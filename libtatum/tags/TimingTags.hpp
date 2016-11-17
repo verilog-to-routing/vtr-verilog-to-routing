@@ -1,5 +1,6 @@
 #pragma once
 #include <iterator>
+#include <memory>
 
 #include "TimingTag.hpp"
 #include "tatum_range.hpp"
@@ -87,7 +88,7 @@ class TimingTags {
         TimingTags(const TimingTags&);
         TimingTags(TimingTags&&);
         TimingTags& operator=(TimingTags);
-        ~TimingTags();
+        ~TimingTags() = default;
         friend void swap(TimingTags& lhs, TimingTags& rhs);
 
         /*
@@ -184,7 +185,7 @@ class TimingTags {
         unsigned short capacity_ = 0;
         unsigned short num_clock_launch_tags_ = 0;
         unsigned short num_clock_capture_tags_ = 0;
-        TimingTag* tags_;
+        std::unique_ptr<TimingTag[]> tags_;
 
 };
 

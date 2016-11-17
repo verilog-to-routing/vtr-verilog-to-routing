@@ -21,7 +21,7 @@ inline TimingTags::TimingTags(const TimingTags& other)
     , num_clock_launch_tags_(other.num_clock_launch_tags_)
     , num_clock_capture_tags_(other.num_clock_capture_tags_)
     , tags_(capacity_ ? new TimingTag[capacity_] : nullptr) {
-    std::copy(other.tags_, other.tags_ + other.size(), tags_);
+    std::copy(other.tags_.get(), other.tags_.get() + other.size(), tags_.get());
 }
 
 inline TimingTags::TimingTags(TimingTags&& other)
@@ -34,22 +34,18 @@ inline TimingTags& TimingTags::operator=(TimingTags other) {
     return *this;
 }
 
-inline TimingTags::~TimingTags() {
-    delete[] tags_;
-}
-
 inline size_t TimingTags::size() const { 
     return size_;
 }
 
 inline TimingTags::iterator TimingTags::begin() {
-    auto iter = iterator(tags_);
+    auto iter = iterator(tags_.get());
 
     return iter;
 }
 
 inline TimingTags::const_iterator TimingTags::begin() const {
-    return const_iterator(tags_);
+    return const_iterator(tags_.get());
 }
 
 inline TimingTags::iterator TimingTags::begin(TagType type) {
@@ -89,14 +85,14 @@ inline TimingTags::const_iterator TimingTags::begin(TagType type) const {
 }
 
 inline TimingTags::iterator TimingTags::end() {
-    auto iter = iterator(tags_ + size_);
-    TATUM_ASSERT_SAFE(iter.p_ >= tags_ && iter.p_ <= tags_ + size());
+    auto iter = iterator(tags_.get() + size_);
+    TATUM_ASSERT_SAFE(iter.p_ >= tags_.get() && iter.p_ <= tags_.get() + size());
     return iter;
 }
 
 inline TimingTags::const_iterator TimingTags::end() const {
-    auto iter = const_iterator(tags_ + size_);
-    TATUM_ASSERT_SAFE(iter.p_ >= tags_ && iter.p_ <= tags_ + size());
+    auto iter = const_iterator(tags_.get() + size_);
+    TATUM_ASSERT_SAFE(iter.p_ >= tags_.get() && iter.p_ <= tags_.get() + size());
     return iter;
 }
 
@@ -117,7 +113,7 @@ inline TimingTags::iterator TimingTags::end(TagType type) {
             TATUM_ASSERT_MSG(false, "Invalid tag type");
     }
 
-    TATUM_ASSERT_SAFE(iter.p_ >= tags_ && iter.p_ <= tags_ + size());
+    TATUM_ASSERT_SAFE(iter.p_ >= tags_.get() && iter.p_ <= tags_.get() + size());
     return iter;
 }
 
@@ -137,7 +133,7 @@ inline TimingTags::const_iterator TimingTags::end(TagType type) const {
         default:
             TATUM_ASSERT_MSG(false, "Invalid tag type");
     }
-    TATUM_ASSERT_SAFE(iter.p_ >= tags_ && iter.p_ <= tags_ + size());
+    TATUM_ASSERT_SAFE(iter.p_ >= tags_.get() && iter.p_ <= tags_.get() + size());
     return iter;
 }
 
@@ -249,7 +245,7 @@ inline TimingTags::iterator TimingTags::insert(iterator iter, const TimingTag& t
         TATUM_ASSERT(size() + 1 <= capacity());
 
         //Shift everything one position right from end to index
-        for(int i = (int) size(); i != (int) index; i--) {
+        for(size_t i = size(); i != index; i--) {
             tags_[i] = tags_[i - 1];
         }
 
@@ -279,10 +275,10 @@ inline TimingTags::iterator TimingTags::insert(iterator iter, const TimingTag& t
 inline void TimingTags::grow_insert(size_t index, const TimingTag& tag) {
     size_t new_capacity = (capacity() == 0) ? 1 : GROWTH_FACTOR * capacity();
 
-    TimingTag* new_tags = new TimingTag[new_capacity];
-    std::copy_n(tags_, index, new_tags); //Copy before index
+    std::unique_ptr<TimingTag[]> new_tags(new TimingTag[new_capacity]);
+    std::copy_n(tags_.get(), index, new_tags.get()); //Copy before index
     new_tags[index] = tag; //Insert the new value
-    std::copy_n(tags_ + index, size() - index, new_tags + index + 1); //Copy after index
+    std::copy_n(tags_.get() + index, size() - index, new_tags.get() + index + 1); //Copy after index
 
     //Swap the tags
     std::swap(tags_, new_tags);
@@ -305,8 +301,6 @@ inline void TimingTags::grow_insert(size_t index, const TimingTag& tag) {
         default:
             TATUM_ASSERT_MSG(false, "Invalid tag type");
     }
-
-    delete new_tags;
 }
 
 inline void swap(TimingTags& lhs, TimingTags& rhs) {
