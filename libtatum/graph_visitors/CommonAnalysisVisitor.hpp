@@ -211,30 +211,32 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
         if(!is_clock_data_capture_edge(tg, edge_id)) {
             TimingTags::tag_range src_launch_clk_tags = ops_.get_launch_clock_tags(src_node_id);
 
-            const Time& clk_launch_edge_delay = ops_.launch_clock_edge_delay(dc, tg, edge_id);
+            if(!src_launch_clk_tags.empty()) {
+                const Time& clk_launch_edge_delay = ops_.launch_clock_edge_delay(dc, tg, edge_id);
 
-            for(const TimingTag& src_launch_clk_tag : src_launch_clk_tags) {
-                //Standard propagation through the clock network
+                for(const TimingTag& src_launch_clk_tag : src_launch_clk_tags) {
+                    //Standard propagation through the clock network
 
-                Time new_arr = src_launch_clk_tag.arr_time() + clk_launch_edge_delay;
-                ops_.merge_arr_tags(node_id, new_arr, src_launch_clk_tag);
+                    Time new_arr = src_launch_clk_tag.arr_time() + clk_launch_edge_delay;
+                    ops_.merge_arr_tags(node_id, new_arr, src_launch_clk_tag);
 
-                if(is_clock_data_launch_edge(tg, edge_id)) {
-                    //We convert the clock arrival time to a data
-                    //arrival time at this node (since the clock's
-                    //arrival launches the data).
-                    TATUM_ASSERT(tg.node_type(node_id) == NodeType::SOURCE);
+                    if(is_clock_data_launch_edge(tg, edge_id)) {
+                        //We convert the clock arrival time to a data
+                        //arrival time at this node (since the clock's
+                        //arrival launches the data).
+                        TATUM_ASSERT(tg.node_type(node_id) == NodeType::SOURCE);
 
-                    //Make a copy of the tag
-                    TimingTag launch_tag = src_launch_clk_tag;
+                        //Make a copy of the tag
+                        TimingTag launch_tag = src_launch_clk_tag;
 
-                    //Update the launch node, since the data is
-                    //launching from this node
-                    launch_tag.set_launch_node(node_id);
-                    launch_tag.set_type(TagType::DATA);
+                        //Update the launch node, since the data is
+                        //launching from this node
+                        launch_tag.set_launch_node(node_id);
+                        launch_tag.set_type(TagType::DATA);
 
-                    //Mark propagated launch time as a DATA tag
-                    ops_.merge_arr_tags(node_id, new_arr, launch_tag);
+                        //Mark propagated launch time as a DATA tag
+                        ops_.merge_arr_tags(node_id, new_arr, launch_tag);
+                    }
                 }
             }
         }
@@ -243,11 +245,13 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
         if(!is_clock_data_launch_edge(tg, edge_id)) {
             TimingTags::tag_range src_capture_clk_tags = ops_.get_capture_clock_tags(src_node_id);
 
-            const Time& clk_capture_edge_delay = ops_.capture_clock_edge_delay(dc, tg, edge_id);
+            if(!src_capture_clk_tags.empty()) {
+                const Time& clk_capture_edge_delay = ops_.capture_clock_edge_delay(dc, tg, edge_id);
 
-            for(const TimingTag& src_capture_clk_tag : src_capture_clk_tags) {
-                //Standard propagation through the clock network
-                ops_.merge_arr_tags(node_id, src_capture_clk_tag.arr_time() + clk_capture_edge_delay, src_capture_clk_tag);
+                for(const TimingTag& src_capture_clk_tag : src_capture_clk_tags) {
+                    //Standard propagation through the clock network
+                    ops_.merge_arr_tags(node_id, src_capture_clk_tag.arr_time() + clk_capture_edge_delay, src_capture_clk_tag);
+                }
             }
         }
     }
