@@ -130,6 +130,8 @@ int main(int argc, char** argv) {
     auto id_maps = timing_graph->optimize_layout();
 
     remap_delay_calculator(*timing_graph, *delay_calculator, id_maps.edge_id_map);
+    timing_constraints->remap_nodes(id_maps.node_id_map);
+    golden_reference->remap_nodes(id_maps.node_id_map);
 
 #endif
 
