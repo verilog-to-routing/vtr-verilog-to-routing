@@ -36,6 +36,19 @@ class GoldenReference {
 
             return cnt;
         }
+
+        void remap_nodes(const tatum::util::linear_map<tatum::NodeId,tatum::NodeId>& node_id_map) {
+            std::map<Key,Value> remapped_results; 
+
+            for(const auto& kv : results) {
+                auto& old_key = kv.first;
+                auto new_key = std::make_pair(node_id_map[old_key.first], old_key.second);
+
+                remapped_results[new_key] = kv.second;
+            }
+
+            results = std::move(remapped_results);
+        }
         
 
     private:
