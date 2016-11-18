@@ -135,7 +135,8 @@ endforeach()
 
 #Apply the warning flags to all build types
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fsanitize=address ${WARN_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g ${WARN_FLAGS}")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g ${WARN_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS}")
 
 #The flex/bison code is not warning clean so we need to suppress some warnings
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS "")
