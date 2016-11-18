@@ -314,10 +314,6 @@ void try_place(struct s_placer_opts placer_opts,
 		first_rlim, final_rlim, inverse_delta_rlim, critical_path_delay = UNDEFINED,
 		**remember_net_delay_original_ptr; /*used to free net_delay if it is re-assigned */
 	double std_dev;
-	int total_swap_attempts;
-	float reject_rate;
-	float accept_rate;
-	float abort_rate;
 	char msg[vtr::BUFSIZE];
 	t_placer_statistics stats;
 	t_slack * slacks = NULL;
@@ -669,16 +665,17 @@ void try_place(struct s_placer_opts placer_opts,
 	update_screen(MAJOR, msg, PLACEMENT, false, timing_inf);
 	 
 	// Print out swap statistics
-	total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
+	size_t total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
     VTR_ASSERT(total_swap_attempts > 0);
 
-	reject_rate = num_swap_rejected / total_swap_attempts;
-	accept_rate = num_swap_accepted / total_swap_attempts;
-	abort_rate = num_swap_aborted / total_swap_attempts;
-	vtr::printf_info("Placement total # of swap attempts: %d\n", total_swap_attempts);
-	vtr::printf_info("\tSwap reject rate: %g\n", reject_rate);
-	vtr::printf_info("\tSwap accept rate: %g\n", accept_rate);
-	vtr::printf_info("\tSwap abort rate: %g\n",	abort_rate);
+    size_t num_swap_print_digits = floor(log10(abs(total_swap_attempts))) + 1;
+	float reject_rate = (float) num_swap_rejected / total_swap_attempts;
+	float accept_rate = (float) num_swap_accepted / total_swap_attempts;
+	float abort_rate = (float) num_swap_aborted / total_swap_attempts;
+	vtr::printf_info("Placement total # of swap attempts: %*d\n", num_swap_print_digits, total_swap_attempts);
+	vtr::printf_info("\tSwaps accepted: %*d (%4.1f %)\n", num_swap_print_digits, num_swap_accepted, 100*accept_rate);
+	vtr::printf_info("\tSwaps rejected: %*d (%4.1f %)\n", num_swap_print_digits, num_swap_rejected, 100*reject_rate);
+	vtr::printf_info("\tSwaps aborted : %*d (%4.1f %)\n", num_swap_print_digits, num_swap_aborted, 100*abort_rate);
 	
 
 #ifdef SPEC
