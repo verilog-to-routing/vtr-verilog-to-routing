@@ -295,10 +295,12 @@ bool TimingGraph::validate() {
 
 GraphIdMaps TimingGraph::optimize_layout() {
     auto node_id_map = optimize_node_layout();
-    auto edge_id_map = optimize_edge_layout();
-
     remap_nodes(node_id_map);
+
+    auto edge_id_map = optimize_edge_layout();
     remap_edges(edge_id_map);
+
+    levelize();
 
     return {node_id_map, edge_id_map};
 }
@@ -315,7 +317,7 @@ tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() const
             //We walk the nodes according to the input-edge order.
             //This is the same order used by the arrival-time traversal (which is responsible
             //for most of the analyzer run-time), so matching it's order exactly results in
-            //better performance
+            //better cache locality
             for(EdgeId edge_id : node_in_edges(node_id)) {
 
                 //edge_id is driven by nodes in level level_idx
@@ -323,10 +325,6 @@ tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() const
             }
         }
     }
-
-    /*
-     * Re-allocate edges to be contiguous in memory
-     */
 
     //Maps from from original to new edge id, used to update node to edge refs
     tatum::util::linear_map<EdgeId,EdgeId> orig_to_new_edge_id(edges().size());
@@ -342,6 +340,11 @@ tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() const
             ++iedge;
         }
     }
+
+    for(auto new_id : orig_to_new_edge_id) {
+        TATUM_ASSERT(new_id);
+    }
+    TATUM_ASSERT(iedge == edges().size());
 
     return orig_to_new_edge_id;
 }
@@ -359,13 +362,16 @@ tatum::util::linear_map<NodeId,NodeId> TimingGraph::optimize_node_layout() const
     size_t inode = 0;
     for(const LevelId level_id : levels()) {
         for(const NodeId old_node_id : level_nodes(level_id)) {
-
             //Record the new node id
             orig_to_new_node_id[old_node_id] = NodeId(inode);
-
             ++inode;
         }
     }
+
+    for(auto new_id : orig_to_new_node_id) {
+        TATUM_ASSERT(new_id);
+    }
+    TATUM_ASSERT(inode == nodes().size());
 
     return orig_to_new_node_id;
 }
@@ -481,6 +487,7 @@ bool TimingGraph::validate_structure() {
             NodeId sink_node = edge_sink_node(out_edge);
             NodeType sink_type = node_type(sink_node);
 
+            //Check type connectivity
             if(src_type == NodeType::SOURCE) {
 
                 if(   sink_type != NodeType::IPIN
@@ -508,8 +515,26 @@ bool TimingGraph::validate_structure() {
             } else {
                 throw tatum::Error("Unrecognized node type");
             }
+
+            //Check that sinks have non fanout
+            if(!node_out_edges(sink_node).empty()) {
+                throw tatum::Error("SINK node should have no out-going edges");
+            }
         }
     }
+
+    for(NodeId node : primary_inputs()) {
+        if(!node_in_edges(node).empty()) {
+            throw tatum::Error("Primary input nodes should have no incoming edges");
+        }
+    }
+
+    for(NodeId node : primary_outputs()) {
+        if(!node_out_edges(node).empty()) {
+            throw tatum::Error("Primary output node should have no outgoing edges");
+        }
+    }
+
     return true;
 }
 
