@@ -45,8 +45,7 @@ add_executable(tatum_sta
 #Exectuable Includes
 target_include_directories(tatum_sta PRIVATE
                            ${TATUM_STA_INCLUDE_DIRS}
-                           "/opt/intel/vtune_amplifier_xe/include"
                            )
 
 #Executable links to the library
-target_link_libraries(tatum_sta libtatum libtatumparse /opt/intel/vtune_amplifier_xe/lib64/libittnotify.a ${CMAKE_DL_LIBS})
+target_link_libraries(tatum_sta libtatum libtatumparse)

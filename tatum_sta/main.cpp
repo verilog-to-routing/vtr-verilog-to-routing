@@ -7,7 +7,6 @@
 #include <memory>
 
 #include <valgrind/callgrind.h>
-#include <ittnotify.h>
 
 #include "tatum_assert.hpp"
 
@@ -30,8 +29,8 @@
 #include "util.hpp"
 #include "output.hpp"
 
-#define NUM_SERIAL_RUNS 20
-#define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
+#define NUM_SERIAL_RUNS 1
+#define NUM_PARALLEL_RUNS 0 
 //#define NUM_SERIAL_RUNS 20
 //#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
 
@@ -189,9 +188,7 @@ int main(int argc, char** argv) {
                 auto start = Clock::now();
 
                 CALLGRIND_TOGGLE_COLLECT;
-                __itt_resume();
                 serial_analyzer->update_timing();
-                __itt_pause();
                 CALLGRIND_TOGGLE_COLLECT;
 
                 serial_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
