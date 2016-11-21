@@ -285,6 +285,7 @@ add_subdirectory(libarchfpga)
 add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
 add_subdirectory(libeasygl)
+add_subdirectory(libtatum)
 add_subdirectory(vpr)
 add_subdirectory(abc_with_bb_support)
 add_subdirectory(ODIN_II)
@@ -326,6 +327,11 @@ set_target_properties(libeasygl
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libeasygl"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libeasygl"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libeasygl")
+set_target_properties(libtatum
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libtatum"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libtatum"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libtatum")
 set_target_properties(libabc abc 
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support"

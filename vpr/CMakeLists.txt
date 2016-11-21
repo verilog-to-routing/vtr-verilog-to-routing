@@ -30,7 +30,8 @@ target_link_libraries(libvpr
                         libarchfpga
                         libsdcparse
                         libblifparse
-                        libeasygl)
+                        libeasygl
+                        libtatum)
 
 #Create the executable
 add_executable(vpr ${EXEC_SOURCES})

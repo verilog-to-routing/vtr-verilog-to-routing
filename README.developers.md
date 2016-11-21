@@ -3,8 +3,9 @@ Subtrees
 Some libraries used by VTR are developed in other repositories and integrated using git subtrees.
 
 Currently these includes:
-* libsdcparse
-* libblifparse
+* libsdcparse       [from git@github.com:kmurray/libsdcparse.git]
+* libblifparse      [from git@github.com:kmurray/libblifparse.git]
+* libtatum          [from git@github.com:kmurray/tatum.git]
 
 As an example consider libsdcparse:
 
