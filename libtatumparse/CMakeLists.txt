@@ -39,12 +39,12 @@ set_source_files_properties(${LIB_SOURCES} ${FLEX_TatumLexer_OUTPUTS} ${BISON_Ta
 #Suppress attribute warnings from bison header
 CHECK_CXX_COMPILER_FLAG("-Wno-attributes" COMPILER_SUPPORTS_-Wno-attributes)
 if(COMPILER_SUPPORTS_-Wno-attributes)
-    set_property(SOURCE ${LIB_SOURCES} ${FLEX_TatumLexer_OUTPUTS} ${BISON_TatumParser_OUTPUT_SOURCE} APPEND_STRING PROPERTY COMPILE_FLAGS "-Wno-attributes")
+    add_compile_options("-Wno-attributes")
 endif()
 
 #Suppress warnings in Flex/Bison generated files
 if(FLEX_BISON_WARN_SUPPRESS_FLAGS)
-    set_property(SOURCE ${FLEX_TatumLexer_OUTPUTS} ${BISON_TatumParser_OUTPUT_SOURCE} APPEND_STRING PROPERTY COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
+    add_compile_options(${FLEX_BISON_WARN_SUPPRESS_FLAGS})
 endif()
 
 #Create the library
