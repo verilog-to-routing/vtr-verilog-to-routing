@@ -668,7 +668,7 @@ void try_place(struct s_placer_opts placer_opts,
 	size_t total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
     VTR_ASSERT(total_swap_attempts > 0);
 
-    size_t num_swap_print_digits = floor(log10(abs(total_swap_attempts))) + 1;
+    size_t num_swap_print_digits = ceil(log10(total_swap_attempts));
 	float reject_rate = (float) num_swap_rejected / total_swap_attempts;
 	float accept_rate = (float) num_swap_accepted / total_swap_attempts;
 	float abort_rate = (float) num_swap_aborted / total_swap_attempts;
