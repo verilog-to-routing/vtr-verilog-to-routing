@@ -25,6 +25,8 @@ namespace tatum {
 template<class Visitor, class DelayCalc>
 class TimingGraphWalker {
     public:
+        virtual ~TimingGraphWalker() = default;
+
         ///Performs the arrival time pre-traversal
         ///\param tg The timing graph
         ///\param tc The timing constraints
