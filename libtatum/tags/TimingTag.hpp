@@ -80,7 +80,7 @@ class TimingTag {
         ///\param new_launch_node The new value set as the tag's launching node
         void set_launch_node(const NodeId new_launch_node) { launch_node_ = new_launch_node; }
 
-        void set_type(const TagType type) { type_ = type; }
+        void set_type(const TagType new_type) { type_ = new_type; }
 
         /*
          * Modification operations
