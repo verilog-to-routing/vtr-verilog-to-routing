@@ -22,12 +22,12 @@ inline TimingTag::TimingTag()
     , type_(TagType::UNKOWN)
     {}
 
-inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, const DomainId domain, const NodeId node, const TagType type)
+inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, const DomainId domain, const NodeId node, const TagType new_type)
     : arr_time_(arr_time_val)
     , req_time_(req_time_val)
     , launch_node_(node)
     , clock_domain_(domain)
-    , type_(type)
+    , type_(new_type)
     {}
 
 inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, const TimingTag& base_tag)
