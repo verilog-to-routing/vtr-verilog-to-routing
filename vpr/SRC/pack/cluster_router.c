@@ -437,7 +437,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 	bool found = false;
 	unsigned int ipos;
 
-	const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(pin_id);
+    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_map, pin_id);
     VTR_ASSERT(pb_graph_pin);
 
     AtomPortId port_id = g_atom_nl.pin_port(pin_id);
@@ -538,7 +538,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 	bool found = false;
 	unsigned int ipos;
 
-	const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(pin_id);
+    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_map, pin_id);
 
     AtomPortId port_id = g_atom_nl.pin_port(pin_id);
     AtomNetId net_id = g_atom_nl.pin_net(pin_id);

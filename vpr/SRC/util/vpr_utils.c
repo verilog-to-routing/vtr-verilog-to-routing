@@ -432,23 +432,23 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *m
 //Retrieves the pb_graph_pin associated with an AtomPinId
 //  Currently this function just wraps get_pb_graph_node_pin_from_model_port_pin()
 //  in a more convenient interface.
-const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin_id) {
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomMap& netlist_map, const AtomPinId pin_id) {
     VTR_ASSERT(pin_id);
 
     //Get the graph node
-    AtomBlockId blk_id = g_atom_nl.pin_block(pin_id);
-    const t_pb_graph_node* pb_gnode = g_atom_map.atom_pb_graph_node(blk_id);
+    AtomBlockId blk_id = netlist.pin_block(pin_id);
+    const t_pb_graph_node* pb_gnode = netlist_map.atom_pb_graph_node(blk_id);
     VTR_ASSERT(pb_gnode);
 
     //The graph node and pin/block should agree on the model they represent
-    VTR_ASSERT(g_atom_nl.block_model(blk_id) == pb_gnode->pb_type->model);
+    VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model);
 
     //Get the pin index
-    AtomPortId port_id = g_atom_nl.pin_port(pin_id);
-    int ipin = g_atom_nl.pin_port_bit(pin_id);
+    AtomPortId port_id = netlist.pin_port(pin_id);
+    int ipin = netlist.pin_port_bit(pin_id);
 
     //Get the model port
-    const t_model_ports* model_port = g_atom_nl.port_model(port_id);
+    const t_model_ports* model_port = netlist.port_model(port_id);
     VTR_ASSERT(model_port);
     
     return get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);

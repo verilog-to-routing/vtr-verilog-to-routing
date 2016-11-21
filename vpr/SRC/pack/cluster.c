@@ -21,6 +21,7 @@ using namespace std;
 
 #include "globals.h"
 #include "atom_netlist.h"
+#include "timing_graph_builder.h"
 #include "pack_types.h"
 #include "cluster.h"
 #include "output_clustering.h"
@@ -380,6 +381,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	if (timing_driven) {
 		raw_slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, 
                                                          expected_lowest_cost_pb_gnode);
+        tatum::TimingGraph tg = TimingGraphBuilder(g_atom_nl, expected_lowest_cost_pb_gnode).build_timing_graph();
+
 		do_timing_analysis(raw_slacks, timing_inf, true, false);
 
 		if (getEchoEnabled()) {
@@ -2450,7 +2453,8 @@ static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id) {
     for(auto pin_id : g_atom_nl.block_pins(blk_id)) {
         auto net_id = g_atom_nl.pin_net(pin_id);
 
-        compute_and_mark_lookahead_pins_used_for_pin(find_pb_graph_pin(pin_id), cur_pb, net_id);
+        const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_map, pin_id);
+        compute_and_mark_lookahead_pins_used_for_pin(pb_graph_pin, cur_pb, net_id);
     }
 }
 
@@ -2607,7 +2611,7 @@ int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const i
     //Record the sink pb graph pins we are looking for
     std::unordered_set<const t_pb_graph_pin*> sink_pb_gpins;
     for(const AtomPinId pin_id : g_atom_nl.net_sinks(net_id)) {
-        const t_pb_graph_pin* sink_pb_gpin = find_pb_graph_pin(pin_id);
+        const t_pb_graph_pin* sink_pb_gpin = find_pb_graph_pin(g_atom_nl, g_atom_map, pin_id);
         VTR_ASSERT(sink_pb_gpin);
 
         sink_pb_gpins.insert(sink_pb_gpin);

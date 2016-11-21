@@ -476,8 +476,7 @@ static void forward_expand_pack_pattern_from_edge(
 					|| ((t_pack_pattern_block*) destination_pb_graph_node->temp_scratch_pad)->pattern_index
 							!= curr_pattern_index) {
 				destination_block = (t_pack_pattern_block*)vtr::calloc(1, sizeof(t_pack_pattern_block));
-				list_of_packing_patterns[curr_pattern_index].base_cost +=
-						compute_primitive_base_cost(destination_pb_graph_node);
+				list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(destination_pb_graph_node);
 				destination_block->block_id = *L_num_blocks;
 				(*L_num_blocks)++;
 				destination_pb_graph_node->temp_scratch_pad =
@@ -637,8 +636,7 @@ static void backward_expand_pack_pattern_from_edge(
 				source_block = (t_pack_pattern_block *)vtr::calloc(1, sizeof(t_pack_pattern_block));
 				source_block->block_id = *L_num_blocks;
 				(*L_num_blocks)++;
-				list_of_packing_patterns[curr_pattern_index].base_cost +=
-						compute_primitive_base_cost(source_pb_graph_node);
+				list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(source_pb_graph_node);
 				source_pb_graph_node->temp_scratch_pad = (void *) source_block;
 				source_block->pattern_index = curr_pattern_index;
 				source_block->pb_type = source_pb_graph_node->pb_type;

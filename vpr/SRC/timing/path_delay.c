@@ -2,6 +2,7 @@
 #include <climits>
 #include <cmath>
 #include <set>
+#include <time.h>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -20,7 +21,6 @@ using namespace std;
 #include "ReadOptions.h"
 #include "read_sdc.h"
 #include "stats.h"
-#include <time.h>
 
 /**************************** Top-level summary ******************************
 
@@ -1255,8 +1255,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 auto iter = expected_lowest_cost_pb_gnode.find(blk_id);
                                 VTR_ASSERT(iter != expected_lowest_cost_pb_gnode.end());
 
-                                from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
-                                                        iter->second);
+                                from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, iter->second);
                                 tnode[inode + 1].num_edges = 1;
                                 tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
                                 tnode[inode + 1].out_edges->to_node = inode;

@@ -28,7 +28,8 @@ static void load_critical_path_annotations(const int line_num,
 		t_pb_graph_node *pb_graph_node, const int mode,
 		const enum e_pin_to_pin_annotation_format input_format,
 		const enum e_pin_to_pin_delay_annotations delay_type,
-		const char *annot_in_pins, const char *annot_out_pins, const char* value);
+		const char *annot_in_pins, const char *annot_out_pins, const char* clock, const char* value);
+static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, const char* clock, int line_num);
 
 void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 	int i, j, k, m;
@@ -44,15 +45,14 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 			if (annotations[i].type == E_ANNOT_PIN_TO_PIN_DELAY) {
 				for (j = 0; j < annotations[i].num_value_prop_pairs; j++) {
 					if (annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_MAX
-							|| annotations[i].prop[j]
-									== E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
-							|| annotations[i].prop[j]
-									== E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
-										load_critical_path_annotations(annotations[i].line_num, pb_graph_node, OPEN,
-								annotations[i].format, (enum e_pin_to_pin_delay_annotations)annotations[i].prop[j],
-								annotations[i].input_pins,
-								annotations[i].output_pins,
-								annotations[i].value[j]);
+			            || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
+                        || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
+                        load_critical_path_annotations(annotations[i].line_num, pb_graph_node, OPEN,
+                            annotations[i].format, (enum e_pin_to_pin_delay_annotations)annotations[i].prop[j],
+                            annotations[i].input_pins,
+                            annotations[i].output_pins,
+                            annotations[i].clock,
+                            annotations[i].value[j]);
 					} else {
 						VTR_ASSERT(
 								annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_MIN || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD);
@@ -87,6 +87,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 										(enum e_pin_to_pin_delay_annotations)annotations[k].prop[m],
 										annotations[k].input_pins,
 										annotations[k].output_pins,
+										annotations[k].clock,
 										annotations[k].value[m]);
 							} else {
 								VTR_ASSERT(
@@ -188,7 +189,7 @@ static void load_critical_path_annotations(const int line_num,
 		t_pb_graph_node *pb_graph_node, const int mode,
 		const enum e_pin_to_pin_annotation_format input_format,
 		const enum e_pin_to_pin_delay_annotations delay_type,
-		const char *annot_in_pins, const char *annot_out_pins, const char* value) {
+		const char *annot_in_pins, const char *annot_out_pins, const char* clock, const char* value) {
 
 	int i, j, k, m, n, p, iedge;
 	t_pb_graph_pin ***in_port, ***out_port;
@@ -287,6 +288,7 @@ static void load_critical_path_annotations(const int line_num,
 		for (i = 0; i < num_in_sets; i++) {
 			for (j = 0; j < num_in_ptrs[i]; j++) {
 				in_port[i][j]->tsu_tco = delay_matrix[k][0];
+				in_port[i][j]->associated_clock_pin = find_clock_pin(pb_graph_node, clock, line_num);
 				k++;
 			}
 		}
@@ -299,13 +301,9 @@ static void load_critical_path_annotations(const int line_num,
 					p = 0;
 					for (m = 0; m < num_out_sets; m++) {
 						for (n = 0; n < num_out_ptrs[m]; n++) {
-							for (iedge = 0;
-									iedge < in_port[i][j]->num_output_edges;
-									iedge++) {
-								if (in_port[i][j]->output_edges[iedge]->output_pins[0]
-										== out_port[m][n]) {
-									VTR_ASSERT(
-											in_port[i][j]->output_edges[iedge]->delay_max == 0);
+							for (iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
+								if (in_port[i][j]->output_edges[iedge]->output_pins[0] == out_port[m][n]) {
+									VTR_ASSERT( in_port[i][j]->output_edges[iedge]->delay_max == 0);
 									break;
 								}
 							}
@@ -380,4 +378,26 @@ static void load_critical_path_annotations(const int line_num,
 		free(delay_matrix[i]);
 	}
 	free(delay_matrix);
+}
+
+static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, const char* clock, int line_num) {
+    t_pb_graph_pin* clock_pin = nullptr;
+    for(int iport = 0; iport < gnode->num_clock_ports; ++iport) {
+        VTR_ASSERT(gnode->num_clock_pins[iport] == 1);
+
+        if(strcmp(clock, gnode->clock_pins[iport][0].port->name) == 0) {
+            VTR_ASSERT(!clock_pin);
+            if(clock_pin) {
+                vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
+                        "Found duplicate clock-pin match");
+            }
+            clock_pin = &gnode->clock_pins[iport][0];
+        }
+    }
+
+    if(!clock_pin) {
+        vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
+                "Failed to find associated clock pin");
+    }
+    return clock_pin;
 }
