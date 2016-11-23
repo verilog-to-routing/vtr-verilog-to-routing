@@ -24,10 +24,10 @@
 #include "sta_util.hpp"
 
 #include "golden_reference.hpp"
-#include "echo_load.hpp"
+#include "echo_loader.hpp"
 #include "verify.hpp"
 #include "util.hpp"
-#include "output.hpp"
+#include "echo_writer.hpp"
 
 #define NUM_SERIAL_RUNS 1
 #define NUM_PARALLEL_RUNS 0 
@@ -159,9 +159,9 @@ int main(int argc, char** argv) {
 
 #ifdef ECHO
     std::ofstream ofs("timing_graph.echo");
-    write_timing_graph(ofs, *timing_graph);
-    write_timing_constraints(ofs, *timing_constraints);
-    write_delay_model(ofs, *timing_graph, *delay_calculator);
+    tatum::write_timing_graph(ofs, *timing_graph);
+    tatum::write_timing_constraints(ofs, *timing_constraints);
+    tatum::write_delay_model(ofs, *timing_graph, *delay_calculator);
     ofs.flush();
 #endif
 
@@ -346,7 +346,7 @@ int main(int argc, char** argv) {
     cout << endl;
 
 #ifdef ECHO
-    write_analysis_result(ofs, *timing_graph, serial_analyzer);
+    tatum::write_analysis_result(ofs, *timing_graph, serial_analyzer);
 #endif
 
 
