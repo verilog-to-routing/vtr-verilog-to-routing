@@ -3,7 +3,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "output.hpp"
+#include "echo_writer.hpp"
 
 #include "tatum_assert.hpp"
 #include "TimingGraph.hpp"
@@ -12,13 +12,7 @@
 #include "TimingTags.hpp"
 #include "timing_analyzers.hpp"
 
-using tatum::NodeId;
-using tatum::EdgeId;
-using tatum::DomainId;
-using tatum::TimingTags;
-using tatum::TimingTag;
-using tatum::TimingGraph;
-using tatum::TimingConstraints;
+namespace tatum {
 
 void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const NodeId node_id);
 
@@ -127,10 +121,10 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
     os << "\n";
 }
 
-void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<tatum::TimingAnalyzer> analyzer) {
+void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<TimingAnalyzer> analyzer) {
     os << "analysis_result:\n";
 
-    auto setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(analyzer);
+    auto setup_analyzer = std::dynamic_pointer_cast<SetupTimingAnalyzer>(analyzer);
     if(setup_analyzer) {
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
@@ -145,7 +139,7 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
             write_tags(os, "SETUP_CAPTURE_CLOCK", setup_analyzer->get_setup_capture_clock_tags(node_id), node_id);
         }
     }
-    auto hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(analyzer);
+    auto hold_analyzer = std::dynamic_pointer_cast<HoldTimingAnalyzer>(analyzer);
     if(hold_analyzer) {
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
@@ -184,4 +178,6 @@ void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag
             os << "\n";
         }
     }
+}
+
 }

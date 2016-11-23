@@ -1,4 +1,4 @@
-#include "echo_load.hpp"
+#include "echo_loader.hpp"
 
 EchoLoader::EchoLoader() {
     tg_ = std::unique_ptr<tatum::TimingGraph>(new tatum::TimingGraph);
