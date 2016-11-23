@@ -1,5 +1,5 @@
-#ifndef TATUMSTA_ECHO_LOAD
-#define TATUMSTA_ECHO_LOAD
+#ifndef TATUMSTA_ECHO_LOADER
+#define TATUMSTA_ECHO_LOADER
 #include <memory>
 
 #include "TimingGraph.hpp"
