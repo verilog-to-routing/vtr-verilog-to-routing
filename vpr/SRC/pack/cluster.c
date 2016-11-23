@@ -10,6 +10,7 @@
 #include <ctime>
 #include <map>
 #include <algorithm>
+#include <fstream>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -21,7 +22,6 @@ using namespace std;
 
 #include "globals.h"
 #include "atom_netlist.h"
-#include "timing_graph_builder.h"
 #include "pack_types.h"
 #include "cluster.h"
 #include "output_clustering.h"
@@ -34,6 +34,11 @@ using namespace std;
 #include "ReadOptions.h"
 #include "cluster_router.h"
 #include "lb_type_rr_graph.h"
+
+#include "timing_graph_builder.h"
+#include "echo_writer.hpp"
+#include "TimingConstraints.hpp"
+#include "read_sdc.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
 
@@ -381,7 +386,14 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	if (timing_driven) {
 		raw_slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, 
                                                          expected_lowest_cost_pb_gnode);
-        tatum::TimingGraph tg = TimingGraphBuilder(g_atom_nl, expected_lowest_cost_pb_gnode).build_timing_graph();
+
+        tatum::TimingGraph tg = TimingGraphBuilder(g_atom_nl, g_atom_map, expected_lowest_cost_pb_gnode).build_timing_graph();
+
+        std::ofstream os_timing_echo("timing.echo");
+        write_timing_graph(os_timing_echo, tg);
+
+        tatum::TimingConstraints tc = create_timing_constraints(g_atom_nl, g_atom_map);
+        write_timing_constraints(os_timing_echo, tc);
 
 		do_timing_analysis(raw_slacks, timing_inf, true, false);
 

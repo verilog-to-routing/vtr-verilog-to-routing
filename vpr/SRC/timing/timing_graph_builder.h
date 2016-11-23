@@ -4,14 +4,17 @@
 
 #include "TimingGraph.hpp"
 #include "atom_netlist_fwd.h"
+#include "atom_map.h"
 #include "physical_types.h"
 
 
 class TimingGraphBuilder {
     public:
         TimingGraphBuilder(const AtomNetlist& netlist,
+                           AtomMap& netlist_map,
                            const std::unordered_map<AtomBlockId,t_pb_graph_node*>& blk_to_pb_gnode_map)
             : netlist_(netlist) 
+            , netlist_map_(netlist_map)
             , blk_to_pb_gnode_(blk_to_pb_gnode_map) {}
 
         tatum::TimingGraph build_timing_graph();
@@ -27,9 +30,9 @@ class TimingGraphBuilder {
 
     private:
         tatum::TimingGraph tg_;
-        vtr::linear_map<AtomPinId,tatum::NodeId> pin_to_tnode_;
 
         const AtomNetlist& netlist_;
+        AtomMap& netlist_map_;
         const std::unordered_map<AtomBlockId,t_pb_graph_node*>& blk_to_pb_gnode_;
 };
 

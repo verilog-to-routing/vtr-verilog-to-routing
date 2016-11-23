@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include "atom_netlist_fwd.h"
 #include "vpr_types.h"
+#include "vtr_bimap.h"
+#include "timing_graph_fwd.hpp"
 /*
  * The AtomMap class describes the mapping between components in the AtomNetlist
  * and other netlists/entities (i.e. atom block <-> t_pb, atom block <-> clb)
@@ -66,6 +68,9 @@ class AtomMap {
         // If either pin_id or tnode_index are not valid any existing mapping
         // is removed
         void set_atom_pin_tnode(const AtomPinId pin_id, const int tnode_index);
+        void set_pin_tnode(const AtomPinId pin_id, const tatum::NodeId tnode_index);
+
+        vtr::bimap<AtomPinId,tatum::NodeId> pin_tnode;
     private:
         std::unordered_map<AtomBlockId,const t_pb*> atom_to_pb_;
         std::unordered_map<const t_pb*,AtomBlockId> pb_to_atom_;
@@ -80,6 +85,7 @@ class AtomMap {
 
         std::unordered_map<AtomPinId,int> atom_pin_to_tnode_;
         std::unordered_map<int,AtomPinId> tnode_to_atom_pin_;
+
 };
 
 #endif

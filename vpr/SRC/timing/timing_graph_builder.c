@@ -63,7 +63,7 @@ void TimingGraphBuilder::add_io_to_timing_graph(const AtomBlockId blk) {
 
     NodeId tnode = tg_.add_node(node_type);
 
-    pin_to_tnode_.insert(pin, tnode);
+    netlist_map_.pin_tnode.insert(pin, tnode);
 }
 
 void TimingGraphBuilder::add_comb_block_to_timing_graph(const AtomBlockId blk) {
@@ -77,7 +77,7 @@ void TimingGraphBuilder::add_comb_block_to_timing_graph(const AtomBlockId blk) {
     for(AtomPinId output_pin : netlist_.block_output_pins(blk)) {
         NodeId tnode = tg_.add_node(NodeType::OPIN);
 
-        pin_to_tnode_.insert(output_pin, tnode);
+        netlist_map_.pin_tnode.insert(output_pin, tnode);
 
         const t_pb_graph_pin* pb_gpin = find_pb_graph_pin(output_pin);
 
@@ -87,7 +87,7 @@ void TimingGraphBuilder::add_comb_block_to_timing_graph(const AtomBlockId blk) {
     for(AtomPinId input_pin : netlist_.block_input_pins(blk)) {
         NodeId tnode = tg_.add_node(NodeType::IPIN);
 
-        pin_to_tnode_.insert(input_pin, tnode);
+        netlist_map_.pin_tnode.insert(input_pin, tnode);
 
         const t_pb_graph_pin* pb_gpin = find_pb_graph_pin(input_pin);
 
@@ -103,7 +103,7 @@ void TimingGraphBuilder::add_comb_block_to_timing_graph(const AtomBlockId blk) {
                 AtomPinId sink_pin = iter->second;
                 VTR_ASSERT(sink_pin);
 
-                NodeId sink_tnode = pin_to_tnode_[sink_pin];
+                NodeId sink_tnode = netlist_map_.pin_tnode[sink_pin];
                 VTR_ASSERT(sink_tnode);
                 
                 tg_.add_edge(tnode, sink_tnode);
@@ -123,7 +123,7 @@ void TimingGraphBuilder::add_seq_block_to_timing_graph(const AtomBlockId blk) {
     for(AtomPinId clock_pin : netlist_.block_clock_pins(blk)) {
         NodeId tnode = tg_.add_node(NodeType::CPIN);
 
-        pin_to_tnode_.insert(clock_pin, tnode);
+        netlist_map_.pin_tnode.insert(clock_pin, tnode);
 
         const t_pb_graph_pin* pb_gpin = find_pb_graph_pin(clock_pin);
         clock_pb_graph_pin_to_pin_id[pb_gpin] = clock_pin;
@@ -132,14 +132,14 @@ void TimingGraphBuilder::add_seq_block_to_timing_graph(const AtomBlockId blk) {
     for(AtomPinId input_pin : netlist_.block_input_pins(blk)) {
         NodeId tnode = tg_.add_node(NodeType::SINK);
 
-        pin_to_tnode_.insert(input_pin, tnode);
+        netlist_map_.pin_tnode.insert(input_pin, tnode);
 
         //Add the edges from the clock to inputs
         const t_pb_graph_pin* gpin = find_associated_clock_pin(input_pin);
         auto iter = clock_pb_graph_pin_to_pin_id.find(gpin);
         VTR_ASSERT(iter != clock_pb_graph_pin_to_pin_id.end());
         AtomPinId clock_pin = iter->second;
-        NodeId clock_tnode = pin_to_tnode_[clock_pin];
+        NodeId clock_tnode = netlist_map_.pin_tnode[clock_pin];
 
         tg_.add_edge(clock_tnode, tnode);
     }
@@ -147,14 +147,14 @@ void TimingGraphBuilder::add_seq_block_to_timing_graph(const AtomBlockId blk) {
     for(AtomPinId output_pin : netlist_.block_output_pins(blk)) {
         NodeId tnode = tg_.add_node(NodeType::SOURCE);
 
-        pin_to_tnode_.insert(output_pin, tnode);
+        netlist_map_.pin_tnode.insert(output_pin, tnode);
 
         //Add the edges from the clock to the output
         const t_pb_graph_pin* gpin = find_associated_clock_pin(output_pin);
         auto iter = clock_pb_graph_pin_to_pin_id.find(gpin);
         VTR_ASSERT(iter != clock_pb_graph_pin_to_pin_id.end());
         AtomPinId clock_pin = iter->second;
-        NodeId clock_tnode = pin_to_tnode_[clock_pin];
+        NodeId clock_tnode = netlist_map_.pin_tnode[clock_pin];
 
         tg_.add_edge(clock_tnode, tnode);
     }
@@ -163,12 +163,12 @@ void TimingGraphBuilder::add_seq_block_to_timing_graph(const AtomBlockId blk) {
 void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
 
     AtomPinId driver_pin = netlist_.net_driver(net);
-    NodeId driver_tnode = pin_to_tnode_[driver_pin];
+    NodeId driver_tnode = netlist_map_.pin_tnode[driver_pin];
     VTR_ASSERT(driver_tnode);
 
 
     for(AtomPinId sink_pin : netlist_.net_sinks(net)) {
-        NodeId sink_tnode = pin_to_tnode_[sink_pin];
+        NodeId sink_tnode = netlist_map_.pin_tnode[sink_pin];
         VTR_ASSERT(sink_tnode);
 
         tg_.add_edge(driver_tnode, sink_tnode);
