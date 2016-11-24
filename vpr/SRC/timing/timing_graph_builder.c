@@ -11,6 +11,7 @@ using tatum::EdgeId;
 using tatum::Time;
 
 TimingGraph TimingGraphBuilder::timing_graph() {
+    tg_.levelize();
     return std::move(tg_);
 }
 

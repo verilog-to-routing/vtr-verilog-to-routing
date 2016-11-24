@@ -38,6 +38,8 @@ using namespace std;
 #include "timing_graph_builder.h"
 #include "echo_writer.hpp"
 #include "TimingConstraints.hpp"
+#include "analyzer_factory.hpp"
+
 #include "read_sdc.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
@@ -390,14 +392,17 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map, expected_lowest_cost_pb_gnode, inter_cluster_net_delay);
         tatum::TimingGraph tg = tg_builder.timing_graph();
         tatum::FixedDelayCalculator dc = tg_builder.delay_calculator();
+        tatum::TimingConstraints tc = create_timing_constraints(g_atom_nl, g_atom_map);
 
         std::ofstream os_timing_echo("timing.echo");
         write_timing_graph(os_timing_echo, tg);
-
-        tatum::TimingConstraints tc = create_timing_constraints(g_atom_nl, g_atom_map);
         write_timing_constraints(os_timing_echo, tc);
-
         write_delay_model(os_timing_echo, tg, dc);
+
+        std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(tg, tc, dc);
+        analyzer->update_timing();
+
+        write_analysis_result(os_timing_echo, tg, analyzer);
 
 		do_timing_analysis(raw_slacks, timing_inf, true, false);
 
