@@ -4,11 +4,21 @@
 #include "atom_netlist.h"
 
 using tatum::TimingGraph;
+using tatum::FixedDelayCalculator;
 using tatum::NodeId;
 using tatum::NodeType;
+using tatum::EdgeId;
+using tatum::Time;
 
+TimingGraph TimingGraphBuilder::timing_graph() {
+    return std::move(tg_);
+}
 
-TimingGraph TimingGraphBuilder::build_timing_graph() {
+FixedDelayCalculator TimingGraphBuilder::delay_calculator() {
+    return FixedDelayCalculator(max_edge_delays_, setup_times_);
+}
+
+void TimingGraphBuilder::build() {
     for(AtomBlockId blk : netlist_.blocks()) {
 
         AtomBlockType blk_type = netlist_.block_type(blk);
@@ -29,8 +39,6 @@ TimingGraph TimingGraphBuilder::build_timing_graph() {
     for(AtomNetId net : netlist_.nets()) {
         add_net_to_timing_graph(net);
     }
-
-    return std::move(tg_);
 }
 
 void TimingGraphBuilder::add_io_to_timing_graph(const AtomBlockId blk) {
@@ -106,7 +114,9 @@ void TimingGraphBuilder::add_comb_block_to_timing_graph(const AtomBlockId blk) {
                 NodeId sink_tnode = netlist_map_.pin_tnode[sink_pin];
                 VTR_ASSERT(sink_tnode);
                 
-                tg_.add_edge(tnode, sink_tnode);
+                EdgeId edge = tg_.add_edge(tnode, sink_tnode);
+
+                max_edge_delays_.insert(edge, Time(pb_gpin->pin_timing_del_max[i]));
             }
         }
     }
@@ -126,6 +136,7 @@ void TimingGraphBuilder::add_seq_block_to_timing_graph(const AtomBlockId blk) {
         netlist_map_.pin_tnode.insert(clock_pin, tnode);
 
         const t_pb_graph_pin* pb_gpin = find_pb_graph_pin(clock_pin);
+        VTR_ASSERT(pb_gpin->type == PB_PIN_CLOCK);
         clock_pb_graph_pin_to_pin_id[pb_gpin] = clock_pin;
     }
 
@@ -135,13 +146,21 @@ void TimingGraphBuilder::add_seq_block_to_timing_graph(const AtomBlockId blk) {
         netlist_map_.pin_tnode.insert(input_pin, tnode);
 
         //Add the edges from the clock to inputs
-        const t_pb_graph_pin* gpin = find_associated_clock_pin(input_pin);
-        auto iter = clock_pb_graph_pin_to_pin_id.find(gpin);
+        const t_pb_graph_pin* gpin = find_pb_graph_pin(input_pin);
+        VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
+
+        const t_pb_graph_pin* clock_gpin = find_associated_clock_pin(input_pin);
+        VTR_ASSERT(clock_gpin->type == PB_PIN_CLOCK);
+
+        auto iter = clock_pb_graph_pin_to_pin_id.find(clock_gpin);
         VTR_ASSERT(iter != clock_pb_graph_pin_to_pin_id.end());
         AtomPinId clock_pin = iter->second;
         NodeId clock_tnode = netlist_map_.pin_tnode[clock_pin];
 
-        tg_.add_edge(clock_tnode, tnode);
+        EdgeId edge = tg_.add_edge(clock_tnode, tnode);
+
+        //Tsu
+        setup_times_.insert(edge, Time(gpin->tsu_tco));
     }
 
     for(AtomPinId output_pin : netlist_.block_output_pins(blk)) {
@@ -150,13 +169,21 @@ void TimingGraphBuilder::add_seq_block_to_timing_graph(const AtomBlockId blk) {
         netlist_map_.pin_tnode.insert(output_pin, tnode);
 
         //Add the edges from the clock to the output
-        const t_pb_graph_pin* gpin = find_associated_clock_pin(output_pin);
-        auto iter = clock_pb_graph_pin_to_pin_id.find(gpin);
+        const t_pb_graph_pin* gpin = find_pb_graph_pin(output_pin);
+        VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
+
+        const t_pb_graph_pin* clock_gpin = find_associated_clock_pin(output_pin);
+        VTR_ASSERT(clock_gpin->type == PB_PIN_CLOCK);
+
+        auto iter = clock_pb_graph_pin_to_pin_id.find(clock_gpin);
         VTR_ASSERT(iter != clock_pb_graph_pin_to_pin_id.end());
         AtomPinId clock_pin = iter->second;
         NodeId clock_tnode = netlist_map_.pin_tnode[clock_pin];
 
-        tg_.add_edge(clock_tnode, tnode);
+        EdgeId edge = tg_.add_edge(clock_tnode, tnode);
+
+        //Tcq
+        max_edge_delays_.insert(edge, Time(gpin->tsu_tco));
     }
 }
 
@@ -171,7 +198,9 @@ void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
         NodeId sink_tnode = netlist_map_.pin_tnode[sink_pin];
         VTR_ASSERT(sink_tnode);
 
-        tg_.add_edge(driver_tnode, sink_tnode);
+        EdgeId edge = tg_.add_edge(driver_tnode, sink_tnode);
+
+        max_edge_delays_.insert(edge, Time(inter_cluster_net_delay_));
     }
 }
 

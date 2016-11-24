@@ -387,13 +387,17 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		raw_slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, 
                                                          expected_lowest_cost_pb_gnode);
 
-        tatum::TimingGraph tg = TimingGraphBuilder(g_atom_nl, g_atom_map, expected_lowest_cost_pb_gnode).build_timing_graph();
+        TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map, expected_lowest_cost_pb_gnode, inter_cluster_net_delay);
+        tatum::TimingGraph tg = tg_builder.timing_graph();
+        tatum::FixedDelayCalculator dc = tg_builder.delay_calculator();
 
         std::ofstream os_timing_echo("timing.echo");
         write_timing_graph(os_timing_echo, tg);
 
         tatum::TimingConstraints tc = create_timing_constraints(g_atom_nl, g_atom_map);
         write_timing_constraints(os_timing_echo, tc);
+
+        write_delay_model(os_timing_echo, tg, dc);
 
 		do_timing_analysis(raw_slacks, timing_inf, true, false);
 
