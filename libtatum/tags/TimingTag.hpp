@@ -9,7 +9,8 @@ namespace tatum {
 enum class TagType : unsigned char {
     CLOCK_LAUNCH,
     CLOCK_CAPTURE,
-    DATA,
+    DATA_ARRIVAL,
+    DATA_REQUIRED,
     UNKOWN
 };
 
@@ -41,21 +42,18 @@ class TimingTag {
         ///\param req_time_val The tagged required time
         ///\param domain The clock domain the arrival/required times were launched from
         ///\param node The original launch node's id (i.e. primary input that originally launched this tag)
-        TimingTag(const Time& arr_time_val, const Time& req_time_val, DomainId domain, NodeId node, TagType type);
+        TimingTag(const Time& time_val, DomainId domain, NodeId node, TagType type);
 
         ///\param arr_time_val The tagged arrival time
         ///\param req_time_val The tagged required time
         ///\param base_tag The tag from which to copy auxilary meta-data (e.g. domain, launch node)
-        TimingTag(const Time& arr_time_val, const Time& req_time_val, const TimingTag& base_tag);
+        TimingTag(const Time& time_val, const TimingTag& base_tag);
 
         /*
          * Getters
          */
         ///\returns This tag's arrival time
-        const Time& arr_time() const { return arr_time_; }
-
-        ///\returns This tag's required time
-        const Time& req_time() const { return req_time_; }
+        const Time& time() const { return time_; }
 
         ///\returns This tag's launching clock domain
         DomainId clock_domain() const { return clock_domain_; }
@@ -69,10 +67,7 @@ class TimingTag {
          * Setters
          */
         ///\param new_arr_time The new value set as the tag's arrival time
-        void set_arr_time(const Time& new_arr_time) { arr_time_ = new_arr_time; }
-
-        ///\param new_req_time The new value set as the tag's required time
-        void set_req_time(const Time& new_req_time) { req_time_ = new_req_time; }
+        void set_time(const Time& new_time) { time_ = new_time; }
 
         ///\param new_req_time The new value set as the tag's clock domain
         void set_clock_domain(const DomainId new_clock_domain) { clock_domain_ = new_clock_domain; }
@@ -93,35 +88,21 @@ class TimingTag {
         ///If the arrival time is updated, meta-data is also updated from base_tag
         ///\param new_arr_time The arrival time to compare against
         ///\param base_tag The tag from which meta-data is copied
-        void max_arr(const Time& new_arr_time, const TimingTag& base_tag);
+        void max(const Time& new_time, const TimingTag& base_tag);
 
         ///Updates the tag's arrival time if new_arr_time is smaller than the current arrival time.
         ///If the arrival time is updated, meta-data is also updated from base_tag
         ///\param new_arr_time The arrival time to compare against
         ///\param base_tag The tag from which meta-data is copied
-        void min_arr(const Time& new_arr_time, const TimingTag& base_tag);
-
-        ///Updates the tag's required time if new_req_time is smaller than the current required time.
-        ///If the required time is updated, meta-data is also updated from base_tag
-        ///\param new_arr_time The arrival time to compare against
-        ///\param base_tag The tag from which meta-data is copied
-        void min_req(const Time& new_req_time, const TimingTag& base_tag);
-
-        ///Updates the tag's required time if new_req_time is larger than the current required time.
-        ///If the required time is updated, meta-data is also updated from base_tag
-        ///\param new_arr_time The arrival time to compare against
-        ///\param base_tag The tag from which meta-data is copied
-        void max_req(const Time& new_req_time, const TimingTag& base_tag);
+        void min(const Time& new_time, const TimingTag& base_tag);
 
     private:
-        void update_arr(const Time& new_arr_time, const TimingTag& base_tag);
-        void update_req(const Time& new_req_time, const TimingTag& base_tag);
+        void update(const Time& new_time, const TimingTag& base_tag);
 
         /*
          * Data
          */
-        Time arr_time_; //Arrival time
-        Time req_time_; //Required time
+        Time time_; //Required time
         NodeId launch_node_; //Node which launched this arrival time
         DomainId clock_domain_; //Clock domain for arr/req times
         TagType type_;

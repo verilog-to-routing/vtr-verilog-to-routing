@@ -84,6 +84,7 @@
 %{
 
 #include <stdio.h>
+#include <cmath>
 #include "assert.h"
 
 #include "tatumparse.hpp"
@@ -131,13 +132,18 @@ using namespace tatumparse;
 
 %token ANALYSIS_RESULTS "analysis_results:"
 %token SETUP_DATA "SETUP_DATA"
+%token SETUP_DATA_ARRIVAL "SETUP_DATA_ARRIVAL"
+%token SETUP_DATA_REQUIRED "SETUP_DATA_REQUIRED"
 %token SETUP_LAUNCH_CLOCK "SETUP_LAUNCH_CLOCK"
 %token SETUP_CAPTURE_CLOCK "SETUP_CAPTURE_CLOCK"
 %token HOLD_DATA "HOLD_DATA"
+%token HOLD_DATA_ARRIVAL "HOLD_DATA_ARRIVAL"
+%token HOLD_DATA_REQUIRED "HOLD_DATA_REQUIRED"
 %token HOLD_LAUNCH_CLOCK "HOLD_LAUNCH_CLOCK"
 %token HOLD_CAPTURE_CLOCK "HOLD_CAPTURE_CLOCK"
 %token ARR "arr:"
 %token REQ "req:"
+%token TIME "time:"
 
 %token EOL "end-of-line"
 %token EOF 0 "end-of-file"
@@ -169,6 +175,7 @@ using namespace tatumparse;
 %type <float> HoldTime
 %type <float> Req
 %type <float> Arr
+%type <float> Time
 %type <TagType> TagType
 
 /* Top level rule */
@@ -202,14 +209,20 @@ DelayModel: DELAY_MODEL EOL { callback.start_delay_model(); }
 
 Results:  ANALYSIS_RESULTS EOL { callback.start_results(); }
         | Results TagType NodeId DomainId Arr Req EOL { callback.add_tag($2, $3, $4, $5, $6); }
+        | Results TagType NodeId DomainId Time EOL { callback.add_tag($2, $3, $4, $5, NAN); }
 
 Arr: ARR Number { $$ = $2; }
 Req: REQ Number { $$ = $2; }
+Time: TIME Number { $$ = $2; }
 
 TagType: TYPE SETUP_DATA { $$ = TagType::SETUP_DATA; }
+       | TYPE SETUP_DATA_ARRIVAL { $$ = TagType::SETUP_DATA_ARRIVAL; }
+       | TYPE SETUP_DATA_REQUIRED { $$ = TagType::SETUP_DATA_REQUIRED; }
        | TYPE SETUP_LAUNCH_CLOCK { $$ = TagType::SETUP_LAUNCH_CLOCK; }
        | TYPE SETUP_CAPTURE_CLOCK { $$ = TagType::SETUP_CAPTURE_CLOCK; }
        | TYPE HOLD_DATA { $$ = TagType::HOLD_DATA; }
+       | TYPE HOLD_DATA_ARRIVAL { $$ = TagType::HOLD_DATA_ARRIVAL; }
+       | TYPE HOLD_DATA_REQUIRED { $$ = TagType::HOLD_DATA_REQUIRED; }
        | TYPE HOLD_LAUNCH_CLOCK { $$ = TagType::HOLD_LAUNCH_CLOCK; }
        | TYPE HOLD_CAPTURE_CLOCK { $$ = TagType::HOLD_CAPTURE_CLOCK; }
 

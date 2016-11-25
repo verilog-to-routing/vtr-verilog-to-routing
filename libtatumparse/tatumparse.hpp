@@ -41,10 +41,14 @@ enum class NodeType {
 };
 
 enum class TagType {
-    SETUP_DATA,
+    SETUP_DATA, //legacy
+    SETUP_DATA_ARRIVAL,
+    SETUP_DATA_REQUIRED,
     SETUP_LAUNCH_CLOCK,
     SETUP_CAPTURE_CLOCK,
-    HOLD_DATA,
+    HOLD_DATA, //legacy
+    HOLD_DATA_ARRIVAL,
+    HOLD_DATA_REQUIRED,
     HOLD_LAUNCH_CLOCK,
     HOLD_CAPTURE_CLOCK
 };

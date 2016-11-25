@@ -114,38 +114,19 @@ class TimingTags {
         void add_tag(const TimingTag& src_tag);
 
         /*
-         * Setup operations
+         * Operations
          */
         ///Updates the arrival time of this set of tags to be the maximum.
-        ///\param tag_pool The pool memory allocator to use
         ///\param new_time The new arrival time to compare against
         ///\param base_tag The associated metat-data for new_time
         ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the arrival time if new_time is larger
-        void max_arr(const Time& new_time, const TimingTag& base_tag);
+        void max(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid=false);
 
         ///Updates the required time of this set of tags to be the minimum.
-        ///\param tag_pool The pool memory allocator to use
         ///\param new_time The new arrival time to compare against
         ///\param base_tag The associated metat-data for new_time
         ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the required time if new_time is smaller
-        void min_req(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid);
-
-        /*
-         * Hold operations
-         */
-        ///Updates the arrival time of this set of tags to be the minimum.
-        ///\param tag_pool The pool memory allocator to use
-        ///\param new_time The new arrival time to compare against
-        ///\param base_tag The associated metat-data for new_time
-        ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the arrival time if new_time is smaller
-        void min_arr(const Time& new_time, const TimingTag& base_tag);
-
-        ///Updates the required time of this set of tags to be the maximum.
-        ///\param tag_pool The pool memory allocator to use
-        ///\param new_time The new arrival time to compare against
-        ///\param base_tag The associated metat-data for new_time
-        ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the required time if new_time is larger
-        void max_req(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid);
+        void min(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid=false);
 
         ///Clears the tags in the current set
         void clear();
@@ -175,15 +156,25 @@ class TimingTags {
         iterator insert(iterator iter, const TimingTag& tag);
         void grow_insert(size_t index, const TimingTag& tag);
 
+        void increment_size(TagType type);
+
 
     private:
-        //We don't expect many tags in a node so unsigned short's
+        //We don't expect many tags in a node so unsigned short's/unsigned char's
         //should be more than sufficient. This also allows the class
         //to be packed down to 16 bytes (8 for counters, 8 for pointer)
+        //
+        //In its current configuration we can store at most:
+        //  65536           total tags (size_ and capacity_)
+        //  256             clock launch tags (num_clock_launch_tags_)
+        //  256             clock capture tags (num_clock_capture_tags_)
+        //  256             data arrival tags (num_data_arrival_tags_)
+        //  (65536 - 3*256) data required tags (size_ - num_*)
         unsigned short size_ = 0;
         unsigned short capacity_ = 0;
-        unsigned short num_clock_launch_tags_ = 0;
-        unsigned short num_clock_capture_tags_ = 0;
+        unsigned char num_clock_launch_tags_ = 0;
+        unsigned char num_clock_capture_tags_ = 0;
+        unsigned char num_data_arrival_tags_ = 0;
         std::unique_ptr<TimingTag[]> tags_;
 
 };

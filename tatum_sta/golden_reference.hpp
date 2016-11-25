@@ -6,19 +6,18 @@
 #include "tatumparse.hpp"
 
 struct TagResult {
-    TagResult(tatum::NodeId node_id, tatum::DomainId domain_id, float arr_val, float req_val): node(node_id), domain(domain_id), arr(arr_val), req(req_val) {}
+    TagResult(tatum::NodeId node_id, tatum::DomainId domain_id, float time_val): node(node_id), domain(domain_id), time(time_val) {}
     tatum::NodeId node;
     tatum::DomainId domain;
-    float arr;
-    float req;
+    float time;
 };
 
 class GoldenReference {
     public:
 
-        void set_result(tatum::NodeId node, tatumparse::TagType tag_type, tatum::DomainId domain, float arr, float req) {
+        void set_result(tatum::NodeId node, tatumparse::TagType tag_type, tatum::DomainId domain, float time) {
             auto key = std::make_pair(node, tag_type);
-            auto res = results[key].insert(std::make_pair(domain, TagResult(node, domain, arr, req)));
+            auto res = results[key].insert(std::make_pair(domain, TagResult(node, domain, time)));
 
             TATUM_ASSERT_MSG(res.second, "Was inserted");
         }

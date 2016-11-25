@@ -128,30 +128,38 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
     if(setup_analyzer) {
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
-            write_tags(os, "SETUP_DATA", setup_analyzer->get_setup_data_tags(node_id), node_id);
+            write_tags(os, "SETUP_DATA_ARRIVAL", setup_analyzer->setup_tags(node_id, TagType::DATA_ARRIVAL), node_id);
         }
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
-            write_tags(os, "SETUP_LAUNCH_CLOCK", setup_analyzer->get_setup_launch_clock_tags(node_id), node_id);
+            write_tags(os, "SETUP_DATA_REQUIRED", setup_analyzer->setup_tags(node_id, TagType::DATA_REQUIRED), node_id);
         }
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
-            write_tags(os, "SETUP_CAPTURE_CLOCK", setup_analyzer->get_setup_capture_clock_tags(node_id), node_id);
+            write_tags(os, "SETUP_LAUNCH_CLOCK", setup_analyzer->setup_tags(node_id, TagType::CLOCK_LAUNCH), node_id);
+        }
+        for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
+            NodeId node_id(node_idx);
+            write_tags(os, "SETUP_CAPTURE_CLOCK", setup_analyzer->setup_tags(node_id, TagType::CLOCK_CAPTURE), node_id);
         }
     }
     auto hold_analyzer = std::dynamic_pointer_cast<HoldTimingAnalyzer>(analyzer);
     if(hold_analyzer) {
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
-            write_tags(os, "HOLD_DATA", hold_analyzer->get_hold_data_tags(node_id), node_id);
+            write_tags(os, "HOLD_DATA_ARRIVAL", hold_analyzer->hold_tags(node_id, TagType::DATA_ARRIVAL), node_id);
         }
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
-            write_tags(os, "HOLD_LAUNCH_CLOCK", hold_analyzer->get_hold_launch_clock_tags(node_id), node_id);
+            write_tags(os, "HOLD_DATA_REQUIRED", hold_analyzer->hold_tags(node_id, TagType::DATA_REQUIRED), node_id);
         }
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
-            write_tags(os, "HOLD_CAPTURE_CLOCK", hold_analyzer->get_hold_capture_clock_tags(node_id), node_id);
+            write_tags(os, "HOLD_LAUNCH_CLOCK", hold_analyzer->hold_tags(node_id, TagType::CLOCK_LAUNCH), node_id);
+        }
+        for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
+            NodeId node_id(node_idx);
+            write_tags(os, "HOLD_CAPTURE_CLOCK", hold_analyzer->hold_tags(node_id, TagType::CLOCK_CAPTURE), node_id);
         }
     }
     os << "\n";
@@ -159,23 +167,13 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
 
 void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const NodeId node_id) {
     for(const auto& tag : tags) {
-        float arr = tag.arr_time().value();
-        float req = tag.req_time().value();
+        float time = tag.time().value();
 
-        if(!isnan(arr) || !isnan(req)) {
+        if(!isnan(time)) {
             os << " type: " << type;
             os << " node: " << size_t(node_id);
             os << " domain: " << size_t(tag.clock_domain());
-
-            if(!isnan(arr)) {
-                os << " arr: " << arr;
-            }
-
-            if(!isnan(arr)) {
-                os << " req: " << tag.req_time().value();
-            }
-
-            os << "\n";
+            os << " time: " << time;
         }
     }
 }
