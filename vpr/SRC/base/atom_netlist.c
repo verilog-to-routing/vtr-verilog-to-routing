@@ -516,6 +516,10 @@ AtomNetlist::block_range AtomNetlist::blocks () const {
     return vtr::make_range(block_ids_.begin(), block_ids_.end()); 
 }
 
+AtomNetlist::pin_range AtomNetlist::pins () const {
+    return vtr::make_range(pin_ids_.begin(), pin_ids_.end()); 
+}
+
 AtomNetlist::net_range AtomNetlist::nets () const {
     return vtr::make_range(net_ids_.begin(), net_ids_.end()); 
 }

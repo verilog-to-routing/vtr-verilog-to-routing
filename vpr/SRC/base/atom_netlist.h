@@ -537,6 +537,9 @@ class AtomNetlist {
         //Returns a range consisting of all blocks in the netlist
         block_range blocks  () const;
 
+        //Returns a range consisting of all pins in the netlist
+        pin_range   pins    () const;
+
         //Returns a range consisting of all nets in the netlist
         net_range   nets    () const;
         
