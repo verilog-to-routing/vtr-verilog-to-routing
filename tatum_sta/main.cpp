@@ -29,10 +29,8 @@
 #include "util.hpp"
 #include "echo_writer.hpp"
 
-#define NUM_SERIAL_RUNS 1
-#define NUM_PARALLEL_RUNS 0 
-//#define NUM_SERIAL_RUNS 20
-//#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
+#define NUM_SERIAL_RUNS 10
+#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
 
 //Should we optimize the timing graph memory layout?
 #define OPTIMIZE_GRAPH_LAYOUT
@@ -291,7 +289,7 @@ int main(int argc, char** argv) {
     float parallel_reset_time = 0;
     size_t parallel_tags_verified = 0;
     std::map<std::string,float> parallel_prof_data;
-    std::vector<double> serial_analysis_times;
+    std::vector<double> parallel_analysis_times;
     {
         cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << endl;
 
@@ -304,7 +302,7 @@ int main(int argc, char** argv) {
 
                 float time = std::chrono::duration_cast<dsec>(Clock::now() - start).count();
                 parallel_prof_data["analysis_sec"] += time;
-                serial_analysis_times.push_back(time);
+                parallel_analysis_times.push_back(time);
             }
 
             for(auto key : {"arrival_pre_traversal_sec", "arrival_traversal_sec", "required_pre_traversal_sec", "required_traversal_sec"}) {
