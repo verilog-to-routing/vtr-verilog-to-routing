@@ -27,51 +27,12 @@ namespace tatum {
 class TimingTags {
     public:
         template<class T>
-        class Iterator : public std::iterator<std::random_access_iterator_tag, T> {
-            friend TimingTags;
-            public:
-                using value_type = typename std::iterator<std::random_access_iterator_tag, T>::value_type;
-                using difference_type = typename std::iterator<std::random_access_iterator_tag, T>::difference_type;
-                using pointer = typename std::iterator<std::random_access_iterator_tag, T>::pointer;
-                using reference = typename std::iterator<std::random_access_iterator_tag, T>::reference;
-                using iterator_category = typename std::iterator<std::random_access_iterator_tag, T>::iterator_category;
-            public:
-                Iterator(): p_(nullptr) {}
-                Iterator(pointer p): p_(p) {}
-                Iterator(const Iterator& other): p_(other.p_) {}
-                Iterator& operator=(const Iterator& other) { p_ = other.p_; return *this; }
-
-                friend bool operator==(Iterator a, Iterator b) { return a.p_ == b.p_; }
-                friend bool operator!=(Iterator a, Iterator b) { return a.p_ != b.p_; }
-
-                reference operator*() { return *p_; }
-                pointer operator->() { return p_; }
-                reference operator[](size_t n) { return *(p_ + n); }
-
-                Iterator& operator++() { ++p_; return *this; }
-                Iterator operator++(int) { Iterator old = *this; ++p_; return old; }
-                Iterator& operator--() { --p_; return *this; }
-                Iterator operator--(int) { Iterator old = *this; --p_; return old; }
-                Iterator& operator+=(size_t n) { p_ += n; return *this; }
-                Iterator& operator-=(size_t n) { p_ -= n; return *this; }
-                friend Iterator operator+(Iterator lhs, size_t rhs) { return lhs += rhs; }
-                friend Iterator operator-(Iterator lhs, size_t rhs) { return lhs += rhs; }
-
-                friend difference_type operator-(const Iterator lhs, const Iterator rhs) { return lhs.p_ - rhs.p_; }
-
-                friend bool operator<(Iterator lhs, Iterator rhs) { return lhs.p_ < rhs.p_; }
-                friend bool operator>(Iterator lhs, Iterator rhs) { return lhs.p_ > rhs.p_; }
-                friend bool operator<=(Iterator lhs, Iterator rhs) { return lhs.p_ <= rhs.p_; }
-                friend bool operator>=(Iterator lhs, Iterator rhs) { return lhs.p_ >= rhs.p_; }
-                friend void swap(Iterator lhs, Iterator rhs) { std::swap(lhs.p_, rhs.p_); }
-            private:
-                T* p_ = nullptr;
-        };
+        class Iterator;
     private:
         //In practice the vast majority of nodes have only two or one
         //tags, so we reserve space for two to avoid costly memory
         //allocations
-        constexpr static size_t DEFAULT_TAGS_TO_RESERVE = 2;
+        constexpr static size_t DEFAULT_TAGS_TO_RESERVE = 3;
         constexpr static size_t GROWTH_FACTOR = 2;
 
     public:
@@ -131,6 +92,50 @@ class TimingTags {
         ///Clears the tags in the current set
         void clear();
 
+    public:
+
+        //Iterator definition
+        template<class T>
+        class Iterator : public std::iterator<std::random_access_iterator_tag, T> {
+            friend TimingTags;
+            public:
+                using value_type = typename std::iterator<std::random_access_iterator_tag, T>::value_type;
+                using difference_type = typename std::iterator<std::random_access_iterator_tag, T>::difference_type;
+                using pointer = typename std::iterator<std::random_access_iterator_tag, T>::pointer;
+                using reference = typename std::iterator<std::random_access_iterator_tag, T>::reference;
+                using iterator_category = typename std::iterator<std::random_access_iterator_tag, T>::iterator_category;
+            public:
+                Iterator(): p_(nullptr) {}
+                Iterator(pointer p): p_(p) {}
+                Iterator(const Iterator& other): p_(other.p_) {}
+                Iterator& operator=(const Iterator& other) { p_ = other.p_; return *this; }
+
+                friend bool operator==(Iterator a, Iterator b) { return a.p_ == b.p_; }
+                friend bool operator!=(Iterator a, Iterator b) { return a.p_ != b.p_; }
+
+                reference operator*() { return *p_; }
+                pointer operator->() { return p_; }
+                reference operator[](size_t n) { return *(p_ + n); }
+
+                Iterator& operator++() { ++p_; return *this; }
+                Iterator operator++(int) { Iterator old = *this; ++p_; return old; }
+                Iterator& operator--() { --p_; return *this; }
+                Iterator operator--(int) { Iterator old = *this; --p_; return old; }
+                Iterator& operator+=(size_t n) { p_ += n; return *this; }
+                Iterator& operator-=(size_t n) { p_ -= n; return *this; }
+                friend Iterator operator+(Iterator lhs, size_t rhs) { return lhs += rhs; }
+                friend Iterator operator-(Iterator lhs, size_t rhs) { return lhs += rhs; }
+
+                friend difference_type operator-(const Iterator lhs, const Iterator rhs) { return lhs.p_ - rhs.p_; }
+
+                friend bool operator<(Iterator lhs, Iterator rhs) { return lhs.p_ < rhs.p_; }
+                friend bool operator>(Iterator lhs, Iterator rhs) { return lhs.p_ > rhs.p_; }
+                friend bool operator<=(Iterator lhs, Iterator rhs) { return lhs.p_ <= rhs.p_; }
+                friend bool operator>=(Iterator lhs, Iterator rhs) { return lhs.p_ >= rhs.p_; }
+                friend void swap(Iterator lhs, Iterator rhs) { std::swap(lhs.p_, rhs.p_); }
+            private:
+                T* p_ = nullptr;
+        };
 
     private:
 
@@ -148,10 +153,16 @@ class TimingTags {
 
         size_t capacity() const;
 
+        std::pair<iterator,bool> find_matching_tag(const TimingTag& tag, bool arr_must_be_valid);
+
         ///Finds a TimingTag in the current set that has clock domain id matching domain_id
-        ///\param domain_id The clock domain id to look for
-        ///\returns An iterator to the tag if found, or end() if not found
-        iterator find_matching_tag(const TimingTag& tag);
+        ///\returns An iterator to the tag if found, or end(tag.type()) if not found
+        std::pair<iterator,bool> find_matching_tag(const TimingTag& tag);
+
+        //Find a TimingTag matching the specified DATA_REQUIRED tag provided there is a valid associated
+        //DATA_ARRIVAL tag
+        std::pair<iterator,bool> find_matching_tag_with_valid_arrival(const TimingTag& tag);
+
 
         iterator insert(iterator iter, const TimingTag& tag);
         void grow_insert(size_t index, const TimingTag& tag);

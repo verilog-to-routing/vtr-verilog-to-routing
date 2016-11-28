@@ -16,6 +16,8 @@ enum class TagType : unsigned char {
 
 std::ostream& operator<<(std::ostream& os, TagType type);
 
+#define TRACK_LAUNCH_NODE
+
 /**
  * The 'TimingTag' class represents an individual timing tag: the information associated
  * with a node's arrival/required times.
@@ -59,7 +61,11 @@ class TimingTag {
         DomainId clock_domain() const { return clock_domain_; }
 
         ///\returns This tag's launching node's id
+#ifdef TRACK_LAUNCH_NODE
         NodeId launch_node() const { return launch_node_; }
+#else
+        NodeId launch_node() const { return NodeId(); }
+#endif
 
         TagType type() const { return type_; }
 
@@ -73,7 +79,11 @@ class TimingTag {
         void set_clock_domain(const DomainId new_clock_domain) { clock_domain_ = new_clock_domain; }
 
         ///\param new_launch_node The new value set as the tag's launching node
+#ifdef TRACK_LAUNCH_NODE
         void set_launch_node(const NodeId new_launch_node) { launch_node_ = new_launch_node; }
+#else
+        void set_launch_node(const NodeId /*new_launch_node*/) { }
+#endif
 
         void set_type(const TagType new_type) { type_ = new_type; }
 
@@ -103,7 +113,9 @@ class TimingTag {
          * Data
          */
         Time time_; //Required time
+#ifdef TRACK_LAUNCH_NODE
         NodeId launch_node_; //Node which launched this arrival time
+#endif
         DomainId clock_domain_; //Clock domain for arr/req times
         TagType type_;
 };

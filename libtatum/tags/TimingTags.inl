@@ -145,74 +145,32 @@ inline void TimingTags::add_tag(const TimingTag& tag) {
 }
 
 inline void TimingTags::max(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid) {
-    iterator iter = find_matching_tag(base_tag);
-    if(iter == end(base_tag.type())) {
-        //An exact match was not found
-        iterator arr_iter = end(TagType::DATA_ARRIVAL);
-        if(arr_must_be_valid) {
-            //Must look for the matching arrival tag
-            TimingTag match_tag(base_tag);
-            match_tag.set_type(TagType::DATA_ARRIVAL);
-            arr_iter = find_matching_tag(match_tag);
-        }
+    auto iter_bool = find_matching_tag(base_tag, arr_must_be_valid);
+    if(iter_bool.second) {
+        auto iter = iter_bool.first;
+        if(iter == end(base_tag.type())) {
+            //An exact match was not found
 
-        if(!arr_must_be_valid || (arr_iter != end(TagType::DATA_ARRIVAL) && arr_iter->time().valid())) {
             //First time we've seen this domain
             TimingTag tag = TimingTag(new_time, base_tag);
             add_tag(tag);
-        }
-    } else {
-        iterator arr_iter = end(TagType::DATA_ARRIVAL);
-        if(arr_must_be_valid) {
-            //See if there is a matching arrival tag
-            if(iter->type() == TagType::DATA_ARRIVAL) {
-                //iter is the matching arrival tag
-                arr_iter = iter;
-            } else {
-                //Must look for the matching arrival tag
-                TimingTag match_tag(base_tag);
-                match_tag.set_type(TagType::DATA_ARRIVAL);
-                arr_iter = find_matching_tag(match_tag);
-            }
-        }
-        if(!arr_must_be_valid || (arr_iter != end(TagType::DATA_ARRIVAL) && arr_iter->time().valid())) {
+        } else {
             iter->max(new_time, base_tag);
         }
     }
 }
 
 inline void TimingTags::min(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid) {
-    iterator iter = find_matching_tag(base_tag);
-    if(iter == end(base_tag.type())) {
-        //An exact match was not found
-        iterator arr_iter = end(TagType::DATA_ARRIVAL);
-        if(arr_must_be_valid) {
-            //Must look for the matching arrival tag
-            TimingTag match_tag(base_tag);
-            match_tag.set_type(TagType::DATA_ARRIVAL);
-            arr_iter = find_matching_tag(match_tag);
-        }
+    auto iter_bool = find_matching_tag(base_tag, arr_must_be_valid);
+    if(iter_bool.second) {
+        auto iter = iter_bool.first;
+        if(iter == end(base_tag.type())) {
+            //An exact match was not found
 
-        if(!arr_must_be_valid || (arr_iter != end(TagType::DATA_ARRIVAL) && arr_iter->time().valid())) {
             //First time we've seen this domain
             TimingTag tag = TimingTag(new_time, base_tag);
             add_tag(tag);
-        }
-    } else {
-        iterator arr_iter = end(TagType::DATA_ARRIVAL);
-        if(arr_must_be_valid) {
-            //See if there is a matching arrival tag
-            if(iter->type() == TagType::DATA_ARRIVAL) {
-                //iter is the matching arrival tag
-                arr_iter = iter;
-            } else {
-                //Must look for the matching arrival tag
-                TimingTag match_tag(base_tag);
-                match_tag.set_type(TagType::DATA_ARRIVAL);
-                arr_iter = find_matching_tag(match_tag);
-            }
-        }
-        if(!arr_must_be_valid || (arr_iter != end(TagType::DATA_ARRIVAL) && arr_iter->time().valid())) {
+        } else {
             iter->min(new_time, base_tag);
         }
     }
@@ -224,16 +182,56 @@ inline void TimingTags::clear() {
     num_clock_capture_tags_ = 0;
 }
 
-inline TimingTags::iterator TimingTags::find_matching_tag(const TimingTag& tag) {
+inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag(const TimingTag& tag, bool arr_must_be_valid) {
+    if(arr_must_be_valid) {
+        return find_matching_tag_with_valid_arrival(tag);
+    } else {
+        return find_matching_tag(tag);
+    }
+}
+
+inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag(const TimingTag& tag) {
     //Linear search for matching tag
     auto b = begin(tag.type());
     auto e = end(tag.type());
     for(auto iter = b; iter != e; ++iter) {
-        if(iter->type() == tag.type() && iter->clock_domain() == tag.clock_domain()) {
-            return iter;
+        if(iter->clock_domain() == tag.clock_domain()) {
+            TATUM_ASSERT_SAFE(iter->type() == tag.type());
+            return {iter, true};
         }
     }
-    return e;
+    return {e, true};
+}
+
+inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag_with_valid_arrival(const TimingTag& tag) {
+    TATUM_ASSERT_MSG(tag.type() == TagType::DATA_REQUIRED, "valid arrival look-up requires a DATA_REQUIRED tag");
+
+    //Linear search for matching arrival tag
+    auto arr_b = begin(TagType::DATA_ARRIVAL);
+    auto arr_e = end(TagType::DATA_ARRIVAL);
+    bool valid_arr = false;
+    for(auto iter = arr_b; iter != arr_e; ++iter) {
+        if(iter->clock_domain() == tag.clock_domain() && tag.time().valid()) {
+            TATUM_ASSERT_SAFE(iter->type() == TagType::DATA_ARRIVAL);
+            valid_arr = true;
+            break;
+        }
+    }
+
+    auto e = end(TagType::DATA_REQUIRED);
+    if(!valid_arr) {
+        return {e, false};
+    }
+
+    //Linear search for matching tag
+    auto b = begin(TagType::DATA_REQUIRED);
+    for(auto iter = b; iter != e; ++iter) {
+        if(iter->clock_domain() == tag.clock_domain()) {
+            TATUM_ASSERT_SAFE(iter->type() == tag.type());
+            return {iter, true};
+        }
+    }
+    return {e, true};
 }
 
 inline size_t TimingTags::capacity() const { return capacity_; }
@@ -251,7 +249,7 @@ inline TimingTags::iterator TimingTags::insert(iterator iter, const TimingTag& t
 
         //Shift everything one position right from end to index
         //TODO: use std::copy_backward?
-        for(size_t i = size(); i != index; i--) {
+        for(size_t i = size(); i != index; --i) {
             tags_[i] = tags_[i - 1];
         }
 

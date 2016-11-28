@@ -8,21 +8,34 @@ namespace tatum {
 
 inline TimingTag::TimingTag()
     : time_(NAN)
+#ifdef TRACK_LAUNCH_NODE
     , launch_node_(NodeId::INVALID())
+#endif
     , clock_domain_(DomainId::INVALID())
     , type_(TagType::UNKOWN)
     {}
 
-inline TimingTag::TimingTag(const Time& time_val, const DomainId domain, const NodeId node, const TagType new_type)
+inline TimingTag::TimingTag(const Time& time_val, 
+                            const DomainId domain, 
+#ifdef TRACK_LAUNCH_NODE
+                            const NodeId node, 
+#else
+                            const NodeId /*node*/,
+#endif
+                            const TagType new_type)
     : time_(time_val)
+#ifdef TRACK_LAUNCH_NODE
     , launch_node_(node)
+#endif
     , clock_domain_(domain)
     , type_(new_type)
     {}
 
 inline TimingTag::TimingTag(const Time& time_val, const TimingTag& base_tag)
     : time_(time_val)
+#ifdef TRACK_LAUNCH_NODE
     , launch_node_(base_tag.launch_node())
+#endif
     , clock_domain_(base_tag.clock_domain())
     , type_(base_tag.type())
     {}
