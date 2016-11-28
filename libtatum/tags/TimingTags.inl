@@ -204,7 +204,7 @@ inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag(const 
 }
 
 inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag_with_valid_arrival(const TimingTag& tag) {
-    TATUM_ASSERT_MSG(tag.type() == TagType::DATA_REQUIRED, "valid arrival look-up requires a DATA_REQUIRED tag");
+    TATUM_ASSERT_SAFE_MSG(tag.type() == TagType::DATA_REQUIRED, "valid arrival look-up requires a DATA_REQUIRED tag");
 
     //Linear search for matching arrival tag
     auto arr_b = begin(TagType::DATA_ARRIVAL);
