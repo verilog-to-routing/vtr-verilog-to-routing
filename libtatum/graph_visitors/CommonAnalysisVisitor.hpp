@@ -35,6 +35,8 @@ class CommonAnalysisVisitor {
         CommonAnalysisVisitor(size_t num_tags)
             : ops_(num_tags) { }
 
+        void do_reset_node(const NodeId node_id) { ops_.reset_node(node_id); }
+
         void do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
 
@@ -43,8 +45,6 @@ class CommonAnalysisVisitor {
 
         template<class DelayCalc>
         void do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id);
-
-        void reset() { ops_.reset(); }
 
     protected:
         AnalysisOps ops_;

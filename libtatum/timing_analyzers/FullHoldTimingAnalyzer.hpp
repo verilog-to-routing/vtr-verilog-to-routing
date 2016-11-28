@@ -26,14 +26,14 @@ class FullHoldTimingAnalyzer : public HoldTimingAnalyzer {
 
     protected:
         virtual void update_timing_impl() override {
+            graph_walker_.do_reset(timing_graph_, hold_visitor_);
+
             graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, hold_visitor_);            
             graph_walker_.do_arrival_traversal(timing_graph_, timing_constraints_, delay_calculator_, hold_visitor_);            
 
             graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, hold_visitor_);            
             graph_walker_.do_required_traversal(timing_graph_, timing_constraints_, delay_calculator_, hold_visitor_);            
         }
-
-        virtual void reset_timing_impl() override { hold_visitor_.reset(); }
 
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
 

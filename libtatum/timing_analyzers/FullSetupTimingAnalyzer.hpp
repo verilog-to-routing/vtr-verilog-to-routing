@@ -26,14 +26,19 @@ class FullSetupTimingAnalyzer : public SetupTimingAnalyzer {
 
     protected:
         virtual void update_timing_impl() override {
+            auto start_time = Clock::now();
+
+            graph_walker_.do_reset(timing_graph_, setup_visitor_);
+
             graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, setup_visitor_);            
             graph_walker_.do_arrival_traversal(timing_graph_, timing_constraints_, delay_calculator_, setup_visitor_);            
 
             graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, setup_visitor_);            
             graph_walker_.do_required_traversal(timing_graph_, timing_constraints_, delay_calculator_, setup_visitor_);            
-        }
 
-        virtual void reset_timing_impl() override { setup_visitor_.reset(); }
+            float analysis_sec = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
+            graph_walker_.set_profiling_data("analysis_sec", analysis_sec);
+        }
 
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
 
@@ -49,6 +54,10 @@ class FullSetupTimingAnalyzer : public SetupTimingAnalyzer {
         const DelayCalc& delay_calculator_;
         SetupAnalysis setup_visitor_;
         GraphWalker<SetupAnalysis, DelayCalc> graph_walker_;
+
+
+        typedef std::chrono::duration<double> dsec;
+        typedef std::chrono::high_resolution_clock Clock;
 };
 
 }} //namepsace

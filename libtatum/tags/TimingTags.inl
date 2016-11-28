@@ -216,6 +216,8 @@ inline void TimingTags::max_req(const Time& new_time, const TimingTag& base_tag,
 
 inline void TimingTags::clear() {
     size_ = 0;
+    num_clock_launch_tags_ = 0;
+    num_clock_capture_tags_ = 0;
 }
 
 inline TimingTags::iterator TimingTags::find_matching_tag(const TimingTag& tag) {

@@ -75,6 +75,14 @@ class TimingGraphWalker {
             profiling_data_["required_traversal_sec"] = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
         }
 
+        void do_reset(const TimingGraph& tg, Visitor& visitor) {
+            auto start_time = Clock::now();
+
+            do_reset_impl(tg, visitor);
+
+            profiling_data_["reset_sec"] = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
+        }
+
         ///Retrieve profiling information
         ///\param key The profiling key
         ///\returns The profiling value for the given key, or NaN if the key is not found
@@ -84,6 +92,10 @@ class TimingGraphWalker {
             } else {
                 return std::numeric_limits<double>::quiet_NaN();
             }
+        }
+
+        void set_profiling_data(std::string key, double val) { 
+            profiling_data_[key] = val;
         }
 
     protected:
@@ -112,6 +124,9 @@ class TimingGraphWalker {
         ///\param dc The edge delay calculator
         ///\param visitor The visitor to apply during the traversal
         virtual void do_required_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) = 0;
+
+        ///Sub-class defined rest in preparation for a timing update
+        virtual void do_reset_impl(const TimingGraph& tg, Visitor& visitor) = 0;
 
     private:
         std::map<std::string, double> profiling_data_;

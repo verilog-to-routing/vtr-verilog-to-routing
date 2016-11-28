@@ -148,7 +148,6 @@ class TimingTags {
         void max_req(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid);
 
         ///Clears the tags in the current set
-        ///\warning Note this does not deallocate the tags. Tag deallocation is the responsibility of the associated pool allocator
         void clear();
 
 

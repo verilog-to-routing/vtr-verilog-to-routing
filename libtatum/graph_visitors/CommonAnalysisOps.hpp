@@ -54,8 +54,8 @@ class CommonAnalysisOps {
             node_tags_[node].add_tag(tag);
         }
 
-        void reset() { 
-            node_tags_ = tatum::util::linear_map<NodeId,TimingTags>(node_tags_.size());
+        void reset_node(const NodeId node) { 
+            node_tags_[node].clear();
         }
 
     protected:
