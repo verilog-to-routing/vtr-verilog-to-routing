@@ -58,6 +58,8 @@ using tatum::NodeId;
 using tatum::EdgeId;
 using tatum::DomainId;
 
+double median(std::vector<double> values);
+
 int main(int argc, char** argv) {
     if(argc != 2) {
         cout << "Usage: " << argv[0] << " tg_echo_file" << endl;
@@ -175,6 +177,7 @@ int main(int argc, char** argv) {
     float serial_reset_time = 0.;
     size_t serial_tags_verified = 0;
     std::map<std::string,float> serial_prof_data;
+    std::vector<double> serial_analysis_times;
     {
         cout << "Running Serial Analysis " << NUM_SERIAL_RUNS << " times" << endl;
 
@@ -191,7 +194,10 @@ int main(int argc, char** argv) {
                 serial_analyzer->update_timing();
                 CALLGRIND_TOGGLE_COLLECT;
 
-                serial_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
+                double time = std::chrono::duration_cast<dsec>(Clock::now() - start).count();
+                serial_prof_data["analysis_sec"] += time;
+                serial_analysis_times.push_back(time);
+
 
             }
 
@@ -234,7 +240,14 @@ int main(int argc, char** argv) {
         }
 
         cout << endl;
-        cout << "Serial Analysis took " << std::setprecision(6) << std::setw(6) << serial_prof_data["analysis_sec"]*NUM_SERIAL_RUNS << " sec, AVG: " << serial_prof_data["analysis_sec"] << " s" << endl;
+        cout << "Serial Analysis took " << std::setprecision(6) << std::setw(6) << serial_prof_data["analysis_sec"]*NUM_SERIAL_RUNS << " sec";
+        if(serial_analysis_times.size() > 0) {
+            cout << " AVG: " << serial_prof_data["analysis_sec"];
+            cout << " Median: " << median(serial_analysis_times);
+            cout << " Min: " << *std::min_element(serial_analysis_times.begin(), serial_analysis_times.end());
+            cout << " Max: " << *std::max_element(serial_analysis_times.begin(), serial_analysis_times.end());
+        }
+        cout << endl;
 
         cout << "\tArr Pre-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["arrival_pre_traversal_sec"] << " s";
         cout << " (" << std::setprecision(2) << serial_prof_data["arrival_pre_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
@@ -278,6 +291,7 @@ int main(int argc, char** argv) {
     float parallel_reset_time = 0;
     size_t parallel_tags_verified = 0;
     std::map<std::string,float> parallel_prof_data;
+    std::vector<double> serial_analysis_times;
     {
         cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << endl;
 
@@ -288,7 +302,9 @@ int main(int argc, char** argv) {
 
                 parallel_analyzer->update_timing();
 
-                parallel_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
+                float time = std::chrono::duration_cast<dsec>(Clock::now() - start).count();
+                parallel_prof_data["analysis_sec"] += time;
+                serial_analysis_times.push_back(time);
             }
 
             for(auto key : {"arrival_pre_traversal_sec", "arrival_traversal_sec", "required_pre_traversal_sec", "required_traversal_sec"}) {
@@ -321,7 +337,14 @@ int main(int argc, char** argv) {
         }
         cout << endl;
 
-        cout << "Parallel Analysis took " << std::setprecision(6) << std::setw(6) << parallel_prof_data["analysis_sec"]*NUM_PARALLEL_RUNS << " sec, AVG: " << parallel_prof_data["analysis_sec"] << " s" << endl;
+        cout << "Parallel Analysis took " << std::setprecision(6) << std::setw(6) << parallel_prof_data["analysis_sec"]*NUM_SERIAL_RUNS << " sec";
+        if(parallel_analysis_times.size() > 0) {
+            cout << " AVG: " << parallel_prof_data["analysis_sec"];
+            cout << " Median: " << median(parallel_analysis_times);
+            cout << " Min: " << *std::min_element(parallel_analysis_times.begin(), parallel_analysis_times.end());
+            cout << " Max: " << *std::max_element(parallel_analysis_times.begin(), parallel_analysis_times.end());
+        }
+        cout << endl;
 
         cout << "\tArr Pre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["arrival_pre_traversal_sec"] << " s";
         cout << " (" << std::setprecision(2) << parallel_prof_data["arrival_pre_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;
@@ -376,4 +399,14 @@ int main(int argc, char** argv) {
     cout << endl << "Total time: " << tatum::time_sec(prog_start, prog_end) << " sec" << endl;
 
     return 0;
+}
+
+double median(std::vector<double> values) {
+    std::sort(values.begin(), values.end());
+
+    if(values.size() % 2 == 0) {
+        return(values[values.size() / 2 - 1] + values[values.size() / 2]) / 2;
+    } else {
+        return values[values.size() / 2];
+    }
 }
