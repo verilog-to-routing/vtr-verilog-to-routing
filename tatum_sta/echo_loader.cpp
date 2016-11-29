@@ -61,25 +61,8 @@ void EchoLoader::add_edge_delay(int edge_id, float min_delay, float max_delay) {
     min_delay_edges_[tatum::EdgeId(edge_id)] = tatum::Time(min_delay);
     max_delay_edges_[tatum::EdgeId(edge_id)] = tatum::Time(max_delay);
 }
-void EchoLoader::add_tag(tatumparse::TagType type, int node_id, int domain_id, float arr, float req) {
-    if(type == tatumparse::TagType::SETUP_DATA) {
-        if(!isnan(arr)) {
-            gr_->set_result(tatum::NodeId(node_id), tatumparse::TagType::SETUP_DATA_ARRIVAL, tatum::DomainId(domain_id), arr);
-        }
-        if(!isnan(req)) {
-            gr_->set_result(tatum::NodeId(node_id), tatumparse::TagType::SETUP_DATA_REQUIRED, tatum::DomainId(domain_id), req);
-        }
-    } else if(type == tatumparse::TagType::HOLD_DATA) {
-        if(!isnan(arr)) {
-            gr_->set_result(tatum::NodeId(node_id), tatumparse::TagType::HOLD_DATA_ARRIVAL, tatum::DomainId(domain_id), arr);
-        }
-        if(!isnan(req)) {
-            gr_->set_result(tatum::NodeId(node_id), tatumparse::TagType::HOLD_DATA_REQUIRED, tatum::DomainId(domain_id), req);
-        }
-    } else {
-        TATUM_ASSERT(isnan(req));
-        gr_->set_result(tatum::NodeId(node_id), type, tatum::DomainId(domain_id), arr);
-    }
+void EchoLoader::add_tag(tatumparse::TagType type, int node_id, int launch_domain_id, int capture_domain_id, float time) {
+    gr_->set_result(tatum::NodeId(node_id), type, tatum::DomainId(launch_domain_id), tatum::DomainId(capture_domain_id), time);
 }
 
 std::unique_ptr<tatum::TimingGraph> EchoLoader::timing_graph() {

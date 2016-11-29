@@ -6,23 +6,28 @@
 #include "tatumparse.hpp"
 
 struct TagResult {
-    TagResult(tatum::NodeId node_id, tatum::DomainId domain_id, float time_val): node(node_id), domain(domain_id), time(time_val) {}
+    TagResult(tatum::NodeId node_id, tatum::DomainId launch_domain_id, tatum::DomainId capture_domain_id, float time_val)
+        : node(node_id)
+        , launch_domain(launch_domain_id)
+        , capture_domain(capture_domain_id)
+        , time(time_val) {}
     tatum::NodeId node;
-    tatum::DomainId domain;
+    tatum::DomainId launch_domain;
+    tatum::DomainId capture_domain;
     float time;
 };
 
 class GoldenReference {
     public:
 
-        void set_result(tatum::NodeId node, tatumparse::TagType tag_type, tatum::DomainId domain, float time) {
+        void set_result(tatum::NodeId node, tatumparse::TagType tag_type, tatum::DomainId launch_domain, tatum::DomainId capture_domain, float time) {
             auto key = std::make_pair(node, tag_type);
-            auto res = results[key].insert(std::make_pair(domain, TagResult(node, domain, time)));
+            auto res = results[key].insert(std::make_pair(std::make_pair(launch_domain, capture_domain), TagResult(node, launch_domain, capture_domain, time)));
 
             TATUM_ASSERT_MSG(res.second, "Was inserted");
         }
 
-        const std::map<tatum::DomainId,TagResult>& get_result(tatum::NodeId node, tatumparse::TagType tag_type) {
+        const std::map<std::pair<tatum::DomainId,tatum::DomainId>,TagResult>& get_result(tatum::NodeId node, tatumparse::TagType tag_type) {
             auto key = std::make_pair(node, tag_type);
             return results[key];
         }
@@ -53,7 +58,7 @@ class GoldenReference {
     private:
         //TODO: this is not very memory efficient....
         typedef std::pair<tatum::NodeId,tatumparse::TagType> Key;
-        typedef std::map<tatum::DomainId,TagResult> Value;
+        typedef std::map<std::pair<tatum::DomainId,tatum::DomainId>,TagResult> Value;
 
         std::map<Key,Value> results;
 };

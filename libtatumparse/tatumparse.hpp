@@ -90,7 +90,7 @@ class Callback {
         virtual void finish_delay_model() = 0;
 
         virtual void start_results() = 0;
-        virtual void add_tag(TagType type, int node_id, int domain_id, float arr, float req) = 0;
+        virtual void add_tag(TagType type, int node_id, int launch_domain_id, int capture_domain_id, float time) = 0;
         virtual void finish_results() = 0;
 
         //End of parsing

@@ -13,9 +13,9 @@ using std::endl;
 constexpr float RELATIVE_EPSILON = 1.e-5;
 constexpr float ABSOLUTE_EPSILON = 1.e-13;
 
-std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range analyzer_tags, const std::map<DomainId,TagResult>& ref_results, std::string type);
+std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range analyzer_tags, const std::map<std::pair<DomainId,DomainId>,TagResult>& ref_results, std::string type);
 bool verify_tag(const TimingTag& tag, const TagResult& ref_result);
-bool verify_time(NodeId node, DomainId domain, float analyzer_time, float reference_time);
+bool verify_time(NodeId node, DomainId launch_domain, DomainId capture_domain, float analyzer_time, float reference_time);
 
 std::pair<size_t,bool> verify_analyzer(const TimingGraph& tg, std::shared_ptr<TimingAnalyzer> analyzer, GoldenReference& gr) {
     bool error = false;
@@ -69,7 +69,7 @@ std::pair<size_t,bool> verify_analyzer(const TimingGraph& tg, std::shared_ptr<Ti
     return {tags_checked,!error};
 }
 
-std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range analyzer_tags, const std::map<DomainId,TagResult>& ref_results, std::string type) {
+std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range analyzer_tags, const std::map<std::pair<DomainId,DomainId>,TagResult>& ref_results, std::string type) {
     bool error = false;
 
     //Check that every tag in the analyzer matches the reference results
@@ -83,7 +83,7 @@ std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range
             domain = tag.capture_clock_domain();
         }
 
-        auto iter = ref_results.find(domain);
+        auto iter = ref_results.find({tag.launch_clock_domain(), tag.capture_clock_domain()});
         if(iter == ref_results.end()) {
             cout << "Node: " << node << " Type: " << type << endl;
             cout << "\tERROR No reference tag found for clock domain " << tag.launch_clock_domain() << endl;
@@ -114,7 +114,7 @@ std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range
         cout << "\t\tRef Tags:" << endl;
         for(const auto& kv : ref_results) {
             const auto& ref = kv.second;
-            cout << "\t\t\tTag " << ref.domain << " time: " << ref.time << endl;
+            cout << "\t\t\tTag " << ref.launch_domain << " to " << ref.capture_domain << " time: " << ref.time << endl;
         }
         error = true;
     }
@@ -123,32 +123,32 @@ std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range
 }
 
 bool verify_tag(const TimingTag& tag, const TagResult& ref_result) {
-    TATUM_ASSERT(tag.launch_clock_domain() == ref_result.domain || tag.capture_clock_domain() == ref_result.domain);
+    TATUM_ASSERT(tag.launch_clock_domain() == ref_result.launch_domain && tag.capture_clock_domain() == ref_result.capture_domain);
 
     bool valid = true;
-    valid &= verify_time(ref_result.node, ref_result.domain, tag.time().value(), ref_result.time);
+    valid &= verify_time(ref_result.node, ref_result.launch_domain, ref_result.capture_domain, tag.time().value(), ref_result.time);
 
     return valid;
 }
 
-bool verify_time(NodeId node, DomainId domain, float analyzer_time, float reference_time) {
+bool verify_time(NodeId node, DomainId launch_domain, DomainId capture_domain, float analyzer_time, float reference_time) {
     float arr_abs_err = fabs(analyzer_time - reference_time);
     float arr_rel_err = relative_error(analyzer_time, reference_time);
     if(isnan(analyzer_time) && isnan(analyzer_time) != isnan(reference_time)) {
-        cout << "Node: " << node << " Clk: " << domain;
+        cout << "Node: " << node << " Launch Clk: " << launch_domain << " Capture Clk: " << capture_domain;
         cout << " Calc: " << analyzer_time;
         cout << " Ref: " << reference_time << endl;
         cout << "\tERROR Calculated time was nan and didn't match golden reference." << endl;
         return false;
     } else if (!isnan(analyzer_time) && isnan(reference_time)) {
-        //We allow tatum results to be non-NAN when VPR is NAN
+        //We allow tatum results to be non-NAN when reference is NAN
         //
         //This occurs in some cases (such as applying clock tags to primary outputs)
         //which are cuased by the differeing analysis methods
     } else if (isnan(analyzer_time) && isnan(reference_time)) {
         //They agree, pass
     } else if(arr_rel_err > RELATIVE_EPSILON && arr_abs_err > ABSOLUTE_EPSILON) {
-        cout << "Node: " << node << " Clk: " << domain;
+        cout << "Node: " << node << " Launch Clk: " << launch_domain << " Capture Clk: " << capture_domain;
         cout << " Calc_: " << analyzer_time;
         cout << " Ref_: " << reference_time << endl;
         cout << "\tERROR time abs, rel errs: " << arr_abs_err;

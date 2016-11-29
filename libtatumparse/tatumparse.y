@@ -123,6 +123,8 @@ using namespace tatumparse;
 %token CONSTRAINT "constraint:"
 %token SRC_DOMAIN "src_domain:"
 %token SINK_DOMAIN "sink_domain:"
+%token LAUNCH_DOMAIN "launch_domain:"
+%token CAPTURE_DOMAIN "capture_domain:"
 
 %token DELAY_MODEL "delay_model:"
 %token MIN_DELAY "min_delay:"
@@ -166,6 +168,8 @@ using namespace tatumparse;
 %type <int> DomainId
 %type <int> SrcDomainId
 %type <int> SinkDomainId
+%type <int> LaunchDomainId
+%type <int> CaptureDomainId
 %type <float> Constraint
 %type <std::string> Name
 %type <float> Number
@@ -173,8 +177,6 @@ using namespace tatumparse;
 %type <float> MinDelay
 %type <float> SetupTime
 %type <float> HoldTime
-%type <float> Req
-%type <float> Arr
 %type <float> Time
 %type <TagType> TagType
 
@@ -208,11 +210,8 @@ DelayModel: DELAY_MODEL EOL { callback.start_delay_model(); }
         | DelayModel EdgeId SetupTime HoldTime EOL { callback.add_edge_setup_hold_time($2, $3, $4); }
 
 Results:  ANALYSIS_RESULTS EOL { callback.start_results(); }
-        | Results TagType NodeId DomainId Arr Req EOL { callback.add_tag($2, $3, $4, $5, $6); }
-        | Results TagType NodeId DomainId Time EOL { callback.add_tag($2, $3, $4, $5, NAN); }
+        | Results TagType NodeId LaunchDomainId CaptureDomainId Time EOL { callback.add_tag($2, $3, $4, $5, NAN); }
 
-Arr: ARR Number { $$ = $2; }
-Req: REQ Number { $$ = $2; }
 Time: TIME Number { $$ = $2; }
 
 TagType: TYPE SETUP_DATA { $$ = TagType::SETUP_DATA; }
@@ -234,6 +233,8 @@ HoldTime: HOLD_TIME Number { $$ = $2; }
 DomainId: DOMAIN INT { $$ = $2; }
 SrcDomainId: SRC_DOMAIN INT { $$ = $2; }
 SinkDomainId: SINK_DOMAIN INT { $$ = $2; }
+LaunchDomainId: LAUNCH_DOMAIN INT { $$ = $2; }
+CaptureDomainId: CAPTURE_DOMAIN INT { $$ = $2; }
 Constraint: CONSTRAINT Number { $$ = $2; }
 Name: NAME STRING { $$ = $2; }
 
