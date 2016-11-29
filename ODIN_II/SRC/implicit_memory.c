@@ -53,6 +53,8 @@ implicit_memory *lookup_implicit_memory_reference_ast(char *instance_name_prefix
 {
 	if (node && node->num_children == 2 && node->type == ARRAY_REF)
 		return lookup_implicit_memory(instance_name_prefix, node->children[0]->types.identifier);
+	else if (node && node->num_children == 3 && node->type == ARRAY_REF)
+		return lookup_implicit_memory(instance_name_prefix, node->children[0]->types.identifier);
 	else if (node && node->type == IDENTIFIERS)
 		return lookup_implicit_memory(instance_name_prefix, node->types.identifier);
 	else
@@ -65,6 +67,9 @@ implicit_memory *lookup_implicit_memory_reference_ast(char *instance_name_prefix
 char is_valid_implicit_memory_reference_ast(char *instance_name_prefix, ast_node_t *node)
 {
 	if (node && node->num_children == 2 && node->type == ARRAY_REF
+			&& lookup_implicit_memory_reference_ast(instance_name_prefix, node))
+		return TRUE;
+	else if (node && node->num_children == 3 && node->type == ARRAY_REF
 			&& lookup_implicit_memory_reference_ast(instance_name_prefix, node))
 		return TRUE;
 	else

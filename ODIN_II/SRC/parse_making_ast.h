@@ -19,7 +19,9 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 
 /* EXPRESSIONS */
 ast_node_t *newArrayRef(char *id, ast_node_t *expression, int line_number);
+ast_node_t *newArrayRef2D(char *id, ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expression2, int line_number);
+ast_node_t *newRangeRef2D(char *id, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, int line_number);
 ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int line_number);
@@ -61,6 +63,7 @@ ast_node_t *newGate(operation_list gate_type, ast_node_t *gate_instance, int lin
 /* MODULE ITEMS */
 ast_node_t *newAssign(ast_node_t *statement, int line_number);
 ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number);
+ast_node_t *newVarDeclare2D(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *expression5, ast_node_t *expression6,ast_node_t *value, int line_number);
 ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number);
 
 /* HIGH LEVEL ITEMS */

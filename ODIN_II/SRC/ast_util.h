@@ -1,4 +1,4 @@
-#include "types.h"
+ #include "types.h"
 
 ast_node_t* create_node_w_type(ids id, int line_number, int file_number);
 void free_child_in_tree(ast_node_t *from, int idx_removal);
@@ -14,6 +14,7 @@ void add_child_to_node(ast_node_t* node, ast_node_t *child);
 void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child);  
 
 int get_range(ast_node_t* first_node);
+int get_range2D(ast_node_t* first_node);
 
 void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_name_prefix);
 char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_prefix);
