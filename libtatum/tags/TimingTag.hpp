@@ -66,7 +66,7 @@ class TimingTag {
 #ifdef TRACK_LAUNCH_NODE
         NodeId launch_node() const { return launch_node_; }
 #else
-        NodeId launch_node() const { return NodeId(); }
+        NodeId launch_node() const { return NodeId::INVALID(); }
 #endif
 
         TagType type() const { return type_; }
