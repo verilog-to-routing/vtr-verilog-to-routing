@@ -26,8 +26,8 @@ class HoldAnalysisOps : public CommonAnalysisOps {
             node_tags_[node].max(time, ref_tag, arrival_must_be_valid); 
         }
 
-        void merge_arr_tags(TimingTags& tags, const Time time, const TimingTag& ref_tag) { 
-            tags.min(time, ref_tag); 
+        void merge_arr_tags(const NodeId node, const Time time, const TimingTag& ref_tag) { 
+            node_tags_[node].min(time, ref_tag); 
         }
 
         template<class DelayCalc>

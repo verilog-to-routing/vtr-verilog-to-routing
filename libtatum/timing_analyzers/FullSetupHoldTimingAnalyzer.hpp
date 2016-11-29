@@ -37,11 +37,10 @@ class FullSetupHoldTimingAnalyzer : public SetupHoldTimingAnalyzer {
 
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
 
-        const TimingTags& setup_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.setup_tags(node_id); }
-        const TimingTags& setup_tags_impl(NodeId node_id, TagType type) const override { return setup_hold_visitor_.setup_tags(node_id, type); }
-
-        const TimingTags& hold_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.hold_tags(node_id); }
-        const TimingTags& hold_tags_impl(NodeId node_id, TagType type) const override { return setup_hold_visitor_.hold_tags(node_id, type); }
+        TimingTags::tag_range setup_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.setup_tags(node_id); }
+        TimingTags::tag_range setup_tags_impl(NodeId node_id, TagType type) const override { return setup_hold_visitor_.setup_tags(node_id, type); }
+        TimingTags::tag_range hold_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.hold_tags(node_id); }
+        TimingTags::tag_range hold_tags_impl(NodeId node_id, TagType type) const override { return setup_hold_visitor_.hold_tags(node_id, type); }
 
     private:
         const TimingGraph& timing_graph_;
