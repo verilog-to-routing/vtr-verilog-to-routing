@@ -53,15 +53,29 @@ void write_dot_file_setup(std::string filename,
         os << "\tnode" << size_t(inode);
         os << "[label=\"";
         os << "{" << inode << " (" << tg.node_type(inode) << ")";
-        if(setup_analyzer) {
-            for(const TimingTag& tag : setup_analyzer->setup_tags(inode)) {
-                os << " | {";
-                os << tag.type() << " - " << tag.clock_domain();
-                os << " launch: " << tag.launch_node();
-                os << "\\n";
-                os << " time: " << tag.time().value();
-                os << "}";
+        for(const TimingTag& tag : setup_analyzer->setup_tags(inode)) {
+            os << " | {";
+            os << tag.type() << "\\n";
+            if(!tag.launch_clock_domain()) {
+                os << "*";
+            } else {
+                os << tag.launch_clock_domain();
             }
+            os << " to ";
+            if(!tag.capture_clock_domain()) {
+                os << "*";
+            } else {
+                os << tag.capture_clock_domain();
+            }
+            if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
+                os << " from ";
+            } else {
+                os << " for ";
+            }
+            os << tag.launch_node();
+            os << "\\n";
+            os << " time: " << tag.time().value();
+            os << "}";
         }
         os << "}\"]";
         os <<std::endl;
@@ -128,8 +142,24 @@ void write_dot_file_hold(std::string filename,
         os << "{" << inode << " (" << tg.node_type(inode) << ")";
         for(const TimingTag& tag : hold_analyzer->hold_tags(inode)) {
             os << " | {";
-            os << tag.type() << " - " << tag.clock_domain();
-            os << " launch: " << tag.launch_node();
+            os << tag.type() << "\\n";
+            if(!tag.launch_clock_domain()) {
+                os << "*";
+            } else {
+                os << tag.launch_clock_domain();
+            }
+            os << " to ";
+            if(!tag.capture_clock_domain()) {
+                os << "*";
+            } else {
+                os << tag.capture_clock_domain();
+            }
+            if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
+                os << " from ";
+            } else {
+                os << " for ";
+            }
+            os << tag.launch_node();
             os << "\\n";
             os << " time: " << tag.time().value();
             os << "}";

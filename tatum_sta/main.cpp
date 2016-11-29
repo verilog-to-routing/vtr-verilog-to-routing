@@ -172,7 +172,6 @@ int main(int argc, char** argv) {
 
     //Performance variables
     float serial_verify_time = 0.;
-    float serial_reset_time = 0.;
     size_t serial_tags_verified = 0;
     std::map<std::string,std::vector<double>> serial_prof_data;
     {
@@ -188,7 +187,14 @@ int main(int argc, char** argv) {
         //Verify
         clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-        serial_tags_verified = verify_analyzer(*timing_graph, serial_analyzer, *golden_reference);
+        auto res = verify_analyzer(*timing_graph, serial_analyzer, *golden_reference);
+
+        serial_tags_verified = res.first;
+
+        if(!res.second) {
+            cout << "Verification failed!\n";
+            std::exit(1);
+        }
 
         clock_gettime(CLOCK_MONOTONIC, &verify_end);
         serial_verify_time += tatum::time_sec(verify_start, verify_end);
@@ -225,9 +231,13 @@ int main(int argc, char** argv) {
         } else {
             cout << "\tVerified " << serial_tags_verified << " tags (expected " << golden_reference->num_tags() << " or " << golden_reference->num_tags()/2 << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
         }
-        cout << "Resetting Serial Analysis took: " << serial_reset_time << " sec" << endl;
         cout << endl;
     }
+
+#ifdef ECHO
+    tatum::write_analysis_result(ofs, *timing_graph, serial_analyzer);
+    ofs.flush();
+#endif
 
     cout << endl;
 
@@ -237,7 +247,6 @@ int main(int argc, char** argv) {
     auto parallel_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(parallel_analyzer);
 
     float parallel_verify_time = 0;
-    float parallel_reset_time = 0;
     size_t parallel_tags_verified = 0;
     std::map<std::string,std::vector<double>> parallel_prof_data;
     {
@@ -250,7 +259,14 @@ int main(int argc, char** argv) {
         clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
         cout << "\n";
-        parallel_tags_verified = verify_analyzer(*timing_graph, parallel_analyzer, *golden_reference);
+        auto res = verify_analyzer(*timing_graph, parallel_analyzer, *golden_reference);
+
+        parallel_tags_verified = res.first;
+
+        if(!res.second) {
+            cout << "Verification failed!\n";
+            std::exit(1);
+        }
 
         clock_gettime(CLOCK_MONOTONIC, &verify_end);
         parallel_verify_time += tatum::time_sec(verify_start, verify_end);
@@ -287,13 +303,8 @@ int main(int argc, char** argv) {
         } else {
             cout << "\tVerified " << serial_tags_verified << " tags (expected " << golden_reference->num_tags() << " or " << golden_reference->num_tags()/2 << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
         }
-        cout << "Resetting Parallel Analysis took: " << parallel_reset_time << " sec" << endl;
     }
     cout << endl;
-
-#ifdef ECHO
-    tatum::write_analysis_result(ofs, *timing_graph, serial_analyzer);
-#endif
 
 
     cout << "Parallel Speed-Up: " << std::fixed << median(serial_prof_data["analysis_sec"]) / median(parallel_prof_data["analysis_sec"]) << "x" << endl;

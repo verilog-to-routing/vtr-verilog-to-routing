@@ -172,8 +172,14 @@ void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag
         if(!isnan(time)) {
             os << " type: " << type;
             os << " node: " << size_t(node_id);
-            os << " domain: " << size_t(tag.clock_domain());
+            if(tag.launch_clock_domain()) {
+                os << " launch_domain: " << size_t(tag.launch_clock_domain());
+            }
+            if(tag.capture_clock_domain()) {
+                os << " capture_domain: " << size_t(tag.capture_clock_domain());
+            }
             os << " time: " << time;
+            os << "\n";
         }
     }
 }

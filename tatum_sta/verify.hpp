@@ -6,6 +6,6 @@
 #include "TimingGraph.hpp"
 #include "golden_reference.hpp"
 
-size_t verify_analyzer(const tatum::TimingGraph& tg, std::shared_ptr<tatum::TimingAnalyzer> analyzer, GoldenReference& gr);
+std::pair<size_t,bool> verify_analyzer(const tatum::TimingGraph& tg, std::shared_ptr<tatum::TimingAnalyzer> analyzer, GoldenReference& gr);
 
 #endif

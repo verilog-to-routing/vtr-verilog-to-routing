@@ -100,8 +100,8 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         //Note: we assume that edge counting has set the effective period constraint assuming a
         //launch edge at time zero.  This means we don't need to do anything special for clocks
         //with rising edges after time zero.
-        TimingTag launch_tag = TimingTag(Time(0.), domain_id, node_id, TagType::CLOCK_LAUNCH);
-        TimingTag capture_tag = TimingTag(Time(0.), domain_id, node_id, TagType::CLOCK_CAPTURE);
+        TimingTag launch_tag = TimingTag(Time(0.), domain_id, DomainId::INVALID(), node_id, TagType::CLOCK_LAUNCH);
+        TimingTag capture_tag = TimingTag(Time(0.), DomainId::INVALID(), domain_id, node_id, TagType::CLOCK_CAPTURE);
 
         //Add the tag
         ops_.add_tag(node_id, launch_tag);
@@ -120,7 +120,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
         TATUM_ASSERT(!isnan(input_constraint));
 
         //Initialize a data tag based on input delay constraint, invalid required time
-        TimingTag input_tag = TimingTag(Time(input_constraint), domain_id, node_id, TagType::DATA_ARRIVAL);
+        TimingTag input_tag = TimingTag(Time(input_constraint), domain_id, DomainId::INVALID(), node_id, TagType::DATA_ARRIVAL);
 
         ops_.add_tag(node_id, input_tag);
     }
@@ -156,7 +156,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
             TATUM_ASSERT(!isnan(output_constraint));
 
             for(auto constraint : output_constraints) {
-                TimingTag constraint_tag = TimingTag(Time(output_constraint), constraint.second.domain, node_id, TagType::CLOCK_CAPTURE);
+                TimingTag constraint_tag = TimingTag(Time(output_constraint), DomainId::INVALID(), constraint.second.domain, node_id, TagType::CLOCK_CAPTURE);
                 ops_.add_tag(node_id, constraint_tag);
             }
         }
@@ -168,23 +168,24 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
     //
     //We need to generate a required time for each clock domain for which there is a data
     //arrival time at this node, while considering all possible clocks that could drive
-    //this node (i.e. take the most restrictive constraint accross all clock tags at this
+    //this node (i.e. take the most restrictive constraint across all clock tags at this
     //node)
     for(const TimingTag& node_data_arr_tag : ops_.get_tags(node_id, TagType::DATA_ARRIVAL)) {
         for(const TimingTag& node_clock_tag : ops_.get_tags(node_id, TagType::CLOCK_CAPTURE)) {
 
             //Should we be analyzing paths between these two domains?
-            if(tc.should_analyze(node_data_arr_tag.clock_domain(), node_clock_tag.clock_domain())) {
+            if(tc.should_analyze(node_data_arr_tag.launch_clock_domain(), node_clock_tag.capture_clock_domain())) {
 
                 //We only set a required time if the source domain actually reaches this sink
                 //domain.  This is indicated by having a valid arrival time.
                 if(node_data_arr_tag.time().valid()) {
-                    float clock_constraint = ops_.clock_constraint(tc, node_data_arr_tag.clock_domain(),
-                                                                       node_clock_tag.clock_domain());
+                    float clock_constraint = ops_.clock_constraint(tc, node_data_arr_tag.launch_clock_domain(),
+                                                                       node_clock_tag.capture_clock_domain());
 
                     //Update the required time. This will keep the most restrictive constraint.
                     TimingTag node_data_req_tag(node_clock_tag.time() + Time(clock_constraint), 
-                                                node_data_arr_tag.clock_domain(), 
+                                                node_data_arr_tag.launch_clock_domain(), 
+                                                node_clock_tag.capture_clock_domain(), 
                                                 node_id, 
                                                 TagType::DATA_REQUIRED);
                     ops_.add_tag(node_id, node_data_req_tag);

@@ -11,12 +11,14 @@ inline TimingTag::TimingTag()
 #ifdef TRACK_LAUNCH_NODE
     , launch_node_(NodeId::INVALID())
 #endif
-    , clock_domain_(DomainId::INVALID())
+    , launch_clock_domain_(DomainId::INVALID())
+    , capture_clock_domain_(DomainId::INVALID())
     , type_(TagType::UNKOWN)
     {}
 
 inline TimingTag::TimingTag(const Time& time_val, 
-                            const DomainId domain, 
+                            const DomainId launch_domain, 
+                            const DomainId capture_domain, 
 #ifdef TRACK_LAUNCH_NODE
                             const NodeId node, 
 #else
@@ -27,7 +29,8 @@ inline TimingTag::TimingTag(const Time& time_val,
 #ifdef TRACK_LAUNCH_NODE
     , launch_node_(node)
 #endif
-    , clock_domain_(domain)
+    , launch_clock_domain_(launch_domain)
+    , capture_clock_domain_(capture_domain)
     , type_(new_type)
     {}
 
@@ -36,14 +39,15 @@ inline TimingTag::TimingTag(const Time& time_val, const TimingTag& base_tag)
 #ifdef TRACK_LAUNCH_NODE
     , launch_node_(base_tag.launch_node())
 #endif
-    , clock_domain_(base_tag.clock_domain())
+    , launch_clock_domain_(base_tag.launch_clock_domain())
+    , capture_clock_domain_(base_tag.capture_clock_domain())
     , type_(base_tag.type())
     {}
 
 
 inline void TimingTag::update(const Time& new_time, const TimingTag& base_tag) {
     TATUM_ASSERT(type() == base_tag.type()); //Type must be the same
-    TATUM_ASSERT(clock_domain() == base_tag.clock_domain()); //Domain must be the same
+    TATUM_ASSERT(launch_clock_domain() == base_tag.launch_clock_domain()); //Domain must be the same
     set_time(new_time);
     set_launch_node(base_tag.launch_node());
 }

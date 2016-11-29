@@ -17,7 +17,7 @@ std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range
 bool verify_tag(const TimingTag& tag, const TagResult& ref_result);
 bool verify_time(NodeId node, DomainId domain, float analyzer_time, float reference_time);
 
-size_t verify_analyzer(const TimingGraph& tg, std::shared_ptr<TimingAnalyzer> analyzer, GoldenReference& gr) {
+std::pair<size_t,bool> verify_analyzer(const TimingGraph& tg, std::shared_ptr<TimingAnalyzer> analyzer, GoldenReference& gr) {
     bool error = false;
     size_t tags_checked = 0;
 
@@ -66,11 +66,7 @@ size_t verify_analyzer(const TimingGraph& tg, std::shared_ptr<TimingAnalyzer> an
         }
     }
 
-    if(error) {
-        std::exit(1);
-    }
-
-    return tags_checked;
+    return {tags_checked,!error};
 }
 
 std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range analyzer_tags, const std::map<DomainId,TagResult>& ref_results, std::string type) {
@@ -79,10 +75,18 @@ std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range
     //Check that every tag in the analyzer matches the reference results
     size_t tags_verified = 0;
     for(const TimingTag& tag : analyzer_tags) {
-        auto iter = ref_results.find(tag.clock_domain());
+        DomainId domain;
+        if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::DATA_ARRIVAL || tag.type() == TagType::DATA_REQUIRED) {
+            domain = tag.launch_clock_domain();
+        } else {
+            TATUM_ASSERT(tag.type() == TagType::CLOCK_CAPTURE);
+            domain = tag.capture_clock_domain();
+        }
+
+        auto iter = ref_results.find(domain);
         if(iter == ref_results.end()) {
             cout << "Node: " << node << " Type: " << type << endl;
-            cout << "\tERROR No reference tag found for clock domain " << tag.clock_domain() << endl;
+            cout << "\tERROR No reference tag found for clock domain " << tag.launch_clock_domain() << endl;
             error = true;
         } else {
             if(!verify_tag(tag, iter->second)) {
@@ -104,7 +108,7 @@ std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range
 
         cout << "\t\tCalc Tags:" << endl;
         for(const TimingTag& tag : analyzer_tags) {
-            cout << "\t\t\tTag " << tag.clock_domain() << " time: " << tag.time().value() << endl;
+            cout << "\t\t\tTag " << tag.launch_clock_domain() << " to " << tag.capture_clock_domain() << " time: " << tag.time().value() << endl;
         }
 
         cout << "\t\tRef Tags:" << endl;
@@ -119,7 +123,7 @@ std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range
 }
 
 bool verify_tag(const TimingTag& tag, const TagResult& ref_result) {
-    TATUM_ASSERT(tag.clock_domain() == ref_result.domain);
+    TATUM_ASSERT(tag.launch_clock_domain() == ref_result.domain || tag.capture_clock_domain() == ref_result.domain);
 
     bool valid = true;
     valid &= verify_time(ref_result.node, ref_result.domain, tag.time().value(), ref_result.time);

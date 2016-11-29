@@ -129,7 +129,7 @@ inline TimingTags::tag_range TimingTags::tags(const TagType type) const {
 
 //Modifiers
 inline void TimingTags::add_tag(const TimingTag& tag) {
-    TATUM_ASSERT(tag.clock_domain());
+    TATUM_ASSERT(tag.launch_clock_domain() || tag.capture_clock_domain());
 
     //Find the position to insert this tag
     //
@@ -196,9 +196,19 @@ inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag(const 
     auto b = begin(tag.type());
     auto e = end(tag.type());
     for(auto iter = b; iter != e; ++iter) {
-        if(iter->clock_domain() == tag.clock_domain()) {
-            TATUM_ASSERT_SAFE(iter->type() == tag.type());
-            return {iter, true};
+        if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::DATA_ARRIVAL) {
+            //Check only the launch clock
+            if(iter->launch_clock_domain() == tag.launch_clock_domain()) {
+                TATUM_ASSERT_SAFE(iter->type() == tag.type());
+                return {iter, true};
+            }
+        } else {
+            TATUM_ASSERT(tag.type() == TagType::CLOCK_CAPTURE);
+            //Check only the capture clock
+            if(iter->capture_clock_domain() == tag.capture_clock_domain()) {
+                TATUM_ASSERT_SAFE(iter->type() == tag.type());
+                return {iter, true};
+            }
         }
     }
     return {e, true};
@@ -212,7 +222,7 @@ inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag_with_v
     auto arr_e = end(TagType::DATA_ARRIVAL);
     bool valid_arr = false;
     for(auto iter = arr_b; iter != arr_e; ++iter) {
-        if(iter->clock_domain() == tag.clock_domain() && tag.time().valid()) {
+        if(iter->launch_clock_domain() == tag.launch_clock_domain() && iter->time().valid()) {
             TATUM_ASSERT_SAFE(iter->type() == TagType::DATA_ARRIVAL);
             valid_arr = true;
             break;
@@ -227,7 +237,7 @@ inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag_with_v
     //Linear search for matching tag
     auto b = begin(TagType::DATA_REQUIRED);
     for(auto iter = b; iter != e; ++iter) {
-        if(iter->clock_domain() == tag.clock_domain()) {
+        if(iter->launch_clock_domain() == tag.launch_clock_domain() && iter->capture_clock_domain() == tag.capture_clock_domain()) {
             TATUM_ASSERT_SAFE(iter->type() == tag.type());
             return {iter, true};
         }

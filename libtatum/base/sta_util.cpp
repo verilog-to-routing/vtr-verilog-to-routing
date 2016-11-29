@@ -262,7 +262,8 @@ void print_setup_tags(const TimingGraph& tg, const SetupTimingAnalyzer& analyzer
             std::cout << "Node: " << node_id << " (" << tg.node_type(node_id) << ")" << std::endl;;
             for(const TimingTag& tag : analyzer.setup_tags(node_id)) {
                 std::cout << "\t" << tag.type() << ": ";
-                std::cout << "  clk : " << tag.clock_domain();
+                std::cout << "  launch : " << tag.launch_clock_domain();
+                std::cout << "  capture : " << tag.capture_clock_domain();
                 std::cout << "  time: " << tag.time().value();
                 std::cout << std::endl;
             }
@@ -281,7 +282,8 @@ void print_hold_tags(const TimingGraph& tg, const HoldTimingAnalyzer& analyzer) 
             std::cout << "Node: " << node_id << " (" << tg.node_type(node_id) << ")" << std::endl;;
             for(const TimingTag& tag : analyzer.hold_tags(node_id)) {
                 std::cout << "\t" << tag.type() << ": ";
-                std::cout << "  clk : " << tag.clock_domain();
+                std::cout << "  launch : " << tag.launch_clock_domain();
+                std::cout << "  capture : " << tag.capture_clock_domain();
                 std::cout << "  time: " << tag.time().value();
                 std::cout << std::endl;
             }

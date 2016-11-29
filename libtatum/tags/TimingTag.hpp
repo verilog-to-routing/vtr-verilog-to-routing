@@ -42,9 +42,10 @@ class TimingTag {
 
         ///\param arr_time_val The tagged arrival time
         ///\param req_time_val The tagged required time
-        ///\param domain The clock domain the arrival/required times were launched from
+        ///\param launch_domain The clock domain the tag was launched from
+        ///\param capture_domain The clock domain the tag was captured on
         ///\param node The original launch node's id (i.e. primary input that originally launched this tag)
-        TimingTag(const Time& time_val, DomainId domain, NodeId node, TagType type);
+        TimingTag(const Time& time_val, DomainId launch_domain, DomainId capture_domain, NodeId node, TagType type);
 
         ///\param arr_time_val The tagged arrival time
         ///\param req_time_val The tagged required time
@@ -58,7 +59,8 @@ class TimingTag {
         const Time& time() const { return time_; }
 
         ///\returns This tag's launching clock domain
-        DomainId clock_domain() const { return clock_domain_; }
+        DomainId launch_clock_domain() const { return launch_clock_domain_; }
+        DomainId capture_clock_domain() const { return capture_clock_domain_; }
 
         ///\returns This tag's launching node's id
 #ifdef TRACK_LAUNCH_NODE
@@ -72,11 +74,14 @@ class TimingTag {
         /*
          * Setters
          */
-        ///\param new_arr_time The new value set as the tag's arrival time
+        ///\param new_time The new value set as the tag's time
         void set_time(const Time& new_time) { time_ = new_time; }
 
-        ///\param new_req_time The new value set as the tag's clock domain
-        void set_clock_domain(const DomainId new_clock_domain) { clock_domain_ = new_clock_domain; }
+        ///\param new_clock_domain The new value set as the tag's source clock domain
+        void set_launch_clock_domain(const DomainId new_clock_domain) { launch_clock_domain_ = new_clock_domain; }
+
+        ///\param new_clock_domain The new value set as the tag's capture clock domain
+        void set_capture_clock_domain(const DomainId new_clock_domain) { capture_clock_domain_ = new_clock_domain; }
 
         ///\param new_launch_node The new value set as the tag's launching node
 #ifdef TRACK_LAUNCH_NODE
@@ -116,7 +121,8 @@ class TimingTag {
 #ifdef TRACK_LAUNCH_NODE
         NodeId launch_node_; //Node which launched this arrival time
 #endif
-        DomainId clock_domain_; //Clock domain for arr/req times
+        DomainId launch_clock_domain_; //Clock domain for arr/req times
+        DomainId capture_clock_domain_; //Clock domain for arr/req times
         TagType type_;
 };
 
