@@ -180,6 +180,7 @@ inline void TimingTags::clear() {
     size_ = 0;
     num_clock_launch_tags_ = 0;
     num_clock_capture_tags_ = 0;
+    num_data_arrival_tags_ = 0;
 }
 
 inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag(const TimingTag& tag, bool arr_must_be_valid) {
