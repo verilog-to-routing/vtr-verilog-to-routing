@@ -83,8 +83,6 @@ HOLD_CONSTRAINT                 { return tatumparse::Parser::make_HOLD_CONSTRAIN
 domain:                         { return tatumparse::Parser::make_DOMAIN(); }
 name:                           { return tatumparse::Parser::make_NAME(); }
 constraint:                     { return tatumparse::Parser::make_CONSTRAINT(); }
-src_domain:                     { return tatumparse::Parser::make_SRC_DOMAIN(); }
-sink_domain:                    { return tatumparse::Parser::make_SINK_DOMAIN(); }
 launch_domain:                  { return tatumparse::Parser::make_LAUNCH_DOMAIN(); }
 capture_domain:                 { return tatumparse::Parser::make_CAPTURE_DOMAIN(); }
 

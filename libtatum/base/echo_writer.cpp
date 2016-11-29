@@ -100,8 +100,8 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
         auto constraint = kv.second;
         if(!isnan(constraint)) {
             os << " type: SETUP_CONSTRAINT";
-            os << " src_domain: " << size_t(key.src_domain_id);
-            os << " sink_domain: " << size_t(key.sink_domain_id);
+            os << " launch_domain: " << size_t(key.src_domain_id);
+            os << " capture_domain: " << size_t(key.sink_domain_id);
             os << " constraint: " << constraint;
             os << "\n";
         }
@@ -112,8 +112,8 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
         auto constraint = kv.second;
         if(!isnan(constraint)) {
             os << " type: HOLD_CONSTRAINT";
-            os << " src_domain: " << size_t(key.src_domain_id);
-            os << " sink_domain: " << size_t(key.sink_domain_id);
+            os << " launch_domain: " << size_t(key.src_domain_id);
+            os << " capture_domain: " << size_t(key.sink_domain_id);
             os << " constraint: " << constraint;
             os << "\n";
         }

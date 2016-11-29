@@ -121,8 +121,6 @@ using namespace tatumparse;
 %token DOMAIN "domain:"
 %token NAME "name:"
 %token CONSTRAINT "constraint:"
-%token SRC_DOMAIN "src_domain:"
-%token SINK_DOMAIN "sink_domain:"
 %token LAUNCH_DOMAIN "launch_domain:"
 %token CAPTURE_DOMAIN "capture_domain:"
 
@@ -143,8 +141,6 @@ using namespace tatumparse;
 %token HOLD_DATA_REQUIRED "HOLD_DATA_REQUIRED"
 %token HOLD_LAUNCH_CLOCK "HOLD_LAUNCH_CLOCK"
 %token HOLD_CAPTURE_CLOCK "HOLD_CAPTURE_CLOCK"
-%token ARR "arr:"
-%token REQ "req:"
 %token TIME "time:"
 
 %token EOL "end-of-line"
@@ -166,8 +162,6 @@ using namespace tatumparse;
 %type <std::vector<int>> OutEdges
 
 %type <int> DomainId
-%type <int> SrcDomainId
-%type <int> SinkDomainId
 %type <int> LaunchDomainId
 %type <int> CaptureDomainId
 %type <float> Constraint
@@ -202,8 +196,8 @@ Constraints: TIMING_CONSTRAINTS EOL { callback.start_constraints(); }
            | Constraints TYPE CONSTANT_GENERATOR NodeId EOL { callback.add_constant_generator($4); }
            | Constraints TYPE INPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_input_constraint($4, $5, $6); }
            | Constraints TYPE OUTPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_output_constraint($4, $5, $6); }
-           | Constraints TYPE SETUP_CONSTRAINT SrcDomainId SinkDomainId Constraint EOL { callback.add_setup_constraint($4, $5, $6); }
-           | Constraints TYPE HOLD_CONSTRAINT SrcDomainId SinkDomainId Constraint EOL { callback.add_hold_constraint($4, $5, $6); }
+           | Constraints TYPE SETUP_CONSTRAINT LaunchDomainId CaptureDomainId Constraint EOL { callback.add_setup_constraint($4, $5, $6); }
+           | Constraints TYPE HOLD_CONSTRAINT LaunchDomainId CaptureDomainId Constraint EOL { callback.add_hold_constraint($4, $5, $6); }
 
 DelayModel: DELAY_MODEL EOL { callback.start_delay_model(); }
         | DelayModel EdgeId MinDelay MaxDelay EOL { callback.add_edge_delay($2, $3, $4); }
@@ -231,8 +225,6 @@ SetupTime: SETUP_TIME Number { $$ = $2; }
 HoldTime: HOLD_TIME Number { $$ = $2; }
 
 DomainId: DOMAIN INT { $$ = $2; }
-SrcDomainId: SRC_DOMAIN INT { $$ = $2; }
-SinkDomainId: SINK_DOMAIN INT { $$ = $2; }
 LaunchDomainId: LAUNCH_DOMAIN INT { $$ = $2; }
 CaptureDomainId: CAPTURE_DOMAIN INT { $$ = $2; }
 Constraint: CONSTRAINT Number { $$ = $2; }
