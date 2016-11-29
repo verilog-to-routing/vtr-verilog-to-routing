@@ -39,9 +39,9 @@ typedef tatum::util::StrongId<level_id_tag> LevelId;
 
 //We expect far fewer domains than nodes/edges so we use a smaller 
 //data type, as this allows for more efficient packing in TimingTag
-//Note that unsigned short gives the range [0,65535) which should be
+//Note that unsigned char gives the range [0,256) which should be
 //more than sufficient
-typedef tatum::util::StrongId<domain_id_tag,unsigned short> DomainId;
+typedef tatum::util::StrongId<domain_id_tag,unsigned char> DomainId;
 
 std::ostream& operator<<(std::ostream& os, NodeId node_id);
 std::ostream& operator<<(std::ostream& os, EdgeId edge_id);
