@@ -14,16 +14,12 @@ namespace tatum {
  */
 class HoldTimingAnalyzer : public virtual TimingAnalyzer {
     public:
-        TimingTags::tag_range get_hold_tags(NodeId node_id) const { return get_hold_tags_impl(node_id); }
-        TimingTags::tag_range get_hold_data_tags(NodeId node_id) const { return get_hold_data_tags_impl(node_id); }
-        TimingTags::tag_range get_hold_launch_clock_tags(NodeId node_id) const { return get_hold_launch_clock_tags_impl(node_id); }
-        TimingTags::tag_range get_hold_capture_clock_tags(NodeId node_id) const { return get_hold_capture_clock_tags_impl(node_id); }
+        TimingTags::tag_range hold_tags(NodeId node_id) const { return hold_tags_impl(node_id); }
+        TimingTags::tag_range hold_tags(NodeId node_id, TagType type) const { return hold_tags_impl(node_id, type); }
 
     protected:
-        virtual TimingTags::tag_range get_hold_tags_impl(NodeId node_id) const = 0;
-        virtual TimingTags::tag_range get_hold_data_tags_impl(NodeId node_id) const = 0;
-        virtual TimingTags::tag_range get_hold_launch_clock_tags_impl(NodeId node_id) const = 0;
-        virtual TimingTags::tag_range get_hold_capture_clock_tags_impl(NodeId node_id) const = 0;
+        virtual TimingTags::tag_range hold_tags_impl(NodeId node_id) const = 0;
+        virtual TimingTags::tag_range hold_tags_impl(NodeId node_id, TagType type) const = 0;
 };
 
 } //namepsace

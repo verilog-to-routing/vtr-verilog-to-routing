@@ -2,92 +2,81 @@
 
 namespace tatum {
 
-inline std::ostream& operator<<(std::ostream& os, TagType type) {
-    if(type == TagType::DATA) os << "DATA";
-    else if(type == TagType::CLOCK_LAUNCH) os << "CLOCK_LAUNCH";
-    else if(type == TagType::CLOCK_CAPTURE) os << "CLOCK_CAPTURE";
-    else TATUM_ASSERT_MSG(false, "Unrecognized TagType");
-    return os;
-}
-
 /*
  * TimingTag implementation
  */
 
 inline TimingTag::TimingTag()
-    : arr_time_(NAN)
-    , req_time_(NAN)
-    , launch_node_(NodeId::INVALID())
-    , clock_domain_(DomainId::INVALID())
+    : time_(NAN)
+#ifdef TATUM_TRACK_ORIGIN_NODE
+    , origin_node_(NodeId::INVALID())
+#endif
+    , launch_clock_domain_(DomainId::INVALID())
+    , capture_clock_domain_(DomainId::INVALID())
     , type_(TagType::UNKOWN)
     {}
 
-inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, const DomainId domain, const NodeId node, const TagType new_type)
-    : arr_time_(arr_time_val)
-    , req_time_(req_time_val)
-    , launch_node_(node)
-    , clock_domain_(domain)
+inline TimingTag::TimingTag(const Time& time_val, 
+                            const DomainId launch_domain, 
+                            const DomainId capture_domain, 
+#ifdef TATUM_TRACK_ORIGIN_NODE
+                            const NodeId node, 
+#else
+                            const NodeId /*node*/,
+#endif
+                            const TagType new_type)
+    : time_(time_val)
+#ifdef TATUM_TRACK_ORIGIN_NODE
+    , origin_node_(node)
+#endif
+    , launch_clock_domain_(launch_domain)
+    , capture_clock_domain_(capture_domain)
     , type_(new_type)
     {}
 
-inline TimingTag::TimingTag(const Time& arr_time_val, const Time& req_time_val, const TimingTag& base_tag)
-    : arr_time_(arr_time_val)
-    , req_time_(req_time_val)
-    , launch_node_(base_tag.launch_node())
-    , clock_domain_(base_tag.clock_domain())
+inline TimingTag::TimingTag(const Time& time_val, const TimingTag& base_tag)
+    : time_(time_val)
+#ifdef TATUM_TRACK_ORIGIN_NODE
+    , origin_node_(base_tag.origin_node())
+#endif
+    , launch_clock_domain_(base_tag.launch_clock_domain())
+    , capture_clock_domain_(base_tag.capture_clock_domain())
     , type_(base_tag.type())
     {}
 
 
-inline void TimingTag::update_arr(const Time& new_arr_time, const TimingTag& base_tag) {
-    //NOTE: leave next alone, since we want to keep the linked list intact
-    TATUM_ASSERT(clock_domain() == base_tag.clock_domain()); //Domain must be the same
-    set_arr_time(new_arr_time);
-    set_launch_node(base_tag.launch_node());
+inline void TimingTag::update(const Time& new_time, const TimingTag& base_tag) {
+    TATUM_ASSERT(type() == base_tag.type()); //Type must be the same
+    TATUM_ASSERT(launch_clock_domain() == base_tag.launch_clock_domain()); //Domain must be the same
+    set_time(new_time);
+    set_origin_node(base_tag.origin_node());
 }
 
-inline void TimingTag::update_req(const Time& new_req_time, const TimingTag& base_tag) {
-    //NOTE: leave next alone, since we want to keep the linked list intact
-    //      leave launch_node alone, since it is set by arrival only
-    TATUM_ASSERT(clock_domain() == base_tag.clock_domain()); //Domain must be the same
-    set_req_time(new_req_time);
-}
-
-
-inline void TimingTag::max_arr(const Time& new_arr_time, const TimingTag& base_tag) {
+inline void TimingTag::max(const Time& new_time, const TimingTag& base_tag) {
     //Need to min with existing value
-    if(!arr_time().valid() || new_arr_time.value() > arr_time().value()) {
+    if(!time().valid() || new_time > time()) {
         //New value is smaller, or no previous valid value existed
         //Update min
-        update_arr(new_arr_time, base_tag);
+        update(new_time, base_tag);
     }
 }
 
-inline void TimingTag::min_req(const Time& new_req_time, const TimingTag& base_tag) {
+inline void TimingTag::min(const Time& new_time, const TimingTag& base_tag) {
     //Need to min with existing value
-    if(!req_time().valid() || new_req_time.value() < req_time().value()) {
+    if(!time().valid() || new_time < time()) {
         //New value is smaller, or no previous valid value existed
         //Update min
-        update_req(new_req_time, base_tag);
+        update(new_time, base_tag);
     }
 }
 
-inline void TimingTag::min_arr(const Time& new_arr_time, const TimingTag& base_tag) {
-    //Need to min with existing value
-    if(!arr_time().valid() || new_arr_time.value() < arr_time().value()) {
-        //New value is smaller, or no previous valid value existed
-        //Update min
-        update_arr(new_arr_time, base_tag);
-    }
-}
-
-inline void TimingTag::max_req(const Time& new_req_time, const TimingTag& base_tag) {
-    //Need to min with existing value
-    if(!req_time().valid() || new_req_time.value() > req_time().value()) {
-        //New value is smaller, or no previous valid value existed
-        //Update min
-        update_req(new_req_time, base_tag);
-    }
+inline std::ostream& operator<<(std::ostream& os, TagType type) {
+    if(type == TagType::DATA_ARRIVAL) os << "DATA_ARRIVAL";
+    else if(type == TagType::DATA_REQUIRED) os << "DATA_REQUIRED";
+    else if(type == TagType::CLOCK_LAUNCH) os << "CLOCK_LAUNCH";
+    else if(type == TagType::CLOCK_CAPTURE) os << "CLOCK_CAPTURE";
+    else TATUM_ASSERT_MSG(false, "Unrecognized TagType");
+    return os;
 }
 
 } //namepsace

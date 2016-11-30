@@ -41,10 +41,14 @@ enum class NodeType {
 };
 
 enum class TagType {
-    SETUP_DATA,
+    SETUP_DATA, //legacy
+    SETUP_DATA_ARRIVAL,
+    SETUP_DATA_REQUIRED,
     SETUP_LAUNCH_CLOCK,
     SETUP_CAPTURE_CLOCK,
-    HOLD_DATA,
+    HOLD_DATA, //legacy
+    HOLD_DATA_ARRIVAL,
+    HOLD_DATA_REQUIRED,
     HOLD_LAUNCH_CLOCK,
     HOLD_CAPTURE_CLOCK
 };
@@ -86,7 +90,7 @@ class Callback {
         virtual void finish_delay_model() = 0;
 
         virtual void start_results() = 0;
-        virtual void add_tag(TagType type, int node_id, int domain_id, float arr, float req) = 0;
+        virtual void add_tag(TagType type, int node_id, int launch_domain_id, int capture_domain_id, float time) = 0;
         virtual void finish_results() = 0;
 
         //End of parsing

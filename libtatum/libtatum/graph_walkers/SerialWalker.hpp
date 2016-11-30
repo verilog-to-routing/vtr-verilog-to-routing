@@ -59,6 +59,12 @@ class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
                 }
             }
         }
+
+        void do_reset_impl(const TimingGraph& tg, Visitor& visitor) override {
+            for(NodeId node_id : tg.nodes()) {
+                visitor.do_reset_node(node_id);
+            }
+        }
 };
 
 } //namepsace

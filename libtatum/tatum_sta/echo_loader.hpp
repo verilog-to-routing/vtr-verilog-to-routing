@@ -43,7 +43,7 @@ public:
     void finish_delay_model() override { }
 
     void start_results() override { }
-    void add_tag(tatumparse::TagType /*type*/, int /*node_id*/, int /*domain_id*/, float /*arr*/, float /*req*/) override;
+    void add_tag(tatumparse::TagType type, int node_id, int launch_domain_id, int capture_domain_id, float time) override;
     void finish_results() override { }
 
     //End of parsing

@@ -27,35 +27,23 @@ class CommonAnalysisOps {
         TimingTags::tag_range get_tags(const NodeId node_id) { 
             return node_tags_[node_id].tags(); 
         }
-        TimingTags::tag_range get_data_tags(const NodeId node_id) { 
-            return node_tags_[node_id].tags(TagType::DATA); 
-        }
-        TimingTags::tag_range get_launch_clock_tags(const NodeId node_id) { 
-            return node_tags_[node_id].tags(TagType::CLOCK_LAUNCH); 
-        }
-        TimingTags::tag_range get_capture_clock_tags(const NodeId node_id) { 
-            return node_tags_[node_id].tags(TagType::CLOCK_CAPTURE); 
+        TimingTags::tag_range get_tags(const NodeId node_id, TagType type) { 
+            return node_tags_[node_id].tags(type); 
         }
 
         TimingTags::tag_range get_tags(const NodeId node_id) const { 
             return node_tags_[node_id].tags(); 
         }
-        TimingTags::tag_range get_data_tags(const NodeId node_id) const {
-            return node_tags_[node_id].tags(TagType::DATA); 
-        }
-        TimingTags::tag_range get_launch_clock_tags(const NodeId node_id) const { 
-            return node_tags_[node_id].tags(TagType::CLOCK_LAUNCH); 
-        }
-        TimingTags::tag_range get_capture_clock_tags(const NodeId node_id) const { 
-            return node_tags_[node_id].tags(TagType::CLOCK_CAPTURE); 
+        TimingTags::tag_range get_tags(const NodeId node_id, TagType type) const {
+            return node_tags_[node_id].tags(type); 
         }
 
         void add_tag(const NodeId node, const TimingTag& tag) {
             node_tags_[node].add_tag(tag);
         }
 
-        void reset() { 
-            node_tags_ = tatum::util::linear_map<NodeId,TimingTags>(node_tags_.size());
+        void reset_node(const NodeId node) { 
+            node_tags_[node].clear();
         }
 
     protected:

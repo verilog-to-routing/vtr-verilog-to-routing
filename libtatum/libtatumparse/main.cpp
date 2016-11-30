@@ -77,7 +77,7 @@ class PrintCallback : public tp::Callback {
     void finish_delay_model() override { fprintf(stdout, "# end delay_model\n"); }
 
     void start_results() override { fprintf(stdout, "analysis_result:\n"); }
-    void add_tag(tp::TagType type, int node_id, int domain_id, float arr, float req) override {
+    void add_tag(tp::TagType type, int node_id, int launch_domain_id, int capture_domain_id, float time) override {
         fprintf(stdout, " type: ");
         switch(type) {
             case tp::TagType::SETUP_DATA: fprintf(stdout, "SETUP_DATA"); break;
@@ -88,7 +88,7 @@ class PrintCallback : public tp::Callback {
             case tp::TagType::HOLD_CAPTURE_CLOCK: fprintf(stdout, "HOLD_CAPTURE_CLOCK"); break;
             default: assert(false);
         }
-        fprintf(stdout, " node: %d domain: %d arr: %g req: %g\n", node_id, domain_id, arr, req);
+        fprintf(stdout, " node: %d launch_domain: %d capture_domain: %d time: %g\n", node_id, launch_domain_id, capture_domain_id, time);
     }
     void finish_results() override { fprintf(stdout, "# end analysis_results\n"); }
 
@@ -141,7 +141,7 @@ class NopCallback : public tp::Callback {
         void finish_delay_model() override {}
 
         void start_results() override {}
-        void add_tag(tp::TagType /*type*/, int /*node_id*/, int /*domain_id*/, float /*arr*/, float /*req*/) override {}
+        void add_tag(tp::TagType /*type*/, int /*node_id*/, int /*launch_domain_id*/, int /*capture_domain_id*/, float /*time*/) override {}
         void finish_results() override {}
 
         //End of parsing

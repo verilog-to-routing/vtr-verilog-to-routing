@@ -13,11 +13,12 @@ using std::endl;
 constexpr float RELATIVE_EPSILON = 1.e-5;
 constexpr float ABSOLUTE_EPSILON = 1.e-13;
 
-size_t verify_node_tags(const NodeId node, TimingTags::tag_range analyzer_tags, const std::map<DomainId,TagResult>& ref_results, std::string type);
+std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range analyzer_tags, const std::map<std::pair<DomainId,DomainId>,TagResult>& ref_results, std::string type);
 bool verify_tag(const TimingTag& tag, const TagResult& ref_result);
-bool verify_time(NodeId node, DomainId domain, std::string type_str, float analyzer_time, float reference_time);
+bool verify_time(NodeId node, DomainId launch_domain, DomainId capture_domain, float analyzer_time, float reference_time);
 
-size_t verify_analyzer(const TimingGraph& tg, std::shared_ptr<TimingAnalyzer> analyzer, GoldenReference& gr) {
+std::pair<size_t,bool> verify_analyzer(const TimingGraph& tg, std::shared_ptr<TimingAnalyzer> analyzer, GoldenReference& gr) {
+    bool error = false;
     size_t tags_checked = 0;
 
     auto setup_analyzer = std::dynamic_pointer_cast<SetupTimingAnalyzer>(analyzer);
@@ -29,36 +30,74 @@ size_t verify_analyzer(const TimingGraph& tg, std::shared_ptr<TimingAnalyzer> an
 
 
             if(setup_analyzer) {
-                tags_checked += verify_node_tags(node, setup_analyzer->get_setup_data_tags(node), gr.get_result(node, tatumparse::TagType::SETUP_DATA), "setup_data");
-                tags_checked += verify_node_tags(node, setup_analyzer->get_setup_launch_clock_tags(node), gr.get_result(node, tatumparse::TagType::SETUP_LAUNCH_CLOCK), "setup_launch_clock");
-                tags_checked += verify_node_tags(node, setup_analyzer->get_setup_capture_clock_tags(node), gr.get_result(node, tatumparse::TagType::SETUP_CAPTURE_CLOCK), "setup_capture_clock");
+                auto res = verify_node_tags(node, setup_analyzer->setup_tags(node, TagType::DATA_ARRIVAL), gr.get_result(node, tatumparse::TagType::SETUP_DATA_ARRIVAL), "setup_data_arrival");
+                tags_checked += res.first;
+                error |= res.second;
+
+                res = verify_node_tags(node, setup_analyzer->setup_tags(node, TagType::DATA_REQUIRED), gr.get_result(node, tatumparse::TagType::SETUP_DATA_REQUIRED), "setup_data_required");
+                tags_checked += res.first;
+                error |= res.second;
+
+                res = verify_node_tags(node, setup_analyzer->setup_tags(node, TagType::CLOCK_LAUNCH), gr.get_result(node, tatumparse::TagType::SETUP_LAUNCH_CLOCK), "setup_launch_clock");
+                tags_checked += res.first;
+                error |= res.second;
+
+                res = verify_node_tags(node, setup_analyzer->setup_tags(node, TagType::CLOCK_CAPTURE), gr.get_result(node, tatumparse::TagType::SETUP_CAPTURE_CLOCK), "setup_capture_clock");
+                tags_checked += res.first;
+                error |= res.second;
             }
             if(hold_analyzer) {
-                tags_checked += verify_node_tags(node, hold_analyzer->get_hold_data_tags(node), gr.get_result(node, tatumparse::TagType::HOLD_DATA), "hold_data");
-                tags_checked += verify_node_tags(node, hold_analyzer->get_hold_launch_clock_tags(node), gr.get_result(node, tatumparse::TagType::HOLD_LAUNCH_CLOCK), "hold_launch_clock");
-                tags_checked += verify_node_tags(node, hold_analyzer->get_hold_capture_clock_tags(node), gr.get_result(node, tatumparse::TagType::HOLD_CAPTURE_CLOCK), "hold_capture_clock");
+                auto res = verify_node_tags(node, hold_analyzer->hold_tags(node, TagType::DATA_ARRIVAL), gr.get_result(node, tatumparse::TagType::HOLD_DATA_ARRIVAL), "hold_data_arrival");
+                tags_checked += res.first;
+                error |= res.second;
+
+                res = verify_node_tags(node, hold_analyzer->hold_tags(node, TagType::DATA_REQUIRED), gr.get_result(node, tatumparse::TagType::HOLD_DATA_REQUIRED), "hold_data_required");
+                tags_checked += res.first;
+                error |= res.second;
+
+                res = verify_node_tags(node, hold_analyzer->hold_tags(node, TagType::CLOCK_LAUNCH), gr.get_result(node, tatumparse::TagType::HOLD_LAUNCH_CLOCK), "hold_launch_clock");
+                tags_checked += res.first;
+                error |= res.second;
+
+                res = verify_node_tags(node, hold_analyzer->hold_tags(node, TagType::CLOCK_CAPTURE), gr.get_result(node, tatumparse::TagType::HOLD_CAPTURE_CLOCK), "hold_capture_clock");
+                tags_checked += res.first;
+                error |= res.second;
             }
         }
     }
 
-    return tags_checked;
+    return {tags_checked,!error};
 }
 
-size_t verify_node_tags(const NodeId node, TimingTags::tag_range analyzer_tags, const std::map<DomainId,TagResult>& ref_results, std::string type) {
+std::pair<size_t,bool> verify_node_tags(const NodeId node, TimingTags::tag_range analyzer_tags, const std::map<std::pair<DomainId,DomainId>,TagResult>& ref_results, std::string type) {
+    bool error = false;
 
     //Check that every tag in the analyzer matches the reference results
     size_t tags_verified = 0;
     for(const TimingTag& tag : analyzer_tags) {
-        auto iter = ref_results.find(tag.clock_domain());
+        DomainId domain;
+        if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::DATA_ARRIVAL || tag.type() == TagType::DATA_REQUIRED) {
+            domain = tag.launch_clock_domain();
+        } else {
+            TATUM_ASSERT(tag.type() == TagType::CLOCK_CAPTURE);
+            domain = tag.capture_clock_domain();
+        }
+
+        auto iter = ref_results.find({tag.launch_clock_domain(), tag.capture_clock_domain()});
         if(iter == ref_results.end()) {
             cout << "Node: " << node << " Type: " << type << endl;
-            cout << "\tERROR No reference tag found for clock domain " << tag.clock_domain() << endl;
-            std::exit(1);
-        } else if (verify_tag(tag, iter->second)) {
-            ++tags_verified;
+            cout << "\tERROR No reference tag found for clock domain " << tag.launch_clock_domain() << endl;
+            error = true;
         } else {
-            cout << "ERROR Failed tag verification!" << endl;
-            std::exit(1);
+            if(!verify_tag(tag, iter->second)) {
+                error = true;
+            }
+            ++tags_verified;
+        /*
+         *} else {
+         *    cout << "ERROR Failed tag verification!" << endl;
+         *    error = true;
+         */
         }
     }
 
@@ -69,51 +108,50 @@ size_t verify_node_tags(const NodeId node, TimingTags::tag_range analyzer_tags, 
 
         cout << "\t\tCalc Tags:" << endl;
         for(const TimingTag& tag : analyzer_tags) {
-            cout << "\t\t\tTag " << tag.clock_domain() << " arr: " << tag.arr_time().value() << " req: " << tag.req_time().value() << endl;
+            cout << "\t\t\tTag " << tag.launch_clock_domain() << " to " << tag.capture_clock_domain() << " time: " << tag.time().value() << endl;
         }
 
         cout << "\t\tRef Tags:" << endl;
         for(const auto& kv : ref_results) {
             const auto& ref = kv.second;
-            cout << "\t\t\tTag " << ref.domain << " arr: " << ref.arr << " req: " << ref.req << endl;
+            cout << "\t\t\tTag " << ref.launch_domain << " to " << ref.capture_domain << " time: " << ref.time << endl;
         }
-        std::exit(1);
+        error = true;
     }
 
-    return tags_verified;
+    return {tags_verified, error};
 }
 
 bool verify_tag(const TimingTag& tag, const TagResult& ref_result) {
-    TATUM_ASSERT(tag.clock_domain() == ref_result.domain);
+    TATUM_ASSERT(tag.launch_clock_domain() == ref_result.launch_domain && tag.capture_clock_domain() == ref_result.capture_domain);
 
     bool valid = true;
-    valid &= verify_time(ref_result.node, ref_result.domain, "arrival", tag.arr_time().value(), ref_result.arr);
-    valid &= verify_time(ref_result.node, ref_result.domain, "required", tag.req_time().value(), ref_result.req);
+    valid &= verify_time(ref_result.node, ref_result.launch_domain, ref_result.capture_domain, tag.time().value(), ref_result.time);
 
     return valid;
 }
 
-bool verify_time(NodeId node, DomainId domain, std::string type_str, float analyzer_time, float reference_time) {
+bool verify_time(NodeId node, DomainId launch_domain, DomainId capture_domain, float analyzer_time, float reference_time) {
     float arr_abs_err = fabs(analyzer_time - reference_time);
     float arr_rel_err = relative_error(analyzer_time, reference_time);
     if(isnan(analyzer_time) && isnan(analyzer_time) != isnan(reference_time)) {
-        cout << "Node: " << node << " Clk: " << domain;
-        cout << " Calc_" + type_str + ": " << analyzer_time;
-        cout << " Ref_" + type_str + ": " << reference_time << endl;
-        cout << "\tERROR Calculated " + type_str + " time was nan and didn't match golden reference." << endl;
+        cout << "Node: " << node << " Launch Clk: " << launch_domain << " Capture Clk: " << capture_domain;
+        cout << " Calc: " << analyzer_time;
+        cout << " Ref: " << reference_time << endl;
+        cout << "\tERROR Calculated time was nan and didn't match golden reference." << endl;
         return false;
     } else if (!isnan(analyzer_time) && isnan(reference_time)) {
-        //We allow tatum results to be non-NAN when VPR is NAN
+        //We allow tatum results to be non-NAN when reference is NAN
         //
         //This occurs in some cases (such as applying clock tags to primary outputs)
         //which are cuased by the differeing analysis methods
     } else if (isnan(analyzer_time) && isnan(reference_time)) {
         //They agree, pass
     } else if(arr_rel_err > RELATIVE_EPSILON && arr_abs_err > ABSOLUTE_EPSILON) {
-        cout << "Node: " << node << " Clk: " << domain;
-        cout << " Calc_" + type_str + ": " << analyzer_time;
-        cout << " Ref_" + type_str + ": " << reference_time << endl;
-        cout << "\tERROR " + type_str + " time abs, rel errs: " << arr_abs_err;
+        cout << "Node: " << node << " Launch Clk: " << launch_domain << " Capture Clk: " << capture_domain;
+        cout << " Calc_: " << analyzer_time;
+        cout << " Ref_: " << reference_time << endl;
+        cout << "\tERROR time abs, rel errs: " << arr_abs_err;
         cout << ", " << arr_rel_err << endl;
         return false;
     } else {

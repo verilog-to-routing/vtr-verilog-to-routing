@@ -49,6 +49,13 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
                 }
             }
         }
+
+        void do_reset_impl(const TimingGraph& tg, Visitor& visitor) override {
+            auto nodes = tg.nodes();
+            cilk_for(auto iter = nodes.begin(); iter != nodes.end(); ++iter) {
+                visitor.do_reset_node(*iter);
+            }
+        }
 };
 
 } //namepsace

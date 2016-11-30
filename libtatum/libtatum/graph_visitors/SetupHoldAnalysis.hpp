@@ -22,6 +22,11 @@ class SetupHoldAnalysis {
             : setup_visitor_(num_tags)
             , hold_visitor_(num_tags) {}
 
+        void do_reset_node(const NodeId node_id) { 
+            setup_visitor_.do_reset_node(node_id); 
+            hold_visitor_.do_reset_node(node_id); 
+        }
+
         void do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) { 
             setup_visitor_.do_arrival_pre_traverse_node(tg, tc, node_id); 
             hold_visitor_.do_arrival_pre_traverse_node(tg, tc, node_id); 
@@ -44,18 +49,12 @@ class SetupHoldAnalysis {
             hold_visitor_.do_required_traverse_node(tg, tc, dc, node_id); 
         }
 
-        TimingTags::tag_range get_setup_data_tags(const NodeId node_id) const { return setup_visitor_.get_setup_data_tags(node_id); }
-        TimingTags::tag_range get_setup_launch_clock_tags(const NodeId node_id) const { return setup_visitor_.get_setup_launch_clock_tags(node_id); }
-        TimingTags::tag_range get_setup_capture_clock_tags(const NodeId node_id) const { return setup_visitor_.get_setup_capture_clock_tags(node_id); }
+        TimingTags::tag_range setup_tags(const NodeId node_id) const { return setup_visitor_.setup_tags(node_id); }
+        TimingTags::tag_range setup_tags(const NodeId node_id, TagType type) const { return setup_visitor_.setup_tags(node_id, type); }
 
-        TimingTags::tag_range get_hold_data_tags(const NodeId node_id) const { return hold_visitor_.get_hold_data_tags(node_id); }
-        TimingTags::tag_range get_hold_launch_clock_tags(const NodeId node_id) const { return hold_visitor_.get_hold_launch_clock_tags(node_id); }
-        TimingTags::tag_range get_hold_capture_clock_tags(const NodeId node_id) const { return hold_visitor_.get_hold_capture_clock_tags(node_id); }
+        TimingTags::tag_range hold_tags(const NodeId node_id) const { return hold_visitor_.hold_tags(node_id); }
+        TimingTags::tag_range hold_tags(const NodeId node_id, TagType type) const { return hold_visitor_.hold_tags(node_id, type); }
 
-        void reset() { 
-            setup_visitor_.reset(); 
-            hold_visitor_.reset(); 
-        }
 
     private:
         SetupAnalysis setup_visitor_;

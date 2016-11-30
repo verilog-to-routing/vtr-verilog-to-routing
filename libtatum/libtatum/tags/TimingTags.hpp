@@ -27,51 +27,11 @@ namespace tatum {
 class TimingTags {
     public:
         template<class T>
-        class Iterator : public std::iterator<std::random_access_iterator_tag, T> {
-            friend TimingTags;
-            public:
-                using value_type = typename std::iterator<std::random_access_iterator_tag, T>::value_type;
-                using difference_type = typename std::iterator<std::random_access_iterator_tag, T>::difference_type;
-                using pointer = typename std::iterator<std::random_access_iterator_tag, T>::pointer;
-                using reference = typename std::iterator<std::random_access_iterator_tag, T>::reference;
-                using iterator_category = typename std::iterator<std::random_access_iterator_tag, T>::iterator_category;
-            public:
-                Iterator(): p_(nullptr) {}
-                Iterator(pointer p): p_(p) {}
-                Iterator(const Iterator& other): p_(other.p_) {}
-                Iterator& operator=(const Iterator& other) { p_ = other.p_; return *this; }
-
-                friend bool operator==(Iterator a, Iterator b) { return a.p_ == b.p_; }
-                friend bool operator!=(Iterator a, Iterator b) { return a.p_ != b.p_; }
-
-                reference operator*() { return *p_; }
-                pointer operator->() { return p_; }
-                reference operator[](size_t n) { return *(p_ + n); }
-
-                Iterator& operator++() { ++p_; return *this; }
-                Iterator operator++(int) { Iterator old = *this; ++p_; return old; }
-                Iterator& operator--() { --p_; return *this; }
-                Iterator operator--(int) { Iterator old = *this; --p_; return old; }
-                Iterator& operator+=(size_t n) { p_ += n; return *this; }
-                Iterator& operator-=(size_t n) { p_ -= n; return *this; }
-                friend Iterator operator+(Iterator lhs, size_t rhs) { return lhs += rhs; }
-                friend Iterator operator-(Iterator lhs, size_t rhs) { return lhs += rhs; }
-
-                friend difference_type operator-(const Iterator lhs, const Iterator rhs) { return lhs.p_ - rhs.p_; }
-
-                friend bool operator<(Iterator lhs, Iterator rhs) { return lhs.p_ < rhs.p_; }
-                friend bool operator>(Iterator lhs, Iterator rhs) { return lhs.p_ > rhs.p_; }
-                friend bool operator<=(Iterator lhs, Iterator rhs) { return lhs.p_ <= rhs.p_; }
-                friend bool operator>=(Iterator lhs, Iterator rhs) { return lhs.p_ >= rhs.p_; }
-                friend void swap(Iterator lhs, Iterator rhs) { std::swap(lhs.p_, rhs.p_); }
-            private:
-                T* p_ = nullptr;
-        };
+        class Iterator;
     private:
-        //In practice the vast majority of nodes have only two or one
-        //tags, so we reserve space for two to avoid costly memory
-        //allocations
-        constexpr static size_t DEFAULT_TAGS_TO_RESERVE = 2;
+        //In practice the vast majority of nodes have only a handful of tags,
+        //so we reserve space for some to avoid costly memory allocations
+        constexpr static size_t DEFAULT_TAGS_TO_RESERVE = 3;
         constexpr static size_t GROWTH_FACTOR = 2;
 
     public:
@@ -114,43 +74,67 @@ class TimingTags {
         void add_tag(const TimingTag& src_tag);
 
         /*
-         * Setup operations
+         * Operations
          */
         ///Updates the arrival time of this set of tags to be the maximum.
-        ///\param tag_pool The pool memory allocator to use
         ///\param new_time The new arrival time to compare against
         ///\param base_tag The associated metat-data for new_time
         ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the arrival time if new_time is larger
-        void max_arr(const Time& new_time, const TimingTag& base_tag);
+        void max(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid=false);
 
         ///Updates the required time of this set of tags to be the minimum.
-        ///\param tag_pool The pool memory allocator to use
         ///\param new_time The new arrival time to compare against
         ///\param base_tag The associated metat-data for new_time
         ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the required time if new_time is smaller
-        void min_req(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid);
-
-        /*
-         * Hold operations
-         */
-        ///Updates the arrival time of this set of tags to be the minimum.
-        ///\param tag_pool The pool memory allocator to use
-        ///\param new_time The new arrival time to compare against
-        ///\param base_tag The associated metat-data for new_time
-        ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the arrival time if new_time is smaller
-        void min_arr(const Time& new_time, const TimingTag& base_tag);
-
-        ///Updates the required time of this set of tags to be the maximum.
-        ///\param tag_pool The pool memory allocator to use
-        ///\param new_time The new arrival time to compare against
-        ///\param base_tag The associated metat-data for new_time
-        ///\remark Finds (or creates) the tag with the same clock domain as base_tag and update the required time if new_time is larger
-        void max_req(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid);
+        void min(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid=false);
 
         ///Clears the tags in the current set
-        ///\warning Note this does not deallocate the tags. Tag deallocation is the responsibility of the associated pool allocator
         void clear();
 
+    public:
+
+        //Iterator definition
+        template<class T>
+        class Iterator : public std::iterator<std::random_access_iterator_tag, T> {
+            friend TimingTags;
+            public:
+                using value_type = typename std::iterator<std::random_access_iterator_tag, T>::value_type;
+                using difference_type = typename std::iterator<std::random_access_iterator_tag, T>::difference_type;
+                using pointer = typename std::iterator<std::random_access_iterator_tag, T>::pointer;
+                using reference = typename std::iterator<std::random_access_iterator_tag, T>::reference;
+                using iterator_category = typename std::iterator<std::random_access_iterator_tag, T>::iterator_category;
+            public:
+                Iterator(): p_(nullptr) {}
+                Iterator(pointer p): p_(p) {}
+                Iterator(const Iterator& other): p_(other.p_) {}
+                Iterator& operator=(const Iterator& other) { p_ = other.p_; return *this; }
+
+                friend bool operator==(Iterator a, Iterator b) { return a.p_ == b.p_; }
+                friend bool operator!=(Iterator a, Iterator b) { return a.p_ != b.p_; }
+
+                reference operator*() { return *p_; }
+                pointer operator->() { return p_; }
+                reference operator[](size_t n) { return *(p_ + n); }
+
+                Iterator& operator++() { ++p_; return *this; }
+                Iterator operator++(int) { Iterator old = *this; ++p_; return old; }
+                Iterator& operator--() { --p_; return *this; }
+                Iterator operator--(int) { Iterator old = *this; --p_; return old; }
+                Iterator& operator+=(size_t n) { p_ += n; return *this; }
+                Iterator& operator-=(size_t n) { p_ -= n; return *this; }
+                friend Iterator operator+(Iterator lhs, size_t rhs) { return lhs += rhs; }
+                friend Iterator operator-(Iterator lhs, size_t rhs) { return lhs -= rhs; }
+
+                friend difference_type operator-(const Iterator lhs, const Iterator rhs) { return lhs.p_ - rhs.p_; }
+
+                friend bool operator<(Iterator lhs, Iterator rhs) { return lhs.p_ < rhs.p_; }
+                friend bool operator>(Iterator lhs, Iterator rhs) { return lhs.p_ > rhs.p_; }
+                friend bool operator<=(Iterator lhs, Iterator rhs) { return lhs.p_ <= rhs.p_; }
+                friend bool operator>=(Iterator lhs, Iterator rhs) { return lhs.p_ >= rhs.p_; }
+                friend void swap(Iterator lhs, Iterator rhs) { std::swap(lhs.p_, rhs.p_); }
+            private:
+                T* p_ = nullptr;
+        };
 
     private:
 
@@ -168,23 +152,39 @@ class TimingTags {
 
         size_t capacity() const;
 
+        std::pair<iterator,bool> find_matching_tag(const TimingTag& tag, bool arr_must_be_valid);
+
         ///Finds a TimingTag in the current set that has clock domain id matching domain_id
-        ///\param domain_id The clock domain id to look for
-        ///\returns An iterator to the tag if found, or end() if not found
-        iterator find_matching_tag(const TimingTag& tag);
+        ///\returns An iterator to the tag if found, or end(tag.type()) if not found
+        std::pair<iterator,bool> find_matching_tag(const TimingTag& tag);
+
+        //Find a TimingTag matching the specified DATA_REQUIRED tag provided there is a valid associated
+        //DATA_ARRIVAL tag
+        std::pair<iterator,bool> find_matching_tag_with_valid_arrival(const TimingTag& tag);
+
 
         iterator insert(iterator iter, const TimingTag& tag);
         void grow_insert(size_t index, const TimingTag& tag);
 
+        void increment_size(TagType type);
+
 
     private:
-        //We don't expect many tags in a node so unsigned short's
+        //We don't expect many tags in a node so unsigned short's/unsigned char's
         //should be more than sufficient. This also allows the class
         //to be packed down to 16 bytes (8 for counters, 8 for pointer)
+        //
+        //In its current configuration we can store at most:
+        //  65536           total tags (size_ and capacity_)
+        //  256             clock launch tags (num_clock_launch_tags_)
+        //  256             clock capture tags (num_clock_capture_tags_)
+        //  256             data arrival tags (num_data_arrival_tags_)
+        //  (65536 - 3*256) data required tags (size_ - num_*)
         unsigned short size_ = 0;
         unsigned short capacity_ = 0;
-        unsigned short num_clock_launch_tags_ = 0;
-        unsigned short num_clock_capture_tags_ = 0;
+        unsigned char num_clock_launch_tags_ = 0;
+        unsigned char num_clock_capture_tags_ = 0;
+        unsigned char num_data_arrival_tags_ = 0;
         std::unique_ptr<TimingTag[]> tags_;
 
 };

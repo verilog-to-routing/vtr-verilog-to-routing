@@ -6,8 +6,6 @@
 #include <sstream>
 #include <memory>
 
-#include <valgrind/callgrind.h>
-
 #include "tatum_assert.hpp"
 
 #include "timing_analyzers.hpp"
@@ -28,11 +26,10 @@
 #include "verify.hpp"
 #include "util.hpp"
 #include "echo_writer.hpp"
+#include "profile.hpp"
 
-#define NUM_SERIAL_RUNS 1
-#define NUM_PARALLEL_RUNS 0 
-//#define NUM_SERIAL_RUNS 20
-//#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
+#define NUM_SERIAL_RUNS 100
+#define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
 
 //Should we optimize the timing graph memory layout?
 #define OPTIMIZE_GRAPH_LAYOUT
@@ -58,14 +55,17 @@ using tatum::NodeId;
 using tatum::EdgeId;
 using tatum::DomainId;
 
+double median(std::vector<double> values);
+double arithmean(std::vector<double> values);
+
 int main(int argc, char** argv) {
     if(argc != 2) {
         cout << "Usage: " << argv[0] << " tg_echo_file" << endl;
         return 1;
     }
 
-    struct timespec prog_start, load_start, verify_start, reset_start;
-    struct timespec prog_end, load_end, verify_end, reset_end;
+    struct timespec prog_start, load_start, verify_start;
+    struct timespec prog_end, load_end, verify_end;
 
     clock_gettime(CLOCK_MONOTONIC, &prog_start);
 
@@ -165,6 +165,11 @@ int main(int argc, char** argv) {
     ofs.flush();
 #endif
 
+    //Make all the analyzer types to test templates
+    std::shared_ptr<tatum::TimingAnalyzer> setup_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
+    std::shared_ptr<tatum::TimingAnalyzer> hold_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
+    std::shared_ptr<tatum::TimingAnalyzer> setup_hold_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
+
     //Create the timing analyzer
     std::shared_ptr<tatum::TimingAnalyzer> serial_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
     auto serial_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(serial_analyzer);
@@ -172,81 +177,57 @@ int main(int argc, char** argv) {
 
     //Performance variables
     float serial_verify_time = 0.;
-    float serial_reset_time = 0.;
     size_t serial_tags_verified = 0;
-    std::map<std::string,float> serial_prof_data;
+    std::map<std::string,std::vector<double>> serial_prof_data;
     {
         cout << "Running Serial Analysis " << NUM_SERIAL_RUNS << " times" << endl;
 
-        //To selectively profile using callgrind:
-        //  valgrind --tool=callgrind --collect-atstart=no --instr-atstart=no --cache-sim=yes --cacheuse=yes ./command
-        CALLGRIND_START_INSTRUMENTATION;
-        for(int i = 0; i < NUM_SERIAL_RUNS; i++) {
-            //Analyze
+        serial_prof_data = profile(NUM_SERIAL_RUNS, serial_analyzer);
 
-            {
-                auto start = Clock::now();
+        cout << "\n";
 
-                CALLGRIND_TOGGLE_COLLECT;
-                serial_analyzer->update_timing();
-                CALLGRIND_TOGGLE_COLLECT;
+        write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
+        write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
 
-                serial_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
+        //Verify
+        clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-            }
+        auto res = verify_analyzer(*timing_graph, serial_analyzer, *golden_reference);
 
-            for(auto key : {"arrival_pre_traversal_sec", "arrival_traversal_sec", "required_pre_traversal_sec", "required_traversal_sec"}) {
-                serial_prof_data[key] += serial_analyzer->get_profiling_data(key);
-            }
+        serial_tags_verified = res.first;
 
-            cout << ".";
-            cout.flush();
-
-            //print_setup_tags(timing_graph, serial_analyzer);
-            //print_hold_tags(timing_graph, serial_analyzer);
-
-            //Verify
-            clock_gettime(CLOCK_MONOTONIC, &verify_start);
-
-            if(i == NUM_SERIAL_RUNS - 1) {
-                cout << "\n";
-
-                write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
-                write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
-
-                serial_tags_verified = verify_analyzer(*timing_graph, serial_analyzer, *golden_reference);
-            }
-
-            clock_gettime(CLOCK_MONOTONIC, &verify_end);
-            serial_verify_time += tatum::time_sec(verify_start, verify_end);
-
-            if(i < NUM_SERIAL_RUNS-1) {
-                clock_gettime(CLOCK_MONOTONIC, &reset_start);
-                serial_analyzer->reset_timing();
-                clock_gettime(CLOCK_MONOTONIC, &reset_end);
-                serial_reset_time += tatum::time_sec(reset_start, reset_end);
-            }
+        if(!res.second) {
+            cout << "Verification failed!\n";
+            std::exit(1);
         }
-        CALLGRIND_STOP_INSTRUMENTATION;
 
-        for(auto kv : serial_prof_data) {
-            serial_prof_data[kv.first] /= NUM_SERIAL_RUNS;
-        }
+        clock_gettime(CLOCK_MONOTONIC, &verify_end);
+        serial_verify_time += tatum::time_sec(verify_start, verify_end);
 
         cout << endl;
-        cout << "Serial Analysis took " << std::setprecision(6) << std::setw(6) << serial_prof_data["analysis_sec"]*NUM_SERIAL_RUNS << " sec, AVG: " << serial_prof_data["analysis_sec"] << " s" << endl;
+        cout << "Serial Analysis took " << std::setprecision(6) << std::setw(6) << arithmean(serial_prof_data["analysis_sec"])*NUM_SERIAL_RUNS << " sec";
+        if(serial_prof_data["analysis_sec"].size() > 0) {
+            cout << " AVG: " << arithmean(serial_prof_data["analysis_sec"]);
+            cout << " Median: " << median(serial_prof_data["analysis_sec"]);
+            cout << " Min: " << *std::min_element(serial_prof_data["analysis_sec"].begin(), serial_prof_data["analysis_sec"].end());
+            cout << " Max: " << *std::max_element(serial_prof_data["analysis_sec"].begin(), serial_prof_data["analysis_sec"].end());
+        }
+        cout << endl;
 
-        cout << "\tArr Pre-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["arrival_pre_traversal_sec"] << " s";
-        cout << " (" << std::setprecision(2) << serial_prof_data["arrival_pre_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
+        cout << "\tReset             Median: " << std::setprecision(6) << std::setw(6) << median(serial_prof_data["reset_sec"]) << " s";
+        cout << " (" << std::setprecision(2) << median(serial_prof_data["reset_sec"])/median(serial_prof_data["analysis_sec"]) << ")" << endl;
 
-        cout << "\tReq Pre-traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["required_pre_traversal_sec"] << " s";
-        cout << " (" << std::setprecision(2) << serial_prof_data["required_pre_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
+        cout << "\tArr Pre-traversal Median: " << std::setprecision(6) << std::setw(6) << median(serial_prof_data["arrival_pre_traversal_sec"]) << " s";
+        cout << " (" << std::setprecision(2) << median(serial_prof_data["arrival_pre_traversal_sec"])/median(serial_prof_data["analysis_sec"]) << ")" << endl;
 
-        cout << "\tArr     traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["arrival_traversal_sec"]<< " s";
-        cout << " (" << std::setprecision(2) << serial_prof_data["arrival_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
+        cout << "\tReq Pre-traversal Median: " << std::setprecision(6) << std::setw(6) << median(serial_prof_data["required_pre_traversal_sec"]) << " s";
+        cout << " (" << std::setprecision(2) << median(serial_prof_data["required_pre_traversal_sec"])/median(serial_prof_data["analysis_sec"]) << ")" << endl;
 
-        cout << "\tReq     traversal Avg: " << std::setprecision(6) << std::setw(6) << serial_prof_data["required_traversal_sec"] << " s";
-        cout << " (" << std::setprecision(2) << serial_prof_data["required_traversal_sec"]/serial_prof_data["analysis_sec"] << ")" << endl;
+        cout << "\tArr     traversal Median: " << std::setprecision(6) << std::setw(6) << median(serial_prof_data["arrival_traversal_sec"]) << " s";
+        cout << " (" << std::setprecision(2) << median(serial_prof_data["arrival_traversal_sec"])/median(serial_prof_data["analysis_sec"]) << ")" << endl;
+
+        cout << "\tReq     traversal Median: " << std::setprecision(6) << std::setw(6) << median(serial_prof_data["required_traversal_sec"]) << " s";
+        cout << " (" << std::setprecision(2) << median(serial_prof_data["required_traversal_sec"])/median(serial_prof_data["analysis_sec"]) << ")" << endl;
 
         cout << "Verifying Serial Analysis took: " << serial_verify_time << " sec" << endl;
         if(serial_tags_verified != golden_reference->num_tags() && serial_tags_verified != golden_reference->num_tags() / 2) {
@@ -255,9 +236,13 @@ int main(int argc, char** argv) {
         } else {
             cout << "\tVerified " << serial_tags_verified << " tags (expected " << golden_reference->num_tags() << " or " << golden_reference->num_tags()/2 << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
         }
-        cout << "Resetting Serial Analysis took: " << serial_reset_time << " sec" << endl;
         cout << endl;
     }
+
+#ifdef ECHO
+    tatum::write_analysis_result(ofs, *timing_graph, serial_analyzer);
+    ofs.flush();
+#endif
 
     cout << endl;
 
@@ -266,99 +251,74 @@ int main(int argc, char** argv) {
     auto parallel_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(parallel_analyzer);
     auto parallel_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(parallel_analyzer);
 
-    //float parallel_analysis_time = 0;
-    //float parallel_pretraverse_time = 0.;
-    //float parallel_fwdtraverse_time = 0.;
-    //float parallel_bcktraverse_time = 0.;
-    //float parallel_analysis_time_avg = 0;
-    //float parallel_pretraverse_time_avg = 0.;
-    //float parallel_fwdtraverse_time_avg = 0.;
-    //float parallel_bcktraverse_time_avg = 0.;
     float parallel_verify_time = 0;
-    float parallel_reset_time = 0;
     size_t parallel_tags_verified = 0;
-    std::map<std::string,float> parallel_prof_data;
+    std::map<std::string,std::vector<double>> parallel_prof_data;
     {
         cout << "Running Parrallel Analysis " << NUM_PARALLEL_RUNS << " times" << endl;
 
-        for(int i = 0; i < NUM_PARALLEL_RUNS; i++) {
-            //Analyze
-            {
-                auto start = Clock::now();
+        //Analyze
+        parallel_prof_data = profile(NUM_PARALLEL_RUNS, parallel_analyzer);
 
-                parallel_analyzer->update_timing();
+        //Verify
+        clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
-                parallel_prof_data["analysis_sec"] += std::chrono::duration_cast<dsec>(Clock::now() - start).count();
-            }
+        cout << "\n";
+        auto res = verify_analyzer(*timing_graph, parallel_analyzer, *golden_reference);
 
-            for(auto key : {"arrival_pre_traversal_sec", "arrival_traversal_sec", "required_pre_traversal_sec", "required_traversal_sec"}) {
-                parallel_prof_data[key] += parallel_analyzer->get_profiling_data(key);
-            }
+        parallel_tags_verified = res.first;
 
-            cout << ".";
-            cout.flush();
-
-            //Verify
-            clock_gettime(CLOCK_MONOTONIC, &verify_start);
-
-            if(i == NUM_PARALLEL_RUNS - 1) {
-                cout << "\n";
-                parallel_tags_verified = verify_analyzer(*timing_graph, parallel_analyzer, *golden_reference);
-            }
-
-            clock_gettime(CLOCK_MONOTONIC, &verify_end);
-            parallel_verify_time += tatum::time_sec(verify_start, verify_end);
-
-            if(i < NUM_PARALLEL_RUNS-1) {
-                clock_gettime(CLOCK_MONOTONIC, &reset_start);
-                parallel_analyzer->reset_timing();
-                clock_gettime(CLOCK_MONOTONIC, &reset_end);
-                parallel_reset_time += tatum::time_sec(reset_start, reset_end);
-            }
+        if(!res.second) {
+            cout << "Verification failed!\n";
+            std::exit(1);
         }
-        for(auto kv : parallel_prof_data) {
-            parallel_prof_data[kv.first] /= NUM_PARALLEL_RUNS;
+
+        clock_gettime(CLOCK_MONOTONIC, &verify_end);
+        parallel_verify_time += tatum::time_sec(verify_start, verify_end);
+
+        cout << endl;
+        cout << "Parallel Analysis took " << std::setprecision(6) << std::setw(6) << arithmean(parallel_prof_data["analysis_sec"])*NUM_SERIAL_RUNS << " sec";
+        if(parallel_prof_data["analysis_sec"].size() > 0) {
+            cout << " AVG: " << arithmean(parallel_prof_data["analysis_sec"]);
+            cout << " Median: " << median(parallel_prof_data["analysis_sec"]);
+            cout << " Min: " << *std::min_element(parallel_prof_data["analysis_sec"].begin(), parallel_prof_data["analysis_sec"].end());
+            cout << " Max: " << *std::max_element(parallel_prof_data["analysis_sec"].begin(), parallel_prof_data["analysis_sec"].end());
         }
         cout << endl;
 
-        cout << "Parallel Analysis took " << std::setprecision(6) << std::setw(6) << parallel_prof_data["analysis_sec"]*NUM_PARALLEL_RUNS << " sec, AVG: " << parallel_prof_data["analysis_sec"] << " s" << endl;
+        cout << "\tReset             Median: " << std::setprecision(6) << std::setw(6) << median(parallel_prof_data["reset_sec"]) << " s";
+        cout << " (" << std::setprecision(2) << median(parallel_prof_data["reset_sec"])/median(parallel_prof_data["analysis_sec"]) << ")" << endl;
 
-        cout << "\tArr Pre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["arrival_pre_traversal_sec"] << " s";
-        cout << " (" << std::setprecision(2) << parallel_prof_data["arrival_pre_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;
+        cout << "\tArr Pre-traversal Median: " << std::setprecision(6) << std::setw(6) << median(parallel_prof_data["arrival_pre_traversal_sec"]) << " s";
+        cout << " (" << std::setprecision(2) << median(parallel_prof_data["arrival_pre_traversal_sec"])/median(parallel_prof_data["analysis_sec"]) << ")" << endl;
 
-        cout << "\tReq Pre-traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["required_pre_traversal_sec"] << " s";
-        cout << " (" << std::setprecision(2) << parallel_prof_data["required_pre_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;
+        cout << "\tReq Pre-traversal Median: " << std::setprecision(6) << std::setw(6) << median(parallel_prof_data["required_pre_traversal_sec"]) << " s";
+        cout << " (" << std::setprecision(2) << median(parallel_prof_data["required_pre_traversal_sec"])/median(parallel_prof_data["analysis_sec"]) << ")" << endl;
 
-        cout << "\tArr     traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["arrival_traversal_sec"] << " s";
-        cout << " (" << std::setprecision(2) << parallel_prof_data["arrival_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;
+        cout << "\tArr     traversal Median: " << std::setprecision(6) << std::setw(6) << median(parallel_prof_data["arrival_traversal_sec"]) << " s";
+        cout << " (" << std::setprecision(2) << median(parallel_prof_data["arrival_traversal_sec"])/median(parallel_prof_data["analysis_sec"]) << ")" << endl;
 
-        cout << "\tReq     traversal Avg: " << std::setprecision(6) << std::setw(6) << parallel_prof_data["required_traversal_sec"] << " s";
-        cout << " (" << std::setprecision(2) << parallel_prof_data["required_traversal_sec"]/parallel_prof_data["analysis_sec"] << ")" << endl;
+        cout << "\tReq     traversal Median: " << std::setprecision(6) << std::setw(6) << median(parallel_prof_data["required_traversal_sec"]) << " s";
+        cout << " (" << std::setprecision(2) << median(parallel_prof_data["required_traversal_sec"])/median(parallel_prof_data["analysis_sec"]) << ")" << endl;
 
         cout << "Verifying Parallel Analysis took: " <<  parallel_verify_time<< " sec" << endl;
         if(parallel_tags_verified != golden_reference->num_tags() && parallel_tags_verified != golden_reference->num_tags()/2) {
-            cout << "\tVerified " << parallel_tags_verified << " tags (expected " << golden_reference->num_tags() << " or " << golden_reference->num_tags()/2 << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
+            //Potentially alow / 2 for setup only analysis from setup/hold golden
+            cout << "WARNING: Expected tags (" << golden_reference->num_tags() << ") differs from tags checked (" << serial_tags_verified << ") , verification may not have occured!" << endl;
         } else {
-            cout << "\tVerified " << parallel_tags_verified << " tags (expected " << golden_reference->num_tags() << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
+            cout << "\tVerified " << serial_tags_verified << " tags (expected " << golden_reference->num_tags() << " or " << golden_reference->num_tags()/2 << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
         }
-        cout << "Resetting Parallel Analysis took: " << parallel_reset_time << " sec" << endl;
     }
     cout << endl;
 
-#ifdef ECHO
-    tatum::write_analysis_result(ofs, *timing_graph, serial_analyzer);
-#endif
 
-
-    cout << "Parallel Speed-Up: " << std::fixed << serial_prof_data["analysis_sec"] / parallel_prof_data["analysis_sec"] << "x" << endl;
-    cout << "\tArr Pre-traversal: " << std::fixed << serial_prof_data["arrival_pre_traversal_sec"] / parallel_prof_data["arrival_pre_traversal_sec"] << "x" << endl;
-    cout << "\tReq Pre-traversal: " << std::fixed << serial_prof_data["required_pre_traversal_sec"] / parallel_prof_data["required_pre_traversal_sec"] << "x" << endl;
-    cout << "\t    Arr-traversal: " << std::fixed << serial_prof_data["arrival_traversal_sec"] / parallel_prof_data["arrival_traversal_sec"] << "x" << endl;
-    cout << "\t    Req-traversal: " << std::fixed << serial_prof_data["required_traversal_sec"] / parallel_prof_data["required_traversal_sec"] << "x" << endl;
+    cout << "Parallel Speed-Up: " << std::fixed << median(serial_prof_data["analysis_sec"]) / median(parallel_prof_data["analysis_sec"]) << "x" << endl;
+    cout << "\t            Reset: " << std::fixed << median(serial_prof_data["reset_sec"]) / median(parallel_prof_data["reset_sec"]) << "x" << endl;
+    cout << "\tArr Pre-traversal: " << std::fixed << median(serial_prof_data["arrival_pre_traversal_sec"]) / median(parallel_prof_data["arrival_pre_traversal_sec"]) << "x" << endl;
+    cout << "\tReq Pre-traversal: " << std::fixed << median(serial_prof_data["required_pre_traversal_sec"]) / median(parallel_prof_data["required_pre_traversal_sec"]) << "x" << endl;
+    cout << "\t    Arr-traversal: " << std::fixed << median(serial_prof_data["arrival_traversal_sec"]) / median(parallel_prof_data["arrival_traversal_sec"]) << "x" << endl;
+    cout << "\t    Req-traversal: " << std::fixed << median(serial_prof_data["required_traversal_sec"]) / median(parallel_prof_data["required_traversal_sec"]) << "x" << endl;
     cout << endl;
-
-    //Per-level speed-up
-    tatum::dump_level_times("level_times.csv", *timing_graph, serial_prof_data, parallel_prof_data);
 #endif //NUM_PARALLEL_RUNS
 
 
@@ -376,4 +336,18 @@ int main(int argc, char** argv) {
     cout << endl << "Total time: " << tatum::time_sec(prog_start, prog_end) << " sec" << endl;
 
     return 0;
+}
+
+double median(std::vector<double> values) {
+    std::sort(values.begin(), values.end());
+
+    if(values.size() % 2 == 0) {
+        return(values[values.size() / 2 - 1] + values[values.size() / 2]) / 2;
+    } else {
+        return values[values.size() / 2];
+    }
+}
+
+double arithmean(std::vector<double> values) {
+    return std::accumulate(values.begin(), values.end(), 0.) / values.size();
 }
