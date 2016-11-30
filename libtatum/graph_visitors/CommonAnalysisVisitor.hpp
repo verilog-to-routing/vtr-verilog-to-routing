@@ -248,7 +248,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
                         //We convert the clock arrival time to a data
                         //arrival time at this node (since the clock's
                         //arrival launches the data).
-                        TATUM_ASSERT(tg.node_type(node_id) == NodeType::SOURCE);
+                        TATUM_ASSERT_SAFE(tg.node_type(node_id) == NodeType::SOURCE);
 
                         //Make a copy of the tag
                         TimingTag launch_tag = src_launch_clk_tag;
@@ -288,7 +288,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
     if(!src_data_tags.empty()) {
         const Time& edge_delay = ops_.data_edge_delay(dc, tg, edge_id);
-        TATUM_ASSERT(edge_delay.valid());
+        TATUM_ASSERT_SAFE(edge_delay.valid());
 
         for(const TimingTag& src_data_tag : src_data_tags) {
             //Standard data-path propagation
@@ -336,7 +336,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
 
     if(!sink_data_tags.empty()) {
         const Time& edge_delay = ops_.data_edge_delay(dc, tg, edge_id);
-        TATUM_ASSERT(edge_delay.valid());
+        TATUM_ASSERT_SAFE(edge_delay.valid());
 
         for(const TimingTag& sink_tag : sink_data_tags) {
             //We only propogate the required time if we have a valid matching arrival time
