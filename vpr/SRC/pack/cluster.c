@@ -39,6 +39,9 @@ using namespace std;
 #include "echo_writer.hpp"
 #include "TimingConstraints.hpp"
 #include "analyzer_factory.hpp"
+#include "sta_util.hpp"
+
+#include "SlackEvaluator.h"
 
 #include "read_sdc.h"
 
@@ -389,6 +392,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		raw_slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, 
                                                          expected_lowest_cost_pb_gnode);
 
+        //New analyzer
         TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map, expected_lowest_cost_pb_gnode, inter_cluster_net_delay);
         tatum::TimingGraph tg = tg_builder.timing_graph();
         tatum::FixedDelayCalculator dc = tg_builder.delay_calculator();
@@ -400,11 +404,30 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         write_delay_model(os_timing_echo, tg, dc);
 
         std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(tg, tc, dc);
-        analyzer->update_timing();
+
+        OptimizerSlack opt_slack(g_atom_nl, g_atom_map, analyzer);
+        opt_slack.update();
+
+        auto dc_sp = std::make_shared<tatum::FixedDelayCalculator>(dc);
+        tatum::write_dot_file_setup("setup.dot", tg, analyzer, dc_sp);
+
 
         write_analysis_result(os_timing_echo, tg, analyzer);
 
+        
+
+
+        //Old analyzer
 		do_timing_analysis(raw_slacks, timing_inf, true, false);
+        slacks = convert_raw_slacks_to_prepack_slacks(raw_slacks);
+
+        for(AtomPinId pin : g_atom_nl.pins()) {
+            vtr::printf("Pin: %zu Node: %zu\n", pin, g_atom_map.pin_tnode[pin]);
+
+            //Slacks
+            vtr::printf("\tTatum Slack: %12g Crit: %8f\n", opt_slack.setup_slack(pin), opt_slack.setup_criticality(pin));
+            vtr::printf("\tVTR   Slack: %12g Crit: %8f\n", slacks.slack[pin], slacks.timing_criticality[pin]);
+        }
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))
@@ -419,7 +442,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				print_criticality(raw_slacks, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
 		}
 
-        slacks = convert_raw_slacks_to_prepack_slacks(raw_slacks);
 
 		for (auto blk_id : g_atom_nl.blocks()) {
 			critindexarray.push_back(blk_id);
