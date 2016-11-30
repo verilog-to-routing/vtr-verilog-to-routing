@@ -29,9 +29,8 @@ class TimingTags {
         template<class T>
         class Iterator;
     private:
-        //In practice the vast majority of nodes have only two or one
-        //tags, so we reserve space for two to avoid costly memory
-        //allocations
+        //In practice the vast majority of nodes have only a handful of tags,
+        //so we reserve space for some to avoid costly memory allocations
         constexpr static size_t DEFAULT_TAGS_TO_RESERVE = 3;
         constexpr static size_t GROWTH_FACTOR = 2;
 
@@ -124,7 +123,7 @@ class TimingTags {
                 Iterator& operator+=(size_t n) { p_ += n; return *this; }
                 Iterator& operator-=(size_t n) { p_ -= n; return *this; }
                 friend Iterator operator+(Iterator lhs, size_t rhs) { return lhs += rhs; }
-                friend Iterator operator-(Iterator lhs, size_t rhs) { return lhs += rhs; }
+                friend Iterator operator-(Iterator lhs, size_t rhs) { return lhs -= rhs; }
 
                 friend difference_type operator-(const Iterator lhs, const Iterator rhs) { return lhs.p_ - rhs.p_; }
 
