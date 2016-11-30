@@ -72,7 +72,7 @@ void write_dot_file_setup(std::string filename,
             } else {
                 os << " for ";
             }
-            os << tag.launch_node();
+            os << tag.origin_node();
             os << "\\n";
             os << " time: " << tag.time().value();
             os << "}";
@@ -159,7 +159,7 @@ void write_dot_file_hold(std::string filename,
             } else {
                 os << " for ";
             }
-            os << tag.launch_node();
+            os << tag.origin_node();
             os << "\\n";
             os << " time: " << tag.time().value();
             os << "}";

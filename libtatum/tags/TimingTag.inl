@@ -8,8 +8,8 @@ namespace tatum {
 
 inline TimingTag::TimingTag()
     : time_(NAN)
-#ifdef TRACK_LAUNCH_NODE
-    , launch_node_(NodeId::INVALID())
+#ifdef TATUM_TRACK_ORIGIN_NODE
+    , origin_node_(NodeId::INVALID())
 #endif
     , launch_clock_domain_(DomainId::INVALID())
     , capture_clock_domain_(DomainId::INVALID())
@@ -19,15 +19,15 @@ inline TimingTag::TimingTag()
 inline TimingTag::TimingTag(const Time& time_val, 
                             const DomainId launch_domain, 
                             const DomainId capture_domain, 
-#ifdef TRACK_LAUNCH_NODE
+#ifdef TATUM_TRACK_ORIGIN_NODE
                             const NodeId node, 
 #else
                             const NodeId /*node*/,
 #endif
                             const TagType new_type)
     : time_(time_val)
-#ifdef TRACK_LAUNCH_NODE
-    , launch_node_(node)
+#ifdef TATUM_TRACK_ORIGIN_NODE
+    , origin_node_(node)
 #endif
     , launch_clock_domain_(launch_domain)
     , capture_clock_domain_(capture_domain)
@@ -36,8 +36,8 @@ inline TimingTag::TimingTag(const Time& time_val,
 
 inline TimingTag::TimingTag(const Time& time_val, const TimingTag& base_tag)
     : time_(time_val)
-#ifdef TRACK_LAUNCH_NODE
-    , launch_node_(base_tag.launch_node())
+#ifdef TATUM_TRACK_ORIGIN_NODE
+    , origin_node_(base_tag.origin_node())
 #endif
     , launch_clock_domain_(base_tag.launch_clock_domain())
     , capture_clock_domain_(base_tag.capture_clock_domain())
@@ -49,7 +49,7 @@ inline void TimingTag::update(const Time& new_time, const TimingTag& base_tag) {
     TATUM_ASSERT(type() == base_tag.type()); //Type must be the same
     TATUM_ASSERT(launch_clock_domain() == base_tag.launch_clock_domain()); //Domain must be the same
     set_time(new_time);
-    set_launch_node(base_tag.launch_node());
+    set_origin_node(base_tag.origin_node());
 }
 
 inline void TimingTag::max(const Time& new_time, const TimingTag& base_tag) {

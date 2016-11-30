@@ -255,7 +255,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
                         //Update the launch node, since the data is
                         //launching from this node
-                        launch_tag.set_launch_node(node_id);
+                        launch_tag.set_origin_node(node_id);
                         launch_tag.set_type(TagType::DATA_ARRIVAL);
 
                         //Mark propagated launch time as a DATA tag
