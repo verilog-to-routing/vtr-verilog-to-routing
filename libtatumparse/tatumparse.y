@@ -84,6 +84,7 @@
 %{
 
 #include <stdio.h>
+#include <cmath>
 #include "assert.h"
 
 #include "tatumparse.hpp"
@@ -120,8 +121,8 @@ using namespace tatumparse;
 %token DOMAIN "domain:"
 %token NAME "name:"
 %token CONSTRAINT "constraint:"
-%token SRC_DOMAIN "src_domain:"
-%token SINK_DOMAIN "sink_domain:"
+%token LAUNCH_DOMAIN "launch_domain:"
+%token CAPTURE_DOMAIN "capture_domain:"
 
 %token DELAY_MODEL "delay_model:"
 %token MIN_DELAY "min_delay:"
@@ -131,13 +132,16 @@ using namespace tatumparse;
 
 %token ANALYSIS_RESULTS "analysis_results:"
 %token SETUP_DATA "SETUP_DATA"
+%token SETUP_DATA_ARRIVAL "SETUP_DATA_ARRIVAL"
+%token SETUP_DATA_REQUIRED "SETUP_DATA_REQUIRED"
 %token SETUP_LAUNCH_CLOCK "SETUP_LAUNCH_CLOCK"
 %token SETUP_CAPTURE_CLOCK "SETUP_CAPTURE_CLOCK"
 %token HOLD_DATA "HOLD_DATA"
+%token HOLD_DATA_ARRIVAL "HOLD_DATA_ARRIVAL"
+%token HOLD_DATA_REQUIRED "HOLD_DATA_REQUIRED"
 %token HOLD_LAUNCH_CLOCK "HOLD_LAUNCH_CLOCK"
 %token HOLD_CAPTURE_CLOCK "HOLD_CAPTURE_CLOCK"
-%token ARR "arr:"
-%token REQ "req:"
+%token TIME "time:"
 
 %token EOL "end-of-line"
 %token EOF 0 "end-of-file"
@@ -158,8 +162,8 @@ using namespace tatumparse;
 %type <std::vector<int>> OutEdges
 
 %type <int> DomainId
-%type <int> SrcDomainId
-%type <int> SinkDomainId
+%type <int> LaunchDomainId
+%type <int> CaptureDomainId
 %type <float> Constraint
 %type <std::string> Name
 %type <float> Number
@@ -167,8 +171,7 @@ using namespace tatumparse;
 %type <float> MinDelay
 %type <float> SetupTime
 %type <float> HoldTime
-%type <float> Req
-%type <float> Arr
+%type <float> Time
 %type <TagType> TagType
 
 /* Top level rule */
@@ -193,23 +196,26 @@ Constraints: TIMING_CONSTRAINTS EOL { callback.start_constraints(); }
            | Constraints TYPE CONSTANT_GENERATOR NodeId EOL { callback.add_constant_generator($4); }
            | Constraints TYPE INPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_input_constraint($4, $5, $6); }
            | Constraints TYPE OUTPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_output_constraint($4, $5, $6); }
-           | Constraints TYPE SETUP_CONSTRAINT SrcDomainId SinkDomainId Constraint EOL { callback.add_setup_constraint($4, $5, $6); }
-           | Constraints TYPE HOLD_CONSTRAINT SrcDomainId SinkDomainId Constraint EOL { callback.add_hold_constraint($4, $5, $6); }
+           | Constraints TYPE SETUP_CONSTRAINT LaunchDomainId CaptureDomainId Constraint EOL { callback.add_setup_constraint($4, $5, $6); }
+           | Constraints TYPE HOLD_CONSTRAINT LaunchDomainId CaptureDomainId Constraint EOL { callback.add_hold_constraint($4, $5, $6); }
 
 DelayModel: DELAY_MODEL EOL { callback.start_delay_model(); }
         | DelayModel EdgeId MinDelay MaxDelay EOL { callback.add_edge_delay($2, $3, $4); }
         | DelayModel EdgeId SetupTime HoldTime EOL { callback.add_edge_setup_hold_time($2, $3, $4); }
 
 Results:  ANALYSIS_RESULTS EOL { callback.start_results(); }
-        | Results TagType NodeId DomainId Arr Req EOL { callback.add_tag($2, $3, $4, $5, $6); }
+        | Results TagType NodeId LaunchDomainId CaptureDomainId Time EOL { callback.add_tag($2, $3, $4, $5, NAN); }
 
-Arr: ARR Number { $$ = $2; }
-Req: REQ Number { $$ = $2; }
+Time: TIME Number { $$ = $2; }
 
 TagType: TYPE SETUP_DATA { $$ = TagType::SETUP_DATA; }
+       | TYPE SETUP_DATA_ARRIVAL { $$ = TagType::SETUP_DATA_ARRIVAL; }
+       | TYPE SETUP_DATA_REQUIRED { $$ = TagType::SETUP_DATA_REQUIRED; }
        | TYPE SETUP_LAUNCH_CLOCK { $$ = TagType::SETUP_LAUNCH_CLOCK; }
        | TYPE SETUP_CAPTURE_CLOCK { $$ = TagType::SETUP_CAPTURE_CLOCK; }
        | TYPE HOLD_DATA { $$ = TagType::HOLD_DATA; }
+       | TYPE HOLD_DATA_ARRIVAL { $$ = TagType::HOLD_DATA_ARRIVAL; }
+       | TYPE HOLD_DATA_REQUIRED { $$ = TagType::HOLD_DATA_REQUIRED; }
        | TYPE HOLD_LAUNCH_CLOCK { $$ = TagType::HOLD_LAUNCH_CLOCK; }
        | TYPE HOLD_CAPTURE_CLOCK { $$ = TagType::HOLD_CAPTURE_CLOCK; }
 
@@ -219,8 +225,8 @@ SetupTime: SETUP_TIME Number { $$ = $2; }
 HoldTime: HOLD_TIME Number { $$ = $2; }
 
 DomainId: DOMAIN INT { $$ = $2; }
-SrcDomainId: SRC_DOMAIN INT { $$ = $2; }
-SinkDomainId: SINK_DOMAIN INT { $$ = $2; }
+LaunchDomainId: LAUNCH_DOMAIN INT { $$ = $2; }
+CaptureDomainId: CAPTURE_DOMAIN INT { $$ = $2; }
 Constraint: CONSTRAINT Number { $$ = $2; }
 Name: NAME STRING { $$ = $2; }
 

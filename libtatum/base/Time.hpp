@@ -48,7 +48,9 @@ class Time {
         Time& operator+=(const Time& rhs);
         Time& operator-=(const Time& rhs);
 
-        friend bool operator==(const Time& lhs, const Time& rhs);
+        friend bool operator==(const Time lhs, const Time rhs);
+        friend bool operator<(const Time lhs, const Time rhs);
+        friend bool operator>(const Time lhs, const Time rhs);
         friend Time operator-(const Time val);
 
     private:

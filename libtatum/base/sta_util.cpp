@@ -145,7 +145,7 @@ void print_setup_tags_histogram(const TimingGraph& tg, const SetupTimingAnalyzer
     std::cout << "Node Total Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> total_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        total_tag_cnts[analyzer.get_setup_tags(i).size()]++;
+        total_tag_cnts[analyzer.setup_tags(i).size()]++;
     }
 
     int total_tags = std::accumulate(total_tag_cnts.begin(), total_tag_cnts.end(), 0, totaler);
@@ -153,21 +153,32 @@ void print_setup_tags_histogram(const TimingGraph& tg, const SetupTimingAnalyzer
         std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_tags << ")" << std::endl;
     }
 
-    std::cout << "Node Data Setup Tag Count Histogram:" << std::endl;
-    std::map<int,int> data_tag_cnts;
+    std::cout << "Node Data Arrival Setup Tag Count Histogram:" << std::endl;
+    std::map<int,int> data_arrival_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        data_tag_cnts[analyzer.get_setup_data_tags(i).size()]++;
+        data_arrival_tag_cnts[analyzer.setup_tags(i, TagType::DATA_ARRIVAL).size()]++;
     }
 
-    int total_data_tags = std::accumulate(data_tag_cnts.begin(), data_tag_cnts.end(), 0, totaler);
-    for(const auto& kv : data_tag_cnts) {
+    int total_data_arrival_tags = std::accumulate(data_arrival_tag_cnts.begin(), data_arrival_tag_cnts.end(), 0, totaler);
+    for(const auto& kv : data_arrival_tag_cnts) {
+        std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_data_arrival_tags << ")" << std::endl;
+    }
+
+    std::cout << "Node Data Required Setup Tag Count Histogram:" << std::endl;
+    std::map<int,int> data_required_tag_cnts;
+    for(const NodeId i : tg.nodes()) {
+        data_required_tag_cnts[analyzer.setup_tags(i, TagType::DATA_REQUIRED).size()]++;
+    }
+
+    int total_data_tags = std::accumulate(data_required_tag_cnts.begin(), data_required_tag_cnts.end(), 0, totaler);
+    for(const auto& kv : data_required_tag_cnts) {
         std::cout << "\t" << kv.first << " Tags: " << std::setw(int_width) << kv.second << " (" << std::setw(flt_width) << std::fixed << (float) kv.second / total_data_tags << ")" << std::endl;
     }
 
     std::cout << "Node Clock Launch Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> clock_launch_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        clock_launch_tag_cnts[analyzer.get_setup_launch_clock_tags(i).size()]++;
+        clock_launch_tag_cnts[analyzer.setup_tags(i, TagType::CLOCK_LAUNCH).size()]++;
     }
 
     int total_clock_launch_tags = std::accumulate(clock_launch_tag_cnts.begin(), clock_launch_tag_cnts.end(), 0, totaler);
@@ -178,7 +189,7 @@ void print_setup_tags_histogram(const TimingGraph& tg, const SetupTimingAnalyzer
     std::cout << "Node Clock Capture Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> clock_capture_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        clock_capture_tag_cnts[analyzer.get_setup_capture_clock_tags(i).size()]++;
+        clock_capture_tag_cnts[analyzer.setup_tags(i, TagType::CLOCK_CAPTURE).size()]++;
     }
 
     int total_clock_capture_tags = std::accumulate(clock_capture_tag_cnts.begin(), clock_capture_tag_cnts.end(), 0, totaler);
@@ -199,7 +210,7 @@ void print_hold_tags_histogram(const TimingGraph& tg, const HoldTimingAnalyzer& 
     std::cout << "Node Total Hold Tag Count Histogram:" << std::endl;
     std::map<int,int> total_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        total_tag_cnts[analyzer.get_hold_tags(i).size()]++;
+        total_tag_cnts[analyzer.hold_tags(i).size()]++;
     }
 
     int total_tags = std::accumulate(total_tag_cnts.begin(), total_tag_cnts.end(), 0, totaler);
@@ -210,7 +221,7 @@ void print_hold_tags_histogram(const TimingGraph& tg, const HoldTimingAnalyzer& 
     std::cout << "Node Data Hold Tag Count Histogram:" << std::endl;
     std::map<int,int> data_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        data_tag_cnts[analyzer.get_hold_data_tags(i).size()]++;
+        data_tag_cnts[analyzer.hold_tags(i).size()]++;
     }
 
     int total_data_tags = std::accumulate(data_tag_cnts.begin(), data_tag_cnts.end(), 0, totaler);
@@ -221,7 +232,7 @@ void print_hold_tags_histogram(const TimingGraph& tg, const HoldTimingAnalyzer& 
     std::cout << "Node Clock Launch Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> clock_launch_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        clock_launch_tag_cnts[analyzer.get_hold_launch_clock_tags(i).size()]++;
+        clock_launch_tag_cnts[analyzer.hold_tags(i, TagType::CLOCK_LAUNCH).size()]++;
     }
 
     int total_clock_launch_tags = std::accumulate(clock_launch_tag_cnts.begin(), clock_launch_tag_cnts.end(), 0, totaler);
@@ -232,7 +243,7 @@ void print_hold_tags_histogram(const TimingGraph& tg, const HoldTimingAnalyzer& 
     std::cout << "Node Clock Capture Setup Tag Count Histogram:" << std::endl;
     std::map<int,int> clock_capture_tag_cnts;
     for(const NodeId i : tg.nodes()) {
-        clock_capture_tag_cnts[analyzer.get_hold_capture_clock_tags(i).size()]++;
+        clock_capture_tag_cnts[analyzer.hold_tags(i, TagType::CLOCK_CAPTURE).size()]++;
     }
 
     int total_clock_capture_tags = std::accumulate(clock_capture_tag_cnts.begin(), clock_capture_tag_cnts.end(), 0, totaler);
@@ -249,25 +260,11 @@ void print_setup_tags(const TimingGraph& tg, const SetupTimingAnalyzer& analyzer
         std::cout << "Level: " << level_id << std::endl;
         for(NodeId node_id : tg.level_nodes(level_id)) {
             std::cout << "Node: " << node_id << " (" << tg.node_type(node_id) << ")" << std::endl;;
-            for(const TimingTag& tag : analyzer.get_setup_data_tags(node_id)) {
-                std::cout << "\tData : ";
-                std::cout << "  clk: " << tag.clock_domain();
-                std::cout << "  Arr: " << tag.arr_time().value();
-                std::cout << "  Req: " << tag.req_time().value();
-                std::cout << std::endl;
-            }
-            for(const TimingTag& tag : analyzer.get_setup_launch_clock_tags(node_id)) {
-                std::cout << "\tClock Launch: ";
-                std::cout << "  clk: " << tag.clock_domain();
-                std::cout << "  Arr: " << tag.arr_time().value();
-                std::cout << "  Req: " << tag.req_time().value();
-                std::cout << std::endl;
-            }
-            for(const TimingTag& tag : analyzer.get_setup_capture_clock_tags(node_id)) {
-                std::cout << "\tClock Capture: ";
-                std::cout << "  clk: " << tag.clock_domain();
-                std::cout << "  Arr: " << tag.arr_time().value();
-                std::cout << "  Req: " << tag.req_time().value();
+            for(const TimingTag& tag : analyzer.setup_tags(node_id)) {
+                std::cout << "\t" << tag.type() << ": ";
+                std::cout << "  launch : " << tag.launch_clock_domain();
+                std::cout << "  capture : " << tag.capture_clock_domain();
+                std::cout << "  time: " << tag.time().value();
                 std::cout << std::endl;
             }
         }
@@ -283,25 +280,11 @@ void print_hold_tags(const TimingGraph& tg, const HoldTimingAnalyzer& analyzer) 
         std::cout << "Level: " << level_id << std::endl;
         for(NodeId node_id : tg.level_nodes(level_id)) {
             std::cout << "Node: " << node_id << " (" << tg.node_type(node_id) << ")" << std::endl;;
-            for(const TimingTag& tag : analyzer.get_hold_data_tags(node_id)) {
-                std::cout << "\tData : ";
-                std::cout << "  clk: " << tag.clock_domain();
-                std::cout << "  Arr: " << tag.arr_time().value();
-                std::cout << "  Req: " << tag.req_time().value();
-                std::cout << std::endl;
-            }
-            for(const TimingTag& tag : analyzer.get_hold_launch_clock_tags(node_id)) {
-                std::cout << "\tClock Launch: ";
-                std::cout << "  clk: " << tag.clock_domain();
-                std::cout << "  Arr: " << tag.arr_time().value();
-                std::cout << "  Req: " << tag.req_time().value();
-                std::cout << std::endl;
-            }
-            for(const TimingTag& tag : analyzer.get_hold_capture_clock_tags(node_id)) {
-                std::cout << "\tClock Capture: ";
-                std::cout << "  clk: " << tag.clock_domain();
-                std::cout << "  Arr: " << tag.arr_time().value();
-                std::cout << "  Req: " << tag.req_time().value();
+            for(const TimingTag& tag : analyzer.hold_tags(node_id)) {
+                std::cout << "\t" << tag.type() << ": ";
+                std::cout << "  launch : " << tag.launch_clock_domain();
+                std::cout << "  capture : " << tag.capture_clock_domain();
+                std::cout << "  time: " << tag.time().value();
                 std::cout << std::endl;
             }
         }

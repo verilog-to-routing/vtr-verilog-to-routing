@@ -1,6 +1,8 @@
 #
 # Compiler flags come from parent
 #
+option(TATUM_STA_ENABLE_VTUNE_PROFILE "Enable selective sampling in VTUNE" OFF)
+option(TATUM_STA_ENABLE_CALLGRIND_PROFILE "Enable selective sampling with callgrind" OFF)
 
 #
 #
@@ -44,8 +46,23 @@ add_executable(tatum_sta
 
 #Exectuable Includes
 target_include_directories(tatum_sta PRIVATE
-                           ${TATUM_STA_INCLUDE_DIRS}
-                           )
+                           ${TATUM_STA_INCLUDE_DIRS})
 
 #Executable links to the library
 target_link_libraries(tatum_sta libtatum libtatumparse)
+
+if(TATUM_STA_ENABLE_VTUNE_PROFILE)
+    target_include_directories(tatum_sta PRIVATE /opt/intel/vtune_amplifier_xe/include)
+    target_link_libraries(tatum_sta /opt/intel/vtune_amplifier_xe/lib64/libittnotify.a ${CMAKE_DL_LIBS})
+    target_compile_definitions(tatum_sta PRIVATE TATUM_STA_PROFILE_VTUNE=1)
+    target_compile_options(tatum_sta PUBLIC -g)
+endif()
+
+if(TATUM_STA_ENABLE_CALLGRIND_PROFILE)
+    
+    #To selectively profile using callgrind:
+    #  valgrind --tool=callgrind --collect-atstart=no --instr-atstart=no --cache-sim=yes --cacheuse=yes ./command
+
+    target_compile_definitions(tatum_sta PRIVATE TATUM_STA_PROFILE_CALLGRIND=1)
+    target_compile_options(tatum_sta PUBLIC -g)
+endif()

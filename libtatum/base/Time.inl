@@ -84,6 +84,18 @@ inline Time operator-(Time in) {
     return in;
 }
 #else //Scalar case (TIME_VEC_WIDTH == 1)
+inline bool operator==(const Time lhs, const Time rhs) {
+    return lhs.time_ == rhs.time_;
+}
+
+inline bool operator<(const Time lhs, const Time rhs) {
+    return lhs.time_ < rhs.time_;
+}
+
+inline bool operator>(const Time lhs, const Time rhs) {
+    return lhs.time_ > rhs.time_;
+}
+
 inline Time operator-(Time in) {
     in.time_ = -in.time_;
     return in;

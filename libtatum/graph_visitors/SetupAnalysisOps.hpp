@@ -22,11 +22,11 @@ class SetupAnalysisOps : public CommonAnalysisOps {
         }
 
         void merge_req_tags(const NodeId node, const Time time, const TimingTag& ref_tag, bool arrival_must_be_valid=false) { 
-            node_tags_[node].min_req(time, ref_tag, arrival_must_be_valid); 
+            node_tags_[node].min(time, ref_tag, arrival_must_be_valid); 
         }
 
         void merge_arr_tags(const NodeId node, const Time time, const TimingTag& ref_tag) { 
-            node_tags_[node].max_arr(time, ref_tag); 
+            node_tags_[node].max(time, ref_tag); 
         }
 
         template<class DelayCalc>

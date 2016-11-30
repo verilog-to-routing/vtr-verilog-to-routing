@@ -83,8 +83,8 @@ HOLD_CONSTRAINT                 { return tatumparse::Parser::make_HOLD_CONSTRAIN
 domain:                         { return tatumparse::Parser::make_DOMAIN(); }
 name:                           { return tatumparse::Parser::make_NAME(); }
 constraint:                     { return tatumparse::Parser::make_CONSTRAINT(); }
-src_domain:                     { return tatumparse::Parser::make_SRC_DOMAIN(); }
-sink_domain:                    { return tatumparse::Parser::make_SINK_DOMAIN(); }
+launch_domain:                  { return tatumparse::Parser::make_LAUNCH_DOMAIN(); }
+capture_domain:                 { return tatumparse::Parser::make_CAPTURE_DOMAIN(); }
 
 delay_model:                    { return tatumparse::Parser::make_DELAY_MODEL(); }
 min_delay:                      { return tatumparse::Parser::make_MIN_DELAY(); }
@@ -94,16 +94,19 @@ hold_time:                      { return tatumparse::Parser::make_HOLD_TIME(); }
 
 analysis_result:                { return tatumparse::Parser::make_ANALYSIS_RESULTS(); }
 SETUP_DATA                      { return tatumparse::Parser::make_SETUP_DATA(); }
+SETUP_DATA_ARRIVAL              { return tatumparse::Parser::make_SETUP_DATA_ARRIVAL(); }
+SETUP_DATA_REQUIRED             { return tatumparse::Parser::make_SETUP_DATA_REQUIRED(); }
 SETUP_LAUNCH_CLOCK               { return tatumparse::Parser::make_SETUP_LAUNCH_CLOCK(); }
 SETUP_CAPTURE_CLOCK             { return tatumparse::Parser::make_SETUP_CAPTURE_CLOCK(); }
 HOLD_DATA                       { return tatumparse::Parser::make_HOLD_DATA(); }
+HOLD_DATA_ARRIVAL              { return tatumparse::Parser::make_HOLD_DATA_ARRIVAL(); }
+HOLD_DATA_REQUIRED             { return tatumparse::Parser::make_HOLD_DATA_REQUIRED(); }
 HOLD_LAUNCH_CLOCK                { return tatumparse::Parser::make_HOLD_LAUNCH_CLOCK(); }
 HOLD_CAPTURE_CLOCK              { return tatumparse::Parser::make_HOLD_CAPTURE_CLOCK(); }
 
-arr:                            { return tatumparse::Parser::make_ARR(); }
-req:                            { return tatumparse::Parser::make_REQ(); }
+time:                            { return tatumparse::Parser::make_TIME(); }
 
-{DIGIT}+                        { return tatumparse::Parser::make_INT(atoi(tatumparse_get_text(yyscanner))); }
+[+-]?{DIGIT}+                        { return tatumparse::Parser::make_INT(atoi(tatumparse_get_text(yyscanner))); }
 (nan)|([-+]?(inf|((({DIGIT}*\.?{DIGIT}+)|({DIGIT}+\.))([eE][-+]?{DIGIT}+)?))) { 
                                     return tatumparse::Parser::make_FLOAT(atof(tatumparse_get_text(yyscanner)));
                                 }

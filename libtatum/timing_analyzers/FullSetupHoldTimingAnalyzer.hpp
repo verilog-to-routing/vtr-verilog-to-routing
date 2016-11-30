@@ -26,6 +26,8 @@ class FullSetupHoldTimingAnalyzer : public SetupHoldTimingAnalyzer {
 
     protected:
         virtual void update_timing_impl() override {
+            graph_walker_.do_reset(timing_graph_, setup_hold_visitor_);
+
             graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, setup_hold_visitor_);            
             graph_walker_.do_arrival_traversal(timing_graph_, timing_constraints_, delay_calculator_, setup_hold_visitor_);            
 
@@ -33,17 +35,12 @@ class FullSetupHoldTimingAnalyzer : public SetupHoldTimingAnalyzer {
             graph_walker_.do_required_traversal(timing_graph_, timing_constraints_, delay_calculator_, setup_hold_visitor_);            
         }
 
-        virtual void reset_timing_impl() override { setup_hold_visitor_.reset(); }
-
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
 
-        const TimingTags& get_setup_data_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.get_setup_data_tags(node_id); }
-        const TimingTags& get_setup_launch_clock_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.get_setup_launch_clock_tags(node_id); }
-        const TimingTags& get_setup_capture_clock_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.get_setup_capture_clock_tags(node_id); }
-
-        const TimingTags& get_hold_data_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.get_hold_data_tags(node_id); }
-        const TimingTags& get_hold_launch_clock_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.get_hold_launch_clock_tags(node_id); }
-        const TimingTags& get_hold_capture_clock_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.get_hold_capture_clock_tags(node_id); }
+        TimingTags::tag_range setup_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.setup_tags(node_id); }
+        TimingTags::tag_range setup_tags_impl(NodeId node_id, TagType type) const override { return setup_hold_visitor_.setup_tags(node_id, type); }
+        TimingTags::tag_range hold_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.hold_tags(node_id); }
+        TimingTags::tag_range hold_tags_impl(NodeId node_id, TagType type) const override { return setup_hold_visitor_.hold_tags(node_id, type); }
 
     private:
         const TimingGraph& timing_graph_;
