@@ -405,7 +405,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
         std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(tg, tc, dc);
 
-        OptimizerSlack opt_slack(g_atom_nl, g_atom_map, analyzer);
+        OptimizerSlack opt_slack(g_atom_nl, g_atom_map, analyzer, tg);
         opt_slack.update();
 
         auto dc_sp = std::make_shared<tatum::FixedDelayCalculator>(dc);

@@ -66,16 +66,23 @@ class SetupSlackEvaluator : public SlackEvaluator {
 //  from "Robust Optimization of Mulitple Timing Constraints" (ROMTC)
 class OptimizerSlack : public SetupSlackEvaluator {
     public:
-        OptimizerSlack(const AtomNetlist& netlist, const AtomMap& atom_map, std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer)
+        OptimizerSlack(const AtomNetlist& netlist, const AtomMap& atom_map, std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer, const tatum::TimingGraph& tg)
             : SetupSlackEvaluator(netlist, atom_map, analyzer)
-            , per_constraint_slacks_(netlist_.pins().size()) {}
+            , tg_(tg)
+            , per_constraint_raw_slacks_(netlist_.pins().size())
+            {}
 
     private:
         void update_setup_slacks() override {
+            
+            update_max_arrival();
+
             for(AtomPinId pin : netlist_.pins()) {
 
                 initialize_per_constraint_info(pin);
+            }
 
+            for(AtomPinId pin : netlist_.pins()) {
                 setup_slack_[pin] = pin_slack(pin);
             }
         }
@@ -88,6 +95,37 @@ class OptimizerSlack : public SetupSlackEvaluator {
 
     private:
 
+        struct DomainPair {
+            tatum::DomainId launch;
+            tatum::DomainId capture;
+
+            friend bool operator<(const DomainPair& lhs, const DomainPair& rhs) {
+                if(lhs.launch < rhs.launch) return true;
+                return lhs.capture < rhs.capture;
+            }
+        };
+
+        struct SlackOrigin {
+            float slack;
+            tatum::NodeId origin_node;
+        };
+
+        void update_max_arrival() {
+            for(tatum::NodeId node : tg_.primary_outputs()) {
+                for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(node, tatum::TagType::DATA_ARRIVAL)) {
+                    float arr_time = tag.time().value();
+
+                    tatum::DomainId launch = tag.launch_clock_domain();
+
+                    if(max_arr_.count(launch)) {
+                        max_arr_[launch] = std::max(max_arr_[launch], arr_time);
+                    } else {
+                        max_arr_[launch] = arr_time;
+                    }
+                }
+            }
+        }
+
         //Initializes the per-constraint slacks at the specified node
         void initialize_per_constraint_info(const AtomPinId pin) {
             tatum::NodeId node = atom_map_.pin_tnode[pin];
@@ -98,48 +136,61 @@ class OptimizerSlack : public SetupSlackEvaluator {
                 arr_times[tag.launch_clock_domain()] = tag.time().value();
             }
 
-
-            //Calculate the slacks and relaxed required time
+            //Calculate the raw slacks
             for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
                 float req_time = tag.time().value();
+
                 float arr_time = arr_times[tag.launch_clock_domain()];
-                auto domains = std::make_pair(tag.launch_clock_domain(), tag.capture_clock_domain());
 
+                DomainPair domains = {tag.launch_clock_domain(), tag.capture_clock_domain()};
 
-                //Calculate the slack
+                //Calculate and save the raw the slack
                 float slack = req_time - arr_time;
 
-                //Save it
-                per_constraint_slacks_[pin].insert(std::make_pair(domains, slack));
+                per_constraint_raw_slacks_[pin][domains] = {slack,tag.origin_node()};
 
+                //Record the per sink/constraint worst-case values
+                if(tg_.node_type(node) == tatum::NodeType::SINK) {
 
-                //Calculate the relaxed required time (Equation 16 of ROMTC)
-                float req_relaxed = std::max(req_time, arr_time);
+                    //Record the maximum relaxed required time per constraint
+                    float req_relaxed = std::max(req_time, max_arr_[tag.launch_clock_domain()]);
+                    if(max_req_relaxed_.count(domains)) {
+                        max_req_relaxed_[domains] = std::max(max_req_relaxed_[domains], req_relaxed);
+                    } else {
+                        max_req_relaxed_[domains] = req_relaxed;
+                    }
 
-                //Record the maximum relaxed required time per constraint
-                if(per_constraint_req_relaxed_.count(domains)) {
-                    per_constraint_req_relaxed_[domains] = std::max(req_relaxed, per_constraint_req_relaxed_[domains]);
-                } else {
-                    per_constraint_req_relaxed_[domains] = req_relaxed;
+                    //Record the shift required
+                    float shift = req_relaxed - req_time;
+
+                    //Record the max shift, per sink node and constraint
+                    if(shifts_[node].count(domains)) {
+                        //Keep the largest shift (i.e. minimal slack)
+                        shifts_[node][domains] = std::max(shifts_[node][domains], shift);
+                    } else {
+                        shifts_[node][domains] = shift;
+                    }
                 }
-
             }
         }
 
         //Return the worst-case slack for the specified pin
-        float pin_slack(const AtomPinId pin) const {
-            //Minimum slack over all constraints (Equation 11 of ROMTC)
+        float pin_slack(const AtomPinId pin) {
+            //Minimum slack over all constraints
             float min_slack = NAN;
 
-            for(const auto& kv : per_constraint_slacks_[pin]) {
-                float slack = kv.second;
+            for(const auto& kv : per_constraint_raw_slacks_[pin]) {
+                const auto& domains = kv.first;
 
-                if(isnan(min_slack) || slack < min_slack) {
+                float slack = shifted_slack(pin, domains);
+
+                //Keep the minimum accross all constraints
+                if(std::isnan(min_slack) || slack < min_slack) {
                     min_slack = slack;
                 }
             }
 
-            VTR_ASSERT(per_constraint_slacks_[pin].empty() || !isnan(min_slack));
+            VTR_ASSERT(per_constraint_raw_slacks_[pin].empty() || !std::isnan(min_slack));
 
             return min_slack;
         }
@@ -149,28 +200,56 @@ class OptimizerSlack : public SetupSlackEvaluator {
             float max_criticality = NAN;
 
             //Maximum criticality over all constraints using per-constraint
-            //relaxed required time (Equation 13 of ROMTC)
-            for(const auto& kv : per_constraint_slacks_[pin]) {
-                auto domains = kv.first;
-                float slack = kv.second;
+            //relaxed required time
+            for(const auto& kv : per_constraint_raw_slacks_[pin]) {
+                auto& domains = kv.first;
 
-                float criticality = 1. - (slack / per_constraint_req_relaxed_[domains]);
+                float slack = shifted_slack(pin, domains);
+                float max_req = shifted_max_req(domains);
 
-                if(isnan(max_criticality) || max_criticality < criticality) {
+                float criticality = 1. - (slack / max_req);
+
+                if(std::isnan(max_criticality) || max_criticality < criticality) {
                     max_criticality = criticality;
                 }
             }
 
-            VTR_ASSERT(per_constraint_slacks_[pin].empty() || !isnan(max_criticality));
+            VTR_ASSERT(per_constraint_raw_slacks_[pin].empty() || !std::isnan(max_criticality));
 
             return max_criticality;
         }
 
-    private:
-        typedef std::map<std::pair<tatum::DomainId,tatum::DomainId>,float> PerConstraintValues;
+        float shifted_slack(AtomPinId pin, DomainPair constr) {
+            VTR_ASSERT(per_constraint_raw_slacks_[pin].count(constr));
 
-        vtr::linear_map<AtomPinId,PerConstraintValues> per_constraint_slacks_;
-        PerConstraintValues per_constraint_req_relaxed_;
+            SlackOrigin slack_origin = per_constraint_raw_slacks_[pin][constr];
+
+            VTR_ASSERT(shifts_.count(slack_origin.origin_node));
+            VTR_ASSERT(shifts_[slack_origin.origin_node].count(constr));
+
+            float shift = shifts_[slack_origin.origin_node][constr];
+
+            float raw_slack = slack_origin.slack;
+            return raw_slack + shift;
+        }
+
+        float shifted_max_req(DomainPair constr) {
+            VTR_ASSERT(max_req_relaxed_.count(constr));
+
+            float max_req_relaxed = max_req_relaxed_[constr];
+
+            return max_req_relaxed;
+        }
+
+    private:
+        typedef std::map<DomainPair,float> PerConstraintValues;
+        typedef std::map<DomainPair,tatum::NodeId> PerConstraintNodeId;
+
+        const tatum::TimingGraph& tg_;
+        vtr::linear_map<AtomPinId,std::map<DomainPair,SlackOrigin>> per_constraint_raw_slacks_;
+        std::map<tatum::NodeId,PerConstraintValues> shifts_;
+        PerConstraintValues max_req_relaxed_;
+        std::map<tatum::DomainId,float> max_arr_;
 };
 
 //AnalysisSlack produces slack and criticality which are appropriate for displaying to an end user.
@@ -225,7 +304,7 @@ class AnalysisSlack : public SetupSlackEvaluator {
 
                 float tag_slack = req_time - arr_time;
 
-                if(isnan(node_slack)) {
+                if(std::isnan(node_slack)) {
                     node_slack = tag_slack;
                 } else {
                     node_slack = std::min(min_slack, tag_slack);
@@ -239,7 +318,7 @@ class AnalysisSlack : public SetupSlackEvaluator {
             float max_req = NAN;
             for(tatum::NodeId node : tg.nodes()) { //TODO: should be able to loop only over output nodes...
                 for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(tatum::TagType::DATA_REQUIRED)) {
-                    if(isnan(max_req)) {
+                    if(std::isnan(max_req)) {
                         max_req = tag.time();
                     } else {
                         max_req = std::max(max_req, tag.time());
