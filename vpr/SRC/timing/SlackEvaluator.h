@@ -3,6 +3,7 @@
 #include <memory>
 #include "atom_netlist.h"
 #include "timing_analyzers.hpp"
+#include "vtr_flat_map.h"
 
 class SlackEvaluator {
     public:
@@ -24,12 +25,37 @@ class SetupSlackEvaluator : public SlackEvaluator {
     public:
         SetupSlackEvaluator(const AtomNetlist& netlist, const AtomMap& atom_map, std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer)
             : SlackEvaluator(netlist, atom_map)
-            , setup_slack_(netlist_.pins().size(), NAN)
-            , setup_criticality_(netlist_.pins().size(), NAN)
             , setup_analyzer_(analyzer) {}
 
-        float setup_slack(AtomPinId pin) { return setup_slack_[pin]; }
-        float setup_criticality(AtomPinId pin) { return setup_criticality_[pin]; }
+        float setup_slack(AtomPinId src_pin, AtomPinId sink_pin) { 
+            auto src_iter = setup_slacks_.find(src_pin);
+            if(src_iter == setup_slacks_.end()) {
+                VPR_THROW(VPR_ERROR_TIMING, "Invalid source pin");
+            }
+
+            auto& sink_pin_map = src_iter->second;
+            auto sink_iter = sink_pin_map.find(sink_pin);
+            if(sink_iter == sink_pin_map.end()) {
+                VPR_THROW(VPR_ERROR_TIMING, "Invalid sink pin");
+            }
+
+            return sink_iter->second;
+        }
+
+        float setup_criticality(AtomPinId src_pin, AtomPinId sink_pin) { 
+            auto src_iter = setup_criticalities_.find(src_pin);
+            if(src_iter == setup_criticalities_.end()) {
+                VPR_THROW(VPR_ERROR_TIMING, "Invalid source pin");
+            }
+
+            auto& sink_pin_map = src_iter->second;
+            auto sink_iter = sink_pin_map.find(sink_pin);
+            if(sink_iter == sink_pin_map.end()) {
+                VPR_THROW(VPR_ERROR_TIMING, "Invalid sink pin");
+            }
+
+            return sink_iter->second;
+        }
 
         void update() override {
             setup_analyzer_->update_timing();
@@ -42,8 +68,8 @@ class SetupSlackEvaluator : public SlackEvaluator {
         virtual void update_setup_slacks() = 0;
         virtual void update_setup_criticalities() = 0;
     protected:
-        vtr::linear_map<AtomPinId,float> setup_slack_;
-        vtr::linear_map<AtomPinId,float> setup_criticality_;
+        vtr::flat_map<AtomPinId,vtr::flat_map<AtomPinId,float>> setup_slacks_;
+        vtr::flat_map<AtomPinId,vtr::flat_map<AtomPinId,float>> setup_criticalities_;
         std::shared_ptr<tatum::SetupTimingAnalyzer> setup_analyzer_;
 };
 
@@ -66,31 +92,27 @@ class SetupSlackEvaluator : public SlackEvaluator {
 //  from "Robust Optimization of Mulitple Timing Constraints" (ROMTC)
 class OptimizerSlack : public SetupSlackEvaluator {
     public:
-        OptimizerSlack(const AtomNetlist& netlist, const AtomMap& atom_map, std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer, const tatum::TimingGraph& tg)
+        OptimizerSlack(const AtomNetlist& netlist, const AtomMap& atom_map, 
+                       std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer, 
+                       const tatum::TimingGraph& tg,
+                       const tatum::FixedDelayCalculator& dc)
             : SetupSlackEvaluator(netlist, atom_map, analyzer)
             , tg_(tg)
-            , per_constraint_raw_slacks_(netlist_.pins().size())
+            , dc_(dc)
+            , raw_edge_slacks_(tg_.edges().size())
             {}
 
     private:
         void update_setup_slacks() override {
-            
-            update_max_arrival();
+            update_raw_edge_slacks();
 
-            for(AtomPinId pin : netlist_.pins()) {
-
-                initialize_per_constraint_info(pin);
-            }
-
-            for(AtomPinId pin : netlist_.pins()) {
-                setup_slack_[pin] = pin_slack(pin);
-            }
+            update_pin_slacks();
         }
 
         void update_setup_criticalities() override {
-            for(AtomPinId pin : netlist_.pins()) {
-                setup_criticality_[pin] = pin_criticality(pin);
-            }
+            update_edge_shifts();
+
+            update_pin_criticalities();
         }
 
     private:
@@ -110,58 +132,64 @@ class OptimizerSlack : public SetupSlackEvaluator {
             tatum::NodeId origin_node;
         };
 
-        void update_max_arrival() {
+        void update_raw_edge_slacks() {
+            for(tatum::EdgeId edge : tg_.edges()) {
+                raw_edge_slacks_[edge].clear(); //Reset if updating
+
+                tatum::NodeId src_node = tg_.edge_src_node(edge); 
+                tatum::NodeId sink_node = tg_.edge_sink_node(edge); 
+
+                std::vector<std::pair<DomainPair,SlackOrigin>> slacks;
+
+                for(const tatum::TimingTag& src_tag : setup_analyzer_->setup_tags(src_node, tatum::TagType::DATA_ARRIVAL)) {
+                    float T_arr_src = src_tag.time().value();
+
+                    for(const tatum::TimingTag& sink_tag : setup_analyzer_->setup_tags(sink_node, tatum::TagType::DATA_REQUIRED)) {
+                        if(sink_tag.launch_clock_domain() != sink_tag.launch_clock_domain()) continue;
+
+                        float T_req_sink = sink_tag.time().value();
+
+                        float delay = dc_.max_edge_delay(tg_, edge).value();
+                        VTR_ASSERT(!std::isnan(delay));
+
+                        float slack = T_req_sink - T_arr_src - delay;
+
+                        DomainPair domains = {src_tag.launch_clock_domain(), sink_tag.launch_clock_domain()};
+                        SlackOrigin slack_origin = {slack, sink_tag.origin_node()};
+                        slacks.emplace_back(domains, slack_origin);
+                    }
+                }
+
+                raw_edge_slacks_[edge] = vtr::make_flat_map(std::move(slacks));
+            }
+        }
+
+        void update_edge_shifts() {
+
+            //Record the worst arrival times per launch domain
+            std::map<tatum::DomainId,float> max_arr;
             for(tatum::NodeId node : tg_.primary_outputs()) {
                 for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(node, tatum::TagType::DATA_ARRIVAL)) {
                     float arr_time = tag.time().value();
 
                     tatum::DomainId launch = tag.launch_clock_domain();
 
-                    if(max_arr_.count(launch)) {
-                        max_arr_[launch] = std::max(max_arr_[launch], arr_time);
+                    if(max_arr.count(launch)) {
+                        max_arr[launch] = std::max(max_arr[launch], arr_time);
                     } else {
-                        max_arr_[launch] = arr_time;
+                        max_arr[launch] = arr_time;
                     }
                 }
             }
-        }
 
-        //Initializes the per-constraint slacks at the specified node
-        void initialize_per_constraint_info(const AtomPinId pin) {
-            tatum::NodeId node = atom_map_.pin_tnode[pin];
+            //Determine the shift requried to relax required times and the maximum required time per domain
+            for(tatum::NodeId node : tg_.primary_outputs()) {
+                for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
+                    DomainPair domains = {tag.launch_clock_domain(), tag.capture_clock_domain()};
 
-            //Collect the per-domain arrival times
-            std::map<tatum::DomainId,float> arr_times;
-            for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(node, tatum::TagType::DATA_ARRIVAL)) {
-                arr_times[tag.launch_clock_domain()] = tag.time().value();
-            }
+                    float req_time = tag.time().value();
 
-            //Calculate the raw slacks
-            for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
-                float req_time = tag.time().value();
-
-                float arr_time = arr_times[tag.launch_clock_domain()];
-
-                DomainPair domains = {tag.launch_clock_domain(), tag.capture_clock_domain()};
-
-                //Calculate and save the raw the slack
-                float slack = req_time - arr_time;
-
-                per_constraint_raw_slacks_[pin][domains] = {slack,tag.origin_node()};
-
-                //Record the per sink/constraint worst-case values
-                if(tg_.node_type(node) == tatum::NodeType::SINK) {
-
-                    //Record the maximum relaxed required time per constraint
-                    float req_relaxed = std::max(req_time, max_arr_[tag.launch_clock_domain()]);
-                    if(max_req_relaxed_.count(domains)) {
-                        max_req_relaxed_[domains] = std::max(max_req_relaxed_[domains], req_relaxed);
-                    } else {
-                        max_req_relaxed_[domains] = req_relaxed;
-                    }
-
-                    //Record the shift required
-                    float shift = req_relaxed - req_time;
+                    float shift = std::max(0.f, max_arr[tag.launch_clock_domain()] - req_time);
 
                     //Record the max shift, per sink node and constraint
                     if(shifts_[node].count(domains)) {
@@ -170,41 +198,65 @@ class OptimizerSlack : public SetupSlackEvaluator {
                     } else {
                         shifts_[node][domains] = shift;
                     }
+
+                    //Record the max req time per constraint
+                    float max_req_relaxed = req_time + shift;
+                    if(max_req_relaxed_.count(domains)) {
+                        max_req_relaxed_[domains] = std::max(max_req_relaxed_[domains], max_req_relaxed);
+                    } else {
+                        max_req_relaxed_[domains] = max_req_relaxed;
+                    }
                 }
             }
         }
 
-        //Return the worst-case slack for the specified pin
-        float pin_slack(const AtomPinId pin) {
-            //Minimum slack over all constraints
-            float min_slack = NAN;
+        void update_pin_criticalities() {
+            setup_criticalities_.clear();
 
-            for(const auto& kv : per_constraint_raw_slacks_[pin]) {
-                const auto& domains = kv.first;
+            for(tatum::EdgeId edge : tg_.edges()) {
+                tatum::NodeId src_node = tg_.edge_src_node(edge);
+                tatum::NodeId sink_node = tg_.edge_sink_node(edge);
 
-                float slack = shifted_slack(pin, domains);
+                AtomPinId src_pin = atom_map_.pin_tnode[src_node];
+                AtomPinId sink_pin = atom_map_.pin_tnode[sink_node];
 
-                //Keep the minimum accross all constraints
-                if(std::isnan(min_slack) || slack < min_slack) {
-                    min_slack = slack;
-                }
+                float crit = criticality(edge);
+
+                setup_criticalities_[src_pin][sink_pin] = crit;
             }
-
-            VTR_ASSERT(per_constraint_raw_slacks_[pin].empty() || !std::isnan(min_slack));
-
-            return min_slack;
         }
 
-        //Return the criticality for the specified pin
-        float pin_criticality(const AtomPinId pin) {
+        void update_pin_slacks() {
+            for(tatum::EdgeId edge : tg_.edges()) {
+                tatum::NodeId src_node = tg_.edge_src_node(edge);
+                tatum::NodeId sink_node = tg_.edge_sink_node(edge);
+
+                AtomPinId src_pin = atom_map_.pin_tnode[src_node];
+                AtomPinId sink_pin = atom_map_.pin_tnode[sink_node];
+
+                float min_slack = NAN;
+
+                for(const auto& kv : raw_edge_slacks_[edge]) {
+                    float slack = kv.second.slack;
+                    if(std::isnan(min_slack) || slack < min_slack) {
+                        min_slack = slack; 
+                    }
+                }
+
+                setup_slacks_[src_pin][sink_pin] = min_slack;
+            }
+        }
+
+        float criticality(const tatum::EdgeId edge) {
             float max_criticality = NAN;
 
             //Maximum criticality over all constraints using per-constraint
             //relaxed required time
-            for(const auto& kv : per_constraint_raw_slacks_[pin]) {
-                auto& domains = kv.first;
+            for(const auto& kv : raw_edge_slacks_[edge]) {
+                const auto& domains = kv.first;
+                const auto& slack_origin = kv.second;
 
-                float slack = shifted_slack(pin, domains);
+                float slack = shifted_slack(domains, slack_origin);
                 float max_req = shifted_max_req(domains);
 
                 float criticality = 1. - (slack / max_req);
@@ -214,23 +266,22 @@ class OptimizerSlack : public SetupSlackEvaluator {
                 }
             }
 
-            VTR_ASSERT(per_constraint_raw_slacks_[pin].empty() || !std::isnan(max_criticality));
+            VTR_ASSERT(raw_edge_slacks_[edge].empty() || !std::isnan(max_criticality));
 
             return max_criticality;
         }
 
-        float shifted_slack(AtomPinId pin, DomainPair constr) {
-            VTR_ASSERT(per_constraint_raw_slacks_[pin].count(constr));
-
-            SlackOrigin slack_origin = per_constraint_raw_slacks_[pin][constr];
-
+        float shifted_slack(DomainPair constr, SlackOrigin slack_origin) {
             VTR_ASSERT(shifts_.count(slack_origin.origin_node));
             VTR_ASSERT(shifts_[slack_origin.origin_node].count(constr));
 
             float shift = shifts_[slack_origin.origin_node][constr];
 
             float raw_slack = slack_origin.slack;
-            return raw_slack + shift;
+
+            float shifted_slack = raw_slack + shift;
+
+            return shifted_slack;
         }
 
         float shifted_max_req(DomainPair constr) {
@@ -242,92 +293,13 @@ class OptimizerSlack : public SetupSlackEvaluator {
         }
 
     private:
-        typedef std::map<DomainPair,float> PerConstraintValues;
-        typedef std::map<DomainPair,tatum::NodeId> PerConstraintNodeId;
-
         const tatum::TimingGraph& tg_;
-        vtr::linear_map<AtomPinId,std::map<DomainPair,SlackOrigin>> per_constraint_raw_slacks_;
-        std::map<tatum::NodeId,PerConstraintValues> shifts_;
-        PerConstraintValues max_req_relaxed_;
-        std::map<tatum::DomainId,float> max_arr_;
+        const tatum::FixedDelayCalculator& dc_;
+
+        vtr::linear_map<tatum::EdgeId,vtr::flat_map<DomainPair,SlackOrigin>> raw_edge_slacks_;
+        std::map<tatum::NodeId,std::map<DomainPair,float>> shifts_;
+        std::map<DomainPair,float> max_req_relaxed_;
 };
 
-//AnalysisSlack produces slack and criticality which are appropriate for displaying to an end user.
-//If using slack/criticality in an optimizer use OptimizerSlack
-#if 0
-class AnalysisSlack : public SetupSlackEvaluator {
-    public:
-        AnalysisSlack(const AtomNelist& netlist, const AtomMap& atom_map, std::unique_ptr<tatum::SetupTimingAnalyzer> analyzer)
-            : SetupSlackEvaluator(netlist, atom_map, analyzer) {}
-
-    private:
-
-        void update_slacks() override {
-            //Re-calculate slacks
-            for(AtomPinId pin : netlist_.pins()) {
-                tatum::NodeId node = atom_map_.pin_tnode[pin];
-
-                slack_[pin] = min_node_slack(node);
-            }
-        }
-
-        void update_criticality() override {
-            //According to Equation (12) of "Robust Optimization of Multiple Timing Constriants"
-            //
-
-            //We first determine the maximum required time over all constraints
-            float max_req = max_req_time();
-
-            //Calculate the criticality
-            //  slack_ should have been initialized to the minimum slack 
-            //  (accross all constraints) for each pin
-            for(AtomPinId pin : netlist_.pins()) {
-                criticality_[pin] = 1. - (slack_[pin] / max_req);
-            }
-        }
-
-    private:
-        float min_node_slack(tatum::NodeId node) {
-            float node_slack = NAN;
-
-
-            //Collect the arrival times for each domain
-            std::map<tatum::DomainId,float> arr_times;
-            for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(tatum::TagType::DATA_ARRIVAL)) {
-                arr_times[tag.launch_clock_domain()] = tag.time().value();
-            }
-
-            //Calculate the slack for each tag and record the minimum
-            for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(tatum::TagType::DATA_REQUIRED)) {
-                float req_time = tag.time().value();
-                float arr_time = arr_times[tag.launch_clock_domain()];
-
-                float tag_slack = req_time - arr_time;
-
-                if(std::isnan(node_slack)) {
-                    node_slack = tag_slack;
-                } else {
-                    node_slack = std::min(min_slack, tag_slack);
-                }
-            }
-
-            return node_slack;
-        }
-
-        float max_req_time() {
-            float max_req = NAN;
-            for(tatum::NodeId node : tg.nodes()) { //TODO: should be able to loop only over output nodes...
-                for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(tatum::TagType::DATA_REQUIRED)) {
-                    if(std::isnan(max_req)) {
-                        max_req = tag.time();
-                    } else {
-                        max_req = std::max(max_req, tag.time());
-                    }
-                }
-            }
-            return max_req;
-        }
-};
-#endif
 
 #endif

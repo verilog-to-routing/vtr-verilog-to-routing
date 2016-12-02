@@ -102,26 +102,26 @@ class flat_map {
         size_type size() const { return vec_.size(); }
         size_type max_size() const { return vec_.max_size(); }
 
-        reference operator[](const key_type& key) {
+        mapped_type& operator[](const key_type& key) {
             auto iter = find(key);
             if(iter == end()) {
                 //Not found
                 iter = insert(std::make_pair(key,mapped_type())).first;
             }
 
-            return *iter;
+            return iter->second;
         }
 
-        reference at(const key_type& key) {
-            return const_cast<reference>(const_cast<const flat_map*>(this)->at(key));
+        mapped_type& at(const key_type& key) {
+            return const_cast<mapped_type&>(const_cast<const flat_map*>(this)->at(key));
         }
 
-        const_reference at(const key_type& key) const {
+        const mapped_type& at(const key_type& key) const {
             auto iter = find(key);
             if(iter == end()) {
                 throw std::out_of_range("Invalid key");
             }
-            return *iter;
+            return iter->second;
         }
 
         //Insert value
@@ -141,10 +141,12 @@ class flat_map {
         //Insert value with position hint
         iterator insert(const_iterator position, const value_type& value) {
             //In a legal position
-            VTR_ASSERT(key_compare((position - 1)->first, value.first));
-            VTR_ASSERT(!key_compare((position + 1)->first, value.first));
+            VTR_ASSERT(position == begin() || value_comp()(*(position - 1), value));
+            VTR_ASSERT(position == --end() || position == end() || !value_comp()(*(position + 1), value));
 
-            vec_.insert(position, value);
+            iterator iter = vec_.insert(position, value);
+
+            return iter;
         }
 
         //Insert range
@@ -205,7 +207,7 @@ class flat_map {
 
         iterator find(const key_type& key) {
             const_iterator const_iter = const_cast<const flat_map*>(this)->find(key);
-            return iterator(const_iter);
+            return convert_to_iterator(const_iter);
         }
 
         const_iterator find(const key_type& key) const {
@@ -223,16 +225,16 @@ class flat_map {
 
         iterator lower_bound(const key_type& key) {
             const_iterator const_iter = const_cast<const flat_map*>(this)->lower_bound(key); 
-            return iterator(const_iter);
+            return convert_to_iterator(const_iter);
         }
 
         const_iterator lower_bound(const key_type& key) const {
-            return std::lower_bound(begin(), end(), key, key_compare()); 
+            return std::lower_bound(begin(), end(), key, value_comp()); 
         }
 
         iterator upper_bound(const key_type& key) {
             const_iterator const_iter = const_cast<const flat_map*>(this)->upper_bound(key); 
-            return iterator(const_iter); 
+            return convert_to_iterator(const_iter);
         }
 
         const_iterator upper_bound(const key_type& key) const {
@@ -264,6 +266,25 @@ class flat_map {
             vec_.erase(std::unique(vec_.begin(), vec_.end(), key_equal_pred), vec_.end());
         }
 
+        iterator convert_to_iterator(const_iterator const_iter) {
+            //This is a work around for the fact that there is no conversion between
+            //a const_iterator and iterator.
+            //
+            //We intiailize i to the start of the container and then advance it by
+            //the distance to const_iter. The resulting i points to the same element
+            //as const_iter
+            //
+            //Note that to be able to call std::distance with an iterator and
+            //const_iterator we need to specify the type as const_iterator (relying
+            //on the implicit conversion from iterator to const_iterator for i)
+            //
+            //Since the iterators are really vector (i.e. random-access) iterators
+            //this takes constant time
+            iterator i = begin();
+            std::advance(i, std::distance<const_iterator>(i, const_iter));
+            return i;
+        }
+
     private:
         std::vector<value_type> vec_;
 };
@@ -272,11 +293,14 @@ template<class K, class T, class Compare>
 class flat_map<K,T,Compare>::value_compare {
     friend class flat_map;
     public:
-        typedef bool result_type;
-        typedef value_type first_argument_type;
-        typedef value_type second_argument_type;
+
         bool operator() (const value_type& x, const value_type& y) const {
             return comp(x.first, y.first);
+        }
+
+        //For std::lower_bound/std::upper_bound
+        bool operator() (const value_type& x, const key_type& y) const {
+            return comp(x.first, y);
         }
     private:
         value_compare(Compare c) : comp(c) {}

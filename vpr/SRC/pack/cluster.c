@@ -405,7 +405,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
         std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(tg, tc, dc);
 
-        OptimizerSlack opt_slack(g_atom_nl, g_atom_map, analyzer, tg);
+        OptimizerSlack opt_slack(g_atom_nl, g_atom_map, analyzer, tg, dc);
         opt_slack.update();
 
         auto dc_sp = std::make_shared<tatum::FixedDelayCalculator>(dc);
@@ -421,13 +421,32 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		do_timing_analysis(raw_slacks, timing_inf, true, false);
         slacks = convert_raw_slacks_to_prepack_slacks(raw_slacks);
 
-        for(AtomPinId pin : g_atom_nl.pins()) {
-            vtr::printf("Pin: %zu Node: %zu\n", pin, g_atom_map.pin_tnode[pin]);
+        vtr::printf("Start Slack Differences:\n");
+        size_t num_crit_diffs = 0;
+        float max_rel_diff = 0.;
+        for(AtomNetId net : g_atom_nl.nets()) {
+            AtomPinId driver = g_atom_nl.net_driver(net);
+            for(AtomPinId pin : g_atom_nl.net_sinks(net)) {
+                float tatum_crit = opt_slack.setup_criticality(driver, pin);
+                float vpr_crit = slacks.timing_criticality[pin];
+                float rel_diff = std::abs(tatum_crit - vpr_crit) / vpr_crit;
+                max_rel_diff = std::max(max_rel_diff, rel_diff);
+                if(rel_diff > 0.02) {
+                    num_crit_diffs++;
+                    vtr::printf("Net %zu Pins: %zu->%zu Nodes: %zu->%zu tnode: %d->%d\n", 
+                                                                                net,
+                                                                                driver, pin, 
+                                                                                g_atom_map.pin_tnode[driver], g_atom_map.pin_tnode[pin], 
+                                                                                g_atom_map.atom_pin_tnode(driver), g_atom_map.atom_pin_tnode(pin));
 
-            //Slacks
-            vtr::printf("\tTatum Slack: %12g Crit: %8f\n", opt_slack.setup_slack(pin), opt_slack.setup_criticality(pin));
-            vtr::printf("\tVTR   Slack: %12g Crit: %8f\n", slacks.slack[pin], slacks.timing_criticality[pin]);
+                    //Slacks
+                    vtr::printf("\tTatum Slack: %12g Crit: %12g\n", opt_slack.setup_slack(driver, pin), tatum_crit);
+                    vtr::printf("\tVTR   Slack: %12g Crit: %12g\n", slacks.slack[pin], vpr_crit);
+                    vtr::printf("\tRelative crit diff            : %12.3f\n", rel_diff);
+                }
+            }
         }
+        vtr::printf("End Slack Differences (%zu differences, max rel diff: %f)\n", num_crit_diffs, max_rel_diff);
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))
