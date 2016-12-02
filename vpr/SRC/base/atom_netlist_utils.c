@@ -745,11 +745,11 @@ size_t sweep_iterative(AtomNetlist& netlist,
         }
 
         if(should_sweep_blocks) {
-            pass_dangling_nets_swept += sweep_nets(netlist);
+            pass_dangling_blocks_swept += sweep_blocks(netlist);
         }
 
         if(should_sweep_nets) {
-            pass_dangling_blocks_swept += sweep_blocks(netlist);
+            pass_dangling_nets_swept += sweep_nets(netlist);
         }
 
         if(should_sweep_constant_primary_outputs) {
