@@ -28,33 +28,21 @@ class SetupSlackEvaluator : public SlackEvaluator {
             , setup_analyzer_(analyzer) {}
 
         float setup_slack(AtomPinId src_pin, AtomPinId sink_pin) { 
-            auto src_iter = setup_slacks_.find(src_pin);
-            if(src_iter == setup_slacks_.end()) {
-                VPR_THROW(VPR_ERROR_TIMING, "Invalid source pin");
+            auto iter = setup_slacks_.find({src_pin, sink_pin});
+            if(iter == setup_slacks_.end()) {
+                VPR_THROW(VPR_ERROR_TIMING, "Invalid source/sink pin during slack look-up (pins must be connected)");
             }
 
-            auto& sink_pin_map = src_iter->second;
-            auto sink_iter = sink_pin_map.find(sink_pin);
-            if(sink_iter == sink_pin_map.end()) {
-                VPR_THROW(VPR_ERROR_TIMING, "Invalid sink pin");
-            }
-
-            return sink_iter->second;
+            return iter->second;
         }
 
         float setup_criticality(AtomPinId src_pin, AtomPinId sink_pin) { 
-            auto src_iter = setup_criticalities_.find(src_pin);
-            if(src_iter == setup_criticalities_.end()) {
-                VPR_THROW(VPR_ERROR_TIMING, "Invalid source pin");
+            auto iter = setup_criticalities_.find({src_pin, sink_pin});
+            if(iter == setup_criticalities_.end()) {
+                VPR_THROW(VPR_ERROR_TIMING, "Invalid source/sink pin during criticality look-up (pins must be connected)");
             }
 
-            auto& sink_pin_map = src_iter->second;
-            auto sink_iter = sink_pin_map.find(sink_pin);
-            if(sink_iter == sink_pin_map.end()) {
-                VPR_THROW(VPR_ERROR_TIMING, "Invalid sink pin");
-            }
-
-            return sink_iter->second;
+            return iter->second;
         }
 
         void update() override {
@@ -68,8 +56,10 @@ class SetupSlackEvaluator : public SlackEvaluator {
         virtual void update_setup_slacks() = 0;
         virtual void update_setup_criticalities() = 0;
     protected:
-        vtr::flat_map<AtomPinId,vtr::flat_map<AtomPinId,float>> setup_slacks_;
-        vtr::flat_map<AtomPinId,vtr::flat_map<AtomPinId,float>> setup_criticalities_;
+        //vtr::flat_map<AtomPinId,vtr::flat_map<AtomPinId,float>> setup_slacks_;
+        //vtr::flat_map<AtomPinId,vtr::flat_map<AtomPinId,float>> setup_criticalities_;
+        vtr::flat_map<std::pair<AtomPinId,AtomPinId>,float> setup_slacks_;
+        vtr::flat_map<std::pair<AtomPinId,AtomPinId>,float> setup_criticalities_;
         std::shared_ptr<tatum::SetupTimingAnalyzer> setup_analyzer_;
 };
 
@@ -213,6 +203,8 @@ class OptimizerSlack : public SetupSlackEvaluator {
         void update_pin_criticalities() {
             setup_criticalities_.clear();
 
+            std::vector<std::pair<std::pair<AtomPinId,AtomPinId>,float>> criticalities;
+
             for(tatum::EdgeId edge : tg_.edges()) {
                 tatum::NodeId src_node = tg_.edge_src_node(edge);
                 tatum::NodeId sink_node = tg_.edge_sink_node(edge);
@@ -222,11 +214,16 @@ class OptimizerSlack : public SetupSlackEvaluator {
 
                 float crit = criticality(edge);
 
-                setup_criticalities_[src_pin][sink_pin] = crit;
+                auto key = std::make_pair(src_pin, sink_pin);
+                criticalities.push_back({key,crit});
             }
+            
+            setup_criticalities_ = vtr::make_flat_map(std::move(criticalities));
         }
 
         void update_pin_slacks() {
+            std::vector<std::pair<std::pair<AtomPinId,AtomPinId>,float>> slacks;
+
             for(tatum::EdgeId edge : tg_.edges()) {
                 tatum::NodeId src_node = tg_.edge_src_node(edge);
                 tatum::NodeId sink_node = tg_.edge_sink_node(edge);
@@ -243,8 +240,10 @@ class OptimizerSlack : public SetupSlackEvaluator {
                     }
                 }
 
-                setup_slacks_[src_pin][sink_pin] = min_slack;
+                auto key = std::make_pair(src_pin, sink_pin);
+                slacks.push_back({key,min_slack});
             }
+            setup_slacks_ = vtr::make_flat_map(slacks);
         }
 
         float criticality(const tatum::EdgeId edge) {
