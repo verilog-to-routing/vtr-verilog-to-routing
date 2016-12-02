@@ -21,6 +21,12 @@ std::string make_unconn(size_t& unconn_count, AtomPinType type);
 void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size_t>& minterms);
 
 
+void print_netlist(std::string filename, const AtomNetlist& netlist) {
+    FILE* f = std::fopen(filename.c_str(), "w");
+    print_netlist(f, netlist);
+    std::fclose(f);
+}
+
 void print_netlist(FILE* f, const AtomNetlist& netlist) {
 
     //Build a map of the blocks by type
@@ -127,7 +133,7 @@ void print_netlist(FILE* f, const AtomNetlist& netlist) {
             AtomBlockId pin_blk = netlist.pin_block(driver_pin);
             AtomBlockId port_blk = netlist.port_block(port);
             VTR_ASSERT(pin_blk == port_blk);
-            printf("\tDriver Block: '%s' Driver Pin: '%s[%u]'\n", netlist.block_name(pin_blk).c_str(), netlist.port_name(port).c_str(), netlist.pin_port_bit(driver_pin));
+            fprintf(f, "\tDriver Block: '%s' Driver Pin: '%s[%u]'\n", netlist.block_name(pin_blk).c_str(), netlist.port_name(port).c_str(), netlist.pin_port_bit(driver_pin));
         } else {
             printf("\tNo Driver\n");
         }
@@ -138,9 +144,15 @@ void print_netlist(FILE* f, const AtomNetlist& netlist) {
             AtomBlockId pin_blk = netlist.pin_block(sink_pin);
             AtomBlockId port_blk = netlist.port_block(port);
             VTR_ASSERT(pin_blk == port_blk);
-            printf("\tSink Block: '%s' Sink Pin: '%s[%u]'\n", netlist.block_name(pin_blk).c_str(), netlist.port_name(port).c_str(), netlist.pin_port_bit(sink_pin));
+            fprintf(f, "\tSink Block: '%s' Sink Pin: '%s[%u]'\n", netlist.block_name(pin_blk).c_str(), netlist.port_name(port).c_str(), netlist.pin_port_bit(sink_pin));
         }
     }
+}
+
+void print_netlist_as_blif(std::string filename, const AtomNetlist& netlist) {
+    FILE* f = std::fopen(filename.c_str(), "w");
+    print_netlist_as_blif(f, netlist);
+    std::fclose(f);
 }
 
 void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
@@ -177,21 +189,51 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             }
         }
         fprintf(f, ".outputs \\\n");
-        for(size_t i = 0; i < outputs.size(); ++i) {
-            auto input_ports = netlist.block_input_ports(outputs[i]);
-            VTR_ASSERT(input_ports.size() == 1);
-            VTR_ASSERT(netlist.port_width(*input_ports.begin()) == 1);
+        size_t i = 0;
+        std::set<std::pair<std::string,std::string>> artificial_buffer_connections_required;
+        for(AtomBlockId blk_id : outputs) {
+            VTR_ASSERT(netlist.block_pins(blk_id).size() == 1);
+            AtomPinId pin = *netlist.block_pins(blk_id).begin();
 
-            fprintf(f, "%s%s", INDENT, netlist.block_name(outputs[i]).c_str()+4);
+            std::string blk_name = netlist.block_name(blk_id);
+            std::string out_name(blk_name.begin() + 4, blk_name.end()); //+4 to trim out: prefix
+
+            fprintf(f, "%s%s", INDENT, out_name.c_str());
+
+            //BLIF requires that primary outputs be driven by nets of the same name
+            //
+            //This is not something we enforce within the netlist data structures
+            //
+            //Since BLIF has no 'logical assignment' other than buffers we need to create
+            //buffers to represent the change of net name.
+            //
+            //See if the net has a different name than the current port, if so we
+            //need an artificial buffer LUT
+            AtomNetId net = netlist.pin_net(pin);
+            if(net) {
+                std::string net_name =  netlist.net_name(net);
+                if(net_name != out_name) {
+                    artificial_buffer_connections_required.insert({net_name,out_name});
+                }
+            }
 
             if(i != outputs.size() - 1) {
                 fprintf(f, " \\\n");
             }
+            ++i;
         }
         fprintf(f, "\n");
-    }
+        fprintf(f, "\n");
 
-    fprintf(f, "\n");
+        //Artificial buffers
+        for(auto buf_pair : artificial_buffer_connections_required) {
+            fprintf(f, "#Artificially inserted primary-output assigment buffer\n");
+            fprintf(f, ".names %s %s\n", buf_pair.first.c_str(), buf_pair.second.c_str());
+            fprintf(f, "1 1\n");
+            fprintf(f, "\n");
+        }
+    
+    }
 
     //Latch
     for(auto blk_id : netlist.blocks()) {
@@ -376,7 +418,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
 
         fprintf(f, "\n");
     }
-    
+
     fprintf(f, ".end\n"); //Main model
     fprintf(f, "\n");
 
@@ -639,6 +681,8 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
 
     //Create the new merged net
     netlist.add_net(new_net_name, new_driver, new_sinks);
+
+
 }
 
 bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk_id) {
@@ -745,11 +789,11 @@ size_t sweep_iterative(AtomNetlist& netlist,
         }
 
         if(should_sweep_blocks) {
-            pass_dangling_nets_swept += sweep_nets(netlist);
+            pass_dangling_blocks_swept += sweep_blocks(netlist);
         }
 
         if(should_sweep_nets) {
-            pass_dangling_blocks_swept += sweep_blocks(netlist);
+            pass_dangling_nets_swept += sweep_nets(netlist);
         }
 
         if(should_sweep_constant_primary_outputs) {
