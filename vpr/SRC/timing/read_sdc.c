@@ -1146,14 +1146,29 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
         tatum::DomainId domain = tc.find_clock_domain(io_constraint->clock_name);
         VTR_ASSERT(domain);
 
-        AtomNetId net = netlist.find_net(io_constraint->name);
-        AtomPinId in_pin = netlist.net_driver(net);
-        VTR_ASSERT(in_pin);
-        AtomBlockId blk = netlist.pin_block(in_pin);
-        VTR_ASSERT(netlist.block_type(blk) == AtomBlockType::INPAD);
+        AtomBlockId blk = netlist.find_block(io_constraint->name);
+        if(!blk) {
+            vtr::printf_warning(__FILE__, __LINE__, "Ignoring input delay timing constraint (primary input '%s' was not found)\n", io_constraint->name);
+            continue;
+        }
 
-        tatum::NodeId node = atom_map.pin_tnode[in_pin];
+        if(netlist.block_type(blk) != AtomBlockType::INPAD) {
+            vtr::printf_warning(__FILE__, __LINE__, "Ignoring input delay timing constraint ('%s' is not a primary input)\n", io_constraint->name);
+            continue;
+        }
 
+        auto blk_pins = netlist.block_pins(blk);
+        if(blk_pins.size() == 0) {
+            vtr::printf_warning(__FILE__, __LINE__, "Input delay timing constraint has no effect (primary input '%s' has no fanout)\n", io_constraint->name);
+            continue;
+        }
+
+        VTR_ASSERT(blk_pins.size() == 1);
+        AtomPinId pin = *blk_pins.begin();
+
+        tatum::NodeId node = atom_map.pin_tnode[pin];
+ 
+        //Apply the constraint
         tc.set_input_constraint(node, domain, io_constraint->delay);
     }
 
@@ -1164,19 +1179,29 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
         tatum::DomainId domain = tc.find_clock_domain(io_constraint->clock_name);
         VTR_ASSERT(domain);
 
-        //The sink outpad pin is the sink of the 
-        AtomNetId net = netlist.find_net(io_constraint->name);
-        AtomPinId out_pin;
-        for(AtomPinId pin : netlist.net_sinks(net)) {
-            AtomBlockId blk = netlist.pin_block(pin);
-            if(netlist.block_type(blk) == AtomBlockType::OUTPAD) {
-                VTR_ASSERT_MSG(!out_pin, "Should be a single outpad sink");
-                out_pin = pin;
-            }
+        //VPR prefixes outputs with "out:"
+        std::string blk_name = std::string("out:") + io_constraint->name;
+        AtomBlockId blk = netlist.find_block(blk_name);
+        if(!blk) {
+            vtr::printf_warning(__FILE__, __LINE__, "Ignoring output delay timing constraint (primary output '%s' was not found)\n", io_constraint->name);
+            continue;
         }
-        VTR_ASSERT(out_pin);
 
-        tatum::NodeId node = atom_map.pin_tnode[out_pin];
+        if(netlist.block_type(blk) != AtomBlockType::OUTPAD) {
+            vtr::printf_warning(__FILE__, __LINE__, "Ignoring output delay timing constraint ('%s' is not a primary output)\n", io_constraint->name);
+            continue;
+        }
+
+        auto blk_pins = netlist.block_pins(blk);
+        if(blk_pins.size() == 0) {
+            vtr::printf_warning(__FILE__, __LINE__, "Output delay timing constraint has no effect (primary output '%s' has no fanout)\n", io_constraint->name);
+            continue;
+        }
+
+        VTR_ASSERT(blk_pins.size() == 1);
+        AtomPinId pin = *blk_pins.begin();
+
+        tatum::NodeId node = atom_map.pin_tnode[pin];
 
         tc.set_output_constraint(node, domain, io_constraint->delay);
     }
