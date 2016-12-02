@@ -220,8 +220,12 @@ void TimingGraph::levelize() {
                 }
             }
 
-            //Also track the primary outputs
-            if(node_out_edges(node_id).size() == 0) {
+            //Also track the primary outputs (those with fan-in AND no fan-out)
+            //
+            // There may be some node with neither any fan-in or fan-out. 
+            // We will treat them as primary inputs, so they should not be to
+            // the primary outputs
+            if(node_out_edges(node_id).size() == 0 && node_in_edges(node_id).size() != 0) {
                 primary_outputs_.push_back(node_id);
             }
         }
@@ -527,11 +531,19 @@ bool TimingGraph::validate_structure() {
         if(!node_in_edges(node).empty()) {
             throw tatum::Error("Primary input nodes should have no incoming edges");
         }
+
+        if(node_type(node) != NodeType::SOURCE) {
+            throw tatum::Error("Primary inputs should be only SOURCE nodes");
+        }
     }
 
     for(NodeId node : primary_outputs()) {
         if(!node_out_edges(node).empty()) {
             throw tatum::Error("Primary output node should have no outgoing edges");
+        }
+
+        if(node_type(node) != NodeType::SINK) {
+            throw tatum::Error("Primary outputs should be only SINK nodes");
         }
     }
 
