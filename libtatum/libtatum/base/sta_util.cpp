@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <numeric>
 #include "tatum_assert.hpp"
 #include "sta_util.hpp"
 
@@ -316,6 +317,43 @@ void dump_level_times(std::string fname, const TimingGraph& timing_graph, std::m
             of << parallel_prof_data[key_fwd.str()] << "," << parallel_prof_data[key_bck.str()];
             of << endl;
         }
+    }
+}
+
+std::vector<NodeId> find_related_nodes(const TimingGraph& tg, const std::vector<NodeId> through_nodes, size_t max_depth) {
+
+    std::vector<NodeId> nodes;
+
+    for(NodeId through_node : through_nodes) {
+        find_transitive_fanin_nodes(tg, nodes, through_node, max_depth);
+        find_transitive_fanout_nodes(tg, nodes, through_node, max_depth);
+    }
+
+    std::sort(nodes.begin(), nodes.end());
+    nodes.erase(std::unique(nodes.begin(), nodes.end()), nodes.end());
+
+    return nodes;
+}
+
+void find_transitive_fanin_nodes(const TimingGraph& tg, std::vector<NodeId>& nodes, const NodeId node, size_t max_depth, size_t depth) {
+    if(depth > max_depth) return;
+
+    nodes.push_back(node);
+
+    for(EdgeId in_edge : tg.node_in_edges(node)) {
+        NodeId src_node = tg.edge_src_node(in_edge);
+        find_transitive_fanin_nodes(tg, nodes, src_node, max_depth, depth + 1);
+    }
+}
+
+void find_transitive_fanout_nodes(const TimingGraph& tg, std::vector<NodeId>& nodes, const NodeId node, size_t max_depth, size_t depth) {
+    if(depth > max_depth) return;
+
+    nodes.push_back(node);
+
+    for(EdgeId out_edge : tg.node_out_edges(node)) {
+        NodeId sink_node = tg.edge_sink_node(out_edge);
+        find_transitive_fanout_nodes(tg, nodes, sink_node, max_depth, depth+1);
     }
 }
 

@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <limits>
 
 #include "timing_analyzers.hpp"
 #include "TimingGraph.hpp"
@@ -25,6 +27,10 @@ void print_levelization(std::shared_ptr<const TimingGraph> tg);
 
 void dump_level_times(std::string fname, const TimingGraph& timing_graph, std::map<std::string,float> serial_prof_data, std::map<std::string,float> parallel_prof_data);
 
+std::vector<NodeId> find_related_nodes(const TimingGraph& tg, const std::vector<NodeId> through_nodes, size_t max_depth=std::numeric_limits<size_t>::max());
+void find_transitive_fanout_nodes(const TimingGraph& tg, std::vector<NodeId>& nodes, const NodeId node, size_t max_depth=std::numeric_limits<size_t>::max(), size_t depth=0);
+void find_transitive_fanin_nodes(const TimingGraph& tg, std::vector<NodeId>& nodes, const NodeId node, size_t max_depth=std::numeric_limits<size_t>::max(), size_t depth=0);
+
 /*
  * Templated function implementations
  */
@@ -33,9 +39,10 @@ template<class DelayCalc=FixedDelayCalculator>
 void write_dot_file_setup(std::string filename, 
                           const TimingGraph& tg, 
                           std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(), 
-                          std::shared_ptr<DelayCalc> delay_calc = std::shared_ptr<DelayCalc>()) {
+                          std::shared_ptr<DelayCalc> delay_calc = std::shared_ptr<DelayCalc>(),
+                          std::vector<NodeId> nodes = std::vector<NodeId>()) {
 
-    if(tg.nodes().size() > 1000) {
+    if(tg.nodes().size() > 1000 && nodes.empty()) {
         std::cout << "Skipping setup dot file due to large timing graph size\n"; 
         return;
     }
@@ -49,7 +56,12 @@ void write_dot_file_setup(std::string filename,
     os << "digraph G {" <<std::endl;
     os << "\tnode[shape=record]" <<std::endl;
 
-    for(const NodeId inode : tg.nodes()) {
+    if(nodes.empty()) {
+        auto tg_nodes = tg.nodes();
+        std::copy(tg_nodes.begin(), tg_nodes.end(), std::back_inserter(nodes));
+    }
+
+    for(const NodeId inode : nodes) {
         os << "\tnode" << size_t(inode);
         os << "[label=\"";
         os << "{" << inode << " (" << tg.node_type(inode) << ")";
@@ -86,7 +98,9 @@ void write_dot_file_setup(std::string filename,
         os << "\t{rank = same;";
 
         for(NodeId node_id : tg.level_nodes(ilevel)) {
-            os << " node" << size_t(node_id) <<";";
+            if(std::binary_search(nodes.begin(), nodes.end(), node_id)) {
+                os << " node" << size_t(node_id) <<";";
+            }
         }
         os << "}" <<std::endl;
     }
@@ -98,17 +112,20 @@ void write_dot_file_setup(std::string filename,
 
                 NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
-                os << "\tnode" << size_t(node_id) << " -> node" << size_t(sink_node_id);
-                if(delay_calc) {
-                    if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SINK) {
-                        os << " [ label=\"" << -delay_calc->setup_time(tg, edge_id) << " (-tsu)\" ]";
-                    } else if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SOURCE) {
-                        os << " [ label=\"" << delay_calc->max_edge_delay(tg, edge_id) << " (tcq)\" ]";
-                    } else {
-                        os << " [ label=\"" << delay_calc->max_edge_delay(tg, edge_id) << "\" ]";
+                if(std::binary_search(nodes.begin(), nodes.end(), node_id)
+                   && std::binary_search(nodes.begin(), nodes.end(), sink_node_id)) {
+                    os << "\tnode" << size_t(node_id) << " -> node" << size_t(sink_node_id);
+                    if(delay_calc) {
+                        if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SINK) {
+                            os << " [ label=\"" << -delay_calc->setup_time(tg, edge_id) << " (-tsu)\" ]";
+                        } else if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SOURCE) {
+                            os << " [ label=\"" << delay_calc->max_edge_delay(tg, edge_id) << " (tcq)\" ]";
+                        } else {
+                            os << " [ label=\"" << delay_calc->max_edge_delay(tg, edge_id) << "\" ]";
+                        }
                     }
+                    os << ";" <<std::endl;
                 }
-                os << ";" <<std::endl;
             }
         }
     }
@@ -116,13 +133,15 @@ void write_dot_file_setup(std::string filename,
     os << "}" <<std::endl;
 }
 
-template<class DelayCalc=const FixedDelayCalculator>
+template<class DelayCalc=FixedDelayCalculator>
 void write_dot_file_hold(std::string filename, 
                          const TimingGraph& tg, 
                          std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(), 
-                         std::shared_ptr<DelayCalc> delay_calc = std::shared_ptr<DelayCalc>()) {
-    if(tg.nodes().size() > 1000) {
-        std::cout << "Skipping hold dot file due to large timing graph size\n"; 
+                         std::shared_ptr<DelayCalc> delay_calc = std::shared_ptr<DelayCalc>(),
+                         std::vector<NodeId> nodes = std::vector<NodeId>()) {
+
+    if(tg.nodes().size() > 1000 && nodes.empty()) {
+        std::cout << "Skipping setup dot file due to large timing graph size\n"; 
         return;
     }
 
@@ -135,8 +154,12 @@ void write_dot_file_hold(std::string filename,
     os << "digraph G {" <<std::endl;
     os << "\tnode[shape=record]" <<std::endl;
 
-    //Declare nodes and annotate tags
-    for(const NodeId inode : tg.nodes()) {
+    if(nodes.empty()) {
+        auto tg_nodes = tg.nodes();
+        std::copy(tg_nodes.begin(), tg_nodes.end(), std::back_inserter(nodes));
+    }
+
+    for(const NodeId inode : nodes) {
         os << "\tnode" << size_t(inode);
         os << "[label=\"";
         os << "{" << inode << " (" << tg.node_type(inode) << ")";
@@ -173,7 +196,9 @@ void write_dot_file_hold(std::string filename,
         os << "\t{rank = same;";
 
         for(NodeId node_id : tg.level_nodes(ilevel)) {
-            os << " node" << size_t(node_id) <<";";
+            if(std::binary_search(nodes.begin(), nodes.end(), node_id)) {
+                os << " node" << size_t(node_id) <<";";
+            }
         }
         os << "}" <<std::endl;
     }
@@ -185,17 +210,20 @@ void write_dot_file_hold(std::string filename,
 
                 NodeId sink_node_id = tg.edge_sink_node(edge_id);
 
-                os << "\tnode" << size_t(node_id) << " -> node" << size_t(sink_node_id);
-                if(delay_calc) {
-                    if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SINK) {
-                        os << " [ label=\"" << delay_calc->hold_time(tg, edge_id) << " (thld)\" ]";
-                    } else if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SOURCE) {
-                        os << " [ label=\"" << delay_calc->min_edge_delay(tg, edge_id) << " (tcq)\" ]";
-                    } else {
-                        os << " [ label=\"" << delay_calc->min_edge_delay(tg, edge_id) << "\" ]";
+                if(std::binary_search(nodes.begin(), nodes.end(), node_id)
+                   && std::binary_search(nodes.begin(), nodes.end(), sink_node_id)) {
+                    os << "\tnode" << size_t(node_id) << " -> node" << size_t(sink_node_id);
+                    if(delay_calc) {
+                        if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SINK) {
+                            os << " [ label=\"" << delay_calc->hold_time(tg, edge_id) << " (thld)\" ]";
+                        } else if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SOURCE) {
+                            os << " [ label=\"" << delay_calc->min_edge_delay(tg, edge_id) << " (tcq)\" ]";
+                        } else {
+                            os << " [ label=\"" << delay_calc->min_edge_delay(tg, edge_id) << "\" ]";
+                        }
                     }
+                    os << ";" <<std::endl;
                 }
-                os << ";" <<std::endl;
             }
         }
     }
