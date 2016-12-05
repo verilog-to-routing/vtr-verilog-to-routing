@@ -156,18 +156,22 @@ class OptimizerSlack : public SetupSlackEvaluator {
 
         void update_edge_shifts() {
 
-            //Record the worst arrival times per launch domain
-            std::map<tatum::DomainId,float> max_arr;
+            //Record the worst arrival times per domain pair
+            std::map<DomainPair,float> max_arr;
             for(tatum::NodeId node : tg_.primary_outputs()) {
-                for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(node, tatum::TagType::DATA_ARRIVAL)) {
-                    float arr_time = tag.time().value();
+                for(const tatum::TimingTag& arr_tag : setup_analyzer_->setup_tags(node, tatum::TagType::DATA_ARRIVAL)) {
+                    float arr_time = arr_tag.time().value();
+                    tatum::DomainId launch = arr_tag.launch_clock_domain();
 
-                    tatum::DomainId launch = tag.launch_clock_domain();
+                    for(const tatum::TimingTag& req_tag : setup_analyzer_->setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
+                        tatum::DomainId capture = req_tag.capture_clock_domain();
 
-                    if(max_arr.count(launch)) {
-                        max_arr[launch] = std::max(max_arr[launch], arr_time);
-                    } else {
-                        max_arr[launch] = arr_time;
+                        DomainPair domains = {launch, capture};
+                        if(max_arr.count(domains)) {
+                            max_arr[domains] = std::max(max_arr[domains], arr_time);
+                        } else {
+                            max_arr[domains] = arr_time;
+                        }
                     }
                 }
             }
@@ -179,7 +183,9 @@ class OptimizerSlack : public SetupSlackEvaluator {
 
                     float req_time = tag.time().value();
 
-                    float shift = std::max(0.f, max_arr[tag.launch_clock_domain()] - req_time);
+                    VTR_ASSERT(max_arr.count(domains));
+                    float shift = std::max(0.f, max_arr[domains] - req_time);
+                    VTR_ASSERT(shift >= 0.);
 
                     //Record the max shift, per sink node and constraint
                     if(shifts_[node].count(domains)) {
