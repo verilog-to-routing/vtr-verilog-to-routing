@@ -519,7 +519,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					lb_type_rr_graphs, &router_data, detailed_routing_stage);
 			vtr::printf_info("Complex block %d: %s, type: %s ", 
 					num_clb, clb[num_clb].name, clb[num_clb].type->name);
-            vtr::printf_direct("."); //Progress dot for seed-block
+            vtr::printf("."); //Progress dot for seed-block
 			fflush(stdout);
 			update_cluster_stats(istart, num_clb, 
                     is_clock, //Set of clock nets
@@ -599,7 +599,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 							blk_model->name);
 					fflush(stdout);
 #else
-					vtr::printf_direct(".");
+					vtr::printf(".");
+					fflush(stdout);
 #endif
 				}
 				update_cluster_stats(next_molecule, num_clb - 1, 
@@ -622,7 +623,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						num_clb - 1);
 			}
 
-			vtr::printf_direct("\n");
+			vtr::printf("\n");
 
 			if (detailed_routing_stage == (int)E_DETAILED_ROUTE_AT_END_ONLY) {
 				is_cluster_legal = try_intra_lb_route(router_data);
