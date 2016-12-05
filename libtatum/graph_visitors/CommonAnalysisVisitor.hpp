@@ -170,8 +170,18 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
     //arrival time at this node, while considering all possible clocks that could drive
     //this node (i.e. take the most restrictive constraint across all clock tags at this
     //node)
-    for(const TimingTag& node_data_arr_tag : ops_.get_tags(node_id, TagType::DATA_ARRIVAL)) {
-        for(const TimingTag& node_clock_tag : ops_.get_tags(node_id, TagType::CLOCK_CAPTURE)) {
+
+
+    //Note: since we add tags at the current node (and the tags are all stored together),
+    //we must *copy* the data arrival and clock capture tags before adding any new tags
+    //(since adding new tags may invalidate the old tag references)
+    auto data_arr_range = ops_.get_tags(node_id, TagType::DATA_ARRIVAL);
+    auto clock_capture_range = ops_.get_tags(node_id, TagType::CLOCK_CAPTURE);
+    std::vector<TimingTag> node_data_arr_tags(data_arr_range.begin(), data_arr_range.end());
+    std::vector<TimingTag> node_clock_capture_tags(clock_capture_range.begin(), clock_capture_range.end());
+
+    for(const TimingTag& node_data_arr_tag : node_data_arr_tags) {
+        for(const TimingTag& node_clock_tag : node_clock_capture_tags) {
 
             //Should we be analyzing paths between these two domains?
             if(tc.should_analyze(node_data_arr_tag.launch_clock_domain(), node_clock_tag.capture_clock_domain())) {
