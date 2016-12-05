@@ -404,6 +404,13 @@ const t_model_ports* AtomNetlist::port_model (const AtomPortId port_id) const {
  * Pins
  *
  */
+std::string AtomNetlist::pin_name (const AtomPinId id) const {
+    AtomBlockId blk = pin_block(id);
+    AtomPortId port = pin_port(id);
+
+    return block_name(blk) + "." + port_name(port) + "[" + std::to_string(pin_port_bit(id)) + "]";
+}
+
 AtomNetId AtomNetlist::pin_net (const AtomPinId id) const { 
     VTR_ASSERT(valid_pin_id(id));
 

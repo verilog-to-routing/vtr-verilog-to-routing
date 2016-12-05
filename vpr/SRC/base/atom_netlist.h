@@ -490,6 +490,9 @@ class AtomNetlist {
         /*
          * Pins
          */
+        //Returns the constructed name (derived from block and port) for the specified pin
+        std::string pin_name        (const AtomPinId id) const;
+
         //Returns the net associated with the specified pin
         AtomNetId   pin_net         (const AtomPinId id) const; 
 
