@@ -135,7 +135,7 @@ class OptimizerSlack : public SetupSlackEvaluator {
                     float T_arr_src = src_tag.time().value();
 
                     for(const tatum::TimingTag& sink_tag : setup_analyzer_->setup_tags(sink_node, tatum::TagType::DATA_REQUIRED)) {
-                        if(sink_tag.launch_clock_domain() != sink_tag.launch_clock_domain()) continue;
+                        if(src_tag.launch_clock_domain() != sink_tag.launch_clock_domain()) continue;
 
                         float T_req_sink = sink_tag.time().value();
 
