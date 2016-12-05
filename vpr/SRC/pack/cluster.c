@@ -402,17 +402,20 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         write_timing_graph(os_timing_echo, tg);
         write_timing_constraints(os_timing_echo, tc);
         write_delay_model(os_timing_echo, tg, dc);
+        os_timing_echo.flush();
 
         std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(tg, tc, dc);
-
-        OptimizerSlack opt_slack(g_atom_nl, g_atom_map, analyzer, tg, dc);
-        opt_slack.update();
+        analyzer->update_timing();
 
         auto dc_sp = std::make_shared<tatum::FixedDelayCalculator>(dc);
         tatum::write_dot_file_setup("setup.dot", tg, analyzer, dc_sp);
 
-
         write_analysis_result(os_timing_echo, tg, analyzer);
+        os_timing_echo.flush();
+
+        OptimizerSlack opt_slack(g_atom_nl, g_atom_map, analyzer, tg, dc);
+        opt_slack.update();
+
 
         
 
