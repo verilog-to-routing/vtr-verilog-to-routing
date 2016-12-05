@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <memory>
+#include <numeric>
 
 #include "tatum_assert.hpp"
 

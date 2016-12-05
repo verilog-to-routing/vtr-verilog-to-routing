@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <numeric>
 #include "tatum_assert.hpp"
 #include "sta_util.hpp"
 
