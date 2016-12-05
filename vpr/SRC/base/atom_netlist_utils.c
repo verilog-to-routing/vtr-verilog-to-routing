@@ -4,6 +4,7 @@
 #include <set>
 #include <algorithm>
 #include <iterator>
+#include <cmath>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -997,7 +998,7 @@ std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTab
     bool on_set = truth_table_encodes_on_set(truth_table); 
 
     //Initialize the lut mask
-    size_t mask_bits = pow(2, num_inputs);
+    size_t mask_bits = std::pow(2, num_inputs);
     std::vector<vtr::LogicValue> mask;
     if(on_set) {
         //If we are encoding the on-set the background value is false

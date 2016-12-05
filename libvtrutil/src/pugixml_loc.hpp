@@ -62,11 +62,12 @@ namespace pugiloc {
                 char buffer[1024];
                 size_t size;
 
-                while ((size = fread(buffer, 1, sizeof(buffer), f)) > 0)
-                {
-                for (size_t i = 0; i < size; ++i)
-                    if (buffer[i] == '\n')
-                        offsets_.push_back(offset + i);
+                while ((size = fread(buffer, 1, sizeof(buffer), f)) > 0) {
+                    for (size_t i = 0; i < size; ++i) {
+                        if (buffer[i] == '\n') {
+                            offsets_.push_back(offset + i);
+                        }
+                    }
 
                     offset += size;
                 }
