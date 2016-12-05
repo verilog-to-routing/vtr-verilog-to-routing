@@ -3302,7 +3302,7 @@ static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pi
         //so we need to convert sources/sinks to their relevant pin tnode's before
         //looking up the netlist pin/net
         int inode_pin = OPEN;
-        if(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE) {
+        if(tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_FF_SOURCE || tnode[inode].type == TN_CLOCK_SOURCE) {
             VTR_ASSERT(tnode[inode].num_edges == 1);
             inode_pin = tnode[inode].out_edges[0].to_node;
         } else if (tnode[inode].type == TN_OUTPAD_SINK || tnode[inode].type == TN_FF_SINK) {
