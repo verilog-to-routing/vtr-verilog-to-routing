@@ -169,22 +169,34 @@ void TimingGraphBuilder::add_seq_block_to_timing_graph(const AtomBlockId blk) {
 
         netlist_map_.pin_tnode.insert(output_pin, tnode);
 
-        //Add the edges from the clock to the output
-        const t_pb_graph_pin* gpin = find_pb_graph_pin(output_pin);
-        VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
+        AtomPortId port = netlist_.pin_port(output_pin);
+        const t_model_ports* port_model = netlist_.port_model(port);
 
-        const t_pb_graph_pin* clock_gpin = find_associated_clock_pin(output_pin);
-        VTR_ASSERT(clock_gpin->type == PB_PIN_CLOCK);
+        if(port_model->is_clock && port_model->dir == OUT_PORT) {
+            //Clock source
+            
+            //Pass, nothing else to do, we treat clock sources as
+            //primary inputs with no incoming edges
+        } else {
+            //Regular output
 
-        auto iter = clock_pb_graph_pin_to_pin_id.find(clock_gpin);
-        VTR_ASSERT(iter != clock_pb_graph_pin_to_pin_id.end());
-        AtomPinId clock_pin = iter->second;
-        NodeId clock_tnode = netlist_map_.pin_tnode[clock_pin];
+            //Add the edges from the clock to the output
+            const t_pb_graph_pin* gpin = find_pb_graph_pin(output_pin);
+            VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
 
-        EdgeId edge = tg_.add_edge(clock_tnode, tnode);
+            const t_pb_graph_pin* clock_gpin = find_associated_clock_pin(output_pin);
+            VTR_ASSERT(clock_gpin->type == PB_PIN_CLOCK);
 
-        //Tcq
-        max_edge_delays_.insert(edge, Time(gpin->tsu_tco));
+            auto iter = clock_pb_graph_pin_to_pin_id.find(clock_gpin);
+            VTR_ASSERT(iter != clock_pb_graph_pin_to_pin_id.end());
+            AtomPinId clock_pin = iter->second;
+            NodeId clock_tnode = netlist_map_.pin_tnode[clock_pin];
+
+            EdgeId edge = tg_.add_edge(clock_tnode, tnode);
+
+            //Tcq
+            max_edge_delays_.insert(edge, Time(gpin->tsu_tco));
+        }
     }
 }
 
