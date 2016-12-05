@@ -9,6 +9,7 @@
 #include <bitset>
 #include <memory>
 #include <unordered_set>
+#include <cmath>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"

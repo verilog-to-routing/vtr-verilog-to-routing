@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include <queue>
+#include <numeric>
 
 #include "atom_netlist.h"
 
