@@ -1129,7 +1129,7 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
         tatum::DomainId src_domain = tc.find_clock_domain(g_sdc->constrained_clocks[isrc_clk].name);
         VTR_ASSERT(src_domain);
         for(int isnk_clk = 0; isnk_clk < g_sdc->num_constrained_clocks; ++isnk_clk) {
-            tatum::DomainId snk_domain = tc.find_clock_domain(g_sdc->constrained_clocks[isrc_clk].name);
+            tatum::DomainId snk_domain = tc.find_clock_domain(g_sdc->constrained_clocks[isnk_clk].name);
             VTR_ASSERT(snk_domain);
 
             float constraint = g_sdc->domain_constraint[isrc_clk][isnk_clk];
