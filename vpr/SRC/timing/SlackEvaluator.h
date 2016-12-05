@@ -144,7 +144,7 @@ class OptimizerSlack : public SetupSlackEvaluator {
 
                         float slack = T_req_sink - T_arr_src - delay;
 
-                        DomainPair domains = {src_tag.launch_clock_domain(), sink_tag.launch_clock_domain()};
+                        DomainPair domains = {src_tag.launch_clock_domain(), sink_tag.capture_clock_domain()};
                         SlackOrigin slack_origin = {slack, sink_tag.origin_node()};
                         slacks.emplace_back(domains, slack_origin);
                     }
