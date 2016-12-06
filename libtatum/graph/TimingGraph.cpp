@@ -2,12 +2,32 @@
 #include <iostream>
 #include <stdexcept>
 #include <stack>
+#include <set>
 
 #include "tatum_assert.hpp"
 #include "tatum_error.hpp"
 #include "TimingGraph.hpp"
 
+
+
 namespace tatum {
+
+//Internal data used in identify_strongly_connected_components() and strongconnect()
+struct NodeSccInfo {
+    bool on_stack = false;
+    int index = -1;
+    int low_link = -1;
+};
+
+std::vector<std::vector<tatum::NodeId>> identify_strongly_connected_components(const tatum::TimingGraph& tg, size_t min_size);
+
+void strongconnect(const tatum::TimingGraph& tg,
+                   tatum::NodeId node, 
+                   int& cur_index, 
+                   std::stack<tatum::NodeId>& stack,
+                   tatum::util::linear_map<tatum::NodeId,NodeSccInfo>& node_info,
+                   std::vector<std::vector<tatum::NodeId>>& sccs,
+                   size_t min_size);
 
 //Builds a mapping from old to new ids by skipping values marked invalid
 template<typename Id>
@@ -543,57 +563,32 @@ bool TimingGraph::validate_structure() {
         }
     }
 
-    if(detect_loops()) {
-        throw tatum::Error("Combinational loop detected");
+    auto comb_loops = identify_combinational_loops(*this);
+    if(!comb_loops.empty()) {
+        throw tatum::Error("Combinational loop detected in timing graph (timing graph should be a DAG). "
+                           "Consider breaking the loops (by cutting edges) or replacing them with an equivalent structure. ");
+        //Future work: 
+        //
+        //  We could handle this internally by identifying the incoming and outgoing edges of the SCC,
+        //  and estimating a 'max' delay through the SCC from each incoming to each outgoing edge.
+        //  The SCC could then be replaced with a clique between SCC input and output edges.
+        //
+        //  One possible estimate is to trace the longest path through the SCC without visiting a node 
+        //  more than once (although this is not gaurenteed to be conservative). 
     }
 
     return true;
 }
 
-bool TimingGraph::detect_loops() {
-    tatum::util::linear_map<NodeId,size_t> visited(nodes().size(), 0);
-
-    for(NodeId node : nodes()) {
-        if(visited[node] == 0) {
-            if(detect_loops_recurr(node, visited)) {
-                return true;
-            }
-        }
-    }
-
-    return false;
+//Returns sets of nodes involved in combinational loops
+std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg) {
+    constexpr size_t MIN_LOOP_SCC_SIZE = 2; //Any SCC of size >= 2 is a loop in the timing graph
+    return identify_strongly_connected_components(tg, MIN_LOOP_SCC_SIZE);
 }
 
-bool TimingGraph::detect_loops_recurr(const NodeId node, tatum::util::linear_map<NodeId,size_t>& visited) {
-    ++visited[node];
-
-    if(visited[node] > node_in_edges(node).size()) {
-        return true;
-    }
-
-    for(EdgeId edge : node_out_edges(node)) {
-        NodeId sink_node = edge_sink_node(edge);
-        if(detect_loops_recurr(sink_node, visited)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-struct NodeSccInfo {
-    bool on_stack = false;
-    int index = -1;
-    int low_link = -1;
-};
-void strongconnect(const TimingGraph& tg,
-                   NodeId node, 
-                   int& cur_index, 
-                   std::stack<NodeId>& stack,
-                   tatum::util::linear_map<NodeId,NodeSccInfo>& node_info,
-                   std::vector<std::vector<NodeId>>& sccs,
-                   size_t min_size);
-
+//Returns sets of nodes (i.e. strongly connected componenets) which exceed the specifided min_size
 std::vector<std::vector<NodeId>> identify_strongly_connected_components(const TimingGraph& tg, size_t min_size) {
+    //This uses Tarjan's algorithm which identifies Strongly Connected Components (SCCs) in O(|V| + |E|) time
     int curr_index = 0;
     std::stack<NodeId> stack;
     tatum::util::linear_map<NodeId,NodeSccInfo> node_info(tg.nodes().size());
@@ -603,14 +598,6 @@ std::vector<std::vector<NodeId>> identify_strongly_connected_components(const Ti
         if(node_info[node].index == -1) {
             strongconnect(tg, node, curr_index, stack, node_info, sccs, min_size); 
         }
-    }
-
-    for(auto scc : sccs) {
-        std::cout << "SCC:";
-        for(NodeId node : scc) {
-            std::cout << " " << node;
-        }
-        std::cout << "\n";
     }
 
     return sccs;
@@ -708,4 +695,6 @@ std::ostream& operator<<(std::ostream& os, LevelId level_id) {
     }
 }
 
+
 } //namepsace
+

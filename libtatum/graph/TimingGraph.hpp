@@ -235,7 +235,8 @@ class TimingGraph {
                                               //      scattered through the graph and do not exist on a single level
 };
 
-std::vector<std::vector<NodeId>> identify_strongly_connected_components(const TimingGraph& tg, size_t min_size);
+//Returns the set of nodes (Strongly Connected Components) that form loops in the timing graph
+std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg);
 
 //Mappings from old to new IDs
 struct GraphIdMaps {
