@@ -3271,7 +3271,11 @@ static void propagate_clock_domain_and_skew(int inode) {
 	tedge = tnode[inode].out_edges;	/* Get the list of edges from the node we're visiting. */
 
 	if (!tedge) { /* Leaf/sink node; base case of the recursion. */
-		VTR_ASSERT(tnode[inode].type == TN_FF_CLOCK || tnode[inode].type == TN_OUTPAD_SINK);
+		if(tnode[inode].type != TN_FF_CLOCK && tnode[inode].type != TN_OUTPAD_SINK) {
+            vtr::printf_warning(__FILE__, __LINE__, "tnode %d appears to take clock as a data input\n", inode);
+            return;
+        }
+
 		VTR_ASSERT(tnode[inode].clock_domain != -1); /* Make sure clock domain is valid. */
 		g_sdc->constrained_clocks[tnode[inode].clock_domain].fanout++;
 		return;
