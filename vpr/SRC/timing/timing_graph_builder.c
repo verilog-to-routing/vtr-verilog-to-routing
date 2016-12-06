@@ -241,7 +241,9 @@ const t_pb_graph_pin* TimingGraphBuilder::find_associated_clock_pin(const AtomPi
     const t_pb_graph_pin* clock_gpin = io_gpin->associated_clock_pin; 
 
     if(!clock_gpin) {
-        VPR_THROW(VPR_ERROR_TIMING, "Failed to find clock pin associated with pin '%s'", netlist_.pin_name(io_pin).c_str());
+        AtomBlockId blk = netlist_.pin_block(io_pin);
+        const t_model* model = netlist_.block_model(blk);
+        VPR_THROW(VPR_ERROR_TIMING, "Failed to find clock pin associated with pin '%s' (model '%s')", netlist_.pin_name(io_pin).c_str(), model->name);
     }
     return clock_gpin;
 }
