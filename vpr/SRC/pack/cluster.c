@@ -417,30 +417,47 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         opt_slack.update();
 
 
-        
+        /*
+         *for(tatum::NodeId node : tg.nodes()) {
+         *    for(const tatum::TimingTag& tag : analyzer->setup_tags(node, tatum::TagType::DATA_ARRIVAL)) {
+         *        if(tag.launch_clock_domain() == tatum::DomainId(2)) {
+         *            AtomPinId pin = g_atom_map.pin_tnode[node];
+         *            vtr::printf("tatum clk 2 arrival at node: %zu pin: %s arr: %g\n", node, g_atom_nl.pin_name(pin).c_str(), tag.time().value());
+         *        }
+         *    }
+         *}
+         *
+         */
 
 
         //Old analyzer
 		do_timing_analysis(raw_slacks, timing_inf, true, false);
         slacks = convert_raw_slacks_to_prepack_slacks(raw_slacks);
 
+
         vtr::printf("Start Slack Differences:\n");
         size_t num_crit_diffs = 0;
         float max_rel_diff = 0.;
+        float min_rel_diff = 0.;
+        constexpr float rel_threshold = 0.03;
         for(AtomNetId net : g_atom_nl.nets()) {
             AtomPinId driver = g_atom_nl.net_driver(net);
             for(AtomPinId pin : g_atom_nl.net_sinks(net)) {
                 float tatum_crit = opt_slack.setup_criticality(driver, pin);
                 float vpr_crit = slacks.timing_criticality[pin];
-                float rel_diff = std::abs(tatum_crit - vpr_crit) / vpr_crit;
+                float rel_diff = (tatum_crit - vpr_crit) / vpr_crit;
                 max_rel_diff = std::max(max_rel_diff, rel_diff);
-                if(rel_diff > 0.02) {
+                min_rel_diff = std::min(min_rel_diff, rel_diff);
+                if(std::abs(rel_diff) > rel_threshold) {
                     num_crit_diffs++;
-                    vtr::printf("Net %zu Pins: %zu->%zu Nodes: %zu->%zu tnode: %d->%d\n", 
+                    vtr::printf("Net %zu '%s' Pins: %zu->%zu Nodes: %zu->%zu tnode: %d->%d '%s->%s'\n", 
                                                                                 net,
+                                                                                g_atom_nl.net_name(net).c_str(),
                                                                                 driver, pin, 
                                                                                 g_atom_map.pin_tnode[driver], g_atom_map.pin_tnode[pin], 
-                                                                                g_atom_map.atom_pin_tnode(driver), g_atom_map.atom_pin_tnode(pin));
+                                                                                g_atom_map.atom_pin_tnode(driver), g_atom_map.atom_pin_tnode(pin),
+                                                                                g_atom_nl.pin_name(driver).c_str(),
+                                                                                g_atom_nl.pin_name(pin).c_str());
 
                     //Slacks
                     vtr::printf("\tTatum Slack: %12g Crit: %12g\n", opt_slack.setup_slack(driver, pin), tatum_crit);
@@ -449,7 +466,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                 }
             }
         }
-        vtr::printf("End Slack Differences (%zu differences, max rel diff: %f)\n", num_crit_diffs, max_rel_diff);
+        vtr::printf("End Slack Differences (%zu differences above threshold (%f), max rel diff: %f, min reldiff: %f)\n", rel_threshold, num_crit_diffs, max_rel_diff, min_rel_diff);
+
+        exit(0);
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))
