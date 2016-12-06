@@ -519,11 +519,6 @@ bool TimingGraph::validate_structure() {
             } else {
                 throw tatum::Error("Unrecognized node type");
             }
-
-            //Check that sinks have non fanout
-            if(!node_out_edges(sink_node).empty()) {
-                throw tatum::Error("SINK node should have no out-going edges");
-            }
         }
     }
 
@@ -547,7 +542,41 @@ bool TimingGraph::validate_structure() {
         }
     }
 
+    if(detect_loops()) {
+        throw tatum::Error("Combinational loop detected");
+    }
+
     return true;
+}
+
+bool TimingGraph::detect_loops() {
+    tatum::util::linear_map<NodeId,size_t> visited(nodes().size(), 0);
+
+    for(NodeId node : nodes()) {
+        if(visited[node] == 0) {
+            if(detect_loops_recurr(node, visited)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool TimingGraph::detect_loops_recurr(const NodeId node, tatum::util::linear_map<NodeId,size_t>& visited) {
+    ++visited[node];
+
+    if(visited[node] > node_in_edges(node).size()) {
+        return true;
+    }
+
+    for(EdgeId edge : node_out_edges(node)) {
+        NodeId sink_node = edge_sink_node(edge);
+        if(detect_loops_recurr(sink_node, visited)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 //Stream output for NodeType

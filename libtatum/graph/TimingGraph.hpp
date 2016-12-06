@@ -208,6 +208,8 @@ class TimingGraph {
         bool validate_sizes();
         bool validate_values();
         bool validate_structure();
+        bool detect_loops();
+        bool detect_loops_recurr(const NodeId node, tatum::util::linear_map<NodeId,size_t>& visited);
 
     private: //Data
         /*
