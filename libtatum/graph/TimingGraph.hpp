@@ -235,6 +235,8 @@ class TimingGraph {
                                               //      scattered through the graph and do not exist on a single level
 };
 
+std::vector<std::vector<NodeId>> identify_strongly_connected_components(const TimingGraph& tg, size_t min_size);
+
 //Mappings from old to new IDs
 struct GraphIdMaps {
     GraphIdMaps(tatum::util::linear_map<NodeId,NodeId> node_map,
