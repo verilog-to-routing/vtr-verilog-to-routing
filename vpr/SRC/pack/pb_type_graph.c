@@ -1173,7 +1173,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 		//Children pb_types
 		if (mode == NULL ) {
 			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-				"pb_graph_parent_node %s failed\n", pb_graph_parent_node->pb_type->name);
+				"pb_graph_parent_node %s not found\n", pb_graph_parent_node->pb_type->name);
 		}
 		for (i = 0; i < mode->num_pb_type_children; i++) {
 			VTR_ASSERT(&mode->pb_type_children[i] == pb_graph_children_nodes[i][0].pb_type);
