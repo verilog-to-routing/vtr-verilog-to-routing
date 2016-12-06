@@ -50,7 +50,6 @@ void write_dot_file_setup(std::string filename,
     std::ofstream os(filename);
 
     auto setup_analyzer = std::dynamic_pointer_cast<const SetupTimingAnalyzer>(analyzer);
-    if(!setup_analyzer) return;
 
     //Write out a dot file of the timing graph
     os << "digraph G {" <<std::endl;
@@ -65,29 +64,31 @@ void write_dot_file_setup(std::string filename,
         os << "\tnode" << size_t(inode);
         os << "[label=\"";
         os << "{" << inode << " (" << tg.node_type(inode) << ")";
-        for(const TimingTag& tag : setup_analyzer->setup_tags(inode)) {
-            os << " | {";
-            os << tag.type() << "\\n";
-            if(!tag.launch_clock_domain()) {
-                os << "*";
-            } else {
-                os << tag.launch_clock_domain();
+        if(setup_analyzer) {
+            for(const TimingTag& tag : setup_analyzer->setup_tags(inode)) {
+                os << " | {";
+                os << tag.type() << "\\n";
+                if(!tag.launch_clock_domain()) {
+                    os << "*";
+                } else {
+                    os << tag.launch_clock_domain();
+                }
+                os << " to ";
+                if(!tag.capture_clock_domain()) {
+                    os << "*";
+                } else {
+                    os << tag.capture_clock_domain();
+                }
+                if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
+                    os << " from ";
+                } else {
+                    os << " for ";
+                }
+                os << tag.origin_node();
+                os << "\\n";
+                os << " time: " << tag.time().value();
+                os << "}";
             }
-            os << " to ";
-            if(!tag.capture_clock_domain()) {
-                os << "*";
-            } else {
-                os << tag.capture_clock_domain();
-            }
-            if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
-                os << " from ";
-            } else {
-                os << " for ";
-            }
-            os << tag.origin_node();
-            os << "\\n";
-            os << " time: " << tag.time().value();
-            os << "}";
         }
         os << "}\"]";
         os <<std::endl;
@@ -144,7 +145,6 @@ void write_dot_file_hold(std::string filename,
     std::ofstream os(filename);
 
     auto hold_analyzer = std::dynamic_pointer_cast<const HoldTimingAnalyzer>(analyzer);
-    if(!hold_analyzer) return;
 
     //Write out a dot file of the timing graph
     os << "digraph G {" <<std::endl;
@@ -159,29 +159,31 @@ void write_dot_file_hold(std::string filename,
         os << "\tnode" << size_t(inode);
         os << "[label=\"";
         os << "{" << inode << " (" << tg.node_type(inode) << ")";
-        for(const TimingTag& tag : hold_analyzer->hold_tags(inode)) {
-            os << " | {";
-            os << tag.type() << "\\n";
-            if(!tag.launch_clock_domain()) {
-                os << "*";
-            } else {
-                os << tag.launch_clock_domain();
+        if(hold_analyzer) {
+            for(const TimingTag& tag : hold_analyzer->hold_tags(inode)) {
+                os << " | {";
+                os << tag.type() << "\\n";
+                if(!tag.launch_clock_domain()) {
+                    os << "*";
+                } else {
+                    os << tag.launch_clock_domain();
+                }
+                os << " to ";
+                if(!tag.capture_clock_domain()) {
+                    os << "*";
+                } else {
+                    os << tag.capture_clock_domain();
+                }
+                if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
+                    os << " from ";
+                } else {
+                    os << " for ";
+                }
+                os << tag.origin_node();
+                os << "\\n";
+                os << " time: " << tag.time().value();
+                os << "}";
             }
-            os << " to ";
-            if(!tag.capture_clock_domain()) {
-                os << "*";
-            } else {
-                os << tag.capture_clock_domain();
-            }
-            if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
-                os << " from ";
-            } else {
-                os << " for ";
-            }
-            os << tag.origin_node();
-            os << "\\n";
-            os << " time: " << tag.time().value();
-            os << "}";
         }
         os << "}\"]";
         os <<std::endl;
