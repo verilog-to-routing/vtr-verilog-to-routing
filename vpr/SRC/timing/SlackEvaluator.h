@@ -112,8 +112,7 @@ class OptimizerSlack : public SetupSlackEvaluator {
             tatum::DomainId capture;
 
             friend bool operator<(const DomainPair& lhs, const DomainPair& rhs) {
-                if(lhs.launch < rhs.launch) return true;
-                return lhs.capture < rhs.capture;
+                return std::tie(lhs.launch, lhs.capture) < std::tie(rhs.launch, rhs.capture);
             }
         };
 
@@ -178,6 +177,7 @@ class OptimizerSlack : public SetupSlackEvaluator {
 
             //Determine the shift requried to relax required times and the maximum required time per domain
             for(tatum::NodeId node : tg_.primary_outputs()) {
+
                 for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
                     DomainPair domains = {tag.launch_clock_domain(), tag.capture_clock_domain()};
 
