@@ -2452,7 +2452,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
                     time for the forward traversal if to_node's arrival time is greater than 
                     the existing maximum, and it is on the sink clock domain. */
                     if (tnode[to_node].num_edges == 0 && tnode[to_node].clock_domain == sink_clock_domain) {
-			max_Tarr = max(max_Tarr, tnode[to_node].T_arr);
+                        max_Tarr = max(max_Tarr, tnode[to_node].T_arr);
                     }
                 }
 			}
@@ -3271,7 +3271,7 @@ static void propagate_clock_domain_and_skew(int inode) {
 	tedge = tnode[inode].out_edges;	/* Get the list of edges from the node we're visiting. */
 
 	if (!tedge) { /* Leaf/sink node; base case of the recursion. */
-		VTR_ASSERT(tnode[inode].type == TN_FF_CLOCK);
+		VTR_ASSERT(tnode[inode].type == TN_FF_CLOCK || tnode[inode].type == TN_OUTPAD_SINK);
 		VTR_ASSERT(tnode[inode].clock_domain != -1); /* Make sure clock domain is valid. */
 		g_sdc->constrained_clocks[tnode[inode].clock_domain].fanout++;
 		return;

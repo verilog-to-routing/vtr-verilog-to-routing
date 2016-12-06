@@ -111,6 +111,7 @@ static const char* sdc_file_name = "<default_SDC>.sdc"; /* Name of SDC file */
 static void alloc_and_load_netlist_clocks_and_ios(void);
 static void use_default_timing_constraints(void);
 static void count_netlist_clocks_as_constrained_clocks(void);
+static void add_clock(std::string net_name);
 static int find_constrained_clock(char * ptr);
 static float calculate_constraint(t_sdc_clock source_domain, t_sdc_clock sink_domain);
 static void add_override_constraint(char ** from_list, int num_from, char ** to_list, int num_to, 
@@ -773,27 +774,47 @@ static void count_netlist_clocks_as_constrained_clocks(void) {
 	g_sdc->num_constrained_clocks = 0;
 	
     for(auto blk_id : g_atom_nl.blocks()) {
+        //Check for input clocks
         for(auto pin_id : g_atom_nl.block_clock_pins(blk_id)) {
             AtomNetId clk_net_id = g_atom_nl.pin_net(pin_id);
             VTR_ASSERT(clk_net_id);
 
             std::string name = g_atom_nl.net_name(clk_net_id);
-            /* Now that we've found a clock, let's see if we've counted it already */
-            bool found = false;
-            for (int i = 0; !found && i < g_sdc->num_constrained_clocks; i++) {
-                if (g_sdc->constrained_clocks[i].name == name) {
-                    found = true;
+            add_clock(name);
+        }
+
+        //Check for generated clocks
+        for(AtomPortId port : g_atom_nl.block_output_ports(blk_id)) {
+            const t_model_ports* port_model = g_atom_nl.port_model(port);
+            VTR_ASSERT(port_model->dir == OUT_PORT);
+
+            if(port_model->is_clock) {
+                //This is a clock generator
+                for(AtomPinId pin : g_atom_nl.port_pins(port)) {
+                    AtomNetId net = g_atom_nl.pin_net(pin);
+                    std::string net_name = g_atom_nl.net_name(net);
+                    add_clock(net_name);
                 }
-            }
-            if (!found) {
-                /* If we get here, the clock is new and so we dynamically grow the array g_sdc->constrained_clocks by one. */
-                g_sdc->constrained_clocks = (t_clock *) vtr::realloc (g_sdc->constrained_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_clock));
-                g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(name.c_str());
-                g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].is_netlist_clock = true;
-                /* Fanout will be filled out once the timing graph has been constructed. */
             }
         }
 	}
+}
+
+static void add_clock(std::string net_name) {
+    /* Now that we've found a clock, let's see if we've counted it already */
+    bool found = false;
+    for (int i = 0; !found && i < g_sdc->num_constrained_clocks; i++) {
+        if (g_sdc->constrained_clocks[i].name == net_name) {
+            found = true;
+        }
+    }
+    if (!found) {
+        /* If we get here, the clock is new and so we dynamically grow the array g_sdc->constrained_clocks by one. */
+        g_sdc->constrained_clocks = (t_clock *) vtr::realloc (g_sdc->constrained_clocks, ++g_sdc->num_constrained_clocks * sizeof(t_clock));
+        g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].name = vtr::strdup(net_name.c_str());
+        g_sdc->constrained_clocks[g_sdc->num_constrained_clocks - 1].is_netlist_clock = true;
+        /* Fanout will be filled out once the timing graph has been constructed. */
+    }
 }
 
 static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_delay) {
