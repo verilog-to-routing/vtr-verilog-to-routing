@@ -87,6 +87,8 @@ class TimingConstraints {
         //\returns A range of input constraints for the node id
         io_constraint_range output_constraints(const NodeId id) const;
 
+        bool disabled_timing(const EdgeId id) const;
+
         ///Prints out the timing constraints for debug purposes
         void print() const;
     public: //Mutators
@@ -111,6 +113,9 @@ class TimingConstraints {
         ///Sets whether the specified node is a constant generator
         void set_constant_generator(const NodeId node_id, bool is_constant_generator=true);
 
+        ///Sets whether the specified edge should be analyzed
+        void set_disable_timing(const EdgeId edge, bool should_analyze);
+
         ///Update node IDs if they have changed
         ///\param node_map A vector mapping from old to new node ids
         void remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_map);
@@ -131,6 +136,8 @@ class TimingConstraints {
         tatum::util::linear_map<DomainId,NodeId> domain_sources_;
 
         std::unordered_set<NodeId> constant_generators_;
+
+        std::unordered_set<EdgeId> edges_disabled_;
 
         std::map<DomainPair,float> setup_constraints_;
         std::map<DomainPair,float> hold_constraints_;

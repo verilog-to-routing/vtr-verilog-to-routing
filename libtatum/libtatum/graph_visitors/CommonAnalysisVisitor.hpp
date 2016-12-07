@@ -220,6 +220,8 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_node(const TimingGr
     //Pull from upstream sources to current node
     for(EdgeId edge_id : tg.node_in_edges(node_id)) {
 
+        if(tc.disabled_timing(edge_id)) continue;
+
 #ifdef LOG_TRAVERSAL_ORDER
         std::cout << "Arrival Traverse " << edge_id << "\n";
 #endif
@@ -315,7 +317,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
 template<class AnalysisOps>
 template<class DelayCalc>
-void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& /*tc*/, const DelayCalc& dc, const NodeId node_id) {
+void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id) {
 #ifdef LOG_TRAVERSAL_ORDER
     std::cout << "Required Traverse " << node_id << "\n";
 #endif
@@ -326,6 +328,8 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingG
 
     //Pull from downstream sinks to current node
     for(EdgeId edge_id : tg.node_out_edges(node_id)) {
+
+        if(tc.disabled_timing(edge_id)) continue;
 
 #ifdef LOG_TRAVERSAL_ORDER
         std::cout << "Required Traverse " << edge_id << "\n";

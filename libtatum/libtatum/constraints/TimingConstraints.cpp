@@ -157,6 +157,10 @@ TimingConstraints::io_constraint_range TimingConstraints::output_constraints(con
     return tatum::util::make_range(range.first, range.second);
 }
 
+bool TimingConstraints::disabled_timing(const EdgeId id) const {
+    return edges_disabled_.count(id);
+}
+
 DomainId TimingConstraints::create_clock_domain(const std::string name) { 
     DomainId id = find_clock_domain(name);
     if(!id) {
@@ -219,6 +223,14 @@ void TimingConstraints::set_constant_generator(const NodeId node_id, bool is_con
         constant_generators_.insert(node_id);
     } else {
         constant_generators_.erase(node_id);
+    }
+}
+
+void TimingConstraints::set_disable_timing(const EdgeId edge, bool should_analyze) {
+    if(should_analyze) {
+        edges_disabled_.erase(edge);
+    } else {
+        edges_disabled_.insert(edge);
     }
 }
 
