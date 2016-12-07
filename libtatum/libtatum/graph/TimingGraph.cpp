@@ -236,6 +236,7 @@ GraphIdMaps TimingGraph::compress() {
     remap_nodes(node_id_map);
     remap_edges(edge_id_map);
 
+    levelize();
     validate();
 
     return {node_id_map, edge_id_map};
@@ -256,6 +257,7 @@ void TimingGraph::force_levelize() {
     //Clear any previous levelization
     level_nodes_.clear();
     level_ids_.clear();
+    primary_inputs_.clear();
     primary_outputs_.clear();
 
     //Allocate space for the first level
@@ -271,10 +273,18 @@ void TimingGraph::force_levelize() {
         size_t node_fanin = node_in_edges(node_id).size();
         node_fanin_remaining[size_t(node_id)] = node_fanin;
 
+        //Initialize the first level
         if(node_fanin == 0) {
-            //Add a primary input
             level_nodes_[LevelId(0)].push_back(node_id);
+
+            if (node_type(node_id) == NodeType::SOURCE) {
+                //We require that all primary inputs (i.e. top-level circuit inputs) to
+                //be sources. Due to disconnected nodes (e.g. due to breaking edges in 
+                //combinational loops) we may have non-sources which appear in the first level.
+                primary_inputs_.push_back(node_id);
+            }
         }
+
     }
 
     //Walk the graph from primary inputs (no fanin) to generate a topological sort
@@ -315,7 +325,9 @@ void TimingGraph::force_levelize() {
             // There may be some node with neither any fan-in or fan-out. 
             // We will treat them as primary inputs, so they should not be to
             // the primary outputs
-            if(node_out_edges(node_id).size() == 0 && node_in_edges(node_id).size() != 0) {
+            if(   node_out_edges(node_id).size() == 0 
+               && node_in_edges(node_id).size() != 0
+               && node_type(node_id) == NodeType::SINK) {
                 primary_outputs_.push_back(node_id);
             }
         }
@@ -423,6 +435,8 @@ tatum::util::linear_map<NodeId,NodeId> TimingGraph::optimize_node_layout() const
 }
 
 void TimingGraph::remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_id_map) {
+    is_levelized_ = false;
+
     //Update values
     node_ids_ = clean_and_reorder_ids(node_id_map);
     node_types_ = clean_and_reorder_values(node_types_, node_id_map);
@@ -435,6 +449,7 @@ void TimingGraph::remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node
 }
 
 void TimingGraph::remap_edges(const tatum::util::linear_map<EdgeId,EdgeId>& edge_id_map) {
+    is_levelized_ = false;
 
     //Update values
     edge_ids_ = clean_and_reorder_ids(edge_id_map);

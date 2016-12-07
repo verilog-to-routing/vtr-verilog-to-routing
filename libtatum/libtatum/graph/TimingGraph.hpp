@@ -131,8 +131,7 @@ class TimingGraph {
         ///\see levelize()
         node_range primary_inputs() const { 
             TATUM_ASSERT_MSG(is_levelized_, "Timing graph must be levelized");
-            //After levelizing PIs will be 1st level
-            return tatum::util::make_range(level_nodes_[LevelId(0)].begin(), level_nodes_[LevelId(0)].end()); 
+            return tatum::util::make_range(primary_inputs_.begin(), primary_inputs_.end()); 
         }
 
         ///\pre The graph must be levelized.
@@ -165,7 +164,9 @@ class TimingGraph {
             return tatum::util::make_range(level_ids_.rbegin(), level_ids_.rend()); 
         }
 
+        //\returns true if the timing graph is internally consistent, throws an exception if not
         bool validate() const;
+
     public: //Mutators
         /*
          * Graph modifiers
@@ -182,10 +183,20 @@ class TimingGraph {
         ///\warning Graph will likely need to be re-levelized after modification
         EdgeId add_edge(const NodeId src_node, const NodeId sink_node);
 
+        ///Removes a node (and it's associated edges) from the timing graph
+        ///\param node_id The node to remove
+        ///\warning This will leave invalid ID references in the timing graph until compress() is called
+        ///\see add_node(), compress()
         void remove_node(const NodeId node_id);
 
+        ///Removes an edge from the timing graph
+        ///\param edge_id The edge to remove
+        ///\warning This will leave invalid ID references in the timing graph until compress() is called
+        ///\see add_edge(), compress()
         void remove_edge(const EdgeId edge_id);
 
+        ///Compresses the Edge and Node ID spaces to eliminate invalid entries
+        ///\returns A structure containing mappings from old to new IDs
         GraphIdMaps  compress();
 
         /*
@@ -245,9 +256,8 @@ class TimingGraph {
         //Auxilary graph-level info, filled in by levelize()
         tatum::util::linear_map<LevelId,LevelId> level_ids_; //The level IDs in the graph
         tatum::util::linear_map<LevelId,std::vector<NodeId>> level_nodes_; //Nodes in each level [0..num_levels()-1]
+        std::vector<NodeId> primary_inputs_; //Primary input nodes of the timing graph.
         std::vector<NodeId> primary_outputs_; //Primary output nodes of the timing graph.
-                                              //NOTE: we track this separetely (unlike Primary Inputs) since these are
-                                              //      scattered through the graph and do not exist on a single level
         bool is_levelized_ = false; //Inidcates if the current levelization is valid
 
 };
