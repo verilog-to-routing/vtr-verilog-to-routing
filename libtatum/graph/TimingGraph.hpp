@@ -120,19 +120,29 @@ class TimingGraph {
         ///\pre The graph must be levelized.
         ///\returns A range containing the nodes in the level
         ///\see levelize()
-        node_range level_nodes(const LevelId level_id) const { return tatum::util::make_range(level_nodes_[level_id].begin(),
-                                                                                        level_nodes_[level_id].end()); }
+        node_range level_nodes(const LevelId level_id) const { 
+            TATUM_ASSERT_MSG(is_levelized_, "Timing graph must be levelized");
+            return tatum::util::make_range(level_nodes_[level_id].begin(),
+                                           level_nodes_[level_id].end()); 
+        }
 
         ///\pre The graph must be levelized.
         ///\returns A range containing the nodes which are primary inputs
         ///\see levelize()
-        node_range primary_inputs() const { return tatum::util::make_range(level_nodes_[LevelId(0)].begin(), level_nodes_[LevelId(0)].end()); } //After levelizing PIs will be 1st level
+        node_range primary_inputs() const { 
+            TATUM_ASSERT_MSG(is_levelized_, "Timing graph must be levelized");
+            //After levelizing PIs will be 1st level
+            return tatum::util::make_range(level_nodes_[LevelId(0)].begin(), level_nodes_[LevelId(0)].end()); 
+        }
 
         ///\pre The graph must be levelized.
         ///\returns A range containing the nodes which are primary outputs
         ///\warning The primary outputs may be on different levels of the graph
         ///\see levelize()
-        node_range primary_outputs() const { return tatum::util::make_range(primary_outputs_.begin(), primary_outputs_.end()); }
+        node_range primary_outputs() const { 
+            TATUM_ASSERT_MSG(is_levelized_, "Timing graph must be levelized");
+            return tatum::util::make_range(primary_outputs_.begin(), primary_outputs_.end()); 
+        }
 
         /*
          * Graph aggregate accessors
@@ -144,11 +154,18 @@ class TimingGraph {
         edge_range edges() const { return tatum::util::make_range(edge_ids_.begin(), edge_ids_.end()); }
 
         //\returns A range containing all levels in the graph
-        level_range levels() const { return tatum::util::make_range(level_ids_.begin(), level_ids_.end()); }
+        level_range levels() const { 
+            TATUM_ASSERT_MSG(is_levelized_, "Timing graph must be levelized");
+            return tatum::util::make_range(level_ids_.begin(), level_ids_.end()); 
+        }
 
         //\returns A range containing all levels in the graph in *reverse* order
-        reverse_level_range reversed_levels() const { return tatum::util::make_range(level_ids_.rbegin(), level_ids_.rend()); }
+        reverse_level_range reversed_levels() const { 
+            TATUM_ASSERT_MSG(is_levelized_, "Timing graph must be levelized");
+            return tatum::util::make_range(level_ids_.rbegin(), level_ids_.rend()); 
+        }
 
+        bool validate() const;
     public: //Mutators
         /*
          * Graph modifiers
@@ -170,8 +187,6 @@ class TimingGraph {
         void remove_edge(const EdgeId edge_id);
 
         GraphIdMaps  compress();
-
-        bool validate();
 
         /*
          * Graph-level modification operations
@@ -201,15 +216,15 @@ class TimingGraph {
         void remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_id_map);
         void remap_edges(const tatum::util::linear_map<EdgeId,EdgeId>& edge_id_map);
 
-        bool valid_node_id(const NodeId node_id);
-        bool valid_edge_id(const EdgeId edge_id);
-        bool valid_level_id(const LevelId level_id);
+        void force_levelize();
 
-        bool validate_sizes();
-        bool validate_values();
-        bool validate_structure();
-        bool detect_loops();
-        bool detect_loops_recurr(const NodeId node, tatum::util::linear_map<NodeId,size_t>& visited);
+        bool valid_node_id(const NodeId node_id) const;
+        bool valid_edge_id(const EdgeId edge_id) const;
+        bool valid_level_id(const LevelId level_id) const;
+
+        bool validate_sizes() const;
+        bool validate_values() const;
+        bool validate_structure() const;
 
     private: //Data
         /*
@@ -233,6 +248,8 @@ class TimingGraph {
         std::vector<NodeId> primary_outputs_; //Primary output nodes of the timing graph.
                                               //NOTE: we track this separetely (unlike Primary Inputs) since these are
                                               //      scattered through the graph and do not exist on a single level
+        bool is_levelized_ = false; //Inidcates if the current levelization is valid
+
 };
 
 //Returns the set of nodes (Strongly Connected Components) that form loops in the timing graph
