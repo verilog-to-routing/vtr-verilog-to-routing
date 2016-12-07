@@ -41,7 +41,6 @@ void write_dot_file_setup(std::string filename,
                           const TimingGraph& tg,
                           std::shared_ptr<DelayCalc> delay_calc = std::shared_ptr<DelayCalc>(),
                           std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(),
-                          const TimingConstraints& tc = TimingConstraints(),
                           std::vector<NodeId> nodes = std::vector<NodeId>()) {
 
     if(tg.nodes().size() > 1000 && nodes.empty()) {
@@ -126,11 +125,11 @@ void write_dot_file_setup(std::string filename,
                     os << "\\n" << delay_calc->max_edge_delay(tg, edge_id);
                 }
             }
-            if(tc.disabled_timing(edge_id)) {
+            if(tg.edge_disabled(edge_id)) {
                 os << "\\n" << "(disabled)";
             }
             os << "\""; //end label
-            if(tc.disabled_timing(edge_id)) {
+            if(tg.edge_disabled(edge_id)) {
                 os << " style=\"dashed\"";
                 os << " color=\"#aaaaaa\""; //grey
                 os << " fontcolor=\"#aaaaaa\""; //grey

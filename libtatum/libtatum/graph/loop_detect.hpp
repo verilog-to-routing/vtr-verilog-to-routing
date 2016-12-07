@@ -8,7 +8,7 @@
 namespace tatum {
 
 //Returns the set of nodes (Strongly Connected Components) that form loops in the timing graph
-std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg, const std::set<tatum::EdgeId>& disabled_edges=std::set<tatum::EdgeId>());
+std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg);
 
 }
 

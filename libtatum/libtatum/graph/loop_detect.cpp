@@ -13,10 +13,9 @@ struct NodeSccInfo {
     int low_link = -1;
 };
 
-std::vector<std::vector<tatum::NodeId>> identify_strongly_connected_components(const tatum::TimingGraph& tg, size_t min_size, const std::set<EdgeId>& disabled_edges=std::set<EdgeId>());
+std::vector<std::vector<tatum::NodeId>> identify_strongly_connected_components(const tatum::TimingGraph& tg, size_t min_size);
 
 void strongconnect(const tatum::TimingGraph& tg,
-                   const std::set<EdgeId>& disabled_edges,
                    tatum::NodeId node, 
                    int& cur_index, 
                    std::stack<tatum::NodeId>& stack,
@@ -28,13 +27,13 @@ void strongconnect(const tatum::TimingGraph& tg,
 
 
 //Returns sets of nodes involved in combinational loops
-std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg, const std::set<tatum::EdgeId>& disabled_edges) {
+std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg) {
     constexpr size_t MIN_LOOP_SCC_SIZE = 2; //Any SCC of size >= 2 is a loop in the timing graph
-    return identify_strongly_connected_components(tg, MIN_LOOP_SCC_SIZE, disabled_edges);
+    return identify_strongly_connected_components(tg, MIN_LOOP_SCC_SIZE);
 }
 
 //Returns sets of nodes (i.e. strongly connected componenets) which exceed the specifided min_size
-std::vector<std::vector<NodeId>> identify_strongly_connected_components(const TimingGraph& tg, size_t min_size, const std::set<tatum::EdgeId>& disabled_edges) {
+std::vector<std::vector<NodeId>> identify_strongly_connected_components(const TimingGraph& tg, size_t min_size) {
     //This uses Tarjan's algorithm which identifies Strongly Connected Components (SCCs) in O(|V| + |E|) time
     int curr_index = 0;
     std::stack<NodeId> stack;
@@ -43,7 +42,7 @@ std::vector<std::vector<NodeId>> identify_strongly_connected_components(const Ti
 
     for(NodeId node : tg.nodes()) {
         if(node_info[node].index == -1) {
-            strongconnect(tg, disabled_edges, node, curr_index, stack, node_info, sccs, min_size); 
+            strongconnect(tg, node, curr_index, stack, node_info, sccs, min_size); 
         }
     }
 
@@ -52,7 +51,6 @@ std::vector<std::vector<NodeId>> identify_strongly_connected_components(const Ti
 
 
 void strongconnect(const TimingGraph& tg,
-                   const std::set<tatum::EdgeId>& disabled_edges,
                    NodeId node, 
                    int& cur_index, 
                    std::stack<NodeId>& stack,
@@ -67,13 +65,13 @@ void strongconnect(const TimingGraph& tg,
     node_info[node].on_stack = true;
 
     for(EdgeId edge : tg.node_out_edges(node)) {
-        if(disabled_edges.count(edge)) continue;
+        if(tg.edge_disabled(edge)) continue;
 
         NodeId sink_node = tg.edge_sink_node(edge);
 
         if(node_info[sink_node].index == -1) {
             //Have not visited sink_node yet
-            strongconnect(tg, disabled_edges, sink_node, cur_index, stack, node_info, sccs, min_size);
+            strongconnect(tg, sink_node, cur_index, stack, node_info, sccs, min_size);
             node_info[node].low_link = std::min(node_info[node].low_link, node_info[sink_node].low_link);
         } else if(node_info[sink_node].on_stack) {
             //sink_node is part of the SCC
