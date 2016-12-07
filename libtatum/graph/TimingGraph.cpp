@@ -6,6 +6,7 @@
 
 #include "tatum_assert.hpp"
 #include "tatum_error.hpp"
+#include "loop_detect.hpp"
 #include "TimingGraph.hpp"
 
 
@@ -155,6 +156,7 @@ EdgeId TimingGraph::add_edge(const NodeId src_node, const NodeId sink_node) {
     //Create the edgge
     edge_src_nodes_.push_back(src_node);
     edge_sink_nodes_.push_back(sink_node);
+    edges_disabled_.push_back(false);
 
     //Verify
     TATUM_ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
@@ -213,6 +215,11 @@ void TimingGraph::remove_edge(const EdgeId edge_id) {
     edge_ids_[edge_id] = EdgeId::INVALID();
 }
 
+void TimingGraph::disable_edge(const EdgeId edge, bool disable) {
+    TATUM_ASSERT(valid_edge_id(edge));
+    edges_disabled_[edge] = disable;
+}
+
 GraphIdMaps TimingGraph::compress() {
     auto node_id_map = compress_ids(node_ids_);
     auto edge_id_map = compress_ids(edge_ids_);
@@ -254,7 +261,11 @@ void TimingGraph::force_levelize() {
     //Also initialize the first level (nodes with no fanin)
     std::vector<int> node_fanin_remaining(nodes().size());
     for(NodeId node_id : nodes()) {
-        size_t node_fanin = node_in_edges(node_id).size();
+        size_t node_fanin = 0;
+        for(EdgeId edge : node_in_edges(node_id)) {
+            if(edge_disabled(edge)) continue;
+            ++node_fanin;
+        }
         node_fanin_remaining[size_t(node_id)] = node_fanin;
 
         //Initialize the first level
@@ -286,6 +297,8 @@ void TimingGraph::force_levelize() {
         for(const NodeId node_id : level_nodes_[LevelId(level_idx)]) {
             //Inspect the fanout
             for(EdgeId edge_id : node_out_edges(node_id)) {
+                if(edge_disabled(edge_id)) continue;
+
                 NodeId sink_node = edge_sink_node(edge_id);
 
                 //Decrement the fanin count
@@ -439,6 +452,7 @@ void TimingGraph::remap_edges(const tatum::util::linear_map<EdgeId,EdgeId>& edge
     edge_ids_ = clean_and_reorder_ids(edge_id_map);
     edge_sink_nodes_ = clean_and_reorder_values(edge_sink_nodes_, edge_id_map);
     edge_src_nodes_ = clean_and_reorder_values(edge_src_nodes_, edge_id_map);
+    edges_disabled_ = clean_and_reorder_values(edges_disabled_, edge_id_map);
 
     //Update cross-references
     for(auto& edges_ref : node_in_edges_) {
@@ -586,6 +600,22 @@ bool TimingGraph::validate_structure() const {
             throw tatum::Error("Primary outputs should be only SINK nodes");
         }
     }
+
+    auto sccs = identify_combinational_loops(*this);
+    if(!sccs.empty()) {
+        throw Error("Timing graph contains active combinational loops. "
+                    "Either disable timing edges (to break the loops) or restructure the graph."); 
+
+        //Future work: 
+        //
+        //  We could handle this internally by identifying the incoming and outgoing edges of the SCC,
+        //  and estimating a 'max' delay through the SCC from each incoming to each outgoing edge.
+        //  The SCC could then be replaced with a clique between SCC input and output edges.
+        //
+        //  One possible estimate is to trace the longest path through the SCC without visiting a node 
+        //  more than once (although this is not gaurenteed to be conservative). 
+    }
+
 
     return true;
 }

@@ -113,6 +113,8 @@ class TimingGraph {
             return edge_src_nodes_[id]; 
         }
 
+        bool edge_disabled(const EdgeId id) const { return edges_disabled_[id]; }
+
         /*
          * Level accessors
          */
@@ -195,6 +197,8 @@ class TimingGraph {
         ///\see add_edge(), compress()
         void remove_edge(const EdgeId edge_id);
 
+        void disable_edge(const EdgeId edge_id, bool disable=true);
+
         ///Compresses the Edge and Node ID spaces to eliminate invalid entries
         ///\returns A structure containing mappings from old to new IDs
         GraphIdMaps  compress();
@@ -252,6 +256,7 @@ class TimingGraph {
         tatum::util::linear_map<EdgeId,EdgeId> edge_ids_; //The edge IDs in the graph
         tatum::util::linear_map<EdgeId,NodeId> edge_sink_nodes_; //Sink node for each edge
         tatum::util::linear_map<EdgeId,NodeId> edge_src_nodes_; //Source node for each edge
+        tatum::util::linear_map<EdgeId,bool>   edges_disabled_;
 
         //Auxilary graph-level info, filled in by levelize()
         tatum::util::linear_map<LevelId,LevelId> level_ids_; //The level IDs in the graph

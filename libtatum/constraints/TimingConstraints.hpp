@@ -21,13 +21,11 @@ class TimingConstraints {
         typedef std::map<DomainPair,float>::const_iterator clock_constraint_iterator;
         typedef std::map<NodeId,IoConstraint>::const_iterator io_constraint_iterator;
         typedef std::unordered_set<NodeId>::const_iterator constant_generator_iterator;
-        typedef std::unordered_set<EdgeId>::const_iterator disabled_edge_iterator;
 
         typedef tatum::util::Range<domain_iterator> domain_range;
         typedef tatum::util::Range<clock_constraint_iterator> clock_constraint_range;
         typedef tatum::util::Range<io_constraint_iterator> io_constraint_range;
         typedef tatum::util::Range<constant_generator_iterator> constant_generator_range;
-        typedef tatum::util::Range<disabled_edge_iterator> disabled_edge_range;
 
     public: //Accessors
         //\returns A range containing all defined clock domains
@@ -89,11 +87,6 @@ class TimingConstraints {
         //\returns A range of input constraints for the node id
         io_constraint_range output_constraints(const NodeId id) const;
 
-        ///\returns True if the edge is disabled (i.e. should not be analyzed)
-        bool disabled_timing(const EdgeId id) const;
-
-        disabled_edge_range disabled_timing_edges() const;
-
         ///Prints out the timing constraints for debug purposes
         void print() const;
     public: //Mutators
@@ -118,9 +111,6 @@ class TimingConstraints {
         ///Sets whether the specified node is a constant generator
         void set_constant_generator(const NodeId node_id, bool is_constant_generator=true);
 
-        ///Sets whether the specified edge should be analyzed
-        void set_disable_timing(const EdgeId edge, bool should_disable);
-
         ///Update node IDs if they have changed
         ///\param node_map A vector mapping from old to new node ids
         void remap_nodes(const tatum::util::linear_map<NodeId,NodeId>& node_map);
@@ -141,8 +131,6 @@ class TimingConstraints {
         tatum::util::linear_map<DomainId,NodeId> domain_sources_;
 
         std::unordered_set<NodeId> constant_generators_;
-
-        std::unordered_set<EdgeId> disabled_edges_;
 
         std::map<DomainPair,float> setup_constraints_;
         std::map<DomainPair,float> hold_constraints_;
