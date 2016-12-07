@@ -26,7 +26,6 @@ class TimingGraphBuilder {
 
         tatum::TimingGraph timing_graph();
         tatum::FixedDelayCalculator delay_calculator();
-        std::set<tatum::EdgeId> disabled_edges();
 
     private:
         void build();
@@ -50,8 +49,6 @@ class TimingGraphBuilder {
         const AtomNetlist& netlist_;
         AtomMap& netlist_map_;
         const std::unordered_map<AtomBlockId,t_pb_graph_node*>& blk_to_pb_gnode_;
-
-        std::set<tatum::EdgeId> disabled_edges_;
 
         float inter_cluster_net_delay_;
         tatum::util::linear_map<tatum::EdgeId,tatum::Time> max_edge_delays_;

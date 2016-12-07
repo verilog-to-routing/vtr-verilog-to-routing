@@ -396,7 +396,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map, expected_lowest_cost_pb_gnode, inter_cluster_net_delay);
         tatum::TimingGraph tg = tg_builder.timing_graph();
         tatum::FixedDelayCalculator dc = tg_builder.delay_calculator();
-        tatum::TimingConstraints tc = create_timing_constraints(g_atom_nl, g_atom_map, tg_builder.disabled_edges());
+        tatum::TimingConstraints tc = create_timing_constraints(g_atom_nl, g_atom_map);
 
         std::ofstream os_timing_echo("timing.echo");
         write_timing_graph(os_timing_echo, tg);
@@ -404,7 +404,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         write_delay_model(os_timing_echo, tg, dc);
         os_timing_echo.flush();
 
-        std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(tg, tc, dc);
+        /*std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(tg, tc, dc);*/
+        std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(tg, tc, dc);
         analyzer->update_timing();
 
         auto dc_sp = std::make_shared<tatum::FixedDelayCalculator>(dc);

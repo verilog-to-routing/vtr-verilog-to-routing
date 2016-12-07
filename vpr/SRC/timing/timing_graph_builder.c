@@ -40,8 +40,6 @@ FixedDelayCalculator TimingGraphBuilder::delay_calculator() {
     return FixedDelayCalculator(max_edge_delays_, setup_times_);
 }
 
-std::set<tatum::EdgeId> TimingGraphBuilder::disabled_edges() { return disabled_edges_; }
-
 void TimingGraphBuilder::build() {
     for(AtomBlockId blk : netlist_.blocks()) {
 
@@ -259,10 +257,10 @@ void TimingGraphBuilder::fix_comb_loops() {
             EdgeId edge_to_break = find_scc_edge_to_break(scc);
             VTR_ASSERT(edge_to_break);
 
-            disabled_edges_.insert(edge_to_break);
+            tg_.disable_edge(edge_to_break);
         }
 
-        sccs = tatum::identify_combinational_loops(tg_, disabled_edges_);
+        sccs = tatum::identify_combinational_loops(tg_);
     }
 }
 
@@ -273,13 +271,13 @@ tatum::EdgeId TimingGraphBuilder::find_scc_edge_to_break(std::vector<tatum::Node
     for(tatum::NodeId src_node : scc) {
         AtomPinId src_pin = netlist_map_.pin_tnode[src_node];
         for(tatum::EdgeId edge : tg_.node_out_edges(src_node)) {
-            if(disabled_edges_.count(edge)) continue;
+            if(tg_.edge_disabled(edge)) continue;
 
             tatum::NodeId sink_node = tg_.edge_sink_node(edge);
             AtomPinId sink_pin = netlist_map_.pin_tnode[sink_node];
 
             if(scc_set.count(sink_node)) {
-                vtr::printf_warning(__FILE__, __LINE__, "Arbitrarily disabling timing on edge %zu (%s -> %s) to break combinational loop\n", 
+                vtr::printf_warning(__FILE__, __LINE__, "Arbitrarily disabling timing graph edge %zu (%s -> %s) to break combinational loop\n", 
                                                          edge, netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(sink_pin).c_str());
                 return edge;
             }
