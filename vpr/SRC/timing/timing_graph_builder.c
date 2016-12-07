@@ -248,12 +248,6 @@ void TimingGraphBuilder::fix_comb_loops() {
     while(!sccs.empty()) {
         vtr::printf_warning(__FILE__, __LINE__, "Detected %zu strongly connected component(s) forming combinational loop(s) in timing graph\n", sccs.size());
         for(auto scc : sccs) {
-            vtr::printf("SCC:");
-            for(tatum::NodeId node : scc) {
-                vtr::printf(" %zu", node);
-            }
-            vtr::printf("\n");
-
             EdgeId edge_to_break = find_scc_edge_to_break(scc);
             VTR_ASSERT(edge_to_break);
 
