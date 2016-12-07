@@ -208,6 +208,8 @@ class TimingGraph {
         bool validate_sizes();
         bool validate_values();
         bool validate_structure();
+        bool detect_loops();
+        bool detect_loops_recurr(const NodeId node, tatum::util::linear_map<NodeId,size_t>& visited);
 
     private: //Data
         /*
@@ -232,6 +234,9 @@ class TimingGraph {
                                               //NOTE: we track this separetely (unlike Primary Inputs) since these are
                                               //      scattered through the graph and do not exist on a single level
 };
+
+//Returns the set of nodes (Strongly Connected Components) that form loops in the timing graph
+std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg);
 
 //Mappings from old to new IDs
 struct GraphIdMaps {
