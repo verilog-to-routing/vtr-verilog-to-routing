@@ -418,19 +418,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         opt_slack.update();
 
 
-        /*
-         *for(tatum::NodeId node : tg.nodes()) {
-         *    for(const tatum::TimingTag& tag : analyzer->setup_tags(node, tatum::TagType::DATA_ARRIVAL)) {
-         *        if(tag.launch_clock_domain() == tatum::DomainId(2)) {
-         *            AtomPinId pin = g_atom_map.pin_tnode[node];
-         *            vtr::printf("tatum clk 2 arrival at node: %zu pin: %s arr: %g\n", node, g_atom_nl.pin_name(pin).c_str(), tag.time().value());
-         *        }
-         *    }
-         *}
-         *
-         */
-
-
         //Old analyzer
 		do_timing_analysis(raw_slacks, timing_inf, true, false);
         slacks = convert_raw_slacks_to_prepack_slacks(raw_slacks);
@@ -451,7 +438,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                 min_rel_diff = std::min(min_rel_diff, rel_diff);
                 if(std::abs(rel_diff) > rel_threshold) {
                     num_crit_diffs++;
-                    vtr::printf("Net %zu '%s' Pins: %zu->%zu Nodes: %zu->%zu tnode: %d->%d '%s->%s'\n", 
+                    vtr::printf("Net %zu '%s' Pins: %zu->%zu Nodes: %zu->%zu tnode: %d->%d (%s -> %s)\n", 
                                                                                 net,
                                                                                 g_atom_nl.net_name(net).c_str(),
                                                                                 driver, pin, 
