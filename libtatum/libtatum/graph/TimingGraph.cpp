@@ -12,22 +12,6 @@
 
 namespace tatum {
 
-//Internal data used in identify_strongly_connected_components() and strongconnect()
-struct NodeSccInfo {
-    bool on_stack = false;
-    int index = -1;
-    int low_link = -1;
-};
-
-std::vector<std::vector<tatum::NodeId>> identify_strongly_connected_components(const tatum::TimingGraph& tg, size_t min_size);
-
-void strongconnect(const tatum::TimingGraph& tg,
-                   tatum::NodeId node, 
-                   int& cur_index, 
-                   std::stack<tatum::NodeId>& stack,
-                   tatum::util::linear_map<tatum::NodeId,NodeSccInfo>& node_info,
-                   std::vector<std::vector<tatum::NodeId>>& sccs,
-                   size_t min_size);
 
 //Builds a mapping from old to new ids by skipping values marked invalid
 template<typename Id>
@@ -279,8 +263,8 @@ void TimingGraph::force_levelize() {
 
             if (node_type(node_id) == NodeType::SOURCE) {
                 //We require that all primary inputs (i.e. top-level circuit inputs) to
-                //be sources. Due to disconnected nodes (e.g. due to breaking edges in 
-                //combinational loops) we may have non-sources which appear in the first level.
+                //be SOURCEs. Due to disconnected nodes we may have non-SOURCEs which 
+                //appear in the first level.
                 primary_inputs_.push_back(node_id);
             }
         }
@@ -603,93 +587,7 @@ bool TimingGraph::validate_structure() const {
         }
     }
 
-    auto comb_loops = identify_combinational_loops(*this);
-    if(!comb_loops.empty()) {
-        throw tatum::Error("Combinational loop detected in timing graph (timing graph should be a DAG). "
-                           "Consider breaking the loops (by cutting edges) or replacing them with an equivalent structure. ");
-        //Future work: 
-        //
-        //  We could handle this internally by identifying the incoming and outgoing edges of the SCC,
-        //  and estimating a 'max' delay through the SCC from each incoming to each outgoing edge.
-        //  The SCC could then be replaced with a clique between SCC input and output edges.
-        //
-        //  One possible estimate is to trace the longest path through the SCC without visiting a node 
-        //  more than once (although this is not gaurenteed to be conservative). 
-    }
-
     return true;
-}
-
-//Returns sets of nodes involved in combinational loops
-std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg) {
-    constexpr size_t MIN_LOOP_SCC_SIZE = 2; //Any SCC of size >= 2 is a loop in the timing graph
-    return identify_strongly_connected_components(tg, MIN_LOOP_SCC_SIZE);
-}
-
-//Returns sets of nodes (i.e. strongly connected componenets) which exceed the specifided min_size
-std::vector<std::vector<NodeId>> identify_strongly_connected_components(const TimingGraph& tg, size_t min_size) {
-    //This uses Tarjan's algorithm which identifies Strongly Connected Components (SCCs) in O(|V| + |E|) time
-    int curr_index = 0;
-    std::stack<NodeId> stack;
-    tatum::util::linear_map<NodeId,NodeSccInfo> node_info(tg.nodes().size());
-    std::vector<std::vector<NodeId>> sccs;
-
-    for(NodeId node : tg.nodes()) {
-        if(node_info[node].index == -1) {
-            strongconnect(tg, node, curr_index, stack, node_info, sccs, min_size); 
-        }
-    }
-
-    return sccs;
-}
-
-
-void strongconnect(const TimingGraph& tg,
-                   NodeId node, 
-                   int& cur_index, 
-                   std::stack<NodeId>& stack,
-                   tatum::util::linear_map<NodeId,NodeSccInfo>& node_info,
-                   std::vector<std::vector<NodeId>>& sccs,
-                   size_t min_size) {
-    node_info[node].index = cur_index;
-    node_info[node].low_link = cur_index;
-    ++cur_index;
-
-    stack.push(node);
-    node_info[node].on_stack = true;
-
-    for(EdgeId edge : tg.node_out_edges(node)) {
-        NodeId sink_node = tg.edge_sink_node(edge);
-
-        if(node_info[sink_node].index == -1) {
-            //Have not visited sink_node yet
-            strongconnect(tg, sink_node, cur_index, stack, node_info, sccs, min_size);
-            node_info[node].low_link = std::min(node_info[node].low_link, node_info[sink_node].low_link);
-        } else if(node_info[sink_node].on_stack) {
-            //sink_node is part of the SCC
-            node_info[node].low_link = std::min(node_info[node].low_link, node_info[sink_node].low_link);
-        }
-    }
-
-    if(node_info[node].low_link == node_info[node].index) {
-        //node is the root of a SCC
-        std::vector<NodeId> scc;
-
-        NodeId scc_node;
-        do {
-            scc_node = stack.top();
-            stack.pop();
-
-            node_info[scc_node].on_stack = false;
-
-            scc.push_back(scc_node);
-
-        } while(scc_node != node);
-
-        if(scc.size() >= min_size) {
-            sccs.push_back(scc);
-        }
-    }
 }
 
 //Stream output for NodeType
