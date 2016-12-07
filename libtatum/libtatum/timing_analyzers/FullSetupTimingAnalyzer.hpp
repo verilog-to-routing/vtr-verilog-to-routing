@@ -2,6 +2,7 @@
 #include "SerialWalker.hpp"
 #include "SetupAnalysis.hpp"
 #include "SetupTimingAnalyzer.hpp"
+#include "validate_timing_graph_constraints.hpp"
 
 namespace tatum { namespace detail {
 
@@ -21,8 +22,9 @@ class FullSetupTimingAnalyzer : public SetupTimingAnalyzer {
             , timing_graph_(timing_graph)
             , timing_constraints_(timing_constraints)
             , delay_calculator_(delay_calculator)
-            , setup_visitor_(timing_graph_.nodes().size())
-            {}
+            , setup_visitor_(timing_graph_.nodes().size()) {
+            validate_timing_graph_constraints(timing_graph_, timing_constraints_);
+        }
 
     protected:
         virtual void update_timing_impl() override {

@@ -2,6 +2,7 @@
 #include "SerialWalker.hpp"
 #include "HoldAnalysis.hpp"
 #include "HoldTimingAnalyzer.hpp"
+#include "validate_timing_graph_constraints.hpp"
 
 namespace tatum { namespace detail {
 
@@ -21,8 +22,9 @@ class FullHoldTimingAnalyzer : public HoldTimingAnalyzer {
             , timing_graph_(timing_graph)
             , timing_constraints_(timing_constraints)
             , delay_calculator_(delay_calculator)
-            , hold_visitor_(timing_graph_.nodes().size())
-            {}
+            , hold_visitor_(timing_graph_.nodes().size()) {
+            validate_timing_graph_constraints(timing_graph_, timing_constraints_);
+        }
 
     protected:
         virtual void update_timing_impl() override {
