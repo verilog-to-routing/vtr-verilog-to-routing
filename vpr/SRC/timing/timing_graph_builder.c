@@ -1,7 +1,11 @@
+#include <set>
+
 #include "timing_graph_builder.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
 #include "atom_netlist.h"
+#include "vtr_log.h"
+#include "loop_detect.hpp"
 
 using tatum::TimingGraph;
 using tatum::FixedDelayCalculator;
@@ -10,8 +14,25 @@ using tatum::NodeType;
 using tatum::EdgeId;
 using tatum::Time;
 
+template<class K, class V>
+tatum::util::linear_map<K,V> remap_valid(const tatum::util::linear_map<K,V>& data, const tatum::util::linear_map<K,K>& id_map) {
+    tatum::util::linear_map<K,V> new_data;
+
+    for(size_t i = 0; i < data.size(); ++i) {
+        tatum::EdgeId old_edge(i);
+        tatum::EdgeId new_edge = id_map[old_edge];
+
+        if(new_edge) {
+            new_data.insert(new_edge, data[old_edge]);
+        }
+    }
+
+    return new_data;
+}
+
 TimingGraph TimingGraphBuilder::timing_graph() {
     tg_.levelize();
+    tg_.validate();
     return std::move(tg_);
 }
 
@@ -40,6 +61,8 @@ void TimingGraphBuilder::build() {
     for(AtomNetId net : netlist_.nets()) {
         add_net_to_timing_graph(net);
     }
+
+    fix_comb_loops();
 }
 
 void TimingGraphBuilder::add_io_to_timing_graph(const AtomBlockId blk) {
@@ -215,6 +238,71 @@ void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
 
         max_edge_delays_.insert(edge, Time(inter_cluster_net_delay_));
     }
+}
+
+void TimingGraphBuilder::fix_comb_loops() {
+    auto sccs = tatum::identify_combinational_loops(tg_);
+
+    //For non-simple loops (i.e. SCCs with multiple loops) we may need to break
+    //multiple edges, so repeatedly break edges until there are no SCCs left
+    while(!sccs.empty()) {
+        vtr::printf_warning(__FILE__, __LINE__, "Detected %zu strongly connected component(s) forming combinational loop(s) in timing graph\n", sccs.size());
+        for(auto scc : sccs) {
+            vtr::printf("SCC:");
+            for(tatum::NodeId node : scc) {
+                vtr::printf(" %zu", node);
+            }
+            vtr::printf("\n");
+
+            EdgeId edge_to_break = find_scc_edge_to_break(scc);
+            VTR_ASSERT(edge_to_break);
+
+            disabled_edges_.insert(edge_to_break);
+        }
+
+        sccs = tatum::identify_combinational_loops(tg_, disabled_edges_);
+    }
+}
+
+tatum::EdgeId TimingGraphBuilder::find_scc_edge_to_break(std::vector<tatum::NodeId> scc) {
+    //Find an edge which is part of the SCC and remove it from the graph,
+    //in the hope of breaking the SCC
+    std::set<tatum::NodeId> scc_set(scc.begin(), scc.end());
+    for(tatum::NodeId src_node : scc) {
+        AtomPinId src_pin = netlist_map_.pin_tnode[src_node];
+        for(tatum::EdgeId edge : tg_.node_out_edges(src_node)) {
+            if(disabled_edges_.count(edge)) continue;
+
+            tatum::NodeId sink_node = tg_.edge_sink_node(edge);
+            AtomPinId sink_pin = netlist_map_.pin_tnode[sink_node];
+
+            if(scc_set.count(sink_node)) {
+                vtr::printf_warning(__FILE__, __LINE__, "Arbitrarily disabling timing on edge %zu (%s -> %s) to break combinational loop\n", 
+                                                         edge, netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(sink_pin).c_str());
+                return edge;
+            }
+        }
+    }
+    return tatum::EdgeId::INVALID();
+}
+
+void TimingGraphBuilder::remap_ids(const tatum::GraphIdMaps& id_mapping) {
+    //Remap the delays
+    max_edge_delays_ = remap_valid(max_edge_delays_, id_mapping.edge_id_map);
+    setup_times_ = remap_valid(setup_times_, id_mapping.edge_id_map);
+
+    //Update the pin-tnode mapping
+    vtr::bimap<AtomPinId,tatum::NodeId> new_pin_tnode;
+
+    for(auto kv : netlist_map_.pin_tnode) {
+        AtomPinId pin = kv.first;
+        tatum::NodeId old_tnode = kv.second;
+        tatum::NodeId new_tnode = id_mapping.node_id_map[old_tnode];
+
+        new_pin_tnode.insert(pin, new_tnode); 
+    }
+
+    netlist_map_.pin_tnode = new_pin_tnode;
 }
 
 const t_pb_graph_pin* TimingGraphBuilder::find_pb_graph_pin(const AtomPinId pin) {

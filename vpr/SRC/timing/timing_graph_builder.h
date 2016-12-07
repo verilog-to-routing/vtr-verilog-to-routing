@@ -34,6 +34,11 @@ class TimingGraphBuilder {
         void add_seq_block_to_timing_graph(const AtomBlockId blk);
         void add_net_to_timing_graph(const AtomNetId net);
 
+        void fix_comb_loops();
+        tatum::EdgeId find_scc_edge_to_break(std::vector<tatum::NodeId> scc);
+
+        void remap_ids(const tatum::GraphIdMaps& id_mapping);
+
         const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin);
         const t_pb_graph_pin* find_associated_clock_pin(const AtomPinId pin);
 
@@ -43,6 +48,8 @@ class TimingGraphBuilder {
         const AtomNetlist& netlist_;
         AtomMap& netlist_map_;
         const std::unordered_map<AtomBlockId,t_pb_graph_node*>& blk_to_pb_gnode_;
+
+        std::set<tatum::EdgeId> disabled_edges_;
 
         float inter_cluster_net_delay_;
         tatum::util::linear_map<tatum::EdgeId,tatum::Time> max_edge_delays_;
