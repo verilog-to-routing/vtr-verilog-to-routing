@@ -567,8 +567,9 @@ bool TimingGraph::validate_structure() const {
                 }
             } else if (src_type == NodeType::OPIN) {
                 if(   sink_type != NodeType::IPIN
+                   && sink_type != NodeType::CPIN
                    && sink_type != NodeType::SINK) {
-                    throw tatum::Error("OPIN nodes should only drive IPIN or SINK nodes");
+                    throw tatum::Error("OPIN nodes should only drive IPIN, CPIN or SINK nodes");
                 }
             } else if (src_type == NodeType::CPIN) {
                 if(   sink_type != NodeType::SOURCE
