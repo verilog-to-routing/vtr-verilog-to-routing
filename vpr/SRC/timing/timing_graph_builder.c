@@ -40,6 +40,8 @@ FixedDelayCalculator TimingGraphBuilder::delay_calculator() {
     return FixedDelayCalculator(max_edge_delays_, setup_times_);
 }
 
+std::set<tatum::EdgeId> TimingGraphBuilder::disabled_edges() { return disabled_edges_; }
+
 void TimingGraphBuilder::build() {
     for(AtomBlockId blk : netlist_.blocks()) {
 

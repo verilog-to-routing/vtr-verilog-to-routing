@@ -1120,7 +1120,7 @@ const char * get_sdc_file_name(){
 	return sdc_file_name;
 }
 
-tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, const AtomMap& atom_map) {
+tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, const AtomMap& atom_map, std::set<tatum::EdgeId> disabled_edges) {
     auto tc = tatum::TimingConstraints();
 
     //Initialize the clocks
@@ -1225,6 +1225,11 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
         tatum::NodeId node = atom_map.pin_tnode[pin];
 
         tc.set_output_constraint(node, domain, io_constraint->delay);
+    }
+
+    //Disable the specified timing edges (e.g. to break combinational loops)
+    for(tatum::EdgeId edge : disabled_edges) {
+        tc.set_disable_timing(edge, true);
     }
 
     //TODO: FF-FF constraint overrides (needs support in Tatum)

@@ -1,4 +1,5 @@
 #include <unordered_map>
+#include <set>
 
 #include "vtr_linear_map.h"
 
@@ -25,6 +26,7 @@ class TimingGraphBuilder {
 
         tatum::TimingGraph timing_graph();
         tatum::FixedDelayCalculator delay_calculator();
+        std::set<tatum::EdgeId> disabled_edges();
 
     private:
         void build();
