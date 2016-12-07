@@ -25,6 +25,10 @@ As an example consider libsdcparse:
 
     Note the '--squash' option which prevents the whole up-stream history from being merged into the current repository.
 
+4. [This is unusual, be sure you really mean to do this!] To push local changes to the upstream subtree
+
+    ` git subtree push --prefix libsdcparse github-libsdcparse master `
+
 For more details see [here](https://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git-subtree/) for a good overview.
 
 Coverity
