@@ -9,6 +9,7 @@
 
 #include "timing_analyzers.hpp"
 #include "TimingGraph.hpp"
+#include "TimingConstraints.hpp"
 #include "TimingTags.hpp"
 #include "FixedDelayCalculator.hpp"
 
@@ -36,14 +37,15 @@ void find_transitive_fanin_nodes(const TimingGraph& tg, std::vector<NodeId>& nod
  */
 
 template<class DelayCalc=FixedDelayCalculator>
-void write_dot_file_setup(std::string filename, 
-                          const TimingGraph& tg, 
+void write_dot_file_setup(std::string filename,
+                          const TimingGraph& tg,
                           std::shared_ptr<DelayCalc> delay_calc = std::shared_ptr<DelayCalc>(),
-                          std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(), 
+                          std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(),
+                          const TimingConstraints& tc = TimingConstraints(),
                           std::vector<NodeId> nodes = std::vector<NodeId>()) {
 
     if(tg.nodes().size() > 1000 && nodes.empty()) {
-        std::cout << "Skipping setup dot file due to large timing graph size\n"; 
+        std::cout << "Skipping setup dot file due to large timing graph size\n";
         return;
     }
 
@@ -86,7 +88,7 @@ void write_dot_file_setup(std::string filename,
                 }
                 os << tag.origin_node();
                 os << "\\n";
-                os << " time: " << tag.time().value();
+                os << "time: " << tag.time().value();
                 os << "}";
             }
         }
@@ -114,15 +116,26 @@ void write_dot_file_setup(std::string filename,
         if(std::binary_search(nodes.begin(), nodes.end(), node_id)
            && std::binary_search(nodes.begin(), nodes.end(), sink_node_id)) {
             os << "\tnode" << size_t(node_id) << " -> node" << size_t(sink_node_id);
+            os << " [ label=\"" << edge_id;
             if(delay_calc) {
                 if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SINK) {
-                    os << " [ label=\"" << edge_id << "\n"<< -delay_calc->setup_time(tg, edge_id) << " (-tsu)\" ]";
+                    os << "\\n"<< -delay_calc->setup_time(tg, edge_id) << " (-tsu)";
                 } else if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SOURCE) {
-                    os << " [ label=\"" << edge_id << "\n" << delay_calc->max_edge_delay(tg, edge_id) << " (tcq)\" ]";
+                    os << "\\n" << delay_calc->max_edge_delay(tg, edge_id) << " (tcq)";
                 } else {
-                    os << " [ label=\"" << edge_id << "\n" << delay_calc->max_edge_delay(tg, edge_id) << "\" ]";
+                    os << "\\n" << delay_calc->max_edge_delay(tg, edge_id);
                 }
             }
+            if(tc.disabled_timing(edge_id)) {
+                os << "\\n" << "(disabled)";
+            }
+            os << "\""; //end label
+            if(tc.disabled_timing(edge_id)) {
+                os << " style=\"dashed\"";
+                os << " color=\"#aaaaaa\""; //grey
+                os << " fontcolor=\"#aaaaaa\""; //grey
+            }
+            os << "]";
             os << ";" <<std::endl;
         }
     }
@@ -131,14 +144,14 @@ void write_dot_file_setup(std::string filename,
 }
 
 template<class DelayCalc=FixedDelayCalculator>
-void write_dot_file_hold(std::string filename, 
-                         const TimingGraph& tg, 
+void write_dot_file_hold(std::string filename,
+                         const TimingGraph& tg,
                          std::shared_ptr<DelayCalc> delay_calc = std::shared_ptr<DelayCalc>(),
-                         std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(), 
+                         std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(),
                          std::vector<NodeId> nodes = std::vector<NodeId>()) {
 
     if(tg.nodes().size() > 1000 && nodes.empty()) {
-        std::cout << "Skipping hold dot file due to large timing graph size\n"; 
+        std::cout << "Skipping hold dot file due to large timing graph size\n";
         return;
     }
 
