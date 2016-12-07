@@ -54,7 +54,7 @@
  *
  */
 #include <vector>
-#include <iosfwd>
+#include <set>
 
 #include "tatum_range.hpp"
 #include "tatum_linear_map.hpp"
@@ -244,26 +244,23 @@ class TimingGraph {
          */
         //Node data
         tatum::util::linear_map<NodeId,NodeId> node_ids_; //The node IDs in the graph
-        tatum::util::linear_map<NodeId,NodeType> node_types_; //Type of node [0..num_nodes()-1]
-        tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_in_edges(node_id)-1]
-        tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node 'node_id' [0..num_nodes()-1][0..num_node_out_edges(node_id)-1]
+        tatum::util::linear_map<NodeId,NodeType> node_types_; //Type of node
+        tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node
+        tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node
 
         //Edge data
         tatum::util::linear_map<EdgeId,EdgeId> edge_ids_; //The edge IDs in the graph
-        tatum::util::linear_map<EdgeId,NodeId> edge_sink_nodes_; //Sink node for each edge [0..num_edges()-1]
-        tatum::util::linear_map<EdgeId,NodeId> edge_src_nodes_; //Source node for each edge [0..num_edges()-1]
+        tatum::util::linear_map<EdgeId,NodeId> edge_sink_nodes_; //Sink node for each edge
+        tatum::util::linear_map<EdgeId,NodeId> edge_src_nodes_; //Source node for each edge
 
         //Auxilary graph-level info, filled in by levelize()
         tatum::util::linear_map<LevelId,LevelId> level_ids_; //The level IDs in the graph
-        tatum::util::linear_map<LevelId,std::vector<NodeId>> level_nodes_; //Nodes in each level [0..num_levels()-1]
+        tatum::util::linear_map<LevelId,std::vector<NodeId>> level_nodes_; //Nodes in each level
         std::vector<NodeId> primary_inputs_; //Primary input nodes of the timing graph.
         std::vector<NodeId> primary_outputs_; //Primary output nodes of the timing graph.
         bool is_levelized_ = false; //Inidcates if the current levelization is valid
 
 };
-
-//Returns the set of nodes (Strongly Connected Components) that form loops in the timing graph
-std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg);
 
 //Mappings from old to new IDs
 struct GraphIdMaps {
