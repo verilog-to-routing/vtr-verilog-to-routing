@@ -133,6 +133,8 @@ Container update_all_refs(const Container& values, const tatum::util::linear_map
 
 
 NodeId TimingGraph::add_node(const NodeType type) {
+    //Invalidate the levelization
+    is_levelized_ = false;
 
     //Reserve an ID
     NodeId node_id = NodeId(node_ids_.size());
@@ -159,6 +161,9 @@ EdgeId TimingGraph::add_edge(const NodeId src_node, const NodeId sink_node) {
     TATUM_ASSERT(valid_node_id(src_node));
     TATUM_ASSERT(valid_node_id(sink_node));
 
+    //Invalidate the levelization
+    is_levelized_ = false;
+
     //Reserve an edge ID
     EdgeId edge_id = EdgeId(edge_ids_.size());
     edge_ids_.push_back(edge_id);
@@ -178,7 +183,71 @@ EdgeId TimingGraph::add_edge(const NodeId src_node, const NodeId sink_node) {
     return edge_id;
 }
 
+
+void TimingGraph::remove_node(const NodeId node_id) {
+    TATUM_ASSERT(valid_node_id(node_id));
+
+    //Invalidate the levelization
+    is_levelized_ = false;
+
+    //Invalidate all the references
+    for(EdgeId in_edge : node_in_edges(node_id)) {
+        if(!in_edge) continue;
+
+        remove_edge(in_edge);
+    }
+
+    for(EdgeId out_edge : node_out_edges(node_id)) {
+        if(!out_edge) continue;
+
+        remove_edge(out_edge);
+    }
+
+    //Mark the node as invalid
+    node_ids_[node_id] = NodeId::INVALID();
+}
+
+void TimingGraph::remove_edge(const EdgeId edge_id) {
+    TATUM_ASSERT(valid_edge_id(edge_id));
+
+    //Invalidate the levelization
+    is_levelized_ = false;
+
+    //Invalidate the upstream node to edge references
+    NodeId src_node = edge_src_node(edge_id);    
+    auto iter_out = std::find(node_out_edges_[src_node].begin(), node_out_edges_[src_node].end(), edge_id);
+    TATUM_ASSERT(iter_out != node_out_edges_[src_node].end());
+    *iter_out = EdgeId::INVALID();
+
+    //Invalidate the downstream node to edge references
+    NodeId sink_node = edge_sink_node(edge_id);    
+    auto iter_in = std::find(node_in_edges_[sink_node].begin(), node_in_edges_[sink_node].end(), edge_id);
+    TATUM_ASSERT(iter_in != node_in_edges_[sink_node].end());
+    *iter_in = EdgeId::INVALID();
+
+    //Mark the edge invalid
+    edge_ids_[edge_id] = EdgeId::INVALID();
+}
+
+GraphIdMaps TimingGraph::compress() {
+    auto node_id_map = compress_ids(node_ids_);
+    auto edge_id_map = compress_ids(edge_ids_);
+
+    remap_nodes(node_id_map);
+    remap_edges(edge_id_map);
+
+    validate();
+
+    return {node_id_map, edge_id_map};
+}
+
 void TimingGraph::levelize() {
+    if(!is_levelized_) {
+        force_levelize();
+    }
+}
+
+void TimingGraph::force_levelize() {
     //Levelizes the timing graph
     //This over-writes any previous levelization if it exists.
     //
@@ -256,60 +325,12 @@ void TimingGraph::levelize() {
             level_ids_.emplace_back(level_idx);
         }
     }
+
+    //Mark the levelization as valid
+    is_levelized_ = true;
 }
 
-void TimingGraph::remove_node(const NodeId node_id) {
-    TATUM_ASSERT(valid_node_id(node_id));
-
-    //Invalidate all the references
-    for(EdgeId in_edge : node_in_edges(node_id)) {
-        if(!in_edge) continue;
-
-        remove_edge(in_edge);
-    }
-
-    for(EdgeId out_edge : node_out_edges(node_id)) {
-        if(!out_edge) continue;
-
-        remove_edge(out_edge);
-    }
-
-    //Mark the node as invalid
-    node_ids_[node_id] = NodeId::INVALID();
-}
-
-void TimingGraph::remove_edge(const EdgeId edge_id) {
-    TATUM_ASSERT(valid_edge_id(edge_id));
-
-    //Invalidate the upstream node to edge references
-    NodeId src_node = edge_src_node(edge_id);    
-    auto iter_out = std::find(node_out_edges_[src_node].begin(), node_out_edges_[src_node].end(), edge_id);
-    TATUM_ASSERT(iter_out != node_out_edges_[src_node].end());
-    *iter_out = EdgeId::INVALID();
-
-    //Invalidate the downstream node to edge references
-    NodeId sink_node = edge_sink_node(edge_id);    
-    auto iter_in = std::find(node_in_edges_[sink_node].begin(), node_in_edges_[sink_node].end(), edge_id);
-    TATUM_ASSERT(iter_in != node_in_edges_[sink_node].end());
-    *iter_in = EdgeId::INVALID();
-
-    //Mark the edge invalid
-    edge_ids_[edge_id] = EdgeId::INVALID();
-}
-
-GraphIdMaps TimingGraph::compress() {
-    auto node_id_map = compress_ids(node_ids_);
-    auto edge_id_map = compress_ids(edge_ids_);
-
-    remap_nodes(node_id_map);
-    remap_edges(edge_id_map);
-
-    validate();
-
-    return {node_id_map, edge_id_map};
-}
-
-bool TimingGraph::validate() {
+bool TimingGraph::validate() const {
     bool valid = true;
     valid &= validate_sizes();
     valid &= validate_values();
@@ -429,19 +450,19 @@ void TimingGraph::remap_edges(const tatum::util::linear_map<EdgeId,EdgeId>& edge
     }
 }
 
-bool TimingGraph::valid_node_id(const NodeId node_id) {
+bool TimingGraph::valid_node_id(const NodeId node_id) const {
     return size_t(node_id) < node_ids_.size();
 }
 
-bool TimingGraph::valid_edge_id(const EdgeId edge_id) {
+bool TimingGraph::valid_edge_id(const EdgeId edge_id) const {
     return size_t(edge_id) < edge_ids_.size();
 }
 
-bool TimingGraph::valid_level_id(const LevelId level_id) {
+bool TimingGraph::valid_level_id(const LevelId level_id) const {
     return size_t(level_id) < level_ids_.size();
 }
 
-bool TimingGraph::validate_sizes() {
+bool TimingGraph::validate_sizes() const {
     if(   node_ids_.size() != node_types_.size()
        || node_ids_.size() != node_in_edges_.size()
        || node_ids_.size() != node_out_edges_.size()) {
@@ -456,7 +477,7 @@ bool TimingGraph::validate_sizes() {
     return true;
 }
 
-bool TimingGraph::validate_values() {
+bool TimingGraph::validate_values() const {
 
     for(NodeId node_id : nodes()) {
         if(!valid_node_id(node_id)) {
@@ -501,8 +522,12 @@ bool TimingGraph::validate_values() {
     return true;
 }
 
-bool TimingGraph::validate_structure() {
+bool TimingGraph::validate_structure() const {
     //Verify that the timing graph connectivity is as expected
+
+    if (!is_levelized_) {
+        throw tatum::Error("Timing graph must be levelized for structural validation");
+    }
 
     for(NodeId src_node : nodes()) {
 
@@ -513,7 +538,7 @@ bool TimingGraph::validate_structure() {
             NodeType sink_type = node_type(sink_node);
 
             //Check type connectivity
-            if(src_type == NodeType::SOURCE) {
+            if (src_type == NodeType::SOURCE) {
 
                 if(   sink_type != NodeType::IPIN
                    && sink_type != NodeType::CPIN
