@@ -29,17 +29,17 @@
 #include "echo_writer.hpp"
 #include "profile.hpp"
 
-#define NUM_SERIAL_RUNS 100
+#define NUM_SERIAL_RUNS 1
 #define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
 
 //Should we optimize the timing graph memory layout?
-#define OPTIMIZE_GRAPH_LAYOUT
+//#define OPTIMIZE_GRAPH_LAYOUT
 
 //Should we print out tag related object size info
 #define PRINT_TAG_SIZES
 
 //Do we dump an echo file?
-//#define ECHO
+#define ECHO
 
 typedef std::chrono::duration<double> dsec;
 typedef std::chrono::high_resolution_clock Clock;
@@ -123,7 +123,9 @@ int main(int argc, char** argv) {
         cout << endl;
     }
 
+
     timing_graph->levelize();
+    timing_graph->validate();
 
 #ifdef OPTIMIZE_GRAPH_LAYOUT
     
@@ -187,8 +189,10 @@ int main(int argc, char** argv) {
 
         cout << "\n";
 
-        write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
-        write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, serial_analyzer, delay_calculator);
+        std::vector<NodeId> nodes;
+        //nodes = find_related_nodes(*timing_graph, {NodeId(71663)});
+        write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, delay_calculator, serial_analyzer, nodes);
+        write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, delay_calculator, serial_analyzer, nodes);
 
         //Verify
         clock_gettime(CLOCK_MONOTONIC, &verify_start);

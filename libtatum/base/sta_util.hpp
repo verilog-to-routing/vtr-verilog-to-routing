@@ -38,8 +38,8 @@ void find_transitive_fanin_nodes(const TimingGraph& tg, std::vector<NodeId>& nod
 template<class DelayCalc=FixedDelayCalculator>
 void write_dot_file_setup(std::string filename, 
                           const TimingGraph& tg, 
-                          std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(), 
                           std::shared_ptr<DelayCalc> delay_calc = std::shared_ptr<DelayCalc>(),
+                          std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(), 
                           std::vector<NodeId> nodes = std::vector<NodeId>()) {
 
     if(tg.nodes().size() > 1000 && nodes.empty()) {
@@ -133,8 +133,8 @@ void write_dot_file_setup(std::string filename,
 template<class DelayCalc=FixedDelayCalculator>
 void write_dot_file_hold(std::string filename, 
                          const TimingGraph& tg, 
-                         std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(), 
                          std::shared_ptr<DelayCalc> delay_calc = std::shared_ptr<DelayCalc>(),
+                         std::shared_ptr<const TimingAnalyzer> analyzer = std::shared_ptr<const TimingAnalyzer>(), 
                          std::vector<NodeId> nodes = std::vector<NodeId>()) {
 
     if(tg.nodes().size() > 1000 && nodes.empty()) {
