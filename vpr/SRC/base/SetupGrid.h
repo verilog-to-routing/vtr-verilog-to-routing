@@ -1,4 +1,4 @@
-#ifndef SETUPGRAD_H
+#ifndef SETUPGRID_H
 #define SETUPGRID_H
 
 /*
