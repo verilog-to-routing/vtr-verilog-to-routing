@@ -280,6 +280,7 @@ add_custom_target(abc_build
 #Add the various sub-projects
 add_subdirectory(liblog)
 add_subdirectory(libpugixml)
+add_subdirectory(libpugiutil)
 add_subdirectory(libvtrutil)
 add_subdirectory(libarchfpga)
 add_subdirectory(libsdcparse)
@@ -301,6 +302,11 @@ set_target_properties(libpugixml
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libpugixml"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libpugixml"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libpugixml")
+set_target_properties(libpugiutil
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libpugiutil"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libpugiutil"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libpugiutil")
 set_target_properties(libvtrutil
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libvtrutil"

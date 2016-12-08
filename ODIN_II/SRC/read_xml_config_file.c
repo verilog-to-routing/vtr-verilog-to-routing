@@ -36,10 +36,10 @@ using namespace pugiutil;
 config_t configuration;
 char empty_string[] = "";
 
-void read_verilog_files(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data);
-void read_outputs(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data);
-void read_debug_switches(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data);
-void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data);
+void read_verilog_files(pugi::xml_node a_node, config_t *config, const pugiutil::loc_data& loc_data);
+void read_outputs(pugi::xml_node a_node, config_t *config, const pugiutil::loc_data& loc_data);
+void read_debug_switches(pugi::xml_node a_node, config_t *config, const pugiutil::loc_data& loc_data);
+void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiutil::loc_data& loc_data);
 void set_default_optimization_settings(config_t *config);
 
 /*-------------------------------------------------------------------------
@@ -56,7 +56,7 @@ void read_config_file(char *file_name)
 	oassert(file_name != NULL);
 	
 	pugi::xml_document doc;
-	pugiloc::loc_data loc_data;
+	pugiutil::loc_data loc_data;
 	try {
 		loc_data = pugiutil::load_xml(doc, file_name);
 
@@ -95,7 +95,7 @@ void read_config_file(char *file_name)
 /*-------------------------------------------------------------------------
  * (function: read_verilog_files)
  *-----------------------------------------------------------------------*/
-void read_verilog_files(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data)
+void read_verilog_files(pugi::xml_node a_node, config_t *config, const pugiutil::loc_data& loc_data)
 {
 	pugi::xml_node child;
 	pugi::xml_node junk;
@@ -117,7 +117,7 @@ void read_verilog_files(pugi::xml_node a_node, config_t *config, const pugiloc::
 /*--------------------------------------------------------------------------
  * (function: read_outputs)
  *------------------------------------------------------------------------*/
-void read_outputs(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data)
+void read_outputs(pugi::xml_node a_node, config_t *config, const pugiutil::loc_data& loc_data)
 {
 	pugi::xml_node child;
 
@@ -154,7 +154,7 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiloc::loc_da
 /*--------------------------------------------------------------------------
  * (function: read_workload_generation)
  *------------------------------------------------------------------------*/
-void read_debug_switches(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data)
+void read_debug_switches(pugi::xml_node a_node, config_t *config, const pugiutil::loc_data& loc_data)
 {
 	pugi::xml_node child;
 
@@ -212,7 +212,7 @@ void set_default_optimization_settings(config_t *config)
 /*--------------------------------------------------------------------------
  * (function: read_optimizations)
  *------------------------------------------------------------------------*/
-void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiloc::loc_data& loc_data)
+void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiutil::loc_data& loc_data)
 {
 	const char *prop;
 	pugi::xml_node child;

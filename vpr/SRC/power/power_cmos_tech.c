@@ -53,17 +53,17 @@ static t_power_mux_volt_inf * g_mux_volt_last_searched;
 /************************* FUNCTION DECLARATIONS ********************/
 
 static void power_tech_load_xml_file(const char * cmos_tech_behavior_filepath);
-static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const pugiloc::loc_data& loc_data);
-static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pugiloc::loc_data& loc_data);
-static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pugiloc::loc_data& loc_data);
+static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
+static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
+static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 static int power_compare_transistor_size(const void * key_void, const void * elem_void);
 static int power_compare_voltage_pair(const void * key_void, const void * elem_void);
 static int power_compare_leakage_pair(const void * key_void, const void * elem_void);
-//static void power_tech_xml_load_sc(pugi::xml_node parent, const pugiloc::loc_data& loc_data);
+//static void power_tech_xml_load_sc(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 static int power_compare_buffer_strength(const void * key_void, const void * elem_void);
 static int power_compare_buffer_sc_levr(const void * key_void, const void * elem_void);
-static void power_tech_xml_load_components(pugi::xml_node parent, const pugiloc::loc_data& loc_data);
-static void power_tech_xml_load_component(pugi::xml_node parent, const pugiloc::loc_data& loc_data,
+static void power_tech_xml_load_components(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
+static void power_tech_xml_load_component(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
 		PowerSpicedComponent ** component, const char * name,
 		float (*usage_fn)(int num_inputs, float transistor_size));
 /************************* FUNCTION DEFINITIONS *********************/
@@ -78,7 +78,7 @@ void power_tech_init(const char * cmos_tech_behavior_filepath) {
 void power_tech_load_xml_file(const char * cmos_tech_behavior_filepath) {
 
     pugi::xml_document doc;
-    pugiloc::loc_data loc_data;
+    pugiutil::loc_data loc_data;
     try {
         loc_data = pugiutil::load_xml(doc, cmos_tech_behavior_filepath);
     } catch(const XmlError& e) {
@@ -137,7 +137,7 @@ void power_tech_load_xml_file(const char * cmos_tech_behavior_filepath) {
 	power_tech_xml_load_components(child, loc_data);
 }
 
-static void power_tech_xml_load_component(pugi::xml_node parent, const pugiloc::loc_data& loc_data,
+static void power_tech_xml_load_component(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
 		PowerSpicedComponent ** component, const char * name,
 		float (*usage_fn)(int num_inputs, float transistor_size)) {
 
@@ -162,7 +162,7 @@ static void power_tech_xml_load_component(pugi::xml_node parent, const pugiloc::
 	}
 }
 
-static void power_tech_xml_load_components(pugi::xml_node parent, const pugiloc::loc_data& loc_data) {
+static void power_tech_xml_load_components(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
 
 	g_power_commonly_used->component_callibration =
 			(PowerSpicedComponent**) vtr::calloc(POWER_CALLIB_COMPONENT_MAX,
@@ -194,7 +194,7 @@ static void power_tech_xml_load_components(pugi::xml_node parent, const pugiloc:
  *  Read NMOS subthreshold leakage currents from the .xml transistor characteristics
  *  This builds a table of (Vds,Ids) value pairs
  *  */
-static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pugiloc::loc_data& loc_data) {
+static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
 	int num_nmos_sizes;
 	int num_leakage_pairs;
 	int i;
@@ -234,7 +234,7 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
  *  Read multiplexer information from the .xml transistor characteristics.
  *  This contains the estimates of mux output voltages, depending on 1) Mux Size 2) Mux Vin
  *  */
-static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pugiloc::loc_data& loc_data) {
+static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
 	int num_nmos_sizes;
 	int num_mux_sizes;
 	int i, j, nmos_idx;
@@ -305,7 +305,7 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
  * - subthreshold leakage
  * - gate leakage
  */
-static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const pugiloc::loc_data& loc_data) {
+static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
 	t_transistor_inf * trans_inf;
 	int i;
 

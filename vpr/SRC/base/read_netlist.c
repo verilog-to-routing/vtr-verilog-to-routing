@@ -33,15 +33,15 @@ using namespace std;
 static const char* netlist_file_name = NULL;
 
 static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,		
-        const pugiloc::loc_data& loc_data);
+        const pugiutil::loc_data& loc_data);
 
 static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 		t_pb* pb, t_pb_route *pb_route, int *num_primitives,
-        const pugiloc::loc_data& loc_data);
+        const pugiutil::loc_data& loc_data);
 
 static void processComplexBlock(pugi::xml_node Parent, t_block *cb,
 		const int index, int *num_primitives,
-        const pugiloc::loc_data& loc_data);
+        const pugiutil::loc_data& loc_data);
 
 static struct s_net *alloc_and_init_netlist_from_hash(const int ncount,
 		struct s_hash **nhash);
@@ -90,7 +90,7 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 	vtr::printf_info("Begin loading packed FPGA netlist file.\n");
 
     pugi::xml_document doc;
-    pugiloc::loc_data loc_data;
+    pugiutil::loc_data loc_data;
     try {
         loc_data = pugiutil::load_xml(doc, net_file);
     } catch(pugiutil::XmlError& e) {
@@ -211,7 +211,7 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
  */
 static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 		const int index, int *num_primitives,
-        const pugiloc::loc_data& loc_data) {
+        const pugiutil::loc_data& loc_data) {
 
 	bool found;
 	int num_tokens = 0;
@@ -294,7 +294,7 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
  */
 static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 	t_pb* pb, t_pb_route *pb_route, int *num_primitives,
-    const pugiloc::loc_data& loc_data) {
+    const pugiutil::loc_data& loc_data) {
 	int i, j, pb_index;
 	bool found;
 	const t_pb_type *pb_type;
@@ -490,7 +490,7 @@ static int add_net_to_hash(struct s_hash **nhash, const char *net_name,
 }
 
 static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
-        const pugiloc::loc_data& loc_data) {
+        const pugiutil::loc_data& loc_data) {
 
 	int i, j, in_port, out_port, clock_port, num_tokens;
     std::vector<std::string> pins;

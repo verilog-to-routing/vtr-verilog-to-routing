@@ -1,65 +1,19 @@
-#ifndef PUGIXML_UTIL_H
-#define PUGIXML_UTIL_H
-/*
- * This file contains utilities for the  PUGI XML parser.
- *
- * They primarily relate to:
- *   - Checking for node/attribute exitance and reporting errors if not
- *   - Misc. utilities like counting tags
- *
- * Using these utilities simplifies error handling while manipulating XML
- * since the user doesn't need to explicitly check for node/attribute existance
- * (by default most of these functions will raise exceptions with useful error
- * messages if the requested item does not exists).
- */
-
-#include <vector>
-#include <cstdio>
-
-#include "pugixml.hpp"
-
-#include "vtr_error.h"
-#include "pugixml_loc.hpp"
+#include "pugixml_util.hpp"
 
 namespace pugiutil {
 
-    //An error produced while getting an XML node/attribute
-    class XmlError : public vtr::VtrError {
-        public:
-            XmlError(std::string msg="", std::string new_filename="", size_t new_linenumber=-1)
-                : vtr::VtrError(msg, new_filename, new_linenumber) {}
-    };
-
     //Loads the XML file specified by filename into the passed pugi::xml_docment
     //
-    //Returns pugiloc::loc_data look-up for xml node line numbers
-    inline pugiloc::loc_data load_xml(pugi::xml_document& doc,  //Document object to be loaded with file contents
+    //Returns loc_data look-up for xml node line numbers
+    loc_data load_xml(pugi::xml_document& doc,  //Document object to be loaded with file contents
                                const std::string filename) { //Filename to load from
         auto load_result = doc.load_file(filename.c_str());
         if(!load_result) {
             throw XmlError("Unable to load XML file '" + filename + "', " + load_result.description() + "", __FILE__, __LINE__);
         }
 
-        return pugiloc::loc_data(filename);
+        return loc_data(filename);
     }
-
-    //Defines whether something (e.g. a node/attribute) is optional or required.
-    //  We use this to improve clarity at the function call site (compared to just 
-    //  using boolean values).
-    //
-    //  For example:
-    //
-    //      auto node = get_first_child(node, "port", loc_data, true);     
-    //
-    //  is ambiguous without looking up what the 4th argument represents, where as:
-    //
-    //      auto node = get_first_child(node, "port", loc_data, REQUIRED);     
-    //
-    //  is much more explicit.
-    enum ReqOpt {
-        REQUIRED,
-        OPTIONAL
-    };
 
     //Gets the first child element of the given name and returns it.
     //
@@ -67,10 +21,10 @@ namespace pugiutil {
     //  child_name - The child tag name
     //  loc_data - XML file location data
     //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
-    inline pugi::xml_node get_first_child(const pugi::xml_node node, 
+    pugi::xml_node get_first_child(const pugi::xml_node node, 
                                    const std::string& child_name, 
-                                   const pugiloc::loc_data& loc_data,
-                                   const ReqOpt req_opt=REQUIRED) {
+                                   const loc_data& loc_data,
+                                   const ReqOpt req_opt) {
 
         pugi::xml_node child = node.child(child_name.c_str());
         if(!child && req_opt == REQUIRED) {
@@ -87,10 +41,10 @@ namespace pugiutil {
     //  child_name - The child tag name
     //  loc_data - XML file location data
     //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
-    inline pugi::xml_node get_single_child(const pugi::xml_node node, 
+    pugi::xml_node get_single_child(const pugi::xml_node node, 
                                     const std::string& child_name, 
-                                    const pugiloc::loc_data& loc_data,
-                                    const ReqOpt req_opt=REQUIRED) {
+                                    const loc_data& loc_data,
+                                    const ReqOpt req_opt) {
         pugi::xml_node child = get_first_child(node, child_name, loc_data, req_opt);
 
         if(child && child.next_sibling(child_name.c_str())) {
@@ -107,10 +61,10 @@ namespace pugiutil {
     //  child_name - The child tag name
     //  loc_data - XML file location data
     //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
-    inline size_t count_children(const pugi::xml_node node, 
+    size_t count_children(const pugi::xml_node node, 
                           const std::string& child_name, 
-                          const pugiloc::loc_data& loc_data,
-                          const ReqOpt req_opt=REQUIRED) {
+                          const loc_data& loc_data,
+                          const ReqOpt req_opt) {
         size_t count = 0;
 
         pugi::xml_node child = get_first_child(node, child_name, loc_data, req_opt);
@@ -129,10 +83,10 @@ namespace pugiutil {
     //  attr_name - The attribute name
     //  loc_data - XML file location data
     //  req_opt - Whether the peropry is required (will error if required and not found) or optional. Defaults to REQUIRED
-    inline pugi::xml_attribute get_attribute(const pugi::xml_node node, 
+    pugi::xml_attribute get_attribute(const pugi::xml_node node, 
                                       const std::string& attr_name,
-                                      const pugiloc::loc_data& loc_data,
-                                      const ReqOpt req_opt=REQUIRED) {
+                                      const loc_data& loc_data,
+                                      const ReqOpt req_opt) {
         pugi::xml_attribute attr = node.attribute(attr_name.c_str());
 
         if(!attr && req_opt == REQUIRED) {
@@ -150,10 +104,10 @@ namespace pugiutil {
     //  tag_name - The expected tag name
     //  loc_data - XML file location data
     //  req_opt - Whether the tag name is required (will error if required and not found) or optional. Defaults to REQUIRED
-    inline bool check_node(const pugi::xml_node node,
+    bool check_node(const pugi::xml_node node,
                     const std::string& tag_name,
-                    const pugiloc::loc_data& loc_data,
-                    const ReqOpt req_opt=REQUIRED) {
+                    const loc_data& loc_data,
+                    const ReqOpt req_opt) {
         if(node.name() == tag_name) {
             return true;
         } else {
@@ -166,5 +120,3 @@ namespace pugiutil {
     }
 
 }
-
-#endif
