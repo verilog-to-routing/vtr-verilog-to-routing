@@ -215,8 +215,6 @@ static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pi
 
 static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_tnode_from_pin_id);
 
-static inline int get_tnode_index(t_tnode * node);
-
 static inline bool has_valid_T_arr(int inode);
 
 static inline bool has_valid_T_req(int inode);
@@ -3476,12 +3474,6 @@ static int find_cf_constraint(const char * source_clock_name, const char * sink_
 		}
 	}
 	return -1;
-}
-
-static inline int get_tnode_index(t_tnode * node) {
-	/* Returns the index of pointer_to_tnode in the array tnode [0..num_tnodes - 1]
-	using pointer arithmetic. */
-	return node - tnode;
 }
 
 static inline bool has_valid_T_arr(int inode) {
