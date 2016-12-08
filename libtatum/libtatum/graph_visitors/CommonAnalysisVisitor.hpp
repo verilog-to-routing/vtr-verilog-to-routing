@@ -59,6 +59,7 @@ class CommonAnalysisVisitor {
         bool should_propagate_clocks(const TimingGraph& tg, const TimingConstraints& tc, const EdgeId edge_id) const;
         bool should_propagate_clock_launch_tags(const TimingGraph& tg, const EdgeId edge_id) const;
         bool should_propagate_clock_capture_tags(const TimingGraph& tg, const EdgeId edge_id) const;
+        bool should_propagate_data(const TimingGraph& tg, const EdgeId edge_id) const;
 
         bool is_clock_data_launch_edge(const TimingGraph& tg, const EdgeId edge_id) const;
         bool is_clock_data_capture_edge(const TimingGraph& tg, const EdgeId edge_id) const;
@@ -298,7 +299,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
     TimingTags::tag_range src_data_tags = ops_.get_tags(src_node_id, TagType::DATA_ARRIVAL);
 
-    if(!src_data_tags.empty()) {
+    if(!src_data_tags.empty() && should_propagate_data(tg, edge_id)) {
         const Time& edge_delay = ops_.data_edge_delay(dc, tg, edge_id);
         TATUM_ASSERT_SAFE(edge_delay.valid());
 
@@ -405,6 +406,18 @@ bool CommonAnalysisVisitor<AnalysisOps>::is_clock_data_capture_edge(const Timing
     NodeId edge_sink_node = tg.edge_sink_node(edge_id);
 
     return (tg.node_type(edge_src_node) == NodeType::CPIN) && (tg.node_type(edge_sink_node) == NodeType::SINK);
+}
+
+template<class AnalysisOps>
+bool CommonAnalysisVisitor<AnalysisOps>::should_propagate_data(const TimingGraph& tg, const EdgeId edge_id) const {
+    //We want to propagate data tags unless then re-enter the clock network
+    NodeId src_node_id = tg.edge_src_node(edge_id);
+    NodeType src_node_type = tg.node_type(src_node_id);
+    if (src_node_type != NodeType::CPIN) {
+        //Do not allow data tags to propagate through clock pins
+        return true;
+    }
+    return false;
 }
 
 }} //namepsace
