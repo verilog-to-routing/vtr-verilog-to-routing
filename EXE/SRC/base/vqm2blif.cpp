@@ -131,6 +131,10 @@ t_boolean split_carry_chain_logic; //user-set flag which controls whether to dec
                                    //(ADDER) components.  May be useful for people working on logic
                                    //re-synthesis who want to re-synthesize the logic feeding the
                                    //adder in a Stratix IV like architecture
+t_boolean print_unused_subckt_pins; //user-set flag which controls whether subckts included unused pins (if true)
+                                    //or if they are omitted (if false). Some BLIF readers require the unused pins
+                                    //to be listed (and connected to nets with no drivers/sinks), which would require
+                                    //this option to be true.
 //============================================================================================
 //			FUNCTION DECLARATIONS
 //============================================================================================
@@ -170,9 +174,9 @@ void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch)
 
 //Output Functions
 
-void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch);
+void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch, t_boolean print_unused_subckt_pins);
 
-	void dump_main_model(t_blif_model* model, ofstream& outfile, t_boolean debug);
+	void dump_main_model(t_blif_model* model, ofstream& outfile, t_boolean print_unused_subckt_pins, t_boolean debug);
 
 		void dump_portlist (ofstream& outfile, pinvec ports, t_boolean debug);
 		void dump_assignments(ofstream& outfile, t_blif_model* model, t_boolean debug);
@@ -192,10 +196,10 @@ void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch);
 
 		void dump_luts (ofstream& outfile, lutvec* blif_luts, t_boolean debug);
 
-		void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean debug);
+		void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean print_unused_pins, t_boolean debug);
 
 			void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port, 
-							const char* inst_name, const char* maptype, int s_index, t_boolean debug);
+							const char* inst_name, const char* maptype, int s_index, t_boolean print_unused_pins, t_boolean debug);
 			void dump_subckt_portlist(ofstream& outfile, t_model_ports* port, t_boolean debug);
 
 	void dump_subckt_models(t_model* temp_model, ofstream& outfile, t_boolean debug);
@@ -386,7 +390,7 @@ int main(int argc, char* argv[])
 #endif
 
 	strcpy ( temp_name, out_file.c_str() );
-	dump_blif ( temp_name, &my_model, &arch );
+	dump_blif ( temp_name, &my_model, &arch, print_unused_subckt_pins );
 
 	processEnd = clock();
 	cout << "\n>> BLIF Conversion took " << (float)(processEnd - processStart)/CLOCKS_PER_SEC << " seconds.\n" ;
@@ -456,6 +460,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
     split_multiclock_blocks = T_FALSE;
     single_clock_primitives = T_TRUE;
     split_carry_chain_logic = T_FALSE;
+    print_unused_subckt_pins = T_FALSE;
 
 	//Now read the command line to configure input variables.
 	for (int i = 1; i < argc; i++){
@@ -568,6 +573,9 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
                 case OT_SPLIT_CARRY_CHAIN_LOGIC:
                     split_carry_chain_logic = T_TRUE;
                     break;
+                case OT_INCLUDE_UNUSED_SUBCKT_PINS:
+                    print_unused_subckt_pins = T_TRUE;
+                    break;
 				default:
 					//Should never get here; unknown tokens aren't mapped.
 					cout << "\nERROR: Token " << argv[i] << " mishandled.\n" ;
@@ -617,6 +625,7 @@ void setup_tokens (tokmap* tokens){
 	tokens->insert(tokpair("-fixglobals", OT_FIXGLOBALS));
 	tokens->insert(tokpair("-split_multiclock_blocks", OT_SPLIT_MULTICLOCK_BLOCKS));
 	tokens->insert(tokpair("-split_carry_chain_logic", OT_SPLIT_CARRY_CHAIN_LOGIC));
+	tokens->insert(tokpair("-include_unused_subckt_pins", OT_INCLUDE_UNUSED_SUBCKT_PINS));
 }
 
 //============================================================================================
@@ -1150,7 +1159,7 @@ void push_lut (t_node* vqm_node, lutvec* blif_luts){
 //============================================================================================
 //============================================================================================
 
-void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch){
+void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch, t_boolean print_unused_subckt_pins){
 /*  Uses a populated model structure to construct a .blif netlist.
  *
  *	ARGUMENTS
@@ -1174,7 +1183,7 @@ void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch){
 	blif_out << "\n#MAIN MODEL\n" ;
 	
 	//completely dump the top-level model
-	dump_main_model(main_model, blif_out, T_FALSE);
+	dump_main_model(main_model, blif_out, print_unused_subckt_pins, T_FALSE);
 	
 	//now dump the subckt models from the architecture
 	//that were used in the vqm
@@ -1190,7 +1199,7 @@ void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch){
 //============================================================================================
 //============================================================================================
 
-void dump_main_model(t_blif_model* model, ofstream& outfile, t_boolean debug){
+void dump_main_model(t_blif_model* model, ofstream& outfile, t_boolean print_unused_subckt_pins, t_boolean debug){
 /*  Dumps information stored in a model structure in proper BLIF syntax.
  *
  *	ARGUMENTS
@@ -1242,7 +1251,7 @@ void dump_main_model(t_blif_model* model, ofstream& outfile, t_boolean debug){
 	
 	//Print Subcircuit Variable information
 	if (model->subckts.size() > 0){
-		dump_subckts(outfile, &(model->subckts), debug);
+		dump_subckts(outfile, &(model->subckts), print_unused_subckt_pins, debug);
 	}
 	
 	//Printing the model data is complete.
@@ -1572,7 +1581,7 @@ void dump_luts (ofstream& outfile, lutvec* blif_luts, t_boolean debug){
 //============================================================================================
 //============================================================================================
 
-void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean debug){
+void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean print_unused_pins, t_boolean debug){
 /*  Traverse the subcircuit vector, printing the names and connections
  *  of each instantiated subcircuit in the main model.
  *
@@ -1610,6 +1619,7 @@ void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean debug){
 					temp_subckt->model_type->inputs, 
 					temp_subckt->inst_name.c_str(), 
 					"input", i,
+                    print_unused_pins,
 					debug);
 			
 		if (debug){
@@ -1624,6 +1634,7 @@ void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean debug){
 					temp_subckt->model_type->outputs, 
 					temp_subckt->inst_name.c_str(),
 					"output", i,
+                    print_unused_pins,
 					debug);
 
 		outfile << endl ;
@@ -1634,7 +1645,7 @@ void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean debug){
 //============================================================================================
 
 void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port, 
-			const char* inst_name, const char* maptype, int s_index, t_boolean debug){
+			const char* inst_name, const char* maptype, int s_index, t_boolean print_unused, t_boolean debug){
 /*  Prints a subcircuit connectivity map, showing all connections.
  *  The keys to the map are the names of the ports in subcircuit's architecture model.
  *
@@ -1680,6 +1691,7 @@ void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port,
 			if (debug)
 				outfile << "\t" ;
 
+#if 0
 			if ((strcmp(maptype, "output") != 0)||(pin_name != "unconn")){
 				//print subcircuit inputs and connected outputs as-is
 				if (temp_cnxn->associated_net->indexed){
@@ -1689,11 +1701,40 @@ void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port,
 
 				outfile << port_name << "=" << pin_name << " ";
 
-			} else {
+			} else if (print_unused) {
 				//print unconnected subcircuit outputs as having a dummy net to drive
 
 				outfile << port_name << "=subckt" << s_index << "~" << port_name << "~unconn " ;
 			}
+#else
+            bool is_input = (std::string(maptype) == "input");
+            assert(is_input || std::string(maptype) == "output");
+
+
+            bool pin_used = (pin_name != "unconn");
+
+            if (pin_used) {
+				if (temp_cnxn->associated_net->indexed){
+					//construct a string of "name[index]"
+					pin_name = append_index_to_str (pin_name, temp_cnxn->wire_index);
+				}
+
+				outfile << port_name << "=" << pin_name << " ";
+
+            } else {
+                //Pin is unused
+                if (print_unused) {
+                    if(is_input) {
+                        //i.e. connect unconnected inputs to the 'unconn' net
+                        outfile << port_name << "=" << pin_name << " ";
+                    } else {
+                        //i.e. connect disconnected outputs to a uniquely named net
+                        outfile << port_name << "=subckt" << s_index << "~" << port_name << "~unconn " ;
+                    }
+                }
+            }
+
+#endif
 
 			if (debug){
 				outfile << endl ;	//create a new line for each mapped port in the DEBUG file
@@ -2064,7 +2105,7 @@ void echo_blif_model (char* echo_file, const char* vqm_filename,
 	model_out << "\n\tMAIN MODEL\n" ;
 	
 	//completely dump the top-level model in DEBUG format
-	dump_main_model(my_model, model_out, T_TRUE);
+	dump_main_model(my_model, model_out, T_TRUE, T_TRUE);
 	
 	model_out << "\n\tSUBCKT MODELS\n";
 	

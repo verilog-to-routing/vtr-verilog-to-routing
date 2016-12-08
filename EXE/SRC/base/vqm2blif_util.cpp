@@ -15,6 +15,7 @@ void print_usage (t_boolean terminate){
 	cout << "\t-buffouts\n" ;
 	cout << "\t-luts [vqm* | blif]\n" ;
     cout << "\t-multiclock_primitives\n";
+    cout << "\t-include_unused_subckt_pins\n";
     //Hide experimental options by default
     //cout << "\t-split_multiclock_blocks\n";
     //cout << "\t-split_carry_chain_logic\n";
