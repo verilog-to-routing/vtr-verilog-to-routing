@@ -347,7 +347,7 @@ AtomPortType AtomNetlist::port_type (const AtomPortId id) const {
 
     const t_model_ports* model_port = port_model(id);
 
-    AtomPortType type;
+    AtomPortType type = AtomPortType::INPUT;
     if(model_port->dir == IN_PORT) {
         if(model_port->is_clock) {
             type = AtomPortType::CLOCK;
@@ -357,7 +357,7 @@ AtomPortType AtomNetlist::port_type (const AtomPortId id) const {
     } else if(model_port->dir == OUT_PORT) {
         type = AtomPortType::OUTPUT;
     } else {
-        VTR_ASSERT_MSG(false, "Recognized model port type");
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Unrecognized model port type");
     }
     return type;
 }
