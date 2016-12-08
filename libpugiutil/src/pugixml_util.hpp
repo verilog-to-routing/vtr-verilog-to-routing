@@ -14,6 +14,7 @@
  */
 
 #include <vector>
+#include <stdexcept>
 #include <cstdio>
 
 #include "pugixml.hpp"
