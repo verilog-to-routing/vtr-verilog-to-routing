@@ -428,6 +428,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         float max_rel_diff = 0.;
         float min_rel_diff = 0.;
         constexpr float rel_threshold = 0.03;
+        std::map<float,tatum::NodeId> exemplar_differences;
         for(AtomNetId net : g_atom_nl.nets()) {
             AtomPinId driver = g_atom_nl.net_driver(net);
             for(AtomPinId pin : g_atom_nl.net_sinks(net)) {
@@ -451,9 +452,21 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                     vtr::printf("\tTatum Slack: %12g Crit: %12g\n", opt_slack.setup_slack(driver, pin), tatum_crit);
                     vtr::printf("\tVTR   Slack: %12g Crit: %12g\n", slacks.slack[pin], vpr_crit);
                     vtr::printf("\tRelative crit diff            : %12.3f\n", rel_diff);
+
+                    if(!exemplar_differences.count(rel_diff)) {
+                        exemplar_differences[rel_diff] = g_atom_map.pin_tnode[pin];
+                    }
                 }
             }
         }
+
+        for(auto kv : exemplar_differences) {
+            auto nodes = tatum::find_related_nodes(tg, {kv.second});
+            std::string fname = "setup.diff_" + std::to_string(std::abs(kv.first)) + ".node_" + std::to_string(size_t(kv.second)) + ".dot";
+            tatum::write_dot_file_setup(fname, tg, dc_sp, analyzer, nodes);
+        }
+
+
         vtr::printf("End Slack Differences (%zu differences above threshold (%f), max rel diff: %f, min reldiff: %f)\n", rel_threshold, num_crit_diffs, max_rel_diff, min_rel_diff);
 
         exit(0);
