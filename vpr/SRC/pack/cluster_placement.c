@@ -794,33 +794,35 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 				model_port = root->output_pins[i][j].port->model_port;
 
                 AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port);
-                AtomNetId net_id = g_atom_nl.port_net(port_id, j);
+                if(port_id) {
+                    AtomNetId net_id = g_atom_nl.port_net(port_id, j);
 
-				if(net_id) {
-					/* This output pin has a dedicated connection to one output, make sure that molecule works */
-					if(molecule->type == MOLECULE_SINGLE_ATOM) {
-						feasible = false; /* There is only one case where an atom can fit in here, so by default, feasibility is false unless proven otherwise */
-                        auto sinks = g_atom_nl.net_sinks(net_id);
-						if(sinks.size() == 1) {
-                            AtomPinId sink_pin = *sinks.begin();
-                            AtomBlockId sink_blk = g_atom_nl.pin_block(sink_pin);
+                    if(net_id) {
+                        /* This output pin has a dedicated connection to one output, make sure that molecule works */
+                        if(molecule->type == MOLECULE_SINGLE_ATOM) {
+                            feasible = false; /* There is only one case where an atom can fit in here, so by default, feasibility is false unless proven otherwise */
+                            auto sinks = g_atom_nl.net_sinks(net_id);
+                            if(sinks.size() == 1) {
+                                AtomPinId sink_pin = *sinks.begin();
+                                AtomBlockId sink_blk = g_atom_nl.pin_block(sink_pin);
 
-							if(g_atom_map.atom_clb(sink_blk) == clb_index) {
-								const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(sink_pin);
-								while(sink_pb_graph_pin->num_output_edges != 0) {
-									VTR_ASSERT(sink_pb_graph_pin->num_output_edges == 1);
-									VTR_ASSERT(sink_pb_graph_pin->output_edges[0]->num_output_pins == 1);
-									sink_pb_graph_pin = sink_pb_graph_pin->output_edges[0]->output_pins[0];
-								}
-                                const t_pb_graph_node* sink_pb_graph_node = g_atom_map.atom_pb_graph_node(sink_blk);
-								if(sink_pb_graph_pin->parent_node == sink_pb_graph_node) {
-									/* There is a atom block mapped to the physical position that pulls in the atom in question */
-									feasible = true;
-								}
-							}
-						}
-					}
-				}
+                                if(g_atom_map.atom_clb(sink_blk) == clb_index) {
+                                    const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(sink_pin);
+                                    while(sink_pb_graph_pin->num_output_edges != 0) {
+                                        VTR_ASSERT(sink_pb_graph_pin->num_output_edges == 1);
+                                        VTR_ASSERT(sink_pb_graph_pin->output_edges[0]->num_output_pins == 1);
+                                        sink_pb_graph_pin = sink_pb_graph_pin->output_edges[0]->output_pins[0];
+                                    }
+                                    const t_pb_graph_node* sink_pb_graph_node = g_atom_map.atom_pb_graph_node(sink_blk);
+                                    if(sink_pb_graph_pin->parent_node == sink_pb_graph_node) {
+                                        /* There is a atom block mapped to the physical position that pulls in the atom in question */
+                                        feasible = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 			}
 		}
 	}

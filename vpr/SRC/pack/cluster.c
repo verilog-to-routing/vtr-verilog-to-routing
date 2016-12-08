@@ -1416,16 +1416,17 @@ static enum e_block_pack_status try_place_atom_block_rec(
 			/* is carry chain, must check if this carry chain spans multiple logic blocks or not */
             t_model_ports *root_port = chain_root_pin->port->model_port;
             auto port_id = g_atom_nl.find_port(blk_id, root_port);
-            VTR_ASSERT(port_id);
-            auto chain_net_id = g_atom_nl.port_net(port_id, chain_root_pin->pin_number);
+            if(port_id) {
+                auto chain_net_id = g_atom_nl.port_net(port_id, chain_root_pin->pin_number);
 
-			if(chain_net_id) {
-				/* this carry chain spans multiple logic blocks, must match up correctly with previous chain for this to route */
-				if(pb_graph_node != chain_root_pin->parent_node) {
-					/* this location does not match with the dedicated chain input from outside logic block, therefore not feasible */
-					block_pack_status = BLK_FAILED_FEASIBLE;
-				}
-			}
+                if(chain_net_id) {
+                    /* this carry chain spans multiple logic blocks, must match up correctly with previous chain for this to route */
+                    if(pb_graph_node != chain_root_pin->parent_node) {
+                        /* this location does not match with the dedicated chain input from outside logic block, therefore not feasible */
+                        block_pack_status = BLK_FAILED_FEASIBLE;
+                    }
+                }
+            }
 		}
 	}
 
