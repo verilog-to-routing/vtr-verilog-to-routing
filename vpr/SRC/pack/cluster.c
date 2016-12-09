@@ -423,6 +423,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         slacks = convert_raw_slacks_to_prepack_slacks(raw_slacks);
 
 
+#if 0
         vtr::printf("Start Slack Differences:\n");
         size_t num_crit_diffs = 0;
         float max_rel_diff = 0.;
@@ -470,6 +471,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         vtr::printf("End Slack Differences (%zu differences above threshold (%f), max rel diff: %f, min reldiff: %f)\n", rel_threshold, num_crit_diffs, max_rel_diff, min_rel_diff);
 
         exit(0);
+#endif
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))
@@ -490,6 +492,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			seed_blend_index_array.push_back(blk_id);
 		}
 
+#if 0
 #ifdef PATH_COUNTING
 		/* Calculate block criticality from a weighted sum of timing and path criticalities. */
         for(auto net_id : g_atom_nl.nets()) {
@@ -531,6 +534,38 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			}
 		}
 #endif
+#endif
+        //Calculate criticality of each block
+        for(AtomBlockId blk : g_atom_nl.blocks()) {
+            for(AtomPinId in_pin : g_atom_nl.block_input_pins(blk)) {
+                AtomNetId net = g_atom_nl.pin_net(in_pin);
+                AtomPinId driver_pin = g_atom_nl.net_driver(net);
+
+                //Max criticality over incomming nets
+                float crit = opt_slack.setup_criticality(driver_pin, in_pin);
+                block_criticality[blk] = std::max(block_criticality[blk], crit);
+
+                //Max criticality over internal connections
+                /*
+                 *for(AtomPinId out_pin : g_atom_nl.block_output_pins(blk)) {
+                 *    crit = opt_slack.setup_criticality(in_pin, out_pin);
+                 *    block_criticality[blk] = std::max(block_criticality[blk], crit);
+                 *}
+                 */
+                tatum::NodeId src_node = g_atom_map.pin_tnode[in_pin];
+                for(tatum::EdgeId edge : tg.node_out_edges(src_node)) {
+                    tatum::NodeId sink_node = tg.edge_sink_node(edge);
+                    AtomPinId sink_pin = g_atom_map.pin_tnode[sink_node];
+
+                    crit = opt_slack.setup_criticality(in_pin, sink_pin);
+                    block_criticality[blk] = std::max(block_criticality[blk], crit);
+                }
+            }
+        }
+
+        for(AtomBlockId blk : g_atom_nl.blocks()) {
+            vtr::printf("blk %zu block_criticality: %g\n", blk, block_criticality[blk]);
+        }
 
         for(auto blk_id : g_atom_nl.blocks()) {
 			/* Score seed gain of each block as a weighted sum of timing criticality, 
