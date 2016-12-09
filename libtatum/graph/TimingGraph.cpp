@@ -217,6 +217,13 @@ void TimingGraph::remove_edge(const EdgeId edge_id) {
 
 void TimingGraph::disable_edge(const EdgeId edge, bool disable) {
     TATUM_ASSERT(valid_edge_id(edge));
+
+    if(edges_disabled_[edge] != disable) {
+        //If we are changing edges the levelization is no longer valid
+        is_levelized_ = false;
+    }
+
+    //Update the edge's disabled flag
     edges_disabled_[edge] = disable;
 }
 
