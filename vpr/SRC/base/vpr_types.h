@@ -749,6 +749,7 @@ struct s_router_opts {
 	int bb_factor;
 	enum e_route_type route_type;
 	int fixed_channel_width;
+    int min_channel_width_hint; //Hint to binary search of what the minimum channel width is
 	bool trim_empty_channels;
 	bool trim_obs_channels;
 	enum e_router_algorithm router_algorithm;

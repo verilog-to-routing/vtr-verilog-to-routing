@@ -445,6 +445,8 @@ ProcessOption(char **Args, t_options * Options) {
 		return Args;
 	case OT_ROUTE_CHAN_WIDTH:
 		return ReadInt(Args, &Options->RouteChanWidth);
+	case OT_MIN_ROUTE_CHAN_WIDTH_HINT:
+		return ReadInt(Args, &Options->min_route_chan_width_hint);
 	case OT_TRIM_EMPTY_CHAN:
 		return ReadOnOff(Args, &Options->TrimEmptyChan);
 	case OT_TRIM_OBS_CHAN:

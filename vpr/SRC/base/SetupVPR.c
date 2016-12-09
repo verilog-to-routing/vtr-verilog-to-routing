@@ -483,6 +483,11 @@ static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
 		RouterOpts->fixed_channel_width = Options.RouteChanWidth;
 	}
 
+	RouterOpts->min_channel_width_hint = -1; /* DEFAULT */
+	if (Options.Count[OT_MIN_ROUTE_CHAN_WIDTH_HINT]) {
+		RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
+	}
+
 	RouterOpts->trim_empty_channels = false; /* DEFAULT */
 	if (Options.Count[OT_TRIM_EMPTY_CHAN]) {
 		RouterOpts->trim_empty_channels = Options.TrimEmptyChan;

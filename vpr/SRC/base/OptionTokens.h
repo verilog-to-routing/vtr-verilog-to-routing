@@ -113,6 +113,7 @@ enum e_OptionBaseToken {
             OT_BEND_COST,
             OT_ROUTE_TYPE,
             OT_ROUTE_CHAN_WIDTH,
+            OT_MIN_ROUTE_CHAN_WIDTH_HINT,
             OT_TRIM_EMPTY_CHAN,
             OT_TRIM_OBS_CHAN,
             OT_VERIFY_BINARY_SEARCH,

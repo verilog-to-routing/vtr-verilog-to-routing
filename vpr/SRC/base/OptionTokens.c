@@ -46,6 +46,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "bend_cost", OT_BEND_COST }, 
 		{ "route_type", OT_ROUTE_TYPE }, 
 		{ "route_chan_width", OT_ROUTE_CHAN_WIDTH },
+		{ "min_route_chan_width_hint", OT_MIN_ROUTE_CHAN_WIDTH_HINT },
 		{ "trim_empty_chan", OT_TRIM_EMPTY_CHAN },
 		{ "trim_obs_chan", OT_TRIM_OBS_CHAN },
 		{ "route", OT_ROUTE }, 
