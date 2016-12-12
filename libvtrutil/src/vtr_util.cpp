@@ -119,6 +119,39 @@ std::string vstring_fmt(const char* fmt, va_list args) {
     return std::string(buf.get(), len);
 }
 
+std::string basename(const std::string& path) {
+    auto elements = split(path, "/");
+
+    std::string str;
+    if(elements.size() > 0) {
+        //Return the last path element
+        str = elements[elements.size() - 1];
+    }
+
+    return str;
+}
+
+std::string dirname(const std::string& path) {
+    auto elements = split(path, "/");
+
+    std::string str;
+    if(elements.size() > 0) {
+        //We need to start the dirname with a "/" if path started with one
+        if(path[0] == '/') {
+            str += "/";
+        }
+            
+        //Join all except the last path element
+        str += join(elements.begin(), elements.end() - 1, "/");
+
+        //We append a final "/" to allow clients to just append directly to the
+        //returned value
+        str += "/";
+    }
+
+    return str;
+}
+
 /* An alternate for strncpy since strncpy doesn't work as most
  * people would expect. This ensures null termination */
 char* strncpy(char *dest, const char *src, size_t size) {

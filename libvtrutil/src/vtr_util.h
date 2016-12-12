@@ -20,6 +20,20 @@ namespace vtr {
     //an explicit va_list
     std::string vstring_fmt(const char* fmt, va_list args);
 
+    //Returns the basename of path (i.e. the last filename component)
+    //  For example, the path "/home/user/my_files/test.blif" -> "test.blif"
+    std::string basename(const std::string& path);
+
+    //Returns the dirname of path (i.e. everything except the last filename component)
+    //  For example, the path "/home/user/my_files/test.blif" -> "/home/user/my_files/"
+    std::string dirname(const std::string& path);
+
+    //Joins a sequence by a specified delimeter
+    //  For example the sequence {"home", "user", "my_files", "test.blif"} with delim="/"
+    //  would return "home/user/my_files/test.blif"
+    template<typename Iter>
+    std::string join(Iter begin, Iter end, std::string delim);
+
     /*
      * Legacy c-style function replacements, typically these add extra error checking
      * and/or correct 'unexpected' behaviour of the standard c-functions
@@ -47,6 +61,21 @@ namespace vtr {
      * Legacy ReadLine Tokening
      */
     std::vector<std::string> ReadLineTokens(FILE * InFile, int *LineNum);
+
+    /*
+     * Template implementations
+     */
+    template<typename Iter>
+    std::string join(Iter begin, Iter end, std::string delim) {
+        std::string joined_str;
+        for(auto iter = begin; iter != end; ++iter) {
+            joined_str += *iter;
+            if(iter != end - 1) {
+                joined_str += delim;
+            }
+        }
+        return joined_str;
+    }
 }
 
 #endif
