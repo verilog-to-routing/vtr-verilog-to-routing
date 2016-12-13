@@ -348,20 +348,7 @@ typedef struct s_slack {
 	 [0..net.size()-1][1..num_pins-1] for post-packed netlists. */
 	float ** slack;
 	float ** timing_criticality;
-#ifdef PATH_COUNTING
-	float ** path_criticality;
-#endif
 } t_slack;
-
-typedef struct s_prepack_slack {
-	/* Matrices storing slacks and criticalities of each sink pin (for all nets)
-	 [AtomPinId] for pre-packed netlists. */
-    std::unordered_map<AtomPinId,float> slack;
-    std::unordered_map<AtomPinId,float> timing_criticality;
-#ifdef PATH_COUNTING
-    std::unordered_map<AtomPinId,float> path_criticality;
-#endif
-} t_prepack_slack;
 
 typedef struct s_override_constraint {
 	/* A special-case constraint to override the default, calculated, timing constraint.  Holds data from

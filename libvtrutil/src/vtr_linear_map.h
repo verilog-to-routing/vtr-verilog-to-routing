@@ -65,7 +65,8 @@ class linear_map {
 
         bool empty() const { return vec_.empty(); }
 
-        bool contain(const K key) const { return size_t(key) < vec_.size(); }
+        bool contains(const K key) const { return size_t(key) < vec_.size(); }
+        size_t count(const K key) const { return contains(key) ? 1 : 0; }
 
     public: //Mutators
         

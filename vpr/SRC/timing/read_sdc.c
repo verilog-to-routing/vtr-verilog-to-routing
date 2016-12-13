@@ -1120,7 +1120,11 @@ const char * get_sdc_file_name(){
 	return sdc_file_name;
 }
 
-tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, const AtomMap& atom_map) {
+tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, const AtomMap& atom_map, t_timing_inf timing_inf) {
+    if(!g_sdc) {
+        read_sdc(timing_inf);
+    }
+
     auto tc = tatum::TimingConstraints();
 
     //Initialize the clocks

@@ -192,7 +192,7 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 static void update_timing_gain_values(const AtomNetId net_id,
 		t_pb* cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block,
-		t_prepack_slack& slacks,
+        const OptimizerSlacks& optimizer_slacks,
         const std::unordered_set<AtomNetId>& is_global);
 
 static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_update gain_flag,
@@ -200,7 +200,7 @@ static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_updat
         bool timing_driven,
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-		t_prepack_slack& slacks,
+        const OptimizerSlacks& optimizer_slacks,
         const std::unordered_set<AtomNetId>& is_global);
 
 static void update_total_gain(float alpha, float beta, bool timing_driven,
@@ -212,7 +212,8 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         const std::unordered_set<AtomNetId>& is_global, 
         const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
-		const bool connection_driven, t_prepack_slack& slacks);
+		const bool connection_driven, 
+        const OptimizerSlacks& slacks);
 
 static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
@@ -259,7 +260,6 @@ static void load_transitive_fanout_candidates(int cluster_index,
 											  t_pb_stats *pb_stats,
 											  t_lb_net_stats *clb_inter_blk_nets);
 
-static t_prepack_slack convert_raw_slacks_to_prepack_slacks(t_slack* raw_slacks);
 /*****************************************/
 /*globally accessable function*/
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
@@ -300,26 +300,15 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	bool early_exit, is_cluster_legal;
 	enum e_block_pack_status block_pack_status;
-	float crit;
 
 	t_cluster_placement_stats *cluster_placement_stats, *cur_cluster_placement_stats_ptr;
 	t_pb_graph_node **primitives_list;
 	t_block *clb; /* [0..num_clusters-1] */
-	t_slack * raw_slacks = NULL;
-    t_prepack_slack slacks;
 	t_lb_router_data *router_data = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
 	t_lb_net_stats *clb_inter_blk_nets = NULL; /* [0..num_clusters-1] */
 
 	vector < vector <t_intra_lb_net> * > intra_lb_routing;
-
-#ifdef PATH_COUNTING
-	unsigned int inet;
-	int ipin;
-#else
-	int inode;
-	float num_paths_scaling, distance_scaling;
-#endif
 
 	/* TODO: This is memory inefficient, fix if causes problems */
 	clb = (t_block*)vtr::calloc(g_atom_nl.blocks().size(), sizeof(t_block));
@@ -388,183 +377,44 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	VTR_ASSERT(max_cluster_size < MAX_SHORT);
 	/* Limit maximum number of elements for each cluster */
 
+    //New analyzer
+    TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map, expected_lowest_cost_pb_gnode, inter_cluster_net_delay);
+    tatum::TimingGraph tg = tg_builder.timing_graph();
+    tatum::FixedDelayCalculator dc = tg_builder.delay_calculator();
+    tatum::TimingConstraints tc = create_timing_constraints(g_atom_nl, g_atom_map, timing_inf);
+
+    std::ofstream os_timing_echo("timing.echo");
+    write_timing_graph(os_timing_echo, tg);
+    write_timing_constraints(os_timing_echo, tc);
+    write_delay_model(os_timing_echo, tg, dc);
+    os_timing_echo.flush();
+
+    /*std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(tg, tc, dc);*/
+    std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(tg, tc, dc);
+    analyzer->update_timing();
+
+    auto dc_sp = std::make_shared<tatum::FixedDelayCalculator>(dc);
+    tatum::write_dot_file_setup("setup.dot", tg, dc_sp, analyzer);
+
+    write_analysis_result(os_timing_echo, tg, analyzer);
+    os_timing_echo.flush();
+
+    OptimizerSlacks optimizer_slacks(g_atom_nl, g_atom_map, analyzer, tg, dc);
+
 	if (timing_driven) {
-		raw_slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, 
-                                                         expected_lowest_cost_pb_gnode);
-
-        //New analyzer
-        TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map, expected_lowest_cost_pb_gnode, inter_cluster_net_delay);
-        tatum::TimingGraph tg = tg_builder.timing_graph();
-        tatum::FixedDelayCalculator dc = tg_builder.delay_calculator();
-        tatum::TimingConstraints tc = create_timing_constraints(g_atom_nl, g_atom_map);
-
-        std::ofstream os_timing_echo("timing.echo");
-        write_timing_graph(os_timing_echo, tg);
-        write_timing_constraints(os_timing_echo, tc);
-        write_delay_model(os_timing_echo, tg, dc);
-        os_timing_echo.flush();
-
-        /*std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(tg, tc, dc);*/
-        std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(tg, tc, dc);
-        analyzer->update_timing();
-
-        auto dc_sp = std::make_shared<tatum::FixedDelayCalculator>(dc);
-        tatum::write_dot_file_setup("setup.dot", tg, dc_sp, analyzer);
-
-        write_analysis_result(os_timing_echo, tg, analyzer);
-        os_timing_echo.flush();
-
-        OptimizerSlack opt_slack(g_atom_nl, g_atom_map, analyzer, tg, dc);
-        opt_slack.update();
-
-
-        //Old analyzer
-		do_timing_analysis(raw_slacks, timing_inf, true, false);
-        slacks = convert_raw_slacks_to_prepack_slacks(raw_slacks);
-
-
-#if 0
-        vtr::printf("Start Slack Differences:\n");
-        size_t num_crit_diffs = 0;
-        float max_rel_diff = 0.;
-        float min_rel_diff = 0.;
-        constexpr float rel_threshold = 0.03;
-        std::map<float,tatum::NodeId> exemplar_differences;
-        for(AtomNetId net : g_atom_nl.nets()) {
-            AtomPinId driver = g_atom_nl.net_driver(net);
-            for(AtomPinId pin : g_atom_nl.net_sinks(net)) {
-                float tatum_crit = opt_slack.setup_criticality(driver, pin);
-                float vpr_crit = slacks.timing_criticality[pin];
-                float rel_diff = (tatum_crit - vpr_crit) / vpr_crit;
-                max_rel_diff = std::max(max_rel_diff, rel_diff);
-                min_rel_diff = std::min(min_rel_diff, rel_diff);
-                if(std::abs(rel_diff) > rel_threshold) {
-                    num_crit_diffs++;
-                    vtr::printf("Net %zu '%s' Pins: %zu->%zu Nodes: %zu->%zu tnode: %d->%d (%s -> %s)\n", 
-                                                                                net,
-                                                                                g_atom_nl.net_name(net).c_str(),
-                                                                                driver, pin, 
-                                                                                g_atom_map.pin_tnode[driver], g_atom_map.pin_tnode[pin], 
-                                                                                g_atom_map.atom_pin_tnode(driver), g_atom_map.atom_pin_tnode(pin),
-                                                                                g_atom_nl.pin_name(driver).c_str(),
-                                                                                g_atom_nl.pin_name(pin).c_str());
-
-                    //Slacks
-                    vtr::printf("\tTatum Slack: %12g Crit: %12g\n", opt_slack.setup_slack(driver, pin), tatum_crit);
-                    vtr::printf("\tVTR   Slack: %12g Crit: %12g\n", slacks.slack[pin], vpr_crit);
-                    vtr::printf("\tRelative crit diff            : %12.3f\n", rel_diff);
-
-                    if(!exemplar_differences.count(rel_diff)) {
-                        exemplar_differences[rel_diff] = g_atom_map.pin_tnode[pin];
-                    }
-                }
-            }
-        }
-
-        for(auto kv : exemplar_differences) {
-            auto nodes = tatum::find_related_nodes(tg, {kv.second});
-            std::string fname = "setup.diff_" + std::to_string(std::abs(kv.first)) + ".node_" + std::to_string(size_t(kv.second)) + ".dot";
-            tatum::write_dot_file_setup(fname, tg, dc_sp, analyzer, nodes);
-        }
-
-
-        vtr::printf("End Slack Differences (%zu differences above threshold (%f), max rel diff: %f, min reldiff: %f)\n", rel_threshold, num_crit_diffs, max_rel_diff, min_rel_diff);
-
-        exit(0);
-#endif
-
-		if (getEchoEnabled()) {
-			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))
-				print_timing_graph(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH));
-#ifndef PATH_COUNTING
-			if(isEchoFileEnabled(E_ECHO_CLUSTERING_TIMING_INFO))
-				print_clustering_timing_info(getEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO));
-#endif
-			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_SLACK))
-				print_slack(raw_slacks->slack, false, getEchoFileName(E_ECHO_PRE_PACKING_SLACK));
-			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_CRITICALITY))
-				print_criticality(raw_slacks, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
-		}
-
-
+        optimizer_slacks.update();
 		for (auto blk_id : g_atom_nl.blocks()) {
 			critindexarray.push_back(blk_id);
 			seed_blend_index_array.push_back(blk_id);
 		}
 
-#if 0
-#ifdef PATH_COUNTING
-		/* Calculate block criticality from a weighted sum of timing and path criticalities. */
-        for(auto net_id : g_atom_nl.nets()) {
-            for(auto pin_id : g_atom_nl.net_sinks(net_id)) {
-			
-				/* Find the atom block blk_id which this pin is a sink on. */
-                auto blk_id = g_atom_nl.pin_block(pin_id);
-					
-				/* The criticality of this pin is a sum of its timing and path criticalities. */
-				crit =		PACK_PATH_WEIGHT  * slacks->path_criticality[pin_id] 
-					 + (1 - PACK_PATH_WEIGHT) * slacks->timing_criticality[pin_id]; 
-
-				/* The criticality of each block is the maximum of the criticalities of all its pins. */
-				if (block_criticality[blk_id] < crit) {
-					block_criticality[blk_id] = crit;
-				}
-			}
-		}
-
-#else
-		/* Calculate criticality based on slacks and tie breakers (# paths, distance from source) */
-		for (inode = 0; inode < num_tnodes; inode++) {
-			/* Only calculate for tnodes which have valid normalized values.
-			Either all values will be accurate or none will, so we only have
-			to check whether one particular value (normalized_T_arr) is valid 
-			Tnodes that do not have both times valid were not part of the analysis. 
-			Because we calloc-ed the array criticality, such nodes will have criticality 0, the lowest possible value. */
-			if (has_valid_normalized_T_arr(inode)) {
-				auto blk_id = find_tnode_atom_block(inode);
-				num_paths_scaling = SCALE_NUM_PATHS
-						* (float) tnode[inode].prepacked_data->normalized_total_critical_paths;
-				distance_scaling = SCALE_DISTANCE_VAL
-						* (float) tnode[inode].prepacked_data->normalized_T_arr;
-				crit = (1 - tnode[inode].prepacked_data->normalized_slack) + num_paths_scaling
-						+ distance_scaling;
-				if (block_criticality[blk_id] < crit) {
-					block_criticality[blk_id] = crit;
-				}
-			}
-		}
-#endif
-#endif
         //Calculate criticality of each block
         for(AtomBlockId blk : g_atom_nl.blocks()) {
             for(AtomPinId in_pin : g_atom_nl.block_input_pins(blk)) {
-                AtomNetId net = g_atom_nl.pin_net(in_pin);
-                AtomPinId driver_pin = g_atom_nl.net_driver(net);
-
                 //Max criticality over incomming nets
-                float crit = opt_slack.setup_criticality(driver_pin, in_pin);
+                float crit = optimizer_slacks.setup_criticality(in_pin);
                 block_criticality[blk] = std::max(block_criticality[blk], crit);
-
-                //Max criticality over internal connections
-                /*
-                 *for(AtomPinId out_pin : g_atom_nl.block_output_pins(blk)) {
-                 *    crit = opt_slack.setup_criticality(in_pin, out_pin);
-                 *    block_criticality[blk] = std::max(block_criticality[blk], crit);
-                 *}
-                 */
-                tatum::NodeId src_node = g_atom_map.pin_tnode[in_pin];
-                for(tatum::EdgeId edge : tg.node_out_edges(src_node)) {
-                    tatum::NodeId sink_node = tg.edge_sink_node(edge);
-                    AtomPinId sink_pin = g_atom_map.pin_tnode[sink_node];
-
-                    crit = opt_slack.setup_criticality(in_pin, sink_pin);
-                    block_criticality[blk] = std::max(block_criticality[blk], crit);
-                }
             }
-        }
-
-        for(AtomBlockId blk : g_atom_nl.blocks()) {
-            vtr::printf("blk %zu block_criticality: %g\n", blk, block_criticality[blk]);
         }
 
         for(auto blk_id : g_atom_nl.blocks()) {
@@ -648,7 +498,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                     is_clock, //Set of clock nets
                     is_clock, //Set of global nets (currently all clocks)
                     global_clocks, alpha,
-					beta, timing_driven, connection_driven, slacks);
+					beta, timing_driven, connection_driven, 
+                    optimizer_slacks);
 			num_clb++;
 
 			if (timing_driven && !early_exit) {
@@ -730,7 +581,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                         is_clock, //Set of all clocks
                         is_clock, //Set of all global signals (currently clocks)
 						global_clocks, alpha, beta, timing_driven,
-						connection_driven, slacks);
+						connection_driven, 
+                        optimizer_slacks);
 				num_unrelated_clustering_attempts = 0;
 
 				if (timing_driven && !early_exit) {
@@ -846,8 +698,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		critindexarray.clear();
 		seed_blend_gain.clear();
 		seed_blend_index_array.clear();
-
-		free_timing_graph(raw_slacks);
 	}
 
 	free (primitives_list);
@@ -1672,7 +1522,7 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 static void update_timing_gain_values(const AtomNetId net_id,
 		t_pb *cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-        t_prepack_slack& slacks,
+        const OptimizerSlacks& optimizer_slacks,
         const std::unordered_set<AtomNetId>& is_global) {
 
 	/*This function is called when the timing_gain values on the atom net*
@@ -1690,14 +1540,9 @@ static void update_timing_gain_values(const AtomNetId net_id,
         for(auto pin_id : pins) {
             auto blk_id = g_atom_nl.pin_block(pin_id);
 			if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
-#ifdef PATH_COUNTING
-				/* Timing gain is a weighted sum of timing and path criticalities. */
-				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks.path_criticality[pin_id] 
-						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks.timing_criticality[pin_id]; 
-#else
-				/* Timing gain is the timing criticality. */
-				timinggain = slacks.timing_criticality[pin_id]; 
-#endif
+
+                timinggain = optimizer_slacks.setup_criticality(pin_id);
+
 				if(cur_pb->pb_stats->timinggain.count(blk_id) == 0) {
 					cur_pb->pb_stats->timinggain[blk_id] = 0;
 				}
@@ -1716,14 +1561,9 @@ static void update_timing_gain_values(const AtomNetId net_id,
 
 		if (g_atom_map.atom_clb(new_blk_id) == NO_CLUSTER) {
 			for (auto pin_id : g_atom_nl.net_sinks(net_id)) {
-#ifdef PATH_COUNTING
-				/* Timing gain is a weighted sum of timing and path criticalities. */
-				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks.path_criticality[pin_id] 
-						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks.timing_criticality[pin_id]; 
-#else
-				/* Timing gain is the timing criticality. */
-				timinggain = slacks.timing_criticality[pin_id]; 
-#endif
+
+                timinggain = optimizer_slacks.setup_criticality(pin_id);
+
 				if(cur_pb->pb_stats->timinggain.count(new_blk_id) == 0) {
 					cur_pb->pb_stats->timinggain[new_blk_id] = 0;
 				}
@@ -1741,7 +1581,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 		bool timing_driven,
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-		t_prepack_slack& slacks,
+        const OptimizerSlacks& optimizer_slacks,
         const std::unordered_set<AtomNetId>& is_global) {
 
 	/* Updates the marked data structures, and if gain_flag is GAIN,  *
@@ -1816,7 +1656,9 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 
 			if (timing_driven) {
 				update_timing_gain_values(net_id, cur_pb,
-						net_relation_to_clustered_block, slacks, is_global);
+						net_relation_to_clustered_block, 
+                        optimizer_slacks,
+                        is_global);
 			}
 		}
 		if(cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
@@ -1885,7 +1727,8 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         const std::unordered_set<AtomNetId>& is_global, 
         const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
-		const bool connection_driven, t_prepack_slack& slacks) {
+		const bool connection_driven, 
+        const OptimizerSlacks& optimizer_slacks) {
 
 	/* Updates cluster stats such as gain, used pins, and clock structures.  */
 
@@ -1934,11 +1777,15 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
             if (!is_clock.count(net_id) || !global_clocks) {
                 mark_and_update_partial_gain(net_id, GAIN, blk_id,
                         timing_driven,
-                        connection_driven, OUTPUT, slacks, is_global);
+                        connection_driven, OUTPUT, 
+                        optimizer_slacks,
+                        is_global);
             } else {
                 mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
                         timing_driven,
-                        connection_driven, OUTPUT, slacks, is_global);
+                        connection_driven, OUTPUT, 
+                        optimizer_slacks,
+                        is_global);
             }
         }
 
@@ -1947,7 +1794,9 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
             auto net_id = g_atom_nl.pin_net(pin_id);
             mark_and_update_partial_gain(net_id, GAIN, blk_id,
                     timing_driven, connection_driven,
-                    INPUT, slacks, is_global);
+                    INPUT, 
+                    optimizer_slacks,
+                    is_global);
         }
 
         /* Finally Clocks */
@@ -1960,10 +1809,14 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
             auto net_id = g_atom_nl.pin_net(pin_id);
             if (global_clocks) {
                 mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
-                        timing_driven, connection_driven, INPUT, slacks, is_global);
+                        timing_driven, connection_driven, INPUT, 
+                        optimizer_slacks,
+                        is_global);
             } else {
                 mark_and_update_partial_gain(net_id, GAIN, blk_id,
-                        timing_driven, connection_driven, INPUT, slacks, is_global);
+                        timing_driven, connection_driven, INPUT, 
+                        optimizer_slacks,
+                        is_global);
             }
         }
 
@@ -2915,24 +2768,3 @@ static void print_block_criticalities(const char * fname) {
 	fclose(fp);
 }
 
-static t_prepack_slack convert_raw_slacks_to_prepack_slacks(t_slack* raw_slacks) {
-    //Temporary helper function to convert raw slacks (by net and net pin indicies)
-    //to AtomNetId, AtomPinId -- this will be replaced with the new timing analyzer
-    t_prepack_slack prepack_slacks;
-    int inet = 0;
-    for(auto net_id : g_atom_nl.nets()) {
-        int ipin = 1;
-        for(auto pin_id : g_atom_nl.net_sinks(net_id)) {
-            float* net_slacks = raw_slacks->slack[inet];
-            float pin_slack = net_slacks[ipin];
-            prepack_slacks.slack[pin_id] = pin_slack;
-            prepack_slacks.timing_criticality[pin_id] = raw_slacks->timing_criticality[inet][ipin];
-#ifdef PATH_COUNTING
-            prepack_slacks.path_criticaltiy[pin_id] = raw_slacks->path_criticality[inet][ipin];
-#endif
-            ++ipin;
-        }
-        ++inet;
-    }
-    return prepack_slacks;
-}

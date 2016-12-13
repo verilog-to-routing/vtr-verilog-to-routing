@@ -1399,14 +1399,14 @@ void AtomNetlist::shrink_to_fit() {
  */
 bool AtomNetlist::valid_block_id(AtomBlockId id) const {
     if(id == AtomBlockId::INVALID()) return false;
-    else if(!block_ids_.contain(id)) return false;
+    else if(!block_ids_.contains(id)) return false;
     else if(block_ids_[id] != id) return false;
     return true;
 }
 
 bool AtomNetlist::valid_port_id(AtomPortId id) const {
     if(id == AtomPortId::INVALID()) return false;
-    else if(!port_ids_.contain(id)) return false;
+    else if(!port_ids_.contains(id)) return false;
     else if(port_ids_[id] != id) return false;
     return true;
 }
@@ -1419,21 +1419,21 @@ bool AtomNetlist::valid_port_bit(AtomPortId id, BitIndex port_bit) const {
 
 bool AtomNetlist::valid_pin_id(AtomPinId id) const {
     if(id == AtomPinId::INVALID()) return false;
-    else if(!pin_ids_.contain(id)) return false;
+    else if(!pin_ids_.contains(id)) return false;
     else if(pin_ids_[id] != id) return false;
     return true;
 }
 
 bool AtomNetlist::valid_net_id(AtomNetId id) const {
     if(id == AtomNetId::INVALID()) return false;
-    else if(!net_ids_.contain(id)) return false;
+    else if(!net_ids_.contains(id)) return false;
     else if(net_ids_[id] != id) return false;
     return true;
 }
 
 bool AtomNetlist::valid_string_id(AtomStringId id) const {
     if(id == AtomStringId::INVALID()) return false;
-    else if(!string_ids_.contain(id)) return false;
+    else if(!string_ids_.contains(id)) return false;
     else if(string_ids_[id] != id) return false;
     return true;
 }
