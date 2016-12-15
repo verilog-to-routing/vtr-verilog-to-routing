@@ -25,6 +25,14 @@ As an example consider libsdcparse:
 
     Note the '--squash' option which prevents the whole up-stream history from being merged into the current repository.
 
+    If you have made local changes to the subtree and pushed them to the parent repository, you may encounter a merge conflict
+    during the above pull (caused by divergent commit IDs between the main and parent repositories).
+    You will need to re-split the subtree so that subtree pull finds the correct common ancestor:
+
+    ` git subtree split --rejoin -P libsdcparse/ `
+
+    You can then re-try the subtree pull as described above.
+
 4. [This is unusual, be sure you really mean to do this!] To push local changes to the upstream subtree
 
     ` git subtree push --prefix libsdcparse github-libsdcparse master `
