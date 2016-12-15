@@ -125,11 +125,12 @@ namespace tatum {
 class SetupAnalysis : public detail::CommonAnalysisVisitor<detail::SetupAnalysisOps> {
 
     public:
-        SetupAnalysis(size_t num_tags)
-            : detail::CommonAnalysisVisitor<detail::SetupAnalysisOps>(num_tags) {}
+        SetupAnalysis(size_t num_tags, size_t num_slacks)
+            : detail::CommonAnalysisVisitor<detail::SetupAnalysisOps>(num_tags, num_slacks) {}
 
         TimingTags::tag_range setup_tags(const NodeId node_id) const { return ops_.get_tags(node_id); }
         TimingTags::tag_range setup_tags(const NodeId node_id, TagType type) const { return ops_.get_tags(node_id, type); }
+        TimingTags::tag_range setup_slacks(const EdgeId edge) const { return ops_.get_slacks(edge); }
 };
 
 } //namepsace

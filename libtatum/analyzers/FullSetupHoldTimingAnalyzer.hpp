@@ -22,7 +22,7 @@ class FullSetupHoldTimingAnalyzer : public SetupHoldTimingAnalyzer {
             , timing_graph_(timing_graph)
             , timing_constraints_(timing_constraints)
             , delay_calculator_(delay_calculator)
-            , setup_hold_visitor_(timing_graph_.nodes().size()) {
+            , setup_hold_visitor_(timing_graph_.nodes().size(), timing_graph_.edges().size()) {
             validate_timing_graph_constraints(timing_graph_, timing_constraints_);
         }
 
@@ -41,8 +41,11 @@ class FullSetupHoldTimingAnalyzer : public SetupHoldTimingAnalyzer {
 
         TimingTags::tag_range setup_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.setup_tags(node_id); }
         TimingTags::tag_range setup_tags_impl(NodeId node_id, TagType type) const override { return setup_hold_visitor_.setup_tags(node_id, type); }
+        TimingTags::tag_range setup_slacks_impl(EdgeId edge_id) const override { return setup_hold_visitor_.setup_slacks(edge_id); }
+
         TimingTags::tag_range hold_tags_impl(NodeId node_id) const override { return setup_hold_visitor_.hold_tags(node_id); }
         TimingTags::tag_range hold_tags_impl(NodeId node_id, TagType type) const override { return setup_hold_visitor_.hold_tags(node_id, type); }
+        TimingTags::tag_range hold_slacks_impl(EdgeId edge_id) const override { return setup_hold_visitor_.hold_slacks(edge_id); }
 
     private:
         const TimingGraph& timing_graph_;

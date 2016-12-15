@@ -58,11 +58,12 @@ namespace tatum {
 class HoldAnalysis : public detail::CommonAnalysisVisitor<detail::HoldAnalysisOps> {
 
     public:
-        HoldAnalysis(size_t num_tags)
-            : detail::CommonAnalysisVisitor<detail::HoldAnalysisOps>(num_tags) {}
+        HoldAnalysis(size_t num_tags, size_t num_slacks)
+            : detail::CommonAnalysisVisitor<detail::HoldAnalysisOps>(num_tags, num_slacks) {}
 
         TimingTags::tag_range hold_tags(const NodeId node_id) const { return ops_.get_tags(node_id); }
         TimingTags::tag_range hold_tags(const NodeId node_id, TagType type) const { return ops_.get_tags(node_id, type); }
+        TimingTags::tag_range hold_slacks(const EdgeId edge_id) const { return ops_.get_slacks(edge_id); }
 };
 
 } //namepsace

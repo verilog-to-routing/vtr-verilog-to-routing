@@ -256,7 +256,7 @@ void TimingGraph::force_levelize() {
     level_nodes_.clear();
     level_ids_.clear();
     primary_inputs_.clear();
-    primary_outputs_.clear();
+    logical_outputs_.clear();
 
     //Allocate space for the first level
     level_nodes_.resize(1);
@@ -332,7 +332,7 @@ void TimingGraph::force_levelize() {
             if(   node_out_edges(node_id).size() == 0 
                && node_in_edges(node_id).size() != 0
                && node_type(node_id) == NodeType::SINK) {
-                primary_outputs_.push_back(node_id);
+                logical_outputs_.push_back(node_id);
             }
         }
 
@@ -599,13 +599,13 @@ bool TimingGraph::validate_structure() const {
         }
     }
 
-    for(NodeId node : primary_outputs()) {
+    for(NodeId node : logical_outputs()) {
         if(!node_out_edges(node).empty()) {
-            throw tatum::Error("Primary output node should have no outgoing edges");
+            throw tatum::Error("Logical output node should have no outgoing edges");
         }
 
         if(node_type(node) != NodeType::SINK) {
-            throw tatum::Error("Primary outputs should be only SINK nodes");
+            throw tatum::Error("Logical outputs should be only SINK nodes");
         }
     }
 

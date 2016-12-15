@@ -179,12 +179,14 @@ class TimingTags {
         //  256             clock launch tags (num_clock_launch_tags_)
         //  256             clock capture tags (num_clock_capture_tags_)
         //  256             data arrival tags (num_data_arrival_tags_)
-        //  (65536 - 3*256) data required tags (size_ - num_*)
+        //  256             data required tags (num_data_required_tags_)
+        //  (65536 - 4*256) slack tags (size_ - num_*)
         unsigned short size_ = 0;
         unsigned short capacity_ = 0;
         unsigned char num_clock_launch_tags_ = 0;
         unsigned char num_clock_capture_tags_ = 0;
         unsigned char num_data_arrival_tags_ = 0;
+        unsigned char num_data_required_tags_ = 0;
         std::unique_ptr<TimingTag[]> tags_;
 
 };

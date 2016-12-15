@@ -129,7 +129,8 @@ class TimingGraph {
         }
 
         ///\pre The graph must be levelized.
-        ///\returns A range containing the nodes which are primary inputs
+        ///\returns A range containing the nodes which are primary inputs (i.e. SOURCE's with no fanin, corresponding to top level design inputs pins)
+        ///\warning Not all SOURCE nodes in the graph are primary inputs (e.g. FF Q pins are SOURCE's but have incomming edges from the clock network)
         ///\see levelize()
         node_range primary_inputs() const { 
             TATUM_ASSERT_MSG(is_levelized_, "Timing graph must be levelized");
@@ -137,12 +138,12 @@ class TimingGraph {
         }
 
         ///\pre The graph must be levelized.
-        ///\returns A range containing the nodes which are primary outputs
-        ///\warning The primary outputs may be on different levels of the graph
+        ///\returns A range containing the nodes which are logical outputs (i.e. SINK's with no fan-out, corresponding to top level design output pins and FF D pins)
+        ///\warning The logical outputs may be on different levels of the graph
         ///\see levelize()
-        node_range primary_outputs() const { 
+        node_range logical_outputs() const { 
             TATUM_ASSERT_MSG(is_levelized_, "Timing graph must be levelized");
-            return tatum::util::make_range(primary_outputs_.begin(), primary_outputs_.end()); 
+            return tatum::util::make_range(logical_outputs_.begin(), logical_outputs_.end()); 
         }
 
         /*
@@ -262,7 +263,7 @@ class TimingGraph {
         tatum::util::linear_map<LevelId,LevelId> level_ids_; //The level IDs in the graph
         tatum::util::linear_map<LevelId,std::vector<NodeId>> level_nodes_; //Nodes in each level
         std::vector<NodeId> primary_inputs_; //Primary input nodes of the timing graph.
-        std::vector<NodeId> primary_outputs_; //Primary output nodes of the timing graph.
+        std::vector<NodeId> logical_outputs_; //Logical output nodes of the timing graph.
         bool is_levelized_ = false; //Inidcates if the current levelization is valid
 
 };

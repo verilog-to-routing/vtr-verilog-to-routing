@@ -14,8 +14,8 @@ namespace tatum { namespace detail {
  */
 class SetupAnalysisOps : public CommonAnalysisOps {
     public:
-        SetupAnalysisOps(size_t num_tags)
-            : CommonAnalysisOps(num_tags) {}
+        SetupAnalysisOps(size_t num_tags, size_t num_slacks)
+            : CommonAnalysisOps(num_tags, num_slacks) {}
 
         float clock_constraint(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
             return tc.setup_constraint(src_id, sink_id); 
@@ -27,6 +27,11 @@ class SetupAnalysisOps : public CommonAnalysisOps {
 
         void merge_arr_tags(const NodeId node, const Time time, const TimingTag& ref_tag) { 
             node_tags_[node].max(time, ref_tag); 
+        }
+
+        void merge_slack_tags(const EdgeId edge, const Time time, TimingTag ref_tag) { 
+            ref_tag.set_type(TagType::SLACK);
+            edge_slacks_[edge].min(time, ref_tag); 
         }
 
         template<class DelayCalc>

@@ -26,7 +26,7 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
         }
 
         void do_required_pre_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, Visitor& visitor) override {
-            const auto& po = tg.primary_outputs();
+            const auto& po = tg.logical_outputs();
             cilk_for(auto iter = po.begin(); iter != po.end(); ++iter) {
                 visitor.do_required_pre_traverse_node(tg, tc, *iter);
             }
@@ -52,8 +52,20 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
 
         void do_reset_impl(const TimingGraph& tg, Visitor& visitor) override {
             auto nodes = tg.nodes();
-            cilk_for(auto iter = nodes.begin(); iter != nodes.end(); ++iter) {
-                visitor.do_reset_node(*iter);
+            cilk_for(auto node_iter = nodes.begin(); node_iter != nodes.end(); ++node_iter) {
+                visitor.do_reset_node(*node_iter);
+            }
+
+            auto edges = tg.edges();
+            cilk_for(auto edge_iter = edges.begin(); edge_iter != edges.end(); ++edge_iter) {
+                visitor.do_reset_edge(*edge_iter);
+            }
+        }
+
+        void do_update_slack_impl(const TimingGraph& tg, const DelayCalc& dc, Visitor& visitor) override {
+            auto edges = tg.edges();
+            cilk_for(auto iter = edges.begin(); iter != edges.end(); ++iter) {
+                visitor.do_slack_traverse_edge(tg, dc, *iter);
             }
         }
 };

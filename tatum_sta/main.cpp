@@ -234,6 +234,9 @@ int main(int argc, char** argv) {
         cout << "\tReq     traversal Median: " << std::setprecision(6) << std::setw(6) << median(serial_prof_data["required_traversal_sec"]) << " s";
         cout << " (" << std::setprecision(2) << median(serial_prof_data["required_traversal_sec"])/median(serial_prof_data["analysis_sec"]) << ")" << endl;
 
+        cout << "\tUpdate slack      Median: " << std::setprecision(6) << std::setw(6) << median(serial_prof_data["update_slack_sec"]) << " s";
+        cout << " (" << std::setprecision(2) << median(serial_prof_data["update_slack_sec"])/median(serial_prof_data["analysis_sec"]) << ")" << endl;
+
         cout << "Verifying Serial Analysis took: " << serial_verify_time << " sec" << endl;
         if(serial_tags_verified != golden_reference->num_tags() && serial_tags_verified != golden_reference->num_tags() / 2) {
             //Potentially alow / 2 for setup only analysis from setup/hold golden
@@ -306,6 +309,9 @@ int main(int argc, char** argv) {
         cout << "\tReq     traversal Median: " << std::setprecision(6) << std::setw(6) << median(parallel_prof_data["required_traversal_sec"]) << " s";
         cout << " (" << std::setprecision(2) << median(parallel_prof_data["required_traversal_sec"])/median(parallel_prof_data["analysis_sec"]) << ")" << endl;
 
+        cout << "\tUpdate slack      Median: " << std::setprecision(6) << std::setw(6) << median(parallel_prof_data["update_slack_sec"]) << " s";
+        cout << " (" << std::setprecision(2) << median(parallel_prof_data["update_slack_sec"])/median(parallel_prof_data["analysis_sec"]) << ")" << endl;
+
         cout << "Verifying Parallel Analysis took: " <<  parallel_verify_time<< " sec" << endl;
         if(parallel_tags_verified != golden_reference->num_tags() && parallel_tags_verified != golden_reference->num_tags()/2) {
             //Potentially alow / 2 for setup only analysis from setup/hold golden
@@ -323,6 +329,7 @@ int main(int argc, char** argv) {
     cout << "\tReq Pre-traversal: " << std::fixed << median(serial_prof_data["required_pre_traversal_sec"]) / median(parallel_prof_data["required_pre_traversal_sec"]) << "x" << endl;
     cout << "\t    Arr-traversal: " << std::fixed << median(serial_prof_data["arrival_traversal_sec"]) / median(parallel_prof_data["arrival_traversal_sec"]) << "x" << endl;
     cout << "\t    Req-traversal: " << std::fixed << median(serial_prof_data["required_traversal_sec"]) / median(parallel_prof_data["required_traversal_sec"]) << "x" << endl;
+    cout << "\t     Update-slack: " << std::fixed << median(serial_prof_data["update_slack_sec"]) / median(parallel_prof_data["update_slack_sec"]) << "x" << endl;
     cout << endl;
 #endif //NUM_PARALLEL_RUNS
 
