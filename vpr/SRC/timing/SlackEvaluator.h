@@ -207,7 +207,7 @@ class OptimizerSlacks : public SetupSlackEvaluator {
 
             //Record the worst arrival times per domain pair
             std::map<DomainPair,float> max_arr;
-            for(tatum::NodeId node : tg_.primary_outputs()) {
+            for(tatum::NodeId node : tg_.logical_outputs()) {
                 for(const tatum::TimingTag& arr_tag : setup_analyzer_->setup_tags(node, tatum::TagType::DATA_ARRIVAL)) {
                     float arr_time = arr_tag.time().value();
                     tatum::DomainId launch = arr_tag.launch_clock_domain();
@@ -226,7 +226,7 @@ class OptimizerSlacks : public SetupSlackEvaluator {
             }
 
             //Determine the shift requried to relax required times and the maximum required time per domain
-            for(tatum::NodeId node : tg_.primary_outputs()) {
+            for(tatum::NodeId node : tg_.logical_outputs()) {
 
                 for(const tatum::TimingTag& tag : setup_analyzer_->setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
                     DomainPair domains = {tag.launch_clock_domain(), tag.capture_clock_domain()};
