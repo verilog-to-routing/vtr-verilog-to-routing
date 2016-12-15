@@ -139,13 +139,10 @@ class OptimizerSlacks : public SetupSlackEvaluator {
             : SetupSlackEvaluator(netlist, atom_map, analyzer)
             , tg_(tg)
             , dc_(dc)
-            , raw_edge_slacks_(tg_.edges().size())
             {}
 
     private:
         void update_setup_edge_slacks() override {
-            update_raw_edge_slacks();
-
             update_edge_slacks();
         }
 
@@ -170,38 +167,6 @@ class OptimizerSlacks : public SetupSlackEvaluator {
             float slack;
             tatum::NodeId origin_node;
         };
-
-        void update_raw_edge_slacks() {
-            for(tatum::EdgeId edge : tg_.edges()) {
-                raw_edge_slacks_[edge].clear(); //Reset if updating
-
-                tatum::NodeId src_node = tg_.edge_src_node(edge); 
-                tatum::NodeId sink_node = tg_.edge_sink_node(edge); 
-
-                std::vector<std::pair<DomainPair,SlackOrigin>> slacks;
-
-                for(const tatum::TimingTag& src_tag : setup_analyzer_->setup_tags(src_node, tatum::TagType::DATA_ARRIVAL)) {
-                    float T_arr_src = src_tag.time().value();
-
-                    for(const tatum::TimingTag& sink_tag : setup_analyzer_->setup_tags(sink_node, tatum::TagType::DATA_REQUIRED)) {
-                        if(src_tag.launch_clock_domain() != sink_tag.launch_clock_domain()) continue;
-
-                        float T_req_sink = sink_tag.time().value();
-
-                        float delay = dc_.max_edge_delay(tg_, edge).value();
-                        VTR_ASSERT(!std::isnan(delay));
-
-                        float slack = T_req_sink - T_arr_src - delay;
-
-                        DomainPair domains = {src_tag.launch_clock_domain(), sink_tag.capture_clock_domain()};
-                        SlackOrigin slack_origin = {slack, sink_tag.origin_node()};
-                        slacks.emplace_back(domains, slack_origin);
-                    }
-                }
-
-                raw_edge_slacks_[edge] = vtr::make_flat_map(std::move(slacks));
-            }
-        }
 
         void update_edge_shifts() {
 
@@ -289,8 +254,8 @@ class OptimizerSlacks : public SetupSlackEvaluator {
 
                 float min_slack = NAN;
 
-                for(const auto& kv : raw_edge_slacks_[edge]) {
-                    float slack = kv.second.slack;
+                for(const auto& slack_tag : setup_analyzer_->setup_slacks(edge)) {
+                    float slack = slack_tag.time().value();
                     if(std::isnan(min_slack) || slack < min_slack) {
                         min_slack = slack; 
                     }
@@ -307,9 +272,10 @@ class OptimizerSlacks : public SetupSlackEvaluator {
 
             //Maximum criticality over all constraints using per-constraint
             //relaxed required time
-            for(const auto& kv : raw_edge_slacks_[edge]) {
-                const auto& domains = kv.first;
-                const auto& slack_origin = kv.second;
+            auto slack_tags = setup_analyzer_->setup_slacks(edge);
+            for(const auto& slack_tag : slack_tags) {
+                DomainPair domains = {slack_tag.launch_clock_domain(), slack_tag.capture_clock_domain()};
+                SlackOrigin slack_origin = {slack_tag.time().value(), slack_tag.origin_node()};
 
                 float slack = shifted_slack(domains, slack_origin);
                 float max_req = shifted_max_req(domains);
@@ -321,7 +287,7 @@ class OptimizerSlacks : public SetupSlackEvaluator {
                 }
             }
 
-            VTR_ASSERT(raw_edge_slacks_[edge].empty() || !std::isnan(max_criticality));
+            VTR_ASSERT(slack_tags.empty() || !std::isnan(max_criticality));
 
             return max_criticality;
         }
@@ -351,7 +317,6 @@ class OptimizerSlacks : public SetupSlackEvaluator {
         const tatum::TimingGraph& tg_;
         const tatum::FixedDelayCalculator& dc_;
 
-        vtr::linear_map<tatum::EdgeId,vtr::flat_map<DomainPair,SlackOrigin>> raw_edge_slacks_;
         std::map<tatum::NodeId,std::map<DomainPair,float>> shifts_;
         std::map<DomainPair,float> max_req_relaxed_;
 };
