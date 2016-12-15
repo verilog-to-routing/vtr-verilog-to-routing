@@ -12,12 +12,14 @@ namespace tatum { namespace detail {
  * maixmum arrival time (and minimum required times) are propagated through the timing graph.
  *
  * \see HoldAnalysisOps
+ * \see SetupAnalysisOps
  * \see CommonAnalysisVisitor
  */
 class CommonAnalysisOps {
     public:
-        CommonAnalysisOps(size_t num_tags) 
-            : node_tags_(num_tags) {}
+        CommonAnalysisOps(size_t num_tags, size_t num_slacks) 
+            : node_tags_(num_tags)
+            , edge_slacks_(num_slacks) {}
 
         CommonAnalysisOps(const CommonAnalysisOps&) = delete;
         CommonAnalysisOps(CommonAnalysisOps&&) = delete;
@@ -46,8 +48,24 @@ class CommonAnalysisOps {
             node_tags_[node].clear();
         }
 
+        void add_slack(const EdgeId edge, const TimingTag& slack_tag) {
+            TATUM_ASSERT(slack_tag.type() == TagType::SLACK);
+
+            edge_slacks_[edge].add_tag(slack_tag); 
+        }
+
+        TimingTags::tag_range get_slacks(const EdgeId edge) const {
+            return edge_slacks_[edge].tags(TagType::SLACK);
+        }
+
+        void reset_edge(const EdgeId edge) { 
+            edge_slacks_[edge].clear();
+        }
+
+
     protected:
         tatum::util::linear_map<NodeId,TimingTags> node_tags_;
+        tatum::util::linear_map<EdgeId,TimingTags> edge_slacks_;
 };
 
 }} //namespace

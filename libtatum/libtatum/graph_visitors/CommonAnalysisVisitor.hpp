@@ -32,10 +32,11 @@ namespace tatum { namespace detail {
 template<class AnalysisOps>
 class CommonAnalysisVisitor {
     public:
-        CommonAnalysisVisitor(size_t num_tags)
-            : ops_(num_tags) { }
+        CommonAnalysisVisitor(size_t num_tags, size_t num_slacks)
+            : ops_(num_tags, num_slacks) { }
 
         void do_reset_node(const NodeId node_id) { ops_.reset_node(node_id); }
+        void do_reset_edge(const EdgeId edge_id) { ops_.reset_edge(edge_id); }
 
         void do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         void do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
@@ -45,6 +46,9 @@ class CommonAnalysisVisitor {
 
         template<class DelayCalc>
         void do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id);
+
+        template<class DelayCalc>
+        void do_slack_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const EdgeId edge);
 
     protected:
         AnalysisOps ops_;
@@ -60,6 +64,7 @@ class CommonAnalysisVisitor {
         bool should_propagate_clock_launch_tags(const TimingGraph& tg, const EdgeId edge_id) const;
         bool should_propagate_clock_capture_tags(const TimingGraph& tg, const EdgeId edge_id) const;
         bool should_propagate_data(const TimingGraph& tg, const EdgeId edge_id) const;
+        bool should_calculate_slack(const TimingTag& src_tag, const TimingTag& sink_tag) const;
 
         bool is_clock_data_launch_edge(const TimingGraph& tg, const EdgeId edge_id) const;
         bool is_clock_data_capture_edge(const TimingGraph& tg, const EdgeId edge_id) const;
@@ -361,6 +366,29 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
 }
 
 template<class AnalysisOps>
+template<class DelayCalc>
+void CommonAnalysisVisitor<AnalysisOps>::do_slack_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const EdgeId edge) {
+    NodeId src_node = tg.edge_src_node(edge);
+    NodeId sink_node = tg.edge_sink_node(edge);
+
+    auto src_arr_tags = ops_.get_tags(src_node, TagType::DATA_ARRIVAL);
+    auto sink_req_tags = ops_.get_tags(sink_node, TagType::DATA_REQUIRED);
+
+    const Time edge_delay = ops_.data_edge_delay(dc, tg, edge);
+
+    for(const tatum::TimingTag& src_arr_tag : src_arr_tags) {
+
+        for(const tatum::TimingTag& sink_req_tag : sink_req_tags) {
+            if(!should_calculate_slack(src_arr_tag, sink_req_tag)) continue;
+
+            Time slack_value = sink_req_tag.time() - src_arr_tag.time() - edge_delay;
+
+            ops_.merge_slack_tags(edge, slack_value, sink_req_tag);
+        }
+    }
+}
+
+template<class AnalysisOps>
 bool CommonAnalysisVisitor<AnalysisOps>::should_propagate_clocks(const TimingGraph& tg, const TimingConstraints& tc, const EdgeId edge_id) const {
     //We want to propagate clock tags through the arbitrary nodes making up the clock network until 
     //we hit another source node (i.e. a FF's output source).
@@ -418,6 +446,13 @@ bool CommonAnalysisVisitor<AnalysisOps>::should_propagate_data(const TimingGraph
         return true;
     }
     return false;
+}
+
+template<class AnalysisOps>
+bool CommonAnalysisVisitor<AnalysisOps>::should_calculate_slack(const TimingTag& src_tag, const TimingTag& sink_tag) const {
+    TATUM_ASSERT_SAFE(src_tag.type() == TagType::DATA_ARRIVAL && sink_tag.type() == TagType::DATA_REQUIRED);
+
+    return src_tag.launch_clock_domain() == sink_tag.launch_clock_domain();
 }
 
 }} //namepsace

@@ -22,7 +22,7 @@ class FullHoldTimingAnalyzer : public HoldTimingAnalyzer {
             , timing_graph_(timing_graph)
             , timing_constraints_(timing_constraints)
             , delay_calculator_(delay_calculator)
-            , hold_visitor_(timing_graph_.nodes().size()) {
+            , hold_visitor_(timing_graph_.nodes().size(), timing_graph_.edges().size()) {
             validate_timing_graph_constraints(timing_graph_, timing_constraints_);
         }
 
@@ -35,12 +35,15 @@ class FullHoldTimingAnalyzer : public HoldTimingAnalyzer {
 
             graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, hold_visitor_);            
             graph_walker_.do_required_traversal(timing_graph_, timing_constraints_, delay_calculator_, hold_visitor_);            
+
+            graph_walker_.do_update_slack(timing_graph_, delay_calculator_, hold_visitor_);
         }
 
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
 
-        const TimingTags& hold_tags_impl(NodeId node_id) const override { return hold_visitor_.hold_tags(node_id); }
-        const TimingTags& hold_tags_impl(NodeId node_id, TagType type) const override { return hold_visitor_.hold_tags(node_id, type); }
+        TimingTags::tag_range hold_tags_impl(NodeId node_id) const override { return hold_visitor_.hold_tags(node_id); }
+        TimingTags::tag_range hold_tags_impl(NodeId node_id, TagType type) const override { return hold_visitor_.hold_tags(node_id, type); }
+        TimingTags::tag_range holdg_slacks_impl(EdgeId edge_id) const override { return hold_visitor_.hold_slacks(edge_id); }
 
     private:
         const TimingGraph& timing_graph_;

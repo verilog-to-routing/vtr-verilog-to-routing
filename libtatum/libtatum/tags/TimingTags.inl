@@ -16,6 +16,7 @@ inline TimingTags::TimingTags(size_t num_reserve)
     , num_clock_launch_tags_(0)
     , num_clock_capture_tags_(0)
     , num_data_arrival_tags_(0)
+    , num_data_required_tags_(0)
     , tags_(capacity_ ? new TimingTag[capacity_] : nullptr)
     {}
 
@@ -25,6 +26,7 @@ inline TimingTags::TimingTags(const TimingTags& other)
     , num_clock_launch_tags_(other.num_clock_launch_tags_)
     , num_clock_capture_tags_(other.num_clock_capture_tags_)
     , num_data_arrival_tags_(other.num_data_arrival_tags_)
+    , num_data_required_tags_(other.num_data_required_tags_)
     , tags_(capacity_ ? new TimingTag[capacity_] : nullptr) {
     std::copy(other.tags_.get(), other.tags_.get() + other.size(), tags_.get());
 }
@@ -73,6 +75,9 @@ inline TimingTags::const_iterator TimingTags::begin(TagType type) const {
         case TagType::DATA_REQUIRED: 
             iter = begin() + num_clock_launch_tags_ + num_clock_capture_tags_ + num_data_arrival_tags_;
             break;
+        case TagType::SLACK: 
+            iter = begin() + num_clock_launch_tags_ + num_clock_capture_tags_ + num_data_arrival_tags_ + num_data_required_tags_;
+            break;
         default:
             TATUM_ASSERT_MSG(false, "Invalid tag type");
     }
@@ -109,6 +114,9 @@ inline TimingTags::const_iterator TimingTags::end(TagType type) const {
             iter = begin(TagType::DATA_REQUIRED);
             break;
         case TagType::DATA_REQUIRED: 
+            iter = begin(TagType::SLACK);
+            break;
+        case TagType::SLACK: 
             //Pass the true end
             iter = end();
             break;
@@ -181,6 +189,7 @@ inline void TimingTags::clear() {
     num_clock_launch_tags_ = 0;
     num_clock_capture_tags_ = 0;
     num_data_arrival_tags_ = 0;
+    num_data_required_tags_ = 0;
 }
 
 inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag(const TimingTag& tag, bool arr_must_be_valid) {
@@ -202,11 +211,17 @@ inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag(const 
                 TATUM_ASSERT_SAFE(iter->type() == tag.type());
                 return {iter, true};
             }
-        } else {
-            TATUM_ASSERT(tag.type() == TagType::CLOCK_CAPTURE);
+        } else if (tag.type() == TagType::CLOCK_CAPTURE) {
             //Check only the capture clock
             if(iter->capture_clock_domain() == tag.capture_clock_domain()) {
                 TATUM_ASSERT_SAFE(iter->type() == tag.type());
+                return {iter, true};
+            }
+        } else {
+            TATUM_ASSERT_SAFE(tag.type() == TagType::SLACK);
+            //Check both clocks
+            if(iter->launch_clock_domain() == tag.launch_clock_domain()
+               && iter->capture_clock_domain() == tag.capture_clock_domain()) {
                 return {iter, true};
             }
         }
@@ -290,6 +305,7 @@ inline void TimingTags::grow_insert(size_t index, const TimingTag& tag) {
     new_tags.num_clock_launch_tags_ = num_clock_launch_tags_;
     new_tags.num_clock_capture_tags_ = num_clock_capture_tags_;
     new_tags.num_data_arrival_tags_ = num_data_arrival_tags_;
+    new_tags.num_data_required_tags_ = num_data_required_tags_;
 
     //Increment to account for the inserted tag
     new_tags.increment_size(tag.type());
@@ -311,6 +327,9 @@ inline void TimingTags::increment_size(TagType type) {
             ++num_data_arrival_tags_;
             break;
         case TagType::DATA_REQUIRED: 
+            ++num_data_required_tags_;
+            break;
+        case TagType::SLACK: 
             //Pass
             break;
         default:
@@ -323,6 +342,7 @@ inline void swap(TimingTags& lhs, TimingTags& rhs) {
     std::swap(lhs.num_clock_launch_tags_, rhs.num_clock_launch_tags_);
     std::swap(lhs.num_clock_capture_tags_, rhs.num_clock_capture_tags_);
     std::swap(lhs.num_data_arrival_tags_, rhs.num_data_arrival_tags_);
+    std::swap(lhs.num_data_required_tags_, rhs.num_data_required_tags_);
     std::swap(lhs.size_, rhs.size_);
     std::swap(lhs.capacity_, rhs.capacity_);
 }

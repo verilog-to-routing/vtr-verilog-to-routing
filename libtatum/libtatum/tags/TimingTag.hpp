@@ -11,6 +11,7 @@ enum class TagType : unsigned char {
     CLOCK_CAPTURE,
     DATA_ARRIVAL,
     DATA_REQUIRED,
+    SLACK,
     UNKOWN
 };
 

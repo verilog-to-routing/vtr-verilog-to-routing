@@ -15,6 +15,7 @@
 namespace tatum {
 
 void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const NodeId node_id);
+void write_slacks(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const EdgeId edge);
 
 void write_timing_graph(std::ostream& os, const TimingGraph& tg) {
     os << "timing_graph:" << "\n";
@@ -149,6 +150,10 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
             NodeId node_id(node_idx);
             write_tags(os, "SETUP_CAPTURE_CLOCK", setup_analyzer->setup_tags(node_id, TagType::CLOCK_CAPTURE), node_id);
         }
+        for(size_t edge_idx = 0; edge_idx < tg.edges().size(); ++edge_idx) {
+            EdgeId edge_id(edge_idx);
+            write_slacks(os, "SETUP_SLACK", setup_analyzer->setup_slacks(edge_id), edge_id);
+        }
     }
     auto hold_analyzer = std::dynamic_pointer_cast<HoldTimingAnalyzer>(analyzer);
     if(hold_analyzer) {
@@ -168,12 +173,18 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
             NodeId node_id(node_idx);
             write_tags(os, "HOLD_CAPTURE_CLOCK", hold_analyzer->hold_tags(node_id, TagType::CLOCK_CAPTURE), node_id);
         }
+        for(size_t edge_idx = 0; edge_idx < tg.edges().size(); ++edge_idx) {
+            EdgeId edge_id(edge_idx);
+            write_slacks(os, "HOLD_SLACK", hold_analyzer->hold_slacks(edge_id), edge_id);
+        }
     }
     os << "\n";
 }
 
 void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const NodeId node_id) {
     for(const auto& tag : tags) {
+        TATUM_ASSERT(tag.type() != TagType::SLACK);
+
         float time = tag.time().value();
 
         if(!isnan(time)) {
@@ -192,6 +203,33 @@ void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag
                 os << "-1";
             }
             os << " time: " << time;
+            os << "\n";
+        }
+    }
+}
+
+void write_slacks(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const EdgeId edge) {
+    for(const auto& tag : tags) {
+        TATUM_ASSERT(tag.type() == TagType::SLACK);
+
+        float time = tag.time().value();
+
+        if(!isnan(time)) {
+            os << " type: " << type;
+            os << " edge: " << size_t(edge);
+            os << " launch_domain: ";
+            if(tag.launch_clock_domain()) {
+                os << size_t(tag.launch_clock_domain());
+            } else {
+                os << "-1";
+            }
+            os << " capture_domain: ";
+            if(tag.capture_clock_domain()) {
+                os << size_t(tag.capture_clock_domain());
+            } else {
+                os << "-1";
+            }
+            os << " slack: " << time;
             os << "\n";
         }
     }

@@ -83,6 +83,14 @@ class TimingGraphWalker {
             profiling_data_["reset_sec"] = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
         }
 
+        void do_update_slack(const TimingGraph& tg, const DelayCalc& dc, Visitor& visitor) {
+            auto start_time = Clock::now();
+
+            do_update_slack_impl(tg, dc, visitor);
+
+            profiling_data_["update_slack_sec"] = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
+        }
+
         ///Retrieve profiling information
         ///\param key The profiling key
         ///\returns The profiling value for the given key, or NaN if the key is not found
@@ -125,8 +133,11 @@ class TimingGraphWalker {
         ///\param visitor The visitor to apply during the traversal
         virtual void do_required_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) = 0;
 
-        ///Sub-class defined rest in preparation for a timing update
+        ///Sub-class defined reset in preparation for a timing update
         virtual void do_reset_impl(const TimingGraph& tg, Visitor& visitor) = 0;
+
+        ///Sub-class defined slack calculation
+        virtual void do_update_slack_impl(const TimingGraph& tg, const DelayCalc& dc, Visitor& visitor) = 0;
 
     private:
         std::map<std::string, double> profiling_data_;

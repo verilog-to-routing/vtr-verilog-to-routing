@@ -46,7 +46,7 @@ std::map<std::string,std::vector<double>> profile(size_t num_iterations, std::sh
         __itt_pause();
 #endif
 
-        for(auto key : {"arrival_pre_traversal_sec", "arrival_traversal_sec", "required_pre_traversal_sec", "required_traversal_sec", "reset_sec", "analysis_sec"}) {
+        for(auto key : {"arrival_pre_traversal_sec", "arrival_traversal_sec", "required_pre_traversal_sec", "required_traversal_sec", "reset_sec", "update_slack_sec", "analysis_sec"}) {
             prof_data[key].push_back(serial_analyzer->get_profiling_data(key));
         }
 
