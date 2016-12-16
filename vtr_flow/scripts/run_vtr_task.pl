@@ -335,23 +335,24 @@ sub run_single_task {
 	# Create a new experiment directory to run experiment in
 	# Counts up until directory number doesn't exist
 	##############################################################
-	my $experiment_number = 1;
+	my $experiment_number = 0;
 
-	while ( -e "$run_prefix$experiment_number" ) {
-		++$experiment_number;
-	}
-	mkdir( "$run_prefix$experiment_number", 0775 )
-	  or die "Failed to make directory ($run_prefix$experiment_number): $!";
-	chmod( 0775, "$run_prefix$experiment_number" );
-	chdir("$run_prefix$experiment_number")
-	  or die
-	  "Failed to change to directory ($run_prefix$experiment_number): $!";
+    my $run_dir = "";
+    my $run_dir_no_prefix = "";
+    do {
+        $experiment_number += 1;
+        $run_dir = sprintf("run%03d", $experiment_number);
+        $run_dir_no_prefix = sprintf("run%d", $experiment_number);
+    } while (-e $run_dir or -e $run_dir_no_prefix);
+
+	mkdir( $run_dir, 0775 ) or die "Failed to make directory ($run_dir): $!";
+	chmod( 0775, $run_dir );
+	chdir($run_dir) or die "Failed to change to directory ($run_dir): $!";
 
 	# Create the directory structure
 	# Make this seperately from file script
 	# just in case failure occurs creating directory
 	foreach my $arch (@archs) {
-		#mkdir( "$arch", 0775 ) or die "Failed to create directory ($arch): $!";
 		make_path( "$arch", { mode => 0775 } ) or die "Failed to create directory ($arch): $!";
 		chmod( 0775, "$arch" );
 		foreach my $circuit (@circuits) {
@@ -369,7 +370,7 @@ sub run_single_task {
         foreach my $arch (@archs) {
 
             #Determine the directory where to run
-            my $dir = "$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}";
+            my $dir = "$task_dir/$run_dir/${arch}/${circuit}";
 
 
             #Build the command to run

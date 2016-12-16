@@ -54,7 +54,7 @@ my $check_golden  = 0;
 my $parse_qor 	  = 1;  # QoR file is parsed by default; turned off if 
 						# user does not specify QoR parse file in config.txt
 my $calc_geomean  = 0;  # QoR geomeans are not computed by default;
-my $override_exp_num       = 0;
+my $override_exp_id       = 0;
 my $revision;
 my $verbose       = 0;
 my $pretty_print_results = 1;
@@ -81,7 +81,7 @@ while ( $token = shift(@ARGV) ) {
 		$calc_geomean = 1;
 	}
 	elsif ( $token eq "-run") {
-	    $override_exp_num = shift(@ARGV);
+	    $override_exp_id = shift(@ARGV);
     }
 	elsif ( $token eq "-revision" ) {
 		$revision = shift(@ARGV);
@@ -187,16 +187,16 @@ sub parse_single_task {
 	    $qor_parse_file = get_important_file($task_path, $vtr_flow_path, $qor_parse_file);
     }
 
-    my $exp_num = 0;
-    if($override_exp_num != 0) {
+    my $exp_id = 0;
+    if($override_exp_id != 0) {
         #explicitely specified via -run parameter
-        $exp_num = $override_exp_num;
+        $exp_id = $override_exp_id;
     } else {
         # haven't explicitely specified via -run parameter
-        $exp_num = last_exp(${task_path});
+        $exp_id = last_exp_id(${task_path});
     }
 	
-	my $run_path = "$task_path/${run_prefix}${exp_num}";
+	my $run_path = "$task_path/${run_prefix}${exp_id}";
 
 	my $first = 1;
 	open( OUTPUT_FILE, ">$run_path/parse_results.txt" );
@@ -270,7 +270,7 @@ sub summarize_qor {
 	my $task_path = "$vtr_flow_path/tasks/$task";
 	
 	my $output_path = $task_path;
-	my $exp_num = last_exp($task_path);
+	my $exp_id = last_exp_id($task_path);
 
 	if ( ( ( $#tasks + 1 ) > 1 ) | ( -e "$task_path/../task_list.txt" ) ) {
 		$output_path = "$task_path/../";
@@ -278,9 +278,9 @@ sub summarize_qor {
 	if ( !-e "$output_path/task_summary" ) {
 		mkdir "$output_path/task_summary";
 	}
-	if ( -e "$output_path/task_summary/${run_prefix}${exp_num}_summary.txt" ) {
+	if ( -e "$output_path/task_summary/${run_prefix}${exp_id}_summary.txt" ) {
 	}
-	open( OUTPUT_FILE, ">$output_path/task_summary/${run_prefix}${exp_num}_summary.txt" );
+	open( OUTPUT_FILE, ">$output_path/task_summary/${run_prefix}${exp_id}_summary.txt" );
 	
 	##############################################################
 	# Append contents of QoR files to output file
@@ -289,8 +289,8 @@ sub summarize_qor {
 	foreach my $task (@tasks) {
 		chomp($task);
 		$task_path = "$vtr_flow_path/tasks/$task";
-		$exp_num = last_exp($task_path);
-		my $run_path = "$task_path/${run_prefix}${exp_num}";
+		$exp_id = last_exp_id($task_path);
+		my $run_path = "$task_path/${run_prefix}${exp_id}";
 
 		open( RESULTS_FILE, "$run_path/qor_results.txt" );
 		my $output = <RESULTS_FILE>;
@@ -320,7 +320,7 @@ sub calc_geomean {
 	my $task_path = "$vtr_flow_path/tasks/$task";
 	
 	my $output_path = $task_path;
-	my $exp_num = last_exp($task_path);
+	my $exp_id = last_exp_id($task_path);
 
 	if ( ( ( $#tasks + 1 ) > 1 ) | ( -e "$task_path/../task_list.txt" ) ) {
 		$output_path = "$task_path/../"; 
@@ -337,7 +337,7 @@ sub calc_geomean {
 	# Read summary file
 	##############################################################
 
-	my $summary_file = "$output_path/task_summary/${run_prefix}${exp_num}_summary.txt";
+	my $summary_file = "$output_path/task_summary/${run_prefix}${exp_id}_summary.txt";
 
 	if ( !-r $summary_file ) {
 		print "[ERROR] Failed to open $summary_file: $!";
@@ -369,7 +369,7 @@ sub calc_geomean {
 	else {
 	}
 
-	print OUTPUT_FILE "\n${exp_num}";
+	print OUTPUT_FILE "\n${exp_id}";
 
 	##############################################################
 	# Compute & write geomean to output file
@@ -454,14 +454,27 @@ sub pretty_print_table {
 
 }
 
-sub last_exp {
+sub last_exp_id {
 	my $path = shift;
-	my $num = 1;
-	while ( -e "$path/${run_prefix}${num}" ) {
+	my $num = 0;
+    my $run_id = "";
+    my $run_id_no_pad = "";
+    do {
 		++$num;
-	}
-	--$num;
-	return $num;
+        $run_id = sprintf("%03d", $num);
+        $run_id_no_pad = sprintf("%d", $num);
+    } while ( -e "$path/${run_prefix}${run_id}" or -e "$path/${run_prefix}${run_id_no_pad}");
+    --$num;
+    $run_id = sprintf("%03d", $num);
+    $run_id_no_pad = sprintf("%d", $num);
+
+    if( -e "$path/${run_prefix}${run_id}" ) {
+        return $run_id;
+    } elsif (-e "$path/${run_prefix}${run_id_no_pad}") {
+        return $run_id_no_pad;
+    }
+
+    die("Unkown experiment id");
 } 
 
 sub check_golden {
