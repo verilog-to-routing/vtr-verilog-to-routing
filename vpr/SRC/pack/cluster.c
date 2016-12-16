@@ -378,9 +378,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/* Limit maximum number of elements for each cluster */
 
     //New analyzer
-    TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map, expected_lowest_cost_pb_gnode, inter_cluster_net_delay);
+    TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map, expected_lowest_cost_pb_gnode);
     tatum::TimingGraph tg = tg_builder.timing_graph();
-    tatum::FixedDelayCalculator dc = tg_builder.delay_calculator();
+    tatum::FixedDelayCalculator dc = tg_builder.clustering_delay_calculator(inter_cluster_net_delay);
     tatum::TimingConstraints tc = create_timing_constraints(g_atom_nl, g_atom_map, timing_inf);
 
     std::ofstream os_timing_echo("timing.echo");

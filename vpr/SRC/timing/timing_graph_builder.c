@@ -36,7 +36,9 @@ TimingGraph TimingGraphBuilder::timing_graph() {
     return std::move(tg_);
 }
 
-FixedDelayCalculator TimingGraphBuilder::delay_calculator() {
+FixedDelayCalculator TimingGraphBuilder::clustering_delay_calculator(float inter_cluster_net_delay) {
+    mark_clustering_net_delays(inter_cluster_net_delay);
+
     return FixedDelayCalculator(max_edge_delays_, setup_times_);
 }
 
@@ -223,21 +225,8 @@ void TimingGraphBuilder::add_seq_block_to_timing_graph(const AtomBlockId blk) {
     }
 }
 
-void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
-
-    AtomPinId driver_pin = netlist_.net_driver(net);
-    NodeId driver_tnode = netlist_map_.pin_tnode[driver_pin];
-    VTR_ASSERT(driver_tnode);
-
-
-    for(AtomPinId sink_pin : netlist_.net_sinks(net)) {
-        NodeId sink_tnode = netlist_map_.pin_tnode[sink_pin];
-        VTR_ASSERT(sink_tnode);
-
-        EdgeId edge = tg_.add_edge(driver_tnode, sink_tnode);
-
-        max_edge_delays_.insert(edge, Time(inter_cluster_net_delay_));
-    }
+void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId /*net*/) {
+    //No-op
 }
 
 void TimingGraphBuilder::fix_comb_loops() {
@@ -330,3 +319,17 @@ const t_pb_graph_pin* TimingGraphBuilder::find_associated_clock_pin(const AtomPi
     return clock_gpin;
 }
 
+void TimingGraphBuilder::mark_clustering_net_delays(float inter_cluster_net_delay) {
+
+    //Mark every driver->sink net connection with the inter_cluster_net_delay
+    for(AtomNetId net : netlist_.nets()) {
+        AtomPinId driver = netlist_.net_driver(net);
+
+        tatum::NodeId driver_tnode = netlist_map_.pin_tnode[driver];
+
+        for(tatum::EdgeId edge : tg_.node_out_edges(driver_tnode)) {
+            max_edge_delays_[edge] = Time(inter_cluster_net_delay);
+        }
+    }
+
+}

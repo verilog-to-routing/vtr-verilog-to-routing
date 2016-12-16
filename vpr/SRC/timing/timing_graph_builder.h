@@ -15,17 +15,15 @@ class TimingGraphBuilder {
     public:
         TimingGraphBuilder(const AtomNetlist& netlist,
                            AtomMap& netlist_map,
-                           const std::unordered_map<AtomBlockId,t_pb_graph_node*>& blk_to_pb_gnode_map,
-                           float inter_cluster_net_delay)
+                           const std::unordered_map<AtomBlockId,t_pb_graph_node*>& blk_to_pb_gnode_map)
             : netlist_(netlist) 
             , netlist_map_(netlist_map)
-            , blk_to_pb_gnode_(blk_to_pb_gnode_map) 
-            , inter_cluster_net_delay_(inter_cluster_net_delay) {
+            , blk_to_pb_gnode_(blk_to_pb_gnode_map) {
             build();
         }
 
         tatum::TimingGraph timing_graph();
-        tatum::FixedDelayCalculator delay_calculator();
+        tatum::FixedDelayCalculator clustering_delay_calculator(float inter_cluster_net_delay);
 
     private:
         void build();
@@ -42,6 +40,8 @@ class TimingGraphBuilder {
 
         const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin);
         const t_pb_graph_pin* find_associated_clock_pin(const AtomPinId pin);
+
+        void mark_clustering_net_delays(float inter_cluster_net_delay);
 
     private:
         tatum::TimingGraph tg_;
