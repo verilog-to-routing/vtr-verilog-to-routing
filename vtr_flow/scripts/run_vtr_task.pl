@@ -330,11 +330,6 @@ sub run_single_task {
 
 	# Check if golden file exists
 	my $golden_results_file = "$task_dir/config/golden_results.txt";
-	if ($show_runtime_estimates) {
-		if ( not -r $golden_results_file ) {
-			$show_runtime_estimates = 0;
-		}
-	}
 
 	##############################################################
 	# Create a new experiment directory to run experiment in
@@ -367,67 +362,79 @@ sub run_single_task {
 	}
 
 	##############################################################
+    # Build up the list of commands to run
+	##############################################################
+    my @actions;
+    foreach my $circuit (@circuits) {
+        foreach my $arch (@archs) {
+
+            #Determine the directory where to run
+            my $dir = "$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}";
+
+
+            #Build the command to run
+            my $command = "$script_path $circuits_dir/$circuit $archs_dir/$arch $script_params" ;
+
+            #Determine the SDC file name
+            my $sdc_name = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
+            my $sdc = "$sdc_dir/$sdc_name";
+            if( -r $sdc) {
+                $command .= " -sdc_file $sdc";
+            }
+
+            #Add a hint about the minimum channel width (potentially saves run-time)
+            my $expected_min_W = ret_expected_min_W($circuit, $arch, $golden_results_file);
+            if($expected_min_W > 0) {
+                $command .= " -min_route_chan_width_hint $expected_min_W";
+            }
+
+            #Estimate runtime
+            my $runtime_estimate = ret_expected_runtime($circuit, $arch, $golden_results_file);
+
+            my @action = [$dir, $command, $runtime_estimate];
+            push(@actions, @action);
+        }
+    }
+
+	##############################################################
 	# Run experiment
 	##############################################################
     my $num_failures = 0;
+
+
 	if ( $system_type eq "local" ) {
 		if ( $processors == 1 ) {
-			foreach my $circuit (@circuits) {
-				foreach my $arch (@archs) {
-					if ($show_runtime_estimates) {
-						my $runtime =
-						  ret_expected_runtime( $circuit, $arch,
-							$golden_results_file );
-						print strftime "Current time: %b-%d %I:%M %p.  ",
-						  localtime;
-						print "Expected runtime of next benchmark: " . $runtime
-						  . "\n";
-					}
+            foreach my $action (@actions) {
+                my ($run_dir, $command, $runtime_estimate) = @$action;
+                if($runtime_estimate >= 0) {
+                    print strftime "Current time: %b-%d %I:%M %p.  ", localtime;
+                    print "Expected runtime of next benchmark: " . $runtime_estimate . "\n";
+                }
 
-					chdir(
-						"$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}"
-					  )
-					  ; # or die "Cannot change to directory $StartDir/$run_prefix${experiment_number}/${arch}/${circuit}: $!";
+                chdir( $run_dir );
 
-					# SDC file defaults to circuit_name.sdc
-					my $sdc = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
-					my $status = system(
-						"$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params\n"
-					);
+                my $status = system( $command );
 
-                    my $return_code = $status >> 8; #Must shift by 8 bits to get real exit code
+                my $return_code = $status >> 8; #Must shift by 8 bits to get real exit code
 
-                    if($return_code != 0) {
-                        $num_failures += 1;
-                    }
-				}
+                if($return_code != 0) {
+                    $num_failures += 1;
+                }
 			}
-		}
-		else {
+		} else {
 			my $thread_work   = Thread::Queue->new();
 			my $thread_result = Thread::Queue->new();
 			my $thread_return_code = Thread::Queue->new();
 			my $threads       = $processors;
 
-			# print "# of Threads: $threads\n";
+            foreach my $action (@actions) {
+                my ($run_dir, $command, $runtime_estimate) = @$action;
 
-			foreach my $circuit (@circuits) {
-				foreach my $arch (@archs) {
-					my $dir =
-					  "$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}";
+                $thread_work->enqueue("$run_dir||||$command");
 
-					# SDC file defaults to circuit_name.sdc
-					my $sdc = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
+            }
 
-					my $command =
-					  "$script_path $circuits_dir/$circuit $archs_dir/$arch -sdc_file $sdc_dir/$sdc $script_params";
-					$thread_work->enqueue("$dir||||$command");
-				}
-			}
-
-			my @pool =
-			  map { threads->create( \&do_work, $thread_work, $thread_result, $thread_return_code ) }
-			  1 .. $threads;
+			my @pool = map { threads->create( \&do_work, $thread_work, $thread_result, $thread_return_code ) } 1 .. $threads;
 
 			for ( 1 .. $threads ) {
 				while ( my $result = $thread_result->dequeue ) {
@@ -443,80 +450,9 @@ sub run_single_task {
 
 			$_->join for @pool;
 		}
-	}
-	elsif ( $system_type eq "PBS_UBC" ) {
-
-		# PBS system
-		my @job_ids;
-		foreach my $circuit (@circuits) {
-			foreach my $arch (@archs) {
-				open( PBS_FILE,
-					">$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_job.txt"
-				);
-				print PBS_FILE "#!/bin/bash\n";
-				print PBS_FILE "#PBS -S /bin/bash\n";
-				print PBS_FILE "#PBS -N $task-$arch-$circuit\n";
-				print PBS_FILE "#PBS -l nodes=1\n";
-				print PBS_FILE "#PBS -l walltime=168:00:00\n";
-				if ( $circuit =~ /PEEng/ ) {
-					print PBS_FILE "#PBS -l mem=6000mb\n";
-				}
-				elsif ( $circuit =~ /mcml/ or $circuit =~ /stereovision2/ ) {
-					print PBS_FILE "#PBS -l mem=5000mb\n";
-				}
-				else {
-					print PBS_FILE "#PBS -l mem=1500mb\n";
-				}
-				print PBS_FILE
-				  "#PBS -o $task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_out.txt\n";
-				print PBS_FILE
-				  "#PBS -e $task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_error.txt\n";
-				print PBS_FILE "#PBS -q g8\n";
-				print PBS_FILE
-				  "cd $task_dir/$run_prefix${experiment_number}/${arch}/${circuit}\n";
-				print PBS_FILE
-				  "$script_path $circuits_dir/$circuit $archs_dir/$arch $script_params\n";
-				close(PBS_FILE);
-
-				my $line =
-				  `qsub $task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_job.txt`;
-				$line =~ /(\d+)\D/;
-				push(
-					@job_ids,
-					[
-						$1,
-						"$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_out.txt",
-						"$task_dir/$run_prefix${experiment_number}/${arch}/${circuit}/pbs_error.txt"
-					]
-				);
-			}
-		}
-
-		# It seems that showq takes a bit of time before the new jobs show up
-		sleep(30);
-
-		# Wait for all of the jobs to finish
-		while ( ( $#job_ids + 1 ) != 0 ) {
-
-			# Check job status at intervals
-			sleep(5);
-
-			# Get showq output
-			my $showq_out = `showq`;
-
-			my $idx;
-			while ( $idx < ( $#job_ids + 1 ) ) {
-				if ( $showq_out =~ /^($job_ids[$idx][0])\s/m ) {
-					$idx++;
-				}
-				else {
-					print `cat $job_ids[$idx][1]`;
-					print `cat $job_ids[$idx][2]`;
-					splice @job_ids, $idx, 1;
-				}
-			}
-		}
-	}
+	} else {
+        die("Unrecognized job system '$system_type'");
+    }
     return $num_failures;
 }
 
@@ -572,6 +508,10 @@ sub ret_expected_runtime {
 	my $arch_name                = shift;
 	my $golden_results_file_path = shift;
 	my $seconds                  = 0;
+
+    if( not -r $golden_results_file_path) {
+        return "Unkown";
+    }
 
 	open( GOLDEN, $golden_results_file_path );
 	my @lines = <GOLDEN>;
@@ -653,4 +593,47 @@ sub ret_expected_runtime {
 	else {
 		return "Unknown";
 	}
+}
+
+sub ret_expected_min_W {
+	my $circuit_name             = shift;
+	my $arch_name                = shift;
+	my $golden_results_file_path = shift;
+	my $seconds                  = 0;
+
+    my $expected_min_W = -1;
+
+    if( -r $golden_results_file_path) {
+        #File exists, look-up the golden min channel width
+        open( GOLDEN, $golden_results_file_path );
+        my @lines = <GOLDEN>;
+        close(GOLDEN);
+
+        my $header_line = shift(@lines);
+        my @headers     = split( /\s+/, $header_line );
+
+        my %index;
+        @index{@headers} = ( 0 .. $#headers );
+
+
+        my @line_array;
+        my $found = 0;
+        foreach my $line (@lines) {
+            @line_array = split( /\s+/, $line );
+            if ( $arch_name eq @line_array[0] and $circuit_name eq @line_array[1] )
+            {
+                $found = 1;
+                last;
+            }
+        }
+
+        if ($found) {
+            my $location = $index{"min_chan_width"};
+            if ($location) {
+                $expected_min_W = @line_array[$location];
+            } 
+        }
+    }
+
+    return $expected_min_W;
 }
