@@ -32,6 +32,7 @@ use POSIX qw/strftime/;
 # Function Prototypes
 sub trim;
 sub parse_single_task;
+sub pretty_print_table;
 sub summarize_qor;
 sub calc_geomean;
 sub check_golden;
@@ -56,6 +57,7 @@ my $calc_geomean  = 0;  # QoR geomeans are not computed by default;
 my $override_exp_num       = 0;
 my $revision;
 my $verbose       = 0;
+my $pretty_print_results = 1;
 
 while ( $token = shift(@ARGV) ) {
 
@@ -217,6 +219,10 @@ sub parse_single_task {
 		}
 	}
 	close(OUTPUT_FILE);
+
+    if ($pretty_print_results) {
+        pretty_print_table("$run_path/parse_results.txt")
+    }
 
 	if ($parse_qor) {
 		my $first = 1;
@@ -395,6 +401,59 @@ sub calc_geomean {
 	close(OUTPUT_FILE);
 }
 
+sub max {
+    my $x = shift;
+    my $y = shift;
+
+    return ($x < $y) ? $y : $x;
+}
+
+sub pretty_print_table {
+    my $file_path = shift;
+
+
+    #Read the input file
+    my @file_data;
+    open(INFILE,"<$file_path");
+    while(<INFILE>) {
+        chomp;
+        push(@file_data, [split /\t/])
+    }
+
+    #Determine the maximum column width for pretty formatting
+    my %col_widths;
+    for my $row (0 .. $#file_data) {
+        for my $col (0 .. $#{$file_data[$row]}) {
+
+            my $col_width = length $file_data[$row][$col];
+
+            #Do we have a valid column width?
+            if (not exists $col_widths{$col}) {
+                #Initial width
+                $col_widths{$col} = $col_width;
+            } else {
+                #Max width
+                $col_widths{$col} = max($col_widths{$col}, $col_width);
+            }
+
+        }
+    }
+
+    #Write out in pretty format
+    open(OUTFILE,">$file_path");
+    for my $row (0 .. $#file_data) {
+        for my $col (0 .. $#{$file_data[$row]}) {
+            printf OUTFILE "%*s", $col_widths{$col}, $file_data[$row][$col];
+
+            if($col != $#{$file_data[$row]}) {
+                printf OUTFILE "\t";
+            }
+        }
+        printf OUTFILE "\n";
+    }
+
+}
+
 sub last_exp {
 	my $path = shift;
 	my $num = 1;
@@ -502,16 +561,8 @@ sub check_golden {
 	my $golden_params = shift @golden_data;
 	my $test_params   = shift @test_data;
 
-	my @golden_params =
-	  split( /\t/, trim($golden_params) );    # get parameters of golden results
-	my @test_params =
-	  split( /\t/, trim($test_params) );      # get parameters of test results
-
-	if ( $golden_params ne $test_params ) {
-		print "[ERROR] Different parameters in golden and result file. $golden_params different from $test_params\n";
-        $failed = 1;
-		return $failed;
-	}
+	my @golden_params = split( /\t/, trim($golden_params) );    # get parameters of golden results
+	my @test_params = split( /\t/, trim($test_params) );      # get parameters of test results
 
 	# Check to ensure all parameters to compare are consistent
 	foreach $line (@pass_req_data) {
@@ -551,31 +602,31 @@ sub check_golden {
 		  "[ERROR] Different number of entries in golden and result files.\n";
           $failed = 1;
 	}
-	@test_data   = sort (@test_data);
-	@golden_data = sort (@golden_data);
 
 	# Iterate through each line of the test results data and compare with the golden data
 	foreach $line (@test_data) {
 		my @test_line   = split( /\t/, $line );
 		my @golden_line = split( /\t/, shift @golden_data );
 
-		if (   ( @test_line[0] ne @golden_line[0] )
-			or ( @test_line[1] ne @golden_line[1] ) )
-		{
-			print
-			  "[ERROR] Circuit/Architecture mismatch between golden and result file.\n";
+        my $golden_arch = trim(@golden_line[0]);
+        my $golden_circuit = trim(@golden_line[1]);
+        my $test_arch = trim(@test_line[0]);
+        my $test_circuit = trim(@test_line[1]);
+
+		if (   ( $test_circuit ne $test_circuit )
+			or ( $test_arch ne $test_arch ) ) {
+
+			print "[ERROR] Circuit/Architecture mismatch between golden ($golden_arch/$golden_circuit) and result ($test_arch/$test_circuit).\n";
             $failed = 1;
 			return $failed;
 		}
-		my $circuitarch = "@test_line[0]-@test_line[1]";
+		my $circuitarch = "$test_arch/$test_circuit";
 
 		# Check each parameter where the type determines what to check for
 		foreach my $value (@params) {
-			my $index =
-			  List::Util::first { $golden_params[$_] eq $value }
-			  0 .. $#golden_params;
-			my $test_value   = @test_line[$index];
-			my $golden_value = @golden_line[$index];
+			my $index = List::Util::first { $golden_params[$_] eq $value } 0 .. $#golden_params;
+			my $test_value   = trim(@test_line[$index]);
+			my $golden_value = trim(@golden_line[$index]);
 
 
 			if ( $type{$value} eq "Range" ) {
@@ -627,7 +678,7 @@ sub check_golden {
     return $failed;
 }
 
-sub trim($) {
+sub trim() {
 	my $string = shift;
 	$string =~ s/^\s+//;
 	$string =~ s/\s+$//;
