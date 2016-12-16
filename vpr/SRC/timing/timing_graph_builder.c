@@ -36,10 +36,10 @@ TimingGraph TimingGraphBuilder::timing_graph() {
     return std::move(tg_);
 }
 
-FixedDelayCalculator TimingGraphBuilder::clustering_delay_calculator(float inter_cluster_net_delay) {
+ClusteringDelayCalculator TimingGraphBuilder::clustering_delay_calculator(float inter_cluster_net_delay) {
     mark_clustering_net_delays(inter_cluster_net_delay);
 
-    return FixedDelayCalculator(max_edge_delays_, setup_times_);
+    return ClusteringDelayCalculator(max_edge_delays_, setup_times_);
 }
 
 void TimingGraphBuilder::build() {

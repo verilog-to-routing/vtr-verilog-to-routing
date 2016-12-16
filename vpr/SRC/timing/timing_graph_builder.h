@@ -4,7 +4,7 @@
 #include "vtr_linear_map.h"
 
 #include "TimingGraph.hpp"
-#include "FixedDelayCalculator.hpp"
+#include "ClusteringDelayCalculator.hpp"
 
 #include "atom_netlist_fwd.h"
 #include "atom_map.h"
@@ -23,7 +23,7 @@ class TimingGraphBuilder {
         }
 
         tatum::TimingGraph timing_graph();
-        tatum::FixedDelayCalculator clustering_delay_calculator(float inter_cluster_net_delay);
+        ClusteringDelayCalculator clustering_delay_calculator(float inter_cluster_net_delay);
 
     private:
         void build();
