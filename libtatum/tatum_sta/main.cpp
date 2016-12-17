@@ -33,7 +33,7 @@
 #define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
 
 //Should we optimize the timing graph memory layout?
-//#define OPTIMIZE_GRAPH_LAYOUT
+#define OPTIMIZE_GRAPH_LAYOUT
 
 //Should we print out tag related object size info
 #define PRINT_TAG_SIZES

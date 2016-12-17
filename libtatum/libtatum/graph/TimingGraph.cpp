@@ -227,6 +227,31 @@ void TimingGraph::disable_edge(const EdgeId edge, bool disable) {
     edges_disabled_[edge] = disable;
 }
 
+EdgeType TimingGraph::edge_type(const EdgeId edge) const {
+    NodeId src_node = edge_src_node(edge);
+    NodeId sink_node = edge_sink_node(edge);
+
+    NodeType src_node_type = node_type(src_node);
+    NodeType sink_node_type = node_type(sink_node);
+
+    if(src_node_type == NodeType::IPIN && sink_node_type == NodeType::OPIN) {
+        return EdgeType::PRIMITIVE_COMBINATIONAL;
+    } else if (   (src_node_type == NodeType::OPIN || src_node_type == NodeType::SOURCE)
+               && (sink_node_type == NodeType::IPIN || sink_node_type == NodeType::SINK || sink_node_type == NodeType::CPIN)) {
+        return EdgeType::NET;
+    } else if (src_node_type == NodeType::CPIN) {
+        if (sink_node_type == NodeType::SOURCE) {
+            return EdgeType::PRIMITIVE_CLOCK_LAUNCH;
+        } else if(sink_node_type == NodeType::SINK) {
+            return EdgeType::PRIMITIVE_CLOCK_CAPTURE;
+        } else {
+            throw tatum::Error("Invalid edge sink node (CPIN source node must connect to SOURCE or SINK sink node)");
+        }
+    } else {
+        throw tatum::Error("Invalid edge sink/source nodes");
+    }
+}
+
 GraphIdMaps TimingGraph::compress() {
     auto node_id_map = compress_ids(node_ids_);
     auto edge_id_map = compress_ids(edge_ids_);
@@ -490,7 +515,8 @@ bool TimingGraph::validate_sizes() const {
     }
 
     if(   edge_ids_.size() != edge_sink_nodes_.size()
-       || edge_ids_.size() != edge_src_nodes_.size()) {
+       || edge_ids_.size() != edge_src_nodes_.size()
+       || edge_ids_.size() != edges_disabled_.size()) {
         throw tatum::Error("Inconsistent edge attribute sizes");
     }
 
@@ -566,22 +592,43 @@ bool TimingGraph::validate_structure() const {
                     throw tatum::Error("SOURCE nodes should only drive IPIN, CPIN or SINK nodes");
                 }
 
+                if(edge_type(out_edge) != EdgeType::NET) {
+                    throw tatum::Error("SOURCE out edges should always be NET type edges");
+                }
+
             } else if (src_type == NodeType::SINK) {
                 throw tatum::Error("SINK nodes should not have out-going edges");
             } else if (src_type == NodeType::IPIN) {
                 if(sink_type != NodeType::OPIN) {
                     throw tatum::Error("IPIN nodes should only drive OPIN nodes");
                 }
+
+                if(edge_type(out_edge) != EdgeType::PRIMITIVE_COMBINATIONAL) {
+                    throw tatum::Error("IPIN to OPIN edges should always be PRIMITIVE_COMBINATIONAL type edges");
+                }
+
             } else if (src_type == NodeType::OPIN) {
                 if(   sink_type != NodeType::IPIN
                    && sink_type != NodeType::CPIN
                    && sink_type != NodeType::SINK) {
                     throw tatum::Error("OPIN nodes should only drive IPIN, CPIN or SINK nodes");
                 }
+
+                if(edge_type(out_edge) != EdgeType::NET) {
+                    throw tatum::Error("OPIN out edges should always be NET type edges");
+                }
+
             } else if (src_type == NodeType::CPIN) {
                 if(   sink_type != NodeType::SOURCE
                    && sink_type != NodeType::SINK) {
                     throw tatum::Error("CPIN nodes should only drive SOURCE or SINK nodes");
+                }
+
+                EdgeType out_edge_type = edge_type(out_edge);
+                if(sink_type == NodeType::SOURCE && out_edge_type != EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
+                    throw tatum::Error("CPIN to SOURCE edges should always be PRIMITIVE_CLOCK_LAUNCH type edges");
+                } else if (sink_type == NodeType::SINK && out_edge_type != EdgeType::PRIMITIVE_CLOCK_CAPTURE) {
+                    throw tatum::Error("CPIN to SINK edges should always be PRIMITIVE_CLOCK_CAPTURE type edges");
                 }
             } else {
                 throw tatum::Error("Unrecognized node type");

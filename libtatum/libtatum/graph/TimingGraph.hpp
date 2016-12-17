@@ -100,6 +100,10 @@ class TimingGraph {
         /*
          * Edge accessors
          */
+        ///\param edge The id of an edge
+        ///\returns The type of the edge
+        EdgeType edge_type(const EdgeId id) const;
+
         ///\param id The id of an edge
         ///\returns The node id of the edge's sink
         NodeId edge_sink_node(const EdgeId id) const { return edge_sink_nodes_[id]; }
@@ -113,6 +117,8 @@ class TimingGraph {
             return edge_src_nodes_[id]; 
         }
 
+        ///\param edge The id of an edge
+        ///\returns Whether the edge is disabled (i.e. ignored during timing analysis)
         bool edge_disabled(const EdgeId id) const { return edges_disabled_[id]; }
 
         /*
@@ -198,6 +204,9 @@ class TimingGraph {
         ///\see add_edge(), compress()
         void remove_edge(const EdgeId edge_id);
 
+        ///Disables an edge in the timing graph (e.g. to break a combinational loop)
+        ///\param edge_id The edge to disable
+        ///\see identify_combinational_loops()
         void disable_edge(const EdgeId edge_id, bool disable=true);
 
         ///Compresses the Edge and Node ID spaces to eliminate invalid entries
