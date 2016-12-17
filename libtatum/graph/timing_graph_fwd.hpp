@@ -23,6 +23,13 @@ enum class NodeType : unsigned char {
     CPIN, //An intermediate clock (input) pin
 };
 
+enum class EdgeType : unsigned char {
+    PRIMITIVE_COMBINATIONAL,
+    PRIMITIVE_CLOCK_LAUNCH,
+    PRIMITIVE_CLOCK_CAPTURE,
+    NET
+};
+
 //Stream operators for NodeType
 std::ostream& operator<<(std::ostream& os, const NodeType type);
 
