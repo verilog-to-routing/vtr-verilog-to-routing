@@ -5,6 +5,7 @@
 
 #include "TimingGraph.hpp"
 #include "ClusteringDelayCalculator.hpp"
+#include "PlacementDelayCalculator.hpp"
 
 #include "atom_netlist_fwd.h"
 #include "atom_map.h"
@@ -24,6 +25,7 @@ class TimingGraphBuilder {
 
         tatum::TimingGraph timing_graph();
         ClusteringDelayCalculator clustering_delay_calculator(float inter_cluster_net_delay);
+        PlacementDelayCalculator placement_delay_calculator();
 
     private:
         void build();
