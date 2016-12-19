@@ -574,8 +574,11 @@ sub check_golden {
 	my $golden_params = shift @golden_data;
 	my $test_params   = shift @test_data;
 
-	my @golden_params = split( /\t/, trim($golden_params) );    # get parameters of golden results
-	my @test_params = split( /\t/, trim($test_params) );      # get parameters of test results
+	my @golden_params = split( /\t/, $golden_params );    # get parameters of golden results
+	my @test_params = split( /\t/, $test_params );      # get parameters of test results
+
+    my @golden_params = map(trim($_), @golden_params);
+    my @test_params = map(trim($_), @test_params);
 
 	# Check to ensure all parameters to compare are consistent
 	foreach $line (@pass_req_data) {
