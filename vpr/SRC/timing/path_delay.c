@@ -780,10 +780,8 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		for (j = 0; j < block[i].pb->pb_graph_node->total_pb_pins; j++) {
 			if (block[i].pb_route[j].atom_net_id) {
 				if (intra_lb_pb_pin_lookup[itype][j]->type == PB_PIN_INPAD
-					|| intra_lb_pb_pin_lookup[itype][j]->type
-								== PB_PIN_OUTPAD
-					|| intra_lb_pb_pin_lookup[itype][j]->type
-								== PB_PIN_SEQUENTIAL) {
+					|| intra_lb_pb_pin_lookup[itype][j]->type == PB_PIN_OUTPAD
+					|| intra_lb_pb_pin_lookup[itype][j]->type == PB_PIN_SEQUENTIAL) {
 					num_nodes_in_block += 2;
 				} else {
 					num_nodes_in_block++;
@@ -842,16 +840,11 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			if (ipb_graph_pin->parent_node->pb_type->max_internal_delay
 					!= UNDEFINED) {
 				if (pb_max_internal_delay == UNDEFINED) {
-					pb_max_internal_delay =
-							ipb_graph_pin->parent_node->pb_type->max_internal_delay;
-					pbtype_max_internal_delay =
-							ipb_graph_pin->parent_node->pb_type;
-				} else if (pb_max_internal_delay
-						< ipb_graph_pin->parent_node->pb_type->max_internal_delay) {
-					pb_max_internal_delay =
-							ipb_graph_pin->parent_node->pb_type->max_internal_delay;
-					pbtype_max_internal_delay =
-							ipb_graph_pin->parent_node->pb_type;
+					pb_max_internal_delay = ipb_graph_pin->parent_node->pb_type->max_internal_delay;
+					pbtype_max_internal_delay = ipb_graph_pin->parent_node->pb_type;
+				} else if (pb_max_internal_delay < ipb_graph_pin->parent_node->pb_type->max_internal_delay) {
+					pb_max_internal_delay = ipb_graph_pin->parent_node->pb_type->max_internal_delay;
+					pbtype_max_internal_delay = ipb_graph_pin->parent_node->pb_type;
 				}
 			}
 
@@ -875,8 +868,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 				if (intra_lb_route[dnode].prev_pb_pin_id == i_pin_id) {
 					VTR_ASSERT(intra_lb_route[dnode].atom_net_id == intra_lb_route[i_pin_id].atom_net_id);
 
-					tnode[i].out_edges[count].Tdel =
-							ipb_graph_pin->output_edges[j]->delay_max;
+					tnode[i].out_edges[count].Tdel = ipb_graph_pin->output_edges[j]->delay_max;
 					tnode[i].out_edges[count].to_node = lookup_tnode_from_pin_id[iblock][dnode];
 					VTR_ASSERT(tnode[i].out_edges[count].to_node != OPEN);
 

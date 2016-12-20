@@ -373,9 +373,11 @@ void try_place(struct s_placer_opts placer_opts,
 			 * *also updated after any swap is accepted   */
 		}
 
+        //Initial timing estimate
 		load_timing_graph_net_delays(net_delay);
 		do_timing_analysis(slacks, timing_inf, false, false);
 		load_criticalities(slacks, crit_exponent);
+
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH));
@@ -633,10 +635,11 @@ void try_place(struct s_placer_opts placer_opts,
 
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
+
+        //Final timing estimate
 		net_delay = point_to_point_delay_cost; /*this makes net_delay up to date with    *
 		 *the same values that the placer is using*/
 		load_timing_graph_net_delays(net_delay);
-
 		do_timing_analysis(slacks, timing_inf, false, false);
 
 		if (getEchoEnabled()) {
@@ -717,9 +720,11 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 		/*note, for path_based, the net delay is not updated since it is current,
 		 *because it accesses point_to_point_delay array */
 
+        //Per-temperature timing update
 		load_timing_graph_net_delays(net_delay);
 		do_timing_analysis(slacks, timing_inf, false, false);
 		load_criticalities(slacks, crit_exponent);
+
 		/*recompute costs from scratch, based on new criticalities */
 		comp_td_costs(timing_cost, delay_cost);
 		*outer_crit_iter_count = 0;
@@ -790,6 +795,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 				/* Using the delays in net_delay, do a timing analysis to update slacks and
 				 * criticalities; then update the timing cost since it will change.
 				 */
+                //Inner loop timing update
 				load_timing_graph_net_delays(net_delay);
 				do_timing_analysis(slacks, timing_inf, false, false);
 				load_criticalities(slacks, crit_exponent);
