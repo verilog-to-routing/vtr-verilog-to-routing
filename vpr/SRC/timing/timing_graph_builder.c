@@ -33,7 +33,7 @@ tatum::util::linear_map<K,V> remap_valid(const tatum::util::linear_map<K,V>& dat
 TimingGraph TimingGraphBuilder::timing_graph() {
     tg_.levelize();
     tg_.validate();
-    return std::move(tg_);
+    return tg_;
 }
 
 ClusteringDelayCalculator TimingGraphBuilder::clustering_delay_calculator(float inter_cluster_net_delay) {
