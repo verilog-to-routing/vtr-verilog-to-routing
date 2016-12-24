@@ -142,6 +142,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 
 void look_for_clocks(netlist_t *netlist);
 
+void convert_multi_to_single_dimentional_array(ast_node_t *node);
 
 /*----------------------------------------------------------------------------
  * (function: create_param_table_for_module)
@@ -1451,9 +1452,6 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		long long data_min = node_min1->types.number.value;
 		long long data_max = node_max1->types.number.value;
 
-		long long data_min1 = node_min3->types.number.value;
-		long long data_max2 = node_max3->types.number.value;
-		
 		if (data_min != 0)
 			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
 					"%s: right memory index must be zero\n", name);
@@ -3006,77 +3004,9 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 
 		if(right->children[2] != NULL)
 		{
-			if ((right->children[1]->type == NUMBERS) && (right->children[2]->type == NUMBERS))
-			{
-				long long array_row = right->children[1]->types.number.value;	
-				long long array_column = right->children[2]->types.number.value;
-				long long array_index = array_row * 8 + array_column;
-				char number[1024] = {0};	
-				sprintf(number, "%lld", array_index);
-				change_to_number_node(right->children[1],number);
-				fprintf(stderr,"Right Memory: %lld: \n",right->children[1]->types.number.value);
-				fprintf(stderr,"Right identifier: %s: \n",right->children[2]->types.identifier);
-				
-				//fprintf(stderr,"Number: %s \n",number);
-				/*char *number = right->children[2]->types.number.number;
-				int len = strlen(number);
-				char *b = strdup((number));
-				long long d = ceil((log(convert_dec_string_of_size_to_long_long(number, len)+1))/log(2));
-				char *c = convert_long_long_to_bit_string(right->children[2]->types.number.value, d);
-				fprintf(stderr,"Right Memory: %lld: \n",right->children[2]->types.number.value);
-				fprintf(stderr,"Number: %s \n",number);
-				fprintf(stderr,"Length: %d \n",len);
-				fprintf(stderr,"b: %s: \n",b);
-				fprintf(stderr,"c: %s: \n",c);
-				fprintf(stderr,"d: %lld: \n",d);*/
-			}
-			else if ((right->children[1]->type == NUMBERS) && (right->children[2]->type == IDENTIFIERS))
-			{
-				char *temp_string;
-				long long array_row = right->children[1]->types.number.value;	
-				temp_string = make_full_ref_name(NULL, NULL, NULL, right->children[2]->types.identifier, -1);
-				long sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
-				long array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
-				long long array_index = array_row * 8 + array_column;
-				char number[1024] = {0};	
-				sprintf(number, "%lld", array_index);
-				change_to_number_node(right->children[1],number);
-
-				/*fprintf(stderr,"Temp String: %s: \n",temp_string);
-				fprintf(stderr,"sc_spot: %ld: \n",sc_spot);
-				fprintf(stderr,"Jibon: %ld: \n",jibon);
-				fprintf(stderr,"Right identifier: %s: \n",right->children[2]->types.identifier);*/
-			}
-			else if ((right->children[1]->type == IDENTIFIERS) && (right->children[2]->type == NUMBERS))
-			{
-				char *temp_string;
-				long long array_column = right->children[2]->types.number.value;	
-				temp_string = make_full_ref_name(NULL, NULL, NULL, right->children[1]->types.identifier, -1);
-				long sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
-				long array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
-				long long array_index = array_row * 8 + array_column;
-				char number[1024] = {0};	
-				sprintf(number, "%lld", array_index);
-				change_to_number_node(right->children[1],number);
-			}
-			else	
-			{
-				char *temp_string;
-				temp_string = make_full_ref_name(NULL, NULL, NULL, right->children[1]->types.identifier, -1);
-				long sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
-				long array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
-				
-				temp_string = make_full_ref_name(NULL, NULL, NULL, right->children[2]->types.identifier, -1);
-				sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
-				long array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
-
-				long long array_index = array_row * 8 + array_column;
-				char number[1024] = {0};	
-				sprintf(number, "%lld", array_index);
-				change_to_number_node(right->children[1],number);
-
-			}
+			convert_multi_to_single_dimentional_array(right);
 		}
+		
 		signal_list_t* address = netlist_expand_ast_of_module(right->children[1], instance_name_prefix);
 		// Pad/shrink the address to the depth of the memory.
 		{
@@ -3158,17 +3088,9 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		{
 			if(left->children[2] != NULL)
 			{
-				if (left->children[2]->type == NUMBERS)
-				{
-					long long array_row = left->children[1]->types.number.value;	
-					long long array_column = left->children[2]->types.number.value;
-					long long array_index = array_row * 8 + array_column;
-					char number[1024] = {0};	
-					sprintf(number, "%lld", array_index);
-					change_to_number_node(left->children[1],number);
-					fprintf(stderr,"Left Memory: %lld: \n",left->children[1]->types.number.value);
-				}
+				convert_multi_to_single_dimentional_array(left);
 			}
+			
 			// Make sure the memory is addressed.
 			signal_list_t* address = netlist_expand_ast_of_module(left->children[1], instance_name_prefix);
 
@@ -5705,5 +5627,66 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 		add_list = insert_in_vptr_list(add_list, block_node);
 
 	return return_list;
+}
+void convert_multi_to_single_dimentional_array(ast_node_t *node)
+{
+	long array_row = 0;
+	long array_column = 0;
+	char number[1024] = {0};
+	long array_index = 0;
+	long sc_spot = 0;
+	char *temp_string = NULL;
+	long array_size = 0;
+
+	temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[0]->types.identifier, -1);
+	sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+	array_size = local_symbol_table[sc_spot]->types.variable.initial_value;
+
+
+	if ((node->children[1]->type == NUMBERS) && (node->children[2]->type == NUMBERS))
+	{
+		array_row = node->children[1]->types.number.value;	
+		array_column = node->children[2]->types.number.value;
+		array_index = array_row * array_size + array_column;
+		sprintf(number, "%ld", array_index);
+		change_to_number_node(node->children[1],number);
+		
+	}
+	else if ((node->children[1]->type == NUMBERS) && (node->children[2]->type == IDENTIFIERS))
+	{
+		array_row = node->children[1]->types.number.value;	
+		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[2]->types.identifier, -1);
+		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
+		array_index = array_row * array_size + array_column;
+		sprintf(number, "%ld", array_index);
+		change_to_number_node(node->children[1],number);
+
+	}
+	else if ((node->children[1]->type == IDENTIFIERS) && (node->children[2]->type == NUMBERS))
+	{
+		array_column = node->children[2]->types.number.value;	
+		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[1]->types.identifier, -1);
+		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+		array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
+		array_index = array_row * array_size + array_column;
+		sprintf(number, "%ld", array_index);
+		change_to_number_node(node->children[1],number);
+	}
+	else	
+	{
+		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[1]->types.identifier, -1);
+		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+		array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
+		
+		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[2]->types.identifier, -1);
+		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
+		array_index = array_row * array_size + array_column;
+		
+		sprintf(number, "%ld", array_index);
+		change_to_number_node(node->children[1],number);
+	}
+	return;
 }
 #endif

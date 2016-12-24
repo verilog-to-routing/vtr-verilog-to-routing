@@ -133,7 +133,7 @@ void remap_input_port_to_memory(nnode_t *node, signal_list_t *signals, const cha
 		if (!strcmp(pin->mapping, port_name))
 		{
 			error_message(NETLIST_ERROR, -1, -1,
-					"Attempted to reassign output port %s to memory %s.", port_name, node->name);
+					"Attempted_1 to reassign output port %s to memory %s.", port_name, node->name);
 		}
 	}
 
@@ -167,7 +167,7 @@ void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, const ch
 		if (!strcmp(pin->mapping, port_name))
 		{
 			error_message(NETLIST_ERROR, -1, -1,
-					"Attempted to reassign output port %s to memory %s.", port_name, node->name);
+					"Attempted_2 to reassign output port %s to memory %s.", port_name, node->name);
 		}
 	}
 
@@ -204,7 +204,7 @@ void remap_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char 
 		if (!strcmp(pin->mapping, port_name))
 		{
 			error_message(NETLIST_ERROR, -1, -1,
-					"Attempted to reassign output port %s to node %s.", port_name, node->name);
+					"Attempted_3 to reassign output port %s to node %s.", port_name, node->name);
 		}
 	}
 
@@ -238,7 +238,7 @@ void add_output_port_to_memory(nnode_t *node, signal_list_t *signals, const char
 		if (!strcmp(pin->mapping, port_name))
 		{
 			error_message(NETLIST_ERROR, -1, -1,
-					"Attempted to reassign output port %s to node %s.", port_name, node->name);
+					"Attempted_4 to reassign output port %s to node %s.", port_name, node->name);
 		}
 	}
 
