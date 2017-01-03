@@ -443,7 +443,7 @@ sub pretty_print_table {
     open(OUTFILE,">$file_path");
     for my $row (0 .. $#file_data) {
         for my $col (0 .. $#{$file_data[$row]}) {
-            printf OUTFILE "%*s", $col_widths{$col}, $file_data[$row][$col];
+            printf OUTFILE "%-*s", $col_widths{$col}, $file_data[$row][$col];
 
             if($col != $#{$file_data[$row]}) {
                 printf OUTFILE "\t";
