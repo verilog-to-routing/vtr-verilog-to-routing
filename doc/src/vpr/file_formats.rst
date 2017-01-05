@@ -96,19 +96,19 @@ To specify unconnected pins on primitives VPR supports two syntaxes:
 
 BLIF File Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~
-The following is an example BLIF file. It implements a 4-bit ripple-carry `adder` and some simple logic.
+The following is an example BLIF file. It implements a 4-bit ripple-carry ``adder`` and some simple logic.
 
-The main `.model` is named `top`, and its input and output pins are listed using the `.inputs` and `.outputs` directives. 
+The main ``.model`` is named ``top``, and its input and output pins are listed using the ``.inputs`` and ``.outputs`` directives. 
 
-The 4-bit ripple-cary adder is built of 1-bit `adder` primitives which are instantiated using the `.subckt` directive.
-Note that the adder primitive is defined as its own `.model` (which describes its pins), and is marked as `.blackbox` to indicate it is an architectural primitive.
+The 4-bit ripple-cary adder is built of 1-bit ``adder`` primitives which are instantiated using the ``.subckt`` directive.
+Note that the adder primitive is defined as its own ``.model`` (which describes its pins), and is marked as ``.blackbox`` to indicate it is an architectural primitive.
 
-The signal `all_sum_high_comb` is computed using combinational logic (`.names`) which ANDs all the sum bits together.
+The signal ``all_sum_high_comb`` is computed using combinational logic (``.names``) which ANDs all the sum bits together.
 
-The `.latch` directive instantiates a rising-edge (`re`) latch (i.e. an edge-triggered Flip-Flop) clocked by `clk`.
-It takes in the combinational signal `all_sum_high_comb` and drives the primary output `all_sum_high_reg`.
+The ``.latch`` directive instantiates a rising-edge (``re``) latch (i.e. an edge-triggered Flip-Flop) clocked by ``clk``.
+It takes in the combinational signal ``all_sum_high_comb`` and drives the primary output ``all_sum_high_reg``.
 
-Also not that the last `.subckt adder` has it's `cout` output left disconnected using the special `unconn` net.
+Also not that the last ``.subckt adder`` has it's ``cout`` output left disconnected using the special ``unconn`` net.
 
 .. code-block:: none
 
