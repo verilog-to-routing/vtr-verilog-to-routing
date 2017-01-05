@@ -165,8 +165,8 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 	try {
 		loc_data = pugiutil::load_xml(doc, ArchFile);
 	} catch (XmlError& e) {
-		archfpga_throw(ArchFile, 0,
-				"Unable to find/load architecture file '%s'.\n", ArchFile, e.what());
+		archfpga_throw(ArchFile, e.line(),
+				"%s", e.what());
 	}
 
 	arch_file_name = ArchFile;
