@@ -38,6 +38,21 @@ Unconnected Primitive Pins
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 Unconnected primitive pins can be specified through several methods.
 
+#. The ``unconn`` net (input pins only).
+
+    VPR treats any **input pin** connected to a net named ``unconn`` as disconnected.
+    
+    For example:
+
+    .. code-block:: none
+
+        .names unconn out
+        0 1
+
+    specifies an inverter with no connected input.
+
+    .. note:: ``unconn`` should only be used for **input pins**. It may name conflicts and create multi-driven nets if used with output pins.
+
 #. Implicitly disconnected ``.subckt`` pins.
 
     For ``.subckt`` instantiations VPR treats primitive pins which are not listed as being implicitly disconnected.
@@ -82,22 +97,7 @@ Unconnected primitive pins can be specified through several methods.
             out=top.memory_controller+memtroll.single_port_ram+str^out~0
 
 
-#. The ``unconn`` net (input pins only).
-
-    VPR treats any **input pin** connected to a net named ``unconn`` as disconnected.
-    
-    For example:
-
-    .. code-block:: none
-
-        .names unconn out
-        0 1
-
-    specifies an inverter with no connected input.
-
-    .. note:: ``unconn`` should only be used for **input pins**. It may name conflicts and create multi-driven nets if used with output pins.
-
-#. Nets with no sinks (output pins only)
+#. Dummy nets with no sinks (output pins only)
 
     By default VPR sweeps away nets with no sinks (see :option:`vpr -sweep_dangling_nets`). As a result output pins can be left 'disconnected' by connecting them to dummy nets.
 
