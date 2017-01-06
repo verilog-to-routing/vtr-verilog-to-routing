@@ -34,27 +34,14 @@ The BLIF file should also contain a black-box ``.model`` definition which define
 
 VPR will check that blackbox ``.model``\s are consistent with the :ref:`<models> section <arch_blif_models>` of the architecture file.
 
-Unconnected Nets
-~~~~~~~~~~~~~~~~
-To specify unconnected pins on primitives VPR supports two syntaxes:
+Unconnected Primitive Pins
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+Unconnected primitive pins can be specified through several methods.
 
-#. The ``unconn`` net.
-
-    VPR treats any pin connected to a net named ``unconn`` as disconnected.
-    
-    For example:
-
-    .. code-block:: none
-
-        .names a unconn
-        0 1
-
-    specifies an inverter with no connected output.
-
-
-#. Implicitly disconnected ``.subckt`` ports.
+#. Implicitly disconnected ``.subckt`` pins.
 
     For ``.subckt`` instantiations VPR treats primitive pins which are not listed as being implicitly disconnected.
+    This works for both input and output pins.
 
     For example the following ``.subckt`` instantiations are equivalent:
 
@@ -94,6 +81,37 @@ To specify unconnected pins on primitives VPR supports two syntaxes:
             we=top.memory_controller+memtroll^MULTI_PORT_MUX~8^MUX_2~554 \
             out=top.memory_controller+memtroll.single_port_ram+str^out~0
 
+
+#. The ``unconn`` net (input pins only).
+
+    VPR treats any **input pin** connected to a net named ``unconn`` as disconnected.
+    
+    For example:
+
+    .. code-block:: none
+
+        .names unconn out
+        0 1
+
+    specifies an inverter with no connected input.
+
+    .. note:: ``unconn`` should only be used for **input pins**. It may name conflicts and create multi-driven nets if used with output pins.
+
+#. Nets with no sinks (output pins only)
+
+    By default VPR sweeps away nets with no sinks (see :option:`vpr -sweep_dangling_nets`). As a result output pins can be left 'disconnected' by connecting them to dummy nets.
+
+    For example:
+
+    .. code-block:: none
+
+        .names in dummy_net1
+        0 1
+
+    specifies an inverter with no connected output (provided ``dummy_net1`` is connected to no other pins).
+
+    .. note:: This method requires that every disconnected output pin should be connected to a **uniquely named** dummy net.
+
 BLIF File Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~
 The following is an example BLIF file. It implements a 4-bit ripple-carry ``adder`` and some simple logic.
@@ -118,13 +136,11 @@ Also not that the last ``.subckt adder`` has it's ``cout`` output left disconnec
 
     .names gnd
      0
-    .names unconn
-     0
 
-    .subckt adder a=a[0] b=b[0] cin=gnd    cout=cin[1] sumout=sum[0]
-    .subckt adder a=a[1] b=b[1] cin=cin[1] cout=cin[2] sumout=sum[1]
-    .subckt adder a=a[2] b=b[2] cin=cin[2] cout=cin[3] sumout=sum[2]
-    .subckt adder a=a[3] b=b[3] cin=cin[3] cout=unconn sumout=sum[3]
+    .subckt adder a=a[0] b=b[0] cin=gnd    cout=cin[1]     sumout=sum[0]
+    .subckt adder a=a[1] b=b[1] cin=cin[1] cout=cin[2]     sumout=sum[1]
+    .subckt adder a=a[2] b=b[2] cin=cin[2] cout=cin[3]     sumout=sum[2]
+    .subckt adder a=a[3] b=b[3] cin=cin[3] cout=dummy_net1 sumout=sum[3]
 
     .names sum[0] sum[1] sum[2] sum[3] all_sum_high_comb
     1111 1
