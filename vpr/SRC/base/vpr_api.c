@@ -310,7 +310,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 	/* Output the current settings to console. */
 	printClusteredNetlistStats();
 
-    int current = vtr::nint((float)sqrt((float)num_blocks)); /* current is the value of the smaller side of the FPGA */
+    int current = std::max(vtr::nint((float)sqrt((float)num_blocks)), 1); /* current is the value of the smaller side of the FPGA */
     int low = 1;
     int high = -1;
 

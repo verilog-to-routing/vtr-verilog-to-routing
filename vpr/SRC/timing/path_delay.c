@@ -415,13 +415,12 @@ void free_timing_graph(t_slack * slacks) {
 	int inode;
 
 	if (tedge_ch.chunk_ptr_head == NULL) {
-		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-				"in free_timing_graph: No timing graph to free.\n");
+        vtr::printf_warning(__FILE__, __LINE__, "in free_timing_graph: No timing graph to free.\n");
 	}
 
 	free_chunk_memory(&tedge_ch);
 
-	if (tnode[0].prepacked_data) {
+	if (tnode != nullptr && tnode[0].prepacked_data) {
 		/* If we allocated prepacked_data for the first node, 
 		it must be allocated for all other nodes too. */
 		for (inode = 0; inode < num_tnodes; inode++) {
@@ -1799,7 +1798,11 @@ static void process_constraints(void) {
 		}
 
 		/* Set arrival times for each top-level tnode on this clock domain. */
-		num_at_level = tnodes_at_level[0].nelem;	
+        if(tnodes_at_level) {
+            num_at_level = tnodes_at_level[0].nelem;	
+        } else {
+            num_at_level = 0;
+        }
 		for (i = 0; i < num_at_level; i++) {
 			inode = tnodes_at_level[0].list[i];
 			if (tnode[inode].clock_domain == source_clock_domain) {
@@ -3187,7 +3190,11 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 
 	/* First, visit all TN_INPAD_SOURCE and TN_CLOCK_SOURCE tnodes 
      * We only need to check the first level of the timing graph, since all SOURCEs should appear there*/
-    num_at_level = tnodes_at_level[0].nelem; /* There are num_at_level top-level tnodes. */
+    if(tnodes_at_level) {
+        num_at_level = tnodes_at_level[0].nelem; /* There are num_at_level top-level tnodes. */
+    } else {
+        num_at_level = 0;
+    }
     for(i = 0; i < num_at_level; i++) {
         inode = tnodes_at_level[0].list[i];	/* Iterate through each tnode. inode is the index of the tnode in the array tnode. */
 		if (tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_CLOCK_SOURCE) {	/* See if this node is the start of an I/O pad, or a clock source. */			
