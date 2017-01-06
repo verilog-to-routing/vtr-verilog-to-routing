@@ -2184,6 +2184,10 @@ static t_pack_molecule *get_molecule_for_cluster(
 static void check_clustering(int num_clb, t_block *clb) {
     std::unordered_set<AtomBlockId> atoms_checked;
 
+    if(num_clb == 0) {
+        vtr::printf_warning(__FILE__, __LINE__, "Packing produced no clustered blocks");
+    }
+
 	/* 
 	 * Check that each atom block connects to one physical primitive and that the primitive links up to the parent clb
 	 */

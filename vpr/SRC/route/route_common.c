@@ -350,6 +350,11 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
 	init_route_structs(router_opts.bb_factor);
 
+    if (g_clbs_nlist.net.empty()) {
+        vtr::printf_warning(__FILE__, __LINE__, "No nets to route\n");
+    }
+
+
 	if (router_opts.router_algorithm == BREADTH_FIRST) {
 		vtr::printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
 		success = try_breadth_first_route(router_opts, clb_opins_used_locally);

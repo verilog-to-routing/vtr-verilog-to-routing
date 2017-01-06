@@ -787,5 +787,9 @@ static void show_blif_stats(const AtomNetlist& netlist) {
     for(auto kv : net_stats) {
         vtr::printf_info("    %-*s: %6.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
     }
+
+    if (netlist.blocks().empty()) {
+        vtr::printf_warning(__FILE__, __LINE__, "Netlist contains no blocks\n");
+    }
 }
 

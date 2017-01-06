@@ -140,14 +140,18 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 
         /* Parse all CLB blocks and all nets*/
 
-        //Count the number of blocks for allocation
-        bcount = pugiutil::count_children(top, "block", loc_data);
-        blist = (struct s_block *) vtr::calloc(bcount, sizeof(t_block));
-
         //Reset atom/pb mapping (it is reloaded from the packed netlist file)
         for(auto blk_id : g_atom_nl.blocks()) {
             g_atom_map.set_atom_pb(blk_id, NULL);
         }
+
+        //Count the number of blocks for allocation
+        bcount = pugiutil::count_children(top, "block", loc_data, pugiutil::ReqOpt::OPTIONAL);
+        if(bcount == 0) {
+            vtr::printf_warning(__FILE__, __LINE__, "Packed netlist contains no clustered blocks\n");
+        }
+
+        blist = (struct s_block *) vtr::calloc(bcount, sizeof(t_block));
 
         /* Process netlist */
 
@@ -157,7 +161,7 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
             i++;
         }
         VTR_ASSERT(i == bcount);
-        VTR_ASSERT(num_primitives > 0);
+        VTR_ASSERT(num_primitives >= 0);
         VTR_ASSERT(static_cast<size_t>(num_primitives) == g_atom_nl.blocks().size());
 
         /* Error check */
