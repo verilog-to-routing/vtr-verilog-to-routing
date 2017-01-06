@@ -861,8 +861,6 @@ AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, 
 
         //Add the pin to the block
         associate_pin_with_block(pin_id, port_type(port_id), port_block(port_id));
-
-
     }
 
     //Check post-conditions: sizes

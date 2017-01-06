@@ -261,7 +261,18 @@ struct BlifAllocCallback : public blifparse::Callback {
                           subckt_model.c_str());
             }
 
-            AtomBlockId blk_id = curr_model().create_block(first_output_name, blk_model);
+            //The name for every block should be unique, check that there is no name conflict
+            AtomBlockId blk_id = curr_model().find_block(first_output_name);
+            if(blk_id) {
+                const t_model* conflicting_model = curr_model().block_model(blk_id);
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, 
+                          "Duplicate blocks named '%s' found in netlist."
+                          " Existing block of type '%s' conflicts with subckt of type '%s'.", 
+                          first_output_name.c_str(), conflicting_model->name, subckt_model.c_str());
+            }
+
+            //Create the block
+            blk_id = curr_model().create_block(first_output_name, blk_model);
 
             for(size_t i = 0; i < ports.size(); ++i) {
                 //Check for consistency between model and ports
