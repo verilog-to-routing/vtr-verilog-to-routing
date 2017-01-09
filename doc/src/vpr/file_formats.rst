@@ -126,7 +126,7 @@ The signal ``all_sum_high_comb`` is computed using combinational logic (``.names
 The ``.latch`` directive instantiates a rising-edge (``re``) latch (i.e. an edge-triggered Flip-Flop) clocked by ``clk``.
 It takes in the combinational signal ``all_sum_high_comb`` and drives the primary output ``all_sum_high_reg``.
 
-Also not that the last ``.subckt adder`` has it's ``cout`` output left disconnected using the special ``unconn`` net.
+Also not that the last ``.subckt adder`` has it's ``cout`` output left implicitly disconnected.
 
 .. code-block:: none
 
@@ -140,7 +140,7 @@ Also not that the last ``.subckt adder`` has it's ``cout`` output left disconnec
     .subckt adder a=a[0] b=b[0] cin=gnd    cout=cin[1]     sumout=sum[0]
     .subckt adder a=a[1] b=b[1] cin=cin[1] cout=cin[2]     sumout=sum[1]
     .subckt adder a=a[2] b=b[2] cin=cin[2] cout=cin[3]     sumout=sum[2]
-    .subckt adder a=a[3] b=b[3] cin=cin[3] cout=dummy_net1 sumout=sum[3]
+    .subckt adder a=a[3] b=b[3] cin=cin[3]                 sumout=sum[3]
 
     .names sum[0] sum[1] sum[2] sum[3] all_sum_high_comb
     1111 1
