@@ -38,6 +38,7 @@
 
 #include <string.h>
 #include <map>
+#include <set>
 #include <string>
 #include <sstream>
 
@@ -95,6 +96,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiloc::loc_data& loc_data);
 static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
 		const pugiloc::loc_data& loc_data);
+static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiloc::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiloc::loc_data& loc_data);
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiloc::loc_data& loc_data);
 static void ProcessSizingTimingIpinCblock(pugi::xml_node Node,
@@ -134,6 +136,28 @@ static void ProcessClocks(pugi::xml_node Parent, t_clock_arch * clocks, const pu
 static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type * pb_type, const pugiloc::loc_data& loc_data);
 static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
 		e_power_estimation_method power_method, const pugiloc::loc_data& loc_data);
+
+
+bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiloc::loc_data& loc_data, const t_model* model);
+bool check_model_clocks(pugi::xml_node model_tag, const pugiloc::loc_data& loc_data, const t_model* model);
+
+static bool attribute_to_bool(const pugi::xml_node node,
+                const pugi::xml_attribute attr,
+                const pugiloc::loc_data& loc_data);
+
+static void bad_tag(const pugi::xml_node node,
+                const pugiloc::loc_data& loc_data,
+                const pugi::xml_node parent_node=pugi::xml_node(),
+                const std::vector<std::string> expected_tags=std::vector<std::string>());
+
+static void bad_attribute(const pugi::xml_attribute attr,
+                const pugi::xml_node node,
+                const pugiloc::loc_data& loc_data,
+                const std::vector<std::string> expected_attributes=std::vector<std::string>());
+static void bad_attribute_value(const pugi::xml_attribute attr,
+                const pugi::xml_node node,
+                const pugiloc::loc_data& loc_data,
+                const std::vector<std::string> expected_attributes=std::vector<std::string>());
 
 /*
  *
@@ -1842,127 +1866,156 @@ static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Ty
 /* Takes in node pointing to <models> and loads all the
  * child type objects.  */
 static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugiloc::loc_data& loc_data) {
-	const char *Prop;
-	pugi::xml_node child;
 	pugi::xml_node p;
 	t_model *temp;
-	t_model_ports *tp;
 	int L_index;
 	/* std::maps for checking duplicates */
 	map<string, int> model_name_map;
-	map<string, int> model_port_map;
 	pair<map<string, int>::iterator, bool> ret_map_name;
-	pair<map<string, int>::iterator, bool> ret_map_port;
 
 	L_index = NUM_MODELS_IN_LIBRARY;
 
 	arch->models = NULL;
-	child = get_first_child(Node, "model", loc_data, OPTIONAL);
-	while (child != NULL) {
+    for(pugi::xml_node model : Node.children()) {
+        //Process each model
+        if(model.name() != std::string("model")) {
+            bad_tag(model, loc_data, Node, {"model"});
+        }
+
 		temp = (t_model*) vtr::calloc(1, sizeof(t_model));
-		temp->used = 0;
-		temp->inputs = temp->outputs = NULL;
-		temp->instances = NULL;
-		Prop = get_attribute(child, "name", loc_data).value();
-		temp->name = vtr::strdup(Prop);
-		temp->pb_types = NULL;
 		temp->index = L_index;
 		L_index++;
+
+        //Process the <model> tag attributes
+        for(pugi::xml_attribute attr : model.attributes()) {
+            if(attr.name() != std::string("name")) {
+                bad_attribute(attr, model, loc_data);
+            } else {
+                VTR_ASSERT(attr.name() == std::string("name"));
+
+                if(!temp->name) {
+                    //First name attr. seen
+                    temp->name = vtr::strdup(attr.value());
+                } else {
+                    //Duplicate name
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
+                            "Duplicate 'name' attribute on <model> tag.");
+                }
+            }
+        }
 
 		/* Try insert new model, check if already exist at the same time */
 		ret_map_name = model_name_map.insert(pair<string, int>(temp->name, 0));
 		if (!ret_map_name.second) {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(child),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
 					"Duplicate model name: '%s'.\n", temp->name);
 		}
 
-		/* Process the inputs */
-		p = get_first_child(child, "input_ports", loc_data);
+        //Process the ports
+        std::set<std::string> port_names;
+        for(pugi::xml_node port_group : model.children()) {
+            if(port_group.name() == std::string("input_ports")) {
+                ProcessModelPorts(port_group, temp, port_names, loc_data);
+            } else if(port_group.name() == std::string("output_ports")) {
+                ProcessModelPorts(port_group, temp, port_names, loc_data);
+            } else {
+                bad_tag(port_group, loc_data, model, {"input_ports", "output_ports"});
+            }
+        }
 
-		p = get_first_child(p, "port", loc_data);
-		if (p != NULL) {
-			while (p != NULL) {
-				tp = (t_model_ports*) vtr::calloc(1, sizeof(t_model_ports));
-				Prop = get_attribute(p, "name", loc_data).value();
-				tp->name = vtr::strdup(Prop);
-				tp->size = -1; /* determined later by pb_types */
-				tp->min_size = -1; /* determined later by pb_types */
-				tp->next = temp->inputs;
-				tp->dir = IN_PORT;
-				tp->is_non_clock_global = get_attribute(p,
-						"is_non_clock_global", loc_data, OPTIONAL).as_bool(false);
-				tp->is_clock = false;
-				Prop = get_attribute(p, "is_clock", loc_data, OPTIONAL).as_string(NULL);
-				if (Prop && vtr::atoi(Prop) != 0) {
-					tp->is_clock = true;
-				}
+        //Sanity check the model
+        check_model_clocks(model, loc_data, temp);
+        check_model_combinational_sinks(model, loc_data, temp);
 
-				if (tp->is_clock == true && tp->is_non_clock_global == true) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(p),
-							"Signal cannot be both a clock and a non-clock signal simultaneously\n");
-				}
 
-				/* Try insert new port, check if already exist at the same time */
-				ret_map_port = model_port_map.insert(
-						pair<string, int>(tp->name, 0));
-				if (!ret_map_port.second) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(p),
-							"Duplicate model input port name: '%s'.\n",
-							tp->name);
-				}
-
-				temp->inputs = tp;
-				p = p.next_sibling(p.name());
-			}
-		}
-
-		/* Process the outputs */
-		p = get_first_child(child, "output_ports", loc_data);
-		p = get_first_child(p, "port", loc_data);
-		if (p != NULL) {
-			while (p != NULL) {
-				tp = (t_model_ports*) vtr::calloc(1, sizeof(t_model_ports));
-				Prop = get_attribute(p, "name", loc_data).value();
-				tp->name = vtr::strdup(Prop);
-				tp->size = -1; /* determined later by pb_types */
-				tp->min_size = -1; /* determined later by pb_types */
-				tp->next = temp->outputs;
-				tp->dir = OUT_PORT;
-				Prop = get_attribute(p, "is_clock", loc_data, OPTIONAL).as_string(NULL);
-				if (Prop && vtr::atoi(Prop) != 0) {
-					tp->is_clock = true;
-				}
-
-				if (tp->is_clock == true && tp->is_non_clock_global == true) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(p),
-							"Signal cannot be both a clock and a non-clock signal simultaneously\n");
-				}
-
-				/* Try insert new output port, check if already exist at the same time */
-				ret_map_port = model_port_map.insert(
-						pair<string, int>(tp->name, 0));
-				if (!ret_map_port.second) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(p),
-							"Duplicate model output port name: '%s'.\n",
-							tp->name);
-				}
-
-				temp->outputs = tp;
-				p = p.next_sibling(p.name());
-			}
-		} 
-
-		/* Clear port map for next model */
-		model_port_map.clear();
-		/* Push new model onto model stack */
+        //Add the model
 		temp->next = arch->models;
 		arch->models = temp;
-		/* Find next model */
-		child = child.next_sibling(child.name());
 	}
-	model_port_map.clear();
-	model_name_map.clear();
 	return;
+}
+
+static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiloc::loc_data& loc_data) {
+    for(pugi::xml_attribute attr : port_group.attributes()) {
+        bad_attribute(attr, port_group, loc_data);
+    }
+
+    enum PORTS dir = ERR_PORT;
+    if(port_group.name() == std::string("input_ports")) {
+        dir = IN_PORT;
+    } else {
+        VTR_ASSERT(port_group.name() == std::string("output_ports"));
+        dir = OUT_PORT;
+    }
+
+    //Process each port
+    for(pugi::xml_node port : port_group.children()) {
+        //Should only be ports
+        if(port.name() != std::string("port")) {
+            bad_tag(port, loc_data, port_group, {"port"});
+        }
+
+        //Ports should have no children
+        for(pugi::xml_node port_child : port.children()) {
+            bad_tag(port_child, loc_data, port);
+        }
+
+        t_model_ports* model_port = new t_model_ports;
+
+        model_port->dir = dir;
+
+        //Process the attributes of each port
+        for(pugi::xml_attribute attr : port.attributes()) {
+
+            if(attr.name() == std::string("name")) {
+                model_port->name = vtr::strdup(attr.value());
+
+            } else if (attr.name() == std::string("is_clock")) {
+                model_port->is_clock = attribute_to_bool(port, attr, loc_data);
+
+            } else if (attr.name() == std::string("is_non_clock_global")) {
+                model_port->is_non_clock_global = attribute_to_bool(port, attr, loc_data);
+
+            } else if (attr.name() == std::string("clock")) {
+                model_port->clock = std::string(attr.value());
+
+            } else if (attr.name() == std::string("combinational_sink_ports")) {
+                model_port->combinational_sink_ports = vtr::split(attr.value());
+
+            } else {
+                bad_attribute(attr, port, loc_data);
+            }
+        }
+
+        //Sanity checks
+        if (model_port->is_clock == true && model_port->is_non_clock_global == true) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
+                    "Model port '%s' cannot be both a clock and a non-clock signal simultaneously", model_port->name);
+        }
+
+        if(port_names.count(model_port->name)) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
+                    "Duplicate model port named '%s'", model_port->name);
+        }
+
+        if(dir == OUT_PORT && !model_port->combinational_sink_ports.empty()) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
+                    "Model output ports can not have combinational sink ports");
+            
+        }
+
+        //Add the port
+        if(dir == IN_PORT) {
+            model_port->next = model->inputs;
+            model->inputs = model_port;
+
+        } else {
+            VTR_ASSERT(dir == OUT_PORT);
+
+            model_port->next = model->outputs;
+            model->outputs = model_port;
+        }
+    }
 }
 
 /* Takes in node pointing to <layout> and loads all the
@@ -2864,3 +2917,174 @@ const char* get_arch_file_name() {
 	return arch_file_name;
 }
 
+bool check_model_clocks(pugi::xml_node model_tag, const pugiloc::loc_data& loc_data, const t_model* model) {
+    //Collect the ports identified as clocks
+    std::set<std::string> clocks;
+    for(t_model_ports* ports : {model->inputs, model->outputs}) {
+        for(t_model_ports* port = ports; port != nullptr; port = port->next) {
+            if(port->is_clock) {
+                clocks.insert(port->name);
+            }
+        }
+    }
+
+    //Check that any clock references on the ports are to identified clock ports
+    for(t_model_ports* ports : {model->inputs, model->outputs}) {
+        for(t_model_ports* port = ports; port != nullptr; port = port->next) {
+            if(!port->clock.empty() && !clocks.count(port->clock)) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
+                        "No matching clock port '%s' on model '%s', required for port '%s'",
+                        port->clock.c_str(), model->name, port->name);
+            }
+        }
+    }
+    return true;
+}
+
+bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiloc::loc_data& loc_data, const t_model* model) {
+    //Outputs should have no combinational sinks
+    for(t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
+        if(port->combinational_sink_ports.size() != 0) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
+                    "Model '%s' output port '%s' can not have combinational sink ports",
+                    model->name, port->name);
+        }
+    }
+
+    //Record the output ports
+    std::set<std::string> output_ports;
+    for(t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
+        output_ports.insert(port->name);
+    }
+
+    //Check that the input port combinational sinks are all outputs
+    for(t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
+        for(std::string sink_port_name : port->combinational_sink_ports) {
+            if(!output_ports.count(sink_port_name)) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
+                        "Model '%s' input port '%s' can not be combinationally connected to '%s' (not an output port of the model)",
+                        model->name, port->name, sink_port_name.c_str());
+                
+            }
+        }
+    }
+    return true;
+}
+
+static bool attribute_to_bool(const pugi::xml_node node,
+                const pugi::xml_attribute attr,
+                const pugiloc::loc_data& loc_data) {
+    if(attr.value() == std::string("1")) {
+        return true;
+    } else if(attr.value() == std::string("0")) {
+        return false;
+    } else {
+        bad_attribute_value(attr, node, loc_data, {"0", "1"});
+    }
+
+    return false;
+}
+
+static void bad_tag(const pugi::xml_node node,
+                const pugiloc::loc_data& loc_data,
+                const pugi::xml_node parent_node,
+                const std::vector<std::string> expected_tags) {
+
+    std::string msg = "Unexpected tag ";
+    msg += "<";
+    msg += node.name();
+    msg += ">";
+
+    if(parent_node) {
+        msg += " in section <";
+        msg += parent_node.name();
+        msg += ">";
+    }
+
+    if(!expected_tags.empty()) {
+        msg += ", expected ";
+        for(auto iter = expected_tags.begin(); iter != expected_tags.end(); ++iter) {
+            msg += "<";
+            msg += *iter;
+            msg += ">"; 
+
+            if(iter < expected_tags.end() - 2) {
+                msg += ", ";
+            } else if(iter == expected_tags.end() - 2) {
+                msg += " or ";
+            }
+        }
+    }
+
+    throw ArchFpgaError(msg, loc_data.filename(), loc_data.line(node));
+}
+
+static void bad_attribute(const pugi::xml_attribute attr,
+                const pugi::xml_node node,
+                const pugiloc::loc_data& loc_data,
+                const std::vector<std::string> expected_attributes) {
+
+    std::string msg = "Unexpected attribute ";
+    msg += "'";
+    msg += attr.name();
+    msg += "'";
+
+    if(node) {
+        msg += " on <";
+        msg += node.name();
+        msg += "> tag";
+    }
+
+    if(!expected_attributes.empty()) {
+        msg += ", expected ";
+        for(auto iter = expected_attributes.begin(); iter != expected_attributes.end(); ++iter) {
+            msg += "'";
+            msg += *iter;
+            msg += "'"; 
+
+            if(iter < expected_attributes.end() - 2) {
+                msg += ", ";
+            } else if(iter == expected_attributes.end() - 2) {
+                msg += " or ";
+            }
+        }
+    }
+
+    throw ArchFpgaError(msg, loc_data.filename(), loc_data.line(node));
+}
+
+static void bad_attribute_value(const pugi::xml_attribute attr,
+                const pugi::xml_node node,
+                const pugiloc::loc_data& loc_data,
+                const std::vector<std::string> expected_values) {
+
+    std::string msg = "Invalid value '";
+    msg += attr.value();
+    msg += "'";
+    msg += " for attribute '";
+    msg += attr.name();
+    msg += "'";
+
+    if(node) {
+        msg += " on <";
+        msg += node.name();
+        msg += "> tag";
+    }
+
+    if(!expected_values.empty()) {
+        msg += ", expected value ";
+        for(auto iter = expected_values.begin(); iter != expected_values.end(); ++iter) {
+            msg += "'";
+            msg += *iter;
+            msg += "'"; 
+
+            if(iter < expected_values.end() - 2) {
+                msg += ", ";
+            } else if(iter == expected_values.end() - 2) {
+                msg += " or ";
+            }
+        }
+    }
+
+    throw ArchFpgaError(msg, loc_data.filename(), loc_data.line(node));
+}
