@@ -639,14 +639,14 @@ void free_arch(t_arch* Arch) {
 			t_model_ports *prev_port = input_port;
 			input_port = input_port->next;
 			free(prev_port->name);
-			free(prev_port);
+			delete prev_port;
 		}
 		t_model_ports *output_port = model->outputs;
 		while (output_port) {
 			t_model_ports *prev_port = output_port;
 			output_port = output_port->next;
 			free(prev_port->name);
-			free(prev_port);
+			delete prev_port;
 		}
 		vtr::t_linked_vptr *vptr = model->pb_types;
 		while (vptr) {
@@ -660,7 +660,7 @@ void free_arch(t_arch* Arch) {
 		if (prev_model->instances)
 			free(prev_model->instances);
 		free(prev_model->name);
-		free(prev_model);
+		delete prev_model;
 	}
 
 	for (int i = 0; i < 4; ++i) {
@@ -681,22 +681,22 @@ void free_arch(t_arch* Arch) {
 
 	free(Arch->model_library[0].name);
 	free(Arch->model_library[0].outputs->name);
-	free(Arch->model_library[0].outputs);
+	delete[] Arch->model_library[0].outputs;
 	free(Arch->model_library[1].inputs->name);
-	free(Arch->model_library[1].inputs);
+	delete[] Arch->model_library[1].inputs;
 	free(Arch->model_library[1].name);
 	free(Arch->model_library[2].name);
 	free(Arch->model_library[2].inputs[0].name);
 	free(Arch->model_library[2].inputs[1].name);
-	free(Arch->model_library[2].inputs);
+	delete[] Arch->model_library[2].inputs;
 	free(Arch->model_library[2].outputs->name);
-	free(Arch->model_library[2].outputs);
+	delete[] Arch->model_library[2].outputs;
 	free(Arch->model_library[3].name);
 	free(Arch->model_library[3].inputs->name);
-	free(Arch->model_library[3].inputs);
+	delete[] Arch->model_library[3].inputs;
 	free(Arch->model_library[3].outputs->name);
-	free(Arch->model_library[3].outputs);
-	free(Arch->model_library);
+	delete[] Arch->model_library[3].outputs;
+	delete[] Arch->model_library;
 
 	if (Arch->clocks) {
 		free(Arch->clocks->clock_inf);

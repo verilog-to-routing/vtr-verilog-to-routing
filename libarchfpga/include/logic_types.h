@@ -38,15 +38,15 @@ struct s_model_ports {
 };
 
 typedef struct s_model {
-	char *name; /* name of this logic model */
-	t_model_ports *inputs; /* linked list of input/clock ports */
-	t_model_ports *outputs; /* linked list of output ports */
-	void *instances;
-	int used;
-    vtr::t_linked_vptr *pb_types; /* Physical block types that implement this model */
-	struct s_model *next; /* next model (linked list) */
+	char *name = nullptr; /* name of this logic model */
+	t_model_ports *inputs = nullptr; /* linked list of input/clock ports */
+	t_model_ports *outputs = nullptr; /* linked list of output ports */
+	void *instances = nullptr;
+	int used = 0;
+    vtr::t_linked_vptr *pb_types = nullptr; /* Physical block types that implement this model */
+	struct s_model *next = nullptr; /* next model (linked list) */
 
-	int index;
+	int index = -1;
 } t_model;
 
 #endif

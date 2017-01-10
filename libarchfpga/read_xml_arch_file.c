@@ -96,7 +96,6 @@ static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiloc::loc_data& loc_data);
 static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
 		const pugiloc::loc_data& loc_data);
-static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiloc::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiloc::loc_data& loc_data);
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiloc::loc_data& loc_data);
 static void ProcessSizingTimingIpinCblock(pugi::xml_node Node,
@@ -105,6 +104,7 @@ static void ProcessChanWidthDistr(pugi::xml_node Node,
 		struct s_arch *arch, const pugiloc::loc_data& loc_data);
 static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const pugiloc::loc_data& loc_data);
 static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugiloc::loc_data& loc_data);
+static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiloc::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, struct s_arch *arch, const pugiloc::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, struct s_arch *arch,
 		const bool timing_enabled, const pugiloc::loc_data& loc_data);
@@ -1103,6 +1103,8 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		}
 		VTR_ASSERT(j == num_annotations);
 
+        /*check_leaf_pb_model_timing_consistency(pb_type, );*/
+
 		/* leaf pb_type, if special known class, then read class lib otherwise treat as primitive */
 		if (pb_type->class_type == LUT_CLASS) {
 			ProcessLutClass(pb_type);
@@ -1882,7 +1884,7 @@ static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugilo
             bad_tag(model, loc_data, Node, {"model"});
         }
 
-		temp = (t_model*) vtr::calloc(1, sizeof(t_model));
+		temp = new t_model;
 		temp->index = L_index;
 		L_index++;
 
