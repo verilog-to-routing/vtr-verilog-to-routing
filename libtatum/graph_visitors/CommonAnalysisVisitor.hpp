@@ -374,7 +374,14 @@ void CommonAnalysisVisitor<AnalysisOps>::do_slack_traverse_edge(const TimingGrap
     auto src_arr_tags = ops_.get_tags(src_node, TagType::DATA_ARRIVAL);
     auto sink_req_tags = ops_.get_tags(sink_node, TagType::DATA_REQUIRED);
 
-    const Time edge_delay = ops_.data_edge_delay(dc, tg, edge);
+    Time edge_delay;
+    if(is_clock_data_launch_edge(tg, edge)) {
+        edge_delay = ops_.launch_clock_edge_delay(dc, tg, edge);
+    } else if(is_clock_data_capture_edge(tg, edge)) {
+        edge_delay = ops_.capture_clock_edge_delay(dc, tg, edge);
+    } else {
+        edge_delay = ops_.data_edge_delay(dc, tg, edge);
+    }
 
     for(const tatum::TimingTag& src_arr_tag : src_arr_tags) {
 
