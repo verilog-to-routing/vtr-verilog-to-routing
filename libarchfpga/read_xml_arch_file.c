@@ -41,6 +41,7 @@
 #include <set>
 #include <string>
 #include <sstream>
+#include <algorithm>
 
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
@@ -88,13 +89,13 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Type, const pugiloc::loc_data& loc_data);
 /*    Process XML hiearchy */
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
-		t_mode * mode, const pugiloc::loc_data& loc_data);
+		t_mode * mode, const t_arch& arch, const pugiloc::loc_data& loc_data);
 static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
 		e_power_estimation_method power_method, const pugiloc::loc_data& loc_data);
 static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type, const pugiloc::loc_data& loc_data);
 static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiloc::loc_data& loc_data);
-static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
+static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
 		const pugiloc::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiloc::loc_data& loc_data);
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiloc::loc_data& loc_data);
@@ -140,24 +141,12 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
 
 bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiloc::loc_data& loc_data, const t_model* model);
 bool check_model_clocks(pugi::xml_node model_tag, const pugiloc::loc_data& loc_data, const t_model* model);
+bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch);
+std::string inst_port_to_port_name(std::string inst_port);
 
 static bool attribute_to_bool(const pugi::xml_node node,
                 const pugi::xml_attribute attr,
                 const pugiloc::loc_data& loc_data);
-
-static void bad_tag(const pugi::xml_node node,
-                const pugiloc::loc_data& loc_data,
-                const pugi::xml_node parent_node=pugi::xml_node(),
-                const std::vector<std::string> expected_tags=std::vector<std::string>());
-
-static void bad_attribute(const pugi::xml_attribute attr,
-                const pugi::xml_node node,
-                const pugiloc::loc_data& loc_data,
-                const std::vector<std::string> expected_attributes=std::vector<std::string>());
-static void bad_attribute_value(const pugi::xml_attribute attr,
-                const pugi::xml_node node,
-                const pugiloc::loc_data& loc_data,
-                const std::vector<std::string> expected_attributes=std::vector<std::string>());
 
 /*
  *
@@ -911,7 +900,7 @@ static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type * pb_t
 
 /* Takes in a pb_type, allocates and loads data for it and recurses downwards */
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
-		t_mode * mode, const pugiloc::loc_data& loc_data) {
+		t_mode * mode, const t_arch& arch, const pugiloc::loc_data& loc_data) {
 	int num_ports, i, j, k, num_annotations;
 	const char *Prop;
 	pugi::xml_node Cur;
@@ -1103,7 +1092,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		}
 		VTR_ASSERT(j == num_annotations);
 
-        /*check_leaf_pb_model_timing_consistency(pb_type, );*/
+        check_leaf_pb_model_timing_consistency(pb_type, arch);
 
 		/* leaf pb_type, if special known class, then read class lib otherwise treat as primitive */
 		if (pb_type->class_type == LUT_CLASS) {
@@ -1128,7 +1117,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 					sizeof(t_mode));
 			pb_type->modes[i].parent_pb_type = pb_type;
 			pb_type->modes[i].index = i;
-			ProcessMode(Parent, &pb_type->modes[i], loc_data);
+			ProcessMode(Parent, &pb_type->modes[i], arch, loc_data);
 			i++;
 		} else {
 			pb_type->modes = (t_mode*) vtr::calloc(pb_type->num_modes,
@@ -1139,7 +1128,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 				if (0 == strcmp(Cur.name(), "mode")) {
 					pb_type->modes[i].parent_pb_type = pb_type;
 					pb_type->modes[i].index = i;
-					ProcessMode(Cur, &pb_type->modes[i], loc_data);
+					ProcessMode(Cur, &pb_type->modes[i], arch, loc_data);
 
 					ret_mode_names = mode_names.insert(
 							pair<string, int>(pb_type->modes[i].name, 0));
@@ -1483,7 +1472,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 	VTR_ASSERT(i == num_interconnect);
 }
 
-static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
+static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
 		const pugiloc::loc_data& loc_data) {
 	int i;
 	const char *Prop;
@@ -1508,7 +1497,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
 		Cur = get_first_child(Parent, "pb_type", loc_data);
 		while (Cur != NULL) {
 			if (0 == strcmp(Cur.name(), "pb_type")) {
-				ProcessPb_Type(Cur, &mode->pb_type_children[i], mode, loc_data);
+				ProcessPb_Type(Cur, &mode->pb_type_children[i], mode, arch, loc_data);
 
 				ret_pb_types = pb_type_names.insert(
 						pair<string, int>(mode->pb_type_children[i].name, 0));
@@ -2233,7 +2222,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 						"First complex block must be named \"io\" and define the inputs and outputs for the FPGA");
 			}
 		}
-		ProcessPb_Type(CurType, Type->pb_type, NULL, loc_data);
+		ProcessPb_Type(CurType, Type->pb_type, NULL, arch, loc_data);
 		Type->num_pins = Type->capacity
 				* (Type->pb_type->num_input_pins
 						+ Type->pb_type->num_output_pins
@@ -2973,6 +2962,121 @@ bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiloc::lo
     return true;
 }
 
+bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch) {
+    //Normalize the blif model name to match the model name
+    // by removing the leading '.' (.latch, .inputs, .names etc.)
+    // by removing the leading '.subckt'
+    VTR_ASSERT(pb_type->blif_model);
+    std::string blif_model = pb_type->blif_model;
+    if(blif_model[0] == '.') {
+        blif_model = blif_model.substr(1);
+    }
+    std::string subckt = "subckt ";
+    auto pos = blif_model.find(subckt);
+    if(pos != std::string::npos) {
+        blif_model = blif_model.substr(pos + subckt.size());
+    }
+
+    //Find the matching model
+    const t_model* model = nullptr;
+
+
+
+    for(const t_model* models : {arch.models, arch.model_library}) {
+        for(model = models; model != nullptr; model = model->next) {
+            if(std::string(model->name) == blif_model) {
+                break;    
+            }
+        }
+        if(model != nullptr) {
+            break;
+        }
+    }
+    VTR_ASSERT(model != nullptr);
+
+    //Now that we have the model we can compare the timing annotations
+     
+    for(int i = 0; i < pb_type->num_annotations; ++i) {
+        const t_pin_to_pin_annotation* annot = &pb_type->annotations[i];
+
+        if(annot->type == E_ANNOT_PIN_TO_PIN_DELAY) {
+            //Check that any combinational delays specified match the 'combinational_sinks_ports' in the model
+            vtr::printf("'%s' -> '%s' @ '%s'\n", annot->input_pins, annot->output_pins, annot->clock);
+
+            if(annot->clock) {
+                //Sequential annotation, check that the clock on the specified port matches the model
+
+                //Annotations always put the pin in the input_pins field
+                VTR_ASSERT(annot->input_pins);
+                InstPort annot_port(annot->input_pins);
+                InstPort annot_clock(annot->clock);
+
+                //Find the model port
+                const t_model_ports* model_port = nullptr;
+                for(const t_model_ports* ports : {model->inputs, model->outputs}) {
+                    for(const t_model_ports* port = ports; port != nullptr; port = port->next) {
+                        if(port->name == annot_port.port_name()) {
+                            model_port = port;
+                            break;
+                        }
+                    }
+                    if(model_port != nullptr) break;
+                }
+                VTR_ASSERT(model_port != nullptr);
+
+                //Check that the clock matches the model definition
+                std::string model_clock = model_port->clock;
+                VTR_ASSERT(!model_clock.empty());
+                if(model_port->clock != annot_clock.port_name()) {
+                    archfpga_throw(get_arch_file_name(), annot->line_num,
+                        "Timing annotation <model> mismatch on port '%s' of model '%s', model specifies"
+                        " clock as '%s' but timing annotations specify '%s'",
+                        annot_port.port_name().c_str(), model->name, model_clock.c_str(), annot_clock.port_name().c_str());
+                }
+
+            } else if (annot->input_pins && annot->output_pins) {
+                //Combinational annotation
+                InstPort annot_in(annot->input_pins);
+                InstPort annot_out(annot->output_pins);
+
+                //Find the input model port
+                const t_model_ports* model_port = nullptr;
+                for(const t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
+                    if(port->name == annot_in.port_name()) {
+                        model_port = port;
+                        break;
+                    }
+                }
+                VTR_ASSERT(model_port != nullptr);
+
+                //Check that the output port is listed in the model's combinational sinks
+                auto b = model_port->combinational_sink_ports.begin();
+                auto e = model_port->combinational_sink_ports.end();
+                auto iter = std::find(b, e, annot_out.port_name());
+                if(iter == e) {
+                    archfpga_throw(get_arch_file_name(), annot->line_num,
+                        "Timing annotation <model> mismatch on port '%s' of model '%s', timing annotation"
+                        " specifies combinational connection to port '%s' but the connection does not exist in the model",
+                        model_port->name, model->name, annot_out.port_name().c_str());
+                }
+            } else {
+                throw ArchFpgaError("Unrecognized delay annotation");
+            }
+        }
+    }
+
+
+    return true; 
+}
+
+std::string inst_port_to_port_name(std::string inst_port) {
+    auto pos = inst_port.find('.');
+    if(pos != std::string::npos) {
+        return inst_port.substr(pos + 1);
+    }
+    return inst_port;
+}
+
 static bool attribute_to_bool(const pugi::xml_node node,
                 const pugi::xml_attribute attr,
                 const pugiloc::loc_data& loc_data) {
@@ -2985,108 +3089,4 @@ static bool attribute_to_bool(const pugi::xml_node node,
     }
 
     return false;
-}
-
-static void bad_tag(const pugi::xml_node node,
-                const pugiloc::loc_data& loc_data,
-                const pugi::xml_node parent_node,
-                const std::vector<std::string> expected_tags) {
-
-    std::string msg = "Unexpected tag ";
-    msg += "<";
-    msg += node.name();
-    msg += ">";
-
-    if(parent_node) {
-        msg += " in section <";
-        msg += parent_node.name();
-        msg += ">";
-    }
-
-    if(!expected_tags.empty()) {
-        msg += ", expected ";
-        for(auto iter = expected_tags.begin(); iter != expected_tags.end(); ++iter) {
-            msg += "<";
-            msg += *iter;
-            msg += ">"; 
-
-            if(iter < expected_tags.end() - 2) {
-                msg += ", ";
-            } else if(iter == expected_tags.end() - 2) {
-                msg += " or ";
-            }
-        }
-    }
-
-    throw ArchFpgaError(msg, loc_data.filename(), loc_data.line(node));
-}
-
-static void bad_attribute(const pugi::xml_attribute attr,
-                const pugi::xml_node node,
-                const pugiloc::loc_data& loc_data,
-                const std::vector<std::string> expected_attributes) {
-
-    std::string msg = "Unexpected attribute ";
-    msg += "'";
-    msg += attr.name();
-    msg += "'";
-
-    if(node) {
-        msg += " on <";
-        msg += node.name();
-        msg += "> tag";
-    }
-
-    if(!expected_attributes.empty()) {
-        msg += ", expected ";
-        for(auto iter = expected_attributes.begin(); iter != expected_attributes.end(); ++iter) {
-            msg += "'";
-            msg += *iter;
-            msg += "'"; 
-
-            if(iter < expected_attributes.end() - 2) {
-                msg += ", ";
-            } else if(iter == expected_attributes.end() - 2) {
-                msg += " or ";
-            }
-        }
-    }
-
-    throw ArchFpgaError(msg, loc_data.filename(), loc_data.line(node));
-}
-
-static void bad_attribute_value(const pugi::xml_attribute attr,
-                const pugi::xml_node node,
-                const pugiloc::loc_data& loc_data,
-                const std::vector<std::string> expected_values) {
-
-    std::string msg = "Invalid value '";
-    msg += attr.value();
-    msg += "'";
-    msg += " for attribute '";
-    msg += attr.name();
-    msg += "'";
-
-    if(node) {
-        msg += " on <";
-        msg += node.name();
-        msg += "> tag";
-    }
-
-    if(!expected_values.empty()) {
-        msg += ", expected value ";
-        for(auto iter = expected_values.begin(); iter != expected_values.end(); ++iter) {
-            msg += "'";
-            msg += *iter;
-            msg += "'"; 
-
-            if(iter < expected_values.end() - 2) {
-                msg += ", ";
-            } else if(iter == expected_values.end() - 2) {
-                msg += " or ";
-            }
-        }
-    }
-
-    throw ArchFpgaError(msg, loc_data.filename(), loc_data.line(node));
 }

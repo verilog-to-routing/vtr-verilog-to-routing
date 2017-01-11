@@ -10,6 +10,4 @@ class ArchFpgaError : public vtr::VtrError {
             : vtr::VtrError(msg, new_filename, new_linenumber){}
 };
 
-void archfpga_throw(const char* filename, int line, const char* fmt, ...);
-
 #endif

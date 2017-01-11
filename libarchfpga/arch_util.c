@@ -11,6 +11,7 @@
 
 
 #include "read_xml_arch_file.h"
+#include "read_xml_util.h"
 
 t_port * findPortByName(const char * name, t_pb_type * pb_type,
 		int * high_index, int * low_index) {
