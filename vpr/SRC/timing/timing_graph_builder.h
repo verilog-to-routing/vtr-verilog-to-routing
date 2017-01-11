@@ -4,8 +4,6 @@
 #include "vtr_linear_map.h"
 
 #include "TimingGraph.hpp"
-#include "ClusteringDelayCalculator.hpp"
-#include "PlacementDelayCalculator.hpp"
 
 #include "atom_netlist_fwd.h"
 #include "atom_map.h"

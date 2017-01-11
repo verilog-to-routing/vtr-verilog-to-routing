@@ -11,7 +11,6 @@ using tatum::TimingGraph;
 using tatum::NodeId;
 using tatum::NodeType;
 using tatum::EdgeId;
-using tatum::Time;
 
 template<class K, class V>
 tatum::util::linear_map<K,V> remap_valid(const tatum::util::linear_map<K,V>& data, const tatum::util::linear_map<K,K>& id_map) {
@@ -34,14 +33,6 @@ TimingGraph TimingGraphBuilder::timing_graph() {
     tg_.validate();
     return tg_;
 }
-
-#if 0
-ClusteringDelayCalculator TimingGraphBuilder::clustering_delay_calculator(float inter_cluster_net_delay) {
-    mark_clustering_net_delays(inter_cluster_net_delay);
-
-    return ClusteringDelayCalculator(max_edge_delays_, setup_times_);
-}
-#endif
 
 void TimingGraphBuilder::build() {
     for(AtomBlockId blk : netlist_.blocks()) {
