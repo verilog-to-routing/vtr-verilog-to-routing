@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cmath>
+#include <memory>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -7,6 +8,11 @@ using namespace std;
 #include "vtr_util.h"
 #include "vtr_random.h"
 #include "vtr_matrix.h"
+
+#include "PlacementDelayCalculator.hpp"
+#include "analyzer_factory.hpp"
+#include "echo_writer.hpp"
+#include "sta_util.hpp"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -377,6 +383,28 @@ void try_place(struct s_placer_opts placer_opts,
 		load_timing_graph_net_delays(net_delay);
 		do_timing_analysis(slacks, timing_inf, false, false);
 		load_criticalities(slacks, crit_exponent);
+
+        //New analyzer
+        PlacementDelayCalculator dc(g_atom_nl, g_atom_map);
+        auto dc_sp = std::make_shared<PlacementDelayCalculator>(dc);
+        tatum::write_dot_file_setup("setup.place.dot", g_timing_graph, dc_sp);
+
+        std::ofstream os_timing_echo("timing.place.echo");
+        write_timing_graph(os_timing_echo, g_timing_graph);
+        os_timing_echo.flush();
+        write_timing_constraints(os_timing_echo, g_timing_constraints);
+        os_timing_echo.flush();
+        write_delay_model(os_timing_echo, g_timing_graph, dc);
+        os_timing_echo.flush();
+
+        std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
+        analyzer->update_timing();
+
+        tatum::write_dot_file_setup("setup.place.dot", g_timing_graph, dc_sp, analyzer);
+
+        write_analysis_result(os_timing_echo, g_timing_graph, analyzer);
+        os_timing_echo.flush();
+
 
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH))

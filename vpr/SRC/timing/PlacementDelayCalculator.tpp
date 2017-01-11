@@ -10,9 +10,6 @@ inline tatum::Time PlacementDelayCalculator::max_edge_delay(const tatum::TimingG
         return atom_combinational_delay(tg, edge);
 
     } else if (edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
-        return atom_setup_time(tg, edge);
-
-    } else if (edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_CAPTURE) {
         return atom_clock_to_q_delay(tg, edge);
 
     } else if (edge_type == tatum::EdgeType::NET) {
@@ -24,12 +21,12 @@ inline tatum::Time PlacementDelayCalculator::max_edge_delay(const tatum::TimingG
     return tatum::Time(NAN); //Suppress compiler warning
 }
 
-inline tatum::Time PlacementDelayCalculator::setup_time(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const { 
-    return tatum::Time(NAN); 
+inline tatum::Time PlacementDelayCalculator::setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+    return atom_setup_time(tg, edge_id);
 }
 
-inline tatum::Time PlacementDelayCalculator::min_edge_delay(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const { 
-    return tatum::Time(NAN); 
+inline tatum::Time PlacementDelayCalculator::min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+    return max_edge_delay(tg, edge_id); 
 }
 
 inline tatum::Time PlacementDelayCalculator::hold_time(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const { 
@@ -104,7 +101,7 @@ inline tatum::Time PlacementDelayCalculator::atom_clock_to_q_delay(const tatum::
     return tatum::Time(gpin->tsu_tco);
 }
 
-inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
+inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const {
     //A net in the atom netlist consists of several different delay components:
     //
     //      delay = launch_cluster_delay + inter_cluster_delay + capture_cluster_delay
@@ -117,14 +114,14 @@ inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingG
     //Note that if the connection is completely absorbed within the cluster then inter_cluster_delay
     //and capture_cluster_delay will both be zero.
 
-    tatum::NodeId src_node = tg.edge_src_node(edge_id);
-    tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
+    /*tatum::NodeId src_node = tg.edge_src_node(edge_id);*/
+    /*tatum::NodeId sink_node = tg.edge_sink_node(edge_id);*/
 
-    AtomPinId src_pin = netlist_map_.pin_tnode[src_node];
-    AtomPinId sink_pin = netlist_map_.pin_tnode[sink_node];
+    /*AtomPinId src_pin = netlist_map_.pin_tnode[src_node];*/
+    /*AtomPinId sink_pin = netlist_map_.pin_tnode[sink_node];*/
 
-    const t_pb_graph_pin* src_gpin = find_pb_graph_pin(src_pin);
-    const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(sink_pin);
+    /*const t_pb_graph_pin* src_gpin = find_pb_graph_pin(src_pin);*/
+    /*const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(sink_pin);*/
 
     //NOTE: even if both the source and sink atoms are contained in the same top-level
     //      CLB, the connection between them may not have been absorbed, and may go 
@@ -132,16 +129,16 @@ inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingG
 
     //Trace the delay from the atom source pin to either the atom sink pin, 
     //or a cluster output pin
-    float launch_cluster_delay = 0.;
+    float launch_cluster_delay = NAN;
     //TODO
 
     //Trace the global routing delay from the source cluster output to the sink
     //cluster input pin
-    float inter_cluster_delay = 0.;
+    float inter_cluster_delay = NAN;
     //TODO
 
     //Trace the delay from the sink cluster input pin to the atom input pin
-    float capture_cluster_delay = 0.;
+    float capture_cluster_delay = NAN;
     //TODO
     
     return tatum::Time(launch_cluster_delay + inter_cluster_delay + capture_cluster_delay);

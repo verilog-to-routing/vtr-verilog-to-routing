@@ -386,9 +386,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
     ClusteringDelayCalculator dc(g_atom_nl, g_atom_map, inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
 
     auto dc_sp = std::make_shared<ClusteringDelayCalculator>(dc);
-    tatum::write_dot_file_setup("setup.dot", g_timing_graph, dc_sp);
+    tatum::write_dot_file_setup("setup.pack.dot", g_timing_graph, dc_sp);
 
-    std::ofstream os_timing_echo("timing.echo");
+    std::ofstream os_timing_echo("timing.pack.echo");
     write_timing_graph(os_timing_echo, g_timing_graph);
     os_timing_echo.flush();
     write_timing_constraints(os_timing_echo, g_timing_constraints);
@@ -399,7 +399,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
     std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
     analyzer->update_timing();
 
-    tatum::write_dot_file_setup("setup.dot", g_timing_graph, dc_sp, analyzer);
+    tatum::write_dot_file_setup("setup.pack.dot", g_timing_graph, dc_sp, analyzer);
 
     write_analysis_result(os_timing_echo, g_timing_graph, analyzer);
     os_timing_echo.flush();
