@@ -8,7 +8,6 @@
 #include "loop_detect.hpp"
 
 using tatum::TimingGraph;
-using tatum::FixedDelayCalculator;
 using tatum::NodeId;
 using tatum::NodeType;
 using tatum::EdgeId;
@@ -36,11 +35,13 @@ TimingGraph TimingGraphBuilder::timing_graph() {
     return tg_;
 }
 
+#if 0
 ClusteringDelayCalculator TimingGraphBuilder::clustering_delay_calculator(float inter_cluster_net_delay) {
     mark_clustering_net_delays(inter_cluster_net_delay);
 
     return ClusteringDelayCalculator(max_edge_delays_, setup_times_);
 }
+#endif
 
 void TimingGraphBuilder::build() {
     for(AtomBlockId blk : netlist_.blocks()) {
@@ -49,12 +50,8 @@ void TimingGraphBuilder::build() {
 
         if(blk_type == AtomBlockType::INPAD || blk_type == AtomBlockType::OUTPAD) {
             add_io_to_timing_graph(blk);
-
-        } else if (blk_type == AtomBlockType::COMBINATIONAL) {
-            add_comb_block_to_timing_graph(blk);
-
-        } else if (blk_type == AtomBlockType::SEQUENTIAL) {
-            add_seq_block_to_timing_graph(blk);
+        } else if (blk_type == AtomBlockType::COMBINATIONAL || blk_type == AtomBlockType::SEQUENTIAL) {
+            add_block_to_timing_graph(blk);
         } else {
             VPR_THROW(VPR_ERROR_TIMING, "Unrecognized atom block type while constructing timing graph");
         }
@@ -100,133 +97,135 @@ void TimingGraphBuilder::add_io_to_timing_graph(const AtomBlockId blk) {
     netlist_map_.pin_tnode.insert(pin, tnode);
 }
 
-void TimingGraphBuilder::add_comb_block_to_timing_graph(const AtomBlockId blk) {
-    VTR_ASSERT(netlist_.block_type(blk) == AtomBlockType::COMBINATIONAL);
-    VTR_ASSERT(netlist_.block_clock_pins(blk).size() == 0);
-
-    //Track the mapping from pb_graph_pin to output pin id
-    std::unordered_map<const t_pb_graph_pin*,AtomPinId> output_pb_graph_pin_to_pin_id;
-
-    //Create the output pins first (so we can make edges from the inputs)
-    for(AtomPinId output_pin : netlist_.block_output_pins(blk)) {
-        NodeId tnode = tg_.add_node(NodeType::OPIN);
-
-        netlist_map_.pin_tnode.insert(output_pin, tnode);
-
-        const t_pb_graph_pin* pb_gpin = find_pb_graph_pin(output_pin);
-
-        output_pb_graph_pin_to_pin_id[pb_gpin] = output_pin;
-    }
-
+void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
+    //Create the input pins
     for(AtomPinId input_pin : netlist_.block_input_pins(blk)) {
-        NodeId tnode = tg_.add_node(NodeType::IPIN);
+        AtomPortId input_port = netlist_.pin_port(input_pin);
+
+        //Inspect the port model to determine pin type
+        const t_model_ports* model_port = netlist_.port_model(input_port);
+
+        NodeId tnode;
+        VTR_ASSERT(!model_port->is_clock);
+        if(model_port->clock.empty()) {
+            //No clock => combinational input
+            tnode = tg_.add_node(NodeType::IPIN);
+        } else {
+            tnode = tg_.add_node(NodeType::SINK);
+        }
 
         netlist_map_.pin_tnode.insert(input_pin, tnode);
+    }
 
-        const t_pb_graph_pin* pb_gpin = find_pb_graph_pin(input_pin);
+    //Create the clock pins
+    for(AtomPinId clock_pin : netlist_.block_clock_pins(blk)) {
+        AtomPortId clock_port = netlist_.pin_port(clock_pin);
 
-        //Add the edges from input to outputs
-        for(int i = 0; i < pb_gpin->num_pin_timing; ++i) {
-            const t_pb_graph_pin* sink_pb_gpin = pb_gpin->pin_timing[i]; 
+        //Inspect the port model to determine pin type
+        const t_model_ports* model_port = netlist_.port_model(clock_port);
 
-            auto iter = output_pb_graph_pin_to_pin_id.find(sink_pb_gpin);
-            //Some blocks may have disconnected outputs (which are not reflected 
-            //in the pg graph), we only add edges to sink pins that exist
-            if(iter != output_pb_graph_pin_to_pin_id.end()) { 
-                //Sink pin exists, add the edge
-                AtomPinId sink_pin = iter->second;
-                VTR_ASSERT(sink_pin);
+        VTR_ASSERT(model_port->is_clock);
+        VTR_ASSERT(model_port->clock.empty());
 
-                NodeId sink_tnode = netlist_map_.pin_tnode[sink_pin];
-                VTR_ASSERT(sink_tnode);
-                
-                EdgeId edge = tg_.add_edge(tnode, sink_tnode);
+        NodeId tnode = tg_.add_node(NodeType::CPIN);
 
-                max_edge_delays_.insert(edge, Time(pb_gpin->pin_timing_del_max[i]));
+        netlist_map_.pin_tnode.insert(clock_pin, tnode);
+    }
+
+    //Create the output pins
+    for(AtomPinId output_pin : netlist_.block_output_pins(blk)) {
+        AtomPortId output_port = netlist_.pin_port(output_pin);
+
+        //Inspect the port model to determine pin type
+        const t_model_ports* model_port = netlist_.port_model(output_port);
+
+        NodeId tnode;
+        if(model_port->clock.empty()) {
+            //No clock => combinational output
+            tnode = tg_.add_node(NodeType::OPIN);
+        } else {
+            //Has an associated clock => sequential output
+            tnode = tg_.add_node(NodeType::SOURCE);
+        }
+
+        netlist_map_.pin_tnode.insert(output_pin, tnode);
+    }
+
+
+    //Connect the clock pins to the sources and sinks
+    for(AtomPinId pin : netlist_.block_pins(blk)) {
+
+        NodeId tnode = netlist_map_.pin_tnode[pin];
+        VTR_ASSERT(tnode);
+
+        if(tg_.node_type(tnode) == NodeType::SOURCE || tg_.node_type(tnode) == NodeType::SINK) {
+            //Look-up the clock name on the port model
+            AtomPortId port = netlist_.pin_port(pin);
+            const t_model_ports* model_port = netlist_.port_model(port);
+
+            VTR_ASSERT_MSG(!model_port->clock.empty(), "Sequential pins must have a clock");
+
+            //Find the clock pin in the netlist
+            AtomPortId clk_port = netlist_.find_port(blk, model_port->clock);
+            VTR_ASSERT(clk_port);
+            VTR_ASSERT_MSG(netlist_.port_width(clk_port) == 1, "Primitive clock ports can only contain one pin");
+
+            AtomPinId clk_pin = netlist_.port_pin(clk_port, 0);
+            VTR_ASSERT(clk_pin);
+
+            //Convert the pin to it's tnode
+            NodeId clk_tnode = netlist_map_.pin_tnode[clk_pin];
+
+            //Add the edge from the clock to the source/sink
+            tg_.add_edge(clk_tnode, tnode);
+        }
+    }
+
+    //Connect the combinational edges
+    for(AtomPinId src_pin : netlist_.block_input_pins(blk)) {
+        //Combinational edges only go between IPINs and OPINs
+        NodeId src_tnode = netlist_map_.pin_tnode[src_pin];
+        VTR_ASSERT(src_tnode);
+
+        if(tg_.node_type(src_tnode) == NodeType::IPIN) {
+
+            //Look-up the combinationally connected sink ports name on the port model
+            AtomPortId src_port = netlist_.pin_port(src_pin);
+            const t_model_ports* model_port = netlist_.port_model(src_port);
+
+            for(std::string sink_port_name : model_port->combinational_sink_ports) {
+                AtomPortId sink_port = netlist_.find_port(blk, sink_port_name); 
+                VTR_ASSERT(sink_port);
+
+                //We now need to create edges between the source pin, and all the pins in the
+                //output port
+                for(AtomPinId sink_pin : netlist_.port_pins(sink_port)) {
+                    NodeId sink_tnode = netlist_map_.pin_tnode[sink_pin];
+                    VTR_ASSERT(sink_tnode);
+
+                    VTR_ASSERT_MSG(tg_.node_type(sink_tnode) == NodeType::OPIN, "Internal primitive combinational edges must be between IPINs and OPINs");
+
+                    //Add the edge between the pins
+                    tg_.add_edge(src_tnode, sink_tnode);
+                }
             }
         }
     }
 }
 
-void TimingGraphBuilder::add_seq_block_to_timing_graph(const AtomBlockId blk) {
-    VTR_ASSERT(netlist_.block_type(blk) == AtomBlockType::SEQUENTIAL);
-    VTR_ASSERT(netlist_.block_clock_pins(blk).size() >= 1);
+void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
+    //Create edges from the driver to sink tnodes
 
-    //Track the mapping from clock gpin's to pin ID's (used to add edges between clock
-    //and source/sink nodes)
-    std::unordered_map<const t_pb_graph_pin*,AtomPinId> clock_pb_graph_pin_to_pin_id;
+    AtomPinId driver_pin = netlist_.net_driver(net);
+    NodeId driver_tnode = netlist_map_.pin_tnode[driver_pin];
+    VTR_ASSERT(driver_tnode);
+    
+    for(AtomPinId sink_pin : netlist_.net_sinks(net)) {
+        NodeId sink_tnode = netlist_map_.pin_tnode[sink_pin];
+        VTR_ASSERT(sink_tnode);
 
-    for(AtomPinId clock_pin : netlist_.block_clock_pins(blk)) {
-        NodeId tnode = tg_.add_node(NodeType::CPIN);
-
-        netlist_map_.pin_tnode.insert(clock_pin, tnode);
-
-        const t_pb_graph_pin* pb_gpin = find_pb_graph_pin(clock_pin);
-        VTR_ASSERT(pb_gpin->type == PB_PIN_CLOCK);
-        clock_pb_graph_pin_to_pin_id[pb_gpin] = clock_pin;
+        tg_.add_edge(driver_tnode, sink_tnode);
     }
-
-    for(AtomPinId input_pin : netlist_.block_input_pins(blk)) {
-        NodeId tnode = tg_.add_node(NodeType::SINK);
-
-        netlist_map_.pin_tnode.insert(input_pin, tnode);
-
-        //Add the edges from the clock to inputs
-        const t_pb_graph_pin* gpin = find_pb_graph_pin(input_pin);
-        VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
-
-        const t_pb_graph_pin* clock_gpin = find_associated_clock_pin(input_pin);
-        VTR_ASSERT(clock_gpin->type == PB_PIN_CLOCK);
-
-        auto iter = clock_pb_graph_pin_to_pin_id.find(clock_gpin);
-        VTR_ASSERT(iter != clock_pb_graph_pin_to_pin_id.end());
-        AtomPinId clock_pin = iter->second;
-        NodeId clock_tnode = netlist_map_.pin_tnode[clock_pin];
-
-        EdgeId edge = tg_.add_edge(clock_tnode, tnode);
-
-        //Tsu
-        setup_times_.insert(edge, Time(gpin->tsu_tco));
-    }
-
-    for(AtomPinId output_pin : netlist_.block_output_pins(blk)) {
-        NodeId tnode = tg_.add_node(NodeType::SOURCE);
-
-        netlist_map_.pin_tnode.insert(output_pin, tnode);
-
-        AtomPortId port = netlist_.pin_port(output_pin);
-        const t_model_ports* port_model = netlist_.port_model(port);
-
-        if(port_model->is_clock && port_model->dir == OUT_PORT) {
-            //Clock source
-            
-            //Pass, nothing else to do, we treat clock sources as
-            //primary inputs with no incoming edges
-        } else {
-            //Regular output
-
-            //Add the edges from the clock to the output
-            const t_pb_graph_pin* gpin = find_pb_graph_pin(output_pin);
-            VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
-
-            const t_pb_graph_pin* clock_gpin = find_associated_clock_pin(output_pin);
-            VTR_ASSERT(clock_gpin->type == PB_PIN_CLOCK);
-
-            auto iter = clock_pb_graph_pin_to_pin_id.find(clock_gpin);
-            VTR_ASSERT(iter != clock_pb_graph_pin_to_pin_id.end());
-            AtomPinId clock_pin = iter->second;
-            NodeId clock_tnode = netlist_map_.pin_tnode[clock_pin];
-
-            EdgeId edge = tg_.add_edge(clock_tnode, tnode);
-
-            //Tcq
-            max_edge_delays_.insert(edge, Time(gpin->tsu_tco));
-        }
-    }
-}
-
-void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId /*net*/) {
-    //No-op
 }
 
 void TimingGraphBuilder::fix_comb_loops() {
@@ -270,10 +269,6 @@ tatum::EdgeId TimingGraphBuilder::find_scc_edge_to_break(std::vector<tatum::Node
 }
 
 void TimingGraphBuilder::remap_ids(const tatum::GraphIdMaps& id_mapping) {
-    //Remap the delays
-    max_edge_delays_ = remap_valid(max_edge_delays_, id_mapping.edge_id_map);
-    setup_times_ = remap_valid(setup_times_, id_mapping.edge_id_map);
-
     //Update the pin-tnode mapping
     vtr::bimap<AtomPinId,tatum::NodeId> new_pin_tnode;
 
@@ -286,50 +281,4 @@ void TimingGraphBuilder::remap_ids(const tatum::GraphIdMaps& id_mapping) {
     }
 
     netlist_map_.pin_tnode = new_pin_tnode;
-}
-
-const t_pb_graph_pin* TimingGraphBuilder::find_pb_graph_pin(const AtomPinId pin) {
-    AtomBlockId blk = netlist_.pin_block(pin);
-
-    auto iter = blk_to_pb_gnode_.find(blk);
-    VTR_ASSERT(iter != blk_to_pb_gnode_.end());
-
-    const t_pb_graph_node* pb_gnode = iter->second;
-
-    AtomPortId port = netlist_.pin_port(pin);
-    const t_model_ports* model_port = netlist_.port_model(port);
-    int ipin = netlist_.pin_port_bit(pin);
-
-    const t_pb_graph_pin* gpin = get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
-    VTR_ASSERT(gpin);
-
-    return gpin;
-}
-
-const t_pb_graph_pin* TimingGraphBuilder::find_associated_clock_pin(const AtomPinId io_pin) {
-    const t_pb_graph_pin* io_gpin = find_pb_graph_pin(io_pin);
-
-    const t_pb_graph_pin* clock_gpin = io_gpin->associated_clock_pin; 
-
-    if(!clock_gpin) {
-        AtomBlockId blk = netlist_.pin_block(io_pin);
-        const t_model* model = netlist_.block_model(blk);
-        VPR_THROW(VPR_ERROR_TIMING, "Failed to find clock pin associated with pin '%s' (model '%s')", netlist_.pin_name(io_pin).c_str(), model->name);
-    }
-    return clock_gpin;
-}
-
-void TimingGraphBuilder::mark_clustering_net_delays(float inter_cluster_net_delay) {
-
-    //Mark every driver->sink net connection with the inter_cluster_net_delay
-    for(AtomNetId net : netlist_.nets()) {
-        AtomPinId driver = netlist_.net_driver(net);
-
-        tatum::NodeId driver_tnode = netlist_map_.pin_tnode[driver];
-
-        for(tatum::EdgeId edge : tg_.node_out_edges(driver_tnode)) {
-            max_edge_delays_[edge] = Time(inter_cluster_net_delay);
-        }
-    }
-
 }

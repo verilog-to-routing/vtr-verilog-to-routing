@@ -130,12 +130,13 @@ class SetupSlackEvaluator : public SlackEvaluator {
 //
 //  Slacks and criticality are calculated according to the per-constraint 'Relaxed Slacks' method 
 //  from "Robust Optimization of Mulitple Timing Constraints" (ROMTC)
+template<class DelayCalc>
 class OptimizerSlacks : public SetupSlackEvaluator {
     public:
         OptimizerSlacks(const AtomNetlist& netlist, const AtomMap& atom_map, 
                        std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer, 
                        const tatum::TimingGraph& tg,
-                       const tatum::FixedDelayCalculator& dc)
+                       const DelayCalc& dc)
             : SetupSlackEvaluator(netlist, atom_map, analyzer)
             , tg_(tg)
             , dc_(dc)
@@ -315,11 +316,21 @@ class OptimizerSlacks : public SetupSlackEvaluator {
 
     private:
         const tatum::TimingGraph& tg_;
-        const tatum::FixedDelayCalculator& dc_;
+        const DelayCalc& dc_;
 
         std::map<tatum::NodeId,std::map<DomainPair,float>> shifts_;
         std::map<DomainPair,float> max_req_relaxed_;
 };
+
+//Convenience wrapper for automatic template deduction
+template<class DelayCalc>
+OptimizerSlacks<DelayCalc> make_optimizer_slacks(const AtomNetlist& netlist, 
+                        const AtomMap& atom_map, 
+                        std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer, 
+                        const tatum::TimingGraph& tg,
+                        const DelayCalc& dc) {
+    return OptimizerSlacks<DelayCalc>(netlist, atom_map, analyzer, tg, dc);
+}
 
 
 #endif

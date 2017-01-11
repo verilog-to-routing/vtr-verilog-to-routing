@@ -15,24 +15,19 @@
 class TimingGraphBuilder {
     public:
         TimingGraphBuilder(const AtomNetlist& netlist,
-                           AtomMap& netlist_map,
-                           const std::unordered_map<AtomBlockId,t_pb_graph_node*>& blk_to_pb_gnode_map)
+                           AtomMap& netlist_map)
             : netlist_(netlist) 
-            , netlist_map_(netlist_map)
-            , blk_to_pb_gnode_(blk_to_pb_gnode_map) {
+            , netlist_map_(netlist_map) {
             build();
         }
 
         tatum::TimingGraph timing_graph();
-        ClusteringDelayCalculator clustering_delay_calculator(float inter_cluster_net_delay);
-        PlacementDelayCalculator placement_delay_calculator();
 
     private:
         void build();
 
         void add_io_to_timing_graph(const AtomBlockId blk);
-        void add_comb_block_to_timing_graph(const AtomBlockId blk);
-        void add_seq_block_to_timing_graph(const AtomBlockId blk);
+        void add_block_to_timing_graph(const AtomBlockId blk);
         void add_net_to_timing_graph(const AtomNetId net);
 
         void fix_comb_loops();
@@ -50,10 +45,5 @@ class TimingGraphBuilder {
 
         const AtomNetlist& netlist_;
         AtomMap& netlist_map_;
-        const std::unordered_map<AtomBlockId,t_pb_graph_node*>& blk_to_pb_gnode_;
-
-        float inter_cluster_net_delay_;
-        tatum::util::linear_map<tatum::EdgeId,tatum::Time> max_edge_delays_;
-        tatum::util::linear_map<tatum::EdgeId,tatum::Time> setup_times_;
 };
 

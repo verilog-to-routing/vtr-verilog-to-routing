@@ -192,7 +192,7 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 static void update_timing_gain_values(const AtomNetId net_id,
 		t_pb* cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block,
-        const OptimizerSlacks& optimizer_slacks,
+        const SetupSlackEvaluator& optimizer_slacks,
         const std::unordered_set<AtomNetId>& is_global);
 
 static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_update gain_flag,
@@ -200,7 +200,7 @@ static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_updat
         bool timing_driven,
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-        const OptimizerSlacks& optimizer_slacks,
+        const SetupSlackEvaluator& optimizer_slacks,
         const std::unordered_set<AtomNetId>& is_global);
 
 static void update_total_gain(float alpha, float beta, bool timing_driven,
@@ -213,7 +213,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
 		const bool connection_driven, 
-        const OptimizerSlacks& slacks);
+        const SetupSlackEvaluator& slacks);
 
 static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
@@ -378,14 +378,19 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/* Limit maximum number of elements for each cluster */
 
     //New analyzer
-    TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map, expected_lowest_cost_pb_gnode);
+    TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map);
     tatum::TimingGraph tg = tg_builder.timing_graph();
-    ClusteringDelayCalculator dc = tg_builder.clustering_delay_calculator(inter_cluster_net_delay);
+    ClusteringDelayCalculator dc(g_atom_nl, g_atom_map, inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
     tatum::TimingConstraints tc = create_timing_constraints(g_atom_nl, g_atom_map, timing_inf);
+
+    auto dc_sp = std::make_shared<ClusteringDelayCalculator>(dc);
+    tatum::write_dot_file_setup("setup.dot", tg, dc_sp);
 
     std::ofstream os_timing_echo("timing.echo");
     write_timing_graph(os_timing_echo, tg);
+    os_timing_echo.flush();
     write_timing_constraints(os_timing_echo, tc);
+    os_timing_echo.flush();
     write_delay_model(os_timing_echo, tg, dc);
     os_timing_echo.flush();
 
@@ -393,13 +398,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
     std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(tg, tc, dc);
     analyzer->update_timing();
 
-    auto dc_sp = std::make_shared<tatum::FixedDelayCalculator>(dc);
     tatum::write_dot_file_setup("setup.dot", tg, dc_sp, analyzer);
 
     write_analysis_result(os_timing_echo, tg, analyzer);
     os_timing_echo.flush();
 
-    OptimizerSlacks optimizer_slacks(g_atom_nl, g_atom_map, analyzer, tg, dc);
+    auto optimizer_slacks = make_optimizer_slacks(g_atom_nl, g_atom_map, analyzer, tg, dc);
 
 	if (timing_driven) {
         optimizer_slacks.update();
@@ -1522,7 +1526,7 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 static void update_timing_gain_values(const AtomNetId net_id,
 		t_pb *cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-        const OptimizerSlacks& optimizer_slacks,
+        const SetupSlackEvaluator& optimizer_slacks,
         const std::unordered_set<AtomNetId>& is_global) {
 
 	/*This function is called when the timing_gain values on the atom net*
@@ -1581,7 +1585,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 		bool timing_driven,
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-        const OptimizerSlacks& optimizer_slacks,
+        const SetupSlackEvaluator& optimizer_slacks,
         const std::unordered_set<AtomNetId>& is_global) {
 
 	/* Updates the marked data structures, and if gain_flag is GAIN,  *
@@ -1728,7 +1732,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
 		const bool connection_driven, 
-        const OptimizerSlacks& optimizer_slacks) {
+        const SetupSlackEvaluator& optimizer_slacks) {
 
 	/* Updates cluster stats such as gain, used pins, and clock structures.  */
 
