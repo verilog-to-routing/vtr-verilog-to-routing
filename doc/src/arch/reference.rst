@@ -37,12 +37,44 @@ The name of the model must match the corresponding name of the BLIF model.
 Each model tag must contain 2 tags: ``<input_ports>`` and ``<output_ports>``.
 Each of these contains ``<port>`` tags:
 
-.. arch:tag:: <port name="string" is_clock="{0 | 1}/>
+.. arch:tag:: <port name="string" is_clock="{0 | 1} clock="string" combinational_sink_ports="string1 string2 ..."/>
 
     :req_param name: The port name.
     :opt_param is_clock: Indicates if the port is a clock. Default: ``0``
+    :opt_param clock: Indicates the port is sequential and controlled by the specified clock (which must be another port on the model marked with ``is_clock=1``). Default: port is treated as combinational (if unspecified)
+    :opt_param combinational_sink_ports: A space-separated list of output ports which are combinationally connected to the current input port. Default: No combinational connections (if unspecified)
 
     Defines the port for a model. 
+
+An example models section containing a combinational primitive ``adder`` and a sequential primitive ``single_port_ram``:
+
+.. code-block:: xml
+
+    <models>
+      <model name="single_port_ram">
+        <input_ports>
+          <port name="we" clock="clk"/>
+          <port name="addr" clock="clk"/>
+          <port name="data" clock="clk"/>
+          <port name="clk" is_clock="1"/>
+        </input_ports>
+        <output_ports>
+          <port name="out" clock="clk"/>
+        </output_ports>
+      </model>
+
+      <model name="adder">
+        <input_ports>
+          <port name="a" combinational_sink_ports="cout sumout"/>
+          <port name="b" combinational_sink_ports="cout sumout"/>
+          <port name="cin" combinational_sink_ports="cout sumout"/>
+        </input_ports>
+        <output_ports>
+          <port name="cout"/>
+          <port name="sumout"/>
+        </output_ports>
+      </model>
+    </models>
 
 .. _arch_global_info:
 
