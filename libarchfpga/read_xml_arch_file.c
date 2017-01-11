@@ -140,6 +140,7 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
 
 
 bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiloc::loc_data& loc_data, const t_model* model);
+void warn_model_missing_timing(pugi::xml_node model_tag, const pugiloc::loc_data& loc_data, const t_model* model);
 bool check_model_clocks(pugi::xml_node model_tag, const pugiloc::loc_data& loc_data, const t_model* model);
 bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch);
 std::string inst_port_to_port_name(std::string inst_port);
@@ -1917,6 +1918,7 @@ static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugilo
         //Sanity check the model
         check_model_clocks(model, loc_data, temp);
         check_model_combinational_sinks(model, loc_data, temp);
+        warn_model_missing_timing(model, loc_data, temp);
 
 
         //Add the model
@@ -2955,11 +2957,37 @@ bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiloc::lo
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
                         "Model '%s' input port '%s' can not be combinationally connected to '%s' (not an output port of the model)",
                         model->name, port->name, sink_port_name.c_str());
-                
             }
         }
     }
     return true;
+}
+
+void warn_model_missing_timing(pugi::xml_node model_tag, const pugiloc::loc_data& loc_data, const t_model* model) {
+    //Check whether there are missing edges and warn the user
+    std::set<std::string> comb_connected_outputs;
+    for(t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
+        if(port->clock.empty() //Not sequential
+           && port->combinational_sink_ports.empty() //Doesn't drive any combinational outputs
+           && !port->is_clock //Not an input clock
+          ) {
+            vtr::printf_warning(loc_data.filename_c_str(), loc_data.line(model_tag),
+                    "Model '%s' input port '%s' has no timing specification (no clock specified to create a sequential input port, not combinationally connected to any outputs, not a clock input)\n", model->name, port->name);
+        }
+
+
+        comb_connected_outputs.insert(port->combinational_sink_ports.begin(), port->combinational_sink_ports.end());
+    }
+     
+    for(t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
+        if(port->clock.empty() //Not sequential
+           && !comb_connected_outputs.count(port->name) //Not combinationally drivven
+           && !port->is_clock //Not an output clock
+           ) {
+            vtr::printf_warning(loc_data.filename_c_str(), loc_data.line(model_tag),
+                    "Model '%s' output port '%s' has no timing specification (no clock specified to create a sequential output port, not combinationally connected to any inputs, not a clock output)\n", model->name, port->name);
+        }
+    }
 }
 
 bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch) {
@@ -3001,7 +3029,6 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
         if(annot->type == E_ANNOT_PIN_TO_PIN_DELAY) {
             //Check that any combinational delays specified match the 'combinational_sinks_ports' in the model
-            vtr::printf("'%s' -> '%s' @ '%s'\n", annot->input_pins, annot->output_pins, annot->clock);
 
             if(annot->clock) {
                 //Sequential annotation, check that the clock on the specified port matches the model
@@ -3029,7 +3056,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                 VTR_ASSERT(!model_clock.empty());
                 if(model_port->clock != annot_clock.port_name()) {
                     archfpga_throw(get_arch_file_name(), annot->line_num,
-                        "Timing annotation <model> mismatch on port '%s' of model '%s', model specifies"
+                        "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', model specifies"
                         " clock as '%s' but timing annotations specify '%s'",
                         annot_port.port_name().c_str(), model->name, model_clock.c_str(), annot_clock.port_name().c_str());
                 }
@@ -3055,7 +3082,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                 auto iter = std::find(b, e, annot_out.port_name());
                 if(iter == e) {
                     archfpga_throw(get_arch_file_name(), annot->line_num,
-                        "Timing annotation <model> mismatch on port '%s' of model '%s', timing annotation"
+                        "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', timing annotation"
                         " specifies combinational connection to port '%s' but the connection does not exist in the model",
                         model_port->name, model->name, annot_out.port_name().c_str());
                 }
