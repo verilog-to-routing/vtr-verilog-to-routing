@@ -1,5 +1,5 @@
-#ifndef CLUSTERING_DELAY_CALCULATOR_HPP
-#define CLUSTERING_DELAY_CALCULATOR_HPP
+#ifndef PRE_CLUSTER_DELAY_CALCULATOR_HPP
+#define PRE_CLUSTER_DELAY_CALCULATOR_HPP
 #include "vtr_assert.h"
 
 #include "Time.hpp"
@@ -11,9 +11,9 @@
 #include "atom_map.h"
 #include "physical_types.h"
 
-class ClusteringDelayCalculator {
+class PreClusterDelayCalculator {
 public:
-    ClusteringDelayCalculator(const AtomNetlist& netlist,
+    PreClusterDelayCalculator(const AtomNetlist& netlist,
                               const AtomMap& netlist_map,
                               float intercluster_net_delay, 
                               std::unordered_map<AtomBlockId,t_pb_graph_node*> expected_lowest_cost_pb_gnode)

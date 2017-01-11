@@ -42,7 +42,7 @@ using namespace std;
 #include "sta_util.hpp"
 
 #include "SlackEvaluator.h"
-#include "ClusteringDelayCalculator.hpp"
+#include "PreClusterDelayCalculator.hpp"
 
 #include "read_sdc.h"
 
@@ -383,9 +383,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
     g_timing_graph = tg_builder.timing_graph();
     g_timing_constraints = create_timing_constraints(g_atom_nl, g_atom_map, timing_inf);
 
-    ClusteringDelayCalculator dc(g_atom_nl, g_atom_map, inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
+    PreClusterDelayCalculator dc(g_atom_nl, g_atom_map, inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
 
-    auto dc_sp = std::make_shared<ClusteringDelayCalculator>(dc);
+    auto dc_sp = std::make_shared<PreClusterDelayCalculator>(dc);
     tatum::write_dot_file_setup("setup.pack.dot", g_timing_graph, dc_sp);
 
     std::ofstream os_timing_echo("timing.pack.echo");
