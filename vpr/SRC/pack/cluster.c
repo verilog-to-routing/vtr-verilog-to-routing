@@ -377,33 +377,33 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	VTR_ASSERT(max_cluster_size < MAX_SHORT);
 	/* Limit maximum number of elements for each cluster */
 
-    //New analyzer
+    //Initialize timing graph and constraints
     TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map);
-    tatum::TimingGraph tg = tg_builder.timing_graph();
+    g_timing_graph = tg_builder.timing_graph();
+    g_timing_constraints = create_timing_constraints(g_atom_nl, g_atom_map, timing_inf);
+
     ClusteringDelayCalculator dc(g_atom_nl, g_atom_map, inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
-    tatum::TimingConstraints tc = create_timing_constraints(g_atom_nl, g_atom_map, timing_inf);
 
     auto dc_sp = std::make_shared<ClusteringDelayCalculator>(dc);
-    tatum::write_dot_file_setup("setup.dot", tg, dc_sp);
+    tatum::write_dot_file_setup("setup.dot", g_timing_graph, dc_sp);
 
     std::ofstream os_timing_echo("timing.echo");
-    write_timing_graph(os_timing_echo, tg);
+    write_timing_graph(os_timing_echo, g_timing_graph);
     os_timing_echo.flush();
-    write_timing_constraints(os_timing_echo, tc);
+    write_timing_constraints(os_timing_echo, g_timing_constraints);
     os_timing_echo.flush();
-    write_delay_model(os_timing_echo, tg, dc);
+    write_delay_model(os_timing_echo, g_timing_graph, dc);
     os_timing_echo.flush();
 
-    /*std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(tg, tc, dc);*/
-    std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(tg, tc, dc);
+    std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
     analyzer->update_timing();
 
-    tatum::write_dot_file_setup("setup.dot", tg, dc_sp, analyzer);
+    tatum::write_dot_file_setup("setup.dot", g_timing_graph, dc_sp, analyzer);
 
-    write_analysis_result(os_timing_echo, tg, analyzer);
+    write_analysis_result(os_timing_echo, g_timing_graph, analyzer);
     os_timing_echo.flush();
 
-    auto optimizer_slacks = make_optimizer_slacks(g_atom_nl, g_atom_map, analyzer, tg, dc);
+    auto optimizer_slacks = make_optimizer_slacks(g_atom_nl, g_atom_map, analyzer, g_timing_graph, dc);
 
 	if (timing_driven) {
         optimizer_slacks.update();

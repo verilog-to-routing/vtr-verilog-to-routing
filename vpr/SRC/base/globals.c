@@ -5,6 +5,8 @@
 #include "netlist.h"
 #include "atom_netlist.h"
 #include "atom_map.h"
+#include "TimingGraph.hpp"
+#include "TimingConstraints.hpp"
 #include <map>
 
 
@@ -21,6 +23,9 @@ AtomNetlist g_atom_nl;
 AtomMap g_atom_map;
 
 std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
+
+tatum::TimingGraph g_timing_graph;
+tatum::TimingConstraints g_timing_constraints;
 
 /******** Clustered netlist ********/
 int num_nets = 0;
