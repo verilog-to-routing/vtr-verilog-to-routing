@@ -42,6 +42,7 @@ using namespace std;
 #include "sta_util.hpp"
 
 #include "SlackEvaluator.h"
+#include "ClusteringDelayCalculator.hpp"
 
 #include "read_sdc.h"
 
