@@ -44,6 +44,7 @@ STRING_CACHE *defines_for_file_sc;
 STRING_CACHE **defines_for_module_sc;
 STRING_CACHE *modules_inputs_sc;
 STRING_CACHE *modules_outputs_sc;
+STRING_CACHE *modules_inputs_outputs_sc;
 //for function
 STRING_CACHE **defines_for_function_sc;
 STRING_CACHE *functions_inputs_sc;
@@ -304,6 +305,7 @@ void init_parser_for_file()
 	modules_outputs_sc = sc_new_string_cache();
 	functions_inputs_sc = sc_new_string_cache();
 	functions_outputs_sc = sc_new_string_cache();
+	modules_inputs_outputs_sc = sc_new_string_cache();
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -566,6 +568,13 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 				            symbol_list->children[i]->children[0] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
 				            found_match = TRUE;
 			            }
+						
+						if ((found_match == FALSE) && ((sc_spot = sc_lookup_string(modules_inputs_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1))
+						{
+							symbol_list->children[i]->types.variable.is_inout = TRUE;
+							symbol_list->children[i]->children[0] = (ast_node_t*)modules_inputs_outputs_sc->data[sc_spot];
+							found_match = TRUE;
+						}
 
 			            if (found_match == FALSE)
 			            {
@@ -634,7 +643,13 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			            break;
 		            case INOUT:
 			            symbol_list->children[i]->types.variable.is_inout = TRUE;
-			            error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+			            
+						if ((sc_spot = sc_add_string(modules_inputs_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) == -1)
+						{
+							error_message(PARSE_ERROR, symbol_list->children[i]->children[0]->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+						}
+						
+						modules_inputs_outputs_sc->data[sc_spot] = (void*)symbol_list->children[i];
 			            break;
 		            case WIRE:
 			            symbol_list->children[i]->types.variable.is_wire = TRUE;
