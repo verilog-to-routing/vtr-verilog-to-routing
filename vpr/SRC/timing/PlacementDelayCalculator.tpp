@@ -3,8 +3,10 @@
 
 #include "vpr_error.h"
 #include "vpr_utils.h"
+#include "globals.h"
 
 inline tatum::Time PlacementDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge) const { 
+    vtr::printf("=== Edge %zu (max) ===\n", size_t(edge));
     tatum::EdgeType edge_type = tg.edge_type(edge);
     if (edge_type == tatum::EdgeType::PRIMITIVE_COMBINATIONAL) {
         return atom_combinational_delay(tg, edge);
@@ -22,14 +24,17 @@ inline tatum::Time PlacementDelayCalculator::max_edge_delay(const tatum::TimingG
 }
 
 inline tatum::Time PlacementDelayCalculator::setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+    vtr::printf("=== Edge %zu (setup) ===\n", size_t(edge_id));
     return atom_setup_time(tg, edge_id);
 }
 
 inline tatum::Time PlacementDelayCalculator::min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+    vtr::printf("=== Edge %zu (min calling max) ===\n", size_t(edge_id));
     return max_edge_delay(tg, edge_id); 
 }
 
-inline tatum::Time PlacementDelayCalculator::hold_time(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const { 
+inline tatum::Time PlacementDelayCalculator::hold_time(const tatum::TimingGraph& /*tg*/, tatum::EdgeId edge_id) const { 
+    vtr::printf("=== Edge %zu (hold) ===\n", size_t(edge_id));
     return tatum::Time(NAN); 
 }
 
@@ -101,7 +106,7 @@ inline tatum::Time PlacementDelayCalculator::atom_clock_to_q_delay(const tatum::
     return tatum::Time(gpin->tsu_tco);
 }
 
-inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const {
+inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
     //A net in the atom netlist consists of several different delay components:
     //
     //      delay = launch_cluster_delay + inter_cluster_delay + capture_cluster_delay
@@ -114,40 +119,148 @@ inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingG
     //Note that if the connection is completely absorbed within the cluster then inter_cluster_delay
     //and capture_cluster_delay will both be zero.
 
-    /*tatum::NodeId src_node = tg.edge_src_node(edge_id);*/
-    /*tatum::NodeId sink_node = tg.edge_sink_node(edge_id);*/
+    tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
 
-    /*AtomPinId src_pin = netlist_map_.pin_tnode[src_node];*/
-    /*AtomPinId sink_pin = netlist_map_.pin_tnode[sink_node];*/
+    AtomPinId atom_sink_pin = netlist_map_.pin_tnode[sink_node];
+    VTR_ASSERT(atom_sink_pin);
 
-    /*const t_pb_graph_pin* src_gpin = find_pb_graph_pin(src_pin);*/
-    /*const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(sink_pin);*/
+    AtomBlockId atom_sink_block = netlist_.pin_block(atom_sink_pin);
+
+    AtomNetId atom_net = netlist_.pin_net(atom_sink_pin);
+
+    int clb_sink_block = netlist_map_.atom_clb(atom_sink_block);
+    VTR_ASSERT(clb_sink_block >= 0);
+
+    const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(atom_sink_pin);
+    VTR_ASSERT(sink_gpin);
+
+    VTR_ASSERT(block[clb_sink_block].pb_route[sink_gpin->pin_count_in_cluster].atom_net_id == atom_net);
 
     //NOTE: even if both the source and sink atoms are contained in the same top-level
     //      CLB, the connection between them may not have been absorbed, and may go 
     //      through the global routing network.
 
-    //Trace the delay from the atom source pin to either the atom sink pin, 
-    //or a cluster output pin
-    float launch_cluster_delay = NAN;
-    //TODO
+    //We trace backward from the sink to the source
 
-    //Trace the global routing delay from the source cluster output to the sink
-    //cluster input pin
-    float inter_cluster_delay = NAN;
-    //TODO
-
-    //Trace the delay from the sink cluster input pin to the atom input pin
+    //Trace the delay from the atom sink pin back to either the atom source pin (in the same cluster), 
+    //or a cluster input pin
     float capture_cluster_delay = NAN;
-    //TODO
+    t_net_pin clb_sink_input_pin;
+    std::tie(capture_cluster_delay, clb_sink_input_pin) = trace_capture_cluster_delay(clb_sink_block, sink_gpin, atom_net);
+
+    if(clb_sink_input_pin.block != UNDEFINED && clb_sink_input_pin.block_pin != UNDEFINED) {
+        //Connection leaves the cluster
+
+        float inter_cluster_delay = NAN;
+        t_net_pin clb_driver_output_pin;
+        std::tie(inter_cluster_delay, clb_driver_output_pin) = trace_inter_cluster_delay(clb_sink_input_pin);
+
+        float launch_cluster_delay = NAN;
+        std::tie(launch_cluster_delay) = trace_launch_cluster_delay(clb_driver_output_pin, atom_net);
+
+        return tatum::Time(launch_cluster_delay + inter_cluster_delay + capture_cluster_delay);
+    } else {
+        //Connection internal to cluster
+        
+        return tatum::Time(capture_cluster_delay);
+    }
+}
+
+inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_capture_cluster_delay(int clb_sink_block, const t_pb_graph_pin* sink_gpin, const AtomNetId atom_net) const {
+    t_pb_route* sink_pb_routes = block[clb_sink_block].pb_route;
+
+    int sink_pb_route_idx = sink_gpin->pin_count_in_cluster;
+    const t_pb_route* sink_pb_route = &sink_pb_routes[sink_pb_route_idx];
+    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d\n", 
+                clb_sink_block,
+                sink_pb_route_idx, sink_pb_route->atom_net_id, 
+                netlist_.net_name(sink_pb_route->atom_net_id).c_str(), 
+                sink_pb_route->prev_pb_pin_id);
+
+    while(sink_pb_route->prev_pb_pin_id >= 0) {
+        //Advance to the next element
+        sink_pb_route_idx = sink_pb_route->prev_pb_pin_id;
+        sink_pb_route = &sink_pb_routes[sink_pb_route_idx];
+
+        vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d\n", 
+                    clb_sink_block,
+                    sink_pb_route_idx, sink_pb_route->atom_net_id, 
+                    netlist_.net_name(sink_pb_route->atom_net_id).c_str(), 
+                    sink_pb_route->prev_pb_pin_id);
+
+        VTR_ASSERT(sink_pb_route->atom_net_id == atom_net);
+    }
+
+
+    t_net_pin clb_input_pin;
+    if(is_clb_io_pin(clb_sink_block, sink_pb_route_idx)) {
+        //Leaves the current cluster, so find the associated CLB net pin
+        int iclb_net = block[clb_sink_block].nets[sink_pb_route_idx];
+
+        for(size_t ipin = 0; ipin < g_clbs_nlist.net.size(); ++ipin) {
+            if(g_clbs_nlist.net[iclb_net].pins[ipin].block == clb_sink_block
+               && g_clbs_nlist.net[iclb_net].pins[ipin].block_pin == sink_pb_route_idx) {
+                clb_input_pin = g_clbs_nlist.net[iclb_net].pins[ipin];
+                break;
+            }
+        }
+        VTR_ASSERT(clb_input_pin.block == clb_sink_block);
+        VTR_ASSERT(clb_input_pin.block_pin == sink_pb_route_idx);
+    }
+
     
-    return tatum::Time(launch_cluster_delay + inter_cluster_delay + capture_cluster_delay);
+    //TODO: delay
+    return std::make_tuple(NAN, clb_input_pin);
+}
+
+inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_inter_cluster_delay(t_net_pin clb_sink_input_pin) const {
+    int iclb_net = block[clb_sink_input_pin.block].nets[clb_sink_input_pin.block_pin];
+
+    t_net_pin clb_driver_output_pin = g_clbs_nlist.net[iclb_net].pins[0];
+
+    vtr::printf("CLB Net: %d (%s)\n", iclb_net, g_clbs_nlist.net[iclb_net].name);
+
+    //TODO: delay
+    return std::make_tuple(NAN, clb_driver_output_pin);
+}
+
+inline std::tuple<float> PlacementDelayCalculator::trace_launch_cluster_delay(t_net_pin clb_driver_output_pin, const AtomNetId atom_net) const {
+    t_pb_route* driver_pb_routes = block[clb_driver_output_pin.block].pb_route;
+
+    int driver_pb_route_idx = clb_driver_output_pin.block_pin;
+    const t_pb_route* driver_pb_route = &driver_pb_routes[driver_pb_route_idx];
+    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d\n", 
+                clb_driver_output_pin.block,
+                driver_pb_route_idx, driver_pb_route->atom_net_id, 
+                netlist_.net_name(driver_pb_route->atom_net_id).c_str(), 
+                driver_pb_route->prev_pb_pin_id);
+
+    while(driver_pb_route->prev_pb_pin_id >= 0) {
+
+        //Advance to the next element
+        driver_pb_route_idx = driver_pb_route->prev_pb_pin_id;
+        driver_pb_route = &driver_pb_routes[driver_pb_route_idx];
+
+        vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d\n", 
+                    clb_driver_output_pin.block,
+                    driver_pb_route_idx, driver_pb_route->atom_net_id, 
+                    netlist_.net_name(driver_pb_route->atom_net_id).c_str(), 
+                    driver_pb_route->prev_pb_pin_id);
+
+        VTR_ASSERT(driver_pb_route->atom_net_id == atom_net);
+    }
+
+    //TODO: delay
+    return std::make_tuple(NAN);
 }
 
 
-inline const t_pb_graph_pin* PlacementDelayCalculator::find_pb_graph_pin(const AtomPinId pin) const {
+
+inline const t_pb_graph_pin* PlacementDelayCalculator::find_pb_graph_pin(const AtomPinId atom_pin) const {
+#if 0
     AtomBlockId blk = netlist_.pin_block(pin);
 
+    //Graph node for this primitive
     const t_pb_graph_node* pb_gnode = netlist_map_.atom_pb_graph_node(blk);
     VTR_ASSERT(pb_gnode);
 
@@ -159,4 +272,42 @@ inline const t_pb_graph_pin* PlacementDelayCalculator::find_pb_graph_pin(const A
     VTR_ASSERT(gpin);
 
     return gpin;
+#else
+    AtomNetId atom_net = netlist_.pin_net(atom_pin);
+    AtomPortId atom_port = netlist_.pin_port(atom_pin);
+    AtomBlockId atom_blk = netlist_.pin_block(atom_pin);
+
+    const t_model_ports* model_port = netlist_.port_model(atom_port);
+
+    int clb = netlist_map_.atom_clb(atom_blk);
+    const t_pb_route* pb_route = block[clb].pb_route;
+    const t_pb_graph_node* pb_gnode = netlist_map_.atom_pb_graph_node(atom_blk);
+
+    //Find the pb graph pin associated with the this atom pin
+    //
+    //Note that we can not look-up the pb graph pin directly by index, since the pins on primitives 
+    //such as LUTs may have been rotated (this happens somewhere inside the packer...)
+    //TODO: find where this is done in the packer and update the atom netlist to reflect the applied
+    //      rotation and update this code to perform the look-up directly
+    const t_pb_graph_pin* net_gpin = nullptr;
+    for(BitIndex ipin = 0; ipin < netlist_.port_width(atom_port); ++ipin) {
+        const t_pb_graph_pin* gpin = get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
+        if(gpin) {
+            AtomNetId connected_atom_net = pb_route[gpin->pin_count_in_cluster].atom_net_id;
+
+            if(connected_atom_net == atom_net) {
+                net_gpin = gpin;
+                break;
+            }
+        }
+    }
+    VTR_ASSERT(net_gpin != nullptr);
+
+    return net_gpin;
+#endif
 }
+
+inline bool PlacementDelayCalculator::is_clb_io_pin(int clb_block, int clb_pb_route_idx) const {
+    return clb_pb_route_idx < block[clb_block].type->num_pins;
+}
+

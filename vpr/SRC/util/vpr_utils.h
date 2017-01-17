@@ -18,6 +18,25 @@ void sync_grid_to_blocks(const int L_num_blocks,
 /**************************************************************
 * Intra-Logic Block Utility Functions
 **************************************************************/
+class IntraLbPbPinLookup {
+    public:
+        IntraLbPbPinLookup(t_type_descriptor* block_types, int num_types);
+        IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs);
+        IntraLbPbPinLookup& operator=(IntraLbPbPinLookup rhs);
+        ~IntraLbPbPinLookup();
+
+
+        const t_pb_graph_pin* pb_gpin(int itype, int ipin);
+
+        friend void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs);
+    private:
+        t_type_descriptor* block_types_;
+        int num_types_;
+
+        t_pb_graph_pin*** intra_lb_pb_pin_lookup_; 
+};
+
+
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);
 int get_max_depth_of_pb_type(t_pb_type *pb_type);
 int get_max_nets_in_pb_type(const t_pb_type *pb_type);

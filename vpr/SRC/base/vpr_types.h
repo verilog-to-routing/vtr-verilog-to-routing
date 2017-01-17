@@ -547,7 +547,7 @@ struct s_block {
 	int z;
 
 	t_pb *pb; /* Internal-to-block hierarchy */
-	t_pb_route *pb_route; /* Internal-to-block routing */
+	t_pb_route *pb_route; /* Internal-to-block routing [0..pb->pb_graph_node->total_pb_pins-1]*/
 
 	unsigned int is_fixed : 1;
 };

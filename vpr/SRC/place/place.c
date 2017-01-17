@@ -385,7 +385,7 @@ void try_place(struct s_placer_opts placer_opts,
 		load_criticalities(slacks, crit_exponent);
 
         //New analyzer
-        PlacementDelayCalculator dc(g_atom_nl, g_atom_map);
+        PlacementDelayCalculator dc(g_atom_nl, g_atom_map, type_descriptors, num_types);
         auto dc_sp = std::make_shared<PlacementDelayCalculator>(dc);
         tatum::write_dot_file_setup("setup.place.dot", g_timing_graph, dc_sp);
 

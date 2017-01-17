@@ -171,6 +171,48 @@ void sync_grid_to_blocks(const int L_num_blocks,
 	}
 }
 
+
+IntraLbPbPinLookup::IntraLbPbPinLookup(t_type_descriptor* block_types, int ntypes)
+    : block_types_(block_types)
+    , num_types_(ntypes) {
+	intra_lb_pb_pin_lookup_ = new t_pb_graph_pin**[num_types_];
+    for(int itype = 0; itype < num_types_; ++itype) {
+		intra_lb_pb_pin_lookup_[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&block_types[itype]);
+    }
+}
+
+IntraLbPbPinLookup::IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs)
+    : IntraLbPbPinLookup(rhs.block_types_, rhs.num_types_) {
+    //nop 
+}
+
+IntraLbPbPinLookup& IntraLbPbPinLookup::operator=(IntraLbPbPinLookup rhs) {
+    //Copy-swap idiom
+    swap(*this, rhs);
+
+    return *this;
+}
+
+IntraLbPbPinLookup::~IntraLbPbPinLookup() {
+	for (int itype = 0; itype < num_types; itype++) {
+		free_pb_graph_pin_lookup_from_index(intra_lb_pb_pin_lookup_[itype]);
+	}
+
+	delete[] intra_lb_pb_pin_lookup_;
+}
+
+const t_pb_graph_pin* IntraLbPbPinLookup::pb_gpin(int itype, int ipin) {
+    VTR_ASSERT(itype < num_types_);
+
+    return intra_lb_pb_pin_lookup_[itype][ipin];
+}
+
+void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs) {
+    std::swap(lhs.num_types_, rhs.num_types_);
+    std::swap(lhs.block_types_, rhs.block_types_);
+    std::swap(lhs.intra_lb_pb_pin_lookup_, rhs.intra_lb_pb_pin_lookup_);
+}
+
 bool is_opin(int ipin, t_type_ptr type) {
 
 	/* Returns true if this clb pin is an output, false otherwise. */
