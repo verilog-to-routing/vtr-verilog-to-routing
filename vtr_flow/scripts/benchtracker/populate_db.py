@@ -69,7 +69,8 @@ def update_db(params, db):
             params.last_run = 0
         # else first run, nothing in table yet
 
-    def add_run_to_db(params, run_number):
+    def add_run_to_db(params, run):
+        run_number = get_trailing_num(run)
         resfilename = get_result_file(params, params.run_prefix, run_number)
         try:
             parsed_date = os.path.getmtime(resfilename)
