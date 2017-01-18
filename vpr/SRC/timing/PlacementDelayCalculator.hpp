@@ -9,9 +9,10 @@
 class PlacementDelayCalculator {
 
 public:
-    PlacementDelayCalculator(const AtomNetlist& netlist, const AtomMap& netlist_map, t_type_descriptor* types, int num_types)
+    PlacementDelayCalculator(const AtomNetlist& netlist, const AtomMap& netlist_map, t_type_descriptor* types, int num_types, float** net_delay)
         : netlist_(netlist)
         , netlist_map_(netlist_map)
+        , net_delay_(net_delay)
         , intra_lb_pb_pin_lookup_(types, num_types)
         {}
 
@@ -40,6 +41,7 @@ private:
 private:
     const AtomNetlist& netlist_;
     const AtomMap& netlist_map_;
+    float** net_delay_;
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup_;
 };

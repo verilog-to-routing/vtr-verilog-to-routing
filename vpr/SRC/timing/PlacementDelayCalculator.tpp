@@ -224,14 +224,20 @@ inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_capture_clust
 }
 
 inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_inter_cluster_delay(t_net_pin clb_sink_input_pin) const {
-    int iclb_net = block[clb_sink_input_pin.block].nets[clb_sink_input_pin.block_pin];
+    int iclb_net = clb_sink_input_pin.net;
+    int iclb_net_sink_pin = clb_sink_input_pin.net_pin;
 
-    t_net_pin clb_driver_output_pin = g_clbs_nlist.net[iclb_net].pins[0];
+    VTR_ASSERT(g_clbs_nlist.net[iclb_net].pins[iclb_net_sink_pin].block == clb_sink_input_pin.block);
+    VTR_ASSERT(g_clbs_nlist.net[iclb_net].pins[iclb_net_sink_pin].block_pin == clb_sink_input_pin.block_pin);
 
-    vtr::printf("CLB Net: %d (%s)\n", iclb_net, g_clbs_nlist.net[iclb_net].name);
+    float delay = net_delay_[iclb_net][iclb_net_sink_pin];
+
+    vtr::printf("CLB Net: %d (%s) delay=%g\n", iclb_net, g_clbs_nlist.net[iclb_net].name, delay);
+
+    t_net_pin clb_driver_output_pin = g_clbs_nlist.net[clb_sink_input_pin.net].pins[0];
 
     //TODO: delay
-    return std::make_tuple(NAN, clb_driver_output_pin);
+    return std::make_tuple(delay, clb_driver_output_pin);
 }
 
 inline std::tuple<float> PlacementDelayCalculator::trace_launch_cluster_delay(t_net_pin clb_driver_output_pin, const AtomNetId atom_net) const {

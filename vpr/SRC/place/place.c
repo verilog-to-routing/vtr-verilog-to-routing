@@ -379,31 +379,36 @@ void try_place(struct s_placer_opts placer_opts,
 			 * *also updated after any swap is accepted   */
 		}
 
+		/*now we can properly compute costs  */
+		comp_td_costs(&timing_cost, &delay_cost); /*also vtr::printf proper values into point_to_point_delay_cost */
+
         //Initial timing estimate
 		load_timing_graph_net_delays(net_delay);
 		do_timing_analysis(slacks, timing_inf, false, false);
 		load_criticalities(slacks, crit_exponent);
 
         //New analyzer
-        PlacementDelayCalculator dc(g_atom_nl, g_atom_map, type_descriptors, num_types);
-        auto dc_sp = std::make_shared<PlacementDelayCalculator>(dc);
-        tatum::write_dot_file_setup("setup.place.dot", g_timing_graph, dc_sp);
+        {
+            PlacementDelayCalculator dc(g_atom_nl, g_atom_map, type_descriptors, num_types, net_delay);
+            auto dc_sp = std::make_shared<PlacementDelayCalculator>(dc);
+            tatum::write_dot_file_setup("setup.place.dot", g_timing_graph, dc_sp);
 
-        std::ofstream os_timing_echo("timing.place.echo");
-        write_timing_graph(os_timing_echo, g_timing_graph);
-        os_timing_echo.flush();
-        write_timing_constraints(os_timing_echo, g_timing_constraints);
-        os_timing_echo.flush();
-        write_delay_model(os_timing_echo, g_timing_graph, dc);
-        os_timing_echo.flush();
+            std::ofstream os_timing_echo("timing.place.echo");
+            write_timing_graph(os_timing_echo, g_timing_graph);
+            os_timing_echo.flush();
+            write_timing_constraints(os_timing_echo, g_timing_constraints);
+            os_timing_echo.flush();
+            write_delay_model(os_timing_echo, g_timing_graph, dc);
+            os_timing_echo.flush();
 
-        std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
-        analyzer->update_timing();
+            std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
+            analyzer->update_timing();
 
-        tatum::write_dot_file_setup("setup.place.dot", g_timing_graph, dc_sp, analyzer);
+            tatum::write_dot_file_setup("setup.place.dot", g_timing_graph, dc_sp, analyzer);
 
-        write_analysis_result(os_timing_echo, g_timing_graph, analyzer);
-        os_timing_echo.flush();
+            write_analysis_result(os_timing_echo, g_timing_graph, analyzer);
+            os_timing_echo.flush();
+        }
 
 
 		if (getEchoEnabled()) {
@@ -415,9 +420,6 @@ void try_place(struct s_placer_opts placer_opts,
 				print_criticality(slacks, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY));
 		}
 		outer_crit_iter_count = 1;
-
-		/*now we can properly compute costs  */
-		comp_td_costs(&timing_cost, &delay_cost); /*also vtr::printf proper values into point_to_point_delay_cost */
 
 		/* Timing cost appears to be 0 for small circuits without any critical paths, this will cause costs to be
 		indefinite values later, so set timing_cost to a small number to prevent it						*/
