@@ -34,6 +34,9 @@ private:
 
     const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin) const;
     bool is_clb_io_pin(int clb_block, int clb_pb_route_idx) const;
+    float pb_route_max_delay(int clb_block, int pb_route_idx) const;
+    const t_pb_graph_edge* find_pb_graph_edge(int clb_block, int pb_route_idx) const;
+    const t_pb_graph_edge* find_pb_graph_edge(const t_pb_graph_pin* driver, const t_pb_graph_pin* sink) const;
 private:
     const AtomNetlist& netlist_;
     const AtomMap& netlist_map_;

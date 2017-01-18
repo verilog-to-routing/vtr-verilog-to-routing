@@ -201,7 +201,7 @@ IntraLbPbPinLookup::~IntraLbPbPinLookup() {
 	delete[] intra_lb_pb_pin_lookup_;
 }
 
-const t_pb_graph_pin* IntraLbPbPinLookup::pb_gpin(int itype, int ipin) {
+const t_pb_graph_pin* IntraLbPbPinLookup::pb_gpin(int itype, int ipin) const {
     VTR_ASSERT(itype < num_types_);
 
     return intra_lb_pb_pin_lookup_[itype][ipin];

@@ -26,7 +26,7 @@ class IntraLbPbPinLookup {
         ~IntraLbPbPinLookup();
 
 
-        const t_pb_graph_pin* pb_gpin(int itype, int ipin);
+        const t_pb_graph_pin* pb_gpin(int itype, int ipin) const;
 
         friend void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs);
     private:

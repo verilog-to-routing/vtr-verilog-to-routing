@@ -169,24 +169,34 @@ inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingG
 inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_capture_cluster_delay(int clb_sink_block, const t_pb_graph_pin* sink_gpin, const AtomNetId atom_net) const {
     t_pb_route* sink_pb_routes = block[clb_sink_block].pb_route;
 
+    float delay = 0.;
+
     int sink_pb_route_idx = sink_gpin->pin_count_in_cluster;
     const t_pb_route* sink_pb_route = &sink_pb_routes[sink_pb_route_idx];
-    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d\n", 
+    float incr_delay = pb_route_max_delay(clb_sink_block, sink_pb_route_idx);
+    delay += incr_delay;
+    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d delay=%g incr_delay=%g\n", 
                 clb_sink_block,
                 sink_pb_route_idx, sink_pb_route->atom_net_id, 
                 netlist_.net_name(sink_pb_route->atom_net_id).c_str(), 
-                sink_pb_route->prev_pb_pin_id);
+                sink_pb_route->prev_pb_pin_id,
+                delay,
+                incr_delay);
 
     while(sink_pb_route->prev_pb_pin_id >= 0) {
         //Advance to the next element
         sink_pb_route_idx = sink_pb_route->prev_pb_pin_id;
         sink_pb_route = &sink_pb_routes[sink_pb_route_idx];
+        incr_delay = pb_route_max_delay(clb_sink_block, sink_pb_route_idx);
+        delay += incr_delay;
 
-        vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d\n", 
+        vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d delay=%g incr_delay=%g\n", 
                     clb_sink_block,
                     sink_pb_route_idx, sink_pb_route->atom_net_id, 
                     netlist_.net_name(sink_pb_route->atom_net_id).c_str(), 
-                    sink_pb_route->prev_pb_pin_id);
+                    sink_pb_route->prev_pb_pin_id,
+                    delay,
+                    incr_delay);
 
         VTR_ASSERT(sink_pb_route->atom_net_id == atom_net);
     }
@@ -210,7 +220,7 @@ inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_capture_clust
 
     
     //TODO: delay
-    return std::make_tuple(NAN, clb_input_pin);
+    return std::make_tuple(delay, clb_input_pin);
 }
 
 inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_inter_cluster_delay(t_net_pin clb_sink_input_pin) const {
@@ -227,13 +237,19 @@ inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_inter_cluster
 inline std::tuple<float> PlacementDelayCalculator::trace_launch_cluster_delay(t_net_pin clb_driver_output_pin, const AtomNetId atom_net) const {
     t_pb_route* driver_pb_routes = block[clb_driver_output_pin.block].pb_route;
 
+    float delay = 0.;
+
     int driver_pb_route_idx = clb_driver_output_pin.block_pin;
     const t_pb_route* driver_pb_route = &driver_pb_routes[driver_pb_route_idx];
-    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d\n", 
+    float incr_delay = pb_route_max_delay(clb_driver_output_pin.block, driver_pb_route_idx);
+    delay += incr_delay;
+    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d delay=%g incr_delay=%g\n", 
                 clb_driver_output_pin.block,
                 driver_pb_route_idx, driver_pb_route->atom_net_id, 
                 netlist_.net_name(driver_pb_route->atom_net_id).c_str(), 
-                driver_pb_route->prev_pb_pin_id);
+                driver_pb_route->prev_pb_pin_id,
+                delay,
+                incr_delay);
 
     while(driver_pb_route->prev_pb_pin_id >= 0) {
 
@@ -241,17 +257,22 @@ inline std::tuple<float> PlacementDelayCalculator::trace_launch_cluster_delay(t_
         driver_pb_route_idx = driver_pb_route->prev_pb_pin_id;
         driver_pb_route = &driver_pb_routes[driver_pb_route_idx];
 
-        vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d\n", 
-                    clb_driver_output_pin.block,
-                    driver_pb_route_idx, driver_pb_route->atom_net_id, 
-                    netlist_.net_name(driver_pb_route->atom_net_id).c_str(), 
-                    driver_pb_route->prev_pb_pin_id);
+        incr_delay = pb_route_max_delay(clb_driver_output_pin.block, driver_pb_route_idx);
+        delay += incr_delay;
+
+    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d delay=%g incr_delay=%g\n", 
+                clb_driver_output_pin.block,
+                driver_pb_route_idx, driver_pb_route->atom_net_id, 
+                netlist_.net_name(driver_pb_route->atom_net_id).c_str(), 
+                driver_pb_route->prev_pb_pin_id,
+                delay,
+                incr_delay);
 
         VTR_ASSERT(driver_pb_route->atom_net_id == atom_net);
     }
 
     //TODO: delay
-    return std::make_tuple(NAN);
+    return std::make_tuple(delay);
 }
 
 
@@ -309,5 +330,51 @@ inline const t_pb_graph_pin* PlacementDelayCalculator::find_pb_graph_pin(const A
 
 inline bool PlacementDelayCalculator::is_clb_io_pin(int clb_block, int clb_pb_route_idx) const {
     return clb_pb_route_idx < block[clb_block].type->num_pins;
+}
+
+inline float PlacementDelayCalculator::pb_route_max_delay(int clb_block, int pb_route_idx) const {
+    const t_pb_graph_edge* pb_edge = find_pb_graph_edge(clb_block, pb_route_idx);
+
+    if(pb_edge) {
+        return pb_edge->delay_max;
+    } else {
+        return 0.;
+    }
+}
+
+const t_pb_graph_edge* PlacementDelayCalculator::find_pb_graph_edge(int clb_block, int pb_route_idx) const {
+    int type_index = block[clb_block].type->index;
+
+    int upstream_pb_route_idx = block[clb_block].pb_route[pb_route_idx].prev_pb_pin_id;
+
+    if(upstream_pb_route_idx >= 0) {
+
+        const t_pb_graph_pin* pb_gpin = intra_lb_pb_pin_lookup_.pb_gpin(type_index, pb_route_idx);
+        const t_pb_graph_pin* upstream_pb_gpin = intra_lb_pb_pin_lookup_.pb_gpin(type_index, upstream_pb_route_idx);
+
+        return find_pb_graph_edge(upstream_pb_gpin, pb_gpin); 
+    } else {
+        return nullptr;
+    }
+}
+
+const t_pb_graph_edge* PlacementDelayCalculator::find_pb_graph_edge(const t_pb_graph_pin* driver, const t_pb_graph_pin* sink) const {
+    VTR_ASSERT(driver);
+    VTR_ASSERT(sink);
+
+    const t_pb_graph_edge* pb_edge = nullptr;
+    for(int iedge = 0; iedge < driver->num_output_edges; ++iedge) {
+        const t_pb_graph_edge* check_edge = driver->output_edges[iedge];
+        VTR_ASSERT(check_edge);
+
+        VTR_ASSERT(check_edge->num_output_pins == 1);
+        if(check_edge->output_pins[0] == sink) {
+            pb_edge = check_edge;
+        }
+
+    }
+    VTR_ASSERT_MSG(pb_edge, "Failed to find pb_graph_edge connecting PB pins");
+
+    return pb_edge;
 }
 
