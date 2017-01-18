@@ -109,6 +109,10 @@ using namespace tatumparse;
 %token EDGE "edge:"
 %token SRC_NODE "src_node:"
 %token SINK_NODE "sink_node:"
+%token DISABLED "disabled:"
+
+%token TRUE "true"
+%token FALSE "false"
 
 %token TIMING_CONSTRAINTS "timing_constraints:"
 %token CLOCK "CLOCK"
@@ -136,12 +140,15 @@ using namespace tatumparse;
 %token SETUP_DATA_REQUIRED "SETUP_DATA_REQUIRED"
 %token SETUP_LAUNCH_CLOCK "SETUP_LAUNCH_CLOCK"
 %token SETUP_CAPTURE_CLOCK "SETUP_CAPTURE_CLOCK"
+%token SETUP_SLACK "SETUP_SLACK"
 %token HOLD_DATA "HOLD_DATA"
 %token HOLD_DATA_ARRIVAL "HOLD_DATA_ARRIVAL"
 %token HOLD_DATA_REQUIRED "HOLD_DATA_REQUIRED"
 %token HOLD_LAUNCH_CLOCK "HOLD_LAUNCH_CLOCK"
 %token HOLD_CAPTURE_CLOCK "HOLD_CAPTURE_CLOCK"
+%token HOLD_SLACK "HOLD_SLACK"
 %token TIME "time:"
+%token SLACK "slack:"
 
 %token EOL "end-of-line"
 %token EOF 0 "end-of-file"
@@ -172,7 +179,11 @@ using namespace tatumparse;
 %type <float> SetupTime
 %type <float> HoldTime
 %type <float> Time
+%type <float> Slack
 %type <TagType> TagType
+%type <bool> Disabled
+
+%type <bool> Bool
 
 /* Top level rule */
 %start tatum_data
@@ -188,7 +199,7 @@ tatum_data: /*empty*/ { }
 
 Graph: TIMING_GRAPH EOL { callback.start_graph(); }
      | Graph NodeId EOL NodeType EOL InEdges EOL OutEdges EOL { callback.add_node($2, $4, $6, $8); }
-     | Graph EdgeId EOL SrcNodeId EOL SinkNodeId EOL { callback.add_edge($2, $4, $6); }
+     | Graph EdgeId EOL SrcNodeId EOL SinkNodeId EOL Disabled EOL { callback.add_edge($2, $4, $6); }
 
 Constraints: TIMING_CONSTRAINTS EOL { callback.start_constraints(); }
            | Constraints TYPE CLOCK DomainId Name EOL { callback.add_clock_domain($4, $5); }
@@ -204,20 +215,22 @@ DelayModel: DELAY_MODEL EOL { callback.start_delay_model(); }
         | DelayModel EdgeId SetupTime HoldTime EOL { callback.add_edge_setup_hold_time($2, $3, $4); }
 
 Results:  ANALYSIS_RESULTS EOL { callback.start_results(); }
-        | Results TagType NodeId LaunchDomainId CaptureDomainId Time EOL { callback.add_tag($2, $3, $4, $5, NAN); }
+        | Results TagType NodeId LaunchDomainId CaptureDomainId Time EOL { callback.add_node_tag($2, $3, $4, $5, NAN); }
+        | Results TagType EdgeId LaunchDomainId CaptureDomainId Slack EOL { callback.add_edge_tag($2, $3, $4, $5, NAN); }
 
 Time: TIME Number { $$ = $2; }
+Slack: SLACK Number { $$ = $2; }
 
-TagType: TYPE SETUP_DATA { $$ = TagType::SETUP_DATA; }
-       | TYPE SETUP_DATA_ARRIVAL { $$ = TagType::SETUP_DATA_ARRIVAL; }
+TagType: TYPE SETUP_DATA_ARRIVAL { $$ = TagType::SETUP_DATA_ARRIVAL; }
        | TYPE SETUP_DATA_REQUIRED { $$ = TagType::SETUP_DATA_REQUIRED; }
        | TYPE SETUP_LAUNCH_CLOCK { $$ = TagType::SETUP_LAUNCH_CLOCK; }
        | TYPE SETUP_CAPTURE_CLOCK { $$ = TagType::SETUP_CAPTURE_CLOCK; }
-       | TYPE HOLD_DATA { $$ = TagType::HOLD_DATA; }
+       | TYPE SETUP_SLACK { $$ = TagType::SETUP_SLACK; }
        | TYPE HOLD_DATA_ARRIVAL { $$ = TagType::HOLD_DATA_ARRIVAL; }
        | TYPE HOLD_DATA_REQUIRED { $$ = TagType::HOLD_DATA_REQUIRED; }
        | TYPE HOLD_LAUNCH_CLOCK { $$ = TagType::HOLD_LAUNCH_CLOCK; }
        | TYPE HOLD_CAPTURE_CLOCK { $$ = TagType::HOLD_CAPTURE_CLOCK; }
+       | TYPE HOLD_SLACK { $$ = TagType::HOLD_SLACK; }
 
 MaxDelay: MAX_DELAY Number { $$ = $2; }
 MinDelay: MIN_DELAY Number { $$ = $2; }
@@ -243,6 +256,10 @@ OutEdges: OUT_EDGES IntList { $$ = $2; }
 EdgeId: EDGE INT { $$ = $2; }
 SrcNodeId: SRC_NODE INT { $$ = $2; }
 SinkNodeId: SINK_NODE INT { $$ = $2; }
+Disabled: DISABLED Bool { $$ = $2; }
+
+Bool: TRUE { $$ = true; }
+    | FALSE { $$ = false; }
 
 IntList: /*empty*/ { $$ = std::vector<int>(); }
        | IntList INT { $$ = std::move($1); $$.push_back($2); }

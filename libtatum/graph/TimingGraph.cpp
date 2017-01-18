@@ -384,6 +384,8 @@ GraphIdMaps TimingGraph::optimize_layout() {
     auto node_id_map = optimize_node_layout();
     remap_nodes(node_id_map);
 
+    levelize();
+
     auto edge_id_map = optimize_edge_layout();
     remap_edges(edge_id_map);
 

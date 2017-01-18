@@ -77,18 +77,25 @@ class PrintCallback : public tp::Callback {
     void finish_delay_model() override { fprintf(stdout, "# end delay_model\n"); }
 
     void start_results() override { fprintf(stdout, "analysis_result:\n"); }
-    void add_tag(tp::TagType type, int node_id, int launch_domain_id, int capture_domain_id, float time) override {
+    void add_node_tag(tp::TagType type, int node_id, int launch_domain_id, int capture_domain_id, float time) override {
         fprintf(stdout, " type: ");
         switch(type) {
-            case tp::TagType::SETUP_DATA: fprintf(stdout, "SETUP_DATA"); break;
             case tp::TagType::SETUP_LAUNCH_CLOCK: fprintf(stdout, "SETUP_LAUNCH_CLOCK"); break;
             case tp::TagType::SETUP_CAPTURE_CLOCK: fprintf(stdout, "SETUP_CAPTURE_CLOCK"); break;
-            case tp::TagType::HOLD_DATA: fprintf(stdout, "HOLD_DATA"); break;
             case tp::TagType::HOLD_LAUNCH_CLOCK: fprintf(stdout, "HOLD_LAUNCH_CLOCK"); break;
             case tp::TagType::HOLD_CAPTURE_CLOCK: fprintf(stdout, "HOLD_CAPTURE_CLOCK"); break;
             default: assert(false);
         }
         fprintf(stdout, " node: %d launch_domain: %d capture_domain: %d time: %g\n", node_id, launch_domain_id, capture_domain_id, time);
+    }
+    void add_edge_tag(tp::TagType type, int edge_id, int launch_domain_id, int capture_domain_id, float time) override {
+        fprintf(stdout, " type: ");
+        switch(type) {
+            case tp::TagType::SETUP_SLACK: fprintf(stdout, "SETUP_SLACK"); break;
+            case tp::TagType::HOLD_SLACK: fprintf(stdout, "HOLD_SLACK"); break;
+            default: assert(false);
+        }
+        fprintf(stdout, " edge: %d launch_domain: %d capture_domain: %d time: %g\n", edge_id, launch_domain_id, capture_domain_id, time);
     }
     void finish_results() override { fprintf(stdout, "# end analysis_results\n"); }
 
@@ -141,7 +148,8 @@ class NopCallback : public tp::Callback {
         void finish_delay_model() override {}
 
         void start_results() override {}
-        void add_tag(tp::TagType /*type*/, int /*node_id*/, int /*launch_domain_id*/, int /*capture_domain_id*/, float /*time*/) override {}
+        void add_node_tag(tp::TagType /*type*/, int /*node_id*/, int /*launch_domain_id*/, int /*capture_domain_id*/, float /*time*/) override {}
+        void add_edge_tag(tp::TagType /*type*/, int /*edge_id*/, int /*launch_domain_id*/, int /*capture_domain_id*/, float /*time*/) override {}
         void finish_results() override {}
 
         //End of parsing

@@ -71,6 +71,7 @@ out_edges:                      { return tatumparse::Parser::make_OUT_EDGES(); }
 edge:                           { return tatumparse::Parser::make_EDGE(); }
 src_node:                       { return tatumparse::Parser::make_SRC_NODE(); }
 sink_node:                      { return tatumparse::Parser::make_SINK_NODE(); }
+disabled:                       { return tatumparse::Parser::make_DISABLED(); }
 
 timing_constraints:             { return tatumparse::Parser::make_TIMING_CONSTRAINTS(); }
 CLOCK                           { return tatumparse::Parser::make_CLOCK(); }
@@ -98,13 +99,19 @@ SETUP_DATA_ARRIVAL              { return tatumparse::Parser::make_SETUP_DATA_ARR
 SETUP_DATA_REQUIRED             { return tatumparse::Parser::make_SETUP_DATA_REQUIRED(); }
 SETUP_LAUNCH_CLOCK               { return tatumparse::Parser::make_SETUP_LAUNCH_CLOCK(); }
 SETUP_CAPTURE_CLOCK             { return tatumparse::Parser::make_SETUP_CAPTURE_CLOCK(); }
+SETUP_SLACK                     { return tatumparse::Parser::make_SETUP_SLACK(); }
 HOLD_DATA                       { return tatumparse::Parser::make_HOLD_DATA(); }
 HOLD_DATA_ARRIVAL              { return tatumparse::Parser::make_HOLD_DATA_ARRIVAL(); }
 HOLD_DATA_REQUIRED             { return tatumparse::Parser::make_HOLD_DATA_REQUIRED(); }
 HOLD_LAUNCH_CLOCK                { return tatumparse::Parser::make_HOLD_LAUNCH_CLOCK(); }
 HOLD_CAPTURE_CLOCK              { return tatumparse::Parser::make_HOLD_CAPTURE_CLOCK(); }
+HOLD_SLACK                     { return tatumparse::Parser::make_HOLD_SLACK(); }
 
 time:                            { return tatumparse::Parser::make_TIME(); }
+slack:                            { return tatumparse::Parser::make_SLACK(); }
+
+true                            { return tatumparse::Parser::make_TRUE(); }
+false                           { return tatumparse::Parser::make_FALSE(); }
 
 [+-]?{DIGIT}+                        { return tatumparse::Parser::make_INT(atoi(tatumparse_get_text(yyscanner))); }
 (nan)|([-+]?(inf|((({DIGIT}*\.?{DIGIT}+)|({DIGIT}+\.))([eE][-+]?{DIGIT}+)?))) { 
