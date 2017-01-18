@@ -290,14 +290,16 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	int num_connections, t_slack * slacks, float crit_exponent, float bb_cost,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost, float ** net_delay, const t_timing_inf &timing_inf);
+	float * inverse_prev_bb_cost, float ** net_delay, const t_timing_inf &timing_inf,
+    tatum::TimingAnalyzer& timing_analyzer);
 
 static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
 	t_slack * slacks, float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
-    float ** net_delay, const t_timing_inf &timing_inf);
+    float ** net_delay, const t_timing_inf &timing_inf,
+    tatum::TimingAnalyzer& timing_analyzer);
 
 /*****************************************************************************/
 void try_place(struct s_placer_opts placer_opts,
@@ -361,8 +363,6 @@ void try_place(struct s_placer_opts placer_opts,
 
     //New analyzer
     PlacementDelayCalculator dc(g_atom_nl, g_atom_map, type_descriptors, num_types, net_delay);
-    auto dc_sp = std::make_shared<PlacementDelayCalculator>(dc);
-    tatum::write_dot_file_setup("setup.place_init.dot", g_timing_graph, dc_sp);
 
     std::ofstream os_timing_echo_init("timing.place_init.echo");
     write_timing_graph(os_timing_echo_init, g_timing_graph);
@@ -372,12 +372,12 @@ void try_place(struct s_placer_opts placer_opts,
     write_delay_model(os_timing_echo_init, g_timing_graph, dc);
     os_timing_echo_init.flush();
 
-    std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
-    analyzer->update_timing();
+    std::shared_ptr<tatum::SetupTimingAnalyzer> timing_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
+    timing_analyzer->update_timing();
 
-    tatum::write_dot_file_setup("setup.place_init.dot", g_timing_graph, dc_sp, analyzer);
+    tatum::write_dot_file_setup("setup.place_init.dot", g_timing_graph, dc, *timing_analyzer);
 
-    write_analysis_result(os_timing_echo_init, g_timing_graph, analyzer);
+    write_analysis_result(os_timing_echo_init, g_timing_graph, timing_analyzer);
     os_timing_echo_init.flush();
 
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
@@ -504,12 +504,14 @@ void try_place(struct s_placer_opts placer_opts,
 
 		outer_loop_recompute_criticalities(placer_opts, num_connections, slacks,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
-			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay, timing_inf);
+			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay, timing_inf,
+            *timing_analyzer);
 
 		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
 			move_lim, slacks, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, &delay_cost,
-			net_delay, timing_inf);
+			net_delay, timing_inf,
+            *timing_analyzer);
 
 		/* Lines below prevent too much round-off error from accumulating *
 		 * in the cost over many iterations.  This round-off can lead to  *
@@ -606,7 +608,8 @@ void try_place(struct s_placer_opts placer_opts,
 
 	outer_loop_recompute_criticalities(placer_opts, num_connections, slacks,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
-			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay, timing_inf);
+			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay, timing_inf,
+            *timing_analyzer);
 
 	t = 0; /* freeze out */
 
@@ -615,7 +618,8 @@ void try_place(struct s_placer_opts placer_opts,
 	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
 			move_lim, slacks, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, &delay_cost,
-			net_delay, timing_inf);
+			net_delay, timing_inf,
+            *timing_analyzer);
 
 	tot_iter += move_lim;
 	success_rat = ((float) stats.success_sum) / move_lim;
@@ -671,8 +675,7 @@ void try_place(struct s_placer_opts placer_opts,
 		load_timing_graph_net_delays(net_delay);
 		do_timing_analysis(slacks, timing_inf, false, false);
 
-        analyzer->update_timing();
-        tatum::write_dot_file_setup("setup.place_final.dot", g_timing_graph, dc_sp);
+        timing_analyzer->update_timing();
 
         std::ofstream os_timing_echo_final("timing.place_final.echo");
         write_timing_graph(os_timing_echo_final, g_timing_graph);
@@ -681,7 +684,7 @@ void try_place(struct s_placer_opts placer_opts,
         os_timing_echo_final.flush();
         write_delay_model(os_timing_echo_final, g_timing_graph, dc);
         os_timing_echo_final.flush();
-        write_analysis_result(os_timing_echo_final, g_timing_graph, analyzer);
+        write_analysis_result(os_timing_echo_final, g_timing_graph, timing_analyzer);
         os_timing_echo_final.flush();
 
 		if (getEchoEnabled()) {
@@ -743,7 +746,9 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	int num_connections, t_slack * slacks, float crit_exponent, float bb_cost,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost, float ** net_delay, const t_timing_inf &timing_inf) {
+	float * inverse_prev_bb_cost, float ** net_delay, const t_timing_inf &timing_inf,
+    tatum::TimingAnalyzer& timing_analyzer
+    ) {
 
 	if (placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
 		return;
@@ -767,6 +772,8 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 		do_timing_analysis(slacks, timing_inf, false, false);
 		load_criticalities(slacks, crit_exponent);
 
+        timing_analyzer.update_timing();
+
 		/*recompute costs from scratch, based on new criticalities */
 		comp_td_costs(timing_cost, delay_cost);
 		*outer_crit_iter_count = 0;
@@ -786,7 +793,8 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 	t_slack * slacks, float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
-	float ** net_delay, const t_timing_inf &timing_inf) {
+	float ** net_delay, const t_timing_inf &timing_inf,
+    tatum::TimingAnalyzer& timing_analyzer) {
 
 	int inner_crit_iter_count, inner_iter;
 	int swap_result;
@@ -842,6 +850,8 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 				do_timing_analysis(slacks, timing_inf, false, false);
 				load_criticalities(slacks, crit_exponent);
 				comp_td_costs(timing_cost, delay_cost);
+
+                timing_analyzer.update_timing();
 			}
 			inner_crit_iter_count++;
 		}
