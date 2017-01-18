@@ -25,8 +25,11 @@ def natural_sort(l):
     alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
     l.sort(key=alphanum_key)
 
-def get_result_file(params, run):
-    return os.path.join(params.task_dir, run, params.result_file)
+def get_result_file(params, run_prefix, run_number):
+    path = os.path.join(params.task_dir, "{}{}".format(run_prefix, run_number), params.result_file)
+    if not os.path.exists(path):
+        path = os.path.join(params.task_dir, "{prefix}{num:03d}".format(prefix=run_prefix, num=run_number), params.result_file)
+    return path
 
 def get_task_table_name(params):
     return params.task_name

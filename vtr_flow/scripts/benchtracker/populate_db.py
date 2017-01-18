@@ -69,9 +69,8 @@ def update_db(params, db):
             params.last_run = 0
         # else first run, nothing in table yet
 
-    def add_run_to_db(params, run):
-        resfilename = get_result_file(params, run)
-        run_number = get_trailing_num(run)
+    def add_run_to_db(params, run_number):
+        resfilename = get_result_file(params, params.run_prefix, run_number)
         try:
             parsed_date = os.path.getmtime(resfilename)
             # throw away unless newer than latest or run number greater than maximum
@@ -147,7 +146,8 @@ def drop_table(params, db):
 
 def create_table(params, db, task_table_name):
     # creates table schema based on the result file of run 1
-    with open(get_result_file(params, params.run_prefix + "1"), 'r') as res:
+
+    with open(get_result_file(params, params.run_prefix, 1), 'r') as res:
         result_params = res.readline().rstrip().split('\t')
         result_params_sample = res.readline().rstrip().split('\t')
         while len(result_params_sample) < len(result_params):
@@ -306,7 +306,9 @@ def load_next_task(params):
 
 # walk operations; all take params and run as arguments
 def check_result_exists(params, run):
-    if not os.path.isfile(get_result_file(params, run)):
+
+    run_number = get_trailing_num(run)
+    if not os.path.isfile(get_result_file(params, params.run_prefix, run_number)):
         parsed_call = params.parse_script.format(
             task_dir = params.task_dir,
             task_name = params.task_name,
