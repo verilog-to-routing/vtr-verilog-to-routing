@@ -42,9 +42,11 @@
  *
  * Port related information can be retrieved using the port_*() member functions.
  *
+ *
  * Usage
  * =====
- * This section provides usage examples for common use-cases.
+ * 
+ * The following provides usage examples for common use-cases.
  *
  * Walking the netlist
  * -------------------
@@ -85,7 +87,30 @@
  * It is common to need to trace the netlist connectivity. The AtomNetlist allows this to be done 
  * efficiently by maintaining cross-references between the various netlist components.
  *
- * For example consider the case where we wish to find all the blocks associated with a particular net:
+ * The following diagram shows the main methods and relationships between netlist components:
+ *
+ *            +---------+      pin_block()                                       
+ *            |         |<--------------------------+                            
+ *            |  Block  |                           |                            
+ *            |         |-----------------------+   |                            
+ *            +---------+      block_pins()     |   |                            
+ *               ^   |                          v   |                            
+ *               |   |                       +---------+  net_pins()  +---------+
+ *               |   |                       |         |<-------------|         |
+ * block_ports() |   | port_block()          |   Pin   |              |   Net   |
+ *               |   |                       |         |------------->|         |
+ *               |   |                       +---------+  pin_net()   +---------+
+ *               |   v                          ^   |                            
+ *            +---------+      port_pins()      |   |                            
+ *            |         |-----------------------+   |                            
+ *            |  Port   |                           |                            
+ *            |         |<--------------------------+                            
+ *            +---------+      pin_port()                                        
+ *
+ * Note that methods which are plurals (e.g. net_pins()) return multiple components.
+ *
+ *
+ * As an example consider the case where we wish to find all the blocks associated with a particular net:
  *
  *      AtomNetId net_id;
  *
@@ -361,7 +386,7 @@
  *
  * Such implementation state should be stored in other data structures (which may reference the AtomNetlist's IDs).
  *
- * The netlist state is typically be immutable (i.e. read-only) for most of the CAD flow.
+ * The netlist state should be immutable (i.e. read-only) for most of the CAD flow.
  * 
  */
 #include <vector>
@@ -619,7 +644,7 @@ class AtomNetlist {
         //Create a completely specified net from specified driver and sinks
         //  name    : The name of the net (Note: must not already exist)
         //  driver  : The net's driver pin
-        //  sinsks  : The net's sink pins
+        //  sinks   : The net's sink pins
         AtomNetId   add_net     (const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
 
         //Mark a pin as being a constant generator.
@@ -630,7 +655,7 @@ class AtomNetlist {
         void set_pin_is_constant(const AtomPinId pin_id, const bool value);
 
         /*
-         * Note: all remove_*() will mark the associated items as invalid, but will the items
+         * Note: all remove_*() will mark the associated items as invalid, but the items
          * will not be removed until compress() is called.
          */
 
