@@ -19,7 +19,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         float inter_cluster_net_delay,
 		float aspect, bool allow_unrelated_clustering,
 		bool connection_driven,
-		enum e_packer_algorithm packer_algorithm, t_timing_inf timing_inf,
+		enum e_packer_algorithm packer_algorithm,
 		std::vector<t_lb_type_rr_node> *lb_type_rr_graphs);
 int get_cluster_of_block(int blkidx);
 #endif

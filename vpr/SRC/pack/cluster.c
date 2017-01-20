@@ -273,7 +273,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         float inter_cluster_net_delay,
 		float aspect, bool allow_unrelated_clustering,
 		bool connection_driven,
-		enum e_packer_algorithm packer_algorithm, t_timing_inf timing_inf, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
+		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
 
 	/* Does the actual work of clustering multiple netlist blocks *
 	 * into clusters.                                                  */
@@ -378,11 +378,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	VTR_ASSERT(max_cluster_size < MAX_SHORT);
 	/* Limit maximum number of elements for each cluster */
 
-    //Initialize timing graph and constraints
-    TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map);
-    g_timing_graph = tg_builder.timing_graph();
-    g_timing_constraints = create_timing_constraints(g_atom_nl, g_atom_map, timing_inf);
-
+    //New timign analyzer
     PreClusterDelayCalculator dc(g_atom_nl, g_atom_map, inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
 
     std::ofstream os_timing_echo("timing.pre_pack.echo");

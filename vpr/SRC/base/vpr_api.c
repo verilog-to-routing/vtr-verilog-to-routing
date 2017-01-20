@@ -60,6 +60,8 @@ using namespace std;
 #include "output_blif.h"
 #include "read_activity.h"
 
+#include "timing_graph_builder.h"
+
 #include "log.h"
 
 /* Local subroutines */
@@ -270,6 +272,10 @@ void vpr_init(const int argc, const char **argv,
             g_atom_net_power = read_activity(g_atom_nl, vpr_setup->FileNameOpts.ActFile);
         }
 
+        //Initialize timing graph and constraints
+        TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map);
+        g_timing_graph = tg_builder.timing_graph();
+        g_timing_constraints = create_timing_constraints(g_atom_nl, g_atom_map, vpr_setup->Timing);
 
 		fflush(stdout);
 
@@ -477,7 +483,7 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
 	}
 
 	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models,
-			vpr_setup.library_models, vpr_setup.Timing, inter_cluster_delay, vpr_setup.PackerRRGraph);
+			vpr_setup.library_models, inter_cluster_delay, vpr_setup.PackerRRGraph);
 
 	end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
