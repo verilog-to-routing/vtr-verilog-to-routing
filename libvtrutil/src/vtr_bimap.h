@@ -11,7 +11,7 @@ namespace vtr {
  * Keys and values can be looked up directly by passing either the key or value.
  * the indexing operator will throw if the key/value does not exist.
  */
-template<class K, class V, template<class ...> class Map=std::unordered_map>
+template<class K, class V, template<class ...> class Map=std::map>
 class bimap {
     public: //Public types
         typedef typename Map<K,V>::const_iterator iterator;
@@ -112,6 +112,9 @@ class bimap {
         Map<K,V> map_;
         Map<V,K> inverse_map_;
 };
+
+template<class K, class V>
+using unordered_bimap = bimap<K,V,std::unordered_map>;
 
 }
 
