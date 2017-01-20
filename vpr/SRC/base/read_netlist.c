@@ -939,5 +939,9 @@ static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin) {
 		load_atom_index_for_pb_pin(pb_route, driver);
 	}	
 		
+    //Store the net coming from the driver
 	pb_route[ipin].atom_net_id = pb_route[driver].atom_net_id;
+
+    //Store ourselves with the driver
+    pb_route[driver].sink_pb_pin_ids.push_back(ipin);
 }
