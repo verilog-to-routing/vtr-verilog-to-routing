@@ -312,6 +312,7 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 
 	pb_type = pb->pb_graph_node->pb_type;
 	if (pb_type->num_modes == 0) {
+        /* A primitive type */
         AtomBlockId blk_id = g_atom_nl.find_block(pb->name);
 		if (!blk_id) {
 			vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
@@ -740,8 +741,8 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 				pb_graph_pin = &block_list[i].pb->pb_graph_node->input_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
-				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id) {
-                    AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+                AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+				if (net_id) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
                                                 g_atom_nl.net_name(net_id).c_str(),
                                                 ext_ncount);
@@ -757,8 +758,8 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 			for (k = 0; k < block_list[i].pb->pb_graph_node->num_output_pins[j]; k++) {
 				pb_graph_pin = &block_list[i].pb->pb_graph_node->output_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
-				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id) {
-                    AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+                AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+				if (net_id) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
                                                 g_atom_nl.net_name(net_id).c_str(),
                                                 ext_ncount);
@@ -774,8 +775,9 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 			for (k = 0; k < block_list[i].pb->pb_graph_node->num_clock_pins[j]; k++) {
 				pb_graph_pin = &block_list[i].pb->pb_graph_node->clock_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
-				if (block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id) {
-                    AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+
+                AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+				if (net_id) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
                                                 g_atom_nl.net_name(net_id).c_str(),
                                                 ext_ncount);
