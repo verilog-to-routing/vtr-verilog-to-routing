@@ -160,11 +160,12 @@ typedef struct s_pb {
 /* Representation of intra-logic block routing */
 struct t_pb_route {
     AtomNetId atom_net_id; /* which net in the atom netlist uses this pin */
-	int prev_pb_pin_id; /* The pb_graph_pin id of the pb_pin that drives this pin */
+	int driver_pb_pin_id; /* The pb_graph_pin id of the pb_pin that drives this pin */
+    std::vector<int> sink_pb_pin_ids;
 
 	t_pb_route() {
 		atom_net_id = AtomNetId::INVALID();
-		prev_pb_pin_id = OPEN;
+		driver_pb_pin_id = OPEN;
 	}
 };
 

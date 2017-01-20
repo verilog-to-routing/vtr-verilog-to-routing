@@ -187,28 +187,28 @@ inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_capture_clust
     float incr_delay = pb_route_max_delay(clb_sink_block, sink_pb_route_idx);
     delay += incr_delay;
 #ifdef PLACEMENT_DELAY_CALC_DEBUG
-    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d delay=%g incr_delay=%g\n", 
+    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) driver_pb_pin_id=%d delay=%g incr_delay=%g\n", 
                 clb_sink_block,
                 sink_pb_route_idx, sink_pb_route->atom_net_id, 
                 netlist_.net_name(sink_pb_route->atom_net_id).c_str(), 
-                sink_pb_route->prev_pb_pin_id,
+                sink_pb_route->driver_pb_pin_id,
                 delay,
                 incr_delay);
 #endif
 
-    while(sink_pb_route->prev_pb_pin_id >= 0) {
+    while(sink_pb_route->driver_pb_pin_id >= 0) {
         //Advance to the next element
-        sink_pb_route_idx = sink_pb_route->prev_pb_pin_id;
+        sink_pb_route_idx = sink_pb_route->driver_pb_pin_id;
         sink_pb_route = &sink_pb_routes[sink_pb_route_idx];
         incr_delay = pb_route_max_delay(clb_sink_block, sink_pb_route_idx);
         delay += incr_delay;
 
 #ifdef PLACEMENT_DELAY_CALC_DEBUG
-        vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d delay=%g incr_delay=%g\n", 
+        vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) driver_pb_pin_id=%d delay=%g incr_delay=%g\n", 
                     clb_sink_block,
                     sink_pb_route_idx, sink_pb_route->atom_net_id, 
                     netlist_.net_name(sink_pb_route->atom_net_id).c_str(), 
-                    sink_pb_route->prev_pb_pin_id,
+                    sink_pb_route->driver_pb_pin_id,
                     delay,
                     incr_delay);
 #endif
@@ -268,30 +268,30 @@ inline std::tuple<float> PlacementDelayCalculator::trace_launch_cluster_delay(t_
     delay += incr_delay;
 
 #ifdef PLACEMENT_DELAY_CALC_DEBUG
-    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d delay=%g incr_delay=%g\n", 
+    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) driver_pb_pin_id=%d delay=%g incr_delay=%g\n", 
                 clb_driver_output_pin.block,
                 driver_pb_route_idx, driver_pb_route->atom_net_id, 
                 netlist_.net_name(driver_pb_route->atom_net_id).c_str(), 
-                driver_pb_route->prev_pb_pin_id,
+                driver_pb_route->driver_pb_pin_id,
                 delay,
                 incr_delay);
 #endif
 
-    while(driver_pb_route->prev_pb_pin_id >= 0) {
+    while(driver_pb_route->driver_pb_pin_id >= 0) {
 
         //Advance to the next element
-        driver_pb_route_idx = driver_pb_route->prev_pb_pin_id;
+        driver_pb_route_idx = driver_pb_route->driver_pb_pin_id;
         driver_pb_route = &driver_pb_routes[driver_pb_route_idx];
 
         incr_delay = pb_route_max_delay(clb_driver_output_pin.block, driver_pb_route_idx);
         delay += incr_delay;
 
 #ifdef PLACEMENT_DELAY_CALC_DEBUG
-    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d delay=%g incr_delay=%g\n", 
+    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) driver_pb_pin_id=%d delay=%g incr_delay=%g\n", 
                 clb_driver_output_pin.block,
                 driver_pb_route_idx, driver_pb_route->atom_net_id, 
                 netlist_.net_name(driver_pb_route->atom_net_id).c_str(), 
-                driver_pb_route->prev_pb_pin_id,
+                driver_pb_route->driver_pb_pin_id,
                 delay,
                 incr_delay);
 #endif
@@ -373,7 +373,7 @@ inline float PlacementDelayCalculator::pb_route_max_delay(int clb_block, int pb_
 const t_pb_graph_edge* PlacementDelayCalculator::find_pb_graph_edge(int clb_block, int pb_route_idx) const {
     int type_index = block[clb_block].type->index;
 
-    int upstream_pb_route_idx = block[clb_block].pb_route[pb_route_idx].prev_pb_pin_id;
+    int upstream_pb_route_idx = block[clb_block].pb_route[pb_route_idx].driver_pb_pin_id;
 
     if(upstream_pb_route_idx >= 0) {
 

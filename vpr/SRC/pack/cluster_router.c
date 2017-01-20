@@ -349,7 +349,7 @@ t_pb_route *alloc_and_load_pb_route(const vector <t_intra_lb_net> *intra_lb_nets
 
 	for(int ipin = 0; ipin < total_pins; ipin++) {
 		pb_route[ipin].atom_net_id = AtomNetId::INVALID();
-		pb_route[ipin].prev_pb_pin_id = OPEN;
+		pb_route[ipin].driver_pb_pin_id = OPEN;
 	}
 
 	for(int inet = 0; inet < (int)lb_nets.size(); inet++) {
@@ -387,14 +387,14 @@ Internal Functions
 /* Recurse through route tree trace to populate pb pin to atom net lookup array */
 static void load_trace_to_pb_route(t_pb_route *pb_route, const int total_pins, const AtomNetId net_id, const int prev_pin_id, const t_lb_trace *trace) {
 	int ipin = trace->current_node;
-	int prev_pb_pin_id = prev_pin_id;
+	int driver_pb_pin_id = prev_pin_id;
 	int cur_pin_id = OPEN;
 	if(ipin < total_pins) {
 		/* This routing node corresponds with a pin.  This node is virtual (ie. sink or source node) */
 		cur_pin_id = ipin;
 		if(!pb_route[cur_pin_id].atom_net_id) {
 			pb_route[cur_pin_id].atom_net_id = net_id;
-			pb_route[cur_pin_id].prev_pb_pin_id = prev_pb_pin_id;
+			pb_route[cur_pin_id].driver_pb_pin_id = driver_pb_pin_id;
 		} else {
 			VTR_ASSERT(pb_route[cur_pin_id].atom_net_id == net_id);
 		}		

@@ -616,7 +616,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                         rr_node_index = pb->pb_graph_node->input_pins[in_port][i].pin_count_in_cluster;
                     else
                         rr_node_index = pb->pb_graph_node->clock_pins[clock_port][i].pin_count_in_cluster;
-                    pb_route[rr_node_index].prev_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
+                    pb_route[rr_node_index].driver_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
                     found = false;
                     for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
                         if (0 == strcmp(interconnect_name.c_str(), pin_node[0][0]->output_edges[j]->interconnect->name)) {
@@ -677,7 +677,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                                     true);
                     VTR_ASSERT(num_sets == 1 && num_ptrs[0] == 1);
                     rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
-                    pb_route[rr_node_index].prev_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
+                    pb_route[rr_node_index].driver_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
                     found = false;
                     for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
                         if (0 == strcmp(interconnect_name.c_str(), pin_node[0][0]->output_edges[j]->interconnect->name)) {
@@ -923,14 +923,14 @@ static void load_interal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb
 	int num_pins = type->pb_graph_head->total_pb_pins;
 
 	for (int i = 0; i < num_pins; i++) {
-		if (pb_route[i].prev_pb_pin_id != OPEN && !pb_route[i].atom_net_id) {
+		if (pb_route[i].driver_pb_pin_id != OPEN && !pb_route[i].atom_net_id) {
 			load_atom_index_for_pb_pin(pb_route, i);
 		}
 	}
 }
 
 static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin) {
-	int driver = pb_route[ipin].prev_pb_pin_id;
+	int driver = pb_route[ipin].driver_pb_pin_id;
 	
 	VTR_ASSERT(driver != OPEN);
 	VTR_ASSERT(!pb_route[ipin].atom_net_id);

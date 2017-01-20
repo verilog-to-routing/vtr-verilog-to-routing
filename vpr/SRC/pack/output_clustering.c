@@ -87,7 +87,7 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 		print_string("open", column, num_tabs, fpout);
 	} else {
 		str_ptr = NULL;
-		prev_node = pb_route[inode].prev_pb_pin_id;
+		prev_node = pb_route[inode].driver_pb_pin_id;
 
 		if (prev_node == OPEN) {
 			/* No previous driver implies that this is either a top-level input pin or a primitive output pin */
@@ -174,7 +174,7 @@ static void print_open_pb_graph_node(t_type_ptr type, t_pb_graph_node * pb_graph
 							pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
 					if (pb_type->num_modes > 0
 						&& pb_route[node_index].atom_net_id) {
-						prev_node = pb_route[node_index].prev_pb_pin_id;
+						prev_node = pb_route[node_index].driver_pb_pin_id;
 						t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
 						for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
 							VTR_ASSERT(prev_pin->output_edges[prev_edge]->num_output_pins == 1);

@@ -29,6 +29,13 @@ class AtomMap {
         void set_atom_pb(const AtomBlockId blk_id, const t_pb* pb);
 
         /*
+         * PB Pins
+         */
+        const t_pb_graph_pin* atom_pin_pb_graph_pin(AtomPinId atom_pin) const;
+        AtomPinId pb_graph_pin_atom_pin(const t_pb_graph_pin* gpin) const;
+        void set_atom_pin_pb_graph_pin(AtomPinId atom_pin, const t_pb_graph_pin* gpin) const;
+
+        /*
          * Blocks
          */
         //Returns the clb index associated with blk_id

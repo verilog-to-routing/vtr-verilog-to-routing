@@ -851,7 +851,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			for (j = 0; j < ipb_graph_pin->num_output_edges; j++) {
 				VTR_ASSERT(ipb_graph_pin->output_edges[j]->num_output_pins == 1);
 				dnode = ipb_graph_pin->output_edges[j]->output_pins[0]->pin_count_in_cluster;
-				if (intra_lb_route[dnode].prev_pb_pin_id == i_pin_id) {
+				if (intra_lb_route[dnode].driver_pb_pin_id == i_pin_id) {
 					count++;
 				}
 			}
@@ -865,7 +865,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			for (j = 0; j < ipb_graph_pin->num_output_edges; j++) {
 				VTR_ASSERT(ipb_graph_pin->output_edges[j]->num_output_pins == 1);
 				dnode = ipb_graph_pin->output_edges[j]->output_pins[0]->pin_count_in_cluster;
-				if (intra_lb_route[dnode].prev_pb_pin_id == i_pin_id) {
+				if (intra_lb_route[dnode].driver_pb_pin_id == i_pin_id) {
 					VTR_ASSERT(intra_lb_route[dnode].atom_net_id == intra_lb_route[i_pin_id].atom_net_id);
 
 					tnode[i].out_edges[count].Tdel = ipb_graph_pin->output_edges[j]->delay_max;
