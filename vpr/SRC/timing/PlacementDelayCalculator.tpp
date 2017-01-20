@@ -5,8 +5,13 @@
 #include "vpr_utils.h"
 #include "globals.h"
 
+//Controls printing detailed info about edge delay calculation
+//#define PLACEMENT_DELAY_CALC_DEBUG
+
 inline tatum::Time PlacementDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge) const { 
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
     vtr::printf("=== Edge %zu (max) ===\n", size_t(edge));
+#endif
     tatum::EdgeType edge_type = tg.edge_type(edge);
     if (edge_type == tatum::EdgeType::PRIMITIVE_COMBINATIONAL) {
         return atom_combinational_delay(tg, edge);
@@ -24,17 +29,23 @@ inline tatum::Time PlacementDelayCalculator::max_edge_delay(const tatum::TimingG
 }
 
 inline tatum::Time PlacementDelayCalculator::setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
     vtr::printf("=== Edge %zu (setup) ===\n", size_t(edge_id));
+#endif
     return atom_setup_time(tg, edge_id);
 }
 
 inline tatum::Time PlacementDelayCalculator::min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
-    vtr::printf("=== Edge %zu (min calling max) ===\n", size_t(edge_id));
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
+    vtr::printf("=== Edge %zu (min) ===\n", size_t(edge_id));
+#endif
     return max_edge_delay(tg, edge_id); 
 }
 
-inline tatum::Time PlacementDelayCalculator::hold_time(const tatum::TimingGraph& /*tg*/, tatum::EdgeId edge_id) const { 
+inline tatum::Time PlacementDelayCalculator::hold_time(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const { 
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
     vtr::printf("=== Edge %zu (hold) ===\n", size_t(edge_id));
+#endif
     return tatum::Time(NAN); 
 }
 
@@ -175,6 +186,7 @@ inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_capture_clust
     const t_pb_route* sink_pb_route = &sink_pb_routes[sink_pb_route_idx];
     float incr_delay = pb_route_max_delay(clb_sink_block, sink_pb_route_idx);
     delay += incr_delay;
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
     vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d delay=%g incr_delay=%g\n", 
                 clb_sink_block,
                 sink_pb_route_idx, sink_pb_route->atom_net_id, 
@@ -182,6 +194,7 @@ inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_capture_clust
                 sink_pb_route->prev_pb_pin_id,
                 delay,
                 incr_delay);
+#endif
 
     while(sink_pb_route->prev_pb_pin_id >= 0) {
         //Advance to the next element
@@ -190,6 +203,7 @@ inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_capture_clust
         incr_delay = pb_route_max_delay(clb_sink_block, sink_pb_route_idx);
         delay += incr_delay;
 
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
         vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d delay=%g incr_delay=%g\n", 
                     clb_sink_block,
                     sink_pb_route_idx, sink_pb_route->atom_net_id, 
@@ -197,6 +211,7 @@ inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_capture_clust
                     sink_pb_route->prev_pb_pin_id,
                     delay,
                     incr_delay);
+#endif
 
         VTR_ASSERT(sink_pb_route->atom_net_id == atom_net);
     }
@@ -232,7 +247,9 @@ inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_inter_cluster
 
     float delay = net_delay_[iclb_net][iclb_net_sink_pin];
 
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
     vtr::printf("CLB Net: %d (%s) delay=%g\n", iclb_net, g_clbs_nlist.net[iclb_net].name, delay);
+#endif
 
     t_net_pin clb_driver_output_pin = g_clbs_nlist.net[clb_sink_input_pin.net].pins[0];
 
@@ -249,6 +266,8 @@ inline std::tuple<float> PlacementDelayCalculator::trace_launch_cluster_delay(t_
     const t_pb_route* driver_pb_route = &driver_pb_routes[driver_pb_route_idx];
     float incr_delay = pb_route_max_delay(clb_driver_output_pin.block, driver_pb_route_idx);
     delay += incr_delay;
+
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
     vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d delay=%g incr_delay=%g\n", 
                 clb_driver_output_pin.block,
                 driver_pb_route_idx, driver_pb_route->atom_net_id, 
@@ -256,6 +275,7 @@ inline std::tuple<float> PlacementDelayCalculator::trace_launch_cluster_delay(t_
                 driver_pb_route->prev_pb_pin_id,
                 delay,
                 incr_delay);
+#endif
 
     while(driver_pb_route->prev_pb_pin_id >= 0) {
 
@@ -266,6 +286,7 @@ inline std::tuple<float> PlacementDelayCalculator::trace_launch_cluster_delay(t_
         incr_delay = pb_route_max_delay(clb_driver_output_pin.block, driver_pb_route_idx);
         delay += incr_delay;
 
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
     vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) prev_pb_pin_id=%d delay=%g incr_delay=%g\n", 
                 clb_driver_output_pin.block,
                 driver_pb_route_idx, driver_pb_route->atom_net_id, 
@@ -273,6 +294,7 @@ inline std::tuple<float> PlacementDelayCalculator::trace_launch_cluster_delay(t_
                 driver_pb_route->prev_pb_pin_id,
                 delay,
                 incr_delay);
+#endif
 
         VTR_ASSERT(driver_pb_route->atom_net_id == atom_net);
     }
