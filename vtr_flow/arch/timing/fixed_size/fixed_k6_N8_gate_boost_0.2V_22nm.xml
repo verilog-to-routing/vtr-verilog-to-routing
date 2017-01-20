@@ -10,16 +10,14 @@ Soft logic blocks use 50% depopulated crossbars
 
 Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but since VPR is in min W transistor areas, no area scaling is needed
 
--->
-  
-  <architecture>
+--><architecture>
   
   <!-- ODIN II specific config -->
   <models>
     <model name="multiply">
       <input_ports>
-      <port name="a"/>
-      <port name="b"/>
+      <port name="a" combinational_sink_ports="out"/>
+      <port name="b" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
       <port name="out"/>
@@ -28,29 +26,29 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
     
     <model name="single_port_ram">
       <input_ports>
-      <port name="we"/>     <!-- control -->
-      <port name="addr"/>  <!-- address lines -->
-      <port name="data"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+      <port name="we" clock="clk"/>     <!-- control -->
+      <port name="addr" clock="clk"/>  <!-- address lines -->
+      <port name="data" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
       <port name="clk" is_clock="1"/>  <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
-      <port name="out"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      <port name="out" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
 
     <model name="dual_port_ram">
       <input_ports>
-      <port name="we1"/>     <!-- write enable -->
-      <port name="we2"/>     <!-- write enable -->
-      <port name="addr1"/>  <!-- address lines -->
-      <port name="addr2"/>  <!-- address lines -->
-      <port name="data1"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
-      <port name="data2"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+      <port name="we1" clock="clk"/>     <!-- write enable -->
+      <port name="we2" clock="clk"/>     <!-- write enable -->
+      <port name="addr1" clock="clk"/>  <!-- address lines -->
+      <port name="addr2" clock="clk"/>  <!-- address lines -->
+      <port name="data1" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+      <port name="data2" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
       <port name="clk" is_clock="1"/>  <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
-      <port name="out1"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
-      <port name="out2"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      <port name="out1" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      <port name="out2" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
 
@@ -190,24 +188,24 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
 			<direct name="direct6" input="ble6.clk" output="ff.clk"/>			
 	        <!-- Register feedback mux -->   
 	    <mux name="mux1" input="ble6.in_C ff.Q" output="lut6.in[2:2]">
-			  <delay_constant max="0.392e-10" in_port="ble6.in_C" out_port="lut6.in[2:2]" />
-			  <delay_constant max="0.392e-10" in_port="ff.Q" out_port="lut6.in[2:2]" />  
+			  <delay_constant max="0.392e-10" in_port="ble6.in_C" out_port="lut6.in[2:2]"/>
+			  <delay_constant max="0.392e-10" in_port="ff.Q" out_port="lut6.in[2:2]"/>  
 			</mux>
 	        <!-- FF input selection mux -->
 	    <mux name="mux2" input="lut6.out ble6.in_C" output="ff.D">
-			  <delay_constant max="1.33594e-11" in_port="lut6.out" out_port="ff.D" />
-			  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff.D" />
+			  <delay_constant max="1.33594e-11" in_port="lut6.out" out_port="ff.D"/>
+			  <delay_constant max="1.57355e-11" in_port="ble6.in_C" out_port="ff.D"/>
         <pack_pattern name="ble6" in_port="lut6.out" out_port="ff.D"/>
 			</mux>
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3" input="ff.Q lut6.out" output="ble6.out_local">
-			  <delay_constant max="9.514e-11" in_port="ff.Q" out_port="ble6.out_local" />
-	      <delay_constant max="9.514e-11" in_port="lut6.out" out_port="ble6.out_local" />
+			  <delay_constant max="9.514e-11" in_port="ff.Q" out_port="ble6.out_local"/>
+	      <delay_constant max="9.514e-11" in_port="lut6.out" out_port="ble6.out_local"/>
 			</mux>
 	        <!-- BLE output (routing 1) --> 
 	    <mux name="mux4" input="ff.Q lut6.out" output="ble6.out_routing[0:0]">
-	      <delay_constant max="3.211e-11" in_port="ff.Q" out_port="ble6.out_routing[0:0]" />
-	  	  <delay_constant max="3.211e-11" in_port="lut6.out" out_port="ble6.out_routing[0:0]" />
+	      <delay_constant max="3.211e-11" in_port="ff.Q" out_port="ble6.out_routing[0:0]"/>
+	  	  <delay_constant max="3.211e-11" in_port="lut6.out" out_port="ble6.out_routing[0:0]"/>
 			</mux>
 		  </interconnect>
 		</pb_type>
@@ -216,28 +214,28 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
          <interconnect>
           <!-- 50% sparsely populated local routing -->
           <complete name="lutA" input="clb.I4 clb.I3 ble6[1:0].out_local ble6[3:2].out_local" output="ble6[7:0].in_A">
-            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_A" />
-            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_A" />
+            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_A"/>
+            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_A"/>
           </complete>
           <complete name="lutB" input="clb.I3 clb.I2 ble6[3:2].out_local ble6[5:4].out_local" output="ble6[7:0].in_B">
-            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_B" />
-            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_B" />
+            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_B"/>
+            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_B"/>
             </complete>
           <complete name="lutC" input="clb.I2 clb.I1 ble6[5:4].out_local ble6[7:6].out_local" output="ble6[7:0].in_C">
-            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_C" />
-            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_C" />
+            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_C"/>
+            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_C"/>
             </complete>
           <complete name="lutD" input="clb.I4 clb.I2 ble6[1:0].out_local ble6[5:4].out_local" output="ble6[7:0].in_D">
-            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_D" />
-            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_D" />
+            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_D"/>
+            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="ble6.in_D"/>
             </complete>
           <complete name="lutE" input="clb.I3 clb.I1 ble6[3:2].out_local ble6[7:6].out_local" output="ble6[7:0].in_E">
-            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_E" />
-            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_E" />
+            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="ble6.in_E"/>
+            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_E"/>
             </complete>
           <complete name="lutF" input="clb.I4 clb.I1 ble6[1:0].out_local ble6[7:6].out_local" output="ble6[7:0].in_F">
-            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_F" />
-            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_F" />
+            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="ble6.in_F"/>
+            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="ble6.in_F"/>
             </complete>
           <complete name="clks" input="clb.clk" output="ble6[7:0].clk">
           </complete>
@@ -340,7 +338,7 @@ Scaling assumptions from 40nm to 22nm: delay constant area drop (22/40)^2 but si
               <input name="B_cfg" num_pins="18"/>
               <output name="OUT_cfg" num_pins="36"/>
 
-              <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1" >
+              <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1">
                 <input name="a" num_pins="18"/>
                 <input name="b" num_pins="18"/>
                 <output name="out" num_pins="36"/>

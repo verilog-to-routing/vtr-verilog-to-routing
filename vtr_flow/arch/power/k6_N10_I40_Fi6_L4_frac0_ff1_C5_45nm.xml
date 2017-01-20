@@ -1,15 +1,9 @@
-<!-- k = 6 -->
-<!-- N = 10 -->
-<!-- I = 40 -->
-<!-- Fi = 6 -->
-<!-- frac_level = 0 -->
-<!-- ff = 1 -->
-<architecture>
+<!-- k = 6 --><!-- N = 10 --><!-- I = 40 --><!-- Fi = 6 --><!-- frac_level = 0 --><!-- ff = 1 --><architecture>
   <models>
     <model name="multiply">
     	<input_ports>
-    		<port name="a"/>
-    		<port name="b"/>
+    		<port name="a" combinational_sink_ports="out"/>
+    		<port name="b" combinational_sink_ports="out"/>
     	</input_ports>
     	<output_ports>
     		<port name="out"/>
@@ -17,41 +11,41 @@
     </model>
     <model name="single_port_ram">
     	<input_ports>
-    		<port name="we"/>
+    		<port name="we" clock="clk"/>
     		<!-- control -->
-    		<port name="addr"/>
+    		<port name="addr" clock="clk"/>
     		<!-- address lines -->
-    		<port name="data"/>
+    		<port name="data" clock="clk"/>
     		<!-- data lines can be broken down into smaller bit widths minimum size 1 -->
     		<port name="clk" is_clock="1"/>
     		<!-- memories are often clocked -->
     	</input_ports>
     	<output_ports>
-    		<port name="out"/>
+    		<port name="out" clock="clk"/>
     		<!-- output can be broken down into smaller bit widths minimum size 1 -->
     	</output_ports>
     </model>
     <model name="dual_port_ram">
     	<input_ports>
-    		<port name="we1"/>
+    		<port name="we1" clock="clk"/>
     		<!-- write enable -->
-    		<port name="we2"/>
+    		<port name="we2" clock="clk"/>
     		<!-- write enable -->
-    		<port name="addr1"/>
+    		<port name="addr1" clock="clk"/>
     		<!-- address lines -->
-    		<port name="addr2"/>
+    		<port name="addr2" clock="clk"/>
     		<!-- address lines -->
-    		<port name="data1"/>
+    		<port name="data1" clock="clk"/>
     		<!-- data lines can be broken down into smaller bit widths minimum size 1 -->
-    		<port name="data2"/>
+    		<port name="data2" clock="clk"/>
     		<!-- data lines can be broken down into smaller bit widths minimum size 1 -->
     		<port name="clk" is_clock="1"/>
     		<!-- memories are often clocked -->
     	</input_ports>
     	<output_ports>
-    		<port name="out1"/>
+    		<port name="out1" clock="clk"/>
     		<!-- output can be broken down into smaller bit widths minimum size 1 -->
-    		<port name="out2"/>
+    		<port name="out2" clock="clk"/>
     		<!-- output can be broken down into smaller bit widths minimum size 1 -->
     	</output_ports>
     </model>
@@ -676,7 +670,7 @@
               <input name="B_cfg" num_pins="18"/>
               <output name="OUT_cfg" num_pins="36"/>
     
-              <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1" >
+              <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1">
                 <input name="a" num_pins="18"/>
                 <input name="b" num_pins="18"/>
                 <output name="out" num_pins="36"/>
