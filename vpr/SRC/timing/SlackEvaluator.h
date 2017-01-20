@@ -4,6 +4,7 @@
 #include "atom_netlist.h"
 #include "timing_analyzers.hpp"
 #include "vtr_flat_map.h"
+#include "vpr_error.h"
 
 class SlackEvaluator {
     public:
