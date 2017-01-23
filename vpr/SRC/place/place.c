@@ -479,7 +479,6 @@ void try_place(struct s_placer_opts placer_opts,
 			cost, bb_cost, timing_cost, delay_cost);
 	vtr::printf_info("\n");
 
-#ifndef SPEC
 	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
 			"-------", "-------", "----------", "----------", "----------", "----------", 
 			"-------", "-------", "-------", "-------", "------", "---------", "------");
@@ -490,7 +489,6 @@ void try_place(struct s_placer_opts placer_opts,
 	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
 			"-------", "-------", "----------", "----------", "----------", "----------", 
 			"-------", "-------", "-------", "-------", "------", "---------", "------");
-#endif
 
 	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d", 
 		cost, bb_cost, timing_cost, delay_cost, width_fac);
@@ -568,25 +566,11 @@ void try_place(struct s_placer_opts placer_opts,
 		oldt = t; /* for finding and printing alpha. */
 		update_t(&t, rlim, success_rat, annealing_sched);
 
-#ifndef SPEC
 		critical_path_delay = get_critical_path_delay();
-		if(oldt >= 100.0 - EPSILON) {
-			vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
-					oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
-					stats.av_delay_cost, place_delay_value, critical_path_delay, 
-					success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
-		} else if(oldt >= 10.0 - EPSILON) {
-			vtr::printf_info("%7.4f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
-					oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
-					stats.av_delay_cost, place_delay_value, critical_path_delay, 
-					success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
-		} else {
-			vtr::printf_info("%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
-					oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
-					stats.av_delay_cost, place_delay_value, critical_path_delay, 
-					success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
-		}
-#endif
+        vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
+                oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
+                stats.av_delay_cost, place_delay_value, critical_path_delay, 
+                success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
 
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
 				cost, bb_cost, timing_cost, t);
@@ -637,11 +621,9 @@ void try_place(struct s_placer_opts placer_opts,
 
 	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
-#ifndef SPEC
 	vtr::printf_info("%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7s %7.4f %7.4f %7.4f %6.3f %9d\n",
 			t, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, place_delay_value, 
 			" ", success_rat, std_dev, rlim, crit_exponent, tot_iter);
-#endif
 
 	// TODO:  
 	// 1. print a message about number of aborted moves.
@@ -724,9 +706,7 @@ void try_place(struct s_placer_opts placer_opts,
 	vtr::printf_info("\tSwaps aborted : %*d (%4.1f %)\n", num_swap_print_digits, num_swap_aborted, 100*abort_rate);
 	
 
-#ifdef SPEC
 	vtr::printf_info("Total moves attempted: %d.0\n", tot_iter);
-#endif
 
 	free_placement_structs(placer_opts);
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -1548,9 +1528,8 @@ static enum swap_result assess_swap(float delta_c, float t) {
 
 	if (delta_c <= 0) {
 
-#ifdef SPEC			/* Reduce variation in final solution due to round off */
+        /* Reduce variation in final solution due to round off */
 		fnum = vtr::frand();
-#endif
 
 		accept = ACCEPTED;
 		return (accept);
