@@ -36,6 +36,15 @@ class IntraLbPbPinLookup {
         t_pb_graph_pin*** intra_lb_pb_pin_lookup_; 
 };
 
+//Find the atom pins (drivers or sinks) connected to the specified top-level CLB pin
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(int clb, int clb_pin);
+
+//Find the atom pin driving to the specified top-level CLB pin
+AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin);
+
+//Find the atom pins driven by the specified top-level CLB pin
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin);
+
 
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);
 int get_max_depth_of_pb_type(t_pb_type *pb_type);

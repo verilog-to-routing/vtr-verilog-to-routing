@@ -82,6 +82,9 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_p
 
 static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapping);
 
+static std::vector<int> find_connected_internal_clb_sink_pins(int clb, int pb_pin);
+static void find_connected_internal_clb_sink_pins_recurr(int clb, int pb_pin, std::vector<int>& connected_sink_pb_pins);
+
 /******************** Subroutine definitions *********************************/
 
 /**
@@ -211,6 +214,92 @@ void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs) {
     std::swap(lhs.num_types_, rhs.num_types_);
     std::swap(lhs.block_types_, rhs.block_types_);
     std::swap(lhs.intra_lb_pb_pin_lookup_, rhs.intra_lb_pb_pin_lookup_);
+}
+
+//Returns the set of pins which are connected to the top level clb pin
+//  The pin may be an input or output (returning the connected sinks or drivers respectively)
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(int clb, int clb_pin) {
+    std::vector<AtomPinId> atom_pins;
+
+    if(is_opin(clb_pin, block[clb].type)) {
+        //output
+        AtomPinId driver = find_clb_pin_driver_atom_pin(clb, clb_pin);
+        if(driver) {
+            atom_pins.push_back(driver);
+        }
+    } else {
+        //input
+        atom_pins = find_clb_pin_sink_atom_pins(clb, clb_pin);
+    }
+
+    return atom_pins;
+}
+
+//Returns the atom pin which drives the top level clb output pin
+AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin) {
+    t_pb_route* pb_routes = block[clb].pb_route;
+
+    int pb_pin_id = pb_routes[clb_pin].driver_pb_pin_id;
+    if(pb_pin_id < 0) {
+        //CLB output pin has no internal driver
+        return AtomPinId::INVALID();
+    }
+
+    //Trace back until the driver is reached
+    while(pb_routes[pb_pin_id].driver_pb_pin_id >= 0) {
+        pb_pin_id = pb_routes[pb_pin_id].driver_pb_pin_id;
+    }
+    VTR_ASSERT(pb_pin_id >= 0);
+
+    //Convert the pb_pin to a t_pb_graph_pin
+    IntraLbPbPinLookup pb_gpin_lookup(type_descriptors, num_types);
+    const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(block[clb].type->index, pb_pin_id);
+
+    //Conver the t_pb_graph_pin to an atom pin
+    AtomPinId atom_pin = g_atom_map.pb_graph_pin_atom_pin(gpin);
+    VTR_ASSERT(atom_pin);
+
+    return atom_pin;
+}
+
+//Returns the set of atom sink pins associated with the top level clb input pin
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin) {
+    t_pb_route* pb_routes = block[clb].pb_route;
+
+
+    VTR_ASSERT_MSG(pb_routes[clb_pin].driver_pb_pin_id < 0, "CLB input pin should have no internal drivers");
+
+    std::vector<int> connected_sink_pb_pins = find_connected_internal_clb_sink_pins(clb, clb_pin);
+
+    std::vector<AtomPinId> sink_atom_pins;
+    IntraLbPbPinLookup pb_gpin_lookup(type_descriptors, num_types);
+    for(int sink_pb_pin : connected_sink_pb_pins) {
+        const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(block[clb].type->index, sink_pb_pin);
+        AtomPinId atom_pin = g_atom_map.pb_graph_pin_atom_pin(gpin);
+        VTR_ASSERT(atom_pin);
+        sink_atom_pins.push_back(atom_pin);
+    }
+
+    return sink_atom_pins;
+}
+
+//Find sinks internal to the given clb which are connected to the specified pb_pin
+static std::vector<int> find_connected_internal_clb_sink_pins(int clb, int pb_pin) {
+    std::vector<int> connected_sink_pb_pins;
+    find_connected_internal_clb_sink_pins_recurr(clb, pb_pin, connected_sink_pb_pins);
+
+    return connected_sink_pb_pins;
+}
+
+//Recursive helper for find_connected_internal_clb_sink_pins()
+static void find_connected_internal_clb_sink_pins_recurr(int clb, int pb_pin, std::vector<int>& connected_sink_pb_pins) {
+    if(block[clb].pb_route[pb_pin].sink_pb_pin_ids.empty()) {
+        //No more sinks => primitive input
+        connected_sink_pb_pins.push_back(pb_pin);
+    }
+    for(int sink_pb_pin : block[clb].pb_route[pb_pin].sink_pb_pin_ids) {
+        find_connected_internal_clb_sink_pins_recurr(clb, sink_pb_pin, connected_sink_pb_pins);
+    }
 }
 
 bool is_opin(int ipin, t_type_ptr type) {
