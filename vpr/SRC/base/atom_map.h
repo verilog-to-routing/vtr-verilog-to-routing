@@ -14,7 +14,8 @@ class AtomMap {
         /*
          * PBs
          */
-        //Returns the pb associated with blk_id
+        //Returns the leaf pb associated with the atom blk_id
+        //  Note: this is the lowest level pb which corresponds directly to the atom block
         const t_pb* atom_pb(const AtomBlockId blk_id) const;
 
         //Returns the atom block id assoicated with pb
@@ -31,9 +32,14 @@ class AtomMap {
         /*
          * PB Pins
          */
+        //Returns the pb graph pin associated with the specified atom pin
         const t_pb_graph_pin* atom_pin_pb_graph_pin(AtomPinId atom_pin) const;
+
+        //Returns the atom pin associated with the specified pb graph pin
         AtomPinId pb_graph_pin_atom_pin(const t_pb_graph_pin* gpin) const;
-        void set_atom_pin_pb_graph_pin(AtomPinId atom_pin, const t_pb_graph_pin* gpin) const;
+
+        //Sets the mapping between an atom pin and pb graph pin
+        void set_atom_pin_pb_graph_pin(AtomPinId atom_pin, const t_pb_graph_pin* gpin);
 
         /*
          * Blocks
@@ -82,7 +88,7 @@ class AtomMap {
         std::unordered_map<AtomBlockId,const t_pb*> atom_to_pb_;
         std::unordered_map<const t_pb*,AtomBlockId> pb_to_atom_;
 
-        std::unordered_map<AtomBlockId,const t_pb_graph_node*> atom_to_lowest_cost_pb_gnode_;
+        vtr::bimap<AtomPinId,const t_pb_graph_pin*> atom_to_pb_graph_pin_;
 
         std::vector<int> atom_to_clb_;
         std::unordered_map<int,AtomBlockId> clb_to_atom_;

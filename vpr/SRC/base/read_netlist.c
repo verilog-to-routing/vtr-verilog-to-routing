@@ -65,6 +65,9 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_ro
 
 static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node);
 
+static void load_atom_pin_mapping();
+static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
+
 /**
  * Initializes the block_list with info from a netlist 
  * net_file - Name of the netlist file to read
@@ -196,6 +199,9 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 	//Added August 2013, Daniel Chen for loading post-pack netlist into new data structures
 	load_global_net_from_array(ext_nlist, ext_ncount, &g_clbs_nlist);
 	//echo_global_nlist_net(&g_clbs_nlist, ext_nlist);
+
+    /* load mapping between atom pins and pb_graph_pins */
+    load_atom_pin_mapping();
 
 	clock_t end = clock();
 
@@ -945,3 +951,86 @@ static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin) {
     //Store ourselves with the driver
     pb_route[driver].sink_pb_pin_ids.push_back(ipin);
 }
+
+//Walk through the atom netlist looking up and storing the t_pb_graph_pin associated with
+//each connected AtomPinId
+static void load_atom_pin_mapping() {
+    for(const AtomBlockId blk : g_atom_nl.blocks()) {
+        const t_pb* pb = g_atom_map.atom_pb(blk);
+        VTR_ASSERT_MSG(pb, "Atom block must have a matching PB");
+
+        const t_pb_graph_node* gnode = pb->pb_graph_node;
+        VTR_ASSERT_MSG(gnode->pb_type->model == g_atom_nl.block_model(blk),
+                       "Atom block PB must match BLIF model");
+
+        for(int iport = 0; iport < gnode->num_input_ports; ++iport) {
+            if (gnode->num_input_pins[iport] <= 0) continue;
+
+            const AtomPortId port = g_atom_nl.find_port(blk, gnode->input_pins[iport][0].port->model_port);
+            VTR_ASSERT(port);
+
+            for(int ipin = 0; ipin < gnode->num_input_pins[iport]; ++ipin) {
+                const t_pb_graph_pin* gpin = &gnode->input_pins[iport][ipin];
+                VTR_ASSERT(gpin);
+
+                set_atom_pin_mapping(blk, port, gpin);
+            }
+        }
+
+        for(int iport = 0; iport < gnode->num_output_ports; ++iport) {
+            if (gnode->num_output_pins[iport] <= 0) continue;
+
+            const AtomPortId port = g_atom_nl.find_port(blk, gnode->output_pins[iport][0].port->model_port);
+            VTR_ASSERT(port);
+
+            for(int ipin = 0; ipin < gnode->num_output_pins[iport]; ++ipin) {
+                const t_pb_graph_pin* gpin = &gnode->output_pins[iport][ipin];
+                VTR_ASSERT(gpin);
+
+                set_atom_pin_mapping(blk, port, gpin);
+            }
+        }
+
+        for(int iport = 0; iport < gnode->num_clock_ports; ++iport) {
+            if (gnode->num_clock_pins[iport] <= 0) continue;
+
+            const AtomPortId port = g_atom_nl.find_port(blk, gnode->clock_pins[iport][0].port->model_port);
+            VTR_ASSERT(port);
+
+            for(int ipin = 0; ipin < gnode->num_clock_pins[iport]; ++ipin) {
+                const t_pb_graph_pin* gpin = &gnode->clock_pins[iport][ipin];
+                VTR_ASSERT(gpin);
+
+                set_atom_pin_mapping(blk, port, gpin);
+            }
+        }
+    }
+}
+
+static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin) {
+    int clb_index = g_atom_map.atom_clb(atom_blk);
+    VTR_ASSERT(clb_index >= 0);
+
+    const t_pb_route* pb_route = &block[clb_index].pb_route[gpin->pin_count_in_cluster];
+
+    if(!pb_route->atom_net_id) {
+        return;
+    }
+
+    //There is an atom net connected to this gpin, we need to determine which atom pin it corresponds to.
+    //This must be done as a full search, since the clustering may re-arrange logically equivalent pins.
+    bool found = false;
+    for(AtomPinId atom_pin : g_atom_nl.port_pins(atom_port)) {
+        const AtomNetId atom_net = g_atom_nl.pin_net(atom_pin);
+
+        if(atom_net == pb_route->atom_net_id) {
+            VTR_ASSERT_MSG(!found, "Ambiguous atom net to pin connection.  The same net is connected multiple times to the same atom port"); 
+
+            found = true;
+
+            //Save the mapping
+            g_atom_map.set_atom_pin_pb_graph_pin(atom_pin, gpin);
+        }
+    }
+}
+
