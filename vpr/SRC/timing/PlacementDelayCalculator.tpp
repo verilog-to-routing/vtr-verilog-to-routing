@@ -234,7 +234,6 @@ inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_capture_clust
     }
 
     
-    //TODO: delay
     return std::make_tuple(delay, clb_input_pin);
 }
 
@@ -253,7 +252,6 @@ inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_inter_cluster
 
     t_net_pin clb_driver_output_pin = g_clbs_nlist.net[clb_sink_input_pin.net].pins[0];
 
-    //TODO: delay
     return std::make_tuple(delay, clb_driver_output_pin);
 }
 
@@ -299,61 +297,16 @@ inline std::tuple<float> PlacementDelayCalculator::trace_launch_cluster_delay(t_
         VTR_ASSERT(driver_pb_route->atom_net_id == atom_net);
     }
 
-    //TODO: delay
     return std::make_tuple(delay);
 }
 
 
 
 inline const t_pb_graph_pin* PlacementDelayCalculator::find_pb_graph_pin(const AtomPinId atom_pin) const {
-#if 0
-    AtomBlockId blk = netlist_.pin_block(pin);
-
-    //Graph node for this primitive
-    const t_pb_graph_node* pb_gnode = netlist_map_.atom_pb_graph_node(blk);
-    VTR_ASSERT(pb_gnode);
-
-    AtomPortId port = netlist_.pin_port(pin);
-    const t_model_ports* model_port = netlist_.port_model(port);
-    int ipin = netlist_.pin_port_bit(pin);
-
-    const t_pb_graph_pin* gpin = get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
-    VTR_ASSERT(gpin);
-
-    return gpin;
-#else
-    AtomNetId atom_net = netlist_.pin_net(atom_pin);
-    AtomPortId atom_port = netlist_.pin_port(atom_pin);
-    AtomBlockId atom_blk = netlist_.pin_block(atom_pin);
-
-    const t_model_ports* model_port = netlist_.port_model(atom_port);
-
-    int clb = netlist_map_.atom_clb(atom_blk);
-    const t_pb_route* pb_route = block[clb].pb_route;
-    const t_pb_graph_node* pb_gnode = netlist_map_.atom_pb_graph_node(atom_blk);
-
-    //Find the pb graph pin associated with the this atom pin
-    //
-    //Note that we can not look-up the pb graph pin directly by index, since the pins on primitives 
-    //such as LUTs may have been rotated (this happens somewhere inside the packer...)
-    //TODO: find where this is done in the packer and update the atom netlist to reflect the applied
-    //      rotation and update this code to perform the look-up directly
-    const t_pb_graph_pin* net_gpin = nullptr;
-    for(BitIndex ipin = 0; ipin < netlist_.port_width(atom_port); ++ipin) {
-        const t_pb_graph_pin* gpin = get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
-        if(gpin) {
-            AtomNetId connected_atom_net = pb_route[gpin->pin_count_in_cluster].atom_net_id;
-
-            if(connected_atom_net == atom_net) {
-                net_gpin = gpin;
-                break;
-            }
-        }
-    }
+    const t_pb_graph_pin* net_gpin = g_atom_map.atom_pin_pb_graph_pin(atom_pin);
     VTR_ASSERT(net_gpin != nullptr);
 
     return net_gpin;
-#endif
 }
 
 inline bool PlacementDelayCalculator::is_clb_io_pin(int clb_block, int clb_pb_route_idx) const {
