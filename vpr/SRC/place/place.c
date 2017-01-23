@@ -9,7 +9,6 @@ using namespace std;
 #include "vtr_random.h"
 #include "vtr_matrix.h"
 
-#include "PlacementDelayCalculator.hpp"
 #include "analyzer_factory.hpp"
 #include "echo_writer.hpp"
 #include "sta_util.hpp"
@@ -31,6 +30,9 @@ using namespace std;
 #include "ReadOptions.h"
 #include "vpr_utils.h"
 #include "place_macro.h"
+
+#include "PlacementDelayCalculator.hpp"
+#include "SlackEvaluator.h"
 
 /************** Types and defines local to place.c ***************************/
 
@@ -287,19 +289,18 @@ static double get_net_wirelength_estimate(int inet, struct s_bb *bbptr);
 static void free_try_swap_arrays(void);
 
 static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
-	int num_connections, t_slack * slacks, float crit_exponent, float bb_cost,
+	int num_connections, float crit_exponent, float bb_cost,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost, float ** net_delay, const t_timing_inf &timing_inf,
-    tatum::TimingAnalyzer& timing_analyzer);
+	float * inverse_prev_bb_cost,
+    SetupSlackEvaluator& optimizer_slacks);
 
 static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
-	t_slack * slacks, float crit_exponent, int inner_recompute_limit,
+	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
-    float ** net_delay, const t_timing_inf &timing_inf,
-    tatum::TimingAnalyzer& timing_analyzer);
+    SetupSlackEvaluator& optimizer_slacks);
 
 /*****************************************************************************/
 void try_place(struct s_placer_opts placer_opts,
@@ -380,6 +381,8 @@ void try_place(struct s_placer_opts placer_opts,
     write_analysis_result(os_timing_echo_init, g_timing_graph, timing_analyzer);
     os_timing_echo_init.flush();
 
+    auto optimizer_slacks = make_optimizer_slacks(g_atom_nl, g_atom_map, timing_analyzer, g_timing_graph, dc);
+
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 		bb_cost = comp_bb_cost(NORMAL);
 
@@ -405,9 +408,8 @@ void try_place(struct s_placer_opts placer_opts,
 		comp_td_costs(&timing_cost, &delay_cost); /*also vtr::printf proper values into point_to_point_delay_cost */
 
         //Initial timing estimate
-		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, timing_inf, false, false);
-		load_criticalities(slacks, crit_exponent);
+        optimizer_slacks.update();
+		load_criticalities(optimizer_slacks, crit_exponent);
 
 
 		if (getEchoEnabled()) {
@@ -502,16 +504,15 @@ void try_place(struct s_placer_opts placer_opts,
 			cost = 1;
 		}
 
-		outer_loop_recompute_criticalities(placer_opts, num_connections, slacks,
+		outer_loop_recompute_criticalities(placer_opts, num_connections,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
-			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay, timing_inf,
-            *timing_analyzer);
+			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
+            optimizer_slacks);
 
 		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
-			move_lim, slacks, crit_exponent, inner_recompute_limit, &stats, 
+			move_lim, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, &delay_cost,
-			net_delay, timing_inf,
-            *timing_analyzer);
+            optimizer_slacks);
 
 		/* Lines below prevent too much round-off error from accumulating *
 		 * in the cost over many iterations.  This round-off can lead to  *
@@ -606,20 +607,19 @@ void try_place(struct s_placer_opts placer_opts,
 	/* Outer loop of the simmulated annealing ends */
 
 
-	outer_loop_recompute_criticalities(placer_opts, num_connections, slacks,
+	outer_loop_recompute_criticalities(placer_opts, num_connections,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
-			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay, timing_inf,
-            *timing_analyzer);
+			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
+            optimizer_slacks);
 
 	t = 0; /* freeze out */
 
 	/* Run inner loop again with temperature = 0 so as to accept only swaps
 	 * which reduce the cost of the placement */
 	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
-			move_lim, slacks, crit_exponent, inner_recompute_limit, &stats, 
+			move_lim, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, &delay_cost,
-			net_delay, timing_inf,
-            *timing_analyzer);
+            optimizer_slacks);
 
 	tot_iter += move_lim;
 	success_rat = ((float) stats.success_sum) / move_lim;
@@ -672,10 +672,8 @@ void try_place(struct s_placer_opts placer_opts,
         //Final timing estimate
 		net_delay = point_to_point_delay_cost; /*this makes net_delay up to date with    *
 		 *the same values that the placer is using*/
-		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, timing_inf, false, false);
 
-        timing_analyzer->update_timing();
+        optimizer_slacks.update();
 
         std::ofstream os_timing_echo_final("timing.place_final.echo");
         write_timing_graph(os_timing_echo_final, g_timing_graph);
@@ -743,12 +741,11 @@ void try_place(struct s_placer_opts placer_opts,
 
 /* Function to recompute the criticalities before the inner loop of the annealing */
 static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
-	int num_connections, t_slack * slacks, float crit_exponent, float bb_cost,
+	int num_connections, float crit_exponent, float bb_cost,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost, float ** net_delay, const t_timing_inf &timing_inf,
-    tatum::TimingAnalyzer& timing_analyzer
-    ) {
+	float * inverse_prev_bb_cost, 
+    SetupSlackEvaluator& optimizer_slacks) {
 
 	if (placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
 		return;
@@ -768,11 +765,9 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 		 *because it accesses point_to_point_delay array */
 
         //Per-temperature timing update
-		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, timing_inf, false, false);
-		load_criticalities(slacks, crit_exponent);
+        optimizer_slacks.update();
+		load_criticalities(optimizer_slacks, crit_exponent);
 
-        timing_analyzer.update_timing();
 
 		/*recompute costs from scratch, based on new criticalities */
 		comp_td_costs(timing_cost, delay_cost);
@@ -790,11 +785,10 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 /* Function which contains the inner loop of the simulated annealing */
 static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
-	t_slack * slacks, float crit_exponent, int inner_recompute_limit,
+	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
-	float ** net_delay, const t_timing_inf &timing_inf,
-    tatum::TimingAnalyzer& timing_analyzer) {
+    SetupSlackEvaluator& optimizer_slacks) {
 
 	int inner_crit_iter_count, inner_iter;
 	int swap_result;
@@ -846,12 +840,11 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 				 * criticalities; then update the timing cost since it will change.
 				 */
                 //Inner loop timing update
-				load_timing_graph_net_delays(net_delay);
-				do_timing_analysis(slacks, timing_inf, false, false);
-				load_criticalities(slacks, crit_exponent);
-				comp_td_costs(timing_cost, delay_cost);
+                optimizer_slacks.update();
+				load_criticalities(optimizer_slacks, crit_exponent);
 
-                timing_analyzer.update_timing();
+
+				comp_td_costs(timing_cost, delay_cost);
 			}
 			inner_crit_iter_count++;
 		}

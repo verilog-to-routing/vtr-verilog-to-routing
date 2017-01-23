@@ -9,11 +9,11 @@
 class PlacementDelayCalculator {
 
 public:
-    PlacementDelayCalculator(const AtomNetlist& netlist, const AtomMap& netlist_map, t_type_descriptor* types, int num_types, float** net_delay)
+    PlacementDelayCalculator(const AtomNetlist& netlist, const AtomMap& netlist_map, t_type_descriptor* types, int ntypes, float** net_delay)
         : netlist_(netlist)
         , netlist_map_(netlist_map)
         , net_delay_(net_delay)
-        , intra_lb_pb_pin_lookup_(types, num_types)
+        , intra_lb_pb_pin_lookup_(types, ntypes)
         {}
 
     tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;

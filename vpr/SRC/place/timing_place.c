@@ -7,6 +7,7 @@ using namespace std;
 #include "vtr_log.h"
 
 #include "vpr_types.h"
+#include "vpr_utils.h"
 #include "globals.h"
 #include "path_delay.h"
 #include "path_delay2.h"
@@ -76,39 +77,28 @@ void print_sink_delays(const char *fname) {
 }
 
 /**************************************/
-void load_criticalities(t_slack * slacks, float crit_exponent) {
+void load_criticalities(SetupSlackEvaluator& optimizer_slacks, float crit_exponent) {
 	/* Performs a 1-to-1 mapping from criticality to timing_place_crit.  
 	  For every pin on every net (or, equivalently, for every tedge ending 
 	  in that pin), timing_place_crit = criticality^(criticality exponent) */
 
-	unsigned int ipin, inet;
-#ifdef PATH_COUNTING
-	float timing_criticality, path_criticality; 
-#endif
-
-	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+	for (size_t inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		if (g_clbs_nlist.net[inet].is_global)
 			continue;
-		for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
-			if (slacks->timing_criticality[inet][ipin] < HUGE_NEGATIVE_FLOAT + 1) {
-				/* We didn't analyze this connection, so give it a timing_place_crit of 0. */
-				timing_place_crit[inet][ipin] = 0.;
-			} else {
-#ifdef PATH_COUNTING
-				/* Calculate criticality as a weighted sum of timing criticality and path 
-				criticality. The placer likes a great deal of contrast between criticalities. 
-				Since path criticality varies much more than timing, we "sharpen" timing 
-				criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
-				path_criticality = slacks->path_criticality[inet][ipin];
-				timing_criticality = pow(slacks->timing_criticality[inet][ipin], crit_exponent);
+		for (size_t ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
+            /* The placer likes a great deal of contrast between criticalities. 
+            Since path criticality varies much more than timing, we "sharpen" timing 
+            criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
 
-				timing_place_crit[inet][ipin] =		 PLACE_PATH_WEIGHT  * path_criticality
-											  + (1 - PLACE_PATH_WEIGHT) * timing_criticality; 
-#else
-				/* Just take timing criticality to some power (crit_exponent). */
-				timing_place_crit[inet][ipin] = pow(slacks->timing_criticality[inet][ipin], crit_exponent);
-#endif
-			}
+            const t_net_pin& net_pin = g_clbs_nlist.net[inet].pins[ipin];
+
+            std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(net_pin.block, net_pin.block_pin);
+
+            float clb_pin_crit = 0.;
+            for(const AtomPinId atom_pin : atom_pins) {
+                clb_pin_crit = std::max(clb_pin_crit, optimizer_slacks.setup_criticality(atom_pin));
+            }
+            timing_place_crit[inet][ipin] = pow(clb_pin_crit, crit_exponent);
 		}
 	}
 }
