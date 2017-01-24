@@ -61,9 +61,10 @@ class HoldAnalysis : public detail::CommonAnalysisVisitor<detail::HoldAnalysisOp
         HoldAnalysis(size_t num_tags, size_t num_slacks)
             : detail::CommonAnalysisVisitor<detail::HoldAnalysisOps>(num_tags, num_slacks) {}
 
-        TimingTags::tag_range hold_tags(const NodeId node_id) const { return ops_.get_tags(node_id); }
-        TimingTags::tag_range hold_tags(const NodeId node_id, TagType type) const { return ops_.get_tags(node_id, type); }
-        TimingTags::tag_range hold_slacks(const EdgeId edge_id) const { return ops_.get_slacks(edge_id); }
+        TimingTags::tag_range hold_tags(const NodeId node) const { return ops_.get_tags(node); }
+        TimingTags::tag_range hold_tags(const NodeId node, TagType type) const { return ops_.get_tags(node, type); }
+        TimingTags::tag_range hold_edge_slacks(const EdgeId edge) const { return ops_.get_edge_slacks(edge); }
+        TimingTags::tag_range hold_node_slacks(const NodeId node) const { return ops_.get_node_slacks(node); }
 };
 
 } //namepsace

@@ -48,7 +48,8 @@ class FullSetupTimingAnalyzer : public SetupTimingAnalyzer {
 
         TimingTags::tag_range setup_tags_impl(NodeId node_id) const override { return setup_visitor_.setup_tags(node_id); }
         TimingTags::tag_range setup_tags_impl(NodeId node_id, TagType type) const override { return setup_visitor_.setup_tags(node_id, type); }
-        TimingTags::tag_range setup_slacks_impl(EdgeId edge_id) const override { return setup_visitor_.setup_slacks(edge_id); }
+        TimingTags::tag_range setup_edge_slacks_impl(EdgeId edge_id) const override { return setup_visitor_.setup_edge_slacks(edge_id); }
+        TimingTags::tag_range setup_node_slacks_impl(NodeId node_id) const override { return setup_visitor_.setup_node_slacks(node_id); }
 
 
     private:

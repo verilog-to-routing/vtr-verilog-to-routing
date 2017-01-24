@@ -128,9 +128,10 @@ class SetupAnalysis : public detail::CommonAnalysisVisitor<detail::SetupAnalysis
         SetupAnalysis(size_t num_tags, size_t num_slacks)
             : detail::CommonAnalysisVisitor<detail::SetupAnalysisOps>(num_tags, num_slacks) {}
 
-        TimingTags::tag_range setup_tags(const NodeId node_id) const { return ops_.get_tags(node_id); }
-        TimingTags::tag_range setup_tags(const NodeId node_id, TagType type) const { return ops_.get_tags(node_id, type); }
-        TimingTags::tag_range setup_slacks(const EdgeId edge) const { return ops_.get_slacks(edge); }
+        TimingTags::tag_range setup_tags(const NodeId node) const { return ops_.get_tags(node); }
+        TimingTags::tag_range setup_tags(const NodeId node, TagType type) const { return ops_.get_tags(node, type); }
+        TimingTags::tag_range setup_edge_slacks(const EdgeId edge) const { return ops_.get_edge_slacks(edge); }
+        TimingTags::tag_range setup_node_slacks(const NodeId node) const { return ops_.get_node_slacks(node); }
 };
 
 } //namepsace
