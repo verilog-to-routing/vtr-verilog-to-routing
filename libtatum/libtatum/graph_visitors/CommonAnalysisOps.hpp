@@ -17,9 +17,10 @@ namespace tatum { namespace detail {
  */
 class CommonAnalysisOps {
     public:
-        CommonAnalysisOps(size_t num_tags, size_t num_slacks) 
-            : node_tags_(num_tags)
-            , edge_slacks_(num_slacks) {}
+        CommonAnalysisOps(size_t num_nodes, size_t num_edges) 
+            : node_tags_(num_nodes)
+            , edge_slacks_(num_edges)
+            , node_slacks_(num_nodes) {}
 
         CommonAnalysisOps(const CommonAnalysisOps&) = delete;
         CommonAnalysisOps(CommonAnalysisOps&&) = delete;
@@ -46,16 +47,25 @@ class CommonAnalysisOps {
 
         void reset_node(const NodeId node) { 
             node_tags_[node].clear();
+            node_slacks_[node].clear();
         }
 
-        void add_slack(const EdgeId edge, const TimingTag& slack_tag) {
-            TATUM_ASSERT(slack_tag.type() == TagType::SLACK);
-
-            edge_slacks_[edge].add_tag(slack_tag); 
+        void merge_slack_tags(const EdgeId edge, const Time time, TimingTag ref_tag) { 
+            ref_tag.set_type(TagType::SLACK);
+            edge_slacks_[edge].min(time, ref_tag); 
         }
 
-        TimingTags::tag_range get_slacks(const EdgeId edge) const {
+        void merge_slack_tags(const NodeId node, const Time time, TimingTag ref_tag) { 
+            ref_tag.set_type(TagType::SLACK);
+            node_slacks_[node].min(time, ref_tag); 
+        }
+
+        TimingTags::tag_range get_edge_slacks(const EdgeId edge) const {
             return edge_slacks_[edge].tags(TagType::SLACK);
+        }
+
+        TimingTags::tag_range get_node_slacks(const NodeId node) const {
+            return node_slacks_[node].tags(TagType::SLACK);
         }
 
         void reset_edge(const EdgeId edge) { 
@@ -65,7 +75,9 @@ class CommonAnalysisOps {
 
     protected:
         tatum::util::linear_map<NodeId,TimingTags> node_tags_;
+
         tatum::util::linear_map<EdgeId,TimingTags> edge_slacks_;
+        tatum::util::linear_map<NodeId,TimingTags> node_slacks_;
 };
 
 }} //namespace

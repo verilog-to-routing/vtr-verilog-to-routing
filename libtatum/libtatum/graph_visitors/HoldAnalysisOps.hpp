@@ -30,11 +30,6 @@ class HoldAnalysisOps : public CommonAnalysisOps {
             node_tags_[node].min(time, ref_tag); 
         }
 
-        void merge_slack_tags(const EdgeId edge, const Time time, TimingTag ref_tag) { 
-            ref_tag.set_type(TagType::SLACK);
-            edge_slacks_[edge].min(time, ref_tag); 
-        }
-
         template<class DelayCalc>
         Time data_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
             return dc.min_edge_delay(tg, edge_id); 

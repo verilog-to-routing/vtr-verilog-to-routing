@@ -54,18 +54,20 @@ class SetupHoldAnalysis {
         }
         
         template<class DelayCalc>
-        void do_slack_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const EdgeId edge) {
-            setup_visitor_.do_slack_traverse_edge(tg, dc, edge); 
-            hold_visitor_.do_slack_traverse_edge(tg, dc, edge); 
+        void do_slack_traverse_node(const TimingGraph& tg, const DelayCalc& dc, const NodeId node) {
+            setup_visitor_.do_slack_traverse_node(tg, dc, node); 
+            hold_visitor_.do_slack_traverse_node(tg, dc, node); 
         }
 
         TimingTags::tag_range setup_tags(const NodeId node_id) const { return setup_visitor_.setup_tags(node_id); }
         TimingTags::tag_range setup_tags(const NodeId node_id, TagType type) const { return setup_visitor_.setup_tags(node_id, type); }
-        TimingTags::tag_range setup_slacks(const EdgeId edge_id) const { return setup_visitor_.setup_slacks(edge_id); }
+        TimingTags::tag_range setup_edge_slacks(const EdgeId edge_id) const { return setup_visitor_.setup_edge_slacks(edge_id); }
+        TimingTags::tag_range setup_node_slacks(const NodeId node_id) const { return setup_visitor_.setup_node_slacks(node_id); }
 
         TimingTags::tag_range hold_tags(const NodeId node_id) const { return hold_visitor_.hold_tags(node_id); }
         TimingTags::tag_range hold_tags(const NodeId node_id, TagType type) const { return hold_visitor_.hold_tags(node_id, type); }
-        TimingTags::tag_range hold_slacks(const EdgeId edge_id) const { return hold_visitor_.hold_slacks(edge_id); }
+        TimingTags::tag_range hold_edge_slacks(const EdgeId edge_id) const { return hold_visitor_.hold_edge_slacks(edge_id); }
+        TimingTags::tag_range hold_node_slacks(const NodeId node_id) const { return hold_visitor_.hold_node_slacks(node_id); }
 
 
     private:

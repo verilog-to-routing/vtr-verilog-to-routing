@@ -91,7 +91,8 @@ class Callback {
 
         virtual void start_results() = 0;
         virtual void add_node_tag(TagType type, int node_id, int launch_domain_id, int capture_domain_id, float time) = 0;
-        virtual void add_edge_tag(TagType type, int edge_id, int launch_domain_id, int capture_domain_id, float time) = 0;
+        virtual void add_edge_slack(TagType type, int edge_id, int launch_domain_id, int capture_domain_id, float slack) = 0;
+        virtual void add_node_slack(TagType type, int node_id, int launch_domain_id, int capture_domain_id, float slack) = 0;
         virtual void finish_results() = 0;
 
         //End of parsing

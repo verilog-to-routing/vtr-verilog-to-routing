@@ -44,7 +44,8 @@ public:
 
     void start_results() override { }
     void add_node_tag(tatumparse::TagType type, int node_id, int launch_domain_id, int capture_domain_id, float time) override;
-    void add_edge_tag(tatumparse::TagType type, int node_id, int launch_domain_id, int capture_domain_id, float time) override;
+    void add_edge_slack(tatumparse::TagType type, int edge_id, int launch_domain_id, int capture_domain_id, float slack) override;
+    void add_node_slack(tatumparse::TagType type, int node_id, int launch_domain_id, int capture_domain_id, float slack) override;
     void finish_results() override { }
 
     //End of parsing

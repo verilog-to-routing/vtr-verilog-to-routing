@@ -88,14 +88,23 @@ class PrintCallback : public tp::Callback {
         }
         fprintf(stdout, " node: %d launch_domain: %d capture_domain: %d time: %g\n", node_id, launch_domain_id, capture_domain_id, time);
     }
-    void add_edge_tag(tp::TagType type, int edge_id, int launch_domain_id, int capture_domain_id, float time) override {
+    void add_edge_slack(tp::TagType type, int edge_id, int launch_domain_id, int capture_domain_id, float slack) override {
         fprintf(stdout, " type: ");
         switch(type) {
             case tp::TagType::SETUP_SLACK: fprintf(stdout, "SETUP_SLACK"); break;
             case tp::TagType::HOLD_SLACK: fprintf(stdout, "HOLD_SLACK"); break;
             default: assert(false);
         }
-        fprintf(stdout, " edge: %d launch_domain: %d capture_domain: %d time: %g\n", edge_id, launch_domain_id, capture_domain_id, time);
+        fprintf(stdout, " edge: %d launch_domain: %d capture_domain: %d time: %g\n", edge_id, launch_domain_id, capture_domain_id, slack);
+    }
+    void add_node_slack(tp::TagType type, int node_id, int launch_domain_id, int capture_domain_id, float slack) override {
+        fprintf(stdout, " type: ");
+        switch(type) {
+            case tp::TagType::SETUP_SLACK: fprintf(stdout, "SETUP_SLACK"); break;
+            case tp::TagType::HOLD_SLACK: fprintf(stdout, "HOLD_SLACK"); break;
+            default: assert(false);
+        }
+        fprintf(stdout, " node: %d launch_domain: %d capture_domain: %d time: %g\n", node_id, launch_domain_id, capture_domain_id, slack);
     }
     void finish_results() override { fprintf(stdout, "# end analysis_results\n"); }
 
@@ -149,7 +158,8 @@ class NopCallback : public tp::Callback {
 
         void start_results() override {}
         void add_node_tag(tp::TagType /*type*/, int /*node_id*/, int /*launch_domain_id*/, int /*capture_domain_id*/, float /*time*/) override {}
-        void add_edge_tag(tp::TagType /*type*/, int /*edge_id*/, int /*launch_domain_id*/, int /*capture_domain_id*/, float /*time*/) override {}
+        void add_edge_slack(tp::TagType /*type*/, int /*edge_id*/, int /*launch_domain_id*/, int /*capture_domain_id*/, float /*slack*/) override {}
+        void add_node_slack(tp::TagType /*type*/, int /*node_id*/, int /*launch_domain_id*/, int /*capture_domain_id*/, float /*slack*/) override {}
         void finish_results() override {}
 
         //End of parsing

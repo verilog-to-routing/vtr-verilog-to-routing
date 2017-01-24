@@ -66,7 +66,10 @@ void EchoLoader::add_node_tag(tatumparse::TagType type, int node_id, int launch_
     gr_->set_result(tatum::NodeId(node_id), type, tatum::DomainId(launch_domain_id), tatum::DomainId(capture_domain_id), time);
 }
 
-void EchoLoader::add_edge_tag(tatumparse::TagType /*type*/, int /*edge_id*/, int /*launch_domain_id*/, int /*capture_domain_id*/, float /*time*/) {
+void EchoLoader::add_edge_slack(tatumparse::TagType /*type*/, int /*edge_id*/, int /*launch_domain_id*/, int /*capture_domain_id*/, float /*slack*/) {
+    //nop
+}
+void EchoLoader::add_node_slack(tatumparse::TagType /*type*/, int /*node_id*/, int /*launch_domain_id*/, int /*capture_domain_id*/, float /*slack*/) {
     //nop
 }
 

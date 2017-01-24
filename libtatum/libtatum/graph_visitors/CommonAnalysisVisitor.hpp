@@ -48,7 +48,7 @@ class CommonAnalysisVisitor {
         void do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id);
 
         template<class DelayCalc>
-        void do_slack_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const EdgeId edge);
+        void do_slack_traverse_node(const TimingGraph& tg, const DelayCalc& dc, const NodeId node);
 
     protected:
         AnalysisOps ops_;
@@ -59,6 +59,9 @@ class CommonAnalysisVisitor {
 
         template<class DelayCalc>
         void do_required_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id);
+
+        template<class DelayCalc>
+        void do_slack_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const EdgeId edge);
 
         bool should_propagate_clocks(const TimingGraph& tg, const TimingConstraints& tc, const EdgeId edge_id) const;
         bool should_propagate_clock_launch_tags(const TimingGraph& tg, const EdgeId edge_id) const;
@@ -361,6 +364,26 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
         for(const TimingTag& sink_tag : sink_data_tags) {
             //We only propogate the required time if we have a valid matching arrival time
             ops_.merge_req_tags(node_id, sink_tag.time() - edge_delay, sink_tag, true);
+        }
+    }
+}
+
+template<class AnalysisOps>
+template<class DelayCalc>
+void CommonAnalysisVisitor<AnalysisOps>::do_slack_traverse_node(const TimingGraph& tg, const DelayCalc& dc, const NodeId node) {
+    //Calculate the slack for each edge
+    for(const EdgeId edge : tg.node_in_edges(node)) {
+        do_slack_traverse_edge(tg, dc, edge);
+    }
+
+    //Calculate the slacks at each node
+    for(const TimingTag& arr_tag : ops_.get_tags(node, TagType::DATA_ARRIVAL)) {
+        for(const TimingTag& req_tag : ops_.get_tags(node, TagType::DATA_REQUIRED)) {
+            if(!should_calculate_slack(arr_tag, req_tag)) continue;
+
+            Time slack_value = req_tag.time() - arr_tag.time();
+
+            ops_.merge_slack_tags(node, slack_value, req_tag);
         }
     }
 }
