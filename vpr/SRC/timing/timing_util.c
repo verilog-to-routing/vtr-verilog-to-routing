@@ -60,3 +60,57 @@ float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
     }
     return wns;
 }
+
+std::vector<HistogramBucket> find_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins) {
+    std::vector<HistogramBucket> histogram;
+
+    //Find the min and max slacks
+    float min_slack = std::numeric_limits<float>::infinity();
+    float max_slack = -std::numeric_limits<float>::infinity();
+    for(tatum::NodeId node : g_timing_graph.logical_outputs()) {
+        for(tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
+            float slack = tag.time().value();
+            
+            min_slack = std::min(min_slack, slack);
+            max_slack = std::max(max_slack, slack);
+        }
+    }
+
+    //Determine the bin size
+    float range = max_slack - min_slack;
+    float bin_size = range / num_bins;
+
+    //Create the buckets
+    float bucket_min = min_slack;
+    for(size_t ibucket = 0; ibucket < num_bins; ++ibucket) {
+        float bucket_max = bucket_min + bin_size;
+
+        histogram.emplace_back(bucket_min, bucket_max);
+
+        bucket_min = bucket_max;
+    }
+
+    //To avoid round-off errors we force the max value of the last bucket equal to the max slack
+    histogram[histogram.size()-1].max_value = max_slack;
+
+    //Count the slacks into the buckets
+    auto comp = [](const HistogramBucket& bucket, float slack) {
+        return bucket.max_value < slack;
+    };
+
+    for(tatum::NodeId node : g_timing_graph.logical_outputs()) {
+        for(tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
+            float slack = tag.time().value();
+            
+            //Find the bucket who's max is less than the current slack
+
+            auto iter = std::lower_bound(histogram.begin(), histogram.end(), slack, comp);
+            VTR_ASSERT(iter != histogram.end());
+            
+            iter->count++;
+        }
+    }
+
+    return histogram;
+}
+

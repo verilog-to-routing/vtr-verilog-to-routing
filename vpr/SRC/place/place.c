@@ -31,6 +31,7 @@ using namespace std;
 #include "vpr_utils.h"
 #include "place_macro.h"
 #include "timing_util.h"
+#include "histogram.h"
 
 #include "PlacementDelayCalculator.hpp"
 #include "SlackEvaluator.h"
@@ -485,6 +486,10 @@ void try_place(struct s_placer_opts placer_opts,
             1e9*find_setup_worst_negative_slack(*timing_analyzer));
 	vtr::printf_info("\n");
 
+    vtr::printf_info("Initial placement estimated setup slack histogram:\n");
+    print_histogram(find_setup_slack_histogram(*timing_analyzer));
+    vtr::printf_info("\n");
+
 	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %7s %7s %6s %9s %6s\n",
 			"-------", "-------", "----------", "----------", "----------", "----------", 
 			"-------", "-------", "-------", "-------", "-------", "-------", "------", 
@@ -699,6 +704,11 @@ void try_place(struct s_placer_opts placer_opts,
                 1e9*find_setup_total_negative_slack(*timing_analyzer));
         vtr::printf_info("Placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
                 1e9*find_setup_worst_negative_slack(*timing_analyzer));
+        vtr::printf_info("\n");
+
+        vtr::printf_info("Placement estimated setup slack histogram:\n");
+        print_histogram(find_setup_slack_histogram(*timing_analyzer));
+        vtr::printf_info("\n");
 	}
 
 	sprintf(msg, "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
