@@ -18,7 +18,6 @@ using namespace std;
 float **timing_place_crit; /*available externally */
 
 static vtr::t_chunk timing_place_crit_ch = {NULL, 0, NULL};
-static vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
 /******** prototypes ******************/
 static float **alloc_crit(vtr::t_chunk *chunk_list_ptr);
