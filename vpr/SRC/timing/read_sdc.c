@@ -1159,7 +1159,7 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
 
             float constraint = g_sdc->domain_constraint[isrc_clk][isnk_clk];
             if(constraint != DO_NOT_ANALYSE) {
-                tc.set_setup_constraint(src_domain, snk_domain, constraint);
+                tc.set_setup_constraint(src_domain, snk_domain, 1e-9*constraint);
             }
         }
     }
@@ -1194,7 +1194,7 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
         tatum::NodeId node = atom_map.pin_tnode[pin];
  
         //Apply the constraint
-        tc.set_input_constraint(node, domain, io_constraint->delay);
+        tc.set_input_constraint(node, domain, 1e-9*io_constraint->delay);
     }
 
     //Initialize the output constraints
@@ -1228,7 +1228,7 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
 
         tatum::NodeId node = atom_map.pin_tnode[pin];
 
-        tc.set_output_constraint(node, domain, io_constraint->delay);
+        tc.set_output_constraint(node, domain, 1e-9*io_constraint->delay);
     }
 
     //TODO: FF-FF constraint overrides (needs support in Tatum)
