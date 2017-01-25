@@ -38,7 +38,10 @@ float find_setup_total_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
     float tns = 0.;
     for(tatum::NodeId node : g_timing_graph.logical_outputs()) {
         for(tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
-            tns += tag.time().value();
+            float slack = tag.time().value();
+            if(slack < 0.) {
+                tns += slack;
+            }
         }
     }
     return tns;
@@ -48,7 +51,11 @@ float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
     float wns = 0.;
     for(tatum::NodeId node : g_timing_graph.logical_outputs()) {
         for(tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
-            wns = std::min(wns, tag.time().value());
+            float slack = tag.time().value();
+
+            if(slack < 0.) {
+                wns = std::min(wns, slack);
+            }
         }
     }
     return wns;
