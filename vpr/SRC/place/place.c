@@ -477,23 +477,25 @@ void try_place(struct s_placer_opts placer_opts,
 	moves_since_cost_recompute = 0;
 	vtr::printf_info("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
 			cost, bb_cost, timing_cost, delay_cost);
-	vtr::printf_info("Initial placement estimated critical path delay: %g ns\n", 
+	vtr::printf_info("Initial placement estimated Critical Path Delay (CPD): %g ns\n", 
             1e9*critical_path_delay);
-	vtr::printf_info("Initial placement estimated setup total negative slack (TNS): %g ns\n", 
+	vtr::printf_info("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
             1e9*find_setup_total_negative_slack(*timing_analyzer));
+	vtr::printf_info("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
+            1e9*find_setup_worst_negative_slack(*timing_analyzer));
 	vtr::printf_info("\n");
 
-	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %10s %7s %7s %7s %6s %9s %6s\n",
+	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %7s %7s %6s %9s %6s\n",
 			"-------", "-------", "----------", "----------", "----------", "----------", 
-			"-------", "----------", "-------", "-------", "-------", "------", 
+			"-------", "-------", "-------", "-------", "-------", "-------", "------", 
             "---------", "------");
-	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %10s %7s %7s %7s %6s %9s %6s\n",
+	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %7s %7s %6s %9s %6s\n",
 			"T", "Cost", "Av BB Cost", "Av TD Cost", "Av Tot Del",
-			"P to P Del", "CPD", "Setup TNS", "Ac Rate", "Std Dev", "R limit", "Exp",
+			"P to P Del", "CPD", "sTNS", "sWNS", "Ac Rate", "Std Dev", "R limit", "Exp",
 			"Tot Moves", "Alpha");
-	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %10s %7s %7s %7s %6s %9s %6s\n",
+	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %7s %7s %6s %9s %6s\n",
 			"-------", "-------", "----------", "----------", "----------", "----------", 
-			"-------", "----------", "-------", "-------", "-------", "------", 
+			"-------", "-------", "-------", "-------", "-------", "-------", "------", 
             "---------", "------");
 
 	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d", 
@@ -573,10 +575,11 @@ void try_place(struct s_placer_opts placer_opts,
 		update_t(&t, rlim, success_rat, annealing_sched);
 
 		critical_path_delay = find_critical_path_delay(*timing_analyzer);
-        vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %-10.4g %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
+        vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f % 7.3f % 7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
                 oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
                 stats.av_delay_cost, place_delay_value, 1e9*critical_path_delay, 
-                find_setup_total_negative_slack(*timing_analyzer),  
+                1e9*find_setup_total_negative_slack(*timing_analyzer),  
+                1e9*find_setup_worst_negative_slack(*timing_analyzer),  
                 success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
 
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
@@ -629,11 +632,12 @@ void try_place(struct s_placer_opts placer_opts,
 	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
     critical_path_delay = find_critical_path_delay(*timing_analyzer);
-    vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %-10.4g %7.4f %7.4f %7.4f %6.3f %9d %6s\n",
-            t, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
-            stats.av_delay_cost, place_delay_value, 1e9*critical_path_delay, 
-            find_setup_total_negative_slack(*timing_analyzer),  
-            success_rat, std_dev, rlim, crit_exponent, tot_iter, "");
+    vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f % 7.3f % 7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
+        t, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
+        stats.av_delay_cost, place_delay_value, 1e9*critical_path_delay, 
+        1e9*find_setup_total_negative_slack(*timing_analyzer),  
+        1e9*find_setup_worst_negative_slack(*timing_analyzer),  
+        success_rat, std_dev, rlim, crit_exponent, tot_iter, "");
 
 	// TODO:  
 	// 1. print a message about number of aborted moves.
@@ -691,8 +695,10 @@ void try_place(struct s_placer_opts placer_opts,
 		critical_path_delay = find_critical_path_delay(*timing_analyzer);
 		vtr::printf_info("\n");
 		vtr::printf_info("Placement estimated critical path delay: %g ns\n", 1e9*critical_path_delay);
-        vtr::printf_info("Placement estimated setup total negative slack (TNS): %g ns\n", 
+        vtr::printf_info("Placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
                 1e9*find_setup_total_negative_slack(*timing_analyzer));
+        vtr::printf_info("Placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
+                1e9*find_setup_worst_negative_slack(*timing_analyzer));
 	}
 
 	sprintf(msg, "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
@@ -1600,8 +1606,8 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 
 	/* TODO low priority: Could be merged into one look-up table */
 	/* Note: This heuristic is terrible on Quality of Results.  
-	 * A much better heuristic is to create a more comprehensive lookup table but
-	 * it's too late in the release cycle to do this.  Pushing until the next release */
+	 * A much better heuristic is to create a more comprehensive lookup table
+     */
 	if (source_type == IO_TYPE) {
 		if (sink_type == IO_TYPE)
 			delay_source_to_sink = delta_io_to_io[delta_x][delta_y];
@@ -1627,7 +1633,7 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 static void comp_td_point_to_point_delays() {
     for(size_t inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
         for(size_t ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
-            comp_td_point_to_point_delay(inet, ipin);
+            point_to_point_delay_cost[inet][ipin] = comp_td_point_to_point_delay(inet, ipin);
         }
     }
 }
