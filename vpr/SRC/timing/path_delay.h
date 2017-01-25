@@ -80,6 +80,7 @@ void free_tnode_lookup_from_pin_id(int **tnode_lookup);
 
 extern int num_tnodes; /* Number of nodes (pins) in the timing graph */
 extern t_tnode *tnode; /* [0..num_tnodes - 1] nodes in the timing graph */
-extern clock_t timing_analysis_runtime;
+extern double timing_analysis_runtime;
+extern size_t timing_analysis_full_updates;
 
 #endif

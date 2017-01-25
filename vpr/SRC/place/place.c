@@ -741,6 +741,10 @@ void try_place(struct s_placer_opts placer_opts,
 	}
 
 	free_try_swap_arrays();
+
+    //Update timing analysis stats
+    timing_analysis_runtime += timing_analyzer->get_profiling_data("total_analysis_sec");
+    timing_analysis_full_updates += timing_analyzer->get_profiling_data("num_full_updates");
 }
 
 /* Function to recompute the criticalities before the inner loop of the annealing */

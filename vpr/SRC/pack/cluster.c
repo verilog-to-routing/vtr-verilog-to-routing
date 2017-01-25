@@ -703,6 +703,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	   free(clb_inter_blk_nets);
 	   clb_inter_blk_nets = NULL;
 	}
+
+    timing_analysis_runtime += analyzer->get_profiling_data("total_analysis_sec");
+    timing_analysis_full_updates += analyzer->get_profiling_data("num_full_updates");
 }
 
 /*****************************************/
