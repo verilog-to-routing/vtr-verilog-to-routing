@@ -366,9 +366,14 @@ void try_place(struct s_placer_opts placer_opts,
 
     //Create the analyzer
     std::shared_ptr<tatum::SetupTimingAnalyzer> timing_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
-    timing_analyzer->update_timing();
 
-    /*tatum::write_dot_file_setup("setup.place_init.dot", g_timing_graph, dc, *timing_analyzer);*/
+    //Do the initial timing update
+    timing_analyzer->update_timing();
+    critical_path_delay = find_critical_path_delay(*timing_analyzer);
+
+    /*std::vector<tatum::NodeId> nodes = {};*/
+    /*std::vector<tatum::NodeId> nodes = find_related_nodes(g_timing_graph, {});*/
+    /*tatum::write_dot_file_setup("setup.place_init.dot", g_timing_graph, dc, *timing_analyzer, nodes);*/
 
     //Get the slack calculator
     auto optimizer_slacks = make_optimizer_slacks(g_atom_nl, g_atom_map, timing_analyzer, g_timing_graph, dc);
@@ -472,18 +477,24 @@ void try_place(struct s_placer_opts placer_opts,
 	moves_since_cost_recompute = 0;
 	vtr::printf_info("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
 			cost, bb_cost, timing_cost, delay_cost);
+	vtr::printf_info("Initial placement estimated critical path delay: %g ns\n", 
+            1e9*critical_path_delay);
+	vtr::printf_info("Initial placement estimated setup total negative slack (TNS): %g ns\n", 
+            1e9*find_setup_total_negative_slack(*timing_analyzer));
 	vtr::printf_info("\n");
 
-	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
+	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %10s %7s %7s %7s %6s %9s %6s\n",
 			"-------", "-------", "----------", "----------", "----------", "----------", 
-			"-------", "-------", "-------", "-------", "------", "---------", "------");
-	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
+			"-------", "----------", "-------", "-------", "-------", "------", 
+            "---------", "------");
+	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %10s %7s %7s %7s %6s %9s %6s\n",
 			"T", "Cost", "Av BB Cost", "Av TD Cost", "Av Tot Del",
-			"P to P Del", "CPD", "Ac Rate", "Std Dev", "R limit", "Exp",
+			"P to P Del", "CPD", "Setup TNS", "Ac Rate", "Std Dev", "R limit", "Exp",
 			"Tot Moves", "Alpha");
-	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
+	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %10s %7s %7s %7s %6s %9s %6s\n",
 			"-------", "-------", "----------", "----------", "----------", "----------", 
-			"-------", "-------", "-------", "-------", "------", "---------", "------");
+			"-------", "----------", "-------", "-------", "-------", "------", 
+            "---------", "------");
 
 	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d", 
 		cost, bb_cost, timing_cost, delay_cost, width_fac);
@@ -562,9 +573,10 @@ void try_place(struct s_placer_opts placer_opts,
 		update_t(&t, rlim, success_rat, annealing_sched);
 
 		critical_path_delay = find_critical_path_delay(*timing_analyzer);
-        vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
+        vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %-10.4g %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
                 oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
                 stats.av_delay_cost, place_delay_value, 1e9*critical_path_delay, 
+                find_setup_total_negative_slack(*timing_analyzer),  
                 success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
 
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
@@ -616,9 +628,12 @@ void try_place(struct s_placer_opts placer_opts,
 
 	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
-	vtr::printf_info("%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7s %7.4f %7.4f %7.4f %6.3f %9d\n",
-			t, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, place_delay_value, 
-			" ", success_rat, std_dev, rlim, crit_exponent, tot_iter);
+    critical_path_delay = find_critical_path_delay(*timing_analyzer);
+    vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %-10.4g %7.4f %7.4f %7.4f %6.3f %9d %6s\n",
+            t, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
+            stats.av_delay_cost, place_delay_value, 1e9*critical_path_delay, 
+            find_setup_total_negative_slack(*timing_analyzer),  
+            success_rat, std_dev, rlim, crit_exponent, tot_iter, "");
 
 	// TODO:  
 	// 1. print a message about number of aborted moves.
@@ -676,6 +691,8 @@ void try_place(struct s_placer_opts placer_opts,
 		critical_path_delay = find_critical_path_delay(*timing_analyzer);
 		vtr::printf_info("\n");
 		vtr::printf_info("Placement estimated critical path delay: %g ns\n", 1e9*critical_path_delay);
+        vtr::printf_info("Placement estimated setup total negative slack (TNS): %g ns\n", 
+                1e9*find_setup_total_negative_slack(*timing_analyzer));
 	}
 
 	sprintf(msg, "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
