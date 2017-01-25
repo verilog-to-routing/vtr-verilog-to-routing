@@ -24,6 +24,11 @@ class FullSetupTimingAnalyzer : public SetupTimingAnalyzer {
             , delay_calculator_(delay_calculator)
             , setup_visitor_(timing_graph_.nodes().size(), timing_graph_.edges().size()) {
             validate_timing_graph_constraints(timing_graph_, timing_constraints_);
+
+            //Initialize profiling data
+            graph_walker_.set_profiling_data("total_analysis_sec", 0.);
+            graph_walker_.set_profiling_data("analysis_sec", 0.);
+            graph_walker_.set_profiling_data("num_full_updates", 0.);
         }
 
     protected:
@@ -40,8 +45,13 @@ class FullSetupTimingAnalyzer : public SetupTimingAnalyzer {
 
             graph_walker_.do_update_slack(timing_graph_, delay_calculator_, setup_visitor_);
 
-            float analysis_sec = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
+            double analysis_sec = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
+
+            //Record profiling data
+            double total_analysis_sec = analysis_sec + graph_walker_.get_profiling_data("total_analysis_sec");
+            graph_walker_.set_profiling_data("total_analysis_sec", total_analysis_sec);
             graph_walker_.set_profiling_data("analysis_sec", analysis_sec);
+            graph_walker_.set_profiling_data("num_full_updates", graph_walker_.get_profiling_data("num_full_updates") + 1);
         }
 
         double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
