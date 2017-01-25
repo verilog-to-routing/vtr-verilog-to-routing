@@ -114,14 +114,6 @@ VPR runs all three stages of pack, place, and route if none of :option:`-pack`, 
 
     **Default:** ``R``
 
-.. option:: -timing_analyze_only_with_net_delay <float>
-
-    .. deprecated:: 7.0
-
-    Perform timing analysis on netlist assuming all edges have the same specified delay
-
-    **Default:** off
-
 .. option:: -full_stats
 
     Print out some extra statistics about the circuit and its routing useful for wireability analysis.  
