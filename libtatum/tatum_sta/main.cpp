@@ -33,7 +33,7 @@
 #define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
 
 //Should we optimize the timing graph memory layout?
-#define OPTIMIZE_GRAPH_LAYOUT
+//#define OPTIMIZE_GRAPH_LAYOUT
 
 //Should we print out tag related object size info
 #define PRINT_TAG_SIZES
@@ -189,17 +189,6 @@ int main(int argc, char** argv) {
 
         cout << "\n";
 
-        std::vector<NodeId> nodes;
-        //nodes = find_related_nodes(*timing_graph, {NodeId(71663)});
-        std::shared_ptr<tatum::SetupTimingAnalyzer> echo_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(setup_analyzer);
-        if(echo_setup_analyzer) {
-            write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, *delay_calculator, *echo_setup_analyzer, nodes);
-        }
-        std::shared_ptr<tatum::HoldTimingAnalyzer> echo_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(hold_analyzer);
-        if(echo_hold_analyzer) {
-            write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, *delay_calculator, *echo_hold_analyzer, nodes);
-        }
-
         //Verify
         clock_gettime(CLOCK_MONOTONIC, &verify_start);
 
@@ -214,6 +203,16 @@ int main(int argc, char** argv) {
 
         clock_gettime(CLOCK_MONOTONIC, &verify_end);
         serial_verify_time += tatum::time_sec(verify_start, verify_end);
+
+        std::vector<NodeId> nodes = find_related_nodes(*timing_graph, {NodeId(8)});
+        std::shared_ptr<tatum::SetupTimingAnalyzer> echo_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(serial_analyzer);
+        if(echo_setup_analyzer) {
+            write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, *delay_calculator, *echo_setup_analyzer, nodes);
+        }
+        std::shared_ptr<tatum::HoldTimingAnalyzer> echo_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(serial_analyzer);
+        if(echo_hold_analyzer) {
+            write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, *delay_calculator, *echo_hold_analyzer, nodes);
+        }
 
         cout << endl;
         cout << "Serial Analysis took " << std::setprecision(6) << std::setw(6) << arithmean(serial_prof_data["analysis_sec"])*NUM_SERIAL_RUNS << " sec";
@@ -351,6 +350,8 @@ int main(int argc, char** argv) {
 
     clock_gettime(CLOCK_MONOTONIC, &prog_end);
 
+    cout << endl << "Net Serial Analysis elapsed time: " << serial_analyzer->get_profiling_data("total_analysis_sec") << " sec over " << serial_analyzer->get_profiling_data("num_full_updates") << " full updates" << endl;
+    cout << endl << "Net Parallel Analysis elapsed time: " << parallel_analyzer->get_profiling_data("total_analysis_sec") << " sec over " << parallel_analyzer->get_profiling_data("num_full_updates") << " full updates" << endl;
     cout << endl << "Total time: " << tatum::time_sec(prog_start, prog_end) << " sec" << endl;
 
     return 0;

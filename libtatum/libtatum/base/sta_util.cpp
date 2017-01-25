@@ -15,6 +15,22 @@ using std::endl;
 
 namespace tatum {
 
+std::string print_tag_domain_from_to(const TimingTag& tag) {
+    std::stringstream ss;
+    if(!tag.launch_clock_domain()) {
+        ss << "*";
+    } else {
+        ss << tag.launch_clock_domain();
+    }
+    ss << " to ";
+    if(!tag.capture_clock_domain()) {
+        ss << "*";
+    } else {
+        ss << tag.capture_clock_domain();
+    }
+    return ss.str();
+}
+
 float time_sec(struct timespec start, struct timespec end) {
     float time = end.tv_sec - start.tv_sec;
 

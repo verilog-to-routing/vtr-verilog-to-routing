@@ -32,6 +32,8 @@ std::vector<NodeId> find_related_nodes(const TimingGraph& tg, const std::vector<
 void find_transitive_fanout_nodes(const TimingGraph& tg, std::vector<NodeId>& nodes, const NodeId node, size_t max_depth=std::numeric_limits<size_t>::max(), size_t depth=0);
 void find_transitive_fanin_nodes(const TimingGraph& tg, std::vector<NodeId>& nodes, const NodeId node, size_t max_depth=std::numeric_limits<size_t>::max(), size_t depth=0);
 
+std::string print_tag_domain_from_to(const TimingTag& tag);
+
 /*
  * Templated function implementations
  */
@@ -63,29 +65,21 @@ void write_dot_file_setup(std::string filename,
         os << "\tnode" << size_t(inode);
         os << "[label=\"";
         os << "{" << inode << " (" << tg.node_type(inode) << ")";
-        for(const TimingTag& tag : analyzer.setup_tags(inode)) {
-            os << " | {";
-            os << tag.type() << "\\n";
-            if(!tag.launch_clock_domain()) {
-                os << "*";
-            } else {
-                os << tag.launch_clock_domain();
+        for(const auto& tags : {analyzer.setup_tags(inode), analyzer.setup_slacks(inode)}) {
+            for(const TimingTag& tag : tags) {
+                os << " | {";
+                os << tag.type() << "\\n";
+                os << print_tag_domain_from_to(tag);
+                if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
+                    os << " from ";
+                } else {
+                    os << " for ";
+                }
+                os << tag.origin_node();
+                os << "\\n";
+                os << "time: " << tag.time().value();
+                os << "}";
             }
-            os << " to ";
-            if(!tag.capture_clock_domain()) {
-                os << "*";
-            } else {
-                os << tag.capture_clock_domain();
-            }
-            if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
-                os << " from ";
-            } else {
-                os << " for ";
-            }
-            os << tag.origin_node();
-            os << "\\n";
-            os << "time: " << tag.time().value();
-            os << "}";
         }
         os << "}\"]";
         os <<std::endl;
@@ -110,6 +104,9 @@ void write_dot_file_setup(std::string filename,
 
         if(std::binary_search(nodes.begin(), nodes.end(), node_id)
            && std::binary_search(nodes.begin(), nodes.end(), sink_node_id)) {
+            //Only draw edges to nodes in the set of nodes being printed
+
+
             os << "\tnode" << size_t(node_id) << " -> node" << size_t(sink_node_id);
             os << " [ label=\"" << edge_id;
             if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SINK) {
@@ -118,6 +115,10 @@ void write_dot_file_setup(std::string filename,
                 os << "\\n" << delay_calc.max_edge_delay(tg, edge_id) << " (tcq)";
             } else {
                 os << "\\n" << delay_calc.max_edge_delay(tg, edge_id);
+            }
+            auto slacks = analyzer.setup_slacks(edge_id);
+            for(const auto& tag : slacks) {
+                os << "\\n" << " (slack " << print_tag_domain_from_to(tag) << ": " << tag.time().value() << ")";
             }
             if(tg.edge_disabled(edge_id)) {
                 os << "\\n" << "(disabled)";
@@ -163,29 +164,21 @@ void write_dot_file_hold(std::string filename,
         os << "\tnode" << size_t(inode);
         os << "[label=\"";
         os << "{" << inode << " (" << tg.node_type(inode) << ")";
-        for(const TimingTag& tag : analyzer.hold_tags(inode)) {
-            os << " | {";
-            os << tag.type() << "\\n";
-            if(!tag.launch_clock_domain()) {
-                os << "*";
-            } else {
-                os << tag.launch_clock_domain();
+        for(const auto& tags : {analyzer.hold_tags(inode), analyzer.hold_slacks(inode)}) {
+            for(const TimingTag& tag : tags) {
+                os << " | {";
+                os << tag.type() << "\\n";
+                os << print_tag_domain_from_to(tag);
+                if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
+                    os << " from ";
+                } else {
+                    os << " for ";
+                }
+                os << tag.origin_node();
+                os << "\\n";
+                os << " time: " << tag.time().value();
+                os << "}";
             }
-            os << " to ";
-            if(!tag.capture_clock_domain()) {
-                os << "*";
-            } else {
-                os << tag.capture_clock_domain();
-            }
-            if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
-                os << " from ";
-            } else {
-                os << " for ";
-            }
-            os << tag.origin_node();
-            os << "\\n";
-            os << " time: " << tag.time().value();
-            os << "}";
         }
         os << "}\"]";
         os <<std::endl;
@@ -210,7 +203,10 @@ void write_dot_file_hold(std::string filename,
 
         if(std::binary_search(nodes.begin(), nodes.end(), node_id)
            && std::binary_search(nodes.begin(), nodes.end(), sink_node_id)) {
+            //Only draw edges to nodes in the set of nodes being printed
+
             os << "\tnode" << size_t(node_id) << " -> node" << size_t(sink_node_id);
+            os << " [ label=\"" << edge_id;
             if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SINK) {
                 os << " [ label=\"" << edge_id << "\n" << delay_calc.hold_time(tg, edge_id) << " (thld)\" ]";
             } else if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SOURCE) {
@@ -218,6 +214,20 @@ void write_dot_file_hold(std::string filename,
             } else {
                 os << " [ label=\"" << edge_id << "\n" << delay_calc.min_edge_delay(tg, edge_id) << "\" ]";
             }
+            auto slacks = analyzer.hold_slacks(edge_id);
+            for(const auto& tag : slacks) {
+                os << "\\n" << " (slack " << print_tag_domain_from_to(tag) << ": " << tag.time().value() << ")";
+            }
+            if(tg.edge_disabled(edge_id)) {
+                os << "\\n" << "(disabled)";
+            }
+            os << "\""; //end label
+            if(tg.edge_disabled(edge_id)) {
+                os << " style=\"dashed\"";
+                os << " color=\"#aaaaaa\""; //grey
+                os << " fontcolor=\"#aaaaaa\""; //grey
+            }
+            os << "]";
             os << ";" <<std::endl;
         }
     }

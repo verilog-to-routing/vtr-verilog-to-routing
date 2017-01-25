@@ -75,6 +75,7 @@ inline std::ostream& operator<<(std::ostream& os, TagType type) {
     else if(type == TagType::DATA_REQUIRED) os << "DATA_REQUIRED";
     else if(type == TagType::CLOCK_LAUNCH) os << "CLOCK_LAUNCH";
     else if(type == TagType::CLOCK_CAPTURE) os << "CLOCK_CAPTURE";
+    else if(type == TagType::SLACK) os << "SLACK";
     else TATUM_ASSERT_MSG(false, "Unrecognized TagType");
     return os;
 }
