@@ -3497,7 +3497,7 @@ float get_critical_path_delay(void) {
 	corresponding to the pair of source and sink clock domains with the least slack in the design. */
 	
 	int source_clock_domain, sink_clock_domain;
-	float least_slack_in_design = HUGE_POSITIVE_FLOAT, critical_path_delay = UNDEFINED;
+	float least_slack_in_design = HUGE_POSITIVE_FLOAT, critical_path_delay = NAN;
 
 	if (!g_sdc) return UNDEFINED; /* If timing analysis is off, for instance. */
 

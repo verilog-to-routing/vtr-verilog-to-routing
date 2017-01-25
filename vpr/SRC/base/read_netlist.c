@@ -967,7 +967,7 @@ static void load_atom_pin_mapping() {
             if (gnode->num_input_pins[iport] <= 0) continue;
 
             const AtomPortId port = g_atom_nl.find_port(blk, gnode->input_pins[iport][0].port->model_port);
-            VTR_ASSERT(port);
+            if(!port) continue;
 
             for(int ipin = 0; ipin < gnode->num_input_pins[iport]; ++ipin) {
                 const t_pb_graph_pin* gpin = &gnode->input_pins[iport][ipin];
@@ -981,7 +981,7 @@ static void load_atom_pin_mapping() {
             if (gnode->num_output_pins[iport] <= 0) continue;
 
             const AtomPortId port = g_atom_nl.find_port(blk, gnode->output_pins[iport][0].port->model_port);
-            VTR_ASSERT(port);
+            if(!port) continue;
 
             for(int ipin = 0; ipin < gnode->num_output_pins[iport]; ++ipin) {
                 const t_pb_graph_pin* gpin = &gnode->output_pins[iport][ipin];
@@ -995,7 +995,7 @@ static void load_atom_pin_mapping() {
             if (gnode->num_clock_pins[iport] <= 0) continue;
 
             const AtomPortId port = g_atom_nl.find_port(blk, gnode->clock_pins[iport][0].port->model_port);
-            VTR_ASSERT(port);
+            if(!port) continue;
 
             for(int ipin = 0; ipin < gnode->num_clock_pins[iport]; ++ipin) {
                 const t_pb_graph_pin* gpin = &gnode->clock_pins[iport][ipin];
