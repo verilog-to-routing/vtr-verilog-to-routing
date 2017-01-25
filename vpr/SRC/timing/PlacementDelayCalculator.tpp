@@ -247,7 +247,7 @@ inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_inter_cluster
     float delay = net_delay_[iclb_net][iclb_net_sink_pin];
 
 #ifdef PLACEMENT_DELAY_CALC_DEBUG
-    vtr::printf("CLB Net: %d (%s) delay=%g\n", iclb_net, g_clbs_nlist.net[iclb_net].name, delay);
+    vtr::printf("CLB Net: %d (%s) driver to pin %d delay=%g\n", iclb_net, g_clbs_nlist.net[iclb_net].name, iclb_net_sink_pin, delay);
 #endif
 
     t_net_pin clb_driver_output_pin = g_clbs_nlist.net[clb_sink_input_pin.net].pins[0];
