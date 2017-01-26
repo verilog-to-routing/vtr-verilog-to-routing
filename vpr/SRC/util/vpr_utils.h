@@ -18,6 +18,8 @@ void sync_grid_to_blocks(const int L_num_blocks,
 /**************************************************************
 * Intra-Logic Block Utility Functions
 **************************************************************/
+
+//Class for looking up pb graph pins from block pin indicies
 class IntraLbPbPinLookup {
     public:
         IntraLbPbPinLookup(t_type_descriptor* block_types, int num_types);
@@ -26,6 +28,8 @@ class IntraLbPbPinLookup {
         ~IntraLbPbPinLookup();
 
 
+        //Returns the pb graph pin associated with the specified type (index into block types array) and
+        // pb pin index (index into block[].pb_route)
         const t_pb_graph_pin* pb_gpin(int itype, int ipin) const;
 
         friend void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs);
@@ -36,14 +40,14 @@ class IntraLbPbPinLookup {
         t_pb_graph_pin*** intra_lb_pb_pin_lookup_; 
 };
 
-//Find the atom pins (drivers or sinks) connected to the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_connected_atom_pins(int clb, int clb_pin);
+//Find the atom pins (driver or sinks) connected to the specified top-level CLB pin
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(int clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 //Find the atom pin driving to the specified top-level CLB pin
-AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin);
+AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 //Find the atom pins driven by the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin);
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);

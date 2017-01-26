@@ -15,6 +15,7 @@ using namespace std;
 
 #include "vpr_types.h"
 #include "vpr_error.h"
+#include "vpr_utils.h"
 
 #include "globals.h"
 #include "place.h"
@@ -297,6 +298,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
 	float * inverse_prev_bb_cost,
+    const IntraLbPbPinLookup& pb_gpin_lookup,
     SetupSlackEvaluator& optimizer_slacks);
 
 static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
@@ -304,6 +306,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
+    const IntraLbPbPinLookup& pb_gpin_lookup,
     SetupSlackEvaluator& optimizer_slacks);
 
 /*****************************************************************************/
@@ -331,6 +334,8 @@ void try_place(struct s_placer_opts placer_opts,
 	t_slack * slacks = NULL;
 
 	/* Allocated here because it goes into timing critical code where each memory allocation is expensive */
+    IntraLbPbPinLookup pb_gpin_lookup(type_descriptors, num_types);
+
 
 	/* init file scope variables */
 	num_swap_rejected = 0;
@@ -408,7 +413,7 @@ void try_place(struct s_placer_opts placer_opts,
 
         //Initial slack estimates
         optimizer_slacks.update();
-        load_criticalities(optimizer_slacks, crit_exponent);
+        load_criticalities(optimizer_slacks, crit_exponent, pb_gpin_lookup);
 
 		/*now we can properly compute costs  */
 		comp_td_costs(&timing_cost, &delay_cost); /*also updates values in point_to_point_delay_cost */
@@ -518,11 +523,13 @@ void try_place(struct s_placer_opts placer_opts,
 		outer_loop_recompute_criticalities(placer_opts, num_connections,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
 			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
+            pb_gpin_lookup,
             optimizer_slacks);
 
 		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
 			move_lim, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, &delay_cost,
+            pb_gpin_lookup,
             optimizer_slacks);
 
 		/* Lines below prevent too much round-off error from accumulating *
@@ -609,6 +616,7 @@ void try_place(struct s_placer_opts placer_opts,
 	outer_loop_recompute_criticalities(placer_opts, num_connections,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
 			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
+            pb_gpin_lookup,
             optimizer_slacks);
 
 	t = 0; /* freeze out */
@@ -618,6 +626,7 @@ void try_place(struct s_placer_opts placer_opts,
 	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
 			move_lim, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, &delay_cost,
+            pb_gpin_lookup,
             optimizer_slacks);
 
 	tot_iter += move_lim;
@@ -753,6 +762,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
 	float * inverse_prev_bb_cost, 
+    const IntraLbPbPinLookup& pb_gpin_lookup,
     SetupSlackEvaluator& optimizer_slacks) {
 
 	if (placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
@@ -771,7 +781,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 
         //Per-temperature timing update
         optimizer_slacks.update();
-		load_criticalities(optimizer_slacks, crit_exponent);
+		load_criticalities(optimizer_slacks, crit_exponent, pb_gpin_lookup);
 
 
 		/*recompute costs from scratch, based on new criticalities */
@@ -793,6 +803,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
+    const IntraLbPbPinLookup& pb_gpin_lookup,
     SetupSlackEvaluator& optimizer_slacks) {
 
 	int inner_crit_iter_count, inner_iter;
@@ -846,7 +857,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 				 */
                 //Inner loop timing update
                 optimizer_slacks.update();
-				load_criticalities(optimizer_slacks, crit_exponent);
+				load_criticalities(optimizer_slacks, crit_exponent, pb_gpin_lookup);
 
 
 				comp_td_costs(timing_cost, delay_cost);

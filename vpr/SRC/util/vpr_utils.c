@@ -217,26 +217,26 @@ void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs) {
 }
 
 //Returns the set of pins which are connected to the top level clb pin
-//  The pin may be an input or output (returning the connected sinks or drivers respectively)
-std::vector<AtomPinId> find_clb_pin_connected_atom_pins(int clb, int clb_pin) {
+//  The pin(s) may be input(s) or and output (returning the connected sinks or drivers respectively)
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(int clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     std::vector<AtomPinId> atom_pins;
 
     if(is_opin(clb_pin, block[clb].type)) {
         //output
-        AtomPinId driver = find_clb_pin_driver_atom_pin(clb, clb_pin);
+        AtomPinId driver = find_clb_pin_driver_atom_pin(clb, clb_pin, pb_gpin_lookup);
         if(driver) {
             atom_pins.push_back(driver);
         }
     } else {
         //input
-        atom_pins = find_clb_pin_sink_atom_pins(clb, clb_pin);
+        atom_pins = find_clb_pin_sink_atom_pins(clb, clb_pin, pb_gpin_lookup);
     }
 
     return atom_pins;
 }
 
 //Returns the atom pin which drives the top level clb output pin
-AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin) {
+AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     t_pb_route* pb_routes = block[clb].pb_route;
 
     int pb_pin_id = pb_routes[clb_pin].driver_pb_pin_id;
@@ -252,7 +252,6 @@ AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin) {
     VTR_ASSERT(pb_pin_id >= 0);
 
     //Convert the pb_pin to a t_pb_graph_pin
-    IntraLbPbPinLookup pb_gpin_lookup(type_descriptors, num_types);
     const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(block[clb].type->index, pb_pin_id);
 
     //Conver the t_pb_graph_pin to an atom pin
@@ -263,16 +262,14 @@ AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin) {
 }
 
 //Returns the set of atom sink pins associated with the top level clb input pin
-std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin) {
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     t_pb_route* pb_routes = block[clb].pb_route;
-
 
     VTR_ASSERT_MSG(pb_routes[clb_pin].driver_pb_pin_id < 0, "CLB input pin should have no internal drivers");
 
     std::vector<int> connected_sink_pb_pins = find_connected_internal_clb_sink_pins(clb, clb_pin);
 
     std::vector<AtomPinId> sink_atom_pins;
-    IntraLbPbPinLookup pb_gpin_lookup(type_descriptors, num_types);
     for(int sink_pb_pin : connected_sink_pb_pins) {
         const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(block[clb].type->index, sink_pb_pin);
         AtomPinId atom_pin = g_atom_map.pb_graph_pin_atom_pin(gpin);
