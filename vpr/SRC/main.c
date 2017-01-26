@@ -77,7 +77,7 @@ int main(int argc, const char **argv) {
 	
 		entire_flow_end = clock();
 
-        vtr::printf_info("Timing analysis took %g seconds (%d full updates).\n", float(timing_analysis_runtime) / CLOCKS_PER_SEC, timing_analysis_full_updates);
+        vtr::printf_info("Timing analysis took %g seconds (%d full updates).\n", timing_analysis_runtime, timing_analysis_full_updates);
 		vtr::printf_info("The entire flow of VPR took %g seconds.\n", 
 				(float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 	
