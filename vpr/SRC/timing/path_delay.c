@@ -149,8 +149,8 @@ from the timing graph back to the netlist relies on this. */
 
 t_tnode *tnode = NULL; /* [0..num_tnodes - 1] */
 int num_tnodes = 0; /* Number of nodes (pins) in the timing graph */
-double timing_analysis_runtime = 0;
-size_t timing_analysis_full_updates = 0;
+
+timing_analysis_profile_info g_timing_analysis_profile_stats;
 
 /******************** Variables local to this module ************************/
 
@@ -2181,7 +2181,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
     free_pin_id_to_pb_mapping(pin_id_to_pb_mapping);
 
     clock_t end = clock();
-    timing_analysis_runtime += double(end - begin);
+    g_timing_analysis_profile_stats.wallclock_time  += double(end - begin);
 }
 
 static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping) {

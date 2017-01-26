@@ -74,13 +74,15 @@ int **alloc_and_load_tnode_lookup_from_pin_id();
 
 void free_tnode_lookup_from_pin_id(int **tnode_lookup);
 
-
+struct timing_analysis_profile_info {
+    double wallclock_time = 0.;
+    size_t num_full_updates = 0;
+};
 
 /*************************** Variable declarations ********************************/
 
 extern int num_tnodes; /* Number of nodes (pins) in the timing graph */
 extern t_tnode *tnode; /* [0..num_tnodes - 1] nodes in the timing graph */
-extern double timing_analysis_runtime;
-extern size_t timing_analysis_full_updates;
+extern timing_analysis_profile_info g_timing_analysis_profile_stats;
 
 #endif
