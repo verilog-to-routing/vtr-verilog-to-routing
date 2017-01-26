@@ -364,7 +364,10 @@ typedef const struct s_type_descriptor *t_type_ptr;
  *  This (along with t_mode) corresponds to the hierarchical specification of 
  *  block modes that users provide in the architecture (i.e. <pb_type/> tags).
  *
- *  There is a single instance of a t_pb_type for each type, which is referenced as a 
+ *  It is also useful to note that a single t_pb_type may represent multiple instances of that
+ *  type in the architecture (see the num_pb field).
+ *
+ *  In VPR there is a single instance of a t_pb_type for each type, which is referenced as a 
  *  flyweight by other objects (e.g. t_pb_graph_node).
  *
  *  Data members:
@@ -590,7 +593,11 @@ struct s_pin_to_pin_annotation {
 
 /** Describes the internal connectivity corresponding to a t_pb_type and t_mode of a cluster.
  *
- *  There is a t_pb_graph_node for each instance of the pb_type (i.e. t_pb_type may describe num_pb instances)
+ *  There is a t_pb_graph_node for each instance of the pb_type (i.e. t_pb_type may describe 
+ *  num_pb instances of the type, with each instance represented as a t_pb_graph_node). 
+ *  The distinction between the pb_type and the pb_graph_node is neccessary since the 'position'
+ *  of a particular instance in the cluster is important when routing the cluster (since the routing
+ *  accessible from each position may be different).
  *
  *  Data members:
  *      pb_type: Pointer to the type of pb graph node this belongs to 

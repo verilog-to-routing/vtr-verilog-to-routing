@@ -114,12 +114,16 @@ typedef class RR_Node t_rr_node;
 struct s_pack_molecule;
 struct s_pb_stats;
 
-/* An FPGA complex block is represented by a hierarchy of physical blocks.  
- These include leaf physical blocks that a netlist block can map to (such as LUTs, flip-flops, memory slices, etc),
- parent physical blocks that contain children physical blocks (such as a BLE) that may be leaves or parents of other physical blocks,
- and the top-level phyiscal block which represents the complex block itself (such as a clustered logic block).
-
- All physical blocks are represented by this s_pb data structure.
+/* A t_pb represents an instance of a clustered block, which may be:
+ *    1) A top level clustered block which is placeable at a location in FPGA device 
+ *       grid location (e.g. a Logic block, RAM block, DSP block), or
+ *    2) An internal 'block' representing an intermediate level of hierarchy inside a top level 
+ *       block (e.g. a BLE), or
+ *    3) A leaf (i.e. atom or primitive) block representing an element of netlist (e.g. LUT,
+ *       flip-lop, memory slice etc.)
+ *
+ * t_pb (in combination with t_pb_route) implement the mapping from the netlist elements to architectural
+ * instances.
  */
 typedef struct s_pb t_pb;
 typedef struct s_pb {
