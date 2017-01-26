@@ -6,6 +6,8 @@
 #include "atom_netlist.h"
 #include "vpr_utils.h"
 
+#include "atom_delay_calc.h"
+
 class PlacementDelayCalculator {
 
 public:
@@ -14,6 +16,7 @@ public:
         , netlist_map_(netlist_map)
         , net_delay_(net_delay)
         , intra_lb_pb_pin_lookup_(types, ntypes)
+        , atom_delay_calc_(netlist, netlist_map)
         {}
 
     tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
@@ -44,6 +47,7 @@ private:
     float** net_delay_;
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup_;
+    CachingAtomDelayCalc atom_delay_calc_;
 };
 
 #include "PlacementDelayCalculator.tpp"

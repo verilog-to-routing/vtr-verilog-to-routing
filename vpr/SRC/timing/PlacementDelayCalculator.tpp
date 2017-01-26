@@ -56,32 +56,7 @@ inline tatum::Time PlacementDelayCalculator::atom_combinational_delay(const tatu
     AtomPinId src_pin = netlist_map_.pin_tnode[src_node];
     AtomPinId sink_pin = netlist_map_.pin_tnode[sink_node];
 
-    AtomBlockId blk = netlist_.pin_block(src_pin);
-    VTR_ASSERT_MSG(netlist_.pin_block(sink_pin) == blk, "Combinational primitive delay must be between pins on the same block");
-
-    VTR_ASSERT_MSG(   netlist_.port_type(netlist_.pin_port(src_pin)) == AtomPortType::INPUT 
-                   && netlist_.port_type(netlist_.pin_port(sink_pin)) == AtomPortType::OUTPUT,
-                   "Combinational connections must go from primitive input to output");
-
-    //Determine the combinational delay from the pb_graph_pin.
-    //  By convention the delay is annotated on the corresponding input pg_graph_pin
-    const t_pb_graph_pin* src_gpin = find_pb_graph_pin(src_pin);
-    const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(sink_pin);
-    VTR_ASSERT(src_gpin->num_pin_timing > 0);
-
-    //Find the annotation on the source that matches the sink
-    float delay = NAN;
-    for(int i = 0; i < src_gpin->num_pin_timing; ++i) {
-        const t_pb_graph_pin* timing_sink_gpin = src_gpin->pin_timing[i]; 
-
-        if(timing_sink_gpin == sink_gpin) {
-            delay = src_gpin->pin_timing_del_max[i];
-            break;
-        }
-    }
-
-    VTR_ASSERT_MSG(!std::isnan(delay), "Must have a valid delay");
-
+    float delay = atom_delay_calc_.atom_combinational_delay(src_pin, sink_pin);
     return tatum::Time(delay);
 }
 
@@ -93,12 +68,10 @@ inline tatum::Time PlacementDelayCalculator::atom_setup_time(const tatum::Timing
     VTR_ASSERT(tg.node_type(in_node) == tatum::NodeType::SINK);
 
     AtomPinId input_pin = netlist_map_.pin_tnode[in_node];
-    VTR_ASSERT(netlist_.port_type(netlist_.pin_port(input_pin)) == AtomPortType::INPUT);
+    AtomPinId clock_pin = netlist_map_.pin_tnode[clock_node];
 
-    const t_pb_graph_pin* gpin = find_pb_graph_pin(input_pin);
-    VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
-
-    return tatum::Time(gpin->tsu_tco);
+    float tsu = atom_delay_calc_.atom_setup_time(clock_pin, input_pin);
+    return tatum::Time(tsu);
 }
 
 inline tatum::Time PlacementDelayCalculator::atom_clock_to_q_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
@@ -109,12 +82,10 @@ inline tatum::Time PlacementDelayCalculator::atom_clock_to_q_delay(const tatum::
     VTR_ASSERT(tg.node_type(out_node) == tatum::NodeType::SOURCE);
 
     AtomPinId output_pin = netlist_map_.pin_tnode[out_node];
-    VTR_ASSERT(netlist_.port_type(netlist_.pin_port(output_pin)) == AtomPortType::OUTPUT);
+    AtomPinId clock_pin = netlist_map_.pin_tnode[clock_node];
 
-    const t_pb_graph_pin* gpin = find_pb_graph_pin(output_pin);
-    VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
-
-    return tatum::Time(gpin->tsu_tco);
+    float tco = atom_delay_calc_.atom_clock_to_q_delay(clock_pin, output_pin);
+    return tatum::Time(tco);
 }
 
 inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
