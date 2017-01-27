@@ -14,11 +14,11 @@ namespace vtr {
  * Keys and values can be looked up directly by passing either the key or value.
  * the indexing operator will throw if the key/value does not exist.
  */
-template<class K, class V, template<class ...> class Map=std::map>
+template<class K, class V, template<class ...> class Map=std::map, template<class ...> class InvMap=std::map>
 class bimap {
     public: //Public types
         typedef typename Map<K,V>::const_iterator iterator;
-        typedef typename Map<V,K>::const_iterator inverse_iterator;
+        typedef typename InvMap<V,K>::const_iterator inverse_iterator;
     public: //Accessors
 
         //Iterators
@@ -107,20 +107,20 @@ class bimap {
         }
 
         //Swap (this enables std::swap via ADL)
-        friend void swap(bimap<K,V,Map>& x, bimap<K,V,Map>& y) {
+        friend void swap(bimap<K,V,Map,InvMap>& x, bimap<K,V,Map,InvMap>& y) {
             std::swap(x.map_, y.map_);
             std::swap(x.inverse_map_, y.inverse_map_);
         }
     private:
         Map<K,V> map_;
-        Map<V,K> inverse_map_;
+        InvMap<V,K> inverse_map_;
 };
 
 template<class K, class V>
-using unordered_bimap = bimap<K,V,std::unordered_map>;
+using unordered_bimap = bimap<K,V,std::unordered_map,std::unordered_map>;
 
 template<class K, class V>
-using flat_bimap = bimap<K,V,vtr::flat_map>;
+using flat_bimap = bimap<K,V,vtr::flat_map,vtr::flat_map>;
 
 }
 
