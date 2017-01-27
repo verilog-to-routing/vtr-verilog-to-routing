@@ -14,6 +14,7 @@ inline PlacementDelayCalculator::PlacementDelayCalculator(const AtomNetlist& net
     , netlist_map_(netlist_map)
     , net_delay_(net_delay)
     , atom_delay_calc_(netlist, netlist_map)
+    , delay_cache_(g_timing_graph.nodes().size(), tatum::Time(NAN))
     {}
 
 inline tatum::Time PlacementDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge) const { 
@@ -58,42 +59,68 @@ inline tatum::Time PlacementDelayCalculator::hold_time(const tatum::TimingGraph&
 }
 
 inline tatum::Time PlacementDelayCalculator::atom_combinational_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
-    tatum::NodeId src_node = tg.edge_src_node(edge_id);
-    tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
 
-    AtomPinId src_pin = netlist_map_.pin_tnode[src_node];
-    AtomPinId sink_pin = netlist_map_.pin_tnode[sink_node];
+    tatum::Time delay = delay_cache_[edge_id];
 
-    float delay = atom_delay_calc_.atom_combinational_delay(src_pin, sink_pin);
-    return tatum::Time(delay);
+    if(std::isnan(delay.value())) {
+        //Miss
+        tatum::NodeId src_node = tg.edge_src_node(edge_id);
+        tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
+
+        AtomPinId src_pin = netlist_map_.pin_tnode[src_node];
+        AtomPinId sink_pin = netlist_map_.pin_tnode[sink_node];
+
+        delay = tatum::Time(atom_delay_calc_.atom_combinational_delay(src_pin, sink_pin));
+
+        //Insert
+        delay_cache_[edge_id] = delay;
+    }
+
+    return delay;
 }
 
 inline tatum::Time PlacementDelayCalculator::atom_setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
-    tatum::NodeId clock_node = tg.edge_src_node(edge_id);
-    VTR_ASSERT(tg.node_type(clock_node) == tatum::NodeType::CPIN);
+    tatum::Time tsu = delay_cache_[edge_id];
 
-    tatum::NodeId in_node = tg.edge_sink_node(edge_id);
-    VTR_ASSERT(tg.node_type(in_node) == tatum::NodeType::SINK);
+    if(std::isnan(tsu.value())) {
+        //Miss
+        tatum::NodeId clock_node = tg.edge_src_node(edge_id);
+        VTR_ASSERT(tg.node_type(clock_node) == tatum::NodeType::CPIN);
 
-    AtomPinId input_pin = netlist_map_.pin_tnode[in_node];
-    AtomPinId clock_pin = netlist_map_.pin_tnode[clock_node];
+        tatum::NodeId in_node = tg.edge_sink_node(edge_id);
+        VTR_ASSERT(tg.node_type(in_node) == tatum::NodeType::SINK);
 
-    float tsu = atom_delay_calc_.atom_setup_time(clock_pin, input_pin);
-    return tatum::Time(tsu);
+        AtomPinId input_pin = netlist_map_.pin_tnode[in_node];
+        AtomPinId clock_pin = netlist_map_.pin_tnode[clock_node];
+
+        tsu = tatum::Time(atom_delay_calc_.atom_setup_time(clock_pin, input_pin));
+
+        //Insert
+        delay_cache_[edge_id] = tsu;
+    }
+    return tsu;
 }
 
 inline tatum::Time PlacementDelayCalculator::atom_clock_to_q_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
-    tatum::NodeId clock_node = tg.edge_src_node(edge_id);
-    VTR_ASSERT(tg.node_type(clock_node) == tatum::NodeType::CPIN);
+    tatum::Time tco = delay_cache_[edge_id];
 
-    tatum::NodeId out_node = tg.edge_sink_node(edge_id);
-    VTR_ASSERT(tg.node_type(out_node) == tatum::NodeType::SOURCE);
+    if(std::isnan(tco.value())) {
+        //Miss
+        tatum::NodeId clock_node = tg.edge_src_node(edge_id);
+        VTR_ASSERT(tg.node_type(clock_node) == tatum::NodeType::CPIN);
 
-    AtomPinId output_pin = netlist_map_.pin_tnode[out_node];
-    AtomPinId clock_pin = netlist_map_.pin_tnode[clock_node];
+        tatum::NodeId out_node = tg.edge_sink_node(edge_id);
+        VTR_ASSERT(tg.node_type(out_node) == tatum::NodeType::SOURCE);
 
-    float tco = atom_delay_calc_.atom_clock_to_q_delay(clock_pin, output_pin);
-    return tatum::Time(tco);
+        AtomPinId output_pin = netlist_map_.pin_tnode[out_node];
+        AtomPinId clock_pin = netlist_map_.pin_tnode[clock_node];
+
+        tco = tatum::Time(atom_delay_calc_.atom_clock_to_q_delay(clock_pin, output_pin));
+
+        //Insert
+        delay_cache_[edge_id] = tco;
+    }
+    return tco;
 }
 
 inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {

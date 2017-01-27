@@ -1,5 +1,7 @@
 #ifndef PLACEMENT_DELAY_CALCULATOR_HPP
 #define PLACEMENT_DELAY_CALCULATOR_HPP
+#include "vtr_linear_map.h"
+
 #include "Time.hpp"
 #include "TimingGraph.hpp"
 
@@ -35,7 +37,9 @@ private:
     float** net_delay_;
 
     CachingClbDelayCalc clb_delay_calc_;
-    CachingAtomDelayCalc atom_delay_calc_;
+    AtomDelayCalc atom_delay_calc_;
+
+    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> delay_cache_;
 };
 
 #include "PlacementDelayCalculator.tpp"
