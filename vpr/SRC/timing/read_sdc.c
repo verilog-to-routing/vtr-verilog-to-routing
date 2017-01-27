@@ -270,6 +270,9 @@ void read_sdc(t_timing_inf timing_inf) {
 	
 	/* Since all the information we need is stored in g_sdc->domain_constraint, g_sdc->constrained_clocks, 
 	and constrained_ios, free other data structures used in this routine */
+	for (int iclk = 0; iclk < g_sdc->num_constrained_clocks; iclk++) {
+        free(sdc_clocks[iclk].name);
+    }
 	free(sdc_clocks);
 	free(netlist_clocks);
     for(int i = 0; i < num_netlist_ios; ++i) {
