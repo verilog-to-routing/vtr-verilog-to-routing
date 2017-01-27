@@ -83,12 +83,12 @@ class AtomMap {
         void set_atom_pin_tnode(const AtomPinId pin_id, const int tnode_index);
         void set_pin_tnode(const AtomPinId pin_id, const tatum::NodeId tnode_index);
 
-        vtr::bimap<AtomPinId,tatum::NodeId> pin_tnode;
+        vtr::unordered_bimap<AtomPinId,tatum::NodeId> pin_tnode;
     private:
         std::unordered_map<AtomBlockId,const t_pb*> atom_to_pb_;
         std::unordered_map<const t_pb*,AtomBlockId> pb_to_atom_;
 
-        vtr::bimap<AtomPinId,const t_pb_graph_pin*> atom_to_pb_graph_pin_;
+        vtr::unordered_bimap<AtomPinId,const t_pb_graph_pin*> atom_to_pb_graph_pin_;
 
         std::vector<int> atom_to_clb_;
         std::unordered_map<int,AtomBlockId> clb_to_atom_;
