@@ -151,7 +151,8 @@ endforeach()
 set(SANITIZE_FLAGS "")
 if(VTR_ENABLE_SANITIZE)
     #Enable sanitizers
-    set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fsanitize=undefined")
+    # -fuse-ld=gold force the gold linker to be used (required for sanitizers, but not enabled by default on some systems)
+    set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fsanitize=undefined -fuse-ld=gold")
     message(STATUS "SANTIIZE_FLAGS: ${SANITIZE_FLAGS}")
 endif()
 
