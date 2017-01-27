@@ -1,8 +1,6 @@
 #include <unordered_map>
 #include <set>
 
-#include "vtr_linear_map.h"
-
 #include "TimingGraph.hpp"
 
 #include "atom_netlist_fwd.h"

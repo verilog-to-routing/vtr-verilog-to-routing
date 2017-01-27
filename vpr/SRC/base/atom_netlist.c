@@ -20,7 +20,7 @@
 
 //Returns true if all elements are contiguously ascending values (i.e. equal to their index)
 template<typename T>
-bool are_contiguous(vtr::linear_map<T,T>& values) {
+bool are_contiguous(vtr::vector_map<T,T>& values) {
     size_t i = 0;
     for(T val : values) {
         if (val != T(i)) {
@@ -33,7 +33,7 @@ bool are_contiguous(vtr::linear_map<T,T>& values) {
 
 //Returns true if all elements in the vector 'values' evaluate true
 template<typename T>
-bool all_valid(vtr::linear_map<T,T>& values) {
+bool all_valid(vtr::vector_map<T,T>& values) {
     for(T val : values) {
         if(!val) {
             return false;
@@ -44,8 +44,8 @@ bool all_valid(vtr::linear_map<T,T>& values) {
 
 //Builds a mapping from old to new ids by skipping values marked invalid
 template<typename Id>
-vtr::linear_map<Id,Id> compress_ids(const vtr::linear_map<Id,Id>& ids) {
-    vtr::linear_map<Id,Id> id_map(ids.size());
+vtr::vector_map<Id,Id> compress_ids(const vtr::vector_map<Id,Id>& ids) {
+    vtr::vector_map<Id,Id> id_map(ids.size());
     size_t i = 0;
     for(auto id : ids) {
         if(id) {
@@ -67,11 +67,11 @@ vtr::linear_map<Id,Id> compress_ids(const vtr::linear_map<Id,Id>& ids) {
 // If it is an invalid ID, the element in values is dropped.
 // Otherwise the element is moved to the new ID location.
 template<typename Id, typename T>
-vtr::linear_map<Id,T> clean_and_reorder_values(const vtr::linear_map<Id,T>& values, const vtr::linear_map<Id,Id>& id_map) {
+vtr::vector_map<Id,T> clean_and_reorder_values(const vtr::vector_map<Id,T>& values, const vtr::vector_map<Id,Id>& id_map) {
     VTR_ASSERT(values.size() == id_map.size());
 
     //Allocate space for the values that will not be dropped
-    vtr::linear_map<Id,T> result;
+    vtr::vector_map<Id,T> result;
 
     //Move over the valid entries to their new locations
     for(size_t cur_idx = 0; cur_idx < values.size(); ++cur_idx) {
@@ -90,11 +90,11 @@ vtr::linear_map<Id,T> clean_and_reorder_values(const vtr::linear_map<Id,T>& valu
 //Returns the set of new valid Ids defined by 'id_map'
 //TOOD: merge with clean_and_reorder_values
 template<typename Id>
-vtr::linear_map<Id,Id> clean_and_reorder_ids(const vtr::linear_map<Id,Id>& id_map) {
+vtr::vector_map<Id,Id> clean_and_reorder_ids(const vtr::vector_map<Id,Id>& id_map) {
     //For IDs, the values are the new id's stored in the map
 
     //Allocate a new vector to store the values that have been not dropped
-    vtr::linear_map<Id,Id> result;
+    vtr::vector_map<Id,Id> result;
 
     //Move over the valid entries to their new locations
     for(size_t cur_idx = 0; cur_idx < id_map.size(); ++cur_idx) {
@@ -112,7 +112,7 @@ vtr::linear_map<Id,Id> clean_and_reorder_ids(const vtr::linear_map<Id,Id>& id_ma
 //Count how many of the Id's referenced in 'range' have a valid
 //new mapping in 'id_map'
 template<typename R, typename Id>
-size_t count_valid_refs(R range, const vtr::linear_map<Id,Id>& id_map) {
+size_t count_valid_refs(R range, const vtr::vector_map<Id,Id>& id_map) {
     size_t valid_count = 0;
 
     for(Id old_id : range) {
@@ -126,7 +126,7 @@ size_t count_valid_refs(R range, const vtr::linear_map<Id,Id>& id_map) {
 
 //Updates the Ids in 'values' based on id_map, even if the original or new mapping is not valid
 template<typename Container, typename ValId>
-Container update_all_refs(const Container& values, const vtr::linear_map<ValId,ValId>& id_map) {
+Container update_all_refs(const Container& values, const vtr::vector_map<ValId,ValId>& id_map) {
     Container updated;
 
     for(ValId orig_val : values) {
@@ -140,7 +140,7 @@ Container update_all_refs(const Container& values, const vtr::linear_map<ValId,V
 }
 
 template<typename Container, typename ValId>
-Container update_valid_refs(const Container& values, const vtr::linear_map<ValId,ValId>& id_map) {
+Container update_valid_refs(const Container& values, const vtr::vector_map<ValId,ValId>& id_map) {
     Container updated;
 
     for(ValId orig_val : values) {
@@ -1116,10 +1116,10 @@ void AtomNetlist::compress() {
     //Walk the netlist to invalidate any unused items
     remove_unused();
 
-    vtr::linear_map<AtomBlockId,AtomBlockId> block_id_map(block_ids_.size());
-    vtr::linear_map<AtomPortId,AtomPortId> port_id_map(port_ids_.size());
-    vtr::linear_map<AtomPinId,AtomPinId> pin_id_map(pin_ids_.size());
-    vtr::linear_map<AtomNetId,AtomNetId> net_id_map(net_ids_.size());
+    vtr::vector_map<AtomBlockId,AtomBlockId> block_id_map(block_ids_.size());
+    vtr::vector_map<AtomPortId,AtomPortId> port_id_map(port_ids_.size());
+    vtr::vector_map<AtomPinId,AtomPinId> pin_id_map(pin_ids_.size());
+    vtr::vector_map<AtomNetId,AtomNetId> net_id_map(net_ids_.size());
 
     //Build the mappings from old to new id's, potentially
     //re-ordering for improved cache locality
@@ -1153,17 +1153,17 @@ void AtomNetlist::compress() {
     dirty_ = false;
 }
 
-void AtomNetlist::build_id_maps(vtr::linear_map<AtomBlockId,AtomBlockId>& block_id_map, 
-                                vtr::linear_map<AtomPortId,AtomPortId>& port_id_map, 
-                                vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map, 
-                                vtr::linear_map<AtomNetId,AtomNetId>& net_id_map) {
+void AtomNetlist::build_id_maps(vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map, 
+                                vtr::vector_map<AtomPortId,AtomPortId>& port_id_map, 
+                                vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map, 
+                                vtr::vector_map<AtomNetId,AtomNetId>& net_id_map) {
     block_id_map = compress_ids(block_ids_);
     port_id_map = compress_ids(port_ids_);
     pin_id_map = compress_ids(pin_ids_);
     net_id_map = compress_ids(net_ids_);
 }
 
-void AtomNetlist::clean_blocks(const vtr::linear_map<AtomBlockId,AtomBlockId>& block_id_map) {
+void AtomNetlist::clean_blocks(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map) {
     //Clean the blocks
 
     //Update all the block values
@@ -1188,7 +1188,7 @@ void AtomNetlist::clean_blocks(const vtr::linear_map<AtomBlockId,AtomBlockId>& b
     VTR_ASSERT_MSG(all_valid(block_ids_), "All Ids should be valid");
 }
 
-void AtomNetlist::clean_ports(const vtr::linear_map<AtomPortId,AtomPortId>& port_id_map) {
+void AtomNetlist::clean_ports(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map) {
     //Clean the ports
 
     //Update all the port values
@@ -1204,7 +1204,7 @@ void AtomNetlist::clean_ports(const vtr::linear_map<AtomPortId,AtomPortId>& port
     VTR_ASSERT_MSG(all_valid(port_ids_), "All Ids should be valid");
 }
 
-void AtomNetlist::clean_pins(const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map) {
+void AtomNetlist::clean_pins(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map) {
     //Clean the pins
 
     //Update all the pin values
@@ -1220,7 +1220,7 @@ void AtomNetlist::clean_pins(const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_
     VTR_ASSERT_MSG(all_valid(pin_ids_), "All Ids should be valid");
 }
 
-void AtomNetlist::clean_nets(const vtr::linear_map<AtomNetId,AtomNetId>& net_id_map) {
+void AtomNetlist::clean_nets(const vtr::vector_map<AtomNetId,AtomNetId>& net_id_map) {
     //Clean the nets
 
     //Update all the net values
@@ -1234,8 +1234,8 @@ void AtomNetlist::clean_nets(const vtr::linear_map<AtomNetId,AtomNetId>& net_id_
     VTR_ASSERT_MSG(all_valid(net_ids_), "All Ids should be valid");
 }
 
-void AtomNetlist::rebuild_block_refs(const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map, 
-                                     const vtr::linear_map<AtomPortId,AtomPortId>& port_id_map) {
+void AtomNetlist::rebuild_block_refs(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map, 
+                                     const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map) {
     //Update the pin id references held by blocks
     for(auto blk_id : blocks()) {
         //Before update the references, we need to know how many are valid,
@@ -1281,8 +1281,8 @@ void AtomNetlist::rebuild_block_refs(const vtr::linear_map<AtomPinId,AtomPinId>&
     VTR_ASSERT(validate_block_sizes());
 }
 
-void AtomNetlist::rebuild_port_refs(const vtr::linear_map<AtomBlockId,AtomBlockId>& block_id_map, 
-                                    const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map) {
+void AtomNetlist::rebuild_port_refs(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map, 
+                                    const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map) {
     //Update block and pin references held by ports
     port_blocks_ = update_valid_refs(port_blocks_, block_id_map); 
     VTR_ASSERT_SAFE_MSG(all_valid(port_blocks_), "All Ids should be valid");
@@ -1296,8 +1296,8 @@ void AtomNetlist::rebuild_port_refs(const vtr::linear_map<AtomBlockId,AtomBlockI
     VTR_ASSERT(validate_port_sizes());
 }
 
-void AtomNetlist::rebuild_pin_refs(const vtr::linear_map<AtomPortId,AtomPortId>& port_id_map, 
-                                   const vtr::linear_map<AtomNetId,AtomNetId>& net_id_map) {
+void AtomNetlist::rebuild_pin_refs(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map, 
+                                   const vtr::vector_map<AtomNetId,AtomNetId>& net_id_map) {
     //Update port and net references held by pins
     pin_ports_ = update_all_refs(pin_ports_, port_id_map);
     VTR_ASSERT_SAFE_MSG(all_valid(pin_ports_), "All Ids should be valid");
@@ -1308,7 +1308,7 @@ void AtomNetlist::rebuild_pin_refs(const vtr::linear_map<AtomPortId,AtomPortId>&
     VTR_ASSERT(validate_pin_sizes());
 }
 
-void AtomNetlist::rebuild_net_refs(const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map) {
+void AtomNetlist::rebuild_net_refs(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map) {
     //Update pin references held by nets
     for(auto& pins : net_pins_) {
         pins = update_valid_refs(pins, pin_id_map);
@@ -1494,7 +1494,7 @@ bool AtomNetlist::validate_block_port_refs() const {
     //Verify that all block <-> port references are consistent
 
     //Track how many times we've seen each port from the blocks 
-    vtr::linear_map<AtomPortId,unsigned> seen_port_ids(port_ids_.size());
+    vtr::vector_map<AtomPortId,unsigned> seen_port_ids(port_ids_.size());
 
     for(auto blk_id : blocks()) {
         for(auto in_port_id : block_input_ports(blk_id)) {
@@ -1576,7 +1576,7 @@ bool AtomNetlist::validate_port_pin_refs() const {
     //Check that port <-> pin references are consistent
 
     //Track how many times we've seen each pin from the ports
-    vtr::linear_map<AtomPinId,unsigned> seen_pin_ids(pin_ids_.size());
+    vtr::vector_map<AtomPinId,unsigned> seen_pin_ids(pin_ids_.size());
 
     for(auto port_id : port_ids_) {
         bool first_bit = true;
@@ -1629,7 +1629,7 @@ bool AtomNetlist::validate_net_pin_refs() const {
     //Check that net <-> pin references are consistent
 
     //Track how many times we've seen each pin from the ports
-    vtr::linear_map<AtomPinId,unsigned> seen_pin_ids(pin_ids_.size());
+    vtr::vector_map<AtomPinId,unsigned> seen_pin_ids(pin_ids_.size());
 
     for(auto net_id : nets()) {
         auto pins = net_pins(net_id);

@@ -1,5 +1,5 @@
-#ifndef VTR_LINEAR_MAP
-#define VTR_LINEAR_MAP
+#ifndef VTR_VECTOR_MAP
+#define VTR_VECTOR_MAP
 #include <vector>
 
 #include "vtr_assert.h"
@@ -16,15 +16,15 @@ namespace vtr {
 //locality. Furthermore, find() returns an iterator to the value directly, rather than a std::pair,
 //and insert() takes both the key and value as seperate arguments and has no return value.
 //
-//Note that it is possible to use linear_map with sparse/non-contiguous keys, but this is typically
+//Note that it is possible to use vector_map with sparse/non-contiguous keys, but this is typically
 //memory inefficient as the underlying vector will allocate space for [0..size_t(max_key)-1],
 //where max_key is the largest key that has been inserted.
 //
 //As with a std::vector, it is the caller's responsibility to ensure there is sufficient space 
-//for a given index/key before it is accessed. The exception to this are the find() and insert() 
+//when a given index/key before it is accessed. The exception to this are the find() and insert() 
 //methods which handle non-existing keys gracefully.
 template<typename K, typename V>
-class linear_map {
+class vector_map {
     public: //Public types
         typedef typename std::vector<V>::const_reference const_reference;
         typedef typename std::vector<V>::reference reference;
@@ -35,7 +35,7 @@ class linear_map {
 
     public: //Constructor
         template<typename... Args>
-        linear_map(Args&&... args)
+        vector_map(Args&&... args)
             : vec_(std::forward<Args>(args)...)
         { }
 
@@ -49,8 +49,9 @@ class linear_map {
 
         //Indexing
         const_reference operator[] (const K n) const { 
-            VTR_ASSERT_SAFE_MSG(size_t(n) < vec_.size(), "Out-of-range index");
-            return vec_[size_t(n)]; 
+            size_t index = size_t(n);
+            VTR_ASSERT_SAFE_MSG(index >= 0 && index < vec_.size(), "Out-of-range index");
+            return vec_[index]; 
         }
 
         const_iterator find(const K key) const {
@@ -115,7 +116,7 @@ class linear_map {
         }
 
         //Swap (this enables std::swap via ADL)
-        friend void swap(linear_map<K,V>& x, linear_map<K,V>& y) {
+        friend void swap(vector_map<K,V>& x, vector_map<K,V>& y) {
             std::swap(x.vec_, y.vec_);
         }
     private:

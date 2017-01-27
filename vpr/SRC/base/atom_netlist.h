@@ -394,7 +394,7 @@
 
 #include "vtr_range.h"
 #include "vtr_logic.h"
-#include "vtr_linear_map.h"
+#include "vtr_vector_map.h"
 
 #include "logic_types.h" //For t_model
 
@@ -406,10 +406,10 @@ class IdMap;
 
 class AtomNetlist {
     public: //Public types
-        typedef vtr::linear_map<AtomBlockId,AtomBlockId>::const_iterator block_iterator;
-        typedef vtr::linear_map<AtomPortId,AtomPortId>::const_iterator port_iterator;
-        typedef vtr::linear_map<AtomPinId,AtomPinId>::const_iterator pin_iterator;
-        typedef vtr::linear_map<AtomNetId,AtomNetId>::const_iterator net_iterator;
+        typedef vtr::vector_map<AtomBlockId,AtomBlockId>::const_iterator block_iterator;
+        typedef vtr::vector_map<AtomPortId,AtomPortId>::const_iterator port_iterator;
+        typedef vtr::vector_map<AtomPinId,AtomPinId>::const_iterator pin_iterator;
+        typedef vtr::vector_map<AtomNetId,AtomNetId>::const_iterator net_iterator;
 
         typedef std::vector<std::vector<vtr::LogicValue>> TruthTable;
 
@@ -745,37 +745,37 @@ class AtomNetlist {
         //Builds the new mappings from old to new IDs.
         //The various IdMap's should be initialized with invalid mappings
         //for all current ID's before being called.
-        void build_id_maps(vtr::linear_map<AtomBlockId,AtomBlockId>& block_id_map, 
-                           vtr::linear_map<AtomPortId,AtomPortId>& port_id_map, 
-                           vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map, 
-                           vtr::linear_map<AtomNetId,AtomNetId>& net_id_map);
+        void build_id_maps(vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map, 
+                           vtr::vector_map<AtomPortId,AtomPortId>& port_id_map, 
+                           vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map, 
+                           vtr::vector_map<AtomNetId,AtomNetId>& net_id_map);
 
         //Removes invalid and reorders blocks
-        void clean_blocks(const vtr::linear_map<AtomBlockId,AtomBlockId>& block_id_map);
+        void clean_blocks(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map);
 
         //Removes invalid and reorders ports
-        void clean_ports(const vtr::linear_map<AtomPortId,AtomPortId>& port_id_map);
+        void clean_ports(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map);
 
         //Removes invalid and reorders pins
-        void clean_pins(const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map);
+        void clean_pins(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map);
 
         //Removes invalid and reorders nets
-        void clean_nets(const vtr::linear_map<AtomNetId,AtomNetId>& net_id_map);
+        void clean_nets(const vtr::vector_map<AtomNetId,AtomNetId>& net_id_map);
 
         //Re-builds cross-references held by blocks
-        void rebuild_block_refs(const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map, 
-                                const vtr::linear_map<AtomPortId,AtomPortId>& port_id_map);
+        void rebuild_block_refs(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map, 
+                                const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map);
 
         //Re-builds cross-references held by ports
-        void rebuild_port_refs(const vtr::linear_map<AtomBlockId,AtomBlockId>& block_id_map, 
-                               const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map);
+        void rebuild_port_refs(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map, 
+                               const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map);
 
         //Re-builds cross-references held by pins
-        void rebuild_pin_refs(const vtr::linear_map<AtomPortId,AtomPortId>& port_id_map, 
-                              const vtr::linear_map<AtomNetId,AtomNetId>& net_id_map);
+        void rebuild_pin_refs(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map, 
+                              const vtr::vector_map<AtomNetId,AtomNetId>& net_id_map);
 
         //Re-builds cross-references held by nets
-        void rebuild_net_refs(const vtr::linear_map<AtomPinId,AtomPinId>& pin_id_map);
+        void rebuild_net_refs(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map);
 
         //Re-builds fast look-ups
         void rebuild_lookups();
@@ -823,51 +823,51 @@ class AtomNetlist {
         bool                        dirty_;         //Indicates the netlist has invalid entries from remove_*() functions
 
         //Block data
-        vtr::linear_map<AtomBlockId,AtomBlockId>             block_ids_;                //Valid block ids
-        vtr::linear_map<AtomBlockId,AtomStringId>            block_names_;              //Name of each block
-        vtr::linear_map<AtomBlockId,const t_model*>          block_models_;             //Architecture model of each block
-        vtr::linear_map<AtomBlockId,TruthTable>              block_truth_tables_;       //Truth tables of each block
+        vtr::vector_map<AtomBlockId,AtomBlockId>             block_ids_;                //Valid block ids
+        vtr::vector_map<AtomBlockId,AtomStringId>            block_names_;              //Name of each block
+        vtr::vector_map<AtomBlockId,const t_model*>          block_models_;             //Architecture model of each block
+        vtr::vector_map<AtomBlockId,TruthTable>              block_truth_tables_;       //Truth tables of each block
 
-        vtr::linear_map<AtomBlockId,std::vector<AtomPinId>>  block_pins_;               //Pins of each block
-        vtr::linear_map<AtomBlockId,unsigned>                block_num_input_pins_;     //Number of input pins on each block
-        vtr::linear_map<AtomBlockId,unsigned>                block_num_output_pins_;    //Number of output pins on each block
-        vtr::linear_map<AtomBlockId,unsigned>                block_num_clock_pins_;     //Number of clock pins on each block
+        vtr::vector_map<AtomBlockId,std::vector<AtomPinId>>  block_pins_;               //Pins of each block
+        vtr::vector_map<AtomBlockId,unsigned>                block_num_input_pins_;     //Number of input pins on each block
+        vtr::vector_map<AtomBlockId,unsigned>                block_num_output_pins_;    //Number of output pins on each block
+        vtr::vector_map<AtomBlockId,unsigned>                block_num_clock_pins_;     //Number of clock pins on each block
 
-        vtr::linear_map<AtomBlockId,std::vector<AtomPortId>> block_ports_;              //Ports of each block
-        vtr::linear_map<AtomBlockId,unsigned>                block_num_input_ports_;    //Input ports of each block
-        vtr::linear_map<AtomBlockId,unsigned>                block_num_output_ports_;   //Output ports of each block
-        vtr::linear_map<AtomBlockId,unsigned>                block_num_clock_ports_;    //Clock ports of each block
+        vtr::vector_map<AtomBlockId,std::vector<AtomPortId>> block_ports_;              //Ports of each block
+        vtr::vector_map<AtomBlockId,unsigned>                block_num_input_ports_;    //Input ports of each block
+        vtr::vector_map<AtomBlockId,unsigned>                block_num_output_ports_;   //Output ports of each block
+        vtr::vector_map<AtomBlockId,unsigned>                block_num_clock_ports_;    //Clock ports of each block
 
         //Port data
-        vtr::linear_map<AtomPortId,AtomPortId>             port_ids_;      //Valid port ids
-        vtr::linear_map<AtomPortId,AtomStringId>           port_names_;    //Name of each port
-        vtr::linear_map<AtomPortId,AtomBlockId>            port_blocks_;   //Block associated with each port
-        vtr::linear_map<AtomPortId,const t_model_ports*>   port_models_;   //Architecture port models of each port
-        vtr::linear_map<AtomPortId,std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
+        vtr::vector_map<AtomPortId,AtomPortId>             port_ids_;      //Valid port ids
+        vtr::vector_map<AtomPortId,AtomStringId>           port_names_;    //Name of each port
+        vtr::vector_map<AtomPortId,AtomBlockId>            port_blocks_;   //Block associated with each port
+        vtr::vector_map<AtomPortId,const t_model_ports*>   port_models_;   //Architecture port models of each port
+        vtr::vector_map<AtomPortId,std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
 
         //Pin data
-        vtr::linear_map<AtomPinId,AtomPinId>  pin_ids_;           //Valid pin ids
-        vtr::linear_map<AtomPinId,AtomPortId> pin_ports_;         //Type of each pin
-        vtr::linear_map<AtomPinId,BitIndex>   pin_port_bits_;     //The ports bit position in the port
-        vtr::linear_map<AtomPinId,AtomNetId>  pin_nets_;          //Net associated with each pin
-        vtr::linear_map<AtomPinId,bool>       pin_is_constant_;   //Indicates if the pin always keeps a constant value
+        vtr::vector_map<AtomPinId,AtomPinId>  pin_ids_;           //Valid pin ids
+        vtr::vector_map<AtomPinId,AtomPortId> pin_ports_;         //Type of each pin
+        vtr::vector_map<AtomPinId,BitIndex>   pin_port_bits_;     //The ports bit position in the port
+        vtr::vector_map<AtomPinId,AtomNetId>  pin_nets_;          //Net associated with each pin
+        vtr::vector_map<AtomPinId,bool>       pin_is_constant_;   //Indicates if the pin always keeps a constant value
 
         //Net data
-        vtr::linear_map<AtomNetId,AtomNetId>              net_ids_;   //Valid net ids
-        vtr::linear_map<AtomNetId,AtomStringId>           net_names_; //Name of each net
-        vtr::linear_map<AtomNetId,std::vector<AtomPinId>> net_pins_;  //Pins associated with each net
+        vtr::vector_map<AtomNetId,AtomNetId>              net_ids_;   //Valid net ids
+        vtr::vector_map<AtomNetId,AtomStringId>           net_names_; //Name of each net
+        vtr::vector_map<AtomNetId,std::vector<AtomPinId>> net_pins_;  //Pins associated with each net
 
         //String data
         // We store each unique string once, and reference it by an StringId
         // This avoids duplicating the strings in the fast look-ups (i.e. the look-ups
         // only store the Ids)
-        vtr::linear_map<AtomStringId,AtomStringId>   string_ids_;    //Valid string ids
-        vtr::linear_map<AtomStringId,std::string>    strings_;       //Strings
+        vtr::vector_map<AtomStringId,AtomStringId>   string_ids_;    //Valid string ids
+        vtr::vector_map<AtomStringId,std::string>    strings_;       //Strings
 
     private: //Fast lookups
 
-        vtr::linear_map<AtomStringId,AtomBlockId>       block_name_to_block_id_;
-        vtr::linear_map<AtomStringId,AtomNetId>         net_name_to_net_id_;
+        vtr::vector_map<AtomStringId,AtomBlockId>       block_name_to_block_id_;
+        vtr::vector_map<AtomStringId,AtomNetId>         net_name_to_net_id_;
         std::unordered_map<std::string,AtomStringId>    string_to_string_id_;
 };
 

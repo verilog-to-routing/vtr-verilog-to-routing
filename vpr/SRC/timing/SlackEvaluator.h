@@ -70,7 +70,7 @@ class SetupSlackEvaluator : public SlackEvaluator {
 
     private:
         void update_setup_pin_slacks() {
-            setup_pin_slacks_ = vtr::linear_map<AtomPinId,float>(netlist_.pins().size(), NAN);
+            setup_pin_slacks_ = vtr::vector_map<AtomPinId,float>(netlist_.pins().size(), NAN);
 
             //Record the lowest slack for every sink pin
             for(auto kv : setup_edge_slacks_) {
@@ -86,7 +86,7 @@ class SetupSlackEvaluator : public SlackEvaluator {
         }
 
         void update_setup_pin_criticalities() {
-            setup_pin_criticalities_ = vtr::linear_map<AtomPinId,float>(netlist_.pins().size(), NAN);
+            setup_pin_criticalities_ = vtr::vector_map<AtomPinId,float>(netlist_.pins().size(), NAN);
 
             //Record the highest criticality for every sink pin
             for(auto kv : setup_edge_criticalities_) {
@@ -110,8 +110,8 @@ class SetupSlackEvaluator : public SlackEvaluator {
         vtr::flat_map<std::pair<AtomPinId,AtomPinId>,float> setup_edge_criticalities_;
         std::shared_ptr<tatum::SetupTimingAnalyzer> setup_analyzer_;
     private:
-        vtr::linear_map<AtomPinId,float> setup_pin_slacks_;
-        vtr::linear_map<AtomPinId,float> setup_pin_criticalities_;
+        vtr::vector_map<AtomPinId,float> setup_pin_slacks_;
+        vtr::vector_map<AtomPinId,float> setup_pin_criticalities_;
 };
 
 /*
