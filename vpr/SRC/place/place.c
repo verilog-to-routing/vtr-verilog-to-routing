@@ -735,9 +735,9 @@ void try_place(struct s_placer_opts placer_opts,
 	float accept_rate = (float) num_swap_accepted / total_swap_attempts;
 	float abort_rate = (float) num_swap_aborted / total_swap_attempts;
 	vtr::printf_info("Placement total # of swap attempts: %*d\n", num_swap_print_digits, total_swap_attempts);
-	vtr::printf_info("\tSwaps accepted: %*d (%4.1f %)\n", num_swap_print_digits, num_swap_accepted, 100*accept_rate);
-	vtr::printf_info("\tSwaps rejected: %*d (%4.1f %)\n", num_swap_print_digits, num_swap_rejected, 100*reject_rate);
-	vtr::printf_info("\tSwaps aborted : %*d (%4.1f %)\n", num_swap_print_digits, num_swap_aborted, 100*abort_rate);
+	vtr::printf_info("\tSwaps accepted: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_accepted, 100*accept_rate);
+	vtr::printf_info("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_rejected, 100*reject_rate);
+	vtr::printf_info("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100*abort_rate);
 	
 
 	vtr::printf_info("Total moves attempted: %d.0\n", tot_iter);
