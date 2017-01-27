@@ -36,10 +36,13 @@ private:
     const AtomMap& netlist_map_;
     float** net_delay_;
 
-    CachingClbDelayCalc clb_delay_calc_;
+    ClbDelayCalc clb_delay_calc_;
     AtomDelayCalc atom_delay_calc_;
 
-    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> delay_cache_;
+    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> edge_delay_cache_;
+    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> driver_clb_delay_cache_;
+    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> sink_clb_delay_cache_;
+    mutable vtr::vector_map<tatum::EdgeId,std::pair<const t_net_pin*,const t_net_pin*>> net_pin_cache_;
 };
 
 #include "PlacementDelayCalculator.tpp"

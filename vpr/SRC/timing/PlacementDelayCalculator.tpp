@@ -14,7 +14,10 @@ inline PlacementDelayCalculator::PlacementDelayCalculator(const AtomNetlist& net
     , netlist_map_(netlist_map)
     , net_delay_(net_delay)
     , atom_delay_calc_(netlist, netlist_map)
-    , delay_cache_(g_timing_graph.nodes().size(), tatum::Time(NAN))
+    , edge_delay_cache_(g_timing_graph.edges().size(), tatum::Time(NAN))
+    , driver_clb_delay_cache_(g_timing_graph.edges().size(), tatum::Time(NAN))
+    , sink_clb_delay_cache_(g_timing_graph.edges().size(), tatum::Time(NAN))
+    , net_pin_cache_(g_timing_graph.edges().size(), std::pair<const t_net_pin*,const t_net_pin*>(nullptr,nullptr))
     {}
 
 inline tatum::Time PlacementDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge) const { 
@@ -60,7 +63,7 @@ inline tatum::Time PlacementDelayCalculator::hold_time(const tatum::TimingGraph&
 
 inline tatum::Time PlacementDelayCalculator::atom_combinational_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
 
-    tatum::Time delay = delay_cache_[edge_id];
+    tatum::Time delay = edge_delay_cache_[edge_id];
 
     if(std::isnan(delay.value())) {
         //Miss
@@ -73,14 +76,14 @@ inline tatum::Time PlacementDelayCalculator::atom_combinational_delay(const tatu
         delay = tatum::Time(atom_delay_calc_.atom_combinational_delay(src_pin, sink_pin));
 
         //Insert
-        delay_cache_[edge_id] = delay;
+        edge_delay_cache_[edge_id] = delay;
     }
 
     return delay;
 }
 
 inline tatum::Time PlacementDelayCalculator::atom_setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
-    tatum::Time tsu = delay_cache_[edge_id];
+    tatum::Time tsu = edge_delay_cache_[edge_id];
 
     if(std::isnan(tsu.value())) {
         //Miss
@@ -96,13 +99,13 @@ inline tatum::Time PlacementDelayCalculator::atom_setup_time(const tatum::Timing
         tsu = tatum::Time(atom_delay_calc_.atom_setup_time(clock_pin, input_pin));
 
         //Insert
-        delay_cache_[edge_id] = tsu;
+        edge_delay_cache_[edge_id] = tsu;
     }
     return tsu;
 }
 
 inline tatum::Time PlacementDelayCalculator::atom_clock_to_q_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
-    tatum::Time tco = delay_cache_[edge_id];
+    tatum::Time tco = edge_delay_cache_[edge_id];
 
     if(std::isnan(tco.value())) {
         //Miss
@@ -118,7 +121,7 @@ inline tatum::Time PlacementDelayCalculator::atom_clock_to_q_delay(const tatum::
         tco = tatum::Time(atom_delay_calc_.atom_clock_to_q_delay(clock_pin, output_pin));
 
         //Insert
-        delay_cache_[edge_id] = tco;
+        edge_delay_cache_[edge_id] = tco;
     }
     return tco;
 }
@@ -136,71 +139,119 @@ inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingG
     //Note that if the connection is completely absorbed within the cluster then inter_cluster_delay
     //and capture_cluster_delay will both be zero.
 
-    tatum::NodeId src_node = tg.edge_src_node(edge_id);
-    tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
+    tatum::Time edge_delay = edge_delay_cache_[edge_id];
+    if (std::isnan(edge_delay.value())) {
+        //Miss
 
-    AtomPinId atom_src_pin = netlist_map_.pin_tnode[src_node];
-    VTR_ASSERT(atom_src_pin);
+        //Note that the net pin pair will only be valid if we have already processed and cached
+        //the clb delays on a previous call
+        const t_net_pin* driver_clb_net_pin = nullptr;
+        const t_net_pin* sink_clb_net_pin = nullptr;
+        std::tie(driver_clb_net_pin, sink_clb_net_pin) = net_pin_cache_[edge_id];
 
-    AtomPinId atom_sink_pin = netlist_map_.pin_tnode[sink_node];
-    VTR_ASSERT(atom_sink_pin);
+        if(driver_clb_net_pin == nullptr && sink_clb_net_pin == nullptr) {
+            //No cached intermediate results
 
-    AtomBlockId atom_src_block = netlist_.pin_block(atom_src_pin);
-    AtomBlockId atom_sink_block = netlist_.pin_block(atom_sink_pin);
+            tatum::NodeId src_node = tg.edge_src_node(edge_id);
+            tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
 
-    AtomNetId atom_net = netlist_.pin_net(atom_sink_pin);
+            AtomPinId atom_src_pin = netlist_map_.pin_tnode[src_node];
+            VTR_ASSERT(atom_src_pin);
 
-    int clb_src_block = netlist_map_.atom_clb(atom_src_block);
-    VTR_ASSERT(clb_src_block >= 0);
-    int clb_sink_block = netlist_map_.atom_clb(atom_sink_block);
-    VTR_ASSERT(clb_sink_block >= 0);
+            AtomPinId atom_sink_pin = netlist_map_.pin_tnode[sink_node];
+            VTR_ASSERT(atom_sink_pin);
 
-    const t_pb_graph_pin* src_gpin = netlist_map_.atom_pin_pb_graph_pin(atom_src_pin);
-    VTR_ASSERT(src_gpin);
-    const t_pb_graph_pin* sink_gpin = netlist_map_.atom_pin_pb_graph_pin(atom_sink_pin);
-    VTR_ASSERT(sink_gpin);
+            AtomBlockId atom_src_block = netlist_.pin_block(atom_src_pin);
+            AtomBlockId atom_sink_block = netlist_.pin_block(atom_sink_pin);
 
-    int src_pb_route_id = src_gpin->pin_count_in_cluster;
-    int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
+            AtomNetId atom_net = netlist_.pin_net(atom_sink_pin);
 
-    VTR_ASSERT(block[clb_src_block].pb_route[src_pb_route_id].atom_net_id == atom_net);
-    VTR_ASSERT(block[clb_sink_block].pb_route[sink_pb_route_id].atom_net_id == atom_net);
+            int clb_src_block = netlist_map_.atom_clb(atom_src_block);
+            VTR_ASSERT(clb_src_block >= 0);
+            int clb_sink_block = netlist_map_.atom_clb(atom_sink_block);
+            VTR_ASSERT(clb_sink_block >= 0);
 
-    //NOTE: even if both the source and sink atoms are contained in the same top-level
-    //      CLB, the connection between them may not have been absorbed, and may go 
-    //      through the global routing network.
+            const t_pb_graph_pin* src_gpin = netlist_map_.atom_pin_pb_graph_pin(atom_src_pin);
+            VTR_ASSERT(src_gpin);
+            const t_pb_graph_pin* sink_gpin = netlist_map_.atom_pin_pb_graph_pin(atom_sink_pin);
+            VTR_ASSERT(sink_gpin);
 
-    //We trace backward from the sink to the source
+            int src_pb_route_id = src_gpin->pin_count_in_cluster;
+            int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
 
-    //Trace the delay from the atom sink pin back to either the atom source pin (in the same cluster), 
-    //or a cluster input pin
-    
-    float delay = NAN;
-    const t_net_pin* sink_clb_net_pin = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
-    if(sink_clb_net_pin != nullptr) {
-        //Connection leaves the CLB
+            VTR_ASSERT(block[clb_src_block].pb_route[src_pb_route_id].atom_net_id == atom_net);
+            VTR_ASSERT(block[clb_sink_block].pb_route[sink_pb_route_id].atom_net_id == atom_net);
 
-        int net = sink_clb_net_pin->net;
-        const t_net_pin* driver_clb_net_pin = &g_clbs_nlist.net[net].pins[0];
-        VTR_ASSERT(driver_clb_net_pin != nullptr);
-        VTR_ASSERT(driver_clb_net_pin->block == clb_src_block);
+            //NOTE: even if both the source and sink atoms are contained in the same top-level
+            //      CLB, the connection between them may not have been absorbed, and may go 
+            //      through the global routing network.
 
-        float driver_clb_delay = clb_delay_calc_.internal_src_to_clb_output_delay(src_pb_route_id, driver_clb_net_pin);
+            //We trace backward from the sink to the source
 
-        float net_delay = inter_cluster_delay(driver_clb_net_pin, sink_clb_net_pin);
+            //Trace the delay from the atom sink pin back to either the atom source pin (in the same cluster), 
+            //or a cluster input pin
 
-        float sink_clb_delay = clb_delay_calc_.clb_input_to_internal_sink_delay(sink_clb_net_pin, sink_pb_route_id);
+            
+            VTR_ASSERT(sink_clb_net_pin == nullptr);
 
-        delay = driver_clb_delay + net_delay + sink_clb_delay;
-    } else {
-        //Connection entirely within the CLB
-        VTR_ASSERT(clb_src_block == clb_sink_block);
-        delay = clb_delay_calc_.internal_src_to_internal_sink_delay(clb_src_block, src_pb_route_id, sink_pb_route_id);
+            sink_clb_net_pin = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
+            if(sink_clb_net_pin != nullptr) {
+                //Connection leaves the CLB
+
+                VTR_ASSERT(driver_clb_net_pin == nullptr);
+
+                int net = sink_clb_net_pin->net;
+                driver_clb_net_pin = &g_clbs_nlist.net[net].pins[0];
+                VTR_ASSERT(driver_clb_net_pin != nullptr);
+                VTR_ASSERT(driver_clb_net_pin->block == clb_src_block);
+
+                tatum::Time driver_clb_delay = tatum::Time(clb_delay_calc_.internal_src_to_clb_output_delay(src_pb_route_id, driver_clb_net_pin));
+
+                tatum::Time net_delay = tatum::Time(inter_cluster_delay(driver_clb_net_pin, sink_clb_net_pin));
+
+                tatum::Time sink_clb_delay = tatum::Time(clb_delay_calc_.clb_input_to_internal_sink_delay(sink_clb_net_pin, sink_pb_route_id));
+
+                edge_delay = driver_clb_delay + net_delay + sink_clb_delay;
+
+                //Save the clb delays (but not the net dealy since it may change during placement)
+                //also save the net pins associated with this edge
+                driver_clb_delay_cache_[edge_id] = driver_clb_delay;
+                sink_clb_delay_cache_[edge_id] = sink_clb_delay;
+                net_pin_cache_[edge_id] = std::make_pair(driver_clb_net_pin, sink_clb_net_pin);
+            } else {
+                //Connection entirely within the CLB
+                VTR_ASSERT(clb_src_block == clb_sink_block);
+
+                edge_delay = tatum::Time(clb_delay_calc_.internal_src_to_internal_sink_delay(clb_src_block, src_pb_route_id, sink_pb_route_id));
+
+                //Save the delay, since it won't change during placement
+                // Note that we cache the full edge delay for edges completely contained within CLBs
+                edge_delay_cache_[edge_id] = edge_delay;
+            }
+        } else {
+            //Calculate the edge delay using cached clb delays and the latest net delay
+            //
+            //  Note: we do not need to handle the case of edges fully contained within CLBs,
+            //        since such delays are cached using edge_delay_cache_ and is handled earlier
+            //        before this point
+
+            VTR_ASSERT(driver_clb_net_pin != nullptr);
+            VTR_ASSERT(sink_clb_net_pin != nullptr);
+
+            tatum::Time driver_clb_delay = driver_clb_delay_cache_[edge_id];
+            VTR_ASSERT(!std::isnan(driver_clb_delay.value()));
+
+            tatum::Time sink_clb_delay = sink_clb_delay_cache_[edge_id];
+            VTR_ASSERT(!std::isnan(sink_clb_delay.value()));
+
+            tatum::Time net_delay = tatum::Time(inter_cluster_delay(driver_clb_net_pin, sink_clb_net_pin));
+
+            edge_delay = driver_clb_delay + net_delay + sink_clb_delay;
+        }
     }
+    VTR_ASSERT(!std::isnan(edge_delay.value()));
 
-    VTR_ASSERT(!std::isnan(delay));
-
-    return tatum::Time(delay);
+    return edge_delay;
     
 }
 
