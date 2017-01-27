@@ -285,8 +285,10 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	processPb(clb_block, cb, index, cb[index].pb, cb[index].pb_route, num_primitives, loc_data);
 
 	cb[index].nets = (int *) vtr::malloc(cb[index].type->num_pins * sizeof(int));
+	cb[index].net_pins = (int *) vtr::malloc(cb[index].type->num_pins * sizeof(int));
 	for (i = 0; i < cb[index].type->num_pins; i++) {
 		cb[index].nets[i] = OPEN;
+		cb[index].net_pins[i] = OPEN;
 	}
 	load_interal_to_block_net_nums(cb[index].type, cb[index].pb_route);
 	freeTokens(tokens, num_tokens);
@@ -806,7 +808,8 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 
 	count = (int *) vtr::calloc(*ext_ncount, sizeof(int));
 
-	/* complete load of external nets so that each net points back to the blocks */
+	/* complete load of external nets so that each net points back to the blocks,
+     * and blocks point back to net pins */
 	for (i = 0; i < L_num_blocks; i++) {
 		ipin = 0;
 		for (j = 0; j < block_list[i].type->num_pins; j++) {
@@ -821,16 +824,25 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 								(*ext_nets)[netnum].num_sinks);
 					}
 
+                    //Mark the mapping from net to block
 					(*ext_nets)[netnum].node_block[count[netnum]] = i;
 					(*ext_nets)[netnum].node_block_pin[count[netnum]] = j;
 
-					(*ext_nets)[netnum].is_global =
-							block_list[i].type->is_global_pin[j]; /* Error check performed later to ensure no mixing of global and non-global signals */
+					(*ext_nets)[netnum].is_global = block_list[i].type->is_global_pin[j]; 
+                    /* Error check performed later to ensure no mixing of global and non-global signals */
+
+                    //Mark the net pin numbers on the block
+                    block_list[i].net_pins[j] = count[netnum]; //A sink
 				} else {
 					VTR_ASSERT(DRIVER == block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type);
 					VTR_ASSERT((*ext_nets)[netnum].node_block[0] == OPEN);
+
+                    //Mark the mapping from net to block
 					(*ext_nets)[netnum].node_block[0] = i;
 					(*ext_nets)[netnum].node_block_pin[0] = j;
+
+                    //Mark the net pin numbers on the block
+                    block_list[i].net_pins[j] = 0; //The driver
 				}
 			}
 		}

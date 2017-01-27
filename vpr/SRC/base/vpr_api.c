@@ -895,6 +895,7 @@ void free_circuit() {
 				free(block[i].pb);
 			}
 			free(block[i].nets);
+			free(block[i].net_pins);
 			free(block[i].name);
 			delete [] block[i].pb_route;
 		}

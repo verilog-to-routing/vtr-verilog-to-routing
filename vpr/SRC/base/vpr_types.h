@@ -543,6 +543,7 @@ struct s_block {
 	char *name;
 	t_type_ptr type;
 	int *nets;
+	int *net_pins;
 	int x;
 	int y;
 	int z;
