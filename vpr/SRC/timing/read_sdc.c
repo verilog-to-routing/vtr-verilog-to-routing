@@ -272,6 +272,9 @@ void read_sdc(t_timing_inf timing_inf) {
 	and constrained_ios, free other data structures used in this routine */
 	free(sdc_clocks);
 	free(netlist_clocks);
+    for(int i = 0; i < num_netlist_ios; ++i) {
+        free(netlist_ios[i]);
+    }
 	free(netlist_ios);
 
     fclose(sdc);
