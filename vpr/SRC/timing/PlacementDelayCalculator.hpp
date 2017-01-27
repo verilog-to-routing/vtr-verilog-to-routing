@@ -34,7 +34,7 @@ private:
     const AtomMap& netlist_map_;
     float** net_delay_;
 
-    ClbDelayCalc clb_delay_calc_;
+    CachingClbDelayCalc clb_delay_calc_;
     CachingAtomDelayCalc atom_delay_calc_;
 };
 

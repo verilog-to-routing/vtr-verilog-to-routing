@@ -2,6 +2,9 @@
 
 #include "globals.h"
 
+/*
+ * ClbDelayCalc
+ */
 inline ClbDelayCalc::ClbDelayCalc()
     : intra_lb_pb_pin_lookup_(type_descriptors, num_types) {}
 
@@ -91,4 +94,48 @@ const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(const t_pb_graph_pin* dr
     VTR_ASSERT_MSG(pb_edge, "Should find pb_graph_edge connecting PB pins");
 
     return pb_edge;
+}
+
+/*
+ * CachingClbDelayCalc
+ */
+inline float CachingClbDelayCalc::clb_input_to_internal_sink_delay(const t_net_pin* clb_input_pin, int internal_sink_pin) const {
+    return trace_max_delay(clb_input_pin->block, clb_input_pin->block_pin, internal_sink_pin);
+}
+
+inline float CachingClbDelayCalc::internal_src_to_clb_output_delay(int internal_src_pin, const t_net_pin* clb_output_pin) const {
+    return trace_max_delay(clb_output_pin->block, internal_src_pin, clb_output_pin->block_pin);
+}
+
+inline float CachingClbDelayCalc::internal_src_to_internal_sink_delay(int clb, int internal_src_pin, int internal_sink_pin) const {
+    return trace_max_delay(clb, internal_src_pin, internal_sink_pin);
+}
+
+inline void CachingClbDelayCalc::invalidate_delay(int clb, int src_pb_route_pin, int sink_pb_route_pin) {
+    auto key = std::make_tuple(clb, src_pb_route_pin, sink_pb_route_pin);
+    delay_cache_.erase(key);
+}
+
+inline void CachingClbDelayCalc::invalidate_all_delays() {
+    delay_cache_.clear();
+}
+
+inline float CachingClbDelayCalc::trace_max_delay(int clb, int src_pb_route_pin, int sink_pb_route_pin) const {
+    auto key = std::make_tuple(clb, src_pb_route_pin, sink_pb_route_pin);
+    auto iter = delay_cache_.find(key);
+
+    if(iter != delay_cache_.end()) {
+        //Hit
+        return iter->second;
+    }
+
+    //Miss
+
+    //Calculate it
+    float delay = raw_delay_calc_.trace_max_delay(clb, src_pb_route_pin, sink_pb_route_pin);
+
+    //Save in cache
+    delay_cache_.insert(std::make_pair(key, delay));
+
+    return delay;
 }
