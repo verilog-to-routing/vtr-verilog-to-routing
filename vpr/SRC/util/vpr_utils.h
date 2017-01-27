@@ -5,7 +5,9 @@
 
 void print_tabs(FILE * fpout, int num_tab);
 
+bool is_clb_input_pin(int ipin, t_type_ptr type);
 bool is_opin(int ipin, t_type_ptr type);
+
 int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node);
 
 void get_class_range_for_block(const int iblk, int *class_low,
@@ -49,6 +51,7 @@ AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin, const IntraLbPbPinL
 //Find the atom pins driven by the specified top-level CLB pin
 std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
+const t_net_pin* find_pb_route_clb_input_net_pin(int clb, int sink_pb_route_id);
 
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);
 int get_max_depth_of_pb_type(t_pb_type *pb_type);

@@ -368,7 +368,7 @@ void try_place(struct s_placer_opts placer_opts,
     comp_td_point_to_point_delays();
 
     //Initialize the delay calculator
-    PlacementDelayCalculator dc(g_atom_nl, g_atom_map, type_descriptors, num_types, point_to_point_delay_cost);
+    PlacementDelayCalculator dc(g_atom_nl, g_atom_map, point_to_point_delay_cost);
 
     //Create the analyzer
     std::shared_ptr<tatum::SetupTimingAnalyzer> timing_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);

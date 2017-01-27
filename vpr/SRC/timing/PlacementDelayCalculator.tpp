@@ -7,6 +7,14 @@
 
 //Controls printing detailed info about edge delay calculation
 //#define PLACEMENT_DELAY_CALC_DEBUG
+inline PlacementDelayCalculator::PlacementDelayCalculator(const AtomNetlist& netlist, 
+                                                          const AtomMap& netlist_map, 
+                                                          float** net_delay)
+    : netlist_(netlist)
+    , netlist_map_(netlist_map)
+    , net_delay_(net_delay)
+    , atom_delay_calc_(netlist, netlist_map)
+    {}
 
 inline tatum::Time PlacementDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge) const { 
 #ifdef PLACEMENT_DELAY_CALC_DEBUG
@@ -101,22 +109,35 @@ inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingG
     //Note that if the connection is completely absorbed within the cluster then inter_cluster_delay
     //and capture_cluster_delay will both be zero.
 
+    tatum::NodeId src_node = tg.edge_src_node(edge_id);
     tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
+
+    AtomPinId atom_src_pin = netlist_map_.pin_tnode[src_node];
+    VTR_ASSERT(atom_src_pin);
 
     AtomPinId atom_sink_pin = netlist_map_.pin_tnode[sink_node];
     VTR_ASSERT(atom_sink_pin);
 
+    AtomBlockId atom_src_block = netlist_.pin_block(atom_src_pin);
     AtomBlockId atom_sink_block = netlist_.pin_block(atom_sink_pin);
 
     AtomNetId atom_net = netlist_.pin_net(atom_sink_pin);
 
+    int clb_src_block = netlist_map_.atom_clb(atom_src_block);
+    VTR_ASSERT(clb_src_block >= 0);
     int clb_sink_block = netlist_map_.atom_clb(atom_sink_block);
     VTR_ASSERT(clb_sink_block >= 0);
 
-    const t_pb_graph_pin* sink_gpin = find_pb_graph_pin(atom_sink_pin);
+    const t_pb_graph_pin* src_gpin = netlist_map_.atom_pin_pb_graph_pin(atom_src_pin);
+    VTR_ASSERT(src_gpin);
+    const t_pb_graph_pin* sink_gpin = netlist_map_.atom_pin_pb_graph_pin(atom_sink_pin);
     VTR_ASSERT(sink_gpin);
 
-    VTR_ASSERT(block[clb_sink_block].pb_route[sink_gpin->pin_count_in_cluster].atom_net_id == atom_net);
+    int src_pb_route_id = src_gpin->pin_count_in_cluster;
+    int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
+
+    VTR_ASSERT(block[clb_src_block].pb_route[src_pb_route_id].atom_net_id == atom_net);
+    VTR_ASSERT(block[clb_sink_block].pb_route[sink_pb_route_id].atom_net_id == atom_net);
 
     //NOTE: even if both the source and sink atoms are contained in the same top-level
     //      CLB, the connection between them may not have been absorbed, and may go 
@@ -126,207 +147,42 @@ inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingG
 
     //Trace the delay from the atom sink pin back to either the atom source pin (in the same cluster), 
     //or a cluster input pin
-    float capture_cluster_delay = NAN;
-    t_net_pin clb_sink_input_pin;
-    std::tie(capture_cluster_delay, clb_sink_input_pin) = trace_capture_cluster_delay(clb_sink_block, sink_gpin, atom_net);
-
-    if(clb_sink_input_pin.block != UNDEFINED && clb_sink_input_pin.block_pin != UNDEFINED) {
-        //Connection leaves the cluster
-
-        float inter_cluster_delay = NAN;
-        t_net_pin clb_driver_output_pin;
-        std::tie(inter_cluster_delay, clb_driver_output_pin) = trace_inter_cluster_delay(clb_sink_input_pin);
-
-        float launch_cluster_delay = NAN;
-        std::tie(launch_cluster_delay) = trace_launch_cluster_delay(clb_driver_output_pin, atom_net);
-
-        return tatum::Time(launch_cluster_delay + inter_cluster_delay + capture_cluster_delay);
-    } else {
-        //Connection internal to cluster
-        
-        return tatum::Time(capture_cluster_delay);
-    }
-}
-
-inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_capture_cluster_delay(int clb_sink_block, const t_pb_graph_pin* sink_gpin, const AtomNetId atom_net) const {
-    t_pb_route* sink_pb_routes = block[clb_sink_block].pb_route;
-
-    float delay = 0.;
-
-    int sink_pb_route_idx = sink_gpin->pin_count_in_cluster;
-    const t_pb_route* sink_pb_route = &sink_pb_routes[sink_pb_route_idx];
-    float incr_delay = pb_route_max_delay(clb_sink_block, sink_pb_route_idx);
-    delay += incr_delay;
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
-    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) driver_pb_pin_id=%d delay=%g incr_delay=%g\n", 
-                clb_sink_block,
-                sink_pb_route_idx, sink_pb_route->atom_net_id, 
-                netlist_.net_name(sink_pb_route->atom_net_id).c_str(), 
-                sink_pb_route->driver_pb_pin_id,
-                delay,
-                incr_delay);
-#endif
-
-    while(sink_pb_route->driver_pb_pin_id >= 0) {
-        //Advance to the next element
-        sink_pb_route_idx = sink_pb_route->driver_pb_pin_id;
-        sink_pb_route = &sink_pb_routes[sink_pb_route_idx];
-        incr_delay = pb_route_max_delay(clb_sink_block, sink_pb_route_idx);
-        delay += incr_delay;
-
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
-        vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) driver_pb_pin_id=%d delay=%g incr_delay=%g\n", 
-                    clb_sink_block,
-                    sink_pb_route_idx, sink_pb_route->atom_net_id, 
-                    netlist_.net_name(sink_pb_route->atom_net_id).c_str(), 
-                    sink_pb_route->driver_pb_pin_id,
-                    delay,
-                    incr_delay);
-#endif
-
-        VTR_ASSERT(sink_pb_route->atom_net_id == atom_net);
-    }
-
-
-    t_net_pin clb_input_pin;
-    if(is_clb_io_pin(clb_sink_block, sink_pb_route_idx)) {
-        //Leaves the current cluster, so find the associated CLB net pin
-        int iclb_net = block[clb_sink_block].nets[sink_pb_route_idx];
-
-        for(size_t ipin = 0; ipin < g_clbs_nlist.net.size(); ++ipin) {
-            if(g_clbs_nlist.net[iclb_net].pins[ipin].block == clb_sink_block
-               && g_clbs_nlist.net[iclb_net].pins[ipin].block_pin == sink_pb_route_idx) {
-                clb_input_pin = g_clbs_nlist.net[iclb_net].pins[ipin];
-                break;
-            }
-        }
-        VTR_ASSERT(clb_input_pin.block == clb_sink_block);
-        VTR_ASSERT(clb_input_pin.block_pin == sink_pb_route_idx);
-    }
-
     
-    return std::make_tuple(delay, clb_input_pin);
-}
+    float delay = NAN;
+    const t_net_pin* sink_clb_net_pin = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
+    if(sink_clb_net_pin != nullptr) {
+        //Connection leaves the CLB
 
-inline std::tuple<float,t_net_pin> PlacementDelayCalculator::trace_inter_cluster_delay(t_net_pin clb_sink_input_pin) const {
-    int iclb_net = clb_sink_input_pin.net;
-    int iclb_net_sink_pin = clb_sink_input_pin.net_pin;
+        int net = sink_clb_net_pin->net;
+        const t_net_pin* driver_clb_net_pin = &g_clbs_nlist.net[net].pins[0];
+        VTR_ASSERT(driver_clb_net_pin != nullptr);
+        VTR_ASSERT(driver_clb_net_pin->block == clb_src_block);
 
-    VTR_ASSERT(g_clbs_nlist.net[iclb_net].pins[iclb_net_sink_pin].block == clb_sink_input_pin.block);
-    VTR_ASSERT(g_clbs_nlist.net[iclb_net].pins[iclb_net_sink_pin].block_pin == clb_sink_input_pin.block_pin);
+        float driver_clb_delay = clb_delay_calc_.internal_src_to_clb_output_delay(src_pb_route_id, driver_clb_net_pin);
 
-    float delay = net_delay_[iclb_net][iclb_net_sink_pin];
+        float net_delay = inter_cluster_delay(driver_clb_net_pin, sink_clb_net_pin);
 
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
-    vtr::printf("CLB Net: %d (%s) driver to pin %d delay=%g\n", iclb_net, g_clbs_nlist.net[iclb_net].name, iclb_net_sink_pin, delay);
-#endif
+        float sink_clb_delay = clb_delay_calc_.clb_input_to_internal_sink_delay(sink_clb_net_pin, sink_pb_route_id);
 
-    t_net_pin clb_driver_output_pin = g_clbs_nlist.net[clb_sink_input_pin.net].pins[0];
-
-    return std::make_tuple(delay, clb_driver_output_pin);
-}
-
-inline std::tuple<float> PlacementDelayCalculator::trace_launch_cluster_delay(t_net_pin clb_driver_output_pin, const AtomNetId atom_net) const {
-    t_pb_route* driver_pb_routes = block[clb_driver_output_pin.block].pb_route;
-
-    float delay = 0.;
-
-    int driver_pb_route_idx = clb_driver_output_pin.block_pin;
-    const t_pb_route* driver_pb_route = &driver_pb_routes[driver_pb_route_idx];
-    float incr_delay = pb_route_max_delay(clb_driver_output_pin.block, driver_pb_route_idx);
-    delay += incr_delay;
-
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
-    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) driver_pb_pin_id=%d delay=%g incr_delay=%g\n", 
-                clb_driver_output_pin.block,
-                driver_pb_route_idx, driver_pb_route->atom_net_id, 
-                netlist_.net_name(driver_pb_route->atom_net_id).c_str(), 
-                driver_pb_route->driver_pb_pin_id,
-                delay,
-                incr_delay);
-#endif
-
-    while(driver_pb_route->driver_pb_pin_id >= 0) {
-
-        //Advance to the next element
-        driver_pb_route_idx = driver_pb_route->driver_pb_pin_id;
-        driver_pb_route = &driver_pb_routes[driver_pb_route_idx];
-
-        incr_delay = pb_route_max_delay(clb_driver_output_pin.block, driver_pb_route_idx);
-        delay += incr_delay;
-
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
-    vtr::printf("CLB: %d PB Route %d: atom_net=%zu (%s) driver_pb_pin_id=%d delay=%g incr_delay=%g\n", 
-                clb_driver_output_pin.block,
-                driver_pb_route_idx, driver_pb_route->atom_net_id, 
-                netlist_.net_name(driver_pb_route->atom_net_id).c_str(), 
-                driver_pb_route->driver_pb_pin_id,
-                delay,
-                incr_delay);
-#endif
-
-        VTR_ASSERT(driver_pb_route->atom_net_id == atom_net);
-    }
-
-    return std::make_tuple(delay);
-}
-
-
-
-inline const t_pb_graph_pin* PlacementDelayCalculator::find_pb_graph_pin(const AtomPinId atom_pin) const {
-    const t_pb_graph_pin* net_gpin = g_atom_map.atom_pin_pb_graph_pin(atom_pin);
-    VTR_ASSERT(net_gpin != nullptr);
-
-    return net_gpin;
-}
-
-inline bool PlacementDelayCalculator::is_clb_io_pin(int clb_block, int clb_pb_route_idx) const {
-    return clb_pb_route_idx < block[clb_block].type->num_pins;
-}
-
-inline float PlacementDelayCalculator::pb_route_max_delay(int clb_block, int pb_route_idx) const {
-    const t_pb_graph_edge* pb_edge = find_pb_graph_edge(clb_block, pb_route_idx);
-
-    if(pb_edge) {
-        return pb_edge->delay_max;
+        delay = driver_clb_delay + net_delay + sink_clb_delay;
     } else {
-        return 0.;
+        //Connection entirely within the CLB
+        VTR_ASSERT(clb_src_block == clb_sink_block);
+        delay = clb_delay_calc_.internal_src_to_internal_sink_delay(clb_src_block, src_pb_route_id, sink_pb_route_id);
     }
+
+    VTR_ASSERT(!std::isnan(delay));
+
+    return tatum::Time(delay);
+    
 }
 
-const t_pb_graph_edge* PlacementDelayCalculator::find_pb_graph_edge(int clb_block, int pb_route_idx) const {
-    int type_index = block[clb_block].type->index;
+inline float PlacementDelayCalculator::inter_cluster_delay(const t_net_pin* driver_clb_pin, const t_net_pin* sink_clb_pin) const {
+    int net = driver_clb_pin->net;
+    VTR_ASSERT(driver_clb_pin->net_pin == 0);
 
-    int upstream_pb_route_idx = block[clb_block].pb_route[pb_route_idx].driver_pb_pin_id;
+    VTR_ASSERT(sink_clb_pin->net == net);
 
-    if(upstream_pb_route_idx >= 0) {
-
-        const t_pb_graph_pin* pb_gpin = intra_lb_pb_pin_lookup_.pb_gpin(type_index, pb_route_idx);
-        const t_pb_graph_pin* upstream_pb_gpin = intra_lb_pb_pin_lookup_.pb_gpin(type_index, upstream_pb_route_idx);
-
-        return find_pb_graph_edge(upstream_pb_gpin, pb_gpin); 
-    } else {
-        return nullptr;
-    }
-}
-
-const t_pb_graph_edge* PlacementDelayCalculator::find_pb_graph_edge(const t_pb_graph_pin* driver, const t_pb_graph_pin* sink) const {
-    VTR_ASSERT(driver);
-    VTR_ASSERT(sink);
-
-    const t_pb_graph_edge* pb_edge = nullptr;
-    for(int iedge = 0; iedge < driver->num_output_edges; ++iedge) {
-        const t_pb_graph_edge* check_edge = driver->output_edges[iedge];
-        VTR_ASSERT(check_edge);
-
-        VTR_ASSERT(check_edge->num_output_pins == 1);
-        if(check_edge->output_pins[0] == sink) {
-            pb_edge = check_edge;
-        }
-
-    }
-    VTR_ASSERT_MSG(pb_edge, "Failed to find pb_graph_edge connecting PB pins");
-
-    return pb_edge;
+    return net_delay_[net][sink_clb_pin->net_pin];
 }
 

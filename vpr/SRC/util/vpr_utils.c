@@ -299,18 +299,79 @@ static void find_connected_internal_clb_sink_pins_recurr(int clb, int pb_pin, st
     }
 }
 
+//Return the net pin which drive the CLB input connected to sink_pb_pin_id
+const t_net_pin* find_pb_route_clb_input_net_pin(int clb, int sink_pb_pin_id) {
+    VTR_ASSERT(clb >= 0);
+    VTR_ASSERT(sink_pb_pin_id >= 0);
+    const t_pb_route* pb_routes = block[clb].pb_route;
+
+    VTR_ASSERT_MSG(pb_routes[sink_pb_pin_id].atom_net_id, "PB route should be associated with a net");
+    
+    //Walk back from the sink to the CLB input pin
+    int curr_pb_pin_id = sink_pb_pin_id;
+    int next_pb_pin_id = pb_routes[curr_pb_pin_id].driver_pb_pin_id;
+    while(next_pb_pin_id >= 0) {
+
+        //Advance back towards the input
+        curr_pb_pin_id = next_pb_pin_id;
+
+        VTR_ASSERT_MSG(pb_routes[next_pb_pin_id].atom_net_id == pb_routes[sink_pb_pin_id].atom_net_id,
+                       "Connected pb_routes should connect the same net");
+
+        next_pb_pin_id = pb_routes[curr_pb_pin_id].driver_pb_pin_id;
+    }
+
+    if(!is_clb_input_pin(curr_pb_pin_id, block[clb].type)) {
+        return nullptr;
+    }
+
+    //curr_pb_pin_id should be a top-level CLB input
+    int clb_net_idx = block[clb].nets[curr_pb_pin_id];
+    int clb_net_pin_idx = block[clb].net_pins[curr_pb_pin_id];
+    VTR_ASSERT(clb_net_idx >= 0);
+    VTR_ASSERT(clb_net_pin_idx >= 0);
+
+    const t_net_pin* clb_net_pin = &g_clbs_nlist.net[clb_net_idx].pins[clb_net_pin_idx];
+
+    //Verify that we got the correct pin
+    VTR_ASSERT(clb_net_pin->block == clb);
+    VTR_ASSERT(clb_net_pin->block_pin == curr_pb_pin_id);
+
+    return clb_net_pin;
+}
+
+bool is_clb_input_pin(int ipin, t_type_ptr type) {
+	/* Returns true if this clb pin is an input, false otherwise. */
+
+    if(ipin > type->num_pins) {
+        //Not a top level pin
+        return false;
+    }
+
+	int iclass = type->pin_class[ipin];
+
+	if (type->class_inf[iclass].type == RECEIVER)
+		return true;
+	else
+		return false;
+
+}
+
 bool is_opin(int ipin, t_type_ptr type) {
 
 	/* Returns true if this clb pin is an output, false otherwise. */
 
-	int iclass;
+    if(ipin > type->num_pins) {
+        //Not a top level pin
+        return false;
+    }
 
-	iclass = type->pin_class[ipin];
+	int iclass = type->pin_class[ipin];
 
 	if (type->class_inf[iclass].type == DRIVER)
-		return (true);
+		return true;
 	else
-		return (false);
+		return false;
 }
 
 
