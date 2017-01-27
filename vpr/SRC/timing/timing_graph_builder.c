@@ -261,7 +261,7 @@ tatum::EdgeId TimingGraphBuilder::find_scc_edge_to_break(std::vector<tatum::Node
 
 void TimingGraphBuilder::remap_ids(const tatum::GraphIdMaps& id_mapping) {
     //Update the pin-tnode mapping
-    vtr::unordered_bimap<AtomPinId,tatum::NodeId> new_pin_tnode;
+    vtr::linear_bimap<AtomPinId,tatum::NodeId> new_pin_tnode;
 
     for(auto kv : netlist_map_.pin_tnode) {
         AtomPinId pin = kv.first;

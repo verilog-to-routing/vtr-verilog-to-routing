@@ -3,6 +3,7 @@
 #include <map>
 #include <unordered_map>
 #include "vtr_flat_map.h"
+#include "vtr_linear_map.h"
 
 #include "vtr_error.h"
 
@@ -14,7 +15,7 @@ namespace vtr {
  * Keys and values can be looked up directly by passing either the key or value.
  * the indexing operator will throw if the key/value does not exist.
  */
-template<class K, class V, template<class ...> class Map=std::map, template<class ...> class InvMap=std::map>
+template<class K, class V, template<typename ...> class Map=std::map, template<typename ...> class InvMap=std::map>
 class bimap {
     public: //Public types
         typedef typename Map<K,V>::const_iterator iterator;
@@ -121,6 +122,9 @@ using unordered_bimap = bimap<K,V,std::unordered_map,std::unordered_map>;
 
 template<class K, class V>
 using flat_bimap = bimap<K,V,vtr::flat_map,vtr::flat_map>;
+
+template<class K, class V>
+using linear_bimap = bimap<K,V,vtr::linear_map,vtr::linear_map>;
 
 }
 

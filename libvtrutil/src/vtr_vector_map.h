@@ -7,14 +7,25 @@
 namespace vtr {
 
 //A vector-like container which is indexed by K (instead of size_t as in std::vector).
+//
+//The main use of this container is to behave like a std::vector which is indexed by 
+//vtr::StrongId.
+//
 //Requires that K be convertable to size_t with the size_t operator (i.e. size_t()), and
 //that the conversion results in a linearly increasing index into the underlying vector.
 //
-//This results in a container that is similar to a std::map (i.e. converts from one type to
-//another), but requires contigously ascending (i.e. linear) keys. Unlike std::map only the
-//values are stored (at the specified index/key), reducing memory usage and improving cache
-//locality. Furthermore, find() returns an iterator to the value directly, rather than a std::pair,
-//and insert() takes both the key and value as seperate arguments and has no return value.
+//This results in a container that is somewat similar to a std::map (i.e. converts from one 
+//type to another), but requires contigously ascending (i.e. linear) keys. Unlike std::map 
+//only the values are stored (at the specified index/key), reducing memory usage and improving 
+//cache locality. Furthermore, operator[] and find() return the value or iterator directly 
+//associated with the value (like std::vector) rather than a std::pair (like std::map).
+//insert() takes both the key and value as seperate arguments and has no return value.
+//
+//Additionally, vector_map will silently create values for 'gaps' in the index range (i.e.
+//those elements are default constructed).
+//
+//If you need a fully featured std::map like container without the above differences see 
+//vtr::linear_map.
 //
 //Note that it is possible to use vector_map with sparse/non-contiguous keys, but this is typically
 //memory inefficient as the underlying vector will allocate space for [0..size_t(max_key)-1],
