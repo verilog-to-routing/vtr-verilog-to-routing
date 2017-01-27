@@ -1,6 +1,9 @@
 #ifndef VTR_BIMAP
 #define VTR_BIMAP
+#include <map>
 #include <unordered_map>
+#include "vtr_flat_map.h"
+
 #include "vtr_error.h"
 
 namespace vtr {
@@ -115,6 +118,9 @@ class bimap {
 
 template<class K, class V>
 using unordered_bimap = bimap<K,V,std::unordered_map>;
+
+template<class K, class V>
+using flat_bimap = bimap<K,V,vtr::flat_map>;
 
 }
 
