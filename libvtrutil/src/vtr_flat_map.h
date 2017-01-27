@@ -129,12 +129,12 @@ class flat_map {
             auto iter = lower_bound(value.first);
             if(iter != end() && iter->first == value.first) {
                 //Found existing
-                return std::make_pair(iter, true);
+                return std::make_pair(iter, false);
             } else {
                 //Insert
                 iter = insert(iter, value);
 
-                return std::make_pair(iter, false);
+                return std::make_pair(iter, true);
             }
         }
 
