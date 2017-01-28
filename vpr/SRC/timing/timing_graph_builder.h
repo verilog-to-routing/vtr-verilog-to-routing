@@ -15,12 +15,14 @@ class TimingGraphBuilder {
             : netlist_(netlist) 
             , netlist_map_(netlist_map) {
             build();
+            opt_memory_layout();
         }
 
         tatum::TimingGraph timing_graph();
 
     private:
         void build();
+        void opt_memory_layout();
 
         void add_io_to_timing_graph(const AtomBlockId blk);
         void add_block_to_timing_graph(const AtomBlockId blk);

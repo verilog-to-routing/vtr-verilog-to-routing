@@ -29,7 +29,6 @@ tatum::util::linear_map<K,V> remap_valid(const tatum::util::linear_map<K,V>& dat
 }
 
 TimingGraph TimingGraphBuilder::timing_graph() {
-    tg_.levelize();
     tg_.validate();
     return tg_;
 }
@@ -53,6 +52,16 @@ void TimingGraphBuilder::build() {
     }
 
     fix_comb_loops();
+
+    tg_.levelize();
+}
+
+void TimingGraphBuilder::opt_memory_layout() {
+    auto id_map = tg_.optimize_layout();
+
+
+    remap_ids(id_map);
+
 }
 
 void TimingGraphBuilder::add_io_to_timing_graph(const AtomBlockId blk) {
