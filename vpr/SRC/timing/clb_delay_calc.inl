@@ -5,6 +5,7 @@
 /*
  * ClbDelayCalc
  */
+
 inline ClbDelayCalc::ClbDelayCalc()
     : intra_lb_pb_pin_lookup_(type_descriptors, num_types) {}
 
@@ -36,7 +37,7 @@ inline float ClbDelayCalc::trace_max_delay(int clb, int src_pb_route_id, int sin
     float delay = 0.;
 
     //Trace back the internal routing from the sink to the source pin
-    int curr_pb_route_id = src_pb_route_id;
+    int curr_pb_route_id = sink_pb_route_id;
     while(pb_routes[curr_pb_route_id].driver_pb_pin_id >= 0) {
         VTR_ASSERT_MSG(atom_net == pb_routes[curr_pb_route_id].atom_net_id, "Internal routing must connect the same net");
 
