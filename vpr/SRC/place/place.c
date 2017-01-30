@@ -377,7 +377,7 @@ void try_place(struct s_placer_opts placer_opts,
     timing_analyzer->update_timing();
     critical_path_delay = find_critical_path_delay(*timing_analyzer);
 
-    /*std::vector<tatum::NodeId> nodes = {};*/
+    std::vector<tatum::NodeId> nodes = {};
     /*std::vector<tatum::NodeId> nodes = find_related_nodes(g_timing_graph, {});*/
     /*tatum::write_dot_file_setup("setup.place_init.dot", g_timing_graph, dc, *timing_analyzer, nodes);*/
 
@@ -680,7 +680,13 @@ void try_place(struct s_placer_opts placer_opts,
 			|| placer_opts.enable_timing_computations) {
 
         //Final timing estimate
-        optimizer_slacks.update();
+        optimizer_slacks.update(); //Tatum
+
+        //Old VPR analyzer
+        load_timing_graph_net_delays(point_to_point_delay_cost);
+		do_timing_analysis(slacks, timing_inf, false, false);
+
+        /*tatum::write_dot_file_setup("setup.place_final.dot", g_timing_graph, dc, *timing_analyzer, nodes);*/
 
         std::ofstream os_timing_echo_final("timing.place_final.echo");
         write_timing_graph(os_timing_echo_final, g_timing_graph);
@@ -708,7 +714,7 @@ void try_place(struct s_placer_opts placer_opts,
 		/* Print critical path delay. */
 		critical_path_delay = find_critical_path_delay(*timing_analyzer);
 		vtr::printf_info("\n");
-		vtr::printf_info("Placement estimated critical path delay: %g ns\n", 1e9*critical_path_delay);
+		vtr::printf_info("Placement estimated critical path delay: %g ns (old VPR STA %g ns)\n", 1e9*critical_path_delay, get_critical_path_delay());
         vtr::printf_info("Placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
                 1e9*find_setup_total_negative_slack(*timing_analyzer));
         vtr::printf_info("Placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
