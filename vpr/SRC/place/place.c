@@ -1616,46 +1616,51 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 
 	/*returns the delay of one point to point connection */
 
-	int source_block, sink_block;
-	int delta_x, delta_y;
-	t_type_ptr source_type, sink_type;
-	float delay_source_to_sink;
+	float delay_source_to_sink = 0.;
 
-	delay_source_to_sink = 0.;
+    if(g_clbs_nlist.net[inet].is_global == false) {
+        //Only estimate delay for signals routed through the inter-block
+        //routing network. Global signals are assumed to have zero delay.
+        int source_block, sink_block;
+        int delta_x, delta_y;
+        t_type_ptr source_type, sink_type;
 
-	source_block = g_clbs_nlist.net[inet].pins[0].block;
-	source_type = block[source_block].type;
 
-	sink_block = g_clbs_nlist.net[inet].pins[ipin].block;
-	sink_type = block[sink_block].type;
+        source_block = g_clbs_nlist.net[inet].pins[0].block;
+        source_type = block[source_block].type;
 
-	VTR_ASSERT(source_type != NULL);
-	VTR_ASSERT(sink_type != NULL);
+        sink_block = g_clbs_nlist.net[inet].pins[ipin].block;
+        sink_type = block[sink_block].type;
 
-	delta_x = abs(block[sink_block].x - block[source_block].x);
-	delta_y = abs(block[sink_block].y - block[source_block].y);
+        VTR_ASSERT(source_type != NULL);
+        VTR_ASSERT(sink_type != NULL);
 
-	/* TODO low priority: Could be merged into one look-up table */
-	/* Note: This heuristic is terrible on Quality of Results.  
-	 * A much better heuristic is to create a more comprehensive lookup table
-     */
-	if (source_type == IO_TYPE) {
-		if (sink_type == IO_TYPE)
-			delay_source_to_sink = delta_io_to_io[delta_x][delta_y];
-		else
-			delay_source_to_sink = delta_io_to_clb[delta_x][delta_y];
-	} else {
-		if (sink_type == IO_TYPE)
-			delay_source_to_sink = delta_clb_to_io[delta_x][delta_y];
-		else
-			delay_source_to_sink = delta_clb_to_clb[delta_x][delta_y];
-	}
-	if (delay_source_to_sink < 0) {
-		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-				"in comp_td_point_to_point_delay: Bad delay_source_to_sink value delta(%d, %d) delay of %g\n"
-				"in comp_td_point_to_point_delay: Delay is less than 0\n",
-				delta_x, delta_y, delay_source_to_sink);
-	}
+        delta_x = abs(block[sink_block].x - block[source_block].x);
+        delta_y = abs(block[sink_block].y - block[source_block].y);
+
+        /* TODO low priority: Could be merged into one look-up table */
+        /* Note: This heuristic is terrible on Quality of Results.  
+         * A much better heuristic is to create a more comprehensive lookup table
+         */
+        if (source_type == IO_TYPE) {
+            if (sink_type == IO_TYPE)
+                delay_source_to_sink = delta_io_to_io[delta_x][delta_y];
+            else
+                delay_source_to_sink = delta_io_to_clb[delta_x][delta_y];
+        } else {
+            if (sink_type == IO_TYPE)
+                delay_source_to_sink = delta_clb_to_io[delta_x][delta_y];
+            else
+                delay_source_to_sink = delta_clb_to_clb[delta_x][delta_y];
+        }
+        if (delay_source_to_sink < 0) {
+            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+                    "in comp_td_point_to_point_delay: Bad delay_source_to_sink value delta(%d, %d) delay of %g\n"
+                    "in comp_td_point_to_point_delay: Delay is less than 0\n",
+                    delta_x, delta_y, delay_source_to_sink);
+        }
+    }
+
 
 	return (delay_source_to_sink);
 }
