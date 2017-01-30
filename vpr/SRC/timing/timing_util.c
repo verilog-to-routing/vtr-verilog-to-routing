@@ -3,35 +3,77 @@
 
 #include "globals.h"
 
-float find_critical_path_delay(const tatum::SetupTimingAnalyzer& setup_analyzer) {
+PathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
+    PathInfo crit_path_info;
 
-    //Look at all the edges to sink nodes in the graph and find the one with least slack
-    tatum::NodeId least_slack_node;
-    tatum::TimingTag least_slack_tag;
-    for(tatum::NodeId node : g_timing_graph.logical_outputs()) { //All sink nodes
-        for(tatum::EdgeId edge : g_timing_graph.node_in_edges(node)) { //All incoming edges
-            for(tatum::TimingTag tag : setup_analyzer.setup_slacks(edge)) { //All slacks on edge
-                if(!least_slack_node //Uninitialized
-                   || least_slack_tag.time() > tag.time()) //Smaller
-                {
-                    least_slack_node = node;
-                    least_slack_tag = tag;
+    auto cpds = find_critical_path_delays(constraints, setup_analyzer);
+
+    //Record the maximum critical path accross all domain pairs
+    for(const auto& path_info : cpds) {
+        if(crit_path_info.path_delay < path_info.path_delay || std::isnan(crit_path_info.path_delay)) {
+            crit_path_info = path_info;
+        }
+    }
+
+    return crit_path_info;
+}
+
+std::vector<PathInfo> find_critical_path_delays(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
+    std::vector<PathInfo> cpds;
+
+    //We calculate the critical path delay (CPD) for each pair of clock domains (which are connected to each other)
+    //
+    //   CPD = (Tlaunch_clock_delay + Tpropagation_delay) - (Tcapture_clock_delay)
+    //       = Tdata_arrival - Tclock_capture
+    //
+    //Intuitively, CPD is the smallest period (maximum frequency) we can run the launch clock at while not violating
+    //the constraint.
+    //
+    //Since we include the launch clock delay in the data arrival time, we only need to calculate the difference
+    //with the caputre clock
+
+    //To ensure we find the critical path delay, we look at the arrival times at all timing endpoints (i.e. logical_outputs())
+    for(tatum::NodeId node : g_timing_graph.logical_outputs()) {
+
+        //Look at each data arrival
+        for(tatum::TimingTag data_tag : setup_analyzer.setup_tags(node, tatum::TagType::DATA_ARRIVAL)) {
+
+            float data_arrival = data_tag.time().value();
+
+            //And each clock arrival
+            for(tatum::TimingTag clock_tag : setup_analyzer.setup_tags(node, tatum::TagType::CLOCK_CAPTURE)) {
+                float clock_capture = clock_tag.time().value();
+
+                float cpd = data_arrival - clock_capture;
+
+                //Provided the domain pair should be analyzed
+                if(constraints.should_analyze(data_tag.launch_clock_domain(), clock_tag.capture_clock_domain())) {
+
+                    //Record the path info
+                    PathInfo path(cpd, 
+                                  data_tag.origin_node(), clock_tag.origin_node(), 
+                                  data_tag.launch_clock_domain(), clock_tag.capture_clock_domain());
+
+                    //Find any existing path for this domain pair
+                    auto cmp = [&path](const PathInfo& elem) {
+                        return    elem.launch_domain == path.launch_domain
+                               && elem.capture_domain == path.capture_domain;
+                    };
+                    auto iter = std::find_if(cpds.begin(), cpds.end(), cmp);
+
+                    if(iter == cpds.end()) {
+                        //New domain pair
+                        cpds.push_back(path);
+                    } else if(iter->path_delay < path.path_delay) {
+                        //New max CPD
+                        *iter = path;
+                    }
                 }
             }
         }
     }
 
-    //Find the associated least-slack tag on the least-slack node
-    float cpd = NAN;
-    for(tatum::TimingTag tag : setup_analyzer.setup_tags(least_slack_node, tatum::TagType::DATA_ARRIVAL)) {
-        if(tag.launch_clock_domain() == least_slack_tag.launch_clock_domain()) {
-            cpd = tag.time().value();
-            break;
-        }
-    }
-    VTR_ASSERT(!std::isnan(cpd));
-
-    return cpd;
+    return cpds;
 }
 
 float find_setup_total_negative_slack(const tatum::SetupTimingAnalyzer& setup_analyzer) {

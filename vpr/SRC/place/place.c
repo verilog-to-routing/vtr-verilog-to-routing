@@ -327,7 +327,8 @@ void try_place(struct s_placer_opts placer_opts,
 	float t, success_rat, rlim, cost, timing_cost, bb_cost, new_bb_cost, new_timing_cost,
 		delay_cost, new_delay_cost, place_delay_value, inverse_prev_bb_cost, inverse_prev_timing_cost,
 		oldt, crit_exponent,
-		first_rlim, final_rlim, inverse_delta_rlim, critical_path_delay = NAN;
+		first_rlim, final_rlim, inverse_delta_rlim;
+    PathInfo critical_path_delay;
 	double std_dev;
 	char msg[vtr::BUFSIZE];
 	t_placer_statistics stats;
@@ -375,7 +376,7 @@ void try_place(struct s_placer_opts placer_opts,
 
     //Do the initial timing update
     timing_analyzer->update_timing();
-    critical_path_delay = find_critical_path_delay(*timing_analyzer);
+    critical_path_delay = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
 
     std::vector<tatum::NodeId> nodes = {};
     /*std::vector<tatum::NodeId> nodes = find_related_nodes(g_timing_graph, {});*/
@@ -484,7 +485,7 @@ void try_place(struct s_placer_opts placer_opts,
 	vtr::printf_info("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
 			cost, bb_cost, timing_cost, delay_cost);
 	vtr::printf_info("Initial placement estimated Critical Path Delay (CPD): %g ns\n", 
-            1e9*critical_path_delay);
+            1e9*critical_path_delay.path_delay);
 	vtr::printf_info("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
             1e9*find_setup_total_negative_slack(*timing_analyzer));
 	vtr::printf_info("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
@@ -586,10 +587,10 @@ void try_place(struct s_placer_opts placer_opts,
 		oldt = t; /* for finding and printing alpha. */
 		update_t(&t, rlim, success_rat, annealing_sched);
 
-		critical_path_delay = find_critical_path_delay(*timing_analyzer);
+		critical_path_delay = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
         vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f % 7.3f % 7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
                 oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
-                stats.av_delay_cost, place_delay_value, 1e9*critical_path_delay, 
+                stats.av_delay_cost, place_delay_value, 1e9*critical_path_delay.path_delay, 
                 1e9*find_setup_total_negative_slack(*timing_analyzer),  
                 1e9*find_setup_worst_negative_slack(*timing_analyzer),  
                 success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
@@ -645,10 +646,10 @@ void try_place(struct s_placer_opts placer_opts,
 
 	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
-    critical_path_delay = find_critical_path_delay(*timing_analyzer);
+    critical_path_delay = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
     vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f % 7.3f % 7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
         t, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
-        stats.av_delay_cost, place_delay_value, 1e9*critical_path_delay, 
+        stats.av_delay_cost, place_delay_value, 1e9*critical_path_delay.path_delay, 
         1e9*find_setup_total_negative_slack(*timing_analyzer),  
         1e9*find_setup_worst_negative_slack(*timing_analyzer),  
         success_rat, std_dev, rlim, crit_exponent, tot_iter, "");
@@ -712,9 +713,9 @@ void try_place(struct s_placer_opts placer_opts,
 		}
 
 		/* Print critical path delay. */
-		critical_path_delay = find_critical_path_delay(*timing_analyzer);
+		critical_path_delay = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
 		vtr::printf_info("\n");
-		vtr::printf_info("Placement estimated critical path delay: %g ns (old VPR STA %g ns)\n", 1e9*critical_path_delay, get_critical_path_delay());
+		vtr::printf_info("Placement estimated critical path delay: %g ns (old VPR STA %g ns)\n", 1e9*critical_path_delay.path_delay, get_critical_path_delay());
         vtr::printf_info("Placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
                 1e9*find_setup_total_negative_slack(*timing_analyzer));
         vtr::printf_info("Placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
