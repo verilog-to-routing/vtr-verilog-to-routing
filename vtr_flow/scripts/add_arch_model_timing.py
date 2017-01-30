@@ -61,20 +61,24 @@ def main():
 
         #Find combinational edges
         for delay_const in prim_pb.findall("./delay_constant"):
-            iport = get_port_name(delay_const.attrib['in_port'])
-            oport = get_port_name(delay_const.attrib['out_port'])
-            if iport not in primitive_timing_specs[blif_model].comb_edges:
-                primitive_timing_specs[blif_model].comb_edges[iport] = set()
+            iports = get_port_names(delay_const.attrib['in_port'])
+            oports = get_port_names(delay_const.attrib['out_port'])
 
-            primitive_timing_specs[blif_model].comb_edges[iport].add(oport)
+            for iport in iports:
+                if iport not in primitive_timing_specs[blif_model].comb_edges:
+                    primitive_timing_specs[blif_model].comb_edges[iport] = set()
+
+                for oport in oports:
+                    primitive_timing_specs[blif_model].comb_edges[iport].add(oport)
 
         #Find sequential ports
         for xpath_pattern in ["./T_setup", "./T_clock_to_Q"]:
             for seq_tag in prim_pb.findall(xpath_pattern):
-                port = get_port_name(seq_tag.attrib['port'])
-                clk = seq_tag.attrib['clock']
+                ports = get_port_names(seq_tag.attrib['port'])
+                for port in ports:
+                    clk = seq_tag.attrib['clock']
 
-                primitive_timing_specs[blif_model].sequential_ports.add((port, clk))
+                    primitive_timing_specs[blif_model].sequential_ports.add((port, clk))
 
     changed = False
     for model in models:
@@ -101,13 +105,18 @@ def main():
         with open(args.xml_file, "w") as f:
             root.write(f)
 
-def get_port_name(string):
-    #Split off the prefix
-    port = string.split('.')[-1]
-    if '[' in port:
-        port = port[:port.find('[')]
+def get_port_names(string):
+    ports = []
 
-    return port
+    for elem in string.split():
+        #Split off the prefix
+        port = elem.split('.')[-1]
+        if '[' in port:
+            port = port[:port.find('[')]
+
+        ports.append(port)
+
+    return ports
 
 
 
