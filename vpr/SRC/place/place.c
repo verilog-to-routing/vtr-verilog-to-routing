@@ -64,6 +64,9 @@ using namespace std;
 #define UPDATED_ONCE 'U'
 #define GOT_FROM_SCRATCH 'S'
 
+/* Run the old STA engine as well as the new */
+#define USE_OLD_VPR_STA
+
 /* For comp_cost.  NORMAL means use the method that generates updateable  *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
@@ -299,6 +302,10 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
 	float * inverse_prev_bb_cost,
     const IntraLbPbPinLookup& pb_gpin_lookup,
+#ifdef USE_OLD_VPR_STA
+    t_slack* slacks,
+    t_timing_inf timing_inf,
+#endif
     SetupSlackEvaluator& optimizer_slacks);
 
 static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
@@ -306,6 +313,10 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
+#ifdef USE_OLD_VPR_STA
+    t_slack* slacks,
+    t_timing_inf timing_inf,
+#endif
     const IntraLbPbPinLookup& pb_gpin_lookup,
     SetupSlackEvaluator& optimizer_slacks);
 
@@ -416,6 +427,11 @@ void try_place(struct s_placer_opts placer_opts,
         optimizer_slacks.update();
         load_criticalities(optimizer_slacks, crit_exponent, pb_gpin_lookup);
 
+#ifdef USE_OLD_VPR_STA
+        load_timing_graph_net_delays(point_to_point_delay_cost);
+		do_timing_analysis(slacks, timing_inf, false, false);
+#endif
+
 		/*now we can properly compute costs  */
 		comp_td_costs(&timing_cost, &delay_cost); /*also updates values in point_to_point_delay_cost */
 
@@ -525,11 +541,19 @@ void try_place(struct s_placer_opts placer_opts,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
 			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
             pb_gpin_lookup,
+#ifdef USE_OLD_VPR_STA
+            slacks,
+            timing_inf,
+#endif
             optimizer_slacks);
 
 		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
 			move_lim, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, &delay_cost,
+#ifdef USE_OLD_VPR_STA
+            slacks,
+            timing_inf,
+#endif
             pb_gpin_lookup,
             optimizer_slacks);
 
@@ -618,6 +642,10 @@ void try_place(struct s_placer_opts placer_opts,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
 			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
             pb_gpin_lookup,
+#ifdef USE_OLD_VPR_STA
+            slacks,
+            timing_inf,
+#endif
             optimizer_slacks);
 
 	t = 0; /* freeze out */
@@ -627,6 +655,10 @@ void try_place(struct s_placer_opts placer_opts,
 	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
 			move_lim, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, &delay_cost,
+#ifdef USE_OLD_VPR_STA
+            slacks,
+            timing_inf,
+#endif
             pb_gpin_lookup,
             optimizer_slacks);
 
@@ -682,6 +714,11 @@ void try_place(struct s_placer_opts placer_opts,
 
         //Final timing estimate
         optimizer_slacks.update(); //Tatum
+
+#ifdef USE_OLD_VPR_STA
+        load_timing_graph_net_delays(point_to_point_delay_cost);
+		do_timing_analysis(slacks, timing_inf, false, false);
+#endif
 
         //Old VPR analyzer
         load_timing_graph_net_delays(point_to_point_delay_cost);
@@ -770,6 +807,10 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
 	float * inverse_prev_bb_cost, 
     const IntraLbPbPinLookup& pb_gpin_lookup,
+#ifdef USE_OLD_VPR_STA
+    t_slack* slacks,
+    t_timing_inf timing_inf,
+#endif
     SetupSlackEvaluator& optimizer_slacks) {
 
 	if (placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
@@ -790,6 +831,10 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
         optimizer_slacks.update();
 		load_criticalities(optimizer_slacks, crit_exponent, pb_gpin_lookup);
 
+#ifdef USE_OLD_VPR_STA
+        load_timing_graph_net_delays(point_to_point_delay_cost);
+		do_timing_analysis(slacks, timing_inf, false, false);
+#endif
 
 		/*recompute costs from scratch, based on new criticalities */
 		comp_td_costs(timing_cost, delay_cost);
@@ -810,6 +855,10 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
+#ifdef USE_OLD_VPR_STA
+    t_slack* slacks,
+    t_timing_inf timing_inf,
+#endif
     const IntraLbPbPinLookup& pb_gpin_lookup,
     SetupSlackEvaluator& optimizer_slacks) {
 
@@ -866,6 +915,10 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
                 optimizer_slacks.update();
 				load_criticalities(optimizer_slacks, crit_exponent, pb_gpin_lookup);
 
+#ifdef USE_OLD_VPR_STA
+                load_timing_graph_net_delays(point_to_point_delay_cost);
+                do_timing_analysis(slacks, timing_inf, false, false);
+#endif
 
 				comp_td_costs(timing_cost, delay_cost);
 			}

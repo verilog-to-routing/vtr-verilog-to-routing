@@ -80,6 +80,11 @@ int main(int argc, const char **argv) {
         vtr::printf_info("Timing analysis took %g seconds (%d full updates).\n", 
                             g_timing_analysis_profile_stats.wallclock_time, 
                             g_timing_analysis_profile_stats.num_full_updates);
+        vtr::printf_info("Old VPR Timing analysis took %g seconds (%d full updates).\n", 
+                            g_timing_analysis_profile_stats.old_sta_wallclock_time,
+                            g_timing_analysis_profile_stats.num_old_sta_full_updates);
+        vtr::printf_info("\tNew STA Speed-up: %.2fx\n", 
+                            g_timing_analysis_profile_stats.old_sta_wallclock_time / g_timing_analysis_profile_stats.wallclock_time);
 		vtr::printf_info("The entire flow of VPR took %g seconds.\n", 
 				(float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 	
