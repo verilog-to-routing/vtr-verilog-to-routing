@@ -130,6 +130,9 @@ inline tatum::Time PlacementDelayCalculator::atom_clock_to_q_delay(const tatum::
         //Insert
         edge_delay_cache_[edge_id] = tco;
     }
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
+    vtr::printf("  Edge %zu Atom Tco: %g\n", size_t(edge_id), tco.value());
+#endif
     return tco;
 }
 
@@ -255,7 +258,7 @@ inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingG
 
             edge_delay = driver_clb_delay + net_delay + sink_clb_delay;
 #ifdef PLACEMENT_DELAY_CALC_DEBUG
-            vtr::printf("  Edge %zu delay: %g = %g + %g + %g (= clb_driver + net + clb_sink)\n", 
+            vtr::printf("  Edge %zu net delay: %g = %g + %g + %g (= clb_driver + net + clb_sink)\n", 
                         size_t(edge_id), 
                         edge_delay.value(),
                         driver_clb_delay.value(),
