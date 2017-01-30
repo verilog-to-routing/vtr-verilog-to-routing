@@ -3035,56 +3035,64 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                 //Annotations always put the pin in the input_pins field
                 VTR_ASSERT(annot->input_pins);
-                InstPort annot_port(annot->input_pins);
-                InstPort annot_clock(annot->clock);
+                for(std::string input_pin : vtr::split(annot->input_pins)) {
+                    InstPort annot_port(input_pin);
+                    for(std::string clock : vtr::split(annot->clock)) {
+                        InstPort annot_clock(annot->clock);
 
-                //Find the model port
-                const t_model_ports* model_port = nullptr;
-                for(const t_model_ports* ports : {model->inputs, model->outputs}) {
-                    for(const t_model_ports* port = ports; port != nullptr; port = port->next) {
-                        if(port->name == annot_port.port_name()) {
-                            model_port = port;
-                            break;
+                        //Find the model port
+                        const t_model_ports* model_port = nullptr;
+                        for(const t_model_ports* ports : {model->inputs, model->outputs}) {
+                            for(const t_model_ports* port = ports; port != nullptr; port = port->next) {
+                                if(port->name == annot_port.port_name()) {
+                                    model_port = port;
+                                    break;
+                                }
+                            }
+                            if(model_port != nullptr) break;
+                        }
+                        VTR_ASSERT(model_port != nullptr);
+
+                        //Check that the clock matches the model definition
+                        std::string model_clock = model_port->clock;
+                        VTR_ASSERT(!model_clock.empty());
+                        if(model_port->clock != annot_clock.port_name()) {
+                            archfpga_throw(get_arch_file_name(), annot->line_num,
+                                "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', model specifies"
+                                " clock as '%s' but timing annotations specify '%s'",
+                                annot_port.port_name().c_str(), model->name, model_clock.c_str(), annot_clock.port_name().c_str());
                         }
                     }
-                    if(model_port != nullptr) break;
-                }
-                VTR_ASSERT(model_port != nullptr);
-
-                //Check that the clock matches the model definition
-                std::string model_clock = model_port->clock;
-                VTR_ASSERT(!model_clock.empty());
-                if(model_port->clock != annot_clock.port_name()) {
-                    archfpga_throw(get_arch_file_name(), annot->line_num,
-                        "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', model specifies"
-                        " clock as '%s' but timing annotations specify '%s'",
-                        annot_port.port_name().c_str(), model->name, model_clock.c_str(), annot_clock.port_name().c_str());
                 }
 
             } else if (annot->input_pins && annot->output_pins) {
                 //Combinational annotation
-                InstPort annot_in(annot->input_pins);
-                InstPort annot_out(annot->output_pins);
+                for(std::string input_pin : vtr::split(annot->input_pins)) {
+                    InstPort annot_in(input_pin);
+                    for(std::string clock : vtr::split(annot->clock)) {
+                        InstPort annot_out(annot->clock);
 
-                //Find the input model port
-                const t_model_ports* model_port = nullptr;
-                for(const t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
-                    if(port->name == annot_in.port_name()) {
-                        model_port = port;
-                        break;
+                        //Find the input model port
+                        const t_model_ports* model_port = nullptr;
+                        for(const t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
+                            if(port->name == annot_in.port_name()) {
+                                model_port = port;
+                                break;
+                            }
+                        }
+                        VTR_ASSERT(model_port != nullptr);
+
+                        //Check that the output port is listed in the model's combinational sinks
+                        auto b = model_port->combinational_sink_ports.begin();
+                        auto e = model_port->combinational_sink_ports.end();
+                        auto iter = std::find(b, e, annot_out.port_name());
+                        if(iter == e) {
+                            archfpga_throw(get_arch_file_name(), annot->line_num,
+                                "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', timing annotation"
+                                " specifies combinational connection to port '%s' but the connection does not exist in the model",
+                                model_port->name, model->name, annot_out.port_name().c_str());
+                        }
                     }
-                }
-                VTR_ASSERT(model_port != nullptr);
-
-                //Check that the output port is listed in the model's combinational sinks
-                auto b = model_port->combinational_sink_ports.begin();
-                auto e = model_port->combinational_sink_ports.end();
-                auto iter = std::find(b, e, annot_out.port_name());
-                if(iter == e) {
-                    archfpga_throw(get_arch_file_name(), annot->line_num,
-                        "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', timing annotation"
-                        " specifies combinational connection to port '%s' but the connection does not exist in the model",
-                        model_port->name, model->name, annot_out.port_name().c_str());
                 }
             } else {
                 throw ArchFpgaError("Unrecognized delay annotation");
