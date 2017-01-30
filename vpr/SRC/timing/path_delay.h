@@ -77,6 +77,9 @@ void free_tnode_lookup_from_pin_id(int **tnode_lookup);
 struct timing_analysis_profile_info {
     double wallclock_time = 0.;
     size_t num_full_updates = 0;
+
+    double old_sta_wallclock_time = 0.;
+    size_t num_old_sta_full_updates = 0;
 };
 
 /*************************** Variable declarations ********************************/

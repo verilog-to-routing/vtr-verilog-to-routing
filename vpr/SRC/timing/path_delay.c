@@ -2181,7 +2181,8 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
     free_pin_id_to_pb_mapping(pin_id_to_pb_mapping);
 
     clock_t end = clock();
-    g_timing_analysis_profile_stats.wallclock_time  += double(end - begin);
+    g_timing_analysis_profile_stats.old_sta_wallclock_time  += double(end - begin) / CLOCKS_PER_SEC;
+    g_timing_analysis_profile_stats.num_old_sta_full_updates  += 1;
 }
 
 static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping) {
