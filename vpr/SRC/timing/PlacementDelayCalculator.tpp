@@ -6,7 +6,8 @@
 #include "globals.h"
 
 //Controls printing detailed info about edge delay calculation
-//#define PLACEMENT_DELAY_CALC_DEBUG
+/*#define PLACEMENT_DELAY_CALC_DEBUG*/
+
 inline PlacementDelayCalculator::PlacementDelayCalculator(const AtomNetlist& netlist, 
                                                           const AtomMap& netlist_map, 
                                                           float** net_delay)
@@ -56,7 +57,7 @@ inline tatum::Time PlacementDelayCalculator::min_edge_delay(const tatum::TimingG
 
 inline tatum::Time PlacementDelayCalculator::hold_time(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const { 
 #ifdef PLACEMENT_DELAY_CALC_DEBUG
-    vtr::printf("=== Edge %zu (hold) ===\n", size_t(edge_id));
+    /*vtr::printf("=== Edge %zu (hold) ===\n", size_t(edge_id));*/
 #endif
     return tatum::Time(NAN); 
 }
@@ -78,6 +79,9 @@ inline tatum::Time PlacementDelayCalculator::atom_combinational_delay(const tatu
         //Insert
         edge_delay_cache_[edge_id] = delay;
     }
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
+    vtr::printf("  Edge %zu Atom Comb Delay: %g\n", size_t(edge_id), delay.value());
+#endif
 
     return delay;
 }
@@ -101,6 +105,9 @@ inline tatum::Time PlacementDelayCalculator::atom_setup_time(const tatum::Timing
         //Insert
         edge_delay_cache_[edge_id] = tsu;
     }
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
+    vtr::printf("  Edge %zu Atom Tsu: %g\n", size_t(edge_id), tsu.value());
+#endif
     return tsu;
 }
 
@@ -247,8 +254,21 @@ inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingG
             tatum::Time net_delay = tatum::Time(inter_cluster_delay(driver_clb_net_pin, sink_clb_net_pin));
 
             edge_delay = driver_clb_delay + net_delay + sink_clb_delay;
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
+            vtr::printf("  Edge %zu delay: %g = %g + %g + %g (= clb_driver + net + clb_sink)\n", 
+                        size_t(edge_id), 
+                        edge_delay.value(),
+                        driver_clb_delay.value(),
+                        net_delay.value(),
+                        sink_clb_delay.value());
+#endif
         }
+    } else {
+#ifdef PLACEMENT_DELAY_CALC_DEBUG
+        vtr::printf("  Edge %zu CLB Internal delay: %g\n", size_t(edge_id), edge_delay.value());
+#endif
     }
+
     VTR_ASSERT(!std::isnan(edge_delay.value()));
 
     return edge_delay;
