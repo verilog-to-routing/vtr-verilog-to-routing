@@ -1036,7 +1036,10 @@ static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId at
         const AtomNetId atom_net = g_atom_nl.pin_net(atom_pin);
 
         if(atom_net == pb_route->atom_net_id) {
-            VTR_ASSERT_MSG(!found, "Ambiguous atom net to pin connection.  The same net is connected multiple times to the same atom port"); 
+            if(found) {
+                //TODO: consider if this is really a problem, it may be the ambiguity is inevitable and equivalent (e.g. multiple pins connected to gnd)
+                vtr::printf_warning(__FILE__, __LINE__, "Atom net to pin connection is potentially ambiguous.  The same net '%s' is connected multiple times to the same atom port '%s' on block '%s'\n", g_atom_nl.net_name(atom_net).c_str(), g_atom_nl.port_name(atom_port).c_str(), g_atom_nl.block_name(g_atom_nl.pin_block(atom_pin)).c_str()); 
+            }
 
             found = true;
 
