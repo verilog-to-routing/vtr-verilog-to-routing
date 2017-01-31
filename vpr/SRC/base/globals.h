@@ -20,19 +20,8 @@
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 
-/********************************************************************
-Checking OS System
-********************************************************************/
-/*#if defined(__WIN32__) || defined(__WIN32) || defined(_WIN32) || defined(WIN32) || defined(__TOS_WIN__) || defined(__WINDOWS__)
-  #ifndef __WIN32__
-    #define __WIN32__
-  #endif
-#else
-    #ifndef __UNIX__
-      #define __UNIX__
-    #endif
-	#include <sys/time.h>
-#endif*/
+//Enable the legacy STA engine
+#define ENABLE_LEGACY_VPR_STA
 
 /********************************************************************
  Atom Netlist Globals
