@@ -1,14 +1,14 @@
 #include <cmath>
-#include "PlacementDelayCalculator.hpp"
+#include "PostClusterDelayCalculator.hpp"
 
 #include "vpr_error.h"
 #include "vpr_utils.h"
 #include "globals.h"
 
-//Controls printing detailed info about edge delay calculation
-/*#define PLACEMENT_DELAY_CALC_DEBUG*/
+//Print detailed debug info about edge delay calculation
+/*#define POST_CLUSTER_DELAY_CALC_DEBUG*/
 
-inline PlacementDelayCalculator::PlacementDelayCalculator(const AtomNetlist& netlist, 
+inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist& netlist, 
                                                           const AtomMap& netlist_map, 
                                                           float** net_delay)
     : netlist_(netlist)
@@ -21,8 +21,8 @@ inline PlacementDelayCalculator::PlacementDelayCalculator(const AtomNetlist& net
     , net_pin_cache_(g_timing_graph.edges().size(), std::pair<const t_net_pin*,const t_net_pin*>(nullptr,nullptr))
     {}
 
-inline tatum::Time PlacementDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge) const { 
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
+inline tatum::Time PostClusterDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge) const { 
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
     vtr::printf("=== Edge %zu (max) ===\n", size_t(edge));
 #endif
     tatum::EdgeType edge_type = tg.edge_type(edge);
@@ -41,28 +41,28 @@ inline tatum::Time PlacementDelayCalculator::max_edge_delay(const tatum::TimingG
     return tatum::Time(NAN); //Suppress compiler warning
 }
 
-inline tatum::Time PlacementDelayCalculator::setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
+inline tatum::Time PostClusterDelayCalculator::setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
     vtr::printf("=== Edge %zu (setup) ===\n", size_t(edge_id));
 #endif
     return atom_setup_time(tg, edge_id);
 }
 
-inline tatum::Time PlacementDelayCalculator::min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
+inline tatum::Time PostClusterDelayCalculator::min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
     vtr::printf("=== Edge %zu (min) ===\n", size_t(edge_id));
 #endif
     return max_edge_delay(tg, edge_id); 
 }
 
-inline tatum::Time PlacementDelayCalculator::hold_time(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const { 
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
+inline tatum::Time PostClusterDelayCalculator::hold_time(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const { 
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
     /*vtr::printf("=== Edge %zu (hold) ===\n", size_t(edge_id));*/
 #endif
     return tatum::Time(NAN); 
 }
 
-inline tatum::Time PlacementDelayCalculator::atom_combinational_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
+inline tatum::Time PostClusterDelayCalculator::atom_combinational_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
 
     tatum::Time delay = edge_delay_cache_[edge_id];
 
@@ -79,14 +79,14 @@ inline tatum::Time PlacementDelayCalculator::atom_combinational_delay(const tatu
         //Insert
         edge_delay_cache_[edge_id] = delay;
     }
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
     vtr::printf("  Edge %zu Atom Comb Delay: %g\n", size_t(edge_id), delay.value());
 #endif
 
     return delay;
 }
 
-inline tatum::Time PlacementDelayCalculator::atom_setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
+inline tatum::Time PostClusterDelayCalculator::atom_setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
     tatum::Time tsu = edge_delay_cache_[edge_id];
 
     if(std::isnan(tsu.value())) {
@@ -105,13 +105,13 @@ inline tatum::Time PlacementDelayCalculator::atom_setup_time(const tatum::Timing
         //Insert
         edge_delay_cache_[edge_id] = tsu;
     }
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
     vtr::printf("  Edge %zu Atom Tsu: %g\n", size_t(edge_id), tsu.value());
 #endif
     return tsu;
 }
 
-inline tatum::Time PlacementDelayCalculator::atom_clock_to_q_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
+inline tatum::Time PostClusterDelayCalculator::atom_clock_to_q_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
     tatum::Time tco = edge_delay_cache_[edge_id];
 
     if(std::isnan(tco.value())) {
@@ -130,13 +130,13 @@ inline tatum::Time PlacementDelayCalculator::atom_clock_to_q_delay(const tatum::
         //Insert
         edge_delay_cache_[edge_id] = tco;
     }
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
     vtr::printf("  Edge %zu Atom Tco: %g\n", size_t(edge_id), tco.value());
 #endif
     return tco;
 }
 
-inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
+inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
     //A net in the atom netlist consists of several different delay components:
     //
     //      delay = launch_cluster_delay + inter_cluster_delay + capture_cluster_delay
@@ -257,7 +257,7 @@ inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingG
             tatum::Time net_delay = tatum::Time(inter_cluster_delay(driver_clb_net_pin, sink_clb_net_pin));
 
             edge_delay = driver_clb_delay + net_delay + sink_clb_delay;
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
             vtr::printf("  Edge %zu net delay: %g = %g + %g + %g (= clb_driver + net + clb_sink)\n", 
                         size_t(edge_id), 
                         edge_delay.value(),
@@ -267,7 +267,7 @@ inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingG
 #endif
         }
     } else {
-#ifdef PLACEMENT_DELAY_CALC_DEBUG
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
         vtr::printf("  Edge %zu CLB Internal delay: %g\n", size_t(edge_id), edge_delay.value());
 #endif
     }
@@ -278,7 +278,7 @@ inline tatum::Time PlacementDelayCalculator::atom_net_delay(const tatum::TimingG
     
 }
 
-inline float PlacementDelayCalculator::inter_cluster_delay(const t_net_pin* driver_clb_pin, const t_net_pin* sink_clb_pin) const {
+inline float PostClusterDelayCalculator::inter_cluster_delay(const t_net_pin* driver_clb_pin, const t_net_pin* sink_clb_pin) const {
     int net = driver_clb_pin->net;
     VTR_ASSERT(driver_clb_pin->net_pin == 0);
 

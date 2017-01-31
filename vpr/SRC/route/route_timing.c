@@ -24,6 +24,11 @@
 
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
 #include "route_profiling.h"	
+
+#include "timing_util.h"
+#include "analyzer_factory.hpp"
+#include "SlackEvaluator.h"
+#include "RoutingDelayCalculator.hpp"
  
 using namespace std;
 
@@ -72,11 +77,17 @@ struct more_sinks_than {
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, t_slack * slacks, vtr::t_ivec ** clb_opins_used_locally, 
-		bool timing_analysis_enabled, const t_timing_inf &timing_inf) {
+		bool timing_analysis_enabled, 
+#ifdef ENABLE_LEGACY_VPR_STA
+        const t_timing_inf &timing_inf
+#endif
+        ) {
 
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns true if the routing succeeds, false otherwise.                    */
+
+    PathInfo critical_path;
 
 	// initialize and properly size the lookups for profiling fanout breakdown
 	 profiling::profiling_initialization(get_max_pins_per_net());
@@ -121,6 +132,17 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			}
 		}
 	}
+
+    //Initialize the delay calculator
+    RoutingDelayCalculator dc(g_atom_nl, g_atom_map, net_delay);
+
+    //Create the analyzer
+    std::shared_ptr<tatum::SetupTimingAnalyzer> timing_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
+
+    //Get the slack calculator
+    auto optimizer_slacks = make_optimizer_slacks(g_atom_nl, g_atom_map, timing_analyzer, g_timing_graph, dc);
+
+    optimizer_slacks.update();
 
 	// build lookup datastructures and 
 	// allocate and initialize remaining_targets [1..max_pins_per_net-1], and rr_node_to_pin [1..num_rr_nodes-1]
@@ -219,11 +241,21 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		if (success) {
    
 			if (timing_analysis_enabled) {
+                //Final timing update
+#ifdef ENABLE_LEGACY_VPR_STA
 				load_timing_graph_net_delays(net_delay);
 				do_timing_analysis(slacks, timing_inf, false, false);
-				float critical_path_delay = get_critical_path_delay();
-                vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
-				vtr::printf_info("Critical path: %g ns\n", critical_path_delay);
+#endif
+
+                optimizer_slacks.update();
+
+                critical_path = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
+
+
+
+
+                vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path.path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
+				vtr::printf_info("Critical path: %g ns\n", critical_path.path_delay);
 			} else {
                 vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 			}
@@ -253,9 +285,14 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			/* Update slack values by doing another timing analysis.
 			   Timing_driven_route_net updated the net delay values. */
 
+            //Per-iteration timing update
+#ifdef ENABLE_LEGACY_VPR_STA
 			load_timing_graph_net_delays(net_delay);
 
 			do_timing_analysis(slacks, timing_inf, false, false);
+#endif
+
+            optimizer_slacks.update();
 
 		} else {
 			/* If timing analysis is not enabled, make sure that the criticalities and the
@@ -271,23 +308,23 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 		
 		if (timing_analysis_enabled) {
-			float critical_path_delay = get_critical_path_delay();
+            critical_path = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
+
 			// check if any connection needs to be forcibly rerouted
 			// first iteration sets up the lower bound connection delays since only timing is optimized for
 			if (itry == 1) {
-				connections_inf.set_stable_critical_path_delay(critical_path_delay);
+				connections_inf.set_stable_critical_path_delay(critical_path.path_delay);
 				connections_inf.set_lower_bound_connection_delays(net_delay);
-			}
-			else {
+			} else {
 				bool stable_routing_configuration = true;
 				// only need to forcibly reroute if critical path grew significantly
-				if (connections_inf.critical_path_delay_grew_significantly(critical_path_delay))
+				if (connections_inf.critical_path_delay_grew_significantly(critical_path.path_delay))
 					stable_routing_configuration = connections_inf.forcibly_reroute_connections(router_opts.max_criticality, slacks, net_delay);
 				// not stable if any connection needs to be forcibly rerouted
 				if (stable_routing_configuration)
-					connections_inf.set_stable_critical_path_delay(critical_path_delay);
+					connections_inf.set_stable_critical_path_delay(critical_path.path_delay);
 			}
-            vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
+            vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path.path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
 		} else {
             vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
