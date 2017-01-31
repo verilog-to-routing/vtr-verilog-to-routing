@@ -61,7 +61,7 @@ inline float ClbDelayCalc::pb_route_max_delay(int clb_block, int pb_route_idx) c
     }
 }
 
-const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(int clb_block, int pb_route_idx) const {
+inline const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(int clb_block, int pb_route_idx) const {
     int type_index = block[clb_block].type->index;
 
     int upstream_pb_route_idx = block[clb_block].pb_route[pb_route_idx].driver_pb_pin_id;
@@ -77,7 +77,7 @@ const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(int clb_block, int pb_ro
     }
 }
 
-const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(const t_pb_graph_pin* driver, const t_pb_graph_pin* sink) const {
+inline const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(const t_pb_graph_pin* driver, const t_pb_graph_pin* sink) const {
     VTR_ASSERT(driver);
     VTR_ASSERT(sink);
 
