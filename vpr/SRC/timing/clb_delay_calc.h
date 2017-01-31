@@ -3,8 +3,6 @@
 
 #include "netlist.h"
 
-class CachingClbDelayCalc; //Forward declaration
-
 //Delay Calculator for routing internal to a clustered logic block
 class ClbDelayCalc {
     public:
@@ -23,7 +21,6 @@ class ClbDelayCalc {
         float clb_input_to_clb_output_delay(const t_net_pin* clb_input_pin, const t_net_pin* clb_output_pin) const;
 
     private:
-        friend CachingClbDelayCalc;
         float trace_max_delay(int clb, int src_pb_route_pin, int sink_pb_route_pin) const;
 
         float pb_route_max_delay(int clb, int pb_route_idx) const;
