@@ -112,9 +112,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
 				slacks->timing_criticality[inet][ipin] = init_timing_criticality_val;
 			}
-#ifdef PATH_COUNTING
-				slacks->path_criticality[inet][ipin] = init_timing_criticality_val;
-#endif		
 		} else { 
 			/* Set delay of global signals to zero. Non-global net delays are set by
 			   update_net_delays_from_route_tree() inside timing_driven_route_net(), 
@@ -267,9 +264,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
 				for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
 					slacks->timing_criticality[inet][ipin] = 0.;
-#ifdef PATH_COUNTING 		
-					slacks->path_criticality[inet][ipin] = 0.; 		
-#endif
 					net_delay[inet][ipin] = 0.;
 				}
 			}
@@ -472,16 +466,12 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		/* Use criticality of 1. This makes all nets critical.  Note: There is a big difference between setting pin criticality to 0
 		compared to 1.  If pin criticality is set to 0, then the current path delay is completely ignored during routing.  By setting
 		pin criticality to 1, the current path delay to the pin will always be considered and optimized for */
-		if (!slacks) pin_criticality[ipin] = 1.0;
-		else {
-#ifdef PATH_COUNTING
-			/* Pin criticality is based on a weighted sum of timing and path criticalities. */	
-			pin_criticality[ipin] =		 ROUTE_PATH_WEIGHT	* slacks->path_criticality[inet][ipin]
-								  + (1 - ROUTE_PATH_WEIGHT) * slacks->timing_criticality[inet][ipin]; 
-#else
+		if (!slacks) {
+            pin_criticality[ipin] = 1.0;
+        } else {
 			/* Pin criticality is based on only timing criticality. */
 			pin_criticality[ipin] = slacks->timing_criticality[inet][ipin];
-#endif
+
 			/* Currently, pin criticality is between 0 and 1. Now shift it downwards 
 			by 1 - max_criticality (max_criticality is 0.99 by default, so shift down
 			by 0.01) and cut off at 0.  This means that all pins with small criticalities 
