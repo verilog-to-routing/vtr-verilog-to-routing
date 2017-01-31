@@ -395,6 +395,9 @@ void load_timing_graph_net_delays(float **net_delay) {
 	 * net_delay[0..net.size()-1][1..num_pins-1].  These net delays should have    *
 	 * been allocated and loaded with the net_delay routines.  This routine      *
 	 * marks the corresponding edges in the timing graph with the proper delay.  */
+
+    clock_t begin = clock();
+
     VTR_ASSERT(net_delay);
 
 	int inode;
@@ -411,6 +414,9 @@ void load_timing_graph_net_delays(float **net_delay) {
 		for (ipin = 1; ipin < num_timing_net_pins(inet); ipin++)
 			tedge[ipin - 1].Tdel = net_delay[inet][ipin];
 	}
+
+    clock_t end = clock();
+    g_timing_analysis_profile_stats.old_delay_annotation_wallclock_time  += double(end - begin) / CLOCKS_PER_SEC;
 }
 
 void free_timing_graph(t_slack * slacks) {
