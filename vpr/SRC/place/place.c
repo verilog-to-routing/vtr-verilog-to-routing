@@ -612,12 +612,18 @@ void try_place(struct s_placer_opts placer_opts,
 		update_t(&t, rlim, success_rat, annealing_sched);
 
 		critical_path_delay = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
-        vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f % 7.3f % 7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
-                oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
-                stats.av_delay_cost, place_delay_value, 1e9*critical_path_delay.path_delay, 
-                1e9*find_setup_total_negative_slack(*timing_analyzer),  
-                1e9*find_setup_worst_negative_slack(*timing_analyzer),  
-                success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
+        float sTNS = find_setup_total_negative_slack(*timing_analyzer);
+        float sWNS =find_setup_worst_negative_slack(*timing_analyzer); 
+        vtr::printf_info("%7.3f "
+                         "%7.5f %10.4f %-10.5g %-10.5g "
+                         "%-10.5g %7.4f % 7.3f % 7.4f "
+                         "%7.4f %7.4f %7.4f %6.3f"
+                         "%9d %6.3f\n",
+                         oldt, 
+                         stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, 
+                         place_delay_value, 1e9*critical_path_delay.path_delay, 1e9*sTNS, 1e9*sWNS,  
+                         success_rat, std_dev, rlim, crit_exponent, 
+                         tot_iter, t / oldt);
 
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
 				cost, bb_cost, timing_cost, t);
@@ -679,12 +685,19 @@ void try_place(struct s_placer_opts placer_opts,
 	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
     critical_path_delay = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
-    vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f % 7.3f % 7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
-        t, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
-        stats.av_delay_cost, place_delay_value, 1e9*critical_path_delay.path_delay, 
-        1e9*find_setup_total_negative_slack(*timing_analyzer),  
-        1e9*find_setup_worst_negative_slack(*timing_analyzer),  
-        success_rat, std_dev, rlim, crit_exponent, tot_iter, "");
+    float sTNS = find_setup_total_negative_slack(*timing_analyzer);
+    float sWNS = find_setup_worst_negative_slack(*timing_analyzer);
+
+    vtr::printf_info("%7.3f "
+                     "%7.5f %10.4f %-10.5g %-10.5g "
+                     "%-10.5g %7.4f % 7.3f % 7.4f "
+                     "%7.4f %7.4f %7.4f %6.3f"
+                     "%9d %6.3f\n",
+                      t, 
+                      stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, 
+                      place_delay_value, 1e9*critical_path_delay.path_delay, 1e9*sTNS, 1e9*sWNS,
+                      success_rat, std_dev, rlim, crit_exponent,
+                      tot_iter, 0.);
 
 	// TODO:  
 	// 1. print a message about number of aborted moves.
