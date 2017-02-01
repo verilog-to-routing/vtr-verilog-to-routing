@@ -507,18 +507,37 @@ void try_place(struct s_placer_opts placer_opts,
     print_histogram(find_setup_slack_histogram(*timing_analyzer));
     vtr::printf_info("\n");
 
-	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %7s %7s %6s %9s %6s\n",
-			"-------", "-------", "----------", "----------", "----------", "----------", 
-			"-------", "-------", "-------", "-------", "-------", "-------", "------", 
-            "---------", "------");
-	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %7s %7s %6s %9s %6s\n",
-			"T", "Cost", "Av BB Cost", "Av TD Cost", "Av Tot Del",
-			"P to P Del", "CPD", "sTNS", "sWNS", "Ac Rate", "Std Dev", "R limit", "Exp",
-			"Tot Moves", "Alpha");
-	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %7s %7s %6s %9s %6s\n",
-			"-------", "-------", "----------", "----------", "----------", "----------", 
-			"-------", "-------", "-------", "-------", "-------", "-------", "------", 
-            "---------", "------");
+    //Table header
+	vtr::printf_info("%7s "
+                     "%7s %10s %10s %10s "
+                     "%10s %7s %7s %8s "
+                     "%7s %7s %7s %6s "
+                     "%9s %6s\n",
+                     "-------", 
+                     "-------", "----------", "----------", "----------", 
+                     "----------", "-------", "-------", "--------", 
+                     "-------", "-------", "-------", "------", 
+                     "---------", "------");
+	vtr::printf_info("%7s "
+                     "%7s %10s %10s %10s "
+                     "%10s %7s %7s %8s "
+                     "%7s %7s %7s %6s "
+                     "%9s %6s\n",
+                     "T",
+                     "Cost", "Av BB Cost", "Av TD Cost", "Av Tot Del",
+                     "P to P Del", "CPD", "sTNS", "sWNS", 
+                     "Ac Rate", "Std Dev", "R limit", "Exp",
+                     "Tot Moves", "Alpha");
+	vtr::printf_info("%7s "
+                     "%7s %10s %10s %10s "
+                     "%10s %7s %7s %8s "
+                     "%7s %7s %7s %6s "
+                     "%9s %6s\n",
+                     "-------", 
+                     "-------", "----------", "----------", "----------", 
+                     "----------", "-------", "-------", "--------", 
+                     "-------", "-------", "-------", "------", 
+                     "---------", "------");
 
 	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d", 
 		cost, bb_cost, timing_cost, delay_cost, width_fac);
@@ -611,7 +630,7 @@ void try_place(struct s_placer_opts placer_opts,
         float sWNS =find_setup_worst_negative_slack(*timing_analyzer); 
         vtr::printf_info("%7.3f "
                          "%7.5f %10.4f %-10.5g %-10.5g "
-                         "%-10.5g %7.4f % 7.3f % 7.4f "
+                         "%-10.5g %7.3f % 7.5g % 8.3f "
                          "%7.4f %7.4f %7.4f %6.3f"
                          "%9d %6.3f\n",
                          oldt, 
@@ -685,7 +704,7 @@ void try_place(struct s_placer_opts placer_opts,
 
     vtr::printf_info("%7.3f "
                      "%7.5f %10.4f %-10.5g %-10.5g "
-                     "%-10.5g %7.4f % 7.3f % 7.4f "
+                     "%-10.5g %7.3f % 7.5g % 8.3f "
                      "%7.4f %7.4f %7.4f %6.3f"
                      "%9d %6.3f\n",
                       t, 
