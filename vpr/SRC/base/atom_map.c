@@ -60,10 +60,6 @@ const t_pb_graph_pin* AtomMap::atom_pin_pb_graph_pin(AtomPinId atom_pin) const {
     return atom_to_pb_graph_pin_[atom_pin];
 }
 
-AtomPinId AtomMap::pb_graph_pin_atom_pin(const t_pb_graph_pin* gpin) const {
-    return atom_to_pb_graph_pin_[gpin];
-}
-
 void AtomMap::set_atom_pin_pb_graph_pin(AtomPinId atom_pin, const t_pb_graph_pin* gpin) {
     atom_to_pb_graph_pin_.insert(atom_pin, gpin);
 }

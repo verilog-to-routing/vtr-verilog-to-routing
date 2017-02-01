@@ -35,9 +35,6 @@ class AtomMap {
         //Returns the pb graph pin associated with the specified atom pin
         const t_pb_graph_pin* atom_pin_pb_graph_pin(AtomPinId atom_pin) const;
 
-        //Returns the atom pin associated with the specified pb graph pin
-        AtomPinId pb_graph_pin_atom_pin(const t_pb_graph_pin* gpin) const;
-
         //Sets the mapping between an atom pin and pb graph pin
         void set_atom_pin_pb_graph_pin(AtomPinId atom_pin, const t_pb_graph_pin* gpin);
 

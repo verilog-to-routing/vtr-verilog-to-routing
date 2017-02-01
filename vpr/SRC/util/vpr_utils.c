@@ -84,6 +84,7 @@ static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapp
 
 static std::vector<int> find_connected_internal_clb_sink_pins(int clb, int pb_pin);
 static void find_connected_internal_clb_sink_pins_recurr(int clb, int pb_pin, std::vector<int>& connected_sink_pb_pins);
+static AtomPinId find_atom_pin_for_pb_route_id(int clb, int pb_route_id, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 /******************** Subroutine definitions *********************************/
 
@@ -244,6 +245,7 @@ AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin, const IntraLbPbPinL
         //CLB output pin has no internal driver
         return AtomPinId::INVALID();
     }
+    AtomNetId atom_net = pb_routes[pb_pin_id].atom_net_id;
 
     //Trace back until the driver is reached
     while(pb_routes[pb_pin_id].driver_pb_pin_id >= 0) {
@@ -251,12 +253,13 @@ AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin, const IntraLbPbPinL
     }
     VTR_ASSERT(pb_pin_id >= 0);
 
-    //Convert the pb_pin to a t_pb_graph_pin
-    const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(block[clb].type->index, pb_pin_id);
+    VTR_ASSERT(atom_net == pb_routes[pb_pin_id].atom_net_id);
 
-    //Conver the t_pb_graph_pin to an atom pin
-    AtomPinId atom_pin = g_atom_map.pb_graph_pin_atom_pin(gpin);
+    //Map the pb_pin_id to AtomPinId
+    AtomPinId atom_pin = find_atom_pin_for_pb_route_id(clb, pb_pin_id, pb_gpin_lookup);
     VTR_ASSERT(atom_pin);
+
+    VTR_ASSERT_MSG(g_atom_nl.pin_net(atom_pin) == atom_net, "Driver atom pin should drive the same net");
 
     return atom_pin;
 }
@@ -267,13 +270,18 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin, const I
 
     VTR_ASSERT_MSG(pb_routes[clb_pin].driver_pb_pin_id < 0, "CLB input pin should have no internal drivers");
 
+    AtomNetId atom_net = pb_routes[clb_pin].atom_net_id;
+
     std::vector<int> connected_sink_pb_pins = find_connected_internal_clb_sink_pins(clb, clb_pin);
 
     std::vector<AtomPinId> sink_atom_pins;
     for(int sink_pb_pin : connected_sink_pb_pins) {
-        const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(block[clb].type->index, sink_pb_pin);
-        AtomPinId atom_pin = g_atom_map.pb_graph_pin_atom_pin(gpin);
+        //Map the pb_pin_id to AtomPinId
+        AtomPinId atom_pin = find_atom_pin_for_pb_route_id(clb, sink_pb_pin, pb_gpin_lookup);
         VTR_ASSERT(atom_pin);
+
+        VTR_ASSERT_MSG(g_atom_nl.pin_net(atom_pin) == atom_net, "Sink atom pins should be driven by the same net");
+
         sink_atom_pins.push_back(atom_pin);
     }
 
@@ -297,6 +305,45 @@ static void find_connected_internal_clb_sink_pins_recurr(int clb, int pb_pin, st
     for(int sink_pb_pin : block[clb].pb_route[pb_pin].sink_pb_pin_ids) {
         find_connected_internal_clb_sink_pins_recurr(clb, sink_pb_pin, connected_sink_pb_pins);
     }
+}
+
+//Maps from a CLB's pb_route ID to it's matching AtomPinId (if the pb_route is a primitive pin)
+static AtomPinId find_atom_pin_for_pb_route_id(int clb, int pb_route_id, const IntraLbPbPinLookup& pb_gpin_lookup) {
+    //Find the graph pin associated with this pb_route
+    const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(block[clb].type->index, pb_route_id);
+    VTR_ASSERT(gpin);
+
+    //Get the PB associated with this block
+    const t_pb* pb = block[clb].pb;
+
+    //Find the graph node containing the pin
+    const t_pb_graph_node* gnode = gpin->parent_node;
+
+    //Find the pb matching the gnode
+    const t_pb* child_pb = pb->find_pb(gnode);
+
+    VTR_ASSERT_MSG(child_pb, "Should find pb containing pb route");
+
+    //Check if this is a leaf/atom pb
+    if(child_pb->child_pbs == nullptr) {
+        //It is a leaf, and hence should map to an atom
+
+        //Find the associated atom
+        AtomBlockId atom_block = g_atom_map.pb_atom(child_pb);
+        VTR_ASSERT(atom_block);
+
+        //Now find the matching pin by seeing which pin maps to the gpin
+        for(AtomPinId atom_pin : g_atom_nl.block_pins(atom_block)) {
+            const t_pb_graph_pin* atom_pin_gpin = g_atom_map.atom_pin_pb_graph_pin(atom_pin);
+            if(atom_pin_gpin == gpin) {
+                //Match
+                return atom_pin;
+            }
+        }
+    }
+
+    //No match
+    return AtomPinId::INVALID();
 }
 
 //Return the net pin which drive the CLB input connected to sink_pb_pin_id

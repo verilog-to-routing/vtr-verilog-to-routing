@@ -31,6 +31,7 @@
 #include <unordered_map>
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
+#include "vtr_assert.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -155,6 +156,34 @@ typedef struct s_pb {
 	bool has_modes() const {
 		return pb_graph_node->pb_type->num_modes > 0;
 	}
+
+    //Returns the t_pb associated with the specified gnode which is contained
+    //within the current pb
+    const t_pb* find_pb(const t_pb_graph_node* gnode) const {
+        //Base case
+        if(pb_graph_node == gnode) {
+            return this;
+        }
+
+        //Search recursively
+        for(int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
+
+            if(child_pbs[ichild_type] == nullptr) continue;
+
+            for(int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
+
+                const t_pb* child_pb = &child_pbs[ichild_type][ipb];
+
+                const t_pb* found_pb = child_pb->find_pb(gnode);
+                if(found_pb != nullptr) {
+                    VTR_ASSERT(found_pb->pb_graph_node == gnode);
+                    return found_pb; //Found
+                }
+            }
+        }
+        return nullptr; //Not found
+    }
+
 } t_pb;
 
 /* Representation of intra-logic block routing */
