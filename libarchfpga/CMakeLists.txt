@@ -23,7 +23,8 @@ set_target_properties(libarchfpga PROPERTIES PREFIX "") #Avoid extra 'lib' prefi
 #Specify link-time dependancies
 target_link_libraries(libarchfpga
                         libvtrutil
-                        libpugixml)
+                        libpugixml
+                        libpugiutil)
 
 #Create the test executable
 add_executable(read_arch ${EXEC_SOURCES})

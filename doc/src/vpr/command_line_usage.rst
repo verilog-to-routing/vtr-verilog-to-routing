@@ -461,6 +461,27 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     .. note:: No binary search on channel capacity will be performed to find the minimum number of tracks required for routing. VPR simply reports whether or not the circuit will route at this channel width.
 
+.. option:: -min_route_chan_width_hint <int>
+
+    Hint to the router what the minimum routable channel width is.
+
+    The value provided is used to initialize the binary search for minimum channel width.
+    A good hint may speed-up the binary search by avoiding time spent at congested channel widths which are not routable.
+
+    The algorithm is robust to incorrect hints (i.e. it continues to binary search), so the hint does not need to be precise.
+
+    This option may ocassionally produce a different minimum channel width due to the different initialization.
+
+    .. seealso:: :option:`-verify_binary_search`
+
+.. option:: -verify_binary_search {on | off}
+
+    Force the router to check that the channel width determined by binary search is the minimum.
+
+    The binary search ocassionally may not find the minimum channel width (e.g. due to router sub-optimality, or routing pattern issues at a particular channel width).
+
+    This option attempts to verify the minimum by routing at successively lower channel widths until two consecutive routing failures are observed.
+
 .. option:: -router_algorithm {breadth_first | timing_driven} 
 
     Selects which router algorithm to use.

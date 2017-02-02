@@ -32,6 +32,7 @@ use POSIX qw/strftime/;
 # Function Prototypes
 sub trim;
 sub parse_single_task;
+sub pretty_print_table;
 sub summarize_qor;
 sub calc_geomean;
 sub check_golden;
@@ -53,9 +54,10 @@ my $check_golden  = 0;
 my $parse_qor 	  = 1;  # QoR file is parsed by default; turned off if 
 						# user does not specify QoR parse file in config.txt
 my $calc_geomean  = 0;  # QoR geomeans are not computed by default;
-my $override_exp_num       = 0;
+my $override_exp_id       = 0;
 my $revision;
 my $verbose       = 0;
+my $pretty_print_results = 1;
 
 while ( $token = shift(@ARGV) ) {
 
@@ -79,7 +81,7 @@ while ( $token = shift(@ARGV) ) {
 		$calc_geomean = 1;
 	}
 	elsif ( $token eq "-run") {
-	    $override_exp_num = shift(@ARGV);
+	    $override_exp_id = shift(@ARGV);
     }
 	elsif ( $token eq "-revision" ) {
 		$revision = shift(@ARGV);
@@ -185,16 +187,16 @@ sub parse_single_task {
 	    $qor_parse_file = get_important_file($task_path, $vtr_flow_path, $qor_parse_file);
     }
 
-    my $exp_num = 0;
-    if($override_exp_num != 0) {
+    my $exp_id = 0;
+    if($override_exp_id != 0) {
         #explicitely specified via -run parameter
-        $exp_num = $override_exp_num;
+        $exp_id = $override_exp_id;
     } else {
         # haven't explicitely specified via -run parameter
-        $exp_num = last_exp(${task_path});
+        $exp_id = last_exp_id(${task_path});
     }
 	
-	my $run_path = "$task_path/${run_prefix}${exp_num}";
+	my $run_path = "$task_path/${run_prefix}${exp_id}";
 
 	my $first = 1;
 	open( OUTPUT_FILE, ">$run_path/parse_results.txt" );
@@ -217,6 +219,10 @@ sub parse_single_task {
 		}
 	}
 	close(OUTPUT_FILE);
+
+    if ($pretty_print_results) {
+        pretty_print_table("$run_path/parse_results.txt")
+    }
 
 	if ($parse_qor) {
 		my $first = 1;
@@ -264,7 +270,7 @@ sub summarize_qor {
 	my $task_path = "$vtr_flow_path/tasks/$task";
 	
 	my $output_path = $task_path;
-	my $exp_num = last_exp($task_path);
+	my $exp_id = last_exp_id($task_path);
 
 	if ( ( ( $#tasks + 1 ) > 1 ) | ( -e "$task_path/../task_list.txt" ) ) {
 		$output_path = "$task_path/../";
@@ -272,9 +278,9 @@ sub summarize_qor {
 	if ( !-e "$output_path/task_summary" ) {
 		mkdir "$output_path/task_summary";
 	}
-	if ( -e "$output_path/task_summary/${run_prefix}${exp_num}_summary.txt" ) {
+	if ( -e "$output_path/task_summary/${run_prefix}${exp_id}_summary.txt" ) {
 	}
-	open( OUTPUT_FILE, ">$output_path/task_summary/${run_prefix}${exp_num}_summary.txt" );
+	open( OUTPUT_FILE, ">$output_path/task_summary/${run_prefix}${exp_id}_summary.txt" );
 	
 	##############################################################
 	# Append contents of QoR files to output file
@@ -283,8 +289,8 @@ sub summarize_qor {
 	foreach my $task (@tasks) {
 		chomp($task);
 		$task_path = "$vtr_flow_path/tasks/$task";
-		$exp_num = last_exp($task_path);
-		my $run_path = "$task_path/${run_prefix}${exp_num}";
+		$exp_id = last_exp_id($task_path);
+		my $run_path = "$task_path/${run_prefix}${exp_id}";
 
 		open( RESULTS_FILE, "$run_path/qor_results.txt" );
 		my $output = <RESULTS_FILE>;
@@ -314,7 +320,7 @@ sub calc_geomean {
 	my $task_path = "$vtr_flow_path/tasks/$task";
 	
 	my $output_path = $task_path;
-	my $exp_num = last_exp($task_path);
+	my $exp_id = last_exp_id($task_path);
 
 	if ( ( ( $#tasks + 1 ) > 1 ) | ( -e "$task_path/../task_list.txt" ) ) {
 		$output_path = "$task_path/../"; 
@@ -331,7 +337,7 @@ sub calc_geomean {
 	# Read summary file
 	##############################################################
 
-	my $summary_file = "$output_path/task_summary/${run_prefix}${exp_num}_summary.txt";
+	my $summary_file = "$output_path/task_summary/${run_prefix}${exp_id}_summary.txt";
 
 	if ( !-r $summary_file ) {
 		print "[ERROR] Failed to open $summary_file: $!";
@@ -363,7 +369,7 @@ sub calc_geomean {
 	else {
 	}
 
-	print OUTPUT_FILE "\n${exp_num}";
+	print OUTPUT_FILE "\n${exp_id}";
 
 	##############################################################
 	# Compute & write geomean to output file
@@ -395,14 +401,80 @@ sub calc_geomean {
 	close(OUTPUT_FILE);
 }
 
-sub last_exp {
+sub max {
+    my $x = shift;
+    my $y = shift;
+
+    return ($x < $y) ? $y : $x;
+}
+
+sub pretty_print_table {
+    my $file_path = shift;
+
+
+    #Read the input file
+    my @file_data;
+    open(INFILE,"<$file_path");
+    while(<INFILE>) {
+        chomp;
+        push(@file_data, [split /\t/])
+    }
+
+    #Determine the maximum column width for pretty formatting
+    my %col_widths;
+    for my $row (0 .. $#file_data) {
+        for my $col (0 .. $#{$file_data[$row]}) {
+
+            my $col_width = length $file_data[$row][$col];
+
+            #Do we have a valid column width?
+            if (not exists $col_widths{$col}) {
+                #Initial width
+                $col_widths{$col} = $col_width;
+            } else {
+                #Max width
+                $col_widths{$col} = max($col_widths{$col}, $col_width);
+            }
+
+        }
+    }
+
+    #Write out in pretty format
+    open(OUTFILE,">$file_path");
+    for my $row (0 .. $#file_data) {
+        for my $col (0 .. $#{$file_data[$row]}) {
+            printf OUTFILE "%-*s", $col_widths{$col}, $file_data[$row][$col];
+
+            if($col != $#{$file_data[$row]}) {
+                printf OUTFILE "\t";
+            }
+        }
+        printf OUTFILE "\n";
+    }
+
+}
+
+sub last_exp_id {
 	my $path = shift;
-	my $num = 1;
-	while ( -e "$path/${run_prefix}${num}" ) {
+	my $num = 0;
+    my $run_id = "";
+    my $run_id_no_pad = "";
+    do {
 		++$num;
-	}
-	--$num;
-	return $num;
+        $run_id = sprintf("%03d", $num);
+        $run_id_no_pad = sprintf("%d", $num);
+    } while ( -e "$path/${run_prefix}${run_id}" or -e "$path/${run_prefix}${run_id_no_pad}");
+    --$num;
+    $run_id = sprintf("%03d", $num);
+    $run_id_no_pad = sprintf("%d", $num);
+
+    if( -e "$path/${run_prefix}${run_id}" ) {
+        return $run_id;
+    } elsif (-e "$path/${run_prefix}${run_id_no_pad}") {
+        return $run_id_no_pad;
+    }
+
+    die("Unkown experiment id");
 } 
 
 sub check_golden {
@@ -502,16 +574,11 @@ sub check_golden {
 	my $golden_params = shift @golden_data;
 	my $test_params   = shift @test_data;
 
-	my @golden_params =
-	  split( /\t/, trim($golden_params) );    # get parameters of golden results
-	my @test_params =
-	  split( /\t/, trim($test_params) );      # get parameters of test results
+	my @golden_params = split( /\t/, $golden_params );    # get parameters of golden results
+	my @test_params = split( /\t/, $test_params );      # get parameters of test results
 
-	if ( $golden_params ne $test_params ) {
-		print "[ERROR] Different parameters in golden and result file. $golden_params different from $test_params\n";
-        $failed = 1;
-		return $failed;
-	}
+    my @golden_params = map(trim($_), @golden_params);
+    my @test_params = map(trim($_), @test_params);
 
 	# Check to ensure all parameters to compare are consistent
 	foreach $line (@pass_req_data) {
@@ -551,31 +618,31 @@ sub check_golden {
 		  "[ERROR] Different number of entries in golden and result files.\n";
           $failed = 1;
 	}
-	@test_data   = sort (@test_data);
-	@golden_data = sort (@golden_data);
 
 	# Iterate through each line of the test results data and compare with the golden data
 	foreach $line (@test_data) {
 		my @test_line   = split( /\t/, $line );
 		my @golden_line = split( /\t/, shift @golden_data );
 
-		if (   ( @test_line[0] ne @golden_line[0] )
-			or ( @test_line[1] ne @golden_line[1] ) )
-		{
-			print
-			  "[ERROR] Circuit/Architecture mismatch between golden and result file.\n";
+        my $golden_arch = trim(@golden_line[0]);
+        my $golden_circuit = trim(@golden_line[1]);
+        my $test_arch = trim(@test_line[0]);
+        my $test_circuit = trim(@test_line[1]);
+
+		if (   ( $test_circuit ne $test_circuit )
+			or ( $test_arch ne $test_arch ) ) {
+
+			print "[ERROR] Circuit/Architecture mismatch between golden ($golden_arch/$golden_circuit) and result ($test_arch/$test_circuit).\n";
             $failed = 1;
 			return $failed;
 		}
-		my $circuitarch = "@test_line[0]-@test_line[1]";
+		my $circuitarch = "$test_arch/$test_circuit";
 
 		# Check each parameter where the type determines what to check for
 		foreach my $value (@params) {
-			my $index =
-			  List::Util::first { $golden_params[$_] eq $value }
-			  0 .. $#golden_params;
-			my $test_value   = @test_line[$index];
-			my $golden_value = @golden_line[$index];
+			my $index = List::Util::first { $golden_params[$_] eq $value } 0 .. $#golden_params;
+			my $test_value   = trim(@test_line[$index]);
+			my $golden_value = trim(@golden_line[$index]);
 
 
 			if ( $type{$value} eq "Range" ) {
@@ -627,7 +694,7 @@ sub check_golden {
     return $failed;
 }
 
-sub trim($) {
+sub trim() {
 	my $string = shift;
 	$string =~ s/^\s+//;
 	$string =~ s/\s+$//;

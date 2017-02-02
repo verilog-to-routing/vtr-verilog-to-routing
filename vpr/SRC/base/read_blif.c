@@ -244,24 +244,39 @@ struct BlifAllocCallback : public blifparse::Callback {
             const t_model* blk_model = find_model(subckt_model);
 
             //We name the subckt based on the net it's first output pin drives
-            std::string first_output_name;
+            std::string subckt_name;
             for(size_t i = 0; i < ports.size(); ++i) {
                 const t_model_ports* model_port = find_model_port(blk_model, ports[i]);
                 VTR_ASSERT(model_port);
 
-                //Determine the pin type
                 if(model_port->dir == OUT_PORT) {
-                    first_output_name = nets[i];
+                    subckt_name = nets[i];
                     break;
                 }
             }
-            //We must have an output in-order to name the subckt
-            if(first_output_name.empty()) {
-                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Found no output pin on .subckt '%s'",
-                          subckt_model.c_str());
+
+            if(subckt_name.empty()) {
+                //We need to name the block uniquely ourselves since there is no connected output
+                subckt_name = unique_subckt_name();
+
+                //Since this is unusual, warn the user
+                vtr::printf_warning(filename_.c_str(), lineno_, 
+                        "Subckt of type '%s' at %s:%d has no output pins, and has been named '%s'\n",
+                        blk_model->name, filename_.c_str(), lineno_, subckt_name.c_str());
             }
 
-            AtomBlockId blk_id = curr_model().create_block(first_output_name, blk_model);
+            //The name for every block should be unique, check that there is no name conflict
+            AtomBlockId blk_id = curr_model().find_block(subckt_name);
+            if(blk_id) {
+                const t_model* conflicting_model = curr_model().block_model(blk_id);
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, 
+                          "Duplicate blocks named '%s' found in netlist."
+                          " Existing block of type '%s' conflicts with subckt of type '%s'.", 
+                          subckt_name.c_str(), conflicting_model->name, subckt_model.c_str());
+            }
+
+            //Create the block
+            blk_id = curr_model().create_block(subckt_name, blk_model);
 
             for(size_t i = 0; i < ports.size(); ++i) {
                 //Check for consistency between model and ports
@@ -581,6 +596,12 @@ struct BlifAllocCallback : public blifparse::Callback {
             }
             return false;
         }
+
+        //Returns a different unique subck name each time it is called
+        std::string unique_subckt_name() {
+            return "unnamed_subckt" + std::to_string(unique_subckt_name_counter_++);
+        }
+
     private:
         bool ended_ = true; //Initially no active .model
         std::string filename_ = "";
@@ -592,6 +613,8 @@ struct BlifAllocCallback : public blifparse::Callback {
         AtomNetlist& main_netlist_; //User object we fill
         const t_model* user_arch_models_ = nullptr;
         const t_model* library_arch_models_ = nullptr;
+
+        size_t unique_subckt_name_counter_ = 0;
 
 };
 
@@ -763,6 +786,10 @@ static void show_blif_stats(const AtomNetlist& netlist) {
     vtr::printf_info("  Nets  : %zu\n", netlist.nets().size()); 
     for(auto kv : net_stats) {
         vtr::printf_info("    %-*s: %6.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
+    }
+
+    if (netlist.blocks().empty()) {
+        vtr::printf_warning(__FILE__, __LINE__, "Netlist contains no blocks\n");
     }
 }
 

@@ -1053,9 +1053,13 @@ static int exit_crit(float t, float cost,
 	}
 
 	/* Automatic annealing schedule */
+    float t_exit = 0.005 * cost / g_clbs_nlist.net.size();
 
-	if (t < 0.005 * cost / g_clbs_nlist.net.size()) {
+    if (t < t_exit) {
 		return (1);
+    } else if (std::isnan(t_exit)) {
+        //May get nan if there are no nets
+        return (1);
 	} else {
 		return (0);
 	}
@@ -1285,6 +1289,11 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	int abort_swap = false;
 
 	num_ts_called ++;
+
+    if(num_blocks == 0) {
+        //Empty netlist, no valid swap possible
+        return ABORTED;
+    }
 
 	/* I'm using negative values of temp_net_cost as a flag, so DO NOT   *
 	 * use cost functions that can go negative.                          */

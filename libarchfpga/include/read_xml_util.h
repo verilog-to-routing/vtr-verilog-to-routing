@@ -2,6 +2,7 @@
 #define READ_XML_UTIL_H
 
 #include "pugixml.hpp"
+#include "pugixml_loc.hpp"
 #include "pugixml_util.hpp"
 
 pugiutil::ReqOpt BoolToReqOpt(bool b);
@@ -9,23 +10,23 @@ pugiutil::ReqOpt BoolToReqOpt(bool b);
 void archfpga_throw(const char* filename, int line, const char* fmt, ...);
 
 void bad_tag(const pugi::xml_node node,
-             const pugiloc::loc_data& loc_data,
+             const pugiutil::loc_data& loc_data,
              const pugi::xml_node parent_node=pugi::xml_node(),
              const std::vector<std::string> expected_tags=std::vector<std::string>());
 
 void bad_attribute(const pugi::xml_attribute attr,
                    const pugi::xml_node node,
-                   const pugiloc::loc_data& loc_data,
+                   const pugiutil::loc_data& loc_data,
                    const std::vector<std::string> expected_attributes=std::vector<std::string>());
 void bad_attribute_value(const pugi::xml_attribute attr,
                          const pugi::xml_node node,
-                         const pugiloc::loc_data& loc_data,
+                         const pugiutil::loc_data& loc_data,
                          const std::vector<std::string> expected_attributes=std::vector<std::string>());
 
 class InstPort {
     public:
         InstPort(std::string str);
-        InstPort(pugi::xml_attribute attr, pugi::xml_node node, const pugiloc::loc_data& loc_data);
+        InstPort(pugi::xml_attribute attr, pugi::xml_node node, const pugiutil::loc_data& loc_data);
         std::string instance_name() { return instance_.name; }
         std::string port_name() { return port_.name; }
 

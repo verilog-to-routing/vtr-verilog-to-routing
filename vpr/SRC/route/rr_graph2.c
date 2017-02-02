@@ -2166,17 +2166,12 @@ void free_sblock_pattern_lookup(
 void load_sblock_pattern_lookup(
 		const int i, const int j, const t_chan_width *nodes_per_chan,
 		const t_chan_details *chan_details_x, const t_chan_details *chan_details_y, 
-		const int Fs, const enum e_switch_block_type switch_block_type,
+		const int /*Fs*/, const enum e_switch_block_type switch_block_type,
 		short ******sblock_pattern) {
 
 	/* This routine loads a lookup table for sblock topology. The lookup table is huge
 	 * because the sblock varies from location to location. The i, j means the owning
 	 * location of the sblock under investigation. */
-
-	int Fs_per_side = 1;
-	if (Fs != -1) {
-		Fs_per_side = Fs / 3;
-	}
 
 	/* SB's have coords from (0, 0) to (nx, ny) */
 	VTR_ASSERT(i >= 0);
@@ -2218,12 +2213,6 @@ void load_sblock_pattern_lookup(
 
 	/* SB's range from (0, 0) to (nx, ny) */
 	/* First find all four sides' incoming wires */
-	bool x_edge =((i < 1) || (i >= nx));
-	bool y_edge =((j < 1) || (j >= ny));
-
-	bool is_corner_sblock =(x_edge && y_edge);
-	bool is_core_sblock =(!x_edge && !y_edge);
-
 	int *wire_mux_on_track[4];
 	int *incoming_wire_label[4];
 	int num_incoming_wires[4];
@@ -2320,7 +2309,6 @@ void load_sblock_pattern_lookup(
 		 * passing and ending wires so the above statement still holds
 		 * if you replace "passing" by "incoming" */
 
-		int side_cw_incoming_wire_count = 0;
 		if (incoming_wire_label[side_cw]) {
 			for (int ichan = 0; ichan < nodes_per_chan->max; ichan++) {
 
@@ -2331,45 +2319,23 @@ void load_sblock_pattern_lookup(
 					itrack = ichan % nodes_per_chan->x_list[j];
 				}
 
-				/* Ending wire, or passing wire with sblock. */
 				if (incoming_wire_label[side_cw][itrack] != UN_SET) {
 
-					if ((incoming_wire_label[side_cw][itrack] < num_ending_wires[side_cw]) 
-						&& (is_corner_sblock || is_core_sblock)) {
+                    int mux = get_simple_switch_block_track((enum e_side)side_cw, 
+                                (enum e_side)to_side,
+                                incoming_wire_label[side_cw][ichan],
+                                switch_block_type,
+                                num_wire_muxes[to_side]);
 
-						/* The ending wires in core sblocks form N-to-N assignment 
-						 * problem, so can use any pattern such as Wilton. This N-to-N 
-						 * mapping depends on the fact that start points stagger across
-						 * channels. */
-						if ((incoming_wire_label[side_cw][itrack] <= num_wire_muxes[to_side]) ||
-							(nodes_per_chan->y_list[i] != nodes_per_chan->x_list[j])) {
-
-							int mux = get_simple_switch_block_track((enum e_side)side_cw, 
-										(enum e_side)to_side,
-										incoming_wire_label[side_cw][ichan],
-										switch_block_type,
-										num_wire_muxes[to_side]);
-
-							if (sblock_pattern[i][j][side_cw][to_side][itrack][0] == UN_SET) {
-								sblock_pattern[i][j][side_cw][to_side][itrack][0] = mux;
-							} else if (sblock_pattern[i][j][side_cw][to_side][itrack][2] == UN_SET) {
-								sblock_pattern[i][j][side_cw][to_side][itrack][2] = mux;
-							}
-						}
-					} else {
-
-						/* These are passing wires with sblock only for core sblocks
-						 * or passing and ending wires (for fringe cases). */
-						int mux = (side_cw_incoming_wire_count * Fs_per_side)
-								% num_wire_muxes[to_side];
-						sblock_pattern[i][j][side_cw][to_side][itrack][0] = mux;
-						side_cw_incoming_wire_count++;
-					}
-				}
+                    if (sblock_pattern[i][j][side_cw][to_side][itrack][0] == UN_SET) {
+                        sblock_pattern[i][j][side_cw][to_side][itrack][0] = mux;
+                    } else if (sblock_pattern[i][j][side_cw][to_side][itrack][2] == UN_SET) {
+                        sblock_pattern[i][j][side_cw][to_side][itrack][2] = mux;
+                    }
+                }
 			}
 		}
 
-		int side_ccw_incoming_wire_count = 0;
 		if (incoming_wire_label[side_ccw]) {
 			for (int ichan = 0; ichan < nodes_per_chan->max; ichan++) {
 
@@ -2380,36 +2346,18 @@ void load_sblock_pattern_lookup(
 					itrack = ichan % nodes_per_chan->x_list[j];
 				}
 
-				/* not ending wire nor passing wire with sblock */
 				if (incoming_wire_label[side_ccw][itrack] != UN_SET) {
 
-					if ((incoming_wire_label[side_ccw][itrack] < num_ending_wires[side_ccw])
-							&& (is_corner_sblock || is_core_sblock)) {
-						/* The ending wires in core sblocks form N-to-N assignment problem, so can
-						 * use any pattern such as Wilton */
-						if ((incoming_wire_label[side_ccw][itrack] <= num_wire_muxes[to_side]) ||
-							(nodes_per_chan->y_list[i] != nodes_per_chan->x_list[j])) {
-							int mux = get_simple_switch_block_track((enum e_side)side_ccw, 
-										(enum e_side)to_side,
-										incoming_wire_label[side_ccw][ichan],
-										switch_block_type, num_wire_muxes[to_side]);
+                    int mux = get_simple_switch_block_track((enum e_side)side_ccw, 
+                                (enum e_side)to_side,
+                                incoming_wire_label[side_ccw][ichan],
+                                switch_block_type, num_wire_muxes[to_side]);
 
-							if (sblock_pattern[i][j][side_ccw][to_side][itrack][0] == UN_SET) {
-								sblock_pattern[i][j][side_ccw][to_side][itrack][0] = mux;
-							} else if (sblock_pattern[i][j][side_ccw][to_side][itrack][2] == UN_SET) {
-								sblock_pattern[i][j][side_ccw][to_side][itrack][2] = mux;
-							}
-						}
-					} else {
-
-						/* These are passing wires with sblock only for core sblocks
-						 * or passing and ending wires (for fringe cases). */
-						int mux = ((side_ccw_incoming_wire_count + side_cw_incoming_wire_count) 
-								* Fs_per_side)
-								% num_wire_muxes[to_side];
-						sblock_pattern[i][j][side_ccw][to_side][itrack][0] = mux;
-						side_ccw_incoming_wire_count++;
-					}
+                    if (sblock_pattern[i][j][side_ccw][to_side][itrack][0] == UN_SET) {
+                        sblock_pattern[i][j][side_ccw][to_side][itrack][0] = mux;
+                    } else if (sblock_pattern[i][j][side_ccw][to_side][itrack][2] == UN_SET) {
+                        sblock_pattern[i][j][side_ccw][to_side][itrack][2] = mux;
+                    }
 				}
 			}
 		}

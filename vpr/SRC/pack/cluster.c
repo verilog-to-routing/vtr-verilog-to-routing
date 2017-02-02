@@ -4,6 +4,35 @@
  * June 8, 2011
  */
 
+/*
+ * The clusterer uses several key data structures:
+ *
+ *      t_pb_type (and related types):
+ *          Represent the architecture as described in the architecture file.
+ *
+ *      t_pb_graph_node (and related types):
+ *          Represents a flattened version of the architecture with t_pb_types 
+ *          expanded (according to num_pb) into unique t_pb_graph_node instances, 
+ *          and the routing connectivity converted to a graph of t_pb_graph_pin (nodes)
+ *          and t_pb_graph_edge.
+ *
+ *      t_pb:
+ *          Represents a clustered instance of a t_pb_graph_node containing netlist primitives
+ *
+ *  t_pb_type and t_pb_graph_node (and related types) describe the targetted FPGA architecture, while t_pb represents
+ *  the actual clustering of the user netlist.
+ *
+ *  For example:
+ *      Consider an architecture where CLBs contain 4 BLEs, and each BLE is a LUT + FF pair.  
+ *      We wish to map a netlist of 400 LUTs and 400 FFs.
+ *
+ *      A BLE corresponds to one t_pb_type (which has num_pb = 4).
+ *
+ *      Each of the 4 BLE positions corresponds to a t_pb_graph_node (each of which references the BLE t_pb_type).
+ *
+ *      The output of clustering is 400 t_pb of type BLE which represent the clustered user netlist.
+ *      Each of the 400 t_pb will reference one of the 4 BLE-type t_pb_graph_nodes.
+ */
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -1390,16 +1419,17 @@ static enum e_block_pack_status try_place_atom_block_rec(
 			/* is carry chain, must check if this carry chain spans multiple logic blocks or not */
             t_model_ports *root_port = chain_root_pin->port->model_port;
             auto port_id = g_atom_nl.find_port(blk_id, root_port);
-            VTR_ASSERT(port_id);
-            auto chain_net_id = g_atom_nl.port_net(port_id, chain_root_pin->pin_number);
+            if(port_id) {
+                auto chain_net_id = g_atom_nl.port_net(port_id, chain_root_pin->pin_number);
 
-			if(chain_net_id) {
-				/* this carry chain spans multiple logic blocks, must match up correctly with previous chain for this to route */
-				if(pb_graph_node != chain_root_pin->parent_node) {
-					/* this location does not match with the dedicated chain input from outside logic block, therefore not feasible */
-					block_pack_status = BLK_FAILED_FEASIBLE;
-				}
-			}
+                if(chain_net_id) {
+                    /* this carry chain spans multiple logic blocks, must match up correctly with previous chain for this to route */
+                    if(pb_graph_node != chain_root_pin->parent_node) {
+                        /* this location does not match with the dedicated chain input from outside logic block, therefore not feasible */
+                        block_pack_status = BLK_FAILED_FEASIBLE;
+                    }
+                }
+            }
 		}
 	}
 
@@ -2159,6 +2189,10 @@ static t_pack_molecule *get_molecule_for_cluster(
 /* TODO: Add more error checking! */
 static void check_clustering(int num_clb, t_block *clb) {
     std::unordered_set<AtomBlockId> atoms_checked;
+
+    if(num_clb == 0) {
+        vtr::printf_warning(__FILE__, __LINE__, "Packing produced no clustered blocks");
+    }
 
 	/* 
 	 * Check that each atom block connects to one physical primitive and that the primitive links up to the parent clb

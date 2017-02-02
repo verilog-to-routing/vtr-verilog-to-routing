@@ -149,7 +149,7 @@ static bool goto_next_char( int *str_ind, const string &pw_formula, char ch);
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
-void read_sb_wireconns(const t_arch_switch_inf * /*switches*/, int /*num_switches*/, pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data ){
+void read_sb_wireconns(const t_arch_switch_inf * /*switches*/, int /*num_switches*/, pugi::xml_node Node, t_switchblock_inf *sb, const pugiutil::loc_data& loc_data ){
 	
 	/* Make sure that Node is a switchblock */
 	check_node(Node, "switchblock", loc_data);
@@ -270,7 +270,7 @@ static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_
 
 /* Loads permutation funcs specified under Node into t_switchblock_inf. Node should be 
    <switchfuncs> */
-void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugiloc::loc_data& loc_data ){
+void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugiutil::loc_data& loc_data ){
 	
 	/* Make sure the passed-in is correct */
 	check_node(Node, "switchfuncs", loc_data);

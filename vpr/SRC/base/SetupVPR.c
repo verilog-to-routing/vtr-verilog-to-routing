@@ -64,18 +64,13 @@ void SetupVPR(t_options *Options,
               t_power_opts * PowerOpts) {
 	int i, j, len;
 
-	if (!Options->CircuitName) vpr_throw(VPR_ERROR_BLIF_F,__FILE__, __LINE__, "No blif file found in arguments (did you specify an architecture file?)\n");
-	len = strlen(Options->CircuitName) + 6; /* circuit_name.blif/0*/
-	if (Options->out_file_prefix != NULL ) {
-		len += strlen(Options->out_file_prefix);
-	}
-	default_output_name = (char*) vtr::calloc(len, sizeof(char));
-	if (Options->out_file_prefix == NULL ) {
-		sprintf(default_output_name, "%s", Options->CircuitName);
-	} else {
-		sprintf(default_output_name, "%s%s", Options->out_file_prefix,
-				Options->CircuitName);
-	}
+	if (!Options->CircuitName) {
+        vpr_throw(VPR_ERROR_BLIF_F,__FILE__, __LINE__, 
+                  "No blif file found in arguments (did you specify an architecture file?)\n");
+    }
+
+    std::string cct_base_name = vtr::basename(Options->CircuitName);
+    default_output_name = vtr::strdup(cct_base_name.c_str());
 
 	/* init default filenames */
 	if (Options->BlifFile == NULL ) {
@@ -93,30 +88,28 @@ void SetupVPR(t_options *Options,
 	}
 
 	if (Options->NetFile == NULL ) {
-		len = strlen(Options->CircuitName) + 5; /* circuit_name.net/0*/
+		len = strlen(default_output_name) + 5; /* circuit_name.net/0*/
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
 		Options->NetFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->NetFile, "%s.net", Options->CircuitName);
+			sprintf(Options->NetFile, "%s.net", default_output_name);
 		} else {
-			sprintf(Options->NetFile, "%s%s.net", Options->out_file_prefix,
-					Options->CircuitName);
+			sprintf(Options->NetFile, "%s%s.net", Options->out_file_prefix, default_output_name);
 		}
 	}
 
 	if (Options->PlaceFile == NULL ) {
-		len = strlen(Options->CircuitName) + 7; /* circuit_name.place/0*/
+		len = strlen(default_output_name) + 7; /* circuit_name.place/0*/
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
 		Options->PlaceFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->PlaceFile, "%s.place", Options->CircuitName);
+			sprintf(Options->PlaceFile, "%s.place", default_output_name);
 		} else {
-			sprintf(Options->PlaceFile, "%s%s.place", Options->out_file_prefix,
-					Options->CircuitName);
+			sprintf(Options->PlaceFile, "%s%s.place", Options->out_file_prefix, default_output_name);
 		}
 	}
 
@@ -127,37 +120,34 @@ void SetupVPR(t_options *Options,
 		}
 		Options->RouteFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->RouteFile, "%s.route", Options->CircuitName);
+			sprintf(Options->RouteFile, "%s.route", default_output_name);
 		} else {
-			sprintf(Options->RouteFile, "%s%s.route", Options->out_file_prefix,
-					Options->CircuitName);
+			sprintf(Options->RouteFile, "%s%s.route", Options->out_file_prefix, default_output_name);
 		}
 	}
 	if (Options->ActFile == NULL ) {
-		len = strlen(Options->CircuitName) + 7; /* circuit_name.route/0*/
+		len = strlen(default_output_name) + 7; /* circuit_name.route/0*/
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
 		Options->ActFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->ActFile, "%s.act", Options->CircuitName);
+			sprintf(Options->ActFile, "%s.act", default_output_name);
 		} else {
-			sprintf(Options->ActFile, "%s%s.act", Options->out_file_prefix,
-					Options->CircuitName);
+			sprintf(Options->ActFile, "%s%s.act", Options->out_file_prefix, default_output_name);
 		}
 	}
 
 	if (Options->PowerFile == NULL ) {
-		len = strlen(Options->CircuitName) + 7; /* circuit_name.route/0*/
+		len = strlen(default_output_name) + 7; /* circuit_name.route/0*/
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
 		Options->PowerFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->PowerFile, "%s.power", Options->CircuitName);
+			sprintf(Options->PowerFile, "%s.power", default_output_name);
 		} else {
-			sprintf(Options->ActFile, "%s%s.power", Options->out_file_prefix,
-					Options->CircuitName);
+			sprintf(Options->ActFile, "%s%s.power", Options->out_file_prefix, default_output_name);
 		}
 	}
 
@@ -214,8 +204,7 @@ void SetupVPR(t_options *Options,
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
 	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
-	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile,
-			PackerOpts);
+	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile, PackerOpts);
 	RoutingArch->dump_rr_structs_file = Options->dump_rr_structs_file;
 
 	/* init global variables */
@@ -481,6 +470,11 @@ static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
 	RouterOpts->fixed_channel_width = NO_FIXED_CHANNEL_WIDTH; /* DEFAULT */
 	if (Options.Count[OT_ROUTE_CHAN_WIDTH]) {
 		RouterOpts->fixed_channel_width = Options.RouteChanWidth;
+	}
+
+	RouterOpts->min_channel_width_hint = -1; /* DEFAULT */
+	if (Options.Count[OT_MIN_ROUTE_CHAN_WIDTH_HINT]) {
+		RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
 	}
 
 	RouterOpts->trim_empty_channels = false; /* DEFAULT */

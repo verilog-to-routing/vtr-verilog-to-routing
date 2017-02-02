@@ -33,15 +33,15 @@ using namespace std;
 static const char* netlist_file_name = NULL;
 
 static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,		
-        const pugiloc::loc_data& loc_data);
+        const pugiutil::loc_data& loc_data);
 
 static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 		t_pb* pb, t_pb_route *pb_route, int *num_primitives,
-        const pugiloc::loc_data& loc_data);
+        const pugiutil::loc_data& loc_data);
 
 static void processComplexBlock(pugi::xml_node Parent, t_block *cb,
 		const int index, int *num_primitives,
-        const pugiloc::loc_data& loc_data);
+        const pugiutil::loc_data& loc_data);
 
 static struct s_net *alloc_and_init_netlist_from_hash(const int ncount,
 		struct s_hash **nhash);
@@ -93,7 +93,7 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 	vtr::printf_info("Begin loading packed FPGA netlist file.\n");
 
     pugi::xml_document doc;
-    pugiloc::loc_data loc_data;
+    pugiutil::loc_data loc_data;
     try {
         loc_data = pugiutil::load_xml(doc, net_file);
     } catch(pugiutil::XmlError& e) {
@@ -102,78 +102,87 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
     }
 
 
-	/* Save netlist file's name in file-scoped variable */
-	netlist_file_name = net_file;
+    try {
+        /* Save netlist file's name in file-scoped variable */
+        netlist_file_name = net_file;
 
-	/* Root node should be block */
-    auto top = doc.child("block");
-    if(!top) {
-        vpr_throw(VPR_ERROR_NET_F, net_file, loc_data.line(top),
-                  "Root element must be 'block'.\n");
+        /* Root node should be block */
+        auto top = doc.child("block");
+        if(!top) {
+            vpr_throw(VPR_ERROR_NET_F, net_file, loc_data.line(top),
+                      "Root element must be 'block'.\n");
+        }
+
+        /* Check top-level netlist attributes */
+        auto top_name = top.attribute("name");
+        if(!top_name) {
+            vpr_throw(VPR_ERROR_NET_F, net_file, loc_data.line(top),
+                      "Root element must have a 'name' attribute.\n");
+        }
+
+        vtr::printf_info("Netlist generated from file '%s'.\n", top_name.value());
+
+        //Verify top level attributes
+        auto top_instance = pugiutil::get_attribute(top, "instance", loc_data);
+
+        if(strcmp(top_instance.value(), "FPGA_packed_netlist[0]") != 0) {
+            vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top),
+                    "Expected top instance to be \"FPGA_packed_netlist[0]\", found \"%s\".",
+                    top_instance.value());
+        }
+
+        //Collect top level I/Os
+        auto top_inputs = pugiutil::get_single_child(top, "inputs", loc_data);
+        circuit_inputs = vtr::split(top_inputs.text().get());
+
+        auto top_outputs = pugiutil::get_single_child(top, "outputs", loc_data);
+        circuit_outputs = vtr::split(top_outputs.text().get());
+
+        auto top_clocks = pugiutil::get_single_child(top, "clocks", loc_data);
+        circuit_clocks = vtr::split(top_clocks.text().get());
+
+        /* Parse all CLB blocks and all nets*/
+
+        //Reset atom/pb mapping (it is reloaded from the packed netlist file)
+        for(auto blk_id : g_atom_nl.blocks()) {
+            g_atom_map.set_atom_pb(blk_id, NULL);
+        }
+
+        //Count the number of blocks for allocation
+        bcount = pugiutil::count_children(top, "block", loc_data, pugiutil::ReqOpt::OPTIONAL);
+        if(bcount == 0) {
+            vtr::printf_warning(__FILE__, __LINE__, "Packed netlist contains no clustered blocks\n");
+        }
+
+        blist = (struct s_block *) vtr::calloc(bcount, sizeof(t_block));
+
+        /* Process netlist */
+
+        i = 0;
+        for(auto curr_block = top.child("block"); curr_block; curr_block = curr_block.next_sibling("block")) {
+            processComplexBlock(curr_block, blist, i, &num_primitives, loc_data);
+            i++;
+        }
+        VTR_ASSERT(i == bcount);
+        VTR_ASSERT(num_primitives >= 0);
+        VTR_ASSERT(static_cast<size_t>(num_primitives) == g_atom_nl.blocks().size());
+
+        /* Error check */
+        for(auto blk_id : g_atom_nl.blocks()) {
+            if (g_atom_map.atom_pb(blk_id) == NULL) {
+                vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
+                        ".blif file and .net file do not match, .net file missing atom %s.\n",
+                        g_atom_nl.block_name(blk_id).c_str());
+            }
+        }
+        /* TODO: Add additional check to make sure net connections match */
+
+        mark_constant_generators(bcount, blist);
+        load_external_nets_and_cb(bcount, blist, &ext_ncount, &ext_nlist, circuit_clocks);
+    } catch(pugiutil::XmlError& e) {
+        vpr_throw(VPR_ERROR_NET_F, e.filename_c_str(), e.line(),
+                  "Error loading post-pack netlist (%s)", e.what());
     }
-
-	/* Check top-level netlist attributes */
-    auto top_name = top.attribute("name");
-    if(!top_name) {
-        vpr_throw(VPR_ERROR_NET_F, net_file, loc_data.line(top),
-                  "Root element must have a 'name' attribute.\n");
-    }
-
-	vtr::printf_info("Netlist generated from file '%s'.\n", top_name.value());
-
-    //Verify top level attributes
-    auto top_instance = pugiutil::get_attribute(top, "instance", loc_data);
-
-    if(strcmp(top_instance.value(), "FPGA_packed_netlist[0]") != 0) {
-		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top),
-				"Expected top instance to be \"FPGA_packed_netlist[0]\", found \"%s\".",
-				top_instance.value());
-    }
-
-    //Collect top level I/Os
-    auto top_inputs = pugiutil::get_single_child(top, "inputs", loc_data);
-    circuit_inputs = vtr::split(top_inputs.text().get());
-
-    auto top_outputs = pugiutil::get_single_child(top, "outputs", loc_data);
-    circuit_outputs = vtr::split(top_outputs.text().get());
-
-    auto top_clocks = pugiutil::get_single_child(top, "clocks", loc_data);
-    circuit_clocks = vtr::split(top_clocks.text().get());
-
-	/* Parse all CLB blocks and all nets*/
-
-    //Count the number of blocks for allocation
-    bcount = pugiutil::count_children(top, "block", loc_data);
-	blist = (struct s_block *) vtr::calloc(bcount, sizeof(t_block));
-
-    //Reset atom/pb mapping (it is reloaded from the packed netlist file)
-    for(auto blk_id : g_atom_nl.blocks()) {
-        g_atom_map.set_atom_pb(blk_id, NULL);
-    }
-
-	/* Process netlist */
-
-    i = 0;
-    for(auto curr_block = top.child("block"); curr_block; curr_block = curr_block.next_sibling("block")) {
-        processComplexBlock(curr_block, blist, i, &num_primitives, loc_data);
-        i++;
-    }
-	VTR_ASSERT(i == bcount);
-    VTR_ASSERT(num_primitives > 0);
-	VTR_ASSERT(static_cast<size_t>(num_primitives) == g_atom_nl.blocks().size());
-
-	/* Error check */
-    for(auto blk_id : g_atom_nl.blocks()) {
-		if (g_atom_map.atom_pb(blk_id) == NULL) {
-			vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-					".blif file and .net file do not match, .net file missing atom %s.\n",
-					g_atom_nl.block_name(blk_id).c_str());
-		}
-	}
-	/* TODO: Add additional check to make sure net connections match */
-
-	mark_constant_generators(bcount, blist);
-	load_external_nets_and_cb(bcount, blist, &ext_ncount, &ext_nlist, circuit_clocks);
 
 	/* TODO: create this function later
 	 check_top_IO_matches_IO_blocks(circuit_inputs, circuit_outputs, circuit_clocks, blist, bcount);
@@ -217,7 +226,7 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
  */
 static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 		const int index, int *num_primitives,
-        const pugiloc::loc_data& loc_data) {
+        const pugiutil::loc_data& loc_data) {
 
 	bool found;
 	int num_tokens = 0;
@@ -302,7 +311,7 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
  */
 static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 	t_pb* pb, t_pb_route *pb_route, int *num_primitives,
-    const pugiloc::loc_data& loc_data) {
+    const pugiutil::loc_data& loc_data) {
 	int i, j, pb_index;
 	bool found;
 	const t_pb_type *pb_type;
@@ -499,7 +508,7 @@ static int add_net_to_hash(struct s_hash **nhash, const char *net_name,
 }
 
 static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
-        const pugiloc::loc_data& loc_data) {
+        const pugiutil::loc_data& loc_data) {
 
 	int i, j, in_port, out_port, clock_port, num_tokens;
     std::vector<std::string> pins;

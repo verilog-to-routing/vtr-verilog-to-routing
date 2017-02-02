@@ -40,7 +40,7 @@ using namespace std;
 
 static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		char *place_file, char *net_file, char *arch_file, char *route_file,
-		bool full_stats, bool verify_binary_search,
+		bool full_stats, bool verify_binary_search, int min_chan_width_hint,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
@@ -117,8 +117,9 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 	if (NO_FIXED_CHANNEL_WIDTH == width_fac) {
         //Binary search for the min channel width
 		g_solution_inf.channel_width = binary_search_place_and_route(placer_opts, place_file, net_file,
-				arch_file, route_file, router_opts.full_stats,
-				router_opts.verify_binary_search, annealing_sched, router_opts,
+				arch_file, route_file, 
+                router_opts.full_stats, router_opts.verify_binary_search, router_opts.min_channel_width_hint,
+                annealing_sched, router_opts,
 				det_routing_arch, segment_inf, timing_inf, chan_width_dist,
 				directs, num_directs);
 		success = (g_solution_inf.channel_width > 0 ? true : false);
@@ -227,7 +228,7 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 
 static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		char *place_file, char *net_file, char *arch_file, char *route_file,
-		bool full_stats, bool verify_binary_search,
+		bool full_stats, bool verify_binary_search, int min_chan_width_hint,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
@@ -245,6 +246,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	char msg[vtr::BUFSIZE];
 	float **net_delay = NULL;
 	t_slack * slacks = NULL;
+    bool using_minw_hint = false;
 
 	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
@@ -278,18 +280,28 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	slacks = alloc_and_load_timing_graph(timing_inf);
 	net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
-	/* UDSD by AY Start */
 	if (det_routing_arch->directionality == BI_DIRECTIONAL)
 		udsd_multiplier = 1;
 	else
 		udsd_multiplier = 2;
-	/* UDSD by AY End */
 
 	if (router_opts.fixed_channel_width != NO_FIXED_CHANNEL_WIDTH) {
 		current = router_opts.fixed_channel_width + 5 * udsd_multiplier;
 		low = router_opts.fixed_channel_width - 1 * udsd_multiplier;
 	} else {
-		current = max_pins_per_clb + max_pins_per_clb % 2; /* Binary search part */
+        /* Initialize binary serach guess */
+
+        if(min_chan_width_hint > 0) {
+            //If the user provided a hint use it as the initial guess
+            vtr::printf("Initializing minimum channel width search using specified hint\n");
+            current = min_chan_width_hint;
+            using_minw_hint = true;
+        } else {
+            //Otherwise base it off the architecture
+            vtr::printf("Initializing minimum channel width search based on maximum CLB pins\n");
+            current = max_pins_per_clb + max_pins_per_clb % 2;
+        }
+
 		low = -1;
 	}
 
@@ -297,7 +309,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
 		if (current % 2 != 0) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-					"in pack_place_and_route.c: Tried odd chan width (%d) for udsd architecture.\n",
+					"Tried odd chan width (%d) in uni-directional routing architecture (chan width must be even).\n",
 					current);
 		}
 	} else {
@@ -306,11 +318,13 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 					"Fs must be three in bidirectional mode.\n");
 		}
 	}
+    VTR_ASSERT(current > 0);
 
 	high = -1;
 	final = -1;
 
 	attempt_count = 0;
+
 
 	while (final == -1) {
 
@@ -352,14 +366,10 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 				clb_opins_used_locally, directs, num_directs);
 		attempt_count++;
 		fflush(stdout);
-#if 1
-		if (success && (Fc_clipped == false)) {
-#else
-			if (success
-					&& (Fc_clipped == false
-							|| det_routing_arch->Fc_type == FRACTIONAL))
-			{
-#endif
+
+        float scale_factor = 2;
+
+		if (success && !Fc_clipped) {
 			if (current == high) {
 				/* Can't go any lower */
 				final = current;
@@ -372,25 +382,29 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 						"Fc_output was too high and was clipped to full (maximum) connectivity.\n");
 			}
 
-			/* If we're re-placing constantly, save placement in case it is best. */
-#if 0
-			if (placer_opts.place_freq == PLACE_ALWAYS)
-			{
-				print_place(place_file, net_file, arch_file);
-			}
-#endif
-
 			/* Save routing in case it is best. */
-			save_routing(best_routing, clb_opins_used_locally,
-					saved_clb_opins_used_locally);
+			save_routing(best_routing, clb_opins_used_locally, saved_clb_opins_used_locally);
+
+            //If the user gave us a minW hint (and we routed successfully at that width)
+            //make the initial guess closer to the current value instead of the standard guess. 
+            //
+            //To avoid wasting time at unroutable channel widths we want to determine an un-routable (but close
+            //to the hint channel width). Picking a value too far below the hint may cause us to waste time
+            //at an un-routable channel width.  Picking a value too close to the hint may cause a spurious
+            //failure (c.f. verify_binary_search). The scale_factor below seems a reasonable compromise.
+            //
+            //Note this is only active for only the first re-routing after the initial guess, 
+            //and we use the default scale_factor otherwise
+            if(using_minw_hint && attempt_count == 1) {
+                scale_factor = 1.1;
+            }
 
 			if ((high - low) <= 1 * udsd_multiplier)
 				final = high;
-
 			if (low != -1) {
-				current = (high + low) / 2;
+				current = (high + low) / scale_factor;
 			} else {
-				current = high / 2; /* haven't found lower bound yet */
+				current = high / scale_factor; /* haven't found lower bound yet */
 			}
 		} else { /* last route not successful */
 			if (success && Fc_clipped) {
@@ -403,7 +417,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 				if ((high - low) <= 1 * udsd_multiplier)
 					final = high;
 
-				current = (high + low) / 2;
+				current = (high + low) / scale_factor;
 			} else {
 				if (router_opts.fixed_channel_width != NO_FIXED_CHANNEL_WIDTH) {
 					/* FOR Wneed = f(Fs) search */
@@ -414,7 +428,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 								"Aborting: Wneed = f(Fs) search found exceedingly large Wneed (at least %d).\n", low);
 					}
 				} else {
-					current = low * 2; /* Haven't found upper bound yet */
+					current = low * scale_factor; /* Haven't found upper bound yet */
 				}
 			}
 		}

@@ -220,7 +220,6 @@ bool operator<(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentine
 
 //Specialize std::hash for StrongId's (needed for std::unordered_map-like containers)
 namespace std {
-    template<>
     template<typename tag, typename T, T sentinel>
     struct hash<vtr::StrongId<tag,T,sentinel>> {
         std::size_t operator()(const vtr::StrongId<tag,T,sentinel> k) const {

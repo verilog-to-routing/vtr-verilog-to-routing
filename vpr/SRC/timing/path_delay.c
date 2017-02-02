@@ -216,8 +216,6 @@ static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pi
 
 static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, int **lookup_tnode_from_pin_id);
 
-static inline int get_tnode_index(t_tnode * node);
-
 static inline bool has_valid_T_arr(int inode);
 
 static inline bool has_valid_T_req(int inode);
@@ -424,13 +422,12 @@ void free_timing_graph(t_slack * slacks) {
 	int inode;
 
 	if (tedge_ch.chunk_ptr_head == NULL) {
-		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-				"in free_timing_graph: No timing graph to free.\n");
+        vtr::printf_warning(__FILE__, __LINE__, "in free_timing_graph: No timing graph to free.\n");
 	}
 
 	free_chunk_memory(&tedge_ch);
 
-	if (tnode[0].prepacked_data) {
+	if (tnode != nullptr && tnode[0].prepacked_data) {
 		/* If we allocated prepacked_data for the first node, 
 		it must be allocated for all other nodes too. */
 		for (inode = 0; inode < num_tnodes; inode++) {
@@ -1105,14 +1102,15 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			model_port = model->outputs;
 			while (model_port) {
                 AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port);
-                VTR_ASSERT(port_id);
-                //Add tnodes for each output pin
-				for (int k = 0; k < model_port->size; k++) {
-                    if(g_atom_nl.port_pin(port_id, k)) {
-						num_tnodes += incr;
-					}
-				}
-				j++;
+                if (port_id) {
+                    //Add tnodes for each output pin
+                    for (int k = 0; k < model_port->size; k++) {
+                        if(g_atom_nl.port_pin(port_id, k)) {
+                            num_tnodes += incr;
+                        }
+                    }
+                    j++;
+                }
 				model_port = model_port->next;
 			}
 		}
@@ -1215,102 +1213,105 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
 			while (model_port) {
 
                 AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port);
-                VTR_ASSERT(port_id);
 
-				if (model_port->is_clock == false) {
-                    //A non-clock output
-                    for (int k = 0; k < model_port->size; k++) {
-                        auto pin_id = g_atom_nl.port_pin(port_id, k);
-                        if (pin_id) {
-                            //Look-ups 
-                            g_atom_map.set_atom_pin_tnode(pin_id, inode);
+                if(port_id) {
 
-                            //The pin's associated net
-                            auto net_id = g_atom_nl.pin_net(pin_id);
+                    if (model_port->is_clock == false) {
+                        //A non-clock output
+                        for (int k = 0; k < model_port->size; k++) {
+                            auto pin_id = g_atom_nl.port_pin(port_id, k);
+                            if (pin_id) {
+                                //Look-ups 
+                                g_atom_map.set_atom_pin_tnode(pin_id, inode);
 
-                            //The first tnode
-                            tnode[inode].prepacked_data->model_pin = k;
-                            tnode[inode].prepacked_data->model_port = j;
-                            tnode[inode].prepacked_data->model_port_ptr = model_port;
-                            tnode[inode].block = OPEN;
-                            tnode[inode].num_edges = g_atom_nl.net_sinks(net_id).size();
-                            tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc( tnode[inode].num_edges * sizeof(t_tedge), &tedge_ch);
+                                //The pin's associated net
+                                auto net_id = g_atom_nl.pin_net(pin_id);
 
-                            if (g_atom_nl.block_type(blk_id) == AtomBlockType::COMBINATIONAL) {
-                                //Non-sequentail block so only a single OPIN tnode
-                                tnode[inode].type = TN_PRIMITIVE_OPIN;
+                                //The first tnode
+                                tnode[inode].prepacked_data->model_pin = k;
+                                tnode[inode].prepacked_data->model_port = j;
+                                tnode[inode].prepacked_data->model_port_ptr = model_port;
+                                tnode[inode].block = OPEN;
+                                tnode[inode].num_edges = g_atom_nl.net_sinks(net_id).size();
+                                tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc( tnode[inode].num_edges * sizeof(t_tedge), &tedge_ch);
 
-                                inode++;
-                            } else {
-                                VTR_ASSERT(g_atom_nl.block_type(blk_id) == AtomBlockType::SEQUENTIAL);
-                                //A sequential block, so the first tnode was an FF_OPIN
-                                tnode[inode].type = TN_FF_OPIN;
+                                if (g_atom_nl.block_type(blk_id) == AtomBlockType::COMBINATIONAL) {
+                                    //Non-sequentail block so only a single OPIN tnode
+                                    tnode[inode].type = TN_PRIMITIVE_OPIN;
 
-                                //The second tnode is the FF_SOURCE
-                                tnode[inode + 1].type = TN_FF_SOURCE;
-                                tnode[inode + 1].block = OPEN;
+                                    inode++;
+                                } else {
+                                    VTR_ASSERT(g_atom_nl.block_type(blk_id) == AtomBlockType::SEQUENTIAL);
+                                    //A sequential block, so the first tnode was an FF_OPIN
+                                    tnode[inode].type = TN_FF_OPIN;
 
-                                //Initialize the edge between SOURCE and OPIN with the clk-to-q delay
+                                    //The second tnode is the FF_SOURCE
+                                    tnode[inode + 1].type = TN_FF_SOURCE;
+                                    tnode[inode + 1].block = OPEN;
+
+                                    //Initialize the edge between SOURCE and OPIN with the clk-to-q delay
+                                    auto iter = expected_lowest_cost_pb_gnode.find(blk_id);
+                                    VTR_ASSERT(iter != expected_lowest_cost_pb_gnode.end());
+
+                                    from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
+                                                            iter->second);
+                                    tnode[inode + 1].num_edges = 1;
+                                    tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
+                                    tnode[inode + 1].out_edges->to_node = inode;
+                                    tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco; //Set the clk-to-Q delay
+
+                                    inode += 2;
+                                }
+                            }
+                        }
+                    } else {
+                        //An output clock port, meaning a clock source (e.g. PLL output)
+
+                        //For every non-empty pin on the clock port create a clock pin and clock source tnode
+                        for (int k = 0; k < model_port->size; k++) {
+                            auto pin_id = g_atom_nl.port_pin(port_id, k);
+                            if (pin_id) {
+                                //Look-ups
+                                g_atom_map.set_atom_pin_tnode(pin_id, inode);
+
+                                //Create the OPIN
+                                tnode[inode].type = TN_CLOCK_OPIN;
+
+                                tnode[inode].prepacked_data->model_pin = k;
+                                tnode[inode].prepacked_data->model_port = j;
+                                tnode[inode].prepacked_data->model_port_ptr = model_port;
+                                tnode[inode].block = OPEN;
+
+                                //Allocate space for the output edges
+                                auto net_id = g_atom_nl.pin_net(pin_id);
+                                tnode[inode].num_edges = g_atom_nl.net_sinks(net_id).size();
+                                tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc( tnode[inode].num_edges * sizeof(t_tedge), &tedge_ch);
+
+
+                                //Create the clock SOURCE
                                 auto iter = expected_lowest_cost_pb_gnode.find(blk_id);
                                 VTR_ASSERT(iter != expected_lowest_cost_pb_gnode.end());
 
-                                from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, iter->second);
+                                from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
+                                                        iter->second);
+                                tnode[inode + 1].type = TN_CLOCK_SOURCE;
+                                tnode[inode + 1].block = OPEN;
                                 tnode[inode + 1].num_edges = 1;
+                                tnode[inode + 1].prepacked_data->model_pin = k;
+                                tnode[inode + 1].prepacked_data->model_port = j;
+                                tnode[inode + 1].prepacked_data->model_port_ptr = model_port;
+
+                                //Initialize the edge between them
                                 tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
                                 tnode[inode + 1].out_edges->to_node = inode;
-                                tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco; //Set the clk-to-Q delay
+                                tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco; //PLL output delay? Not clear what this reallly means... perhaps clock insertion delay from PLL?
 
                                 inode += 2;
                             }
                         }
                     }
-                } else {
-                    //An output clock port, meaning a clock source (e.g. PLL output)
-
-                    //For every non-empty pin on the clock port create a clock pin and clock source tnode
-                    for (int k = 0; k < model_port->size; k++) {
-                        auto pin_id = g_atom_nl.port_pin(port_id, k);
-                        if (pin_id) {
-                            //Look-ups
-                            g_atom_map.set_atom_pin_tnode(pin_id, inode);
-
-                            //Create the OPIN
-                            tnode[inode].type = TN_CLOCK_OPIN;
-
-                            tnode[inode].prepacked_data->model_pin = k;
-                            tnode[inode].prepacked_data->model_port = j;
-                            tnode[inode].prepacked_data->model_port_ptr = model_port;
-                            tnode[inode].block = OPEN;
-
-                            //Allocate space for the output edges
-                            auto net_id = g_atom_nl.pin_net(pin_id);
-                            tnode[inode].num_edges = g_atom_nl.net_sinks(net_id).size();
-                            tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc( tnode[inode].num_edges * sizeof(t_tedge), &tedge_ch);
-
-
-                            //Create the clock SOURCE
-                            auto iter = expected_lowest_cost_pb_gnode.find(blk_id);
-                            VTR_ASSERT(iter != expected_lowest_cost_pb_gnode.end());
-
-                            from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
-                                                    iter->second);
-                            tnode[inode + 1].type = TN_CLOCK_SOURCE;
-                            tnode[inode + 1].block = OPEN;
-                            tnode[inode + 1].num_edges = 1;
-                            tnode[inode + 1].prepacked_data->model_pin = k;
-                            tnode[inode + 1].prepacked_data->model_port = j;
-                            tnode[inode + 1].prepacked_data->model_port_ptr = model_port;
-
-                            //Initialize the edge between them
-                            tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
-                            tnode[inode + 1].out_edges->to_node = inode;
-                            tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco; //PLL output delay? Not clear what this reallly means... perhaps clock insertion delay from PLL?
-
-                            inode += 2;
-                        }
-                    }
                 }
-				j++;
+                j++;
 				model_port = model_port->next;
 			}
 
@@ -1361,27 +1362,28 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                         //Find the tnode associated with the sink port & pin
                                         auto sink_blk_id = blk_id; //Within a single atom, so the source and sink blocks are the same
                                         auto sink_port_id = g_atom_nl.find_port(sink_blk_id, to_pb_graph_pin->port->model_port);
-                                        VTR_ASSERT(sink_port_id);
-                                        auto sink_pin_id = g_atom_nl.port_pin(sink_port_id, to_pb_graph_pin->pin_number);
-                                        if(sink_pin_id) {
-                                            //Pin is in use
+                                        if(sink_port_id) {
+                                            auto sink_pin_id = g_atom_nl.port_pin(sink_port_id, to_pb_graph_pin->pin_number);
+                                            if(sink_pin_id) {
+                                                //Pin is in use
 
-                                            int to_node = g_atom_map.atom_pin_tnode(sink_pin_id);
-                                            VTR_ASSERT(to_node != OPEN);
+                                                int to_node = g_atom_map.atom_pin_tnode(sink_pin_id);
+                                                VTR_ASSERT(to_node != OPEN);
 
-                                            //Skip pins with no connections
-                                            if(!sink_pin_id) {
-                                                continue;
+                                                //Skip pins with no connections
+                                                if(!sink_pin_id) {
+                                                    continue;
+                                                }
+
+                                                //Mark the delay
+                                                tnode[inode].out_edges[count].Tdel = from_pb_graph_pin->pin_timing_del_max[m];
+
+                                                VTR_ASSERT(tnode[to_node].type == TN_PRIMITIVE_OPIN);
+
+                                                tnode[inode].out_edges[count].to_node = to_node;
+
+                                                count++;
                                             }
-
-                                            //Mark the delay
-                                            tnode[inode].out_edges[count].Tdel = from_pb_graph_pin->pin_timing_del_max[m];
-
-                                            VTR_ASSERT(tnode[to_node].type == TN_PRIMITIVE_OPIN);
-
-                                            tnode[inode].out_edges[count].to_node = to_node;
-
-                                            count++;
                                         }
                                     }
                                     //Mark the number of used edges (note that this may be less than the number allocated, since
@@ -1795,7 +1797,11 @@ static void process_constraints(void) {
 		}
 
 		/* Set arrival times for each top-level tnode on this clock domain. */
-		num_at_level = tnodes_at_level[0].nelem;	
+        if(tnodes_at_level) {
+            num_at_level = tnodes_at_level[0].nelem;	
+        } else {
+            num_at_level = 0;
+        }
 		for (i = 0; i < num_at_level; i++) {
 			inode = tnodes_at_level[0].list[i];
 			if (tnode[inode].clock_domain == source_clock_domain) {
@@ -3184,7 +3190,11 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 
 	/* First, visit all TN_INPAD_SOURCE and TN_CLOCK_SOURCE tnodes 
      * We only need to check the first level of the timing graph, since all SOURCEs should appear there*/
-    num_at_level = tnodes_at_level[0].nelem; /* There are num_at_level top-level tnodes. */
+    if(tnodes_at_level) {
+        num_at_level = tnodes_at_level[0].nelem; /* There are num_at_level top-level tnodes. */
+    } else {
+        num_at_level = 0;
+    }
     for(i = 0; i < num_at_level; i++) {
         inode = tnodes_at_level[0].list[i];	/* Iterate through each tnode. inode is the index of the tnode in the array tnode. */
 		if (tnode[inode].type == TN_INPAD_SOURCE || tnode[inode].type == TN_CLOCK_SOURCE) {	/* See if this node is the start of an I/O pad, or a clock source. */			
@@ -3475,12 +3485,6 @@ static int find_cf_constraint(const char * source_clock_name, const char * sink_
 		}
 	}
 	return -1;
-}
-
-static inline int get_tnode_index(t_tnode * node) {
-	/* Returns the index of pointer_to_tnode in the array tnode [0..num_tnodes - 1]
-	using pointer arithmetic. */
-	return node - tnode;
 }
 
 static inline bool has_valid_T_arr(int inode) {

@@ -27,7 +27,7 @@ void* malloc(size_t size) {
 		return NULL ;
 	}
 
-	if ((ret = std::malloc(size)) == NULL ) {
+	if ((ret = std::malloc(size)) == NULL && size != 0) {
 		throw VtrError("Unable to malloc memory.", __FILE__, __LINE__);
 	}
 	return (ret);
@@ -37,7 +37,7 @@ void* realloc(void *ptr, size_t size) {
 	void *ret;
 
 	ret = std::realloc(ptr, size);
-	if (NULL == ret) {
+	if (NULL == ret && size != 0) {
 		throw VtrError(string_fmt("Unable to realloc memory (ptr=%p, size=%d).", ptr, size),
                         __FILE__, __LINE__);
 	}

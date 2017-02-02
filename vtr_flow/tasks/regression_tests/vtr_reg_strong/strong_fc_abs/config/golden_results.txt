@@ -1,0 +1,2 @@
+arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
+k6_N10_mem32K_40nm_fc_abs.xml	stereovision3.v	80beecf-dirty	success	18	2.7056	0.095324	0.124366	0.321324	0.024363	728	-1	-1	-1	293	323	128	20	11	30	0	0		

@@ -1023,24 +1023,28 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 		while (cur_pack_pattern_connection != NULL && success == true) {
 			if (cur_pack_pattern_connection->from_block == current_pattern_block) {
 				/* find net corresponding to pattern */
-                auto port_id = g_atom_nl.find_port(blk_id, cur_pack_pattern_connection->from_pin->port->model_port);
-                VTR_ASSERT(port_id);
-				ipin = cur_pack_pattern_connection->from_pin->pin_number;
-                auto net_id = g_atom_nl.port_net(port_id, ipin);
+                AtomPortId port_id = g_atom_nl.find_port(blk_id, cur_pack_pattern_connection->from_pin->port->model_port);
+                if(!port_id) {
+                    //No matching port, we may be at the end
+                    success = is_block_optional[cur_pack_pattern_connection->to_block->block_id];
+                } else {
+                    ipin = cur_pack_pattern_connection->from_pin->pin_number;
+                    AtomNetId net_id = g_atom_nl.port_net(port_id, ipin);
 
-				/* Check if net is valid */
-				if (!net_id || g_atom_nl.net_sinks(net_id).size() != 1) { /* One fanout assumption */
-					success = is_block_optional[cur_pack_pattern_connection->to_block->block_id];
-				} else {
-                    auto net_sinks = g_atom_nl.net_sinks(net_id);
-                    VTR_ASSERT(net_sinks.size() == 1);
+                    /* Check if net is valid */
+                    if (!net_id || g_atom_nl.net_sinks(net_id).size() != 1) { /* One fanout assumption */
+                        success = is_block_optional[cur_pack_pattern_connection->to_block->block_id];
+                    } else {
+                        auto net_sinks = g_atom_nl.net_sinks(net_id);
+                        VTR_ASSERT(net_sinks.size() == 1);
 
-                    auto sink_pin_id = *net_sinks.begin();
-                    auto sink_blk_id = g_atom_nl.pin_block(sink_pin_id);
+                        auto sink_pin_id = *net_sinks.begin();
+                        auto sink_blk_id = g_atom_nl.pin_block(sink_pin_id);
 
-					success = try_expand_molecule(molecule, atom_molecules, sink_blk_id,
-                                cur_pack_pattern_connection->to_block);
-				}
+                        success = try_expand_molecule(molecule, atom_molecules, sink_blk_id,
+                                    cur_pack_pattern_connection->to_block);
+                    }
+                }
 			} else {
 				VTR_ASSERT(cur_pack_pattern_connection->to_block == current_pattern_block);
 				/* find net corresponding to pattern */
@@ -1237,12 +1241,17 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 	/* Assign driver furthest up the chain that matches the root node and is unassigned to a molecule as the root */
 	model_port = root_ipin->port->model_port;
 
-    auto port_id = g_atom_nl.find_port(blk_id, model_port);
-    VTR_ASSERT(port_id);
+    AtomPortId port_id = g_atom_nl.find_port(blk_id, model_port);
+    if(!port_id) {
+        //There is no port with the chain connection on this block, it must be the furthest
+        //up the chain, so return it as root
+        return blk_id;
+    }
 
 	AtomNetId driving_net_id = g_atom_nl.port_net(port_id, root_ipin->pin_number);
 	if(!driving_net_id) {
-		/* The current block is the furthest up the chain, return it */
+        //There is no net associated with the chain connection on this block, it must be the furthest
+        //up the chain, so return it as root
 		return blk_id;
 	}
 

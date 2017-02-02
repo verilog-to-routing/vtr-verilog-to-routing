@@ -29,7 +29,7 @@ InstPort::InstPort(std::string str) {
     }
 }
 
-InstPort::InstPort(pugi::xml_attribute attr, pugi::xml_node node, const pugiloc::loc_data& loc_data) {
+InstPort::InstPort(pugi::xml_attribute attr, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
 
     try {
         *this = InstPort(attr.value());
@@ -130,7 +130,7 @@ void archfpga_throw(const char* filename, int line, const char* fmt, ...) {
 
 
 void bad_tag(const pugi::xml_node node,
-                const pugiloc::loc_data& loc_data,
+                const pugiutil::loc_data& loc_data,
                 const pugi::xml_node parent_node,
                 const std::vector<std::string> expected_tags) {
 
@@ -165,7 +165,7 @@ void bad_tag(const pugi::xml_node node,
 
 void bad_attribute(const pugi::xml_attribute attr,
                 const pugi::xml_node node,
-                const pugiloc::loc_data& loc_data,
+                const pugiutil::loc_data& loc_data,
                 const std::vector<std::string> expected_attributes) {
 
     std::string msg = "Unexpected attribute ";
@@ -199,7 +199,7 @@ void bad_attribute(const pugi::xml_attribute attr,
 
 void bad_attribute_value(const pugi::xml_attribute attr,
                 const pugi::xml_node node,
-                const pugiloc::loc_data& loc_data,
+                const pugiutil::loc_data& loc_data,
                 const std::vector<std::string> expected_values) {
 
     std::string msg = "Invalid value '";

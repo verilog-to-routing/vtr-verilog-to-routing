@@ -85,6 +85,7 @@ struct s_options {
 	float bend_cost;
 	enum e_route_type RouteType;
 	int RouteChanWidth;
+	int min_route_chan_width_hint; //Hint to binary search router about what the min chan width is
 	bool TrimEmptyChan;
 	bool TrimObsChan;
 	enum e_router_algorithm RouterAlgorithm;
