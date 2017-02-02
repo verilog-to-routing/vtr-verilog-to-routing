@@ -343,7 +343,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/* TODO: This is memory inefficient, fix if causes problems */
 	clb = (t_block*)vtr::calloc(g_atom_nl.blocks().size(), sizeof(t_block));
 	num_clb = 0;
-	clb_inter_blk_nets = (t_lb_net_stats*) vtr::calloc(g_atom_nl.blocks().size(), sizeof(t_lb_net_stats));
+	clb_inter_blk_nets = new t_lb_net_stats[g_atom_nl.blocks().size()];
 
 	istart = NULL;
 
@@ -675,7 +675,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				num_used_instances_type[clb[num_clb - 1].type->index]--;
                 revalid_molecules(clb[num_clb - 1].pb, atom_molecules);
 				free_pb(clb[num_clb - 1].pb);
-				free(clb[num_clb - 1].pb);
+				delete clb[num_clb - 1].pb;
 				free(clb[num_clb - 1].name);
 				clb[num_clb - 1].name = NULL;
 				clb[num_clb - 1].pb = NULL;
@@ -711,7 +711,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		free_pb(clb[i].pb);
 		free(clb[i].name);
 		free(clb[i].nets);
-		free(clb[i].pb);
+		delete clb[i].pb;
 	}
 	free(clb);
 
@@ -729,7 +729,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	free (primitives_list);
 	if(clb_inter_blk_nets != NULL) {
-	   free(clb_inter_blk_nets);
+	   delete[] clb_inter_blk_nets;
 	   clb_inter_blk_nets = NULL;
 	}
 
@@ -1176,8 +1176,7 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	pb->pb_stats->lookahead_input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
 	pb->pb_stats->lookahead_output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
 	pb->pb_stats->num_feasible_blocks = NOT_VALID;
-	pb->pb_stats->feasible_blocks = (t_pack_molecule**) vtr::calloc(
-			AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, sizeof(t_pack_molecule *));
+	pb->pb_stats->feasible_blocks = (t_pack_molecule**) vtr::calloc(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, sizeof(t_pack_molecule *));
 
 	pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
 	for (i = 0; i < pb->pb_graph_node->num_input_pin_class; i++) {
@@ -1363,10 +1362,10 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
 		set_reset_pb_modes(router_data, parent_pb, true);
         const t_mode* mode = &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode];
-		parent_pb->child_pbs = (t_pb **) vtr::calloc( mode->num_pb_type_children, sizeof(t_pb *));
+        parent_pb->child_pbs = new t_pb*[mode->num_pb_type_children];
 
 		for (i = 0; i < mode->num_pb_type_children; i++) {
-			parent_pb->child_pbs[i] = (t_pb *) vtr::calloc( mode->pb_type_children[i].num_pb, sizeof(t_pb));
+            parent_pb->child_pbs[i] = new t_pb[mode->pb_type_children[i].num_pb];
 
 			for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
 				parent_pb->child_pbs[i][j].parent_pb = parent_pb;
@@ -1903,7 +1902,7 @@ static void start_new_cluster(
 				if (new_cluster->type == EMPTY_TYPE) {
 					continue;
 				}
-				new_cluster->pb = (t_pb*)vtr::calloc(1, sizeof(t_pb));
+				new_cluster->pb = new t_pb;
 				new_cluster->pb->pb_graph_node = new_cluster->type->pb_graph_head;
 				alloc_and_load_pb_stats(new_cluster->pb);
 				new_cluster->pb->parent_pb = NULL;
@@ -1925,8 +1924,8 @@ static void start_new_cluster(
 					break;
 				} else {
 					free_router_data(*router_data);
-					free_pb_stats(new_cluster->pb);
-					free(new_cluster->pb);
+					free_pb(new_cluster->pb);
+					delete new_cluster->pb;
 					*router_data = NULL;
 				}
 				count++;

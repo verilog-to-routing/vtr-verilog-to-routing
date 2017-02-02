@@ -749,6 +749,48 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin) {
 	return NULL;
 }
 
+const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name) {
+    const t_pb_graph_pin* gpin = find_pb_graph_pin(pb_gnode, port_name, 0);
+
+    if(gpin != nullptr) {
+        return gpin->port;
+    }
+    return nullptr;
+}
+
+const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index) {
+	for(int iport = 0; iport < pb_gnode->num_input_ports; iport++) {
+        if(pb_gnode->num_input_pins[iport] < index) continue;
+
+        const t_pb_graph_pin* gpin = &pb_gnode->input_pins[iport][index];
+
+        if(gpin->port->name == port_name) {
+            return gpin;
+        }
+    }
+	for(int iport = 0; iport < pb_gnode->num_output_ports; iport++) {
+        if(pb_gnode->num_output_pins[iport] < index) continue;
+
+        const t_pb_graph_pin* gpin = &pb_gnode->output_pins[iport][index];
+
+        if(gpin->port->name == port_name) {
+            return gpin;
+        }
+    }
+	for(int iport = 0; iport < pb_gnode->num_clock_ports; iport++) {
+        if(pb_gnode->num_clock_pins[iport] < index) continue;
+
+        const t_pb_graph_pin* gpin = &pb_gnode->clock_pins[iport][index];
+
+        if(gpin->port->name == port_name) {
+            return gpin;
+        }
+    }
+
+    //Not found
+    return nullptr;
+}
+
 /* Recusively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_pin_lookup_from_index, t_pb_graph_node *pb_graph_node) {
 	for(int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
@@ -945,11 +987,16 @@ void free_pb(t_pb *pb) {
 					free_pb(&pb->child_pbs[i][j]);
 				}
 			}
-			if (pb->child_pbs[i])
-				free(pb->child_pbs[i]);
+			if (pb->child_pbs[i]) {
+                //Free children (num_pb)
+				delete[] pb->child_pbs[i];
+            }
 		}
-		if (pb->child_pbs)
-			free(pb->child_pbs);
+		if (pb->child_pbs) {
+            //Free child pointers (modes)
+			delete[] pb->child_pbs;
+        }
+
 		pb->child_pbs = NULL;
 
 		if (pb->name)
@@ -1031,10 +1078,7 @@ void free_pb_stats(t_pb *pb) {
         pb->pb_stats->connectiongain.clear();
         pb->pb_stats->num_pins_of_net_in_pb.clear();
         
-        if(!pb->pb_stats->marked_blocks.empty()) {
-            t_pb_graph_node *pb_graph_node = pb->pb_graph_node;
-            if(pb_graph_node) {
-            }
+        if(pb->pb_stats->feasible_blocks) {
             free(pb->pb_stats->feasible_blocks);
         }
         if(pb->pb_stats->transitive_fanout_candidates != NULL) {

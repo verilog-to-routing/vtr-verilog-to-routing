@@ -148,11 +148,14 @@ void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id)
 	const t_pb *pb;
     std::map<AtomBlockId, bool>& atoms_added = *router_data->atoms_added;
 
-	pb = g_atom_map.atom_pb(blk_id);
-	
 	if(atoms_added.count(blk_id) > 0) {
 		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Atom %s added twice to router\n", g_atom_nl.block_name(blk_id).c_str());
 	}
+
+	pb = g_atom_map.atom_pb(blk_id);
+
+    VTR_ASSERT(pb);
+	
 	atoms_added[blk_id] = true;
 
 	set_reset_pb_modes(router_data, pb, true);
@@ -188,6 +191,8 @@ void set_reset_pb_modes(t_lb_router_data *router_data, const t_pb *pb, const boo
 	t_pb_graph_node *pb_graph_node;
 	int mode = pb->mode;
 	int inode;
+
+    VTR_ASSERT(mode >= 0);
 		
 	pb_graph_node = pb->pb_graph_node;
 	pb_type = pb_graph_node->pb_type;
@@ -774,6 +779,7 @@ static void expand_node(t_lb_router_data *router_data, t_expansion_node exp_node
 		/* Adjust cost so that higher fanout nets prefer higher fanout routing nodes while lower fanout nets prefer lower fanout routing nodes */
 		float fanout_factor = 1.0;
 		next_mode = lb_rr_node_stats[enode.node_index].mode;
+        VTR_ASSERT(next_mode >= 0);
 		if (lb_type_graph[enode.node_index].num_fanout[next_mode] > 1) {
 			fanout_factor = 0.85 + (0.25 / net_fanout);
 		}

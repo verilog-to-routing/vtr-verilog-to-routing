@@ -53,6 +53,12 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin, const I
 
 const t_net_pin* find_pb_route_clb_input_net_pin(int clb, int sink_pb_route_id);
 
+//Returns the port matching name within pb_gnode
+const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name);
+
+//Returns the graph pin matching name at pin index
+const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index);
+
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);
 int get_max_depth_of_pb_type(t_pb_type *pb_type);
 int get_max_nets_in_pb_type(const t_pb_type *pb_type);

@@ -235,7 +235,7 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	const t_pb_type * pb_type = NULL;
 
 	/* parse cb attributes */
-	cb[index].pb = (t_pb*) vtr::calloc(1, sizeof(t_pb));
+	cb[index].pb = new t_pb;
 
     auto block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
 	cb[index].name = vtr::strdup(block_name.value());
@@ -346,9 +346,9 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 	} else {
 		/* process children of child if exists */
 
-		pb->child_pbs = (t_pb **) vtr::calloc(pb_type->modes[pb->mode].num_pb_type_children, sizeof(t_pb*));
+		pb->child_pbs = new t_pb*[pb_type->modes[pb->mode].num_pb_type_children];
 		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-			pb->child_pbs[i] = (t_pb *) vtr::calloc(pb_type->modes[pb->mode].pb_type_children[i].num_pb, sizeof(t_pb));
+			pb->child_pbs[i] = new t_pb[pb_type->modes[pb->mode].pb_type_children[i].num_pb];
 		}
 
 		/* Populate info for each physical block  */
@@ -716,6 +716,52 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
             }
         }
 	}
+
+    //Record any port rotation mappings
+    for(auto pin_rot_map = pugiutil::get_first_child(Parent, "port_rotation_map", loc_data, pugiutil::OPTIONAL); 
+            pin_rot_map; 
+            pin_rot_map = pin_rot_map.next_sibling("port_rotation_map")) {
+
+        auto port_name = pugiutil::get_attribute(pin_rot_map, "name", loc_data).value();
+
+        const t_port* pb_gport = find_pb_graph_port(pb->pb_graph_node, port_name);
+
+        if(pb_gport == nullptr) {
+            vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(pin_rot_map),
+                    "Failed to find port with name '%s' on pb %s[%d]\n",
+                     port_name,
+                     pb->pb_graph_node->pb_type->name, pb->pb_graph_node->placement_index);
+        }
+
+        auto pin_mapping = vtr::split(pin_rot_map.text().get());
+
+        if(size_t(pb_gport->num_pins) != pin_mapping.size()) {
+            vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(pin_rot_map),
+                    "Incorrect # pins %zu (expected %d) found for port %s rotation map in pb %s[%d].\n",
+                    pin_mapping.size(), pb_gport->num_pins, port_name, pb->pb_graph_node->pb_type->name,
+                    pb->pb_graph_node->placement_index);
+        }
+
+        std::string open = "open";
+        for(int ipin = 0; ipin < (int) pins.size(); ++ipin) {
+            if(pin_mapping[ipin] == open) continue; //No mapping for this physical pin to atom pin
+
+            int atom_pin_index = std::stoi(pin_mapping[ipin]);
+
+            if(atom_pin_index < 0) {
+                vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(pin_rot_map),
+                        "Invalid pin number %d in port rotation map (must be >= 0)\n", atom_pin_index);
+            }
+
+            VTR_ASSERT(atom_pin_index >= 0);
+
+            const t_pb_graph_pin* pb_gpin = find_pb_graph_pin(pb->pb_graph_node, port_name, ipin);
+            VTR_ASSERT(pb_gpin);
+
+            //Set the rotation mapping
+            pb->set_atom_pin_bit_index(pb_gpin, atom_pin_index);
+        }
+    }
 }
 
 /**  
@@ -1029,6 +1075,8 @@ static void load_atom_pin_mapping() {
 }
 
 static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin) {
+    VTR_ASSERT(g_atom_nl.port_block(atom_port) == atom_blk);
+
     int clb_index = g_atom_map.atom_clb(atom_blk);
     VTR_ASSERT(clb_index >= 0);
 
@@ -1038,23 +1086,15 @@ static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId at
         return;
     }
 
-    //There is an atom net connected to this gpin, we need to determine which atom pin it corresponds to.
-    //This must be done as a full search, since the clustering may re-arrange logically equivalent pins.
-    bool found = false;
-    for(AtomPinId atom_pin : g_atom_nl.port_pins(atom_port)) {
-        const AtomNetId atom_net = g_atom_nl.pin_net(atom_pin);
+    const t_pb* pb = g_atom_map.atom_pb(atom_blk);
 
-        if(atom_net == pb_route->atom_net_id) {
-            if(found) {
-                //TODO: consider if this is really a problem, it may be the ambiguity is inevitable and equivalent (e.g. multiple pins connected to gnd)
-                vtr::printf_warning(__FILE__, __LINE__, "Atom net to pin connection is potentially ambiguous.  The same net '%s' is connected multiple times to the same atom port '%s' on block '%s'\n", g_atom_nl.net_name(atom_net).c_str(), g_atom_nl.port_name(atom_port).c_str(), g_atom_nl.block_name(g_atom_nl.pin_block(atom_pin)).c_str()); 
-            }
+    BitIndex atom_pin_bit_index = pb->atom_pin_bit_index(gpin);
 
-            found = true;
+    AtomPinId atom_pin = g_atom_nl.port_pin(atom_port, atom_pin_bit_index);
 
-            //Save the mapping
-            g_atom_map.set_atom_pin_pb_graph_pin(atom_pin, gpin);
-        }
-    }
+    VTR_ASSERT(pb_route->atom_net_id == g_atom_nl.pin_net(atom_pin));
+
+    //Save the mapping
+    g_atom_map.set_atom_pin_pb_graph_pin(atom_pin, gpin);
 }
 

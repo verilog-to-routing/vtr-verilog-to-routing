@@ -128,17 +128,18 @@ struct s_pb_stats;
  */
 typedef struct s_pb t_pb;
 typedef struct s_pb {
-	char *name; /* Name of this physical block */
-	t_pb_graph_node *pb_graph_node; /* pointer to pb_graph_node this pb corresponds to */
+	char *name = nullptr; /* Name of this physical block */
+	t_pb_graph_node *pb_graph_node = nullptr; /* pointer to pb_graph_node this pb corresponds to */
 
-	int mode; /* mode that this pb is set to */
+	int mode = 0; /* mode that this pb is set to */
 
-	t_pb **child_pbs; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
-	t_pb *parent_pb; /* pointer to parent node */
+	t_pb **child_pbs = nullptr; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
+	t_pb *parent_pb = nullptr; /* pointer to parent node */
 
-	struct s_pb_stats *pb_stats; /* statistics for current pb */
+	struct s_pb_stats *pb_stats = nullptr; /* statistics for current pb */
 
-	int clock_net; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
+	int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
+
 
 	int get_num_child_types() const {
 		if (child_pbs != NULL && has_modes()) {
@@ -147,9 +148,11 @@ typedef struct s_pb {
 			return 0;
 		}
 	}
+
 	int get_num_children_of_type(int type_index) const {
 		return get_mode()->pb_type_children[type_index].num_pb;
 	}
+
 	t_mode* get_mode() const {
 		if (has_modes()) {
 			return &pb_graph_node->pb_type->modes[mode];
@@ -157,6 +160,7 @@ typedef struct s_pb {
 			return NULL;
 		}
 	}
+
 	bool has_modes() const {
 		return pb_graph_node->pb_type->num_modes > 0;
 	}
@@ -187,6 +191,39 @@ typedef struct s_pb {
         }
         return nullptr; //Not found
     }
+
+    //Returns true if this pb corresponds to a primitive block (i.e. in the AtomNetlist)
+    bool is_primitive() const {
+        return child_pbs == nullptr;
+    }
+
+    //Returns the bit index into the AtomPort for the specified primitive
+    //pb_graph_pin, considering any pin rotations which have been applied to logically
+    //equivalent pins
+    BitIndex atom_pin_bit_index(const t_pb_graph_pin* gpin) const {
+        VTR_ASSERT_MSG(is_primitive(), "Atom pin indicies can only be looked up from primitives");
+
+        auto iter = pin_rotations_.find(gpin);
+
+        if(iter != pin_rotations_.end()) {
+            //Return the original atom pin index
+            return iter->second;
+        } else {
+            //No re-mapping, return the index directly
+            return gpin->pin_number;
+        }
+    }
+
+    //For a given gpin, sets the mapping to the original atom netlist pin's bit index in
+    //it's AtomPort.  This is used to record any pin rotations which have been applied to
+    //logically equivalent pins
+    void set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_index) {
+        pin_rotations_[gpin] = atom_pin_bit_index;
+    }
+
+private:
+    std::map<const t_pb_graph_pin*,BitIndex> pin_rotations_; //Contains the atom netlist port bit index associated 
+                                                       //with any primitive pins which have been rotated during clustering
 
 } t_pb;
 

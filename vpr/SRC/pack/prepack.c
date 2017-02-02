@@ -851,7 +851,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
         auto rng = atom_molecules.equal_range(blk_id);
         bool rng_empty = (rng.first == rng.second);
 		if (rng_empty) {
-			cur_molecule = (t_pack_molecule*) vtr::calloc(1, sizeof(t_pack_molecule));
+			cur_molecule = new t_pack_molecule;
 			cur_molecule->valid = true;
 			cur_molecule->type = MOLECULE_SINGLE_ATOM;
 			cur_molecule->num_blocks = 1;
@@ -922,7 +922,7 @@ static t_pack_molecule *try_create_molecule(
 	bool failed = false;
 
 	{
-		molecule = (t_pack_molecule*)vtr::calloc(1, sizeof(t_pack_molecule));
+		molecule = new t_pack_molecule;
 		molecule->valid = true;
 		molecule->type = MOLECULE_FORCED_PACK;
 		molecule->pack_pattern = &list_of_pack_patterns[pack_pattern_index];
@@ -964,7 +964,7 @@ static t_pack_molecule *try_create_molecule(
 
 	if (failed == true) {
 		/* Does not match pattern, free molecule */
-		free(molecule);
+		delete molecule;
 		molecule = NULL;
 	}
 	return molecule;

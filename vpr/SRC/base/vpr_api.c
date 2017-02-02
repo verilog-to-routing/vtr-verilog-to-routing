@@ -892,7 +892,7 @@ void free_circuit() {
 		for (int i = 0; i < num_blocks; ++i) {
 			if (block[i].pb != NULL) {
 				free_pb(block[i].pb);
-				free(block[i].pb);
+				delete block[i].pb;
 			}
 			free(block[i].nets);
 			free(block[i].net_pins);

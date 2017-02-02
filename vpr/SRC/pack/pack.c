@@ -109,7 +109,7 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 	cur_pack_molecule = list_of_pack_molecules;
 	while (cur_pack_molecule != NULL){
 		cur_pack_molecule = list_of_pack_molecules->next;
-		free(list_of_pack_molecules);
+		delete list_of_pack_molecules;
 		list_of_pack_molecules = cur_pack_molecule;
 	}
 
