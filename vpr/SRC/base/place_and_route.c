@@ -51,8 +51,6 @@ static float comp_width(t_chan * chan, float x, float separation);
 
 void post_place_sync(const int L_num_blocks);
 
-void free_pb_data(t_pb *pb);
-
 /************************* Subroutine Definitions ****************************/
 
 bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *net_file,
@@ -741,37 +739,6 @@ void post_place_sync(const int L_num_blocks) {
 				}
 				VTR_ASSERT(k < g_clbs_nlist.net[inet].pins.size());
 			}
-		}
-	}
-}
-
-void free_pb_data(t_pb *pb) {
-	int i, j;
-	const t_pb_type *pb_type;
-
-	if (pb == NULL || pb->name == NULL) {
-		return;
-	}
-
-	pb_type = pb->pb_graph_node->pb_type;
-
-	if (pb_type->num_modes > 0) {
-		/* Free children of pb */
-		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb;
-					j++) {
-				if (pb->child_pbs[i]) {
-					free_pb_data(&pb->child_pbs[i][j]);
-				}
-			}
-		}
-	}
-
-	/* Frees all the pb data structures.                                 */
-	if (pb->name) {
-		free(pb->name);
-		if (pb->child_pbs) {
-			free(pb->child_pbs);
 		}
 	}
 }
