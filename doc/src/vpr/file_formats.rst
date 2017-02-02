@@ -212,6 +212,32 @@ The names of these connections use the following format:
 #. The name of an output pin of a primitve (leaf block) is the same as the name of the net using that pin.
 #. The names of all other pins are specified by describing their immediate drivers.  This format is ``[name_of_immediate_driver_block].[port_name][pin#]->interconnect_name``.
 
+For primitives with equivalent inputs VPR may rotate the input pins.  
+The resulting rotation is specified with the ``<port_rotation_map>`` tag.
+For example, consider a netlist contains a 2-input LUT named ``c``, which is implemented in a 5-LUT:
+
+.. code-block:: xml
+    :caption: Example of ``<port_rotation_map>`` tag.
+    :linenos:
+
+    ...
+    <block name="c" instance="lut[0]">
+        <inputs>
+            <port name="in">open open lut5.in[2]->direct:lut5  open lut5.in[4]->direct:lut5  </port>
+            <port_rotation_map name="in">open open 1 open 0 </port_rotation_map>
+        </inputs>
+        <outputs>
+            <port name="out">c </port>
+        </outputs>
+        <clocks>
+        </clocks>
+    </block>
+    ...
+
+In the original netlist the two LUT inputs were connected to pins at indicies 0 and 1 (the only input pins).
+However during clustering the inputs were rotated, and those nets now connect to the pins at indicies 2 and 4 (line 4).
+The ``<port_rotation_map>`` tag specified the port name it applies to (``name`` attribute), and its contents lists the pin indicies each pin in the port list is associated with in the original netlist (i.e. the pins ``lut5.in[2]->direct:lut5`` and ``lut5.in[4]->direct:lut5`` respectively correspond to indicies 1 and 0 in the original netlist).
+
 .. note:: Use :option:`vpr -net_file` to override the default net file name.
 
 Packing File Format Example
