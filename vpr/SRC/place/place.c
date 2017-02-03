@@ -427,6 +427,13 @@ void try_place(struct s_placer_opts placer_opts,
 		do_timing_analysis(slacks, timing_inf, false, false);
 #endif
 
+#ifdef USE_OLD_VPR_STA
+        float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path_delay.path_delay);
+        if(cpd_diff_ns > ERROR_TOL) {
+            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Clasic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path_delay.path_delay);
+        }
+#endif
+
 		/*now we can properly compute costs  */
 		comp_td_costs(&timing_cost, &delay_cost); /*also updates values in point_to_point_delay_cost */
 
@@ -638,6 +645,13 @@ void try_place(struct s_placer_opts placer_opts,
                          place_delay_value, 1e9*critical_path_delay.path_delay, 1e9*sTNS, 1e9*sWNS,  
                          success_rat, std_dev, rlim, crit_exponent, 
                          tot_iter, t / oldt);
+
+#ifdef USE_OLD_VPR_STA
+        float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path_delay.path_delay);
+        if(cpd_diff_ns > ERROR_TOL) {
+            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Clasic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path_delay.path_delay);
+        }
+#endif
 
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
 				cost, bb_cost, timing_cost, t);
