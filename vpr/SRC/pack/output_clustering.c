@@ -354,40 +354,42 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
                 VTR_ASSERT(atom_blk);
 
                 AtomPortId atom_port = g_atom_nl.find_port(atom_blk, pb_type->ports[i].model_port);
-                VTR_ASSERT(atom_port);
 
-                print_tabs(fpout, tab_depth);
-                fprintf(fpout, "\t\t<port_rotation_map name=\"%s\">", pb_graph_node->pb_type->ports[i].name);
+                if(atom_port) { //Port exists (some LUTs may have no input and hence no port in the atom netlist)
 
-                std::set<AtomPinId> recorded_pins;
+                    print_tabs(fpout, tab_depth);
+                    fprintf(fpout, "\t\t<port_rotation_map name=\"%s\">", pb_graph_node->pb_type->ports[i].name);
 
-                for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-                    node_index = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
-                    AtomNetId atom_net = pb_route[node_index].atom_net_id;
+                    std::set<AtomPinId> recorded_pins;
 
-                    if(atom_net) {
-                        //This physical pin is in use, find the original pin in the atom netlist
-                        AtomPinId orig_pin;
-                        for(AtomPinId atom_pin : g_atom_nl.port_pins(atom_port)) {
-                            if(recorded_pins.count(atom_pin)) continue; //Don't add pins twice
+                    for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+                        node_index = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+                        AtomNetId atom_net = pb_route[node_index].atom_net_id;
 
-                            AtomNetId atom_pin_net = g_atom_nl.pin_net(atom_pin);
+                        if(atom_net) {
+                            //This physical pin is in use, find the original pin in the atom netlist
+                            AtomPinId orig_pin;
+                            for(AtomPinId atom_pin : g_atom_nl.port_pins(atom_port)) {
+                                if(recorded_pins.count(atom_pin)) continue; //Don't add pins twice
 
-                            if(atom_pin_net == atom_net) {
-                                orig_pin = atom_pin;
-                                break;
+                                AtomNetId atom_pin_net = g_atom_nl.pin_net(atom_pin);
+
+                                if(atom_pin_net == atom_net) {
+                                    orig_pin = atom_pin;
+                                    break;
+                                }
                             }
-                        }
 
-                        VTR_ASSERT(orig_pin);
-                        //The physical pin j, maps to a pin in the atom netlist
-                        fprintf(fpout, "%d ", g_atom_nl.pin_port_bit(orig_pin));
-                    } else {
-                        //The physical pin is disconnected
-                        fprintf(fpout, "open ");
+                            VTR_ASSERT(orig_pin);
+                            //The physical pin j, maps to a pin in the atom netlist
+                            fprintf(fpout, "%d ", g_atom_nl.pin_port_bit(orig_pin));
+                        } else {
+                            //The physical pin is disconnected
+                            fprintf(fpout, "open ");
+                        }
                     }
+                    fprintf(fpout, "</port_rotation_map>\n");
                 }
-                fprintf(fpout, "</port_rotation_map>\n");
             }
 
 
