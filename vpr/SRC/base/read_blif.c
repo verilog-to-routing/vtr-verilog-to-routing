@@ -659,12 +659,16 @@ AtomNetlist read_and_process_blif(const char *blif_file,
         netlist = read_blif(blif_file, user_models, library_models);
     }
 
+    print_netlist_as_blif("atom_netlist.orig.echo.blif", netlist);
+
     process_blif(netlist,
                  should_absorb_buffers, 
                  should_sweep_dangling_primary_ios, 
                  should_sweep_dangling_nets,
                  should_sweep_dangling_blocks,
                  should_sweep_constant_primary_outputs);
+
+    print_netlist_as_blif("atom_netlist.cleaned.echo.blif", netlist);
 
 
     show_blif_stats(netlist);
