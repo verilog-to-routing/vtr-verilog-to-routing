@@ -1,9 +1,12 @@
 #ifndef ATOM_MAP_H
 #define ATOM_MAP_H
 #include <unordered_map>
+
+#include "vtr_bimap.h"
+#include "vtr_vector_map.h"
+
 #include "atom_netlist_fwd.h"
 #include "vpr_types.h"
-#include "vtr_bimap.h"
 #include "timing_graph_fwd.hpp"
 /*
  * The AtomMap class describes the mapping between components in the AtomNetlist
@@ -87,7 +90,7 @@ class AtomMap {
 
         //Use a dense linear map for AtomPinId -> t_pb_graph_pin*,
         //and an unordered map for t_pb_graph_pin* -> AtomPinId
-        vtr::bimap<AtomPinId,const t_pb_graph_pin*,vtr::linear_map,std::unordered_map> atom_to_pb_graph_pin_;
+        vtr::vector_map<AtomPinId,const t_pb_graph_pin*> atom_to_pb_graph_pin_;
 
         std::vector<int> atom_to_clb_;
         std::unordered_map<int,AtomBlockId> clb_to_atom_;
