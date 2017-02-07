@@ -1,0 +1,11 @@
+.model top
+.inputs a b c d e
+.outputs f
+
+#This LUT has multiple connections, net 'a' connects multiple times
+.names a b a c d e f
+-00110 1
+-1111- 1
+-1-111 1
+
+.end
