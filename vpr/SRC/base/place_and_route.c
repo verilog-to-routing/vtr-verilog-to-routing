@@ -723,17 +723,13 @@ void post_place_sync(const int L_num_blocks) {
 		for (j = 0; j < max_num_block_pins; j++) {
 			inet = block[iblk].nets[j];
 			if (inet != OPEN && block[iblk].z > 0) {
-				VTR_ASSERT(
-						block[iblk]. nets[j + block[iblk].z * max_num_block_pins] == OPEN);
-				block[iblk].nets[j + block[iblk].z * max_num_block_pins] =
-						block[iblk].nets[j];
+				VTR_ASSERT(block[iblk]. nets[j + block[iblk].z * max_num_block_pins] == OPEN);
+				block[iblk].nets[j + block[iblk].z * max_num_block_pins] = block[iblk].nets[j];
 				block[iblk].nets[j] = OPEN;
 				for (k = 0; k < g_clbs_nlist.net[inet].pins.size(); k++) {
 					if (g_clbs_nlist.net[inet].pins[k].block == iblk && g_clbs_nlist.net[inet].pins[k].block_pin == j) {
-						g_clbs_nlist.net[inet].pins[k].block_pin = j
-								+ block[iblk].z * max_num_block_pins;
-						clb_net[inet].node_block_pin[k] = j 
-								+ block[iblk].z * max_num_block_pins; //Daniel to-do: take out clb_net later
+						g_clbs_nlist.net[inet].pins[k].block_pin = j + block[iblk].z * max_num_block_pins;
+						clb_net[inet].node_block_pin[k] = j + block[iblk].z * max_num_block_pins; //Daniel to-do: take out clb_net later
 						break;
 					}
 				}
