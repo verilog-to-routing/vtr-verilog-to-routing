@@ -375,6 +375,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
                                 AtomNetId atom_pin_net = g_atom_nl.pin_net(atom_pin);
 
                                 if(atom_pin_net == atom_net) {
+                                    recorded_pins.insert(atom_pin);
                                     orig_pin = atom_pin;
                                     break;
                                 }

@@ -306,7 +306,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
 			for(int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
 				/* load intermediate indices */
 				pb_pin = &pb_graph_node->input_pins[iport][ipin];
-				port_equivalent = pb_pin->port->equivalent;
+                port_equivalent = pb_pin->port->equivalent;
 				pin_index = pb_pin->pin_count_in_cluster;
 
 				/* alloc and load rr node info */

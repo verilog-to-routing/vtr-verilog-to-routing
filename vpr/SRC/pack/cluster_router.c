@@ -75,6 +75,7 @@ static void free_lb_trace(t_lb_trace *lb_trace);
 static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPinId pin_id);
 static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const AtomPinId pin_id);
 
+static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data);
 
 static void commit_remove_rt(t_lb_trace *rt, t_lb_router_data *router_data, e_commit_remove op);
 static bool is_skip_route_net(t_lb_trace *rt, t_lb_router_data *router_data);
@@ -163,6 +164,8 @@ void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id)
     for(auto pin_id : g_atom_nl.block_pins(blk_id)) {
         add_pin_to_rt_terminals(router_data, pin_id);
     }
+
+    fix_duplicate_equivalent_pins(router_data);
 }
 
 /* Remove pins of netlist atom from current routing drivers/targets */
@@ -283,17 +286,17 @@ bool try_intra_lb_route(t_lb_router_data *router_data) {
 						exp_node = pq.top();
 						pq.pop();
 
-						if(router_data->explored_node_tb[exp_node.node_index].explored_id != router_data->explore_id_index) {
+                        if(router_data->explored_node_tb[exp_node.node_index].explored_id != router_data->explore_id_index) {
 							/* First time node is popped implies path to this node is the lowest cost.
 								If the node is popped a second time, then the path to that node is higher than this path so
-								ignore.
+								ignore. 
 							*/
 							router_data->explored_node_tb[exp_node.node_index].explored_id = router_data->explore_id_index;
 							router_data->explored_node_tb[exp_node.node_index].prev_index = exp_node.prev_index;
 							if(exp_node.node_index != lb_nets[idx].terminals[itarget]) {								
 								expand_node(router_data, exp_node, pq, lb_nets[idx].terminals.size() - 1);
 							}
-						}
+                        }
 					}
 				} while(exp_node.node_index != lb_nets[idx].terminals[itarget] && is_impossible == false);
 
@@ -327,8 +330,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data) {
 
 	if (is_routed) {
 		save_and_reset_lb_route(router_data);
-	}
-	else {
+	} else {
 		for (unsigned int inet = 0; inet < lb_nets.size(); inet++) {
 			free_lb_net_rt(lb_nets[inet].rt_tree);
 			lb_nets[inet].rt_tree = NULL;
@@ -454,7 +456,8 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 	}
 
 	/* Find if current net is in route tree, if not, then add to rt.
-	   Code assumes that # of nets in cluster is small so a linear search through vector is faster than using more complex data structures
+	   Code assumes that # of nets in cluster is small so a linear search through 
+       vector is faster than using more complex data structures
 	*/
 	for(ipos = 0; ipos < lb_nets.size(); ipos++) {
 		if(lb_nets[ipos].atom_net_id == net_id) {
@@ -480,6 +483,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 		int source_terminal;
 		source_terminal = get_lb_type_rr_graph_ext_source_index(lb_type);
 		lb_nets[ipos].terminals.push_back(source_terminal);
+		lb_nets[ipos].atom_pins.push_back(pin_id);
 		VTR_ASSERT(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE);
 	}
 
@@ -488,6 +492,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 		int sink_terminal;
 		VTR_ASSERT(lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type));
 		lb_nets[ipos].terminals[0] = pb_graph_pin->pin_count_in_cluster;
+		lb_nets[ipos].atom_pins[0] = pin_id;
 
 		VTR_ASSERT(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE);
 		
@@ -497,33 +502,42 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 			if(lb_nets[ipos].terminals.size() == 1) {
 				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
 				lb_nets[ipos].terminals.push_back(sink_terminal);
+				lb_nets[ipos].atom_pins.push_back(pin_id);
 			} else {
 				sink_terminal = lb_nets[ipos].terminals[1];
 				lb_nets[ipos].terminals.push_back(sink_terminal);
 				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
 				lb_nets[ipos].terminals[1] = sink_terminal;
+				lb_nets[ipos].atom_pins[1] = pin_id;
 			}
 			VTR_ASSERT(lb_type_graph[lb_nets[ipos].terminals[1]].type == LB_SINK);
 		}
 	} else {
-		/* Sink for input pins is one past the primitive input pin
-		*/
+        //This is an input to a primitive
+        VTR_ASSERT(g_atom_nl.port_type(port_id) == AtomPortType::INPUT
+                   || g_atom_nl.port_type(port_id) == AtomPortType::CLOCK);
+
+        //Get the rr node index associated with the pin
 		int pin_index = pb_graph_pin->pin_count_in_cluster;
 		VTR_ASSERT(get_num_modes_of_lb_type_rr_node(lb_type_graph[pin_index]) == 1);
 		VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
 		
-		pin_index = lb_type_graph[pin_index].outedges[0][0].node_index;
-		VTR_ASSERT(lb_type_graph[pin_index].type == LB_SINK);
+		/* We actually route to the sink (to handle logically equivalent pins).
+         * The sink is one past the primitive input pin */
+		int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
+		VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
 
 		if(lb_nets[ipos].terminals.size() == g_atom_nl.net_pins(net_id).size() &&
 			lb_nets[ipos].terminals[1] == get_lb_type_rr_graph_ext_sink_index(lb_type)) {
 
-		    /* If all sinks of net are all contained in the logic block, then the net does not need to route out of the logic block,
-			so the external sink can be removed
-			*/
-			lb_nets[ipos].terminals[1] = pin_index;
+		    /* If all sinks of net are all contained in the logic block, then the net does 
+             * not need to route out of the logic block, so the external sink can be removed */
+			lb_nets[ipos].terminals[1] = sink_index;
+			lb_nets[ipos].atom_pins[1] = pin_id;
 		} else {
-			lb_nets[ipos].terminals.push_back(pin_index);
+            //Add as a regular sink
+			lb_nets[ipos].terminals.push_back(sink_index);
+            lb_nets[ipos].atom_pins.push_back(pin_id);
 		}
 	}
 
@@ -585,20 +599,36 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 		int pin_index = pb_graph_pin->pin_count_in_cluster;
 		unsigned int iterm;
 
+
 		VTR_ASSERT(get_num_modes_of_lb_type_rr_node(lb_type_graph[pin_index]) == 1);
 		VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
-		pin_index = lb_type_graph[pin_index].outedges[0][0].node_index;
-		VTR_ASSERT(lb_type_graph[pin_index].type == LB_SINK);
+		int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
+		VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
 			
+        int target_index = -1;
+        //Search for the sink
 		found = false;
 		for(iterm = 0; iterm < lb_nets[ipos].terminals.size(); iterm++) {
-			if(lb_nets[ipos].terminals[iterm] == pin_index) {
+			if(lb_nets[ipos].terminals[iterm] == sink_index) {
+                target_index = sink_index;
 				found = true;
 				break;
 			}
 		}
+        if(!found) {
+            //Search for the pin
+            found = false;
+            for(iterm = 0; iterm < lb_nets[ipos].terminals.size(); iterm++) {
+                if(lb_nets[ipos].terminals[iterm] == pin_index) {
+                    target_index = pin_index;
+                    found = true;
+                    break;
+                }
+            }
+
+        }
 		VTR_ASSERT(found == true);
-		VTR_ASSERT(lb_nets[ipos].terminals[iterm] == pin_index);
+		VTR_ASSERT(lb_nets[ipos].terminals[iterm] == target_index);
 		VTR_ASSERT(iterm > 0);
 		
 		/* Drop terminal from list */
@@ -628,6 +658,52 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 		lb_nets[ipos] = lb_nets.back();
 		lb_nets.pop_back();
 	}
+}
+
+//It is possible that a net may connect multiple times to a logically equivalent set of primitive pins.
+//The cluster router will only route one connection for a particular net to the common sink of the
+//equivalent pins.
+//
+//To work around this, we fix all but one of these duplicate connections to route to specific pins,
+//(instead of the common sink). This ensures a legal routing is produced and that the duplicate pins
+//are not 'missing' in the clustered netlist.
+static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
+	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
+
+    for(size_t ilb_net = 0; ilb_net < lb_nets.size(); ++ilb_net) {
+
+        //Collect all the sink terminals indicies which target a particular node
+        std::map<int,std::vector<int>> duplicate_terminals;
+        for(size_t iterm = 1; iterm < lb_nets[ilb_net].terminals.size(); ++iterm) {
+            int node = lb_nets[ilb_net].terminals[iterm];
+
+            duplicate_terminals[node].push_back(iterm);
+        }
+
+        for(auto kv : duplicate_terminals) {
+            if(kv.second.size() < 2) continue; //Only process duplicates
+
+            //Remap all the duplicate terminals so they target the pin instead of the sink
+            for(size_t idup_term = 0; idup_term < kv.second.size(); ++idup_term) {
+                int iterm = kv.second[idup_term]; //The index in terminals which is duplicated
+
+                AtomPinId atom_pin = lb_nets[ilb_net].atom_pins[iterm];
+                VTR_ASSERT(atom_pin);
+
+                const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_map, atom_pin);
+                VTR_ASSERT(pb_graph_pin);
+
+                if(!pb_graph_pin->port->equivalent) continue; //Only need to remap equivalent ports
+
+
+                //Remap this terminal to an explicit pin instead of the common sink
+                int pin_index = pb_graph_pin->pin_count_in_cluster;
+                lb_nets[ilb_net].terminals[iterm] = pin_index;
+
+                //TODO: port now appears in .net output, but rotation is wrong!
+            }
+        }
+    }
 }
 
 /* Commit or remove route tree from currently routed solution */
@@ -816,7 +892,7 @@ static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *explor
 	/* Store path all the way back to route tree */
 	rt_index = node_index;
 	while(explored_node_tb[rt_index].inet != irt_net) {
-		trace_forward.push_back(rt_index);
+        trace_forward.push_back(rt_index);
 		rt_index = explored_node_tb[rt_index].prev_index;
 		VTR_ASSERT(rt_index != OPEN);
 	}
@@ -828,10 +904,10 @@ static void add_to_rt(t_lb_trace *rt, int node_index, t_explored_node_tb *explor
 	/* Add path to root tree */
 	while(!trace_forward.empty()) {
 		trace_index = trace_forward.back();
-		curr_node.current_node = trace_index;
-		link_node->next_nodes.push_back(curr_node);
-		link_node = &link_node->next_nodes.back();
-		trace_forward.pop_back();
+        curr_node.current_node = trace_index;
+        link_node->next_nodes.push_back(curr_node);
+        link_node = &link_node->next_nodes.back();
+        trace_forward.pop_back();
 	}
 }
 

@@ -164,7 +164,9 @@ struct t_lb_trace {
 /* Represents a net used inside a logic block and the physical nodes used by the net */
 struct t_intra_lb_net {
     AtomNetId atom_net_id;              /* index of atom net this intra_lb_net represents */
-    std::vector<int> terminals;				/* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
+    std::vector<int> terminals;			/* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
+    std::vector<AtomPinId> atom_pins;	/* AtomPin's associated with each terminal */
+    std::vector<bool> fixed_terminals;  /* Marks a terminal as having a fixed target (i.e. a pin not a sink) */
 	t_lb_trace *rt_tree;				/* Route tree head */
 	
 	t_intra_lb_net() {
