@@ -474,6 +474,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 		lb_nets.push_back(new_net);
 	}
 	VTR_ASSERT(lb_nets[ipos].atom_net_id == net_id);
+    VTR_ASSERT(lb_nets[ipos].atom_pins.size() == lb_nets[ipos].terminals.size());
 
 	/*
 	Determine whether or not this is a new intra lb net, if yes, then add to list of intra lb nets
@@ -485,7 +486,10 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 		lb_nets[ipos].terminals.push_back(source_terminal);
 		lb_nets[ipos].atom_pins.push_back(pin_id);
 		VTR_ASSERT(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE);
+
 	}
+
+    VTR_ASSERT(lb_nets[ipos].atom_pins.size() == lb_nets[ipos].terminals.size());
 
 	if(g_atom_nl.port_type(port_id) == AtomPortType::OUTPUT) {
 		/* Net driver pin takes 0th position in terminals */
@@ -506,6 +510,8 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 			} else {
 				sink_terminal = lb_nets[ipos].terminals[1];
 				lb_nets[ipos].terminals.push_back(sink_terminal);
+				lb_nets[ipos].atom_pins.push_back(pin_id);
+
 				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
 				lb_nets[ipos].terminals[1] = sink_terminal;
 				lb_nets[ipos].atom_pins[1] = pin_id;
@@ -540,6 +546,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
             lb_nets[ipos].atom_pins.push_back(pin_id);
 		}
 	}
+    VTR_ASSERT(lb_nets[ipos].atom_pins.size() == lb_nets[ipos].terminals.size());
 
 	int num_lb_terminals = lb_nets[ipos].terminals.size();
 	VTR_ASSERT(num_lb_terminals <= (int) g_atom_nl.net_pins(net_id).size());
@@ -579,6 +586,8 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 	VTR_ASSERT(found == true);
 	VTR_ASSERT(lb_nets[ipos].atom_net_id == net_id);
 	
+    VTR_ASSERT(lb_nets[ipos].atom_pins.size() == lb_nets[ipos].terminals.size());
+
     auto port_type = g_atom_nl.port_type(port_id);
 	if(port_type == AtomPortType::OUTPUT) {
 		/* Net driver pin takes 0th position in terminals */
@@ -591,6 +600,9 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 		if(lb_nets[ipos].terminals[1] == sink_terminal) {
 			lb_nets[ipos].terminals[1] = lb_nets[ipos].terminals.back();
 			lb_nets[ipos].terminals.pop_back();
+
+            lb_nets[ipos].atom_pins[1] = lb_nets[ipos].atom_pins.back();
+            lb_nets[ipos].atom_pins.pop_back();
 		}
 	} else {
         VTR_ASSERT(port_type == AtomPortType::INPUT || port_type == AtomPortType::CLOCK);
@@ -634,10 +646,14 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 		/* Drop terminal from list */
 		lb_nets[ipos].terminals[iterm] = lb_nets[ipos].terminals.back();
 		lb_nets[ipos].terminals.pop_back();
+
+        lb_nets[ipos].atom_pins[iterm] = lb_nets[ipos].atom_pins.back();
+        lb_nets[ipos].atom_pins.pop_back();
 		
 		if(lb_nets[ipos].terminals.size() == 1 && lb_nets[ipos].terminals[0] != get_lb_type_rr_graph_ext_source_index(lb_type)) {
 			/* The removed sink must be driven by an atom found in the cluster, add in special sink outside of cluster to represent this */
 			lb_nets[ipos].terminals.push_back(get_lb_type_rr_graph_ext_sink_index(lb_type));
+            lb_nets[ipos].atom_pins.push_back(AtomPinId::INVALID());
 		}
 
 		if(lb_nets[ipos].terminals.size() > 1 &&
@@ -649,8 +665,13 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 			lb_nets[ipos].terminals.push_back(terminal);
 			lb_nets[ipos].terminals[1] = get_lb_type_rr_graph_ext_sink_index(lb_type);
 
+			AtomPinId pin = lb_nets[ipos].atom_pins[1];
+			lb_nets[ipos].atom_pins.push_back(pin);
+			lb_nets[ipos].atom_pins[1] = AtomPinId::INVALID();
+
 		}
 	}
+    VTR_ASSERT(lb_nets[ipos].atom_pins.size() == lb_nets[ipos].terminals.size());
 
 	if(lb_nets[ipos].terminals.size() == 1 && 
 		lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type)) {
@@ -668,6 +689,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 //(instead of the common sink). This ensures a legal routing is produced and that the duplicate pins
 //are not 'missing' in the clustered netlist.
 static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
+	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
 
     for(size_t ilb_net = 0; ilb_net < lb_nets.size(); ++ilb_net) {
@@ -687,6 +709,7 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
             for(size_t idup_term = 0; idup_term < kv.second.size(); ++idup_term) {
                 int iterm = kv.second[idup_term]; //The index in terminals which is duplicated
 
+                VTR_ASSERT(lb_nets[ilb_net].atom_pins.size() == lb_nets[ilb_net].terminals.size());
                 AtomPinId atom_pin = lb_nets[ilb_net].atom_pins[iterm];
                 VTR_ASSERT(atom_pin);
 
@@ -695,12 +718,25 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
 
                 if(!pb_graph_pin->port->equivalent) continue; //Only need to remap equivalent ports
 
-
                 //Remap this terminal to an explicit pin instead of the common sink
                 int pin_index = pb_graph_pin->pin_count_in_cluster;
-                lb_nets[ilb_net].terminals[iterm] = pin_index;
 
-                //TODO: port now appears in .net output, but rotation is wrong!
+                vtr::printf_warning(__FILE__, __LINE__, 
+                            "Found duplicate nets connected to logically equivalent pins. "
+                            "Remapping intra lb net %d (atom net %zu '%s') from common sink "
+                            "pb_route %d to fixed pin pb_route %d\n",
+                            ilb_net, size_t(lb_nets[ilb_net].atom_net_id), g_atom_nl.net_name(lb_nets[ilb_net].atom_net_id).c_str(),
+                            kv.first, pin_index);
+
+                VTR_ASSERT(lb_type_graph[pin_index].type == LB_INTERMEDIATE);
+                VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
+                int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
+                VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
+                VTR_ASSERT_MSG(sink_index == lb_nets[ilb_net].terminals[iterm], "Remapped pin must be connected to original sink");
+
+
+                //Change the target
+                lb_nets[ilb_net].terminals[iterm] = pin_index;
             }
         }
     }

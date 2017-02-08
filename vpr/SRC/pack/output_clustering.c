@@ -112,15 +112,12 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 			if (prev_pin->port->parent_pb_type->depth
 					>= cur_pin->port->parent_pb_type->depth) {
 				/* Connections from siblings or children should have an explicit index, connections from parent does not need an explicit index */
-				len =
-						strlen(
-								prev_pin->parent_node->pb_type->name)
-								+ prev_pin->parent_node->placement_index
-										/ 10
-								+ strlen(
-										prev_pin->port->name)
-								+ prev_pin->pin_number
-										/ 10 + strlen(name) + 11;
+				len = strlen(prev_pin->parent_node->pb_type->name)
+                      + prev_pin->parent_node->placement_index / 10
+                      + strlen( prev_pin->port->name)
+                      + prev_pin->pin_number / 10 
+                      + strlen(name)
+                      + 11;
 				str_ptr = (char*)vtr::malloc(len * sizeof(char));
 				sprintf(str_ptr, "%s[%d].%s[%d]->%s ",
 						prev_pin->parent_node->pb_type->name,
@@ -128,13 +125,11 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 						prev_pin->port->name,
 						prev_pin->pin_number, name);
 			} else {
-				len =
-						strlen(
-								prev_pin->parent_node->pb_type->name)
-								+ strlen(
-										prev_pin->port->name)
-								+ prev_pin->pin_number
-										/ 10 + strlen(name) + 8;
+				len = strlen(prev_pin->parent_node->pb_type->name)
+					  + strlen(prev_pin->port->name)
+					  + prev_pin->pin_number / 10 
+                      + strlen(name)
+                      + 8;
 				str_ptr = (char*)vtr::malloc(len * sizeof(char));
 				sprintf(str_ptr, "%s.%s[%d]->%s ",
 						prev_pin->parent_node->pb_type->name,
@@ -332,10 +327,12 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 	port_index = 0;
 	for (i = 0; i < pb_type->num_ports; i++) {
 		if (!pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT) {
+
 			print_tabs(fpout, tab_depth);
 			fprintf(fpout, "\t\t<port name=\"%s\">", pb_graph_node->pb_type->ports[i].name);
 			for (j = 0; j < pb_type->ports[i].num_pins; j++) {
 				node_index = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+
 				if (pb_type->parent_mode == NULL) {
 					print_net_name(pb_route[node_index].atom_net_id, &column, tab_depth, fpout);
 				} else {
