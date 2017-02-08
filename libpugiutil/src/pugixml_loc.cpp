@@ -1,4 +1,5 @@
 #include <cstdio>
+#include "pugixml_util.hpp"
 #include "pugixml_loc.hpp"
 
 namespace pugiutil {
@@ -21,6 +22,10 @@ std::size_t loc_data::col(std::ptrdiff_t offset) const {
 
 void loc_data::build_loc_data() {
     FILE* f = fopen(filename_.c_str(), "rb");
+
+    if(f == nullptr) {
+        throw XmlError("Failed to open file", filename_);
+    }
 
     std::ptrdiff_t offset = 0;
 
