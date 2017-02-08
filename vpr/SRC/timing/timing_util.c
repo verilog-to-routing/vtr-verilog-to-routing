@@ -18,6 +18,21 @@ PathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constr
     return crit_path_info;
 }
 
+PathInfo find_least_slack_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
+    PathInfo crit_path_info;
+
+    auto cpds = find_critical_path_delays(constraints, setup_analyzer);
+
+    //Record the maximum critical path accross all domain pairs
+    for(const auto& path_info : cpds) {
+        if(path_info.slack < crit_path_info.slack || std::isnan(crit_path_info.slack)) {
+            crit_path_info = path_info;
+        }
+    }
+
+    return crit_path_info;
+}
+
 std::vector<PathInfo> find_critical_path_delays(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     std::vector<PathInfo> cpds;
 
@@ -44,14 +59,18 @@ std::vector<PathInfo> find_critical_path_delays(const tatum::TimingConstraints& 
             for(tatum::TimingTag clock_tag : setup_analyzer.setup_tags(node, tatum::TagType::CLOCK_CAPTURE)) {
                 float clock_capture = clock_tag.time().value();
 
-                float cpd = data_arrival - clock_capture;
+
 
                 //Provided the domain pair should be analyzed
                 if(constraints.should_analyze(data_tag.launch_clock_domain(), clock_tag.capture_clock_domain())) {
 
+                    float cpd = data_arrival - clock_capture;
+
+                    float slack = find_node_setup_slack(setup_analyzer, node, data_tag.launch_clock_domain(), data_tag.launch_clock_domain());
+
                     //Record the path info
-                    PathInfo path(cpd, 
-                                  data_tag.origin_node(), clock_tag.origin_node(), 
+                    PathInfo path(cpd, slack,
+                                  data_tag.origin_node(), node, 
                                   data_tag.launch_clock_domain(), clock_tag.capture_clock_domain());
 
                     //Find any existing path for this domain pair
@@ -101,6 +120,17 @@ float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
         }
     }
     return wns;
+}
+
+float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, tatum::NodeId node, tatum::DomainId launch_domain, tatum::DomainId capture_domain) {
+    for(const auto& tag : setup_analyzer.setup_slacks(node)) {
+        if(tag.launch_clock_domain() == launch_domain &&
+           tag.capture_clock_domain() == capture_domain) {
+            return tag.time().value();
+        }
+    }
+
+    return NAN;
 }
 
 std::vector<HistogramBucket> find_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins) {

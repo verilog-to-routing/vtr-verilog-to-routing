@@ -409,7 +409,7 @@ void try_place(struct s_placer_opts placer_opts,
         optimizer_slacks.update();
         load_criticalities(optimizer_slacks, crit_exponent, pb_gpin_lookup);
 
-        critical_path_delay = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
+        critical_path_delay = find_least_slack_critical_path_delay(g_timing_constraints, *timing_analyzer);
 
         //Write out the initial timing echo file
         std::ofstream os_timing_echo_init("timing.place_init.echo");
@@ -424,13 +424,11 @@ void try_place(struct s_placer_opts placer_opts,
 
 #ifdef USE_OLD_VPR_STA
         load_timing_graph_net_delays(point_to_point_delay_cost);
-		do_timing_analysis(slacks, timing_inf, false, false);
-#endif
+		do_timing_analysis(slacks, timing_inf, false, true);
 
-#ifdef USE_OLD_VPR_STA
         float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path_delay.path_delay);
         if(cpd_diff_ns > ERROR_TOL) {
-            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Clasic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path_delay.path_delay);
+            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path_delay.path_delay);
         }
 #endif
 
@@ -632,7 +630,7 @@ void try_place(struct s_placer_opts placer_opts,
 		oldt = t; /* for finding and printing alpha. */
 		update_t(&t, rlim, success_rat, annealing_sched);
 
-		critical_path_delay = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
+		critical_path_delay = find_least_slack_critical_path_delay(g_timing_constraints, *timing_analyzer);
         float sTNS = find_setup_total_negative_slack(*timing_analyzer);
         float sWNS =find_setup_worst_negative_slack(*timing_analyzer); 
         vtr::printf_info("%7.3f "
@@ -649,7 +647,7 @@ void try_place(struct s_placer_opts placer_opts,
 #ifdef USE_OLD_VPR_STA
         float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path_delay.path_delay);
         if(cpd_diff_ns > ERROR_TOL) {
-            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Clasic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path_delay.path_delay);
+            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path_delay.path_delay);
         }
 #endif
 
@@ -712,7 +710,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
-    critical_path_delay = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
+    critical_path_delay = find_least_slack_critical_path_delay(g_timing_constraints, *timing_analyzer);
     float sTNS = find_setup_total_negative_slack(*timing_analyzer);
     float sWNS = find_setup_worst_negative_slack(*timing_analyzer);
 
@@ -755,12 +753,12 @@ void try_place(struct s_placer_opts placer_opts,
 
         //Final timing estimate
         optimizer_slacks.update(); //Tatum
-		critical_path_delay = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
+		critical_path_delay = find_least_slack_critical_path_delay(g_timing_constraints, *timing_analyzer);
 
 #ifdef USE_OLD_VPR_STA
         //Old VPR analyzer
         load_timing_graph_net_delays(point_to_point_delay_cost);
-		do_timing_analysis(slacks, timing_inf, false, false);
+		do_timing_analysis(slacks, timing_inf, false, true);
 #endif
 
         std::ofstream os_timing_echo_final("timing.place_final.echo");
@@ -803,7 +801,7 @@ void try_place(struct s_placer_opts placer_opts,
 #ifdef USE_OLD_VPR_STA
         float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path_delay.path_delay);
         if(cpd_diff_ns > ERROR_TOL) {
-            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Clasic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path_delay.path_delay);
+            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path_delay.path_delay);
         }
 #endif
 	}
@@ -877,7 +875,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 
 #ifdef USE_OLD_VPR_STA
         load_timing_graph_net_delays(point_to_point_delay_cost);
-		do_timing_analysis(slacks, timing_inf, false, false);
+		do_timing_analysis(slacks, timing_inf, false, true);
 #endif
 
 		/*recompute costs from scratch, based on new criticalities */
@@ -961,7 +959,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 
 #ifdef USE_OLD_VPR_STA
                 load_timing_graph_net_delays(point_to_point_delay_cost);
-                do_timing_analysis(slacks, timing_inf, false, false);
+                do_timing_analysis(slacks, timing_inf, false, true);
 #endif
 
 				comp_td_costs(timing_cost, delay_cost);
