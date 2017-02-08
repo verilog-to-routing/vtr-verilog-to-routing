@@ -192,6 +192,18 @@ typedef struct s_pb {
         return nullptr; //Not found
     }
 
+    //Returns the root pb containing this pb
+    const t_pb* root_pb() const {
+        
+        const t_pb* curr_pb = this;
+        while(curr_pb->parent_pb != nullptr) {
+            curr_pb = curr_pb->parent_pb;
+        }
+
+        VTR_ASSERT(curr_pb->parent_pb == nullptr);
+        return curr_pb;
+    }
+
     //Returns true if this pb corresponds to a primitive block (i.e. in the AtomNetlist)
     bool is_primitive() const {
         return child_pbs == nullptr;
