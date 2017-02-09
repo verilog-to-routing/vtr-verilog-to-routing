@@ -140,10 +140,17 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
         const t_model_ports* model_port = netlist_.port_model(output_port);
 
         NodeId tnode;
-        if(model_port->clock.empty()) {
+        if(model_port->is_clock) {
+            //A generated clock source
+            tnode = tg_.add_node(NodeType::SOURCE);
+
+        } else if(model_port->clock.empty()) {
             //No clock => combinational output
             tnode = tg_.add_node(NodeType::OPIN);
+
         } else {
+            VTR_ASSERT(!model_port->is_clock);
+            VTR_ASSERT(!model_port->clock.empty());
             //Has an associated clock => sequential output
             tnode = tg_.add_node(NodeType::SOURCE);
         }
@@ -162,6 +169,12 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
             //Look-up the clock name on the port model
             AtomPortId port = netlist_.pin_port(pin);
             const t_model_ports* model_port = netlist_.port_model(port);
+
+            if(model_port->is_clock && model_port->dir == OUT_PORT) {
+                //This pin is a clock generator, so there is no clock pin
+                //connection
+                continue; 
+            }
 
             VTR_ASSERT_MSG(!model_port->clock.empty(), "Sequential pins must have a clock");
 
