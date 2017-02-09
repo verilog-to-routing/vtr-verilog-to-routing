@@ -580,7 +580,44 @@ bool TimingGraph::validate_structure() const {
     for(NodeId src_node : nodes()) {
 
         NodeType src_type = node_type(src_node);
+
+        auto out_edges = node_out_edges(src_node);
+        auto in_edges = node_in_edges(src_node);
+
+        //Check expected number of fan-in/fan-out edges
+        if(src_type == NodeType::SOURCE) {
+            if(in_edges.size() > 1) {
+                throw tatum::Error("SOURCE node has more than one incoming edge (expected 0 if primary input, or 1 if clocked)");
+            }
+        } else if (src_type == NodeType::SINK) {
+            if(out_edges.size() > 0) {
+                throw tatum::Error("SINK node has out-going edges");
+            }
+        } else if (src_type == NodeType::IPIN) {
+            if(in_edges.size() == 0) {
+                throw tatum::Error("IPIN has no in-coming edges");
+            }
+            if(out_edges.size() == 0) {
+                throw tatum::Error("IPIN has no out-going edges");
+            }
+        } else if (src_type == NodeType::OPIN) {
+            if(in_edges.size() == 0) {
+                throw tatum::Error("OPIN has no in-coming edges");
+            }
+            if(out_edges.size() == 0) {
+                throw tatum::Error("OPIN has no out-going edges");
+            }
+        } else {
+            TATUM_ASSERT(src_type == NodeType::CPIN);
+            if(in_edges.size() == 0) {
+                throw tatum::Error("CPIN has no in-coming edges");
+            }
+            if(out_edges.size() == 0) {
+                throw tatum::Error("CPIN has no out-going edges");
+            }
+        }
         
+        //Check node-type edge connectivity
         for(EdgeId out_edge : node_out_edges(src_node)) {
             NodeId sink_node = edge_sink_node(out_edge);
             NodeType sink_type = node_type(sink_node);

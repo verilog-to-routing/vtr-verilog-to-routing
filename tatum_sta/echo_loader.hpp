@@ -24,7 +24,7 @@ public:
 
     void start_graph() override { }
     void add_node(int node_id, tatumparse::NodeType type, std::vector<int> in_edge_ids, std::vector<int> out_edge_ids) override;
-    void add_edge(int edge_id, int src_node_id, int sink_node_id) override;
+    void add_edge(int edge_id, int src_node_id, int sink_node_id, bool disabled) override;
     void finish_graph() override;
 
     void start_constraints() override { }

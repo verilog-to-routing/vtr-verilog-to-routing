@@ -71,7 +71,7 @@ class Callback {
 
         virtual void start_graph() = 0;
         virtual void add_node(int node_id, NodeType type, std::vector<int> in_edge_ids, std::vector<int> out_edge_ids) = 0;
-        virtual void add_edge(int edge_id, int src_node_id, int sink_node_id) = 0;
+        virtual void add_edge(int edge_id, int src_node_id, int sink_node_id, bool disabled=false) = 0;
         virtual void finish_graph() = 0;
 
         virtual void start_constraints() = 0;

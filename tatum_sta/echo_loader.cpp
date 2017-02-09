@@ -11,9 +11,11 @@ void EchoLoader::add_node(int node_id, tatumparse::NodeType type, std::vector<in
     TATUM_ASSERT(created_node_id == tatum::NodeId(node_id));
 }
 
-void EchoLoader::add_edge(int edge_id, int src_node_id, int sink_node_id) {
+void EchoLoader::add_edge(int edge_id, int src_node_id, int sink_node_id, bool disabled) {
     tatum::EdgeId created_edge_id = tg_->add_edge(tatum::NodeId(src_node_id), tatum::NodeId(sink_node_id));
     TATUM_ASSERT(created_edge_id == tatum::EdgeId(edge_id));
+
+    tg_->disable_edge(created_edge_id, disabled);
 }
 
 void EchoLoader::finish_graph() { 
