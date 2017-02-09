@@ -52,7 +52,9 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
 #ifdef __cilk
             num_unconstrained = unconstrained_reducer.get_value();
 #endif
-            std::cerr << "Warning: " << num_unconstrained << " timing sinks were not constrained\n";
+            if(num_unconstrained > 0) {
+                std::cerr << "Warning: " << num_unconstrained << " timing sinks were not constrained\n";
+            }
         }
 
         void do_arrival_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) override {
