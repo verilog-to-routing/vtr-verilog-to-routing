@@ -6,7 +6,7 @@ namespace tatum {
 
 class GraphVisitor {
     public:
-        void do_arrival_pre_traverse_node(const TimingGraph& /*tg*/, const TimingConstraints& /*tc*/, const NodeId /*node_id*/) {}
+        bool do_arrival_pre_traverse_node(const TimingGraph& /*tg*/, const TimingConstraints& /*tc*/, const NodeId /*node_id*/) {}
         void do_arrival_traverse_node(const TimingGraph& /*tg*/, const TimingConstraints& /*tc*/, const NodeId /*node_id*/) {}
 
         template<class DelayCalc>

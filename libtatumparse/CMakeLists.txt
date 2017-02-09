@@ -37,6 +37,7 @@ set_source_files_properties(${FLEX_vpr_timing_graph_lexer_OUTPUTS}
 set_source_files_properties(${LIB_SOURCES} ${FLEX_TatumLexer_OUTPUTS} ${BISON_TatumParser_OUTPUT_SOURCE} PROPERTIES LANGUAGE CXX)
 
 #Suppress attribute warnings from bison header
+include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-Wno-attributes" COMPILER_SUPPORTS_-Wno-attributes)
 if(COMPILER_SUPPORTS_-Wno-attributes)
     add_compile_options("-Wno-attributes")

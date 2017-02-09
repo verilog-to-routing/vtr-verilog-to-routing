@@ -4,9 +4,7 @@
 
 //#define LOG_TRAVERSAL_LEVELS
 
-#ifdef LOG_TRAVERSAL_LEVELS
-# include <iostream>
-#endif
+#include <iostream>
 
 namespace tatum {
 
@@ -33,9 +31,13 @@ class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
 #ifdef LOG_TRAVERSAL_LEVELS
             std::cout << "Required Pre-traversal\n";
 #endif
+            size_t num_unconstrained = 0;
             for(NodeId node_id : tg.logical_outputs()) {
-                visitor.do_required_pre_traverse_node(tg, tc, node_id);
+                bool constrained = visitor.do_required_pre_traverse_node(tg, tc, node_id);
+
+                if(!constrained) ++num_unconstrained;
             }
+            std::cerr << "Warning: " << num_unconstrained << " timing sinks were not constrained\n";
         }
 
         void do_arrival_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) override {

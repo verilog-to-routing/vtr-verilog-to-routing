@@ -36,9 +36,11 @@ class SetupHoldAnalysis {
             hold_visitor_.do_arrival_pre_traverse_node(tg, tc, node_id); 
         }
 
-        void do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) { 
-            setup_visitor_.do_required_pre_traverse_node(tg, tc, node_id); 
-            hold_visitor_.do_required_pre_traverse_node(tg, tc, node_id); 
+        bool do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) { 
+            bool setup_unconstrained = setup_visitor_.do_required_pre_traverse_node(tg, tc, node_id); 
+            bool hold_unconstrained = hold_visitor_.do_required_pre_traverse_node(tg, tc, node_id); 
+
+            return setup_unconstrained || hold_unconstrained;
         }
 
         template<class DelayCalc>
