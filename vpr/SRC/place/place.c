@@ -64,9 +64,6 @@ using namespace std;
 #define UPDATED_ONCE 'U'
 #define GOT_FROM_SCRATCH 'S'
 
-/* Run the old STA engine as well as the new */
-#define USE_OLD_VPR_STA
-
 /* For comp_cost.  NORMAL means use the method that generates updateable  *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
@@ -302,7 +299,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
 	float * inverse_prev_bb_cost,
     const IntraLbPbPinLookup& pb_gpin_lookup,
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks,
     t_timing_inf timing_inf,
 #endif
@@ -313,7 +310,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks,
     t_timing_inf timing_inf,
 #endif
@@ -422,7 +419,7 @@ void try_place(struct s_placer_opts placer_opts,
         write_analysis_result(os_timing_echo_init, g_timing_graph, timing_analyzer);
         os_timing_echo_init.flush();
 
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
         load_timing_graph_net_delays(point_to_point_delay_cost);
 		do_timing_analysis(slacks, timing_inf, false, true);
 
@@ -560,7 +557,7 @@ void try_place(struct s_placer_opts placer_opts,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
 			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
             pb_gpin_lookup,
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
             timing_inf,
 #endif
@@ -569,7 +566,7 @@ void try_place(struct s_placer_opts placer_opts,
 		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
 			move_lim, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, &delay_cost,
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
             timing_inf,
 #endif
@@ -644,7 +641,7 @@ void try_place(struct s_placer_opts placer_opts,
                          success_rat, std_dev, rlim, crit_exponent, 
                          tot_iter, t / oldt);
 
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
         float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path_delay.path_delay);
         if(cpd_diff_ns > ERROR_TOL) {
             vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path_delay.path_delay);
@@ -674,7 +671,7 @@ void try_place(struct s_placer_opts placer_opts,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
 			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
             pb_gpin_lookup,
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
             timing_inf,
 #endif
@@ -687,7 +684,7 @@ void try_place(struct s_placer_opts placer_opts,
 	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
 			move_lim, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, &delay_cost,
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
             timing_inf,
 #endif
@@ -755,7 +752,7 @@ void try_place(struct s_placer_opts placer_opts,
         optimizer_slacks.update(); //Tatum
 		critical_path_delay = find_least_slack_critical_path_delay(g_timing_constraints, *timing_analyzer);
 
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
         //Old VPR analyzer
         load_timing_graph_net_delays(point_to_point_delay_cost);
 		do_timing_analysis(slacks, timing_inf, false, true);
@@ -798,7 +795,7 @@ void try_place(struct s_placer_opts placer_opts,
         print_histogram(find_setup_slack_histogram(*timing_analyzer));
         vtr::printf_info("\n");
 
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
         float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path_delay.path_delay);
         if(cpd_diff_ns > ERROR_TOL) {
             vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path_delay.path_delay);
@@ -849,7 +846,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
 	float * inverse_prev_bb_cost, 
     const IntraLbPbPinLookup& pb_gpin_lookup,
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks,
     t_timing_inf timing_inf,
 #endif
@@ -873,7 +870,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
         optimizer_slacks.update();
 		load_criticalities(optimizer_slacks, crit_exponent, pb_gpin_lookup);
 
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
         load_timing_graph_net_delays(point_to_point_delay_cost);
 		do_timing_analysis(slacks, timing_inf, false, true);
 #endif
@@ -897,7 +894,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks,
     t_timing_inf timing_inf,
 #endif
@@ -957,7 +954,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
                 optimizer_slacks.update();
 				load_criticalities(optimizer_slacks, crit_exponent, pb_gpin_lookup);
 
-#ifdef USE_OLD_VPR_STA
+#ifdef ENABLE_CLASSIC_VPR_STA
                 load_timing_graph_net_delays(point_to_point_delay_cost);
                 do_timing_analysis(slacks, timing_inf, false, true);
 #endif

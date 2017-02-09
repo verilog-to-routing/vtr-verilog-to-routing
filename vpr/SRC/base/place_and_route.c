@@ -137,11 +137,17 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 
 		clb_opins_used_locally = alloc_route_structs();
 
+#ifdef ENABLE_CLASSIC_VPR_STA
 		t_slack *slacks = alloc_and_load_timing_graph(timing_inf);
+#endif
 		float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
 		success = try_route(width_fac, router_opts, det_routing_arch,
-				segment_inf, timing_inf, net_delay, slacks, chan_width_dist,
+				segment_inf, timing_inf, net_delay,
+#ifdef ENABLE_CLASSIC_VPR_STA
+                slacks, 
+#endif
+                chan_width_dist,
 				clb_opins_used_locally, directs, num_directs);
 
 		if (success == false) {
@@ -160,7 +166,11 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 					det_routing_arch->R_minW_pmos,
 					det_routing_arch->directionality,
 					det_routing_arch->wire_to_rr_ipin_switch,
-					timing_inf.timing_analysis_enabled, net_delay, slacks, timing_inf);
+					timing_inf.timing_analysis_enabled, net_delay
+#ifdef ENABLE_CLASSIC_VPR_STA
+                    , slacks, timing_inf
+#endif
+                    );
 
 			print_route(route_file);
 
@@ -174,14 +184,18 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 		init_draw_coords(max_pins_per_clb);
 		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
 		
+#ifdef ENABLE_CLASSIC_VPR_STA
         VTR_ASSERT(slacks->slack);
+#endif
 
         if(GetPostSynthesisOption())
         {
             netlist_writer(g_atom_nl.netlist_name());
         }
 
+#ifdef ENABLE_CLASSIC_VPR_STA
         free_timing_graph(slacks);
+#endif
 
         VTR_ASSERT(net_delay);
         free_net_delay(net_delay, &net_delay_ch);
@@ -243,7 +257,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	bool success, prev_success, prev2_success, Fc_clipped = false;
 	char msg[vtr::BUFSIZE];
 	float **net_delay = NULL;
+#ifdef ENABLE_CLASSIC_VPR_STA
 	t_slack * slacks = NULL;
+#endif
     bool using_minw_hint = false;
 
 	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
@@ -275,7 +291,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	best_routing = alloc_saved_routing(clb_opins_used_locally,
 			&saved_clb_opins_used_locally);
 
+#ifdef ENABLE_CLASSIC_VPR_STA
 	slacks = alloc_and_load_timing_graph(timing_inf);
+#endif
 	net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
 	if (det_routing_arch->directionality == BI_DIRECTIONAL)
@@ -360,7 +378,11 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 					directs, num_directs);
 		}
 		success = try_route(current, router_opts, det_routing_arch, segment_inf,
-				timing_inf, net_delay, slacks, chan_width_dist,
+				timing_inf, net_delay, 
+#ifdef ENABLE_CLASSIC_VPR_STA
+                slacks, 
+#endif
+                chan_width_dist,
 				clb_opins_used_locally, directs, num_directs);
 		attempt_count++;
 		fflush(stdout);
@@ -468,7 +490,10 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 						directs, num_directs);
 			}
 			success = try_route(current, router_opts, det_routing_arch,
-					segment_inf, timing_inf, net_delay, slacks,
+					segment_inf, timing_inf, net_delay, 
+#ifdef ENABLE_CLASSIC_VPR_STA
+                    slacks,
+#endif
 					chan_width_dist, clb_opins_used_locally, directs, num_directs);
 
 			if (success && Fc_clipped == false) {
@@ -541,7 +566,11 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			det_routing_arch->num_segment, det_routing_arch->R_minW_nmos,
 			det_routing_arch->R_minW_pmos, det_routing_arch->directionality,
 			det_routing_arch->wire_to_rr_ipin_switch,
-			timing_inf.timing_analysis_enabled, net_delay, slacks, timing_inf);
+			timing_inf.timing_analysis_enabled, net_delay
+#ifdef ENABLE_CLASSIC_VPR_STA
+            , slacks, timing_inf
+#endif
+            );
 
 	print_route(route_file);
 
@@ -558,9 +587,6 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		  {
             netlist_writer(g_atom_nl.netlist_name().c_str());
 		  }
-
-		//free_timing_graph(slacks);
-		//free_net_delay(net_delay, &net_delay_ch);
 	}
 	
 	for (i = 0; i < num_blocks; i++) {
@@ -573,7 +599,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	free_saved_routing(best_routing, saved_clb_opins_used_locally);
 	fflush(stdout);
 	
+#ifdef ENABLE_CLASSIC_VPR_STA
 	free_timing_graph(slacks);
+#endif
 	free_net_delay(net_delay, &net_delay_ch);
 
 	return (final);

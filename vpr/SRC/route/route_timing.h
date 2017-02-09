@@ -2,23 +2,40 @@
 #include <unordered_map>
 #include <vector>
 #include "connection_based_routing.h"
+#include "vpr_types.h"
 
 int get_max_pins_per_net(void);
 
 bool try_timing_driven_route(struct s_router_opts router_opts,
-		float **net_delay, t_slack * slacks, vtr::t_ivec ** clb_opins_used_locally,
-        bool timing_analysis_enabled, const t_timing_inf &timing_inf);
+		float **net_delay, 
+#ifdef ENABLE_CLASSIC_VPR_STA
+        t_slack * slacks, 
+#endif
+        vtr::t_ivec ** clb_opins_used_locally,
+        bool timing_analysis_enabled
+#ifdef ENABLE_CLASSIC_VPR_STA
+        , const t_timing_inf &timing_inf
+#endif
+        );
 bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
 		struct s_router_opts router_opts,
 		CBRR& connections_inf,
 		float* pin_criticality, 
-		t_rt_node** rt_node_of_sink, float** net_delay, t_slack* slacks);
+		t_rt_node** rt_node_of_sink, float** net_delay
+#ifdef ENABLE_CLASSIC_VPR_STA
+        , t_slack* slacks
+#endif
+        );
 
 bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
 		CBRR& connections_inf,
 		float *pin_criticality, int min_incremental_reroute_fanout, t_rt_node ** rt_node_of_sink, 
-		float *net_delay, t_slack * slacks);
+		float *net_delay
+#ifdef ENABLE_CLASSIC_VPR_STA
+        , t_slack * slacks
+#endif
+        );
 
 
 void alloc_timing_driven_route_structs(float **pin_criticality_ptr,

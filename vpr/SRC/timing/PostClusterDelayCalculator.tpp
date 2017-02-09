@@ -234,7 +234,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 
                 edge_delay = tatum::Time(clb_delay_calc_.internal_src_to_internal_sink_delay(clb_src_block, src_pb_route_id, sink_pb_route_id));
 
-                //Save the delay, since it won't change during placement
+                //Save the delay, since it won't change during placement or routing
                 // Note that we cache the full edge delay for edges completely contained within CLBs
                 edge_delay_cache_[edge_id] = edge_delay;
             }

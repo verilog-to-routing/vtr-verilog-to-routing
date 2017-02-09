@@ -37,7 +37,11 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		float R_minW_nmos, float R_minW_pmos,
 		enum e_directionality directionality, int wire_to_ipin_switch,
 		bool timing_analysis_enabled,
-		float **net_delay, t_slack * slacks, const t_timing_inf &timing_inf) {
+		float **net_delay 
+#ifdef ENABLE_CLASSIC_VPR_STA
+        , t_slack * slacks, const t_timing_inf &timing_inf
+#endif
+        ) {
 
 	/* Prints out various statistics about the current routing.  Both a routing *
 	 * and an rr_graph must exist when you call this routine.                   */
@@ -85,6 +89,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		if (timing_analysis_enabled) {
 			load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
+#ifdef ENABLE_CLASSIC_VPR_STA
 			load_timing_graph_net_delays(net_delay);
 
 			do_timing_analysis(slacks, timing_inf, false, true);
@@ -104,6 +109,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
             }
 
 			print_timing_stats();
+#endif
 		}
 	}
 

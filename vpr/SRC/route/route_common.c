@@ -293,7 +293,10 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 
 bool try_route(int width_fac, struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, float **net_delay, t_slack * slacks,
+		t_timing_inf timing_inf, float **net_delay,
+#ifdef ENABLE_CLASSIC_VPR_STA
+        t_slack * slacks,
+#endif
 		t_chan_width_dist chan_width_dist, vtr::t_ivec ** clb_opins_used_locally,
 		t_direct_inf *directs, int num_directs) {
 
@@ -361,8 +364,15 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 	} else { /* TIMING_DRIVEN route */
 		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
 
-		success = try_timing_driven_route(router_opts, net_delay, slacks,
-			clb_opins_used_locally,timing_inf.timing_analysis_enabled, timing_inf);
+		success = try_timing_driven_route(router_opts, net_delay, 
+#ifdef ENABLE_CLASSIC_VPR_STA
+            slacks,
+#endif
+			clb_opins_used_locally,timing_inf.timing_analysis_enabled
+#ifdef ENABLE_CLASSIC_VPR_STA
+            , timing_inf
+#endif
+            );
 
 		profiling::time_on_fanout_analysis();
 	}

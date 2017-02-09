@@ -20,9 +20,6 @@
 #include "TimingGraph.hpp"
 #include "TimingConstraints.hpp"
 
-//Enable the legacy STA engine
-#define ENABLE_LEGACY_VPR_STA
-
 /********************************************************************
  Atom Netlist Globals
  ********************************************************************/

@@ -604,7 +604,11 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 			router_opts.astar_fac, router_opts.bend_cost, 
 			dummy_connections_inf,
 			pin_criticality, router_opts.min_incremental_reroute_fanout, rt_node_of_sink, 
-			net_delay[NET_USED], NULL);
+			net_delay[NET_USED] 
+#ifdef ENABLE_CLASSIC_VPR_STA
+            , NULL
+#endif
+            );
 
 	net_delay_value = net_delay[NET_USED][NET_USED_SINK_BLOCK];
 
