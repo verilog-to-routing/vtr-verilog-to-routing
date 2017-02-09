@@ -5,6 +5,7 @@
 #include "timing_analyzers.hpp"
 #include "TimingConstraints.hpp"
 #include "histogram.h"
+#include "PlacementDelayCalculator.hpp"
 
 struct PathInfo {
     PathInfo() = default;
@@ -51,5 +52,8 @@ float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, ta
 
 //Returns a slack histogram
 std::vector<HistogramBucket> find_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins = 10);
+
+//Prints the atom net delays to a file
+void dump_atom_net_delays_tatum(std::string filename, const PlacementDelayCalculator& dc);
 
 #endif

@@ -1,3 +1,6 @@
+#include <fstream>
+
+#include "vtr_log.h"
 #include "timing_util.h"
 #include "vtr_assert.h"
 
@@ -184,5 +187,35 @@ std::vector<HistogramBucket> find_setup_slack_histogram(const tatum::SetupTiming
     }
 
     return histogram;
+}
+
+void dump_atom_net_delays_tatum(std::string filename, const PlacementDelayCalculator& dc) {
+    std::ofstream os(filename);
+
+    for(AtomNetId net : g_atom_nl.nets()) {
+        os << "Net: " << size_t(net) << " (" << g_atom_nl.net_name(net) << ")\n";
+        AtomPinId driver = g_atom_nl.net_driver(net);
+        os << "\tDriver: " << size_t(driver) << " (" << g_atom_nl.pin_name(driver) << ")\n";
+
+        tatum::NodeId driver_tnode = g_atom_map.pin_tnode[driver];
+
+        for(AtomPinId sink : g_atom_nl.net_sinks(net)) {
+            tatum::NodeId sink_tnode = g_atom_map.pin_tnode[sink];
+
+            //Find the corresponding edge
+            tatum::EdgeId edge;
+            for(tatum::EdgeId check_edge : g_timing_graph.node_out_edges(driver_tnode)) {
+                if(g_timing_graph.edge_sink_node(check_edge) == sink_tnode) {
+                    edge = check_edge;
+                    break;
+                }
+            }
+            VTR_ASSERT(edge);
+
+            float delay = dc.max_edge_delay(g_timing_graph, edge).value();
+            os << "\tSink " << size_t(sink) << ": " << delay << " (" << g_atom_nl.pin_name(sink) << "): " "\n";
+
+        }
+    }
 }
 
