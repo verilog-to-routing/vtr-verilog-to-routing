@@ -68,8 +68,10 @@ std::vector<PathInfo> find_critical_path_delays(const tatum::TimingConstraints& 
                 if(constraints.should_analyze(data_tag.launch_clock_domain(), clock_tag.capture_clock_domain())) {
 
                     float cpd = data_arrival - clock_capture;
+                    VTR_ASSERT(!std::isnan(cpd));
 
-                    float slack = find_node_setup_slack(setup_analyzer, node, data_tag.launch_clock_domain(), data_tag.launch_clock_domain());
+                    float slack = find_node_setup_slack(setup_analyzer, node, data_tag.launch_clock_domain(), clock_tag.capture_clock_domain());
+                    VTR_ASSERT(!std::isnan(slack));
 
                     //Record the path info
                     PathInfo path(cpd, slack,
