@@ -39,7 +39,7 @@ class CommonAnalysisVisitor {
         void do_reset_edge(const EdgeId edge_id) { ops_.reset_edge(edge_id); }
 
         void do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
-        void do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
+        bool do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
 
         template<class DelayCalc>
         void do_arrival_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id);
@@ -136,13 +136,15 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
 }
 
 template<class AnalysisOps>
-void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+bool CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
 
     /*
      * Calculate required times
      */
 
     TATUM_ASSERT(tg.node_type(node_id) == NodeType::SINK);
+
+    bool node_constrained = true;
 
     //Sinks corresponding to FF sinks will have propagated (capturing) clock tags,
     //while those corresponding to outpads will not. To treat them uniformly, we 
@@ -154,9 +156,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
         auto output_constraints = tc.output_constraints(node_id);
 
         if(output_constraints.empty()) {
-            //throw tatum::Error("Output unconstrained");
-            std::cerr << "Warning: Timing graph " << node_id << " " << tg.node_type(node_id);
-            std::cerr << " has no incomming clock tags, and no output constraint. No required time will be calculated\n";
+            node_constrained = false;
         } else {
             DomainId domain_id = tc.node_clock_domain(node_id);
             TATUM_ASSERT(domain_id);
@@ -212,6 +212,8 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
             }
         }
     }
+
+    return node_constrained;
 }
 
 /*
@@ -482,7 +484,13 @@ template<class AnalysisOps>
 bool CommonAnalysisVisitor<AnalysisOps>::should_calculate_slack(const TimingTag& src_tag, const TimingTag& sink_tag) const {
     TATUM_ASSERT_SAFE(src_tag.type() == TagType::DATA_ARRIVAL && sink_tag.type() == TagType::DATA_REQUIRED);
 
+    //NOTE: we do not need to check the constraints to determine whether this domain pair should be analyzed,
+    //      this check has already been done when we created the DATA_REQUIRED tags (i.e. sink tags in this context),
+    //      ensuring we only calculate slack for valid domain pairs (otherwise the DATA_REQUIREd tag would note exist)
+
+
     return src_tag.launch_clock_domain() == sink_tag.launch_clock_domain();
+
 }
 
 }} //namepsace

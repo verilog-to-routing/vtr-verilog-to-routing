@@ -3,6 +3,10 @@
 #include "TimingGraphWalker.hpp"
 #include "TimingGraph.hpp"
 
+#ifdef __cilk
+# include <cilk/reducer_opadd.h>
+#endif
+
 
 namespace tatum {
 
@@ -27,9 +31,28 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
 
         void do_required_pre_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, Visitor& visitor) override {
             const auto& po = tg.logical_outputs();
+
+            size_t num_unconstrained = 0;
+#ifdef __cilk
+            //Use reducer for thread-safe sum
+            cilk::reducer<cilk::op_add<size_t>> unconstrained_reducer(0);
+#endif
+
             cilk_for(auto iter = po.begin(); iter != po.end(); ++iter) {
-                visitor.do_required_pre_traverse_node(tg, tc, *iter);
+                bool constrained = visitor.do_required_pre_traverse_node(tg, tc, *iter);
+
+                if(!constrained) {
+#ifdef __cilk
+                    *unconstrained_reducer += 1;
+#else
+                    num_unconstrained += 1;
+#endif
+                }
             }
+#ifdef __cilk
+            num_unconstrained = unconstrained_reducer.get_value();
+#endif
+            std::cerr << "Warning: " << num_unconstrained << " timing sinks were not constrained\n";
         }
 
         void do_arrival_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) override {
