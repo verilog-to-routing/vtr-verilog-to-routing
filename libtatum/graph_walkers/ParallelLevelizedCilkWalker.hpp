@@ -53,7 +53,7 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
             num_unconstrained = unconstrained_reducer.get_value();
 #endif
             if(num_unconstrained > 0) {
-                std::cerr << "Warning: " << num_unconstrained << " timing sinks were not constrained\n";
+                std::cerr << "Warning: " << num_unconstrained << " timing sinks were not constrained during timing analysis\n";
             }
         }
 

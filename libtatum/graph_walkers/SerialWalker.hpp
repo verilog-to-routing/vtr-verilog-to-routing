@@ -38,8 +38,8 @@ class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
                 if(!constrained) ++num_unconstrained;
             }
 
-            if(num_unconstrained  0) {
-                std::cerr << "Warning: " << num_unconstrained << " timing sinks were not constrained\n";
+            if(num_unconstrained > 0) {
+                std::cerr << "Warning: " << num_unconstrained << " timing sinks were not constrained during timing analysis\n";
             }
         }
 
