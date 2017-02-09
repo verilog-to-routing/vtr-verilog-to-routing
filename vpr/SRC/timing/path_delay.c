@@ -1560,6 +1560,7 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
 	tnode[i].pb_graph_pin = pb_graph_pin;
 	tnode[i].block = iblock;
 
+
 	if (tnode[i].pb_graph_pin->parent_node->pb_type->blif_model == NULL) {
 		VTR_ASSERT(tnode[i].pb_graph_pin->type == PB_PIN_NORMAL);
 		if (tnode[i].pb_graph_pin->parent_node->parent_pb_graph_node == NULL) {
@@ -1573,6 +1574,8 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
 			tnode[i].type = TN_INTERMEDIATE_NODE;
 		}
 	} else {
+        AtomPinId atom_pin = find_atom_pin(iblock, pb_graph_pin);
+
 		if (tnode[i].pb_graph_pin->type == PB_PIN_INPAD) {
 			VTR_ASSERT(tnode[i].pb_graph_pin->port->type == OUT_PORT);
 			tnode[i].type = TN_INPAD_OPIN;
@@ -1584,6 +1587,10 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
 			tnode[i + 1].pb_graph_pin = pb_graph_pin; /* Necessary for propagate_clock_domain_and_skew(). */
 			tnode[i + 1].type = TN_INPAD_SOURCE;
 			tnode[i + 1].block = iblock;
+
+
+            g_atom_map.set_atom_pin_tnode(atom_pin, i + 1);
+
 			(*inode)++;
 		} else if (tnode[i].pb_graph_pin->type == PB_PIN_OUTPAD) {
 			VTR_ASSERT(tnode[i].pb_graph_pin->port->type == IN_PORT);
@@ -1598,6 +1605,8 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
 			tnode[i + 1].block = iblock;
 			tnode[i + 1].num_edges = 0;
 			tnode[i + 1].out_edges = NULL;
+
+            g_atom_map.set_atom_pin_tnode(atom_pin, i + 1);
 			(*inode)++;
 		} else if (tnode[i].pb_graph_pin->type == PB_PIN_SEQUENTIAL) {
 			if (tnode[i].pb_graph_pin->port->type == IN_PORT) {
@@ -1612,6 +1621,8 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
 				tnode[i + 1].block = iblock;
 				tnode[i + 1].num_edges = 0;
 				tnode[i + 1].out_edges = NULL;
+
+                g_atom_map.set_atom_pin_tnode(atom_pin, i + 1);
 			} else {
 				VTR_ASSERT(tnode[i].pb_graph_pin->port->type == OUT_PORT);
                 //Determine whether we are a standard clocked output pin (TN_FF_OPIN with TN_FF_SOURCE)
@@ -1628,6 +1639,8 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
                     tnode[i + 1].pb_graph_pin = pb_graph_pin;
                     tnode[i + 1].type = TN_FF_SOURCE;
                     tnode[i + 1].block = iblock;
+
+                    g_atom_map.set_atom_pin_tnode(atom_pin, i + 1);
                 } else {
                     //Clock source
                     tnode[i].type = TN_CLOCK_OPIN;
@@ -1639,6 +1652,8 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
                     tnode[i + 1].pb_graph_pin = pb_graph_pin;
                     tnode[i + 1].type = TN_CLOCK_SOURCE;
                     tnode[i + 1].block = iblock;
+
+                    g_atom_map.set_atom_pin_tnode(atom_pin, i + 1);
                 }
 			}
 			(*inode)++;
@@ -1646,14 +1661,20 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
 			tnode[i].type = TN_FF_CLOCK;
 			tnode[i].num_edges = 0;
 			tnode[i].out_edges = NULL;
+
+            g_atom_map.set_atom_pin_tnode(atom_pin, i);
 		} else {
 			if (tnode[i].pb_graph_pin->port->type == IN_PORT) {
 				VTR_ASSERT(tnode[i].pb_graph_pin->type == PB_PIN_TERMINAL);
 				tnode[i].type = TN_PRIMITIVE_IPIN;
+
+                g_atom_map.set_atom_pin_tnode(atom_pin, i);
 			} else {
 				VTR_ASSERT(tnode[i].pb_graph_pin->port->type == OUT_PORT);
 				VTR_ASSERT(tnode[i].pb_graph_pin->type == PB_PIN_TERMINAL);
 				tnode[i].type = TN_PRIMITIVE_OPIN;
+
+                g_atom_map.set_atom_pin_tnode(atom_pin, i);
 			}
 		}
 	}

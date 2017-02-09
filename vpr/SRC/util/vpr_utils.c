@@ -665,6 +665,33 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *m
 	return NULL;
 }
 
+//Retrieves the atom pin associated with a specific CLB and pb_graph_pin
+AtomPinId find_atom_pin(int iblk, const t_pb_graph_pin* pb_gpin) {
+    int pb_route_id = pb_gpin->pin_count_in_cluster;
+    AtomNetId atom_net = block[iblk].pb_route[pb_route_id].atom_net_id;
+
+    VTR_ASSERT(atom_net);
+
+    AtomPinId atom_pin;
+
+    //Look through all the pins on this net, looking for the matching pin
+    for(AtomPinId pin : g_atom_nl.net_pins(atom_net)) {
+        AtomBlockId blk = g_atom_nl.pin_block(pin);
+        if(g_atom_map.atom_clb(blk) == iblk) {
+            //Part of the same CLB
+
+            if(g_atom_map.atom_pin_pb_graph_pin(pin) == pb_gpin) {
+                //The same pin
+                atom_pin = pin;
+            }
+        }
+    }
+
+    VTR_ASSERT(atom_pin);
+
+    return atom_pin;
+}
+
 //Retrieves the pb_graph_pin associated with an AtomPinId
 //  Currently this function just wraps get_pb_graph_node_pin_from_model_port_pin()
 //  in a more convenient interface.

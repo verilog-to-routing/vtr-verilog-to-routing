@@ -59,6 +59,8 @@ const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string po
 //Returns the graph pin matching name at pin index
 const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index);
 
+AtomPinId find_atom_pin(int iblk, const t_pb_graph_pin* pb_gpin);
+
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);
 int get_max_depth_of_pb_type(t_pb_type *pb_type);
 int get_max_nets_in_pb_type(const t_pb_type *pb_type);
