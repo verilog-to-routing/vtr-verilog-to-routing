@@ -26,10 +26,7 @@
 #include "route_profiling.h"	
 
 #include "timing_util.h"
-#include "analyzer_factory.hpp"
-#include "SlackEvaluator.h"
-#include "RoutingDelayCalculator.hpp"
- 
+
 using namespace std;
 
 
@@ -77,6 +74,8 @@ struct more_sinks_than {
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, 
+        const IntraLbPbPinLookup& pb_gpin_lookup,
+        SetupSlackEvaluator& optimizer_slacks,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks, 
 #endif
@@ -91,7 +90,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns true if the routing succeeds, false otherwise.                    */
 
-    PathInfo critical_path;
+    float critical_path = NAN;
 
 	// initialize and properly size the lookups for profiling fanout breakdown
 	 profiling::profiling_initialization(get_max_pins_per_net());
@@ -139,17 +138,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		}
 	}
 
-    //Initialize the delay calculator
-    RoutingDelayCalculator dc(g_atom_nl, g_atom_map, net_delay);
-
-    //Create the analyzer
-    std::shared_ptr<tatum::SetupTimingAnalyzer> timing_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
-
-    //Get the slack calculator
-    auto optimizer_slacks = make_optimizer_slacks(g_atom_nl, g_atom_map, timing_analyzer, g_timing_graph, dc);
-
-    optimizer_slacks.update();
-
 	// build lookup datastructures and 
 	// allocate and initialize remaining_targets [1..max_pins_per_net-1], and rr_node_to_pin [1..num_rr_nodes-1]
 	CBRR connections_inf {};
@@ -175,7 +163,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				connections_inf,
 				route_structs.pin_criticality,
 				route_structs.rt_node_of_sink,
-				net_delay
+				net_delay,
+                pb_gpin_lookup,
+                optimizer_slacks
 #ifdef ENABLE_CLASSIC_VPR_STA
 				, slacks
 #endif
@@ -257,13 +247,13 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
                 optimizer_slacks.update();
 
-                critical_path = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
+                critical_path = optimizer_slacks.critical_path_delay();
 
 
 
 
-                vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path.path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
-				vtr::printf_info("Critical path: %g ns\n", critical_path.path_delay);
+                vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, 1e9*critical_path, overused_ratio*num_rr_nodes, overused_ratio*100);
+				vtr::printf_info("Critical path: %g ns\n", 1e9*critical_path);
 			} else {
                 vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 			}
@@ -318,17 +308,17 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 		
 		if (timing_analysis_enabled) {
-            critical_path = find_longest_critical_path_delay(g_timing_constraints, *timing_analyzer);
+            critical_path = optimizer_slacks.critical_path_delay();
 
 			// check if any connection needs to be forcibly rerouted
 			// first iteration sets up the lower bound connection delays since only timing is optimized for
 			if (itry == 1) {
-				connections_inf.set_stable_critical_path_delay(critical_path.path_delay);
+				connections_inf.set_stable_critical_path_delay(critical_path);
 				connections_inf.set_lower_bound_connection_delays(net_delay);
 			} else {
 				bool stable_routing_configuration = true;
 				// only need to forcibly reroute if critical path grew significantly
-				if (connections_inf.critical_path_delay_grew_significantly(critical_path.path_delay))
+				if (connections_inf.critical_path_delay_grew_significantly(critical_path))
 					stable_routing_configuration = connections_inf.forcibly_reroute_connections(router_opts.max_criticality, 
 #ifdef ENABLE_CLASSIC_VPR_STA
                             slacks, 
@@ -336,9 +326,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
                             net_delay);
 				// not stable if any connection needs to be forcibly rerouted
 				if (stable_routing_configuration)
-					connections_inf.set_stable_critical_path_delay(critical_path.path_delay);
+					connections_inf.set_stable_critical_path_delay(critical_path);
 			}
-            vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path.path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
+            vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path, overused_ratio*num_rr_nodes, overused_ratio*100);
 		} else {
             vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
@@ -359,7 +349,9 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		struct s_router_opts router_opts,
 		CBRR& connections_inf,
 		float* pin_criticality,
-		t_rt_node** rt_node_of_sink, float** net_delay
+		t_rt_node** rt_node_of_sink, float** net_delay,
+        const IntraLbPbPinLookup& pb_gpin_lookup,
+        SetupSlackEvaluator& optimizer_slacks
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_slack* slacks
 #endif
@@ -384,7 +376,10 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 				router_opts.astar_fac, router_opts.bend_cost, 
 				connections_inf,
 				pin_criticality, router_opts.min_incremental_reroute_fanout, 
-				rt_node_of_sink, net_delay[inet]
+				rt_node_of_sink, 
+                net_delay[inet],
+                pb_gpin_lookup,
+                optimizer_slacks
 #ifdef ENABLE_CLASSIC_VPR_STA
                 , slacks
 #endif
@@ -501,7 +496,9 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		float criticality_exp, float astar_fac, float bend_cost,
 		CBRR& connections_inf,
 		float *pin_criticality, int min_incremental_reroute_fanout,
-		t_rt_node ** rt_node_of_sink, float *net_delay
+		t_rt_node ** rt_node_of_sink, float *net_delay,
+        const IntraLbPbPinLookup& pb_gpin_lookup,
+        const SetupSlackEvaluator& optimizer_slacks
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_slack * slacks
 #endif
@@ -530,7 +527,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		/* Use criticality of 1. This makes all nets critical.  Note: There is a big difference between setting pin criticality to 0
 		compared to 1.  If pin criticality is set to 0, then the current path delay is completely ignored during routing.  By setting
 		pin criticality to 1, the current path delay to the pin will always be considered and optimized for */
-#ifdef ENABLE_CLASSIC_VPR_STA
+#if 0
 		if (!slacks) {
             pin_criticality[ipin] = 1.0;
         } else {
@@ -553,7 +550,16 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);			
 		}
 #else
-            pin_criticality[ipin] = 1.0;
+        //New analyzer
+        const t_net_pin& net_pin = g_clbs_nlist.net[inet].pins[ipin];
+
+        std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(net_pin.block, net_pin.block_pin, pb_gpin_lookup);
+
+        float clb_pin_crit = 0.;
+        for(const AtomPinId atom_pin : atom_pins) {
+            clb_pin_crit = std::max(clb_pin_crit, optimizer_slacks.setup_criticality(atom_pin));
+        }
+        pin_criticality[ipin] = clb_pin_crit;
 #endif
 	}
 

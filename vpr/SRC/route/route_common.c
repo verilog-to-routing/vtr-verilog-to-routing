@@ -28,6 +28,12 @@ using namespace std;
 
 #include "route_profiling.h"
 
+#include "timing_util.h"
+#include "analyzer_factory.hpp"
+#include "SlackEvaluator.h"
+#include "RoutingDelayCalculator.hpp"
+#include "path_delay.h"
+ 
 
 // Disable the routing predictor for circuits with less that this number of nets.
 // This was experimentally determined, by Matthew Walker, to be the most useful
@@ -364,7 +370,22 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 	} else { /* TIMING_DRIVEN route */
 		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
 
+        //Initialize the delay calculator
+        RoutingDelayCalculator dc(g_atom_nl, g_atom_map, net_delay);
+
+        //Create the analyzer
+        std::shared_ptr<tatum::SetupTimingAnalyzer> timing_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
+
+        //Get the slack calculator
+        auto optimizer_slacks = make_optimizer_slacks(g_atom_nl, g_atom_map, timing_analyzer, g_timing_graph, dc);
+        optimizer_slacks.update();
+
+        IntraLbPbPinLookup intra_lb_pb_pin_lookup(type_descriptors, num_types);
+
+
 		success = try_timing_driven_route(router_opts, net_delay, 
+            intra_lb_pb_pin_lookup,
+            optimizer_slacks,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
 #endif
@@ -375,9 +396,16 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
             );
 
 		profiling::time_on_fanout_analysis();
+
+
+        //Update timing analysis stats
+        g_timing_analysis_profile_stats.wallclock_time += timing_analyzer->get_profiling_data("total_analysis_sec");
+        g_timing_analysis_profile_stats.num_full_updates += timing_analyzer->get_profiling_data("num_full_updates");
+
 	}
 
 	free_rr_node_route_structs();
+
 	return (success);
 }
 

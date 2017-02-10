@@ -5,32 +5,61 @@
 #include "timing_analyzers.hpp"
 #include "vtr_flat_map.h"
 #include "vpr_error.h"
+#include "timing_util.h"
 
 class SlackEvaluator {
     public:
-        SlackEvaluator(const AtomNetlist& netlist, const AtomMap& atom_map)
-            : netlist_(netlist)
-            , atom_map_(atom_map) {}
-
         virtual ~SlackEvaluator() = default;
 
         //Update the slacks
         virtual void update()  = 0;
-
-    protected:
-        const AtomNetlist& netlist_;
-        const AtomMap& atom_map_;
 };
 
 class SetupSlackEvaluator : public SlackEvaluator {
     public:
-        SetupSlackEvaluator(const AtomNetlist& netlist, const AtomMap& atom_map, std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer)
-            : SlackEvaluator(netlist, atom_map)
+        virtual float setup_slack(AtomPinId src_pin, AtomPinId sink_pin) const = 0;
+        virtual float setup_criticality(AtomPinId src_pin, AtomPinId sink_pin) const = 0;
+
+        virtual float setup_slack(AtomPinId pin) const = 0;
+        virtual float setup_criticality(AtomPinId pin) const = 0;
+
+        virtual float critical_path_delay() const = 0;
+};
+
+class ConstantSetupSlackEvaluator : public SetupSlackEvaluator {
+    public:
+        ConstantSetupSlackEvaluator(float slack=0., float criticality=1., float cpd=NAN)
+            : slack_(slack)
+            , criticality_(criticality)
+            , cpd_(cpd) {}
+
+        float setup_slack(AtomPinId /*src_pin*/, AtomPinId /*sink_pin*/) const override { return slack_; }
+        float setup_criticality(AtomPinId /*src_pin*/, AtomPinId /*sink_pin*/) const override { return criticality_; }
+
+        float setup_slack(AtomPinId /*pin*/) const override { return slack_; }
+        float setup_criticality(AtomPinId /*pin*/) const override { return criticality_; }
+
+        float critical_path_delay() const override { return cpd_; }
+
+        void update() override { /*NoOp*/ }
+
+    private:
+        const float slack_;
+        const float criticality_;
+        const float cpd_;
+};
+
+class DynamicSetupSlackEvaluator : public SetupSlackEvaluator {
+    public:
+        DynamicSetupSlackEvaluator(const AtomNetlist& netlist, const AtomMap& atom_map, std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer)
+            : netlist_(netlist)
+            , atom_map_(atom_map)
             , setup_analyzer_(analyzer) {}
 
         //Returns the slack of the connection from src_pin to sink_pin
-        float setup_slack(AtomPinId src_pin, AtomPinId sink_pin) const { 
+        float setup_slack(AtomPinId src_pin, AtomPinId sink_pin) const override { 
             auto iter = setup_edge_slacks_.find({src_pin, sink_pin});
+
             if(iter == setup_edge_slacks_.end()) {
                 VPR_THROW(VPR_ERROR_TIMING, "Invalid source/sink pin during slack look-up (pins must be connected)");
             }
@@ -39,8 +68,9 @@ class SetupSlackEvaluator : public SlackEvaluator {
         }
 
         //Returns the criticality of the connection from src_pin to sink_pin
-        float setup_criticality(AtomPinId src_pin, AtomPinId sink_pin) const { 
+        float setup_criticality(AtomPinId src_pin, AtomPinId sink_pin) const override { 
             auto iter = setup_edge_criticalities_.find({src_pin, sink_pin});
+
             if(iter == setup_edge_criticalities_.end()) {
                 VPR_THROW(VPR_ERROR_TIMING, "Invalid source/sink pin during criticality look-up (pins must be connected)");
             }
@@ -49,14 +79,16 @@ class SetupSlackEvaluator : public SlackEvaluator {
         }
 
         //Returns the slack of the most critical connection (lowest slack) through the specified pin
-        float setup_slack(AtomPinId pin) const {
+        float setup_slack(AtomPinId pin) const override {
             return setup_pin_slacks_[pin];
         }
 
         //Returns the criticality of the most critical connection through the specified pin
-        float setup_criticality(AtomPinId pin) const {
+        float setup_criticality(AtomPinId pin) const override {
             return setup_pin_criticalities_[pin];
         }
+
+        float critical_path_delay() const override { return find_least_slack_critical_path_delay(g_timing_constraints, *setup_analyzer_).path_delay; }
 
         void update() override {
             setup_analyzer_->update_timing();
@@ -106,6 +138,8 @@ class SetupSlackEvaluator : public SlackEvaluator {
         virtual void update_setup_edge_slacks() = 0;
         virtual void update_setup_edge_criticalities() = 0;
     protected:
+        const AtomNetlist& netlist_;
+        const AtomMap& atom_map_;
         vtr::flat_map<std::pair<AtomPinId,AtomPinId>,float> setup_edge_slacks_;
         vtr::flat_map<std::pair<AtomPinId,AtomPinId>,float> setup_edge_criticalities_;
         std::shared_ptr<tatum::SetupTimingAnalyzer> setup_analyzer_;
@@ -132,13 +166,13 @@ class SetupSlackEvaluator : public SlackEvaluator {
 //  Slacks and criticality are calculated according to the per-constraint 'Relaxed Slacks' method 
 //  from "Robust Optimization of Mulitple Timing Constraints" (ROMTC)
 template<class DelayCalc>
-class OptimizerSlacks : public SetupSlackEvaluator {
+class OptimizerSlacks : public DynamicSetupSlackEvaluator {
     public:
         OptimizerSlacks(const AtomNetlist& netlist, const AtomMap& atom_map, 
                        std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer, 
                        const tatum::TimingGraph& tg,
                        const DelayCalc& dc)
-            : SetupSlackEvaluator(netlist, atom_map, analyzer)
+            : DynamicSetupSlackEvaluator(netlist, atom_map, analyzer)
             , tg_(tg)
             , dc_(dc)
             {}
