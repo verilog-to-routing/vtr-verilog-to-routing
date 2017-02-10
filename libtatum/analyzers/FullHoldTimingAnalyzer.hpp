@@ -54,7 +54,7 @@ class FullHoldTimingAnalyzer : public HoldTimingAnalyzer {
             graph_walker_.set_profiling_data("num_full_updates", graph_walker_.get_profiling_data("num_full_updates") + 1);
         }
 
-        double get_profiling_data_impl(std::string key) override { return graph_walker_.get_profiling_data(key); }
+        double get_profiling_data_impl(std::string key) const override { return graph_walker_.get_profiling_data(key); }
 
         TimingTags::tag_range hold_tags_impl(NodeId node_id) const override { return hold_visitor_.hold_tags(node_id); }
         TimingTags::tag_range hold_tags_impl(NodeId node_id, TagType type) const override { return hold_visitor_.hold_tags(node_id, type); }

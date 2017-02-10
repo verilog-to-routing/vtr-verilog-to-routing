@@ -94,9 +94,10 @@ class TimingGraphWalker {
         ///Retrieve profiling information
         ///\param key The profiling key
         ///\returns The profiling value for the given key, or NaN if the key is not found
-        double get_profiling_data(std::string key) { 
-            if(profiling_data_.count(key)) {
-                return profiling_data_[key];
+        double get_profiling_data(std::string key) const { 
+            auto iter = profiling_data_.find(key);
+            if(iter != profiling_data_.end()) {
+                return iter->second;
             } else {
                 return std::numeric_limits<double>::quiet_NaN();
             }
