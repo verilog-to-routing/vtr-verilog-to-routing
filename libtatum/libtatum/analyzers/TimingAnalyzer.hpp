@@ -28,12 +28,12 @@ class TimingAnalyzer {
         ///Perform timing analysis to update timing information (i.e. arrival & required times)
         void update_timing() { update_timing_impl(); }
 
-        double get_profiling_data(std::string key) { return get_profiling_data_impl(key); }
+        double get_profiling_data(std::string key) const { return get_profiling_data_impl(key); }
 
     protected:
         virtual void update_timing_impl() = 0;
 
-        virtual double get_profiling_data_impl(std::string key) = 0;
+        virtual double get_profiling_data_impl(std::string key) const = 0;
 };
 
 } //namepsace
