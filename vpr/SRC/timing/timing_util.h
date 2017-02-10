@@ -56,4 +56,50 @@ std::vector<HistogramBucket> find_setup_slack_histogram(const tatum::SetupTiming
 //Prints the atom net delays to a file
 void dump_atom_net_delays_tatum(std::string filename, const PlacementDelayCalculator& dc);
 
+/*
+ * Slack and criticality calculation utilities
+ */
+
+//For comparing the values of two timing tags
+struct TimingTagValueComp {
+    bool operator()(const tatum::TimingTag& lhs, const tatum::TimingTag& rhs) {
+        return lhs.time().value() < rhs.time().value();
+    }
+};
+
+//Return the tag from the range [first,last) which has the lowest value
+tatum::TimingTag find_minimum_tag(tatum::TimingTags::tag_range tags);
+
+//Return the tag from the range [first,last) which has the highest value
+tatum::TimingTag find_maximum_tag(tatum::TimingTags::tag_range tags);
+
+//A pair of clock domains
+struct DomainPair {
+    DomainPair(tatum::DomainId l, tatum::DomainId c)
+        : launch(l), capture(c) {}
+
+    tatum::DomainId launch;
+    tatum::DomainId capture;
+
+    friend bool operator<(const DomainPair& lhs, const DomainPair& rhs) {
+        return std::tie(lhs.launch, lhs.capture) < std::tie(rhs.launch, rhs.capture);
+    }
+};
+
+//Returns the worst (maximum) criticality of the set of slack tags specified. Requires the maximum
+//required time and worst slack for all domain pairs represent by the slack tags
+//
+// Criticality (in [0., 1.]) represents how timing-critical something is, 
+// 0. is non-critical and 1. is most-critical.
+//
+// This returns 'relaxed per constraint' criticaly as defined in:
+//
+//     M. Wainberg and V. Betz, "Robust Optimization of Multiple Timing Constraints," 
+//         IEEE CAD, vol. 34, no. 12, pp. 1942-1953, Dec. 2015. doi: 10.1109/TCAD.2015.2440316
+//
+// which handles the trade-off between different timing constraints in multi-clock circuits.
+float calc_relaxed_criticality(const std::map<DomainPair,float>& domains_max_req,
+                               const std::map<DomainPair,float>& domains_worst_slack,
+                               const tatum::TimingTags::tag_range tags);
+
 #endif

@@ -221,3 +221,89 @@ void dump_atom_net_delays_tatum(std::string filename, const PlacementDelayCalcul
     }
 }
 
+/*
+ * Slack and criticality calculation utilities
+ */
+
+//Return the tag from the range [first,last) which has the lowest value
+tatum::TimingTag find_minimum_tag(tatum::TimingTags::tag_range tags) {
+
+    auto iter = std::min_element(tags.begin(), tags.end(), TimingTagValueComp()); 
+
+    VTR_ASSERT_MSG(iter != tags.end(), "Minimum timing tag should have been found");
+
+    return *iter;
+}
+
+//Return the tag from the range [first,last) which has the highest value
+tatum::TimingTag find_maximum_tag(tatum::TimingTags::tag_range tags) {
+
+    auto iter = std::max_element(tags.begin(), tags.end(), TimingTagValueComp()); 
+
+    VTR_ASSERT_MSG(iter != tags.end(), "Maximum timing tag should have been found");
+
+    return *iter;
+}
+
+//Returns the worst (maximum) criticality of the set of slack tags specified. Requires the maximum
+//required time and worst slack for all domain pairs represent by the slack tags
+//
+// Criticality (in [0., 1.]) represents how timing-critical something is, 
+// 0. is non-critical and 1. is most-critical.
+//
+// This returns 'relaxed per constraint' criticaly as defined in:
+//
+//     M. Wainberg and V. Betz, "Robust Optimization of Multiple Timing Constraints," 
+//         IEEE CAD, vol. 34, no. 12, pp. 1942-1953, Dec. 2015. doi: 10.1109/TCAD.2015.2440316
+//
+// which handles the trade-off between different timing constraints in multi-clock circuits.
+//
+// Note that unlike in Wainberg, we calculate the relaxed criticality as a post-processing step.
+float calc_relaxed_criticality(const std::map<DomainPair,float>& domains_max_req,
+                               const std::map<DomainPair,float>& domains_worst_slack,
+                               const tatum::TimingTags::tag_range tags) {
+
+    //Record the maximum criticality over all the tags
+    float max_crit = -std::numeric_limits<float>::infinity();
+    for(const auto& tag : tags) {
+
+        VTR_ASSERT_MSG(tag.type() == tatum::TagType::SLACK, "Tags must be slacks to calculate criticality");
+
+        float slack = tag.time().value();
+
+        auto domain_pair = DomainPair(tag.launch_clock_domain(), tag.capture_clock_domain());
+
+        auto iter = domains_max_req.find(domain_pair);
+        VTR_ASSERT_MSG(iter != domains_max_req.end(), "Require the maximum required time for clock domain pair");
+        float max_req = iter->second;
+
+
+        iter = domains_worst_slack.find(domain_pair);
+        VTR_ASSERT_MSG(iter != domains_worst_slack.end(), "Require the worst slack for clock domain pair");
+        float worst_slack = iter->second;
+
+        if(worst_slack < 0.) {
+            //We shift slacks and required time by the most negative slack 
+            //**in the domain**, to ensure criticality is bounded within [0., 1.]
+            //
+            //This corresponds to the 'relaxed' criticality from Wainberg et. al.
+            float shift = -worst_slack;
+            VTR_ASSERT(shift > 0.);
+
+            slack += shift;
+            max_req += shift;
+        }
+
+        float crit = 1. - (slack / max_req);
+
+        //TODO: consider round-off error? Could clip to 0/1 if differs by a small amount
+        VTR_ASSERT_MSG(crit >= 0., "Criticality should never be negative");
+        VTR_ASSERT_MSG(crit <= 1., "Criticality should never be greather than one");
+
+        max_crit = std::max(max_crit, crit);
+    }
+    VTR_ASSERT_MSG(max_crit >= 0., "Criticality should never be negative");
+    VTR_ASSERT_MSG(max_crit <= 1., "Criticality should never be greather than one");
+
+    return max_crit;
+}
