@@ -38,7 +38,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		float *pin_criticality, int min_incremental_reroute_fanout, t_rt_node ** rt_node_of_sink, 
 		float *net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        const SetupSlackEvaluator& optimizer_slacks
+        const SetupSlackEvaluator* optimizer_slacks
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_slack * slacks
 #endif

@@ -249,6 +249,12 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
                 critical_path = optimizer_slacks.critical_path_delay();
 
+#ifdef ENABLE_CLASSIC_VPR_STA
+                float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path);
+                if(cpd_diff_ns > 0.01) {
+                    vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path);
+                }
+#endif
 
 
 
@@ -328,7 +334,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				if (stable_routing_configuration)
 					connections_inf.set_stable_critical_path_delay(critical_path);
 			}
-            vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, critical_path, overused_ratio*num_rr_nodes, overused_ratio*100);
+            vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, 1e9*critical_path, overused_ratio*num_rr_nodes, overused_ratio*100);
 		} else {
             vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}
@@ -379,7 +385,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 				rt_node_of_sink, 
                 net_delay[inet],
                 pb_gpin_lookup,
-                optimizer_slacks
+                &optimizer_slacks
 #ifdef ENABLE_CLASSIC_VPR_STA
                 , slacks
 #endif
@@ -498,7 +504,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		float *pin_criticality, int min_incremental_reroute_fanout,
 		t_rt_node ** rt_node_of_sink, float *net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        const SetupSlackEvaluator& optimizer_slacks
+        const SetupSlackEvaluator* optimizer_slacks
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_slack * slacks
 #endif
@@ -550,16 +556,35 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);			
 		}
 #else
-        //New analyzer
-        const t_net_pin& net_pin = g_clbs_nlist.net[inet].pins[ipin];
+        if(optimizer_slacks == nullptr) {
+            pin_criticality[ipin] = 1.0;
+        } else {
+            //New analyzer
+            const t_net_pin& net_pin = g_clbs_nlist.net[inet].pins[ipin];
 
-        std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(net_pin.block, net_pin.block_pin, pb_gpin_lookup);
+            std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(net_pin.block, net_pin.block_pin, pb_gpin_lookup);
 
-        float clb_pin_crit = 0.;
-        for(const AtomPinId atom_pin : atom_pins) {
-            clb_pin_crit = std::max(clb_pin_crit, optimizer_slacks.setup_criticality(atom_pin));
+            float clb_pin_crit = 0.;
+            for(const AtomPinId atom_pin : atom_pins) {
+                clb_pin_crit = std::max(clb_pin_crit, optimizer_slacks->setup_criticality(atom_pin));
+            }
+            pin_criticality[ipin] = clb_pin_crit;
+
+			/* Currently, pin criticality is between 0 and 1. Now shift it downwards 
+			by 1 - max_criticality (max_criticality is 0.99 by default, so shift down
+			by 0.01) and cut off at 0.  This means that all pins with small criticalities 
+			(<0.01) get criticality 0 and are ignored entirely, and everything
+			else becomes a bit less critical. This effect becomes more pronounced if
+			max_criticality is set lower. */
+			// VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
+			pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
+
+			/* Take pin criticality to some power (1 by default). */
+			pin_criticality[ipin] = pow(pin_criticality[ipin], criticality_exp);
+			
+			/* Cut off pin criticality at max_criticality. */
+			pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);			
         }
-        pin_criticality[ipin] = clb_pin_crit;
 #endif
 	}
 

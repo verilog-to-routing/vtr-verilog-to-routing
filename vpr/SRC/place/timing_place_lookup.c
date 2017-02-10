@@ -598,7 +598,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	CBRR dummy_connections_inf;
 	dummy_connections_inf.prepare_routing_for_net(NET_USED);
 
-    IntraLbPbPinLookup dummy_pb_pin_lookup(type_descriptors, 0);
+    IntraLbPbPinLookup dummy_pb_pin_lookup(type_descriptors, num_types);
 
 	/* Route this net with a dummy criticality of 0 by calling 
 	timing_driven_route_net with slacks set to NULL. */
@@ -609,7 +609,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 			pin_criticality, router_opts.min_incremental_reroute_fanout, rt_node_of_sink, 
 			net_delay[NET_USED],
             dummy_pb_pin_lookup,
-            ConstantSetupSlackEvaluator(0., 1.)
+            nullptr
 #ifdef ENABLE_CLASSIC_VPR_STA
             , NULL
 #endif
