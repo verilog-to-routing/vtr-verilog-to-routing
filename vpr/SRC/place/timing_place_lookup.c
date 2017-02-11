@@ -20,6 +20,8 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "netlist.h"
 
+#include "TimingInfo.h"
+
 /*this file contains routines that generate the array containing*/
 /*the delays between blocks, this is used in the timing driven  */
 /*placement routines */

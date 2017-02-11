@@ -262,6 +262,9 @@ tatum::TimingTag find_maximum_tag(tatum::TimingTags::tag_range tags) {
 float calc_relaxed_criticality(const std::map<DomainPair,float>& domains_max_req,
                                const std::map<DomainPair,float>& domains_worst_slack,
                                const tatum::TimingTags::tag_range tags) {
+    //Allowable round-off tolerance during criticality calculation
+    constexpr float CRITICALITY_ROUND_OFF_TOLERANCE = 1e-5;
+
 
     //Record the maximum criticality over all the tags
     float max_crit = -std::numeric_limits<float>::infinity();
@@ -296,9 +299,13 @@ float calc_relaxed_criticality(const std::map<DomainPair,float>& domains_max_req
 
         float crit = 1. - (slack / max_req);
 
-        //TODO: consider round-off error? Could clip to 0/1 if differs by a small amount
-        VTR_ASSERT_MSG(crit >= 0., "Criticality should never be negative");
-        VTR_ASSERT_MSG(crit <= 1., "Criticality should never be greather than one");
+        //Soft check for reasonable criticality values
+        VTR_ASSERT_MSG(crit >= 0. - CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be negative");
+        VTR_ASSERT_MSG(crit <= 1. + CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be greather than one");
+
+        //Clamp criticality to [0., 1.] to correct round-off
+        crit = std::max(0.f, crit);
+        crit = std::min(1.f, crit);
 
         max_crit = std::max(max_crit, crit);
     }
