@@ -629,7 +629,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 		critical_path_delay = find_least_slack_critical_path_delay(g_timing_constraints, *timing_analyzer);
         float sTNS = find_setup_total_negative_slack(*timing_analyzer);
-        float sWNS =find_setup_worst_negative_slack(*timing_analyzer); 
+        float sWNS = find_setup_worst_negative_slack(*timing_analyzer); 
         vtr::printf_info("%7.3f "
                          "%7.5f %10.4f %-10.5g %-10.5g "
                          "%-10.5g %7.3f % 7.5g % 8.3f "

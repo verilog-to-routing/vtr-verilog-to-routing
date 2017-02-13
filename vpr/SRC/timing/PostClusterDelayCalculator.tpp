@@ -174,8 +174,6 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             AtomBlockId atom_src_block = netlist_.pin_block(atom_src_pin);
             AtomBlockId atom_sink_block = netlist_.pin_block(atom_sink_pin);
 
-            AtomNetId atom_net = netlist_.pin_net(atom_sink_pin);
-
             int clb_src_block = netlist_map_.atom_clb(atom_src_block);
             VTR_ASSERT(clb_src_block >= 0);
             int clb_sink_block = netlist_map_.atom_clb(atom_sink_block);
@@ -189,6 +187,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             int src_pb_route_id = src_gpin->pin_count_in_cluster;
             int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
 
+            AtomNetId atom_net = netlist_.pin_net(atom_sink_pin);
             VTR_ASSERT(block[clb_src_block].pb_route[src_pb_route_id].atom_net_id == atom_net);
             VTR_ASSERT(block[clb_sink_block].pb_route[sink_pb_route_id].atom_net_id == atom_net);
 

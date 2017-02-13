@@ -733,36 +733,20 @@ static float comp_width(t_chan * chan, float x, float separation) {
 	return (val);
 }
 
-/* After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type */
-/* This function should only be called once */
+/*
+ * After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type.
+ * This is required by blocks with capacity > 1 (e.g. typically IOs with multiple instaces in each placement
+ * gride location). Since they may be swapped around during placement, we need to update which pins the various
+ * nets use.
+ *
+ * This updates both the external inter-block net connecitivity (i.e. the clustered netlist), and the intra-block
+ * connectivity (since the internal pins used also change).
+ *
+ * This function should only be called once 
+ */
 void post_place_sync(const int L_num_blocks) {
-	int iblk, j, inet;
-	unsigned k;
-	t_type_ptr type;
-	int max_num_block_pins;
-
 	/* Go through each block */
-	for (iblk = 0; iblk < L_num_blocks; ++iblk) {
-		type = block[iblk].type;
-		VTR_ASSERT(type->num_pins % type->capacity == 0);
-		max_num_block_pins = type->num_pins / type->capacity;
-		/* Logical location and physical location is offset by z * max_num_block_pins */
-		/* Sync blocks and nets */
-		for (j = 0; j < max_num_block_pins; j++) {
-			inet = block[iblk].nets[j];
-			if (inet != OPEN && block[iblk].z > 0) {
-				VTR_ASSERT(block[iblk]. nets[j + block[iblk].z * max_num_block_pins] == OPEN);
-				block[iblk].nets[j + block[iblk].z * max_num_block_pins] = block[iblk].nets[j];
-				block[iblk].nets[j] = OPEN;
-				for (k = 0; k < g_clbs_nlist.net[inet].pins.size(); k++) {
-					if (g_clbs_nlist.net[inet].pins[k].block == iblk && g_clbs_nlist.net[inet].pins[k].block_pin == j) {
-						g_clbs_nlist.net[inet].pins[k].block_pin = j + block[iblk].z * max_num_block_pins;
-						clb_net[inet].node_block_pin[k] = j + block[iblk].z * max_num_block_pins; //Daniel to-do: take out clb_net later
-						break;
-					}
-				}
-				VTR_ASSERT(k < g_clbs_nlist.net[inet].pins.size());
-			}
-		}
+	for (int iblk = 0; iblk < L_num_blocks; ++iblk) {
+        place_sync_external_block_connections(iblk);
 	}
 }

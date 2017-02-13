@@ -10,11 +10,13 @@ inline ClbDelayCalc::ClbDelayCalc()
     : intra_lb_pb_pin_lookup_(type_descriptors, num_types) {}
 
 inline float ClbDelayCalc::clb_input_to_internal_sink_delay(const t_net_pin* clb_input_pin, int internal_sink_pin) const {
-    return trace_max_delay(clb_input_pin->block, clb_input_pin->block_pin, internal_sink_pin);
+    int pb_ipin = find_clb_pb_pin(clb_input_pin->block, clb_input_pin->block_pin);
+    return trace_max_delay(clb_input_pin->block, pb_ipin, internal_sink_pin);
 }
 
 inline float ClbDelayCalc::internal_src_to_clb_output_delay(int internal_src_pin, const t_net_pin* clb_output_pin) const {
-    return trace_max_delay(clb_output_pin->block, internal_src_pin, clb_output_pin->block_pin);
+    int pb_opin = find_clb_pb_pin(clb_output_pin->block, clb_output_pin->block_pin);
+    return trace_max_delay(clb_output_pin->block, internal_src_pin, pb_opin);
 }
 
 inline float ClbDelayCalc::internal_src_to_internal_sink_delay(int clb, int internal_src_pin, int internal_sink_pin) const {
@@ -23,10 +25,16 @@ inline float ClbDelayCalc::internal_src_to_internal_sink_delay(int clb, int inte
 
 inline float ClbDelayCalc::clb_input_to_clb_output_delay(const t_net_pin* clb_input_pin, const t_net_pin* clb_output_pin) const {
     VTR_ASSERT_MSG(clb_input_pin->block == clb_output_pin->block, "Route through clb input/output pins must be on the same CLB");
-    return trace_max_delay(clb_input_pin->block, clb_input_pin->block_pin, clb_output_pin->block_pin);
+    int pb_ipin = find_clb_pb_pin(clb_input_pin->block, clb_input_pin->block_pin);
+    int pb_opin = find_clb_pb_pin(clb_input_pin->block, clb_output_pin->block_pin);
+    return trace_max_delay(clb_input_pin->block, pb_ipin, pb_opin);
 }
 
 inline float ClbDelayCalc::trace_max_delay(int clb, int src_pb_route_id, int sink_pb_route_id) const {
+    VTR_ASSERT(src_pb_route_id < block[clb].pb->pb_graph_node->total_pb_pins);
+    VTR_ASSERT(sink_pb_route_id < block[clb].pb->pb_graph_node->total_pb_pins);
+
+
     const t_pb_route* pb_routes = block[clb].pb_route;
 
     AtomNetId atom_net = pb_routes[src_pb_route_id].atom_net_id;

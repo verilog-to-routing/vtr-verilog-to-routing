@@ -53,6 +53,12 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin, const I
 
 const t_net_pin* find_pb_route_clb_input_net_pin(int clb, int sink_pb_route_id);
 
+//Return the pb pin index corresponding to the pin clb_pin on block clb
+int find_clb_pb_pin(int clb, int clb_pin);
+
+//Return the clb_pin corresponding to the pb_pin on the specified block
+int find_pb_pin_clb_pin(int clb, int pb_pin);
+
 //Returns the port matching name within pb_gnode
 const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name);
 
@@ -105,5 +111,9 @@ void print_usage_by_wire_length();
 
 AtomBlockId find_tnode_atom_block(int inode);
 AtomBlockId find_memory_sibling(const t_pb* pb);
+
+
+void place_sync_all_external_block_connections();
+void place_sync_external_block_connections(int iblk);
 #endif
 
