@@ -76,7 +76,7 @@ void print_sink_delays(const char *fname) {
 }
 
 /**************************************/
-void load_criticalities(SetupSlackEvaluator& optimizer_slacks, float crit_exponent, const IntraLbPbPinLookup& pb_gpin_lookup) {
+void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const IntraLbPbPinLookup& pb_gpin_lookup) {
 	/* Performs a 1-to-1 mapping from criticality to timing_place_crit.  
 	  For every pin on every net (or, equivalently, for every tedge ending 
 	  in that pin), timing_place_crit = criticality^(criticality exponent) */
@@ -95,7 +95,7 @@ void load_criticalities(SetupSlackEvaluator& optimizer_slacks, float crit_expone
 
             float clb_pin_crit = 0.;
             for(const AtomPinId atom_pin : atom_pins) {
-                clb_pin_crit = std::max(clb_pin_crit, optimizer_slacks.setup_criticality(atom_pin));
+                clb_pin_crit = std::max(clb_pin_crit, timing_info.setup_pin_criticality(atom_pin));
             }
             timing_place_crit[inet][ipin] = pow(clb_pin_crit, crit_exponent);
 		}

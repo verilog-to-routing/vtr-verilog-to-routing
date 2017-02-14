@@ -303,7 +303,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
     t_slack* slacks,
     t_timing_inf timing_inf,
 #endif
-    SetupSlackEvaluator& optimizer_slacks);
+    SetupTimingInfo& timing_info);
 
 static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
@@ -315,7 +315,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
     t_timing_inf timing_inf,
 #endif
     const IntraLbPbPinLookup& pb_gpin_lookup,
-    SetupSlackEvaluator& optimizer_slacks);
+    SetupTimingInfo& timing_info);
 
 /*****************************************************************************/
 void try_place(struct s_placer_opts placer_opts,
@@ -341,6 +341,8 @@ void try_place(struct s_placer_opts placer_opts,
 	char msg[vtr::BUFSIZE];
 	t_placer_statistics stats;
 	t_slack * slacks = NULL;
+    std::shared_ptr<SetupTimingInfo> timing_info;
+    std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
 
 	/* Allocated here because it goes into timing critical code where each memory allocation is expensive */
     IntraLbPbPinLookup pb_gpin_lookup(type_descriptors, num_types);
@@ -370,22 +372,6 @@ void try_place(struct s_placer_opts placer_opts,
 	init_draw_coords((float) width_fac);
 
 
-    /*
-     * Setup the timing analyzer
-     */
-    //Update the point-to-point delays from the initial placement
-    comp_td_point_to_point_delays();
-
-    //Initialize the delay calculator
-    PlacementDelayCalculator dc(g_atom_nl, g_atom_map, point_to_point_delay_cost);
-
-    //Create the analyzer
-    std::shared_ptr<tatum::SetupTimingAnalyzer> timing_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
-
-    //Get the slack calculator
-    auto optimizer_slacks = make_optimizer_slacks(g_atom_nl, g_atom_map, timing_analyzer, g_timing_graph, dc);
-
-
 
 
 	/* Gets initial cost and loads bounding boxes. */
@@ -402,22 +388,28 @@ void try_place(struct s_placer_opts placer_opts,
 
 		place_delay_value = 0;
 
-        //Initial slack estimates
-        optimizer_slacks.update();
-        load_criticalities(optimizer_slacks, crit_exponent, pb_gpin_lookup);
+        //Update the point-to-point delays from the initial placement
+        comp_td_point_to_point_delays();
 
-        critical_path = find_least_slack_critical_path_delay(g_timing_constraints, *timing_analyzer);
+        /*
+         * Initialize timing analysis
+         */
+        placement_delay_calc = std::make_shared<PlacementDelayCalculator>(g_atom_nl, g_atom_map, point_to_point_delay_cost);
+        timing_info = make_setup_timing_info(placement_delay_calc);
+
+        //Initial slack estimates
+        load_criticalities(*timing_info, crit_exponent, pb_gpin_lookup);
+
+        critical_path = timing_info->least_slack_critical_path();
 
         //Write out the initial timing echo file
-        std::ofstream os_timing_echo_init("timing.place_init.echo");
-        write_timing_graph(os_timing_echo_init, g_timing_graph);
-        os_timing_echo_init.flush();
-        write_timing_constraints(os_timing_echo_init, g_timing_constraints);
-        os_timing_echo_init.flush();
-        write_delay_model(os_timing_echo_init, g_timing_graph, dc);
-        os_timing_echo_init.flush();
-        write_analysis_result(os_timing_echo_init, g_timing_graph, timing_analyzer);
-        os_timing_echo_init.flush();
+        {
+            std::ofstream os_timing_echo_init("timing.place_init.echo");
+            write_timing_graph(os_timing_echo_init, g_timing_graph);
+            write_timing_constraints(os_timing_echo_init, g_timing_constraints);
+            write_delay_model(os_timing_echo_init, g_timing_graph, *placement_delay_calc);
+            write_analysis_result(os_timing_echo_init, g_timing_graph, timing_info->analyzer());
+        }
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         load_timing_graph_net_delays(point_to_point_delay_cost);
@@ -500,13 +492,13 @@ void try_place(struct s_placer_opts placer_opts,
 	vtr::printf_info("Initial placement estimated Critical Path Delay (CPD): %g ns\n", 
             1e9*critical_path.path_delay);
 	vtr::printf_info("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
-            1e9*find_setup_total_negative_slack(*timing_analyzer));
+            1e9*timing_info->setup_total_negative_slack());
 	vtr::printf_info("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
-            1e9*find_setup_worst_negative_slack(*timing_analyzer));
+            1e9*timing_info->setup_worst_negative_slack());
 	vtr::printf_info("\n");
 
     vtr::printf_info("Initial placement estimated setup slack histogram:\n");
-    print_histogram(find_setup_slack_histogram(*timing_analyzer));
+    print_histogram(find_setup_slack_histogram(*timing_info->setup_analyzer()));
     vtr::printf_info("\n");
 
     //Table header
@@ -561,7 +553,7 @@ void try_place(struct s_placer_opts placer_opts,
             slacks,
             timing_inf,
 #endif
-            optimizer_slacks);
+            *timing_info);
 
 		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
 			move_lim, crit_exponent, inner_recompute_limit, &stats, 
@@ -571,7 +563,7 @@ void try_place(struct s_placer_opts placer_opts,
             timing_inf,
 #endif
             pb_gpin_lookup,
-            optimizer_slacks);
+            *timing_info);
 
 		/* Lines below prevent too much round-off error from accumulating *
 		 * in the cost over many iterations.  This round-off can lead to  *
@@ -627,9 +619,9 @@ void try_place(struct s_placer_opts placer_opts,
 		oldt = t; /* for finding and printing alpha. */
 		update_t(&t, rlim, success_rat, annealing_sched);
 
-		critical_path = find_least_slack_critical_path_delay(g_timing_constraints, *timing_analyzer);
-        float sTNS = find_setup_total_negative_slack(*timing_analyzer);
-        float sWNS = find_setup_worst_negative_slack(*timing_analyzer); 
+		critical_path = timing_info->least_slack_critical_path();
+        float sTNS = timing_info->setup_total_negative_slack();
+        float sWNS = timing_info->setup_worst_negative_slack(); 
         vtr::printf_info("%7.3f "
                          "%7.5f %10.4f %-10.5g %-10.5g "
                          "%-10.5g %7.3f % 7.5g % 8.3f "
@@ -675,7 +667,7 @@ void try_place(struct s_placer_opts placer_opts,
             slacks,
             timing_inf,
 #endif
-            optimizer_slacks);
+            *timing_info);
 
 	t = 0; /* freeze out */
 
@@ -689,7 +681,7 @@ void try_place(struct s_placer_opts placer_opts,
             timing_inf,
 #endif
             pb_gpin_lookup,
-            optimizer_slacks);
+            *timing_info);
 
 	tot_iter += move_lim;
 	success_rat = ((float) stats.success_sum) / move_lim;
@@ -707,9 +699,9 @@ void try_place(struct s_placer_opts placer_opts,
 
 	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
-    critical_path = find_least_slack_critical_path_delay(g_timing_constraints, *timing_analyzer);
-    float sTNS = find_setup_total_negative_slack(*timing_analyzer);
-    float sWNS = find_setup_worst_negative_slack(*timing_analyzer);
+    critical_path = timing_info->least_slack_critical_path();
+    float sTNS = timing_info->setup_total_negative_slack();
+    float sWNS = timing_info->setup_worst_negative_slack();
 
     vtr::printf_info("%7.3f "
                      "%7.5f %10.4f %-10.5g %-10.5g "
@@ -749,8 +741,8 @@ void try_place(struct s_placer_opts placer_opts,
 			|| placer_opts.enable_timing_computations) {
 
         //Final timing estimate
-        optimizer_slacks.update(); //Tatum
-		critical_path = find_least_slack_critical_path_delay(g_timing_constraints, *timing_analyzer);
+        timing_info->update(); //Tatum
+		critical_path = timing_info->least_slack_critical_path();
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         //Old VPR analyzer
@@ -758,41 +750,26 @@ void try_place(struct s_placer_opts placer_opts,
 		do_timing_analysis(slacks, timing_inf, false, true);
 #endif
 
-        std::ofstream os_timing_echo_final("timing.place_final.echo");
-        write_timing_graph(os_timing_echo_final, g_timing_graph);
-        os_timing_echo_final.flush();
-        write_timing_constraints(os_timing_echo_final, g_timing_constraints);
-        os_timing_echo_final.flush();
-        write_delay_model(os_timing_echo_final, g_timing_graph, dc);
-        os_timing_echo_final.flush();
-        write_analysis_result(os_timing_echo_final, g_timing_graph, timing_analyzer);
-        os_timing_echo_final.flush();
-
-		if (getEchoEnabled()) {
-			if(isEchoFileEnabled(E_ECHO_PLACEMENT_SINK_DELAYS))
-				print_sink_delays(getEchoFileName(E_ECHO_PLACEMENT_SINK_DELAYS));
-			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_SLACK))
-				print_slack(slacks->slack, false, getEchoFileName(E_ECHO_FINAL_PLACEMENT_SLACK));
-			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_CRITICALITY))
-				print_criticality(slacks, getEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY));
-			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH))
-				print_timing_graph(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH));
-			if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRIT_PATH))
-				print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH), timing_inf);
-		}
-
+        {
+            std::ofstream os_timing_echo_final("timing.place_final.echo");
+            write_timing_graph(os_timing_echo_final, g_timing_graph);
+            write_timing_constraints(os_timing_echo_final, g_timing_constraints);
+            write_delay_model(os_timing_echo_final, g_timing_graph, *placement_delay_calc);
+            write_analysis_result(os_timing_echo_final, g_timing_graph, timing_info->analyzer());
+        }
 
 		/* Print critical path delay. */
 		vtr::printf_info("\n");
-		vtr::printf_info("Placement estimated critical path delay: %g ns (old VPR STA %g ns)\n", 1e9*critical_path.path_delay, get_critical_path_delay());
+		vtr::printf_info("Placement estimated critical path delay: %g ns (old VPR STA %g ns)\n", 
+                1e9*critical_path.path_delay, get_critical_path_delay());
         vtr::printf_info("Placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
-                1e9*find_setup_total_negative_slack(*timing_analyzer));
+                1e9*timing_info->setup_total_negative_slack());
         vtr::printf_info("Placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
-                1e9*find_setup_worst_negative_slack(*timing_analyzer));
+                1e9*timing_info->setup_worst_negative_slack());
         vtr::printf_info("\n");
 
         vtr::printf_info("Placement estimated setup slack histogram:\n");
-        print_histogram(find_setup_slack_histogram(*timing_analyzer));
+        print_histogram(find_setup_slack_histogram(*timing_info->setup_analyzer()));
         vtr::printf_info("\n");
 
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -835,8 +812,8 @@ void try_place(struct s_placer_opts placer_opts,
 	free_try_swap_arrays();
 
     //Update timing analysis stats
-    g_timing_analysis_profile_stats.wallclock_time += timing_analyzer->get_profiling_data("total_analysis_sec");
-    g_timing_analysis_profile_stats.num_full_updates += timing_analyzer->get_profiling_data("num_full_updates");
+    g_timing_analysis_profile_stats.wallclock_time += timing_info->analyzer()->get_profiling_data("total_analysis_sec");
+    g_timing_analysis_profile_stats.num_full_updates += timing_info->analyzer()->get_profiling_data("num_full_updates");
 }
 
 /* Function to recompute the criticalities before the inner loop of the annealing */
@@ -850,7 +827,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
     t_slack* slacks,
     t_timing_inf timing_inf,
 #endif
-    SetupSlackEvaluator& optimizer_slacks) {
+    SetupTimingInfo& timing_info) {
 
 	if (placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
 		return;
@@ -867,8 +844,8 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 		*place_delay_value = (*delay_cost) / num_connections;
 
         //Per-temperature timing update
-        optimizer_slacks.update();
-		load_criticalities(optimizer_slacks, crit_exponent, pb_gpin_lookup);
+        timing_info.update();
+		load_criticalities(timing_info, crit_exponent, pb_gpin_lookup);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         load_timing_graph_net_delays(point_to_point_delay_cost);
@@ -899,7 +876,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
     t_timing_inf timing_inf,
 #endif
     const IntraLbPbPinLookup& pb_gpin_lookup,
-    SetupSlackEvaluator& optimizer_slacks) {
+    SetupTimingInfo& timing_info) {
 
 	int inner_crit_iter_count, inner_iter;
 	int swap_result;
@@ -951,8 +928,8 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 				 * criticalities; then update the timing cost since it will change.
 				 */
                 //Inner loop timing update
-                optimizer_slacks.update();
-				load_criticalities(optimizer_slacks, crit_exponent, pb_gpin_lookup);
+                timing_info.update();
+				load_criticalities(timing_info, crit_exponent, pb_gpin_lookup);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
                 load_timing_graph_net_delays(point_to_point_delay_cost);
