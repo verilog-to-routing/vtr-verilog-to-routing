@@ -130,10 +130,10 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
     os << "\n";
 }
 
-void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<TimingAnalyzer> analyzer) {
+void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<const TimingAnalyzer> analyzer) {
     os << "analysis_result:\n";
 
-    auto setup_analyzer = std::dynamic_pointer_cast<SetupTimingAnalyzer>(analyzer);
+    auto setup_analyzer = std::dynamic_pointer_cast<const SetupTimingAnalyzer>(analyzer);
     if(setup_analyzer) {
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
@@ -160,7 +160,7 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
             write_slacks(os, "SETUP_SLACK", setup_analyzer->setup_slacks(node_id), node_id);
         }
     }
-    auto hold_analyzer = std::dynamic_pointer_cast<HoldTimingAnalyzer>(analyzer);
+    auto hold_analyzer = std::dynamic_pointer_cast<const HoldTimingAnalyzer>(analyzer);
     if(hold_analyzer) {
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
