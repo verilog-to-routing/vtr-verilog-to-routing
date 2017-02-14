@@ -29,12 +29,9 @@ using namespace std;
 #include "route_profiling.h"
 
 #include "timing_util.h"
-#include "analyzer_factory.hpp"
-#include "SlackEvaluator.h"
 #include "RoutingDelayCalculator.hpp"
-#include "path_delay.h"
-
 #include "TimingInfo.h"
+#include "path_delay.h"
  
 
 // Disable the routing predictor for circuits with less that this number of nets.

@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cmath>
 #include <memory>
+#include <fstream>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -8,10 +9,6 @@ using namespace std;
 #include "vtr_util.h"
 #include "vtr_random.h"
 #include "vtr_matrix.h"
-
-#include "analyzer_factory.hpp"
-#include "echo_writer.hpp"
-#include "sta_util.hpp"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -31,11 +28,12 @@ using namespace std;
 #include "ReadOptions.h"
 #include "vpr_utils.h"
 #include "place_macro.h"
-#include "timing_util.h"
 #include "histogram.h"
 
 #include "PlacementDelayCalculator.hpp"
-#include "SlackEvaluator.h"
+#include "timing_util.h"
+#include "TimingInfo.h"
+#include "echo_writer.hpp"
 
 /************** Types and defines local to place.c ***************************/
 

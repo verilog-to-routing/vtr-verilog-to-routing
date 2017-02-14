@@ -3,7 +3,7 @@
 
 #include "timing_util.h"
 #include "vpr_error.h"
-#include "SlackEvaluator.h"
+#include "slack_evaluation.h"
 
 //NOTE: These classes should not be used directly but created with the 
 //      make_*_timing_info() functions in TimingInfo.h, and used through
