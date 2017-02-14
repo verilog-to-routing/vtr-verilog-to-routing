@@ -4,6 +4,7 @@
 #include "timing_util.h"
 #include "vpr_error.h"
 #include "slack_evaluation.h"
+#include "globals.h"
 
 //NOTE: These classes should not be used directly but created with the 
 //      make_*_timing_info() functions in timing_info.h, and used through
@@ -74,12 +75,34 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
     public:
         //Mutators
         void update() override {
+
             update_setup();
         }
 
-        void update_setup() override { 
-            setup_analyzer_->update_timing(); 
-            update_setup_slacks(); 
+        void update_setup() override {
+            //Update the arrival and required times and re-calculate slacks
+            double sta_wallclock_time = 0.;
+            {
+                auto start_time = Clock::now();
+
+                setup_analyzer_->update_timing(); 
+
+                sta_wallclock_time = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
+            }
+
+            double slack_wallclock_time = 0.;
+            {
+                auto start_time = Clock::now();
+
+                update_setup_slacks(); 
+
+                slack_wallclock_time = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
+            }
+
+            //Update global timing analysis stats
+            g_timing_analysis_profile_stats.sta_wallclock_time += sta_wallclock_time;
+            g_timing_analysis_profile_stats.slack_wallclock_time += slack_wallclock_time;
+            g_timing_analysis_profile_stats.num_full_updates += 1;
         }
 
         void update_setup_slacks() {
@@ -96,6 +119,9 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
         std::shared_ptr<tatum::SetupTimingAnalyzer> setup_analyzer_;
 
         SetupSlackCrit slack_crit_;
+
+        typedef std::chrono::duration<double> dsec;
+        typedef std::chrono::high_resolution_clock Clock;
 };
 
 template<class DelayCalc>

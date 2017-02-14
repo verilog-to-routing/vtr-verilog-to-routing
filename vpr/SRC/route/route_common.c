@@ -390,11 +390,6 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
             );
 
 		profiling::time_on_fanout_analysis();
-
-        //Update timing analysis stats
-        g_timing_analysis_profile_stats.wallclock_time += timing_info->analyzer()->get_profiling_data("total_analysis_sec");
-        g_timing_analysis_profile_stats.num_full_updates += timing_info->analyzer()->get_profiling_data("num_full_updates");
-
 	}
 
 	free_rr_node_route_structs();

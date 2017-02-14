@@ -721,9 +721,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	   delete[] clb_inter_blk_nets;
 	   clb_inter_blk_nets = NULL;
 	}
-
-    g_timing_analysis_profile_stats.wallclock_time += timing_info->analyzer()->get_profiling_data("total_analysis_sec");
-    g_timing_analysis_profile_stats.num_full_updates += timing_info->analyzer()->get_profiling_data("num_full_updates");
 }
 
 /*****************************************/

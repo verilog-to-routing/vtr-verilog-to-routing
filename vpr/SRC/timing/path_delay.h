@@ -74,26 +74,8 @@ int **alloc_and_load_tnode_lookup_from_pin_id();
 
 void free_tnode_lookup_from_pin_id(int **tnode_lookup);
 
-struct timing_analysis_profile_info {
-    double timing_analysis_wallclock_time() {
-        return wallclock_time;
-    }
-
-    double old_timing_analysis_wallclock_time() {
-        return old_sta_wallclock_time + old_delay_annotation_wallclock_time;
-    }
-
-    double wallclock_time = 0.;
-    size_t num_full_updates = 0;
-    double old_sta_wallclock_time = 0.;
-    double old_delay_annotation_wallclock_time = 0.;
-    size_t num_old_sta_full_updates = 0;
-};
-
 /*************************** Variable declarations ********************************/
 
 extern int num_tnodes; /* Number of nodes (pins) in the timing graph */
 extern t_tnode *tnode; /* [0..num_tnodes - 1] nodes in the timing graph */
-extern timing_analysis_profile_info g_timing_analysis_profile_stats;
-
 #endif

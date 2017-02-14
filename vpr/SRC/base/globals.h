@@ -33,8 +33,33 @@ extern AtomMap g_atom_map;
 /* Atom net power info */
 extern std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
 
+
+/********************************************************************
+ Timing Globals
+ ********************************************************************/
 extern std::shared_ptr<tatum::TimingGraph> g_timing_graph;
 extern std::shared_ptr<tatum::TimingConstraints> g_timing_constraints;
+
+
+struct timing_analysis_profile_info {
+    double timing_analysis_wallclock_time() {
+        return sta_wallclock_time + slack_wallclock_time;
+    }
+
+    double old_timing_analysis_wallclock_time() {
+        return old_sta_wallclock_time + old_delay_annotation_wallclock_time;
+    }
+
+    double sta_wallclock_time = 0.;
+    double slack_wallclock_time = 0.;
+    size_t num_full_updates = 0;
+
+    double old_sta_wallclock_time = 0.;
+    double old_delay_annotation_wallclock_time = 0.;
+    size_t num_old_sta_full_updates = 0;
+};
+extern timing_analysis_profile_info g_timing_analysis_profile_stats;
+
 
 /********************************************************************
  CLB Netlist Globals

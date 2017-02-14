@@ -150,8 +150,6 @@ from the timing graph back to the netlist relies on this. */
 t_tnode *tnode = NULL; /* [0..num_tnodes - 1] */
 int num_tnodes = 0; /* Number of nodes (pins) in the timing graph */
 
-timing_analysis_profile_info g_timing_analysis_profile_stats;
-
 /******************** Variables local to this module ************************/
 
 #define NUM_BUCKETS 5 /* Used when printing slack and criticality. */

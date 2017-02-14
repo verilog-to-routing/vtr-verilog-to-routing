@@ -21,7 +21,7 @@ using namespace std;
 
 #include "vpr_error.h"
 #include "vpr_api.h"
-#include "path_delay.h" /* for timing_analysis_runtime */
+#include "globals.h"
 
 /*
  * Exit codes to signal success/failure to scripts
@@ -77,16 +77,20 @@ int main(int argc, const char **argv) {
 	
 		entire_flow_end = clock();
 
-        vtr::printf_info("Timing analysis took %g seconds (%d full updates).\n", 
+        vtr::printf_info("Timing analysis took %g seconds (%g STA, %g slack) (%d full updates).\n", 
                             g_timing_analysis_profile_stats.timing_analysis_wallclock_time(), 
+                            g_timing_analysis_profile_stats.sta_wallclock_time, 
+                            g_timing_analysis_profile_stats.slack_wallclock_time, 
                             g_timing_analysis_profile_stats.num_full_updates);
         vtr::printf_info("Old VPR Timing analysis took %g seconds (%g STA, %g delay annotitaion) (%d full updates).\n", 
                             g_timing_analysis_profile_stats.old_timing_analysis_wallclock_time(),
                             g_timing_analysis_profile_stats.old_sta_wallclock_time,
                             g_timing_analysis_profile_stats.old_delay_annotation_wallclock_time,
                             g_timing_analysis_profile_stats.num_old_sta_full_updates);
-        vtr::printf_info("\tNew STA Speed-up: %.2fx\n", 
-                            g_timing_analysis_profile_stats.old_sta_wallclock_time / g_timing_analysis_profile_stats.wallclock_time);
+        vtr::printf_info("\tSTA       Speed-up: %.2fx\n", 
+                            g_timing_analysis_profile_stats.old_sta_wallclock_time / g_timing_analysis_profile_stats.sta_wallclock_time);
+        vtr::printf_info("\tSTA+Slack Speed-up: %.2fx\n", 
+                            g_timing_analysis_profile_stats.old_timing_analysis_wallclock_time() / g_timing_analysis_profile_stats.timing_analysis_wallclock_time());
 		vtr::printf_info("The entire flow of VPR took %g seconds.\n", 
 				(float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 	
