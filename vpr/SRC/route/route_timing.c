@@ -243,7 +243,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
                 //Final timing update
 #ifdef ENABLE_CLASSIC_VPR_STA
 				load_timing_graph_net_delays(net_delay);
-				do_timing_analysis(slacks, timing_inf, false, false);
+				do_timing_analysis(slacks, timing_inf, false, true);
 #endif
 
                 timing_info.update();
@@ -294,7 +294,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
 			load_timing_graph_net_delays(net_delay);
 
-			do_timing_analysis(slacks, timing_inf, false, false);
+			do_timing_analysis(slacks, timing_inf, false, true);
 #endif
 
             timing_info.update();
