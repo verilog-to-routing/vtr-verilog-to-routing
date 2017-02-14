@@ -335,10 +335,14 @@ void try_place(struct s_placer_opts placer_opts,
 		oldt, crit_exponent,
 		first_rlim, final_rlim, inverse_delta_rlim;
     PathInfo critical_path;
+    float sTNS = NAN;
+    float sWNS = NAN;
+
 	double std_dev;
 	char msg[vtr::BUFSIZE];
 	t_placer_statistics stats;
 	t_slack * slacks = NULL;
+
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
 
@@ -395,6 +399,8 @@ void try_place(struct s_placer_opts placer_opts,
         placement_delay_calc = std::make_shared<PlacementDelayCalculator>(g_atom_nl, g_atom_map, point_to_point_delay_cost);
         timing_info = make_setup_timing_info(placement_delay_calc);
 
+        timing_info->update();
+
         //Initial slack estimates
         load_criticalities(*timing_info, crit_exponent, pb_gpin_lookup);
 
@@ -449,14 +455,33 @@ void try_place(struct s_placer_opts placer_opts,
 		inverse_prev_bb_cost = 0;
 	}
 
+
+    //Initial pacement statistics
+    vtr::printf_info("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
+            cost, bb_cost, timing_cost, delay_cost);
+	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+        vtr::printf_info("Initial placement estimated Critical Path Delay (CPD): %g ns\n", 
+                1e9*critical_path.path_delay);
+        vtr::printf_info("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
+                1e9*timing_info->setup_total_negative_slack());
+        vtr::printf_info("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
+                1e9*timing_info->setup_worst_negative_slack());
+        vtr::printf_info("\n");
+
+        vtr::printf_info("Initial placement estimated setup slack histogram:\n");
+        print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
+    }
+    vtr::printf_info("\n");
+
 	move_lim = (int) (annealing_sched.inner_num * pow(num_blocks, 1.3333));
 
-	if (placer_opts.inner_loop_recompute_divider != 0)
+	if (placer_opts.inner_loop_recompute_divider != 0) {
 		inner_recompute_limit = (int) 
 			(0.5 + (float) move_lim	/ (float) placer_opts.inner_loop_recompute_divider);
-	else
+    } else {
 		/*don't do an inner recompute */
 		inner_recompute_limit = move_lim + 1;
+    }
 
 	/* Sometimes I want to run the router with a random placement.  Avoid *
 	 * using 0 moves to stop division by 0 and 0 length vector problems,  *
@@ -479,19 +504,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 	tot_iter = 0;
 	moves_since_cost_recompute = 0;
-	vtr::printf_info("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
-			cost, bb_cost, timing_cost, delay_cost);
-	vtr::printf_info("Initial placement estimated Critical Path Delay (CPD): %g ns\n", 
-            1e9*critical_path.path_delay);
-	vtr::printf_info("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
-            1e9*timing_info->setup_total_negative_slack());
-	vtr::printf_info("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
-            1e9*timing_info->setup_worst_negative_slack());
-	vtr::printf_info("\n");
 
-    vtr::printf_info("Initial placement estimated setup slack histogram:\n");
-    print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
-    vtr::printf_info("\n");
 
     //Table header
 	vtr::printf_info("%7s "
@@ -611,11 +624,14 @@ void try_place(struct s_placer_opts placer_opts,
 		oldt = t; /* for finding and printing alpha. */
 		update_t(&t, rlim, success_rat, annealing_sched);
 
-		critical_path = timing_info->least_slack_critical_path();
-        float sTNS = timing_info->setup_total_negative_slack();
-        float sWNS = timing_info->setup_worst_negative_slack(); 
+        if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+            critical_path = timing_info->least_slack_critical_path();
+            sTNS = timing_info->setup_total_negative_slack();
+            sWNS = timing_info->setup_worst_negative_slack(); 
+        }
+
         vtr::printf_info("%7.3f "
-                         "%7.5f %10.4f %-10.5g %-10.5g "
+                         "%7.4f %10.4f %-10.5g %-10.5g "
                          "%-10.5g %7.3f % 7.5g % 8.3f "
                          "%7.4f %7.4f %7.4f %6.3f"
                          "%9d %6.3f\n",
@@ -626,9 +642,11 @@ void try_place(struct s_placer_opts placer_opts,
                          tot_iter, t / oldt);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
-        float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
-        if(cpd_diff_ns > ERROR_TOL) {
-            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
+        if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+            float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
+            if(cpd_diff_ns > ERROR_TOL) {
+                vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
+            }
         }
 #endif
 
@@ -691,12 +709,14 @@ void try_place(struct s_placer_opts placer_opts,
 
 	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
-    critical_path = timing_info->least_slack_critical_path();
-    float sTNS = timing_info->setup_total_negative_slack();
-    float sWNS = timing_info->setup_worst_negative_slack();
+	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+        critical_path = timing_info->least_slack_critical_path();
+        sTNS = timing_info->setup_total_negative_slack();
+        sWNS = timing_info->setup_worst_negative_slack();
+    }
 
     vtr::printf_info("%7.3f "
-                     "%7.5f %10.4f %-10.5g %-10.5g "
+                     "%7.4f %10.4f %-10.5g %-10.5g "
                      "%-10.5g %7.3f % 7.5g % 8.3f "
                      "%7.4f %7.4f %7.4f %6.3f"
                      "%9d %6.3f\n",
