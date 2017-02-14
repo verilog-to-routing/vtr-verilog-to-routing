@@ -29,12 +29,17 @@ tatum::util::linear_map<K,V> remap_valid(const tatum::util::linear_map<K,V>& dat
 }
 
 std::unique_ptr<TimingGraph> TimingGraphBuilder::timing_graph() {
+    build();
+    opt_memory_layout();
+
     VTR_ASSERT(tg_);
     tg_->validate();
     return std::move(tg_);
 }
 
 void TimingGraphBuilder::build() {
+    tg_ = std::unique_ptr<tatum::TimingGraph>(new tatum::TimingGraph());
+
     for(AtomBlockId blk : netlist_.blocks()) {
 
         AtomBlockType blk_type = netlist_.block_type(blk);

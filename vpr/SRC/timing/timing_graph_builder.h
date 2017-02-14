@@ -12,8 +12,6 @@ class TimingGraphBuilder {
                            AtomMap& netlist_map)
             : netlist_(netlist) 
             , netlist_map_(netlist_map) {
-            build();
-            opt_memory_layout();
         }
 
         std::unique_ptr<tatum::TimingGraph> timing_graph();
