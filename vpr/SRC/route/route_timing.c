@@ -25,6 +25,7 @@
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
 #include "route_profiling.h"	
 
+#include "timing_info.h"
 #include "timing_util.h"
 
 using namespace std;

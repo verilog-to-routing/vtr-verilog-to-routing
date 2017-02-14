@@ -30,7 +30,7 @@ using namespace std;
 
 #include "timing_util.h"
 #include "RoutingDelayCalculator.hpp"
-#include "TimingInfo.h"
+#include "timing_info.h"
 #include "path_delay.h"
  
 

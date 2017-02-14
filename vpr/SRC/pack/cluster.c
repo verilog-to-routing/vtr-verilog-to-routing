@@ -64,7 +64,7 @@ using namespace std;
 #include "cluster_router.h"
 #include "lb_type_rr_graph.h"
 
-#include "TimingInfo.h"
+#include "timing_info.h"
 #include "PreClusterDelayCalculator.hpp"
 #include "echo_writer.hpp"
 

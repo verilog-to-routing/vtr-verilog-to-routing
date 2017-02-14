@@ -15,6 +15,8 @@ using namespace std;
 #include "timing_place_lookup.h"
 #include "timing_place.h"
 
+#include "timing_info.h"
+
 float **timing_place_crit; /*available externally */
 
 static vtr::t_chunk timing_place_crit_ch = {NULL, 0, NULL};

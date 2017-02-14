@@ -6,7 +6,7 @@
 #include "slack_evaluation.h"
 
 //NOTE: These classes should not be used directly but created with the 
-//      make_*_timing_info() functions in TimingInfo.h, and used through
+//      make_*_timing_info() functions in timing_info.h, and used through
 //      their abstract interfaces (SetupTimingInfo, HoldTimingInfo etc.)
 
 template<class DelayCalc>

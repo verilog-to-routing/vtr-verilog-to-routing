@@ -1,7 +1,7 @@
 #ifndef TIMING_PLACE
 #define TIMING_PLACE
 
-#include "TimingInfo.h"
+#include "timing_info_fwd.h"
 
 t_slack * alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 		struct s_router_opts router_opts,

@@ -3,7 +3,9 @@
 #include <vector>
 #include "connection_based_routing.h"
 #include "vpr_types.h"
-#include "TimingInfo.h"
+
+#include "vpr_utils.h"
+#include "timing_info_fwd.h"
 
 int get_max_pins_per_net(void);
 

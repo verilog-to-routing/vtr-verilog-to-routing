@@ -2,14 +2,9 @@
 #define VPR_TIMING_INFO_H
 #include <memory>
 
+#include "timing_info_fwd.h"
 #include "analyzer_factory.hpp"
-
 #include "timing_util.h"
-
-class TimingInfo;
-class SetupTimingInfo;
-class HoldTimingInfo;
-class SetupHoldTimingInfo;
 
 //Create a SetupTimingInfo for the given delay calculator
 template<class DelayCalc>
@@ -137,7 +132,7 @@ class SetupHoldTimingInfo : public SetupTimingInfo, public HoldTimingInfo {
 
 };
 
-#include "ConcreteTimingInfo.h"
+#include "concrete_timing_info.h"
 
 template<class DelayCalc>
 std::unique_ptr<SetupTimingInfo> make_setup_timing_info(std::shared_ptr<DelayCalc> delay_calculator) {

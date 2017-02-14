@@ -32,7 +32,7 @@ using namespace std;
 
 #include "PlacementDelayCalculator.hpp"
 #include "timing_util.h"
-#include "TimingInfo.h"
+#include "timing_info.h"
 #include "echo_writer.hpp"
 
 /************** Types and defines local to place.c ***************************/
