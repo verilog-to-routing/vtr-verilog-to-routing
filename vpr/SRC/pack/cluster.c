@@ -419,10 +419,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
         {
             std::ofstream os_timing_echo("timing.pre_pack.echo");
-            write_timing_graph(os_timing_echo, g_timing_graph);
+            write_timing_graph(os_timing_echo, *g_timing_graph);
             write_timing_constraints(os_timing_echo, g_timing_constraints);
-            write_delay_model(os_timing_echo, g_timing_graph, *clustering_delay_calc);
-            write_analysis_result(os_timing_echo, g_timing_graph, timing_info->analyzer());
+            write_delay_model(os_timing_echo, *g_timing_graph, *clustering_delay_calc);
+            write_analysis_result(os_timing_echo, *g_timing_graph, timing_info->analyzer());
         }
 
 		for (auto blk_id : g_atom_nl.blocks()) {

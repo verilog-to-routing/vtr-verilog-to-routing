@@ -15,10 +15,10 @@ inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist&
     , netlist_map_(netlist_map)
     , net_delay_(net_delay)
     , atom_delay_calc_(netlist, netlist_map)
-    , edge_delay_cache_(g_timing_graph.edges().size(), tatum::Time(NAN))
-    , driver_clb_delay_cache_(g_timing_graph.edges().size(), tatum::Time(NAN))
-    , sink_clb_delay_cache_(g_timing_graph.edges().size(), tatum::Time(NAN))
-    , net_pin_cache_(g_timing_graph.edges().size(), std::pair<const t_net_pin*,const t_net_pin*>(nullptr,nullptr))
+    , edge_delay_cache_(g_timing_graph->edges().size(), tatum::Time(NAN))
+    , driver_clb_delay_cache_(g_timing_graph->edges().size(), tatum::Time(NAN))
+    , sink_clb_delay_cache_(g_timing_graph->edges().size(), tatum::Time(NAN))
+    , net_pin_cache_(g_timing_graph->edges().size(), std::pair<const t_net_pin*,const t_net_pin*>(nullptr,nullptr))
     {}
 
 inline tatum::Time PostClusterDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge) const { 

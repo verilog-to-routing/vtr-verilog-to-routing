@@ -51,7 +51,7 @@ std::vector<PathInfo> find_critical_path_delays(const tatum::TimingConstraints& 
     //with the caputre clock
 
     //To ensure we find the critical path delay, we look at the arrival times at all timing endpoints (i.e. logical_outputs())
-    for(tatum::NodeId node : g_timing_graph.logical_outputs()) {
+    for(tatum::NodeId node : g_timing_graph->logical_outputs()) {
 
         //Look at each data arrival
         for(tatum::TimingTag data_tag : setup_analyzer.setup_tags(node, tatum::TagType::DATA_ARRIVAL)) {
@@ -102,7 +102,7 @@ std::vector<PathInfo> find_critical_path_delays(const tatum::TimingConstraints& 
 
 float find_setup_total_negative_slack(const tatum::SetupTimingAnalyzer& setup_analyzer) {
     float tns = 0.;
-    for(tatum::NodeId node : g_timing_graph.logical_outputs()) {
+    for(tatum::NodeId node : g_timing_graph->logical_outputs()) {
         for(tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
             float slack = tag.time().value();
             if(slack < 0.) {
@@ -115,7 +115,7 @@ float find_setup_total_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
 
 float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_analyzer) {
     float wns = 0.;
-    for(tatum::NodeId node : g_timing_graph.logical_outputs()) {
+    for(tatum::NodeId node : g_timing_graph->logical_outputs()) {
         for(tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
             float slack = tag.time().value();
 
@@ -144,7 +144,7 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
     //Find the min and max slacks
     float min_slack = std::numeric_limits<float>::infinity();
     float max_slack = -std::numeric_limits<float>::infinity();
-    for(tatum::NodeId node : g_timing_graph.logical_outputs()) {
+    for(tatum::NodeId node : g_timing_graph->logical_outputs()) {
         for(tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
             float slack = tag.time().value();
             
@@ -175,7 +175,7 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
         return bucket.max_value < slack;
     };
 
-    for(tatum::NodeId node : g_timing_graph.logical_outputs()) {
+    for(tatum::NodeId node : g_timing_graph->logical_outputs()) {
         for(tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
             float slack = tag.time().value();
             
@@ -206,15 +206,15 @@ void dump_atom_net_delays_tatum(std::string filename, const PlacementDelayCalcul
 
             //Find the corresponding edge
             tatum::EdgeId edge;
-            for(tatum::EdgeId check_edge : g_timing_graph.node_out_edges(driver_tnode)) {
-                if(g_timing_graph.edge_sink_node(check_edge) == sink_tnode) {
+            for(tatum::EdgeId check_edge : g_timing_graph->node_out_edges(driver_tnode)) {
+                if(g_timing_graph->edge_sink_node(check_edge) == sink_tnode) {
                     edge = check_edge;
                     break;
                 }
             }
             VTR_ASSERT(edge);
 
-            float delay = dc.max_edge_delay(g_timing_graph, edge).value();
+            float delay = dc.max_edge_delay(*g_timing_graph, edge).value();
             os << "\tSink " << size_t(sink) << ": " << delay << " (" << g_atom_nl.pin_name(sink) << "): " "\n";
 
         }

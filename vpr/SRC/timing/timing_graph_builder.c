@@ -28,9 +28,10 @@ tatum::util::linear_map<K,V> remap_valid(const tatum::util::linear_map<K,V>& dat
     return new_data;
 }
 
-TimingGraph TimingGraphBuilder::timing_graph() {
-    tg_.validate();
-    return tg_;
+std::unique_ptr<TimingGraph> TimingGraphBuilder::timing_graph() {
+    VTR_ASSERT(tg_);
+    tg_->validate();
+    return std::move(tg_);
 }
 
 void TimingGraphBuilder::build() {
@@ -53,11 +54,11 @@ void TimingGraphBuilder::build() {
 
     fix_comb_loops();
 
-    tg_.levelize();
+    tg_->levelize();
 }
 
 void TimingGraphBuilder::opt_memory_layout() {
-    auto id_map = tg_.optimize_layout();
+    auto id_map = tg_->optimize_layout();
 
 
     remap_ids(id_map);
@@ -92,7 +93,7 @@ void TimingGraphBuilder::add_io_to_timing_graph(const AtomBlockId blk) {
         }
     }
 
-    NodeId tnode = tg_.add_node(node_type);
+    NodeId tnode = tg_->add_node(node_type);
 
     netlist_map_.pin_tnode.insert(pin, tnode);
 }
@@ -109,9 +110,9 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
         VTR_ASSERT(!model_port->is_clock);
         if(model_port->clock.empty()) {
             //No clock => combinational input
-            tnode = tg_.add_node(NodeType::IPIN);
+            tnode = tg_->add_node(NodeType::IPIN);
         } else {
-            tnode = tg_.add_node(NodeType::SINK);
+            tnode = tg_->add_node(NodeType::SINK);
         }
 
         netlist_map_.pin_tnode.insert(input_pin, tnode);
@@ -127,7 +128,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
         VTR_ASSERT(model_port->is_clock);
         VTR_ASSERT(model_port->clock.empty());
 
-        NodeId tnode = tg_.add_node(NodeType::CPIN);
+        NodeId tnode = tg_->add_node(NodeType::CPIN);
 
         netlist_map_.pin_tnode.insert(clock_pin, tnode);
     }
@@ -142,17 +143,17 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
         NodeId tnode;
         if(model_port->is_clock) {
             //A generated clock source
-            tnode = tg_.add_node(NodeType::SOURCE);
+            tnode = tg_->add_node(NodeType::SOURCE);
 
         } else if(model_port->clock.empty()) {
             //No clock => combinational output
-            tnode = tg_.add_node(NodeType::OPIN);
+            tnode = tg_->add_node(NodeType::OPIN);
 
         } else {
             VTR_ASSERT(!model_port->is_clock);
             VTR_ASSERT(!model_port->clock.empty());
             //Has an associated clock => sequential output
-            tnode = tg_.add_node(NodeType::SOURCE);
+            tnode = tg_->add_node(NodeType::SOURCE);
         }
 
         netlist_map_.pin_tnode.insert(output_pin, tnode);
@@ -165,7 +166,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
         NodeId tnode = netlist_map_.pin_tnode[pin];
         VTR_ASSERT(tnode);
 
-        if(tg_.node_type(tnode) == NodeType::SOURCE || tg_.node_type(tnode) == NodeType::SINK) {
+        if(tg_->node_type(tnode) == NodeType::SOURCE || tg_->node_type(tnode) == NodeType::SINK) {
             //Look-up the clock name on the port model
             AtomPortId port = netlist_.pin_port(pin);
             const t_model_ports* model_port = netlist_.port_model(port);
@@ -190,7 +191,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
             NodeId clk_tnode = netlist_map_.pin_tnode[clk_pin];
 
             //Add the edge from the clock to the source/sink
-            tg_.add_edge(clk_tnode, tnode);
+            tg_->add_edge(clk_tnode, tnode);
         }
     }
 
@@ -200,7 +201,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
         NodeId src_tnode = netlist_map_.pin_tnode[src_pin];
         VTR_ASSERT(src_tnode);
 
-        if(tg_.node_type(src_tnode) == NodeType::IPIN) {
+        if(tg_->node_type(src_tnode) == NodeType::IPIN) {
 
             //Look-up the combinationally connected sink ports name on the port model
             AtomPortId src_port = netlist_.pin_port(src_pin);
@@ -216,10 +217,10 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                     NodeId sink_tnode = netlist_map_.pin_tnode[sink_pin];
                     VTR_ASSERT(sink_tnode);
 
-                    VTR_ASSERT_MSG(tg_.node_type(sink_tnode) == NodeType::OPIN, "Internal primitive combinational edges must be between IPINs and OPINs");
+                    VTR_ASSERT_MSG(tg_->node_type(sink_tnode) == NodeType::OPIN, "Internal primitive combinational edges must be between IPINs and OPINs");
 
                     //Add the edge between the pins
-                    tg_.add_edge(src_tnode, sink_tnode);
+                    tg_->add_edge(src_tnode, sink_tnode);
                 }
             }
         }
@@ -237,12 +238,12 @@ void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
         NodeId sink_tnode = netlist_map_.pin_tnode[sink_pin];
         VTR_ASSERT(sink_tnode);
 
-        tg_.add_edge(driver_tnode, sink_tnode);
+        tg_->add_edge(driver_tnode, sink_tnode);
     }
 }
 
 void TimingGraphBuilder::fix_comb_loops() {
-    auto sccs = tatum::identify_combinational_loops(tg_);
+    auto sccs = tatum::identify_combinational_loops(*tg_);
 
     //For non-simple loops (i.e. SCCs with multiple loops) we may need to break
     //multiple edges, so repeatedly break edges until there are no SCCs left
@@ -252,10 +253,10 @@ void TimingGraphBuilder::fix_comb_loops() {
             EdgeId edge_to_break = find_scc_edge_to_break(scc);
             VTR_ASSERT(edge_to_break);
 
-            tg_.disable_edge(edge_to_break);
+            tg_->disable_edge(edge_to_break);
         }
 
-        sccs = tatum::identify_combinational_loops(tg_);
+        sccs = tatum::identify_combinational_loops(*tg_);
     }
 }
 
@@ -265,10 +266,10 @@ tatum::EdgeId TimingGraphBuilder::find_scc_edge_to_break(std::vector<tatum::Node
     std::set<tatum::NodeId> scc_set(scc.begin(), scc.end());
     for(tatum::NodeId src_node : scc) {
         AtomPinId src_pin = netlist_map_.pin_tnode[src_node];
-        for(tatum::EdgeId edge : tg_.node_out_edges(src_node)) {
-            if(tg_.edge_disabled(edge)) continue;
+        for(tatum::EdgeId edge : tg_->node_out_edges(src_node)) {
+            if(tg_->edge_disabled(edge)) continue;
 
-            tatum::NodeId sink_node = tg_.edge_sink_node(edge);
+            tatum::NodeId sink_node = tg_->edge_sink_node(edge);
             AtomPinId sink_pin = netlist_map_.pin_tnode[sink_node];
 
             if(scc_set.count(sink_node)) {

@@ -24,7 +24,7 @@ AtomMap g_atom_map;
 
 std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
 
-tatum::TimingGraph g_timing_graph;
+std::shared_ptr<tatum::TimingGraph> g_timing_graph;
 tatum::TimingConstraints g_timing_constraints;
 
 /******** Clustered netlist ********/

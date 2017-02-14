@@ -1,11 +1,9 @@
-#include <unordered_map>
-#include <set>
+#include <memory>
 
 #include "TimingGraph.hpp"
 
 #include "atom_netlist_fwd.h"
 #include "atom_map.h"
-#include "physical_types.h"
 
 
 class TimingGraphBuilder {
@@ -18,7 +16,7 @@ class TimingGraphBuilder {
             opt_memory_layout();
         }
 
-        tatum::TimingGraph timing_graph();
+        std::unique_ptr<tatum::TimingGraph> timing_graph();
 
     private:
         void build();
@@ -39,7 +37,7 @@ class TimingGraphBuilder {
         void mark_clustering_net_delays(float inter_cluster_net_delay);
 
     private:
-        tatum::TimingGraph tg_;
+        std::unique_ptr<tatum::TimingGraph> tg_;
 
         const AtomNetlist& netlist_;
         AtomMap& netlist_map_;

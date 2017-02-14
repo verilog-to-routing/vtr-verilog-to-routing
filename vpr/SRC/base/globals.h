@@ -12,6 +12,7 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include <unordered_map>
+#include <memory>
 
 #include "vtr_matrix.h"
 #include "netlist.h"
@@ -32,7 +33,7 @@ extern AtomMap g_atom_map;
 /* Atom net power info */
 extern std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
 
-extern tatum::TimingGraph g_timing_graph;
+extern std::shared_ptr<tatum::TimingGraph> g_timing_graph;
 extern tatum::TimingConstraints g_timing_constraints;
 
 /********************************************************************

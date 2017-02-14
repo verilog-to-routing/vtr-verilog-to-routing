@@ -273,8 +273,10 @@ void vpr_init(const int argc, const char **argv,
         }
 
         //Initialize timing graph and constraints
-        TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map);
-        g_timing_graph = tg_builder.timing_graph();
+        {
+            TimingGraphBuilder tg_builder(g_atom_nl, g_atom_map);
+            g_timing_graph = tg_builder.timing_graph();
+        }
         g_timing_constraints = create_timing_constraints(g_atom_nl, g_atom_map, vpr_setup->Timing);
 
 		fflush(stdout);
