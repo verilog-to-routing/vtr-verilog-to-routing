@@ -1,10 +1,15 @@
 #include <fstream>
 
 #include "vtr_log.h"
-#include "timing_util.h"
 #include "vtr_assert.h"
+#include "vtr_math.h"
 
 #include "globals.h"
+#include "timing_util.h"
+
+double sec_to_nanosec(double seconds) { return 1e9*seconds; }
+
+double sec_to_mhz(double seconds) { return (1. / seconds) / 1e6; }
 
 PathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     PathInfo crit_path_info;
@@ -191,6 +196,99 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
     return histogram;
 }
 
+void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
+    auto crit_paths = find_critical_path_delays(constraints, setup_analyzer);
+    if(constraints.clock_domains().size() == 1) {
+        //Single clock
+        VTR_ASSERT(crit_paths.size() == 1);
+
+        //Only makes sense to tal about Fmax in a single-clock circuit
+        vtr::printf("Final critical path: %g ns,", sec_to_nanosec(crit_paths[0].path_delay));
+        vtr::printf(" Fmax: %g MHz", sec_to_mhz(crit_paths[0].path_delay));
+        vtr::printf("\n");
+
+    } else {
+        //Multi-clock
+
+        //Periods per constraint
+		vtr::printf_info("Minimum clock periods to meet each constraint:\n");
+        for(const auto& path : crit_paths) {
+            vtr::printf("%s to %s: %g ns (%g MHz)\n",
+                        constraints.clock_domain_name(path.launch_domain).c_str(),
+                        constraints.clock_domain_name(path.capture_domain).c_str(),
+                        sec_to_nanosec(path.path_delay),
+                        sec_to_mhz(path.path_delay));
+        }
+
+        //Slack per constraint
+		vtr::printf_info("Worst setup slacks per constraint:\n");
+        for(const auto& path : crit_paths) {
+            vtr::printf("%s to %s: %g ns\n",
+                        constraints.clock_domain_name(path.launch_domain).c_str(),
+                        constraints.clock_domain_name(path.capture_domain).c_str(),
+                        sec_to_nanosec(path.slack));
+        }
+        vtr::printf("\n");
+    }
+    vtr::printf("\n");
+
+    vtr::printf("Setup Worst Negative Slack (sWNS): %g ns\n", sec_to_nanosec(find_setup_worst_negative_slack(setup_analyzer)));
+    vtr::printf("Setup Total Negative Slack (sTNS): %g ns\n", sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer)));
+    vtr::printf("\n");
+
+    vtr::printf_info("Setup slack histogram:\n");
+    print_histogram(create_setup_slack_histogram(setup_analyzer));
+    vtr::printf("\n");
+
+    //Calculate the intra-domain (i.e. same launch and capture domain) geomean, and fanout-weighted periods
+    std::vector<double> intra_domain_cpds;
+    std::vector<double> fanout_weighted_intra_domain_cpds;
+    double total_intra_domain_fanout = 0.;
+    auto clock_fanouts = count_clock_fanouts(*g_timing_graph, setup_analyzer);
+    for(const auto& path : crit_paths) {
+        if(path.launch_domain == path.capture_domain) {
+            intra_domain_cpds.push_back(path.path_delay);
+
+            auto iter = clock_fanouts.find(path.launch_domain);
+            VTR_ASSERT(iter != clock_fanouts.end());
+            double fanout = iter->second;
+
+            fanout_weighted_intra_domain_cpds.push_back(path.path_delay * fanout);
+            total_intra_domain_fanout += fanout;
+        }
+    }
+
+    if(intra_domain_cpds.size() > 0) {
+        vtr::printf("\n");
+        double geomean_intra_domain_cpd = vtr::geomean(intra_domain_cpds.begin(), intra_domain_cpds.end());
+        vtr::printf("Geometric mean intra-domain period: %g ns (%g MHz)\n", 
+                sec_to_nanosec(geomean_intra_domain_cpd), 
+                sec_to_mhz(geomean_intra_domain_cpd));
+
+        //Normalize weighted fanouts by total fanouts
+        for(auto& weighted_cpd : fanout_weighted_intra_domain_cpds) {
+            weighted_cpd /= total_intra_domain_fanout;
+        }
+        double fanout_weighted_geomean_intra_domain_cpd = vtr::geomean(fanout_weighted_intra_domain_cpds.begin(),
+                                                                       fanout_weighted_intra_domain_cpds.end());
+        vtr::printf("Fanout-weighted geomean intra-domain period: %g ns (%g MHz)\n", 
+                sec_to_nanosec(fanout_weighted_geomean_intra_domain_cpd), 
+                sec_to_mhz(fanout_weighted_geomean_intra_domain_cpd));
+    }
+    vtr::printf("\n");
+}
+
+std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer) {
+    std::map<tatum::DomainId,size_t> fanouts;
+    for(auto node: timing_graph.logical_outputs()) {
+        for(auto tag : setup_analyzer.setup_tags(node, tatum::TagType::CLOCK_CAPTURE)) {
+            fanouts[tag.capture_clock_domain()] += 1;
+        }
+    }
+
+    return fanouts;
+}
+
 void dump_atom_net_delays_tatum(std::string filename, const PlacementDelayCalculator& dc) {
     std::ofstream os(filename);
 
@@ -226,23 +324,15 @@ void dump_atom_net_delays_tatum(std::string filename, const PlacementDelayCalcul
  */
 
 //Return the tag from the range [first,last) which has the lowest value
-tatum::TimingTag find_minimum_tag(tatum::TimingTags::tag_range tags) {
+tatum::TimingTags::const_iterator find_minimum_tag(tatum::TimingTags::tag_range tags) {
 
-    auto iter = std::min_element(tags.begin(), tags.end(), TimingTagValueComp()); 
-
-    VTR_ASSERT_MSG(iter != tags.end(), "Minimum timing tag should have been found");
-
-    return *iter;
+    return std::min_element(tags.begin(), tags.end(), TimingTagValueComp()); 
 }
 
 //Return the tag from the range [first,last) which has the highest value
-tatum::TimingTag find_maximum_tag(tatum::TimingTags::tag_range tags) {
+tatum::TimingTags::const_iterator find_maximum_tag(tatum::TimingTags::tag_range tags) {
 
-    auto iter = std::max_element(tags.begin(), tags.end(), TimingTagValueComp()); 
-
-    VTR_ASSERT_MSG(iter != tags.end(), "Maximum timing tag should have been found");
-
-    return *iter;
+    return std::max_element(tags.begin(), tags.end(), TimingTagValueComp()); 
 }
 
 //Returns the worst (maximum) criticality of the set of slack tags specified. Requires the maximum
@@ -267,7 +357,7 @@ float calc_relaxed_criticality(const std::map<DomainPair,float>& domains_max_req
 
 
     //Record the maximum criticality over all the tags
-    float max_crit = -std::numeric_limits<float>::infinity();
+    float max_crit = 0.;
     for(const auto& tag : tags) {
 
         VTR_ASSERT_MSG(tag.type() == tatum::TagType::SLACK, "Tags must be slacks to calculate criticality");

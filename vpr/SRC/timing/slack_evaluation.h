@@ -47,8 +47,14 @@ class SetupSlackCrit {
             VTR_ASSERT(node);
 
             //Find the worst (least) slack at this node
-            auto min_tag = find_minimum_tag(analyzer.setup_slacks(node));
-            pin_slacks_[pin] = min_tag.time().value();
+            auto tags = analyzer.setup_slacks(node);
+            auto min_tag_iter = find_minimum_tag(tags);
+            if(min_tag_iter != tags.end()) {
+                pin_slacks_[pin] = min_tag_iter->time().value();
+            } else {
+                //No tags (e.g. driven by constant generator)
+                pin_slacks_[pin] = std::numeric_limits<float>::infinity();
+            }
         }
 
         void update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {

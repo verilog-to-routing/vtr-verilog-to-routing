@@ -7,6 +7,10 @@
 #include "histogram.h"
 #include "PlacementDelayCalculator.hpp"
 
+double sec_to_nanosec(double seconds); 
+
+double sec_to_mhz(double seconds);
+
 struct PathInfo {
     PathInfo() = default;
     PathInfo(float delay, float slack_val, tatum::NodeId launch_n, tatum::NodeId capture_n, tatum::DomainId launch_d, tatum::DomainId capture_d)
@@ -53,8 +57,15 @@ float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, ta
 //Returns a slack histogram
 std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins = 10);
 
+//Print a useful summary of timing information
+void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
+
+//Returns the a map of domain's and thier clock fanout (i.e. logical outputs at which the clock captures)
+std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer);
+
 //Prints the atom net delays to a file
 void dump_atom_net_delays_tatum(std::string filename, const PlacementDelayCalculator& dc);
+
 
 /*
  * Slack and criticality calculation utilities
@@ -68,10 +79,10 @@ struct TimingTagValueComp {
 };
 
 //Return the tag from the range [first,last) which has the lowest value
-tatum::TimingTag find_minimum_tag(tatum::TimingTags::tag_range tags);
+tatum::TimingTags::const_iterator find_minimum_tag(tatum::TimingTags::tag_range tags);
 
 //Return the tag from the range [first,last) which has the highest value
-tatum::TimingTag find_maximum_tag(tatum::TimingTags::tag_range tags);
+tatum::TimingTags::const_iterator find_maximum_tag(tatum::TimingTags::tag_range tags);
 
 //A pair of clock domains
 struct DomainPair {

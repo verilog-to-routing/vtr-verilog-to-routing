@@ -7,6 +7,7 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_matrix.h"
 #include "vtr_log.h"
+#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -21,6 +22,11 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
 #include "endpoint_timing.h"
+
+#include "timing_info.h"
+#include "RoutingDelayCalculator.hpp"
+
+#include "timing_util.h"
 
 /********************** Subroutines local to this module *********************/
 
@@ -89,6 +95,11 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		if (timing_analysis_enabled) {
 			load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
+            auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_map, net_delay);
+
+            std::shared_ptr<SetupTimingInfo> timing_info = make_setup_timing_info(routing_delay_calc);
+            timing_info->update();
+
 #ifdef ENABLE_CLASSIC_VPR_STA
 			load_timing_graph_net_delays(net_delay);
 
@@ -108,8 +119,13 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
                 print_endpoint_timing(getEchoFileName(E_ECHO_ENDPOINT_TIMING));
             }
 
+            vtr::printf("CLASSIC STATS\n");
+            vtr::printf("=============\n");
 			print_timing_stats();
 #endif
+            vtr::printf("NEW STATS\n");
+            vtr::printf("=========\n");
+			print_setup_timing_summary(*g_timing_constraints, *timing_info->setup_analyzer());
 		}
 	}
 
