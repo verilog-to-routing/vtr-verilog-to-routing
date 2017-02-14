@@ -1126,19 +1126,19 @@ const char * get_sdc_file_name(){
 	return sdc_file_name;
 }
 
-tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, const AtomMap& atom_map, t_timing_inf timing_inf) {
+std::unique_ptr<tatum::TimingConstraints> create_timing_constraints(const AtomNetlist& netlist, const AtomMap& atom_map, t_timing_inf timing_inf) {
     if(!g_sdc) {
         read_sdc(timing_inf);
     }
 
-    auto tc = tatum::TimingConstraints();
+    std::unique_ptr<tatum::TimingConstraints> tc(new tatum::TimingConstraints());
 
     //Initialize the clocks
     for(int iclk = 0; iclk < g_sdc->num_constrained_clocks; ++iclk) {
         t_clock* clk = &g_sdc->constrained_clocks[iclk];
 
         //Make the clock
-        tatum::DomainId domain = tc.create_clock_domain(clk->name);
+        tatum::DomainId domain = tc->create_clock_domain(clk->name);
 
         //Find the clock source
         AtomNetId clk_net = netlist.find_net(clk->name);
@@ -1149,7 +1149,7 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
 
             tatum::NodeId src_node = atom_map.pin_tnode[driver_pin];
 
-            tc.set_clock_domain_source(src_node, domain);
+            tc->set_clock_domain_source(src_node, domain);
         } else {
             //Virtual clock - no driver
         }
@@ -1157,15 +1157,15 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
 
     //Initialize the clock-to-clock constraints
     for(int isrc_clk = 0; isrc_clk < g_sdc->num_constrained_clocks; ++isrc_clk) {
-        tatum::DomainId src_domain = tc.find_clock_domain(g_sdc->constrained_clocks[isrc_clk].name);
+        tatum::DomainId src_domain = tc->find_clock_domain(g_sdc->constrained_clocks[isrc_clk].name);
         VTR_ASSERT(src_domain);
         for(int isnk_clk = 0; isnk_clk < g_sdc->num_constrained_clocks; ++isnk_clk) {
-            tatum::DomainId snk_domain = tc.find_clock_domain(g_sdc->constrained_clocks[isnk_clk].name);
+            tatum::DomainId snk_domain = tc->find_clock_domain(g_sdc->constrained_clocks[isnk_clk].name);
             VTR_ASSERT(snk_domain);
 
             float constraint = g_sdc->domain_constraint[isrc_clk][isnk_clk];
             if(constraint != DO_NOT_ANALYSE) {
-                tc.set_setup_constraint(src_domain, snk_domain, 1e-9*constraint);
+                tc->set_setup_constraint(src_domain, snk_domain, 1e-9*constraint);
             }
         }
     }
@@ -1174,7 +1174,7 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
     for(int iinput = 0; iinput < g_sdc->num_constrained_inputs; ++iinput) {
         t_io* io_constraint = &g_sdc->constrained_inputs[iinput];
 
-        tatum::DomainId domain = tc.find_clock_domain(io_constraint->clock_name);
+        tatum::DomainId domain = tc->find_clock_domain(io_constraint->clock_name);
         VTR_ASSERT(domain);
 
         AtomBlockId blk = netlist.find_block(io_constraint->name);
@@ -1200,14 +1200,14 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
         tatum::NodeId node = atom_map.pin_tnode[pin];
  
         //Apply the constraint
-        tc.set_input_constraint(node, domain, 1e-9*io_constraint->delay);
+        tc->set_input_constraint(node, domain, 1e-9*io_constraint->delay);
     }
 
     //Initialize the output constraints
     for(int ioutput = 0; ioutput < g_sdc->num_constrained_outputs; ++ioutput) {
         t_io* io_constraint = &g_sdc->constrained_outputs[ioutput];
 
-        tatum::DomainId domain = tc.find_clock_domain(io_constraint->clock_name);
+        tatum::DomainId domain = tc->find_clock_domain(io_constraint->clock_name);
         VTR_ASSERT(domain);
 
         //VPR prefixes outputs with "out:"
@@ -1234,7 +1234,7 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
 
         tatum::NodeId node = atom_map.pin_tnode[pin];
 
-        tc.set_output_constraint(node, domain, 1e-9*io_constraint->delay);
+        tc->set_output_constraint(node, domain, 1e-9*io_constraint->delay);
     }
 
     //TODO: FF-FF constraint overrides (needs support in Tatum)
@@ -1244,7 +1244,7 @@ tatum::TimingConstraints create_timing_constraints(const AtomNetlist& netlist, c
         for(AtomPinId pin : netlist.block_output_pins(blk)) {
             if(netlist.pin_is_constant(pin)) {
                 tatum::NodeId node = atom_map.pin_tnode[pin];
-                tc.set_constant_generator(node);
+                tc->set_constant_generator(node);
             }
         }
     }

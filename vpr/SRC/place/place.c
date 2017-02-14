@@ -404,7 +404,7 @@ void try_place(struct s_placer_opts placer_opts,
         {
             std::ofstream os_timing_echo_init("timing.place_init.echo");
             write_timing_graph(os_timing_echo_init, *g_timing_graph);
-            write_timing_constraints(os_timing_echo_init, g_timing_constraints);
+            write_timing_constraints(os_timing_echo_init, *g_timing_constraints);
             write_delay_model(os_timing_echo_init, *g_timing_graph, *placement_delay_calc);
             write_analysis_result(os_timing_echo_init, *g_timing_graph, timing_info->analyzer());
         }
@@ -751,7 +751,7 @@ void try_place(struct s_placer_opts placer_opts,
         {
             std::ofstream os_timing_echo_final("timing.place_final.echo");
             write_timing_graph(os_timing_echo_final, *g_timing_graph);
-            write_timing_constraints(os_timing_echo_final, g_timing_constraints);
+            write_timing_constraints(os_timing_echo_final, *g_timing_constraints);
             write_delay_model(os_timing_echo_final, *g_timing_graph, *placement_delay_calc);
             write_analysis_result(os_timing_echo_final, *g_timing_graph, timing_info->analyzer());
         }

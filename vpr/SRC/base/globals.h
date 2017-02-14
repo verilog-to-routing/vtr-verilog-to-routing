@@ -34,7 +34,7 @@ extern AtomMap g_atom_map;
 extern std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
 
 extern std::shared_ptr<tatum::TimingGraph> g_timing_graph;
-extern tatum::TimingConstraints g_timing_constraints;
+extern std::shared_ptr<tatum::TimingConstraints> g_timing_constraints;
 
 /********************************************************************
  CLB Netlist Globals
