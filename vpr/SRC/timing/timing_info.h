@@ -39,10 +39,10 @@ class TimingInfo {
         virtual std::shared_ptr<const tatum::TimingAnalyzer> analyzer() const = 0;
 
         //Return the underlying timing graph
-        //virtual std::shared_ptr<const tatum::TimingGraph> timing_graph() const = 0;
+        virtual std::shared_ptr<const tatum::TimingGraph> timing_graph() const = 0;
 
         //Return the underlying timing constraints
-        //virtual std::shared_ptr<const tatum::TimingConstraints> timing_constraints() const = 0;
+        virtual std::shared_ptr<const tatum::TimingConstraints> timing_constraints() const = 0;
 };
 
 //Generic interface which provides setup-related timing information
@@ -140,7 +140,7 @@ std::unique_ptr<SetupTimingInfo> make_setup_timing_info(std::shared_ptr<DelayCal
     std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(*g_timing_graph, *g_timing_constraints, *delay_calculator);
 
      return std::unique_ptr<ConcreteSetupTimingInfo<DelayCalc>>(
-             new ConcreteSetupTimingInfo<DelayCalc>(*g_timing_graph, *g_timing_constraints, delay_calculator, analyzer)
+             new ConcreteSetupTimingInfo<DelayCalc>(g_timing_graph, g_timing_constraints, delay_calculator, analyzer)
             );
 }
 
@@ -149,7 +149,7 @@ std::unique_ptr<HoldTimingInfo> make_hold_timing_info(std::shared_ptr<DelayCalc>
     std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis>::make(*g_timing_graph, *g_timing_constraints, *delay_calculator);
 
      return std::unique_ptr<ConcreteHoldTimingInfo<DelayCalc>>(
-             new ConcreteHoldTimingInfo<DelayCalc>(*g_timing_graph, *g_timing_constraints, delay_calculator, analyzer)
+             new ConcreteHoldTimingInfo<DelayCalc>(g_timing_graph, g_timing_constraints, delay_calculator, analyzer)
             );
 }
 
@@ -158,7 +158,7 @@ std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr
     std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*g_timing_graph, *g_timing_constraints, *delay_calculator);
 
      return std::unique_ptr<ConcreteSetupHoldTimingInfo<DelayCalc>>(
-             new ConcreteSetupHoldTimingInfo<DelayCalc>(*g_timing_graph, *g_timing_constraints, delay_calculator, analyzer)
+             new ConcreteSetupHoldTimingInfo<DelayCalc>(g_timing_graph, g_timing_constraints, delay_calculator, analyzer)
             );
 }
 

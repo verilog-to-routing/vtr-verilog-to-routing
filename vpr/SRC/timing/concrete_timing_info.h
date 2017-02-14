@@ -13,8 +13,8 @@ template<class DelayCalc>
 class ConcreteSetupTimingInfo : public SetupTimingInfo {
     public:
         //Constructors
-        ConcreteSetupTimingInfo(const tatum::TimingGraph& timing_graph, 
-                                const tatum::TimingConstraints& timing_constraints,
+        ConcreteSetupTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph, 
+                                std::shared_ptr<const tatum::TimingConstraints> timing_constraints,
                                 std::shared_ptr<DelayCalc> delay_calc,
                                 std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer)
             : timing_graph_(timing_graph)
@@ -28,15 +28,15 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
     public:
         //Accessors
         PathInfo least_slack_critical_path() const override {
-            return find_least_slack_critical_path_delay(timing_constraints_, *setup_analyzer_);
+            return find_least_slack_critical_path_delay(*timing_constraints_, *setup_analyzer_);
         }
 
         PathInfo longest_critical_path() const override {
-            return find_longest_critical_path_delay(timing_constraints_, *setup_analyzer_);
+            return find_longest_critical_path_delay(*timing_constraints_, *setup_analyzer_);
         }
 
         std::vector<PathInfo> critical_paths() const override {
-            return find_critical_path_delays(timing_constraints_, *setup_analyzer_);
+            return find_critical_path_delays(*timing_constraints_, *setup_analyzer_);
         }
 
         float setup_total_negative_slack() const override {
@@ -59,6 +59,14 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
             return setup_analyzer();
         }
 
+        std::shared_ptr<const tatum::TimingGraph> timing_graph() const  override {
+            return timing_graph_;
+        }
+
+        std::shared_ptr<const tatum::TimingConstraints> timing_constraints() const  override {
+            return timing_constraints_;
+        }
+
         std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const override {
             return setup_analyzer_;
         }
@@ -75,15 +83,15 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
         }
 
         void update_setup_slacks() {
-            slack_crit_.update_slacks_and_criticalities(timing_graph_, *setup_analyzer_);
+            slack_crit_.update_slacks_and_criticalities(*timing_graph_, *setup_analyzer_);
         }
 
     private:
 
     private:
         //Data
-        const tatum::TimingGraph& timing_graph_;
-        const tatum::TimingConstraints& timing_constraints_;
+        std::shared_ptr<const tatum::TimingGraph> timing_graph_;
+        std::shared_ptr<const tatum::TimingConstraints> timing_constraints_;
         std::shared_ptr<DelayCalc> delay_calc_;
         std::shared_ptr<tatum::SetupTimingAnalyzer> setup_analyzer_;
 
@@ -94,8 +102,8 @@ template<class DelayCalc>
 class ConcreteHoldTimingInfo : public HoldTimingInfo {
     public:
         //Constructors
-        ConcreteHoldTimingInfo(const tatum::TimingGraph& timing_graph, 
-                               const tatum::TimingConstraints& timing_constraints,
+        ConcreteHoldTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph, 
+                               std::shared_ptr<const tatum::TimingConstraints> timing_constraints,
                                std::shared_ptr<DelayCalc> delay_calc,
                                std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer)
             : timing_graph_(timing_graph)
@@ -115,6 +123,8 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
 
         std::shared_ptr<const tatum::TimingAnalyzer> analyzer() const override { return hold_analyzer(); }
         std::shared_ptr<const tatum::HoldTimingAnalyzer> hold_analyzer() const override { return hold_analyzer_; }
+        std::shared_ptr<const tatum::TimingGraph> timing_graph() const  override { return timing_graph_; }
+        std::shared_ptr<const tatum::TimingConstraints> timing_constraints() const  override { return timing_constraints_; }
 
     public:
         //Mutators
@@ -133,8 +143,8 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
 
     private:
         //Data
-        const tatum::TimingGraph& timing_graph_;
-        const tatum::TimingConstraints& timing_constraints_;
+        std::shared_ptr<const tatum::TimingGraph> timing_graph_;
+        std::shared_ptr<const tatum::TimingConstraints> timing_constraints_;
         std::shared_ptr<DelayCalc> delay_calc_;
         std::shared_ptr<tatum::SetupTimingAnalyzer> hold_analyzer_;
 
@@ -146,13 +156,15 @@ template<class DelayCalc>
 class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
     public:
         //Constructors
-        ConcreteSetupHoldTimingInfo(const tatum::TimingGraph& timing_graph, 
-                                    const tatum::TimingConstraints& timing_constraints,
+        ConcreteSetupHoldTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph, 
+                                    std::shared_ptr<const tatum::TimingConstraints> timing_constraints,
                                     std::shared_ptr<DelayCalc> delay_calc,
                                     std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer)
             : setup_timing_(timing_graph, timing_constraints, setup_hold_analyzer)
             , hold_timing_(timing_graph, timing_constraints, setup_hold_analyzer)
-            , setup_hold_analyzer_(analyzer) {}
+            , setup_hold_analyzer_(analyzer) {
+            //pass
+        }
     private:
         //Accessors
 
@@ -181,14 +193,18 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
         //Combined setup-hold related
         std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> setup_hold_analyzer() const override { return setup_hold_analyzer_; }
 
+        //TimingInfo related
         std::shared_ptr<const tatum::TimingAnalyzer> analyzer() const override { return setup_hold_analyzer(); }
+        std::shared_ptr<const tatum::TimingGraph> timing_graph() const  override { return setup_timing_.timing_graph();; }
+        std::shared_ptr<const tatum::TimingConstraints> timing_constraints() const  override { return setup_timing_.timing_constraints(); }
 
     public:
         //Mutators
 
         //Update both setup and hold simultaneously
-        //  This is more efficient since it performs a single combined STA to update both
-        //  setup and hold
+        //  This is more efficient than calling update_hold() and update_setup() separately, since 
+        //  it performs a single combined STA to update both setup and hold (instead of calling it
+        //  twice).
         void update() override {
             setup_hold_analyzer_->update_timing(); 
             setup_timing_.update_setup(); 
