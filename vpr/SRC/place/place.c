@@ -498,7 +498,7 @@ void try_place(struct s_placer_opts placer_opts,
 	vtr::printf_info("\n");
 
     vtr::printf_info("Initial placement estimated setup slack histogram:\n");
-    print_histogram(find_setup_slack_histogram(*timing_info->setup_analyzer()));
+    print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
     vtr::printf_info("\n");
 
     //Table header
@@ -769,7 +769,7 @@ void try_place(struct s_placer_opts placer_opts,
         vtr::printf_info("\n");
 
         vtr::printf_info("Placement estimated setup slack histogram:\n");
-        print_histogram(find_setup_slack_histogram(*timing_info->setup_analyzer()));
+        print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
         vtr::printf_info("\n");
 
 #ifdef ENABLE_CLASSIC_VPR_STA

@@ -138,7 +138,7 @@ float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, ta
     return NAN;
 }
 
-std::vector<HistogramBucket> find_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins) {
+std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins) {
     std::vector<HistogramBucket> histogram;
 
     //Find the min and max slacks

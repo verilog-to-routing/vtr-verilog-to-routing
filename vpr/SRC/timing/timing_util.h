@@ -51,7 +51,7 @@ float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
 float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, tatum::NodeId node, tatum::DomainId launch_domain, tatum::DomainId capture_domain);
 
 //Returns a slack histogram
-std::vector<HistogramBucket> find_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins = 10);
+std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins = 10);
 
 //Prints the atom net delays to a file
 void dump_atom_net_delays_tatum(std::string filename, const PlacementDelayCalculator& dc);
