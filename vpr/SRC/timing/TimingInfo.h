@@ -42,6 +42,12 @@ class TimingInfo {
 
         //Return the underlying timing analyzer
         virtual std::shared_ptr<const tatum::TimingAnalyzer> analyzer() const = 0;
+
+        //Return the underlying timing graph
+        //virtual std::shared_ptr<const tatum::TimingGraph> timing_graph() const = 0;
+
+        //Return the underlying timing constraints
+        //virtual std::shared_ptr<const tatum::TimingConstraints> timing_constraints() const = 0;
 };
 
 //Generic interface which provides setup-related timing information

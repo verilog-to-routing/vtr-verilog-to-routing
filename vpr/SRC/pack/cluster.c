@@ -64,6 +64,7 @@ using namespace std;
 #include "cluster_router.h"
 #include "lb_type_rr_graph.h"
 
+#include "TimingInfo.h"
 #include "timing_graph_builder.h"
 #include "echo_writer.hpp"
 #include "TimingConstraints.hpp"
@@ -222,7 +223,7 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 static void update_timing_gain_values(const AtomNetId net_id,
 		t_pb* cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block,
-        const SetupSlackEvaluator& optimizer_slacks,
+        const SetupTimingInfo& timing_info,
         const std::unordered_set<AtomNetId>& is_global);
 
 static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_update gain_flag,
@@ -230,7 +231,7 @@ static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_updat
         bool timing_driven,
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-        const SetupSlackEvaluator& optimizer_slacks,
+        const SetupTimingInfo& timing_info,
         const std::unordered_set<AtomNetId>& is_global);
 
 static void update_total_gain(float alpha, float beta, bool timing_driven,
@@ -243,7 +244,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
 		const bool connection_driven, 
-        const SetupSlackEvaluator& slacks);
+        const SetupTimingInfo& timing_info);
 
 static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
@@ -340,6 +341,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	vector < vector <t_intra_lb_net> * > intra_lb_routing;
 
+    std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
+    std::shared_ptr<SetupTimingInfo> timing_info;
+
 	/* TODO: This is memory inefficient, fix if causes problems */
 	clb = (t_block*)vtr::calloc(g_atom_nl.blocks().size(), sizeof(t_block));
 	num_clb = 0;
@@ -407,29 +411,26 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	VTR_ASSERT(max_cluster_size < MAX_SHORT);
 	/* Limit maximum number of elements for each cluster */
 
-    //New timign analyzer
-    PreClusterDelayCalculator dc(g_atom_nl, g_atom_map, inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
-
-    std::ofstream os_timing_echo("timing.pre_pack.echo");
-    write_timing_graph(os_timing_echo, g_timing_graph);
-    os_timing_echo.flush();
-    write_timing_constraints(os_timing_echo, g_timing_constraints);
-    os_timing_echo.flush();
-    write_delay_model(os_timing_echo, g_timing_graph, dc);
-    os_timing_echo.flush();
-
-    std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(g_timing_graph, g_timing_constraints, dc);
-    analyzer->update_timing();
-
-    tatum::write_dot_file_setup("setup.pre_pack.dot", g_timing_graph, dc, *analyzer);
-
-    write_analysis_result(os_timing_echo, g_timing_graph, analyzer);
-    os_timing_echo.flush();
-
-    auto optimizer_slacks = make_optimizer_slacks(g_atom_nl, g_atom_map, analyzer, g_timing_graph, dc);
 
 	if (timing_driven) {
-        optimizer_slacks.update();
+
+        /*
+         * Initialize the timing analyzer
+         */
+        clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(g_atom_nl, g_atom_map, inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
+        timing_info = make_setup_timing_info(clustering_delay_calc);
+
+        //Calculate the initial timing
+        timing_info->update();
+
+        {
+            std::ofstream os_timing_echo("timing.pre_pack.echo");
+            write_timing_graph(os_timing_echo, g_timing_graph);
+            write_timing_constraints(os_timing_echo, g_timing_constraints);
+            write_delay_model(os_timing_echo, g_timing_graph, *clustering_delay_calc);
+            write_analysis_result(os_timing_echo, g_timing_graph, timing_info->analyzer());
+        }
+
 		for (auto blk_id : g_atom_nl.blocks()) {
 			critindexarray.push_back(blk_id);
 			seed_blend_index_array.push_back(blk_id);
@@ -439,7 +440,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         for(AtomBlockId blk : g_atom_nl.blocks()) {
             for(AtomPinId in_pin : g_atom_nl.block_input_pins(blk)) {
                 //Max criticality over incomming nets
-                float crit = optimizer_slacks.setup_criticality(in_pin);
+                float crit = timing_info->setup_pin_criticality(in_pin);
                 block_criticality[blk] = std::max(block_criticality[blk], crit);
             }
         }
@@ -526,7 +527,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                     is_clock, //Set of global nets (currently all clocks)
                     global_clocks, alpha,
 					beta, timing_driven, connection_driven, 
-                    optimizer_slacks);
+                    *timing_info);
 			num_clb++;
 
 			if (timing_driven && !early_exit) {
@@ -609,7 +610,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                         is_clock, //Set of all global signals (currently clocks)
 						global_clocks, alpha, beta, timing_driven,
 						connection_driven, 
-                        optimizer_slacks);
+                        *timing_info);
 				num_unrelated_clustering_attempts = 0;
 
 				if (timing_driven && !early_exit) {
@@ -733,8 +734,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	   clb_inter_blk_nets = NULL;
 	}
 
-    g_timing_analysis_profile_stats.wallclock_time += analyzer->get_profiling_data("total_analysis_sec");
-    g_timing_analysis_profile_stats.num_full_updates += analyzer->get_profiling_data("num_full_updates");
+    g_timing_analysis_profile_stats.wallclock_time += timing_info->analyzer()->get_profiling_data("total_analysis_sec");
+    g_timing_analysis_profile_stats.num_full_updates += timing_info->analyzer()->get_profiling_data("num_full_updates");
 }
 
 /*****************************************/
@@ -1552,7 +1553,7 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 static void update_timing_gain_values(const AtomNetId net_id,
 		t_pb *cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-        const SetupSlackEvaluator& optimizer_slacks,
+        const SetupTimingInfo& timing_info,
         const std::unordered_set<AtomNetId>& is_global) {
 
 	/*This function is called when the timing_gain values on the atom net*
@@ -1571,7 +1572,7 @@ static void update_timing_gain_values(const AtomNetId net_id,
             auto blk_id = g_atom_nl.pin_block(pin_id);
 			if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
 
-                timinggain = optimizer_slacks.setup_criticality(pin_id);
+                timinggain = timing_info.setup_pin_criticality(pin_id);
 
 				if(cur_pb->pb_stats->timinggain.count(blk_id) == 0) {
 					cur_pb->pb_stats->timinggain[blk_id] = 0;
@@ -1592,7 +1593,7 @@ static void update_timing_gain_values(const AtomNetId net_id,
 		if (g_atom_map.atom_clb(new_blk_id) == NO_CLUSTER) {
 			for (auto pin_id : g_atom_nl.net_sinks(net_id)) {
 
-                timinggain = optimizer_slacks.setup_criticality(pin_id);
+                timinggain = timing_info.setup_pin_criticality(pin_id);
 
 				if(cur_pb->pb_stats->timinggain.count(new_blk_id) == 0) {
 					cur_pb->pb_stats->timinggain[new_blk_id] = 0;
@@ -1611,7 +1612,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 		bool timing_driven,
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-        const SetupSlackEvaluator& optimizer_slacks,
+        const SetupTimingInfo& timing_info,
         const std::unordered_set<AtomNetId>& is_global) {
 
 	/* Updates the marked data structures, and if gain_flag is GAIN,  *
@@ -1687,7 +1688,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 			if (timing_driven) {
 				update_timing_gain_values(net_id, cur_pb,
 						net_relation_to_clustered_block, 
-                        optimizer_slacks,
+                        timing_info,
                         is_global);
 			}
 		}
@@ -1758,7 +1759,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
 		const bool connection_driven, 
-        const SetupSlackEvaluator& optimizer_slacks) {
+        const SetupTimingInfo& timing_info) {
 
 	/* Updates cluster stats such as gain, used pins, and clock structures.  */
 
@@ -1808,13 +1809,13 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
                 mark_and_update_partial_gain(net_id, GAIN, blk_id,
                         timing_driven,
                         connection_driven, OUTPUT, 
-                        optimizer_slacks,
+                        timing_info,
                         is_global);
             } else {
                 mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
                         timing_driven,
                         connection_driven, OUTPUT, 
-                        optimizer_slacks,
+                        timing_info,
                         is_global);
             }
         }
@@ -1825,7 +1826,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
             mark_and_update_partial_gain(net_id, GAIN, blk_id,
                     timing_driven, connection_driven,
                     INPUT, 
-                    optimizer_slacks,
+                    timing_info,
                     is_global);
         }
 
@@ -1840,12 +1841,12 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
             if (global_clocks) {
                 mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
                         timing_driven, connection_driven, INPUT, 
-                        optimizer_slacks,
+                        timing_info,
                         is_global);
             } else {
                 mark_and_update_partial_gain(net_id, GAIN, blk_id,
                         timing_driven, connection_driven, INPUT, 
-                        optimizer_slacks,
+                        timing_info,
                         is_global);
             }
         }
