@@ -166,11 +166,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				route_structs.rt_node_of_sink,
 				net_delay,
                 pb_gpin_lookup,
-                timing_info
-#ifdef ENABLE_CLASSIC_VPR_STA
-				, slacks
-#endif
-			);
+                timing_info);
 
 			if (!is_routable) {
 				return (false);
@@ -358,11 +354,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		float* pin_criticality,
 		t_rt_node** rt_node_of_sink, float** net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        SetupTimingInfo& timing_info
-#ifdef ENABLE_CLASSIC_VPR_STA
-        , t_slack* slacks
-#endif
-        ) {
+        SetupTimingInfo& timing_info) {
 
 	bool is_routed = false;
 
@@ -386,11 +378,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 				rt_node_of_sink, 
                 net_delay[inet],
                 pb_gpin_lookup,
-                &timing_info
-#ifdef ENABLE_CLASSIC_VPR_STA
-                , slacks
-#endif
-                );
+                &timing_info);
 
 		profiling::net_fanout_end(g_clbs_nlist.net[inet].num_sinks());
 
@@ -506,16 +494,13 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		t_rt_node ** rt_node_of_sink, float *net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
         const SetupTimingInfo* timing_info
-#ifdef ENABLE_CLASSIC_VPR_STA
-        , t_slack * slacks
-#endif
         ) {
 
 	/* Returns true as long as found some way to hook up this net, even if that *
 	 * way resulted in overuse of resources (congestion).  If there is no way   *
 	 * to route this net, even ignoring congestion, it returns false.  In this  *
-	 * case the rr_graph is disconnected and you can give up. If slacks = NULL, *
-	 * give each net a dummy criticality of 0.									*/
+	 * case the rr_graph is disconnected and you can give up.                   *
+     * If timing_info = NULL, give each net a dummy criticality of 0.			*/
 
 	unsigned int num_sinks = g_clbs_nlist.net[inet].num_sinks();
 
@@ -534,29 +519,6 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		/* Use criticality of 1. This makes all nets critical.  Note: There is a big difference between setting pin criticality to 0
 		compared to 1.  If pin criticality is set to 0, then the current path delay is completely ignored during routing.  By setting
 		pin criticality to 1, the current path delay to the pin will always be considered and optimized for */
-#if 0
-		if (!slacks) {
-            pin_criticality[ipin] = 1.0;
-        } else {
-			/* Pin criticality is based on only timing criticality. */
-			pin_criticality[ipin] = slacks->timing_criticality[inet][ipin];
-
-			/* Currently, pin criticality is between 0 and 1. Now shift it downwards 
-			by 1 - max_criticality (max_criticality is 0.99 by default, so shift down
-			by 0.01) and cut off at 0.  This means that all pins with small criticalities 
-			(<0.01) get criticality 0 and are ignored entirely, and everything
-			else becomes a bit less critical. This effect becomes more pronounced if
-			max_criticality is set lower. */
-			// VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
-			pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
-
-			/* Take pin criticality to some power (1 by default). */
-			pin_criticality[ipin] = pow(pin_criticality[ipin], criticality_exp);
-			
-			/* Cut off pin criticality at max_criticality. */
-			pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);			
-		}
-#else
         if(timing_info == nullptr) {
             pin_criticality[ipin] = 1.0;
         } else {
@@ -586,7 +548,6 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 			/* Cut off pin criticality at max_criticality. */
 			pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);			
         }
-#endif
 	}
 
 	// compare the criticality of different sink nodes

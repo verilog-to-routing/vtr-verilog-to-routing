@@ -28,11 +28,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		float* pin_criticality, 
 		t_rt_node** rt_node_of_sink, float** net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        SetupTimingInfo& timing_info
-#ifdef ENABLE_CLASSIC_VPR_STA
-        , t_slack* slacks
-#endif
-        );
+        SetupTimingInfo& timing_info);
 
 bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
@@ -40,11 +36,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		float *pin_criticality, int min_incremental_reroute_fanout, t_rt_node ** rt_node_of_sink, 
 		float *net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        const SetupTimingInfo* optimizer_slacks
-#ifdef ENABLE_CLASSIC_VPR_STA
-        , t_slack * slacks
-#endif
-        );
+        const SetupTimingInfo* optimizer_slacks);
 
 
 void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
