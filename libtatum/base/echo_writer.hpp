@@ -9,7 +9,7 @@ namespace tatum {
 
 void write_timing_graph(std::ostream& os, const TimingGraph& tg);
 void write_timing_constraints(std::ostream& os, const TimingConstraints& tc);
-void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<TimingAnalyzer> analyzer);
+void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<const TimingAnalyzer> analyzer);
 
 template<class DelayCalc>
 void write_delay_model(std::ostream& os, const TimingGraph& tg, const DelayCalc& dc) {
@@ -32,14 +32,14 @@ void write_delay_model(std::ostream& os, const TimingGraph& tg, const DelayCalc&
 }
 
 template<class DelayCalc>
-void write_echo(std::string filename, const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const std::shared_ptr<TimingAnalyzer> analyzer) {
+void write_echo(std::string filename, const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const std::shared_ptr<const TimingAnalyzer> analyzer) {
     std::ofstream os(filename);
 
     write_echo(os, tg, tc, dc, analyzer);
 }
 
 template<class DelayCalc>
-void write_echo(std::ostream& os, const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const std::shared_ptr<TimingAnalyzer> analyzer) {
+void write_echo(std::ostream& os, const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const std::shared_ptr<const TimingAnalyzer> analyzer) {
     write_timing_graph(os, tg);
     write_timing_constraints(os, tc);
     write_delay_model(os, tg, dc);
