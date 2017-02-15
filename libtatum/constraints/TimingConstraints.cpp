@@ -21,6 +21,11 @@ NodeId TimingConstraints::clock_domain_source_node(const DomainId id) const {
     return domain_sources_[id];
 }
 
+bool TimingConstraints::is_virtual_clock(const DomainId id) const {
+    //No source node indicates a virtual clock
+    return bool(clock_domain_source_node(id));
+}
+
 DomainId TimingConstraints::node_clock_domain(const NodeId id) const {
     //This is currenlty a linear search through all clock sources and
     //I/O constraints, could be made more efficient but it is only called

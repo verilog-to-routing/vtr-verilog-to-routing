@@ -22,8 +22,16 @@ class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
 #ifdef LOG_TRAVERSAL_LEVELS
             std::cout << "Arrival Pre-traversal\n";
 #endif
+
+            size_t num_unconstrained = 0;
             for(NodeId node_id : tg.primary_inputs()) {
-                visitor.do_arrival_pre_traverse_node(tg, tc, node_id);
+                bool constrained = visitor.do_arrival_pre_traverse_node(tg, tc, node_id);
+
+                if(!constrained) ++num_unconstrained;
+            }
+
+            if(num_unconstrained > 0) {
+                std::cerr << "Warning: " << num_unconstrained << " timing source(s) were not constrained during timing analysis\n";
             }
         }
 
@@ -39,7 +47,7 @@ class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
             }
 
             if(num_unconstrained > 0) {
-                std::cerr << "Warning: " << num_unconstrained << " timing sinks were not constrained during timing analysis\n";
+                std::cerr << "Warning: " << num_unconstrained << " timing sink(s) were not constrained during timing analysis\n";
             }
         }
 

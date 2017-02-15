@@ -37,6 +37,8 @@ class TimingConstraints {
         //\returns The source NodeId of the specified domain
         NodeId clock_domain_source_node(const DomainId id) const;
 
+        bool is_virtual_clock(const DomainId) const;
+
         //\returns The domain of the specified node id if it is a clock source
         DomainId node_clock_domain(const NodeId id) const;
 
