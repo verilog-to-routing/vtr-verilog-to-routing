@@ -682,18 +682,31 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			
 			find(\&find_postsynthesis_netlist, ".");
 
+            #Pick the netlist to verify against
+            #
+            #We pick the 'earliest' netlist of the stages that where run
+            my $reference_netlist = "";
+            if($starting_stage <= $stage_idx_odin) {
+                $reference_netlist = $odin_output_file_name;
+            } elsif ($starting_stage <= $stage_idx_abc) {
+                $reference_netlist = $abc_output_file_name;
+            } else {
+                #VPR's input
+                $reference_netlist = $prevpr_output_file_name;
+            }
 
-            #First try ABC's Sequentail Equivalence Check (SEC)
+
+            #First try ABC's Sequential Equivalence Check (SEC)
 			$q = &system_with_timeout($abc_path, 
 							"abc.sec.out",
 							$timeout,
 							$temp_dir,
 							"-c", 
-							"sec $odin_output_file_name $vpr_postsynthesis_netlist"
+							"sec $reference_netlist $vpr_postsynthesis_netlist"
 			);
 
             # Parse ABC verification output
-            if ( open( SECOUT, "< abc.sec.out" ) ) {
+            if ( open( SECOUT, "< $temp_dir/abc.sec.out" ) ) {
                 undef $/;
                 my $sec_content = <SECOUT>;
                 close(SECOUT);
@@ -707,10 +720,10 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                                     $timeout,
                                     $temp_dir,
                                     "-c", 
-                                    "cec $odin_output_file_name $vpr_postsynthesis_netlist;"
+                                    "cec $reference_netlist $vpr_postsynthesis_netlist;"
                     );
 
-                    if ( open( CECOUT, "< abc.cec.out" ) ) {
+                    if ( open( CECOUT, "< $temp_dir/abc.cec.out" ) ) {
                         undef $/;
                         my $cec_content = <CECOUT>;
                         close(CECOUT);
