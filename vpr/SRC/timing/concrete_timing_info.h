@@ -250,4 +250,44 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
         std::shared_ptr<tatum::SetupTimingAnalyzer> setup_hold_analyzer_;
 };
 
+//No-op version of timing info, useful for algorithms that query timing info when run with timing disabled
+class NoOpTimingInfo : public SetupHoldTimingInfo {
+    public: //Accessors
+        //Setup related
+        std::vector<PathInfo> critical_paths() const override { return std::vector<PathInfo>(); }
+        PathInfo least_slack_critical_path() const override { return PathInfo(); }
+        PathInfo longest_critical_path() const override { return PathInfo(); }
+
+        float setup_total_negative_slack() const override { return 0.; }
+        float setup_worst_negative_slack() const override { return 0.; }
+
+        float setup_pin_slack(AtomPinId /*pin*/) const override { return 0.; }
+        float setup_pin_criticality(AtomPinId /*pin*/) const override { return 1.; }
+
+        std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const override { return nullptr; }
+
+        //Hold related
+        float hold_total_negative_slack() const override { return 0.; }
+        float hold_worst_negative_slack() const override { return 0.; }
+
+        float hold_pin_slack(AtomPinId /*pin*/) const override { return 0.; }
+        float hold_pin_criticality(AtomPinId /*pin*/) const override { return 1.; }
+
+        std::shared_ptr<const tatum::HoldTimingAnalyzer> hold_analyzer() const override { return nullptr; }
+
+        //Combined setup-hold related
+        std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> setup_hold_analyzer() const override { return nullptr; }
+
+        //TimingInfo related
+        std::shared_ptr<const tatum::TimingAnalyzer> analyzer() const override { return nullptr; }
+        std::shared_ptr<const tatum::TimingGraph> timing_graph() const  override { return nullptr;; }
+        std::shared_ptr<const tatum::TimingConstraints> timing_constraints() const  override { return nullptr; }
+
+    public: //Mutators
+
+        void update() override { }
+        void update_hold() override { }
+        void update_setup() override { }
+};
+
 #endif

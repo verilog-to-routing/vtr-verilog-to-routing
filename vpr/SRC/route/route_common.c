@@ -370,9 +370,14 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
 
         //Initialize the delay calculator
-        auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_map, net_delay);
+        std::shared_ptr<SetupTimingInfo> timing_info;
+        if(timing_inf.timing_analysis_enabled) {
+            auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_map, net_delay);
 
-        std::shared_ptr<SetupTimingInfo> timing_info = make_setup_timing_info(routing_delay_calc);
+            timing_info = make_setup_timing_info(routing_delay_calc);
+        } else {
+            timing_info = std::make_shared<NoOpTimingInfo>();
+        }
 
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(type_descriptors, num_types);
 
@@ -383,7 +388,8 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
 #endif
-			clb_opins_used_locally,timing_inf.timing_analysis_enabled
+			clb_opins_used_locally
+            , timing_inf.timing_analysis_enabled
 #ifdef ENABLE_CLASSIC_VPR_STA
             , timing_inf
 #endif
