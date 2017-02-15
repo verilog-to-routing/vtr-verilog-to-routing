@@ -23,14 +23,34 @@ template<class Visitor, class DelayCalc>
 class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc> {
     public:
         void do_arrival_pre_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, Visitor& visitor) override {
+            size_t num_unconstrained = 0;
+#ifdef __cilk
+            //Use reducer for thread-safe sum
+            cilk::reducer<cilk::op_add<size_t>> unconstrained_reducer(0);
+#endif
+
             const auto& pi = tg.primary_inputs();
             cilk_for(auto iter = pi.begin(); iter != pi.end(); ++iter) {
-                visitor.do_arrival_pre_traverse_node(tg, tc, *iter);
+                bool constrained = visitor.do_arrival_pre_traverse_node(tg, tc, *iter);
+
+                if(!constrained) {
+#ifdef __cilk
+                    *unconstrained_reducer += 1;
+#else
+                    num_unconstrained += 1;
+#endif
+                }
+            }
+
+#ifdef __cilk
+            num_unconstrained = unconstrained_reducer.get_value();
+#endif
+            if(num_unconstrained > 0) {
+                std::cerr << "Warning: " << num_unconstrained << " timing source(s) were not constrained during timing analysis\n";
             }
         }
 
         void do_required_pre_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, Visitor& visitor) override {
-            const auto& po = tg.logical_outputs();
 
             size_t num_unconstrained = 0;
 #ifdef __cilk
@@ -38,6 +58,7 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
             cilk::reducer<cilk::op_add<size_t>> unconstrained_reducer(0);
 #endif
 
+            const auto& po = tg.logical_outputs();
             cilk_for(auto iter = po.begin(); iter != po.end(); ++iter) {
                 bool constrained = visitor.do_required_pre_traverse_node(tg, tc, *iter);
 
@@ -49,11 +70,12 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
 #endif
                 }
             }
+
 #ifdef __cilk
             num_unconstrained = unconstrained_reducer.get_value();
 #endif
             if(num_unconstrained > 0) {
-                std::cerr << "Warning: " << num_unconstrained << " timing sinks were not constrained during timing analysis\n";
+                std::cerr << "Warning: " << num_unconstrained << " timing sink(s) were not constrained during timing analysis\n";
             }
         }
 

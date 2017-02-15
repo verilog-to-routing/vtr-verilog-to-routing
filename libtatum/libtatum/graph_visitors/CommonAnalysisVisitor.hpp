@@ -38,7 +38,7 @@ class CommonAnalysisVisitor {
         void do_reset_node(const NodeId node_id) { ops_.reset_node(node_id); }
         void do_reset_edge(const EdgeId edge_id) { ops_.reset_edge(edge_id); }
 
-        void do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
+        bool do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
         bool do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
 
         template<class DelayCalc>
@@ -79,60 +79,73 @@ class CommonAnalysisVisitor {
  */
 
 template<class AnalysisOps>
-void CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
+bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) {
     //Logical Input
     TATUM_ASSERT_MSG(tg.node_in_edges(node_id).size() == 0, "Logical input has input edges: timing graph not levelized.");
 
     NodeType node_type = tg.node_type(node_id);
 
+    bool node_constrained = false;
+
     if(tc.node_is_constant_generator(node_id)) {
         //We don't propagate any tags from constant generators,
         //since they do not effect the dynamic timing behaviour of the
         //system
-        return;
-    }
-
-    TATUM_ASSERT(node_type == NodeType::SOURCE);
-
-    if(tc.node_is_clock_source(node_id)) {
-        //Generate the appropriate clock tag
-
-        TATUM_ASSERT_MSG(ops_.get_tags(node_id, TagType::CLOCK_LAUNCH).size() == 0, "Uninitialized clock source should have no launch clock tags");
-        TATUM_ASSERT_MSG(ops_.get_tags(node_id, TagType::CLOCK_CAPTURE).size() == 0, "Uninitialized clock source should have no capture clock tags");
-
-        //Find it's domain
-        DomainId domain_id = tc.node_clock_domain(node_id);
-        TATUM_ASSERT(domain_id);
-
-        //Initialize a clock tag with zero arrival, invalid required time
-        //
-        //Note: we assume that edge counting has set the effective period constraint assuming a
-        //launch edge at time zero.  This means we don't need to do anything special for clocks
-        //with rising edges after time zero.
-        TimingTag launch_tag = TimingTag(Time(0.), domain_id, DomainId::INVALID(), node_id, TagType::CLOCK_LAUNCH);
-        TimingTag capture_tag = TimingTag(Time(0.), DomainId::INVALID(), domain_id, node_id, TagType::CLOCK_CAPTURE);
-
-        //Add the tag
-        ops_.add_tag(node_id, launch_tag);
-        ops_.add_tag(node_id, capture_tag);
-
+        node_constrained = true;
     } else {
 
-        //A standard primary input, generate the appropriate data tag
+        TATUM_ASSERT(node_type == NodeType::SOURCE);
 
-        TATUM_ASSERT_MSG(ops_.get_tags(node_id, TagType::DATA_ARRIVAL).size() == 0, "Primary input already has data tags");
+        if(tc.node_is_clock_source(node_id)) {
+            //Generate the appropriate clock tag
 
-        DomainId domain_id = tc.node_clock_domain(node_id);
-        TATUM_ASSERT(domain_id);
+            TATUM_ASSERT_MSG(ops_.get_tags(node_id, TagType::CLOCK_LAUNCH).size() == 0, "Uninitialized clock source should have no launch clock tags");
+            TATUM_ASSERT_MSG(ops_.get_tags(node_id, TagType::CLOCK_CAPTURE).size() == 0, "Uninitialized clock source should have no capture clock tags");
 
-        float input_constraint = tc.input_constraint(node_id, domain_id);
-        TATUM_ASSERT(!isnan(input_constraint));
+            //Find it's domain
+            DomainId domain_id = tc.node_clock_domain(node_id);
+            TATUM_ASSERT(domain_id);
 
-        //Initialize a data tag based on input delay constraint, invalid required time
-        TimingTag input_tag = TimingTag(Time(input_constraint), domain_id, DomainId::INVALID(), node_id, TagType::DATA_ARRIVAL);
+            //Initialize a clock tag with zero arrival, invalid required time
+            //
+            //Note: we assume that edge counting has set the effective period constraint assuming a
+            //launch edge at time zero.  This means we don't need to do anything special for clocks
+            //with rising edges after time zero.
+            TimingTag launch_tag = TimingTag(Time(0.), domain_id, DomainId::INVALID(), node_id, TagType::CLOCK_LAUNCH);
+            TimingTag capture_tag = TimingTag(Time(0.), DomainId::INVALID(), domain_id, node_id, TagType::CLOCK_CAPTURE);
 
-        ops_.add_tag(node_id, input_tag);
+            //Add the tag
+            ops_.add_tag(node_id, launch_tag);
+            ops_.add_tag(node_id, capture_tag);
+
+            node_constrained = true;
+
+        } else {
+            //A standard primary input, generate the appropriate data tags
+
+            TATUM_ASSERT_MSG(ops_.get_tags(node_id, TagType::DATA_ARRIVAL).size() == 0, "Primary input already has data tags");
+
+            auto input_constraints = tc.input_constraints(node_id);
+            if(!input_constraints.empty()) { //Some inputs may be unconstrained, so do not create tags for them
+
+                //TODO: support multi-domain constraints on a single input
+                DomainId domain_id = tc.node_clock_domain(node_id);
+                TATUM_ASSERT(domain_id);
+
+                float input_constraint = tc.input_constraint(node_id, domain_id);
+                TATUM_ASSERT(!isnan(input_constraint));
+
+                //Initialize a data tag based on input delay constraint
+                TimingTag input_tag = TimingTag(Time(input_constraint), domain_id, DomainId::INVALID(), node_id, TagType::DATA_ARRIVAL);
+
+                ops_.add_tag(node_id, input_tag);
+
+                node_constrained = true;
+            }
+        }
     }
+
+    return node_constrained;
 }
 
 template<class AnalysisOps>
@@ -144,7 +157,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
 
     TATUM_ASSERT(tg.node_type(node_id) == NodeType::SINK);
 
-    bool node_constrained = true;
+    bool node_constrained = false;
 
     //Sinks corresponding to FF sinks will have propagated (capturing) clock tags,
     //while those corresponding to outpads will not. To treat them uniformly, we 
@@ -155,9 +168,8 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
 
         auto output_constraints = tc.output_constraints(node_id);
 
-        if(output_constraints.empty()) {
-            node_constrained = false;
-        } else {
+        if(!output_constraints.empty()) { //Some outputs may be unconstrained, so do not create tags for them
+            //TODO: support multi-domain constraints on a single input
             DomainId domain_id = tc.node_clock_domain(node_id);
             TATUM_ASSERT(domain_id);
 
@@ -167,8 +179,13 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
             for(auto constraint : output_constraints) {
                 TimingTag constraint_tag = TimingTag(Time(output_constraint), DomainId::INVALID(), constraint.second.domain, node_id, TagType::CLOCK_CAPTURE);
                 ops_.add_tag(node_id, constraint_tag);
+
+                node_constrained = true;
             }
         }
+    } else {
+        //There is already a propagated clock at this node
+        node_constrained = true;
     }
 
     //At this point the sink will have a capturing clock tag defined
