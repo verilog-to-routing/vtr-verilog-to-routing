@@ -15,6 +15,7 @@ sdc_dir=sdc
 # Add circuits to list to sweep
 circuit_list_add=and.blif
 circuit_list_add=multiconnected_lut.blif
+circuit_list_add=multiconnected_lut2.blif
 circuit_list_add=and_latch.blif
 circuit_list_add=false_path_mux.blif 
 circuit_list_add=mult_2x2.blif
