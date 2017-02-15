@@ -32,12 +32,18 @@ class HoldAnalysisOps : public CommonAnalysisOps {
 
         template<class DelayCalc>
         Time data_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
-            return dc.min_edge_delay(tg, edge_id); 
+            Time delay = dc.min_edge_delay(tg, edge_id);
+            TATUM_ASSERT_MSG(delay.value() >= 0., "Data edge delay expected to be positive");
+
+            return delay; 
         }
 
         template<class DelayCalc>
         Time launch_clock_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
-            return dc.min_edge_delay(tg, edge_id);
+            Time delay = dc.min_edge_delay(tg, edge_id);
+            TATUM_ASSERT_MSG(delay.value() >= 0., "Launch clock edge delay expected to be positive");
+
+            return delay;
         }
 
         template<class DelayCalc>
@@ -46,9 +52,17 @@ class HoldAnalysisOps : public CommonAnalysisOps {
             NodeId sink_node = tg.edge_sink_node(edge_id);
 
             if(tg.node_type(src_node) == NodeType::CPIN && tg.node_type(sink_node) == NodeType::SINK) {
-                return dc.hold_time(tg, edge_id);
+                Time thld = dc.hold_time(tg, edge_id);
+                TATUM_ASSERT_MSG(thld.value() >= 0., "Hold Time (Thld) expected to be positive");
+
+                //The hold time is returned as a positive value, since it is placed on the clock path
+                //(instead of the data path).
+                return thld;
             } else {
-                return dc.max_edge_delay(tg, edge_id); 
+                Time tcq = dc.max_edge_delay(tg, edge_id);
+                TATUM_ASSERT_MSG(tcq.value() >= 0., "Clock-to-q delay (Tcq) expected to be positive");
+
+                return tcq; 
             }
         }
 };

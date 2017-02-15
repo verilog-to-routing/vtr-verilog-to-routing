@@ -204,7 +204,8 @@ int main(int argc, char** argv) {
         clock_gettime(CLOCK_MONOTONIC, &verify_end);
         serial_verify_time += tatum::time_sec(verify_start, verify_end);
 
-        std::vector<NodeId> nodes = find_related_nodes(*timing_graph, {NodeId(8)});
+        //std::vector<NodeId> nodes = find_related_nodes(*timing_graph, {NodeId(152625)});
+        std::vector<NodeId> nodes;
         std::shared_ptr<tatum::SetupTimingAnalyzer> echo_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(serial_analyzer);
         if(echo_setup_analyzer) {
             write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, *delay_calculator, *echo_setup_analyzer, nodes);
