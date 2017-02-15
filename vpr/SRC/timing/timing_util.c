@@ -102,6 +102,21 @@ std::vector<PathInfo> find_critical_path_delays(const tatum::TimingConstraints& 
         }
     }
 
+    auto cmp = [&](const PathInfo& lhs, const PathInfo& rhs) {
+        const auto& lhs_launch_clock_name = constraints.clock_domain_name(lhs.launch_domain);
+        const auto& rhs_launch_clock_name = constraints.clock_domain_name(rhs.launch_domain);
+        if(lhs_launch_clock_name < rhs_launch_clock_name) {
+            //Sort by clock name first
+            return true;
+        } else if (lhs_launch_clock_name == rhs_launch_clock_name) {
+            //Then so the intra-domain pair appear first
+            return lhs.launch_domain == rhs.launch_domain; 
+        }
+        return false;
+    };
+
+    std::sort(cpds.begin(), cpds.end(), cmp);
+
     return cpds;
 }
 
@@ -213,7 +228,12 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
         //Periods per constraint
 		vtr::printf_info("Minimum clock periods to meet each constraint:\n");
         for(const auto& path : crit_paths) {
-            vtr::printf("%s to %s: %g ns (%g MHz)\n",
+            if(path.launch_domain != path.capture_domain) {
+                //Indent inter-domain paths
+                vtr::printf("    ");
+            }
+
+            vtr::printf("  %s to %s: %g ns (%g MHz)\n",
                         constraints.clock_domain_name(path.launch_domain).c_str(),
                         constraints.clock_domain_name(path.capture_domain).c_str(),
                         sec_to_nanosec(path.path_delay),
@@ -223,7 +243,11 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
         //Slack per constraint
 		vtr::printf_info("Worst setup slacks per constraint:\n");
         for(const auto& path : crit_paths) {
-            vtr::printf("%s to %s: %g ns\n",
+            if(path.launch_domain != path.capture_domain) {
+                //Indent inter-domain paths
+                vtr::printf("    ");
+            }
+            vtr::printf("  %s to %s: %g ns\n",
                         constraints.clock_domain_name(path.launch_domain).c_str(),
                         constraints.clock_domain_name(path.capture_domain).c_str(),
                         sec_to_nanosec(path.slack));
