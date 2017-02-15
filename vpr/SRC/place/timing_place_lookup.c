@@ -549,11 +549,15 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 	block[SOURCE_BLOCK].x = source_x_loc;
 	block[SOURCE_BLOCK].y = source_y_loc;
 	block[SOURCE_BLOCK].z = source_z_loc;
+	block[SOURCE_BLOCK].pb = nullptr;
+	block[SOURCE_BLOCK].pb_route = nullptr;
 
 	block[SINK_BLOCK].type = sink_type;
 	block[SINK_BLOCK].x = sink_x_loc;
 	block[SINK_BLOCK].y = sink_y_loc;
 	block[SINK_BLOCK].z = sink_z_loc;
+	block[SINK_BLOCK].pb = nullptr;
+	block[SINK_BLOCK].pb_route = nullptr;
 
 	grid[source_x_loc][source_y_loc].blocks[source_z_loc] = SOURCE_BLOCK;
 	grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = SINK_BLOCK;

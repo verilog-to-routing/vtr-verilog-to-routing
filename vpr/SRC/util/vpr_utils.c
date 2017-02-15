@@ -267,6 +267,7 @@ AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin, const IntraLbPbPinL
 //Returns the set of atom sink pins associated with the top level clb input pin
 std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     t_pb_route* pb_routes = block[clb].pb_route;
+    VTR_ASSERT(pb_routes);
 
     VTR_ASSERT_MSG(clb_pin < block[clb].type->num_pins, "Must be a valid top-level pin");
 
@@ -280,6 +281,7 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin, const I
     //further
     int pb_pin = find_clb_pb_pin(clb, clb_pin);
 
+    VTR_ASSERT(block[clb].pb);
     VTR_ASSERT_MSG(pb_pin < block[clb].pb->pb_graph_node->num_pins(), "Pin must map to a top-level pb pin");
 
     VTR_ASSERT_MSG(pb_routes[pb_pin].driver_pb_pin_id < 0, "CLB input pin should have no internal drivers");
