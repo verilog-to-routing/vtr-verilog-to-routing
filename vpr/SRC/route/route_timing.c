@@ -111,8 +111,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	   delay estimates. Set criticalities to 1 when timing analysis is on to 
 	   optimize timing, and to 0 when timing analysis is off to optimize routability. */
 
-	float init_timing_criticality_val = (timing_analysis_enabled ? 1.0 : 0.0);
-
 	/* Variables used to do the optimization of the routing, aborting visibly
 	 * impossible Ws */
 	double overused_ratio;
@@ -123,13 +121,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	time_per_iteration.reserve(router_opts.max_router_iterations + 1);
 	
 	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-		if (g_clbs_nlist.net[inet].is_global == false) {
-			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
-#ifdef ENABLE_CLASSIC_VPR_STA
-				slacks->timing_criticality[inet][ipin] = init_timing_criticality_val;
-#endif
-			}
-		} else { 
+		if (g_clbs_nlist.net[inet].is_global) {
 			/* Set delay of global signals to zero. Non-global net delays are set by
 			   update_net_delays_from_route_tree() inside timing_driven_route_net(), 
 			   which is only called for non-global nets. */
@@ -323,9 +315,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				// only need to forcibly reroute if critical path grew significantly
 				if (connections_inf.critical_path_delay_grew_significantly(critical_path.path_delay))
 					stable_routing_configuration = connections_inf.forcibly_reroute_connections(router_opts.max_criticality, 
-#ifdef ENABLE_CLASSIC_VPR_STA
-                            slacks, 
-#endif
                             timing_info,
                             pb_gpin_lookup,
                             net_delay);
@@ -1435,9 +1424,6 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(const
 }
 
 bool Connection_based_routing_resources::forcibly_reroute_connections(float max_criticality, 
-#ifdef ENABLE_CLASSIC_VPR_STA
-        const t_slack* slacks, 
-#endif
         const SetupTimingInfo& timing_info,
         const IntraLbPbPinLookup& pb_gpin_lookup,
         const float* const * net_delay) {
@@ -1478,14 +1464,9 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			}
 				
 			// skip if connection criticality is too low (not a problem connection)
-#ifdef ENABLE_CLASSIC_VPR_STA
-			if (slacks->timing_criticality[inet][ipin] < (max_criticality * connection_criticality_tolerance))
-				continue;
-#else
             float pin_criticality = calculate_clb_net_pin_criticality(timing_info, pb_gpin_lookup, inet, ipin);
 			if (pin_criticality < (max_criticality * connection_criticality_tolerance))
 				continue;
-#endif
 
 			// skip if connection's delay is close to optimal
 			if (net_delay[inet][ipin] < (lower_bound_connection_delay[inet][ipin - 1] * connection_delay_optimality_tolerance))				
