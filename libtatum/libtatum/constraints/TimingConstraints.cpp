@@ -23,7 +23,7 @@ NodeId TimingConstraints::clock_domain_source_node(const DomainId id) const {
 
 bool TimingConstraints::is_virtual_clock(const DomainId id) const {
     //No source node indicates a virtual clock
-    return bool(clock_domain_source_node(id));
+    return !bool(clock_domain_source_node(id));
 }
 
 DomainId TimingConstraints::node_clock_domain(const NodeId id) const {
