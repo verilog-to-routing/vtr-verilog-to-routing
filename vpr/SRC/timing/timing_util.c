@@ -226,28 +226,29 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
         //Multi-clock
 
         //Periods per constraint
-		vtr::printf_info("Minimum clock periods to meet each constraint:\n");
+		vtr::printf_info("Critical path delays (CPDs) per constraint:\n");
         for(const auto& path : crit_paths) {
             if(path.launch_domain != path.capture_domain) {
                 //Indent inter-domain paths
-                vtr::printf("    ");
+                vtr::printf("\t");
             }
 
-            vtr::printf("  %s to %s: %g ns (%g MHz)\n",
+            vtr::printf("  %s to %s CPD: %g ns (%g MHz)\n",
                         constraints.clock_domain_name(path.launch_domain).c_str(),
                         constraints.clock_domain_name(path.capture_domain).c_str(),
                         sec_to_nanosec(path.path_delay),
                         sec_to_mhz(path.path_delay));
         }
+        vtr::printf("\n");
 
         //Slack per constraint
 		vtr::printf_info("Worst setup slacks per constraint:\n");
         for(const auto& path : crit_paths) {
             if(path.launch_domain != path.capture_domain) {
                 //Indent inter-domain paths
-                vtr::printf("    ");
+                vtr::printf("\t");
             }
-            vtr::printf("  %s to %s: %g ns\n",
+            vtr::printf("  %s to %s worst setup slack: %g ns\n",
                         constraints.clock_domain_name(path.launch_domain).c_str(),
                         constraints.clock_domain_name(path.capture_domain).c_str(),
                         sec_to_nanosec(path.slack));
@@ -264,13 +265,13 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
     print_histogram(create_setup_slack_histogram(setup_analyzer));
     vtr::printf("\n");
 
-    //Calculate the intra-domain (i.e. same launch and capture domain) geomean, and fanout-weighted periods
+    //Calculate the intra-domain (i.e. same launch and capture domain) non-virtual geomean, and fanout-weighted periods
     std::vector<double> intra_domain_cpds;
     std::vector<double> fanout_weighted_intra_domain_cpds;
     double total_intra_domain_fanout = 0.;
     auto clock_fanouts = count_clock_fanouts(*g_timing_graph, setup_analyzer);
     for(const auto& path : crit_paths) {
-        if(path.launch_domain == path.capture_domain) {
+        if(path.launch_domain == path.capture_domain && !constraints.is_virtual_clock(path.launch_domain)) {
             intra_domain_cpds.push_back(path.path_delay);
 
             auto iter = clock_fanouts.find(path.launch_domain);
@@ -282,10 +283,11 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
         }
     }
 
+    //Print multi-clock geomeans
     if(intra_domain_cpds.size() > 0) {
         vtr::printf("\n");
         double geomean_intra_domain_cpd = vtr::geomean(intra_domain_cpds.begin(), intra_domain_cpds.end());
-        vtr::printf("Geometric mean intra-domain period: %g ns (%g MHz)\n", 
+        vtr::printf("Geometric mean non-virtual intra-domain period: %g ns (%g MHz)\n", 
                 sec_to_nanosec(geomean_intra_domain_cpd), 
                 sec_to_mhz(geomean_intra_domain_cpd));
 
@@ -295,7 +297,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
         }
         double fanout_weighted_geomean_intra_domain_cpd = vtr::geomean(fanout_weighted_intra_domain_cpds.begin(),
                                                                        fanout_weighted_intra_domain_cpds.end());
-        vtr::printf("Fanout-weighted geomean intra-domain period: %g ns (%g MHz)\n", 
+        vtr::printf("Fanout-weighted geomean non-virtual intra-domain period: %g ns (%g MHz)\n", 
                 sec_to_nanosec(fanout_weighted_geomean_intra_domain_cpd), 
                 sec_to_mhz(fanout_weighted_geomean_intra_domain_cpd));
     }
