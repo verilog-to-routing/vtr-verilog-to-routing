@@ -1599,8 +1599,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //  figure out this permutation to reflect the physical implementation connectivity.
         //  
         //  We return a permutation map (which is a list of swaps from index to index)
-        //  which is then applied to do the rotation of the lutmask
-        std::vector<int> determine_lut_permutation(size_t num_inputs, const t_pb* atom) {
+        //  which is then applied to do the rotation of the lutmask.
+        //
+        //  The net in the atom netlist which was originally connected to pin i, is connected
+        //  to pin permute[i] in the implementation.
+        std::vector<int> determine_lut_permutation(size_t num_inputs, const t_pb* atom_pb) {
             std::vector<int> permute(num_inputs, OPEN);
 
 #ifdef DEBUG_LUT_MASK
@@ -1615,30 +1618,33 @@ class NetlistWriterVisitor : public NetlistVisitor {
             //
             //We walk through the logical inputs to this atom (i.e. in the original truth table/netlist)
             //and find the corresponding input in the implementation atom (i.e. in the current netlist)
-            auto ports = g_atom_nl.block_input_ports(g_atom_map.pb_atom(atom));
+            auto ports = g_atom_nl.block_input_ports(g_atom_map.pb_atom(atom_pb));
             if(ports.size() == 1) {
+                const t_pb_graph_node* gnode = atom_pb->pb_graph_node;
+                VTR_ASSERT(gnode->num_input_ports == 1);
+                VTR_ASSERT(gnode->num_input_pins[0] >= (int) num_inputs);
+
                 AtomPortId port_id = *ports.begin();
-                for(size_t i = 0; i < num_inputs; i++) {
-                    AtomNetId logical_net_id = g_atom_nl.port_net(port_id, i); //The original net in the atom netlist
 
-                    if(logical_net_id) {
-                        AtomNetId impl_input_net_id;
-                        size_t j;
-                        for(j = 0; j < num_inputs; j++) {
-                            impl_input_net_id = find_atom_input_logical_net(atom, j); //The net currently connected to input j
+                for(size_t ipin = 0; ipin < num_inputs; ++ipin) {
 
-                            if(logical_net_id == impl_input_net_id) {
-#ifdef DEBUG_LUT_MASK
-                                std::cout << "\tLogic net (" << g_atom_nl.net_name(logical_net_id) << ") ";
-                                std::cout << "atom lut input " << i << " -> impl lut input " << j << std::endl;
-#endif
-                                break;
-                            }
-                        }
+                    AtomNetId impl_input_net_id = find_atom_input_logical_net(atom_pb, ipin); //The net currently connected to input j
+
+                    //Find the original pin index
+                    const t_pb_graph_pin* gpin = &gnode->input_pins[0][ipin];
+                    BitIndex orig_index = atom_pb->atom_pin_bit_index(gpin);
+
+                    if(impl_input_net_id) {
+                        //If there is a valid net connected in the implementation
+                        AtomNetId logical_net_id = g_atom_nl.port_net(port_id, orig_index);
                         VTR_ASSERT(impl_input_net_id == logical_net_id);
 
-                        permute[i] = j;
+                        //Mark the permutation.
+                        //  The net originally located at orig_index in the atom netlist
+                        //  was moved to ipin in the implementation
+                        permute[orig_index] = ipin;
                     }
+
                 }
             } else {
                 //May have no inputs on a constant generator
