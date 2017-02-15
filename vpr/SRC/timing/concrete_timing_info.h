@@ -262,7 +262,18 @@ class NoOpTimingInfo : public SetupHoldTimingInfo {
         float setup_worst_negative_slack() const override { return 0.; }
 
         float setup_pin_slack(AtomPinId /*pin*/) const override { return 0.; }
-        float setup_pin_criticality(AtomPinId /*pin*/) const override { return 1.; }
+
+        float setup_pin_criticality(AtomPinId /*pin*/) const override { 
+            /*
+             * Use criticality of 1. This makes all nets critical.  
+             *
+             * Note: There is a big difference between setting pin criticality to 0 compared to 1.
+             * If pin criticality is set to 0, then the current path delay is completely ignored 
+             * during optimization. By setting pin criticality to 1, the current path delay will 
+             * always be considered and optimized for.
+             */
+            return 1.; 
+        }
 
         std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const override { return nullptr; }
 

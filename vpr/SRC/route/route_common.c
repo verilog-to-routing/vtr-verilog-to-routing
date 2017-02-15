@@ -376,7 +376,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
             timing_info = make_setup_timing_info(routing_delay_calc);
         } else {
-            timing_info = std::make_shared<NoOpTimingInfo>();
+            timing_info = make_no_op_timing_info();
         }
 
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(type_descriptors, num_types);

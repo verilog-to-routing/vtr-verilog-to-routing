@@ -19,6 +19,11 @@ std::unique_ptr<HoldTimingInfo> make_hold_timing_info(std::shared_ptr<DelayCalc>
 template<class DelayCalc>
 std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr<DelayCalc> delay_calculator);
 
+//Create a timing info object which does no timing analysis, and returns
+//place-holder values. This is useful to running timing driven algorithms
+//with timing disabled
+std::unique_ptr<SetupHoldTimingInfo> make_no_op_timing_info();
+
 
 //Generic inteface which provides functionality to update (but not
 //access) timing information.  
@@ -160,6 +165,12 @@ std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr
 
      return std::unique_ptr<ConcreteSetupHoldTimingInfo<DelayCalc>>(
              new ConcreteSetupHoldTimingInfo<DelayCalc>(g_timing_graph, g_timing_constraints, delay_calculator, analyzer)
+            );
+}
+
+inline std::unique_ptr<SetupHoldTimingInfo> make_no_op_timing_info() {
+     return std::unique_ptr<NoOpTimingInfo>(
+             new NoOpTimingInfo()
             );
 }
 
