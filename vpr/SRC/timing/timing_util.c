@@ -379,7 +379,7 @@ float calc_relaxed_criticality(const std::map<DomainPair,float>& domains_max_req
                                const std::map<DomainPair,float>& domains_worst_slack,
                                const tatum::TimingTags::tag_range tags) {
     //Allowable round-off tolerance during criticality calculation
-    constexpr float CRITICALITY_ROUND_OFF_TOLERANCE = 1e-5;
+    constexpr float CRITICALITY_ROUND_OFF_TOLERANCE = 1e-4;
 
 
     //Record the maximum criticality over all the tags
@@ -412,6 +412,7 @@ float calc_relaxed_criticality(const std::map<DomainPair,float>& domains_max_req
             slack += shift;
             max_req += shift;
         }
+        VTR_ASSERT(max_req > 0.);
 
         float crit = 1. - (slack / max_req);
 
