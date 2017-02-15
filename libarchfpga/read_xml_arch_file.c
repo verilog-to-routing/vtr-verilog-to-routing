@@ -3055,11 +3055,16 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                         //Check that the clock matches the model definition
                         std::string model_clock = model_port->clock;
-                        VTR_ASSERT(!model_clock.empty());
+                        if(model_clock.empty()) {
+                            archfpga_throw(get_arch_file_name(), annot->line_num,
+                                "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', model specifies"
+                                " no clock but timing annotation specifies '%s'",
+                                annot_port.port_name().c_str(), model->name, annot_clock.port_name().c_str());
+                        }
                         if(model_port->clock != annot_clock.port_name()) {
                             archfpga_throw(get_arch_file_name(), annot->line_num,
                                 "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', model specifies"
-                                " clock as '%s' but timing annotations specify '%s'",
+                                " clock as '%s' but timing annotation specifies '%s'",
                                 annot_port.port_name().c_str(), model->name, model_clock.c_str(), annot_clock.port_name().c_str());
                         }
                     }
