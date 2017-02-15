@@ -87,18 +87,12 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 		if (g_clbs_nlist.net[inet].is_global)
 			continue;
 		for (size_t ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
+
+            float clb_pin_crit = calculate_clb_net_pin_criticality(timing_info, pb_gpin_lookup, inet, ipin);
+
             /* The placer likes a great deal of contrast between criticalities. 
             Since path criticality varies much more than timing, we "sharpen" timing 
             criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
-
-            const t_net_pin& net_pin = g_clbs_nlist.net[inet].pins[ipin];
-
-            std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(net_pin.block, net_pin.block_pin, pb_gpin_lookup);
-
-            float clb_pin_crit = 0.;
-            for(const AtomPinId atom_pin : atom_pins) {
-                clb_pin_crit = std::max(clb_pin_crit, timing_info.setup_pin_criticality(atom_pin));
-            }
             timing_place_crit[inet][ipin] = pow(clb_pin_crit, crit_exponent);
 		}
 	}

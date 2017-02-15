@@ -4,6 +4,7 @@
 
 #include "timing_info_fwd.h"
 #include "analyzer_factory.hpp"
+#include "PathInfo.h"
 #include "timing_util.h"
 
 //Create a SetupTimingInfo for the given delay calculator

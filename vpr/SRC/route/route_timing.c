@@ -326,6 +326,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
                             slacks, 
 #endif
+                            timing_info,
+                            pb_gpin_lookup,
                             net_delay);
 				// not stable if any connection needs to be forcibly rerouted
 				if (stable_routing_configuration)
@@ -522,16 +524,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
         if(timing_info == nullptr) {
             pin_criticality[ipin] = 1.0;
         } else {
-            //New analyzer
-            const t_net_pin& net_pin = g_clbs_nlist.net[inet].pins[ipin];
-
-            std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(net_pin.block, net_pin.block_pin, pb_gpin_lookup);
-
-            float clb_pin_crit = 0.;
-            for(const AtomPinId atom_pin : atom_pins) {
-                clb_pin_crit = std::max(clb_pin_crit, timing_info->setup_pin_criticality(atom_pin));
-            }
-            pin_criticality[ipin] = clb_pin_crit;
+            pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, inet, ipin);
 
 			/* Currently, pin criticality is between 0 and 1. Now shift it downwards 
 			by 1 - max_criticality (max_criticality is 0.99 by default, so shift down
@@ -1445,6 +1438,8 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 #ifdef ENABLE_CLASSIC_VPR_STA
         const t_slack* slacks, 
 #endif
+        const SetupTimingInfo& timing_info,
+        const IntraLbPbPinLookup& pb_gpin_lookup,
         const float* const * net_delay) {
 
 	/* Run through all non-congested connections of all nets and see if any need to be forcibly rerouted.
@@ -1487,7 +1482,9 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			if (slacks->timing_criticality[inet][ipin] < (max_criticality * connection_criticality_tolerance))
 				continue;
 #else
-            VTR_ASSERT_MSG(false, "Need to handle new criicality when doing connection based routing");
+            float pin_criticality = calculate_clb_net_pin_criticality(timing_info, pb_gpin_lookup, inet, ipin);
+			if (pin_criticality < (max_criticality * connection_criticality_tolerance))
+				continue;
 #endif
 
 			// skip if connection's delay is close to optimal

@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include "route_tree_type.h"
 #include "vpr_types.h"
+#include "timing_info.h"
 
 /***************** Connection based rerouting **********************/
 // encompasses both incremental rerouting through route tree pruning
@@ -117,6 +118,8 @@ public:
 #ifdef ENABLE_CLASSIC_VPR_STA
             const t_slack* slacks, 
 #endif
+            const SetupTimingInfo& timing_info,
+            const IntraLbPbPinLookup& pb_gpin_lookup,
             const float* const * net_delay);
 
 };

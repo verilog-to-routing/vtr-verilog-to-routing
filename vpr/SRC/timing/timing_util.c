@@ -6,6 +6,7 @@
 
 #include "globals.h"
 #include "timing_util.h"
+#include "timing_info.h"
 
 double sec_to_nanosec(double seconds) { return 1e9*seconds; }
 
@@ -346,9 +347,8 @@ void dump_atom_net_delays_tatum(std::string filename, const PlacementDelayCalcul
 }
 
 /*
- * Slack and criticality calculation utilities
+ * Tag utilities
  */
-
 //Return the tag from the range [first,last) which has the lowest value
 tatum::TimingTags::const_iterator find_minimum_tag(tatum::TimingTags::tag_range tags) {
 
@@ -360,6 +360,26 @@ tatum::TimingTags::const_iterator find_maximum_tag(tatum::TimingTags::tag_range 
 
     return std::max_element(tags.begin(), tags.end(), TimingTagValueComp()); 
 }
+
+//Return the criticality of a net's pin in the CLB netlist
+float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const IntraLbPbPinLookup& pb_gpin_lookup, int inet, int ipin) {
+    const t_net_pin& net_pin = g_clbs_nlist.net[inet].pins[ipin];
+
+    //There may be multiple atom netlist pins connected to this CLB pin
+    std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(net_pin.block, net_pin.block_pin, pb_gpin_lookup);
+
+    //Take the maximum of the atom pin criticality as the CLB pin criticality
+    float clb_pin_crit = 0.;
+    for(const AtomPinId atom_pin : atom_pins) {
+        clb_pin_crit = std::max(clb_pin_crit, timing_info.setup_pin_criticality(atom_pin));
+    }
+
+    return clb_pin_crit;
+}
+
+/*
+ * Slack and criticality calculation utilities
+ */
 
 //Returns the worst (maximum) criticality of the set of slack tags specified. Requires the maximum
 //required time and worst slack for all domain pairs represent by the slack tags

@@ -6,35 +6,13 @@
 #include "TimingConstraints.hpp"
 #include "histogram.h"
 #include "PlacementDelayCalculator.hpp"
+#include "timing_info_fwd.h"
+#include "PathInfo.h"
+#include "DomainPair.h"
 
 double sec_to_nanosec(double seconds); 
 
 double sec_to_mhz(double seconds);
-
-struct PathInfo {
-    PathInfo() = default;
-    PathInfo(float delay, float slack_val, tatum::NodeId launch_n, tatum::NodeId capture_n, tatum::DomainId launch_d, tatum::DomainId capture_d)
-        : path_delay(delay)
-        , slack(slack_val)
-        , launch_node(launch_n)
-        , capture_node(capture_n)
-        , launch_domain(launch_d)
-        , capture_domain(capture_d) {}
-
-    float path_delay = NAN;
-    float slack = NAN;
-
-    //The timing source and sink which launched,
-    //and captured the data
-    tatum::NodeId launch_node;
-    tatum::NodeId capture_node;
-
-    //The launching clock domain
-    tatum::DomainId launch_domain;
-
-    //The capture clock domain
-    tatum::DomainId capture_domain;
-};
 
 //Returns the path delay of the longest critical timing path (i.e. across all domains)
 PathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
@@ -66,11 +44,9 @@ std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& t
 //Prints the atom net delays to a file
 void dump_atom_net_delays_tatum(std::string filename, const PlacementDelayCalculator& dc);
 
-
 /*
- * Slack and criticality calculation utilities
+ * Tag utilities
  */
-
 //For comparing the values of two timing tags
 struct TimingTagValueComp {
     bool operator()(const tatum::TimingTag& lhs, const tatum::TimingTag& rhs) {
@@ -84,18 +60,13 @@ tatum::TimingTags::const_iterator find_minimum_tag(tatum::TimingTags::tag_range 
 //Return the tag from the range [first,last) which has the highest value
 tatum::TimingTags::const_iterator find_maximum_tag(tatum::TimingTags::tag_range tags);
 
-//A pair of clock domains
-struct DomainPair {
-    DomainPair(tatum::DomainId l, tatum::DomainId c)
-        : launch(l), capture(c) {}
 
-    tatum::DomainId launch;
-    tatum::DomainId capture;
+/*
+ * Slack and criticality calculation utilities
+ */
 
-    friend bool operator<(const DomainPair& lhs, const DomainPair& rhs) {
-        return std::tie(lhs.launch, lhs.capture) < std::tie(rhs.launch, rhs.capture);
-    }
-};
+//Return the criticality of a net's pin in the CLB netlist
+float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const IntraLbPbPinLookup& pb_gpin_lookup, int inet, int ipin);
 
 //Returns the worst (maximum) criticality of the set of slack tags specified. Requires the maximum
 //required time and worst slack for all domain pairs represent by the slack tags
