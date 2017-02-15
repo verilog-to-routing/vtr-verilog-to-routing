@@ -297,7 +297,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         float inter_cluster_net_delay,
 		float aspect, bool allow_unrelated_clustering,
 		bool connection_driven,
-		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
+		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs
+#ifdef ENABLE_CLASSIC_VPR_STA
+        , t_timing_inf timing_inf
+#endif
+        ) {
 
 	/* Does the actual work of clustering multiple netlist blocks *
 	 * into clusters.                                                  */
@@ -418,6 +422,20 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         timing_info->update();
 
         tatum::write_echo("timing.pre_pack.echo", *g_timing_graph, *g_timing_constraints, *clustering_delay_calc, timing_info->analyzer());
+
+#ifdef ENABLE_CLASSIC_VPR_STA
+        t_slack* slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, expected_lowest_cost_pb_gnode);
+        do_timing_analysis(slacks, timing_inf, true, true);
+
+        auto cpds = timing_info->critical_paths();
+        auto critical_path = timing_info->least_slack_critical_path();
+        float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
+        if(cpd_diff_ns > 0.01) {
+            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
+        }
+
+        free_timing_graph(slacks);
+#endif
 
 		for (auto blk_id : g_atom_nl.blocks()) {
 			critindexarray.push_back(blk_id);

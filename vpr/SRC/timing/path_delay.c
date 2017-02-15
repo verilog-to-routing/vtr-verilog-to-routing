@@ -3161,7 +3161,8 @@ static void update_normalized_costs(float criticality_denom, long max_critical_i
     criticality when calculating block criticality for the clusterer. */
 
     if (timing_inf.slack_definition == 'R' || timing_inf.slack_definition == 'I') {
-        VTR_ASSERT(criticality_denom != 0); /* Possible if timing analysis is being run pre-packing
+        /*VTR_ASSERT(criticality_denom != 0); */
+        /* Possible if timing analysis is being run pre-packing
                                         with all delays set to 0. This is not currently done, 
                                         but if you're going to do it, you need to decide how 
                                         best to normalize these values to suit your purposes. */

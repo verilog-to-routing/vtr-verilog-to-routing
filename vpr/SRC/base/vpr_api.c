@@ -485,7 +485,11 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
 	}
 
 	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models,
-			vpr_setup.library_models, inter_cluster_delay, vpr_setup.PackerRRGraph);
+			vpr_setup.library_models, inter_cluster_delay, vpr_setup.PackerRRGraph
+#ifdef ENABLE_CLASSIC_VPR_STA
+            , vpr_setup.Timing
+#endif
+            );
 
 	end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);

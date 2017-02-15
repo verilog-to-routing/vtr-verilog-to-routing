@@ -27,8 +27,16 @@ using namespace std;
 
 static std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
 
-void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
-		const t_model *user_models, const t_model *library_models, float interc_delay, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
+void try_pack(struct s_packer_opts *packer_opts, 
+        const t_arch * arch,
+		const t_model *user_models,
+        const t_model *library_models,
+        float interc_delay,
+        vector<t_lb_type_rr_node> *lb_type_rr_graphs
+#ifdef ENABLE_CLASSIC_VPR_STA
+        , t_timing_inf timing_inf
+#endif
+        ) {
     std::unordered_set<AtomNetId> is_clock;
     std::multimap<AtomBlockId,t_pack_molecule*> atom_molecules; //The molecules associated with each atom block
     std::unordered_map<AtomBlockId,t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
@@ -97,7 +105,11 @@ void try_pack(struct s_packer_opts *packer_opts, const t_arch * arch,
 				packer_opts->allow_unrelated_clustering,
 				packer_opts->connection_driven,
 				packer_opts->packer_algorithm,
-				lb_type_rr_graphs);
+				lb_type_rr_graphs
+#ifdef ENABLE_CLASSIC_VPR_STA
+                , timing_inf
+#endif
+                );
 	} else {
 		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
 				"Skip clustering no longer supported.\n");
