@@ -56,7 +56,7 @@ class TimingTag {
         ///\param arr_time_val The tagged arrival time
         ///\param req_time_val The tagged required time
         ///\param base_tag The tag from which to copy auxilary meta-data (e.g. domain, launch node)
-        TimingTag(const Time& time_val, const TimingTag& base_tag);
+        TimingTag(const Time& time_val, NodeId origin, const TimingTag& base_tag);
 
         /*
          * Getters
@@ -109,16 +109,16 @@ class TimingTag {
         ///If the arrival time is updated, meta-data is also updated from base_tag
         ///\param new_arr_time The arrival time to compare against
         ///\param base_tag The tag from which meta-data is copied
-        void max(const Time& new_time, const TimingTag& base_tag);
+        void max(const Time& new_time, const NodeId origin, const TimingTag& base_tag);
 
         ///Updates the tag's arrival time if new_arr_time is smaller than the current arrival time.
         ///If the arrival time is updated, meta-data is also updated from base_tag
         ///\param new_arr_time The arrival time to compare against
         ///\param base_tag The tag from which meta-data is copied
-        void min(const Time& new_time, const TimingTag& base_tag);
+        void min(const Time& new_time, const NodeId origin, const TimingTag& base_tag);
 
     private:
-        void update(const Time& new_time, const TimingTag& base_tag);
+        void update(const Time& new_time, const NodeId origin, const TimingTag& base_tag);
 
         /*
          * Data

@@ -21,12 +21,12 @@ class SetupAnalysisOps : public CommonAnalysisOps {
             return tc.setup_constraint(src_id, sink_id); 
         }
 
-        void merge_req_tags(const NodeId node, const Time time, const TimingTag& ref_tag, bool arrival_must_be_valid=false) { 
-            node_tags_[node].min(time, ref_tag, arrival_must_be_valid); 
+        void merge_req_tags(const NodeId node, const Time time, const NodeId origin, const TimingTag& ref_tag, bool arrival_must_be_valid=false) { 
+            node_tags_[node].min(time, origin, ref_tag, arrival_must_be_valid); 
         }
 
-        void merge_arr_tags(const NodeId node, const Time time, const TimingTag& ref_tag) { 
-            node_tags_[node].max(time, ref_tag); 
+        void merge_arr_tags(const NodeId node, const Time time, const NodeId origin, const TimingTag& ref_tag) { 
+            node_tags_[node].max(time, origin, ref_tag); 
         }
 
         template<class DelayCalc>
@@ -56,6 +56,8 @@ class SetupAnalysisOps : public CommonAnalysisOps {
                 Time tsu = dc.setup_time(tg, edge_id);
                 TATUM_ASSERT_MSG(tsu.value() >= 0., "Setup Time (Tsu) expected to be positive");
 
+                //The setup time is returned as a negative value, since it is placed on the clock path
+                //(instead of the data path).
                 return -tsu;
             } else {
                 Time tcq = dc.min_edge_delay(tg, edge_id);
