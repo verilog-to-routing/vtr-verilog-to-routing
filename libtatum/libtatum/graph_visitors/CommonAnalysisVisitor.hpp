@@ -111,8 +111,16 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
             //Note: we assume that edge counting has set the effective period constraint assuming a
             //launch edge at time zero.  This means we don't need to do anything special for clocks
             //with rising edges after time zero.
-            TimingTag launch_tag = TimingTag(Time(0.), domain_id, DomainId::INVALID(), node_id, TagType::CLOCK_LAUNCH);
-            TimingTag capture_tag = TimingTag(Time(0.), DomainId::INVALID(), domain_id, node_id, TagType::CLOCK_CAPTURE);
+            TimingTag launch_tag = TimingTag(Time(0.), 
+                                             domain_id,
+                                             DomainId::INVALID(),
+                                             NodeId::INVALID(), //Origin
+                                             TagType::CLOCK_LAUNCH);
+            TimingTag capture_tag = TimingTag(Time(0.), 
+                                              DomainId::INVALID(),
+                                              domain_id,
+                                              NodeId::INVALID(), //Origin
+                                              TagType::CLOCK_CAPTURE);
 
             //Add the tag
             ops_.add_tag(node_id, launch_tag);
@@ -136,7 +144,11 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
                 TATUM_ASSERT(!isnan(input_constraint));
 
                 //Initialize a data tag based on input delay constraint
-                TimingTag input_tag = TimingTag(Time(input_constraint), domain_id, DomainId::INVALID(), node_id, TagType::DATA_ARRIVAL);
+                TimingTag input_tag = TimingTag(Time(input_constraint), 
+                                                domain_id, 
+                                                DomainId::INVALID(), 
+                                                NodeId::INVALID(), //Origin
+                                                TagType::DATA_ARRIVAL);
 
                 ops_.add_tag(node_id, input_tag);
 
@@ -177,7 +189,11 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
             TATUM_ASSERT(!isnan(output_constraint));
 
             for(auto constraint : output_constraints) {
-                TimingTag constraint_tag = TimingTag(Time(output_constraint), DomainId::INVALID(), constraint.second.domain, node_id, TagType::CLOCK_CAPTURE);
+                TimingTag constraint_tag = TimingTag(Time(output_constraint), 
+                                                     DomainId::INVALID(), 
+                                                     constraint.second.domain,
+                                                     NodeId::INVALID(), //Origin
+                                                     TagType::CLOCK_CAPTURE);
                 ops_.add_tag(node_id, constraint_tag);
 
                 node_constrained = true;
@@ -222,7 +238,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
                     TimingTag node_data_req_tag(node_clock_tag.time() + Time(clock_constraint), 
                                                 node_data_arr_tag.launch_clock_domain(), 
                                                 node_clock_tag.capture_clock_domain(), 
-                                                node_id, 
+                                                NodeId::INVALID(), //Origin
                                                 TagType::DATA_REQUIRED);
                     ops_.add_tag(node_id, node_data_req_tag);
                 }
@@ -282,7 +298,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
                     //Standard propagation through the clock network
 
                     Time new_arr = src_launch_clk_tag.time() + clk_launch_edge_delay;
-                    ops_.merge_arr_tags(node_id, new_arr, src_launch_clk_tag);
+                    ops_.merge_arr_tags(node_id, new_arr, src_node_id, src_launch_clk_tag);
 
                     if(is_clock_data_launch_edge(tg, edge_id)) {
                         //We convert the clock arrival time to a data
@@ -299,7 +315,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
                         launch_tag.set_type(TagType::DATA_ARRIVAL);
 
                         //Mark propagated launch time as a DATA tag
-                        ops_.merge_arr_tags(node_id, new_arr, launch_tag);
+                        ops_.merge_arr_tags(node_id, new_arr, src_node_id, launch_tag);
                     }
                 }
             }
@@ -314,7 +330,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
                 for(const TimingTag& src_capture_clk_tag : src_capture_clk_tags) {
                     //Standard propagation through the clock network
-                    ops_.merge_arr_tags(node_id, src_capture_clk_tag.time() + clk_capture_edge_delay, src_capture_clk_tag);
+                    ops_.merge_arr_tags(node_id, src_capture_clk_tag.time() + clk_capture_edge_delay, src_node_id, src_capture_clk_tag);
                 }
             }
         }
@@ -333,7 +349,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
         for(const TimingTag& src_data_tag : src_data_tags) {
             //Standard data-path propagation
             Time new_arr = src_data_tag.time() + edge_delay;
-            ops_.merge_arr_tags(node_id, new_arr, src_data_tag);
+            ops_.merge_arr_tags(node_id, new_arr, src_node_id, src_data_tag);
         }
     }
 }
@@ -382,7 +398,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
 
         for(const TimingTag& sink_tag : sink_data_tags) {
             //We only propogate the required time if we have a valid matching arrival time
-            ops_.merge_req_tags(node_id, sink_tag.time() - edge_delay, sink_tag, true);
+            ops_.merge_req_tags(node_id, sink_tag.time() - edge_delay, sink_node_id, sink_tag, true);
         }
     }
 }

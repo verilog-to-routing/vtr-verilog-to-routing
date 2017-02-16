@@ -152,7 +152,7 @@ inline void TimingTags::add_tag(const TimingTag& tag) {
     insert(iter, tag);
 }
 
-inline void TimingTags::max(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid) {
+inline void TimingTags::max(const Time& new_time, const NodeId origin, const TimingTag& base_tag, bool arr_must_be_valid) {
     auto iter_bool = find_matching_tag(base_tag, arr_must_be_valid);
     if(iter_bool.second) {
         auto iter = iter_bool.first;
@@ -160,15 +160,15 @@ inline void TimingTags::max(const Time& new_time, const TimingTag& base_tag, boo
             //An exact match was not found
 
             //First time we've seen this domain
-            TimingTag tag = TimingTag(new_time, base_tag);
+            TimingTag tag = TimingTag(new_time, origin, base_tag);
             add_tag(tag);
         } else {
-            iter->max(new_time, base_tag);
+            iter->max(new_time, origin, base_tag);
         }
     }
 }
 
-inline void TimingTags::min(const Time& new_time, const TimingTag& base_tag, bool arr_must_be_valid) {
+inline void TimingTags::min(const Time& new_time, const NodeId origin, const TimingTag& base_tag, bool arr_must_be_valid) {
     auto iter_bool = find_matching_tag(base_tag, arr_must_be_valid);
     if(iter_bool.second) {
         auto iter = iter_bool.first;
@@ -176,10 +176,10 @@ inline void TimingTags::min(const Time& new_time, const TimingTag& base_tag, boo
             //An exact match was not found
 
             //First time we've seen this domain
-            TimingTag tag = TimingTag(new_time, base_tag);
+            TimingTag tag = TimingTag(new_time, origin, base_tag);
             add_tag(tag);
         } else {
-            iter->min(new_time, base_tag);
+            iter->min(new_time, origin, base_tag);
         }
     }
 }

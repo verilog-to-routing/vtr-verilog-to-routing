@@ -34,10 +34,10 @@ inline TimingTag::TimingTag(const Time& time_val,
     , type_(new_type)
     {}
 
-inline TimingTag::TimingTag(const Time& time_val, const TimingTag& base_tag)
+inline TimingTag::TimingTag(const Time& time_val, NodeId origin, const TimingTag& base_tag)
     : time_(time_val)
 #ifdef TATUM_TRACK_ORIGIN_NODE
-    , origin_node_(base_tag.origin_node())
+    , origin_node_(origin)
 #endif
     , launch_clock_domain_(base_tag.launch_clock_domain())
     , capture_clock_domain_(base_tag.capture_clock_domain())
@@ -45,28 +45,28 @@ inline TimingTag::TimingTag(const Time& time_val, const TimingTag& base_tag)
     {}
 
 
-inline void TimingTag::update(const Time& new_time, const TimingTag& base_tag) {
+inline void TimingTag::update(const Time& new_time, const NodeId origin, const TimingTag& base_tag) {
     TATUM_ASSERT(type() == base_tag.type()); //Type must be the same
     TATUM_ASSERT(launch_clock_domain() == base_tag.launch_clock_domain()); //Domain must be the same
     set_time(new_time);
-    set_origin_node(base_tag.origin_node());
+    set_origin_node(origin);
 }
 
-inline void TimingTag::max(const Time& new_time, const TimingTag& base_tag) {
+inline void TimingTag::max(const Time& new_time, const NodeId origin, const TimingTag& base_tag) {
     //Need to min with existing value
     if(!time().valid() || new_time > time()) {
         //New value is smaller, or no previous valid value existed
         //Update min
-        update(new_time, base_tag);
+        update(new_time, origin, base_tag);
     }
 }
 
-inline void TimingTag::min(const Time& new_time, const TimingTag& base_tag) {
+inline void TimingTag::min(const Time& new_time, const NodeId origin, const TimingTag& base_tag) {
     //Need to min with existing value
     if(!time().valid() || new_time < time()) {
         //New value is smaller, or no previous valid value existed
         //Update min
-        update(new_time, base_tag);
+        update(new_time, origin, base_tag);
     }
 }
 

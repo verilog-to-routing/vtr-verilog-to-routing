@@ -70,12 +70,16 @@ void write_dot_file_setup(std::string filename,
                 os << " | {";
                 os << tag.type() << "\\n";
                 os << print_tag_domain_from_to(tag);
-                if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
-                    os << " from ";
+                if(tag.origin_node()) {
+                    if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
+                        os << " from ";
+                    } else {
+                        os << " for ";
+                    }
+                    os << tag.origin_node();
                 } else {
-                    os << " for ";
+                    os << " [Origin] ";
                 }
-                os << tag.origin_node();
                 os << "\\n";
                 os << "time: " << tag.time().value();
                 os << "}";
@@ -169,12 +173,16 @@ void write_dot_file_hold(std::string filename,
                 os << " | {";
                 os << tag.type() << "\\n";
                 os << print_tag_domain_from_to(tag);
-                if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
-                    os << " from ";
+                if(tag.origin_node()) {
+                    if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
+                        os << " from ";
+                    } else {
+                        os << " for ";
+                    }
+                    os << tag.origin_node();
                 } else {
-                    os << " for ";
+                    os << " [Origin] ";
                 }
-                os << tag.origin_node();
                 os << "\\n";
                 os << " time: " << tag.time().value();
                 os << "}";

@@ -52,12 +52,12 @@ class CommonAnalysisOps {
 
         void merge_slack_tags(const EdgeId edge, const Time time, TimingTag ref_tag) { 
             ref_tag.set_type(TagType::SLACK);
-            edge_slacks_[edge].min(time, ref_tag); 
+            edge_slacks_[edge].min(time, ref_tag.origin_node(), ref_tag); 
         }
 
         void merge_slack_tags(const NodeId node, const Time time, TimingTag ref_tag) { 
             ref_tag.set_type(TagType::SLACK);
-            node_slacks_[node].min(time, ref_tag); 
+            node_slacks_[node].min(time, ref_tag.origin_node(), ref_tag); 
         }
 
         TimingTags::tag_range get_edge_slacks(const EdgeId edge) const {
