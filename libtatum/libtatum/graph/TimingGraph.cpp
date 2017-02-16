@@ -252,6 +252,15 @@ EdgeType TimingGraph::edge_type(const EdgeId edge) const {
     }
 }
 
+EdgeId TimingGraph::find_edge(const tatum::NodeId src_node, const tatum::NodeId sink_node) const {
+    for(EdgeId edge : node_out_edges(src_node)) {
+        if(edge_sink_node(edge) == sink_node) {
+            return edge;
+        }
+    }
+    return EdgeId::INVALID();
+}
+
 GraphIdMaps TimingGraph::compress() {
     auto node_id_map = compress_ids(node_ids_);
     auto edge_id_map = compress_ids(edge_ids_);

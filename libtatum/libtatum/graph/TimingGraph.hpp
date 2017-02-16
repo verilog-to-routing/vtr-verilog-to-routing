@@ -121,6 +121,11 @@ class TimingGraph {
         ///\returns Whether the edge is disabled (i.e. ignored during timing analysis)
         bool edge_disabled(const EdgeId id) const { return edges_disabled_[id]; }
 
+        ///\param src_node the edge's source node
+        ///\param sink_node the edge's sink node
+        ///\returns The edge betwen these the source and sink nodes, or EdgeId::INVALID() if none exists
+        EdgeId find_edge(const tatum::NodeId src_node, const tatum::NodeId sink_node) const;
+
         /*
          * Level accessors
          */
