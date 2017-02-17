@@ -22,6 +22,11 @@ class HoldAnalysisOps : public CommonAnalysisOps {
             return tc.hold_constraint(src_id, sink_id); 
         }
 
+        float clock_uncertainty(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
+            //Hold analysis, so late capture clock arrival is pessimistic
+            return +tc.hold_clock_uncertainty(src_id, sink_id); 
+        }
+
         void merge_req_tags(const NodeId node, const Time time, const NodeId origin, const TimingTag& ref_tag, bool arrival_must_be_valid=false) { 
             node_tags_[node].max(time, origin, ref_tag, arrival_must_be_valid); 
         }

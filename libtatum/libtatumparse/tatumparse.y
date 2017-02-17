@@ -122,9 +122,12 @@ using namespace tatumparse;
 %token OUTPUT_CONSTRAINT "OUTPUT_CONSTRAINT"
 %token SETUP_CONSTRAINT "SETUP_CONSTRAINT"
 %token HOLD_CONSTRAINT "HOLD_CONSTRAINT"
+%token SETUP_UNCERTAINTY "SETUP_UNCERTAINTY"
+%token HOLD_UNCERTAINTY "HOLD_UNCERTAINTY"
 %token DOMAIN "domain:"
 %token NAME "name:"
 %token CONSTRAINT "constraint:"
+%token UNCERTAINTY "uncertainty:"
 %token LAUNCH_DOMAIN "launch_domain:"
 %token CAPTURE_DOMAIN "capture_domain:"
 
@@ -172,6 +175,7 @@ using namespace tatumparse;
 %type <int> LaunchDomainId
 %type <int> CaptureDomainId
 %type <float> Constraint
+%type <float> Uncertainty
 %type <std::string> Name
 %type <float> Number
 %type <float> MaxDelay
@@ -209,6 +213,8 @@ Constraints: TIMING_CONSTRAINTS EOL { callback.start_constraints(); }
            | Constraints TYPE OUTPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_output_constraint($4, $5, $6); }
            | Constraints TYPE SETUP_CONSTRAINT LaunchDomainId CaptureDomainId Constraint EOL { callback.add_setup_constraint($4, $5, $6); }
            | Constraints TYPE HOLD_CONSTRAINT LaunchDomainId CaptureDomainId Constraint EOL { callback.add_hold_constraint($4, $5, $6); }
+           | Constraints TYPE SETUP_UNCERTAINTY LaunchDomainId CaptureDomainId Uncertainty EOL { callback.add_setup_uncertainty($4, $5, $6); }
+           | Constraints TYPE HOLD_UNCERTAINTY LaunchDomainId CaptureDomainId Uncertainty EOL { callback.add_hold_uncertainty($4, $5, $6); }
 
 DelayModel: DELAY_MODEL EOL { callback.start_delay_model(); }
         | DelayModel EdgeId MinDelay MaxDelay EOL { callback.add_edge_delay($2, $3, $4); }
@@ -242,6 +248,7 @@ DomainId: DOMAIN INT { $$ = $2; }
 LaunchDomainId: LAUNCH_DOMAIN INT { $$ = $2; }
 CaptureDomainId: CAPTURE_DOMAIN INT { $$ = $2; }
 Constraint: CONSTRAINT Number { $$ = $2; }
+Uncertainty: UNCERTAINTY Number { $$ = $2; }
 Name: NAME STRING { $$ = $2; }
 
 NodeType: TYPE SOURCE { $$ = NodeType::SOURCE; }

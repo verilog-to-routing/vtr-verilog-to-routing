@@ -54,6 +54,14 @@ void EchoLoader::add_hold_constraint(int src_domain_id, int sink_domain_id, floa
     tc_->set_hold_constraint(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), constraint);
 }
 
+void EchoLoader::add_setup_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) {
+    tc_->set_setup_clock_uncertainty(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), uncertainty);
+}
+
+void EchoLoader::add_hold_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) {
+    tc_->set_hold_clock_uncertainty(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), uncertainty);
+}
+
 void EchoLoader::add_edge_setup_hold_time(int edge_id, float setup_time, float hold_time) {
     setup_times_[tatum::EdgeId(edge_id)] = tatum::Time(setup_time);
     hold_times_[tatum::EdgeId(edge_id)] = tatum::Time(hold_time);
