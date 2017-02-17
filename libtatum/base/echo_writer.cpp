@@ -127,6 +127,30 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
             os << "\n";
         }
     }
+
+    for(auto kv : tc.setup_clock_uncertainties()) {
+        auto key = kv.first;
+        auto uncertainty = kv.second;
+        //if(uncertainty != 0.) {
+            os << " type: SETUP_UNCERTAINTY";
+            os << " launch_domain: " << size_t(key.src_domain_id);
+            os << " capture_domain: " << size_t(key.sink_domain_id);
+            os << " uncertainty: " << uncertainty;
+            os << "\n";
+        //}
+    }
+
+    for(auto kv : tc.hold_clock_uncertainties()) {
+        auto key = kv.first;
+        auto uncertainty = kv.second;
+        //if(uncertainty != 0.) {
+            os << " type: HOLD_UNCERTAINTY";
+            os << " launch_domain: " << size_t(key.src_domain_id);
+            os << " capture_domain: " << size_t(key.sink_domain_id);
+            os << " uncertainty: " << uncertainty;
+            os << "\n";
+        //}
+    }
     os << "\n";
 }
 

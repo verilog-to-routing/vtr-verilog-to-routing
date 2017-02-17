@@ -81,9 +81,12 @@ INPUT_CONSTRAINT                { return tatumparse::Parser::make_INPUT_CONSTRAI
 OUTPUT_CONSTRAINT               { return tatumparse::Parser::make_OUTPUT_CONSTRAINT(); }
 SETUP_CONSTRAINT                { return tatumparse::Parser::make_SETUP_CONSTRAINT(); }
 HOLD_CONSTRAINT                 { return tatumparse::Parser::make_HOLD_CONSTRAINT(); }
+SETUP_UNCERTAINTY               { return tatumparse::Parser::make_SETUP_UNCERTAINTY(); }
+HOLD_UNCERTAINTY                { return tatumparse::Parser::make_HOLD_UNCERTAINTY(); }
 domain:                         { return tatumparse::Parser::make_DOMAIN(); }
 name:                           { return tatumparse::Parser::make_NAME(); }
 constraint:                     { return tatumparse::Parser::make_CONSTRAINT(); }
+uncertainty:                    { return tatumparse::Parser::make_UNCERTAINTY(); }
 launch_domain:                  { return tatumparse::Parser::make_LAUNCH_DOMAIN(); }
 capture_domain:                 { return tatumparse::Parser::make_CAPTURE_DOMAIN(); }
 

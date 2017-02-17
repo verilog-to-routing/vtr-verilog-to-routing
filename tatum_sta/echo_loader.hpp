@@ -35,6 +35,8 @@ public:
     void add_output_constraint(int node_id, int domain_id, float constraint) override;
     void add_setup_constraint(int src_domain_id, int sink_domain_id, float constraint) override;
     void add_hold_constraint(int src_domain_id, int sink_domain_id, float constraint) override;
+    void add_setup_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) override;
+    void add_hold_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) override;
     void finish_constraints() override { }
 
     void start_delay_model() override { }

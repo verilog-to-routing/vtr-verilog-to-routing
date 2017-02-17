@@ -68,6 +68,12 @@ class PrintCallback : public tp::Callback {
     void add_hold_constraint(int src_domain_id, int sink_domain_id, float constraint) override {
         fprintf(stdout, " type: HOLD_CONSTRAINT src_domain: %d sink_domain: %d constraint: %g\n", src_domain_id, sink_domain_id, constraint);
     }
+    void add_setup_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) override {
+        fprintf(stdout, " type: SETUP_UNCERTAINTY src_domain: %d sink_domain: %d uncertainty: %g\n", src_domain_id, sink_domain_id, uncertainty);
+    }
+    void add_hold_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) override {
+        fprintf(stdout, " type: HOLD_UNCERTAINTY src_domain: %d sink_domain: %d uncertainty: %g\n", src_domain_id, sink_domain_id, uncertainty);
+    }
     void finish_constraints() override { fprintf(stdout, "# end timing_constraints\n"); }
 
     void start_delay_model() override { fprintf(stdout, "delay_model:\n"); }
@@ -152,6 +158,8 @@ class NopCallback : public tp::Callback {
         void add_output_constraint(int /*node_id*/, int /*domain_id*/, float /*constraint*/) override {}
         void add_setup_constraint(int /*src_domain_id*/, int /*sink_domain_id*/, float /*constraint*/) override {}
         void add_hold_constraint(int /*src_domain_id*/, int /*sink_domain_id*/, float /*constraint*/) override {}
+        void add_setup_uncertainty(int /*src_domain_id*/, int /*sink_domain_id*/, float /*uncertainty*/) override {}
+        void add_hold_uncertainty(int /*src_domain_id*/, int /*sink_domain_id*/, float /*uncertainty*/) override {}
         void finish_constraints() override {}
 
         void start_delay_model() override {}

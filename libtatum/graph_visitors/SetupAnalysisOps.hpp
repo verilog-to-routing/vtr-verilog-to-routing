@@ -21,6 +21,11 @@ class SetupAnalysisOps : public CommonAnalysisOps {
             return tc.setup_constraint(src_id, sink_id); 
         }
 
+        float clock_uncertainty(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
+            //Setup analysis, so early capture clock arrival is pessimistic
+            return -tc.setup_clock_uncertainty(src_id, sink_id); 
+        }
+
         void merge_req_tags(const NodeId node, const Time time, const NodeId origin, const TimingTag& ref_tag, bool arrival_must_be_valid=false) { 
             node_tags_[node].min(time, origin, ref_tag, arrival_must_be_valid); 
         }

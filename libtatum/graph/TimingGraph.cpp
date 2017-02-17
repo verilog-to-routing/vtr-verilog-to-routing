@@ -253,6 +253,9 @@ EdgeType TimingGraph::edge_type(const EdgeId edge) const {
 }
 
 EdgeId TimingGraph::find_edge(const tatum::NodeId src_node, const tatum::NodeId sink_node) const {
+    TATUM_ASSERT(valid_node_id(src_node));
+    TATUM_ASSERT(valid_node_id(sink_node));
+
     for(EdgeId edge : node_out_edges(src_node)) {
         if(edge_sink_node(edge) == sink_node) {
             return edge;
