@@ -361,6 +361,18 @@ tatum::TimingTags::const_iterator find_maximum_tag(tatum::TimingTags::tag_range 
     return std::max_element(tags.begin(), tags.end(), TimingTagValueComp()); 
 }
 
+tatum::TimingTags::const_iterator find_tag(tatum::TimingTags::tag_range tags, 
+                                           tatum::DomainId launch_domain, 
+                                           tatum::DomainId capture_domain) {
+    for(auto iter = tags.begin(); iter != tags.end(); ++iter) {
+        if(iter->launch_clock_domain() == launch_domain && iter->capture_clock_domain() == capture_domain) {
+            return iter;
+        }
+    }
+
+    return tags.end();
+}
+
 //Return the criticality of a net's pin in the CLB netlist
 float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const IntraLbPbPinLookup& pb_gpin_lookup, int inet, int ipin) {
     const t_net_pin& net_pin = g_clbs_nlist.net[inet].pins[ipin];

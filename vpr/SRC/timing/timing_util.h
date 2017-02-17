@@ -60,6 +60,10 @@ tatum::TimingTags::const_iterator find_minimum_tag(tatum::TimingTags::tag_range 
 //Return the tag from the range [first,last) which has the highest value
 tatum::TimingTags::const_iterator find_maximum_tag(tatum::TimingTags::tag_range tags);
 
+//Return the tag for the specified clock domains
+tatum::TimingTags::const_iterator find_tag(tatum::TimingTags::tag_range tags,
+                                           tatum::DomainId launch_domain, 
+                                           tatum::DomainId capture_domain);
 
 /*
  * Slack and criticality calculation utilities
