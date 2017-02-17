@@ -47,8 +47,12 @@ std::vector<PathInfo> find_critical_path_delays(const tatum::TimingConstraints& 
 
     //We calculate the critical path delay (CPD) for each pair of clock domains (which are connected to each other)
     //
+    //  Tdata_arrival = Tlaunch_clock_delay + Tpropagation_delay
+    //  Tdata_required = Tcapture_clock_delay + Tconstr
+    //
     //   CPD = (Tlaunch_clock_delay + Tpropagation_delay) - (Tcapture_clock_delay)
-    //       = Tdata_arrival - Tclock_capture
+    //       = Tdata_arrival - (Tdata_required - Tconstr)
+    //       = Tdata_arrival - Tdata_required + Tconstr
     //
     //Intuitively, CPD is the smallest period (maximum frequency) we can run the launch clock at while not violating
     //the constraint.
@@ -73,7 +77,10 @@ std::vector<PathInfo> find_critical_path_delays(const tatum::TimingConstraints& 
                 //Provided the domain pair should be analyzed
                 if(constraints.should_analyze(data_tag.launch_clock_domain(), clock_tag.capture_clock_domain())) {
 
-                    float cpd = data_arrival - clock_capture;
+                    float constraint = constraints.setup_constraint(data_tag.launch_clock_domain(), clock_tag.capture_clock_domain());
+                    VTR_ASSERT(!std::isnan(constraint));
+
+                    float cpd = data_arrival - clock_capture + constraint;
                     VTR_ASSERT(!std::isnan(cpd));
 
                     float slack = find_node_setup_slack(setup_analyzer, node, data_tag.launch_clock_domain(), clock_tag.capture_clock_domain());
