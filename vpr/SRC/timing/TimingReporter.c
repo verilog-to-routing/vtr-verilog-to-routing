@@ -81,7 +81,14 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
 
             std::string point;
             if(!path_elem.tag.origin_node() && path_elem.tag.type() == tatum::TagType::CLOCK_LAUNCH) {
+                Time latency = Time(timing_constraints_->source_latency(timing_path.launch_domain));
+                Time orig = path_elem.tag.time() - latency;
+
                 point = "clock " + timing_constraints_->clock_domain_name(timing_path.launch_domain) + " (rise edge)";
+                print_path_line(os, point, orig, orig);
+                prev_path = orig;
+
+                point = "clock source latency";
             } else {
                 point = netlist_.pin_name(pin) + " (" + netlist_.block_model(blk)->name + ")";
             }
@@ -149,10 +156,16 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
                 VTR_ASSERT(!path_elem.tag.origin_node());
                 VTR_ASSERT(path_elem.tag.type() == tatum::TagType::CLOCK_CAPTURE);
 
+                Time latency = Time(timing_constraints_->source_latency(timing_path.launch_domain));
+                Time orig = path_elem.tag.time() - latency;
+                prev_path = orig;
+
                 std::string point = "clock " + timing_constraints_->clock_domain_name(timing_path.capture_domain) + " (rise edge)";
+                print_path_line(os, point, orig, orig);
+
                 path = path_elem.tag.time();
                 Time incr = path - prev_path;
-                print_path_line(os, point, incr, path);
+                print_path_line(os, "clock source latency", incr, path);
             } else if (ielem == timing_path.clock_capture.size() - 1) {
                 //End
                 VTR_ASSERT(!path_elem.tag.origin_node());
