@@ -44,6 +44,7 @@ class TimingPath {
         std::vector<TimingPathElem> clock_launch;
         std::vector<TimingPathElem> data_launch;
         std::vector<TimingPathElem> clock_capture;
+        tatum::TimingTag slack_tag;
 };
 
 
