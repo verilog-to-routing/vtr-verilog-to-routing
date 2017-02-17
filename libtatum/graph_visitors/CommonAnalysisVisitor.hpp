@@ -108,12 +108,13 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
 
             for(DomainId capture_domain_id : tc.clock_domains()) {
                 if(tc.should_analyze(launch_domain_id, capture_domain_id)) {
-                    //Initialize a clock launch tag with zero arrival
+                    //Initialize a clock launch tag
                     //
                     //Note: we assume that edge counting has set the effective period constraint assuming a
-                    //launch edge at time zero.  This means we don't need to do anything special for clocks
-                    //with rising edges after time zero.
-                    TimingTag launch_tag = TimingTag(Time(0.), 
+                    //launch edge at time zero + source latency.  This means we don't need to do anything 
+                    //special for clocks with rising edges after time zero.
+                    float launch_source_latency = tc.source_latency(launch_domain_id);
+                    TimingTag launch_tag = TimingTag(Time(launch_source_latency), 
                                                      launch_domain_id,
                                                      capture_domain_id,
                                                      NodeId::INVALID(), //Origin
@@ -127,8 +128,9 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
                     //domain pair. Note that it does include the effect of clock uncertainty, which is handled
                     //when the caputre tag is converted into a data-arrival tag
                     float clock_constraint = ops_.clock_constraint(tc, launch_domain_id, capture_domain_id);
+                    float capture_source_latency = tc.source_latency(capture_domain_id);
 
-                    TimingTag capture_tag = TimingTag(Time(clock_constraint), 
+                    TimingTag capture_tag = TimingTag(Time(capture_source_latency) + Time(clock_constraint), 
                                                       launch_domain_id,
                                                       capture_domain_id,
                                                       NodeId::INVALID(), //Origin
@@ -162,6 +164,9 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
                 //Add the launch tag
                 ops_.add_tag(node_id, launch_tag);
 
+                //An input constraint means there is 'input_constraint' delay from when an external 
+                //signal is launched by its clock (external to the chip) until it arrives at the
+                //primary input
                 float input_constraint = tc.input_constraint(node_id, domain_id);
                 TATUM_ASSERT(!isnan(input_constraint));
 
@@ -210,13 +215,22 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
             for(DomainId launch_domain_id : tc.clock_domains()) {
                 if(tc.should_analyze(launch_domain_id, capture_domain_id)) {
 
+                    //The capture clock may be delayed from it's true source
+                    float capture_source_latency = tc.source_latency(capture_domain_id);
+
+                    //The capture clock usually falls one cycle after the launch clock
                     float clock_constraint = ops_.clock_constraint(tc, launch_domain_id, capture_domain_id);
                     TATUM_ASSERT(!isnan(clock_constraint));
 
-                    float output_constraint = tc.output_constraint(node_id, capture_domain_id);
+                    //An output constraint means there is output_constraint delay outside the chip,
+                    //as a result signals need to reach the primary-output at least output_constraint
+                    //before the capture clock.
+                    //
+                    //Hence we subtract the output constraint from the target clock constraint
+                    float output_constraint = -tc.output_constraint(node_id, capture_domain_id);
                     TATUM_ASSERT(!isnan(output_constraint));
 
-                    TimingTag constraint_tag = TimingTag(Time(clock_constraint) + Time(output_constraint), 
+                    TimingTag constraint_tag = TimingTag(Time(capture_source_latency) + Time(clock_constraint) + Time(output_constraint), 
                                                          launch_domain_id,
                                                          capture_domain_id, 
                                                          NodeId::INVALID(), //Origin
@@ -259,6 +273,8 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
                 //We only set a required time if the source domain actually reaches this sink
                 //domain.  This is indicated by having a valid arrival time.
                 if(node_data_arr_tag.time().valid()) {
+
+                    //We apply the clock uncertainty to the generated required time tag
                     float clock_uncertainty = ops_.clock_uncertainty(tc, 
                                                                      node_data_arr_tag.launch_clock_domain(), 
                                                                      node_clock_tag.capture_clock_domain());

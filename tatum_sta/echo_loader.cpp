@@ -62,6 +62,10 @@ void EchoLoader::add_hold_uncertainty(int src_domain_id, int sink_domain_id, flo
     tc_->set_hold_clock_uncertainty(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), uncertainty);
 }
 
+void EchoLoader::add_source_latency(int domain_id, float latency) {
+    tc_->set_source_latency(tatum::DomainId(domain_id), latency);
+}
+
 void EchoLoader::add_edge_setup_hold_time(int edge_id, float setup_time, float hold_time) {
     setup_times_[tatum::EdgeId(edge_id)] = tatum::Time(setup_time);
     hold_times_[tatum::EdgeId(edge_id)] = tatum::Time(hold_time);

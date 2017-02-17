@@ -123,6 +123,8 @@ int main(int argc, char** argv) {
         cout << endl;
     }
 
+    timing_constraints->print_constraints();
+
 
     timing_graph->levelize();
     timing_graph->validate();
