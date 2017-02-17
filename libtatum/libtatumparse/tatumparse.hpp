@@ -84,6 +84,7 @@ class Callback {
         virtual void add_hold_constraint(int src_domain_id, int sink_domain_id, float constraint) = 0;
         virtual void add_setup_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) = 0;
         virtual void add_hold_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) = 0;
+        virtual void add_source_latency(int domain_id, float latency) = 0;
         virtual void finish_constraints() = 0;
 
         virtual void start_delay_model() = 0;

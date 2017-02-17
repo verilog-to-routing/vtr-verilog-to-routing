@@ -142,6 +142,16 @@ float TimingConstraints::input_constraint(const NodeId node_id, const DomainId d
     return std::numeric_limits<float>::quiet_NaN();
 }
 
+float TimingConstraints::source_latency(const DomainId domain) const {
+
+    auto iter = source_latencies_.find(domain);
+    if(iter == source_latencies_.end()) {
+        return 0.; //Defaults to zero if unspecified
+    }
+
+    return iter->second;
+}
+
 float TimingConstraints::output_constraint(const NodeId node_id, const DomainId domain_id) const {
 
     auto iter = find_io_constraint(node_id, domain_id, output_constraints_);
@@ -188,6 +198,10 @@ TimingConstraints::io_constraint_range TimingConstraints::input_constraints(cons
 TimingConstraints::io_constraint_range TimingConstraints::output_constraints(const NodeId id) const {
     auto range = output_constraints_.equal_range(id);
     return tatum::util::make_range(range.first, range.second);
+}
+
+TimingConstraints::source_latency_range TimingConstraints::source_latencies() const {
+    return tatum::util::make_range(source_latencies_.begin(), source_latencies_.end());
 }
 
 DomainId TimingConstraints::create_clock_domain(const std::string name) { 
@@ -251,6 +265,10 @@ void TimingConstraints::set_output_constraint(const NodeId node_id, const Domain
         //Not found create it
         output_constraints_.insert(std::make_pair(node_id, IoConstraint(domain_id, constraint)));
     }
+}
+
+void TimingConstraints::set_source_latency(const DomainId domain, const float latency) {
+    source_latencies_[domain] = latency;
 }
 
 void TimingConstraints::set_clock_domain_source(const NodeId node_id, const DomainId domain_id) {
@@ -358,6 +376,14 @@ void TimingConstraints::print_constraints() const {
         cout << "SRC: " << key.src_domain_id;
         cout << " SINK: " << key.sink_domain_id;
         cout << " Uncertainty: " << uncertainty;
+        cout << endl;
+    }
+    cout << "Source Latency" << endl;
+    for(auto kv : source_latencies()) {
+        auto domain = kv.first;
+        float latency = kv.second;
+        cout << "Domain: " << domain;
+        cout << " Latency: " << latency;
         cout << endl;
     }
 }
