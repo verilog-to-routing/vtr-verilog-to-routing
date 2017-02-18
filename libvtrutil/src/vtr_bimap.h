@@ -112,7 +112,7 @@ class bimap {
                 K key = inv_iter->second;
                 inverse_map_.erase(inv_iter);
 
-                auto iter = map_.find(val);
+                auto iter = map_.find(key);
                 VTR_ASSERT(iter != map_.end());
                 map_.erase(iter);
             }
