@@ -70,18 +70,17 @@ class AtomMap {
         void set_atom_clb_net(const AtomNetId net_id, const int clb_net_index);
 
         /*
-         * Timing Nodes
+         * Classic Timing Nodes
          */
         //Returns the tnode index associated with the atom pin
-        int atom_pin_tnode(const AtomPinId pin_id) const;
+        int atom_pin_classic_tnode(const AtomPinId pin_id) const;
         //Returns the atom pin id associated with the tnode index
-        AtomPinId tnode_atom_pin(const int tnode_index) const;
+        AtomPinId classic_tnode_atom_pin(const int tnode_index) const;
 
         //Sets the bidirectional mapping between an atom pin and a tnode
         // If either pin_id or tnode_index are not valid any existing mapping
         // is removed
-        void set_atom_pin_tnode(const AtomPinId pin_id, const int tnode_index);
-        void set_pin_tnode(const AtomPinId pin_id, const tatum::NodeId tnode_index);
+        void set_atom_pin_classic_tnode(const AtomPinId pin_id, const int tnode_index);
 
         vtr::linear_bimap<AtomPinId,tatum::NodeId> pin_tnode;
     private:

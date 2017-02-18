@@ -1884,7 +1884,7 @@ AtomBlockId find_tnode_atom_block(int inode) {
 
         VTR_ASSERT(tnode[i_opin_node].type == TN_INPAD_OPIN ||tnode[i_opin_node].type == TN_FF_OPIN);
 
-        pin_id = g_atom_map.tnode_atom_pin(i_opin_node);
+        pin_id = g_atom_map.classic_tnode_atom_pin(i_opin_node);
         
     } else if (type == TN_OUTPAD_SINK || type == TN_FF_SINK) {
         //A sink does not map directly to a netlist pin,
@@ -1896,9 +1896,9 @@ AtomBlockId find_tnode_atom_block(int inode) {
         VTR_ASSERT(tnode[i_ipin_node].num_edges == 1);
         VTR_ASSERT(tnode[i_ipin_node].out_edges[0].to_node == inode);
 
-        pin_id = g_atom_map.tnode_atom_pin(i_ipin_node);
+        pin_id = g_atom_map.classic_tnode_atom_pin(i_ipin_node);
     } else {
-        pin_id = g_atom_map.tnode_atom_pin(inode);
+        pin_id = g_atom_map.classic_tnode_atom_pin(inode);
     }
 
     blk_id = g_atom_nl.pin_block(pin_id);

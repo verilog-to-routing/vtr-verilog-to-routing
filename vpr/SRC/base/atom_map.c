@@ -155,9 +155,9 @@ void AtomMap::set_atom_clb_net(const AtomNetId net_id, const int clb_net_index) 
 }
 
 /*
- * Timing nodes
+ * Classic Timing nodes
  */
-AtomPinId AtomMap::tnode_atom_pin(const int tnode_index) const {
+AtomPinId AtomMap::classic_tnode_atom_pin(const int tnode_index) const {
     auto iter = tnode_to_atom_pin_.find(tnode_index);
     if(iter == tnode_to_atom_pin_.end()) {
         //Not found
@@ -166,7 +166,7 @@ AtomPinId AtomMap::tnode_atom_pin(const int tnode_index) const {
     return iter->second;
 }
 
-int AtomMap::atom_pin_tnode(const AtomPinId pin_id) const {
+int AtomMap::atom_pin_classic_tnode(const AtomPinId pin_id) const {
     auto iter = atom_pin_to_tnode_.find(pin_id);
     if(iter == atom_pin_to_tnode_.end()) {
         //Not found
@@ -177,7 +177,7 @@ int AtomMap::atom_pin_tnode(const AtomPinId pin_id) const {
 }
 
 
-void AtomMap::set_atom_pin_tnode(const AtomPinId pin_id, const int tnode_index) {
+void AtomMap::set_atom_pin_classic_tnode(const AtomPinId pin_id, const int tnode_index) {
     VTR_ASSERT(pin_id);
     //If either are invalid remove any mapping
     if(!pin_id) {
