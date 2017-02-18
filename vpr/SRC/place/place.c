@@ -396,7 +396,7 @@ void try_place(struct s_placer_opts placer_opts,
         /*
          * Initialize timing analysis
          */
-        placement_delay_calc = std::make_shared<PlacementDelayCalculator>(g_atom_nl, g_atom_map, point_to_point_delay_cost);
+        placement_delay_calc = std::make_shared<PlacementDelayCalculator>(g_atom_nl, g_atom_lookup, point_to_point_delay_cost);
         timing_info = make_setup_timing_info(placement_delay_calc);
 
         timing_info->update();

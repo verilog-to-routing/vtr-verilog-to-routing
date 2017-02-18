@@ -90,11 +90,11 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 	const t_pb_graph_node *pb_graph_node;
 	t_pb_type *pb_type;
 
-	clb_index = g_atom_map.atom_clb(atom_blk);
+	clb_index = g_atom_lookup.atom_clb(atom_blk);
 	VTR_ASSERT(clb_index != OPEN);
 	pb_route = clb[clb_index].pb_route;
 	VTR_ASSERT(pb_route != NULL);
-	pb_graph_node = g_atom_map.atom_pb_graph_node(atom_blk);
+	pb_graph_node = g_atom_lookup.atom_pb_graph_node(atom_blk);
 	pb_type = pb_graph_node->pb_type;
 
 

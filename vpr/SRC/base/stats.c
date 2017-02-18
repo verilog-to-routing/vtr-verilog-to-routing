@@ -97,7 +97,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		if (timing_analysis_enabled) {
 			load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
-            auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_map, net_delay);
+            auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
 
             std::shared_ptr<SetupTimingInfo> timing_info = make_setup_timing_info(routing_delay_calc);
             timing_info->update();
@@ -132,11 +132,11 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
             /*
              *tatum::write_dot_file_setup("report_timing.dot", 
              *                      *timing_info->timing_graph(), 
-             *                      RoutingDelayCalculator(g_atom_nl, g_atom_map, net_delay),
+             *                      RoutingDelayCalculator(g_atom_nl, g_atom_lookup, net_delay),
              *                      *timing_info->setup_analyzer());
              */
 
-            TimingReporter timing_reporter(g_atom_nl, g_atom_map, g_timing_graph, g_timing_constraints, timing_info->setup_analyzer());
+            TimingReporter timing_reporter(g_atom_nl, g_atom_lookup, g_timing_graph, g_timing_constraints, timing_info->setup_analyzer());
 
             timing_reporter.report_timing("timing.rpt");
 		}

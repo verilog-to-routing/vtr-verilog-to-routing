@@ -153,7 +153,7 @@ void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id)
 		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Atom %s added twice to router\n", g_atom_nl.block_name(blk_id).c_str());
 	}
 
-	pb = g_atom_map.atom_pb(blk_id);
+	pb = g_atom_lookup.atom_pb(blk_id);
 
     VTR_ASSERT(pb);
 	
@@ -172,7 +172,7 @@ void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id)
 void remove_atom_from_target(t_lb_router_data *router_data, const AtomBlockId blk_id) {
 	map <AtomBlockId, bool> & atoms_added = *router_data->atoms_added;
 
-	const t_pb* pb = g_atom_map.atom_pb(blk_id);
+	const t_pb* pb = g_atom_lookup.atom_pb(blk_id);
 	
 	if(atoms_added.count(blk_id) == 0) {
 		return;
@@ -444,7 +444,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 	bool found = false;
 	unsigned int ipos;
 
-    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_map, pin_id);
+    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_lookup, pin_id);
     VTR_ASSERT(pb_graph_pin);
 
     AtomPortId port_id = g_atom_nl.pin_port(pin_id);
@@ -564,7 +564,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 	bool found = false;
 	unsigned int ipos;
 
-    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_map, pin_id);
+    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_lookup, pin_id);
 
     AtomPortId port_id = g_atom_nl.pin_port(pin_id);
     AtomNetId net_id = g_atom_nl.pin_net(pin_id);
@@ -713,7 +713,7 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
                 AtomPinId atom_pin = lb_nets[ilb_net].atom_pins[iterm];
                 VTR_ASSERT(atom_pin);
 
-                const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_map, atom_pin);
+                const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_lookup, atom_pin);
                 VTR_ASSERT(pb_graph_pin);
 
                 if(!pb_graph_pin->port->equivalent) continue; //Only need to remap equivalent ports

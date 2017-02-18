@@ -9,12 +9,12 @@
 /*#define POST_CLUSTER_DELAY_CALC_DEBUG*/
 
 inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist& netlist, 
-                                                          const AtomMap& netlist_map, 
+                                                          const AtomLookup& netlist_lookup, 
                                                           float** net_delay)
     : netlist_(netlist)
-    , netlist_map_(netlist_map)
+    , netlist_lookup_(netlist_lookup)
     , net_delay_(net_delay)
-    , atom_delay_calc_(netlist, netlist_map)
+    , atom_delay_calc_(netlist, netlist_lookup)
     , edge_delay_cache_(g_timing_graph->edges().size(), tatum::Time(NAN))
     , driver_clb_delay_cache_(g_timing_graph->edges().size(), tatum::Time(NAN))
     , sink_clb_delay_cache_(g_timing_graph->edges().size(), tatum::Time(NAN))
@@ -71,8 +71,8 @@ inline tatum::Time PostClusterDelayCalculator::atom_combinational_delay(const ta
         tatum::NodeId src_node = tg.edge_src_node(edge_id);
         tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
 
-        AtomPinId src_pin = netlist_map_.tnode_atom_pin(src_node);
-        AtomPinId sink_pin = netlist_map_.tnode_atom_pin(sink_node);
+        AtomPinId src_pin = netlist_lookup_.tnode_atom_pin(src_node);
+        AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
 
         delay = tatum::Time(atom_delay_calc_.atom_combinational_delay(src_pin, sink_pin));
 
@@ -97,8 +97,8 @@ inline tatum::Time PostClusterDelayCalculator::atom_setup_time(const tatum::Timi
         tatum::NodeId in_node = tg.edge_sink_node(edge_id);
         VTR_ASSERT(tg.node_type(in_node) == tatum::NodeType::SINK);
 
-        AtomPinId input_pin = netlist_map_.tnode_atom_pin(in_node);
-        AtomPinId clock_pin = netlist_map_.tnode_atom_pin(clock_node);
+        AtomPinId input_pin = netlist_lookup_.tnode_atom_pin(in_node);
+        AtomPinId clock_pin = netlist_lookup_.tnode_atom_pin(clock_node);
 
         tsu = tatum::Time(atom_delay_calc_.atom_setup_time(clock_pin, input_pin));
 
@@ -122,8 +122,8 @@ inline tatum::Time PostClusterDelayCalculator::atom_clock_to_q_delay(const tatum
         tatum::NodeId out_node = tg.edge_sink_node(edge_id);
         VTR_ASSERT(tg.node_type(out_node) == tatum::NodeType::SOURCE);
 
-        AtomPinId output_pin = netlist_map_.tnode_atom_pin(out_node);
-        AtomPinId clock_pin = netlist_map_.tnode_atom_pin(clock_node);
+        AtomPinId output_pin = netlist_lookup_.tnode_atom_pin(out_node);
+        AtomPinId clock_pin = netlist_lookup_.tnode_atom_pin(clock_node);
 
         tco = tatum::Time(atom_delay_calc_.atom_clock_to_q_delay(clock_pin, output_pin));
 
@@ -165,23 +165,23 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             tatum::NodeId src_node = tg.edge_src_node(edge_id);
             tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
 
-            AtomPinId atom_src_pin = netlist_map_.tnode_atom_pin(src_node);
+            AtomPinId atom_src_pin = netlist_lookup_.tnode_atom_pin(src_node);
             VTR_ASSERT(atom_src_pin);
 
-            AtomPinId atom_sink_pin = netlist_map_.tnode_atom_pin(sink_node);
+            AtomPinId atom_sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
             VTR_ASSERT(atom_sink_pin);
 
             AtomBlockId atom_src_block = netlist_.pin_block(atom_src_pin);
             AtomBlockId atom_sink_block = netlist_.pin_block(atom_sink_pin);
 
-            int clb_src_block = netlist_map_.atom_clb(atom_src_block);
+            int clb_src_block = netlist_lookup_.atom_clb(atom_src_block);
             VTR_ASSERT(clb_src_block >= 0);
-            int clb_sink_block = netlist_map_.atom_clb(atom_sink_block);
+            int clb_sink_block = netlist_lookup_.atom_clb(atom_sink_block);
             VTR_ASSERT(clb_sink_block >= 0);
 
-            const t_pb_graph_pin* src_gpin = netlist_map_.atom_pin_pb_graph_pin(atom_src_pin);
+            const t_pb_graph_pin* src_gpin = netlist_lookup_.atom_pin_pb_graph_pin(atom_src_pin);
             VTR_ASSERT(src_gpin);
-            const t_pb_graph_pin* sink_gpin = netlist_map_.atom_pin_pb_graph_pin(atom_sink_pin);
+            const t_pb_graph_pin* sink_gpin = netlist_lookup_.atom_pin_pb_graph_pin(atom_sink_pin);
             VTR_ASSERT(sink_gpin);
 
             int src_pb_route_id = src_gpin->pin_count_in_cluster;

@@ -8,17 +8,17 @@
 #include "vpr_utils.h"
 
 #include "atom_netlist.h"
-#include "atom_map.h"
+#include "atom_lookup.h"
 #include "physical_types.h"
 
 class PreClusterDelayCalculator {
 public:
     PreClusterDelayCalculator(const AtomNetlist& netlist,
-                              const AtomMap& netlist_map,
+                              const AtomLookup& netlist_lookup,
                               float intercluster_net_delay, 
                               std::unordered_map<AtomBlockId,t_pb_graph_node*> expected_lowest_cost_pb_gnode)
         : netlist_(netlist)
-        , netlist_map_(netlist_map)
+        , netlist_lookup_(netlist_lookup)
         , inter_cluster_net_delay_(intercluster_net_delay)
         , block_to_pb_gnode_(expected_lowest_cost_pb_gnode) {
         //nop
@@ -32,7 +32,7 @@ public:
             //Tcq
             VTR_ASSERT_MSG(tg.node_type(sink_node) == tatum::NodeType::SOURCE, "Tcq only defined from CPIN to SOURCE");
 
-            AtomPinId sink_pin = netlist_map_.tnode_atom_pin(sink_node);
+            AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
             VTR_ASSERT(sink_pin);
 
             const t_pb_graph_pin* gpin = find_pb_graph_pin(sink_pin);
@@ -43,11 +43,11 @@ public:
 
         } else if (tg.node_type(src_node) == tatum::NodeType::IPIN && tg.node_type(sink_node) == tatum::NodeType::OPIN) {
             //Primitive internal combinational delay
-            AtomPinId input_pin = netlist_map_.tnode_atom_pin(src_node);
+            AtomPinId input_pin = netlist_lookup_.tnode_atom_pin(src_node);
             VTR_ASSERT(input_pin);
             const t_pb_graph_pin* input_gpin = find_pb_graph_pin(input_pin);
 
-            AtomPinId output_pin = netlist_map_.tnode_atom_pin(sink_node);
+            AtomPinId output_pin = netlist_lookup_.tnode_atom_pin(sink_node);
             VTR_ASSERT(output_pin);
             const t_pb_graph_pin* output_gpin = find_pb_graph_pin(output_pin);
 
@@ -81,7 +81,7 @@ public:
         VTR_ASSERT_MSG(tg.node_type(src_node) == tatum::NodeType::CPIN, "Edge setup time only valid if source node is a CPIN");
         VTR_ASSERT_MSG(tg.node_type(sink_node) == tatum::NodeType::SINK, "Edge setup time only valid if sink node is a SINK");
         
-        AtomPinId sink_pin = netlist_map_.tnode_atom_pin(sink_node);
+        AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
         VTR_ASSERT(sink_pin);
 
         const t_pb_graph_pin* gpin = find_pb_graph_pin(sink_pin);
@@ -133,7 +133,7 @@ private:
     }
 private:
     const AtomNetlist& netlist_;
-    const AtomMap& netlist_map_;
+    const AtomLookup& netlist_lookup_;
     const float inter_cluster_net_delay_;
     const std::unordered_map<AtomBlockId,t_pb_graph_node*> block_to_pb_gnode_;
 };

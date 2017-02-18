@@ -5,9 +5,9 @@
 #include "vpr_error.h"
 #include "atom_netlist.h"
 
-SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomMap& netlist_map)
+SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& netlist_lookup)
     : netlist_(netlist)
-    , netlist_map_(netlist_map)
+    , netlist_lookup_(netlist_lookup)
     , pin_slacks_(netlist_.pins().size(), NAN)
     , pin_criticalities_(netlist_.pins().size(), NAN) {
     //pass
@@ -34,7 +34,7 @@ void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
 
 void SetupSlackCrit::update_pin_slack(const AtomPinId pin, const tatum::SetupTimingAnalyzer& analyzer) {
     //Find the timing node associated with the pin
-    tatum::NodeId node = netlist_map_.atom_pin_tnode(pin);
+    tatum::NodeId node = netlist_lookup_.atom_pin_tnode(pin);
     VTR_ASSERT(node);
 
     //Find the worst (least) slack at this node
@@ -83,7 +83,7 @@ void SetupSlackCrit::update_pin_criticality(AtomPinId pin,
                                             const tatum::SetupTimingAnalyzer& analyzer, 
                                             const std::map<DomainPair,float>& max_req, 
                                             const std::map<DomainPair,float>& worst_slack) {
-    tatum::NodeId node = netlist_map_.atom_pin_tnode(pin);
+    tatum::NodeId node = netlist_lookup_.atom_pin_tnode(pin);
     VTR_ASSERT(node);
 
     //Calculate maximum criticality over all domains

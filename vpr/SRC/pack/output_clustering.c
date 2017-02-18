@@ -522,7 +522,7 @@ static void print_stats(t_block *clb, int num_clusters) {
 			if (clb[icluster].pb_route == NULL) {
 				if (clb[icluster].nets[ipin] != OPEN) {
                     int clb_net_idx = clb[icluster].nets[ipin];
-                    auto net_id = g_atom_map.atom_net(clb_net_idx);
+                    auto net_id = g_atom_lookup.atom_net(clb_net_idx);
                     VTR_ASSERT(net_id);
 					nets_absorbed[net_id] = false;
 					if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type == RECEIVER) {

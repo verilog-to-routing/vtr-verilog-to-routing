@@ -1,5 +1,5 @@
-#ifndef ATOM_MAP_H
-#define ATOM_MAP_H
+#ifndef ATOM_LOOKUP_H
+#define ATOM_LOOKUP_H
 #include <unordered_map>
 
 #include "vtr_bimap.h"
@@ -10,10 +10,10 @@
 #include "vpr_types.h"
 #include "timing_graph_fwd.hpp"
 /*
- * The AtomMap class describes the mapping between components in the AtomNetlist
+ * The AtomLookup class describes the mapping between components in the AtomNetlist
  * and other netlists/entities (i.e. atom block <-> t_pb, atom block <-> clb)
  */
-class AtomMap {
+class AtomLookup {
     public:
         typedef vtr::linear_bimap<AtomPinId,tatum::NodeId>::iterator pin_tnode_iterator;
 

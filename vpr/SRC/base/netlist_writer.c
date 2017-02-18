@@ -772,7 +772,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         }
 
         void visit_atom_impl(const t_pb* atom) override { 
-            const t_model* model = g_atom_nl.block_model(g_atom_map.pb_atom(atom));
+            const t_model* model = g_atom_nl.block_model(g_atom_lookup.pb_atom(atom));
 
             if(model->name == std::string("input")) {
                 inputs_.emplace_back(make_io(atom, PortType::IN));
@@ -1553,8 +1553,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Returns the tnode ID of the given atom's connected cluster pin
         int find_tnode(const t_pb* atom, int cluster_pin_idx) {
 
-            AtomBlockId blk_id = g_atom_map.pb_atom(atom);
-            int clb_index = g_atom_map.atom_clb(blk_id);
+            AtomBlockId blk_id = g_atom_lookup.pb_atom(atom);
+            int clb_index = g_atom_lookup.atom_clb(blk_id);
             int tnode_id = pin_id_to_tnode_lookup_[clb_index][cluster_pin_idx];
 
             VTR_ASSERT(tnode_id != OPEN);
@@ -1565,7 +1565,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Returns a LogicVec representing the LUT mask of the given LUT atom
         LogicVec load_lut_mask(size_t num_inputs, //LUT size
                               const t_pb* atom) { //LUT primitive
-            const t_model* model = g_atom_nl.block_model(g_atom_map.pb_atom(atom));
+            const t_model* model = g_atom_nl.block_model(g_atom_lookup.pb_atom(atom));
             VTR_ASSERT(model->name == std::string("names"));
 
 #ifdef DEBUG_LUT_MASK
@@ -1577,7 +1577,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
 
             //Retrieve the truth table
-            const auto& truth_table = g_atom_nl.block_truth_table(g_atom_map.pb_atom(atom));
+            const auto& truth_table = g_atom_nl.block_truth_table(g_atom_lookup.pb_atom(atom));
 
             //Apply the permutation
             auto permuted_truth_table = permute_truth_table(truth_table, num_inputs, permute);
@@ -1618,7 +1618,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             //
             //We walk through the logical inputs to this atom (i.e. in the original truth table/netlist)
             //and find the corresponding input in the implementation atom (i.e. in the current netlist)
-            auto ports = g_atom_nl.block_input_ports(g_atom_map.pb_atom(atom_pb));
+            auto ports = g_atom_nl.block_input_ports(g_atom_lookup.pb_atom(atom_pb));
             if(ports.size() == 1) {
                 const t_pb_graph_node* gnode = atom_pb->pb_graph_node;
                 VTR_ASSERT(gnode->num_input_ports == 1);

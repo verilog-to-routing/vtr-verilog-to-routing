@@ -274,8 +274,8 @@ void vpr_init(const int argc, const char **argv,
 
         //Initialize timing graph and constraints
         if(vpr_setup->TimingEnabled) {
-            g_timing_graph = TimingGraphBuilder(g_atom_nl, g_atom_map).timing_graph();
-            g_timing_constraints = create_timing_constraints(g_atom_nl, g_atom_map, vpr_setup->Timing);
+            g_timing_graph = TimingGraphBuilder(g_atom_nl, g_atom_lookup).timing_graph();
+            g_timing_constraints = create_timing_constraints(g_atom_nl, g_atom_lookup, vpr_setup->Timing);
         }
 
 		fflush(stdout);

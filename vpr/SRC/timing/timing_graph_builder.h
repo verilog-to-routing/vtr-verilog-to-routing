@@ -3,15 +3,15 @@
 #include "TimingGraph.hpp"
 
 #include "atom_netlist_fwd.h"
-#include "atom_map.h"
+#include "atom_lookup.h"
 
 
 class TimingGraphBuilder {
     public:
         TimingGraphBuilder(const AtomNetlist& netlist,
-                           AtomMap& netlist_map)
+                           AtomLookup& netlist_lookup)
             : netlist_(netlist) 
-            , netlist_map_(netlist_map) {
+            , netlist_lookup_(netlist_lookup) {
         }
 
         std::unique_ptr<tatum::TimingGraph> timing_graph();
@@ -38,6 +38,6 @@ class TimingGraphBuilder {
         std::unique_ptr<tatum::TimingGraph> tg_;
 
         const AtomNetlist& netlist_;
-        AtomMap& netlist_map_;
+        AtomLookup& netlist_lookup_;
 };
 

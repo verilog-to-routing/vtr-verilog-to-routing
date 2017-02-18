@@ -348,12 +348,12 @@ static AtomPinId find_atom_pin_for_pb_route_id(int clb, int pb_route_id, const I
         //It is a leaf, and hence should map to an atom
 
         //Find the associated atom
-        AtomBlockId atom_block = g_atom_map.pb_atom(child_pb);
+        AtomBlockId atom_block = g_atom_lookup.pb_atom(child_pb);
         VTR_ASSERT(atom_block);
 
         //Now find the matching pin by seeing which pin maps to the gpin
         for(AtomPinId atom_pin : g_atom_nl.block_pins(atom_block)) {
-            const t_pb_graph_pin* atom_pin_gpin = g_atom_map.atom_pin_pb_graph_pin(atom_pin);
+            const t_pb_graph_pin* atom_pin_gpin = g_atom_lookup.atom_pin_pb_graph_pin(atom_pin);
             if(atom_pin_gpin == gpin) {
                 //Match
                 return atom_pin;
@@ -682,7 +682,7 @@ AtomBlockId find_memory_sibling(const t_pb* pb) {
         const t_pb* sibling_pb = &memory_class_pb->child_pbs[pb->mode][isibling];
 
         if(sibling_pb->name != NULL) {
-            return g_atom_map.pb_atom(sibling_pb);
+            return g_atom_lookup.pb_atom(sibling_pb);
         }
     }
     return AtomBlockId::INVALID();
@@ -745,10 +745,10 @@ AtomPinId find_atom_pin(int iblk, const t_pb_graph_pin* pb_gpin) {
     //Look through all the pins on this net, looking for the matching pin
     for(AtomPinId pin : g_atom_nl.net_pins(atom_net)) {
         AtomBlockId blk = g_atom_nl.pin_block(pin);
-        if(g_atom_map.atom_clb(blk) == iblk) {
+        if(g_atom_lookup.atom_clb(blk) == iblk) {
             //Part of the same CLB
 
-            if(g_atom_map.atom_pin_pb_graph_pin(pin) == pb_gpin) {
+            if(g_atom_lookup.atom_pin_pb_graph_pin(pin) == pb_gpin) {
                 //The same pin
                 atom_pin = pin;
             }
@@ -763,12 +763,12 @@ AtomPinId find_atom_pin(int iblk, const t_pb_graph_pin* pb_gpin) {
 //Retrieves the pb_graph_pin associated with an AtomPinId
 //  Currently this function just wraps get_pb_graph_node_pin_from_model_port_pin()
 //  in a more convenient interface.
-const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomMap& netlist_map, const AtomPinId pin_id) {
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id) {
     VTR_ASSERT(pin_id);
 
     //Get the graph node
     AtomBlockId blk_id = netlist.pin_block(pin_id);
-    const t_pb_graph_node* pb_gnode = netlist_map.atom_pb_graph_node(blk_id);
+    const t_pb_graph_node* pb_gnode = netlist_lookup.atom_pb_graph_node(blk_id);
     VTR_ASSERT(pb_gnode);
 
     //The graph node and pin/block should agree on the model they represent
@@ -1103,14 +1103,14 @@ void free_pb(t_pb *pb) {
 			free(pb->name);
 		pb->name = NULL;
 
-        auto blk_id = g_atom_map.pb_atom(pb);
+        auto blk_id = g_atom_lookup.pb_atom(pb);
 		if (blk_id) {
 
             //Update atom netlist mapping
-            g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
-            g_atom_map.set_atom_pb(blk_id, NULL);
+            g_atom_lookup.set_atom_clb(blk_id, NO_CLUSTER);
+            g_atom_lookup.set_atom_pb(blk_id, NULL);
 		}
-        g_atom_map.set_atom_pb(AtomBlockId::INVALID(), pb);
+        g_atom_lookup.set_atom_pb(AtomBlockId::INVALID(), pb);
 	}
 	free_pb_stats(pb);
 }
@@ -1129,13 +1129,13 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
         }
     } else {
         //Primitive
-        auto blk_id = g_atom_map.pb_atom(pb);
+        auto blk_id = g_atom_lookup.pb_atom(pb);
 		if (blk_id) {
             /* If any molecules were marked invalid because of this logic block getting packed, mark them valid */
 
             //Update atom netlist mapping
-            g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
-            g_atom_map.set_atom_pb(blk_id, NULL);
+            g_atom_lookup.set_atom_clb(blk_id, NO_CLUSTER);
+            g_atom_lookup.set_atom_pb(blk_id, NULL);
 
             auto rng = atom_molecules.equal_range(blk_id);
             for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
@@ -1144,7 +1144,7 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
                     int i;
                     for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
                         if (cur_molecule->atom_block_ids[i]) {
-                            if (g_atom_map.atom_clb(cur_molecule->atom_block_ids[i]) != OPEN) {
+                            if (g_atom_lookup.atom_clb(cur_molecule->atom_block_ids[i]) != OPEN) {
                                 break;
                             }
                         }
@@ -1884,7 +1884,7 @@ AtomBlockId find_tnode_atom_block(int inode) {
 
         VTR_ASSERT(tnode[i_opin_node].type == TN_INPAD_OPIN ||tnode[i_opin_node].type == TN_FF_OPIN);
 
-        pin_id = g_atom_map.classic_tnode_atom_pin(i_opin_node);
+        pin_id = g_atom_lookup.classic_tnode_atom_pin(i_opin_node);
         
     } else if (type == TN_OUTPAD_SINK || type == TN_FF_SINK) {
         //A sink does not map directly to a netlist pin,
@@ -1896,9 +1896,9 @@ AtomBlockId find_tnode_atom_block(int inode) {
         VTR_ASSERT(tnode[i_ipin_node].num_edges == 1);
         VTR_ASSERT(tnode[i_ipin_node].out_edges[0].to_node == inode);
 
-        pin_id = g_atom_map.classic_tnode_atom_pin(i_ipin_node);
+        pin_id = g_atom_lookup.classic_tnode_atom_pin(i_ipin_node);
     } else {
-        pin_id = g_atom_map.classic_tnode_atom_pin(inode);
+        pin_id = g_atom_lookup.classic_tnode_atom_pin(inode);
     }
 
     blk_id = g_atom_nl.pin_block(pin_id);

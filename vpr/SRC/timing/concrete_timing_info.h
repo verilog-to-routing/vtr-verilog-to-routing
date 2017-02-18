@@ -22,7 +22,7 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
             , timing_constraints_(timing_constraints)
             , delay_calc_(delay_calc)
             , setup_analyzer_(analyzer)
-            , slack_crit_(g_atom_nl, g_atom_map) {
+            , slack_crit_(g_atom_nl, g_atom_lookup) {
             //pass
         }
 

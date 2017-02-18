@@ -806,14 +806,14 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
                                 AtomPinId sink_pin = *sinks.begin();
                                 AtomBlockId sink_blk = g_atom_nl.pin_block(sink_pin);
     
-                                if(g_atom_map.atom_clb(sink_blk) == clb_index) {
-                                    const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_map, sink_pin);
+                                if(g_atom_lookup.atom_clb(sink_blk) == clb_index) {
+                                    const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_lookup, sink_pin);
                                     while(sink_pb_graph_pin->num_output_edges != 0) {
                                         VTR_ASSERT(sink_pb_graph_pin->num_output_edges == 1);
                                         VTR_ASSERT(sink_pb_graph_pin->output_edges[0]->num_output_pins == 1);
                                         sink_pb_graph_pin = sink_pb_graph_pin->output_edges[0]->output_pins[0];
                                     }
-                                    const t_pb_graph_node* sink_pb_graph_node = g_atom_map.atom_pb_graph_node(sink_blk);
+                                    const t_pb_graph_node* sink_pb_graph_node = g_atom_lookup.atom_pb_graph_node(sink_blk);
                                     if(sink_pb_graph_pin->parent_node == sink_pb_graph_node) {
                                         /* There is a atom block mapped to the physical position that pulls in the atom in question */
                                         feasible = true;

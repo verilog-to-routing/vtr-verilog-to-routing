@@ -145,7 +145,7 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 
         //Reset atom/pb mapping (it is reloaded from the packed netlist file)
         for(auto blk_id : g_atom_nl.blocks()) {
-            g_atom_map.set_atom_pb(blk_id, NULL);
+            g_atom_lookup.set_atom_pb(blk_id, NULL);
         }
 
         //Count the number of blocks for allocation
@@ -169,7 +169,7 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 
         /* Error check */
         for(auto blk_id : g_atom_nl.blocks()) {
-            if (g_atom_map.atom_pb(blk_id) == NULL) {
+            if (g_atom_lookup.atom_pb(blk_id) == NULL) {
                 vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
                         ".blif file and .net file do not match, .net file missing atom %s.\n",
                         g_atom_nl.block_name(blk_id).c_str());
@@ -190,13 +190,13 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
 
 	/* load mapping between external nets and all nets */
     for(auto net_id : g_atom_nl.nets()) {
-        g_atom_map.set_atom_clb_net(net_id, OPEN);
+        g_atom_lookup.set_atom_clb_net(net_id, OPEN);
 	}
 
 	for (i = 0; i < ext_ncount; i++) {
         AtomNetId net_id = g_atom_nl.find_net(ext_nlist[i].name);
         VTR_ASSERT(net_id);
-        g_atom_map.set_atom_clb_net(net_id, i);
+        g_atom_lookup.set_atom_clb_net(net_id, i);
 	}
 
 	/* Return blocks and nets */
@@ -271,7 +271,7 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	}
 
 	/* Parse all pbs and CB internal nets*/
-    g_atom_map.set_atom_pb(AtomBlockId::INVALID(), cb[index].pb);
+    g_atom_lookup.set_atom_pb(AtomBlockId::INVALID(), cb[index].pb);
 
 	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
 	cb[index].pb_route = alloc_pb_route(cb[index].pb->pb_graph_node);
@@ -339,8 +339,8 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 
         //Update atom netlist mapping
         VTR_ASSERT(blk_id);
-        g_atom_map.set_atom_pb(blk_id, pb);
-        g_atom_map.set_atom_clb(blk_id, index);
+        g_atom_lookup.set_atom_pb(blk_id, pb);
+        g_atom_lookup.set_atom_clb(blk_id, index);
 
 		(*num_primitives)++;
 	} else {
@@ -397,7 +397,7 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
                 pb->child_pbs[i][pb_index].name = vtr::strdup(name.value());
 
                 /* Parse all pbs and CB internal nets*/
-                g_atom_map.set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
+                g_atom_lookup.set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
 
                 auto mode = child.attribute("mode");
                 pb->child_pbs[i][pb_index].mode = 0;
@@ -419,7 +419,7 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
             } else {
                 /* physical block has no used primitives but it may have used routing */
                 pb->child_pbs[i][pb_index].name = NULL;
-                g_atom_map.set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
+                g_atom_lookup.set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
 
                 auto lookahead1 = pugiutil::get_first_child(child, "outputs", loc_data, pugiutil::OPTIONAL);
                 if (lookahead1) {
@@ -1023,7 +1023,7 @@ static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin) {
 //each connected AtomPinId
 static void load_atom_pin_mapping() {
     for(const AtomBlockId blk : g_atom_nl.blocks()) {
-        const t_pb* pb = g_atom_map.atom_pb(blk);
+        const t_pb* pb = g_atom_lookup.atom_pb(blk);
         VTR_ASSERT_MSG(pb, "Atom block must have a matching PB");
 
         const t_pb_graph_node* gnode = pb->pb_graph_node;
@@ -1077,7 +1077,7 @@ static void load_atom_pin_mapping() {
 static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin) {
     VTR_ASSERT(g_atom_nl.port_block(atom_port) == atom_blk);
 
-    int clb_index = g_atom_map.atom_clb(atom_blk);
+    int clb_index = g_atom_lookup.atom_clb(atom_blk);
     VTR_ASSERT(clb_index >= 0);
 
     const t_pb_route* pb_route = &block[clb_index].pb_route[gpin->pin_count_in_cluster];
@@ -1086,7 +1086,7 @@ static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId at
         return;
     }
 
-    const t_pb* pb = g_atom_map.atom_pb(atom_blk);
+    const t_pb* pb = g_atom_lookup.atom_pb(atom_blk);
 
     BitIndex atom_pin_bit_index = pb->atom_pin_bit_index(gpin);
 
@@ -1095,6 +1095,6 @@ static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId at
     VTR_ASSERT(pb_route->atom_net_id == g_atom_nl.pin_net(atom_pin));
 
     //Save the mapping
-    g_atom_map.set_atom_pin_pb_graph_pin(atom_pin, gpin);
+    g_atom_lookup.set_atom_pin_pb_graph_pin(atom_pin, gpin);
 }
 

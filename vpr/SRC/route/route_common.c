@@ -372,7 +372,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
         //Initialize the delay calculator
         std::shared_ptr<SetupTimingInfo> timing_info;
         if(timing_inf.timing_analysis_enabled) {
-            auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_map, net_delay);
+            auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
 
             timing_info = make_setup_timing_info(routing_delay_calc);
         } else {

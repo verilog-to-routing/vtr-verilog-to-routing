@@ -161,7 +161,7 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 		}
 
 		if (pb) {
-            AtomBlockId blk_id = g_atom_map.pb_atom(pb);
+            AtomBlockId blk_id = g_atom_lookup.pb_atom(pb);
 			SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size,
 					g_atom_nl.block_truth_table(blk_id));
 		} else {
@@ -1164,8 +1164,8 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 		clb_net_power = (t_net_power*) vtr::calloc(num_nets, sizeof(t_net_power));
 	}
 	for (net_idx = 0; net_idx < num_nets; net_idx++) {
-		clb_net_power[net_idx].probability = g_atom_net_power[g_atom_map.atom_net(net_idx)].probability;
-		clb_net_power[net_idx].density = g_atom_net_power[g_atom_map.atom_net(net_idx)].density;
+		clb_net_power[net_idx].probability = g_atom_net_power[g_atom_lookup.atom_net(net_idx)].probability;
+		clb_net_power[net_idx].density = g_atom_net_power[g_atom_lookup.atom_net(net_idx)].density;
 	}
 
 	/* Initialize RR Graph Structures */

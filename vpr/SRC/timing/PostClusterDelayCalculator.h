@@ -14,7 +14,7 @@
 class PostClusterDelayCalculator {
 
 public:
-    PostClusterDelayCalculator(const AtomNetlist& netlist, const AtomMap& netlist_map, float** net_delay);
+    PostClusterDelayCalculator(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, float** net_delay);
 
     tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
     tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
@@ -33,7 +33,7 @@ private:
 
 private:
     const AtomNetlist& netlist_;
-    const AtomMap& netlist_map_;
+    const AtomLookup& netlist_lookup_;
     float** net_delay_;
 
     ClbDelayCalc clb_delay_calc_;

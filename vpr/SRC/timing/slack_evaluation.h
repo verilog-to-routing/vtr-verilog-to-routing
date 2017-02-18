@@ -8,7 +8,7 @@
 
 class SetupSlackCrit {
     public: //Constructors
-        SetupSlackCrit(const AtomNetlist& netlist, const AtomMap& netlist_map);
+        SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& netlist_lookup);
 
     public: //Accessors
 
@@ -38,7 +38,7 @@ class SetupSlackCrit {
 
     private: //Data
         const AtomNetlist& netlist_;
-        const AtomMap& netlist_map_;
+        const AtomLookup& netlist_lookup_;
         
         vtr::vector_map<AtomPinId, float> pin_slacks_;
         vtr::vector_map<AtomPinId, float> pin_criticalities_;

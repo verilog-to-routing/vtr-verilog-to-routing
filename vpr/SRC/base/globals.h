@@ -28,7 +28,7 @@
 extern AtomNetlist g_atom_nl;
 
 /* Mappins to/from the Atom Netlist */
-extern AtomMap g_atom_map;
+extern AtomLookup g_atom_lookup;
 
 /* Atom net power info */
 extern std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;

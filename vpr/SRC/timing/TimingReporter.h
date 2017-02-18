@@ -51,7 +51,7 @@ class TimingPath {
 class TimingReporter {
     public:
         TimingReporter(const AtomNetlist& netist,
-                       const AtomMap& netlist_map,
+                       const AtomLookup& netlist_lookup,
                        std::shared_ptr<const tatum::TimingGraph> timing_graph, 
                        std::shared_ptr<const tatum::TimingConstraints> timing_constraints, 
                        std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer,
@@ -79,7 +79,7 @@ class TimingReporter {
 
     private:
         const AtomNetlist& netlist_;
-        const AtomMap& netlist_map_;
+        const AtomLookup& netlist_lookup_;
         std::shared_ptr<const tatum::TimingGraph> timing_graph_;
         std::shared_ptr<const tatum::TimingConstraints> timing_constraints_;
         std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer_;
