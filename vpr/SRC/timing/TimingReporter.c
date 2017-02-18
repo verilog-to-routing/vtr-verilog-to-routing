@@ -217,10 +217,10 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
     print_path_line(os, "data arrival time", -arr_time);
     os << divider << "\n";
     Time slack = timing_path.slack_tag.time();
-    if(slack.value() > 0) {
-        print_path_line(os, "slack (MET)", slack);
-    } else {
+    if(slack.value() < 0. || std::signbit(slack.value())) {
         print_path_line(os, "slack (VIOLATED)", slack);
+    } else {
+        print_path_line(os, "slack (MET)", slack);
     }
     os << "\n";
 }
