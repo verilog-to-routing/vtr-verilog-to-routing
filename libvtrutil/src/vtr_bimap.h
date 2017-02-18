@@ -75,10 +75,21 @@ class bimap {
         //Drop all stored key-values
         void clear() { map_.clear(); inverse_map_.clear(); }
 
-        //Add a new key-value pair
-        void insert(const K key, const V value) {
-            map_.insert({key,value});
-            inverse_map_.insert({value,key});
+        //Insert a key-value pair, if not already in map
+        std::pair<iterator,bool> insert(const K key, const V value) {
+            auto ret1 = map_.insert({key,value});
+            auto ret2 = inverse_map_.insert({value,key});
+
+            VTR_ASSERT(ret1.second == ret2.second);
+
+            //Return true if inserted
+            return ret1;
+        }
+
+        //Update a key-value pair, will insert if not already in map
+        void update(const K key, const V value) {
+            map_[key] = value;
+            inverse_map_[value] = key;
         }
 
         //Remove the specified key (and it's associated value)
