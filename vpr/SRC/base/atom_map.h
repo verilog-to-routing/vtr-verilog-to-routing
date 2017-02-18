@@ -99,6 +99,7 @@ class AtomMap {
         //Sets the bi-directional mapping between an atom netlist pin and timing graph node
         void set_pin_tnode(const AtomPinId pin, const tatum::NodeId node);
     private:
+        //A linear map which uses -1 as the sentinel value
         template<class K, class V>
         using linear_map_int = vtr::linear_map<K,V,vtr::MinusOneSentinel<K>>;
 
@@ -108,8 +109,7 @@ class AtomMap {
 
         vtr::vector_map<AtomBlockId,int> atom_to_clb_;
 
-        std::unordered_map<AtomNetId,int> atom_to_clb_net_;
-        std::unordered_map<int,AtomNetId> clb_to_atom_net_;
+        vtr::bimap<AtomNetId,int, vtr::linear_map, linear_map_int> atom_net_to_clb_net_;
 
         std::unordered_map<AtomPinId,int> atom_pin_to_tnode_;
         std::unordered_map<int,AtomPinId> tnode_to_atom_pin_;
