@@ -111,8 +111,7 @@ class AtomMap {
 
         vtr::bimap<AtomNetId,int, vtr::linear_map, linear_map_int> atom_net_to_clb_net_;
 
-        std::unordered_map<AtomPinId,int> atom_pin_to_tnode_;
-        std::unordered_map<int,AtomPinId> tnode_to_atom_pin_;
+        vtr::bimap<AtomPinId,int,vtr::linear_map,linear_map_int> atom_pin_to_classic_tnode_;
 
         vtr::linear_bimap<AtomPinId,tatum::NodeId> pin_tnode_;
 };

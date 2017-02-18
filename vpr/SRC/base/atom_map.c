@@ -118,8 +118,8 @@ void AtomMap::set_atom_clb_net(const AtomNetId net_id, const int clb_net_index) 
  * Classic Timing nodes
  */
 AtomPinId AtomMap::classic_tnode_atom_pin(const int tnode_index) const {
-    auto iter = tnode_to_atom_pin_.find(tnode_index);
-    if(iter == tnode_to_atom_pin_.end()) {
+    auto iter = atom_pin_to_classic_tnode_.find(tnode_index);
+    if(iter == atom_pin_to_classic_tnode_.inverse_end()) {
         //Not found
         return AtomPinId::INVALID();
     }
@@ -127,8 +127,8 @@ AtomPinId AtomMap::classic_tnode_atom_pin(const int tnode_index) const {
 }
 
 int AtomMap::atom_pin_classic_tnode(const AtomPinId pin_id) const {
-    auto iter = atom_pin_to_tnode_.find(pin_id);
-    if(iter == atom_pin_to_tnode_.end()) {
+    auto iter = atom_pin_to_classic_tnode_.find(pin_id);
+    if(iter == atom_pin_to_classic_tnode_.end()) {
         //Not found
         return OPEN;
     }
@@ -140,22 +140,15 @@ int AtomMap::atom_pin_classic_tnode(const AtomPinId pin_id) const {
 void AtomMap::set_atom_pin_classic_tnode(const AtomPinId pin_id, const int tnode_index) {
     VTR_ASSERT(pin_id);
     //If either are invalid remove any mapping
-    if(!pin_id) {
+    if(!pin_id && tnode_index != OPEN) {
         //Remove
-        tnode_to_atom_pin_.erase(tnode_index);
-        VTR_ASSERT_SAFE(atom_pin_to_tnode_.count(pin_id) == 0);
-    }
-    if(tnode_index == OPEN) {
+        atom_pin_to_classic_tnode_.erase(tnode_index);
+    } else if(pin_id && tnode_index == OPEN) {
         //Remove
-        atom_pin_to_tnode_.erase(pin_id);
-        VTR_ASSERT_SAFE(tnode_to_atom_pin_.count(tnode_index) == 0);
-    }
-    
-    //If both are valid store the mapping
-    if(pin_id && tnode_index != OPEN) {
+        atom_pin_to_classic_tnode_.erase(pin_id);
+    } else if(pin_id && tnode_index != OPEN) {
         //Store
-        atom_pin_to_tnode_[pin_id] = tnode_index;
-        tnode_to_atom_pin_[tnode_index] = pin_id;
+        atom_pin_to_classic_tnode_.update(pin_id, tnode_index);
     }
 }
 
