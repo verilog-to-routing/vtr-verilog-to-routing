@@ -105,7 +105,7 @@ class AtomLookup {
 
         vtr::bimap<AtomBlockId,const t_pb*, vtr::linear_map, std::unordered_map> atom_to_pb_;
 
-        vtr::vector_map<AtomPinId,const t_pb_graph_pin*> atom_to_pb_graph_pin_;
+        vtr::vector_map<AtomPinId,const t_pb_graph_pin*> atom_pin_to_pb_graph_pin_;
 
         vtr::vector_map<AtomBlockId,int> atom_to_clb_;
 

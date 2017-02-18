@@ -1,4 +1,5 @@
 #include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "atom_lookup.h"
 /*
@@ -34,13 +35,20 @@ const t_pb_graph_node* AtomLookup::atom_pb_graph_node(const AtomBlockId blk_id) 
 void AtomLookup::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
     //If either of blk_id or pb are not valid, 
     //remove any mapping
+
+    if(!blk_id) {
+        vtr::printf("Setting atom -> pb: INVALID -> %p\n", pb);
+    } else {
+        vtr::printf("Setting atom -> pb: %zu -> %p\n", size_t(blk_id), pb);
+    }
+
     if(!blk_id && pb) {
         //Remove
         atom_to_pb_.erase(pb);
     } else if(blk_id && !pb) {
         //Remove
         atom_to_pb_.erase(blk_id);
-    } else if(blk_id &&  pb) {
+    } else if(blk_id && pb) {
         //If both are valid store the mapping
         atom_to_pb_.update(blk_id, pb);
     }
@@ -50,11 +58,11 @@ void AtomLookup::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
  * PB Pins
  */
 const t_pb_graph_pin* AtomLookup::atom_pin_pb_graph_pin(AtomPinId atom_pin) const {
-    return atom_to_pb_graph_pin_[atom_pin];
+    return atom_pin_to_pb_graph_pin_[atom_pin];
 }
 
 void AtomLookup::set_atom_pin_pb_graph_pin(AtomPinId atom_pin, const t_pb_graph_pin* gpin) {
-    atom_to_pb_graph_pin_.insert(atom_pin, gpin);
+    atom_pin_to_pb_graph_pin_.insert(atom_pin, gpin);
 }
 
 /*
@@ -71,6 +79,13 @@ int AtomLookup::atom_clb(const AtomBlockId blk_id) const {
 
 void AtomLookup::set_atom_clb(const AtomBlockId blk_id, const int clb_index) {
     VTR_ASSERT(blk_id);
+
+
+    if(!blk_id) {
+        vtr::printf("Setting atom -> clb: INVALID -> %d\n", clb_index);
+    } else {
+        vtr::printf("Setting atom -> clb: %zu -> %d\n", size_t(blk_id), clb_index);
+    }
 
     //If both are valid store the mapping
     atom_to_clb_.update(blk_id, clb_index);
