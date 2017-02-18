@@ -102,11 +102,8 @@ class AtomMap {
         //Sets the bi-directional mapping between an atom netlist pin and timing graph node
         void set_pin_tnode(const AtomPinId pin, const tatum::NodeId node);
     private:
-        std::unordered_map<AtomBlockId,const t_pb*> atom_to_pb_;
-        std::unordered_map<const t_pb*,AtomBlockId> pb_to_atom_;
+        vtr::bimap<AtomBlockId,const t_pb*, vtr::linear_map, std::unordered_map> atom_to_pb_;
 
-        //Use a dense linear map for AtomPinId -> t_pb_graph_pin*,
-        //and an unordered map for t_pb_graph_pin* -> AtomPinId
         vtr::vector_map<AtomPinId,const t_pb_graph_pin*> atom_to_pb_graph_pin_;
 
         std::vector<int> atom_to_clb_;
