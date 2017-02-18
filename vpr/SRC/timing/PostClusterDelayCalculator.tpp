@@ -71,8 +71,8 @@ inline tatum::Time PostClusterDelayCalculator::atom_combinational_delay(const ta
         tatum::NodeId src_node = tg.edge_src_node(edge_id);
         tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
 
-        AtomPinId src_pin = netlist_map_.pin_tnode[src_node];
-        AtomPinId sink_pin = netlist_map_.pin_tnode[sink_node];
+        AtomPinId src_pin = netlist_map_.tnode_pin(src_node);
+        AtomPinId sink_pin = netlist_map_.tnode_pin(sink_node);
 
         delay = tatum::Time(atom_delay_calc_.atom_combinational_delay(src_pin, sink_pin));
 
@@ -97,8 +97,8 @@ inline tatum::Time PostClusterDelayCalculator::atom_setup_time(const tatum::Timi
         tatum::NodeId in_node = tg.edge_sink_node(edge_id);
         VTR_ASSERT(tg.node_type(in_node) == tatum::NodeType::SINK);
 
-        AtomPinId input_pin = netlist_map_.pin_tnode[in_node];
-        AtomPinId clock_pin = netlist_map_.pin_tnode[clock_node];
+        AtomPinId input_pin = netlist_map_.tnode_pin(in_node);
+        AtomPinId clock_pin = netlist_map_.tnode_pin(clock_node);
 
         tsu = tatum::Time(atom_delay_calc_.atom_setup_time(clock_pin, input_pin));
 
@@ -122,8 +122,8 @@ inline tatum::Time PostClusterDelayCalculator::atom_clock_to_q_delay(const tatum
         tatum::NodeId out_node = tg.edge_sink_node(edge_id);
         VTR_ASSERT(tg.node_type(out_node) == tatum::NodeType::SOURCE);
 
-        AtomPinId output_pin = netlist_map_.pin_tnode[out_node];
-        AtomPinId clock_pin = netlist_map_.pin_tnode[clock_node];
+        AtomPinId output_pin = netlist_map_.tnode_pin(out_node);
+        AtomPinId clock_pin = netlist_map_.tnode_pin(clock_node);
 
         tco = tatum::Time(atom_delay_calc_.atom_clock_to_q_delay(clock_pin, output_pin));
 
@@ -165,10 +165,10 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             tatum::NodeId src_node = tg.edge_src_node(edge_id);
             tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
 
-            AtomPinId atom_src_pin = netlist_map_.pin_tnode[src_node];
+            AtomPinId atom_src_pin = netlist_map_.tnode_pin(src_node);
             VTR_ASSERT(atom_src_pin);
 
-            AtomPinId atom_sink_pin = netlist_map_.pin_tnode[sink_node];
+            AtomPinId atom_sink_pin = netlist_map_.tnode_pin(sink_node);
             VTR_ASSERT(atom_sink_pin);
 
             AtomBlockId atom_src_block = netlist_.pin_block(atom_src_pin);

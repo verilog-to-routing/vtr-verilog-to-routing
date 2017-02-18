@@ -32,7 +32,7 @@ public:
             //Tcq
             VTR_ASSERT_MSG(tg.node_type(sink_node) == tatum::NodeType::SOURCE, "Tcq only defined from CPIN to SOURCE");
 
-            AtomPinId sink_pin = netlist_map_.pin_tnode[sink_node];
+            AtomPinId sink_pin = netlist_map_.tnode_pin(sink_node);
             VTR_ASSERT(sink_pin);
 
             const t_pb_graph_pin* gpin = find_pb_graph_pin(sink_pin);
@@ -43,11 +43,11 @@ public:
 
         } else if (tg.node_type(src_node) == tatum::NodeType::IPIN && tg.node_type(sink_node) == tatum::NodeType::OPIN) {
             //Primitive internal combinational delay
-            AtomPinId input_pin = netlist_map_.pin_tnode[src_node];
+            AtomPinId input_pin = netlist_map_.tnode_pin(src_node);
             VTR_ASSERT(input_pin);
             const t_pb_graph_pin* input_gpin = find_pb_graph_pin(input_pin);
 
-            AtomPinId output_pin = netlist_map_.pin_tnode[sink_node];
+            AtomPinId output_pin = netlist_map_.tnode_pin(sink_node);
             VTR_ASSERT(output_pin);
             const t_pb_graph_pin* output_gpin = find_pb_graph_pin(output_pin);
 
@@ -81,7 +81,7 @@ public:
         VTR_ASSERT_MSG(tg.node_type(src_node) == tatum::NodeType::CPIN, "Edge setup time only valid if source node is a CPIN");
         VTR_ASSERT_MSG(tg.node_type(sink_node) == tatum::NodeType::SINK, "Edge setup time only valid if sink node is a SINK");
         
-        AtomPinId sink_pin = netlist_map_.pin_tnode[sink_node];
+        AtomPinId sink_pin = netlist_map_.tnode_pin(sink_node);
         VTR_ASSERT(sink_pin);
 
         const t_pb_graph_pin* gpin = find_pb_graph_pin(sink_pin);

@@ -4,6 +4,7 @@
 
 #include "vtr_bimap.h"
 #include "vtr_vector_map.h"
+#include "vtr_range.h"
 
 #include "atom_netlist_fwd.h"
 #include "vpr_types.h"
@@ -13,6 +14,10 @@
  * and other netlists/entities (i.e. atom block <-> t_pb, atom block <-> clb)
  */
 class AtomMap {
+    public:
+        typedef vtr::linear_bimap<AtomPinId,tatum::NodeId>::iterator pin_tnode_iterator;
+
+        typedef vtr::Range<pin_tnode_iterator> pin_tnode_range;
     public:
         /*
          * PBs
@@ -82,7 +87,20 @@ class AtomMap {
         // is removed
         void set_atom_pin_classic_tnode(const AtomPinId pin_id, const int tnode_index);
 
-        vtr::linear_bimap<AtomPinId,tatum::NodeId> pin_tnode;
+        /*
+         * Timing Nodes
+         */
+        //Returns the timing graph node associated with the specified atom netlist pin
+        tatum::NodeId pin_tnode(const AtomPinId pin) const;
+
+        //Returns the atom netlist pin associated with the specified timing graph node 
+        AtomPinId tnode_pin(const tatum::NodeId tnode) const;
+
+        //Returns a range of all pin to tnode mappings
+        pin_tnode_range pin_tnodes() const;
+
+        //Sets the bi-directional mapping between an atom netlist pin and timing graph node
+        void set_pin_tnode(const AtomPinId pin, const tatum::NodeId node);
     private:
         std::unordered_map<AtomBlockId,const t_pb*> atom_to_pb_;
         std::unordered_map<const t_pb*,AtomBlockId> pb_to_atom_;
@@ -100,6 +118,7 @@ class AtomMap {
         std::unordered_map<AtomPinId,int> atom_pin_to_tnode_;
         std::unordered_map<int,AtomPinId> tnode_to_atom_pin_;
 
+        vtr::linear_bimap<AtomPinId,tatum::NodeId> pin_tnode_;
 };
 
 #endif
