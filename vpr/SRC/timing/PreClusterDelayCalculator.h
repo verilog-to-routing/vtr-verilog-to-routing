@@ -1,5 +1,5 @@
-#ifndef PRE_CLUSTER_DELAY_CALCULATOR_HPP
-#define PRE_CLUSTER_DELAY_CALCULATOR_HPP
+#ifndef PRE_CLUSTER_DELAY_CALCULATOR_H
+#define PRE_CLUSTER_DELAY_CALCULATOR_H
 #include "vtr_assert.h"
 
 #include "Time.hpp"

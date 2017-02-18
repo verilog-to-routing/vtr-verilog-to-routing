@@ -30,7 +30,7 @@ using namespace std;
 #include "place_macro.h"
 #include "histogram.h"
 
-#include "PlacementDelayCalculator.hpp"
+#include "PlacementDelayCalculator.h"
 #include "timing_util.h"
 #include "timing_info.h"
 #include "echo_writer.hpp"

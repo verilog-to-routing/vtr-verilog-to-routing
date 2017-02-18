@@ -24,7 +24,7 @@ using namespace std;
 #include "endpoint_timing.h"
 
 #include "timing_info.h"
-#include "RoutingDelayCalculator.hpp"
+#include "RoutingDelayCalculator.h"
 
 #include "timing_util.h"
 #include "TimingReporter.h"

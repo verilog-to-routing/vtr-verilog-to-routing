@@ -1,5 +1,5 @@
 #include <cmath>
-#include "PostClusterDelayCalculator.hpp"
+#include "PostClusterDelayCalculator.h"
 
 #include "vpr_error.h"
 #include "vpr_utils.h"

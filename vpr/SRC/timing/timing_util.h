@@ -5,10 +5,11 @@
 #include "timing_analyzers.hpp"
 #include "TimingConstraints.hpp"
 #include "histogram.h"
-#include "PlacementDelayCalculator.hpp"
 #include "timing_info_fwd.h"
 #include "PathInfo.h"
 #include "DomainPair.h"
+
+#include "vpr_utils.h"
 
 double sec_to_nanosec(double seconds); 
 
@@ -40,9 +41,6 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
 
 //Returns the a map of domain's and thier clock fanout (i.e. logical outputs at which the clock captures)
 std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer);
-
-//Prints the atom net delays to a file
-void dump_atom_net_delays_tatum(std::string filename, const PlacementDelayCalculator& dc);
 
 /*
  * Tag utilities

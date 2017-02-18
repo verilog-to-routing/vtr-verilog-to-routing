@@ -1,5 +1,6 @@
 #include "slack_evaluation.h"
 
+#include "TimingGraph.hpp"
 #include "timing_util.h"
 #include "vpr_error.h"
 #include "atom_netlist.h"
@@ -33,7 +34,7 @@ void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
 
 void SetupSlackCrit::update_pin_slack(const AtomPinId pin, const tatum::SetupTimingAnalyzer& analyzer) {
     //Find the timing node associated with the pin
-    tatum::NodeId node = g_atom_map.pin_tnode[pin];
+    tatum::NodeId node = netlist_map_.pin_tnode[pin];
     VTR_ASSERT(node);
 
     //Find the worst (least) slack at this node
@@ -82,7 +83,7 @@ void SetupSlackCrit::update_pin_criticality(AtomPinId pin,
                                             const tatum::SetupTimingAnalyzer& analyzer, 
                                             const std::map<DomainPair,float>& max_req, 
                                             const std::map<DomainPair,float>& worst_slack) {
-    tatum::NodeId node = g_atom_map.pin_tnode[pin];
+    tatum::NodeId node = netlist_map_.pin_tnode[pin];
     VTR_ASSERT(node);
 
     //Calculate maximum criticality over all domains

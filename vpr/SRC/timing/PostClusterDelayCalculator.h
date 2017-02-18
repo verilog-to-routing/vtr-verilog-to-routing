@@ -1,5 +1,5 @@
-#ifndef POST_CLUSTER_DELAY_CALCULATOR_HPP
-#define POST_CLUSTER_DELAY_CALCULATOR_HPP
+#ifndef POST_CLUSTER_DELAY_CALCULATOR_H
+#define POST_CLUSTER_DELAY_CALCULATOR_H
 #include "vtr_linear_map.h"
 
 #include "Time.hpp"

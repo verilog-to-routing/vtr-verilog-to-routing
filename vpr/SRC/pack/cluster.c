@@ -65,7 +65,7 @@ using namespace std;
 #include "lb_type_rr_graph.h"
 
 #include "timing_info.h"
-#include "PreClusterDelayCalculator.hpp"
+#include "PreClusterDelayCalculator.h"
 #include "echo_writer.hpp"
 
 #include "read_sdc.h"

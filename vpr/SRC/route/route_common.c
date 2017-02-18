@@ -29,7 +29,7 @@ using namespace std;
 #include "route_profiling.h"
 
 #include "timing_util.h"
-#include "RoutingDelayCalculator.hpp"
+#include "RoutingDelayCalculator.h"
 #include "timing_info.h"
 #include "path_delay.h"
  
