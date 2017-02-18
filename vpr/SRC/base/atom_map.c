@@ -155,18 +155,18 @@ void AtomMap::set_atom_pin_classic_tnode(const AtomPinId pin_id, const int tnode
 /*
  * Timing Nodes
  */
-tatum::NodeId AtomMap::pin_tnode(const AtomPinId pin) const {
+tatum::NodeId AtomMap::atom_pin_tnode(const AtomPinId pin) const {
     return pin_tnode_[pin];
 }
 
-AtomPinId AtomMap::tnode_pin(const tatum::NodeId tnode) const {
+AtomPinId AtomMap::tnode_atom_pin(const tatum::NodeId tnode) const {
     return pin_tnode_[tnode];
 }
 
-AtomMap::pin_tnode_range AtomMap::pin_tnodes() const {
+AtomMap::pin_tnode_range AtomMap::atom_pin_tnodes() const {
     return vtr::make_range(pin_tnode_.begin(), pin_tnode_.end());
 }
 
-void AtomMap::set_pin_tnode(const AtomPinId pin, const tatum::NodeId node) {
+void AtomMap::set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node) {
     pin_tnode_.update(pin, node);
 }

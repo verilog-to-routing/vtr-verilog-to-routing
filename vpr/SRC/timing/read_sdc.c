@@ -1147,7 +1147,7 @@ std::unique_ptr<tatum::TimingConstraints> create_timing_constraints(const AtomNe
             //Real netlist clock
             AtomPinId driver_pin = netlist.net_driver(clk_net);
 
-            tatum::NodeId src_node = atom_map.pin_tnode(driver_pin);
+            tatum::NodeId src_node = atom_map.atom_pin_tnode(driver_pin);
 
             tc->set_clock_domain_source(src_node, domain);
         } else {
@@ -1197,7 +1197,7 @@ std::unique_ptr<tatum::TimingConstraints> create_timing_constraints(const AtomNe
         VTR_ASSERT(blk_pins.size() == 1);
         AtomPinId pin = *blk_pins.begin();
 
-        tatum::NodeId node = atom_map.pin_tnode(pin);
+        tatum::NodeId node = atom_map.atom_pin_tnode(pin);
  
         //Apply the constraint
         tc->set_input_constraint(node, domain, 1e-9*io_constraint->delay);
@@ -1232,7 +1232,7 @@ std::unique_ptr<tatum::TimingConstraints> create_timing_constraints(const AtomNe
         VTR_ASSERT(blk_pins.size() == 1);
         AtomPinId pin = *blk_pins.begin();
 
-        tatum::NodeId node = atom_map.pin_tnode(pin);
+        tatum::NodeId node = atom_map.atom_pin_tnode(pin);
 
         tc->set_output_constraint(node, domain, 1e-9*io_constraint->delay);
     }
@@ -1243,7 +1243,7 @@ std::unique_ptr<tatum::TimingConstraints> create_timing_constraints(const AtomNe
     for(AtomBlockId blk : netlist.blocks()) {
         for(AtomPinId pin : netlist.block_output_pins(blk)) {
             if(netlist.pin_is_constant(pin)) {
-                tatum::NodeId node = atom_map.pin_tnode(pin);
+                tatum::NodeId node = atom_map.atom_pin_tnode(pin);
                 tc->set_constant_generator(node);
             }
         }

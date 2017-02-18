@@ -88,16 +88,16 @@ class AtomMap {
          * Timing Nodes
          */
         //Returns the timing graph node associated with the specified atom netlist pin
-        tatum::NodeId pin_tnode(const AtomPinId pin) const;
+        tatum::NodeId atom_pin_tnode(const AtomPinId pin) const;
 
         //Returns the atom netlist pin associated with the specified timing graph node 
-        AtomPinId tnode_pin(const tatum::NodeId tnode) const;
+        AtomPinId tnode_atom_pin(const tatum::NodeId tnode) const;
 
         //Returns a range of all pin to tnode mappings
-        pin_tnode_range pin_tnodes() const;
+        pin_tnode_range atom_pin_tnodes() const;
 
         //Sets the bi-directional mapping between an atom netlist pin and timing graph node
-        void set_pin_tnode(const AtomPinId pin, const tatum::NodeId node);
+        void set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node);
     private:
         //A linear map which uses -1 as the sentinel value
         template<class K, class V>

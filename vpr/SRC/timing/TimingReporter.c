@@ -57,8 +57,8 @@ void TimingReporter::report_timing(std::ostream& os,
 void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path) const {
     std::string divider = "--------------------------------------------------------------------------------";
 
-    AtomPinId startpin = netlist_map_.tnode_pin(timing_path.startpoint());
-    AtomPinId endpin = netlist_map_.tnode_pin(timing_path.endpoint());
+    AtomPinId startpin = netlist_map_.tnode_atom_pin(timing_path.startpoint());
+    AtomPinId endpin = netlist_map_.tnode_atom_pin(timing_path.endpoint());
 
 
 
@@ -76,7 +76,7 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
 
         //Clock
         for(TimingPathElem path_elem : timing_path.clock_launch) {
-            AtomPinId pin = netlist_map_.tnode_pin(path_elem.node);
+            AtomPinId pin = netlist_map_.tnode_atom_pin(path_elem.node);
             AtomBlockId blk = netlist_.pin_block(pin);
 
             std::string point;
@@ -104,7 +104,7 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
         for(size_t ielem = 0; ielem < timing_path.data_launch.size(); ++ielem) {
             const TimingPathElem& path_elem = timing_path.data_launch[ielem];
 
-            AtomPinId pin = netlist_map_.tnode_pin(path_elem.node);
+            AtomPinId pin = netlist_map_.tnode_atom_pin(path_elem.node);
             AtomBlockId blk = netlist_.pin_block(pin);
 
             if(ielem == 0) {
@@ -148,7 +148,7 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
         for(size_t ielem = 0; ielem < timing_path.clock_capture.size(); ++ielem) {
             const TimingPathElem& path_elem = timing_path.clock_capture[ielem];
 
-            AtomPinId pin = netlist_map_.tnode_pin(path_elem.node);
+            AtomPinId pin = netlist_map_.tnode_atom_pin(path_elem.node);
             AtomBlockId blk = netlist_.pin_block(pin);
 
             if(ielem == 0) {
