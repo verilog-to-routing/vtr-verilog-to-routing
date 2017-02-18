@@ -15,6 +15,7 @@ class DefaultSentinel {
         constexpr static T INVALID() { return T::INVALID(); }
 };
 
+//The MinusOneSentinel uses the value '-1' as the sentinel value
 template<class T>
 class MinusOneSentinel {
     public:
