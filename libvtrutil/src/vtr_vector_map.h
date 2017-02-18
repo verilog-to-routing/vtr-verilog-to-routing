@@ -126,6 +126,8 @@ class vector_map {
             operator[](key) = value; 
         }
 
+        void update(const K key, const V value) { insert(key, value); }
+
         //Swap (this enables std::swap via ADL)
         friend void swap(vector_map<K,V>& x, vector_map<K,V>& y) {
             std::swap(x.vec_, y.vec_);
