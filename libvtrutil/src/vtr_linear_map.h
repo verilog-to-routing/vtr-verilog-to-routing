@@ -5,6 +5,22 @@
 
 namespace vtr {
 
+//linear_map needs to know what the value of the sentiel
+//key is in order to operate correctly (e.g. skip invalid keys)
+//DefaultSentinel queries the INVALID static member function of 
+//the specified type to get this value
+template<class T>
+class DefaultSentinel {
+    public:
+        constexpr static T INVALID() { return T::INVALID(); }
+};
+
+template<class T>
+class MinusOneSentinel {
+    public:
+        constexpr static T INVALID() { return T(-1); }
+};
+
 //A std::map-like container which is indexed by K
 //
 //The main use of this container is to behave like a std::map which is optimized to hold
@@ -12,7 +28,7 @@ namespace vtr {
 //
 //Requires that K be convertable to size_t with the size_t operator (i.e. size_t()), and
 //that the conversion results in a linearly increasing index into the underlying vector.
-//Also requires that K::INVALID() return the sentinel value used to mark invalid entries.
+//Also requires that K() return the sentinel value used to mark invalid entries.
 //
 //If you only need to access the value associated with the key consider using vtr::vector_map
 //instead, which provides a similar but more std::vector-like interface.
@@ -24,7 +40,7 @@ namespace vtr {
 //As with a std::vector, it is the caller's responsibility to ensure there is sufficient space 
 //when a given index/key before it is accessed. The exception to this are the find() and insert() 
 //methods which handle non-existing keys gracefully.
-template<class K, class T>
+template<class K, class T, class Sentinel=DefaultSentinel<K>>
 class linear_map {
     public:
         typedef K key_type;
@@ -216,8 +232,20 @@ class linear_map {
             return (lb_iter != end()) ? std::make_pair(lb_iter, ub_iter) : std::make_pair(ub_iter, ub_iter);
         }
 
+        size_type valid_size() const {
+            size_t valid_cnt = 0;
+            for(const auto& kv : vec_) {
+                if(kv.first != sentinel()) {
+                    ++valid_cnt;
+                }
+            }
+            return valid_cnt;
+        }
+
     public:
-        friend void swap(linear_map& lhs, linear_map& rhs) { std::swap(lhs.vec_, rhs.vec_); }
+        friend void swap(linear_map& lhs, linear_map& rhs) { 
+            std::swap(lhs.vec_, rhs.vec_); 
+        }
 
     private:
         iterator convert_to_iterator(const_iterator const_iter) {
@@ -233,13 +261,13 @@ class linear_map {
             //on the implicit conversion from iterator to const_iterator for i)
             //
             //Since the iterators are really vector (i.e. random-access) iterators
-            //this takes constant time
+            //both distance and advance take constant time
             iterator i = begin();
             std::advance(i, std::distance<const_iterator>(i, const_iter));
             return i;
         }
 
-        constexpr K sentinel() const { return K::INVALID(); }
+        constexpr K sentinel() const { return Sentinel::INVALID(); }
 
     private:
         std::vector<value_type> vec_;
