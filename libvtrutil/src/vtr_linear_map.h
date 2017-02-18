@@ -1,6 +1,7 @@
-#ifndef VTR_LINEAR_MAP2_H
-#define VTR_LINEAR_MAP2_H
+#ifndef VTR_LINEAR_MAP_H
+#define VTR_LINEAR_MAP_H
 #include <vector>
+#include <stdexcept>
 
 namespace vtr {
 
@@ -144,7 +145,7 @@ class linear_map {
         void clear() { vec_.clear(); }
 
         template<class ...Args>
-        iterator emplace(const key_type& key, Args&&... args) {
+        std::pair<iterator,bool> emplace(const key_type& key, Args&&... args) {
             auto iter = find(key);
             if(iter != end()) {
                 //Found
@@ -155,10 +156,10 @@ class linear_map {
 
                 if(index >= vec_.size()) {
                     //Make space, initialize empty slots with sentinel values
-                    vec_.resize(index + 1, std::make_pair(sentinel(), T()));
+                    vec_.resize(index + 1, value_type(sentinel(), T()));
                 }
 
-                vec_[index] = T(std::forward<Args>(args)...);
+                vec_[index] = value_type(key, std::forward<Args>(args)...);
 
                 return std::make_pair(vec_.begin() + index, true);
             }
