@@ -52,9 +52,6 @@ class AtomMap {
         //Returns the clb index associated with blk_id
         int atom_clb(const AtomBlockId blk_id) const;
 
-        //Returns the atom block id associated with clb_block_index
-        AtomBlockId clb_atom(const int clb_block_index) const;
-
         //Sets the bidirectional mapping between an atom and clb
         // If either blk_id or clb_index are not valid any existing mapping
         // is removed
@@ -102,12 +99,14 @@ class AtomMap {
         //Sets the bi-directional mapping between an atom netlist pin and timing graph node
         void set_pin_tnode(const AtomPinId pin, const tatum::NodeId node);
     private:
+        template<class K, class V>
+        using linear_map_int = vtr::linear_map<K,V,vtr::MinusOneSentinel<K>>;
+
         vtr::bimap<AtomBlockId,const t_pb*, vtr::linear_map, std::unordered_map> atom_to_pb_;
 
         vtr::vector_map<AtomPinId,const t_pb_graph_pin*> atom_to_pb_graph_pin_;
 
-        std::vector<int> atom_to_clb_;
-        std::unordered_map<int,AtomBlockId> clb_to_atom_;
+        vtr::vector_map<AtomBlockId,int> atom_to_clb_;
 
         std::unordered_map<AtomNetId,int> atom_to_clb_net_;
         std::unordered_map<int,AtomNetId> clb_to_atom_net_;
