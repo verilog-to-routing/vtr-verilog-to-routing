@@ -42,31 +42,46 @@ void TimingReporter::report_timing_setup(std::string filename,
 void TimingReporter::report_timing_setup(std::ostream& os, 
                                          const tatum::SetupTimingAnalyzer& setup_analyzer,
                                          size_t npaths) const {
+    auto paths = collect_worst_setup_paths(setup_analyzer, npaths);
+
+    report_timing(os, paths, npaths);
+}
+
+void TimingReporter::report_timing(std::ostream& os,
+                                   const std::vector<TimingPath>& paths, 
+                                   size_t npaths) const {
     os << "#Timing report of worst " << npaths << " path(s)\n";
     os << "# Unit scale: " << std::setprecision(0) << std::scientific << unit_scale_ << " seconds\n";
     os << "# Output precision: " << precision_ << "\n";
     os << "\n";
 
-    auto paths = collect_worst_setup_paths(setup_analyzer, npaths);
-
     size_t i = 0;
     for(const auto& path : paths) {
         os << "#Path " << ++i << "\n";
-        report_path_setup(os, path);
+        report_path(os, path);
         os << "\n";
     }
 
     os << "#End of timing report\n";
 }
-void TimingReporter::report_path_setup(std::ostream& os, const TimingPath& timing_path) const {
+
+void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path) const {
     std::string divider = "--------------------------------------------------------------------------------";
 
     os << "Startpoint: " << name_resolver_.node_name(timing_path.startpoint()) << " (" << name_resolver_.node_block_type_name(timing_path.startpoint()) << ")\n";
     os << "Endpoint  : " << name_resolver_.node_name(timing_path.endpoint()) << " (" << name_resolver_.node_block_type_name(timing_path.endpoint()) << ")\n";
-    os << "Path Type : max [setup]" << "\n";
+
+    if(timing_path.type == TimingPathType::SETUP) {
+        os << "Path Type : max [setup]" << "\n";
+    } else {
+        VTR_ASSERT_MSG(timing_path.type == TimingPathType::HOLD, "Expected path type SETUP or HOLD");
+        os << "Path Type : min [hold]" << "\n";
+    }
+
     os << "\n";
     print_path_line(os, "Point", " Incr", " Path");
     os << divider << "\n";
+
     //Launch path
     Time arr_time;
     {
@@ -117,6 +132,7 @@ void TimingReporter::report_path_setup(std::ostream& os, const TimingPath& timin
             std::string point = name_resolver_.node_name(path_elem.node) + " (" + name_resolver_.node_block_type_name(path_elem.node) + ")";
             path = path_elem.tag.time();
             Time incr = path - prev_path;
+
             if(path_elem.incomming_edge 
                && timing_graph_.edge_type(path_elem.incomming_edge) == tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
                     point += " [clk-to-q]";
@@ -189,7 +205,12 @@ void TimingReporter::report_path_setup(std::ostream& os, const TimingPath& timin
 
                 std::string point;
                 if(edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_CAPTURE) {
-                    point = "cell setup time";
+                    if(timing_path.type == TimingPathType::SETUP) {
+                        point = "cell setup time";
+                    } else {
+                        VTR_ASSERT_MSG(timing_path.type == TimingPathType::HOLD, "Expected path type SETUP or HOLD");
+                        point = "cell hold time";
+                    }
                 } else {
                     //Regular node
                     point = name_resolver_.node_name(path_elem.node) + " (" + name_resolver_.node_block_type_name(path_elem.node) + ")";
@@ -274,6 +295,7 @@ TimingPath TimingReporter::trace_setup_path(const tatum::SetupTimingAnalyzer& se
     TimingPath path;
     path.launch_domain = sink_tag.launch_clock_domain();
     path.capture_domain = sink_tag.capture_clock_domain();
+    path.type = TimingPathType::SETUP;
 
     //Trace the data launch path
     NodeId curr_node = sink_node;

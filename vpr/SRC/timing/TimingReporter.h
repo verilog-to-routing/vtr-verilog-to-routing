@@ -28,6 +28,12 @@ class TimingPathElem {
         tatum::EdgeId incomming_edge;
 };
 
+enum class TimingPathType {
+    SETUP,
+    HOLD,
+    UNKOWN
+};
+
 class TimingPath {
     public:
         tatum::DomainId launch_domain;
@@ -46,6 +52,7 @@ class TimingPath {
         std::vector<TimingPathElem> data_launch;
         std::vector<TimingPathElem> clock_capture;
         tatum::TimingTag slack_tag;
+        TimingPathType type;
 };
 
 class TimingGraphNameResolver {
@@ -72,8 +79,11 @@ class TimingReporter {
     public:
         void report_timing_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=100) const;
         void report_timing_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=100) const;
+
+        //TODO: implement report_timing_hold
     private:
-        void report_path_setup(std::ostream& os, const TimingPath& path) const;
+        void report_timing(std::ostream& os, const std::vector<TimingPath>& paths, size_t npaths) const;
+        void report_path(std::ostream& os, const TimingPath& path) const;
         void print_path_line(std::ostream& os, std::string point, tatum::Time incr, tatum::Time path) const;
         void print_path_line(std::ostream& os, std::string point, tatum::Time path) const;
         void print_path_line(std::ostream& os, std::string point, std::string incr, std::string path) const;
