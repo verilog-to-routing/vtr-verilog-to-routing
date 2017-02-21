@@ -137,9 +137,9 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
              */
 
             VprTimingGraphNameResolver name_resolver;
-            TimingReporter timing_reporter(name_resolver, g_timing_graph, g_timing_constraints);
+            TimingReporter timing_reporter(name_resolver, *g_timing_graph, *g_timing_constraints);
 
-            timing_reporter.report_timing_setup("timing.rpt", timing_info->setup_analyzer());
+            timing_reporter.report_timing_setup("timing.rpt", *timing_info->setup_analyzer());
 		}
 	}
 
