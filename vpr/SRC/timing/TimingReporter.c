@@ -121,7 +121,10 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
                 float input_constraint = timing_constraints_->input_constraint(path_elem.node, timing_path.capture_domain);
                 if(!std::isnan(input_constraint)) {
                     path += Time(input_constraint);
+
                     print_path_line(os, "input external delay", Time(input_constraint), path);
+
+                    prev_path = path;
                 }
             }
 
