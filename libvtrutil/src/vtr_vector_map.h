@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "vtr_assert.h"
+#include "vtr_sentinels.h"
 
 namespace vtr {
 
@@ -22,7 +23,7 @@ namespace vtr {
 //insert() takes both the key and value as seperate arguments and has no return value.
 //
 //Additionally, vector_map will silently create values for 'gaps' in the index range (i.e.
-//those elements are default constructed).
+//those elements are initialized with Sentinel::INVALID()).
 //
 //If you need a fully featured std::map like container without the above differences see 
 //vtr::linear_map.
@@ -32,9 +33,9 @@ namespace vtr {
 //where max_key is the largest key that has been inserted.
 //
 //As with a std::vector, it is the caller's responsibility to ensure there is sufficient space 
-//when a given index/key before it is accessed. The exception to this are the find() and insert() 
-//methods which handle non-existing keys gracefully.
-template<typename K, typename V>
+//when a given index/key before it is accessed. The exception to this are the find(), insert() and 
+//update() methods which handle non-existing keys gracefully.
+template<typename K, typename V, typename Sentinel=DefaultSentinel<V>>
 class vector_map {
     public: //Public types
         typedef typename std::vector<V>::const_reference const_reference;
@@ -119,7 +120,7 @@ class vector_map {
         void insert(const K key, const V value) {
             if(size_t(key) >= vec_.size()) {
                 //Resize so key is in range
-                vec_.resize(size_t(key) + 1);
+                vec_.resize(size_t(key) + 1, Sentinel::INVALID());
             }
 
             //Insert the value

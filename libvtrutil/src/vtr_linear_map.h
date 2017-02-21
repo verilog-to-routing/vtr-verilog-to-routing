@@ -3,24 +3,9 @@
 #include <vector>
 #include <stdexcept>
 
+#include "vtr_sentinels.h"
+
 namespace vtr {
-
-//linear_map needs to know what the value of the sentiel
-//key is in order to operate correctly (e.g. skip invalid keys)
-//DefaultSentinel queries the INVALID static member function of 
-//the specified type to get this value
-template<class T>
-class DefaultSentinel {
-    public:
-        constexpr static T INVALID() { return T::INVALID(); }
-};
-
-//The MinusOneSentinel uses the value '-1' as the sentinel value
-template<class T>
-class MinusOneSentinel {
-    public:
-        constexpr static T INVALID() { return T(-1); }
-};
 
 //A std::map-like container which is indexed by K
 //

@@ -36,12 +36,6 @@ void AtomLookup::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
     //If either of blk_id or pb are not valid, 
     //remove any mapping
 
-    if(!blk_id) {
-        vtr::printf("Setting atom -> pb: INVALID -> %p\n", pb);
-    } else {
-        vtr::printf("Setting atom -> pb: %zu -> %p\n", size_t(blk_id), pb);
-    }
-
     if(!blk_id && pb) {
         //Remove
         atom_to_pb_.erase(pb);
@@ -69,6 +63,7 @@ void AtomLookup::set_atom_pin_pb_graph_pin(AtomPinId atom_pin, const t_pb_graph_
  * Blocks
  */
 int AtomLookup::atom_clb(const AtomBlockId blk_id) const {
+    VTR_ASSERT(blk_id);
     auto iter = atom_to_clb_.find(blk_id);
     if(iter == atom_to_clb_.end()) {
         return NO_CLUSTER;
@@ -80,14 +75,6 @@ int AtomLookup::atom_clb(const AtomBlockId blk_id) const {
 void AtomLookup::set_atom_clb(const AtomBlockId blk_id, const int clb_index) {
     VTR_ASSERT(blk_id);
 
-
-    if(!blk_id) {
-        vtr::printf("Setting atom -> clb: INVALID -> %d\n", clb_index);
-    } else {
-        vtr::printf("Setting atom -> clb: %zu -> %d\n", size_t(blk_id), clb_index);
-    }
-
-    //If both are valid store the mapping
     atom_to_clb_.update(blk_id, clb_index);
 }
 

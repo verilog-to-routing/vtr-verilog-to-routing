@@ -98,21 +98,30 @@ class AtomLookup {
 
         //Sets the bi-directional mapping between an atom netlist pin and timing graph node
         void set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node);
-    private:
-        //A linear map which uses -1 as the sentinel value
+    private: //Types
+        //A vtr::linear_map using OPEN as the sentinel key
         template<class K, class V>
-        using linear_map_int = vtr::linear_map<K,V,vtr::MinusOneSentinel<K>>;
+        using linear_map_clb_net = vtr::linear_map<K,V,vtr::CustomSentinel<K,OPEN>>;
+
+        //A vtr::linear_map using -1 as the sentinel key
+        template<class K, class V>
+        using linear_map_classic_tnode = vtr::linear_map<K,V,vtr::MinusOneSentinel<K>>;
+
+        //A vtr::vector_map using NO_CLUSTER as the sentinel value
+        template<class K, class V>
+        using vector_map_clb = vtr::vector_map<K,V,vtr::CustomSentinel<V,NO_CLUSTER>>;
+
+    private:
 
         vtr::bimap<AtomBlockId,const t_pb*, vtr::linear_map, std::unordered_map> atom_to_pb_;
 
         vtr::vector_map<AtomPinId,const t_pb_graph_pin*> atom_pin_to_pb_graph_pin_;
 
-        //vtr::vector_map<AtomBlockId,int> atom_to_clb_;
-        std::vector<int> atom_to_clb_;
+        vector_map_clb<AtomBlockId,int> atom_to_clb_;
 
-        vtr::bimap<AtomNetId,int, vtr::linear_map, linear_map_int> atom_net_to_clb_net_;
+        vtr::bimap<AtomNetId,int, vtr::linear_map, linear_map_clb_net> atom_net_to_clb_net_;
 
-        vtr::bimap<AtomPinId,int,vtr::linear_map,linear_map_int> atom_pin_to_classic_tnode_;
+        vtr::bimap<AtomPinId,int,vtr::linear_map,linear_map_classic_tnode> atom_pin_to_classic_tnode_;
 
         vtr::linear_bimap<AtomPinId,tatum::NodeId> pin_tnode_;
 };
