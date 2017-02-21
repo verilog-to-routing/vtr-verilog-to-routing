@@ -22,43 +22,43 @@ using tatum::DomainId;
 TimingReporter::TimingReporter(const TimingGraphNameResolver& name_resolver,
                                std::shared_ptr<const tatum::TimingGraph> timing_graph, 
                                std::shared_ptr<const tatum::TimingConstraints> timing_constraints, 
-                               std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer,
                                float unit_scale,
                                size_t precision)
     : name_resolver_(name_resolver)
     , timing_graph_(timing_graph)
     , timing_constraints_(timing_constraints)
-    , setup_analyzer_(setup_analyzer)
     , unit_scale_(unit_scale)
     , precision_(precision) {
     //pass
 }
 
-void TimingReporter::report_timing(std::string filename, 
-                                   size_t npaths) const {
+void TimingReporter::report_timing_setup(std::string filename, 
+                                         std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer,
+                                         size_t npaths) const {
     std::ofstream os(filename);
-    report_timing(os, npaths);
+    report_timing_setup(os, setup_analyzer, npaths);
 }
 
-void TimingReporter::report_timing(std::ostream& os, 
-                                   size_t npaths) const {
+void TimingReporter::report_timing_setup(std::ostream& os, 
+                                         std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer,
+                                         size_t npaths) const {
     os << "#Timing report of worst " << npaths << " path(s)\n";
     os << "# Unit scale: " << std::setprecision(0) << std::scientific << unit_scale_ << " seconds\n";
     os << "# Output precision: " << precision_ << "\n";
     os << "\n";
 
-    auto paths = collect_worst_paths(npaths);
+    auto paths = collect_worst_setup_paths(setup_analyzer, npaths);
 
     size_t i = 0;
     for(const auto& path : paths) {
         os << "#Path " << ++i << "\n";
-        report_path(os, path);
+        report_path_setup(os, path);
         os << "\n";
     }
 
     os << "#End of timing report\n";
 }
-void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path) const {
+void TimingReporter::report_path_setup(std::ostream& os, const TimingPath& timing_path) const {
     std::string divider = "--------------------------------------------------------------------------------";
 
     os << "Startpoint: " << name_resolver_.node_name(timing_path.startpoint()) << " (" << name_resolver_.node_block_type_name(timing_path.startpoint()) << ")\n";
@@ -234,7 +234,7 @@ void TimingReporter::print_path_line(std::ostream& os, std::string point, std::s
     os << "\n";
 }
 
-std::vector<TimingPath> TimingReporter::collect_worst_paths(size_t npaths) const {
+std::vector<TimingPath> TimingReporter::collect_worst_setup_paths(std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer, size_t npaths) const {
     std::vector<TimingPath> paths;
 
     //Sort the sinks by slack
@@ -242,7 +242,7 @@ std::vector<TimingPath> TimingReporter::collect_worst_paths(size_t npaths) const
 
     //Add the slacks of all sink
     for(NodeId node : timing_graph_->logical_outputs()) {
-        for(tatum::TimingTag tag : setup_analyzer_->setup_slacks(node)) {
+        for(tatum::TimingTag tag : setup_analyzer->setup_slacks(node)) {
             tags_and_sinks.emplace(tag,node);
         }
     }
@@ -255,7 +255,7 @@ std::vector<TimingPath> TimingReporter::collect_worst_paths(size_t npaths) const
         tatum::TimingTag sink_tag;
         std::tie(sink_tag, sink_node) = kv;
 
-        TimingPath path = trace_path(sink_tag, sink_node); 
+        TimingPath path = trace_setup_path(setup_analyzer, sink_tag, sink_node); 
 
         paths.push_back(path);
 
@@ -265,7 +265,9 @@ std::vector<TimingPath> TimingReporter::collect_worst_paths(size_t npaths) const
     return paths;
 }
 
-TimingPath TimingReporter::trace_path(const tatum::TimingTag& sink_tag, const NodeId sink_node) const {
+TimingPath TimingReporter::trace_setup_path(std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer, 
+                                            const tatum::TimingTag& sink_tag, 
+                                            const NodeId sink_node) const {
     VTR_ASSERT(timing_graph_->node_type(sink_node) == tatum::NodeType::SINK);
     VTR_ASSERT(sink_tag.type() == tatum::TagType::SLACK);
 
@@ -280,14 +282,14 @@ TimingPath TimingReporter::trace_path(const tatum::TimingTag& sink_tag, const No
 
         if(curr_node == sink_node) {
             //Record the slack at the sink node
-            auto slack_tags = setup_analyzer_->setup_slacks(curr_node);
+            auto slack_tags = setup_analyzer->setup_slacks(curr_node);
             auto iter = find_tag(slack_tags, path.launch_domain, path.capture_domain);
             VTR_ASSERT(iter != slack_tags.end());
 
             path.slack_tag = *iter;
         }
 
-        auto data_tags = setup_analyzer_->setup_tags(curr_node, tatum::TagType::DATA_ARRIVAL);
+        auto data_tags = setup_analyzer->setup_tags(curr_node, tatum::TagType::DATA_ARRIVAL);
 
         //First try to find the exact tag match
         auto iter = find_tag(data_tags, path.launch_domain, path.capture_domain);
@@ -318,7 +320,7 @@ TimingPath TimingReporter::trace_path(const tatum::TimingTag& sink_tag, const No
         VTR_ASSERT(timing_graph_->node_type(curr_node) == tatum::NodeType::CPIN);
 
         while(curr_node) {
-            auto launch_tags = setup_analyzer_->setup_tags(curr_node, tatum::TagType::CLOCK_LAUNCH);
+            auto launch_tags = setup_analyzer->setup_tags(curr_node, tatum::TagType::CLOCK_LAUNCH);
             auto iter = find_tag(launch_tags, path.launch_domain, path.capture_domain);
             VTR_ASSERT(iter != launch_tags.end());
 
@@ -338,7 +340,7 @@ TimingPath TimingReporter::trace_path(const tatum::TimingTag& sink_tag, const No
         //From the primary input launch tag
         VTR_ASSERT(path.data_launch.size() > 0);
         tatum::NodeId launch_node = path.data_launch[0].node;
-        auto clock_launch_tags = setup_analyzer_->setup_tags(launch_node, tatum::TagType::CLOCK_LAUNCH);
+        auto clock_launch_tags = setup_analyzer->setup_tags(launch_node, tatum::TagType::CLOCK_LAUNCH);
         //First try to find the exact tag match
         auto iter = find_tag(clock_launch_tags, path.launch_domain, path.capture_domain);
         if(iter == clock_launch_tags.end()) {
@@ -359,7 +361,7 @@ TimingPath TimingReporter::trace_path(const tatum::TimingTag& sink_tag, const No
 
         if(curr_node == sink_node) {
             //Record the required time
-            auto required_tags = setup_analyzer_->setup_tags(curr_node, tatum::TagType::DATA_REQUIRED);
+            auto required_tags = setup_analyzer->setup_tags(curr_node, tatum::TagType::DATA_REQUIRED);
             auto iter = find_tag(required_tags, path.launch_domain, path.capture_domain);
             VTR_ASSERT(iter != required_tags.end());
             path.clock_capture.emplace_back(*iter, curr_node, EdgeId::INVALID());
@@ -367,7 +369,7 @@ TimingPath TimingReporter::trace_path(const tatum::TimingTag& sink_tag, const No
 
 
         //Record the clock capture tag
-        auto capture_tags = setup_analyzer_->setup_tags(curr_node, tatum::TagType::CLOCK_CAPTURE);
+        auto capture_tags = setup_analyzer->setup_tags(curr_node, tatum::TagType::CLOCK_CAPTURE);
         auto iter = find_tag(capture_tags, path.launch_domain, path.capture_domain);
         VTR_ASSERT(iter != capture_tags.end());
 

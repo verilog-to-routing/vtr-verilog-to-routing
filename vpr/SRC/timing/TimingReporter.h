@@ -67,22 +67,20 @@ class TimingReporter {
         TimingReporter(const TimingGraphNameResolver& name_resolver,
                        std::shared_ptr<const tatum::TimingGraph> timing_graph, 
                        std::shared_ptr<const tatum::TimingConstraints> timing_constraints, 
-                       std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer,
                        float unit_scale=1e-9,
                        size_t precision=3);
     public:
-        void report_timing(std::string filename, size_t npaths=100) const;
-
-        void report_timing(std::ostream& os, size_t npaths=100) const;
+        void report_timing_setup(std::string filename, std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer, size_t npaths=100) const;
+        void report_timing_setup(std::ostream& os, std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer, size_t npaths=100) const;
     private:
-        void report_path(std::ostream& os, const TimingPath& path) const;
+        void report_path_setup(std::ostream& os, const TimingPath& path) const;
         void print_path_line(std::ostream& os, std::string point, tatum::Time incr, tatum::Time path) const;
         void print_path_line(std::ostream& os, std::string point, tatum::Time path) const;
         void print_path_line(std::ostream& os, std::string point, std::string incr, std::string path) const;
 
-        std::vector<TimingPath> collect_worst_paths(size_t npaths) const;
+        std::vector<TimingPath> collect_worst_setup_paths(std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer, size_t npaths) const;
 
-        TimingPath trace_path(const tatum::TimingTag& sink_tag, const tatum::NodeId sink_node) const;
+        TimingPath trace_setup_path(std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer, const tatum::TimingTag& sink_tag, const tatum::NodeId sink_node) const;
 
         float convert_to_printable_units(float) const;
 
@@ -92,7 +90,6 @@ class TimingReporter {
         const TimingGraphNameResolver& name_resolver_;
         std::shared_ptr<const tatum::TimingGraph> timing_graph_;
         std::shared_ptr<const tatum::TimingConstraints> timing_constraints_;
-        std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer_;
         float unit_scale_;
         size_t precision_;
 };
