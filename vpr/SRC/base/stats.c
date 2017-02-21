@@ -136,7 +136,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
              *                      *timing_info->setup_analyzer());
              */
 
-            TimingReporter timing_reporter(g_atom_nl, g_atom_lookup, g_timing_graph, g_timing_constraints, timing_info->setup_analyzer());
+            TimingReporter timing_reporter(VprTimingGraphNameResolver(), g_timing_graph, g_timing_constraints, timing_info->setup_analyzer());
 
             timing_reporter.report_timing("timing.rpt");
 		}

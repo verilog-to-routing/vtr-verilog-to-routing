@@ -12,20 +12,20 @@
 #include "timing_util.h"
 #include "sta_util.hpp"
 
+#include "globals.h"
+
 using tatum::Time;
 using tatum::EdgeId;
 using tatum::NodeId;
 using tatum::DomainId;
 
-TimingReporter::TimingReporter(const AtomNetlist& netlist,
-                               const AtomLookup& netlist_lookup,
+TimingReporter::TimingReporter(const TimingGraphNameResolver& name_resolver,
                                std::shared_ptr<const tatum::TimingGraph> timing_graph, 
                                std::shared_ptr<const tatum::TimingConstraints> timing_constraints, 
                                std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer,
                                float unit_scale,
                                size_t precision)
-    : netlist_(netlist)
-    , netlist_lookup_(netlist_lookup)
+    : name_resolver_(name_resolver)
     , timing_graph_(timing_graph)
     , timing_constraints_(timing_constraints)
     , setup_analyzer_(setup_analyzer)
@@ -61,16 +61,8 @@ void TimingReporter::report_timing(std::ostream& os,
 void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path) const {
     std::string divider = "--------------------------------------------------------------------------------";
 
-    AtomPinId startpin = netlist_lookup_.tnode_atom_pin(timing_path.startpoint());
-    AtomPinId endpin = netlist_lookup_.tnode_atom_pin(timing_path.endpoint());
-
-    AtomBlockId startblk = netlist_.pin_block(startpin);
-    AtomBlockId endblk = netlist_.pin_block(endpin);
-
-
-
-    os << "Startpoint: " << netlist_.pin_name(startpin) << " (" << netlist_.block_model(startblk)->name << ")\n";
-    os << "Endpoint  : " << netlist_.pin_name(endpin) << " (" << netlist_.block_model(endblk)->name << ")\n";
+    os << "Startpoint: " << name_resolver_.node_name(timing_path.startpoint()) << " (" << name_resolver_.node_block_type_name(timing_path.startpoint()) << ")\n";
+    os << "Endpoint  : " << name_resolver_.node_name(timing_path.endpoint()) << " (" << name_resolver_.node_block_type_name(timing_path.endpoint()) << ")\n";
     os << "Path Type : max [setup]" << "\n";
     os << "\n";
     print_path_line(os, "Point", " Incr", " Path");
@@ -83,9 +75,6 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
 
         //Clock
         for(TimingPathElem path_elem : timing_path.clock_launch) {
-            AtomPinId pin = netlist_lookup_.tnode_atom_pin(path_elem.node);
-            AtomBlockId blk = netlist_.pin_block(pin);
-
             std::string point;
             if(!path_elem.tag.origin_node() && path_elem.tag.type() == tatum::TagType::CLOCK_LAUNCH) {
                 Time latency = Time(timing_constraints_->source_latency(timing_path.launch_domain));
@@ -97,7 +86,7 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
 
                 point = "clock source latency";
             } else {
-                point = netlist_.pin_name(pin) + " (" + netlist_.block_model(blk)->name + ")";
+                point = name_resolver_.node_name(path_elem.node) + " (" + name_resolver_.node_block_type_name(path_elem.node) + ")";
             }
             path = path_elem.tag.time();
             Time incr = path - prev_path;
@@ -110,9 +99,6 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
         //Data
         for(size_t ielem = 0; ielem < timing_path.data_launch.size(); ++ielem) {
             const TimingPathElem& path_elem = timing_path.data_launch[ielem];
-
-            AtomPinId pin = netlist_lookup_.tnode_atom_pin(path_elem.node);
-            AtomBlockId blk = netlist_.pin_block(pin);
 
             if(ielem == 0) {
                 //Start
@@ -128,7 +114,7 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
                 }
             }
 
-            std::string point = netlist_.pin_name(pin) + " (" + netlist_.block_model(blk)->name + ")";
+            std::string point = name_resolver_.node_name(path_elem.node) + " (" + name_resolver_.node_block_type_name(path_elem.node) + ")";
             path = path_elem.tag.time();
             Time incr = path - prev_path;
             if(path_elem.incomming_edge 
@@ -157,9 +143,6 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
 
         for(size_t ielem = 0; ielem < timing_path.clock_capture.size(); ++ielem) {
             const TimingPathElem& path_elem = timing_path.clock_capture[ielem];
-
-            AtomPinId pin = netlist_lookup_.tnode_atom_pin(path_elem.node);
-            AtomBlockId blk = netlist_.pin_block(pin);
 
             if(ielem == 0) {
                 //Start
@@ -209,7 +192,7 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
                     point = "cell setup time";
                 } else {
                     //Regular node
-                    point = netlist_.pin_name(pin) + " (" + netlist_.block_model(blk)->name + ")";
+                    point = name_resolver_.node_name(path_elem.node) + " (" + name_resolver_.node_block_type_name(path_elem.node) + ")";
                 }
 
                 path = path_elem.tag.time();
@@ -414,4 +397,16 @@ std::string TimingReporter::to_printable_string(Time val) const {
     ss << std::fixed << std::setprecision(precision_) << convert_to_printable_units(val.value());
 
     return ss.str();
+}
+
+
+std::string VprTimingGraphNameResolver::node_name(const tatum::NodeId node) const {
+    AtomPinId pin = g_atom_lookup.tnode_atom_pin(node);
+    return g_atom_nl.pin_name(pin);
+}
+
+std::string VprTimingGraphNameResolver::node_block_type_name(const tatum::NodeId node) const {
+    AtomPinId pin = g_atom_lookup.tnode_atom_pin(node);
+    AtomBlockId blk = g_atom_nl.pin_block(pin);
+    return g_atom_nl.block_model(blk)->name;
 }

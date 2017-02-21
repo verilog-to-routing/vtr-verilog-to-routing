@@ -2,6 +2,7 @@
 #define VPR_TIMING_REPORTER_H
 #include <iosfwd>
 #include <vector>
+#include <string>
 
 #include "vtr_assert.h"
 
@@ -47,22 +48,32 @@ class TimingPath {
         tatum::TimingTag slack_tag;
 };
 
+class TimingGraphNameResolver {
+    public:
+        virtual ~TimingGraphNameResolver() = default;
+
+        virtual std::string node_name(tatum::NodeId node) const = 0;
+        virtual std::string node_block_type_name(tatum::NodeId node) const = 0;
+};
+
+class VprTimingGraphNameResolver : public TimingGraphNameResolver {
+    public:
+        std::string node_name(tatum::NodeId node) const override;
+        std::string node_block_type_name(tatum::NodeId node) const override;
+};
 
 class TimingReporter {
     public:
-        TimingReporter(const AtomNetlist& netist,
-                       const AtomLookup& netlist_lookup,
+        TimingReporter(const TimingGraphNameResolver& name_resolver,
                        std::shared_ptr<const tatum::TimingGraph> timing_graph, 
                        std::shared_ptr<const tatum::TimingConstraints> timing_constraints, 
                        std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer,
                        float unit_scale=1e-9,
                        size_t precision=3);
     public:
+        void report_timing(std::string filename, size_t npaths=100) const;
 
-        void report_timing(std::string filename, size_t npaths=10000) const;
-
-        void report_timing(std::ostream& os, size_t npaths=10) const;
-
+        void report_timing(std::ostream& os, size_t npaths=100) const;
     private:
         void report_path(std::ostream& os, const TimingPath& path) const;
         void print_path_line(std::ostream& os, std::string point, tatum::Time incr, tatum::Time path) const;
@@ -78,8 +89,7 @@ class TimingReporter {
         std::string to_printable_string(tatum::Time val) const;
 
     private:
-        const AtomNetlist& netlist_;
-        const AtomLookup& netlist_lookup_;
+        const TimingGraphNameResolver& name_resolver_;
         std::shared_ptr<const tatum::TimingGraph> timing_graph_;
         std::shared_ptr<const tatum::TimingConstraints> timing_constraints_;
         std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer_;
