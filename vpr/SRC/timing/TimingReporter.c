@@ -49,10 +49,14 @@ void TimingReporter::report_timing(std::ostream& os,
 
     auto paths = collect_worst_paths(npaths);
 
+    size_t i = 0;
     for(const auto& path : paths) {
+        os << "#Path " << ++i << "\n";
         report_path(os, path);
         os << "\n";
     }
+
+    os << "#End of timing report\n";
 }
 void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path) const {
     std::string divider = "--------------------------------------------------------------------------------";
@@ -60,11 +64,14 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
     AtomPinId startpin = netlist_lookup_.tnode_atom_pin(timing_path.startpoint());
     AtomPinId endpin = netlist_lookup_.tnode_atom_pin(timing_path.endpoint());
 
+    AtomBlockId startblk = netlist_.pin_block(startpin);
+    AtomBlockId endblk = netlist_.pin_block(endpin);
 
 
-    os << "Startpoint: " << netlist_.pin_name(startpin) << "\n";
-    os << "Endpoint  : " << netlist_.pin_name(endpin) << "\n";
-    os << "Path Type : max (setup)" << "\n";
+
+    os << "Startpoint: " << netlist_.pin_name(startpin) << " (" << netlist_.block_model(startblk)->name << ")\n";
+    os << "Endpoint  : " << netlist_.pin_name(endpin) << " (" << netlist_.block_model(endblk)->name << ")\n";
+    os << "Path Type : max [setup]" << "\n";
     os << "\n";
     print_path_line(os, "Point", " Incr", " Path");
     os << divider << "\n";
