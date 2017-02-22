@@ -725,6 +725,12 @@ bool TimingGraph::validate_structure() const {
     return true;
 }
 
+//Returns sets of nodes involved in combinational loops
+std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg) {
+    constexpr size_t MIN_LOOP_SCC_SIZE = 2; //Any SCC of size >= 2 is a loop in the timing graph
+    return identify_strongly_connected_components(tg, MIN_LOOP_SCC_SIZE);
+}
+
 //Stream output for NodeType
 std::ostream& operator<<(std::ostream& os, const NodeType type) {
     if      (type == NodeType::SOURCE)              os << "SOURCE";

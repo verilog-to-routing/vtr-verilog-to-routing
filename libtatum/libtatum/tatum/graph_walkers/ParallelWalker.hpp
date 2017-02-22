@@ -1,11 +1,8 @@
 #pragma once
 
+//ParallelWalker is an alias for ParallelLevelizedCilkWalker 
+#include "tatum/graph_walkers_fwd.hpp"
+
+
+//Include the def'n of ParallelLevelizedCilkWalker
 #include "ParallelLevelizedCilkWalker.hpp"
-
-namespace tatum {
-
-///The default parallel graph walker
-template<class Visitor, class DelayCalc>
-using ParallelWalker = ParallelLevelizedCilkWalker<Visitor, DelayCalc>;
-
-} //namepsace

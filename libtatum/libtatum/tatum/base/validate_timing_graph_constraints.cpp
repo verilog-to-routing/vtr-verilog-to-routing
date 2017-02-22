@@ -3,7 +3,6 @@
 #include "tatum/TimingConstraints.hpp"
 
 #include "tatum/util/tatum_error.hpp"
-#include "tatum/base/loop_detect.hpp"
 
 namespace tatum {
 
