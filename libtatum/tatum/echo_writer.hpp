@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <iostream>
+#include <fstream>
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraintsFwd.hpp"
 #include "tatum/timing_analyzers.hpp"

@@ -222,15 +222,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
                     float clock_constraint = ops_.clock_constraint(tc, launch_domain_id, capture_domain_id);
                     TATUM_ASSERT(!isnan(clock_constraint));
 
-                    //An output constraint means there is output_constraint delay outside the chip,
-                    //as a result signals need to reach the primary-output at least output_constraint
-                    //before the capture clock.
-                    //
-                    //Hence we subtract the output constraint from the target clock constraint
-                    float output_constraint = -tc.output_constraint(node_id, capture_domain_id);
-                    TATUM_ASSERT(!isnan(output_constraint));
-
-                    TimingTag constraint_tag = TimingTag(Time(capture_source_latency) + Time(clock_constraint) + Time(output_constraint), 
+                    TimingTag constraint_tag = TimingTag(Time(capture_source_latency) + Time(clock_constraint),
                                                          launch_domain_id,
                                                          capture_domain_id, 
                                                          NodeId::INVALID(), //Origin
@@ -279,8 +271,19 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
                                                                      node_data_arr_tag.launch_clock_domain(), 
                                                                      node_clock_tag.capture_clock_domain());
 
+                    //An output constraint means there is output_constraint delay outside the chip,
+                    //as a result signals need to reach the primary-output at least output_constraint
+                    //before the capture clock.
+                    //
+                    //Hence we subtract the output constraint from the target clock constraint
+                    float output_constraint = -tc.output_constraint(node_id, 
+                                                                    node_clock_tag.capture_clock_domain());
+                    if(isnan(output_constraint)) {
+                        output_constraint = 0.;
+                    }
+
                     //Update the required time. This will keep the most restrictive constraint.
-                    TimingTag node_data_req_tag(node_clock_tag.time() + Time(clock_uncertainty), 
+                    TimingTag node_data_req_tag(node_clock_tag.time() + Time(clock_uncertainty) + Time(output_constraint), 
                                                 node_data_arr_tag.launch_clock_domain(), 
                                                 node_clock_tag.capture_clock_domain(), 
                                                 NodeId::INVALID(), //Origin
