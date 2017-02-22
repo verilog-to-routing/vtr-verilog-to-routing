@@ -21,7 +21,7 @@
 #include "tatum/delay_calc/FixedDelayCalculator.hpp"
 
 #include "tatum/base/sta_util.hpp"
-#include "tatum/base/echo_writer.hpp"
+#include "tatum/echo_writer.hpp"
 
 #include "golden_reference.hpp"
 #include "echo_loader.hpp"

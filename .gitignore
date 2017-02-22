@@ -3,17 +3,9 @@
 #
 
 #Executables
-sta
-sta_test
 
 #Generated files
 build*/
-*.echo
-*.blif
-*.xml
-*.constraint
-*.partition
-*.partition_regex
 core
 massif.out*
 *.log
@@ -28,25 +20,7 @@ gmon.out
 callgrind*
 
 #ctags
-tags
-
-#
-# VIM related files
-#
-*.s[a-w][a-z]
-*.un~
-Session.vim
-.netrwhist
-*~
-
-#
-# VPR temporary files
-#
-*.net
-*.place
-*.route
-*.echo
-
+./tags
 
 #
 # C++ related files
