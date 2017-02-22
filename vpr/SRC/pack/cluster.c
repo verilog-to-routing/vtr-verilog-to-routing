@@ -426,9 +426,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack* slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, expected_lowest_cost_pb_gnode);
         do_timing_analysis(slacks, timing_inf, true, true);
+        print_timing_graph(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH));
 
         auto cpds = timing_info->critical_paths();
         auto critical_path = timing_info->least_slack_critical_path();
+
         float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
         if(cpd_diff_ns > 0.01) {
             print_classic_cpds();
