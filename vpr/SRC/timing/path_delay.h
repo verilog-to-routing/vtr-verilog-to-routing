@@ -54,6 +54,8 @@ void print_criticality(t_slack * slacks, const char *fname);
 
 void print_net_delay(float **net_delay, const char *fname);
 
+void print_classic_cpds();
+
 #ifdef PATH_COUNTING
 void print_path_criticality(float ** path_criticality, const char *fname);
 #else

@@ -323,6 +323,11 @@ std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& t
     return fanouts;
 }
 
+void print_tatum_cpds(std::vector<PathInfo> cpds) {
+    for(auto path : cpds) {
+        vtr::printf("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain), size_t(path.capture_domain), path.slack, path.path_delay);
+    }
+}
 
 /*
  * Slack and criticality calculation utilities

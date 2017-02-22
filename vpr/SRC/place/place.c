@@ -415,6 +415,9 @@ void try_place(struct s_placer_opts placer_opts,
 
         float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
         if(cpd_diff_ns > ERROR_TOL) {
+            print_classic_cpds();
+            print_tatum_cpds(timing_info->critical_paths());
+
             vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
         }
 #endif
@@ -645,6 +648,9 @@ void try_place(struct s_placer_opts placer_opts,
         if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
             float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
             if(cpd_diff_ns > ERROR_TOL) {
+                print_classic_cpds();
+                print_tatum_cpds(timing_info->critical_paths());
+
                 vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
             }
         }
@@ -782,6 +788,9 @@ void try_place(struct s_placer_opts placer_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
         float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
         if(cpd_diff_ns > ERROR_TOL) {
+            print_classic_cpds();
+            print_tatum_cpds(timing_info->critical_paths());
+
             vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
         }
 #endif

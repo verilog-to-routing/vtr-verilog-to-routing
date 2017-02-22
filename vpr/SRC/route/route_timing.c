@@ -241,6 +241,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
                 float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
                 if(cpd_diff_ns > 0.01) {
+                    print_classic_cpds();
+                    print_tatum_cpds(timing_info.critical_paths());
+
                     vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
                 }
 #endif
@@ -251,6 +254,16 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				vtr::printf_info("Critical path: %g ns\n", 1e9*critical_path.path_delay);
 			} else {
                 vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
+
+#ifdef ENABLE_CLASSIC_VPR_STA
+                float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
+                if(cpd_diff_ns > 0.01) {
+                    print_classic_cpds();
+                    print_tatum_cpds(timing_info.critical_paths());
+
+                    vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
+                }
+#endif
 			}
 
 			vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
@@ -323,6 +336,16 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 					connections_inf.set_stable_critical_path_delay(critical_path.path_delay);
 			}
             vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, 1e9*critical_path.path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
+
+#ifdef ENABLE_CLASSIC_VPR_STA
+            float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
+            if(cpd_diff_ns > 0.01) {
+                print_classic_cpds();
+                print_tatum_cpds(timing_info.critical_paths());
+
+                vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
+            }
+#endif
 		} else {
             vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 		}

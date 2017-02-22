@@ -431,6 +431,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         auto critical_path = timing_info->least_slack_critical_path();
         float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
         if(cpd_diff_ns > 0.01) {
+            print_classic_cpds();
+            print_tatum_cpds(timing_info->critical_paths());
+
             vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
         }
 

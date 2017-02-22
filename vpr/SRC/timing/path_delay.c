@@ -3907,3 +3907,14 @@ size_t num_timing_net_sinks(int inet) {
     VTR_ASSERT(f_num_timing_net_pins[inet] > 0);
     return f_num_timing_net_pins[inet] - 1;
 }
+
+void print_classic_cpds() {
+	for (int source_clock_domain = 0; source_clock_domain < g_sdc->num_constrained_clocks; source_clock_domain++) {
+		for (int sink_clock_domain = 0; sink_clock_domain < g_sdc->num_constrained_clocks; sink_clock_domain++) {
+            float least_slack = f_timing_stats->least_slack[source_clock_domain][sink_clock_domain];
+            float critical_path_delay = f_timing_stats->cpd[source_clock_domain][sink_clock_domain];
+
+            vtr::printf("Classic %d -> %d: least_slack=%g cpd=%g\n", source_clock_domain, sink_clock_domain, least_slack, critical_path_delay);
+		}
+	}
+}
