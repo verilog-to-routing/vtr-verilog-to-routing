@@ -66,7 +66,7 @@ using namespace std;
 
 #include "timing_info.h"
 #include "PreClusterDelayCalculator.h"
-#include "echo_writer.hpp"
+#include "tatum/echo_writer.hpp"
 
 #include "read_sdc.h"
 

@@ -27,8 +27,8 @@ using namespace std;
 #include "RoutingDelayCalculator.h"
 
 #include "timing_util.h"
-#include "TimingReporter.h"
-#include "sta_util.hpp"
+#include "VprTimingGraphNameResolver.h"
+#include "tatum/TimingReporter.hpp"
 
 /********************** Subroutines local to this module *********************/
 
@@ -129,15 +129,8 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
             vtr::printf("=========\n");
 			print_setup_timing_summary(*g_timing_constraints, *timing_info->setup_analyzer());
 
-            /*
-             *tatum::write_dot_file_setup("report_timing.dot", 
-             *                      *timing_info->timing_graph(), 
-             *                      RoutingDelayCalculator(g_atom_nl, g_atom_lookup, net_delay),
-             *                      *timing_info->setup_analyzer());
-             */
-
-            VprTimingGraphNameResolver name_resolver;
-            TimingReporter timing_reporter(name_resolver, *g_timing_graph, *g_timing_constraints);
+            VprTimingGraphNameResolver name_resolver(g_atom_nl, g_atom_lookup);
+            tatum::TimingReporter timing_reporter(name_resolver, *g_timing_graph, *g_timing_constraints);
 
             timing_reporter.report_timing_setup("timing.rpt", *timing_info->setup_analyzer());
 		}

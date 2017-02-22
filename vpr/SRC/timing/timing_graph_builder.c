@@ -7,7 +7,8 @@
 #include "vpr_error.h"
 #include "vpr_utils.h"
 #include "atom_netlist.h"
-#include "loop_detect.hpp"
+
+#include "tatum/TimingGraph.hpp"
 
 using tatum::TimingGraph;
 using tatum::NodeId;

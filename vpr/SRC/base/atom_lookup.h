@@ -1,5 +1,7 @@
 #ifndef ATOM_LOOKUP_H
 #define ATOM_LOOKUP_H
+#include "atom_lookup_fwd.h"
+
 #include <unordered_map>
 
 #include "vtr_bimap.h"
@@ -8,7 +10,7 @@
 
 #include "atom_netlist_fwd.h"
 #include "vpr_types.h"
-#include "timing_graph_fwd.hpp"
+#include "tatum/TimingGraphFwd.hpp"
 /*
  * The AtomLookup class describes the mapping between components in the AtomNetlist
  * and other netlists/entities (i.e. atom block <-> t_pb, atom block <-> clb)

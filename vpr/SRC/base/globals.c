@@ -5,8 +5,8 @@
 #include "netlist.h"
 #include "atom_netlist.h"
 #include "atom_lookup.h"
-#include "TimingGraph.hpp"
-#include "TimingConstraints.hpp"
+#include "tatum/TimingGraph.hpp"
+#include "tatum/TimingConstraints.hpp"
 #include <map>
 
 

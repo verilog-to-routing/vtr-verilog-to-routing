@@ -1,7 +1,7 @@
 #ifndef VRP_DOMAIN_PAIR_H
 #define VRP_DOMAIN_PAIR_H
 
-#include "timing_graph_fwd.hpp"
+#include "tatum/TimingGraphFwd.hpp"
 
 //A pair of clock domains
 struct DomainPair {

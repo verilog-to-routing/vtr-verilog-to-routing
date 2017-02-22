@@ -2,8 +2,8 @@
 #define VPR_TIMING_UTIL_H
 #include <vector>
 
-#include "timing_analyzers.hpp"
-#include "TimingConstraints.hpp"
+#include "tatum/timing_analyzers.hpp"
+#include "tatum/TimingConstraints.hpp"
 #include "histogram.h"
 #include "timing_info_fwd.h"
 #include "PathInfo.h"

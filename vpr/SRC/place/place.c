@@ -33,7 +33,7 @@ using namespace std;
 #include "PlacementDelayCalculator.h"
 #include "timing_util.h"
 #include "timing_info.h"
-#include "echo_writer.hpp"
+#include "tatum/echo_writer.hpp"
 
 /************** Types and defines local to place.c ***************************/
 

@@ -23,7 +23,7 @@ using namespace std;
 #include "slre.h"
 #include "sdc.hpp"
 
-#include "TimingConstraints.hpp"
+#include "tatum/TimingConstraints.hpp"
 
 /***************************** Summary **********************************/
 

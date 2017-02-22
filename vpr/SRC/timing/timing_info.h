@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "timing_info_fwd.h"
-#include "analyzer_factory.hpp"
+#include "tatum/analyzer_factory.hpp"
 #include "PathInfo.h"
 #include "timing_util.h"
 

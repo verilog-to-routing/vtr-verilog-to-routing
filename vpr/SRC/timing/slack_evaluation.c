@@ -1,6 +1,6 @@
 #include "slack_evaluation.h"
 
-#include "TimingGraph.hpp"
+#include "tatum/TimingGraph.hpp"
 #include "timing_util.h"
 #include "vpr_error.h"
 #include "atom_netlist.h"

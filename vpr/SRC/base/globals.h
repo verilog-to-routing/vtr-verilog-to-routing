@@ -18,8 +18,8 @@
 #include "netlist.h"
 #include "atom_netlist_fwd.h"
 #include "rr_node.h"
-#include "TimingGraph.hpp"
-#include "TimingConstraints.hpp"
+#include "tatum/TimingGraph.hpp"
+#include "tatum/TimingConstraints.hpp"
 
 /********************************************************************
  Atom Netlist Globals

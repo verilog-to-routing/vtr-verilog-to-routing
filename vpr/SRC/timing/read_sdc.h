@@ -1,8 +1,9 @@
 #ifndef READ_SDC_H
 #define READ_SDC_H
-#include "timing_constraints_fwd.hpp"
-#include "timing_graph_fwd.hpp"
 #include <memory>
+
+#include "tatum/TimingConstraintsFwd.hpp"
+#include "tatum/TimingGraphFwd.hpp"
 
 /*********************** Externally-accessible variables **************************/
 

@@ -2,8 +2,8 @@
 #define POST_CLUSTER_DELAY_CALCULATOR_H
 #include "vtr_linear_map.h"
 
-#include "Time.hpp"
-#include "TimingGraph.hpp"
+#include "tatum/Time.hpp"
+#include "tatum/TimingGraph.hpp"
 
 #include "atom_netlist.h"
 #include "vpr_utils.h"

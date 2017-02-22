@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "TimingGraph.hpp"
+#include "tatum/TimingGraphFwd.hpp"
 
 #include "atom_netlist_fwd.h"
 #include "atom_lookup.h"

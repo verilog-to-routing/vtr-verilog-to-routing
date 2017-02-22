@@ -2,7 +2,7 @@
 #define PRE_CLUSTER_DELAY_CALCULATOR_H
 #include "vtr_assert.h"
 
-#include "Time.hpp"
+#include "tatum/Time.hpp"
 
 #include "vpr_error.h"
 #include "vpr_utils.h"

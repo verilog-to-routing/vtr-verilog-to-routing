@@ -3,7 +3,7 @@
 #include <map>
 #include "atom_netlist_fwd.h"
 #include "DomainPair.h"
-#include "timing_analyzers.hpp"
+#include "tatum/timing_analyzers.hpp"
 #include "vtr_vector_map.h"
 
 class SetupSlackCrit {
