@@ -1,6 +1,8 @@
 #ifndef TATUM_ANALYZER_FACTORY_FWD_HPP
 #define TATUM_ANALYZER_FACTORY_FWD_HPP
 
+#include "graph_walkers_fwd.hpp"
+
 namespace tatum {
 
 ///Factor class to construct timing analyzers

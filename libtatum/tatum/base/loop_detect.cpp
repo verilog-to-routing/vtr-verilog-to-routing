@@ -13,8 +13,6 @@ struct NodeSccInfo {
     int low_link = -1;
 };
 
-std::vector<std::vector<tatum::NodeId>> identify_strongly_connected_components(const tatum::TimingGraph& tg, size_t min_size);
-
 void strongconnect(const tatum::TimingGraph& tg,
                    tatum::NodeId node, 
                    int& cur_index, 
@@ -25,12 +23,6 @@ void strongconnect(const tatum::TimingGraph& tg,
 
 
 
-
-//Returns sets of nodes involved in combinational loops
-std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg) {
-    constexpr size_t MIN_LOOP_SCC_SIZE = 2; //Any SCC of size >= 2 is a loop in the timing graph
-    return identify_strongly_connected_components(tg, MIN_LOOP_SCC_SIZE);
-}
 
 //Returns sets of nodes (i.e. strongly connected componenets) which exceed the specifided min_size
 std::vector<std::vector<NodeId>> identify_strongly_connected_components(const TimingGraph& tg, size_t min_size) {
