@@ -163,6 +163,7 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
         //Sanity check the arrival time calculated by this timing report (i.e. path) and the one calculated by
         //the analyzer (i.e. arr_time) agree
         if(!nearly_equal(arr_time, path)) {
+            os.flush();
             std::stringstream ss;
             ss << "Internal Error: analyzer arrival time (" << arr_time.value() << ")"
                << " differs from timing report path arrival time (" << path.value() << ")"
@@ -186,12 +187,16 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
                 TATUM_ASSERT(!path_elem.tag.origin_node());
                 TATUM_ASSERT(path_elem.tag.type() == TagType::CLOCK_CAPTURE);
 
-                Time latency = Time(timing_constraints_.source_latency(timing_path.launch_domain));
-                Time orig = path_elem.tag.time() - latency;
-                prev_path = orig;
+                Time constraint;
+                if(timing_path.type == TimingPathType::SETUP) {
+                    constraint = Time(timing_constraints_.setup_constraint(timing_path.launch_domain, timing_path.capture_domain));
+                } else {
+                    constraint = Time(timing_constraints_.hold_constraint(timing_path.launch_domain, timing_path.capture_domain));
+                }
 
                 std::string point = "clock " + timing_constraints_.clock_domain_name(timing_path.capture_domain) + " (rise edge)";
-                print_path_line(os, point, orig, orig);
+                print_path_line(os, point, constraint, constraint);
+                prev_path = constraint;
 
                 path = path_elem.tag.time();
                 Time incr = path - prev_path;
@@ -253,6 +258,7 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
 
         //Sanity check required time
         if(!nearly_equal(req_time, path)) {
+            os.flush();
             std::stringstream ss;
             ss << "Internal Error: analyzer required time (" << req_time.value() << ")"
                << " differs from report_timing path required time (" << path.value() << ")"
@@ -273,6 +279,7 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
         print_path_line(os, "slack (MET)", slack);
     }
     os << "\n";
+    os.flush();
 }
 
 void TimingReporter::print_path_line(std::ostream& os, std::string point, Time incr, Time path) const {
