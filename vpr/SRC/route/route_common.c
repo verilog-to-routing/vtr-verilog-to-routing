@@ -31,6 +31,9 @@ using namespace std;
 #include "timing_util.h"
 #include "RoutingDelayCalculator.h"
 #include "timing_info.h"
+#include "tatum/echo_writer.hpp"
+
+
 #include "path_delay.h"
  
 
@@ -371,8 +374,9 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
         //Initialize the delay calculator
         std::shared_ptr<SetupTimingInfo> timing_info;
+        std::shared_ptr<RoutingDelayCalculator> routing_delay_calc;
         if(timing_inf.timing_analysis_enabled) {
-            auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
+            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
 
             timing_info = make_setup_timing_info(routing_delay_calc);
         } else {
@@ -396,6 +400,10 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
             );
 
 		profiling::time_on_fanout_analysis();
+
+        if(timing_inf.timing_analysis_enabled) {
+            tatum::write_echo("timing.route_final.echo", *g_timing_graph, *g_timing_constraints, *routing_delay_calc, timing_info->analyzer());
+        }
 	}
 
 	free_rr_node_route_structs();
