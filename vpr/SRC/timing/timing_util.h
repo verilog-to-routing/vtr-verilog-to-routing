@@ -43,27 +43,6 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
 std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer);
 
 /*
- * Tag utilities
- */
-//For comparing the values of two timing tags
-struct TimingTagValueComp {
-    bool operator()(const tatum::TimingTag& lhs, const tatum::TimingTag& rhs) {
-        return lhs.time().value() < rhs.time().value();
-    }
-};
-
-//Return the tag from the range [first,last) which has the lowest value
-tatum::TimingTags::const_iterator find_minimum_tag(tatum::TimingTags::tag_range tags);
-
-//Return the tag from the range [first,last) which has the highest value
-tatum::TimingTags::const_iterator find_maximum_tag(tatum::TimingTags::tag_range tags);
-
-//Return the tag for the specified clock domains
-tatum::TimingTags::const_iterator find_tag(tatum::TimingTags::tag_range tags,
-                                           tatum::DomainId launch_domain, 
-                                           tatum::DomainId capture_domain);
-
-/*
  * Slack and criticality calculation utilities
  */
 

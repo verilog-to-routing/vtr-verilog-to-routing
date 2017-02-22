@@ -323,32 +323,10 @@ std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& t
     return fanouts;
 }
 
+
 /*
- * Tag utilities
+ * Slack and criticality calculation utilities
  */
-//Return the tag from the range [first,last) which has the lowest value
-tatum::TimingTags::const_iterator find_minimum_tag(tatum::TimingTags::tag_range tags) {
-
-    return std::min_element(tags.begin(), tags.end(), TimingTagValueComp()); 
-}
-
-//Return the tag from the range [first,last) which has the highest value
-tatum::TimingTags::const_iterator find_maximum_tag(tatum::TimingTags::tag_range tags) {
-
-    return std::max_element(tags.begin(), tags.end(), TimingTagValueComp()); 
-}
-
-tatum::TimingTags::const_iterator find_tag(tatum::TimingTags::tag_range tags, 
-                                           tatum::DomainId launch_domain, 
-                                           tatum::DomainId capture_domain) {
-    for(auto iter = tags.begin(); iter != tags.end(); ++iter) {
-        if(iter->launch_clock_domain() == launch_domain && iter->capture_clock_domain() == capture_domain) {
-            return iter;
-        }
-    }
-
-    return tags.end();
-}
 
 //Return the criticality of a net's pin in the CLB netlist
 float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const IntraLbPbPinLookup& pb_gpin_lookup, int inet, int ipin) {
@@ -365,10 +343,6 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, cons
 
     return clb_pin_crit;
 }
-
-/*
- * Slack and criticality calculation utilities
- */
 
 //Returns the worst (maximum) criticality of the set of slack tags specified. Requires the maximum
 //required time and worst slack for all domain pairs represent by the slack tags
