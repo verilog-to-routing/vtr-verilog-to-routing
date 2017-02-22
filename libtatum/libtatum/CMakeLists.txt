@@ -1,3 +1,5 @@
+project("libtatum")
+
 if(TATUM_ENABLE_PARALLEL_ANALYSIS)
     #
     # Determine if the compiler has Cilk Plus support
@@ -34,16 +36,11 @@ endif()
 #
 
 #Source files for the library
-file(GLOB_RECURSE LIB_TATUM_SOURCES */*.cpp)
-file(GLOB_RECURSE LIB_TATUM_HEADERS */*.hpp)
+file(GLOB_RECURSE LIB_TATUM_SOURCES *.cpp)
+file(GLOB_RECURSE LIB_TATUM_HEADERS *.hpp)
 
 #Include directories
-foreach(header ${LIB_TATUM_HEADERS})
-    get_filename_component(incl_dir ${header} DIRECTORY)
-    list(APPEND LIB_TATUM_INCLUDE_DIRS ${incl_dir})
-endforeach()
-#Remove duplicate include directories
-list(REMOVE_DUPLICATES LIB_TATUM_INCLUDE_DIRS)
+set(LIB_TATUM_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 
 #
 #

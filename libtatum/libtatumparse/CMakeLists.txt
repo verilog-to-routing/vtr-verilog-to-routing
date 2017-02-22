@@ -1,25 +1,20 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-project("tatumparse")
+project("libtatumparse")
 
 #Flex and Bison are used to generate the parser
 find_package(BISON REQUIRED 3.0)
 find_package(FLEX REQUIRED)
 
-file(GLOB_RECURSE LIB_SOURCES tatumparse*.cpp)
-file(GLOB_RECURSE LIB_HEADERS tatumparse*.hpp)
+file(GLOB_RECURSE LIB_SOURCES */tatumparse*.cpp)
+file(GLOB_RECURSE LIB_HEADERS tatumparse.hpp tatumparse/*.hpp)
 
 #Include directories
-foreach(header ${LIB_HEADERS})
-    get_filename_component(incl_dir ${header} DIRECTORY)
-    list(APPEND LIB_INCLUDE_DIRS ${incl_dir})
-endforeach()
-#Remove duplicate include directories
-list(REMOVE_DUPLICATES LIB_INCLUDE_DIRS)
+set(LIB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
 
 #Find the flex and bison input files
-file(GLOB LEXER_SOURCES tatumparse.l)
-file(GLOB PARSER_SOURCES tatumparse.y)
+file(GLOB LEXER_SOURCES */tatumparse.l)
+file(GLOB PARSER_SOURCES */tatumparse.y)
 
 #Make the flex and bison targets
 flex_target(TatumLexer ${LEXER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/tatumparse_lexer.gen.c
@@ -54,10 +49,8 @@ add_library(libtatumparse STATIC
              ${LIB_SOURCES}
              ${FLEX_TatumLexer_OUTPUTS} 
              ${BISON_TatumParser_OUTPUT_SOURCE})
-target_include_directories(libtatumparse PUBLIC ${LIB_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
+
+#Need binary dir for flex/bison generated headers
+target_include_directories(libtatumparse PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(libtatumparse PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libtatumparse PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
-
-#Create the test executable only if we are the root project
-add_executable(tatumparse_test main.cpp)
-target_link_libraries(tatumparse_test libtatumparse)
-
