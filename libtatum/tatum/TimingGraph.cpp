@@ -115,6 +115,37 @@ Container update_all_refs(const Container& values, const tatum::util::linear_map
 }
 
 
+EdgeId TimingGraph::node_clock_capture_edge(const NodeId node) const {
+
+    if(node_type(node) == NodeType::SINK) {
+        //Only sinks can have clock capture edges
+
+        //Look through the edges for the incoming clock edge
+        for(EdgeId edge : node_in_edges(node)) {
+            if(edge_type(edge) == EdgeType::PRIMITIVE_CLOCK_CAPTURE) {
+                return edge;
+            }
+        }
+    }
+
+    return EdgeId::INVALID();
+}
+
+EdgeId TimingGraph::node_clock_launch_edge(const NodeId node) const {
+
+    if(node_type(node) == NodeType::SOURCE) {
+        //Only sources can have clock capture edges
+
+        //Look through the edges for the incoming clock edge
+        for(EdgeId edge : node_in_edges(node)) {
+            if(edge_type(edge) == EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
+                return edge;
+            }
+        }
+    }
+
+    return EdgeId::INVALID();
+}
 
 
 NodeId TimingGraph::add_node(const NodeType type) {

@@ -111,11 +111,14 @@ void write_dot_file_setup(std::string filename,
             //Only draw edges to nodes in the set of nodes being printed
 
 
+            std::string color = "";
             os << "\tnode" << size_t(node_id) << " -> node" << size_t(sink_node_id);
             os << " [ label=\"" << edge_id;
             if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SINK) {
+                color = "#c45403"; //Orange-red
                 os << "\\n"<< -delay_calc.setup_time(tg, edge_id) << " (-tsu)";
             } else if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SOURCE) {
+                color = "#10c403"; //Green
                 os << "\\n" << delay_calc.max_edge_delay(tg, edge_id) << " (tcq)";
             } else {
                 os << "\\n" << delay_calc.max_edge_delay(tg, edge_id);
@@ -132,6 +135,8 @@ void write_dot_file_setup(std::string filename,
                 os << " style=\"dashed\"";
                 os << " color=\"#aaaaaa\""; //grey
                 os << " fontcolor=\"#aaaaaa\""; //grey
+            } else if (!color.empty()) {
+                os << " color=\"" + color + "\"";
             }
             os << "]";
             os << ";" <<std::endl;
