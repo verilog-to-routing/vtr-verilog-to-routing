@@ -1,5 +1,7 @@
 #ifndef TATUM_TIMING_PATH_HPP
 #define TATUM_TIMING_PATH_HPP
+#include <vector>
+
 #include "TimingPathFwd.hpp"
 
 #include "tatum/util/tatum_assert.hpp"
