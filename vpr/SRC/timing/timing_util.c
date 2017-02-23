@@ -12,14 +12,14 @@ double sec_to_nanosec(double seconds) { return 1e9*seconds; }
 
 double sec_to_mhz(double seconds) { return (1. / seconds) / 1e6; }
 
-PathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
-    PathInfo crit_path_info;
+tatum::TimingPathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
+    tatum::TimingPathInfo crit_path_info;
 
-    auto cpds = find_critical_path_delays(constraints, setup_analyzer);
+    auto cpds = tatum::find_critical_paths(*g_timing_graph, constraints, setup_analyzer);
 
     //Record the maximum critical path accross all domain pairs
     for(const auto& path_info : cpds) {
-        if(crit_path_info.path_delay < path_info.path_delay || std::isnan(crit_path_info.path_delay)) {
+        if(crit_path_info.delay() < path_info.delay() || std::isnan(crit_path_info.delay())) {
             crit_path_info = path_info;
         }
     }
@@ -27,92 +27,19 @@ PathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constr
     return crit_path_info;
 }
 
-PathInfo find_least_slack_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
-    PathInfo crit_path_info;
+tatum::TimingPathInfo find_least_slack_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
+    tatum::TimingPathInfo crit_path_info;
 
-    auto cpds = find_critical_path_delays(constraints, setup_analyzer);
+    auto cpds = tatum::find_critical_paths(*g_timing_graph, constraints, setup_analyzer);
 
     //Record the maximum critical path accross all domain pairs
     for(const auto& path_info : cpds) {
-        if(path_info.slack < crit_path_info.slack || std::isnan(crit_path_info.slack)) {
+        if(path_info.slack() < crit_path_info.slack() || std::isnan(crit_path_info.slack())) {
             crit_path_info = path_info;
         }
     }
 
     return crit_path_info;
-}
-
-std::vector<PathInfo> find_critical_path_delays(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
-    std::vector<PathInfo> cpds;
-
-    //We calculate the critical path delay (CPD) for each pair of clock domains (which are connected to each other)
-    //
-    //Intuitively, CPD is the smallest period (maximum frequency) we can run the launch clock at while not violating
-    //the constraint.
-    //
-    //We calculate CPD as:
-    //
-    //      CPD = constarint - slack
-    //
-    //If slack < 0, this will lengthen the constraint to it's feasible value (i.e. the CPD)
-    //If slack > 0, this will tighten the constraint to it's feasible value (i.e. the CPD)
-    //
-    //Using the slack to calculate CPD implicitly accounts for i/o delays, clock uncertainty, clock latency etc,
-    //as they are already included in the slack.
-
-    //To ensure we find the critical path delay, we look at all timing endpoints (i.e. logical_outputs()) and keep
-    //the largest for each domain pair
-    for(tatum::NodeId node : g_timing_graph->logical_outputs()) {
-
-        //Look at each data arrival
-        for(tatum::TimingTag slack_tag : setup_analyzer.setup_slacks(node)) {
-            float slack = slack_tag.time().value();
-            VTR_ASSERT(!std::isnan(slack));
-
-            float constraint = constraints.setup_constraint(slack_tag.launch_clock_domain(), slack_tag.capture_clock_domain());
-            VTR_ASSERT(!std::isnan(constraint));
-
-            float cpd = constraint - slack;
-            VTR_ASSERT(!std::isnan(cpd));
-
-            //Record the path info
-            PathInfo path(cpd, slack,
-                          slack_tag.origin_node(), node, 
-                          slack_tag.launch_clock_domain(), slack_tag.capture_clock_domain());
-
-            //Find any existing path for this domain pair
-            auto cmp = [&path](const PathInfo& elem) {
-                return    elem.launch_domain == path.launch_domain
-                       && elem.capture_domain == path.capture_domain;
-            };
-            auto iter = std::find_if(cpds.begin(), cpds.end(), cmp);
-
-            if(iter == cpds.end()) {
-                //New domain pair
-                cpds.push_back(path);
-            } else if(iter->path_delay < path.path_delay) {
-                //New max CPD
-                *iter = path;
-            }
-        }
-    }
-
-    //Sort the paths in a reasonable order
-    auto cmp = [&](const PathInfo& lhs, const PathInfo& rhs) {
-        const auto& lhs_launch_clock_name = constraints.clock_domain_name(lhs.launch_domain);
-        const auto& rhs_launch_clock_name = constraints.clock_domain_name(rhs.launch_domain);
-        if(lhs_launch_clock_name < rhs_launch_clock_name) {
-            //Sort by clock name first
-            return true;
-        } else if (lhs_launch_clock_name == rhs_launch_clock_name) {
-            //Then so the intra-domain pair appear first
-            return lhs.launch_domain == rhs.launch_domain; 
-        }
-        return false;
-    };
-    std::sort(cpds.begin(), cpds.end(), cmp);
-
-    return cpds;
 }
 
 float find_setup_total_negative_slack(const tatum::SetupTimingAnalyzer& setup_analyzer) {
@@ -207,46 +134,64 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
 }
 
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
-    auto crit_paths = find_critical_path_delays(constraints, setup_analyzer);
+    auto crit_paths = tatum::find_critical_paths(*g_timing_graph, constraints, setup_analyzer);
     if(constraints.clock_domains().size() == 1) {
         //Single clock
         VTR_ASSERT(crit_paths.size() == 1);
 
         //Only makes sense to tal about Fmax in a single-clock circuit
-        vtr::printf("Final critical path: %g ns,", sec_to_nanosec(crit_paths[0].path_delay));
-        vtr::printf(" Fmax: %g MHz", sec_to_mhz(crit_paths[0].path_delay));
+        vtr::printf("Final critical path: %g ns,", sec_to_nanosec(crit_paths[0].delay()));
+        vtr::printf(" Fmax: %g MHz", sec_to_mhz(crit_paths[0].delay()));
         vtr::printf("\n");
 
     } else {
         //Multi-clock
 
         //Periods per constraint
-		vtr::printf_info("Critical path delays (CPDs) per constraint:\n");
+		vtr::printf_info("Intra-domain critical path delays (CPDs):\n");
         for(const auto& path : crit_paths) {
-            if(path.launch_domain != path.capture_domain) {
-                //Indent inter-domain paths
-                vtr::printf("\t");
+            if(path.launch_domain() == path.capture_domain()) {
+                vtr::printf("  %s to %s CPD: %g ns (%g MHz)\n",
+                            constraints.clock_domain_name(path.launch_domain()).c_str(),
+                            constraints.clock_domain_name(path.capture_domain()).c_str(),
+                            sec_to_nanosec(path.delay()),
+                            sec_to_mhz(path.delay()));
             }
+        }
+        vtr::printf("\n");
 
-            vtr::printf("  %s to %s CPD: %g ns (%g MHz)\n",
-                        constraints.clock_domain_name(path.launch_domain).c_str(),
-                        constraints.clock_domain_name(path.capture_domain).c_str(),
-                        sec_to_nanosec(path.path_delay),
-                        sec_to_mhz(path.path_delay));
+		vtr::printf_info("Inter-domain critical path delays (CPDs):\n");
+        for(const auto& path : crit_paths) {
+            if(path.launch_domain() != path.capture_domain()) {
+                vtr::printf("  %s to %s CPD: %g ns (%g MHz)\n",
+                            constraints.clock_domain_name(path.launch_domain()).c_str(),
+                            constraints.clock_domain_name(path.capture_domain()).c_str(),
+                            sec_to_nanosec(path.delay()),
+                            sec_to_mhz(path.delay()));
+            }
         }
         vtr::printf("\n");
 
         //Slack per constraint
-		vtr::printf_info("Worst setup slacks per constraint:\n");
+		vtr::printf_info("Intra-domain worst setup slacks per constraint:\n");
         for(const auto& path : crit_paths) {
-            if(path.launch_domain != path.capture_domain) {
-                //Indent inter-domain paths
-                vtr::printf("\t");
+            if(path.launch_domain() == path.capture_domain()) {
+                vtr::printf("  %s to %s worst setup slack: %g ns\n",
+                            constraints.clock_domain_name(path.launch_domain()).c_str(),
+                            constraints.clock_domain_name(path.capture_domain()).c_str(),
+                            sec_to_nanosec(path.slack()));
             }
-            vtr::printf("  %s to %s worst setup slack: %g ns\n",
-                        constraints.clock_domain_name(path.launch_domain).c_str(),
-                        constraints.clock_domain_name(path.capture_domain).c_str(),
-                        sec_to_nanosec(path.slack));
+        }
+        vtr::printf("\n");
+
+		vtr::printf_info("Inter-domain worst setup slacks per constraint:\n");
+        for(const auto& path : crit_paths) {
+            if(path.launch_domain() != path.capture_domain()) {
+                vtr::printf("  %s to %s worst setup slack: %g ns\n",
+                            constraints.clock_domain_name(path.launch_domain()).c_str(),
+                            constraints.clock_domain_name(path.capture_domain()).c_str(),
+                            sec_to_nanosec(path.slack()));
+            }
         }
         vtr::printf("\n");
     }
@@ -266,14 +211,14 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
     double total_intra_domain_fanout = 0.;
     auto clock_fanouts = count_clock_fanouts(*g_timing_graph, setup_analyzer);
     for(const auto& path : crit_paths) {
-        if(path.launch_domain == path.capture_domain && !constraints.is_virtual_clock(path.launch_domain)) {
-            intra_domain_cpds.push_back(path.path_delay);
+        if(path.launch_domain() == path.capture_domain() && !constraints.is_virtual_clock(path.launch_domain())) {
+            intra_domain_cpds.push_back(path.delay());
 
-            auto iter = clock_fanouts.find(path.launch_domain);
+            auto iter = clock_fanouts.find(path.launch_domain());
             VTR_ASSERT(iter != clock_fanouts.end());
             double fanout = iter->second;
 
-            fanout_weighted_intra_domain_cpds.push_back(path.path_delay * fanout);
+            fanout_weighted_intra_domain_cpds.push_back(path.delay() * fanout);
             total_intra_domain_fanout += fanout;
         }
     }
@@ -301,18 +246,25 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
 
 std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     std::map<tatum::DomainId,size_t> fanouts;
-    for(auto node: timing_graph.logical_outputs()) {
-        for(auto tag : setup_analyzer.setup_tags(node, tatum::TagType::CLOCK_CAPTURE)) {
-            fanouts[tag.capture_clock_domain()] += 1;
+    for(tatum::NodeId node : timing_graph.nodes()) {
+
+        tatum::NodeType type = timing_graph.node_type(node);
+        if(type == tatum::NodeType::SOURCE || type == tatum::NodeType::SINK) {
+            for(auto tag : setup_analyzer.setup_tags(node, tatum::TagType::DATA_ARRIVAL)) {
+                fanouts[tag.launch_clock_domain()] += 1;
+            }
+            for(auto tag : setup_analyzer.setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
+                fanouts[tag.launch_clock_domain()] += 1;
+            }
         }
     }
 
     return fanouts;
 }
 
-void print_tatum_cpds(std::vector<PathInfo> cpds) {
+void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
     for(auto path : cpds) {
-        vtr::printf("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain), size_t(path.capture_domain), path.slack, path.path_delay);
+        vtr::printf("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), path.slack(), path.delay());
     }
 }
 

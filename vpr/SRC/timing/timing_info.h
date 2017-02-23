@@ -4,7 +4,7 @@
 
 #include "timing_info_fwd.h"
 #include "tatum/analyzer_factory.hpp"
-#include "PathInfo.h"
+#include "tatum/timing_paths.hpp"
 #include "timing_util.h"
 
 //Create a SetupTimingInfo for the given delay calculator
@@ -60,13 +60,13 @@ class SetupTimingInfo : public virtual TimingInfo {
         //Accessors
 
         //Return the critical path with the least slack
-        virtual PathInfo least_slack_critical_path() const = 0;
+        virtual tatum::TimingPathInfo least_slack_critical_path() const = 0;
 
         //Return the critical path the the longest absolute delay
-        virtual PathInfo longest_critical_path() const = 0;
+        virtual tatum::TimingPathInfo longest_critical_path() const = 0;
 
         //Return the set of critical paths between all clock domain pairs
-        virtual std::vector<PathInfo> critical_paths() const = 0;
+        virtual std::vector<tatum::TimingPathInfo> critical_paths() const = 0;
 
 
         //Return the total negative slack w.r.t. setup constraints

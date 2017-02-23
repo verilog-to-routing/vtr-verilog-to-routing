@@ -4,9 +4,9 @@
 
 #include "tatum/timing_analyzers.hpp"
 #include "tatum/TimingConstraints.hpp"
+#include "tatum/timing_paths.hpp"
 #include "histogram.h"
 #include "timing_info_fwd.h"
-#include "PathInfo.h"
 #include "DomainPair.h"
 
 #include "vpr_utils.h"
@@ -16,13 +16,10 @@ double sec_to_nanosec(double seconds);
 double sec_to_mhz(double seconds);
 
 //Returns the path delay of the longest critical timing path (i.e. across all domains)
-PathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
+tatum::TimingPathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
 
 //Returns the path delay of the least-slack critical timing path (i.e. across all domains)
-PathInfo find_least_slack_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
-
-//Returns the critical path delay between all active launch/capture clock domain pairs
-std::vector<PathInfo> find_critical_path_delays(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
+tatum::TimingPathInfo find_least_slack_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
 
 //Returns the total negative slack (setup) at all timing end-points and clock domain pairs
 float find_setup_total_negative_slack(const tatum::SetupTimingAnalyzer& setup_analyzer);
@@ -39,7 +36,7 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
 //Print a useful summary of timing information
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
 
-void print_tatum_cpds(std::vector<PathInfo> cpds);
+void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds);
 
 //Returns the a map of domain's and thier clock fanout (i.e. logical outputs at which the clock captures)
 std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer);

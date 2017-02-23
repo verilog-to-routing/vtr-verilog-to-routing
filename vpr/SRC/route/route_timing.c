@@ -91,7 +91,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns true if the routing succeeds, false otherwise.                    */
 
-    PathInfo critical_path;
+    tatum::TimingPathInfo critical_path;
 
 	// initialize and properly size the lookups for profiling fanout breakdown
 	 profiling::profiling_initialization(get_max_pins_per_net());
@@ -239,29 +239,29 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
                 critical_path = timing_info.least_slack_critical_path();
 
 #ifdef ENABLE_CLASSIC_VPR_STA
-                float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
+                float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
                 if(cpd_diff_ns > 0.01) {
                     print_classic_cpds();
                     print_tatum_cpds(timing_info.critical_paths());
 
-                    vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
+                    vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
                 }
 #endif
 
 
 
-                vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, 1e9*critical_path.path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
-				vtr::printf_info("Critical path: %g ns\n", 1e9*critical_path.path_delay);
+                vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, 1e9*critical_path.delay(), overused_ratio*num_rr_nodes, overused_ratio*100);
+				vtr::printf_info("Critical path: %g ns\n", 1e9*critical_path.delay());
 			} else {
                 vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
-                float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
+                float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
                 if(cpd_diff_ns > 0.01) {
                     print_classic_cpds();
                     print_tatum_cpds(timing_info.critical_paths());
 
-                    vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
+                    vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
                 }
 #endif
 			}
@@ -321,29 +321,29 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			// check if any connection needs to be forcibly rerouted
 			// first iteration sets up the lower bound connection delays since only timing is optimized for
 			if (itry == 1) {
-				connections_inf.set_stable_critical_path_delay(critical_path.path_delay);
+				connections_inf.set_stable_critical_path_delay(critical_path.delay());
 				connections_inf.set_lower_bound_connection_delays(net_delay);
 			} else {
 				bool stable_routing_configuration = true;
 				// only need to forcibly reroute if critical path grew significantly
-				if (connections_inf.critical_path_delay_grew_significantly(critical_path.path_delay))
+				if (connections_inf.critical_path_delay_grew_significantly(critical_path.delay()))
 					stable_routing_configuration = connections_inf.forcibly_reroute_connections(router_opts.max_criticality, 
                             timing_info,
                             pb_gpin_lookup,
                             net_delay);
 				// not stable if any connection needs to be forcibly rerouted
 				if (stable_routing_configuration)
-					connections_inf.set_stable_critical_path_delay(critical_path.path_delay);
+					connections_inf.set_stable_critical_path_delay(critical_path.delay());
 			}
-            vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, 1e9*critical_path.path_delay, overused_ratio*num_rr_nodes, overused_ratio*100);
+            vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, 1e9*critical_path.delay(), overused_ratio*num_rr_nodes, overused_ratio*100);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
-            float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.path_delay);
+            float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
             if(cpd_diff_ns > 0.01) {
                 print_classic_cpds();
                 print_tatum_cpds(timing_info.critical_paths());
 
-                vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.path_delay);
+                vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
             }
 #endif
 		} else {

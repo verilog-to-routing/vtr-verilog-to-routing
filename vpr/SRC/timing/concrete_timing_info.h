@@ -28,16 +28,16 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
 
     public:
         //Accessors
-        PathInfo least_slack_critical_path() const override {
+        tatum::TimingPathInfo least_slack_critical_path() const override {
             return find_least_slack_critical_path_delay(*timing_constraints_, *setup_analyzer_);
         }
 
-        PathInfo longest_critical_path() const override {
+        tatum::TimingPathInfo longest_critical_path() const override {
             return find_longest_critical_path_delay(*timing_constraints_, *setup_analyzer_);
         }
 
-        std::vector<PathInfo> critical_paths() const override {
-            return find_critical_path_delays(*timing_constraints_, *setup_analyzer_);
+        std::vector<tatum::TimingPathInfo> critical_paths() const override {
+            return tatum::find_critical_paths(*timing_graph_, *timing_constraints_, *setup_analyzer_);
         }
 
         float setup_total_negative_slack() const override {
@@ -195,9 +195,9 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
         //Accessors
 
         //Setup related
-        std::vector<PathInfo> critical_paths() const override { return setup_timing_.critical_paths(); }
-        PathInfo least_slack_critical_path() const override { return setup_timing_.least_slack_critical_path(); }
-        PathInfo longest_critical_path() const override { return setup_timing_.longest_critical_path(); }
+        std::vector<tatum::TimingPathInfo> critical_paths() const override { return setup_timing_.critical_paths(); }
+        tatum::TimingPathInfo least_slack_critical_path() const override { return setup_timing_.least_slack_critical_path(); }
+        tatum::TimingPathInfo longest_critical_path() const override { return setup_timing_.longest_critical_path(); }
 
         float setup_total_negative_slack() const override { return setup_timing_.setup_total_negative_slack(); }
         float setup_worst_negative_slack() const override { return setup_timing_.setup_worst_negative_slack(); }
@@ -254,9 +254,9 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
 class NoOpTimingInfo : public SetupHoldTimingInfo {
     public: //Accessors
         //Setup related
-        std::vector<PathInfo> critical_paths() const override { return std::vector<PathInfo>(); }
-        PathInfo least_slack_critical_path() const override { return PathInfo(); }
-        PathInfo longest_critical_path() const override { return PathInfo(); }
+        std::vector<tatum::TimingPathInfo> critical_paths() const override { return std::vector<tatum::TimingPathInfo>(); }
+        tatum::TimingPathInfo least_slack_critical_path() const override { return tatum::TimingPathInfo(); }
+        tatum::TimingPathInfo longest_critical_path() const override { return tatum::TimingPathInfo(); }
 
         float setup_total_negative_slack() const override { return 0.; }
         float setup_worst_negative_slack() const override { return 0.; }
