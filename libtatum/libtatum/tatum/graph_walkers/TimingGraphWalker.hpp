@@ -117,6 +117,7 @@ class TimingGraphWalker {
         ///Sub-class defined required time pre-traversal
         ///\param tg The timing graph
         ///\param tc The timing constraints
+        ///\param dc The edge delay calculator
         ///\param visitor The visitor to apply during the traversal
         virtual void do_required_pre_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, Visitor& visitor) = 0;
 

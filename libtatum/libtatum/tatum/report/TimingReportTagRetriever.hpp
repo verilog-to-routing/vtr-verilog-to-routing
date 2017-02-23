@@ -1,5 +1,7 @@
 #ifndef TATUM_TIMING_REPORT_TAG_RETRIEVER_HPP
 #define TATUM_TIMING_REPORT_TAG_RETRIEVER_HPP
+#include "tatum/timing_analyzers.hpp"
+#include "tatum/report/TimingPathFwd.hpp"
 
 namespace tatum { namespace detail {
 

@@ -152,15 +152,22 @@ class TimingTags {
 
         size_t capacity() const;
 
-        std::pair<iterator,bool> find_matching_tag(const TimingTag& tag, bool arr_must_be_valid);
+        ///Finds a timing tag in the current set which matches tag
+        ///\returns A pair of bool and iterator. 
+        //          The bool is true if it is valid for iterator to be processed.
+        //          The iterator is not equal to end(tag.type()) if a matching tag was found
+        std::pair<bool,iterator> find_matching_tag(const TimingTag& tag, bool arr_must_be_valid);
 
-        ///Finds a TimingTag in the current set that has clock domain id matching domain_id
-        ///\returns An iterator to the tag if found, or end(tag.type()) if not found
-        std::pair<iterator,bool> find_matching_tag(const TimingTag& tag);
+        ///Finds a TimingTag in the current set that matches the launch and capture clocks of tag
+        ///\returns An iterator to the tag if found, or end(type) if not found
+        iterator find_matching_tag(TagType type, DomainId launch_domain, DomainId capture_domain);
 
-        //Find a TimingTag matching the specified DATA_REQUIRED tag provided there is a valid associated
-        //DATA_ARRIVAL tag
-        std::pair<iterator,bool> find_matching_tag_with_valid_arrival(const TimingTag& tag);
+        ///Find a TimingTag matching the specified DATA_REQUIRED tag provided there is 
+        //a valid associated DATA_ARRIVAL tag
+        ///\returns A a pair of bool and iterator. The bool indicates if a valid arrival was found, 
+        ///         the iterator is the required tag matching launch and capture which has a valid 
+        //          corresponding arrival time, or end(TagType::DATA_REQUIRED)
+        std::pair<bool,iterator> find_data_required_with_valid_data_arrival(DomainId launch_domain, DomainId capture_domain);
 
 
         iterator insert(iterator iter, const TimingTag& tag);

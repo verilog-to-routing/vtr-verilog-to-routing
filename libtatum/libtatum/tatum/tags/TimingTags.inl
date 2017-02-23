@@ -153,9 +153,11 @@ inline void TimingTags::add_tag(const TimingTag& tag) {
 }
 
 inline void TimingTags::max(const Time& new_time, const NodeId origin, const TimingTag& base_tag, bool arr_must_be_valid) {
-    auto iter_bool = find_matching_tag(base_tag, arr_must_be_valid);
-    if(iter_bool.second) {
-        auto iter = iter_bool.first;
+    auto bool_iter = find_matching_tag(base_tag, arr_must_be_valid);
+
+    bool valid = bool_iter.first;
+    if(valid) {
+        auto iter = bool_iter.second;
         if(iter == end(base_tag.type())) {
             //An exact match was not found
 
@@ -169,9 +171,11 @@ inline void TimingTags::max(const Time& new_time, const NodeId origin, const Tim
 }
 
 inline void TimingTags::min(const Time& new_time, const NodeId origin, const TimingTag& base_tag, bool arr_must_be_valid) {
-    auto iter_bool = find_matching_tag(base_tag, arr_must_be_valid);
-    if(iter_bool.second) {
-        auto iter = iter_bool.first;
+    auto bool_iter = find_matching_tag(base_tag, arr_must_be_valid);
+
+    bool valid = bool_iter.first;
+    if(valid) {
+        auto iter = bool_iter.second;
         if(iter == end(base_tag.type())) {
             //An exact match was not found
 
@@ -192,72 +196,47 @@ inline void TimingTags::clear() {
     num_data_required_tags_ = 0;
 }
 
-inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag(const TimingTag& tag, bool arr_must_be_valid) {
+inline std::pair<bool,TimingTags::iterator> TimingTags::find_matching_tag(const TimingTag& tag, bool arr_must_be_valid) {
     if(arr_must_be_valid) {
-        return find_matching_tag_with_valid_arrival(tag);
+        TATUM_ASSERT(tag.type() == TagType::DATA_REQUIRED);
+        auto bool_iter = find_data_required_with_valid_data_arrival(tag.launch_clock_domain(), tag.capture_clock_domain());
+        return bool_iter;
     } else {
-        return find_matching_tag(tag);
+        auto iter = find_matching_tag(tag.type(), tag.launch_clock_domain(), tag.capture_clock_domain());
+        return {true, iter};
     }
 }
 
-inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag(const TimingTag& tag) {
+inline TimingTags::iterator TimingTags::find_matching_tag(TagType type, DomainId launch_domain, DomainId capture_domain) {
     //Linear search for matching tag
-    auto b = begin(tag.type());
-    auto e = end(tag.type());
+    auto b = begin(type);
+    auto e = end(type);
     for(auto iter = b; iter != e; ++iter) {
-        if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::DATA_ARRIVAL) {
-            //Check only the launch clock
-            if(iter->launch_clock_domain() == tag.launch_clock_domain()) {
-                TATUM_ASSERT_SAFE(iter->type() == tag.type());
-                return {iter, true};
-            }
-        } else if (tag.type() == TagType::CLOCK_CAPTURE) {
-            //Check only the capture clock
-            if(iter->capture_clock_domain() == tag.capture_clock_domain()) {
-                TATUM_ASSERT_SAFE(iter->type() == tag.type());
-                return {iter, true};
-            }
-        } else {
-            TATUM_ASSERT_SAFE(tag.type() == TagType::SLACK);
-            //Check both clocks
-            if(iter->launch_clock_domain() == tag.launch_clock_domain()
-               && iter->capture_clock_domain() == tag.capture_clock_domain()) {
-                return {iter, true};
-            }
+        bool match_launch =    !launch_domain               //Search wildcard
+                            || !iter->launch_clock_domain() //Match wildcard
+                            || launch_domain == iter->launch_clock_domain(); //Exact match
+
+        bool match_capture =   !capture_domain               //Search wildcard
+                            || !iter->capture_clock_domain() //Match wildcard
+                            || capture_domain == iter->capture_clock_domain(); //Exact match
+
+        if(match_launch && match_capture) {
+            return iter;
         }
     }
-    return {e, true};
+    return e;
 }
 
-inline std::pair<TimingTags::iterator,bool> TimingTags::find_matching_tag_with_valid_arrival(const TimingTag& tag) {
-    TATUM_ASSERT_SAFE_MSG(tag.type() == TagType::DATA_REQUIRED, "valid arrival look-up requires a DATA_REQUIRED tag");
-
-    //Linear search for matching arrival tag
-    auto arr_b = begin(TagType::DATA_ARRIVAL);
-    auto arr_e = end(TagType::DATA_ARRIVAL);
-    bool valid_arr = false;
-    for(auto iter = arr_b; iter != arr_e; ++iter) {
-        if(iter->launch_clock_domain() == tag.launch_clock_domain() && iter->time().valid()) {
-            TATUM_ASSERT_SAFE(iter->type() == TagType::DATA_ARRIVAL);
-            valid_arr = true;
-            break;
-        }
+inline std::pair<bool,TimingTags::iterator> TimingTags::find_data_required_with_valid_data_arrival(DomainId launch_domain, DomainId capture_domain) {
+    //Look for the matching arrival
+    auto arr_iter = find_matching_tag(TagType::DATA_ARRIVAL, launch_domain, DomainId::INVALID());
+    if(arr_iter == end(TagType::DATA_ARRIVAL) || !arr_iter->time().valid()) {
+        //No valid arrival
+        return {false, end(TagType::DATA_REQUIRED)};
     }
 
-    auto e = end(TagType::DATA_REQUIRED);
-    if(!valid_arr) {
-        return {e, false};
-    }
-
-    //Linear search for matching tag
-    auto b = begin(TagType::DATA_REQUIRED);
-    for(auto iter = b; iter != e; ++iter) {
-        if(iter->launch_clock_domain() == tag.launch_clock_domain() && iter->capture_clock_domain() == tag.capture_clock_domain()) {
-            TATUM_ASSERT_SAFE(iter->type() == tag.type());
-            return {iter, true};
-        }
-    }
-    return {e, true};
+    //Find the matching required
+    return {true, find_matching_tag(TagType::DATA_REQUIRED, launch_domain, capture_domain)};
 }
 
 inline size_t TimingTags::capacity() const { return capacity_; }

@@ -28,13 +28,15 @@ class TimingReporter {
     private:
         void report_timing(std::ostream& os, const std::vector<TimingPath>& paths, size_t npaths) const;
         void report_path(std::ostream& os, const TimingPath& path) const;
-        void print_path_line(std::ostream& os, std::string point, tatum::Time incr, tatum::Time path) const;
-        void print_path_line(std::ostream& os, std::string point, tatum::Time path) const;
+
+        void update_print_path(std::ostream& os, std::string point, tatum::Time path) const;
+        void update_print_path_no_incr(std::ostream& os, std::string point, tatum::Time path) const;
+        void reset_path() const;
+
+        void print_path_line_no_incr(std::ostream& os, std::string point, Time path) const;
         void print_path_line(std::ostream& os, std::string point, std::string incr, std::string path) const;
 
         std::vector<TimingPath> collect_worst_paths(const detail::TagRetriever& tag_retriever, size_t npaths) const;
-
-        TimingPath trace_path(const detail::TagRetriever& tag_retriever, const tatum::TimingTag& sink_tag, const tatum::NodeId sink_node) const;
 
         float convert_to_printable_units(float) const;
 
@@ -46,11 +48,13 @@ class TimingReporter {
         const TimingGraphNameResolver& name_resolver_;
         const TimingGraph& timing_graph_;
         const TimingConstraints& timing_constraints_;
-        float unit_scale_;
-        size_t precision_;
+        float unit_scale_ = 1e-9;
+        size_t precision_ = 3;
 
         float relative_error_tolerance_ = 1.e-5;
         float absolute_error_tolerance_ = 1e-13; //Sub pico-second
+
+        mutable Time prev_path_ = Time(0.);
 };
 
 } //namespace
