@@ -8,6 +8,7 @@
 
 #include "tatum/TimingConstraintsFwd.hpp"
 #include "tatum/TimingGraphFwd.hpp"
+#include "tatum/Time.hpp"
 
 namespace tatum {
 
@@ -18,10 +19,10 @@ namespace tatum {
 class TimingConstraints {
     public: //Types
         typedef tatum::util::linear_map<DomainId,DomainId>::const_iterator domain_iterator;
-        typedef std::map<DomainPair,float>::const_iterator clock_constraint_iterator;
-        typedef std::map<DomainPair,float>::const_iterator clock_uncertainty_iterator;
+        typedef std::map<DomainPair,Time>::const_iterator clock_constraint_iterator;
+        typedef std::map<DomainPair,Time>::const_iterator clock_uncertainty_iterator;
         typedef std::map<NodeId,IoConstraint>::const_iterator io_constraint_iterator;
-        typedef std::map<DomainId,float>::const_iterator source_latency_iterator;
+        typedef std::map<DomainId,Time>::const_iterator source_latency_iterator;
         typedef std::unordered_set<NodeId>::const_iterator constant_generator_iterator;
 
         typedef tatum::util::Range<domain_iterator> domain_range;
@@ -36,7 +37,7 @@ class TimingConstraints {
         domain_range clock_domains() const;
 
         ///\returns The name of a clock domain
-        const std::string& clock_domain_name(const DomainId id) const;
+        std::string clock_domain_name(const DomainId id) const;
 
         ///\returns The source NodeId of the specified domain
         NodeId clock_domain_source_node(const DomainId id) const;
@@ -61,27 +62,27 @@ class TimingConstraints {
         bool should_analyze(const DomainId src_domain, const DomainId sink_domain) const;
 
         ///\returns The setup (max) constraint between src_domain and sink_domain
-        float setup_constraint(const DomainId src_domain, const DomainId sink_domain) const;
+        Time setup_constraint(const DomainId src_domain, const DomainId sink_domain) const;
 
         ///\returns The hold (min) constraint between src_domain and sink_domain
-        float hold_constraint(const DomainId src_domain, const DomainId sink_domain) const;
+        Time hold_constraint(const DomainId src_domain, const DomainId sink_domain) const;
         
         ///\returns The setup clock uncertainty between src_domain and sink_domain (defaults to zero if unspecified)
-        float setup_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain) const;
+        Time setup_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain) const;
 
         ///\returns The hold clock uncertainty between src_domain and sink_domain (defaults to zero if unspecified)
-        float hold_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain) const;
+        Time hold_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain) const;
 
         ///\returns The input delay constraint on node_id
-        float input_constraint(const NodeId node_id, const DomainId domain_id) const;
+        Time input_constraint(const NodeId node_id, const DomainId domain_id) const;
 
         ///\returns The output delay constraint on node_id
-        float output_constraint(const NodeId node_id, const DomainId domain_id) const;
+        Time output_constraint(const NodeId node_id, const DomainId domain_id) const;
 
         ///\returns The external (e.g. off-chip) source latency of a particular clock domain
         //
         //Corresponds to the delay from the clock's true source to it's definition point on-chip
-        float source_latency(const DomainId domain_id) const;
+        Time source_latency(const DomainId domain_id) const;
 
         ///\returns A range of all constant generator nodes
         constant_generator_range constant_generators() const;
@@ -120,25 +121,25 @@ class TimingConstraints {
         DomainId create_clock_domain(const std::string name);
 
         ///Sets the setup constraint between src_domain and sink_domain with value constraint
-        void set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const float constraint);
+        void set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint);
 
         ///Sets the hold constraint between src_domain and sink_domain with value constraint
-        void set_hold_constraint(const DomainId src_domain, const DomainId sink_domain, const float constraint);
+        void set_hold_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint);
 
         ///Sets the setup clock uncertainty between src_domain and sink_domain with value uncertainty
-        void set_setup_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain, const float uncertainty);
+        void set_setup_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain, const Time uncertainty);
 
         ///Sets the hold clock uncertainty between src_domain and sink_domain with value uncertainty
-        void set_hold_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain, const float uncertainty);
+        void set_hold_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain, const Time uncertainty);
 
         ///Sets the input delay constraint on node_id with value constraint
-        void set_input_constraint(const NodeId node_id, const DomainId domain_id, const float constraint);
+        void set_input_constraint(const NodeId node_id, const DomainId domain_id, const Time constraint);
 
         ///Sets the output delay constraint on node_id with value constraint
-        void set_output_constraint(const NodeId node_id, const DomainId domain_id, const float constraint);
+        void set_output_constraint(const NodeId node_id, const DomainId domain_id, const Time constraint);
 
         ///Sets the source latency of the specified clock domain
-        void set_source_latency(const DomainId domain_id, const float latency);
+        void set_source_latency(const DomainId domain_id, const Time latency);
 
         ///Sets the source node for the specified clock domain
         void set_clock_domain_source(const NodeId node_id, const DomainId domain_id);
@@ -167,13 +168,13 @@ class TimingConstraints {
 
         std::unordered_set<NodeId> constant_generators_;
 
-        std::map<DomainPair,float> setup_constraints_;
-        std::map<DomainPair,float> hold_constraints_;
-        std::map<DomainPair,float> setup_clock_uncertainties_;
-        std::map<DomainPair,float> hold_clock_uncertainties_;
+        std::map<DomainPair,Time> setup_constraints_;
+        std::map<DomainPair,Time> hold_constraints_;
+        std::map<DomainPair,Time> setup_clock_uncertainties_;
+        std::map<DomainPair,Time> hold_clock_uncertainties_;
         std::multimap<NodeId,IoConstraint> input_constraints_;
         std::multimap<NodeId,IoConstraint> output_constraints_;
-        std::map<DomainId,float> source_latencies_;
+        std::map<DomainId,Time> source_latencies_;
 };
 
 /*
@@ -197,10 +198,10 @@ struct DomainPair {
 };
 
 struct IoConstraint {
-    IoConstraint(DomainId domain_id, float constraint_val): domain(domain_id), constraint(constraint_val) {}
+    IoConstraint(DomainId domain_id, Time constraint_val): domain(domain_id), constraint(constraint_val) {}
 
     DomainId domain;
-    float constraint;
+    Time constraint;
 };
 
 } //namepsace

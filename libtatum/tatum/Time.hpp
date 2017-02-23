@@ -30,18 +30,15 @@ namespace tatum {
 class Time {
     public:
         typedef float scalar_type;
+    public: //Constructors
         Time(): Time(NAN) {}
+
         ///Initialize from float types
         explicit Time(const double time) { set_value(time); }
 
+    public: //Accessors
         ///The current time value
         scalar_type value() const;
-
-        ///Allow conversions to float
-        operator float() const { return value(); }
-
-        ///Set the current time value to time
-        void set_value(scalar_type time);
 
         ///Indicates whether the current time value is valid
         bool valid() const;
@@ -51,6 +48,14 @@ class Time {
         ///Updates the time value with the min of itself and other
         void min(const Time& other);
 
+        ///Allow conversions to scalar_type (usually float)
+        operator scalar_type() const { return value(); }
+
+    public: //Mutators
+        ///Set the current time value to time
+        void set_value(scalar_type time);
+
+
         Time& operator+=(const Time& rhs);
         Time& operator-=(const Time& rhs);
 
@@ -58,6 +63,7 @@ class Time {
         friend bool operator<(const Time lhs, const Time rhs);
         friend bool operator>(const Time lhs, const Time rhs);
         friend Time operator-(const Time val);
+        friend Time operator+(const Time val);
 
     private:
 #if TIME_VEC_WIDTH > 1

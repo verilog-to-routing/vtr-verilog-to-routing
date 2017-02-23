@@ -29,8 +29,9 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
             cilk::reducer<cilk::op_add<size_t>> unconstrained_reducer(0);
 #endif
 
-            const auto& pi = tg.primary_inputs();
-            cilk_for(auto iter = pi.begin(); iter != pi.end(); ++iter) {
+            LevelId first_level = *tg.levels().begin();
+            auto nodes = tg.level_nodes(first_level);
+            cilk_for(auto iter = nodes.begin(); iter != nodes.end(); ++iter) {
                 bool constrained = visitor.do_arrival_pre_traverse_node(tg, tc, *iter);
 
                 if(!constrained) {

@@ -39,31 +39,31 @@ void EchoLoader::add_constant_generator(int node_id) {
 }
 
 void EchoLoader::add_input_constraint(int node_id, int domain_id, float constraint) {
-    tc_->set_input_constraint(tatum::NodeId(node_id), tatum::DomainId(domain_id), constraint);
+    tc_->set_input_constraint(tatum::NodeId(node_id), tatum::DomainId(domain_id), tatum::Time(constraint));
 }
 
 void EchoLoader::add_output_constraint(int node_id, int domain_id, float constraint) {
-    tc_->set_output_constraint(tatum::NodeId(node_id), tatum::DomainId(domain_id), constraint);
+    tc_->set_output_constraint(tatum::NodeId(node_id), tatum::DomainId(domain_id), tatum::Time(constraint));
 }
 
 void EchoLoader::add_setup_constraint(int src_domain_id, int sink_domain_id, float constraint) {
-    tc_->set_setup_constraint(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), constraint);
+    tc_->set_setup_constraint(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), tatum::Time(constraint));
 }
 
 void EchoLoader::add_hold_constraint(int src_domain_id, int sink_domain_id, float constraint) {
-    tc_->set_hold_constraint(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), constraint);
+    tc_->set_hold_constraint(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), tatum::Time(constraint));
 }
 
 void EchoLoader::add_setup_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) {
-    tc_->set_setup_clock_uncertainty(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), uncertainty);
+    tc_->set_setup_clock_uncertainty(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), tatum::Time(uncertainty));
 }
 
 void EchoLoader::add_hold_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) {
-    tc_->set_hold_clock_uncertainty(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), uncertainty);
+    tc_->set_hold_clock_uncertainty(tatum::DomainId(src_domain_id), tatum::DomainId(sink_domain_id), tatum::Time(uncertainty));
 }
 
 void EchoLoader::add_source_latency(int domain_id, float latency) {
-    tc_->set_source_latency(tatum::DomainId(domain_id), latency);
+    tc_->set_source_latency(tatum::DomainId(domain_id), tatum::Time(latency));
 }
 
 void EchoLoader::add_edge_setup_hold_time(int edge_id, float setup_time, float hold_time) {

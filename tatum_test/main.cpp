@@ -6,6 +6,7 @@
 #include <sstream>
 #include <memory>
 #include <numeric>
+#include <iomanip>
 
 #include "tatum/util/tatum_assert.hpp"
 
@@ -21,6 +22,7 @@
 
 #include "tatum/delay_calc/FixedDelayCalculator.hpp"
 
+#include "tatum/report/graphviz_dot_writer.hpp"
 #include "tatum/base/sta_util.hpp"
 #include "tatum/echo_writer.hpp"
 

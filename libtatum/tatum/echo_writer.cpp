@@ -90,7 +90,7 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
         auto node_id = kv.first;
         auto domain_id = kv.second.domain;
         auto constraint = kv.second.constraint;
-        if(!isnan(constraint)) {
+        if(constraint.valid()) {
             os << " type: INPUT_CONSTRAINT node: " << size_t(node_id) << " domain: " << size_t(domain_id) << " constraint: " << constraint << "\n";
         }
     }
@@ -99,7 +99,7 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
         auto node_id = kv.first;
         auto domain_id = kv.second.domain;
         auto constraint = kv.second.constraint;
-        if(!isnan(constraint)) {
+        if(constraint.valid()) {
             os << " type: OUTPUT_CONSTRAINT node: " << size_t(node_id) << " domain: " << size_t(domain_id) << " constraint: " << constraint << "\n";
         }
     }
@@ -107,7 +107,7 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
     for(auto kv : tc.setup_constraints()) {
         auto key = kv.first;
         auto constraint = kv.second;
-        if(!isnan(constraint)) {
+        if(constraint.valid()) {
             os << " type: SETUP_CONSTRAINT";
             os << " launch_domain: " << size_t(key.src_domain_id);
             os << " capture_domain: " << size_t(key.sink_domain_id);
@@ -119,7 +119,7 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
     for(auto kv : tc.hold_constraints()) {
         auto key = kv.first;
         auto constraint = kv.second;
-        if(!isnan(constraint)) {
+        if(constraint.valid()) {
             os << " type: HOLD_CONSTRAINT";
             os << " launch_domain: " << size_t(key.src_domain_id);
             os << " capture_domain: " << size_t(key.sink_domain_id);
