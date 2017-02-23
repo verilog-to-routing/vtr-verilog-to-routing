@@ -137,8 +137,6 @@ inline TimingTags::tag_range TimingTags::tags(const TagType type) const {
 
 //Modifiers
 inline void TimingTags::add_tag(const TimingTag& tag) {
-    TATUM_ASSERT(tag.launch_clock_domain() || tag.capture_clock_domain());
-
     //Find the position to insert this tag
     //
     //We keep tags of the same type together.

@@ -24,10 +24,14 @@ class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
 #endif
 
             size_t num_unconstrained = 0;
-            for(NodeId node_id : tg.primary_inputs()) {
+
+            LevelId first_level = *tg.levels().begin();
+            for(NodeId node_id : tg.level_nodes(first_level)) {
                 bool constrained = visitor.do_arrival_pre_traverse_node(tg, tc, node_id);
 
-                if(!constrained) ++num_unconstrained;
+                if(!constrained) {
+                    ++num_unconstrained;
+                }
             }
 
             if(num_unconstrained > 0) {
@@ -43,7 +47,9 @@ class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
             for(NodeId node_id : tg.logical_outputs()) {
                 bool constrained = visitor.do_required_pre_traverse_node(tg, tc, node_id);
 
-                if(!constrained) ++num_unconstrained;
+                if(!constrained) {
+                    ++num_unconstrained;
+                }
             }
 
             if(num_unconstrained > 0) {

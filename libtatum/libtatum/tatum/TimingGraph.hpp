@@ -149,7 +149,8 @@ class TimingGraph {
         }
 
         ///\pre The graph must be levelized.
-        ///\returns A range containing the nodes which are logical outputs (i.e. SINK's with no fan-out, corresponding to top level design output pins and FF D pins)
+        ///\returns A range containing the nodes which are logical outputs (i.e. nodes with no fan-out 
+        //          corresponding to: top level design output pins and FF D pins)
         ///\warning The logical outputs may be on different levels of the graph
         ///\see levelize()
         node_range logical_outputs() const { 

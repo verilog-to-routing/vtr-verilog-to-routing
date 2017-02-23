@@ -18,11 +18,11 @@ class HoldAnalysisOps : public CommonAnalysisOps {
         HoldAnalysisOps(size_t num_tags, size_t num_slacks)
             : CommonAnalysisOps(num_tags, num_slacks) {}
 
-        float clock_constraint(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
+        Time clock_constraint(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
             return tc.hold_constraint(src_id, sink_id); 
         }
 
-        float clock_uncertainty(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
+        Time clock_uncertainty(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
             //Hold analysis, so late capture clock arrival is pessimistic
             return +tc.hold_clock_uncertainty(src_id, sink_id); 
         }

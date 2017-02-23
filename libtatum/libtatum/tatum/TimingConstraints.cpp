@@ -13,7 +13,10 @@ TimingConstraints::domain_range TimingConstraints::clock_domains() const {
     return tatum::util::make_range(domain_ids_.begin(), domain_ids_.end());
 }
 
-const std::string& TimingConstraints::clock_domain_name(const DomainId id) const {
+std::string TimingConstraints::clock_domain_name(const DomainId id) const {
+    if(!id) {
+        return std::string("*");
+    }
     return domain_names_[id];
 }
 
@@ -91,75 +94,82 @@ DomainId TimingConstraints::find_clock_domain(const std::string& name) const {
 }
 
 bool TimingConstraints::should_analyze(const DomainId src_domain, const DomainId sink_domain) const {
+    if(!src_domain && sink_domain) {
+        return true; //Wildcard match
+    } else if (src_domain && !sink_domain) {
+        return true; //Wildcard match
+    }
+
+    //Exact match
     return setup_constraints_.count(DomainPair(src_domain, sink_domain)) 
            || hold_constraints_.count(DomainPair(src_domain, sink_domain));
 }
 
-float TimingConstraints::hold_constraint(const DomainId src_domain, const DomainId sink_domain) const {
+Time TimingConstraints::hold_constraint(const DomainId src_domain, const DomainId sink_domain) const {
     auto iter = hold_constraints_.find(DomainPair(src_domain, sink_domain));
     if(iter == hold_constraints_.end()) {
-        return std::numeric_limits<float>::quiet_NaN();
+        return std::numeric_limits<Time>::quiet_NaN();
     }
 
     return iter->second;
 }
-float TimingConstraints::setup_constraint(const DomainId src_domain, const DomainId sink_domain) const {
+Time TimingConstraints::setup_constraint(const DomainId src_domain, const DomainId sink_domain) const {
     auto iter = setup_constraints_.find(DomainPair(src_domain, sink_domain));
     if(iter == setup_constraints_.end()) {
-        return std::numeric_limits<float>::quiet_NaN();
+        return std::numeric_limits<Time>::quiet_NaN();
     }
 
     return iter->second;
 }
 
-float TimingConstraints::setup_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain) const {
+Time TimingConstraints::setup_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain) const {
 
     auto iter = setup_clock_uncertainties_.find(DomainPair(src_domain, sink_domain));
     if(iter == setup_clock_uncertainties_.end()) {
-        return 0.; //Defaults to zero if unspecified
+        return Time(0.); //Defaults to zero if unspecified
     }
 
     return iter->second;
 }
 
-float TimingConstraints::hold_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain) const {
+Time TimingConstraints::hold_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain) const {
 
     auto iter = hold_clock_uncertainties_.find(DomainPair(src_domain, sink_domain));
     if(iter == hold_clock_uncertainties_.end()) {
-        return 0.; //Defaults to zero if unspecified
+        return Time(0.); //Defaults to zero if unspecified
     }
 
     return iter->second;
 }
 
-float TimingConstraints::input_constraint(const NodeId node_id, const DomainId domain_id) const {
+Time TimingConstraints::input_constraint(const NodeId node_id, const DomainId domain_id) const {
 
     auto iter = find_io_constraint(node_id, domain_id, input_constraints_);
     if(iter != input_constraints_.end()) {
         return iter->second.constraint;
     }
 
-    return std::numeric_limits<float>::quiet_NaN();
+    return std::numeric_limits<Time>::quiet_NaN();
 }
 
-float TimingConstraints::source_latency(const DomainId domain) const {
+Time TimingConstraints::source_latency(const DomainId domain) const {
 
     auto iter = source_latencies_.find(domain);
     if(iter == source_latencies_.end()) {
-        return 0.; //Defaults to zero if unspecified
+        return Time(0.); //Defaults to zero if unspecified
     }
 
     return iter->second;
 }
 
-float TimingConstraints::output_constraint(const NodeId node_id, const DomainId domain_id) const {
+Time TimingConstraints::output_constraint(const NodeId node_id, const DomainId domain_id) const {
 
     auto iter = find_io_constraint(node_id, domain_id, output_constraints_);
     if(iter != output_constraints_.end()) {
         return iter->second.constraint;
     }
 
-    return std::numeric_limits<float>::quiet_NaN();
+    return std::numeric_limits<Time>::quiet_NaN();
 }
 
 TimingConstraints::constant_generator_range TimingConstraints::constant_generators() const {
@@ -221,31 +231,31 @@ DomainId TimingConstraints::create_clock_domain(const std::string name) {
     return id; 
 }
 
-void TimingConstraints::set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const float constraint) {
+void TimingConstraints::set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint) {
     auto key = DomainPair(src_domain, sink_domain);
     auto iter = setup_constraints_.insert(std::make_pair(key, constraint));
     TATUM_ASSERT_MSG(iter.second, "Attempted to insert duplicate setup clock constraint");
 }
 
-void TimingConstraints::set_hold_constraint(const DomainId src_domain, const DomainId sink_domain, const float constraint) {
+void TimingConstraints::set_hold_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint) {
     auto key = DomainPair(src_domain, sink_domain);
     auto iter = hold_constraints_.insert(std::make_pair(key, constraint));
     TATUM_ASSERT_MSG(iter.second, "Attempted to insert duplicate hold clock constraint");
 }
 
-void TimingConstraints::set_setup_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain, const float uncertainty) {
+void TimingConstraints::set_setup_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain, const Time uncertainty) {
     auto key = DomainPair(src_domain, sink_domain);
     auto iter = setup_clock_uncertainties_.insert(std::make_pair(key, uncertainty));
     TATUM_ASSERT_MSG(iter.second, "Attempted to insert duplicate setup clock uncertainty");
 }
 
-void TimingConstraints::set_hold_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain, const float uncertainty) {
+void TimingConstraints::set_hold_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain, const Time uncertainty) {
     auto key = DomainPair(src_domain, sink_domain);
     auto iter = hold_clock_uncertainties_.insert(std::make_pair(key, uncertainty));
     TATUM_ASSERT_MSG(iter.second, "Attempted to insert duplicate hold clock uncertainty");
 }
 
-void TimingConstraints::set_input_constraint(const NodeId node_id, const DomainId domain_id, const float constraint) {
+void TimingConstraints::set_input_constraint(const NodeId node_id, const DomainId domain_id, const Time constraint) {
     auto iter = find_io_constraint(node_id, domain_id, input_constraints_);
     if(iter != input_constraints_.end()) {
         //Found, update
@@ -256,7 +266,7 @@ void TimingConstraints::set_input_constraint(const NodeId node_id, const DomainI
     }
 }
 
-void TimingConstraints::set_output_constraint(const NodeId node_id, const DomainId domain_id, const float constraint) {
+void TimingConstraints::set_output_constraint(const NodeId node_id, const DomainId domain_id, const Time constraint) {
     auto iter = find_io_constraint(node_id, domain_id, output_constraints_);
     if(iter != output_constraints_.end()) {
         //Found, update
@@ -267,7 +277,7 @@ void TimingConstraints::set_output_constraint(const NodeId node_id, const Domain
     }
 }
 
-void TimingConstraints::set_source_latency(const DomainId domain, const float latency) {
+void TimingConstraints::set_source_latency(const DomainId domain, const Time latency) {
     source_latencies_[domain] = latency;
 }
 
@@ -327,7 +337,7 @@ void TimingConstraints::print_constraints() const {
     cout << "Setup Clock Constraints" << endl;
     for(auto kv : setup_constraints()) {
         auto key = kv.first;
-        float constraint = kv.second;
+        Time constraint = kv.second;
         cout << "SRC: " << key.src_domain_id;
         cout << " SINK: " << key.sink_domain_id;
         cout << " Constraint: " << constraint;
@@ -336,7 +346,7 @@ void TimingConstraints::print_constraints() const {
     cout << "Hold Clock Constraints" << endl;
     for(auto kv : hold_constraints()) {
         auto key = kv.first;
-        float constraint = kv.second;
+        Time constraint = kv.second;
         cout << "SRC: " << key.src_domain_id;
         cout << " SINK: " << key.sink_domain_id;
         cout << " Constraint: " << constraint;
@@ -363,7 +373,7 @@ void TimingConstraints::print_constraints() const {
     cout << "Setup Clock Uncertainty" << endl;
     for(auto kv : setup_clock_uncertainties()) {
         auto key = kv.first;
-        float uncertainty = kv.second;
+        Time uncertainty = kv.second;
         cout << "SRC: " << key.src_domain_id;
         cout << " SINK: " << key.sink_domain_id;
         cout << " Uncertainty: " << uncertainty;
@@ -372,7 +382,7 @@ void TimingConstraints::print_constraints() const {
     cout << "Hold Clock Uncertainty" << endl;
     for(auto kv : hold_clock_uncertainties()) {
         auto key = kv.first;
-        float uncertainty = kv.second;
+        Time uncertainty = kv.second;
         cout << "SRC: " << key.src_domain_id;
         cout << " SINK: " << key.sink_domain_id;
         cout << " Uncertainty: " << uncertainty;
@@ -381,7 +391,7 @@ void TimingConstraints::print_constraints() const {
     cout << "Source Latency" << endl;
     for(auto kv : source_latencies()) {
         auto domain = kv.first;
-        float latency = kv.second;
+        Time latency = kv.second;
         cout << "Domain: " << domain;
         cout << " Latency: " << latency;
         cout << endl;

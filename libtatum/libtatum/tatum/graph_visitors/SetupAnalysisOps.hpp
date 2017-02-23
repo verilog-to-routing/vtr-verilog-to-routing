@@ -17,11 +17,11 @@ class SetupAnalysisOps : public CommonAnalysisOps {
         SetupAnalysisOps(size_t num_tags, size_t num_slacks)
             : CommonAnalysisOps(num_tags, num_slacks) {}
 
-        float clock_constraint(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
+        Time clock_constraint(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
             return tc.setup_constraint(src_id, sink_id); 
         }
 
-        float clock_uncertainty(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
+        Time clock_uncertainty(const TimingConstraints& tc, const DomainId src_id, const DomainId sink_id) { 
             //Setup analysis, so early capture clock arrival is pessimistic
             return -tc.setup_clock_uncertainty(src_id, sink_id); 
         }

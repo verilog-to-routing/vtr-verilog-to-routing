@@ -83,6 +83,12 @@ inline Time operator-(Time in) {
     }
     return in;
 }
+inline Time operator+(Time in) {
+    for(size_t i = 0; i < time_.size(); i++) {
+        in.time_[i] = +in.time_[i];
+    }
+    return in;
+}
 #else //Scalar case (TIME_VEC_WIDTH == 1)
 inline bool operator==(const Time lhs, const Time rhs) {
     return lhs.time_ == rhs.time_;
@@ -98,6 +104,10 @@ inline bool operator>(const Time lhs, const Time rhs) {
 
 inline Time operator-(Time in) {
     in.time_ = -in.time_;
+    return in;
+}
+inline Time operator+(Time in) {
+    in.time_ = +in.time_;
     return in;
 }
 #endif //TIME_VEC_WIDTH

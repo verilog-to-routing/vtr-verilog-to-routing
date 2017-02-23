@@ -135,8 +135,8 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
             TATUM_ASSERT(timing_path.data_arrival_elements().size() > 0);
             const TimingPathElem& path_elem = *(timing_path.data_arrival_elements().begin());
 
-            float input_constraint = timing_constraints_.input_constraint(path_elem.node(), path_info.launch_domain());
-            if(!std::isnan(input_constraint)) {
+            Time input_constraint = timing_constraints_.input_constraint(path_elem.node(), path_info.launch_domain());
+            if(input_constraint.valid()) {
                 arr_path += Time(input_constraint);
 
                 update_print_path(os, "input external delay", arr_path);
@@ -243,8 +243,8 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
             }
 
             //Output constraint
-            float output_constraint = timing_constraints_.output_constraint(path_elem.node(), path_info.capture_domain());
-            if(!std::isnan(output_constraint)) {
+            Time output_constraint = timing_constraints_.output_constraint(path_elem.node(), path_info.capture_domain());
+            if(output_constraint.valid()) {
                 req_path += -Time(output_constraint);
                 update_print_path(os, "output external delay", req_path);
             }
