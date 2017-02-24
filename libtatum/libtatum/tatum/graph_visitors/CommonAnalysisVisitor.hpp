@@ -431,23 +431,24 @@ void CommonAnalysisVisitor<AnalysisOps>::mark_sink_required_times(const TimingGr
         const Time capture_edge_delay = ops_.capture_clock_edge_delay(dc, tg, clock_capture_edge);
 
         for(const TimingTag& src_capture_clk_tag : src_capture_clk_tags) {
-            DomainId capture_domain = src_capture_clk_tag.capture_clock_domain();
+            DomainId clock_launch_domain = src_capture_clk_tag.launch_clock_domain();
+            DomainId clock_capture_domain = src_capture_clk_tag.capture_clock_domain();
             for(const TimingTag& node_data_arr_tag : node_data_arr_tags) {
-                DomainId launch_domain = node_data_arr_tag.launch_clock_domain();
+                DomainId data_launch_domain = node_data_arr_tag.launch_clock_domain();
 
                 if(is_const_gen_tag(node_data_arr_tag)) {
-                    //A constant generator tag. Reqquired time is not terribly well defined,
+                    //A constant generator tag. Required time is not terribly well defined,
                     //so just use the capture clock tag values since we nevery look at these
                     //tags except to check that any downstream nodes have been constrained
-                    launch_domain = src_capture_clk_tag.capture_clock_domain();
+                    data_launch_domain = src_capture_clk_tag.capture_clock_domain();
                 }
 
                 //We produce a fully specified capture clock tags (both launch and capture) so we only want 
                 //to consider the capture clock tag which matches the data launch domain
-                bool same_launch_domain = (launch_domain == capture_domain);
+                bool same_launch_domain = (data_launch_domain == clock_launch_domain);
 
                 //We only want to analyze paths between domains where a valid constraint has been specified
-                bool valid_launch_capture_pair = tc.should_analyze(launch_domain, capture_domain);
+                bool valid_launch_capture_pair = tc.should_analyze(data_launch_domain, clock_capture_domain);
 
                 if(same_launch_domain && valid_launch_capture_pair) {
 
@@ -457,15 +458,15 @@ void CommonAnalysisVisitor<AnalysisOps>::mark_sink_required_times(const TimingGr
                     TATUM_ASSERT(node_data_arr_tag.time().valid());
 
                     //We apply the clock uncertainty to the generated required time tag
-                    Time clock_uncertainty = ops_.clock_uncertainty(tc, launch_domain, capture_domain);
+                    Time clock_uncertainty = ops_.clock_uncertainty(tc, data_launch_domain, clock_capture_domain);
 
                     Time req_time =   src_capture_clk_tag.time() //Period + latency + propagated clock network delay to CPIN
                                     + capture_edge_delay         //CPIN to sink delay (Thld, or Tsu)
                                     + Time(clock_uncertainty);   //Clock period uncertainty
 
                     TimingTag node_data_req_tag(req_time, 
-                                                launch_domain, 
-                                                capture_domain, 
+                                                data_launch_domain, 
+                                                clock_capture_domain, 
                                                 NodeId::INVALID(), //Origin
                                                 TagType::DATA_REQUIRED);
 
@@ -476,11 +477,11 @@ void CommonAnalysisVisitor<AnalysisOps>::mark_sink_required_times(const TimingGr
     } else {
         //Must be a primary-output sink, need to set required tags based on output constraints
 
-        DomainId capture_domain = tc.node_clock_domain(node_id);
+        DomainId io_capture_domain = tc.node_clock_domain(node_id);
 
         //Any constrained primary outputs should have a specified clock domain
         // Note that some outputs may not be constrained and hence should not get required times
-        if(capture_domain) {
+        if(io_capture_domain) {
 
             //An output constraint means there is output_constraint delay outside the chip,
             //as a result signals need to reach the primary-output at least output_constraint
@@ -489,35 +490,35 @@ void CommonAnalysisVisitor<AnalysisOps>::mark_sink_required_times(const TimingGr
             //Hence we use a negative output constraint value to subtract the output constraint 
             //from the target clock constraint
             Time output_constraint = -tc.output_constraint(node_id, 
-                                                            capture_domain);
+                                                           io_capture_domain);
             TATUM_ASSERT(output_constraint.valid());
 
             //Since there is no propagated clock tag to primary outputs, we need to account for
             //the capture source clock latency
-            Time capture_clock_source_latency = tc.source_latency(capture_domain);
+            Time capture_clock_source_latency = tc.source_latency(io_capture_domain);
 
             for(const TimingTag& node_data_arr_tag : node_data_arr_tags) {
-                DomainId launch_domain = node_data_arr_tag.launch_clock_domain();
+                DomainId data_launch_domain = node_data_arr_tag.launch_clock_domain();
+
+                if(is_const_gen_tag(node_data_arr_tag)) {
+                    //A constant generator tag. Required time is not terribly well defined,
+                    //so just use the inter-domain values since we nevery look at these
+                    //tags except to check that any downstream nodes have been constrained
+
+                    data_launch_domain = io_capture_domain;
+                }
 
                 //Should we be analyzing paths between these two domains?
-                if(tc.should_analyze(launch_domain, capture_domain)) {
+                if(tc.should_analyze(data_launch_domain, io_capture_domain)) {
 
                     //We only set a required time if the source domain actually reaches this sink
                     //domain.  This is indicated by the presence of an arrival tag (which should have
                     //a valid arrival time).
                     TATUM_ASSERT(node_data_arr_tag.time().valid());
 
-                    if(is_const_gen_tag(node_data_arr_tag)) {
-                        //A constant generator tag. Reqquired time is not terribly well defined,
-                        //so just use the inter-domain values since we nevery look at these
-                        //tags except to check that any downstream nodes have been constrained
+                    Time constraint = ops_.clock_constraint(tc, data_launch_domain, io_capture_domain);
 
-                        launch_domain = capture_domain;
-                    }
-
-                    Time constraint = ops_.clock_constraint(tc, launch_domain, capture_domain);
-
-                    Time clock_uncertainty = ops_.clock_uncertainty(tc, capture_domain, capture_domain);
+                    Time clock_uncertainty = ops_.clock_uncertainty(tc, data_launch_domain, io_capture_domain);
 
                     //Calulate the required time
                     Time req_time =   Time(constraint)                   //Period constraint
@@ -526,8 +527,8 @@ void CommonAnalysisVisitor<AnalysisOps>::mark_sink_required_times(const TimingGr
                                     + Time(clock_uncertainty);           //Clock period uncertainty
 
                     TimingTag node_data_req_tag(req_time, 
-                                                launch_domain, 
-                                                capture_domain, 
+                                                data_launch_domain, 
+                                                io_capture_domain, 
                                                 NodeId::INVALID(), //Origin
                                                 TagType::DATA_REQUIRED);
 

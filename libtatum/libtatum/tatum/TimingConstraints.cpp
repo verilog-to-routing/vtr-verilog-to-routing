@@ -94,13 +94,8 @@ DomainId TimingConstraints::find_clock_domain(const std::string& name) const {
 }
 
 bool TimingConstraints::should_analyze(const DomainId src_domain, const DomainId sink_domain) const {
-    if(!src_domain && sink_domain) {
-        return true; //Wildcard match
-    } else if (src_domain && !sink_domain) {
-        return true; //Wildcard match
-    }
-
-    //Exact match
+    TATUM_ASSERT(src_domain);
+    TATUM_ASSERT(sink_domain);
     return setup_constraints_.count(DomainPair(src_domain, sink_domain)) 
            || hold_constraints_.count(DomainPair(src_domain, sink_domain));
 }
