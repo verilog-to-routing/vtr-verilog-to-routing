@@ -132,7 +132,8 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
             VprTimingGraphNameResolver name_resolver(g_atom_nl, g_atom_lookup);
             tatum::TimingReporter timing_reporter(name_resolver, *g_timing_graph, *g_timing_constraints);
 
-            timing_reporter.report_timing_setup("timing.rpt", *timing_info->setup_analyzer());
+            timing_reporter.report_timing_setup("report_timing.setup.rpt", *timing_info->setup_analyzer());
+            timing_reporter.report_unconstrained_endpoints_setup("report_unconstrained_timing_endpoints.rpt", *timing_info->setup_analyzer());
 		}
 	}
 

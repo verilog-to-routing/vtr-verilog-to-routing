@@ -49,6 +49,9 @@ class TimingInfo {
 
         //Return the underlying timing constraints
         virtual std::shared_ptr<const tatum::TimingConstraints> timing_constraints() const = 0;
+
+        //Enable/disable warnings about unconstrained startpoints/endpoints during timing analysis
+        virtual void set_warn_unconstrained(bool val) = 0;
 };
 
 //Generic interface which provides setup-related timing information

@@ -299,6 +299,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #endif
 
             timing_info.update();
+            timing_info.set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during routing
 
 		} else {
 			/* If timing analysis is not enabled, make sure that the criticalities and the

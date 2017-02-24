@@ -6,6 +6,8 @@
 #include "slack_evaluation.h"
 #include "globals.h"
 
+void warn_unconstrained(std::shared_ptr<const tatum::TimingAnalyzer> analyzer);
+
 //NOTE: These classes should not be used directly but created with the 
 //      make_*_timing_info() functions in timing_info.h, and used through
 //      their abstract interfaces (SetupTimingInfo, HoldTimingInfo etc.)
@@ -77,6 +79,11 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
         void update() override {
 
             update_setup();
+
+            if(warn_unconstrained_) {
+                warn_unconstrained(analyzer());
+            }
+
         }
 
         void update_setup() override {
@@ -109,6 +116,8 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
             slack_crit_.update_slacks_and_criticalities(*timing_graph_, *setup_analyzer_);
         }
 
+        void set_warn_unconstrained(bool val) override { warn_unconstrained_ = val; }
+
     private:
 
     private:
@@ -119,6 +128,8 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
         std::shared_ptr<tatum::SetupTimingAnalyzer> setup_analyzer_;
 
         SetupSlackCrit slack_crit_;
+
+        bool warn_unconstrained_ = true;
 
         typedef std::chrono::duration<double> dsec;
         typedef std::chrono::high_resolution_clock Clock;
@@ -156,6 +167,10 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
         //Mutators
         void update() override {
             update_hold();
+
+            if(warn_unconstrained_) {
+                warn_unconstrained(analyzer());
+            }
         }
 
         void update_hold() override { 
@@ -167,6 +182,8 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
             VPR_THROW(VPR_ERROR_TIMING, "Unimplemented");
         }
 
+        void set_warn_unconstrained(bool val) override { warn_unconstrained_ = val; }
+
     private:
         //Data
         std::shared_ptr<const tatum::TimingGraph> timing_graph_;
@@ -176,6 +193,8 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
 
         vtr::vector_map<AtomPinId,float> hold_pin_slacks_;
         vtr::vector_map<AtomPinId,float> hold_pin_criticalities_;
+
+        bool warn_unconstrained_ = true;
 };
 
 template<class DelayCalc>
@@ -235,6 +254,10 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
             setup_hold_analyzer_->update_timing(); 
             setup_timing_.update_setup(); 
             hold_timing_.update_hold();
+
+            if(warn_unconstrained_) {
+                warn_unconstrained(analyzer());
+            }
         }
 
         //Update hold only
@@ -243,11 +266,14 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
         //Update setup only
         void update_setup() override { setup_timing_.update_setup(); }
 
+        void set_warn_unconstrained(bool val) override { warn_unconstrained_ = val; }
     private:
         ConcreteSetupTimingInfo<DelayCalc> setup_timing_;
         ConcreteSetupTimingInfo<DelayCalc> hold_timing_;
         std::shared_ptr<DelayCalc> delay_calc_;
         std::shared_ptr<tatum::SetupTimingAnalyzer> setup_hold_analyzer_;
+
+        bool warn_unconstrained_ = true;
 };
 
 //No-op version of timing info, useful for algorithms that query timing info when run with timing disabled
@@ -294,11 +320,11 @@ class NoOpTimingInfo : public SetupHoldTimingInfo {
         std::shared_ptr<const tatum::TimingGraph> timing_graph() const  override { return nullptr;; }
         std::shared_ptr<const tatum::TimingConstraints> timing_constraints() const  override { return nullptr; }
 
+        void set_warn_unconstrained(bool /*val*/) override { }
     public: //Mutators
 
         void update() override { }
         void update_hold() override { }
         void update_setup() override { }
 };
-
 #endif

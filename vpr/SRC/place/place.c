@@ -400,6 +400,7 @@ void try_place(struct s_placer_opts placer_opts,
         timing_info = make_setup_timing_info(placement_delay_calc);
 
         timing_info->update();
+        timing_info->set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during placement
 
         //Initial slack estimates
         load_criticalities(*timing_info, crit_exponent, pb_gpin_lookup);
