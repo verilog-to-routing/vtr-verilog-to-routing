@@ -55,6 +55,7 @@
  */
 #include <vector>
 #include <set>
+#include <limits>
 
 #include "tatum/util/tatum_range.hpp"
 #include "tatum/util/tatum_linear_map.hpp"
@@ -285,6 +286,22 @@ class TimingGraph {
 
 //Returns the set of nodes (Strongly Connected Components) that form loops in the timing graph
 std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg);
+
+//Returns the set of nodes transitively connected (either fanin or fanout) to nodes in through_nodes
+//up to max_depth (default infinite) hops away
+std::vector<NodeId> find_transitively_connected_nodes(const TimingGraph& tg, 
+                                                      const std::vector<NodeId> through_nodes, 
+                                                      size_t max_depth=std::numeric_limits<size_t>::max());
+
+//Returns the set of nodes in the transitive fanin of nodes in sinks up to max_depth (default infinite) hops away
+std::vector<NodeId> find_transitive_fanin_nodes(const TimingGraph& tg, 
+                                                const std::vector<NodeId> sinks, 
+                                                size_t max_depth=std::numeric_limits<size_t>::max());
+
+//Returns the set of nodes in the transitive fanout of nodes in sources up to max_depth (default infinite) hops away
+std::vector<NodeId> find_transitive_fanout_nodes(const TimingGraph& tg,
+                                                 const std::vector<NodeId> sources, 
+                                                 size_t max_depth=std::numeric_limits<size_t>::max());
 
 //Mappings from old to new IDs
 struct GraphIdMaps {
