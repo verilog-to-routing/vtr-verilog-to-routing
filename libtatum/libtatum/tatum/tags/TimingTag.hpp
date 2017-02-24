@@ -1,5 +1,6 @@
 #pragma once
 #include <iosfwd>
+#include <limits>
 
 #include "tatum/Time.hpp"
 #include "tatum/TimingGraphFwd.hpp"
@@ -15,14 +16,11 @@ enum class TagType : unsigned char {
     UNKOWN
 };
 
+class TimingTag;
+
 std::ostream& operator<<(std::ostream& os, TagType type);
 
-//Track the origin node that is the determinant of a tag
-// This can be disabled to reduce the size of the TimingTag object.
-// If origin node tracking is disabled, the origin_node() accessors 
-// will always return an invalid node id and constructors/set_origin_node()
-// will ignore the passed node id
-#define TATUM_TRACK_ORIGIN_NODE
+bool is_const_gen_tag(const TimingTag& tag);
 
 /**
  * The 'TimingTag' class represents an individual timing tag: the information associated
@@ -40,10 +38,35 @@ std::ostream& operator<<(std::ostream& os, TagType type);
  *       This is modelled by the separate 'TimingTags' class.
  */
 class TimingTag {
-    public:
-        /*
-         * Constructors
-         */
+    public: //Static
+        //Returns a tag suitable for use at a constant generator, during 
+        //setup analysis.
+        //
+        ///In particular it's domains are left invalid (i.e. wildcards),
+        //and it's arrival time set to -inf (so it will be maxed out by
+        //any non-constant tag)
+        static TimingTag CONST_GEN_TAG_SETUP() {
+            return TimingTag(Time(-std::numeric_limits<float>::infinity()),
+                             DomainId::INVALID(),
+                             DomainId::INVALID(),
+                             NodeId::INVALID(),
+                             TagType::DATA_ARRIVAL);
+        }
+
+        //Returns a tag suitable for use at a constant generator, during 
+        //hold analysis.
+        //
+        ///In particular it's domains are left invalid (i.e. wildcards),
+        //and it's arrival time set to +inf (so it will be minned out by
+        //any non-constant tag)
+        static TimingTag CONST_GEN_TAG_HOLD() {
+            return TimingTag(Time(+std::numeric_limits<float>::infinity()),
+                             DomainId::INVALID(),
+                             DomainId::INVALID(),
+                             NodeId::INVALID(),
+                             TagType::DATA_ARRIVAL);
+        }
+    public: //Constructors
         TimingTag();
 
         ///\param arr_time_val The tagged arrival time
@@ -58,9 +81,8 @@ class TimingTag {
         ///\param base_tag The tag from which to copy auxilary meta-data (e.g. domain, launch node)
         TimingTag(const Time& time_val, NodeId origin, const TimingTag& base_tag);
 
-        /*
-         * Getters
-         */
+
+    public: //Accessors
         ///\returns This tag's arrival time
         const Time& time() const { return time_; }
 
@@ -69,17 +91,11 @@ class TimingTag {
         DomainId capture_clock_domain() const { return capture_clock_domain_; }
 
         ///\returns This tag's launching node's id
-#ifdef TATUM_TRACK_ORIGIN_NODE
         NodeId origin_node() const { return origin_node_; }
-#else
-        NodeId origin_node() const { return NodeId::INVALID(); }
-#endif
 
         TagType type() const { return type_; }
 
-        /*
-         * Setters
-         */
+    public: //Mutators
         ///\param new_time The new value set as the tag's time
         void set_time(const Time& new_time) { time_ = new_time; }
 
@@ -90,11 +106,7 @@ class TimingTag {
         void set_capture_clock_domain(const DomainId new_clock_domain) { capture_clock_domain_ = new_clock_domain; }
 
         ///\param new_launch_node The new value set as the tag's launching node
-#ifdef TATUM_TRACK_ORIGIN_NODE
         void set_origin_node(const NodeId new_origin_node) { origin_node_ = new_origin_node; }
-#else
-        void set_origin_node(const NodeId /*new_origin_node*/) { }
-#endif
 
         void set_type(const TagType new_type) { type_ = new_type; }
 
@@ -124,13 +136,12 @@ class TimingTag {
          * Data
          */
         Time time_; //Required time
-#ifdef TATUM_TRACK_ORIGIN_NODE
         NodeId origin_node_; //Node which launched this arrival time
-#endif
         DomainId launch_clock_domain_; //Clock domain for arr/req times
         DomainId capture_clock_domain_; //Clock domain for arr/req times
         TagType type_;
 };
+
 
 //For comparing the values of two timing tags
 struct TimingTagValueComp {

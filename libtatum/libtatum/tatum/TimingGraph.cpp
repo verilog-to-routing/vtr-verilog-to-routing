@@ -114,6 +114,18 @@ Container update_all_refs(const Container& values, const tatum::util::linear_map
     return updated;
 }
 
+//Recursive helper functions for collecting transitively connected nodes
+void find_transitive_fanout_nodes_recurr(const TimingGraph& tg, 
+                                         std::vector<NodeId>& nodes, 
+                                         const NodeId node, 
+                                         size_t max_depth=std::numeric_limits<size_t>::max(), 
+                                         size_t depth=0);
+void find_transitive_fanin_nodes_recurr(const TimingGraph& tg, 
+                                        std::vector<NodeId>& nodes, 
+                                        const NodeId node, 
+                                        size_t max_depth=std::numeric_limits<size_t>::max(), 
+                                        size_t depth=0);
+
 
 EdgeId TimingGraph::node_clock_capture_edge(const NodeId node) const {
 
@@ -760,6 +772,84 @@ bool TimingGraph::validate_structure() const {
 std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph& tg) {
     constexpr size_t MIN_LOOP_SCC_SIZE = 2; //Any SCC of size >= 2 is a loop in the timing graph
     return identify_strongly_connected_components(tg, MIN_LOOP_SCC_SIZE);
+}
+
+std::vector<NodeId> find_transitively_connected_nodes(const TimingGraph& tg, 
+                                                      const std::vector<NodeId> through_nodes, 
+                                                      size_t max_depth) {
+    std::vector<NodeId> nodes;
+
+    for(NodeId through_node : through_nodes) {
+        find_transitive_fanin_nodes_recurr(tg, nodes, through_node, max_depth);
+        find_transitive_fanout_nodes_recurr(tg, nodes, through_node, max_depth);
+    }
+
+    std::sort(nodes.begin(), nodes.end());
+    nodes.erase(std::unique(nodes.begin(), nodes.end()), nodes.end());
+
+    return nodes;
+}
+
+std::vector<NodeId> find_transitive_fanin_nodes(const TimingGraph& tg, 
+                                                const std::vector<NodeId> sinks, 
+                                                size_t max_depth) {
+    std::vector<NodeId> nodes;
+
+    for(NodeId sink : sinks) {
+        find_transitive_fanin_nodes_recurr(tg, nodes, sink, max_depth);
+    }
+
+    std::sort(nodes.begin(), nodes.end());
+    nodes.erase(std::unique(nodes.begin(), nodes.end()), nodes.end());
+
+    return nodes;
+}
+
+std::vector<NodeId> find_transitive_fanout_nodes(const TimingGraph& tg, 
+                                                 const std::vector<NodeId> sources, 
+                                                 size_t max_depth) {
+    std::vector<NodeId> nodes;
+
+    for(NodeId source : sources) {
+        find_transitive_fanout_nodes_recurr(tg, nodes, source, max_depth);
+    }
+
+    std::sort(nodes.begin(), nodes.end());
+    nodes.erase(std::unique(nodes.begin(), nodes.end()), nodes.end());
+
+    return nodes;
+}
+
+void find_transitive_fanin_nodes_recurr(const TimingGraph& tg, 
+                                        std::vector<NodeId>& nodes, 
+                                        const NodeId node, 
+                                        size_t max_depth, 
+                                        size_t depth) {
+    if(depth > max_depth) return;
+
+    nodes.push_back(node);
+
+    for(EdgeId in_edge : tg.node_in_edges(node)) {
+        if(tg.edge_disabled(in_edge)) continue;
+        NodeId src_node = tg.edge_src_node(in_edge);
+        find_transitive_fanin_nodes_recurr(tg, nodes, src_node, max_depth, depth + 1);
+    }
+}
+
+void find_transitive_fanout_nodes_recurr(const TimingGraph& tg, 
+                                         std::vector<NodeId>& nodes,
+                                         const NodeId node,
+                                         size_t max_depth,
+                                         size_t depth) {
+    if(depth > max_depth) return;
+
+    nodes.push_back(node);
+
+    for(EdgeId out_edge : tg.node_out_edges(node)) {
+        if(tg.edge_disabled(out_edge)) continue;
+        NodeId sink_node = tg.edge_sink_node(out_edge);
+        find_transitive_fanout_nodes_recurr(tg, nodes, sink_node, max_depth, depth+1);
+    }
 }
 
 //Stream output for NodeType
