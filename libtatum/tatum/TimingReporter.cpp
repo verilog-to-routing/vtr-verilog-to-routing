@@ -446,8 +446,11 @@ std::vector<TimingPath> TimingReporter::collect_worst_paths(const detail::TagRet
 }
 
 void TimingReporter::report_unconstrained_endpoints(std::ostream& os, const detail::TagRetriever& tag_retriever) const {
-    os << "#Unconstrained endpoints\n";
+    os << "#Unconstrained timing endpoints\n";
     os << "\n";
+
+    os << "timing_node_id node_type node_name\n";
+    os << "-------------- --------- ---------\n";
 
     for(NodeId node : timing_graph_.nodes()) {
         NodeType node_type = timing_graph_.node_type(node);
@@ -455,8 +458,9 @@ void TimingReporter::report_unconstrained_endpoints(std::ostream& os, const deta
             //An endpoint
             auto tags = tag_retriever.tags(node);
             if(!is_constrained(node_type, tags)) {
-                os << name_resolver_.node_name(node) 
-                   << " (" << name_resolver_.node_block_type_name(node) << ")"
+                os << size_t(node)
+                   << " " << name_resolver_.node_block_type_name(node)
+                   << " " << name_resolver_.node_name(node)
                    << "\n";
             }
         }

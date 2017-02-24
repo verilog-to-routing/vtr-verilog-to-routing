@@ -34,7 +34,6 @@ TimingTags::const_iterator find_tag(TimingTags::tag_range tags,
 bool is_constrained(NodeType node_type, TimingTags::tag_range tags) {
     bool has_clock_launch = false;
     bool has_clock_capture = false;
-    bool has_data_arrival = false;
     bool has_data_required = false;
 
     for(const auto& tag : tags) {
@@ -42,8 +41,6 @@ bool is_constrained(NodeType node_type, TimingTags::tag_range tags) {
             has_clock_launch = true;
         } else if (tag.type() == TagType::CLOCK_CAPTURE) {
             has_clock_capture = true;
-        } else if (tag.type() == TagType::DATA_ARRIVAL) {
-            has_data_arrival = true;
         } else if (tag.type() == TagType::DATA_REQUIRED) {
             has_data_required = true;
         }
