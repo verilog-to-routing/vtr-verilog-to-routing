@@ -24,7 +24,6 @@ class SetupTimingAnalyzer : public virtual TimingAnalyzer {
         virtual TimingTags::tag_range setup_tags_impl(NodeId node_id, TagType type) const = 0;
         virtual TimingTags::tag_range setup_edge_slacks_impl(EdgeId edge_id) const = 0;
         virtual TimingTags::tag_range setup_node_slacks_impl(NodeId node_id) const = 0;
-
 };
 
 } //namepsace

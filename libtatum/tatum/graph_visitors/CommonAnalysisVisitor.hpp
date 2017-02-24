@@ -185,14 +185,10 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
 template<class AnalysisOps>
 bool CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& /*tc*/, const NodeId node_id) {
 
-    TATUM_ASSERT(tg.node_type(node_id) == NodeType::SINK);
+    NodeType node_type = tg.node_type(node_id);
+    TATUM_ASSERT(node_type == NodeType::SINK);
 
-    auto data_req_tags = ops_.get_tags(node_id, TagType::DATA_REQUIRED);
-
-    //Constrained nodes should have required times
-    bool node_constrained = !data_req_tags.empty();
-
-    return node_constrained;
+    return is_constrained(node_type, ops_.get_tags(node_id));
 }
 
 /*

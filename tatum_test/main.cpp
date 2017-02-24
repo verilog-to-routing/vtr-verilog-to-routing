@@ -32,8 +32,8 @@
 #include "util.hpp"
 #include "profile.hpp"
 
-#define NUM_SERIAL_RUNS 10
-#define NUM_PARALLEL_RUNS (1*NUM_SERIAL_RUNS)
+#define NUM_SERIAL_RUNS 1
+#define NUM_PARALLEL_RUNS (0*NUM_SERIAL_RUNS)
 
 //Should we optimize the timing graph memory layout?
 //#define OPTIMIZE_GRAPH_LAYOUT
@@ -196,8 +196,15 @@ int main(int argc, char** argv) {
 
         cout << "\n";
 
+        if(serial_analyzer->num_unconstrained_startpoints() > 0) {
+            cout << "Warning: " << serial_analyzer->num_unconstrained_startpoints() << " sources are unconstrained\n";
+        }
+        if(serial_analyzer->num_unconstrained_endpoints() > 0) {
+            cout << "Warning: " << serial_analyzer->num_unconstrained_endpoints() << " sinks are unconstrained\n";
+        }
+
         std::vector<NodeId> nodes;
-        //nodes = find_transitively_connected_nodes(*timing_graph, {NodeId(496)});
+        //nodes = find_transitively_connected_nodes(*timing_graph, {NodeId(33296)});
 
         tatum::NodeNumResolver name_resolver(*timing_graph);
         tatum::TimingReporter timing_reporter(name_resolver, *timing_graph, *timing_constraints);
@@ -206,6 +213,7 @@ int main(int argc, char** argv) {
         if(echo_setup_analyzer) {
             write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, *delay_calculator, *echo_setup_analyzer, nodes);
             timing_reporter.report_timing_setup("report_timing.setup.rpt", *echo_setup_analyzer);
+            timing_reporter.report_unconstrained_endpoints_setup("report_unconstrained_endpoints.setup.rpt", *echo_setup_analyzer);
         }
         std::shared_ptr<tatum::HoldTimingAnalyzer> echo_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(serial_analyzer);
         if(echo_hold_analyzer) {

@@ -11,6 +11,8 @@
 
 namespace tatum {
 
+constexpr size_t REPORT_TIMING_DEFAULT_NPATHS=100;
+
 //A class for generating timing reports
 class TimingReporter {
     public:
@@ -20,27 +22,23 @@ class TimingReporter {
                        float unit_scale=1e-9,
                        size_t precision=3);
     public:
-        void report_timing_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=100) const;
-        void report_timing_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=100) const;
+        void report_timing_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
+        void report_timing_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
 
-        void report_timing_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=100) const;
-        void report_timing_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=100) const;
+        void report_timing_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
+        void report_timing_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
+
+        void report_unconstrained_endpoints_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer) const;
+        void report_unconstrained_endpoints_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer) const;
+
+        void report_unconstrained_endpoints_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer) const;
+        void report_unconstrained_endpoints_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer) const;
     private:
         void report_timing(std::ostream& os, const std::vector<TimingPath>& paths, size_t npaths) const;
         void report_path(std::ostream& os, const TimingPath& path) const;
-
-        void update_print_path(std::ostream& os, std::string point, tatum::Time path) const;
-        void update_print_path_no_incr(std::ostream& os, std::string point, tatum::Time path) const;
-        void reset_path() const;
-
-        void print_path_line_no_incr(std::ostream& os, std::string point, Time path) const;
-        void print_path_line(std::ostream& os, std::string point, std::string incr, std::string path) const;
-
         std::vector<TimingPath> collect_worst_paths(const detail::TagRetriever& tag_retriever, size_t npaths) const;
 
-        float convert_to_printable_units(float) const;
-
-        std::string to_printable_string(tatum::Time val) const;
+        void report_unconstrained_endpoints(std::ostream& os, const detail::TagRetriever& tag_retriever) const;
 
         bool nearly_equal(const tatum::Time& lhs, const tatum::Time& rhs) const;
     private:
@@ -54,7 +52,6 @@ class TimingReporter {
         float relative_error_tolerance_ = 1.e-5;
         float absolute_error_tolerance_ = 1e-13; //Sub pico-second
 
-        mutable Time prev_path_ = Time(0.);
 };
 
 } //namespace

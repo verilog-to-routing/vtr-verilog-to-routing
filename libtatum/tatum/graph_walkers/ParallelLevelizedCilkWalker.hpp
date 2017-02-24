@@ -23,7 +23,6 @@ template<class Visitor, class DelayCalc>
 class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc> {
     public:
         void do_arrival_pre_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, Visitor& visitor) override {
-            size_t num_unconstrained = 0;
 #ifdef __cilk
             //Use reducer for thread-safe sum
             cilk::reducer<cilk::op_add<size_t>> unconstrained_reducer(0);
@@ -38,22 +37,18 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
 #ifdef __cilk
                     *unconstrained_reducer += 1;
 #else
-                    num_unconstrained += 1;
+                    num_unconstrained_startpoints_ += 1;
 #endif
                 }
             }
 
 #ifdef __cilk
-            num_unconstrained = unconstrained_reducer.get_value();
+            num_unconstrained_startpoints_ = unconstrained_reducer.get_value();
 #endif
-            if(num_unconstrained > 0) {
-                std::cerr << "Warning: " << num_unconstrained << " timing source(s) were not constrained during timing analysis\n";
-            }
         }
 
         void do_required_pre_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, Visitor& visitor) override {
 
-            size_t num_unconstrained = 0;
 #ifdef __cilk
             //Use reducer for thread-safe sum
             cilk::reducer<cilk::op_add<size_t>> unconstrained_reducer(0);
@@ -67,17 +62,14 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
 #ifdef __cilk
                     *unconstrained_reducer += 1;
 #else
-                    num_unconstrained += 1;
+                    num_unconstrained_endpoints_ += 1;
 #endif
                 }
             }
 
 #ifdef __cilk
-            num_unconstrained = unconstrained_reducer.get_value();
+            num_unconstrained_endpoints_ = unconstrained_reducer.get_value();
 #endif
-            if(num_unconstrained > 0) {
-                std::cerr << "Warning: " << num_unconstrained << " timing sink(s) were not constrained during timing analysis\n";
-            }
         }
 
         void do_arrival_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) override {
@@ -117,6 +109,11 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker<Visitor, DelayCalc>
             }
         }
 
+        size_t num_unconstrained_startpoints_impl() const override { return num_unconstrained_startpoints_; }
+        size_t num_unconstrained_endpoints_impl() const override { return num_unconstrained_endpoints_; }
+    private:
+        size_t num_unconstrained_startpoints_;
+        size_t num_unconstrained_endpoints_;
 };
 
 } //namepsace

@@ -213,6 +213,8 @@ TimingTags::const_iterator find_tag(TimingTags::tag_range tags,
                                            DomainId launch_domain, 
                                            DomainId capture_domain);
 
+//Returns true of the specified set of tags would constrain a node of type node_type
+bool is_constrained(NodeType node_type, TimingTags::tag_range tags);
 
 } //namepsace
 

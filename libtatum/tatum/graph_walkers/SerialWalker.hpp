@@ -2,10 +2,6 @@
 #include "tatum/graph_walkers/TimingGraphWalker.hpp"
 #include "tatum/TimingGraph.hpp"
 
-//#define LOG_TRAVERSAL_LEVELS
-
-#include <iostream>
-
 namespace tatum {
 
 /**
@@ -19,10 +15,6 @@ template<class Visitor, class DelayCalc>
 class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
     protected:
         void do_arrival_pre_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, Visitor& visitor) override {
-#ifdef LOG_TRAVERSAL_LEVELS
-            std::cout << "Arrival Pre-traversal\n";
-#endif
-
             size_t num_unconstrained = 0;
 
             LevelId first_level = *tg.levels().begin();
@@ -34,16 +26,12 @@ class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
                 }
             }
 
-            if(num_unconstrained > 0) {
-                std::cerr << "Warning: " << num_unconstrained << " timing source(s) were not constrained during timing analysis\n";
-            }
+            num_unconstrained_startpoints_ = num_unconstrained;
         }
 
         void do_required_pre_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, Visitor& visitor) override {
-#ifdef LOG_TRAVERSAL_LEVELS
-            std::cout << "Required Pre-traversal\n";
-#endif
             size_t num_unconstrained = 0;
+
             for(NodeId node_id : tg.logical_outputs()) {
                 bool constrained = visitor.do_required_pre_traverse_node(tg, tc, node_id);
 
@@ -52,16 +40,11 @@ class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
                 }
             }
 
-            if(num_unconstrained > 0) {
-                std::cerr << "Warning: " << num_unconstrained << " timing sink(s) were not constrained during timing analysis\n";
-            }
+            num_unconstrained_endpoints_ = num_unconstrained;
         }
 
         void do_arrival_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) override {
             for(LevelId level_id : tg.levels()) {
-#ifdef LOG_TRAVERSAL_LEVELS
-                std::cout << "Arrival " << level_id << "\n";
-#endif
                 for(NodeId node_id : tg.level_nodes(level_id)) {
                     visitor.do_arrival_traverse_node(tg, tc, dc, node_id);
                 }
@@ -70,9 +53,6 @@ class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
 
         void do_required_traversal_impl(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, Visitor& visitor) override {
             for(LevelId level_id : tg.reversed_levels()) {
-#ifdef LOG_TRAVERSAL_LEVELS
-                std::cout << "Required " << level_id << "\n";
-#endif
                 for(NodeId node_id : tg.level_nodes(level_id)) {
                     visitor.do_required_traverse_node(tg, tc, dc, node_id);
                 }
@@ -93,6 +73,12 @@ class SerialWalker : public TimingGraphWalker<Visitor, DelayCalc> {
                 visitor.do_reset_edge(edge_id);
             }
         }
+
+        size_t num_unconstrained_startpoints_impl() const override { return num_unconstrained_startpoints_; }
+        size_t num_unconstrained_endpoints_impl() const override { return num_unconstrained_endpoints_; }
+    private:
+        size_t num_unconstrained_startpoints_;
+        size_t num_unconstrained_endpoints_;
 };
 
 } //namepsace

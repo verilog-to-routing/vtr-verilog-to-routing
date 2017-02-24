@@ -12,6 +12,7 @@ namespace tatum { namespace detail {
         public:
             virtual ~TagRetriever() = default;
 
+            virtual TimingTags::tag_range tags(NodeId node) const = 0;
             virtual TimingTags::tag_range tags(NodeId node, TagType tag_type) const = 0;
             virtual TimingTags::tag_range slacks(NodeId node) const = 0;
             virtual TimingPathType type() const = 0;
@@ -20,6 +21,10 @@ namespace tatum { namespace detail {
     class SetupTagRetriever : public TagRetriever {
         public:
             SetupTagRetriever(const SetupTimingAnalyzer& analyzer): analyzer_(analyzer) {}
+
+            TimingTags::tag_range tags(NodeId node) const override {
+                return analyzer_.setup_tags(node);           
+            }
 
             TimingTags::tag_range tags(NodeId node, TagType tag_type) const override {
                 return analyzer_.setup_tags(node, tag_type);           
@@ -39,6 +44,10 @@ namespace tatum { namespace detail {
     class HoldTagRetriever : public TagRetriever {
         public:
             HoldTagRetriever(const HoldTimingAnalyzer& analyzer): analyzer_(analyzer) {}
+
+            TimingTags::tag_range tags(NodeId node) const override {
+                return analyzer_.hold_tags(node);           
+            }
 
             TimingTags::tag_range tags(NodeId node, TagType tag_type) const override {
                 return analyzer_.hold_tags(node, tag_type);           
