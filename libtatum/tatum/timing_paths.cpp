@@ -74,21 +74,6 @@ std::vector<TimingPathInfo> find_critical_paths(const TimingGraph& timing_graph,
         }
     }
 
-    //Sort the paths in a reasonable order
-    auto cmp = [&](const TimingPathInfo& lhs, const TimingPathInfo& rhs) {
-        const auto& lhs_launch_clock_name = timing_constraints.clock_domain_name(lhs.launch_domain());
-        const auto& rhs_launch_clock_name = timing_constraints.clock_domain_name(rhs.launch_domain());
-        if(lhs_launch_clock_name < rhs_launch_clock_name) {
-            //Sort by clock name first
-            return true;
-        } else if (lhs_launch_clock_name == rhs_launch_clock_name) {
-            //Then so the intra-domain pair appears first
-            return lhs.launch_domain() == rhs.launch_domain(); 
-        }
-        return false;
-    };
-    std::sort(cpds.begin(), cpds.end(), cmp);
-
     return cpds;
 }
 
