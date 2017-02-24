@@ -55,6 +55,8 @@ class FullHoldTimingAnalyzer : public HoldTimingAnalyzer {
         }
 
         double get_profiling_data_impl(std::string key) const override { return graph_walker_.get_profiling_data(key); }
+        size_t num_unconstrained_startpoints_impl() const override { return graph_walker_.num_unconstrained_startpoints(); }
+        size_t num_unconstrained_endpoints_impl() const override { return graph_walker_.num_unconstrained_endpoints(); }
 
         TimingTags::tag_range hold_tags_impl(NodeId node_id) const override { return hold_visitor_.hold_tags(node_id); }
         TimingTags::tag_range hold_tags_impl(NodeId node_id, TagType type) const override { return hold_visitor_.hold_tags(node_id, type); }

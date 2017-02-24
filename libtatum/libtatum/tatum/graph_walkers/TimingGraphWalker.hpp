@@ -107,6 +107,9 @@ class TimingGraphWalker {
             profiling_data_[key] = val;
         }
 
+        size_t num_unconstrained_startpoints() const { return num_unconstrained_startpoints_impl(); }
+        size_t num_unconstrained_endpoints() const { return num_unconstrained_endpoints_impl(); }
+
     protected:
         ///Sub-class defined arrival time pre-traversal
         ///\param tg The timing graph
@@ -140,6 +143,9 @@ class TimingGraphWalker {
 
         ///Sub-class defined slack calculation
         virtual void do_update_slack_impl(const TimingGraph& tg, const DelayCalc& dc, Visitor& visitor) = 0;
+
+        virtual size_t num_unconstrained_startpoints_impl() const = 0;
+        virtual size_t num_unconstrained_endpoints_impl() const = 0;
 
     private:
         std::map<std::string, double> profiling_data_;
