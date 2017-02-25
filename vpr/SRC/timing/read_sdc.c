@@ -726,6 +726,7 @@ static void use_default_timing_constraints(void) {
 }
 
 static void alloc_and_load_netlist_clocks_and_ios(void) {
+    std::map<const t_model*,std::vector<const t_model_ports*>> clock_gen_ports; //Records info about clock generating ports
 
 	/* Count how many clocks and I/Os are in the netlist. 
 	Store the names of each clock and each I/O in netlist_clocks and netlist_ios. */
@@ -734,6 +735,23 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 
         AtomBlockType type = g_atom_nl.block_type(blk_id);
         if(type == AtomBlockType::SEQUENTIAL) {
+
+            //Save any clock generating ports on this model type
+            const t_model* model = g_atom_nl.block_model(blk_id);
+            VTR_ASSERT(model);
+            auto iter = clock_gen_ports.find(model);
+            if(iter == clock_gen_ports.end()) {
+                //First time seen, record any ports which could generate clocks
+                for(const t_model_ports* model_port = model->outputs; model_port; model_port = model_port->next) {
+                    VTR_ASSERT(model_port->dir == OUT_PORT);
+                    if(model_port->is_clock) {
+                        //Clock generator
+                        clock_gen_ports[model].push_back(model_port);
+                    }
+                }
+            }
+
+            //Look for connected input clocks
             for(auto pin_id : g_atom_nl.block_clock_pins(blk_id)) {
                 AtomNetId clk_net_id = g_atom_nl.pin_net(pin_id);
                 VTR_ASSERT(clk_net_id);
@@ -750,6 +768,35 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
                     /* If we get here, the clock is new and so we dynamically grow the array netlist_clocks by one. */
                     netlist_clocks = (char **) vtr::realloc (netlist_clocks, ++num_netlist_clocks * sizeof(char *));
                     netlist_clocks[num_netlist_clocks - 1] = vtr::strdup(name.c_str());
+                }
+            }
+
+            //Look for any generated clocks
+            if(clock_gen_ports.count(model)) {
+                //This is a clock generator
+
+                //Check all the clock generating ports
+                for(const t_model_ports* model_port : clock_gen_ports[model]) {
+                    AtomPortId clk_gen_port = g_atom_nl.find_port(blk_id, model_port);
+
+                    for(AtomPinId pin_id : g_atom_nl.port_pins(clk_gen_port)) {
+                        AtomNetId clk_net_id = g_atom_nl.pin_net(pin_id);
+                        VTR_ASSERT(clk_net_id);
+
+                        std::string name = g_atom_nl.net_name(clk_net_id);
+                        /* Now that we've found a clock, let's see if we've counted it already */
+                        bool found = false;
+                        for (int i = 0; !found && i < num_netlist_clocks; i++) {
+                            if (netlist_clocks[i] == name) {
+                                found = true;
+                            }
+                        }
+                        if (!found) {
+                            /* If we get here, the clock is new and so we dynamically grow the array netlist_clocks by one. */
+                            netlist_clocks = (char **) vtr::realloc (netlist_clocks, ++num_netlist_clocks * sizeof(char *));
+                            netlist_clocks[num_netlist_clocks - 1] = vtr::strdup(name.c_str());
+                        }
+                    }
                 }
             }
 		} else if (type == AtomBlockType::INPAD || type == AtomBlockType::OUTPAD) {
