@@ -207,8 +207,10 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
 
     os << "\n";
 
+    size_t point_print_width = estimate_point_print_width(timing_path);
+
     //Helper to track path state and output formatting
-    ReportTimingPathHelper path_helper(unit_scale_, precision_);
+    ReportTimingPathHelper path_helper(unit_scale_, precision_, point_print_width);
     path_helper.print_path_line(os, "Point", " Incr", " Path");
     path_helper.print_divider(os);
 
@@ -472,6 +474,21 @@ void TimingReporter::report_unconstrained_endpoints(std::ostream& os, const deta
 
 bool TimingReporter::nearly_equal(const Time& lhs, const Time& rhs) const {
     return tatum::util::nearly_equal(lhs.value(), rhs.value(), absolute_error_tolerance_, relative_error_tolerance_);
+}
+
+size_t TimingReporter::estimate_point_print_width(const TimingPath& path) const {
+    size_t width = 60; //default
+    for(auto elems : {path.clock_launch_elements(), path.data_arrival_elements(), path.clock_capture_elements()}) {
+        for(auto elem : elems) {
+            //Take the longest typical point name
+            std::string point = name_resolver_.node_name(elem.node()) + " (" + name_resolver_.node_block_type_name(elem.node()) + ")";
+            point += " [clk-to-q]";
+
+            //Keep the max over all points
+            width = std::max(width, point.size());
+        }
+    }
+    return width;
 }
 
 } //namespace tatum
