@@ -41,6 +41,8 @@ class TimingReporter {
         void report_unconstrained_endpoints(std::ostream& os, const detail::TagRetriever& tag_retriever) const;
 
         bool nearly_equal(const tatum::Time& lhs, const tatum::Time& rhs) const;
+
+        size_t estimate_point_print_width(const TimingPath& path) const;
     private:
     private:
         const TimingGraphNameResolver& name_resolver_;
