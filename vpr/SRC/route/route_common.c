@@ -58,6 +58,9 @@ constexpr size_t PREDICTOR_RELAX_SLACK_FACTOR = 2;
 constexpr double OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK = 0.0002;
 constexpr double OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK = 50;
 
+// The ratio between predicted and maximum router iterations above which routing is aborted
+constexpr double PREDICTOR_ABORT_ITERATION_RATIO = 1.4;
+
 /***************** Variables shared only by route modules *******************/
 
 t_rr_node_route_inf *rr_node_route_inf = NULL; /* [0..num_rr_nodes-1] */
@@ -457,7 +460,7 @@ int predict_success_route_iter(int router_iteration, const std::vector<double>& 
 	// FIXME: if congestion increases compared to previous iterations, this can return a positive slope
 	int expected_success_route_iter = (itry*congestion_slope - historical_overuse_ratio.back()) / congestion_slope;
 
-	if (expected_success_route_iter > 1.25 * router_opts.max_router_iterations) {
+	if (expected_success_route_iter > PREDICTOR_ABORT_ITERATION_RATIO * router_opts.max_router_iterations) {
 		vtr::printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_success_route_iter);
 		return UNDEFINED;
 	}
