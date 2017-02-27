@@ -512,7 +512,6 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
 
 	int i, j, in_port, out_port, clock_port, num_tokens;
     std::vector<std::string> pins;
-	int rr_node_index;
 	t_pb_graph_pin *** pin_node;
 	int *num_ptrs, num_sets;
 	bool found;
@@ -586,10 +585,14 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                 //We are processing a top-level pb, so these pins connect to inter-block nets
                 for (i = 0; i < num_tokens; i++) {
                     //Set rr_node_index to the pb_route for the appropriate port
-                    if (0 == strcmp(Parent.name(), "inputs"))
-                        rr_node_index = pb->pb_graph_node->input_pins[in_port][i].pin_count_in_cluster;
-                    else
-                        rr_node_index = pb->pb_graph_node->clock_pins[clock_port][i].pin_count_in_cluster;
+                    const t_pb_graph_pin* pb_gpin = nullptr;
+                    if (0 == strcmp(Parent.name(), "inputs")) {
+                        pb_gpin = &pb->pb_graph_node->input_pins[in_port][i];
+                    } else {
+                        pb_gpin = &pb->pb_graph_node->clock_pins[clock_port][i];
+                    }
+                    VTR_ASSERT(pb_gpin != nullptr);
+                    int rr_node_index = pb_gpin->pin_count_in_cluster;
 
 
                     if (strcmp(pins[i].c_str(), "open") != 0) {
@@ -602,6 +605,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                         }
                         //Mark the associated inter-block net
                         pb_route[rr_node_index].atom_net_id = net_id;
+                        pb_route[rr_node_index].pb_graph_pin = pb_gpin;
                     }						
                 }
             } else {
@@ -629,11 +633,19 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                                     pin_name.c_str(), &num_ptrs, &num_sets, true,
                                     true);
                     VTR_ASSERT(num_sets == 1 && num_ptrs[0] == 1);
-                    if (0 == strcmp(Parent.name(), "inputs"))
-                        rr_node_index = pb->pb_graph_node->input_pins[in_port][i].pin_count_in_cluster;
-                    else
-                        rr_node_index = pb->pb_graph_node->clock_pins[clock_port][i].pin_count_in_cluster;
+
+                    const t_pb_graph_pin* pb_gpin = nullptr;
+                    if (0 == strcmp(Parent.name(), "inputs")) {
+                        pb_gpin = &pb->pb_graph_node->input_pins[in_port][i];
+                    } else {
+                        pb_gpin = &pb->pb_graph_node->clock_pins[clock_port][i];
+                    }
+                    VTR_ASSERT(pb_gpin != nullptr);
+                    int rr_node_index = pb_gpin->pin_count_in_cluster;
+
                     pb_route[rr_node_index].driver_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
+                    pb_route[rr_node_index].pb_graph_pin = pb_gpin;
+
                     found = false;
                     for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
                         if (0 == strcmp(interconnect_name.c_str(), pin_node[0][0]->output_edges[j]->interconnect->name)) {
@@ -659,7 +671,8 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
             if (pb->pb_graph_node->pb_type->num_modes == 0) {
                 /* primitives are drivers of nets */
                 for (i = 0; i < num_tokens; i++) {
-                    rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
+                    const t_pb_graph_pin* pb_gpin = &pb->pb_graph_node->output_pins[out_port][i];
+                    int rr_node_index = pb_gpin->pin_count_in_cluster;
                     if (strcmp(pins[i].c_str(), "open") != 0) {
                         AtomNetId net_id = g_atom_nl.find_net(pins[i].c_str());
                         if (!net_id) {
@@ -668,6 +681,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                                     pins[i].c_str());
                         }
                         pb_route[rr_node_index].atom_net_id = net_id;
+                        pb_route[rr_node_index].pb_graph_pin = pb_gpin;
                     }
                 }
             } else {
@@ -693,8 +707,12 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
                                     pin_name.c_str(), &num_ptrs, &num_sets, true,
                                     true);
                     VTR_ASSERT(num_sets == 1 && num_ptrs[0] == 1);
-                    rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
+                    int rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
+
+                    //Why does this not use the output pin used to deterimine the rr node index?
                     pb_route[rr_node_index].driver_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
+                    pb_route[rr_node_index].pb_graph_pin = pin_node[0][0]; 
+
                     found = false;
                     for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
                         if (0 == strcmp(interconnect_name.c_str(), pin_node[0][0]->output_edges[j]->interconnect->name)) {

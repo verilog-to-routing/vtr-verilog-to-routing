@@ -5,7 +5,8 @@
 
 void print_tabs(FILE * fpout, int num_tab);
 
-bool is_clb_input_pin(int ipin, t_type_ptr type);
+bool is_clb_external_pin(int clb, int pb_pin_id);
+
 bool is_opin(int ipin, t_type_ptr type);
 
 int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node);

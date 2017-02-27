@@ -365,7 +365,7 @@ static AtomPinId find_atom_pin_for_pb_route_id(int clb, int pb_route_id, const I
     return AtomPinId::INVALID();
 }
 
-//Return the net pin which drive the CLB input connected to sink_pb_pin_id
+//Return the net pin which drive the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
 const t_net_pin* find_pb_route_clb_input_net_pin(int clb, int sink_pb_pin_id) {
     VTR_ASSERT(sink_pb_pin_id < block[clb].pb->pb_graph_node->total_pb_pins);
 
@@ -389,12 +389,15 @@ const t_net_pin* find_pb_route_clb_input_net_pin(int clb, int sink_pb_pin_id) {
         next_pb_pin_id = pb_routes[curr_pb_pin_id].driver_pb_pin_id;
     }
 
-    //To account for capacity > 1 blocks we need to convert the pb_pin to the clb pin
-    int clb_pin = find_pb_pin_clb_pin(clb, curr_pb_pin_id);
+    bool is_output_pin = (pb_routes[curr_pb_pin_id].pb_graph_pin->port->type == OUT_PORT);
 
-    if(!is_clb_input_pin(clb_pin, block[clb].type)) {
+    if(!is_clb_external_pin(clb, curr_pb_pin_id) || is_output_pin) {
         return nullptr;
     }
+
+    //To account for capacity > 1 blocks we need to convert the pb_pin to the clb pin
+    int clb_pin = find_pb_pin_clb_pin(clb, curr_pb_pin_id);
+    VTR_ASSERT(clb_pin >= 0);
 
     //clb_pin should be a top-level CLB input
     int clb_net_idx = block[clb].nets[clb_pin];
@@ -455,21 +458,17 @@ int find_pb_pin_clb_pin(int clb, int pb_pin) {
     return clb_pin;
 }
 
-bool is_clb_input_pin(int ipin, t_type_ptr type) {
-	/* Returns true if this clb pin is an input, false otherwise. */
+bool is_clb_external_pin(int clb, int pb_pin_id) {
 
-    if(ipin > type->num_pins) {
-        //Not a top level pin
-        return false;
-    }
+    const t_pb_graph_pin* gpin = block[clb].pb_route[pb_pin_id].pb_graph_pin;
+    VTR_ASSERT(gpin);
 
-	int iclass = type->pin_class[ipin];
+    //If the gpin's parent graph node is the same as the pb's graph node
+    //this must be a top level pin
+    const t_pb_graph_node* gnode = gpin->parent_node;
+    bool is_top_level_pin = (gnode == block[clb].pb->pb_graph_node);
 
-	if (type->class_inf[iclass].type == RECEIVER)
-		return true;
-	else
-		return false;
-
+    return is_top_level_pin;
 }
 
 bool is_opin(int ipin, t_type_ptr type) {
