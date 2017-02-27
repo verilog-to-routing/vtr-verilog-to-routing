@@ -690,17 +690,27 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = get_attribute(Parent, "max", loc_data, OPTIONAL).as_string(NULL);
+
+        bool found_min_max_attrib = false;
 		if (Prop) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX;
 			annotation->value[i] = vtr::strdup(Prop);
 			i++;
+            found_min_max_attrib = true;
 		}
 		Prop = get_attribute(Parent, "min", loc_data, OPTIONAL).as_string(NULL);
 		if (Prop) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN;
 			annotation->value[i] = vtr::strdup(Prop);
 			i++;
+            found_min_max_attrib = true;
 		}
+
+        if(!found_min_max_attrib) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                    "Failed to find either 'max' or 'min' attribute required for <%s> in <%s>",
+                    Parent.name(), Parent.parent().name());
+        }
 
 		Prop = get_attribute(Parent, "port", loc_data).value();
 		annotation->input_pins = vtr::strdup(Prop);
