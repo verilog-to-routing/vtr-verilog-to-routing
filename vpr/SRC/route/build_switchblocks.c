@@ -33,7 +33,7 @@ This functionality is split across different files which are described below:
     * s_det_routing_arch carries info about custom switch blocks
   * build_switchblocks.c (this file):
     * builds t_sb_connection_map sparse array containing target connections for each wire in each horizontal/vertical channel segment.
-      'compute_wire_connections' is the most important function here -- it computes the set of wire segments that a given wire at 
+      'compute_wire_connections' is the most important function here -- it computes the set of wire segments that a given wire at
       (x, y, from_side, to_side, from_wire) should connect to.
   * rr_graph.c:
     * calls alloc_and_load_switchblock_permutations (from build_switchblocks.c) which creates the t_sb_connection_map
@@ -46,7 +46,7 @@ This functionality is split across different files which are described below:
 Some terminology:
 
   * Wire segment type: a named group of wires defined in the architecture file.
-  * Wire subsegment number: a number assigned to a wire subsegment relative to the wire's start coordinate (see diagram below). 
+  * Wire subsegment number: a number assigned to a wire subsegment relative to the wire's start coordinate (see diagram below).
        Used to define a collection of wire segments that have a start point in the same column (or row) of the FPGA.
   * Wire switch point: a number assigned to a specific switch block along a wire segment
 
@@ -56,11 +56,11 @@ Ex: for a length-4 unidirectional wire segment going in the decreasing direction
 
 The new switch block format allows a user to specify mathematical permutation functions that describe how different types of wires will connect at different switchpoinnts. One or more wire types *and* one or more switch points define a set of wires, and each switch block connection is specified in terms of a source and destination set. Specifically, the permutation functions prescribe how a set of from_type/from_switchpoint wires (the source set) in one channel segment should connect to a set of to_type/to_switchpoint wires (the destination set) in an adjacent channel segment. This provides for an abstract but very flexible way of specifying different switch block patterns.
 
-An example from an XML VPR architecture file is given below. 
+An example from an XML VPR architecture file is given below.
 
-The 'wireconn' entries define ordered source/destination sets of wire segments that should be connected with the specified permutation functions. The wireconn entries essentially "re-index" the channel so that a permutation function of 't/2' means that the t'th wire segment in the source wireconn set should connect to the [(t/2)%W]'th wire segment in the destination set where W is the size, or effective channel width, of the destination set (note that permutation functions are implicitly modulo W so that all functions evaluate to a number that indexes into the destination set). 
+The 'wireconn' entries define ordered source/destination sets of wire segments that should be connected with the specified permutation functions. The wireconn entries essentially "re-index" the channel so that a permutation function of 't/2' means that the t'th wire segment in the source wireconn set should connect to the [(t/2)%W]'th wire segment in the destination set where W is the size, or effective channel width, of the destination set (note that permutation functions are implicitly modulo W so that all functions evaluate to a number that indexes into the destination set).
 
-  <!-- Specify that custom switch blocks will be used. This is backwards compatible with VPR's previous wilton/subset/univeral specification, 
+  <!-- Specify that custom switch blocks will be used. This is backwards compatible with VPR's previous wilton/subset/univeral specification,
        but "custom" is specified instead. -->
   <switch_block type="custom"/>			<-- backwards-compatible with VPR's previous wilton/subset/universal/full specification
   ...
@@ -89,7 +89,7 @@ The 'wireconn' entries define ordered source/destination sets of wire segments t
       <!-- A list of permutation functions. Any number can be specified (for instance two "lt" entries can be specified to increase
            Fs of connections from the left to the top switch block sides -->
       <switchfuncs>
-        <!-- "lr" means left-to-right, "lt" means left to top, etc. Formulas support different operators which are discussed later --> 
+        <!-- "lr" means left-to-right, "lt" means left to top, etc. Formulas support different operators which are discussed later -->
         <func type="lr" formula="t"/>
         <func type="lt" formula="W-t"/>
         <func type="lb" formula="W+t-1"/>
@@ -114,7 +114,7 @@ The 'wireconn' entries define ordered source/destination sets of wire segments t
     </switchblock>
   </switchblocklist>
 
-Allowed symmbols and operators for the switch block permutation functions are described below (recall 
+Allowed symmbols and operators for the switch block permutation functions are described below (recall
 that formulas are evaluated in 'parse_switchblocks.c'):
   * "+" -- addition
   * "-" -- subtraction
@@ -144,12 +144,12 @@ using namespace std;
 
 /************ Defines ************/
 /* if defined, switch block patterns are loaded by first computing a row of switch blocks and then
-   stamping out the row throughout the FPGA */ 
+   stamping out the row throughout the FPGA */
 //#define FAST_SB_COMPUTATION
 
-/* REF_X/REF_Y set a reference coordinate; some look-up structures in this file are computed relative to 
+/* REF_X/REF_Y set a reference coordinate; some look-up structures in this file are computed relative to
    this reference */
-#define REF_X 1			//constexpr int REX_X = 1;	<-- basically C++11 defines; more type-safe	
+#define REF_X 1			//constexpr int REX_X = 1;	<-- basically C++11 defines; more type-safe
 #define REF_Y 1
 
 
@@ -157,19 +157,19 @@ using namespace std;
 /* contains info about a wire segment type */
 class Wire_Info{
 public:
-	int length;		/* the length of this type of wire segment in tiles */
-	int num_wires;		/* total number of wires in a channel segment (basically W) */
-	int start;		/* the wire index at which this type starts in the channel segment (0..W-1) */
-	
-	void set(int len, int wires, int st){
-		length = len; num_wires = wires; start = st;
-	}
-	Wire_Info(){
-		this->set(0, 0, 0);
-	}
-	Wire_Info(int len, int wires, int st){
-		this->set(len, wires, st);
-	}
+    int length;		/* the length of this type of wire segment in tiles */
+    int num_wires;		/* total number of wires in a channel segment (basically W) */
+    int start;		/* the wire index at which this type starts in the channel segment (0..W-1) */
+
+    void set(int len, int wires, int st){
+        length = len; num_wires = wires; start = st;
+    }
+    Wire_Info(){
+        this->set(0, 0, 0);
+    }
+    Wire_Info(int len, int wires, int st){
+        this->set(len, wires, st);
+    }
 };
 
 
@@ -180,11 +180,11 @@ typedef map< string, Wire_Info > t_wire_type_sizes;
 
 /************ Function Declarations ************/
 /* Counts the number of wires in each wire type in the specified channel */
-static void count_wire_type_sizes(t_seg_details *channel, int nodes_per_chan, 
-			t_wire_type_sizes *wire_type_sizes);
+static void count_wire_type_sizes(t_seg_details *channel, int nodes_per_chan,
+                                  t_wire_type_sizes *wire_type_sizes);
 
 #ifdef FAST_SB_COMPUTATION
-/* over all connected wire types (i,j), compute the maximum least common multiple of their wire lengths, 
+/* over all connected wire types (i,j), compute the maximum least common multiple of their wire lengths,
    ie max(LCM(L_i, L_J)) */
 static int get_max_lcm(vector<t_switchblock_inf> *switchblocks, t_wire_type_sizes *wire_type_sizes);
 
@@ -194,20 +194,36 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 		t_wire_type_sizes *wire_type_sizes, e_directionality directionality,
 		t_sb_connection_map *sb_conns);
 
-/* computes a horizontal line of switchblocks of size sb_row_size (or of nx-2, whichever is smaller), starting 
+/* computes a horizontal line of switchblocks of size sb_row_size (or of nx-2, whichever is smaller), starting
    at coordinate (1,1) */
 static void compute_switchblock_row(int sb_row_size, t_chan_details *chan_details_x, t_chan_details *chan_details_y,
-		vector<t_switchblock_inf> *switchblocks, int nx, int ny, int nodes_per_chan, 
+		vector<t_switchblock_inf> *switchblocks, int nx, int ny, int nodes_per_chan,
 		t_wire_type_sizes *wire_type_sizes, e_directionality directionality,
 		t_sb_connection_map *sb_row);
 
 /* stamp out a line of horizontal switchblocks starting at coordinates (ref_x, ref_y) and
    continuing on for sb_row_size */
-static void stampout_switchblocks_from_row( int sb_row_size,  
+static void stampout_switchblocks_from_row( int sb_row_size,
 		int nodes_per_chan,
-		int nx, int ny, t_wire_type_sizes *wire_type_sizes, 
-		e_directionality directionality, t_sb_connection_map *sb_row, 
+		int nx, int ny, t_wire_type_sizes *wire_type_sizes,
+		e_directionality directionality, t_sb_connection_map *sb_row,
 		t_sb_connection_map *sb_conns );
+
+/* Compute the wire(s) that the wire at (x, y, from_side, to_side, from_wire) should connect to.
+   sb_conns is updated with the result */
+static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_side,
+			enum e_side to_side, int from_wire, t_chan_details * chan_details_x,
+			t_chan_details * chan_details_y, t_switchblock_inf *sb,
+			int nx, int ny,
+			t_wire_type_sizes *wire_type_sizes, e_directionality directionality,
+			t_sb_connection_map *sb_conns);
+
+/* ... sb_conn represents the 'coordinates' of the desired switch block connections */
+static void compute_wireconn_connections(int nx, int ny, e_directionality directionality,
+		t_chan_details *from_chan_details, t_chan_details *to_chan_details, Switchblock_Lookup sb_conn,
+		int from_x, int from_y, int to_x, int to_y, t_rr_type from_chan_type, t_rr_type to_chan_type,
+		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb,
+		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns);
 
 /* compute greatest common denominator of x and y */
 static int gcd(int x, int y);
@@ -216,49 +232,33 @@ static int gcd(int x, int y);
 static int lcm(int x, int y);
 #endif	//FAST_SB_COMPUTATION
 
-/* Compute the wire(s) that the wire at (x, y, from_side, to_side, from_wire) should connect to.
-   sb_conns is updated with the result */
-static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_side,
-			enum e_side to_side, int from_wire, t_chan_details * chan_details_x,
-			t_chan_details * chan_details_y, t_switchblock_inf *sb,
-			int nx, int ny,
-			t_wire_type_sizes *wire_type_sizes, e_directionality directionality, 
-			t_sb_connection_map *sb_conns);
+/* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */
+static void get_switchpoint_wires(int nx, int ny, t_seg_details *chan_details,
+                                  t_rr_type chan_type, int x, int y, e_side side, vector<string> *wire_type_vec, vector<int> *points,
+                                  t_wire_type_sizes *wire_type_sizes, bool is_dest, vector<int> *wires);
 
-/* ... sb_conn represents the 'coordinates' of the desired switch block connections */
-static void compute_wireconn_connections(int nx, int ny, e_directionality directionality,
-		t_chan_details *from_chan_details, t_chan_details *to_chan_details, Switchblock_Lookup sb_conn,
-		int from_x, int from_y, int to_x, int to_y, t_rr_type from_chan_type, t_rr_type to_chan_type, 
-		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb, 
-		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns);
-
-/* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */ 
-static void get_switchpoint_wires(int nx, int ny, t_seg_details *chan_details, 
-		t_rr_type chan_type, int x, int y, e_side side, vector<string> *wire_type_vec, vector<int> *points, 
-		t_wire_type_sizes *wire_type_sizes, bool is_dest, vector<int> *wires);
-
-static t_rr_type index_into_correct_chan(int tile_x, int tile_y, enum e_side side, 
-			t_chan_details *chan_details_x, t_chan_details *chan_details_y,
-			int *chan_x, int *chan_y, 
-			t_chan_details **chan_details);
+static t_rr_type index_into_correct_chan(int tile_x, int tile_y, enum e_side side,
+                                         t_chan_details *chan_details_x, t_chan_details *chan_details_y,
+                                         int *chan_x, int *chan_y,
+                                         t_chan_details **chan_details);
 
 /* checks whether the specified coordinates are out of bounds */
-static bool coords_out_of_bounds(int nx, int ny, int x_coord, int y_coord, 
-			e_rr_type chan_type);
+static bool coords_out_of_bounds(int nx, int ny, int x_coord, int y_coord,
+                                 e_rr_type chan_type);
 
-/* returns seg coordinate based on a channel's x/y coordinates */
-static int get_seg_coordinate(t_rr_type chan_type, int x_coord, int y_coord);
+///* returns seg coordinate based on a channel's x/y coordinates */
+//static int get_seg_coordinate(t_rr_type chan_type, int x_coord, int y_coord);
 
 /* returns the subsegment number of the specified wire at seg_coord*/
 static int get_wire_subsegment_num(int nx, int ny, e_rr_type chan_type,
-			 t_seg_details &wire_details, int seg_coord);
+                                   t_seg_details &wire_details, int seg_coord);
 
 int get_wire_segment_length(int nx, int ny, e_rr_type chan_type, t_seg_details &wire_details);
 
 /* Returns the switchpoint of the wire specified by wire_details at a segment coordinate
    of seg_coord, and connection to the sb_side of the switchblock */
 static int get_switchpoint_of_wire(int nx, int ny, e_rr_type chan_type,
-		t_seg_details &wire_details, int seg_coord, e_side sb_side);
+                                   t_seg_details &wire_details, int seg_coord, e_side sb_side);
 
 /* returns true if the coordinates x/y do not correspond to the location specified by 'location' */
 static bool sb_not_here(int nx, int ny, int x, int y, e_sb_location location);
@@ -275,31 +275,43 @@ static bool is_core(int nx, int ny, int x, int y);
 /* adjusts a negative destination wire index calculated from a permutation formula */
 static int adjust_formula_result(int dest_wire, int dest_W);
 
+/* compute the wire(s) that the wire(s) at (x, y, from_side, to_side) should connect to,
+ * sb_conns is updated with the result */
+void compute_each_side(int x_coord, int y_coord, enum e_side from_side,enum e_side to_side,t_chan_details * chan_details_x,
+                       t_chan_details * chan_details_y,t_switchblock_inf *sb,
+                       int nx, int ny,t_wire_type_sizes *wire_type_sizes, e_directionality directionality,
+                       t_sb_connection_map *sb_conns);
 
+/* compute all the wire connections given the specific "from_side", "to_side" and "wireconn_ptr",
+ * and it's the sub-iteration of "compute_each_side" call */
+void compute_each_conn(int x_coord, int y_coord, enum e_side from_side,enum e_side to_side, int from_x, int from_y,
+                       t_switchblock_inf *sb, int nx, int ny, t_chan_details *from_chan_details, t_chan_details *to_chan_details, int to_x, int to_y,
+                       t_rr_type from_chan_type, t_rr_type to_chan_type, t_wire_type_sizes *wire_type_sizes, t_wireconn_inf *wireconn_ptr,
+                       t_sb_connection_map *sb_conns,e_directionality directionality);
 
 /************ Function Definitions ************/
 /* allocate and build the switchblock permutation map */
-t_sb_connection_map * alloc_and_load_switchblock_permutations( t_chan_details * chan_details_x, 
-				t_chan_details * chan_details_y, int nx, int ny, 
-				vector<t_switchblock_inf> switchblocks, 
-				s_chan_width *nodes_per_chan, e_directionality directionality){
+t_sb_connection_map * alloc_and_load_switchblock_permutations( t_chan_details * chan_details_x,
+                                                               t_chan_details * chan_details_y, int nx, int ny,
+                                                               vector<t_switchblock_inf> switchblocks,
+                                                               s_chan_width *nodes_per_chan, e_directionality directionality){
 
-	/* get a single number for channel width */
-	int channel_width = nodes_per_chan->max;
-	if (nodes_per_chan->max != nodes_per_chan->x_min || nodes_per_chan->max != nodes_per_chan->y_min){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Custom switch blocks currently support consistent channel widths only.");
-	}
+    /* get a single number for channel width */
+    int channel_width = nodes_per_chan->max;
+    if (nodes_per_chan->max != nodes_per_chan->x_min || nodes_per_chan->max != nodes_per_chan->y_min){
+        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Custom switch blocks currently support consistent channel widths only.");
+    }
 
-	/* sparse array that will contain switch block connections */
-	t_sb_connection_map *sb_conns = new t_sb_connection_map;
+    /* sparse array that will contain switch block connections */
+    t_sb_connection_map *sb_conns = new t_sb_connection_map;
 
-	/* We assume that x & y channels have the same ratios of wire types. i.e., looking at a single 
-	   channel is representative of all channels in the FPGA -- as of 3/9/2013 this is true in VPR */
-	t_wire_type_sizes wire_type_sizes;
-	count_wire_type_sizes(chan_details_x[0][0], channel_width, &wire_type_sizes);
-	
+    /* We assume that x & y channels have the same ratios of wire types. i.e., looking at a single
+       channel is representative of all channels in the FPGA -- as of 3/9/2013 this is true in VPR */
+    t_wire_type_sizes wire_type_sizes;
+    count_wire_type_sizes(chan_details_x[0][0], channel_width, &wire_type_sizes);
+
 #ifdef FAST_SB_COMPUTATION
-	/******** fast switch block computation method; computes a row of switchblocks then stamps it out everywhere ********/
+    /******** fast switch block computation method; computes a row of switchblocks then stamps it out everywhere ********/
 	/* figure out max(lcm(L_i, L_j)) for all wire lengths belonging to wire types i & j */
 	int max_lcm = get_max_lcm(&switchblocks, &wire_type_sizes);
 	t_sb_connection_map sb_row;
@@ -318,63 +330,209 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations( t_chan_details * 
 			nx, ny, &wire_type_sizes, directionality, &sb_row, sb_conns );
 
 #else
-	/******** slow switch block computation method; computes switchblocks at each coordinate ********/
-	/* iterate over all the switchblocks specified in the architecture */
-	for (int i_sb = 0; i_sb < (int)switchblocks.size(); i_sb++){
-		t_switchblock_inf sb = switchblocks[i_sb];
 
-		/* verify that switchblock type matches specified directionality -- currently we have to stay consistent */
-		if (directionality != sb.directionality){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
-		}
-		/* Iterate over the x,y coordinates spanning the FPGA. Currently, the FPGA size is set as
-		   (0..nx+1) by (0..ny+1), so we iterate over 0..nx and 0..ny. */
-		for (int x_coord = 0; x_coord <= nx+1; x_coord++){
-			for (int y_coord = 0; y_coord <= ny+1; y_coord++){
-				if (sb_not_here(nx, ny, x_coord, y_coord, sb.location)){
-					continue;
-				}
-				/* Iterate over each wire in channel */
-				for (int from_wire = 0; from_wire < channel_width; from_wire++){
+    /******** slow switch block computation method; computes switchblocks at each coordinate ********/
+    /* iterate over all the switchblocks specified in the architecture */
+    for (int i_sb = 0; i_sb < (int)switchblocks.size(); i_sb++){
+        t_switchblock_inf sb = switchblocks[i_sb];
 
-					/* now we iterate over all the potential side1->side2 connections */
-					for ( e_side from_side = (e_side) 0; from_side < 4; from_side = (e_side)(from_side + 1) ){
-						for ( e_side to_side = (e_side) 0; to_side < 4; to_side = (e_side)(to_side + 1) ){
-							
-							/* Fill appropriate entry of the sb_conns map with vector specifying the wires 
-							   the current wire will connect to */
-							compute_wire_connections(x_coord, y_coord, from_side, to_side, from_wire,
-									chan_details_x, chan_details_y, &sb, nx, ny,
-									&wire_type_sizes, directionality, sb_conns);
-							
-						}
-					}
-				}
-			}
-		}
-	}
+        /* verify that switchblock type matches specified directionality -- currently we have to stay consistent */
+        if (directionality != sb.directionality){
+            vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
+        }
+
+        /* Iterate over the x,y coordinates spanning the FPGA. Currently, the FPGA size is set as
+           (0..nx+1) by (0..ny+1), so we iterate over 0..nx and 0..ny. */
+        for (int x_coord = 0; x_coord <= nx+1; x_coord++){
+            for (int y_coord = 0; y_coord <= ny+1; y_coord++){
+                if (sb_not_here(nx, ny, x_coord, y_coord, sb.location)) {
+                    continue;
+                }
+
+                /* now we iterate over all the potential side1->side2 connections */
+                for ( e_side from_side = (e_side) 0; from_side < 4; from_side = (e_side)(from_side + 1) ){
+                    for ( e_side to_side = (e_side) 0; to_side < 4; to_side = (e_side)(to_side + 1) ){
+                        /* can't connect a side to itself */
+                        if (from_side == to_side){
+                            continue;
+                        }
+                        /* Fill appropriate entry of the sb_conns map for each "from_side" and "to_side" pair at the given (x_coord, y_coord) coordinate. */
+                        compute_each_side(x_coord, y_coord, from_side, to_side, chan_details_x, chan_details_y, &sb, nx,
+                                          ny, &wire_type_sizes, directionality, sb_conns);
+
+                    }
+                }
+            }
+        }
+    }
 #endif
 
-	return sb_conns;
+    return sb_conns;
 }
 
+void compute_each_side(int x_coord, int y_coord, enum e_side from_side,enum e_side to_side,t_chan_details * chan_details_x,
+                       t_chan_details * chan_details_y,t_switchblock_inf *sb,
+                       int nx, int ny,t_wire_type_sizes *wire_type_sizes, e_directionality directionality,
+                       t_sb_connection_map *sb_conns) {
+
+    SB_Side_Connection side_conn(from_side, to_side);		/* for indexing into this switchblock's permutation funcs */
+
+    /* check that the permutation map has an entry for this side combination */
+    if (sb->permutation_map.count(side_conn) == 0){
+        /* the specified switchblock does not have any permutation funcs for this side1->side2 connection */
+        return;
+    }
+
+    t_chan_details *from_chan_details = NULL;	/* details for source channel */
+    t_chan_details *to_chan_details = NULL ;	/* details for destination channel */
+    int from_x, from_y;				/* index into source channel */
+    int to_x, to_y;					/* index into destination channel */
+    /* pointer to a connection specification between wire types/subsegment_nums */
+    t_wireconn_inf *wireconn_ptr;
+
+    t_rr_type from_chan_type, to_chan_type;		/* the type of channel - i.e. CHANX or CHANY */
+    from_x = from_y = to_x = to_y = UNDEFINED;
+
+    /* find the correct channel, and the coordinates to index into it for both the source and
+	   destination channels. also return the channel type (ie chanx/chany) into which we are
+	   indexing */
+    from_chan_type = index_into_correct_chan(x_coord, y_coord, from_side, chan_details_x, chan_details_y,
+                                             &from_x, &from_y, &from_chan_details);
+    to_chan_type = index_into_correct_chan(x_coord, y_coord, to_side, chan_details_x, chan_details_y,
+                                           &to_x, &to_y, &to_chan_details);
+
+    /* make sure from_x/y and to_x/y aren't out of bounds */
+    if (coords_out_of_bounds(nx, ny, to_x, to_y, to_chan_type) ||
+        coords_out_of_bounds(nx, ny, from_x, from_y, from_chan_type)){
+        return;
+    }
+
+    /* iterate over all the wire connections specified for this switch block */
+    for (int iconn = 0; iconn < (int)sb->wireconns.size(); iconn++) {
+        wireconn_ptr = &sb->wireconns[iconn];
+        /* compute one type of wire connection each iteration */
+        compute_each_conn(x_coord, y_coord, from_side, to_side, from_x, from_y, sb, nx, ny, from_chan_details,
+                          to_chan_details, to_x, to_y, from_chan_type, to_chan_type, wire_type_sizes,
+                          wireconn_ptr, sb_conns, directionality);
+    }
+    from_chan_details = NULL;
+    to_chan_details = NULL;
+
+}
+
+void compute_each_conn(int x_coord, int y_coord, enum e_side from_side,enum e_side to_side, int from_x, int from_y,
+                       t_switchblock_inf *sb, int nx, int ny, t_chan_details *from_chan_details, t_chan_details *to_chan_details, int to_x, int to_y,
+                       t_rr_type from_chan_type, t_rr_type to_chan_type, t_wire_type_sizes *wire_type_sizes, t_wireconn_inf *wireconn_ptr,
+                       t_sb_connection_map *sb_conns,e_directionality directionality){
+
+    int dest_W;                         /* the effective destination channel width is the size of the destination wire set */
+    int src_wire_ind, dest_wire_ind;    /* the index of the source/destination wire within their own switchpoint set */
+
+    vector<int> potential_src_wires;    /* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
+    vector<int> potential_dest_wires;
+
+    Switchblock_Lookup sb_conn(x_coord, y_coord, from_side, to_side,0);	/* for indexing into FPGA's switchblock map */
+
+    /* names of wire types we may be connecting from/to */
+    vector<string> *from_wire_type = &(wireconn_ptr->from_type);
+    vector<string> *to_wire_type = &(wireconn_ptr->to_type);
+
+    /* get the indices of wires with the destination subsegment number, as well as the effective destination
+        channel width (which is the number of wires with the destination subsegment number) */
+    get_switchpoint_wires(nx, ny, to_chan_details[to_x][to_y], to_chan_type, to_x, to_y, sb_conn.to_side,
+                          to_wire_type, &(wireconn_ptr->to_point), wire_type_sizes, true, &potential_dest_wires);
+
+    if (0 == potential_dest_wires.size()){
+        return;
+    }
+
+    dest_W = (int)potential_dest_wires.size();
+
+    /* get the index of the source wire relative to all the wires specified by the wireconn */
+    get_switchpoint_wires(nx, ny, from_chan_details[from_x][from_y], from_chan_type, from_x, from_y, sb_conn.from_side,
+                          from_wire_type, &(wireconn_ptr->from_point), wire_type_sizes, false, &potential_src_wires);
+
+    if (0 == potential_src_wires.size()){
+        return;
+    }
+
+    /* iterate in the potential source wires under the given wire connection.
+     * at this point the vectors 'potential_src_wires' and 'potential_dest_wires' contain the indices of the from_type/from_point
+     * and to_type/to_point wire segments. now its time to compute which destination wire segments our specific wire segment of interest
+     * ('potential_src_wires') should connect to */
+    for(src_wire_ind = 0;src_wire_ind < (int)potential_src_wires.size();src_wire_ind++) {
+
+        sb_conn.from_wire = potential_src_wires[src_wire_ind];
+
+        /* get a reference to the string vector containing desired side1->side2 permutations */
+        SB_Side_Connection side_conn(sb_conn.from_side, sb_conn.to_side);
+        vector<string> &permutations_ref = sb->permutation_map[side_conn];
+
+        /* iterate over the permutation functions specified in permutations_ref */
+
+        s_formula_data formula_data;
+        for (int iperm = 0; iperm < (int) permutations_ref.size(); iperm++) {
+            /* Convert the symbolic permutation formula to a number */
+            formula_data.dest_W = dest_W;
+            if (0 == dest_W) {
+                continue;
+            }
+            formula_data.wire = src_wire_ind;
+            dest_wire_ind = get_sb_formula_result(permutations_ref[iperm].c_str(),
+                                                  formula_data);
+            dest_wire_ind = adjust_formula_result(dest_wire_ind, dest_W);
+            if (dest_wire_ind < 0) {
+                vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
+                          "Got a negative wire from switch block formula %s",
+                          permutations_ref[iperm].c_str());
+            }
+
+            /* the resulting wire number is the *index* of the destination wire in it's own
+               set, so we need to convert that back to the absolute index of the wire in the channel */
+            int to_wire = potential_dest_wires[dest_wire_ind];
+
+            /* create the struct containing information about the target wire segment which will be added to the
+               sb connections map */
+            t_to_wire_inf to_wire_inf;
+            to_wire_inf.to_wire = (short)to_wire;
+            to_wire_inf.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch;
+
+            /* and now, finally, add this switchblock connection to the switchblock connections map */
+            (*sb_conns)[sb_conn].push_back(to_wire_inf);
+
+            /* If bidir architecture, implement the reverse connection as well */
+            if (BI_DIRECTIONAL == directionality) {
+                to_wire_inf.to_wire = (short)potential_src_wires[src_wire_ind];
+                //Since we are implementing the reverse connection we have swapped from and to.
+                //Mark so coverity ignores this issue
+                //
+                //coverity[swapped_arguments]
+                Switchblock_Lookup sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord,
+                                                   sb_conn.to_side, sb_conn.from_side,
+                                                   to_wire);
+                (*sb_conns)[sb_conn_reverse].push_back(to_wire_inf);
+            }
+        }
+    }
+
+}
 
 /* deallocates switch block connections sparse array */
 void free_switchblock_permutations(t_sb_connection_map *sb_conns){
-	sb_conns->clear();
-	delete sb_conns;
-	sb_conns = NULL;
-	/* the switch block unordered_map can get quite large and it doesn't seem like the program
-	   is interested in releasing the memory back to the OS after the map is cleared. 
-	   calling malloc_trim forces the program to give unused heap space back to the OS. 
-	   this significantly reduces memory usage during the routing stage when running multiple 
-	   large benchmark circuits in parallel. */
-	malloc_trim(0);
-	return;
+    sb_conns->clear();
+    delete sb_conns;
+    sb_conns = NULL;
+    /* the switch block unordered_map can get quite large and it doesn't seem like the program
+       is interested in releasing the memory back to the OS after the map is cleared.
+       calling malloc_trim forces the program to give unused heap space back to the OS.
+       this significantly reduces memory usage during the routing stage when running multiple
+       large benchmark circuits in parallel. */
+    malloc_trim(0);
+    return;
 }
 
 #ifdef FAST_SB_COMPUTATION
-/* over all connected wire types (i,j), compute the maximum least common multiple of their wire lengths, 
+/* over all connected wire types (i,j), compute the maximum least common multiple of their wire lengths,
    ie max(LCM(L_i, L_J)) */
 static int get_max_lcm( vector<t_switchblock_inf> *switchblocks, t_wire_type_sizes *wire_type_sizes){
 	int max_lcm = -1;
@@ -402,19 +560,19 @@ static int get_max_lcm( vector<t_switchblock_inf> *switchblocks, t_wire_type_siz
 			    		if (current_lcm > max_lcm){
 						    max_lcm = current_lcm;
 					    }
-                    } 
+                    }
 				}
 			}
 		}
 	}
-	
+
 	return max_lcm;
 }
 
-/* computes a horizontal row of switchblocks of size sb_row_size (or of nx-2, whichever is smaller), starting 
+/* computes a horizontal row of switchblocks of size sb_row_size (or of nx-2, whichever is smaller), starting
    at coordinate (1,1) */
 static void compute_switchblock_row(int sb_row_size, t_chan_details *chan_details_x, t_chan_details *chan_details_y,
-		vector<t_switchblock_inf> *switchblocks, int nx, int ny, int nodes_per_chan, 
+		vector<t_switchblock_inf> *switchblocks, int nx, int ny, int nodes_per_chan,
 		t_wire_type_sizes *wire_type_sizes, e_directionality directionality,
 		t_sb_connection_map *sb_row){
 
@@ -430,8 +588,8 @@ static void compute_switchblock_row(int sb_row_size, t_chan_details *chan_detail
 				/* now we iterate over all the potential side1->side2 connections */
 				for ( e_side from_side = (e_side) 0; from_side < 4; from_side = (e_side)(from_side + 1) ){
 					for ( e_side to_side = (e_side) 0; to_side < 4; to_side = (e_side)(to_side + 1) ){
-						
-						/* Fill appropriate entry of the sb_conns map with vector specifying the wires 
+
+						/* Fill appropriate entry of the sb_conns map with vector specifying the wires
 						   the current wire will connect to */
 						compute_wire_connections(x, y, from_side, to_side, from_wire,
 								chan_details_x, chan_details_y, sb, nx, ny,
@@ -448,8 +606,8 @@ static void compute_switchblock_row(int sb_row_size, t_chan_details *chan_detail
    continuing on for sb_row_size */
 static void stampout_switchblocks_from_row( int sb_row_size,
 		int nodes_per_chan,
-		int nx, int ny, t_wire_type_sizes *wire_type_sizes, 
-		e_directionality directionality, t_sb_connection_map *sb_row, 
+		int nx, int ny, t_wire_type_sizes *wire_type_sizes,
+		e_directionality directionality, t_sb_connection_map *sb_row,
 		t_sb_connection_map *sb_conns ){
 
 	/* over all x coordinates that may need stamping out */
@@ -461,7 +619,7 @@ static void stampout_switchblocks_from_row( int sb_row_size,
 				continue;
 			}
 			/* over each source side */
-			for (int from_side = 0; from_side < 4; from_side ++){		
+			for (int from_side = 0; from_side < 4; from_side ++){
 				/* over each destination side */
 				for (int to_side = 0; to_side < 4; to_side ++){
 					/* can't connect a side to itself */
@@ -560,198 +718,13 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 	}
 }
 
-
-/* compute greatest common denominator of x and y */
-static int gcd(int x, int y){
-	int result;
-	if (y == 0){
-		result = x;
-	} else {
-		result = gcd(y, x % y);
-	}
-	return result;
-}
-
-
-/* compute least common multiple of x and y */
-static int lcm(int x, int y){
-	int result;
-	result = x / gcd(x,y) * y;
-	return result;
-}
-#endif	//FAST_SB_COMPUTATION
-
-/* returns true if the coordinates x/y do not correspond to the location specified by 'location' */
-static bool sb_not_here(int nx, int ny, int x, int y, e_sb_location location){
-	bool sb_not_here = true;
-
-	switch( location ){
-		case E_EVERYWHERE:
-			sb_not_here = false;
-			break;
-		case E_PERIMETER:
-			if (is_perimeter(nx, ny, x, y)){
-				sb_not_here = false;
-			}
-			break;
-		case E_CORNER:
-			if (is_corner(nx, ny, x, y)){
-				sb_not_here = false;
-			}
-			break;
-		case E_CORE:
-			if (is_core(nx, ny, x, y)){
-				sb_not_here = false;
-			}
-			break;
-		case E_FRINGE:
-			if (is_perimeter(nx, ny, x, y) && !is_corner(nx, ny, x, y)){
-				sb_not_here = false;
-			}
-			break;
-		default:
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "sb_not_here: unrecognized location enum: %d\n", location);
-			break;
-	}
-	return sb_not_here;
-}
-
-
-/* checks if the specified coordinates represent a corner of the FPGA */
-static bool is_corner(int nx, int ny, int x, int y){
-	bool is_corner = false;
-	if ((x == 0 && y == 0) ||
-	    (x == 0 && y == ny) ||
-	    (x == nx && y == 0) ||
-	    (x == nx && y == ny)){
-		is_corner = true;
-	}
-	return is_corner;
-}
-
-
-/* checks if the specified coordinates correspond to one of the perimeter switchblocks */
-static bool is_perimeter(int nx, int ny, int x, int y){
-	bool is_perimeter = false;
-	if (x == 0 || x == nx ||
-	    y == 0 || y == ny){
-		is_perimeter = true;
-	}
-	return is_perimeter;
-}
-
-
-/* checks if the specified coordinates correspond to the core of the FPGA (i.e. not perimeter) */
-static bool is_core(int nx, int ny, int x, int y){
-	bool is_core = !is_perimeter(nx, ny, x, y);
-	return is_core;
-}
-
-	
-/* Counts the number of wires in each wire type in the specified channel */
-static void count_wire_type_sizes(t_seg_details *channel, int nodes_per_chan, 
-			t_wire_type_sizes *wire_type_sizes){
-	string wire_type;
-	const char * new_type;
-	int new_length, length;
-	int new_start, start;
-	int num_wires = 0;
-	Wire_Info wire_info;	
-
-	wire_type = channel[0].type_name_ptr;
-	length = channel[0].length;
-	start = 0;
-	for (int iwire = 0; iwire < nodes_per_chan; iwire++){
-		new_type = channel[iwire].type_name_ptr;
-		new_length = channel[iwire].length;
-		new_start = iwire;
-		if (strcmp(new_type, wire_type.c_str()) != 0){
-			wire_info.set(length, num_wires, start);
-			(*wire_type_sizes)[wire_type] = wire_info;
-			wire_type = new_type;
-			length = new_length;
-			start = new_start;
-			num_wires = 0;
-		}
-		num_wires++;
-	}
-	wire_info.set(length, num_wires, start);
-	(*wire_type_sizes)[wire_type] = wire_info;
-
-	return;
-} 
-
-
-/* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */ 
-static void get_switchpoint_wires(int nx, int ny, t_seg_details *chan_details, 
-		t_rr_type chan_type, int x, int y, e_side side, vector<string> *wire_type_vec, vector<int> *points, 
-		t_wire_type_sizes *wire_type_sizes, bool is_dest, vector<int> *wires){
-
-	wires->clear();
-	int num_types = (int)wire_type_vec->size();
-
-	int seg_coord = x;
-	if (chan_type == CHANY){
-		seg_coord = y;
-	}
-
-	for (int itype = 0; itype < num_types; itype++){
-		string wire_type = wire_type_vec->at(itype);
-		if ((*wire_type_sizes).find(wire_type) == (*wire_type_sizes).end()) {
-		    // wire_type_sizes may not contain wire_type if its seg freq is 0
-		    continue;
-		}
-		/* get the number of wires of given type */
-		int num_type_wires = wire_type_sizes->at(wire_type).num_wires;
-		/* get the last wire belonging to this type */
-		int first_type_wire = wire_type_sizes->at(wire_type).start;
-		int last_type_wire = first_type_wire + num_type_wires - 1;
-
-		
-		/* walk through each wire segment of specified type and check whether it matches one
-		   of the specified switchpoints */
-		for (int iwire = first_type_wire; iwire <= last_type_wire; iwire++){
-			e_direction seg_direction = chan_details[iwire].direction;
-			
-			/* unidirectional wires going in the decreasing direction can have an outgoing edge
-			   only from the top or right switch block sides, and an incoming edge only if they are
-			   at the left or bottom sides (analogous for wires going in INC direction) */
-			if (side == TOP || side == RIGHT){
-				if (seg_direction == DEC_DIRECTION && is_dest){
-					continue;
-				}
-				if (seg_direction == INC_DIRECTION && !is_dest){
-					continue;
-				}
-			} else {
-				VTR_ASSERT(side == LEFT || side == BOTTOM);
-				if (seg_direction == DEC_DIRECTION && !is_dest){
-					continue;
-				}
-				if (seg_direction == INC_DIRECTION && is_dest){
-					continue;
-				}
-			}
-			
-			int wire_switchpoint = get_switchpoint_of_wire(nx, ny, chan_type, chan_details[iwire], seg_coord, side);
-
-			/* check if this wire belongs to one of the specified switchpoints; add it to our 'wires' vector if so */
-			if ( find( points->begin(), points->end(), wire_switchpoint ) != points->end() ){
-				wires->push_back( iwire );
-			}
-		}
-	}
-	sort(wires->begin(), wires->end());
-}
-
-
 /* Compute the wire(s) that the wire at (x, y, from_side, to_side, from_wire) should connect to.
    sb_conns is updated with the result */
 static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_side,
 			enum e_side to_side, int from_wire, t_chan_details * chan_details_x,
 			t_chan_details * chan_details_y, t_switchblock_inf *sb,
 			int nx, int ny,
-			t_wire_type_sizes *wire_type_sizes, e_directionality directionality, 
+			t_wire_type_sizes *wire_type_sizes, e_directionality directionality,
 			t_sb_connection_map *sb_conns){
 
 	t_chan_details *from_chan_details = NULL;	/* details for source channel */
@@ -775,11 +748,11 @@ static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_
 	}
 
 	/* find the correct channel, and the coordinates to index into it for both the source and
-	   destination channels. also return the channel type (ie chanx/chany) into which we are 
+	   destination channels. also return the channel type (ie chanx/chany) into which we are
 	   indexing */
-	from_chan_type = index_into_correct_chan(x_coord, y_coord, from_side, chan_details_x, chan_details_y, 
+	from_chan_type = index_into_correct_chan(x_coord, y_coord, from_side, chan_details_x, chan_details_y,
 				&from_x, &from_y, &from_chan_details);
-	to_chan_type = index_into_correct_chan(x_coord, y_coord, to_side, chan_details_x, chan_details_y, 
+	to_chan_type = index_into_correct_chan(x_coord, y_coord, to_side, chan_details_x, chan_details_y,
 				&to_x, &to_y, &to_chan_details);
 
 	/* make sure from_x/y and to_x/y aren't out of bounds */
@@ -787,7 +760,7 @@ static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_
 	    coords_out_of_bounds(nx, ny, from_x, from_y, from_chan_type)){
 		return;
 	}
-	
+
 	/* iterate over all the wire connections specified for this switch block */
 	for (int iconn = 0; iconn < (int)sb->wireconns.size(); iconn++){
 		/* pointer to a connection specification between wire types/subsegment_nums */
@@ -805,15 +778,14 @@ static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_
 	return;
 }
 
-
-/* computes the destination wire segments that a source wire segment at the coordinate 'sb_conn' (in 
+/* computes the destination wire segments that a source wire segment at the coordinate 'sb_conn' (in
    channel segment with coordinate from_x/from_y) should connect to based on the specified 'wireconn_ptr'.
    wireconn_ptr defines the source and destination sets of wire segments (based on wire segment type & switchpoint
    as defined at the top of this file), and the indices of wires to connect to are relative to these sets */
 static void compute_wireconn_connections(int nx, int ny, e_directionality directionality,
 		t_chan_details *from_chan_details, t_chan_details *to_chan_details, Switchblock_Lookup sb_conn,
-		int from_x, int from_y, int to_x, int to_y, t_rr_type from_chan_type, t_rr_type to_chan_type, 
-		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb, 
+		int from_x, int from_y, int to_x, int to_y, t_rr_type from_chan_type, t_rr_type to_chan_type,
+		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb,
 		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns){
 
 	e_direction from_wire_direction = from_chan_details[from_x][from_y][sb_conn.from_wire].direction;
@@ -847,7 +819,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 	vector<int> to_switchpoint;
 
 	/* the current wire corresponds to a single switchpoint */
-	from_switchpoint = get_switchpoint_of_wire(nx, ny, from_chan_type, from_chan_details[from_x][from_y][sb_conn.from_wire], 
+	from_switchpoint = get_switchpoint_of_wire(nx, ny, from_chan_type, from_chan_details[from_x][from_y][sb_conn.from_wire],
 	                                        from_seg, sb_conn.from_side);
 	/* If we're at a switch block side where *all* wires start/terminate (i.e. around the FPGA perimeter) then
 	   the source switchpoint is 0 no matter what */
@@ -895,13 +867,13 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 		return;
 	}
 
-	/* now we need to find all wires in the destination channel that correspond to the 
+	/* now we need to find all wires in the destination channel that correspond to the
 	   type and point specified by the current wireconn_ptr. Must also have appropriate
 	   directionality */
 
-	/* get the indices of wires with the destination subsegment number, as well as the effective destination 
+	/* get the indices of wires with the destination subsegment number, as well as the effective destination
 	   channel width (which is the number of wires with the destination subsegment number) */
-	get_switchpoint_wires(nx, ny, to_chan_details[to_x][to_y], to_chan_type, to_x, to_y, sb_conn.to_side, 
+	get_switchpoint_wires(nx, ny, to_chan_details[to_x][to_y], to_chan_type, to_x, to_y, sb_conn.to_side,
 			to_wire_type, &to_switchpoint, wire_type_sizes, true, &potential_dest_wires);
 
 	if (0 == potential_dest_wires.size()){
@@ -910,7 +882,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 	dest_W = potential_dest_wires.size();
 
 	/* get the index of the source wire relative to all the wires specified by the wireconn */
-	get_switchpoint_wires(nx, ny, from_chan_details[from_x][from_y], from_chan_type, from_x, from_y, sb_conn.from_side, 
+	get_switchpoint_wires(nx, ny, from_chan_details[from_x][from_y], from_chan_type, from_x, from_y, sb_conn.from_side,
 			from_wire_type, &(wireconn_ptr->from_point), wire_type_sizes, false, &potential_src_wires);
 	if (0 == potential_src_wires.size()){
 		return;
@@ -921,7 +893,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Could not find switch block source wire in vector of potential source wires\n");
 	}
 	src_wire_ind = it - potential_src_wires.begin();
-	
+
 	/* at this point the vectors 'potential_src_wires' and 'potential_dest_wires' contain the indices of the from_type/from_point
 	   and to_type/to_point wire segments. now its time to compute which destination wire segments our specific wire segment of interest
 	   ('from_wire') should connect to */
@@ -943,15 +915,15 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 		dest_wire_ind = get_sb_formula_result(permutations_ref[iperm].c_str(), formula_data);
 		dest_wire_ind = adjust_formula_result(dest_wire_ind, dest_W);
 		if(dest_wire_ind < 0){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Got a negative wire from switch block formula %s", permutations_ref[iperm].c_str()); 
+			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Got a negative wire from switch block formula %s", permutations_ref[iperm].c_str());
 		}
 
 		/* the resulting wire number is the *index* of the destination wire in it's own
 		   set, so we need to convert that back to the absolute index of the wire in the channel */
 		to_wire = potential_dest_wires[dest_wire_ind];
-		
-		/* create the struct containing information about the target wire segment which will be added to the 
-		   sb connections map */	
+
+		/* create the struct containing information about the target wire segment which will be added to the
+		   sb connections map */
 		t_to_wire_inf to_wire_inf;
 		to_wire_inf.to_wire = to_wire;
 		to_wire_inf.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch;
@@ -973,143 +945,327 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 }
 
 
-/* Here we find the correct channel (x or y), and the coordinates to index into it based on the 
-   specified tile coordinates and the switchblock side. Also returns the type of channel
-   that we are indexing into (ie, CHANX or CHANY */
-static t_rr_type index_into_correct_chan(int tile_x, int tile_y, enum e_side side, 
-			t_chan_details *chan_details_x, t_chan_details *chan_details_y,
-			int *set_x, int *set_y, 
-			t_chan_details **set_chan_details){
-	
-	t_rr_type chan_type = CHANX;
-
-	/* here we use the VPR convention that a tile 'owns' the channels directly to the right
-	   and above it */
-	switch (side){
-		case TOP:
-			/* this is y-channel belonging to tile above */
-			*set_chan_details = chan_details_y;
-			*set_x = tile_x;
-			*set_y = tile_y+1;
-			chan_type = CHANY;
-			break;
-		case RIGHT:
-			/* this is x-channel belonging to tile to the right */
-			*set_chan_details = chan_details_x;
-			*set_x = tile_x+1;
-			*set_y = tile_y;
-			chan_type = CHANX;
-			break;
-		case BOTTOM:
-			/* this is y-channel on the right of the tile */
-			*set_chan_details = chan_details_y;
-			*set_x = tile_x;
-			*set_y = tile_y;
-			chan_type = CHANY;
-			break;
-		case LEFT:
-			/* this is x-channel on top of the tile */
-			*set_chan_details = chan_details_x;
-			*set_x = tile_x;
-			*set_y = tile_y;
-			chan_type = CHANX;
-			break;
-		default:
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "index_into_correct_chan: unknown side specified: %d\n", side);
-			break;
-	}
-
-	return chan_type;
-}
-
-
-/* checks whether the specified coordinates are out of bounds */
-static bool coords_out_of_bounds(int nx, int ny, int x_coord, int y_coord, 
-			e_rr_type chan_type){
-	bool result = true;
-
-	if (CHANX == chan_type){
-		if (x_coord <=0 || x_coord >= nx+1 ||	/* there is no x-channel at x=0 */
-		    y_coord < 0 || y_coord >= ny+1){
-			result = true;
-		} else {
-			result = false;
-		}
-	} else if (CHANY == chan_type){
-		if (x_coord < 0 || x_coord >= nx+1 ||
-		    y_coord <= 0 || y_coord >= ny+1){	/* there is no y-channel at y=0 */
-			result = true;
-		} else {
-			result = false;
-		}
-
+/* compute greatest common denominator of x and y */
+static int gcd(int x, int y){
+	int result;
+	if (y == 0){
+		result = x;
 	} else {
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "coords_out_of_bounds(): illegal channel type %d\n", chan_type);
+		result = gcd(y, x % y);
 	}
 	return result;
 }
 
 
-/* We can look at a channel as either having an x and y coordinate, or as having a 
-   'seg' and 'chan' coordinate. Here we return the seg coordinate based on the 
-   channel type and channel x/y coordinates */
-static int get_seg_coordinate(t_rr_type chan_type, int x_coord, int y_coord){
-	int seg = -1;
-	
-	switch (chan_type){
-		case CHANX:
-			seg = x_coord;
-			break;
-		case CHANY:
-			seg = y_coord;
-			break;
-		default:
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "get_seg_coordinate: 'chan_type' %d is not a channel\n", chan_type);
-			break;
-	}
-
-	return seg;
+/* compute least common multiple of x and y */
+static int lcm(int x, int y){
+	int result;
+	result = x / gcd(x,y) * y;
+	return result;
 }
+#endif	//FAST_SB_COMPUTATION
+
+/* returns true if the coordinates x/y do not correspond to the location specified by 'location' */
+static bool sb_not_here(int nx, int ny, int x, int y, e_sb_location location){
+    bool sb_not_here = true;
+
+    switch( location ){
+        case E_EVERYWHERE:
+            sb_not_here = false;
+            break;
+        case E_PERIMETER:
+            if (is_perimeter(nx, ny, x, y)){
+                sb_not_here = false;
+            }
+            break;
+        case E_CORNER:
+            if (is_corner(nx, ny, x, y)){
+                sb_not_here = false;
+            }
+            break;
+        case E_CORE:
+            if (is_core(nx, ny, x, y)){
+                sb_not_here = false;
+            }
+            break;
+        case E_FRINGE:
+            if (is_perimeter(nx, ny, x, y) && !is_corner(nx, ny, x, y)){
+                sb_not_here = false;
+            }
+            break;
+        default:
+            vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "sb_not_here: unrecognized location enum: %d\n", location);
+            break;
+    }
+    return sb_not_here;
+}
+
+
+/* checks if the specified coordinates represent a corner of the FPGA */
+static bool is_corner(int nx, int ny, int x, int y){
+    bool is_corner = false;
+    if ((x == 0 && y == 0) ||
+        (x == 0 && y == ny) ||
+        (x == nx && y == 0) ||
+        (x == nx && y == ny)){
+        is_corner = true;
+    }
+    return is_corner;
+}
+
+
+/* checks if the specified coordinates correspond to one of the perimeter switchblocks */
+static bool is_perimeter(int nx, int ny, int x, int y){
+    bool is_perimeter = false;
+    if (x == 0 || x == nx ||
+        y == 0 || y == ny){
+        is_perimeter = true;
+    }
+    return is_perimeter;
+}
+
+
+/* checks if the specified coordinates correspond to the core of the FPGA (i.e. not perimeter) */
+static bool is_core(int nx, int ny, int x, int y){
+    bool is_core = !is_perimeter(nx, ny, x, y);
+    return is_core;
+}
+
+
+/* Counts the number of wires in each wire type in the specified channel */
+static void count_wire_type_sizes(t_seg_details *channel, int nodes_per_chan,
+                                  t_wire_type_sizes *wire_type_sizes){
+    string wire_type;
+    const char * new_type;
+    int new_length, length;
+    int new_start, start;
+    int num_wires = 0;
+    Wire_Info wire_info;
+
+    wire_type = channel[0].type_name_ptr;
+    length = channel[0].length;
+    start = 0;
+    for (int iwire = 0; iwire < nodes_per_chan; iwire++){
+        new_type = channel[iwire].type_name_ptr;
+        new_length = channel[iwire].length;
+        new_start = iwire;
+        if (strcmp(new_type, wire_type.c_str()) != 0){
+            wire_info.set(length, num_wires, start);
+            (*wire_type_sizes)[wire_type] = wire_info;
+            wire_type = new_type;
+            length = new_length;
+            start = new_start;
+            num_wires = 0;
+        }
+        num_wires++;
+    }
+    wire_info.set(length, num_wires, start);
+    (*wire_type_sizes)[wire_type] = wire_info;
+
+    return;
+}
+
+
+/* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */
+static void get_switchpoint_wires(int nx, int ny, t_seg_details *chan_details,
+                                  t_rr_type chan_type, int x, int y, e_side side, vector<string> *wire_type_vec, vector<int> *points,
+                                  t_wire_type_sizes *wire_type_sizes, bool is_dest, vector<int> *wires){
+
+    wires->clear();
+    int num_types = (int)wire_type_vec->size();
+
+    int seg_coord = x;
+    if (chan_type == CHANY){
+        seg_coord = y;
+    }
+
+    for (int itype = 0; itype < num_types; itype++){
+        string wire_type = wire_type_vec->at(itype);
+        if ((*wire_type_sizes).find(wire_type) == (*wire_type_sizes).end()) {
+            // wire_type_sizes may not contain wire_type if its seg freq is 0
+            continue;
+        }
+        /* get the number of wires of given type */
+        int num_type_wires = wire_type_sizes->at(wire_type).num_wires;
+        /* get the last wire belonging to this type */
+        int first_type_wire = wire_type_sizes->at(wire_type).start;
+        int last_type_wire = first_type_wire + num_type_wires - 1;
+
+
+        /* walk through each wire segment of specified type and check whether it matches one
+           of the specified switchpoints */
+        for (int iwire = first_type_wire; iwire <= last_type_wire; iwire++){
+            e_direction seg_direction = chan_details[iwire].direction;
+
+            /* unidirectional wires going in the decreasing direction can have an outgoing edge
+               only from the top or right switch block sides, and an incoming edge only if they are
+               at the left or bottom sides (analogous for wires going in INC direction) */
+            if (side == TOP || side == RIGHT){
+                if (seg_direction == DEC_DIRECTION && is_dest){
+                    continue;
+                }
+                if (seg_direction == INC_DIRECTION && !is_dest){
+                    continue;
+                }
+            } else {
+                VTR_ASSERT(side == LEFT || side == BOTTOM);
+                if (seg_direction == DEC_DIRECTION && !is_dest){
+                    continue;
+                }
+                if (seg_direction == INC_DIRECTION && is_dest){
+                    continue;
+                }
+            }
+
+            int wire_switchpoint = get_switchpoint_of_wire(nx, ny, chan_type, chan_details[iwire], seg_coord, side);
+
+            /* check if this wire belongs to one of the specified switchpoints; add it to our 'wires' vector if so */
+            if ( find( points->begin(), points->end(), wire_switchpoint ) != points->end() ){
+                wires->push_back( iwire );
+            }
+        }
+    }
+    sort(wires->begin(), wires->end());
+}
+
+
+/* Here we find the correct channel (x or y), and the coordinates to index into it based on the
+   specified tile coordinates and the switchblock side. Also returns the type of channel
+   that we are indexing into (ie, CHANX or CHANY */
+static t_rr_type index_into_correct_chan(int tile_x, int tile_y, enum e_side side,
+                                         t_chan_details *chan_details_x, t_chan_details *chan_details_y,
+                                         int *set_x, int *set_y,
+                                         t_chan_details **set_chan_details){
+
+    t_rr_type chan_type = CHANX;
+
+    /* here we use the VPR convention that a tile 'owns' the channels directly to the right
+       and above it */
+    switch (side){
+        case TOP:
+            /* this is y-channel belonging to tile above */
+            *set_chan_details = chan_details_y;
+            *set_x = tile_x;
+            *set_y = tile_y+1;
+            chan_type = CHANY;
+            break;
+        case RIGHT:
+            /* this is x-channel belonging to tile to the right */
+            *set_chan_details = chan_details_x;
+            *set_x = tile_x+1;
+            *set_y = tile_y;
+            chan_type = CHANX;
+            break;
+        case BOTTOM:
+            /* this is y-channel on the right of the tile */
+            *set_chan_details = chan_details_y;
+            *set_x = tile_x;
+            *set_y = tile_y;
+            chan_type = CHANY;
+            break;
+        case LEFT:
+            /* this is x-channel on top of the tile */
+            *set_chan_details = chan_details_x;
+            *set_x = tile_x;
+            *set_y = tile_y;
+            chan_type = CHANX;
+            break;
+        default:
+            vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "index_into_correct_chan: unknown side specified: %d\n", side);
+            break;
+    }
+
+    return chan_type;
+}
+
+
+/* checks whether the specified coordinates are out of bounds */
+static bool coords_out_of_bounds(int nx, int ny, int x_coord, int y_coord,
+                                 e_rr_type chan_type){
+    bool result = true;
+
+    if (CHANX == chan_type){
+        if (x_coord <=0 || x_coord >= nx+1 ||	/* there is no x-channel at x=0 */
+            y_coord < 0 || y_coord >= ny+1){
+            result = true;
+        } else {
+            result = false;
+        }
+    } else if (CHANY == chan_type){
+        if (x_coord < 0 || x_coord >= nx+1 ||
+            y_coord <= 0 || y_coord >= ny+1){	/* there is no y-channel at y=0 */
+            result = true;
+        } else {
+            result = false;
+        }
+
+    } else {
+        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "coords_out_of_bounds(): illegal channel type %d\n", chan_type);
+    }
+    return result;
+}
+
+
+///* We can look at a channel as either having an x and y coordinate, or as having a
+//   'seg' and 'chan' coordinate. Here we return the seg coordinate based on the
+//   channel type and channel x/y coordinates */
+//static int get_seg_coordinate(t_rr_type chan_type, int x_coord, int y_coord){
+//	int seg = -1;
+//
+//	switch (chan_type){
+//		case CHANX:
+//			seg = x_coord;
+//			break;
+//		case CHANY:
+//			seg = y_coord;
+//			break;
+//		default:
+//			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "get_seg_coordinate: 'chan_type' %d is not a channel\n", chan_type);
+//			break;
+//	}
+//
+//	return seg;
+//}
 
 
 /* returns the subsegment number of the specified wire at seg_coord */
 static int get_wire_subsegment_num(int nx, int ny, e_rr_type chan_type,
-			 t_seg_details &wire_details, int seg_coord){
-	
-	/* We get wire subsegment number by comparing the wire's seg_coord to the seg_start of the wire.
-	   The offset between seg_start (or seg_end) and seg_coord is the subsegment number 
+                                   t_seg_details &wire_details, int seg_coord){
 
-	   Cases:
-	   seg starts at bottom but does not extend all the way to the top -- look at seg_end
-	   seg starts > bottom and does not extend all the way to top -- look at seg_start
-	   seg starts > bottom but terminates all the way at the top -- look at seg_start
-	   seg starts at bottom and extends all the way to the top -- look at seg end
-	*/
+    /* We get wire subsegment number by comparing the wire's seg_coord to the seg_start of the wire.
+       The offset between seg_start (or seg_end) and seg_coord is the subsegment number
 
-	int subsegment_num;
-	int seg_start = wire_details.seg_start;
-	int seg_end = wire_details.seg_end;
-	e_direction direction = wire_details.direction;
-	int wire_length = get_wire_segment_length(nx, ny, chan_type, wire_details);
-	int min_seg;
+       Cases:
+       seg starts at bottom but does not extend all the way to the top -- look at seg_end
+       seg starts > bottom and does not extend all the way to top -- look at seg_start
+       seg starts > bottom but terminates all the way at the top -- look at seg_start
+       seg starts at bottom and extends all the way to the top -- look at seg end
+    */
 
-	/* determine the minimum and maximum values that the 'seg' coordinate 
-	   of a wire can take */
-	min_seg = 1;	
+    int subsegment_num;
+    int seg_start = wire_details.seg_start;
+    int seg_end = wire_details.seg_end;
+    e_direction direction = wire_details.direction;
+    int wire_length = get_wire_segment_length(nx, ny, chan_type, wire_details);
+    int min_seg;
 
-	if (seg_start != min_seg){
-		subsegment_num = seg_coord - seg_start;
-	} else {
-		subsegment_num = (wire_length-1) - (seg_end - seg_coord);
-	}
+    /* determine the minimum and maximum values that the 'seg' coordinate
+       of a wire can take */
+    min_seg = 1;
 
-	/* if this wire is going in the decreasing direction, reverse the subsegment num */
-	VTR_ASSERT(seg_end >= seg_start);
-	if (direction == DEC_DIRECTION){
-		subsegment_num = wire_length-1 - subsegment_num;
-	}
+    if (seg_start != min_seg){
+        subsegment_num = seg_coord - seg_start;
+    } else {
+        subsegment_num = (wire_length-1) - (seg_end - seg_coord);
+    }
 
-	return subsegment_num;
+    /* if this wire is going in the decreasing direction, reverse the subsegment num */
+    VTR_ASSERT(seg_end >= seg_start);
+    if (direction == DEC_DIRECTION){
+        subsegment_num = wire_length-1 - subsegment_num;
+    }
+
+    return subsegment_num;
 }
 
 /* returns wire segment length based on either:
@@ -1118,93 +1274,93 @@ static int get_wire_subsegment_num(int nx, int ny, e_rr_type chan_type,
 
    Computing the wire segment length in this way help to classify short vs long wire segments according to switchpoint. */
 int get_wire_segment_length(int nx, int ny, e_rr_type chan_type, t_seg_details &wire_details){
-	int wire_length;
-	
-	int min_seg = 1;
-	int max_seg = nx;
-	if (chan_type == CHANY){
-		max_seg = ny;
-	}
-	
-	int seg_start = wire_details.seg_start;
-	int seg_end = wire_details.seg_end;
+    int wire_length;
 
-	if (seg_start == min_seg && seg_end == max_seg){
-		wire_length = seg_end - seg_start + 1;
-	} else {
-		wire_length = wire_details.length;
-	}
+    int min_seg = 1;
+    int max_seg = nx;
+    if (chan_type == CHANY){
+        max_seg = ny;
+    }
 
-	return wire_length;
+    int seg_start = wire_details.seg_start;
+    int seg_end = wire_details.seg_end;
+
+    if (seg_start == min_seg && seg_end == max_seg){
+        wire_length = seg_end - seg_start + 1;
+    } else {
+        wire_length = wire_details.length;
+    }
+
+    return wire_length;
 }
 
 
 /* Returns the switchpoint of the wire specified by wire_details at a segment coordinate
    of seg_coord, and connection to the sb_side of the switchblock */
 static int get_switchpoint_of_wire(int nx, int ny, e_rr_type chan_type,
-		 t_seg_details &wire_details, int seg_coord, e_side sb_side){
+                                   t_seg_details &wire_details, int seg_coord, e_side sb_side){
 
-	/* this function calculates the switchpoint of a given wire by first calculating
-	   the subsegmennt number of the specified wire. For instance, for a wire with L=4:
+    /* this function calculates the switchpoint of a given wire by first calculating
+       the subsegmennt number of the specified wire. For instance, for a wire with L=4:
 
-		switchpoint:	0-------1-------2-------3-------0
-		subsegment_num:	    0       1       2       3
+        switchpoint:	0-------1-------2-------3-------0
+        subsegment_num:	    0       1       2       3
 
-	   So knowing the wire's subsegment_num and which switchblock side it connects to is 
-	   enough to calculate the switchpoint
+       So knowing the wire's subsegment_num and which switchblock side it connects to is
+       enough to calculate the switchpoint
 
-	*/
+    */
 
-	int switchpoint;
+    int switchpoint;
 
-	/* get the minimum and maximum segment coordinate which a wire in this channel type can take */
-	int min_seg = 1;
-	int max_seg = nx;
-	if (chan_type == CHANY){
-		max_seg = ny;
-	}
+    /* get the minimum and maximum segment coordinate which a wire in this channel type can take */
+    int min_seg = 1;
+    int max_seg = nx;
+    if (chan_type == CHANY){
+        max_seg = ny;
+    }
 
-	/* check whether the current seg_coord/sb_side coordinate specifies a perimeter switch block side at which all wire segments terminate/start.
-	   in this case only segments with switchpoints = 0 can exist */
-	bool perimeter_connection = false;
-	if ((seg_coord == min_seg && (sb_side == RIGHT || sb_side == TOP)) ||
-	    (seg_coord == max_seg && (sb_side == LEFT || sb_side == BOTTOM))){
-		perimeter_connection = true;
-	}
+    /* check whether the current seg_coord/sb_side coordinate specifies a perimeter switch block side at which all wire segments terminate/start.
+       in this case only segments with switchpoints = 0 can exist */
+    bool perimeter_connection = false;
+    if ((seg_coord == min_seg && (sb_side == RIGHT || sb_side == TOP)) ||
+        (seg_coord == max_seg && (sb_side == LEFT || sb_side == BOTTOM))){
+        perimeter_connection = true;
+    }
 
-	if (perimeter_connection){
-		switchpoint = 0;
-	} else {
-		int wire_length = get_wire_segment_length(nx, ny, chan_type, wire_details);
-		int subsegment_num = get_wire_subsegment_num(nx, ny, chan_type, wire_details, seg_coord);
+    if (perimeter_connection){
+        switchpoint = 0;
+    } else {
+        int wire_length = get_wire_segment_length(nx, ny, chan_type, wire_details);
+        int subsegment_num = get_wire_subsegment_num(nx, ny, chan_type, wire_details, seg_coord);
 
-		e_direction direction = wire_details.direction;
-		if (LEFT == sb_side || BOTTOM == sb_side){
-			switchpoint = (subsegment_num + 1) % wire_length;
-			if (direction == DEC_DIRECTION){
-				switchpoint = subsegment_num;
-			}
-		} else {
-			VTR_ASSERT(RIGHT == sb_side || TOP == sb_side);
-			switchpoint = subsegment_num;
-			if (direction == DEC_DIRECTION){
-				switchpoint = (subsegment_num + 1) % wire_length;
-			}
-		}
-	}
+        e_direction direction = wire_details.direction;
+        if (LEFT == sb_side || BOTTOM == sb_side){
+            switchpoint = (subsegment_num + 1) % wire_length;
+            if (direction == DEC_DIRECTION){
+                switchpoint = subsegment_num;
+            }
+        } else {
+            VTR_ASSERT(RIGHT == sb_side || TOP == sb_side);
+            switchpoint = subsegment_num;
+            if (direction == DEC_DIRECTION){
+                switchpoint = (subsegment_num + 1) % wire_length;
+            }
+        }
+    }
 
-	return switchpoint;
+    return switchpoint;
 }
 
 
 /* adjusts a negative destination wire calculated from a permutation formula */
 static int adjust_formula_result(int dest_wire, int dest_W){
-	int result = dest_wire;
-	if (dest_wire < 0){
-		int mult = (-1*dest_wire) / dest_W + 1;
-		result = dest_wire + mult*dest_W;
-	}
-	result = (result + dest_W) % dest_W;
-	return result;
+    int result = dest_wire;
+    if (dest_wire < 0){
+        int mult = (-1*dest_wire) / dest_W + 1;
+        result = dest_wire + mult*dest_W;
+    }
+    result = (result + dest_W) % dest_W;
+    return result;
 }
 
