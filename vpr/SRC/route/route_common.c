@@ -41,16 +41,22 @@ using namespace std;
 // This was experimentally determined, by Matthew Walker, to be the most useful
 // metric, and this is also somewhat larger than largest circuit observed to have
 // inaccurate predictions, thought this is still only affects quite small circuits.
-#define MIN_NETS_TO_ACTIVATE_PREDICTOR 150
+constexpr int MIN_NETS_TO_ACTIVATE_PREDICTOR = 150;
+
+// Routing predictor will start predicting after this many iterations have occured (avoids initial start-up transients)
+constexpr int PREDICTOR_START_ITERATION = 8;
+
 // Routing failure predictor will take into account this number of past iterations:
-#define PREDICTOR_ITERATIONS 5
+constexpr int PREDICTOR_ITERATIONS = 5;
+
 // XXX: Congestion can take a little longer to resolve once the fraction of overused nodes is low.
 //	Once the overuse ratio is lower than the following value (either as a ratio or absolute number 
-//	of rr nodesor absolute), the predictor will take into accountthe previous 2*PREDICTOR_ITERATIONS 
+//	of rr nodes absolute), the predictor will take into account the previous PREDICTOR_RELAX_SLACK_FACTOR*PREDICTOR_ITERATIONS 
 //	iterations instead.
 //	This is just a placeholder; the exact value should be investigated
-#define OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK 0.0002
-#define OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK 20
+constexpr size_t PREDICTOR_RELAX_SLACK_FACTOR = 2;
+constexpr double OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK = 0.0002;
+constexpr double OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK = 50;
 
 /***************** Variables shared only by route modules *******************/
 
@@ -430,7 +436,7 @@ bool feasible_routing(void) {
 
 int predict_success_route_iter(int router_iteration, const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts) {
 
-	if (router_iteration <= PREDICTOR_ITERATIONS) 
+	if (router_iteration < std::max(PREDICTOR_START_ITERATION, PREDICTOR_ITERATIONS)) 
 		return 0;
 
 	// invalid condition for prediction
@@ -442,9 +448,8 @@ int predict_success_route_iter(int router_iteration, const std::vector<double>& 
 	size_t start_iteration = itry - PREDICTOR_ITERATIONS;
 	if (historical_overuse_ratio.back() < OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK
         || historical_overuse_ratio.back()*num_rr_nodes < OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK){
-		start_iteration = itry - 2*PREDICTOR_ITERATIONS;
-		if (2*PREDICTOR_ITERATIONS > itry)
-			start_iteration = 0;
+		start_iteration = itry - PREDICTOR_RELAX_SLACK_FACTOR*PREDICTOR_ITERATIONS;
+        start_iteration = std::max<size_t>(0, start_iteration); //Bound to first iteration
 	}
 	double congestion_slope = linear_regression_vector(historical_overuse_ratio, start_iteration);
 
