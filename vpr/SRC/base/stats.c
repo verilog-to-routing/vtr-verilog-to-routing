@@ -121,12 +121,14 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
                 print_endpoint_timing(getEchoFileName(E_ECHO_ENDPOINT_TIMING));
             }
 
-            vtr::printf("CLASSIC STATS\n");
-            vtr::printf("=============\n");
-			print_timing_stats();
+            vtr::printf("Classic Timing Stats\n");
+            vtr::printf("====================\n");
+            print_timing_stats();
+
+            vtr::printf("New Timing Stats\n");
+            vtr::printf("================\n");
 #endif
-            vtr::printf("NEW STATS\n");
-            vtr::printf("=========\n");
+            vtr::printf("\n");
 			print_setup_timing_summary(*g_timing_constraints, *timing_info->setup_analyzer());
 
             VprTimingGraphNameResolver name_resolver(g_atom_nl, g_atom_lookup);
