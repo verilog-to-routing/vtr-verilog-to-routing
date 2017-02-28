@@ -199,10 +199,10 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
         << ")\n";
 
     if(path_info.type() == TimingPathType::SETUP) {
-        os << "Path Type : max [setup]" << "\n";
+        os << "Path Type : setup" << "\n";
     } else {
         TATUM_ASSERT_MSG(path_info.type() == TimingPathType::HOLD, "Expected path type SETUP or HOLD");
-        os << "Path Type : min [hold]" << "\n";
+        os << "Path Type : hold" << "\n";
     }
 
     os << "\n";
@@ -264,7 +264,7 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
 
             EdgeId in_edge = path_elem.incomming_edge();
             if(in_edge && timing_graph_.edge_type(in_edge) == EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
-                    point += " [clk-to-q]";
+                    point += " [clock-to-output]";
             }
 
             arr_path = path_elem.tag().time();
@@ -482,7 +482,7 @@ size_t TimingReporter::estimate_point_print_width(const TimingPath& path) const 
         for(auto elem : elems) {
             //Take the longest typical point name
             std::string point = name_resolver_.node_name(elem.node()) + " (" + name_resolver_.node_block_type_name(elem.node()) + ")";
-            point += " [clk-to-q]";
+            point += " [clock-to-output]";
 
             //Keep the max over all points
             width = std::max(width, point.size());

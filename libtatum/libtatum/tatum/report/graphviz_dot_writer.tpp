@@ -26,9 +26,9 @@ inline std::string print_tag_domain_from_to(const TimingTag& tag) {
 template<class DelayCalc=FixedDelayCalculator>
 void write_dot_file_setup(std::string filename,
                           const TimingGraph& tg,
-                          const DelayCalc& delay_calc = DelayCalc(),
-                          const SetupTimingAnalyzer& analyzer = SetupTimingAnalyzer(),
-                          std::vector<NodeId> nodes = std::vector<NodeId>()) {
+                          const DelayCalc& delay_calc,
+                          const SetupTimingAnalyzer& analyzer,
+                          std::vector<NodeId> nodes) {
 
     if(tg.nodes().size() > MAX_DOT_GRAPH_NODES && nodes.empty()) {
         std::cout << "Skipping setup dot file due to large timing graph size\n";
@@ -135,9 +135,9 @@ void write_dot_file_setup(std::string filename,
 template<class DelayCalc=FixedDelayCalculator>
 void write_dot_file_hold(std::string filename,
                          const TimingGraph& tg,
-                         const DelayCalc& delay_calc = DelayCalc(),
-                         const HoldTimingAnalyzer& analyzer = TimingAnalyzer(),
-                         std::vector<NodeId> nodes = std::vector<NodeId>()) {
+                         const DelayCalc& delay_calc,
+                         const HoldTimingAnalyzer& analyzer,
+                         std::vector<NodeId> nodes) {
 
     if(tg.nodes().size() > MAX_DOT_GRAPH_NODES && nodes.empty()) {
         std::cout << "Skipping hold dot file due to large timing graph size\n";
