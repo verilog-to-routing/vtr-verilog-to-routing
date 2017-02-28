@@ -91,7 +91,7 @@ void vpr_print_title(void) {
 
 	vtr::printf_info("\n");
 	vtr::printf_info("VPR FPGA Placement and Routing.\n");
-	vtr::printf_info("Version: %s\n", vtr::VERSION_SHORT);
+	vtr::printf_info("Version: %s\n", vtr::VERSION);
 	vtr::printf_info("Revision: %s\n", vtr::VCS_REVISION);
 	vtr::printf_info("Compiled: %s\n", vtr::BUILD_TIMESTAMP);
 	vtr::printf_info("University of Toronto\n");
