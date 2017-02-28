@@ -55,6 +55,7 @@ void write_timing_graph(std::ostream& os, const TimingGraph& tg) {
         EdgeId edge_id(edge_idx);
 
         os << " edge: " << size_t(edge_id) << "\n";
+        os << "  type: " << tg.edge_type(edge_id) << "\n";
         os << "  src_node: " << size_t(tg.edge_src_node(edge_id)) << "\n";
         os << "  sink_node: " << size_t(tg.edge_sink_node(edge_id)) << "\n";
         os << "  disabled: ";

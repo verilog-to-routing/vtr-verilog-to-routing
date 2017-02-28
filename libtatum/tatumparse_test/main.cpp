@@ -36,8 +36,19 @@ class PrintCallback : public tp::Callback {
         }
         fprintf(stdout, "\n");
     }
-    void add_edge(int edge_id, int src_node_id, int sink_node_id, bool disabled) override {
+    void add_edge(int edge_id, tp::EdgeType type, int src_node_id, int sink_node_id, bool disabled) override {
         fprintf(stdout, " edge: %d\n", edge_id);
+
+        fprintf(stdout, "  type:");
+        switch(type) {
+            case tp::EdgeType::PRIMITIVE_COMBINATIONAL: fprintf(stdout, " PRIMITIVE_COMBINATIONAL"); break;
+            case tp::EdgeType::PRIMITIVE_CLOCK_LAUNCH : fprintf(stdout, " PRIMITIVE_CLOCK_LAUNCH"); break;
+            case tp::EdgeType::PRIMITIVE_CLOCK_CAPTURE: fprintf(stdout, " PRIMITIVE_CLOCK_CAPTURE"); break;
+            case tp::EdgeType::INTERCONNECT           : fprintf(stdout, " INTERCONNECT"); break;
+            default: assert(false);
+        }
+        fprintf(stdout, "\n");
+
         fprintf(stdout, "  src_node: %d\n", src_node_id);
         fprintf(stdout, "  sink_node: %d\n", sink_node_id);
         if(disabled) {
@@ -150,7 +161,7 @@ class NopCallback : public tp::Callback {
 
         void start_graph() override {}
         void add_node(int /*node_id*/, tp::NodeType /*type*/, std::vector<int> /*in_edge_ids*/, std::vector<int> /*out_edge_ids*/) override {}
-        void add_edge(int /*edge_id*/, int /*src_node_id*/, int /*sink_node_id*/, bool /*disabled*/) override {}
+        void add_edge(int /*edge_id*/, tp::EdgeType /*type*/, int /*src_node_id*/, int /*sink_node_id*/, bool /*disabled*/) override {}
         void finish_graph() override {}
 
         void start_constraints() override {}

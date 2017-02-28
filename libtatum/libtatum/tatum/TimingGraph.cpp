@@ -183,7 +183,7 @@ NodeId TimingGraph::add_node(const NodeType type) {
     return node_id;
 }
 
-EdgeId TimingGraph::add_edge(const NodeId src_node, const NodeId sink_node) {
+EdgeId TimingGraph::add_edge(const EdgeType type, const NodeId src_node, const NodeId sink_node) {
     //We require that the source/sink node must already be in the graph,
     //  so we can update them with thier edge references
     TATUM_ASSERT(valid_node_id(src_node));
@@ -197,6 +197,7 @@ EdgeId TimingGraph::add_edge(const NodeId src_node, const NodeId sink_node) {
     edge_ids_.push_back(edge_id);
 
     //Create the edgge
+    edge_types_.push_back(type);
     edge_src_nodes_.push_back(src_node);
     edge_sink_nodes_.push_back(sink_node);
     edges_disabled_.push_back(false);
@@ -271,28 +272,12 @@ void TimingGraph::disable_edge(const EdgeId edge, bool disable) {
 }
 
 EdgeType TimingGraph::edge_type(const EdgeId edge) const {
-    NodeId src_node = edge_src_node(edge);
-    NodeId sink_node = edge_sink_node(edge);
+#if 0
+#else
+    TATUM_ASSERT(valid_edge_id(edge));
 
-    NodeType src_node_type = node_type(src_node);
-    NodeType sink_node_type = node_type(sink_node);
-
-    if(src_node_type == NodeType::IPIN && sink_node_type == NodeType::OPIN) {
-        return EdgeType::PRIMITIVE_COMBINATIONAL;
-    } else if (   (src_node_type == NodeType::OPIN || src_node_type == NodeType::SOURCE)
-               && (sink_node_type == NodeType::IPIN || sink_node_type == NodeType::SINK || sink_node_type == NodeType::CPIN)) {
-        return EdgeType::NET;
-    } else if (src_node_type == NodeType::CPIN) {
-        if (sink_node_type == NodeType::SOURCE) {
-            return EdgeType::PRIMITIVE_CLOCK_LAUNCH;
-        } else if(sink_node_type == NodeType::SINK) {
-            return EdgeType::PRIMITIVE_CLOCK_CAPTURE;
-        } else {
-            throw tatum::Error("Invalid edge sink node (CPIN source node must connect to SOURCE or SINK sink node)");
-        }
-    } else {
-        throw tatum::Error("Invalid edge sink/source nodes");
-    }
+    return edge_types_[edge];
+#endif
 }
 
 EdgeId TimingGraph::find_edge(const tatum::NodeId src_node, const tatum::NodeId sink_node) const {
@@ -539,6 +524,7 @@ void TimingGraph::remap_edges(const tatum::util::linear_map<EdgeId,EdgeId>& edge
 
     //Update values
     edge_ids_ = clean_and_reorder_ids(edge_id_map);
+    edge_types_ = clean_and_reorder_values(edge_types_, edge_id_map);
     edge_sink_nodes_ = clean_and_reorder_values(edge_sink_nodes_, edge_id_map);
     edge_src_nodes_ = clean_and_reorder_values(edge_src_nodes_, edge_id_map);
     edges_disabled_ = clean_and_reorder_values(edges_disabled_, edge_id_map);
@@ -565,16 +551,21 @@ bool TimingGraph::valid_level_id(const LevelId level_id) const {
 }
 
 bool TimingGraph::validate_sizes() const {
-    if(   node_ids_.size() != node_types_.size()
-       || node_ids_.size() != node_in_edges_.size()
-       || node_ids_.size() != node_out_edges_.size()) {
+    if (   node_ids_.size() != node_types_.size()
+        || node_ids_.size() != node_in_edges_.size()
+        || node_ids_.size() != node_out_edges_.size()) {
         throw tatum::Error("Inconsistent node attribute sizes");
     }
 
-    if(   edge_ids_.size() != edge_sink_nodes_.size()
-       || edge_ids_.size() != edge_src_nodes_.size()
-       || edge_ids_.size() != edges_disabled_.size()) {
+    if (   edge_ids_.size() != edge_types_.size()
+        || edge_ids_.size() != edge_sink_nodes_.size()
+        || edge_ids_.size() != edge_src_nodes_.size()
+        || edge_ids_.size() != edges_disabled_.size()) {
         throw tatum::Error("Inconsistent edge attribute sizes");
+    }
+
+    if (level_ids_.size() != level_nodes_.size()) {
+        throw tatum::Error("Inconsistent level attribute sizes");
     }
 
     return true;
@@ -676,6 +667,8 @@ bool TimingGraph::validate_structure() const {
             NodeId sink_node = edge_sink_node(out_edge);
             NodeType sink_type = node_type(sink_node);
 
+            EdgeType out_edge_type = edge_type(out_edge);
+
             //Check type connectivity
             if (src_type == NodeType::SOURCE) {
 
@@ -685,8 +678,17 @@ bool TimingGraph::validate_structure() const {
                     throw tatum::Error("SOURCE nodes should only drive IPIN, CPIN or SINK nodes");
                 }
 
-                if(edge_type(out_edge) != EdgeType::NET) {
-                    throw tatum::Error("SOURCE out edges should always be NET type edges");
+                if(sink_type == NodeType::SINK) {
+                    if(   out_edge_type != EdgeType::INTERCONNECT
+                       && out_edge_type != EdgeType::PRIMITIVE_COMBINATIONAL) {
+                        throw tatum::Error("SOURCE to SINK edges should always be either INTERCONNECT or PRIMTIIVE_COMBINATIONAL type edges");
+                    }
+                    
+                } else {
+                    TATUM_ASSERT(sink_type == NodeType::IPIN || sink_type == NodeType::CPIN);
+                    if(out_edge_type != EdgeType::INTERCONNECT) {
+                        throw tatum::Error("SOURCE to IPIN/CPIN edges should always be INTERCONNECT type edges");
+                    }
                 }
 
             } else if (src_type == NodeType::SINK) {
@@ -696,7 +698,7 @@ bool TimingGraph::validate_structure() const {
                     throw tatum::Error("IPIN nodes should only drive OPIN nodes");
                 }
 
-                if(edge_type(out_edge) != EdgeType::PRIMITIVE_COMBINATIONAL) {
+                if(out_edge_type != EdgeType::PRIMITIVE_COMBINATIONAL) {
                     throw tatum::Error("IPIN to OPIN edges should always be PRIMITIVE_COMBINATIONAL type edges");
                 }
 
@@ -707,8 +709,8 @@ bool TimingGraph::validate_structure() const {
                     throw tatum::Error("OPIN nodes should only drive IPIN, CPIN or SINK nodes");
                 }
 
-                if(edge_type(out_edge) != EdgeType::NET) {
-                    throw tatum::Error("OPIN out edges should always be NET type edges");
+                if(out_edge_type != EdgeType::INTERCONNECT) {
+                    throw tatum::Error("OPIN out edges should always be INTERCONNECT type edges");
                 }
 
             } else if (src_type == NodeType::CPIN) {
@@ -717,7 +719,6 @@ bool TimingGraph::validate_structure() const {
                     throw tatum::Error("CPIN nodes should only drive SOURCE or SINK nodes");
                 }
 
-                EdgeType out_edge_type = edge_type(out_edge);
                 if(sink_type == NodeType::SOURCE && out_edge_type != EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
                     throw tatum::Error("CPIN to SOURCE edges should always be PRIMITIVE_CLOCK_LAUNCH type edges");
                 } else if (sink_type == NodeType::SINK && out_edge_type != EdgeType::PRIMITIVE_CLOCK_CAPTURE) {
@@ -852,6 +853,31 @@ void find_transitive_fanout_nodes_recurr(const TimingGraph& tg,
     }
 }
 
+EdgeType infer_edge_type(const TimingGraph& tg, EdgeId edge) {
+    NodeId src_node = tg.edge_src_node(edge);
+    NodeId sink_node = tg.edge_sink_node(edge);
+
+    NodeType src_node_type = tg.node_type(src_node);
+    NodeType sink_node_type = tg.node_type(sink_node);
+
+    if(src_node_type == NodeType::IPIN && sink_node_type == NodeType::OPIN) {
+        return EdgeType::PRIMITIVE_COMBINATIONAL;
+    } else if (   (src_node_type == NodeType::OPIN || src_node_type == NodeType::SOURCE)
+               && (sink_node_type == NodeType::IPIN || sink_node_type == NodeType::SINK || sink_node_type == NodeType::CPIN)) {
+        return EdgeType::INTERCONNECT;
+    } else if (src_node_type == NodeType::CPIN) {
+        if (sink_node_type == NodeType::SOURCE) {
+            return EdgeType::PRIMITIVE_CLOCK_LAUNCH;
+        } else if(sink_node_type == NodeType::SINK) {
+            return EdgeType::PRIMITIVE_CLOCK_CAPTURE;
+        } else {
+            throw tatum::Error("Invalid edge sink node (CPIN source node must connect to SOURCE or SINK sink node)");
+        }
+    } else {
+        throw tatum::Error("Invalid edge sink/source nodes");
+    }
+}
+
 //Stream output for NodeType
 std::ostream& operator<<(std::ostream& os, const NodeType type) {
     if      (type == NodeType::SOURCE)              os << "SOURCE";
@@ -860,6 +886,16 @@ std::ostream& operator<<(std::ostream& os, const NodeType type) {
     else if (type == NodeType::OPIN)                os << "OPIN";
     else if (type == NodeType::CPIN)                os << "CPIN";
     else throw std::domain_error("Unrecognized NodeType");
+    return os;
+}
+
+//Stream output for EdgeType
+std::ostream& operator<<(std::ostream& os, const EdgeType type) {
+    if      (type == EdgeType::PRIMITIVE_COMBINATIONAL) os << "PRIMITIVE_COMBINATIONAL";
+    else if (type == EdgeType::PRIMITIVE_CLOCK_LAUNCH)  os << "PRIMITIVE_CLOCK_LAUNCH"; 
+    else if (type == EdgeType::PRIMITIVE_CLOCK_CAPTURE) os << "PRIMITIVE_CLOCK_CAPTURE";
+    else if (type == EdgeType::INTERCONNECT)            os << "INTERCONNECT";
+    else throw std::domain_error("Unrecognized EdgeType");
     return os;
 }
 

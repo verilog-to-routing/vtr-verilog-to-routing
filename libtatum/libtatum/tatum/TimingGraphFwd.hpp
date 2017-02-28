@@ -23,15 +23,18 @@ enum class NodeType : unsigned char {
     CPIN, //An intermediate clock (input) pin
 };
 
+//Stream operators for NodeType
+
 enum class EdgeType : unsigned char {
     PRIMITIVE_COMBINATIONAL,
     PRIMITIVE_CLOCK_LAUNCH,
     PRIMITIVE_CLOCK_CAPTURE,
-    NET
+    INTERCONNECT
 };
 
-//Stream operators for NodeType
+//Stream operators for Edge/Node Type
 std::ostream& operator<<(std::ostream& os, const NodeType type);
+std::ostream& operator<<(std::ostream& os, const EdgeType type);
 
 //Various IDs used by the timing graph
 
