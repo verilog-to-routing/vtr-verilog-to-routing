@@ -824,15 +824,16 @@ t_pb_graph_pin *** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
 			in_squig_bracket = false;
 		} else if (tokens[i].type == TOKEN_STRING) {
 
-			success = realloc_and_load_pb_graph_pin_ptrs_at_var(line_num,
-					pb_graph_parent_node, pb_graph_children_nodes,
-					interconnect_error_check, is_input_to_interc, tokens, &i,
-					&((*num_ptrs)[curr_set]), &pb_graph_pins[curr_set]);
-
-			if (!success) {
+            try {
+                success = realloc_and_load_pb_graph_pin_ptrs_at_var(line_num,
+                        pb_graph_parent_node, pb_graph_children_nodes,
+                        interconnect_error_check, is_input_to_interc, tokens, &i,
+                        &((*num_ptrs)[curr_set]), &pb_graph_pins[curr_set]);
+            } catch(VprError& e) {
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-					"Syntax error processing port string %s\n", port_string);
-			}
+					"Syntax error processing port string '%s' (%s)\n", port_string, e.what());
+            }
+            VTR_ASSERT(success);
 
 			if (!in_squig_bracket) {
 				curr_set++;
@@ -1158,13 +1159,13 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 			if ((pb_lsb != pb_msb)
 					&& (pb_lsb != pb_graph_parent_node->placement_index)) {
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-					"Incorrect placement index for %s, expected index %d\n", tokens[0].data,
+					"Incorrect placement index for %s, expected index %d", tokens[0].data,
 						pb_graph_parent_node->placement_index);
 			}
 
 			if ((pb_lsb != pb_msb)) {
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-					"Cannot specify range for a parent pb: '%s'\n", tokens[0].data);
+					"Cannot specify range for a parent pb: '%s'", tokens[0].data);
 			}
 
 			pb_lsb = pb_msb = 0; /* Internal representation of parent is always 0 */
@@ -1173,7 +1174,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 		//Children pb_types
 		if (mode == NULL ) {
 			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-				"pb_graph_parent_node %s not found\n", pb_graph_parent_node->pb_type->name);
+				"Parent pb node '%s' missing", pb_graph_parent_node->pb_type->name);
 		}
 		for (i = 0; i < mode->num_pb_type_children; i++) {
 			VTR_ASSERT(&mode->pb_type_children[i] == pb_graph_children_nodes[i][0].pb_type);
@@ -1214,7 +1215,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 					if (pb_lsb < 0 || pb_lsb >= max_pb_node_array ||
 						pb_msb < 0 || pb_msb >= max_pb_node_array) {
 						vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-							"Mode '%s' -> pb '%s' [%d,%d] out of range [%d,%d]\n", mode->name,
+							"Mode '%s' -> pb '%s' [%d,%d] out of range [%d,%d]", mode->name,
 							mode->pb_type_children[i].name, pb_msb, pb_lsb, max_pb_node_array - 1, 0);
 					}
 				} else {
@@ -1228,7 +1229,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
 	if (!found) {
 		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-			"Unknown pb_type name %s, not defined in namespace of mode %s\n", 
+			"Unknown pb_type name %s, not defined in namespace of mode %s", 
 			tokens[*token_index].data, mode->name);
 	}
 
@@ -1249,7 +1250,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 	if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],
 				0) == NULL) {
 		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-			"Failed to find port name %s\n", port_name);
+			"Failed to find port name %s", port_name);
 	}
 
 	
@@ -1316,7 +1317,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 							ipin);
 			if ((*pb_graph_pins)[i * (abs(pin_msb - pin_lsb) + 1) + j] == NULL ) {
 				vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-					"Pin %s.%s[%d] cannot be found\n",
+					"Pin %s.%s[%d] cannot be found",
 						pb_node_array[ipb].pb_type->name, port_name, ipin);
 			}
 			iport =
@@ -1331,24 +1332,24 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 					if (is_input_to_interc) {
 						if (iport->type != IN_PORT) {
 							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-								"Input to interconnect from parent is not an input or clock pin\n");
+								"Input to interconnect from parent is not an input or clock pin");
 						}
 					} else {
 						if (iport->type != OUT_PORT) {
 							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-								"Output from interconnect from parent is not an input or clock pin\n");
+								"Output from interconnect from parent is not an input or clock pin");
 						}
 					}
 				} else {
 					if (is_input_to_interc) {
 						if (iport->type != OUT_PORT) {
 							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-								"output from interconnect from parent is not an input or clock pin\n");
+								"output from interconnect from parent is not an input or clock pin");
 						}
 					} else {
 						if (iport->type != IN_PORT) {
 							vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, 
-								"Input to interconnect from parent is not an input or clock pin\n");
+								"Input to interconnect from parent is not an input or clock pin");
 						}
 					}
 				}
