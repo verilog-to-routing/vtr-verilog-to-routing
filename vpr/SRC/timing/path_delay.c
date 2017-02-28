@@ -186,6 +186,8 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf);
 static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net_delay,
         const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode);
 
+static void mark_max_block_delay(const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode);
+
 static void alloc_timing_stats(void);
 
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
@@ -332,6 +334,8 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
     f_num_timing_net_pins = init_atom_timing_net_pins();
 
 	alloc_and_load_tnodes_from_prepacked_netlist(inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
+
+    mark_max_block_delay(expected_lowest_cost_pb_gnode);
 
     detect_and_fix_timing_graph_combinational_loops();
 
@@ -3907,4 +3911,24 @@ void print_classic_cpds() {
             vtr::printf("Classic %d -> %d: least_slack=%g cpd=%g\n", source_clock_domain, sink_clock_domain, least_slack, critical_path_delay);
 		}
 	}
+}
+
+static void mark_max_block_delay(const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode) {
+    for(AtomBlockId blk : g_atom_nl.blocks()) {
+        auto iter = expected_lowest_cost_pb_gnode.find(blk);
+        if(iter != expected_lowest_cost_pb_gnode.end()) {
+            const t_pb_graph_node* gnode = iter->second;
+            const t_pb_type* pb_type = gnode->pb_type;
+
+			if (pb_type->max_internal_delay != UNDEFINED) {
+				if (pb_max_internal_delay == UNDEFINED) {
+					pb_max_internal_delay = pb_type->max_internal_delay;
+					pbtype_max_internal_delay = pb_type;
+				} else if (pb_max_internal_delay < pb_type->max_internal_delay) {
+					pb_max_internal_delay = pb_type->max_internal_delay;
+					pbtype_max_internal_delay = pb_type;
+				}
+			}
+        }
+    }
 }
