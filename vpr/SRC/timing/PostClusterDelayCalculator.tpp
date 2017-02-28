@@ -32,7 +32,7 @@ inline tatum::Time PostClusterDelayCalculator::max_edge_delay(const tatum::Timin
     } else if (edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
         return atom_clock_to_q_delay(tg, edge);
 
-    } else if (edge_type == tatum::EdgeType::NET) {
+    } else if (edge_type == tatum::EdgeType::INTERCONNECT) {
         return atom_net_delay(tg, edge);
     }
 

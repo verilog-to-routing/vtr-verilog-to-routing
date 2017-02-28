@@ -107,6 +107,8 @@ void TimingGraphBuilder::add_io_to_timing_graph(const AtomBlockId blk) {
 }
 
 void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
+    std::set<std::string> output_ports_requiring_internal_sinks;
+
     //Create the input pins
     for(AtomPinId input_pin : netlist_.block_input_pins(blk)) {
         AtomPortId input_port = netlist_.pin_port(input_pin);
@@ -121,6 +123,18 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
             tnode = tg_->add_node(NodeType::IPIN);
         } else {
             tnode = tg_->add_node(NodeType::SINK);
+
+            if(!model_port->combinational_sink_ports.empty()) {
+                //There is an internal sequential connection within this primitive
+
+                //Create the internal source
+                NodeId internal_tnode = tg_->add_node(NodeType::SOURCE);
+                netlist_lookup_.set_atom_pin_tnode(input_pin, internal_tnode, BlockTnode::INTERNAL);
+
+                //Record the output port which will need an internal sink created
+                output_ports_requiring_internal_sinks.insert(model_port->combinational_sink_ports.begin(),
+                                                             model_port->combinational_sink_ports.end());
+            }
         }
 
         netlist_lookup_.set_atom_pin_tnode(input_pin, tnode);
@@ -162,6 +176,12 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
             VTR_ASSERT(!model_port->clock.empty());
             //Has an associated clock => sequential output
             tnode = tg_->add_node(NodeType::SOURCE);
+
+
+            if(output_ports_requiring_internal_sinks.count(model_port->name)) {
+                NodeId internal_tnode = tg_->add_node(NodeType::SINK);
+                netlist_lookup_.set_atom_pin_tnode(output_pin, internal_tnode, BlockTnode::INTERNAL);
+            }
         }
 
         netlist_lookup_.set_atom_pin_tnode(output_pin, tnode);
@@ -171,64 +191,91 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
     //Connect the clock pins to the sources and sinks
     for(AtomPinId pin : netlist_.block_pins(blk)) {
 
-        NodeId tnode = netlist_lookup_.atom_pin_tnode(pin);
-        VTR_ASSERT(tnode);
+        for(auto blk_tnode_type : {BlockTnode::EXTERNAL, BlockTnode::INTERNAL}) {
+            NodeId tnode = netlist_lookup_.atom_pin_tnode(pin, blk_tnode_type);
 
-        if(tg_->node_type(tnode) == NodeType::SOURCE || tg_->node_type(tnode) == NodeType::SINK) {
-            //Look-up the clock name on the port model
-            AtomPortId port = netlist_.pin_port(pin);
-            const t_model_ports* model_port = netlist_.port_model(port);
+            if (tnode) {
+                auto node_type = tg_->node_type(tnode);
 
-            if(model_port->is_clock && model_port->dir == OUT_PORT) {
-                //This pin is a clock generator, so there is no clock pin
-                //connection
-                continue; 
+                if(node_type == NodeType::SOURCE || node_type == NodeType::SINK) {
+                    //Look-up the clock name on the port model
+                    AtomPortId port = netlist_.pin_port(pin);
+                    const t_model_ports* model_port = netlist_.port_model(port);
+
+                    if(model_port->is_clock && model_port->dir == OUT_PORT) {
+                        //This pin is a clock generator, so there is no clock pin
+                        //connection
+                        continue; 
+                    }
+
+                    VTR_ASSERT_MSG(!model_port->clock.empty(), "Sequential pins must have a clock");
+
+                    //Find the clock pin in the netlist
+                    AtomPortId clk_port = netlist_.find_port(blk, model_port->clock);
+                    VTR_ASSERT(clk_port);
+                    VTR_ASSERT_MSG(netlist_.port_width(clk_port) == 1, "Primitive clock ports can only contain one pin");
+
+                    AtomPinId clk_pin = netlist_.port_pin(clk_port, 0);
+                    VTR_ASSERT(clk_pin);
+
+                    //Convert the pin to it's tnode
+                    NodeId clk_tnode = netlist_lookup_.atom_pin_tnode(clk_pin);
+
+                    tatum::EdgeType type;
+                    if(node_type == NodeType::SOURCE) {
+                        type = tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH;
+                    } else {
+                        VTR_ASSERT(node_type == NodeType::SINK);
+                        type = tatum::EdgeType::PRIMITIVE_CLOCK_CAPTURE;
+                    }
+
+                    //Add the edge from the clock to the source/sink
+                    tg_->add_edge(type, clk_tnode, tnode);
+                }
             }
-
-            VTR_ASSERT_MSG(!model_port->clock.empty(), "Sequential pins must have a clock");
-
-            //Find the clock pin in the netlist
-            AtomPortId clk_port = netlist_.find_port(blk, model_port->clock);
-            VTR_ASSERT(clk_port);
-            VTR_ASSERT_MSG(netlist_.port_width(clk_port) == 1, "Primitive clock ports can only contain one pin");
-
-            AtomPinId clk_pin = netlist_.port_pin(clk_port, 0);
-            VTR_ASSERT(clk_pin);
-
-            //Convert the pin to it's tnode
-            NodeId clk_tnode = netlist_lookup_.atom_pin_tnode(clk_pin);
-
-            //Add the edge from the clock to the source/sink
-            tg_->add_edge(clk_tnode, tnode);
         }
     }
 
     //Connect the combinational edges
     for(AtomPinId src_pin : netlist_.block_input_pins(blk)) {
-        //Combinational edges only go between IPINs and OPINs
-        NodeId src_tnode = netlist_lookup_.atom_pin_tnode(src_pin);
-        VTR_ASSERT(src_tnode);
+        //Combinational edges go between IPINs and OPINs for combinational blocks
+        //and between the internal SOURCEs and SINKS for sequential blocks
+        for(auto blk_tnode_type : {BlockTnode::EXTERNAL, BlockTnode::INTERNAL}) {
+            NodeId src_tnode = netlist_lookup_.atom_pin_tnode(src_pin, blk_tnode_type);
 
-        if(tg_->node_type(src_tnode) == NodeType::IPIN) {
+            if(src_tnode) {
+                auto src_type = tg_->node_type(src_tnode);
+                bool is_internal_source = (   blk_tnode_type == BlockTnode::INTERNAL 
+                                           && src_type == NodeType::SOURCE);
 
-            //Look-up the combinationally connected sink ports name on the port model
-            AtomPortId src_port = netlist_.pin_port(src_pin);
-            const t_model_ports* model_port = netlist_.port_model(src_port);
+                if(src_type == NodeType::IPIN || is_internal_source) {
 
-            for(std::string sink_port_name : model_port->combinational_sink_ports) {
-                AtomPortId sink_port = netlist_.find_port(blk, sink_port_name); 
-                VTR_ASSERT(sink_port);
+                    //Look-up the combinationally connected sink ports name on the port model
+                    AtomPortId src_port = netlist_.pin_port(src_pin);
+                    const t_model_ports* model_port = netlist_.port_model(src_port);
 
-                //We now need to create edges between the source pin, and all the pins in the
-                //output port
-                for(AtomPinId sink_pin : netlist_.port_pins(sink_port)) {
-                    NodeId sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin);
-                    VTR_ASSERT(sink_tnode);
+                    for(std::string sink_port_name : model_port->combinational_sink_ports) {
+                        AtomPortId sink_port = netlist_.find_port(blk, sink_port_name); 
+                        VTR_ASSERT(sink_port);
 
-                    VTR_ASSERT_MSG(tg_->node_type(sink_tnode) == NodeType::OPIN, "Internal primitive combinational edges must be between IPINs and OPINs");
+                        //We now need to create edges between the source pin, and all the pins in the
+                        //output port
+                        for(AtomPinId sink_pin : netlist_.port_pins(sink_port)) {
+                            NodeId sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin, blk_tnode_type);
+                            VTR_ASSERT(sink_tnode);
 
-                    //Add the edge between the pins
-                    tg_->add_edge(src_tnode, sink_tnode);
+                            auto sink_type = tg_->node_type(sink_tnode);
+                            bool is_internal_sink = (   blk_tnode_type == BlockTnode::INTERNAL 
+                                                     && sink_type == NodeType::SINK);
+                            VTR_ASSERT_MSG(sink_type == NodeType::OPIN
+                                           || is_internal_sink, 
+                                           "Internal primitive combinational edges must be between IPINs and OPINs,"
+                                           " or internal SINKs and internal SOURCEs");
+
+                            //Add the edge between the pins
+                            tg_->add_edge(tatum::EdgeType::PRIMITIVE_COMBINATIONAL, src_tnode, sink_tnode);
+                        }
+                    }
                 }
             }
         }
@@ -246,7 +293,7 @@ void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
         NodeId sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin);
         VTR_ASSERT(sink_tnode);
 
-        tg_->add_edge(driver_tnode, sink_tnode);
+        tg_->add_edge(tatum::EdgeType::INTERCONNECT, driver_tnode, sink_tnode);
     }
 }
 

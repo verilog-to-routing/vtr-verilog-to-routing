@@ -3524,7 +3524,7 @@ bool has_valid_normalized_T_arr(int inode) {
 }
 #endif
 
-/*#define INCLUDE_PB_MAX_DELAY_IN_CRIT_PATH*/
+#define INCLUDE_PB_MAX_DELAY_IN_CRIT_PATH
 
 float get_critical_path_delay(void) {
 	/* Finds the critical path delay, which is the minimum clock period required to meet the constraint

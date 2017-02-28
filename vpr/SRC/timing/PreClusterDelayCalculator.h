@@ -28,44 +28,15 @@ public:
         tatum::NodeId src_node = tg.edge_src_node(edge_id);
         tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
 
-        if(tg.node_type(src_node) == tatum::NodeType::CPIN) {
-            //Tcq
-            VTR_ASSERT_MSG(tg.node_type(sink_node) == tatum::NodeType::SOURCE, "Tcq only defined from CPIN to SOURCE");
+        auto edge_type = tg.edge_type(edge_id);
 
-            AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
-            VTR_ASSERT(sink_pin);
-
-            const t_pb_graph_pin* gpin = find_pb_graph_pin(sink_pin);
-            VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
-
-            //Clock-to-q delay marked on the SOURCE node (the sink node of this edge)
-            return tatum::Time(gpin->tco);
-
-        } else if (tg.node_type(src_node) == tatum::NodeType::IPIN && tg.node_type(sink_node) == tatum::NodeType::OPIN) {
-            //Primitive internal combinational delay
-            AtomPinId input_pin = netlist_lookup_.tnode_atom_pin(src_node);
-            VTR_ASSERT(input_pin);
-            const t_pb_graph_pin* input_gpin = find_pb_graph_pin(input_pin);
-
-            AtomPinId output_pin = netlist_lookup_.tnode_atom_pin(sink_node);
-            VTR_ASSERT(output_pin);
-            const t_pb_graph_pin* output_gpin = find_pb_graph_pin(output_pin);
-
-            for(int i = 0; i < input_gpin->num_pin_timing; ++i) {
-                const t_pb_graph_pin* sink_gpin = input_gpin->pin_timing[i];
-
-                if(sink_gpin == output_gpin) {
-                    return tatum::Time(input_gpin->pin_timing_del_max[i]);
-                }
-            }
-            VTR_ASSERT_MSG(false, "Found no primitive combinational delay for edge");
-
+        if (edge_type == tatum::EdgeType::PRIMITIVE_COMBINATIONAL) {
+            return prim_comb_delay(tg, src_node, sink_node);
+        } else if(edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
+            return prim_tcq_delay(tg, src_node, sink_node);
         } else {
-            VTR_ASSERT(   tg.node_type(src_node) == tatum::NodeType::OPIN 
-                       || tg.node_type(src_node) == tatum::NodeType::SOURCE);
-            VTR_ASSERT(   tg.node_type(sink_node) == tatum::NodeType::IPIN 
-                       || tg.node_type(sink_node) == tatum::NodeType::SINK 
-                       || tg.node_type(sink_node) == tatum::NodeType::CPIN);
+            VTR_ASSERT(edge_type == tatum::EdgeType::INTERCONNECT);
+
             //External net delay
             return tatum::Time(inter_cluster_net_delay_);
         }
@@ -77,9 +48,11 @@ public:
     tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
         tatum::NodeId src_node = tg.edge_src_node(edge_id);
         tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
+        auto edge_type = tg.edge_type(edge_id);
 
         VTR_ASSERT_MSG(tg.node_type(src_node) == tatum::NodeType::CPIN, "Edge setup time only valid if source node is a CPIN");
         VTR_ASSERT_MSG(tg.node_type(sink_node) == tatum::NodeType::SINK, "Edge setup time only valid if sink node is a SINK");
+        VTR_ASSERT(edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_CAPTURE);
         
         AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
         VTR_ASSERT(sink_pin);
@@ -92,15 +65,64 @@ public:
 
     tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
         //Currently return the same delay
+        //TODO: use true min delay
         return max_edge_delay(tg, edge_id);
     }
 
-    tatum::Time hold_time(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const {
-        //Unimplemented
-        return tatum::Time(NAN);
+    tatum::Time hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
+        //Currently return the same as hold time
+        //TODO: use true hold time
+        return setup_time(tg, edge_id);
     }
 
 private:
+
+    tatum::Time prim_tcq_delay(const tatum::TimingGraph& tg, tatum::NodeId src_node, tatum::NodeId sink_node) const {
+        VTR_ASSERT_MSG(   tg.node_type(src_node) == tatum::NodeType::CPIN
+                       && tg.node_type(sink_node) == tatum::NodeType::SOURCE,
+                       "Tcq only defined from CPIN to SOURCE");
+
+        AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
+        VTR_ASSERT(sink_pin);
+
+        const t_pb_graph_pin* gpin = find_pb_graph_pin(sink_pin);
+        VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
+
+        //Clock-to-q delay marked on the SOURCE node (the sink node of this edge)
+        return tatum::Time(gpin->tco);
+    }
+
+    tatum::Time prim_comb_delay(const tatum::TimingGraph& tg, tatum::NodeId src_node, tatum::NodeId sink_node) const {
+        auto src_node_type = tg.node_type(src_node);
+        auto sink_node_type = tg.node_type(sink_node);
+        VTR_ASSERT_MSG(   (src_node_type == tatum::NodeType::IPIN && sink_node_type == tatum::NodeType::OPIN)
+                       || (src_node_type == tatum::NodeType::SOURCE && sink_node_type == tatum::NodeType::SINK),
+                       "Primitive combinational delay must be between IPIN and OPIN, or block internal SOURCE and block internal SINK");
+
+        //Primitive internal combinational delay
+        AtomPinId input_pin = netlist_lookup_.tnode_atom_pin(src_node);
+        VTR_ASSERT(input_pin);
+        const t_pb_graph_pin* input_gpin = find_pb_graph_pin(input_pin);
+
+        AtomPinId output_pin = netlist_lookup_.tnode_atom_pin(sink_node);
+        VTR_ASSERT(output_pin);
+        const t_pb_graph_pin* output_gpin = find_pb_graph_pin(output_pin);
+
+        tatum::Time time;
+        for(int i = 0; i < input_gpin->num_pin_timing; ++i) {
+            const t_pb_graph_pin* sink_gpin = input_gpin->pin_timing[i];
+
+            if(sink_gpin == output_gpin) {
+                time = tatum::Time(input_gpin->pin_timing_del_max[i]);
+                break;
+            }
+        }
+
+        VTR_ASSERT_MSG(time.valid(), "Found no primitive combinational delay for edge");
+
+        return time;
+    }
+
     const t_pb_graph_pin* find_pb_graph_pin(const AtomPinId pin) const {
         AtomBlockId blk = netlist_.pin_block(pin);
 
