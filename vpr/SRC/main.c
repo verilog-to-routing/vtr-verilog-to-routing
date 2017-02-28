@@ -71,9 +71,7 @@ int main(int argc, const char **argv) {
             }
 		}
 
-		if (vpr_setup.PowerOpts.do_power) {
-			vpr_power_estimation(vpr_setup, Arch);
-		}
+        vpr_analysis(vpr_setup, Arch);
 	
 		entire_flow_end = clock();
 

@@ -59,6 +59,9 @@ using namespace std;
 #include "lb_type_rr_graph.h"
 #include "output_blif.h"
 #include "read_activity.h"
+#include "net_delay.h"
+#include "AnalysisDelayCalculator.h"
+#include "timing_info.h"
 
 #include "timing_graph_builder.h"
 
@@ -1026,17 +1029,42 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 	}
 }
 
+void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+
+    //Load the net delays
+	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
+    float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
+    load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
+
+    //Do timing analysis
+    auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
+    auto timing_info = make_setup_timing_info(analysis_delay_calc);
+    timing_info->update();
+
+    //TODO: move stats here (from router)
+
+    //Do power analysis
+    if(vpr_setup.PowerOpts.do_power) {
+        vpr_power_estimation(vpr_setup, Arch, *timing_info);
+    }
+
+    //Clean-up the net delays
+    free_net_delay(net_delay, &net_delay_ch);
+}
+
 /* This function performs power estimation, and must be called
  * after packing, placement AND routing. Currently, this
  * will not work when running a partial flow (ex. only routing).
  */
-void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info) {
 
 	/* Ensure we are only using 1 clock */
-	VTR_ASSERT(count_netlist_clocks() == 1);
+	if(timing_info.critical_paths().size() != 1) {
+        VPR_THROW(VPR_ERROR_POWER, "Power analysis only supported on single-clock circuits");
+    }
 
 	/* Get the critical path of this clock */
-	g_solution_inf.T_crit = get_critical_path_delay() / 1e9;
+	g_solution_inf.T_crit = timing_info.least_slack_critical_path().delay();
 	VTR_ASSERT(g_solution_inf.T_crit > 0.);
 
 	vtr::printf_info("\n\nPower Estimation:\n");
@@ -1128,6 +1156,9 @@ void vpr_print_error(const VprError& vpr_error){
             break;
         case VPR_ERROR_ATOM_NETLIST:
             error_type = vtr::strdup("Atom Netlist");
+            break;
+        case VPR_ERROR_POWER:
+            error_type = vtr::strdup("Power");
             break;
         case VPR_ERROR_OTHER:
             error_type = vtr::strdup("Other");

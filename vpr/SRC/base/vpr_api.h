@@ -34,6 +34,7 @@
 #include "read_xml_arch_file.h"
 #include "vpr_utils.h"
 #include "place_macro.h"
+#include "timing_info_fwd.h"
 
 #include "vpr_error.h"
 
@@ -43,7 +44,7 @@ void vpr_init(const int argc, const char **argv, t_options *options,
 void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch);
-void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch);
+void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_free_vpr_data_structures(t_arch& Arch, const t_options& options,
 		t_vpr_setup& vpr_setup);
 void vpr_free_all(t_arch& Arch, const t_options& options,
@@ -85,6 +86,7 @@ void vpr_check_setup(const struct s_placer_opts PlacerOpts,
 		const t_timing_inf Timing, const t_chan_width_dist Chans);
 /* Show current setup */
 void vpr_show_setup(const t_options& options, const t_vpr_setup& vpr_setup);
+void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info);
 
 /* Output file names management */
 void vpr_alloc_and_load_output_file_names(const char* default_name);
