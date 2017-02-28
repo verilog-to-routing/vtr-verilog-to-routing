@@ -11,8 +11,8 @@ void EchoLoader::add_node(int node_id, tatumparse::NodeType type, std::vector<in
     TATUM_ASSERT(created_node_id == tatum::NodeId(node_id));
 }
 
-void EchoLoader::add_edge(int edge_id, int src_node_id, int sink_node_id, bool disabled) {
-    tatum::EdgeId created_edge_id = tg_->add_edge(tatum::NodeId(src_node_id), tatum::NodeId(sink_node_id));
+void EchoLoader::add_edge(int edge_id, tatumparse::EdgeType type, int src_node_id, int sink_node_id, bool disabled) {
+    tatum::EdgeId created_edge_id = tg_->add_edge(to_tatum_edge_type(type), tatum::NodeId(src_node_id), tatum::NodeId(sink_node_id));
     TATUM_ASSERT(created_edge_id == tatum::EdgeId(edge_id));
 
     tg_->disable_edge(created_edge_id, disabled);
@@ -115,6 +115,19 @@ tatum::NodeType EchoLoader::to_tatum_node_type(tatumparse::NodeType type) {
     } else {
         TATUM_ASSERT(type == tatumparse::NodeType::OPIN);
         return tatum::NodeType::OPIN;
+    }
+}
+
+tatum::EdgeType EchoLoader::to_tatum_edge_type(tatumparse::EdgeType type) {
+    if(type == tatumparse::EdgeType::PRIMITIVE_COMBINATIONAL) {
+        return tatum::EdgeType::PRIMITIVE_COMBINATIONAL;
+    } else if(type == tatumparse::EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
+        return tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH;
+    } else if(type == tatumparse::EdgeType::PRIMITIVE_CLOCK_CAPTURE) {
+        return tatum::EdgeType::PRIMITIVE_CLOCK_CAPTURE;
+    } else {
+        TATUM_ASSERT(type == tatumparse::EdgeType::INTERCONNECT);
+        return tatum::EdgeType::INTERCONNECT;
     }
 }
 

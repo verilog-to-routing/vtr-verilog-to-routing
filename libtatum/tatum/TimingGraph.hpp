@@ -193,11 +193,12 @@ class TimingGraph {
         NodeId add_node(const NodeType type);
 
         ///Adds an edge to the timing graph
+        ///\param type The edge's type
         ///\param src_node The node id of the edge's driving node
         ///\param sink_node The node id of the edge's sink node
         ///\pre The src_node and sink_node must have been already added to the graph
         ///\warning Graph will likely need to be re-levelized after modification
-        EdgeId add_edge(const NodeId src_node, const NodeId sink_node);
+        EdgeId add_edge(const EdgeType type, const NodeId src_node, const NodeId sink_node);
 
         ///Removes a node (and it's associated edges) from the timing graph
         ///\param node_id The node to remove
@@ -271,6 +272,7 @@ class TimingGraph {
 
         //Edge data
         tatum::util::linear_map<EdgeId,EdgeId> edge_ids_; //The edge IDs in the graph
+        tatum::util::linear_map<EdgeId,EdgeType> edge_types_; //Type of edge
         tatum::util::linear_map<EdgeId,NodeId> edge_sink_nodes_; //Sink node for each edge
         tatum::util::linear_map<EdgeId,NodeId> edge_src_nodes_; //Source node for each edge
         tatum::util::linear_map<EdgeId,bool>   edges_disabled_;
@@ -303,6 +305,8 @@ std::vector<NodeId> find_transitive_fanout_nodes(const TimingGraph& tg,
                                                  const std::vector<NodeId> sources, 
                                                  size_t max_depth=std::numeric_limits<size_t>::max());
 
+EdgeType infer_edge_type(const TimingGraph& tg, EdgeId edge);
+
 //Mappings from old to new IDs
 struct GraphIdMaps {
     GraphIdMaps(tatum::util::linear_map<NodeId,NodeId> node_map,
@@ -311,6 +315,7 @@ struct GraphIdMaps {
     tatum::util::linear_map<NodeId,NodeId> node_id_map;
     tatum::util::linear_map<EdgeId,EdgeId> edge_id_map;
 };
+
 
 
 } //namepsace

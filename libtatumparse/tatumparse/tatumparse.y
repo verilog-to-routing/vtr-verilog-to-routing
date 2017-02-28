@@ -110,6 +110,10 @@ using namespace tatumparse;
 %token SRC_NODE "src_node:"
 %token SINK_NODE "sink_node:"
 %token DISABLED "disabled:"
+%token PRIMITIVE_COMBINATIONAL "PRIMITIVE_COMBINATIONAL"
+%token PRIMITIVE_CLOCK_LAUNCH "PRIMITIVE_CLOCK_LAUNCH"
+%token PRIMITIVE_CLOCK_CAPTURE "PRIMITIVE_CLOCK_CAPTURE"
+%token INTERCONNECT "INTERCONNECT"
 
 %token TRUE "true"
 %token FALSE "false"
@@ -169,6 +173,7 @@ using namespace tatumparse;
 %type <int> SinkNodeId
 %type <int> EdgeId
 %type <tatumparse::NodeType> NodeType
+%type <tatumparse::EdgeType> EdgeType
 %type <std::vector<int>> IntList
 %type <std::vector<int>> InEdges
 %type <std::vector<int>> OutEdges
@@ -206,7 +211,7 @@ tatum_data: /*empty*/ { }
 
 Graph: TIMING_GRAPH EOL { callback.start_graph(); }
      | Graph NodeId EOL NodeType EOL InEdges EOL OutEdges EOL { callback.add_node($2, $4, $6, $8); }
-     | Graph EdgeId EOL SrcNodeId EOL SinkNodeId EOL Disabled { callback.add_edge($2, $4, $6, $8); }
+     | Graph EdgeId EOL EdgeType EOL SrcNodeId EOL SinkNodeId EOL Disabled { callback.add_edge($2, $4, $6, $8, $10); }
 
 Constraints: TIMING_CONSTRAINTS EOL { callback.start_constraints(); }
            | Constraints TYPE CLOCK DomainId Name EOL { callback.add_clock_domain($4, $5); }
@@ -261,6 +266,11 @@ NodeType: TYPE SOURCE { $$ = NodeType::SOURCE; }
         | TYPE IPIN { $$ = NodeType::IPIN; }
         | TYPE OPIN { $$ = NodeType::OPIN; }
         | TYPE CPIN { $$ = NodeType::CPIN; }
+
+EdgeType: TYPE PRIMITIVE_COMBINATIONAL { $$ = EdgeType::PRIMITIVE_COMBINATIONAL; }
+        | TYPE PRIMITIVE_CLOCK_LAUNCH { $$ = EdgeType::PRIMITIVE_CLOCK_LAUNCH; }
+        | TYPE PRIMITIVE_CLOCK_CAPTURE { $$ = EdgeType::PRIMITIVE_CLOCK_CAPTURE; }
+        | TYPE INTERCONNECT { $$ = EdgeType::INTERCONNECT; }
 
 NodeId: NODE INT { $$ = $2;}
 InEdges: IN_EDGES IntList { $$ = $2; }

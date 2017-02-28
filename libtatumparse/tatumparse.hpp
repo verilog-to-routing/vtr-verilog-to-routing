@@ -40,6 +40,13 @@ enum class NodeType {
     CPIN
 };
 
+enum class EdgeType {
+    PRIMITIVE_COMBINATIONAL,
+    PRIMITIVE_CLOCK_LAUNCH,
+    PRIMITIVE_CLOCK_CAPTURE,
+    INTERCONNECT
+};
+
 enum class TagType {
     SETUP_DATA_ARRIVAL,
     SETUP_DATA_REQUIRED,
@@ -71,7 +78,7 @@ class Callback {
 
         virtual void start_graph() = 0;
         virtual void add_node(int node_id, NodeType type, std::vector<int> in_edge_ids, std::vector<int> out_edge_ids) = 0;
-        virtual void add_edge(int edge_id, int src_node_id, int sink_node_id, bool disabled=false) = 0;
+        virtual void add_edge(int edge_id, EdgeType type, int src_node_id, int sink_node_id, bool disabled=false) = 0;
         virtual void finish_graph() = 0;
 
         virtual void start_constraints() = 0;

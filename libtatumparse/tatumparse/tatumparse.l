@@ -72,6 +72,10 @@ edge:                           { return tatumparse::Parser::make_EDGE(); }
 src_node:                       { return tatumparse::Parser::make_SRC_NODE(); }
 sink_node:                      { return tatumparse::Parser::make_SINK_NODE(); }
 disabled:                       { return tatumparse::Parser::make_DISABLED(); }
+PRIMITIVE_COMBINATIONAL         { return tatumparse::Parser::make_PRIMITIVE_COMBINATIONAL(); }
+PRIMITIVE_CLOCK_LAUNCH          { return tatumparse::Parser::make_PRIMITIVE_CLOCK_LAUNCH(); }
+PRIMITIVE_CLOCK_CAPTURE         { return tatumparse::Parser::make_PRIMITIVE_CLOCK_CAPTURE(); }
+INTERCONNECT                    { return tatumparse::Parser::make_INTERCONNECT(); }
 
 timing_constraints:             { return tatumparse::Parser::make_TIMING_CONSTRAINTS(); }
 CLOCK                           { return tatumparse::Parser::make_CLOCK(); }
