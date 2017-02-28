@@ -622,7 +622,7 @@ The classes we offer are:
 
 Timing
 ~~~~~~
-Timing is specified through tags contained in pb_type, complete, direct, or mux tags as follows:
+Timing is specified through tags contained in ``pb_type``, ``complete``, ``direct``, or ``mux`` tags as follows:
 
 .. arch:tag:: <delay_constant max="float" in_port="string" out_port="string"/>
 
