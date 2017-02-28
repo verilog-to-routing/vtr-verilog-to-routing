@@ -32,7 +32,6 @@ using namespace std;
 #include "ReadOptions.h"
 #include "route_common.h"
 #include "place_macro.h"
-#include "netlist_writer.h"
 #include "power.h"
 
 
@@ -186,14 +185,6 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 		
 #ifdef ENABLE_CLASSIC_VPR_STA
         VTR_ASSERT(slacks->slack);
-#endif
-
-        if(GetPostSynthesisOption())
-        {
-            netlist_writer(g_atom_nl.netlist_name());
-        }
-
-#ifdef ENABLE_CLASSIC_VPR_STA
         free_timing_graph(slacks);
 #endif
 
@@ -582,13 +573,6 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	sprintf(msg, "Routing succeeded with a channel width factor of %d.", final);
 	update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
 
-	if (timing_inf.timing_analysis_enabled) {
-		if(GetPostSynthesisOption())
-		  {
-            netlist_writer(g_atom_nl.netlist_name().c_str());
-		  }
-	}
-	
 	for (i = 0; i < num_blocks; i++) {
 		free_ivec_vector(clb_opins_used_locally[i], 0,
 				block[i].type->num_class - 1);

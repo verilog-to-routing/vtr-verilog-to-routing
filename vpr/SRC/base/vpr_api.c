@@ -62,6 +62,7 @@ using namespace std;
 #include "net_delay.h"
 #include "AnalysisDelayCalculator.h"
 #include "timing_info.h"
+#include "netlist_writer.h"
 
 #include "timing_graph_builder.h"
 
@@ -1031,25 +1032,31 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 
 void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
-    //Load the net delays
-	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
-    float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
-    load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
+	if (vpr_setup.TimingEnabled) {
+        //Load the net delays
+        vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
+        float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
+        load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
-    //Do timing analysis
-    auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
-    auto timing_info = make_setup_timing_info(analysis_delay_calc);
-    timing_info->update();
+        //Do timing analysis
+        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
+        auto timing_info = make_setup_timing_info(analysis_delay_calc);
+        timing_info->update();
 
-    //TODO: move stats here (from router)
+        //TODO: move stats here (from router)
 
-    //Do power analysis
-    if(vpr_setup.PowerOpts.do_power) {
-        vpr_power_estimation(vpr_setup, Arch, *timing_info);
+        if(GetPostSynthesisOption()) {
+            netlist_writer(g_atom_nl.netlist_name().c_str(), analysis_delay_calc);
+        }
+        
+        //Do power analysis
+        if(vpr_setup.PowerOpts.do_power) {
+            vpr_power_estimation(vpr_setup, Arch, *timing_info);
+        }
+
+        //Clean-up the net delays
+        free_net_delay(net_delay, &net_delay_ch);
     }
-
-    //Clean-up the net delays
-    free_net_delay(net_delay, &net_delay_ch);
 }
 
 /* This function performs power estimation, and must be called

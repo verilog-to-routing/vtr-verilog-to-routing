@@ -105,7 +105,6 @@ enum class PortType {
 //
 std::string indent(size_t depth);
 double get_delay_ps(double delay_sec);
-double get_delay_ps(int source_tnode, int sink_tnode);
 
 void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, int depth);
 void print_verilog_port(std::ostream& os, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth);
@@ -342,7 +341,7 @@ class LutInst : public Instance {
                 os << indent(depth+2) << "(ABSOLUTE\n";
                 
                 for(auto& arc : timing_arcs()) {
-                    double delay_ps = get_delay_ps(arc.delay());
+                    double delay_ps = arc.delay();
 
                     std::stringstream delay_triple;
                     delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
@@ -744,14 +743,30 @@ class Assignment {
 class NetlistWriterVisitor : public NetlistVisitor {
     public: //Public interface
         NetlistWriterVisitor(std::ostream& verilog_os, //Output stream for verilog netlist
-                                std::ostream& blif_os, //Output stream for blif netlist
-                                std::ostream& sdf_os) //Output stream for SDF
+                             std::ostream& blif_os, //Output stream for blif netlist
+                             std::ostream& sdf_os, //Output stream for SDF
+                             std::shared_ptr<const AnalysisDelayCalculator> delay_calc)
             : verilog_os_(verilog_os)
             , blif_os_(blif_os)
-            , sdf_os_(sdf_os) {
-            
-            //Need to look-up pins from tnode's
-            pin_id_to_tnode_lookup_ = alloc_and_load_tnode_lookup_from_pin_id();
+            , sdf_os_(sdf_os)
+            , delay_calc_(delay_calc) {
+
+            //Initialize the pin to tnode look-up
+            for(AtomPinId pin : g_atom_nl.pins()) {
+                AtomBlockId blk = g_atom_nl.pin_block(pin);
+                int clb_idx = g_atom_lookup.atom_clb(blk);
+
+                const t_pb_graph_pin* gpin = g_atom_lookup.atom_pin_pb_graph_pin(pin);
+                VTR_ASSERT(gpin);
+                int pb_pin_idx = gpin->pin_count_in_cluster;
+
+                tatum::NodeId tnode_id = g_atom_lookup.atom_pin_tnode(pin);
+
+                auto key = std::make_pair(clb_idx, pb_pin_idx);
+                auto value = std::make_pair(key, tnode_id);
+                auto ret = pin_id_to_tnode_lookup_.insert(value);
+                VTR_ASSERT_MSG(ret.second, "Was inserted");
+            }
         }
 
         //Non copyable/assignable/moveable
@@ -759,10 +774,6 @@ class NetlistWriterVisitor : public NetlistVisitor {
         NetlistWriterVisitor(NetlistWriterVisitor&& other) = delete;
         NetlistWriterVisitor& operator=(NetlistWriterVisitor& rhs) = delete;
         NetlistWriterVisitor& operator=(NetlistWriterVisitor&& rhs) = delete;
-
-        ~NetlistWriterVisitor() {
-            free_tnode_lookup_from_pin_id(pin_id_to_tnode_lookup_);
-        }
 
     private: //Internal types
     private: //NetlistVisitor interface functions
@@ -983,7 +994,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Returns the name of a wire connecting a primitive and global net.  
         //The wire is recorded and instantiated by the top level output routines.
         std::string make_inst_wire(AtomNetId atom_net_id, //The id of the net in the atom netlist
-                                   int tnode_id,  //The tnode associated with the primitive pin
+                                   tatum::NodeId tnode_id,  //The tnode associated with the primitive pin
                                    std::string inst_name, //The name of the instance associated with the pin
                                    PortType port_type, //The port direction
                                    int port_idx, //The instance port index
@@ -1056,7 +1067,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 PortType wire_dir = (dir == PortType::IN) ? PortType::OUT : PortType::IN;
 
                 //Look up the tnode associated with this pin (used for delay calculation)
-                int tnode_id = find_tnode(atom, cluster_pin_idx);
+                tatum::NodeId tnode_id = find_tnode(atom, cluster_pin_idx);
 
                 auto wire_name = make_inst_wire(atom_net_id, tnode_id, io_name, wire_dir, 0, 0);
 
@@ -1090,7 +1101,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             const t_block* top_block = find_top_block(atom);
 
-            //Add inputs adding connections
+            VTR_ASSERT(pb_graph_node->num_output_ports == 1); //LUT has one output port
+            VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1); //LUT has one output pin
+            int sink_cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
+
+            //Add inputs connections
             std::vector<Arc> timing_arcs;
             for(int pin_idx = 0; pin_idx < pb_graph_node->num_input_pins[0]; pin_idx++) {
                 int cluster_pin_idx = pb_graph_node->input_pins[0][pin_idx].pin_count_in_cluster; //Unique pin index in cluster
@@ -1104,13 +1119,14 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     //Connected to a net
                     
                     //Look up the tnode associated with this pin (used for delay calculation)
-                    int tnode_id = find_tnode(atom, cluster_pin_idx);
+                    tatum::NodeId src_tnode_id = find_tnode(atom, cluster_pin_idx);
+                    tatum::NodeId sink_tnode_id = find_tnode(atom, sink_cluster_pin_idx);
 
-                    net = make_inst_wire(atom_net_id, tnode_id, inst_name, PortType::IN, 0, pin_idx);
+                    net = make_inst_wire(atom_net_id, src_tnode_id, inst_name, PortType::IN, 0, pin_idx);
 
                     //Record the timing arc
-                    VTR_ASSERT(tnode[tnode_id].num_edges == 1);
-                    float delay = tnode[tnode_id].out_edges[0].Tdel;
+                    float delay = get_delay_ps(src_tnode_id, sink_tnode_id);
+
                     Arc timing_arc("in", pin_idx, "out", 0, delay);
 
                     timing_arcs.push_back(timing_arc);
@@ -1120,10 +1136,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             //Add the single output connection
             {
-                VTR_ASSERT(pb_graph_node->num_output_ports == 1); //LUT has one output port
-                VTR_ASSERT(pb_graph_node->num_output_pins[0] == 1); //LUT has one output pin
-                int cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
-                auto atom_net_id = top_block->pb_route[cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+                auto atom_net_id = top_block->pb_route[sink_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
 
                 std::string net;
                 if(!atom_net_id) {
@@ -1133,7 +1146,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     //Connected to a net
 
                     //Look up the tnode associated with this pin (used for delay calculation)
-                    int tnode_id = find_tnode(atom, cluster_pin_idx);
+                    tatum::NodeId tnode_id = find_tnode(atom, sink_cluster_pin_idx);
 
                     net = make_inst_wire(atom_net_id, tnode_id, inst_name, PortType::OUT, 0, 0);
                 }
@@ -1354,7 +1367,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             params["WIDTH"] = "0";
 
             //Delay matrix[sink_tnode] -> tuple of source_port_name, pin index, delay
-            std::map<int,std::vector<std::tuple<std::string,int,double>>> tnode_delay_matrix;
+            std::map<tatum::NodeId,std::vector<std::tuple<std::string,int,double>>> tnode_delay_matrix;
 
             //Process the input ports
             for(int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
@@ -1372,17 +1385,17 @@ class NetlistWriterVisitor : public NetlistVisitor {
                         net = "";
                     } else {
                         //Connected
-                        auto inode = find_tnode(atom, cluster_pin_idx);
-                        net = make_inst_wire(atom_net_id, inode, inst_name, PortType::IN, iport, ipin);
+                        auto src_tnode = find_tnode(atom, cluster_pin_idx);
+                        net = make_inst_wire(atom_net_id, src_tnode, inst_name, PortType::IN, iport, ipin);
 
                         //Delays
                         //
-                        //We record the souce sink tnodes and thier delays here since the timing graph only
-                        //has forward edges
-                        for(int iedge = 0; iedge < tnode[inode].num_edges; iedge++) {
-                            auto& edge = tnode[inode].out_edges[iedge];
-                            auto key = edge.to_node;
-                            tnode_delay_matrix[key].emplace_back(port->name, ipin, edge.Tdel);
+                        //We record the souce sink tnodes and thier delays here
+                        for(tatum::EdgeId edge : g_timing_graph->node_out_edges(src_tnode)) {
+                            double delay = delay_calc_->max_edge_delay(*g_timing_graph, edge);
+
+                            auto sink_tnode = g_timing_graph->edge_sink_node(edge);
+                            tnode_delay_matrix[sink_tnode].emplace_back(port->name, ipin, delay);
                         }
                     }
 
@@ -1448,7 +1461,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             params["WIDTH"] = "0";
 
             //Delay matrix[sink_tnode] -> tuple of source_port_name, pin index, delay
-            std::map<int,std::vector<std::tuple<std::string,int,double>>> tnode_delay_matrix;
+            std::map<tatum::NodeId,std::vector<std::tuple<std::string,int,double>>> tnode_delay_matrix;
 
             //Process the input ports
             for(int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
@@ -1469,6 +1482,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                     } else {
                         //Connected
+#if 0
                         auto inode = find_tnode(atom, cluster_pin_idx);
                         net = make_inst_wire(atom_net_id, inode, inst_name, PortType::IN, iport, ipin);
 
@@ -1481,6 +1495,21 @@ class NetlistWriterVisitor : public NetlistVisitor {
                             auto key = edge.to_node;
                             tnode_delay_matrix[key].emplace_back(port->name, ipin, edge.Tdel);
                         }
+#else
+                        //Connected
+                        auto src_tnode = find_tnode(atom, cluster_pin_idx);
+                        net = make_inst_wire(atom_net_id, src_tnode, inst_name, PortType::IN, iport, ipin);
+
+                        //Delays
+                        //
+                        //We record the souce sink tnodes and thier delays here
+                        for(tatum::EdgeId edge : g_timing_graph->node_out_edges(src_tnode)) {
+                            double delay = delay_calc_->max_edge_delay(*g_timing_graph, edge);
+
+                            auto sink_tnode = g_timing_graph->edge_sink_node(edge);
+                            tnode_delay_matrix[sink_tnode].emplace_back(port->name, ipin, delay);
+                        }
+#endif
                     }
 
                     input_port_conns[port->name].push_back(net);
@@ -1551,13 +1580,17 @@ class NetlistWriterVisitor : public NetlistVisitor {
         }
 
         //Returns the tnode ID of the given atom's connected cluster pin
-        int find_tnode(const t_pb* atom, int cluster_pin_idx) {
+        tatum::NodeId find_tnode(const t_pb* atom, int cluster_pin_idx) {
 
             AtomBlockId blk_id = g_atom_lookup.pb_atom(atom);
             int clb_index = g_atom_lookup.atom_clb(blk_id);
-            int tnode_id = pin_id_to_tnode_lookup_[clb_index][cluster_pin_idx];
 
-            VTR_ASSERT(tnode_id != OPEN);
+            auto key = std::make_pair(clb_index, cluster_pin_idx);
+            auto iter = pin_id_to_tnode_lookup_.find(key);
+            VTR_ASSERT(iter != pin_id_to_tnode_lookup_.end());
+
+            tatum::NodeId tnode_id = iter->second;
+            VTR_ASSERT(tnode_id);
 
             return tnode_id;
         }
@@ -1794,6 +1827,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
             return name;
         }
 
+        //Returns the delay in pico-seconds from source_tnode to sink_tnode
+        double get_delay_ps(tatum::NodeId source_tnode, tatum::NodeId sink_tnode) {
+            tatum::EdgeId edge = g_timing_graph->find_edge(source_tnode, sink_tnode);
+            VTR_ASSERT(edge);
+
+            double delay_sec = delay_calc_->max_edge_delay(*g_timing_graph, edge);
+
+            return ::get_delay_ps(delay_sec); //Class overload hides file-scope by default
+        }
+
 
     private: //Data
         std::string top_module_name_; //Name of the top level module (i.e. the circuit)
@@ -1804,20 +1847,22 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Drivers of logical nets. 
         // Key: logic net id, Value: pair of wire_name and tnode_id
-        std::map<AtomNetId, std::pair<std::string,int>> logical_net_drivers_; 
+        std::map<AtomNetId, std::pair<std::string,tatum::NodeId>> logical_net_drivers_; 
 
         //Sinks of logical nets. 
         // Key: logical net id, Value: vector wire_name tnode_id pairs
-        std::map<AtomNetId, std::vector<std::pair<std::string,int>>> logical_net_sinks_; 
+        std::map<AtomNetId, std::vector<std::pair<std::string,tatum::NodeId>>> logical_net_sinks_; 
         std::map<std::string, float> logical_net_sink_delays_;
-
-        //Look-up from pins to tnodes
-        int** pin_id_to_tnode_lookup_;
 
         //Output streams
         std::ostream& verilog_os_;
         std::ostream& blif_os_;
         std::ostream& sdf_os_;
+
+        //Look-up from pins to tnodes
+        std::map<std::pair<int,int>,tatum::NodeId> pin_id_to_tnode_lookup_;
+
+        std::shared_ptr<const AnalysisDelayCalculator> delay_calc_;
 };
 
 //
@@ -1825,7 +1870,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 //
 
 //Main routing for this file. See netlist_writer.h for details.
-void netlist_writer(const std::string basename) {
+void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc) {
     std::string verilog_filename = basename+ "_post_synthesis.v";
     std::string blif_filename = basename + "_post_synthesis.blif";
     std::string sdf_filename = basename + "_post_synthesis.sdf";
@@ -1838,7 +1883,7 @@ void netlist_writer(const std::string basename) {
     std::ofstream blif_os(blif_filename);
     std::ofstream sdf_os(sdf_filename);
 
-    NetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os);
+    NetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc);
 
     NetlistWalker nl_walker(visitor);
 
@@ -1873,16 +1918,6 @@ std::string indent(size_t depth) {
 //Returns the delay in pico-seconds from a floating point delay
 double get_delay_ps(double delay_sec) {
     return delay_sec * 1e12; //Scale to picoseconds
-}
-
-//Returns the delay in pico-seconds from source_tnode to sink_tnode
-double get_delay_ps(int source_tnode, int sink_tnode) {
-    float source_delay = tnode[source_tnode].T_arr;
-    float sink_delay = tnode[sink_tnode].T_arr;
-
-    float delay_sec = sink_delay - source_delay;
-
-    return get_delay_ps(delay_sec);
 }
 
 //Returns the name of a unique unconnected net
