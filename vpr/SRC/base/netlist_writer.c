@@ -1169,7 +1169,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::string input_net = make_inst_wire(input_atom_net_id, find_tnode(atom, input_cluster_pin_idx), inst_name, PortType::IN, 0, 0);
             port_conns["D"] = input_net;
 
-            double tsu = pb_graph_node->input_pins[0][0].tsu_tco;
+            double tsu = pb_graph_node->input_pins[0][0].tsu;
 
             //Output (Q)
             int output_cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
@@ -1177,7 +1177,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             std::string output_net = make_inst_wire(output_atom_net_id, find_tnode(atom, output_cluster_pin_idx), inst_name, PortType::OUT, 0, 0);
             port_conns["Q"] = output_net;
 
-            double tcq = pb_graph_node->output_pins[0][0].tsu_tco;
+            double tcq = pb_graph_node->output_pins[0][0].tco;
 
             //Clock (control)
             int control_cluster_pin_idx = pb_graph_node->clock_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
@@ -1268,7 +1268,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     }
 
                     input_port_conns[port_name].push_back(net);
-                    ports_tsu[port_name] = pin->tsu_tco;
+                    ports_tsu[port_name] = pin->tsu;
                 }
             }
 
@@ -1303,7 +1303,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                                     "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
                     }
                     output_port_conns[port_name].push_back(net);
-                    ports_tcq[port_name] = pin->tsu_tco;
+                    ports_tcq[port_name] = pin->tco;
                 }
             }
 

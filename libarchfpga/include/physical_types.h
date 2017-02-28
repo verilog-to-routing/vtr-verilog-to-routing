@@ -30,6 +30,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <limits>
 #include "logic_types.h"
 
 //Forward declarations
@@ -701,7 +702,8 @@ struct s_pb_graph_pin {
 
 	/* timing information */
 	enum e_pb_graph_pin_type type; /* Is a sequential logic element (true), inpad/outpad (true), or neither (false) */
-	float tsu_tco; /* For sequential logic elements, this is the setup time (if input) or clock-to-q time (if output) */
+	float tsu = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the setup time */
+	float tco = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the clock to output time */
     struct s_pb_graph_pin* associated_clock_pin; /* For sequentail elements, the associated clock */
 	struct s_pb_graph_pin** pin_timing; /* primitive ipin to opin timing */
 	float *pin_timing_del_max; /* primitive ipin to opin timing */

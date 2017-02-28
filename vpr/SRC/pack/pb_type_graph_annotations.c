@@ -283,11 +283,17 @@ static void load_critical_path_annotations(const int line_num,
 	}
 
 	if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
-			|| delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
+        || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
 		k = 0;
 		for (i = 0; i < num_in_sets; i++) {
 			for (j = 0; j < num_in_ptrs[i]; j++) {
-				in_port[i][j]->tsu_tco = delay_matrix[k][0];
+
+                if(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
+                    in_port[i][j]->tsu = delay_matrix[k][0];
+                } else {
+                    VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX);
+                    in_port[i][j]->tco = delay_matrix[k][0];
+                }
 				in_port[i][j]->associated_clock_pin = find_clock_pin(pb_graph_node, clock, line_num);
 				k++;
 			}

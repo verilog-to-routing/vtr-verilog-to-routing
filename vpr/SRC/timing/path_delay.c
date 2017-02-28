@@ -1256,7 +1256,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                     tnode[inode + 1].num_edges = 1;
                                     tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
                                     tnode[inode + 1].out_edges->to_node = inode;
-                                    tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco; //Set the clk-to-Q delay
+                                    tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tco; //Set the clk-to-Q delay
 
                                     inode += 2;
                                 }
@@ -1302,7 +1302,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 //Initialize the edge between them
                                 tnode[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
                                 tnode[inode + 1].out_edges->to_node = inode;
-                                tnode[inode + 1].out_edges->Tdel = from_pb_graph_pin->tsu_tco; //PLL output delay? Not clear what this reallly means... perhaps clock insertion delay from PLL?
+                                tnode[inode + 1].out_edges->Tdel = 0.; //PLL output delay? Not clear what this reallly means... perhaps clock insertion delay from PLL?
 
                                 inode += 2;
                             }
@@ -1398,7 +1398,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                     tnode[inode].num_edges = 1;
                                     tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
                                     tnode[inode].out_edges->to_node = inode + 1;
-                                    tnode[inode].out_edges->Tdel = from_pb_graph_pin->tsu_tco;
+                                    tnode[inode].out_edges->Tdel = from_pb_graph_pin->tsu;
 
                                     //Initialize the FF_SINK node
                                     tnode[inode + 1].type = TN_FF_SINK;
@@ -1612,7 +1612,7 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
 				tnode[i].num_edges = 1;
 				tnode[i].out_edges = (t_tedge *) vtr::chunk_malloc(
 						1 * sizeof(t_tedge), &tedge_ch);
-				tnode[i].out_edges->Tdel = pb_graph_pin->tsu_tco;
+				tnode[i].out_edges->Tdel = pb_graph_pin->tsu;
 				tnode[i].out_edges->to_node = i + 1;
 				tnode[i + 1].pb_graph_pin = pb_graph_pin;
 				tnode[i + 1].type = TN_FF_SINK;
@@ -1632,7 +1632,7 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
                     tnode[i + 1].num_edges = 1;
                     tnode[i + 1].out_edges = (t_tedge *) vtr::chunk_malloc(
                             1 * sizeof(t_tedge), &tedge_ch);
-                    tnode[i + 1].out_edges->Tdel = pb_graph_pin->tsu_tco;
+                    tnode[i + 1].out_edges->Tdel = pb_graph_pin->tco;
                     tnode[i + 1].out_edges->to_node = i;
                     tnode[i + 1].pb_graph_pin = pb_graph_pin;
                     tnode[i + 1].type = TN_FF_SOURCE;
@@ -1645,7 +1645,7 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
                     tnode[i + 1].num_edges = 1;
                     tnode[i + 1].out_edges = (t_tedge *) vtr::chunk_malloc(
                             1 * sizeof(t_tedge), &tedge_ch);
-                    tnode[i + 1].out_edges->Tdel = pb_graph_pin->tsu_tco;
+                    tnode[i + 1].out_edges->Tdel = 0.; //Not clear what this delay physically represents
                     tnode[i + 1].out_edges->to_node = i;
                     tnode[i + 1].pb_graph_pin = pb_graph_pin;
                     tnode[i + 1].type = TN_CLOCK_SOURCE;

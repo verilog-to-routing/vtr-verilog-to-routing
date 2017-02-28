@@ -42,7 +42,7 @@ inline float AtomDelayCalc::atom_setup_time(const AtomPinId /*clock_pin*/, const
     const t_pb_graph_pin* gpin = find_pb_graph_pin(input_pin);
     VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
 
-    return gpin->tsu_tco;
+    return gpin->tsu;
 }
 
 inline float AtomDelayCalc::atom_clock_to_q_delay(const AtomPinId /*clock_pin*/, const AtomPinId output_pin) const {
@@ -51,7 +51,7 @@ inline float AtomDelayCalc::atom_clock_to_q_delay(const AtomPinId /*clock_pin*/,
     const t_pb_graph_pin* gpin = find_pb_graph_pin(output_pin);
     VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
 
-    return gpin->tsu_tco;
+    return gpin->tco;
 }
 
 inline const t_pb_graph_pin* AtomDelayCalc::find_pb_graph_pin(const AtomPinId atom_pin) const {

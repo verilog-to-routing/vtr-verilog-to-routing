@@ -39,7 +39,7 @@ public:
             VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
 
             //Clock-to-q delay marked on the SOURCE node (the sink node of this edge)
-            return tatum::Time(gpin->tsu_tco);
+            return tatum::Time(gpin->tco);
 
         } else if (tg.node_type(src_node) == tatum::NodeType::IPIN && tg.node_type(sink_node) == tatum::NodeType::OPIN) {
             //Primitive internal combinational delay
@@ -87,7 +87,7 @@ public:
         const t_pb_graph_pin* gpin = find_pb_graph_pin(sink_pin);
         VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
 
-        return tatum::Time(gpin->tsu_tco);
+        return tatum::Time(gpin->tsu);
     }
 
     tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
