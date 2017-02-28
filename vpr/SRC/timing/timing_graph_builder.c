@@ -293,9 +293,9 @@ tatum::EdgeId TimingGraphBuilder::find_scc_edge_to_break(std::vector<tatum::Node
 void TimingGraphBuilder::remap_ids(const tatum::GraphIdMaps& id_mapping) {
     //Update the pin-tnode mapping
     vtr::linear_map<AtomPinId,tatum::NodeId> new_atom_pin_tnode;
-    for(auto kv : netlist_lookup_.atom_pin_tnodes()) {
-        AtomPinId pin = kv.first;
-        tatum::NodeId old_tnode = kv.second;
+    for(auto kv : netlist_lookup_.tnode_atom_pins()) {
+        tatum::NodeId old_tnode = kv.first;
+        AtomPinId pin = kv.second;
         tatum::NodeId new_tnode = id_mapping.node_id_map[old_tnode];
 
         new_atom_pin_tnode.emplace(pin, new_tnode);

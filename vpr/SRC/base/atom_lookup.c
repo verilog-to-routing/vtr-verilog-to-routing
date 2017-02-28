@@ -157,18 +157,47 @@ void AtomLookup::set_atom_pin_classic_tnode(const AtomPinId pin_id, const int tn
 /*
  * Timing Nodes
  */
-tatum::NodeId AtomLookup::atom_pin_tnode(const AtomPinId pin) const {
-    return pin_tnode_[pin];
+tatum::NodeId AtomLookup::atom_pin_tnode(const AtomPinId pin, BlockTnode block_tnode_type) const {
+    if(block_tnode_type == BlockTnode::EXTERNAL) {
+        auto iter = atom_pin_tnode_external_.find(pin);
+        if(iter != atom_pin_tnode_external_.end()) {
+            return iter->second;
+        }
+    } else {
+        VTR_ASSERT(block_tnode_type == BlockTnode::INTERNAL);
+        auto iter = atom_pin_tnode_internal_.find(pin);
+        if(iter != atom_pin_tnode_internal_.end()) {
+            return iter->second;
+        }
+    }
+
+    return tatum::NodeId::INVALID(); //Not found
 }
 
 AtomPinId AtomLookup::tnode_atom_pin(const tatum::NodeId tnode) const {
-    return pin_tnode_[tnode];
+    auto iter = tnode_atom_pin_.find(tnode);
+    if(iter != tnode_atom_pin_.end()) {
+        return iter->second;
+    }
+
+    return AtomPinId::INVALID(); //Not found
 }
 
-AtomLookup::pin_tnode_range AtomLookup::atom_pin_tnodes() const {
-    return vtr::make_range(pin_tnode_.begin(), pin_tnode_.end());
+AtomLookup::tnode_pin_range AtomLookup::tnode_atom_pins() const {
+    return vtr::make_range(tnode_atom_pin_.begin(), tnode_atom_pin_.end());
 }
 
-void AtomLookup::set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node) {
-    pin_tnode_.update(pin, node);
+void AtomLookup::set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node, BlockTnode block_tnode_type) {
+
+    //A pin always expands to an external tnode (i.e. it's external connectivity in the netlist)
+    //but some pins may expand to an additional tnode (i.e. to SOURCE/SINK to cover internal sequential paths within a block)
+    if(block_tnode_type == BlockTnode::EXTERNAL) {
+        atom_pin_tnode_external_[pin] = node;
+    } else {
+        VTR_ASSERT(block_tnode_type == BlockTnode::INTERNAL);
+        atom_pin_tnode_internal_[pin] = node;
+    }
+
+    //Each tnode maps to precisely one pin
+    tnode_atom_pin_[node] = pin;
 }
