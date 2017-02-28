@@ -3524,8 +3524,6 @@ bool has_valid_normalized_T_arr(int inode) {
 }
 #endif
 
-#define INCLUDE_PB_MAX_DELAY_IN_CRIT_PATH
-
 float get_critical_path_delay(void) {
 	/* Finds the critical path delay, which is the minimum clock period required to meet the constraint
 	corresponding to the pair of source and sink clock domains with the least slack in the design. */
@@ -3543,11 +3541,9 @@ float get_critical_path_delay(void) {
 			}
 		}
 	}
-#ifdef INCLUDE_PB_MAX_DELAY_IN_CRIT_PATH
 	if (pb_max_internal_delay != UNDEFINED && pb_max_internal_delay > critical_path_delay) {
 		critical_path_delay = pb_max_internal_delay;
     }
-#endif
 
 	return critical_path_delay * 1e9; /* Convert to nanoseconds */
 }
@@ -3564,33 +3560,22 @@ void print_timing_stats(void) {
 	double fanout_weighted_geomean_period = 0.;
 	bool found;
 
-		// REMOVE AFTER
-		critical_path_delay = get_critical_path_delay();
-		vtr::printf_info("Critical path in print timing: %g ns\n", critical_path_delay);
-		critical_path_delay = UNDEFINED;
+	for (source_clock_domain = 0; source_clock_domain < g_sdc->num_constrained_clocks; source_clock_domain++) {
+		for (sink_clock_domain = 0; sink_clock_domain < g_sdc->num_constrained_clocks; sink_clock_domain++) {
+			if (least_slack_in_design > f_timing_stats->least_slack[source_clock_domain][sink_clock_domain]) {
+				least_slack_in_design = f_timing_stats->least_slack[source_clock_domain][sink_clock_domain];
+            }
+        }
+    }
 
 	/* Find critical path delay. If the pb_max_internal_delay is greater than this, it becomes
 	 the limiting factor on critical path delay, so print that instead, with a special message. */
-#ifndef INCLUDE_PB_MAX_DELAY_IN_CRIT_PATH
-    critical_path_delay = get_critical_path_delay() / 1e9;
-	if (pb_max_internal_delay != UNDEFINED && pb_max_internal_delay > critical_path_delay) {
-		critical_path_delay = pb_max_internal_delay;
-		vtr::printf_info("Final critical path: %g ns", 1e9 * critical_path_delay);
-		vtr::printf_direct(" (capped by fmax of block type %s)", pbtype_max_internal_delay->name);
-		
-#else
     critical_path_delay = get_critical_path_delay();
-	if (pb_max_internal_delay != UNDEFINED && 1e9*pb_max_internal_delay == critical_path_delay) {
-		vtr::printf_info("Final critical path: %g ns", critical_path_delay);
-		vtr::printf_direct(" (capped by fmax of block type %s)", pbtype_max_internal_delay->name);
-#endif
-	} else {
-		vtr::printf_info("Final critical path: %g ns", 1e9 * critical_path_delay);
-	}
+    vtr::printf_info("Final critical path: %g ns", critical_path_delay);
 
 	if (g_sdc->num_constrained_clocks <= 1) {
 		/* Although critical path delay is always well-defined, it doesn't make sense to talk about fmax for multi-clock circuits */
-		vtr::printf_direct(", f_max: %g MHz", 1e-6 / critical_path_delay);
+		vtr::printf_direct(", f_max: %g MHz", 1e3 / critical_path_delay);
 	}
 	vtr::printf_direct("\n");
 	
