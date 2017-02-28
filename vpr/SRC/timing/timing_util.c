@@ -264,7 +264,7 @@ std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& t
 
 void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
     for(auto path : cpds) {
-        vtr::printf("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), path.slack(), path.delay());
+        vtr::printf("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), float(path.slack()), float(path.delay()));
     }
 }
 
