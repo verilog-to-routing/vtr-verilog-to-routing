@@ -734,7 +734,7 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
     for(auto blk_id : g_atom_nl.blocks()) {
 
         AtomBlockType type = g_atom_nl.block_type(blk_id);
-        if(type == AtomBlockType::SEQUENTIAL) {
+        if(type == AtomBlockType::BLOCK) {
 
             //Save any clock generating ports on this model type
             const t_model* model = g_atom_nl.block_model(blk_id);

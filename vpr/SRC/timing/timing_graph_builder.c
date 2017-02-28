@@ -49,7 +49,7 @@ void TimingGraphBuilder::build() {
 
         if(blk_type == AtomBlockType::INPAD || blk_type == AtomBlockType::OUTPAD) {
             add_io_to_timing_graph(blk);
-        } else if (blk_type == AtomBlockType::COMBINATIONAL || blk_type == AtomBlockType::SEQUENTIAL) {
+        } else if (blk_type == AtomBlockType::BLOCK) {
             add_block_to_timing_graph(blk);
         } else {
             VPR_THROW(VPR_ERROR_TIMING, "Unrecognized atom block type while constructing timing graph");

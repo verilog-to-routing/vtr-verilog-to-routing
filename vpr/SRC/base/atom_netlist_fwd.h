@@ -56,8 +56,7 @@ enum class AtomPinType : char {
 enum class AtomBlockType : char {
     INPAD,          //A primary input
     OUTPAD,         //A primary output
-    COMBINATIONAL,  //A combinational block (e.g. LUT)
-    SEQUENTIAL      //A sequential (i.e. clocked) block (e.g. Flip-Flop)
+    BLOCK           //A basic atom block (LUT, FF, blackbox etc.)
 };
 
 #endif

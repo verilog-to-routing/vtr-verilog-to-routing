@@ -1071,10 +1071,9 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
             }
 		} else {
             int incr;
-			if (g_atom_nl.block_type(blk_id) == AtomBlockType::COMBINATIONAL) {
+			if (g_atom_nl.block_is_combinational(blk_id)) {
 				incr = 1; //Non-sequential so only an IPIN or OPIN node
 			} else {
-                VTR_ASSERT(g_atom_nl.block_type(blk_id) == AtomBlockType::SEQUENTIAL);
                 VTR_ASSERT(g_atom_nl.block_clock_pins(blk_id).size() > 0);
 				incr = 2; //Sequential so both and IPIN/OPIN and a SOURCE/SINK nodes
 			}
@@ -1237,13 +1236,13 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 tnode[inode].num_edges = g_atom_nl.net_sinks(net_id).size();
                                 tnode[inode].out_edges = (t_tedge *) vtr::chunk_malloc( tnode[inode].num_edges * sizeof(t_tedge), &tedge_ch);
 
-                                if (g_atom_nl.block_type(blk_id) == AtomBlockType::COMBINATIONAL) {
+                                if (g_atom_nl.block_is_combinational(blk_id)) {
                                     //Non-sequentail block so only a single OPIN tnode
                                     tnode[inode].type = TN_PRIMITIVE_OPIN;
 
                                     inode++;
                                 } else {
-                                    VTR_ASSERT(g_atom_nl.block_type(blk_id) == AtomBlockType::SEQUENTIAL);
+                                    VTR_ASSERT(g_atom_nl.block_clock_pins(blk_id).size() > 0);
                                     //A sequential block, so the first tnode was an FF_OPIN
                                     tnode[inode].type = TN_FF_OPIN;
 
@@ -1348,7 +1347,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
                                                         iter->second);
 
-                                if (g_atom_nl.block_type(blk_id) == AtomBlockType::COMBINATIONAL) {
+                                if (g_atom_nl.block_is_combinational(blk_id)) {
                                     //A non-sequential/combinational block
 
                                     tnode[inode].type = TN_PRIMITIVE_IPIN;
@@ -1393,7 +1392,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                     tnode[inode].num_edges = count;
                                     inode++;
                                 } else {
-                                    VTR_ASSERT(g_atom_nl.block_type(blk_id) == AtomBlockType::SEQUENTIAL);
+                                    VTR_ASSERT(g_atom_nl.block_clock_pins(blk_id).size() > 0);
 
                                     //A sequential input
                                     tnode[inode].type = TN_FF_IPIN;

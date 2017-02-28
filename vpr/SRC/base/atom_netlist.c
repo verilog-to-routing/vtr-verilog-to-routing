@@ -203,7 +203,7 @@ const std::string& AtomNetlist::block_name (const AtomBlockId id) const {
 AtomBlockType AtomNetlist::block_type (const AtomBlockId id) const {
     const t_model* blk_model = block_model(id);
 
-    AtomBlockType type = AtomBlockType::COMBINATIONAL;
+    AtomBlockType type = AtomBlockType::BLOCK;
     if(blk_model->name == std::string("input")) {
         type = AtomBlockType::INPAD;
     } else if(blk_model->name == std::string("output")) {
@@ -222,9 +222,9 @@ AtomBlockType AtomNetlist::block_type (const AtomBlockId id) const {
         }
 
         if(clk_count == 0) {
-            type = AtomBlockType::COMBINATIONAL;
+            type = AtomBlockType::BLOCK;
         } else if (clk_count == 1) {
-            type = AtomBlockType::SEQUENTIAL;
+            type = AtomBlockType::BLOCK;
         } else {
             VTR_ASSERT(clk_count > 1);
             VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Primitive '%s' has multiple clocks (currently unsupported)",
@@ -244,6 +244,12 @@ const AtomNetlist::TruthTable& AtomNetlist::block_truth_table (const AtomBlockId
     VTR_ASSERT(valid_block_id(id));
 
     return block_truth_tables_[id];
+}
+
+bool  AtomNetlist::block_is_combinational (const AtomBlockId id) const {
+    VTR_ASSERT(valid_block_id(id));
+
+    return block_clock_pins(id).size() == 0;
 }
 
 AtomNetlist::pin_range AtomNetlist::block_pins (const AtomBlockId id) const {
@@ -718,19 +724,20 @@ bool AtomNetlist::verify_block_invariants() const {
                 }
             }
 
-            if(block_type(blk_id) == AtomBlockType::SEQUENTIAL) {
+            if(block_is_combinational(blk_id)) {
+                //Non-sequential types must not have a clock
+                if(clk_net_id) {
+                    VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Atom block '%s' is a non-sequential type but has a clock '%s'", 
+                              block_name(blk_id).c_str(), net_name(clk_net_id).c_str());
+                }
+
+            } else {
                 //Sequential types must have a clock
                 if(!clk_net_id) {
                     VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Atom block '%s' is sequential type but has no clock", 
                               block_name(blk_id).c_str());
                 }
 
-            } else {
-                //Non-sequential types must not have a clock
-                if(clk_net_id) {
-                    VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Atom block '%s' is a non-sequential type but has a clock '%s'", 
-                              block_name(blk_id).c_str(), net_name(clk_net_id).c_str());
-                }
             }
         }
         {

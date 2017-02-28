@@ -644,8 +644,7 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 		switch (type) {
         case AtomBlockType::INPAD:
         case AtomBlockType::OUTPAD:
-        case AtomBlockType::COMBINATIONAL:
-        case AtomBlockType::SEQUENTIAL:
+        case AtomBlockType::BLOCK:
 			if (skip_clustering) {
 				VTR_ASSERT(0);
 			}

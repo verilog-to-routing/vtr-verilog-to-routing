@@ -21,135 +21,6 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk);
 std::string make_unconn(size_t& unconn_count, AtomPinType type);
 void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size_t>& minterms);
 
-
-void print_netlist(std::string filename, const AtomNetlist& netlist) {
-    FILE* f = std::fopen(filename.c_str(), "w");
-    print_netlist(f, netlist);
-    std::fclose(f);
-}
-
-void print_netlist(FILE* f, const AtomNetlist& netlist) {
-
-    //Build a map of the blocks by type
-    std::multimap<AtomBlockType,AtomBlockId> blocks_by_type;
-    for(AtomBlockId blk_id : netlist.blocks()) {
-        if(blk_id) {
-            blocks_by_type.insert({netlist.block_type(blk_id), blk_id});
-        }
-    }
-
-    //Iterating through the map ensures blocks of the same type are printed together
-    for(auto kv : blocks_by_type) {
-        AtomBlockType type = kv.first;
-        AtomBlockId blk_id = kv.second;
-        const t_model* model = netlist.block_model(blk_id);
-
-        //Print the block model type and type
-        fprintf(f, "Block '%s'", model->name);
-        fprintf(f, " (");
-        switch(type) {
-            case AtomBlockType::INPAD : fprintf(f, "INPAD"); break;
-            case AtomBlockType::OUTPAD: fprintf(f, "OUTPAD"); break;
-            case AtomBlockType::COMBINATIONAL: fprintf(f, "COMBINATIONAL"); break;
-            case AtomBlockType::SEQUENTIAL: fprintf(f, "SEQUENTIAL"); break;
-            default: VTR_ASSERT_MSG(false, "Recognzied AtomBlockType");
-        }
-        fprintf(f, "):");
-        //Print block name
-        fprintf(f, " %s\n", netlist.block_name(blk_id).c_str());
-
-        //Print input ports
-        for(auto input_port : netlist.block_input_ports(blk_id)) {
-            auto pins = netlist.port_pins(input_port);
-            fprintf(f, "\tInput (%zu bits)\n", pins.size());
-            size_t i = 0;
-            for(auto pin : pins) {
-                fprintf(f, "\t\t%s [%zu] <-", netlist.port_name(input_port).c_str(), i);
-                if(pin) {
-                    auto net = netlist.pin_net(pin);
-                    if(net) {
-                        fprintf(f, " %s", netlist.net_name(net).c_str());
-                    } else {
-                        fprintf(f, " ");
-                    }
-                } else {
-                    fprintf(f, " ");
-                }
-                fprintf(f, "\n");
-                i++;
-            }
-        }
-
-        //Print output ports
-        for(auto output_port : netlist.block_output_ports(blk_id)) {
-            auto pins = netlist.port_pins(output_port);
-            fprintf(f, "\tOutput (%zu bits)\n", pins.size());
-            size_t i = 0;
-            for(auto pin : pins) {
-                fprintf(f, "\t\t%s [%zu] ->", netlist.port_name(output_port).c_str(), i);
-                if(pin) {
-                    auto net = netlist.pin_net(pin);
-                    if(net) {
-                        fprintf(f, " %s", netlist.net_name(net).c_str());
-                    } else {
-                        fprintf(f, " ");
-                    }
-                } else {
-                    fprintf(f, " ");
-                }
-                fprintf(f, "\n");
-                i++;
-            }
-        }
-
-        //Print clock ports
-        for(auto clock_port : netlist.block_clock_ports(blk_id)) {
-            auto pins = netlist.port_pins(clock_port);
-            fprintf(f, "\tClock (%zu bits)\n", pins.size());
-            size_t i = 0;
-            for(auto pin : pins) {
-                fprintf(f, "\t\t%s [%zu] <-", netlist.port_name(clock_port).c_str(), i);
-                if(pin) {
-                    fprintf(f, " %s", netlist.net_name(netlist.pin_net(pin)).c_str());
-                } else {
-                    fprintf(f, " ");
-                }
-                fprintf(f, "\n");
-                i++;
-            }
-        }
-    }
-
-    //Print out per-net information
-    for(auto net_id : netlist.nets()) {
-        if(!net_id) continue;
-
-        auto sinks = netlist.net_sinks(net_id);
-        //Net name and fanout
-        fprintf(f, "Net '%s' (fanout %zu)\n", netlist.net_name(net_id).c_str(), sinks.size());
-
-        AtomPinId driver_pin = netlist.net_driver(net_id);
-        if(driver_pin) {
-            AtomPortId port = netlist.pin_port(driver_pin);
-            AtomBlockId pin_blk = netlist.pin_block(driver_pin);
-            AtomBlockId port_blk = netlist.port_block(port);
-            VTR_ASSERT(pin_blk == port_blk);
-            fprintf(f, "\tDriver Block: '%s' Driver Pin: '%s[%u]'\n", netlist.block_name(pin_blk).c_str(), netlist.port_name(port).c_str(), netlist.pin_port_bit(driver_pin));
-        } else {
-            printf("\tNo Driver\n");
-        }
-
-        for(AtomPinId sink_pin : sinks) {
-            VTR_ASSERT(sink_pin);
-            AtomPortId port = netlist.pin_port(sink_pin);
-            AtomBlockId pin_blk = netlist.pin_block(sink_pin);
-            AtomBlockId port_blk = netlist.port_block(port);
-            VTR_ASSERT(pin_blk == port_blk);
-            fprintf(f, "\tSink Block: '%s' Sink Pin: '%s[%u]'\n", netlist.block_name(pin_blk).c_str(), netlist.port_name(port).c_str(), netlist.pin_port_bit(sink_pin));
-        }
-    }
-}
-
 void print_netlist_as_blif(std::string filename, const AtomNetlist& netlist) {
     FILE* f = std::fopen(filename.c_str(), "w");
     print_netlist_as_blif(f, netlist);
@@ -238,7 +109,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
 
     //Latch
     for(auto blk_id : netlist.blocks()) {
-        if(netlist.block_type(blk_id) == AtomBlockType::SEQUENTIAL) {
+        if(netlist.block_type(blk_id) == AtomBlockType::BLOCK) {
             const t_model* blk_model = netlist.block_model(blk_id);
             if(blk_model->name != std::string("latch")) continue;
 
@@ -303,7 +174,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
 
     //Names
     for(auto blk_id : netlist.blocks()) {
-        if(netlist.block_type(blk_id) == AtomBlockType::COMBINATIONAL) {
+        if(netlist.block_type(blk_id) == AtomBlockType::BLOCK) {
             const t_model* blk_model = netlist.block_model(blk_id);
             if(blk_model->name != std::string("names")) continue;
 
@@ -366,7 +237,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
     std::set<const t_model*> subckt_models;
     for(auto blk_id : netlist.blocks()) {
         const t_model* blk_model = netlist.block_model(blk_id);
-        if(blk_model->name == std::string("latch")
+        if (   blk_model->name == std::string("latch")
             || blk_model->name == std::string("names")
             || blk_model->name == std::string("input")
             || blk_model->name == std::string("output")) {
@@ -498,63 +369,63 @@ std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist) {
 }
 
 bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
-    if(netlist.block_type(blk) == AtomBlockType::COMBINATIONAL) {
+    if(netlist.block_type(blk) == AtomBlockType::BLOCK) {
         const t_model* blk_model = netlist.block_model(blk);
-        if(blk_model->name == std::string("names")) {
+
+        if(blk_model->name != std::string("names")) return false;
             
-            auto input_ports = netlist.block_input_ports(blk);
-            auto output_ports = netlist.block_output_ports(blk);
+        auto input_ports = netlist.block_input_ports(blk);
+        auto output_ports = netlist.block_output_ports(blk);
 
-            //Buffer LUTs have a single input port and a single output port
-            if(input_ports.size() == 1 && output_ports.size() == 1) {
-                //Count the number of connected input pins
-                size_t connected_input_pins = 0;
-                for(auto input_pin : netlist.block_input_pins(blk)) {
-                    if(input_pin && netlist.pin_net(input_pin)) {
-                        ++connected_input_pins;
-                    }
+        //Buffer LUTs have a single input port and a single output port
+        if(input_ports.size() == 1 && output_ports.size() == 1) {
+            //Count the number of connected input pins
+            size_t connected_input_pins = 0;
+            for(auto input_pin : netlist.block_input_pins(blk)) {
+                if(input_pin && netlist.pin_net(input_pin)) {
+                    ++connected_input_pins;
                 }
-
-                //Count the number of connected output pins
-                size_t connected_output_pins = 0;
-                for(auto output_pin : netlist.block_output_pins(blk)) {
-                    if(output_pin && netlist.pin_net(output_pin)) {
-                        ++connected_output_pins;
-                    }
-                }
-
-                //Both ports must be single bit
-                if(connected_input_pins == 1 && connected_output_pins == 1) {
-                    //It is a single-input single-output LUT, we now 
-                    //inspect it's truth table
-                    //
-                    const auto& truth_table = netlist.block_truth_table(blk);
-
-                    VTR_ASSERT_MSG(truth_table.size() == 1, "One truth-table row");
-                    VTR_ASSERT_MSG(truth_table[0].size() == 2, "Two truth-table row entries");
-
-                    //Check for valid buffer logic functions
-                    // A LUT is a buffer provided it has the identity logic
-                    // function and a single input. For example:
-                    // 
-                    // .names in_buf out_buf
-                    // 1 1
-                    // 
-                    // and
-                    // 
-                    // .names int_buf out_buf
-                    // 0 0
-                    // 
-                    // both implement logical identity.
-                    if((truth_table[0][0] == vtr::LogicValue::TRUE && truth_table[0][1] == vtr::LogicValue::TRUE)
-                        || (truth_table[0][0] == vtr::LogicValue::FALSE && truth_table[0][1] == vtr::LogicValue::FALSE)) {
-
-                        //It is a buffer LUT
-                        return true;
-                    }
-                }
-
             }
+
+            //Count the number of connected output pins
+            size_t connected_output_pins = 0;
+            for(auto output_pin : netlist.block_output_pins(blk)) {
+                if(output_pin && netlist.pin_net(output_pin)) {
+                    ++connected_output_pins;
+                }
+            }
+
+            //Both ports must be single bit
+            if(connected_input_pins == 1 && connected_output_pins == 1) {
+                //It is a single-input single-output LUT, we now 
+                //inspect it's truth table
+                //
+                const auto& truth_table = netlist.block_truth_table(blk);
+
+                VTR_ASSERT_MSG(truth_table.size() == 1, "One truth-table row");
+                VTR_ASSERT_MSG(truth_table[0].size() == 2, "Two truth-table row entries");
+
+                //Check for valid buffer logic functions
+                // A LUT is a buffer provided it has the identity logic
+                // function and a single input. For example:
+                // 
+                // .names in_buf out_buf
+                // 1 1
+                // 
+                // and
+                // 
+                // .names int_buf out_buf
+                // 0 0
+                // 
+                // both implement logical identity.
+                if((truth_table[0][0] == vtr::LogicValue::TRUE && truth_table[0][1] == vtr::LogicValue::TRUE)
+                    || (truth_table[0][0] == vtr::LogicValue::FALSE && truth_table[0][1] == vtr::LogicValue::FALSE)) {
+
+                    //It is a buffer LUT
+                    return true;
+                }
+            }
+
         }
     }
     return false;

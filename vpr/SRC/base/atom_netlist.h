@@ -442,6 +442,10 @@ class AtomNetlist {
         //Returns the model associated with the block
         const t_model*      block_model         (const AtomBlockId id) const;
 
+        //Returns true if the block is purley combinational (i.e. no input clocks
+        //and not a primary input
+        bool                block_is_combinational    (const AtomBlockId id) const;
+
         //Returns the truth table associated with the block
         // Note that this is only non-empty for LUTs and Flip-Flops/latches.
         //
