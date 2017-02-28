@@ -46,16 +46,16 @@ Each of these contains ``<port>`` tags:
 
     Defines the port for a model. 
 
-An example models section containing a combinational primitive ``adder`` and a sequential primitive ``single_port_ram``:
+An example models section containing a combinational primitive ``adder`` and a sequential primitive ``single_port_ram`` follows:
 
 .. code-block:: xml
 
     <models>
       <model name="single_port_ram">
         <input_ports>
-          <port name="we" clock="clk"/>
-          <port name="addr" clock="clk"/>
-          <port name="data" clock="clk"/>
+          <port name="we" clock="clk" />
+          <port name="addr" clock="clk" combinational_sink_ports="out"/>
+          <port name="data" clock="clk" combinational_sink_ports="out"/>
           <port name="clk" is_clock="1"/>
         </input_ports>
         <output_ports>
@@ -75,6 +75,9 @@ An example models section containing a combinational primitive ``adder`` and a s
         </output_ports>
       </model>
     </models>
+
+Note that for ``single_port_ram`` above, the ports ``we``, ``addr``, ``data``, and ``out`` is a sequential output since they have a clock specified.
+Additionally ``addr`` and ``data`` are shown to be combinationally connected to ``out``; this corresponds to an internal timing path between the ``addr`` and ``data`` input registers, and the ``out`` output registers.
 
 .. _arch_global_info:
 
