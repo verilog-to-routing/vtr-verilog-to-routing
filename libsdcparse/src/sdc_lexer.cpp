@@ -5,7 +5,8 @@ extern YY_DECL; //For sdcparse_lex()
 
 namespace sdcparse {
 
-Lexer::Lexer(FILE* file) {
+Lexer::Lexer(FILE* file, Callback& callback)
+    : callback_(callback) {
     sdcparse_lex_init(&state_);
     sdcparse_set_in(file, state_);
 }
@@ -15,7 +16,7 @@ Lexer::~Lexer() {
 }
 
 Parser::symbol_type Lexer::next_token() {
-    return sdcparse_lex(state_);
+    return sdcparse_lex(state_, callback_);
 }
 
 const char* Lexer::text() const {
