@@ -24,6 +24,7 @@ using namespace std;
 #include "sdcparse.hpp"
 
 #include "tatum/TimingConstraints.hpp"
+#include "read_sdc2.h"
 
 /***************************** Summary **********************************/
 
@@ -1211,6 +1212,7 @@ const char * get_sdc_file_name(){
 }
 
 std::unique_ptr<tatum::TimingConstraints> create_timing_constraints(const AtomNetlist& netlist, const AtomLookup& atom_lookup, t_timing_inf timing_inf) {
+#if 0
     if(!g_sdc) {
         read_sdc(timing_inf);
     }
@@ -1334,5 +1336,8 @@ std::unique_ptr<tatum::TimingConstraints> create_timing_constraints(const AtomNe
     }
 
     return tc;
+#else
+    return read_sdc2(timing_inf, netlist, atom_lookup, *g_timing_graph);
+#endif
 }
 
