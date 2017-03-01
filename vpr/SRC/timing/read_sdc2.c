@@ -306,9 +306,51 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
         }
 
-        void set_multicycle_path(const sdcparse::SetMulticyclePath& /*cmd*/) override {
+        void set_multicycle_path(const sdcparse::SetMulticyclePath& cmd) override {
             ++num_commands_;
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_multicycle_path currently unsupported"); 
+
+            if(cmd.type == sdcparse::SetupHoldType::NONE) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
+                        "set_multicycle_path must specify either -setup or -hold"); 
+            }
+
+            auto from_clocks = get_clocks(cmd.from);
+            auto to_clocks = get_clocks(cmd.to);
+
+            if(from_clocks.empty() && to_clocks.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
+                        "set_multicycle_path must specify at least one -from or -to clock"); 
+            }
+
+            if (from_clocks.empty()) {
+                from_clocks = get_all_clocks();
+            }
+
+            if (to_clocks.empty()) {
+                to_clocks = get_all_clocks();
+            }
+
+            for(auto from_clock : from_clocks) {
+                for(auto to_clock : to_clocks) {
+                    auto domain_pair = std::make_pair(from_clock, to_clock);
+
+                    if(cmd.type == sdcparse::SetupHoldType::SETUP) {
+                        setup_mcp_overrides_[domain_pair] = cmd.mcp_value;
+
+                    } else {
+                        VTR_ASSERT(cmd.type == sdcparse::SetupHoldType::HOLD);
+
+                        //The hold check is specified relative to the current setup check
+
+                        //Find the current setup check
+                        int setup_mcp_value = setup_mcp(from_clock, to_clock);
+
+                        //Move the setup check the specified cycles before the setup check
+                        hold_mcp_overrides_[domain_pair] = setup_mcp_value - cmd.mcp_value;
+                    }
+                }
+            }
+
         }
 
         void set_clock_uncertainty(const sdcparse::SetClockUncertainty& cmd) override { 
@@ -432,107 +474,6 @@ class SdcParseCallback2 : public sdcparse::Callback {
     public:
         size_t num_commands() { return num_commands_; }
     private:
-
-        std::set<AtomPinId> get_ports(const sdcparse::StringGroup& port_group) {
-            if(port_group.type != sdcparse::StringGroupType::PORT) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
-                         "Expected port collection via get_ports"); 
-            }
-
-            std::set<AtomPinId> pins;
-            for (const auto& port_pattern : port_group.strings) {
-                std::regex port_regex = glob_pattern_to_regex(port_pattern);
-
-                bool found = false;
-                for(const auto& kv : netlist_primary_ios_) {
-                    
-                    const std::string& io_name = kv.first;
-                    if(std::regex_match(io_name, port_regex)) {
-                        found = true;
-
-                        AtomPinId pin = kv.second;
-                        
-                        pins.insert(pin);
-                    }
-                }
-
-                if(!found) {
-                    vtr::printf_warning(fname_.c_str(), lineno_, 
-                                        "get_ports target name or pattern '%s' matched no clocks\n",
-                                        port_pattern.c_str());
-                }
-            }
-            return pins;
-        }
-
-        std::set<tatum::DomainId> get_clocks(const sdcparse::StringGroup& clock_group) {
-            if(clock_group.type != sdcparse::StringGroupType::CLOCK) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
-                         "Expected clock collection via get_clocks"); 
-            }
-
-            std::set<tatum::DomainId> domains;
-            for (const auto& clock_glob_pattern : clock_group.strings) {
-                std::regex clock_regex = glob_pattern_to_regex(clock_glob_pattern);
-
-                bool found = false;
-                for(tatum::DomainId domain : tc_.clock_domains()) {
-                    
-                    const std::string& clock_name = tc_.clock_domain_name(domain);
-                    if(std::regex_match(clock_name, clock_regex)) {
-                        found = true;
-                        
-                        domains.insert(domain);
-                    }
-                }
-
-                if(!found) {
-                    vtr::printf_warning(fname_.c_str(), lineno_, 
-                                        "get_clocks target name or pattern '%s' matched no clocks\n",
-                                        clock_glob_pattern.c_str());
-                }
-            }
-            
-            return domains;
-        }
-
-        std::set<AtomPinId> get_pins(const sdcparse::StringGroup& pin_group) {
-            if(pin_group.type != sdcparse::StringGroupType::PIN) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
-                         "Expected pin collection via get_pins"); 
-            }
-
-            std::set<AtomPinId> pins;
-            for (const auto& pin_pattern : pin_group.strings) {
-                std::regex pin_regex = glob_pattern_to_regex(pin_pattern);
-
-                bool found = false;
-                for(AtomPinId pin : netlist_.pins()) {
-
-                    const std::string& pin_name = netlist_.pin_name(pin);
-
-                    if(std::regex_match(pin_name, pin_regex)) {
-                        found = true;
-                        
-                        pins.insert(pin);
-                    }
-                }
-
-                if(!found) {
-                    vtr::printf_warning(fname_.c_str(), lineno_, 
-                                        "get_pins target name or pattern '%s' matched no pins\n",
-                                        pin_pattern.c_str());
-                }
-            }
-            
-            return pins;
-        }
-
-        std::set<tatum::DomainId> get_all_clocks() {
-            auto domains = tc_.clock_domains();
-            return std::set<tatum::DomainId>(domains.begin(), domains.end());
-        }
-
         void resolve_clock_constraints() {
             //Set the default clock constraints
             for(tatum::DomainId launch_clock : tc_.clock_domains()) {
@@ -635,6 +576,11 @@ class SdcParseCallback2 : public sdcparse::Callback {
                     }
                 }
 
+                //Adjust for multi-cycle overrides
+                // The constraint = default constraint (obtained via edge counting) + (num_multicycles - 1) * period of sink clock domain. 
+                int setup_mcp_value = setup_mcp(launch_domain, capture_domain);
+                scaled_constraint += capture_period * (setup_mcp_value - 1);
+
                 //Rescale the constraint back to a float
                 constraint = float(scaled_constraint) / CLOCK_SCALE;
             }
@@ -642,6 +588,126 @@ class SdcParseCallback2 : public sdcparse::Callback {
             constraint = sdc_units_to_seconds(constraint);
 
             return tatum::Time(constraint);
+        }
+
+        int setup_mcp(tatum::DomainId from, tatum::DomainId to) const {
+            auto key = std::make_pair(from, to);
+            auto iter = setup_mcp_overrides_.find(key);
+            if(iter != setup_mcp_overrides_.end()) {
+                return iter->second;
+            }
+
+            return 1; //Default
+        }
+
+        int hold_mcp(tatum::DomainId from, tatum::DomainId to) const {
+            auto key = std::make_pair(from, to);
+            auto iter = hold_mcp_overrides_.find(key);
+            if(iter != hold_mcp_overrides_.end()) {
+                return iter->second;
+            }
+
+            return setup_mcp(from, to) - 1; //Default
+        }
+
+        std::set<AtomPinId> get_ports(const sdcparse::StringGroup& port_group) {
+            if(port_group.type != sdcparse::StringGroupType::PORT) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
+                         "Expected port collection via get_ports"); 
+            }
+
+            std::set<AtomPinId> pins;
+            for (const auto& port_pattern : port_group.strings) {
+                std::regex port_regex = glob_pattern_to_regex(port_pattern);
+
+                bool found = false;
+                for(const auto& kv : netlist_primary_ios_) {
+                    
+                    const std::string& io_name = kv.first;
+                    if(std::regex_match(io_name, port_regex)) {
+                        found = true;
+
+                        AtomPinId pin = kv.second;
+                        
+                        pins.insert(pin);
+                    }
+                }
+
+                if(!found) {
+                    vtr::printf_warning(fname_.c_str(), lineno_, 
+                                        "get_ports target name or pattern '%s' matched no clocks\n",
+                                        port_pattern.c_str());
+                }
+            }
+            return pins;
+        }
+
+        std::set<tatum::DomainId> get_clocks(const sdcparse::StringGroup& clock_group) {
+            if(clock_group.type != sdcparse::StringGroupType::CLOCK) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
+                         "Expected clock collection via get_clocks"); 
+            }
+
+            std::set<tatum::DomainId> domains;
+            for (const auto& clock_glob_pattern : clock_group.strings) {
+                std::regex clock_regex = glob_pattern_to_regex(clock_glob_pattern);
+
+                bool found = false;
+                for(tatum::DomainId domain : tc_.clock_domains()) {
+                    
+                    const std::string& clock_name = tc_.clock_domain_name(domain);
+                    if(std::regex_match(clock_name, clock_regex)) {
+                        found = true;
+                        
+                        domains.insert(domain);
+                    }
+                }
+
+                if(!found) {
+                    vtr::printf_warning(fname_.c_str(), lineno_, 
+                                        "get_clocks target name or pattern '%s' matched no clocks\n",
+                                        clock_glob_pattern.c_str());
+                }
+            }
+            
+            return domains;
+        }
+
+        std::set<AtomPinId> get_pins(const sdcparse::StringGroup& pin_group) {
+            if(pin_group.type != sdcparse::StringGroupType::PIN) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
+                         "Expected pin collection via get_pins"); 
+            }
+
+            std::set<AtomPinId> pins;
+            for (const auto& pin_pattern : pin_group.strings) {
+                std::regex pin_regex = glob_pattern_to_regex(pin_pattern);
+
+                bool found = false;
+                for(AtomPinId pin : netlist_.pins()) {
+
+                    const std::string& pin_name = netlist_.pin_name(pin);
+
+                    if(std::regex_match(pin_name, pin_regex)) {
+                        found = true;
+                        
+                        pins.insert(pin);
+                    }
+                }
+
+                if(!found) {
+                    vtr::printf_warning(fname_.c_str(), lineno_, 
+                                        "get_pins target name or pattern '%s' matched no pins\n",
+                                        pin_pattern.c_str());
+                }
+            }
+            
+            return pins;
+        }
+
+        std::set<tatum::DomainId> get_all_clocks() {
+            auto domains = tc_.clock_domains();
+            return std::set<tatum::DomainId>(domains.begin(), domains.end());
         }
 
         float sdc_units_to_seconds(float val) const {
@@ -671,7 +737,8 @@ class SdcParseCallback2 : public sdcparse::Callback {
         std::set<std::pair<tatum::DomainId,tatum::DomainId>> disabled_domain_pairs_;
         std::map<std::pair<tatum::DomainId,tatum::DomainId>, tatum::Time> domain_pair_override_constraints_;
 
-        std::map<std::pair<tatum::DomainId,tatum::DomainId>,int> cycle_constraints_;
+        std::map<std::pair<tatum::DomainId,tatum::DomainId>,int> setup_mcp_overrides_;
+        std::map<std::pair<tatum::DomainId,tatum::DomainId>,int> hold_mcp_overrides_;
 };
 
 std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_inf, 
