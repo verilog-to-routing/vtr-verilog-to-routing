@@ -272,9 +272,38 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
         }
 
-        void set_min_max_delay(const sdcparse::SetMinMaxDelay& /*cmd*/) override { 
+        void set_min_max_delay(const sdcparse::SetMinMaxDelay& cmd) override { 
             ++num_commands_;
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_min_delay/set_max_delay currently unsupported"); 
+
+            if(cmd.type != sdcparse::MinMaxType::MAX) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_min_delay currently unsupported"); 
+            }
+
+            auto from_clocks = get_clocks(cmd.from);
+            auto to_clocks = get_clocks(cmd.to);
+
+            if(from_clocks.empty() && to_clocks.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
+                        "set_max_path must specify at least one -from or -to clock"); 
+            }
+
+            if (from_clocks.empty()) {
+                from_clocks = get_all_clocks();
+            }
+
+            if (to_clocks.empty()) {
+                to_clocks = get_all_clocks();
+            }
+
+            float constraint = sdc_units_to_seconds(cmd.value);
+
+            for (auto from_clock : from_clocks) {
+                for (auto to_clock : to_clocks) {
+                    //Mark this domain pair to be disabled
+                    auto key = std::make_pair(from_clock, to_clock);
+                    domain_pair_override_constraints_[key] = tatum::Time(constraint);
+                }
+            }
         }
 
         void set_multicycle_path(const sdcparse::SetMulticyclePath& /*cmd*/) override {
@@ -509,21 +538,25 @@ class SdcParseCallback2 : public sdcparse::Callback {
             for(tatum::DomainId launch_clock : tc_.clock_domains()) {
                 for(tatum::DomainId capture_clock : tc_.clock_domains()) {
 
-                    if(disabled_domain_pairs_.count({launch_clock, capture_clock})) continue;
+                    auto domain_pair = std::make_pair(launch_clock, capture_clock);
 
-                    float constraint = calculate_setup_constraint(launch_clock, capture_clock);                    
+                    if(disabled_domain_pairs_.count(domain_pair)) continue;
 
-                    //Convert to seconds
-                    constraint = sdc_units_to_seconds(constraint);
+                    tatum::Time constraint;
+                    if(domain_pair_override_constraints_.count(domain_pair)) {
+                        constraint = domain_pair_override_constraints_[domain_pair];
+                    } else {
+                        constraint = calculate_setup_constraint(launch_clock, capture_clock);
+                    }
 
-                    tc_.set_setup_constraint(launch_clock, capture_clock, tatum::Time(constraint));
+                    VTR_ASSERT(constraint.valid());
+
+                    tc_.set_setup_constraint(launch_clock, capture_clock, constraint);
                 }
             }
-
-            //TODO: deal with override constraints
         }
 
-        float calculate_setup_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
+        tatum::Time calculate_setup_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
             constexpr int CLOCK_SCALE = 1000;
 
             auto launch_iter = sdc_clocks_.find(launch_domain);
@@ -537,71 +570,78 @@ class SdcParseCallback2 : public sdcparse::Callback {
             VTR_ASSERT_MSG(launch_clock.period > 0., "Clock period must be positive");
             VTR_ASSERT_MSG(capture_clock.period > 0., "Clock period must be positive");
 
-            //If the source and sink domains have the same period and edges, the constraint is the common clock period. 
+            float constraint = std::numeric_limits<float>::quiet_NaN();
+
             if (std::fabs(launch_clock.period - capture_clock.period) < EPSILON && 
                 std::fabs(launch_clock.rise_edge - capture_clock.rise_edge) < EPSILON &&
                 std::fabs(launch_clock.fall_edge - capture_clock.fall_edge) < EPSILON) {
-                return launch_clock.period; 
-            }
+                //The source and sink domains have the same period and edges, the constraint is the common clock period. 
 
-            //If either period is 0, the constraint is 0
-            if (launch_clock.period < EPSILON || capture_clock.period < EPSILON) {
-                return 0.;
-            }
+                constraint = sdc_units_to_seconds(launch_clock.period);
 
-            /*
-             * Use edge counting to find the period
-             */
+            } else if (launch_clock.period < EPSILON || capture_clock.period < EPSILON) {
+                //If either period is 0, the constraint is 0
+                constraint = 0.;
 
-            //Multiply periods and edges by CLOCK_SCALE and round down to the nearest 
-            //integer, to avoid messy decimals.
-            int launch_period = static_cast<int>(launch_clock.period * CLOCK_SCALE);
-            int capture_period = static_cast<int>(capture_clock.period * CLOCK_SCALE);
-            int launch_rise_edge = static_cast<int>(launch_clock.rise_edge * CLOCK_SCALE);
-            int capture_rise_edge = static_cast<int>(capture_clock.rise_edge * CLOCK_SCALE);	
+            } else {
+                /*
+                 * Use edge counting to find the minimum period
+                 */
 
-            //Find the LCM of the two periods. This determines how long it takes before 
-            //the pattern of the two clock's edges starts repeating.
-            int lcm_period = vtr::lcm(launch_period, capture_period);
+                //Multiply periods and edges by CLOCK_SCALE and round down to the nearest 
+                //integer, to avoid messy decimals.
+                int launch_period = static_cast<int>(launch_clock.period * CLOCK_SCALE);
+                int capture_period = static_cast<int>(capture_clock.period * CLOCK_SCALE);
+                int launch_rise_edge = static_cast<int>(launch_clock.rise_edge * CLOCK_SCALE);
+                int capture_rise_edge = static_cast<int>(capture_clock.rise_edge * CLOCK_SCALE);	
 
-            //Create arrays of positive edges for each clock over one LCM clock period.
+                //Find the LCM of the two periods. This determines how long it takes before 
+                //the pattern of the two clock's edges starts repeating.
+                int lcm_period = vtr::lcm(launch_period, capture_period);
 
-            //Launch edges
-            int launch_rise_time = launch_rise_edge;
-            std::vector<int> launch_edges;
-            int num_launch_edges = lcm_period/launch_period + 1; 
-            for(int i = 0; i < num_launch_edges; ++i) {
-                launch_edges.push_back(launch_rise_time);
-                launch_rise_time += launch_period;
-            }
+                //Create arrays of positive edges for each clock over one LCM clock period.
 
-            //Capture edges
-            int capture_rise_time = capture_rise_edge;
-            int num_capture_edges = lcm_period/capture_period + 1;
-            std::vector<int> capture_edges;
-            for(int i = 0; i < num_capture_edges; ++i) {
-                capture_edges.push_back(capture_rise_time);
-                capture_rise_time += capture_period;
-            }
+                //Launch edges
+                int launch_rise_time = launch_rise_edge;
+                std::vector<int> launch_edges;
+                int num_launch_edges = lcm_period/launch_period + 1; 
+                for(int i = 0; i < num_launch_edges; ++i) {
+                    launch_edges.push_back(launch_rise_time);
+                    launch_rise_time += launch_period;
+                }
 
-            //Compare every edge in source_edges with every edge in sink_edges. 
-            //The lowest STRICTLY POSITIVE difference between a sink edge and a 
-            //source edge yeilds the setup time constraint.
-            int scaled_constraint = std::numeric_limits<int>::max(); //Initialize to +inf, so any constraint will be less
+                //Capture edges
+                int capture_rise_time = capture_rise_edge;
+                int num_capture_edges = lcm_period/capture_period + 1;
+                std::vector<int> capture_edges;
+                for(int i = 0; i < num_capture_edges; ++i) {
+                    capture_edges.push_back(capture_rise_time);
+                    capture_rise_time += capture_period;
+                }
 
-            for(int launch_edge : launch_edges) {
-                for(int capture_edge : capture_edges) {
-                    if(capture_edge > launch_edge) { //Postive only
-                        int edge_diff = capture_edge - launch_edge;
-                        VTR_ASSERT(edge_diff >= 0.);
+                //Compare every edge in source_edges with every edge in sink_edges. 
+                //The lowest STRICTLY POSITIVE difference between a sink edge and a 
+                //source edge yeilds the setup time constraint.
+                int scaled_constraint = std::numeric_limits<int>::max(); //Initialize to +inf, so any constraint will be less
 
-                        scaled_constraint = std::min(scaled_constraint, edge_diff);
+                for(int launch_edge : launch_edges) {
+                    for(int capture_edge : capture_edges) {
+                        if(capture_edge > launch_edge) { //Postive only
+                            int edge_diff = capture_edge - launch_edge;
+                            VTR_ASSERT(edge_diff >= 0.);
+
+                            scaled_constraint = std::min(scaled_constraint, edge_diff);
+                        }
                     }
                 }
+
+                //Rescale the constraint back to a float
+                constraint = float(scaled_constraint) / CLOCK_SCALE;
             }
 
-            //Rescale the constraint back to a float
-            return float(scaled_constraint) / CLOCK_SCALE;
+            constraint = sdc_units_to_seconds(constraint);
+
+            return tatum::Time(constraint);
         }
 
         float sdc_units_to_seconds(float val) const {
@@ -629,6 +669,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
         std::map<std::string,AtomPinId> netlist_primary_ios_;
 
         std::set<std::pair<tatum::DomainId,tatum::DomainId>> disabled_domain_pairs_;
+        std::map<std::pair<tatum::DomainId,tatum::DomainId>, tatum::Time> domain_pair_override_constraints_;
 
         std::map<std::pair<tatum::DomainId,tatum::DomainId>,int> cycle_constraints_;
 };
