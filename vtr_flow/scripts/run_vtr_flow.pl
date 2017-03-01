@@ -597,6 +597,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				push( @vpr_args, $architecture_file_name );
 				push( @vpr_args, "$benchmark_name" );
 				push( @vpr_args, "--route" );
+                push( @vpr_args, "--analysis" );
 				push( @vpr_args, "--blif_file"	);
 				push( @vpr_args, "$prevpr_output_file_name");
 				push( @vpr_args, "--route_chan_width" );   

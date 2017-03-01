@@ -15,8 +15,6 @@ using namespace std;
 
 static bool EchoEnabled;
 
-static bool Generate_PostSynthesis_Netlist;
-
 static bool *echoFileEnabled = NULL;
 static char **echoFileNames = NULL;
 
@@ -81,22 +79,6 @@ void setEchoEnabled(bool echo_enabled) {
 		/* initialize default echo options */
 		alloc_and_load_echo_file_info();
 	}
-}
-
-bool GetPostSynthesisOption(void){
-  return Generate_PostSynthesis_Netlist;
-}
-
-void SetPostSynthesisOption(bool post_synthesis_enabled){
-  Generate_PostSynthesis_Netlist = post_synthesis_enabled;
-}
-
-bool IsPostSynthesisEnabled(const t_options *Options) {
-  /* First priority to the '--generate_postsynthesis_netlist' flag */
-  if (Options->Count[OT_GENERATE_POST_SYNTHESIS_NETLIST]) {
-    return Options->Generate_Post_Synthesis_Netlist;
-  }
-  return false;
 }
 
 void setAllEchoFileEnabled(bool value) {
@@ -335,6 +317,7 @@ ProcessOption(char **Args, t_options * Options) {
 	case OT_PACK:
 	case OT_ROUTE:
 	case OT_PLACE:
+	case OT_ANALYSIS:
 		return Args;
     case OT_SLACK_DEFINITION:
         return ReadChar(Args, &Options->SlackDefinition);

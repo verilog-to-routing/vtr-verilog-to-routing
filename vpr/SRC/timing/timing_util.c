@@ -135,16 +135,26 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
 
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     auto crit_paths = tatum::find_critical_paths(*g_timing_graph, constraints, setup_analyzer);
-    if(constraints.clock_domains().size() == 1) {
-        //Single clock
-        VTR_ASSERT(crit_paths.size() == 1);
 
-        //Only makes sense to tal about Fmax in a single-clock circuit
-        vtr::printf("Final critical path: %g ns,", sec_to_nanosec(crit_paths[0].delay()));
-        vtr::printf(" Fmax: %g MHz", sec_to_mhz(crit_paths[0].delay()));
-        vtr::printf("\n");
+    auto least_slack_cpd = find_least_slack_critical_path_delay(constraints, setup_analyzer);
+    vtr::printf("Final critical path: %g ns", sec_to_nanosec(least_slack_cpd.delay()));
 
-    } else {
+    if(crit_paths.size() == 1) {
+        //Fmax is only meaningful for a single-clock circuit
+        vtr::printf(", Fmax: %g MHz", sec_to_mhz(least_slack_cpd.delay()));
+    }
+    vtr::printf("\n");
+
+    vtr::printf("Setup Worst Negative Slack (sWNS): %g ns\n", sec_to_nanosec(find_setup_worst_negative_slack(setup_analyzer)));
+    vtr::printf("Setup Total Negative Slack (sTNS): %g ns\n", sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer)));
+    vtr::printf("\n");
+
+    vtr::printf_info("Setup slack histogram:\n");
+    print_histogram(create_setup_slack_histogram(setup_analyzer));
+    vtr::printf("\n");
+
+
+    if (crit_paths.size() > 1) {
         //Multi-clock
 
         //Periods per constraint
@@ -197,49 +207,43 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
     }
     vtr::printf("\n");
 
-    vtr::printf("Setup Worst Negative Slack (sWNS): %g ns\n", sec_to_nanosec(find_setup_worst_negative_slack(setup_analyzer)));
-    vtr::printf("Setup Total Negative Slack (sTNS): %g ns\n", sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer)));
-    vtr::printf("\n");
-
-    vtr::printf_info("Setup slack histogram:\n");
-    print_histogram(create_setup_slack_histogram(setup_analyzer));
-    vtr::printf("\n");
-
     //Calculate the intra-domain (i.e. same launch and capture domain) non-virtual geomean, and fanout-weighted periods
-    std::vector<double> intra_domain_cpds;
-    std::vector<double> fanout_weighted_intra_domain_cpds;
-    double total_intra_domain_fanout = 0.;
-    auto clock_fanouts = count_clock_fanouts(*g_timing_graph, setup_analyzer);
-    for(const auto& path : crit_paths) {
-        if(path.launch_domain() == path.capture_domain() && !constraints.is_virtual_clock(path.launch_domain())) {
-            intra_domain_cpds.push_back(path.delay());
+    if(crit_paths.size() > 1) {
+        std::vector<double> intra_domain_cpds;
+        std::vector<double> fanout_weighted_intra_domain_cpds;
+        double total_intra_domain_fanout = 0.;
+        auto clock_fanouts = count_clock_fanouts(*g_timing_graph, setup_analyzer);
+        for(const auto& path : crit_paths) {
+            if(path.launch_domain() == path.capture_domain() && !constraints.is_virtual_clock(path.launch_domain())) {
+                intra_domain_cpds.push_back(path.delay());
 
-            auto iter = clock_fanouts.find(path.launch_domain());
-            VTR_ASSERT(iter != clock_fanouts.end());
-            double fanout = iter->second;
+                auto iter = clock_fanouts.find(path.launch_domain());
+                VTR_ASSERT(iter != clock_fanouts.end());
+                double fanout = iter->second;
 
-            fanout_weighted_intra_domain_cpds.push_back(path.delay() * fanout);
-            total_intra_domain_fanout += fanout;
+                fanout_weighted_intra_domain_cpds.push_back(path.delay() * fanout);
+                total_intra_domain_fanout += fanout;
+            }
         }
-    }
 
-    //Print multi-clock geomeans
-    if(intra_domain_cpds.size() > 0) {
-        vtr::printf("\n");
-        double geomean_intra_domain_cpd = vtr::geomean(intra_domain_cpds.begin(), intra_domain_cpds.end());
-        vtr::printf("Geometric mean non-virtual intra-domain period: %g ns (%g MHz)\n", 
-                sec_to_nanosec(geomean_intra_domain_cpd), 
-                sec_to_mhz(geomean_intra_domain_cpd));
+        //Print multi-clock geomeans
+        if(intra_domain_cpds.size() > 0) {
+            vtr::printf("\n");
+            double geomean_intra_domain_cpd = vtr::geomean(intra_domain_cpds.begin(), intra_domain_cpds.end());
+            vtr::printf("Geometric mean non-virtual intra-domain period: %g ns (%g MHz)\n", 
+                    sec_to_nanosec(geomean_intra_domain_cpd), 
+                    sec_to_mhz(geomean_intra_domain_cpd));
 
-        //Normalize weighted fanouts by total fanouts
-        for(auto& weighted_cpd : fanout_weighted_intra_domain_cpds) {
-            weighted_cpd /= total_intra_domain_fanout;
+            //Normalize weighted fanouts by total fanouts
+            for(auto& weighted_cpd : fanout_weighted_intra_domain_cpds) {
+                weighted_cpd /= total_intra_domain_fanout;
+            }
+            double fanout_weighted_geomean_intra_domain_cpd = vtr::geomean(fanout_weighted_intra_domain_cpds.begin(),
+                                                                           fanout_weighted_intra_domain_cpds.end());
+            vtr::printf("Fanout-weighted geomean non-virtual intra-domain period: %g ns (%g MHz)\n", 
+                    sec_to_nanosec(fanout_weighted_geomean_intra_domain_cpd), 
+                    sec_to_mhz(fanout_weighted_geomean_intra_domain_cpd));
         }
-        double fanout_weighted_geomean_intra_domain_cpd = vtr::geomean(fanout_weighted_intra_domain_cpds.begin(),
-                                                                       fanout_weighted_intra_domain_cpds.end());
-        vtr::printf("Fanout-weighted geomean non-virtual intra-domain period: %g ns (%g MHz)\n", 
-                sec_to_nanosec(fanout_weighted_geomean_intra_domain_cpd), 
-                sec_to_mhz(fanout_weighted_geomean_intra_domain_cpd));
     }
     vtr::printf("\n");
 }

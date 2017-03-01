@@ -65,6 +65,7 @@ using namespace std;
 #include "netlist_writer.h"
 
 #include "timing_graph_builder.h"
+#include "timing_reports.h"
 
 #include "log.h"
 
@@ -107,7 +108,7 @@ void vpr_print_usage(void) {
 	vtr::printf_info("Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
 	vtr::printf_info("\n");
 	vtr::printf_info("General Options:  [--nodisp] [--auto <int>] [--pack]\n");
-	vtr::printf_info("\t[--place] [--route]\n");
+	vtr::printf_info("\t[--place] [--route] [--analysis]\n");
 	vtr::printf_info("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
 	vtr::printf_info("\t[--blif_file <string>] [--net_file <string>] [--place_file <string>]\n");
 	vtr::printf_info("\t[--route_file <string>] [--sdc_file <string>] [--echo_file on | off]\n");
@@ -222,7 +223,6 @@ void vpr_init(const int argc, const char **argv,
 
 		/* Determine whether echo is on or off */
 		setEchoEnabled(IsEchoEnabled(options));
-		SetPostSynthesisOption(IsPostSynthesisEnabled(options));
 		vpr_setup->constant_net_delay = options->constant_net_delay;
 		vpr_setup->gen_netlist_as_blif = (options->Count[OT_GEN_NELIST_AS_BLIF] > 0);
 
@@ -239,6 +239,7 @@ void vpr_init(const int argc, const char **argv,
 				 &vpr_setup->PlacerOpts, 
                  &vpr_setup->AnnealSched,
 				 &vpr_setup->RouterOpts, 
+				 &vpr_setup->AnalysisOpts, 
                  &vpr_setup->RoutingArch,
 				 &vpr_setup->PackerRRGraph, 
                  &vpr_setup->Segments,
@@ -964,6 +965,7 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		struct s_placer_opts *PlacerOpts,
 		struct s_annealing_sched *AnnealSched,
 		struct s_router_opts *RouterOpts,
+		t_analysis_opts* AnalysisOpts,
 		struct s_det_routing_arch *RoutingArch,
 		vector <t_lb_type_rr_node> **PackerRRGraph,
 		t_segment_inf ** Segments, t_timing_inf * Timing,
@@ -971,7 +973,7 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		t_power_opts * PowerOpts) {
 	SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
 			user_models, library_models, NetlistOpts, PackerOpts, PlacerOpts,
-			AnnealSched, RouterOpts, RoutingArch, PackerRRGraph, Segments, Timing,
+			AnnealSched, RouterOpts, AnalysisOpts, RoutingArch, PackerRRGraph, Segments, Timing,
 			ShowGraphics, GraphPause, PowerOpts);
 }
 /* Check inputs are reasonable */
@@ -1031,6 +1033,13 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 }
 
 void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+    if(!vpr_setup.AnalysisOpts.doAnalysis) return;
+
+    if(trace_head == nullptr) {
+        VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
+    }
+
+    //TODO: move router stats here
 
 	if (vpr_setup.TimingEnabled) {
         //Load the net delays
@@ -1038,14 +1047,16 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
         load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
-        //Do timing analysis
+        //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
         auto timing_info = make_setup_timing_info(analysis_delay_calc);
         timing_info->update();
 
-        //TODO: move stats here (from router)
+        //Timing stats
+        generate_timing_stats(*timing_info);
 
-        if(GetPostSynthesisOption()) {
+        //Write the post-syntesis netlist
+        if(vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
             netlist_writer(g_atom_nl.netlist_name().c_str(), analysis_delay_calc);
         }
         
@@ -1166,6 +1177,9 @@ void vpr_print_error(const VprError& vpr_error){
             break;
         case VPR_ERROR_POWER:
             error_type = vtr::strdup("Power");
+            break;
+        case VPR_ERROR_ANALYSIS:
+            error_type = vtr::strdup("Analysis");
             break;
         case VPR_ERROR_OTHER:
             error_type = vtr::strdup("Other");

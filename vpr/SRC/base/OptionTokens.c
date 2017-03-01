@@ -83,6 +83,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ "tech_properties", OT_CMOS_TECH_BEHAVIOR_FILE }, /* Technology properties */
 		{ "routing_failure_predictor", OT_ROUTING_FAILURE_PREDICTOR }, /* Routing failure predictor */
 		{ "dump_rr_structs_file", OT_DUMP_RR_STRUCTS_FILE },
+		{ "analysis", OT_ANALYSIS }, 
 
 		{ NULL, OT_BASE_UNKNOWN } /* End of list marker */
 };

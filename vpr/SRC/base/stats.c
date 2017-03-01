@@ -94,50 +94,41 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 				segment_inf, R_minW_nmos, R_minW_pmos);
 		get_segment_usage_stats(num_segment, segment_inf);
 
-		if (timing_analysis_enabled) {
-			load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
+	}
 
-            auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
+    if (timing_analysis_enabled) {
+        load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
-            std::shared_ptr<SetupTimingInfo> timing_info = make_setup_timing_info(routing_delay_calc);
-            timing_info->update();
+        auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
+
+        std::shared_ptr<SetupTimingInfo> timing_info = make_setup_timing_info(routing_delay_calc);
+        timing_info->update();
 
 #ifdef ENABLE_CLASSIC_VPR_STA
-			load_timing_graph_net_delays(net_delay);
+        load_timing_graph_net_delays(net_delay);
 
-			do_timing_analysis(slacks, timing_inf, false, true);
+        do_timing_analysis(slacks, timing_inf, false, true);
 
-			if (getEchoEnabled()) {
-				if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
-					print_timing_graph(getEchoFileName(E_ECHO_TIMING_GRAPH));
-				if (isEchoFileEnabled(E_ECHO_NET_DELAY)) 
-					print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
-			}
+        if (getEchoEnabled()) {
+            if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
+                print_timing_graph(getEchoFileName(E_ECHO_TIMING_GRAPH));
+            if (isEchoFileEnabled(E_ECHO_NET_DELAY)) 
+                print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
+        }
 
-			print_slack(slacks->slack, true, getOutputFileName(E_SLACK_FILE));
-			print_critical_path(getOutputFileName(E_CRIT_PATH_FILE), timing_inf);
+        print_slack(slacks->slack, true, getOutputFileName(E_SLACK_FILE));
+        print_critical_path(getOutputFileName(E_CRIT_PATH_FILE), timing_inf);
 
-			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ENDPOINT_TIMING)) {
-                print_endpoint_timing(getEchoFileName(E_ECHO_ENDPOINT_TIMING));
-            }
+        if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ENDPOINT_TIMING)) {
+            print_endpoint_timing(getEchoFileName(E_ECHO_ENDPOINT_TIMING));
+        }
 
-            vtr::printf("Classic Timing Stats\n");
-            vtr::printf("====================\n");
-            print_timing_stats();
-
-            vtr::printf("New Timing Stats\n");
-            vtr::printf("================\n");
+        vtr::printf("Classic Timing Stats\n");
+        vtr::printf("====================\n");
+        print_timing_stats();
 #endif
-            vtr::printf("\n");
-			print_setup_timing_summary(*g_timing_constraints, *timing_info->setup_analyzer());
 
-            VprTimingGraphNameResolver name_resolver(g_atom_nl, g_atom_lookup);
-            tatum::TimingReporter timing_reporter(name_resolver, *g_timing_graph, *g_timing_constraints);
-
-            timing_reporter.report_timing_setup("report_timing.setup.rpt", *timing_info->setup_analyzer());
-            timing_reporter.report_unconstrained_endpoints_setup("report_unconstrained_timing_endpoints.rpt", *timing_info->setup_analyzer());
-		}
-	}
+    }
 
 	if (full_stats == true)
 		print_wirelen_prob_dist();

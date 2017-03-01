@@ -17,6 +17,8 @@ static void ShowPlacerOpts(const t_options& Options,
 		const struct s_placer_opts& PlacerOpts,
 		const struct s_annealing_sched& AnnealSched);
 static void ShowRouterOpts(const struct s_router_opts& RouterOpts);
+static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts);
+
 static void ShowAnnealSched(const struct s_annealing_sched& AnnealSched);
 static void ShowRoutingArch(const struct s_det_routing_arch& RoutingArch);
 
@@ -30,10 +32,13 @@ void ShowSetup(const t_options& options, const t_vpr_setup& vpr_setup) {
 	vtr::printf_info("Circuit placement file: %s\n", vpr_setup.FileNameOpts.PlaceFile);
 	vtr::printf_info("Circuit routing file: %s\n", vpr_setup.FileNameOpts.RouteFile);
 	vtr::printf_info("Circuit SDC file: %s\n", vpr_setup.Timing.SDCFile);
+	vtr::printf_info("\n");
 
 	vtr::printf_info("Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));
 	vtr::printf_info("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
 	vtr::printf_info("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
+	vtr::printf_info("Analysis: %s\n", (vpr_setup.AnalysisOpts.doAnalysis ? "ENABLED" : "DISABLED"));
+	vtr::printf_info("\n");
 
     ShowNetlistOpts(vpr_setup.NetlistOpts);
 
@@ -45,6 +50,9 @@ void ShowSetup(const t_options& options, const t_vpr_setup& vpr_setup) {
 	}
 	if (vpr_setup.RouterOpts.doRouting) {
 		ShowRouterOpts(vpr_setup.RouterOpts);
+	}
+	if (vpr_setup.AnalysisOpts.doAnalysis) {
+		ShowAnalysisOpts(vpr_setup.AnalysisOpts);
 	}
 
 	if (DETAILED == vpr_setup.RouterOpts.route_type)
@@ -366,6 +374,11 @@ static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
     vtr::printf_info("NetlistOpts.sweep_dangling_nets           : %s\n", (NetlistOpts.sweep_dangling_nets)            ? "true" : "false");
     vtr::printf_info("NetlistOpts.sweep_dangling_blocks         : %s\n", (NetlistOpts.sweep_dangling_blocks)          ? "true" : "false");
     vtr::printf_info("NetlistOpts.sweep_constant_primary_outputs: %s\n", (NetlistOpts.sweep_constant_primary_outputs) ? "true" : "false");
+	vtr::printf_info("\n");
+}
+
+static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
+    vtr::printf_info("AnalysisOpts.gen_post_synthesis_netlist: %s\n", (AnalysisOpts.gen_post_synthesis_netlist) ? "true" : "false");
 	vtr::printf_info("\n");
 }
 

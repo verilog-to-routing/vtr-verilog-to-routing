@@ -843,6 +843,12 @@ struct s_router_opts {
 	enum e_routing_failure_predictor routing_failure_predictor;
 };
 
+struct t_analysis_opts {
+    bool doAnalysis;
+
+    bool gen_post_synthesis_netlist;
+};
+
 /* Defines the detailed routing architecture of the FPGA.  Only important   *
  * if the route_type is DETAILED.                                           *
  * (UDSD by AY) directionality: Should the tracks be uni-directional or     *
@@ -1048,6 +1054,7 @@ typedef struct s_vpr_setup {
 	struct s_placer_opts PlacerOpts; /* Options for placer */
 	struct s_annealing_sched AnnealSched; /* Placement option annealing schedule */
 	struct s_router_opts RouterOpts; /* router options */
+    t_analysis_opts AnalysisOpts; /* Analysis options */
 	struct s_det_routing_arch RoutingArch; /* routing architecture */
 	std::vector <t_lb_type_rr_node> *PackerRRGraph;
 	t_segment_inf * Segments; /* wires in routing architecture */
