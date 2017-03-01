@@ -55,10 +55,12 @@ class SdcParseCallback2 : public sdcparse::Callback {
     public:
         SdcParseCallback2(const AtomNetlist& netlist,
                           const AtomLookup& lookup,
-                          tatum::TimingConstraints& timing_constraints)
+                          tatum::TimingConstraints& timing_constraints,
+                          tatum::TimingGraph& tg)
             : netlist_(netlist)
             , lookup_(lookup)
             , tc_(timing_constraints)
+            , tg_(tg)
             {}
     public: //sdcparse::Callback interface
         //Start of parsing
@@ -163,69 +165,53 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 domain = tc_.find_clock_domain(cmd.clock_name);
             }
 
+            //Error checks
             if (!domain) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                           "Failed to find clock domain '%s' for I/O constraint",
                           cmd.clock_name.c_str());
             }
 
-            if (cmd.target_ports.strings.empty()) {
+            //Find all matching I/Os
+            auto io_pins = get_ports(cmd.target_ports);
+
+            if(io_pins.empty()) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                          "No targets specified for I/O constraint",
-                          cmd.clock_name.c_str());
+                          "Found no matching primary inputs or primary outputs");
             }
 
-            if (cmd.target_ports.type != sdcparse::StringGroupType::PORT) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                          "I/O constraint targets must be ports");
-            }
+            float max_delay = sdc_units_to_seconds(cmd.max_delay);
 
-            for (const std::string& io_glob_pattern : cmd.target_ports.strings) {
-                bool found = false;
+            for(AtomPinId pin : io_pins) {
+                tatum::NodeId tnode = lookup_.atom_pin_tnode(pin);
+                VTR_ASSERT(tnode);
 
-                std::regex io_regex = glob_pattern_to_regex(io_glob_pattern);
+                //Set i/o constraint
+                if (cmd.type == sdcparse::IoDelayType::INPUT) {
 
-                for (const auto& kv : netlist_primary_ios_) {
-                    const std::string& io_name = kv.first;
+                    tc_.set_input_constraint(tnode, domain, tatum::Time(max_delay));
 
-                    if (std::regex_match(io_name, io_regex)) {
-                        found = true;
+                    if(netlist_.pin_type(pin) == AtomPinType::SINK) {
+                        AtomBlockId blk = netlist_.pin_block(pin);
+                        std::string io_name = orig_blif_name(netlist_.block_name(blk));
 
-                        AtomPinId pin = kv.second;
-
-                        tatum::NodeId tnode = lookup_.atom_pin_tnode(pin);
-                        VTR_ASSERT(tnode);
-
-                        float max_delay = sdc_units_to_seconds(cmd.max_delay);
-
-                        //Set i/o constraint
-                        if (cmd.type == sdcparse::IoDelayType::INPUT) {
-
-                            tc_.set_input_constraint(tnode, domain, tatum::Time(max_delay));
-
-                            if(netlist_.pin_type(pin) == AtomPinType::SINK) {
-                                vtr::printf_warning(fname_.c_str(), lineno_, 
-                                                    "set_input_delay command applied to primary output '%s'\n",
-                                                    io_name.c_str());
-                            }
-                        } else {
-                            VTR_ASSERT(cmd.type == sdcparse::IoDelayType::OUTPUT);
-
-                            tc_.set_output_constraint(tnode, domain, tatum::Time(max_delay));
-
-                            if(netlist_.pin_type(pin) == AtomPinType::DRIVER) {
-                                vtr::printf_warning(fname_.c_str(), lineno_, 
-                                                    "set_output_delay command applied to primary input '%s'\n",
-                                                    io_name.c_str());
-                            }
-                        }
+                        vtr::printf_warning(fname_.c_str(), lineno_, 
+                                            "set_input_delay command applied to primary output '%s'\n",
+                                            io_name.c_str());
                     }
-                }
+                } else {
+                    VTR_ASSERT(cmd.type == sdcparse::IoDelayType::OUTPUT);
 
-                if (!found) {
-                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                              "Name or pattern '%s' does not match any primary input or primary output",
-                              io_glob_pattern.c_str());
+                    tc_.set_output_constraint(tnode, domain, tatum::Time(max_delay));
+
+                    if(netlist_.pin_type(pin) == AtomPinType::DRIVER) {
+                        AtomBlockId blk = netlist_.pin_block(pin);
+                        std::string io_name = orig_blif_name(netlist_.block_name(blk));
+
+                        vtr::printf_warning(fname_.c_str(), lineno_, 
+                                            "set_output_delay command applied to primary input '%s'\n",
+                                            io_name.c_str());
+                    }
                 }
             }
         }
@@ -250,19 +236,104 @@ class SdcParseCallback2 : public sdcparse::Callback {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_multicycle_path currently unsupported"); 
         }
 
-        void set_clock_uncertainty(const sdcparse::SetClockUncertainty& /*cmd*/) override { 
+        void set_clock_uncertainty(const sdcparse::SetClockUncertainty& cmd) override { 
             ++num_commands_;
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_uncertainty currently unsupported"); 
+
+            auto from_clocks = get_clocks(cmd.from);
+            auto to_clocks = get_clocks(cmd.to);
+
+            if (from_clocks.empty()) {
+                from_clocks = get_all_clocks();
+            }
+
+            if (to_clocks.empty()) {
+                to_clocks = get_all_clocks();
+            }
+
+            float uncertainty = sdc_units_to_seconds(cmd.value);
+
+            for (auto from_clock : from_clocks) {
+                for (auto to_clock : to_clocks) {
+
+                    if (cmd.type == sdcparse::SetupHoldType::SETUP) {
+                        tc_.set_setup_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty));
+
+                    } else {
+                        VTR_ASSERT(cmd.type == sdcparse::SetupHoldType::HOLD);
+
+                        tc_.set_hold_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty));
+                    }
+                }
+            }
         }
 
-        void set_clock_latency(const sdcparse::SetClockLatency& /*cmd*/) override { 
+        void set_clock_latency(const sdcparse::SetClockLatency& cmd) override { 
             ++num_commands_;
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency currently unsupported"); 
+
+            if (cmd.type != sdcparse::ClockLatencyType::SOURCE) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency only support specifying -source latency"); 
+            }
+
+            if (cmd.early_late == sdcparse::EarlyLateType::EARLY) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency currently does not support -early latency"); 
+            }
+
+            VTR_ASSERT(cmd.early_late == sdcparse::EarlyLateType::LATE || cmd.early_late == sdcparse::EarlyLateType::NONE);
+
+            auto clocks = get_clocks(cmd.target_clocks);
+            if (clocks.empty()) {
+                clocks = get_all_clocks();
+            }
+
+            float latency = sdc_units_to_seconds(cmd.value);
+
+            for (auto clock : clocks) {
+                tc_.set_source_latency(clock, tatum::Time(latency)); 
+            }
         }
 
-        void set_disable_timing(const sdcparse::SetDisableTiming& /*cmd*/) override { 
+        void set_disable_timing(const sdcparse::SetDisableTiming& cmd) override { 
             ++num_commands_;
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_disable_timing currently unsupported"); 
+
+            //Collect the specified pins
+            auto from_pins = get_pins(cmd.from); 
+            auto to_pins = get_pins(cmd.to); 
+
+            if (from_pins.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "Found no matching -from pins");
+            }
+
+            if (to_pins.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "Found no matching -to pins");
+            }
+
+            //Disable any edges between the from and to sets
+            for (auto from_pin : from_pins) {
+                for (auto to_pin : from_pins) {
+                    tatum::NodeId from_tnode = lookup_.atom_pin_tnode(from_pin);
+                    VTR_ASSERT(from_tnode);
+
+                    tatum::NodeId to_tnode = lookup_.atom_pin_tnode(to_pin);
+                    VTR_ASSERT(to_tnode);
+
+                    //Find the edge matching these nodes
+                    tatum::EdgeId edge = tg_.find_edge(from_tnode, to_tnode);
+
+                    if (!edge) {
+                        const auto& from_pin_name = netlist_.pin_name(from_pin);
+                        const auto& to_pin_name = netlist_.pin_name(to_pin);
+
+                        vtr::printf_warning(fname_.c_str(), lineno_, 
+                                            "set_disable_timing no timing edge found from pin '%s' to pin '%s'\n",
+                                            from_pin_name.c_str(), to_pin_name.c_str());
+                    }
+
+                    //Mark the edge in the timing graph as disabled
+                    tg_.disable_edge(edge);
+                }
+            }
         }
 
         void set_timing_derate(const sdcparse::SetTimingDerate& /*cmd*/) override { 
@@ -273,6 +344,9 @@ class SdcParseCallback2 : public sdcparse::Callback {
         //End of parsing
         void finish_parse() override {
             resolve_clock_constraints();
+
+            //Re-levelize if needed (e.g. due to set_disable_timing)
+            tg_.levelize();
         }
 
         //Error during parsing
@@ -283,6 +357,106 @@ class SdcParseCallback2 : public sdcparse::Callback {
     public:
         size_t num_commands() { return num_commands_; }
     private:
+
+        std::set<AtomPinId> get_ports(const sdcparse::StringGroup& port_group) {
+            if(port_group.type != sdcparse::StringGroupType::PORT) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
+                         "Expected port collection via get_ports"); 
+            }
+
+            std::set<AtomPinId> pins;
+            for (const auto& port_pattern : port_group.strings) {
+                std::regex port_regex = glob_pattern_to_regex(port_pattern);
+
+                bool found = false;
+                for(const auto& kv : netlist_primary_ios_) {
+                    
+                    const std::string& io_name = kv.first;
+                    if(std::regex_match(io_name, port_regex)) {
+                        found = true;
+
+                        AtomPinId pin = kv.second;
+                        
+                        pins.insert(pin);
+                    }
+                }
+
+                if(!found) {
+                    vtr::printf_warning(fname_.c_str(), lineno_, 
+                                        "get_ports target name or pattern '%s' matched no clocks\n",
+                                        port_pattern.c_str());
+                }
+            }
+            return pins;
+        }
+
+        std::set<tatum::DomainId> get_clocks(const sdcparse::StringGroup& clock_group) {
+            if(clock_group.type != sdcparse::StringGroupType::CLOCK) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
+                         "Expected clock collection via get_clocks"); 
+            }
+
+            std::set<tatum::DomainId> domains;
+            for (const auto& clock_glob_pattern : clock_group.strings) {
+                std::regex clock_regex = glob_pattern_to_regex(clock_glob_pattern);
+
+                bool found = false;
+                for(tatum::DomainId domain : tc_.clock_domains()) {
+                    
+                    const std::string& clock_name = tc_.clock_domain_name(domain);
+                    if(std::regex_match(clock_name, clock_regex)) {
+                        found = true;
+                        
+                        domains.insert(domain);
+                    }
+                }
+
+                if(!found) {
+                    vtr::printf_warning(fname_.c_str(), lineno_, 
+                                        "get_clocks target name or pattern '%s' matched no clocks\n",
+                                        clock_glob_pattern.c_str());
+                }
+            }
+            
+            return domains;
+        }
+
+        std::set<AtomPinId> get_pins(const sdcparse::StringGroup& pin_group) {
+            if(pin_group.type != sdcparse::StringGroupType::PIN) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
+                         "Expected pin collection via get_pins"); 
+            }
+
+            std::set<AtomPinId> pins;
+            for (const auto& pin_pattern : pin_group.strings) {
+                std::regex pin_regex = glob_pattern_to_regex(pin_pattern);
+
+                bool found = false;
+                for(AtomPinId pin : netlist_.pins()) {
+
+                    const std::string& pin_name = netlist_.pin_name(pin);
+
+                    if(std::regex_match(pin_name, pin_regex)) {
+                        found = true;
+                        
+                        pins.insert(pin);
+                    }
+                }
+
+                if(!found) {
+                    vtr::printf_warning(fname_.c_str(), lineno_, 
+                                        "get_pins target name or pattern '%s' matched no pins\n",
+                                        pin_pattern.c_str());
+                }
+            }
+            
+            return pins;
+        }
+
+        std::set<tatum::DomainId> get_all_clocks() {
+            auto domains = tc_.clock_domains();
+            return std::set<tatum::DomainId>(domains.begin(), domains.end());
+        }
 
         void resolve_clock_constraints() {
             //Set the default clock constraints
@@ -393,6 +567,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
         const AtomNetlist& netlist_;
         const AtomLookup& lookup_;
         tatum::TimingConstraints& tc_;
+        tatum::TimingGraph& tg_;
 
         size_t num_commands_ = 0;
         std::string fname_;
@@ -408,14 +583,14 @@ class SdcParseCallback2 : public sdcparse::Callback {
 std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_inf, 
                                                    const AtomNetlist& netlist, 
                                                    const AtomLookup& lookup, 
-                                                   tatum::TimingGraph& /*timing_graph*/) {
-    auto tc = std::unique_ptr<tatum::TimingConstraints>(new tatum::TimingConstraints());
+                                                   tatum::TimingGraph& timing_graph) {
+    auto timing_constraints = std::unique_ptr<tatum::TimingConstraints>(new tatum::TimingConstraints());
 
     if (!timing_inf.timing_analysis_enabled) {
 		vtr::printf("\n");
 		vtr::printf("Timing analysis off\n");
-        apply_default_timing_constraints(netlist, lookup, *tc);
-        return tc;
+        apply_default_timing_constraints(netlist, lookup, *timing_constraints);
+        return timing_constraints;
     }
 
     FILE* sdc_file = fopen(timing_inf.SDCFile, "r");
@@ -423,27 +598,28 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_i
         //No SDC file
 		vtr::printf("\n");
 		vtr::printf("SDC file '%s' not found\n", timing_inf.SDCFile);
-        apply_default_timing_constraints(netlist, lookup, *tc);
-        return tc;
+        apply_default_timing_constraints(netlist, lookup, *timing_constraints);
+        return timing_constraints;
     }
 
     VTR_ASSERT(sdc_file != nullptr);
 
     //Parse the file
-    SdcParseCallback2 callback(netlist, lookup, *tc);
+    SdcParseCallback2 callback(netlist, lookup, *timing_constraints, timing_graph);
     sdc_parse_file(sdc_file, callback, timing_inf.SDCFile);
+    fclose(sdc_file);
 
     if (callback.num_commands() == 0) {
 		vtr::printf("\n");
 		vtr::printf("SDC file '%s' contained no SDC commands\n", timing_inf.SDCFile);
-        apply_default_timing_constraints(netlist, lookup, *tc);
+        apply_default_timing_constraints(netlist, lookup, *timing_constraints);
     } else {
 		vtr::printf("\n");
 		vtr::printf("Applied %zu SDC commands from '%s'\n", callback.num_commands(), timing_inf.SDCFile);
     }
     vtr::printf("\n");
 
-    return tc;
+    return timing_constraints;
 }
 
 //Apply the default timing constraints (i.e. if there are no user specified constraints)
