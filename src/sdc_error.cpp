@@ -1,15 +1,12 @@
 #include <cstdarg>
 #include <cassert>
 #include "sdc_error.hpp"
-#include "sdc.hpp"
+#include "sdcparse.hpp"
 
 namespace sdcparse {
 
-//Define the sdc error handler and set the default
-std::function<void(const int, const std::string&, const std::string&)> sdc_error = default_sdc_error;
-
 //We wrap the actual sdc_error to issolate custom handlers from vaargs
-void sdc_error_wrap(const int line_no, const std::string& near_text, const char* fmt, ...) {
+void sdc_error_wrap(Callback& callback, const int line_no, const std::string& near_text, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
@@ -43,7 +40,7 @@ void sdc_error_wrap(const int line_no, const std::string& near_text, const char*
     std::string msg(buf.get(), len);
 
     //Call the error handler
-    sdc_error(line_no, near_text, msg);
+    callback.parse_error(line_no, near_text, msg);
 }
 
 }

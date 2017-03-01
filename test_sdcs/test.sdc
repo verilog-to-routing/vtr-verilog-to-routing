@@ -4,6 +4,7 @@ create_clock -period 3 -waveform {1 2} clk1 #Integer period, integer waveform
 create_clock -period 2.3 clk2 #Float period
 create_clock -period 2 {clk3 clk4} #Multiple targets
 
+
 #Virtual Clocks
 create_clock -period 1 -name input_clk
 create_clock -period 0 -name output_clk #Zero period
@@ -29,10 +30,17 @@ set_multicycle_path 2 -setup -from [get_clocks{clk}]        -to [get_clocks{outp
 set_multicycle_path 3 -setup -from {asdf~/ff}               -to {wer/234/ff3 xcw/32|ff2} #Objects
 set_multicycle_path 3 -setup -from {asdf/ff qwert/asd/ff}   -to [get_clocks{output_clk}] #Mixed Clocks/Objects
 set_multicycle_path 0 -setup -from [get_clocks{output_clk}] -to {asdf/ff2} #Mixed Clocks/Objects
+set_multicycle_path 3 -hold -from {asdf/ff qwert/asd/ff}   -to [get_clocks{output_clk}] #hold
 
 #I/O Delay
 set_input_delay -clock input_clk -max 0.5 [get_ports{in1 in2 in3}]
 set_output_delay -clock output_clk -max 1 [get_ports{out*}]
+
+#Line continuation
+create_clock -period \
+2 {clk3 \
+clk4} \
+#asdf
 
 #Spaced Comments
 

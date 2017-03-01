@@ -89,38 +89,56 @@ struct CreateClock;
 struct SetIoDelay;
 struct SetClockGroups;
 struct SetFalsePath;
-struct SetMaxDelay;
+struct SetMinMaxDelay;
 struct SetMulticyclePath;
+struct SetClockUncertainty;
+struct SetClockLatency;
+struct SetDisableTiming;
+struct SetTimingDerate;
 
 struct StringGroup;
 
 
+class Callback {
+
+    public:
+        virtual ~Callback() {};
+
+        //Start of parsing
+        virtual void start_parse() = 0;
+
+        //Sets current filename
+        virtual void filename(std::string fname) = 0;
+
+        //Sets current line number
+        virtual void lineno(int line_num) = 0;
+
+        virtual void create_clock(const CreateClock& cmd) = 0;
+        virtual void set_io_delay(const SetIoDelay& cmd) = 0;
+        virtual void set_clock_groups(const SetClockGroups& cmd) = 0;
+        virtual void set_false_path(const SetFalsePath& cmd) = 0;
+        virtual void set_min_max_delay(const SetMinMaxDelay& cmd) = 0;
+        virtual void set_multicycle_path(const SetMulticyclePath& cmd) = 0;
+        virtual void set_clock_uncertainty(const SetClockUncertainty& cmd) = 0;
+        virtual void set_clock_latency(const SetClockLatency& cmd) = 0;
+        virtual void set_disable_timing(const SetDisableTiming& cmd) = 0;
+        virtual void set_timing_derate(const SetTimingDerate& cmd) = 0;
+
+        //End of parsing
+        virtual void finish_parse() = 0;
+
+        //Error during parsing
+        virtual void parse_error(const int curr_lineno, const std::string& near_text, const std::string& msg) = 0;
+};
+
 /*
  * External functions for loading an SDC file
  */
-std::shared_ptr<SdcCommands> sdc_parse_filename(std::string filename);
-std::shared_ptr<SdcCommands> sdc_parse_filename(const char* filename);
-std::shared_ptr<SdcCommands> sdc_parse_file(FILE* sdc);
+void sdc_parse_filename(std::string filename, Callback& callback);
+void sdc_parse_filename(const char* filename, Callback& callback);
 
-
-/* 
- * The default sdc_error() implementation.
- * By default it prints the error mesage to stderr and exits the program.
- */
-void default_sdc_error(const int line_number, const std::string& near_text, const std::string& msg);
-
-/*
- * libsdc calls sdc_error() to report errors encountered while parsing an SDC file.  
- *
- * If you wish to define your own error reporting function (e.g. to throw exceptions instead
- * of exit) you can change the behaviour by providing another callable type which matches the signature.
- *
- * The return type is void, while the arguments are:
- *     1) const int line_no            - the file line number
- *     2) const std::string& near_text - the text the parser encountered 'near' the error
- *     3) const std::string& msg       - the error message
- */
-void set_sdc_error_handler(std::function<void(const int, const std::string&, const std::string&)> new_sdc_error_handler);
+//Loads from 'sdc'. 'filename' only used to pass a filename to callback and can be left unspecified
+void sdc_parse_file(FILE* sdc, Callback& callback, const char* filename=""); 
 
 /*
  * Sentinal values
@@ -136,6 +154,12 @@ enum class IoDelayType {
     OUTPUT
 };
 
+enum class MinMaxType {
+    MIN,
+    MAX,
+    NONE
+};
+
 enum class ClockGroupsType {
     NONE,
     EXCLUSIVE
@@ -146,30 +170,29 @@ enum class FromToType {
     TO
 };
 
-enum class McpType {
-    NONE, 
-    SETUP
+enum class EarlyLateType {
+    EARLY,
+    LATE,
+    NONE
+};
+
+enum class SetupHoldType {
+    SETUP,
+    HOLD,
+    NONE
+};
+
+enum class ClockLatencyType {
+    SOURCE,
+    NONE
 };
 
 enum class StringGroupType {
     STRING, 
     PORT, 
-    CLOCK
-};
-
-/*
- * Collection of SDC commands
- */
-struct SdcCommands {
-    bool has_commands();
-
-    std::vector<CreateClock> create_clock_cmds;
-    std::vector<SetIoDelay> set_input_delay_cmds;
-    std::vector<SetIoDelay> set_output_delay_cmds;
-    std::vector<SetClockGroups> set_clock_groups_cmds;
-    std::vector<SetFalsePath> set_false_path_cmds;
-    std::vector<SetMaxDelay> set_max_delay_cmds;
-    std::vector<SetMulticyclePath> set_multicycle_path_cmds;
+    CLOCK,
+    CELL,
+    PIN
 };
 
 /*
@@ -178,10 +201,10 @@ struct SdcCommands {
 
 struct StringGroup {
     StringGroup() = default;
-    StringGroup(StringGroupType type)
-        : group_type(type) {}
+    StringGroup(StringGroupType group_type)
+        : type(group_type) {}
 
-    StringGroupType group_type = StringGroupType::STRING;   //The type of the string group, default is STRING. 
+    StringGroupType type = StringGroupType::STRING;   //The type of the string group, default is STRING. 
                                                             // Groups derived from 'calls' to [get_clocks {...}] 
                                                             // and [get_ports {...}] will have types SDC_CLOCK 
                                                             // and SDC_PORT respectively.
@@ -199,55 +222,78 @@ struct CreateClock {
     StringGroup targets;                        //The set of strings indicating clock sources.
                                                 // May be explicit strings or regexs.
     bool is_virtual = false;                    //Identifies this as a virtual (non-netlist) clock
-
-    int file_line_number = UNINITIALIZED_INT;   //Line number where this command is defined
 };
 
 struct SetIoDelay {
     SetIoDelay() = default;
-    SetIoDelay(IoDelayType type)
-        : io_type(type) {}
+    SetIoDelay(IoDelayType io_type)
+        : type(io_type) {}
 
-    IoDelayType io_type = IoDelayType::INPUT;       //Identifies whether this represents a
+    IoDelayType type = IoDelayType::INPUT;       //Identifies whether this represents a
                                                     // set_input_delay or set_output delay
                                                     // command.
     std::string clock_name = "";                    //Name of the clock this constraint is associated with
     double max_delay = UNINITIALIZED_FLOAT;         //The maximum input delay allowed on the target ports
     StringGroup target_ports;                       //The target ports
-
-    int file_line_number = UNINITIALIZED_INT;       //Line number where this command is defined
 };
 
 struct SetClockGroups {
-    ClockGroupsType cg_type = ClockGroupsType::NONE;    //The type of clock group relation being specified
-    std::vector<StringGroup> clock_groups;              //The groups of clocks
-
-    int file_line_number = UNINITIALIZED_INT;           //Line number where this command is defined
+    ClockGroupsType type = ClockGroupsType::NONE;   //The type of clock group relation being specified
+    std::vector<StringGroup> clock_groups;          //The groups of clocks
 };
 
 struct SetFalsePath {
     StringGroup from;                           //The source list of startpoints or clocks
     StringGroup to;                             //The target list of endpoints or clocks
-                                                
-    int file_line_number = UNINITIALIZED_INT;   //Line number where this command is defined
 };
 
-struct SetMaxDelay {
-    double max_delay = UNINITIALIZED_FLOAT;     //The maximum allowed delay between the from
+struct SetMinMaxDelay {
+    SetMinMaxDelay() = default;
+    SetMinMaxDelay(MinMaxType delay_type)
+        : type(delay_type) {}
+    MinMaxType type = MinMaxType::NONE;         //Whether this is a min or max delay
+    double value = UNINITIALIZED_FLOAT;         //The maximum/minimum allowed delay between the from
                                                 // and to clocks
     StringGroup from;                           //The source list of startpoints or clocks
     StringGroup to;                             //The target list of endpoints or clocks
-
-    int file_line_number = UNINITIALIZED_INT;   //Line number where this command is defined
 };
 
 struct SetMulticyclePath {
-    McpType mcp_type = McpType::NONE;           //The type of the mcp
+    SetupHoldType type = SetupHoldType::NONE;   //The type of the mcp
     int mcp_value = UNINITIALIZED_INT;          //The number of cycles specifed
     StringGroup from;                           //The source list of startpoints or clocks
     StringGroup to;                             //The target list of endpoints or clocks
+};
 
-    int file_line_number = UNINITIALIZED_INT;   //Line number where this command is defined
+struct SetClockUncertainty {
+    SetupHoldType type = SetupHoldType::NONE;   //Analysis type this uncertainty applies to
+    float value = UNINITIALIZED_FLOAT;          //The uncertainty value
+
+    StringGroup from;                           //Launch clock domain(s)
+    StringGroup to;                             //Capture clock domain(s)
+};
+
+struct SetClockLatency {
+    ClockLatencyType type = ClockLatencyType::NONE;//Latency type
+    EarlyLateType early_late = EarlyLateType::NONE; //Is the early or late latency?
+    float value = UNINITIALIZED_FLOAT;          //The latency value
+
+    StringGroup target_clocks;                  //The target clocks
+};
+
+struct SetDisableTiming {
+    StringGroup from;                           //The source pins
+    StringGroup to;                             //The sink pins
+};
+
+struct SetTimingDerate {
+    EarlyLateType type = EarlyLateType::NONE;   //The derate type
+    bool derate_nets = false;                   //Should nets be derated?
+    bool derate_cells = false;                  //Should cells be derated?
+
+    float value = UNINITIALIZED_FLOAT;          //The derate value
+
+    StringGroup cell_targets;                   //The (possibly empty) set of target cells
 };
 
 } //namespace
