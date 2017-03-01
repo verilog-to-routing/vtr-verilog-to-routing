@@ -156,22 +156,44 @@ class SdcCallback : public sdcparse::Callback {
         void lineno(int line_num) override { lineno_ = line_num; }
 
         //Individual commands
-        void create_clock(const sdcparse::CreateClock& cmd) override { apply_create_clock(cmd, lineno_); }
-        void set_io_delay(const sdcparse::SetIoDelay& cmd) override { apply_set_io_delay(cmd, lineno_); }
-        void set_clock_groups(const sdcparse::SetClockGroups& cmd) override { apply_set_clock_groups(cmd, lineno_); }
-        void set_false_path(const sdcparse::SetFalsePath& cmd) override { apply_set_false_path(cmd); }
-        void set_min_max_delay(const sdcparse::SetMinMaxDelay& cmd) override { apply_set_min_max_delay(cmd); }
-        void set_multicycle_path(const sdcparse::SetMulticyclePath& cmd) override { apply_set_multicycle_path(cmd); }
+        void create_clock(const sdcparse::CreateClock& cmd) override { 
+            got_commands_ = true;
+            apply_create_clock(cmd, lineno_); 
+        }
+        void set_io_delay(const sdcparse::SetIoDelay& cmd) override { 
+            got_commands_ = true;
+            apply_set_io_delay(cmd, lineno_); 
+        }
+        void set_clock_groups(const sdcparse::SetClockGroups& cmd) override { 
+            got_commands_ = true;
+            apply_set_clock_groups(cmd, lineno_); 
+        }
+        void set_false_path(const sdcparse::SetFalsePath& cmd) override { 
+            got_commands_ = true;
+            apply_set_false_path(cmd); 
+        }
+        void set_min_max_delay(const sdcparse::SetMinMaxDelay& cmd) override { 
+            got_commands_ = true;
+            apply_set_min_max_delay(cmd);
+        }
+        void set_multicycle_path(const sdcparse::SetMulticyclePath& cmd) override {
+            got_commands_ = true;
+            apply_set_multicycle_path(cmd);
+        }
         void set_clock_uncertainty(const sdcparse::SetClockUncertainty& /*cmd*/) override { 
+            got_commands_ = true;
             vpr_sdc_error(lineno_, "", "set_clock_uncertainty currently unsupported"); 
         }
         void set_clock_latency(const sdcparse::SetClockLatency& /*cmd*/) override { 
+            got_commands_ = true;
             vpr_sdc_error(lineno_, "", "set_clock_latency currently unsupported"); 
         }
         void set_disable_timing(const sdcparse::SetDisableTiming& /*cmd*/) override { 
+            got_commands_ = true;
             vpr_sdc_error(lineno_, "", "set_disable_timing currently unsupported"); 
         }
         void set_timing_derate(const sdcparse::SetTimingDerate& /*cmd*/) override { 
+            got_commands_ = true;
             vpr_sdc_error(lineno_, "", "set_timing_derate currently unsupported"); 
         }
 
