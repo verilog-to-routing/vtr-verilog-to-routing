@@ -216,14 +216,60 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
         }
 
-        void set_clock_groups(const sdcparse::SetClockGroups& /*cmd*/) override { 
+        void set_clock_groups(const sdcparse::SetClockGroups& cmd) override { 
             ++num_commands_;
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_groups currently unsupported"); 
+
+            if (cmd.type != sdcparse::ClockGroupsType::EXCLUSIVE) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
+                        "set_clock_groups only supports -exclusive groups"); 
+            }
+
+            //FIXME: more efficient to collect per-group clocks once instead of at each iteration
+
+            //Disable timing between each group of clock domains
+            for (size_t src_group = 0; src_group < cmd.clock_groups.size(); ++src_group) {
+                auto src_clocks = get_clocks(cmd.clock_groups[src_group]);
+
+                for (size_t sink_group = 0; sink_group < cmd.clock_groups.size(); ++sink_group) {
+                    if (src_group == sink_group) continue;
+
+                    auto sink_clocks = get_clocks(cmd.clock_groups[sink_group]);
+
+                    for (auto src_clock : src_clocks) {
+                        for (auto sink_clock : sink_clocks) {
+                            //Mark this pair of domains to be disabled
+                            disabled_domain_pairs_.insert({src_clock, sink_clock});
+                        }
+                    }
+                }
+            }
         }
 
-        void set_false_path(const sdcparse::SetFalsePath& /*cmd*/) override { 
+        void set_false_path(const sdcparse::SetFalsePath& cmd) override { 
             ++num_commands_;
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_false_path currently unsupported"); 
+
+            auto from_clocks = get_clocks(cmd.from);
+            auto to_clocks = get_clocks(cmd.to);
+
+            if (from_clocks.empty() && to_clocks.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
+                        "set_false_path must specify at least one -from or -to clock"); 
+            }
+
+            if (from_clocks.empty()) {
+                from_clocks = get_all_clocks();
+            }
+
+            if (to_clocks.empty()) {
+                to_clocks = get_all_clocks();
+            }
+
+            for (auto from_clock : from_clocks) {
+                for (auto to_clock : to_clocks) {
+                    //Mark this domain pair to be disabled
+                    disabled_domain_pairs_.insert({from_clock, to_clock});
+                }
+            }
         }
 
         void set_min_max_delay(const sdcparse::SetMinMaxDelay& /*cmd*/) override { 
@@ -462,7 +508,10 @@ class SdcParseCallback2 : public sdcparse::Callback {
             //Set the default clock constraints
             for(tatum::DomainId launch_clock : tc_.clock_domains()) {
                 for(tatum::DomainId capture_clock : tc_.clock_domains()) {
-                    float constraint = calculate_default_setup_constraint(launch_clock, capture_clock);                    
+
+                    if(disabled_domain_pairs_.count({launch_clock, capture_clock})) continue;
+
+                    float constraint = calculate_setup_constraint(launch_clock, capture_clock);                    
 
                     //Convert to seconds
                     constraint = sdc_units_to_seconds(constraint);
@@ -474,7 +523,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
             //TODO: deal with override constraints
         }
 
-        float calculate_default_setup_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
+        float calculate_setup_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
             constexpr int CLOCK_SCALE = 1000;
 
             auto launch_iter = sdc_clocks_.find(launch_domain);
@@ -578,6 +627,10 @@ class SdcParseCallback2 : public sdcparse::Callback {
         std::map<tatum::DomainId,sdcparse::CreateClock> sdc_clocks_;
         std::set<AtomNetId> netlist_clock_nets_;
         std::map<std::string,AtomPinId> netlist_primary_ios_;
+
+        std::set<std::pair<tatum::DomainId,tatum::DomainId>> disabled_domain_pairs_;
+
+        std::map<std::pair<tatum::DomainId,tatum::DomainId>,int> cycle_constraints_;
 };
 
 std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_inf, 
