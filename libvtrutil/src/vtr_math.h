@@ -34,6 +34,19 @@ namespace vtr {
 
         return std::exp( (1. / n) * log_sum );
     }
+
+    //Return the lowest common multiple of m and n
+    // Note that T should be an integral type
+    template<typename T>
+    T lcm(T m, T n) {
+        static_assert(std::is_integral<T>::value, "T must be integral");
+
+        T lcm_val;
+        for (lcm_val = 1; lcm_val % m != 0 || lcm_val % n != 0; ++lcm_val)
+            ;
+
+        return lcm_val;
+    }
 }
 
 #endif
