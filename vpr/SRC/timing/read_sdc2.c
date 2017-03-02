@@ -275,10 +275,6 @@ class SdcParseCallback2 : public sdcparse::Callback {
         void set_min_max_delay(const sdcparse::SetMinMaxDelay& cmd) override { 
             ++num_commands_;
 
-            if(cmd.type != sdcparse::MinMaxType::MAX) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_min_delay currently unsupported"); 
-            }
-
             auto from_clocks = get_clocks(cmd.from);
             auto to_clocks = get_clocks(cmd.to);
 
@@ -295,13 +291,19 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 to_clocks = get_all_clocks();
             }
 
-            float constraint = sdc_units_to_seconds(cmd.value);
+            float constraint = cmd.value;
 
             for (auto from_clock : from_clocks) {
                 for (auto to_clock : to_clocks) {
                     //Mark this domain pair to be disabled
                     auto key = std::make_pair(from_clock, to_clock);
-                    domain_pair_override_constraints_[key] = tatum::Time(constraint);
+
+                    if(cmd.type == sdcparse::MinMaxType::MAX) {
+                        setup_override_constraints_[key] = constraint;
+                    } else {
+                        VTR_ASSERT(cmd.type == sdcparse::MinMaxType::MIN);
+                        hold_override_constraints_[key] = constraint;
+                    }
                 }
             }
         }
@@ -345,7 +347,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                         //Find the current setup check
                         int setup_mcp_value = setup_mcp(from_clock, to_clock);
 
-                        //Move the setup check the specified cycles before the setup check
+                        //Move the hold check the specified cycles before the setup check
                         hold_mcp_overrides_[domain_pair] = setup_mcp_value - cmd.mcp_value;
                     }
                 }
@@ -475,7 +477,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
         size_t num_commands() { return num_commands_; }
     private:
         void resolve_clock_constraints() {
-            //Set the default clock constraints
+            //Set the clock constraints
             for(tatum::DomainId launch_clock : tc_.clock_domains()) {
                 for(tatum::DomainId capture_clock : tc_.clock_domains()) {
 
@@ -483,21 +485,100 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
                     if(disabled_domain_pairs_.count(domain_pair)) continue;
 
-                    tatum::Time constraint;
-                    if(domain_pair_override_constraints_.count(domain_pair)) {
-                        constraint = domain_pair_override_constraints_[domain_pair];
-                    } else {
-                        constraint = calculate_setup_constraint(launch_clock, capture_clock);
-                    }
+                    //Setup
+                    tatum::Time setup_constraint = calculate_setup_constraint(launch_clock, capture_clock);
+                    VTR_ASSERT(setup_constraint.valid());
 
-                    VTR_ASSERT(constraint.valid());
+                    tc_.set_setup_constraint(launch_clock, capture_clock, setup_constraint);
 
-                    tc_.set_setup_constraint(launch_clock, capture_clock, constraint);
+                    //Hold
+                    tatum::Time hold_constraint = calculate_hold_constraint(launch_clock, capture_clock);
+                    VTR_ASSERT(hold_constraint.valid());
+
+                    tc_.set_hold_constraint(launch_clock, capture_clock, hold_constraint);
                 }
             }
         }
 
         tatum::Time calculate_setup_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
+            //Calculate the period-based constraint, including the effect of multi-cycle paths
+            float min_launch_to_capture_time = calculate_min_launch_to_capture_edge_time(launch_domain, capture_domain);
+
+            auto iter = sdc_clocks_.find(capture_domain);
+            VTR_ASSERT(iter != sdc_clocks_.end());
+            float capture_period = iter->second.period;
+
+            //The period based constraint is the minimum launch to capture edge time + the capture period * setup mcp
+            // By default the setup mpc is 1, specifying a capture 1 cycle after launch
+            float period_based_setup_constraint = min_launch_to_capture_time + capture_period * setup_mcp(launch_domain, capture_domain);
+
+            //By default the period-based constraint is the constraint
+            float setup_constraint = period_based_setup_constraint;
+
+            //See if we have any other override constraints
+            auto domain_pair = std::make_pair(launch_domain, capture_domain);
+            auto override_iter = setup_override_constraints_.find(domain_pair);
+            if(override_iter != setup_override_constraints_.end()) {
+                float override_setup_constraint = override_iter->second;
+
+                //Keep the minimum constraint
+                setup_constraint = std::min(setup_constraint, override_setup_constraint);
+
+                //Warn if the override did not actuallly override
+                if(setup_constraint != override_setup_constraint) {
+                    vtr::printf_warning(__FILE__, __LINE__,
+                                        "Override setup constraint (%g) did not override period-based constraint (%g)"
+                                        " for transfers from clock '%s' to clock '%s'\n",
+                                        override_setup_constraint, period_based_setup_constraint,
+                                        tc_.clock_domain_name(launch_domain).c_str(),
+                                        tc_.clock_domain_name(capture_domain).c_str());
+                }
+            }
+
+            setup_constraint = sdc_units_to_seconds(setup_constraint);
+            return tatum::Time(setup_constraint);
+        }
+
+        tatum::Time calculate_hold_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
+            float min_launch_to_capture_time = calculate_min_launch_to_capture_edge_time(launch_domain, capture_domain);
+
+            auto iter = sdc_clocks_.find(capture_domain);
+            VTR_ASSERT(iter != sdc_clocks_.end());
+            float capture_period = iter->second.period;
+
+            //The period based constraint is the minimum launch to capture edge time + the capture period * hold mcp
+            // By default the hold mpc is 0, specifying a capture the same cycle as launch
+            float period_based_hold_constraint = min_launch_to_capture_time + capture_period * hold_mcp(launch_domain, capture_domain);
+
+            //By default the period-based constraint is the constraint
+            float hold_constraint = period_based_hold_constraint;
+
+            //See if we have any other override constraints
+            auto domain_pair = std::make_pair(launch_domain, capture_domain);
+            auto override_iter = hold_override_constraints_.find(domain_pair);
+            if(override_iter != hold_override_constraints_.end()) {
+                float override_hold_constraint = override_iter->second;
+
+                //Keep the minimum constraint
+                hold_constraint = std::min(hold_constraint, override_hold_constraint);
+
+                //Warn if the override did not actuallly override
+                if(hold_constraint != override_hold_constraint) {
+                    vtr::printf_warning(__FILE__, __LINE__,
+                                        "Override hold constraint (%g) did not override period-based constraint (%g)"
+                                        " for transfers from clock '%s' to clock '%s'\n",
+                                        override_hold_constraint, period_based_hold_constraint,
+                                        tc_.clock_domain_name(launch_domain).c_str(),
+                                        tc_.clock_domain_name(capture_domain).c_str());
+                }
+            }
+
+            hold_constraint = sdc_units_to_seconds(hold_constraint);
+            return tatum::Time(hold_constraint);
+        }
+
+        //Determine the minumum time between the edges of the launch and capture clocks
+        float calculate_min_launch_to_capture_edge_time(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
             constexpr int CLOCK_SCALE = 1000;
 
             auto launch_iter = sdc_clocks_.find(launch_domain);
@@ -518,7 +599,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 std::fabs(launch_clock.fall_edge - capture_clock.fall_edge) < EPSILON) {
                 //The source and sink domains have the same period and edges, the constraint is the common clock period. 
 
-                constraint = sdc_units_to_seconds(launch_clock.period);
+                constraint = launch_clock.period;
 
             } else if (launch_clock.period < EPSILON || capture_clock.period < EPSILON) {
                 //If either period is 0, the constraint is 0
@@ -526,7 +607,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
             } else {
                 /*
-                 * Use edge counting to find the minimum period
+                 * Use edge counting to find the minimum launch to capture edge time
                  */
 
                 //Multiply periods and edges by CLOCK_SCALE and round down to the nearest 
@@ -567,7 +648,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
                 for(int launch_edge : launch_edges) {
                     for(int capture_edge : capture_edges) {
-                        if(capture_edge > launch_edge) { //Postive only
+                        if(capture_edge >= launch_edge) { //Postive only
                             int edge_diff = capture_edge - launch_edge;
                             VTR_ASSERT(edge_diff >= 0.);
 
@@ -576,18 +657,13 @@ class SdcParseCallback2 : public sdcparse::Callback {
                     }
                 }
 
-                //Adjust for multi-cycle overrides
-                // The constraint = default constraint (obtained via edge counting) + (num_multicycles - 1) * period of sink clock domain. 
-                int setup_mcp_value = setup_mcp(launch_domain, capture_domain);
-                scaled_constraint += capture_period * (setup_mcp_value - 1);
-
                 //Rescale the constraint back to a float
                 constraint = float(scaled_constraint) / CLOCK_SCALE;
             }
 
             constraint = sdc_units_to_seconds(constraint);
 
-            return tatum::Time(constraint);
+            return constraint;
         }
 
         int setup_mcp(tatum::DomainId from, tatum::DomainId to) const {
@@ -597,7 +673,8 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 return iter->second;
             }
 
-            return 1; //Default
+            //Default: capture one cycle after launch
+            return 1;
         }
 
         int hold_mcp(tatum::DomainId from, tatum::DomainId to) const {
@@ -607,7 +684,10 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 return iter->second;
             }
 
-            return setup_mcp(from, to) - 1; //Default
+            //Default: capture the cycle before setup is captured
+            //For the default setup mcp this implies capturing the same
+            //cycle as launch
+            return setup_mcp(from, to) - 1;
         }
 
         std::set<AtomPinId> get_ports(const sdcparse::StringGroup& port_group) {
@@ -735,7 +815,8 @@ class SdcParseCallback2 : public sdcparse::Callback {
         std::map<std::string,AtomPinId> netlist_primary_ios_;
 
         std::set<std::pair<tatum::DomainId,tatum::DomainId>> disabled_domain_pairs_;
-        std::map<std::pair<tatum::DomainId,tatum::DomainId>, tatum::Time> domain_pair_override_constraints_;
+        std::map<std::pair<tatum::DomainId,tatum::DomainId>, float> setup_override_constraints_;
+        std::map<std::pair<tatum::DomainId,tatum::DomainId>, float> hold_override_constraints_;
 
         std::map<std::pair<tatum::DomainId,tatum::DomainId>,int> setup_mcp_overrides_;
         std::map<std::pair<tatum::DomainId,tatum::DomainId>,int> hold_mcp_overrides_;
