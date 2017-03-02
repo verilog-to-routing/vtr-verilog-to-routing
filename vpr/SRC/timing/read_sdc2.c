@@ -189,27 +189,32 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 //Set i/o constraint
                 if (cmd.type == sdcparse::IoDelayType::INPUT) {
 
-                    tc_.set_input_constraint(tnode, domain, tatum::Time(max_delay));
 
-                    if(netlist_.pin_type(pin) == AtomPinType::SINK) {
+                    if(netlist_.pin_type(pin) == AtomPinType::DRIVER) {
+                        tc_.set_input_constraint(tnode, domain, tatum::Time(max_delay));
+                    } else {
+                        VTR_ASSERT(netlist_.pin_type(pin) == AtomPinType::SINK);
+
                         AtomBlockId blk = netlist_.pin_block(pin);
                         std::string io_name = orig_blif_name(netlist_.block_name(blk));
 
                         vtr::printf_warning(fname_.c_str(), lineno_, 
-                                            "set_input_delay command applied to primary output '%s'\n",
+                                            "set_input_delay command matched but was not applied to primary output '%s'\n",
                                             io_name.c_str());
                     }
                 } else {
                     VTR_ASSERT(cmd.type == sdcparse::IoDelayType::OUTPUT);
 
-                    tc_.set_output_constraint(tnode, domain, tatum::Time(max_delay));
+                    if(netlist_.pin_type(pin) == AtomPinType::SINK) {
+                        tc_.set_output_constraint(tnode, domain, tatum::Time(max_delay));
 
-                    if(netlist_.pin_type(pin) == AtomPinType::DRIVER) {
+                    } else {
+                        VTR_ASSERT(netlist_.pin_type(pin) == AtomPinType::DRIVER);
                         AtomBlockId blk = netlist_.pin_block(pin);
                         std::string io_name = orig_blif_name(netlist_.block_name(blk));
 
                         vtr::printf_warning(fname_.c_str(), lineno_, 
-                                            "set_output_delay command applied to primary input '%s'\n",
+                                            "set_output_delay command matched but was not applied to primary input '%s'\n",
                                             io_name.c_str());
                     }
                 }
@@ -369,7 +374,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
             for (auto from_clock : from_clocks) {
                 for (auto to_clock : to_clocks) {
 
-                    if (cmd.type == sdcparse::SetupHoldType::SETUP) {
+                    if (cmd.type == sdcparse::SetupHoldType::SETUP || cmd.type == sdcparse::SetupHoldType::NONE) {
                         tc_.set_setup_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty));
 
                     } else {
@@ -718,12 +723,17 @@ class SdcParseCallback2 : public sdcparse::Callback {
         }
 
         std::set<tatum::DomainId> get_clocks(const sdcparse::StringGroup& clock_group) {
+            std::set<tatum::DomainId> domains;
+
+            if(clock_group.strings.empty()) {
+                return domains;
+            }
+
             if(clock_group.type != sdcparse::StringGroupType::CLOCK) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
                          "Expected clock collection via get_clocks"); 
             }
 
-            std::set<tatum::DomainId> domains;
             for (const auto& clock_glob_pattern : clock_group.strings) {
                 std::regex clock_regex = glob_pattern_to_regex(clock_glob_pattern);
 
@@ -749,12 +759,17 @@ class SdcParseCallback2 : public sdcparse::Callback {
         }
 
         std::set<AtomPinId> get_pins(const sdcparse::StringGroup& pin_group) {
+            std::set<AtomPinId> pins;
+
+            if(pin_group.strings.empty()) {
+                return pins;
+            }
+
             if(pin_group.type != sdcparse::StringGroupType::PIN) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
                          "Expected pin collection via get_pins"); 
             }
 
-            std::set<AtomPinId> pins;
             for (const auto& pin_pattern : pin_group.strings) {
                 std::regex pin_regex = glob_pattern_to_regex(pin_pattern);
 
