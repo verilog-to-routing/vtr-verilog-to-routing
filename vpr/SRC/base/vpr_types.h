@@ -229,8 +229,8 @@ typedef struct s_pb {
     //For a given gpin, sets the mapping to the original atom netlist pin's bit index in
     //it's AtomPort.  This is used to record any pin rotations which have been applied to
     //logically equivalent pins
-    void set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_index) {
-        pin_rotations_[gpin] = atom_pin_bit_index;
+    void set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_idx) {
+        pin_rotations_[gpin] = atom_pin_bit_idx;
     }
 
 private:

@@ -16,14 +16,14 @@ template<class DelayCalc>
 class ConcreteSetupTimingInfo : public SetupTimingInfo {
     public:
         //Constructors
-        ConcreteSetupTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph, 
-                                std::shared_ptr<const tatum::TimingConstraints> timing_constraints,
+        ConcreteSetupTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph_v, 
+                                std::shared_ptr<const tatum::TimingConstraints> timing_constraints_v,
                                 std::shared_ptr<DelayCalc> delay_calc,
-                                std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer)
-            : timing_graph_(timing_graph)
-            , timing_constraints_(timing_constraints)
+                                std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer_v)
+            : timing_graph_(timing_graph_v)
+            , timing_constraints_(timing_constraints_v)
             , delay_calc_(delay_calc)
-            , setup_analyzer_(analyzer)
+            , setup_analyzer_(analyzer_v)
             , slack_crit_(g_atom_nl, g_atom_lookup) {
             //pass
         }
@@ -139,14 +139,14 @@ template<class DelayCalc>
 class ConcreteHoldTimingInfo : public HoldTimingInfo {
     public:
         //Constructors
-        ConcreteHoldTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph, 
-                               std::shared_ptr<const tatum::TimingConstraints> timing_constraints,
+        ConcreteHoldTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph_v, 
+                               std::shared_ptr<const tatum::TimingConstraints> timing_constraints_v,
                                std::shared_ptr<DelayCalc> delay_calc,
-                               std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer)
-            : timing_graph_(timing_graph)
-            , timing_constraints_(timing_constraints)
+                               std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer_v)
+            : timing_graph_(timing_graph_v)
+            , timing_constraints_(timing_constraints_v)
             , delay_calc_(delay_calc)
-            , hold_analyzer_(analyzer) {
+            , hold_analyzer_(analyzer_v) {
             //pass
         }
 
@@ -201,13 +201,13 @@ template<class DelayCalc>
 class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
     public:
         //Constructors
-        ConcreteSetupHoldTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph, 
-                                    std::shared_ptr<const tatum::TimingConstraints> timing_constraints,
+        ConcreteSetupHoldTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph_v, 
+                                    std::shared_ptr<const tatum::TimingConstraints> timing_constraints_v,
                                     std::shared_ptr<DelayCalc> delay_calc,
-                                    std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer)
-            : setup_timing_(timing_graph, timing_constraints, setup_hold_analyzer)
-            , hold_timing_(timing_graph, timing_constraints, setup_hold_analyzer)
-            , setup_hold_analyzer_(analyzer) {
+                                    std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer_v)
+            : setup_timing_(timing_graph_v, timing_constraints_v, analyzer_v)
+            , hold_timing_(timing_graph_v, timing_constraints_v, analyzer_v)
+            , setup_hold_analyzer_(analyzer_v) {
             //pass
         }
     private:
