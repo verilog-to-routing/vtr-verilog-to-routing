@@ -228,26 +228,22 @@ DomainId TimingConstraints::create_clock_domain(const std::string name) {
 
 void TimingConstraints::set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint) {
     auto key = DomainPair(src_domain, sink_domain);
-    auto iter = setup_constraints_.insert(std::make_pair(key, constraint));
-    TATUM_ASSERT_MSG(iter.second, "Attempted to insert duplicate setup clock constraint");
+    setup_constraints_[key] = constraint;
 }
 
 void TimingConstraints::set_hold_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint) {
     auto key = DomainPair(src_domain, sink_domain);
-    auto iter = hold_constraints_.insert(std::make_pair(key, constraint));
-    TATUM_ASSERT_MSG(iter.second, "Attempted to insert duplicate hold clock constraint");
+    hold_constraints_[key] = constraint;
 }
 
 void TimingConstraints::set_setup_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain, const Time uncertainty) {
     auto key = DomainPair(src_domain, sink_domain);
-    auto iter = setup_clock_uncertainties_.insert(std::make_pair(key, uncertainty));
-    TATUM_ASSERT_MSG(iter.second, "Attempted to insert duplicate setup clock uncertainty");
+    setup_clock_uncertainties_[key] = uncertainty;
 }
 
 void TimingConstraints::set_hold_clock_uncertainty(const DomainId src_domain, const DomainId sink_domain, const Time uncertainty) {
     auto key = DomainPair(src_domain, sink_domain);
-    auto iter = hold_clock_uncertainties_.insert(std::make_pair(key, uncertainty));
-    TATUM_ASSERT_MSG(iter.second, "Attempted to insert duplicate hold clock uncertainty");
+    hold_clock_uncertainties_[key] = uncertainty;
 }
 
 void TimingConstraints::set_input_constraint(const NodeId node_id, const DomainId domain_id, const Time constraint) {
