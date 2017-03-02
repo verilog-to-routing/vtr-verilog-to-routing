@@ -19,6 +19,8 @@ using namespace std;
 #include "vtr_memory.h"
 #include "vtr_log.h"
 
+#include "tatum/error.hpp"
+
 #include "vpr_error.h"
 #include "vpr_api.h"
 #include "globals.h"
@@ -71,6 +73,7 @@ int main(int argc, const char **argv) {
             }
 		}
 
+
         vpr_analysis(vpr_setup, Arch);
 	
 		entire_flow_end = clock();
@@ -95,13 +98,19 @@ int main(int argc, const char **argv) {
 		/* free data structures */
 		vpr_free_all(Arch, Options, vpr_setup);
 
-	} catch(VprError& vpr_error){
-		vpr_print_error(vpr_error);
-        /* Signal error to scripts */
+	} catch(const tatum::Error& tatum_error){
+        vtr::printf_error(__FILE__, __LINE__, "STA Engine: %s\n", tatum_error.what());
+
         return ERROR_EXIT_CODE;
-	} catch(vtr::VtrError& vtr_error){
+
+	} catch(const VprError& vpr_error){
+		vpr_print_error(vpr_error);
+
+        return ERROR_EXIT_CODE;
+
+	} catch(const vtr::VtrError& vtr_error){
         vtr::printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
-        /* Signal error to scripts */
+
         return ERROR_EXIT_CODE;
 	}
 	
