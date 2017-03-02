@@ -228,6 +228,9 @@ void read_sdc(t_timing_inf timing_inf) {
 	g_sdc = (t_timing_constraints *) vtr::calloc(1, sizeof(t_timing_constraints));
 	
 
+#ifndef ENABLE_CLASSIC_VPR_STA
+    return;
+#endif
 	/* If no SDC file is included or specified, or timing analysis is off,
 	use default behaviour of cutting paths between domains and optimizing each clock separately */
 
