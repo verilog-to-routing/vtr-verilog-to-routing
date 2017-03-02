@@ -462,6 +462,10 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
         //End of parsing
         void finish_parse() override {
+            //Mark constant generator timing nodes
+            mark_constant_generators(netlist_, lookup_, tc_);
+
+            //Determine the final clock constraints
             resolve_clock_constraints();
 
             //Re-levelize if needed (e.g. due to set_disable_timing)
