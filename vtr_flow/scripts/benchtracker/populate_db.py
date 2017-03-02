@@ -149,8 +149,8 @@ def create_table(params, db, task_table_name):
     # creates table schema based on the result file of run 1
 
     with open(get_result_file(params, params.run_prefix, 1), 'r') as res:
-        result_params = res.readline().rstrip().split('\t')
-        result_params_sample = res.readline().rstrip().split('\t')
+        result_params = [param.strip() for param in res.readline().rstrip().split('\t')]
+        result_params_sample = [value.strip() for value in res.readline().rstrip().split('\t')]
         while len(result_params_sample) < len(result_params):
             result_params_sample.append('')
 
