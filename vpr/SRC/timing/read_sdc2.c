@@ -1021,18 +1021,21 @@ void constrain_all_ios(const AtomNetlist& netlist,
 
         if (type == AtomBlockType::INPAD || type == AtomBlockType::OUTPAD) {
             //Get the pin
-            VTR_ASSERT(netlist.block_pins(blk).size() == 1);
-            AtomPinId pin = *netlist.block_pins(blk).begin();
+            if (netlist.block_pins(blk).size() == 1) {
+                AtomPinId pin = *netlist.block_pins(blk).begin();
 
-            //Find the associated tnode
-            tatum::NodeId tnode = lookup.atom_pin_tnode(pin);
+                //Find the associated tnode
+                tatum::NodeId tnode = lookup.atom_pin_tnode(pin);
 
-            //Constrain it
-            if (type == AtomBlockType::INPAD) {
-                tc.set_input_constraint(tnode, input_domain, input_delay);
+                //Constrain it
+                if (type == AtomBlockType::INPAD) {
+                    tc.set_input_constraint(tnode, input_domain, input_delay);
+                } else {
+                    VTR_ASSERT(type == AtomBlockType::OUTPAD);
+                    tc.set_output_constraint(tnode, output_domain, output_delay);
+                }
             } else {
-                VTR_ASSERT(type == AtomBlockType::OUTPAD);
-                tc.set_output_constraint(tnode, output_domain, output_delay);
+                VTR_ASSERT_MSG(netlist.block_pins(blk).size() == 0, "Unconnected I/O");
             }
         }
     }
