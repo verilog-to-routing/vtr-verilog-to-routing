@@ -233,9 +233,14 @@ void print_string_group(const StringGroup& group) {
 }
 
 void print_from_to_group(const StringGroup& from, const StringGroup& to) {
-    printf("-from ");
-    print_string_group(from);
-    printf(" -to ");
-    print_string_group(to);
+    if(!from.strings.empty()) {
+        printf("-from ");
+        print_string_group(from);
+    }
+
+    if(!to.strings.empty()) {
+        printf(" -to ");
+        print_string_group(to);
+    }
 }
 

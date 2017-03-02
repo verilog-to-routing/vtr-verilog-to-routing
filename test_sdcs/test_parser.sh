@@ -10,7 +10,7 @@ fi
 test_cnt=0
 for path in "$@"
 do
-    sdc_files=`find $path -name '*.sdc'`
+    sdc_files=`find $path -name '*.sdc' | sort -V`
     for sdc_file in ${sdc_files[@]}
     do
         test_cnt=$((test_cnt + 1))

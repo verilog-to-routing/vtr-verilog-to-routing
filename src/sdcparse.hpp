@@ -83,8 +83,6 @@ enum class FromToType;
 enum class McpType;
 enum class StringGroupType;
 
-struct SdcCommands;
-
 struct CreateClock;
 struct SetIoDelay;
 struct SetClockGroups;
