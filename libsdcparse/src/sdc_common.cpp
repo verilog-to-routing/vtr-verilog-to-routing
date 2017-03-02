@@ -217,17 +217,10 @@ void sdc_set_false_path_add_to_from_group(Callback& callback, const Lexer& lexer
     }
 }
 
-void add_sdc_set_false_path(Callback& callback, const Lexer& lexer, SetFalsePath& sdc_set_false_path) {
+void add_sdc_set_false_path(Callback& callback, const Lexer& /*lexer*/, SetFalsePath& sdc_set_false_path) {
     /*
      * Error checks
      */
-    if(sdc_set_false_path.from.strings.empty()) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify source clock(s)/object(s) with the '-from' option.\n"); 
-    }
-
-    if(sdc_set_false_path.to.strings.empty()) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify target clock(s)/objects(s) with the '-to' option.\n"); 
-    }
 
     /*
      * Add command
@@ -278,14 +271,6 @@ void add_sdc_set_min_max_delay(Callback& callback, const Lexer& lexer, SetMinMax
      */
     if(std::isnan(sdc_set_min_max_delay.value)) {
         sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify the max delay value.\n"); 
-    }
-
-    if(sdc_set_min_max_delay.from.strings.empty()) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify source clock(s) with the '-from' option.\n"); 
-    }
-
-    if(sdc_set_min_max_delay.to.strings.empty()) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify source clock(s) with the '-to' option.\n"); 
     }
 
     /*
@@ -344,20 +329,8 @@ void add_sdc_set_multicycle_path(Callback& callback, const Lexer& lexer, SetMult
     /*
      * Error checks
      */
-    if(sdc_set_multicycle_path.type == SetupHoldType::NONE) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify the multicycle path type as '-setup' or '-hold'.\n"); 
-    }
-
     if(sdc_set_multicycle_path.mcp_value == UNINITIALIZED_INT) {
         sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify the multicycle path value.\n"); 
-    }
-
-    if(sdc_set_multicycle_path.from.strings.empty()) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify source clock(s) with the '-from' option.\n"); 
-    }
-
-    if(sdc_set_multicycle_path.to.strings.empty()) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify source clock(s) with the '-to' option.\n"); 
     }
 
     /*
@@ -416,20 +389,8 @@ void add_sdc_set_clock_uncertainty(Callback& callback, const Lexer& lexer, SetCl
     /*
      * Error checks
      */
-    if(sdc_set_clock_uncertainty.type == SetupHoldType::NONE) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify the clock uncertainty type as '-setup' or '-hold'.\n"); 
-    }
-
     if(std::isnan(sdc_set_clock_uncertainty.value)) {
         sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify the clock uncertainty value.\n"); 
-    }
-
-    if(sdc_set_clock_uncertainty.from.strings.empty()) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify source clock(s) with the '-from' option.\n"); 
-    }
-
-    if(sdc_set_clock_uncertainty.to.strings.empty()) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify source clock(s) with the '-to' option.\n"); 
     }
 
     /*
@@ -533,17 +494,10 @@ void sdc_set_disable_timing_add_to_from_group(Callback& callback, const Lexer& l
     }
 }
 
-void add_sdc_set_disable_timing(Callback& callback, const Lexer& lexer, SetDisableTiming& sdc_set_disable_timing) {
+void add_sdc_set_disable_timing(Callback& callback, const Lexer& /*lexer*/, SetDisableTiming& sdc_set_disable_timing) {
     /*
      * Error checks
      */
-    if(sdc_set_disable_timing.from.strings.empty()) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify source clock(s)/object(s) with the '-from' option.\n"); 
-    }
-
-    if(sdc_set_disable_timing.to.strings.empty()) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify target clock(s)/objects(s) with the '-to' option.\n"); 
-    }
 
     /*
      * Add command
