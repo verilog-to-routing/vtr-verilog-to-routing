@@ -54,6 +54,7 @@ using namespace std;
 #include "route_export.h"
 #include "vpr_api.h"
 #include "read_sdc.h"
+#include "read_sdc2.h"
 #include "power.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
@@ -280,7 +281,7 @@ void vpr_init(const int argc, const char **argv,
         //Initialize timing graph and constraints
         if(vpr_setup->TimingEnabled) {
             g_timing_graph = TimingGraphBuilder(g_atom_nl, g_atom_lookup).timing_graph();
-            g_timing_constraints = create_timing_constraints(g_atom_nl, g_atom_lookup, vpr_setup->Timing);
+            g_timing_constraints = read_sdc2(vpr_setup->Timing, g_atom_nl, g_atom_lookup, *g_timing_graph);
         }
 
 		fflush(stdout);
