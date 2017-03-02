@@ -6,7 +6,7 @@ The VTR documentaion is generated using sphinx, a python based documenation gene
 The documentation itself is written in re-structured text (files ending in .rst), which
 is a lightwieght mark-up language for text documents.
 
-Currently VTR's documenation is automatically built by www.readthedocs.org and is served at:
+Currently VTR's documenation is automatically built by https://readthedocs.org/projects/vtr/ and is served at:
 
     https://docs.verilogtorouting.org/
 

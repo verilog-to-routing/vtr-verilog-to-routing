@@ -1,0 +1,12 @@
+.model top
+.inputs a b c d e
+.outputs f
+
+#This LUT has multiple connections, net 'a' connects multiple times
+# In this instance the logic function makes the first 'a' input non-redundant
+.names a b a c d e f
+100110 1
+-1111- 1
+-1-111 1
+
+.end

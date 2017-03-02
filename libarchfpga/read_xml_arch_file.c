@@ -38,8 +38,10 @@
 
 #include <string.h>
 #include <map>
+#include <set>
 #include <string>
 #include <sstream>
+#include <algorithm>
 
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
@@ -87,13 +89,13 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
 /*    Process XML hiearchy */
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
-		t_mode * mode, const pugiutil::loc_data& loc_data);
+		t_mode * mode, const t_arch& arch, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort(pugi::xml_node Parent, t_port * port,
 		e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
 static void ProcessPinToPinAnnotations(pugi::xml_node parent,
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugiutil::loc_data& loc_data);
-static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
+static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
 		const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
@@ -103,6 +105,7 @@ static void ProcessChanWidthDistr(pugi::xml_node Node,
 		struct s_arch *arch, const pugiutil::loc_data& loc_data);
 static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const pugiutil::loc_data& loc_data);
 static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugiutil::loc_data& loc_data);
+static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, struct s_arch *arch, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, struct s_arch *arch,
 		const bool timing_enabled, const pugiutil::loc_data& loc_data);
@@ -134,6 +137,17 @@ static void ProcessClocks(pugi::xml_node Parent, t_clock_arch * clocks, const pu
 static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type * pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port * port,
 		e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
+
+
+bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model);
+void warn_model_missing_timing(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model);
+bool check_model_clocks(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model);
+bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch);
+std::string inst_port_to_port_name(std::string inst_port);
+
+static bool attribute_to_bool(const pugi::xml_node node,
+                const pugi::xml_attribute attr,
+                const pugiutil::loc_data& loc_data);
 
 /*
  *
@@ -676,17 +690,27 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
 		annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
 		Prop = get_attribute(Parent, "max", loc_data, OPTIONAL).as_string(NULL);
+
+        bool found_min_max_attrib = false;
 		if (Prop) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX;
 			annotation->value[i] = vtr::strdup(Prop);
 			i++;
+            found_min_max_attrib = true;
 		}
 		Prop = get_attribute(Parent, "min", loc_data, OPTIONAL).as_string(NULL);
 		if (Prop) {
 			annotation->prop[i] = (int) E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN;
 			annotation->value[i] = vtr::strdup(Prop);
 			i++;
+            found_min_max_attrib = true;
 		}
+
+        if(!found_min_max_attrib) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                    "Failed to find either 'max' or 'min' attribute required for <%s> in <%s>",
+                    Parent.name(), Parent.parent().name());
+        }
 
 		Prop = get_attribute(Parent, "port", loc_data).value();
 		annotation->input_pins = vtr::strdup(Prop);
@@ -887,7 +911,7 @@ static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type * pb_t
 
 /* Takes in a pb_type, allocates and loads data for it and recurses downwards */
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
-		t_mode * mode, const pugiutil::loc_data& loc_data) {
+		t_mode * mode, const t_arch& arch, const pugiutil::loc_data& loc_data) {
 	int num_ports, i, j, k, num_annotations;
 	const char *Prop;
 	pugi::xml_node Cur;
@@ -1079,6 +1103,8 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		}
 		VTR_ASSERT(j == num_annotations);
 
+        check_leaf_pb_model_timing_consistency(pb_type, arch);
+
 		/* leaf pb_type, if special known class, then read class lib otherwise treat as primitive */
 		if (pb_type->class_type == LUT_CLASS) {
 			ProcessLutClass(pb_type);
@@ -1102,7 +1128,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 					sizeof(t_mode));
 			pb_type->modes[i].parent_pb_type = pb_type;
 			pb_type->modes[i].index = i;
-			ProcessMode(Parent, &pb_type->modes[i], loc_data);
+			ProcessMode(Parent, &pb_type->modes[i], arch, loc_data);
 			i++;
 		} else {
 			pb_type->modes = (t_mode*) vtr::calloc(pb_type->num_modes,
@@ -1113,7 +1139,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 				if (0 == strcmp(Cur.name(), "mode")) {
 					pb_type->modes[i].parent_pb_type = pb_type;
 					pb_type->modes[i].index = i;
-					ProcessMode(Cur, &pb_type->modes[i], loc_data);
+					ProcessMode(Cur, &pb_type->modes[i], arch, loc_data);
 
 					ret_mode_names = mode_names.insert(
 							pair<string, int>(pb_type->modes[i].name, 0));
@@ -1457,7 +1483,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 	VTR_ASSERT(i == num_interconnect);
 }
 
-static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
+static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
 		const pugiutil::loc_data& loc_data) {
 	int i;
 	const char *Prop;
@@ -1482,7 +1508,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode,
 		Cur = get_first_child(Parent, "pb_type", loc_data);
 		while (Cur != NULL) {
 			if (0 == strcmp(Cur.name(), "pb_type")) {
-				ProcessPb_Type(Cur, &mode->pb_type_children[i], mode, loc_data);
+				ProcessPb_Type(Cur, &mode->pb_type_children[i], mode, arch, loc_data);
 
 				ret_pb_types = pb_type_names.insert(
 						pair<string, int>(mode->pb_type_children[i].name, 0));
@@ -1842,127 +1868,157 @@ static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Ty
 /* Takes in node pointing to <models> and loads all the
  * child type objects.  */
 static void ProcessModels(pugi::xml_node Node, struct s_arch *arch, const pugiutil::loc_data& loc_data) {
-	const char *Prop;
-	pugi::xml_node child;
 	pugi::xml_node p;
 	t_model *temp;
-	t_model_ports *tp;
 	int L_index;
 	/* std::maps for checking duplicates */
 	map<string, int> model_name_map;
-	map<string, int> model_port_map;
 	pair<map<string, int>::iterator, bool> ret_map_name;
-	pair<map<string, int>::iterator, bool> ret_map_port;
 
 	L_index = NUM_MODELS_IN_LIBRARY;
 
 	arch->models = NULL;
-	child = get_first_child(Node, "model", loc_data, OPTIONAL);
-	while (child != NULL) {
-		temp = (t_model*) vtr::calloc(1, sizeof(t_model));
-		temp->used = 0;
-		temp->inputs = temp->outputs = NULL;
-		temp->instances = NULL;
-		Prop = get_attribute(child, "name", loc_data).value();
-		temp->name = vtr::strdup(Prop);
-		temp->pb_types = NULL;
+    for(pugi::xml_node model : Node.children()) {
+        //Process each model
+        if(model.name() != std::string("model")) {
+            bad_tag(model, loc_data, Node, {"model"});
+        }
+
+		temp = new t_model;
 		temp->index = L_index;
 		L_index++;
+
+        //Process the <model> tag attributes
+        for(pugi::xml_attribute attr : model.attributes()) {
+            if(attr.name() != std::string("name")) {
+                bad_attribute(attr, model, loc_data);
+            } else {
+                VTR_ASSERT(attr.name() == std::string("name"));
+
+                if(!temp->name) {
+                    //First name attr. seen
+                    temp->name = vtr::strdup(attr.value());
+                } else {
+                    //Duplicate name
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
+                            "Duplicate 'name' attribute on <model> tag.");
+                }
+            }
+        }
 
 		/* Try insert new model, check if already exist at the same time */
 		ret_map_name = model_name_map.insert(pair<string, int>(temp->name, 0));
 		if (!ret_map_name.second) {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(child),
+			archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
 					"Duplicate model name: '%s'.\n", temp->name);
 		}
 
-		/* Process the inputs */
-		p = get_first_child(child, "input_ports", loc_data);
+        //Process the ports
+        std::set<std::string> port_names;
+        for(pugi::xml_node port_group : model.children()) {
+            if(port_group.name() == std::string("input_ports")) {
+                ProcessModelPorts(port_group, temp, port_names, loc_data);
+            } else if(port_group.name() == std::string("output_ports")) {
+                ProcessModelPorts(port_group, temp, port_names, loc_data);
+            } else {
+                bad_tag(port_group, loc_data, model, {"input_ports", "output_ports"});
+            }
+        }
 
-		p = get_first_child(p, "port", loc_data);
-		if (p != NULL) {
-			while (p != NULL) {
-				tp = (t_model_ports*) vtr::calloc(1, sizeof(t_model_ports));
-				Prop = get_attribute(p, "name", loc_data).value();
-				tp->name = vtr::strdup(Prop);
-				tp->size = -1; /* determined later by pb_types */
-				tp->min_size = -1; /* determined later by pb_types */
-				tp->next = temp->inputs;
-				tp->dir = IN_PORT;
-				tp->is_non_clock_global = get_attribute(p,
-						"is_non_clock_global", loc_data, OPTIONAL).as_bool(false);
-				tp->is_clock = false;
-				Prop = get_attribute(p, "is_clock", loc_data, OPTIONAL).as_string(NULL);
-				if (Prop && vtr::atoi(Prop) != 0) {
-					tp->is_clock = true;
-				}
+        //Sanity check the model
+        check_model_clocks(model, loc_data, temp);
+        check_model_combinational_sinks(model, loc_data, temp);
+        warn_model_missing_timing(model, loc_data, temp);
 
-				if (tp->is_clock == true && tp->is_non_clock_global == true) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(p),
-							"Signal cannot be both a clock and a non-clock signal simultaneously\n");
-				}
 
-				/* Try insert new port, check if already exist at the same time */
-				ret_map_port = model_port_map.insert(
-						pair<string, int>(tp->name, 0));
-				if (!ret_map_port.second) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(p),
-							"Duplicate model input port name: '%s'.\n",
-							tp->name);
-				}
-
-				temp->inputs = tp;
-				p = p.next_sibling(p.name());
-			}
-		}
-
-		/* Process the outputs */
-		p = get_first_child(child, "output_ports", loc_data);
-		p = get_first_child(p, "port", loc_data);
-		if (p != NULL) {
-			while (p != NULL) {
-				tp = (t_model_ports*) vtr::calloc(1, sizeof(t_model_ports));
-				Prop = get_attribute(p, "name", loc_data).value();
-				tp->name = vtr::strdup(Prop);
-				tp->size = -1; /* determined later by pb_types */
-				tp->min_size = -1; /* determined later by pb_types */
-				tp->next = temp->outputs;
-				tp->dir = OUT_PORT;
-				Prop = get_attribute(p, "is_clock", loc_data, OPTIONAL).as_string(NULL);
-				if (Prop && vtr::atoi(Prop) != 0) {
-					tp->is_clock = true;
-				}
-
-				if (tp->is_clock == true && tp->is_non_clock_global == true) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(p),
-							"Signal cannot be both a clock and a non-clock signal simultaneously\n");
-				}
-
-				/* Try insert new output port, check if already exist at the same time */
-				ret_map_port = model_port_map.insert(
-						pair<string, int>(tp->name, 0));
-				if (!ret_map_port.second) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(p),
-							"Duplicate model output port name: '%s'.\n",
-							tp->name);
-				}
-
-				temp->outputs = tp;
-				p = p.next_sibling(p.name());
-			}
-		} 
-
-		/* Clear port map for next model */
-		model_port_map.clear();
-		/* Push new model onto model stack */
+        //Add the model
 		temp->next = arch->models;
 		arch->models = temp;
-		/* Find next model */
-		child = child.next_sibling(child.name());
 	}
-	model_port_map.clear();
-	model_name_map.clear();
 	return;
+}
+
+static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data) {
+    for(pugi::xml_attribute attr : port_group.attributes()) {
+        bad_attribute(attr, port_group, loc_data);
+    }
+
+    enum PORTS dir = ERR_PORT;
+    if(port_group.name() == std::string("input_ports")) {
+        dir = IN_PORT;
+    } else {
+        VTR_ASSERT(port_group.name() == std::string("output_ports"));
+        dir = OUT_PORT;
+    }
+
+    //Process each port
+    for(pugi::xml_node port : port_group.children()) {
+        //Should only be ports
+        if(port.name() != std::string("port")) {
+            bad_tag(port, loc_data, port_group, {"port"});
+        }
+
+        //Ports should have no children
+        for(pugi::xml_node port_child : port.children()) {
+            bad_tag(port_child, loc_data, port);
+        }
+
+        t_model_ports* model_port = new t_model_ports;
+
+        model_port->dir = dir;
+
+        //Process the attributes of each port
+        for(pugi::xml_attribute attr : port.attributes()) {
+
+            if(attr.name() == std::string("name")) {
+                model_port->name = vtr::strdup(attr.value());
+
+            } else if (attr.name() == std::string("is_clock")) {
+                model_port->is_clock = attribute_to_bool(port, attr, loc_data);
+
+            } else if (attr.name() == std::string("is_non_clock_global")) {
+                model_port->is_non_clock_global = attribute_to_bool(port, attr, loc_data);
+
+            } else if (attr.name() == std::string("clock")) {
+                model_port->clock = std::string(attr.value());
+
+            } else if (attr.name() == std::string("combinational_sink_ports")) {
+                model_port->combinational_sink_ports = vtr::split(attr.value());
+
+            } else {
+                bad_attribute(attr, port, loc_data);
+            }
+        }
+
+        //Sanity checks
+        if (model_port->is_clock == true && model_port->is_non_clock_global == true) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
+                    "Model port '%s' cannot be both a clock and a non-clock signal simultaneously", model_port->name);
+        }
+
+        if(port_names.count(model_port->name)) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
+                    "Duplicate model port named '%s'", model_port->name);
+        }
+
+        if(dir == OUT_PORT && !model_port->combinational_sink_ports.empty()) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
+                    "Model output ports can not have combinational sink ports");
+            
+        }
+
+        //Add the port
+        if(dir == IN_PORT) {
+            model_port->next = model->inputs;
+            model->inputs = model_port;
+
+        } else {
+            VTR_ASSERT(dir == OUT_PORT);
+
+            model_port->next = model->outputs;
+            model->outputs = model_port;
+        }
+    }
 }
 
 /* Takes in node pointing to <layout> and loads all the
@@ -2178,7 +2234,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 						"First complex block must be named \"io\" and define the inputs and outputs for the FPGA");
 			}
 		}
-		ProcessPb_Type(CurType, Type->pb_type, NULL, loc_data);
+		ProcessPb_Type(CurType, Type->pb_type, NULL, arch, loc_data);
 		Type->num_pins = Type->capacity
 				* (Type->pb_type->num_input_pins
 						+ Type->pb_type->num_output_pins
@@ -2864,3 +2920,223 @@ const char* get_arch_file_name() {
 	return arch_file_name;
 }
 
+bool check_model_clocks(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model) {
+    //Collect the ports identified as clocks
+    std::set<std::string> clocks;
+    for(t_model_ports* ports : {model->inputs, model->outputs}) {
+        for(t_model_ports* port = ports; port != nullptr; port = port->next) {
+            if(port->is_clock) {
+                clocks.insert(port->name);
+            }
+        }
+    }
+
+    //Check that any clock references on the ports are to identified clock ports
+    for(t_model_ports* ports : {model->inputs, model->outputs}) {
+        for(t_model_ports* port = ports; port != nullptr; port = port->next) {
+            if(!port->clock.empty() && !clocks.count(port->clock)) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
+                        "No matching clock port '%s' on model '%s', required for port '%s'",
+                        port->clock.c_str(), model->name, port->name);
+            }
+        }
+    }
+    return true;
+}
+
+bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model) {
+    //Outputs should have no combinational sinks
+    for(t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
+        if(port->combinational_sink_ports.size() != 0) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
+                    "Model '%s' output port '%s' can not have combinational sink ports",
+                    model->name, port->name);
+        }
+    }
+
+    //Record the output ports
+    std::set<std::string> output_ports;
+    for(t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
+        output_ports.insert(port->name);
+    }
+
+    //Check that the input port combinational sinks are all outputs
+    for(t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
+        for(std::string sink_port_name : port->combinational_sink_ports) {
+            if(!output_ports.count(sink_port_name)) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
+                        "Model '%s' input port '%s' can not be combinationally connected to '%s' (not an output port of the model)",
+                        model->name, port->name, sink_port_name.c_str());
+            }
+        }
+    }
+    return true;
+}
+
+void warn_model_missing_timing(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model) {
+    //Check whether there are missing edges and warn the user
+    std::set<std::string> comb_connected_outputs;
+    for(t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
+        if(port->clock.empty() //Not sequential
+           && port->combinational_sink_ports.empty() //Doesn't drive any combinational outputs
+           && !port->is_clock //Not an input clock
+          ) {
+            vtr::printf_warning(loc_data.filename_c_str(), loc_data.line(model_tag),
+                    "Model '%s' input port '%s' has no timing specification (no clock specified to create a sequential input port, not combinationally connected to any outputs, not a clock input)\n", model->name, port->name);
+        }
+
+
+        comb_connected_outputs.insert(port->combinational_sink_ports.begin(), port->combinational_sink_ports.end());
+    }
+     
+    for(t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
+        if(port->clock.empty() //Not sequential
+           && !comb_connected_outputs.count(port->name) //Not combinationally drivven
+           && !port->is_clock //Not an output clock
+           ) {
+            vtr::printf_warning(loc_data.filename_c_str(), loc_data.line(model_tag),
+                    "Model '%s' output port '%s' has no timing specification (no clock specified to create a sequential output port, not combinationally connected to any inputs, not a clock output)\n", model->name, port->name);
+        }
+    }
+}
+
+bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch) {
+    //Normalize the blif model name to match the model name
+    // by removing the leading '.' (.latch, .inputs, .names etc.)
+    // by removing the leading '.subckt'
+    VTR_ASSERT(pb_type->blif_model);
+    std::string blif_model = pb_type->blif_model;
+    if(blif_model[0] == '.') {
+        blif_model = blif_model.substr(1);
+    }
+    std::string subckt = "subckt ";
+    auto pos = blif_model.find(subckt);
+    if(pos != std::string::npos) {
+        blif_model = blif_model.substr(pos + subckt.size());
+    }
+
+    //Find the matching model
+    const t_model* model = nullptr;
+
+
+
+    for(const t_model* models : {arch.models, arch.model_library}) {
+        for(model = models; model != nullptr; model = model->next) {
+            if(std::string(model->name) == blif_model) {
+                break;    
+            }
+        }
+        if(model != nullptr) {
+            break;
+        }
+    }
+    VTR_ASSERT(model != nullptr);
+
+    //Now that we have the model we can compare the timing annotations
+     
+    for(int i = 0; i < pb_type->num_annotations; ++i) {
+        const t_pin_to_pin_annotation* annot = &pb_type->annotations[i];
+
+        if(annot->type == E_ANNOT_PIN_TO_PIN_DELAY) {
+            //Check that any combinational delays specified match the 'combinational_sinks_ports' in the model
+
+            if(annot->clock) {
+                //Sequential annotation, check that the clock on the specified port matches the model
+
+                //Annotations always put the pin in the input_pins field
+                VTR_ASSERT(annot->input_pins);
+                for(std::string input_pin : vtr::split(annot->input_pins)) {
+                    InstPort annot_port(input_pin);
+                    for(std::string clock : vtr::split(annot->clock)) {
+                        InstPort annot_clock(annot->clock);
+
+                        //Find the model port
+                        const t_model_ports* model_port = nullptr;
+                        for(const t_model_ports* ports : {model->inputs, model->outputs}) {
+                            for(const t_model_ports* port = ports; port != nullptr; port = port->next) {
+                                if(port->name == annot_port.port_name()) {
+                                    model_port = port;
+                                    break;
+                                }
+                            }
+                            if(model_port != nullptr) break;
+                        }
+                        VTR_ASSERT(model_port != nullptr);
+
+                        //Check that the clock matches the model definition
+                        std::string model_clock = model_port->clock;
+                        if(model_clock.empty()) {
+                            archfpga_throw(get_arch_file_name(), annot->line_num,
+                                "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', model specifies"
+                                " no clock but timing annotation specifies '%s'",
+                                annot_port.port_name().c_str(), model->name, annot_clock.port_name().c_str());
+                        }
+                        if(model_port->clock != annot_clock.port_name()) {
+                            archfpga_throw(get_arch_file_name(), annot->line_num,
+                                "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', model specifies"
+                                " clock as '%s' but timing annotation specifies '%s'",
+                                annot_port.port_name().c_str(), model->name, model_clock.c_str(), annot_clock.port_name().c_str());
+                        }
+                    }
+                }
+
+            } else if (annot->input_pins && annot->output_pins) {
+                //Combinational annotation
+                for(std::string input_pin : vtr::split(annot->input_pins)) {
+                    InstPort annot_in(input_pin);
+                    for(std::string clock : vtr::split(annot->clock)) {
+                        InstPort annot_out(annot->clock);
+
+                        //Find the input model port
+                        const t_model_ports* model_port = nullptr;
+                        for(const t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
+                            if(port->name == annot_in.port_name()) {
+                                model_port = port;
+                                break;
+                            }
+                        }
+                        VTR_ASSERT(model_port != nullptr);
+
+                        //Check that the output port is listed in the model's combinational sinks
+                        auto b = model_port->combinational_sink_ports.begin();
+                        auto e = model_port->combinational_sink_ports.end();
+                        auto iter = std::find(b, e, annot_out.port_name());
+                        if(iter == e) {
+                            archfpga_throw(get_arch_file_name(), annot->line_num,
+                                "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', timing annotation"
+                                " specifies combinational connection to port '%s' but the connection does not exist in the model",
+                                model_port->name, model->name, annot_out.port_name().c_str());
+                        }
+                    }
+                }
+            } else {
+                throw ArchFpgaError("Unrecognized delay annotation");
+            }
+        }
+    }
+
+
+    return true; 
+}
+
+std::string inst_port_to_port_name(std::string inst_port) {
+    auto pos = inst_port.find('.');
+    if(pos != std::string::npos) {
+        return inst_port.substr(pos + 1);
+    }
+    return inst_port;
+}
+
+static bool attribute_to_bool(const pugi::xml_node node,
+                const pugi::xml_attribute attr,
+                const pugiutil::loc_data& loc_data) {
+    if(attr.value() == std::string("1")) {
+        return true;
+    } else if(attr.value() == std::string("0")) {
+        return false;
+    } else {
+        bad_attribute_value(attr, node, loc_data, {"0", "1"});
+    }
+
+    return false;
+}

@@ -40,6 +40,7 @@ static void SetupTiming(const t_options& Options, const t_arch& Arch,
 static void SetupSwitches(const t_arch& Arch,
 		struct s_det_routing_arch *RoutingArch,
 		const struct s_arch_switch_inf *ArchSwitches, int NumArchSwitches);
+static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 		t_arch * Arch);
 
@@ -57,6 +58,7 @@ void SetupVPR(t_options *Options,
               struct s_placer_opts *PlacerOpts,
               struct s_annealing_sched *AnnealSched,
               struct s_router_opts *RouterOpts,
+              t_analysis_opts* AnalysisOpts,
               struct s_det_routing_arch *RoutingArch,
               vector <t_lb_type_rr_node> **PackerRRGraphs,
               t_segment_inf ** Segments, t_timing_inf * Timing,
@@ -168,6 +170,7 @@ void SetupVPR(t_options *Options,
 	SetupPlacerOpts(*Options, TimingEnabled, PlacerOpts);
 	SetupAnnealSched(*Options, AnnealSched);
 	SetupRouterOpts(*Options, TimingEnabled, RouterOpts);
+	SetupAnalysisOpts(*Options, *AnalysisOpts);
 	SetupPowerOpts(*Options, PowerOpts, Arch);
 
 	if (readArchFile == true) {
@@ -206,6 +209,24 @@ void SetupVPR(t_options *Options,
 	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
 	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile, PackerOpts);
 	RoutingArch->dump_rr_structs_file = Options->dump_rr_structs_file;
+
+    //Setup the default flow
+    if (   !Options->Count[OT_PACK] 
+        && !Options->Count[OT_PLACE]
+        && !Options->Count[OT_ROUTE] 
+        && !Options->Count[OT_ANALYSIS]) {
+
+        //run all stages if none specified
+        PackerOpts->doPacking = true;
+        PlacerOpts->doPlacement = true;
+        RouterOpts->doRouting = true;
+        AnalysisOpts->doAnalysis = true;
+    }
+
+    //By default run analysis after routing
+    if(RouterOpts->doRouting) {
+        AnalysisOpts->doAnalysis = true;
+    }
 
 	/* init global variables */
     vtr::out_file_prefix = Options->out_file_prefix;
@@ -540,9 +561,6 @@ static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
 	RouterOpts->doRouting = false;
 	if (Options.Count[OT_ROUTE]) {
 		RouterOpts->doRouting = true;
-	} else if (!Options.Count[OT_PACK] && !Options.Count[OT_PLACE]
-			&& !Options.Count[OT_ROUTE]) {
-			RouterOpts->doRouting = true;
 	}
 
 	/* Andre: Default value for the predictor is SAFE */
@@ -612,9 +630,6 @@ void SetupPackerOpts(const t_options& Options, const bool TimingEnabled,
 	PackerOpts->doPacking = false; /* DEFAULT */
 	if (Options.Count[OT_PACK]) {
 		PackerOpts->doPacking = true;
-	} else if (!Options.Count[OT_PACK] && !Options.Count[OT_PLACE]
-			&& !Options.Count[OT_ROUTE]) {
-			PackerOpts->doPacking = true;
 	}
 
 	PackerOpts->global_clocks = true; /* DEFAULT */
@@ -705,6 +720,11 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
 static void SetupPlacerOpts(const t_options& Options, const bool TimingEnabled,
 		struct s_placer_opts *PlacerOpts) {
 
+	PlacerOpts->doPlacement = false; /* DEFAULT */
+	if (Options.Count[OT_PLACE]) {
+		PlacerOpts->doPlacement = true;
+	}
+
 	PlacerOpts->inner_loop_recompute_divider = 0; /* DEFAULT */
 	if (Options.Count[OT_INNER_LOOP_RECOMPUTE_DIVIDER]) {
 		PlacerOpts->inner_loop_recompute_divider =
@@ -775,18 +795,18 @@ static void SetupPlacerOpts(const t_options& Options, const bool TimingEnabled,
 			|| (Options.Count[OT_PLACE_CHAN_WIDTH])) {
 		PlacerOpts->place_freq = PLACE_ONCE;
 	}
+}
 
-	PlacerOpts->doPlacement = false; /* DEFAULT */
-	if (Options.Count[OT_PLACE]) {
-		PlacerOpts->doPlacement = true;
-	} else if (!Options.Count[OT_PACK] && !Options.Count[OT_PLACE]
-			&& !Options.Count[OT_ROUTE]) {
-			PlacerOpts->doPlacement = true;
-	}
-	if (PlacerOpts->doPlacement == false) {
-		PlacerOpts->place_freq = PLACE_NEVER;
+static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
+	analysis_opts.doAnalysis = false; /* DEFAULT */
+	if (Options.Count[OT_ANALYSIS]) {
+		analysis_opts.doAnalysis = true;
 	}
 
+    analysis_opts.gen_post_synthesis_netlist = false; /* DEFAULT */
+	if (Options.Count[OT_GENERATE_POST_SYNTHESIS_NETLIST]) {
+        analysis_opts.gen_post_synthesis_netlist = Options.Generate_Post_Synthesis_Netlist;
+	}
 }
 
 static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
@@ -809,5 +829,4 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 		Arch->clocks = NULL;
 		g_clock_arch = NULL;
 	}
-
 }

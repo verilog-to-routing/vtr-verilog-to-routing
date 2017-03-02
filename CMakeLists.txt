@@ -27,7 +27,6 @@ set(VTR_VERSION_PATCH 0)
 set(VTR_VERSION_PRERELEASE "dev")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
 include(FilesToDirs)
 
 #
@@ -151,7 +150,8 @@ endforeach()
 set(SANITIZE_FLAGS "")
 if(VTR_ENABLE_SANITIZE)
     #Enable sanitizers
-    set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fsanitize=undefined")
+    # -fuse-ld=gold force the gold linker to be used (required for sanitizers, but not enabled by default on some systems)
+    set(SANITIZE_FLAGS "-g -fsanitize=address -fsanitize=leak -fsanitize=undefined -fuse-ld=gold")
     message(STATUS "SANTIIZE_FLAGS: ${SANITIZE_FLAGS}")
 endif()
 
@@ -286,6 +286,7 @@ add_subdirectory(libarchfpga)
 add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
 add_subdirectory(libeasygl)
+add_subdirectory(libtatum)
 add_subdirectory(vpr)
 add_subdirectory(abc_with_bb_support)
 add_subdirectory(ODIN_II)
@@ -332,6 +333,11 @@ set_target_properties(libeasygl
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libeasygl"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libeasygl"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libeasygl")
+set_target_properties(libtatum
+    PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libtatum"
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libtatum"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libtatum")
 set_target_properties(libabc abc 
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/abc_with_bb_support"

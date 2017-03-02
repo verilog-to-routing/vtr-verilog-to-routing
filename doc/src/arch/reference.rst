@@ -37,12 +37,47 @@ The name of the model must match the corresponding name of the BLIF model.
 Each model tag must contain 2 tags: ``<input_ports>`` and ``<output_ports>``.
 Each of these contains ``<port>`` tags:
 
-.. arch:tag:: <port name="string" is_clock="{0 | 1}/>
+.. arch:tag:: <port name="string" is_clock="{0 | 1} clock="string" combinational_sink_ports="string1 string2 ..."/>
 
     :req_param name: The port name.
     :opt_param is_clock: Indicates if the port is a clock. Default: ``0``
+    :opt_param clock: Indicates the port is sequential and controlled by the specified clock (which must be another port on the model marked with ``is_clock=1``). Default: port is treated as combinational (if unspecified)
+    :opt_param combinational_sink_ports: A space-separated list of output ports which are combinationally connected to the current input port. Default: No combinational connections (if unspecified)
 
     Defines the port for a model. 
+
+An example models section containing a combinational primitive ``adder`` and a sequential primitive ``single_port_ram`` follows:
+
+.. code-block:: xml
+
+    <models>
+      <model name="single_port_ram">
+        <input_ports>
+          <port name="we" clock="clk" />
+          <port name="addr" clock="clk" combinational_sink_ports="out"/>
+          <port name="data" clock="clk" combinational_sink_ports="out"/>
+          <port name="clk" is_clock="1"/>
+        </input_ports>
+        <output_ports>
+          <port name="out" clock="clk"/>
+        </output_ports>
+      </model>
+
+      <model name="adder">
+        <input_ports>
+          <port name="a" combinational_sink_ports="cout sumout"/>
+          <port name="b" combinational_sink_ports="cout sumout"/>
+          <port name="cin" combinational_sink_ports="cout sumout"/>
+        </input_ports>
+        <output_ports>
+          <port name="cout"/>
+          <port name="sumout"/>
+        </output_ports>
+      </model>
+    </models>
+
+Note that for ``single_port_ram`` above, the ports ``we``, ``addr``, ``data``, and ``out`` is a sequential output since they have a clock specified.
+Additionally ``addr`` and ``data`` are shown to be combinationally connected to ``out``; this corresponds to an internal timing path between the ``addr`` and ``data`` input registers, and the ``out`` output registers.
 
 .. _arch_global_info:
 
@@ -590,7 +625,7 @@ The classes we offer are:
 
 Timing
 ~~~~~~
-Timing is specified through tags contained in pb_type, complete, direct, or mux tags as follows:
+Timing is specified through tags contained with in ``pb_type``, ``complete``, ``direct``, or ``mux`` tags as follows:
 
 .. arch:tag:: <delay_constant max="float" in_port="string" out_port="string"/>
 
@@ -599,6 +634,9 @@ Timing is specified through tags contained in pb_type, complete, direct, or mux 
     :req_param out_port: The output port name.
 
     Specifies a maximum delay equal from in_port to out_port.
+
+    * If ``in_port`` and ``out_port`` are non-sequential (i.e combinational) inputs specifies the combinational path delay between them.
+    * If ``in_port`` and ``out_port`` are sequential (i.e. have ``T_setup`` and/or ``T_clock_to_Q`` tags) specifies the combinational delay between the primitive;s input and/or output registers.
 
 
 .. arch:tag:: <delay_matrix type="max" in_port="string" out_port="string"> matrix </delay>
@@ -610,6 +648,9 @@ Timing is specified through tags contained in pb_type, complete, direct, or mux 
 
     Describe a timing matrix for all edges going from ``in_port`` to ``out_port``.
     Number of rows of matrix should equal the number of inputs, number of columns should equal the number of outputs.
+
+    * If ``in_port`` and ``out_port`` are non-sequential (i.e combinational) inputs specifies the combinational path delay between them.
+    * If ``in_port`` and ``out_port`` are sequential (i.e. have ``T_setup`` and/or ``T_clock_to_Q`` tags) specifies the combinational delay between the primitive's input and/or output registers.
 
     **Example:**
     The following defines a delay matrix for a 4-bit input port ``in``, and 3-bit output port ``out``:
@@ -629,9 +670,11 @@ Timing is specified through tags contained in pb_type, complete, direct, or mux 
     :req_param port: The port name the setup constraint applies to.
     :req_param clock: The port name of the clock the setup constraint is specified relative to.
 
-    Specifies a ports setup constraint.
+    Specifies a port's setup constraint.
+    * If ``port`` is an input specifies the external setup time of the primitive's input register (i.e. for paths terminating at the input register).
+    * If ``port`` is an output specifies the internal setup time of the primitive's output register (i.e. for paths terminating at the output register) .
 
-    .. note:: Applies to sequential ``<pb_type>`` only.     
+    .. note:: Applies only to ``<pb_type>`` tags
 
 .. arch:tag:: <T_clock_to_Q max="float" port="string" clock="string"/>
 
@@ -639,7 +682,41 @@ Timing is specified through tags contained in pb_type, complete, direct, or mux 
     :req_param port: The port name the delay value applies to.
     :req_param clock: The port name of the clock the clock-to-Q delay is specified relative to.
 
-    Specifies a ports clock-to-Q delay.
+    Specifies a port's clock-to-Q delay.
+    * If ``port`` is an input specifies the internal clock-to-Q delay of the primitive's input register (i.e. for paths starting at the input register).
+    * If ``port`` is an output specifies the external clock-to-Q delay of the primitive's output register (i.e. for paths starting at the output register) .
+
+    .. note:: Applies only to ``<pb_type>`` tags
+
+
+Modeling Sequential Primitive Internal Timing Paths
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+By default, if only ``<T_setup>`` and ``<T_clock_to_Q>`` are specified on a primitive ``pb_type`` no internal timing paths are modeled.
+However, such paths can be modeled by using ``<delay_constant>`` and/or ``<delay_matrix>`` can be used in conjunction with ``<T_setup>`` and ``<T_clock_to_Q>``.  
+This is useful for modeling the speed-limiting path of an FPGA hard block like a RAM or DSP.
+
+As an example, consider a sequential black-box primitive named ``seq_foo`` which has an input port ``in``, output port ``out``, and clock ``clk``:
+
+.. code-block:: xml
+
+    <pb_type name="seq_foo" blif_model=".subckt seq_foo" num_pb="1">
+        <input name="in" num_pins="4"/>
+        <output name="out" num_pins="1"/>
+        <clock name="clk" num_pins="1"/> 
+
+        <!-- external -->
+        <T_setup value="80e-12" port="seq_foo.in" clock="clk"/>
+        <T_clock_to_Q max="20e-12" port="seq_foo.out" clock="clk"/>
+
+        <!-- internal -->
+        <T_clock_to_Q max="10e-12" port="seq_foo.in" clock="clk"/>
+        <delay_constant max="0.9e-9" in_port="seq_foo.in" out_port="seq_foo.out"/>
+        <T_setup value="90e-12" port="seq_foo.out" clock="clk"/>
+    </pb_type>
+
+To model an internal critical path delay, we specify the internal clock-to-Q delay of the input register (10ps), the internal combinational delay (0.9ns) and the output register's setup time (90ps). The sum of these delays corresponds to a 1ns critical path delay.
+
+.. note:: Primitive timing paths with only one stage of registers can be modeled by specifying ``<T_setup>`` and ``<T_clock_to_Q>`` on only one of the ports.
 
 Power
 ~~~~~

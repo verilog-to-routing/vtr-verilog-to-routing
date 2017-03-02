@@ -1,9 +1,7 @@
 <!-- Use Virtex II-like architecture  N04K04L04.FC15FO25.AREA1DELAY1.CMOS130NM.BPTM     Width = 72 
   Assume adder delay == LUT delay
   Assume Carry delay = Stratix IV carry delay * 3 (130nm/40nm is approximately 3, so linear scaling -> delay is 3x more)
--->
-  
-  <architecture>
+--><architecture>
 
 
   
@@ -11,9 +9,9 @@
   <models>
     <model name="adder">
       <input_ports>
-        <port name="a"/>
-        <port name="b"/>
-        <port name="cin"/>
+        <port name="a" combinational_sink_ports="sumout cout"/>
+        <port name="b" combinational_sink_ports="sumout cout"/>
+        <port name="cin" combinational_sink_ports="sumout cout"/>
       </input_ports>
       <output_ports>
         <port name="cout"/>
@@ -231,8 +229,8 @@
 
             <interconnect>
               <complete name="complete1" input="clb.I ble[3:0].out" output="ble[3:0].in">
-                <delay_constant max="7.586000e-11" in_port="clb.I" out_port="ble[3:0].in" />
-                <delay_constant max="7.260000e-11" in_port="ble[3:0].out" out_port="ble[3:0].in" />
+                <delay_constant max="7.586000e-11" in_port="clb.I" out_port="ble[3:0].in"/>
+                <delay_constant max="7.260000e-11" in_port="ble[3:0].out" out_port="ble[3:0].in"/>
               </complete>
               <complete name="complete2" input="clb.clk" output="ble[3:0].clk"/>
               <direct name="direct1" input="ble[3:0].out" output="clb.O"/>

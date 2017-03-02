@@ -54,11 +54,19 @@ using namespace std;
 #include "route_export.h"
 #include "vpr_api.h"
 #include "read_sdc.h"
+#include "read_sdc2.h"
 #include "power.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
 #include "output_blif.h"
 #include "read_activity.h"
+#include "net_delay.h"
+#include "AnalysisDelayCalculator.h"
+#include "timing_info.h"
+#include "netlist_writer.h"
+
+#include "timing_graph_builder.h"
+#include "timing_reports.h"
 
 #include "log.h"
 
@@ -85,7 +93,7 @@ void vpr_print_title(void) {
 
 	vtr::printf_info("\n");
 	vtr::printf_info("VPR FPGA Placement and Routing.\n");
-	vtr::printf_info("Version: %s\n", vtr::VERSION_SHORT);
+	vtr::printf_info("Version: %s\n", vtr::VERSION);
 	vtr::printf_info("Revision: %s\n", vtr::VCS_REVISION);
 	vtr::printf_info("Compiled: %s\n", vtr::BUILD_TIMESTAMP);
 	vtr::printf_info("University of Toronto\n");
@@ -101,7 +109,7 @@ void vpr_print_usage(void) {
 	vtr::printf_info("Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
 	vtr::printf_info("\n");
 	vtr::printf_info("General Options:  [--nodisp] [--auto <int>] [--pack]\n");
-	vtr::printf_info("\t[--place] [--route] [--timing_analyze_only_with_net_delay <float>]\n");
+	vtr::printf_info("\t[--place] [--route] [--analysis]\n");
 	vtr::printf_info("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
 	vtr::printf_info("\t[--blif_file <string>] [--net_file <string>] [--place_file <string>]\n");
 	vtr::printf_info("\t[--route_file <string>] [--sdc_file <string>] [--echo_file on | off]\n");
@@ -216,7 +224,6 @@ void vpr_init(const int argc, const char **argv,
 
 		/* Determine whether echo is on or off */
 		setEchoEnabled(IsEchoEnabled(options));
-		SetPostSynthesisOption(IsPostSynthesisEnabled(options));
 		vpr_setup->constant_net_delay = options->constant_net_delay;
 		vpr_setup->gen_netlist_as_blif = (options->Count[OT_GEN_NELIST_AS_BLIF] > 0);
 
@@ -233,6 +240,7 @@ void vpr_init(const int argc, const char **argv,
 				 &vpr_setup->PlacerOpts, 
                  &vpr_setup->AnnealSched,
 				 &vpr_setup->RouterOpts, 
+				 &vpr_setup->AnalysisOpts, 
                  &vpr_setup->RoutingArch,
 				 &vpr_setup->PackerRRGraph, 
                  &vpr_setup->Segments,
@@ -270,6 +278,11 @@ void vpr_init(const int argc, const char **argv,
             g_atom_net_power = read_activity(g_atom_nl, vpr_setup->FileNameOpts.ActFile);
         }
 
+        //Initialize timing graph and constraints
+        if(vpr_setup->TimingEnabled) {
+            g_timing_graph = TimingGraphBuilder(g_atom_nl, g_atom_lookup).timing_graph();
+            g_timing_constraints = read_sdc2(vpr_setup->Timing, g_atom_nl, g_atom_lookup, *g_timing_graph);
+        }
 
 		fflush(stdout);
 
@@ -477,7 +490,11 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
 	}
 
 	try_pack(&vpr_setup.PackerOpts, &arch, vpr_setup.user_models,
-			vpr_setup.library_models, vpr_setup.Timing, inter_cluster_delay, vpr_setup.PackerRRGraph);
+			vpr_setup.library_models, inter_cluster_delay, vpr_setup.PackerRRGraph
+#ifdef ENABLE_CLASSIC_VPR_STA
+            , vpr_setup.Timing
+#endif
+            );
 
 	end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end - begin);
@@ -639,14 +656,14 @@ void free_arch(t_arch* Arch) {
 			t_model_ports *prev_port = input_port;
 			input_port = input_port->next;
 			free(prev_port->name);
-			free(prev_port);
+			delete prev_port;
 		}
 		t_model_ports *output_port = model->outputs;
 		while (output_port) {
 			t_model_ports *prev_port = output_port;
 			output_port = output_port->next;
 			free(prev_port->name);
-			free(prev_port);
+			delete prev_port;
 		}
 		vtr::t_linked_vptr *vptr = model->pb_types;
 		while (vptr) {
@@ -660,7 +677,7 @@ void free_arch(t_arch* Arch) {
 		if (prev_model->instances)
 			free(prev_model->instances);
 		free(prev_model->name);
-		free(prev_model);
+		delete prev_model;
 	}
 
 	for (int i = 0; i < 4; ++i) {
@@ -681,22 +698,22 @@ void free_arch(t_arch* Arch) {
 
 	free(Arch->model_library[0].name);
 	free(Arch->model_library[0].outputs->name);
-	free(Arch->model_library[0].outputs);
+	delete[] Arch->model_library[0].outputs;
 	free(Arch->model_library[1].inputs->name);
-	free(Arch->model_library[1].inputs);
+	delete[] Arch->model_library[1].inputs;
 	free(Arch->model_library[1].name);
 	free(Arch->model_library[2].name);
 	free(Arch->model_library[2].inputs[0].name);
 	free(Arch->model_library[2].inputs[1].name);
-	free(Arch->model_library[2].inputs);
+	delete[] Arch->model_library[2].inputs;
 	free(Arch->model_library[2].outputs->name);
-	free(Arch->model_library[2].outputs);
+	delete[] Arch->model_library[2].outputs;
 	free(Arch->model_library[3].name);
 	free(Arch->model_library[3].inputs->name);
-	free(Arch->model_library[3].inputs);
+	delete[] Arch->model_library[3].inputs;
 	free(Arch->model_library[3].outputs->name);
-	free(Arch->model_library[3].outputs);
-	free(Arch->model_library);
+	delete[] Arch->model_library[3].outputs;
+	delete[] Arch->model_library;
 
 	if (Arch->clocks) {
 		free(Arch->clocks->clock_inf);
@@ -886,9 +903,10 @@ void free_circuit() {
 		for (int i = 0; i < num_blocks; ++i) {
 			if (block[i].pb != NULL) {
 				free_pb(block[i].pb);
-				free(block[i].pb);
+				delete block[i].pb;
 			}
 			free(block[i].nets);
+			free(block[i].net_pins);
 			free(block[i].name);
 			delete [] block[i].pb_route;
 		}
@@ -948,6 +966,7 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		struct s_placer_opts *PlacerOpts,
 		struct s_annealing_sched *AnnealSched,
 		struct s_router_opts *RouterOpts,
+		t_analysis_opts* AnalysisOpts,
 		struct s_det_routing_arch *RoutingArch,
 		vector <t_lb_type_rr_node> **PackerRRGraph,
 		t_segment_inf ** Segments, t_timing_inf * Timing,
@@ -955,7 +974,7 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		t_power_opts * PowerOpts) {
 	SetupVPR(Options, TimingEnabled, readArchFile, FileNameOpts, Arch,
 			user_models, library_models, NetlistOpts, PackerOpts, PlacerOpts,
-			AnnealSched, RouterOpts, RoutingArch, PackerRRGraph, Segments, Timing,
+			AnnealSched, RouterOpts, AnalysisOpts, RoutingArch, PackerRRGraph, Segments, Timing,
 			ShowGraphics, GraphPause, PowerOpts);
 }
 /* Check inputs are reasonable */
@@ -1014,17 +1033,57 @@ static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
 	}
 }
 
+void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+    if(!vpr_setup.AnalysisOpts.doAnalysis) return;
+
+    if(trace_head == nullptr) {
+        VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
+    }
+
+    //TODO: move router stats here
+
+	if (vpr_setup.TimingEnabled) {
+        //Load the net delays
+        vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
+        float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
+        load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
+
+        //Do final timing analysis
+        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
+        auto timing_info = make_setup_timing_info(analysis_delay_calc);
+        timing_info->update();
+
+        //Timing stats
+        generate_timing_stats(*timing_info);
+
+        //Write the post-syntesis netlist
+        if(vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
+            netlist_writer(g_atom_nl.netlist_name().c_str(), analysis_delay_calc);
+        }
+        
+        //Do power analysis
+        if(vpr_setup.PowerOpts.do_power) {
+            vpr_power_estimation(vpr_setup, Arch, *timing_info);
+        }
+
+        //Clean-up the net delays
+        free_net_delay(net_delay, &net_delay_ch);
+    }
+}
+
 /* This function performs power estimation, and must be called
  * after packing, placement AND routing. Currently, this
  * will not work when running a partial flow (ex. only routing).
  */
-void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info) {
 
 	/* Ensure we are only using 1 clock */
-	VTR_ASSERT(count_netlist_clocks() == 1);
+	if(timing_info.critical_paths().size() != 1) {
+        VPR_THROW(VPR_ERROR_POWER, "Power analysis only supported on single-clock circuits");
+    }
 
 	/* Get the critical path of this clock */
-	g_solution_inf.T_crit = get_critical_path_delay() / 1e9;
+	g_solution_inf.T_crit = timing_info.least_slack_critical_path().delay();
 	VTR_ASSERT(g_solution_inf.T_crit > 0.);
 
 	vtr::printf_info("\n\nPower Estimation:\n");
@@ -1116,6 +1175,12 @@ void vpr_print_error(const VprError& vpr_error){
             break;
         case VPR_ERROR_ATOM_NETLIST:
             error_type = vtr::strdup("Atom Netlist");
+            break;
+        case VPR_ERROR_POWER:
+            error_type = vtr::strdup("Power");
+            break;
+        case VPR_ERROR_ANALYSIS:
+            error_type = vtr::strdup("Analysis");
             break;
         case VPR_ERROR_OTHER:
             error_type = vtr::strdup("Other");

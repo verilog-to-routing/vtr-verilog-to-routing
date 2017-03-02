@@ -30,6 +30,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <limits>
 #include "logic_types.h"
 
 //Forward declarations
@@ -641,6 +642,26 @@ struct s_pb_graph_node {
 	 */
 	t_pb_graph_node_power * pb_node_power;
 	t_interconnect_pins ** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
+
+    //Returns the number of pins on this graph node
+    //  Note this is the total for all ports on this node exluding any children (i.e. sum of all num_input_pins, num_output_pins, num_clock_pins)
+    int num_pins() {
+        int npins = 0;
+
+        for(int iport = 0; iport < num_input_ports; ++iport) {
+            npins += num_input_pins[iport];
+        }
+
+        for(int iport = 0; iport < num_output_ports; ++iport) {
+            npins += num_output_pins[iport];
+        }
+
+        for(int iport = 0; iport < num_clock_ports; ++iport) {
+            npins += num_clock_pins[iport];
+        }
+
+        return npins;
+    }
 };
 
 
@@ -681,7 +702,9 @@ struct s_pb_graph_pin {
 
 	/* timing information */
 	enum e_pb_graph_pin_type type; /* Is a sequential logic element (true), inpad/outpad (true), or neither (false) */
-	float tsu_tco; /* For sequential logic elements, this is the setup time (if input) or clock-to-q time (if output) */
+	float tsu = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the setup time */
+	float tco = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the clock to output time */
+    struct s_pb_graph_pin* associated_clock_pin; /* For sequentail elements, the associated clock */
 	struct s_pb_graph_pin** pin_timing; /* primitive ipin to opin timing */
 	float *pin_timing_del_max; /* primitive ipin to opin timing */
 	int num_pin_timing; /* primitive ipin to opin timing */

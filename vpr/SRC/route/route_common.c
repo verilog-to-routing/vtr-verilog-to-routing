@@ -28,21 +28,38 @@ using namespace std;
 
 #include "route_profiling.h"
 
+#include "timing_util.h"
+#include "RoutingDelayCalculator.h"
+#include "timing_info.h"
+#include "tatum/echo_writer.hpp"
+
+
+#include "path_delay.h"
+ 
 
 // Disable the routing predictor for circuits with less that this number of nets.
 // This was experimentally determined, by Matthew Walker, to be the most useful
 // metric, and this is also somewhat larger than largest circuit observed to have
 // inaccurate predictions, thought this is still only affects quite small circuits.
-#define MIN_NETS_TO_ACTIVATE_PREDICTOR 150
+constexpr int MIN_NETS_TO_ACTIVATE_PREDICTOR = 150;
+
+// Routing predictor will start predicting after this many iterations have occured (avoids initial start-up transients)
+constexpr int PREDICTOR_START_ITERATION = 8;
+
 // Routing failure predictor will take into account this number of past iterations:
-#define PREDICTOR_ITERATIONS 5
+constexpr int PREDICTOR_ITERATIONS = 5;
+
 // XXX: Congestion can take a little longer to resolve once the fraction of overused nodes is low.
 //	Once the overuse ratio is lower than the following value (either as a ratio or absolute number 
-//	of rr nodesor absolute), the predictor will take into accountthe previous 2*PREDICTOR_ITERATIONS 
+//	of rr nodes absolute), the predictor will take into account the previous PREDICTOR_RELAX_SLACK_FACTOR*PREDICTOR_ITERATIONS 
 //	iterations instead.
 //	This is just a placeholder; the exact value should be investigated
-#define OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK 0.0002
-#define OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK 20
+constexpr size_t PREDICTOR_RELAX_SLACK_FACTOR = 2;
+constexpr double OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK = 0.0002;
+constexpr double OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK = 50;
+
+// The ratio between predicted and maximum router iterations above which routing is aborted
+constexpr double PREDICTOR_ABORT_ITERATION_RATIO = 1.4;
 
 /***************** Variables shared only by route modules *******************/
 
@@ -293,7 +310,10 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 
 bool try_route(int width_fac, struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, float **net_delay, t_slack * slacks,
+		t_timing_inf timing_inf, float **net_delay,
+#ifdef ENABLE_CLASSIC_VPR_STA
+        t_slack * slacks,
+#endif
 		t_chan_width_dist chan_width_dist, vtr::t_ivec ** clb_opins_used_locally,
 		t_direct_inf *directs, int num_directs) {
 
@@ -361,13 +381,42 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 	} else { /* TIMING_DRIVEN route */
 		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
 
-		success = try_timing_driven_route(router_opts, net_delay, slacks,
-			clb_opins_used_locally,timing_inf.timing_analysis_enabled, timing_inf);
+        //Initialize the delay calculator
+        std::shared_ptr<SetupTimingInfo> timing_info;
+        std::shared_ptr<RoutingDelayCalculator> routing_delay_calc;
+        if(timing_inf.timing_analysis_enabled) {
+            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
+
+            timing_info = make_setup_timing_info(routing_delay_calc);
+        } else {
+            timing_info = make_no_op_timing_info();
+        }
+
+        IntraLbPbPinLookup intra_lb_pb_pin_lookup(type_descriptors, num_types);
+
+
+		success = try_timing_driven_route(router_opts, net_delay, 
+            intra_lb_pb_pin_lookup,
+            *timing_info,
+#ifdef ENABLE_CLASSIC_VPR_STA
+            slacks,
+#endif
+			clb_opins_used_locally
+            , timing_inf.timing_analysis_enabled
+#ifdef ENABLE_CLASSIC_VPR_STA
+            , timing_inf
+#endif
+            );
 
 		profiling::time_on_fanout_analysis();
+
+        if(timing_inf.timing_analysis_enabled) {
+            tatum::write_echo("timing.route_final.echo", *g_timing_graph, *g_timing_constraints, *routing_delay_calc, timing_info->analyzer());
+        }
 	}
 
 	free_rr_node_route_structs();
+
 	return (success);
 }
 
@@ -390,7 +439,7 @@ bool feasible_routing(void) {
 
 int predict_success_route_iter(int router_iteration, const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts) {
 
-	if (router_iteration <= PREDICTOR_ITERATIONS) 
+	if (router_iteration < std::max(PREDICTOR_START_ITERATION, PREDICTOR_ITERATIONS)) 
 		return 0;
 
 	// invalid condition for prediction
@@ -402,9 +451,8 @@ int predict_success_route_iter(int router_iteration, const std::vector<double>& 
 	size_t start_iteration = itry - PREDICTOR_ITERATIONS;
 	if (historical_overuse_ratio.back() < OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK
         || historical_overuse_ratio.back()*num_rr_nodes < OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK){
-		start_iteration = itry - 2*PREDICTOR_ITERATIONS;
-		if (2*PREDICTOR_ITERATIONS > itry)
-			start_iteration = 0;
+		start_iteration = itry - PREDICTOR_RELAX_SLACK_FACTOR*PREDICTOR_ITERATIONS;
+        start_iteration = std::max<size_t>(0, start_iteration); //Bound to first iteration
 	}
 	double congestion_slope = linear_regression_vector(historical_overuse_ratio, start_iteration);
 
@@ -412,7 +460,7 @@ int predict_success_route_iter(int router_iteration, const std::vector<double>& 
 	// FIXME: if congestion increases compared to previous iterations, this can return a positive slope
 	int expected_success_route_iter = (itry*congestion_slope - historical_overuse_ratio.back()) / congestion_slope;
 
-	if (expected_success_route_iter > 1.25 * router_opts.max_router_iterations) {
+	if (expected_success_route_iter > PREDICTOR_ABORT_ITERATION_RATIO * router_opts.max_router_iterations) {
 		vtr::printf_info("Routing aborted, the predicted iteration for a successful route (%d) is too high.\n", expected_success_route_iter);
 		return UNDEFINED;
 	}

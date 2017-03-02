@@ -10,6 +10,7 @@ using namespace std;
 #include "vtr_memory.h"
 #include "vtr_matrix.h"
 #include "vtr_math.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -238,6 +239,8 @@ void build_rr_graph(
 		int *num_rr_switches,
 		int *Warnings) {
 
+	vtr::printf_info("Starting build routing resource graph...\n");
+    clock_t begin = clock();
 
 	/* Reset warning flag */
 	*Warnings = RR_GRAPH_NO_WARN;
@@ -610,6 +613,9 @@ void build_rr_graph(
 	if(clb_to_clb_directs != NULL) {
 		free(clb_to_clb_directs);
 	}
+
+    float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
+	vtr::printf_info("Build routing resource graph took %g seconds\n", elapsed_time);
 }
 
 

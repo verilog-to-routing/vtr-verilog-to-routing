@@ -290,7 +290,7 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 
 	if (type == TN_CB_OPIN) {
 		AtomNetId atom_net_id = block[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
-		inet = g_atom_map.clb_net(atom_net_id);
+		inet = g_atom_lookup.clb_net(atom_net_id);
         VTR_ASSERT(inet != OPEN);
 		fprintf(fp, "External-to-Block Net: #%d (%s).  Pins on net: %d.\n",
 			inet, g_clbs_nlist.net[inet].name, (int) g_clbs_nlist.net[inet].pins.size());

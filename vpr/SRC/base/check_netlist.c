@@ -216,22 +216,22 @@ static int check_clb_internal_nets(unsigned int iblk) {
 	t_pb_graph_pin** pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(block[iblk].type);
 
 	for (int i = 0; i < num_pins_in_block; i++) {
-		if (pb_route[i].atom_net_id || pb_route[i].prev_pb_pin_id != OPEN) {
+		if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != OPEN) {
 			if ((pb_graph_pin_lookup[i]->port->type == IN_PORT && pb_graph_pin_lookup[i]->parent_node->parent_pb_graph_node == NULL) ||
 				(pb_graph_pin_lookup[i]->port->type == OUT_PORT && pb_graph_pin_lookup[i]->parent_node->pb_type->num_modes == 0)
 				) {
-				if (pb_route[i].prev_pb_pin_id != OPEN) {
+				if (pb_route[i].driver_pb_pin_id != OPEN) {
 					vtr::printf_error(__FILE__, __LINE__,
 						"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, block[iblk].name, i);
 					error++;
 				}
 			} else {
-				if (!pb_route[i].atom_net_id || pb_route[i].prev_pb_pin_id == OPEN) {
+				if (!pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id == OPEN) {
 					vtr::printf_error(__FILE__, __LINE__,
 						"Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, block[iblk].name, i);
 					error++;
 				} else {
-					int prev_pin = pb_route[i].prev_pb_pin_id;
+					int prev_pin = pb_route[i].driver_pb_pin_id;
 					if (pb_route[prev_pin].atom_net_id != pb_route[i].atom_net_id) {
 						vtr::printf_error(__FILE__, __LINE__,
 							"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, block[iblk].name, i, prev_pin);

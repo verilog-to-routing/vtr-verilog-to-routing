@@ -476,8 +476,7 @@ static void forward_expand_pack_pattern_from_edge(
 					|| ((t_pack_pattern_block*) destination_pb_graph_node->temp_scratch_pad)->pattern_index
 							!= curr_pattern_index) {
 				destination_block = (t_pack_pattern_block*)vtr::calloc(1, sizeof(t_pack_pattern_block));
-				list_of_packing_patterns[curr_pattern_index].base_cost +=
-						compute_primitive_base_cost(destination_pb_graph_node);
+				list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(destination_pb_graph_node);
 				destination_block->block_id = *L_num_blocks;
 				(*L_num_blocks)++;
 				destination_pb_graph_node->temp_scratch_pad =
@@ -637,8 +636,7 @@ static void backward_expand_pack_pattern_from_edge(
 				source_block = (t_pack_pattern_block *)vtr::calloc(1, sizeof(t_pack_pattern_block));
 				source_block->block_id = *L_num_blocks;
 				(*L_num_blocks)++;
-				list_of_packing_patterns[curr_pattern_index].base_cost +=
-						compute_primitive_base_cost(source_pb_graph_node);
+				list_of_packing_patterns[curr_pattern_index].base_cost += compute_primitive_base_cost(source_pb_graph_node);
 				source_pb_graph_node->temp_scratch_pad = (void *) source_block;
 				source_block->pattern_index = curr_pattern_index;
 				source_block->pb_type = source_pb_graph_node->pb_type;
@@ -853,7 +851,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
         auto rng = atom_molecules.equal_range(blk_id);
         bool rng_empty = (rng.first == rng.second);
 		if (rng_empty) {
-			cur_molecule = (t_pack_molecule*) vtr::calloc(1, sizeof(t_pack_molecule));
+			cur_molecule = new t_pack_molecule;
 			cur_molecule->valid = true;
 			cur_molecule->type = MOLECULE_SINGLE_ATOM;
 			cur_molecule->num_blocks = 1;
@@ -924,7 +922,7 @@ static t_pack_molecule *try_create_molecule(
 	bool failed = false;
 
 	{
-		molecule = (t_pack_molecule*)vtr::calloc(1, sizeof(t_pack_molecule));
+		molecule = new t_pack_molecule;
 		molecule->valid = true;
 		molecule->type = MOLECULE_FORCED_PACK;
 		molecule->pack_pattern = &list_of_pack_patterns[pack_pattern_index];
@@ -966,7 +964,7 @@ static t_pack_molecule *try_create_molecule(
 
 	if (failed == true) {
 		/* Does not match pattern, free molecule */
-		free(molecule);
+		delete molecule;
 		molecule = NULL;
 	}
 	return molecule;

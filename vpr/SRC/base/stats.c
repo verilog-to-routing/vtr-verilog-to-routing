@@ -7,6 +7,7 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_matrix.h"
 #include "vtr_log.h"
+#include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -21,6 +22,13 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "ReadOptions.h"
 #include "endpoint_timing.h"
+
+#include "timing_info.h"
+#include "RoutingDelayCalculator.h"
+
+#include "timing_util.h"
+#include "VprTimingGraphNameResolver.h"
+#include "tatum/TimingReporter.hpp"
 
 /********************** Subroutines local to this module *********************/
 
@@ -37,7 +45,11 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		float R_minW_nmos, float R_minW_pmos,
 		enum e_directionality directionality, int wire_to_ipin_switch,
 		bool timing_analysis_enabled,
-		float **net_delay, t_slack * slacks, const t_timing_inf &timing_inf) {
+		float **net_delay 
+#ifdef ENABLE_CLASSIC_VPR_STA
+        , t_slack * slacks, const t_timing_inf &timing_inf
+#endif
+        ) {
 
 	/* Prints out various statistics about the current routing.  Both a routing *
 	 * and an rr_graph must exist when you call this routine.                   */
@@ -82,30 +94,41 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 				segment_inf, R_minW_nmos, R_minW_pmos);
 		get_segment_usage_stats(num_segment, segment_inf);
 
-		if (timing_analysis_enabled) {
-			load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
-
-			load_timing_graph_net_delays(net_delay);
-
-			do_timing_analysis(slacks, timing_inf, false, true);
-
-			if (getEchoEnabled()) {
-				if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
-					print_timing_graph(getEchoFileName(E_ECHO_TIMING_GRAPH));
-				if (isEchoFileEnabled(E_ECHO_NET_DELAY)) 
-					print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
-			}
-
-			print_slack(slacks->slack, true, getOutputFileName(E_SLACK_FILE));
-			print_critical_path(getOutputFileName(E_CRIT_PATH_FILE), timing_inf);
-
-			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ENDPOINT_TIMING)) {
-                print_endpoint_timing(getEchoFileName(E_ECHO_ENDPOINT_TIMING));
-            }
-
-			print_timing_stats();
-		}
 	}
+
+    if (timing_analysis_enabled) {
+        load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
+
+        auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
+
+        std::shared_ptr<SetupTimingInfo> timing_info = make_setup_timing_info(routing_delay_calc);
+        timing_info->update();
+
+#ifdef ENABLE_CLASSIC_VPR_STA
+        load_timing_graph_net_delays(net_delay);
+
+        do_timing_analysis(slacks, timing_inf, false, true);
+
+        if (getEchoEnabled()) {
+            if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
+                print_timing_graph(getEchoFileName(E_ECHO_TIMING_GRAPH));
+            if (isEchoFileEnabled(E_ECHO_NET_DELAY)) 
+                print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
+        }
+
+        print_slack(slacks->slack, true, getOutputFileName(E_SLACK_FILE));
+        print_critical_path(getOutputFileName(E_CRIT_PATH_FILE), timing_inf);
+
+        if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ENDPOINT_TIMING)) {
+            print_endpoint_timing(getEchoFileName(E_ECHO_ENDPOINT_TIMING));
+        }
+
+        vtr::printf("Classic Timing Stats\n");
+        vtr::printf("====================\n");
+        print_timing_stats();
+#endif
+
+    }
 
 	if (full_stats == true)
 		print_wirelen_prob_dist();

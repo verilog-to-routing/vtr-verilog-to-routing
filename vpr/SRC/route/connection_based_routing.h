@@ -2,6 +2,8 @@
 #include <vector>
 #include <unordered_map>
 #include "route_tree_type.h"
+#include "vpr_types.h"
+#include "timing_info.h"
 
 /***************** Connection based rerouting **********************/
 // encompasses both incremental rerouting through route tree pruning
@@ -112,7 +114,10 @@ public:
 
 	// check each connection of each net to see if any satisfy the criteria described above (for the forcible_reroute_connection_flag data structure)
 	// and if so, mark them to be rerouted
-	bool forcibly_reroute_connections(float max_criticality, const t_slack* slacks, const float* const * net_delay);
+	bool forcibly_reroute_connections(float max_criticality, 
+            const SetupTimingInfo& timing_info,
+            const IntraLbPbPinLookup& pb_gpin_lookup,
+            const float* const * net_delay);
 
 };
 

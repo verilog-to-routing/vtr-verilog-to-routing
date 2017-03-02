@@ -11,7 +11,11 @@ namespace vtr {
     std::vector<std::string> split(const char* text, const std::string delims=" \t\n");
     std::vector<std::string> split(const std::string& text, const std::string delims=" \t\n");
 
+    //Returns 'input' with the first instance of 'search' replaced with 'replace'
     std::string replace_first(const std::string& input, const std::string& search, const std::string& replace);
+
+    //Returns 'input' with all instances of 'search' replaced with 'replace'
+    std::string replace_all(const std::string& input, const std::string& search, const std::string& replace);
 
     //Returns a std::string formatted using a printf-style format string
     std::string string_fmt(const char* fmt, ...);

@@ -65,6 +65,10 @@ void load_global_net_from_array(const t_net* net_arr,
 				g_nlist->net[i].pins[j].block_port = net_arr[i].node_block_port[j];
 
 			g_nlist->net[i].pins[j].block_pin = net_arr[i].node_block_pin[j];
+
+            //Also store the net info in the t_net_pin
+            g_nlist->net[i].pins[j].net = i;
+            g_nlist->net[i].pins[j].net_pin = j;
 		}
 	}
 

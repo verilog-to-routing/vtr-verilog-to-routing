@@ -3,8 +3,9 @@ Subtrees
 Some libraries used by VTR are developed in other repositories and integrated using git subtrees.
 
 Currently these includes:
-* libsdcparse
-* libblifparse
+* libsdcparse       [from git@github.com:kmurray/libsdcparse.git]
+* libblifparse      [from git@github.com:kmurray/libblifparse.git]
+* libtatum          [from git@github.com:kmurray/tatum.git]
 
 As an example consider libsdcparse:
 
@@ -23,6 +24,18 @@ As an example consider libsdcparse:
     ` git subtree pull --prefix libsdcparse github-libsdcparse master --squash `
 
     Note the '--squash' option which prevents the whole up-stream history from being merged into the current repository.
+
+    If you have made local changes to the subtree and pushed them to the parent repository, you may encounter a merge conflict
+    during the above pull (caused by divergent commit IDs between the main and parent repositories).
+    You will need to re-split the subtree so that subtree pull finds the correct common ancestor:
+
+    ` git subtree split --rejoin -P libsdcparse/ `
+
+    You can then re-try the subtree pull as described above.
+
+4. [This is unusual, be sure you really mean to do this!] To push local changes to the upstream subtree
+
+    ` git subtree push --prefix libsdcparse github-libsdcparse master `
 
 For more details see [here](https://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git-subtree/) for a good overview.
 

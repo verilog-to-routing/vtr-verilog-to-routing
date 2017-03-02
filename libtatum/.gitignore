@@ -1,0 +1,49 @@
+#
+# Project Related Files
+#
+
+#Executables
+
+#Generated files
+build*/
+core
+massif.out*
+*.log
+
+#YCM
+.ycm_extra_conf.py
+
+#gprof
+gmon.out
+
+#valgrind
+callgrind*
+
+#ctags
+./tags
+
+#
+# C++ related files
+#
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Dependency files
+*.d
+
+#
+# Python temp files
+#
+*.pyc

@@ -11,6 +11,7 @@
 
 
 #include "read_xml_arch_file.h"
+#include "read_xml_util.h"
 
 t_port * findPortByName(const char * name, t_pb_type * pb_type,
 		int * high_index, int * low_index) {
@@ -601,14 +602,15 @@ e_power_estimation_method power_method_inherited(
 void CreateModelLibrary(struct s_arch *arch) {
 	t_model* model_library;
 
-	model_library = (t_model*) vtr::calloc(4, sizeof(t_model));
+	model_library = new t_model[4];
+
+    //INPAD
 	model_library[0].name = vtr::strdup("input");
 	model_library[0].index = 0;
 	model_library[0].inputs = NULL;
 	model_library[0].instances = NULL;
 	model_library[0].next = &model_library[1];
-	model_library[0].outputs = (t_model_ports*) vtr::calloc(1,
-			sizeof(t_model_ports));
+	model_library[0].outputs = new t_model_ports[1];
 	model_library[0].outputs->dir = OUT_PORT;
 	model_library[0].outputs->name = vtr::strdup("inpad");
 	model_library[0].outputs->next = NULL;
@@ -617,10 +619,10 @@ void CreateModelLibrary(struct s_arch *arch) {
 	model_library[0].outputs->index = 0;
 	model_library[0].outputs->is_clock = false;
 
+    //OUTPAD
 	model_library[1].name = vtr::strdup("output");
 	model_library[1].index = 1;
-	model_library[1].inputs = (t_model_ports*) vtr::calloc(1,
-			sizeof(t_model_ports));
+	model_library[1].inputs = new t_model_ports[1];
 	model_library[1].inputs->dir = IN_PORT;
 	model_library[1].inputs->name = vtr::strdup("outpad");
 	model_library[1].inputs->next = NULL;
@@ -632,10 +634,11 @@ void CreateModelLibrary(struct s_arch *arch) {
 	model_library[1].next = &model_library[2];
 	model_library[1].outputs = NULL;
 
+    //LATCH
 	model_library[2].name = vtr::strdup("latch");
 	model_library[2].index = 2;
-	model_library[2].inputs = (t_model_ports*) vtr::calloc(2,
-			sizeof(t_model_ports));
+	model_library[2].inputs = new t_model_ports[2];
+
 	model_library[2].inputs[0].dir = IN_PORT;
 	model_library[2].inputs[0].name = vtr::strdup("D");
 	model_library[2].inputs[0].next = &model_library[2].inputs[1];
@@ -643,6 +646,8 @@ void CreateModelLibrary(struct s_arch *arch) {
 	model_library[2].inputs[0].min_size = 1;
 	model_library[2].inputs[0].index = 0;
 	model_library[2].inputs[0].is_clock = false;
+	model_library[2].inputs[0].clock = "clk";
+
 	model_library[2].inputs[1].dir = IN_PORT;
 	model_library[2].inputs[1].name = vtr::strdup("clk");
 	model_library[2].inputs[1].next = NULL;
@@ -650,40 +655,45 @@ void CreateModelLibrary(struct s_arch *arch) {
 	model_library[2].inputs[1].min_size = 1;
 	model_library[2].inputs[1].index = 0;
 	model_library[2].inputs[1].is_clock = true;
+
 	model_library[2].instances = NULL;
 	model_library[2].next = &model_library[3];
-	model_library[2].outputs = (t_model_ports*) vtr::calloc(1,
-			sizeof(t_model_ports));
-	model_library[2].outputs->dir = OUT_PORT;
-	model_library[2].outputs->name = vtr::strdup("Q");
-	model_library[2].outputs->next = NULL;
-	model_library[2].outputs->size = 1;
-	model_library[2].outputs->min_size = 1;
-	model_library[2].outputs->index = 0;
-	model_library[2].outputs->is_clock = false;
 
+	model_library[2].outputs = new t_model_ports[1];
+	model_library[2].outputs[0].dir = OUT_PORT;
+	model_library[2].outputs[0].name = vtr::strdup("Q");
+	model_library[2].outputs[0].next = NULL;
+	model_library[2].outputs[0].size = 1;
+	model_library[2].outputs[0].min_size = 1;
+	model_library[2].outputs[0].index = 0;
+	model_library[2].outputs[0].is_clock = false;
+	model_library[2].outputs[0].clock = "clk";
+
+    //NAMES
 	model_library[3].name = vtr::strdup("names");
 	model_library[3].index = 3;
-	model_library[3].inputs = (t_model_ports*) vtr::calloc(1,
-			sizeof(t_model_ports));
-	model_library[3].inputs->dir = IN_PORT;
-	model_library[3].inputs->name = vtr::strdup("in");
-	model_library[3].inputs->next = NULL;
-	model_library[3].inputs->size = 1;
-	model_library[3].inputs->min_size = 1;
-	model_library[3].inputs->index = 0;
-	model_library[3].inputs->is_clock = false;
+
+	model_library[3].inputs = new t_model_ports[1];
+	model_library[3].inputs[0].dir = IN_PORT;
+	model_library[3].inputs[0].name = vtr::strdup("in");
+	model_library[3].inputs[0].next = NULL;
+	model_library[3].inputs[0].size = 1;
+	model_library[3].inputs[0].min_size = 1;
+	model_library[3].inputs[0].index = 0;
+	model_library[3].inputs[0].is_clock = false;
+	model_library[3].inputs[0].combinational_sink_ports = {"out"};
+
 	model_library[3].instances = NULL;
 	model_library[3].next = NULL;
-	model_library[3].outputs = (t_model_ports*) vtr::calloc(1,
-			sizeof(t_model_ports));
-	model_library[3].outputs->dir = OUT_PORT;
-	model_library[3].outputs->name = vtr::strdup("out");
-	model_library[3].outputs->next = NULL;
-	model_library[3].outputs->size = 1;
-	model_library[3].outputs->min_size = 1;
-	model_library[3].outputs->index = 0;
-	model_library[3].outputs->is_clock = false;
+
+	model_library[3].outputs = new t_model_ports[1];
+	model_library[3].outputs[0].dir = OUT_PORT;
+	model_library[3].outputs[0].name = vtr::strdup("out");
+	model_library[3].outputs[0].next = NULL;
+	model_library[3].outputs[0].size = 1;
+	model_library[3].outputs[0].min_size = 1;
+	model_library[3].outputs[0].index = 0;
+	model_library[3].outputs[0].is_clock = false;
 
 	arch->model_library = model_library;
 }

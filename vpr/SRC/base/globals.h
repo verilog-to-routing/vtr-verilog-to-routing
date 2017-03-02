@@ -12,25 +12,14 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 #include <unordered_map>
+#include <memory>
 
 #include "vtr_matrix.h"
 #include "netlist.h"
 #include "atom_netlist_fwd.h"
 #include "rr_node.h"
-
-/********************************************************************
-Checking OS System
-********************************************************************/
-/*#if defined(__WIN32__) || defined(__WIN32) || defined(_WIN32) || defined(WIN32) || defined(__TOS_WIN__) || defined(__WINDOWS__)
-  #ifndef __WIN32__
-    #define __WIN32__
-  #endif
-#else
-    #ifndef __UNIX__
-      #define __UNIX__
-    #endif
-	#include <sys/time.h>
-#endif*/
+#include "tatum/TimingGraph.hpp"
+#include "tatum/TimingConstraints.hpp"
 
 /********************************************************************
  Atom Netlist Globals
@@ -39,10 +28,38 @@ Checking OS System
 extern AtomNetlist g_atom_nl;
 
 /* Mappins to/from the Atom Netlist */
-extern AtomMap g_atom_map;
+extern AtomLookup g_atom_lookup;
 
 /* Atom net power info */
 extern std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
+
+
+/********************************************************************
+ Timing Globals
+ ********************************************************************/
+extern std::shared_ptr<tatum::TimingGraph> g_timing_graph;
+extern std::shared_ptr<tatum::TimingConstraints> g_timing_constraints;
+
+
+struct timing_analysis_profile_info {
+    double timing_analysis_wallclock_time() {
+        return sta_wallclock_time + slack_wallclock_time;
+    }
+
+    double old_timing_analysis_wallclock_time() {
+        return old_sta_wallclock_time + old_delay_annotation_wallclock_time;
+    }
+
+    double sta_wallclock_time = 0.;
+    double slack_wallclock_time = 0.;
+    size_t num_full_updates = 0;
+
+    double old_sta_wallclock_time = 0.;
+    double old_delay_annotation_wallclock_time = 0.;
+    size_t num_old_sta_full_updates = 0;
+};
+extern timing_analysis_profile_info g_timing_analysis_profile_stats;
+
 
 /********************************************************************
  CLB Netlist Globals

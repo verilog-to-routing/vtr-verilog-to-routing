@@ -6,7 +6,7 @@
  *
  * The ordering of this enum is important and used for error checking.  The OT__START_* and
  * OT__END_* items are used to delimit options that apply to specific stages (i.e. packing, 
- * placement, routing).
+ * placement, routing, analysis).
  *
  * If you have a general option that applies to more than one stage 
  * it should go in the general options section before the OT_PACK token.
@@ -25,7 +25,7 @@
  * CheckOptions.c for details).
  *
  * In general this layout supports specifying option groups in a tree-like structure, which
- * is encoded here as the trees pre-order traversal, and made more explicit in the source 
+ * is encoded here as the tree's pre-order traversal, and made more explicit in the source 
  * code by intentation.
  */
 enum e_OptionBaseToken {
@@ -35,19 +35,12 @@ enum e_OptionBaseToken {
 	OT_CREATE_ECHO_FILE,
 	OT_TIMING_ANALYSIS,
     OT_SLACK_DEFINITION,
-	OT_GENERATE_POST_SYNTHESIS_NETLIST,
 	OT_OUTFILE_PREFIX,
 	OT_BLIF_FILE,
 	OT_NET_FILE,
 	OT_PLACE_FILE,
 	OT_ROUTE_FILE,
 	OT_SDC_FILE,
-
-    //TODO check for nop power options
-	OT_POWER,
-	OT_ACTIVITY_FILE,
-	OT_POWER_OUT_FILE,
-	OT_CMOS_TECH_BEHAVIOR_FILE,
 
     //Netlist processing related options
     OT_ABSORB_BUFFER_LUTS,
@@ -129,7 +122,19 @@ enum e_OptionBaseToken {
                 OT_CRITICALITY_EXP,
             OT__END_TIMING_ROUTE_OPTIONS, //Marker
         OT__END_ROUTE_OPTIONS = OT__END_TIMING_ROUTE_OPTIONS, //Marker
-    OT_BASE_UNKNOWN = OT__END_TIMING_ROUTE_OPTIONS //Marker
+
+    //Analysis options (post routing)
+    OT_ANALYSIS,
+        OT__START_ANALYSIS_OPTIONS, //Marker
+            OT_GENERATE_POST_SYNTHESIS_NETLIST,
+            OT_POWER,
+            OT__START_ANALYSIS_POWER_OPTIONS, //Marker
+                OT_ACTIVITY_FILE,
+                OT_POWER_OUT_FILE,
+                OT_CMOS_TECH_BEHAVIOR_FILE,
+            OT__END_ANALYSIS_POWER_OPTIONS, //Marker
+        OT__END_ANALYSIS_OPTIONS, //Marker
+    OT_BASE_UNKNOWN = OT__END_ANALYSIS_OPTIONS //Marker
 };
 
 enum e_OptionArgToken {

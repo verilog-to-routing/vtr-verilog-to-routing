@@ -70,6 +70,25 @@ std::string replace_first(const std::string& input, const std::string& search, c
     return output;
 }
 
+std::string replace_all(const std::string& input, const std::string& search, const std::string& replace) {
+
+    std::string output;
+
+    size_t last = 0;
+    size_t pos = input.find(search, last); //Find the first instance of 'search' starting at or after 'last'
+    while(pos != std::string::npos) {
+        output += input.substr(last, pos - last); //Append anything in the input string between last and current match
+        output += replace; //Add the replacement
+
+        last = pos + search.size(); //Advance past the current match
+
+        pos = input.find(search, last); //Look for the next match
+    }
+    output += input.substr(last, pos - last); //Append anything in 'input' after the last match
+
+    return output;
+}
+
 //Returns a std::string formatted using a printf-style format string
 std::string string_fmt(const char* fmt, ...) {
     // Make a variable argument list

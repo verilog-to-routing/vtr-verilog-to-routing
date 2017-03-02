@@ -4,7 +4,9 @@
 #include "globals.h"
 #include "netlist.h"
 #include "atom_netlist.h"
-#include "atom_map.h"
+#include "atom_lookup.h"
+#include "tatum/TimingGraph.hpp"
+#include "tatum/TimingConstraints.hpp"
 #include <map>
 
 
@@ -18,9 +20,16 @@ char *default_output_name = NULL;
 /******** Atom Netlist ********/
 AtomNetlist g_atom_nl;
 
-AtomMap g_atom_map;
+AtomLookup g_atom_lookup;
 
 std::unordered_map<AtomNetId,t_net_power> g_atom_net_power;
+
+/******** Timing ********/
+
+std::shared_ptr<tatum::TimingGraph> g_timing_graph;
+std::shared_ptr<tatum::TimingConstraints> g_timing_constraints;
+
+timing_analysis_profile_info g_timing_analysis_profile_stats;
 
 /******** Clustered netlist ********/
 int num_nets = 0;

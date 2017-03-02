@@ -19,9 +19,11 @@ using namespace std;
 #include "vtr_memory.h"
 #include "vtr_log.h"
 
+#include "tatum/error.hpp"
+
 #include "vpr_error.h"
 #include "vpr_api.h"
-#include "path_delay.h" /* for timing_analysis_runtime */
+#include "globals.h"
 
 /*
  * Exit codes to signal success/failure to scripts
@@ -71,26 +73,44 @@ int main(int argc, const char **argv) {
             }
 		}
 
-		if (vpr_setup.PowerOpts.do_power) {
-			vpr_power_estimation(vpr_setup, Arch);
-		}
+
+        vpr_analysis(vpr_setup, Arch);
 	
 		entire_flow_end = clock();
 
-        vtr::printf_info("Timing analysis took %g seconds.\n", float(timing_analysis_runtime) / CLOCKS_PER_SEC);
+        vtr::printf_info("Timing analysis took %g seconds (%g STA, %g slack) (%d full updates).\n", 
+                            g_timing_analysis_profile_stats.timing_analysis_wallclock_time(), 
+                            g_timing_analysis_profile_stats.sta_wallclock_time, 
+                            g_timing_analysis_profile_stats.slack_wallclock_time, 
+                            g_timing_analysis_profile_stats.num_full_updates);
+        vtr::printf_info("Old VPR Timing analysis took %g seconds (%g STA, %g delay annotitaion) (%d full updates).\n", 
+                            g_timing_analysis_profile_stats.old_timing_analysis_wallclock_time(),
+                            g_timing_analysis_profile_stats.old_sta_wallclock_time,
+                            g_timing_analysis_profile_stats.old_delay_annotation_wallclock_time,
+                            g_timing_analysis_profile_stats.num_old_sta_full_updates);
+        vtr::printf_info("\tSTA       Speed-up: %.2fx\n", 
+                            g_timing_analysis_profile_stats.old_sta_wallclock_time / g_timing_analysis_profile_stats.sta_wallclock_time);
+        vtr::printf_info("\tSTA+Slack Speed-up: %.2fx\n", 
+                            g_timing_analysis_profile_stats.old_timing_analysis_wallclock_time() / g_timing_analysis_profile_stats.timing_analysis_wallclock_time());
 		vtr::printf_info("The entire flow of VPR took %g seconds.\n", 
 				(float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 	
 		/* free data structures */
 		vpr_free_all(Arch, Options, vpr_setup);
 
-	} catch(VprError& vpr_error){
-		vpr_print_error(vpr_error);
-        /* Signal error to scripts */
+	} catch(const tatum::Error& tatum_error){
+        vtr::printf_error(__FILE__, __LINE__, "STA Engine: %s\n", tatum_error.what());
+
         return ERROR_EXIT_CODE;
-	} catch(vtr::VtrError& vtr_error){
+
+	} catch(const VprError& vpr_error){
+		vpr_print_error(vpr_error);
+
+        return ERROR_EXIT_CODE;
+
+	} catch(const vtr::VtrError& vtr_error){
         vtr::printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
-        /* Signal error to scripts */
+
         return ERROR_EXIT_CODE;
 	}
 	

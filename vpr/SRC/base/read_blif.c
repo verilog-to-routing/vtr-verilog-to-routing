@@ -549,6 +549,8 @@ struct BlifAllocCallback : public blifparse::Callback {
                 for(auto blk_id : curr_model().blocks()) {
                     if(marked_blocks.count(blk_id)) continue; //Don't mark multiple times
 
+                    if(curr_model().block_type(blk_id) != AtomBlockType::BLOCK) continue; //Don't mark I/Os as constants
+
                     if(identify_candidate_constant_generator_subckt(blk_id)) {
                         //This block is a constant generator
                         marked_blocks.insert(blk_id);
@@ -576,7 +578,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
             //We look for combinational blocks which are not .names (i.e.
             //combinational .subckts)
-            if(curr_model().block_type(blk_id) == AtomBlockType::COMBINATIONAL
+            if(curr_model().block_is_combinational(blk_id)
                && arch_model->name != std::string("names")) {
 
                 //A subckt is a constant generator if all its input nets are either:
@@ -659,12 +661,16 @@ AtomNetlist read_and_process_blif(const char *blif_file,
         netlist = read_blif(blif_file, user_models, library_models);
     }
 
+    print_netlist_as_blif("atom_netlist.orig.echo.blif", netlist);
+
     process_blif(netlist,
                  should_absorb_buffers, 
                  should_sweep_dangling_primary_ios, 
                  should_sweep_dangling_nets,
                  should_sweep_dangling_blocks,
                  should_sweep_constant_primary_outputs);
+
+    print_netlist_as_blif("atom_netlist.cleaned.echo.blif", netlist);
 
 
     show_blif_stats(netlist);

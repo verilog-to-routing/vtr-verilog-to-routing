@@ -39,6 +39,7 @@
 #include <ctime>
 #include <map>
 #include <algorithm>
+#include <fstream>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -62,6 +63,13 @@ using namespace std;
 #include "ReadOptions.h"
 #include "cluster_router.h"
 #include "lb_type_rr_graph.h"
+
+#include "timing_info.h"
+#include "PreClusterDelayCalculator.h"
+#include "tatum/echo_writer.hpp"
+#include "tatum/report/graphviz_dot_writer.hpp"
+
+#include "read_sdc.h"
 
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*/
 
@@ -210,7 +218,7 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 static void update_timing_gain_values(const AtomNetId net_id,
 		t_pb* cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block,
-		t_prepack_slack& slacks,
+        const SetupTimingInfo& timing_info,
         const std::unordered_set<AtomNetId>& is_global);
 
 static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_update gain_flag,
@@ -218,7 +226,7 @@ static void mark_and_update_partial_gain(const AtomNetId inet, enum e_gain_updat
         bool timing_driven,
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-		t_prepack_slack& slacks,
+        const SetupTimingInfo& timing_info,
         const std::unordered_set<AtomNetId>& is_global);
 
 static void update_total_gain(float alpha, float beta, bool timing_driven,
@@ -230,7 +238,8 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         const std::unordered_set<AtomNetId>& is_global, 
         const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
-		const bool connection_driven, t_prepack_slack& slacks);
+		const bool connection_driven, 
+        const SetupTimingInfo& timing_info);
 
 static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
@@ -277,7 +286,6 @@ static void load_transitive_fanout_candidates(int cluster_index,
 											  t_pb_stats *pb_stats,
 											  t_lb_net_stats *clb_inter_blk_nets);
 
-static t_prepack_slack convert_raw_slacks_to_prepack_slacks(t_slack* raw_slacks);
 /*****************************************/
 /*globally accessable function*/
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
@@ -290,7 +298,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         float inter_cluster_net_delay,
 		float aspect, bool allow_unrelated_clustering,
 		bool connection_driven,
-		enum e_packer_algorithm packer_algorithm, t_timing_inf timing_inf, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
+		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs
+#ifdef ENABLE_CLASSIC_VPR_STA
+        , t_timing_inf timing_inf
+#endif
+        ) {
 
 	/* Does the actual work of clustering multiple netlist blocks *
 	 * into clusters.                                                  */
@@ -318,31 +330,23 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	bool early_exit, is_cluster_legal;
 	enum e_block_pack_status block_pack_status;
-	float crit;
 
 	t_cluster_placement_stats *cluster_placement_stats, *cur_cluster_placement_stats_ptr;
 	t_pb_graph_node **primitives_list;
 	t_block *clb; /* [0..num_clusters-1] */
-	t_slack * raw_slacks = NULL;
-    t_prepack_slack slacks;
 	t_lb_router_data *router_data = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
 	t_lb_net_stats *clb_inter_blk_nets = NULL; /* [0..num_clusters-1] */
 
 	vector < vector <t_intra_lb_net> * > intra_lb_routing;
 
-#ifdef PATH_COUNTING
-	unsigned int inet;
-	int ipin;
-#else
-	int inode;
-	float num_paths_scaling, distance_scaling;
-#endif
+    std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
+    std::shared_ptr<SetupTimingInfo> timing_info;
 
 	/* TODO: This is memory inefficient, fix if causes problems */
 	clb = (t_block*)vtr::calloc(g_atom_nl.blocks().size(), sizeof(t_block));
 	num_clb = 0;
-	clb_inter_blk_nets = (t_lb_net_stats*) vtr::calloc(g_atom_nl.blocks().size(), sizeof(t_lb_net_stats));
+	clb_inter_blk_nets = new t_lb_net_stats[g_atom_nl.blocks().size()];
 
 	istart = NULL;
 
@@ -406,72 +410,54 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	VTR_ASSERT(max_cluster_size < MAX_SHORT);
 	/* Limit maximum number of elements for each cluster */
 
+
 	if (timing_driven) {
-		raw_slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, 
-                                                         expected_lowest_cost_pb_gnode);
-		do_timing_analysis(raw_slacks, timing_inf, true, false);
 
-		if (getEchoEnabled()) {
-			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH))
-				print_timing_graph(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH));
-#ifndef PATH_COUNTING
-			if(isEchoFileEnabled(E_ECHO_CLUSTERING_TIMING_INFO))
-				print_clustering_timing_info(getEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO));
+        /*
+         * Initialize the timing analyzer
+         */
+        clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(g_atom_nl, g_atom_lookup, inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
+        timing_info = make_setup_timing_info(clustering_delay_calc);
+
+        //Calculate the initial timing
+        timing_info->update();
+
+        tatum::write_echo("timing.pre_pack.echo", *g_timing_graph, *g_timing_constraints, *clustering_delay_calc, timing_info->analyzer());
+        tatum::write_dot_file_setup("timing_graph.dot", *g_timing_graph, *clustering_delay_calc, *timing_info->setup_analyzer());
+
+
+#ifdef ENABLE_CLASSIC_VPR_STA
+        t_slack* slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, expected_lowest_cost_pb_gnode);
+        do_timing_analysis(slacks, timing_inf, true, true);
+        print_timing_graph(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH));
+
+        auto cpds = timing_info->critical_paths();
+        auto critical_path = timing_info->least_slack_critical_path();
+
+        float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
+        if(cpd_diff_ns > 0.01) {
+            print_classic_cpds();
+            print_tatum_cpds(timing_info->critical_paths());
+
+            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
+        }
+
+        free_timing_graph(slacks);
 #endif
-			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_SLACK))
-				print_slack(raw_slacks->slack, false, getEchoFileName(E_ECHO_PRE_PACKING_SLACK));
-			if(isEchoFileEnabled(E_ECHO_PRE_PACKING_CRITICALITY))
-				print_criticality(raw_slacks, getEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY));
-		}
-
-        slacks = convert_raw_slacks_to_prepack_slacks(raw_slacks);
 
 		for (auto blk_id : g_atom_nl.blocks()) {
 			critindexarray.push_back(blk_id);
 			seed_blend_index_array.push_back(blk_id);
 		}
 
-#ifdef PATH_COUNTING
-		/* Calculate block criticality from a weighted sum of timing and path criticalities. */
-        for(auto net_id : g_atom_nl.nets()) {
-            for(auto pin_id : g_atom_nl.net_sinks(net_id)) {
-			
-				/* Find the atom block blk_id which this pin is a sink on. */
-                auto blk_id = g_atom_nl.pin_block(pin_id);
-					
-				/* The criticality of this pin is a sum of its timing and path criticalities. */
-				crit =		PACK_PATH_WEIGHT  * slacks->path_criticality[pin_id] 
-					 + (1 - PACK_PATH_WEIGHT) * slacks->timing_criticality[pin_id]; 
-
-				/* The criticality of each block is the maximum of the criticalities of all its pins. */
-				if (block_criticality[blk_id] < crit) {
-					block_criticality[blk_id] = crit;
-				}
-			}
-		}
-
-#else
-		/* Calculate criticality based on slacks and tie breakers (# paths, distance from source) */
-		for (inode = 0; inode < num_tnodes; inode++) {
-			/* Only calculate for tnodes which have valid normalized values.
-			Either all values will be accurate or none will, so we only have
-			to check whether one particular value (normalized_T_arr) is valid 
-			Tnodes that do not have both times valid were not part of the analysis. 
-			Because we calloc-ed the array criticality, such nodes will have criticality 0, the lowest possible value. */
-			if (has_valid_normalized_T_arr(inode)) {
-				auto blk_id = find_tnode_atom_block(inode);
-				num_paths_scaling = SCALE_NUM_PATHS
-						* (float) tnode[inode].prepacked_data->normalized_total_critical_paths;
-				distance_scaling = SCALE_DISTANCE_VAL
-						* (float) tnode[inode].prepacked_data->normalized_T_arr;
-				crit = (1 - tnode[inode].prepacked_data->normalized_slack) + num_paths_scaling
-						+ distance_scaling;
-				if (block_criticality[blk_id] < crit) {
-					block_criticality[blk_id] = crit;
-				}
-			}
-		}
-#endif
+        //Calculate criticality of each block
+        for(AtomBlockId blk : g_atom_nl.blocks()) {
+            for(AtomPinId in_pin : g_atom_nl.block_input_pins(blk)) {
+                //Max criticality over incomming nets
+                float crit = timing_info->setup_pin_criticality(in_pin);
+                block_criticality[blk] = std::max(block_criticality[blk], crit);
+            }
+        }
 
         for(auto blk_id : g_atom_nl.blocks()) {
 			/* Score seed gain of each block as a weighted sum of timing criticality, 
@@ -554,7 +540,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                     is_clock, //Set of clock nets
                     is_clock, //Set of global nets (currently all clocks)
                     global_clocks, alpha,
-					beta, timing_driven, connection_driven, slacks);
+					beta, timing_driven, connection_driven, 
+                    *timing_info);
 			num_clb++;
 
 			if (timing_driven && !early_exit) {
@@ -636,7 +623,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                         is_clock, //Set of all clocks
                         is_clock, //Set of all global signals (currently clocks)
 						global_clocks, alpha, beta, timing_driven,
-						connection_driven, slacks);
+						connection_driven, 
+                        *timing_info);
 				num_unrelated_clustering_attempts = 0;
 
 				if (timing_driven && !early_exit) {
@@ -702,7 +690,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				num_used_instances_type[clb[num_clb - 1].type->index]--;
                 revalid_molecules(clb[num_clb - 1].pb, atom_molecules);
 				free_pb(clb[num_clb - 1].pb);
-				free(clb[num_clb - 1].pb);
+				delete clb[num_clb - 1].pb;
 				free(clb[num_clb - 1].name);
 				clb[num_clb - 1].name = NULL;
 				clb[num_clb - 1].pb = NULL;
@@ -738,7 +726,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		free_pb(clb[i].pb);
 		free(clb[i].name);
 		free(clb[i].nets);
-		free(clb[i].pb);
+		delete clb[i].pb;
 	}
 	free(clb);
 
@@ -752,13 +740,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		critindexarray.clear();
 		seed_blend_gain.clear();
 		seed_blend_index_array.clear();
-
-		free_timing_graph(raw_slacks);
 	}
 
 	free (primitives_list);
 	if(clb_inter_blk_nets != NULL) {
-	   free(clb_inter_blk_nets);
+	   delete[] clb_inter_blk_nets;
 	   clb_inter_blk_nets = NULL;
 	}
 }
@@ -789,7 +775,7 @@ static void check_clocks(const std::unordered_set<AtomNetId>& is_clock) {
 
 /* Determine if atom block is in pb */
 static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb *pb) {
-	const t_pb* cur_pb = g_atom_map.atom_pb(blk_id);
+	const t_pb* cur_pb = g_atom_lookup.atom_pb(blk_id);
 	while (cur_pb) {
 		if (cur_pb == pb) {
 			return true;
@@ -958,7 +944,7 @@ static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb) {
 
 	VTR_ASSERT(cur_pb_type->num_modes == 0); /* primitive */
 
-    AtomBlockId cur_pb_blk_id = g_atom_map.pb_atom(cur_pb);
+    AtomBlockId cur_pb_blk_id = g_atom_lookup.pb_atom(cur_pb);
 	if (cur_pb_blk_id && cur_pb_blk_id != blk_id) {
 
 		/* This pb already has a different logical block */
@@ -1202,8 +1188,7 @@ static void alloc_and_load_pb_stats(t_pb *pb) {
 	pb->pb_stats->lookahead_input_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_input_pin_class);
 	pb->pb_stats->lookahead_output_pins_used = std::vector<std::vector<AtomNetId>>(pb->pb_graph_node->num_output_pin_class);
 	pb->pb_stats->num_feasible_blocks = NOT_VALID;
-	pb->pb_stats->feasible_blocks = (t_pack_molecule**) vtr::calloc(
-			AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, sizeof(t_pack_molecule *));
+	pb->pb_stats->feasible_blocks = (t_pack_molecule**) vtr::calloc(AAPACK_MAX_FEASIBLE_BLOCK_ARRAY_SIZE, sizeof(t_pack_molecule *));
 
 	pb->pb_stats->tie_break_high_fanout_net = AtomNetId::INVALID();
 	for (i = 0; i < pb->pb_graph_node->num_input_pin_class; i++) {
@@ -1301,7 +1286,7 @@ static enum e_block_pack_status try_pack_molecule(
 						/* Chained molecules often take up lots of area and are important, 
                          * if a chain is packed in, want to rename logic block to match chain name */
                         AtomBlockId chain_root_blk_id = molecule->atom_block_ids[molecule->pack_pattern->root_block->block_id];
-						cur_pb = g_atom_map.atom_pb(chain_root_blk_id)->parent_pb;
+						cur_pb = g_atom_lookup.atom_pb(chain_root_blk_id)->parent_pb;
 						while(cur_pb != NULL) {
 						    free(cur_pb->name);
 						    cur_pb->name = vtr::strdup(g_atom_nl.block_name(chain_root_blk_id).c_str());
@@ -1383,21 +1368,21 @@ static enum e_block_pack_status try_place_atom_block_rec(
 	/* Create siblings if siblings are not allocated */
 	if (parent_pb->child_pbs == NULL) {
 		VTR_ASSERT(parent_pb->name == NULL);
-        g_atom_map.set_atom_pb(AtomBlockId::INVALID(), parent_pb);
+        g_atom_lookup.set_atom_pb(AtomBlockId::INVALID(), parent_pb);
 
 		parent_pb->name = vtr::strdup(g_atom_nl.block_name(blk_id).c_str());
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
 		set_reset_pb_modes(router_data, parent_pb, true);
         const t_mode* mode = &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode];
-		parent_pb->child_pbs = (t_pb **) vtr::calloc( mode->num_pb_type_children, sizeof(t_pb *));
+        parent_pb->child_pbs = new t_pb*[mode->num_pb_type_children];
 
 		for (i = 0; i < mode->num_pb_type_children; i++) {
-			parent_pb->child_pbs[i] = (t_pb *) vtr::calloc( mode->pb_type_children[i].num_pb, sizeof(t_pb));
+            parent_pb->child_pbs[i] = new t_pb[mode->pb_type_children[i].num_pb];
 
 			for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
 				parent_pb->child_pbs[i][j].parent_pb = parent_pb;
 
-                g_atom_map.set_atom_pb(AtomBlockId::INVALID(), &parent_pb->child_pbs[i][j]);
+                g_atom_lookup.set_atom_pb(AtomBlockId::INVALID(), &parent_pb->child_pbs[i][j]);
 
 				parent_pb->child_pbs[i][j].pb_graph_node =
 						&(parent_pb->pb_graph_node->child_pb_graph_nodes[parent_pb->mode][i][j]);
@@ -1425,15 +1410,15 @@ static enum e_block_pack_status try_place_atom_block_rec(
 	is_primitive = (pb_type->num_modes == 0);
 
 	if (is_primitive) {
-		VTR_ASSERT(!g_atom_map.pb_atom(pb)
-                    && g_atom_map.atom_pb(blk_id) == NULL 
-                    && g_atom_map.atom_clb(blk_id) == NO_CLUSTER);
+		VTR_ASSERT(!g_atom_lookup.pb_atom(pb)
+                    && g_atom_lookup.atom_pb(blk_id) == NULL 
+                    && g_atom_lookup.atom_clb(blk_id) == NO_CLUSTER);
 		/* try pack to location */
 		pb->name = vtr::strdup(g_atom_nl.block_name(blk_id).c_str());
 
         //Update the atom netlist mappings
-        g_atom_map.set_atom_clb(blk_id, clb_index);
-        g_atom_map.set_atom_pb(blk_id, pb);
+        g_atom_lookup.set_atom_clb(blk_id, clb_index);
+        g_atom_lookup.set_atom_pb(blk_id, pb);
 
 		add_atom_as_target(router_data, blk_id);
 		if (!primitive_feasible(blk_id, pb)) {
@@ -1471,12 +1456,12 @@ static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *
     //being removed from the active mapping.
     //
     //In general most code works fine accessing cosnt t_pb*,
-    //which is why we store them as such in g_atom_map
-    t_pb* pb = const_cast<t_pb*>(g_atom_map.atom_pb(blk_id)); 
+    //which is why we store them as such in g_atom_lookup
+    t_pb* pb = const_cast<t_pb*>(g_atom_lookup.atom_pb(blk_id)); 
 
     //Update the atom netlist mapping
-    g_atom_map.set_atom_clb(blk_id, NO_CLUSTER);
-    g_atom_map.set_atom_pb(blk_id, NULL);
+    g_atom_lookup.set_atom_clb(blk_id, NO_CLUSTER);
+    g_atom_lookup.set_atom_pb(blk_id, NULL);
 
 	if (pb != NULL) {
 		/* When freeing molecules, the current block might already have been freed by a prior revert 
@@ -1520,16 +1505,16 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 
 	num_internal_connections = num_open_connections = num_stuck_connections = 0;
 
-	int clb_index = g_atom_map.atom_clb(clustered_blk_id);
+	int clb_index = g_atom_lookup.atom_clb(clustered_blk_id);
 
 	/* may wish to speed things up by ignoring clock nets since they are high fanout */
 
     for(auto pin_id : g_atom_nl.net_pins(net_id)) {
         auto blk_id = g_atom_nl.pin_block(pin_id);
-		if (g_atom_map.atom_clb(blk_id) == clb_index
-				&& is_atom_blk_in_pb(blk_id, g_atom_map.atom_pb(clustered_blk_id))) {
+		if (g_atom_lookup.atom_clb(blk_id) == clb_index
+				&& is_atom_blk_in_pb(blk_id, g_atom_lookup.atom_pb(clustered_blk_id))) {
 			num_internal_connections++;
-		} else if (g_atom_map.atom_clb(blk_id) == OPEN) {
+		} else if (g_atom_lookup.atom_clb(blk_id) == OPEN) {
 			num_open_connections++;
 		} else {
 			num_stuck_connections++;
@@ -1541,7 +1526,7 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
             auto blk_id = g_atom_nl.pin_block(pin_id);
             VTR_ASSERT(blk_id);
 
-			if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
+			if (g_atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
 				/* TODO: Gain function accurate only if net has one connection to block, 
                  * TODO: Should we handle case where net has multi-connection to block? 
                  *       Gain computation is only off by a bit in this case */
@@ -1564,7 +1549,7 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
         auto driver_pin_id = g_atom_nl.net_driver(net_id);
         auto blk_id = g_atom_nl.pin_block(driver_pin_id);
 
-		if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
+		if (g_atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
 			if(cur_pb->pb_stats->connectiongain.count(blk_id) == 0) {
 				cur_pb->pb_stats->connectiongain[blk_id] = 0;
 			}
@@ -1579,7 +1564,7 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 static void update_timing_gain_values(const AtomNetId net_id,
 		t_pb *cur_pb,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-        t_prepack_slack& slacks,
+        const SetupTimingInfo& timing_info,
         const std::unordered_set<AtomNetId>& is_global) {
 
 	/*This function is called when the timing_gain values on the atom net*
@@ -1596,15 +1581,10 @@ static void update_timing_gain_values(const AtomNetId net_id,
 			&& !is_global.count(net_id)) {
         for(auto pin_id : pins) {
             auto blk_id = g_atom_nl.pin_block(pin_id);
-			if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
-#ifdef PATH_COUNTING
-				/* Timing gain is a weighted sum of timing and path criticalities. */
-				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks.path_criticality[pin_id] 
-						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks.timing_criticality[pin_id]; 
-#else
-				/* Timing gain is the timing criticality. */
-				timinggain = slacks.timing_criticality[pin_id]; 
-#endif
+			if (g_atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
+
+                timinggain = timing_info.setup_pin_criticality(pin_id);
+
 				if(cur_pb->pb_stats->timinggain.count(blk_id) == 0) {
 					cur_pb->pb_stats->timinggain[blk_id] = 0;
 				}
@@ -1621,16 +1601,11 @@ static void update_timing_gain_values(const AtomNetId net_id,
         auto driver_pin = g_atom_nl.net_driver(net_id);
         auto new_blk_id = g_atom_nl.pin_block(driver_pin);
 
-		if (g_atom_map.atom_clb(new_blk_id) == NO_CLUSTER) {
+		if (g_atom_lookup.atom_clb(new_blk_id) == NO_CLUSTER) {
 			for (auto pin_id : g_atom_nl.net_sinks(net_id)) {
-#ifdef PATH_COUNTING
-				/* Timing gain is a weighted sum of timing and path criticalities. */
-				timinggain =	  TIMING_GAIN_PATH_WEIGHT  * slacks.path_criticality[pin_id] 
-						   + (1 - TIMING_GAIN_PATH_WEIGHT) * slacks.timing_criticality[pin_id]; 
-#else
-				/* Timing gain is the timing criticality. */
-				timinggain = slacks.timing_criticality[pin_id]; 
-#endif
+
+                timinggain = timing_info.setup_pin_criticality(pin_id);
+
 				if(cur_pb->pb_stats->timinggain.count(new_blk_id) == 0) {
 					cur_pb->pb_stats->timinggain[new_blk_id] = 0;
 				}
@@ -1648,7 +1623,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 		bool timing_driven,
 		bool connection_driven,
 		enum e_net_relation_to_clustered_block net_relation_to_clustered_block, 
-		t_prepack_slack& slacks,
+        const SetupTimingInfo& timing_info,
         const std::unordered_set<AtomNetId>& is_global) {
 
 	/* Updates the marked data structures, and if gain_flag is GAIN,  *
@@ -1659,7 +1634,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 	 * cluster. The timinggain is the criticality of the most critical*
 	 * atom net between this atom block and an atom block in the cluster.             */
 
-	t_pb* cur_pb = g_atom_map.atom_pb(clustered_blk_id)->parent_pb;
+	t_pb* cur_pb = g_atom_lookup.atom_pb(clustered_blk_id)->parent_pb;
 
 	if (g_atom_nl.net_sinks(net_id).size() > AAPACK_MAX_NET_SINKS_IGNORE) {
 		/* Optimization: It can be too runtime costly for marking all sinks for 
@@ -1702,7 +1677,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 			if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
                 for(auto pin_id : pins) {
                     auto blk_id = g_atom_nl.pin_block(pin_id);
-					if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
+					if (g_atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
 
 						if (cur_pb->pb_stats->sharinggain.count(blk_id) == 0) {
 							cur_pb->pb_stats->marked_blocks.push_back(blk_id);
@@ -1723,7 +1698,9 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 
 			if (timing_driven) {
 				update_timing_gain_values(net_id, cur_pb,
-						net_relation_to_clustered_block, slacks, is_global);
+						net_relation_to_clustered_block, 
+                        timing_info,
+                        is_global);
 			}
 		}
 		if(cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
@@ -1792,7 +1769,8 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         const std::unordered_set<AtomNetId>& is_global, 
         const bool global_clocks,
 		const float alpha, const float beta, const bool timing_driven,
-		const bool connection_driven, t_prepack_slack& slacks) {
+		const bool connection_driven, 
+        const SetupTimingInfo& timing_info) {
 
 	/* Updates cluster stats such as gain, used pins, and clock structures.  */
 
@@ -1822,9 +1800,9 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 		}
 
         //Update atom netlist mapping
-        g_atom_map.set_atom_clb(blk_id, clb_index);
+        g_atom_lookup.set_atom_clb(blk_id, clb_index);
 
-		cur_pb = g_atom_map.atom_pb(blk_id)->parent_pb;
+		cur_pb = g_atom_lookup.atom_pb(blk_id)->parent_pb;
 		while (cur_pb) {
 			/* reset list of feasible blocks */
 			cur_pb->pb_stats->num_feasible_blocks = NOT_VALID;
@@ -1841,11 +1819,15 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
             if (!is_clock.count(net_id) || !global_clocks) {
                 mark_and_update_partial_gain(net_id, GAIN, blk_id,
                         timing_driven,
-                        connection_driven, OUTPUT, slacks, is_global);
+                        connection_driven, OUTPUT, 
+                        timing_info,
+                        is_global);
             } else {
                 mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
                         timing_driven,
-                        connection_driven, OUTPUT, slacks, is_global);
+                        connection_driven, OUTPUT, 
+                        timing_info,
+                        is_global);
             }
         }
 
@@ -1854,7 +1836,9 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
             auto net_id = g_atom_nl.pin_net(pin_id);
             mark_and_update_partial_gain(net_id, GAIN, blk_id,
                     timing_driven, connection_driven,
-                    INPUT, slacks, is_global);
+                    INPUT, 
+                    timing_info,
+                    is_global);
         }
 
         /* Finally Clocks */
@@ -1867,15 +1851,19 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
             auto net_id = g_atom_nl.pin_net(pin_id);
             if (global_clocks) {
                 mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
-                        timing_driven, connection_driven, INPUT, slacks, is_global);
+                        timing_driven, connection_driven, INPUT, 
+                        timing_info,
+                        is_global);
             } else {
                 mark_and_update_partial_gain(net_id, GAIN, blk_id,
-                        timing_driven, connection_driven, INPUT, slacks, is_global);
+                        timing_driven, connection_driven, INPUT, 
+                        timing_info,
+                        is_global);
             }
         }
 
 		update_total_gain(alpha, beta, timing_driven, connection_driven,
-				g_atom_map.atom_pb(blk_id)->parent_pb);
+				g_atom_lookup.atom_pb(blk_id)->parent_pb);
 
 		commit_lookahead_pins_used(cb);
 	}
@@ -1926,7 +1914,7 @@ static void start_new_cluster(
 				if (new_cluster->type == EMPTY_TYPE) {
 					continue;
 				}
-				new_cluster->pb = (t_pb*)vtr::calloc(1, sizeof(t_pb));
+				new_cluster->pb = new t_pb;
 				new_cluster->pb->pb_graph_node = new_cluster->type->pb_graph_head;
 				alloc_and_load_pb_stats(new_cluster->pb);
 				new_cluster->pb->parent_pb = NULL;
@@ -1948,8 +1936,8 @@ static void start_new_cluster(
 					break;
 				} else {
 					free_router_data(*router_data);
-					free_pb_stats(new_cluster->pb);
-					free(new_cluster->pb);
+					free_pb(new_cluster->pb);
+					delete new_cluster->pb;
 					*router_data = NULL;
 				}
 				count++;
@@ -2029,7 +2017,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 		cur_pb->pb_stats->num_feasible_blocks = 0;
 		cur_pb->pb_stats->explore_transitive_fanout = true; /* If no legal molecules found, enable exploration of molecules two hops away */
 		for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
-			if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
+			if (g_atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
 
                 auto rng = atom_molecules.equal_range(blk_id);
                 for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
@@ -2038,7 +2026,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 						success = true;
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 							if (molecule->atom_block_ids[j]) {
-								VTR_ASSERT(g_atom_map.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
+								VTR_ASSERT(g_atom_lookup.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
 								auto blk_id2 = molecule->atom_block_ids[j];
 								if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) { 
                                     /* TODO: debating whether to check if placement exists for molecule 
@@ -2075,7 +2063,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 
             AtomBlockId blk_id = g_atom_nl.pin_block(pin_id);
 
-			if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
+			if (g_atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
 
                 auto rng = atom_molecules.equal_range(blk_id);
                 for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
@@ -2084,7 +2072,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 						success = true;
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 							if (molecule->atom_block_ids[j]) {
-								VTR_ASSERT(g_atom_map.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
+								VTR_ASSERT(g_atom_lookup.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
 								auto blk_id2 = molecule->atom_block_ids[j];
 								if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) { 
                                     /* TODO: debating whether to check if placement exists for molecule (more 
@@ -2126,7 +2114,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 					success = true;
 					for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 						if (molecule->atom_block_ids[j]) {
-							VTR_ASSERT(g_atom_map.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
+							VTR_ASSERT(g_atom_lookup.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
 							auto blk_id = molecule->atom_block_ids[j];
 							if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) { 
                                 /* TODO: debating whether to check if placement exists for molecule (more 
@@ -2222,7 +2210,7 @@ static void check_clustering(int num_clb, t_block *clb) {
 	 */
     for(auto blk_id : g_atom_nl.blocks()) {
         //Each atom should be part of a pb
-        const t_pb* atom_pb = g_atom_map.atom_pb(blk_id);
+        const t_pb* atom_pb = g_atom_lookup.atom_pb(blk_id);
         if(!atom_pb) {
 			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 					"Atom block %s is not mapped to a pb\n",
@@ -2230,7 +2218,7 @@ static void check_clustering(int num_clb, t_block *clb) {
         }
 
         //Check the reverse mapping is consistent
-		if (g_atom_map.pb_atom(atom_pb) != blk_id) {
+		if (g_atom_lookup.pb_atom(atom_pb) != blk_id) {
 			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 					"pb %s does not contain atom block %s but atom block %s maps to pb.\n",
                     atom_pb->name,
@@ -2246,7 +2234,7 @@ static void check_clustering(int num_clb, t_block *clb) {
 			VTR_ASSERT(cur_pb->name);
 		}
 
-        int iclb = g_atom_map.atom_clb(blk_id);
+        int iclb = g_atom_lookup.atom_clb(blk_id);
         if(iclb == NO_CLUSTER) {
 			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 					"Atom %s is not mapped to a CLB\n",
@@ -2284,7 +2272,7 @@ static void check_cluster_atom_blocks(t_pb *pb, std::unordered_set<AtomBlockId>&
 	pb_type = pb->pb_graph_node->pb_type;
 	if (pb_type->num_modes == 0) {
 		/* primitive */
-        auto blk_id = g_atom_map.pb_atom(pb);
+        auto blk_id = g_atom_lookup.pb_atom(pb);
 		if (blk_id) {
 			if (blocks_checked.count(blk_id)) {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
@@ -2292,7 +2280,7 @@ static void check_cluster_atom_blocks(t_pb *pb, std::unordered_set<AtomBlockId>&
 						pb->name, g_atom_nl.block_name(blk_id).c_str());
 			}
 			blocks_checked.insert(blk_id);
-			if (pb != g_atom_map.atom_pb(blk_id)) {
+			if (pb != g_atom_lookup.atom_pb(blk_id)) {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 						"pb %s contains atom block %s but atom block does not link to pb.\n",
 						pb->name, g_atom_nl.block_name(blk_id).c_str());
@@ -2332,7 +2320,7 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
 			blk_id = critindexarray[(*seedindex)++];
 		}
 
-		if (g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
+		if (g_atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
 
             auto rng = atom_molecules.equal_range(blk_id);
             for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
@@ -2440,7 +2428,7 @@ static void try_update_lookahead_pins_used(t_pb *cur_pb) {
 		}
 	} else {
 
-        AtomBlockId blk_id = g_atom_map.pb_atom(cur_pb);
+        AtomBlockId blk_id = g_atom_lookup.pb_atom(cur_pb);
 		if (pb_type->blif_model != NULL && blk_id) {
 			compute_and_mark_lookahead_pins_used(blk_id);
 		}
@@ -2478,14 +2466,15 @@ static void reset_lookahead_pins_used(t_pb *cur_pb) {
 
 /* Determine if pins of speculatively packed pb are legal */
 static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id) {
-	const t_pb* cur_pb = g_atom_map.atom_pb(blk_id);
+	const t_pb* cur_pb = g_atom_lookup.atom_pb(blk_id);
     VTR_ASSERT(cur_pb != NULL);
 
 	/* Walk through inputs, outputs, and clocks marking pins off of the same class */
     for(auto pin_id : g_atom_nl.block_pins(blk_id)) {
         auto net_id = g_atom_nl.pin_net(pin_id);
 
-        compute_and_mark_lookahead_pins_used_for_pin(find_pb_graph_pin(pin_id), cur_pb, net_id);
+        const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_lookup, pin_id);
+        compute_and_mark_lookahead_pins_used_for_pin(pb_graph_pin, cur_pb, net_id);
     }
 }
 
@@ -2513,12 +2502,12 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *p
 			/* find location of net driver if exist in clb, NULL otherwise */
             auto driver_pin_id = g_atom_nl.net_driver(net_id);
 
-            auto prim_blk_id = g_atom_map.pb_atom(primitive_pb);
+            auto prim_blk_id = g_atom_lookup.pb_atom(primitive_pb);
 
-            const t_pb* driver_pb = g_atom_map.atom_pb(driver_blk_id);
+            const t_pb* driver_pb = g_atom_lookup.atom_pb(driver_blk_id);
 
 			output_pb_graph_pin = NULL;
-			if (g_atom_map.atom_clb(driver_blk_id) == g_atom_map.atom_clb(prim_blk_id)) {
+			if (g_atom_lookup.atom_clb(driver_blk_id) == g_atom_lookup.atom_clb(prim_blk_id)) {
 				pb_type = driver_pb->pb_graph_node->pb_type;
 				output_port = 0;
 				found = false;
@@ -2602,10 +2591,10 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *p
 
                 //Check if all the net sinks are, in fact, inside this cluster
                 bool all_sinks_in_cur_cluster = true;
-                int driver_clb = g_atom_map.atom_clb(driver_blk_id);
+                int driver_clb = g_atom_lookup.atom_clb(driver_blk_id);
                 for(auto pin_id : g_atom_nl.net_sinks(net_id)) {
                     auto sink_blk_id = g_atom_nl.pin_block(pin_id);
-					if (g_atom_map.atom_clb(sink_blk_id) != driver_clb) {
+					if (g_atom_lookup.atom_clb(sink_blk_id) != driver_clb) {
                         all_sinks_in_cur_cluster = false;
 						break;
 					}
@@ -2642,7 +2631,7 @@ int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const i
     //Record the sink pb graph pins we are looking for
     std::unordered_set<const t_pb_graph_pin*> sink_pb_gpins;
     for(const AtomPinId pin_id : g_atom_nl.net_sinks(net_id)) {
-        const t_pb_graph_pin* sink_pb_gpin = find_pb_graph_pin(pin_id);
+        const t_pb_graph_pin* sink_pb_gpin = find_pb_graph_pin(g_atom_nl, g_atom_lookup, pin_id);
         VTR_ASSERT(sink_pb_gpin);
 
         sink_pb_gpins.insert(sink_pb_gpin);
@@ -2748,13 +2737,13 @@ static void load_transitive_fanout_candidates(int cluster_index,
 		if(g_atom_nl.net_pins(net_id).size() < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE + 1) {
             for(const auto pin_id : g_atom_nl.net_pins(net_id)) {
                 AtomBlockId atom_blk_id = g_atom_nl.pin_block(pin_id);
-                int tclb = g_atom_map.atom_clb(atom_blk_id); //The transitive CLB
+                int tclb = g_atom_lookup.atom_clb(atom_blk_id); //The transitive CLB
 				if(tclb != cluster_index && tclb != NO_CLUSTER) {
 					/* Explore transitive connections from already packed cluster */
 					for(AtomNetId tnet : clb_inter_blk_nets[tclb].nets_in_lb) {
                         for(AtomPinId tpin : g_atom_nl.net_pins(tnet)) {
                             auto blk_id = g_atom_nl.pin_block(tpin);
-							if(g_atom_map.atom_clb(blk_id) == NO_CLUSTER) {
+							if(g_atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
 								/* This transitive atom is not packed, score and add */
 								std::vector<t_pack_molecule *> &transitive_fanout_candidates = *(pb_stats->transitive_fanout_candidates);
 
@@ -2825,24 +2814,3 @@ static void print_block_criticalities(const char * fname) {
 	fclose(fp);
 }
 
-static t_prepack_slack convert_raw_slacks_to_prepack_slacks(t_slack* raw_slacks) {
-    //Temporary helper function to convert raw slacks (by net and net pin indicies)
-    //to AtomNetId, AtomPinId -- this will be replaced with the new timing analyzer
-    t_prepack_slack prepack_slacks;
-    int inet = 0;
-    for(auto net_id : g_atom_nl.nets()) {
-        int ipin = 1;
-        for(auto pin_id : g_atom_nl.net_sinks(net_id)) {
-            float* net_slacks = raw_slacks->slack[inet];
-            float pin_slack = net_slacks[ipin];
-            prepack_slacks.slack[pin_id] = pin_slack;
-            prepack_slacks.timing_criticality[pin_id] = raw_slacks->timing_criticality[inet][ipin];
-#ifdef PATH_COUNTING
-            prepack_slacks.path_criticaltiy[pin_id] = raw_slacks->path_criticality[inet][ipin];
-#endif
-            ++ipin;
-        }
-        ++inet;
-    }
-    return prepack_slacks;
-}

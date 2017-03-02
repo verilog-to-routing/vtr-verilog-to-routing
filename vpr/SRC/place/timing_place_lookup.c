@@ -549,11 +549,15 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 	block[SOURCE_BLOCK].x = source_x_loc;
 	block[SOURCE_BLOCK].y = source_y_loc;
 	block[SOURCE_BLOCK].z = source_z_loc;
+	block[SOURCE_BLOCK].pb = nullptr;
+	block[SOURCE_BLOCK].pb_route = nullptr;
 
 	block[SINK_BLOCK].type = sink_type;
 	block[SINK_BLOCK].x = sink_x_loc;
 	block[SINK_BLOCK].y = sink_y_loc;
 	block[SINK_BLOCK].z = sink_z_loc;
+	block[SINK_BLOCK].pb = nullptr;
+	block[SINK_BLOCK].pb_route = nullptr;
 
 	grid[source_x_loc][source_y_loc].blocks[source_z_loc] = SOURCE_BLOCK;
 	grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = SINK_BLOCK;
@@ -597,6 +601,9 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 
 	CBRR dummy_connections_inf;
 	dummy_connections_inf.prepare_routing_for_net(NET_USED);
+
+    IntraLbPbPinLookup dummy_pb_pin_lookup(type_descriptors, num_types);
+
 	/* Route this net with a dummy criticality of 0 by calling 
 	timing_driven_route_net with slacks set to NULL. */
 	timing_driven_route_net(NET_USED, itry, pres_fac,
@@ -604,7 +611,9 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 			router_opts.astar_fac, router_opts.bend_cost, 
 			dummy_connections_inf,
 			pin_criticality, router_opts.min_incremental_reroute_fanout, rt_node_of_sink, 
-			net_delay[NET_USED], NULL);
+			net_delay[NET_USED],
+            dummy_pb_pin_lookup,
+            nullptr);
 
 	net_delay_value = net_delay[NET_USED][NET_USED_SINK_BLOCK];
 

@@ -2,8 +2,9 @@
     /*
      * Include Files
      */
-    #include "sdc.hpp"
+    #include "sdcparse.hpp"
     #include "sdc_common.hpp"
+    #include "sdc_error.hpp"
 
     #include "sdc_lexer.hpp"
 
@@ -40,13 +41,33 @@
  */
 %option prefix="sdcparse_" 
 
+/* Common character classes */
+BACK_SLASH [\\]
+WS [ \t]
+ENDL (\n|\n\r|\r\n)
+DIGIT10 [0-9]
+NAN ((?i:nan)(\([^{WS}]*\))?)
+INF (?i:inf|infinity)
+FLOAT_BASE (({DIGIT10}*\.?{DIGIT10}+)|({DIGIT10}+\.))
+FLOAT_EXP ([eE][-+]?{DIGIT10}+)
+FLOAT_NUMBER ({NAN}|([-+]?({INF}|({FLOAT_BASE}{FLOAT_EXP}?))))
+INT_NUMBER ([-+]?{DIGIT10}+)
+ALPHA [a-zA-Z_]
+SYMBOL [-~|:*\\/]
+ID_FIRST ({ALPHA})
+ID_MID ({ALPHA}|{DIGIT10}|{SYMBOL})
+ID_INDEX (\[{DIGIT10}+\])
+ID ({ID_FIRST}{ID_MID}*{ID_INDEX}?)
+STR ({ID}|\*{ID}?)
+
 /*
  * Symbol Definitions
  */
 %%
-"#".*                           { /* skip comments */ }
-[\n\r]+                         { return sdcparse::Parser::make_EOL(); }
-[ \t]+                          { /* skip white space */ }
+#.*                             { /* skip comments */ }
+{BACK_SLASH}{WS}*{ENDL}         { /* line continuation don't send EOL to parser */ }
+{ENDL}                          { return sdcparse::Parser::make_EOL(); }
+{WS}+                           { /* skip white space */ }
 
 "create_clock"                  { return sdcparse::Parser::make_CMD_CREATE_CLOCK(); }
 "set_input_delay"               { return sdcparse::Parser::make_CMD_SET_INPUT_DELAY(); }
@@ -54,10 +75,17 @@
 "set_clock_groups"              { return sdcparse::Parser::make_CMD_SET_CLOCK_GROUPS(); }
 "set_false_path"                { return sdcparse::Parser::make_CMD_SET_FALSE_PATH(); }
 "set_max_delay"                 { return sdcparse::Parser::make_CMD_SET_MAX_DELAY(); }
+"set_min_delay"                 { return sdcparse::Parser::make_CMD_SET_MIN_DELAY(); }
 "set_multicycle_path"           { return sdcparse::Parser::make_CMD_SET_MULTICYCLE_PATH(); }
+"set_clock_uncertainty"         { return sdcparse::Parser::make_CMD_SET_CLOCK_UNCERTAINTY(); }
+"set_clock_latency"             { return sdcparse::Parser::make_CMD_SET_CLOCK_LATENCY(); }
+"set_disable_timing"            { return sdcparse::Parser::make_CMD_SET_DISABLE_TIMING(); }
+"set_timing_derate"             { return sdcparse::Parser::make_CMD_SET_TIMING_DERATE(); }
 
 "get_ports"                     { return sdcparse::Parser::make_CMD_GET_PORTS(); }
 "get_clocks"                    { return sdcparse::Parser::make_CMD_GET_CLOCKS(); }
+"get_cells"                     { return sdcparse::Parser::make_CMD_GET_CELLS(); }
+"get_pins"                      { return sdcparse::Parser::make_CMD_GET_PINS(); }
 
 "-period"                       { return sdcparse::Parser::make_ARG_PERIOD(); }
 "-name"                         { return sdcparse::Parser::make_ARG_NAME(); }
@@ -69,10 +97,19 @@
 "-from"                         { return sdcparse::Parser::make_ARG_FROM(); }
 "-to"                           { return sdcparse::Parser::make_ARG_TO(); }
 "-setup"                        { return sdcparse::Parser::make_ARG_SETUP(); }
+"-hold"                         { return sdcparse::Parser::make_ARG_HOLD(); }
+"-early"                        { return sdcparse::Parser::make_ARG_EARLY(); }
+"-late"                         { return sdcparse::Parser::make_ARG_LATE(); }
+"-cell_delay"                   { return sdcparse::Parser::make_ARG_CELL_DELAY(); }
+"-net_delay"                    { return sdcparse::Parser::make_ARG_NET_DELAY(); }
+"-source"                       { return sdcparse::Parser::make_ARG_SOURCE(); }
 
-[-+]?[0-9]+                     { return sdcparse::Parser::make_INT_NUMBER(atoi(sdcparse_get_text(yyscanner))); }
-[-+]?([0-9]*\.?[0-9]+|[0-9]+\.) { return sdcparse::Parser::make_FLOAT_NUMBER(atof(sdcparse_get_text(yyscanner))); }
-\{[ \t]*[^ \t]*[ \t]*\}         { 
+{INT_NUMBER}                    { return sdcparse::Parser::make_INT_NUMBER(atoi(sdcparse_get_text(yyscanner))); }
+{FLOAT_NUMBER}                  { return sdcparse::Parser::make_FLOAT_NUMBER(atof(sdcparse_get_text(yyscanner))); }
+{STR}                           { 
+                                  return sdcparse::Parser::make_STRING(sdcparse_get_text(yyscanner)); 
+                                }
+\{{WS}*{STR}{WS}*\}             { 
                                   /*
                                    * Any continguous sequence of non-white space characters, 
                                    * with optional leading and/or trailing whitespace that falls
@@ -109,9 +146,6 @@
 
                                   return ret; 
                                 }
-[-a-zA-Z0-9_~|:*\\/]*           { 
-                                  return sdcparse::Parser::make_STRING(sdcparse_get_text(yyscanner)); 
-                                }
 \[                              { return sdcparse::Parser::make_LSPAR(); }
 \]                              { return sdcparse::Parser::make_RSPAR(); }
 \{                              { return sdcparse::Parser::make_LCPAR(); }
@@ -125,5 +159,7 @@
                                      line IS blank - so the parse must handle those correclty. */
                                   static bool once; return (once = !once) ? sdcparse::Parser::make_EOL() : sdcparse::Parser::make_EOF();
                                 }
-.                               { assert(false); }
+.                               { 
+                                  sdc_error_wrap(callback, sdcparse_get_lineno(yyscanner), sdcparse_get_text(yyscanner), "Unrecognized character"); 
+                                }
 %%

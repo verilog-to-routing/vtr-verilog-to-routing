@@ -138,10 +138,9 @@ Otherwise equivalent to :sdc:command:`set_clock_groups`.
 
         **Required:** Yes
 
-set_max_delay
--------------
-Overrides the default timing constraint calculated using the information from :sdc:command:`create_clock` with a user-specified delay.
-Be aware that this may produce unexpected results.
+set_max_delay/set_min_delay
+---------------------------
+Overrides the default setup (max) or hold (min) timing constraint calculated using the information from :sdc:command:`create_clock` with a user-specified delay.
 
 *Example Usage:*
 
@@ -150,7 +149,12 @@ Be aware that this may produce unexpected results.
     #Specify a maximum delay of 17 from input_clk to output_clk
     set_max_delay 17 -from [get_clocks {input_clk}] -to [get_clocks {output_clk}]
 
-.. sdc:command:: set_max_delay
+    #Specify a minimum delay of 2 from input_clk to output_clk
+    set_max_delay 2 -from [get_clocks {input_clk}] -to [get_clocks {output_clk}]
+
+.. note:: Max/Min delays are supported between entire clock domains, but *not* between individual netlist elements.
+
+.. sdc:command:: set_max_delay/set_min_delay
 
     .. sdc:option:: <delay>
 
@@ -172,7 +176,13 @@ Be aware that this may produce unexpected results.
 
 set_multicycle_path
 -------------------
-Creates a multicycle at the clock domain level: adds (:sdc:option:`<num_multicycles>` - 1) times the period of the destination clock to the default setup time constraint.
+Sets how many cycles elapse between the launch and capture edges for setup and hold checks.
+
+The default the setup mutlicycle value is 1 (i.e. the capture setup check is performed one cycle after the launch edge).
+
+The default hold multicycle is one less than the setup multicycle path (i.e. the capture hold check occurs in the same cycle as the launch edge for the default setup multicycle). 
+
+If neither :sdc:option:`-setup` or :sdc:option:`-hold` are specified the multicycle is treated as a setup multicycle.
 
 *Example Usage:*
 
@@ -180,6 +190,11 @@ Creates a multicycle at the clock domain level: adds (:sdc:option:`<num_multicyc
 
     #Create a 3 cycle setup mcp from clk to clk2
     set_multicycle_path -setup -from [get_clocks {clk}] -to [get_clocks {clk2}] 3
+
+    #Create a 0 cycle hold mcp from clk to clk2
+    # Note that this moves the default hold check back to it's original position before the
+    # seutp mcp was applied
+    set_multicycle_path -hold -from [get_clocks {clk}] -to [get_clocks {clk2}] 2
 
 .. note:: Multicycles are supported between entire clock domains, but *not* between individual registers.
 
@@ -189,9 +204,13 @@ Creates a multicycle at the clock domain level: adds (:sdc:option:`<num_multicyc
         
         Indicates that the multicycle-path applies to setup analysis.
 
-        .. note:: VPR currently does not support hold analysis.
+        **Required:** No
 
-        **Required:** Yes
+    .. sdc:option:: -hold
+        
+        Indicates that the multicycle-path applies to hold analysis.
+
+        **Required:** No
     
     .. sdc:option:: -from [get_clocks <clock list or regexes>]
         
@@ -214,17 +233,16 @@ Creates a multicycle at the clock domain level: adds (:sdc:option:`<num_multicyc
 set_input_delay/set_output_delay
 --------------------------------
 Use ``set_input_delay`` if you want timing paths from input I/Os analyzed, and ``set_output_delay`` if you want timing paths to output I/Os analyzed.
-If these commands are not specified in your SDC, paths from and to I/Os will not be timing analyzed.
+
+.. note:: If these commands are not specified in your SDC, paths from and to I/Os will not be timing analyzed.
 
 These commands constrain each I/O pad specified after ``get_ports`` to be timing-equivalent to a register clocked on the clock specified after ``-clock``.
 This can be either a clock signal in your design or a virtual clock that does not exist in the design but which is used only to specify the timing of I/Os.
 
-The command also adds the delay max_delay through each pad, thereby tightening the setup time constraint along paths travelling through the I/O pad; this additional delay can be used to model board level delays.
+The specified delays are added to I/O timing paths and can be used to model board level delays.
 
 For single-clock circuits, ``-clock`` can be wildcarded using ``*`` to refer to the single netlist clock, although this is not supported in standard SDC.
 This allows a single SDC command to constrain I/Os in all single-clock circuits.
-
-Regular expressions may be used to refer to I/Os with this command.
 
 *Example Usage:*
 
@@ -259,6 +277,102 @@ Regular expressions may be used to refer to I/Os with this command.
         Specifies the port names or port name regex.
 
         **Required:** Yes
+
+set_clock_uncertainty
+---------------------
+Sets the clock uncertainty between clock domains. 
+This is typically used to model uncertainty in the clock arrival times due to clock jitter.
+
+*Example Usage:*
+
+.. code-block:: tcl
+
+    #Sets the clock uncertainty between all clock domain pairs to 0.025
+    set_clock_uncertainty 0.025
+
+    #Sets the clock uncertainty from 'clk' to all other clock domains to 0.05
+    set_clock_uncertainty -from [get_clocks {clk}] 0.05
+
+    #Sets the clock uncertainty from 'clk' to 'clk2' to 0.75
+    set_clock_uncertainty -from [get_clocks {clk}]  -to [get_clocks {clk2}] 0.75
+
+.. sdc:command:: set_clock_uncertainty
+
+    .. sdc:option:: -from [get_clocks <clock list or regexes>]
+        
+        Specifies the source clock domain(s).
+
+        **Required:** No
+    
+    .. sdc:option:: -to [get_clocks <clock list or regexes>]
+
+        Specifies the sink clock domain(s).
+
+        **Required:** No
+    
+    .. sdc:option:: <uncertainty>
+
+        The clock uncertainty value between the from and to clocks.
+
+        **Required:** Yes
+
+set_clock_latency
+-----------------
+Sets the latency of a clock. 
+VPR automatically calculates on-chip clock network delay, and so only source latency is supported.
+
+Source clock latency corresponds to the delay from the true clock source (e.g. off-chip clock generator) to the on-chip clock definition point.
+
+.. code-block:: tcl
+
+    #Sets the source clock latency of 'clk' to 1.0
+    set_clock_latency -source 1.0 [get_clocks {clk}]
+
+.. sdc:command:: set_clock_latency
+
+    .. sdc:option:: -source
+
+        Specifies that the latency is the source latency.
+
+        **Required:** Yes
+
+    .. sdc:option:: [get_clocks <clock list or regexes>]
+        
+        Specifies the clock domain(s).
+
+        **Required:** Yes
+    
+    .. sdc:option:: <latency>
+
+        The clock's latency.
+
+        **Required:** Yes
+
+set_disable_timing
+------------------
+Disables timing between a pair of connected pins in the netlist.
+This is typically used to manually break combinational loops.
+
+.. code-block:: tcl
+
+    #Disables the timing edge between the pins 'in[0]' and 'out[0]' on 
+    #the netlist primitive named 'blk1'
+    set_disable_timing -from [get_pins {blk1.in[0]}] -to [get_pins {blk1.out[0]}]
+
+.. sdc:command:: set_disable_timing
+
+    .. sdc:option:: -from [get_pins <pin list or regexes>]
+        
+        Specifies the source netlist pins.
+
+        **Required:** Yes
+    
+    .. sdc:option:: -to [get_pins <pin list or regexes>]
+
+        Specifies the sink netlist pins.
+
+        **Required:** Yes
+
 
 Special Characters
 ------------------
@@ -345,7 +459,7 @@ Changing the phase between clocks, and accounting for delay through I/Os with se
 
 E
 ~~
-Sample using all supported SDC commands.  Inputs and outputs are constrained on separate virtual clocks.
+Sample using most supported SDC commands.  Inputs and outputs are constrained on separate virtual clocks.
 
 .. code-block:: tcl
 

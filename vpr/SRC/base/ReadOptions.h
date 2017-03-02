@@ -180,8 +180,4 @@ void free_output_file_names();
 bool IsTimingEnabled(const t_options *Options);
 bool IsEchoEnabled(const t_options *Options);
 
-bool GetPostSynthesisOption(void);
-void SetPostSynthesisOption(bool post_synthesis_enabled);
-
-bool IsPostSynthesisEnabled(const t_options *Options);
 #endif

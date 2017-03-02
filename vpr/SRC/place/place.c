@@ -1,5 +1,7 @@
 #include <cstdio>
 #include <cmath>
+#include <memory>
+#include <fstream>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -10,6 +12,7 @@ using namespace std;
 
 #include "vpr_types.h"
 #include "vpr_error.h"
+#include "vpr_utils.h"
 
 #include "globals.h"
 #include "place.h"
@@ -25,6 +28,12 @@ using namespace std;
 #include "ReadOptions.h"
 #include "vpr_utils.h"
 #include "place_macro.h"
+#include "histogram.h"
+
+#include "PlacementDelayCalculator.h"
+#include "timing_util.h"
+#include "timing_info.h"
+#include "tatum/echo_writer.hpp"
 
 /************** Types and defines local to place.c ***************************/
 
@@ -249,6 +258,8 @@ static float recompute_bb_cost(void);
 
 static float comp_td_point_to_point_delay(int inet, int ipin);
 
+static void comp_td_point_to_point_delays();
+
 static void update_td_cost(void);
 
 static void comp_delta_td_cost(float *delta_timing, float *delta_delay);
@@ -281,17 +292,28 @@ static double get_net_wirelength_estimate(int inet, struct s_bb *bbptr);
 static void free_try_swap_arrays(void);
 
 static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
-	int num_connections, t_slack * slacks, float crit_exponent, float bb_cost,
+	int num_connections, float crit_exponent, float bb_cost,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost, float ** net_delay, const t_timing_inf &timing_inf);
+	float * inverse_prev_bb_cost,
+    const IntraLbPbPinLookup& pb_gpin_lookup,
+#ifdef ENABLE_CLASSIC_VPR_STA
+    t_slack* slacks,
+    t_timing_inf timing_inf,
+#endif
+    SetupTimingInfo& timing_info);
 
 static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
-	t_slack * slacks, float crit_exponent, int inner_recompute_limit,
+	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
-    float ** net_delay, const t_timing_inf &timing_inf);
+#ifdef ENABLE_CLASSIC_VPR_STA
+    t_slack* slacks,
+    t_timing_inf timing_inf,
+#endif
+    const IntraLbPbPinLookup& pb_gpin_lookup,
+    SetupTimingInfo& timing_info);
 
 /*****************************************************************************/
 void try_place(struct s_placer_opts placer_opts,
@@ -310,17 +332,23 @@ void try_place(struct s_placer_opts placer_opts,
 	unsigned int ipin, inet;
 	float t, success_rat, rlim, cost, timing_cost, bb_cost, new_bb_cost, new_timing_cost,
 		delay_cost, new_delay_cost, place_delay_value, inverse_prev_bb_cost, inverse_prev_timing_cost,
-		oldt, **net_delay = NULL, crit_exponent,
-		first_rlim, final_rlim, inverse_delta_rlim, critical_path_delay = UNDEFINED,
-		**remember_net_delay_original_ptr; /*used to free net_delay if it is re-assigned */
+		oldt, crit_exponent,
+		first_rlim, final_rlim, inverse_delta_rlim;
+    tatum::TimingPathInfo critical_path;
+    float sTNS = NAN;
+    float sWNS = NAN;
+
 	double std_dev;
 	char msg[vtr::BUFSIZE];
 	t_placer_statistics stats;
 	t_slack * slacks = NULL;
 
-	/* Allocated here because it goes into timing critical code where each memory allocation is expensive */
+    std::shared_ptr<SetupTimingInfo> timing_info;
+    std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
 
-	remember_net_delay_original_ptr = NULL; /*prevents compiler warning */
+	/* Allocated here because it goes into timing critical code where each memory allocation is expensive */
+    IntraLbPbPinLookup pb_gpin_lookup(type_descriptors, num_types);
+
 
 	/* init file scope variables */
 	num_swap_rejected = 0;
@@ -332,10 +360,7 @@ void try_place(struct s_placer_opts placer_opts,
 			|| placer_opts.enable_timing_computations) {
 		/*do this before the initial placement to avoid messing up the initial placement */
 		slacks = alloc_lookups_and_criticalities(chan_width_dist, router_opts,
-				det_routing_arch, segment_inf, timing_inf, &net_delay, directs, num_directs);
-
-		remember_net_delay_original_ptr = net_delay;
-
+				det_routing_arch, segment_inf, timing_inf, directs, num_directs);
 	}
 
 	width_fac = placer_opts.place_chan_width;
@@ -348,8 +373,8 @@ void try_place(struct s_placer_opts placer_opts,
 	initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file);
 	init_draw_coords((float) width_fac);
 
-	/* Storing the number of pins on each type of block makes the swap routine *
-	 * slightly more efficient.                                                */
+
+
 
 	/* Gets initial cost and loads bounding boxes. */
 
@@ -365,17 +390,42 @@ void try_place(struct s_placer_opts placer_opts,
 
 		place_delay_value = 0;
 
-		if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-			net_delay = point_to_point_delay_cost; /*this keeps net_delay up to date with      *
-			 * *the same values that the placer is using  *
-			 * *point_to_point_delay_cost is computed each*
-			 * *time that comp_td_costs is called, and is *
-			 * *also updated after any swap is accepted   */
-		}
+        //Update the point-to-point delays from the initial placement
+        comp_td_point_to_point_delays();
 
-		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, timing_inf, false, false);
-		load_criticalities(slacks, crit_exponent);
+        /*
+         * Initialize timing analysis
+         */
+        placement_delay_calc = std::make_shared<PlacementDelayCalculator>(g_atom_nl, g_atom_lookup, point_to_point_delay_cost);
+        timing_info = make_setup_timing_info(placement_delay_calc);
+
+        timing_info->update();
+        timing_info->set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during placement
+
+        //Initial slack estimates
+        load_criticalities(*timing_info, crit_exponent, pb_gpin_lookup);
+
+        critical_path = timing_info->least_slack_critical_path();
+
+        //Write out the initial timing echo file
+        tatum::write_echo("timing.place_init.echo", *g_timing_graph, *g_timing_constraints, *placement_delay_calc, timing_info->analyzer());
+
+#ifdef ENABLE_CLASSIC_VPR_STA
+        load_timing_graph_net_delays(point_to_point_delay_cost);
+		do_timing_analysis(slacks, timing_inf, false, true);
+
+        float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
+        if(cpd_diff_ns > ERROR_TOL) {
+            print_classic_cpds();
+            print_tatum_cpds(timing_info->critical_paths());
+
+            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
+        }
+#endif
+
+		/*now we can properly compute costs  */
+		comp_td_costs(&timing_cost, &delay_cost); /*also updates values in point_to_point_delay_cost */
+
 		if (getEchoEnabled()) {
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH))
 				print_timing_graph(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH));
@@ -385,9 +435,6 @@ void try_place(struct s_placer_opts placer_opts,
 				print_criticality(slacks, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY));
 		}
 		outer_crit_iter_count = 1;
-
-		/*now we can properly compute costs  */
-		comp_td_costs(&timing_cost, &delay_cost); /*also vtr::printf proper values into point_to_point_delay_cost */
 
 		/* Timing cost appears to be 0 for small circuits without any critical paths, this will cause costs to be
 		indefinite values later, so set timing_cost to a small number to prevent it						*/
@@ -412,14 +459,33 @@ void try_place(struct s_placer_opts placer_opts,
 		inverse_prev_bb_cost = 0;
 	}
 
+
+    //Initial pacement statistics
+    vtr::printf_info("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
+            cost, bb_cost, timing_cost, delay_cost);
+	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+        vtr::printf_info("Initial placement estimated Critical Path Delay (CPD): %g ns\n", 
+                1e9*critical_path.delay());
+        vtr::printf_info("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
+                1e9*timing_info->setup_total_negative_slack());
+        vtr::printf_info("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
+                1e9*timing_info->setup_worst_negative_slack());
+        vtr::printf_info("\n");
+
+        vtr::printf_info("Initial placement estimated setup slack histogram:\n");
+        print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
+    }
+    vtr::printf_info("\n");
+
 	move_lim = (int) (annealing_sched.inner_num * pow(num_blocks, 1.3333));
 
-	if (placer_opts.inner_loop_recompute_divider != 0)
+	if (placer_opts.inner_loop_recompute_divider != 0) {
 		inner_recompute_limit = (int) 
 			(0.5 + (float) move_lim	/ (float) placer_opts.inner_loop_recompute_divider);
-	else
+    } else {
 		/*don't do an inner recompute */
 		inner_recompute_limit = move_lim + 1;
+    }
 
 	/* Sometimes I want to run the router with a random placement.  Avoid *
 	 * using 0 moves to stop division by 0 and 0 length vector problems,  *
@@ -442,22 +508,39 @@ void try_place(struct s_placer_opts placer_opts,
 
 	tot_iter = 0;
 	moves_since_cost_recompute = 0;
-	vtr::printf_info("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
-			cost, bb_cost, timing_cost, delay_cost);
-	vtr::printf_info("\n");
 
-#ifndef SPEC
-	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
-			"-------", "-------", "----------", "----------", "----------", "----------", 
-			"-------", "-------", "-------", "-------", "------", "---------", "------");
-	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
-			"T", "Cost", "Av BB Cost", "Av TD Cost", "Av Tot Del",
-			"P to P Del", "d_max", "Ac Rate", "Std Dev", "R limit", "Exp",
-			"Tot Moves", "Alpha");
-	vtr::printf_info("%7s %7s %10s %10s %10s %10s %7s %7s %7s %7s %6s %9s %6s\n",
-			"-------", "-------", "----------", "----------", "----------", "----------", 
-			"-------", "-------", "-------", "-------", "------", "---------", "------");
-#endif
+
+    //Table header
+	vtr::printf_info("%7s "
+                     "%7s %10s %10s %10s "
+                     "%10s %7s %7s %8s "
+                     "%7s %7s %7s %6s "
+                     "%9s %6s\n",
+                     "-------", 
+                     "-------", "----------", "----------", "----------", 
+                     "----------", "-------", "-------", "--------", 
+                     "-------", "-------", "-------", "------", 
+                     "---------", "------");
+	vtr::printf_info("%7s "
+                     "%7s %10s %10s %10s "
+                     "%10s %7s %7s %8s "
+                     "%7s %7s %7s %6s "
+                     "%9s %6s\n",
+                     "T",
+                     "Cost", "Av BB Cost", "Av TD Cost", "Av Tot Del",
+                     "P to P Del", "CPD", "sTNS", "sWNS", 
+                     "Ac Rate", "Std Dev", "R limit", "Exp",
+                     "Tot Moves", "Alpha");
+	vtr::printf_info("%7s "
+                     "%7s %10s %10s %10s "
+                     "%10s %7s %7s %8s "
+                     "%7s %7s %7s %6s "
+                     "%9s %6s\n",
+                     "-------", 
+                     "-------", "----------", "----------", "----------", 
+                     "----------", "-------", "-------", "--------", 
+                     "-------", "-------", "-------", "------", 
+                     "---------", "------");
 
 	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d", 
 		cost, bb_cost, timing_cost, delay_cost, width_fac);
@@ -471,14 +554,25 @@ void try_place(struct s_placer_opts placer_opts,
 			cost = 1;
 		}
 
-		outer_loop_recompute_criticalities(placer_opts, num_connections, slacks,
+		outer_loop_recompute_criticalities(placer_opts, num_connections,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
-			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay, timing_inf);
+			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
+            pb_gpin_lookup,
+#ifdef ENABLE_CLASSIC_VPR_STA
+            slacks,
+            timing_inf,
+#endif
+            *timing_info);
 
 		placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
-			move_lim, slacks, crit_exponent, inner_recompute_limit, &stats, 
+			move_lim, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, &delay_cost,
-			net_delay, timing_inf);
+#ifdef ENABLE_CLASSIC_VPR_STA
+            slacks,
+            timing_inf,
+#endif
+            pb_gpin_lookup,
+            *timing_info);
 
 		/* Lines below prevent too much round-off error from accumulating *
 		 * in the cost over many iterations.  This round-off can lead to  *
@@ -534,24 +628,33 @@ void try_place(struct s_placer_opts placer_opts,
 		oldt = t; /* for finding and printing alpha. */
 		update_t(&t, rlim, success_rat, annealing_sched);
 
-#ifndef SPEC
-		critical_path_delay = get_critical_path_delay();
-		if(oldt >= 100.0 - EPSILON) {
-			vtr::printf_info("%7.3f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
-					oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
-					stats.av_delay_cost, place_delay_value, critical_path_delay, 
-					success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
-		} else if(oldt >= 10.0 - EPSILON) {
-			vtr::printf_info("%7.4f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
-					oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
-					stats.av_delay_cost, place_delay_value, critical_path_delay, 
-					success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
-		} else {
-			vtr::printf_info("%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7.4f %7.4f %7.4f %7.4f %6.3f %9d %6.3f\n",
-					oldt, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, 
-					stats.av_delay_cost, place_delay_value, critical_path_delay, 
-					success_rat, std_dev, rlim, crit_exponent, tot_iter, t / oldt);
-		}
+        if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+            critical_path = timing_info->least_slack_critical_path();
+            sTNS = timing_info->setup_total_negative_slack();
+            sWNS = timing_info->setup_worst_negative_slack(); 
+        }
+
+        vtr::printf_info("%7.3f "
+                         "%7.4f %10.4f %-10.5g %-10.5g "
+                         "%-10.5g %7.3f % 7.5g % 8.3f "
+                         "%7.4f %7.4f %7.4f %6.3f"
+                         "%9d %6.3f\n",
+                         oldt, 
+                         stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, 
+                         place_delay_value, 1e9*critical_path.delay(), 1e9*sTNS, 1e9*sWNS,  
+                         success_rat, std_dev, rlim, crit_exponent, 
+                         tot_iter, t / oldt);
+
+#ifdef ENABLE_CLASSIC_VPR_STA
+        if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+            float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
+            if(cpd_diff_ns > ERROR_TOL) {
+                print_classic_cpds();
+                print_tatum_cpds(timing_info->critical_paths());
+
+                vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
+            }
+        }
 #endif
 
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
@@ -573,18 +676,29 @@ void try_place(struct s_placer_opts placer_opts,
 	/* Outer loop of the simmulated annealing ends */
 
 
-	outer_loop_recompute_criticalities(placer_opts, num_connections, slacks,
+	outer_loop_recompute_criticalities(placer_opts, num_connections,
 			crit_exponent, bb_cost, &place_delay_value, &timing_cost, &delay_cost,
-			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost, net_delay, timing_inf);
+			&outer_crit_iter_count, &inverse_prev_timing_cost, &inverse_prev_bb_cost,
+            pb_gpin_lookup,
+#ifdef ENABLE_CLASSIC_VPR_STA
+            slacks,
+            timing_inf,
+#endif
+            *timing_info);
 
 	t = 0; /* freeze out */
 
 	/* Run inner loop again with temperature = 0 so as to accept only swaps
 	 * which reduce the cost of the placement */
 	placement_inner_loop(t, rlim, placer_opts, inverse_prev_bb_cost, inverse_prev_timing_cost, 
-			move_lim, slacks, crit_exponent, inner_recompute_limit, &stats, 
+			move_lim, crit_exponent, inner_recompute_limit, &stats, 
 			&cost, &bb_cost, &timing_cost, &delay_cost,
-			net_delay, timing_inf);
+#ifdef ENABLE_CLASSIC_VPR_STA
+            slacks,
+            timing_inf,
+#endif
+            pb_gpin_lookup,
+            *timing_info);
 
 	tot_iter += move_lim;
 	success_rat = ((float) stats.success_sum) / move_lim;
@@ -602,11 +716,22 @@ void try_place(struct s_placer_opts placer_opts,
 
 	std_dev = get_std_dev(stats.success_sum, stats.sum_of_squares, stats.av_cost);
 
-#ifndef SPEC
-	vtr::printf_info("%7.5f %7.5f %10.4f %-10.5g %-10.5g %-10.5g %7s %7.4f %7.4f %7.4f %6.3f %9d\n",
-			t, stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, place_delay_value, 
-			" ", success_rat, std_dev, rlim, crit_exponent, tot_iter);
-#endif
+	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+        critical_path = timing_info->least_slack_critical_path();
+        sTNS = timing_info->setup_total_negative_slack();
+        sWNS = timing_info->setup_worst_negative_slack();
+    }
+
+    vtr::printf_info("%7.3f "
+                     "%7.4f %10.4f %-10.5g %-10.5g "
+                     "%-10.5g %7.3f % 7.5g % 8.3f "
+                     "%7.4f %7.4f %7.4f %6.3f"
+                     "%9d %6.3f\n",
+                      t, 
+                      stats.av_cost, stats.av_bb_cost, stats.av_timing_cost, stats.av_delay_cost, 
+                      place_delay_value, 1e9*critical_path.delay(), 1e9*sTNS, 1e9*sWNS,
+                      success_rat, std_dev, rlim, crit_exponent,
+                      tot_iter, 0.);
 
 	// TODO:  
 	// 1. print a message about number of aborted moves.
@@ -633,29 +758,43 @@ void try_place(struct s_placer_opts placer_opts,
 
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
-		net_delay = point_to_point_delay_cost; /*this makes net_delay up to date with    *
-		 *the same values that the placer is using*/
-		load_timing_graph_net_delays(net_delay);
 
-		do_timing_analysis(slacks, timing_inf, false, false);
+        //Final timing estimate
+        timing_info->update(); //Tatum
+		critical_path = timing_info->least_slack_critical_path();
 
-		if (getEchoEnabled()) {
-			if(isEchoFileEnabled(E_ECHO_PLACEMENT_SINK_DELAYS))
-				print_sink_delays(getEchoFileName(E_ECHO_PLACEMENT_SINK_DELAYS));
-			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_SLACK))
-				print_slack(slacks->slack, false, getEchoFileName(E_ECHO_FINAL_PLACEMENT_SLACK));
-			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_CRITICALITY))
-				print_criticality(slacks, getEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY));
-			if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH))
-				print_timing_graph(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH));
-			if(isEchoFileEnabled(E_ECHO_PLACEMENT_CRIT_PATH))
-				print_critical_path(getEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH), timing_inf);
-		}
+        tatum::write_echo("timing.place_final.echo", *g_timing_graph, *g_timing_constraints, *placement_delay_calc, timing_info->analyzer());
+
+#ifdef ENABLE_CLASSIC_VPR_STA
+        //Old VPR analyzer
+        load_timing_graph_net_delays(point_to_point_delay_cost);
+		do_timing_analysis(slacks, timing_inf, false, true);
+#endif
+
 
 		/* Print critical path delay. */
-		critical_path_delay = get_critical_path_delay();
 		vtr::printf_info("\n");
-		vtr::printf_info("Placement estimated critical path delay: %g ns\n", critical_path_delay);
+		vtr::printf_info("Placement estimated critical path delay: %g ns (old VPR STA %g ns)\n", 
+                1e9*critical_path.delay(), get_critical_path_delay());
+        vtr::printf_info("Placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
+                1e9*timing_info->setup_total_negative_slack());
+        vtr::printf_info("Placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
+                1e9*timing_info->setup_worst_negative_slack());
+        vtr::printf_info("\n");
+
+        vtr::printf_info("Placement estimated setup slack histogram:\n");
+        print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
+        vtr::printf_info("\n");
+
+#ifdef ENABLE_CLASSIC_VPR_STA
+        float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
+        if(cpd_diff_ns > ERROR_TOL) {
+            print_classic_cpds();
+            print_tatum_cpds(timing_info->critical_paths());
+
+            vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
+        }
+#endif
 	}
 
 	sprintf(msg, "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
@@ -673,21 +812,18 @@ void try_place(struct s_placer_opts placer_opts,
 	float accept_rate = (float) num_swap_accepted / total_swap_attempts;
 	float abort_rate = (float) num_swap_aborted / total_swap_attempts;
 	vtr::printf_info("Placement total # of swap attempts: %*d\n", num_swap_print_digits, total_swap_attempts);
-	vtr::printf_info("\tSwaps accepted: %*d (%4.1f %)\n", num_swap_print_digits, num_swap_accepted, 100*accept_rate);
-	vtr::printf_info("\tSwaps rejected: %*d (%4.1f %)\n", num_swap_print_digits, num_swap_rejected, 100*reject_rate);
-	vtr::printf_info("\tSwaps aborted : %*d (%4.1f %)\n", num_swap_print_digits, num_swap_aborted, 100*abort_rate);
+	vtr::printf_info("\tSwaps accepted: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_accepted, 100*accept_rate);
+	vtr::printf_info("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_rejected, 100*reject_rate);
+	vtr::printf_info("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100*abort_rate);
 	
 
-#ifdef SPEC
 	vtr::printf_info("Total moves attempted: %d.0\n", tot_iter);
-#endif
 
 	free_placement_structs(placer_opts);
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 
-		net_delay = remember_net_delay_original_ptr;
-		free_lookups_and_criticalities(&net_delay, slacks);
+		free_lookups_and_criticalities(slacks);
 	}
 
 	free_try_swap_arrays();
@@ -695,10 +831,16 @@ void try_place(struct s_placer_opts placer_opts,
 
 /* Function to recompute the criticalities before the inner loop of the annealing */
 static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
-	int num_connections, t_slack * slacks, float crit_exponent, float bb_cost,
+	int num_connections, float crit_exponent, float bb_cost,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
-	float * inverse_prev_bb_cost, float ** net_delay, const t_timing_inf &timing_inf) {
+	float * inverse_prev_bb_cost, 
+    const IntraLbPbPinLookup& pb_gpin_lookup,
+#ifdef ENABLE_CLASSIC_VPR_STA
+    t_slack* slacks,
+    t_timing_inf timing_inf,
+#endif
+    SetupTimingInfo& timing_info) {
 
 	if (placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
 		return;
@@ -714,12 +856,15 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 
 		*place_delay_value = (*delay_cost) / num_connections;
 
-		/*note, for path_based, the net delay is not updated since it is current,
-		 *because it accesses point_to_point_delay array */
+        //Per-temperature timing update
+        timing_info.update();
+		load_criticalities(timing_info, crit_exponent, pb_gpin_lookup);
 
-		load_timing_graph_net_delays(net_delay);
-		do_timing_analysis(slacks, timing_inf, false, false);
-		load_criticalities(slacks, crit_exponent);
+#ifdef ENABLE_CLASSIC_VPR_STA
+        load_timing_graph_net_delays(point_to_point_delay_cost);
+		do_timing_analysis(slacks, timing_inf, false, true);
+#endif
+
 		/*recompute costs from scratch, based on new criticalities */
 		comp_td_costs(timing_cost, delay_cost);
 		*outer_crit_iter_count = 0;
@@ -736,10 +881,15 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 /* Function which contains the inner loop of the simulated annealing */
 static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
-	t_slack * slacks, float crit_exponent, int inner_recompute_limit,
+	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
-	float ** net_delay, const t_timing_inf &timing_inf) {
+#ifdef ENABLE_CLASSIC_VPR_STA
+    t_slack* slacks,
+    t_timing_inf timing_inf,
+#endif
+    const IntraLbPbPinLookup& pb_gpin_lookup,
+    SetupTimingInfo& timing_info) {
 
 	int inner_crit_iter_count, inner_iter;
 	int swap_result;
@@ -790,9 +940,15 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 				/* Using the delays in net_delay, do a timing analysis to update slacks and
 				 * criticalities; then update the timing cost since it will change.
 				 */
-				load_timing_graph_net_delays(net_delay);
-				do_timing_analysis(slacks, timing_inf, false, false);
-				load_criticalities(slacks, crit_exponent);
+                //Inner loop timing update
+                timing_info.update();
+				load_criticalities(timing_info, crit_exponent, pb_gpin_lookup);
+
+#ifdef ENABLE_CLASSIC_VPR_STA
+                load_timing_graph_net_delays(point_to_point_delay_cost);
+                do_timing_analysis(slacks, timing_inf, false, true);
+#endif
+
 				comp_td_costs(timing_cost, delay_cost);
 			}
 			inner_crit_iter_count++;
@@ -1506,9 +1662,8 @@ static enum swap_result assess_swap(float delta_c, float t) {
 
 	if (delta_c <= 0) {
 
-#ifdef SPEC			/* Reduce variation in final solution due to round off */
+        /* Reduce variation in final solution due to round off */
 		fnum = vtr::frand();
-#endif
 
 		accept = ACCEPTED;
 		return (accept);
@@ -1553,48 +1708,62 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 
 	/*returns the delay of one point to point connection */
 
-	int source_block, sink_block;
-	int delta_x, delta_y;
-	t_type_ptr source_type, sink_type;
-	float delay_source_to_sink;
+	float delay_source_to_sink = 0.;
 
-	delay_source_to_sink = 0.;
+    if(g_clbs_nlist.net[inet].is_global == false) {
+        //Only estimate delay for signals routed through the inter-block
+        //routing network. Global signals are assumed to have zero delay.
+        int source_block, sink_block;
+        int delta_x, delta_y;
+        t_type_ptr source_type, sink_type;
 
-	source_block = g_clbs_nlist.net[inet].pins[0].block;
-	source_type = block[source_block].type;
 
-	sink_block = g_clbs_nlist.net[inet].pins[ipin].block;
-	sink_type = block[sink_block].type;
+        source_block = g_clbs_nlist.net[inet].pins[0].block;
+        source_type = block[source_block].type;
 
-	VTR_ASSERT(source_type != NULL);
-	VTR_ASSERT(sink_type != NULL);
+        sink_block = g_clbs_nlist.net[inet].pins[ipin].block;
+        sink_type = block[sink_block].type;
 
-	delta_x = abs(block[sink_block].x - block[source_block].x);
-	delta_y = abs(block[sink_block].y - block[source_block].y);
+        VTR_ASSERT(source_type != NULL);
+        VTR_ASSERT(sink_type != NULL);
 
-	/* TODO low priority: Could be merged into one look-up table */
-	/* Note: This heuristic is terrible on Quality of Results.  
-	 * A much better heuristic is to create a more comprehensive lookup table but
-	 * it's too late in the release cycle to do this.  Pushing until the next release */
-	if (source_type == IO_TYPE) {
-		if (sink_type == IO_TYPE)
-			delay_source_to_sink = delta_io_to_io[delta_x][delta_y];
-		else
-			delay_source_to_sink = delta_io_to_clb[delta_x][delta_y];
-	} else {
-		if (sink_type == IO_TYPE)
-			delay_source_to_sink = delta_clb_to_io[delta_x][delta_y];
-		else
-			delay_source_to_sink = delta_clb_to_clb[delta_x][delta_y];
-	}
-	if (delay_source_to_sink < 0) {
-		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-				"in comp_td_point_to_point_delay: Bad delay_source_to_sink value delta(%d, %d) delay of %g\n"
-				"in comp_td_point_to_point_delay: Delay is less than 0\n",
-				delta_x, delta_y, delay_source_to_sink);
-	}
+        delta_x = abs(block[sink_block].x - block[source_block].x);
+        delta_y = abs(block[sink_block].y - block[source_block].y);
+
+        /* TODO low priority: Could be merged into one look-up table */
+        /* Note: This heuristic is terrible on Quality of Results.  
+         * A much better heuristic is to create a more comprehensive lookup table
+         */
+        if (source_type == IO_TYPE) {
+            if (sink_type == IO_TYPE)
+                delay_source_to_sink = delta_io_to_io[delta_x][delta_y];
+            else
+                delay_source_to_sink = delta_io_to_clb[delta_x][delta_y];
+        } else {
+            if (sink_type == IO_TYPE)
+                delay_source_to_sink = delta_clb_to_io[delta_x][delta_y];
+            else
+                delay_source_to_sink = delta_clb_to_clb[delta_x][delta_y];
+        }
+        if (delay_source_to_sink < 0) {
+            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+                    "in comp_td_point_to_point_delay: Bad delay_source_to_sink value delta(%d, %d) delay of %g\n"
+                    "in comp_td_point_to_point_delay: Delay is less than 0\n",
+                    delta_x, delta_y, delay_source_to_sink);
+        }
+    }
+
 
 	return (delay_source_to_sink);
+}
+
+//Recompute all point to point delays, updating point_to_point_delay_cost
+static void comp_td_point_to_point_delays() {
+    for(size_t inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
+        for(size_t ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
+            point_to_point_delay_cost[inet][ipin] = comp_td_point_to_point_delay(inet, ipin);
+        }
+    }
 }
 
 static void update_td_cost(void) {
@@ -1606,8 +1775,7 @@ static void update_td_cost(void) {
 	int iblk, iblk2, bnum, driven_by_moved_block;
 	
 	/* Go through all the blocks moved. */
-	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)
-	{
+	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
 		for (iblk_pin = 0; iblk_pin < block[bnum].type->num_pins; iblk_pin++) {
 
@@ -1624,28 +1792,24 @@ static void update_td_cost(void) {
 			if (net_pin != 0) {
 
 				driven_by_moved_block = false;
-				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++)
-				{	if (g_clbs_nlist.net[inet].pins[0].block == blocks_affected.moved_blocks[iblk2].block_num)
+				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++) {
+                    if (g_clbs_nlist.net[inet].pins[0].block == blocks_affected.moved_blocks[iblk2].block_num)
 						driven_by_moved_block = true;
 				}
 				
 				/* The following "if" prevents the value from being updated twice. */
 				if (driven_by_moved_block == false) {
-					point_to_point_delay_cost[inet][net_pin] =
-							temp_point_to_point_delay_cost[inet][net_pin];
+					point_to_point_delay_cost[inet][net_pin] = temp_point_to_point_delay_cost[inet][net_pin];
 					temp_point_to_point_delay_cost[inet][net_pin] = -1;
-					point_to_point_timing_cost[inet][net_pin] =
-							temp_point_to_point_timing_cost[inet][net_pin];
+					point_to_point_timing_cost[inet][net_pin] = temp_point_to_point_timing_cost[inet][net_pin];
 					temp_point_to_point_timing_cost[inet][net_pin] = -1;
 				}
 			} else { /* This net is being driven by a moved block, recompute */
 				/* All point to point connections on this net. */
 				for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
-					point_to_point_delay_cost[inet][ipin] =
-							temp_point_to_point_delay_cost[inet][ipin];
+					point_to_point_delay_cost[inet][ipin] = temp_point_to_point_delay_cost[inet][ipin];
 					temp_point_to_point_delay_cost[inet][ipin] = -1;
-					point_to_point_timing_cost[inet][ipin] =
-							temp_point_to_point_timing_cost[inet][ipin];
+					point_to_point_timing_cost[inet][ipin] = temp_point_to_point_timing_cost[inet][ipin];
 					temp_point_to_point_timing_cost[inet][ipin] = -1;
 				} /* Finished updating the pin */
 			}
@@ -1702,10 +1866,8 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 
 					temp_point_to_point_timing_cost[inet][net_pin] =
 						timing_place_crit[inet][net_pin] * temp_delay;
-					delta_timing_cost += temp_point_to_point_timing_cost[inet][net_pin]
-						- point_to_point_timing_cost[inet][net_pin];
-					delta_delay_cost += temp_point_to_point_delay_cost[inet][net_pin]
-							- point_to_point_delay_cost[inet][net_pin];
+					delta_timing_cost += temp_point_to_point_timing_cost[inet][net_pin] - point_to_point_timing_cost[inet][net_pin];
+					delta_delay_cost += temp_point_to_point_delay_cost[inet][net_pin] - point_to_point_delay_cost[inet][net_pin];
 				}
 			} else { /* This net is being driven by a moved block, recompute */
 				/* All point to point connections on this net. */
@@ -1715,10 +1877,8 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 
 					temp_point_to_point_timing_cost[inet][ipin] =
 						timing_place_crit[inet][ipin] * temp_delay;
-					delta_timing_cost += temp_point_to_point_timing_cost[inet][ipin]
-						- point_to_point_timing_cost[inet][ipin];
-					delta_delay_cost += temp_point_to_point_delay_cost[inet][ipin]
-							- point_to_point_delay_cost[inet][ipin];
+					delta_timing_cost += temp_point_to_point_timing_cost[inet][ipin] - point_to_point_timing_cost[inet][ipin];
+					delta_delay_cost += temp_point_to_point_delay_cost[inet][ipin] - point_to_point_delay_cost[inet][ipin];
 
 				} /* Finished updating the pin */
 			}
@@ -1896,34 +2056,26 @@ static void alloc_and_load_placement_structs(
 			|| placer_opts.enable_timing_computations) {
 		/* Allocate structures associated with timing driven placement */
 		/* [0..g_clbs_nlist.net.size()-1][1..num_pins-1]  */
-		point_to_point_delay_cost = (float **) vtr::malloc(
-				g_clbs_nlist.net.size() * sizeof(float *));
-		temp_point_to_point_delay_cost = (float **) vtr::malloc(
-				g_clbs_nlist.net.size() * sizeof(float *));
+		point_to_point_delay_cost = (float **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(float *));
+		temp_point_to_point_delay_cost = (float **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(float *));
 
-		point_to_point_timing_cost = (float **) vtr::malloc(
-				g_clbs_nlist.net.size() * sizeof(float *));
-		temp_point_to_point_timing_cost = (float **) vtr::malloc(
-				g_clbs_nlist.net.size() * sizeof(float *));
+		point_to_point_timing_cost = (float **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(float *));
+		temp_point_to_point_timing_cost = (float **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(float *));
 
 		for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 
 			/* In the following, subract one so index starts at *
 			 * 1 instead of 0 */
-			point_to_point_delay_cost[inet] = (float *) vtr::malloc(
-					g_clbs_nlist.net[inet].num_sinks() * sizeof(float));
+			point_to_point_delay_cost[inet] = (float *) vtr::malloc(g_clbs_nlist.net[inet].num_sinks() * sizeof(float));
 			point_to_point_delay_cost[inet]--;
 
-			temp_point_to_point_delay_cost[inet] = (float *) vtr::malloc(
-					g_clbs_nlist.net[inet].num_sinks() * sizeof(float));
+			temp_point_to_point_delay_cost[inet] = (float *) vtr::malloc(g_clbs_nlist.net[inet].num_sinks() * sizeof(float));
 			temp_point_to_point_delay_cost[inet]--;
 
-			point_to_point_timing_cost[inet] = (float *) vtr::malloc(
-					g_clbs_nlist.net[inet].num_sinks() * sizeof(float));
+			point_to_point_timing_cost[inet] = (float *) vtr::malloc(g_clbs_nlist.net[inet].num_sinks() * sizeof(float));
 			point_to_point_timing_cost[inet]--;
 
-			temp_point_to_point_timing_cost[inet] = (float *) vtr::malloc(
-					g_clbs_nlist.net[inet].num_sinks() * sizeof(float));
+			temp_point_to_point_timing_cost[inet] = (float *) vtr::malloc(g_clbs_nlist.net[inet].num_sinks() * sizeof(float));
 			temp_point_to_point_timing_cost[inet]--;
 		}
 		for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {

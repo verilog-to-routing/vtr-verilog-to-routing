@@ -7,6 +7,7 @@ using namespace std;
 #include "vtr_log.h"
 
 #include "vpr_types.h"
+#include "vpr_utils.h"
 #include "globals.h"
 #include "path_delay.h"
 #include "path_delay2.h"
@@ -14,10 +15,11 @@ using namespace std;
 #include "timing_place_lookup.h"
 #include "timing_place.h"
 
+#include "timing_info.h"
+
 float **timing_place_crit; /*available externally */
 
 static vtr::t_chunk timing_place_crit_ch = {NULL, 0, NULL};
-static vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
 /******** prototypes ******************/
 static float **alloc_crit(vtr::t_chunk *chunk_list_ptr);
@@ -76,39 +78,22 @@ void print_sink_delays(const char *fname) {
 }
 
 /**************************************/
-void load_criticalities(t_slack * slacks, float crit_exponent) {
+void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const IntraLbPbPinLookup& pb_gpin_lookup) {
 	/* Performs a 1-to-1 mapping from criticality to timing_place_crit.  
 	  For every pin on every net (or, equivalently, for every tedge ending 
 	  in that pin), timing_place_crit = criticality^(criticality exponent) */
 
-	unsigned int ipin, inet;
-#ifdef PATH_COUNTING
-	float timing_criticality, path_criticality; 
-#endif
-
-	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+	for (size_t inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		if (g_clbs_nlist.net[inet].is_global)
 			continue;
-		for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
-			if (slacks->timing_criticality[inet][ipin] < HUGE_NEGATIVE_FLOAT + 1) {
-				/* We didn't analyze this connection, so give it a timing_place_crit of 0. */
-				timing_place_crit[inet][ipin] = 0.;
-			} else {
-#ifdef PATH_COUNTING
-				/* Calculate criticality as a weighted sum of timing criticality and path 
-				criticality. The placer likes a great deal of contrast between criticalities. 
-				Since path criticality varies much more than timing, we "sharpen" timing 
-				criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
-				path_criticality = slacks->path_criticality[inet][ipin];
-				timing_criticality = pow(slacks->timing_criticality[inet][ipin], crit_exponent);
+		for (size_t ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 
-				timing_place_crit[inet][ipin] =		 PLACE_PATH_WEIGHT  * path_criticality
-											  + (1 - PLACE_PATH_WEIGHT) * timing_criticality; 
-#else
-				/* Just take timing criticality to some power (crit_exponent). */
-				timing_place_crit[inet][ipin] = pow(slacks->timing_criticality[inet][ipin], crit_exponent);
-#endif
-			}
+            float clb_pin_crit = calculate_clb_net_pin_criticality(timing_info, pb_gpin_lookup, inet, ipin);
+
+            /* The placer likes a great deal of contrast between criticalities. 
+            Since path criticality varies much more than timing, we "sharpen" timing 
+            criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
+            timing_place_crit[inet][ipin] = pow(clb_pin_crit, crit_exponent);
 		}
 	}
 }
@@ -117,13 +102,10 @@ void load_criticalities(t_slack * slacks, float crit_exponent) {
 t_slack * alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, float ***net_delay, const t_direct_inf *directs, 
+		t_timing_inf timing_inf, const t_direct_inf *directs, 
 		const int num_directs) {
 
 	t_slack * slacks = alloc_and_load_timing_graph(timing_inf);
-
-	(*net_delay) = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net,
-			g_clbs_nlist.net.size());
 
 	compute_delay_lookup_tables(router_opts, det_routing_arch, segment_inf,
 			chan_width_dist, directs, num_directs);
@@ -134,13 +116,12 @@ t_slack * alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 }
 
 /**************************************/
-void free_lookups_and_criticalities(float ***net_delay, t_slack * slacks) {
+void free_lookups_and_criticalities(t_slack * slacks) {
 
 	free(timing_place_crit);
 	free_crit(&timing_place_crit_ch);
 
 	free_timing_graph(slacks);
-	free_net_delay(*net_delay, &net_delay_ch);
 
 	free_place_lookup_structs();
 }

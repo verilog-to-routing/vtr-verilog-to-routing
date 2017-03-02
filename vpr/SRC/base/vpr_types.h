@@ -31,6 +31,7 @@
 #include <unordered_map>
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
+#include "vtr_assert.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -127,17 +128,18 @@ struct s_pb_stats;
  */
 typedef struct s_pb t_pb;
 typedef struct s_pb {
-	char *name; /* Name of this physical block */
-	t_pb_graph_node *pb_graph_node; /* pointer to pb_graph_node this pb corresponds to */
+	char *name = nullptr; /* Name of this physical block */
+	t_pb_graph_node *pb_graph_node = nullptr; /* pointer to pb_graph_node this pb corresponds to */
 
-	int mode; /* mode that this pb is set to */
+	int mode = 0; /* mode that this pb is set to */
 
-	t_pb **child_pbs; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
-	t_pb *parent_pb; /* pointer to parent node */
+	t_pb **child_pbs = nullptr; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
+	t_pb *parent_pb = nullptr; /* pointer to parent node */
 
-	struct s_pb_stats *pb_stats; /* statistics for current pb */
+	struct s_pb_stats *pb_stats = nullptr; /* statistics for current pb */
 
-	int clock_net; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
+	int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
+
 
 	int get_num_child_types() const {
 		if (child_pbs != NULL && has_modes()) {
@@ -146,9 +148,11 @@ typedef struct s_pb {
 			return 0;
 		}
 	}
+
 	int get_num_children_of_type(int type_index) const {
 		return get_mode()->pb_type_children[type_index].num_pb;
 	}
+
 	t_mode* get_mode() const {
 		if (has_modes()) {
 			return &pb_graph_node->pb_type->modes[mode];
@@ -156,19 +160,95 @@ typedef struct s_pb {
 			return NULL;
 		}
 	}
+
 	bool has_modes() const {
 		return pb_graph_node->pb_type->num_modes > 0;
 	}
+
+    //Returns the t_pb associated with the specified gnode which is contained
+    //within the current pb
+    const t_pb* find_pb(const t_pb_graph_node* gnode) const {
+        //Base case
+        if(pb_graph_node == gnode) {
+            return this;
+        }
+
+        //Search recursively
+        for(int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
+
+            if(child_pbs[ichild_type] == nullptr) continue;
+
+            for(int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
+
+                const t_pb* child_pb = &child_pbs[ichild_type][ipb];
+
+                const t_pb* found_pb = child_pb->find_pb(gnode);
+                if(found_pb != nullptr) {
+                    VTR_ASSERT(found_pb->pb_graph_node == gnode);
+                    return found_pb; //Found
+                }
+            }
+        }
+        return nullptr; //Not found
+    }
+
+    //Returns the root pb containing this pb
+    const t_pb* root_pb() const {
+        
+        const t_pb* curr_pb = this;
+        while(curr_pb->parent_pb != nullptr) {
+            curr_pb = curr_pb->parent_pb;
+        }
+
+        VTR_ASSERT(curr_pb->parent_pb == nullptr);
+        return curr_pb;
+    }
+
+    //Returns true if this pb corresponds to a primitive block (i.e. in the AtomNetlist)
+    bool is_primitive() const {
+        return child_pbs == nullptr;
+    }
+
+    //Returns the bit index into the AtomPort for the specified primitive
+    //pb_graph_pin, considering any pin rotations which have been applied to logically
+    //equivalent pins
+    BitIndex atom_pin_bit_index(const t_pb_graph_pin* gpin) const {
+        VTR_ASSERT_MSG(is_primitive(), "Atom pin indicies can only be looked up from primitives");
+
+        auto iter = pin_rotations_.find(gpin);
+
+        if(iter != pin_rotations_.end()) {
+            //Return the original atom pin index
+            return iter->second;
+        } else {
+            //No re-mapping, return the index directly
+            return gpin->pin_number;
+        }
+    }
+
+    //For a given gpin, sets the mapping to the original atom netlist pin's bit index in
+    //it's AtomPort.  This is used to record any pin rotations which have been applied to
+    //logically equivalent pins
+    void set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_index) {
+        pin_rotations_[gpin] = atom_pin_bit_index;
+    }
+
+private:
+    std::map<const t_pb_graph_pin*,BitIndex> pin_rotations_; //Contains the atom netlist port bit index associated 
+                                                       //with any primitive pins which have been rotated during clustering
+
 } t_pb;
 
 /* Representation of intra-logic block routing */
 struct t_pb_route {
     AtomNetId atom_net_id; /* which net in the atom netlist uses this pin */
-	int prev_pb_pin_id; /* The pb_graph_pin id of the pb_pin that drives this pin */
+	int driver_pb_pin_id; /* The pb_pin id of the pb_pin that drives this pin */
+    std::vector<int> sink_pb_pin_ids; /* The pb_pin id's of the pb_pins driven by this node */
+    const t_pb_graph_pin* pb_graph_pin = nullptr; /* The graph pin associated wit this node */
 
 	t_pb_route() {
 		atom_net_id = AtomNetId::INVALID();
-		prev_pb_pin_id = OPEN;
+		driver_pb_pin_id = OPEN;
 	}
 };
 
@@ -222,6 +302,10 @@ typedef struct s_cluster_placement_stats {
 /******************************************************************
  * Timing data types
  *******************************************************************/
+
+//Enable the legacy STA engine to run along side the
+//new STA engine
+#define ENABLE_CLASSIC_VPR_STA
 
 // #define PATH_COUNTING 'P'
 /* Uncomment this to turn on path counting. Its value determines how path criticality
@@ -352,20 +436,7 @@ typedef struct s_slack {
 	 [0..net.size()-1][1..num_pins-1] for post-packed netlists. */
 	float ** slack;
 	float ** timing_criticality;
-#ifdef PATH_COUNTING
-	float ** path_criticality;
-#endif
 } t_slack;
-
-typedef struct s_prepack_slack {
-	/* Matrices storing slacks and criticalities of each sink pin (for all nets)
-	 [AtomPinId] for pre-packed netlists. */
-    std::unordered_map<AtomPinId,float> slack;
-    std::unordered_map<AtomPinId,float> timing_criticality;
-#ifdef PATH_COUNTING
-    std::unordered_map<AtomPinId,float> path_criticality;
-#endif
-} t_prepack_slack;
 
 typedef struct s_override_constraint {
 	/* A special-case constraint to override the default, calculated, timing constraint.  Holds data from
@@ -559,14 +630,16 @@ struct s_block {
 	char *name;
 	t_type_ptr type;
 	int *nets;
+	int *net_pins;
 	int x;
 	int y;
 	int z;
 
 	t_pb *pb; /* Internal-to-block hierarchy */
-	t_pb_route *pb_route; /* Internal-to-block routing */
+	t_pb_route *pb_route; /* Internal-to-block routing [0..pb->pb_graph_node->total_pb_pins-1]*/
 
 	unsigned int is_fixed : 1;
+    unsigned int nets_and_pins_synced_to_z_coordinate : 1;
 };
 typedef struct s_block t_block;
 
@@ -768,6 +841,12 @@ struct s_router_opts {
     bool switch_usage_analysis;
 	bool doRouting;
 	enum e_routing_failure_predictor routing_failure_predictor;
+};
+
+struct t_analysis_opts {
+    bool doAnalysis;
+
+    bool gen_post_synthesis_netlist;
 };
 
 /* Defines the detailed routing architecture of the FPGA.  Only important   *
@@ -975,6 +1054,7 @@ typedef struct s_vpr_setup {
 	struct s_placer_opts PlacerOpts; /* Options for placer */
 	struct s_annealing_sched AnnealSched; /* Placement option annealing schedule */
 	struct s_router_opts RouterOpts; /* router options */
+    t_analysis_opts AnalysisOpts; /* Analysis options */
 	struct s_det_routing_arch RoutingArch; /* routing architecture */
 	std::vector <t_lb_type_rr_node> *PackerRRGraph;
 	t_segment_inf * Segments; /* wires in routing architecture */

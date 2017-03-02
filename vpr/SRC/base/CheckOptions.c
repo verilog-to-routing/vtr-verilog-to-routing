@@ -15,7 +15,8 @@ void CheckOptions(const t_options& options, bool timing_enabled) {
     //By default we run all stages
     bool default_flow = (options.Count[OT_PACK] == 0 &&
                          options.Count[OT_PLACE] == 0 &&
-                         options.Count[OT_ROUTE] == 0);
+                         options.Count[OT_ROUTE] == 0 &&
+                         options.Count[OT_ANALYSIS] == 0);
 
     //By default we do timing-driven compilation
     bool timing_place = timing_enabled;
@@ -102,6 +103,25 @@ void CheckOptions(const t_options& options, bool timing_enabled) {
                                 OT__END_TIMING_ROUTE_OPTIONS,
                                 "timing-driven routing");
     }
+
+    if(!default_flow && !options.Count[OT_ANALYSIS] && !options.Count[OT_ROUTE]) {
+        //We are not performing analysis, so check for any related options
+        // Note that by default analysis runs if routing runs
+        check_for_stage_options(options, 
+                                OT__START_ANALYSIS_OPTIONS, 
+                                OT__END_ANALYSIS_OPTIONS, 
+                                "analysis");
+
+    }
+
+    if(!options.Count[OT_POWER]) {
+        //We are not performing power analysis, so check for any related options
+        check_for_stage_options(options, 
+                                OT__START_ANALYSIS_POWER_OPTIONS, 
+                                OT__END_ANALYSIS_POWER_OPTIONS, 
+                                "analysis power estimation");
+    }
+
 }
 
 void check_for_stage_options(const t_options& options, e_OptionBaseToken start, e_OptionBaseToken end, const char* stage_name) {

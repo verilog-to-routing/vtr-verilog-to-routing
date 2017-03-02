@@ -30,9 +30,12 @@ struct t_net_pin{
 	int block;
 	int block_port;
 	int block_pin;
+    int net;
+    int net_pin;
 
 	t_net_pin(){
 		block = block_port = block_pin = UNDEFINED;
+        net = net_pin = UNDEFINED;
 	}
 };
 

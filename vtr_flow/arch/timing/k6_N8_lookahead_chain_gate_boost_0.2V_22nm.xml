@@ -17,16 +17,14 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
 Each 2-to-1 mux for adder adds 22ps delay and 9 MWTAs
 
 Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
--->
-  
-  <architecture>
+--><architecture>
   
   <!-- ODIN II specific config -->
   <models>
     <model name="multiply">
       <input_ports>
-      <port name="a"/>
-      <port name="b"/>
+      <port name="a" combinational_sink_ports="out"/>
+      <port name="b" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
       <port name="out"/>
@@ -35,37 +33,37 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
     
     <model name="single_port_ram">
       <input_ports>
-      <port name="we"/>     <!-- control -->
-      <port name="addr"/>  <!-- address lines -->
-      <port name="data"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+      <port name="we" clock="clk"/>     <!-- control -->
+      <port name="addr" clock="clk"/>  <!-- address lines -->
+      <port name="data" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
       <port name="clk" is_clock="1"/>  <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
-      <port name="out"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      <port name="out" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
 
     <model name="dual_port_ram">
       <input_ports>
-      <port name="we1"/>     <!-- write enable -->
-      <port name="we2"/>     <!-- write enable -->
-      <port name="addr1"/>  <!-- address lines -->
-      <port name="addr2"/>  <!-- address lines -->
-      <port name="data1"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
-      <port name="data2"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+      <port name="we1" clock="clk"/>     <!-- write enable -->
+      <port name="we2" clock="clk"/>     <!-- write enable -->
+      <port name="addr1" clock="clk"/>  <!-- address lines -->
+      <port name="addr2" clock="clk"/>  <!-- address lines -->
+      <port name="data1" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+      <port name="data2" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
       <port name="clk" is_clock="1"/>  <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
-      <port name="out1"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
-      <port name="out2"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      <port name="out1" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      <port name="out2" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
 
     <model name="adder">
       <input_ports>
-      <port name="a"/>     
-      <port name="b"/>  
-      <port name="cin"/> 
+      <port name="a" combinational_sink_ports="sumout cout"/>     
+      <port name="b" combinational_sink_ports="sumout cout"/>  
+      <port name="cin" combinational_sink_ports="sumout cout"/> 
       </input_ports>
       <output_ports>
       <port name="cout"/>
@@ -294,19 +292,19 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 
             <direct name="direct3_1" input="adder.sumout[0]" output="arithlut.out1">
               <pack_pattern name="chain" in_port="adder.sumout[0]" out_port="arithlut.out1"/>
-              <delay_constant max="22e-12" in_port="adder.sumout[0]" out_port="arithlut.out1" />
+              <delay_constant max="22e-12" in_port="adder.sumout[0]" out_port="arithlut.out1"/>
             </direct>
             <direct name="direct3_2" input="adder.sumout[1]" output="arithlut.out2">
               <pack_pattern name="chain" in_port="adder.sumout[1]" out_port="arithlut.out2"/>
-              <delay_constant max="22e-12" in_port="adder.sumout[1]" out_port="arithlut.out2" />
+              <delay_constant max="22e-12" in_port="adder.sumout[1]" out_port="arithlut.out2"/>
             </direct>
             <direct name="direct3_3" input="adder.sumout[2]" output="arithlut.out3">
               <pack_pattern name="chain" in_port="adder.sumout[2]" out_port="arithlut.out3"/>
-              <delay_constant max="22e-12" in_port="adder.sumout[2]" out_port="arithlut.out3" />
+              <delay_constant max="22e-12" in_port="adder.sumout[2]" out_port="arithlut.out3"/>
             </direct>
             <direct name="direct3_4" input="adder.sumout[3]" output="arithlut.out4">
               <pack_pattern name="chain" in_port="adder.sumout[3]" out_port="arithlut.out4"/>
-              <delay_constant max="22e-12" in_port="adder.sumout[3]" out_port="arithlut.out4" />
+              <delay_constant max="22e-12" in_port="adder.sumout[3]" out_port="arithlut.out4"/>
             </direct>
             <direct name="direct4" input="arithlut.cin" output="adder.cin">
               <pack_pattern name="chain" in_port="arithlut.cin" out_port="adder.cin"/>
@@ -381,90 +379,90 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
 			<direct name="direct8_4" input="fourBLE.clk" output="ff[3].clk"/>
 	        <!-- Register feedback mux -->   
 	    <mux name="mux1_1" input="fourBLE.in_C[0] ff[0].Q" output="arithlut.in1[2:2]">
-			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[0]" out_port="arithlut.in1[2:2]" />
-			  <delay_constant max="0.392e-10" in_port="ff[0].Q" out_port="arithlut.in1[2:2]" />  
+			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[0]" out_port="arithlut.in1[2:2]"/>
+			  <delay_constant max="0.392e-10" in_port="ff[0].Q" out_port="arithlut.in1[2:2]"/>  
 			</mux>
 	    <mux name="mux1_2" input="fourBLE.in_C[1] ff[1].Q" output="arithlut.in2[2:2]">
-			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[1]" out_port="arithlut.in2[2:2]" />
-			  <delay_constant max="0.392e-10" in_port="ff[1].Q" out_port="arithlut.in2[2:2]" />  
+			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[1]" out_port="arithlut.in2[2:2]"/>
+			  <delay_constant max="0.392e-10" in_port="ff[1].Q" out_port="arithlut.in2[2:2]"/>  
 			</mux>
 	    <mux name="mux1_3" input="fourBLE.in_C[2] ff[2].Q" output="arithlut.in3[2:2]">
-			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[2]" out_port="arithlut.in3[2:2]" />
-			  <delay_constant max="0.392e-10" in_port="ff[2].Q" out_port="arithlut.in3[2:2]" />  
+			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[2]" out_port="arithlut.in3[2:2]"/>
+			  <delay_constant max="0.392e-10" in_port="ff[2].Q" out_port="arithlut.in3[2:2]"/>  
 			</mux>
 	    <mux name="mux1_4" input="fourBLE.in_C[3] ff[3].Q" output="arithlut.in4[2:2]">
-			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[3]" out_port="arithlut.in4[2:2]" />
-			  <delay_constant max="0.392e-10" in_port="ff[3].Q" out_port="arithlut.in4[2:2]" />  
+			  <delay_constant max="0.392e-10" in_port="fourBLE.in_C[3]" out_port="arithlut.in4[2:2]"/>
+			  <delay_constant max="0.392e-10" in_port="ff[3].Q" out_port="arithlut.in4[2:2]"/>  
 			</mux>
 
 
 
 	        <!-- FF input selection mux -->
 	    <mux name="mux2_1" input="arithlut.out1 fourBLE.in_C[0]" output="ff[0].D">
-			  <delay_constant max="1.33594e-11" in_port="arithlut.out1" out_port="ff[0].D" />
-			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[0]" out_port="ff[0].D" />
+			  <delay_constant max="1.33594e-11" in_port="arithlut.out1" out_port="ff[0].D"/>
+			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[0]" out_port="ff[0].D"/>
         <pack_pattern name="ble6" in_port="arithlut.out1" out_port="ff[0].D"/>
         <pack_pattern name="chain" in_port="arithlut.out1" out_port="ff[0].D"/>
 			</mux>
 	        <!-- FF input selection mux -->
 	    <mux name="mux2_2" input="arithlut.out2 fourBLE.in_C[1]" output="ff[1].D">
-			  <delay_constant max="1.33594e-11" in_port="arithlut.out2" out_port="ff[1].D" />
-			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[1]" out_port="ff[1].D" />
+			  <delay_constant max="1.33594e-11" in_port="arithlut.out2" out_port="ff[1].D"/>
+			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[1]" out_port="ff[1].D"/>
         <pack_pattern name="ble6" in_port="arithlut.out2" out_port="ff[1].D"/>
         <pack_pattern name="chain" in_port="arithlut.out2" out_port="ff[1].D"/>
 			</mux>
 	        <!-- FF input selection mux -->
 	    <mux name="mux2_3" input="arithlut.out3 fourBLE.in_C[2]" output="ff[2].D">
-			  <delay_constant max="1.33594e-11" in_port="arithlut.out3" out_port="ff[2].D" />
-			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[2]" out_port="ff[2].D" />
+			  <delay_constant max="1.33594e-11" in_port="arithlut.out3" out_port="ff[2].D"/>
+			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[2]" out_port="ff[2].D"/>
         <pack_pattern name="ble6" in_port="arithlut.out3" out_port="ff[2].D"/>
         <pack_pattern name="chain" in_port="arithlut.out3" out_port="ff[2].D"/>
 			</mux>
 	        <!-- FF input selection mux -->
 	    <mux name="mux2_4" input="arithlut.out4 fourBLE.in_C[3]" output="ff[3].D">
-			  <delay_constant max="1.33594e-11" in_port="arithlut.out4" out_port="ff[3].D" />
-			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[3]" out_port="ff[3].D" />
+			  <delay_constant max="1.33594e-11" in_port="arithlut.out4" out_port="ff[3].D"/>
+			  <delay_constant max="1.57355e-11" in_port="fourBLE.in_C[3]" out_port="ff[3].D"/>
         <pack_pattern name="ble6" in_port="arithlut.out4" out_port="ff[3].D"/>
         <pack_pattern name="chain" in_port="arithlut.out4" out_port="ff[3].D"/>
 			</mux>
 
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3_1" input="ff[0].Q arithlut.out1" output="fourBLE.out_local[0]">
-			  <delay_constant max="9.514e-11" in_port="ff[0].Q" out_port="fourBLE.out_local[0]" />
-	      <delay_constant max="9.514e-11" in_port="arithlut.out1" out_port="fourBLE.out_local[0]" />
+			  <delay_constant max="9.514e-11" in_port="ff[0].Q" out_port="fourBLE.out_local[0]"/>
+	      <delay_constant max="9.514e-11" in_port="arithlut.out1" out_port="fourBLE.out_local[0]"/>
 			</mux>
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3_2" input="ff[1].Q arithlut.out2" output="fourBLE.out_local[1]">
-			  <delay_constant max="9.514e-11" in_port="ff[1].Q" out_port="fourBLE.out_local[1]" />
-	      <delay_constant max="9.514e-11" in_port="arithlut.out2" out_port="fourBLE.out_local[1]" />
+			  <delay_constant max="9.514e-11" in_port="ff[1].Q" out_port="fourBLE.out_local[1]"/>
+	      <delay_constant max="9.514e-11" in_port="arithlut.out2" out_port="fourBLE.out_local[1]"/>
 			</mux>
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3_3" input="ff[2].Q arithlut.out3" output="fourBLE.out_local[2]">
-			  <delay_constant max="9.514e-11" in_port="ff[2].Q" out_port="fourBLE.out_local[2]" />
-	      <delay_constant max="9.514e-11" in_port="arithlut.out3" out_port="fourBLE.out_local[2]" />
+			  <delay_constant max="9.514e-11" in_port="ff[2].Q" out_port="fourBLE.out_local[2]"/>
+	      <delay_constant max="9.514e-11" in_port="arithlut.out3" out_port="fourBLE.out_local[2]"/>
 			</mux>
 	        <!-- BLE output (local) -->                  
 			<mux name="mux3_4" input="ff[3].Q arithlut.out4" output="fourBLE.out_local[3]">
-			  <delay_constant max="9.514e-11" in_port="ff[3].Q" out_port="fourBLE.out_local[3]" />
-	      <delay_constant max="9.514e-11" in_port="arithlut.out4" out_port="fourBLE.out_local[3]" />
+			  <delay_constant max="9.514e-11" in_port="ff[3].Q" out_port="fourBLE.out_local[3]"/>
+	      <delay_constant max="9.514e-11" in_port="arithlut.out4" out_port="fourBLE.out_local[3]"/>
 			</mux>
 
 	        <!-- BLE output (routing 1) --> 
 	    <mux name="mux4_1" input="ff[0].Q arithlut.out1" output="fourBLE.out_routing[0]">
-	      <delay_constant max="3.211e-11" in_port="ff[0].Q" out_port="fourBLE.out_routing[0]" />
-			  <delay_constant max="3.211e-11" in_port="arithlut.out1" out_port="fourBLE.out_routing[0]" />
+	      <delay_constant max="3.211e-11" in_port="ff[0].Q" out_port="fourBLE.out_routing[0]"/>
+			  <delay_constant max="3.211e-11" in_port="arithlut.out1" out_port="fourBLE.out_routing[0]"/>
 			</mux>
 	    <mux name="mux4_2" input="ff[1].Q arithlut.out2" output="fourBLE.out_routing[1]">
-	      <delay_constant max="3.211e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[1]" />
-			  <delay_constant max="3.211e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[1]" />
+	      <delay_constant max="3.211e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[1]"/>
+			  <delay_constant max="3.211e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[1]"/>
 			</mux>
 	    <mux name="mux4_3" input="ff[2].Q arithlut.out3" output="fourBLE.out_routing[2]">
-	      <delay_constant max="3.211e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[2]" />
-			  <delay_constant max="3.211e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[2]" />
+	      <delay_constant max="3.211e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[2]"/>
+			  <delay_constant max="3.211e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[2]"/>
 			</mux>
 	    <mux name="mux4_4" input="ff[3].Q arithlut.out4" output="fourBLE.out_routing[3]">
-	      <delay_constant max="3.211e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[3]" />
-			  <delay_constant max="3.211e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[3]" />
+	      <delay_constant max="3.211e-11" in_port="ff[1].Q" out_port="fourBLE.out_routing[3]"/>
+			  <delay_constant max="3.211e-11" in_port="arithlut.out2" out_port="fourBLE.out_routing[3]"/>
 			</mux>
 		  </interconnect>
 		</pb_type>
@@ -473,28 +471,28 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
         <interconnect>
           <!-- 50% sparsely populated local routing -->
           <complete name="lutA" input="clb.I4 clb.I3 fourBLE[0].out_local[1:0] fourBLE[0].out_local[3:2]" output="fourBLE.in_A">
-            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="fourBLE.in_A" />
-            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="fourBLE.in_A" />
+            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="fourBLE.in_A"/>
+            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="fourBLE.in_A"/>
           </complete>
           <complete name="lutB" input="clb.I3 clb.I2 fourBLE[0].out_local[3:2] fourBLE[1].out_local[1:0]" output="fourBLE.in_B">
-            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="fourBLE.in_B" />
-            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="fourBLE.in_B" />
+            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="fourBLE.in_B"/>
+            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="fourBLE.in_B"/>
             </complete>
           <complete name="lutC" input="clb.I2 clb.I1 fourBLE[1].out_local[1:0] fourBLE[1].out_local[3:2]" output="fourBLE.in_C">
-            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="fourBLE.in_C" />
-            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="fourBLE.in_C" />
+            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="fourBLE.in_C"/>
+            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="fourBLE.in_C"/>
             </complete>
           <complete name="lutD" input="clb.I4 clb.I2 fourBLE[0].out_local[1:0] fourBLE[1].out_local[1:0]" output="fourBLE.in_D">
-            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="fourBLE.in_D" />
-            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="fourBLE.in_D" />
+            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="fourBLE.in_D"/>
+            <delay_constant max="6.478e-11" in_port="clb.I2" out_port="fourBLE.in_D"/>
             </complete>
           <complete name="lutE" input="clb.I3 clb.I1 fourBLE[0].out_local[3:2] fourBLE[1].out_local[3:2]" output="fourBLE.in_E">
-            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="fourBLE.in_E" />
-            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="fourBLE.in_E" />
+            <delay_constant max="6.478e-11" in_port="clb.I3" out_port="fourBLE.in_E"/>
+            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="fourBLE.in_E"/>
             </complete>
           <complete name="lutF" input="clb.I4 clb.I1 fourBLE[0].out_local[1:0] fourBLE[1].out_local[3:2]" output="fourBLE.in_F">
-            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="fourBLE.in_F" />
-            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="fourBLE.in_F" />
+            <delay_constant max="6.478e-11" in_port="clb.I4" out_port="fourBLE.in_F"/>
+            <delay_constant max="6.478e-11" in_port="clb.I1" out_port="fourBLE.in_F"/>
           </complete>
           <complete name="clks" input="clb.clk" output="fourBLE[1:0].clk">
           </complete>
@@ -506,7 +504,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
           </direct>
           <direct name="chain2" input="fourBLE[1].cout" output="clb.cout">
             <pack_pattern name="chain" in_port="fourBLE[1].cout" out_port="clb.cout"/>
-            <delay_constant max="20e-12" in_port="fourBLE[1].cout" out_port="clb.cout" />           <!-- delay of carry link joining two adjacent CLBs -->
+            <delay_constant max="20e-12" in_port="fourBLE[1].cout" out_port="clb.cout"/>           <!-- delay of carry link joining two adjacent CLBs -->
           </direct>
           <direct name="chain3" input="fourBLE[0].cout" output="fourBLE[1].cin">
             <pack_pattern name="chain" in_port="fourBLE[0].cout" out_port="fourBLE[1].cin"/>
@@ -611,7 +609,7 @@ Each 2-to-1 mux adds 6 MWTAs for SRAM cell.
               <input name="B_cfg" num_pins="18"/>
               <output name="OUT_cfg" num_pins="36"/>
 
-              <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1" >
+              <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1">
                 <input name="a" num_pins="18"/>
                 <input name="b" num_pins="18"/>
                 <output name="out" num_pins="36"/>

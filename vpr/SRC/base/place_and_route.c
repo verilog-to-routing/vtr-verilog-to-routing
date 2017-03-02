@@ -32,7 +32,6 @@ using namespace std;
 #include "ReadOptions.h"
 #include "route_common.h"
 #include "place_macro.h"
-#include "netlist_writer.h"
 #include "power.h"
 
 
@@ -50,8 +49,6 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 static float comp_width(t_chan * chan, float x, float separation);
 
 void post_place_sync(const int L_num_blocks);
-
-void free_pb_data(t_pb *pb);
 
 /************************* Subroutine Definitions ****************************/
 
@@ -139,11 +136,17 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 
 		clb_opins_used_locally = alloc_route_structs();
 
+#ifdef ENABLE_CLASSIC_VPR_STA
 		t_slack *slacks = alloc_and_load_timing_graph(timing_inf);
+#endif
 		float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
 		success = try_route(width_fac, router_opts, det_routing_arch,
-				segment_inf, timing_inf, net_delay, slacks, chan_width_dist,
+				segment_inf, timing_inf, net_delay,
+#ifdef ENABLE_CLASSIC_VPR_STA
+                slacks, 
+#endif
+                chan_width_dist,
 				clb_opins_used_locally, directs, num_directs);
 
 		if (success == false) {
@@ -162,7 +165,11 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 					det_routing_arch->R_minW_pmos,
 					det_routing_arch->directionality,
 					det_routing_arch->wire_to_rr_ipin_switch,
-					timing_inf.timing_analysis_enabled, net_delay, slacks, timing_inf);
+					timing_inf.timing_analysis_enabled, net_delay
+#ifdef ENABLE_CLASSIC_VPR_STA
+                    , slacks, timing_inf
+#endif
+                    );
 
 			print_route(route_file);
 
@@ -176,14 +183,10 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 		init_draw_coords(max_pins_per_clb);
 		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
 		
+#ifdef ENABLE_CLASSIC_VPR_STA
         VTR_ASSERT(slacks->slack);
-
-        if(GetPostSynthesisOption())
-        {
-            netlist_writer(g_atom_nl.netlist_name());
-        }
-
         free_timing_graph(slacks);
+#endif
 
         VTR_ASSERT(net_delay);
         free_net_delay(net_delay, &net_delay_ch);
@@ -245,7 +248,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	bool success, prev_success, prev2_success, Fc_clipped = false;
 	char msg[vtr::BUFSIZE];
 	float **net_delay = NULL;
+#ifdef ENABLE_CLASSIC_VPR_STA
 	t_slack * slacks = NULL;
+#endif
     bool using_minw_hint = false;
 
 	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
@@ -277,7 +282,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	best_routing = alloc_saved_routing(clb_opins_used_locally,
 			&saved_clb_opins_used_locally);
 
+#ifdef ENABLE_CLASSIC_VPR_STA
 	slacks = alloc_and_load_timing_graph(timing_inf);
+#endif
 	net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
 	if (det_routing_arch->directionality == BI_DIRECTIONAL)
@@ -362,7 +369,11 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 					directs, num_directs);
 		}
 		success = try_route(current, router_opts, det_routing_arch, segment_inf,
-				timing_inf, net_delay, slacks, chan_width_dist,
+				timing_inf, net_delay, 
+#ifdef ENABLE_CLASSIC_VPR_STA
+                slacks, 
+#endif
+                chan_width_dist,
 				clb_opins_used_locally, directs, num_directs);
 		attempt_count++;
 		fflush(stdout);
@@ -470,7 +481,10 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 						directs, num_directs);
 			}
 			success = try_route(current, router_opts, det_routing_arch,
-					segment_inf, timing_inf, net_delay, slacks,
+					segment_inf, timing_inf, net_delay, 
+#ifdef ENABLE_CLASSIC_VPR_STA
+                    slacks,
+#endif
 					chan_width_dist, clb_opins_used_locally, directs, num_directs);
 
 			if (success && Fc_clipped == false) {
@@ -543,7 +557,11 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			det_routing_arch->num_segment, det_routing_arch->R_minW_nmos,
 			det_routing_arch->R_minW_pmos, det_routing_arch->directionality,
 			det_routing_arch->wire_to_rr_ipin_switch,
-			timing_inf.timing_analysis_enabled, net_delay, slacks, timing_inf);
+			timing_inf.timing_analysis_enabled, net_delay
+#ifdef ENABLE_CLASSIC_VPR_STA
+            , slacks, timing_inf
+#endif
+            );
 
 	print_route(route_file);
 
@@ -555,16 +573,6 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	sprintf(msg, "Routing succeeded with a channel width factor of %d.", final);
 	update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
 
-	if (timing_inf.timing_analysis_enabled) {
-		if(GetPostSynthesisOption())
-		  {
-            netlist_writer(g_atom_nl.netlist_name().c_str());
-		  }
-
-		//free_timing_graph(slacks);
-		//free_net_delay(net_delay, &net_delay_ch);
-	}
-	
 	for (i = 0; i < num_blocks; i++) {
 		free_ivec_vector(clb_opins_used_locally[i], 0,
 				block[i].type->num_class - 1);
@@ -575,7 +583,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	free_saved_routing(best_routing, saved_clb_opins_used_locally);
 	fflush(stdout);
 	
+#ifdef ENABLE_CLASSIC_VPR_STA
 	free_timing_graph(slacks);
+#endif
 	free_net_delay(net_delay, &net_delay_ch);
 
 	return (final);
@@ -707,71 +717,20 @@ static float comp_width(t_chan * chan, float x, float separation) {
 	return (val);
 }
 
-/* After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type */
-/* This function should only be called once */
+/*
+ * After placement, logical pins for blocks, and nets must be updated to correspond with physical pins of type.
+ * This is required by blocks with capacity > 1 (e.g. typically IOs with multiple instaces in each placement
+ * gride location). Since they may be swapped around during placement, we need to update which pins the various
+ * nets use.
+ *
+ * This updates both the external inter-block net connecitivity (i.e. the clustered netlist), and the intra-block
+ * connectivity (since the internal pins used also change).
+ *
+ * This function should only be called once 
+ */
 void post_place_sync(const int L_num_blocks) {
-	int iblk, j, inet;
-	unsigned k;
-	t_type_ptr type;
-	int max_num_block_pins;
-
 	/* Go through each block */
-	for (iblk = 0; iblk < L_num_blocks; ++iblk) {
-		type = block[iblk].type;
-		VTR_ASSERT(type->num_pins % type->capacity == 0);
-		max_num_block_pins = type->num_pins / type->capacity;
-		/* Logical location and physical location is offset by z * max_num_block_pins */
-		/* Sync blocks and nets */
-		for (j = 0; j < max_num_block_pins; j++) {
-			inet = block[iblk].nets[j];
-			if (inet != OPEN && block[iblk].z > 0) {
-				VTR_ASSERT(
-						block[iblk]. nets[j + block[iblk].z * max_num_block_pins] == OPEN);
-				block[iblk].nets[j + block[iblk].z * max_num_block_pins] =
-						block[iblk].nets[j];
-				block[iblk].nets[j] = OPEN;
-				for (k = 0; k < g_clbs_nlist.net[inet].pins.size(); k++) {
-					if (g_clbs_nlist.net[inet].pins[k].block == iblk && g_clbs_nlist.net[inet].pins[k].block_pin == j) {
-						g_clbs_nlist.net[inet].pins[k].block_pin = j
-								+ block[iblk].z * max_num_block_pins;
-						clb_net[inet].node_block_pin[k] = j 
-								+ block[iblk].z * max_num_block_pins; //Daniel to-do: take out clb_net later
-						break;
-					}
-				}
-				VTR_ASSERT(k < g_clbs_nlist.net[inet].pins.size());
-			}
-		}
-	}
-}
-
-void free_pb_data(t_pb *pb) {
-	int i, j;
-	const t_pb_type *pb_type;
-
-	if (pb == NULL || pb->name == NULL) {
-		return;
-	}
-
-	pb_type = pb->pb_graph_node->pb_type;
-
-	if (pb_type->num_modes > 0) {
-		/* Free children of pb */
-		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-			for (j = 0; j < pb_type->modes[pb->mode].pb_type_children[i].num_pb;
-					j++) {
-				if (pb->child_pbs[i]) {
-					free_pb_data(&pb->child_pbs[i][j]);
-				}
-			}
-		}
-	}
-
-	/* Frees all the pb data structures.                                 */
-	if (pb->name) {
-		free(pb->name);
-		if (pb->child_pbs) {
-			free(pb->child_pbs);
-		}
+	for (int iblk = 0; iblk < L_num_blocks; ++iblk) {
+        place_sync_external_block_connections(iblk);
 	}
 }

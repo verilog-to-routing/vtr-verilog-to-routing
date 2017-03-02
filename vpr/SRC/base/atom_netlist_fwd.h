@@ -7,7 +7,7 @@
 
 //Forward delcaration
 class AtomNetlist;
-class AtomMap;
+class AtomLookup;
 
 /*
  * Ids
@@ -19,13 +19,13 @@ class AtomMap;
  */
 
 //Type tags for Ids
-struct atom_blk_id_tag;
+struct atom_block_id_tag;
 struct atom_net_id_tag;
 struct atom_port_id_tag;
 struct atom_pin_id_tag;
 
 //A unique identifier for a block/primitive in the atom netlist
-typedef vtr::StrongId<atom_blk_id_tag> AtomBlockId;
+typedef vtr::StrongId<atom_block_id_tag> AtomBlockId;
 
 //A unique identifier for a net in the atom netlist
 typedef vtr::StrongId<atom_net_id_tag> AtomNetId;
@@ -56,8 +56,7 @@ enum class AtomPinType : char {
 enum class AtomBlockType : char {
     INPAD,          //A primary input
     OUTPAD,         //A primary output
-    COMBINATIONAL,  //A combinational block (e.g. LUT)
-    SEQUENTIAL      //A sequential (i.e. clocked) block (e.g. Flip-Flop)
+    BLOCK           //A basic atom block (LUT, FF, blackbox etc.)
 };
 
 #endif

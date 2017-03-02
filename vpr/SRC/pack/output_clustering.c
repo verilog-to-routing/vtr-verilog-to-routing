@@ -87,7 +87,7 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 		print_string("open", column, num_tabs, fpout);
 	} else {
 		str_ptr = NULL;
-		prev_node = pb_route[inode].prev_pb_pin_id;
+		prev_node = pb_route[inode].driver_pb_pin_id;
 
 		if (prev_node == OPEN) {
 			/* No previous driver implies that this is either a top-level input pin or a primitive output pin */
@@ -112,15 +112,12 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 			if (prev_pin->port->parent_pb_type->depth
 					>= cur_pin->port->parent_pb_type->depth) {
 				/* Connections from siblings or children should have an explicit index, connections from parent does not need an explicit index */
-				len =
-						strlen(
-								prev_pin->parent_node->pb_type->name)
-								+ prev_pin->parent_node->placement_index
-										/ 10
-								+ strlen(
-										prev_pin->port->name)
-								+ prev_pin->pin_number
-										/ 10 + strlen(name) + 11;
+				len = strlen(prev_pin->parent_node->pb_type->name)
+                      + prev_pin->parent_node->placement_index / 10
+                      + strlen( prev_pin->port->name)
+                      + prev_pin->pin_number / 10 
+                      + strlen(name)
+                      + 11;
 				str_ptr = (char*)vtr::malloc(len * sizeof(char));
 				sprintf(str_ptr, "%s[%d].%s[%d]->%s ",
 						prev_pin->parent_node->pb_type->name,
@@ -128,13 +125,11 @@ static void print_interconnect(t_type_ptr type, int inode, int *column, int num_
 						prev_pin->port->name,
 						prev_pin->pin_number, name);
 			} else {
-				len =
-						strlen(
-								prev_pin->parent_node->pb_type->name)
-								+ strlen(
-										prev_pin->port->name)
-								+ prev_pin->pin_number
-										/ 10 + strlen(name) + 8;
+				len = strlen(prev_pin->parent_node->pb_type->name)
+					  + strlen(prev_pin->port->name)
+					  + prev_pin->pin_number / 10 
+                      + strlen(name)
+                      + 8;
 				str_ptr = (char*)vtr::malloc(len * sizeof(char));
 				sprintf(str_ptr, "%s.%s[%d]->%s ",
 						prev_pin->parent_node->pb_type->name,
@@ -174,7 +169,7 @@ static void print_open_pb_graph_node(t_type_ptr type, t_pb_graph_node * pb_graph
 							pb_graph_node->output_pins[port_index][j].pin_count_in_cluster;
 					if (pb_type->num_modes > 0
 						&& pb_route[node_index].atom_net_id) {
-						prev_node = pb_route[node_index].prev_pb_pin_id;
+						prev_node = pb_route[node_index].driver_pb_pin_id;
 						t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type[type->index][prev_node];
 						for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
 							VTR_ASSERT(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
@@ -332,21 +327,70 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 	port_index = 0;
 	for (i = 0; i < pb_type->num_ports; i++) {
 		if (!pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT) {
+
 			print_tabs(fpout, tab_depth);
-			fprintf(fpout, "\t\t<port name=\"%s\">",
-					pb_graph_node->pb_type->ports[i].name);
+			fprintf(fpout, "\t\t<port name=\"%s\">", pb_graph_node->pb_type->ports[i].name);
 			for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-				node_index =
-						pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+				node_index = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+
 				if (pb_type->parent_mode == NULL) {
-					print_net_name(pb_route[node_index].atom_net_id, &column,
-							tab_depth, fpout);
+					print_net_name(pb_route[node_index].atom_net_id, &column, tab_depth, fpout);
 				} else {
-					print_interconnect(type, node_index, &column, tab_depth + 2, pb_route,
-							fpout);
+					print_interconnect(type, node_index, &column, tab_depth + 2, pb_route, fpout);
 				}
 			}
 			fprintf(fpout, "</port>\n");
+
+            //The cluster router may have rotated equivalent pins (e.g. LUT inputs), 
+            //record the resulting rotation here so it can be unambigously mapped 
+            //back to the atom netlist
+            if(pb_type->ports[i].equivalent && pb_type->parent_mode != NULL && pb_type->num_modes == 0) {
+                //This is a primitive with equivalent inputs
+
+                AtomBlockId atom_blk = g_atom_nl.find_block(pb->name);
+                VTR_ASSERT(atom_blk);
+
+                AtomPortId atom_port = g_atom_nl.find_port(atom_blk, pb_type->ports[i].model_port);
+
+                if(atom_port) { //Port exists (some LUTs may have no input and hence no port in the atom netlist)
+
+                    print_tabs(fpout, tab_depth);
+                    fprintf(fpout, "\t\t<port_rotation_map name=\"%s\">", pb_graph_node->pb_type->ports[i].name);
+
+                    std::set<AtomPinId> recorded_pins;
+
+                    for (j = 0; j < pb_type->ports[i].num_pins; j++) {
+                        node_index = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
+                        AtomNetId atom_net = pb_route[node_index].atom_net_id;
+
+                        if(atom_net) {
+                            //This physical pin is in use, find the original pin in the atom netlist
+                            AtomPinId orig_pin;
+                            for(AtomPinId atom_pin : g_atom_nl.port_pins(atom_port)) {
+                                if(recorded_pins.count(atom_pin)) continue; //Don't add pins twice
+
+                                AtomNetId atom_pin_net = g_atom_nl.pin_net(atom_pin);
+
+                                if(atom_pin_net == atom_net) {
+                                    recorded_pins.insert(atom_pin);
+                                    orig_pin = atom_pin;
+                                    break;
+                                }
+                            }
+
+                            VTR_ASSERT(orig_pin);
+                            //The physical pin j, maps to a pin in the atom netlist
+                            fprintf(fpout, "%d ", g_atom_nl.pin_port_bit(orig_pin));
+                        } else {
+                            //The physical pin is disconnected
+                            fprintf(fpout, "open ");
+                        }
+                    }
+                    fprintf(fpout, "</port_rotation_map>\n");
+                }
+            }
+
+
 			port_index++;
 		}
 	}
@@ -382,17 +426,13 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 	for (i = 0; i < pb_type->num_ports; i++) {
 		if (pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT) {
 			print_tabs(fpout, tab_depth);
-			fprintf(fpout, "\t\t<port name=\"%s\">",
-					pb_graph_node->pb_type->ports[i].name);
+			fprintf(fpout, "\t\t<port name=\"%s\">", pb_graph_node->pb_type->ports[i].name);
 			for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-				node_index =
-						pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
+				node_index = pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
 				if (pb_type->parent_mode == NULL) {
-					print_net_name(pb_route[node_index].atom_net_id, &column,
-							tab_depth, fpout);
+					print_net_name(pb_route[node_index].atom_net_id, &column, tab_depth, fpout);
 				} else {
-					print_interconnect(type, node_index, &column, tab_depth + 2, pb_route,
-							fpout);
+					print_interconnect(type, node_index, &column, tab_depth + 2, pb_route, fpout);
 				}
 			}
 			fprintf(fpout, "</port>\n");
@@ -406,8 +446,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 		for (i = 0; i < mode->num_pb_type_children; i++) {
 			for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
 				/* If child pb is not used but routing is used, I must print things differently */
-				if ((pb->child_pbs[i] != NULL)
-						&& (pb->child_pbs[i][j].name != NULL)) {
+				if ((pb->child_pbs[i] != NULL) && (pb->child_pbs[i][j].name != NULL)) {
 					print_pb(fpout, type, &pb->child_pbs[i][j], j, pb_route, tab_depth + 1);
 				} else {
 					is_used = false;
@@ -416,10 +455,8 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 
 					for (k = 0; k < child_pb_type->num_ports && !is_used; k++) {
 						if (child_pb_type->ports[k].type == OUT_PORT) {
-							for (m = 0; m < child_pb_type->ports[k].num_pins;
-									m++) {
-								node_index =
-										pb_graph_node->child_pb_graph_nodes[pb->mode][i][j].output_pins[port_index][m].pin_count_in_cluster;
+							for (m = 0; m < child_pb_type->ports[k].num_pins; m++) {
+								node_index = pb_graph_node->child_pb_graph_nodes[pb->mode][i][j].output_pins[port_index][m].pin_count_in_cluster;
 								if (pb_route[node_index].atom_net_id) {
 									is_used = true;
 									break;
@@ -485,7 +522,7 @@ static void print_stats(t_block *clb, int num_clusters) {
 			if (clb[icluster].pb_route == NULL) {
 				if (clb[icluster].nets[ipin] != OPEN) {
                     int clb_net_idx = clb[icluster].nets[ipin];
-                    auto net_id = g_atom_map.atom_net(clb_net_idx);
+                    auto net_id = g_atom_lookup.atom_net(clb_net_idx);
                     VTR_ASSERT(net_id);
 					nets_absorbed[net_id] = false;
 					if (clb[icluster].type->class_inf[clb[icluster].type->pin_class[ipin]].type == RECEIVER) {
@@ -607,8 +644,7 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 		switch (type) {
         case AtomBlockType::INPAD:
         case AtomBlockType::OUTPAD:
-        case AtomBlockType::COMBINATIONAL:
-        case AtomBlockType::SEQUENTIAL:
+        case AtomBlockType::BLOCK:
 			if (skip_clustering) {
 				VTR_ASSERT(0);
 			}
