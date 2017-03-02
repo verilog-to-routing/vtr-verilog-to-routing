@@ -121,6 +121,10 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
         if(model_port->clock.empty()) {
             //No clock => combinational input
             tnode = tg_->add_node(NodeType::IPIN);
+
+            //A combinational pin is really both internal and external, mark it internal here
+            //and external iin the default case below
+            netlist_lookup_.set_atom_pin_tnode(input_pin, tnode, BlockTnode::INTERNAL);
         } else {
             tnode = tg_->add_node(NodeType::SINK);
 
@@ -170,6 +174,10 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
         } else if(model_port->clock.empty()) {
             //No clock => combinational output
             tnode = tg_->add_node(NodeType::OPIN);
+
+            //A combinational pin is really both internal and external, mark it internal here
+            //and external iin the default case below
+            netlist_lookup_.set_atom_pin_tnode(output_pin, tnode, BlockTnode::INTERNAL);
 
         } else {
             VTR_ASSERT(!model_port->is_clock);
