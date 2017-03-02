@@ -2,7 +2,7 @@
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
 
-#include "tatum/util/tatum_error.hpp"
+#include "tatum/error.hpp"
 
 namespace tatum {
 

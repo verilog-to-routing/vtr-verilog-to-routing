@@ -1,6 +1,6 @@
 #include "tatum/tags/TimingTags.hpp"
 #include "tatum/TimingGraphFwd.hpp"
-#include "tatum/util/tatum_error.hpp"
+#include "tatum/error.hpp"
 namespace tatum {
 
 /*

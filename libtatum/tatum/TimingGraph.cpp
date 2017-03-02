@@ -4,10 +4,10 @@
 #include <stack>
 #include <set>
 
-#include "util/tatum_assert.hpp"
-#include "util/tatum_error.hpp"
-#include "base/loop_detect.hpp"
-#include "TimingGraph.hpp"
+#include "tatum/util/tatum_assert.hpp"
+#include "tatum/base/loop_detect.hpp"
+#include "tatum/error.hpp"
+#include "tatum/TimingGraph.hpp"
 
 
 
