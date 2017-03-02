@@ -342,6 +342,16 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
 
             TATUM_ASSERT(timing_graph_.node_type(path_elem.node()) == NodeType::SINK);
 
+            //Uncertainty
+            Time uncertainty;
+            if(path_info.type() == TimingPathType::SETUP) {
+                uncertainty = -Time(timing_constraints_.setup_clock_uncertainty(path_info.launch_domain(), path_info.capture_domain()));
+            } else {
+                uncertainty = Time(timing_constraints_.hold_clock_uncertainty(path_info.launch_domain(), path_info.capture_domain()));
+            }
+            req_path += uncertainty;
+            path_helper.update_print_path(os, "clock uncertainty", req_path);
+
             //Setup/hold time
             EdgeId in_edge = path_elem.incomming_edge();
             if(in_edge && timing_graph_.edge_type(in_edge) == EdgeType::PRIMITIVE_CLOCK_CAPTURE) {
@@ -362,16 +372,6 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
                 req_path += -Time(output_constraint);
                 path_helper.update_print_path(os, "output external delay", req_path);
             }
-
-            //Uncertainty
-            Time uncertainty;
-            if(path_info.type() == TimingPathType::SETUP) {
-                uncertainty = -Time(timing_constraints_.setup_clock_uncertainty(path_info.launch_domain(), path_info.capture_domain()));
-            } else {
-                uncertainty = Time(timing_constraints_.hold_clock_uncertainty(path_info.launch_domain(), path_info.capture_domain()));
-            }
-            req_path += uncertainty;
-            path_helper.update_print_path(os, "clock uncertainty", req_path);
 
             //Final arrival time
             req_time = path_elem.tag().time();
