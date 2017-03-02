@@ -55,8 +55,8 @@ Unconnected primitive pins can be specified through several methods.
 
 #. Implicitly disconnected ``.subckt`` pins.
 
-    For ``.subckt`` instantiations VPR treats primitive pins which are not listed as being implicitly disconnected.
-    This works for both input and output pins.
+    For ``.subckt`` instantiations VPR treats primitive pins which are not listed as being implicitly disconnected.*{this sentence seems incomplete, please advise.}
+    This works for both input and output pins. 
 
     For example the following ``.subckt`` instantiations are equivalent:
 
@@ -126,7 +126,7 @@ The signal ``all_sum_high_comb`` is computed using combinational logic (``.names
 The ``.latch`` directive instantiates a rising-edge (``re``) latch (i.e. an edge-triggered Flip-Flop) clocked by ``clk``.
 It takes in the combinational signal ``all_sum_high_comb`` and drives the primary output ``all_sum_high_reg``.
 
-Also not that the last ``.subckt adder`` has it's ``cout`` output left implicitly disconnected.
+Also note that the last ``.subckt adder`` has it's ``cout`` output left implicitly disconnected.
 
 .. code-block:: none
 
