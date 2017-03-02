@@ -1,6 +1,6 @@
 #ifndef TATUM_COMMON_ANALYSIS_VISITOR_HPP
 #define TATUM_COMMON_ANALYSIS_VISITOR_HPP
-#include "tatum/util/tatum_error.hpp"
+#include "tatum/error.hpp"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
 #include "tatum/tags/TimingTags.hpp"
