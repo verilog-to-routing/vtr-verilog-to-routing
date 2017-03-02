@@ -594,12 +594,12 @@ AtomPinId AtomNetlist::find_pin (const AtomPortId port_id, BitIndex port_bit) co
         return pin_port_bit(pin_id) < bit_index; 
     };
 
-    auto pins = port_pins(port_id);
+    auto pin_range = port_pins(port_id);
 
     //Finds the location where the pin with bit index port_bit should be located (if it exists)
-    auto iter = std::lower_bound(pins.begin(), pins.end(), port_bit, port_bit_cmp);
+    auto iter = std::lower_bound(pin_range.begin(), pin_range.end(), port_bit, port_bit_cmp);
 
-    if(iter == pins.end() || pin_port_bit(*iter) != port_bit) {
+    if(iter == pin_range.end() || pin_port_bit(*iter) != port_bit) {
         //Either the end of the pins (i.e. not found), or
         //the value does not match (indicating a gap in the indicies, so also not found)
         return AtomPinId::INVALID();
@@ -1253,17 +1253,17 @@ void AtomNetlist::rebuild_block_refs(const vtr::vector_map<AtomPinId,AtomPinId>&
         size_t num_output_pins = count_valid_refs(block_output_pins(blk_id), pin_id_map);
         size_t num_clock_pins = count_valid_refs(block_clock_pins(blk_id), pin_id_map);
 
-        std::vector<AtomPinId>& pins = block_pins_[blk_id];
+        std::vector<AtomPinId>& pin_collection = block_pins_[blk_id];
 
-        pins = update_valid_refs(pins, pin_id_map);
+        pin_collection = update_valid_refs(pin_collection, pin_id_map);
         block_num_input_pins_[blk_id] = num_input_pins;
         block_num_output_pins_[blk_id] = num_output_pins;
         block_num_clock_pins_[blk_id] = num_clock_pins;
 
-        VTR_ASSERT_SAFE_MSG(all_valid(pins), "All Ids should be valid");
-        VTR_ASSERT(pins.size() == (size_t) block_num_input_pins_[blk_id]
-                                           + block_num_output_pins_[blk_id]
-                                           + block_num_clock_pins_[blk_id]);
+        VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All Ids should be valid");
+        VTR_ASSERT(pin_collection.size() == (size_t) block_num_input_pins_[blk_id]
+                                                   + block_num_output_pins_[blk_id]
+                                                   + block_num_clock_pins_[blk_id]);
 
         //Similarily for ports
         size_t num_input_ports = count_valid_refs(block_input_ports(blk_id), port_id_map);
@@ -1294,9 +1294,9 @@ void AtomNetlist::rebuild_port_refs(const vtr::vector_map<AtomBlockId,AtomBlockI
 
     VTR_ASSERT(port_blocks_.size() == port_ids_.size());
 
-    for(auto& pins : port_pins_) {
-        pins = update_valid_refs(pins, pin_id_map);
-        VTR_ASSERT_SAFE_MSG(all_valid(pins), "All Ids should be valid");
+    for(auto& pin_collection : port_pins_) {
+        pin_collection = update_valid_refs(pin_collection, pin_id_map);
+        VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All Ids should be valid");
     }
     VTR_ASSERT(validate_port_sizes());
 }
@@ -1315,10 +1315,10 @@ void AtomNetlist::rebuild_pin_refs(const vtr::vector_map<AtomPortId,AtomPortId>&
 
 void AtomNetlist::rebuild_net_refs(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map) {
     //Update pin references held by nets
-    for(auto& pins : net_pins_) {
-        pins = update_valid_refs(pins, pin_id_map);
+    for(auto& pin_collection : net_pins_) {
+        pin_collection = update_valid_refs(pin_collection, pin_id_map);
 
-        VTR_ASSERT_SAFE_MSG(all_valid(pins), "All sinks should be valid");
+        VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All sinks should be valid");
     }
     VTR_ASSERT(validate_net_sizes());
 }
@@ -1350,8 +1350,8 @@ void AtomNetlist::shrink_to_fit() {
     block_truth_tables_.shrink_to_fit();
 
     block_pins_.shrink_to_fit();
-    for(std::vector<AtomPinId>& pins : block_pins_) {
-        pins.shrink_to_fit();
+    for(std::vector<AtomPinId>& pin_collection : block_pins_) {
+        pin_collection.shrink_to_fit();
     }
     block_num_input_pins_.shrink_to_fit();
     block_num_output_pins_.shrink_to_fit();
@@ -1372,8 +1372,8 @@ void AtomNetlist::shrink_to_fit() {
     port_blocks_.shrink_to_fit();
     port_models_.shrink_to_fit();
     port_pins_.shrink_to_fit();
-    for(auto& pins : port_pins_) {
-        pins.shrink_to_fit();
+    for(auto& pin_collection : port_pins_) {
+        pin_collection.shrink_to_fit();
     }
     VTR_ASSERT(validate_port_sizes());
 
@@ -1637,10 +1637,10 @@ bool AtomNetlist::validate_net_pin_refs() const {
     vtr::vector_map<AtomPinId,unsigned> seen_pin_ids(pin_ids_.size());
 
     for(auto net_id : nets()) {
-        auto pins = net_pins(net_id);
-        for(auto iter = pins.begin(); iter != pins.end(); ++iter) {
+        auto pin_range = net_pins(net_id);
+        for(auto iter = pin_range.begin(); iter != pin_range.end(); ++iter) {
             auto pin_id = *iter;
-            if(iter != pins.begin()) {
+            if(iter != pin_range.begin()) {
                 //The first net pin is the driver, which may be invalid
                 //if there is no driver. So we only check for a valid id
                 //on the other net pins (which are all sinks and must be valid)
