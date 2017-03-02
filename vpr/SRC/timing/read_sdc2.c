@@ -589,8 +589,8 @@ class SdcParseCallback2 : public sdcparse::Callback {
             VTR_ASSERT(capture_iter != sdc_clocks_.end());
             const sdcparse::CreateClock& capture_clock = capture_iter->second;
 
-            VTR_ASSERT_MSG(launch_clock.period > 0., "Clock period must be positive");
-            VTR_ASSERT_MSG(capture_clock.period > 0., "Clock period must be positive");
+            VTR_ASSERT_MSG(launch_clock.period >= 0., "Clock period must be positive");
+            VTR_ASSERT_MSG(capture_clock.period >= 0., "Clock period must be positive");
 
             float constraint = std::numeric_limits<float>::quiet_NaN();
 
