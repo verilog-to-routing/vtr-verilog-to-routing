@@ -311,11 +311,6 @@ class SdcParseCallback2 : public sdcparse::Callback {
         void set_multicycle_path(const sdcparse::SetMulticyclePath& cmd) override {
             ++num_commands_;
 
-            if(cmd.type == sdcparse::SetupHoldType::NONE) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, 
-                        "set_multicycle_path must specify either -setup or -hold"); 
-            }
-
             auto from_clocks = get_clocks(cmd.from);
             auto to_clocks = get_clocks(cmd.to);
 
@@ -336,7 +331,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 for(auto to_clock : to_clocks) {
                     auto domain_pair = std::make_pair(from_clock, to_clock);
 
-                    if(cmd.type == sdcparse::SetupHoldType::SETUP) {
+                    if(cmd.type == sdcparse::SetupHoldType::SETUP || cmd.type == sdcparse::SetupHoldType::NONE) {
                         setup_mcp_overrides_[domain_pair] = cmd.mcp_value;
 
                     } else {
