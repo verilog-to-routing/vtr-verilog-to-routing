@@ -533,18 +533,17 @@ class SdcParseCallback2 : public sdcparse::Callback {
             if (override_iter != setup_override_constraints_.end()) {
                 float override_setup_constraint = override_iter->second;
 
-                //Keep the minimum constraint
-                setup_constraint = std::min(setup_constraint, override_setup_constraint);
-
-                //Warn if the override did not actuallly override
-                if (setup_constraint != override_setup_constraint) {
+                if (setup_constraint > override_setup_constraint) {
                     vtr::printf_warning(__FILE__, __LINE__,
-                                        "Override setup constraint (%g) did not override period-based constraint (%g)"
+                                        "Override setup constraint (%g) overrides a tighter default period-based constraint (%g)"
                                         " for transfers from clock '%s' to clock '%s'\n",
-                                        override_setup_constraint, period_based_setup_constraint,
+                                        override_setup_constraint, setup_constraint,
                                         tc_.clock_domain_name(launch_domain).c_str(),
                                         tc_.clock_domain_name(capture_domain).c_str());
                 }
+
+                //Override the constarint
+                setup_constraint = override_setup_constraint;
             }
 
             setup_constraint = sdc_units_to_seconds(setup_constraint);
@@ -589,18 +588,17 @@ class SdcParseCallback2 : public sdcparse::Callback {
             if(override_iter != hold_override_constraints_.end()) {
                 float override_hold_constraint = override_iter->second;
 
-                //Keep the minimum constraint
-                hold_constraint = std::min(hold_constraint, override_hold_constraint);
-
-                //Warn if the override did not actuallly override
-                if(hold_constraint != override_hold_constraint) {
+                if (hold_constraint < override_hold_constraint) {
                     vtr::printf_warning(__FILE__, __LINE__,
-                                        "Override hold constraint (%g) did not override period-based constraint (%g)"
+                                        "Override hold constraint (%g) overrides tighter default period-based constraint (%g)"
                                         " for transfers from clock '%s' to clock '%s'\n",
-                                        override_hold_constraint, period_based_hold_constraint,
+                                        override_hold_constraint, hold_constraint,
                                         tc_.clock_domain_name(launch_domain).c_str(),
                                         tc_.clock_domain_name(capture_domain).c_str());
                 }
+
+                //Override the constarint
+                hold_constraint = override_hold_constraint;
             }
 
             hold_constraint = sdc_units_to_seconds(hold_constraint);
