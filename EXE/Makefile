@@ -15,7 +15,7 @@ WARN_FLAGS = -Wall
 
 DEBUG_FLAGS = -g
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
-INC_FLAGS = -Iinclude -ISRC/include/libcommon_c++/SRC/TIO_InputOutputHandlers
+INC_FLAGS = -ISRC/include -ISRC/base -ISRC/include/libcommon_c++/SRC/TIO_InputOutputHandlers
 LIB_FLAGS = rcs
 
 FLAGS = $(WARN_FLAGS) $(INC_FLAGS)

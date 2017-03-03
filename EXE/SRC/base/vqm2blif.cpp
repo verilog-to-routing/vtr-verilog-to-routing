@@ -77,8 +77,8 @@
 *  For more, see "logic_types.h", "read_xml_arch_file.h" and "read_xml_arch_file.c" in libvpr
 *********************************************************************************************/
 
-#include "../include/vqm2blif.h"
-#include "../include/lut_stats.h"
+#include "vqm2blif.h"
+#include "lut_stats.h"
 
 #include <sys/stat.h>
 
