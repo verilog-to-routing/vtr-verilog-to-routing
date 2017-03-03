@@ -341,14 +341,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
                     } else {
                         VTR_ASSERT(cmd.type == sdcparse::SetupHoldType::HOLD);
-
-                        //The hold check is specified relative to the current setup check
-
-                        //Find the current setup check
-                        int setup_mcp_value = setup_mcp(from_clock, to_clock);
-
-                        //Move the hold check the specified cycles before the setup check
-                        hold_mcp_overrides_[domain_pair] = setup_mcp_value - cmd.mcp_value;
+                        hold_mcp_overrides_[domain_pair] = cmd.mcp_value;
                     }
                 }
             }
@@ -504,6 +497,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
         }
 
+        //Returns the setup constraint in seconds
         tatum::Time calculate_setup_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
             //Calculate the period-based constraint, including the effect of multi-cycle paths
             float min_launch_to_capture_time = calculate_min_launch_to_capture_edge_time(launch_domain, capture_domain);
@@ -512,9 +506,23 @@ class SdcParseCallback2 : public sdcparse::Callback {
             VTR_ASSERT(iter != sdc_clocks_.end());
             float capture_period = iter->second.period;
 
-            //The period based constraint is the minimum launch to capture edge time + the capture period * setup mcp
-            // By default the setup mpc is 1, specifying a capture 1 cycle after launch
-            float period_based_setup_constraint = min_launch_to_capture_time + capture_period * setup_mcp(launch_domain, capture_domain);
+            //The period based constraint is the minimum launch to capture edge time + the capture period * (extra_cycles)
+            //
+            // Since min_launch_to_capture_time is the minimum time to the first capture edge after a launch edge, it already
+            // implicitly includes one capture cycle. As a result we subtract 1 from the setup capture cycle value to determine 
+            // how many extra capture cycles need to be added to the constraint.
+            //
+            // By default the setup capture cycle 1, specifying a capture 1 cycle after launch
+            int extra_cycles = setup_capture_cycle(launch_domain, capture_domain) - 1;
+            float period_based_setup_constraint = min_launch_to_capture_time + capture_period * extra_cycles;
+
+            //Warn the user if we added negative cycles
+            if (extra_cycles < 0) {
+                vtr::printf_warning(__FILE__, __LINE__,
+                                    "Added negative (%d) additional capture clock cycles to setup constraint"
+                                    " for clock '%s' to clock '%s' transfers; check your set_multicycle_path specifications\n",
+                                    extra_cycles, tc_.clock_domain_name(launch_domain).c_str(), tc_.clock_domain_name(capture_domain).c_str());
+            }
 
             //By default the period-based constraint is the constraint
             float setup_constraint = period_based_setup_constraint;
@@ -522,14 +530,14 @@ class SdcParseCallback2 : public sdcparse::Callback {
             //See if we have any other override constraints
             auto domain_pair = std::make_pair(launch_domain, capture_domain);
             auto override_iter = setup_override_constraints_.find(domain_pair);
-            if(override_iter != setup_override_constraints_.end()) {
+            if (override_iter != setup_override_constraints_.end()) {
                 float override_setup_constraint = override_iter->second;
 
                 //Keep the minimum constraint
                 setup_constraint = std::min(setup_constraint, override_setup_constraint);
 
                 //Warn if the override did not actuallly override
-                if(setup_constraint != override_setup_constraint) {
+                if (setup_constraint != override_setup_constraint) {
                     vtr::printf_warning(__FILE__, __LINE__,
                                         "Override setup constraint (%g) did not override period-based constraint (%g)"
                                         " for transfers from clock '%s' to clock '%s'\n",
@@ -540,9 +548,19 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
 
             setup_constraint = sdc_units_to_seconds(setup_constraint);
+
+            if (setup_constraint < 0.) {
+                VPR_THROW(VPR_ERROR_SDC, "Setup constraint %g for transfers from clock '%s' to clock '%s' is negative."
+                                         " Requires data to arrive before launch edge (No time travelling allowed!)",
+                                         setup_constraint,
+                                         tc_.clock_domain_name(launch_domain).c_str(),
+                                         tc_.clock_domain_name(capture_domain).c_str());
+            }
+
             return tatum::Time(setup_constraint);
         }
 
+        //Returns the hold constraint in seconds
         tatum::Time calculate_hold_constraint(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
             float min_launch_to_capture_time = calculate_min_launch_to_capture_edge_time(launch_domain, capture_domain);
 
@@ -550,9 +568,17 @@ class SdcParseCallback2 : public sdcparse::Callback {
             VTR_ASSERT(iter != sdc_clocks_.end());
             float capture_period = iter->second.period;
 
-            //The period based constraint is the minimum launch to capture edge time + the capture period * hold mcp
-            // By default the hold mpc is 0, specifying a capture the same cycle as launch
-            float period_based_hold_constraint = min_launch_to_capture_time + capture_period * hold_mcp(launch_domain, capture_domain);
+            //The period based constraint is the minimum launch to capture edge time + the capture period * extra_cycles
+            //
+            // Since min_launch_to_capture_time is the minimum time to the first capture edge *after* a launch edge, it already
+            // implicitly includes one capture cycle. As a result we subtract 1 from the hold capture cycle value to determine 
+            // how many extra capture cycles need to be added to the constraint.
+            //
+            // For the default hold check is one cycle before the setup check
+            // For the default setup check (1) this means extra_cycles is -1 (i.e. the hold capture check occurs against 
+            // the capture edge *before* the launch edge)
+            int extra_cycles = hold_capture_cycle(launch_domain, capture_domain) - 1;
+            float period_based_hold_constraint = min_launch_to_capture_time + capture_period * extra_cycles;
 
             //By default the period-based constraint is the constraint
             float hold_constraint = period_based_hold_constraint;
@@ -578,10 +604,11 @@ class SdcParseCallback2 : public sdcparse::Callback {
             }
 
             hold_constraint = sdc_units_to_seconds(hold_constraint);
+
             return tatum::Time(hold_constraint);
         }
 
-        //Determine the minumum time between the edges of the launch and capture clocks
+        //Determine the minumum time (in SDC units) between the edges of the launch and capture clocks
         float calculate_min_launch_to_capture_edge_time(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
             constexpr int CLOCK_SCALE = 1000;
 
@@ -665,33 +692,41 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 constraint = float(scaled_constraint) / CLOCK_SCALE;
             }
 
-            constraint = sdc_units_to_seconds(constraint);
-
             return constraint;
         }
 
-        int setup_mcp(tatum::DomainId from, tatum::DomainId to) const {
+        //Returns the cycle number (after launch) where the setup check occurs
+        int setup_capture_cycle(tatum::DomainId from, tatum::DomainId to) const {
+            //Default: capture one cycle after launch
+            int setup_mcp_value = 1;
+
+            //Any overrides
             auto key = std::make_pair(from, to);
             auto iter = setup_mcp_overrides_.find(key);
             if(iter != setup_mcp_overrides_.end()) {
-                return iter->second;
+                setup_mcp_value = iter->second;
             }
 
-            //Default: capture one cycle after launch
-            return 1;
+            //The setup capture cycle is the setup mcp value
+            return setup_mcp_value;
         }
 
-        int hold_mcp(tatum::DomainId from, tatum::DomainId to) const {
+        //Returns the cycle number (after launch) where the hold check occurs
+        int hold_capture_cycle(tatum::DomainId from, tatum::DomainId to) const {
+            //Default: hold captures the cycle before setup is captured
+            //For the default setup mcp this implies capturing the same
+            //cycle as launch
+            int hold_mcp_value = 1;
+
+            //Any overrides?
             auto key = std::make_pair(from, to);
             auto iter = hold_mcp_overrides_.find(key);
             if(iter != hold_mcp_overrides_.end()) {
-                return iter->second;
+                hold_mcp_value = iter->second;
             }
 
-            //Default: capture the cycle before setup is captured
-            //For the default setup mcp this implies capturing the same
-            //cycle as launch
-            return setup_mcp(from, to) - 1;
+            //The hold capture cycle is the setup capture cycle minus the hold mcp value
+            return setup_capture_cycle(from, to) - hold_mcp_value;
         }
 
         std::set<AtomPinId> get_ports(const sdcparse::StringGroup& port_group) {
