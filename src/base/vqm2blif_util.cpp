@@ -1,4 +1,5 @@
 #include "vqm2blif_util.h"
+#include "vtr_util.h"
 
 //============================================================================================
 //============================================================================================
@@ -147,7 +148,7 @@ string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models){
     //    NOTE: this applies to all blocks
     if (operation_mode != NULL) {
         //Copy the string
-        char* temp_string_value = my_strdup(operation_mode->value.string_value);
+        char* temp_string_value = vtr::strdup(operation_mode->value.string_value);
 
         //Remove characters that are invalid in blif
         clean_name(temp_string_value);

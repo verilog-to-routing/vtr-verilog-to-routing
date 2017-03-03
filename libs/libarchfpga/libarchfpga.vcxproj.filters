@@ -17,9 +17,6 @@
     <ClInclude Include="include\util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\ezxml.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\logic_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -35,11 +32,11 @@
     <ClInclude Include="include\ReadLine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\cad_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ezxml.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="util.c">
       <Filter>Source Files</Filter>
     </ClCompile>

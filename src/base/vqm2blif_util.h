@@ -44,12 +44,10 @@
 #include <set>
 #include <string.h>
 
-#include "libvqm/vqm_dll.h"	//VQM Parser
+#include "vqm_dll.h"	//VQM Parser
 #include "hash.h"				//Hash Table Functions
 
-extern "C" {
-	#include "libarchfpga/include/read_xml_arch_file.h"	//Architecture Parser
-}
+#include "read_xml_arch_file.h"	//Architecture Parser
 
 using namespace std;
 

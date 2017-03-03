@@ -45,7 +45,7 @@ typedef struct s_net_driver {
             t_node* node;
         } node_port;
     } driver;
-    boolean is_global;
+    bool is_global;
 } t_net_driver;
 typedef map<t_pin_def*, t_net_driver> t_net_driver_map;
 

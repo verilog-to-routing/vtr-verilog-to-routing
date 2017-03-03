@@ -2,8 +2,10 @@
 //				INCLUDES
 //============================================================================================
 #include "preprocess.h"
-#include "libvqm/vqm_common.h"
+#include "vqm_common.h"
 #include "lut_stats.h"
+#include "vtr_memory.h"
+#include "vtr_util.h"
 #include <ios>
 
 
@@ -79,9 +81,9 @@ t_node_port_vec_pair identify_global_local_pins(t_module* module, t_arch* arch, 
     
 int insert_fake_global_buffer_cells(t_module* module, t_assign_vec_pair global_local_assign, t_node_port_vec_pair global_local_pins);
 
-boolean is_node_port_global(t_node* node, t_node_port_association* node_port, t_global_ports global_ports);
+bool is_node_port_global(t_node* node, t_node_port_association* node_port, t_global_ports global_ports);
 
-boolean is_net_global(t_pin_def* net, t_global_nets global_nets);
+bool is_net_global(t_pin_def* net, t_global_nets global_nets);
 
 t_pin_def* add_new_input_buffer(t_module* module, t_pin_def* global_src_net, t_buffer_type buffer_type, int num_buffers_inserted);
 
@@ -392,7 +394,7 @@ char* prefix_string(const char* prefix, const char* base) {
     //Number of characters (including terminator)
     size_t new_string_size = (strlen(prefix) + strlen(base) + 1)*sizeof(char);
 
-    char* new_string = (char*) my_malloc(new_string_size);
+    char* new_string = (char*) vtr::malloc(new_string_size);
 
     //Checks for overflow
     snprintf(new_string, new_string_size, "%s%s", prefix, base);
@@ -477,11 +479,11 @@ t_split_inout_pin create_decomposed_pins(t_module* module, t_pin_def* inout_pin)
      */
 
     //Reallocate space
-    module->array_of_pins = (t_pin_def**) my_realloc(module->array_of_pins, module->number_of_pins*sizeof(t_pin_def*));
+    module->array_of_pins = (t_pin_def**) vtr::realloc(module->array_of_pins, module->number_of_pins*sizeof(t_pin_def*));
 
     //The new output pin is at the end of the array, and must be
     // allocated
-    module->array_of_pins[module->number_of_pins-1] = (t_pin_def*) my_malloc(sizeof(t_pin_def));
+    module->array_of_pins[module->number_of_pins-1] = (t_pin_def*) vtr::malloc(sizeof(t_pin_def));
 
     //Pointer to the new output pin
     t_pin_def* new_output_pin = module->array_of_pins[module->number_of_pins-1];
@@ -684,24 +686,24 @@ void identify_mlab_acting_as_rom(t_module* module) {
                     //attached to a constant.  Here we check for vcc and gnd
                     if(strcmp(clock_net->name, "vcc") == 0 || strcmp(clock_net->name, "gnd") == 0) {
                         //It is a ROM, create an operation mode
-                        t_node_parameter* new_op_mode = (t_node_parameter*) my_malloc(sizeof(t_node_parameter));
+                        t_node_parameter* new_op_mode = (t_node_parameter*) vtr::malloc(sizeof(t_node_parameter));
 
                         const char* param_name = "operation_mode";
                         const char* param_value = "ROM";
 
                         //Param name
-                        new_op_mode->name = (char*) my_malloc(sizeof(char)*(strlen(param_name) + 1));
+                        new_op_mode->name = (char*) vtr::malloc(sizeof(char)*(strlen(param_name) + 1));
                         strncpy(new_op_mode->name, param_name, strlen(param_name) + 1);
 
                         //Param value type
                         new_op_mode->type = NODE_PARAMETER_STRING;
 
                         //Param value
-                        new_op_mode->value.string_value = (char*) my_malloc(sizeof(char)*(strlen(param_value) + 1));
+                        new_op_mode->value.string_value = (char*) vtr::malloc(sizeof(char)*(strlen(param_value) + 1));
                         strncpy(new_op_mode->value.string_value, param_value, strlen(param_value) + 1);
 
                         //Add the operation mode to the list of parameters
-                        node->array_of_params = (t_node_parameter**) my_realloc(node->array_of_params, sizeof(t_node_parameter*) * ++node->number_of_params);
+                        node->array_of_params = (t_node_parameter**) vtr::realloc(node->array_of_params, sizeof(t_node_parameter*) * ++node->number_of_params);
                         node->array_of_params[node->number_of_params-1] = new_op_mode;
 
                         converted_mlab_count++;
@@ -858,12 +860,12 @@ void decompose_carry_chains(t_module* module) {
         
         //Insert the duplicate logic_lcell_1 node
         module->number_of_nodes++;
-        module->array_of_nodes = (t_node**) my_realloc(module->array_of_nodes, sizeof(t_node*)*module->number_of_nodes);
+        module->array_of_nodes = (t_node**) vtr::realloc(module->array_of_nodes, sizeof(t_node*)*module->number_of_nodes);
         module->array_of_nodes[module->number_of_nodes-1] = logic_lcell_1;
 
         //Insert the duplicate arith_lcell node
         module->number_of_nodes++;
-        module->array_of_nodes = (t_node**) my_realloc(module->array_of_nodes, sizeof(t_node*)*module->number_of_nodes);
+        module->array_of_nodes = (t_node**) vtr::realloc(module->array_of_nodes, sizeof(t_node*)*module->number_of_nodes);
         module->array_of_nodes[module->number_of_nodes-1] = arith_lcell;
 
         //Disconnect the non-logic ports from the logic_lcell_0
@@ -911,18 +913,18 @@ void decompose_carry_chains(t_module* module) {
         char buf[50]; //Buffer for net names
 
         //Allocate the logic lcell output nets
-        t_pin_def* logic_lcell_0_combout_net = (t_pin_def*) my_malloc(sizeof(t_pin_def));
+        t_pin_def* logic_lcell_0_combout_net = (t_pin_def*) vtr::malloc(sizeof(t_pin_def));
         snprintf(buf, sizeof(buf), "__split_carry_lcell_combout_%d__", net_count);
-        logic_lcell_0_combout_net->name = my_strdup(buf);
+        logic_lcell_0_combout_net->name = vtr::strdup(buf);
         logic_lcell_0_combout_net->left = 0;
         logic_lcell_0_combout_net->right = 0;
         logic_lcell_0_combout_net->indexed = T_FALSE;
         logic_lcell_0_combout_net->type = PIN_WIRE;
         net_count++;
 
-        t_pin_def* logic_lcell_1_combout_net = (t_pin_def*) my_malloc(sizeof(t_pin_def));
+        t_pin_def* logic_lcell_1_combout_net = (t_pin_def*) vtr::malloc(sizeof(t_pin_def));
         snprintf(buf, sizeof(buf), "__split_carry_lcell_combout_%d__", net_count);
-        logic_lcell_1_combout_net->name = my_strdup(buf);
+        logic_lcell_1_combout_net->name = vtr::strdup(buf);
         logic_lcell_1_combout_net->left = 0;
         logic_lcell_1_combout_net->right = 0;
         logic_lcell_1_combout_net->indexed = T_FALSE;
@@ -931,7 +933,7 @@ void decompose_carry_chains(t_module* module) {
 
         //Insert the nets in the global net array
         module->number_of_pins += 2;
-        module->array_of_pins = (t_pin_def**) my_realloc(module->array_of_pins, sizeof(t_pin_def*)*module->number_of_pins);
+        module->array_of_pins = (t_pin_def**) vtr::realloc(module->array_of_pins, sizeof(t_pin_def*)*module->number_of_pins);
         module->array_of_pins[module->number_of_pins-2] = logic_lcell_0_combout_net;
         module->array_of_pins[module->number_of_pins-1] = logic_lcell_1_combout_net;
 
@@ -940,29 +942,29 @@ void decompose_carry_chains(t_module* module) {
         //
 
         //Create the combout port on the logic_lcell_0
-        t_node_port_association* logic_lcell_0_combout_port = (t_node_port_association*) my_malloc(sizeof(t_node_port_association));
+        t_node_port_association* logic_lcell_0_combout_port = (t_node_port_association*) vtr::malloc(sizeof(t_node_port_association));
         snprintf(buf, sizeof(buf), "combout");
-        logic_lcell_0_combout_port->port_name = my_strdup(buf);
+        logic_lcell_0_combout_port->port_name = vtr::strdup(buf);
         logic_lcell_0_combout_port->port_index = 0;
         logic_lcell_0_combout_port->associated_net = logic_lcell_0_combout_net;
         logic_lcell_0_combout_port->wire_index = 0;
         
         //Insert the port
         logic_lcell_0->number_of_ports++;
-        logic_lcell_0->array_of_ports = (t_node_port_association**) my_realloc(logic_lcell_0->array_of_ports, sizeof(t_node_port_association*)*logic_lcell_0->number_of_ports);
+        logic_lcell_0->array_of_ports = (t_node_port_association**) vtr::realloc(logic_lcell_0->array_of_ports, sizeof(t_node_port_association*)*logic_lcell_0->number_of_ports);
         logic_lcell_0->array_of_ports[logic_lcell_0->number_of_ports-1] = logic_lcell_0_combout_port;
 
         //Create the combout port on the logic_lcell_1
-        t_node_port_association* logic_lcell_1_combout_port = (t_node_port_association*) my_malloc(sizeof(t_node_port_association));
+        t_node_port_association* logic_lcell_1_combout_port = (t_node_port_association*) vtr::malloc(sizeof(t_node_port_association));
         snprintf(buf, sizeof(buf), "combout");
-        logic_lcell_1_combout_port->port_name = my_strdup(buf);
+        logic_lcell_1_combout_port->port_name = vtr::strdup(buf);
         logic_lcell_1_combout_port->port_index = 0;
         logic_lcell_1_combout_port->associated_net = logic_lcell_1_combout_net;
         logic_lcell_1_combout_port->wire_index = 0;
         
         //Insert the port
         logic_lcell_1->number_of_ports++;
-        logic_lcell_1->array_of_ports = (t_node_port_association**) my_realloc(logic_lcell_1->array_of_ports, sizeof(t_node_port_association*)*logic_lcell_1->number_of_ports);
+        logic_lcell_1->array_of_ports = (t_node_port_association**) vtr::realloc(logic_lcell_1->array_of_ports, sizeof(t_node_port_association*)*logic_lcell_1->number_of_ports);
         logic_lcell_1->array_of_ports[logic_lcell_1->number_of_ports-1] = logic_lcell_1_combout_port;
 
 
@@ -974,24 +976,24 @@ void decompose_carry_chains(t_module* module) {
         //  outputs.
 
         //datad port first
-        t_node_port_association* arith_lcell_datad_port = (t_node_port_association*) my_malloc(sizeof(t_node_port_association));
+        t_node_port_association* arith_lcell_datad_port = (t_node_port_association*) vtr::malloc(sizeof(t_node_port_association));
         snprintf(buf, sizeof(buf), "datad");
-        arith_lcell_datad_port->port_name = my_strdup(buf);
+        arith_lcell_datad_port->port_name = vtr::strdup(buf);
         arith_lcell_datad_port->port_index = 0;
         arith_lcell_datad_port->associated_net = logic_lcell_0_combout_net;
         arith_lcell_datad_port->wire_index = 0;
         
         //dataf port second
-        t_node_port_association* arith_lcell_dataf_port = (t_node_port_association*) my_malloc(sizeof(t_node_port_association));
+        t_node_port_association* arith_lcell_dataf_port = (t_node_port_association*) vtr::malloc(sizeof(t_node_port_association));
         snprintf(buf, sizeof(buf), "dataf");
-        arith_lcell_dataf_port->port_name = my_strdup(buf);
+        arith_lcell_dataf_port->port_name = vtr::strdup(buf);
         arith_lcell_dataf_port->port_index = 0;
         arith_lcell_dataf_port->associated_net = logic_lcell_1_combout_net;
         arith_lcell_dataf_port->wire_index = 0;
         
         //Insert the ports
         arith_lcell->number_of_ports += 2;
-        arith_lcell->array_of_ports = (t_node_port_association**) my_realloc(arith_lcell->array_of_ports, sizeof(t_node_port_association*)*arith_lcell->number_of_ports);
+        arith_lcell->array_of_ports = (t_node_port_association**) vtr::realloc(arith_lcell->array_of_ports, sizeof(t_node_port_association*)*arith_lcell->number_of_ports);
         arith_lcell->array_of_ports[arith_lcell->number_of_ports-2] = arith_lcell_datad_port;
         arith_lcell->array_of_ports[arith_lcell->number_of_ports-1] = arith_lcell_dataf_port;
 
@@ -1436,7 +1438,7 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
         t_node* split_node_b = duplicate_node(orig_node);
 
         module->number_of_nodes++;
-        module->array_of_nodes = (t_node**) my_realloc(module->array_of_nodes, sizeof(t_node*)*module->number_of_nodes);
+        module->array_of_nodes = (t_node**) vtr::realloc(module->array_of_nodes, sizeof(t_node*)*module->number_of_nodes);
         module->array_of_nodes[module->number_of_nodes-1] = split_node_b;
 
         //2) Rename the block names and types
@@ -1447,7 +1449,7 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
         new_len = strlen(split_node_a->type);
         new_len += strlen(SPLIT_A_POSTFIX);
         char* old_type = split_node_a->type;
-        split_node_a->type = (char*) my_malloc(sizeof(*split_node_a->type)*(new_len+1));
+        split_node_a->type = (char*) vtr::malloc(sizeof(*split_node_a->type)*(new_len+1));
         snprintf(split_node_a->type, new_len+1, "%s%s", old_type, SPLIT_A_POSTFIX);
         free(old_type);
 
@@ -1455,7 +1457,7 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
         new_len = strlen(split_node_a->name);
         new_len += strlen(SPLIT_A_POSTFIX);
         char* old_name = split_node_a->name;
-        split_node_a->name = (char*) my_malloc(sizeof(*split_node_a->name)*(new_len+1));
+        split_node_a->name = (char*) vtr::malloc(sizeof(*split_node_a->name)*(new_len+1));
         snprintf(split_node_a->name, new_len+1, "%s%s", old_name, SPLIT_A_POSTFIX);
         free(old_name);
 
@@ -1463,7 +1465,7 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
         new_len = strlen(split_node_b->type);
         new_len += strlen(SPLIT_B_POSTFIX);
         old_type = split_node_b->type;
-        split_node_b->type = (char*) my_malloc(sizeof(*split_node_b->type)*(new_len+1));
+        split_node_b->type = (char*) vtr::malloc(sizeof(*split_node_b->type)*(new_len+1));
         snprintf(split_node_b->type, new_len+1, "%s%s", old_type, SPLIT_B_POSTFIX);
         free(old_type);
 
@@ -1471,7 +1473,7 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
         new_len = strlen(split_node_b->name);
         new_len += strlen(SPLIT_B_POSTFIX);
         old_name = split_node_b->name;
-        split_node_b->name = (char*) my_malloc(sizeof(*split_node_b->name)*(new_len+1));
+        split_node_b->name = (char*) vtr::malloc(sizeof(*split_node_b->name)*(new_len+1));
         snprintf(split_node_b->name, new_len+1, "%s%s", old_name, SPLIT_B_POSTFIX);
         free(old_name);
 
@@ -1495,7 +1497,7 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
         }
         
         //Reallocate
-        t_node_port_association** new_port_array = (t_node_port_association**) my_malloc(sizeof(t_node_port_association*)*(split_node_a->number_of_ports - num_ports_removed));
+        t_node_port_association** new_port_array = (t_node_port_association**) vtr::malloc(sizeof(t_node_port_association*)*(split_node_a->number_of_ports - num_ports_removed));
         size_t index = 0;
         for(int i = 0; i < split_node_a->number_of_ports; i++) {
             t_node_port_association* node_port = split_node_a->array_of_ports[i];
@@ -1530,7 +1532,7 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
             }
         }
         
-        new_port_array = (t_node_port_association**) my_malloc(sizeof(t_node_port_association*)*(split_node_b->number_of_ports - num_ports_removed));
+        new_port_array = (t_node_port_association**) vtr::malloc(sizeof(t_node_port_association*)*(split_node_b->number_of_ports - num_ports_removed));
         index = 0;
         for(int i = 0; i < split_node_b->number_of_ports; i++) {
             t_node_port_association* node_port = split_node_b->array_of_ports[i];
@@ -1551,14 +1553,14 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
 
         //5) Create dummy net to connect 'A' to 'B', used by packer molecules to always place these together
         module->number_of_pins++;
-        module->array_of_pins = (t_pin_def**) my_realloc(module->array_of_pins, sizeof(t_pin_def*)*module->number_of_pins);
+        module->array_of_pins = (t_pin_def**) vtr::realloc(module->array_of_pins, sizeof(t_pin_def*)*module->number_of_pins);
 
         //Create the new net
-        t_pin_def* new_net = (t_pin_def*) my_malloc(sizeof(t_pin_def));
+        t_pin_def* new_net = (t_pin_def*) vtr::malloc(sizeof(t_pin_def));
 
         char buf[50];
         snprintf(buf, sizeof(char)*50, DUMMY_NET_NAME_FORMAT, dummy_net_count);
-        new_net->name = (char*) my_malloc(strlen(buf)+1);
+        new_net->name = (char*) vtr::malloc(strlen(buf)+1);
         strncpy(new_net->name, buf, strlen(buf)+1);
         new_net->left = 0;
         new_net->right = 0;
@@ -1571,10 +1573,10 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
 
         //5) Add dummy signal to 'A'
         split_node_a->number_of_ports++;
-        split_node_a->array_of_ports = (t_node_port_association**) my_realloc(split_node_a->array_of_ports, split_node_a->number_of_ports*sizeof(t_node_port_association*));
+        split_node_a->array_of_ports = (t_node_port_association**) vtr::realloc(split_node_a->array_of_ports, split_node_a->number_of_ports*sizeof(t_node_port_association*));
 
-        t_node_port_association* new_port_a = (t_node_port_association*) my_malloc(sizeof(t_node_port_association));
-        new_port_a->port_name = (char*) my_malloc(sizeof(char)*strlen(DUMMY_A_PORT_NAME)+1);
+        t_node_port_association* new_port_a = (t_node_port_association*) vtr::malloc(sizeof(t_node_port_association));
+        new_port_a->port_name = (char*) vtr::malloc(sizeof(char)*strlen(DUMMY_A_PORT_NAME)+1);
         snprintf(new_port_a->port_name, strlen(DUMMY_A_PORT_NAME)+1, "%s", DUMMY_A_PORT_NAME);
         new_port_a->port_index = -1;
         new_port_a->associated_net = new_net;
@@ -1584,10 +1586,10 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
 
         //6) Add dummy signal to 'B'
         split_node_b->number_of_ports++;
-        split_node_b->array_of_ports = (t_node_port_association**) my_realloc(split_node_b->array_of_ports, split_node_b->number_of_ports*sizeof(t_node_port_association*));
+        split_node_b->array_of_ports = (t_node_port_association**) vtr::realloc(split_node_b->array_of_ports, split_node_b->number_of_ports*sizeof(t_node_port_association*));
 
-        t_node_port_association* new_port_b = (t_node_port_association*) my_malloc(sizeof(t_node_port_association));
-        new_port_b->port_name = (char*) my_malloc(sizeof(char)*strlen(DUMMY_B_PORT_NAME)+1);
+        t_node_port_association* new_port_b = (t_node_port_association*) vtr::malloc(sizeof(t_node_port_association));
+        new_port_b->port_name = (char*) vtr::malloc(sizeof(char)*strlen(DUMMY_B_PORT_NAME)+1);
         snprintf(new_port_b->port_name, strlen(DUMMY_B_PORT_NAME)+1, "%s", DUMMY_B_PORT_NAME);
         new_port_b->port_index = -1;
         new_port_b->associated_net = new_net;
@@ -1618,20 +1620,20 @@ t_node_parameter* find_node_param(t_node* node, const char* param_name) {
 }
 
 t_node* duplicate_node(t_node* orig_node) {
-    t_node* new_node = (t_node*) my_malloc(sizeof(t_node));
+    t_node* new_node = (t_node*) vtr::malloc(sizeof(t_node));
     
     //Copy each field
     new_node->type = strdup(orig_node->type);
     new_node->name = strdup(orig_node->name);
 
     new_node->number_of_params = orig_node->number_of_params;
-    new_node->array_of_params = (t_node_parameter**) my_malloc(sizeof(t_node_parameter*)*orig_node->number_of_params);
+    new_node->array_of_params = (t_node_parameter**) vtr::malloc(sizeof(t_node_parameter*)*orig_node->number_of_params);
     for(int i = 0; i < orig_node->number_of_params; i++) {
         new_node->array_of_params[i] = duplicate_param(orig_node->array_of_params[i]);
     }
     
     new_node->number_of_ports = orig_node->number_of_ports;
-    new_node->array_of_ports = (t_node_port_association**) my_malloc(sizeof(t_node_port_association*)*orig_node->number_of_ports);
+    new_node->array_of_ports = (t_node_port_association**) vtr::malloc(sizeof(t_node_port_association*)*orig_node->number_of_ports);
     for(int i = 0; i < orig_node->number_of_ports; i++) {
         new_node->array_of_ports[i] = duplicate_port(orig_node->array_of_ports[i]);
     }
@@ -1640,7 +1642,7 @@ t_node* duplicate_node(t_node* orig_node) {
 }
 
 t_node_parameter* duplicate_param(t_node_parameter* orig_param) {
-    t_node_parameter* new_param = (t_node_parameter*) my_malloc(sizeof(t_node_parameter));
+    t_node_parameter* new_param = (t_node_parameter*) vtr::malloc(sizeof(t_node_parameter));
     
     new_param->name = strdup(orig_param->name);
     new_param->type = orig_param->type;
@@ -1650,7 +1652,7 @@ t_node_parameter* duplicate_param(t_node_parameter* orig_param) {
 }
 
 t_node_port_association* duplicate_port(t_node_port_association* orig_port) {
-    t_node_port_association* new_port = (t_node_port_association*) my_malloc(sizeof(t_node_port_association));
+    t_node_port_association* new_port = (t_node_port_association*) vtr::malloc(sizeof(t_node_port_association));
 
     new_port->port_name = strdup(orig_port->port_name);
     new_port->port_index = orig_port->port_index;
@@ -2136,7 +2138,7 @@ t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_p
                 //Save the driver type
                 net_driver.driver_type = ASSIGN;
                 net_driver.driver.assign = assign;
-                net_driver.is_global = FALSE; //Assignments by default are never global
+                net_driver.is_global = false; //Assignments by default are never global
 
             }
 
@@ -2210,7 +2212,7 @@ t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_p
 
             if (global_sink_fraction >= PROMOTE_NET_GLOBAL_SINK_FRAC) {
                 printf("\t\t\t\tPromoting driver to global (Frac global sinks: %.2f). \n", global_sink_fraction);
-                net_driver.is_global = TRUE; 
+                net_driver.is_global = true; 
             }
         }
 
@@ -2241,8 +2243,8 @@ t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_p
     return net_driver_map;
 }
 
-boolean is_node_port_global(t_node* node, t_node_port_association* node_port, t_global_ports global_ports) {
-    boolean node_port_is_global = FALSE;
+bool is_node_port_global(t_node* node, t_node_port_association* node_port, t_global_ports global_ports) {
+    bool node_port_is_global = false;
 
     //Check if the node type has any global ports
     t_global_ports::iterator gp_iter = global_ports.find(node->type);
@@ -2254,7 +2256,7 @@ boolean is_node_port_global(t_node* node, t_node_port_association* node_port, t_
         t_str_ports::iterator gps_iter = global_port_strings->find(node_port->port_name);
         if(gps_iter != global_port_strings->end()) {
             //It is in the list therefore, node_port is global
-            node_port_is_global = TRUE;
+            node_port_is_global = true;
         }
     }
 
@@ -2312,11 +2314,11 @@ t_assign_vec_pair identify_global_local_assignments(t_module* module, t_global_n
     return global_local_assignments;
 }
 
-boolean is_net_global(t_pin_def* net, t_global_nets global_nets) {
-    boolean net_is_global = FALSE;
+bool is_net_global(t_pin_def* net, t_global_nets global_nets) {
+    bool net_is_global = false;
     
     if(global_nets.find(net) != global_nets.end()) {
-        net_is_global = TRUE;
+        net_is_global = true;
     }
     
     return net_is_global;
@@ -2345,7 +2347,7 @@ t_node_port_vec_pair identify_global_local_pins(t_module* module, t_arch* arch, 
             if(is_net_global(associated_net, global_nets)) {
                 
                 //Figure out if node_port is global
-                boolean node_port_is_global = is_node_port_global(node, node_port, global_ports);
+                bool node_port_is_global = is_node_port_global(node, node_port, global_ports);
 
                 //The net driver
                 t_net_driver net_driver = net_driver_map[associated_net];
@@ -2382,7 +2384,7 @@ t_node_port_vec_pair identify_global_local_pins(t_module* module, t_arch* arch, 
 
                     //3b) net_driver is not global
                     } else {
-                        assert(node_port_is_global == TRUE);
+                        assert(node_port_is_global == true);
 
                         //Add the the appropriate list, so that a l2g buffer is added before node_port
                         global_local_pins.local_to_global.push_back(node_port);

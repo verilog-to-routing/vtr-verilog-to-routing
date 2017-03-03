@@ -18,16 +18,14 @@ Architecture based off Stratix IV
            conclusion - just take the 600 MHz as is, and Quartus II logiclock hasn't fixed the bug that I've seen it do to registers when I worked at Altera (ie. eject without warning)
 
     NOTE: Area numbers for hard blocks unknown!
--->
-  
-  <architecture>
+--><architecture>
   
   <!-- ODIN II specific config -->
   <models>
     <model name="multiply">
       <input_ports>
-      <port name="a"/>
-      <port name="b"/>
+      <port name="a" combinational_sink_ports="out"/>
+      <port name="b" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
       <port name="out"/>
@@ -36,29 +34,29 @@ Architecture based off Stratix IV
     
     <model name="single_port_ram">
       <input_ports>
-      <port name="we"/>     <!-- control -->
-      <port name="addr"/>  <!-- address lines -->
-      <port name="data"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+      <port name="we" clock="clk"/>     <!-- control -->
+      <port name="addr" clock="clk"/>  <!-- address lines -->
+      <port name="data" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
       <port name="clk" is_clock="1"/>  <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
-      <port name="out"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      <port name="out" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
 
     <model name="dual_port_ram">
       <input_ports>
-      <port name="we1"/>     <!-- write enable -->
-      <port name="we2"/>     <!-- write enable -->
-      <port name="addr1"/>  <!-- address lines -->
-      <port name="addr2"/>  <!-- address lines -->
-      <port name="data1"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
-      <port name="data2"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+      <port name="we1" clock="clk"/>     <!-- write enable -->
+      <port name="we2" clock="clk"/>     <!-- write enable -->
+      <port name="addr1" clock="clk"/>  <!-- address lines -->
+      <port name="addr2" clock="clk"/>  <!-- address lines -->
+      <port name="data1" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+      <port name="data2" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
       <port name="clk" is_clock="1"/>  <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
-      <port name="out1"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
-      <port name="out2"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      <port name="out1" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      <port name="out2" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
 
@@ -77,9 +75,9 @@ Architecture based off Stratix IV
 
 <model name="adder">
       <input_ports>
-      <port name="a"/>
-      <port name="b"/>
-      <port name="cin"/>
+      <port name="a" combinational_sink_ports="sumout cout"/>
+      <port name="b" combinational_sink_ports="sumout cout"/>
+      <port name="cin" combinational_sink_ports="sumout cout"/>
       </input_ports>
       <output_ports>
       <port name="cout"/>
@@ -239,8 +237,8 @@ Architecture based off Stratix IV
         </pb_type>
         <interconnect>
           <complete name="crossbar" input="clb.I ble[9:0].out" output="ble[9:0].in">
-            <delay_constant max="8.044000e-11" in_port="clb.I" out_port="ble[9:0].in" />
-            <delay_constant max="7.354000e-11" in_port="ble[9:0].out" out_port="ble[9:0].in" />
+            <delay_constant max="8.044000e-11" in_port="clb.I" out_port="ble[9:0].in"/>
+            <delay_constant max="7.354000e-11" in_port="ble[9:0].out" out_port="ble[9:0].in"/>
           </complete>
           <complete name="clks" input="clb.clk" output="ble[9:0].clk">
           </complete>
@@ -308,7 +306,7 @@ Architecture based off Stratix IV
                   <input name="B_cfg" num_pins="18"/>
                   <output name="OUT_cfg" num_pins="36"/>
 
-                  <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1" >
+                  <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1">
                     <input name="a" num_pins="18"/>
                     <input name="b" num_pins="18"/>
                     <output name="out" num_pins="36"/>
@@ -695,8 +693,8 @@ Architecture based off Stratix IV
         </pb_type>
         <interconnect>
           <complete name="crossbar" input="carry_chain_example.I ble[3:0].out" output="ble[3:0].in">
-            <delay_constant max="8.044000e-11" in_port="carry_chain_example.I" out_port="ble[3:0].in" />
-            <delay_constant max="7.354000e-11" in_port="ble[3:0].out" out_port="ble[3:0].in" />
+            <delay_constant max="8.044000e-11" in_port="carry_chain_example.I" out_port="ble[3:0].in"/>
+            <delay_constant max="7.354000e-11" in_port="ble[3:0].out" out_port="ble[3:0].in"/>
           </complete>
           <complete name="clks" input="carry_chain_example.clk" output="ble[3:0].clk">
           </complete>

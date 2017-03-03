@@ -43,7 +43,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(VCInstallDir)include;include;..\libcommon_c++\SRC\TIO_InputOutputHandlers</IncludePath>
+    <IncludePath>$(VCInstallDir)include;include;..\liblog\src</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -57,9 +57,8 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <CompileAsManaged>
       </CompileAsManaged>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>../liblog/src</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <CompileAs>CompileAsCpp</CompileAs>
       <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
@@ -84,7 +83,7 @@
       <AdditionalIncludeDirectories>include;../libcommon_c++/SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
       <CompileAsManaged>false</CompileAsManaged>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>include;../libcommon_c++/SRC/TIO_InputOutputHandlers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./include;../liblog/src</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -97,7 +96,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\arch_types.h" />
-    <ClInclude Include="include\ezxml.h" />
+    <ClInclude Include="include\cad_types.h" />
     <ClInclude Include="include\logic_types.h" />
     <ClInclude Include="include\physical_types.h" />
     <ClInclude Include="include\ReadLine.h" />
@@ -106,7 +105,6 @@
     <ClInclude Include="include\util.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ezxml.c" />
     <ClCompile Include="ReadLine.c" />
     <ClCompile Include="read_xml_arch_file.c" />
     <ClCompile Include="read_xml_util.c" />

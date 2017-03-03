@@ -1,76 +1,64 @@
-CC = g++
+#This is a simple wrapper hiding cmake from non-expert end users.
+#
+# It supports the targets:
+#   'make' 		 	 - builds everything (all libaries/executables)
+#   'make clean' 	 - removes generated build objects/libraries/executables etc.
+# 	'make distclean' - will clean everything including the cmake generated build files
+#
+# All other targets (e.g. 'make vpr') are passed to the cmake generated makefile
+# and processed according to the CMakeLists.txt.
+#
+# To perform a debug build use:
+#   'make BUILD_TYPE=debug'
 
-export BUILD_TYPE = release
-export OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD = -O3
+#Default build type
+# Possible values:
+#    release
+#    debug
+BUILD_TYPE = release
+
+#Allows users to pass parameters to cmake
+#  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
+override CMAKE_PARAMS += -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+
+#Suppress makefile output (e.g. entering/leaving directories)
+MAKEFLAGS := -s 
+
+BUILD_DIR=./build
+GENERATED_MAKEFILE := $(BUILD_DIR)/Makefile
+
+#Check for the cmake exectuable
+CMAKE := $(shell command -v cmake 2> /dev/null)
 
 
-SRC_DIR = src
-OBJ_DIR = OBJ
-BASE_DIR = $(SRC_DIR)/base
-INC_DIR = $(SRC_DIR)/base
-LIBS_DIR = libs
+#All targets in this make file are always out of date.
+# This ensures that any make target requests are forwarded to
+# the generated makefile
+.PHONY: all distclean $(GENERATED_MAKEFILE) $(MAKECMDGOALS)
 
-LVQM_DIR = $(LIBS_DIR)/libvqm
-LARCHFPGA_DIR = $(LIBS_DIR)/libarchfpga
+#Build everything
+all: $(GENERATED_MAKEFILE)
+	@+$(MAKE) -C $(BUILD_DIR)
 
-LIB_DIR = -L$(LARCHFPGA_DIR) -L$(LVQM_DIR)
-LIB = -lm -lvqm -larchfpga 
+#Call the generated Makefile's clean, and then remove all cmake generated files
+distclean: $(GENERATED_MAKEFILE)
+	@ echo "Cleaning build..."
+	@+$(MAKE) -C $(BUILD_DIR) clean 
+	@ echo "Removing build system files.."
+	@ rm -rf $(BUILD_DIR)
+	@ rm -rf CMakeFiles CMakeCache.txt #In case 'cmake .' was run in the source directory
 
-WARN_FLAGS = -Wall 
-
-DEBUG_FLAGS = -g
-OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
-INC_FLAGS = -I$(SRC_DIR)/base -I $(LIBS_DIR) -I$(LIBS_DIR)/libcommon_c++/SRC/TIO_InputOutputHandlers
-LIB_FLAGS = rcs
-
-FLAGS = $(WARN_FLAGS) $(INC_FLAGS)
-
-ifneq (,$(findstring release, $(BUILD_TYPE)))
-  FLAGS := $(FLAGS) $(OPT_FLAGS)
-else                              # DEBUG build
-  FLAGS := $(FLAGS) $(DEBUG_FLAGS)
+#Call cmake to generate the main Makefile
+$(GENERATED_MAKEFILE):
+ifndef CMAKE
+	$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
 endif
+	@ mkdir -p $(BUILD_DIR)
+	echo "cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. "
+	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. 
 
-EXE = vqm2blif.exe
-
-OBJ = $(patsubst $(BASE_DIR)/%.cpp, $(OBJ_DIR)/%.o,$(wildcard $(BASE_DIR)/*.cpp))
-OBJ_DIRS=$(sort $(dir $(OBJ)))
-
-GEN = *.blif *.echo BLIF/*.blif
-
-HEADERS = $(wildcard $(INC_DIR)/*.h)
-
-
-
-#DEPENDANCIES
-all: $(EXE) 
-
-$(EXE): $(OBJ) Makefile $(HEADERS) $(LARCHFPGA_DIR)/libarchfpga.a $(LVQM_DIR)/libvqm.a
-	$(CC) $(FLAGS) $(OBJ) -o $(EXE) $(LIB_DIR) $(LIB)
-
-$(LVQM_DIR)/libvqm.a:
-	cd $(LVQM_DIR) && make
-
-$(LARCHFPGA_DIR)/libarchfpga.a:
-	cd $(LARCHFPGA_DIR) && make
-
-# Enable a second round of expansion so that we may include
-# the target directory as a prerequisite of the object file.
-.SECONDEXPANSION:
-
-# The directory follows a "|" to use an existence check instead of the usual
-# timestamp check.  Every write to the directory updates the timestamp thus
-# without this, all but the last file written to a directory would appear
-# to be out of date.
-$(OBJ): OBJ/%.o:$(BASE_DIR)/%.cpp $(HEADERS) | $$(dir $$@D)
-	$(CC) $(FLAGS) -c $< -o $@
-
-
-# Silently create target directories as need
-$(OBJ_DIRS):
-	@ mkdir -p $@
-
-clean:
-	rm -f $(EXE) $(OBJ) $(GEN)
-	cd $(LVQM_DIR) && make clean
-	cd $(LARCHFPGA_DIR) && make clean
+#Forward any targets that are not named 'distclean' to the generated Makefile
+ifeq ($(findstring distclean,$(MAKECMDGOALS)),)
+$(MAKECMDGOALS): $(GENERATED_MAKEFILE)
+	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
+endif

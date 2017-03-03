@@ -2,8 +2,11 @@
 # Project Related Files
 #
 
+#Build dir
+build
+
 #Executables
-vqm2blif.exe
+vqm2blif
 
 #Generated files
 EXE/OBJ
@@ -11,6 +14,9 @@ core
 printhandlerdemo
 pcredemo
 read_arch
+test_log
+
+*.log
 
 #Flex & Bison
 lex.yy.c

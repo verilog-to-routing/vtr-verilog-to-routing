@@ -1,360 +1,234 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "util.h"
-#include "ezxml.h"
+#include <sstream>
 #include "read_xml_util.h"
-#include "read_xml_arch_file.h"
 
-/* Finds child element with given name and returns it. Errors out if
- * more than one instance exists. */
-ezxml_t FindElement(INP ezxml_t Parent, INP const char *Name,
-		INP boolean Required) {
-	ezxml_t Cur;
+#include "vtr_util.h"
+#include "arch_error.h"
 
-	/* Find the first node of correct name */
-	Cur = ezxml_child(Parent, Name);
+using namespace pugiutil;
 
-	/* Error out if node isn't found but they required it */
-	if (Required) {
-		if (NULL == Cur) {			
-			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line, 
-				"Element '%s' not found within element '%s'.\n", Name, Parent->name);
-		}
+/* Convert bool to ReqOpt enum */ 
+extern ReqOpt BoolToReqOpt(bool b) {
+	if (b) {
+		return REQUIRED;	
 	}
-
-	/* Look at next tag with same name and error out if exists */
-	if (Cur != NULL && Cur->next) {
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line , 
-			"Element '%s' found twice within element '%s'.\n", Name, Parent->name);
-	}
-	return Cur;
-}
-/* Finds child element with given name and returns it. */
-ezxml_t FindFirstElement(INP ezxml_t Parent, INP const char *Name,
-		INP boolean Required) {
-	ezxml_t Cur;
-
-	/* Find the first node of correct name */
-	Cur = ezxml_child(Parent, Name);
-
-	/* Error out if node isn't found but they required it */
-	if (Required) {
-		if (NULL == Cur) {			
-			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line, 
-				"Element '%s' not found within element '%s'.\n", Name, Parent->name);
-		}
-	}
-
-	return Cur;
+	return OPTIONAL;
 }
 
-/* Checks the node is an element with name equal to one given */
-void CheckElement(INP ezxml_t Node, INP const char *Name) {
-	assert(Node != NULL && Name != NULL);
-	if (0 != strcmp(Node->name, Name)) {		
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Node->line, 
-			"Element '%s' within element '%s' does match expected element type of '%s'\n", Node->name, 
-			(Node->parent ? (Node->parent->name ? Node->parent->name : Node->name) : "ROOT_TAG") ,Name);
-	}
+InstPort::InstPort(std::string str) {
+    std::vector<std::string> inst_port = vtr::split(str, ".");
+
+    if(inst_port.size() == 1) {
+        instance_ = {"", 0, 0};
+        port_ = parse_name_index(inst_port[0]);
+
+    } else if(inst_port.size() == 2) {
+        instance_ = parse_name_index(inst_port[0]);
+        port_ = parse_name_index(inst_port[1]);
+    } else {
+        throw ArchFpgaError("Failed to parse instance port specification '%s'");
+    }
 }
 
-/* Checks that the node has no remaining child nodes or property nodes,
- * then unlinks the node from the tree which updates pointers and
- * frees the memory */
-void FreeNode(INOUTP ezxml_t Node) {
-	ezxml_t Cur;
-	char *Txt;
+InstPort::InstPort(pugi::xml_attribute attr, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
 
-	/* Shouldn't have unprocessed properties */
-	if (Node->attr[0]) {		
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Node->line, 
-			"Node '%s' has invalid property %s=\"%s\".\n", Node->name, Node->attr[0], Node->attr[1]);
-	}
-
-	/* Shouldn't have non-whitespace text */
-	Txt = Node->txt;
-	while (*Txt) {
-		if (!IsWhitespace(*Txt)) {			
-			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Node->line, 
-				"Node '%s' has unexpected text '%s' within it.\n", Node->name, Node->txt);
-		}
-		++Txt;
-	}
-
-	/* We shouldn't have child items left */
-	Cur = Node->child;
-	if (Cur) {		
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Node->line, 
-			"Node '%s' has invalid child node '%s'.\n", Node->name, Cur->name);
-	}
-
-	/* Now actually unlink and free the node */
-	ezxml_remove(Node);
+    try {
+        *this = InstPort(attr.value());
+    } catch (const ArchFpgaError& e) {
+		archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+				"Failed to parse instance port specification '%s' for"
+                " attribute '%s' on <%s> tag, %s",
+				attr.value(), attr.name(), node.name(), e.what());
+    }
 }
 
-/* Returns TRUE if character is whatspace between tokens */
-boolean IsWhitespace(char c) {
-	switch (c) {
-	case ' ':
-	case '\t':
-	case '\r':
-	case '\n':
-		return TRUE;
-	default:
-		return FALSE;
-	}
+InstPort::name_index InstPort::parse_name_index(std::string str) {
+    auto open_bracket_pos = str.find("["); 
+    auto close_bracket_pos = str.find("]"); 
+    auto colon_pos = str.find(":"); 
+
+    //Parse checks
+    if(open_bracket_pos == std::string::npos && close_bracket_pos != std::string::npos) {
+        //Close brace only
+        std::string msg = "near '" + str + "', missing '['";
+        throw ArchFpgaError(msg);
+    }
+
+    if(open_bracket_pos != std::string::npos && close_bracket_pos == std::string::npos) {
+        //Open brace only
+        std::string msg = "near '" + str + "', missing ']'";
+        throw ArchFpgaError(msg);
+    }
+
+    if(open_bracket_pos != std::string::npos && close_bracket_pos != std::string::npos) {
+        //Have open and close braces, close must be after open
+        if(open_bracket_pos > close_bracket_pos) {
+            std::string msg = "near '" + str + "', '[' after ']'";
+            throw ArchFpgaError(msg);
+        }
+    }
+
+    if(colon_pos != std::string::npos) {
+        //Have a colon, it must be between open/close braces
+        if(colon_pos > close_bracket_pos || colon_pos < open_bracket_pos) {
+            std::string msg = "near '" + str + "', found ':' but not between '[' and ']'";
+            throw ArchFpgaError(msg);
+        }
+    }
+
+
+    //Extract the name and index info
+    std::string name = str.substr(0,open_bracket_pos);
+    std::string first_idx_str;
+    std::string second_idx_str;
+
+    if(colon_pos == std::string::npos && open_bracket_pos == std::string::npos && close_bracket_pos == std::string::npos) {
+    } else if(colon_pos == std::string::npos) {
+        //No colon, implies a single element
+        first_idx_str = str.substr(open_bracket_pos + 1, close_bracket_pos);
+        second_idx_str = first_idx_str;
+    } else {
+        //Colon, implies a range
+        first_idx_str = str.substr(open_bracket_pos + 1, colon_pos);
+        second_idx_str = str.substr(colon_pos + 1, close_bracket_pos);
+    }
+
+    size_t first_idx = 0;
+    if(!first_idx_str.empty()) {
+        std::stringstream ss(first_idx_str);
+        ss >> first_idx;
+        if(!ss.good()) {
+            std::string msg = "near '" + str + "', expected positive integer";
+            throw ArchFpgaError(msg);
+        }
+    }
+    size_t second_idx = 0;
+    if(!second_idx_str.empty()) {
+        std::stringstream ss(second_idx_str);
+        ss >> second_idx;
+        if(!ss.good()) {
+            std::string msg = "near '" + str + "', expected positive integer";
+            throw ArchFpgaError(msg);
+        }
+    }
+
+    return {name, std::min(first_idx, second_idx), std::max(first_idx, second_idx)};
+
 }
 
-const char *
-FindProperty(INP ezxml_t Parent, INP const char *Name, INP boolean Required) {
-	const char *Res;
+void archfpga_throw(const char* filename, int line, const char* fmt, ...) {
+    va_list va_args;
 
-	Res = ezxml_attr(Parent, Name);
-	if (Required) {
-		if (NULL == Res) {			
-			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line, 
-				"Required property '%s' not found for element '%s'.\n", Name, Parent->name);
-		}
-	}
-	return Res;
+    va_start(va_args, fmt);
+
+    auto msg = vtr::vstring_fmt(fmt, va_args);
+
+    va_end(va_args);
+
+    throw ArchFpgaError(msg, filename, line);
 }
 
-/* Count tokens and length in all the Text children nodes of current node. */
-extern void CountTokensInString(INP const char *Str, OUTP int *Num,
-		OUTP int *Len) {
-	boolean InToken;
-	*Num = 0;
-	*Len = 0;
-	InToken = FALSE;
-	while (*Str) {
-		if (IsWhitespace(*Str)) {
-			InToken = FALSE;
-		}
 
-		else
 
-		{
-			if (!InToken) {
-				++(*Num);
-			}
-			++(*Len);
-			InToken = TRUE;
-		}
-		++Str; /* Advance pointer */
-	}
+void bad_tag(const pugi::xml_node node,
+                const pugiutil::loc_data& loc_data,
+                const pugi::xml_node parent_node,
+                const std::vector<std::string> expected_tags) {
+
+    std::string msg = "Unexpected tag ";
+    msg += "<";
+    msg += node.name();
+    msg += ">";
+
+    if(parent_node) {
+        msg += " in section <";
+        msg += parent_node.name();
+        msg += ">";
+    }
+
+    if(!expected_tags.empty()) {
+        msg += ", expected ";
+        for(auto iter = expected_tags.begin(); iter != expected_tags.end(); ++iter) {
+            msg += "<";
+            msg += *iter;
+            msg += ">"; 
+
+            if(iter < expected_tags.end() - 2) {
+                msg += ", ";
+            } else if(iter == expected_tags.end() - 2) {
+                msg += " or ";
+            }
+        }
+    }
+
+    throw ArchFpgaError(msg, loc_data.filename(), loc_data.line(node));
 }
 
-/* Returns a token list of the text nodes of a given node. This
- * unlinks all the text nodes from the document */
-extern char **
-GetNodeTokens(INP ezxml_t Node) {
-	int Count, Len;
-	char *Cur, *Dst;
-	boolean InToken;
-	char **Tokens;
+void bad_attribute(const pugi::xml_attribute attr,
+                const pugi::xml_node node,
+                const pugiutil::loc_data& loc_data,
+                const std::vector<std::string> expected_attributes) {
 
-	/* Count the tokens and find length of token data */
-	CountTokensInString(Node->txt, &Count, &Len);
+    std::string msg = "Unexpected attribute ";
+    msg += "'";
+    msg += attr.name();
+    msg += "'";
 
-	/* Error out if no tokens found */
-	if (Count < 1) {
-		return NULL;
-	}
-	Len = (sizeof(char) * Len) + /* Length of actual data */
-	(sizeof(char) * Count); /* Null terminators */
+    if(node) {
+        msg += " on <";
+        msg += node.name();
+        msg += "> tag";
+    }
 
-	/* Alloc the pointer list and data list. Count the final 
-	 * empty string we will use as list terminator */
-	Tokens = (char **) my_malloc(sizeof(char *) * (Count + 1));
-	Dst = (char *) my_malloc(sizeof(char) * Len);
-	Count = 0;
+    if(!expected_attributes.empty()) {
+        msg += ", expected ";
+        for(auto iter = expected_attributes.begin(); iter != expected_attributes.end(); ++iter) {
+            msg += "'";
+            msg += *iter;
+            msg += "'"; 
 
-	/* Copy data to tokens */
-	Cur = Node->txt;
-	InToken = FALSE;
-	while (*Cur) {
-		if (IsWhitespace(*Cur)) {
-			if (InToken) {
-				*Dst = '\0';
-				++Dst;
-			}
-			InToken = FALSE;
-		}
+            if(iter < expected_attributes.end() - 2) {
+                msg += ", ";
+            } else if(iter == expected_attributes.end() - 2) {
+                msg += " or ";
+            }
+        }
+    }
 
-		else {
-			if (!InToken) {
-				Tokens[Count] = Dst;
-				++Count;
-			}
-			*Dst = *Cur;
-			++Dst;
-			InToken = TRUE;
-		}
-		++Cur;
-	}
-	if (InToken) { /* Null term final token */
-		*Dst = '\0';
-		++Dst;
-	}
-	ezxml_set_txt(Node, "");
-	Tokens[Count] = NULL; /* End of tokens marker is a NULL */
-
-	/* Return the list */
-	return Tokens;
+    throw ArchFpgaError(msg, loc_data.filename(), loc_data.line(node));
 }
 
-/* Returns a token list of the text nodes of a given node. This
- * does not unlink the text nodes from the document */
-extern char **
-LookaheadNodeTokens(INP ezxml_t Node) {
-	int Count, Len;
-	char *Cur, *Dst;
-	boolean InToken;
-	char **Tokens;
+void bad_attribute_value(const pugi::xml_attribute attr,
+                const pugi::xml_node node,
+                const pugiutil::loc_data& loc_data,
+                const std::vector<std::string> expected_values) {
 
-	/* Count the tokens and find length of token data */
-	CountTokensInString(Node->txt, &Count, &Len);
+    std::string msg = "Invalid value '";
+    msg += attr.value();
+    msg += "'";
+    msg += " for attribute '";
+    msg += attr.name();
+    msg += "'";
 
-	/* Error out if no tokens found */
-	if (Count < 1) {
-		return NULL;
-	}
-	Len = (sizeof(char) * Len) + /* Length of actual data */
-	(sizeof(char) * Count); /* Null terminators */
+    if(node) {
+        msg += " on <";
+        msg += node.name();
+        msg += "> tag";
+    }
 
-	/* Alloc the pointer list and data list. Count the final 
-	 * empty string we will use as list terminator */
-	Tokens = (char **) my_malloc(sizeof(char *) * (Count + 1));
-	Dst = (char *) my_malloc(sizeof(char) * Len);
-	Count = 0;
+    if(!expected_values.empty()) {
+        msg += ", expected value ";
+        for(auto iter = expected_values.begin(); iter != expected_values.end(); ++iter) {
+            msg += "'";
+            msg += *iter;
+            msg += "'"; 
 
-	/* Copy data to tokens */
-	Cur = Node->txt;
-	InToken = FALSE;
-	while (*Cur) {
-		if (IsWhitespace(*Cur)) {
-			if (InToken) {
-				*Dst = '\0';
-				++Dst;
-			}
-			InToken = FALSE;
-		}
+            if(iter < expected_values.end() - 2) {
+                msg += ", ";
+            } else if(iter == expected_values.end() - 2) {
+                msg += " or ";
+            }
+        }
+    }
 
-		else {
-			if (!InToken) {
-				Tokens[Count] = Dst;
-				++Count;
-			}
-			*Dst = *Cur;
-			++Dst;
-			InToken = TRUE;
-		}
-		++Cur;
-	}
-	if (InToken) { /* Null term final token */
-		*Dst = '\0';
-		++Dst;
-	}
-	Tokens[Count] = NULL; /* End of tokens marker is a NULL */
-
-	/* Return the list */
-	return Tokens;
+    throw ArchFpgaError(msg, loc_data.filename(), loc_data.line(node));
 }
-
-/* Find integer attribute matching Name in XML tag Parent and return it if exists.  
- Removes attribute from Parent */
-extern int GetIntProperty(INP ezxml_t Parent, INP char *Name,
-		INP boolean Required, INP int default_value) {
-	const char * Prop;
-	int property_value;
-
-	property_value = default_value;
-	Prop = FindProperty(Parent, Name, Required);
-	if (Prop) {
-		property_value = my_atoi(Prop);
-		ezxml_set_attr(Parent, Name, NULL);
-	}
-	return property_value;
-}
-
-/* Find floating-point attribute matching Name in XML tag Parent and return it if exists.  
- Removes attribute from Parent */
-extern float GetFloatProperty(INP ezxml_t Parent, INP char *Name,
-		INP boolean Required, INP float default_value) {
-
-	const char * Prop;
-	float property_value;
-
-	property_value = default_value;
-	Prop = FindProperty(Parent, Name, Required);
-	if (Prop) {
-		property_value = (float)atof(Prop);
-		ezxml_set_attr(Parent, Name, NULL);
-	}
-	return property_value;
-}
-
-/* Find boolean attribute matching Name in XML tag Parent and return it if exists.  
- Removes attribute from Parent */
-extern boolean GetBooleanProperty(INP ezxml_t Parent, INP char *Name,
-		INP boolean Required, INP boolean default_value) {
-
-	const char * Prop;
-	boolean property_value;
-
-	property_value = default_value;
-	Prop = FindProperty(Parent, Name, Required);
-	if (Prop) {
-		if ((strcmp(Prop, "false") == 0) || (strcmp(Prop, "FALSE") == 0)
-				|| (strcmp(Prop, "False") == 0)) {
-			property_value = FALSE;
-		} else if ((strcmp(Prop, "true") == 0) || (strcmp(Prop, "TRUE") == 0)
-				|| (strcmp(Prop, "True") == 0)) {
-			property_value = TRUE;
-		} else {			
-			vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Parent->line, 
-				"Unknown value %s for boolean attribute %s in %s", Prop, Name, Parent->name);
-		}
-		ezxml_set_attr(Parent, Name, NULL);
-	}
-	return property_value;
-}
-
-/* Counts number of child elements in a container element. 
- * Name is the name of the child element. 
- * Errors if no occurances found. */
-extern int CountChildren(INP ezxml_t Node, INP const char *Name,
-		INP int min_count) {
-	ezxml_t Cur, sibling;
-	int Count;
-
-	Count = 0;
-	Cur = Node->child;
-	sibling = NULL;
-
-	if (Cur) {
-		sibling = Cur->sibling;
-	}
-
-	while (Cur) {
-		if (strcmp(Cur->name, Name) == 0) {
-			++Count;
-		}
-		Cur = Cur->next;
-		if (Cur == NULL) {
-			Cur = sibling;
-			if (Cur != NULL) {
-				sibling = Cur->sibling;
-			}
-		}
-	}
-	/* Error if no occurances found */
-	if (Count < min_count) {		
-		vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), Node->line, 
-			"Expected node '%s' to have %d child elements, but none found.\n", Node->name, min_count);
-	}
-	return Count;
-}
-

@@ -13,15 +13,16 @@
 CC = g++
 AR = ar
 
-WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -D__USE_FIXED_PROTOTYPES__ -pedantic -Wshadow -Wcast-align -D_POSIX_SOURCE -Wno-write-strings
+WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -pedantic -Wshadow -Wcast-align -Wno-write-strings
 DEBUG_FLAGS = -g
-OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
-INC_FLAGS = -Iinclude -I../libcommon_c++/SRC/TIO_InputOutputHandlers
+OPT_FLAGS = -O3
+INC_FLAGS = -Iinclude -I../liblog/src -I../libpugixml/src -I../libvtrutil/src
 LIB_FLAGS = rcs
+
 
 EXE = read_arch
 
-FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -MD -MP
+FLAGS = $(INC_FLAGS) $(WARN_FLAGS) -MD -MP -std=c++0x
 
 ifneq (,$(findstring release, $(BUILD_TYPE)))
   FLAGS := $(FLAGS) $(OPT_FLAGS)
@@ -29,39 +30,36 @@ else                              # DEBUG build
   FLAGS := $(FLAGS) $(DEBUG_FLAGS)
 endif
 
-SRC = read_xml_arch_file.c read_xml_util.c ezxml.c ReadLine.c util.c
+SRC = read_xml_arch_file.c read_xml_util.c parse_switchblocks.c echo_arch.c arch_util.c arch_error.c
 OBJS = $(SRC:.c=.o)
 
 DEPS = $(OBJS:.o=.d) main.d
 
+.PHONY: clean libpugixml libvtrutil
+
 # Standalone executable to test architecture reader
-$(EXE): main.o libarchfpga.a
-	$(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -lm -larchfpga
+$(EXE): main.o libarchfpga.a 
+	$(CC) main.o -o $(EXE) $(INC_FLAGS) -L. -L../libpugixml -L../libvtrutil -L ../liblog -lm -larchfpga -lpugixml -lvtrutil -llog 
  
 
-libarchfpga.a: $(OBJS) ../libcommon_c/pcre/libpcre.a ../libcommon_c++/libcommon_c++.a
-	 cp ../libcommon_c++/libcommon_c++.a $@
-	 ar rcs $@ $(OBJS)
+libarchfpga.a: $(OBJS) libpugixml libvtrutil
+	ar rcs $@ $(OBJS)
 
-../libcommon_c/pcre/libpcre.a:
-	@ cd ../libcommon_c/pcre && make
+libpugixml:
+	@ cd ../libpugixml && make libpugixml.a
 
-../libcommon_c++/libcommon_c++.a:
-	@ cd ../libcommon_c++ && make
+libvtrutil:
+	@ cd ../libvtrutil && make libvtrutil.a
 
 %.o: %.c
 	$(CC) $(FLAGS) -c $< -o $@ 
  
 -include $(DEPS)
 
-
-
 clean :
 	@ rm -f libarchfpga.a
 	@ rm -f $(OBJS) $(OBJS:.o=.d)
 	@ rm -f read_arch
 	@ rm -f main.o main.d
-	@ cd ../libcommon_c/pcre && make clean
-	@ cd ../libcommon_c++ && make clean
-
-
+	@ cd ../libpugixml && make clean
+	@ cd ../libvtrutil && make clean
