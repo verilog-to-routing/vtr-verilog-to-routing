@@ -438,6 +438,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         if(cpd_diff_ns > 0.01) {
             print_classic_cpds();
             print_tatum_cpds(timing_info->critical_paths());
+            compare_tatum_classic_constraints();
 
             vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
         }
