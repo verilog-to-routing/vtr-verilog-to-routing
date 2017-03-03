@@ -7,6 +7,7 @@
 #include "vpr_error.h"
 #include "vpr_utils.h"
 #include "atom_netlist.h"
+#include "atom_netlist_utils.h"
 
 #include "tatum/TimingGraph.hpp"
 
@@ -29,6 +30,14 @@ tatum::util::linear_map<K,V> remap_valid(const tatum::util::linear_map<K,V>& dat
     }
 
     return new_data;
+}
+
+TimingGraphBuilder::TimingGraphBuilder(const AtomNetlist& netlist,
+                   AtomLookup& netlist_lookup)
+    : netlist_(netlist) 
+    , netlist_lookup_(netlist_lookup)
+    , netlist_clocks_(find_netlist_clocks(netlist_)) {
+    //pass
 }
 
 std::unique_ptr<TimingGraph> TimingGraphBuilder::timing_graph() {
@@ -160,6 +169,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
     }
 
     //Create the output pins
+    std::set<tatum::NodeId> clock_generator_tnodes;
     for(AtomPinId output_pin : netlist_.block_output_pins(blk)) {
         AtomPortId output_port = netlist_.pin_port(output_pin);
 
@@ -167,28 +177,40 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
         const t_model_ports* model_port = netlist_.port_model(output_port);
 
         NodeId tnode;
-        if(model_port->is_clock) {
+        if(is_netlist_clock_source(output_pin)) {
             //A generated clock source
             tnode = tg_->add_node(NodeType::SOURCE);
 
-        } else if(model_port->clock.empty()) {
-            //No clock => combinational output
-            tnode = tg_->add_node(NodeType::OPIN);
+            clock_generator_tnodes.insert(tnode);
 
-            //A combinational pin is really both internal and external, mark it internal here
-            //and external iin the default case below
-            netlist_lookup_.set_atom_pin_tnode(output_pin, tnode, BlockTnode::INTERNAL);
+            if(!model_port->is_clock) {
+                //An implicit clock source, possibly clock derived from data
 
+                AtomNetId clock_net = netlist_.pin_net(output_pin);
+                vtr::printf_warning(__FILE__, __LINE__, "Inferred implicit clock source %s for netlist clock %s (possibly data used as clock)\n",
+                                    netlist_.pin_name(output_pin).c_str(), netlist_.net_name(clock_net).c_str()); 
+            }
         } else {
-            VTR_ASSERT(!model_port->is_clock);
-            VTR_ASSERT(!model_port->clock.empty());
-            //Has an associated clock => sequential output
-            tnode = tg_->add_node(NodeType::SOURCE);
+            VTR_ASSERT_MSG(!model_port->is_clock, "Must not be a clock generator");
+
+            if(model_port->clock.empty()) {
+                //No clock => combinational output
+                tnode = tg_->add_node(NodeType::OPIN);
+
+                //A combinational pin is really both internal and external, mark it internal here
+                //and external in the default case below
+                netlist_lookup_.set_atom_pin_tnode(output_pin, tnode, BlockTnode::INTERNAL);
+
+            } else {
+                VTR_ASSERT(!model_port->clock.empty());
+                //Has an associated clock => sequential output
+                tnode = tg_->add_node(NodeType::SOURCE);
 
 
-            if(output_ports_requiring_internal_sinks.count(model_port->name)) {
-                NodeId internal_tnode = tg_->add_node(NodeType::SINK);
-                netlist_lookup_.set_atom_pin_tnode(output_pin, internal_tnode, BlockTnode::INTERNAL);
+                if(output_ports_requiring_internal_sinks.count(model_port->name)) {
+                    NodeId internal_tnode = tg_->add_node(NodeType::SINK);
+                    netlist_lookup_.set_atom_pin_tnode(output_pin, internal_tnode, BlockTnode::INTERNAL);
+                }
             }
         }
 
@@ -201,45 +223,42 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
 
         for(auto blk_tnode_type : {BlockTnode::EXTERNAL, BlockTnode::INTERNAL}) {
             NodeId tnode = netlist_lookup_.atom_pin_tnode(pin, blk_tnode_type);
+            if (!tnode) continue;
 
-            if (tnode) {
-                auto node_type = tg_->node_type(tnode);
+            if (clock_generator_tnodes.count(tnode)) continue; //Clock sources don't have incomming clock pin connections
 
-                if(node_type == NodeType::SOURCE || node_type == NodeType::SINK) {
-                    //Look-up the clock name on the port model
-                    AtomPortId port = netlist_.pin_port(pin);
-                    const t_model_ports* model_port = netlist_.port_model(port);
+            auto node_type = tg_->node_type(tnode);
 
-                    if(model_port->is_clock && model_port->dir == OUT_PORT) {
-                        //This pin is a clock generator, so there is no clock pin
-                        //connection
-                        continue; 
-                    }
+            if(node_type == NodeType::SOURCE || node_type == NodeType::SINK) {
+                //Look-up the clock name on the port model
+                AtomPortId port = netlist_.pin_port(pin);
+                const t_model_ports* model_port = netlist_.port_model(port);
 
-                    VTR_ASSERT_MSG(!model_port->clock.empty(), "Sequential pins must have a clock");
+                VTR_ASSERT_MSG(!model_port->clock.empty(), "Sequential pins must have a clock");
 
-                    //Find the clock pin in the netlist
-                    AtomPortId clk_port = netlist_.find_port(blk, model_port->clock);
-                    VTR_ASSERT(clk_port);
-                    VTR_ASSERT_MSG(netlist_.port_width(clk_port) == 1, "Primitive clock ports can only contain one pin");
+                //Find the clock pin in the netlist
+                AtomPortId clk_port = netlist_.find_port(blk, model_port->clock);
+                VTR_ASSERT(clk_port);
+                VTR_ASSERT_MSG(netlist_.port_width(clk_port) == 1, "Primitive clock ports can only contain one pin");
 
-                    AtomPinId clk_pin = netlist_.port_pin(clk_port, 0);
-                    VTR_ASSERT(clk_pin);
+                AtomPinId clk_pin = netlist_.port_pin(clk_port, 0);
+                VTR_ASSERT(clk_pin);
 
-                    //Convert the pin to it's tnode
-                    NodeId clk_tnode = netlist_lookup_.atom_pin_tnode(clk_pin);
+                //Convert the pin to it's tnode
+                NodeId clk_tnode = netlist_lookup_.atom_pin_tnode(clk_pin);
 
-                    tatum::EdgeType type;
-                    if(node_type == NodeType::SOURCE) {
-                        type = tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH;
-                    } else {
-                        VTR_ASSERT(node_type == NodeType::SINK);
-                        type = tatum::EdgeType::PRIMITIVE_CLOCK_CAPTURE;
-                    }
-
-                    //Add the edge from the clock to the source/sink
-                    tg_->add_edge(type, clk_tnode, tnode);
+                tatum::EdgeType type;
+                if(node_type == NodeType::SOURCE) {
+                    type = tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH;
+                } else {
+                    VTR_ASSERT(node_type == NodeType::SINK);
+                    type = tatum::EdgeType::PRIMITIVE_CLOCK_CAPTURE;
                 }
+
+
+                //Add the edge from the clock to the source/sink
+                VTR_ASSERT_MSG(!tg_->find_edge(clk_tnode, tnode), "Clock timing edge should not already exist");
+                tg_->add_edge(type, clk_tnode, tnode);
             }
         }
     }
@@ -277,7 +296,9 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                                    "Internal primitive combinational edges must be between IPINs and OPINs,"
                                    " or internal SINKs and internal SOURCEs");
 
+
                     //Add the edge between the pins
+                    VTR_ASSERT_MSG(!tg_->find_edge(src_tnode, sink_tnode), "Combinational timing edge should not already exist");
                     tg_->add_edge(tatum::EdgeType::PRIMITIVE_COMBINATIONAL, src_tnode, sink_tnode);
                 }
             }
@@ -296,6 +317,7 @@ void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
         NodeId sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin);
         VTR_ASSERT(sink_tnode);
 
+        VTR_ASSERT_MSG(!tg_->find_edge(driver_tnode, sink_tnode), "Interconnect timing edge should not already exist");
         tg_->add_edge(tatum::EdgeType::INTERCONNECT, driver_tnode, sink_tnode);
     }
 }
@@ -357,3 +379,13 @@ void TimingGraphBuilder::remap_ids(const tatum::GraphIdMaps& id_mapping) {
         netlist_lookup_.set_atom_pin_tnode(pin, tnode);
     }
 }
+
+bool TimingGraphBuilder::is_netlist_clock_source(const AtomPinId pin) const {
+    AtomNetId net = netlist_.pin_net(pin);
+
+    bool is_clock_net = netlist_clocks_.count(net);
+    bool is_net_driver = (pin == netlist_.net_driver(net));
+
+    return is_clock_net && is_net_driver;
+}
+

@@ -9,13 +9,9 @@
 class TimingGraphBuilder {
     public:
         TimingGraphBuilder(const AtomNetlist& netlist,
-                           AtomLookup& netlist_lookup)
-            : netlist_(netlist) 
-            , netlist_lookup_(netlist_lookup) {
-        }
+                           AtomLookup& netlist_lookup);
 
         std::unique_ptr<tatum::TimingGraph> timing_graph();
-
     private:
         void build();
         void opt_memory_layout();
@@ -34,10 +30,14 @@ class TimingGraphBuilder {
 
         void mark_clustering_net_delays(float inter_cluster_net_delay);
 
+        bool is_netlist_clock_source(const AtomPinId pin) const;
+
     private:
         std::unique_ptr<tatum::TimingGraph> tg_;
 
         const AtomNetlist& netlist_;
         AtomLookup& netlist_lookup_;
+
+        std::set<AtomNetId> netlist_clocks_;
 };
 
