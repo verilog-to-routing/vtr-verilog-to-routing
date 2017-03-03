@@ -3,10 +3,11 @@ CC = g++
 SRC_DIR = SRC
 OBJ_DIR = OBJ
 BASE_DIR = $(SRC_DIR)/base
-INC_DIR = $(SRC_DIR)/include
+INC_DIR = $(SRC_DIR)/base
+LIBS_DIR = $(SRC_DIR)/libs
 
-LVQM_DIR = $(INC_DIR)/libvqm
-LARCHFPGA_DIR = $(INC_DIR)/libarchfpga
+LVQM_DIR = $(LIBS_DIR)/libvqm
+LARCHFPGA_DIR = $(LIBS_DIR)/libarchfpga
 
 LIB_DIR = -L$(LARCHFPGA_DIR) -L$(LVQM_DIR)
 LIB = -lm -lvqm -larchfpga 
@@ -15,7 +16,7 @@ WARN_FLAGS = -Wall
 
 DEBUG_FLAGS = -g
 OPT_FLAGS = $(OPTIMIZATION_LEVEL_FOR_RELEASE_BUILD)
-INC_FLAGS = -ISRC/include -ISRC/base -ISRC/include/libcommon_c++/SRC/TIO_InputOutputHandlers
+INC_FLAGS = -ISRC/libs -ISRC/base -ISRC/libs/libcommon_c++/SRC/TIO_InputOutputHandlers
 LIB_FLAGS = rcs
 
 FLAGS = $(WARN_FLAGS) $(INC_FLAGS)

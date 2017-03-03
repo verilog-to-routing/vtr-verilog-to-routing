@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <math.h>
 
-#include "../include/lut_stats.h"
+#include "lut_stats.h"
 
 using std::cout;
 using std::endl;

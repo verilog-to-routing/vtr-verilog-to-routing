@@ -84,7 +84,7 @@
 *	To see how the VQM primitive is elaborated once marked as a LUT, see lutmask.h and the 
 * push_lut() function in vqm2blif.cpp.
 *********************************************************************************************/
-#include "../include/lut_recog.h"
+#include "lut_recog.h"
 
 //============================================================================================
 //				CP FUNCTIONS

@@ -1,9 +1,9 @@
 //============================================================================================
 //				INCLUDES
 //============================================================================================
-#include "../include/preprocess.h"
-#include "../include/libvqm/vqm_common.h"
-#include "../include/lut_stats.h"
+#include "preprocess.h"
+#include "libvqm/vqm_common.h"
+#include "lut_stats.h"
 #include <ios>
 
 

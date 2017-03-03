@@ -1,10 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <algorithm> //For std::max
-#include "../include/hash.h"
+#include "hash.h"
 
 extern "C" {
-	#include "../include/libarchfpga/include/util.h"
+	#include "libarchfpga/include/util.h"
 }
 
 #define HASHSIZE 5000001
