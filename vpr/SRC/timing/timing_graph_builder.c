@@ -123,7 +123,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
             tnode = tg_->add_node(NodeType::IPIN);
 
             //A combinational pin is really both internal and external, mark it internal here
-            //and external iin the default case below
+            //and external in the default case below
             netlist_lookup_.set_atom_pin_tnode(input_pin, tnode, BlockTnode::INTERNAL);
         } else {
             tnode = tg_->add_node(NodeType::SINK);
@@ -248,42 +248,37 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
     for(AtomPinId src_pin : netlist_.block_input_pins(blk)) {
         //Combinational edges go between IPINs and OPINs for combinational blocks
         //and between the internal SOURCEs and SINKS for sequential blocks
-        for(auto blk_tnode_type : {BlockTnode::EXTERNAL, BlockTnode::INTERNAL}) {
-            NodeId src_tnode = netlist_lookup_.atom_pin_tnode(src_pin, blk_tnode_type);
+        //
+        //We have already marked all internal SOURCE/SINK nodes internal, and all IPIN/OPIN nodes as internal
+        //so we only need to look at tnode's of that class
+        NodeId src_tnode = netlist_lookup_.atom_pin_tnode(src_pin, BlockTnode::INTERNAL);
 
-            if(src_tnode) {
-                auto src_type = tg_->node_type(src_tnode);
-                bool is_internal_source = (   blk_tnode_type == BlockTnode::INTERNAL 
-                                           && src_type == NodeType::SOURCE);
+        if(src_tnode) {
+            auto src_type = tg_->node_type(src_tnode);
 
-                if(src_type == NodeType::IPIN || is_internal_source) {
+            //Look-up the combinationally connected sink ports name on the port model
+            AtomPortId src_port = netlist_.pin_port(src_pin);
+            const t_model_ports* model_port = netlist_.port_model(src_port);
 
-                    //Look-up the combinationally connected sink ports name on the port model
-                    AtomPortId src_port = netlist_.pin_port(src_pin);
-                    const t_model_ports* model_port = netlist_.port_model(src_port);
+            for(std::string sink_port_name : model_port->combinational_sink_ports) {
+                AtomPortId sink_port = netlist_.find_port(blk, sink_port_name); 
+                if(!sink_port) continue; //Port may not be connected
 
-                    for(std::string sink_port_name : model_port->combinational_sink_ports) {
-                        AtomPortId sink_port = netlist_.find_port(blk, sink_port_name); 
-                        VTR_ASSERT(sink_port);
+                //We now need to create edges between the source pin, and all the pins in the
+                //output port
+                for(AtomPinId sink_pin : netlist_.port_pins(sink_port)) {
+                    NodeId sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin, BlockTnode::INTERNAL);
+                    VTR_ASSERT(sink_tnode);
 
-                        //We now need to create edges between the source pin, and all the pins in the
-                        //output port
-                        for(AtomPinId sink_pin : netlist_.port_pins(sink_port)) {
-                            NodeId sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin, blk_tnode_type);
-                            VTR_ASSERT(sink_tnode);
+                    auto sink_type = tg_->node_type(sink_tnode);
 
-                            auto sink_type = tg_->node_type(sink_tnode);
-                            bool is_internal_sink = (   blk_tnode_type == BlockTnode::INTERNAL 
-                                                     && sink_type == NodeType::SINK);
-                            VTR_ASSERT_MSG(sink_type == NodeType::OPIN
-                                           || is_internal_sink, 
-                                           "Internal primitive combinational edges must be between IPINs and OPINs,"
-                                           " or internal SINKs and internal SOURCEs");
+                    VTR_ASSERT_MSG(   (src_type == NodeType::IPIN && sink_type == NodeType::OPIN)
+                                   || (src_type == NodeType::SOURCE && sink_type == NodeType::SINK),
+                                   "Internal primitive combinational edges must be between IPINs and OPINs,"
+                                   " or internal SINKs and internal SOURCEs");
 
-                            //Add the edge between the pins
-                            tg_->add_edge(tatum::EdgeType::PRIMITIVE_COMBINATIONAL, src_tnode, sink_tnode);
-                        }
-                    }
+                    //Add the edge between the pins
+                    tg_->add_edge(tatum::EdgeType::PRIMITIVE_COMBINATIONAL, src_tnode, sink_tnode);
                 }
             }
         }
