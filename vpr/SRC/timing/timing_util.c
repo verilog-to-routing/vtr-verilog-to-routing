@@ -8,6 +8,8 @@
 #include "timing_util.h"
 #include "timing_info.h"
 
+#include "read_sdc.h"
+
 double sec_to_nanosec(double seconds) { return 1e9*seconds; }
 
 double sec_to_mhz(double seconds) { return (1. / seconds) / 1e6; }
@@ -266,12 +268,6 @@ std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& t
     return fanouts;
 }
 
-void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
-    for(auto path : cpds) {
-        vtr::printf("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), float(path.slack()), float(path.delay()));
-    }
-}
-
 /*
  * Slack and criticality calculation utilities
  */
@@ -361,4 +357,32 @@ float calc_relaxed_criticality(const std::map<DomainPair,float>& domains_max_req
     VTR_ASSERT_MSG(max_crit <= 1., "Criticality should never be greather than one");
 
     return max_crit;
+}
+
+void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
+    for(auto path : cpds) {
+        vtr::printf("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), float(path.slack()), float(path.delay()));
+    }
+}
+
+void compare_tatum_classic_constraints() {
+    if(g_sdc) {
+        vtr::printf("Comparing timing constraints:\n");
+        for(int launch_clk = 0; launch_clk < g_sdc->num_constrained_clocks; ++launch_clk) {
+            tatum::DomainId launch_domain = g_timing_constraints->find_clock_domain(g_sdc->constrained_clocks[launch_clk].name);
+            VTR_ASSERT(launch_domain);
+
+            for(int capture_clk = 0; capture_clk < g_sdc->num_constrained_clocks; ++capture_clk) {
+                tatum::DomainId capture_domain = g_timing_constraints->find_clock_domain(g_sdc->constrained_clocks[capture_clk].name);
+                VTR_ASSERT(capture_domain);
+                
+                tatum::Time constraint = g_timing_constraints->setup_constraint(launch_domain, capture_domain);
+
+                vtr::printf("  %s -> %s Classic: %g Tatum: %g\n", 
+                            g_sdc->constrained_clocks[launch_clk].name, g_sdc->constrained_clocks[capture_clk].name,
+                            g_sdc->domain_constraint[launch_clk][capture_clk],
+                            constraint.value());
+            }
+        }
+    }
 }

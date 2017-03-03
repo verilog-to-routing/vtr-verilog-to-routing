@@ -36,8 +36,6 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
 //Print a useful summary of timing information
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
 
-void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds);
-
 //Returns the a map of domain's and thier clock fanout (i.e. logical outputs at which the clock captures)
 std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer);
 
@@ -64,4 +62,10 @@ float calc_relaxed_criticality(const std::map<DomainPair,float>& domains_max_req
                                const std::map<DomainPair,float>& domains_worst_slack,
                                const tatum::TimingTags::tag_range tags);
 
+/*
+ * Debug
+ */
+void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds);
+
+void compare_tatum_classic_constraints();
 #endif
