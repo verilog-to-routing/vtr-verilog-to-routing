@@ -6,6 +6,20 @@ project("libvtrutil")
 set(VTR_VERSION_FILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/src/vtr_version.cpp.in)
 set(VTR_VERSION_FILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/vtr_version.cpp)
 set(VTR_COMPILER_INFO "${CMAKE_CXX_COMPILER_ID} on ${CMAKE_SYSTEM}")
+
+#Set default version numbers in case not specified
+if(NOT DEFINED VTR_VERSION_MAJOR)
+    set(VTR_VERSION_MAJOR 0)
+endif()
+
+if(NOT DEFINED VTR_VERSION_MINOR)
+    set(VTR_VERSION_MINOR 0)
+endif()
+
+if(NOT DEFINED VTR_VERSION_PATCH)
+    set(VTR_VERSION_PATCH 0)
+endif()
+
 # We always update the vtr_version.cpp file every time the project is built, 
 # to ensure the git revision and dirty status are up to date.
 #
