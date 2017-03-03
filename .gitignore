@@ -52,6 +52,7 @@ vtr_flow/benchmarks/titan_blif/*.blif
 # Log Files
 #
 vpr_stdout.log
+output.log
 
 #
 # VPR Result files
@@ -74,6 +75,7 @@ ODIN_II/SRC/verilog_flex.c
 #
 ODIN_II/default_out.blif
 ODIN_II/input_vectors
+ODIN_II/output_vectors
 ODIN_II/log
 ODIN_II/output_activity
 ODIN_II/temp.blif
