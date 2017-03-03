@@ -12,8 +12,8 @@ This involves two key steps:
 
  #. Specifying the physical delay values
      
-These two septs separatate the logical timing characteristics of a primitive, from the physically dependant delays.
-This enables a single netlist primitive type (e.g. Flip-Flop) to be mapped into different physical locations with different timing characteristics.
+These two steps separatate the logical timing characteristics of a primitive, from the physically dependant delays.
+This enables a single logical netlist primitive type (e.g. Flip-Flop) to be mapped into different physical locations with different timing characteristics.
 
 The :ref:`FPGA architecture description <fpga_architecture_description>` describes the logical timing characteristics in the :ref:`models section <arch_models>`, while the physical timing information is specified on ``pb_types`` within :ref:`complex block <arch_complex_blocks>`.
 
@@ -78,7 +78,7 @@ Sequential block (no internal paths)
 A typical sequential block is a D-Flip-Flop (DFF).
 DFFs have no internal timing paths between their input and output ports.
 
-.. note:: If you are using BLIF's ``.latch`` directive to represent DFFs there is no need to explicitly provide a ``<model>`` definition as it is supported by default.
+.. note:: If you are using BLIF's ``.latch`` directive to represent DFFs there is no need to explicitly provide a ``<model>`` definition, as it is supported by default.
 
 .. figure:: dff.*
     :width: 50%
@@ -86,7 +86,7 @@ DFFs have no internal timing paths between their input and output ports.
     DFF
 
 Sequential model ports are specified by providing the ``clock="<name>"`` attribute, where ``<name>`` is the name of the associated clock ports.
-The assoicated clock port must have ``is_clock="1"`` specified to indicate it is an clock.
+The assoicated clock port must have ``is_clock="1"`` specified to indicate it is a clock.
 
 .. code-block:: xml
 
@@ -132,7 +132,7 @@ However the output port (``out``) is a combinational output, connected internall
 
 .. code-block:: xml
 
-      <model name="single_port_ram_mixed>
+      <model name="single_port_ram_mixed">
         <input_ports>
           <port name="we" combinational_sink_ports="out"/>
           <port name="addr" combinational_sink_ports="out"/>
@@ -180,7 +180,7 @@ However, also specify the following additional timing information:
 
 Sequential block (with internal paths)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Some primitives represent more complex architecture primitives, and have timing paths which are contained completely within the block.
+Some primitives represent more complex architecture primitives, which have timing paths contained completely within the block.
 
 The model below specifies a sequential single-port RAM.
 The ports ``we``, ``addr``, and ``data`` are sequential inputs, while the port ``out`` is a sequential output.
@@ -219,7 +219,7 @@ Since the output port ``out`` is sequential we also define the:
 The combinational delay between the input and output registers is set to 740ps.
 
 Note the internal path from the input to output registers can limit the maximum operating frequency.
-In this case the internal path delay is 1ns (200ps + 740ps + 60ps), or an Fmax of 1 GHz.
+In this case the internal path delay is 1ns (200ps + 740ps + 60ps) limiting the maximum frequency to 1 GHz.
 
 .. code-block:: xml
 
@@ -259,12 +259,10 @@ Multi-clock Sequential block (with internal paths)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 It is also possible for a sequential primitive to have multiple clocks.
 
-The following model represents a simple dual-port sequential RAM with:
+The following model represents a multi-clock simple dual-port sequential RAM with:
 
- * one write port (``addr1`` and ``data1``, ``we1``), and
- * one read port (``addr2`` and ``data2``).
-
-The read and write ports are controlled by ``clk2`` and ``clk1`` respectively.
+ * one write port (``addr1`` and ``data1``, ``we1``) controlled by ``clk1``, and
+ * one read port (``addr2`` and ``data2``) controlled by ``clk2``.
 
 .. figure:: multiclock_dp_ram.*
     :width: 75%
@@ -275,16 +273,14 @@ The read and write ports are controlled by ``clk2`` and ``clk1`` respectively.
 
       <model name="multiclock_dual_port_ram">
         <input_ports>
+          <!-- Write Port -->
+          <port name="we1" clock="clk1" combinational_sink_ports="data2"/>
+          <port name="addr1" clock="clk1" combinational_sink_ports="data2"/>
+          <port name="data1" clock="clk1" combinational_sink_ports="data2"/>
+          <port name="clk1" is_clock="1"/>
+
           <!-- Read Port -->
           <port name="addr2" clock="clk2" combinational_sink_ports="data2"/>
-
-          <!-- Write Port -->
-          <port name="addr1" clock="clk1" combinational_sink_ports="data2"/>
-          <port name="data1" clock="clk1"/>
-          <port name="we1" clock="clk1" combinational_sink_ports="data2"/>
-
-          <!-- Clocks -->
-          <port name="clk1" is_clock="1"/>
           <port name="clk2" is_clock="1"/>
         </input_ports>
         <output_ports>
