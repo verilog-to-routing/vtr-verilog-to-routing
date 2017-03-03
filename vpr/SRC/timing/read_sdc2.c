@@ -13,6 +13,7 @@
 
 #include "vpr_error.h"
 #include "atom_netlist.h"
+#include "atom_netlist_utils.h"
 #include "atom_lookup.h"
 
 void apply_default_timing_constraints(const AtomNetlist& netlist, 
@@ -1072,67 +1073,6 @@ void constrain_all_ios(const AtomNetlist& netlist,
             }
         }
     }
-}
-
-//Find all the clock nets in the specified netlist
-std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist) {
-
-    std::set<AtomNetId> clock_nets; //The clock nets
-
-    std::map<const t_model*,std::vector<const t_model_ports*>> clock_gen_ports; //Records info about clock generating ports
-
-    //Look through all the blocks (except I/Os) to find sink clock pins, or
-    //clock generators
-    //
-    //Since we don't have good information about what pins are clock generators we build a lookup as we go
-    for(auto blk_id : netlist.blocks()) {
-        AtomBlockType type = netlist.block_type(blk_id);
-        if(type != AtomBlockType::BLOCK) continue;
-
-        //Save any clock generating ports on this model type
-        const t_model* model = netlist.block_model(blk_id);
-        VTR_ASSERT(model);
-        auto iter = clock_gen_ports.find(model);
-        if(iter == clock_gen_ports.end()) { 
-            //First time we've seen this model, intialize it
-            clock_gen_ports[model] = {};
-
-            //Look at all the ports to find clock generators
-            for(const t_model_ports* model_port = model->outputs; model_port; model_port = model_port->next) {
-                VTR_ASSERT(model_port->dir == OUT_PORT);
-                if(model_port->is_clock) {
-                    //Clock generator
-                    clock_gen_ports[model].push_back(model_port);
-                }
-            }
-        }
-
-        //Look for connected input clocks
-        for(auto pin_id : netlist.block_clock_pins(blk_id)) {
-            AtomNetId clk_net_id = netlist.pin_net(pin_id);
-            VTR_ASSERT(clk_net_id);
-
-            clock_nets.insert(clk_net_id);
-        }
-
-        //Look for any generated clocks
-        if(!clock_gen_ports[model].empty()) {
-            //This is a clock generator
-
-            //Check all the clock generating ports
-            for(const t_model_ports* model_port : clock_gen_ports[model]) {
-                AtomPortId clk_gen_port = netlist.find_port(blk_id, model_port);
-
-                for(AtomPinId pin_id : netlist.port_pins(clk_gen_port)) {
-                    AtomNetId clk_net_id = netlist.pin_net(pin_id);
-                    VTR_ASSERT(clk_net_id);
-                    clock_nets.insert(clk_net_id);
-                }
-            }
-        }
-    }
-
-    return clock_nets;
 }
 
 std::map<std::string,AtomPinId> find_netlist_primary_ios(const AtomNetlist& netlist) {

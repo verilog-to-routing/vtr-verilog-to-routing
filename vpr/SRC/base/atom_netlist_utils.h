@@ -1,6 +1,7 @@
 #ifndef ATOM_NETLIST_UTILS_H
 #define ATOM_NETLIST_UTILS_H
 #include <cstdio>
+#include <set>
 #include "atom_netlist.h"
 
 /*
@@ -74,4 +75,8 @@ std::vector<size_t> cube_to_minterms(std::vector<vtr::LogicValue> cube);
 void print_netlist_as_blif(std::string filename, const AtomNetlist& netlist);
 void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist);
 
+/*
+ * Identify all clock nets
+ */
+std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist);
 #endif
