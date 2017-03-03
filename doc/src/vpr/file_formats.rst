@@ -51,11 +51,11 @@ Unconnected primitive pins can be specified through several methods.
 
     specifies an inverter with no connected input.
 
-    .. note:: ``unconn`` should only be used for **input pins**. It may name conflicts and create multi-driven nets if used with output pins.
+    .. note:: ``unconn`` should only be used for **input pins**. It may cause name conflicts and create multi-driven nets if used with output pins.
 
 #. Implicitly disconnected ``.subckt`` pins.
 
-    For ``.subckt`` instantiations VPR treats primitive pins which are not listed as being implicitly disconnected.*{this sentence seems incomplete, please advise.}
+    For ``.subckt`` instantiations VPR treats unlisted primitive pins as implicitly disconnected.
     This works for both input and output pins. 
 
     For example the following ``.subckt`` instantiations are equivalent:
