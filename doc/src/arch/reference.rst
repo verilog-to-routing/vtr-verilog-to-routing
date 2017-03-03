@@ -23,7 +23,7 @@ The architecture tag contains the following tags:
 * ``<directlist>``
 * ``<complexblocklist>``
 
-.. _arch_blif_models:
+.. _arch_models:
 
 Recognized BLIF Models (<models>)
 ---------------------------------
@@ -78,6 +78,8 @@ An example models section containing a combinational primitive ``adder`` and a s
 
 Note that for ``single_port_ram`` above, the ports ``we``, ``addr``, ``data``, and ``out`` is a sequential output since they have a clock specified.
 Additionally ``addr`` and ``data`` are shown to be combinationally connected to ``out``; this corresponds to an internal timing path between the ``addr`` and ``data`` input registers, and the ``out`` output registers.
+
+.. seealso:: For more examples of primitive timing modeling specifications see the :ref:`arch_model_timing_tutorial`
 
 .. _arch_global_info:
 
@@ -267,7 +269,7 @@ This is specified in the content within the ``<chan_width_distr>`` tag.
     .. seealso:: <x distr>
 
 
-.. _arch_complex_logic_blocks:
+.. _arch_complex_blocks:
 
 Complex Logic Blocks
 --------------------
@@ -625,6 +627,9 @@ The classes we offer are:
 
 Timing
 ~~~~~~
+
+.. seealso:: For examples of primitive timing modeling specifications see the :ref:`arch_model_timing_tutorial`
+
 Timing is specified through tags contained with in ``pb_type``, ``complete``, ``direct``, or ``mux`` tags as follows:
 
 .. arch:tag:: <delay_constant max="float" in_port="string" out_port="string"/>

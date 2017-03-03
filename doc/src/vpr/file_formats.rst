@@ -32,7 +32,7 @@ Black Box Primitives
 Black-box architectural primitives (RAMs, Multipliers etc.) should be instantiated in the netlist using BLIF's ``.subckt`` directive.
 The BLIF file should also contain a black-box ``.model`` definition which defines the input and outputs of each ``.subckt`` type.
 
-VPR will check that blackbox ``.model``\s are consistent with the :ref:`<models> section <arch_blif_models>` of the architecture file.
+VPR will check that blackbox ``.model``\s are consistent with the :ref:`<models> section <arch_models>` of the architecture file.
 
 Unconnected Primitive Pins
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
