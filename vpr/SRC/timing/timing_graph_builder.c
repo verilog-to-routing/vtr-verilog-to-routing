@@ -292,10 +292,10 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                     auto sink_type = tg_->node_type(sink_tnode);
 
                     VTR_ASSERT_MSG(   (src_type == NodeType::IPIN && sink_type == NodeType::OPIN)
-                                   || (src_type == NodeType::SOURCE && sink_type == NodeType::SINK),
-                                   "Internal primitive combinational edges must be between IPINs and OPINs,"
-                                   " or internal SINKs and internal SOURCEs");
-
+                                   || (src_type == NodeType::SOURCE && sink_type == NodeType::SINK)
+                                   || (src_type == NodeType::SOURCE && sink_type == NodeType::OPIN)
+                                   || (src_type == NodeType::IPIN && sink_type == NodeType::SINK),
+                                   "Internal primitive combinational edges must be between {IPIN, SOURCE} and {OPIN, SINK}");
 
                     //Add the edge between the pins
                     VTR_ASSERT_MSG(!tg_->find_edge(src_tnode, sink_tnode), "Combinational timing edge should not already exist");
