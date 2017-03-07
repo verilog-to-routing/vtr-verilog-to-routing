@@ -280,8 +280,16 @@ void vpr_init(const int argc, const char **argv,
 
         //Initialize timing graph and constraints
         if(vpr_setup->TimingEnabled) {
-            g_timing_graph = TimingGraphBuilder(g_atom_nl, g_atom_lookup).timing_graph();
-            g_timing_constraints = read_sdc2(vpr_setup->Timing, g_atom_nl, g_atom_lookup, *g_timing_graph);
+            {
+                vtr::ScopedPrintTimer t("Build Timing Graph");
+                g_timing_graph = TimingGraphBuilder(g_atom_nl, g_atom_lookup).timing_graph();
+                vtr::printf("  Timing Graph Nodes: %zu\n", g_timing_graph->nodes().size());
+                vtr::printf("  Timing Graph Edges: %zu\n", g_timing_graph->edges().size());
+            }
+            {
+                vtr::ScopedPrintTimer t("Load Timing Constraints");
+                g_timing_constraints = read_sdc2(vpr_setup->Timing, g_atom_nl, g_atom_lookup, *g_timing_graph);
+            }
         }
 
 		fflush(stdout);
