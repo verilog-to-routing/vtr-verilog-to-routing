@@ -837,12 +837,6 @@ void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_sub
 	temp_subckt.inst_name = (string)vqm_node->name;	//copy the instance name
 	assert ( !temp_subckt.inst_name.empty() );
 	
-	vqm_ports_found.clear();
-	for (int i = 0; i < vqm_node->number_of_ports; i++){
-		//initialize all ports_found flags to zero.
-		vqm_ports_found.push_back(T_FALSE);
-	}
-
 	if (elab_mode == NONE){
 		//search for an Architecture model solely based on block name
 		assert (vqm_node->type != NULL);
@@ -857,6 +851,13 @@ void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_sub
 		cout << "\n\nERROR: Corrupted Elaboration Mode.\n" ;
 		exit(1);
 	}
+
+	vqm_ports_found.clear();
+	for (int i = 0; i < vqm_node->number_of_ports; i++){
+		//initialize all ports_found flags to zero.
+		vqm_ports_found.push_back(T_FALSE);
+	}
+
 
 	//traverse through the models declared in the Architecture file
 	//to find the one corresponding directly to the node found in the vqm

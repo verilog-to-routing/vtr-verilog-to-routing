@@ -2372,7 +2372,7 @@ t_node_port_vec_pair identify_global_local_pins(t_module* module, t_arch* arch, 
                 } else {
                     //3a) net_driver is global
                     if(net_driver.is_global) {
-                        assert(node_port_is_global == FALSE);
+                        assert(node_port_is_global == T_FALSE);
 
                         //Add the the appropriate list, so that a g2l buffer is added before node_port
                         global_local_pins.global_to_local.push_back(node_port);

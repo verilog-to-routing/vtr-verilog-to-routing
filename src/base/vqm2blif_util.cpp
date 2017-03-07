@@ -1,5 +1,6 @@
 #include "vqm2blif_util.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 //============================================================================================
 //============================================================================================
@@ -413,6 +414,7 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
     //We need to save clock information about the RAM to determine whether output registers are used
     t_node_parameter* port_a_data_out_clock = NULL;
     t_node_parameter* port_b_data_out_clock = NULL;
+    t_node_parameter* port_b_address_clock = NULL;
     
     //We need to save the ram data and address widths, to identfy the RAM type (singel port, rom, simple dual port, true dual port)
     t_node_parameter* port_a_data_width = NULL;
@@ -459,6 +461,11 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
             port_b_data_out_clock = temp_param;
             continue;
         }
+        if (strcmp (temp_param->name, "port_b_address_clock") == 0){
+            assert( temp_param->type == NODE_PARAMETER_STRING );
+            port_b_address_clock = temp_param;
+            continue;
+        }
     }
 
     /*
@@ -471,27 +478,63 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
         
         bool found_port_a_output_clock = false;
         bool found_port_b_output_clock = false;
+        bool found_port_b_input_clock = false;
         if(port_a_data_out_clock != NULL && strcmp(port_a_data_out_clock->value.string_value, "none") != 0) {
             found_port_a_output_clock = true;
         }
         if(port_b_data_out_clock != NULL && strcmp(port_b_data_out_clock->value.string_value, "none") != 0) {
-
             found_port_b_output_clock = true;
         }
+        if(port_b_address_clock != NULL && strcmp(port_b_address_clock->value.string_value, "none") != 0) {
+            found_port_b_input_clock = true;
+        }
 
-        //Provided both ports are used, they should have the same output type (comb or reg)
-        if(verbose_mode) {
-            //if(port_a_data_out_clock != NULL && port_b_data_out_clock != NULL) {
-                //cout << "Warning: RAM " << vqm_node->type << " '" << vqm_node->name << "' does not use output registers for";
-                //cout << " ports A and B.  The block will be approximated as having registered output ports.";
-                //cout << " Please check architecture carefully to verify any timing approximations made about the block." << endl; 
-            //}
+        //The inputs to SIV ram blocks are always sequential
+        //  Port A is always controlled by clk0
+
+        //We model port a as being clocked by clock0, and port b by clock1
+        //In some instances the VQM has portb clocked by clock0 and clock1 unused, to work-around this we connect
+        //the portb clock to clock1
+        if(found_port_b_input_clock && port_b_address_clock->value.string_value != string("clock1")) {
+            cout << "Warning: re-mapping port B clock to 'clock1'\n";
+
+            //Find the clk1 port
+            t_node_port_association* clk0_port = nullptr;
+            t_node_port_association* clk1_port = nullptr;
+            for(int i = 0; i < vqm_node->number_of_ports; ++i) {
+                t_node_port_association* check_port = vqm_node->array_of_ports[i];
+                if(check_port->port_name == std::string("clk1")) {
+                    clk1_port = check_port;
+                }
+                if(check_port->port_name == std::string("clk0")) {
+                    clk0_port = check_port;
+                }
+            }
+            assert(clk0_port); //Should exist
+            assert(!clk1_port); //Should not exist
+
+            //Create the clk1 port as a duplicate of clk0
+            clk1_port = (t_node_port_association*) vtr::calloc(1, sizeof(t_node_port_association));
+            memcpy(clk1_port, clk0_port, sizeof(t_node_port_association));
+            clk1_port->port_name = vtr::strdup("clk1"); //Rename
+
+            //Insert it
+            ++vqm_node->number_of_ports;
+            vqm_node->array_of_ports = (t_node_port_association**) vtr::realloc(vqm_node->array_of_ports, vqm_node->number_of_ports*sizeof(t_node_port_association*));
+            vqm_node->array_of_ports[vqm_node->number_of_ports - 1] = clk1_port;
         }
 
         //Mark whether the outputs are registered or not
-        if (found_port_a_output_clock || found_port_b_output_clock) {
+        if (found_port_a_output_clock && found_port_b_output_clock) {
             mode_hash.append(".output_type{reg}");
         } else {
+            if(found_port_a_output_clock != found_port_b_output_clock) {
+                cout << "Warning: inconsitent output port modes for " << vqm_node->type << " instance " << vqm_node->name << "\n";
+                cout << "\tport A sequential: " << found_port_a_output_clock << "\n";
+                cout << "\tport B sequential: " << found_port_a_output_clock << "\n";
+                cout << "\tApproximating as combinational output to be pessimistic\n";
+            }
+
             mode_hash.append(".output_type{comb}");
         }
     }
