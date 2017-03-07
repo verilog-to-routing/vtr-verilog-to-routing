@@ -359,8 +359,11 @@ void try_place(struct s_placer_opts placer_opts,
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 		/*do this before the initial placement to avoid messing up the initial placement */
-		slacks = alloc_lookups_and_criticalities(chan_width_dist, router_opts,
-				det_routing_arch, segment_inf, timing_inf, directs, num_directs);
+		alloc_lookups_and_criticalities(chan_width_dist, router_opts, det_routing_arch, segment_inf, directs, num_directs);
+
+#ifdef ENABLE_CLASSIC_VPR_STA
+        slacks = = alloc_and_load_timing_graph(timing_inf);
+#endif
 	}
 
 	width_fac = placer_opts.place_chan_width;

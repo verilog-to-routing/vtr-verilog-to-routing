@@ -99,20 +99,16 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 }
 
 /**************************************/
-t_slack * alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
+void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, const t_direct_inf *directs, 
+		const t_direct_inf *directs, 
 		const int num_directs) {
-
-	t_slack * slacks = alloc_and_load_timing_graph(timing_inf);
 
 	compute_delay_lookup_tables(router_opts, det_routing_arch, segment_inf,
 			chan_width_dist, directs, num_directs);
 	
 	timing_place_crit = alloc_crit(&timing_place_crit_ch);
-
-	return slacks;
 }
 
 /**************************************/
