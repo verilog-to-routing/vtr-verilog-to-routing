@@ -112,12 +112,10 @@ void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 }
 
 /**************************************/
-void free_lookups_and_criticalities(t_slack * slacks) {
+void free_lookups_and_criticalities() {
 
 	free(timing_place_crit);
 	free_crit(&timing_place_crit_ch);
-
-	free_timing_graph(slacks);
 
 	free_place_lookup_structs();
 }

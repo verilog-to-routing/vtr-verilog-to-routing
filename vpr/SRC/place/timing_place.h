@@ -9,7 +9,7 @@ void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 		const t_direct_inf *directs, 
 		const int num_directs);
 
-void free_lookups_and_criticalities(t_slack * slacks);
+void free_lookups_and_criticalities();
 
 void print_sink_delays(const char *fname);
 

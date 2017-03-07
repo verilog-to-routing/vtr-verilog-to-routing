@@ -826,7 +826,11 @@ void try_place(struct s_placer_opts placer_opts,
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 
-		free_lookups_and_criticalities(slacks);
+#ifdef ENABLE_CLASSIC_VPR_STA
+        free_timing_graph(slacks);
+#endif
+
+		free_lookups_and_criticalities();
 	}
 
 	free_try_swap_arrays();
