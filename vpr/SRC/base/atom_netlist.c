@@ -209,27 +209,7 @@ AtomBlockType AtomNetlist::block_type (const AtomBlockId id) const {
     } else if(blk_model->name == std::string("output")) {
         type = AtomBlockType::OUTPAD;
     } else {
-        //Determine if combinational or sequential.
-        // We loop through the inputs looking for clocks
-        const t_model_ports* port = blk_model->inputs;
-        size_t clk_count = 0;
-
-        while(port) {
-            if(port->is_clock) {
-                ++clk_count;
-            }
-            port = port->next;
-        }
-
-        if(clk_count == 0) {
-            type = AtomBlockType::BLOCK;
-        } else if (clk_count == 1) {
-            type = AtomBlockType::BLOCK;
-        } else {
-            VTR_ASSERT(clk_count > 1);
-            VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Primitive '%s' has multiple clocks (currently unsupported)",
-                      blk_model->name);
-        }
+        type = AtomBlockType::BLOCK;
     }
     return type;
 }
