@@ -200,8 +200,9 @@ void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch, t_boole
 		void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean print_unused_pins, t_boolean debug);
 
 			void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port, 
-							const char* inst_name, const char* maptype, int s_index, t_boolean print_unused_pins, t_boolean debug);
-			void dump_subckt_portlist(ofstream& outfile, t_model_ports* port, t_boolean debug);
+							const char* inst_name, const char* maptype, int s_index, t_boolean print_unused_pins, t_boolean debug, bool last);
+            size_t count_print_pins(t_model_ports* temp_port, portmap* map, t_boolean print_unused);
+			void dump_subckt_portlist(ofstream& outfile, t_model_ports* port, string indent, t_boolean debug);
 
 	void dump_subckt_models(t_model* temp_model, ofstream& outfile, t_boolean debug);
 
@@ -1213,13 +1214,13 @@ void dump_main_model(t_blif_model* model, ofstream& outfile, t_boolean print_unu
 	 
 	//Dump inputs: ".inputs <name> <name> ..."
 	if (model->input_ports.size() > 0){
-		outfile << ((debug)? "Inputs:\n":".inputs ");
+		outfile << ((debug)? "Inputs:\n":".inputs \\\n");
 		dump_portlist (outfile, model->input_ports, debug);
 	} 
 	
 	//Dump outputs: ".outputs <name> <name> ..."
 	if (model->output_ports.size() > 0){
-		outfile << ((debug)? "Outputs:\n":".outputs ");
+		outfile << ((debug)? "Outputs:\n":".outputs \\\n");
 		dump_portlist (outfile, model->output_ports, debug);		
 	} 
 	
@@ -1274,37 +1275,35 @@ void dump_portlist (ofstream& outfile, pinvec ports, t_boolean debug){
 	int limit = ports.size();	//don't evaluate .size() each iteration of the loop.
 	t_pin_def* temp_pin;
 	string temp_name;
-	int ports_dumped = 1;
+    string indent = "    ";
 
 	for (int i = 0; i < limit; i++){
 		//cycle through all ports
 		temp_pin = ports[i];
 		
-		for (	int j = min(temp_pin->left, temp_pin->right);
-			j <= max(temp_pin->left, temp_pin->right); 
-			j++, ports_dumped++){
-				//if the pin is non-indexed, iterates once and doesn't append an index.
-				//otherwise, flattens a bus into component wires using index convention.
+        int j_min = min(temp_pin->left, temp_pin->right);
+        int j_max = max(temp_pin->left, temp_pin->right); 
+		for (int j = j_min; j <= j_max; j++){
+            //if the pin is non-indexed, iterates once and doesn't append an index.
+            //otherwise, flattens a bus into component wires using index convention.
 
-				temp_name = (string)temp_pin->name;
+            temp_name = (string)temp_pin->name;
 
-				if (temp_pin->indexed){	
-					temp_name = append_index_to_str(temp_name, j);
-				}
+            if (temp_pin->indexed){	
+                temp_name = append_index_to_str(temp_name, j);
+            }
 
-				outfile << temp_name << " ";
+            outfile << indent << temp_name;
 
-				if (debug){
-					outfile << endl ;	//one port per line in DEBUG file
-				} else if ((ports_dumped == MAX_PPL)&&((i+j) < ((limit-1) + max(temp_pin->left, temp_pin->right)))){
-					ports_dumped = 0;
-					outfile << "\\\n" ;	//prevents long lines in BLIF file
-					//second condition to make sure the last port doesn't get a 
-				}
+            bool last = (i == limit - 1 && j == j_max);
+
+            if(!last) {
+                outfile << " \\";
+            }
+            outfile << "\n";
+
 		}
 	}	
-
-	outfile << endl ;
 }
 
 //============================================================================================
@@ -1601,36 +1600,39 @@ void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean print_unused_pi
 		} else {
 			outfile << "\n# Subckt " << i << ": " << temp_subckt->inst_name << " \n.subckt " << temp_subckt->model_type->name << " \\\n" ;
 		}
+
 			
 		if (debug){
 			outfile << "Input Map:\n" ;
 		}
+
+        size_t num_print_output_pins = count_print_pins(temp_subckt->model_type->outputs, &(temp_subckt->output_cnxns), print_unused_pins);
 		
 		//dump the input map containing connectivity data
+        bool last = (num_print_output_pins == 0);
 		dump_subckt_map(outfile,
 					&(temp_subckt->input_cnxns), 
 					temp_subckt->model_type->inputs, 
 					temp_subckt->inst_name.c_str(), 
 					"input", i,
                     print_unused_pins,
-					debug);
+					debug,
+                    last);
 			
 		if (debug){
 			outfile << "\nOutput Map:\n" ;
-		} else {
-			outfile << "\\\n" ;
 		}
 			
 		//dump the output map containing connectivity data
+        last = true;
 		dump_subckt_map(outfile,
 					&(temp_subckt->output_cnxns), 
 					temp_subckt->model_type->outputs, 
 					temp_subckt->inst_name.c_str(),
 					"output", i,
                     print_unused_pins,
-					debug);
-
-		outfile << endl ;
+					debug,
+                    last);
 	}
 }
 
@@ -1638,7 +1640,7 @@ void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean print_unused_pi
 //============================================================================================
 
 void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port, 
-			const char* inst_name, const char* maptype, int s_index, t_boolean print_unused, t_boolean debug){
+			const char* inst_name, const char* maptype, int s_index, t_boolean print_unused, t_boolean debug, bool last){
 /*  Prints a subcircuit connectivity map, showing all connections.
  *  The keys to the map are the names of the ports in subcircuit's architecture model.
  *
@@ -1659,6 +1661,7 @@ void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port,
 	t_node_port_association* temp_cnxn;
 	string port_name;
 	string pin_name;
+    string indent = "    ";
 
 	int ports_dumped = 1;
 
@@ -1684,22 +1687,6 @@ void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port,
 			if (debug)
 				outfile << "\t" ;
 
-#if 0
-			if ((strcmp(maptype, "output") != 0)||(pin_name != "unconn")){
-				//print subcircuit inputs and connected outputs as-is
-				if (temp_cnxn->associated_net->indexed){
-					//construct a string of "name[index]"
-					pin_name = append_index_to_str (pin_name, temp_cnxn->wire_index);
-				}
-
-				outfile << port_name << "=" << pin_name << " ";
-
-			} else if (print_unused) {
-				//print unconnected subcircuit outputs as having a dummy net to drive
-
-				outfile << port_name << "=subckt" << s_index << "~" << port_name << "~unconn " ;
-			}
-#else
             bool is_input = (std::string(maptype) == "input");
             assert(is_input || std::string(maptype) == "output");
 
@@ -1712,33 +1699,69 @@ void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port,
 					pin_name = append_index_to_str (pin_name, temp_cnxn->wire_index);
 				}
 
-				outfile << port_name << "=" << pin_name << " ";
+				outfile << indent << port_name << "=" << pin_name;
 
             } else {
                 //Pin is unused
                 if (print_unused) {
                     if(is_input) {
                         //i.e. connect unconnected inputs to the 'unconn' net
-                        outfile << port_name << "=" << pin_name << " ";
+                        outfile << indent << port_name << "=" << pin_name;
                     } else {
                         //i.e. connect disconnected outputs to a uniquely named net
-                        outfile << port_name << "=subckt" << s_index << "~" << port_name << "~unconn " ;
+                        outfile << indent << port_name << "=subckt" << s_index << "~" << port_name << "~unconn";
                     }
                 }
             }
 
-#endif
+            if (print_unused || pin_used) {
 
-			if (debug){
-				outfile << endl ;	//create a new line for each mapped port in the DEBUG file
-			} else if (ports_dumped % MAX_PPL == 0){
-				outfile << "\\\n" ;	//prevents ridiculously long lines in the BLIF file
-			}
+                bool last_entry = (last && temp_port->next == NULL && i == temp_port->size - 1);
+
+                if(!last_entry) {
+                    outfile << " \\";
+                }
+                    
+                outfile << "\n";
+            }
 		}
 
 		//print the next port's information
 		temp_port = temp_port->next;
 	}
+}
+
+size_t count_print_pins(t_model_ports* temp_port, portmap* map, t_boolean print_unused) {
+    size_t count = 0;
+	while(temp_port){
+		for (int i = 0; i < temp_port->size; i++){
+			//loop through a port's size
+            string port_name;
+			if (temp_port->size > 1){
+				//rename the port "name[i]"
+				port_name = append_index_to_str((string)temp_port->name, i);
+			} else {
+				//otherwise just copy the port name without an index
+				port_name = (string)temp_port->name;
+			}
+			t_node_port_association* temp_cnxn = map->find(port_name)->second;	
+			//"second" is a member of portpair,
+			//corresponds to the connection the port is mapped to
+			assert(temp_cnxn != NULL);
+
+			string pin_name = (string)temp_cnxn->associated_net->name;
+
+            bool pin_used = (pin_name != "unconn");
+
+            if(pin_used || print_unused) {
+                ++count;
+            }
+
+        }
+		temp_port = temp_port->next;
+    }
+
+    return count;
 }
 
 //============================================================================================
@@ -1769,13 +1792,13 @@ void dump_subckt_models(t_model* temp_model, ofstream& outfile, t_boolean debug)
 			}
 			outfile << ((debug)? "\n Model: " : "\n.model ") << temp_model->name << endl ;
 			
-			outfile << ((debug)? "Inputs:\n" : ".inputs ") ; //cycle through all inputs
-			dump_subckt_portlist(outfile, temp_model->inputs, debug);
+			outfile << ((debug)? "Inputs:\n" : ".inputs \\\n") ; //cycle through all inputs
+			dump_subckt_portlist(outfile, temp_model->inputs, "    ", debug);
 
-			outfile << ((debug)? "Outputs:\n" : "\n.outputs ") ; //cycle through all outputs
-			dump_subckt_portlist(outfile, temp_model->outputs, debug);
+			outfile << ((debug)? "Outputs:\n" : ".outputs \\\n") ; //cycle through all outputs
+			dump_subckt_portlist(outfile, temp_model->outputs, "    ", debug);
 
-			outfile << ((debug)? "\nEND MODEL\n" : "\n.blackbox\n.end\n") ;
+			outfile << ((debug)? "\nEND MODEL\n" : ".blackbox\n.end\n") ;
 		}	
 		temp_model = temp_model->next;
 	}
@@ -1785,7 +1808,7 @@ void dump_subckt_models(t_model* temp_model, ofstream& outfile, t_boolean debug)
 //============================================================================================
 //============================================================================================
 
-void dump_subckt_portlist(ofstream& outfile, t_model_ports* port, t_boolean debug){
+void dump_subckt_portlist(ofstream& outfile, t_model_ports* port, std::string indent, t_boolean debug){
 /*  Dumps the portlist of a subcircuit model at the end of a BLIF, flattening busses as necessary.
  *
  *	ARGUMENTS
@@ -1808,15 +1831,14 @@ void dump_subckt_portlist(ofstream& outfile, t_model_ports* port, t_boolean debu
 			}
 
 			//dump the name of the port
-			outfile << temp_name ;
+			outfile << indent << temp_name ;
 
-			if (debug){
-				outfile << endl ;
-			} else if ((ports_dumped % MAX_PPL == 0)&&(port->next)){
-				outfile << " \\\n" ;		//prevents ridiculously long lines in BLIF file
-			} else {
-				outfile << " " ;
-			}
+            bool last = (port->next == NULL && i == port->size - 1);
+
+            if(!last) {
+                outfile << " \\";
+            }
+            outfile << "\n";
 		}
 		port = port->next;
 	}
