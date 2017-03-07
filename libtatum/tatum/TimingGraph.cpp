@@ -189,25 +189,34 @@ EdgeId TimingGraph::add_edge(const EdgeType type, const NodeId src_node, const N
     TATUM_ASSERT(valid_node_id(src_node));
     TATUM_ASSERT(valid_node_id(sink_node));
 
-    //Invalidate the levelization
-    is_levelized_ = false;
+    EdgeId edge_id = find_edge(src_node, sink_node); //Does the edge already exist?
+    if (!edge_id) {
+        //No existing edge, create edge
 
-    //Reserve an edge ID
-    EdgeId edge_id = EdgeId(edge_ids_.size());
-    edge_ids_.push_back(edge_id);
+        //Invalidate the levelization
+        is_levelized_ = false;
 
-    //Create the edgge
-    edge_types_.push_back(type);
-    edge_src_nodes_.push_back(src_node);
-    edge_sink_nodes_.push_back(sink_node);
-    edges_disabled_.push_back(false);
+        //Reserve an edge ID
+        edge_id = EdgeId(edge_ids_.size());
+        edge_ids_.push_back(edge_id);
 
-    //Verify
-    TATUM_ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
+        //Create the edgge
+        edge_types_.push_back(type);
+        edge_src_nodes_.push_back(src_node);
+        edge_sink_nodes_.push_back(sink_node);
+        edges_disabled_.push_back(false);
 
-    //Update the nodes the edge references
-    node_out_edges_[src_node].push_back(edge_id);
-    node_in_edges_[sink_node].push_back(edge_id);
+        //Verify
+        TATUM_ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
+
+        //Update the nodes the edge references
+        node_out_edges_[src_node].push_back(edge_id);
+        node_in_edges_[sink_node].push_back(edge_id);
+    }
+
+    TATUM_ASSERT(edge_type(edge_id) == type);
+    TATUM_ASSERT(edge_src_node(edge_id) == src_node);
+    TATUM_ASSERT(edge_sink_node(edge_id) == sink_node);
 
     //Return the edge id of the added edge
     return edge_id;
@@ -673,9 +682,10 @@ bool TimingGraph::validate_structure() const {
             if (src_type == NodeType::SOURCE) {
 
                 if(   sink_type != NodeType::IPIN
+                   && sink_type != NodeType::OPIN
                    && sink_type != NodeType::CPIN
                    && sink_type != NodeType::SINK) {
-                    throw tatum::Error("SOURCE nodes should only drive IPIN, CPIN or SINK nodes");
+                    throw tatum::Error("SOURCE nodes should only drive IPIN, OPIN, CPIN or SINK nodes");
                 }
 
                 if(sink_type == NodeType::SINK) {
@@ -684,6 +694,10 @@ bool TimingGraph::validate_structure() const {
                         throw tatum::Error("SOURCE to SINK edges should always be either INTERCONNECT or PRIMTIIVE_COMBINATIONAL type edges");
                     }
                     
+                } else if (sink_type == NodeType::OPIN) {
+                    if(out_edge_type != EdgeType::PRIMITIVE_COMBINATIONAL) {
+                        throw tatum::Error("SOURCE to OPIN edges should always be PRIMITIVE_COMBINATIONAL type edges");
+                    }
                 } else {
                     TATUM_ASSERT(sink_type == NodeType::IPIN || sink_type == NodeType::CPIN);
                     if(out_edge_type != EdgeType::INTERCONNECT) {
