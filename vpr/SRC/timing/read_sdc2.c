@@ -46,7 +46,6 @@ void constrain_all_ios(const AtomNetlist& netlist,
                        tatum::Time input_delay, 
                        tatum::Time output_delay);
 
-std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist);
 std::map<std::string,AtomPinId> find_netlist_primary_ios(const AtomNetlist& netlist);
 std::string orig_blif_name(std::string name);
 
