@@ -23,7 +23,7 @@ class ModelTiming:
 def parse_args():
     parser = argparse.ArgumentParser(description="Update VTR architecture files to include explicit sequential port or combinational timing edge specificationstiming on primitive models based on exiting <pb_type> timing specifications")
 
-    parser.add_argument("xml_file", help="xml_file to update")
+    parser.add_argument("xml_file", help="xml_file to update (modified in place)")
 
     return parser.parse_args()
 
