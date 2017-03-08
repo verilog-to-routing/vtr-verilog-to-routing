@@ -72,17 +72,17 @@ struct more_sinks_than {
 
 class WirelengthInfo {
     public:
-        WirelengthInfo(int available=-1, int used=-1)
+        WirelengthInfo(size_t available=0u, size_t used=0u)
             : available_wirelength_(available)
             , used_wirelength_(used) {}
 
-        int available_wirelength() const { return available_wirelength_; }
-        int used_wirelength() const { return used_wirelength_; }
+        size_t available_wirelength() const { return available_wirelength_; }
+        size_t used_wirelength() const { return used_wirelength_; }
         float used_wirelength_ratio() const { return float(used_wirelength()) / float(available_wirelength()); }
 
     private:
-        int available_wirelength_;
-        int used_wirelength_;
+        size_t available_wirelength_;
+        size_t used_wirelength_;
 };
 
 static WirelengthInfo calculate_wirelength_info();
@@ -1527,8 +1527,8 @@ void Connection_based_routing_resources::clear_force_reroute_for_net() {
 }
 
 static WirelengthInfo calculate_wirelength_info() {
-	int used_wirelength = 0;
-	int available_wirelength = 0;
+	size_t used_wirelength = 0;
+	size_t available_wirelength = 0;
 
 	for (int i = 0; i < num_rr_nodes; ++i) {
 		if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
@@ -1555,9 +1555,9 @@ static WirelengthInfo calculate_wirelength_info() {
 
 
 static void print_route_status_header() {
-    vtr::printf_info("--------- ---------- ------------------ --------------- -------- ---------- ---------- \n");
+    vtr::printf_info("--------- ---------- ------------------ ---------------- -------- ---------- ---------- \n");
     vtr::printf_info("Iteration Time (sec)  Overused RR Nodes      Wirelength CPD (ns)  sTNS (ns)  sWNS (ns) \n");
-    vtr::printf_info("--------- ---------- ------------------ --------------- -------- ---------- ---------- \n");	
+    vtr::printf_info("--------- ---------- ------------------ ---------------- -------- ---------- ---------- \n");	
 
 }
 
@@ -1576,25 +1576,28 @@ static void print_route_status(int itry, double elapsed_sec,
     vtr::printf(" %8.3g (%6.4f%)", overused_ratio*num_rr_nodes, overused_ratio*100);
 
     //Wirelength
-    vtr::printf(" %7d (%4.1f%)", wirelength_info.used_wirelength(), wirelength_info.used_wirelength_ratio()*100);
+    vtr::printf(" %8.3g (%4.1f%)", float(wirelength_info.used_wirelength()), wirelength_info.used_wirelength_ratio()*100);
 
     //CPD
     if(timing_enabled) {
-        vtr::printf(" %8.3f",  1e9*timing_info.least_slack_critical_path().delay());
+        float cpd = timing_info.least_slack_critical_path().delay();
+        vtr::printf(" %8.3f",  1e9*cpd);
     } else {
         vtr::printf(" %8s", "N/A");
     }
 
     //sTNS
     if(timing_enabled) {
-        vtr::printf(" % 10.4g",  1e9*timing_info.setup_total_negative_slack());
+        float sTNS = timing_info.setup_total_negative_slack();
+        vtr::printf(" % 10.4g",  1e9*sTNS);
     } else {
         vtr::printf(" %10s", "N/A");
     }
 
     //sWNS
     if(timing_enabled) {
-        vtr::printf(" % 10.4g",  1e9*timing_info.setup_worst_negative_slack());
+        float sWNS = timing_info.setup_worst_negative_slack();
+        vtr::printf(" % 10.4g",  1e9*sWNS);
     } else {
         vtr::printf(" %10s", "N/A");
     }
