@@ -727,7 +727,7 @@ void try_place(struct s_placer_opts placer_opts,
 
     vtr::printf_info("%7.3f "
                      "%7.4f %10.4f %-10.5g %-10.5g "
-                     "%-10.5g %7.3f % 7.5g % 8.3f "
+                     "%-10.5g %7.3f % 10.3g % 8.3f "
                      "%7.4f %7.4f %7.4f %6.3f"
                      "%9d %6.3f\n",
                       t, 
