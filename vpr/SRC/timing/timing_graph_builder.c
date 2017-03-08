@@ -257,7 +257,6 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
 
 
                 //Add the edge from the clock to the source/sink
-                VTR_ASSERT_MSG(!tg_->find_edge(clk_tnode, tnode), "Clock timing edge should not already exist");
                 tg_->add_edge(type, clk_tnode, tnode);
             }
         }
@@ -298,7 +297,6 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                                    "Internal primitive combinational edges must be between {IPIN, SOURCE} and {OPIN, SINK}");
 
                     //Add the edge between the pins
-                    VTR_ASSERT_MSG(!tg_->find_edge(src_tnode, sink_tnode), "Combinational timing edge should not already exist");
                     tg_->add_edge(tatum::EdgeType::PRIMITIVE_COMBINATIONAL, src_tnode, sink_tnode);
                 }
             }
@@ -317,7 +315,6 @@ void TimingGraphBuilder::add_net_to_timing_graph(const AtomNetId net) {
         NodeId sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin);
         VTR_ASSERT(sink_tnode);
 
-        VTR_ASSERT_MSG(!tg_->find_edge(driver_tnode, sink_tnode), "Interconnect timing edge should not already exist");
         tg_->add_edge(tatum::EdgeType::INTERCONNECT, driver_tnode, sink_tnode);
     }
 }
