@@ -1555,9 +1555,9 @@ static WirelengthInfo calculate_wirelength_info() {
 
 
 static void print_route_status_header() {
-    vtr::printf_info("--------- ---------- ----------------- --------------- -------- ---------- ---------- \n");
-    vtr::printf_info("Iteration Time (sec) Overused RR Nodes      Wirelength CPD (ns)  sTNS (ns)  sWNS (ns) \n");
-    vtr::printf_info("--------- ---------- ----------------- --------------- -------- ---------- ---------- \n");	
+    vtr::printf_info("--------- ---------- ------------------ --------------- -------- ---------- ---------- \n");
+    vtr::printf_info("Iteration Time (sec)  Overused RR Nodes      Wirelength CPD (ns)  sTNS (ns)  sWNS (ns) \n");
+    vtr::printf_info("--------- ---------- ------------------ --------------- -------- ---------- ---------- \n");	
 
 }
 
@@ -1573,7 +1573,7 @@ static void print_route_status(int itry, double elapsed_sec,
     vtr::printf(" %10.1f", elapsed_sec);
     
     //Overused RR nodes
-    vtr::printf(" %7.3g (%6.4f%)", overused_ratio*num_rr_nodes, overused_ratio*100);
+    vtr::printf(" %8.3g (%6.4f%)", overused_ratio*num_rr_nodes, overused_ratio*100);
 
     //Wirelength
     vtr::printf(" %7d (%4.1f%)", wirelength_info.used_wirelength(), wirelength_info.used_wirelength_ratio()*100);
