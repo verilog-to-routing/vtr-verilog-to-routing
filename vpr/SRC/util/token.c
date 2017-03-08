@@ -180,7 +180,7 @@ void my_atof_2D(float **matrix, const int max_i, const int max_j,
 		}
 		*cur2 = '\0';
 		VTR_ASSERT(i < max_i && j < max_j);
-		matrix[i][j] = atof(cur);
+		matrix[i][j] = vtr::atof(cur);
 		j++;
 		cur = cur2;
 		*cur = ' ';

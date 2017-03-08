@@ -3,6 +3,7 @@
 #include <cerrno> //For errno
 #include <cstring>
 #include <memory>
+#include <sstream>
 
 #include "vtr_util.h"
 #include "vtr_assert.h"
@@ -205,17 +206,36 @@ char* strdup(const char *str) {
     return Dst;
 }
 
-int atoi(const char *str) {
+template<class T>
+T atoT(const std::string& value, const std::string& type_name) {
+    //The c version of atof doesn't catch errors.
+    //
+    //This version uses stringstream to detect conversion errors
+    std::istringstream ss(value);
 
-    /* Returns the integer represented by the first part of the character       *
-     * string.                                              */
+    T val;
+    ss >> val;
 
-    if (str[0] < '0' || str[0] > '9') {
-        if (!(str[0] == '-' && str[1] >= '0' && str[1] <= '9')) {
-            throw VtrError(string_fmt("Expected integer instead of '%s'", str), __FILE__, __LINE__);
-        }
+    if(ss.fail() || !ss.eof()) {
+        //Failed to convert, or did not consume all input
+        std::stringstream msg;
+        msg << "Failed to convert string '" << value << "' to " << type_name;
+        throw VtrError(msg.str(), __FILE__, __LINE__);
     }
-    return std::atoi(str);
+
+    return val;
+}
+
+int atoi(const std::string& value) {
+    return atoT<int>(value, "int");
+}
+
+double atod(const std::string& value) {
+    return atoT<double>(value, "double");
+}
+
+float atof(const std::string& value) {
+    return atoT<float>(value, "float");
 }
 
 char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {

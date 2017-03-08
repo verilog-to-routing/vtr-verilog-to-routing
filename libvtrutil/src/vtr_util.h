@@ -45,10 +45,13 @@ namespace vtr {
     constexpr size_t BUFSIZE = 32768; /* Maximum line length for various parsing proc. */
     char* strncpy(char *dest, const char *src, size_t size);
     char* strdup(const char *str);
-    int atoi(const char *str);
     char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf);
     FILE* fopen(const char *fname, const char *flag);
     char* fgets(char *buf, int max_size, FILE * fp);
+
+    int atoi(const std::string& value);
+    float atof(const std::string& value);
+    double atod(const std::string& value);
 
     /*
      * File utilities

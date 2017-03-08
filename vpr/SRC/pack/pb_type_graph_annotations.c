@@ -8,6 +8,7 @@
 using namespace std;
 
 #include "vtr_assert.h"
+#include "vtr_util.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -275,9 +276,10 @@ static void load_critical_path_annotations(const int line_num,
 		my_atof_2D(delay_matrix, num_inputs, num_outputs, value);
 	} else {
 		VTR_ASSERT(input_format == E_ANNOT_PIN_TO_PIN_CONSTANT);
+        float flt_val = vtr::atof(value);
 		for (i = 0; i < num_inputs; i++) {
 			for (j = 0; j < num_outputs; j++) {
-				delay_matrix[i][j] = atof(value);
+				delay_matrix[i][j] = flt_val;
 			}
 		}
 	}

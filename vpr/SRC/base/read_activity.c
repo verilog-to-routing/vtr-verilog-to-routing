@@ -55,7 +55,7 @@ std::unordered_map<AtomNetId,t_net_power> read_activity(const AtomNetlist& netli
 		word1 = strtok(buf, TOKENS);
 		word2 = strtok(NULL, TOKENS);
 		word3 = strtok(NULL, TOKENS);
-		add_activity_to_net(netlist, atom_net_power, word1, atof(word2), atof(word3));
+		add_activity_to_net(netlist, atom_net_power, word1, vtr::atof(word2), vtr::atof(word3));
 
 		ptr = vtr::fgets(buf, vtr::BUFSIZE, act_file_hdl);
 	}

@@ -721,7 +721,7 @@ ReadInt(char **Args, int *Val) {
 	if ((**Args > '9') || (**Args < '0'))
 		Error(*Args);
 
-	*Val = atoi(*Args);
+	*Val = vtr::atoi(*Args);
 
 	return ++Args;
 }
@@ -737,7 +737,7 @@ ReadFloat(char ** Args, float *Val) {
 		Error(*Args);
 	}
 
-	*Val = atof(*Args);
+	*Val = vtr::atof(*Args);
 
 	return ++Args;
 }
