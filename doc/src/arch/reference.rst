@@ -1037,13 +1037,12 @@ The full format is documented below.
 .. arch:tag:: <switchblock name="string" type="string">
 
     :req_param name: A unique alphanumeric string
-    :req_param type: 
-        unidir or bidir.
-        A bidirectional switch block will implicitly mirror the specified permutation functions – e.g. if a permutation function of type "lr" (function used to connect wires from the left to the right side of a switch block) has been specified, a reverse permutation function of type "rl" (right-to-left) is automatically assumed.
+    :req_param type: ``unidir`` or ``bidir``.
+        A bidirectional switch block will implicitly mirror the specified permutation functions – e.g. if a permutation function of type ``lr`` (function used to connect wires from the left to the right side of a switch block) has been specified, a reverse permutation function of type ``rl`` (right-to-left) is automatically assumed.
         A unidirectional switch block makes no such implicit assumptions.
         The type of switch block must match the directionality of the segments defined under the ``<segmentlist>`` node.
 
-    <switchblock> is the top-level XML node used to describe connections between different segment types.
+    ``<switchblock>`` is the top-level XML node used to describe connections between different segment types.
 
 .. arch:tag:: <switchblock_location type="string"/>
     
@@ -1068,7 +1067,8 @@ The full format is documented below.
     :req_param type: 
         Specifies which switch block sides this function should connect.
         With the switch block sides being left, top, right and bottom, the allowed entries are one of {``lt``, ``lr``, ``lb``, ``tr``, ``tb``, ``tl``, ``rb``, ``rl``, ``rt``, ``bl``, ``bt``, ``br``} where ``lt`` means that the specified permutation formula will be used to connect the left-top sides of the switch block.
-        .. note:: In a bidirectional architecture the reverse connection is implicit).
+
+        .. note:: In a bidirectional architecture the reverse connection is implicit.
 
     :req_param formula: 
         Specifies the mathematical permutation function that determines the pattern with which the source/destination sets of wires (defined using the <wireconn> entries) at the two switch block sides will be connected.
@@ -1105,5 +1105,6 @@ The full format is documented below.
 
     :req_param to_switchpoint: 
         A comma-separated list of integers that defines which switchpoints will be the destination of the connections specified.
+
         .. note:: In a unidirectional architecture wires can only be driven at their start point so ``to_switchpoint="0"`` is the only legal specification in this case.
 
