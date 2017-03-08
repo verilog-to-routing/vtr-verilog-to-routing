@@ -108,7 +108,7 @@ VPR runs all three stages of pack, place, and route if none of :option:`-pack`, 
 
 .. option:: -slack_definition { R | I | S | G | C | N }
 
-    The slack definition used in timing analysis.  
+    The slack definition used in the classic timing analyzer.  
     This option is for experimentation only; the default is fine for ordinary usage.  
     See path_delay.c for details.
 

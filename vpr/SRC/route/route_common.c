@@ -411,7 +411,10 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 		profiling::time_on_fanout_analysis();
 
         if(timing_inf.timing_analysis_enabled) {
-            tatum::write_echo("timing.route_final.echo", *g_timing_graph, *g_timing_constraints, *routing_delay_calc, timing_info->analyzer());
+            if(isEchoFileEnabled(E_ECHO_FINAL_ROUTING_TIMING_GRAPH)) {
+                tatum::write_echo(getEchoFileName(E_ECHO_FINAL_ROUTING_TIMING_GRAPH),
+                                  *g_timing_graph, *g_timing_constraints, *routing_delay_calc, timing_info->analyzer());
+            }
         }
 	}
 

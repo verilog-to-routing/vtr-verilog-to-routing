@@ -422,14 +422,16 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         //Calculate the initial timing
         timing_info->update();
 
-        tatum::write_echo("timing.pre_pack.echo", *g_timing_graph, *g_timing_constraints, *clustering_delay_calc, timing_info->analyzer());
-        tatum::write_dot_file_setup("timing_graph.dot", *g_timing_graph, *clustering_delay_calc, *timing_info->setup_analyzer());
+        if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH)) {
+            tatum::write_echo(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH), 
+                              *g_timing_graph, *g_timing_constraints, *clustering_delay_calc, timing_info->analyzer());
+        }
 
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack* slacks = alloc_and_load_pre_packing_timing_graph(inter_cluster_net_delay, timing_inf, expected_lowest_cost_pb_gnode);
         do_timing_analysis(slacks, timing_inf, true, true);
-        print_timing_graph(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH));
+        print_timing_graph(std::string("classic.") + getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH));
 
         auto cpds = timing_info->critical_paths();
         auto critical_path = timing_info->least_slack_critical_path();

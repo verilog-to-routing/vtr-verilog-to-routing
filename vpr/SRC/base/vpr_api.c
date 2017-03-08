@@ -67,6 +67,7 @@ using namespace std;
 
 #include "timing_graph_builder.h"
 #include "timing_reports.h"
+#include "tatum/echo_writer.hpp"
 
 #include "log.h"
 
@@ -1060,6 +1061,11 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
         auto timing_info = make_setup_timing_info(analysis_delay_calc);
         timing_info->update();
+
+        if(isEchoFileEnabled(E_ECHO_ANALYSIS_TIMING_GRAPH)) {
+            tatum::write_echo(getEchoFileName(E_ECHO_ANALYSIS_TIMING_GRAPH),
+                    *g_timing_graph, *g_timing_constraints, *analysis_delay_calc, timing_info->analyzer());
+        }
 
         //Timing stats
         generate_timing_stats(*timing_info);

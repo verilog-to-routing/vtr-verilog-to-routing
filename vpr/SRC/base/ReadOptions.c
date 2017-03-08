@@ -114,15 +114,20 @@ void alloc_and_load_echo_file_info() {
 	echoFileEnabled = (bool*)vtr::calloc((int) E_ECHO_END_TOKEN, sizeof(bool));
 	echoFileNames = (char**)vtr::calloc((int) E_ECHO_END_TOKEN, sizeof(char*));
 
-	setAllEchoFileEnabled(true);
+	setAllEchoFileEnabled(getEchoEnabled());
+
+    //Timing Graphs
+	setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "timing_graph.pre_pack.echo");
+	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_initial.echo");
+	setEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_final.echo");
+	setEchoFileName(E_ECHO_FINAL_ROUTING_TIMING_GRAPH, "timing_graph.route_final.echo");
+	setEchoFileName(E_ECHO_ANALYSIS_TIMING_GRAPH, "timing_graph.analysis.echo");
 
 	setEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT, "initial_clb_placement.echo");
-	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "initial_placement_timing_graph.echo");
 	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_SLACK, "initial_placement_slack.echo");
 	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY, "initial_placement_criticality.echo");
 	setEchoFileName(E_ECHO_END_CLB_PLACEMENT, "end_clb_placement.echo");
 	setEchoFileName(E_ECHO_PLACEMENT_SINK_DELAYS, "placement_sink_delays.echo");
-	setEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH, "final_placement_timing_graph.echo");
 	setEchoFileName(E_ECHO_FINAL_PLACEMENT_SLACK, "final_placement_slack.echo");
 	setEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY, "final_placement_criticality.echo");
 	setEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH, "placement_crit_path.echo");
@@ -133,14 +138,10 @@ void alloc_and_load_echo_file_info() {
 	setEchoFileName(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS, "placement_lower_bound_sink_delays.echo");
 	setEchoFileName(E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS, "placement_logic_sink_delays.echo");
 	setEchoFileName(E_ECHO_ROUTING_SINK_DELAYS, "routing_sink_delays.echo");
-	setEchoFileName(E_ECHO_POST_FLOW_TIMING_GRAPH, "post_flow_timing_graph.blif");
 	setEchoFileName(E_ECHO_POST_PACK_NETLIST, "post_pack_netlist.blif");
 	setEchoFileName(E_ECHO_BLIF_INPUT, "blif_input.echo");
 	setEchoFileName(E_ECHO_COMPRESSED_NETLIST, "compressed_netlist.echo");
 	setEchoFileName(E_ECHO_NET_DELAY, "net_delay.echo");
-	setEchoFileName(E_ECHO_TIMING_GRAPH, "timing_graph.echo");
-	setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "pre_packing_timing_graph.echo");
-	setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH_AS_BLIF, "pre_packing_timing_graph_as_blif.blif");
 	setEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO, "clustering_timing_info.echo");
 	setEchoFileName(E_ECHO_PRE_PACKING_SLACK, "pre_packing_slack.echo");
 	setEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY, "pre_packing_criticality.echo");

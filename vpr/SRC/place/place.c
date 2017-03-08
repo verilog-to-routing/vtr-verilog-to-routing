@@ -341,7 +341,9 @@ void try_place(struct s_placer_opts placer_opts,
 	double std_dev;
 	char msg[vtr::BUFSIZE];
 	t_placer_statistics stats;
+#ifdef ENABLE_CLASSIC_VPR_STA
 	t_slack * slacks = NULL;
+#endif
 
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
@@ -411,7 +413,10 @@ void try_place(struct s_placer_opts placer_opts,
         critical_path = timing_info->least_slack_critical_path();
 
         //Write out the initial timing echo file
-        tatum::write_echo("timing.place_init.echo", *g_timing_graph, *g_timing_constraints, *placement_delay_calc, timing_info->analyzer());
+        if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH)) {
+            tatum::write_echo(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH),
+                    *g_timing_graph, *g_timing_constraints, *placement_delay_calc, timing_info->analyzer());
+        }
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         load_timing_graph_net_delays(point_to_point_delay_cost);
@@ -430,12 +435,12 @@ void try_place(struct s_placer_opts placer_opts,
 		comp_td_costs(&timing_cost, &delay_cost); /*also updates values in point_to_point_delay_cost */
 
 		if (getEchoEnabled()) {
-			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH))
-				print_timing_graph(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH));
+#ifdef ENABLE_CLASSIC_VPR_STA
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_SLACK))
 				print_slack(slacks->slack, false, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_SLACK));
 			if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_CRITICALITY))
 				print_criticality(slacks, getEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY));
+#endif
 		}
 		outer_crit_iter_count = 1;
 
@@ -766,7 +771,10 @@ void try_place(struct s_placer_opts placer_opts,
         timing_info->update(); //Tatum
 		critical_path = timing_info->least_slack_critical_path();
 
-        tatum::write_echo("timing.place_final.echo", *g_timing_graph, *g_timing_constraints, *placement_delay_calc, timing_info->analyzer());
+        if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH)) {
+            tatum::write_echo(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH),
+                    *g_timing_graph, *g_timing_constraints, *placement_delay_calc, timing_info->analyzer());
+        }
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         //Old VPR analyzer
