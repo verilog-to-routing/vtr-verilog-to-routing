@@ -529,10 +529,7 @@ static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
 	}
 
 	/* Depends on RouterOpts->router_algorithm */
-	RouterOpts->first_iter_pres_fac = 0.5; /* DEFAULT */
-	if (BREADTH_FIRST == RouterOpts->router_algorithm) {
-		RouterOpts->first_iter_pres_fac = 0.0; /* DEFAULT */
-	}
+	RouterOpts->first_iter_pres_fac = 0.0; /* DEFAULT */
 	if (NO_TIMING == RouterOpts->router_algorithm || Options.Count[OT_FAST]) {
 		RouterOpts->first_iter_pres_fac = 10000.0; /* DEFAULT */
 	}

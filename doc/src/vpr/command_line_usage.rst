@@ -410,7 +410,10 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     This sets the present overuse penalty factor for the very first routing iteration.
     :option:`-initial_pres_fac` sets it for the second iteration. 
 
-    **Default:** ``0.5``
+    .. note:: A value of ``0.0`` causes congestion to be ignored on the first routing iteration. 
+              This produces a lower bound on the achievable delay.
+
+    **Default:** ``0.0``
 
 .. option:: -pres_fac_mult <float>
 
