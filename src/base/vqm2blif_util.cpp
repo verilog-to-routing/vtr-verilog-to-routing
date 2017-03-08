@@ -496,7 +496,6 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
         //In some instances the VQM has portb clocked by clock0 and clock1 unused, to work-around this we connect
         //the portb clock to clock1
         if(found_port_b_input_clock && port_b_address_clock->value.string_value != string("clock1")) {
-            cout << "Warning: re-mapping port B clock to 'clock1'\n";
 
             //Find the clk1 port
             t_node_port_association* clk0_port = nullptr;
@@ -511,17 +510,21 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
                 }
             }
             assert(clk0_port); //Should exist
-            assert(!clk1_port); //Should not exist
+            if(!clk1_port) {
+                cout << "Warning: re-mapping port B clock to 'clock1'\n";
 
-            //Create the clk1 port as a duplicate of clk0
-            clk1_port = (t_node_port_association*) vtr::calloc(1, sizeof(t_node_port_association));
-            memcpy(clk1_port, clk0_port, sizeof(t_node_port_association));
-            clk1_port->port_name = vtr::strdup("clk1"); //Rename
+                //Create the clk1 port as a duplicate of clk0
+                clk1_port = (t_node_port_association*) vtr::calloc(1, sizeof(t_node_port_association));
+                memcpy(clk1_port, clk0_port, sizeof(t_node_port_association));
+                clk1_port->port_name = vtr::strdup("clk1"); //Rename
 
-            //Insert it
-            ++vqm_node->number_of_ports;
-            vqm_node->array_of_ports = (t_node_port_association**) vtr::realloc(vqm_node->array_of_ports, vqm_node->number_of_ports*sizeof(t_node_port_association*));
-            vqm_node->array_of_ports[vqm_node->number_of_ports - 1] = clk1_port;
+                //Insert it
+                ++vqm_node->number_of_ports;
+                vqm_node->array_of_ports = (t_node_port_association**) vtr::realloc(vqm_node->array_of_ports, vqm_node->number_of_ports*sizeof(t_node_port_association*));
+                vqm_node->array_of_ports[vqm_node->number_of_ports - 1] = clk1_port;
+            } else {
+                //Pass
+            }
         }
 
         //Mark whether the outputs are registered or not
@@ -531,7 +534,7 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
             if(found_port_a_output_clock != found_port_b_output_clock) {
                 cout << "Warning: inconsitent output port modes for " << vqm_node->type << " instance " << vqm_node->name << "\n";
                 cout << "\tport A sequential: " << found_port_a_output_clock << "\n";
-                cout << "\tport B sequential: " << found_port_a_output_clock << "\n";
+                cout << "\tport B sequential: " << found_port_b_output_clock << "\n";
                 cout << "\tApproximating as combinational output to be pessimistic\n";
             }
 
