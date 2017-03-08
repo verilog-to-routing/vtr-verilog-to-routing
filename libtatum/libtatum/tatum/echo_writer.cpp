@@ -25,26 +25,25 @@ void write_timing_graph(std::ostream& os, const TimingGraph& tg) {
     for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
         NodeId node_id(node_idx);
 
-        os << " node: " << size_t(node_id) << "\n";
+        os << " node: " << size_t(node_id) << " \\\n";
 
-        os << "  type: " << tg.node_type(node_id);
-        os << "\n";
+        os << "  type: " << tg.node_type(node_id) << " \\\n";
 
-        os << "  in_edges: ";
+        os << "  in_edges:";
         auto in_edges = tg.node_in_edges(node_id);
         std::vector<EdgeId> edges(in_edges.begin(), in_edges.end());
         std::sort(edges.begin(), edges.end()); //sort the edges for consitent output
         for(EdgeId edge_id : edges) {
-            os << size_t(edge_id) << " ";
+            os << " " << size_t(edge_id) ;
         }
-        os << "\n";
+        os << " \\\n";
 
-        os << "  out_edges: ";  
+        os << "  out_edges:";  
         auto out_edges = tg.node_out_edges(node_id);
         edges =  std::vector<EdgeId>(out_edges.begin(), out_edges.end());
         std::sort(edges.begin(), edges.end()); //sort the edges for consitent output
         for(EdgeId edge_id : edges) {
-            os << size_t(edge_id) << " ";
+            os << " " << size_t(edge_id);
         }
         os << "\n";
 
@@ -54,10 +53,10 @@ void write_timing_graph(std::ostream& os, const TimingGraph& tg) {
     for(size_t edge_idx = 0; edge_idx < tg.edges().size(); ++edge_idx) {
         EdgeId edge_id(edge_idx);
 
-        os << " edge: " << size_t(edge_id) << "\n";
-        os << "  type: " << tg.edge_type(edge_id) << "\n";
-        os << "  src_node: " << size_t(tg.edge_src_node(edge_id)) << "\n";
-        os << "  sink_node: " << size_t(tg.edge_sink_node(edge_id)) << "\n";
+        os << " edge: " << size_t(edge_id) << " \\\n";
+        os << "  type: " << tg.edge_type(edge_id) << " \\\n";
+        os << "  src_node: " << size_t(tg.edge_src_node(edge_id)) << " \\\n";
+        os << "  sink_node: " << size_t(tg.edge_sink_node(edge_id)) << " \\\n";
         os << "  disabled: ";
         if(tg.edge_disabled(edge_id)) {
             os << "true";

@@ -1,8 +1,7 @@
 #include <algorithm>
 #include <iostream>
-#include <stdexcept>
-#include <stack>
-#include <set>
+#include <sstream>
+#include <map>
 
 #include "tatum/util/tatum_assert.hpp"
 #include "tatum/base/loop_detect.hpp"
@@ -189,30 +188,25 @@ EdgeId TimingGraph::add_edge(const EdgeType type, const NodeId src_node, const N
     TATUM_ASSERT(valid_node_id(src_node));
     TATUM_ASSERT(valid_node_id(sink_node));
 
-    EdgeId edge_id = find_edge(src_node, sink_node); //Does the edge already exist?
-    if (!edge_id) {
-        //No existing edge, create edge
+    //Invalidate the levelization
+    is_levelized_ = false;
 
-        //Invalidate the levelization
-        is_levelized_ = false;
+    //Reserve an edge ID
+    EdgeId edge_id = EdgeId(edge_ids_.size());
+    edge_ids_.push_back(edge_id);
 
-        //Reserve an edge ID
-        edge_id = EdgeId(edge_ids_.size());
-        edge_ids_.push_back(edge_id);
+    //Create the edgge
+    edge_types_.push_back(type);
+    edge_src_nodes_.push_back(src_node);
+    edge_sink_nodes_.push_back(sink_node);
+    edges_disabled_.push_back(false);
 
-        //Create the edgge
-        edge_types_.push_back(type);
-        edge_src_nodes_.push_back(src_node);
-        edge_sink_nodes_.push_back(sink_node);
-        edges_disabled_.push_back(false);
+    //Verify
+    TATUM_ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
 
-        //Verify
-        TATUM_ASSERT(edge_sink_nodes_.size() == edge_src_nodes_.size());
-
-        //Update the nodes the edge references
-        node_out_edges_[src_node].push_back(edge_id);
-        node_in_edges_[sink_node].push_back(edge_id);
-    }
+    //Update the nodes the edge references
+    node_out_edges_[src_node].push_back(edge_id);
+    node_in_edges_[sink_node].push_back(edge_id);
 
     TATUM_ASSERT(edge_type(edge_id) == type);
     TATUM_ASSERT(edge_src_node(edge_id) == src_node);
@@ -741,6 +735,33 @@ bool TimingGraph::validate_structure() const {
             } else {
                 throw tatum::Error("Unrecognized node type");
             }
+        }
+    }
+
+    //Record the nodes assoicated with each edge
+    std::map<std::pair<NodeId,NodeId>,std::vector<EdgeId>> edge_nodes;
+    for(EdgeId edge : edges()) {
+        NodeId src_node = edge_src_node(edge);
+        NodeId sink_node = edge_sink_node(edge);
+
+        edge_nodes[{src_node,sink_node}].push_back(edge);
+    }
+
+    //Check for duplicate edges between pairs of nodes
+    for(const auto& kv : edge_nodes) {
+        const auto& edge_ids = kv.second;
+
+        TATUM_ASSERT_MSG(edge_ids.size() > 0, "Node pair must have at least one edge");
+        if(edge_ids.size() > 1) {
+            NodeId src_node = kv.first.first;
+            NodeId sink_node = kv.first.second;
+            std::stringstream ss;
+            ss << "Dulplicate timing edges found " << src_node << " -> " << sink_node
+               << ", duplicate edges: ";
+            for(EdgeId edge : edge_ids) {
+                ss << edge << " ";
+            }
+            throw tatum::Error(ss.str());
         }
     }
 
