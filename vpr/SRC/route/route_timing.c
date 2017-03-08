@@ -70,6 +70,28 @@ struct more_sinks_than {
 	}
 };
 
+class WirelengthInfo {
+    public:
+        WirelengthInfo(int available=-1, int used=-1)
+            : available_wirelength_(available)
+            , used_wirelength_(used) {}
+
+        int available_wirelength() const { return available_wirelength_; }
+        int used_wirelength() const { return used_wirelength_; }
+        float used_wirelength_ratio() const { return float(used_wirelength()) / float(available_wirelength()); }
+
+    private:
+        int available_wirelength_;
+        int used_wirelength_;
+};
+
+static WirelengthInfo calculate_wirelength_info();
+
+static void print_route_status_header();
+static void print_route_status(int itry, double elapsed_sec, 
+                               double overused_ratio, const WirelengthInfo& wirelength_info,
+                               bool timing_enabled,
+                               const SetupTimingInfo& timing_info);
 
 
 /************************ Subroutine definitions *****************************/
@@ -114,6 +136,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	/* Variables used to do the optimization of the routing, aborting visibly
 	 * impossible Ws */
 	double overused_ratio;
+    WirelengthInfo wirelength_info;
 	vector<double> historical_overuse_ratio; 
 	historical_overuse_ratio.reserve(router_opts.max_router_iterations + 1);
 	// for unroutable large circuits, the time per iteration seems to increase dramatically
@@ -167,6 +190,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		clock_t end = clock();
 		float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
 		time_per_iteration.push_back(time);
+        wirelength_info = calculate_wirelength_info();
 
 		if (itry == 1) {
             
@@ -175,9 +199,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
                 return false;
             }
 
-            vtr::printf_info("--------- ---------- ----------- ---------------------\n");
-            vtr::printf_info("Iteration       Time   Crit Path     Overused RR Nodes\n");
-            vtr::printf_info("--------- ---------- ----------- ---------------------\n");	
+            print_route_status_header();
         }
 
 		/* Make sure any CLB OPINs used up by subblocks being hooked directly
@@ -249,11 +271,10 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #endif
 
 
-
-                vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, 1e9*critical_path.delay(), overused_ratio*num_rr_nodes, overused_ratio*100);
+                print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info);
 				vtr::printf_info("Critical path: %g ns\n", 1e9*critical_path.delay());
 			} else {
-                vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
+                print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
                 float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
@@ -336,7 +357,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				if (stable_routing_configuration)
 					connections_inf.set_stable_critical_path_delay(critical_path.delay());
 			}
-            vtr::printf_info("%9d %6.2f sec %8.5f ns   %3.2e (%3.4f %)\n", itry, time, 1e9*critical_path.delay(), overused_ratio*num_rr_nodes, overused_ratio*100);
+            print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
             float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
@@ -348,7 +369,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
             }
 #endif
 		} else {
-            vtr::printf_info("%9d %6.2f sec         N/A   %3.2e (%3.4f %)\n", itry, time, overused_ratio*num_rr_nodes, overused_ratio*100);
+            print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info);
 		}
 
         if (router_opts.congestion_analysis) profiling::congestion_analysis();
@@ -1286,41 +1307,19 @@ static bool should_route_net(int inet, const CBRR& connections_inf) {
 static bool early_exit_heuristic(const t_router_opts& /*router_opts*/) {
 	/* Early exit code for cases where it is obvious that a successful route will not be found 
 	   Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
-	int total_wirelength = 0;
-	int available_wirelength = 0;
-
-	for (int i = 0; i < num_rr_nodes; ++i) {
-		if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
-			available_wirelength += rr_node[i].get_capacity() + 
-					rr_node[i].get_xhigh() - rr_node[i].get_xlow() + 
-					rr_node[i].get_yhigh() - rr_node[i].get_ylow();
-		}
-	}
-
-	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-		if (g_clbs_nlist.net[inet].is_global == false
-				&& g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
-			int bends, wirelength, segments;
-			get_num_bends_and_length(inet, &bends, &wirelength, &segments);
-
-			total_wirelength += wirelength;
-		}
-	}
-    VTR_ASSERT(available_wirelength > 0);
-    float used_wirelength_ratio = (float) (total_wirelength) / (float) (available_wirelength);
+    auto wirelength_info = calculate_wirelength_info();
 
 	vtr::printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
-			total_wirelength, available_wirelength,
-			used_wirelength_ratio);
+			wirelength_info.used_wirelength(), wirelength_info.available_wirelength(),
+			wirelength_info.used_wirelength_ratio());
 
-	if (used_wirelength_ratio > FIRST_ITER_WIRELENTH_LIMIT) {
+	if (wirelength_info.used_wirelength_ratio() > FIRST_ITER_WIRELENTH_LIMIT) {
 		vtr::printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
 				FIRST_ITER_WIRELENTH_LIMIT);
         return true;
 	}
 	return false;
 }
-
 
 // incremental rerouting resources class definitions
 Connection_based_routing_resources::Connection_based_routing_resources() : 
@@ -1525,4 +1524,80 @@ void Connection_based_routing_resources::clear_force_reroute_for_net() {
 			profiling::perform_forced_reroute();
 		}
 	}
+}
+
+static WirelengthInfo calculate_wirelength_info() {
+	int used_wirelength = 0;
+	int available_wirelength = 0;
+
+	for (int i = 0; i < num_rr_nodes; ++i) {
+		if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
+			available_wirelength += rr_node[i].get_capacity() + 
+					rr_node[i].get_xhigh() - rr_node[i].get_xlow() + 
+					rr_node[i].get_yhigh() - rr_node[i].get_ylow();
+		}
+	}
+
+	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
+		if (g_clbs_nlist.net[inet].is_global == false
+            && g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
+			int bends, wirelength, segments;
+			get_num_bends_and_length(inet, &bends, &wirelength, &segments);
+
+			used_wirelength += wirelength;
+		}
+	}
+    VTR_ASSERT(available_wirelength > 0);
+
+    return WirelengthInfo(available_wirelength, used_wirelength);
+}
+
+
+
+static void print_route_status_header() {
+    vtr::printf_info("--------- ---------- ----------------- --------------- -------- ---------- ---------- \n");
+    vtr::printf_info("Iteration Time (sec) Overused RR Nodes      Wirelength CPD (ns)  sTNS (ns)  sWNS (ns) \n");
+    vtr::printf_info("--------- ---------- ----------------- --------------- -------- ---------- ---------- \n");	
+
+}
+
+static void print_route_status(int itry, double elapsed_sec, 
+                               double overused_ratio, const WirelengthInfo& wirelength_info,
+                               bool timing_enabled,
+                               const SetupTimingInfo& timing_info) {
+
+    //Iteration
+    vtr::printf("%9d", itry);
+
+    //Elapsed Time
+    vtr::printf(" %10.1f", elapsed_sec);
+    
+    //Overused RR nodes
+    vtr::printf(" %7.3g (%6.4f%)", overused_ratio*num_rr_nodes, overused_ratio*100);
+
+    //Wirelength
+    vtr::printf(" %7d (%4.1f%)", wirelength_info.used_wirelength(), wirelength_info.used_wirelength_ratio()*100);
+
+    //CPD
+    if(timing_enabled) {
+        vtr::printf(" %8.3f",  1e9*timing_info.least_slack_critical_path().delay());
+    } else {
+        vtr::printf(" %8s", "N/A");
+    }
+
+    //sTNS
+    if(timing_enabled) {
+        vtr::printf(" % 10.4g",  1e9*timing_info.setup_total_negative_slack());
+    } else {
+        vtr::printf(" %10s", "N/A");
+    }
+
+    //sWNS
+    if(timing_enabled) {
+        vtr::printf(" % 10.4g",  1e9*timing_info.setup_worst_negative_slack());
+    } else {
+        vtr::printf(" %10s", "N/A");
+    }
+
+    vtr::printf("\n");
 }
