@@ -1555,9 +1555,9 @@ static WirelengthInfo calculate_wirelength_info() {
 
 
 static void print_route_status_header() {
-    vtr::printf_info("--------- ---------- ------------------ ---------------- -------- ---------- ---------- \n");
-    vtr::printf_info("Iteration Time (sec)  Overused RR Nodes      Wirelength CPD (ns)  sTNS (ns)  sWNS (ns) \n");
-    vtr::printf_info("--------- ---------- ------------------ ---------------- -------- ---------- ---------- \n");	
+    vtr::printf_info("--------- ---------- ------------------ ----------------- -------- ---------- ---------- \n");
+    vtr::printf_info("Iteration Time (sec)  Overused RR Nodes        Wirelength CPD (ns)  sTNS (ns)  sWNS (ns) \n");
+    vtr::printf_info("--------- ---------- ------------------ ----------------- -------- ---------- ---------- \n");	
 
 }
 
@@ -1576,7 +1576,7 @@ static void print_route_status(int itry, double elapsed_sec,
     vtr::printf(" %8.3g (%6.4f%)", overused_ratio*num_rr_nodes, overused_ratio*100);
 
     //Wirelength
-    vtr::printf(" %8.3g (%4.1f%)", float(wirelength_info.used_wirelength()), wirelength_info.used_wirelength_ratio()*100);
+    vtr::printf(" %9.4g (%4.1f%)", float(wirelength_info.used_wirelength()), wirelength_info.used_wirelength_ratio()*100);
 
     //CPD
     if(timing_enabled) {
@@ -1597,7 +1597,7 @@ static void print_route_status(int itry, double elapsed_sec,
     //sWNS
     if(timing_enabled) {
         float sWNS = timing_info.setup_worst_negative_slack();
-        vtr::printf(" % 10.4g",  1e9*sWNS);
+        vtr::printf(" % 10.3f",  1e9*sWNS);
     } else {
         vtr::printf(" %10s", "N/A");
     }
