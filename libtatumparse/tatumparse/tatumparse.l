@@ -52,6 +52,7 @@ ENDL (\n|\n\r|\r\n)
  */
 %%
 #.*{ENDL}                       { /* ignore comments */ }
+{BACK_SLASH}{WS}*{ENDL}         { /* line continuation don't send EOL to parser */ }
 ^{WS}*{ENDL}                    { /* Ignore blank lines. */ }
 {ENDL}                          { 
                                   return tatumparse::Parser::make_EOL(); 

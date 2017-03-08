@@ -210,8 +210,8 @@ tatum_data: /*empty*/ { }
     | tatum_data EOL { /*eat stray EOL */ }
 
 Graph: TIMING_GRAPH EOL { callback.start_graph(); }
-     | Graph NodeId EOL NodeType EOL InEdges EOL OutEdges EOL { callback.add_node($2, $4, $6, $8); }
-     | Graph EdgeId EOL EdgeType EOL SrcNodeId EOL SinkNodeId EOL Disabled { callback.add_edge($2, $4, $6, $8, $10); }
+     | Graph NodeId NodeType InEdges OutEdges EOL { callback.add_node($2, $3, $4, $4); }
+     | Graph EdgeId EdgeType SrcNodeId SinkNodeId Disabled EOL { callback.add_edge($2, $3, $4, $5, $6); }
 
 Constraints: TIMING_CONSTRAINTS EOL { callback.start_constraints(); }
            | Constraints TYPE CLOCK DomainId Name EOL { callback.add_clock_domain($4, $5); }
@@ -280,7 +280,7 @@ EdgeId: EDGE INT { $$ = $2; }
 SrcNodeId: SRC_NODE INT { $$ = $2; }
 SinkNodeId: SINK_NODE INT { $$ = $2; }
 Disabled: /* Unsipecified*/ { $$ = false; }
-        | DISABLED Bool EOL { $$ = $2; }
+        | DISABLED Bool { $$ = $2; }
 
 Bool: TRUE { $$ = true; }
     | FALSE { $$ = false; }
