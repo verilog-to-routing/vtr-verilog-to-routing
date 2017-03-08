@@ -777,8 +777,12 @@ void try_place(struct s_placer_opts placer_opts,
 
 		/* Print critical path delay. */
 		vtr::printf_info("\n");
-		vtr::printf_info("Placement estimated critical path delay: %g ns (old VPR STA %g ns)\n", 
+		vtr::printf_info("Placement estimated critical path delay: %g ns", 
                 1e9*critical_path.delay(), get_critical_path_delay());
+#ifdef ENABLE_CLASSIC_VPR_STA
+		vtr::printf_info(" (classic VPR STA %g ns)", get_critical_path_delay());
+#endif
+        vtr::printf("\n");
         vtr::printf_info("Placement estimated setup Total Negative Slack (sTNS): %g ns\n", 
                 1e9*timing_info->setup_total_negative_slack());
         vtr::printf_info("Placement estimated setup Worst Negative Slack (sWNS): %g ns\n", 
