@@ -83,6 +83,7 @@ int main(int argc, const char **argv) {
                             g_timing_analysis_profile_stats.sta_wallclock_time, 
                             g_timing_analysis_profile_stats.slack_wallclock_time, 
                             g_timing_analysis_profile_stats.num_full_updates);
+#ifdef ENABLE_CLASSIC_VPR_STA
         vtr::printf_info("Old VPR Timing analysis took %g seconds (%g STA, %g delay annotitaion) (%d full updates).\n", 
                             g_timing_analysis_profile_stats.old_timing_analysis_wallclock_time(),
                             g_timing_analysis_profile_stats.old_sta_wallclock_time,
@@ -92,6 +93,7 @@ int main(int argc, const char **argv) {
                             g_timing_analysis_profile_stats.old_sta_wallclock_time / g_timing_analysis_profile_stats.sta_wallclock_time);
         vtr::printf_info("\tSTA+Slack Speed-up: %.2fx\n", 
                             g_timing_analysis_profile_stats.old_timing_analysis_wallclock_time() / g_timing_analysis_profile_stats.timing_analysis_wallclock_time());
+#endif
 		vtr::printf_info("The entire flow of VPR took %g seconds.\n", 
 				(float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 	
