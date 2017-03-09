@@ -100,14 +100,12 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 				type_descriptors[i].pb_graph_head, nhash, &ncount);
 	}
 
-	list_of_packing_patterns = alloc_and_init_pattern_list_from_hash(ncount,
-			nhash);
+	list_of_packing_patterns = alloc_and_init_pattern_list_from_hash(ncount, nhash);
 
 	/* load packing patterns by traversing the edges to find edges belonging to pattern */
 	for (i = 0; i < ncount; i++) {
 		for (j = 0; j < num_types; j++) {
-			expansion_edge = find_expansion_edge_of_pattern(i,
-					type_descriptors[j].pb_graph_head);
+			expansion_edge = find_expansion_edge_of_pattern(i, type_descriptors[j].pb_graph_head);
 			if (expansion_edge == NULL) {
 				continue;
 			}
@@ -133,9 +131,17 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 		}
 	}
 
+    //Sanity check, every pattern should have a root block
+    for(i = 0; i < ncount; ++i) {
+        if(list_of_packing_patterns[i].root_block == nullptr) {
+            VPR_THROW(VPR_ERROR_ARCH, "Failed to find root block for pack pattern %s", list_of_packing_patterns[i].name);
+        }
+    }
+
 	free_hash_table(nhash);
 
 	*num_packing_patterns = ncount;
+
 
 	return list_of_packing_patterns;
 }
@@ -1089,6 +1095,7 @@ static void print_pack_molecules(const char *fname,
 	fprintf(fp, "# of pack patterns %d\n", num_pack_patterns);
 		
 	for (i = 0; i < num_pack_patterns; i++) {
+        VTR_ASSERT(list_of_pack_patterns[i].root_block);
 		fprintf(fp, "pack pattern index %d block count %d name %s root %s\n",
 				list_of_pack_patterns[i].index,
 				list_of_pack_patterns[i].num_blocks,
