@@ -6,6 +6,8 @@
 #include "lut_stats.h"
 #include "vtr_memory.h"
 #include "vtr_util.h"
+#include "vtr_assert.h"
+#include "vqm2blif_util.h"
 #include <ios>
 
 
@@ -29,6 +31,8 @@ int fix_netlist_connectivity_for_inout_pins(t_split_inout_pin* new_input_pin,
                                             t_assign_vec* pin_assignment_sinks, 
                                             t_port_vec* pin_node_sources,
                                             t_port_vec* pin_node_sinks           );
+
+void expand_ram_clocks(t_module* module);
 
 //Functions to remove global constants
 void remove_constant_nets(t_module *module);
@@ -97,7 +101,7 @@ void print_map(t_global_ports global_ports);
 //============================================================================================
 //============================================================================================
 void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types, 
-                        t_boolean fix_global_nets, t_boolean split_multiclock_blocks, t_boolean single_clock_primitives,
+                        t_boolean fix_global_nets, t_boolean elaborate_ram_clocks, t_boolean single_clock_primitives,
                         t_boolean split_carry_chain_logic){
     /*
      * Put all netlist pre-processing function calls here
@@ -123,7 +127,7 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_
         cout << endl;
     }
 
-    if(single_clock_primitives && split_multiclock_blocks) {
+    if(single_clock_primitives && elaborate_ram_clocks) {
         cout << "ERROR: Can not force single clocks while splitting multiclock blocks!" << endl;
     } else {
 
@@ -132,14 +136,14 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_
             remove_extra_primitive_clocks(module);
         }
 
-        if(split_multiclock_blocks) {
-            cout << "\t>> Preprocessing Netlist to decompose dual-clock Blocks" << endl;
-            decompose_multiclock_blocks(module, arch, arch_types, num_types);
+        if(elaborate_ram_clocks) {
+            cout << "\t>> Preprocessing Netlist to elaborate ram clocks" << endl;
+            expand_ram_clocks(module);
         }
     }
     cout << endl;
 
-    if(single_clock_primitives || split_multiclock_blocks) {
+    if(single_clock_primitives) {
         cout << "\t>> Preprocessing Netlist to remove false clock nets" << endl;
         //VPR may falsely identify nets connected to clock pins, but not driven by clock
         //ports as clock nets, and then error out if they connected to non-clock pins.
@@ -1078,6 +1082,109 @@ void remove_extra_primitive_clocks(t_module *module) {
     }
 
     cout << "\t>> Removed " << num_clock_ports_removed << " clock port(s) from " << num_multiclock_nodes << " netlist primitives(s)." << endl;
+
+}
+
+int find_vqm_port_index(const t_node* node, std::string name) {
+    for (int i = 0; i < node->number_of_ports; ++i) {
+        if (node->array_of_ports[i]->port_name == name) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+void add_port(int idx, t_node* node, const t_node_port_association* base_port, const std::string new_name) {
+    if(idx > node->number_of_ports - 1) {
+        VTR_ASSERT(idx == node->number_of_ports);
+        node->array_of_ports = (t_node_port_association**) realloc(node->array_of_ports, ++node->number_of_ports*sizeof(t_node_port_association*));
+    }
+
+    //Make a copy of the base port
+    t_node_port_association* new_port = (t_node_port_association*) malloc(sizeof(t_node_port_association));
+    memcpy(new_port, base_port, sizeof(t_node_port_association));
+
+    //Update the name
+    new_port->port_name = vtr::strdup(new_name.c_str());
+
+    //Insert it
+    node->array_of_ports[idx] = new_port;
+}
+
+//Return an existing index from existing_idxs (which is then removed) or the
+//current number of ports
+int get_next_port_idx(const t_node* node, std::set<int>& existing_idxs) {
+    int idx = node->number_of_ports;
+    if(!existing_idxs.empty()) {
+        idx = *existing_idxs.begin();
+        existing_idxs.erase(idx);
+    }
+    return idx;
+}
+
+void expand_ram_clocks(t_module* module) {
+    int num_ram_blocks_processed = 0;
+    int num_clocks_added = 0;
+    for (int i = 0; i < module->number_of_nodes; ++i) {
+        t_node* node = module->array_of_nodes[i];
+
+        if (strcmp(node->type, "stratixiv_ram_block") == 0) {
+            ++num_ram_blocks_processed;
+            RamInfo ram_info = get_ram_info(node);
+
+            //Stratix IV ram blocks use clk0 and clk1 to specify the clocks, and use params
+            //to define which clock controls what port
+            //
+            //To simply things in down stream tools (since BLIF doesn't support params) we replace the 
+            //VQM clocks with the following ports:
+            //   
+            //   * clk_portain    //Clock capturing input data to port a
+            //   * clk_portaout   //Clock launching output data from port a
+            //   * clk_portbin    //Clock capturing input data for port b
+            //   * clk_portbout   //Clock launching output data for port b
+            //
+            //We set these to the appropriate net based on the data set in VQM params
+
+            //Find and record the existing clk ports
+            // We do this so we can overwrite them
+            std::set<int> existing_clk_idxs;
+
+            int clk0_idx = find_vqm_port_index(node, "clk0");
+            if (clk0_idx >= 0) existing_clk_idxs.insert(clk0_idx);
+
+            int clk1_idx = find_vqm_port_index(node, "clk1");
+            if (clk1_idx >= 0) existing_clk_idxs.insert(clk1_idx);
+
+            //Specify the port A input clock
+            VTR_ASSERT_MSG(ram_info.port_a_input_clock, "Always a port a input clock");
+            add_port(get_next_port_idx(node, existing_clk_idxs), node, ram_info.port_a_input_clock, "clk_portain");
+            ++num_clocks_added;
+
+            //Specify the port A output clock
+            if (ram_info.port_a_output_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, ram_info.port_a_output_clock, "clk_portaout");
+                ++num_clocks_added;
+            }
+
+            //Specify the port B input clock
+            if(ram_info.port_b_input_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, ram_info.port_b_input_clock, "clk_portbin");
+                ++num_clocks_added;
+            }
+
+            if(ram_info.port_b_output_clock) {
+                add_port(get_next_port_idx(node, existing_clk_idxs), node, ram_info.port_b_output_clock, "clk_portbout");
+                ++num_clocks_added;
+            }
+
+            VTR_ASSERT(existing_clk_idxs.empty());
+            VTR_ASSERT(find_vqm_port_index(node, "clk0") < 0);
+            VTR_ASSERT(find_vqm_port_index(node, "clk1") < 0);
+        }
+    }
+
+    cout << "\t>> Expaned " << num_clocks_added << " clocks accross " << num_ram_blocks_processed << " ram blocks" << endl;
 
 }
 

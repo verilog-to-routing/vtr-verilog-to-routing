@@ -76,7 +76,7 @@ enum v_OptionBaseToken
 	OT_CLEAN,
 	OT_BUFFOUTS,
     OT_FIXGLOBALS,
-    OT_SPLIT_MULTICLOCK_BLOCKS,
+    OT_ELABORATE_RAM_CLOCKS,
     OT_MULTICLOCK_PRIMITIVES,
     OT_SPLIT_CARRY_CHAIN_LOGIC,
     OT_INCLUDE_UNUSED_SUBCKT_PINS,
@@ -90,6 +90,20 @@ struct cstrcomp{	//operator structure to compare C-strings within a map class
 
 typedef map <const char*, v_OptionBaseToken, cstrcomp> tokmap;
 typedef pair <const char*, v_OptionBaseToken> tokpair;
+
+struct RamInfo {
+    std::string mode = "";
+    int port_a_addr_width = 0;
+    int port_a_data_width = 0;
+    t_node_port_association* port_a_input_clock = nullptr;
+    t_node_port_association* port_a_output_clock = nullptr;
+
+    int port_b_addr_width = 0;
+    int port_b_data_width = 0;
+    t_node_port_association* port_b_input_clock = nullptr;
+    t_node_port_association* port_b_output_clock = nullptr;
+};
+
 
 //============================================================================================
 //				GLOBAL FUNCTIONS
@@ -115,6 +129,8 @@ t_model* find_arch_model_by_name(string model_name, t_model* arch_models); //ret
 string get_wire_name(t_pin_def* net, int index);	//returns a string with the appropriate wire name
 
 string append_index_to_str (string busname, int index);	//appends an integer index to the end of a string
+
+RamInfo get_ram_info(const t_node* vqm_node);
 
 //Other
 

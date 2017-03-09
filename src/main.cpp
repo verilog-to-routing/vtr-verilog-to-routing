@@ -119,9 +119,9 @@ t_boolean fix_global_nets;  //user-set flag which controls whether to insert fak
                             //an attempt to make VPR treat some signals (i.e. clocks) as 
                             //globals
 
-t_boolean split_multiclock_blocks; //user-set flag which controls whether dual clock rams are
-                                       //split into two primitives.  This is needed to work around
-                                       //VPR's limitation of one clock per primitive.
+t_boolean elaborate_ram_clocks; //user-set flag which controls whether rams have their clocks
+                                //explicitly elaborated so the clock associated with in/out data
+                                //for each port are explicit
 
 t_boolean single_clock_primitives; //user-set flag which controls whether multiclock blocks have
                                    // their extra clocks dropped.  This is a work around for
@@ -315,7 +315,7 @@ int main(int argc, char* argv[])
     cout << "\n>> Preprocessing Netlist...\n";
     processStart = clock();
 
-    preprocess_netlist(my_module, &arch, types, numTypes, fix_global_nets, split_multiclock_blocks,
+    preprocess_netlist(my_module, &arch, types, numTypes, fix_global_nets, elaborate_ram_clocks,
                        single_clock_primitives, split_carry_chain_logic);
 	
     if (debug_mode){
@@ -451,8 +451,8 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 	clean_mode = CL_ALL;
 	buffd_outs = T_FALSE;
     fix_global_nets = T_FALSE;
-    split_multiclock_blocks = T_FALSE;
-    single_clock_primitives = T_TRUE;
+    elaborate_ram_clocks = T_TRUE;
+    single_clock_primitives = T_FALSE;
     split_carry_chain_logic = T_FALSE;
     print_unused_subckt_pins = T_FALSE;
 
@@ -561,8 +561,8 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
                 case OT_FIXGLOBALS:
                     fix_global_nets = T_TRUE;
                     break;
-                case OT_SPLIT_MULTICLOCK_BLOCKS:
-                    split_multiclock_blocks = T_TRUE;
+                case OT_ELABORATE_RAM_CLOCKS:
+                    elaborate_ram_clocks = T_TRUE;
                     break;
                 case OT_SPLIT_CARRY_CHAIN_LOGIC:
                     split_carry_chain_logic = T_TRUE;
@@ -617,7 +617,7 @@ void setup_tokens (tokmap* tokens){
 	tokens->insert(tokpair("-buffouts", OT_BUFFOUTS));
 	tokens->insert(tokpair("-multiclock_primitives", OT_MULTICLOCK_PRIMITIVES));
 	tokens->insert(tokpair("-fixglobals", OT_FIXGLOBALS));
-	tokens->insert(tokpair("-split_multiclock_blocks", OT_SPLIT_MULTICLOCK_BLOCKS));
+	tokens->insert(tokpair("-elaborate_ram_clocks", OT_ELABORATE_RAM_CLOCKS));
 	tokens->insert(tokpair("-split_carry_chain_logic", OT_SPLIT_CARRY_CHAIN_LOGIC));
 	tokens->insert(tokpair("-include_unused_subckt_pins", OT_INCLUDE_UNUSED_SUBCKT_PINS));
 }

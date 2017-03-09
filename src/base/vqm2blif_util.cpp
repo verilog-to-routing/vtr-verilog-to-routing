@@ -1,6 +1,7 @@
 #include "vqm2blif_util.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include "vtr_assert.h"
 
 //============================================================================================
 //============================================================================================
@@ -409,64 +410,9 @@ void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* arch_models, 
 }
         
 void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash) {
-    assert(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
+    VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
     
-    //We need to save clock information about the RAM to determine whether output registers are used
-    t_node_parameter* port_a_data_out_clock = NULL;
-    t_node_parameter* port_b_data_out_clock = NULL;
-    t_node_parameter* port_b_address_clock = NULL;
-    
-    //We need to save the ram data and address widths, to identfy the RAM type (singel port, rom, simple dual port, true dual port)
-    t_node_parameter* port_a_data_width = NULL;
-    t_node_parameter* port_a_addr_width = NULL;
-    t_node_parameter* port_b_data_width = NULL;
-    t_node_parameter* port_b_addr_width = NULL;
-    
-
-
-    char buffer[128]; //For integer to string conversion, use with snprintf which checks for overflow
-
-	for (int i = 0; i < vqm_node->number_of_params; i++){
-		//Each parameter specifies a configuration of the node in the circuit.
-		t_node_parameter* temp_param = vqm_node->array_of_params[i];
-
-        //Save the ram width/depth related parameters
-        if (strcmp (temp_param->name, "port_a_data_width") == 0){
-            assert( temp_param->type == NODE_PARAMETER_INTEGER );
-            port_a_data_width = temp_param;
-            continue;
-        }
-        if (strcmp (temp_param->name, "port_a_address_width") == 0){
-            assert( temp_param->type == NODE_PARAMETER_INTEGER );
-            port_a_addr_width = temp_param;
-            continue;
-        }
-        if (strcmp (temp_param->name, "port_b_data_width") == 0){
-            assert( temp_param->type == NODE_PARAMETER_INTEGER );
-            port_b_data_width = temp_param;
-            continue;
-        }
-        if (strcmp (temp_param->name, "port_b_address_width") == 0){
-            assert( temp_param->type == NODE_PARAMETER_INTEGER );
-            port_b_addr_width = temp_param;
-            continue;
-        }
-        if (strcmp (temp_param->name, "port_a_data_out_clock") == 0){
-            assert( temp_param->type == NODE_PARAMETER_STRING );
-            port_a_data_out_clock = temp_param;
-            continue;
-        }
-        if (strcmp (temp_param->name, "port_b_data_out_clock") == 0){
-            assert( temp_param->type == NODE_PARAMETER_STRING );
-            port_b_data_out_clock = temp_param;
-            continue;
-        }
-        if (strcmp (temp_param->name, "port_b_address_clock") == 0){
-            assert( temp_param->type == NODE_PARAMETER_STRING );
-            port_b_address_clock = temp_param;
-            continue;
-        }
-    }
+    RamInfo ram_info = get_ram_info(vqm_node);
 
     /*
      *  The following code attempts to identify RAM bocks which do and do not use
@@ -476,68 +422,36 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
         //Only elaborate registered/combinational behaviour if in timing accurate
         // mode elaboration
         
-        bool found_port_a_output_clock = false;
-        bool found_port_b_output_clock = false;
-        bool found_port_b_input_clock = false;
-        if(port_a_data_out_clock != NULL && strcmp(port_a_data_out_clock->value.string_value, "none") != 0) {
-            found_port_a_output_clock = true;
-        }
-        if(port_b_data_out_clock != NULL && strcmp(port_b_data_out_clock->value.string_value, "none") != 0) {
-            found_port_b_output_clock = true;
-        }
-        if(port_b_address_clock != NULL && strcmp(port_b_address_clock->value.string_value, "none") != 0) {
-            found_port_b_input_clock = true;
-        }
-
-        //The inputs to SIV ram blocks are always sequential
-        //  Port A is always controlled by clk0
-
-        //We model port a as being clocked by clock0, and port b by clock1
-        //In some instances the VQM has portb clocked by clock0 and clock1 unused, to work-around this we connect
-        //the portb clock to clock1
-        if(found_port_b_input_clock && port_b_address_clock->value.string_value != string("clock1")) {
-
-            //Find the clk1 port
-            t_node_port_association* clk0_port = nullptr;
-            t_node_port_association* clk1_port = nullptr;
-            for(int i = 0; i < vqm_node->number_of_ports; ++i) {
-                t_node_port_association* check_port = vqm_node->array_of_ports[i];
-                if(check_port->port_name == std::string("clk1")) {
-                    clk1_port = check_port;
-                }
-                if(check_port->port_name == std::string("clk0")) {
-                    clk0_port = check_port;
-                }
-            }
-            assert(clk0_port); //Should exist
-            if(!clk1_port) {
-                cout << "Warning: re-mapping port B clock to 'clock1'\n";
-
-                //Create the clk1 port as a duplicate of clk0
-                clk1_port = (t_node_port_association*) vtr::calloc(1, sizeof(t_node_port_association));
-                memcpy(clk1_port, clk0_port, sizeof(t_node_port_association));
-                clk1_port->port_name = vtr::strdup("clk1"); //Rename
-
-                //Insert it
-                ++vqm_node->number_of_ports;
-                vqm_node->array_of_ports = (t_node_port_association**) vtr::realloc(vqm_node->array_of_ports, vqm_node->number_of_ports*sizeof(t_node_port_association*));
-                vqm_node->array_of_ports[vqm_node->number_of_ports - 1] = clk1_port;
-            } else {
-                //Pass
-            }
-        }
-
         //Mark whether the outputs are registered or not
-        if (found_port_a_output_clock && found_port_b_output_clock) {
+        bool reg_outputs = false;
+        if (ram_info.mode == "single_port" || ram_info.mode == "rom") {
+            VTR_ASSERT(!ram_info.port_b_input_clock);
+            VTR_ASSERT(!ram_info.port_b_output_clock);
+
+            if(ram_info.port_a_output_clock) {
+                reg_outputs = true;
+            }
+        } else {
+            VTR_ASSERT(ram_info.mode == "dual_port" || ram_info.mode == "bidir_dual_port");
+            VTR_ASSERT_MSG(ram_info.port_b_input_clock, "RAM inputs always assumed sequential");
+
+            if (ram_info.mode == "dual_port" && ram_info.port_b_output_clock) {
+                reg_outputs = true;
+            } else if (ram_info.mode == "bidir_dual_port") {
+                
+                if (ram_info.port_a_output_clock && ram_info.port_b_output_clock) {
+                    reg_outputs = true;
+                } else {
+                    cout << "Unable to resolve whether bi-dir dual port RAM " << vqm_node->name << " outputs are sequential or combinational:\n";
+                    cout << "   port A output sequential: " << bool(ram_info.port_a_output_clock) << "\n";
+                    cout << "   port B output sequential: " << bool(ram_info.port_b_output_clock) << "\n";
+                }
+            }
+        }
+
+        if(reg_outputs) {
             mode_hash.append(".output_type{reg}");
         } else {
-            if(found_port_a_output_clock != found_port_b_output_clock) {
-                cout << "Warning: inconsitent output port modes for " << vqm_node->type << " instance " << vqm_node->name << "\n";
-                cout << "\tport A sequential: " << found_port_a_output_clock << "\n";
-                cout << "\tport B sequential: " << found_port_b_output_clock << "\n";
-                cout << "\tApproximating as combinational output to be pessimistic\n";
-            }
-
             mode_hash.append(".output_type{comb}");
         }
     }
@@ -562,12 +476,13 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
      *
      */
     // 1) A single port memory, only port A params are found
-    if (   (port_a_data_width != NULL) && (port_a_addr_width != NULL)
-        && (port_b_data_width == NULL) && (port_b_addr_width == NULL)) {
+    //if (   (port_a_data_width != NULL) && (port_a_addr_width != NULL)
+        //&& (port_b_data_width == NULL) && (port_b_addr_width == NULL)) {
+    if(ram_info.mode == "single_port" || ram_info.mode == "rom") {
+        VTR_ASSERT(ram_info.port_b_addr_width == 0);
 
         //Only print the address width, the data widths are handled by the VPR memory class
-        snprintf(buffer, sizeof(buffer), "%d", port_a_addr_width->value.integer_value);
-        mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
+        mode_hash.append(".port_a_address_width{" + std::to_string(ram_info.port_a_addr_width) + "}");
 
         if (find_arch_model_by_name(mode_hash, arch_models) == NULL){
             cout << "Error: could not find single port memory primitive '" << mode_hash << "' in architecture file" << endl;
@@ -575,18 +490,15 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
         }
 
     //A dual port memory, both port A and B params have been found
-    } else if (   (port_a_data_width != NULL) && (port_a_addr_width != NULL) 
-               && (port_b_data_width != NULL) && (port_b_addr_width != NULL)) {
-      
+    } else {
+        VTR_ASSERT(ram_info.mode == "dual_port" || ram_info.mode == "bidir_dual_port");
+        
         //2) Both ports are the same size, so only append the address widths, the data widths are handled by the VPR memory class
-        if (   (port_a_data_width->value.integer_value == port_b_data_width->value.integer_value)
-            && (port_a_addr_width->value.integer_value == port_b_addr_width->value.integer_value)) {
+        if (   (ram_info.port_a_data_width == ram_info.port_b_data_width)
+            && (ram_info.port_a_addr_width == ram_info.port_b_addr_width)) {
 
-            snprintf(buffer, sizeof(buffer), "%d", port_a_addr_width->value.integer_value);
-            mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
-
-            snprintf(buffer, sizeof(buffer), "%d", port_b_addr_width->value.integer_value);
-            mode_hash.append(".port_b_address_width{" + (string)buffer + "}");
+            mode_hash.append(".port_a_address_width{" + std::to_string(ram_info.port_a_addr_width) + "}");
+            mode_hash.append(".port_b_address_width{" + std::to_string(ram_info.port_b_addr_width) + "}");
 
             if (find_arch_model_by_name(mode_hash, arch_models) == NULL){
                 cout << "Error: could not find dual port (non-mixed_width) memory primitive '" << mode_hash << "' in architecture file";
@@ -602,22 +514,15 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
              * if it does, use it.  Otherwise use the operation mode only.
              */
 
+            tmp_mode_hash.append(".port_a_address_width{" + std::to_string(ram_info.port_a_addr_width) + "}");
+            tmp_mode_hash.append(".port_b_address_width{" + std::to_string(ram_info.port_b_addr_width) + "}");
+
             //Each port has a different size, so print both the address and data widths. Mixed widths are not handled by the VPR memory class
-            snprintf(buffer, sizeof(buffer), "%d", port_a_data_width->value.integer_value);
-            tmp_mode_hash.append(".port_a_data_width{" + (string)buffer + "}");
-
-            snprintf(buffer, sizeof(buffer), "%d", port_a_addr_width->value.integer_value);
-            tmp_mode_hash.append(".port_a_address_width{" + (string)buffer + "}");
-
-            snprintf(buffer, sizeof(buffer), "%d", port_b_data_width->value.integer_value);
-            tmp_mode_hash.append(".port_b_data_width{" + (string)buffer + "}");
-
-            snprintf(buffer, sizeof(buffer), "%d", port_b_addr_width->value.integer_value);
-            tmp_mode_hash.append(".port_b_address_width{" + (string)buffer + "}");
-
+            tmp_mode_hash.append(".port_a_data_width{" + std::to_string(ram_info.port_a_data_width) + "}");
+            tmp_mode_hash.append(".port_b_data_width{" + std::to_string(ram_info.port_b_data_width) + "}");
 
             if (find_arch_model_by_name(tmp_mode_hash, arch_models) == NULL){
-                //3a) Use the default name
+                //3a) Not found, use the default name (no specific address/data widths)
                 ; // do nothing
             } else {
                 //3b) Use the more detailed name, since it was found in the architecture
@@ -731,5 +636,194 @@ void verify_module (t_module* module){
 	}
 }
 
+RamInfo get_ram_info(const t_node* vqm_node) {
+    VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
+
+    t_node_parameter* operation_mode = NULL;
+    
+    //We need to save clock information about the RAM to determine whether output registers are used
+    t_node_parameter* port_a_address_clock = NULL;
+    t_node_parameter* port_a_data_out_clock = NULL;
+    t_node_parameter* port_b_address_clock = NULL;
+    t_node_parameter* port_b_data_out_clock = NULL;
+    
+    //We need to save the ram data and address widths, to identfy the RAM type (singel port, rom, simple dual port, true dual port)
+    t_node_parameter* port_a_data_width = NULL;
+    t_node_parameter* port_a_addr_width = NULL;
+    t_node_parameter* port_b_data_width = NULL;
+    t_node_parameter* port_b_addr_width = NULL;
+
+	for (int i = 0; i < vqm_node->number_of_params; i++){
+		//Each parameter specifies a configuration of the node in the circuit.
+		t_node_parameter* temp_param = vqm_node->array_of_params[i];
+
+        //Save the ram width/depth related parameters
+        if (strcmp (temp_param->name, "operation_mode") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            operation_mode = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_a_data_width") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_INTEGER );
+            port_a_data_width = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_a_address_width") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_INTEGER );
+            port_a_addr_width = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_b_data_width") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_INTEGER );
+            port_b_data_width = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_b_address_width") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_INTEGER );
+            port_b_addr_width = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_a_address_clock") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            port_a_address_clock = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_a_data_out_clock") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            port_a_data_out_clock = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_b_address_clock") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            port_b_address_clock = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_b_data_out_clock") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
+            port_b_data_out_clock = temp_param;
+            continue;
+        }
+    }
+
+    RamInfo ram_info;
+
+    //Set the mode
+    VTR_ASSERT(operation_mode);
+    ram_info.mode = operation_mode->value.string_value;
+
+    //Set the widths
+    VTR_ASSERT(port_a_addr_width);
+    ram_info.port_a_addr_width = port_a_addr_width->value.integer_value;
+
+    VTR_ASSERT(port_a_data_width);
+    ram_info.port_a_data_width = port_a_data_width->value.integer_value;
+
+    if (port_b_addr_width) {
+        ram_info.port_b_addr_width = port_b_addr_width->value.integer_value;
+    }
+
+    if (port_b_data_width) {
+        ram_info.port_b_data_width = port_b_data_width->value.integer_value;
+    }
+
+
+    //Find the clock ports
+    t_node_port_association* clk0_port = nullptr;
+    t_node_port_association* clk1_port = nullptr;
+
+    t_node_port_association* clk_portain = nullptr;
+    t_node_port_association* clk_portaout = nullptr;
+    t_node_port_association* clk_portbin = nullptr;
+    t_node_port_association* clk_portbout = nullptr;
+    for(int i = 0; i < vqm_node->number_of_ports; ++i) {
+        t_node_port_association* check_port = vqm_node->array_of_ports[i];
+        if(check_port->port_name == std::string("clk0")) {
+            clk0_port = check_port;
+        }
+        if(check_port->port_name == std::string("clk1")) {
+            clk1_port = check_port;
+        }
+        if(check_port->port_name == std::string("clk_portain")) {
+            clk_portain = check_port;
+        }
+        if(check_port->port_name == std::string("clk_portaout")) {
+            clk_portaout = check_port;
+        }
+        if(check_port->port_name == std::string("clk_portbin")) {
+            clk_portbin = check_port;
+        }
+        if(check_port->port_name == std::string("clk_portbout")) {
+            clk_portbout = check_port;
+        }
+    }
+
+    if(clk0_port) {
+        //Not pre-processed, so remap the clocks ourselvs
+        VTR_ASSERT(!clk_portain);
+        VTR_ASSERT(!clk_portaout);
+        VTR_ASSERT(!clk_portbin);
+        VTR_ASSERT(!clk_portbout);
+
+        //Port a input clock
+        if(!port_a_address_clock) {
+            //Assumed that port a input is always controlled by clk0, 
+            //none of the VQM files have produced a port_a_address_clock param
+            ram_info.port_a_input_clock = clk0_port;
+        } else if (port_a_address_clock->value.string_value == std::string("clock0")){
+            ram_info.port_a_input_clock = clk0_port;
+        } else {
+            VTR_ASSERT(port_a_address_clock->value.string_value == std::string("clock1"));
+            VTR_ASSERT(clk1_port);
+            ram_info.port_a_input_clock = clk1_port;
+        }
+
+        //Port a output clock
+        VTR_ASSERT(port_a_data_out_clock);
+        if (port_a_data_out_clock->value.string_value == std::string("clock0")){
+            ram_info.port_a_output_clock = clk0_port;
+        } else if (port_a_data_out_clock->value.string_value == std::string("clock1")) {
+            VTR_ASSERT(clk1_port);
+            ram_info.port_a_output_clock = clk1_port;
+        } else {
+            VTR_ASSERT(port_a_data_out_clock->value.string_value == std::string("none"));
+            ram_info.port_a_output_clock = nullptr;
+        }
+
+        //Port b input clock
+        if (port_b_address_clock) {
+            if (port_b_address_clock->value.string_value == std::string("clock0")){
+                ram_info.port_b_input_clock = clk0_port;
+            } else if (port_b_address_clock->value.string_value == std::string("clock1")) {
+                VTR_ASSERT(clk1_port);
+                ram_info.port_b_input_clock = clk1_port;
+            } else {
+                VTR_ASSERT(port_b_address_clock->value.string_value == std::string("none"));
+                ram_info.port_b_input_clock = nullptr;
+            }
+        }
+
+        //Port b output clock
+        if (port_b_data_out_clock) {
+            if (port_b_data_out_clock->value.string_value == std::string("clock0")){
+                ram_info.port_b_output_clock = clk0_port;
+            } else if (port_b_data_out_clock->value.string_value == std::string("clock1")) {
+                VTR_ASSERT(clk1_port);
+                ram_info.port_b_output_clock = clk1_port;
+            } else {
+                VTR_ASSERT(port_b_data_out_clock->value.string_value == std::string("none"));
+                ram_info.port_b_output_clock = nullptr;
+            }
+        }
+    } else {
+        VTR_ASSERT(!clk0_port);
+        VTR_ASSERT(!clk1_port);
+        //Use the pre-processed values
+        ram_info.port_a_input_clock = clk_portain;
+        ram_info.port_a_output_clock = clk_portaout;
+        ram_info.port_b_input_clock = clk_portbin;
+        ram_info.port_b_output_clock = clk_portbout;
+    }
+    return ram_info;
+}
 //============================================================================================
 //============================================================================================
