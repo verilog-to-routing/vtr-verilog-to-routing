@@ -50,13 +50,14 @@ constexpr int PREDICTOR_START_ITERATION = 8;
 constexpr int PREDICTOR_ITERATIONS = 5;
 
 // XXX: Congestion can take a little longer to resolve once the fraction of overused nodes is low.
-//	Once the overuse ratio is lower than the following value (either as a ratio or absolute number 
+//	Once the overuse ratio is lower than the following values (either as a ratio or absolute number 
 //	of rr nodes absolute), the predictor will take into account the previous PREDICTOR_RELAX_SLACK_FACTOR*PREDICTOR_ITERATIONS 
 //	iterations instead.
 //	This is just a placeholder; the exact value should be investigated
 constexpr size_t PREDICTOR_RELAX_SLACK_FACTOR = 2;
-constexpr double OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK = 0.0002;
-constexpr double OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK = 50;
+constexpr double PREDICTOR_OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK = 0.0002;
+constexpr double PREDICTOR_OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK = 100;
+constexpr double PREDICTOR_OVERUSE_ABSOLUTE_FOR_NO_ABORT = 50;
 
 // The ratio between predicted and maximum router iterations above which routing is aborted
 constexpr double PREDICTOR_ABORT_ITERATION_RATIO = 1.4;
@@ -441,21 +442,31 @@ bool feasible_routing(void) {
 }
 
 int predict_success_route_iter(int router_iteration, const std::vector<double>& historical_overuse_ratio, const t_router_opts& router_opts) {
+	if (router_opts.routing_failure_predictor == OFF || num_nets < MIN_NETS_TO_ACTIVATE_PREDICTOR) 
+        //invalid condition for prediction
+		return 0;
 
 	if (router_iteration < std::max(PREDICTOR_START_ITERATION, PREDICTOR_ITERATIONS)) 
+        //Not enough iterations yet
 		return 0;
 
-	// invalid condition for prediction
-	if (router_opts.routing_failure_predictor == OFF || num_nets < MIN_NETS_TO_ACTIVATE_PREDICTOR) 
-		return 0;
+    if (historical_overuse_ratio.back()*num_rr_nodes <= PREDICTOR_OVERUSE_ABSOLUTE_FOR_NO_ABORT ) {
+        //Below absolute threshold
+        // We don't try to predict failures when ther are only a few congested resources, 
+        // since we don't want to give-up when nearly congestion free.
+        //
+        // In such cases congestion can take many iterations to resolve. However, since there 
+        // are few congested resources, those iterations are typcially fast.
+        return 0;
+    }
 
 	// compute slope 
 	size_t itry = historical_overuse_ratio.size() - 1;
 	size_t start_iteration = itry - PREDICTOR_ITERATIONS;
-	if (historical_overuse_ratio.back() < OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK
-        || historical_overuse_ratio.back()*num_rr_nodes < OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK){
+	if (historical_overuse_ratio.back() < PREDICTOR_OVERUSE_RATIO_FOR_INCREASED_PREDICTOR_SLACK
+        || historical_overuse_ratio.back()*num_rr_nodes < PREDICTOR_OVERUSE_ABSOLUTE_FOR_INCREASED_PREDICTOR_SLACK){
 		start_iteration = itry - PREDICTOR_RELAX_SLACK_FACTOR*PREDICTOR_ITERATIONS;
-        start_iteration = std::max<size_t>(0, start_iteration); //Bound to first iteration
+        start_iteration = std::max<size_t>(PREDICTOR_START_ITERATION, start_iteration); //Bound to first valid iteration
 	}
 	double congestion_slope = linear_regression_vector(historical_overuse_ratio, start_iteration);
 
