@@ -20,6 +20,7 @@ struct s_options {
 	char *dump_rr_structs_file;
 
 	/* General options */
+    bool show_version;
 	int GraphPause;
 	float constant_net_delay;
 	bool TimingAnalysis;

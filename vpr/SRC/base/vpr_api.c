@@ -85,8 +85,6 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 /* For resync of clustered netlist to the post-route solution. This function adds local nets to cluster */
 static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node, t_pb *pb);
 
-void vpr_print_args(int argc, const char** argv);
-
 /* Local subroutines end */
 
 /* Display general VPR information */
@@ -97,6 +95,7 @@ void vpr_print_title(void) {
 	vtr::printf_info("Version: %s\n", vtr::VERSION);
 	vtr::printf_info("Revision: %s\n", vtr::VCS_REVISION);
 	vtr::printf_info("Compiled: %s\n", vtr::BUILD_TIMESTAMP);
+	vtr::printf_info("Compiler: %s\n", vtr::COMPILER);
 	vtr::printf_info("University of Toronto\n");
 	vtr::printf_info("vtr-users@googlegroups.com\n");
 	vtr::printf_info("This is free open source code under MIT license.\n");
@@ -109,7 +108,7 @@ void vpr_print_usage(void) {
 
 	vtr::printf_info("Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
 	vtr::printf_info("\n");
-	vtr::printf_info("General Options:  [--nodisp] [--auto <int>] [--pack]\n");
+	vtr::printf_info("General Options:  [--version] [--nodisp] [--auto <int>] [--pack]\n");
 	vtr::printf_info("\t[--place] [--route] [--analysis]\n");
 	vtr::printf_info("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
 	vtr::printf_info("\t[--blif_file <string>] [--net_file <string>] [--place_file <string>]\n");
@@ -193,118 +192,113 @@ void vpr_init(const int argc, const char **argv,
 		t_vpr_setup *vpr_setup,
 		t_arch *arch) {
 
-	log_set_output_file("vpr_stdout.log");
+    vtr::set_log_file("vpr_stdout.log");
 
-	/* Print title message */
-	vpr_print_title();
+    /* Print title message */
+    vpr_print_title();
+
+    memset(options, 0, sizeof(t_options));
+    memset(vpr_setup, 0, sizeof(t_vpr_setup));
+    memset(arch, 0, sizeof(t_arch));
+
+    /* Read in user options */
+    ReadOptions(argc, argv, options);
+
+    if(options->show_version) {
+        //Printed title (which includes version info) above, so all done
+        return;
+    }
 
     //Print out the arguments passed to VPR.
     //This provides a reference in the log file to exactly
     //how VPR was run, aiding in re-producibility
     vpr_print_args(argc, argv);
 
-	if (argc >= 3) {
 
-		memset(options, 0, sizeof(t_options));
-		memset(vpr_setup, 0, sizeof(t_vpr_setup));
-		memset(arch, 0, sizeof(t_arch));
+    /* Timing option priorities */
+    vpr_setup->TimingEnabled = IsTimingEnabled(options);
 
-		/* Read in user options */
-		ReadOptions(argc, argv, options);
+    /* Verify the rest of the options */
+    CheckOptions(*options, vpr_setup->TimingEnabled);
 
-		/* Timing option priorities */
-		vpr_setup->TimingEnabled = IsTimingEnabled(options);
+    vtr::printf_info("\n");
+    vtr::printf_info("Architecture file: %s\n", options->ArchFile);
+    vtr::printf_info("Circuit name: %s.blif\n", options->CircuitName);
+    vtr::printf_info("\n");
 
-        /* Verify the rest of the options */
-		CheckOptions(*options, vpr_setup->TimingEnabled);
+    /* Determine whether echo is on or off */
+    setEchoEnabled(IsEchoEnabled(options));
+    vpr_setup->constant_net_delay = options->constant_net_delay;
+    vpr_setup->gen_netlist_as_blif = (options->Count[OT_GEN_NELIST_AS_BLIF] > 0);
 
-        vtr::printf_info("\n");
-        vtr::printf_info("Architecture file: %s\n", options->ArchFile);
-        vtr::printf_info("Circuit name: %s.blif\n", options->CircuitName);
-        vtr::printf_info("\n");
+    /* Read in arch and circuit */
+    SetupVPR(options, 
+             vpr_setup->TimingEnabled, 
+             true, 
+             &vpr_setup->FileNameOpts,
+             arch, 
+             &vpr_setup->user_models,
+             &vpr_setup->library_models, 
+             &vpr_setup->NetlistOpts,
+             &vpr_setup->PackerOpts,
+             &vpr_setup->PlacerOpts, 
+             &vpr_setup->AnnealSched,
+             &vpr_setup->RouterOpts, 
+             &vpr_setup->AnalysisOpts, 
+             &vpr_setup->RoutingArch,
+             &vpr_setup->PackerRRGraph, 
+             &vpr_setup->Segments,
+             &vpr_setup->Timing, 
+             &vpr_setup->ShowGraphics,
+             &vpr_setup->GraphPause, 
+             &vpr_setup->PowerOpts);
 
-		/* Determine whether echo is on or off */
-		setEchoEnabled(IsEchoEnabled(options));
-		vpr_setup->constant_net_delay = options->constant_net_delay;
-		vpr_setup->gen_netlist_as_blif = (options->Count[OT_GEN_NELIST_AS_BLIF] > 0);
+    /* Check inputs are reasonable */
+    CheckArch(*arch);
 
-		/* Read in arch and circuit */
-		SetupVPR(options, 
-                 vpr_setup->TimingEnabled, 
-                 true, 
-                 &vpr_setup->FileNameOpts,
-				 arch, 
-                 &vpr_setup->user_models,
-				 &vpr_setup->library_models, 
-                 &vpr_setup->NetlistOpts,
-                 &vpr_setup->PackerOpts,
-				 &vpr_setup->PlacerOpts, 
-                 &vpr_setup->AnnealSched,
-				 &vpr_setup->RouterOpts, 
-				 &vpr_setup->AnalysisOpts, 
-                 &vpr_setup->RoutingArch,
-				 &vpr_setup->PackerRRGraph, 
-                 &vpr_setup->Segments,
-				 &vpr_setup->Timing, 
-                 &vpr_setup->ShowGraphics,
-				 &vpr_setup->GraphPause, 
-                 &vpr_setup->PowerOpts);
+    /* Verify settings don't conflict or otherwise not make sense */
+    CheckSetup(vpr_setup->PlacerOpts,
+            vpr_setup->RouterOpts,
+            vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing,
+            arch->Chans);
 
-		/* Check inputs are reasonable */
-		CheckArch(*arch);
+    /* flush any messages to user still in stdout that hasn't gotten displayed */
+    fflush(stdout);
 
-		/* Verify settings don't conflict or otherwise not make sense */
-		CheckSetup(vpr_setup->PlacerOpts,
-				vpr_setup->RouterOpts,
-				vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing,
-				arch->Chans);
-
-		/* flush any messages to user still in stdout that hasn't gotten displayed */
-		fflush(stdout);
-
-		/* Read blif file and sweep unused components */
-		g_atom_nl = read_and_process_blif(vpr_setup->PackerOpts.blif_file_name,
-                                          vpr_setup->user_models, 
-                                          vpr_setup->library_models,
-                                          vpr_setup->NetlistOpts.absorb_buffer_luts,
-                                          vpr_setup->NetlistOpts.sweep_dangling_primary_ios,
-                                          vpr_setup->NetlistOpts.sweep_dangling_nets,
-                                          vpr_setup->NetlistOpts.sweep_dangling_blocks,
-                                          vpr_setup->NetlistOpts.sweep_constant_primary_outputs);
+    /* Read blif file and sweep unused components */
+    g_atom_nl = read_and_process_blif(vpr_setup->PackerOpts.blif_file_name,
+                                      vpr_setup->user_models, 
+                                      vpr_setup->library_models,
+                                      vpr_setup->NetlistOpts.absorb_buffer_luts,
+                                      vpr_setup->NetlistOpts.sweep_dangling_primary_ios,
+                                      vpr_setup->NetlistOpts.sweep_dangling_nets,
+                                      vpr_setup->NetlistOpts.sweep_dangling_blocks,
+                                      vpr_setup->NetlistOpts.sweep_constant_primary_outputs);
 
 
-        if(vpr_setup->PowerOpts.do_power) {
-            //Load the net activity file for power estimation
-            vtr::ScopedPrintTimer t("Load Activity File");
-            g_atom_net_power = read_activity(g_atom_nl, vpr_setup->FileNameOpts.ActFile);
+    if(vpr_setup->PowerOpts.do_power) {
+        //Load the net activity file for power estimation
+        vtr::ScopedPrintTimer t("Load Activity File");
+        g_atom_net_power = read_activity(g_atom_nl, vpr_setup->FileNameOpts.ActFile);
+    }
+
+    //Initialize timing graph and constraints
+    if(vpr_setup->TimingEnabled) {
+        {
+            vtr::ScopedPrintTimer t("Build Timing Graph");
+            g_timing_graph = TimingGraphBuilder(g_atom_nl, g_atom_lookup).timing_graph();
+            vtr::printf("  Timing Graph Nodes: %zu\n", g_timing_graph->nodes().size());
+            vtr::printf("  Timing Graph Edges: %zu\n", g_timing_graph->edges().size());
         }
-
-        //Initialize timing graph and constraints
-        if(vpr_setup->TimingEnabled) {
-            {
-                vtr::ScopedPrintTimer t("Build Timing Graph");
-                g_timing_graph = TimingGraphBuilder(g_atom_nl, g_atom_lookup).timing_graph();
-                vtr::printf("  Timing Graph Nodes: %zu\n", g_timing_graph->nodes().size());
-                vtr::printf("  Timing Graph Edges: %zu\n", g_timing_graph->edges().size());
-            }
-            {
-                vtr::ScopedPrintTimer t("Load Timing Constraints");
-                g_timing_constraints = read_sdc2(vpr_setup->Timing, g_atom_nl, g_atom_lookup, *g_timing_graph);
-            }
+        {
+            vtr::ScopedPrintTimer t("Load Timing Constraints");
+            g_timing_constraints = read_sdc2(vpr_setup->Timing, g_atom_nl, g_atom_lookup, *g_timing_graph);
         }
+    }
 
-		fflush(stdout);
+    fflush(stdout);
 
-		ShowSetup(*options, *vpr_setup);
-
-
-	} else {
-		/* Print usage message if no args */
-		vpr_print_usage();
-		vtr::printf_error(__FILE__, __LINE__,
-			"Missing arguments, see above and try again!\n");
-		exit(1);
-	}
+    ShowSetup(*options, *vpr_setup);
 }
 
 /*

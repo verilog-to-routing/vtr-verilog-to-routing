@@ -53,10 +53,13 @@ int main(int argc, const char **argv) {
 
 	entire_flow_begin = clock();
 
-	try{
-
+	try {
 		/* Read options, architecture, and circuit netlist */
 		vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
+
+        if(Options.show_version) {
+            return SUCCESS_EXIT_CODE;
+        }
 
 		/* If the user requests packing, do packing */
 		if (vpr_setup.PackerOpts.doPacking) {

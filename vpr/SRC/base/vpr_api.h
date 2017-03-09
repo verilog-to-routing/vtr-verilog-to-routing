@@ -52,7 +52,7 @@ void vpr_free_all(t_arch& Arch, const t_options& options,
 
 /* Display general info to user */
 void vpr_print_title(void);
-void vpr_print_args(int argc, char** argv);
+void vpr_print_args(int argc, const char** argv);
 void vpr_print_usage(void);
 
 /****************************************************************************************************

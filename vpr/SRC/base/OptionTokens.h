@@ -29,6 +29,7 @@
  * code by intentation.
  */
 enum e_OptionBaseToken {
+	OT_VERSION,
 	OT_NODISP,
 	OT_AUTO,
 	OT_GEN_NELIST_AS_BLIF,

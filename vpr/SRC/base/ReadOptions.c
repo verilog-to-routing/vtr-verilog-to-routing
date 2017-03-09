@@ -308,6 +308,8 @@ ProcessOption(char **Args, t_options * Options) {
 	case OT_DUMP_RR_STRUCTS_FILE:
 		return ReadString(Args, &Options->dump_rr_structs_file);
 		/* General Options */
+	case OT_VERSION:
+        Options->show_version = true;
 	case OT_NODISP:
 	case OT_CONGESTION_ANALYSIS:
 	case OT_FANOUT_ANALYSIS:

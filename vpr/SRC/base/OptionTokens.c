@@ -4,6 +4,7 @@
 /* OptionBaseTokenList is for command line arg tokens. We will track how 
  * many times each of these things exist in a file */
 struct s_TokenPair OptionBaseTokenList[] = {
+		{ "version", OT_VERSION }, 
 		{ "nodisp", OT_NODISP }, 
 		{ "congestion_analysis", OT_CONGESTION_ANALYSIS },
 		{ "fanout_analysis", OT_FANOUT_ANALYSIS },
