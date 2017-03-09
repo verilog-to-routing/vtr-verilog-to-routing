@@ -39,7 +39,7 @@ using namespace std;
 
 static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		char *place_file, char *net_file, char *arch_file, char *route_file,
-		bool full_stats, bool verify_binary_search, int min_chan_width_hint,
+		bool verify_binary_search, int min_chan_width_hint,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
@@ -115,7 +115,7 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
         //Binary search for the min channel width
 		g_solution_inf.channel_width = binary_search_place_and_route(placer_opts, place_file, net_file,
 				arch_file, route_file, 
-                router_opts.full_stats, router_opts.verify_binary_search, router_opts.min_channel_width_hint,
+                router_opts.verify_binary_search, router_opts.min_channel_width_hint,
                 annealing_sched, router_opts,
 				det_routing_arch, segment_inf, timing_inf, chan_width_dist,
 				directs, num_directs);
@@ -158,18 +158,6 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 			get_serial_num();
 
 			vtr::printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
-
-			routing_stats(router_opts.full_stats, router_opts.route_type,
-					g_num_rr_switches, segment_inf,
-					det_routing_arch->num_segment, det_routing_arch->R_minW_nmos,
-					det_routing_arch->R_minW_pmos,
-					det_routing_arch->directionality,
-					det_routing_arch->wire_to_rr_ipin_switch,
-					timing_inf.timing_analysis_enabled, net_delay
-#ifdef ENABLE_CLASSIC_VPR_STA
-                    , slacks, timing_inf
-#endif
-                    );
 
 			print_route(route_file);
 
@@ -231,7 +219,7 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 
 static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		char *place_file, char *net_file, char *arch_file, char *route_file,
-		bool full_stats, bool verify_binary_search, int min_chan_width_hint,
+		bool verify_binary_search, int min_chan_width_hint,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
@@ -551,17 +539,6 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 				"Best routing Fc_output too high, clipped to full (maximum) connectivity.\n");
 	}
 	vtr::printf_info("Best routing used a channel width factor of %d.\n", final);
-
-	routing_stats(full_stats, router_opts.route_type,
-			g_num_rr_switches, segment_inf,
-			det_routing_arch->num_segment, det_routing_arch->R_minW_nmos,
-			det_routing_arch->R_minW_pmos, det_routing_arch->directionality,
-			det_routing_arch->wire_to_rr_ipin_switch,
-			timing_inf.timing_analysis_enabled, net_delay
-#ifdef ENABLE_CLASSIC_VPR_STA
-            , slacks, timing_inf
-#endif
-            );
 
 	print_route(route_file);
 

@@ -1049,13 +1049,27 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
 
-    //TODO: move router stats here
-
+    float** net_delay = nullptr;
+    vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 	if (vpr_setup.TimingEnabled) {
         //Load the net delays
-        vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
-        float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
+        net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
         load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
+    }
+
+
+	routing_stats(vpr_setup.RouterOpts.full_stats, vpr_setup.RouterOpts.route_type,
+			g_num_rr_switches, vpr_setup.Segments,
+			vpr_setup.RoutingArch.num_segment, vpr_setup.RoutingArch.R_minW_nmos,
+			vpr_setup.RoutingArch.R_minW_pmos, vpr_setup.RoutingArch.directionality,
+			vpr_setup.RoutingArch.wire_to_rr_ipin_switch,
+			vpr_setup.TimingEnabled, net_delay
+#ifdef ENABLE_CLASSIC_VPR_STA
+            , slacks, timing_inf
+#endif
+            );
+
+	if (vpr_setup.TimingEnabled) {
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
