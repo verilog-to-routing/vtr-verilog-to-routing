@@ -31,7 +31,6 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
-#include "create_button.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
 			  * track CPU runtime.														   */
@@ -98,6 +97,7 @@ static void highlight_rr_nodes(float x, float y);
 static void draw_highlight_blocks_color(t_type_ptr type, int bnum);
 static void draw_reset_blk_color(int i);
 
+static inline bool LOD_screen_area_test_square(float width, float screen_area_threshold);
 static inline bool default_triangle_LOD_screen_area_test();
 static inline bool triangle_LOD_screen_area_test(float arrow_size);
 
@@ -144,7 +144,7 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 
 			if (crit_path_button_enabled) {
-				create_button("Congestion", "Crit. Path", highlight_crit_path, timing_inf);
+				/*create_button("Congestion", "Crit. Path", highlight_crit_path, timing_inf);*/
 			}
 		} 
 		else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
@@ -163,7 +163,7 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 
 			if (crit_path_button_enabled) {
-				create_button("Congestion", "Crit. Path", highlight_crit_path, timing_inf);
+				/*create_button("Congestion", "Crit. Path", highlight_crit_path, timing_inf);*/
 			}
 		}
 	}
@@ -580,7 +580,7 @@ void init_draw_coords(float width_val) {
 	/* Load coordinates of sub-blocks inside the clbs */
 	draw_internal_init_blk();
 
-	init_world(
+	set_visible_world(
 		0.0, 0.0,
 		draw_coords->tile_y[ny + 1] + draw_coords->get_tile_width(), 
 		draw_coords->tile_x[nx + 1] + draw_coords->get_tile_width()
@@ -2366,6 +2366,10 @@ void draw_triangle_along_line(
 	poly[2].y = ybaseline + xunit * switch_rad;
 
 	fillpoly(poly, 3);
+}
+
+static inline bool LOD_screen_area_test_square(float width, float screen_area_threshold) {
+    return LOD_screen_area_test(t_bound_box(0., 0., width, width), screen_area_threshold);
 }
 
 static inline bool default_triangle_LOD_screen_area_test() {

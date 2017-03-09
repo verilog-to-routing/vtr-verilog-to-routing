@@ -5,7 +5,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/mo
 
 option(EASYGL_ENABLE_GRAPHICS "Enables easygl graphics" ON)
 
-file(GLOB_RECURSE LIB_SOURCES src/*.c)
+file(GLOB_RECURSE LIB_SOURCES src/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*.h)
 headers_to_include_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
@@ -29,6 +29,7 @@ if(EASYGL_ENABLE_GRAPHICS)
         find_package(X11 COMPONENTS X11 Xft)
         find_package(Freetype)
         find_package(Fontconfig)
+        find_package(Cairo)
 
         set(FOUND_EASYGL_DEPENDANCIES true)
 
@@ -47,10 +48,15 @@ if(EASYGL_ENABLE_GRAPHICS)
             message(WARNING "EasyGL: Failed to find required fontconfig library (on debian/ubuntu try 'sudo apt-get install fontconfig' to install)")
         endif()
 
+        if(NOT CAIRO_FOUND)
+            set(FOUND_EASYGL_DEPENDANCIES  false)
+            message(WARNING "EasyGL: Failed to find required cairo library (on debian/ubuntu try 'sudo apt-get install libcairo2-dev' to install)")
+        endif()
+
         if(FOUND_EASYGL_DEPENDANCIES)
             #Got all libraries, enable
-            list(APPEND GRAPHICS_LIBRARIES ${X11_X11_LIB} ${X11_Xft_LIB} ${FREETYPE_LIBRARIES} ${FONTCONFIG_LIBRARIES})
-            list(APPEND GRAPHICS_INCLUDES ${X11_X11_INCLUDE_PATH} ${X11_Xft_INCLUDE_PATH} ${FREETYPE_INCLUDE_DIRS} ${FONTCONFIG_INCLUDE_DIRS})
+            list(APPEND GRAPHICS_LIBRARIES ${X11_X11_LIB} ${X11_Xft_LIB} ${FREETYPE_LIBRARIES} ${FONTCONFIG_LIBRARIES} ${CAIRO_LIBRARIES})
+            list(APPEND GRAPHICS_INCLUDES ${X11_X11_INCLUDE_PATH} ${X11_Xft_INCLUDE_PATH} ${FREETYPE_INCLUDE_DIRS} ${FONTCONFIG_INCLUDE_DIRS} ${CAIRO_INCLUDE_DIRS})
         else()
             #Disable
             set(EASYGL_ENABLE_GRAPHICS false)

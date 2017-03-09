@@ -107,17 +107,17 @@ void draw_internal_init_blk() {
 
 		// note, that all clbs of the same type are the same size,
 		// and that consequently we have *one* model for each type.
-		clb_bbox.bottom_left().set(0,0);
+		clb_bbox.bottom_left() = t_point(0,0);
 		if (type_desc.width > (nx + 2) || type_desc.height > (ny + 2)) {
 			// in this case, the clb certainly wont't fit, but this prevents
 			// an out-of-bounds access, and provides some sort of (probably right)
 			// value
-			clb_bbox.top_right().set(
+			clb_bbox.top_right() = t_point(
 				(draw_coords->tile_x[1]-draw_coords->tile_x[0])*(type_desc.width - 1),
 				(draw_coords->tile_y[1]-draw_coords->tile_y[0])*(type_desc.height - 1)
 			);
 		} else {
-			clb_bbox.top_right().set(
+			clb_bbox.top_right() = t_point(
 				draw_coords->tile_x[type_desc.width  - 1],
 				draw_coords->tile_y[type_desc.height - 1]
 			);
