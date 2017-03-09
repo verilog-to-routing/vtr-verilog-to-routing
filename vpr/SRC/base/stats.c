@@ -205,8 +205,8 @@ static void get_channel_occupancy_stats(void) {
 	load_channel_occupancies(chanx_occ, chany_occ);
 
 	vtr::printf_info("\n");
-	vtr::printf_info("X - Directed channels: j max occ ave occ capacity\n");
-	vtr::printf_info("                      -- ------- ------- --------\n");
+	vtr::printf_info("X - Directed channels:   j max occ ave occ capacity\n");
+	vtr::printf_info("                      ---- ------- ------- --------\n");
 
 	int total_x = 0;
 	for (int j = 0; j <= ny; ++j) {
@@ -219,11 +219,11 @@ static void get_channel_occupancy_stats(void) {
 			ave_occ += chanx_occ[i][j];
 		}
 		ave_occ /= nx;
-		vtr::printf_info("                      %2d %7d %7.4f %8d\n", j, max_occ, ave_occ, chan_width.x_list[j]);
+		vtr::printf_info("                      %4d %7d %7.3f %8d\n", j, max_occ, ave_occ, chan_width.x_list[j]);
 	}
 
-	vtr::printf_info("Y - Directed channels: i max occ ave occ capacity\n");
-	vtr::printf_info("                      -- ------- ------- --------\n");
+	vtr::printf_info("Y - Directed channels:   i max occ ave occ capacity\n");
+	vtr::printf_info("                      ---- ------- ------- --------\n");
 
 	int total_y = 0;
 	for (int i = 0; i <= nx; ++i) {
@@ -236,7 +236,7 @@ static void get_channel_occupancy_stats(void) {
 			ave_occ += chany_occ[i][j];
 		}
 		ave_occ /= ny;
-		vtr::printf_info("                      %2d %7d %7.4f %8d\n", i, max_occ, ave_occ, chan_width.y_list[i]);
+		vtr::printf_info("                      %4d %7d %7.3f %8d\n", i, max_occ, ave_occ, chan_width.y_list[i]);
 	}
 
 	vtr::printf_info("\n");
