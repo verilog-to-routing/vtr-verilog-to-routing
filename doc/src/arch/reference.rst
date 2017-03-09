@@ -807,22 +807,24 @@ The ``<segment>`` tag and its contents are described below.
     :req_param content:
         The switch names and the depopulation pattern as described below.
 
+.. _fig_sb_pattern:
+
+.. figure:: sb_pattern.*
+
+    Switch block and connection block pattern example with four tracks per channel
+
 .. arch:tag:: <sb type="pattern">int list</sb>
 
-    This tag describes the switch block depopulation (as illustrated in the figure below) for this particular wire segment.
+    This tag describes the switch block depopulation (as illustrated in :numref:`fig_sb_pattern`) for this particular wire segment.
     For example, the firsth length 6 wire in the figure below has an sb pattern of ``1 0 1 0 1 0 1``.
     The second wire has a pattern of ``0 1 0 1 0 1 0``.
     A ``1`` indicates the existance of a switch block and a ``0`` indicates that there is no switch box at that point.
     Note that there a 7 entries in the integer list for a length 6 wire.
     For a length L wire there must be L+1 entries seperated by spaces.
 
-    .. figure sb_pattern.*
-
-        Switch Block Pattern
-
 .. arch:tag:: <cb type="pattern">int list</cb>
 
-    This tag describes the connection block depopulation (as illustrated by the circles in the figure above) for this particular wire segment.
+    This tag describes the connection block depopulation (as illustrated by the circles in :numref:`fig_sb_pattern`) for this particular wire segment.
     For example, the firsth length 6 wire in the figure below has an sb pattern of ``1 1 1 1 1 1``.
     The third wire has a pattern of ``1 0 0 1 1 0``.
     A ``1`` indicates the existance of a connection block and a ``0`` indicates that there is no connection box at that point.
