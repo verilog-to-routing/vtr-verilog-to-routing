@@ -119,6 +119,7 @@ int main(int argc, char** argv) {
         }
 
         timing_graph = loader.timing_graph();
+        timing_graph->set_allow_dangling_combinational_nodes(true);
         timing_constraints = loader.timing_constraints();
         delay_calculator = loader.delay_calculator();
         golden_reference = loader.golden_reference();

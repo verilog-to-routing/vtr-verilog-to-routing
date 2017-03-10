@@ -633,11 +633,9 @@ bool TimingGraph::validate_structure() const {
         auto out_edges = node_out_edges(src_node);
         auto in_edges = node_in_edges(src_node);
 
-        size_t num_active_in_edges = count_active_edges(in_edges);
-
         //Check expected number of fan-in/fan-out edges
         if(src_type == NodeType::SOURCE) {
-            if(num_active_in_edges > 1) {
+            if(in_edges.size() > 1) {
                 throw tatum::Error("SOURCE node has more than one active incoming edge (expected 0 if primary input, or 1 if clocked)");
             }
         } else if (src_type == NodeType::SINK) {
@@ -645,16 +643,16 @@ bool TimingGraph::validate_structure() const {
                 throw tatum::Error("SINK node has out-going edges");
             }
         } else if (src_type == NodeType::IPIN) {
-            if(in_edges.size() == 0) {
+            if(in_edges.size() == 0 && !allow_dangling_combinational_nodes_) {
                 throw tatum::Error("IPIN has no in-coming edges");
             }
-            if(out_edges.size() == 0) {
+            if(out_edges.size() == 0 && !allow_dangling_combinational_nodes_) {
                 throw tatum::Error("IPIN has no out-going edges");
             }
         } else if (src_type == NodeType::OPIN) {
             //May have no incoming edges if a constant generator, so don't check that case
 
-            if(out_edges.size() == 0) {
+            if(out_edges.size() == 0 && !allow_dangling_combinational_nodes_) {
                 throw tatum::Error("OPIN has no out-going edges");
             }
         } else {
