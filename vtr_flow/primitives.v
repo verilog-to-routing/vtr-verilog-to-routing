@@ -48,7 +48,7 @@
 //However NOT ALL SIMULATORS TREAT MULTIBIT SPECIFY STATEMENTS CORRECTLY,
 //at least by default (in particular ModelSim, see notes below).
 //
-//The previos examples use the 'parrallel connection' operator '=>', which
+//The previous examples use the 'parrallel connection' operator '=>', which
 //creates parallel edges between the two operands (i.e. bit 0 to bit 0, bit
 //1 to bit 1 etc.).  Note that both operands must have the same bit-width. 
 //
