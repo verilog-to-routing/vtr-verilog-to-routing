@@ -85,7 +85,11 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 		VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
 		begin = clock();
 		try_place(placer_opts, annealing_sched, chan_width_dist, router_opts,
-				det_routing_arch, segment_inf, timing_inf, directs, num_directs);
+				det_routing_arch, segment_inf, 
+#ifdef ENABLE_CLASSIC_VPR_STA
+                timing_inf, 
+#endif
+                directs, num_directs);
 		print_place(place_file, net_file, arch_file);
 		end = clock();
 
@@ -169,7 +173,7 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 		}
 
 		init_draw_coords(max_pins_per_clb);
-		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
+		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
 		
 #ifdef ENABLE_CLASSIC_VPR_STA
         VTR_ASSERT(slacks->slack);
@@ -353,7 +357,10 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		if (placer_opts.place_freq == PLACE_ALWAYS) {
 			placer_opts.place_chan_width = current;
 			try_place(placer_opts, annealing_sched, chan_width_dist,
-					router_opts, det_routing_arch, segment_inf, timing_inf,
+					router_opts, det_routing_arch, segment_inf, 
+#ifdef ENABLE_CLASSIC_VPR_STA
+                    timing_inf,
+#endif
 					directs, num_directs);
 		}
 		success = try_route(current, router_opts, det_routing_arch, segment_inf,
@@ -465,7 +472,10 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			if (placer_opts.place_freq == PLACE_ALWAYS) {
 				placer_opts.place_chan_width = current;
 				try_place(placer_opts, annealing_sched, chan_width_dist,
-						router_opts, det_routing_arch, segment_inf, timing_inf,
+						router_opts, det_routing_arch, segment_inf,
+#ifdef ENABLE_CLASSIC_VPR_STA
+                        timing_inf,
+#endif
 						directs, num_directs);
 			}
 			success = try_route(current, router_opts, det_routing_arch,
@@ -548,7 +558,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	init_draw_coords(max_pins_per_clb);
 	sprintf(msg, "Routing succeeded with a channel width factor of %d.", final);
-	update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled, timing_inf);
+	update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
 
 	for (i = 0; i < num_blocks; i++) {
 		free_ivec_vector(clb_opins_used_locally[i], 0,

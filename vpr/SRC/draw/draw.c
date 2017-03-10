@@ -62,7 +62,7 @@ constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.9;
 static void toggle_nets(void (*drawscreen)(void));
 static void toggle_rr(void (*drawscreen)(void));
 static void toggle_congestion(void (*drawscreen)(void));
-static void highlight_crit_path(void (*drawscreen_ptr)(void), const t_timing_inf &timing_inf);
+static void highlight_crit_path(void (*drawscreen_ptr)(void));
 
 static void drawscreen(void);
 static void redraw_screen(void);
@@ -128,7 +128,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 }
 
 void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
-		bool crit_path_button_enabled, const t_timing_inf &timing_inf) {
+		bool crit_path_button_enabled) {
 
 	/* Updates the screen if the user has requested graphics.  The priority  *
 	 * value controls whether or not the Proceed button must be clicked to   *
@@ -151,7 +151,7 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 
 			if (crit_path_button_enabled) {
-				/*create_button("Congestion", "Crit. Path", highlight_crit_path, timing_inf);*/
+                create_button("Congestion", "Crit. Path", highlight_crit_path);
 			}
 		} 
 		else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
@@ -170,7 +170,7 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 			create_button("Toggle RR", "Congestion", toggle_congestion);
 
 			if (crit_path_button_enabled) {
-				/*create_button("Congestion", "Crit. Path", highlight_crit_path, timing_inf);*/
+                create_button("Congestion", "Crit. Path", highlight_crit_path);
 			}
 		}
 	}
@@ -387,12 +387,15 @@ void toggle_blk_internal(void (*drawscreen_ptr)(void)) {
 	drawscreen_ptr();
 }
 
-static void highlight_crit_path(void (*drawscreen_ptr)(void), const t_timing_inf &timing_inf) {
+static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
+    //TODO: unimplemented with tatum timing analysis
+
 
 	/* Highlights all the blocks and nets on the critical path. */
-	t_draw_state* draw_state = get_draw_state_vars();
-	t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
+	/*t_draw_state* draw_state = get_draw_state_vars();*/
+	/*t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();*/
 
+#if 0
 	vtr::t_linked_int *critical_path_head, *critical_path_node;
 	int inode, iblk, inet, num_nets_seen;
 	static int nets_to_highlight = 1;
@@ -484,6 +487,8 @@ static void highlight_crit_path(void (*drawscreen_ptr)(void), const t_timing_inf
 	free_int_list(&critical_path_head);
 
 	update_message(msg);
+#endif
+
 	drawscreen_ptr();
 }
 

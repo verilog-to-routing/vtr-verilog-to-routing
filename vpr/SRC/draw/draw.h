@@ -6,7 +6,7 @@
 #include "draw_global.h"
 
 void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
-		bool crit_path_button_enabled, const t_timing_inf &timing_inf);
+		bool crit_path_button_enabled);
 
 void alloc_draw_structs(void);
 

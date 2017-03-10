@@ -320,7 +320,10 @@ void try_place(struct s_placer_opts placer_opts,
 		struct s_annealing_sched annealing_sched,
 		t_chan_width_dist chan_width_dist, struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, t_direct_inf *directs, int num_directs) {
+#ifdef ENABLE_CLASSIC_VPR_STA
+		t_timing_inf timing_inf, 
+#endif
+        t_direct_inf *directs, int num_directs) {
 
 	/* Does almost all the work of placing a circuit.  Width_fac gives the   *
 	 * width of the widest channel.  Place_cost_exp says what exponent the   *
@@ -552,7 +555,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d", 
 		cost, bb_cost, timing_cost, delay_cost, width_fac);
-	update_screen(MAJOR, msg, PLACEMENT, false, timing_inf);
+	update_screen(MAJOR, msg, PLACEMENT, false);
 
 
 	/* Outer loop of the simmulated annealing begins */
@@ -667,7 +670,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
 				cost, bb_cost, timing_cost, t);
-		update_screen(MINOR, msg, PLACEMENT, false, timing_inf);
+		update_screen(MINOR, msg, PLACEMENT, false);
 		update_rlim(&rlim, success_rat);
 
 		if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
@@ -816,7 +819,7 @@ void try_place(struct s_placer_opts placer_opts,
 			cost, bb_cost, timing_cost, width_fac);
 	vtr::printf_info("Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n", 
 			cost, bb_cost, timing_cost, delay_cost);
-	update_screen(MAJOR, msg, PLACEMENT, false, timing_inf);
+	update_screen(MAJOR, msg, PLACEMENT, false);
 	 
 	// Print out swap statistics
 	size_t total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;

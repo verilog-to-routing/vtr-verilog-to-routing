@@ -1,5 +1,14 @@
+#ifndef VPR_PLACE_H
+#define VPR_PLACE_H
+
+#include "vpr_types.h"
 void try_place(struct s_placer_opts placer_opts,
 		struct s_annealing_sched annealing_sched,
 		t_chan_width_dist chan_width_dist, struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, t_direct_inf *directs, int num_directs);
+#ifdef ENABLE_CLASSIC_VPR_STA
+		t_timing_inf timing_inf, 
+#endif
+        t_direct_inf *directs, int num_directs);
+
+#endif
