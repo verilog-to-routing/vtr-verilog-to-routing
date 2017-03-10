@@ -259,6 +259,8 @@ class TimingGraph {
         bool validate_values() const;
         bool validate_structure() const;
 
+        size_t count_active_edges(edge_range) const;
+
     private: //Data
         /*
          * For improved memory locality, we use a Struct of Arrays (SoA)

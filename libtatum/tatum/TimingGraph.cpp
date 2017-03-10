@@ -633,10 +633,12 @@ bool TimingGraph::validate_structure() const {
         auto out_edges = node_out_edges(src_node);
         auto in_edges = node_in_edges(src_node);
 
+        size_t num_active_in_edges = count_active_edges(in_edges);
+
         //Check expected number of fan-in/fan-out edges
         if(src_type == NodeType::SOURCE) {
-            if(in_edges.size() > 1) {
-                throw tatum::Error("SOURCE node has more than one incoming edge (expected 0 if primary input, or 1 if clocked)");
+            if(num_active_in_edges > 1) {
+                throw tatum::Error("SOURCE node has more than one active incoming edge (expected 0 if primary input, or 1 if clocked)");
             }
         } else if (src_type == NodeType::SINK) {
             if(out_edges.size() > 0) {
@@ -802,6 +804,16 @@ bool TimingGraph::validate_structure() const {
 
 
     return true;
+}
+
+size_t TimingGraph::count_active_edges(edge_range edges_to_check) const {
+    size_t active_cnt = 0;
+    for(EdgeId edge : edges_to_check) {
+        if(!edge_disabled(edge)) {
+            ++active_cnt;
+        }
+    }
+    return active_cnt;
 }
 
 //Returns sets of nodes involved in combinational loops
