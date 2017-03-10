@@ -7,6 +7,7 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_matrix.h"
 #include "vtr_log.h"
+#include "vtr_util.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -19,6 +20,7 @@ using namespace std;
 #include "timing_place_lookup.h"
 #include "read_xml_arch_file.h"
 #include "netlist.h"
+#include "ReadOptions.h"
 
 /*this file contains routines that generate the array containing*/
 /*the delays between blocks, this is used in the timing driven  */
@@ -60,10 +62,6 @@ using namespace std;
 
 #define DEBUG_TIMING_PLACE_LOOKUP	/*initialize arrays to known state */
 
-#define DUMPFILE "lookup_dump.echo"
-/*#define PRINT_ARRAYS*//*only used during debugging, calls routine to  */
-/*print out the various lookup arrays           */
-
 /***variables that are exported to other modules***/
 
 /*the delta arrays are used to contain the best case routing delay */
@@ -92,11 +90,6 @@ static struct s_grid_tile **grid_backup;
 static int num_types_backup;
 
 vtr::t_ivec **clb_opins_used_locally;
-
-#ifdef PRINT_ARRAYS
-static FILE *lookup_dump; /* If debugging mode is on, print out to
- * the file defined in DUMPFILE */
-#endif /* PRINT_ARRAYS */
 
 /*** Function Prototypes *****/
 
@@ -159,13 +152,12 @@ static int get_longest_segment_length(
 		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf);
 static void reset_placement(void);
 
-#ifdef PRINT_ARRAYS
-static void print_array(float **array_to_print,
+static void print_delta_delays_echo(const char* filename);
+static void print_array(FILE* file, float **array_to_print,
 		int x1,
 		int x2,
 		int y1,
 		int y2);
-#endif
 /**************************************/
 
 static int get_best_pin(enum e_pin_type pintype, t_type_ptr type) {
@@ -966,9 +958,8 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts) {
 }
 
 /**************************************/
-#ifdef PRINT_ARRAYS
 static void
-print_array(float **array_to_print,
+print_array(FILE* lookup_dump, float **array_to_print,
 		int x1,
 		int x2,
 		int y1,
@@ -990,7 +981,6 @@ print_array(float **array_to_print,
 	}
 	fprintf(lookup_dump, "\n\n");
 }
-#endif
 /**************************************/
 static void compute_delta_arrays(struct s_router_opts router_opts, int longest_length) {
 
@@ -1003,19 +993,23 @@ static void compute_delta_arrays(struct s_router_opts router_opts, int longest_l
 	vtr::printf_info("Computing delta_clb_to_clb lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_clb_to_clb(router_opts, longest_length);
 
-#ifdef PRINT_ARRAYS
-	lookup_dump = my_fopen(DUMPFILE, "w", 0);
-	fprintf(lookup_dump, "\n\nprinting delta_clb_to_clb\n");
-	print_array(delta_clb_to_clb, 0, nx - 1, 0, ny - 1);
-	fprintf(lookup_dump, "\n\nprinting delta_io_to_clb\n");
-	print_array(delta_io_to_clb, 0, nx, 0, ny);
-	fprintf(lookup_dump, "\n\nprinting delta_clb_to_io\n");
-	print_array(delta_clb_to_io, 0, nx, 0, ny);
-	fprintf(lookup_dump, "\n\nprinting delta_io_to_io\n");
-	print_array(delta_io_to_io, 0, nx + 1, 0, ny + 1);
-	fclose(lookup_dump);
-#endif
+    if(isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
+        print_delta_delays_echo(getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
+    }
+}
 
+static void print_delta_delays_echo(const char* filename) {
+
+	FILE* lookup_dump = vtr::fopen(filename, "w");
+	fprintf(lookup_dump, "\n\nprinting delta_clb_to_clb\n");
+	print_array(lookup_dump, delta_clb_to_clb, 0, nx - 1, 0, ny - 1);
+	fprintf(lookup_dump, "\n\nprinting delta_io_to_clb\n");
+	print_array(lookup_dump, delta_io_to_clb, 0, nx, 0, ny);
+	fprintf(lookup_dump, "\n\nprinting delta_clb_to_io\n");
+	print_array(lookup_dump, delta_clb_to_io, 0, nx, 0, ny);
+	fprintf(lookup_dump, "\n\nprinting delta_io_to_io\n");
+	print_array(lookup_dump, delta_io_to_io, 0, nx + 1, 0, ny + 1);
+	fclose(lookup_dump);
 }
 
 /******* Globally Accessable Functions **********/
