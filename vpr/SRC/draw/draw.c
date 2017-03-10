@@ -101,6 +101,9 @@ static inline bool LOD_screen_area_test_square(float width, float screen_area_th
 static inline bool default_triangle_LOD_screen_area_test();
 static inline bool triangle_LOD_screen_area_test(float arrow_size);
 
+static inline void draw_mux_with_size(t_point origin, e_side orientation, float height, int size);
+static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height);
+static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height, float width, float height_scale);
 
 /********************** Subroutine definitions ******************************/
 
@@ -850,13 +853,8 @@ static void draw_rr_chanx(int inode, const t_color& color) {
 	/* Draws an x-directed channel segment.                       */
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
-	enum {
-		BUFFSIZE = 80
-	};
 	t_bound_box bound_box;
-	float wire_start_y1, wire_start_y2; 
 	int k; 
-	char str[BUFFSIZE];
 
 	// For CHANX, bound_box.bottom() is same as bound_box.top()
 	bound_box = draw_get_rr_chan_bbox(inode);
@@ -871,24 +869,14 @@ static void draw_rr_chanx(int inode, const t_color& color) {
 	else
 		drawline(bound_box.bottom_left(), bound_box.top_right());
 
-	wire_start_y1 = bound_box.bottom() - WIRE_DRAWING_WIDTH/2;
-	wire_start_y2 = bound_box.top() + WIRE_DRAWING_WIDTH/2;
-
 	// draw the arrows and small lines iff zoomed in really far.
 	if (default_triangle_LOD_screen_area_test() == false) {
 		return;
 	}
 
 	if (rr_node[inode].get_direction() == INC_DIRECTION) {
-		setlinewidth(2);
-		setcolor(YELLOW);
-		/* Draw a line at start of wire to indicate mux */
-		drawline(bound_box.left(), wire_start_y1, bound_box.left(), wire_start_y2); 
-
-		/* Mux balence numbers */
-		setcolor(BLACK);
-		sprintf(str, "%d", rr_node[inode].get_fan_in());
-		drawtext(bound_box.bottom_left(), str, FLT_MAX, WIRE_DRAWING_WIDTH*6);
+		/* Draw mux at start of wire */
+        draw_mux_with_size(bound_box.bottom_left(), RIGHT, WIRE_DRAWING_WIDTH, rr_node[inode].get_fan_in());
 
 		setcolor(BLACK);
 		setlinewidth(0);
@@ -909,14 +897,8 @@ static void draw_rr_chanx(int inode, const t_color& color) {
 		}
 		setcolor(color);
 	} else if (rr_node[inode].get_direction() == DEC_DIRECTION) {
-		setlinewidth(2);
-		setcolor(YELLOW);
-		drawline(bound_box.right(), wire_start_y1, bound_box.right(), wire_start_y2);
-
-		/* Mux balance numbers */
-		setcolor(BLACK);
-		sprintf(str, "%d", rr_node[inode].get_fan_in());
-		drawtext(bound_box.right(), bound_box.bottom(), str, FLT_MAX, WIRE_DRAWING_WIDTH*6);
+		/* Draw mux at start of wire */
+        draw_mux_with_size(bound_box.top_right(), LEFT, WIRE_DRAWING_WIDTH, rr_node[inode].get_fan_in());
 
 		setlinewidth(0);
 		draw_triangle_along_line(bound_box.left() + 0.15, bound_box.bottom(), bound_box.right(), 
@@ -939,13 +921,8 @@ static void draw_rr_chany(int inode, const t_color& color) {
 	/* Draws a y-directed channel segment.                       */
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
-	enum {
-		BUFFSIZE = 80
-	};
 	t_bound_box bound_box;
-	float wire_start_x1, wire_start_x2; 
 	int k; 
-	char str[BUFFSIZE];
 
 	// Get the coordinates of the channel wire segment.
 	// For CHANY, bound_box.left() is equal to bound_box.right().
@@ -967,24 +944,16 @@ static void draw_rr_chany(int inode, const t_color& color) {
 
 	}
 
-	wire_start_x1 = bound_box.left() - WIRE_DRAWING_WIDTH/2;
-	wire_start_x2 = bound_box.right() + WIRE_DRAWING_WIDTH/2;
-
 	// draw the arrows and small lines iff zoomed in really far.
 	if (default_triangle_LOD_screen_area_test() == false) {
 		return;
 	}
 	
 	if (rr_node[inode].get_direction() == INC_DIRECTION) {
-		setlinewidth(2);
-		setcolor(YELLOW);
-		drawline(wire_start_x1, bound_box.bottom(), wire_start_x2, bound_box.bottom());
+		/* Draw mux at start of wire */
+        draw_mux_with_size(bound_box.bottom_left(), TOP, WIRE_DRAWING_WIDTH, rr_node[inode].get_fan_in());
 
 		setcolor(BLACK);
-		sprintf(str, "%d", rr_node[inode].get_fan_in());
-		drawtext(bound_box.bottom_left(), str, FLT_MAX, WIRE_DRAWING_WIDTH*6);
-		setcolor(BLACK);
-
 		setlinewidth(0);
 		draw_triangle_along_line(bound_box.right(), bound_box.top() - 0.15, bound_box.left(), 
 								 bound_box.right(), bound_box.bottom(), bound_box.top());
@@ -999,15 +968,10 @@ static void draw_rr_chany(int inode, const t_color& color) {
 		}
 		setcolor(color);
 	} else if (rr_node[inode].get_direction() == DEC_DIRECTION) {
-		setlinewidth(2);
-		setcolor(YELLOW);
-		drawline(wire_start_x1, bound_box.top(), wire_start_x2, bound_box.top());
+		/* Draw mux at start of wire */
+        draw_mux_with_size(bound_box.top_right(), BOTTOM, WIRE_DRAWING_WIDTH, rr_node[inode].get_fan_in());
 
 		setcolor(BLACK);
-		sprintf(str, "%d", rr_node[inode].get_fan_in());
-		drawtext(bound_box.left(), bound_box.top(), str, FLT_MAX, WIRE_DRAWING_WIDTH*6);
-		setcolor(BLACK);
-
 		setlinewidth(0);
 		draw_triangle_along_line(bound_box.left(), bound_box.bottom() + 0.15, bound_box.right(), 
 								 bound_box.left(), bound_box.top(), bound_box.bottom());
@@ -2328,6 +2292,12 @@ void draw_triangle_along_line(
 		xcenter + xunit * distance_from_end, ycenter + yunit * distance_from_end, x1, x2, y1, y2);
 }
 
+//Wrapper using explicit point's
+void draw_triangle_along_line(float distance_from_end, t_point start, t_point end) {
+    draw_triangle_along_line(distance_from_end, start.x, end.x, start.y, end.y);
+}
+
+
 /**
  * Draws a small trangle using draw_triangle_along_line(7 floats), and
  * DEFAULT_ARROW_SIZE.
@@ -2671,3 +2641,66 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
 }
 
+static inline void draw_mux_with_size(t_point origin, e_side orientation, float height, int size) {
+    setcolor(YELLOW);
+    auto bounds = draw_mux(origin, orientation, height);
+
+    setcolor(BLACK);
+    drawtext_in(bounds, std::to_string(size));
+}
+
+//Draws a mux
+static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height) {
+    return draw_mux(origin, orientation, height, 0.4*height, 0.6);
+}
+
+static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height, float width, float scale) {
+    std::array<t_point, 4> mux_polygon;
+
+    switch(orientation) {
+        case TOP:
+            //Clock-wise from bottom left
+            mux_polygon[0] = t_point(origin.x - height / 2, origin.y - width / 2);
+            mux_polygon[1] = t_point(origin.x - (scale * height) / 2, origin.y + width / 2);
+            mux_polygon[2] = t_point(origin.x + (scale * height) / 2, origin.y + width / 2);
+            mux_polygon[3] = t_point(origin.x + height / 2, origin.y - width / 2);
+            break;
+        case BOTTOM:
+            //Clock-wise from bottom left
+            mux_polygon[0] = t_point(origin.x - (scale * height) / 2, origin.y - width / 2);
+            mux_polygon[1] = t_point(origin.x - height / 2, origin.y + width / 2);
+            mux_polygon[2] = t_point(origin.x + height / 2, origin.y + width / 2);
+            mux_polygon[3] = t_point(origin.x + (scale * height) / 2, origin.y - width / 2);
+            break;
+        case LEFT:
+            //Clock-wise from bottom left
+            mux_polygon[0] = t_point(origin.x - width / 2, origin.y - (scale * height) / 2);
+            mux_polygon[1] = t_point(origin.x - width / 2, origin.y + (scale * height) / 2);
+            mux_polygon[2] = t_point(origin.x + width / 2, origin.y + height / 2);
+            mux_polygon[3] = t_point(origin.x + width / 2, origin.y - height / 2);
+            break;
+        case RIGHT:
+            //Clock-wise from bottom left
+            mux_polygon[0] = t_point(origin.x - width / 2, origin.y - height / 2);
+            mux_polygon[1] = t_point(origin.x - width / 2, origin.y + height / 2);
+            mux_polygon[2] = t_point(origin.x + width / 2, origin.y + (scale * height) / 2);
+            mux_polygon[3] = t_point(origin.x + width / 2, origin.y - (scale * height) / 2);
+            break;
+
+        default:
+            VTR_ASSERT_MSG(false, "Unrecognized orientation");
+    }
+
+    fillpoly(mux_polygon.data(), mux_polygon.size());
+
+    t_point min = mux_polygon[0];
+    t_point max = mux_polygon[0];
+    for(const auto& point : mux_polygon) {
+        min.x = std::min(min.x, point.x);
+        min.y = std::min(min.y, point.y);
+        max.x = std::max(max.x, point.x);
+        max.y = std::max(max.y, point.y);
+    }
+
+    return t_bound_box(min, max);
+}
