@@ -1029,6 +1029,7 @@ The last switch point has an index of 0 because it is shared between the end of 
 
 A collection of wire types and switch points defines a set of wires which will be connected to another set of wires with the specified permutation functions (the ‘sets’ of wires are defined using the ``<wireconn>`` tags).
 This format allows for an abstract but very flexible way of specifying different switch block patterns.
+For additional discussion on interconnect modeling see :cite:`petelin_masc`.
 The full format is documented below.
 
 **Overall Notes:**
