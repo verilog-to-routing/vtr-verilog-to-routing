@@ -205,8 +205,14 @@ static void drawscreen() {
 	 * It erases whatever is on screen, then calls redraw_screen to redraw   *
 	 * it.                                                                   */
 
+    set_drawing_buffer(OFF_SCREEN);
+
 	clearscreen();
 	redraw_screen();
+
+    copy_off_screen_buffer_to_screen();
+
+    set_drawing_buffer(ON_SCREEN);
 
 #ifdef TIME_DRAWSCREEN
 
