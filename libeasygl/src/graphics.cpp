@@ -3518,8 +3518,34 @@ static void x11_init_graphics(const char *window_name) {
         x11_state.screen_num,
         24, TrueColor,
         &x11_state.visual_info) == 0) {
-        fprintf(stderr, "Warning found strange 24-bit TrueColor visual:\n");
+        fprintf(stderr, "Warning failed to find 24-bit TrueColor visual\n");
         fprintf(stderr, "  Graphics may not draw correctly\n");
+
+    }
+
+    if(x11_state.visual_info.bits_per_rgb != 8) {
+        fprintf(stderr, "Warning found strange 24-bit TrueColor visual with %d-bit channels (expected 8)\n", x11_state.visual_info.bits_per_rgb);
+        fprintf(stderr, "  Searching for any TrueColor visual with 8-bit channels\n");
+
+        //Try manually searching for a TrueColor mode with 8-bit pixels
+        XVisualInfo visual_template;
+        visual_template.c_class = TrueColor; //In c++ the XVisualInfo.class member is renamed c_class to avoid a name conflict with the class keyword
+        visual_template.bits_per_rgb = 8;
+        int num_matches = 0;
+
+        XVisualInfo* matching_visual_info = XGetVisualInfo(x11_state.display, 
+                                                           VisualClassMask | VisualBitsPerRGBMask,
+                                                           &visual_template,
+                                                           &num_matches);
+        if(matching_visual_info == nullptr || num_matches == 0) {
+            fprintf(stderr, "  Warning failed to find any TrueColor visual with 8-bits per channel\n");
+            fprintf(stderr, "  Graphics may not draw correctly\n");
+        } else {
+            x11_state.visual_info = matching_visual_info[0];
+            fprintf(stderr, "  Found %d-bit TrueColor visual with 8-bits per channel\n", x11_state.visual_info.depth);
+        }
+
+        XFree(matching_visual_info);
     }
 
     if (x11_state.visual_info.bits_per_rgb != 8) {
@@ -3532,6 +3558,7 @@ static void x11_init_graphics(const char *window_name) {
             x11_state.visual_info.blue_mask
             );
         fprintf(stderr, "  Graphics may not draw correctly\n");
+
     }
 
     Window root_window = XDefaultRootWindow(x11_state.display);
