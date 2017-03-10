@@ -1242,11 +1242,15 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 
 	if (draw_state->draw_rr_toggle != DRAW_ALL_RR) {
 		if (draw_state->draw_rr_node[chanx_node].node_highlighted) {
+            t_point start(x1, y1);
+            t_point end(x2, y2);
 			float xend, yend;
-			xend = x2 + (x1 - x2) / 10.;
-			yend = y2 + (y1 - y2) / 10.;
 			// Draw arrow showing direction
-			draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
+            if (edge_dir == FROM_X_TO_Y) {
+                draw_triangle_along_line(start, end, 0.2);
+            } else {
+                draw_triangle_along_line(end, start, 0.2);
+            }
 		}
 		return;
 	}
@@ -2263,49 +2267,23 @@ static void draw_reset_blk_color(int i) {
 }
 
 /**
- * Draws a small triange, using draw_triangle_along_line(6 x float), but at
- * a distance from the point (x1, y1) if greater than zero, or a distance
- * from (x2, y2) if less than or equal to zero.
+ * Draws a small triange, at a position along a line from 'start' to 'end'.
  *
- * Note that therefore pasing 0 results in a
- * typical pointing arrow line, from (x1,y1) to (x2,y2).
+ * 'relative_position' [0., 1] defines the triangles position relative to 'start'.
+ *
+ * A 'relative_position' of 0. draws the triangle centered at 'start'.
+ * A 'relative_position' of 1. draws the triangle centered at 'end'.
+ * Fractional values draw the triangle along the line
  */
-void draw_triangle_along_line(
-	float distance_from_end, float x1, float x2, float y1, float y2)
-{
-	float xdelta = x2 - x1;
-	float ydelta = y2 - y1;
-	float magnitude = sqrt(xdelta * xdelta + ydelta * ydelta);
-	float xunit = xdelta / magnitude;
-	float yunit = ydelta / magnitude;	
+void draw_triangle_along_line(t_point start, t_point end, float relative_position) {
+    VTR_ASSERT(relative_position >= 0. && relative_position <= 1.);
+	float xdelta = end.x - start.x;
+	float ydelta = end.y - start.y;
 
-	float xcenter, ycenter;
-	if (distance_from_end > 0) {
-		xcenter = x1;
-		ycenter = y1;
-	} else {
-		xcenter = x2;
-		ycenter = y2;
-	}
+    float xtri = start.x + xdelta * relative_position;
+    float ytri = start.y + ydelta * relative_position;
 
-	draw_triangle_along_line(
-		xcenter + xunit * distance_from_end, ycenter + yunit * distance_from_end, x1, x2, y1, y2);
-}
-
-//Wrapper using explicit point's
-void draw_triangle_along_line(float distance_from_end, t_point start, t_point end) {
-    draw_triangle_along_line(distance_from_end, start.x, end.x, start.y, end.y);
-}
-
-
-/**
- * Draws a small trangle using draw_triangle_along_line(7 floats), and
- * DEFAULT_ARROW_SIZE.
- */
-void draw_triangle_along_line(
-	float xend, float yend, float x1, float x2, float y1, float y2)
-{
-	draw_triangle_along_line(xend, yend, x1, x2, y1, y2, DEFAULT_ARROW_SIZE);
+	draw_triangle_along_line(xtri, ytri, start.x, end.x, start.y, end.y);
 }
 
 /**

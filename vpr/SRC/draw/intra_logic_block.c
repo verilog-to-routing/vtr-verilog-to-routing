@@ -612,16 +612,8 @@ void draw_one_logical_connection(
 		);
 	} else {
 		// if they are not, put 2 near each end
-		draw_triangle_along_line(
-			3,
-			src_point.x, sink_point.x,
-			src_point.y, sink_point.y
-		);
-		draw_triangle_along_line(
-			-3,
-			src_point.x, sink_point.x,
-			src_point.y, sink_point.y
-		);
+		draw_triangle_along_line(src_point, sink_point, 0.05);
+		draw_triangle_along_line(src_point, sink_point, 0.95);
 	}
 
 }
