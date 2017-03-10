@@ -484,16 +484,12 @@ static void *my_realloc(void *memblk, int ibytes);
  * used by the client program.                                  */
 static float xscrn_to_world(int x);
 static float yscrn_to_world(int y);
-// static t_point scrn_to_world(const t_point& point); // uncomment if needed
-// static t_bound_box scrn_to_world(const t_bound_box& box); // uncomment if needed
 
 /* translation from world to screen coordinates */
 static int xworld_to_scrn(float worldx);
 static int yworld_to_scrn(float worldy);
 static float xworld_to_scrn_fl(float worldx); // without rounding to nearest pixel
 static float yworld_to_scrn_fl(float worldy);
-static t_point world_to_scrn(const t_point& point);
-static t_bound_box world_to_scrn(const t_bound_box& box);
 static float xrad_to_scrn (float xrad);
 static float yrad_to_scrn (float yrad);
 
@@ -684,19 +680,19 @@ static float yscrn_to_world(int y) {
     return world_coord_y;
 }
 
-// static t_point scrn_to_world(const t_point& point) {
-// 	return t_point(
-// 		xscrn_to_world(point.x),
-// 		yscrn_to_world(point.y)
-// 	);
-// }
+t_point scrn_to_world(const t_point& point) {
+    return t_point(
+        xscrn_to_world(point.x),
+        yscrn_to_world(point.y)
+    );
+}
 
-// static t_bound_box scrn_to_world(const t_bound_box& box) {
-// 	return t_bound_box(
-// 		scrn_to_world(box.bottom_left()),
-// 		scrn_to_world(box.top_right())
-// 	);
-// }
+t_bound_box scrn_to_world(const t_bound_box& box) {
+    return t_bound_box(
+        scrn_to_world(box.bottom_left()),
+        scrn_to_world(box.top_right())
+    );
+}
 
 /* Translates from world (client program) coordinates to screen coordinates
  * (pixels) in the x direction.  Add 0.5 at end for extra half-pixel accuracy. 
@@ -749,14 +745,14 @@ static float yworld_to_scrn_fl(float worldy) {
     return (winy);
 }
 
-static t_point world_to_scrn(const t_point& point) {
+t_point world_to_scrn(const t_point& point) {
     return t_point(
         xworld_to_scrn_fl(point.x),
         yworld_to_scrn_fl(point.y)
         );
 }
 
-static t_bound_box world_to_scrn(const t_bound_box& box) {
+t_bound_box world_to_scrn(const t_bound_box& box) {
     return t_bound_box(
         world_to_scrn(box.bottom_left()),
         world_to_scrn(box.top_right())

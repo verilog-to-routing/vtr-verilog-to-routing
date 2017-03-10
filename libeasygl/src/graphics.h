@@ -415,6 +415,10 @@ bool LOD_min_dim_test(float dim_threshold);
  */
 bool LOD_screen_area_test(t_bound_box test, float screen_area_threshold);
 
+t_point world_to_scrn(const t_point& point);
+t_bound_box world_to_scrn(const t_bound_box& box);
+t_point scrn_to_world(const t_point& point);
+t_bound_box scrn_to_world(const t_bound_box& box);
 
 /***************** POSTSCRIPT PRINTING ROUTINES ******************************/
 
