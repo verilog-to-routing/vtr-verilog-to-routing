@@ -51,6 +51,10 @@ using namespace std;
 #define DEFAULT_RR_NODE_COLOR BLACK
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
+//The arrow head position for turning/straight-thru connections in a switch box
+constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
+constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.9;
+
 /************************** File Scope Variables ****************************/
 
 /********************** Subroutines local to this module ********************/
@@ -1240,25 +1244,13 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 
 	drawline(x1, y1, x2, y2);
 
-	if (draw_state->draw_rr_toggle != DRAW_ALL_RR) {
-		if (draw_state->draw_rr_node[chanx_node].node_highlighted) {
-            t_point start(x1, y1);
-            t_point end(x2, y2);
-			float xend, yend;
-			// Draw arrow showing direction
-            if (edge_dir == FROM_X_TO_Y) {
-                draw_triangle_along_line(start, end, 0.2);
-            } else {
-                draw_triangle_along_line(end, start, 0.2);
-            }
-		}
-		return;
-	}
-
-	if (edge_dir == FROM_X_TO_Y)
-		draw_rr_switch(x1, y1, x2, y2, g_rr_switch_inf[switch_type].buffered);
-	else
-		draw_rr_switch(x2, y2, x1, y1, g_rr_switch_inf[switch_type].buffered);
+	if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[chanx_node].node_highlighted) {
+        if (edge_dir == FROM_X_TO_Y) {
+            draw_rr_switch(x1, y1, x2, y2, g_rr_switch_inf[switch_type].buffered);
+        } else {
+            draw_rr_switch(x2, y2, x1, y1, g_rr_switch_inf[switch_type].buffered);
+        }
+    }
 }
 
 
@@ -1342,14 +1334,8 @@ static void draw_chanx_to_chanx_edge(int from_node, int to_node,
 	
 	drawline(x1, y1, x2, y2);
 
-	if (draw_state->draw_rr_toggle == DRAW_ALL_RR)
+	if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[from_node].node_highlighted) {
 		draw_rr_switch(x1, y1, x2, y2, g_rr_switch_inf[switch_type].buffered);
-	else if (draw_state->draw_rr_node[from_node].node_highlighted) {
-		float xend, yend;
-		xend = x2 + (x1 - x2) / 10.;
-		yend = y2 + (y1 - y2) / 10.;
-		// Draw arrow showing direction
-		draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
 	}
 }
 
@@ -1433,14 +1419,8 @@ static void draw_chany_to_chany_edge(int from_node, int to_node,
 	/* UDSD Modification by WMF End */
 	drawline(x1, y1, x2, y2);
 
-	if (draw_state->draw_rr_toggle == DRAW_ALL_RR)
+	if (draw_state->draw_rr_toggle == DRAW_ALL_RR || draw_state->draw_rr_node[from_node].node_highlighted) {
 		draw_rr_switch(x1, y1, x2, y2, g_rr_switch_inf[switch_type].buffered);
-	else if (draw_state->draw_rr_node[from_node].node_highlighted) {
-		float xend, yend;
-		xend = x2 + (x1 - x2) / 10.;
-		yend = y2 + (y1 - y2) / 10.;
-		// Draw arrow showing direction
-		draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
 	}
 }
 
@@ -1488,42 +1468,25 @@ static t_bound_box draw_get_rr_chan_bbox (int inode) {
 }
 
 
-static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y,
-		bool buffered) {
+static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered) {
 
 	/* Draws a buffer (triangle) or pass transistor (circle) on the edge        *
 	 * connecting from to to, depending on the status of buffered.  The drawing *
 	 * is closest to the from_node, since it reflects the switch type of from.  */
 
-	const float switch_rad = 0.15;
-	float magnitude, xcen, ycen, xdelta, ydelta, xbaseline, ybaseline;
-	float xunit, yunit;
-	t_point poly[3];
-
-	xcen = from_x + (to_x - from_x) / 10.;
-	ycen = from_y + (to_y - from_y) / 10.;
-
 	if (!buffered) { /* Draw a circle for a pass transistor */
+        float xcen = from_x + (to_x - from_x) / 10.;
+        float ycen = from_y + (to_y - from_y) / 10.;
+        const float switch_rad = 0.15;
 		drawarc(xcen, ycen, switch_rad, 0., 360.);
 	} else { /* Buffer */
-		xdelta = to_x - from_x;
-		ydelta = to_y - from_y;
-		magnitude = sqrt(xdelta * xdelta + ydelta * ydelta);
-		xunit = xdelta / magnitude;
-		yunit = ydelta / magnitude;
-		poly[0].x = xcen + xunit * switch_rad;
-		poly[0].y = ycen + yunit * switch_rad;
-		xbaseline = xcen - xunit * switch_rad;
-		ybaseline = ycen - yunit * switch_rad;
-
-		/* Recall: perpendicular vector to the unit vector along the switch (xv, yv) *
-		 * is (yv, -xv).                                                             */
-
-		poly[1].x = xbaseline + yunit * switch_rad;
-		poly[1].y = ybaseline - xunit * switch_rad;
-		poly[2].x = xbaseline - yunit * switch_rad;
-		poly[2].y = ybaseline + xunit * switch_rad;
-		fillpoly(poly, 3);
+        if(from_x == to_x || from_y == to_y) {
+            //Straight connection
+            draw_triangle_along_line(t_point(from_x, from_y), t_point(to_x, to_y), SB_EDGE_STRAIGHT_ARROW_POSITION);
+        } else {
+            //Turn connection
+            draw_triangle_along_line(t_point(from_x, from_y), t_point(to_x, to_y), SB_EDGE_TURN_ARROW_POSITION);
+        }
 	}
 }
 
