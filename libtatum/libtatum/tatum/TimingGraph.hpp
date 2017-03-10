@@ -237,6 +237,12 @@ class TimingGraph {
         ///\returns The mapping from old to new IDs
         GraphIdMaps optimize_layout();
 
+
+        ///Sets whether dangling combinational nodes is an error (if true) or not
+        void set_allow_dangling_combinational_nodes(bool value) {
+            allow_dangling_combinational_nodes_ = value;
+        }
+
     private: //Internal helper functions
         ///\returns A mapping from old to new edge ids which is optimized for performance
         //          (i.e. cache locality)
@@ -285,6 +291,8 @@ class TimingGraph {
         std::vector<NodeId> primary_inputs_; //Primary input nodes of the timing graph.
         std::vector<NodeId> logical_outputs_; //Logical output nodes of the timing graph.
         bool is_levelized_ = false; //Inidcates if the current levelization is valid
+
+        bool allow_dangling_combinational_nodes_ = false;
 
 };
 
