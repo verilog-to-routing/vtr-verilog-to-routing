@@ -1569,9 +1569,9 @@ static void draw_rr_pin(int inode, const t_color& color) {
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	//exit early unless zoomed in really far.
-	if (LOD_screen_area_test_square(draw_coords->pin_size, MIN_VISIBLE_AREA) == false) {
-		return;
-	}
+    if (LOD_screen_area_test_square(draw_coords->pin_size, MIN_VISIBLE_AREA) == false) {
+        return;
+    }
 
 	int ipin, i, j, iside;
 	float xcen, ycen;
@@ -2375,7 +2375,22 @@ void draw_triangle_along_line(
 }
 
 static inline bool LOD_screen_area_test_square(float width, float screen_area_threshold) {
-    return LOD_screen_area_test(t_bound_box(0., 0., width, width), screen_area_threshold);
+
+    //Since world coordinates get clipped when converted to screen (at high zoom levels),
+    //we can not pick an arbitrary world root coordinate for the rectange we want to test,
+    //as clipping could cause it's area to go to zero when we convert from world to screen
+    //coordinates.
+    //
+    //Instead we specify an on-screen location for the rectangle we plan to test
+    t_point lower_left = scrn_to_world(t_point(0., 0.)); //Pick one corner of the screen
+
+    //Offset by the width
+    t_point upper_right = lower_left;
+    upper_right.offset(width, width);
+
+    t_bound_box world_rect = t_bound_box(lower_left, upper_right);
+
+    return LOD_screen_area_test(world_rect, screen_area_threshold);
 }
 
 static inline bool default_triangle_LOD_screen_area_test() {
