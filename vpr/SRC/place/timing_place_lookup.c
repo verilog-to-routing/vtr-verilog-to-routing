@@ -959,28 +959,35 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts) {
 
 /**************************************/
 static void
-print_array(FILE* lookup_dump, float **array_to_print,
+print_array(FILE* f, float **array_to_print,
 		int x1,
 		int x2,
 		int y1,
 		int y2)
 {
 
-	int idx_x, idx_y;
+    fprintf(f, " dy \\ dx");
+    for(int delta_x = x1; delta_x <= x2; ++delta_x) {
+        fprintf(f, " %9d", delta_x);
+    }
+    fprintf(f, "\n");
 
-	fprintf(lookup_dump, "\nPrinting Array \n\n");
+    fprintf(f, "     ---");
+    for(int delta_x = x1; delta_x <= x2; ++delta_x) {
+        fprintf(f, " ---------");
+    }
+    fprintf(f, "\n");
 
-	for (idx_y = y2; idx_y >= y1; idx_y--)
-	{
-		for (idx_x = x1; idx_x <= x2; idx_x++)
-		{
-			fprintf(lookup_dump, " %9.2e",
-					array_to_print[idx_x][idx_y]);
-		}
-		fprintf(lookup_dump, "\n");
-	}
-	fprintf(lookup_dump, "\n\n");
+    for(int delta_y = y1; delta_y <= y2; ++delta_y) {
+        fprintf(f, "%4d |  ", delta_y);
+        for(int delta_x = x1; delta_x <= x2; ++delta_x) {
+			fprintf(f, " %9.2e",
+					array_to_print[delta_x][delta_y]);
+        }
+        fprintf(f, "\n");
+    }
 }
+
 /**************************************/
 static void compute_delta_arrays(struct s_router_opts router_opts, int longest_length) {
 
@@ -1001,13 +1008,13 @@ static void compute_delta_arrays(struct s_router_opts router_opts, int longest_l
 static void print_delta_delays_echo(const char* filename) {
 
 	FILE* lookup_dump = vtr::fopen(filename, "w");
-	fprintf(lookup_dump, "\n\nprinting delta_clb_to_clb\n");
+	fprintf(lookup_dump, "\n\ndelta_clb_to_clb\n");
 	print_array(lookup_dump, delta_clb_to_clb, 0, nx - 1, 0, ny - 1);
-	fprintf(lookup_dump, "\n\nprinting delta_io_to_clb\n");
+	fprintf(lookup_dump, "\n\ndelta_io_to_clb\n");
 	print_array(lookup_dump, delta_io_to_clb, 0, nx, 0, ny);
-	fprintf(lookup_dump, "\n\nprinting delta_clb_to_io\n");
+	fprintf(lookup_dump, "\n\ndelta_clb_to_io\n");
 	print_array(lookup_dump, delta_clb_to_io, 0, nx, 0, ny);
-	fprintf(lookup_dump, "\n\nprinting delta_io_to_io\n");
+	fprintf(lookup_dump, "\n\ndelta_io_to_io\n");
 	print_array(lookup_dump, delta_io_to_io, 0, nx + 1, 0, ny + 1);
 	fclose(lookup_dump);
 }
