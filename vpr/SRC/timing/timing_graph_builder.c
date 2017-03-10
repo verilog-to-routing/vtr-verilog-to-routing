@@ -45,6 +45,7 @@ std::unique_ptr<TimingGraph> TimingGraphBuilder::timing_graph() {
     opt_memory_layout();
 
     VTR_ASSERT(tg_);
+
     tg_->validate();
     return std::move(tg_);
 }
@@ -189,6 +190,10 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                 AtomNetId clock_net = netlist_.pin_net(output_pin);
                 vtr::printf_warning(__FILE__, __LINE__, "Inferred implicit clock source %s for netlist clock %s (possibly data used as clock)\n",
                                     netlist_.pin_name(output_pin).c_str(), netlist_.net_name(clock_net).c_str()); 
+
+                //This type of situation often requires cutting paths between the implicit clock source and
+                //it's inputs which can cause dangling combinational nodes. Do not error if this occurs.
+                tg_->set_allow_dangling_combinational_nodes(true);
             }
         } else {
             VTR_ASSERT_MSG(!model_port->is_clock, "Must not be a clock generator");
@@ -285,19 +290,41 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                 //We now need to create edges between the source pin, and all the pins in the
                 //output port
                 for(AtomPinId sink_pin : netlist_.port_pins(sink_port)) {
+
+                    //Get the tnode of the sink
                     NodeId sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin, BlockTnode::INTERNAL);
-                    VTR_ASSERT(sink_tnode);
 
-                    auto sink_type = tg_->node_type(sink_tnode);
+                    if(!sink_tnode) {
+                        //No tnode found, either a combinational clock generator or an error
 
-                    VTR_ASSERT_MSG(   (src_type == NodeType::IPIN && sink_type == NodeType::OPIN)
-                                   || (src_type == NodeType::SOURCE && sink_type == NodeType::SINK)
-                                   || (src_type == NodeType::SOURCE && sink_type == NodeType::OPIN)
-                                   || (src_type == NodeType::IPIN && sink_type == NodeType::SINK),
-                                   "Internal primitive combinational edges must be between {IPIN, SOURCE} and {OPIN, SINK}");
+                        //Try again looking for an external tnode
+                        sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin, BlockTnode::EXTERNAL);
 
-                    //Add the edge between the pins
-                    tg_->add_edge(tatum::EdgeType::PRIMITIVE_COMBINATIONAL, src_tnode, sink_tnode);
+                        //Is the sink a clock generator?
+                        if (sink_tnode && clock_generator_tnodes.count(sink_tnode)) {
+                            //Do not create the edge
+                            vtr::printf_warning(__FILE__, __LINE__, 
+                                "Timing edge from %s to %s will not be created since %s has been identified as a clock generator\n",
+                                netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(src_pin).c_str());
+                        } else {
+                            //Unknown
+                            VPR_THROW(VPR_ERROR_TIMING, "Unable to find matching sink tnode for timing edge from %s to %s",
+                                        netlist_.pin_name(src_pin).c_str(), netlist_.pin_name(src_pin).c_str());
+                        }
+
+                    } else {
+                        //Valid tnode create the edge
+                        auto sink_type = tg_->node_type(sink_tnode);
+
+                        VTR_ASSERT_MSG(   (src_type == NodeType::IPIN   && sink_type == NodeType::OPIN)
+                                       || (src_type == NodeType::SOURCE && sink_type == NodeType::SINK)
+                                       || (src_type == NodeType::SOURCE && sink_type == NodeType::OPIN)
+                                       || (src_type == NodeType::IPIN   && sink_type == NodeType::SINK),
+                                       "Internal primitive combinational edges must be between {IPIN, SOURCE} and {OPIN, SINK}");
+
+                        //Add the edge between the pins
+                        tg_->add_edge(tatum::EdgeType::PRIMITIVE_COMBINATIONAL, src_tnode, sink_tnode);
+                    }
                 }
             }
         }
