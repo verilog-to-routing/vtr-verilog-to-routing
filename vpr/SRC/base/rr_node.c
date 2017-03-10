@@ -77,6 +77,9 @@ enum e_drivers t_rr_node::get_drivers() const {
 short t_rr_node::get_occ() const {
 	return occ;
 }
+short t_rr_node::get_length() const {
+	return length;
+}
 
 /*
 	Pass in two coordinate variables describing location of node.

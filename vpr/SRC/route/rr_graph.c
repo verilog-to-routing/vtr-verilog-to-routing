@@ -2311,6 +2311,7 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 				L_rr_node[inode].get_xhigh(), L_rr_node[inode].get_yhigh());
 	}
 	fprintf(fp, "Ptc_num: %d ", L_rr_node[inode].get_ptc_num());
+	fprintf(fp, "Length: %d ", L_rr_node[inode].get_length());
 	fprintf(fp, "Direction: %s ", direction_name[L_rr_node[inode].get_direction() + 1]);
 	fprintf(fp, "Drivers: %s ", drivers_name[L_rr_node[inode].get_drivers() + 1]);
 	fprintf(fp, "\n");

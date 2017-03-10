@@ -99,6 +99,7 @@ public:
 	short get_fan_in() const;
 	short get_num_edges() const;
 	short get_occ() const;
+    signed short get_length() const;
 	enum e_direction get_direction() const;
 	enum e_drivers get_drivers() const;
 
