@@ -88,6 +88,41 @@ static AtomPinId find_atom_pin_for_pb_route_id(int clb, int pb_route_id, const I
 
 /******************** Subroutine definitions *********************************/
 
+const t_model* find_model(const t_model* models, const std::string& name, bool required) {
+
+    for(const t_model* model = models; model != nullptr; model = model->next) {
+        if(name == model->name) {
+            return model;
+        }
+    }
+
+    if(required) {
+        VPR_THROW(VPR_ERROR_ARCH, "Failed to find architecture modedl '%s'\n", name.c_str());
+    }
+
+    return nullptr;
+}
+
+const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required) {
+    VTR_ASSERT(model);
+    
+    for(const t_model_ports* model_ports : {model->inputs, model->outputs}) {
+        for(const t_model_ports* port = model_ports; port != nullptr; port = port->next) {
+            if (port->name == name) {
+                return port;
+            }
+        }
+    }
+
+    if(required) {
+        VPR_THROW(VPR_ERROR_ARCH, "Failed to find port '%s; on architecture modedl '%s'\n", name.c_str(), model->name);
+    }
+
+
+    return nullptr;
+}
+
+
 /**
  * print tabs given number of tabs to file
  */
@@ -1949,4 +1984,3 @@ void place_sync_external_block_connections(int iblk) {
     block[iblk].nets_and_pins_synced_to_z_coordinate = true;
 
 }
-

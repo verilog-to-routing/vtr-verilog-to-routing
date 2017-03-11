@@ -520,25 +520,28 @@ class AtomNetlist {
          * Pins
          */
         //Returns the constructed name (derived from block and port) for the specified pin
-        std::string pin_name        (const AtomPinId id) const;
+        std::string  pin_name           (const AtomPinId id) const;
 
         //Returns the net associated with the specified pin
-        AtomNetId   pin_net         (const AtomPinId id) const; 
+        AtomNetId    pin_net            (const AtomPinId id) const; 
 
         //Returns the pin type of the specified pin
-        AtomPinType pin_type        (const AtomPinId id) const; 
+        AtomPinType  pin_type           (const AtomPinId id) const; 
 
         //Returns the port associated with the specified pin
-        AtomPortId  pin_port        (const AtomPinId id) const;
+        AtomPortId   pin_port           (const AtomPinId id) const;
 
         //Returns the port bit index associated with the specified pin
-        BitIndex    pin_port_bit    (const AtomPinId id) const;
+        BitIndex     pin_port_bit       (const AtomPinId id) const;
+
+        //Returns the port type associated with the specified pin
+        AtomPortType pin_port_type      (const AtomPinId id) const;
 
         //Returns the block associated with the specified pin
-        AtomBlockId pin_block       (const AtomPinId id) const;
+        AtomBlockId  pin_block          (const AtomPinId id) const;
 
         //Returns true if the pin is a constant (i.e. its value never changes)
-        bool        pin_is_constant (const AtomPinId id) const;
+        bool         pin_is_constant    (const AtomPinId id) const;
 
         /*
          * Nets
@@ -657,6 +660,13 @@ class AtomNetlist {
         //  pin_id  : The pin to be marked
         //  value   : The boolean value to set the pin_is_constant attribute
         void set_pin_is_constant(const AtomPinId pin_id, const bool value);
+
+        //Add the specified pin to the specified net as pin_type. Automatically removes
+        //any previous net connection for this pin.
+        //  pin      : The pin to add
+        //  pin_type : The type of the pin (i.e. driver or sink)
+        //  net      : The net to add the pin to
+        void set_pin_net(const AtomPinId pin, AtomPinType pin_type, const AtomNetId net);
 
         /*
          * Note: all remove_*() will mark the associated items as invalid, but the items

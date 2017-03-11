@@ -424,10 +424,15 @@ AtomPortId AtomNetlist::pin_port (const AtomPinId id) const {
     return pin_ports_[id];
 }
 
-BitIndex AtomNetlist::pin_port_bit(const AtomPinId id) const {
+BitIndex AtomNetlist::pin_port_bit (const AtomPinId id) const {
     VTR_ASSERT(valid_pin_id(id));
 
     return pin_port_bits_[id];
+}
+
+AtomPortType AtomNetlist::pin_port_type (const AtomPinId id) const {
+    AtomPortId port = pin_port(id);
+    return port_type(port);
 }
 
 AtomBlockId AtomNetlist::pin_block (const AtomPinId id) const { 
@@ -942,6 +947,24 @@ void AtomNetlist::set_pin_is_constant(const AtomPinId pin_id, const bool value) 
     VTR_ASSERT(valid_pin_id(pin_id));
 
     pin_is_constant_[pin_id] = value;
+}
+
+void AtomNetlist::set_pin_net (const AtomPinId pin, AtomPinType pin_type, const AtomNetId net) {
+    VTR_ASSERT(valid_pin_id(pin));
+    VTR_ASSERT(   (pin_type == AtomPinType::DRIVER && pin_port_type(pin) == AtomPortType::OUTPUT)
+               || (pin_type == AtomPinType::SINK   && (pin_port_type(pin) == AtomPortType::INPUT || pin_port_type(pin) == AtomPortType::CLOCK)));
+
+    AtomNetId orig_net = pin_net(pin);
+    if(orig_net) {
+        //Clean up the pin reference on the original net
+        remove_net_pin(orig_net, pin);
+    }
+
+    //Mark the pin's net
+    pin_nets_[pin] = net;
+
+    //Add the pin to the net
+    associate_pin_with_net(pin, pin_type, net);
 }
 
 void AtomNetlist::remove_block(const AtomBlockId blk_id) {
@@ -1763,8 +1786,8 @@ AtomNetlist::AtomStringId AtomNetlist::create_string (const std::string& str) {
 void AtomNetlist::associate_pin_with_net(const AtomPinId pin_id, const AtomPinType type, const AtomNetId net_id) {
     //Add the pin to the net
     if(type == AtomPinType::DRIVER) {
-        VTR_ASSERT_MSG(net_pins_[net_id].size() > 0, "Space for net's pin");
-        VTR_ASSERT_MSG(net_pins_[net_id][0] == AtomPinId::INVALID(), "No existing net driver");
+        VTR_ASSERT_MSG(net_pins_[net_id].size() > 0, "Must be space for net's pin");
+        VTR_ASSERT_MSG(net_pins_[net_id][0] == AtomPinId::INVALID(), "Must be no existing net driver");
         
         net_pins_[net_id][0] = pin_id; //Set driver
     } else {

@@ -16,6 +16,12 @@
 void absorb_buffer_luts(AtomNetlist& netlist);
 
 /*
+ * Modifies the netlist to fix cases where a clock is used as data,
+ * by replacing the data portion of the net with the specified model/port/bit driver
+ */
+void fix_clock_to_data_conversions(AtomNetlist& netlist, const t_model* library_models);
+
+/*
  * Modify the netlist by sweeping away unused nets/blocks/inputs
  */
 //Repeatedly sweeps the netlist removing blocks and nets 

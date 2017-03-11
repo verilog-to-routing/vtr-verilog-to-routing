@@ -10,6 +10,15 @@
 #include "vtr_log.h"
 
 #include "vpr_error.h"
+#include "vpr_utils.h"
+
+std::map<AtomNetId,std::vector<AtomPinId>> find_clock_used_as_data_pins(const AtomNetlist& netlist);
+
+AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist, 
+                                   const AtomNetId clock_net, const std::vector<AtomPinId>& data_pins,
+                                   const t_model* blk_model, 
+                                   const t_model_ports* model_clock_port, const BitIndex clock_port_bit,
+                                   const t_model_ports* model_data_port, const BitIndex data_port_bit);
 
 std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist);
 bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk);
@@ -123,9 +132,6 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             auto input_ports = netlist.block_input_ports(blk_id);
             auto output_ports = netlist.block_output_ports(blk_id);
             auto clock_ports = netlist.block_clock_ports(blk_id);
-            VTR_ASSERT(input_ports.size() == 1);
-            VTR_ASSERT(output_ports.size() == 1);
-            VTR_ASSERT(clock_ports.size() == 1);
 
             for(auto ports : {input_ports, output_ports, clock_ports}) {
                 for(AtomPortId port_id : ports) {
@@ -149,6 +155,18 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
                 }
             }
 
+            if(d_net.empty()) {
+                d_net = make_unconn(unconn_count, AtomPinType::SINK);
+            }
+
+            if(q_net.empty()) {
+                q_net = make_unconn(unconn_count, AtomPinType::DRIVER);
+            }
+
+            if(clk_net.empty()) {
+                clk_net = make_unconn(unconn_count, AtomPinType::SINK);
+            }
+
             //Latch type: VPR always assumes rising edge
             auto type = "re"; 
 
@@ -156,14 +174,16 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             int init_val = 3; //Unkown or unspecified
             //The initial value is stored as a single value in the truth table
             const auto& so_cover = netlist.block_truth_table(blk_id);
-            VTR_ASSERT(so_cover.size() == 1); //Only one row
-            VTR_ASSERT(so_cover[0].size() == 1); //Only one column
-            switch(so_cover[0][0]) {
-                case vtr::LogicValue::TRUE: init_val = 1; break;
-                case vtr::LogicValue::FALSE: init_val = 0; break;
-                case vtr::LogicValue::DONT_CARE: init_val = 2; break;
-                case vtr::LogicValue::UNKOWN: init_val = 3; break;
-                default: VTR_ASSERT_MSG(false, "Unrecognzied latch initial state");
+            if(so_cover.size() == 1) {
+                VTR_ASSERT(so_cover.size() == 1); //Only one row
+                VTR_ASSERT(so_cover[0].size() == 1); //Only one column
+                switch(so_cover[0][0]) {
+                    case vtr::LogicValue::TRUE: init_val = 1; break;
+                    case vtr::LogicValue::FALSE: init_val = 0; break;
+                    case vtr::LogicValue::DONT_CARE: init_val = 2; break;
+                    case vtr::LogicValue::UNKOWN: init_val = 3; break;
+                    default: VTR_ASSERT_MSG(false, "Unrecognzied latch initial state");
+                }
             }
 
             fprintf(f, ".latch %s %s %s %s %d\n", d_net.c_str(), q_net.c_str(), type, clk_net.c_str(), init_val);
@@ -557,6 +577,102 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
 
 }
 
+void fix_clock_to_data_conversions(AtomNetlist& netlist, const t_model* library_models) {
+    //Some netlists contain clock signals that are also used as data inputs
+    //
+    //This function removes these cases by creating a new net whose sinks are the
+    //'data' sinks of the clock net. This net is then driven by a latch with no
+    //input data signal, but clocked by the original clock
+
+    auto clock_data_pins = find_clock_used_as_data_pins(netlist);
+
+    //Use the latch D port to generate the data version fo the clock
+    const t_model* model = find_model(library_models, "latch");
+    VTR_ASSERT(model);
+    const t_model_ports* clock_port = find_model_port(model, "clk");
+    VTR_ASSERT(clock_port);
+    BitIndex clock_port_bit = 0;
+
+    const t_model_ports* data_port = find_model_port(model, "Q");
+    VTR_ASSERT(data_port);
+    BitIndex data_port_bit = 0;
+
+    for(auto kv : clock_data_pins) {
+        AtomNetId clock_net = kv.first;
+        const std::vector<AtomPinId>& data_pins = kv.second;
+
+        vtr::printf_warning(__FILE__, __LINE__, "Clock '%s' drives both clock and data pins, splitting it into separate clock and data nets\n",
+                            netlist.net_name(clock_net).c_str());
+
+        fix_clock_to_data_pins(netlist,
+                               clock_net, data_pins,
+                               model, 
+                               clock_port, clock_port_bit,
+                               data_port, data_port_bit);
+    }
+}
+
+//Finds all clock sinks which are data ports in the netlist.
+//Returns a map of clock_net to the clock's data_sinks
+std::map<AtomNetId,std::vector<AtomPinId>> find_clock_used_as_data_pins(const AtomNetlist& netlist) {
+    std::map<AtomNetId,std::vector<AtomPinId>> clock_data_pins;
+
+    auto netlist_clocks = find_netlist_clocks(netlist);
+
+
+    for(AtomNetId clock_net : netlist_clocks) {
+        for(AtomPinId clock_sink : netlist.net_sinks(clock_net)) {
+
+            auto port_type = netlist.pin_port_type(clock_sink);
+
+            if(port_type != AtomPortType::CLOCK) {
+
+                clock_data_pins[clock_net].push_back(clock_sink); 
+            }
+        }
+    }
+
+    return clock_data_pins; 
+}
+
+AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist, 
+                                   const AtomNetId clock_net, const std::vector<AtomPinId>& data_pins,
+                                   const t_model* blk_model, 
+                                   const t_model_ports* model_clock_port, const BitIndex clock_port_bit,
+                                   const t_model_ports* model_data_port, const BitIndex data_port_bit) {
+    //Create a new block clocked by clock_net which will drive the 'data' version of the clock
+
+    std::string blk_name = "__vpr__" + netlist.net_name(clock_net) + "__as_data__";
+    VTR_ASSERT_MSG(!netlist.find_block(blk_name), "Failed to create unique clock as data source block name");
+
+    //Make the block
+    AtomBlockId blk = netlist.create_block(blk_name, blk_model);
+    VTR_ASSERT(blk);
+
+    //Connect the clock
+    AtomPortId clock_port = netlist.create_port(blk, model_clock_port);
+    netlist.create_pin(clock_port, clock_port_bit, clock_net, AtomPinType::SINK);
+
+    //Make the data port
+    AtomPortId data_port = netlist.create_port(blk, model_data_port);
+
+    //Make the net
+    VTR_ASSERT_MSG(!netlist.find_net(blk_name), "Failed to create unique clock as data net name");
+    AtomNetId clock_data_net = netlist.create_net(blk_name);
+    VTR_ASSERT(clock_data_net);
+
+    //Create the driver pin
+    netlist.create_pin(data_port, data_port_bit, clock_data_net, AtomPinType::DRIVER);
+
+    //Update all the data pins to connect to clock_data_net instead of the original clock net
+    for(AtomPinId sink_pin : data_pins) {
+
+        netlist.set_pin_net(sink_pin, AtomPinType::SINK, clock_data_net);
+    }
+
+    return blk;
+}
+
 bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk_id) {
     //Any block with no fanout is removable
     for(AtomPinId pin_id : netlist.block_output_pins(blk_id)) {
@@ -797,7 +913,7 @@ std::string make_unconn(size_t& unconn_count, AtomPinType /*pin_type*/) {
         return std::string("unconn");
     }
 #else
-    return std::string("unconn") + std::to_string(unconn_count++);
+    return std::string("__vpr__unconn") + std::to_string(unconn_count++);
 #endif
 }
 
@@ -963,6 +1079,8 @@ std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist) {
     //
     //Since we don't have good information about what pins are clock generators we build a lookup as we go
     for(auto blk_id : netlist.blocks()) {
+        if(!blk_id) continue;
+
         AtomBlockType type = netlist.block_type(blk_id);
         if(type != AtomBlockType::BLOCK) continue;
 
@@ -986,6 +1104,8 @@ std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist) {
 
         //Look for connected input clocks
         for(auto pin_id : netlist.block_clock_pins(blk_id)) {
+            if(!pin_id) continue;
+
             AtomNetId clk_net_id = netlist.pin_net(pin_id);
             VTR_ASSERT(clk_net_id);
 
@@ -1001,8 +1121,11 @@ std::set<AtomNetId> find_netlist_clocks(const AtomNetlist& netlist) {
                 AtomPortId clk_gen_port = netlist.find_port(blk_id, model_port);
 
                 for(AtomPinId pin_id : netlist.port_pins(clk_gen_port)) {
+                    if(!pin_id) continue;
+
                     AtomNetId clk_net_id = netlist.pin_net(pin_id);
-                    VTR_ASSERT(clk_net_id);
+                    if(!clk_net_id) continue;
+
                     clock_nets.insert(clk_net_id);
                 }
             }

@@ -3,6 +3,9 @@
 
 #include "netlist.h"
 
+const t_model* find_model(const t_model* models, const std::string& name, bool required=true);
+const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required=true);
+
 void print_tabs(FILE * fpout, int num_tab);
 
 bool is_clb_external_pin(int clb, int pb_pin_id);
