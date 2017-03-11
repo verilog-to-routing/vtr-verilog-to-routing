@@ -132,6 +132,7 @@ private:
         VTR_ASSERT(iter != block_to_pb_gnode_.end());
 
         const t_pb_graph_node* pb_gnode = iter->second;
+        VTR_ASSERT(pb_gnode);
 
         AtomPortId port = netlist_.pin_port(pin);
         const t_model_ports* model_port = netlist_.port_model(port);

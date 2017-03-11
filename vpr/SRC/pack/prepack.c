@@ -1107,6 +1107,12 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const 
 			}
 		}
 	}
+
+    if(!best) {
+        VPR_THROW(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
+                  g_atom_nl.block_model(blk_id)->name);
+    }
+
 	return best;
 }
 
