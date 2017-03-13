@@ -20,6 +20,7 @@ using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_matrix.h"
+#include "vtr_log.h"
 
 #include "vpr_utils.h"
 #include "vpr_error.h"
@@ -57,6 +58,8 @@ constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.9;
 
 /************************** File Scope Variables ****************************/
 
+std::string rr_highlight_message;
+
 /********************** Subroutines local to this module ********************/
 
 static void toggle_nets(void (*drawscreen)(void));
@@ -72,6 +75,7 @@ static void drawroute(enum e_draw_net_type draw_net_type);
 static void draw_congestion(void);
 
 static void highlight_blocks(float x, float y, t_event_buttonPressed button_info);
+static void act_on_mouse_over(float x, float y);
 static void deselect_all(void);
 
 static void draw_rr(void);
@@ -182,7 +186,8 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 	update_message(msg);
 	drawscreen();
 	if (priority >= draw_state->gr_automode) {
-		event_loop(highlight_blocks, NULL, NULL, drawscreen);
+        set_mouse_move_input(true); //Enable act_on_mouse_over callback
+		event_loop(highlight_blocks, act_on_mouse_over, NULL, drawscreen);
 	} else {
 		flushinput();
 	}
@@ -1910,6 +1915,8 @@ static void draw_highlight_fan_in_fan_out(int hit_node) {
 /* This is a helper function for highlight_rr_nodes(). It determines whether 
  * a routing resource has been clicked on by computing a bounding box for that 
  *  and checking if the mouse click hit inside its bounding box.
+ *
+ *  It returns the hit RR node's ID (or OPEN if no hit)
  */
 static int draw_check_rr_node_hit (float click_x, float click_y) {
 	int inode;
@@ -2015,6 +2022,8 @@ static void highlight_rr_nodes(float x, float y) {
 				    xlow, ylow, xhigh, yhigh, ptc_num, rr_node[hit_node].get_num_edges(), 
 				    rr_node[hit_node].get_occ(), rr_node[hit_node].get_capacity());
 
+            rr_highlight_message = message;
+
 		}
 		else {
 			/* Using white color to represent de-highlighting (or 
@@ -2035,6 +2044,7 @@ static void highlight_rr_nodes(float x, float y) {
 
 	if (hit_node == OPEN) {
 		update_message(draw_state->default_message);
+        rr_highlight_message = "";
 		drawscreen();
 		return;
 	}
@@ -2133,6 +2143,36 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	update_message(msg);
 
 	drawscreen(); /* Need to erase screen. */
+}
+
+static void act_on_mouse_over(float mouse_x, float mouse_y) {
+
+	t_draw_state* draw_state = get_draw_state_vars();
+
+	if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
+
+        int hit_node = draw_check_rr_node_hit(mouse_x, mouse_y);
+
+        if(hit_node != OPEN) {
+            //Update message
+
+            std::string msg = vtr::string_fmt("Moused over rr node #%d: %s", hit_node, rr_node[hit_node].rr_get_type_string());
+            if (rr_node[hit_node].type == CHANX || rr_node[hit_node].type == CHANY) {
+                msg += vtr::string_fmt(" track: %d len: %d", rr_node[hit_node].get_ptc_num(), rr_node[hit_node].get_length());
+                update_message(msg.c_str());
+            } else if (rr_node[hit_node].type == IPIN || rr_node[hit_node].type == OPIN) {
+                msg += vtr::string_fmt(" pin: %d len: %d", rr_node[hit_node].get_ptc_num(), rr_node[hit_node].get_length());
+                update_message(msg.c_str());
+            }
+        } else {
+            //No rr node moused over, reset message
+            if(!rr_highlight_message.empty()) {
+                update_message(rr_highlight_message.c_str());
+            } else {
+                update_message(draw_state->default_message);
+            }
+        }
+    }
 }
 
 
