@@ -224,7 +224,7 @@ void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag
 
         float time = tag.time().value();
 
-        if(!isnan(time)) {
+        if(!std::isnan(time)) {
             os << " type: " << type;
             os << " node: " << size_t(node_id);
             os << " launch_domain: ";
@@ -251,7 +251,7 @@ void write_slacks(std::ostream& os, const std::string& type, const TimingTags::t
 
         float time = tag.time().value();
 
-        if(!isnan(time)) {
+        if(!std::isnan(time)) {
             os << " type: " << type;
             os << " edge: " << size_t(edge);
             os << " launch_domain: ";
@@ -278,7 +278,7 @@ void write_slacks(std::ostream& os, const std::string& type, const TimingTags::t
 
         float time = tag.time().value();
 
-        if(!isnan(time)) {
+        if(!std::isnan(time)) {
             os << " type: " << type;
             os << " node: " << size_t(node);
             os << " launch_domain: ";

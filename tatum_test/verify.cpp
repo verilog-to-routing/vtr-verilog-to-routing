@@ -136,18 +136,18 @@ bool verify_tag(const TimingTag& tag, const TagResult& ref_result) {
 bool verify_time(NodeId node, DomainId launch_domain, DomainId capture_domain, float analyzer_time, float reference_time) {
     float arr_abs_err = fabs(analyzer_time - reference_time);
     float arr_rel_err = relative_error(analyzer_time, reference_time);
-    if(isnan(analyzer_time) && isnan(analyzer_time) != isnan(reference_time)) {
+    if(std::isnan(analyzer_time) && std::isnan(analyzer_time) != std::isnan(reference_time)) {
         cout << "Node: " << node << " Launch Clk: " << launch_domain << " Capture Clk: " << capture_domain;
         cout << " Calc: " << analyzer_time;
         cout << " Ref: " << reference_time << endl;
         cout << "\tERROR Calculated time was nan and didn't match golden reference." << endl;
         return false;
-    } else if (!isnan(analyzer_time) && isnan(reference_time)) {
+    } else if (!std::isnan(analyzer_time) && std::isnan(reference_time)) {
         //We allow tatum results to be non-NAN when reference is NAN
         //
         //This occurs in some cases (such as applying clock tags to primary outputs)
         //which are cuased by the differeing analysis methods
-    } else if (isnan(analyzer_time) && isnan(reference_time)) {
+    } else if (std::isnan(analyzer_time) && std::isnan(reference_time)) {
         //They agree, pass
     } else if(arr_rel_err > RELATIVE_EPSILON && arr_abs_err > ABSOLUTE_EPSILON) {
         cout << "Node: " << node << " Launch Clk: " << launch_domain << " Capture Clk: " << capture_domain;
@@ -157,7 +157,7 @@ bool verify_time(NodeId node, DomainId launch_domain, DomainId capture_domain, f
         cout << ", " << arr_rel_err << endl;
         return false;
     } else {
-        TATUM_ASSERT(!isnan(arr_rel_err) && !isnan(arr_abs_err));
+        TATUM_ASSERT(!std::isnan(arr_rel_err) && !std::isnan(arr_abs_err));
         TATUM_ASSERT(arr_rel_err < RELATIVE_EPSILON || arr_abs_err < ABSOLUTE_EPSILON);
     }
     return true;
