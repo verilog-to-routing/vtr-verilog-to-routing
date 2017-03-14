@@ -77,7 +77,7 @@ void print_int_matrix3(int ***vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 		fprintf(outfile, "\n");
 	}
 
-	fclose(outfile);
+    vtr::fclose(outfile);
 }
 
 

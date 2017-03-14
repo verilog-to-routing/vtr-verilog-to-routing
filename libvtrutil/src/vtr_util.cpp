@@ -293,6 +293,10 @@ FILE* fopen(const char *fname, const char *flag) {
     return (fp);
 }
 
+int fclose(FILE* f) {
+    return std::fclose(f);
+}
+
 char* fgets(char *buf, int max_size, FILE * fp) {
     /* Get an input line, update the line number and cut off *
      * any comment part.  A \ at the end of a line with no   *
