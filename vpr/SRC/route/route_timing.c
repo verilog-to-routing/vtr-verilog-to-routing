@@ -28,6 +28,8 @@
 #include "timing_info.h"
 #include "timing_util.h"
 
+#include "router_lookahead_map.h"
+
 using namespace std;
 
 
@@ -968,6 +970,12 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 
 	if (rr_type == CHANX || rr_type == CHANY) {
 
+#ifdef USE_MAP_LOOKAHEAD
+		float my_delay, my_cong;
+		return get_lookahead_map_cost(inode, target_node, criticality_fac, my_delay, my_cong);
+
+
+#else
 		num_segs_same_dir = get_expected_segs_to_target(inode, target_node,
 				&num_segs_ortho_dir);
 		cost_index = rr_node[inode].get_cost_index();
@@ -998,6 +1006,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 		expected_cost = criticality_fac * Tdel
 				+ (1. - criticality_fac) * cong_cost;
 		return (expected_cost);
+#endif
 	}
 
 	else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */

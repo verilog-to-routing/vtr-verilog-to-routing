@@ -30,6 +30,8 @@ using namespace std;
 #include "cb_metrics.h"
 #include "build_switchblocks.h"
 
+#include "router_lookahead_map.h"
+
 typedef struct s_mux {
 	int size;
 	struct s_mux *next;
@@ -548,6 +550,10 @@ void build_rr_graph(
 	if (dump_rr_structs_file){
 		dump_rr_structs(dump_rr_structs_file);
 	}
+
+#ifdef USE_MAP_LOOKAHEAD
+	compute_router_lookahead(num_seg_types, *wire_to_rr_ipin_switch);
+#endif
 
 	/* Free all temp structs */
 	if (seg_details) {
