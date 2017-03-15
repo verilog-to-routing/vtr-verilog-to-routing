@@ -21,8 +21,10 @@ BUILD_TYPE = release
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
 override CMAKE_PARAMS += -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 
-#Suppress makefile output (e.g. entering/leaving directories)
-MAKEFLAGS := -s 
+
+# -s : Suppresss makefile output (e.g. entering/leaving directories)
+# --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
+MAKEFLAGS := -s --output-sync target
 
 BUILD_DIR=./build
 GENERATED_MAKEFILE := $(BUILD_DIR)/Makefile
