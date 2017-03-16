@@ -949,10 +949,10 @@ void AtomNetlist::set_pin_is_constant(const AtomPinId pin_id, const bool value) 
     pin_is_constant_[pin_id] = value;
 }
 
-void AtomNetlist::set_pin_net (const AtomPinId pin, AtomPinType pin_type, const AtomNetId net) {
+void AtomNetlist::set_pin_net (const AtomPinId pin, AtomPinType type, const AtomNetId net) {
     VTR_ASSERT(valid_pin_id(pin));
-    VTR_ASSERT(   (pin_type == AtomPinType::DRIVER && pin_port_type(pin) == AtomPortType::OUTPUT)
-               || (pin_type == AtomPinType::SINK   && (pin_port_type(pin) == AtomPortType::INPUT || pin_port_type(pin) == AtomPortType::CLOCK)));
+    VTR_ASSERT(   (type == AtomPinType::DRIVER && pin_port_type(pin) == AtomPortType::OUTPUT)
+               || (type == AtomPinType::SINK   && (pin_port_type(pin) == AtomPortType::INPUT || pin_port_type(pin) == AtomPortType::CLOCK)));
 
     AtomNetId orig_net = pin_net(pin);
     if(orig_net) {
@@ -964,7 +964,7 @@ void AtomNetlist::set_pin_net (const AtomPinId pin, AtomPinType pin_type, const 
     pin_nets_[pin] = net;
 
     //Add the pin to the net
-    associate_pin_with_net(pin, pin_type, net);
+    associate_pin_with_net(pin, type, net);
 }
 
 void AtomNetlist::remove_block(const AtomBlockId blk_id) {
