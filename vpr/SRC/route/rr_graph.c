@@ -552,7 +552,7 @@ void build_rr_graph(
 	}
 
 #ifdef USE_MAP_LOOKAHEAD
-	compute_router_lookahead(num_seg_types, *wire_to_rr_ipin_switch);
+	compute_router_lookahead(num_seg_types);
 #endif
 
 	/* Free all temp structs */

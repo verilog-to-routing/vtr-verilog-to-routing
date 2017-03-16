@@ -1,3 +1,18 @@
+/* 
+The router lookahead provides an estimate of the cost from an intermediate node to the target node 
+during directed (A*-like) routing.
+
+The VPR 7.0 lookahead (route/route_timing.c ==> get_timing_driven_expected_cost) lower-bounds the remaining delay and
+congestion by assuming that a minimum number of wires, of the same type as the current node being expanded, can be used
+to complete the route. While this method is efficient, it can run into trouble with architectures that use
+multiple interconnected wire types.
+
+The lookahead in this file pre-computes delay/congestion costs up and to the right of a starting tile. This generates
+delay/congestion tables for {CHANX, CHANY} channel types, over all wire types defined in the architecture file.
+See Section 3.2.4 in Oleg Petelin's MASc thesis (2016) for more discussion.
+
+*/
+
 
 #include <cmath>
 #include <vector>
@@ -7,26 +22,39 @@
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
-#include "vpr_api.h"	//FIXME.. I don't know which file to include for vtr::nint...
 #include "globals.h"
 #include "vtr_math.h"
+#include "vtr_log.h"
 #include "router_lookahead_map.h"
 
-
-#include "vtr_log.h"
-
-
-
 using namespace std;
+
 
 /* the cost map is computed by running a Dijkstra search from channel segment rr nodes at the specified reference coordinate */
 #define REF_X 3
 #define REF_Y 3
 
-#define MAX_TRACK_OFFSET 16//32
+/* we will profile delay/congestion using this many tracks for each wire type */
+#define MAX_TRACK_OFFSET 16
+
+/* we're profiling routing cost over many tracks for each wire type, so we'll have many cost entries at each |dx|,|dy| offset.
+   there are many ways to "boil down" the many costs at each offset to a single entry for a given (wire type, chan_type) combination --
+   we can take the smallest cost, the average, median, etc. This define selects the method we use.
+   See e_representative_entry_method */
 #define REPRESENTATIVE_ENTRY_METHOD SMALLEST
 
-//#define IMPLICIT_IPINS	//if defined, routing will stop before reaching IPINs and the delays due to ipin switches will be added implicitly
+
+/* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
+   representative entry, this enum is passed-in to specify how that representative entry should be 
+   calculated */
+enum e_representative_entry_method{
+	FIRST = 0,	//the first cost that was recorded
+	SMALLEST,	//the smallest-delay cost recorded
+	AVERAGE,
+	GEOMEAN,
+	MEDIAN
+};
+
 
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
    to travel relative x/y distances */
@@ -46,16 +74,6 @@ public:
 };
 
 
-/* when a list of delay/congestion entries at a coordinate in Cost_Entry is boiled down to a single
-   representative entry, this enum is passed-in to specify how that representative entry should be 
-   calculated */
-enum e_representative_entry_method{
-	FIRST = 0,
-	SMALLEST,
-	AVERAGE,
-	GEOMEAN,
-	MEDIAN
-};
 
 /* a class that stores delay/congestion information for a given relative coordinate during the Dijkstra expansion. 
    since it stores multiple cost entries, it is later boiled down to a single representative cost entry to be stored 
@@ -122,8 +140,8 @@ public:
 /* a class that represents an entry in the Dijkstra expansion priority queue */
 class PQ_Entry{
 public:
-	int rr_node_ind;		//index of rr_node that this entry represents
-	float cost;				//the cost of the path to get to this node
+	int rr_node_ind;     //index of rr_node that this entry represents
+	float cost;          //the cost of the path to get to this node
 
 	/* store backward delay, R and congestion info */
 	float delay;
@@ -180,10 +198,6 @@ typedef vector< vector<Expansion_Cost_Entry> > t_routing_cost_map;		//[0..nx][0.
 /* The cost map */
 t_cost_map f_cost_map;
 
-#ifdef IMPLICIT_IPINS
-float f_wire_to_ipin_switch_delay = UNDEFINED;
-#endif
-
 /******** File-Scope Functions ********/
 static void alloc_cost_map(int num_segments);
 static void free_cost_map();
@@ -205,7 +219,7 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 /******** Function Definitions ********/
 /* queries the lookahead_map (should have been computed prior to routing) to get the expected cost
    from the specified source to the specified target */
-float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticality_fac, float &delay, float &cong){
+float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticality_fac){
 	int from_x, from_y, to_x, to_y;
 
 	RR_Node &from_node = rr_node[from_node_ind];
@@ -220,18 +234,6 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 	from_y = from_node.get_ylow();
 	to_x = rr_node[to_node_ind].get_xlow();
 	to_y = rr_node[to_node_ind].get_ylow();
-
-	//if (from_type == CHANX){
-	//	if (to_y < from_y)
-	//		from_y++;
-	//	if (to_x < from_x)
-	//		from_x++;
-	//} else if (from_type == CHANY){
-	//	if (to_x < from_x)
-	//		from_x++;
-	//	if (to_y < from_y)
-	//		from_y++;
-	//}
 
 	int delta_x = abs(from_x - to_x);
 	int delta_y = abs(from_y - to_y);
@@ -248,17 +250,13 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 
 	float expected_cost = criticality_fac * expected_delay + (1.0 - criticality_fac) * expected_congestion;
 
-	delay = expected_delay;
-	cong = expected_congestion;
-
 	return expected_cost;
 }
 
-/* Computes the lookahead map to be used by the router. If a map was computed prior to this, it will be cleared
-   and a new one will be allocated. The rr graph must have been built before calling this function. */
-void compute_router_lookahead(int num_segments, int wire_to_ipin_rr_switch_ind){
-	//TODO: account for bend cost??
 
+/* Computes the lookahead map to be used by the router. If a map was computed prior to this, a new one will not be computed again. 
+   The rr graph must have been built before calling this function. */
+void compute_router_lookahead(int num_segments){
 	if (f_cost_map.size()){
 		/* if lookahead map has already been computed, do not compute it again */
 		vtr::printf_info("Router lookahead map already allocated. Will not compute router lookahead map again.\n");
@@ -266,10 +264,6 @@ void compute_router_lookahead(int num_segments, int wire_to_ipin_rr_switch_ind){
 	}
 
 	clock_t start_time = clock();
-
-#ifdef IMPLICIT_IPINS
-	f_wire_to_ipin_switch_delay = g_rr_switch_inf[wire_to_ipin_rr_switch_ind].Tdel;
-#endif
 
 	/* free previous delay map and allocate new one */
 	free_cost_map();
@@ -346,9 +340,8 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 		direction = DEC_DIRECTION;
 	}
 
-	vtr::t_ivec channel_node_list = rr_node_indices[rr_type][chan_coord][seg_coord];		//XXX: indexing by chan/seg is correct, right?
+	vtr::t_ivec channel_node_list = rr_node_indices[rr_type][chan_coord][seg_coord];
 
-	//printf("num tracks: %d\n", channel_node_list.nelem);
 	/* find first node in channel that has specified segment index and goes in the desired direction */
 	for (int itrack = 0; itrack < channel_node_list.nelem; itrack++){
 		int node_ind = channel_node_list.list[itrack];
@@ -357,14 +350,11 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 		int node_cost_ind = rr_node[node_ind].get_cost_index();
 		int node_seg_ind = rr_indexed_data[node_cost_ind].seg_index;
 
-		//printf("\ttrack %d  cost_index %d  seg_ind %d\n", itrack, node_cost_ind, node_seg_ind);
-
 		if ((node_direction == direction || node_direction == BI_DIRECTION) &&
 			    node_seg_ind == seg_index){
 			/* found first track that has the specified segment index and goes in the desired direction */
 			result = node_ind;
 			if (track_offset == 0){
-				//printf("track %d  offset %d\n", itrack, track_offset);
 				break;
 			}
 			track_offset -= 2;
@@ -418,47 +408,6 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
 			continue;
 		}
 
-		//printf("expanded %d\n", node_ind);
-
-
-#ifdef IMPLICIT_IPINS
-		/* Stop at CHANX/CHANY nodes instead of IPINS */
-
-		float extra_delay = f_wire_to_ipin_switch_delay;
-		if (rr_node[node_ind].type == CHANX){
-			int xlow = rr_node[node_ind].get_xlow();
-			int xhigh = rr_node[node_ind].get_xhigh();
-			int y = rr_node[node_ind].get_ylow();
-
-			for (int ix = xlow; ix <= xhigh; ix++){
-				if (ix >= start_x && y >= start_y){
-					int delta_x = ix - start_x;
-					int delta_y = y - start_y;
-					
-					if (delta_x >= 0 && delta_y >= 0){
-						routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay + extra_delay, current.congestion_upstream);
-						routing_cost_map[delta_x][delta_y + 1].add_cost_entry(current.delay + extra_delay, current.congestion_upstream);
-					}
-				}
-			}
-		} else if (rr_node[node_ind].type == CHANY){
-			int ylow = rr_node[node_ind].get_ylow();
-			int yhigh = rr_node[node_ind].get_yhigh();
-			int x = rr_node[node_ind].get_xlow();
-
-			for (int iy = ylow; iy <= yhigh; iy++){
-				if (iy >= start_y && x >= start_x){
-					int delta_x = x - start_x;
-					int delta_y = iy - start_y;
-
-					if (delta_x >= 0 && delta_y >= 0){
-						routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay + extra_delay, current.congestion_upstream);
-						routing_cost_map[delta_x + 1][delta_y].add_cost_entry(current.delay + extra_delay, current.congestion_upstream);
-					}
-				}
-			}
-		}
-#else
 		/* if this node is an ipin record its congestion/delay in the routing_cost_map */
 		if (rr_node[node_ind].type == IPIN){
 			int ipin_x = rr_node[node_ind].get_xlow();
@@ -468,13 +417,9 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
 				int delta_x = ipin_x - start_x;
 				int delta_y = ipin_y - start_y;
 
-				//printf("\t%d %d\n", delta_x, delta_y);
-
 				routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
 			}
 		}
-
-#endif
 
 		expand_dijkstra_neighbours(current, node_visited_costs, node_expanded, pq);
 		node_expanded[node_ind] = true;
@@ -528,8 +473,6 @@ static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_ro
 			
 			Expansion_Cost_Entry &expansion_cost_entry = routing_cost_map[ix][iy];
 
-			//printf("%d %d  %f\n", ix, iy, expansion_cost_entry.get_representative_cost_entry());
-
 			f_cost_map[chan_index][segment_index][ix][iy] = expansion_cost_entry.get_representative_cost_entry( REPRESENTATIVE_ENTRY_METHOD );
 		}
 	}
@@ -543,22 +486,14 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 		chan_index = 1;
 	}
 
-	//TODO: may need to set (0,0) entry manually to avoid ram block weirdness
-
 	/* find missing cost entries and fill them in by copying a nearby cost entry */
 	for (unsigned ix = 0; ix < f_cost_map[chan_index][segment_index].size(); ix++){
 		for (unsigned iy = 0; iy < f_cost_map[chan_index][segment_index][ix].size(); iy++){
 			Cost_Entry cost_entry = f_cost_map[chan_index][segment_index][ix][iy];
 
 			if (cost_entry.delay < 0 && cost_entry.congestion < 0){
-				//if (ix == 0 && iy == 0){
-				//	Cost_Entry entry(0, 0);
-				//	f_cost_map[chan_index][segment_index][ix][iy] = entry;
-				//} else {
-					Cost_Entry copied_entry = get_nearby_cost_entry(ix, iy, segment_index, chan_index);
-					f_cost_map[chan_index][segment_index][ix][iy] = copied_entry;
-				//}
-
+				Cost_Entry copied_entry = get_nearby_cost_entry(ix, iy, segment_index, chan_index);
+				f_cost_map[chan_index][segment_index][ix][iy] = copied_entry;
 			}
 		}
 	}
@@ -590,7 +525,6 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 		copy_y = vtr::nint( (float)x * slope );
 	}
 
-	//printf("%d %d  %f  %d %d\n", x, y, slope, copy_x, copy_y);
 	assert(copy_x > 0 || copy_y > 0);
 
 	Cost_Entry copy_entry = f_cost_map[chan_index][segment_index][copy_x][copy_y];
@@ -679,7 +613,6 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry(){
 	for (auto entry : this->cost_vector){
 		float bin_num = floor( (entry.delay - min_del_entry.delay) / bin_size );
 
-		//printf("entry %.3e  min %.3e  bin_size %.3e  bin_num %.3e\n", entry.delay, min_del_entry.delay, bin_size, bin_num);
 		assert(vtr::nint(bin_num) >= 0 && vtr::nint(bin_num) <= num_bins);
 		if (vtr::nint(bin_num) == num_bins){
 			/* largest entry will otherwise have an out-of-bounds bin number */

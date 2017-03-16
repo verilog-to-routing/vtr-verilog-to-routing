@@ -971,10 +971,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 	if (rr_type == CHANX || rr_type == CHANY) {
 
 #ifdef USE_MAP_LOOKAHEAD
-		float my_delay, my_cong;
-		return get_lookahead_map_cost(inode, target_node, criticality_fac, my_delay, my_cong);
-
-
+		return get_lookahead_map_cost(inode, target_node, criticality_fac);
 #else
 		num_segs_same_dir = get_expected_segs_to_target(inode, target_node,
 				&num_segs_ortho_dir);
