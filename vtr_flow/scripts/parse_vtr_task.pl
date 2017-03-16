@@ -451,6 +451,7 @@ sub pretty_print_table {
         }
         printf OUTFILE "\n";
     }
+    close(OUTFILE);
 
 }
 
