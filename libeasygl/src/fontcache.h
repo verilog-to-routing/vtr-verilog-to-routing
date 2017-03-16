@@ -55,12 +55,12 @@
 
 using namespace std;
 
-#ifdef WIN32
+#if defined WIN32
 typedef LOGFONT* font_ptr;
-#endif
-
-#ifdef X11
+#elif defined X11
 typedef XftFont* font_ptr;
+#else
+typedef void* font_ptr;
 #endif
 
 /**
