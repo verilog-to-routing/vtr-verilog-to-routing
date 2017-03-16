@@ -10,6 +10,7 @@ void Surface::setSurface(const char* filePath) {
     //We load the surface via cairo, and specify the custom cairo deleter
     //std::shared_ptr handles reference counting will automaticly 
     //cleans-up the image data when there are no more references
+#ifndef NO_GRAPHICS
     mSurface = std::shared_ptr<cairo_surface_t>(cairo_image_surface_create_from_png(filePath), cairo_surface_destroy);
     switch(cairo_surface_status(mSurface.get())) {
         case CAIRO_STATUS_SUCCESS:
@@ -37,6 +38,7 @@ void Surface::setSurface(const char* filePath) {
             std::cerr << "Invalid Error" << std::endl;
             break;
     }
+#endif
     // should only reach this point if unsuccessful
     mSurface = std::shared_ptr<cairo_surface_t>(nullptr);
 }

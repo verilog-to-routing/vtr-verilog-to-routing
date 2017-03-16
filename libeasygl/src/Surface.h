@@ -2,8 +2,15 @@
 #define SURFACE_H
 
 #include <memory>
-#include <cairo.h>
-#include <cairo-xlib.h>
+
+#ifndef NO_GRAPHICS
+# include <cairo.h>
+# include <cairo-xlib.h>
+#else
+//Without graphcs we may not have access to the cairo headers
+//So use a dummy type
+typedef void cairo_surface_t;
+#endif
 
 // This class implements a Cairo surface (buffer of pixel data for graphics)
 // which can be initialized from a png file, and then the surface (bitmap)
