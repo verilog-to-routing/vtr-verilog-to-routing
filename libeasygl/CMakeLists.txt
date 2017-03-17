@@ -18,8 +18,10 @@ set(GRAPHICS_INCLUDES "")
 set(GRAPHICS_DEFINES "")
 
 if(EASYGL_ENABLE_GRAPHICS)
+    #Check for dependancies
     if(WIN32)
         #Windows
+        #TODO: this is untested
         list(GRAPHICS_DEFINES APPEND "-DWIN32")
     else()
         #Assume unix-like

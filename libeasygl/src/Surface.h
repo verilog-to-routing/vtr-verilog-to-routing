@@ -3,14 +3,7 @@
 
 #include <memory>
 
-#ifndef NO_GRAPHICS
-# include <cairo.h>
-# include <cairo-xlib.h>
-#else
-//Without graphcs we may not have access to the cairo headers
-//So use a dummy type
-typedef void cairo_surface_t;
-#endif
+class SurfaceImpl;
 
 // This class implements a Cairo surface (buffer of pixel data for graphics)
 // which can be initialized from a png file, and then the surface (bitmap)
@@ -26,15 +19,18 @@ class Surface {
         Surface(const char* filePath);
         ~Surface() = default;
         Surface& operator=(const Surface& rhs) = default; // assignment operator
-        Surface(const Surface& surface) = default; // cctor
+        Surface(const Surface& surface);
 
         void setSurface(const char* filePath);
 
-        // Note: getSurface will return NULL if never properly initialized
-        cairo_surface_t* getSurface() const;
-
     private:
-        std::shared_ptr<cairo_surface_t> mSurface;
+        //Requires access to the underlying cairo surface object
+        friend void draw_surface(const Surface& surface, float x, float y);
+
+        //We use the PIMPL idiom to avoid the main graphics.h
+        //interface becoming dependant on cario headers, which 
+        //may not be availabe if graphics is disabled
+        std::unique_ptr<SurfaceImpl> impl_;
 };
 
 #endif

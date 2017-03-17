@@ -30,20 +30,34 @@ const char* const fontname_config[]{
  * begin FontCache function definitions *
  ******************************************/
 
-void FontCache::close_font(font_ptr font) {
 #ifdef X11
+void FontCache::close_font(font_ptr font) {
     XftFontClose(t_x11_state::getInstance()->display, font);
-#elif defined WIN32
-    free(font);
-#endif
 }
+#elif defined WIN32
+void FontCache::close_font(font_ptr font) {
+    free(font);
+}
+#else
+void FontCache::close_font(font_ptr /*font*/) {
+}
+#endif
 
 /**
  * Loads the font with given attributes, and puts the pointer to in in put_font_ptr_here
  */
-font_ptr FontCache::do_font_loading(int pointsize, int degrees) {
+font_ptr FontCache::do_font_loading(
+        
+#if defined X11 || defined WIN32
+        int pointsize, int degrees
+#else
+        int /*pointsize*/, int /*degrees*/
+#endif
+        ) {
 
+#if defined X11 || defined WIN32
     bool success = false;
+#endif
     font_ptr retval = NULL;
 
 #ifdef X11

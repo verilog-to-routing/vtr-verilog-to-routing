@@ -219,6 +219,8 @@ close_graphics() to release all drawing structures and close the graphics.*/
 #include "graphics_state.h"
 #include "graphics_automark.h"
 
+#include "SurfaceImpl.h" //Needed by draw_surface to access the underlying surface type
+
 using namespace std;
 
 
@@ -3417,8 +3419,9 @@ Surface load_png_from_file(const char* file_path) {
 }
 
 void draw_surface(const Surface& surface, float x, float y) {
-    if (surface.getSurface() != NULL) {
-        cairo_set_source_surface(x11_state.ctx, surface.getSurface(),
+    cairo_surface_t* cairo_surface = surface.impl_->getSurface();
+    if (cairo_surface != NULL) {
+        cairo_set_source_surface(x11_state.ctx, cairo_surface,
                 xworld_to_scrn(x), yworld_to_scrn(y));
         cairo_paint(x11_state.ctx);
     }
@@ -5163,150 +5166,106 @@ void win32_fillcurve(t_point *points,
 
 #include "graphics.h"
 
-void event_loop(void (*act_on_mousebutton) (float x, float y, t_event_buttonPressed button_info),
-    void (*act_on_mousemove) (float x, float y),
-    void (*act_on_keypress) (char key_pressed, int keysym),
-    void (*drawscreen) (void)) {
-}
+void event_loop(void (* /*act_on_mousebutton*/) (float x, float y, t_event_buttonPressed button_info),
+    void (* /*act_on_mousemove*/) (float x, float y),
+    void (* /*act_on_keypress*/) (char key_pressed, int keysym),
+    void (* /*drawscreen*/) (void)) { }
 
-void init_graphics(const std::string& window_name, int cindex) {
-}
+void init_graphics(const std::string& /*window_name*/, int /*cindex*/) { }
 
-void init_graphics(const std::string& window_name, const t_color& background) {
-}
+void init_graphics(const std::string& /*window_name*/, const t_color& /*background*/) { }
 
-void close_graphics(void) {
-}
+void close_graphics(void) { }
 
-void update_message(const std::string& msg) {
-}
+void update_message(const std::string& /*msg*/) { }
 
-void draw_message(void) {
-}
+void draw_message(void) { }
 
-void set_visible_world(float xl, float yt, float xr, float yb) {
-}
+void set_visible_world(float /*xl*/, float /*yt*/, float /*xr*/, float /*yb*/) { }
 
-void set_visible_world(const t_bound_box& bounds) {
-}
+void set_visible_world(const t_bound_box& /*bounds*/) { }
 
-void flushinput(void) {
-}
+void flushinput(void) { }
 
-void setcolor(int cindex) {
-}
+void setcolor(int /*cindex*/) { }
 
-void setcolor(const t_color& c) {
-}
+void setcolor(const t_color& /*c*/) { }
 
-void setcolor(uint_fast8_t r, uint_fast8_t g, uint_fast8_t b) {
-}
+void setcolor(uint_fast8_t /*r*/, uint_fast8_t /*g*/, uint_fast8_t /*b*/, uint_fast8_t /*a*/) { }
 
-void setcolor_by_name(std::string cname) {
-}
+void setcolor_by_name(std::string /*cname*/) { }
 
 t_color getcolor(void) {
     return t_color(0, 0, 0);
 }
 
-void setlinestyle(int linestyle) {
-}
+void setlinewidth(int /*linewidth*/) { }
 
-void setlinewidth(int linewidth) {
-}
-
-void setfontsize(int pointsize) {
-}
+void setfontsize(int /*pointsize*/) { }
 
 int getfontsize() {
     return 0;
 }
 
-void settextrotation(int degrees) {
-}
+void settextrotation(int /*degrees*/) { }
 
 int gettextrotation() {
     return 0;
 }
 
-void settextattrs(int pointsize, int degrees) {
-}
+void settextattrs(int /*pointsize*/, int /*degrees*/) { }
 
-void drawline(const t_point& p1, const t_point& p2) {
-}
+void drawline(const t_point& /*p1*/, const t_point& /*p2*/) { }
 
-void drawline(float x1, float y1, float x2, float y2) {
-}
+void drawline(float /*x1*/, float /*y1*/, float /*x2*/, float /*y2*/) { }
 
-void drawrect(const t_bound_box& rect) {
-}
+void drawrect(const t_bound_box& /*rect*/) { }
 
-void drawrect(const t_point& bottomleft, const t_point& upperright) {
-}
+void drawrect(const t_point& /*bottomleft*/, const t_point& /*upperright*/) { }
 
-void drawrect(float x1, float y1, float x2, float y2) {
-}
+void drawrect(float /*x1*/, float /*y1*/, float /*x2*/, float /*y2*/) { }
 
-void fillrect(const t_bound_box& rect) {
-}
+void fillrect(const t_bound_box& /*rect*/) { }
 
-void fillrect(const t_point& bottomleft, const t_point& upperright) {
-}
+void fillrect(const t_point& /*bottomleft*/, const t_point& /*upperright*/) { }
 
-void fillrect(float x1, float y1, float x2, float y2) {
-}
+void fillrect(float /*x1*/, float /*y1*/, float /*x2*/, float /*y2*/) { }
 
-void fillpoly(t_point *points, int npoints) {
-}
+void fillpoly(t_point* /*points*/, int /*npoints*/) { }
 
-void drawarc(float xcen, float ycen, float rad, float startang,
-    float angextent) {
-}
+void drawarc(float /*xcen*/, float /*ycen*/, float /*rad*/, float /*startang*/,
+    float /*angextent*/) { }
 
 void drawellipticarc(
-    const t_point& center, float radx, float rady, float startang, float angextent) {
-}
+    const t_point& /*center*/, float /*radx*/, float /*rady*/, float /*startang*/, float /*angextent*/) { }
 
-void drawellipticarc(float xc, float yc, float radx, float rady,
-    float startang, float angextent) {
-}
+void drawellipticarc(float /*xc*/, float /*yc*/, float /*radx*/, float /*rady*/,
+    float /*startang*/, float /*angextent*/) { }
 
-void fillarc(const t_point& center, float rad, float startang, float angextent) {
-}
+void fillarc(const t_point& /*center*/, float /*rad*/, float /*startang*/, float /*angextent*/) { }
 
-void fillarc(float xcen, float ycen, float rad, float startang,
-    float angextent) {
-}
+void fillarc(float /*xcen*/, float /*ycen*/, float /*rad*/, float /*startang*/,
+    float /*angextent*/) { }
 
 void fillellipticarc(
-    const t_point& center, float radx, float rady, float startang, float angextent) {
-}
+    const t_point& /*center*/, float /*radx*/, float /*rady*/, float /*startang*/, float /*angextent*/) { }
 
-void fillellipticarc(float xc, float yc, float radx, float rady,
-    float startang, float angextent) {
-}
+void fillellipticarc(float /*xc*/, float /*yc*/, float /*radx*/, float /*rady*/,
+    float /*startang*/, float /*angextent*/) { }
 
-void drawtext_in(const t_bound_box& bbox, const std::string& text) {
-}
+void drawtext_in(const t_bound_box& /*bbox*/, const std::string& /*text*/) { }
 
-void drawtext_in(const t_bound_box& bbox, const std::string& text, float tolerance) {
-}
+void drawtext_in(const t_bound_box& /*bbox*/, const std::string& /*text*/, float /*tolerance*/) { }
 
-void drawtext(const t_point& text_center, const std::string& text, const t_bound_box& bounds) {
-}
+void drawtext(const t_point& /*text_center*/, const std::string& /*text*/, const t_bound_box& /*bounds*/) { }
 
-void drawtext(const t_point& text_center, const std::string& text,
-    const t_bound_box& bounds, float tolerance) {
-}
+void drawtext(const t_point& /*text_center*/, const std::string& /*text*/, const t_bound_box& /*bounds*/, float /*tolerance*/) { }
 
-void drawtext(const t_point& text_center, const std::string& text, float boundx, float boundy) {
-}
+void drawtext(const t_point& /*text_center*/, const std::string& /*text*/, float /*boundx*/, float /*boundy*/) { }
 
-void drawtext(float xc, float yc, const std::string& text, float boundx, float boundy) {
-}
+void drawtext(float /*xc*/, float /*yc*/, const std::string& /*text*/, float /*boundx*/, float /*boundy*/) { }
 
-void clearscreen(void) {
-}
+void clearscreen(void) { }
 
 t_bound_box get_visible_world() {
     return t_bound_box(0, 0, 0, 0);
@@ -5316,44 +5275,60 @@ t_bound_box get_visible_screen() {
     return (t_bound_box(0, 0, 0, 0));
 }
 
-void create_button(const char *prev_button_text, const char *button_text,
-    void (*button_func) (void (*drawscreen) (void))) {
-}
+void create_button(const char* /*prev_button_text*/, const char* /*button_text*/,
+    void (* /*button_func*/) (void (*drawscreen) (void))) { }
 
-void destroy_button(const char *button_text) {
-}
+void destroy_button(const char* /*button_text*/) { }
 
-int init_postscript(const char *fname) {
+int init_postscript(const char* /*fname*/) {
     return (1);
 }
 
-void close_postscript(void) {
+void close_postscript(void) { }
+
+void get_report_structure(t_report*) { }
+
+void set_mouse_move_input(bool) { }
+
+void set_keypress_input(bool) { }
+
+void set_draw_mode(enum e_draw_mode /*draw_mode*/) { }
+
+void enable_or_disable_button(int /*ibutton*/, bool /*enabled*/) { }
+
+void change_button_text(const char* /*button_text*/, const char* /*new_button_text*/) { }
+
+
+t_point world_to_scrn(const t_point& /*point*/) {
+    return t_point();
 }
 
-void report_structure(t_report*) {
+t_bound_box world_to_scrn(const t_bound_box& /*box*/) {
+    return t_bound_box();
 }
 
-void set_mouse_move_input(bool) {
+t_point scrn_to_world(const t_point& /*point*/) {
+    return t_point();
 }
 
-void set_keypress_input(bool) {
+t_bound_box scrn_to_world(const t_bound_box& /*box*/) {
+    return t_bound_box();
 }
 
-void set_draw_mode(enum e_draw_mode draw_mode) {
+bool LOD_screen_area_test(t_bound_box /*test*/, float /*screen_area_threshold*/) {
+    return true;
 }
 
-void enable_or_disable_button(int ibutton, bool enabled) {
-}
-
-void change_button_text(const char *button_text, const char *new_button_text) {
-}
+void setlinestyle(int /*linestyle*/, int /*capstyle*/) { }
+void set_drawing_buffer(t_draw_to /*draw_mode*/) { }
+void copy_off_screen_buffer_to_screen() { }
 
 #ifdef WIN32
 
-void win32_drawcurve(t_point *points, int npoints) {
+void win32_drawcurve(t_point* /*points*/, int npoints) {
 }
 
-void win32_fillcurve(t_point *points, int npoints) {
+void win32_fillcurve(t_point* points, int npoints) {
 }
 
 
