@@ -199,8 +199,6 @@ setfontsize, setlinewidth, and setlinestyle) and draw simple shapes as
 desired. When the program is done executing the graphics, it should call
 close_graphics() to release all drawing structures and close the graphics.*/
 
-#include <math.h>
-
 #ifndef NO_GRAPHICS  // Strip everything out and just put in stubs if NO_GRAPHICS defined
 
 /**********************************
@@ -208,6 +206,7 @@ close_graphics() to release all drawing structures and close the graphics.*/
  **********************************/
 #include <stdlib.h>
 #include <stdio.h>
+#include <cmath>
 #include <string>
 #include <iostream>
 #include <algorithm>
