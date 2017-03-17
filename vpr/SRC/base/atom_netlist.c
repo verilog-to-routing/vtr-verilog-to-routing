@@ -32,9 +32,9 @@ bool are_contiguous(vtr::vector_map<T,T>& values) {
 }
 
 //Returns true if all elements in the vector 'values' evaluate true
-template<typename T>
-bool all_valid(vtr::vector_map<T,T>& values) {
-    for(T val : values) {
+template<typename Container>
+bool all_valid(const Container& values) {
+    for(auto val : values) {
         if(!val) {
             return false;
         }
