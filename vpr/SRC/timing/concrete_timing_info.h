@@ -189,7 +189,7 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
         std::shared_ptr<const tatum::TimingGraph> timing_graph_;
         std::shared_ptr<const tatum::TimingConstraints> timing_constraints_;
         std::shared_ptr<DelayCalc> delay_calc_;
-        std::shared_ptr<tatum::SetupTimingAnalyzer> hold_analyzer_;
+        std::shared_ptr<tatum::HoldTimingAnalyzer> hold_analyzer_;
 
         vtr::vector_map<AtomPinId,float> hold_pin_slacks_;
         vtr::vector_map<AtomPinId,float> hold_pin_criticalities_;
@@ -205,8 +205,8 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
                                     std::shared_ptr<const tatum::TimingConstraints> timing_constraints_v,
                                     std::shared_ptr<DelayCalc> delay_calc,
                                     std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer_v)
-            : setup_timing_(timing_graph_v, timing_constraints_v, analyzer_v)
-            , hold_timing_(timing_graph_v, timing_constraints_v, analyzer_v)
+            : setup_timing_(timing_graph_v, timing_constraints_v, delay_calc, analyzer_v)
+            , hold_timing_(timing_graph_v, timing_constraints_v, delay_calc, analyzer_v)
             , setup_hold_analyzer_(analyzer_v) {
             //pass
         }
@@ -270,7 +270,6 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
     private:
         ConcreteSetupTimingInfo<DelayCalc> setup_timing_;
         ConcreteSetupTimingInfo<DelayCalc> hold_timing_;
-        std::shared_ptr<DelayCalc> delay_calc_;
         std::shared_ptr<tatum::SetupTimingAnalyzer> setup_hold_analyzer_;
 
         bool warn_unconstrained_ = true;
