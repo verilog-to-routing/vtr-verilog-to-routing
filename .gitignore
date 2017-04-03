@@ -51,8 +51,7 @@ vtr_flow/benchmarks/titan_blif/*.blif
 #
 # Log Files
 #
-vpr_stdout.log
-output.log
+*.log
 
 #
 # VPR Result files
