@@ -77,10 +77,10 @@ def main():
     #Test all the compilers with the default build config
     num_failed = 0
     num_configs = 0
-    for cc, cxx in compilers_to_test:
-        for vtr_assert_level in args.vtr_assert_levels: 
-            for easygl_config in args.easygl_configs: 
-                for tatum_parallel_config in args.tatum_parallel_configs: 
+    for vtr_assert_level in args.vtr_assert_levels: 
+        for easygl_config in args.easygl_configs: 
+            for tatum_parallel_config in args.tatum_parallel_configs: 
+                for cc, cxx in compilers_to_test:
                     num_configs += 1
                     config = OrderedDict()
                     config["EASYGL_ENABLE_GRAPHICS"] = easygl_config
@@ -93,7 +93,7 @@ def main():
                         num_failed += 1
 
                         if args.exit_on_failure:
-                            sys.exit(1)
+                            sys.exit(num_failed)
 
     if num_failed != 0:
         print "Failed to build {} of {} configurations".format(num_failed, num_configs)
@@ -152,7 +152,7 @@ def build_config(args, cc, cxx, config):
             print "\tERROR: see {}".format(log_file)
             return False
 
-    print "\tOK"
+    print "  OK"
     return True
 
 if __name__ == "__main__":
