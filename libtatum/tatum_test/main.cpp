@@ -204,21 +204,26 @@ int main(int argc, char** argv) {
             cout << "Warning: " << serial_analyzer->num_unconstrained_endpoints() << " sinks are unconstrained\n";
         }
 
-        std::vector<NodeId> nodes;
-        //nodes = find_transitively_connected_nodes(*timing_graph, {NodeId(6768)});
-
         tatum::NodeNumResolver name_resolver(*timing_graph);
         tatum::TimingReporter timing_reporter(name_resolver, *timing_graph, *timing_constraints);
 
+        auto dot_writer = make_graphviz_dot_writer(*timing_graph, *delay_calculator);
+
+        std::vector<NodeId> nodes;
+        //nodes = find_transitively_connected_nodes(*timing_graph, {NodeId(6768)});
+        //dot_writer.set_nodes_to_dump(nodes);
+
         std::shared_ptr<tatum::SetupTimingAnalyzer> echo_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(serial_analyzer);
         if(echo_setup_analyzer) {
-            write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, *delay_calculator, *echo_setup_analyzer, nodes);
+            //write_dot_file_setup("tg_setup_annotated.dot", *timing_graph, *delay_calculator, *echo_setup_analyzer, nodes);
+            dot_writer.write_dot_file("tg_setup_annotated.dot", *echo_setup_analyzer);
             timing_reporter.report_timing_setup("report_timing.setup.rpt", *echo_setup_analyzer);
             timing_reporter.report_unconstrained_endpoints_setup("report_unconstrained_timing_endpoints.rpt", *echo_setup_analyzer);
         }
         std::shared_ptr<tatum::HoldTimingAnalyzer> echo_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(serial_analyzer);
         if(echo_hold_analyzer) {
-            write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, *delay_calculator, *echo_hold_analyzer, nodes);
+            //write_dot_file_hold("tg_hold_annotated.dot", *timing_graph, *delay_calculator, *echo_hold_analyzer, nodes);
+            dot_writer.write_dot_file("tg_hold_annotated.dot", *echo_hold_analyzer);
             timing_reporter.report_timing_hold("report_timing.hold.rpt", *echo_hold_analyzer);
         }
 

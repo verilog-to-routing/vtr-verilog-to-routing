@@ -2,236 +2,226 @@
 #include "tatum/base/sta_util.hpp"
 #include <iostream>
 #include <sstream>
+#include <iterator>
+#include <string>
 
 namespace tatum {
 
 constexpr size_t MAX_DOT_GRAPH_NODES = 1000;
 
-inline std::string print_tag_domain_from_to(const TimingTag& tag) {
-    std::stringstream ss;
+template<class DelayCalc>
+GraphvizDotWriter<DelayCalc>::GraphvizDotWriter(const TimingGraph& tg, const DelayCalc& delay_calc)
+    : tg_(tg)
+    , delay_calc_(delay_calc) {
+
+    //By default dump all nodes
+    auto nodes = tg_.nodes();
+    nodes_to_dump_ = std::set<NodeId>(nodes.begin(), nodes.end());
+}
+
+template<class DelayCalc>
+void GraphvizDotWriter<DelayCalc>::write_dot_file(std::string filename) {
+    std::ofstream os(filename);
+    write_dot_file(os);
+}
+
+template<class DelayCalc>
+void GraphvizDotWriter<DelayCalc>::write_dot_file(std::ostream& os) {
+    std::map<NodeId,std::vector<TimingTag>> node_tags;
+    for(NodeId node : nodes_to_dump_) {
+        node_tags[node] = std::vector<TimingTag>(); //No tags
+    }
+
+    std::map<NodeId,std::vector<TimingTag>> node_slacks;
+    for(NodeId node : nodes_to_dump_) {
+        node_slacks[node] = std::vector<TimingTag>(); //No slacks
+    }
+
+    write_dot_format(os, node_tags, node_slacks);
+}
+
+template<class DelayCalc>
+void GraphvizDotWriter<DelayCalc>::write_dot_file(std::string filename, const TimingAnalyzer& analyzer) {
+    std::ofstream os(filename);
+    write_dot_file(os, analyzer);
+}
+
+template<class DelayCalc>
+void GraphvizDotWriter<DelayCalc>::write_dot_file(std::ostream& os, const TimingAnalyzer& analyzer) {
+    std::map<NodeId,std::vector<TimingTag>> node_tags;
+    std::map<NodeId,std::vector<TimingTag>> node_slacks;
+    TimingType timing_type = TimingType::UNKOWN;
+
+    //This is ugly, but makes it transparent to the user who just passes thier analyzer
+    const SetupTimingAnalyzer* setup_analyzer = dynamic_cast<const SetupTimingAnalyzer*>(&analyzer);
+    const HoldTimingAnalyzer* hold_analyzer = dynamic_cast<const HoldTimingAnalyzer*>(&analyzer);
+
+    for(NodeId node : nodes_to_dump_) {
+        if(setup_analyzer) {
+            auto tags = setup_analyzer->setup_tags(node);
+            std::copy(tags.begin(), tags.end(), std::back_inserter(node_tags[node]));
+
+            auto slacks = setup_analyzer->setup_slacks(node);
+            std::copy(slacks.begin(), slacks.end(), std::back_inserter(node_slacks[node]));
+
+            timing_type = TimingType::SETUP;
+        } else {
+            TATUM_ASSERT(hold_analyzer);
+
+            auto tags = hold_analyzer->hold_tags(node);
+            std::copy(tags.begin(), tags.end(), std::back_inserter(node_tags[node]));
+
+            auto slacks = hold_analyzer->hold_slacks(node);
+            std::copy(slacks.begin(), slacks.end(), std::back_inserter(node_slacks[node]));
+
+            timing_type = TimingType::HOLD;
+        }
+    }
+
+    write_dot_format(os, node_tags, node_slacks, timing_type);
+}
+
+
+template<class DelayCalc>
+void GraphvizDotWriter<DelayCalc>::write_dot_format(std::ostream& os, 
+                                         const std::map<NodeId,std::vector<TimingTag>>& node_tags,
+                                         const std::map<NodeId,std::vector<TimingTag>>& node_slacks,
+                                         TimingType timing_type) {
+    TATUM_ASSERT(timing_type == TimingType::SETUP || timing_type == TimingType::HOLD);
+
+    os << "digraph G {" << std::endl;
+    os << "\tnode[shape=record]" << std::endl;
+
+    for(const NodeId node: nodes_to_dump_) {
+        auto tag_iter = node_tags.find(node);
+        TATUM_ASSERT(tag_iter != node_tags.end());
+
+        auto slack_iter = node_slacks.find(node);
+        TATUM_ASSERT(slack_iter != node_slacks.end());
+
+        write_dot_node(os, node, tag_iter->second, slack_iter->second);
+    }
+
+    for(const LevelId level : tg_.levels()) {
+        write_dot_level(os, level);
+    }
+
+    for(const EdgeId edge : tg_.edges()) {
+        write_dot_edge(os, edge, timing_type);
+    }
+
+    os << "}" << std::endl;
+}
+
+template<class DelayCalc>
+void GraphvizDotWriter<DelayCalc>::write_dot_node(std::ostream& os, 
+                                       const NodeId node, 
+                                       const std::vector<TimingTag>& tags, 
+                                       const std::vector<TimingTag>& slacks) {
+    os << "\t";
+    os << node_name(node);
+    os << "[label=\"";
+    os << "{" << node << " (" << tg_.node_type(node) << ")";
+
+    for(const auto& tag_set : {tags, slacks}) {
+        for(const auto& tag : tag_set) {
+            os << " | {";
+            os << tag.type() << "\\n";
+            tag_domain_from_to(os, tag);
+            if(tag.origin_node()) {
+                if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
+                    os << " from ";
+                } else {
+                    os << " for ";
+                }
+                os << tag.origin_node();
+            } else {
+                os << " [Origin] ";
+            }
+            os << "\\n";
+            os << "time: " << tag.time().value();
+            os << "}";
+        }
+    }
+    os << "}\"]";
+    os << std::endl;
+}
+
+template<class DelayCalc>
+void GraphvizDotWriter<DelayCalc>::write_dot_level(std::ostream& os, const LevelId level) {
+    os << "\t{rank = same; ";
+    for(const NodeId node : tg_.level_nodes(level)) {
+        if(nodes_to_dump_.count(node)) {
+            os << node_name(node) <<"; ";
+        }
+    }
+    os << "}" << std::endl;
+}
+
+template<class DelayCalc>
+void GraphvizDotWriter<DelayCalc>::write_dot_edge(std::ostream& os, const EdgeId edge, const TimingType timing_type) {
+    NodeId src_node = tg_.edge_src_node(edge);
+    NodeId sink_node = tg_.edge_sink_node(edge);
+
+    if(nodes_to_dump_.count(src_node) && nodes_to_dump_.count(sink_node)) {
+        //Only draw edges to nodes in the set of nodes being printed
+
+        EdgeType edge_type = tg_.edge_type(edge);
+
+        std::string color = "";
+        os << "\t" << node_name(src_node) << " -> " << node_name(sink_node);
+        os << " [ label=\"" << edge;
+        if(edge_type == EdgeType::PRIMITIVE_CLOCK_CAPTURE) {
+            color = CLOCK_CAPTURE_EDGE_COLOR;
+            if (timing_type == TimingType::SETUP) {
+                os << "\\n"<< -delay_calc_.setup_time(tg_, edge) << " (-tsu)";
+            } else {
+                //Hold
+                TATUM_ASSERT(timing_type == TimingType::HOLD);
+                os << "\\n"<< delay_calc_.hold_time(tg_, edge) << " (thld)";
+            }
+        } else if(edge_type == EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
+            color = CLOCK_LAUNCH_EDGE_COLOR;
+            os << "\\n" << delay_calc_.max_edge_delay(tg_, edge) << " (tcq)";
+        } else {
+            os << "\\n" << delay_calc_.max_edge_delay(tg_, edge);
+        }
+
+        if(tg_.edge_disabled(edge)) {
+            os << "\\n" << "(disabled)";
+        }
+
+        os << "\""; //end label
+        if(tg_.edge_disabled(edge)) {
+            os << " style=\"dashed\"";
+            os << " color=\"" << DISABLED_EDGE_COLOR << "\"";
+            os << " fontcolor=\"" << DISABLED_EDGE_COLOR << "\"";
+        } else if (!color.empty()) {
+            os << " color=\"" + color + "\"";
+        }
+        os << "]";
+        os << ";" <<std::endl;
+    }
+}
+
+template<class DelayCalc>
+void GraphvizDotWriter<DelayCalc>::tag_domain_from_to(std::ostream& os, const TimingTag& tag) {
     if(!tag.launch_clock_domain()) {
-        ss << "*";
+        os << "*";
     } else {
-        ss << tag.launch_clock_domain();
+        os << tag.launch_clock_domain();
     }
-    ss << " to ";
+    os << " to ";
     if(!tag.capture_clock_domain()) {
-        ss << "*";
+        os << "*";
     } else {
-        ss << tag.capture_clock_domain();
+        os << tag.capture_clock_domain();
     }
-    return ss.str();
 }
 
-template<class DelayCalc=FixedDelayCalculator>
-void write_dot_file_setup(std::string filename,
-                          const TimingGraph& tg,
-                          const DelayCalc& delay_calc,
-                          const SetupTimingAnalyzer& analyzer,
-                          std::vector<NodeId> nodes) {
-
-    if(tg.nodes().size() > MAX_DOT_GRAPH_NODES && nodes.empty()) {
-        std::cout << "Skipping setup dot file due to large timing graph size\n";
-        return;
-    }
-
-    std::ofstream os(filename);
-
-    //Write out a dot file of the timing graph
-    os << "digraph G {" <<std::endl;
-    os << "\tnode[shape=record]" <<std::endl;
-
-    if(nodes.empty()) {
-        //All nodes
-        auto tg_nodes = tg.nodes();
-        std::copy(tg_nodes.begin(), tg_nodes.end(), std::back_inserter(nodes));
-    }
-
-    for(const NodeId inode : nodes) {
-        os << "\tnode" << size_t(inode);
-        os << "[label=\"";
-        os << "{" << inode << " (" << tg.node_type(inode) << ")";
-        for(const auto& tags : {analyzer.setup_tags(inode), analyzer.setup_slacks(inode)}) {
-            for(const TimingTag& tag : tags) {
-                os << " | {";
-                os << tag.type() << "\\n";
-                os << print_tag_domain_from_to(tag);
-                if(tag.origin_node()) {
-                    if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
-                        os << " from ";
-                    } else {
-                        os << " for ";
-                    }
-                    os << tag.origin_node();
-                } else {
-                    os << " [Origin] ";
-                }
-                os << "\\n";
-                os << "time: " << tag.time().value();
-                os << "}";
-            }
-        }
-        os << "}\"]";
-        os <<std::endl;
-    }
-
-    //Force drawing to be levelized
-    for(const LevelId ilevel : tg.levels()) {
-        os << "\t{rank = same;";
-
-        for(NodeId node_id : tg.level_nodes(ilevel)) {
-            if(std::binary_search(nodes.begin(), nodes.end(), node_id)) {
-                os << " node" << size_t(node_id) <<";";
-            }
-        }
-        os << "}" <<std::endl;
-    }
-
-    //Add edges with delays annoated
-    for(EdgeId edge_id : tg.edges()) {
-        NodeId node_id = tg.edge_src_node(edge_id);
-        NodeId sink_node_id = tg.edge_sink_node(edge_id);
-
-        if(std::binary_search(nodes.begin(), nodes.end(), node_id)
-           && std::binary_search(nodes.begin(), nodes.end(), sink_node_id)) {
-            //Only draw edges to nodes in the set of nodes being printed
-
-
-            std::string color = "";
-            os << "\tnode" << size_t(node_id) << " -> node" << size_t(sink_node_id);
-            os << " [ label=\"" << edge_id;
-            if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SINK) {
-                color = "#c45403"; //Orange-red
-                os << "\\n"<< -delay_calc.setup_time(tg, edge_id) << " (-tsu)";
-            } else if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SOURCE) {
-                color = "#10c403"; //Green
-                os << "\\n" << delay_calc.max_edge_delay(tg, edge_id) << " (tcq)";
-            } else {
-                os << "\\n" << delay_calc.max_edge_delay(tg, edge_id);
-            }
-            auto slacks = analyzer.setup_slacks(edge_id);
-            for(const auto& tag : slacks) {
-                os << "\\n" << " (slack " << print_tag_domain_from_to(tag) << ": " << tag.time().value() << ")";
-            }
-            if(tg.edge_disabled(edge_id)) {
-                os << "\\n" << "(disabled)";
-            }
-            os << "\""; //end label
-            if(tg.edge_disabled(edge_id)) {
-                os << " style=\"dashed\"";
-                os << " color=\"#aaaaaa\""; //grey
-                os << " fontcolor=\"#aaaaaa\""; //grey
-            } else if (!color.empty()) {
-                os << " color=\"" + color + "\"";
-            }
-            os << "]";
-            os << ";" <<std::endl;
-        }
-    }
-
-    os << "}" <<std::endl;
-}
-
-template<class DelayCalc=FixedDelayCalculator>
-void write_dot_file_hold(std::string filename,
-                         const TimingGraph& tg,
-                         const DelayCalc& delay_calc,
-                         const HoldTimingAnalyzer& analyzer,
-                         std::vector<NodeId> nodes) {
-
-    if(tg.nodes().size() > MAX_DOT_GRAPH_NODES && nodes.empty()) {
-        std::cout << "Skipping hold dot file due to large timing graph size\n";
-        return;
-    }
-
-    std::ofstream os(filename);
-
-    //Write out a dot file of the timing graph
-    os << "digraph G {" <<std::endl;
-    os << "\tnode[shape=record]" <<std::endl;
-
-    if(nodes.empty()) {
-        auto tg_nodes = tg.nodes();
-        std::copy(tg_nodes.begin(), tg_nodes.end(), std::back_inserter(nodes));
-    }
-
-    for(const NodeId inode : nodes) {
-        os << "\tnode" << size_t(inode);
-        os << "[label=\"";
-        os << "{" << inode << " (" << tg.node_type(inode) << ")";
-        for(const auto& tags : {analyzer.hold_tags(inode), analyzer.hold_slacks(inode)}) {
-            for(const TimingTag& tag : tags) {
-                os << " | {";
-                os << tag.type() << "\\n";
-                os << print_tag_domain_from_to(tag);
-                if(tag.origin_node()) {
-                    if(tag.type() == TagType::CLOCK_LAUNCH || tag.type() == TagType::CLOCK_CAPTURE || tag.type() == TagType::DATA_ARRIVAL) {
-                        os << " from ";
-                    } else {
-                        os << " for ";
-                    }
-                    os << tag.origin_node();
-                } else {
-                    os << " [Origin] ";
-                }
-                os << "\\n";
-                os << " time: " << tag.time().value();
-                os << "}";
-            }
-        }
-        os << "}\"]";
-        os <<std::endl;
-    }
-
-    //Force drawing to be levelized
-    for(const LevelId ilevel : tg.levels()) {
-        os << "\t{rank = same;";
-
-        for(NodeId node_id : tg.level_nodes(ilevel)) {
-            if(std::binary_search(nodes.begin(), nodes.end(), node_id)) {
-                os << " node" << size_t(node_id) <<";";
-            }
-        }
-        os << "}" <<std::endl;
-    }
-
-    //Add edges with delays annoated
-    for(EdgeId edge_id : tg.edges()) {
-        NodeId node_id = tg.edge_src_node(edge_id);
-        NodeId sink_node_id = tg.edge_sink_node(edge_id);
-
-        if(std::binary_search(nodes.begin(), nodes.end(), node_id)
-           && std::binary_search(nodes.begin(), nodes.end(), sink_node_id)) {
-            //Only draw edges to nodes in the set of nodes being printed
-
-            os << "\tnode" << size_t(node_id) << " -> node" << size_t(sink_node_id);
-            os << " [ label=\"" << edge_id;
-            if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SINK) {
-                os << "\\n" << delay_calc.hold_time(tg, edge_id) << " (thld)";
-            } else if(tg.node_type(node_id) == NodeType::CPIN && tg.node_type(sink_node_id) == NodeType::SOURCE) {
-                os << "\\n" << delay_calc.min_edge_delay(tg, edge_id) << " (tcq)";
-            } else {
-                os << "\\n" << delay_calc.min_edge_delay(tg, edge_id);
-            }
-            auto slacks = analyzer.hold_slacks(edge_id);
-            for(const auto& tag : slacks) {
-                os << "\\n" << " (slack " << print_tag_domain_from_to(tag) << ": " << tag.time().value() << ")";
-            }
-            if(tg.edge_disabled(edge_id)) {
-                os << "\\n" << "(disabled)";
-            }
-            os << "\""; //end label
-            if(tg.edge_disabled(edge_id)) {
-                os << " style=\"dashed\"";
-                os << " color=\"#aaaaaa\""; //grey
-                os << " fontcolor=\"#aaaaaa\""; //grey
-            }
-            os << "]";
-            os << ";" <<std::endl;
-        }
-    }
-
-    os << "}" <<std::endl;
+template<class DelayCalc>
+std::string GraphvizDotWriter<DelayCalc>::node_name(const NodeId node) {
+    return "node" + std::to_string(size_t(node));
 }
 
 } //namespace

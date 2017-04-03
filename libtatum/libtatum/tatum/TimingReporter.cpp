@@ -198,10 +198,10 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
         << " clocked by " << timing_constraints_.clock_domain_name(path_info.capture_domain())
         << ")\n";
 
-    if(path_info.type() == TimingPathType::SETUP) {
+    if(path_info.type() == TimingType::SETUP) {
         os << "Path Type : setup" << "\n";
     } else {
-        TATUM_ASSERT_MSG(path_info.type() == TimingPathType::HOLD, "Expected path type SETUP or HOLD");
+        TATUM_ASSERT_MSG(path_info.type() == TimingType::HOLD, "Expected path type SETUP or HOLD");
         os << "Path Type : hold" << "\n";
     }
 
@@ -308,7 +308,7 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
             req_path = Time(0.);
 
             Time constraint;
-            if(path_info.type() == TimingPathType::SETUP) {
+            if(path_info.type() == TimingType::SETUP) {
                 constraint = Time(timing_constraints_.setup_constraint(path_info.launch_domain(), path_info.capture_domain()));
             } else {
                 constraint = Time(timing_constraints_.hold_constraint(path_info.launch_domain(), path_info.capture_domain()));
@@ -344,7 +344,7 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
 
             //Uncertainty
             Time uncertainty;
-            if(path_info.type() == TimingPathType::SETUP) {
+            if(path_info.type() == TimingType::SETUP) {
                 uncertainty = -Time(timing_constraints_.setup_clock_uncertainty(path_info.launch_domain(), path_info.capture_domain()));
             } else {
                 uncertainty = Time(timing_constraints_.hold_clock_uncertainty(path_info.launch_domain(), path_info.capture_domain()));
@@ -356,10 +356,10 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
             EdgeId in_edge = path_elem.incomming_edge();
             if(in_edge && timing_graph_.edge_type(in_edge) == EdgeType::PRIMITIVE_CLOCK_CAPTURE) {
                 std::string point;
-                if(path_info.type() == TimingPathType::SETUP) {
+                if(path_info.type() == TimingType::SETUP) {
                     point = "cell setup time";
                 } else {
-                    TATUM_ASSERT_MSG(path_info.type() == TimingPathType::HOLD, "Expected path type SETUP or HOLD");
+                    TATUM_ASSERT_MSG(path_info.type() == TimingType::HOLD, "Expected path type SETUP or HOLD");
                     point = "cell hold time";
                 }
                 req_path = path_elem.tag().time();

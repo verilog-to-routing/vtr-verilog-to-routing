@@ -9,6 +9,6 @@
 #endif
 
 #include "tatumparse_common.hpp"
-#include "tatumparse_parser.gen.h" //For the generated Parser class
+#include "tatumparse_parser.gen.hpp" //For the generated Parser class
 
 #endif

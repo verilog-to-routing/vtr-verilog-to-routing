@@ -2,7 +2,8 @@
 #define TATUM_TIMING_PATH_HPP
 #include <vector>
 
-#include "TimingPathFwd.hpp"
+#include "tatum/report/TimingPathFwd.hpp"
+#include "tatum/base/TimingType.hpp"
 
 #include "tatum/util/tatum_assert.hpp"
 #include "tatum/util/tatum_range.hpp"
@@ -14,7 +15,7 @@ namespace tatum {
 class TimingPathInfo {
     public:
         TimingPathInfo() = default;
-        TimingPathInfo(TimingPathType path_type, Time path_delay, Time path_slack, NodeId launch_n, NodeId capture_n, DomainId launch_d, DomainId capture_d)
+        TimingPathInfo(TimingType path_type, Time path_delay, Time path_slack, NodeId launch_n, NodeId capture_n, DomainId launch_d, DomainId capture_d)
             : path_type_(path_type)
             , delay_(path_delay)
             , slack_(path_slack)
@@ -23,7 +24,7 @@ class TimingPathInfo {
             , launch_domain_(launch_d)
             , capture_domain_(capture_d) {}
 
-        TimingPathType type() { return path_type_; }
+        TimingType type() { return path_type_; }
 
         Time delay() const { return delay_; }
         Time slack() const { return slack_; }
@@ -35,7 +36,7 @@ class TimingPathInfo {
         DomainId capture_domain() const { return capture_domain_; }
 
     private:
-        TimingPathType path_type_ = TimingPathType::UNKOWN;
+        TimingType path_type_ = TimingType::UNKOWN;
 
         Time delay_;
         Time slack_;
