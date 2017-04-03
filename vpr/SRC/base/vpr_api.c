@@ -82,9 +82,6 @@ static void free_circuit(void);
 static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const int wire_segment_length,
 			int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin);
 
-/* For resync of clustered netlist to the post-route solution. This function adds local nets to cluster */
-static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node, t_pb *pb);
-
 /* Local subroutines end */
 
 /* Display general VPR information */
@@ -1011,29 +1008,6 @@ void vpr_set_output_file_name(enum e_output_files ename, const char *name,
 }
 char *vpr_get_output_file_name(enum e_output_files ename) {
 	return getOutputFileName(ename);
-}
-
-static void resync_pb_graph_nodes_in_pb(t_pb_graph_node *pb_graph_node,
-		t_pb *pb) {
-
-	if (pb->name == NULL) {
-		return;
-	}
-
-	VTR_ASSERT(strcmp(pb->pb_graph_node->pb_type->name, pb_graph_node->pb_type->name) == 0);
-
-	pb->pb_graph_node = pb_graph_node;
-	if (pb->child_pbs != NULL) {
-		for (int i = 0; i < pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; ++i) {
-			if (pb->child_pbs[i] != NULL) {
-				for (int j = 0; j < pb_graph_node->pb_type->modes[pb->mode].pb_type_children[i].num_pb; ++j) {
-					resync_pb_graph_nodes_in_pb(
-							&pb_graph_node->child_pb_graph_nodes[pb->mode][i][j],
-							&pb->child_pbs[i][j]);
-				}
-			}
-		}
-	}
 }
 
 void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
