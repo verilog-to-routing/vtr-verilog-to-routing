@@ -26,6 +26,9 @@
 /* Avoid unused yyunput function warning */
 %option nounput
 
+/* Avoid unused yyinput function warning */
+%option noinput
+
 /* isatty() doesn't exist on windows */
 %option never-interactive
 
