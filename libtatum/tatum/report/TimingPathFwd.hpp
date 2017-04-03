@@ -3,13 +3,6 @@
 
 namespace tatum {
 
-//The type of a timing path
-enum class TimingPathType {
-    SETUP,
-    HOLD,
-    UNKOWN
-};
-
 class TimingPathInfo;
 class TimingPathElem;
 class TimingPath;

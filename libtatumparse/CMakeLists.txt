@@ -17,9 +17,9 @@ file(GLOB LEXER_SOURCES */tatumparse.l)
 file(GLOB PARSER_SOURCES */tatumparse.y)
 
 #Make the flex and bison targets
-flex_target(TatumLexer ${LEXER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/tatumparse_lexer.gen.c
+flex_target(TatumLexer ${LEXER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/tatumparse_lexer.gen.cpp
         COMPILE_FLAGS --header-file=${CMAKE_CURRENT_BINARY_DIR}/tatumparse_lexer.gen.h)
-bison_target(TatumParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/tatumparse_parser.gen.c)
+bison_target(TatumParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/tatumparse_parser.gen.cpp)
 add_flex_bison_dependency(TatumLexer TatumParser)
 #Apply suppression flags to the relevant files, must come after flex/bision
 #targets for output vars to be defined

@@ -51,7 +51,7 @@ std::vector<TimingPathInfo> find_critical_paths(const TimingGraph& timing_graph,
             TATUM_ASSERT(slack.valid());
 
             //Record the path info
-            TimingPathInfo path(TimingPathType::SETUP,
+            TimingPathInfo path(TimingType::SETUP,
                                 cpd, slack,
                                 NodeId::INVALID(), //We currently don't trace the path back to the start point, so just mark as invalid
                                 node, 

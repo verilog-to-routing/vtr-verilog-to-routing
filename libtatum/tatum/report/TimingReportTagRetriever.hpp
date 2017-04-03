@@ -2,6 +2,7 @@
 #define TATUM_TIMING_REPORT_TAG_RETRIEVER_HPP
 #include "tatum/timing_analyzers.hpp"
 #include "tatum/report/TimingPathFwd.hpp"
+#include "tatum/base/TimingType.hpp"
 
 namespace tatum { namespace detail {
 
@@ -15,7 +16,7 @@ namespace tatum { namespace detail {
             virtual TimingTags::tag_range tags(NodeId node) const = 0;
             virtual TimingTags::tag_range tags(NodeId node, TagType tag_type) const = 0;
             virtual TimingTags::tag_range slacks(NodeId node) const = 0;
-            virtual TimingPathType type() const = 0;
+            virtual TimingType type() const = 0;
     };
 
     class SetupTagRetriever : public TagRetriever {
@@ -34,8 +35,8 @@ namespace tatum { namespace detail {
                 return analyzer_.setup_slacks(node);           
             }
 
-            TimingPathType type() const override {
-                return TimingPathType::SETUP;
+            TimingType type() const override {
+                return TimingType::SETUP;
             }
         private:
             const SetupTimingAnalyzer& analyzer_;
@@ -57,8 +58,8 @@ namespace tatum { namespace detail {
                 return analyzer_.hold_slacks(node);           
             }
 
-            TimingPathType type() const override {
-                return TimingPathType::HOLD;
+            TimingType type() const override {
+                return TimingType::HOLD;
             }
         private:
             const HoldTimingAnalyzer& analyzer_;
