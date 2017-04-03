@@ -3082,10 +3082,11 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
             } else if (annot->input_pins && annot->output_pins) {
                 //Combinational annotation
+                VTR_ASSERT_MSG(!annot->clock, "Combinational annotations should have no clock");
                 for(std::string input_pin : vtr::split(annot->input_pins)) {
                     InstPort annot_in(input_pin);
-                    for(std::string clock : vtr::split(annot->clock)) {
-                        InstPort annot_out(annot->clock);
+                    for(std::string output_pin : vtr::split(annot->output_pins)) {
+                        InstPort annot_out(output_pin);
 
                         //Find the input model port
                         const t_model_ports* model_port = nullptr;
