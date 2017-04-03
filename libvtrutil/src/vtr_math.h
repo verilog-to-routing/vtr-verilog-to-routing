@@ -4,6 +4,8 @@
 #include <map>
 #include <cmath>
 
+#include "vtr_assert.h"
+
 namespace vtr {
     /*********************** Math operations *************************************/
     int ipow(int base, int exp);
@@ -31,6 +33,8 @@ namespace vtr {
             log_sum += std::log(*iter);
             n += 1;
         }
+
+        VTR_ASSERT(n > 0.);
 
         return std::exp( (1. / n) * log_sum );
     }
