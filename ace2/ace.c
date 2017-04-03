@@ -298,6 +298,7 @@ Ace_Obj_Info_t * Ace_ObjInfo(Abc_Obj_t * obj) {
 		return info;
 	}
 	assert(0);
+    return NULL;
 }
 
 void prob_epsilon_fix(double * d) {
