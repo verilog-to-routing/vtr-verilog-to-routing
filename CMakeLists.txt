@@ -80,6 +80,7 @@ set(WARN_FLAGS_TO_CHECK  #The flags to check if the compiler supports
     "-Wcast-align"                  #Warn if a cast causes memory alignment changes
     "-Wshadow"                      #Warn if local variable shadows another variable
     "-Wformat=2"                    #Sanity checks for printf-like formatting
+    "-Wno-format-nonliteral"        # But don't worry about non-literal formtting (i.e. run-time printf format strings)
     "-Wlogical-op"                  #Checks for logical op when bit-wise expected
     "-Wmissing-declarations"        #Warn if a global function is defined with no delcaration
     "-Wmissing-include-dirs"        #Warn if a user include directory is missing
@@ -127,19 +128,6 @@ foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     if(COMPILER_SUPPORTS_${flag})
         #Flag supported, so enable it
         set(FLEX_BISON_WARN_SUPPRESS_FLAGS "${FLEX_BISON_WARN_SUPPRESS_FLAGS} ${flag}")
-    endif()
-endforeach()
-
-#We sometimes want to suppress format-nonliteral checks
-set(WARN_NON_LITERAL_SUPPRESS_FLAGS "")
-set(WARN_NON_LITERAL_SUPPRESS_FLAGS_TO_CHECK
-    "-Wno-format-nonliteral" #Disable format check warnings on non-literal strings
-    )
-foreach(flag ${WARN_NON_LITERAL_SUPPRESS_FLAGS_TO_CHECK})
-    CHECK_CXX_COMPILER_FLAG(${flag} COMPILER_SUPPORTS_${flag})
-    if(COMPILER_SUPPORTS_${flag})
-        #Flag supported, so enable it
-        set(WARN_NON_LITERAL_SUPPRESS_FLAGS "${WARN_NON_LITERAL_SUPPRESS_FLAGS} ${flag}")
     endif()
 endforeach()
 

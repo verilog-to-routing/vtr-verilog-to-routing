@@ -11,12 +11,6 @@ files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 #Treat .c as CXX
 set_source_files_properties(${LIB_SOURCES} ${EXEC_SOURCES} PROPERTIES LANGUAGE CXX)
 
-#See if we support disabling format-nonliteral checks
-
-#Disable format-nonliteral checks on slre library
-set_source_files_properties(SRC/timing/slre.c
-    PROPERTIES COMPILE_FLAGS ${WARN_NON_LITERAL_SUPPRESS_FLAGS})
-
 #Create the library
 add_library(libvpr STATIC
              ${LIB_HEADERS}
