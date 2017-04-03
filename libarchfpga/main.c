@@ -30,12 +30,9 @@ int main(int argc, char **argv) {
             return 1;
         }
 
-        printf(
-                "------------------------------------------------------------------------------\n");
-        printf(
-                "- Read architecture file and print library data structures into an output file\n");
-        printf(
-                "------------------------------------------------------------------------------\n\n");
+        printf("------------------------------------------------------------------------------\n");
+        printf("- Read architecture file and print library data structures into an output file\n");
+        printf("------------------------------------------------------------------------------\n\n");
 
         printf("Inputs: \n"
                 "architecture %s \n"
