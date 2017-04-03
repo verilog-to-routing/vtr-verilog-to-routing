@@ -26,6 +26,9 @@
 /* Avoid unused yyunput function warning */
 %option nounput
 
+/* Avoid unused yyinput function warning */
+%option noinput
+
 /* isatty() doesn't exist on windows */
 %option never-interactive
 
@@ -158,5 +161,5 @@ ENDL (\n|\n\r|\r\n)
                                      line IS blank - so the parser must handle those correclty. */
                                   static bool once; return (once = !once) ? blifparse::Parser::make_EOL() : blifparse::Parser::make_EOF();
                                 }
-<*>.                            { blifparse::blif_error_wrap(callback, blifparse_get_lineno(yyscanner), blifparse_get_text(yyscanner), "Unrecognzied character"); }
+<*>.                            { blifparse::blif_error_wrap(callback, blifparse_get_lineno(yyscanner), blifparse_get_text(yyscanner), "Unrecognized character"); }
 %%
