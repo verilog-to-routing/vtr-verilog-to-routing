@@ -34,7 +34,6 @@
 vtr::t_ivec ***
 alloc_and_load_switch_block_conn(const int nodes_per_chan,
 		const enum e_switch_block_type switch_block_type, const int Fs) {
-	enum e_side from_side, to_side;
 	int from_track;
 	vtr::t_ivec ***switch_block_conn = NULL;
 
@@ -43,8 +42,8 @@ alloc_and_load_switch_block_conn(const int nodes_per_chan,
 
 	switch_block_conn = vtr::alloc_matrix3<vtr::t_ivec>(0, 3, 0, 3, 0, (nodes_per_chan - 1));
 
-	for (from_side = (enum e_side)0; from_side < 4; from_side = (enum e_side)(from_side + 1)) {
-		for (to_side = (enum e_side)0; to_side < 4; to_side = (enum e_side)(to_side + 1)) {
+	for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+		for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 			for (from_track = 0; from_track < nodes_per_chan; from_track++) {
 				if (from_side != to_side) {
 					switch_block_conn[from_side][to_side][from_track].nelem = 1;
@@ -57,8 +56,7 @@ alloc_and_load_switch_block_conn(const int nodes_per_chan,
 									nodes_per_chan);
 				} else { /* from_side == to_side -> no connection. */
 					switch_block_conn[from_side][to_side][from_track].nelem = 0;
-					switch_block_conn[from_side][to_side][from_track].list =
-							NULL;
+					switch_block_conn[from_side][to_side][from_track].list = NULL;
 				}
 			}
 		}

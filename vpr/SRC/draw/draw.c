@@ -2558,12 +2558,11 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	bool found;
 	float x1, x2, y1, y2;
 	float xend, yend;
-	enum e_side iside, pin_side;
+	enum e_side pin_side;
 	t_type_ptr type;
 
 	VTR_ASSERT(rr_node[opin_node].type == OPIN);
 	VTR_ASSERT(rr_node[ipin_node].type == IPIN);
-	iside = (enum e_side)0;
 	x1 = y1 = x2 = y2 = 0;
 	width_offset = 0;
 	height_offset = 0;
@@ -2581,7 +2580,8 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	found = false;
 	for (int width = 0; width < type->width && !found; ++width) {
 		for (int height = 0; height < type->height && !found; ++height) {
-			for (iside = (enum e_side)0; iside < 4 && !found; iside = (enum e_side)(iside + 1)) {
+            for (e_side iside : {TOP, RIGHT, BOTTOM, LEFT}) {
+
 				/* Find first location of pin */
 				if (1 == type->pinloc[width][height][iside][opin_pin_num]) {
 					width_offset = width;
@@ -2607,7 +2607,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	found = false;
 	for (int width = 0; width < type->width && !found; ++width) {
 		for (int height = 0; height < type->height && !found; ++height) {
-			for (iside = (enum e_side)0; iside < 4 && !found; iside = (enum e_side)(iside + 1)) {
+            for (e_side iside : {TOP, RIGHT, BOTTOM, LEFT}) {
 				/* Find first location of pin */
 				if (1 == type->pinloc[width][height][iside][ipin_pin_num]) {
 					width_offset = width;

@@ -338,8 +338,8 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations( t_chan_details * 
 				for (int from_wire = 0; from_wire < channel_width; from_wire++){
 
 					/* now we iterate over all the potential side1->side2 connections */
-					for ( e_side from_side = (e_side) 0; from_side < 4; from_side = (e_side)(from_side + 1) ){
-						for ( e_side to_side = (e_side) 0; to_side < 4; to_side = (e_side)(to_side + 1) ){
+                    for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                        for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 							
 							/* Fill appropriate entry of the sb_conns map with vector specifying the wires 
 							   the current wire will connect to */
@@ -428,8 +428,8 @@ static void compute_switchblock_row(int sb_row_size, t_chan_details *chan_detail
 			/* Iterate over each wire in channel */
 			for (int from_wire = 0; from_wire < nodes_per_chan; from_wire++){
 				/* now we iterate over all the potential side1->side2 connections */
-				for ( e_side from_side = (e_side) 0; from_side < 4; from_side = (e_side)(from_side + 1) ){
-					for ( e_side to_side = (e_side) 0; to_side < 4; to_side = (e_side)(to_side + 1) ){
+                for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 						
 						/* Fill appropriate entry of the sb_conns map with vector specifying the wires 
 						   the current wire will connect to */
@@ -461,9 +461,11 @@ static void stampout_switchblocks_from_row( int sb_row_size,
 				continue;
 			}
 			/* over each source side */
-			for (int from_side = 0; from_side < 4; from_side ++){		
+            for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+
 				/* over each destination side */
-				for (int to_side = 0; to_side < 4; to_side ++){
+                for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+
 					/* can't connect a side to itself */
 					if (from_side == to_side){
 						continue;
@@ -480,8 +482,8 @@ static void stampout_switchblocks_from_row( int sb_row_size,
 						int copy_x = 1 + (distance % sb_row_size);	//TODO: based on what? explain staggering pattern
 
 						/* create the indices to key into the switchblock permutation map */
-						Switchblock_Lookup my_key(x, y, (e_side)from_side, (e_side)to_side, iwire);
-						Switchblock_Lookup copy_key(copy_x, copy_y, (e_side)from_side, (e_side)to_side, iwire);
+						Switchblock_Lookup my_key(x, y, from_side, to_side, iwire);
+						Switchblock_Lookup copy_key(copy_x, copy_y, from_side, to_side, iwire);
 
 						if ( sb_row->count(copy_key) == 0 ){
 							continue;
@@ -515,8 +517,8 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 				/* Iterate over each wire in channel */
 				for (int from_wire = 0; from_wire < nodes_per_chan; from_wire++){
 					/* now we iterate over all the potential side1->side2 connections */
-					for ( e_side from_side = (e_side) 0; from_side < 4; from_side = (e_side)(from_side + 1) ){
-						for ( e_side to_side = (e_side) 0; to_side < 4; to_side = (e_side)(to_side + 1) ){
+                    for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                        for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 
 							/* Fill appropriate entry of the sb_conns map with vector specifying the wires
 							   the current wire will connect to */
@@ -543,8 +545,8 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 				/* Iterate over each wire in channel */
 				for (int from_wire = 0; from_wire < nodes_per_chan; from_wire++){
 					/* now we iterate over all the potential side1->side2 connections */
-					for ( e_side from_side = (e_side) 0; from_side < 4; from_side = (e_side)(from_side + 1) ){
-						for ( e_side to_side = (e_side) 0; to_side < 4; to_side = (e_side)(to_side + 1) ){
+                    for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                        for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 
 							/* Fill appropriate entry of the sb_conns map with vector specifying the wires
 							   the current wire will connect to */

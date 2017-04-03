@@ -2408,7 +2408,8 @@ static void build_unidir_rr_opins(const int i, const int j,
 
 			for (int width = 0; width < type->width; ++width) {
 				for (int height = 0; height < type->height; ++height) {
-					for (enum e_side side = (enum e_side)0; side < 4; side = (enum e_side)(side + 1)) {
+                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+
 						/* Can't do anything if pin isn't at this location */
 						if (0 == type->pinloc[width][height][side][pin_index]) {
 							continue;
