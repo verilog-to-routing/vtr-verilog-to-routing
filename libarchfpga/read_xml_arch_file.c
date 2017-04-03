@@ -178,117 +178,117 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 	pugiutil::loc_data loc_data;
 	try {
 		loc_data = pugiutil::load_xml(doc, ArchFile);
+
+        arch_file_name = ArchFile;
+
+        /* Root node should be architecture */
+        auto architecture = get_single_child(doc, "architecture", loc_data);
+
+        /* TODO: do version processing properly with string delimiting on the . */
+        Prop = get_attribute(architecture, "version", loc_data, OPTIONAL).as_string(NULL);
+        if (Prop != NULL) {
+            if (atof(Prop) > atof(VPR_VERSION)) {
+                vtr::printf_warning(__FILE__, __LINE__,
+                        "This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
+                        atof(Prop));
+            }
+        }
+
+        /* Process models */
+        Next = get_single_child(architecture, "models", loc_data);
+        ProcessModels(Next, arch, loc_data);
+        CreateModelLibrary(arch);
+
+        /* Process layout */
+        Next = get_single_child(architecture, "layout", loc_data);
+        ProcessLayout(Next, arch, loc_data);
+
+        /* Process device */
+        Next = get_single_child(architecture, "device", loc_data);
+        ProcessDevice(Next, arch, timing_enabled, loc_data);
+
+        /* Process switches */
+        Next = get_single_child(architecture, "switchlist", loc_data);
+        ProcessSwitches(Next, &(arch->Switches), &(arch->num_switches),
+                timing_enabled, loc_data);
+
+        /* Process switchblocks. This depends on switches */
+        bool switchblocklist_required = (arch->SBType == CUSTOM);	//require this section only if custom switchblocks are used
+        SWITCHBLOCKLIST_REQD = BoolToReqOpt(switchblocklist_required);	
+
+
+        /* Process segments. This depends on switches */
+        Next = get_single_child(architecture, "segmentlist", loc_data);
+        ProcessSegments(Next, &(arch->Segments), &(arch->num_segments),
+                arch->Switches, arch->num_switches, timing_enabled, switchblocklist_required, loc_data);
+        
+
+        Next = get_single_child(architecture, "switchblocklist", loc_data, SWITCHBLOCKLIST_REQD);
+        if (Next){
+            ProcessSwitchblocks(Next, &(arch->switchblocks), arch->Switches, arch->num_switches, loc_data);
+        }
+
+        /* Process types */
+        Next = get_single_child(architecture, "complexblocklist", loc_data);
+        ProcessComplexBlocks(Next, Types, NumTypes, *arch, loc_data);
+
+        /* Process directs */
+        Next = get_single_child(architecture, "directlist", loc_data, OPTIONAL);
+        if (Next) {
+            ProcessDirects(Next, &(arch->Directs), &(arch->num_directs),
+                    arch->Switches, arch->num_switches,
+                    loc_data);
+        }
+
+        /* Process architecture power information */
+
+        /* If arch->power has been initialized, meaning the user has requested power estimation,
+         * then the power architecture information is required.
+         */
+        if (arch->power) {
+            POWER_REQD = REQUIRED;
+        } else {
+            POWER_REQD = OPTIONAL;
+        }
+
+        Next = get_single_child(architecture, "power", loc_data, POWER_REQD);
+        if (Next) {
+            if (arch->power) {
+                ProcessPower(Next, arch->power, loc_data);
+            } else {
+                /* This information still needs to be read, even if it is just
+                 * thrown away.
+                 */
+                t_power_arch * power_arch_fake = (t_power_arch*) vtr::calloc(1,
+                        sizeof(t_power_arch));
+                ProcessPower(Next, power_arch_fake, loc_data);
+                free(power_arch_fake);
+            }
+        }
+
+        // Process Clocks
+        Next = get_single_child(architecture, "clocks", loc_data, POWER_REQD);
+        if (Next) {
+            if (arch->clocks) {
+                ProcessClocks(Next, arch->clocks, loc_data);
+            } else {
+                /* This information still needs to be read, even if it is just
+                 * thrown away.
+                 */
+                t_clock_arch * clocks_fake = (t_clock_arch*) vtr::calloc(1,
+                        sizeof(t_clock_arch));
+                ProcessClocks(Next, clocks_fake, loc_data);
+                free(clocks_fake->clock_inf);
+                free(clocks_fake);
+            }
+        }
+        SyncModelsPbTypes(arch, *Types, *NumTypes);
+        UpdateAndCheckModels(arch);
+
 	} catch (XmlError& e) {
 		archfpga_throw(ArchFile, e.line(),
 				"%s", e.what());
 	}
-
-	arch_file_name = ArchFile;
-
-	/* Root node should be architecture */
-	auto architecture = get_single_child(doc, "architecture", loc_data);
-
-	/* TODO: do version processing properly with string delimiting on the . */
-	Prop = get_attribute(architecture, "version", loc_data, OPTIONAL).as_string(NULL);
-	if (Prop != NULL) {
-		if (atof(Prop) > atof(VPR_VERSION)) {
-			vtr::printf_warning(__FILE__, __LINE__,
-					"This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
-					atof(Prop));
-		}
-	}
-
-	/* Process models */
-	Next = get_single_child(architecture, "models", loc_data);
-	ProcessModels(Next, arch, loc_data);
-	CreateModelLibrary(arch);
-
-	/* Process layout */
-	Next = get_single_child(architecture, "layout", loc_data);
-	ProcessLayout(Next, arch, loc_data);
-
-	/* Process device */
-	Next = get_single_child(architecture, "device", loc_data);
-	ProcessDevice(Next, arch, timing_enabled, loc_data);
-
-	/* Process switches */
-	Next = get_single_child(architecture, "switchlist", loc_data);
-	ProcessSwitches(Next, &(arch->Switches), &(arch->num_switches),
-			timing_enabled, loc_data);
-
-	/* Process switchblocks. This depends on switches */
-	bool switchblocklist_required = (arch->SBType == CUSTOM);	//require this section only if custom switchblocks are used
-	SWITCHBLOCKLIST_REQD = BoolToReqOpt(switchblocklist_required);	
-
-
-	/* Process segments. This depends on switches */
-	Next = get_single_child(architecture, "segmentlist", loc_data);
-	ProcessSegments(Next, &(arch->Segments), &(arch->num_segments),
-			arch->Switches, arch->num_switches, timing_enabled, switchblocklist_required, loc_data);
-	
-
-	Next = get_single_child(architecture, "switchblocklist", loc_data, SWITCHBLOCKLIST_REQD);
-	if (Next){
-		ProcessSwitchblocks(Next, &(arch->switchblocks), arch->Switches, arch->num_switches, loc_data);
-	}
-
-	/* Process types */
-	Next = get_single_child(architecture, "complexblocklist", loc_data);
-	ProcessComplexBlocks(Next, Types, NumTypes, *arch, loc_data);
-
-	/* Process directs */
-	Next = get_single_child(architecture, "directlist", loc_data, OPTIONAL);
-	if (Next) {
-		ProcessDirects(Next, &(arch->Directs), &(arch->num_directs),
-                arch->Switches, arch->num_switches,
-				loc_data);
-	}
-
-	/* Process architecture power information */
-
-	/* If arch->power has been initialized, meaning the user has requested power estimation,
-	 * then the power architecture information is required.
-	 */
-	if (arch->power) {
-		POWER_REQD = REQUIRED;
-	} else {
-		POWER_REQD = OPTIONAL;
-	}
-
-	Next = get_single_child(architecture, "power", loc_data, POWER_REQD);
-	if (Next) {
-		if (arch->power) {
-			ProcessPower(Next, arch->power, loc_data);
-		} else {
-			/* This information still needs to be read, even if it is just
-			 * thrown away.
-			 */
-			t_power_arch * power_arch_fake = (t_power_arch*) vtr::calloc(1,
-					sizeof(t_power_arch));
-			ProcessPower(Next, power_arch_fake, loc_data);
-			free(power_arch_fake);
-		}
-	}
-
-// Process Clocks
-	Next = get_single_child(architecture, "clocks", loc_data, POWER_REQD);
-	if (Next) {
-		if (arch->clocks) {
-			ProcessClocks(Next, arch->clocks, loc_data);
-		} else {
-			/* This information still needs to be read, even if it is just
-			 * thrown away.
-			 */
-			t_clock_arch * clocks_fake = (t_clock_arch*) vtr::calloc(1,
-					sizeof(t_clock_arch));
-			ProcessClocks(Next, clocks_fake, loc_data);
-			free(clocks_fake->clock_inf);
-			free(clocks_fake);
-		}
-	}
-	SyncModelsPbTypes(arch, *Types, *NumTypes);
-	UpdateAndCheckModels(arch);
-
 }
 
 
