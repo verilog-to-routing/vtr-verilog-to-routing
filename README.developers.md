@@ -65,7 +65,7 @@ To submit a build to coverity do the following:
     #From the VTR root
     mkdir -p build
     cd build
-    CC=gcc CXX=g++ cmake .. -DCMAKE_BUILD_TYPE=debug
+    CC=gcc CXX=g++ cmake ..
 
 Note that we explicitly asked for gcc and g++, the coverity build tool defaults to these compilers, and may not like the default 'cc' or 'c++' (even if they are linked to gcc/g++).
 
