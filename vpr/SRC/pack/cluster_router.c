@@ -97,8 +97,8 @@ static void load_trace_to_pb_route(t_pb_route *pb_route, const int total_pins, c
 ******************************************************************************************/
 #ifdef PRINT_INTRA_LB_ROUTE
 static void print_route(char *filename, t_lb_router_data *router_data);
-#endif
 static void print_trace(FILE *fp, t_lb_trace *trace);
+#endif
 
 /*****************************************************************************************
 * Constructor/Destructor functions 
@@ -999,7 +999,6 @@ static void print_route(char *filename, t_lb_router_data *router_data) {
 	}
 	fclose(fp);
 }
-#endif
 
 /* Debug routine, print out trace of net */
 static void print_trace(FILE *fp, t_lb_trace *trace) {
@@ -1016,6 +1015,7 @@ static void print_trace(FILE *fp, t_lb_trace *trace) {
 		print_trace(fp, &trace->next_nodes[ibranch]);
 	}
 }
+#endif
 
 static void reset_explored_node_tb(t_lb_router_data *router_data) {
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
