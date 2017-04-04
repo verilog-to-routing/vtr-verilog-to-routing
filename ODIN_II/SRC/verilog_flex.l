@@ -38,6 +38,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 %option noyywrap
 %option nounput
+%option noinput
 
 %%
 
