@@ -3,13 +3,10 @@ cmake_minimum_required(VERSION 2.8.12)
 project("vpr")
 
 #Collect the source files
-file(GLOB_RECURSE EXEC_SOURCES SRC/main.c)
-file(GLOB_RECURSE LIB_SOURCES SRC/*/*.c)
+file(GLOB_RECURSE EXEC_SOURCES SRC/main.cpp)
+file(GLOB_RECURSE LIB_SOURCES SRC/*/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS SRC/*/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
-
-#Treat .c as CXX
-set_source_files_properties(${LIB_SOURCES} ${EXEC_SOURCES} PROPERTIES LANGUAGE CXX)
 
 #Create the library
 add_library(libvpr STATIC
