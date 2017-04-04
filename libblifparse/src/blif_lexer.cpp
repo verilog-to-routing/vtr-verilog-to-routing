@@ -1,5 +1,5 @@
 #include "blif_lexer.hpp"
-#include "blif_lexer.gen.h" //For blifparse_lex_*()
+#include "blif_lexer.gen.hpp" //For blifparse_lex_*()
 
 extern YY_DECL; //For blifparse_lex()
 
