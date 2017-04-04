@@ -113,6 +113,15 @@ def main():
     sys.exit(num_failed)
 
 def build_config(args, cc, cxx, config):
+
+    if not compiler_is_found(cc):
+        print "Failed to find C compiler {}, skipping".format(cc)
+        return False
+
+    if not compiler_is_found(cxx):
+        print "Failed to find C++ compiler {}, skipping".format(cxx)
+        return False
+
     config_strs = []
     for key, value in config.iteritems():
         config_strs += ["{}={}".format(key, value)]
@@ -190,6 +199,14 @@ def is_valid_warning_error(line):
                     return False #Suppressed
             return True #Valid error/warning
     return False #Not a problem
+
+def compiler_is_found(execname):
+
+    try:
+        result = subprocess.check_output([execname, "--version"], stderr=subprocess.PIPE) == 0
+    except OSError as e:
+        return False
+    return True
 
 if __name__ == "__main__":
     main()
