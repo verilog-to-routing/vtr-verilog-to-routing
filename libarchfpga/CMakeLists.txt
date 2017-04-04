@@ -2,13 +2,10 @@ cmake_minimum_required(VERSION 2.8.12)
 
 project("libarchfpga")
 
-file(GLOB_RECURSE EXEC_SOURCES main.c)
-file(GLOB_RECURSE LIB_SOURCES *.c)
-file(GLOB_RECURSE LIB_HEADERS include/*.h)
+file(GLOB_RECURSE EXEC_SOURCES main.cpp)
+file(GLOB_RECURSE LIB_SOURCES src/*.cpp)
+file(GLOB_RECURSE LIB_HEADERS src/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
-
-#Treat .c as CXX
-set_source_files_properties(${LIB_SOURCES} PROPERTIES LANGUAGE CXX)
 
 #Remove test executable from library
 list(REMOVE_ITEM LIB_SOURCES ${EXEC_SOURCES})
