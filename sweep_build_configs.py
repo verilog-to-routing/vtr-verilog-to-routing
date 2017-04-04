@@ -3,10 +3,11 @@ import argparse
 import subprocess
 import sys
 import os
+import re
 import shutil
 from collections import OrderedDict
 
-DEFAULT_TARGETS_TO_BUILD=["vpr"]
+DEFAULT_TARGETS_TO_BUILD=["all"]
 
 DEFAULT_GNU_COMPILER_VERSIONS=["4.9", "5", "6"]
 DEFAULT_CLANG_COMPILER_VERSIONS=["3.6", "3.8"]
@@ -15,8 +16,19 @@ DEFAULT_EASYGL_CONFIGS = ["OFF", "ON"]
 DEFAULT_TATUM_PARALLEL_CONFIGS = ["ON", "OFF"]
 DEFAULT_VTR_ASSERT_LEVELS= ["2", "3"]#, "1", "0"]
 
+
+ERROR_WARNING_REGEXES = [
+        re.compile(r".*warning:.*"),
+        re.compile(r".*error:.*"),
+    ]
+
+SUPPRESSION_ERROR_WARNING_REGEXES = [
+        #We compile some .c files as C++, so we don't worry about these warnings from clang
+        re.compile(r".*clang:.*warning:.*treating.*c.*as.*c\+\+.*"),
+    ]
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="Test building the specified targets with multiple compilers and build configurations")
+    parser = argparse.ArgumentParser(description="Test building VTR for multiple different build configurations and compilers")
 
     parser.add_argument("targets", 
                         nargs="*",
@@ -107,6 +119,7 @@ def build_config(args, cc, cxx, config):
 
     log_file = "build_{}_{}_{}.log".format(cc, cxx, '__'.join(config_strs))
 
+    build_successful = True
     with open(log_file, 'w') as f:
         print "Building with CC={} CXX={}:".format(cc, cxx)
         print >>f, "Building with CC={} CXX={}:".format(cc, cxx)
@@ -149,11 +162,34 @@ def build_config(args, cc, cxx, config):
         try:
             subprocess.check_call(build_cmd, cwd=build_dir, stdout=f, stderr=f, env=new_env)
         except subprocess.CalledProcessError as e:
-            print "\tERROR: see {}".format(log_file)
-            return False
+            build_successful = False
 
-    print "  OK"
-    return True
+    #Look for errors and warnings in the build log
+    issue_count = 0
+    with open(log_file) as f:
+        for line in f:
+            if is_valid_warning_error(line):
+                print "    " + line,
+                issue_count += 1
+
+    if not build_successful:
+        print "  ERROR: failed to compile"
+    else:
+        print "  OK",
+        if issue_count > 0:
+            print " ({} warnings)".format(issue_count),
+        print
+
+    return build_successful
+
+def is_valid_warning_error(line):
+    for issue_regex in ERROR_WARNING_REGEXES:
+        if issue_regex.match(line):
+            for suppression_regex in SUPPRESSION_ERROR_WARNING_REGEXES:
+                if suppression_regex.match(line):
+                    return False #Suppressed
+            return True #Valid error/warning
+    return False #Not a problem
 
 if __name__ == "__main__":
     main()
