@@ -9,6 +9,6 @@
 #endif
 
 #include "blif_common.hpp"
-#include "blif_parser.gen.h" //For the generated Parser class
+#include "blif_parser.gen.hpp" //For the generated Parser class
 
 #endif

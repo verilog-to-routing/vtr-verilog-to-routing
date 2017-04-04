@@ -25,14 +25,10 @@ file(GLOB_RECURSE LEXER_SOURCES src/blif*.l)
 file(GLOB_RECURSE PARSER_SOURCES src/blif*.y)
 
 #Make the flex and bison targets
-flex_target(BlifLexer ${LEXER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/blif_lexer.gen.c
-        COMPILE_FLAGS --header-file=${CMAKE_CURRENT_BINARY_DIR}/blif_lexer.gen.h)
-bison_target(BlifParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/blif_parser.gen.c)
+flex_target(BlifLexer ${LEXER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/blif_lexer.gen.cpp
+        COMPILE_FLAGS --header-file=${CMAKE_CURRENT_BINARY_DIR}/blif_lexer.gen.hpp)
+bison_target(BlifParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/blif_parser.gen.cpp)
 add_flex_bison_dependency(BlifLexer BlifParser)
-
-
-#Treat .c as CXX
-set_source_files_properties(${LIB_SOURCES} ${FLEX_BlifLexer_OUTPUTS} ${BISON_BlifParser_OUTPUT_SOURCE} PROPERTIES LANGUAGE CXX)
 
 #Suppress warnings in Flex/Bison generated files
 if(FLEX_BISON_WARN_SUPPRESS_FLAGS)
