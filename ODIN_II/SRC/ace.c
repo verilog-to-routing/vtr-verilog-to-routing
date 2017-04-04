@@ -423,7 +423,7 @@ void output_ace_info_node ( char *name, ace_obj_info_t *info, FILE *act_out ) {
  *---------------------------------------------------------------------------*/
 pset set_clear(pset r, int size)
 {
-    register int i = LOOPINIT(size);
+    int i = LOOPINIT(size);
     *r = i; do r[i] = 0; while (--i > 0);
     return r;
 }

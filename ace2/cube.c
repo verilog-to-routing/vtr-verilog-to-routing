@@ -4,10 +4,10 @@
 /* set_clear -- make "r" the empty set of "size" elements */
 /*
  pset set_clear(r, size)
- register pset r;
+ pset r;
  int size;
  {
- register int i = LOOPINIT(size);
+ int i = LOOPINIT(size);
  *r = i; do r[i] = 0; while (--i > 0);
  return r;
  }*/
