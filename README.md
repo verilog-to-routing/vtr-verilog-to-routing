@@ -22,7 +22,7 @@ For most users of VTR (rather than active developers) you should download the la
 
 Building
 ========
-On unix-like systems run `make` from the root directory.
+On unix-like systems run `make` from the root VTR directory.
 
 For more details see [here](BUILDING.md).
 
