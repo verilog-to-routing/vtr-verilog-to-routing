@@ -2,6 +2,7 @@
 using namespace std;
 
 #include "vtr_assert.h"
+#include "vtr_log.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -283,6 +284,11 @@ static void load_rr_indexed_data_T_values(int index_start,
 				num_switches++;
 			}
 		}
+
+        if (num_switches == 0) {
+            vtr::printf_warning(__FILE__, __LINE__, "Track %d had no switches\n", itrack);
+            continue;
+        }
         VTR_ASSERT(num_switches > 0);
 
 		avg_switch_R /= num_switches;
