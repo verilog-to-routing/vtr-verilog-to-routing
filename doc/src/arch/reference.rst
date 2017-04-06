@@ -76,8 +76,10 @@ An example models section containing a combinational primitive ``adder`` and a s
       </model>
     </models>
 
-Note that for ``single_port_ram`` above, the ports ``we``, ``addr``, ``data``, and ``out`` is a sequential output since they have a clock specified.
+Note that for ``single_port_ram`` above, the ports ``we``, ``addr``, ``data``, and ``out`` are sequential since they have a clock specified.
 Additionally ``addr`` and ``data`` are shown to be combinationally connected to ``out``; this corresponds to an internal timing path between the ``addr`` and ``data`` input registers, and the ``out`` output registers.
+
+For the ``adder`` the input ports ``a``, ``b`` and ``cin`` are each combintionally connected to the output ports ``cout`` and ``sumout`` (the adder is a purley combinational primitive).
 
 .. seealso:: For more examples of primitive timing modeling specifications see the :ref:`arch_model_timing_tutorial`
 
