@@ -8,6 +8,7 @@
 #include <fstream>
 #include <numeric>
 #include "tatum/util/tatum_assert.hpp"
+#include "tatum/util/OsFlagGuard.hpp"
 #include "tatum/base/sta_util.hpp"
 
 using std::cout;
@@ -254,6 +255,8 @@ void print_hold_tags_histogram(const TimingGraph& tg, const HoldTimingAnalyzer& 
 }
 
 void print_setup_tags(const TimingGraph& tg, const SetupTimingAnalyzer& analyzer) {
+    OsFlagGuard flag_guard(std::cout);
+
     std::cout << std::endl;
     std::cout << "Setup Tags:" << std::endl;
     std::cout << std::scientific;
@@ -274,6 +277,8 @@ void print_setup_tags(const TimingGraph& tg, const SetupTimingAnalyzer& analyzer
 }
 
 void print_hold_tags(const TimingGraph& tg, const HoldTimingAnalyzer& analyzer) {
+    OsFlagGuard flag_guard(std::cout);
+
     std::cout << std::endl;
     std::cout << "Hold Tags:" << std::endl;
     std::cout << std::scientific;

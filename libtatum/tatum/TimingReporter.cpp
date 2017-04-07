@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "tatum/util/tatum_math.hpp"
+#include "tatum/util/OsFlagGuard.hpp"
 #include "tatum/error.hpp"
 #include "tatum/TimingReporter.hpp"
 #include "tatum/TimingGraph.hpp"
@@ -169,6 +170,8 @@ void TimingReporter::report_unconstrained_endpoints_hold(std::ostream& os,
 void TimingReporter::report_timing(std::ostream& os,
                                    const std::vector<TimingPath>& paths, 
                                    size_t npaths) const {
+    tatum::OsFlagGuard flag_guard(os);
+
     os << "#Timing report of worst " << npaths << " path(s)\n";
     os << "# Unit scale: " << std::setprecision(0) << std::scientific << unit_scale_ << " seconds\n";
     os << "# Output precision: " << precision_ << "\n";

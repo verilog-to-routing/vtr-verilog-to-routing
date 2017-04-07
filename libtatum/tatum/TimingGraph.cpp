@@ -660,9 +660,8 @@ bool TimingGraph::validate_structure() const {
             if(in_edges.size() == 0) {
                 throw tatum::Error("CPIN has no in-coming edges");
             }
-            if(out_edges.size() == 0) {
-                throw tatum::Error("CPIN has no out-going edges");
-            }
+            //We do not check for out-going cpin edges, since there is no reason that
+            //a clock must be used
         }
         
         //Check node-type edge connectivity
