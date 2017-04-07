@@ -78,6 +78,10 @@ float RoutingSuccessPredictor::estimate_success_iteration() {
     if (iterations_.size() > min_history_) {
         auto model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor_);
         success_iteration = model.find_x_for_y_value(0.);
+
+        if(success_iteration < 0.) {
+            success_iteration = std::numeric_limits<float>::infinity();
+        }
     }
 
     return success_iteration;
