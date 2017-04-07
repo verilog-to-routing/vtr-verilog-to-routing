@@ -110,8 +110,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
         do_timing_analysis(slacks, timing_inf, false, true);
 
         if (getEchoEnabled()) {
-            if(isEchoFileEnabled(E_ECHO_TIMING_GRAPH))
-                print_timing_graph(getEchoFileName(E_ECHO_TIMING_GRAPH));
+            print_timing_graph("routing_stats.timing_graph.classic.echo");
             if (isEchoFileEnabled(E_ECHO_NET_DELAY)) 
                 print_net_delay(net_delay, getEchoFileName(E_ECHO_NET_DELAY));
         }

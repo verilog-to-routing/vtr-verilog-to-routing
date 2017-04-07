@@ -1019,10 +1019,13 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     float** net_delay = nullptr;
     vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
+    t_slack* slacks = nullptr;
 	if (vpr_setup.TimingEnabled) {
         //Load the net delays
         net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
         load_net_delay_from_routing(net_delay, g_clbs_nlist.net, g_clbs_nlist.net.size());
+
+        slacks = alloc_and_load_timing_graph(vpr_setup.Timing);
     }
 
 
@@ -1033,7 +1036,7 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 			vpr_setup.RoutingArch.wire_to_rr_ipin_switch,
 			vpr_setup.TimingEnabled, net_delay
 #ifdef ENABLE_CLASSIC_VPR_STA
-            , slacks, timing_inf
+            , slacks, vpr_setup.Timing
 #endif
             );
 
@@ -1064,6 +1067,8 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
         //Clean-up the net delays
         free_net_delay(net_delay, &net_delay_ch);
+
+        free_timing_graph(slacks);
     }
 }
 
