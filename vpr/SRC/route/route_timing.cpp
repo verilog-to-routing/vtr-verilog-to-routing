@@ -21,6 +21,7 @@
 #include "net_delay.h"
 #include "stats.h"
 #include "ReadOptions.h"
+#include "routing_success_predictor.h"
 
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
 #include "route_profiling.h"	
@@ -93,7 +94,8 @@ static void print_route_status_header();
 static void print_route_status(int itry, double elapsed_sec, 
                                double overused_ratio, const WirelengthInfo& wirelength_info,
                                bool timing_enabled,
-                               const SetupTimingInfo& timing_info);
+                               const SetupTimingInfo& timing_info,
+                               float est_success_iteration);
 
 
 /************************ Subroutine definitions *****************************/
@@ -118,7 +120,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
     tatum::TimingPathInfo critical_path;
 
 	// initialize and properly size the lookups for profiling fanout breakdown
-	 profiling::profiling_initialization(get_max_pins_per_net());
+	profiling::profiling_initialization(get_max_pins_per_net());
 
 	auto sorted_nets = vector<int>(g_clbs_nlist.net.size());
 
@@ -130,6 +132,16 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than());
 
 	timing_driven_route_structs route_structs{}; // allocs route strucs (calls default constructor)
+
+    RoutingSuccessPredictor routing_success_predictor;
+    float abort_iteration_threshold = std::numeric_limits<float>::infinity(); //Default no early abort
+    if (router_opts.routing_failure_predictor == SAFE) {
+        abort_iteration_threshold = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE * router_opts.max_router_iterations;
+    } else if (router_opts.routing_failure_predictor == AGGRESSIVE) {
+        abort_iteration_threshold = ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE * router_opts.max_router_iterations;
+    } else {
+        VTR_ASSERT_MSG(router_opts.routing_failure_predictor == OFF, "Unrecognized routing failure predictor setting");
+    }
 
 	/* First do one routing iteration ignoring congestion to get reasonable net 
 	   delay estimates. Set criticalities to 1 when timing analysis is on to 
@@ -219,34 +231,13 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		 * may abort the routing if the ratio is too high. */
 		overused_ratio = get_overused_ratio();
 		historical_overuse_ratio.push_back(overused_ratio);
+        routing_success_predictor.add_iteration_overuse(itry, overused_ratio * num_rr_nodes);
 
-		/**** Routing Predictor -- Determine when routing success is unlikely, and routing should be aborted ****/
-		int expected_success_route_iter = predict_success_route_iter(itry, historical_overuse_ratio, router_opts);
-		if (expected_success_route_iter == UNDEFINED) {
-			return false;
-		}
-
-#ifdef REGRESSION_EXIT
-		if (itry > 15) {
-			// compare their slopes over the last 5 iterations
-			double time_per_iteration_slope = linear_regression_vector(time_per_iteration, itry-5);
-			double congestion_per_iteration_slope = linear_regression_vector(historical_overuse_ratio, itry-5);
-			if (router_opts.congestion_analysis)
-				vtr::printf_info("%f s/iteration %f %/iteration\n", time_per_iteration_slope, congestion_per_iteration_slope);
-			// time is increasing and congestion is non-decreasing (grows faster than 10% per iteration)
-			if (congestion_per_iteration_slope > 0 && time_per_iteration_slope > 0.1*time_per_iteration.back()
-				&& time_per_iteration_slope > 1) {	// filter out noise
-				vtr::printf_info("Time per iteration growing too fast at slope %f s/iteration \n\
-								 while congestion grows at %f %/iteration, unlikely to finish.\n",
-					time_per_iteration_slope, congestion_per_iteration_slope);
-
-				return false;
-			}
-		}
-#endif
-		/**** END Routing Predictor ****/
-
-        //print_usage_by_wire_length();
+        float est_success_iteration = routing_success_predictor.estimate_success_iteration();
+        if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
+            vtr::printf_info("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
+            return false;
+        }
 
 		// finished routing, converged to a solution with all legal connections (no congestion)
 		if (success) {
@@ -273,10 +264,10 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #endif
 
 
-                print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info);
+                print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info, est_success_iteration);
 				vtr::printf_info("Critical path: %g ns\n", 1e9*critical_path.delay());
 			} else {
-                print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info);
+                print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info, est_success_iteration);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
                 float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
@@ -359,7 +350,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				if (stable_routing_configuration)
 					connections_inf.set_stable_critical_path_delay(critical_path.delay());
 			}
-            print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info);
+            print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info, est_success_iteration);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
             float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
@@ -371,7 +362,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
             }
 #endif
 		} else {
-            print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info);
+            print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info, est_success_iteration);
 		}
 
         if (router_opts.congestion_analysis) profiling::congestion_analysis();
@@ -1561,16 +1552,17 @@ static WirelengthInfo calculate_wirelength_info() {
 
 
 static void print_route_status_header() {
-    vtr::printf_info("--------- ---------- ------------------- ----------------- -------- ---------- ---------- \n");
-    vtr::printf_info("Iteration Time (sec)   Overused RR Nodes        Wirelength CPD (ns)  sTNS (ns)  sWNS (ns) \n");
-    vtr::printf_info("--------- ---------- ------------------- ----------------- -------- ---------- ---------- \n");	
+    vtr::printf_info("--------- ---------- ------------------- ----------------- -------- ---------- ---------- ---------------\n");
+    vtr::printf_info("Iteration Time (sec)   Overused RR Nodes        Wirelength CPD (ns)  sTNS (ns)  sWNS (ns) Est. Succ. Iter\n");
+    vtr::printf_info("--------- ---------- ------------------- ----------------- -------- ---------- ---------- ---------------\n");	
 
 }
 
 static void print_route_status(int itry, double elapsed_sec, 
                                double overused_ratio, const WirelengthInfo& wirelength_info,
                                bool timing_enabled,
-                               const SetupTimingInfo& timing_info) {
+                               const SetupTimingInfo& timing_info,
+                               float est_success_iteration) {
 
     //Iteration
     vtr::printf("%9d", itry);
@@ -1607,6 +1599,9 @@ static void print_route_status(int itry, double elapsed_sec,
     } else {
         vtr::printf(" %10s", "N/A");
     }
+
+    //Estimated success iteration
+    vtr::printf(" %15.1f", est_success_iteration);
 
     vtr::printf("\n");
 }
