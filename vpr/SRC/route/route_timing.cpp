@@ -1601,7 +1601,11 @@ static void print_route_status(int itry, double elapsed_sec,
     }
 
     //Estimated success iteration
-    vtr::printf(" %15.1f", est_success_iteration);
+    if (std::isnan(est_success_iteration)) {
+        vtr::printf(" %15s", "N/A");
+    } else {
+        vtr::printf(" %15.1f", est_success_iteration);
+    }
 
     vtr::printf("\n");
 }
