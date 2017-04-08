@@ -234,9 +234,13 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
         routing_success_predictor.add_iteration_overuse(itry, overused_ratio * num_rr_nodes);
 
         float est_success_iteration = routing_success_predictor.estimate_success_iteration();
-        if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
-            vtr::printf_info("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
-            return false;
+        if (overused_ratio * num_rr_nodes > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
+            //Only abort if we have a significatn number of overused resources
+            
+            if(!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
+                vtr::printf_info("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
+                return false;
+            }
         }
 
 		// finished routing, converged to a solution with all legal connections (no congestion)

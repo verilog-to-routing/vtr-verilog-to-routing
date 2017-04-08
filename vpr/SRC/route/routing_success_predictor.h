@@ -9,6 +9,10 @@
 constexpr float ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_SAFE = 3;
 constexpr float ROUTING_PREDICTOR_ITERATION_ABORT_FACTOR_AGGRESSIVE = 1.5;
 
+//If the number of overused resources is below this threshold do not abort.
+// This avoids giving up when solutions are nearly legal, but converging slowly
+constexpr size_t ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD = 100;
+
 class RoutingSuccessPredictor {
 public:
     RoutingSuccessPredictor(size_t min_history=8, float history_factor=0.5);
