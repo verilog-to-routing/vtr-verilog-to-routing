@@ -1,31 +1,25 @@
 Odin II - Version 1.0 - User's Manual
 
+PRE-REQUISITES
+-------------
+1. ctags
+2. bison
+3. flex
+4. gcc 5.x
+5. cmake 2.8.12 (minimum version)
+
+These packages are not included in this install and are left to the user. (On linux systems, these packages are generally available through your distribution's package management system.)
+
+
 INSTALL
 ------------
 
-1. libarchfpga
+ODIN uses CMake as it's build system. CMake provides a protable cross-platform build systems with many useful features.
 
-This library needs to be built for your platform.  The Makefile for
-Odin will link the libarchfpga library located in:
-../libarchfpga_5 or ../libarchfpga_6
+For unix-like systems we provide a wrapper Makefile which supports the traditional make and make clean commands, but calls CMake behind the scenes.
 
-By default Odin II uses libarchfpga_6. To compile it, change directory to 
-../libarchfpga_6 and type "make". 
+To build ODIN, run "make odin_II.exe" from the vtr root directory.
 
-2. Odin II
-
-Odin is compiled with a standard Makefile.  For the first time
-I would suggest a:
-make clean && make
-
-Note: 
-- that Odin relies on ctags, bison, and flex.  These details are not 
-included in this install and are left to the user. (On linux systems, 
-these packages are generally available through your distribution's package 
-management system.)
-- the default make targets VRP 6.0. For VPR 5.0 you can either
-change the Makefile variable "BUILD=" to VPR5 or you can type:
-make clean && make BUILD=VPR5
 
 USAGE
 -------------
