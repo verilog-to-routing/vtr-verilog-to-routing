@@ -2,7 +2,6 @@ vpr_status;String
 critical_path_delay;Range;0.80;1.40
 pack_time;Range;0.10;10.0
 place_time;Range;0.10;10.0
-min_chan_width_route_time;Range;0.10;10.0
 crit_path_route_time;Range;0.10;10.0
 num_pre_packed_nets;Range;0.9;1.10
 num_pre_packed_blocks;Range;0.9;1.10
