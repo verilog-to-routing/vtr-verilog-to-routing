@@ -644,9 +644,10 @@ sub check_golden {
 
 		# Check each parameter where the type determines what to check for
 		foreach my $value (@params) {
-			my $index = List::Util::first { $golden_params[$_] eq $value } 0 .. $#golden_params;
-			my $test_value   = trim(@test_line[$index]);
-			my $golden_value = trim(@golden_line[$index]);
+			my $test_index = List::Util::first { $test_params[$_] eq $value } 0 .. $#test_params;
+			my $golden_index = List::Util::first { $golden_params[$_] eq $value } 0 .. $#golden_params;
+			my $test_value   = trim(@test_line[$test_index]);
+			my $golden_value = trim(@golden_line[$golden_index]);
 
 
 			if ( $type{$value} eq "Range" ) {
