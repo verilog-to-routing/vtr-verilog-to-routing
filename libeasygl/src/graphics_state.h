@@ -63,27 +63,30 @@ public:
     t_x11_state();
     ~t_x11_state();
 
-    Display *display;
+    Display *display = nullptr;
     int screen_num;
     Window toplevel, menu, textarea;
     GC gc_normal, gc_xor, gc_menus, current_gc;
-    XftDraw *toplevel_draw, *menu_draw, *textarea_draw;
+    XftDraw *toplevel_draw = nullptr, 
+            *menu_draw = nullptr, 
+            *textarea_draw = nullptr;
     XftColor xft_menutextcolor;
     XftColor xft_currentcolor;
     XVisualInfo visual_info;
     Colormap colormap_to_use;
 
     // single multi-buffering variables
-    Drawable* draw_area;
+    Drawable* draw_area = nullptr;
     Pixmap draw_buffer;
-    XftDraw *draw_buffer_draw, *draw_area_draw;
+    XftDraw *draw_buffer_draw = nullptr, 
+            *draw_area_draw = nullptr;
 
     // window attributes here so I only have to call XGetWindowAttributes on resize
     XWindowAttributes attributes;
 
     // Cairo related things
-    cairo_surface_t *cairo_surface;
-    cairo_t *ctx;
+    cairo_surface_t *cairo_surface = nullptr;
+    cairo_t *ctx = nullptr;
 
     static t_x11_state *getInstance();
 
@@ -215,7 +218,7 @@ struct t_gl_state {
     t_coordinate_system currentcoordinatesystem;
     t_draw_to current_draw_to;  
     e_draw_mode current_draw_mode;
-    FILE *ps;
+    FILE *ps = nullptr;
     bool ProceedPressed;
     char statusMessage[BUFSIZE];
     FontCache font_info;

@@ -416,9 +416,27 @@ bool LOD_min_dim_test(float dim_threshold);
  */
 bool LOD_screen_area_test(t_bound_box test, float screen_area_threshold);
 
+
+/**
+ * returns the screen coordinates (i.e. pixel location) of the world coordinate 'point'
+ */
 t_point world_to_scrn(const t_point& point);
+
+
+/**
+ * returns the screen coordinates (i.e. pixel locations) of the world coordinate bounding box
+ * 'box'
+ */
 t_bound_box world_to_scrn(const t_bound_box& box);
+
+/**
+ * returns the world coordinates of the screen (i.e. pixel) location 'point'
+ */
 t_point scrn_to_world(const t_point& point);
+
+/**
+ * returns the world coordinates of the screen (i.e. pixel) bounding box 'box'
+ */
 t_bound_box scrn_to_world(const t_bound_box& box);
 
 /***************** POSTSCRIPT PRINTING ROUTINES ******************************/

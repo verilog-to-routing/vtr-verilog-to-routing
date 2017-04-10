@@ -15,10 +15,10 @@ class SurfaceImpl;
 
 class Surface {
     public:
-        Surface() = default;
+        Surface();
         Surface(const char* filePath);
-        ~Surface() = default;
-        Surface& operator=(const Surface& rhs) = default; // assignment operator
+        ~Surface();
+        Surface& operator=(Surface rhs); // assignment operator
         Surface(const Surface& surface);
 
         void setSurface(const char* filePath);
@@ -26,6 +26,8 @@ class Surface {
     private:
         //Requires access to the underlying cairo surface object
         friend void draw_surface(const Surface& surface, float x, float y);
+
+        friend void swap(Surface& lhs, Surface& rhs);
 
         //We use the PIMPL idiom to avoid the main graphics.h
         //interface becoming dependant on cario headers, which 

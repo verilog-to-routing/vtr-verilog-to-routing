@@ -337,7 +337,7 @@ typedef struct {
     HWND hwnd;
 #endif
     t_button_type type;
-    char text[BUTTON_TEXT_LEN];
+    char text[BUTTON_TEXT_LEN]; //Space for terminator
     int poly[3][2];
     bool ispressed;
     bool enabled;
@@ -1298,6 +1298,7 @@ void create_button(const char *prev_button_text, const char *button_text,
     button_state.button[i].width = 90;
     button_state.button[i].type = button_type;
     strncpy(button_state.button[i].text, button_text, BUTTON_TEXT_LEN);
+    button_state.button[i].text[BUTTON_TEXT_LEN-1] = '\0'; //Ensure null termination
     button_state.button[i].fcn = button_func;
     button_state.button[i].ispressed = false;
     button_state.button[i].enabled = true;
@@ -2565,6 +2566,7 @@ draw_message(void) {
 void
 update_message(const string& msg) {
     strncpy(gl_state.statusMessage, msg.c_str(), BUFSIZE);
+    gl_state.statusMessage[BUFSIZE-1] = '\0'; //Ensure null terimination
     draw_message();
 #ifdef X11
     // Make this appear immediately.  Win32 does that automaticaly.
@@ -3355,6 +3357,7 @@ void change_button_text(const char *button_name, const char *new_button_text) {
 
     if (bnum != -1) {
         strncpy(button_state.button[i].text, new_button_text, BUTTON_TEXT_LEN);
+        button_state.button[i].text[BUTTON_TEXT_LEN-1] = '\0'; //Ensure null terimination
 #ifdef X11
         x11_drawbut(i);
 #else // Win32
@@ -3803,6 +3806,7 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
                     default:
                         break;  
                 }
+                break;
             case MotionNotify:
 #ifdef VERBOSE 
 //                printf("Got a MotionNotify Event.\n");
