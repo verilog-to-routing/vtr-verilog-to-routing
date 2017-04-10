@@ -32,8 +32,8 @@ routed_wirelength;vpr.out;Total wirelength: (.*), average
 
 #VPR Analysis (final implementation) Metrics
 critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
-setup_TNS;vpr.out;Setup Total Negative Slack \(sTNS\): (.*) ns
-setup_WNS;vpr.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
+setup_TNS;vpr.crit_path.out;Setup Total Negative Slack \(sTNS\): (.*) ns
+setup_WNS;vpr.crit_path.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
 
 #VPR Run-time Metrics
 pack_time;vpr.out;Packing took (.*) seconds
