@@ -195,7 +195,11 @@ sub run_single_task {
 		my $line = $_;
 		chomp($line);
 
+        #Skip comment-only or blank lines
 		if ( $line =~ /^\s*#.*$/ or $line =~ /^\s*$/ ) { next; }
+
+        #Trim off a line-ending comment
+        $line =~ s/#.*$//;
 
 		my @data  = split( /=/, $line );
 		my $key   = trim( $data[0] );

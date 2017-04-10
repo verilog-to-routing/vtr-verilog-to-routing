@@ -149,6 +149,9 @@ sub parse_single_task {
 		# Ignore comments
 		if ( $line =~ /^\s*#.*$/ or $line =~ /^\s*$/ ) { next; }
 
+        #Trim off a line-ending comment
+        $line =~ s/#.*$//;
+
 		my @data  = split( /=/, $line );
 		my $key   = trim( $data[0] );
 		my $value = trim( $data[1] );
