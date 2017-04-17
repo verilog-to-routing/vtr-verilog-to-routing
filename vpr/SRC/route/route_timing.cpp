@@ -96,6 +96,7 @@ static void print_route_status(int itry, double elapsed_sec,
                                bool timing_enabled,
                                const SetupTimingInfo& timing_info,
                                float est_success_iteration);
+static int round_up(float x);
 
 
 /************************ Subroutine definitions *****************************/
@@ -1011,9 +1012,11 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 }
 
 
-/* Macro used below to ensure that fractions are rounded up, but floating   *
+/* Used below to ensure that fractions are rounded up, but floating   *
  * point values very close to an integer are rounded to that integer.       */
-#define ROUND_UP(x) (ceil (x - 0.001))
+static int round_up(float x) {
+    return std::ceil(x - 0.001);
+}
 
 static int get_expected_segs_to_target(int inode, int target_node,
 		int *num_segs_ortho_dir_ptr) {
@@ -1044,12 +1047,10 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		/* Count vertical (orthogonal to inode) segs first. */
 
 		if (ylow > target_y) { /* Coming from a row above target? */
-			*num_segs_ortho_dir_ptr =
-					(int)(ROUND_UP((ylow - target_y + 1.) * ortho_inv_length));
+			*num_segs_ortho_dir_ptr = round_up((ylow - target_y + 1.) * ortho_inv_length);
 			no_need_to_pass_by_clb = 1;
 		} else if (ylow < target_y - 1) { /* Below the CLB bottom? */
-			*num_segs_ortho_dir_ptr = (int)(ROUND_UP((target_y - ylow) *
-					ortho_inv_length));
+			*num_segs_ortho_dir_ptr = round_up((target_y - ylow) * ortho_inv_length);
 			no_need_to_pass_by_clb = 1;
 		} else { /* In a row that passes by target CLB */
 			*num_segs_ortho_dir_ptr = 0;
@@ -1060,11 +1061,11 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		/* Now count horizontal (same dir. as inode) segs. */
 
 		if (xlow > target_x + no_need_to_pass_by_clb) {
-			num_segs_same_dir = (int)(ROUND_UP((xlow - no_need_to_pass_by_clb -
-							target_x) * inv_length));
+			num_segs_same_dir = round_up((xlow - no_need_to_pass_by_clb -
+							target_x) * inv_length);
 		} else if (xhigh < target_x - no_need_to_pass_by_clb) {
-			num_segs_same_dir = (int)(ROUND_UP((target_x - no_need_to_pass_by_clb -
-							xhigh) * inv_length));
+			num_segs_same_dir = round_up((target_x - no_need_to_pass_by_clb -
+							xhigh) * inv_length);
 		} else {
 			num_segs_same_dir = 0;
 		}
@@ -1078,12 +1079,11 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		/* Count horizontal (orthogonal to inode) segs first. */
 
 		if (xlow > target_x) { /* Coming from a column right of target? */
-			*num_segs_ortho_dir_ptr = (int)(
-					ROUND_UP((xlow - target_x + 1.) * ortho_inv_length));
+			*num_segs_ortho_dir_ptr = round_up((xlow - target_x + 1.) * ortho_inv_length);
 			no_need_to_pass_by_clb = 1;
 		} else if (xlow < target_x - 1) { /* Left of and not adjacent to the CLB? */
-			*num_segs_ortho_dir_ptr = (int)(ROUND_UP((target_x - xlow) *
-					ortho_inv_length));
+			*num_segs_ortho_dir_ptr = round_up((target_x - xlow) *
+					ortho_inv_length);
 			no_need_to_pass_by_clb = 1;
 		} else { /* In a column that passes by target CLB */
 			*num_segs_ortho_dir_ptr = 0;
@@ -1093,11 +1093,11 @@ static int get_expected_segs_to_target(int inode, int target_node,
 		/* Now count vertical (same dir. as inode) segs. */
 
 		if (ylow > target_y + no_need_to_pass_by_clb) {
-			num_segs_same_dir = (int)(ROUND_UP((ylow - no_need_to_pass_by_clb -
-							target_y) * inv_length));
+			num_segs_same_dir = round_up((ylow - no_need_to_pass_by_clb -
+							target_y) * inv_length);
 		} else if (yhigh < target_y - no_need_to_pass_by_clb) {
-			num_segs_same_dir = (int)(ROUND_UP((target_y - no_need_to_pass_by_clb -
-							yhigh) * inv_length));
+			num_segs_same_dir = round_up((target_y - no_need_to_pass_by_clb -
+							yhigh) * inv_length);
 		} else {
 			num_segs_same_dir = 0;
 		}
