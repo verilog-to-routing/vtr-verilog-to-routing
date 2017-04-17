@@ -365,7 +365,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
             timing_info = make_setup_timing_info(routing_delay_calc);
         } else {
-            timing_info = make_no_op_timing_info();
+            timing_info = make_constant_timing_info(0.);
         }
 
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(type_descriptors, num_types);
@@ -373,7 +373,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
 		success = try_timing_driven_route(router_opts, net_delay, 
             intra_lb_pb_pin_lookup,
-            *timing_info,
+            timing_info,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
 #endif

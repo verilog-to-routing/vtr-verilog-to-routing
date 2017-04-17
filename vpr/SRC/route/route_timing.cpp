@@ -94,7 +94,7 @@ static void print_route_status_header();
 static void print_route_status(int itry, double elapsed_sec, 
                                double overused_ratio, const WirelengthInfo& wirelength_info,
                                bool timing_enabled,
-                               const SetupTimingInfo& timing_info,
+                               std::shared_ptr<const SetupTimingInfo> timing_info,
                                float est_success_iteration);
 static int round_up(float x);
 
@@ -103,7 +103,7 @@ static int round_up(float x);
 bool try_timing_driven_route(struct s_router_opts router_opts,
 		float **net_delay, 
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        SetupTimingInfo& timing_info,
+        std::shared_ptr<SetupTimingInfo> timing_info,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks, 
 #endif
@@ -174,7 +174,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	CBRR connections_inf {};
 	VTR_ASSERT_SAFE(connections_inf.sanity_check_lookup());
 
-
 	float pres_fac = router_opts.first_iter_pres_fac; /* Typically 0 -> ignore cong. */
 
 	for (int itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
@@ -185,18 +184,24 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			g_clbs_nlist.net[inet].is_fixed = false;
 		}
 
+        std::shared_ptr<SetupTimingInfo> route_timing_info = timing_info;
+        if (timing_analysis_enabled && itry == 1) {
+            //First routing iteration, make all nets critical for a min-delay routing
+            route_timing_info = make_constant_timing_info(1.); 
+        }
+
 		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
 			bool is_routable = try_timing_driven_route_net(
-				sorted_nets[i],
-				itry,
-				pres_fac,
-				router_opts,
-				connections_inf,
-				route_structs.pin_criticality,
-				route_structs.rt_node_of_sink,
-				net_delay,
-                pb_gpin_lookup,
-                timing_info);
+                    sorted_nets[i],
+                    itry,
+                    pres_fac,
+                    router_opts,
+                    connections_inf,
+                    route_structs.pin_criticality,
+                    route_structs.rt_node_of_sink,
+                    net_delay,
+                    pb_gpin_lookup,
+                    route_timing_info);
 
 			if (!is_routable) {
 				return (false);
@@ -254,15 +259,15 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				do_timing_analysis(slacks, timing_inf, false, true);
 #endif
 
-                timing_info.update();
+                timing_info->update();
 
-                critical_path = timing_info.least_slack_critical_path();
+                critical_path = timing_info->least_slack_critical_path();
 
 #ifdef ENABLE_CLASSIC_VPR_STA
                 float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
                 if(cpd_diff_ns > 0.01) {
                     print_classic_cpds();
-                    print_tatum_cpds(timing_info.critical_paths());
+                    print_tatum_cpds(timing_info->critical_paths());
 
                     vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
                 }
@@ -278,7 +283,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
                 float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
                 if(cpd_diff_ns > 0.01) {
                     print_classic_cpds();
-                    print_tatum_cpds(timing_info.critical_paths());
+                    print_tatum_cpds(timing_info->critical_paths());
 
                     vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
                 }
@@ -317,8 +322,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			do_timing_analysis(slacks, timing_inf, false, true);
 #endif
 
-            timing_info.update();
-            timing_info.set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during routing
+            timing_info->update();
+            timing_info->set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during routing
 
 		} else {
 			/* If timing analysis is not enabled, make sure that the criticalities and the
@@ -336,7 +341,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 		
 		if (timing_analysis_enabled) {
-            critical_path = timing_info.least_slack_critical_path();
+            critical_path = timing_info->least_slack_critical_path();
 
 			// check if any connection needs to be forcibly rerouted
 			// first iteration sets up the lower bound connection delays since only timing is optimized for
@@ -361,7 +366,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
             float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
             if(cpd_diff_ns > 0.01) {
                 print_classic_cpds();
-                print_tatum_cpds(timing_info.critical_paths());
+                print_tatum_cpds(timing_info->critical_paths());
 
                 vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
             }
@@ -388,7 +393,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		float* pin_criticality,
 		t_rt_node** rt_node_of_sink, float** net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        SetupTimingInfo& timing_info) {
+        std::shared_ptr<SetupTimingInfo> timing_info) {
 
 	bool is_routed = false;
 
@@ -412,7 +417,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 				rt_node_of_sink, 
                 net_delay[inet],
                 pb_gpin_lookup,
-                &timing_info);
+                timing_info);
 
 		profiling::net_fanout_end(g_clbs_nlist.net[inet].num_sinks());
 
@@ -527,14 +532,13 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		float *pin_criticality, int min_incremental_reroute_fanout,
 		t_rt_node ** rt_node_of_sink, float *net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        const SetupTimingInfo* timing_info
+        std::shared_ptr<const SetupTimingInfo> timing_info
         ) {
 
 	/* Returns true as long as found some way to hook up this net, even if that *
 	 * way resulted in overuse of resources (congestion).  If there is no way   *
 	 * to route this net, even ignoring congestion, it returns false.  In this  *
-	 * case the rr_graph is disconnected and you can give up.                   *
-     * If timing_info = NULL, give each net a dummy criticality of 0.			*/
+	 * case the rr_graph is disconnected and you can give up.                   */
 
 	unsigned int num_sinks = g_clbs_nlist.net[inet].num_sinks();
 
@@ -550,29 +554,22 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	// calculate criticality of remaining target pins
 	for (int ipin : remaining_targets) {
-		/* Use criticality of 1. This makes all nets critical.  Note: There is a big difference between setting pin criticality to 0
-		compared to 1.  If pin criticality is set to 0, then the current path delay is completely ignored during routing.  By setting
-		pin criticality to 1, the current path delay to the pin will always be considered and optimized for */
-        if(timing_info == nullptr) {
-            pin_criticality[ipin] = 1.0;
-        } else {
-            pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, inet, ipin);
+        pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, inet, ipin);
 
-			/* Currently, pin criticality is between 0 and 1. Now shift it downwards 
-			by 1 - max_criticality (max_criticality is 0.99 by default, so shift down
-			by 0.01) and cut off at 0.  This means that all pins with small criticalities 
-			(<0.01) get criticality 0 and are ignored entirely, and everything
-			else becomes a bit less critical. This effect becomes more pronounced if
-			max_criticality is set lower. */
-			// VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
-			pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
+        /* Pin criticality is between 0 and 1. 
+         * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default, 
+         * so shift down by 0.01) and cut off at 0.  This means that all pins with small 
+         * criticalities (<0.01) get criticality 0 and are ignored entirely, and everything 
+         * else becomes a bit less critical. This effect becomes more pronounced if 
+         * max_criticality is set lower. */
+        // VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
+        pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
 
-			/* Take pin criticality to some power (1 by default). */
-			pin_criticality[ipin] = pow(pin_criticality[ipin], criticality_exp);
-			
-			/* Cut off pin criticality at max_criticality. */
-			pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);			
-        }
+        /* Take pin criticality to some power (1 by default). */
+        pin_criticality[ipin] = pow(pin_criticality[ipin], criticality_exp);
+        
+        /* Cut off pin criticality at max_criticality. */
+        pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);			
 	}
 
 	// compare the criticality of different sink nodes
@@ -629,8 +626,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 
 	profiling::sink_criticality_start();
 
-	int highfanout_rlim = mark_node_expansion_by_bin(inet, target_node,
-			rt_root);
+	int highfanout_rlim = mark_node_expansion_by_bin(inet, target_node, rt_root);
 	
 	if (itarget > 0 && itry > 5) {
 		/* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
@@ -951,8 +947,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 	} /* End for all neighbours */
 }
 
-static float get_timing_driven_expected_cost(int inode, int target_node,
-		float criticality_fac, float R_upstream) {
+static float get_timing_driven_expected_cost(int inode, int target_node, float criticality_fac, float R_upstream) {
 
 	/* Determines the expected cost (due to both delay and resouce cost) to reach *
 	 * the target node from inode.  It doesn't include the cost of inode --       *
@@ -969,44 +964,29 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 #ifdef USE_MAP_LOOKAHEAD
 		return get_lookahead_map_cost(inode, target_node, criticality_fac);
 #else
-		num_segs_same_dir = get_expected_segs_to_target(inode, target_node,
-				&num_segs_ortho_dir);
+		num_segs_same_dir = get_expected_segs_to_target(inode, target_node, &num_segs_ortho_dir);
 		cost_index = rr_node[inode].get_cost_index();
 		ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
 
-		cong_cost = num_segs_same_dir * rr_indexed_data[cost_index].base_cost
-				+ num_segs_ortho_dir
-						* rr_indexed_data[ortho_cost_index].base_cost;
-		cong_cost += rr_indexed_data[IPIN_COST_INDEX].base_cost
-				+ rr_indexed_data[SINK_COST_INDEX].base_cost;
+		cong_cost =   num_segs_same_dir * rr_indexed_data[cost_index].base_cost
+				    + num_segs_ortho_dir * rr_indexed_data[ortho_cost_index].base_cost;
+		cong_cost +=   rr_indexed_data[IPIN_COST_INDEX].base_cost
+				     + rr_indexed_data[SINK_COST_INDEX].base_cost;
 
-		Tdel =
-				num_segs_same_dir * rr_indexed_data[cost_index].T_linear
-						+ num_segs_ortho_dir
-								* rr_indexed_data[ortho_cost_index].T_linear
-						+ num_segs_same_dir * num_segs_same_dir
-								* rr_indexed_data[cost_index].T_quadratic
-						+ num_segs_ortho_dir * num_segs_ortho_dir
-								* rr_indexed_data[ortho_cost_index].T_quadratic
-						+ R_upstream
-								* (num_segs_same_dir
-										* rr_indexed_data[cost_index].C_load
-										+ num_segs_ortho_dir
-												* rr_indexed_data[ortho_cost_index].C_load);
+		Tdel =   num_segs_same_dir * rr_indexed_data[cost_index].T_linear
+               + num_segs_ortho_dir * rr_indexed_data[ortho_cost_index].T_linear
+               + num_segs_same_dir * num_segs_same_dir * rr_indexed_data[cost_index].T_quadratic
+               + num_segs_ortho_dir * num_segs_ortho_dir * rr_indexed_data[ortho_cost_index].T_quadratic
+               + R_upstream * (num_segs_same_dir * rr_indexed_data[cost_index].C_load + num_segs_ortho_dir * rr_indexed_data[ortho_cost_index].C_load);
 
 		Tdel += rr_indexed_data[IPIN_COST_INDEX].T_linear;
 
-		expected_cost = criticality_fac * Tdel
-				+ (1. - criticality_fac) * cong_cost;
+		expected_cost = criticality_fac * Tdel + (1. - criticality_fac) * cong_cost;
 		return (expected_cost);
 #endif
-	}
-
-	else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
+	} else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
 		return (rr_indexed_data[SINK_COST_INDEX].base_cost);
-	}
-
-	else { /* Change this if you want to investigate route-throughs */
+	} else { /* Change this if you want to investigate route-throughs */
 		return (0.);
 	}
 }
@@ -1448,7 +1428,7 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(const
 }
 
 bool Connection_based_routing_resources::forcibly_reroute_connections(float max_criticality, 
-        const SetupTimingInfo& timing_info,
+        std::shared_ptr<const SetupTimingInfo> timing_info,
         const IntraLbPbPinLookup& pb_gpin_lookup,
         const float* const * net_delay) {
 
@@ -1488,7 +1468,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			}
 				
 			// skip if connection criticality is too low (not a problem connection)
-            float pin_criticality = calculate_clb_net_pin_criticality(timing_info, pb_gpin_lookup, inet, ipin);
+            float pin_criticality = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, inet, ipin);
 			if (pin_criticality < (max_criticality * connection_criticality_tolerance))
 				continue;
 
@@ -1565,7 +1545,7 @@ static void print_route_status_header() {
 static void print_route_status(int itry, double elapsed_sec, 
                                double overused_ratio, const WirelengthInfo& wirelength_info,
                                bool timing_enabled,
-                               const SetupTimingInfo& timing_info,
+                               std::shared_ptr<const SetupTimingInfo> timing_info,
                                float est_success_iteration) {
 
     //Iteration
@@ -1582,7 +1562,7 @@ static void print_route_status(int itry, double elapsed_sec,
 
     //CPD
     if(timing_enabled) {
-        float cpd = timing_info.least_slack_critical_path().delay();
+        float cpd = timing_info->least_slack_critical_path().delay();
         vtr::printf(" %8.3f",  1e9*cpd);
     } else {
         vtr::printf(" %8s", "N/A");
@@ -1590,7 +1570,7 @@ static void print_route_status(int itry, double elapsed_sec,
 
     //sTNS
     if(timing_enabled) {
-        float sTNS = timing_info.setup_total_negative_slack();
+        float sTNS = timing_info->setup_total_negative_slack();
         vtr::printf(" % 10.4g",  1e9*sTNS);
     } else {
         vtr::printf(" %10s", "N/A");
@@ -1598,7 +1578,7 @@ static void print_route_status(int itry, double elapsed_sec,
 
     //sWNS
     if(timing_enabled) {
-        float sWNS = timing_info.setup_worst_negative_slack();
+        float sWNS = timing_info->setup_worst_negative_slack();
         vtr::printf(" % 10.3f",  1e9*sWNS);
     } else {
         vtr::printf(" %10s", "N/A");

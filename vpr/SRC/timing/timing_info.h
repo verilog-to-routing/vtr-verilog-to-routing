@@ -171,9 +171,9 @@ std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr
             );
 }
 
-inline std::unique_ptr<SetupHoldTimingInfo> make_no_op_timing_info() {
-     return std::unique_ptr<NoOpTimingInfo>(
-             new NoOpTimingInfo()
+inline std::unique_ptr<SetupHoldTimingInfo> make_constant_timing_info(const float criticality) {
+     return std::unique_ptr<ConstantTimingInfo>(
+             new ConstantTimingInfo(criticality)
             );
 }
 
