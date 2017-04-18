@@ -28,6 +28,7 @@ placed_setup_WNS_est;vpr.out;Placement estimated setup Worst Negative Slack \(sW
 
 #VPR Routing Metrics
 routed_wirelength;vpr.out;Total wirelength: (.*), average
+crit_path_route_success_iteration;vpr.out;Successfully routed after (\d+) routing iterations
 
 #VPR Analysis (final implementation) Metrics
 critical_path_delay;vpr.out;Final critical path: (.*) ns

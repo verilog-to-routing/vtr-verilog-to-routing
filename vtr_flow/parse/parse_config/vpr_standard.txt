@@ -26,9 +26,14 @@ placed_CPD_est;vpr.out;Placement estimated critical path delay: (.*) ns
 placed_setup_TNS_est;vpr.out;Placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
 placed_setup_WNS_est;vpr.out;Placement estimated setup Worst Negative Slack \(sWNS\): (.*) ns
 
-#VPR Routing Metrics
+#VPR Min W Routing Metrics
 min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
 routed_wirelength;vpr.out;Total wirelength: (.*), average
+min_chan_width_route_success_iteration;vpr.out;Successfully routed after (\d+) routing iterations
+
+#VPR Critical Path Routing Metrics
+crit_path_routed_wirelength;vpr.crit_path.out;Total wirelength: (.*), average
+crit_path_route_success_iteration;vpr.crit_path.out;Successfully routed after (\d+) routing iterations
 
 #VPR Analysis (final implementation) Metrics
 critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
