@@ -43,8 +43,8 @@ static void processComplexBlock(pugi::xml_node Parent, t_block *cb,
 		const int index, int *num_primitives,
         const pugiutil::loc_data& loc_data);
 
-static t_netlist* alloc_and_init_netlist_from_hash(const int ncount,
-		struct s_hash **nhash);
+static void alloc_and_init_netlist_from_hash(const int ncount,
+		struct s_hash **nhash, t_netlist* clb_nlist);
 
 static int add_net_to_hash(struct s_hash **nhash, const char *net_name,
 		int *ncount);
@@ -447,11 +447,12 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
  * nhash - hashtable of nets
  * returns array of nets stored in hashtable
  */
-static t_netlist* alloc_and_init_netlist_from_hash(int net_count, struct s_hash **nhash) {
+static void alloc_and_init_netlist_from_hash(int net_count, struct s_hash **nhash, t_netlist* nlist) {
 	struct s_hash_iterator hash_iter;
 	struct s_hash *curr_net;
 
-    t_netlist* nlist = new t_netlist;
+    VTR_ASSERT(nlist->net.size() == 0);
+
     nlist->net.resize(net_count); //Allocate space for nets
 
     hash_iter = start_hash_table_iterator();
@@ -463,8 +464,6 @@ static t_netlist* alloc_and_init_netlist_from_hash(int net_count, struct s_hash 
 
 		curr_net = get_next_hash(nhash, &hash_iter);
     }
-
-    return nlist;
 }
 
 /**
@@ -853,7 +852,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 	}
 
 	/* alloc and partially load the list of external nets */
-	clb_nlist = alloc_and_init_netlist_from_hash(ext_ncount, ext_nhash);
+	alloc_and_init_netlist_from_hash(ext_ncount, ext_nhash, clb_nlist);
 
 	/* Load global nets */
 	num_tokens = circuit_clocks.size();
@@ -880,6 +879,10 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 					clb_nlist->net[netnum].pins[count[netnum]].block = i;
 					clb_nlist->net[netnum].pins[count[netnum]].block_pin = j;
 
+                    //Pin to net mapping
+                    clb_nlist->net[netnum].pins[count[netnum]].net = netnum;
+                    clb_nlist->net[netnum].pins[count[netnum]].net_pin = count[netnum];
+
 					clb_nlist->net[netnum].is_global = block_list[i].type->is_global_pin[j]; 
                     /* Error check performed later to ensure no mixing of global and non-global signals */
 
@@ -892,6 +895,10 @@ static void load_external_nets_and_cb(const int L_num_blocks,
                     //Mark the mapping from net to block
 					clb_nlist->net[netnum].pins[0].block = i;
 					clb_nlist->net[netnum].pins[0].block_pin = j;
+
+                    //Pin to net mapping
+                    clb_nlist->net[netnum].pins[0].net = netnum;
+                    clb_nlist->net[netnum].pins[0].net_pin = 0;
 
                     //Mark the net pin numbers on the block
                     block_list[i].net_pins[j] = 0; //The driver
