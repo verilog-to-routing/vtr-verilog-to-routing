@@ -52,19 +52,21 @@ void read_place(const char *place_file, const char *arch_file,
 		};
 	}
 	if (error) {
-		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
-				"'%s' - Bad filename specification line in placement file.\n", 
-				place_file);
+		vpr_throw(VPR_ERROR_PLACE_F, place_file, line, 
+				"Bad filename specification line in placement file.");
 	}
-	if (tokens[2] != arch_file) {
-		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
-				"'%s' - Architecture file that generated placement (%s) does not match current architecture file (%s).\n", 
-				place_file, tokens[2].c_str(), arch_file);
+
+    //TODO: a more robust approach would be to save the hash (e.g. SHA256) of the net/arch files and compare those, rather than
+    //the filepaths
+	if (tokens[2] != net_file) {
+		vpr_throw(VPR_ERROR_PLACE_F, place_file, line, 
+				"Netlist file that generated placement (%s) does not match current netlist file (%s).\n", 
+				tokens[2].c_str(), net_file);
 	}
-	if (tokens[5] != net_file) {
-		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
-				"'%s' - Netlist file that generated placement (%s) does not match current netlist file (%s).\n", 
-				place_file, tokens[5].c_str(), net_file);
+	if (tokens[5] != arch_file) {
+		vpr_throw(VPR_ERROR_PLACE_F, place_file, line, 
+				"Architecture file that generated placement (%s) does not match current architecture file (%s).\n", 
+				tokens[5].c_str(), arch_file);
 	}
 
 	/* Check array size in second line matches */

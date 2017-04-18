@@ -79,7 +79,7 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 
 	if (!placer_opts.doPlacement || placer_opts.place_freq == PLACE_NEVER) {
 		/* Read the placement from a file */
-		read_place(place_file, net_file, arch_file, nx, ny, num_blocks, block);
+		read_place(place_file, arch_file, net_file, nx, ny, num_blocks, block);
 		sync_grid_to_blocks(num_blocks, nx, ny, grid);
 	} else {
 		VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
