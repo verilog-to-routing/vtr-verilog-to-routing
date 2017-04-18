@@ -221,6 +221,7 @@ static void alloc_delay_lookup_netlists() {
 }
 
 static void free_delay_lookup_netlists() {
+    free_global_nlist_net(&g_clbs_nlist);
     free_block();
 }
 
@@ -573,7 +574,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	CBRR dummy_connections_inf;
 	dummy_connections_inf.prepare_routing_for_net(NET_USED);
 
-    std::shared_ptr<SetupTimingInfo> timing_info = make_constant_timing_info(1.); //Criticality 1. to ensure min-delay routing
+    std::shared_ptr<SetupTimingInfo> timing_info;
 
     IntraLbPbPinLookup dummy_pb_pin_lookup(type_descriptors, num_types);
 
@@ -581,7 +582,8 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 			router_opts.max_criticality, router_opts.criticality_exp,
 			router_opts.astar_fac, router_opts.bend_cost, 
 			dummy_connections_inf,
-			pin_criticality, router_opts.min_incremental_reroute_fanout, rt_node_of_sink, 
+			nullptr, //We pass in no criticality array, indicating we want a min-delay routing
+            router_opts.min_incremental_reroute_fanout, rt_node_of_sink, 
 			net_delay[NET_USED],
             dummy_pb_pin_lookup,
             timing_info);

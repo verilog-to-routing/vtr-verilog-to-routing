@@ -552,38 +552,47 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	VTR_ASSERT(!remaining_targets.empty());
 
 
-	// calculate criticality of remaining target pins
-	for (int ipin : remaining_targets) {
-        pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, inet, ipin);
+    if (pin_criticality != nullptr) {
+        // calculate criticality of remaining target pins
+        for (int ipin : remaining_targets) {
+            pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, inet, ipin);
 
-        /* Pin criticality is between 0 and 1. 
-         * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default, 
-         * so shift down by 0.01) and cut off at 0.  This means that all pins with small 
-         * criticalities (<0.01) get criticality 0 and are ignored entirely, and everything 
-         * else becomes a bit less critical. This effect becomes more pronounced if 
-         * max_criticality is set lower. */
-        // VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
-        pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
+            /* Pin criticality is between 0 and 1. 
+             * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default, 
+             * so shift down by 0.01) and cut off at 0.  This means that all pins with small 
+             * criticalities (<0.01) get criticality 0 and are ignored entirely, and everything 
+             * else becomes a bit less critical. This effect becomes more pronounced if 
+             * max_criticality is set lower. */
+            // VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
+            pin_criticality[ipin] = max(pin_criticality[ipin] - (1.0 - max_criticality), 0.0);
 
-        /* Take pin criticality to some power (1 by default). */
-        pin_criticality[ipin] = pow(pin_criticality[ipin], criticality_exp);
-        
-        /* Cut off pin criticality at max_criticality. */
-        pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);			
-	}
+            /* Take pin criticality to some power (1 by default). */
+            pin_criticality[ipin] = pow(pin_criticality[ipin], criticality_exp);
+            
+            /* Cut off pin criticality at max_criticality. */
+            pin_criticality[ipin] = min(pin_criticality[ipin], max_criticality);			
+        }
 
-	// compare the criticality of different sink nodes
-	sort(begin(remaining_targets), end(remaining_targets), Criticality_comp{pin_criticality});
+        // compare the criticality of different sink nodes
+        sort(begin(remaining_targets), end(remaining_targets), Criticality_comp{pin_criticality});
+    }
+
 	/* Update base costs according to fanout and criticality rules */
-
-
 	update_rr_base_costs(inet);
 	
 
 	// explore in order of decreasing criticality (no longer need sink_order array)
 	for (unsigned itarget = 0; itarget < remaining_targets.size(); ++itarget) {
 		int target_pin = remaining_targets[itarget];
-		float target_criticality = pin_criticality[target_pin];
+		float target_criticality;
+        if (pin_criticality != nullptr) {
+            target_criticality = pin_criticality[target_pin];
+        } else {
+            VTR_ASSERT(pin_criticality == nullptr);
+
+            //No pin criticality implies we want a min delay routing, so use criticality of 1.
+            target_criticality = 1.;
+        }
 
 		// build a branch in the route tree to the target
 		if (!timing_driven_route_sink(itry, inet, itarget, target_pin, target_criticality, 
