@@ -605,11 +605,10 @@ bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch) {
 
 	/* Do placement and routing */
 	bool success = place_and_route(vpr_setup->PlacerOpts,
-			vpr_setup->FileNameOpts.PlaceFile, vpr_setup->FileNameOpts.NetFile,
-			vpr_setup->FileNameOpts.ArchFile, vpr_setup->FileNameOpts.RouteFile,
+			vpr_setup->FileNameOpts, 
+            &arch,
 			vpr_setup->AnnealSched, vpr_setup->RouterOpts, &vpr_setup->RoutingArch,
-			vpr_setup->Segments, vpr_setup->Timing, arch.Chans,
-			arch.Directs, arch.num_directs);
+			vpr_setup->Segments, vpr_setup->Timing);
 	fflush(stdout);
 
 	/* Close down X Display */

@@ -5,6 +5,7 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_log.h"
+#include "vtr_digest.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -14,9 +15,10 @@ using namespace std;
 #include "read_place.h"
 #include "read_xml_arch_file.h"
 
-void read_place(const char *place_file, const char *arch_file,
-		const char *net_file, const int L_nx, const int L_ny,
-		const int L_num_blocks, struct s_block block_list[]) {
+void read_place(const char* net_file, 
+                const char* place_file,
+                const int L_nx, const int L_ny,
+		        const int L_num_blocks, struct s_block block_list[]) {
 
 	FILE *infile;
     std::vector<std::string> tokens;
@@ -24,6 +26,8 @@ void read_place(const char *place_file, const char *arch_file,
 	int i;
 	int error;
 	struct s_block *cur_blk;
+
+    g_placement_id = vtr::secure_digest_file(place_file);
 
 	infile = fopen(place_file, "r");
 	if (!infile) vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
@@ -33,10 +37,10 @@ void read_place(const char *place_file, const char *arch_file,
 	/* Check filenames in first line match */
 	tokens = vtr::ReadLineTokens(infile, &line);
 	error = 0;
-	if (tokens.size() < 6) {
+	if (tokens.size() != 4) {
 		error = 1;
 	}
-	for (i = 0; i < 6; ++i) {
+	for (i = 0; i < 4; ++i) {
 		if (!error) {
 			if (tokens[i].empty()) {
 				error = 1;
@@ -44,29 +48,25 @@ void read_place(const char *place_file, const char *arch_file,
 		}
 	}
 	if (!error) {
-		if (tokens[0] != "Netlist"
-				|| tokens[1] != "file:"
-				|| tokens[3] != "Architecture"
-				|| tokens[4] != "file:") {
+		if (   tokens[0] != "Netlist_File:"
+            || tokens[2] != "Netlist_ID:") {
 			error = 1;
 		};
 	}
 	if (error) {
 		vpr_throw(VPR_ERROR_PLACE_F, place_file, line, 
-				"Bad filename specification line in placement file.");
+				"Bad file ID specification line in placement file.\n", 
+				place_file);
 	}
 
-    //TODO: a more robust approach would be to save the hash (e.g. SHA256) of the net/arch files and compare those, rather than
-    //the filepaths
-	if (tokens[2] != net_file) {
+    std::string place_net_file = tokens[1];
+    std::string place_net_id = tokens[3];
+
+	if (place_net_id != g_clbs_nlist.netlist_id) {
+        //TODO: make optional warning
 		vpr_throw(VPR_ERROR_PLACE_F, place_file, line, 
-				"Netlist file that generated placement (%s) does not match current netlist file (%s).\n", 
-				tokens[2].c_str(), net_file);
-	}
-	if (tokens[5] != arch_file) {
-		vpr_throw(VPR_ERROR_PLACE_F, place_file, line, 
-				"Architecture file that generated placement (%s) does not match current architecture file (%s).\n", 
-				tokens[5].c_str(), arch_file);
+				"Netlist file that generated placement (File: %s ID: %s) does not match current netlist file (File: %s ID: %s).\n", 
+				place_net_file.c_str(), place_net_id.c_str(), net_file, g_clbs_nlist.netlist_id.c_str());
 	}
 
 	/* Check array size in second line matches */
@@ -266,9 +266,11 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	vtr::printf_info("\n");
 }
 
-void print_place(const char *place_file, const char *net_file, const char *arch_file) {
+void print_place(const char* net_file, 
+                 const char* net_id, 
+                 const char* place_file) {
 
-	/* Prints out the placement of the circuit.  The architecture and    *
+	/* Prints out the placement of the circuit. The architecture and     *
 	 * netlist files used to generate this placement are recorded in the *
 	 * file to avoid loading a placement with the wrong support files    *
 	 * later.                                                            */
@@ -278,8 +280,9 @@ void print_place(const char *place_file, const char *net_file, const char *arch_
 
 	fp = fopen(place_file, "w");
 
-	fprintf(fp, "Netlist file: %s   Architecture file: %s\n", net_file,
-			arch_file);
+	fprintf(fp, "Netlist_File: %s Netlist_ID: %s\n", 
+            net_file,
+            net_id);
 	fprintf(fp, "Array size: %d x %d logic blocks\n\n", nx, ny);
 	fprintf(fp, "#block name\tx\ty\tsubblk\tblock number\n");
 	fprintf(fp, "#----------\t--\t--\t------\t------------\n");
@@ -293,4 +296,7 @@ void print_place(const char *place_file, const char *net_file, const char *arch_
 		fprintf(fp, "\t#%d\n", i);
 	}
 	fclose(fp);
+
+    //Calculate the ID of the placement
+    g_placement_id = vtr::secure_digest_file(place_file);
 }

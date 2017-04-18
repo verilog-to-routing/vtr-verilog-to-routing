@@ -15,12 +15,12 @@ typedef struct s_fmap_cell {
 } t_fmap_cell;
 
 bool place_and_route(
-		struct s_placer_opts placer_opts, char *place_file, char *net_file,
-		char *arch_file, char *route_file,
+		struct s_placer_opts placer_opts, 
+		struct s_file_name_opts  filename_opts, 
+        const t_arch* arch,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
-		t_direct_inf *directs, int num_directs);
+		t_timing_inf timing_inf);
 
 void init_chan(int cfactor, t_chan_width_dist chan_width_dist);

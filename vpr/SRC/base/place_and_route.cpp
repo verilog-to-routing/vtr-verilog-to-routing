@@ -38,13 +38,13 @@ using namespace std;
 /******************* Subroutines local to this module ************************/
 
 static int binary_search_place_and_route(struct s_placer_opts placer_opts,
-		char *place_file, char *net_file, char *arch_file, char *route_file,
+		struct s_file_name_opts filename_opts, 
+        const t_arch* arch, 
 		bool verify_binary_search, int min_chan_width_hint,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
-		t_direct_inf *directs, int num_directs);
+		t_timing_inf timing_inf);
 
 static float comp_width(t_chan * chan, float x, float separation);
 
@@ -52,13 +52,13 @@ void post_place_sync(const int L_num_blocks);
 
 /************************* Subroutine Definitions ****************************/
 
-bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *net_file,
-		char *arch_file, char *route_file,
+bool place_and_route(struct s_placer_opts placer_opts, 
+		struct s_file_name_opts filename_opts, 
+		const t_arch* arch, 
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
-		t_direct_inf *directs, int num_directs) {
+		t_timing_inf timing_inf) {
 
 	/* This routine controls the overall placement and routing of a circuit. */
 	char msg[vtr::BUFSIZE];
@@ -66,7 +66,6 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 	bool success = false;
 	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
-	/*struct s_linked_vptr *net_delay_chunk_list_head;*/
 	vtr::t_ivec **clb_opins_used_locally = NULL; /* [0..num_blocks-1][0..num_class-1] */
 	clock_t begin, end;
 
@@ -79,18 +78,22 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 
 	if (!placer_opts.doPlacement || placer_opts.place_freq == PLACE_NEVER) {
 		/* Read the placement from a file */
+<<<<<<< HEAD
 		read_place(place_file, arch_file, net_file, nx, ny, num_blocks, block);
+=======
+		read_place(filename_opts.ArchFile, filename_opts.NetFile, filename_opts.PlaceFile, arch, nx, ny, num_blocks, block);
+>>>>>>> Add netlist and architecture SHA256 ID consistency checks when reading placement file
 		sync_grid_to_blocks(num_blocks, nx, ny, grid);
 	} else {
 		VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
 		begin = clock();
-		try_place(placer_opts, annealing_sched, chan_width_dist, router_opts,
+		try_place(placer_opts, annealing_sched, arch->Chans, router_opts,
 				det_routing_arch, segment_inf, 
 #ifdef ENABLE_CLASSIC_VPR_STA
                 timing_inf, 
 #endif
-                directs, num_directs);
-		print_place(place_file, net_file, arch_file);
+                arch->Directs, arch->num_directs);
+		print_place(filename_opts.ArchFile, arch->architecture_id, filename_opts.NetFile, g_clbs_nlist.netlist_id.c_str(), filename_opts.PlaceFile);
 		end = clock();
 
 		vtr::printf_info("Placement took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
@@ -108,8 +111,8 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 		if(width_fac != NO_FIXED_CHANNEL_WIDTH) {
 		    //Only try if a fixed channel width is specified
 		    try_graph(width_fac, router_opts, det_routing_arch, 
-			    segment_inf, chan_width_dist,
-			    directs, num_directs);
+			    segment_inf, arch->Chans,
+			    arch->Directs, arch->num_directs);
 		}
 		return(true);
 	}
@@ -117,12 +120,12 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 	/* If channel width not fixed, use binary search to find min W */
 	if (NO_FIXED_CHANNEL_WIDTH == width_fac) {
         //Binary search for the min channel width
-		g_solution_inf.channel_width = binary_search_place_and_route(placer_opts, place_file, net_file,
-				arch_file, route_file, 
+		g_solution_inf.channel_width = binary_search_place_and_route(placer_opts, 
+                filename_opts,
+				arch,
                 router_opts.verify_binary_search, router_opts.min_channel_width_hint,
                 annealing_sched, router_opts,
-				det_routing_arch, segment_inf, timing_inf, chan_width_dist,
-				directs, num_directs);
+				det_routing_arch, segment_inf, timing_inf);
 		success = (g_solution_inf.channel_width > 0 ? true : false);
 	} else {
         //Route at the specified channel width
@@ -150,8 +153,8 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 #ifdef ENABLE_CLASSIC_VPR_STA
                 slacks, 
 #endif
-                chan_width_dist,
-				clb_opins_used_locally, directs, num_directs);
+                arch->Chans,
+				clb_opins_used_locally, arch->Directs, arch->num_directs);
 
 		if (success == false) {
             
@@ -163,7 +166,7 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
 
 			vtr::printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
 
-			print_route(route_file);
+			print_route(filename_opts.RouteFile);
 
 			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ROUTING_SINK_DELAYS)) {
 				print_sink_delays(getEchoFileName(E_ECHO_ROUTING_SINK_DELAYS));
@@ -209,26 +212,17 @@ bool place_and_route(struct s_placer_opts placer_opts, char *place_file, char *n
     delete [] g_switch_fanin_remap;
     g_switch_fanin_remap = NULL;
 
-	/*WMF: cleaning up memory usage */
-
-	/*	if (g_heap_free_head)
-		free(g_heap_free_head);
-	if (g_trace_free_head)
-		free(g_trace_free_head);
-	if (g_linked_f_pointer_free_head)
-		free(g_linked_f_pointer_free_head);*/
-
 	return(success);
 }
 
 static int binary_search_place_and_route(struct s_placer_opts placer_opts,
-		char *place_file, char *net_file, char *arch_file, char *route_file,
+		struct s_file_name_opts filename_opts, 
+        const t_arch* arch, 
 		bool verify_binary_search, int min_chan_width_hint,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, t_chan_width_dist chan_width_dist,
-		t_direct_inf *directs, int num_directs) {
+		t_timing_inf timing_inf) {
 
 	/* This routine performs a binary search to find the minimum number of      *
 	 * tracks per channel required to successfully route a circuit, and returns *
@@ -356,20 +350,20 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 		if (placer_opts.place_freq == PLACE_ALWAYS) {
 			placer_opts.place_chan_width = current;
-			try_place(placer_opts, annealing_sched, chan_width_dist,
+			try_place(placer_opts, annealing_sched, arch->Chans,
 					router_opts, det_routing_arch, segment_inf, 
 #ifdef ENABLE_CLASSIC_VPR_STA
                     timing_inf,
 #endif
-					directs, num_directs);
+					arch->Directs, arch->num_directs);
 		}
 		success = try_route(current, router_opts, det_routing_arch, segment_inf,
 				timing_inf, net_delay, 
 #ifdef ENABLE_CLASSIC_VPR_STA
                 slacks, 
 #endif
-                chan_width_dist,
-				clb_opins_used_locally, directs, num_directs);
+                arch->Chans,
+				clb_opins_used_locally, arch->Directs, arch->num_directs);
 		attempt_count++;
 		fflush(stdout);
 
@@ -471,19 +465,19 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 				break;
 			if (placer_opts.place_freq == PLACE_ALWAYS) {
 				placer_opts.place_chan_width = current;
-				try_place(placer_opts, annealing_sched, chan_width_dist,
+				try_place(placer_opts, annealing_sched, arch->Chans,
 						router_opts, det_routing_arch, segment_inf,
 #ifdef ENABLE_CLASSIC_VPR_STA
                         timing_inf,
 #endif
-						directs, num_directs);
+						arch->Directs, arch->num_directs);
 			}
 			success = try_route(current, router_opts, det_routing_arch,
 					segment_inf, timing_inf, net_delay, 
 #ifdef ENABLE_CLASSIC_VPR_STA
                     slacks,
 #endif
-					chan_width_dist, clb_opins_used_locally, directs, num_directs);
+					arch->Chans, clb_opins_used_locally, arch->Directs, arch->num_directs);
 
 			if (success && Fc_clipped == false) {
 				final = current;
@@ -491,7 +485,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 						saved_clb_opins_used_locally);
 
 				if (placer_opts.place_freq == PLACE_ALWAYS) {
-					print_place(place_file, net_file, arch_file);
+                    print_place(filename_opts.ArchFile, arch->architecture_id, 
+                                filename_opts.NetFile, g_clbs_nlist.netlist_id.c_str(), 
+                                filename_opts.PlaceFile);
 				}
 			}
 
@@ -507,18 +503,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	/* End binary search verification. */
 	/* Restore the best placement (if necessary), the best routing, and  *
 	 * * the best channel widths for final drawing and statistics output.  */
-	init_chan(final, chan_width_dist);
+	init_chan(final, arch->Chans);
 
-#if 0
-	if (placer_opts.place_freq == PLACE_ALWAYS)
-	{
-		vtr::printf_info("Reading best placement back in.\n");
-		placer_opts.place_chan_width = final;
-		read_place(place_file, net_file, arch_file, placer_opts,
-				router_opts, chan_width_dist, det_routing_arch,
-				segment_inf, timing_inf);
-	}
-#endif
 	free_rr_graph();
 
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
@@ -532,7 +518,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			router_opts.base_cost_type,
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
-			directs, num_directs, false, 
+			arch->Directs, arch->num_directs, false, 
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&g_num_rr_switches,
@@ -550,7 +536,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	}
 	vtr::printf_info("Best routing used a channel width factor of %d.\n", final);
 
-	print_route(route_file);
+	print_route(filename_opts.RouteFile);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ROUTING_SINK_DELAYS)) {
 		print_sink_delays(getEchoFileName(E_ECHO_ROUTING_SINK_DELAYS));

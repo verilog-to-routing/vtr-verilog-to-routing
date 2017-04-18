@@ -38,4 +38,4 @@ void restore_routing(struct s_trace **best_routing,
 
 void get_serial_num(void);
 
-void print_route(char *name);
+void print_route(const char *name);

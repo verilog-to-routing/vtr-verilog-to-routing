@@ -16,6 +16,7 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_log.h"
+#include "vtr_digest.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -88,6 +89,9 @@ void read_netlist(const char *net_file, const t_arch* arch,
 
 	/* Parse the file */
 	vtr::printf_info("Begin loading packed FPGA netlist file.\n");
+
+    //Save an identifier for the netlist based on it's contents
+    clb_nlist->netlist_id = vtr::secure_digest_file(net_file);
 
     pugi::xml_document doc;
     pugiutil::loc_data loc_data;

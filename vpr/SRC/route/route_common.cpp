@@ -1301,7 +1301,7 @@ alloc_linked_f_pointer(void) {
 	return (temp_ptr);
 }
 
-void print_route(char *route_file) {
+void print_route(const char *route_file) {
 
 	/* Prints out the routing to file route_file.  */
 
