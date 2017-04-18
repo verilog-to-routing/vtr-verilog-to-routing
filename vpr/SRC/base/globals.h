@@ -6,7 +6,7 @@
 
  These variables represent the user netlist in various stages of the CAD flow:
   g_atom_nl for the unclustered user-supplied netlist
-  clb_net and block for the clustered netlist post packing
+  g_clbs_nlist and block for the clustered netlist post packing
  */
 
 #ifndef GLOBALS_H
