@@ -579,7 +579,7 @@ static void print_stats(t_block *clb, int num_clusters) {
 }
 
 void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_intra_lb_net> * > &intra_lb_routing, bool global_clocks,
-		const std::unordered_set<AtomNetId>& is_clock, const char *out_fname, bool skip_clustering) {
+		const std::unordered_set<AtomNetId>& is_clock, const std::string& architecture_id, const char *out_fname, bool skip_clustering) {
 
 	/* 
 	 * This routine dumps out the output netlist in a format suitable for  *
@@ -604,8 +604,8 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	
 	fpout = fopen(out_fname, "w");
 
-	fprintf(fpout, "<block name=\"%s\" instance=\"FPGA_packed_netlist[0]\">\n",
-			out_fname);
+	fprintf(fpout, "<block name=\"%s\" instance=\"FPGA_packed_netlist[0]\" architecture_id=\"%s\">\n",
+			out_fname, architecture_id.c_str());
 	fprintf(fpout, "\t<inputs>\n\t\t");
 
 	column = 2 * TAB_LENGTH; /* Organize whitespace to ident data inside block */

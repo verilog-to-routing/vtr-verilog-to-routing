@@ -695,6 +695,8 @@ void free_arch(t_arch* Arch) {
 	}
 	free(Arch->Directs);
 
+    free(Arch->architecture_id);
+
 	free(Arch->model_library[0].name);
 	free(Arch->model_library[0].outputs->name);
 	delete[] Arch->model_library[0].outputs;

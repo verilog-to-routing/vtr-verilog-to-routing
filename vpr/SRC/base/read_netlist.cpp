@@ -76,7 +76,7 @@ static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId at
  * num_nets - number of nets in netlist
  * net_list - nets in netlist [0..num_nets - 1]
  */
-void read_netlist(const char *net_file, const t_arch* /*arch*/,
+void read_netlist(const char *net_file, const t_arch* arch,
 		int *L_num_blocks, struct s_block *block_list[],
 		t_netlist* clb_nlist) {
 	clock_t begin = clock();
@@ -126,6 +126,23 @@ void read_netlist(const char *net_file, const t_arch* /*arch*/,
             vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top),
                     "Expected top instance to be \"FPGA_packed_netlist[0]\", found \"%s\".",
                     top_instance.value());
+        }
+
+        auto architecture_id = top.attribute("architecture_id");
+        if (architecture_id) {
+            //Netlist file has an architecture id, make sure it is 
+            //consistent with the loaded architecture file.
+            //
+            //Note that we currently don't require that the architecture_id exists, 
+            //to remain compatible with old .net files
+            std::string arch_id = architecture_id.value();
+            if (arch_id != arch->architecture_id) {
+                //TODO: make this configurable as warning or error
+                vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top),
+                        "Netlist was generated from a different architecture file (loaded architecture ID: %s, netlist file architecture ID: %s)",
+                        arch->architecture_id,
+                        arch_id.c_str());
+            }
         }
 
         //Collect top level I/Os

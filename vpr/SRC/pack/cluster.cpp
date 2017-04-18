@@ -713,7 +713,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	block = clb;
 
-	output_clustering(clb, num_clb, intra_lb_routing, global_clocks, is_clock, out_fname, false);
+	output_clustering(clb, num_clb, intra_lb_routing, global_clocks, is_clock, arch->architecture_id, out_fname, false);
 	
 	block = NULL;
 	for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++){
