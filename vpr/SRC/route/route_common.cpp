@@ -9,6 +9,7 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_log.h"
+#include "vtr_digest.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -1301,7 +1302,7 @@ alloc_linked_f_pointer(void) {
 	return (temp_ptr);
 }
 
-void print_route(const char *route_file) {
+void print_route(const char* placement_file, const char* route_file) {
 
 	/* Prints out the routing to file route_file.  */
 
@@ -1313,6 +1314,8 @@ void print_route(const char *route_file) {
 	FILE *fp;
 
 	fp = fopen(route_file, "w");
+
+    fprintf(fp, "Placement_File: %s Placement_ID: %s\n", placement_file, g_placement_id.c_str());
 
 	fprintf(fp, "Array size: %d x %d logic blocks.\n", nx, ny);
 	fprintf(fp, "\nRouting:");
@@ -1421,6 +1424,9 @@ void print_route(const char *route_file) {
 				num_linked_f_pointer_allocated);
 		fclose(fp);
 	}
+
+    //Save the digest of the route file
+    g_routing_id = vtr::secure_digest_file(route_file);
 
 }
 

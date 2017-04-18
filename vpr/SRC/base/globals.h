@@ -71,6 +71,8 @@ extern struct s_block *block;
 /* New external-to-complex block, post-packed netlist*/
 extern t_netlist g_clbs_nlist;
 
+extern std::string g_placement_id; //SHA256 digest of .place file
+
 /********************************************************************
  Physical FPGA architecture globals 
  *********************************************************************/
@@ -106,6 +108,8 @@ extern t_chan_width chan_width;
 
 /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
 extern struct s_trace **trace_head, **trace_tail;
+
+extern std::string g_routing_id; //SHA256 digest of .route file
 
 /* Structures to define the routing architecture of the FPGA.           */
 extern int num_rr_nodes;

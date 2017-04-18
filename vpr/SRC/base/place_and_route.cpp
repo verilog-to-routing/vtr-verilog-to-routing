@@ -78,11 +78,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 
 	if (!placer_opts.doPlacement || placer_opts.place_freq == PLACE_NEVER) {
 		/* Read the placement from a file */
-<<<<<<< HEAD
-		read_place(place_file, arch_file, net_file, nx, ny, num_blocks, block);
-=======
-		read_place(filename_opts.ArchFile, filename_opts.NetFile, filename_opts.PlaceFile, arch, nx, ny, num_blocks, block);
->>>>>>> Add netlist and architecture SHA256 ID consistency checks when reading placement file
+		read_place(filename_opts.NetFile, filename_opts.PlaceFile, nx, ny, num_blocks, block);
 		sync_grid_to_blocks(num_blocks, nx, ny, grid);
 	} else {
 		VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
@@ -93,7 +89,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
                 timing_inf, 
 #endif
                 arch->Directs, arch->num_directs);
-		print_place(filename_opts.ArchFile, arch->architecture_id, filename_opts.NetFile, g_clbs_nlist.netlist_id.c_str(), filename_opts.PlaceFile);
+		print_place(filename_opts.NetFile, g_clbs_nlist.netlist_id.c_str(), filename_opts.PlaceFile);
 		end = clock();
 
 		vtr::printf_info("Placement took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
@@ -166,7 +162,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 
 			vtr::printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
 
-			print_route(filename_opts.RouteFile);
+			print_route(filename_opts.PlaceFile, filename_opts.RouteFile);
 
 			if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ROUTING_SINK_DELAYS)) {
 				print_sink_delays(getEchoFileName(E_ECHO_ROUTING_SINK_DELAYS));
@@ -485,8 +481,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 						saved_clb_opins_used_locally);
 
 				if (placer_opts.place_freq == PLACE_ALWAYS) {
-                    print_place(filename_opts.ArchFile, arch->architecture_id, 
-                                filename_opts.NetFile, g_clbs_nlist.netlist_id.c_str(), 
+                    print_place(filename_opts.NetFile, g_clbs_nlist.netlist_id.c_str(), 
                                 filename_opts.PlaceFile);
 				}
 			}
@@ -536,7 +531,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	}
 	vtr::printf_info("Best routing used a channel width factor of %d.\n", final);
 
-	print_route(filename_opts.RouteFile);
+	print_route(filename_opts.PlaceFile, filename_opts.RouteFile);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ROUTING_SINK_DELAYS)) {
 		print_sink_delays(getEchoFileName(E_ECHO_ROUTING_SINK_DELAYS));

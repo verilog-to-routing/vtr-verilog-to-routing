@@ -45,6 +45,8 @@ t_type_ptr IO_TYPE = NULL;
 t_type_ptr EMPTY_TYPE = NULL;
 t_type_ptr FILL_TYPE = NULL;
 
+std::string g_placement_id; //SHA256 digest of .place file
+
 /******** Physical architecture ********/
 
 int nx = 0;
@@ -66,6 +68,8 @@ struct s_grid_tile **grid = NULL; /* [0..(nx+1)][0..(ny+1)] Physical block list 
 /* Linked list start pointers.  Define the routing. */
 struct s_trace **trace_head = NULL; /* [0..(num_nets-1)] */
 struct s_trace **trace_tail = NULL; /* [0..(num_nets-1)] */
+
+std::string g_routing_id; //SHA256 digest of .route file
 
 /******** Structures defining the FPGA routing architecture ********/
 

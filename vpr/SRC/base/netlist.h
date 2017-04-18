@@ -77,6 +77,7 @@ struct t_vnet{
 struct t_netlist{
 	//vector<t_blocks> blocks; To-do: Need to implement later
 	vector<t_vnet>  net;
+
     std::string netlist_id;
 };
 

@@ -11,6 +11,7 @@ using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_digest.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -676,4 +677,7 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 		free_pb_graph_pin_lookup_from_index (pb_graph_pin_lookup_from_index_by_type[itype]);
 	}
 	delete[] pb_graph_pin_lookup_from_index_by_type;
+
+    //Calculate the ID of the clustering
+    g_clbs_nlist.netlist_id = vtr::secure_digest_file(out_fname);
 }
