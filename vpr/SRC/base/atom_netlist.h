@@ -296,14 +296,14 @@
  *
  * Netlist is compressed ('not dirty')
  * -----------------------------------
- * If the netlist is compressed (i.e. !dirty(), meaning there have been NO calls to remove_*() since the last call to 
+ * If the netlist is compressed (i.e. !is_dirty(), meaning there have been NO calls to remove_*() since the last call to 
  * compress()) the following invariant will hold:
  *      - Any range returned will contain only valid IDs
  *
  * In practise this means the following conditions hold:
  *      - Blocks will not contain empty ports/pins (e.g. ports with no pin/net connections)
  *      - Ports will not contain pins with no associated net
- *      - Net will not contain invalid sink pins
+ *      - Nets will not contain invalid sink pins
  *
  * This means that no error checking for invalid IDs is needed if simply iterating through netlist (see below for
  * some exceptions).
@@ -314,7 +314,7 @@
  *
  * Netlist is NOT compressed ('dirty')
  * -----------------------------------
- * If the netlist is not compressed (i.e. dirty(), meaning there have been calls to remove_*() with no subsequent 
+ * If the netlist is not compressed (i.e. is_dirty(), meaning there have been calls to remove_*() with no subsequent 
  * calls to compress()) then the invariant above does not hold.
  *
  * Any range may return invalid IDs. In practise this means, 
@@ -612,8 +612,12 @@ class AtomNetlist {
         //Sanity check for internal consistency (throws an exception on failure)
         bool verify() const;
 
-        //Indictes if the netlist has invalid entries due to modifications (e.g. from remove_*() calls)
-        bool dirty() const;
+        //Returns true if the netlist has invalid entries due to modifications (e.g. from remove_*() calls)
+        bool is_dirty() const;
+
+        //Returns true if the netlist has *no* invalid entries due to modifications (e.g. from remove_*() calls)
+        //Note that this is a convenience method which is the logical inverse of is_dirty()
+        bool is_compressed() const;
 
         //Item counts and container info (for debugging)
         void print_stats() const;

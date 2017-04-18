@@ -650,7 +650,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type *cur_pb_t
         return false;
     }
 
-    VTR_ASSERT_MSG(!g_atom_nl.dirty(), "This function assumes a compresssed/non-dirty netlist");
+    VTR_ASSERT_MSG(g_atom_nl.is_compressed(), "This function assumes a compresssed/non-dirty netlist");
 
 
     //Keep track of how many atom ports were checked.

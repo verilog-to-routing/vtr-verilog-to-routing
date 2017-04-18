@@ -178,8 +178,12 @@ const std::string& AtomNetlist::netlist_name() const {
     return netlist_name_;
 }
 
-bool AtomNetlist::dirty() const {
+bool AtomNetlist::is_dirty() const {
     return dirty_;
+}
+
+bool AtomNetlist::is_compressed() const {
+    return !is_dirty();
 }
 
 void AtomNetlist::print_stats() const {
