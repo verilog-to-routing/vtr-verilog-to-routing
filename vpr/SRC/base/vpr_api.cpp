@@ -306,8 +306,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 
 	/* Read in netlist file for placement and routing */
 	if (vpr_setup.FileNameOpts.NetFile) {
-		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch,
-				&num_blocks, &block, &num_nets, &clb_net);
+		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, &num_blocks, &block, &g_clbs_nlist);
 
 		/* This is done so that all blocks have subblocks and can be treated the same */
 		check_netlist();
@@ -884,17 +883,6 @@ static void free_pb_type(t_pb_type *pb_type) {
 }
 
 void free_circuit() {
-
-	if (clb_net != NULL) {
-		for (int i = 0; i < num_nets; ++i) {
-			free(clb_net[i].name);
-			free(clb_net[i].node_block);
-			free(clb_net[i].node_block_pin);
-			free(clb_net[i].node_block_port);
-		}
-	}
-	free(clb_net);
-	clb_net = NULL;
 
 	//Free new net structures
 	free_global_nlist_net(&g_clbs_nlist);

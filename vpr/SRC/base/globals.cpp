@@ -32,9 +32,6 @@ std::shared_ptr<tatum::TimingConstraints> g_timing_constraints;
 timing_analysis_profile_info g_timing_analysis_profile_stats;
 
 /******** Clustered netlist ********/
-int num_nets = 0;
-struct s_net *clb_net = NULL;
-
 int num_blocks = 0;
 struct s_block *block = NULL;
 

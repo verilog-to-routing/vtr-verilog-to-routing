@@ -2,7 +2,7 @@
  Global variables 
 
  Key global variables that are used everywhere in VPR: 
- clb_net, block, and g_atom_nl
+ block, and g_atom_nl
 
  These variables represent the user netlist in various stages of the CAD flow:
   g_atom_nl for the unclustered user-supplied netlist
@@ -64,10 +64,6 @@ extern timing_analysis_profile_info g_timing_analysis_profile_stats;
 /********************************************************************
  CLB Netlist Globals
  ********************************************************************/
-/* external-to-complex block nets in the user netlist */
-extern int num_nets;
-extern struct s_net *clb_net;
-
 /* blocks in the user netlist */
 extern int num_blocks;
 extern struct s_block *block;

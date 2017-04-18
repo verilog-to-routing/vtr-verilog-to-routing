@@ -776,7 +776,6 @@ static void dealloc_mux_graph_rec(t_mux_node * node) {
 static void power_usage_routing(t_power_usage * power_usage,
 		const t_det_routing_arch * routing_arch, t_segment_inf * segment_inf) {
 	int rr_node_idx;
-	int net_idx;
 	int edge_idx;
 
 	power_zero_usage(power_usage);
@@ -795,7 +794,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 	}
 
 	/* Populate net indices into rr graph */
-	for (net_idx = 0; net_idx < num_nets; net_idx++) {
+	for (size_t net_idx = 0; net_idx < g_clbs_nlist.net.size(); net_idx++) {
 		struct s_trace * trace;
 
 		for (trace = trace_head[net_idx]; trace != NULL; trace = trace->next) {
@@ -805,7 +804,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 	}
 
 	/* Populate net indices into rr graph */
-	for (net_idx = 0; net_idx < num_nets; net_idx++) {
+	for (size_t net_idx = 0; net_idx < g_clbs_nlist.net.size(); net_idx++) {
 		struct s_trace * trace;
 
 		for (trace = trace_head[net_idx]; trace != NULL; trace = trace->next) {
@@ -1151,7 +1150,6 @@ void power_pb_pins_init() {
 }
 
 void power_routing_init(const t_det_routing_arch * routing_arch) {
-	int net_idx;
 	int rr_node_idx;
 	int max_fanin;
 	int max_IPIN_fanin;
@@ -1161,9 +1159,9 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 
 	/* Copy probability/density values to new netlist */
 	if (!clb_net_power) {
-		clb_net_power = (t_net_power*) vtr::calloc(num_nets, sizeof(t_net_power));
+		clb_net_power = (t_net_power*) vtr::calloc(g_clbs_nlist.net.size(), sizeof(t_net_power));
 	}
-	for (net_idx = 0; net_idx < num_nets; net_idx++) {
+	for (size_t net_idx = 0; net_idx < g_clbs_nlist.net.size(); net_idx++) {
 		clb_net_power[net_idx].probability = g_atom_net_power[g_atom_lookup.atom_net(net_idx)].probability;
 		clb_net_power[net_idx].density = g_atom_net_power[g_atom_lookup.atom_net(net_idx)].density;
 	}

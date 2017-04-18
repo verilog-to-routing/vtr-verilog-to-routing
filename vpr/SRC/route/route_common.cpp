@@ -734,17 +734,15 @@ alloc_route_structs(void) {
 }
 
 void alloc_route_static_structs(void) {
-	trace_head = (struct s_trace **) vtr::calloc(num_nets,
-			sizeof(struct s_trace *));
-	trace_tail = (struct s_trace **) vtr::malloc(
-			num_nets * sizeof(struct s_trace *));
+	trace_head = (struct s_trace **) vtr::calloc(g_clbs_nlist.net.size(), sizeof(struct s_trace *));
+	trace_tail = (struct s_trace **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(struct s_trace *));
 
 	heap_size = nx * ny;
 	heap = (struct s_heap **) vtr::malloc(heap_size * sizeof(struct s_heap *));
 	heap--; /* heap stores from [1..heap_size] */
 	heap_tail = 1;
 
-	route_bb = (struct s_bb *) vtr::malloc(num_nets * sizeof(struct s_bb));
+	route_bb = (struct s_bb *) vtr::malloc(g_clbs_nlist.net.size() * sizeof(struct s_bb));
 }
 
 struct s_trace **

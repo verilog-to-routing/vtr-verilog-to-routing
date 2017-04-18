@@ -7,13 +7,13 @@
 
 #ifndef READ_NETLIST_H
 #define READ_NETLIST_H
+#include "netlist.h"
 
 void read_netlist(const char *net_file, 
 		const t_arch *arch,
 		int *L_num_blocks, 
 		struct s_block *block_list[],
-		int *L_num_nets, 
-		struct s_net *net_list[]);
+		t_netlist* clb_nlist);
 
 #endif
 

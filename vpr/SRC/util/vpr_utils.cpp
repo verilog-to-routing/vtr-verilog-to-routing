@@ -1972,7 +1972,6 @@ void place_sync_external_block_connections(int iblk) {
             for (k = 0; k < g_clbs_nlist.net[inet].pins.size(); k++) {
                 if (g_clbs_nlist.net[inet].pins[k].block == iblk && g_clbs_nlist.net[inet].pins[k].block_pin == j) {
                     g_clbs_nlist.net[inet].pins[k].block_pin = j + block[iblk].z * max_num_block_pins;
-                    clb_net[inet].node_block_pin[k] = j + block[iblk].z * max_num_block_pins; //Daniel to-do: take out clb_net later
                     break;
                 }
             }
