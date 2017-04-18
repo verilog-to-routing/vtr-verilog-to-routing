@@ -20,21 +20,19 @@ using namespace std;
  *				Block to which the nodes of this pin connect. The source 
  *				block is net.pins[0].block and the sink blocks are the remaining pins.
  *				When this is in the g_clb_netlist, it is an index into block[]
- * block_port:  Port index (on a block) to which each net terminal connects. 
- *				A port is a named collection of pins.
- *				Indexes into input_net_tnodes
  * block_pin:   Pin index (on a block) to which each net terminal connects. 
+ * net:         Net index to which this pin is associated
+ * net_pin:     Pin index (in the net) of this pin (e.g. net_pin == 0 means this pin is a driver)
  *				
  */
 struct t_net_pin{
 	int block;
-	int block_port;
 	int block_pin;
     int net;
     int net_pin;
 
 	t_net_pin(){
-		block = block_port = block_pin = UNDEFINED;
+		block = block_pin = UNDEFINED;
         net = net_pin = UNDEFINED;
 	}
 };
@@ -80,9 +78,6 @@ struct t_netlist{
 	//vector<t_blocks> blocks; To-do: Need to implement later
 	vector<t_vnet>  net;
 };
-
-void load_global_net_from_array(const t_net* net_arr,
-	const int num_net_arr, t_netlist* g_nlist);
 
 void echo_global_nlist_net(const t_netlist* g_nlist);
 
