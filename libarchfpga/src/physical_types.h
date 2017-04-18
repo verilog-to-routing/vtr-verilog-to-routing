@@ -1030,6 +1030,8 @@ typedef struct s_switchblock_inf{
 /*   Detailed routing architecture */
 typedef struct s_arch t_arch;
 struct s_arch {
+    char* architecture_id; //Secure hash digest of the architecture file to uniquely identify this architecture
+
 	t_chan_width_dist Chans;
 	enum e_switch_block_type SBType;
 	std::vector<t_switchblock_inf> switchblocks;

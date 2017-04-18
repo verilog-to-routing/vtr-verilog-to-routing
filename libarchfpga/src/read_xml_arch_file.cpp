@@ -50,6 +50,7 @@
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_matrix.h"
+#include "vtr_digest.h"
 
 #include "arch_types.h"
 #include "arch_util.h"
@@ -172,6 +173,9 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 						"Expecting .xml format for architecture files.\n",
 				ArchFile);
 	}
+
+    //Create a unique identifier for this architecture file based on it's contents
+    arch->architecture_id = vtr::strdup(vtr::secure_digest_file(ArchFile).c_str());
 
 	/* Parse the file */
 	pugi::xml_document doc;
