@@ -604,8 +604,8 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	
 	fpout = fopen(out_fname, "w");
 
-	fprintf(fpout, "<block name=\"%s\" instance=\"FPGA_packed_netlist[0]\" architecture_id=\"%s\">\n",
-			out_fname, architecture_id.c_str());
+	fprintf(fpout, "<block name=\"%s\" instance=\"FPGA_packed_netlist[0]\" architecture_id=\"%s\" atom_netlist_id=\"%s\">\n",
+			out_fname, architecture_id.c_str(), g_atom_nl.netlist_id().c_str());
 	fprintf(fpout, "\t<inputs>\n\t\t");
 
 	column = 2 * TAB_LENGTH; /* Organize whitespace to ident data inside block */

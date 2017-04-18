@@ -32,6 +32,7 @@ using namespace std;
 #include "vtr_log.h"
 #include "vtr_logic.h"
 #include "vtr_time.h"
+#include "vtr_digest.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -59,8 +60,9 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue);
 
 struct BlifAllocCallback : public blifparse::Callback {
     public:
-        BlifAllocCallback(AtomNetlist& main_netlist, const t_model* user_models, const t_model* library_models)
+        BlifAllocCallback(AtomNetlist& main_netlist, const std::string netlist_id, const t_model* user_models, const t_model* library_models)
             : main_netlist_(main_netlist)
+            , netlist_id_(netlist_id)
             , user_arch_models_(user_models) 
             , library_arch_models_(library_models) {}
 
@@ -80,7 +82,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         void begin_model(std::string model_name) override { 
             //Create a new model, and set it's name
 
-            blif_models_.emplace_back(model_name);
+            blif_models_.emplace_back(model_name, netlist_id_);
             blif_models_black_box_.emplace_back(false);
             ended_ = false;
         }
@@ -614,6 +616,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         std::vector<bool> blif_models_black_box_;
 
         AtomNetlist& main_netlist_; //User object we fill
+        const std::string netlist_id_; //Unique identifier based on the contents of the blif file
         const t_model* user_arch_models_ = nullptr;
         const t_model* library_arch_models_ = nullptr;
 
@@ -637,9 +640,12 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
 static AtomNetlist read_blif(const char *blif_file, 
                              const t_model *user_models, 
                              const t_model *library_models) {
-    AtomNetlist netlist;
 
-    BlifAllocCallback alloc_callback(netlist, user_models, library_models);
+
+    AtomNetlist netlist;
+    std::string netlist_id = vtr::secure_digest_file(blif_file);
+
+    BlifAllocCallback alloc_callback(netlist, netlist_id, user_models, library_models);
     blifparse::blif_parse_filename(blif_file, alloc_callback);
 
     netlist.verify();

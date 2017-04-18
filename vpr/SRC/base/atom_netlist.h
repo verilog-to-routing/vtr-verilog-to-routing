@@ -420,8 +420,9 @@ class AtomNetlist {
     public:
 
         //Constructs a netlist
-        // name - the name of the netlist
-        AtomNetlist(std::string name="");
+        // name: the name of the netlist (e.g. top-level module)
+        // id:   a unique identifier for the netlist (e.g. a secure digest of the input file)
+        AtomNetlist(std::string name="", std::string id="");
 
     public: //Public Accessors
         /*
@@ -429,6 +430,10 @@ class AtomNetlist {
          */
         //Retrieve the name of the netlist
         const std::string&  netlist_name() const;
+
+        //Retrieve the unique identifier for this netlist
+        //This is typically a secure digest of the input file.
+        const std::string&  netlist_id() const;
 
         /*
          * Blocks
@@ -838,6 +843,7 @@ class AtomNetlist {
 
         //Netlist data
         std::string                 netlist_name_;  //Name of the top-level netlist
+        std::string                 netlist_id_;    //Unique identifier for the netlist
         bool                        dirty_;         //Indicates the netlist has invalid entries from remove_*() functions
 
         //Block data

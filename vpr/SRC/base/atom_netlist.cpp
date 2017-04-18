@@ -165,8 +165,9 @@ Container update_valid_refs(const Container& values, const vtr::vector_map<ValId
  *
  */
 
-AtomNetlist::AtomNetlist(std::string name)
+AtomNetlist::AtomNetlist(std::string name, std::string id)
     : netlist_name_(name)
+    , netlist_id_(id)
     , dirty_(false) {}
 
 /*
@@ -176,6 +177,10 @@ AtomNetlist::AtomNetlist(std::string name)
  */
 const std::string& AtomNetlist::netlist_name() const {
     return netlist_name_;
+}
+
+const std::string& AtomNetlist::netlist_id() const {
+    return netlist_id_;
 }
 
 bool AtomNetlist::is_dirty() const {

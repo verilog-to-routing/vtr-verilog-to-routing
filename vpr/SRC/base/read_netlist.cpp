@@ -145,6 +145,23 @@ void read_netlist(const char *net_file, const t_arch* arch,
             }
         }
 
+        auto atom_netlist_id = top.attribute("atom_netlist_id");
+        if (atom_netlist_id) {
+            //Netlist file has an_atom netlist_id, make sure it is 
+            //consistent with the loaded atom netlist.
+            //
+            //Note that we currently don't require that the atom_netlist_id exists, 
+            //to remain compatible with old .net files
+            std::string atom_nl_id = atom_netlist_id.value();
+            if (atom_nl_id != g_atom_nl.netlist_id()) {
+                //TODO: make this configurable as warning or error
+                vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top),
+                        "Netlist was generated from a different atom netlist file (loaded atom netlist ID: %s, packed netlist atom netlist ID: %s)",
+                        atom_nl_id.c_str(),
+                        g_atom_nl.netlist_id().c_str());
+            }
+        }
+
         //Collect top level I/Os
         auto top_inputs = pugiutil::get_single_child(top, "inputs", loc_data);
         circuit_inputs = vtr::split(top_inputs.text().get());
