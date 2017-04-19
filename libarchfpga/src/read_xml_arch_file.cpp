@@ -427,6 +427,77 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			}
 			Cur = Cur.next_sibling(Cur.name());
 		}
+
+        //Verify that all top-level pins have had thier locations specified
+
+        //Count up all the specified pins
+        std::map<std::string,std::set<int>> port_pins_with_specified_locations;
+        for (int w = 0; w < Type->width; ++w) {
+            for (int h = 0; h < Type->height; ++h) {
+                for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (int itoken = 0; itoken < Type->num_pin_loc_assignments[w][h][side]; ++itoken) {
+                        const char* pin_spec = Type->pin_loc_assignments[w][h][side][itoken];
+                        InstPort inst_port(Type->pin_loc_assignments[w][h][side][itoken]);
+
+                        //A pin specification should contain only the block name, and not any instace count information
+                        if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
+                            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                           "Pin location specification '%s' should not contain an instance range (should only be the block name)",
+                                           pin_spec);
+                        }
+
+                        //Check that the block name matches
+                        if (inst_port.instance_name() != Type->name) {
+                            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                           "Mismatched block name in pin location specification (expected '%s' was '%s')",
+                                           Type->name, inst_port.instance_name().c_str());
+                        }
+
+                        int pin_low_idx = inst_port.port_low_index();
+                        int pin_high_idx = inst_port.port_high_index();
+
+                        if(pin_low_idx == InstPort::UNSPECIFIED && pin_high_idx == InstPort::UNSPECIFIED) {
+                            //Empty range, so full port
+
+                            //Find the matching pb type to get the total number of pins
+                            const t_port* port = nullptr;
+                            for (int iport = 0; iport < Type->pb_type->num_ports; ++iport) {
+                                const t_port* tmp_port = &Type->pb_type->ports[iport];
+                                if (tmp_port->name == inst_port.port_name()) {
+                                    port = tmp_port;
+                                    break;
+                                }
+                            }
+                            VTR_ASSERT(port);
+
+                            pin_low_idx = 0;
+                            pin_high_idx = port->num_pins - 1;
+                        }
+                        VTR_ASSERT(pin_low_idx >= 0);
+                        VTR_ASSERT(pin_high_idx >= 0);
+
+                        for (int ipin = pin_low_idx; ipin <= pin_high_idx; ++ipin) {
+                            //Record that the pin has it's location specified
+                            port_pins_with_specified_locations[inst_port.port_name()].insert(ipin);
+                        }
+                    }
+                }
+            }
+        }
+
+        //Check for any pins missing location specs
+        for (int iport = 0; iport < Type->pb_type->num_ports; ++iport) {
+            const t_port* port = &Type->pb_type->ports[iport];
+
+            for (int ipin = 0; ipin < port->num_pins; ++ipin) {
+                if (!port_pins_with_specified_locations[port->name].count(ipin)) {
+                    //Missing
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                   "Pin '%s.%s[%d]' has no pin location specificed with pin location pattern=\"custom\"",
+                                   Type->name, port->name, ipin);
+                }
+            }
+        }
 	}
 
 	/* Setup pin classes */

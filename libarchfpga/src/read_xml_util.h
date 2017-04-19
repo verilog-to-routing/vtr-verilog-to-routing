@@ -25,21 +25,24 @@ void bad_attribute_value(const pugi::xml_attribute attr,
 
 class InstPort {
     public:
+        static constexpr int UNSPECIFIED = -1;
+
         InstPort(std::string str);
+        InstPort(std::string str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
         InstPort(pugi::xml_attribute attr, pugi::xml_node node, const pugiutil::loc_data& loc_data);
         std::string instance_name() { return instance_.name; }
         std::string port_name() { return port_.name; }
 
-        size_t instance_low_index() { return instance_.low_idx; }
-        size_t instance_high_index() { return instance_.high_idx; }
-        size_t port_low_index() { return port_.low_idx; }
-        size_t port_high_index() { return port_.high_idx; }
+        int instance_low_index() { return instance_.low_idx; }
+        int instance_high_index() { return instance_.high_idx; }
+        int port_low_index() { return port_.low_idx; }
+        int port_high_index() { return port_.high_idx; }
 
     private:
         struct name_index {
             std::string name;
-            size_t low_idx;
-            size_t high_idx;
+            int low_idx;
+            int high_idx;
         };
 
         name_index parse_name_index(std::string str);

@@ -18,7 +18,7 @@ InstPort::InstPort(std::string str) {
     std::vector<std::string> inst_port = vtr::split(str, ".");
 
     if(inst_port.size() == 1) {
-        instance_ = {"", 0, 0};
+        instance_ = {"", -1, -1};
         port_ = parse_name_index(inst_port[0]);
 
     } else if(inst_port.size() == 2) {
@@ -29,8 +29,18 @@ InstPort::InstPort(std::string str) {
     }
 }
 
-InstPort::InstPort(pugi::xml_attribute attr, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+InstPort::InstPort(std::string str, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+    try {
+        *this = InstPort(str);
+    } catch (const ArchFpgaError& e) {
+		archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+				"Failed to parse instance port specification '%s' for"
+                " on <%s> tag, %s",
+				str.c_str(), node.name(), e.what());
+    }
+}
 
+InstPort::InstPort(pugi::xml_attribute attr, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
     try {
         *this = InstPort(attr.value());
     } catch (const ArchFpgaError& e) {
@@ -92,23 +102,28 @@ InstPort::name_index InstPort::parse_name_index(std::string str) {
         second_idx_str = str.substr(colon_pos + 1, close_bracket_pos);
     }
 
-    size_t first_idx = 0;
+    int first_idx = UNSPECIFIED;
     if(!first_idx_str.empty()) {
         std::stringstream ss(first_idx_str);
-        ss >> first_idx;
+        size_t idx;
+        ss >> idx;
         if(!ss.good()) {
             std::string msg = "near '" + str + "', expected positive integer";
             throw ArchFpgaError(msg);
         }
+        first_idx = idx;
     }
-    size_t second_idx = 0;
+
+    int second_idx = UNSPECIFIED;
     if(!second_idx_str.empty()) {
         std::stringstream ss(second_idx_str);
-        ss >> second_idx;
+        size_t idx;
+        ss >> idx;
         if(!ss.good()) {
             std::string msg = "near '" + str + "', expected positive integer";
             throw ArchFpgaError(msg);
         }
+        second_idx = idx;
     }
 
     return {name, std::min(first_idx, second_idx), std::max(first_idx, second_idx)};
