@@ -365,6 +365,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	/* Load the pin locations */
 	if (Type->pin_location_distribution == E_CUSTOM_PIN_DISTR) {
 		Cur = Locations.first_child();
+        std::set<e_side> seen_sides;
 		while (Cur) {
 			check_node(Cur, "loc", loc_data);
 
@@ -377,7 +378,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			}
 
 			/* Get side */
-			int side = 0;
+			e_side side;
 			Prop = get_attribute(Cur, "side", loc_data).value();
 			if (0 == strcmp(Prop, "left")) {
 				side = LEFT;
@@ -391,6 +392,14 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"'%s' is not a valid side.\n", Prop);
 			}
+
+            //Check for duplicate side specifications, since the code below silently overwrites if there are duplicates
+            if (seen_sides.count(side)) {
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+						"Duplicate pin location side specification. Only a single <loc> per side is permitted.\n");
+            } else {
+                seen_sides.insert(side);
+            }
 
 			/* Check location is on perimeter */
 			if ((TOP == side) && (height != (Type->height - 1))) {
@@ -408,12 +417,10 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			Count = Tokens.size();
 			Type->num_pin_loc_assignments[0][height][side] = Count;
 			if (Count > 0) {
-				Type->pin_loc_assignments[0][height][side] = (char**) vtr::calloc(
-						Count, sizeof(char*));
+				Type->pin_loc_assignments[0][height][side] = (char**) vtr::calloc(Count, sizeof(char*));
 				for (int pin = 0; pin < Count; ++pin) {
 					/* Store location assignment */
-					Type->pin_loc_assignments[0][height][side][pin] = vtr::strdup(
-							Tokens[pin].c_str());
+					Type->pin_loc_assignments[0][height][side][pin] = vtr::strdup(Tokens[pin].c_str());
 
 					/* Advance through list of pins in this location */
 				}
