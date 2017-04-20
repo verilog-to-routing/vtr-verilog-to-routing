@@ -8,6 +8,8 @@ import argparse
 
 from verilogtorouting.error import *
 
+VERBOSITY_CHOICES = range(5)
+
 class RawDefaultHelpFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
     """
     An argparse formatter which supports both default arguments and raw formatting of description/epilog

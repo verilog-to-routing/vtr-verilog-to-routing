@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pyt
 
 from verilogtorouting.flow import run_vtr_flow, VTR_STAGE, vtr_stages, CommandRunner
 from verilogtorouting.error import *
-from verilogtorouting.util import print_verbose, RawDefaultHelpFormatter
+from verilogtorouting.util import print_verbose, RawDefaultHelpFormatter, VERBOSITY_CHOICES
 
 class VtrStageArgparseAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
@@ -41,7 +41,7 @@ class YesNoArgparseAction(argparse.Action):
 
 yes_no_choices = ['yes', 'no']
 
-def argument_parser(prog=None):
+def vtr_command_argparser(prog=None):
     usage = "%(prog)s architecture_file circuit_file [options]"
     description = textwrap.dedent(
                     """
@@ -83,6 +83,7 @@ def argument_parser(prog=None):
                     Only run a specific stage (assumes required results have already been generated):
 
                         %(prog)s arch.xml circuit.blif --start vpr --end vpr
+
                 """
              )
 
@@ -115,7 +116,7 @@ def argument_parser(prog=None):
                         help="Ending stage of the VTR flow.")
 
     parser.add_argument("-v", "--verbosity",
-                        choices=[0, 1, 2, 3, 4],
+                        choices=VERBOSITY_CHOICES,
                         default=2,
                         type=int,
                         help="Verbosity of the script. Higher values produce more output.")
@@ -159,11 +160,11 @@ def argument_parser(prog=None):
     return parser
 
 def main():
-    run_vtr_flow_main(sys.argv[1:])
+    vtr_command_main(sys.argv[1:])
 
-def run_vtr_flow_main(arg_list, prog=None):
+def vtr_command_main(arg_list, prog=None):
     #Load the arguments
-    args, unkown_args = argument_parser(prog).parse_known_args(arg_list)
+    args, unkown_args = vtr_command_argparser(prog).parse_known_args(arg_list)
 
     abs_path_arch_file = os.path.abspath(args.architecture_file)
     abs_path_circuit_file = os.path.abspath(args.circuit_file)

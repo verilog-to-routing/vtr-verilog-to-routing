@@ -1,0 +1,236 @@
+#!/usr/bin/env python
+
+# Overview
+# --------
+# This is a centralized script for running VTR.
+# 
+# It wraps various other scripts for running VTR and parsing the results
+# into sub-commands.
+# This provides a straight forward interface based on sub-commands
+# (like 'git commit').
+# 
+# Run as 'vtr help' for usage.
+
+# Adding Sub-commands
+# ----------------------
+# Each sub-command is a stand-alone python script which is loaded by
+# this script at run-time.
+#
+# To add a new sub-command simply create a file named:
+#       
+#       vtr-{command}.py
+#
+# located under:
+#    
+#       $VTR_ROOT/vtr_flow/scripts
+#
+# where {command} is the command name.
+#
+# For example the 'flow' command is implemented in the file:
+#
+#       $VTR_ROOT/vtr_flow/scripts/vtr-flow.py
+#
+# Each command script is expected to implement the following two methods:
+#
+#       def vtr_command_argparser(prog=None):
+#           pass
+#
+# and
+#
+#       def vtr_command_main(arg_list, prog=None):
+#           pass
+#
+# vtr_command_argparser() takes the program name as it's first argument and returns
+# the argparse.ArgumentParser used by the command (this is used to implement the 'help'
+# subcommand).
+#
+# vtr_command_main() takes the list of command line arguments and the program name
+# and executes the command
+
+
+import argparse
+import sys
+import os
+import textwrap
+import importlib
+from fnmatch import fnmatch
+
+def determine_vtr_root():
+    """
+    Returns the root of the VTR source tree as determined by:
+      1. The VTR_ROOT environment variable, if set otherwise
+      2. The location of this script file
+    """
+    if 'VTR_ROOT' in os.environ:
+        return os.environ['VTR_ROOT']
+    else:
+        #Infer from the directory containing this script file
+        return os.path.dirname(os.path.abspath(__file__))
+
+def import_vtr_commands(vtr_root):
+    """
+    Loads the vtr-*.py scripts from $VTR_ROOT/vtr_flow/scripts as modules 
+    Returns a dictionary mapping from the command name to it's module
+    """
+    commands = {}
+
+    vtr_command_dir = os.path.join(vtr_root, "vtr_flow", "scripts")
+    sys.path.insert(0, vtr_command_dir)
+
+    for file in os.listdir(vtr_command_dir):
+        if fnmatch(file, "vtr-*.py"):
+            command_base, ext = os.path.splitext(file)
+
+            command_name = command_base.split('-', 1)[1]
+
+            commands[command_name] = importlib.import_module(command_base)
+
+    return commands
+
+VTR_ROOT = determine_vtr_root()
+sys.path.insert(0, os.path.join(VTR_ROOT, 'vtr_flow', 'scripts', 'python_libs')) #For verilogtorouting module
+
+from verilogtorouting.util import RawDefaultHelpFormatter
+
+VTR_COMMANDS = import_vtr_commands(VTR_ROOT)
+
+def argument_parser(vtr_commands):
+
+    main_description = textwrap.dedent(
+                    """
+                    Script for running the Verilog-to-Routing design flow, 
+                    conducting experiments and collecting results.
+                    """
+                  )
+
+    main_epilog = textwrap.dedent(
+                    """
+                    Examples
+                    --------
+
+                        Get help with the 'flow' subcommand:
+
+                            %(prog)s help flow
+
+                        Run the standard design flow for a single architecture and circuit
+
+                            %(prog)s flow arch.xml circuit.v
+
+                        Run a VTR task named 'my_task'
+
+                            %(prog)s task my_task
+
+                    """
+              )
+
+    parser = argparse.ArgumentParser(description=main_description,
+                                     epilog=main_epilog,
+                                     formatter_class=RawDefaultHelpFormatter
+                                     )
+
+    subparsers = parser.add_subparsers(title='VTR subcommands',
+                                       #help="VTR subcommands",
+                                       dest="command")
+
+    help_description = textwrap.dedent(
+                    """
+                    Get help with subcommands
+                    """
+                  )
+
+    help_epilog = textwrap.dedent(
+                    """
+                    Examples
+                    --------
+
+                        Get help with the 'flow' subcommand:
+
+                            %(prog)s flow
+
+                        Get help with the 'task' subcommand:
+
+                            %(prog)s flow
+
+                    """
+              )
+    help_parser = subparsers.add_parser('help', 
+                                        description=help_description,
+                                        help=help_description,
+                                        epilog=help_epilog,
+                                        formatter_class=RawDefaultHelpFormatter)
+    help_parser.add_argument("sub_command",
+                             nargs="?",
+                             help="Sub-command to get help with")
+
+    for command, module in vtr_commands.iteritems():
+
+        try:
+            description = module.vtr_command_argparser().description
+        except AttributeError as e:
+            raise AttributeError("VTR command '{}' is missing required function ({})".format(command, e.message))
+
+        subparsers.add_parser(command, 
+                              add_help=False, #Show full usage if -h supplied
+                              help=module.vtr_command_argparser().description)
+
+    return parser, help_parser
+
+def main():
+    parser, help_parser = argument_parser(VTR_COMMANDS)
+
+    #Parse the subcommand. Any unkown arguments are passed to the subcommand.
+    args, unkown_args = parser.parse_known_args()
+
+    #The effective program being executed (used to make help messages consistent)
+    prog = "{} {}".format(os.path.basename(sys.argv[0]), args.command)
+
+    if args.command == "help":
+
+        if not args.sub_command:
+            #This script's help
+            parser.print_help()
+
+        elif args.sub_command == "help":
+            help_parser.print_help()
+
+        elif args.sub_command in VTR_COMMANDS:
+            #Show the sub-command in the help output
+            help_prog = "{} {}".format(os.path.basename(sys.argv[0]), args.sub_command)
+
+            try:
+                cmd_parser = VTR_COMMANDS[args.sub_command].vtr_command_argparser(help_prog)
+            except AttributeError as e:
+                raise AttributeError("VTR command '{}' is missing required function ({})".format(args.sub_command, e.message))
+
+            cmd_parser.print_help()
+
+        else:
+            print "Unrecognized help subcommand {}".format(args.sub_command)
+            parser.print_help()
+            sys.exit(1)
+
+    elif args.command in VTR_COMMANDS:
+        #Run the appropraite command
+        try:
+            VTR_COMMANDS[args.command].vtr_command_main(unkown_args, prog=prog)
+        except AttributeError as e:
+            raise AttributeError("VTR command '{}' is missing required function ({})".format(args.command, e.message))
+
+    else:
+        print "Unrecognized subcommand {}".format(args.help_for_command)
+        parser.print_help()
+        sys.exit(1)
+
+    sys.exit(0)
+
+
+def determine_vtr_root():
+    if 'VTR_ROOT' in os.environ:
+        return os.environ['VTR_ROOT']
+    else:
+        #Infer from the directory containing this script file
+        return os.path.dirname(os.path.abspath(__file__))
+
+
+if __name__ == "__main__":
+    main()

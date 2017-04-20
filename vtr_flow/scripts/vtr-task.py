@@ -9,28 +9,42 @@ from multiprocessing import Pool
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python_libs'))
 
+import verilogtorouting as vtr
 from verilogtorouting.error import *
-from verilogtorouting.util import load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time
+from verilogtorouting.util import load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES
 from verilogtorouting.task import load_task_config, TaskConfig, find_task_config_file
 from verilogtorouting.flow import CommandRunner
 
-def argument_parser(prog=None):
+def vtr_command_argparser(prog=None):
     description = textwrap.dedent(
                     """
                     Runs one or more VTR tasks.
                     """
                   )
+    epilog = textwrap.dedent(
+                """
+                Examples
+                --------
 
-    class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
-        """
-        An argparse formatter which supports both default arguments and raw formatting of description/epilog
-        """
-        pass
+                    Run the task named 'timing_chain':
+
+                        %(prog)s timing_chain
+
+                    Run all the tasks listed in the file 'task_list.txt':
+
+                        %(prog)s -l task_list.txt
+
+                    Run 'timing_chain' with 4 jobs running in parallel:
+
+                        %(prog)s timing_chain -j4
+                """
+             )
 
     parser = argparse.ArgumentParser(
                 prog=prog,
                 description=description,
-                formatter_class=CustomFormatter,
+                epilog=epilog,
+                formatter_class=RawDefaultHelpFormatter,
              )
 
     #
@@ -61,7 +75,7 @@ def argument_parser(prog=None):
                         help="Time limit for this script.")
 
     parser.add_argument("-v", "--verbosity",
-                        choices=range(5),
+                        choices=VERBOSITY_CHOICES,
                         default=1,
                         type=int,
                         help="Sets the verbosity of the script. Higher values produce more output.")
@@ -69,11 +83,11 @@ def argument_parser(prog=None):
     return parser
 
 def main():
-    run_vtr_task_main(sys.argv[1:])
+    vtr_command_main(sys.argv[1:])
 
-def run_vtr_task_main(arg_list, prog=None):
+def vtr_command_main(arg_list, prog=None):
     #Load the arguments
-    args = argument_parser(prog).parse_args(arg_list)
+    args = vtr_command_argparser(prog).parse_args(arg_list)
 
     try:
         task_names = args.task
