@@ -523,7 +523,7 @@ sub ret_expected_runtime {
 	close(GOLDEN);
 
 	my $header_line = shift(@lines);
-	my @headers     = split( /\s+/, $header_line );
+	my @headers     = map(trim($_), split( /\t/, $header_line ));
 
 	my %index;
 	@index{@headers} = ( 0 .. $#headers );
@@ -531,7 +531,7 @@ sub ret_expected_runtime {
 	my @line_array;
 	my $found = 0;
 	foreach my $line (@lines) {
-		@line_array = split( /\s+/, $line );
+		@line_array = split( /\t/, $line );
 		if ( $arch_name eq @line_array[0] and $circuit_name eq @line_array[1] )
 		{
 			$found = 1;
@@ -615,7 +615,7 @@ sub ret_expected_min_W {
         close(GOLDEN);
 
         my $header_line = shift(@lines);
-        my @headers     = split( /\s+/, $header_line );
+        my @headers     = map(trim($_), split( /\t/, $header_line ));
 
         my %index;
         @index{@headers} = ( 0 .. $#headers );
@@ -624,7 +624,7 @@ sub ret_expected_min_W {
         my @line_array;
         my $found = 0;
         foreach my $line (@lines) {
-            @line_array = split( /\s+/, $line );
+            @line_array = split( /\t/, $line );
             if ( $arch_name eq @line_array[0] and $circuit_name eq @line_array[1] )
             {
                 $found = 1;
