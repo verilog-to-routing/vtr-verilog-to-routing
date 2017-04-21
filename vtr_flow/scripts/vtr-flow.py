@@ -125,8 +125,9 @@ def vtr_command_argparser(prog=None):
     # Power arguments
     #
     power = parser.add_argument_group("Power", description="Power Analysis Related Options")
-    power.add_argument("--power_tech",
+    power.add_argument("--power",
                        default=None,
+                       dest="power_tech",
                        metavar="POWER_TECH_FILE",
                        help="Enables power analysis using the specified technology file. Power analysis is disabled if not specified.")
 
