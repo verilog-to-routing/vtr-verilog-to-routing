@@ -31,8 +31,6 @@
 
 #include "router_lookahead_map.h"
 
-using namespace std;
-
 class WirelengthInfo {
     public:
         WirelengthInfo(size_t available=0u, size_t used=0u)
@@ -41,11 +39,26 @@ class WirelengthInfo {
 
         size_t available_wirelength() const { return available_wirelength_; }
         size_t used_wirelength() const { return used_wirelength_; }
-        float used_wirelength_ratio() const { return float(used_wirelength()) / float(available_wirelength()); }
+        float used_wirelength_ratio() const { return float(used_wirelength()) / available_wirelength(); }
 
     private:
         size_t available_wirelength_;
         size_t used_wirelength_;
+};
+
+class OveruseInfo {
+    public:
+        OveruseInfo(size_t total = 0u, size_t overused = 0u)
+            : total_nodes_(total)
+            , overused_nodes_(overused) {}
+
+        size_t total_nodes() const { return total_nodes_; }
+        size_t overused_nodes() const { return overused_nodes_; }
+        float overused_ratio() const { return float(overused_nodes()) / total_nodes(); }
+
+    private:
+        size_t total_nodes_;
+        size_t overused_nodes_;
 };
 
 
@@ -78,7 +91,6 @@ static void timing_driven_check_net_delays(float **net_delay);
 static int mark_node_expansion_by_bin(int inet, int target_node,
 		t_rt_node * rt_node);
 
-static double get_overused_ratio();
 
 static bool should_route_net(int inet, const CBRR& connections_inf);
 static bool early_exit_heuristic(const WirelengthInfo& wirelength_info);
@@ -89,10 +101,11 @@ struct more_sinks_than {
 };
 
 static WirelengthInfo calculate_wirelength_info();
+static OveruseInfo calculate_overuse_info();
 
 static void print_route_status_header();
 static void print_route_status(int itry, double elapsed_sec, 
-                               double overused_ratio, const WirelengthInfo& wirelength_info,
+                               const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
                                bool timing_enabled,
                                std::shared_ptr<const SetupTimingInfo> timing_info,
                                float est_success_iteration);
@@ -165,7 +178,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
      */
     bool routing_is_successful = false;
     WirelengthInfo wirelength_info;
-	double overused_ratio;
+	OveruseInfo overuse_info;
     tatum::TimingPathInfo critical_path;
     int itry; //Routing iteration number
 
@@ -226,9 +239,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		bool routing_is_feasible = feasible_routing();
         float est_success_iteration = routing_success_predictor.estimate_success_iteration();
 
-		overused_ratio = get_overused_ratio();
+		overuse_info = calculate_overuse_info();
         wirelength_info = calculate_wirelength_info();
-        routing_success_predictor.add_iteration_overuse(itry, overused_ratio * num_rr_nodes);
+        routing_success_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes());
 
 
         if (timing_analysis_enabled) {
@@ -257,7 +270,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
         }
 
         //Output progress
-        print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info, est_success_iteration);
+        print_route_status(itry, time, overuse_info, wirelength_info, timing_analysis_enabled, timing_info, est_success_iteration);
 
         /*
          * Are we finished?
@@ -276,7 +289,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
         }
 
         //Estimate at what iteration we will converge to a legal routing
-        if (overused_ratio * num_rr_nodes > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
+        if (overuse_info.overused_nodes() > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
             //Only abort if we have a significant number of overused resources
             
             if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
@@ -424,18 +437,6 @@ void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
 	*rt_node_of_sink_ptr = rt_node_of_sink - 1;
 
 	alloc_route_tree_timing_structs();
-}
-
-/* This function gets ratio of overused nodes (overused_nodes / num_rr_nodes) */
-static double get_overused_ratio(){
-	double overused_nodes = 0.0;
-	int inode;
-	for(inode = 0; inode < num_rr_nodes; inode++){
-		if(rr_node[inode].get_occ() > rr_node[inode].get_capacity())
-			overused_nodes += (rr_node[inode].get_occ() - rr_node[inode].get_capacity());
-	}
-	overused_nodes /= (double)num_rr_nodes;
-	return overused_nodes;
 }
 
 /*
@@ -1483,6 +1484,16 @@ void Connection_based_routing_resources::clear_force_reroute_for_net() {
 	}
 }
 
+static OveruseInfo calculate_overuse_info() {
+	size_t overused_nodes = 0;
+	int inode;
+	for(inode = 0; inode < num_rr_nodes; inode++){
+		if(rr_node[inode].get_occ() > rr_node[inode].get_capacity())
+			overused_nodes += (rr_node[inode].get_occ() - rr_node[inode].get_capacity());
+	}
+	return OveruseInfo(num_rr_nodes, overused_nodes);
+}
+
 static WirelengthInfo calculate_wirelength_info() {
 	size_t used_wirelength = 0;
 	size_t available_wirelength = 0;
@@ -1519,7 +1530,7 @@ static void print_route_status_header() {
 }
 
 static void print_route_status(int itry, double elapsed_sec, 
-                               double overused_ratio, const WirelengthInfo& wirelength_info,
+                               const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
                                bool timing_enabled,
                                std::shared_ptr<const SetupTimingInfo> timing_info,
                                float est_success_iteration) {
