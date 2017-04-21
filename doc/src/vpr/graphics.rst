@@ -6,12 +6,29 @@ VPR includes easy-to-use graphics for visualizing both the targetted FPGA archit
 
 Enabling Graphics
 -----------------
-Graphics are disabled by default.
-To enable them compile VPR with the flag ``ENABLE_GRAPHICS`` in the Makefile set to ``true``.  
 
-.. note:: Once the ``ENABLE_GRAPHICS`` flag is set VPR will need to be re-built (e.g. ``make clean`` followed by ``make``) for graphics to be enable.
+Compiling with Graphics Support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The build system will attempt to build VPR with graphics support by default.
 
-.. note:: If compiling VPR with Microsoft Visual Studio, set WIN32 as a preprocessor definition in VPR Properties.
+If all the reuired libraries are found the build system will report::
+
+    -- EasyGL: graphics enabled
+
+If the required libraries are not found cmake will report::
+
+    -- EasyGL: graphics disabled
+
+and list the missing libraries::
+
+    -- EasyGL: Failed to find required X11 library (on debian/ubuntu try 'sudo apt-get install libx11-dev' to install)
+    -- EasyGL: Failed to find required Xft library (on debian/ubuntu try 'sudo apt-get install libxft-dev' to install)
+    -- EasyGL: Failed to find required fontconfig library (on debian/ubuntu try 'sudo apt-get install fontconfig' to install)
+    -- EasyGL: Failed to find required cairo library (on debian/ubuntu try 'sudo apt-get install libcairo2-dev' to install)
+
+Enabling Graphics at Run-time
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+When running VPR provide :option:`vpr -disp` ``on`` to enable graphics.
 
 A graphical window will now pop up when you run VPR.
 
@@ -26,7 +43,7 @@ Selecting **PostScript** creates a PostScript file (in pic1.ps, pic2.ps, etc.) o
 **Proceed** tells VPR to continue with the next step in placing and routing the circuit.
 **Exit** aborts the program.
 
-.. note:: Menu buttons will be greyed out when VPR is working, to show they are not selectable.
+.. note:: Menu buttons will be greyed out when they are not selectable (e.g. VPR is working).
 
 Visualizing Netlist Connectivity
 --------------------------------
