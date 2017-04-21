@@ -62,11 +62,9 @@ static struct s_trace *trace_free_head = NULL;
 /* For keeping track of the sudo malloc memory for the trace*/
 static vtr::t_chunk trace_ch = {NULL, 0, NULL};
 
-#ifdef DEBUG
 static int num_trace_allocated = 0; /* To watch for memory leaks. */
 static int num_heap_allocated = 0;
 static int num_linked_f_pointer_allocated = 0;
-#endif
 
 static struct s_linked_f_pointer *rr_modified_head = NULL;
 static struct s_linked_f_pointer *linked_f_pointer_free_head = NULL;
@@ -545,21 +543,17 @@ update_traceback(struct s_heap *hptr, int inet) {
 	int inode;
 	short iedge;
 
-#ifdef DEBUG
 	t_rr_type rr_type;
-#endif
 
 	// hptr points to the end of a connection
 	inode = hptr->index;
 
-#ifdef DEBUG
 	rr_type = rr_node[inode].type;
 	if (rr_type != SINK) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in update_traceback. Expected type = SINK (%d).\n"
 			"\tGot type = %d while tracing back net %d.\n", SINK, rr_type, inet);
 	}
-#endif
 
 	tptr = alloc_trace_data(); /* SINK on the end of the connection */
 	tptr->index = inode;
@@ -603,25 +597,19 @@ void reset_path_costs(void) {
 
 	struct s_linked_f_pointer *mod_ptr;
 
-#ifdef DEBUG
 	int num_mod_ptrs;
-#endif
 
 	/* The traversal method below is slightly painful to make it faster. */
 
 	if (rr_modified_head != NULL) {
 		mod_ptr = rr_modified_head;
 
-#ifdef DEBUG
 		num_mod_ptrs = 1;
-#endif
 
 		while (mod_ptr->next != NULL) {
 			*(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT;
 			mod_ptr = mod_ptr->next;
-#ifdef DEBUG
 			num_mod_ptrs++;
-#endif
 		}
 		*(mod_ptr->fptr) = HUGE_POSITIVE_FLOAT; /* Do last one. */
 
@@ -632,9 +620,7 @@ void reset_path_costs(void) {
 		linked_f_pointer_free_head = rr_modified_head;
 		rr_modified_head = NULL;
 
-#ifdef DEBUG
 		num_linked_f_pointer_allocated -= num_mod_ptrs;
-#endif
 	}
 }
 
@@ -1222,9 +1208,7 @@ alloc_heap_data(void) {
 
 	temp_ptr = heap_free_head;
 	heap_free_head = heap_free_head->u.next;
-#ifdef DEBUG
 	num_heap_allocated++;
-#endif
 	return (temp_ptr);
 }
 
@@ -1232,9 +1216,7 @@ void free_heap_data(struct s_heap *hptr) {
 
 	hptr->u.next = heap_free_head;
 	heap_free_head = hptr;
-#ifdef DEBUG
 	num_heap_allocated--;
-#endif
 }
 
 void invalidate_heap_entries(int sink_node, int ipin_node) {
@@ -1260,9 +1242,7 @@ alloc_trace_data(void) {
 	}
 	temp_ptr = trace_free_head;
 	trace_free_head = trace_free_head->next;
-#ifdef DEBUG
 	num_trace_allocated++;
-#endif
 	return (temp_ptr);
 }
 
@@ -1272,9 +1252,7 @@ void free_trace_data(struct s_trace *tptr) {
 
 	tptr->next = trace_free_head;
 	trace_free_head = tptr;
-#ifdef DEBUG
 	num_trace_allocated--;
-#endif
 }
 
 static struct s_linked_f_pointer *
@@ -1295,9 +1273,7 @@ alloc_linked_f_pointer(void) {
 	temp_ptr = linked_f_pointer_free_head;
 	linked_f_pointer_free_head = linked_f_pointer_free_head->next;
 
-#ifdef DEBUG
 	num_linked_f_pointer_allocated++;
-#endif
 
 	return (temp_ptr);
 }

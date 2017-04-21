@@ -118,7 +118,7 @@ void alloc_and_load_grid(int *num_instances_type) {
 #endif
 
 #ifdef SHOW_ARCH
-	/* DEBUG code */
+	/* debug code */
 	dump = my_fopen("grid_type_dump.txt", "w", 0);
 	for (j = (ny + 1); j >= 0; --j)
 	{

@@ -291,10 +291,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			}
 
 			vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
-#ifdef DEBUG
+
 			if (timing_analysis_enabled)
 				timing_driven_check_net_delays(net_delay);
-#endif
 			return (true);
 		}
 

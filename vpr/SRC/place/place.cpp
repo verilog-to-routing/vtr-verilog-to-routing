@@ -1133,12 +1133,10 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 
 	std_dev = get_std_dev(num_accepted, sum_of_squares, av);
 
-#ifdef DEBUG
 	if (num_accepted != move_lim) {
 		vtr::printf_warning(__FILE__, __LINE__, 
 				"Starting t: %d of %d configurations accepted.\n", num_accepted, move_lim);
 	}
-#endif
 
 #ifdef VERBOSE
 	vtr::printf_info("std_dev: %g, average cost: %g, starting temp: %g\n", std_dev, av, 20. * std_dev);
@@ -1589,11 +1587,9 @@ static bool find_to(t_type_ptr type, float rlim,
 	min_y = max(0, y_from - rly);
 	max_y = min(ny + 1, y_from + rly);
 
-#ifdef DEBUG
 	if (rlx < 1 || rlx > nx + 1) {
 		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in find_to: rlx = %d\n", rlx);
 	}
-#endif
 
 	num_tries = 0;
 	itype = type->index;
@@ -1634,11 +1630,10 @@ static bool find_to(t_type_ptr type, float rlim,
 		VTR_ASSERT(*py_to >= 0 && *py_to <= ny + 1);
 	} while (is_legal == false);
 
-#ifdef DEBUG
 	if (*px_to < 0 || *px_to > nx + 1 || *py_to < 0 || *py_to > ny + 1) {
 		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in routine find_to: (x_to,y_to) = (%d,%d)\n", *px_to, *py_to);
 	}
-#endif
+
 	VTR_ASSERT(type == grid[*px_to][*py_to].type);
 	return true;
 }

@@ -43,9 +43,7 @@ using namespace std;
 #include <sys/time.h>
 #endif
 
-#ifdef DEBUG
 #include "rr_graph.h"
-#endif
 
 /****************************** Define Macros *******************************/
 
@@ -2033,9 +2031,7 @@ static void highlight_rr_nodes(float x, float y) {
 			draw_state->draw_rr_node[hit_node].node_highlighted = false;
 		}
 
-#ifdef DEBUG
 		print_rr_node(stdout, rr_node, hit_node);
-#endif
 		if (draw_state->draw_rr_toggle != DRAW_NO_RR) 
 			// If rr_graph is shown, highlight the fan-in/fan-outs for
 			// this node.

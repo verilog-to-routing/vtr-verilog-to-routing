@@ -243,14 +243,12 @@ alloc_and_load_rc_tree(int inet, t_rc_node ** rc_node_free_list_ptr,
 
 		else if (rr_node[inode].type != SINK) { /* Connection to old stuff. */
 
-#ifdef DEBUG
 			prev_node = prev_rc->inode;
 			if (rr_node[prev_node].type != SINK) {
 				vtr::printf_info("prev node %d, type is actually %d\n", prev_node, rr_node[prev_node].type);
 				vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
 						"in alloc_and_load_rc_tree: Routing of net %d is not a tree.\n", inet);
 			}
-#endif
 
 			prev_rc = rr_node_to_rc_node[inode].rc_node;
 		}

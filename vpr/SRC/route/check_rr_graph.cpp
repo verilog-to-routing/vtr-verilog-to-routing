@@ -116,11 +116,8 @@ void check_rr_graph(const t_graph_type graph_type,
 			switch_types_from_current_to_node[to_node] = 0;
 		}
 
-		/* Slow test below.  Leave commented out most of the time. */
-
-#ifdef DEBUG
+		/* Slow test could leave commented out most of the time. */
 		check_pass_transistors(inode);
-#endif
 
 	} /* End for all rr_nodes */
 

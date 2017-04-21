@@ -39,9 +39,6 @@
 typedef struct s_power_opts t_power_opts;
 typedef struct s_net_power t_net_power;
 
-#define DEBUG 1			/* Echoes input & checks error conditions */
-/* Only causes about a 1% speed degradation in V 3.10 */
-
 /*#define CREATE_ECHO_FILES*//* prints echo files */
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*//*Displays candidates during packing that failed */
 /*#define PRINT_SINK_DELAYS*//*prints the sink delays to files */

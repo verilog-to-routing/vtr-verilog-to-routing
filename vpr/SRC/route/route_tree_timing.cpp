@@ -245,13 +245,11 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 	inode = hptr->index;
 
-#ifdef DEBUG
 	if (rr_node[inode].type != SINK) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in add_path_to_route_tree. Expected type = SINK (%d).\n"
 			"Got type = %d.",  SINK, rr_node[inode].type);
 	}
-#endif
 
 	sink_rt_node = alloc_rt_node();
 	sink_rt_node->u.child_list = NULL;
@@ -358,12 +356,10 @@ static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node) {
 
 	while (linked_rt_edge != NULL) { /* While SINK not reached. */
 
-#ifdef DEBUG
 		if (linked_rt_edge->next != NULL) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in load_new_path_R_upstream: new routing addition is a tree (not a path).\n");
 		}
-#endif
 
 		rt_node = linked_rt_edge->child;
 		iswitch = linked_rt_edge->iswitch;

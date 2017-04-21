@@ -346,9 +346,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
                 nx = current;
                 ny = vtr::nint(current / Arch.clb_grid.Aspect);
             }
-#if DEBUG
             vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", nx, ny);
-#endif
             alloc_and_load_grid(num_instances_type);
             freeGrid();
 

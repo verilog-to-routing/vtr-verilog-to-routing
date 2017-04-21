@@ -1381,7 +1381,6 @@ int get_rr_node_index(
 	/* Check valid ptc num */
 	VTR_ASSERT(ptc >= 0);
 
-#ifdef DEBUG
 	switch (rr_type) {
 	case SOURCE:
 		VTR_ASSERT(ptc < type->num_class);
@@ -1415,7 +1414,6 @@ int get_rr_node_index(
 			 "Request for type=%d ptc=%d at (%d, %d).\n",
 			 rr_type, ptc, x, y);
 	}
-#endif
 
 	return (ptc < lookup.nelem ? lookup.list[ptc] : -1);
 }
