@@ -137,7 +137,7 @@ def vtr_command_argparser(prog=None):
     house_keeping = parser.add_argument_group("House Keeping", description="Configuration related to how files/time/memory are used by the script.")
 
     house_keeping.add_argument("--work_dir",
-                               default="./temp",
+                               default=".",
                                help="Directory to store intermediate and result files.")
 
     house_keeping.add_argument("--track_memory_usage",
@@ -177,8 +177,7 @@ def vtr_command_main(arg_list, prog=None):
                                    max_memory_mb=args.memory_limit, 
                                    timeout_sec=args.timeout,
                                    verbose=True if args.verbosity >= 3 else False,
-                                   echo_cmd=True if args.verbosity >= 4 else False,
-                                   )
+                                   echo_cmd=True if args.verbosity >= 4 else False)
     try:
         vpr_args = process_unkown_args(unkown_args)
 
