@@ -223,7 +223,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
                     route_timing_info);
 
 			if (!is_routable) {
-				return (false);
+				return (false); //Impossible to route
 			}
 		}
 
