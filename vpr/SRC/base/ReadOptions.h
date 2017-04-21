@@ -21,6 +21,7 @@ struct s_options {
 
 	/* General options */
     bool show_version;
+    bool show_graphics; //Enable interactive graphics?
 	int GraphPause;
 	float constant_net_delay;
 	bool TimingAnalysis;

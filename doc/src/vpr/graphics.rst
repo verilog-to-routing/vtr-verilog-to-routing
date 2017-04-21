@@ -1,3 +1,5 @@
+.. _vpr_graphics:
+
 Graphics
 ========
 VPR includes easy-to-use graphics for visualizing both the targetted FPGA architecture, and the circuit VPR has implementation on the architecture.

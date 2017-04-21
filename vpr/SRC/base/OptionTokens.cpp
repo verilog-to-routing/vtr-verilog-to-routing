@@ -5,7 +5,7 @@
  * many times each of these things exist in a file */
 struct s_TokenPair OptionBaseTokenList[] = {
 		{ "version", OT_VERSION }, 
-		{ "nodisp", OT_NODISP }, 
+		{ "disp", OT_DISP }, 
 		{ "congestion_analysis", OT_CONGESTION_ANALYSIS },
 		{ "fanout_analysis", OT_FANOUT_ANALYSIS },
         { "switch_stats", OT_SWITCH_USAGE_ANALYSIS },

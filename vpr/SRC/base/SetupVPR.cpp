@@ -254,14 +254,11 @@ void SetupVPR(t_options *Options,
 	if (Options->Count[OT_AUTO]) {
 		*GraphPause = Options->GraphPause;
 	}
-#ifdef NO_GRAPHICS
+
 	*ShowGraphics = false; /* DEFAULT */
-#else /* NO_GRAPHICS */
-	*ShowGraphics = true; /* DEFAULT */
-	if (Options->Count[OT_NODISP]) {
-		*ShowGraphics = false;
+	if (Options->show_graphics) {
+		*ShowGraphics = true;
 	}
-#endif /* NO_GRAPHICS */
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
 		EchoArch(getEchoFileName(E_ECHO_ARCH), type_descriptors, num_types,

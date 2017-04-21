@@ -21,7 +21,7 @@ VPR has a lot of options.
 The options most people will be interested in are:
 
 * :option:`-route_chan_width` (route at a fixed channel width), and 
-* :option:`-nodisp` (turn off graphics).
+* :option:`-disp` (turn on/off graphics).
 
 In general for the other options the defaults are fine, and only people looking at how different CAD algorithms perform will try many of them.
 To understand what the more esoteric placer and router options actually do, see :cite:`betz_arch_cad` or download :cite:`betz_directional_bias_routing_arch,betz_biased_global_routing_tech_report,betz_vpr,marquardt_timing_driven_placement` from the author’s `web page <http://www.eecg.toronto.edu/~vaughn>`_.
@@ -67,11 +67,12 @@ General Options
 ----------------
 VPR runs all three stages of pack, place, and route if none of :option:`-pack`, :option:`-place`, or :option:`-route` are specified.
 
-.. option:: -nodisp
+.. option:: -disp {on | off}
 
-    Disables all graphics. Useful for scripting purposes or if you're not running X Windows.
+    Controls whether :ref:`VPR's interactive graphics <vpr_graphics>` are enabled.
+    Graphics are very useful for inspecting and debugging the FPGA architecture and/or circuit implementation.
 
-    **Default:** graphics is enabled (if VPR is compiled with graphics_enabled).
+    **Default:** ``off``
 
 .. option:: -auto <int>
 

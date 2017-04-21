@@ -105,7 +105,7 @@ void vpr_print_usage(void) {
 
 	vtr::printf_info("Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
 	vtr::printf_info("\n");
-	vtr::printf_info("General Options:  [--version] [--nodisp] [--auto <int>] [--pack]\n");
+	vtr::printf_info("General Options:  [--version] [--disp on | off] [--auto <int>] [--pack]\n");
 	vtr::printf_info("\t[--place] [--route] [--analysis]\n");
 	vtr::printf_info("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
 	vtr::printf_info("\t[--blif_file <string>] [--net_file <string>] [--place_file <string>]\n");

@@ -54,10 +54,6 @@ typedef struct s_net_power t_net_power;
 /*#define PRINT_REL_POS_DISTR *//*prints out the relative distribution graph for placements */
 /*#define DUMP_BLIF_ECHO*//*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
 
-#ifdef SPEC
-#define NO_GRAPHICS		/* Rips out graphics (for non-X11 systems)      */
-#endif
-
 #define TOKENS " \t\n"		/* Input file parsing. */
 
 /*#define VERBOSE 1*//* Prints all sorts of intermediate data */

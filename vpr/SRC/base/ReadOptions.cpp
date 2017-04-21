@@ -311,7 +311,8 @@ ProcessOption(char **Args, t_options * Options) {
 		/* General Options */
 	case OT_VERSION:
         Options->show_version = true;
-	case OT_NODISP:
+	case OT_DISP:
+		return ReadOnOff(Args, &Options->show_graphics);
 	case OT_CONGESTION_ANALYSIS:
 	case OT_FANOUT_ANALYSIS:
     case OT_SWITCH_USAGE_ANALYSIS:
