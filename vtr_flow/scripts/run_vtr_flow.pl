@@ -557,7 +557,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push( @vpr_args, "$congestion_analysis");
 		push( @vpr_args, "$switch_usage_analysis");
 		push( @vpr_args, @forwarded_vpr_args);
-		push( @vpr_args, "--nodisp");
 
 
 		$q = &system_with_timeout(
@@ -606,7 +605,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				push( @vpr_args, "$max_router_iterations");
 				push( @vpr_args, "--cluster_seed_type"   );
 				push( @vpr_args, "$vpr_cluster_seed_type");
-				push( @vpr_args, "--nodisp" );             
 				push( @vpr_args, @vpr_power_args);
 				push( @vpr_args, "--gen_postsynthesis_netlist" );
 				push( @vpr_args, "$gen_postsynthesis_netlist");
@@ -648,7 +646,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push( @vpr_args, "$min_chan_width" );
 		push( @vpr_args, "--max_router_iterations" );
 		push( @vpr_args, "$max_router_iterations");
-		push( @vpr_args, "--nodisp");
 		push( @vpr_args, "--cluster_seed_type" );       
 		push( @vpr_args, "$vpr_cluster_seed_type");
 		push( @vpr_args, @vpr_power_args);

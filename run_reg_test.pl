@@ -386,7 +386,7 @@ sub run_quick_test {
 	}
 
 	print "Testing VPR: ";
-	system("../vpr/vpr sample_arch.xml vpr_test -blif_file vpr_test.blif -route_file route.out -nodisp > vpr_out.txt 2>&1");
+	system("../vpr/vpr sample_arch.xml vpr_test -blif_file vpr_test.blif -route_file route.out > vpr_out.txt 2>&1");
 	if(-f "route.out") {
 		print " [PASSED]\n\n";
 	} else {
