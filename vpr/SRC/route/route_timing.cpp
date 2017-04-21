@@ -1523,10 +1523,9 @@ static WirelengthInfo calculate_wirelength_info() {
 
 
 static void print_route_status_header() {
-    vtr::printf_info("--------- ---------- ------------------- ----------------- -------- ---------- ---------- ---------------\n");
-    vtr::printf_info("Iteration Time (sec)   Overused RR Nodes        Wirelength CPD (ns)  sTNS (ns)  sWNS (ns) Est. Succ. Iter\n");
-    vtr::printf_info("--------- ---------- ------------------- ----------------- -------- ---------- ---------- ---------------\n");	
-
+    vtr::printf_info("----- ---------- ------------------- ----------------- -------- ---------- ---------- ----------------\n");
+    vtr::printf_info("Iter. Time (sec)   Overused RR Nodes        Wirelength CPD (ns)  sTNS (ns)  sWNS (ns) Est. Succ. Iter.\n");
+    vtr::printf_info("----- ---------- ------------------- ----------------- -------- ---------- ---------- ----------------\n");	
 }
 
 static void print_route_status(int itry, double elapsed_sec, 
@@ -1536,13 +1535,13 @@ static void print_route_status(int itry, double elapsed_sec,
                                float est_success_iteration) {
 
     //Iteration
-    vtr::printf("%9d", itry);
+    vtr::printf("%5d", itry);
 
     //Elapsed Time
     vtr::printf(" %10.1f", elapsed_sec);
     
     //Overused RR nodes
-    vtr::printf(" %8.3g (%7.4f%)", overused_ratio*num_rr_nodes, overused_ratio*100);
+    vtr::printf(" %8.3g (%7.4f%)", float(overuse_info.overused_nodes()), overuse_info.overused_ratio()*100);
 
     //Wirelength
     vtr::printf(" %9.4g (%4.1f%)", float(wirelength_info.used_wirelength()), wirelength_info.used_wirelength_ratio()*100);
@@ -1573,9 +1572,9 @@ static void print_route_status(int itry, double elapsed_sec,
 
     //Estimated success iteration
     if (std::isnan(est_success_iteration)) {
-        vtr::printf(" %15s", "N/A");
+        vtr::printf(" %16s", "N/A");
     } else {
-        vtr::printf(" %15.1f", est_success_iteration);
+        vtr::printf(" %16.0f", est_success_iteration);
     }
 
     vtr::printf("\n");
