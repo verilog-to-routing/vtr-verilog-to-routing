@@ -1,6 +1,6 @@
 #include <cstdio>
 #include <cstring>
-using namespace std;
+#include <fstream>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -15,122 +15,123 @@ using namespace std;
 #include "read_place.h"
 #include "read_xml_arch_file.h"
 
+t_block* find_block(t_block* blocks, int num_blocks, std::string name);
+
 void read_place(const char* net_file, 
                 const char* place_file,
                 const int L_nx, const int L_ny,
 		        const int L_num_blocks, struct s_block block_list[]) {
+    std::ifstream fstream(place_file); 
+    if (!fstream) {
+        vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
+                        "'%s' - Cannot open place file.\n", 
+                        place_file);
+    }
 
-	FILE *infile;
-    std::vector<std::string> tokens;
-	int line = 0;
-	int i;
-	int error;
-	struct s_block *cur_blk;
+    std::string line;
+    int lineno = 0;
+    bool seen_netlist_id = false;
+    bool seen_grid_dimensions = false;
+    while (std::getline(fstream, line)) { //Parse line-by-line
+        ++lineno;
+
+        std::vector<std::string> tokens = vtr::split(line);
+
+        if (tokens.empty()) {
+            continue; //Skip blank lines
+
+        } else if (tokens[0][0] == '#') {
+            continue; //Skip commented lines
+
+        } else if (tokens.size() == 4 
+                   && tokens[0] == "Netlist_File:" 
+                   && tokens[2] == "Netlist_ID:") {
+            //Check that the netlist used to generate this placement matches the one loaded
+            //
+            //NOTE: this is an optional check which causes no errors if this line is missing.
+            //      This ensures other tools can still generate placement files which can be loaded 
+            //      by VPR.
+
+            if (seen_netlist_id) {
+                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, 
+                          "Duplicate Netlist_File/Netlist_ID specification");
+            }
+            
+            std::string place_netlist_id = tokens[3];
+            std::string place_netlist_file = tokens[1];
+
+            if (place_netlist_id != g_clbs_nlist.netlist_id) {
+                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, 
+                          "The packed netlist file that generated placement (File: '%s' ID: '%s')"
+                          " does not match current netlist (File: '%s' ID: '%s')", 
+                          place_netlist_file.c_str(), place_netlist_id.c_str(), 
+                          net_file, g_clbs_nlist.netlist_id.c_str());
+            }
+
+            seen_netlist_id = true;
+
+        } else if (tokens.size() == 7 
+                   && tokens[0] == "Array"
+                   && tokens[1] == "size:"
+                   && tokens[3] == "x"
+                   && tokens[5] == "logic"
+                   && tokens[6] == "blocks") {
+            //Load the device grid dimensions
+
+            if (seen_grid_dimensions) {
+                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, 
+                          "Duplicate device grid dimensions specification");
+            }
+
+            int place_file_nx = vtr::atoi(tokens[2]);
+            int place_file_ny = vtr::atoi(tokens[4]);
+            if (L_nx != place_file_nx || L_ny != place_file_ny) {
+                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, 
+                        "Current FPGA size (%d x %d) is different from size when placement generated (%d x %d)", 
+                        L_nx, L_ny, place_file_nx, place_file_ny);
+            }
+
+            seen_grid_dimensions = true;
+
+        } else if (tokens.size() == 4 || (tokens.size() == 5 && tokens[4][0] == '#')) {
+            //Load the block location
+            //
+            //We should have 4 tokens of actual data, with an optional 5th (commented) token indicating VPR's
+            //internal block number
+
+            //Grid dimensions are required by this point
+            if (!seen_grid_dimensions) {
+                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, 
+                        "Missing device grid size specification");
+            }
+
+            std::string block_name = tokens[0];
+            int block_x = vtr::atoi(tokens[1]);
+            int block_y = vtr::atoi(tokens[2]);
+            int block_z = vtr::atoi(tokens[3]);
+
+            t_block* blk = find_block(block_list, L_num_blocks, block_name);
+
+            if (!blk) {
+                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, 
+                          "Block '%s' in placement file does not exist in netlist.",
+                          block_name.c_str());
+            }
+
+            //Set the location
+            blk->x = block_x;
+            blk->y = block_y;
+            blk->z = block_z;
+
+        } else {
+            //Unrecognized
+            vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, 
+                      "Invalid line '%s' in placement file",
+                      line.c_str());
+        }
+    }
 
     g_placement_id = vtr::secure_digest_file(place_file);
-
-	infile = fopen(place_file, "r");
-	if (!infile) vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
-				"'%s' - Cannot find place file.\n", 
-				place_file);
-		
-	/* Check filenames in first line match */
-	tokens = vtr::ReadLineTokens(infile, &line);
-	error = 0;
-	if (tokens.size() != 4) {
-		error = 1;
-	}
-	for (i = 0; i < 4; ++i) {
-		if (!error) {
-			if (tokens[i].empty()) {
-				error = 1;
-			}
-		}
-	}
-	if (!error) {
-		if (   tokens[0] != "Netlist_File:"
-            || tokens[2] != "Netlist_ID:") {
-			error = 1;
-		};
-	}
-	if (error) {
-		vpr_throw(VPR_ERROR_PLACE_F, place_file, line, 
-				"Bad file ID specification line in placement file.\n", 
-				place_file);
-	}
-
-    std::string place_net_file = tokens[1];
-    std::string place_net_id = tokens[3];
-
-	if (place_net_id != g_clbs_nlist.netlist_id) {
-        //TODO: make optional warning
-		vpr_throw(VPR_ERROR_PLACE_F, place_file, line, 
-				"Netlist file that generated placement (File: %s ID: %s) does not match current netlist file (File: %s ID: %s).\n", 
-				place_net_file.c_str(), place_net_id.c_str(), net_file, g_clbs_nlist.netlist_id.c_str());
-	}
-
-	/* Check array size in second line matches */
-	tokens = vtr::ReadLineTokens(infile, &line);
-	error = 0;
-	if (tokens.size() < 7) {
-		error = 1;
-	}
-	for (i = 0; i < 7; ++i) {
-		if (!error) {
-			if (tokens[i].empty()) {
-				error = 1;
-			}
-		}
-	}
-	if (!error) {
-		if (tokens[0] != "Array"
-				|| tokens[1] != "size:"
-				|| tokens[3] != "x"
-				|| tokens[5] != "logic"
-				|| tokens[6] != "blocks") {
-			error = 1;
-		};
-	}
-	if (error) {
-		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, "'%s' - Bad FPGA size specification line in placement file.\n",
-				place_file);
-	}
-	if ((vtr::atoi(tokens[2].c_str()) != L_nx) || (vtr::atoi(tokens[4].c_str()) != L_ny)) {
-		vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
-				"'%s' - Current FPGA size (%d x %d) is different from size when placement generated (%d x %d).\n", 
-				place_file, L_nx, L_ny, vtr::atoi(tokens[2].c_str()), vtr::atoi(tokens[4].c_str()));
-	}
-
-    do {
-        tokens = vtr::ReadLineTokens(infile, &line);
-
-        if(tokens.empty()) {
-            continue;
-        }
-
-		/* Linear search to match pad to netlist */
-		cur_blk = NULL;
-		for (i = 0; i < L_num_blocks; ++i) {
-			if (block_list[i].name == tokens[0]) {
-				cur_blk = (block_list + i);
-				break;
-			}
-		}
-
-		/* Error if invalid block */
-		if (NULL == cur_blk) {
-			vpr_throw(VPR_ERROR_PLACE_F, place_file, line, 
-					"Block in placement file does not exist in netlist.\n");
-		}
-
-		/* Set pad coords */
-		cur_blk->x = vtr::atoi(tokens[1].c_str());
-		cur_blk->y = vtr::atoi(tokens[2].c_str());
-		cur_blk->z = vtr::atoi(tokens[3].c_str());
-
-	} while (!std::feof(infile));
-
-	fclose(infile);
 }
 
 void read_user_pad_loc(const char *pad_loc_file) {
@@ -299,4 +300,15 @@ void print_place(const char* net_file,
 
     //Calculate the ID of the placement
     g_placement_id = vtr::secure_digest_file(place_file);
+}
+
+t_block* find_block(t_block* blocks, int nblocks, std::string name) {
+    t_block* blk = NULL;
+    for (int i = 0; i < nblocks; ++i) {
+        if (blocks[i].name == name) {
+            blk = (blocks + i);
+            break;
+        }
+    }
+    return blk;
 }
