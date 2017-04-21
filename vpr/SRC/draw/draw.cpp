@@ -562,7 +562,7 @@ void init_draw_coords(float width_val) {
 	int j;
 
 	if (!draw_state->show_graphics)
-		return; /* -nodisp was selected. */
+		return; /* Graphics disabled */
 
 	/* Each time routing is on screen, need to reallocate the color of each *
 	 * rr_node, as the number of rr_nodes may change.						*/
