@@ -81,17 +81,21 @@ def run_vtr_flow(architecture_file, circuit_file,
     # RTL Elaboration & Synthesis
     #
     if should_run_stage(VTR_STAGE.odin, start_stage, end_stage):
-        print_verbose(2, verbosity, " Running Odin II")
+        if circuit_ext == ".blif":
+            print_verbose(2, verbosity, " Skipping Odin II (circuit is already in BLIF)")
 
-        run_odin(architecture_file_basename, next_stage_netlist, 
-                 output_netlist=post_odin_netlist, 
-                 command_runner=command_runner, 
-                 work_dir=work_dir)
+        else:
+            print_verbose(2, verbosity, " Running Odin II")
 
-        next_stage_netlist = post_odin_netlist
+            run_odin(architecture_file_basename, next_stage_netlist, 
+                     output_netlist=post_odin_netlist, 
+                     command_runner=command_runner, 
+                     work_dir=work_dir)
 
-        if not lec_base_netlist:
-            lec_base_netlist = post_odin_netlist
+            next_stage_netlist = post_odin_netlist
+
+            if not lec_base_netlist:
+                lec_base_netlist = post_odin_netlist
 
     #
     # Logic Optimization & Technology Mapping
