@@ -30,16 +30,16 @@ class VtrStageArgparseAction(argparse.Action):
         else:
             raise argparse.ArgumentError(self, "Invalid VTR stage '" + value + "'")
 
-class YesNoArgparseAction(argparse.Action):
+class OnOffArgparseAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
-        if value.lower() == "yes":
+        if value.lower() == "on":
             setattr(namespace, self.dest, True)
-        elif value.lower() == "no":
+        elif value.lower() == "off":
             setattr(namespace, self.dest, False)
         else:
             raise argparse.ArgumentError(self, "Invalid yes/no value '" + value + "'")
 
-yes_no_choices = ['yes', 'no']
+on_off_choices = ['on', 'off']
 
 def vtr_command_argparser(prog=None):
     usage = "%(prog)s architecture_file circuit_file [options]"
@@ -140,9 +140,9 @@ def vtr_command_argparser(prog=None):
                                help="Directory to store intermediate and result files.")
 
     house_keeping.add_argument("--track_memory_usage",
-                               choices=yes_no_choices,
-                               default="yes",
-                               action=YesNoArgparseAction,
+                               choices=on_off_choices,
+                               default="on",
+                               action=OnOffArgparseAction,
                                help="Track the memory usage for each stage. Requires /usr/bin/time -v, disabled if not available.")
 
     house_keeping.add_argument("--memory_limit",
