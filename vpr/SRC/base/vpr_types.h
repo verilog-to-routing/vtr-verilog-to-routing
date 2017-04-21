@@ -76,8 +76,6 @@ typedef size_t bitfield;
 #define EMPTY_BLOCK -1
 #define INVALID_BLOCK -2
 
-#define ROUTING_PREDICTOR_RUNNING_AVERAGE_BASE 5 /* Base number of previous iterations used to compute reduction in congestion */
-
 /*******************************************************************************
  * Packing specific data types and constants
  * Packing takes the circuit described in the technology mapped user netlist

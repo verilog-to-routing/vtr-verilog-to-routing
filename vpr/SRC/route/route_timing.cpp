@@ -33,6 +33,21 @@
 
 using namespace std;
 
+class WirelengthInfo {
+    public:
+        WirelengthInfo(size_t available=0u, size_t used=0u)
+            : available_wirelength_(available)
+            , used_wirelength_(used) {}
+
+        size_t available_wirelength() const { return available_wirelength_; }
+        size_t used_wirelength() const { return used_wirelength_; }
+        float used_wirelength_ratio() const { return float(used_wirelength()) / float(available_wirelength()); }
+
+    private:
+        size_t available_wirelength_;
+        size_t used_wirelength_;
+};
+
 
 /******************** Subroutines local to route_timing.c ********************/
 
@@ -66,26 +81,11 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 static double get_overused_ratio();
 
 static bool should_route_net(int inet, const CBRR& connections_inf);
-static bool early_exit_heuristic(const t_router_opts& router_opts);
+static bool early_exit_heuristic(const WirelengthInfo& wirelength_info);
 struct more_sinks_than {
 	inline bool operator() (const int& net_index1, const int& net_index2) {
 		return g_clbs_nlist.net[net_index1].num_sinks() > g_clbs_nlist.net[net_index2].num_sinks();
 	}
-};
-
-class WirelengthInfo {
-    public:
-        WirelengthInfo(size_t available=0u, size_t used=0u)
-            : available_wirelength_(available)
-            , used_wirelength_(used) {}
-
-        size_t available_wirelength() const { return available_wirelength_; }
-        size_t used_wirelength() const { return used_wirelength_; }
-        float used_wirelength_ratio() const { return float(used_wirelength()) / float(available_wirelength()); }
-
-    private:
-        size_t available_wirelength_;
-        size_t used_wirelength_;
 };
 
 static WirelengthInfo calculate_wirelength_info();
@@ -118,22 +118,19 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	 * must have already been allocated, and net_delay must have been allocated. *
 	 * Returns true if the routing succeeds, false otherwise.                    */
 
-    tatum::TimingPathInfo critical_path;
-
-	// initialize and properly size the lookups for profiling fanout breakdown
+	//Initialize and properly size the lookups for profiling
 	profiling::profiling_initialization(get_max_pins_per_net());
 
+	//sort so net with most sinks is first.
 	auto sorted_nets = vector<int>(g_clbs_nlist.net.size());
-
 	for (size_t i = 0; i < g_clbs_nlist.net.size(); ++i) {
 		sorted_nets[i] = i;
 	}
-
-	// sort so net with most sinks is first.
 	std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than());
 
-	timing_driven_route_structs route_structs{}; // allocs route strucs (calls default constructor)
-
+    /*
+     * Configure the routing predictor
+     */
     RoutingSuccessPredictor routing_success_predictor;
     float abort_iteration_threshold = std::numeric_limits<float>::infinity(); //Default no early abort
     if (router_opts.routing_failure_predictor == SAFE) {
@@ -144,40 +141,46 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
         VTR_ASSERT_MSG(router_opts.routing_failure_predictor == OFF, "Unrecognized routing failure predictor setting");
     }
 
-	/* First do one routing iteration ignoring congestion to get reasonable net 
-	   delay estimates. Set criticalities to 1 when timing analysis is on to 
-	   optimize timing, and to 0 when timing analysis is off to optimize routability. */
-
-	/* Variables used to do the optimization of the routing, aborting visibly
-	 * impossible Ws */
-	double overused_ratio;
-    WirelengthInfo wirelength_info;
-	vector<double> historical_overuse_ratio; 
-	historical_overuse_ratio.reserve(router_opts.max_router_iterations + 1);
-	// for unroutable large circuits, the time per iteration seems to increase dramatically
-	vector<float> time_per_iteration;
-	time_per_iteration.reserve(router_opts.max_router_iterations + 1);
-	
+    /* Set delay of global signals to zero. Non-global net delays are set by
+       update_net_delays_from_route_tree() inside timing_driven_route_net(), 
+       which is only called for non-global nets. */
 	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
 		if (g_clbs_nlist.net[inet].is_global) {
-			/* Set delay of global signals to zero. Non-global net delays are set by
-			   update_net_delays_from_route_tree() inside timing_driven_route_net(), 
-			   which is only called for non-global nets. */
 			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
 				net_delay[inet][ipin] = 0.;
 			}
 		}
 	}
 
-	// build lookup datastructures and 
-	// allocate and initialize remaining_targets [1..max_pins_per_net-1], and rr_node_to_pin [1..num_rr_nodes-1]
 	CBRR connections_inf {};
 	VTR_ASSERT_SAFE(connections_inf.sanity_check_lookup());
 
+    /*
+     * Routing parameters
+     */
 	float pres_fac = router_opts.first_iter_pres_fac; /* Typically 0 -> ignore cong. */
 
-	for (int itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
+    /*
+     * Routing status and metrics
+     */
+    bool routing_is_successful = false;
+    WirelengthInfo wirelength_info;
+	double overused_ratio;
+    tatum::TimingPathInfo critical_path;
+    int itry; //Routing iteration number
+
+	/*
+     * On the first routing iteration ignore congestion to get reasonable net 
+	 * delay estimates. Set criticalities to 1 when timing analysis is on to 
+	 * optimize timing, and to 0 when timing analysis is off to optimize routability. 
+     * 
+     * On subsequent iterations use the net delays from the previous iteration. 
+     */
+    print_route_status_header();
+	timing_driven_route_structs route_structs;
+	for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
 		clock_t begin = clock();
+
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
 		for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
 			g_clbs_nlist.net[inet].is_routed = false;
@@ -190,6 +193,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
             route_timing_info = make_constant_timing_info(1.); 
         }
 
+        /*
+         * Route each net
+         */
 		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
 			bool is_routable = try_timing_driven_route_net(
                     sorted_nets[i],
@@ -207,97 +213,83 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				return (false);
 			}
 		}
-		clock_t end = clock();
-		float time = static_cast<float>(end - begin) / CLOCKS_PER_SEC;
-		time_per_iteration.push_back(time);
-        wirelength_info = calculate_wirelength_info();
 
-		if (itry == 1) {
-            
-            if(early_exit_heuristic(router_opts)) {
-                //Abort
-                return false;
-            }
-
-            print_route_status_header();
-        }
-
-		/* Make sure any CLB OPINs used up by subblocks being hooked directly
-		   to them are reserved for that purpose. */
-
+		// Make sure any CLB OPINs used up by subblocks being hooked directly to them are reserved for that purpose
 		bool rip_up_local_opins = (itry == 1 ? false : true);
 		reserve_locally_used_opins(pres_fac, router_opts.acc_fac, rip_up_local_opins, clb_opins_used_locally);
 
-		/* Pathfinder guys quit after finding a feasible route. I may want to keep 
-		   going longer, trying to improve timing.  Think about this some. */
+		float time = static_cast<float>(clock() - begin) / CLOCKS_PER_SEC;
 
-		bool success = feasible_routing();
+        /*
+         * Calculate metrics for the current routing
+         */
+		bool routing_is_feasible = feasible_routing();
+        float est_success_iteration = routing_success_predictor.estimate_success_iteration();
 
-		/* Verification to check the ratio of overused nodes, depending on the configuration
-		 * may abort the routing if the ratio is too high. */
 		overused_ratio = get_overused_ratio();
-		historical_overuse_ratio.push_back(overused_ratio);
+        wirelength_info = calculate_wirelength_info();
         routing_success_predictor.add_iteration_overuse(itry, overused_ratio * num_rr_nodes);
 
-        float est_success_iteration = routing_success_predictor.estimate_success_iteration();
+
+        if (timing_analysis_enabled) {
+            //Update timing based on the new routing
+            //Note that the net delays have already been updated by timing_driven_route_net
+#ifdef ENABLE_CLASSIC_VPR_STA
+			load_timing_graph_net_delays(net_delay);
+
+			do_timing_analysis(slacks, timing_inf, false, true);
+#endif
+
+            timing_info->update();
+            timing_info->set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during routing
+
+            critical_path = timing_info->least_slack_critical_path();
+
+#ifdef ENABLE_CLASSIC_VPR_STA
+            float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
+            if(cpd_diff_ns > 0.01) {
+                print_classic_cpds();
+                print_tatum_cpds(timing_info->critical_paths());
+
+                vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
+            }
+#endif
+        }
+
+        //Output progress
+        print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info, est_success_iteration);
+
+        /*
+         * Are we finished?
+         */
+        routing_is_successful = routing_is_feasible; //TODO: keep going after legal routing to further optimize timing
+        if (routing_is_successful) {
+            break; //Finished
+        }
+
+        /*
+         * Abort checks: Should we give-up because this routing problem is unlikely to converge to a legal routing?
+         */
+        if (itry == 1 && early_exit_heuristic(wirelength_info)) {
+            //Abort
+            break;
+        }
+
+        //Estimate at what iteration we will converge to a legal routing
         if (overused_ratio * num_rr_nodes > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
-            //Only abort if we have a significatn number of overused resources
+            //Only abort if we have a significant number of overused resources
             
-            if(!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
+            if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
                 vtr::printf_info("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
-                return false;
+                break; //Abort
             }
         }
 
-		// finished routing, converged to a solution with all legal connections (no congestion)
-		if (success) {
-   
-			if (timing_analysis_enabled) {
-                //Final timing update
-#ifdef ENABLE_CLASSIC_VPR_STA
-				load_timing_graph_net_delays(net_delay);
-				do_timing_analysis(slacks, timing_inf, false, true);
-#endif
+        /*
+         * Prepare for the next iteration
+         */
 
-                timing_info->update();
-
-                critical_path = timing_info->least_slack_critical_path();
-
-#ifdef ENABLE_CLASSIC_VPR_STA
-                float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
-                if(cpd_diff_ns > 0.01) {
-                    print_classic_cpds();
-                    print_tatum_cpds(timing_info->critical_paths());
-
-                    vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
-                }
-#endif
-
-
-                print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info, est_success_iteration);
-				vtr::printf_info("Critical path: %g ns\n", 1e9*critical_path.delay());
-			} else {
-                print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info, est_success_iteration);
-
-#ifdef ENABLE_CLASSIC_VPR_STA
-                float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
-                if(cpd_diff_ns > 0.01) {
-                    print_classic_cpds();
-                    print_tatum_cpds(timing_info->critical_paths());
-
-                    vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
-                }
-#endif
-			}
-
-			vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
-
-			if (timing_analysis_enabled)
-				timing_driven_check_net_delays(net_delay);
-			return (true);
-		}
-
-		// still need to route more iterations (some congested parts)
+        //Update pres_fac and resource costs
 		if (itry == 1) {
 			pres_fac = router_opts.initial_pres_fac;
 			pathfinder_update_cost(pres_fac, 0.); /* Acc_fac=0 for first iter. */
@@ -311,19 +303,26 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		}
 
 		if (timing_analysis_enabled) {		
-			/* Update slack values by doing another timing analysis.
-			   Timing_driven_route_net updated the net delay values. */
+            /*
+             * Determine if any connectsion need to be forcibly re-routed due to timing
+             */
+			if (itry == 1) {
+                // first iteration sets up the lower bound connection delays since only timing is optimized for
+				connections_inf.set_stable_critical_path_delay(critical_path.delay());
+				connections_inf.set_lower_bound_connection_delays(net_delay);
+			} else {
+				bool stable_routing_configuration = true;
+				// only need to forcibly reroute if critical path grew significantly
+				if (connections_inf.critical_path_delay_grew_significantly(critical_path.delay()))
+					stable_routing_configuration = connections_inf.forcibly_reroute_connections(router_opts.max_criticality, 
+                            timing_info,
+                            pb_gpin_lookup,
+                            net_delay);
 
-            //Per-iteration timing update
-#ifdef ENABLE_CLASSIC_VPR_STA
-			load_timing_graph_net_delays(net_delay);
-
-			do_timing_analysis(slacks, timing_inf, false, true);
-#endif
-
-            timing_info->update();
-            timing_info->set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during routing
-
+				// not stable if any connection needs to be forcibly rerouted
+				if (stable_routing_configuration)
+					connections_inf.set_stable_critical_path_delay(critical_path.delay());
+			}
 		} else {
 			/* If timing analysis is not enabled, make sure that the criticalities and the
 			   net_delays stay as 0 so that wirelength can be optimized. */
@@ -337,52 +336,25 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 				}
 			}
 		}
-
 		
-		if (timing_analysis_enabled) {
-            critical_path = timing_info->least_slack_critical_path();
-
-			// check if any connection needs to be forcibly rerouted
-			// first iteration sets up the lower bound connection delays since only timing is optimized for
-			if (itry == 1) {
-				connections_inf.set_stable_critical_path_delay(critical_path.delay());
-				connections_inf.set_lower_bound_connection_delays(net_delay);
-			} else {
-				bool stable_routing_configuration = true;
-				// only need to forcibly reroute if critical path grew significantly
-				if (connections_inf.critical_path_delay_grew_significantly(critical_path.delay()))
-					stable_routing_configuration = connections_inf.forcibly_reroute_connections(router_opts.max_criticality, 
-                            timing_info,
-                            pb_gpin_lookup,
-                            net_delay);
-				// not stable if any connection needs to be forcibly rerouted
-				if (stable_routing_configuration)
-					connections_inf.set_stable_critical_path_delay(critical_path.delay());
-			}
-            print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info, est_success_iteration);
-
-#ifdef ENABLE_CLASSIC_VPR_STA
-            float cpd_diff_ns = std::abs(get_critical_path_delay() - 1e9*critical_path.delay());
-            if(cpd_diff_ns > 0.01) {
-                print_classic_cpds();
-                print_tatum_cpds(timing_info->critical_paths());
-
-                vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, "Classic VPR and Tatum critical paths do not match (%g and %g respectively)", get_critical_path_delay(), 1e9*critical_path.delay());
-            }
-#endif
-		} else {
-            print_route_status(itry, time, overused_ratio, wirelength_info, timing_analysis_enabled, timing_info, est_success_iteration);
-		}
 
         if (router_opts.congestion_analysis) profiling::congestion_analysis();
         if (router_opts.fanout_analysis) profiling::time_on_fanout_analysis();
         // profiling::time_on_criticality_analysis();
-
-		fflush(stdout);
 	}
-	vtr::printf_info("Routing failed.\n");
 
-	return (false);
+    if (routing_is_successful) {
+        if (timing_analysis_enabled) {
+            timing_driven_check_net_delays(net_delay);
+            vtr::printf_info("Critical path: %g ns\n", 1e9*critical_path.delay());
+        }
+
+        vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
+    } else {
+        vtr::printf_info("Routing failed.\n");
+    }
+
+	return routing_is_successful;
 }
 
 
@@ -1293,17 +1265,13 @@ static bool should_route_net(int inet, const CBRR& connections_inf) {
 	return false; /* Current route has no overuse */
 }
 
-static bool early_exit_heuristic(const t_router_opts& /*router_opts*/) {
+static bool early_exit_heuristic(const WirelengthInfo& wirelength_info) {
 	/* Early exit code for cases where it is obvious that a successful route will not be found 
 	   Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
-    auto wirelength_info = calculate_wirelength_info();
-
-	vtr::printf_info("Wire length after first iteration %d, total available wire length %d, ratio %g\n",
-			wirelength_info.used_wirelength(), wirelength_info.available_wirelength(),
-			wirelength_info.used_wirelength_ratio());
 
 	if (wirelength_info.used_wirelength_ratio() > FIRST_ITER_WIRELENTH_LIMIT) {
-		vtr::printf_info("Wire length usage ratio exceeds limit of %g, fail routing.\n",
+		vtr::printf_info("Wire length usage ratio %g exceeds limit of %g, fail routing.\n",
+                wirelength_info.used_wirelength_ratio(),
 				FIRST_ITER_WIRELENTH_LIMIT);
         return true;
 	}
@@ -1600,4 +1568,6 @@ static void print_route_status(int itry, double elapsed_sec,
     }
 
     vtr::printf("\n");
+
+    fflush(stdout);
 }
