@@ -132,13 +132,8 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 		rr_indexed_data[SINK_COST_INDEX].base_cost = 0.;
 		rr_indexed_data[OPIN_COST_INDEX].base_cost = delay_normalization_fac;
 
-#ifndef SPEC
 		rr_indexed_data[IPIN_COST_INDEX].base_cost = 0.95
 				* delay_normalization_fac;
-#else /* Avoid roundoff for SPEC */
-		rr_indexed_data[IPIN_COST_INDEX].base_cost =
-		delay_normalization_fac;
-#endif
 	}
 
 	/* Load base costs for CHANX and CHANY segments */
