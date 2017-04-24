@@ -164,10 +164,10 @@ def argument_parser(vtr_commands):
 
     for command, module in vtr_commands.iteritems():
 
-        try:
-            description = module.vtr_command_argparser().description
-        except AttributeError as e:
+        if not hasattr(module, "vtr_command_argparser"):
             raise AttributeError("VTR command '{}' is missing required function ({})".format(command, e.message))
+        else:
+            description = module.vtr_command_argparser().description
 
         subparsers.add_parser(command, 
                               add_help=False, #Show full usage if -h supplied
@@ -197,10 +197,10 @@ def main():
             #Show the sub-command in the help output
             help_prog = "{} {}".format(os.path.basename(sys.argv[0]), args.sub_command)
 
-            try:
-                cmd_parser = VTR_COMMANDS[args.sub_command].vtr_command_argparser(help_prog)
-            except AttributeError as e:
+            if not hasattr(VTR_COMMANDS[args.sub_command], "vtr_command_argparser"):
                 raise AttributeError("VTR command '{}' is missing required function ({})".format(args.sub_command, e.message))
+            else:
+                cmd_parser = VTR_COMMANDS[args.sub_command].vtr_command_argparser(help_prog)
 
             cmd_parser.print_help()
 
@@ -211,10 +211,10 @@ def main():
 
     elif args.command in VTR_COMMANDS:
         #Run the appropraite command
-        try:
-            VTR_COMMANDS[args.command].vtr_command_main(unkown_args, prog=prog)
-        except AttributeError as e:
+        if not hasattr(VTR_COMMANDS[args.command], "vtr_command_argparser"):
             raise AttributeError("VTR command '{}' is missing required function ({})".format(args.command, e.message))
+        else:
+            VTR_COMMANDS[args.command].vtr_command_main(unkown_args, prog=prog)
 
     else:
         print "Unrecognized subcommand {}".format(args.help_for_command)

@@ -5,8 +5,8 @@ import subprocess
 import time
 from collections import OrderedDict
 
-from util import make_enum, print_verbose, mkdir_p, find_vtr_file, file_replace, relax_W, CommandRunner
-from inspect import determine_memory_addr_width, determine_lut_size, determine_min_W
+from util import make_enum, print_verbose, mkdir_p, find_vtr_file, file_replace, relax_W, CommandRunner, write_tab_delimitted_csv
+from inspect import determine_memory_addr_width, determine_lut_size, determine_min_W, load_parse_patterns
 from error import *
 
 VTR_STAGE = make_enum("odin", "abc", 'ace', "vpr", "lec")
@@ -16,6 +16,7 @@ def run_vtr_flow(architecture_file, circuit_file,
                  power_tech_file=None,
                  start_stage=VTR_STAGE.odin, end_stage=VTR_STAGE.vpr, 
                  command_runner=CommandRunner(), 
+                 parse_config_file=None,
                  work_dir=".", 
                  verbosity=0,
                  vpr_args=None):
@@ -33,6 +34,7 @@ def run_vtr_flow(architecture_file, circuit_file,
         start_stage      : Stage of the flow to start at
         end_stage        : Stage of the flow to finish at
         command_runner   : A CommandRunner object used to run system commands
+        parse_config_file: The configuration file defining how to parse metrics from results
         verbosity        : How much output to produce
         vpr_args         : A dictionary of keywork arguments to pass on to VPR
     """
@@ -179,7 +181,47 @@ def run_vtr_flow(architecture_file, circuit_file,
         print_verbose(2, verbosity, " Running ABC Logical Equivalence Check")
         run_abc_lec(lec_base_netlist, post_vpr_netlist, command_runner=command_runner, log_filename="abc.lec.out")
 
+
+
+    #
+    # Parse the results
+    #
+    if not parse_config_file:
+        parse_config_file = find_vtr_file(os.path.join("vpr_standard.txt")) #Default config
+
+    print_verbose(2, verbosity, " Parsing results")
+    metrics = parse_vtr_flow(parse_config_file, work_dir)
+    write_tab_delimitted_csv(os.path.join(work_dir, "parse_results.txt"), [metrics])
+
     print_verbose(1, verbosity, "OK")
+    return metrics
+
+def parse_vtr_flow(parse_config_file, work_dir):
+    parse_patterns = load_parse_patterns(parse_config_file) 
+
+    parse_results = OrderedDict()
+
+    #Set defaults
+    for parse_pattern in parse_patterns.values():
+
+        if parse_pattern.default_value() != None:
+            parse_results[parse_pattern.name()] = parse_pattern.default_value()
+        else:
+            parse_results[parse_pattern.name()] = ""
+
+    #Process each pattern
+    for parse_pattern in parse_patterns.values():
+
+        filepath = os.path.join(work_dir, parse_pattern.filename())
+        if os.path.exists(filepath):
+            with open(parse_pattern.filename()) as f:
+                for line in f:
+                    match = parse_pattern.regex().match(line)
+                    if match:
+                        #Extract the first group value
+                        parse_results[parse_pattern.name()] = match.groups()[0]
+
+    return parse_results
 
 def run_odin(architecture_file, circuit_file, 
              output_netlist, 
@@ -323,8 +365,8 @@ def run_vpr(architecture, circuit, command_runner, work_dir, output_netlist=None
     cmd = [vpr_exec, architecture, circuit]
 
     #Enable netlist generation
-    if output_netlist:
-        vpr_args['gen_postsynthesis_netlist'] = output_netlist
+    #if output_netlist:
+        #vpr_args['gen_postsynthesis_netlist'] = output_netlist
 
     #Translate arbitrary keyword arguments into options for VPR
     for arg, value in vpr_args.iteritems():

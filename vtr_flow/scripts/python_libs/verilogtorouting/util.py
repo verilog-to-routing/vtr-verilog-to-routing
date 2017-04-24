@@ -1,10 +1,13 @@
 import os
 import sys
+import re
 import time
 import errno
 import subprocess
 import distutils.spawn as distutils_spawn
 import argparse
+import csv
+from collections import OrderedDict
 
 from verilogtorouting.error import *
 
@@ -153,6 +156,62 @@ class CommandRunner(object):
         return True
 
 
+def write_tab_delimitted_csv(filepath, rows):
+    """
+    Write out the data provied in a tab-delimited CSV format
+
+    filepath: The filepath to write the data to
+    rows: An iterable of dictionary-like elements; each element 
+          provides a set key-value pairs corresponding to a row 
+          in the output file
+    """
+    #Calculate the max width of each column
+    columns = OrderedDict()
+    for row in rows:
+        for key, value in row.iteritems():
+
+            if key not in columns:
+                columns[key] = max(len(key), len(str(value)))
+            else:
+                columns[key] = max(columns[key], len(str(value)))
+
+    #Write the elements
+    with open(filepath, 'w') as f:
+        writer = csv.writer(f, delimiter='\t')
+
+        #Write out the header
+        header = []
+        for col_name, col_width in columns.iteritems():
+            header.append("{:{width}}".format(col_name, width=col_width))
+        writer.writerow(header)
+
+        #Write rows
+        for row in rows:
+            values = []
+            for col_name, col_width in columns.iteritems():
+                values.append("{:{width}}".format(row[col_name], width=col_width))
+            writer.writerow(values)
+
+def load_tab_delimited_csv(filepath):
+
+    data = []
+    with open(filepath) as f:
+        reader = csv.reader(f, delimiter='\t')
+
+        header = None
+        for csv_row in reader:
+            if header == None:
+                header = [val.strip() for val in csv_row]
+            else:
+                data_row = OrderedDict()
+
+                for i, value in enumerate(csv_row):
+                    data_row[header[i]] = value.strip()
+
+                data.append(data_row)
+
+    return data
+
 def make_enum(*sequential, **named):
     """
     Makes an enumeration
@@ -282,6 +341,32 @@ def load_list_file(list_file):
                 continue
             values.append(line)
     return values
+
+def load_config_lines(filepath):
+    """
+    Loads the lines of a file, stripping blank lines and '#' comments.
+
+    Returns a list of lines
+    """
+    config_lines = []
+
+    blank_regex = re.compile(r"^\s*$")
+    with open(filepath) as f:
+        for line in f:
+            #Trim '\n'
+            line = line.strip()
+
+            #Trim comments
+            if '#' in line:
+                line = line.split('#')[0]
+
+            #Skip blanks
+            if blank_regex.match(line):
+                continue
+
+            config_lines.append(line)
+
+    return config_lines            
 
 def format_elapsed_time(time_delta):
     total_sec = int(round(time_delta.total_seconds()))

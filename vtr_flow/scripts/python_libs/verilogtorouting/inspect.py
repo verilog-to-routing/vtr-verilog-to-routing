@@ -1,4 +1,5 @@
 import re
+from collections import OrderedDict
 
 try:
     #Try for the fast c-based version first
@@ -7,7 +8,55 @@ except ImportError:
     #Fall back on python implementation
     import xml.etree.ElementTree as ET
 
+from util import load_config_lines
 from error import InspectError
+
+class ParsePattern:
+    def __init__(self, name, filename, regex_str, default_value=None):
+        self._name = name
+        self._filename = filename
+        self._regex = re.compile(regex_str)
+        self._default_value = default_value
+
+    def name(self):
+        return self._name
+
+    def filename(self):
+        return self._filename
+
+    def regex(self):
+        return self._regex
+
+    def default_value(self):
+        return self._default_value
+
+def load_parse_patterns(parse_config_filepath):
+    parse_patterns = OrderedDict()
+
+    for line in load_config_lines(parse_config_filepath):
+
+        components = line.split(';')
+
+    
+        if len(components) == 3 or len(components) == 4:
+
+            name = components[0]
+            filepath = components[1]
+            regex_str = components[2]
+
+            default_value = None
+            if len(components) == 4:
+                default_value = components[3]
+
+            if name not in parse_patterns:
+                parse_patterns[name] = ParsePattern(name, filepath, regex_str, default_value)
+            else:
+                raise InspectError("Duplicate parse pattern name '{}'".format(name), parse_config_filepath)
+
+        else:
+            raise InspectError("Invalid parse format line: '{}'".format(line), parse_config_filepath)
+
+    return parse_patterns
 
 def determine_lut_size(architecture_file):
     """
