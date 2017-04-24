@@ -281,7 +281,7 @@ def run_vpr_relax_W(architecture, circuit, command_runner=CommandRunner(), work_
     vpr_min_W_log = '.'.join([logfile_base, "min_W", "out"])
     vpr_crit_path_log = '.'.join([logfile_base, "crit_path", "out"])
 
-    print_verbose(2, verbosity, " Running VPR (determing minimum channel width)" )
+    print_verbose(2, verbosity, " Running VPR (determining minimum channel width)" )
 
     run_vpr(architecture, circuit, command_runner, work_dir, log_filename=vpr_min_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
 
@@ -293,7 +293,7 @@ def run_vpr_relax_W(architecture, circuit, command_runner=CommandRunner(), work_
 
     relaxed_W = relax_W(min_W, relax_W_factor)
 
-    print_verbose(2, verbosity, " Running VPR (determing critical path at {fac}x minimum channel width)".format(fac=relax_W_factor))
+    print_verbose(2, verbosity, " Running VPR (determining critical path at {fac}x minimum channel width)".format(fac=relax_W_factor))
 
     vpr_args['route'] = True #Re-route only
     vpr_args['route_chan_width'] = relaxed_W #At a fixed channel width
