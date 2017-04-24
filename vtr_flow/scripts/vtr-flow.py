@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pyt
 
 from verilogtorouting.flow import run_vtr_flow, VTR_STAGE, vtr_stages, CommandRunner
 from verilogtorouting.error import *
-from verilogtorouting.util import print_verbose, RawDefaultHelpFormatter, VERBOSITY_CHOICES
+from verilogtorouting.util import print_verbose, RawDefaultHelpFormatter, VERBOSITY_CHOICES, find_vtr_file
 
 class VtrStageArgparseAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
@@ -121,6 +121,11 @@ def vtr_command_argparser(prog=None):
                         type=int,
                         help="Verbosity of the script. Higher values produce more output.")
 
+    parser.add_argument("--parse_config_file",
+                        default=find_vtr_file("vpr_standard.txt"),
+                        help="Parse file to run after flow completion")
+
+
     #
     # Power arguments
     #
@@ -189,6 +194,7 @@ def vtr_command_main(arg_list, prog=None):
                      start_stage=args.start, 
                      end_stage=args.end,
                      command_runner=command_runner,
+                     parse_config_file=args.parse_config_file,
                      verbosity=args.verbosity,
                      vpr_args=vpr_args
                      )
