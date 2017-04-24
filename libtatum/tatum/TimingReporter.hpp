@@ -7,6 +7,7 @@
 
 #include "tatum/TimingGraphNameResolver.hpp"
 #include "tatum/report/TimingPath.hpp"
+#include "tatum/report/TimingPathCollector.hpp"
 #include "tatum/report/TimingReportTagRetriever.hpp"
 
 namespace tatum {
@@ -33,10 +34,10 @@ class TimingReporter {
 
         void report_unconstrained_endpoints_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer) const;
         void report_unconstrained_endpoints_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer) const;
+
     private:
         void report_timing(std::ostream& os, const std::vector<TimingPath>& paths, size_t npaths) const;
         void report_path(std::ostream& os, const TimingPath& path) const;
-        std::vector<TimingPath> collect_worst_paths(const detail::TagRetriever& tag_retriever, size_t npaths) const;
 
         void report_unconstrained_endpoints(std::ostream& os, const detail::TagRetriever& tag_retriever) const;
 
@@ -54,6 +55,7 @@ class TimingReporter {
         float relative_error_tolerance_ = 1.e-5;
         float absolute_error_tolerance_ = 1e-13; //Sub pico-second
 
+        TimingPathCollector path_collector_;
 };
 
 } //namespace

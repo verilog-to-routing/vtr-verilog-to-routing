@@ -10,7 +10,6 @@
 #include "tatum/TimingReporter.hpp"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
-#include "tatum/report/timing_path_tracing.hpp"
 
 namespace { //File-scope utilities
 
@@ -117,8 +116,7 @@ void TimingReporter::report_timing_setup(std::string filename,
 void TimingReporter::report_timing_setup(std::ostream& os, 
                                          const SetupTimingAnalyzer& setup_analyzer,
                                          size_t npaths) const {
-    detail::SetupTagRetriever tag_retriever(setup_analyzer);
-    auto paths = collect_worst_paths(tag_retriever, npaths);
+    auto paths = path_collector_.collect_worst_setup_paths(timing_graph_, setup_analyzer, npaths);
 
     report_timing(os, paths, npaths);
 }
@@ -133,8 +131,7 @@ void TimingReporter::report_timing_hold(std::string filename,
 void TimingReporter::report_timing_hold(std::ostream& os, 
                                          const HoldTimingAnalyzer& hold_analyzer,
                                          size_t npaths) const {
-    detail::HoldTagRetriever tag_retriever(hold_analyzer);
-    auto paths = collect_worst_paths(tag_retriever, npaths);
+    auto paths = path_collector_.collect_worst_hold_paths(timing_graph_, hold_analyzer, npaths);
 
     report_timing(os, paths, npaths);
 }
@@ -417,37 +414,6 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
            << " beyond tolerance";
         throw tatum::Error(ss.str());
     }
-}
-
-std::vector<TimingPath> TimingReporter::collect_worst_paths(const detail::TagRetriever& tag_retriever, size_t npaths) const {
-    std::vector<TimingPath> paths;
-
-    //Sort the sinks by slack
-    std::map<TimingTag,NodeId,TimingTagValueComp> tags_and_sinks;
-
-    //Add the slacks of all sink
-    for(NodeId node : timing_graph_.logical_outputs()) {
-        for(TimingTag tag : tag_retriever.slacks(node)) {
-            tags_and_sinks.emplace(tag,node);
-        }
-    }
-
-    //Trace the paths for each tag/node pair
-    // The the map will sort the nodes and tags from worst to best slack (i.e. ascending slack order),
-    // so the first pair is the most critical end-point
-    for(const auto& kv : tags_and_sinks) {
-        NodeId sink_node;
-        TimingTag sink_tag;
-        std::tie(sink_tag, sink_node) = kv;
-
-        TimingPath path = detail::trace_path(timing_graph_, tag_retriever, sink_tag.launch_clock_domain(), sink_tag.capture_clock_domain(), sink_node); 
-
-        paths.push_back(path);
-
-        if(paths.size() >= npaths) break;
-    }
-
-    return paths;
 }
 
 void TimingReporter::report_unconstrained_endpoints(std::ostream& os, const detail::TagRetriever& tag_retriever) const {

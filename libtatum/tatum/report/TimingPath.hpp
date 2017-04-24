@@ -3,7 +3,10 @@
 #include <vector>
 
 #include "tatum/report/TimingPathFwd.hpp"
+#include "tatum/TimingGraphFwd.hpp"
 #include "tatum/base/TimingType.hpp"
+#include "tatum/Time.hpp"
+#include "tatum/tags/TimingTag.hpp"
 
 #include "tatum/util/tatum_assert.hpp"
 #include "tatum/util/tatum_range.hpp"
