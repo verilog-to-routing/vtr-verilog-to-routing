@@ -11,6 +11,7 @@
 t_draw_state::t_draw_state() :
 	pic_on_screen(NO_PICTURE),
 	show_nets(DRAW_NO_NETS),
+    show_crit_path(DRAW_NO_CRIT_PATH),
 	show_congestion(DRAW_NO_CONGEST),
 	draw_rr_toggle(DRAW_NO_RR),
 	max_sub_blk_lvl(0),
@@ -20,7 +21,8 @@ t_draw_state::t_draw_state() :
 	draw_route_type(GLOBAL),
 	net_color(NULL),
 	block_color(NULL),
-	draw_rr_node(NULL) { 
+	draw_rr_node(NULL),
+    setup_timing_info(nullptr) { 
 
 }
 

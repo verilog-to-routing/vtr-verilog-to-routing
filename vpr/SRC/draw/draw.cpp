@@ -16,6 +16,7 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
+#include <sstream>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -32,6 +33,8 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
+#include "atom_netlist.h"
+#include "tatum/report/TimingPathCollector.hpp"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
 			  * track CPU runtime.														   */
@@ -63,11 +66,12 @@ std::string rr_highlight_message;
 static void toggle_nets(void (*drawscreen)(void));
 static void toggle_rr(void (*drawscreen)(void));
 static void toggle_congestion(void (*drawscreen)(void));
-static void highlight_crit_path(void (*drawscreen_ptr)(void));
+static void toggle_crit_path(void (*drawscreen_ptr)(void));
 
 static void drawscreen(void);
 static void redraw_screen(void);
 static void drawplace(void);
+static void draw_crit_path_flylines(void);
 static void drawnets(void);
 static void drawroute(enum e_draw_net_type draw_net_type);
 static void draw_congestion(void);
@@ -111,6 +115,11 @@ static inline void draw_mux_with_size(t_point origin, e_side orientation, float 
 static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height);
 static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height, float width, float height_scale);
 
+
+t_point tnode_draw_coord(tatum::NodeId node);
+t_point atom_pin_draw_coord(AtomPinId pin);
+void draw_timing_edge(t_point start, t_point end, float incr_delay);
+
 /********************** Subroutine definitions ******************************/
 
 
@@ -130,7 +139,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 }
 
 void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
-		bool crit_path_button_enabled) {
+		std::shared_ptr<SetupTimingInfo> setup_timing_info) {
 
 	/* Updates the screen if the user has requested graphics.  The priority  *
 	 * value controls whether or not the Proceed button must be clicked to   *
@@ -147,22 +156,23 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 		if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
+            if(setup_timing_info) {
+                create_button("Blk Internal", "Crit. Path", toggle_crit_path);
+            }
 		} 
 		else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
 			create_button("Blk Internal", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
-
-			if (crit_path_button_enabled) {
-                create_button("Congestion", "Crit. Path", highlight_crit_path);
-			}
+            if(setup_timing_info) {
+                create_button("Congestion", "Crit. Path", toggle_crit_path);
+            }
 		} 
 		else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
 			destroy_button("Toggle RR");
 			destroy_button("Congestion");
-
-			if (crit_path_button_enabled) {
-				destroy_button("Crit. Path");
-			}
+            if(setup_timing_info) {
+                destroy_button("Crit. Path");
+            }
 		} 
 		else if (pic_on_screen_val == ROUTING
 				&& draw_state->pic_on_screen == NO_PICTURE) {
@@ -170,15 +180,16 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);
 			create_button("Blk Internal", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
-
-			if (crit_path_button_enabled) {
-                create_button("Congestion", "Crit. Path", highlight_crit_path);
-			}
+            if(setup_timing_info) {
+                create_button("Congestion", "Crit. Path", toggle_crit_path);
+            }
 		}
 	}
 	/* Save the main message. */
 
 	vtr::strncpy(draw_state->default_message, msg, vtr::BUFSIZE);
+
+    draw_state->setup_timing_info = setup_timing_info;
 
 	draw_state->pic_on_screen = pic_on_screen_val;
 	update_message(msg);
@@ -221,8 +232,6 @@ static void drawscreen() {
 	redraw_screen();
 
     copy_off_screen_buffer_to_screen();
-
-    set_drawing_buffer(ON_SCREEN);
 
 #ifdef TIME_DRAWSCREEN
 
@@ -273,6 +282,14 @@ static void redraw_screen() {
 			default:
 			break;
 		}
+
+        switch (draw_state->show_crit_path) {
+            case DRAW_CRIT_PATH_FLYLINES:
+                draw_crit_path_flylines();
+                break;
+            default:
+                break;
+        }
 	} else { /* ROUTING on screen */
 
 		switch (draw_state->show_nets) {
@@ -390,107 +407,17 @@ void toggle_blk_internal(void (*drawscreen_ptr)(void)) {
 	drawscreen_ptr();
 }
 
-static void highlight_crit_path(void (*drawscreen_ptr)(void)) {
-    //TODO: unimplemented with tatum timing analysis
+static void toggle_crit_path(void (*drawscreen_ptr)(void)) {
+	t_draw_state* draw_state = get_draw_state_vars();
 
-
-	/* Highlights all the blocks and nets on the critical path. */
-	/*t_draw_state* draw_state = get_draw_state_vars();*/
-	/*t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();*/
-
-#if 0
-	vtr::t_linked_int *critical_path_head, *critical_path_node;
-	int inode, iblk, inet, num_nets_seen;
-	static int nets_to_highlight = 1;
-	char msg[vtr::BUFSIZE];
-
-	sel_subblk_info.clear_critical_path();
-
-	if (nets_to_highlight == 0) { /* Clear the display of all highlighting. */
-		nets_to_highlight = 1;
-		deselect_all();
-		update_message(draw_state->default_message);
-		drawscreen_ptr();
-		return;
-	}
-
-	critical_path_head = allocate_and_load_critical_path(timing_inf);
-	critical_path_node = critical_path_head;
-	num_nets_seen = 0;
-
-	t_tnode* last_opin = NULL; // last output pin
-	bool hit_end_of_crit_path = false;
-
-	while (true) {
-		if (critical_path_node == NULL) {
-			hit_end_of_crit_path = true;
-			break;
-		} else if (num_nets_seen == nets_to_highlight) {
-			break;
-		}
-
-		inode = critical_path_node->data;
-		t_tnode* current_pin = &tnode[inode];
-
-		get_tnode_block_and_output_net(inode, &iblk, &inet);
-
-		if (inet != OPEN) {
-			if (num_nets_seen < nets_to_highlight - 1) { /* First nets. */
-				draw_state->net_color[inet] = crit_path_colors::net::TAIL;
-			} else if (num_nets_seen == nets_to_highlight - 1) {
-				draw_state->net_color[inet] = crit_path_colors::net::HEAD; /* Last (new) net. */
-			}
-		}
-
-		switch (current_pin->type) {
-			case TN_INPAD_OPIN:
-			case TN_PRIMITIVE_OPIN:
-			case TN_FF_SOURCE:
-				if ((num_nets_seen + 1) < nets_to_highlight) {
-					// not the head, or not the block driving the head.
-					draw_state->block_color[iblk] = crit_path_colors::blk::TAIL;
-				} else {
-					// highlight the block driving the head.
-					draw_state->block_color[iblk] = crit_path_colors::blk::HEAD_DRIVER;
-				}
-				last_opin = current_pin;
-			break;
-			default:
-			if (last_opin != NULL) {
-				switch (current_pin->type) {
-					case TN_OUTPAD_IPIN:
-					case TN_PRIMITIVE_IPIN:
-					case TN_FF_SINK:
-						// highlight the head block.
-						draw_state->block_color[iblk] = crit_path_colors::blk::HEAD;
-						sel_subblk_info.add_to_critical_path(*last_opin,*current_pin);
-						last_opin = NULL;
-						num_nets_seen++;
-					break;
-					default:
-					break;
-				}
-			}
-			break;
-		}
-
-		critical_path_node = critical_path_node->next;
-	}
-
-	if (hit_end_of_crit_path) {
-		nets_to_highlight = 0;
-		sprintf(msg, "All %d nets on the critical path highlighted.",
-				num_nets_seen);
-	} else {
-		sprintf(msg, "First %d nets on the critical path highlighted.",
-				nets_to_highlight);
-		nets_to_highlight++;
-	}
-
-	free_int_list(&critical_path_head);
-
-	update_message(msg);
-#endif
+    switch (draw_state->show_crit_path) {
+        case DRAW_NO_CRIT_PATH:
+            draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES;
+            break;
+        default:
+            draw_state->show_crit_path = DRAW_NO_CRIT_PATH;
+            break;
+    };
 
 	drawscreen_ptr();
 }
@@ -691,6 +618,84 @@ static void drawplace(void) {
 		}
 	}
 }
+
+t_point tnode_draw_coord(tatum::NodeId node) {
+    AtomPinId pin = g_atom_lookup.tnode_atom_pin(node);
+    return atom_pin_draw_coord(pin);
+}
+
+t_point atom_pin_draw_coord(AtomPinId pin) {
+    AtomBlockId blk = g_atom_nl.pin_block(pin);
+    int clb_index = g_atom_lookup.atom_clb(blk);
+    const t_pb_graph_node* pg_gnode = g_atom_lookup.atom_pb_graph_node(blk);
+
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+    t_bound_box bbox = draw_coords->get_absolute_pb_bbox(clb_index, pg_gnode);
+
+    //Draw at the center of the corresponding PB
+    return bbox.get_center();
+}
+
+void draw_timing_edge(t_point start, t_point end, float incr_delay) {
+    drawline(start, end);
+    draw_triangle_along_line(start, end, 0.95, 40*DEFAULT_ARROW_SIZE);
+    draw_triangle_along_line(start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
+
+
+    //Determine the strict bounding box based on the lines start/end
+    float min_x = std::min(start.x, end.x);
+    float max_x = std::max(start.x, end.x);
+    float min_y = std::min(start.y, end.y);
+    float max_y = std::max(start.y, end.y);
+
+    //If we have a nearly horizontal/vertical line the bbox is too
+    //small to draw the text, so widen it by a tile (i.e. CLB) width
+	float tile_width = get_draw_coords_vars()->get_tile_width();
+    if (max_x - min_x < tile_width) {
+        max_x += tile_width / 2;
+        min_x -= tile_width / 2;
+    }
+    if (max_y - min_y < tile_width) {
+        max_y += tile_width / 2;
+        min_y -= tile_width / 2;
+    }
+
+    t_bound_box text_bbox(min_x, min_y, max_x, max_y);
+
+    std::stringstream ss;
+    ss.precision(3);
+    ss << 1e9*incr_delay; //In nanoseconds
+    std::string incr_delay_str = ss.str();
+
+    drawtext_in(text_bbox, incr_delay_str.c_str());
+}
+
+static void draw_crit_path_flylines(void) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    tatum::TimingPathCollector path_collector;
+
+    auto paths = path_collector.collect_worst_setup_paths(*g_timing_graph, *(draw_state->setup_timing_info->setup_analyzer()), 1);
+    tatum::TimingPath path = paths[0];
+
+    setlinestyle(SOLID);
+    setcolor(BLUE);
+
+    tatum::NodeId prev_node;
+    float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
+    for(tatum::TimingPathElem elem : path.data_arrival_elements()) {
+        tatum::NodeId node = elem.node();
+        float arr_time = elem.tag().time();
+
+        if(prev_node) {
+            float delay = arr_time - prev_arr_time;
+            draw_timing_edge(tnode_draw_coord(prev_node), tnode_draw_coord(node), delay);
+        }
+        prev_node = node;
+        prev_arr_time = arr_time;
+    }
+}
+
 
 static void drawnets(void) {
 	t_draw_state* draw_state = get_draw_state_vars();
@@ -2279,7 +2284,7 @@ static void draw_reset_blk_color(int i) {
  * A 'relative_position' of 1. draws the triangle centered at 'end'.
  * Fractional values draw the triangle along the line
  */
-void draw_triangle_along_line(t_point start, t_point end, float relative_position) {
+void draw_triangle_along_line(t_point start, t_point end, float relative_position, float arrow_size) {
     VTR_ASSERT(relative_position >= 0. && relative_position <= 1.);
 	float xdelta = end.x - start.x;
 	float ydelta = end.y - start.y;
@@ -2287,7 +2292,7 @@ void draw_triangle_along_line(t_point start, t_point end, float relative_positio
     float xtri = start.x + xdelta * relative_position;
     float ytri = start.y + ydelta * relative_position;
 
-	draw_triangle_along_line(xtri, ytri, start.x, end.x, start.y, end.y);
+	draw_triangle_along_line(xtri, ytri, start.x, end.x, start.y, end.y, arrow_size);
 }
 
 /**

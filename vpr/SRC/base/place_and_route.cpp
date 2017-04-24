@@ -172,7 +172,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 		}
 
 		init_draw_coords(max_pins_per_clb);
-		update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
+		update_screen(MAJOR, msg, ROUTING, nullptr);
 		
 #ifdef ENABLE_CLASSIC_VPR_STA
         VTR_ASSERT(slacks->slack);
@@ -539,7 +539,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	init_draw_coords(max_pins_per_clb);
 	sprintf(msg, "Routing succeeded with a channel width factor of %d.", final);
-	update_screen(MAJOR, msg, ROUTING, timing_inf.timing_analysis_enabled);
+	update_screen(MAJOR, msg, ROUTING, nullptr);
 
 	for (i = 0; i < num_blocks; i++) {
 		free_ivec_vector(clb_opins_used_locally[i], 0,

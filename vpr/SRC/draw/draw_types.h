@@ -17,10 +17,18 @@
 #define DRAW_TYPES_H
 
 #include <vector>
+#include <memory>
+#include "timing_info_fwd.h"
 #include "vtr_util.h"
 #include "graphics.h"
 #include "vpr_types.h"
 using namespace std;
+
+enum e_draw_crit_path {
+      DRAW_NO_CRIT_PATH
+    , DRAW_CRIT_PATH_FLYLINES
+    //, DRAW_CRIT_PATH_ROUTING
+};
 
 enum e_draw_nets {
 	DRAW_NO_NETS = 0,
@@ -98,6 +106,7 @@ typedef struct {
 struct t_draw_state {
 	pic_type pic_on_screen;
 	e_draw_nets show_nets;
+    e_draw_crit_path show_crit_path;
 	e_draw_congestion show_congestion;
 	e_draw_rr_toggle draw_rr_toggle;
 	int max_sub_blk_lvl;
@@ -108,6 +117,7 @@ struct t_draw_state {
 	char default_message[vtr::BUFSIZE];
 	t_color *net_color, *block_color;
 	t_draw_rr_node *draw_rr_node;
+    std::shared_ptr<const SetupTimingInfo> setup_timing_info;
 
 	t_draw_state();
 
