@@ -59,7 +59,7 @@ def run_vtr_flow(architecture_file, circuit_file,
     post_ace_netlist = circuit_name + ".ace.blif"
     post_ace_activity_file = circuit_name + ".act"
     pre_vpr_netlist = circuit_name + ".pre_vpr.blif"
-    post_vpr_netlist = circuit_name + ".vpr.blif"
+    post_vpr_netlist = "top_post_synthesis.blif" #circuit_name + ".vpr.blif"
     lec_base_netlist = None #Reference netlist for LEC
 
     if circuit_ext == ".blif":
@@ -147,6 +147,11 @@ def run_vtr_flow(architecture_file, circuit_file,
         #Copy the input netlist for input to vpr
         shutil.copyfile(os.path.join(work_dir, next_stage_netlist), os.path.join(work_dir, pre_vpr_netlist))
 
+        #Do we need to generate the post-synthesis netlist? (e.g. for LEC)
+        if should_run_stage(VTR_STAGE.lec, start_stage, end_stage):
+            if "gen_postsynthesis_netlist" not in vpr_args:
+                vpr_args["gen_postsynthesis_netlist"] = "on"
+
         if "route_chan_width" in vpr_args:
             #The User specified a fixed channel width
             print_verbose(2, verbosity, " Running VPR (at fixed channel width)")
@@ -164,12 +169,15 @@ def run_vtr_flow(architecture_file, circuit_file,
                             verbosity=verbosity, 
                             vpr_args=vpr_args)
 
+        if not lec_base_netlist:
+            lec_base_netlist = pre_vpr_netlist
+
     #
     # Logical Equivalence Checks (LEC)
     #
     if should_run_stage(VTR_STAGE.lec, start_stage, end_stage):
         print_verbose(2, verbosity, " Running ABC Logical Equivalence Check")
-        run_abc_lec(lec_base_netlist, post_vpr_netlist, command_runner=command_runner, log_filename="abc_lec.out")
+        run_abc_lec(lec_base_netlist, post_vpr_netlist, command_runner=command_runner, log_filename="abc.lec.out")
 
     print_verbose(1, verbosity, "OK")
 
@@ -209,7 +217,7 @@ def run_odin(architecture_file, circuit_file,
 
     command_runner.run_system_command(cmd, work_dir=work_dir, log_filename=log_filename, indent_depth=1)
 
-def run_abc(architecture_file, circuit_file, output_netlist, command_runner, work_dir=".", log_filename="abc.out", abc_exec=None, abc_script=None, abc_rc=None):
+def run_abc(architecture_file, circuit_file, output_netlist, command_runner, work_dir=".", log_filename="abc.opt_techmap.out", abc_exec=None, abc_script=None, abc_rc=None):
     mkdir_p(work_dir)
 
     if abc_exec == None:
@@ -329,7 +337,7 @@ def run_vpr(architecture, circuit, command_runner, work_dir, output_netlist=None
 
     command_runner.run_system_command(cmd, work_dir=work_dir, log_filename=log_filename, indent_depth=1)
 
-def run_abc_lec(reference_netlist, implementation_netlist, command_runner, work_dir=".", log_filename="abc_lec.out", abc_exec=None):
+def run_abc_lec(reference_netlist, implementation_netlist, command_runner, work_dir=".", log_filename="abc.lec.out", abc_exec=None):
     """
     Run Logical Equivalence Checking (LEC) between two netlists using ABC
     """
