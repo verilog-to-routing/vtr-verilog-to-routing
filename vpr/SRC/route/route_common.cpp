@@ -289,6 +289,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
 #endif
+        std::shared_ptr<SetupTimingInfo> timing_info,
 		t_chan_width_dist chan_width_dist, vtr::t_ivec ** clb_opins_used_locally,
 		t_direct_inf *directs, int num_directs) {
 
@@ -356,17 +357,6 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 	} else { /* TIMING_DRIVEN route */
 		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
 
-        //Initialize the delay calculator
-        std::shared_ptr<SetupTimingInfo> timing_info;
-        std::shared_ptr<RoutingDelayCalculator> routing_delay_calc;
-        if(timing_inf.timing_analysis_enabled) {
-            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
-
-            timing_info = make_setup_timing_info(routing_delay_calc);
-        } else {
-            timing_info = make_constant_timing_info(0.);
-        }
-
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(type_descriptors, num_types);
 
 
@@ -385,12 +375,6 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
 		profiling::time_on_fanout_analysis();
 
-        if(timing_inf.timing_analysis_enabled) {
-            if(isEchoFileEnabled(E_ECHO_FINAL_ROUTING_TIMING_GRAPH)) {
-                tatum::write_echo(getEchoFileName(E_ECHO_FINAL_ROUTING_TIMING_GRAPH),
-                                  *g_timing_graph, *g_timing_constraints, *routing_delay_calc, timing_info->analyzer());
-            }
-        }
 	}
 
 	free_rr_node_route_structs();

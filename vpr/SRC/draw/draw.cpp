@@ -284,7 +284,8 @@ static void redraw_screen() {
 		}
 
         switch (draw_state->show_crit_path) {
-            case DRAW_CRIT_PATH_FLYLINES:
+            case DRAW_CRIT_PATH_FLYLINES: //fallthrough
+            case DRAW_CRIT_PATH_FLYLINES_DELAYS:
                 draw_crit_path_flylines();
                 break;
             default:
@@ -302,6 +303,15 @@ static void redraw_screen() {
 				draw_rr();
 			break;
 		}
+
+        switch (draw_state->show_crit_path) {
+            case DRAW_CRIT_PATH_FLYLINES: //fallthrough
+            case DRAW_CRIT_PATH_FLYLINES_DELAYS:
+                draw_crit_path_flylines();
+                break;
+            default:
+                break;
+        }
 
 		if (draw_state->show_congestion != DRAW_NO_CONGEST) {
 			draw_congestion();
@@ -413,6 +423,9 @@ static void toggle_crit_path(void (*drawscreen_ptr)(void)) {
     switch (draw_state->show_crit_path) {
         case DRAW_NO_CRIT_PATH:
             draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES;
+            break;
+        case DRAW_CRIT_PATH_FLYLINES:
+            draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES_DELAYS;
             break;
         default:
             draw_state->show_crit_path = DRAW_NO_CRIT_PATH;
@@ -642,32 +655,39 @@ void draw_timing_edge(t_point start, t_point end, float incr_delay) {
     draw_triangle_along_line(start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
 
 
-    //Determine the strict bounding box based on the lines start/end
-    float min_x = std::min(start.x, end.x);
-    float max_x = std::max(start.x, end.x);
-    float min_y = std::min(start.y, end.y);
-    float max_y = std::max(start.y, end.y);
+    bool draw_delays = (get_draw_state_vars()->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS);
+    if (draw_delays) {
+        //Determine the strict bounding box based on the lines start/end
+        float min_x = std::min(start.x, end.x);
+        float max_x = std::max(start.x, end.x);
+        float min_y = std::min(start.y, end.y);
+        float max_y = std::max(start.y, end.y);
 
-    //If we have a nearly horizontal/vertical line the bbox is too
-    //small to draw the text, so widen it by a tile (i.e. CLB) width
-	float tile_width = get_draw_coords_vars()->get_tile_width();
-    if (max_x - min_x < tile_width) {
-        max_x += tile_width / 2;
-        min_x -= tile_width / 2;
+        //If we have a nearly horizontal/vertical line the bbox is too
+        //small to draw the text, so widen it by a tile (i.e. CLB) width
+        float tile_width = get_draw_coords_vars()->get_tile_width();
+        if (max_x - min_x < tile_width) {
+            max_x += tile_width / 2;
+            min_x -= tile_width / 2;
+        }
+        if (max_y - min_y < tile_width) {
+            max_y += tile_width / 2;
+            min_y -= tile_width / 2;
+        }
+
+        //TODO: draw the delays nicer
+        //   * rotate to match edge
+        //   * offset from line
+        //   * track visible in window
+        t_bound_box text_bbox(min_x, min_y, max_x, max_y);
+
+        std::stringstream ss;
+        ss.precision(3);
+        ss << 1e9*incr_delay; //In nanoseconds
+        std::string incr_delay_str = ss.str();
+
+        drawtext_in(text_bbox, incr_delay_str.c_str());
     }
-    if (max_y - min_y < tile_width) {
-        max_y += tile_width / 2;
-        min_y -= tile_width / 2;
-    }
-
-    t_bound_box text_bbox(min_x, min_y, max_x, max_y);
-
-    std::stringstream ss;
-    ss.precision(3);
-    ss << 1e9*incr_delay; //In nanoseconds
-    std::string incr_delay_str = ss.str();
-
-    drawtext_in(text_bbox, incr_delay_str.c_str());
 }
 
 static void draw_crit_path_flylines(void) {

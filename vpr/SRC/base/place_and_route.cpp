@@ -34,6 +34,10 @@ using namespace std;
 #include "place_macro.h"
 #include "power.h"
 
+#include "RoutingDelayCalculator.h"
+#include "timing_info.h"
+#include "tatum/echo_writer.hpp"
+
 
 /******************* Subroutines local to this module ************************/
 
@@ -44,7 +48,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf);
+		t_timing_inf timing_inf,
+        std::shared_ptr<SetupTimingInfo> timing_info);
 
 static float comp_width(t_chan * chan, float x, float separation);
 
@@ -113,6 +118,22 @@ bool place_and_route(struct s_placer_opts placer_opts,
 		return(true);
 	}
 
+    //Routing
+    //Initialize the delay calculator
+    float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
+
+    std::shared_ptr<SetupTimingInfo> timing_info;
+    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc;
+    if(timing_inf.timing_analysis_enabled) {
+        routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
+
+        timing_info = make_setup_timing_info(routing_delay_calc);
+    } else {
+        timing_info = make_constant_timing_info(0.);
+    }
+
+
+
 	/* If channel width not fixed, use binary search to find min W */
 	if (NO_FIXED_CHANNEL_WIDTH == width_fac) {
         //Binary search for the min channel width
@@ -121,7 +142,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 				arch,
                 router_opts.verify_binary_search, router_opts.min_channel_width_hint,
                 annealing_sched, router_opts,
-				det_routing_arch, segment_inf, timing_inf);
+				det_routing_arch, segment_inf, timing_inf, timing_info);
 		success = (g_solution_inf.channel_width > 0 ? true : false);
 	} else {
         //Route at the specified channel width
@@ -142,15 +163,21 @@ bool place_and_route(struct s_placer_opts placer_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
 		t_slack *slacks = alloc_and_load_timing_graph(timing_inf);
 #endif
-		float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
-
 		success = try_route(width_fac, router_opts, det_routing_arch,
 				segment_inf, timing_inf, net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
                 slacks, 
 #endif
+                timing_info,
                 arch->Chans,
 				clb_opins_used_locally, arch->Directs, arch->num_directs);
+
+        if(timing_inf.timing_analysis_enabled) {
+            if(isEchoFileEnabled(E_ECHO_FINAL_ROUTING_TIMING_GRAPH)) {
+                tatum::write_echo(getEchoFileName(E_ECHO_FINAL_ROUTING_TIMING_GRAPH),
+                                  *g_timing_graph, *g_timing_constraints, *routing_delay_calc, timing_info->analyzer());
+            }
+        }
 
 		if (success == false) {
             
@@ -172,7 +199,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 		}
 
 		init_draw_coords(max_pins_per_clb);
-		update_screen(MAJOR, msg, ROUTING, nullptr);
+		update_screen(MAJOR, msg, ROUTING, timing_info);
 		
 #ifdef ENABLE_CLASSIC_VPR_STA
         VTR_ASSERT(slacks->slack);
@@ -218,7 +245,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf) {
+		t_timing_inf timing_inf,
+        std::shared_ptr<SetupTimingInfo> timing_info) {
 
 	/* This routine performs a binary search to find the minimum number of      *
 	 * tracks per channel required to successfully route a circuit, and returns *
@@ -267,7 +295,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
 	slacks = alloc_and_load_timing_graph(timing_inf);
 #endif
-	net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
+    VTR_ASSERT(net_delay);
 
 	if (det_routing_arch->directionality == BI_DIRECTIONAL)
 		udsd_multiplier = 1;
@@ -358,6 +386,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
                 slacks, 
 #endif
+                timing_info,
                 arch->Chans,
 				clb_opins_used_locally, arch->Directs, arch->num_directs);
 		attempt_count++;
@@ -473,6 +502,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
                     slacks,
 #endif
+                    timing_info,
 					arch->Chans, clb_opins_used_locally, arch->Directs, arch->num_directs);
 
 			if (success && Fc_clipped == false) {

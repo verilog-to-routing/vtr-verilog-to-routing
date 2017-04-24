@@ -27,6 +27,7 @@ using namespace std;
 enum e_draw_crit_path {
       DRAW_NO_CRIT_PATH
     , DRAW_CRIT_PATH_FLYLINES
+    , DRAW_CRIT_PATH_FLYLINES_DELAYS
     //, DRAW_CRIT_PATH_ROUTING
 };
 
