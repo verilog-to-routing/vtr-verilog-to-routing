@@ -86,6 +86,9 @@ def main():
     vtr_command_main(sys.argv[1:])
 
 def vtr_command_main(arg_list, prog=None):
+    #import pudb
+    #pudb.set_trace()
+
     #Load the arguments
     args = vtr_command_argparser(prog).parse_args(arg_list)
 
@@ -174,7 +177,7 @@ def local_worker(worker_args):
         operation = operation.format(worker_args['task_name'])
 
 
-        print_verbose(1, verbosity,  "Started  {operation} at {time}".format(operation=operation,
+        print_verbose(1, verbosity,  "Starting {operation} at {time}".format(operation=operation,
                                                                              time=start.strftime(TIME_FMT)))
 
         cmd_runner = worker_args['cmd_runner']
@@ -184,24 +187,27 @@ def local_worker(worker_args):
         mkdir_p(work_dir)
 
         #Build the command
-        cmd = [worker_args['exec'],
-               worker_args['arch'],
-               worker_args['circuit'],
-              ]
-        if os.path.basename(cmd[0]) == "run_vtr_flow.py":
-            #Add default params to run_vtr_flow if they are not overriden
-            if '--work_dir' not in worker_args['script_args']:
-                cmd += ["--work_dir", "."]
-            if '--v' not in worker_args['script_args'] and '--verbosity' not in worker_args['script_args']:
-                cmd += ["-v", str(verbosity)]
+        cmd = worker_args['exec'] + [worker_args['arch'], worker_args['circuit']]
+        #if os.path.basename(cmd[0]) == "run_vtr_flow.py":
+            ##Add default params to run_vtr_flow if they are not overriden
+            #if '--work_dir' not in worker_args['script_args']:
+                #cmd += ["--work_dir", "."]
+            #if '--v' not in worker_args['script_args'] and '--verbosity' not in worker_args['script_args']:
+                #cmd += ["-v", str(verbosity)]
 
         cmd += worker_args['script_args']
 
 
-        print_verbose(2, verbosity, "\t" + str(cmd))
+        #print_verbose(2, verbosity, "\t" + str(cmd))
 
         output, returncode = cmd_runner.run_system_command(cmd, work_dir=work_dir, indent_depth=1)
         assert returncode == 0
+    except CommandError as e:
+        end = datetime.now()
+        elapsed = end - start
+        print_verbose(1, verbosity, "Failed   {operation} at {time} (elapsed {length})".format(operation=operation,
+                                                                                           time=end.strftime(TIME_FMT), 
+                                                                                           length=format_elapsed_time(elapsed)))
     except KeyboardInterrupt as e:
         end = datetime.now()
         elapsed = end - start
@@ -229,9 +235,9 @@ def build_worker_args(args, configs):
         for arch, circuit in itertools.product(config.archs, config.circuits):
             executable = None
             if config.script_path:
-                executable = config.script_path
+                executable = [config.script_path]
             else:
-                executable = find_vtr_file('run_vtr_flow.py', is_executabe=True)
+                executable = [find_vtr_file('vtr', is_executabe=True), 'flow']
 
             script_params = []
             if config.script_params:
@@ -247,7 +253,7 @@ def build_worker_args(args, configs):
             if config.pad_file:
                 script_params += ["--fix_pins", resolve_vtr_source_file(config, config.pad_file)]
 
-            work_dir = os.path.join(os.path.basename(arch), os.path.basename(circuit))
+            work_dir = os.path.join(config.task_name, os.path.basename(arch), os.path.basename(circuit))
 
             task_name = config.task_name + ": " + work_dir
 
