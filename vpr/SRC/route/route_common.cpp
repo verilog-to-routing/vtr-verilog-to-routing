@@ -285,7 +285,7 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 
 bool try_route(int width_fac, struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf, float **net_delay,
+		float **net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
 #endif
@@ -367,7 +367,6 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
             slacks,
 #endif
 			clb_opins_used_locally
-            , timing_inf.timing_analysis_enabled
 #ifdef ENABLE_CLASSIC_VPR_STA
             , timing_inf
 #endif

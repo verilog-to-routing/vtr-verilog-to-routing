@@ -48,7 +48,6 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf,
         float** net_delay,
         std::shared_ptr<SetupTimingInfo> timing_info);
 
@@ -123,14 +122,12 @@ bool place_and_route(struct s_placer_opts placer_opts,
     //Initialize the delay calculator
     float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
 
-    std::shared_ptr<SetupTimingInfo> timing_info;
-    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc;
+    std::shared_ptr<SetupTimingInfo> timing_info = nullptr;
+    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
     if(timing_inf.timing_analysis_enabled) {
         routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
 
         timing_info = make_setup_timing_info(routing_delay_calc);
-    } else {
-        timing_info = make_constant_timing_info(0.);
     }
 
 
@@ -143,7 +140,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 				arch,
                 router_opts.verify_binary_search, router_opts.min_channel_width_hint,
                 annealing_sched, router_opts,
-				det_routing_arch, segment_inf, timing_inf, net_delay, timing_info);
+				det_routing_arch, segment_inf, net_delay, timing_info);
 		success = (g_solution_inf.channel_width > 0 ? true : false);
 	} else {
         //Route at the specified channel width
@@ -165,7 +162,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 		t_slack *slacks = alloc_and_load_timing_graph(timing_inf);
 #endif
 		success = try_route(width_fac, router_opts, det_routing_arch,
-				segment_inf, timing_inf, net_delay,
+				segment_inf, net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
                 slacks, 
 #endif
@@ -246,7 +243,6 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		struct s_annealing_sched annealing_sched,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		t_timing_inf timing_inf,
         float** net_delay,
         std::shared_ptr<SetupTimingInfo> timing_info) {
 
@@ -380,7 +376,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 					arch->Directs, arch->num_directs);
 		}
 		success = try_route(current, router_opts, det_routing_arch, segment_inf,
-				timing_inf, net_delay, 
+				net_delay, 
 #ifdef ENABLE_CLASSIC_VPR_STA
                 slacks, 
 #endif
@@ -496,7 +492,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 						arch->Directs, arch->num_directs);
 			}
 			success = try_route(current, router_opts, det_routing_arch,
-					segment_inf, timing_inf, net_delay, 
+					segment_inf, net_delay, 
 #ifdef ENABLE_CLASSIC_VPR_STA
                     slacks,
 #endif
