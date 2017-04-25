@@ -205,7 +205,6 @@ bool place_and_route(struct s_placer_opts placer_opts,
 #endif
 
         VTR_ASSERT(net_delay);
-        free_net_delay(net_delay, &net_delay_ch);
 
 		fflush(stdout);
 	}
@@ -222,6 +221,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 	/* Frees up all the data structure used in vpr_utils. */
 	free_port_pin_from_blk_pin();
 	free_blk_pin_from_port_pin();
+    free_net_delay(net_delay, &net_delay_ch);
 
 	end = clock();    
 
