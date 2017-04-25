@@ -169,7 +169,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 	draw_state->draw_route_type = route_type;
 }
 
-void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
+void update_screen(int priority, const char *msg, enum pic_type pic_on_screen_val,
 		std::shared_ptr<SetupTimingInfo> setup_timing_info) {
 
 	/* Updates the screen if the user has requested graphics.  The priority  *
@@ -190,22 +190,16 @@ void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
             if(setup_timing_info) {
                 create_button("Blk Internal", "Crit. Path", toggle_crit_path);
             }
-		} 
-		else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
+		} else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
 			create_button("Blk Internal", "Toggle RR", toggle_rr);
 			create_button("Toggle RR", "Congestion", toggle_congestion);
-            if(setup_timing_info) {
-                create_button("Congestion", "Crit. Path", toggle_crit_path);
-            }
-		} 
-		else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
+		} else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
 			destroy_button("Toggle RR");
 			destroy_button("Congestion");
             if(setup_timing_info) {
                 destroy_button("Crit. Path");
             }
-		} 
-		else if (pic_on_screen_val == ROUTING
+		} else if (pic_on_screen_val == ROUTING
 				&& draw_state->pic_on_screen == NO_PICTURE) {
 			create_button("Window", "Toggle Nets", toggle_nets);
 			create_button("Toggle Nets", "Blk Internal", toggle_blk_internal);

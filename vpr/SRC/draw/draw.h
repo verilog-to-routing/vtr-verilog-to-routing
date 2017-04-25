@@ -5,7 +5,7 @@
 #include "graphics.h"
 #include "draw_global.h"
 
-void update_screen(int priority, char *msg, enum pic_type pic_on_screen_val,
+void update_screen(int priority, const char *msg, enum pic_type pic_on_screen_val,
 		std::shared_ptr<SetupTimingInfo> timing_info);
 
 void alloc_draw_structs(void);
