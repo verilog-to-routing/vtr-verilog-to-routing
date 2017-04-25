@@ -555,7 +555,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d", 
 		cost, bb_cost, timing_cost, delay_cost, width_fac);
-	update_screen(MAJOR, msg, PLACEMENT, timing_info);
+	update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
 
 
 	/* Outer loop of the simmulated annealing begins */
@@ -670,7 +670,7 @@ void try_place(struct s_placer_opts placer_opts,
 
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
 				cost, bb_cost, timing_cost, t);
-		update_screen(MINOR, msg, PLACEMENT, timing_info);
+		update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info);
 		update_rlim(&rlim, success_rat);
 
 		if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
@@ -819,7 +819,7 @@ void try_place(struct s_placer_opts placer_opts,
 			cost, bb_cost, timing_cost, width_fac);
 	vtr::printf_info("Placement cost: %g, bb_cost: %g, td_cost: %g, delay_cost: %g\n", 
 			cost, bb_cost, timing_cost, delay_cost);
-	update_screen(MAJOR, msg, PLACEMENT, timing_info);
+	update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
 	 
 	// Print out swap statistics
 	size_t total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;

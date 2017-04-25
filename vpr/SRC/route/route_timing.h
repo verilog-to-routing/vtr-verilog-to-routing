@@ -16,10 +16,11 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks, 
 #endif
-        vtr::t_ivec ** clb_opins_used_locally
+        vtr::t_ivec ** clb_opins_used_locally,
 #ifdef ENABLE_CLASSIC_VPR_STA
         , const t_timing_inf &timing_inf
 #endif
+        ScreenUpdatePriority first_iteration_priority
         );
 bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
 		struct s_router_opts router_opts,

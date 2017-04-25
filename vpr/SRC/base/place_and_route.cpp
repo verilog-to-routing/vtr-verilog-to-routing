@@ -168,7 +168,8 @@ bool place_and_route(struct s_placer_opts placer_opts,
 #endif
                 timing_info,
                 arch->Chans,
-				clb_opins_used_locally, arch->Directs, arch->num_directs);
+				clb_opins_used_locally, arch->Directs, arch->num_directs,
+                ScreenUpdatePriority::MAJOR);
 
         if(timing_inf.timing_analysis_enabled) {
             if(isEchoFileEnabled(E_ECHO_FINAL_ROUTING_TIMING_GRAPH)) {
@@ -197,7 +198,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 		}
 
 		init_draw_coords(max_pins_per_clb);
-		update_screen(MAJOR, msg, ROUTING, timing_info);
+		update_screen(ScreenUpdatePriority::MAJOR, msg, ROUTING, timing_info);
 		
 #ifdef ENABLE_CLASSIC_VPR_STA
         VTR_ASSERT(slacks->slack);
@@ -382,7 +383,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 #endif
                 timing_info,
                 arch->Chans,
-				clb_opins_used_locally, arch->Directs, arch->num_directs);
+				clb_opins_used_locally, arch->Directs, arch->num_directs,
+                (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR);
 		attempt_count++;
 		fflush(stdout);
 
@@ -497,7 +499,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
                     slacks,
 #endif
                     timing_info,
-					arch->Chans, clb_opins_used_locally, arch->Directs, arch->num_directs);
+					arch->Chans, clb_opins_used_locally, arch->Directs, arch->num_directs,
+                    ScreenUpdatePriority::MINOR);
 
 			if (success && Fc_clipped == false) {
 				final = current;
@@ -563,7 +566,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	init_draw_coords(max_pins_per_clb);
 	sprintf(msg, "Routing succeeded with a channel width factor of %d.", final);
-	update_screen(MAJOR, msg, ROUTING, nullptr);
+	update_screen(ScreenUpdatePriority::MAJOR, msg, ROUTING, timing_info);
 
 	for (i = 0; i < num_blocks; i++) {
 		free_ivec_vector(clb_opins_used_locally[i], 0,

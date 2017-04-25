@@ -21,6 +21,7 @@
 #include "net_delay.h"
 #include "stats.h"
 #include "ReadOptions.h"
+#include "draw.h"
 #include "routing_success_predictor.h"
 
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
@@ -119,11 +120,11 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks, 
 #endif
-        vtr::t_ivec ** clb_opins_used_locally
+        vtr::t_ivec ** clb_opins_used_locally,
 #ifdef ENABLE_CLASSIC_VPR_STA
         , const t_timing_inf &timing_inf
 #endif
-        ) {
+        ScreenUpdatePriority first_iteration_priority) {
 
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
 	 * must have already been allocated, and net_delay must have been allocated. *
@@ -276,6 +277,13 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
         //Output progress
         print_route_status(itry, time, overuse_info, wirelength_info, timing_info, est_success_iteration);
+
+        //Update graphics
+        if (itry == 1) {
+            update_screen(first_iteration_priority, "Routing...", ROUTING, timing_info);
+        } else {
+            update_screen(ScreenUpdatePriority::MINOR, "Routing...", ROUTING, timing_info);
+        }
 
         /*
          * Are we finished?

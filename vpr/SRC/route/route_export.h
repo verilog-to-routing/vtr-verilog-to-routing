@@ -17,7 +17,8 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 #endif
         std::shared_ptr<SetupTimingInfo> timing_info,
 		t_chan_width_dist chan_width_dist, vtr::t_ivec ** clb_opins_used_locally,
-		t_direct_inf *directs, int num_directs);
+		t_direct_inf *directs, int num_directs,
+        ScreenUpdatePriority first_iteration_priority);
 
 bool feasible_routing(void);
 

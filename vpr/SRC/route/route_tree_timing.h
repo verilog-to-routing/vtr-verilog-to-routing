@@ -6,7 +6,8 @@
 
 /**************** Subroutines exported by route_tree_timing.c ***************/
 
-void alloc_route_tree_timing_structs(void);
+//Returns true if allocated
+bool alloc_route_tree_timing_structs(bool exists_ok = false);
 
 void free_route_tree_timing_structs(void);
 

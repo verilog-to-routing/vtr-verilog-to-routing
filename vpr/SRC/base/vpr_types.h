@@ -55,8 +55,13 @@ typedef struct s_net_power t_net_power;
 
 typedef size_t bitfield;
 
-#define MINOR 0			/* For update_screen.  Denotes importance of update. */
-#define MAJOR 1
+/* For update_screen.  Denotes importance of update. 
+ * By default MINOR only updates the screen, while MAJOR
+ * pauses graphics for the user to interact */
+enum class ScreenUpdatePriority {
+    MINOR = 0,
+    MAJOR = 1 
+};
 
 #define MAX_SHORT 32767
 

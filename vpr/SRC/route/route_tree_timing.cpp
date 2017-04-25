@@ -67,18 +67,25 @@ static bool equal_approx(float a, float b) {
 	return fabs(a - b) < epsilon;
 }
 
-void alloc_route_tree_timing_structs(void) {
+bool alloc_route_tree_timing_structs(bool exists_ok) {
 
 	/* Allocates any structures needed to build the routing trees. */
 
-	if (rr_node_to_rt_node != NULL || rt_node_free_list != NULL
-			|| rt_node_free_list != NULL) {
-			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-				"in alloc_route_tree_timing_structs: old structures already exist.\n");
+    bool route_tree_structs_are_allocated = (rr_node_to_rt_node != NULL 
+                                             || rt_node_free_list != NULL
+			                                 || rt_node_free_list != NULL);
+    if (route_tree_structs_are_allocated) {
+        if (exists_ok) {
+            return false;
+        } else {
+                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+                    "in alloc_route_tree_timing_structs: old structures already exist.\n");
+        }
 	}
 
-	rr_node_to_rt_node = (t_rt_node **) vtr::malloc(
-			num_rr_nodes * sizeof(t_rt_node *));
+	rr_node_to_rt_node = (t_rt_node **) vtr::malloc(num_rr_nodes * sizeof(t_rt_node *));
+
+    return true;
 }
 
 void free_route_tree_timing_structs(void) {

@@ -169,7 +169,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val,
 	draw_state->draw_route_type = route_type;
 }
 
-void update_screen(int priority, const char *msg, enum pic_type pic_on_screen_val,
+void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type pic_on_screen_val,
 		std::shared_ptr<SetupTimingInfo> setup_timing_info) {
 
 	/* Updates the screen if the user has requested graphics.  The priority  *
@@ -219,7 +219,7 @@ void update_screen(int priority, const char *msg, enum pic_type pic_on_screen_va
 	draw_state->pic_on_screen = pic_on_screen_val;
 	update_message(msg);
 	drawscreen();
-	if (priority >= draw_state->gr_automode) {
+	if (int(priority) >= draw_state->gr_automode) {
         set_mouse_move_input(true); //Enable act_on_mouse_over callback
 		event_loop(highlight_blocks, act_on_mouse_over, NULL, drawscreen);
 	} else {
@@ -2882,8 +2882,6 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
     }
 
     points.push_back(atom_pin_draw_coord(atom_sink_pin));
-
-    free_route_tree_timing_structs();
 }
 
 //Returns the set of rr nodes which connect driver to sink
@@ -2891,8 +2889,7 @@ static std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver
     VTR_ASSERT(driver_clb_net_pin->net == sink_clb_net_pin->net);
     VTR_ASSERT(driver_clb_net_pin->net_pin == 0);
 
-
-    alloc_route_tree_timing_structs(); //Needed for traceback_to_route_tree
+    bool allocated_route_tree_structs = alloc_route_tree_timing_structs(true); //Needed for traceback_to_route_tree
 
     //Conver the traceback into an easily search-able
     t_rt_node* rt_root = traceback_to_route_tree(driver_clb_net_pin->net);
@@ -2909,7 +2906,9 @@ static std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver
     //Traced from sink to source, but we want to draw from source to sink
     std::reverse(rr_nodes_on_path.begin(), rr_nodes_on_path.end()); 
 
-    free_route_tree_timing_structs(); //Clean-up
+    if (allocated_route_tree_structs) {
+        free_route_tree_timing_structs(); //Clean-up
+    }
     return rr_nodes_on_path;
 }
 

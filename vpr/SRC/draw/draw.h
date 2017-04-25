@@ -5,11 +5,13 @@
 #include "graphics.h"
 #include "draw_global.h"
 
-void update_screen(int priority, const char *msg, enum pic_type pic_on_screen_val,
+void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type pic_on_screen_val,
 		std::shared_ptr<SetupTimingInfo> timing_info);
 
 void alloc_draw_structs(void);
 
+//Initializes the drawing locations.
+//FIXME: Currently broken if no rr-graph is loaded
 void init_draw_coords(float clb_width);
 
 void init_graphics_state(bool show_graphics_val, int gr_automode_val,

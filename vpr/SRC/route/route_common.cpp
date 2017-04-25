@@ -25,6 +25,7 @@ using namespace std;
 #include "place_and_route.h"
 #include "rr_graph.h"
 #include "read_xml_arch_file.h"
+#include "draw.h"
 #include "ReadOptions.h"
 
 #include "route_profiling.h"
@@ -291,7 +292,8 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 #endif
         std::shared_ptr<SetupTimingInfo> timing_info,
 		t_chan_width_dist chan_width_dist, vtr::t_ivec ** clb_opins_used_locally,
-		t_direct_inf *directs, int num_directs) {
+		t_direct_inf *directs, int num_directs,
+        ScreenUpdatePriority first_iteration_priority) {
 
 	/* Attempts a routing via an iterated maze router algorithm.  Width_fac *
 	 * specifies the relative width of the channels, while the members of   *
@@ -339,6 +341,9 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
 	vtr::printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
+    //Initialize drawing, now that we have an RR graph
+    init_draw_coords(width_fac);
+
 	bool success = true;
 
 	/* Allocate and load additional rr_graph information needed only by the router. */
@@ -349,7 +354,6 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
     if (g_clbs_nlist.net.empty()) {
         vtr::printf_warning(__FILE__, __LINE__, "No nets to route\n");
     }
-
 
 	if (router_opts.router_algorithm == BREADTH_FIRST) {
 		vtr::printf_info("Confirming router algorithm: BREADTH_FIRST.\n");
@@ -366,10 +370,11 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
             slacks,
 #endif
-			clb_opins_used_locally
+			clb_opins_used_locally,
 #ifdef ENABLE_CLASSIC_VPR_STA
             , timing_inf
 #endif
+            first_iteration_priority
             );
 
 		profiling::time_on_fanout_analysis();
