@@ -49,6 +49,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf,
+        float** net_delay,
         std::shared_ptr<SetupTimingInfo> timing_info);
 
 static float comp_width(t_chan * chan, float x, float separation);
@@ -142,7 +143,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 				arch,
                 router_opts.verify_binary_search, router_opts.min_channel_width_hint,
                 annealing_sched, router_opts,
-				det_routing_arch, segment_inf, timing_inf, timing_info);
+				det_routing_arch, segment_inf, timing_inf, net_delay, timing_info);
 		success = (g_solution_inf.channel_width > 0 ? true : false);
 	} else {
         //Route at the specified channel width
@@ -246,6 +247,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 		struct s_router_opts router_opts,
 		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf,
+        float** net_delay,
         std::shared_ptr<SetupTimingInfo> timing_info) {
 
 	/* This routine performs a binary search to find the minimum number of      *
@@ -257,15 +259,11 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	int max_pins_per_clb, i;
 	bool success, prev_success, prev2_success, Fc_clipped = false;
 	char msg[vtr::BUFSIZE];
-	float **net_delay = NULL;
 #ifdef ENABLE_CLASSIC_VPR_STA
 	t_slack * slacks = NULL;
 #endif
     bool using_minw_hint = false;
 
-	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
-
-	/*struct s_linked_vptr *net_delay_chunk_list_head;*/
 	vtr::t_ivec **clb_opins_used_locally, **saved_clb_opins_used_locally;
 
 	/* [0..num_blocks-1][0..num_class-1] */
@@ -295,7 +293,6 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
 	slacks = alloc_and_load_timing_graph(timing_inf);
 #endif
-	net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
     VTR_ASSERT(net_delay);
 
 	if (det_routing_arch->directionality == BI_DIRECTIONAL)
@@ -585,7 +582,6 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
 	free_timing_graph(slacks);
 #endif
-	free_net_delay(net_delay, &net_delay_ch);
 
 	return (final);
 

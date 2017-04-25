@@ -119,11 +119,14 @@ alloc_net_delay(vtr::t_chunk *chunk_list_ptr, vector<t_vnet> & nets,
 	net_delay = (float **) vtr::malloc(n_nets * sizeof(float *));
 
 	for (inet = 0; inet < n_nets; inet++) {
-		tmp_ptr = (float *) vtr::chunk_malloc(
-				nets[inet].num_sinks() * sizeof(float),
-				chunk_list_ptr);
+		tmp_ptr = (float *) vtr::chunk_malloc(nets[inet].num_sinks() * sizeof(float), chunk_list_ptr);
 
 		net_delay[inet] = tmp_ptr - 1; /* [1..num_pins-1] */
+
+        //Ensure the net delays are initialized with non-garbage values
+        for(size_t ipin = 1; ipin < nets[inet].pins.size(); ++ipin) {
+            net_delay[inet][ipin] = std::numeric_limits<float>::quiet_NaN();
+        }
 	}
 
 	return (net_delay);

@@ -258,7 +258,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             edge_delay = driver_clb_delay + net_delay + sink_clb_delay;
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
             vtr::printf("  Edge %zu net delay: %g = %g + %g + %g (= clb_driver + net + clb_sink)\n", 
-                        size_t(edge_id), 
+                        size_t(edge_id),
                         edge_delay.value(),
                         driver_clb_delay.value(),
                         net_delay.value(),

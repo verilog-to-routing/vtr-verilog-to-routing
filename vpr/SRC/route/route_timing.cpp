@@ -243,7 +243,6 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
         wirelength_info = calculate_wirelength_info();
         routing_success_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes());
 
-
         if (timing_analysis_enabled) {
             //Update timing based on the new routing
             //Note that the net delays have already been updated by timing_driven_route_net
