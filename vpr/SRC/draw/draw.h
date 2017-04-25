@@ -43,4 +43,7 @@ namespace crit_path_colors {
 
 const float WIRE_DRAWING_WIDTH = 0.5;
 
+//Returns the drawing coordinates of the specified pin
+t_point atom_pin_draw_coord(AtomPinId pin);
+
 #endif /* DRAW_H */

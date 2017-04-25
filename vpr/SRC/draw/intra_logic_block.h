@@ -137,4 +137,8 @@ t_selected_sub_block_info& get_selected_sub_block_info();
  */
 void draw_logical_connections();
 
+
+void find_pin_index_at_model_scope(const AtomPinId the_pin, const AtomBlockId lblk, 
+                                   int* pin_index, int* total_pins);
+
 #endif /* INTRA_LOGIC_BLOCK_H */

@@ -142,20 +142,17 @@ static inline t_bound_box draw_mux(t_point origin, e_side orientation, float hei
 static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height, float width, float height_scale);
 
 
-t_point tnode_draw_coord(tatum::NodeId node);
-t_point atom_pin_draw_coord(AtomPinId pin);
-static void draw_crit_path_flylines(void);
+static void draw_crit_path();
 void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay);
-
-static void draw_crit_path_routing();
 void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color);
-std::vector<t_point> trace_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode);
+void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color);
+void draw_partial_route(const std::vector<int>& rr_nodes_to_draw);
+
+t_point tnode_draw_coord(tatum::NodeId node);
+
 std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin);
-std::vector<t_point> trace_routed_connection_draw_coords(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin);
-void draw_routed_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color);
-bool trace_net_connection_rr_nodes(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
+bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
 short find_switch(int prev_inode, int inode);
-void draw_partial_route(std::vector<int>& rr_nodes_to_draw);
 
 /********************** Subroutine definitions ******************************/
 
@@ -320,14 +317,7 @@ static void redraw_screen() {
 			break;
 		}
 
-        switch (draw_state->show_crit_path) {
-            case DRAW_CRIT_PATH_FLYLINES: //fallthrough
-            case DRAW_CRIT_PATH_FLYLINES_DELAYS:
-                draw_crit_path_flylines();
-                break;
-            default:
-                break;
-        }
+        draw_crit_path();
 	} else { /* ROUTING on screen */
 
 		switch (draw_state->show_nets) {
@@ -341,18 +331,7 @@ static void redraw_screen() {
 			break;
 		}
 
-        switch (draw_state->show_crit_path) {
-            case DRAW_CRIT_PATH_FLYLINES: //fallthrough
-            case DRAW_CRIT_PATH_FLYLINES_DELAYS:
-                draw_crit_path_flylines();
-                break;
-            case DRAW_CRIT_PATH_ROUTING: //fallthrough
-            case DRAW_CRIT_PATH_ROUTING_DELAYS:
-                draw_crit_path_routing();
-                break;
-            default:
-                break;
-        }
+        draw_crit_path();
 
 		if (draw_state->show_congestion != DRAW_NO_CONGEST) {
 			draw_congestion();
@@ -2702,32 +2681,63 @@ t_point atom_pin_draw_coord(AtomPinId pin) {
     const t_pb_graph_node* pg_gnode = g_atom_lookup.atom_pb_graph_node(blk);
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
-    t_bound_box bbox = draw_coords->get_absolute_pb_bbox(clb_index, pg_gnode);
+    t_bound_box pb_bbox = draw_coords->get_absolute_pb_bbox(clb_index, pg_gnode);
 
-    //Draw at the center of the corresponding PB
-    return bbox.get_center();
+    //We place each atom pin inside it's pb bounding box
+    //and distribute the pins along it's vertical centre line
+	const float FRACTION_USABLE_WIDTH = 0.8;
+	float width =  pb_bbox.get_width();
+	float usable_width =  width  * FRACTION_USABLE_WIDTH;
+	float x_offset = pb_bbox.left() + width * (1 - FRACTION_USABLE_WIDTH)/2;
+
+    int pin_index, pin_total;
+	find_pin_index_at_model_scope(pin, blk, &pin_index, &pin_total);
+
+	const t_point point =  {
+		x_offset + usable_width * pin_index / ((float)pin_total),
+		pb_bbox.get_ycenter()
+	};
+
+    return point;
 }
 
-static void draw_crit_path_flylines(void) {
-    setlinestyle(SOLID);
-    setcolor(BLUE);
-
-
+static void draw_crit_path() {
     tatum::TimingPathCollector path_collector;
 
     t_draw_state* draw_state = get_draw_state_vars();
+
+    if (draw_state->show_crit_path == DRAW_NO_CRIT_PATH) {
+        return;
+    }
+
+    //Get the worst timing path
     auto paths = path_collector.collect_worst_setup_paths(*g_timing_graph, *(draw_state->setup_timing_info->setup_analyzer()), 1);
     tatum::TimingPath path = paths[0];
 
+    //Walk through the timing path drawing each edge
     tatum::NodeId prev_node;
     float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
+    int i = 0;
     for(tatum::TimingPathElem elem : path.data_arrival_elements()) {
         tatum::NodeId node = elem.node();
         float arr_time = elem.tag().time();
 
         if(prev_node) {
             float delay = arr_time - prev_arr_time;
-            draw_flyline_timing_edge(tnode_draw_coord(prev_node), tnode_draw_coord(node), delay);
+            if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES || draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
+                setcolor(BLUE);
+                draw_flyline_timing_edge(tnode_draw_coord(prev_node), tnode_draw_coord(node), delay);
+            } else {
+                VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
+                //For routed timing edges we draw each 'edge' in a different color, this allows users to identify which routing
+                //corresponds to which edge
+                //
+                //We pick colors from the kelly max-contrast list, for long paths there may be repeates
+                t_color color = kelly_max_contrast_colors[i++ % kelly_max_contrast_colors.size()];
+
+                //Draw the routed version of the timing edge
+                draw_routed_timing_edge(prev_node, node, delay, color);
+            }
         }
         prev_node = node;
         prev_arr_time = arr_time;
@@ -2776,37 +2786,9 @@ void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay) {
     }
 }
 
-
-static void draw_crit_path_routing(void) {
-    setlinestyle(SOLID);
-    setcolor(BLUE);
-
-    tatum::TimingPathCollector path_collector;
-
-    t_draw_state* draw_state = get_draw_state_vars();
-    auto paths = path_collector.collect_worst_setup_paths(*g_timing_graph, *(draw_state->setup_timing_info->setup_analyzer()), 1);
-    tatum::TimingPath path = paths[0];
-
-    tatum::NodeId prev_node;
-    float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
-    int i = 0;
-    for(tatum::TimingPathElem elem : path.data_arrival_elements()) {
-        tatum::NodeId node = elem.node();
-        float arr_time = elem.tag().time();
-
-        if(prev_node) {
-            float delay = arr_time - prev_arr_time;
-            draw_routed_timing_edge(prev_node, node, delay, kelly_max_contrast_colors[i++ % kelly_max_contrast_colors.size()]);
-        }
-        prev_node = node;
-        prev_arr_time = arr_time;
-
-    }
-}
-
 void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color) {
 
-    draw_routed_connection(start_tnode, end_tnode, color);
+    draw_routed_timing_edge_connection(start_tnode, end_tnode, color);
     
     setlinestyle(DASHED);
     setlinewidth(3);
@@ -2819,9 +2801,7 @@ void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode,
 }
 
 //Collect all the drawing locations associated with the timing edge between start and end
-void draw_routed_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color) {
-
-    alloc_route_tree_timing_structs();
+void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color) {
 
     std::vector<t_point> points;
 
@@ -2864,10 +2844,6 @@ void draw_routed_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t
             VTR_ASSERT(driver_clb_net_pin->block == clb_src_block);
 
             //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
-            /*
-             *auto routed_points = trace_routed_connection_draw_coords(driver_clb_net_pin, sink_clb_net_pin);
-             *points.insert(points.end(), routed_points.begin(), routed_points.end());
-             */
             auto routed_rr_nodes = trace_routed_connection_rr_nodes(driver_clb_net_pin, sink_clb_net_pin);
 
             //Mark all the nodes highlighted
@@ -2889,75 +2865,37 @@ void draw_routed_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t
     free_route_tree_timing_structs();
 }
 
+//Returns the set of rr nodes which connect driver to sink
 std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin) {
     VTR_ASSERT(driver_clb_net_pin->net == sink_clb_net_pin->net);
     VTR_ASSERT(driver_clb_net_pin->net_pin == 0);
 
+
+    alloc_route_tree_timing_structs(); //Needed for traceback_to_route_tree
+
+    //Conver the traceback into an easily search-able
     t_rt_node* rt_root = traceback_to_route_tree(driver_clb_net_pin->net);
 
     VTR_ASSERT(rt_root->inode == net_rr_terminals[driver_clb_net_pin->net][driver_clb_net_pin->net_pin]);
 
     int sink_rr_node = net_rr_terminals[sink_clb_net_pin->net][sink_clb_net_pin->net_pin];
-    std::vector<int> rr_nodes_on_path;
-    trace_net_connection_rr_nodes(rt_root, sink_rr_node, rr_nodes_on_path);
-    std::reverse(rr_nodes_on_path.begin(), rr_nodes_on_path.end()); //Traced from sink to source, but we want to draw from source to sink
 
+    std::vector<int> rr_nodes_on_path;
+
+    //Collect the rr nodes
+    trace_routed_connection_rr_nodes_recurr(rt_root, sink_rr_node, rr_nodes_on_path);
+
+    //Traced from sink to source, but we want to draw from source to sink
+    std::reverse(rr_nodes_on_path.begin(), rr_nodes_on_path.end()); 
+
+    free_route_tree_timing_structs(); //Clean-up
     return rr_nodes_on_path;
 }
 
-std::vector<t_point> trace_routed_connection_draw_coords(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin) {
-    auto rr_nodes_on_path = trace_routed_connection_rr_nodes(driver_clb_net_pin, sink_clb_net_pin);
-
-    //Convert the rr_nodes to drawing coordinates
-    std::vector<t_point> points;
-
-    for (int inode : rr_nodes_on_path) {
-		switch (rr_node[inode].type) {
-			case IPIN: //Fallthrough
-			case OPIN:		
-			{
-				int i = rr_node[inode].get_xlow();
-				int j = rr_node[inode].get_ylow();
-				t_type_ptr type = grid[i][j].type;
-				int width_offset = grid[i][j].width_offset;
-				int height_offset = grid[i][j].height_offset;
-				int ipin = rr_node[inode].get_ptc_num();
-				float xcen, ycen;
-				
-				for (int iside = 0; iside < 4; iside++) {
-					// If pin exists on this side of the block, then get pin coordinates
-					if (type->pinloc[width_offset][height_offset][iside][ipin]) {
-						draw_get_rr_pin_coords(inode, iside, width_offset, height_offset, 
-											   &xcen, &ycen);
-					}
-				}
-                points.emplace_back(xcen, ycen);
-				break;
-			}
-			case CHANX: //Fallthrough
-			case CHANY:
-			{
-				t_bound_box bbox = draw_get_rr_chan_bbox(inode);
-                if (rr_node[inode].get_direction() == INC_DIRECTION) {
-                    points.push_back(bbox.bottom_left());
-                    points.push_back(bbox.top_right());
-                } else {
-                    points.push_back(bbox.top_right());
-                    points.push_back(bbox.bottom_left());
-                }
-				break;
-			}
-			default:
-				break;
-		}
-    }
-
-    return points;
-
-    return points;
-}
-
-bool trace_net_connection_rr_nodes(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path) {
+//Helper function for trace_routed_connection_rr_nodes
+//Adds the rr nodes linking rt_node to sink_rr_node to rr_nodes_on_path
+//Returns true if rt_node is on the path
+bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path) {
     //DFS from the current rt_node to the sink_rr_node, when the sink is found trace back the used rr nodes
 
     if (rt_node->inode == sink_rr_node) {
@@ -2969,7 +2907,7 @@ bool trace_net_connection_rr_nodes(const t_rt_node* rt_node, int sink_rr_node, s
         t_rt_node* child_rt_node = edge->child;
         VTR_ASSERT(child_rt_node);
 
-        bool on_path_to_sink = trace_net_connection_rr_nodes(child_rt_node, sink_rr_node, rr_nodes_on_path);
+        bool on_path_to_sink = trace_routed_connection_rr_nodes_recurr(child_rt_node, sink_rr_node, rr_nodes_on_path);
 
         if (on_path_to_sink) {
             rr_nodes_on_path.push_back(rt_node->inode);
@@ -2980,6 +2918,7 @@ bool trace_net_connection_rr_nodes(const t_rt_node* rt_node, int sink_rr_node, s
     return false; //Not on path to sink
 }
 
+//Find the switch between two rr nodes
 short find_switch(int prev_inode, int inode) {
     for (int i = 0; i < rr_node[prev_inode].get_num_edges(); ++i) {
         if (rr_node[prev_inode].edges[i] == inode) {
@@ -2990,7 +2929,8 @@ short find_switch(int prev_inode, int inode) {
     return -1;
 }
 
-void draw_partial_route(std::vector<int>& rr_nodes_to_draw) {
+//Draws the set of rr_nodes specified, using the colors set in draw_state
+void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
 

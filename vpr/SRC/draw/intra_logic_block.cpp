@@ -44,13 +44,8 @@ static int draw_internal_find_max_lvl(t_pb_type pb_type);
 static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_box& parent_bbox);
 static bool is_top_lvl_block_highlighted(const t_block& clb);
 
-void draw_one_logical_connection(
-	const AtomPinId src_pin,  const AtomBlockId src_lblk, const t_bound_box& src_abs_bbox,
-	const AtomPinId sink_pin, const AtomBlockId sink_lblk, const t_bound_box& sink_abs_bbox);
+void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin);
 t_pb* highlight_sub_block_helper(const t_block& clb, t_pb* pb, const t_point& local_pt, int max_depth);
-void find_pin_index_at_model_scope(
-	const AtomPinId the_pin, const AtomBlockId lblk, const bool search_inputs,
-	int* pin_index, int* total_pins);
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -466,8 +461,6 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 void draw_logical_connections() {
 	const t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
 	t_draw_state* draw_state = get_draw_state_vars();
-	t_draw_coords *draw_coords = get_draw_coords_vars();
-
 
 	// iterate over all the atom nets
     for(auto net_id : g_atom_nl.nets()) {
@@ -478,9 +471,6 @@ void draw_logical_connections() {
 		t_block* src_clb = &block[g_atom_lookup.atom_clb(src_blk_id)];
 		bool src_is_selected = sel_subblk_info.is_in_selected_subtree(src_pb_gnode, src_clb);
 		bool src_is_src_of_selected = sel_subblk_info.is_source_of_selected(src_pb_gnode, src_clb);
-
-		// get the abs bbox of of the driver pb
-		const t_bound_box& src_bbox = draw_coords->get_absolute_pb_bbox(g_atom_lookup.atom_clb(src_blk_id), src_pb_gnode);
 
 		// iterate over the sinks
         for(auto sink_pin_id : g_atom_nl.net_sinks(net_id)) {
@@ -504,18 +494,14 @@ void draw_logical_connections() {
 				continue; // not showing all, and not the sperified block, so skip
 			}
 
-			// get the abs. bbox of the sink pb
-			const t_bound_box& sink_bbox = draw_coords->get_absolute_pb_bbox(g_atom_lookup.atom_clb(sink_blk_id), sink_pb_gnode);
-
-			draw_one_logical_connection(driver_pin_id, src_blk_id, src_bbox, sink_pin_id, sink_blk_id, sink_bbox);		
+			draw_one_logical_connection(driver_pin_id, sink_pin_id);		
 		}
 	}
 }
 
 /**
  * Helper function for draw_one_logical_connection(...). 
- * We return the index of the pin in the context of the *model* (i.e. accross
- * all input or output ports as determined by search_inputs).
+ * We return the index of the pin in the context of the *model*
  * This is used to determine where to draw connection start/end points
  *
  * The pin index in the model context is returned via pin_index.
@@ -526,7 +512,7 @@ void draw_logical_connections() {
  * inputs (if true) or outputs (if false).
  */
 void find_pin_index_at_model_scope(
-	const AtomPinId pin_id, const AtomBlockId blk_id, const bool search_inputs,
+	const AtomPinId pin_id, const AtomBlockId blk_id,
 	int* pin_index, int* total_pins) {
 
     AtomPortId port_id = g_atom_nl.pin_port(pin_id);
@@ -537,24 +523,25 @@ void find_pin_index_at_model_scope(
     int pin_cnt = 0;
     *pin_index = -1; //initialize
     const t_model* model = g_atom_nl.block_model(blk_id);
-    const t_model_ports* port = (search_inputs) ? model->inputs : model->outputs;
-    while(port) {
+    for (const t_model_ports* port : {model->inputs, model->outputs}) {
+        while(port) {
 
-        if(port == model_port) {
-            //This is the port the pin is associated with, record it's index
+            if(port == model_port) {
+                //This is the port the pin is associated with, record it's index
 
-            //Get the pin index in the port
-            int atom_port_index = g_atom_nl.pin_port_bit(pin_id);
+                //Get the pin index in the port
+                int atom_port_index = g_atom_nl.pin_port_bit(pin_id);
 
-            //The index of this pin in the model is the pins counted so-far 
-            //(i.e. accross previous ports) plus the index in the port
-            *pin_index = pin_cnt + atom_port_index;
+                //The index of this pin in the model is the pins counted so-far 
+                //(i.e. accross previous ports) plus the index in the port
+                *pin_index = pin_cnt + atom_port_index;
+            }
+
+            //Running total of model pins seen so-far
+            pin_cnt += port->size;
+
+            port = port->next;
         }
-
-        //Running total of model pins seen so-far
-        pin_cnt += port->size;
-
-        port = port->next;
     }
 
     VTR_ASSERT(*pin_index != -1);
@@ -567,40 +554,16 @@ void find_pin_index_at_model_scope(
  * The *_abs_bbox parameters are for mild optmization, as the absolute bbox can be calculated
  * more effeciently elsewhere.
  */
-void draw_one_logical_connection(
-	const AtomPinId src_pin,  const AtomBlockId src_lblk, const t_bound_box& src_abs_bbox,
-	const AtomPinId sink_pin, const AtomBlockId sink_lblk, const t_bound_box& sink_abs_bbox) {
+void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin) {
 
-	const float FRACTION_USABLE_WIDTH = 0.3;
-
-	float src_width =  src_abs_bbox.get_width();
-	float sink_width = sink_abs_bbox.get_width();
-
-	float src_usable_width =  src_width  * FRACTION_USABLE_WIDTH;
-	float sink_usable_width = sink_width * FRACTION_USABLE_WIDTH;
-
-	float src_x_offset = src_abs_bbox.left() + src_width * (1 - FRACTION_USABLE_WIDTH)/2;
-	float sink_x_offset = sink_abs_bbox.left() + sink_width * (1 - FRACTION_USABLE_WIDTH)/2;
-
-	int src_pin_index, sink_pin_index, src_pin_total, sink_pin_total;
-
-	find_pin_index_at_model_scope(src_pin,  src_lblk, false,  &src_pin_index, &src_pin_total );
-	find_pin_index_at_model_scope(sink_pin, sink_lblk, true, &sink_pin_index, &sink_pin_total);
-
-	const t_point src_point =  {
-		src_x_offset + src_usable_width * src_pin_index / ((float)src_pin_total),
-		src_abs_bbox.get_ycenter()
-	};
-	const t_point sink_point = {
-		sink_x_offset + sink_usable_width * sink_pin_index / ((float)sink_pin_total),
-		sink_abs_bbox.get_ycenter()
-	};
+    t_point src_point = atom_pin_draw_coord(src_pin);
+    t_point sink_point = atom_pin_draw_coord(sink_pin);
 
 	// draw a link connecting the pins.
 	drawline(src_point.x, src_point.y,
 		sink_point.x, sink_point.y);
 
-	if (g_atom_lookup.atom_clb(src_lblk) == g_atom_lookup.atom_clb(sink_lblk)) {
+	if (g_atom_lookup.atom_clb(g_atom_nl.pin_block(src_pin)) == g_atom_lookup.atom_clb(g_atom_nl.pin_block(sink_pin))) {
 		// if they are in the same clb, put one arrow in the center
 		float center_x = (src_point.x + sink_point.x) / 2;
 		float center_y = (src_point.y + sink_point.y) / 2;
