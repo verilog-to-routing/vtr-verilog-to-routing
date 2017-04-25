@@ -71,7 +71,6 @@ static void toggle_crit_path(void (*drawscreen_ptr)(void));
 static void drawscreen(void);
 static void redraw_screen(void);
 static void drawplace(void);
-static void draw_crit_path_flylines(void);
 static void drawnets(void);
 static void drawroute(enum e_draw_net_type draw_net_type);
 static void draw_congestion(void);
@@ -118,7 +117,15 @@ static inline t_bound_box draw_mux(t_point origin, e_side orientation, float hei
 
 t_point tnode_draw_coord(tatum::NodeId node);
 t_point atom_pin_draw_coord(AtomPinId pin);
-void draw_timing_edge(t_point start, t_point end, float incr_delay);
+static void draw_crit_path_flylines(void);
+void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay);
+
+static void draw_crit_path_routing();
+void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay);
+std::vector<t_point> trace_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode);
+std::vector<t_point> trace_routed_connection_draw_coords(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin);
+std::vector<t_point> trace_routed_timing_edge_draw_coords(tatum::NodeId src_tnode, tatum::NodeId sink_tnode);
+bool trace_net_connection_rr_nodes(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
 
 /********************** Subroutine definitions ******************************/
 
@@ -309,6 +316,10 @@ static void redraw_screen() {
             case DRAW_CRIT_PATH_FLYLINES_DELAYS:
                 draw_crit_path_flylines();
                 break;
+            case DRAW_CRIT_PATH_ROUTING: //fallthrough
+            case DRAW_CRIT_PATH_ROUTING_DELAYS:
+                draw_crit_path_routing();
+                break;
             default:
                 break;
         }
@@ -420,17 +431,39 @@ void toggle_blk_internal(void (*drawscreen_ptr)(void)) {
 static void toggle_crit_path(void (*drawscreen_ptr)(void)) {
 	t_draw_state* draw_state = get_draw_state_vars();
 
-    switch (draw_state->show_crit_path) {
-        case DRAW_NO_CRIT_PATH:
-            draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES;
-            break;
-        case DRAW_CRIT_PATH_FLYLINES:
-            draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES_DELAYS;
-            break;
-        default:
-            draw_state->show_crit_path = DRAW_NO_CRIT_PATH;
-            break;
-    };
+    if (draw_state->pic_on_screen == PLACEMENT) {
+        switch (draw_state->show_crit_path) {
+            case DRAW_NO_CRIT_PATH:
+                draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES;
+                break;
+            case DRAW_CRIT_PATH_FLYLINES:
+                draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES_DELAYS;
+                break;
+            default:
+                draw_state->show_crit_path = DRAW_NO_CRIT_PATH;
+                break;
+        };
+    } else {
+        VTR_ASSERT(draw_state->pic_on_screen == ROUTING);
+
+        switch (draw_state->show_crit_path) {
+            case DRAW_NO_CRIT_PATH:
+                draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES;
+                break;
+            case DRAW_CRIT_PATH_FLYLINES:
+                draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES_DELAYS;
+                break;
+            case DRAW_CRIT_PATH_FLYLINES_DELAYS:
+                draw_state->show_crit_path = DRAW_CRIT_PATH_ROUTING;
+                break;
+            case DRAW_CRIT_PATH_ROUTING:
+                draw_state->show_crit_path = DRAW_CRIT_PATH_ROUTING_DELAYS;
+                break;
+            default:
+                draw_state->show_crit_path = DRAW_NO_CRIT_PATH;
+                break;
+        };
+    }
 
 	drawscreen_ptr();
 }
@@ -631,91 +664,6 @@ static void drawplace(void) {
 		}
 	}
 }
-
-t_point tnode_draw_coord(tatum::NodeId node) {
-    AtomPinId pin = g_atom_lookup.tnode_atom_pin(node);
-    return atom_pin_draw_coord(pin);
-}
-
-t_point atom_pin_draw_coord(AtomPinId pin) {
-    AtomBlockId blk = g_atom_nl.pin_block(pin);
-    int clb_index = g_atom_lookup.atom_clb(blk);
-    const t_pb_graph_node* pg_gnode = g_atom_lookup.atom_pb_graph_node(blk);
-
-	t_draw_coords* draw_coords = get_draw_coords_vars();
-    t_bound_box bbox = draw_coords->get_absolute_pb_bbox(clb_index, pg_gnode);
-
-    //Draw at the center of the corresponding PB
-    return bbox.get_center();
-}
-
-void draw_timing_edge(t_point start, t_point end, float incr_delay) {
-    drawline(start, end);
-    draw_triangle_along_line(start, end, 0.95, 40*DEFAULT_ARROW_SIZE);
-    draw_triangle_along_line(start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
-
-
-    bool draw_delays = (get_draw_state_vars()->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS);
-    if (draw_delays) {
-        //Determine the strict bounding box based on the lines start/end
-        float min_x = std::min(start.x, end.x);
-        float max_x = std::max(start.x, end.x);
-        float min_y = std::min(start.y, end.y);
-        float max_y = std::max(start.y, end.y);
-
-        //If we have a nearly horizontal/vertical line the bbox is too
-        //small to draw the text, so widen it by a tile (i.e. CLB) width
-        float tile_width = get_draw_coords_vars()->get_tile_width();
-        if (max_x - min_x < tile_width) {
-            max_x += tile_width / 2;
-            min_x -= tile_width / 2;
-        }
-        if (max_y - min_y < tile_width) {
-            max_y += tile_width / 2;
-            min_y -= tile_width / 2;
-        }
-
-        //TODO: draw the delays nicer
-        //   * rotate to match edge
-        //   * offset from line
-        //   * track visible in window
-        t_bound_box text_bbox(min_x, min_y, max_x, max_y);
-
-        std::stringstream ss;
-        ss.precision(3);
-        ss << 1e9*incr_delay; //In nanoseconds
-        std::string incr_delay_str = ss.str();
-
-        drawtext_in(text_bbox, incr_delay_str.c_str());
-    }
-}
-
-static void draw_crit_path_flylines(void) {
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    tatum::TimingPathCollector path_collector;
-
-    auto paths = path_collector.collect_worst_setup_paths(*g_timing_graph, *(draw_state->setup_timing_info->setup_analyzer()), 1);
-    tatum::TimingPath path = paths[0];
-
-    setlinestyle(SOLID);
-    setcolor(BLUE);
-
-    tatum::NodeId prev_node;
-    float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
-    for(tatum::TimingPathElem elem : path.data_arrival_elements()) {
-        tatum::NodeId node = elem.node();
-        float arr_time = elem.tag().time();
-
-        if(prev_node) {
-            float delay = arr_time - prev_arr_time;
-            draw_timing_edge(tnode_draw_coord(prev_node), tnode_draw_coord(node), delay);
-        }
-        prev_node = node;
-        prev_arr_time = arr_time;
-    }
-}
-
 
 static void drawnets(void) {
 	t_draw_state* draw_state = get_draw_state_vars();
@@ -2711,3 +2659,278 @@ static inline t_bound_box draw_mux(t_point origin, e_side orientation, float hei
 
     return t_bound_box(min, max);
 }
+
+
+t_point tnode_draw_coord(tatum::NodeId node) {
+    AtomPinId pin = g_atom_lookup.tnode_atom_pin(node);
+    return atom_pin_draw_coord(pin);
+}
+
+t_point atom_pin_draw_coord(AtomPinId pin) {
+    AtomBlockId blk = g_atom_nl.pin_block(pin);
+    int clb_index = g_atom_lookup.atom_clb(blk);
+    const t_pb_graph_node* pg_gnode = g_atom_lookup.atom_pb_graph_node(blk);
+
+	t_draw_coords* draw_coords = get_draw_coords_vars();
+    t_bound_box bbox = draw_coords->get_absolute_pb_bbox(clb_index, pg_gnode);
+
+    //Draw at the center of the corresponding PB
+    return bbox.get_center();
+}
+
+static void draw_crit_path_flylines(void) {
+    setlinestyle(SOLID);
+    setcolor(BLUE);
+
+
+    tatum::TimingPathCollector path_collector;
+
+    t_draw_state* draw_state = get_draw_state_vars();
+    auto paths = path_collector.collect_worst_setup_paths(*g_timing_graph, *(draw_state->setup_timing_info->setup_analyzer()), 1);
+    tatum::TimingPath path = paths[0];
+
+    tatum::NodeId prev_node;
+    float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
+    for(tatum::TimingPathElem elem : path.data_arrival_elements()) {
+        tatum::NodeId node = elem.node();
+        float arr_time = elem.tag().time();
+
+        if(prev_node) {
+            float delay = arr_time - prev_arr_time;
+            draw_flyline_timing_edge(tnode_draw_coord(prev_node), tnode_draw_coord(node), delay);
+        }
+        prev_node = node;
+        prev_arr_time = arr_time;
+    }
+}
+
+void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay) {
+    drawline(start, end);
+    draw_triangle_along_line(start, end, 0.95, 40*DEFAULT_ARROW_SIZE);
+    draw_triangle_along_line(start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
+
+
+    bool draw_delays = (get_draw_state_vars()->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS);
+    if (draw_delays) {
+        //Determine the strict bounding box based on the lines start/end
+        float min_x = std::min(start.x, end.x);
+        float max_x = std::max(start.x, end.x);
+        float min_y = std::min(start.y, end.y);
+        float max_y = std::max(start.y, end.y);
+
+        //If we have a nearly horizontal/vertical line the bbox is too
+        //small to draw the text, so widen it by a tile (i.e. CLB) width
+        float tile_width = get_draw_coords_vars()->get_tile_width();
+        if (max_x - min_x < tile_width) {
+            max_x += tile_width / 2;
+            min_x -= tile_width / 2;
+        }
+        if (max_y - min_y < tile_width) {
+            max_y += tile_width / 2;
+            min_y -= tile_width / 2;
+        }
+
+        //TODO: draw the delays nicer
+        //   * rotate to match edge
+        //   * offset from line
+        //   * track visible in window
+        t_bound_box text_bbox(min_x, min_y, max_x, max_y);
+
+        std::stringstream ss;
+        ss.precision(3);
+        ss << 1e9*incr_delay; //In nanoseconds
+        std::string incr_delay_str = ss.str();
+
+        drawtext_in(text_bbox, incr_delay_str.c_str());
+    }
+}
+
+
+static void draw_crit_path_routing(void) {
+    setlinestyle(SOLID);
+    setcolor(BLUE);
+
+    tatum::TimingPathCollector path_collector;
+
+    t_draw_state* draw_state = get_draw_state_vars();
+    auto paths = path_collector.collect_worst_setup_paths(*g_timing_graph, *(draw_state->setup_timing_info->setup_analyzer()), 1);
+    tatum::TimingPath path = paths[0];
+
+    tatum::NodeId prev_node;
+    float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
+    for(tatum::TimingPathElem elem : path.data_arrival_elements()) {
+        tatum::NodeId node = elem.node();
+        float arr_time = elem.tag().time();
+
+        if(prev_node) {
+            float delay = arr_time - prev_arr_time;
+            draw_routed_timing_edge(prev_node, node, delay);
+        }
+        prev_node = node;
+        prev_arr_time = arr_time;
+    }
+}
+
+void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float /*incr_delay*/) {
+
+    std::vector<t_point> points = trace_routed_timing_edge_draw_coords(start_tnode, end_tnode);
+    
+    auto prev_point_iter = points.begin();
+    for(auto point_iter = prev_point_iter + 1; point_iter != points.end(); ++point_iter) {
+
+        if (prev_point_iter == points.begin()) {
+            //First point, draw an arrow near the beginning
+            draw_triangle_along_line(*prev_point_iter, *point_iter, 0.05, 40*DEFAULT_ARROW_SIZE);
+        } else if (point_iter + 1 == points.end()) {
+            //Last point, draw an arrow near the end
+            draw_triangle_along_line(*prev_point_iter, *point_iter, 0.95, 40*DEFAULT_ARROW_SIZE);
+        }
+        drawline(*prev_point_iter, *point_iter);
+
+        prev_point_iter = point_iter;
+    }
+}
+
+//Collect all the drawing locations associated with the timing edge between start and end
+std::vector<t_point> trace_routed_timing_edge_draw_coords(tatum::NodeId src_tnode, tatum::NodeId sink_tnode) {
+
+    alloc_route_tree_timing_structs();
+
+    std::vector<t_point> points;
+
+    AtomPinId atom_src_pin = g_atom_lookup.tnode_atom_pin(src_tnode);
+    AtomPinId atom_sink_pin = g_atom_lookup.tnode_atom_pin(sink_tnode);
+
+    points.push_back(atom_pin_draw_coord(atom_src_pin));
+
+    tatum::EdgeId tedge = g_timing_graph->find_edge(src_tnode, sink_tnode);
+    tatum::EdgeType edge_type = g_timing_graph->edge_type(tedge);
+
+    //We currently only trace interconnect edges in detail, and treat all others
+    //as flylines
+    if (edge_type == tatum::EdgeType::INTERCONNECT) {
+        //All atom pins are implemented inside CLBs, so next hop is to the top-level CLB pins
+
+        //TODO: most of this code is highly similar to code in PostClusterDelayCalculator, refactor
+        //      into a common method for walking the clustered netlist, this would also (potentially)
+        //      allow us to grab the component delays
+        AtomBlockId atom_src_block = g_atom_nl.pin_block(atom_src_pin);
+        AtomBlockId atom_sink_block = g_atom_nl.pin_block(atom_sink_pin);
+
+        int clb_src_block = g_atom_lookup.atom_clb(atom_src_block);
+        VTR_ASSERT(clb_src_block >= 0);
+        int clb_sink_block = g_atom_lookup.atom_clb(atom_sink_block);
+        VTR_ASSERT(clb_sink_block >= 0);
+
+        const t_pb_graph_pin* sink_gpin = g_atom_lookup.atom_pin_pb_graph_pin(atom_sink_pin);
+        VTR_ASSERT(sink_gpin);
+
+        int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
+
+        const t_net_pin* sink_clb_net_pin = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
+        if(sink_clb_net_pin != nullptr) {
+            //Connection leaves the CLB
+
+            int net = sink_clb_net_pin->net;
+            const t_net_pin* driver_clb_net_pin = &g_clbs_nlist.net[net].pins[0];
+            VTR_ASSERT(driver_clb_net_pin != nullptr);
+            VTR_ASSERT(driver_clb_net_pin->block == clb_src_block);
+
+            //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
+            auto routed_points = trace_routed_connection_draw_coords(driver_clb_net_pin, sink_clb_net_pin);
+            points.insert(points.end(), routed_points.begin(), routed_points.end());
+        } else {
+            //Connection entirely within the CLB, we don't draw the internal routing so treat it as a fly-line
+            VTR_ASSERT(clb_src_block == clb_sink_block);
+        }
+    }
+
+    points.push_back(atom_pin_draw_coord(atom_sink_pin));
+
+    free_route_tree_timing_structs();
+    return points;
+}
+
+std::vector<t_point> trace_routed_connection_draw_coords(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin) {
+    VTR_ASSERT(driver_clb_net_pin->net == sink_clb_net_pin->net);
+    VTR_ASSERT(driver_clb_net_pin->net_pin == 0);
+
+    t_rt_node* rt_root = traceback_to_route_tree(driver_clb_net_pin->net);
+
+    VTR_ASSERT(rt_root->inode == net_rr_terminals[driver_clb_net_pin->net][driver_clb_net_pin->net_pin]);
+
+    int sink_rr_node = net_rr_terminals[sink_clb_net_pin->net][sink_clb_net_pin->net_pin];
+    std::vector<int> rr_nodes_on_path;
+    trace_net_connection_rr_nodes(rt_root, sink_rr_node, rr_nodes_on_path);
+    std::reverse(rr_nodes_on_path.begin(), rr_nodes_on_path.end()); //Traced from sink to source, but we want to draw from source to sink
+
+    //Convert the rr_nodes to drawing coordinates
+    std::vector<t_point> points;
+
+    for (int inode : rr_nodes_on_path) {
+		switch (rr_node[inode].type) {
+			case IPIN: //Fallthrough
+			case OPIN:		
+			{
+				int i = rr_node[inode].get_xlow();
+				int j = rr_node[inode].get_ylow();
+				t_type_ptr type = grid[i][j].type;
+				int width_offset = grid[i][j].width_offset;
+				int height_offset = grid[i][j].height_offset;
+				int ipin = rr_node[inode].get_ptc_num();
+				float xcen, ycen;
+				
+				for (int iside = 0; iside < 4; iside++) {
+					// If pin exists on this side of the block, then get pin coordinates
+					if (type->pinloc[width_offset][height_offset][iside][ipin]) {
+						draw_get_rr_pin_coords(inode, iside, width_offset, height_offset, 
+											   &xcen, &ycen);
+					}
+				}
+                points.emplace_back(xcen, ycen);
+				break;
+			}
+			case CHANX: //Fallthrough
+			case CHANY:
+			{
+				t_bound_box bbox = draw_get_rr_chan_bbox(inode);
+                if (rr_node[inode].get_direction() == INC_DIRECTION) {
+                    points.push_back(bbox.bottom_left());
+                    points.push_back(bbox.top_right());
+                } else {
+                    points.push_back(bbox.top_right());
+                    points.push_back(bbox.bottom_left());
+                }
+				break;
+			}
+			default:
+				break;
+		}
+    }
+
+    return points;
+}
+
+bool trace_net_connection_rr_nodes(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path) {
+    //DFS from the current rt_node to the sink_rr_node, when the sink is found trace back the used rr nodes
+
+    if (rt_node->inode == sink_rr_node) {
+        rr_nodes_on_path.push_back(sink_rr_node);
+        return true;
+    }
+
+    for (t_linked_rt_edge* edge = rt_node->u.child_list; edge != nullptr; edge = edge->next) {
+        t_rt_node* child_rt_node = edge->child;
+        VTR_ASSERT(child_rt_node);
+
+        bool on_path_to_sink = trace_net_connection_rr_nodes(child_rt_node, sink_rr_node, rr_nodes_on_path);
+
+        if (on_path_to_sink) {
+            rr_nodes_on_path.push_back(rt_node->inode);
+            return true;
+        }
+    }
+
+    return false; //Not on path to sink
+}
+
