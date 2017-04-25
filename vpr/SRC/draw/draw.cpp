@@ -17,6 +17,7 @@
 #include <cmath>
 #include <algorithm>
 #include <sstream>
+#include <array>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -56,6 +57,32 @@ using namespace std;
 //The arrow head position for turning/straight-thru connections in a switch box
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.9;
+
+//Kelly's Maximum contrast colors (Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943)
+const std::array<t_color,21> kelly_max_contrast_colors = {
+    //t_color(242,243,244), //white: skip white since it doesn't contrast well with the light background
+    t_color(34,34,34),    //black
+    t_color(243,195,0),   //yellow
+    t_color(135,86,146),  //purple
+    t_color(243,132,0),   //orange
+    t_color(161,202,241), //light blue
+    t_color(190,0,50),    //red
+    t_color(194,178,128), //buf
+    t_color(132,132,130), //gray
+    t_color(0,136,86),    //green
+    t_color(230,143,172), //purplish pink
+    t_color(0,103,165),   //blue
+    t_color(249,147,121), //yellowish pink
+    t_color(96,78,151),   //violet
+    t_color(246,166,0),   //orange yellow
+    t_color(179,68,108),  //purplish red
+    t_color(220,211,0),   //greenish yellow
+    t_color(136,45,23),   //redish brown
+    t_color(141,182,0),   //yellow green
+    t_color(101,69,34),   //yellowish brong
+    t_color(226,88,34),   //reddish orange
+    t_color(43,61,38)     //olive green
+};
 
 /************************** File Scope Variables ****************************/
 
@@ -121,11 +148,14 @@ static void draw_crit_path_flylines(void);
 void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay);
 
 static void draw_crit_path_routing();
-void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay);
+void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color);
 std::vector<t_point> trace_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode);
+std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin);
 std::vector<t_point> trace_routed_connection_draw_coords(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin);
-std::vector<t_point> trace_routed_timing_edge_draw_coords(tatum::NodeId src_tnode, tatum::NodeId sink_tnode);
+void draw_routed_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color);
 bool trace_net_connection_rr_nodes(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
+short find_switch(int prev_inode, int inode);
+void draw_partial_route(std::vector<int>& rr_nodes_to_draw);
 
 /********************** Subroutine definitions ******************************/
 
@@ -2710,7 +2740,8 @@ void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay) {
     draw_triangle_along_line(start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
 
 
-    bool draw_delays = (get_draw_state_vars()->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS);
+    bool draw_delays = (get_draw_state_vars()->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS
+                        || get_draw_state_vars()->show_crit_path == DRAW_CRIT_PATH_ROUTING_DELAYS);
     if (draw_delays) {
         //Determine the strict bounding box based on the lines start/end
         float min_x = std::min(start.x, end.x);
@@ -2758,41 +2789,37 @@ static void draw_crit_path_routing(void) {
 
     tatum::NodeId prev_node;
     float prev_arr_time = std::numeric_limits<float>::quiet_NaN();
+    int i = 0;
     for(tatum::TimingPathElem elem : path.data_arrival_elements()) {
         tatum::NodeId node = elem.node();
         float arr_time = elem.tag().time();
 
         if(prev_node) {
             float delay = arr_time - prev_arr_time;
-            draw_routed_timing_edge(prev_node, node, delay);
+            draw_routed_timing_edge(prev_node, node, delay, kelly_max_contrast_colors[i++ % kelly_max_contrast_colors.size()]);
         }
         prev_node = node;
         prev_arr_time = arr_time;
+
     }
 }
 
-void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float /*incr_delay*/) {
+void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color) {
 
-    std::vector<t_point> points = trace_routed_timing_edge_draw_coords(start_tnode, end_tnode);
+    draw_routed_connection(start_tnode, end_tnode, color);
     
-    auto prev_point_iter = points.begin();
-    for(auto point_iter = prev_point_iter + 1; point_iter != points.end(); ++point_iter) {
+    setlinestyle(DASHED);
+    setlinewidth(3);
+    setcolor(color);
 
-        if (prev_point_iter == points.begin()) {
-            //First point, draw an arrow near the beginning
-            draw_triangle_along_line(*prev_point_iter, *point_iter, 0.05, 40*DEFAULT_ARROW_SIZE);
-        } else if (point_iter + 1 == points.end()) {
-            //Last point, draw an arrow near the end
-            draw_triangle_along_line(*prev_point_iter, *point_iter, 0.95, 40*DEFAULT_ARROW_SIZE);
-        }
-        drawline(*prev_point_iter, *point_iter);
+    draw_flyline_timing_edge(tnode_draw_coord(start_tnode), tnode_draw_coord(end_tnode), incr_delay);
 
-        prev_point_iter = point_iter;
-    }
+    setlinewidth(0);
+    setlinestyle(SOLID);
 }
 
 //Collect all the drawing locations associated with the timing edge between start and end
-std::vector<t_point> trace_routed_timing_edge_draw_coords(tatum::NodeId src_tnode, tatum::NodeId sink_tnode) {
+void draw_routed_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color) {
 
     alloc_route_tree_timing_structs();
 
@@ -2837,8 +2864,20 @@ std::vector<t_point> trace_routed_timing_edge_draw_coords(tatum::NodeId src_tnod
             VTR_ASSERT(driver_clb_net_pin->block == clb_src_block);
 
             //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
-            auto routed_points = trace_routed_connection_draw_coords(driver_clb_net_pin, sink_clb_net_pin);
-            points.insert(points.end(), routed_points.begin(), routed_points.end());
+            /*
+             *auto routed_points = trace_routed_connection_draw_coords(driver_clb_net_pin, sink_clb_net_pin);
+             *points.insert(points.end(), routed_points.begin(), routed_points.end());
+             */
+            auto routed_rr_nodes = trace_routed_connection_rr_nodes(driver_clb_net_pin, sink_clb_net_pin);
+
+            //Mark all the nodes highlighted
+            t_draw_state* draw_state = get_draw_state_vars();
+            for (int inode : routed_rr_nodes) {
+				draw_state->draw_rr_node[inode].color = color;
+            }
+
+
+            draw_partial_route(routed_rr_nodes);
         } else {
             //Connection entirely within the CLB, we don't draw the internal routing so treat it as a fly-line
             VTR_ASSERT(clb_src_block == clb_sink_block);
@@ -2848,10 +2887,9 @@ std::vector<t_point> trace_routed_timing_edge_draw_coords(tatum::NodeId src_tnod
     points.push_back(atom_pin_draw_coord(atom_sink_pin));
 
     free_route_tree_timing_structs();
-    return points;
 }
 
-std::vector<t_point> trace_routed_connection_draw_coords(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin) {
+std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin) {
     VTR_ASSERT(driver_clb_net_pin->net == sink_clb_net_pin->net);
     VTR_ASSERT(driver_clb_net_pin->net_pin == 0);
 
@@ -2863,6 +2901,12 @@ std::vector<t_point> trace_routed_connection_draw_coords(const t_net_pin* driver
     std::vector<int> rr_nodes_on_path;
     trace_net_connection_rr_nodes(rt_root, sink_rr_node, rr_nodes_on_path);
     std::reverse(rr_nodes_on_path.begin(), rr_nodes_on_path.end()); //Traced from sink to source, but we want to draw from source to sink
+
+    return rr_nodes_on_path;
+}
+
+std::vector<t_point> trace_routed_connection_draw_coords(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin) {
+    auto rr_nodes_on_path = trace_routed_connection_rr_nodes(driver_clb_net_pin, sink_clb_net_pin);
 
     //Convert the rr_nodes to drawing coordinates
     std::vector<t_point> points;
@@ -2909,6 +2953,8 @@ std::vector<t_point> trace_routed_connection_draw_coords(const t_net_pin* driver
     }
 
     return points;
+
+    return points;
 }
 
 bool trace_net_connection_rr_nodes(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path) {
@@ -2934,3 +2980,139 @@ bool trace_net_connection_rr_nodes(const t_rt_node* rt_node, int sink_rr_node, s
     return false; //Not on path to sink
 }
 
+short find_switch(int prev_inode, int inode) {
+    for (int i = 0; i < rr_node[prev_inode].get_num_edges(); ++i) {
+        if (rr_node[prev_inode].edges[i] == inode) {
+            return rr_node[prev_inode].switches[i];
+        }
+    }
+    VTR_ASSERT(false);
+    return -1;
+}
+
+void draw_partial_route(std::vector<int>& rr_nodes_to_draw) {
+
+	t_draw_state* draw_state = get_draw_state_vars();
+
+	static int **chanx_track = NULL; /* [1..nx][0..ny] */
+	static int **chany_track = NULL; /* [0..nx][1..ny] */
+	if (draw_state->draw_route_type == GLOBAL) {
+		/* Allocate some temporary storage if it's not already available. */
+		if (chanx_track == NULL) {
+			chanx_track = vtr::alloc_matrix<int>(1, nx, 0, ny);
+		}
+
+		if (chany_track == NULL) {
+			chany_track = vtr::alloc_matrix<int>(0, nx, 1, ny);
+		}
+
+		for (int i = 1; i <= nx; i++)
+			for (int j = 0; j <= ny; j++)
+				chanx_track[i][j] = (-1);
+
+		for (int i = 0; i <= nx; i++)
+			for (int j = 1; j <= ny; j++)
+				chany_track[i][j] = (-1);
+	}
+
+    for(size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
+
+        int inode = rr_nodes_to_draw[i];
+        auto rr_type = rr_node[inode].type;
+
+        int prev_node = rr_nodes_to_draw[i-1];
+        auto prev_type = rr_node[prev_node].type;
+
+        auto switch_type = find_switch(prev_node, inode);
+
+        switch (rr_type) {
+
+            case OPIN: {
+                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color);
+                break;
+            }
+            case IPIN: {
+                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color);
+                if(rr_node[prev_node].type == OPIN) {
+                    draw_pin_to_pin(prev_node, inode);
+                } else {
+                    draw_pin_to_chan_edge(inode, prev_node);
+                }
+                break;
+            }
+            case CHANX: {
+                if (draw_state->draw_route_type == GLOBAL)
+                    chanx_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
+
+                int itrack = get_track_num(inode, chanx_track, chany_track);
+                draw_rr_chanx(inode, draw_state->draw_rr_node[inode].color);
+
+                switch (prev_type) {
+
+                    case CHANX: {
+                        draw_chanx_to_chanx_edge(prev_node, inode,
+                                itrack, switch_type);
+                        break;
+                    }
+                    case CHANY: {
+                        int prev_track = get_track_num(prev_node, chanx_track,
+                                chany_track);
+                        draw_chanx_to_chany_edge(inode, itrack, prev_node,
+                                prev_track, FROM_Y_TO_X, switch_type);
+                        break;
+                    }
+                    case OPIN: {
+                        draw_pin_to_chan_edge(prev_node, inode);
+                        break;
+                    }
+                    default: {
+                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                                "in drawroute: Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                prev_type, rr_type);
+                    }
+                }
+
+                break;
+            }
+            case CHANY: {
+                if (draw_state->draw_route_type == GLOBAL)
+                    chany_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
+
+                int itrack = get_track_num(inode, chanx_track, chany_track);
+                draw_rr_chany(inode, draw_state->draw_rr_node[inode].color);
+
+                switch (prev_type) {
+
+                    case CHANX: {
+                        int prev_track = get_track_num(prev_node, chanx_track,
+                                chany_track);
+                        draw_chanx_to_chany_edge(prev_node, prev_track, inode,
+                                itrack, FROM_X_TO_Y, switch_type);
+                        break;
+                    }
+                    case CHANY: {
+                        draw_chany_to_chany_edge(prev_node, inode,
+                                itrack, switch_type);
+                        break;
+                    }
+                    case OPIN: {
+                        draw_pin_to_chan_edge(prev_node, inode);
+
+                        break;
+                    }
+                    default: {
+                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                                "in drawroute: Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                prev_type, rr_type);
+                    }
+                }
+
+                break;
+            }
+            default: {
+                break;
+            }
+
+        }
+    }
+}
