@@ -2726,6 +2726,10 @@ static void draw_crit_path() {
         return;
     }
 
+    if (!draw_state->setup_timing_info) {
+        return; //No timing to draw
+    }
+
     //Get the worst timing path
     auto paths = path_collector.collect_worst_setup_paths(*g_timing_graph, *(draw_state->setup_timing_info->setup_analyzer()), 1);
     tatum::TimingPath path = paths[0];
@@ -2742,6 +2746,7 @@ static void draw_crit_path() {
             float delay = arr_time - prev_arr_time;
             if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES || draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
                 setcolor(BLUE);
+                setlinestyle(SOLID);
                 draw_flyline_timing_edge(tnode_draw_coord(prev_node), tnode_draw_coord(node), delay);
             } else {
                 VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
