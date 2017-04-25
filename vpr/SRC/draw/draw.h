@@ -46,4 +46,7 @@ const float WIRE_DRAWING_WIDTH = 0.5;
 //Returns the drawing coordinates of the specified pin
 t_point atom_pin_draw_coord(AtomPinId pin);
 
+//Returns the drawing coordinates of the specified tnode
+t_point tnode_draw_coord(tatum::NodeId node);
+
 #endif /* DRAW_H */

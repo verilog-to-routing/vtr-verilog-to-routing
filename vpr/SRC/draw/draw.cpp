@@ -101,11 +101,13 @@ static void drawplace(void);
 static void drawnets(void);
 static void drawroute(enum e_draw_net_type draw_net_type);
 static void draw_congestion(void);
+static void draw_crit_path();
 
 static void highlight_blocks(float x, float y, t_event_buttonPressed button_info);
 static void act_on_mouse_over(float x, float y);
 static void deselect_all(void);
 
+void draw_partial_route(const std::vector<int>& rr_nodes_to_draw);
 static void draw_rr(void);
 static void draw_rr_edges(int from_node);
 static void draw_rr_pin(int inode, const t_color& color);
@@ -141,18 +143,13 @@ static inline void draw_mux_with_size(t_point origin, e_side orientation, float 
 static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height);
 static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height, float width, float height_scale);
 
+static void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay);
+static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color);
+static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color);
 
-static void draw_crit_path();
-void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay);
-void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color);
-void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color);
-void draw_partial_route(const std::vector<int>& rr_nodes_to_draw);
-
-t_point tnode_draw_coord(tatum::NodeId node);
-
-std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin);
-bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
-short find_switch(int prev_inode, int inode);
+static std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin);
+static bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
+static short find_switch(int prev_inode, int inode);
 
 /********************** Subroutine definitions ******************************/
 
@@ -1599,33 +1596,10 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 
 	/* Next free track in each channel segment if routing is GLOBAL */
 
-	static int **chanx_track = NULL; /* [1..nx][0..ny] */
-	static int **chany_track = NULL; /* [0..nx][1..ny] */
-
 	unsigned int inet;
-	int i, j, inode, prev_node, prev_track, itrack;
-	short switch_type;
+	int inode;
 	struct s_trace *tptr;
-	t_rr_type rr_type, prev_type;
-
-	if (draw_state->draw_route_type == GLOBAL) {
-		/* Allocate some temporary storage if it's not already available. */
-		if (chanx_track == NULL) {
-			chanx_track = vtr::alloc_matrix<int>(1, nx, 0, ny);
-		}
-
-		if (chany_track == NULL) {
-			chany_track = vtr::alloc_matrix<int>(0, nx, 1, ny);
-		}
-
-		for (i = 1; i <= nx; i++)
-			for (j = 0; j <= ny; j++)
-				chanx_track[i][j] = (-1);
-
-		for (i = 0; i <= nx; i++)
-			for (j = 1; j <= ny; j++)
-				chany_track[i][j] = (-1);
-	}
+	t_rr_type rr_type;
 
 	setlinestyle(SOLID);
 
@@ -1645,10 +1619,9 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 		inode = tptr->index;
 		rr_type = rr_node[inode].type;
 
+        std::vector<int> rr_nodes_to_draw;
+        rr_nodes_to_draw.push_back(inode);
 		for (;;) {
-			prev_node = inode;
-			prev_type = rr_type;
-			switch_type = tptr->iswitch;
 			tptr = tptr->next;
 			inode = tptr->index;
 			rr_type = rr_node[inode].type;
@@ -1664,105 +1637,154 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 				draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
 			}
 
-			switch (rr_type) {
-
-			case OPIN:
-				draw_rr_pin(inode, draw_state->draw_rr_node[inode].color);
-				break;
-
-			case IPIN:
-				draw_rr_pin(inode, draw_state->draw_rr_node[inode].color);
-				if(rr_node[prev_node].type == OPIN) {
-					draw_pin_to_pin(prev_node, inode);
-				} else {
-					draw_pin_to_chan_edge(inode, prev_node);
-				}
-				break;
-
-			case CHANX:
-				if (draw_state->draw_route_type == GLOBAL)
-					chanx_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
-
-				itrack = get_track_num(inode, chanx_track, chany_track);
-				draw_rr_chanx(inode, draw_state->draw_rr_node[inode].color);
-
-				switch (prev_type) {
-
-				case CHANX:
-					draw_chanx_to_chanx_edge(prev_node, inode,
-							itrack, switch_type);
-					break;
-
-				case CHANY:
-					prev_track = get_track_num(prev_node, chanx_track,
-							chany_track);
-					draw_chanx_to_chany_edge(inode, itrack, prev_node,
-							prev_track, FROM_Y_TO_X, switch_type);
-					break;
-
-				case OPIN:
-					draw_pin_to_chan_edge(prev_node, inode);
-					break;
-
-				default:
-					vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-							"in drawroute: Unexpected connection from an rr_node of type %d to one of type %d.\n",
-							prev_type, rr_type);
-				}
-
-				break;
-
-			case CHANY:
-				if (draw_state->draw_route_type == GLOBAL)
-					chany_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
-
-				itrack = get_track_num(inode, chanx_track, chany_track);
-				draw_rr_chany(inode, draw_state->draw_rr_node[inode].color);
-
-				switch (prev_type) {
-
-				case CHANX:
-					prev_track = get_track_num(prev_node, chanx_track,
-							chany_track);
-					draw_chanx_to_chany_edge(prev_node, prev_track, inode,
-							itrack, FROM_X_TO_Y, switch_type);
-					break;
-
-				case CHANY:
-					draw_chany_to_chany_edge(prev_node, inode,
-							itrack, switch_type);
-					break;
-
-				case OPIN:
-					draw_pin_to_chan_edge(prev_node, inode);
-
-					break;
-
-				default:
-					vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-							"in drawroute: Unexpected connection from an rr_node of type %d to one of type %d.\n",
-							prev_type, rr_type);
-				}
-
-				break;
-
-			default:
-				break;
-
-			}
+            rr_nodes_to_draw.push_back(inode);
 
 			if (rr_type == SINK) { /* Skip the next segment */
+                draw_partial_route(rr_nodes_to_draw);
+                rr_nodes_to_draw.clear();
+
 				tptr = tptr->next;
 				if (tptr == NULL)
 					break;
 				inode = tptr->index;
 				rr_type = rr_node[inode].type;
+                rr_nodes_to_draw.push_back(inode);
+
 			}
 
 		} /* End loop over traceback. */
+
+        draw_partial_route(rr_nodes_to_draw);
 	} /* End for (each net) */
 }
 
+//Draws the set of rr_nodes specified, using the colors set in draw_state
+void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
+
+	t_draw_state* draw_state = get_draw_state_vars();
+
+	static int **chanx_track = NULL; /* [1..nx][0..ny] */
+	static int **chany_track = NULL; /* [0..nx][1..ny] */
+	if (draw_state->draw_route_type == GLOBAL) {
+		/* Allocate some temporary storage if it's not already available. */
+		if (chanx_track == NULL) {
+			chanx_track = vtr::alloc_matrix<int>(1, nx, 0, ny);
+		}
+
+		if (chany_track == NULL) {
+			chany_track = vtr::alloc_matrix<int>(0, nx, 1, ny);
+		}
+
+		for (int i = 1; i <= nx; i++)
+			for (int j = 0; j <= ny; j++)
+				chanx_track[i][j] = (-1);
+
+		for (int i = 0; i <= nx; i++)
+			for (int j = 1; j <= ny; j++)
+				chany_track[i][j] = (-1);
+	}
+
+    for(size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
+
+        int inode = rr_nodes_to_draw[i];
+        auto rr_type = rr_node[inode].type;
+
+        int prev_node = rr_nodes_to_draw[i-1];
+        auto prev_type = rr_node[prev_node].type;
+
+        auto switch_type = find_switch(prev_node, inode);
+
+        switch (rr_type) {
+
+            case OPIN: {
+                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color);
+                break;
+            }
+            case IPIN: {
+                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color);
+                if(rr_node[prev_node].type == OPIN) {
+                    draw_pin_to_pin(prev_node, inode);
+                } else {
+                    draw_pin_to_chan_edge(inode, prev_node);
+                }
+                break;
+            }
+            case CHANX: {
+                if (draw_state->draw_route_type == GLOBAL)
+                    chanx_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
+
+                int itrack = get_track_num(inode, chanx_track, chany_track);
+                draw_rr_chanx(inode, draw_state->draw_rr_node[inode].color);
+
+                switch (prev_type) {
+
+                    case CHANX: {
+                        draw_chanx_to_chanx_edge(prev_node, inode,
+                                itrack, switch_type);
+                        break;
+                    }
+                    case CHANY: {
+                        int prev_track = get_track_num(prev_node, chanx_track,
+                                chany_track);
+                        draw_chanx_to_chany_edge(inode, itrack, prev_node,
+                                prev_track, FROM_Y_TO_X, switch_type);
+                        break;
+                    }
+                    case OPIN: {
+                        draw_pin_to_chan_edge(prev_node, inode);
+                        break;
+                    }
+                    default: {
+                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                                "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                prev_type, rr_type);
+                    }
+                }
+
+                break;
+            }
+            case CHANY: {
+                if (draw_state->draw_route_type == GLOBAL)
+                    chany_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
+
+                int itrack = get_track_num(inode, chanx_track, chany_track);
+                draw_rr_chany(inode, draw_state->draw_rr_node[inode].color);
+
+                switch (prev_type) {
+
+                    case CHANX: {
+                        int prev_track = get_track_num(prev_node, chanx_track,
+                                chany_track);
+                        draw_chanx_to_chany_edge(prev_node, prev_track, inode,
+                                itrack, FROM_X_TO_Y, switch_type);
+                        break;
+                    }
+                    case CHANY: {
+                        draw_chany_to_chany_edge(prev_node, inode,
+                                itrack, switch_type);
+                        break;
+                    }
+                    case OPIN: {
+                        draw_pin_to_chan_edge(prev_node, inode);
+
+                        break;
+                    }
+                    default: {
+                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                                "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                prev_type, rr_type);
+                    }
+                }
+
+                break;
+            }
+            default: {
+                break;
+            }
+
+        }
+    }
+}
 
 static int get_track_num(int inode, int **chanx_track, int **chany_track) {
 
@@ -2744,7 +2766,7 @@ static void draw_crit_path() {
     }
 }
 
-void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay) {
+static void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay) {
     drawline(start, end);
     draw_triangle_along_line(start, end, 0.95, 40*DEFAULT_ARROW_SIZE);
     draw_triangle_along_line(start, end, 0.05, 40*DEFAULT_ARROW_SIZE);
@@ -2786,7 +2808,7 @@ void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay) {
     }
 }
 
-void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color) {
+static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color) {
 
     draw_routed_timing_edge_connection(start_tnode, end_tnode, color);
     
@@ -2801,7 +2823,7 @@ void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode,
 }
 
 //Collect all the drawing locations associated with the timing edge between start and end
-void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color) {
+static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color) {
 
     std::vector<t_point> points;
 
@@ -2866,7 +2888,7 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId s
 }
 
 //Returns the set of rr nodes which connect driver to sink
-std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin) {
+static std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin) {
     VTR_ASSERT(driver_clb_net_pin->net == sink_clb_net_pin->net);
     VTR_ASSERT(driver_clb_net_pin->net_pin == 0);
 
@@ -2919,7 +2941,7 @@ bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_
 }
 
 //Find the switch between two rr nodes
-short find_switch(int prev_inode, int inode) {
+static short find_switch(int prev_inode, int inode) {
     for (int i = 0; i < rr_node[prev_inode].get_num_edges(); ++i) {
         if (rr_node[prev_inode].edges[i] == inode) {
             return rr_node[prev_inode].switches[i];
@@ -2929,130 +2951,3 @@ short find_switch(int prev_inode, int inode) {
     return -1;
 }
 
-//Draws the set of rr_nodes specified, using the colors set in draw_state
-void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
-
-	t_draw_state* draw_state = get_draw_state_vars();
-
-	static int **chanx_track = NULL; /* [1..nx][0..ny] */
-	static int **chany_track = NULL; /* [0..nx][1..ny] */
-	if (draw_state->draw_route_type == GLOBAL) {
-		/* Allocate some temporary storage if it's not already available. */
-		if (chanx_track == NULL) {
-			chanx_track = vtr::alloc_matrix<int>(1, nx, 0, ny);
-		}
-
-		if (chany_track == NULL) {
-			chany_track = vtr::alloc_matrix<int>(0, nx, 1, ny);
-		}
-
-		for (int i = 1; i <= nx; i++)
-			for (int j = 0; j <= ny; j++)
-				chanx_track[i][j] = (-1);
-
-		for (int i = 0; i <= nx; i++)
-			for (int j = 1; j <= ny; j++)
-				chany_track[i][j] = (-1);
-	}
-
-    for(size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
-
-        int inode = rr_nodes_to_draw[i];
-        auto rr_type = rr_node[inode].type;
-
-        int prev_node = rr_nodes_to_draw[i-1];
-        auto prev_type = rr_node[prev_node].type;
-
-        auto switch_type = find_switch(prev_node, inode);
-
-        switch (rr_type) {
-
-            case OPIN: {
-                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color);
-                break;
-            }
-            case IPIN: {
-                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color);
-                if(rr_node[prev_node].type == OPIN) {
-                    draw_pin_to_pin(prev_node, inode);
-                } else {
-                    draw_pin_to_chan_edge(inode, prev_node);
-                }
-                break;
-            }
-            case CHANX: {
-                if (draw_state->draw_route_type == GLOBAL)
-                    chanx_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
-
-                int itrack = get_track_num(inode, chanx_track, chany_track);
-                draw_rr_chanx(inode, draw_state->draw_rr_node[inode].color);
-
-                switch (prev_type) {
-
-                    case CHANX: {
-                        draw_chanx_to_chanx_edge(prev_node, inode,
-                                itrack, switch_type);
-                        break;
-                    }
-                    case CHANY: {
-                        int prev_track = get_track_num(prev_node, chanx_track,
-                                chany_track);
-                        draw_chanx_to_chany_edge(inode, itrack, prev_node,
-                                prev_track, FROM_Y_TO_X, switch_type);
-                        break;
-                    }
-                    case OPIN: {
-                        draw_pin_to_chan_edge(prev_node, inode);
-                        break;
-                    }
-                    default: {
-                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-                                "in drawroute: Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                prev_type, rr_type);
-                    }
-                }
-
-                break;
-            }
-            case CHANY: {
-                if (draw_state->draw_route_type == GLOBAL)
-                    chany_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
-
-                int itrack = get_track_num(inode, chanx_track, chany_track);
-                draw_rr_chany(inode, draw_state->draw_rr_node[inode].color);
-
-                switch (prev_type) {
-
-                    case CHANX: {
-                        int prev_track = get_track_num(prev_node, chanx_track,
-                                chany_track);
-                        draw_chanx_to_chany_edge(prev_node, prev_track, inode,
-                                itrack, FROM_X_TO_Y, switch_type);
-                        break;
-                    }
-                    case CHANY: {
-                        draw_chany_to_chany_edge(prev_node, inode,
-                                itrack, switch_type);
-                        break;
-                    }
-                    case OPIN: {
-                        draw_pin_to_chan_edge(prev_node, inode);
-
-                        break;
-                    }
-                    default: {
-                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-                                "in drawroute: Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                prev_type, rr_type);
-                    }
-                }
-
-                break;
-            }
-            default: {
-                break;
-            }
-
-        }
-    }
-}
