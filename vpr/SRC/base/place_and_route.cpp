@@ -295,6 +295,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
 	slacks = alloc_and_load_timing_graph(timing_inf);
 #endif
+	net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
     VTR_ASSERT(net_delay);
 
 	if (det_routing_arch->directionality == BI_DIRECTIONAL)

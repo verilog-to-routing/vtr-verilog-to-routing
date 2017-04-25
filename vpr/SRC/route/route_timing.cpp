@@ -187,7 +187,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	 * delay estimates. Set criticalities to 1 when timing analysis is on to 
 	 * optimize timing, and to 0 when timing analysis is off to optimize routability. 
      * 
-     * On subsequent iterations use the net delays from the previous iteration. 
+     * Subsequent iterations use the net delays from the previous iteration. 
      */
     print_route_status_header();
 	timing_driven_route_structs route_structs;
