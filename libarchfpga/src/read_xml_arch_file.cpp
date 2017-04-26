@@ -378,7 +378,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 			}
 
 			/* Get side */
-			e_side side;
+			e_side side = TOP;
 			Prop = get_attribute(Cur, "side", loc_data).value();
 			if (0 == strcmp(Prop, "left")) {
 				side = LEFT;
