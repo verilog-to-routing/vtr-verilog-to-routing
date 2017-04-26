@@ -1,19 +1,26 @@
 #ifndef VTR_CMAP_H
 #define VTR_CMAP_H
 #include <vector>
-#include <tuple>
 
 namespace vtr {
 
+template<class T>
+struct Color {
+    T r;
+    T g;
+    T b;
+};
+
+
 class ColorMap {
     public:
-        ColorMap(float min, float max, const std::vector<std::tuple<float,float,float>>& color_data);
+        ColorMap(float min, float max, const std::vector<Color<float>>& color_data);
         virtual ~ColorMap() = default;
-        std::tuple<float,float,float> color(float value);
+        Color<float> color(float value);
     private:
         float min_;
         float max_;
-        std::vector<std::tuple<float,float,float>> color_data_;
+        std::vector<Color<float>> color_data_;
 };
 
 class InfernoColorMap : public ColorMap {

@@ -152,6 +152,8 @@ static std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver
 static bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
 static short find_switch(int prev_inode, int inode);
 
+t_color to_t_color(vtr::Color<float> color);
+
 /********************** Subroutine definitions ******************************/
 
 
@@ -736,8 +738,7 @@ static void draw_congestion(void) {
 		if (congestion_ratio > 1.) {
 
 
-            auto rgb_tuple = cmap.color(congestion_ratio);
-            t_color congested_color(get<0>(rgb_tuple)*256, get<1>(rgb_tuple)*256, get<2>(rgb_tuple));
+            t_color congested_color = to_t_color(cmap.color(congestion_ratio));
 
 			switch (rr_node[inode].type) {
 			case CHANX:
@@ -2974,5 +2975,9 @@ static short find_switch(int prev_inode, int inode) {
     }
     VTR_ASSERT(false);
     return -1;
+}
+
+t_color to_t_color(vtr::Color<float> color) {
+    return t_color(color.r*256, color.g*256, color.b*256); 
 }
 
