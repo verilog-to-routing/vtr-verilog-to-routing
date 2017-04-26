@@ -49,17 +49,23 @@ class WirelengthInfo {
 
 class OveruseInfo {
     public:
-        OveruseInfo(size_t total = 0u, size_t overused = 0u)
+        OveruseInfo(size_t total = 0u, size_t overused = 0u, size_t total_overuse_val=0u, size_t worst_overuse_val=0u)
             : total_nodes_(total)
-            , overused_nodes_(overused) {}
+            , overused_nodes_(overused)
+            , total_overuse_(total_overuse_val)
+            , worst_overuse_(worst_overuse_val) {}
 
         size_t total_nodes() const { return total_nodes_; }
         size_t overused_nodes() const { return overused_nodes_; }
-        float overused_ratio() const { return float(overused_nodes()) / total_nodes(); }
+        float overused_node_ratio() const { return float(overused_nodes()) / total_nodes(); }
+        size_t total_overuse() const { return total_overuse_; }
+        size_t worst_overuse() const { return worst_overuse_; }
 
     private:
         size_t total_nodes_;
         size_t overused_nodes_;
+        size_t total_overuse_;
+        size_t worst_overuse_;
 };
 
 
@@ -203,7 +209,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
         if (timing_info) {
             if (itry == 1) {
                 //First routing iteration, make all nets critical for a min-delay routing
-                route_timing_info = make_constant_timing_info(1.); 
+                route_timing_info = nullptr;
             } else {
                 //Other iterations user the true criticality
                 route_timing_info = timing_info;
@@ -1491,12 +1497,19 @@ void Connection_based_routing_resources::clear_force_reroute_for_net() {
 
 static OveruseInfo calculate_overuse_info() {
 	size_t overused_nodes = 0;
+    size_t total_overuse = 0;
+    size_t worst_overuse = 0;
 	int inode;
 	for(inode = 0; inode < num_rr_nodes; inode++){
-		if(rr_node[inode].get_occ() > rr_node[inode].get_capacity())
-			overused_nodes += (rr_node[inode].get_occ() - rr_node[inode].get_capacity());
+        int overuse = rr_node[inode].get_occ() - rr_node[inode].get_capacity();
+		if(overuse > 0) {
+			overused_nodes += 1;
+
+            total_overuse += overuse;
+            worst_overuse = std::max(worst_overuse, size_t(overuse));
+        }
 	}
-	return OveruseInfo(num_rr_nodes, overused_nodes);
+	return OveruseInfo(num_rr_nodes, overused_nodes, total_overuse, worst_overuse);
 }
 
 static WirelengthInfo calculate_wirelength_info() {
@@ -1529,7 +1542,7 @@ static WirelengthInfo calculate_wirelength_info() {
 
 static void print_route_status_header() {
     vtr::printf_info("----- ---------- ------------------- ----------------- -------- ---------- ---------- ----------------\n");
-    vtr::printf_info("Iter. Time (sec)   Overused RR Nodes        Wirelength CPD (ns)  sTNS (ns)  sWNS (ns) Est. Succ. Iter.\n");
+    vtr::printf_info("Iter. Time (sec)   Overused RR Nodes       Wirelength  CPD (ns)  sTNS (ns)  sWNS (ns) Est. Succ. Iter.\n");
     vtr::printf_info("----- ---------- ------------------- ----------------- -------- ---------- ---------- ----------------\n");	
 }
 
@@ -1545,7 +1558,7 @@ static void print_route_status(int itry, double elapsed_sec,
     vtr::printf(" %10.1f", elapsed_sec);
     
     //Overused RR nodes
-    vtr::printf(" %8.3g (%7.4f%)", float(overuse_info.overused_nodes()), overuse_info.overused_ratio()*100);
+    vtr::printf(" %8.3g (%7.4f%)", float(overuse_info.overused_nodes()), overuse_info.overused_node_ratio()*100);
 
     //Wirelength
     vtr::printf(" %9.4g (%4.1f%)", float(wirelength_info.used_wirelength()), wirelength_info.used_wirelength_ratio()*100);
