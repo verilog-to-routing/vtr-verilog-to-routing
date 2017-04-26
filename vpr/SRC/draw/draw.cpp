@@ -23,6 +23,7 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_matrix.h"
 #include "vtr_log.h"
+#include "vtr_color_map.h"
 
 #include "vpr_utils.h"
 #include "vpr_error.h"
@@ -709,18 +710,44 @@ static void draw_congestion(void) {
 
 	setlinewidth(2);
 
+
+    float min_congestion_ratio = 1.;
+    float max_congestion_ratio = min_congestion_ratio;
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 		short occ = rr_node[inode].get_occ();
-		if (occ > 0) {
+        short capacity = rr_node[inode].get_capacity();
+
+        float congestion_ratio = float(occ) / capacity;
+
+        max_congestion_ratio = std::max(max_congestion_ratio, congestion_ratio);
+    }
+
+    char msg[vtr::BUFSIZE];
+    sprintf(msg, "Overuse ratio range (%.2f, %.2f]", min_congestion_ratio, max_congestion_ratio);
+    update_message(msg);
+
+    vtr::PlasmaColorMap cmap(min_congestion_ratio, max_congestion_ratio);
+
+	for (inode = 0; inode < num_rr_nodes; inode++) {
+		short occ = rr_node[inode].get_occ();
+        short capacity = rr_node[inode].get_capacity();
+
+        float congestion_ratio = float(occ) / capacity;
+		if (congestion_ratio > 1.) {
+
+
+            auto rgb_tuple = cmap.color(congestion_ratio);
+            t_color congested_color(get<0>(rgb_tuple)*256, get<1>(rgb_tuple)*256, get<2>(rgb_tuple));
+
 			switch (rr_node[inode].type) {
 			case CHANX:
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
 					occ > rr_node[inode].get_capacity()) {
-					draw_rr_chanx(inode, RED);
+					draw_rr_chanx(inode, congested_color);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
 					if (occ > rr_node[inode].get_capacity())
-						draw_rr_chanx(inode, RED);
+						draw_rr_chanx(inode, congested_color);
 					else
 						draw_rr_chanx(inode, BLUE);
 				}
@@ -729,11 +756,11 @@ static void draw_congestion(void) {
 			case CHANY:
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
 					occ > rr_node[inode].get_capacity()) {
-					draw_rr_chany(inode, RED);
+					draw_rr_chany(inode, congested_color);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
 					if (occ > rr_node[inode].get_capacity())
-						draw_rr_chany(inode, RED);
+						draw_rr_chany(inode, congested_color);
 					else
 						draw_rr_chany(inode, BLUE);
 				}
@@ -743,11 +770,11 @@ static void draw_congestion(void) {
 			case OPIN:
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
 					occ > rr_node[inode].get_capacity()) {
-					draw_rr_pin(inode, RED);
+					draw_rr_pin(inode, congested_color);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
 					if (occ > rr_node[inode].get_capacity())
-						draw_rr_pin(inode, RED);
+						draw_rr_pin(inode, congested_color);
 					else
 						draw_rr_pin(inode, BLUE);
 				}
