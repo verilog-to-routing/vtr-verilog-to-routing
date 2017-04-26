@@ -59,30 +59,30 @@ using namespace std;
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.9;
 
-//Kelly's Maximum contrast colors (Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943)
+//Kelly's maximum contrast colors (Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943)
 const std::array<t_color,21> kelly_max_contrast_colors = {
-    //t_color(242,243,244), //white: skip white since it doesn't contrast well with the light background
-    t_color(34,34,34),    //black
-    t_color(243,195,0),   //yellow
-    t_color(135,86,146),  //purple
-    t_color(243,132,0),   //orange
-    t_color(161,202,241), //light blue
-    t_color(190,0,50),    //red
-    t_color(194,178,128), //buf
-    t_color(132,132,130), //gray
-    t_color(0,136,86),    //green
-    t_color(230,143,172), //purplish pink
-    t_color(0,103,165),   //blue
-    t_color(249,147,121), //yellowish pink
-    t_color(96,78,151),   //violet
-    t_color(246,166,0),   //orange yellow
-    t_color(179,68,108),  //purplish red
-    t_color(220,211,0),   //greenish yellow
-    t_color(136,45,23),   //redish brown
-    t_color(141,182,0),   //yellow green
-    t_color(101,69,34),   //yellowish brong
-    t_color(226,88,34),   //reddish orange
-    t_color(43,61,38)     //olive green
+    //t_color(242, 243, 244), //white: skip white since it doesn't contrast well with the light background
+    t_color( 34,  34,  34), //black
+    t_color(243, 195,   0), //yellow
+    t_color(135,  86, 146), //purple
+    t_color(243, 132,   0), //orange
+    t_color(161, 202, 241), //light blue
+    t_color(190,   0,  50), //red
+    t_color(194, 178, 128), //buf
+    t_color(132, 132, 130), //gray
+    t_color(  0, 136,  86), //green
+    t_color(230, 143, 172), //purplish pink
+    t_color(  0, 103, 165), //blue
+    t_color(249, 147, 121), //yellowish pink
+    t_color( 96,  78, 151), //violet
+    t_color(246, 166,   0), //orange yellow
+    t_color(179,  68, 108), //purplish red
+    t_color(220, 211,   0), //greenish yellow
+    t_color(136,  45,  23), //redish brown
+    t_color(141, 182,   0), //yellow green
+    t_color(101,  69,  34), //yellowish brown
+    t_color(226,  88,  34), //reddish orange
+    t_color( 43,  61,  38)  //olive green
 };
 
 /************************** File Scope Variables ****************************/
