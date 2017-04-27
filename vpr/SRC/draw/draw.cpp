@@ -2770,18 +2770,19 @@ static void draw_crit_path() {
         float arr_time = elem.tag().time();
 
         if(prev_node) {
+            //We draw each 'edge' in a different color, this allows users to identify the stages and
+            //any routing which corresponds to the edge
+            //
+            //We pick colors from the kelly max-contrast list, for long paths there may be repeats
+            t_color color = kelly_max_contrast_colors[i++ % kelly_max_contrast_colors.size()];
+
             float delay = arr_time - prev_arr_time;
             if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES || draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
-                setcolor(BLUE);
+                setcolor(color);
                 setlinestyle(SOLID);
                 draw_flyline_timing_edge(tnode_draw_coord(prev_node), tnode_draw_coord(node), delay);
             } else {
                 VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
-                //For routed timing edges we draw each 'edge' in a different color, this allows users to identify which routing
-                //corresponds to which edge
-                //
-                //We pick colors from the kelly max-contrast list, for long paths there may be repeates
-                t_color color = kelly_max_contrast_colors[i++ % kelly_max_contrast_colors.size()];
 
                 //Draw the routed version of the timing edge
                 draw_routed_timing_edge(prev_node, node, delay, color);
