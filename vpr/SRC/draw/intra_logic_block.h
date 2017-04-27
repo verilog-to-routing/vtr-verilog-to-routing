@@ -55,19 +55,13 @@ private:
 	t_pb_graph_node* selected_pb_gnode;
 	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > sinks;
 	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > sources;
-	std::unordered_set< std::pair<clb_pin_tuple, clb_pin_tuple>, sel_subblk_hasher> nets_on_critical_path;
 	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > in_selected_subtree;
-	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > blocks_on_critical_path;
-	gnode_clb_pair head_of_critical_path;
-	gnode_clb_pair driver_of_head_of_critical_path;
 
 public:
 
 	t_selected_sub_block_info();
 
 	void set(t_pb* new_selected_sub_block, t_block* containing_block);
-	void add_to_critical_path(const t_tnode& src_tnode, const t_tnode& sink_tnode);
-
 	t_pb_graph_node* get_selected_pb_gnode() const;
 	t_block* get_containing_block() const;
 
@@ -80,20 +74,11 @@ public:
 
 	bool has_selection() const;
 	void clear();
-	void clear_critical_path();
-
 	// pb related selection test functions
 	bool is_selected(const t_pb_graph_node* test, const t_block* test_block) const;
 	bool is_sink_of_selected(const t_pb_graph_node* test, const t_block* test_block) const;
 	bool is_source_of_selected(const t_pb_graph_node* test, const t_block* test_block) const;
 	bool is_in_selected_subtree(const t_pb_graph_node* test, const t_block* test_block) const;
-	bool is_on_critical_path(const t_pb_graph_node* test, const t_block* test_block) const;
-	bool is_head_of_critical_path(const t_pb_graph_node* test, const t_block* test_block) const;
-	bool is_driver_of_head_of_critical_path(const t_pb_graph_node* test, const t_block* test_block) const;
-
-	// net related selection test functions
-	bool is_head_net_of_critical_path(const AtomPinId test_src, const AtomPinId test_sink) const;
-	bool is_on_critical_path(const AtomPinId test_src, const AtomPinId test_sink) const;
 };
 
 /* Enable/disable clb internals drawing. Internals drawing is enabled with a click of the

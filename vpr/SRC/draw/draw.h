@@ -31,18 +31,6 @@ const color_types SELECTED_COLOR = GREEN;
 const color_types DRIVES_IT_COLOR = RED;
 const color_types DRIVEN_BY_IT_COLOR = LIGHTMEDIUMBLUE;
 
-namespace crit_path_colors {
-	namespace blk {
-		const t_color HEAD        (0x99,0xFF,0x66);
-		const t_color HEAD_DRIVER (0x55,0x88,0xFF);
-		const t_color TAIL        (0xAA,0xCC,0xFF);
-	}
-	namespace net {
-		const t_color HEAD (0x00,0xDD,0x00);
-		const t_color TAIL (0x00,0x77,0xBB);
-	}
-}
-
 const float WIRE_DRAWING_WIDTH = 0.5;
 
 //Returns the drawing coordinates of the specified pin

@@ -1839,9 +1839,10 @@ static int get_track_num(int inode, int **chanx_track, int **chany_track) {
 }
 
 
-/* This helper function determines whether a net has been highlighted. The highlighting *
- * could be caused by the user clicking on a routing resource, highlight critical path  *
- * toggled, or fan-in/fan-out of a highlighted node.									*/
+/* This helper function determines whether a net has been highlighted. The highlighting
+ * could be caused by the user clicking on a routing resource, toggled, or 
+ * fan-in/fan-out of a highlighted node.									
+ */
 static bool draw_if_net_highlighted (int inet) {
 	bool highlighted = false;
 
@@ -1849,9 +1850,7 @@ static bool draw_if_net_highlighted (int inet) {
 
 	if (draw_state->net_color[inet] == MAGENTA
 		|| draw_state->net_color[inet] == DRIVES_IT_COLOR
-		|| draw_state->net_color[inet] == DRIVEN_BY_IT_COLOR
-		|| draw_state->net_color[inet] == crit_path_colors::net::HEAD
-		|| draw_state->net_color[inet] == crit_path_colors::net::TAIL) {
+		|| draw_state->net_color[inet] == DRIVEN_BY_IT_COLOR) {
 
 		highlighted = true;
 	}
