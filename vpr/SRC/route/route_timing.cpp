@@ -532,8 +532,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
 	unsigned int num_sinks = g_clbs_nlist.net[inet].num_sinks();
 
-	t_rt_node* rt_root = setup_routing_resources(itry, inet, num_sinks, pres_fac, min_incremental_reroute_fanout, 
-		connections_inf, rt_node_of_sink);
+	t_rt_node* rt_root = setup_routing_resources(itry, inet, num_sinks, pres_fac, min_incremental_reroute_fanout, connections_inf, rt_node_of_sink);
 	// after this point the route tree is correct
 	// remaining_targets from this point on are the **pin indices** that have yet to be routed 
 	auto& remaining_targets = connections_inf.get_remaining_targets();
@@ -764,7 +763,6 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		// check for edge correctness
 		VTR_ASSERT_SAFE(is_valid_skeleton_tree(rt_root));
 		VTR_ASSERT_SAFE(should_route_net(inet, connections_inf));
-		VTR_ASSERT_SAFE(!is_uncongested_route_tree(rt_root));
 
 		// prune the branches of the tree that don't legally lead to sinks
 		// destroyed represents whether the entire tree is illegal
@@ -778,8 +776,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		if (destroyed) {
 			profiling::route_tree_pruned();
 			// traceback remains empty for just the root and no need to update pathfinder costs
-		}
-		else {
+		} else {
 			profiling::route_tree_preserved();
 
 			// sync traceback into a state that matches the route tree
@@ -1448,9 +1445,6 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 
 			// update if more optimal connection found
 			if (net_delay[inet][ipin] < lower_bound_connection_delay[inet][ipin - 1]) {
-				if (net_delay[inet][ipin] == 0) {
-					// vtr::printf_info("net delay incorrectly 0 %4d %d\n", inet, rr_sink_node);
-				}
 				lower_bound_connection_delay[inet][ipin - 1] = net_delay[inet][ipin];
 				continue;
 			}
