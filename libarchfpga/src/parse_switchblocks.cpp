@@ -99,7 +99,7 @@ static void check_unidir_switchblock(const t_switchblock_inf *sb );
 static void check_bidir_switchblock(const t_permutation_map *permutation_map );
 
 /* checks for correctness of a wireconn segment specification. */
-static void check_wireconn_segments(const t_arch* arch, const t_wireconn_inf& wireconn);
+static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn);
 
 /*---- Functions for Parsing the Symbolic Switchblock Formulas ----*/
 /* returns integer result according to specified formula and data */
@@ -364,7 +364,7 @@ void check_switchblock(const t_switchblock_inf* sb, const t_arch* arch){
 	/* check that specified wires exist */
     for (const auto& wireconn : sb->wireconns) {
 
-        check_wireconn_segments(arch, wireconn);
+        check_wireconn(arch, wireconn);
     }
 
 	//TODO:
@@ -424,11 +424,40 @@ static void check_bidir_switchblock(const t_permutation_map *permutation_map ){
 	return;
 }
 
-static void check_wireconn_segments(const t_arch* arch, const t_wireconn_inf& wireconn) {
-    for (const auto& seg_names : {wireconn.from_type, wireconn.to_type}) {
-        for (const auto& seg_name : seg_names) {
-            if (!segment_exists(arch, seg_name)) {
-                archfpga_throw( __FILE__, __LINE__, "Failed to find segment '%s' for <wireconn> specification\n", seg_name.c_str());
+static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn) {
+    for (const auto& seg_name : wireconn.from_type) {
+
+        //Make sure the segment exists
+        const t_segment_inf* seg_info = find_segment(arch, seg_name);
+        if (!seg_info) {
+            archfpga_throw( __FILE__, __LINE__, "Failed to find segment '%s' for <wireconn> from_type specification\n", seg_name.c_str());
+        }
+
+        //Check that the specified switch points are valid
+        for(int switchpoint : wireconn.from_point) {
+            if (switchpoint < 0) {
+                archfpga_throw( __FILE__, __LINE__, "Invalid <wireconn> from_switchpoint '%d' (must be >= 0)\n", switchpoint, seg_name.c_str());
+            }
+            if (switchpoint >= seg_info->length) {
+                archfpga_throw( __FILE__, __LINE__, "Invalid <wireconn> from_switchpoints '%d' (must be < %d)\n", switchpoint, seg_info->length);
+            }
+        }
+    }
+    for (const auto& seg_name : wireconn.to_type) {
+
+        //Make sure the segment exists
+        const t_segment_inf* seg_info = find_segment(arch, seg_name);
+        if (!seg_info) {
+            archfpga_throw( __FILE__, __LINE__, "Failed to find segment '%s' for <wireconn> to_type specification\n", seg_name.c_str());
+        }
+
+        //Check that the specified switch points are valid
+        for(int switchpoint : wireconn.to_point) {
+            if (switchpoint < 0) {
+                archfpga_throw( __FILE__, __LINE__, "Invalid <wireconn> to_switchpoint '%d' (must be >= 0)\n", switchpoint, seg_name.c_str());
+            }
+            if (switchpoint >= seg_info->length) {
+                archfpga_throw( __FILE__, __LINE__, "Invalid <wireconn> to_switchpoints '%d' (must be < %d)\n", switchpoint, seg_info->length);
             }
         }
     }
