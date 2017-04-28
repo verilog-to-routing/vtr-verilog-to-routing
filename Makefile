@@ -1,9 +1,9 @@
 #This is a simple wrapper hiding cmake from non-expert end users.
 #
 # It supports the targets:
-#   'make' 		 	 - builds everything (all libaries/executables)
-#   'make clean' 	 - removes generated build objects/libraries/executables etc.
-# 	'make distclean' - will clean everything including the cmake generated build files
+#   'make'           - builds everything (all libaries/executables)
+#   'make clean'     - removes generated build objects/libraries/executables etc.
+#   'make distclean' - will clean everything including the cmake generated build files
 #
 # All other targets (e.g. 'make vpr') are passed to the cmake generated makefile
 # and processed according to the CMakeLists.txt.
