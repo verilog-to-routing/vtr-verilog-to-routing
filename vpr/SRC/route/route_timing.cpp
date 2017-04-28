@@ -209,7 +209,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
         if (timing_info) {
             if (itry == 1) {
                 //First routing iteration, make all nets critical for a min-delay routing
-                route_timing_info = nullptr;
+                route_timing_info = make_constant_timing_info(1.);
             } else {
                 //Other iterations user the true criticality
                 route_timing_info = timing_info;
