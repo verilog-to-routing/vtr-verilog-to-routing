@@ -1124,32 +1124,21 @@ bool is_valid_route_tree(const t_rt_node* root) {
 	return true;
 }
 
+//Returns true if the route tree rooted at 'root' is not congested
 bool is_uncongested_route_tree(const t_rt_node* root) {
-	// make sure the nodes are legally connected
-	t_linked_rt_edge* edge {root->u.child_list};
-	
-	for (;;) {
-		int inode = root->inode;
-		if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) {
-			// vtr::printf_info("node %d occ %d > cap %d\n", inode, rr_node[inode].get_occ(), rr_node[inode].get_capacity());
-			return false;
-		}
+    int inode = root->inode;
+    if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) {
+        //This node is congested
+        return false;
+    }
 
-		// reached a sink
-		if (!edge) {
-			return true;
-		}
-		// branch point (sibling edges)
-		else if (edge->next) {
-			// recursively update for each of its sibling branches
-			do {
-				if (!is_uncongested_route_tree(edge->child)) return false;
-				edge = edge->next;
-			} while (edge);
-			return true;
-		}
+    for (t_linked_rt_edge* edge = root->u.child_list; edge != nullptr; edge = edge->next) {
+        if (!is_uncongested_route_tree(edge->child)) {
+            //The sub-tree connected to this edge is congested
+            return false;
+        }
+    }
 
-		root = edge->child;
-		edge = root->u.child_list;
-	}
+    //The sub-tree below the curret node is unconngested
+    return true;
 }
