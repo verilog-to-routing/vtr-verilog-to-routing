@@ -472,7 +472,7 @@ static void toggle_crit_path(void (*drawscreen_ptr)(void)) {
 }
 
 
-void alloc_draw_structs(void) {
+void alloc_draw_structs(const t_arch* arch) {
 	/* Call accessor functions to retrieve global variables. */
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 	t_draw_state* draw_state = get_draw_state_vars();
@@ -494,6 +494,8 @@ void alloc_draw_structs(void) {
 	 * not yet know information about the routing resources.				  */
 	draw_state->draw_rr_node = (t_draw_rr_node *) vtr::malloc(
 									num_rr_nodes * sizeof(t_draw_rr_node));
+
+    draw_state->arch_info = arch;
 
 	deselect_all(); /* Set initial colors */
 }
@@ -2179,10 +2181,18 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
 
             std::string msg = vtr::string_fmt("Moused over rr node #%d: %s", hit_node, rr_node[hit_node].rr_get_type_string());
             if (rr_node[hit_node].type == CHANX || rr_node[hit_node].type == CHANY) {
-                msg += vtr::string_fmt(" track: %d len: %d", rr_node[hit_node].get_ptc_num(), rr_node[hit_node].get_length());
+                int cost_index = rr_node[hit_node].get_cost_index();
+
+                int seg_index = rr_indexed_data[cost_index].seg_index;
+
+                msg += vtr::string_fmt(" track: %d len: %d seg_type: %s", 
+                            rr_node[hit_node].get_ptc_num(), 
+                            rr_node[hit_node].get_length(),
+                            draw_state->arch_info->Segments[seg_index].name
+                        );
                 update_message(msg.c_str());
             } else if (rr_node[hit_node].type == IPIN || rr_node[hit_node].type == OPIN) {
-                msg += vtr::string_fmt(" pin: %d len: %d", rr_node[hit_node].get_ptc_num(), rr_node[hit_node].get_length());
+                msg += vtr::string_fmt(" pin: %d", rr_node[hit_node].get_ptc_num());
                 update_message(msg.c_str());
             }
         } else {

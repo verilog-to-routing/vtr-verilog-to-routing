@@ -120,6 +120,7 @@ struct t_draw_state {
 	t_color *net_color, *block_color;
 	t_draw_rr_node *draw_rr_node;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
+    const t_arch* arch_info;
 
 	t_draw_state();
 

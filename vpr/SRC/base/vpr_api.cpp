@@ -598,7 +598,7 @@ bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch) {
 			vpr_setup->RouterOpts.route_type);
 	if (vpr_setup->ShowGraphics) {
 		init_graphics("VPR:  Versatile Place and Route for FPGAs", WHITE);
-		alloc_draw_structs();
+		alloc_draw_structs(&arch);
 	}
 
 	/* Do placement and routing */
