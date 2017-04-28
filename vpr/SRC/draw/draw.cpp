@@ -798,7 +798,7 @@ void draw_rr(void) {
 
 	int inode;
 
-	if (draw_state->draw_rr_toggle == DRAW_NO_RR) {
+	if (draw_state->draw_rr_toggle == DRAW_NO_RR || draw_state->draw_rr_toggle == DRAW_MOUSE_OVER_RR) {
 		setlinewidth(3);
 		drawroute(HIGHLIGHTED);
 		setlinewidth(0);

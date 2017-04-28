@@ -44,6 +44,7 @@ enum e_draw_nets {
  */
 enum e_draw_rr_toggle {
 	DRAW_NO_RR = 0,
+	DRAW_MOUSE_OVER_RR,
 	DRAW_NODES_RR,
 	DRAW_NODES_AND_SBOX_RR,
 	DRAW_ALL_BUT_BUFFERS_RR,
