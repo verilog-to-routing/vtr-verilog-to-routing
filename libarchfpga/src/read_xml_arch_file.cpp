@@ -125,8 +125,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 		struct s_segment_inf **Segs, int *NumSegs,
 		const struct s_arch_switch_inf *Switches, const int NumSwitches,
 		const bool timing_enabled, const bool switchblocklist_required, const pugiutil::loc_data& loc_data);
-static void ProcessSwitchblocks(pugi::xml_node Parent, vector<t_switchblock_inf> *switchblocks,
-				const t_arch_switch_inf *switches, const int num_switches, const pugiutil::loc_data& loc_data);
+static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void ProcessCB_SB(pugi::xml_node Node, bool * list,
 		const int len, const pugiutil::loc_data& loc_data);
 static void ProcessPower( pugi::xml_node parent,
@@ -229,7 +228,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 
         Next = get_single_child(architecture, "switchblocklist", loc_data, SWITCHBLOCKLIST_REQD);
         if (Next){
-            ProcessSwitchblocks(Next, &(arch->switchblocks), arch->Switches, arch->num_switches, loc_data);
+            ProcessSwitchblocks(Next, arch, loc_data);
         }
 
         /* Process types */
@@ -2527,8 +2526,7 @@ static void ProcessSegments(pugi::xml_node Parent,
 /* Processes the switchblocklist section from the xml architecture file. 
    See vpr/SRC/route/build_switchblocks.c for a detailed description of this 
    switch block format */
-static void ProcessSwitchblocks(pugi::xml_node Parent, vector<t_switchblock_inf> *switchblocks,
-				const t_arch_switch_inf *switches, const int num_switches, const pugiutil::loc_data& loc_data){
+static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data){
 
 	pugi::xml_node Node;
 	pugi::xml_node SubElem;
@@ -2536,7 +2534,7 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, vector<t_switchblock_inf>
 
 	/* get the number of switchblocks */
 	int num_switchblocks = count_children(Parent, "switchblock", loc_data);
-	switchblocks->reserve(num_switchblocks);
+	arch->switchblocks.reserve(num_switchblocks);
 
 	
 	/* read-in all switchblock data */
@@ -2584,15 +2582,15 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, vector<t_switchblock_inf>
 
 		/* get switchblock permutation functions */
 		SubElem = get_first_child(Node, "switchfuncs", loc_data);
-		read_sb_switchfuncs(SubElem, &(sb), loc_data);
+		read_sb_switchfuncs(SubElem, &sb, loc_data);
 		
-		read_sb_wireconns(switches, num_switches, Node, &(sb), loc_data);
-
-		/* assign the sb to the switchblocks vector */		
-		switchblocks->push_back(sb);
+		read_sb_wireconns(arch->Switches, arch->num_switches, Node, &sb, loc_data);
 
 		/* run error checks on switch blocks */
-		check_switchblock(&sb);
+		check_switchblock(&sb, arch);
+
+		/* assign the sb to the switchblocks vector */		
+		arch->switchblocks.push_back(sb);
 
 		Node = Node.next_sibling(Node.name());
 	}

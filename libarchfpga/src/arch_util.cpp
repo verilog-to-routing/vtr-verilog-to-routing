@@ -888,3 +888,21 @@ void primitives_annotation_clock_match(
 	}
 
 }
+
+
+t_segment_inf* find_segment(const t_arch* arch, std::string name) {
+
+    for (int i = 0; i < arch->num_segments; ++i) {
+        t_segment_inf* seg = &arch->Segments[i];
+        if (seg->name == name) {
+            return seg;
+        }
+    }
+
+    return nullptr;
+}
+
+bool segment_exists(const t_arch* arch, std::string name) {
+    return find_segment(arch, name) != nullptr;
+}
+

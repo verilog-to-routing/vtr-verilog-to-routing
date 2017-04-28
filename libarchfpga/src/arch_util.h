@@ -33,4 +33,7 @@ void UpdateAndCheckModels(struct s_arch *arch);
 
 void primitives_annotation_clock_match(
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type);
+
+bool segment_exists(const t_arch* arch, std::string name);
+t_segment_inf* find_segment(const t_arch* arch, std::string name);
 #endif

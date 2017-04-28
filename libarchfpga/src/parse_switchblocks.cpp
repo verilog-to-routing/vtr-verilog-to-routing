@@ -28,6 +28,7 @@ specified by the switch block permutation functions into their numeric counterpa
 #include "arch_error.h"
 
 #include "read_xml_util.h"
+#include "arch_util.h"
 #include "arch_types.h"
 #include "physical_types.h"
 #include "parse_switchblocks.h"
@@ -91,12 +92,14 @@ static void parse_comma_separated_wire_types(const char *ch, vector<string> *wir
 /* parses the wirepoints specified in ch into the vector wire_points_vec */
 static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_points_vec);
 
-/* checks for correctness of a unidir switchblock. hard exit if error found (to be changed to throw later) */
+/* checks for correctness of a unidir switchblock. */
 static void check_unidir_switchblock(const t_switchblock_inf *sb );
 
-/* checks for correctness of a bidir switchblock. hard exit if error found (to be changed to throw later) */
+/* checks for correctness of a bidir switchblock. */
 static void check_bidir_switchblock(const t_permutation_map *permutation_map );
 
+/* checks for correctness of a wireconn segment specification. */
+static void check_wireconn_segments(const t_arch* arch, const t_wireconn_inf& wireconn);
 
 /*---- Functions for Parsing the Symbolic Switchblock Formulas ----*/
 /* returns integer result according to specified formula and data */
@@ -344,7 +347,7 @@ void read_sb_switchfuncs( pugi::xml_node Node, t_switchblock_inf *sb, const pugi
 
 
 /* checks for correctness of switch block read-in from the XML architecture file */
-void check_switchblock(const t_switchblock_inf *sb ){
+void check_switchblock(const t_switchblock_inf* sb, const t_arch* arch){
 
 	/* get directionality */
 	enum e_directionality directionality = sb->directionality;
@@ -357,11 +360,17 @@ void check_switchblock(const t_switchblock_inf *sb ){
 		check_bidir_switchblock( &(sb->permutation_map) );
 	}
 
+
+	/* check that specified wires exist */
+    for (const auto& wireconn : sb->wireconns) {
+
+        check_wireconn_segments(arch, wireconn);
+    }
+
 	//TODO:
 	/* check that the wire segment directionality matches the specified switch block directionality */
 	/* check for duplicate names */
 	/* check that specified switches exist */
-	/* check that specified wires exist */
 	/* check that type of switchblock matches type of switch specified */
 }
 
@@ -415,6 +424,15 @@ static void check_bidir_switchblock(const t_permutation_map *permutation_map ){
 	return;
 }
 
+static void check_wireconn_segments(const t_arch* arch, const t_wireconn_inf& wireconn) {
+    for (const auto& seg_names : {wireconn.from_type, wireconn.to_type}) {
+        for (const auto& seg_name : seg_names) {
+            if (!segment_exists(arch, seg_name)) {
+                archfpga_throw( __FILE__, __LINE__, "Failed to find segment '%s' for <wireconn> specification\n", seg_name.c_str());
+            }
+        }
+    }
+}
 
 /*---- Functions for Parsing the Symbolic Switchblock Formulas ----*/
 
