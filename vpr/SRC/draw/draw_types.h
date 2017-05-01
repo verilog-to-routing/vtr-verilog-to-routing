@@ -166,6 +166,7 @@ struct t_draw_coords {
 	t_draw_coords();
 	
 	float get_tile_width();
+	float get_tile_height();
 
 	/**
 	 * Retrieve the bounding box for the given pb in the given

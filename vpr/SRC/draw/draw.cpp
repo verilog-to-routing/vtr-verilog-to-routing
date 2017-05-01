@@ -112,8 +112,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw);
 static void draw_rr(void);
 static void draw_rr_edges(int from_node);
 static void draw_rr_pin(int inode, const t_color& color);
-static void draw_rr_chanx(int inode, const t_color& color);
-static void draw_rr_chany(int inode, const t_color& color);
+static void draw_rr_chan(int inode, const t_color color);
 static t_bound_box draw_get_rr_chan_bbox(int inode);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node);
 static void draw_x(float x, float y, float size);
@@ -746,26 +745,26 @@ static void draw_congestion(void) {
 			case CHANX:
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
 					occ > rr_node[inode].get_capacity()) {
-					draw_rr_chanx(inode, congested_color);
+					draw_rr_chan(inode, congested_color);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
 					if (occ > rr_node[inode].get_capacity())
-						draw_rr_chanx(inode, congested_color);
+						draw_rr_chan(inode, congested_color);
 					else
-						draw_rr_chanx(inode, BLUE);
+						draw_rr_chan(inode, BLUE);
 				}
 				break;
 
 			case CHANY:
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
 					occ > rr_node[inode].get_capacity()) {
-					draw_rr_chany(inode, congested_color);
+					draw_rr_chan(inode, congested_color);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
 					if (occ > rr_node[inode].get_capacity())
-						draw_rr_chany(inode, congested_color);
+						draw_rr_chan(inode, congested_color);
 					else
-						draw_rr_chany(inode, BLUE);
+						draw_rr_chan(inode, BLUE);
 				}
 				break;
 
@@ -835,12 +834,12 @@ void draw_rr(void) {
 			break; /* Don't draw. */
 
 		case CHANX:
-			draw_rr_chanx(inode, draw_state->draw_rr_node[inode].color);
+			draw_rr_chan(inode, draw_state->draw_rr_node[inode].color);
 			draw_rr_edges(inode);
 			break;
 
 		case CHANY:
-			draw_rr_chany(inode, draw_state->draw_rr_node[inode].color);
+			draw_rr_chan(inode, draw_state->draw_rr_node[inode].color);
 			draw_rr_edges(inode);
 			break;
 
@@ -862,145 +861,142 @@ void draw_rr(void) {
 	drawroute(HIGHLIGHTED);
 }
 
+static void draw_rr_chan(int inode, const t_color color) {
+    t_rr_type type = rr_node[inode].type;
 
-static void draw_rr_chanx(int inode, const t_color& color) {
+    VTR_ASSERT(type == CHANX || type == CHANY);
 
-	/* Draws an x-directed channel segment.                       */
-	t_draw_coords* draw_coords = get_draw_coords_vars();
+    t_bound_box bound_box = draw_get_rr_chan_bbox(inode);
+    e_direction dir = rr_node[inode].get_direction();
 
-	t_bound_box bound_box;
-	int k; 
-
-	// For CHANX, bound_box.bottom() is same as bound_box.top()
-	bound_box = draw_get_rr_chan_bbox(inode);
+    //We assume increasing direction, and swap if needed
+    t_point start = bound_box.bottom_left();
+    t_point end = bound_box.top_right();
+    if (dir == DEC_DIRECTION) {
+        std::swap(start, end);
+    }
 
 	setcolor(color);
 	if (color != DEFAULT_RR_NODE_COLOR) {
 		// If wire is highlighted, then draw with thicker linewidth.
 		setlinewidth(3);
-		drawline(bound_box.bottom_left(), bound_box.top_right());
+    }
+
+    drawline(start, end);
+
+	if (color != DEFAULT_RR_NODE_COLOR) {
+		// Revert width change
 		setlinewidth(0);
 	}
-	else
-		drawline(bound_box.bottom_left(), bound_box.top_right());
 
 	// draw the arrows and small lines iff zoomed in really far.
 	if (default_triangle_LOD_screen_area_test() == false) {
 		return;
 	}
 
-	if (rr_node[inode].get_direction() == INC_DIRECTION) {
-		/* Draw mux at start of wire */
-        draw_mux_with_size(bound_box.bottom_left(), RIGHT, WIRE_DRAWING_WIDTH, rr_node[inode].get_fan_in());
+    e_side mux_dir = TOP;
+    int coord_min = -1;
+    int coord_max = -1;
+    if (type == CHANX) {
+        coord_min = rr_node[inode].get_xlow();
+        coord_max = rr_node[inode].get_xhigh();
+        if (dir == INC_DIRECTION) {
+            mux_dir = RIGHT;
+        } else {
+            mux_dir = LEFT;
+        }
+    } else {
+        VTR_ASSERT(type == CHANY);
+        coord_min = rr_node[inode].get_ylow();
+        coord_max = rr_node[inode].get_yhigh();
+        if (dir == INC_DIRECTION) {
+            mux_dir = TOP;
+        } else {
+            mux_dir = BOTTOM;
+        }
+    }
 
-		setcolor(BLACK);
-		setlinewidth(0);
-		draw_triangle_along_line(bound_box.right() - 0.15, bound_box.top(), bound_box.left(), 
-								 bound_box.right(), bound_box.bottom(), bound_box.top());
-
-		setcolor(LIGHTGREY);
-		/* TODO: this looks odd, why does it ignore final block? does this mean nothing 
-		 * appears with L=1 ? 
-		 */
-		for (k = rr_node[inode].get_xlow(); k < rr_node[inode].get_xhigh(); k++) {
-			bound_box.right() = draw_coords->tile_x[k] + draw_coords->get_tile_width();
-			draw_triangle_along_line(bound_box.right() - 0.15, bound_box.top(), bound_box.left(), 
-									 bound_box.right(), bound_box.bottom(), bound_box.top());
-			bound_box.right() = draw_coords->tile_x[k + 1];
-			draw_triangle_along_line(bound_box.right() + 0.15, bound_box.top(), bound_box.left(), 
-									 bound_box.right(), bound_box.bottom(), bound_box.top());
-		}
-		setcolor(color);
-	} else if (rr_node[inode].get_direction() == DEC_DIRECTION) {
-		/* Draw mux at start of wire */
-        draw_mux_with_size(bound_box.top_right(), LEFT, WIRE_DRAWING_WIDTH, rr_node[inode].get_fan_in());
-
-		setlinewidth(0);
-		draw_triangle_along_line(bound_box.left() + 0.15, bound_box.bottom(), bound_box.right(), 
-								 bound_box.left(), bound_box.top(), bound_box.bottom());
-		setcolor(LIGHTGREY);
-		for (k = rr_node[inode].get_xhigh(); k > rr_node[inode].get_xlow(); k--) {
-			bound_box.left() = draw_coords->tile_x[k];
-			draw_triangle_along_line(bound_box.left() + 0.15, bound_box.bottom(), bound_box.right(), 
-									 bound_box.left(), bound_box.top(), bound_box.bottom());
-			bound_box.left() = draw_coords->tile_x[k - 1] + draw_coords->get_tile_width();
-			draw_triangle_along_line(bound_box.left() - 0.15, bound_box.bottom(), bound_box.right(), 
-									 bound_box.left(), bound_box.top(), bound_box.bottom());
-		}
-		setcolor(color);
-	}
-}
-
-static void draw_rr_chany(int inode, const t_color& color) {
-
-	/* Draws a y-directed channel segment.                       */
+    //Draw direction indicators at the boundary of each switch block, and label them
+    //with the corresponding switch point (see build_switchblocks.c for a description of switch points)
 	t_draw_coords* draw_coords = get_draw_coords_vars();
+    float arrow_offset = DEFAULT_ARROW_SIZE / 2;
+    t_color arrow_color = LIGHTGREY;
+    t_color text_color = BLACK;
+    for(int k = coord_min; k <= coord_max; ++k) {
 
-	t_bound_box bound_box;
-	int k; 
+        int switchpoint_min = -1;
+        int switchpoint_max = -1;
+        if(dir == INC_DIRECTION) {
+            switchpoint_min = k - coord_min;
+            switchpoint_max = switchpoint_min + 1;
+        } else {
+            switchpoint_min = (coord_max + 1) - k;
+            switchpoint_max = switchpoint_min - 1;
+        }
 
-	// Get the coordinates of the channel wire segment.
-	// For CHANY, bound_box.left() is equal to bound_box.right().
-	bound_box = draw_get_rr_chan_bbox(inode);
+        t_point arrow_loc_min;
+        t_point arrow_loc_max;
+        if (type == CHANX) {
+            float sb_xmin = draw_coords->tile_x[k];
+            arrow_loc_min = t_point(sb_xmin + arrow_offset, start.y);
 
-	setcolor(color);
-	if (color != DEFAULT_RR_NODE_COLOR) 
-	{
-		// If wire is highlighted, then draw with thicker linewidth.
-		setlinewidth(3);
+            float sb_xmax = draw_coords->tile_x[k] + draw_coords->get_tile_width();
+            arrow_loc_max = t_point(sb_xmax - arrow_offset, start.y);
 
-		drawline(bound_box.bottom_left(), bound_box.top_right());
-		
-		setlinewidth(0);
-	}
-	else
-	{
-		drawline(bound_box.bottom_left(), bound_box.top_right());
+        } else {
+            float sb_ymin = draw_coords->tile_y[k];
+            arrow_loc_min = t_point(start.x, sb_ymin + arrow_offset);
 
-	}
+            float sb_ymax = draw_coords->tile_y[k] + draw_coords->get_tile_height();
+            arrow_loc_max = t_point(start.x, sb_ymax - arrow_offset);
+        }
 
-	// draw the arrows and small lines iff zoomed in really far.
-	if (default_triangle_LOD_screen_area_test() == false) {
-		return;
-	}
-	
-	if (rr_node[inode].get_direction() == INC_DIRECTION) {
-		/* Draw mux at start of wire */
-        draw_mux_with_size(bound_box.bottom_left(), TOP, WIRE_DRAWING_WIDTH, rr_node[inode].get_fan_in());
+        if (switchpoint_min == 0) {
+            //Draw a mux at the start of each wire, labelled with it's size (#inputs)
+            draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, rr_node[inode].get_fan_in());
+        } else {
+            //Draw arrows and label with switch point
+            if (k == coord_min) {
+                std::swap(arrow_color, text_color);
+            }
 
-		setcolor(BLACK);
-		setlinewidth(0);
-		draw_triangle_along_line(bound_box.right(), bound_box.top() - 0.15, bound_box.left(), 
-								 bound_box.right(), bound_box.bottom(), bound_box.top());
-		setcolor(LIGHTGREY);
-		for (k = rr_node[inode].get_ylow(); k < rr_node[inode].get_yhigh(); k++) {
-			bound_box.top() = draw_coords->tile_y[k] + draw_coords->get_tile_width();
-			draw_triangle_along_line(bound_box.right(), bound_box.top() - 0.15, bound_box.left(), 
-									 bound_box.right(), bound_box.bottom(), bound_box.top());
-			bound_box.top() = draw_coords->tile_y[k + 1];
-			draw_triangle_along_line(bound_box.right(), bound_box.top() + 0.15, bound_box.left(), 
-									 bound_box.right(), bound_box.bottom(), bound_box.top());
-		}
-		setcolor(color);
-	} else if (rr_node[inode].get_direction() == DEC_DIRECTION) {
-		/* Draw mux at start of wire */
-        draw_mux_with_size(bound_box.top_right(), BOTTOM, WIRE_DRAWING_WIDTH, rr_node[inode].get_fan_in());
+            setcolor(arrow_color);
+            draw_triangle_along_line(arrow_loc_min, start, end);
 
-		setcolor(BLACK);
-		setlinewidth(0);
-		draw_triangle_along_line(bound_box.left(), bound_box.bottom() + 0.15, bound_box.right(), 
-								 bound_box.left(), bound_box.top(), bound_box.bottom());
-		setcolor(LIGHTGREY);
-		for (k = rr_node[inode].get_yhigh(); k > rr_node[inode].get_ylow(); k--) {
-			bound_box.bottom() = draw_coords->tile_y[k];
-			draw_triangle_along_line(bound_box.left(), bound_box.bottom() + 0.15, bound_box.right(), 
-									 bound_box.left(), bound_box.top(), bound_box.bottom());
-			bound_box.bottom() = draw_coords->tile_y[k - 1] + draw_coords->get_tile_width();
-			draw_triangle_along_line(bound_box.left(), bound_box.bottom() - 0.15, bound_box.right(), 
-									 bound_box.left(), bound_box.top(), bound_box.bottom());
-		}
-		setcolor(color);
-	}
+            setcolor(text_color);
+            t_bound_box bbox(t_point(arrow_loc_min.x - DEFAULT_ARROW_SIZE/2, arrow_loc_min.y - DEFAULT_ARROW_SIZE / 4),
+                             t_point(arrow_loc_min.x + DEFAULT_ARROW_SIZE/2, arrow_loc_min.y + DEFAULT_ARROW_SIZE / 4));
+            drawtext_in(bbox, std::to_string(switchpoint_min));
+
+            if (k == coord_min) {
+                //Revert
+                std::swap(arrow_color, text_color);
+            }
+        }
+
+        if (switchpoint_max == 0) {
+            //Draw a mux at the start of each wire, labelled with it's size (#inputs)
+            draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, rr_node[inode].get_fan_in());
+        } else {
+            //Draw arrows and label with switch point
+            if (k == coord_max) {
+                std::swap(arrow_color, text_color);
+            }
+
+            setcolor(arrow_color);
+            draw_triangle_along_line(arrow_loc_max, start, end);
+
+            setcolor(text_color);
+            t_bound_box bbox(t_point(arrow_loc_max.x - DEFAULT_ARROW_SIZE/2, arrow_loc_max.y - DEFAULT_ARROW_SIZE / 4),
+                             t_point(arrow_loc_max.x + DEFAULT_ARROW_SIZE/2, arrow_loc_max.y + DEFAULT_ARROW_SIZE / 4));
+            drawtext_in(bbox, std::to_string(switchpoint_max));
+
+            if (k == coord_max) {
+                //Revert
+                std::swap(arrow_color, text_color);
+            }
+        }
+    }
 }
 
 static void draw_rr_edges(int inode) {
@@ -1738,7 +1734,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
                     chanx_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
 
                 int itrack = get_track_num(inode, chanx_track, chany_track);
-                draw_rr_chanx(inode, draw_state->draw_rr_node[inode].color);
+                draw_rr_chan(inode, draw_state->draw_rr_node[inode].color);
 
                 switch (prev_type) {
 
@@ -1772,7 +1768,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
                     chany_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
 
                 int itrack = get_track_num(inode, chanx_track, chany_track);
-                draw_rr_chany(inode, draw_state->draw_rr_node[inode].color);
+                draw_rr_chan(inode, draw_state->draw_rr_node[inode].color);
 
                 switch (prev_type) {
 
@@ -2325,6 +2321,14 @@ void draw_triangle_along_line(t_point start, t_point end, float relative_positio
 	draw_triangle_along_line(xtri, ytri, start.x, end.x, start.y, end.y, arrow_size);
 }
 
+/* Draws a trangle with it's center at loc, and of length & width
+ * arrow_size, rotated such that it points in the direction
+ * of the directed line segment start -> end.
+ */
+void draw_triangle_along_line(t_point loc, t_point start, t_point end, float arrow_size) {
+    draw_triangle_along_line(loc.x, loc.y, start.x, end.x, start.y, end.y, arrow_size);
+}
+
 /**
  * Draws a trangle with it's center at (xend, yend), and of length & width
  * arrow_size, rotated such that it points in the direction
@@ -2332,9 +2336,7 @@ void draw_triangle_along_line(t_point start, t_point end, float relative_positio
  *
  * Note that the parameters are in a strange order
  */
-void draw_triangle_along_line(
-	float xend, float yend, float x1, float x2, float y1, float y2, float arrow_size)
-{
+void draw_triangle_along_line(float xend, float yend, float x1, float x2, float y1, float y2, float arrow_size) {
 	float switch_rad = arrow_size/2;
 	float xdelta, ydelta;
 	float magnitude;
@@ -2671,6 +2673,7 @@ static inline t_bound_box draw_mux(t_point origin, e_side orientation, float hei
     return draw_mux(origin, orientation, height, 0.4*height, 0.6);
 }
 
+//Draws a mux, height/width define the bounding box, scale [0.,1.] controls the slope of the muxes sides
 static inline t_bound_box draw_mux(t_point origin, e_side orientation, float height, float width, float scale) {
     std::array<t_point, 4> mux_polygon;
 

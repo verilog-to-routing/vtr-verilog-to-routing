@@ -62,6 +62,11 @@ float t_draw_coords::get_tile_width() {
 	return tile_width;
 }
 
+float t_draw_coords::get_tile_height() {
+    //For now, same as width
+	return tile_width;
+}
+
 t_bound_box t_draw_coords::get_pb_bbox(int clb_index, const t_pb_graph_node& pb_gnode) {
 	return get_pb_bbox(block[clb_index], pb_gnode);
 }

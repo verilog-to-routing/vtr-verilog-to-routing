@@ -15,7 +15,7 @@
 
 #define MAX_BLOCK_COLOURS 5
 
-#define DEFAULT_ARROW_SIZE 0.3
+constexpr float DEFAULT_ARROW_SIZE = 0.3;
 
 // a very small area, in (screen pixels)^2
 // used for level of detail culling
