@@ -317,8 +317,8 @@ static void load_critical_path_annotations(const int line_num,
                         if (out_pins.count(pb_edge->output_pins[0])) {
                             VTR_ASSERT(pb_edge->delay_max == 0);
                             pb_edge->delay_max = delay_matrix[k][p];
+                            ++p;
                         }
-                        ++p;
                     }
                     ++k;
                 }
