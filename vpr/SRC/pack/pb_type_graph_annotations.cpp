@@ -55,8 +55,9 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
                             annotations[i].clock,
                             annotations[i].value[j]);
 					} else {
-						VTR_ASSERT(
-								annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_MIN || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD);
+						VTR_ASSERT(annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_MIN 
+                                   || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN 
+                                   || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD);
 					}
 				}
 			} else {
@@ -71,18 +72,12 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 		for (i = 0; i < pb_type->num_modes; i++) {
 			for (j = 0; j < pb_type->modes[i].num_interconnect; j++) {
 				annotations = pb_type->modes[i].interconnect[j].annotations;
-				for (k = 0;
-						k < pb_type->modes[i].interconnect[j].num_annotations;
-						k++) {
+				for (k = 0; k < pb_type->modes[i].interconnect[j].num_annotations; k++) {
 					if (annotations[k].type == E_ANNOT_PIN_TO_PIN_DELAY) {
-						for (m = 0; m < annotations[k].num_value_prop_pairs;
-								m++) {
-							if (annotations[k].prop[m]
-									== E_ANNOT_PIN_TO_PIN_DELAY_MAX
-									|| annotations[k].prop[m]
-											== E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
-									|| annotations[k].prop[m]
-											== E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
+						for (m = 0; m < annotations[k].num_value_prop_pairs; m++) {
+							if (annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_MAX
+								|| annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
+								|| annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
 									load_critical_path_annotations(annotations[k].line_num, pb_graph_node, i,
 										annotations[k].format,
 										(enum e_pin_to_pin_delay_annotations)annotations[k].prop[m],
@@ -91,12 +86,12 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 										annotations[k].clock,
 										annotations[k].value[m]);
 							} else {
-								VTR_ASSERT(
-										annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_MIN || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD);
+								VTR_ASSERT(annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_MIN 
+                                           || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN 
+                                           || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD);
 							}
 						}
-					} else if (annotations[k].type
-							== E_ANNOT_PIN_TO_PIN_PACK_PATTERN) {
+					} else if (annotations[k].type == E_ANNOT_PIN_TO_PIN_PACK_PATTERN) {
 						VTR_ASSERT(annotations[k].num_value_prop_pairs == 1);
 						load_pack_pattern_annotations(annotations[k].line_num, pb_graph_node, i,
 								annotations[k].input_pins,
@@ -116,8 +111,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 	for (i = 0; i < pb_type->num_modes; i++) {
 		for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
 			for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-				load_pb_graph_pin_to_pin_annotations(
-						&pb_graph_node->child_pb_graph_nodes[i][j][k]);
+				load_pb_graph_pin_to_pin_annotations(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
 			}
 		}
 	}
@@ -147,10 +141,8 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node *p
 			p = 0;
 			for (m = 0; m < num_out_sets; m++) {
 				for (n = 0; n < num_out_ptrs[m]; n++) {
-					for (iedge = 0; iedge < in_port[i][j]->num_output_edges;
-							iedge++) {
-						if (in_port[i][j]->output_edges[iedge]->output_pins[0]
-								== out_port[m][n]) {
+					for (iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
+						if (in_port[i][j]->output_edges[iedge]->output_pins[0] == out_port[m][n]) {
 							break;
 						}
 					}
@@ -303,30 +295,34 @@ static void load_critical_path_annotations(const int line_num,
 	} else {
 		if (pb_graph_node->pb_type->num_modes != 0) {
 			/* Not a primitive, find pb_graph_edge */
-			k = 0;
+
+            //Fast look-up for out pin membership
+            std::set<t_pb_graph_pin*> out_pins;
+            for (m = 0; m < num_out_sets; m++) {
+                for (n = 0; n < num_out_ptrs[m]; n++) {
+                    out_pins.insert(out_port[m][n]);
+                }
+            }
+            
+            //Mark the edge delays
+            //
+            //We walk all the out-going edges from the input pins, if the target
+            //is in the output set we mark the edge with the appropriate delay
+            k = 0;
 			for (i = 0; i < num_in_sets; i++) {
 				for (j = 0; j < num_in_ptrs[i]; j++) {
-					p = 0;
-					for (m = 0; m < num_out_sets; m++) {
-						for (n = 0; n < num_out_ptrs[m]; n++) {
-							for (iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
-								if (in_port[i][j]->output_edges[iedge]->output_pins[0] == out_port[m][n]) {
-									VTR_ASSERT( in_port[i][j]->output_edges[iedge]->delay_max == 0);
-									break;
-								}
-							}
-							/* jluu Todo: This is inefficient, I know the interconnect so I know what edges exist
-							 can use this info to only annotate existing edges */
-							if (iedge != in_port[i][j]->num_output_edges) {
-								in_port[i][j]->output_edges[iedge]->delay_max =
-										delay_matrix[k][p];
-							}
-							p++;
-						}
-					}
-					k++;
-				}
-			}
+                    p = 0;
+                    for (iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
+                        t_pb_graph_edge* pb_edge = in_port[i][j]->output_edges[iedge];
+                        if (out_pins.count(pb_edge->output_pins[0])) {
+                            VTR_ASSERT(pb_edge->delay_max == 0);
+                            pb_edge->delay_max = delay_matrix[k][p];
+                        }
+                        ++p;
+                    }
+                    ++k;
+                }
+            }
 		} else {
 			/* Primitive, allocate appropriate nodes */
 			k = 0;
