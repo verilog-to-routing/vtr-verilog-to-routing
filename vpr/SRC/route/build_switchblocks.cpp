@@ -234,7 +234,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 
 /* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */ 
 static void get_switchpoint_wires(int nx, int ny, t_seg_details *chan_details, 
-		t_rr_type chan_type, int x, int y, e_side side, vector<string> *wire_type_vec, vector<int> *points, 
+		t_rr_type chan_type, int x, int y, e_side side, const vector<t_wire_switchpoints>& wire_switchpoints_vec, 
 		t_wire_type_sizes *wire_type_sizes, bool is_dest, vector<int> *wires);
 
 static t_rr_type index_into_correct_chan(int tile_x, int tile_y, enum e_side side, 
@@ -673,19 +673,21 @@ static void count_wire_type_sizes(t_seg_details *channel, int nodes_per_chan,
 
 /* returns the wire indices belonging to the types in 'wire_type_vec' and switchpoints in 'points' at the given channel segment */ 
 static void get_switchpoint_wires(int nx, int ny, t_seg_details *chan_details, 
-		t_rr_type chan_type, int x, int y, e_side side, vector<string> *wire_type_vec, vector<int> *points, 
+		t_rr_type chan_type, int x, int y, e_side side, const vector<t_wire_switchpoints>& wire_switchpoints_vec, 
 		t_wire_type_sizes *wire_type_sizes, bool is_dest, vector<int> *wires){
 
 	wires->clear();
-	int num_types = (int)wire_type_vec->size();
 
 	int seg_coord = x;
 	if (chan_type == CHANY){
 		seg_coord = y;
 	}
 
-	for (int itype = 0; itype < num_types; itype++){
-		string wire_type = wire_type_vec->at(itype);
+	for (const t_wire_switchpoints& wire_switchpoints : wire_switchpoints_vec){
+
+		const auto& wire_type = wire_switchpoints.segment_name;
+        const auto& points = wire_switchpoints.switchpoints;
+
 		if ((*wire_type_sizes).find(wire_type) == (*wire_type_sizes).end()) {
 		    // wire_type_sizes may not contain wire_type if its seg freq is 0
 		    continue;
@@ -725,7 +727,7 @@ static void get_switchpoint_wires(int nx, int ny, t_seg_details *chan_details,
 			int wire_switchpoint = get_switchpoint_of_wire(nx, ny, chan_type, chan_details[iwire], seg_coord, side);
 
 			/* check if this wire belongs to one of the specified switchpoints; add it to our 'wires' vector if so */
-			if ( find( points->begin(), points->end(), wire_switchpoint ) != points->end() ){
+			if ( find( points.begin(), points.end(), wire_switchpoint ) != points.end() ){
 				wires->push_back( iwire );
 			}
 		}
@@ -807,19 +809,15 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb, 
 		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns){
 
-	/* names of wire types we may be connecting from/to */
-	vector<string> *from_wire_type = &(wireconn_ptr->from_type);
-	vector<string> *to_wire_type = &(wireconn_ptr->to_type);
-
 	/* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
 	vector<int> potential_src_wires;
 	vector<int> potential_dest_wires;
 
 	get_switchpoint_wires(nx, ny, from_chan_details[from_x][from_y], from_chan_type, from_x, from_y, sb_conn.from_side, 
-			from_wire_type, &(wireconn_ptr->from_point), wire_type_sizes, false, &potential_src_wires);
+			wireconn_ptr->from_switchpoint_set, wire_type_sizes, false, &potential_src_wires);
 
 	get_switchpoint_wires(nx, ny, to_chan_details[to_x][to_y], to_chan_type, to_x, to_y, sb_conn.to_side, 
-			to_wire_type, &(wireconn_ptr->to_point), wire_type_sizes, true, &potential_dest_wires);
+			wireconn_ptr->to_switchpoint_set, wire_type_sizes, true, &potential_dest_wires);
 
     if (potential_src_wires.size() == 0 || potential_dest_wires.size() == 0) {
         //Can't make any connections between empty sets

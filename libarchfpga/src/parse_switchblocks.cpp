@@ -89,15 +89,21 @@ public:
 //Load an XML wireconn specification into a t_wireconn_inf 
 t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 
+//Process a wireconn defined in the inline style (using attributes)
+void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc);
+
+//Process a wireconn defined in the multinode style (more advanced specification)
+void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc);
+
 /* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec. 
    Spaces are trimmed off */
-static void parse_comma_separated_wire_types(const char *ch, vector<string> *wire_types_vec);
+static void parse_comma_separated_wire_types(const char *ch, std::vector<t_wire_switchpoints>& wire_switchpoints);
 
 /* parses the wirepoints specified in ch into the vector wire_points_vec */
-static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_points_vec);
+static void parse_comma_separated_wire_points(const char *ch, std::vector<t_wire_switchpoints>& wire_switchpoints);
 
 /* Parses the number of connections type */
-static void parse_num_conns(std::string num_conns, t_wireconn_inf* wireconn);
+static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn);
 
 /* checks for correctness of a unidir switchblock. */
 static void check_unidir_switchblock(const t_switchblock_inf *sb );
@@ -186,115 +192,94 @@ void read_sb_wireconns(const t_arch_switch_inf * /*switches*/, int /*num_switche
 t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
     t_wireconn_inf wc;
 
-    /* get the connection style */
-    const char* char_prop = get_attribute(node, "num_conns_type", loc_data).value();
-    parse_num_conns(char_prop, &wc);
+    size_t num_attributes = count_attributes(node, loc_data);
 
-    /* get from type */
-    char_prop = get_attribute(node, "from_type", loc_data).value();
-    parse_comma_separated_wire_types(char_prop, &wc.from_type);
+    if (num_attributes == 1) {
+        parse_wireconn_multinode(node, loc_data, wc);
+    } else {
+        VTR_ASSERT(num_attributes > 0);
+        parse_wireconn_inline(node, loc_data, wc);
+    }
 
-    /* get to type */
-    char_prop = get_attribute(node, "to_type", loc_data).value();
-    parse_comma_separated_wire_types(char_prop, &wc.to_type);
-
-    /* get the source wire point */
-    char_prop = get_attribute(node, "from_switchpoint", loc_data).value();
-    parse_comma_separated_wire_points(char_prop, &(wc.from_point));
-
-    /* get the destination wire point */
-    char_prop = get_attribute(node, "to_switchpoint", loc_data).value();
-    parse_comma_separated_wire_points(char_prop, &(wc.to_point));
 
     return wc;
 }
 
+void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc) {
+    //Parse an inline wireconn definition, using attributes
+
+    /* get the connection style */
+    const char* char_prop = get_attribute(node, "num_conns_type", loc_data).value();
+    parse_num_conns(char_prop, wc);
+
+    /* get from type */
+    char_prop = get_attribute(node, "from_type", loc_data).value();
+    parse_comma_separated_wire_types(char_prop, wc.from_switchpoint_set);
+
+    /* get to type */
+    char_prop = get_attribute(node, "to_type", loc_data).value();
+    parse_comma_separated_wire_types(char_prop, wc.to_switchpoint_set);
+
+    /* get the source wire point */
+    char_prop = get_attribute(node, "from_switchpoint", loc_data).value();
+    parse_comma_separated_wire_points(char_prop, wc.from_switchpoint_set);
+
+    /* get the destination wire point */
+    char_prop = get_attribute(node, "to_switchpoint", loc_data).value();
+    parse_comma_separated_wire_points(char_prop, wc.to_switchpoint_set);
+}
+
+void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc) {
+    /* get the connection style */
+    const char* char_prop = get_attribute(node, "num_conns_type", loc_data).value();
+    parse_num_conns(char_prop, wc);
+
+}
 
 /* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec. 
    Spaces are trimmed off */
-static void parse_comma_separated_wire_types(const char *ch, vector<string> *wire_types_vec){
-	
-	string types(ch);
-	int str_size = types.size();
-	int ch_start = 0;
-	int ind = 0;
+static void parse_comma_separated_wire_types(const char *ch, std::vector<t_wire_switchpoints>& wire_switchpoints) {
+    auto types = vtr::split(ch, ",");
 
-	if (0 == str_size){
-		archfpga_throw( __FILE__, __LINE__, "parse_comma_separated_wire_types: found empty wireconn wire type entry\n");
-	}
+    if (types.empty()){
+        archfpga_throw( __FILE__, __LINE__, "parse_comma_separated_wire_types: found empty wireconn wire type entry\n");
+    }
 
-	while (ch_start <= str_size - 1){
-		string substr;
-		
-		/* get the next wire type */
-		if (ind != str_size - 1){
-			goto_next_char(&ind, types, ',');
-		}
-		if (ind == str_size - 1){
-			substr = types.substr(ch_start, ind - ch_start + 1);
-		} else {
-			substr = types.substr(ch_start, ind - ch_start);
-		}
-		/* trim whitespace */
-		substr.erase(substr.begin(), std::find_if(substr.begin(), substr.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
-		wire_types_vec->push_back( substr );
+    for (auto type : types) {
+        t_wire_switchpoints wsp;
+        wsp.segment_name = type;
 
-		ch_start = ind + 1;
-	}
+        wire_switchpoints.push_back(wsp);
+    }
 }
 
 
 /* parses the wirepoints specified in the comma-separated 'ch' char array into the vector wire_points_vec */
-static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_points_vec){
-	int ind = 0;
-	wire_points_vec->clear();
+static void parse_comma_separated_wire_points(const char *ch, std::vector<t_wire_switchpoints>& wire_switchpoints){
+    auto points = vtr::split(ch, ",");
+    if (points.empty()){
+        archfpga_throw( __FILE__, __LINE__, "parse_comma_separated_wire_points: found empty wireconn wire point entry\n");
+    }
 
-	/* walk through ch and check that all characters are legal */
-	while ('\0' != ch[ind]){
-		if (',' != ch[ind] && ' ' != ch[ind] && !is_char_number(ch[ind])){
-			archfpga_throw( __FILE__, __LINE__, "parse_comma_separated_wire_points: found wireconn wire point entry with illegal character: %c\n", ch[ind]);
-		}
-		ind++;
-	}
-	if (0 == ind){
-		archfpga_throw( __FILE__, __LINE__, "parse_comma_separated_wire_points: found empty wireconn wire point entry\n");
-	}
+    for(auto point_str : points) {
+        int point = vtr::atoi(point_str);
 
-	/* error checking done, move on to parsing */ 
-	string points(ch);
-	int str_size = points.size();
-	int ch_start = 0;
-	ind = 0;
-	while (ch_start <= str_size - 1){
-		string substr;
-		
-		/* get the next wirepoint */
-		if (ind != str_size - 1){
-			goto_next_char(&ind, points, ',');
-		}
-		if (ind == str_size - 1){
-			substr = points.substr(ch_start, ind - ch_start + 1);
-		} else {
-			substr = points.substr(ch_start, ind - ch_start);
-		}
-		wire_points_vec->push_back( atoi(substr.c_str()) );
-
-		ch_start = ind + 1;
-	}
-
-	return;
+        for(auto& wire_switchpoint : wire_switchpoints) {
+            wire_switchpoint.switchpoints.push_back(point);
+        }
+    }
 }
 
-static void parse_num_conns(std::string num_conns, t_wireconn_inf* wireconn) {
+static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn) {
 
     if (num_conns == "from") {
-        wireconn->num_conns_type = WireConnType::FROM;
+        wireconn.num_conns_type = WireConnType::FROM;
     } else if (num_conns == "to") {
-        wireconn->num_conns_type = WireConnType::TO;
+        wireconn.num_conns_type = WireConnType::TO;
     } else if (num_conns == "min") {
-        wireconn->num_conns_type = WireConnType::MIN;
+        wireconn.num_conns_type = WireConnType::MIN;
     } else if (num_conns == "max") {
-        wireconn->num_conns_type = WireConnType::MAX;
+        wireconn.num_conns_type = WireConnType::MAX;
     } else {
 		archfpga_throw( __FILE__, __LINE__, "Invalid num_conns specification '%s'", num_conns.c_str());
     }
@@ -408,12 +393,12 @@ void check_switchblock(const t_switchblock_inf* sb, const t_arch* arch){
 static void check_unidir_switchblock(const t_switchblock_inf *sb ){
 
 	/* Check that the destination wire points are always the starting points (i.e. of wire point 0) */
-	const vector<t_wireconn_inf> &wireconns = sb->wireconns;
-	int num_wireconns = (int)wireconns.size();
-	for (int iconn = 0; iconn < num_wireconns; iconn++){
-		if ( wireconns[iconn].to_point.size() > 1 || wireconns[iconn].to_point[0] != 0 ){
-			archfpga_throw( __FILE__, __LINE__, "Unidirectional switch blocks are currently only allowed to drive the start points of wire segments\n");
-		}
+	for (const t_wireconn_inf& wireconn : sb->wireconns){
+        for (const t_wire_switchpoints& wire_to_points : wireconn.to_switchpoint_set) {
+            if (wire_to_points.switchpoints.size() > 1 || wire_to_points.switchpoints[0] != 0){
+                archfpga_throw( __FILE__, __LINE__, "Unidirectional switch blocks are currently only allowed to drive the start points of wire segments\n");
+            }
+        }
 	}
 }
 
@@ -454,42 +439,48 @@ static void check_bidir_switchblock(const t_permutation_map *permutation_map ){
 }
 
 static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn) {
-    for (const auto& seg_name : wireconn.from_type) {
+    for (const t_wire_switchpoints& wire_switchpoints : wireconn.from_switchpoint_set) {
+        auto seg_name = wire_switchpoints.segment_name;
 
         //Make sure the segment exists
         const t_segment_inf* seg_info = find_segment(arch, seg_name);
         if (!seg_info) {
-            archfpga_throw( __FILE__, __LINE__, "Failed to find segment '%s' for <wireconn> from_type specification\n", seg_name.c_str());
+            archfpga_throw( __FILE__, __LINE__, "Failed to find segment '%s' for <wireconn> from type specification\n", seg_name.c_str());
         }
 
         //Check that the specified switch points are valid
-        for(int switchpoint : wireconn.from_point) {
+        for(int switchpoint : wire_switchpoints.switchpoints) {
             if (switchpoint < 0) {
                 archfpga_throw( __FILE__, __LINE__, "Invalid <wireconn> from_switchpoint '%d' (must be >= 0)\n", switchpoint, seg_name.c_str());
             }
             if (switchpoint >= seg_info->length) {
                 archfpga_throw( __FILE__, __LINE__, "Invalid <wireconn> from_switchpoints '%d' (must be < %d)\n", switchpoint, seg_info->length);
             }
+            //TODO: check that points correspond to valid sb locations
         }
     }
-    for (const auto& seg_name : wireconn.to_type) {
+
+    for (const t_wire_switchpoints& wire_switchpoints : wireconn.to_switchpoint_set) {
+        auto seg_name = wire_switchpoints.segment_name;
 
         //Make sure the segment exists
         const t_segment_inf* seg_info = find_segment(arch, seg_name);
         if (!seg_info) {
-            archfpga_throw( __FILE__, __LINE__, "Failed to find segment '%s' for <wireconn> to_type specification\n", seg_name.c_str());
+            archfpga_throw( __FILE__, __LINE__, "Failed to find segment '%s' for <wireconn> to type specification\n", seg_name.c_str());
         }
 
         //Check that the specified switch points are valid
-        for(int switchpoint : wireconn.to_point) {
+        for(int switchpoint : wire_switchpoints.switchpoints) {
             if (switchpoint < 0) {
                 archfpga_throw( __FILE__, __LINE__, "Invalid <wireconn> to_switchpoint '%d' (must be >= 0)\n", switchpoint, seg_name.c_str());
             }
             if (switchpoint >= seg_info->length) {
                 archfpga_throw( __FILE__, __LINE__, "Invalid <wireconn> to_switchpoints '%d' (must be < %d)\n", switchpoint, seg_info->length);
             }
+            //TODO: check that points correspond to valid sb locations
         }
     }
+
 }
 
 /*---- Functions for Parsing the Symbolic Switchblock Formulas ----*/
