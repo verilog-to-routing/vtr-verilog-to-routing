@@ -81,6 +81,8 @@ namespace pugiutil {
             child = child.next_sibling(child_name.c_str());
         }
 
+        //Note that we don't do any error checking here since get_first_child does the existance check
+
         return count;
     }
 
