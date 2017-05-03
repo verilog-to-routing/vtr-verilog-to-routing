@@ -273,7 +273,7 @@ static bool is_perimeter(int nx, int ny, int x, int y);
 static bool is_core(int nx, int ny, int x, int y);
 
 /* adjusts a negative destination wire index calculated from a permutation formula */
-static int adjust_formula_result(int dest_wire, int dest_W);
+static int adjust_formula_result(int dest_wire, int src_W, int dest_W, int connection_ind);
 
 
 
@@ -807,162 +807,6 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb, 
 		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns){
 
-#if 0
-	e_direction from_wire_direction = from_chan_details[from_x][from_y][sb_conn.from_wire].direction;
-	if ( from_wire_direction == INC_DIRECTION ){
-		/* if this is a unidirectional wire headed in the increasing direction (relative to coordinate system)
-		   then switch block source side should be BOTTOM or LEFT */
-		if (sb_conn.from_side == TOP || sb_conn.from_side == RIGHT){
-			return;
-		}
-	} else if ( from_wire_direction == DEC_DIRECTION ){
-		/* a wire heading in the decreasing direction can only connect from the TOP or RIGHT sides of a switch block */
-		if (sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT){
-			return;
-		}
-	} else {
-		VTR_ASSERT( from_wire_direction == BI_DIRECTION );
-	}
-
-	/* name of the source wire type */
-	const char *wire_type_name = from_chan_details[from_x][from_y][sb_conn.from_wire].type_name_ptr;
-
-	/* names of wire types we may be connecting from/to */
-	vector<string> *from_wire_type = &(wireconn_ptr->from_type);
-	vector<string> *to_wire_type = &(wireconn_ptr->to_type);
-
-	/* the 'seg' coordinate of the from channel */
-	int from_seg = get_seg_coordinate( from_chan_type, from_x, from_y );
-
-	/* the 'from' switchpoint and 'to' switchpoints at which the connection is made */
-	int from_switchpoint;
-	vector<int> to_switchpoint;
-
-	/* the current wire corresponds to a single switchpoint */
-	from_switchpoint = get_switchpoint_of_wire(nx, ny, from_chan_type, from_chan_details[from_x][from_y][sb_conn.from_wire], 
-	                                        from_seg, sb_conn.from_side);
-	/* If we're at a switch block side where *all* wires start/terminate (i.e. around the FPGA perimeter) then
-	   the source switchpoint is 0 no matter what */
-	if ((TOP    == sb_conn.from_side && sb_conn.y_coord == 0) ||
-	    (RIGHT  == sb_conn.from_side && sb_conn.x_coord == 0) ||
-	    (LEFT   == sb_conn.from_side && sb_conn.x_coord == nx) ||
-	    (BOTTOM == sb_conn.from_side && sb_conn.y_coord == ny)){
-		from_switchpoint = 0;
-	}
-
-	/* there may be multiple destination switchpoints */
-	to_switchpoint = wireconn_ptr->to_point;
-
-	/* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
-	vector<int> potential_src_wires;
-	vector<int> potential_dest_wires;
-
-	/* the index of the source/destination wire within their own switchpoint set */
-	int src_wire_ind, dest_wire_ind;
-
-	/* the effective destination channel width is the size of the destination wire set */
-	int dest_W;
-
-	/* check that the current wire has one of the types specified by the wire connection */
-	bool skip = true;
-	for (int itype = 0; itype < (int)from_wire_type->size(); itype++){
-		if (from_wire_type->at(itype) == wire_type_name){
-			skip = false;
-			break;
-		}
-	}
-	if (skip){
-		return;
-	}
-
-	/* check that the current wire has one of the source wire points specified by the wire connection */
-	skip = true;
-	for (int ipoint = 0; ipoint < (int)wireconn_ptr->from_point.size(); ipoint++){
-		if (from_switchpoint == wireconn_ptr->from_point[ipoint]){
-			skip = false;
-			break;
-		}
-	}
-	if (skip){
-		return;
-	}
-
-	/* now we need to find all wires in the destination channel that correspond to the 
-	   type and point specified by the current wireconn_ptr. Must also have appropriate
-	   directionality */
-
-	/* get the indices of wires with the destination subsegment number, as well as the effective destination 
-	   channel width (which is the number of wires with the destination subsegment number) */
-	get_switchpoint_wires(nx, ny, to_chan_details[to_x][to_y], to_chan_type, to_x, to_y, sb_conn.to_side, 
-			to_wire_type, &to_switchpoint, wire_type_sizes, true, &potential_dest_wires);
-
-	if (0 == potential_dest_wires.size()){
-		return;
-	}
-	dest_W = potential_dest_wires.size();
-
-	/* get the index of the source wire relative to all the wires specified by the wireconn */
-	get_switchpoint_wires(nx, ny, from_chan_details[from_x][from_y], from_chan_type, from_x, from_y, sb_conn.from_side, 
-			from_wire_type, &(wireconn_ptr->from_point), wire_type_sizes, false, &potential_src_wires);
-	if (0 == potential_src_wires.size()){
-		return;
-	}
-
-	vector<int>::iterator it = find(potential_src_wires.begin(), potential_src_wires.end(), sb_conn.from_wire);
-	if (it == potential_src_wires.end()){
-		vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Could not find switch block source wire in vector of potential source wires\n");
-	}
-	src_wire_ind = it - potential_src_wires.begin();
-	
-	/* at this point the vectors 'potential_src_wires' and 'potential_dest_wires' contain the indices of the from_type/from_point
-	   and to_type/to_point wire segments. now its time to compute which destination wire segments our specific wire segment of interest
-	   ('from_wire') should connect to */
-
-	/* get a reference to the string vector containing desired side1->side2 permutations */
-	SB_Side_Connection side_conn(sb_conn.from_side, sb_conn.to_side);
-	vector<string> &permutations_ref = sb->permutation_map[side_conn];
-
-	/* iterate over the permutation functions specified in permutations_ref */
-	int to_wire;
-	s_formula_data formula_data;
-	for (int iperm = 0; iperm < (int)permutations_ref.size(); iperm++){
-		/* Convert the symbolic permutation formula to a number */
-		formula_data.dest_W = dest_W;
-		if (0 == dest_W){
-			return;
-		}
-		formula_data.wire = src_wire_ind;
-		dest_wire_ind = get_sb_formula_result(permutations_ref[iperm].c_str(), formula_data);
-		dest_wire_ind = adjust_formula_result(dest_wire_ind, dest_W);
-		if(dest_wire_ind < 0){
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Got a negative wire from switch block formula %s", permutations_ref[iperm].c_str()); 
-		}
-
-		/* the resulting wire number is the *index* of the destination wire in it's own
-		   set, so we need to convert that back to the absolute index of the wire in the channel */
-		to_wire = potential_dest_wires[dest_wire_ind];
-		
-		/* create the struct containing information about the target wire segment which will be added to the 
-		   sb connections map */	
-		t_to_wire_inf to_wire_inf;
-		to_wire_inf.to_wire = to_wire;
-		to_wire_inf.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch;
-
-		/* and now, finally, add this switchblock connection to the switchblock connections map */
-		(*sb_conns)[sb_conn].push_back(to_wire_inf);
-
-		/* If bidir architecture, implement the reverse connection as well */
-		if (BI_DIRECTIONAL == directionality){
-			to_wire_inf.to_wire = sb_conn.from_wire;
-            //Since we are implementing the reverse connection we have swapped from and to.
-            //Mark so coverity ignores this issue
-            //
-            //coverity[swapped_arguments]
-			Switchblock_Lookup sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.to_side, sb_conn.from_side, to_wire);
-			(*sb_conns)[sb_conn_reverse].push_back(to_wire_inf);
-		}
-	}
-#else
 	/* names of wire types we may be connecting from/to */
 	vector<string> *from_wire_type = &(wireconn_ptr->from_type);
 	vector<string> *to_wire_type = &(wireconn_ptr->to_type);
@@ -984,7 +828,8 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 
 	/* At this point the vectors 'potential_src_wires' and 'potential_dest_wires' contain the indices of the from_type/from_point
 	   and to_type/to_point wire segments. Now we compute the connections between them, according to permutation functions */
-	size_t dest_W = potential_dest_wires.size();
+    size_t src_W = potential_src_wires.size();
+    size_t dest_W = potential_dest_wires.size();
 
     //TODO: We could add another user-configurable parameter to control ordering of types in the sets.
     //      Currently we just iterate through them in order, but we could:
@@ -998,7 +843,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 
     } else if (wireconn_ptr->num_conns_type == WireConnType::TO) {
         num_conns = potential_dest_wires.size();
-        
+
     } else if (wireconn_ptr->num_conns_type == WireConnType::MIN) {
         num_conns = std::min(potential_src_wires.size(), potential_dest_wires.size());
 
@@ -1008,6 +853,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
     } else {
         vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Unrecognized wireconn type"); 
     }
+
 
     for (size_t iconn = 0; iconn < num_conns; ++iconn) {
 
@@ -1041,12 +887,10 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
             /* Convert the symbolic permutation formula to a number */
             s_formula_data formula_data;
             formula_data.dest_W = dest_W;
-            if (0 == dest_W){
-                return;
-            }
             formula_data.wire = src_wire_ind;
-            int dest_wire_ind = get_sb_formula_result(permutations_ref[iperm].c_str(), formula_data);
-            dest_wire_ind = adjust_formula_result(dest_wire_ind, dest_W);
+            int raw_dest_wire_ind = get_sb_formula_raw_result(permutations_ref[iperm].c_str(), formula_data);
+            int dest_wire_ind = adjust_formula_result(raw_dest_wire_ind, src_W, dest_W, iconn);
+
             if(dest_wire_ind < 0){
                 vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Got a negative wire from switch block formula %s", permutations_ref[iperm].c_str()); 
             }
@@ -1076,7 +920,6 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
             }
         }
     }
-#endif
 }
 
 
@@ -1304,14 +1147,33 @@ static int get_switchpoint_of_wire(int nx, int ny, e_rr_type chan_type,
 }
 
 
-/* adjusts a negative destination wire calculated from a permutation formula */
-static int adjust_formula_result(int dest_wire, int dest_W){
+/* adjusts the destination wire calculated from a permutation formula to account for negative indicies,
+ * source wire set offset, and modulo by destination wire set size
+ * */
+static int adjust_formula_result(int dest_wire, int src_W, int dest_W, int connection_ind) {
 	int result = dest_wire;
-	if (dest_wire < 0){
+
+	if (dest_wire < 0) { 
+        //Adjust for negative indicies
 		int mult = (-1*dest_wire) / dest_W + 1;
 		result = dest_wire + mult*dest_W;
 	}
+
+    //Offset the destination track by a multiple of src_W to ensure all destination tracks are covered
+    //
+    // The permutation formula produce a 1-to-1 mapping from src track to dest track (i.e. each source 
+    // track is mapped to precisely one destination track). This is problematic if we are processing
+    // a wireconn which goes through the source set multiple times (e.g. dest set larger than src set while 
+    // processing a WireConnType::TO), since the permutation formula will only generate src_W track indicies
+    // (leaving some of the destination tracks unconnected). To ensure we get different destination tracks on 
+    // subsequent passes through the same source set, we offset the raw track by a multiple of src_W. Note the 
+    // use of integer division; src_mult will equal 0 on the first pass, 1 on the second etc.
+    int src_mult = connection_ind / src_W;
+    result += src_W * src_mult;
+
+    //Final result must be modulo dest_W
 	result = (result + dest_W) % dest_W;
+
 	return result;
 }
 
