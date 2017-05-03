@@ -1095,24 +1095,8 @@ The full format is documented below.
     Defined under the ``<switchfuncs>`` XML node, one or more ``<func...>`` entries is used to specify permutation functions that connect different sides of a switch block.
 
 
-.. arch:tag:: <wireconn from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..." num_conns_type="{from,to,min,max}"/>
+.. arch:tag:: <wireconn num_conns_type="{from,to,min,max}" from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..."/>
     
-    :req_param from_type: 
-        A comma-separated list segment names that defines which segment types will be a source of a connection.
-        The segment names specified must match the names of the segments defined under the ``<segmentlist>`` XML node.
-
-    :req_param to_type:     
-        A comma-separated list of segment names that defines which segment types will be the destination of the connections specified.
-        Each segment name must match an entry in the ``<segmentlist>`` XML node.
-
-    :req_param from_switchpoint: 
-        A comma-separated list of integers that defines which switchpoints will be a source of a connection.
-
-    :req_param to_switchpoint: 
-        A comma-separated list of integers that defines which switchpoints will be the destination of the connections specified.
-
-        .. note:: In a unidirectional architecture wires can only be driven at their start point so ``to_switchpoint="0"`` is the only legal specification in this case.
-
     :req_param num_conns_type: 
         Specifies how many connections should be created between the from_type/from_switchpoint set and the to_type/to_switchpoint set.
 
@@ -1148,3 +1132,48 @@ The full format is documented below.
             .. figure:: wireconn_num_conns_type_max.*
                 :width: 100%
 
+    :opt_param from_type: 
+        A comma-separated list segment names that defines which segment types will be a source of a connection.
+        The segment names specified must match the names of the segments defined under the ``<segmentlist>`` XML node.
+        Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
+
+    :opt_param to_type:     
+        A comma-separated list of segment names that defines which segment types will be the destination of the connections specified.
+        Each segment name must match an entry in the ``<segmentlist>`` XML node.
+        Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
+
+    :opt_param from_switchpoint: 
+        A comma-separated list of integers that defines which switchpoints will be a source of a connection.
+        Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
+
+    :opt_param to_switchpoint: 
+        A comma-separated list of integers that defines which switchpoints will be the destination of the connections specified.
+        Required if no ``<from>`` or ``<to>`` nodes are specified within the ``<wireconn>``.
+
+        .. note:: In a unidirectional architecture wires can only be driven at their start point so ``to_switchpoint="0"`` is the only legal specification in this case.
+
+    .. arch:tag:: <from type="string" switchpoint="int, int, int, ..."/>
+
+        :req_param type: 
+        
+            The name of a segment specified in the ``<segmentlist>``.
+
+        :req_param switchpoint:
+
+            A comma-separated list of integers that defines switchpoints.
+
+            .. note:: In a unidirectional architecture wires can only be driven at their start point so ``to_switchpoint="0"`` is the only legal specification in this case.
+
+        Specifies a subset of *source* wire switchpoints.
+
+        This tag can be specified multiple times.
+        The surrounding ``<wireconn>``'s source set is the union of all contained ``<from>`` tags.
+
+    .. arch:tag:: <to type="string" switchpoint="int, int, int, ..."/>
+
+        Specifies a subset of *destination* wire switchpoints.
+
+        This tag can be specified multiple times.
+        The surrounding ``<wireconn>``'s destination set is the union of all contained ``<to>`` tags.
+
+        .. seealso:: ``<from>`` for attribute descriptions.
