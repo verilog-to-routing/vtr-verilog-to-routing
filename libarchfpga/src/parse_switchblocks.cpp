@@ -95,6 +95,9 @@ void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_da
 //Process a wireconn defined in the multinode style (more advanced specification)
 void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc);
 
+//Process a <from> or <to> sub-node of a multinode wireconn
+t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiutil::loc_data& loc_data);
+
 /* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec. 
    Spaces are trimmed off */
 static void parse_comma_separated_wire_types(const char *ch, std::vector<t_wire_switchpoints>& wire_switchpoints);
@@ -234,6 +237,49 @@ void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc
     const char* char_prop = get_attribute(node, "num_conns_type", loc_data).value();
     parse_num_conns(char_prop, wc);
 
+    size_t num_from_children = count_children(node, "from", loc_data);
+    size_t num_to_children = count_children(node, "to", loc_data);
+
+    VTR_ASSERT(num_from_children > 0);
+    VTR_ASSERT(num_to_children > 0);
+
+    for (pugi::xml_node child : node.children()) {
+        if (child.name() == std::string("from")) {
+            t_wire_switchpoints from_switchpoints = parse_wireconn_from_to_node(child, loc_data);
+            wc.from_switchpoint_set.push_back(from_switchpoints);
+        } else if (child.name() == std::string("to")) {
+            t_wire_switchpoints to_switchpoints = parse_wireconn_from_to_node(child, loc_data);
+            wc.to_switchpoint_set.push_back(to_switchpoints);
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "Unrecognized child node '%s' of parent node '%s'",
+                            node.name(), child.name());
+        }
+    }
+}
+
+t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+    size_t attribute_count = count_attributes(node, loc_data);
+
+    if (attribute_count != 2) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "Expected only 2 attributes on node '%s'",
+                        node.name());
+    }
+
+    t_wire_switchpoints wire_switchpoints;
+    wire_switchpoints.segment_name = get_attribute(node, "type", loc_data).value();
+
+    auto points_str = get_attribute(node, "switchpoint", loc_data).value();
+    for (auto point_str : vtr::split(points_str, ",")) {
+        int switchpoint = vtr::atoi(point_str);
+        wire_switchpoints.switchpoints.push_back(switchpoint);
+    }
+
+    if (wire_switchpoints.switchpoints.empty()) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "Empty switchpoint specification",
+                        node.name());
+    }
+
+    return wire_switchpoints;
 }
 
 /* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec. 
