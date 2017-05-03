@@ -1095,7 +1095,7 @@ The full format is documented below.
     Defined under the ``<switchfuncs>`` XML node, one or more ``<func...>`` entries is used to specify permutation functions that connect different sides of a switch block.
 
 
-.. arch:tag:: <wireconn from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..."/>
+.. arch:tag:: <wireconn from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..." num_conns_type="{from,to,min,max}"/>
     
     :req_param from_type: 
         A comma-separated list segment names that defines which segment types will be a source of a connection.
@@ -1112,4 +1112,39 @@ The full format is documented below.
         A comma-separated list of integers that defines which switchpoints will be the destination of the connections specified.
 
         .. note:: In a unidirectional architecture wires can only be driven at their start point so ``to_switchpoint="0"`` is the only legal specification in this case.
+
+    :req_param num_conns_type: 
+        Specifies how many connections should be created between the from_type/from_switchpoint set and the to_type/to_switchpoint set.
+
+        * ``from`` -- Creates number of switchblock edges equal to the 'from' set size. 
+
+            This ensures that each element in the 'from' set is connected to an element of the 'to' set. 
+            However it may leave some elements of the 'to' set either multiply-connected or disconnected.
+
+            .. figure:: wireconn_num_conns_type_from.*
+                :width: 100%
+
+        * ``to`` -- Creates number of switchblock edges equal to the 'to' set size size. 
+
+            This ensures that each element of the 'to' set is connected to precisely one element of the 'from' set.
+            However it may leave some elements of the 'from' set either multiply-connected or disconnected.
+
+            .. figure:: wireconn_num_conns_type_to.*
+                :width: 100%
+
+        * ``min`` --  Creates number of switchblock edges equal to the minimum of the 'from' and 'to' set sizes. 
+
+            This ensures *no* element of the 'from' or 'to' sets is connected to multiple elements in the opposing set.
+            However it may leave some elements in the larger set disconnected.
+
+            .. figure:: wireconn_num_conns_type_min.*
+                :width: 100%
+
+        * ``max`` -- Creates number of switchblock edges equal to the maximum of the 'from' and 'to' set sizes. 
+
+            This ensures *all* elements of the 'from' or 'to' sets are connected to at least one element in the opposing set.
+            However some elements in the smaller set may be multiply-connected.
+
+            .. figure:: wireconn_num_conns_type_max.*
+                :width: 100%
 
