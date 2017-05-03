@@ -85,6 +85,10 @@ public:
 
 /**** Function Declarations ****/
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
+
+//Load an XML wireconn specification into a t_wireconn_inf 
+t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data);
+
 /* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec. 
    Spaces are trimmed off */
 static void parse_comma_separated_wire_types(const char *ch, vector<string> *wire_types_vec);
@@ -162,7 +166,6 @@ void read_sb_wireconns(const t_arch_switch_inf * /*switches*/, int /*num_switche
 	
 	int num_wireconns;
 	pugi::xml_node SubElem;
-	const char *char_prop;
 
 	/* count the number of specified wire connections for this SB */
 	num_wireconns = count_children(Node, "wireconn", loc_data, OPTIONAL);
@@ -172,33 +175,38 @@ void read_sb_wireconns(const t_arch_switch_inf * /*switches*/, int /*num_switche
 		SubElem = get_first_child(Node, "wireconn", loc_data);	
 	}
 	for (int i = 0; i < num_wireconns; i++){
-		t_wireconn_inf wc;		
-
-		/* get from type */
-		char_prop = get_attribute(SubElem, "from_type", loc_data).value();
-		parse_comma_separated_wire_types(char_prop, &wc.from_type);
-
-		/* get to type */
-		char_prop = get_attribute(SubElem, "to_type", loc_data).value();
-		parse_comma_separated_wire_types(char_prop, &wc.to_type);
-
-		/* get the source wire point */
-		char_prop = get_attribute(SubElem, "from_switchpoint", loc_data).value();
-		parse_comma_separated_wire_points(char_prop, &(wc.from_point));
-
-		/* get the destination wire point */
-		char_prop = get_attribute(SubElem, "to_switchpoint", loc_data).value();
-		parse_comma_separated_wire_points(char_prop, &(wc.to_point));
-
-        /* get the type */
-		char_prop = get_attribute(SubElem, "num_conns_type", loc_data).value();
-        parse_num_conns(char_prop, &wc);
-
+        t_wireconn_inf wc = parse_wireconn(SubElem, loc_data);
 		sb->wireconns.push_back(wc);
 		SubElem = SubElem.next_sibling(SubElem.name());
 	}
 
 	return;
+}
+
+t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+    t_wireconn_inf wc;
+
+    /* get the connection style */
+    const char* char_prop = get_attribute(node, "num_conns_type", loc_data).value();
+    parse_num_conns(char_prop, &wc);
+
+    /* get from type */
+    char_prop = get_attribute(node, "from_type", loc_data).value();
+    parse_comma_separated_wire_types(char_prop, &wc.from_type);
+
+    /* get to type */
+    char_prop = get_attribute(node, "to_type", loc_data).value();
+    parse_comma_separated_wire_types(char_prop, &wc.to_type);
+
+    /* get the source wire point */
+    char_prop = get_attribute(node, "from_switchpoint", loc_data).value();
+    parse_comma_separated_wire_points(char_prop, &(wc.from_point));
+
+    /* get the destination wire point */
+    char_prop = get_attribute(node, "to_switchpoint", loc_data).value();
+    parse_comma_separated_wire_points(char_prop, &(wc.to_point));
+
+    return wc;
 }
 
 
