@@ -1843,14 +1843,15 @@ static int get_track_to_chan_seg(
 	}
 
 	/* get coordinate to index into the SB map */
-	Switchblock_Lookup sb_coord(tile_x, tile_y, from_side, to_side, from_wire);
+	Switchblock_Lookup sb_coord(tile_x, tile_y, from_side, to_side);
 	if ( sb_conn_map->count(sb_coord) > 0 ){
 		/* get reference to the connections vector which lists all destination wires for a given source wire
 		   at a specific coordinate sb_coord */
-		vector<t_to_wire_inf> &conn_vector = (*sb_conn_map)[sb_coord];
+		vector<t_switchblock_edge> &conn_vector = (*sb_conn_map)[sb_coord];
 
 		/* go through the connections... */
 		for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
+            if (conn_vector.at(iconn).from_wire != from_wire) continue;
 			
 			int to_wire = conn_vector.at(iconn).to_wire;
 			int to_node = get_rr_node_index(to_x, to_y, to_chan_type, to_wire,

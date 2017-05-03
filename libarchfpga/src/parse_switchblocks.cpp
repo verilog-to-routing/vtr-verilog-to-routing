@@ -92,6 +92,9 @@ static void parse_comma_separated_wire_types(const char *ch, vector<string> *wir
 /* parses the wirepoints specified in ch into the vector wire_points_vec */
 static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_points_vec);
 
+/* Parses the number of connections type */
+static void parse_num_conns(std::string num_conns, t_wireconn_inf* wireconn);
+
 /* checks for correctness of a unidir switchblock. */
 static void check_unidir_switchblock(const t_switchblock_inf *sb );
 
@@ -187,6 +190,10 @@ void read_sb_wireconns(const t_arch_switch_inf * /*switches*/, int /*num_switche
 		char_prop = get_attribute(SubElem, "to_switchpoint", loc_data).value();
 		parse_comma_separated_wire_points(char_prop, &(wc.to_point));
 
+        /* get the type */
+		char_prop = get_attribute(SubElem, "num_conns_type", loc_data).value();
+        parse_num_conns(char_prop, &wc);
+
 		sb->wireconns.push_back(wc);
 		SubElem = SubElem.next_sibling(SubElem.name());
 	}
@@ -270,6 +277,20 @@ static void parse_comma_separated_wire_points(const char *ch, vector<int> *wire_
 	return;
 }
 
+static void parse_num_conns(std::string num_conns, t_wireconn_inf* wireconn) {
+
+    if (num_conns == "from") {
+        wireconn->num_conns_type = WireConnType::FROM;
+    } else if (num_conns == "to") {
+        wireconn->num_conns_type = WireConnType::TO;
+    } else if (num_conns == "min") {
+        wireconn->num_conns_type = WireConnType::MIN;
+    } else if (num_conns == "max") {
+        wireconn->num_conns_type = WireConnType::MAX;
+    } else {
+		archfpga_throw( __FILE__, __LINE__, "Invalid num_conns specification '%s'", num_conns.c_str());
+    }
+}
 
 /* Loads permutation funcs specified under Node into t_switchblock_inf. Node should be 
    <switchfuncs> */

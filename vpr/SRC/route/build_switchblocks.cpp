@@ -219,7 +219,7 @@ static int lcm(int x, int y);
 /* Compute the wire(s) that the wire at (x, y, from_side, to_side, from_wire) should connect to.
    sb_conns is updated with the result */
 static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_side,
-			enum e_side to_side, int from_wire, t_chan_details * chan_details_x,
+			enum e_side to_side, t_chan_details * chan_details_x,
 			t_chan_details * chan_details_y, t_switchblock_inf *sb,
 			int nx, int ny,
 			t_wire_type_sizes *wire_type_sizes, e_directionality directionality, 
@@ -334,22 +334,18 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations( t_chan_details * 
 				if (sb_not_here(nx, ny, x_coord, y_coord, sb.location)){
 					continue;
 				}
-				/* Iterate over each wire in channel */
-				for (int from_wire = 0; from_wire < channel_width; from_wire++){
-
-					/* now we iterate over all the potential side1->side2 connections */
-                    for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-							
-							/* Fill appropriate entry of the sb_conns map with vector specifying the wires 
-							   the current wire will connect to */
-							compute_wire_connections(x_coord, y_coord, from_side, to_side, from_wire,
-									chan_details_x, chan_details_y, &sb, nx, ny,
-									&wire_type_sizes, directionality, sb_conns);
-							
-						}
-					}
-				}
+                /* now we iterate over all the potential side1->side2 connections */
+                for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                        
+                        /* Fill appropriate entry of the sb_conns map with vector specifying the wires 
+                           the current wire will connect to */
+                        compute_wire_connections(x_coord, y_coord, from_side, to_side,
+                                chan_details_x, chan_details_y, &sb, nx, ny,
+                                &wire_type_sizes, directionality, sb_conns);
+                        
+                    }
+                }
 			}
 		}
 	}
@@ -425,20 +421,17 @@ static void compute_switchblock_row(int sb_row_size, t_chan_details *chan_detail
 			if (sb_not_here(nx, ny, x, y, sb->location)){
 				continue;
 			}
-			/* Iterate over each wire in channel */
-			for (int from_wire = 0; from_wire < nodes_per_chan; from_wire++){
-				/* now we iterate over all the potential side1->side2 connections */
-                for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                    for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-						
-						/* Fill appropriate entry of the sb_conns map with vector specifying the wires 
-						   the current wire will connect to */
-						compute_wire_connections(x, y, from_side, to_side, from_wire,
-								chan_details_x, chan_details_y, sb, nx, ny,
-								wire_type_sizes, directionality, sb_row);
-					}
-				}
-			}
+            /* now we iterate over all the potential side1->side2 connections */
+            for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    
+                    /* Fill appropriate entry of the sb_conns map with vector specifying the wires 
+                       the current wire will connect to */
+                    compute_wire_connections(x, y, from_side, to_side,
+                            chan_details_x, chan_details_y, sb, nx, ny,
+                            wire_type_sizes, directionality, sb_row);
+                }
+            }
 		}
 	}
 }
@@ -514,20 +507,17 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 				if (sb_not_here(nx, ny, x, y, sb->location)){
 					continue;
 				}
-				/* Iterate over each wire in channel */
-				for (int from_wire = 0; from_wire < nodes_per_chan; from_wire++){
-					/* now we iterate over all the potential side1->side2 connections */
-                    for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                /* now we iterate over all the potential side1->side2 connections */
+                for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 
-							/* Fill appropriate entry of the sb_conns map with vector specifying the wires
-							   the current wire will connect to */
-							compute_wire_connections(x, y, from_side, to_side, from_wire,
-									chan_details_x, chan_details_y, sb, nx, ny,
-									wire_type_sizes, directionality, sb_conns);
-						}
-					}
-				}
+                        /* Fill appropriate entry of the sb_conns map with vector specifying the wires
+                           the current wire will connect to */
+                        compute_wire_connections(x, y, from_side, to_side,
+                                chan_details_x, chan_details_y, sb, nx, ny,
+                                wire_type_sizes, directionality, sb_conns);
+                    }
+                }
 			}
 			x = nx;
 		}
@@ -542,20 +532,17 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 				if (sb_not_here(nx, ny, x, y, sb->location)){
 					continue;
 				}
-				/* Iterate over each wire in channel */
-				for (int from_wire = 0; from_wire < nodes_per_chan; from_wire++){
-					/* now we iterate over all the potential side1->side2 connections */
-                    for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                /* now we iterate over all the potential side1->side2 connections */
+                for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 
-							/* Fill appropriate entry of the sb_conns map with vector specifying the wires
-							   the current wire will connect to */
-							compute_wire_connections(x, y, from_side, to_side, from_wire,
-									chan_details_x, chan_details_y, sb, nx, ny,
-									wire_type_sizes, directionality, sb_conns);
-						}
-					}
-				}
+                        /* Fill appropriate entry of the sb_conns map with vector specifying the wires
+                           the current wire will connect to */
+                        compute_wire_connections(x, y, from_side, to_side,
+                                chan_details_x, chan_details_y, sb, nx, ny,
+                                wire_type_sizes, directionality, sb_conns);
+                    }
+                }
 			}
 			y = ny;
 		}
@@ -747,14 +734,16 @@ static void get_switchpoint_wires(int nx, int ny, t_seg_details *chan_details,
 }
 
 
-/* Compute the wire(s) that the wire at (x, y, from_side, to_side, from_wire) should connect to.
+/* Compute the wire(s) that the wire at (x, y, from_side, to_side) should connect to.
    sb_conns is updated with the result */
-static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_side,
-			enum e_side to_side, int from_wire, t_chan_details * chan_details_x,
-			t_chan_details * chan_details_y, t_switchblock_inf *sb,
+static void compute_wire_connections(int x_coord, int y_coord, 
+            enum e_side from_side, enum e_side to_side, 
+            t_chan_details* chan_details_x, t_chan_details* chan_details_y,
+            t_switchblock_inf* sb,
 			int nx, int ny,
-			t_wire_type_sizes *wire_type_sizes, e_directionality directionality, 
-			t_sb_connection_map *sb_conns){
+			t_wire_type_sizes *wire_type_sizes, 
+            e_directionality directionality, 
+			t_sb_connection_map* sb_conns){
 
 	t_chan_details *from_chan_details = NULL;	/* details for source channel */
 	t_chan_details *to_chan_details = NULL ;	/* details for destination channel */
@@ -764,7 +753,7 @@ static void compute_wire_connections(int x_coord, int y_coord, enum e_side from_
 	from_x = from_y = to_x = to_y = UNDEFINED;
 
 	SB_Side_Connection side_conn(from_side, to_side);		/* for indexing into this switchblock's permutation funcs */
-	Switchblock_Lookup sb_conn(x_coord, y_coord, from_side, to_side, from_wire);	/* for indexing into FPGA's switchblock map */
+	Switchblock_Lookup sb_conn(x_coord, y_coord, from_side, to_side);	/* for indexing into FPGA's switchblock map */
 
 	/* can't connect a switchblock side to itself */
 	if (from_side == to_side){
@@ -818,6 +807,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 		t_wire_type_sizes *wire_type_sizes, t_switchblock_inf *sb, 
 		t_wireconn_inf *wireconn_ptr, t_sb_connection_map *sb_conns){
 
+#if 0
 	e_direction from_wire_direction = from_chan_details[from_x][from_y][sb_conn.from_wire].direction;
 	if ( from_wire_direction == INC_DIRECTION ){
 		/* if this is a unidirectional wire headed in the increasing direction (relative to coordinate system)
@@ -853,10 +843,10 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 	                                        from_seg, sb_conn.from_side);
 	/* If we're at a switch block side where *all* wires start/terminate (i.e. around the FPGA perimeter) then
 	   the source switchpoint is 0 no matter what */
-	if ((TOP==sb_conn.from_side && sb_conn.y_coord==0) ||
-	     (RIGHT==sb_conn.from_side && sb_conn.x_coord==0) ||
-	     (LEFT==sb_conn.from_side && sb_conn.x_coord==nx) ||
-	     (BOTTOM==sb_conn.from_side && sb_conn.y_coord==ny)){
+	if ((TOP    == sb_conn.from_side && sb_conn.y_coord == 0) ||
+	    (RIGHT  == sb_conn.from_side && sb_conn.x_coord == 0) ||
+	    (LEFT   == sb_conn.from_side && sb_conn.x_coord == nx) ||
+	    (BOTTOM == sb_conn.from_side && sb_conn.y_coord == ny)){
 		from_switchpoint = 0;
 	}
 
@@ -876,7 +866,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 	/* check that the current wire has one of the types specified by the wire connection */
 	bool skip = true;
 	for (int itype = 0; itype < (int)from_wire_type->size(); itype++){
-		if ( strcmp(from_wire_type->at(itype).c_str(), wire_type_name) == 0 ){
+		if (from_wire_type->at(itype) == wire_type_name){
 			skip = false;
 			break;
 		}
@@ -972,6 +962,121 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
 			(*sb_conns)[sb_conn_reverse].push_back(to_wire_inf);
 		}
 	}
+#else
+	/* names of wire types we may be connecting from/to */
+	vector<string> *from_wire_type = &(wireconn_ptr->from_type);
+	vector<string> *to_wire_type = &(wireconn_ptr->to_type);
+
+	/* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
+	vector<int> potential_src_wires;
+	vector<int> potential_dest_wires;
+
+	get_switchpoint_wires(nx, ny, from_chan_details[from_x][from_y], from_chan_type, from_x, from_y, sb_conn.from_side, 
+			from_wire_type, &(wireconn_ptr->from_point), wire_type_sizes, false, &potential_src_wires);
+
+	get_switchpoint_wires(nx, ny, to_chan_details[to_x][to_y], to_chan_type, to_x, to_y, sb_conn.to_side, 
+			to_wire_type, &(wireconn_ptr->to_point), wire_type_sizes, true, &potential_dest_wires);
+
+    if (potential_src_wires.size() == 0 || potential_dest_wires.size() == 0) {
+        //Can't make any connections between empty sets
+        return;
+    }
+
+	/* At this point the vectors 'potential_src_wires' and 'potential_dest_wires' contain the indices of the from_type/from_point
+	   and to_type/to_point wire segments. Now we compute the connections between them, according to permutation functions */
+	size_t dest_W = potential_dest_wires.size();
+
+    //TODO: We could add another user-configurable parameter to control ordering of types in the sets.
+    //      Currently we just iterate through them in order, but we could:
+    //      * randomly shuffle, or
+    //      * interleave (to ensure good diversity)
+
+    //Determine how many connections to make
+    size_t num_conns = 0;
+    if (wireconn_ptr->num_conns_type == WireConnType::FROM) {
+        num_conns = potential_src_wires.size();
+
+    } else if (wireconn_ptr->num_conns_type == WireConnType::TO) {
+        num_conns = potential_dest_wires.size();
+        
+    } else if (wireconn_ptr->num_conns_type == WireConnType::MIN) {
+        num_conns = std::min(potential_src_wires.size(), potential_dest_wires.size());
+
+    } else if (wireconn_ptr->num_conns_type == WireConnType::MAX) {
+        num_conns = std::max(potential_src_wires.size(), potential_dest_wires.size());
+
+    } else {
+        vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Unrecognized wireconn type"); 
+    }
+
+    for (size_t iconn = 0; iconn < num_conns; ++iconn) {
+
+        //Select the from wire
+        // We modulo by the src set size to wrap around if there are more connections that src wires
+        int src_wire_ind = iconn % potential_src_wires.size(); //Index in src set
+        int from_wire = potential_src_wires[src_wire_ind]; //Index in channel
+
+        e_direction from_wire_direction = from_chan_details[from_x][from_y][from_wire].direction;
+        if (from_wire_direction == INC_DIRECTION) {
+            /* if this is a unidirectional wire headed in the increasing direction (relative to coordinate system)
+               then switch block source side should be BOTTOM or LEFT */
+            if (sb_conn.from_side == TOP || sb_conn.from_side == RIGHT){
+                continue;
+            }
+            VTR_ASSERT(sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT);
+        } else if (from_wire_direction == DEC_DIRECTION){
+            /* a wire heading in the decreasing direction can only connect from the TOP or RIGHT sides of a switch block */
+            if (sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT){
+                continue;
+            }
+            VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT);
+        } else {
+            VTR_ASSERT(from_wire_direction == BI_DIRECTION);
+        }
+
+        //Evaluate permutation functions for the from_wire
+        SB_Side_Connection side_conn(sb_conn.from_side, sb_conn.to_side);
+        vector<string> &permutations_ref = sb->permutation_map[side_conn];
+        for (int iperm = 0; iperm < (int)permutations_ref.size(); iperm++){
+            /* Convert the symbolic permutation formula to a number */
+            s_formula_data formula_data;
+            formula_data.dest_W = dest_W;
+            if (0 == dest_W){
+                return;
+            }
+            formula_data.wire = src_wire_ind;
+            int dest_wire_ind = get_sb_formula_result(permutations_ref[iperm].c_str(), formula_data);
+            dest_wire_ind = adjust_formula_result(dest_wire_ind, dest_W);
+            if(dest_wire_ind < 0){
+                vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "Got a negative wire from switch block formula %s", permutations_ref[iperm].c_str()); 
+            }
+            
+            int to_wire = potential_dest_wires[dest_wire_ind]; //Index in channel
+
+            /* create the struct containing information about the target wire segment which will be added to the 
+               sb connections map */	
+            t_switchblock_edge sb_edge;
+            sb_edge.from_wire = from_wire;
+            sb_edge.to_wire = to_wire;
+            sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch;
+
+            /* and now, finally, add this switchblock connection to the switchblock connections map */
+            (*sb_conns)[sb_conn].push_back(sb_edge);
+
+            /* If bidir architecture, implement the reverse connection as well */
+            if (BI_DIRECTIONAL == directionality) {
+                t_switchblock_edge sb_reverse_edge = sb_edge;
+                std::swap(sb_reverse_edge.from_wire, sb_reverse_edge.to_wire);
+                //Since we are implementing the reverse connection we have swapped from and to.
+                //
+                //Coverity flags this (false positive), so annotatate so coverity ignores it:
+                //coverity[swapped_arguments]
+                Switchblock_Lookup sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.to_side, sb_conn.from_side);
+                (*sb_conns)[sb_conn_reverse].push_back(sb_reverse_edge);
+            }
+        }
+    }
+#endif
 }
 
 
