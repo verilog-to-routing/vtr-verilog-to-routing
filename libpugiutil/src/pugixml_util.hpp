@@ -103,12 +103,21 @@ namespace pugiutil {
                           const loc_data& loc_data,
                           const ReqOpt req_opt=REQUIRED);
     
+    //Counts the number of attributes on the specified node
+    //
+    //  node - The xml node
+    //  loc_data - XML file location data
+    //  req_opt - Whether any attributes are required (will error if required and none are found) or optional. Defaults to REQUIRED
+    size_t count_attributes(const pugi::xml_node node,
+                            const loc_data& loc_data,
+                            const ReqOpt req_opt=REQUIRED);
+
     //Gets a named property on an node and returns it.
     //
     //  node - The xml node
     //  attr_name - The attribute name
     //  loc_data - XML file location data
-    //  req_opt - Whether the peropry is required (will error if required and not found) or optional. Defaults to REQUIRED
+    //  req_opt - Whether the attribute is required (will error if required and not found) or optional. Defaults to REQUIRED
     pugi::xml_attribute get_attribute(const pugi::xml_node node, 
                                       const std::string& attr_name,
                                       const loc_data& loc_data,
