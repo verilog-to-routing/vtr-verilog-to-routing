@@ -183,7 +183,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 			vtr::printf_info("Circuit is unroutable with a channel width factor of %d.\n", width_fac);
 			sprintf(msg, "Routing failed with a channel width factor of %d. ILLEGAL routing shown.", width_fac);
 		} else {
-			check_route(router_opts.route_type, g_num_rr_switches, clb_opins_used_locally);
+			check_route(router_opts.route_type, g_num_rr_switches, clb_opins_used_locally, segment_inf);
 			get_serial_num();
 
 			vtr::printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
@@ -549,7 +549,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	restore_routing(best_routing, clb_opins_used_locally,
 			saved_clb_opins_used_locally);
 	check_route(router_opts.route_type, g_num_rr_switches,
-			clb_opins_used_locally);
+			clb_opins_used_locally, segment_inf);
 	get_serial_num();
 
 	if (Fc_clipped) {

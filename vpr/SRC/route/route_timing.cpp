@@ -637,8 +637,16 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	struct s_heap* cheapest {get_heap_head()};
 
 	if (cheapest == NULL) { /* Infeasible routing.  No possible path for net. */
-		vtr::printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
-				   inet, g_clbs_nlist.net[inet].name, target_node);
+        int src_block = g_clbs_nlist.net[inet].pins[0].block;
+        int src_block_pin = g_clbs_nlist.net[inet].pins[0].block_pin;
+        int sink_block = g_clbs_nlist.net[inet].pins[target_pin].block;
+        int sink_block_pin = g_clbs_nlist.net[inet].pins[target_pin].block_pin;
+
+        std::string src_block_name = block[src_block].name;
+        std::string sink_block_name = block[sink_block].name;
+
+        vtr::printf_info("Cannot route net '%s' from: block '%s' pin %d, to: block '%s' pin %d, target rr node: %d %s at (%d,%d) -- no possible path.\n",
+                   g_clbs_nlist.net[inet].name, src_block_name.c_str(), src_block_pin, sink_block_name.c_str(), sink_block_pin, target_node, rr_node[target_node].rr_get_type_string(), rr_node[target_node].get_xlow(), rr_node[target_node].get_ylow());
 		reset_path_costs();
 		free_route_tree(rt_root);
 		return (false);
@@ -685,8 +693,17 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 		cheapest = get_heap_head();
 
 		if (cheapest == NULL) { /* Impossible routing.  No path for net. */
-			vtr::printf_info("Cannot route net #%d (%s) to sink node #%d -- no possible path.\n",
-					 inet, g_clbs_nlist.net[inet].name, target_node);
+            int src_block = g_clbs_nlist.net[inet].pins[0].block;
+            int src_block_pin = g_clbs_nlist.net[inet].pins[0].block_pin;
+            int sink_block = g_clbs_nlist.net[inet].pins[target_pin].block;
+            int sink_block_pin = g_clbs_nlist.net[inet].pins[target_pin].block_pin;
+
+            std::string src_block_name = block[src_block].name;
+            std::string sink_block_name = block[sink_block].name;
+
+            vtr::printf_info("Cannot route net '%s' from: block '%s' pin %d, to: block '%s' pin %d, target rr node: %d %s at (%d,%d) -- no possible path.\n",
+                       g_clbs_nlist.net[inet].name, src_block_name.c_str(), src_block_pin, sink_block_name.c_str(), sink_block_pin, target_node, rr_node[target_node].rr_get_type_string(), rr_node[target_node].get_xlow(), rr_node[target_node].get_ylow());
+
 			reset_path_costs();
 			free_route_tree(rt_root);
 			return (false);

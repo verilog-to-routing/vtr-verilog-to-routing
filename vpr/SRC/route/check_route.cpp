@@ -15,7 +15,7 @@ using namespace std;
 #include "read_xml_arch_file.h"
 
 /******************** Subroutines local to this module **********************/
-static void check_node_and_range(int inode, enum e_route_type route_type);
+static void check_node_and_range(int inode, enum e_route_type route_type, const t_segment_inf* segment_inf);
 static void check_source(int inode, int inet);
 static void check_sink(int inode, int inet, bool * pin_done);
 static void check_switch(struct s_trace *tptr, int num_switch);
@@ -24,12 +24,12 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(int inet, bool * connected_to_route);
 static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_locally);
 static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
-		enum e_route_type route_type);
+		enum e_route_type route_type, const t_segment_inf* segment_inf);
 
 /************************ Subroutine definitions ****************************/
 
 void check_route(enum e_route_type route_type, int num_switches,
-		vtr::t_ivec ** clb_opins_used_locally) {
+		vtr::t_ivec ** clb_opins_used_locally, const t_segment_inf* segment_inf) {
 
 	/* This routine checks that a routing:  (1) Describes a properly         *
 	 * connected path for each net, (2) this path connects all the           *
@@ -58,7 +58,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 			"Error in check_route -- routing resources are overused.\n");
 	}
 
-	check_locally_used_clb_opins(clb_opins_used_locally, route_type);
+	check_locally_used_clb_opins(clb_opins_used_locally, route_type, segment_inf);
 
 	connected_to_route = (bool *) vtr::calloc(num_rr_nodes, sizeof(bool));
 
@@ -87,7 +87,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 		}
 
 		inode = tptr->index;
-		check_node_and_range(inode, route_type);
+		check_node_and_range(inode, route_type, segment_inf);
 		check_switch(tptr, num_switches);
 		connected_to_route[inode] = true; /* Mark as in path. */
 
@@ -101,7 +101,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 		while (tptr != NULL) {
 			inode = tptr->index;
-			check_node_and_range(inode, route_type);
+			check_node_and_range(inode, route_type, segment_inf);
 			check_switch(tptr, num_switches);
 
 			if (rr_node[prev_node].type == SINK) {
@@ -550,7 +550,7 @@ static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_local
 }
 
 static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
-		enum e_route_type route_type) {
+		enum e_route_type route_type, const t_segment_inf* segment_inf) {
 
 	/* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
 	 * legal routing if subblocks connect to OPINs directly.                    */
@@ -565,7 +565,7 @@ static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
 				inode = clb_opins_used_locally[iblk][iclass].list[ipin];
-				check_node_and_range(inode, route_type); /* Node makes sense? */
+				check_node_and_range(inode, route_type, segment_inf); /* Node makes sense? */
 
 				/* Now check that node is an OPIN of the right type. */
 
@@ -589,7 +589,7 @@ static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 	}
 }
 
-static void check_node_and_range(int inode, enum e_route_type route_type) {
+static void check_node_and_range(int inode, enum e_route_type route_type, const t_segment_inf* segment_inf) {
 
 	/* Checks that inode is within the legal range, then calls check_node to    *
 	 * check that everything else about the node is OK.                         */
@@ -598,5 +598,5 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, num_rr_nodes - 1);
 	}
-	check_node(inode, route_type);
+	check_node(inode, route_type, segment_inf);
 }

@@ -23,7 +23,8 @@ static void check_pass_transistors(int from_node);
 
 void check_rr_graph(const t_graph_type graph_type, 
 		const int L_nx, const int L_ny,
-		const int num_rr_switches, int ***Fc_in) {
+		const int num_rr_switches, int ***Fc_in,
+        const t_segment_inf* segment_inf) {
 
 	int *num_edges_from_current_to_node; /* [0..num_rr_nodes-1] */
 	int *total_edges_to_node; /* [0..num_rr_nodes-1] */
@@ -58,7 +59,7 @@ void check_rr_graph(const t_graph_type graph_type,
 		rr_type = rr_node[inode].type;
 		num_edges = rr_node[inode].get_num_edges();
 
-		check_node(inode, route_type);
+		check_node(inode, route_type, segment_inf);
 
 		/* Check all the connectivity (edges, etc.) information.                    */
 
@@ -159,9 +160,9 @@ void check_rr_graph(const t_graph_type graph_type,
 						  	"in check_rr_graph: node %d has no fanin.\n", inode);
 				} else if (!is_chain && !is_fringe_warning_sent) {
 					vtr::printf_warning(__FILE__, __LINE__, 
-						"in check_rr_graph: fringe node %d has no fanin.\n"
+						"in check_rr_graph: fringe node %d %s at (%d,%d) has no fanin.\n"
 						"\t This is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
-						inode);
+						inode, rr_node[inode].rr_get_type_string(), rr_node[inode].get_xlow(), rr_node[inode].get_ylow());
 					is_fringe_warning_sent = true;
 				}
 			}
@@ -198,7 +199,7 @@ static bool rr_node_is_global_clb_ipin(int inode) {
 	return type->is_global_pin[ipin];
 }
 
-void check_node(int inode, enum e_route_type route_type) {
+void check_node(int inode, enum e_route_type route_type, const t_segment_inf* segment_inf) {
 
 	/* This routine checks that the rr_node is inside the grid and has a valid  
 	 * pin number, etc.  
@@ -217,6 +218,7 @@ void check_node(int inode, enum e_route_type route_type) {
 	yhigh = rr_node[inode].get_yhigh();
 	ptc_num = rr_node[inode].get_ptc_num();
 	capacity = rr_node[inode].get_capacity();
+	cost_index = rr_node[inode].get_cost_index();
 	type = NULL;
 
 	if (xlow > xhigh || ylow > yhigh) {
@@ -232,6 +234,11 @@ void check_node(int inode, enum e_route_type route_type) {
 	if (ptc_num < 0) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
+	}
+
+	if (cost_index < 0 || cost_index >= num_rr_indexed_data) {
+			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
+				"in check_node: node %d cost index (%d) is out of range.\n", inode, cost_index);
 	}
 
 	/* Check that the segment is within the array and such. */
@@ -389,7 +396,14 @@ void check_node(int inode, enum e_route_type route_type) {
 			/* Just a warning, since a very poorly routable rr-graph could have nodes with no edges.  *
 			 * If such a node was ever used in a final routing (not just in an rr_graph), other       *
 			 * error checks in check_routing will catch it.                                           */ 
-			vtr::printf_warning(__FILE__, __LINE__, "in check_node: node %d has no edges.\n", inode);
+            if (rr_node[inode].type == CHANX || rr_node[inode].type == CHANY) {
+                int seg_index = rr_indexed_data[cost_index].seg_index;
+                const char* seg_name = segment_inf[seg_index].name;
+                vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) has no out-going edges.\n", 
+                        inode, rr_node[inode].rr_get_type_string(), seg_name, xlow, ylow, xhigh, yhigh);
+            } else {
+                vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) ptc=%d has no out-going edges.\n", inode, rr_node[inode].rr_get_type_string(), xlow, ylow, rr_node[inode].get_ptc_num());
+            }
 		}
 	}
 
@@ -400,8 +414,7 @@ void check_node(int inode, enum e_route_type route_type) {
 		}
 	}
 
-	/* Check that the capacitance, resistance and cost_index are reasonable. */
-
+	/* Check that the capacitance and resistance are reasonable. */
 	C = rr_node[inode].C;
 	R = rr_node[inode].R;
 
@@ -419,11 +432,6 @@ void check_node(int inode, enum e_route_type route_type) {
 		}
 	}
 
-	cost_index = rr_node[inode].get_cost_index();
-	if (cost_index < 0 || cost_index >= num_rr_indexed_data) {
-			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-				"in check_node: node %d cost index (%d) is out of range.\n", inode, cost_index);
-	}
 }
 
 static void check_pass_transistors(int from_node) {

@@ -544,7 +544,7 @@ void build_rr_graph(
 	}
 
 
-	check_rr_graph(graph_type, L_nx, L_ny, *num_rr_switches, Fc_in);
+	check_rr_graph(graph_type, L_nx, L_ny, *num_rr_switches, Fc_in, segment_inf);
 
 	/* dump out rr structs if requested */
 	if (dump_rr_structs_file){
