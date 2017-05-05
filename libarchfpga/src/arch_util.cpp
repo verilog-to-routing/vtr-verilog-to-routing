@@ -80,7 +80,6 @@ void SetupEmptyType(struct s_type_descriptor* cb_type_descriptors,
 	type->pin_class = NULL;
 	type->is_global_pin = NULL;
 	type->is_Fc_frac = NULL;
-	type->is_Fc_full_flex = NULL;
 	type->Fc = NULL;
 	type->pb_type = NULL;
 	type->area = UNDEFINED;

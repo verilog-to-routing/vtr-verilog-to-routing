@@ -280,7 +280,6 @@ struct s_port_power {
  pin_class: The class a pin belongs to
  is_global_pin: Whether or not a pin is global (hence not routed)
  is_Fc_frac: true if Fc fractional, else Fc absolute
- is_Fc_out_full_flex: true means opins will connect to all available segments
  pb_type: Internal subblocks and routing information for this physical block
  pb_graph_head: Head of DAG of pb_types_nodes and their edges
 
@@ -313,7 +312,6 @@ struct s_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	bool *is_global_pin; /* [0..num_pins-1] */
 
 	bool *is_Fc_frac; /* [0..num_pins-1] */
-	bool *is_Fc_full_flex; /* [0..num_pins-1] */
 	float **Fc; /* [0..num_pins-1][0..num_segments-1] where num_segments is specified in s_arch or s_det_routing_arch */
 
 	/* Clustering info */

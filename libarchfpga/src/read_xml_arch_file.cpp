@@ -1636,8 +1636,6 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 	def_out_val = OPEN;
 
 	Type->is_Fc_frac = (bool *) vtr::malloc(Type->num_pins * sizeof(bool));
-	Type->is_Fc_full_flex = (bool *) vtr::malloc(
-			Type->num_pins * sizeof(bool));
 	Type->Fc = vtr::alloc_matrix<float>(0, Type->num_pins-1, 0, num_segments-1);
 
 	/* Load the default fc_in, if specified */
@@ -1651,7 +1649,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 			def_type_in = FC_FULL;
 		} else {
 			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-					"Invalid type '%s' for Fc. Only abs, frac and full are allowed.\n",
+					"Invalid type '%s' for Fc. Must be 'abs' or 'frac'.\n",
 					Prop);
 		}
 		switch (def_type_in) {
@@ -1675,11 +1673,9 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 			def_type_out = FC_ABS;
 		} else if (0 == strcmp(Prop, "frac")) {
 			def_type_out = FC_FRAC;
-		} else if (0 == strcmp(Prop, "full")) {
-			def_type_out = FC_FULL;
 		} else {
 			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-					"Invalid type '%s' for Fc. Only abs, frac and full are allowed.\n",
+					"Invalid type '%s' for Fc. Must be 'abs' or 'frac'.\n",
 					Prop);
 		}
 		switch (def_type_out) {
@@ -1704,17 +1700,12 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 		for (int iseg = 0; iseg < num_segments; iseg++){
 			if (Type->class_inf[iclass].type == DRIVER) {
 				Type->Fc[ipin][iseg] = def_out_val;
-				Type->is_Fc_full_flex[ipin] =
-						(def_type_out == FC_FULL) ? true : false;
 				Type->is_Fc_frac[ipin] = (def_type_out == FC_FRAC) ? true : false;
 			} else if (Type->class_inf[iclass].type == RECEIVER) {
 				Type->Fc[ipin][iseg] = def_in_val;
-				Type->is_Fc_full_flex[ipin] =
-						(def_type_in == FC_FULL) ? true : false;
 				Type->is_Fc_frac[ipin] = (def_type_in == FC_FRAC) ? true : false;
 			} else {
 				Type->Fc[ipin][iseg] = -1;
-				Type->is_Fc_full_flex[ipin] = false;
 				Type->is_Fc_frac[ipin] = false;
 			}
 		}
@@ -1823,21 +1814,12 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 
 						// Check whether the value had been overwritten
 						if (ovr_val != Type->Fc[iport_pin + curr_pin][0]
-									|| Type->is_Fc_full_flex[iport_pin
-											+ curr_pin]
-											!= (ovr_type == FC_FULL) ? true :
-							false
-									|| Type->is_Fc_frac[iport_pin + curr_pin]
-											!= (ovr_type == FC_FRAC) ?
-									true : false) {
+							|| (Type->is_Fc_frac[iport_pin + curr_pin] != (ovr_type == FC_FRAC)) ?  true : false) {
 
 							for (int iseg = 0; iseg < num_segments; iseg++){
 								Type->Fc[iport_pin + curr_pin][iseg] = ovr_val;
 							}
-							Type->is_Fc_full_flex[iport_pin + curr_pin] =
-									(ovr_type == FC_FULL) ? true : false;
-							Type->is_Fc_frac[iport_pin + curr_pin] =
-									(ovr_type == FC_FRAC) ? true : false;
+							Type->is_Fc_frac[iport_pin + curr_pin] = (ovr_type == FC_FRAC) ? true : false;
 
 						} else {
 

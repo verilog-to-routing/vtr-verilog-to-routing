@@ -215,7 +215,7 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 
 static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
 		const int num_seg_types, const int *sets_per_seg_type,
-		const int max_chan_width, const bool is_Fc_out,
+		const int max_chan_width,
 		const enum e_directionality directionality, 
 		bool *Fc_clipped, const bool ignore_Fc_0);
 
@@ -342,13 +342,13 @@ void build_rr_graph(
 	} else {
 		bool Fc_clipped = false;
 		Fc_in = alloc_and_load_actual_fc(L_num_types, types, max_pins, num_seg_types, sets_per_seg_type, max_chan_width,
-				false, directionality, &Fc_clipped, ignore_Fc_0);
+				directionality, &Fc_clipped, ignore_Fc_0);
 		if (Fc_clipped) {
 			*Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
 		}
 		Fc_clipped = false;
 		Fc_out = alloc_and_load_actual_fc(L_num_types, types, max_pins, num_seg_types, sets_per_seg_type, max_chan_width,
-				true, directionality, &Fc_clipped, ignore_Fc_0);
+				directionality, &Fc_clipped, ignore_Fc_0);
 		if (Fc_clipped) {
 			*Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
 		}
@@ -357,14 +357,8 @@ void build_rr_graph(
 		for (int i = 1; i < L_num_types; ++i) { /* Skip "<EMPTY>" */
 			for (int j = 0; j < type_descriptors[i].num_pins; ++j) {
 				for (int k = 0; k < num_seg_types; k++){
-					if (type_descriptors[i].is_Fc_full_flex[j]) {
-						vtr::printf_info("Fc Actual Values: type = %s, pin = %d, seg_index = %d, Fc_out = full, Fc_in = %d.\n",
-								type_descriptors[i].name, j, k, Fc_in[i][j][k]);
-					}
-					else {
-						vtr::printf_info("Fc Actual Values: type = %s, pin = %d, seg = %d, Fc_out = %d, Fc_in = %d.\n",
-								type_descriptors[i].name, j, k, Fc_out[i][j][k], Fc_in[i][j][k]);
-					}
+                    vtr::printf_info("Fc Actual Values: type = %s, pin = %d, seg = %d (%s), Fc_out = %d, Fc_in = %d.\n",
+                            type_descriptors[i].name, j, k, segment_inf[k].name, Fc_out[i][j][k], Fc_in[i][j][k]);
 				}
 			}
 		}
@@ -895,10 +889,10 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 	return seg_details;
 }
 
-/* Calculates the actual Fc values for the given max_chan_width value */
+/* Calculates the number of track connects from each block pin to each segment type */
 static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
 		const int num_seg_types, const int *sets_per_seg_type,
-		const int max_chan_width, const bool is_Fc_out,
+		const int max_chan_width,
 		const enum e_directionality directionality, 
 		bool *Fc_clipped, const bool ignore_Fc_0) {
 
@@ -934,11 +928,16 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
 						Result[itype][ipin][iseg] = (int)Fc[ipin][iseg];
 					}
 
-					if (is_Fc_out && types[itype].is_Fc_full_flex[ipin]) {
-						Result[itype][ipin][iseg] = sets_per_seg_type[iseg] * fac;
-					}
-
+                    //If the fractional Fc value and segment count is is low, we may get no 
+                    //connections from the pin to this wire type; take the max with fac to 
+                    //ensure we get at least some connections
+                    //
+                    //TODO: think about this, this may dramatically increase the number of connections 
+                    //      beyond what is expected for low Fc connections to 'rare' wire types
 					Result[itype][ipin][iseg] = max(Result[itype][ipin][iseg], fac);
+
+                    //It is possible that we may want more connections that wires of this type exist;
+                    //so clip to the maximum number of wires
 					if (Result[itype][ipin][iseg] > sets_per_seg_type[iseg] * fac) {
 						*Fc_clipped = true;
 						Result[itype][ipin][iseg] = sets_per_seg_type[iseg] * fac;

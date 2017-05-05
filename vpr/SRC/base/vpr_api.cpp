@@ -527,13 +527,9 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 		   iterate over all segments as well if necessary */
 		int Fc = FILL_TYPE->Fc[ipin][0];
 		bool is_fractional = FILL_TYPE->is_Fc_frac[ipin];
-		bool is_full_flex = FILL_TYPE->is_Fc_full_flex[ipin];
 
 		if (pin_type == DRIVER){
-			if (is_full_flex){
-				/* opin connects to all wire segments in channel */
-				Fc = 1.0;
-			} else if (!is_fractional) {
+			if (!is_fractional) {
 				/* convert to fractional representation if necessary */
 				Fc /= W;
 			}
@@ -792,7 +788,6 @@ static void free_complex_block_types(void) {
 		free(type_descriptors[i].grid_loc_def);
 
 		free(type_descriptors[i].is_Fc_frac);
-		free(type_descriptors[i].is_Fc_full_flex);
         vtr::free_matrix(type_descriptors[i].Fc, 0, type_descriptors[i].num_pins-1, 0);
 
 		free_pb_type(type_descriptors[i].pb_type);

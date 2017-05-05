@@ -80,9 +80,6 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
 			fprintf(Echo, "\tis_Fc_frac: \n");
 			fprintf(Echo, "\t\tPin number %d: %s\n", j,
 					(Types[i].is_Fc_frac[j] ? "true" : "false"));
-			fprintf(Echo, "\tis_Fc_full_flex: \n");
-			fprintf(Echo, "\t\tPin number %d: %s\n", j,
-					(Types[i].is_Fc_full_flex[j] ? "true" : "false"));
 			for (int iseg = 0; iseg < arch->num_segments; iseg++){
 				fprintf(Echo, "\tPin: %d  Segment: %d  Fc: %f\n", j, iseg, Types[i].Fc[j][iseg]);
 			}
