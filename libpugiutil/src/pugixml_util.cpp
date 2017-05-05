@@ -62,7 +62,7 @@ namespace pugiutil {
         return child;
     }
 
-    //Counts the number of child nodes
+    //Counts the number of child nodes of type 'child_name'
     //
     //  node - The parent xml node
     //  child_name - The child tag name
@@ -84,6 +84,49 @@ namespace pugiutil {
         //Note that we don't do any error checking here since get_first_child does the existance check
 
         return count;
+    }
+
+    //Counts the number of child nodes (any type)
+    //
+    //  node - The parent xml node
+    //  loc_data - XML file location data
+    //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
+    size_t count_children(const pugi::xml_node node, 
+                          const loc_data& loc_data,
+                          const ReqOpt req_opt) {
+        size_t count = std::distance(node.begin(), node.end());
+
+        if (count == 0 && req_opt == REQUIRED) {
+            throw XmlError("Expected child node(s) in node '" + std::string(node.name()) + "'",
+                           loc_data.filename(), loc_data.line(node));
+        }
+
+        return count;
+    }
+
+    //Throws a well formatted error if the actual child count does not equal the 'expected_count'
+    //
+    //  node - The parent xml node
+    //  loc_data - XML file location data
+    //  expected_count - The expected number of child nodes
+    void expect_child_node_count(const pugi::xml_node node,
+                            size_t expected_count,
+                            const loc_data& loc_data) {
+        size_t actual_count = count_children(node, loc_data, OPTIONAL);
+
+        if (actual_count != expected_count) {
+            //throw XmlError("Expected " + std::to_string(expected_count) 
+                            //+ " child node(s) of node "
+                            //+ "'" + std::string(node.name()) + "'"
+                            //+ "(found " + std::to_string(actual_count) + ")",
+                           //loc_data.filename(), loc_data.line(node));
+            
+            throw XmlError("Found " + std::to_string(actual_count)
+                            + " child node(s) of "
+                            + "'" + std::string(node.name()) + "'"
+                            + "(expected " + std::to_string(expected_count) + ")",
+                           loc_data.filename(), loc_data.line(node));
+        }
     }
 
     //Counts the number of attributes on the specified node

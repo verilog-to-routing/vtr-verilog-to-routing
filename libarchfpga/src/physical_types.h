@@ -267,6 +267,21 @@ struct s_port_power {
 	bool reverse_scaled; /* Scale by (1-prob) */
 };
 
+
+//The type of Fc specification
+enum class e_fc_type {
+    FRACTIONAL,   //Fractional Fc specification (i.e. fraction of routing channel tracks)
+    ABSOLUTE     //Absolute Fc specification (i.e. absolute number of tracks)
+};
+
+//Describes the Fc specification for a set of pins and a segment
+struct t_fc_specification {
+    e_fc_type fc_type;      //How to interpret the Fc value
+    float fc_value;         //The Fc value
+    int seg_index;          //The target segment index
+    std::vector<int> pins;  //The block pins collectively effected by this Fc
+};
+
 /* Describes the type for a physical logic block
  name: unique identifier for type  
  num_pins: Number of pins for the block
@@ -279,7 +294,7 @@ struct s_port_power {
  class_inf: Information of each logically-equivalent class
  pin_class: The class a pin belongs to
  is_global_pin: Whether or not a pin is global (hence not routed)
- is_Fc_frac: true if Fc fractional, else Fc absolute
+ fc_specs: The Fc specifications for all pins
  pb_type: Internal subblocks and routing information for this physical block
  pb_graph_head: Head of DAG of pb_types_nodes and their edges
 
@@ -311,8 +326,7 @@ struct s_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 
 	bool *is_global_pin; /* [0..num_pins-1] */
 
-	bool *is_Fc_frac; /* [0..num_pins-1] */
-	float **Fc; /* [0..num_pins-1][0..num_segments-1] where num_segments is specified in s_arch or s_det_routing_arch */
+    std::vector<t_fc_specification> fc_specs;
 
 	/* Clustering info */
 	struct s_pb_type *pb_type;

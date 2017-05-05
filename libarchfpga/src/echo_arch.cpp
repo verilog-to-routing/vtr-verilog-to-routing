@@ -6,6 +6,7 @@
 #include "vtr_list.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include "vtr_assert.h"
 
 using vtr::t_linked_vptr;
 
@@ -76,13 +77,22 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
 		fprintf(Echo, "\tcapacity: %d\n", Types[i].capacity);
 		fprintf(Echo, "\twidth: %d\n", Types[i].width);
 		fprintf(Echo, "\theight: %d\n", Types[i].height);
-		for (j = 0; j < Types[i].num_pins; j++) {
-			fprintf(Echo, "\tis_Fc_frac: \n");
-			fprintf(Echo, "\t\tPin number %d: %s\n", j,
-					(Types[i].is_Fc_frac[j] ? "true" : "false"));
-			for (int iseg = 0; iseg < arch->num_segments; iseg++){
-				fprintf(Echo, "\tPin: %d  Segment: %d  Fc: %f\n", j, iseg, Types[i].Fc[j][iseg]);
-			}
+		for (const t_fc_specification& fc_spec : Types[i].fc_specs) {
+            fprintf(Echo, "fc_type: ");
+            if (fc_spec.fc_type == e_fc_type::ABSOLUTE) {
+                fprintf(Echo, "ABSOLUTE");
+            } else if (fc_spec.fc_type == e_fc_type::FRACTIONAL) {
+                fprintf(Echo, "FRACTIONAL");
+            } else {
+                VTR_ASSERT(false);
+            }
+            fprintf(Echo, "fc_value: %f", fc_spec.fc_value);
+            fprintf(Echo, "segment: %s", arch->Segments[fc_spec.seg_index].name);
+            fprintf(Echo, "pins:");
+            for (int pin : fc_spec.pins) {
+                fprintf(Echo, " %d", pin);
+            }
+            fprintf(Echo, "\n");
 		}
 		fprintf(Echo, "\tnum_drivers: %d\n", Types[i].num_drivers);
 		fprintf(Echo, "\tnum_receivers: %d\n", Types[i].num_receivers);

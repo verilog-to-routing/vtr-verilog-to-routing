@@ -63,8 +63,11 @@
 using namespace std;
 using namespace pugiutil;
 
-enum Fc_type {
-	FC_ABS, FC_FRAC, FC_FULL
+struct t_fc_override {
+    std::string port_name;
+    std::string seg_name;
+    e_fc_type fc_type;
+    float fc_value;
 };
 
 /* This gives access to the architecture file name to 
@@ -99,6 +102,8 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode * mode, const pugi
 static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch,
 		const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiutil::loc_data& loc_data);
+static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
+static e_fc_type string_to_fc_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
 static void ProcessSizingTimingIpinCblock(pugi::xml_node Node,
 		struct s_arch *arch, const bool timing_enabled, const pugiutil::loc_data& loc_data);
@@ -1618,294 +1623,145 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch
 	ProcessInterconnect(Cur, mode, loc_data);
 }
 
-/* Takes in the node ptr for the 'fc_in' and 'fc_out' elements and initializes
+/* Takes in the node ptr for the 'fc' elements and initializes
  * the appropriate fields of type. */
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiutil::loc_data& loc_data) {
-	enum Fc_type def_type_in, def_type_out, ovr_type;
-	const char *Prop, *Prop2;
-	char *port_name;
-	float def_in_val, def_out_val, ovr_val;
-	int ipin, iclass, end_pin_index, start_pin_index, match_count;
-	int iport, iport_pin, curr_pin, port_found;
-	pugi::xml_node Child;
+    e_fc_type default_fc_in_type = e_fc_type::FRACTIONAL;
+    e_fc_type default_fc_out_type = e_fc_type::FRACTIONAL;
+    float default_fc_in_value = std::numeric_limits<float>::quiet_NaN();
+    float default_fc_out_value = std::numeric_limits<float>::quiet_NaN();
 
-	def_type_in = FC_FRAC;
-	def_type_out = FC_FRAC;
-    ovr_type = FC_FRAC; //Remove uninitialized warning
-	def_in_val = OPEN;
-	def_out_val = OPEN;
+	/* Load the default fc_in */
+	auto default_fc_in_attrib = get_attribute(Node, "default_in_type", loc_data);
+    default_fc_in_type = string_to_fc_type(default_fc_in_attrib.value(), Node, loc_data);
 
-	Type->is_Fc_frac = (bool *) vtr::malloc(Type->num_pins * sizeof(bool));
-	Type->Fc = vtr::alloc_matrix<float>(0, Type->num_pins-1, 0, num_segments-1);
+    auto default_in_val_attrib = get_attribute(Node, "default_in_val", loc_data);
+    default_fc_in_value = vtr::atof(default_in_val_attrib.value());
 
-	/* Load the default fc_in, if specified */
-	Prop = get_attribute(Node, "default_in_type", loc_data, OPTIONAL).as_string(NULL);
-	if (Prop != NULL) {
-		if (0 == strcmp(Prop, "abs")) {
-			def_type_in = FC_ABS;
-		} else if (0 == strcmp(Prop, "frac")) {
-			def_type_in = FC_FRAC;
-		} else if (0 == strcmp(Prop, "full")) {
-			def_type_in = FC_FULL;
-		} else {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-					"Invalid type '%s' for Fc. Must be 'abs' or 'frac'.\n",
-					Prop);
-		}
-		switch (def_type_in) {
-		case FC_FULL:
-			def_in_val = 0.0;
-			break;
-		case FC_ABS:
-		case FC_FRAC:
-			Prop2 = get_attribute(Node, "default_in_val", loc_data).value();
-			def_in_val = (float) atof(Prop2);
-			break;
-		default:
-			def_in_val = -1;
-		}
-	}
+	/* Load the default fc_out */
+	auto default_fc_out_attrib = get_attribute(Node, "default_out_type", loc_data);
+    default_fc_out_type = string_to_fc_type(default_fc_out_attrib.value(), Node, loc_data);
 
-	/* Load the default fc_out, if specified */
-	Prop = get_attribute(Node, "default_out_type", loc_data, OPTIONAL).as_string(NULL);
-	if (Prop != NULL) {
-		if (0 == strcmp(Prop, "abs")) {
-			def_type_out = FC_ABS;
-		} else if (0 == strcmp(Prop, "frac")) {
-			def_type_out = FC_FRAC;
-		} else {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-					"Invalid type '%s' for Fc. Must be 'abs' or 'frac'.\n",
-					Prop);
-		}
-		switch (def_type_out) {
-		case FC_FULL:
-			def_out_val = 0.0;
-			break;
-		case FC_ABS:
-		case FC_FRAC:
-			Prop2 = get_attribute(Node, "default_out_val", loc_data).value();
-			def_out_val = (float) atof(Prop2);
-			break;
-		default:
-			def_out_val = -1;
-		}
-	}
+    auto default_out_val_attrib = get_attribute(Node, "default_out_val", loc_data);
+    default_fc_out_value = vtr::atof(default_out_val_attrib.value());
 
-	/* Go though all the pins and segments in Type, assign def_in_val and def_out_val
-	 * to entries in Type->Fc array corresponding to input pins and output
-	 * pins. Also sets up the type of fc of the pin in the bool arrays    */
-	for (ipin = 0; ipin < Type->num_pins; ipin++) {
-		iclass = Type->pin_class[ipin];
-		for (int iseg = 0; iseg < num_segments; iseg++){
-			if (Type->class_inf[iclass].type == DRIVER) {
-				Type->Fc[ipin][iseg] = def_out_val;
-				Type->is_Fc_frac[ipin] = (def_type_out == FC_FRAC) ? true : false;
-			} else if (Type->class_inf[iclass].type == RECEIVER) {
-				Type->Fc[ipin][iseg] = def_in_val;
-				Type->is_Fc_frac[ipin] = (def_type_in == FC_FRAC) ? true : false;
-			} else {
-				Type->Fc[ipin][iseg] = -1;
-				Type->is_Fc_frac[ipin] = false;
-			}
-		}
-	}
-
-	/* pin-based fc overrides and segment-based fc overrides should not exist at the same time */
-	if (get_first_child(Node, "pin", loc_data, OPTIONAL) != NULL && get_first_child(Node, "segment", loc_data, OPTIONAL) != NULL){
-		archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-				"Complex block 'fc' is allowed to specify pin-based fc overrides OR segment-based fc overrides, not both.\n");
-	}
-
-	/* Now, check for pin-based fc override - look for pin child. */
-	Child = get_first_child(Node, "pin", loc_data, OPTIONAL);
-	while (Child != NULL) {
-		/* Get all the properties of the child first */
-		Prop = get_attribute(Child, "name", loc_data).as_string(NULL);
-
-		Prop2 = get_attribute(Child, "fc_type", loc_data).as_string(NULL);
-		if (Prop2 != NULL) {
-			if (0 == strcmp(Prop2, "abs")) {
-				ovr_type = FC_ABS;
-			} else if (0 == strcmp(Prop2, "frac")) {
-				ovr_type = FC_FRAC;
-			} else if (0 == strcmp(Prop2, "full")) {
-				ovr_type = FC_FULL;
-			} else {
-				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
-						"Invalid type '%s' for Fc. Only abs, frac and full are allowed.\n",
-						Prop2);
-			}
-			switch (ovr_type) {
-			case FC_FULL:
-				ovr_val = 0.0;
-				break;
-			case FC_ABS:
-			case FC_FRAC:
-				Prop2 = get_attribute(Child, "fc_val", loc_data).value();
-				ovr_val = (float) atof(Prop2);
-				break;
-			default:
-				ovr_val = -1;
-			}
-
-			port_name = NULL;
-
-			/* Search for the child pin in Type and overwrites the default values     */
-			/* Check whether the name is in the format of "<port_name>" or            *
-			 * "<port_name> [start_index:end_index]" by looking for the symbol '['    */
-			Prop2 = strstr(Prop, "[");
-			if (Prop2 == NULL) {
-				/* Format "port_name" , Prop stores the port_name */
-				end_pin_index = start_pin_index = -1;
-			} else {
-				/* Format "port_name [start_index:end_index]" */
-				match_count = sscanf(Prop, "%s [%d:%d]", port_name,
-						&end_pin_index, &start_pin_index);
-				Prop = port_name;
-				if (match_count != 3
-						|| (match_count != 1 && port_name == NULL)) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
-							"Invalid name for pin child, name should be in the format \"port_name\" or \"port_name [end_pin_index:start_pin_index]\","
-									"The end_pin_index and start_pin_index can be the same.\n");
-				}
-				if (end_pin_index < 0 || start_pin_index < 0) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
-							"The pin_index should not be a negative value.\n");
-				}
-				if (end_pin_index < start_pin_index) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
-							"The end_pin_index should be not be less than start_pin_index.\n");
-				}
-			}
-
-			/* Find the matching port_name in Type */
-			/* TODO: Check for pins assigned more than one override fc's - right now assigning the last value specified. */
-			iport_pin = 0;
-			port_found = false;
-			for (iport = 0;
-					((iport < Type->pb_type->num_ports) && (port_found == false));
-					iport++) {
-				if (strcmp(Prop, Type->pb_type->ports[iport].name) == 0) {
-					/* This is the port, the start_pin_index and end_pin_index offset starts
-					 * here. The indices are inclusive. */
-					port_found = true;
-					if (end_pin_index > Type->pb_type->ports[iport].num_pins) {
-						archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
-								"The end_pin_index for this port: %d cannot be greater than the number of pins in this port: %d.\n",
-								end_pin_index,
-								Type->pb_type->ports[iport].num_pins);
-					}
-
-					// The pin indices is not specified - override whole port.
-					if (end_pin_index == -1 && start_pin_index == -1) {
-						start_pin_index = 0;
-
-						// Minus one since it is going to be assessed inclusively.
-						end_pin_index = Type->pb_type->ports[iport].num_pins
-								- 1;
-					}
-
-					/* Go through the pins in the port from start_pin_index to end_pin_index
-					 * and overwrite the default fc_val and fc_type with the values parsed in
-					 * from above. */
-					for (curr_pin = start_pin_index; curr_pin <= end_pin_index;
-							curr_pin++) {
-
-						// Check whether the value had been overwritten
-						if (ovr_val != Type->Fc[iport_pin + curr_pin][0]
-							|| (Type->is_Fc_frac[iport_pin + curr_pin] != (ovr_type == FC_FRAC)) ?  true : false) {
-
-							for (int iseg = 0; iseg < num_segments; iseg++){
-								Type->Fc[iport_pin + curr_pin][iseg] = ovr_val;
-							}
-							Type->is_Fc_frac[iport_pin + curr_pin] = (ovr_type == FC_FRAC) ? true : false;
-
-						} else {
-
-							archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
-									"Multiple Fc override detected!\n");
-						}
-					}
-
-				} else {
-					/* This is not the matching port, move the iport_pin index forward. */
-					iport_pin += Type->pb_type->ports[iport].num_pins;
-				}
-			} /* Finish going through all the ports in pb_type looking for the pin child's port. */
-
-			/* The override pin child is not in any of the ports in pb_type. */
-			if (port_found == false) {
-				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
-						"The port \"%s\" cannot be found.\n", Prop);
-			}
-
-			/* End of case where fc_type of pin_child is specified. */
-		} else {
-			/* fc_type of pin_child is not specified. Error out. */
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
-					"Pin child with no fc_type specified is not allowed.\n");
-		}
-
-		/* Find next child and frees up the current child. */
-		Child = Child.next_sibling(Child.name());
-
-	} /* End of processing pin children */
-
-	/* now check for segment-based overrides. earlier in this function we already checked that both kinds of
-	   overrides haven't been specified */
-	Child = get_first_child(Node, "segment", loc_data, OPTIONAL);
-	while (Child != NULL){
-		const char *segment_name;
-		int seg_ind;
-		float in_val;
-		float out_val;
-
-		/* get name */
-		Prop = get_attribute(Child, "name", loc_data).value();
-		segment_name = Prop;
-
-		/* get fc_in */
-		Prop = get_attribute(Child, "in_val", loc_data).value();
-		in_val = (float) atof(Prop);
+    /* Load any <fc_override/> tags */
+    std::vector<t_fc_override> fc_overrides;
+    for (auto child_node : Node.children()) {
+        t_fc_override fc_override = Process_Fc_override(child_node, loc_data);
+        fc_overrides.push_back(fc_override);
+    }
 
 
-		/* get fc_out */
-		Prop = get_attribute(Child, "out_val", loc_data).value();
-		out_val = (float) atof(Prop);
+    /* Go through all the port/segment combinations and create the (potentially 
+     * overriden) pin/seg Fc specifications */
+    const t_pb_type* pb_type = Type->pb_type;
+    for (int iseg = 0; iseg < num_segments; ++iseg) {
+        int iblk_pin = 0;
+        for(int iport = 0; iport < pb_type->num_ports; ++iport) {
+            const t_port* port = &pb_type->ports[iport];
 
+            t_fc_specification fc_spec;
+            fc_spec.seg_index = iseg;
 
-		/* get segment index for which Fc should be updated */
-		seg_ind = UNDEFINED;
-		for (int iseg = 0; iseg < num_segments; iseg++){
-			if ( strcmp(segment_name, segments[iseg].name) == 0 ){
-				seg_ind = iseg;
-				break;
-			}
-		}
-		if (seg_ind == UNDEFINED){
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Child),
-				"Segment-based Fc override specified segment name that cannot be found in segment list: %s\n", segment_name);
-		}
+            //Apply the defaults
+            if (port->type == IN_PORT) {
+                fc_spec.fc_type = default_fc_in_type;
+                fc_spec.fc_value = default_fc_in_value;
+            } else {
+                VTR_ASSERT(port->type == OUT_PORT);
+                fc_spec.fc_type = default_fc_out_type;
+                fc_spec.fc_value = default_fc_out_value;
+            }
 
-		/* update Fc for this segment across all driver/receiver pins */
-		for (ipin = 0; ipin < Type->num_pins; ipin++){
-			iclass = Type->pin_class[ipin];
+            //Apply any matching overrides
+            for(const auto& fc_override : fc_overrides) {
+                if (fc_override.port_name == port->name || fc_override.seg_name == segments[iseg].name) {
+                    //Exact match, or partial match to either port or seg name
+                    // Note that we continue searching, this ensures that the last matching override is applied last
+                    fc_spec.fc_type = fc_override.fc_type;
+                    fc_spec.fc_value = fc_override.fc_value;
+                }
+            }
 
-			if (Type->class_inf[iclass].type == DRIVER){
-				Type->Fc[ipin][seg_ind] = out_val;
-			} else if (Type->class_inf[iclass].type == RECEIVER){
-				Type->Fc[ipin][seg_ind] = in_val;
-			} else {
-				/* do nothing */
-			}
-		}
+            //Add all the pins from this port
+            for(int iport_pin = 0; iport_pin < port->num_pins; ++iport_pin) {
+                //XXX: this assumes that iterating through the pb_type ports 
+                //     in order yields the block pin order
+                fc_spec.pins.push_back(iblk_pin);
+                ++iblk_pin;
+            }
 
+            Type->fc_specs.push_back(fc_spec);
+        }
+    }
+}
 
-		/* Find next child*/
-		Child = Child.next_sibling(Child.name());
-	}
+static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+    if (node.name() != std::string("fc_override")) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                "Unexpeted node of type '%s' (expected only 'fc_override')",
+                node.name());
+    }
 
+    t_fc_override fc_override;
+
+    expect_child_node_count(node, 0, loc_data);
+
+    bool seen_fc_type = false;
+    bool seen_fc_value = false;
+    bool seen_port_or_seg = false;
+    for(auto attrib : node.attributes()) {
+        if (attrib.name() == std::string("port_name")) {
+            fc_override.port_name = attrib.value();
+            seen_port_or_seg |= true;
+        } else if (attrib.name() == std::string("segment_name")) {
+            fc_override.seg_name = attrib.value();
+            seen_port_or_seg |= true;
+        } else if (attrib.name() == std::string("fc_type")) {
+            fc_override.fc_type = string_to_fc_type(attrib.value(), node, loc_data);
+            seen_fc_type = true;
+        } else if (attrib.name() == std::string("fc_val")) {
+            fc_override.fc_value = vtr::atoi(attrib.value());
+            seen_fc_value = true;
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                    "Unexpected attribute '%s'", attrib.name());
+        }
+    }
+
+    if (!seen_fc_type) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                "Missing expected attribute 'fc_type'");
+    }
+
+    if (!seen_fc_value) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                "Missing expected attribute 'fc_value'");
+    }
+
+    if (!seen_port_or_seg) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                "Missing expected attribute(s) 'port_name' and/or 'segment_name'");
+    }
+
+    return fc_override;
+}
+
+static e_fc_type string_to_fc_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+    e_fc_type fc_type;
+
+    if (str == "frac") {
+        fc_type = e_fc_type::FRACTIONAL;
+    } else if (str == "abs") {
+        fc_type = e_fc_type::ABSOLUTE;
+    } else {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                "Invalid fc_type '%s'. Must be 'abs' or 'frac'.\n",
+                str.c_str());
+    }
+
+    return fc_type;
 }
 
 /* Thie processes attributes of the 'type' tag */

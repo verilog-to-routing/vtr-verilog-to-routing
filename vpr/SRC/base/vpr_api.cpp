@@ -519,33 +519,31 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 	Fc_in = 0, Fc_out = 0;
 
 	/* get Fc_in/out for FILL_TYPE block (i.e. logic blocks) */
-	int num_pins = FILL_TYPE->num_pins;
-	for (int ipin = 0; ipin < num_pins; ipin++){
-		int iclass = FILL_TYPE->pin_class[ipin];
-		e_pin_type pin_type = FILL_TYPE->class_inf[iclass].type;
-		/* Get Fc of the pin to the first wire segment it connects to. TODO: In the future can
-		   iterate over all segments as well if necessary */
-		int Fc = FILL_TYPE->Fc[ipin][0];
-		bool is_fractional = FILL_TYPE->is_Fc_frac[ipin];
+    VTR_ASSERT(FILL_TYPE->fc_specs.size() > 0);
 
-		if (pin_type == DRIVER){
-			if (!is_fractional) {
-				/* convert to fractional representation if necessary */
-				Fc /= W;
-			}
-			if (Fc > Fc_out){
-				Fc_out = Fc;
-			}
-		}
-		if (pin_type == RECEIVER){
-			if (!is_fractional){
-				Fc /= W;
-			}
-			if (Fc > Fc_in){
-				Fc_in = Fc;
-			}
-		}
-	}
+    //Estimate the maximum Fc_in/Fc_out
+
+    for (const t_fc_specification& fc_spec : FILL_TYPE->fc_specs) {
+        float Fc = fc_spec.fc_value;
+
+        if (fc_spec.fc_type == e_fc_type::ABSOLUTE) {
+            //Convert to estimated fractional
+            Fc /= W;
+        }
+        VTR_ASSERT_MSG(Fc >= 0 && Fc <= 1., "Fc should be fractional");
+
+        for (int ipin : fc_spec.pins) {
+            int iclass = FILL_TYPE->pin_class[ipin];
+            e_pin_type pin_type = FILL_TYPE->class_inf[iclass].type;
+
+            if (pin_type == DRIVER) {
+                Fc_out = std::max(Fc, Fc_out);
+            } else {
+                VTR_ASSERT(pin_type == RECEIVER);
+                Fc_in = std::max(Fc, Fc_in);
+            }
+        }
+    }
 
 	/* Estimates of switch fan-in are done as follows:
 	   1) opin to wire switch:
@@ -786,9 +784,6 @@ static void free_complex_block_types(void) {
 		free(type_descriptors[i].is_global_pin);
 		free(type_descriptors[i].pin_class);
 		free(type_descriptors[i].grid_loc_def);
-
-		free(type_descriptors[i].is_Fc_frac);
-        vtr::free_matrix(type_descriptors[i].Fc, 0, type_descriptors[i].num_pins-1, 0);
 
 		free_pb_type(type_descriptors[i].pb_type);
 		free(type_descriptors[i].pb_type);

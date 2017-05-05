@@ -68,15 +68,14 @@ static void alloc_and_load_blk_pin_from_port_pin(void);
  * Otherwise, mark down all the pins in that port.                                 */
 static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_name, 
 		char * port_name, int end_pin_index, int start_pin_index, char * src_string, 
-		int line, int ** idirect_from_blk_pin, int ** direct_type_from_blk_pin, int num_segments);
+		int line, int ** idirect_from_blk_pin, int ** direct_type_from_blk_pin);
 
 /* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
  * direct_type_from_blk_pin with direct_type from start_pin_index to               *
  * end_pin_index.                                                                  */
 static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int itype, 
 		int iport, int ** idirect_from_blk_pin, int idirect, 
-		int ** direct_type_from_blk_pin, int direct_type, int line, char * src_string,
-		int num_segments);
+		int ** direct_type_from_blk_pin, int direct_type, int line, char * src_string);
 
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_pin_lookup_from_index, t_pb_graph_node *pb_graph_node);
 
@@ -1572,8 +1571,7 @@ void parse_direct_pin_name(char * src_string, int line, int * start_pin_index,
 
 static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int itype, 
 		int iport, int ** idirect_from_blk_pin, int idirect, 
-		int ** direct_type_from_blk_pin, int direct_type, int line, char * src_string,
-		int num_segments) {
+		int ** direct_type_from_blk_pin, int direct_type, int line, char * src_string) {
 
 	/* Mark the pin entry in idirect_from_blk_pin with idirect and the pin entry in    *
 	 * direct_type_from_blk_pin with direct_type from start_pin_index to               *
@@ -1587,12 +1585,15 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 								
 		//iterate through all segment connections and check if all Fc's are 0
 		bool all_fcs_0 = true;
-		for (int iseg = 0; iseg < num_segments; iseg++){
-			if (type_descriptors[itype].Fc[iblk_pin][iseg] > 0){
-				all_fcs_0 = false;
-				break;
-			}
-		}
+        for (const auto& fc_spec : type_descriptors[itype].fc_specs) {
+            for(int ipin : fc_spec.pins) {
+                if(iblk_pin == ipin && fc_spec.fc_value > 0) {
+                    all_fcs_0 = false;
+                    break;
+                }
+            }
+            if(!all_fcs_0) break;
+        }
 
 		// Check the fc for the pin, direct chain link only if fc == 0
 		if (all_fcs_0) {
@@ -1600,10 +1601,9 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 							
 			// Check whether the pins are marked, errors out if so
 			if (direct_type_from_blk_pin[itype][iblk_pin] != OPEN) {
-				vtr::printf_error(__FILE__, __LINE__,
+				vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__,
 						"[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n", 
 						line, src_string);
-				exit(1);
 			} else {
 				direct_type_from_blk_pin[itype][iblk_pin] = direct_type;
 			}
@@ -1614,8 +1614,7 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 
 static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_name, 
 		char * port_name, int end_pin_index, int start_pin_index, char * src_string, 
-		int line, int ** idirect_from_blk_pin, int ** direct_type_from_blk_pin,
-		int num_segments) {
+		int line, int ** idirect_from_blk_pin, int ** direct_type_from_blk_pin) {
 
 	/* Go through all the ports in all the blocks to find the port that has the same   *
 	 * name as port_name and belongs to the block type that has the name pb_type_name. *
@@ -1651,13 +1650,11 @@ static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_n
 					if (start_pin_index >= 0 || end_pin_index >= 0) {
 						mark_direct_of_pins(start_pin_index, end_pin_index, itype, 
 								iport, idirect_from_blk_pin, idirect, 
-								direct_type_from_blk_pin, direct_type, line, src_string,
-								num_segments);
+								direct_type_from_blk_pin, direct_type, line, src_string);
 					} else {
 						mark_direct_of_pins(0, num_port_pins-1, itype, 
 								iport, idirect_from_blk_pin, idirect, 
-								direct_type_from_blk_pin, direct_type, line, src_string,
-								num_segments);
+								direct_type_from_blk_pin, direct_type, line, src_string);
 					}
 				} // Do nothing if port_name does not match
 			} // Finish going through all the ports
@@ -1666,7 +1663,7 @@ static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_n
 
 }
 
-void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs, int num_segments, 
+void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs, 
 		int *** idirect_from_blk_pin, int *** direct_type_from_blk_pin) {
 
 	/* Allocates and loads idirect_from_blk_pin and direct_type_from_blk_pin arrays.    *
@@ -1733,15 +1730,13 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 		mark_direct_of_ports (idirect, SOURCE, from_pb_type_name, from_port_name, 
 				from_end_pin_index, from_start_pin_index, directs[idirect].from_pin, 
 				directs[idirect].line,
-				temp_idirect_from_blk_pin, temp_direct_type_from_blk_pin,
-				num_segments);
+				temp_idirect_from_blk_pin, temp_direct_type_from_blk_pin);
 
 		// Then, find blocks with the same name as to_pb_type_name and from_port_name
 		mark_direct_of_ports (idirect, SINK, to_pb_type_name, to_port_name, 
 				to_end_pin_index, to_start_pin_index, directs[idirect].to_pin, 
 				directs[idirect].line,
-				temp_idirect_from_blk_pin, temp_direct_type_from_blk_pin,
-				num_segments);
+				temp_idirect_from_blk_pin, temp_direct_type_from_blk_pin);
 
 	} // Finish going through all the directs
 

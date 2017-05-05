@@ -191,7 +191,7 @@ static const float cross_count[50] = { /* [0..49] */1.0, 1.0, 1.0, 1.0828, 1.153
 
 static void alloc_and_load_placement_structs(
 		float place_cost_exp, struct s_placer_opts placer_opts,
-		t_direct_inf *directs, int num_directs, int num_segments);
+		t_direct_inf *directs, int num_directs);
 
 static void alloc_and_load_try_swap_structs();
 
@@ -376,7 +376,7 @@ void try_place(struct s_placer_opts placer_opts,
 	init_chan(width_fac, chan_width_dist);
 
 	alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts,
-			directs, num_directs, det_routing_arch->num_segment);
+			directs, det_routing_arch->num_segment);
 
 	initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file);
 	init_draw_coords((float) width_fac);
@@ -2053,7 +2053,7 @@ static void free_placement_structs(
 
 static void alloc_and_load_placement_structs(
 		float place_cost_exp, struct s_placer_opts placer_opts,
-		t_direct_inf *directs, int num_directs, int num_segments) {
+		t_direct_inf *directs, int num_directs) {
 
 	/* Allocates the major structures needed only by the placer, primarily for *
 	 * computing costs quickly and such.                                       */
@@ -2125,7 +2125,7 @@ static void alloc_and_load_placement_structs(
 
 	alloc_and_load_try_swap_structs();
 
-	num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, num_segments, &pl_macros);
+	num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, &pl_macros);
 }
 
 static void alloc_and_load_try_swap_structs() {

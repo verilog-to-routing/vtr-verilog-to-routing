@@ -278,7 +278,7 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 }
 
 
-int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, int num_segments, t_pl_macro ** macros){
+int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl_macro ** macros){
 	
 	/* This function allocates and loads the macros placement macros   *
 	 * and returns the total number of macros in 2 steps.              *
@@ -306,7 +306,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, int 
 	t_pl_macro * macro = NULL;
 	
 	/* Sets up the required variables. */
-	alloc_and_load_idirect_from_blk_pin(directs, num_directs, num_segments, 
+	alloc_and_load_idirect_from_blk_pin(directs, num_directs, 
 			&f_idirect_from_blk_pin, &f_direct_type_from_blk_pin);
 
 	/* Allocate maximum memory for temporary variables. */

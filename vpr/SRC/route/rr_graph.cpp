@@ -911,41 +911,74 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
 
 	Result = vtr::alloc_matrix3<int>(0, L_num_types-1, 0, max_pins-1, 0, num_seg_types-1);
 
-	for (int itype = 1; itype < L_num_types; ++itype) { 
-		float **Fc = types[itype].Fc; 
-		for (int ipin = 0; ipin < types[itype].num_pins; ++ipin) {
+	for (int itype = 1; itype < L_num_types; ++itype) { //Skip <EMPTY>
+        for (const t_fc_specification fc_spec : types[itype].fc_specs) {
 
-			for (int iseg = 0; iseg < num_seg_types; iseg++){
+            int iseg = fc_spec.seg_index;
 
-				if(Fc[ipin][iseg] == 0 && ignore_Fc_0 == false) {
-					/* Special case indicating that this pin does not connect to general-purpose routing */
-					Result[itype][ipin][iseg] = 0;
-				} else {
-					/* General case indicating that this pin connects to general-purpose routing */
-					if (types[itype].is_Fc_frac[ipin]) {
-						Result[itype][ipin][iseg] = fac * vtr::nint(sets_per_seg_type[iseg] * Fc[ipin][iseg]);
-					} else {
-						Result[itype][ipin][iseg] = (int)Fc[ipin][iseg];
-					}
+            if(fc_spec.fc_value == 0 && ignore_Fc_0 == false) {
+                /* Special case indicating that this pin does not connect to general-purpose routing */
+                for (int ipin : fc_spec.pins) {
+                    Result[itype][ipin][iseg] = 0;
+                }
+            } else {
+                /* General case indicating that this pin connects to general-purpose routing */
+            
+                //Calculate how many connections there should be accross all the pins in this fc_spec
+                float flt_total_connections;
+                if (fc_spec.fc_type == e_fc_type::FRACTIONAL) {
+                    float conns_per_pin = fac * sets_per_seg_type[iseg] * fc_spec.fc_value;
+                    flt_total_connections = conns_per_pin * fc_spec.pins.size();
+                } else {
 
-                    //If the fractional Fc value and segment count is is low, we may get no 
-                    //connections from the pin to this wire type; take the max with fac to 
-                    //ensure we get at least some connections
-                    //
-                    //TODO: think about this, this may dramatically increase the number of connections 
-                    //      beyond what is expected for low Fc connections to 'rare' wire types
-					Result[itype][ipin][iseg] = max(Result[itype][ipin][iseg], fac);
+                    VTR_ASSERT(fc_spec.fc_type == e_fc_type::ABSOLUTE);
+                    flt_total_connections = fc_spec.fc_value;
+                }
 
+                //Round to integer
+                int total_connections = vtr::nint(flt_total_connections);
+
+                //Ensure that there are at least fac connections, this ensures that low Fc ports
+                //targeting small sets of segs get connection(s), even if flt_total_connections < fac.
+                total_connections = std::max(total_connections, fac);
+
+                //Ensure total evenly divides fac by adding the remainder
+                total_connections += (total_connections % fac);
+
+                VTR_ASSERT(total_connections > 0);
+                VTR_ASSERT(total_connections % fac == 0);
+
+                //We walk through all the pins this fc_spec applies to, adding fac connections
+                //to each pin, until we run out of connections. This should distribute the connections 
+                //as evenly as possible (if total_connections % pins.size() != 0, there will be 
+                //some inevitable imbalance).
+                int connections_remaining = total_connections;
+                while (connections_remaining != 0) {
+
+                    //Add one set of connections to each pin
+                    for (int ipin : fc_spec.pins) {
+                        if (connections_remaining >= fac) {
+                            Result[itype][ipin][iseg] += fac;
+                            connections_remaining -= fac;
+                        } else {
+                            VTR_ASSERT(connections_remaining == 0);
+                            break;
+                        }
+                    }
+                }
+
+                for (int ipin : fc_spec.pins) {
                     //It is possible that we may want more connections that wires of this type exist;
-                    //so clip to the maximum number of wires
-					if (Result[itype][ipin][iseg] > sets_per_seg_type[iseg] * fac) {
-						*Fc_clipped = true;
-						Result[itype][ipin][iseg] = sets_per_seg_type[iseg] * fac;
-					}
-				}
-				VTR_ASSERT(Result[itype][ipin][iseg] % fac == 0);
-			}
-		}
+                    //clip to the maximum number of wires
+                    if (Result[itype][ipin][iseg] > sets_per_seg_type[iseg] * fac) {
+                        *Fc_clipped = true;
+                        Result[itype][ipin][iseg] = sets_per_seg_type[iseg] * fac;
+                    }
+
+                    VTR_ASSERT_MSG(Result[itype][ipin][iseg] % fac == 0, "Absolute Fc must be divisible by 1 (bidir architecture) or 2 (unidir architecture)");
+                }
+            }
+        }
 	}
 
 	return Result;

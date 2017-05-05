@@ -92,7 +92,7 @@ namespace pugiutil {
                                     const loc_data& loc_data,
                                     const ReqOpt req_opt=REQUIRED);
 
-    //Counts the number of child nodes
+    //Counts the number of child nodes of type 'child_name'
     //
     //  node - The parent xml node
     //  child_name - The child tag name
@@ -102,7 +102,25 @@ namespace pugiutil {
                           const std::string& child_name, 
                           const loc_data& loc_data,
                           const ReqOpt req_opt=REQUIRED);
+
+    //Counts the number of child nodes (any type)
+    //
+    //  node - The parent xml node
+    //  loc_data - XML file location data
+    //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
+    size_t count_children(const pugi::xml_node node, 
+                          const loc_data& loc_data,
+                          const ReqOpt req_opt);
     
+    //Throws a well formatted error if the actual child count does not equal the 'expected_count'
+    //
+    //  node - The parent xml node
+    //  loc_data - XML file location data
+    //  expected_count - The expected number of child nodes
+    void expect_child_node_count(const pugi::xml_node node,
+                            size_t expected_count,
+                            const loc_data& loc_data);
+
     //Counts the number of attributes on the specified node
     //
     //  node - The xml node
