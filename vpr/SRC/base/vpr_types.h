@@ -51,9 +51,7 @@ typedef struct s_net_power t_net_power;
 
 #define TOKENS " \t\n"		/* Input file parsing. */
 
-/*#define VERBOSE 1*//* Prints all sorts of intermediate data */
-
-typedef size_t bitfield;
+//#define VERBOSE 1[> Prints all sorts of intermediate data <]
 
 /* For update_screen.  Denotes importance of update. 
  * By default MINOR only updates the screen, while MAJOR
