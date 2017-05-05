@@ -957,7 +957,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 
 				inner_crit_iter_count = 0;
 #ifdef VERBOSE
-				vtr::printf_trace("Inner loop recompute criticalities\n");
+				vtr::printf("Inner loop recompute criticalities\n");
 #endif
 				/* Using the delays in net_delay, do a timing analysis to update slacks and
 				 * criticalities; then update the timing cost since it will change.
@@ -976,7 +976,7 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
 			inner_crit_iter_count++;
 		}
 #ifdef VERBOSE
-		vtr::printf_trace("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
+		vtr::printf("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
 				t, *cost, *bb_cost, *timing_cost, inner_iter, *delay_cost);
 		if (fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL)
 			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,

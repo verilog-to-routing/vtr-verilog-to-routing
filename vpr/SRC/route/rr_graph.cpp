@@ -354,9 +354,9 @@ void build_rr_graph(
 		}
 
 #ifdef VERBOSE
-		for (i = 1; i < L_num_types; ++i) { /* Skip "<EMPTY>" */
-			for (j = 0; j < type_descriptors[i].num_pins; ++j) {
-				for (k = 0; k < num_seg_types; k++){
+		for (int i = 1; i < L_num_types; ++i) { /* Skip "<EMPTY>" */
+			for (int j = 0; j < type_descriptors[i].num_pins; ++j) {
+				for (int k = 0; k < num_seg_types; k++){
 					if (type_descriptors[i].is_Fc_full_flex[j]) {
 						vtr::printf_info("Fc Actual Values: type = %s, pin = %d, seg_index = %d, Fc_out = full, Fc_in = %d.\n",
 								type_descriptors[i].name, j, k, Fc_in[i][j][k]);
