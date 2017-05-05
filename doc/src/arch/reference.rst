@@ -381,31 +381,65 @@ They describe how a complex block interfaces with the inter-block world.
     When generating the FPGA routing architecture VPR will try to make 'good' choices about how pins and wires interconnect; for more details on the criteria and methods used see :cite:`betz_automatic_generation_of_fpga_routing`.
 
 
-    **Special Case:**
+    **Overriding Default Values:**
 
-    If you have complex block pins that do not connect to general interconnect (eg. carry chains), you would use the ``<pin>`` tag, within the ``<fc>`` tag, to specify them
+    .. arch:tag:: <fc_override fc_type="{frac|abs}" fc_val="{int|float}", port_name="{string}" segment_name="{string}">
 
-    .. code-block:: xml
+        :req_param fc_type:
+            Indicates how the override :math:`F_c` value should be interpreted.
+            
+            ``frac``: The fraction of tracks in the channel from which each pin connects.
 
-        <pin name="<string>" fc_type="frac" fc_val="0"/>
+            ``abs``: Inpterpretted as the absolute number of tracks from which each connects.
 
-    Where the attribute ``name`` is the name of the pin.  
-    Note: ``fc_val`` must be 0.
-    Other values are not yet supported.
+        :req_param fc_val:
+            Fraction or number of tracks in a channel.
+
+        :opt_param port_name:
+            The name of the port to which this override applies.
+            If left unspecified this override applies to all ports.
+
+        :opt_param segment_name:
+            The name of the segment (defined under ``<segmentlist>``) to which this override applies.
+            If left unspecified this override applies to all segments.
 
 
-    **Special Case:**
+        .. note:: At least one of ``port_name`` or ``segment_name`` must be specified.
 
-    An optional segment-based override can be specified within the ``<fc>`` tag as:
 
-    .. code-block:: xml
 
-        <segment name="string" in_val="float" out_val="float"/>
+        **Port Override Example: Carry Chains**
 
-    The name corresponds to one of the segment types defined under the ``<segmentlist>`` tag.
-    The ``in_val`` and ``out_val`` fields specify the new connection block flexibilities with which the block pins will connect to the specified segments.
-    The ``default_in_type`` and ``default_out_type`` values specified in the <fc> tag will apply to this segment-based override.
-    Note that the segment-based override cannot be used in combination with the pin-based override above – this is currently not supported.
+        If you have complex block pins that do not connect to general interconnect (eg. carry chains), you would use the ``<fc_override>`` tag, within the ``<fc>`` tag, to specify them:
+
+        .. code-block:: xml
+
+            <fc_override fc_type="frac" fc_val="0" port_name="cin"/>
+
+        Where the attribute ``port_name`` is the name of the pin (``cin`` in this example).
+
+        **Segment Override Example:**
+
+        It is also possible to specify per ``<segment>`` (i.e. routing wire) overrides:
+
+        .. code-block:: xml
+
+            <fc_override fc_type="frac" fc_val="0.1" segment_name="L4"/>
+
+        Where the above would cause all pins (both inputs and outputs) to use a fractional :math:`F_c` of ``0.1`` when connecting to segments of type ``L4``.
+
+        **Combined Port and Segment Override Example:**
+
+        The ``port_name`` and ``segment_name`` attributes can be used together.
+        For example:
+
+        .. code-block:: xml
+
+            <fc_override fc_type="frac" fc_val="0.1" port_name="my_input" segment_name="L4"/>
+            <fc_override fc_type="frac" fc_val="0.2" port_name="my_output" segment_name="L4"/>
+
+        specifies that port ``my_input`` use a fractional :math:`F_c` of ``0.1`` when connecting to segments of type ``L4``, while the port ``my_output`` uses a fractional :math:`F_c` of ``0.2`` when connecting to segments of type ``L4``.
+        All other port/segment combinations would use the default :math:`F_c` values.
 
 .. arch:tag:: <pinlocations pattern="{spread|custom}">
 
