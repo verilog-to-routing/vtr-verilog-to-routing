@@ -246,9 +246,6 @@ static t_rr_type index_into_correct_chan(int tile_x, int tile_y, enum e_side sid
 static bool coords_out_of_bounds(int nx, int ny, int x_coord, int y_coord, 
 			e_rr_type chan_type);
 
-/* returns seg coordinate based on a channel's x/y coordinates */
-static int get_seg_coordinate(t_rr_type chan_type, int x_coord, int y_coord);
-
 /* returns the subsegment number of the specified wire at seg_coord*/
 static int get_wire_subsegment_num(int nx, int ny, e_rr_type chan_type,
 			 t_seg_details &wire_details, int seg_coord);
@@ -996,29 +993,6 @@ static bool coords_out_of_bounds(int nx, int ny, int x_coord, int y_coord,
 	}
 	return result;
 }
-
-
-/* We can look at a channel as either having an x and y coordinate, or as having a 
-   'seg' and 'chan' coordinate. Here we return the seg coordinate based on the 
-   channel type and channel x/y coordinates */
-static int get_seg_coordinate(t_rr_type chan_type, int x_coord, int y_coord){
-	int seg = -1;
-	
-	switch (chan_type){
-		case CHANX:
-			seg = x_coord;
-			break;
-		case CHANY:
-			seg = y_coord;
-			break;
-		default:
-			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "get_seg_coordinate: 'chan_type' %d is not a channel\n", chan_type);
-			break;
-	}
-
-	return seg;
-}
-
 
 /* returns the subsegment number of the specified wire at seg_coord */
 static int get_wire_subsegment_num(int nx, int ny, e_rr_type chan_type,
