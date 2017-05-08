@@ -80,7 +80,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 		/* Check the SOURCE of the net. */
 
-		tptr = trace_head[inet];
+		tptr = g_trace_head[inet];
 		if (tptr == NULL) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_route: net %d has no routing.\n", inet);
@@ -285,7 +285,7 @@ static void reset_flags(int inet, bool * connected_to_route) {
 	struct s_trace *tptr;
 	int inode;
 
-	tptr = trace_head[inet];
+	tptr = g_trace_head[inet];
 
 	while (tptr != NULL) {
 		inode = tptr->index;
@@ -517,7 +517,7 @@ static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_local
 		if (g_clbs_nlist.net[inet].is_global) /* Skip global nets. */
 			continue;
 
-		tptr = trace_head[inet];
+		tptr = g_trace_head[inet];
 		if (tptr == NULL)
 			continue;
 

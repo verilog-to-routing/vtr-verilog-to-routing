@@ -120,8 +120,8 @@ void save_routing(struct s_trace **best_routing,
 		vtr::t_ivec ** saved_clb_opins_used_locally) {
 
 	/* This routing frees any routing currently held in best routing,       *
-	 * then copies over the current routing (held in trace_head), and       *
-	 * finally sets trace_head and trace_tail to all NULLs so that the      *
+	 * then copies over the current routing (held in g_trace_head), and       *
+	 * finally sets g_trace_head and g_trace_tail to all NULLs so that the      *
 	 * connection to the saved routing is broken.  This is necessary so     *
 	 * that the next iteration of the router does not free the saved        *
 	 * routing elements.  Also saves any data about locally used clb_opins, *
@@ -143,13 +143,13 @@ void save_routing(struct s_trace **best_routing,
 		}
 
 		/* Save a pointer to the current routing in best_routing. */
-		best_routing[inet] = trace_head[inet];
+		best_routing[inet] = g_trace_head[inet];
 
 		/* Set the current (working) routing to NULL so the current trace       *
 		 * elements won't be reused by the memory allocator.                    */
 
-		trace_head[inet] = NULL;
-		trace_tail[inet] = NULL;
+		g_trace_head[inet] = NULL;
+		g_trace_tail[inet] = NULL;
 	}
 
 	/* Save which OPINs are locally used.                           */
@@ -170,11 +170,11 @@ void restore_routing(struct s_trace **best_routing,
 		vtr::t_ivec ** clb_opins_used_locally,
 		vtr::t_ivec ** saved_clb_opins_used_locally) {
 
-	/* Deallocates any current routing in trace_head, and replaces it with    *
+	/* Deallocates any current routing in g_trace_head, and replaces it with    *
 	 * the routing in best_routing.  Best_routing is set to NULL to show that *
-	 * it no longer points to a valid routing.  NOTE:  trace_tail is not      *
+	 * it no longer points to a valid routing.  NOTE:  g_trace_tail is not      *
 	 * restored -- it is set to all NULLs since it is only used in            *
-	 * update_traceback.  If you need trace_tail restored, modify this        *
+	 * update_traceback.  If you need g_trace_tail restored, modify this        *
 	 * routine.  Also restores the locally used opin data.                    */
 
 	unsigned int inet;
@@ -187,7 +187,7 @@ void restore_routing(struct s_trace **best_routing,
 		free_traceback(inet);
 
 		/* Set the current routing to the saved one. */
-		trace_head[inet] = best_routing[inet];
+		g_trace_head[inet] = best_routing[inet];
 		best_routing[inet] = NULL; /* No stored routing. */
 	}
 
@@ -223,7 +223,7 @@ void get_serial_num(void) {
 		/* Global nets will have null trace_heads (never routed) so they *
 		 * are not included in the serial number calculation.            */
 
-		tptr = trace_head[inet];
+		tptr = g_trace_head[inet];
 		while (tptr != NULL) {
 			inode = tptr->index;
 			serial_num += (inet + 1)
@@ -408,7 +408,7 @@ void pathfinder_update_path_cost(struct s_trace *route_segment_start,
 
 	/* This routine updates the occupancy and pres_cost of the rr_nodes that are *
 	 * affected by the portion of the routing of one net that starts at          *
-	 * route_segment_start.  If route_segment_start is trace_head[inet], the     *
+	 * route_segment_start.  If route_segment_start is g_trace_head[inet], the     *
 	 * cost of all the nodes in the routing of net inet are updated.  If         *
 	 * add_or_sub is -1 the net (or net portion) is ripped up, if it is 1 the    *
 	 * net is added to the routing.  The size of pres_fac determines how severly *
@@ -516,7 +516,7 @@ update_traceback(struct s_heap *hptr, int inet) {
 
 	/* This routine adds the most recently finished wire segment to the         *
 	 * traceback linked list.  The first connection starts with the net SOURCE  *
-	 * and begins at the structure pointed to by trace_head[inet]. Each         *
+	 * and begins at the structure pointed to by g_trace_head[inet]. Each         *
 	 * connection ends with a SINK.  After each SINK, the next connection       *
 	 * begins (if the net has more than 2 pins).  The first element after the   *
 	 * SINK gives the routing node on a previous piece of the routing, which is *
@@ -566,15 +566,15 @@ update_traceback(struct s_heap *hptr, int inet) {
 		inode = rr_node_route_inf[inode].prev_node;
 	}
 
-	if (trace_tail[inet] != NULL) {
-		trace_tail[inet]->next = tptr; /* Traceback ends with tptr */
+	if (g_trace_tail[inet] != NULL) {
+		g_trace_tail[inet]->next = tptr; /* Traceback ends with tptr */
 		ret_ptr = tptr->next; /* First new segment.       */
 	} else { /* This was the first "chunk" of the net's routing */
-		trace_head[inet] = tptr;
+		g_trace_head[inet] = tptr;
 		ret_ptr = tptr; /* Whole traceback is new. */
 	}
 
-	trace_tail[inet] = temptail;
+	g_trace_tail[inet] = temptail;
 	return (ret_ptr);
 }
 
@@ -675,15 +675,15 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
 void free_traceback(int inet) {
 
 	/* Puts the entire traceback (old routing) for this net on the free list *
-	 * and sets the trace_head pointers etc. for the net to NULL.            */
+	 * and sets the g_trace_head pointers etc. for the net to NULL.            */
 
 	struct s_trace *tptr, *tempptr;
 
-	if(trace_head == NULL) {
+	if(g_trace_head == NULL) {
 		return;
 	}
 
-	tptr = trace_head[inet];
+	tptr = g_trace_head[inet];
 
 	while (tptr != NULL) {
 		tempptr = tptr->next;
@@ -691,8 +691,8 @@ void free_traceback(int inet) {
 		tptr = tempptr;
 	}
 
-	trace_head[inet] = NULL;
-	trace_tail[inet] = NULL;
+	g_trace_head[inet] = NULL;
+	g_trace_tail[inet] = NULL;
 }
 
 vtr::t_ivec **
@@ -709,8 +709,8 @@ alloc_route_structs(void) {
 }
 
 void alloc_route_static_structs(void) {
-	trace_head = (struct s_trace **) vtr::calloc(g_clbs_nlist.net.size(), sizeof(struct s_trace *));
-	trace_tail = (struct s_trace **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(struct s_trace *));
+	g_trace_head = (struct s_trace **) vtr::calloc(g_clbs_nlist.net.size(), sizeof(struct s_trace *));
+	g_trace_tail = (struct s_trace **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(struct s_trace *));
 
 	heap_size = nx * ny;
 	heap = (struct s_heap **) vtr::malloc(heap_size * sizeof(struct s_heap *));
@@ -824,12 +824,12 @@ void free_trace_structs(void) {
 	for (i = 0; i < g_clbs_nlist.net.size(); i++)
 		free_traceback(i);
 
-	if(trace_head) {
-		free(trace_head);
-		free(trace_tail);
+	if(g_trace_head) {
+		free(g_trace_head);
+		free(g_trace_tail);
 	}
-	trace_head = NULL;
-	trace_tail = NULL;
+	g_trace_head = NULL;
+	g_trace_tail = NULL;
 }
 
 void free_route_structs() {
@@ -1290,7 +1290,7 @@ void print_route(const char* placement_file, const char* route_file) {
 				fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
 			} else {
 				fprintf(fp, "\n\nNet %d (%s)\n\n", inet, g_clbs_nlist.net[inet].name);
-				tptr = trace_head[inet];
+				tptr = g_trace_head[inet];
 
 				while (tptr != NULL) {
 					inode = tptr->index;
@@ -1487,7 +1487,7 @@ void free_chunk_memory_trace(void) {
 void print_traceback(int inet) {
 	// linearly print linked list
 	vtr::printf_info("traceback %d: ", inet);
-	t_trace* head = trace_head[inet];
+	t_trace* head = g_trace_head[inet];
 	while (head) {
 		int inode {head->index};
 		if (g_rr_nodes[inode].type() == SINK) 

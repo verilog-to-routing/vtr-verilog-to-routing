@@ -754,7 +754,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		profiling::net_rerouted();
 
 		// rip up the whole net
-		pathfinder_update_path_cost(trace_head[inet], -1, pres_fac);
+		pathfinder_update_path_cost(g_trace_head[inet], -1, pres_fac);
 		free_traceback(inet);
 
 		rt_root = init_route_tree_to_source(inet);
@@ -786,7 +786,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		bool destroyed = prune_route_tree(rt_root, pres_fac, connections_inf); 
 
 		// entire traceback is still freed since the pruned tree will need to have its pres_cost updated
-		pathfinder_update_path_cost(trace_head[inet], -1, pres_fac);
+		pathfinder_update_path_cost(g_trace_head[inet], -1, pres_fac);
 		free_traceback(inet);
 
 		// if entirely pruned, have just the source (not removed from pathfinder costs)
@@ -799,7 +799,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 			// sync traceback into a state that matches the route tree
 			traceback_from_route_tree(inet, rt_root, num_sinks - remaining_targets.size());
 			// put the updated costs of the route tree nodes back into pathfinder
-			pathfinder_update_path_cost(trace_head[inet], 1, pres_fac);
+			pathfinder_update_path_cost(g_trace_head[inet], 1, pres_fac);
 		}
 
 		// give lookup on the reached sinks
@@ -1258,7 +1258,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
 /* Detect if net should be routed or not */
 static bool should_route_net(int inet, const CBRR& connections_inf) {
-	t_trace * tptr = trace_head[inet];
+	t_trace * tptr = g_trace_head[inet];
 
 	if (tptr == NULL) {
 		/* No routing yet. */

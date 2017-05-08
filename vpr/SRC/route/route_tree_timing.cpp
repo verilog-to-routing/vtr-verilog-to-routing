@@ -561,7 +561,7 @@ t_rt_node* traceback_to_route_tree(int inet) {
 	 * returns the root of the converted route tree
 	 * initially points at the traceback equivalent of root 							  */
 
-	t_trace* head {trace_head[inet]};
+	t_trace* head {g_trace_head[inet]};
 	// always called after the 1st iteration, so should exist
 	VTR_ASSERT(head != nullptr);
 
@@ -702,7 +702,7 @@ static t_trace* traceback_branch_from_route_tree(t_trace* head, const t_rt_node*
 t_trace* traceback_from_route_tree(int inet, const t_rt_node* root, int num_routed_sinks) {
 
 	/* Creates the traceback for net inet from the route tree rooted at root
-	 * properly sets trace_head and trace_tail for this net
+	 * properly sets g_trace_head and g_trace_tail for this net
 	 * returns the trace head for inet 					 					 */
 
 	t_trace* head {alloc_trace_data()};
@@ -715,8 +715,8 @@ t_trace* traceback_from_route_tree(int inet, const t_rt_node* root, int num_rout
 	// tag end of traceback
 	tail->next = nullptr;
 
-	trace_tail[inet] = tail;
-	trace_head[inet] = head;
+	g_trace_tail[inet] = tail;
+	g_trace_head[inet] = head;
 
 	return head;
 }

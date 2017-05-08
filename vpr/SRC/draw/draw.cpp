@@ -1629,13 +1629,13 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 		if (g_clbs_nlist.net[inet].is_global) /* Don't draw global nets. */
 			continue;
 
-		if (trace_head[inet] == NULL) /* No routing.  Skip.  (Allows me to draw */
+		if (g_trace_head[inet] == NULL) /* No routing.  Skip.  (Allows me to draw */
 			continue; /* partially complete routes).            */
 
 		if (draw_net_type == HIGHLIGHTED && draw_state->net_color[inet] == BLACK)
 			continue;
 
-		tptr = trace_head[inet]; /* SOURCE to start */
+		tptr = g_trace_head[inet]; /* SOURCE to start */
 		inode = tptr->index;
 		rr_type = g_rr_nodes[inode].type();
 
@@ -1867,7 +1867,7 @@ static void highlight_nets(char *message, int hit_node) {
 	t_draw_state* draw_state = get_draw_state_vars();
 	
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		for (tptr = trace_head[inet]; tptr != NULL; tptr = tptr->next) {
+		for (tptr = g_trace_head[inet]; tptr != NULL; tptr = tptr->next) {
 			if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
 				draw_state->net_color[inet] = draw_state->draw_rr_node[tptr->index].color;
 				if (tptr->index == hit_node) {

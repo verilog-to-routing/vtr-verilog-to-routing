@@ -107,7 +107,7 @@ extern float grid_logic_tile_area;
 extern t_chan_width g_chan_width;
 
 /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
-extern struct s_trace **trace_head, **trace_tail;
+extern struct s_trace **g_trace_head, **g_trace_tail;
 
 extern std::string g_routing_id; //SHA256 digest of .route file
 

@@ -273,7 +273,7 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 		if (g_clbs_nlist.net[inet].is_global && g_clbs_nlist.net[inet].num_sinks() != 0) /* Skip global and empty nets. */
 			continue;
 
-		tptr = trace_head[inet];
+		tptr = g_trace_head[inet];
 		while (tptr != NULL) {
 			inode = tptr->index;
 			rr_type = g_rr_nodes[inode].type();
@@ -316,7 +316,7 @@ void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
 	length = 0;
 	segments = 0;
 
-	prevptr = trace_head[inet]; /* Should always be SOURCE. */
+	prevptr = g_trace_head[inet]; /* Should always be SOURCE. */
 	if (prevptr == NULL) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
 				"in get_num_bends_and_length: net #%d has no traceback.\n", inet);

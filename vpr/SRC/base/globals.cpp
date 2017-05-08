@@ -66,8 +66,8 @@ struct s_grid_tile **grid = NULL; /* [0..(nx+1)][0..(ny+1)] Physical block list 
 /******** Structures defining the routing ********/
 
 /* Linked list start pointers.  Define the routing. */
-struct s_trace **trace_head = NULL; /* [0..(num_nets-1)] */
-struct s_trace **trace_tail = NULL; /* [0..(num_nets-1)] */
+struct s_trace **g_trace_head = NULL; /* [0..(num_nets-1)] */
+struct s_trace **g_trace_tail = NULL; /* [0..(num_nets-1)] */
 
 std::string g_routing_id; //SHA256 digest of .route file
 

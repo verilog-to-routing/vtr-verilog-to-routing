@@ -995,7 +995,7 @@ char *vpr_get_output_file_name(enum e_output_files ename) {
 void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     if(!vpr_setup.AnalysisOpts.doAnalysis) return;
 
-    if(trace_head == nullptr) {
+    if(g_trace_head == nullptr) {
         VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
 

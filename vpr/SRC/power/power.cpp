@@ -797,7 +797,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 	for (size_t net_idx = 0; net_idx < g_clbs_nlist.net.size(); net_idx++) {
 		struct s_trace * trace;
 
-		for (trace = trace_head[net_idx]; trace != NULL; trace = trace->next) {
+		for (trace = g_trace_head[net_idx]; trace != NULL; trace = trace->next) {
 			rr_node_power[trace->index].visited = false;
 			rr_node_power[trace->index].net_num = net_idx;
 		}
@@ -807,7 +807,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 	for (size_t net_idx = 0; net_idx < g_clbs_nlist.net.size(); net_idx++) {
 		struct s_trace * trace;
 
-		for (trace = trace_head[net_idx]; trace != NULL; trace = trace->next) {
+		for (trace = g_trace_head[net_idx]; trace != NULL; trace = trace->next) {
 			t_rr_node * node = &g_rr_nodes[trace->index];
 			t_rr_node_power * node_power = &rr_node_power[trace->index];
 
