@@ -1656,43 +1656,51 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
     /* Go through all the port/segment combinations and create the (potentially 
      * overriden) pin/seg Fc specifications */
     const t_pb_type* pb_type = Type->pb_type;
+    int pins_per_capacity_instance = Type->num_pins / Type->capacity;
     for (int iseg = 0; iseg < num_segments; ++iseg) {
-        int iblk_pin = 0;
-        for(int iport = 0; iport < pb_type->num_ports; ++iport) {
-            const t_port* port = &pb_type->ports[iport];
 
-            t_fc_specification fc_spec;
-            fc_spec.seg_index = iseg;
+        for(int icapacity = 0; icapacity < Type->capacity; ++icapacity) {
 
-            //Apply the defaults
-            if (port->type == IN_PORT) {
-                fc_spec.fc_type = default_fc_in_type;
-                fc_spec.fc_value = default_fc_in_value;
-            } else {
-                VTR_ASSERT(port->type == OUT_PORT);
-                fc_spec.fc_type = default_fc_out_type;
-                fc_spec.fc_value = default_fc_out_value;
-            }
+            //If capacity > 0, we need t offset the block index by the number of pins per instance
+            //this ensures that all pins have an Fc specification
+            int iblk_pin = icapacity * pins_per_capacity_instance;
 
-            //Apply any matching overrides
-            for(const auto& fc_override : fc_overrides) {
-                if (fc_override.port_name == port->name || fc_override.seg_name == segments[iseg].name) {
-                    //Exact match, or partial match to either port or seg name
-                    // Note that we continue searching, this ensures that the last matching override is applied last
-                    fc_spec.fc_type = fc_override.fc_type;
-                    fc_spec.fc_value = fc_override.fc_value;
+            for(int iport = 0; iport < pb_type->num_ports; ++iport) {
+                const t_port* port = &pb_type->ports[iport];
+
+                t_fc_specification fc_spec;
+                fc_spec.seg_index = iseg;
+
+                //Apply the defaults
+                if (port->type == IN_PORT) {
+                    fc_spec.fc_type = default_fc_in_type;
+                    fc_spec.fc_value = default_fc_in_value;
+                } else {
+                    VTR_ASSERT(port->type == OUT_PORT);
+                    fc_spec.fc_type = default_fc_out_type;
+                    fc_spec.fc_value = default_fc_out_value;
                 }
-            }
 
-            //Add all the pins from this port
-            for(int iport_pin = 0; iport_pin < port->num_pins; ++iport_pin) {
-                //XXX: this assumes that iterating through the pb_type ports 
-                //     in order yields the block pin order
-                fc_spec.pins.push_back(iblk_pin);
-                ++iblk_pin;
-            }
+                //Apply any matching overrides
+                for(const auto& fc_override : fc_overrides) {
+                    if (fc_override.port_name == port->name || fc_override.seg_name == segments[iseg].name) {
+                        //Exact match, or partial match to either port or seg name
+                        // Note that we continue searching, this ensures that the last matching override is applied last
+                        fc_spec.fc_type = fc_override.fc_type;
+                        fc_spec.fc_value = fc_override.fc_value;
+                    }
+                }
 
-            Type->fc_specs.push_back(fc_spec);
+                //Add all the pins from this port
+                for(int iport_pin = 0; iport_pin < port->num_pins; ++iport_pin) {
+                    //XXX: this assumes that iterating through the pb_type ports 
+                    //     in order yields the block pin order
+                    fc_spec.pins.push_back(iblk_pin);
+                    ++iblk_pin;
+                }
+
+                Type->fc_specs.push_back(fc_spec);
+            }
         }
     }
 }
