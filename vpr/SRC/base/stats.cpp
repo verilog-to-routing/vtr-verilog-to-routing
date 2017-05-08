@@ -276,7 +276,7 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 		tptr = trace_head[inet];
 		while (tptr != NULL) {
 			inode = tptr->index;
-			rr_type = rr_node[inode].type;
+			rr_type = rr_node[inode].type();
 
 			if (rr_type == SINK) {
 				tptr = tptr->next; /* Skip next segment. */
@@ -322,20 +322,20 @@ void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
 				"in get_num_bends_and_length: net #%d has no traceback.\n", inet);
 	}
 	inode = prevptr->index;
-	prev_type = rr_node[inode].type;
+	prev_type = rr_node[inode].type();
 
 	tptr = prevptr->next;
 
 	while (tptr != NULL) {
 		inode = tptr->index;
-		curr_type = rr_node[inode].type;
+		curr_type = rr_node[inode].type();
 
 		if (curr_type == SINK) { /* Starting a new segment */
 			tptr = tptr->next; /* Link to existing path - don't add to len. */
 			if (tptr == NULL)
 				break;
 
-			curr_type = rr_node[tptr->index].type;
+			curr_type = rr_node[tptr->index].type();
 		}
 
 		else if (curr_type == CHANX || curr_type == CHANY) {

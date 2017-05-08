@@ -156,7 +156,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 	for (from_node = 0; from_node < num_rr_nodes; from_node++) {
 
-		from_rr_type = rr_node[from_node].type;
+		from_rr_type = rr_node[from_node].type();
 
 		switch (from_rr_type) {
 
@@ -167,10 +167,10 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 			for (iedge = 0; iedge < num_edges; iedge++) {
 
 				to_node = rr_node[from_node].edges[iedge];
-				to_rr_type = rr_node[to_node].type;
+				to_rr_type = rr_node[to_node].type();
 
 				/* Ignore any uninitialized rr_graph nodes */
-				if ((rr_node[to_node].type == SOURCE) 
+				if ((rr_node[to_node].type() == SOURCE) 
 						&& (rr_node[to_node].get_xlow() == 0) && (rr_node[to_node].get_ylow() == 0)
 						&& (rr_node[to_node].get_xhigh() == 0) && (rr_node[to_node].get_yhigh() == 0)) {
 					continue;
@@ -356,7 +356,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 	ntrans = 0;
 	for (from_node = 0; from_node < num_rr_nodes; from_node++) {
 
-		from_rr_type = rr_node[from_node].type;
+		from_rr_type = rr_node[from_node].type();
 
 		switch (from_rr_type) {
 
@@ -368,10 +368,10 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 			for (iedge = 0; iedge < num_edges; iedge++) {
 
 				to_node = rr_node[from_node].edges[iedge];
-				to_rr_type = rr_node[to_node].type;
+				to_rr_type = rr_node[to_node].type();
 
 				/* Ignore any uninitialized rr_graph nodes */
-				if ((rr_node[to_node].type == SOURCE) 
+				if ((rr_node[to_node].type() == SOURCE) 
 						&& (rr_node[to_node].get_xlow() == 0) && (rr_node[to_node].get_ylow() == 0)
 						&& (rr_node[to_node].get_xhigh() == 0) && (rr_node[to_node].get_yhigh() == 0)) {
 					continue;

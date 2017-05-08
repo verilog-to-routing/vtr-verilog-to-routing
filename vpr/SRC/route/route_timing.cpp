@@ -595,7 +595,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	if (!g_clbs_nlist.net[inet].is_global) {
 		for (unsigned ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
 			if (net_delay[ipin] == 0) {	// should be SOURCE->OPIN->IPIN->SINK
-				VTR_ASSERT(rr_node[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type == OPIN);
+				VTR_ASSERT(rr_node[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type() == OPIN);
 			}
 		}
 	}
@@ -621,7 +621,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	
 	if (itarget > 0 && itry > 5) {
 		/* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
-		VTR_ASSERT(rr_node[rt_root->inode].type == SOURCE);
+		VTR_ASSERT(rr_node[rt_root->inode].type() == SOURCE);
 		rt_root->re_expand = false;
 	}
 
@@ -909,7 +909,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 		 * more promising routes, but makes route-throughs (via CLBs) impossible.   *
 		 * Change this if you want to investigate route-throughs.                   */
 
-		t_rr_type to_type = rr_node[to_node].type;
+		t_rr_type to_type = rr_node[to_node].type();
 		if (to_type == IPIN
             && (rr_node[to_node].get_xhigh() != target_x
             || rr_node[to_node].get_yhigh() != target_y))
@@ -936,8 +936,8 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 		new_back_pcost += criticality_fac * Tdel;
 
 		if (bend_cost != 0.) {
-			t_rr_type from_type = rr_node[inode].type;
-			to_type = rr_node[to_node].type;
+			t_rr_type from_type = rr_node[inode].type();
+			to_type = rr_node[to_node].type();
 			if ((from_type == CHANX && to_type == CHANY)
 					|| (from_type == CHANY && to_type == CHANX))
 				new_back_pcost += bend_cost;
@@ -963,7 +963,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
 	int cost_index, ortho_cost_index, num_segs_same_dir, num_segs_ortho_dir;
 	float expected_cost, cong_cost, Tdel;
 
-	rr_type = rr_node[inode].type;
+	rr_type = rr_node[inode].type();
 
 	if (rr_type == CHANX || rr_type == CHANY) {
 
@@ -1023,7 +1023,7 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	inv_length = rr_indexed_data[cost_index].inv_length;
 	ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
 	ortho_inv_length = rr_indexed_data[ortho_cost_index].inv_length;
-	rr_type = rr_node[inode].type;
+	rr_type = rr_node[inode].type();
 
 	if (rr_type == CHANX) {
 		ylow = rr_node[inode].get_ylow();
@@ -1165,7 +1165,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		while (linked_rt_edge != NULL && success == false) {
 			child_node = linked_rt_edge->child;
 			inode = child_node->inode;
-			if (!(rr_node[inode].type == IPIN || rr_node[inode].type == SINK)) {
+			if (!(rr_node[inode].type() == IPIN || rr_node[inode].type() == SINK)) {
 				if (rr_node[inode].get_xlow() <= target_xhigh + rlim
 						&& rr_node[inode].get_xhigh() >= target_xhigh - rlim
 						&& rr_node[inode].get_ylow() <= target_yhigh + rlim
@@ -1199,7 +1199,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	while (linked_rt_edge != NULL) {
 		child_node = linked_rt_edge->child;
 		inode = child_node->inode;
-		if (!(rr_node[inode].type == IPIN || rr_node[inode].type == SINK)) {
+		if (!(rr_node[inode].type() == IPIN || rr_node[inode].type() == SINK)) {
 			if (rr_node[inode].get_xlow() <= target_xhigh + rlim
 					&& rr_node[inode].get_xhigh() >= target_xhigh - rlim
 					&& rr_node[inode].get_ylow() <= target_yhigh + rlim
@@ -1274,7 +1274,7 @@ static bool should_route_net(int inet, const CBRR& connections_inf) {
 			return true; /* overuse detected */
 		}
 
-		if (rr_node[inode].type == SINK) {
+		if (rr_node[inode].type() == SINK) {
 			// even if net is fully routed, not complete if parts of it should get ripped up (EXPERIMENTAL)
 			if (connections_inf.should_force_reroute_connection(inode)) {
 				return true;
@@ -1528,7 +1528,7 @@ static WirelengthInfo calculate_wirelength_info() {
 	size_t available_wirelength = 0;
 
 	for (int i = 0; i < num_rr_nodes; ++i) {
-		if (rr_node[i].type == CHANX || rr_node[i].type == CHANY) {
+		if (rr_node[i].type() == CHANX || rr_node[i].type() == CHANY) {
 			available_wirelength += rr_node[i].get_capacity() + 
 					rr_node[i].get_xhigh() - rr_node[i].get_xlow() + 
 					rr_node[i].get_yhigh() - rr_node[i].get_ylow();

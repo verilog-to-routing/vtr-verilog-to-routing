@@ -61,8 +61,8 @@ int seg_index_of_sblock(int from_node, int to_node) {
 
 	t_rr_type from_rr_type, to_rr_type;
 
-	from_rr_type = rr_node[from_node].type;
-	to_rr_type = rr_node[to_node].type;
+	from_rr_type = rr_node[from_node].type();
+	to_rr_type = rr_node[to_node].type();
 
 	if (from_rr_type == CHANX) {
 		if (to_rr_type == CHANY) {

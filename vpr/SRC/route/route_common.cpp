@@ -231,7 +231,7 @@ void get_serial_num(void) {
 
 			serial_num -= rr_node[inode].get_ptc_num() * (inet + 1) * 10;
 
-			serial_num -= rr_node[inode].type * (inet + 1) * 100;
+			serial_num -= rr_node[inode].type() * (inet + 1) * 100;
 			serial_num %= 2000000000; /* Prevent overflow */
 			tptr = tptr->next;
 		}
@@ -423,7 +423,7 @@ void pathfinder_update_path_cost(struct s_trace *route_segment_start,
 	for (;;) {
 		pathfinder_update_single_node_cost(tptr->index, add_or_sub, pres_fac);
 
-		if (rr_node[tptr->index].type == SINK) {
+		if (rr_node[tptr->index].type() == SINK) {
 			tptr = tptr->next; /* Skip next segment. */
 			if (tptr == NULL)
 				break;
@@ -536,7 +536,7 @@ update_traceback(struct s_heap *hptr, int inet) {
 	// hptr points to the end of a connection
 	inode = hptr->index;
 
-	rr_type = rr_node[inode].type;
+	rr_type = rr_node[inode].type();
 	if (rr_type != SINK) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in update_traceback. Expected type = SINK (%d).\n"
@@ -1294,7 +1294,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 				while (tptr != NULL) {
 					inode = tptr->index;
-					rr_type = rr_node[inode].type;
+					rr_type = rr_node[inode].type();
 					ilow = rr_node[inode].get_xlow();
 					jlow = rr_node[inode].get_ylow();
 
@@ -1490,7 +1490,7 @@ void print_traceback(int inet) {
 	t_trace* head = trace_head[inet];
 	while (head) {
 		int inode {head->index};
-		if (rr_node[inode].type == SINK) 
+		if (rr_node[inode].type() == SINK) 
 			vtr::printf_info("%d(sink)(%d)->",inode, rr_node[inode].get_occ());
 		else 
 			vtr::printf_info("%d(%d)->",inode, rr_node[inode].get_occ());

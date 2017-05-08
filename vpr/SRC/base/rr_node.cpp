@@ -1,18 +1,11 @@
 #include "rr_node.h"
 #include "globals.h"
 
-/* Create an array of strings which maps to an enumeration (t_rr_type)  *
- * so a routing resource name can be identified 						*
- * by its index in the array. To retrieve desired rr-type name, call    *
- * member function rr_get_type_string() of the structure s_rr_node.     */
-static const char *name_type[] = { "SOURCE", "SINK", "IPIN", "OPIN", "CHANX", 
-							"CHANY", "INTRA_CLUSTER_EDGE" };
-
 /* Member function of "struct s_rr_node" used to retrieve a routing *
  * resource type string by its index, which is defined by           *
  * "t_rr_type type".												*/
 const char *t_rr_node::rr_get_type_string() const {
-	return name_type[type];
+	return rr_node_typename[type()];
 }
 
 short t_rr_node::get_xlow() const {
@@ -27,7 +20,7 @@ short t_rr_node::get_ylow() const {
 	Note: assuming that type -> width is 1, see assertion in rr_graph.c
 */
 short t_rr_node::get_xhigh() const {
-	if (type == CHANX) {
+	if (type() == CHANX) {
 		return xlow + length;
 	} else {
 		return xlow;
@@ -35,7 +28,7 @@ short t_rr_node::get_xhigh() const {
 }
 
 short t_rr_node::get_yhigh() const {
-	if (type != CHANX && type != INTRA_CLUSTER_EDGE) {
+	if (type() != CHANX && type() != INTRA_CLUSTER_EDGE) {
 		return ylow + length;
 	} else {
 		return ylow;

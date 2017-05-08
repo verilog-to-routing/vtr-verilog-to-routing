@@ -1873,7 +1873,7 @@ void print_usage_by_wire_length() {
     map<int, int> used_wire_count;
     map<int, int> total_wire_count;
     for (int inode = 0; inode < num_rr_nodes; inode++) {
-        if (rr_node[inode].type == CHANX || rr_node[inode].type == CHANY) {
+        if (rr_node[inode].type() == CHANX || rr_node[inode].type() == CHANY) {
             //int length = abs(rr_node[inode].get_xhigh() + rr_node[inode].get_yhigh() 
             //             - rr_node[inode].get_xlow() - rr_node[inode].get_ylow());
             int length = rr_node[inode].get_length();

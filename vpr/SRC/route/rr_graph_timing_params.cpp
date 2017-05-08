@@ -42,14 +42,14 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 
-		from_rr_type = rr_node[inode].type;
+		from_rr_type = rr_node[inode].type();
 
 		if (from_rr_type == CHANX || from_rr_type == CHANY) {
 
 			for (iedge = 0; iedge < rr_node[inode].get_num_edges(); iedge++) {
 
 				to_node = rr_node[inode].edges[iedge];
-				to_rr_type = rr_node[to_node].type;
+				to_rr_type = rr_node[to_node].type();
 
 				if (to_rr_type == CHANX || to_rr_type == CHANY) {
 
@@ -118,7 +118,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
 			/*   for (iedge=0;iedge<rr_node[inode].num_edges;iedge++) {
 			 * to_node = rr_node[inode].edges[iedge];
-			 * if (rr_node[to_node].type == IPIN) {
+			 * if (rr_node[to_node].type() == IPIN) {
 			 * icblock = seg_index_of_cblock (from_rr_type, to_node);
 			 * cblock_counted[icblock] = false;
 			 * }
@@ -149,7 +149,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 				switch_index = rr_node[inode].switches[iedge];
 				/* UDSD by ICK Start */
 				to_node = rr_node[inode].edges[iedge];
-				to_rr_type = rr_node[to_node].type;
+				to_rr_type = rr_node[to_node].type();
 
 				if (to_rr_type != CHANX && to_rr_type != CHANY)
 					continue;
@@ -173,7 +173,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 		for (iedge = 0; iedge < rr_node[inode].get_num_edges(); iedge++) {
 			switch_index = rr_node[inode].switches[iedge];
 			to_node = rr_node[inode].edges[iedge];
-			to_rr_type = rr_node[to_node].type;
+			to_rr_type = rr_node[to_node].type();
 			if (to_rr_type == CHANX || to_rr_type == CHANY) {
 				if (rr_node[to_node].get_drivers() == SINGLE) {
 					/* Cout was not added in these cases */

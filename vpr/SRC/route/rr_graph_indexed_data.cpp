@@ -258,7 +258,7 @@ static void load_rr_indexed_data_T_values(int index_start,
 		for (int iedge = 0; iedge < num_edges; iedge++){
 			int to_node_index = rr_node[inode].edges[iedge];
 			/* want to get C/R/Tdel of switches that connect this track segment to other track segments */
-			if (rr_node[to_node_index].type == CHANX || rr_node[to_node_index].type == CHANY){
+			if (rr_node[to_node_index].type() == CHANX || rr_node[to_node_index].type() == CHANY){
 				int switch_index = rr_node[inode].switches[iedge];
 				avg_switch_R += g_rr_switch_inf[switch_index].R;
 				avg_switch_T += g_rr_switch_inf[switch_index].Tdel;

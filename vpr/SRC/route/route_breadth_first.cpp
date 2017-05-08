@@ -222,7 +222,7 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 	int inode, sink_node, last_ipin_node;
 
 	tptr = start_ptr;
-	if(tptr != NULL && rr_node[tptr->index].type == SINK) {
+	if(tptr != NULL && rr_node[tptr->index].type() == SINK) {
 		/* During logical equivalence case, only use one opin */
 		tptr = tptr->next;
 	}
@@ -256,7 +256,7 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 			inode = tptr->index;
 			node_to_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 
-			if (rr_node[inode].type == IPIN)
+			if (rr_node[inode].type() == IPIN)
 				last_ipin_node = inode;
 
 			tptr = next_ptr;
@@ -310,8 +310,8 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 		tot_cost = pcost + get_rr_cong_cost(to_node);
 
 		if (bend_cost != 0.) {
-			from_type = rr_node[inode].type;
-			to_type = rr_node[to_node].type;
+			from_type = rr_node[inode].type();
+			to_type = rr_node[to_node].type();
 			if ((from_type == CHANX && to_type == CHANY)
 					|| (from_type == CHANY && to_type == CHANX))
 				tot_cost += bend_cost;

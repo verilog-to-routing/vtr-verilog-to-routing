@@ -66,9 +66,9 @@ private:
 
 	short occ;
 	enum e_direction direction;
+	t_rr_type type_;
 
 public:
-	t_rr_type type;
 	int *edges;
 	short *switches;
 
@@ -76,6 +76,7 @@ public:
 	float C;
 
 	/* Member functions */
+    t_rr_type type() const { return type_; }
 	const char *rr_get_type_string() const; /* Retrieve rr_type as a string */
 	short get_xlow() const;
 	short get_ylow() const;
@@ -91,6 +92,7 @@ public:
 	enum e_direction get_direction() const;
 	enum e_drivers get_drivers() const;
 
+    void set_type(t_rr_type new_type) { type_ = new_type; }
 	void set_coordinates(short, short, short, short);
 	void set_ptc_num(short);
 	void set_cost_index(short);

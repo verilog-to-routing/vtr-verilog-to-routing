@@ -821,7 +821,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 					t_rr_node_power * next_node_power =
 							&rr_node_power[node->edges[edge_idx]];
 
-					switch (next_node->type) {
+					switch (next_node->type()) {
 					case CHANX:
 					case CHANY:
 					case IPIN:
@@ -861,7 +861,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 		//float C_per_seg_split;
 		int wire_length;
 
-		switch (node->type) {
+		switch (node->type()) {
 		case SOURCE:
 		case SINK:
 		case OPIN:
@@ -899,9 +899,9 @@ static void power_usage_routing(t_power_usage * power_usage,
 			VTR_ASSERT(node_power->in_prob);
 
 			wire_length = 0;
-			if (node->type == CHANX) {
+			if (node->type() == CHANX) {
 				wire_length = node->get_xhigh() - node->get_xlow() + 1;
-			} else if (node->type == CHANY) {
+			} else if (node->type() == CHANY) {
 				wire_length = node->get_yhigh() - node->get_ylow() + 1;
 			}
 			C_wire =
@@ -1183,7 +1183,7 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 		t_rr_node * node = &rr_node[rr_node_idx];
 		t_rr_node_power * node_power = &rr_node_power[rr_node_idx];
 
-		switch (node->type) {
+		switch (node->type()) {
 		case IPIN:
 			max_IPIN_fanin = max(max_IPIN_fanin,
 					static_cast<int>(node->get_fan_in()));
@@ -1237,14 +1237,10 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 
 		for (edge_idx = 0; edge_idx < node->get_num_edges(); edge_idx++) {
 			if (node->edges[edge_idx] != OPEN) {
-				if (rr_node_power[node->edges[edge_idx]].driver_switch_type
-						== OPEN) {
-					rr_node_power[node->edges[edge_idx]].driver_switch_type =
-							node->switches[edge_idx];
+				if (rr_node_power[node->edges[edge_idx]].driver_switch_type == OPEN) {
+					rr_node_power[node->edges[edge_idx]].driver_switch_type = node->switches[edge_idx];
 				} else {
-					VTR_ASSERT(
-							rr_node_power[node->edges[edge_idx]].driver_switch_type
-									== node->switches[edge_idx]);
+					VTR_ASSERT(rr_node_power[node->edges[edge_idx]].driver_switch_type == node->switches[edge_idx]);
 				}
 			}
 		}
@@ -1255,7 +1251,7 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 	for (rr_node_idx = 0; rr_node_idx < num_rr_nodes; rr_node_idx++) {
 		t_rr_node * node = &rr_node[rr_node_idx];
 
-		switch (node->type) {
+		switch (node->type()) {
 		case CHANX:
 		case CHANY:
 			if (node->get_num_edges() > max_seg_fanout) {
@@ -1341,7 +1337,7 @@ bool power_uninit(void) {
 		t_rr_node * node = &rr_node[rr_node_idx];
 		t_rr_node_power * node_power = &rr_node_power[rr_node_idx];
 
-		switch (node->type) {
+		switch (node->type()) {
 		case CHANX:
 		case CHANY:
 		case IPIN:

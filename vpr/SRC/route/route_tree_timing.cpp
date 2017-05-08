@@ -252,10 +252,10 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 	inode = hptr->index;
 
-	if (rr_node[inode].type != SINK) {
+	if (rr_node[inode].type() != SINK) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in add_path_to_route_tree. Expected type = SINK (%d).\n"
-			"Got type = %d.",  SINK, rr_node[inode].type);
+			"Got type = %d.",  SINK, rr_node[inode].type());
 	}
 
 	sink_rt_node = alloc_rt_node();
@@ -304,7 +304,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 		rt_node->C_downstream = C_downstream;
 		rr_node_to_rt_node[inode] = rt_node;
 
-        if (rr_node[inode].type == IPIN)
+        if (rr_node[inode].type() == IPIN)
             rt_node->re_expand = false;
         else
             rt_node->re_expand = true;
@@ -581,7 +581,7 @@ t_rt_node* traceback_to_route_tree(int inet) {
 		// head is always on the trunk of the tree (explored part) while tail is always on a new branch
 		tail = head->next;
 		// while the next sink has not been reached (this branch has not been fully drawn)
-		while (rr_node[tail->index].type != SINK) tail = tail->next; 
+		while (rr_node[tail->index].type() != SINK) tail = tail->next; 
 		// tail is at the end of the branch (SINK)
 		// [head+1, tail(sink)] is the new part of the route tree
 		for (t_trace* new_node = head->next; new_node != tail; new_node = new_node->next) {
@@ -960,9 +960,9 @@ void print_edge(const t_linked_rt_edge* edge) {
 
 static void print_node(const t_rt_node* rt_node) {
 	int inode = rt_node->inode;
-	t_rr_type node_type = rr_node[inode].type;
+	t_rr_type node_type = rr_node[inode].type();
 	vtr::printf_info("%5.1e %5.1e %2d%6s|%-6d-> ", rt_node->C_downstream, rt_node->R_upstream,
-		rt_node->re_expand, node_typename[node_type], inode);	
+		rt_node->re_expand, rr_node_typename[node_type], inode);	
 }
 
 

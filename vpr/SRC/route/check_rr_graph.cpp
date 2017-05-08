@@ -50,13 +50,13 @@ void check_rr_graph(const t_graph_type graph_type,
 	for (inode = 0; inode < num_rr_nodes; inode++) {
 
 		/* Ignore any uninitialized rr_graph nodes */
-		if ((rr_node[inode].type == SOURCE) 
+		if ((rr_node[inode].type() == SOURCE) 
 				&& (rr_node[inode].get_xlow() == 0) && (rr_node[inode].get_ylow() == 0)
 				&& (rr_node[inode].get_xhigh() == 0) && (rr_node[inode].get_yhigh() == 0)) {
 			continue;
 		}
 
-		rr_type = rr_node[inode].type;
+		rr_type = rr_node[inode].type();
 		num_edges = rr_node[inode].get_num_edges();
 
 		check_node(inode, route_type, segment_inf);
@@ -95,7 +95,7 @@ void check_rr_graph(const t_graph_type graph_type,
 			to_node = rr_node[inode].edges[iedge];
 
 			if (num_edges_from_current_to_node[to_node] > 1) {
-				to_rr_type = rr_node[to_node].type;
+				to_rr_type = rr_node[to_node].type();
 
 				if ((to_rr_type != CHANX && to_rr_type != CHANY)
 						|| (rr_type != CHANX && rr_type != CHANY)) {
@@ -127,7 +127,7 @@ void check_rr_graph(const t_graph_type graph_type,
 	is_fringe_warning_sent = false;
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		rr_type = rr_node[inode].type;
+		rr_type = rr_node[inode].type();
 
 		if (rr_type != SOURCE) {
 			if (total_edges_to_node[inode] < 1
@@ -152,8 +152,8 @@ void check_rr_graph(const t_graph_type graph_type,
 						|| (rr_node[inode].get_ylow() == 1)
 						|| (rr_node[inode].get_xhigh() == L_nx)
 						|| (rr_node[inode].get_yhigh() == L_ny));
-				is_wire =(rr_node[inode].type == CHANX
-						|| rr_node[inode].type == CHANY);
+				is_wire =(rr_node[inode].type() == CHANX
+						|| rr_node[inode].type() == CHANY);
 
 				if (!is_chain && !is_fringe && !is_wire) {
 					vtr::printf_error(__FILE__, __LINE__,
@@ -191,7 +191,7 @@ static bool rr_node_is_global_clb_ipin(int inode) {
 
 	type = grid[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()].type;
 
-	if (rr_node[inode].type != IPIN)
+	if (rr_node[inode].type() != IPIN)
 		return (false);
 
 	ipin = rr_node[inode].get_ptc_num();
@@ -211,7 +211,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	int nodes_per_chan, tracks_per_node, num_edges, cost_index;
 	float C, R;
 
-	rr_type = rr_node[inode].type;
+	rr_type = rr_node[inode].type();
 	xlow = rr_node[inode].get_xlow();
 	xhigh = rr_node[inode].get_xhigh();
 	ylow = rr_node[inode].get_ylow();
@@ -396,7 +396,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 			/* Just a warning, since a very poorly routable rr-graph could have nodes with no edges.  *
 			 * If such a node was ever used in a final routing (not just in an rr_graph), other       *
 			 * error checks in check_routing will catch it.                                           */ 
-            if (rr_node[inode].type == CHANX || rr_node[inode].type == CHANY) {
+            if (rr_node[inode].type() == CHANX || rr_node[inode].type() == CHANY) {
                 int seg_index = rr_indexed_data[cost_index].seg_index;
                 const char* seg_name = segment_inf[seg_index].name;
                 vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) has no out-going edges.\n", 
@@ -444,7 +444,7 @@ static void check_pass_transistors(int from_node) {
 	short from_switch_type;
 	bool trans_matched;
 
-	from_rr_type = rr_node[from_node].type;
+	from_rr_type = rr_node[from_node].type();
 	if (from_rr_type != CHANX && from_rr_type != CHANY)
 		return;
 
@@ -452,7 +452,7 @@ static void check_pass_transistors(int from_node) {
 
 	for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
 		to_node = rr_node[from_node].edges[from_edge];
-		to_rr_type = rr_node[to_node].type;
+		to_rr_type = rr_node[to_node].type();
 
 		if (to_rr_type != CHANX && to_rr_type != CHANY)
 			continue;

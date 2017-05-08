@@ -224,7 +224,7 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 
 	RR_Node &from_node = rr_node[from_node_ind];
 
-	e_rr_type from_type = from_node.type;
+	e_rr_type from_type = from_node.type();
 	int from_cost_index = from_node.get_cost_index();
 	int from_seg_index = rr_indexed_data[from_cost_index].seg_index;
 
@@ -409,7 +409,7 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
 		}
 
 		/* if this node is an ipin record its congestion/delay in the routing_cost_map */
-		if (rr_node[node_ind].type == IPIN){
+		if (rr_node[node_ind].type() == IPIN){
 			int ipin_x = rr_node[node_ind].get_xlow();
 			int ipin_y = rr_node[node_ind].get_ylow();
 

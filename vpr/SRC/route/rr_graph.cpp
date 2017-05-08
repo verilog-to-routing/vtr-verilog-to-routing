@@ -516,11 +516,11 @@ void build_rr_graph(
 	/* Update rr_nodes capacities if global routing */
 	if (graph_type == GRAPH_GLOBAL) {
 		for (int i = 0; i < num_rr_nodes; i++) {
-			if (rr_node[i].type == CHANX) {
+			if (rr_node[i].type() == CHANX) {
 				int ylow = rr_node[i].get_ylow();
 				rr_node[i].set_capacity( chan_width.x_list[ylow] );
 			}
-			if (rr_node[i].type == CHANY) {
+			if (rr_node[i].type() == CHANY) {
 				int xlow = rr_node[i].get_xlow();
 				rr_node[i].set_capacity( chan_width.y_list[xlow] );
 			}
@@ -1300,7 +1300,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 			}
 
 			L_rr_node[inode].set_cost_index(SOURCE_COST_INDEX);
-			L_rr_node[inode].type = SOURCE;
+			L_rr_node[inode].set_type(SOURCE);
 		} else { /* SINK */
 			VTR_ASSERT(class_inf[iclass].type == RECEIVER);
 			inode = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
@@ -1317,7 +1317,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 			L_rr_node[inode].switches = NULL;
 
 			L_rr_node[inode].set_cost_index(SINK_COST_INDEX);
-			L_rr_node[inode].type = SINK;
+			L_rr_node[inode].set_type(SINK);
 		}
 
 		/* Things common to both SOURCEs and SINKs.   */
@@ -1352,7 +1352,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 			L_rr_node[to_node].set_fan_in(L_rr_node[to_node].get_fan_in() + 1);
 
 			L_rr_node[inode].set_cost_index(IPIN_COST_INDEX);
-			L_rr_node[inode].type = IPIN;
+			L_rr_node[inode].set_type(IPIN);
 
 		} else {
 			VTR_ASSERT(class_inf[iclass].type == DRIVER);
@@ -1362,7 +1362,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 			L_rr_node[inode].edges = NULL;
 			L_rr_node[inode].switches = NULL;
 			L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
-			L_rr_node[inode].type = OPIN;
+			L_rr_node[inode].set_type(OPIN);
 		}
 
 		/* Common to both DRIVERs and RECEIVERs */
@@ -1538,7 +1538,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 		L_rr_node[node].C = length * seg_details[track].Cmetal;
 
 		L_rr_node[node].set_ptc_num(track);
-		L_rr_node[node].type = chan_type;
+		L_rr_node[node].set_type(chan_type);
 		L_rr_node[node].set_direction(seg_details[track].direction);
 		//L_rr_node[node].set_drivers(seg_details[track].drivers);
 	}
@@ -2240,7 +2240,7 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	static const char *direction_name[] = { "OPEN", "INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION" };
 	static const char *drivers_name[] = { "OPEN", "MULTI_BUFFER", "SINGLE" };
 
-	t_rr_type rr_type = L_rr_node[inode].type;
+	t_rr_type rr_type = L_rr_node[inode].type();
 
 	/* Make sure we don't overrun const arrays */
 	VTR_ASSERT((L_rr_node[inode].get_direction() + 1) < (int)(sizeof(direction_name) / sizeof(char *)));
