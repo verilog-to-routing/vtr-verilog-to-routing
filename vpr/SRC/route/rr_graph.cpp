@@ -1331,24 +1331,12 @@ static void build_rr_sinks_sources(const int i, const int j,
 		L_rr_node[inode].C = 0;
 		L_rr_node[inode].set_ptc_num(iclass);
 		L_rr_node[inode].set_direction((enum e_direction)OPEN);
-		//L_rr_node[inode].set_drivers((enum e_drivers)OPEN);
 	}
 
-	int ipb_pin = 0;
-	int opb_pin = 0;
-	int iport = 0;
-	int oport = 0;
-	int iporttype = 0;
-
-	const t_pb_graph_node *pb_graph_node = type->pb_graph_head;
-	if(pb_graph_node != NULL && pb_graph_node->num_input_ports == 0) {
-		iporttype = 1;
-	}
 	/* Connect IPINS to SINKS and dummy for OPINS */
 	for (int ipin = 0; ipin < num_pins; ++ipin) {
 		int inode = 0;;
 		int iclass = pin_class[ipin];
-		int z = ipin / (type->pb_type->num_clock_pins + type->pb_type->num_output_pins + type->pb_type->num_input_pins);
 
 		if (class_inf[iclass].type == RECEIVER) {
 			inode = get_rr_node_index(i, j, IPIN, ipin, L_rr_node_indices);
@@ -1366,61 +1354,15 @@ static void build_rr_sinks_sources(const int i, const int j,
 			L_rr_node[inode].set_cost_index(IPIN_COST_INDEX);
 			L_rr_node[inode].type = IPIN;
 
-			/* Add in information so that I can identify which cluster pin this rr_node connects to later */
-			L_rr_node[inode].z = z;
-			if(iporttype == 0) {
-				VTR_ASSERT(pb_graph_node != NULL);
-				L_rr_node[inode].pb_graph_pin = &pb_graph_node->input_pins[iport][ipb_pin];
-				ipb_pin++;
-				if(ipb_pin >= pb_graph_node->num_input_pins[iport]) {
-					iport++;
-					ipb_pin = 0;
-					if(iport >= pb_graph_node->num_input_ports) {
-						iporttype++;
-						iport = 0;
-						if(pb_graph_node->num_clock_ports == 0) {
-							iporttype = 0;
-						}
-					}
-				}
-			} else {
-				VTR_ASSERT(iporttype == 1);
-				L_rr_node[inode].pb_graph_pin = &pb_graph_node->clock_pins[iport][ipb_pin];
-				ipb_pin++;
-				if(ipb_pin >= pb_graph_node->num_clock_pins[iport]) {
-					iport++;
-					ipb_pin = 0;
-					if(iport >= pb_graph_node->num_clock_ports) {
-						iporttype = 0;
-						iport = 0;
-						if(pb_graph_node->num_input_ports == 0) {
-							iporttype = 1;
-						}
-					}
-				}
-			}
 		} else {
 			VTR_ASSERT(class_inf[iclass].type == DRIVER);
 			inode = get_rr_node_index(i, j, OPIN, ipin, L_rr_node_indices);
 			
-			/* Add in information so that I can identify which cluster pin this rr_node connects to later */
-			L_rr_node[inode].z = z;
 			L_rr_node[inode].set_num_edges(0);
 			L_rr_node[inode].edges = NULL;
 			L_rr_node[inode].switches = NULL;
 			L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
 			L_rr_node[inode].type = OPIN;
-			
-			VTR_ASSERT(pb_graph_node != NULL);
-			L_rr_node[inode].pb_graph_pin = &pb_graph_node->output_pins[oport][opb_pin];
-			opb_pin++;
-			if(opb_pin >= pb_graph_node->num_output_pins[oport]) {
-				oport++;
-				opb_pin = 0;
-				if(oport >= pb_graph_node->num_output_ports) {
-					oport = 0;
-				}
-			}
 		}
 
 		/* Common to both DRIVERs and RECEIVERs */
@@ -1431,7 +1373,6 @@ static void build_rr_sinks_sources(const int i, const int j,
 		L_rr_node[inode].R = 0;
 		L_rr_node[inode].set_ptc_num(ipin);
 		L_rr_node[inode].set_direction((enum e_direction)OPEN);
-		//L_rr_node[inode].set_drivers((enum e_drivers)OPEN);
 	}
 }
 
@@ -2321,10 +2262,6 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	fprintf(fp, "Drivers: %s ", drivers_name[L_rr_node[inode].get_drivers() + 1]);
 	fprintf(fp, "\n");
 
-	if( rr_type == IPIN || rr_type == OPIN)
-	{
-		fprintf(fp, "name %s\n", L_rr_node[inode].pb_graph_pin->port->name);
-	}
 	fprintf(fp, "%d edge(s):", L_rr_node[inode].get_num_edges());
 	for (int iconn = 0; iconn < L_rr_node[inode].get_num_edges(); ++iconn)
 		fprintf(fp, " %d", L_rr_node[inode].edges[iconn]);

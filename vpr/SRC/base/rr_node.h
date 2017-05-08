@@ -76,12 +76,6 @@ public:
 	float R;
 	float C;
 
-	/* Used by clustering only (TODO, may wish to extend to regular router) */
-	t_pb_graph_pin *pb_graph_pin;
-	/* For IPIN, source, and sink nodes, helps identify which location this 
-	rr_node belongs to */
-	int z; 
-	
 	/* Member functions */
 	const char *rr_get_type_string() const; /* Retrieve rr_type as a string */
 	short get_xlow() const;
