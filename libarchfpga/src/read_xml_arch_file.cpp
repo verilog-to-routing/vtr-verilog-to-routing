@@ -1749,7 +1749,7 @@ static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::lo
 }
 
 static e_fc_type string_to_fc_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
-    e_fc_type fc_type;
+    e_fc_type fc_type = e_fc_type::FRACTIONAL;
 
     if (str == "frac") {
         fc_type = e_fc_type::FRACTIONAL;
