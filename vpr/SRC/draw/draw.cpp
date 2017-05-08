@@ -2179,7 +2179,7 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
             if (g_rr_nodes[hit_node].type() == CHANX || g_rr_nodes[hit_node].type() == CHANY) {
                 int cost_index = g_rr_nodes[hit_node].cost_index();
 
-                int seg_index = rr_indexed_data[cost_index].seg_index;
+                int seg_index = g_rr_indexed_data[cost_index].seg_index;
 
                 msg += vtr::string_fmt(" track: %d len: %d seg_type: %s", 
                             g_rr_nodes[hit_node].ptc_num(), 

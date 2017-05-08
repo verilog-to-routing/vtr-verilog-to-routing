@@ -1158,7 +1158,7 @@ void free_rr_graph(void) {
 	VTR_ASSERT(rr_node_indices);
 	free_rr_node_indices(rr_node_indices);
 	free(g_rr_nodes);
-	free(rr_indexed_data);
+	free(g_rr_indexed_data);
 	for (i = 0; i < num_blocks; i++) {
 		free(rr_blk_source[i]);
 	}
@@ -1167,7 +1167,7 @@ void free_rr_graph(void) {
 	net_rr_terminals = NULL;
 	g_rr_nodes = NULL;
 	rr_node_indices = NULL;
-	rr_indexed_data = NULL;
+	g_rr_indexed_data = NULL;
 	g_num_rr_nodes = 0;
 
 	delete[] g_rr_switch_inf;
@@ -2258,21 +2258,21 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	fprintf(fp, "Cost_index: %d\n", L_rr_node[inode].cost_index());
 }
 
-/* Prints all the rr_indexed_data of index to file fp.   */
+/* Prints all the g_rr_indexed_data of index to file fp.   */
 void print_rr_indexed_data(FILE * fp, int index) {
 
 	fprintf(fp, "Index: %d\n", index);
 
-	fprintf(fp, "ortho_cost_index: %d  ", rr_indexed_data[index].ortho_cost_index);
-	fprintf(fp, "base_cost: %g  ", rr_indexed_data[index].saved_base_cost);
-	fprintf(fp, "saved_base_cost: %g\n", rr_indexed_data[index].saved_base_cost);
+	fprintf(fp, "ortho_cost_index: %d  ", g_rr_indexed_data[index].ortho_cost_index);
+	fprintf(fp, "base_cost: %g  ", g_rr_indexed_data[index].saved_base_cost);
+	fprintf(fp, "saved_base_cost: %g\n", g_rr_indexed_data[index].saved_base_cost);
 
-	fprintf(fp, "Seg_index: %d  ", rr_indexed_data[index].seg_index);
-	fprintf(fp, "inv_length: %g\n", rr_indexed_data[index].inv_length);
+	fprintf(fp, "Seg_index: %d  ", g_rr_indexed_data[index].seg_index);
+	fprintf(fp, "inv_length: %g\n", g_rr_indexed_data[index].inv_length);
 
-	fprintf(fp, "T_linear: %g  ", rr_indexed_data[index].T_linear);
-	fprintf(fp, "T_quadratic: %g  ", rr_indexed_data[index].T_quadratic);
-	fprintf(fp, "C_load: %g\n", rr_indexed_data[index].C_load);
+	fprintf(fp, "T_linear: %g  ", g_rr_indexed_data[index].T_linear);
+	fprintf(fp, "T_quadratic: %g  ", g_rr_indexed_data[index].T_quadratic);
+	fprintf(fp, "C_load: %g\n", g_rr_indexed_data[index].C_load);
 }
 
 static void build_unidir_rr_opins(const int i, const int j,

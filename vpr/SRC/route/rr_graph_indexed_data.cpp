@@ -27,7 +27,7 @@ static void load_rr_indexed_data_T_values(int index_start,
 
 /******************** Subroutine definitions *********************************/
 
-/* Allocates the rr_indexed_data array and loads it with appropriate values. *
+/* Allocates the g_rr_indexed_data array and loads it with appropriate values. *
  * It currently stores the segment type (or OPEN if the index doesn't        *
  * correspond to an CHANX or CHANY type), the base cost of nodes of that     *
  * type, and some info to allow rapid estimates of time to get to a target   *
@@ -48,7 +48,7 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
 	int iseg, length, i, index;
 
 	g_num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * num_segment);
-	rr_indexed_data = (t_rr_indexed_data *) vtr::malloc(
+	g_rr_indexed_data = (t_rr_indexed_data *) vtr::malloc(
 			g_num_rr_indexed_data * sizeof(t_rr_indexed_data));
 
 	/* For rr_types that aren't CHANX or CHANY, base_cost is valid, but most     *
@@ -57,15 +57,15 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
 	 * * other than base_cost are invalid. Mark invalid fields as OPEN for safety. */
 
 	for (i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
-		rr_indexed_data[i].ortho_cost_index = OPEN;
-		rr_indexed_data[i].seg_index = OPEN;
-		rr_indexed_data[i].inv_length = OPEN;
-		rr_indexed_data[i].T_linear = OPEN;
-		rr_indexed_data[i].T_quadratic = OPEN;
-		rr_indexed_data[i].C_load = OPEN;
+		g_rr_indexed_data[i].ortho_cost_index = OPEN;
+		g_rr_indexed_data[i].seg_index = OPEN;
+		g_rr_indexed_data[i].inv_length = OPEN;
+		g_rr_indexed_data[i].T_linear = OPEN;
+		g_rr_indexed_data[i].T_quadratic = OPEN;
+		g_rr_indexed_data[i].C_load = OPEN;
 	}
 
-	rr_indexed_data[IPIN_COST_INDEX].T_linear =
+	g_rr_indexed_data[IPIN_COST_INDEX].T_linear =
 			g_rr_switch_inf[wire_to_ipin_switch].Tdel;
 
 	/* X-directed segments. */
@@ -73,15 +73,15 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
 	for (iseg = 0; iseg < num_segment; iseg++) {
 		index = CHANX_COST_INDEX_START + iseg;
 
-		rr_indexed_data[index].ortho_cost_index = index + num_segment;
+		g_rr_indexed_data[index].ortho_cost_index = index + num_segment;
 
 		if (segment_inf[iseg].longline)
 			length = nx;
 		else
 			length = min(segment_inf[iseg].length, nx);
 
-		rr_indexed_data[index].inv_length = 1. / length;
-		rr_indexed_data[index].seg_index = iseg;
+		g_rr_indexed_data[index].inv_length = 1. / length;
+		g_rr_indexed_data[index].seg_index = iseg;
 	}
 
 	load_rr_indexed_data_T_values(CHANX_COST_INDEX_START, num_segment, CHANX,
@@ -92,15 +92,15 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
 	for (iseg = 0; iseg < num_segment; iseg++) {
 		index = CHANX_COST_INDEX_START + num_segment + iseg;
 
-		rr_indexed_data[index].ortho_cost_index = index - num_segment;
+		g_rr_indexed_data[index].ortho_cost_index = index - num_segment;
 
 		if (segment_inf[iseg].longline)
 			length = ny;
 		else
 			length = min(segment_inf[iseg].length, ny);
 
-		rr_indexed_data[index].inv_length = 1. / length;
-		rr_indexed_data[index].seg_index = iseg;
+		g_rr_indexed_data[index].inv_length = 1. / length;
+		g_rr_indexed_data[index].seg_index = iseg;
 	}
 
 	load_rr_indexed_data_T_values((CHANX_COST_INDEX_START + num_segment),
@@ -114,7 +114,7 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
 static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 		vtr::t_ivec *** L_rr_node_indices, enum e_base_cost_type base_cost_type) {
 
-	/* Loads the base_cost member of rr_indexed_data according to the specified *
+	/* Loads the base_cost member of g_rr_indexed_data according to the specified *
 	 * base_cost_type.                                                          */
 
 	float delay_normalization_fac;
@@ -128,25 +128,25 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 	}
 
 	if (base_cost_type == DEMAND_ONLY || base_cost_type == DELAY_NORMALIZED) {
-		rr_indexed_data[SOURCE_COST_INDEX].base_cost = delay_normalization_fac;
-		rr_indexed_data[SINK_COST_INDEX].base_cost = 0.;
-		rr_indexed_data[OPIN_COST_INDEX].base_cost = delay_normalization_fac;
+		g_rr_indexed_data[SOURCE_COST_INDEX].base_cost = delay_normalization_fac;
+		g_rr_indexed_data[SINK_COST_INDEX].base_cost = 0.;
+		g_rr_indexed_data[OPIN_COST_INDEX].base_cost = delay_normalization_fac;
 
-		rr_indexed_data[IPIN_COST_INDEX].base_cost = 0.95
+		g_rr_indexed_data[IPIN_COST_INDEX].base_cost = 0.95
 				* delay_normalization_fac;
 	}
 
 	/* Load base costs for CHANX and CHANY segments */
 
 	for (index = CHANX_COST_INDEX_START; index < g_num_rr_indexed_data; index++) {
-			/*       rr_indexed_data[index].base_cost = delay_normalization_fac /
-			 rr_indexed_data[index].inv_length;  */
+			/*       g_rr_indexed_data[index].base_cost = delay_normalization_fac /
+			 g_rr_indexed_data[index].inv_length;  */
 
-		rr_indexed_data[index].base_cost = delay_normalization_fac;
-		/*       rr_indexed_data[index].base_cost = delay_normalization_fac *
-		 sqrt (1. / rr_indexed_data[index].inv_length);  */
-		/*       rr_indexed_data[index].base_cost = delay_normalization_fac *
-		 (1. + 1. / rr_indexed_data[index].inv_length);  */
+		g_rr_indexed_data[index].base_cost = delay_normalization_fac;
+		/*       g_rr_indexed_data[index].base_cost = delay_normalization_fac *
+		 sqrt (1. / g_rr_indexed_data[index].inv_length);  */
+		/*       g_rr_indexed_data[index].base_cost = delay_normalization_fac *
+		 (1. + 1. / g_rr_indexed_data[index].inv_length);  */
 	}
 
 	/* Save a copy of the base costs -- if dynamic costing is used by the     * 
@@ -154,8 +154,8 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 	 * able to restore them from a saved version is useful.                   */
 
 	for (index = 0; index < g_num_rr_indexed_data; index++) {
-		rr_indexed_data[index].saved_base_cost =
-				rr_indexed_data[index].base_cost;
+		g_rr_indexed_data[index].saved_base_cost =
+				g_rr_indexed_data[index].base_cost;
 	}
 }
 
@@ -177,10 +177,10 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 		if (inode == -1)
 			continue;
 		cost_index = g_rr_nodes[inode].cost_index();
-		frac_num_seg = clb_dist * rr_indexed_data[cost_index].inv_length;
-		Tdel = frac_num_seg * rr_indexed_data[cost_index].T_linear
+		frac_num_seg = clb_dist * g_rr_indexed_data[cost_index].inv_length;
+		Tdel = frac_num_seg * g_rr_indexed_data[cost_index].T_linear
 				+ frac_num_seg * frac_num_seg
-						* rr_indexed_data[cost_index].T_quadratic;
+						* g_rr_indexed_data[cost_index].T_quadratic;
 		Tdel_sum += Tdel / (float) clb_dist;
 	}
 
@@ -190,10 +190,10 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 		if (inode == -1)
 			continue;
 		cost_index = g_rr_nodes[inode].cost_index();
-		frac_num_seg = clb_dist * rr_indexed_data[cost_index].inv_length;
-		Tdel = frac_num_seg * rr_indexed_data[cost_index].T_linear
+		frac_num_seg = clb_dist * g_rr_indexed_data[cost_index].inv_length;
+		Tdel = frac_num_seg * g_rr_indexed_data[cost_index].T_linear
 				+ frac_num_seg * frac_num_seg
-						* rr_indexed_data[cost_index].T_quadratic;
+						* g_rr_indexed_data[cost_index].T_quadratic;
 		Tdel_sum += Tdel / (float) clb_dist;
 	}
 
@@ -311,9 +311,9 @@ static void load_rr_indexed_data_T_values(int index_start,
 			cost_index < index_start + num_indices_to_load; cost_index++) {
 
 		if (num_nodes_of_index[cost_index] == 0) { /* Segments don't exist. */
-			rr_indexed_data[cost_index].T_linear = OPEN;
-			rr_indexed_data[cost_index].T_quadratic = OPEN;
-			rr_indexed_data[cost_index].C_load = OPEN;
+			g_rr_indexed_data[cost_index].T_linear = OPEN;
+			g_rr_indexed_data[cost_index].T_quadratic = OPEN;
+			g_rr_indexed_data[cost_index].C_load = OPEN;
 		} else {
 			Rnode = R_total[cost_index] / num_nodes_of_index[cost_index];
 			Cnode = C_total[cost_index] / num_nodes_of_index[cost_index];
@@ -321,17 +321,17 @@ static void load_rr_indexed_data_T_values(int index_start,
 			Tsw = (float) switch_T_total[cost_index] / num_nodes_of_index[cost_index];
 
 			if (switches_buffered[cost_index]){
-				rr_indexed_data[cost_index].T_linear = Tsw + Rsw * Cnode
+				g_rr_indexed_data[cost_index].T_linear = Tsw + Rsw * Cnode
 						+ 0.5 * Rnode * Cnode;
-				rr_indexed_data[cost_index].T_quadratic = 0.;
-				rr_indexed_data[cost_index].C_load = 0.;
+				g_rr_indexed_data[cost_index].T_quadratic = 0.;
+				g_rr_indexed_data[cost_index].C_load = 0.;
 			} else { /* Pass transistor */
-				rr_indexed_data[cost_index].C_load = Cnode;
+				g_rr_indexed_data[cost_index].C_load = Cnode;
 
 				/* See Dec. 23, 1997 notes for deriviation of formulae. */
 
-				rr_indexed_data[cost_index].T_linear = Tsw + 0.5 * Rsw * Cnode;
-				rr_indexed_data[cost_index].T_quadratic = (Rsw + Rnode) * 0.5
+				g_rr_indexed_data[cost_index].T_linear = Tsw + 0.5 * Rsw * Cnode;
+				g_rr_indexed_data[cost_index].T_quadratic = (Rsw + Rnode) * 0.5
 						* Cnode;
 			}
 		}

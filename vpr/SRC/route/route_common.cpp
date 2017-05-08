@@ -620,7 +620,7 @@ float get_rr_cong_cost(int inode) {
 	float cost;
 
 	cost_index = g_rr_nodes[inode].cost_index();
-	cost = rr_indexed_data[cost_index].base_cost
+	cost = g_rr_indexed_data[cost_index].base_cost
 			* rr_node_route_inf[inode].acc_cost
 			* rr_node_route_inf[inode].pres_cost;
 	return (cost);

@@ -972,26 +972,26 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
 #else
 		num_segs_same_dir = get_expected_segs_to_target(inode, target_node, &num_segs_ortho_dir);
 		cost_index = g_rr_nodes[inode].cost_index();
-		ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
+		ortho_cost_index = g_rr_indexed_data[cost_index].ortho_cost_index;
 
-		cong_cost =   num_segs_same_dir * rr_indexed_data[cost_index].base_cost
-				    + num_segs_ortho_dir * rr_indexed_data[ortho_cost_index].base_cost;
-		cong_cost +=   rr_indexed_data[IPIN_COST_INDEX].base_cost
-				     + rr_indexed_data[SINK_COST_INDEX].base_cost;
+		cong_cost =   num_segs_same_dir * g_rr_indexed_data[cost_index].base_cost
+				    + num_segs_ortho_dir * g_rr_indexed_data[ortho_cost_index].base_cost;
+		cong_cost +=   g_rr_indexed_data[IPIN_COST_INDEX].base_cost
+				     + g_rr_indexed_data[SINK_COST_INDEX].base_cost;
 
-		Tdel =   num_segs_same_dir * rr_indexed_data[cost_index].T_linear
-               + num_segs_ortho_dir * rr_indexed_data[ortho_cost_index].T_linear
-               + num_segs_same_dir * num_segs_same_dir * rr_indexed_data[cost_index].T_quadratic
-               + num_segs_ortho_dir * num_segs_ortho_dir * rr_indexed_data[ortho_cost_index].T_quadratic
-               + R_upstream * (num_segs_same_dir * rr_indexed_data[cost_index].C_load + num_segs_ortho_dir * rr_indexed_data[ortho_cost_index].C_load);
+		Tdel =   num_segs_same_dir * g_rr_indexed_data[cost_index].T_linear
+               + num_segs_ortho_dir * g_rr_indexed_data[ortho_cost_index].T_linear
+               + num_segs_same_dir * num_segs_same_dir * g_rr_indexed_data[cost_index].T_quadratic
+               + num_segs_ortho_dir * num_segs_ortho_dir * g_rr_indexed_data[ortho_cost_index].T_quadratic
+               + R_upstream * (num_segs_same_dir * g_rr_indexed_data[cost_index].C_load + num_segs_ortho_dir * g_rr_indexed_data[ortho_cost_index].C_load);
 
-		Tdel += rr_indexed_data[IPIN_COST_INDEX].T_linear;
+		Tdel += g_rr_indexed_data[IPIN_COST_INDEX].T_linear;
 
 		expected_cost = criticality_fac * Tdel + (1. - criticality_fac) * cong_cost;
 		return (expected_cost);
 #endif
 	} else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
-		return (rr_indexed_data[SINK_COST_INDEX].base_cost);
+		return (g_rr_indexed_data[SINK_COST_INDEX].base_cost);
 	} else { /* Change this if you want to investigate route-throughs */
 		return (0.);
 	}
@@ -1020,9 +1020,9 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	target_x = g_rr_nodes[target_node].xlow();
 	target_y = g_rr_nodes[target_node].ylow();
 	cost_index = g_rr_nodes[inode].cost_index();
-	inv_length = rr_indexed_data[cost_index].inv_length;
-	ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
-	ortho_inv_length = rr_indexed_data[ortho_cost_index].inv_length;
+	inv_length = g_rr_indexed_data[cost_index].inv_length;
+	ortho_cost_index = g_rr_indexed_data[cost_index].ortho_cost_index;
+	ortho_inv_length = g_rr_indexed_data[ortho_cost_index].inv_length;
 	rr_type = g_rr_nodes[inode].type();
 
 	if (rr_type == CHANX) {
@@ -1107,12 +1107,12 @@ static void update_rr_base_costs(int inet) {
 	factor = sqrt(fanout);
 
 	for (index = CHANX_COST_INDEX_START; index < g_num_rr_indexed_data; index++) {
-		if (rr_indexed_data[index].T_quadratic > 0.) { /* pass transistor */
-			rr_indexed_data[index].base_cost =
-					rr_indexed_data[index].saved_base_cost * factor;
+		if (g_rr_indexed_data[index].T_quadratic > 0.) { /* pass transistor */
+			g_rr_indexed_data[index].base_cost =
+					g_rr_indexed_data[index].saved_base_cost * factor;
 		} else {
-			rr_indexed_data[index].base_cost =
-					rr_indexed_data[index].saved_base_cost;
+			g_rr_indexed_data[index].base_cost =
+					g_rr_indexed_data[index].saved_base_cost;
 		}
 	}
 }

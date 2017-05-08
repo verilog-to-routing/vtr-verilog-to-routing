@@ -397,7 +397,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 			 * If such a node was ever used in a final routing (not just in an rr_graph), other       *
 			 * error checks in check_routing will catch it.                                           */ 
             if (g_rr_nodes[inode].type() == CHANX || g_rr_nodes[inode].type() == CHANY) {
-                int seg_index = rr_indexed_data[cost_index].seg_index;
+                int seg_index = g_rr_indexed_data[cost_index].seg_index;
                 const char* seg_name = segment_inf[seg_index].name;
                 vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) has no out-going edges.\n", 
                         inode, g_rr_nodes[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh);

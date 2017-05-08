@@ -44,7 +44,7 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		if (g_rr_nodes[inode].type() == CHANX || g_rr_nodes[inode].type() == CHANY) {
 			cost_index = g_rr_nodes[inode].cost_index();
-			seg_type = rr_indexed_data[cost_index].seg_index;
+			seg_type = g_rr_indexed_data[cost_index].seg_index;
 
 			if (!segment_inf[seg_type].longline)
 				length = segment_inf[seg_type].length;

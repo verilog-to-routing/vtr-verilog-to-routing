@@ -905,7 +905,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 			}
 			C_wire =
 					wire_length
-							* segment_inf[rr_indexed_data[node->cost_index()].seg_index].Cmetal;
+							* segment_inf[g_rr_indexed_data[node->cost_index()].seg_index].Cmetal;
 			//(double)g_power_commonly_used->tile_length);
 			VTR_ASSERT(node_power->selected_input < node->fan_in());
 

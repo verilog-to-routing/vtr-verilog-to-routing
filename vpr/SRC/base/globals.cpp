@@ -78,7 +78,7 @@ t_rr_node *g_rr_nodes = NULL; /* [0..(g_num_rr_nodes-1)] */
 vtr::t_ivec ***rr_node_indices = NULL;
 
 int g_num_rr_indexed_data = 0;
-t_rr_indexed_data *rr_indexed_data = NULL; /* [0..(g_num_rr_indexed_data-1)] */
+t_rr_indexed_data *g_rr_indexed_data = NULL; /* [0..(g_num_rr_indexed_data-1)] */
 
 t_rr_node_state* g_rr_node_state = NULL; /* [0..(g_num_rr_nodes)-1] */
 

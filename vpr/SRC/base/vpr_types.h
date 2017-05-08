@@ -991,7 +991,7 @@ typedef struct s_trace {
 
 #define NO_PREVIOUS -1
 
-/* Index of the SOURCE, SINK, OPIN, IPIN, etc. member of rr_indexed_data.    */
+/* Index of the SOURCE, SINK, OPIN, IPIN, etc. member of g_rr_indexed_data.    */
 enum e_cost_indices {
 	SOURCE_COST_INDEX = 0,
 	SINK_COST_INDEX,

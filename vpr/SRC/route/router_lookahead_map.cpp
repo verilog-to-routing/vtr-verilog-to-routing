@@ -171,7 +171,7 @@ public:
 		int cost_index = g_rr_nodes[set_rr_node_ind].cost_index();
 		this->congestion_upstream = parent_congestion_upstream;
 		if (switch_ind != UNDEFINED){
-			this->congestion_upstream += rr_indexed_data[cost_index].base_cost;
+			this->congestion_upstream += g_rr_indexed_data[cost_index].base_cost;
 		}
 
 		/* set the cost of this node */
@@ -226,7 +226,7 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 
 	e_rr_type from_type = from_node.type();
 	int from_cost_index = from_node.cost_index();
-	int from_seg_index = rr_indexed_data[from_cost_index].seg_index;
+	int from_seg_index = g_rr_indexed_data[from_cost_index].seg_index;
 
 	assert(from_seg_index >= 0);
 
@@ -348,7 +348,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 
 		e_direction node_direction = g_rr_nodes[node_ind].direction();
 		int node_cost_ind = g_rr_nodes[node_ind].cost_index();
-		int node_seg_ind = rr_indexed_data[node_cost_ind].seg_index;
+		int node_seg_ind = g_rr_indexed_data[node_cost_ind].seg_index;
 
 		if ((node_direction == direction || node_direction == BI_DIRECTION) &&
 			    node_seg_ind == seg_index){
