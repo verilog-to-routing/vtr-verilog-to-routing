@@ -1160,10 +1160,10 @@ void free_rr_graph(void) {
 	free(g_rr_nodes);
 	free(g_rr_indexed_data);
 	for (i = 0; i < num_blocks; i++) {
-		free(rr_blk_source[i]);
+		free(g_rr_blk_source[i]);
 	}
-	free(rr_blk_source);
-	rr_blk_source = NULL;
+	free(g_rr_blk_source);
+	g_rr_blk_source = NULL;
 	g_net_rr_terminals = NULL;
 	g_rr_nodes = NULL;
 	g_rr_node_indices = NULL;
@@ -1234,12 +1234,12 @@ static void alloc_and_load_rr_clb_source(vtr::t_ivec *** L_rr_node_indices) {
 	t_rr_type rr_type;
 	t_type_ptr type;
 
-	rr_blk_source = (int **) vtr::malloc(num_blocks * sizeof(int *));
+	g_rr_blk_source = (int **) vtr::malloc(num_blocks * sizeof(int *));
 
 	for (iblk = 0; iblk < num_blocks; iblk++) {
 		type = block[iblk].type;
 		get_class_range_for_block(iblk, &class_low, &class_high);
-		rr_blk_source[iblk] = (int *) vtr::malloc(type->num_class * sizeof(int));
+		g_rr_blk_source[iblk] = (int *) vtr::malloc(type->num_class * sizeof(int));
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			if (iclass >= class_low && iclass <= class_high) {
 				i = block[iblk].x;
@@ -1252,9 +1252,9 @@ static void alloc_and_load_rr_clb_source(vtr::t_ivec *** L_rr_node_indices) {
 
 				inode = get_rr_node_index(i, j, rr_type, iclass,
 						L_rr_node_indices);
-				rr_blk_source[iblk][iclass] = inode;
+				g_rr_blk_source[iblk][iclass] = inode;
 			} else {
-				rr_blk_source[iblk][iclass] = OPEN;
+				g_rr_blk_source[iblk][iclass] = OPEN;
 			}
 		}
 	}

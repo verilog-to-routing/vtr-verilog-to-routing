@@ -1431,7 +1431,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 			/* Always 0 for pads and for RECEIVER (IPIN) classes */
 
 			if (num_local_opin != 0) { /* Have to reserve (use) some OPINs */
-				from_node = rr_blk_source[iblk][iclass];
+				from_node = g_rr_blk_source[iblk][iclass];
 				num_edges = g_rr_nodes[from_node].num_edges();
 				for (iconn = 0; iconn < num_edges; iconn++) {
 					to_node = g_rr_nodes[from_node].edge_sink_node(iconn);

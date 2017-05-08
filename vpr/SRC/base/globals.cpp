@@ -98,7 +98,7 @@ map<int, int> *g_switch_fanin_remap = NULL; /* an array of map. array index: [0.
 
 /* Stores the SOURCE and SINK nodes of all CLBs (not valid for pads).     */
 
-int **rr_blk_source = NULL; /* [0..(num_blocks-1)][0..(num_class-1)] */
+int **g_rr_blk_source = NULL; /* [0..(num_blocks-1)][0..(num_class-1)] */
 
 /* primiary inputs removed from circuit */
 vtr::t_linked_vptr *circuit_p_io_removed = NULL;
