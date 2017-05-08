@@ -77,7 +77,6 @@ public:
 	float C;
 
 	/* Used by clustering only (TODO, may wish to extend to regular router) */
-	int net_num;
 	t_pb_graph_pin *pb_graph_pin;
 	/* For IPIN, source, and sink nodes, helps identify which location this 
 	rr_node belongs to */

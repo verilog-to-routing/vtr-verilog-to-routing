@@ -788,7 +788,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 
 	/* Reset rr graph net indices */
 	for (rr_node_idx = 0; rr_node_idx < num_rr_nodes; rr_node_idx++) {
-		rr_node[rr_node_idx].net_num = OPEN;
+		rr_node_power[rr_node_idx].net_num = OPEN;
 		rr_node_power[rr_node_idx].num_inputs = 0;
 		rr_node_power[rr_node_idx].selected_input = 0;
 	}
@@ -799,7 +799,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 
 		for (trace = trace_head[net_idx]; trace != NULL; trace = trace->next) {
 			rr_node_power[trace->index].visited = false;
-			rr_node[trace->index].net_num = net_idx;
+			rr_node_power[trace->index].net_num = net_idx;
 		}
 	}
 
@@ -825,14 +825,11 @@ static void power_usage_routing(t_power_usage * power_usage,
 					case CHANX:
 					case CHANY:
 					case IPIN:
-						if (next_node->net_num == node->net_num) {
-							next_node_power->selected_input =
-									next_node_power->num_inputs;
+						if (next_node_power->net_num == node_power->net_num) {
+							next_node_power->selected_input = next_node_power->num_inputs;
 						}
-						next_node_power->in_dens[next_node_power->num_inputs] =
-								clb_net_density(node->net_num);
-						next_node_power->in_prob[next_node_power->num_inputs] =
-								clb_net_prob(node->net_num);
+						next_node_power->in_dens[next_node_power->num_inputs] = clb_net_density(node_power->net_num);
+						next_node_power->in_prob[next_node_power->num_inputs] = clb_net_prob(node_power->net_num);
 						next_node_power->num_inputs++;
 						if (next_node_power->num_inputs > next_node->get_fan_in()) {
                             vtr::printf_info("%d %d\n", next_node_power->num_inputs,
@@ -972,7 +969,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 
 			/* Wire Capacitance */
 			power_usage_wire(&sub_power_usage, C_wire,
-					clb_net_density(node->net_num), g_solution_inf.T_crit);
+					clb_net_density(node_power->net_num), g_solution_inf.T_crit);
 			power_add_usage(power_usage, &sub_power_usage);
 			power_component_add_usage(&sub_power_usage,
 					POWER_COMPONENT_ROUTE_GLB_WIRE);
