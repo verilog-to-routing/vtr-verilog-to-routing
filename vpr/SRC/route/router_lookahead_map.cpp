@@ -434,9 +434,9 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float> &nod
 
 	RR_Node &parent_node = rr_node[parent_ind];
 
-	for (int iedge = 0; iedge < parent_node.get_num_edges(); iedge++){
-		int child_node_ind = parent_node.edges[iedge];
-		int switch_ind = parent_node.switches[iedge];
+	for (int iedge = 0; iedge < parent_node.num_edges(); iedge++){
+		int child_node_ind = parent_node.edge_sink_node(iedge);
+		int switch_ind = parent_node.edge_switch(iedge);
 
 		/* skip this child if it has already been expanded from */
 		if (node_expanded[child_node_ind]){

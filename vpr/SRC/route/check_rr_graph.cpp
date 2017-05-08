@@ -57,14 +57,14 @@ void check_rr_graph(const t_graph_type graph_type,
 		}
 
 		rr_type = rr_node[inode].type();
-		num_edges = rr_node[inode].get_num_edges();
+		num_edges = rr_node[inode].num_edges();
 
 		check_node(inode, route_type, segment_inf);
 
 		/* Check all the connectivity (edges, etc.) information.                    */
 
 		for (iedge = 0; iedge < num_edges; iedge++) {
-			to_node = rr_node[inode].edges[iedge];
+			to_node = rr_node[inode].edge_sink_node(iedge);
 
 			if (to_node < 0 || to_node >= num_rr_nodes) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -75,7 +75,7 @@ void check_rr_graph(const t_graph_type graph_type,
 			num_edges_from_current_to_node[to_node]++;
 			total_edges_to_node[to_node]++;
 
-			switch_type = rr_node[inode].switches[iedge];
+			switch_type = rr_node[inode].edge_switch(iedge);
 
 			if (switch_type < 0 || switch_type >= num_rr_switches) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -92,7 +92,7 @@ void check_rr_graph(const t_graph_type graph_type,
 		} /* End for all edges of node. */
 
 		for (iedge = 0; iedge < num_edges; iedge++) {
-			to_node = rr_node[inode].edges[iedge];
+			to_node = rr_node[inode].edge_sink_node(iedge);
 
 			if (num_edges_from_current_to_node[to_node] > 1) {
 				to_rr_type = rr_node[to_node].type();
@@ -389,7 +389,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	}
 
 	/* Check that the number of (out) edges is reasonable. */
-	num_edges = rr_node[inode].get_num_edges();
+	num_edges = rr_node[inode].num_edges();
 
 	if (rr_type != SINK && rr_type != IPIN) {
 		if (num_edges <= 0) {
@@ -448,16 +448,16 @@ static void check_pass_transistors(int from_node) {
 	if (from_rr_type != CHANX && from_rr_type != CHANY)
 		return;
 
-	from_num_edges = rr_node[from_node].get_num_edges();
+	from_num_edges = rr_node[from_node].num_edges();
 
 	for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
-		to_node = rr_node[from_node].edges[from_edge];
+		to_node = rr_node[from_node].edge_sink_node(from_edge);
 		to_rr_type = rr_node[to_node].type();
 
 		if (to_rr_type != CHANX && to_rr_type != CHANY)
 			continue;
 
-		from_switch_type = rr_node[from_node].switches[from_edge];
+		from_switch_type = rr_node[from_node].edge_switch(from_edge);
 
 		if (g_rr_switch_inf[from_switch_type].buffered)
 			continue;
@@ -466,12 +466,12 @@ static void check_pass_transistors(int from_node) {
 		 * check that there is a corresponding edge from to_node back to         *
 		 * from_node.                                                            */
 
-		to_num_edges = rr_node[to_node].get_num_edges();
+		to_num_edges = rr_node[to_node].num_edges();
 		trans_matched = false;
 
 		for (to_edge = 0; to_edge < to_num_edges; to_edge++) {
-			if (rr_node[to_node].edges[to_edge] == from_node
-					&& rr_node[to_node].switches[to_edge] == from_switch_type) {
+			if (rr_node[to_node].edge_sink_node(to_edge) == from_node
+					&& rr_node[to_node].edge_switch(to_edge) == from_switch_type) {
 				trans_matched = true;
 				break;
 			}

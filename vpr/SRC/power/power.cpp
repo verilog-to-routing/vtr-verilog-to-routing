@@ -815,11 +815,10 @@ static void power_usage_routing(t_power_usage * power_usage,
 				continue;
 			}
 
-			for (edge_idx = 0; edge_idx < node->get_num_edges(); edge_idx++) {
-				if (node->edges[edge_idx] != OPEN) {
-					t_rr_node * next_node = &rr_node[node->edges[edge_idx]];
-					t_rr_node_power * next_node_power =
-							&rr_node_power[node->edges[edge_idx]];
+			for (edge_idx = 0; edge_idx < node->num_edges(); edge_idx++) {
+				if (node->edge_sink_node(edge_idx) != OPEN) {
+					t_rr_node * next_node = &rr_node[node->edge_sink_node(edge_idx)];
+					t_rr_node_power * next_node_power = &rr_node_power[node->edge_sink_node(edge_idx)];
 
 					switch (next_node->type()) {
 					case CHANX:
@@ -977,12 +976,10 @@ static void power_usage_routing(t_power_usage * power_usage,
 			/* Determine types of switches that this wire drives */
 			connectionbox_fanout = 0;
 			switchbox_fanout = 0;
-			for (switch_idx = 0; switch_idx < node->get_num_edges(); switch_idx++) {
-				if (node->switches[switch_idx]
-						== routing_arch->wire_to_rr_ipin_switch) {
+			for (switch_idx = 0; switch_idx < node->num_edges(); switch_idx++) {
+				if (node->edge_switch(switch_idx) == routing_arch->wire_to_rr_ipin_switch) {
 					connectionbox_fanout++;
-				} else if (node->switches[switch_idx]
-						== routing_arch->delayless_switch) {
+				} else if (node->edge_switch(switch_idx) == routing_arch->delayless_switch) {
 					/* Do nothing */
 				} else {
 					switchbox_fanout++;
@@ -1196,12 +1193,10 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 			break;
 		case CHANX:
 		case CHANY:
-			for (switch_idx = 0; switch_idx < node->get_num_edges(); switch_idx++) {
-				if (node->switches[switch_idx]
-						== routing_arch->wire_to_rr_ipin_switch) {
+			for (switch_idx = 0; switch_idx < node->num_edges(); switch_idx++) {
+				if (node->edge_switch(switch_idx) == routing_arch->wire_to_rr_ipin_switch) {
 					fanout_to_IPIN++;
-				} else if (node->switches[switch_idx]
-						!= routing_arch->delayless_switch) {
+				} else if (node->edge_switch(switch_idx) != routing_arch->delayless_switch) {
 					fanout_to_seg++;
 				}
 			}
@@ -1235,12 +1230,12 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 		t_rr_node * node = &rr_node[rr_node_idx];
 		int edge_idx;
 
-		for (edge_idx = 0; edge_idx < node->get_num_edges(); edge_idx++) {
-			if (node->edges[edge_idx] != OPEN) {
-				if (rr_node_power[node->edges[edge_idx]].driver_switch_type == OPEN) {
-					rr_node_power[node->edges[edge_idx]].driver_switch_type = node->switches[edge_idx];
+		for (edge_idx = 0; edge_idx < node->num_edges(); edge_idx++) {
+			if (node->edge_sink_node(edge_idx) != OPEN) {
+				if (rr_node_power[node->edge_sink_node(edge_idx)].driver_switch_type == OPEN) {
+					rr_node_power[node->edge_sink_node(edge_idx)].driver_switch_type = node->edge_switch(edge_idx);
 				} else {
-					VTR_ASSERT(rr_node_power[node->edges[edge_idx]].driver_switch_type == node->switches[edge_idx]);
+					VTR_ASSERT(rr_node_power[node->edge_sink_node(edge_idx)].driver_switch_type == node->edge_switch(edge_idx));
 				}
 			}
 		}
@@ -1254,8 +1249,8 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 		switch (node->type()) {
 		case CHANX:
 		case CHANY:
-			if (node->get_num_edges() > max_seg_fanout) {
-				max_seg_fanout = node->get_num_edges();
+			if (node->num_edges() > max_seg_fanout) {
+				max_seg_fanout = node->num_edges();
 			}
 			break;
 		default:

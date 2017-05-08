@@ -879,14 +879,14 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 	int inode = current->index;
 	float old_back_pcost = current->backward_path_cost;
 	float R_upstream = current->R_upstream;
-	int num_edges = rr_node[inode].get_num_edges();
+	int num_edges = rr_node[inode].num_edges();
 
 	int target_x = rr_node[target_node].get_xhigh();
 	int target_y = rr_node[target_node].get_yhigh();
 	bool high_fanout = g_clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM;
 
 	for (int iconn = 0; iconn < num_edges; iconn++) {
-		int to_node = rr_node[inode].edges[iconn];
+		int to_node = rr_node[inode].edge_sink_node(iconn);
 
 		if (high_fanout) {
 			// since target node is an IPIN, xhigh and xlow are the same (same for y values)
@@ -923,7 +923,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 		float new_back_pcost = old_back_pcost
 				+ (1. - criticality_fac) * get_rr_cong_cost(to_node);
 		
-		int iswitch = rr_node[inode].switches[iconn];
+		int iswitch = rr_node[inode].edge_switch(iconn);
 		if (g_rr_switch_inf[iswitch].buffered) {
 			new_R_upstream = g_rr_switch_inf[iswitch].R;
 		} else {

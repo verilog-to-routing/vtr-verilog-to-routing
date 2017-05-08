@@ -46,14 +46,14 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
 		if (from_rr_type == CHANX || from_rr_type == CHANY) {
 
-			for (iedge = 0; iedge < rr_node[inode].get_num_edges(); iedge++) {
+			for (iedge = 0; iedge < rr_node[inode].num_edges(); iedge++) {
 
-				to_node = rr_node[inode].edges[iedge];
+				to_node = rr_node[inode].edge_sink_node(iedge);
 				to_rr_type = rr_node[to_node].type();
 
 				if (to_rr_type == CHANX || to_rr_type == CHANY) {
 
-					switch_index = rr_node[inode].switches[iedge];
+					switch_index = rr_node[inode].edge_switch(iedge);
 					Cin = g_rr_switch_inf[switch_index].Cin;
 					Cout = g_rr_switch_inf[switch_index].Cout;
 					buffered = g_rr_switch_inf[switch_index].buffered;
@@ -116,7 +116,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 			/* Method below would be faster for very unpopulated segments, but I  *
 			 * think it would be slower overall for most FPGAs, so commented out. */
 
-			/*   for (iedge=0;iedge<rr_node[inode].num_edges;iedge++) {
+			/*   for (iedge=0;iedge<rr_node[inode].num_edges();iedge++) {
 			 * to_node = rr_node[inode].edges[iedge];
 			 * if (rr_node[to_node].type() == IPIN) {
 			 * icblock = seg_index_of_cblock (from_rr_type, to_node);
@@ -145,10 +145,9 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 		/* End node is CHANX or CHANY */
 		else if (from_rr_type == OPIN) {
 
-			for (iedge = 0; iedge < rr_node[inode].get_num_edges(); iedge++) {
-				switch_index = rr_node[inode].switches[iedge];
-				/* UDSD by ICK Start */
-				to_node = rr_node[inode].edges[iedge];
+			for (iedge = 0; iedge < rr_node[inode].num_edges(); iedge++) {
+				switch_index = rr_node[inode].edge_switch(iedge);
+				to_node = rr_node[inode].edge_sink_node(iedge);
 				to_rr_type = rr_node[to_node].type();
 
 				if (to_rr_type != CHANX && to_rr_type != CHANY)
@@ -156,7 +155,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
 				if (rr_node[to_node].get_drivers() != SINGLE) {
 					Cout = g_rr_switch_inf[switch_index].Cout;
-					to_node = rr_node[inode].edges[iedge]; /* Will be CHANX or CHANY */
+					to_node = rr_node[inode].edge_sink_node(iedge); /* Will be CHANX or CHANY */
 					rr_node[to_node].set_C(rr_node[to_node].C() + Cout);
 				}
 			}
@@ -170,9 +169,9 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	 * out what the Cout's should be */
 	Couts_to_add = (float *) vtr::calloc(num_rr_nodes, sizeof(float));
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		for (iedge = 0; iedge < rr_node[inode].get_num_edges(); iedge++) {
-			switch_index = rr_node[inode].switches[iedge];
-			to_node = rr_node[inode].edges[iedge];
+		for (iedge = 0; iedge < rr_node[inode].num_edges(); iedge++) {
+			switch_index = rr_node[inode].edge_switch(iedge);
+			to_node = rr_node[inode].edge_sink_node(iedge);
 			to_rr_type = rr_node[to_node].type();
 			if (to_rr_type == CHANX || to_rr_type == CHANY) {
 				if (rr_node[to_node].get_drivers() == SINGLE) {

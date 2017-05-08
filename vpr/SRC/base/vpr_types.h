@@ -893,10 +893,8 @@ enum e_drivers {
 	MULTI_BUFFERED, SINGLE
 };
 
-/* UDSD by AY */
-
 enum e_direction : unsigned char {
-	INC_DIRECTION = 0, DEC_DIRECTION = 1, BI_DIRECTION = 2
+	INC_DIRECTION = 0, DEC_DIRECTION = 1, BI_DIRECTION = 2, NONE = 3
 };
 
 /* Lists detailed information about segmentation.  [0 .. W-1].              *

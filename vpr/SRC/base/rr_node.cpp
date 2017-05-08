@@ -51,10 +51,6 @@ short t_rr_node::get_fan_in() const {
 	return fan_in;
 }
 
-short t_rr_node::get_num_edges() const {
-	return num_edges;
-}
-
 enum e_direction t_rr_node::get_direction() const {
 	return direction;
 }
@@ -114,8 +110,14 @@ void t_rr_node::set_fan_in(short _fan_in) {
 	fan_in = _fan_in;
 }
 
-void t_rr_node::set_num_edges(short _num_edges) {
-	num_edges = _num_edges;
+void t_rr_node::set_num_edges(short new_num_edges) {
+    num_edges_ = new_num_edges;
+
+    delete[] edge_sink_nodes_;
+    delete[] edge_switches_;
+
+    edge_sink_nodes_ = new int[num_edges_];
+    edge_switches_ = new short[num_edges_];
 }
 
 void t_rr_node::set_direction(e_direction _direction) {

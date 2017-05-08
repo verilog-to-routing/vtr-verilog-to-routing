@@ -275,7 +275,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	downstream_rt_node = sink_rt_node;
 	inode = hptr->u.prev_node;
 	iedge = hptr->prev_edge;
-	iswitch = rr_node[inode].switches[iedge];
+	iswitch = rr_node[inode].edge_switch(iedge);
 
 	/* For all "new" nodes in the path */
 	// inode is node index of previous node
@@ -311,7 +311,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 		downstream_rt_node = rt_node;
 		iedge = rr_node_route_inf[inode].prev_edge;
 		inode = rr_node_route_inf[inode].prev_node;
-		iswitch = rr_node[inode].switches[iedge];
+		iswitch = rr_node[inode].edge_switch(iedge);
 	}
 
 	/* Inode is the branch point to the old routing */

@@ -96,11 +96,11 @@ static void dump_rr_nodes( fstream &file ){
 		file << "C(" << node.C() << ") ";
 
 		/* print edges and switches */
-		file << endl << "  .edges(" << node.get_num_edges() << ")" << endl;	//specify how many edges/switches there are
-		for (int iedge = 0; iedge < node.get_num_edges(); iedge++){
+		file << endl << "  .edges(" << node.num_edges() << ")" << endl;	//specify how many edges/switches there are
+		for (int iedge = 0; iedge < node.num_edges(); iedge++){
 			file << "   " << iedge << ": "; 
-			file << "edge(" << node.edges[iedge] << ") ";
-			file << "switch(" << node.switches[iedge] << ")" << endl;
+			file << "edge(" << node.edge_sink_node(iedge) << ") ";
+			file << "switch(" << node.edge_switch(iedge) << ")" << endl;
 		}
 		file << "  .end edges" << endl;
 	}

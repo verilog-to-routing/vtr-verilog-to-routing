@@ -685,10 +685,10 @@ static int alloc_rr_switch_inf(map<int,int> *switch_fanin){
     map<int, int> *inward_switch_inf = new map<int, int>[num_rr_nodes];
     for (int inode = 0; inode < num_rr_nodes; inode ++) {
         t_rr_node from_node = rr_node[inode];
-        int num_edges = from_node.get_num_edges();
+        int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
-            int switch_index = from_node.switches[iedge];
-            int to_node_index = from_node.edges[iedge];
+            int switch_index = from_node.edge_switch(iedge);
+            int to_node_index = from_node.edge_sink_node(iedge);
             if (inward_switch_inf[to_node_index].count(switch_index) == 0) 
                 inward_switch_inf[to_node_index][switch_index] = 0;
             inward_switch_inf[to_node_index][switch_index] ++;
@@ -776,11 +776,11 @@ static void load_rr_switch_inf(const int num_arch_switches, map<int,int> *switch
 static void remap_rr_node_switch_indices(map<int,int> *switch_fanin){
 	for (int inode = 0; inode < num_rr_nodes; inode++){
 		t_rr_node from_node = rr_node[inode];
-		int num_edges = from_node.get_num_edges();
+		int num_edges = from_node.num_edges();
 		for (int iedge = 0; iedge < num_edges; iedge++){
-			t_rr_node to_node = rr_node[ from_node.edges[iedge] ];
+			t_rr_node to_node = rr_node[ from_node.edge_sink_node(iedge) ];
 			/* get the switch which this edge uses and its fanin */
-			int switch_index = from_node.switches[iedge];
+			int switch_index = from_node.edge_switch(iedge);
 			int fanin = to_node.get_fan_in();
 
 			if (switch_fanin[switch_index].count(UNDEFINED) == 1){
@@ -789,7 +789,7 @@ static void remap_rr_node_switch_indices(map<int,int> *switch_fanin){
 
 			int rr_switch_index = switch_fanin[switch_index][fanin];
 
-			from_node.switches[iedge] = rr_switch_index;
+			from_node.set_edge_switch(iedge, rr_switch_index);
 		}
 	}
 }
@@ -1151,12 +1151,7 @@ void free_rr_graph(void) {
 		free(net_rr_terminals);
 	}
 	for (i = 0; i < num_rr_nodes; i++) {
-		if (rr_node[i].edges != NULL) {
-			free(rr_node[i].edges);
-		}
-		if (rr_node[i].switches != NULL) {
-			free(rr_node[i].switches);
-		}
+        rr_node[i].set_num_edges(0);
 	}
 
 	VTR_ASSERT(rr_node_indices);
@@ -1287,14 +1282,12 @@ static void build_rr_sinks_sources(const int i, const int j,
 
 			int num_edges = class_inf[iclass].num_pins;
 			L_rr_node[inode].set_num_edges(num_edges);
-			L_rr_node[inode].edges = (int *) vtr::malloc(num_edges * sizeof(int));
-			L_rr_node[inode].switches = (short *) vtr::malloc(num_edges * sizeof(short));
 
 			for (int ipin = 0; ipin < class_inf[iclass].num_pins; ++ipin) {
 				int pin_num = class_inf[iclass].pinlist[ipin];
 				int to_node = get_rr_node_index(i, j, OPIN, pin_num, L_rr_node_indices);
-				L_rr_node[inode].edges[ipin] = to_node;
-				L_rr_node[inode].switches[ipin] = delayless_switch;
+				L_rr_node[inode].set_edge_sink_node(ipin, to_node);
+				L_rr_node[inode].set_edge_switch(ipin, delayless_switch);
 
 				L_rr_node[to_node].set_fan_in(L_rr_node[to_node].get_fan_in() + 1);
 			}
@@ -1313,8 +1306,6 @@ static void build_rr_sinks_sources(const int i, const int j,
 
 			/* Initialize to unconnected to fix values */
 			L_rr_node[inode].set_num_edges(0);
-			L_rr_node[inode].edges = NULL;
-			L_rr_node[inode].switches = NULL;
 
 			L_rr_node[inode].set_cost_index(SINK_COST_INDEX);
 			L_rr_node[inode].set_type(SINK);
@@ -1330,7 +1321,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 		L_rr_node[inode].set_R(0);
 		L_rr_node[inode].set_C(0);
 		L_rr_node[inode].set_ptc_num(iclass);
-		L_rr_node[inode].set_direction((enum e_direction)OPEN);
+		L_rr_node[inode].set_direction(e_direction::NONE);
 	}
 
 	/* Connect IPINS to SINKS and dummy for OPINS */
@@ -1343,11 +1334,9 @@ static void build_rr_sinks_sources(const int i, const int j,
 			int to_node = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
 
 			L_rr_node[inode].set_num_edges(1);
-			L_rr_node[inode].edges = (int *) vtr::malloc(sizeof(int));
-			L_rr_node[inode].switches = (short *) vtr::malloc(sizeof(short));
 
-			L_rr_node[inode].edges[0] = to_node;
-			L_rr_node[inode].switches[0] = delayless_switch;
+			L_rr_node[inode].set_edge_sink_node(0, to_node);
+			L_rr_node[inode].set_edge_switch(0, delayless_switch);
 
 			L_rr_node[to_node].set_fan_in(L_rr_node[to_node].get_fan_in() + 1);
 
@@ -1359,8 +1348,6 @@ static void build_rr_sinks_sources(const int i, const int j,
 			inode = get_rr_node_index(i, j, OPIN, ipin, L_rr_node_indices);
 			
 			L_rr_node[inode].set_num_edges(0);
-			L_rr_node[inode].edges = NULL;
-			L_rr_node[inode].switches = NULL;
 			L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
 			L_rr_node[inode].set_type(OPIN);
 		}
@@ -1372,7 +1359,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 		L_rr_node[inode].set_C(0);
 		L_rr_node[inode].set_R(0);
 		L_rr_node[inode].set_ptc_num(ipin);
-		L_rr_node[inode].set_direction((enum e_direction)OPEN);
+		L_rr_node[inode].set_direction(e_direction::NONE);
 	}
 }
 
@@ -1575,19 +1562,15 @@ void alloc_and_load_edges_and_switches(t_rr_node * L_rr_node, const int inode,
 	int i;
 
 	/* Check we aren't overwriting edges */
-	VTR_ASSERT(L_rr_node[inode].get_num_edges() < 1);
-	VTR_ASSERT(NULL == L_rr_node[inode].edges);
-	VTR_ASSERT(NULL == L_rr_node[inode].switches);
+	VTR_ASSERT(L_rr_node[inode].num_edges() == 0);
 
 	L_rr_node[inode].set_num_edges(num_edges);
-	L_rr_node[inode].edges = (int *) vtr::malloc(num_edges * sizeof(int));
-	L_rr_node[inode].switches = (short *) vtr::malloc(num_edges * sizeof(short));
 
 	i = 0;
 	list_ptr = edge_list_head;
 	while (list_ptr && (i < num_edges)) {
-		L_rr_node[inode].edges[i] = list_ptr->edge;
-		L_rr_node[inode].switches[i] = list_ptr->iswitch;
+		L_rr_node[inode].set_edge_sink_node(i, list_ptr->edge);
+		L_rr_node[inode].set_edge_switch(i, list_ptr->iswitch);
 
 		L_rr_node[list_ptr->edge].set_fan_in(L_rr_node[list_ptr->edge].get_fan_in() + 1);
 
@@ -2237,13 +2220,13 @@ void dump_rr_graph(const char *file_name) {
 /* Prints all the data about node inode to file fp.                    */
 void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 
-	static const char *direction_name[] = { "OPEN", "INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION" };
+	static const char *direction_name[] = { "NONE", "INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION" };
 	static const char *drivers_name[] = { "OPEN", "MULTI_BUFFER", "SINGLE" };
 
 	t_rr_type rr_type = L_rr_node[inode].type();
 
 	/* Make sure we don't overrun const arrays */
-	VTR_ASSERT((L_rr_node[inode].get_direction() + 1) < (int)(sizeof(direction_name) / sizeof(char *)));
+	VTR_ASSERT((L_rr_node[inode].get_direction()) < (int)(sizeof(direction_name) / sizeof(char *)));
 	VTR_ASSERT((L_rr_node[inode].get_drivers() + 1) < (int)(sizeof(drivers_name) / sizeof(char *)));
 
 	fprintf(fp, "Node: %d %s ", inode, L_rr_node[inode].rr_get_type_string());
@@ -2262,14 +2245,14 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	fprintf(fp, "Drivers: %s ", drivers_name[L_rr_node[inode].get_drivers() + 1]);
 	fprintf(fp, "\n");
 
-	fprintf(fp, "%d edge(s):", L_rr_node[inode].get_num_edges());
-	for (int iconn = 0; iconn < L_rr_node[inode].get_num_edges(); ++iconn)
-		fprintf(fp, " %d", L_rr_node[inode].edges[iconn]);
+	fprintf(fp, "%d edge(s):", L_rr_node[inode].num_edges());
+	for (int iconn = 0; iconn < L_rr_node[inode].num_edges(); ++iconn)
+		fprintf(fp, " %d", L_rr_node[inode].edge_sink_node(iconn));
 	fprintf(fp, "\n");
 
 	fprintf(fp, "Switch types:");
-	for (int iconn = 0; iconn < L_rr_node[inode].get_num_edges(); ++iconn)
-		fprintf(fp, " %d", L_rr_node[inode].switches[iconn]);
+	for (int iconn = 0; iconn < L_rr_node[inode].num_edges(); ++iconn)
+		fprintf(fp, " %d", L_rr_node[inode].edge_switch(iconn));
 	fprintf(fp, "\n");
 
 	fprintf(fp, "Occ: %d  Capacity: %d\n", L_rr_node[inode].get_occ(),

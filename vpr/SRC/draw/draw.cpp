@@ -1018,8 +1018,8 @@ static void draw_rr_edges(int inode) {
 
 	from_ptc_num = rr_node[inode].get_ptc_num();
 
-	for (int iedge = 0, l = rr_node[inode].get_num_edges(); iedge < l; iedge++) {
-		to_node = rr_node[inode].edges[iedge];
+	for (int iedge = 0, l = rr_node[inode].num_edges(); iedge < l; iedge++) {
+		to_node = rr_node[inode].edge_sink_node(iedge);
 		to_type = rr_node[to_node].type();
 		to_ptc_num = rr_node[to_node].get_ptc_num();
 
@@ -1088,7 +1088,7 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
 					setcolor(DARKGREEN);
-				switch_type = rr_node[inode].switches[iedge];
+				switch_type = rr_node[inode].edge_switch(iedge);
 				draw_chanx_to_chanx_edge(inode, to_node,
 						to_ptc_num, switch_type);
 				break;
@@ -1100,7 +1100,7 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
 					setcolor(DARKGREEN);
-				switch_type = rr_node[inode].switches[iedge];
+				switch_type = rr_node[inode].edge_switch(iedge);
 				draw_chanx_to_chany_edge(inode, from_ptc_num, to_node,
 						to_ptc_num, FROM_X_TO_Y, switch_type);
 				break;
@@ -1145,7 +1145,7 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
 					setcolor(DARKGREEN);
-				switch_type = rr_node[inode].switches[iedge];
+				switch_type = rr_node[inode].edge_switch(iedge);
 				draw_chanx_to_chany_edge(to_node, to_ptc_num, inode,
 						from_ptc_num, FROM_Y_TO_X, switch_type);
 				break;
@@ -1157,7 +1157,7 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[inode].color);
 				} else
 					setcolor(DARKGREEN);
-				switch_type = rr_node[inode].switches[iedge];
+				switch_type = rr_node[inode].edge_switch(iedge);
 				draw_chany_to_chany_edge(inode, to_node,
 						to_ptc_num, switch_type);
 				break;
@@ -1897,8 +1897,8 @@ static void draw_highlight_fan_in_fan_out(int hit_node) {
 	t_draw_state* draw_state = get_draw_state_vars();
 
 	/* Highlight the fanout nodes in red. */
-	for (int iedge = 0, l = rr_node[hit_node].get_num_edges(); iedge < l; iedge++) {
-		int fanout_node = rr_node[hit_node].edges[iedge];
+	for (int iedge = 0, l = rr_node[hit_node].num_edges(); iedge < l; iedge++) {
+		int fanout_node = rr_node[hit_node].edge_sink_node(iedge);
 
 		if (draw_state->draw_rr_node[hit_node].color == MAGENTA) {
 			// If node is highlighted, highlight its fanout
@@ -1914,8 +1914,8 @@ static void draw_highlight_fan_in_fan_out(int hit_node) {
 
 	/* Highlight the nodes that can fanin to this node in blue. */
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		for (int iedge = 0, l = rr_node[inode].get_num_edges(); iedge < l; iedge++) {
-			int fanout_node = rr_node[inode].edges[iedge];
+		for (int iedge = 0, l = rr_node[inode].num_edges(); iedge < l; iedge++) {
+			int fanout_node = rr_node[inode].edge_sink_node(iedge);
 			if (fanout_node == hit_node) { 
 				if (draw_state->draw_rr_node[hit_node].color == MAGENTA) {
 					// If hit_node is highlighted, highlight its fanin
@@ -2040,7 +2040,7 @@ static void highlight_rr_nodes(float x, float y) {
 
 			sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) track: %d, %d edges, occ: %d, capacity: %d",
 				    hit_node, rr_node[hit_node].rr_get_type_string(),
-				    xlow, ylow, xhigh, yhigh, ptc_num, rr_node[hit_node].get_num_edges(), 
+				    xlow, ylow, xhigh, yhigh, ptc_num, rr_node[hit_node].num_edges(), 
 				    rr_node[hit_node].get_occ(), rr_node[hit_node].get_capacity());
 
             rr_highlight_message = message;
@@ -2981,9 +2981,9 @@ bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_
 
 //Find the switch between two rr nodes
 static short find_switch(int prev_inode, int inode) {
-    for (int i = 0; i < rr_node[prev_inode].get_num_edges(); ++i) {
-        if (rr_node[prev_inode].edges[i] == inode) {
-            return rr_node[prev_inode].switches[i];
+    for (int i = 0; i < rr_node[prev_inode].num_edges(); ++i) {
+        if (rr_node[prev_inode].edge_sink_node(i) == inode) {
+            return rr_node[prev_inode].edge_switch(i);
         }
     }
     VTR_ASSERT(false);

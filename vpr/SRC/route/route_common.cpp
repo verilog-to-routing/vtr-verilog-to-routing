@@ -558,7 +558,7 @@ update_traceback(struct s_heap *hptr, int inet) {
 	while (inode != NO_PREVIOUS) {
 		prevptr = alloc_trace_data();
 		prevptr->index = inode;
-		prevptr->iswitch = rr_node[inode].switches[iedge];
+		prevptr->iswitch = rr_node[inode].edge_switch(iedge);
 		prevptr->next = tptr;
 		tptr = prevptr;
 
@@ -1432,9 +1432,9 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
 			if (num_local_opin != 0) { /* Have to reserve (use) some OPINs */
 				from_node = rr_blk_source[iblk][iclass];
-				num_edges = rr_node[from_node].get_num_edges();
+				num_edges = rr_node[from_node].num_edges();
 				for (iconn = 0; iconn < num_edges; iconn++) {
-					to_node = rr_node[from_node].edges[iconn];
+					to_node = rr_node[from_node].edge_sink_node(iconn);
 					cost = get_rr_cong_cost(to_node);
 					node_to_heap(to_node, cost, OPEN, OPEN, 0., 0.);
 				}

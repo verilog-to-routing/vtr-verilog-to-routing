@@ -162,11 +162,11 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 		case CHANX:
 		case CHANY:
-			num_edges = rr_node[from_node].get_num_edges();
+			num_edges = rr_node[from_node].num_edges();
 
 			for (iedge = 0; iedge < num_edges; iedge++) {
 
-				to_node = rr_node[from_node].edges[iedge];
+				to_node = rr_node[from_node].edge_sink_node(iedge);
 				to_rr_type = rr_node[to_node].type();
 
 				/* Ignore any uninitialized rr_graph nodes */
@@ -180,7 +180,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 				case CHANX:
 				case CHANY:
-					iswitch = rr_node[from_node].switches[iedge];
+					iswitch = rr_node[from_node].edge_switch(iedge);
 
 					if (g_rr_switch_inf[iswitch].buffered) {
 						iseg = seg_index_of_sblock(from_node, to_node);
@@ -253,11 +253,11 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 			break;
 
 		case OPIN:
-			num_edges = rr_node[from_node].get_num_edges();
+			num_edges = rr_node[from_node].num_edges();
 			shared_opin_buffer_trans = 0.;
 
 			for (iedge = 0; iedge < num_edges; iedge++) {
-				iswitch = rr_node[from_node].switches[iedge];
+				iswitch = rr_node[from_node].edge_switch(iedge);
 				ntrans_no_sharing += unsharable_switch_trans[iswitch]
 						+ sharable_switch_trans[iswitch];
 				ntrans_sharing += unsharable_switch_trans[iswitch];
@@ -362,12 +362,12 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 
 		case CHANX:
 		case CHANY:
-			num_edges = rr_node[from_node].get_num_edges();
+			num_edges = rr_node[from_node].num_edges();
 
 			/* Increment number of inputs per cblock if IPIN */
 			for (iedge = 0; iedge < num_edges; iedge++) {
 
-				to_node = rr_node[from_node].edges[iedge];
+				to_node = rr_node[from_node].edge_sink_node(iedge);
 				to_rr_type = rr_node[to_node].type();
 
 				/* Ignore any uninitialized rr_graph nodes */
@@ -382,7 +382,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 				case CHANX:
 				case CHANY:
 					if (!chan_node_switch_done[to_node]){
-						int switch_index = rr_node[from_node].switches[iedge];
+						int switch_index = rr_node[from_node].edge_switch(iedge);
 						/* Each wire segment begins with a multipexer followed by a driver for unidirectional */
 						/* Each multiplexer contains all the fan-in to that routing node */
 						/* Add up area of multiplexer */
