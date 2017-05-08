@@ -401,6 +401,9 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
                 const char* seg_name = segment_inf[seg_index].name;
                 vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) has no out-going edges.\n", 
                         inode, g_rr_nodes[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh);
+            } else if (g_rr_nodes[inode].type() == IPIN || g_rr_nodes[inode].type() == OPIN) {
+                vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) block_type=%s ptc=%d has no out-going edges.\n", 
+                        inode, g_rr_nodes[inode].type_string(), xlow, ylow, grid[xlow][ylow].type->name, g_rr_nodes[inode].ptc_num());
             } else {
                 vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) ptc=%d has no out-going edges.\n", 
                         inode, g_rr_nodes[inode].type_string(), xlow, ylow, g_rr_nodes[inode].ptc_num());
