@@ -75,12 +75,13 @@ std::string g_routing_id; //SHA256 digest of .route file
 
 int g_num_rr_nodes = 0;
 t_rr_node *g_rr_nodes = NULL; /* [0..(g_num_rr_nodes-1)] */
-vtr::t_ivec ***rr_node_indices = NULL;
+
+vtr::t_ivec ***g_rr_node_indices = NULL;
+
+t_rr_node_state* g_rr_node_state = NULL; /* [0..(g_num_rr_nodes)-1] */
 
 int g_num_rr_indexed_data = 0;
 t_rr_indexed_data *g_rr_indexed_data = NULL; /* [0..(g_num_rr_indexed_data-1)] */
-
-t_rr_node_state* g_rr_node_state = NULL; /* [0..(g_num_rr_nodes)-1] */
 
 /* Gives the rr_node indices of net terminals. */
 int **net_rr_terminals = NULL; /* [0..num_nets-1][0..num_pins-1] */

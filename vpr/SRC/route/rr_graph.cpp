@@ -372,7 +372,7 @@ void build_rr_graph(
 	/* Alloc node lookups, count nodes, alloc rr nodes */
 	g_num_rr_nodes = 0;
 
-	rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, L_nx, L_ny,
+	g_rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, L_nx, L_ny,
 			&g_num_rr_nodes, chan_details_x, chan_details_y);
 	g_rr_nodes = (t_rr_node *) vtr::malloc(sizeof(t_rr_node) * g_num_rr_nodes);
 	memset(g_rr_nodes, 0, sizeof(t_rr_node) * g_num_rr_nodes);
@@ -509,7 +509,7 @@ void build_rr_graph(
 			seg_details, chan_details_x, chan_details_y,
 			L_rr_edge_done, track_to_pin_lookup, opin_to_track_map,
 			switch_block_conn, sb_conn_map, L_grid, L_nx, L_ny, Fs, unidir_sb_pattern,
-			Fc_out, Fc_xofs, Fc_yofs, rr_node_indices, max_chan_width,
+			Fc_out, Fc_xofs, Fc_yofs, g_rr_node_indices, max_chan_width,
 			delayless_switch, directionality, wire_to_arch_ipin_switch, &Fc_clipped, 
 			directs, num_directs, clb_to_clb_directs);
 
@@ -801,12 +801,12 @@ static void rr_graph_externals(
 		int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type) {
 
 	add_rr_graph_C_from_switches(g_rr_switch_inf[wire_to_rr_ipin_switch].Cin);
-	alloc_and_load_rr_indexed_data(segment_inf, num_seg_types, rr_node_indices,
+	alloc_and_load_rr_indexed_data(segment_inf, num_seg_types, g_rr_node_indices,
 			max_chan_width, wire_to_rr_ipin_switch, base_cost_type);
 
 	alloc_net_rr_terminals();
-	load_net_rr_terminals(rr_node_indices);
-	alloc_and_load_rr_clb_source(rr_node_indices);
+	load_net_rr_terminals(g_rr_node_indices);
+	alloc_and_load_rr_clb_source(g_rr_node_indices);
 }
 
 static bool **alloc_and_load_perturb_ipins(const int L_num_types,
@@ -1155,8 +1155,8 @@ void free_rr_graph(void) {
         g_rr_nodes[i].set_num_edges(0);
 	}
 
-	VTR_ASSERT(rr_node_indices);
-	free_rr_node_indices(rr_node_indices);
+	VTR_ASSERT(g_rr_node_indices);
+	free_rr_node_indices(g_rr_node_indices);
 	free(g_rr_nodes);
 	free(g_rr_indexed_data);
 	for (i = 0; i < num_blocks; i++) {
@@ -1166,7 +1166,7 @@ void free_rr_graph(void) {
 	rr_blk_source = NULL;
 	net_rr_terminals = NULL;
 	g_rr_nodes = NULL;
-	rr_node_indices = NULL;
+	g_rr_node_indices = NULL;
 	g_rr_indexed_data = NULL;
 	g_num_rr_nodes = 0;
 
@@ -1174,6 +1174,7 @@ void free_rr_graph(void) {
 	g_rr_switch_inf = NULL;
 
     delete[] g_rr_node_state;
+    g_rr_node_state = NULL;
 }
 
 static void alloc_net_rr_terminals(void) {

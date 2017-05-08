@@ -118,7 +118,7 @@ extern t_rr_node *g_rr_nodes; /* [0..g_num_rr_nodes-1]          */
 extern int g_num_rr_indexed_data;
 extern t_rr_indexed_data *g_rr_indexed_data; /* [0 .. g_num_rr_indexed_data-1] */
 
-extern vtr::t_ivec ***rr_node_indices;
+extern vtr::t_ivec ***g_rr_node_indices;
 
 
 extern t_rr_node_state* g_rr_node_state; /* [0..g_num_rr_nodes-1] */

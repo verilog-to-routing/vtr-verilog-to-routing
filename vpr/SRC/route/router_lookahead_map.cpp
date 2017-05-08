@@ -340,7 +340,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 		direction = DEC_DIRECTION;
 	}
 
-	vtr::t_ivec channel_node_list = rr_node_indices[rr_type][chan_coord][seg_coord];
+	vtr::t_ivec channel_node_list = g_rr_node_indices[rr_type][chan_coord][seg_coord];
 
 	/* find first node in channel that has specified segment index and goes in the desired direction */
 	for (int itrack = 0; itrack < channel_node_list.nelem; itrack++){

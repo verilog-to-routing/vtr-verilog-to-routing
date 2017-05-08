@@ -566,7 +566,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	assign_locations(source_type, source_x_loc, source_y_loc, source_z_loc,
 			sink_type, sink_x_loc, sink_y_loc, sink_z_loc);
 
-	load_net_rr_terminals(rr_node_indices);
+	load_net_rr_terminals(g_rr_node_indices);
 
 	int itry = 1;
 	float pres_fac = 0.0; /* ignore congestion */

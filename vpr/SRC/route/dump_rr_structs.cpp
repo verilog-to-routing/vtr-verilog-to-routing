@@ -233,7 +233,7 @@ static void dump_rr_node_indices( fstream &file ){
 	   in which case chan=y and seg=x, whereas for all other nodes chan=x and seg=y. i'm not sure how non-square FPGAs are handled in that case... */
 	
 	for (int itype = 0; itype < NUM_RR_TYPES; itype++){
-		if (rr_node_indices[itype] == NULL){
+		if (g_rr_node_indices[itype] == NULL){
 			/* skip if not allocated */
 			continue;
 		}
@@ -250,12 +250,12 @@ static void dump_rr_node_indices( fstream &file ){
 					y = ix;
 				}
 
-				if (rr_node_indices[rr_type][ix] == NULL){
+				if (g_rr_node_indices[rr_type][ix] == NULL){
 					/* skip if not allocated */
 					continue;
 				}
 
-				vtr::t_ivec vec = rr_node_indices[rr_type][ix][iy];
+				vtr::t_ivec vec = g_rr_node_indices[rr_type][ix][iy];
 
 				if (vec.nelem == 0){
 					/* skip if vector not allocated */
