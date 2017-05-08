@@ -395,7 +395,7 @@ bool feasible_routing(void) {
 	int inode;
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		if (rr_node[inode].occ() > rr_node[inode].capacity()) {
+		if (g_rr_node_state[inode].occ() > rr_node[inode].capacity()) {
 			return (false);
 		}
 	}
@@ -441,8 +441,8 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 	 * pres_cost is set according to the overuse that would result from having
 	 * ONE MORE net use this routing node.     */
 
-	int occ = rr_node[inode].occ() + add_or_sub;
-	rr_node[inode].set_occ(occ);
+	int occ = g_rr_node_state[inode].occ() + add_or_sub;
+	g_rr_node_state[inode].set_occ(occ);
 	// can't have negative occupancy
 	VTR_ASSERT(occ >= 0);
 
@@ -467,7 +467,7 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 	int inode, occ, capacity;
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		occ = rr_node[inode].occ();
+		occ = g_rr_node_state[inode].occ();
 		capacity = rr_node[inode].capacity();
 
 		if (occ > capacity) {
@@ -1461,9 +1461,9 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 
 	int occ, capacity;
 
-	occ = rr_node[inode].occ() + add_or_sub;
+	occ = g_rr_node_state[inode].occ() + add_or_sub;
 	capacity = rr_node[inode].capacity();
-	rr_node[inode].set_occ(occ);
+	g_rr_node_state[inode].set_occ(occ);
 
 	if (occ < capacity) {
 		rr_node_route_inf[inode].pres_cost = 1.0;
@@ -1491,9 +1491,9 @@ void print_traceback(int inet) {
 	while (head) {
 		int inode {head->index};
 		if (rr_node[inode].type() == SINK) 
-			vtr::printf_info("%d(sink)(%d)->",inode, rr_node[inode].occ());
+			vtr::printf_info("%d(sink)(%d)->",inode, g_rr_node_state[inode].occ());
 		else 
-			vtr::printf_info("%d(%d)->",inode, rr_node[inode].occ());
+			vtr::printf_info("%d(%d)->",inode, g_rr_node_state[inode].occ());
 		head = head->next;
 	}
 	vtr::printf_info("\n");

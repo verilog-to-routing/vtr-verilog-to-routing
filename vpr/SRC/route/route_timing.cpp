@@ -600,7 +600,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		}
 	}
 
-	VTR_ASSERT_MSG(rr_node[rt_root->inode].occ() <= rr_node[rt_root->inode].capacity(), "SOURCE should never be congested");
+	VTR_ASSERT_MSG(g_rr_node_state[rt_root->inode].occ() <= rr_node[rt_root->inode].capacity(), "SOURCE should never be congested");
 
 	// route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
 	free_route_tree(rt_root);
@@ -1267,7 +1267,7 @@ static bool should_route_net(int inet, const CBRR& connections_inf) {
 
 	for (;;) {
 		int inode = tptr->index;
-		int occ = rr_node[inode].occ();
+		int occ = g_rr_node_state[inode].occ();
 		int capacity = rr_node[inode].capacity();
 
 		if (occ > capacity) {
@@ -1512,7 +1512,7 @@ static OveruseInfo calculate_overuse_info() {
     size_t worst_overuse = 0;
 	int inode;
 	for(inode = 0; inode < num_rr_nodes; inode++){
-        int overuse = rr_node[inode].occ() - rr_node[inode].capacity();
+        int overuse = g_rr_node_state[inode].occ() - rr_node[inode].capacity();
 		if(overuse > 0) {
 			overused_nodes += 1;
 

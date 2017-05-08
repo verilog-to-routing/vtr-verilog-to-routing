@@ -7,7 +7,7 @@
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
  * to store algorithm-specific data should be stored in one of the           *
- * parallel rr_node_? structures.                                            *
+ * parallel rr_node_* structures.                                            *
  *                                                                           *
  * xlow, xhigh, ylow, yhigh:  Integer coordinates (see route.c for           *
  *       coordinate system) of the ends of this routing resource.            *
@@ -20,10 +20,9 @@
  * ptc_num:  Pin, track or class number, depending on rr_node type.          *
  *           Needed to properly draw.                                        *
  * cost_index: An integer index into the table of routing resource indexed   *
- *             data (this indirection allows quick dynamic changes of rr     *
- *             base costs, and some memory storage savings for fields that   *
- *             have only a few distinct values).                             *
- * occ:        Current occupancy (usage) of this node.                       *
+ *             data t_rr_index_data (this indirection allows quick dynamic   *
+ *             changes of rr base costs, and some memory storage savings for *
+ *             fields that have only a few distinct values).                 *
  * capacity:   Capacity of this node (number of routes that can use it).     *
  * num_edges:  Number of edges exiting this node.  That is, the number       *
  *             of nodes to which it connects.                                *
@@ -62,7 +61,6 @@ class t_rr_node {
         signed short length() const;
 
         short capacity() const;
-        short occ() const;
 
         short ptc_num() const;
         short cost_index() const;
@@ -155,5 +153,18 @@ typedef struct s_rr_indexed_data {
 	 * This is only the wire capacitance, not including any switches */
 	float C_tile_per_m;
 } t_rr_indexed_data;
+
+/* Contains ephemeral routing related rr_node state.
+ * Actual data related to the structure of the RR graph should be in t_rr_node
+ *
+ * occ:        Current occupancy (usage) of this node.
+ */
+class t_rr_node_state {
+    public:
+        short occ() const { return occ_; }
+        void set_occ(int new_occ) { occ_ = new_occ; }
+    private:
+        short occ_ = 0;
+};
 
 #endif

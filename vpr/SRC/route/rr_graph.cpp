@@ -549,6 +549,8 @@ void build_rr_graph(
 	compute_router_lookahead(num_seg_types);
 #endif
 
+    g_rr_node_state = new t_rr_node_state[num_rr_nodes];
+
 	/* Free all temp structs */
 	if (seg_details) {
 		free_seg_details(seg_details, max_chan_width);
@@ -1170,6 +1172,8 @@ void free_rr_graph(void) {
 
 	delete[] g_rr_switch_inf;
 	g_rr_switch_inf = NULL;
+
+    delete[] g_rr_node_state;
 }
 
 static void alloc_net_rr_terminals(void) {
@@ -1312,7 +1316,6 @@ static void build_rr_sinks_sources(const int i, const int j,
 
 		/* Things common to both SOURCEs and SINKs.   */
 		L_rr_node[inode].set_capacity(class_inf[iclass].num_pins);
-		L_rr_node[inode].set_occ(0);
 		//assuming that type->width is always 1.
 		//if this needs to change, rr_node.{h,c} need to be modified accordingly
 		VTR_ASSERT(type->width == 1);
@@ -1353,7 +1356,6 @@ static void build_rr_sinks_sources(const int i, const int j,
 
 		/* Common to both DRIVERs and RECEIVERs */
 		L_rr_node[inode].set_capacity(1);
-		L_rr_node[inode].set_occ(0);
 		L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
 		L_rr_node[inode].set_C(0);
 		L_rr_node[inode].set_R(0);
@@ -1509,7 +1511,6 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 
 		/* Edge arrays have now been built up.  Do everything else.  */
 		L_rr_node[node].set_cost_index(cost_index_offset + seg_details[track].index);
-		L_rr_node[node].set_occ( track < tracks_per_chan ? 0 : 1 );
 		L_rr_node[node].set_capacity(1); /* GLOBAL routing handled elsewhere */
 
 		if (chan_type == CHANX){
@@ -2250,8 +2251,7 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 		fprintf(fp, " %d", L_rr_node[inode].edge_switch(iconn));
 	fprintf(fp, "\n");
 
-	fprintf(fp, "Occ: %d  Capacity: %d\n", L_rr_node[inode].occ(),
-			L_rr_node[inode].capacity());
+	fprintf(fp, "Capacity: %d\n", L_rr_node[inode].capacity());
 	if (rr_type != INTRA_CLUSTER_EDGE) {
 		fprintf(fp, "R: %g  C: %g\n", L_rr_node[inode].R(), L_rr_node[inode].C());
 	}

@@ -55,9 +55,6 @@ e_direction t_rr_node::direction() const {
 	return direction_;
 }
 
-short t_rr_node::occ() const {
-	return occ_;
-}
 short t_rr_node::length() const {
 	return length_;
 }
@@ -117,10 +114,6 @@ void t_rr_node::set_num_edges(short new_num_edges) {
 
 void t_rr_node::set_direction(e_direction new_direction) {
 	direction_ = new_direction;
-}
-
-void t_rr_node::set_occ(short new_occ) {
-	occ_ = new_occ;
 }
 
 void t_rr_node::set_R(float new_R) { 

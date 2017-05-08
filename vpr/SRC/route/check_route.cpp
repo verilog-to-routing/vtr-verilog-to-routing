@@ -506,7 +506,7 @@ static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_local
 	/* First set the occupancy of everything to zero. */
 
 	for (inode = 0; inode < num_rr_nodes; inode++)
-		rr_node[inode].set_occ(0);
+		g_rr_node_state[inode].set_occ(0);
 
 	/* Now go through each net and count the tracks and pins used everywhere */
 
@@ -521,7 +521,7 @@ static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_local
 
 		for (;;) {
 			inode = tptr->index;
-			rr_node[inode].set_occ(rr_node[inode].occ() + 1);
+			g_rr_node_state[inode].set_occ(g_rr_node_state[inode].occ() + 1);
 
 			if (rr_node[inode].type() == SINK) {
 				tptr = tptr->next; /* Skip next segment. */
@@ -543,7 +543,7 @@ static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_local
 			/* Will always be 0 for pads or SINK classes. */
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
 				inode = clb_opins_used_locally[iblk][iclass].list[ipin];
-				rr_node[inode].set_occ(rr_node[inode].occ() + 1);
+				g_rr_node_state[inode].set_occ(g_rr_node_state[inode].occ() + 1);
 			}
 		}
 	}

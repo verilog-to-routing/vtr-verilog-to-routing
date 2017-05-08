@@ -80,6 +80,8 @@ vtr::t_ivec ***rr_node_indices = NULL;
 int num_rr_indexed_data = 0;
 t_rr_indexed_data *rr_indexed_data = NULL; /* [0..(num_rr_indexed_data-1)] */
 
+t_rr_node_state* g_rr_node_state = NULL; /* [0..(num_rr_nodes)-1] */
+
 /* Gives the rr_node indices of net terminals. */
 
 int **net_rr_terminals = NULL; /* [0..num_nets-1][0..num_pins-1] */

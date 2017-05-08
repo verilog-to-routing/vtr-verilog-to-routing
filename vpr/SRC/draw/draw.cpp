@@ -401,7 +401,7 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 	} else {
 		num_congested = 0;
 		for (inode = 0; inode < num_rr_nodes; inode++) {
-			if (rr_node[inode].occ() > rr_node[inode].capacity()) {
+			if (g_rr_node_state[inode].occ() > rr_node[inode].capacity()) {
 				num_congested++;
 			}
 		}
@@ -717,7 +717,7 @@ static void draw_congestion(void) {
     float min_congestion_ratio = 1.;
     float max_congestion_ratio = min_congestion_ratio;
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		short occ = rr_node[inode].occ();
+		short occ = g_rr_node_state[inode].occ();
         short capacity = rr_node[inode].capacity();
 
         float congestion_ratio = float(occ) / capacity;
@@ -732,7 +732,7 @@ static void draw_congestion(void) {
     vtr::PlasmaColorMap cmap(min_congestion_ratio, max_congestion_ratio);
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		short occ = rr_node[inode].occ();
+		short occ = g_rr_node_state[inode].occ();
         short capacity = rr_node[inode].capacity();
 
         float congestion_ratio = float(occ) / capacity;
@@ -2041,7 +2041,7 @@ static void highlight_rr_nodes(float x, float y) {
 			sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) track: %d, %d edges, occ: %d, capacity: %d",
 				    hit_node, rr_node[hit_node].type_string(),
 				    xlow, ylow, xhigh, yhigh, ptc_num, rr_node[hit_node].num_edges(), 
-				    rr_node[hit_node].occ(), rr_node[hit_node].capacity());
+				    g_rr_node_state[hit_node].occ(), rr_node[hit_node].capacity());
 
             rr_highlight_message = message;
 

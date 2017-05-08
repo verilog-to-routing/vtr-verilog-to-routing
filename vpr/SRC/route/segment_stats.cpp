@@ -51,9 +51,9 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 			else
 				length = LONGLINE;
 
-			seg_occ_by_length[length] += rr_node[inode].occ();
+			seg_occ_by_length[length] += g_rr_node_state[inode].occ();
 			seg_cap_by_length[length] += rr_node[inode].capacity();
-			seg_occ_by_type[seg_type] += rr_node[inode].occ();
+			seg_occ_by_type[seg_type] += g_rr_node_state[inode].occ();
 			seg_cap_by_type[seg_type] += rr_node[inode].capacity();
 
 		}
