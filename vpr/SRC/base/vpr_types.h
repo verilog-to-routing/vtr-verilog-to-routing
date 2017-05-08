@@ -895,7 +895,7 @@ enum e_drivers {
 
 /* UDSD by AY */
 
-enum e_direction {
+enum e_direction : unsigned char {
 	INC_DIRECTION = 0, DEC_DIRECTION = 1, BI_DIRECTION = 2
 };
 
@@ -972,7 +972,7 @@ struct s_linked_f_pointer {
  * SINK:    A dummy node that is a logical input within a block    *
  *          -- i.e. the gate that needs a signal.                  */
 
-typedef enum e_rr_type {
+typedef enum e_rr_type : unsigned char {
 	SOURCE = 0, SINK, IPIN, OPIN, CHANX, CHANY, INTRA_CLUSTER_EDGE, NUM_RR_TYPES
 } t_rr_type;
 const std::vector<const char*> node_typename {

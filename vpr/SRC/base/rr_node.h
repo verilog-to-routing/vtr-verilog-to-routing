@@ -56,7 +56,7 @@ typedef class RR_Node {
 private:
 	short xlow;
 	short ylow;
-	signed short length;
+	short length;
 	
 	short ptc_num;
 	short cost_index;
@@ -64,9 +64,8 @@ private:
 	short num_edges;
 	short capacity;
 
-	enum e_direction direction; /* UDSD by AY */
-	//enum e_drivers drivers; /* UDSD by AY */
 	short occ;
+	enum e_direction direction;
 
 public:
 	t_rr_type type;
