@@ -244,11 +244,11 @@ alloc_and_load_rc_tree(int inet, t_rc_node ** rc_node_free_list_ptr,
 			prev_rc = curr_rc;
 		}
 
-		else if (rr_node[inode].type() != SINK) { /* Connection to old stuff. */
+		else if (g_rr_nodes[inode].type() != SINK) { /* Connection to old stuff. */
 
 			prev_node = prev_rc->inode;
-			if (rr_node[prev_node].type() != SINK) {
-				vtr::printf_info("prev node %d, type is actually %d\n", prev_node, rr_node[prev_node].type());
+			if (g_rr_nodes[prev_node].type() != SINK) {
+				vtr::printf_info("prev node %d, type is actually %d\n", prev_node, g_rr_nodes[prev_node].type());
 				vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
 						"in alloc_and_load_rc_tree: Routing of net %d is not a tree.\n", inet);
 			}
@@ -376,7 +376,7 @@ static float load_rc_tree_C(t_rc_node * rc_node) {
 
 	linked_rc_edge = rc_node->u.child_list;
 	inode = rc_node->inode;
-	C = rr_node[inode].C();
+	C = g_rr_nodes[inode].C();
 
 	while (linked_rc_edge != NULL) { /* For all children */
 		iswitch = linked_rc_edge->iswitch;
@@ -408,9 +408,9 @@ static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival) {
 
 	Tdel = T_arrival;
 	inode = rc_node->inode;
-	Rmetal = rr_node[inode].R();
+	Rmetal = g_rr_nodes[inode].R();
 
-	/* NB:  rr_node[inode].C gives the capacitance of this node, while          *
+	/* NB:  g_rr_nodes[inode].C gives the capacitance of this node, while          *
 	 * rc_node->C_downstream gives the unbuffered downstream capacitance rooted *
 	 * at this node, including the C of the node itself.  I want to multiply    *
 	 * the C of this node by 0.5 Rmetal, since it's a distributed RC line.      *

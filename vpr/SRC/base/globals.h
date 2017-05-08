@@ -113,7 +113,7 @@ extern std::string g_routing_id; //SHA256 digest of .route file
 
 /* Structures to define the routing architecture of the FPGA.           */
 extern int g_num_rr_nodes;
-extern t_rr_node *rr_node; /* [0..g_num_rr_nodes-1]          */
+extern t_rr_node *g_rr_nodes; /* [0..g_num_rr_nodes-1]          */
 
 extern int num_rr_indexed_data;
 extern t_rr_indexed_data *rr_indexed_data; /* [0 .. num_rr_indexed_data-1] */

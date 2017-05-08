@@ -140,7 +140,7 @@ public:
 /* a class that represents an entry in the Dijkstra expansion priority queue */
 class PQ_Entry{
 public:
-	int rr_node_ind;     //index of rr_node that this entry represents
+	int rr_node_ind;     //index in g_rr_nodes that this entry represents
 	float cost;          //the cost of the path to get to this node
 
 	/* store backward delay, R and congestion info */
@@ -160,15 +160,15 @@ public:
 		}
 
 		/* get delay info for this node */
-		this->delay = parent_delay + rr_node[set_rr_node_ind].C() * (new_R_upstream + 0.5 * rr_node[set_rr_node_ind].R());
+		this->delay = parent_delay + g_rr_nodes[set_rr_node_ind].C() * (new_R_upstream + 0.5 * g_rr_nodes[set_rr_node_ind].R());
 		if (switch_ind != UNDEFINED){
 			this->delay += g_rr_switch_inf[switch_ind].Tdel;
 		}
-		new_R_upstream += rr_node[set_rr_node_ind].R();
+		new_R_upstream += g_rr_nodes[set_rr_node_ind].R();
 		this->R_upstream = new_R_upstream;
 
 		/* get congestion info for this node */
-		int cost_index = rr_node[set_rr_node_ind].cost_index();
+		int cost_index = g_rr_nodes[set_rr_node_ind].cost_index();
 		this->congestion_upstream = parent_congestion_upstream;
 		if (switch_ind != UNDEFINED){
 			this->congestion_upstream += rr_indexed_data[cost_index].base_cost;
@@ -222,7 +222,7 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticality_fac){
 	int from_x, from_y, to_x, to_y;
 
-	t_rr_node &from_node = rr_node[from_node_ind];
+	t_rr_node &from_node = g_rr_nodes[from_node_ind];
 
 	e_rr_type from_type = from_node.type();
 	int from_cost_index = from_node.cost_index();
@@ -232,8 +232,8 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 
 	from_x = from_node.xlow();
 	from_y = from_node.ylow();
-	to_x = rr_node[to_node_ind].xlow();
-	to_y = rr_node[to_node_ind].ylow();
+	to_x = g_rr_nodes[to_node_ind].xlow();
+	to_y = g_rr_nodes[to_node_ind].ylow();
 
 	int delta_x = abs(from_x - to_x);
 	int delta_y = abs(from_y - to_y);
@@ -346,8 +346,8 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 	for (int itrack = 0; itrack < channel_node_list.nelem; itrack++){
 		int node_ind = channel_node_list.list[itrack];
 
-		e_direction node_direction = rr_node[node_ind].direction();
-		int node_cost_ind = rr_node[node_ind].cost_index();
+		e_direction node_direction = g_rr_nodes[node_ind].direction();
+		int node_cost_ind = g_rr_nodes[node_ind].cost_index();
 		int node_seg_ind = rr_indexed_data[node_cost_ind].seg_index;
 
 		if ((node_direction == direction || node_direction == BI_DIRECTION) &&
@@ -409,9 +409,9 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
 		}
 
 		/* if this node is an ipin record its congestion/delay in the routing_cost_map */
-		if (rr_node[node_ind].type() == IPIN){
-			int ipin_x = rr_node[node_ind].xlow();
-			int ipin_y = rr_node[node_ind].ylow();
+		if (g_rr_nodes[node_ind].type() == IPIN){
+			int ipin_x = g_rr_nodes[node_ind].xlow();
+			int ipin_y = g_rr_nodes[node_ind].ylow();
 
 			if (ipin_x >= start_x && ipin_y >= start_y){
 				int delta_x = ipin_x - start_x;
@@ -432,7 +432,7 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float> &nod
 
 	int parent_ind = parent_entry.rr_node_ind;
 
-	t_rr_node &parent_node = rr_node[parent_ind];
+	t_rr_node &parent_node = g_rr_nodes[parent_ind];
 
 	for (int iedge = 0; iedge < parent_node.num_edges(); iedge++){
 		int child_node_ind = parent_node.edge_sink_node(iedge);

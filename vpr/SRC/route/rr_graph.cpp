@@ -374,8 +374,8 @@ void build_rr_graph(
 
 	rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, L_nx, L_ny,
 			&g_num_rr_nodes, chan_details_x, chan_details_y);
-	rr_node = (t_rr_node *) vtr::malloc(sizeof(t_rr_node) * g_num_rr_nodes);
-	memset(rr_node, 0, sizeof(t_rr_node) * g_num_rr_nodes);
+	g_rr_nodes = (t_rr_node *) vtr::malloc(sizeof(t_rr_node) * g_num_rr_nodes);
+	memset(g_rr_nodes, 0, sizeof(t_rr_node) * g_num_rr_nodes);
 	bool *L_rr_edge_done = (bool *) vtr::malloc(sizeof(bool) * g_num_rr_nodes);
 	memset(L_rr_edge_done, 0, sizeof(bool) * g_num_rr_nodes);
 
@@ -505,7 +505,7 @@ void build_rr_graph(
 	/* END OPconst MAP */
 
 	bool Fc_clipped = false;
-	alloc_and_load_rr_graph(g_num_rr_nodes, rr_node, num_seg_types, 
+	alloc_and_load_rr_graph(g_num_rr_nodes, g_rr_nodes, num_seg_types, 
 			seg_details, chan_details_x, chan_details_y,
 			L_rr_edge_done, track_to_pin_lookup, opin_to_track_map,
 			switch_block_conn, sb_conn_map, L_grid, L_nx, L_ny, Fs, unidir_sb_pattern,
@@ -516,13 +516,13 @@ void build_rr_graph(
 	/* Update rr_nodes capacities if global routing */
 	if (graph_type == GRAPH_GLOBAL) {
 		for (int i = 0; i < g_num_rr_nodes; i++) {
-			if (rr_node[i].type() == CHANX) {
-				int ylow = rr_node[i].ylow();
-				rr_node[i].set_capacity( chan_width.x_list[ylow] );
+			if (g_rr_nodes[i].type() == CHANX) {
+				int ylow = g_rr_nodes[i].ylow();
+				g_rr_nodes[i].set_capacity( chan_width.x_list[ylow] );
 			}
-			if (rr_node[i].type() == CHANY) {
-				int xlow = rr_node[i].xlow();
-				rr_node[i].set_capacity( chan_width.y_list[xlow] );
+			if (g_rr_nodes[i].type() == CHANY) {
+				int xlow = g_rr_nodes[i].xlow();
+				g_rr_nodes[i].set_capacity( chan_width.y_list[xlow] );
 			}
 		}
 	}
@@ -686,7 +686,7 @@ static int alloc_rr_switch_inf(map<int,int> *switch_fanin){
     // map key: switch index specified in arch; map value: fanin for that index
     map<int, int> *inward_switch_inf = new map<int, int>[g_num_rr_nodes];
     for (int inode = 0; inode < g_num_rr_nodes; inode ++) {
-        t_rr_node from_node = rr_node[inode];
+        t_rr_node from_node = g_rr_nodes[inode];
         int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int switch_index = from_node.edge_switch(iedge);
@@ -777,10 +777,10 @@ static void load_rr_switch_inf(const int num_arch_switches, map<int,int> *switch
    which contains switch info at different fan-in values */
 static void remap_rr_node_switch_indices(map<int,int> *switch_fanin){
 	for (int inode = 0; inode < g_num_rr_nodes; inode++){
-		t_rr_node from_node = rr_node[inode];
+		t_rr_node from_node = g_rr_nodes[inode];
 		int num_edges = from_node.num_edges();
 		for (int iedge = 0; iedge < num_edges; iedge++){
-			t_rr_node to_node = rr_node[ from_node.edge_sink_node(iedge) ];
+			t_rr_node to_node = g_rr_nodes[ from_node.edge_sink_node(iedge) ];
 			/* get the switch which this edge uses and its fanin */
 			int switch_index = from_node.edge_switch(iedge);
 			int fanin = to_node.fan_in();
@@ -1152,12 +1152,12 @@ void free_rr_graph(void) {
 		free(net_rr_terminals);
 	}
 	for (i = 0; i < g_num_rr_nodes; i++) {
-        rr_node[i].set_num_edges(0);
+        g_rr_nodes[i].set_num_edges(0);
 	}
 
 	VTR_ASSERT(rr_node_indices);
 	free_rr_node_indices(rr_node_indices);
-	free(rr_node);
+	free(g_rr_nodes);
 	free(rr_indexed_data);
 	for (i = 0; i < num_blocks; i++) {
 		free(rr_blk_source[i]);
@@ -1165,7 +1165,7 @@ void free_rr_graph(void) {
 	free(rr_blk_source);
 	rr_blk_source = NULL;
 	net_rr_terminals = NULL;
-	rr_node = NULL;
+	g_rr_nodes = NULL;
 	rr_node_indices = NULL;
 	rr_indexed_data = NULL;
 	g_num_rr_nodes = 0;
@@ -1317,7 +1317,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 		/* Things common to both SOURCEs and SINKs.   */
 		L_rr_node[inode].set_capacity(class_inf[iclass].num_pins);
 		//assuming that type->width is always 1.
-		//if this needs to change, rr_node.{h,c} need to be modified accordingly
+		//if this needs to change, g_rr_nodes.{h,c} need to be modified accordingly
 		VTR_ASSERT(type->width == 1);
 		L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
 		L_rr_node[inode].set_R(0);
@@ -1537,10 +1537,10 @@ void watch_edges(int inode, t_linked_edge * edge_list_head) {
 	list_ptr = edge_list_head;
 	i = 0;
 
-	print_rr_node(stdout, rr_node, inode);
+	print_rr_node(stdout, g_rr_nodes, inode);
 	while (list_ptr != NULL) {
 		to_node = list_ptr->edge;
-		print_rr_node(stdout, rr_node, to_node);
+		print_rr_node(stdout, g_rr_nodes, to_node);
 		list_ptr = list_ptr->next;
 		i++;
 	}
@@ -2209,7 +2209,7 @@ void dump_rr_graph(const char *file_name) {
 	FILE *fp = vtr::fopen(file_name, "w");
 
 	for (int inode = 0; inode < g_num_rr_nodes; ++inode) {
-		print_rr_node(fp, rr_node, inode);
+		print_rr_node(fp, g_rr_nodes, inode);
 		fprintf(fp, "\n");
 	}
 
@@ -2382,7 +2382,7 @@ static void build_unidir_rr_opins(const int i, const int j,
 		/* Add the edges */
 		int opin_node_index = get_rr_node_index(i, j, OPIN, pin_index, L_rr_node_indices);
 		VTR_ASSERT(opin_node_index >= 0);
-		alloc_and_load_edges_and_switches(rr_node, opin_node_index, num_edges,
+		alloc_and_load_edges_and_switches(g_rr_nodes, opin_node_index, num_edges,
 				L_rr_edge_done, edge_list);
 		while (edge_list != NULL) {
 			t_linked_edge *next_edge = edge_list->next;

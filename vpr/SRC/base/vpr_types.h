@@ -13,9 +13,9 @@
 
  Key data structures:
 
- net - Connectivity data structure for the user netlist
- block - An already clustered logic block, the placer finds physical locations for these blocks.  Intra-logic block interconnect stored in pb_route.
- rr_node - The basic building block of the interconnect in the FPGA architecture
+ t_net - Connectivity data structure for the user netlist
+ t_block - An already clustered logic block, the placer finds physical locations for these blocks.  Intra-logic block interconnect stored in pb_route.
+ t_rr_node - The basic building block of the interconnect in the FPGA architecture
 
  Cluster-specific main data structure:
 

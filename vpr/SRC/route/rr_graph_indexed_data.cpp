@@ -176,7 +176,7 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 				L_rr_node_indices);
 		if (inode == -1)
 			continue;
-		cost_index = rr_node[inode].cost_index();
+		cost_index = g_rr_nodes[inode].cost_index();
 		frac_num_seg = clb_dist * rr_indexed_data[cost_index].inv_length;
 		Tdel = frac_num_seg * rr_indexed_data[cost_index].T_linear
 				+ frac_num_seg * frac_num_seg
@@ -189,7 +189,7 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 				L_rr_node_indices);
 		if (inode == -1)
 			continue;
-		cost_index = rr_node[inode].cost_index();
+		cost_index = g_rr_nodes[inode].cost_index();
 		frac_num_seg = clb_dist * rr_indexed_data[cost_index].inv_length;
 		Tdel = frac_num_seg * rr_indexed_data[cost_index].T_linear
 				+ frac_num_seg * frac_num_seg
@@ -244,22 +244,22 @@ static void load_rr_indexed_data_T_values(int index_start,
 				L_rr_node_indices);
 		if (inode == -1)
 			continue;
-		cost_index = rr_node[inode].cost_index();
+		cost_index = g_rr_nodes[inode].cost_index();
 		num_nodes_of_index[cost_index]++;
-		C_total[cost_index] += rr_node[inode].C();
-		R_total[cost_index] += rr_node[inode].R();
+		C_total[cost_index] += g_rr_nodes[inode].C();
+		R_total[cost_index] += g_rr_nodes[inode].R();
 
 		/* get average switch parameters */
-		int num_edges = rr_node[inode].num_edges();
+		int num_edges = g_rr_nodes[inode].num_edges();
 		double avg_switch_R = 0;
 		double avg_switch_T = 0;
 		int num_switches = 0;
 		short buffered = UNDEFINED;
 		for (int iedge = 0; iedge < num_edges; iedge++){
-			int to_node_index = rr_node[inode].edge_sink_node(iedge);
+			int to_node_index = g_rr_nodes[inode].edge_sink_node(iedge);
 			/* want to get C/R/Tdel of switches that connect this track segment to other track segments */
-			if (rr_node[to_node_index].type() == CHANX || rr_node[to_node_index].type() == CHANY){
-				int switch_index = rr_node[inode].edge_switch(iedge);
+			if (g_rr_nodes[to_node_index].type() == CHANX || g_rr_nodes[to_node_index].type() == CHANY){
+				int switch_index = g_rr_nodes[inode].edge_switch(iedge);
 				avg_switch_R += g_rr_switch_inf[switch_index].R;
 				avg_switch_T += g_rr_switch_inf[switch_index].Tdel;
 

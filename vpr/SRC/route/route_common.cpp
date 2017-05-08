@@ -227,11 +227,11 @@ void get_serial_num(void) {
 		while (tptr != NULL) {
 			inode = tptr->index;
 			serial_num += (inet + 1)
-					* (rr_node[inode].xlow() * (nx + 1) - rr_node[inode].yhigh());
+					* (g_rr_nodes[inode].xlow() * (nx + 1) - g_rr_nodes[inode].yhigh());
 
-			serial_num -= rr_node[inode].ptc_num() * (inet + 1) * 10;
+			serial_num -= g_rr_nodes[inode].ptc_num() * (inet + 1) * 10;
 
-			serial_num -= rr_node[inode].type() * (inet + 1) * 100;
+			serial_num -= g_rr_nodes[inode].type() * (inet + 1) * 100;
 			serial_num %= 2000000000; /* Prevent overflow */
 			tptr = tptr->next;
 		}
@@ -395,7 +395,7 @@ bool feasible_routing(void) {
 	int inode;
 
 	for (inode = 0; inode < g_num_rr_nodes; inode++) {
-		if (g_rr_node_state[inode].occ() > rr_node[inode].capacity()) {
+		if (g_rr_node_state[inode].occ() > g_rr_nodes[inode].capacity()) {
 			return (false);
 		}
 	}
@@ -423,7 +423,7 @@ void pathfinder_update_path_cost(struct s_trace *route_segment_start,
 	for (;;) {
 		pathfinder_update_single_node_cost(tptr->index, add_or_sub, pres_fac);
 
-		if (rr_node[tptr->index].type() == SINK) {
+		if (g_rr_nodes[tptr->index].type() == SINK) {
 			tptr = tptr->next; /* Skip next segment. */
 			if (tptr == NULL)
 				break;
@@ -446,7 +446,7 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 	// can't have negative occupancy
 	VTR_ASSERT(occ >= 0);
 
-	int	capacity = rr_node[inode].capacity();
+	int	capacity = g_rr_nodes[inode].capacity();
 	if (occ < capacity) {
 		rr_node_route_inf[inode].pres_cost = 1.0;
 	} else {
@@ -468,7 +468,7 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 
 	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		occ = g_rr_node_state[inode].occ();
-		capacity = rr_node[inode].capacity();
+		capacity = g_rr_nodes[inode].capacity();
 
 		if (occ > capacity) {
 			rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
@@ -536,7 +536,7 @@ update_traceback(struct s_heap *hptr, int inet) {
 	// hptr points to the end of a connection
 	inode = hptr->index;
 
-	rr_type = rr_node[inode].type();
+	rr_type = g_rr_nodes[inode].type();
 	if (rr_type != SINK) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in update_traceback. Expected type = SINK (%d).\n"
@@ -558,7 +558,7 @@ update_traceback(struct s_heap *hptr, int inet) {
 	while (inode != NO_PREVIOUS) {
 		prevptr = alloc_trace_data();
 		prevptr->index = inode;
-		prevptr->iswitch = rr_node[inode].edge_switch(iedge);
+		prevptr->iswitch = g_rr_nodes[inode].edge_switch(iedge);
 		prevptr->next = tptr;
 		tptr = prevptr;
 
@@ -619,7 +619,7 @@ float get_rr_cong_cost(int inode) {
 	short cost_index;
 	float cost;
 
-	cost_index = rr_node[inode].cost_index();
+	cost_index = g_rr_nodes[inode].cost_index();
 	cost = rr_indexed_data[cost_index].base_cost
 			* rr_node_route_inf[inode].acc_cost
 			* rr_node_route_inf[inode].pres_cost;
@@ -1294,17 +1294,17 @@ void print_route(const char* placement_file, const char* route_file) {
 
 				while (tptr != NULL) {
 					inode = tptr->index;
-					rr_type = rr_node[inode].type();
-					ilow = rr_node[inode].xlow();
-					jlow = rr_node[inode].ylow();
+					rr_type = g_rr_nodes[inode].type();
+					ilow = g_rr_nodes[inode].xlow();
+					jlow = g_rr_nodes[inode].ylow();
 
 					fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode, 
-							rr_node[inode].type_string(), ilow, jlow);
+							g_rr_nodes[inode].type_string(), ilow, jlow);
 
-					if ((ilow != rr_node[inode].xhigh())
-							|| (jlow != rr_node[inode].yhigh()))
-						fprintf(fp, "to (%d,%d) ", rr_node[inode].xhigh(),
-								rr_node[inode].yhigh());
+					if ((ilow != g_rr_nodes[inode].xhigh())
+							|| (jlow != g_rr_nodes[inode].yhigh()))
+						fprintf(fp, "to (%d,%d) ", g_rr_nodes[inode].xhigh(),
+								g_rr_nodes[inode].yhigh());
 
 					switch (rr_type) {
 
@@ -1334,14 +1334,14 @@ void print_route(const char* placement_file, const char* route_file) {
 					default:
 						vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 								  "in print_route: Unexpected traceback element type: %d (%s).\n", 
-								  rr_type, rr_node[inode].type_string());
+								  rr_type, g_rr_nodes[inode].type_string());
 						break;
 					}
 
-					fprintf(fp, "%d  ", rr_node[inode].ptc_num());
+					fprintf(fp, "%d  ", g_rr_nodes[inode].ptc_num());
 
 					if (grid[ilow][jlow].type != IO_TYPE && (rr_type == IPIN || rr_type == OPIN)) {
-						int pin_num = rr_node[inode].ptc_num();
+						int pin_num = g_rr_nodes[inode].ptc_num();
 						int offset = grid[ilow][jlow].height_offset;
 						int iblock = grid[ilow][jlow - offset].blocks[0];
 						VTR_ASSERT(iblock != OPEN);
@@ -1432,9 +1432,9 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
 			if (num_local_opin != 0) { /* Have to reserve (use) some OPINs */
 				from_node = rr_blk_source[iblk][iclass];
-				num_edges = rr_node[from_node].num_edges();
+				num_edges = g_rr_nodes[from_node].num_edges();
 				for (iconn = 0; iconn < num_edges; iconn++) {
-					to_node = rr_node[from_node].edge_sink_node(iconn);
+					to_node = g_rr_nodes[from_node].edge_sink_node(iconn);
 					cost = get_rr_cong_cost(to_node);
 					node_to_heap(to_node, cost, OPEN, OPEN, 0., 0.);
 				}
@@ -1462,7 +1462,7 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 	int occ, capacity;
 
 	occ = g_rr_node_state[inode].occ() + add_or_sub;
-	capacity = rr_node[inode].capacity();
+	capacity = g_rr_nodes[inode].capacity();
 	g_rr_node_state[inode].set_occ(occ);
 
 	if (occ < capacity) {
@@ -1490,7 +1490,7 @@ void print_traceback(int inet) {
 	t_trace* head = trace_head[inet];
 	while (head) {
 		int inode {head->index};
-		if (rr_node[inode].type() == SINK) 
+		if (g_rr_nodes[inode].type() == SINK) 
 			vtr::printf_info("%d(sink)(%d)->",inode, g_rr_node_state[inode].occ());
 		else 
 			vtr::printf_info("%d(%d)->",inode, g_rr_node_state[inode].occ());

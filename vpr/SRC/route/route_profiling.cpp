@@ -148,7 +148,7 @@ void congestion_analysis() {
 
 	int total_congestion = 0;
 	for (int inode = 0; inode < g_num_rr_nodes; ++inode) {
-		const t_rr_node& node = rr_node[inode];
+		const t_rr_node& node = g_rr_nodes[inode];
 		int congestion = node.get_occ() - node.get_capacity();
 
 		if (congestion > 0) {
@@ -171,7 +171,7 @@ void congestion_analysis() {
 	if (!congested.empty()) {
 		vtr::printf_info("Specific congested nodes\nxlow ylow   type\n");
 		for (int inode = 0; inode < g_num_rr_nodes; ++inode) {
-			const t_rr_node& node = rr_node[inode];
+			const t_rr_node& node = g_rr_nodes[inode];
 			if (congested.is_congested(node.type) && (node.get_occ() - node.get_capacity()) > 0) {
 				vtr::printf_info("(%3d,%3d) %6s\n", node.get_xlow(), node.get_ylow(), node_typename[node.type]);
 			}

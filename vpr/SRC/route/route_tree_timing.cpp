@@ -194,9 +194,9 @@ init_route_tree_to_source(int inet) {
 	inode = net_rr_terminals[inet][0]; /* Net source */
 
 	rt_root->inode = inode;
-	rt_root->C_downstream = rr_node[inode].C();
-	rt_root->R_upstream = rr_node[inode].R();
-	rt_root->Tdel = 0.5 * rr_node[inode].R() * rr_node[inode].C();
+	rt_root->C_downstream = g_rr_nodes[inode].C();
+	rt_root->R_upstream = g_rr_nodes[inode].R();
+	rt_root->Tdel = 0.5 * g_rr_nodes[inode].R() * g_rr_nodes[inode].C();
 	rr_node_to_rt_node[inode] = rt_root;
 
 	return (rt_root);
@@ -251,16 +251,16 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 	inode = hptr->index;
 
-	if (rr_node[inode].type() != SINK) {
+	if (g_rr_nodes[inode].type() != SINK) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in add_path_to_route_tree. Expected type = SINK (%d).\n"
-			"Got type = %d.",  SINK, rr_node[inode].type());
+			"Got type = %d.",  SINK, g_rr_nodes[inode].type());
 	}
 
 	sink_rt_node = alloc_rt_node();
 	sink_rt_node->u.child_list = NULL;
 	sink_rt_node->inode = inode;
-	C_downstream = rr_node[inode].C();
+	C_downstream = g_rr_nodes[inode].C();
 	sink_rt_node->C_downstream = C_downstream;
 	rr_node_to_rt_node[inode] = sink_rt_node;
 
@@ -275,7 +275,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	downstream_rt_node = sink_rt_node;
 	inode = hptr->u.prev_node;
 	iedge = hptr->prev_edge;
-	iswitch = rr_node[inode].edge_switch(iedge);
+	iswitch = g_rr_nodes[inode].edge_switch(iedge);
 
 	/* For all "new" nodes in the path */
 	// inode is node index of previous node
@@ -296,14 +296,14 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 		rt_node->inode = inode;
 
 		if (g_rr_switch_inf[iswitch].buffered == false)
-			C_downstream += rr_node[inode].C();
+			C_downstream += g_rr_nodes[inode].C();
 		else
-			C_downstream = rr_node[inode].C();
+			C_downstream = g_rr_nodes[inode].C();
 
 		rt_node->C_downstream = C_downstream;
 		rr_node_to_rt_node[inode] = rt_node;
 
-        if (rr_node[inode].type() == IPIN)
+        if (g_rr_nodes[inode].type() == IPIN)
             rt_node->re_expand = false;
         else
             rt_node->re_expand = true;
@@ -311,7 +311,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 		downstream_rt_node = rt_node;
 		iedge = rr_node_route_inf[inode].prev_edge;
 		inode = rr_node_route_inf[inode].prev_node;
-		iswitch = rr_node[inode].edge_switch(iedge);
+		iswitch = g_rr_nodes[inode].edge_switch(iedge);
 	}
 
 	/* Inode is the branch point to the old routing */
@@ -347,7 +347,7 @@ static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node) {
 	inode = rt_node->inode;
 	parent_rt_node = rt_node->parent_node;
 
-	R_upstream = g_rr_switch_inf[iswitch].R + rr_node[inode].R();
+	R_upstream = g_rr_switch_inf[iswitch].R + g_rr_nodes[inode].R();
 
 	if (g_rr_switch_inf[iswitch].buffered == false)
 		R_upstream += parent_rt_node->R_upstream;
@@ -372,9 +372,9 @@ static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node) {
 		inode = rt_node->inode;
 
 		if (g_rr_switch_inf[iswitch].buffered)
-			R_upstream = g_rr_switch_inf[iswitch].R + rr_node[inode].R();
+			R_upstream = g_rr_switch_inf[iswitch].R + g_rr_nodes[inode].R();
 		else
-			R_upstream += g_rr_switch_inf[iswitch].R + rr_node[inode].R();
+			R_upstream += g_rr_switch_inf[iswitch].R + g_rr_nodes[inode].R();
 
 		rt_node->R_upstream = R_upstream;
 		linked_rt_edge = rt_node->u.child_list;
@@ -427,7 +427,7 @@ void load_route_tree_Tdel(t_rt_node * subtree_rt_root, float Tarrival) {
 	 * along a wire segment's length.  See discussion in net_delay.c if you want
 	 * to change this.                                                           */
 
-	Tdel = Tarrival + 0.5 * subtree_rt_root->C_downstream * rr_node[inode].R();
+	Tdel = Tarrival + 0.5 * subtree_rt_root->C_downstream * g_rr_nodes[inode].R();
 	subtree_rt_root->Tdel = Tdel;
 
 	/* Now expand the children of this node to load their Tdel values (depth-
@@ -580,7 +580,7 @@ t_rt_node* traceback_to_route_tree(int inet) {
 		// head is always on the trunk of the tree (explored part) while tail is always on a new branch
 		tail = head->next;
 		// while the next sink has not been reached (this branch has not been fully drawn)
-		while (rr_node[tail->index].type() != SINK) tail = tail->next; 
+		while (g_rr_nodes[tail->index].type() != SINK) tail = tail->next; 
 		// tail is at the end of the branch (SINK)
 		// [head+1, tail(sink)] is the new part of the route tree
 		for (t_trace* new_node = head->next; new_node != tail; new_node = new_node->next) {
@@ -778,15 +778,15 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 	auto inode = rt_root->inode;
 
 	// illegal tree, propagate information back up (actual removal done at an upstream branch point)
-	if (g_rr_node_state[inode].occ() > rr_node[inode].capacity()) return true;
+	if (g_rr_node_state[inode].occ() > g_rr_nodes[inode].capacity()) return true;
 	// legal routing, allowed to do calculations now
 
 	// can calculate R_upstream from just upstream information without considering children
 	auto parent_switch = rt_root->parent_switch;
 	if (g_rr_switch_inf[parent_switch].buffered)
-		R_upstream = g_rr_switch_inf[parent_switch].R + rr_node[inode].R();
+		R_upstream = g_rr_switch_inf[parent_switch].R + g_rr_nodes[inode].R();
 	else
-		R_upstream += g_rr_switch_inf[parent_switch].R + rr_node[inode].R();
+		R_upstream += g_rr_switch_inf[parent_switch].R + g_rr_nodes[inode].R();
 	rt_root->R_upstream = R_upstream;
 
 	auto edge = rt_root->u.child_list;
@@ -834,7 +834,7 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 	VTR_ASSERT(rt_root->u.child_list != nullptr);
 
 	// the sum of its children and its own capacitance
-	rt_root->C_downstream = C_downstream_children + rr_node[inode].C();
+	rt_root->C_downstream = C_downstream_children + g_rr_nodes[inode].C();
 	return false;
 }
 
@@ -849,7 +849,7 @@ bool prune_route_tree(t_rt_node* rt_root, float pres_fac, CBRR& connections_inf)
 
 	// SOURCE node should never be congested
 	VTR_ASSERT(rt_root != nullptr);
-	VTR_ASSERT(g_rr_node_state[rt_root->inode].occ() <= rr_node[rt_root->inode].capacity());
+	VTR_ASSERT(g_rr_node_state[rt_root->inode].occ() <= g_rr_nodes[rt_root->inode].capacity());
 
 	// prune illegal branches from root
 	auto edge = rt_root->u.child_list;
@@ -959,7 +959,7 @@ void print_edge(const t_linked_rt_edge* edge) {
 
 static void print_node(const t_rt_node* rt_node) {
 	int inode = rt_node->inode;
-	t_rr_type node_type = rr_node[inode].type();
+	t_rr_type node_type = g_rr_nodes[inode].type();
 	vtr::printf_info("%5.1e %5.1e %2d%6s|%-6d-> ", rt_node->C_downstream, rt_node->R_upstream,
 		rt_node->re_expand, rr_node_typename[node_type], inode);	
 }
@@ -976,7 +976,7 @@ static void print_node_inf(const t_rt_node* rt_node) {
 static void print_node_congestion(const t_rt_node* rt_node) {
 	int inode = rt_node->inode;
 	const auto& node_inf = rr_node_route_inf[inode];
-	const auto& node = rr_node[inode];
+	const auto& node = g_rr_nodes[inode];
 	const auto& node_state = g_rr_node_state[inode];
 	vtr::printf_info("%2d %2d|%-6d-> ", node_inf.pres_cost, rt_node->Tdel,
 		node_state.occ(), node.capacity(), inode);		
@@ -1064,20 +1064,20 @@ bool is_valid_route_tree(const t_rt_node* root) {
 	short iswitch = root->parent_switch;
 	if (root->parent_node) {
 		if (g_rr_switch_inf[iswitch].buffered) {
-			if (root->R_upstream != rr_node[inode].R() + g_rr_switch_inf[iswitch].R) {
+			if (root->R_upstream != g_rr_nodes[inode].R() + g_rr_switch_inf[iswitch].R) {
 				vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, 
-					rr_node[inode].R() + g_rr_switch_inf[iswitch].R);
+					g_rr_nodes[inode].R() + g_rr_switch_inf[iswitch].R);
 				return false;
 			}
 		}
-		else if (root->R_upstream != rr_node[inode].R() + root->parent_node->R_upstream + g_rr_switch_inf[iswitch].R) {
+		else if (root->R_upstream != g_rr_nodes[inode].R() + root->parent_node->R_upstream + g_rr_switch_inf[iswitch].R) {
 			vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, 
-				rr_node[inode].R() + root->parent_node->R_upstream + g_rr_switch_inf[iswitch].R);
+				g_rr_nodes[inode].R() + root->parent_node->R_upstream + g_rr_switch_inf[iswitch].R);
 			return false;
 		}
 	}
-	else if (root->R_upstream != rr_node[inode].R()) {
-		vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, rr_node[inode].R());
+	else if (root->R_upstream != g_rr_nodes[inode].R()) {
+		vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, g_rr_nodes[inode].R());
 		return false;
 	}
 
@@ -1087,7 +1087,7 @@ bool is_valid_route_tree(const t_rt_node* root) {
 	// sink, must not be congested
 	if (!edge) {
 		int occ = g_rr_node_state[inode].occ();
-		int capacity = rr_node[inode].capacity();
+		int capacity = g_rr_nodes[inode].capacity();
 		if (occ > capacity) {
 			vtr::printf_info("SINK %d occ %d > cap %d\n", inode, occ, capacity);
 			return false;
@@ -1116,8 +1116,8 @@ bool is_valid_route_tree(const t_rt_node* root) {
 		edge = edge->next;
 	}
 
-	if (root->C_downstream != C_downstream_children + rr_node[inode].C()) {
-		vtr::printf_info("mismatch C downstream %e supposed %e\n", root->C_downstream, C_downstream_children + rr_node[inode].C());
+	if (root->C_downstream != C_downstream_children + g_rr_nodes[inode].C()) {
+		vtr::printf_info("mismatch C downstream %e supposed %e\n", root->C_downstream, C_downstream_children + g_rr_nodes[inode].C());
 		return false;
 	}
 
@@ -1127,7 +1127,7 @@ bool is_valid_route_tree(const t_rt_node* root) {
 //Returns true if the route tree rooted at 'root' is not congested
 bool is_uncongested_route_tree(const t_rt_node* root) {
     int inode = root->inode;
-    if (g_rr_node_state[inode].occ() > rr_node[inode].capacity()) {
+    if (g_rr_node_state[inode].occ() > g_rr_nodes[inode].capacity()) {
         //This node is congested
         return false;
     }

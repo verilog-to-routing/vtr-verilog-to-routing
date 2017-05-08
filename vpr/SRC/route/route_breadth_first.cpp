@@ -222,7 +222,7 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 	int inode, sink_node, last_ipin_node;
 
 	tptr = start_ptr;
-	if(tptr != NULL && rr_node[tptr->index].type() == SINK) {
+	if(tptr != NULL && g_rr_nodes[tptr->index].type() == SINK) {
 		/* During logical equivalence case, only use one opin */
 		tptr = tptr->next;
 	}
@@ -256,7 +256,7 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 			inode = tptr->index;
 			node_to_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 
-			if (rr_node[inode].type() == IPIN)
+			if (g_rr_nodes[inode].type() == IPIN)
 				last_ipin_node = inode;
 
 			tptr = next_ptr;
@@ -296,22 +296,22 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 	t_rr_type from_type, to_type;
 	float tot_cost;
 
-	num_edges = rr_node[inode].num_edges();
+	num_edges = g_rr_nodes[inode].num_edges();
 	for (iconn = 0; iconn < num_edges; iconn++) {
-		to_node = rr_node[inode].edge_sink_node(iconn);
+		to_node = g_rr_nodes[inode].edge_sink_node(iconn);
 
-		if (rr_node[to_node].xhigh() < route_bb[inet].xmin
-				|| rr_node[to_node].xlow() > route_bb[inet].xmax
-				|| rr_node[to_node].yhigh() < route_bb[inet].ymin
-				|| rr_node[to_node].ylow() > route_bb[inet].ymax)
+		if (g_rr_nodes[to_node].xhigh() < route_bb[inet].xmin
+				|| g_rr_nodes[to_node].xlow() > route_bb[inet].xmax
+				|| g_rr_nodes[to_node].yhigh() < route_bb[inet].ymin
+				|| g_rr_nodes[to_node].ylow() > route_bb[inet].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
 
 		tot_cost = pcost + get_rr_cong_cost(to_node);
 
 		if (bend_cost != 0.) {
-			from_type = rr_node[inode].type();
-			to_type = rr_node[to_node].type();
+			from_type = g_rr_nodes[inode].type();
+			to_type = g_rr_nodes[to_node].type();
 			if ((from_type == CHANX && to_type == CHANY)
 					|| (from_type == CHANY && to_type == CHANX))
 				tot_cost += bend_cost;

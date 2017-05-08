@@ -1780,7 +1780,7 @@ static int convert_switch_index(int *switch_index, int *fanin) {
  * print out number of usage for every switch (type / fanin combination)
  * (referring to rr_graph.c: alloc_rr_switch_inf())
  * NOTE: to speed up this function, for XXX uni-directional arch XXX, the most efficient 
- * way is to change the rr_node data structure (let it store the inward switch index,
+ * way is to change the g_rr_nodes data structure (let it store the inward switch index,
  * instead of outward switch index list): --> instead of using a nested loop of 
  *     for (inode in rr_nodes) {
  *         for (iedges in edges) {
@@ -1794,7 +1794,7 @@ static int convert_switch_index(int *switch_index, int *fanin) {
  *         get switch type of inode;
  *         get fanin of inode;
  *     }
- * now since rr_node does not contain the switch type inward to the current node,
+ * now since g_rr_nodes does not contain the switch type inward to the current node,
  * we have to use an extra loop to setup the information of inward switch first.
  */ 
 void print_switch_usage() {
@@ -1810,7 +1810,7 @@ void print_switch_usage() {
     // map key: switch index; map value: count (fanin)
     map<int, int> *inward_switch_inf = new map<int, int>[g_num_rr_nodes];
     for (int inode = 0; inode < g_num_rr_nodes; inode++) {
-        t_rr_node from_node = rr_node[inode];
+        t_rr_node from_node = g_rr_nodes[inode];
         int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int switch_index = from_node.edge_switch(iedge);
@@ -1873,10 +1873,10 @@ void print_usage_by_wire_length() {
     map<int, int> used_wire_count;
     map<int, int> total_wire_count;
     for (int inode = 0; inode < g_num_rr_nodes; inode++) {
-        if (rr_node[inode].type() == CHANX || rr_node[inode].type() == CHANY) {
-            //int length = abs(rr_node[inode].get_xhigh() + rr_node[inode].get_yhigh() 
-            //             - rr_node[inode].get_xlow() - rr_node[inode].get_ylow());
-            int length = rr_node[inode].get_length();
+        if (g_rr_nodes[inode].type() == CHANX || rr_node[inode].type() == CHANY) {
+            //int length = abs(g_rr_nodes[inode].get_xhigh() + rr_node[inode].get_yhigh() 
+            //             - g_rr_nodes[inode].get_xlow() - rr_node[inode].get_ylow());
+            int length = g_rr_nodes[inode].get_length();
             if (rr_node_state[inode].occ() > 0) {
                 if (used_wire_count.count(length) == 0)
                     used_wire_count[length] = 0;

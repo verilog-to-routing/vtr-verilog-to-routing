@@ -104,7 +104,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 			check_node_and_range(inode, route_type, segment_inf);
 			check_switch(tptr, num_switches);
 
-			if (rr_node[prev_node].type() == SINK) {
+			if (g_rr_nodes[prev_node].type() == SINK) {
 				if (connected_to_route[inode] == false) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_route: node %d does not link into existing routing for net %d.\n", inode, inet);
@@ -118,7 +118,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 						"in check_route: found non-adjacent segments in traceback while checking net %d.\n", inet);
 				}
 
-				if (connected_to_route[inode] && rr_node[inode].type() != SINK) {
+				if (connected_to_route[inode] && g_rr_nodes[inode].type() != SINK) {
 
 					/* Note:  Can get multiple connections to the same logically-equivalent     *
 					 * SINK in some logic blocks.                                               */
@@ -129,7 +129,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 				connected_to_route[inode] = true; /* Mark as in path. */
 
-				if (rr_node[inode].type() == SINK)
+				if (g_rr_nodes[inode].type() == SINK)
 					check_sink(inode, inet, pin_done);
 
 			} /* End of prev_node type != SINK */
@@ -137,7 +137,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 			tptr = tptr->next;
 		} /* End while */
 
-		if (rr_node[prev_node].type() != SINK) {
+		if (g_rr_nodes[prev_node].type() != SINK) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_route: net %d does not end with a SINK.\n", inet);
 		}
@@ -168,12 +168,12 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 	unsigned int ipin;
 	t_type_ptr type;
 
-	VTR_ASSERT(rr_node[inode].type() == SINK);
-	i = rr_node[inode].xlow();
-	j = rr_node[inode].ylow();
+	VTR_ASSERT(g_rr_nodes[inode].type() == SINK);
+	i = g_rr_nodes[inode].xlow();
+	j = g_rr_nodes[inode].ylow();
 	type = grid[i][j].type;
 	/* For sinks, ptc_num is the class */
-	ptc_num = rr_node[inode].ptc_num(); 
+	ptc_num = g_rr_nodes[inode].ptc_num(); 
 	ifound = 0;
 
 	for (iblk = 0; iblk < type->capacity; iblk++) {
@@ -216,16 +216,16 @@ static void check_source(int inode, int inet) {
 	t_type_ptr type;
 	int i, j, ptc_num, bnum, node_block_pin, iclass;
 
-	rr_type = rr_node[inode].type();
+	rr_type = g_rr_nodes[inode].type();
 	if (rr_type != SOURCE) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
 			"in check_source: net %d begins with a node of type %d.\n", inet, rr_type);
 	}
 
-	i = rr_node[inode].xlow();
-	j = rr_node[inode].ylow();
+	i = g_rr_nodes[inode].xlow();
+	j = g_rr_nodes[inode].ylow();
 	/* for sinks and sources, ptc_num is class */
-	ptc_num = rr_node[inode].ptc_num(); 
+	ptc_num = g_rr_nodes[inode].ptc_num(); 
 	/* First node_block for net is the source */
 	bnum = g_clbs_nlist.net[inet].pins[0].block; 
 	type = grid[i][j].type;
@@ -255,7 +255,7 @@ static void check_switch(struct s_trace *tptr, int num_switch) {
 	inode = tptr->index;
 	switch_type = tptr->iswitch;
 
-	if (rr_node[inode].type() != SINK) {
+	if (g_rr_nodes[inode].type() != SINK) {
 		if (switch_type < 0 || switch_type >= num_switch) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_switch: rr_node %d left via switch type %d.\n"
@@ -313,8 +313,8 @@ static bool check_adjacent(int from_node, int to_node) {
 
 	reached = false;
 
-	for (iconn = 0; iconn < rr_node[from_node].num_edges(); iconn++) {
-		if (rr_node[from_node].edge_sink_node(iconn) == to_node) {
+	for (iconn = 0; iconn < g_rr_nodes[from_node].num_edges(); iconn++) {
+		if (g_rr_nodes[from_node].edge_sink_node(iconn) == to_node) {
 			reached = true;
 			break;
 		}
@@ -329,18 +329,18 @@ static bool check_adjacent(int from_node, int to_node) {
 
 	num_adj = 0;
 
-	from_type = rr_node[from_node].type();
-	from_xlow = rr_node[from_node].xlow();
-	from_ylow = rr_node[from_node].ylow();
-	from_xhigh = rr_node[from_node].xhigh();
-	from_yhigh = rr_node[from_node].yhigh();
-	from_ptc = rr_node[from_node].ptc_num();
-	to_type = rr_node[to_node].type();
-	to_xlow = rr_node[to_node].xlow();
-	to_ylow = rr_node[to_node].ylow();
-	to_xhigh = rr_node[to_node].xhigh();
-	to_yhigh = rr_node[to_node].yhigh();
-	to_ptc = rr_node[to_node].ptc_num();
+	from_type = g_rr_nodes[from_node].type();
+	from_xlow = g_rr_nodes[from_node].xlow();
+	from_ylow = g_rr_nodes[from_node].ylow();
+	from_xhigh = g_rr_nodes[from_node].xhigh();
+	from_yhigh = g_rr_nodes[from_node].yhigh();
+	from_ptc = g_rr_nodes[from_node].ptc_num();
+	to_type = g_rr_nodes[to_node].type();
+	to_xlow = g_rr_nodes[to_node].xlow();
+	to_ylow = g_rr_nodes[to_node].ylow();
+	to_xhigh = g_rr_nodes[to_node].xhigh();
+	to_yhigh = g_rr_nodes[to_node].yhigh();
+	to_ptc = g_rr_nodes[to_node].ptc_num();
 
 	switch (from_type) {
 
@@ -394,8 +394,8 @@ static bool check_adjacent(int from_node, int to_node) {
 		if (to_type == IPIN) {
 			num_adj += 1; //adjacent
 		} else if (to_type == CHANX) {
-			from_xhigh = rr_node[from_node].xhigh();
-			to_xhigh = rr_node[to_node].xhigh();
+			from_xhigh = g_rr_nodes[from_node].xhigh();
+			to_xhigh = g_rr_nodes[to_node].xhigh();
 			if (from_ylow == to_ylow) {
 				/* UDSD Modification by WMF Begin */
 				/*For Fs > 3, can connect to overlapping wire segment */
@@ -426,8 +426,8 @@ static bool check_adjacent(int from_node, int to_node) {
 		if (to_type == IPIN) {
 			num_adj += 1; //adjacent
 		} else if (to_type == CHANY) {
-			from_yhigh = rr_node[from_node].yhigh();
-			to_yhigh = rr_node[to_node].yhigh();
+			from_yhigh = g_rr_nodes[from_node].yhigh();
+			to_yhigh = g_rr_nodes[to_node].yhigh();
 			if (from_xlow == to_xlow) {
 				/* UDSD Modification by WMF Begin */
 				if (to_yhigh == from_ylow - 1 || from_yhigh == to_ylow - 1) {
@@ -476,13 +476,13 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
 	int chanx_y, chanx_xlow, chanx_xhigh;
 	int chany_x, chany_ylow, chany_yhigh;
 
-	chanx_y = rr_node[chanx_node].ylow();
-	chanx_xlow = rr_node[chanx_node].xlow();
-	chanx_xhigh = rr_node[chanx_node].xhigh();
+	chanx_y = g_rr_nodes[chanx_node].ylow();
+	chanx_xlow = g_rr_nodes[chanx_node].xlow();
+	chanx_xhigh = g_rr_nodes[chanx_node].xhigh();
 
-	chany_x = rr_node[chany_node].xlow();
-	chany_ylow = rr_node[chany_node].ylow();
-	chany_yhigh = rr_node[chany_node].yhigh();
+	chany_x = g_rr_nodes[chany_node].xlow();
+	chany_ylow = g_rr_nodes[chany_node].ylow();
+	chany_yhigh = g_rr_nodes[chany_node].yhigh();
 
 	if (chany_ylow > chanx_y + 1 || chany_yhigh < chanx_y)
 		return (0);
@@ -495,9 +495,11 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
 
 static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_locally) {
 
-	/* This routine updates the occ field in the rr_node structure according to *
-	 * the resource usage of the current routing.  It does a brute force        *
-	 * recompute from scratch that is useful for sanity checking.               */
+	/*
+     * This routine updates the occ field in the g_rr_node_state structure 
+     * according to the resource usage of the current routing.  It does a 
+     * brute force recompute from scratch that is useful for sanity checking.
+     */
 
 	int inode, iblk, iclass, ipin, num_local_opins;
 	unsigned inet;
@@ -523,7 +525,7 @@ static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_local
 			inode = tptr->index;
 			g_rr_node_state[inode].set_occ(g_rr_node_state[inode].occ() + 1);
 
-			if (rr_node[inode].type() == SINK) {
+			if (g_rr_nodes[inode].type() == SINK) {
 				tptr = tptr->next; /* Skip next segment. */
 				if (tptr == NULL)
 					break;
@@ -569,7 +571,7 @@ static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 
 				/* Now check that node is an OPIN of the right type. */
 
-				rr_type = rr_node[inode].type();
+				rr_type = g_rr_nodes[inode].type();
 				if (rr_type != OPIN) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%d (%s)\n"
@@ -577,7 +579,7 @@ static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 						iblk, block[iblk].name, iclass, inode, rr_type);
 				}
 
-				ipin = rr_node[inode].ptc_num();
+				ipin = g_rr_nodes[inode].ptc_num();
 				if (block[iblk].type->pin_class[ipin] != iclass) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%d (%s):\n"

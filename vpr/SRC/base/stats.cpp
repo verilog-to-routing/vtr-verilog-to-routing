@@ -276,7 +276,7 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 		tptr = trace_head[inet];
 		while (tptr != NULL) {
 			inode = tptr->index;
-			rr_type = rr_node[inode].type();
+			rr_type = g_rr_nodes[inode].type();
 
 			if (rr_type == SINK) {
 				tptr = tptr->next; /* Skip next segment. */
@@ -285,14 +285,14 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 			}
 
 			else if (rr_type == CHANX) {
-				j = rr_node[inode].ylow();
-				for (i = rr_node[inode].xlow(); i <= rr_node[inode].xhigh(); i++)
+				j = g_rr_nodes[inode].ylow();
+				for (i = g_rr_nodes[inode].xlow(); i <= g_rr_nodes[inode].xhigh(); i++)
 					chanx_occ[i][j]++;
 			}
 
 			else if (rr_type == CHANY) {
-				i = rr_node[inode].xlow();
-				for (j = rr_node[inode].ylow(); j <= rr_node[inode].yhigh(); j++)
+				i = g_rr_nodes[inode].xlow();
+				for (j = g_rr_nodes[inode].ylow(); j <= g_rr_nodes[inode].yhigh(); j++)
 					chany_occ[i][j]++;
 			}
 
@@ -322,26 +322,26 @@ void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
 				"in get_num_bends_and_length: net #%d has no traceback.\n", inet);
 	}
 	inode = prevptr->index;
-	prev_type = rr_node[inode].type();
+	prev_type = g_rr_nodes[inode].type();
 
 	tptr = prevptr->next;
 
 	while (tptr != NULL) {
 		inode = tptr->index;
-		curr_type = rr_node[inode].type();
+		curr_type = g_rr_nodes[inode].type();
 
 		if (curr_type == SINK) { /* Starting a new segment */
 			tptr = tptr->next; /* Link to existing path - don't add to len. */
 			if (tptr == NULL)
 				break;
 
-			curr_type = rr_node[tptr->index].type();
+			curr_type = g_rr_nodes[tptr->index].type();
 		}
 
 		else if (curr_type == CHANX || curr_type == CHANY) {
 			segments++;
-			length += 1 + rr_node[inode].xhigh() - rr_node[inode].xlow()
-					+ rr_node[inode].yhigh() - rr_node[inode].ylow();
+			length += 1 + g_rr_nodes[inode].xhigh() - g_rr_nodes[inode].xlow()
+					+ g_rr_nodes[inode].yhigh() - g_rr_nodes[inode].ylow();
 
 			if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
 				bends++;

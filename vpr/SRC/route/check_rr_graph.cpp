@@ -50,21 +50,21 @@ void check_rr_graph(const t_graph_type graph_type,
 	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 
 		/* Ignore any uninitialized rr_graph nodes */
-		if ((rr_node[inode].type() == SOURCE) 
-				&& (rr_node[inode].xlow() == 0) && (rr_node[inode].ylow() == 0)
-				&& (rr_node[inode].xhigh() == 0) && (rr_node[inode].yhigh() == 0)) {
+		if ((g_rr_nodes[inode].type() == SOURCE) 
+				&& (g_rr_nodes[inode].xlow() == 0) && (g_rr_nodes[inode].ylow() == 0)
+				&& (g_rr_nodes[inode].xhigh() == 0) && (g_rr_nodes[inode].yhigh() == 0)) {
 			continue;
 		}
 
-		rr_type = rr_node[inode].type();
-		num_edges = rr_node[inode].num_edges();
+		rr_type = g_rr_nodes[inode].type();
+		num_edges = g_rr_nodes[inode].num_edges();
 
 		check_node(inode, route_type, segment_inf);
 
 		/* Check all the connectivity (edges, etc.) information.                    */
 
 		for (iedge = 0; iedge < num_edges; iedge++) {
-			to_node = rr_node[inode].edge_sink_node(iedge);
+			to_node = g_rr_nodes[inode].edge_sink_node(iedge);
 
 			if (to_node < 0 || to_node >= g_num_rr_nodes) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -75,7 +75,7 @@ void check_rr_graph(const t_graph_type graph_type,
 			num_edges_from_current_to_node[to_node]++;
 			total_edges_to_node[to_node]++;
 
-			switch_type = rr_node[inode].edge_switch(iedge);
+			switch_type = g_rr_nodes[inode].edge_switch(iedge);
 
 			if (switch_type < 0 || switch_type >= num_rr_switches) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -92,10 +92,10 @@ void check_rr_graph(const t_graph_type graph_type,
 		} /* End for all edges of node. */
 
 		for (iedge = 0; iedge < num_edges; iedge++) {
-			to_node = rr_node[inode].edge_sink_node(iedge);
+			to_node = g_rr_nodes[inode].edge_sink_node(iedge);
 
 			if (num_edges_from_current_to_node[to_node] > 1) {
-				to_rr_type = rr_node[to_node].type();
+				to_rr_type = g_rr_nodes[to_node].type();
 
 				if ((to_rr_type != CHANX && to_rr_type != CHANY)
 						|| (rr_type != CHANX && rr_type != CHANY)) {
@@ -127,7 +127,7 @@ void check_rr_graph(const t_graph_type graph_type,
 	is_fringe_warning_sent = false;
 
 	for (inode = 0; inode < g_num_rr_nodes; inode++) {
-		rr_type = rr_node[inode].type();
+		rr_type = g_rr_nodes[inode].type();
 
 		if (rr_type != SOURCE) {
 			if (total_edges_to_node[inode] < 1
@@ -142,18 +142,18 @@ void check_rr_graph(const t_graph_type graph_type,
 				 */
 
 				if(rr_type == IPIN) {
-					type = grid[rr_node[inode].xlow()][rr_node[inode].ylow()].type;
-					if(Fc_in[type->index][rr_node[inode].ptc_num()][0] == 0) {
+					type = grid[g_rr_nodes[inode].xlow()][g_rr_nodes[inode].ylow()].type;
+					if(Fc_in[type->index][g_rr_nodes[inode].ptc_num()][0] == 0) {
 						is_chain = true;
 					}
 				}
 
-				is_fringe =((rr_node[inode].xlow() == 1)
-						|| (rr_node[inode].ylow() == 1)
-						|| (rr_node[inode].xhigh() == L_nx)
-						|| (rr_node[inode].yhigh() == L_ny));
-				is_wire =(rr_node[inode].type() == CHANX
-						|| rr_node[inode].type() == CHANY);
+				is_fringe =((g_rr_nodes[inode].xlow() == 1)
+						|| (g_rr_nodes[inode].ylow() == 1)
+						|| (g_rr_nodes[inode].xhigh() == L_nx)
+						|| (g_rr_nodes[inode].yhigh() == L_ny));
+				is_wire =(g_rr_nodes[inode].type() == CHANX
+						|| g_rr_nodes[inode].type() == CHANY);
 
 				if (!is_chain && !is_fringe && !is_wire) {
 					vtr::printf_error(__FILE__, __LINE__,
@@ -162,7 +162,7 @@ void check_rr_graph(const t_graph_type graph_type,
 					vtr::printf_warning(__FILE__, __LINE__, 
 						"in check_rr_graph: fringe node %d %s at (%d,%d) has no fanin.\n"
 						"\t This is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
-						inode, rr_node[inode].type_string(), rr_node[inode].xlow(), rr_node[inode].ylow());
+						inode, g_rr_nodes[inode].type_string(), g_rr_nodes[inode].xlow(), g_rr_nodes[inode].ylow());
 					is_fringe_warning_sent = true;
 				}
 			}
@@ -189,12 +189,12 @@ static bool rr_node_is_global_clb_ipin(int inode) {
 	int ipin;
 	t_type_ptr type;
 
-	type = grid[rr_node[inode].xlow()][rr_node[inode].ylow()].type;
+	type = grid[g_rr_nodes[inode].xlow()][g_rr_nodes[inode].ylow()].type;
 
-	if (rr_node[inode].type() != IPIN)
+	if (g_rr_nodes[inode].type() != IPIN)
 		return (false);
 
-	ipin = rr_node[inode].ptc_num();
+	ipin = g_rr_nodes[inode].ptc_num();
 
 	return type->is_global_pin[ipin];
 }
@@ -211,14 +211,14 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	int nodes_per_chan, tracks_per_node, num_edges, cost_index;
 	float C, R;
 
-	rr_type = rr_node[inode].type();
-	xlow = rr_node[inode].xlow();
-	xhigh = rr_node[inode].xhigh();
-	ylow = rr_node[inode].ylow();
-	yhigh = rr_node[inode].yhigh();
-	ptc_num = rr_node[inode].ptc_num();
-	capacity = rr_node[inode].capacity();
-	cost_index = rr_node[inode].cost_index();
+	rr_type = g_rr_nodes[inode].type();
+	xlow = g_rr_nodes[inode].xlow();
+	xhigh = g_rr_nodes[inode].xhigh();
+	ylow = g_rr_nodes[inode].ylow();
+	yhigh = g_rr_nodes[inode].yhigh();
+	ptc_num = g_rr_nodes[inode].ptc_num();
+	capacity = g_rr_nodes[inode].capacity();
+	cost_index = g_rr_nodes[inode].cost_index();
 	type = NULL;
 
 	if (xlow > xhigh || ylow > yhigh) {
@@ -389,20 +389,21 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	}
 
 	/* Check that the number of (out) edges is reasonable. */
-	num_edges = rr_node[inode].num_edges();
+	num_edges = g_rr_nodes[inode].num_edges();
 
 	if (rr_type != SINK && rr_type != IPIN) {
 		if (num_edges <= 0) {
 			/* Just a warning, since a very poorly routable rr-graph could have nodes with no edges.  *
 			 * If such a node was ever used in a final routing (not just in an rr_graph), other       *
 			 * error checks in check_routing will catch it.                                           */ 
-            if (rr_node[inode].type() == CHANX || rr_node[inode].type() == CHANY) {
+            if (g_rr_nodes[inode].type() == CHANX || g_rr_nodes[inode].type() == CHANY) {
                 int seg_index = rr_indexed_data[cost_index].seg_index;
                 const char* seg_name = segment_inf[seg_index].name;
                 vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) has no out-going edges.\n", 
-                        inode, rr_node[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh);
+                        inode, g_rr_nodes[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh);
             } else {
-                vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) ptc=%d has no out-going edges.\n", inode, rr_node[inode].type_string(), xlow, ylow, rr_node[inode].ptc_num());
+                vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) ptc=%d has no out-going edges.\n", 
+                        inode, g_rr_nodes[inode].type_string(), xlow, ylow, g_rr_nodes[inode].ptc_num());
             }
 		}
 	}
@@ -415,8 +416,8 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	}
 
 	/* Check that the capacitance and resistance are reasonable. */
-	C = rr_node[inode].C();
-	R = rr_node[inode].R();
+	C = g_rr_nodes[inode].C();
+	R = g_rr_nodes[inode].R();
 
 	if (rr_type == CHANX || rr_type == CHANY) {
 		if (C < 0. || R < 0.) {
@@ -444,20 +445,20 @@ static void check_pass_transistors(int from_node) {
 	short from_switch_type;
 	bool trans_matched;
 
-	from_rr_type = rr_node[from_node].type();
+	from_rr_type = g_rr_nodes[from_node].type();
 	if (from_rr_type != CHANX && from_rr_type != CHANY)
 		return;
 
-	from_num_edges = rr_node[from_node].num_edges();
+	from_num_edges = g_rr_nodes[from_node].num_edges();
 
 	for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
-		to_node = rr_node[from_node].edge_sink_node(from_edge);
-		to_rr_type = rr_node[to_node].type();
+		to_node = g_rr_nodes[from_node].edge_sink_node(from_edge);
+		to_rr_type = g_rr_nodes[to_node].type();
 
 		if (to_rr_type != CHANX && to_rr_type != CHANY)
 			continue;
 
-		from_switch_type = rr_node[from_node].edge_switch(from_edge);
+		from_switch_type = g_rr_nodes[from_node].edge_switch(from_edge);
 
 		if (g_rr_switch_inf[from_switch_type].buffered)
 			continue;
@@ -466,12 +467,12 @@ static void check_pass_transistors(int from_node) {
 		 * check that there is a corresponding edge from to_node back to         *
 		 * from_node.                                                            */
 
-		to_num_edges = rr_node[to_node].num_edges();
+		to_num_edges = g_rr_nodes[to_node].num_edges();
 		trans_matched = false;
 
 		for (to_edge = 0; to_edge < to_num_edges; to_edge++) {
-			if (rr_node[to_node].edge_sink_node(to_edge) == from_node
-					&& rr_node[to_node].edge_switch(to_edge) == from_switch_type) {
+			if (g_rr_nodes[to_node].edge_sink_node(to_edge) == from_node
+					&& g_rr_nodes[to_node].edge_switch(to_edge) == from_switch_type) {
 				trans_matched = true;
 				break;
 			}

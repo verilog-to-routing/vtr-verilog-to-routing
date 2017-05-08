@@ -30,7 +30,7 @@ struct s_heap {
  *                      to the target.                                      *
  * R_upstream: Used only by the timing-driven router.  Stores the upstream  *
  *             resistance to ground from this node, including the           *
- *             resistance of the node itself (rr_node[index].R).            */
+ *             resistance of the node itself (g_rr_nodes[index].R).            */
 
 typedef struct {
 	int prev_node;

@@ -33,7 +33,7 @@ static void dump_rr_node_indices( fstream &file );
 /**** Function Definitions ****/
 
 /* The main function for dumping rr structs to a specified file. The structures dumped are:
-	- rr nodes (rr_node)
+	- rr nodes (g_rr_nodes)
 	- rr switches (g_rr_switch_inf)
 	- the grid (grid)
 	- physical block types (type_descriptors)
@@ -77,10 +77,10 @@ void dump_rr_structs( const char *filename ){
 static void dump_rr_nodes( fstream &file ){
 	/* specify that we're in the rr node section and how many nodes there are */
 	file << endl;
-	file << ".rr_node(" << g_num_rr_nodes << ")" << endl;
+	file << ".rr_nodes(" << g_num_rr_nodes << ")" << endl;
 
 	for (int inode = 0; inode < g_num_rr_nodes; inode++){
-		t_rr_node node = rr_node[inode];
+		t_rr_node node = g_rr_nodes[inode];
 
 		/* a node's info is printed entirely on one line */
 		file << " node_" << inode << ": ";
@@ -104,7 +104,7 @@ static void dump_rr_nodes( fstream &file ){
 		}
 		file << "  .end edges" << endl;
 	}
-	file << ".end rr_node" << endl;
+	file << ".end rr_nodes" << endl;
 }
 
 /* dumps all rr switches to specified file */

@@ -44,10 +44,10 @@ int seg_index_of_cblock(t_rr_type from_rr_type, int to_node) {
 	 * box from from_rr_type (CHANX or CHANY) to to_node (IPIN).                 */
 
 	if (from_rr_type == CHANX)
-		return (rr_node[to_node].xlow());
+		return (g_rr_nodes[to_node].xlow());
 	else
 		/* CHANY */
-		return (rr_node[to_node].ylow());
+		return (g_rr_nodes[to_node].ylow());
 }
 
 int seg_index_of_sblock(int from_node, int to_node) {
@@ -61,17 +61,17 @@ int seg_index_of_sblock(int from_node, int to_node) {
 
 	t_rr_type from_rr_type, to_rr_type;
 
-	from_rr_type = rr_node[from_node].type();
-	to_rr_type = rr_node[to_node].type();
+	from_rr_type = g_rr_nodes[from_node].type();
+	to_rr_type = g_rr_nodes[to_node].type();
 
 	if (from_rr_type == CHANX) {
 		if (to_rr_type == CHANY) {
-			return (rr_node[to_node].xlow());
+			return (g_rr_nodes[to_node].xlow());
 		} else if (to_rr_type == CHANX) {
-			if (rr_node[to_node].xlow() > rr_node[from_node].xlow()) { /* Going right */
-				return (rr_node[from_node].xhigh());
+			if (g_rr_nodes[to_node].xlow() > g_rr_nodes[from_node].xlow()) { /* Going right */
+				return (g_rr_nodes[from_node].xhigh());
 			} else { /* Going left */
-				return (rr_node[to_node].xhigh());
+				return (g_rr_nodes[to_node].xhigh());
 			}
 		} else {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -83,12 +83,12 @@ int seg_index_of_sblock(int from_node, int to_node) {
 	/* End from_rr_type is CHANX */
 	else if (from_rr_type == CHANY) {
 		if (to_rr_type == CHANX) {
-			return (rr_node[to_node].ylow());
+			return (g_rr_nodes[to_node].ylow());
 		} else if (to_rr_type == CHANY) {
-			if (rr_node[to_node].ylow() > rr_node[from_node].ylow()) { /* Going up */
-				return (rr_node[from_node].yhigh());
+			if (g_rr_nodes[to_node].ylow() > g_rr_nodes[from_node].ylow()) { /* Going up */
+				return (g_rr_nodes[from_node].yhigh());
 			} else { /* Going down */
-				return (rr_node[to_node].yhigh());
+				return (g_rr_nodes[to_node].yhigh());
 			}
 		} else {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
