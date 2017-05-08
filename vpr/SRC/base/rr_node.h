@@ -54,18 +54,18 @@
 typedef class RR_Node {
 
 private:
-	short xlow;
-	short ylow;
-	short length;
+	short xlow_;
+	short ylow_;
+	short length_;
 	
-	short ptc_num;
-	short cost_index;
-	short fan_in;
+	short ptc_num_;
+	short cost_index_;
+	short fan_in_;
 
-	short capacity;
-	short occ;
+	short capacity_;
+	short occ_;
 
-	enum e_direction direction;
+	enum e_direction direction_;
 	t_rr_type type_;
 
     //Note: we use manually managed memory to save space vs std::vector;
@@ -79,25 +79,25 @@ private:
 public:
 	/* Member functions */
     t_rr_type type() const { return type_; }
-	const char *rr_get_type_string() const; /* Retrieve rr_type as a string */
+	const char *type_string() const; /* Retrieve rr_type as a string */
 
 	short num_edges() const { return num_edges_; }
     int edge_sink_node(int iedge) const { return edge_sink_nodes_[iedge]; }
     short edge_switch(int iedge) const { return edge_switches_[iedge]; }
 
-	short get_xlow() const;
-	short get_ylow() const;
-	short get_xhigh() const;
-	short get_yhigh() const;
+	short xlow() const;
+	short ylow() const;
+	short xhigh() const;
+	short yhigh() const;
 
-	short get_ptc_num() const;
-	short get_cost_index() const;
-	short get_capacity() const;
-	short get_fan_in() const;
-	short get_occ() const;
-    signed short get_length() const;
-	enum e_direction get_direction() const;
-	enum e_drivers get_drivers() const;
+	short ptc_num() const;
+	short cost_index() const;
+	short capacity() const;
+	short fan_in() const;
+	short occ() const;
+    signed short length() const;
+	enum e_direction direction() const;
+	enum e_drivers drivers() const;
     float R() const { return R_; }
     float C() const { return C_; }
 
@@ -113,8 +113,8 @@ public:
     void set_R(float new_R) { R_ = new_R; }
     void set_C(float new_C) { C_ = new_C; }
 
-    void set_edge_sink_node(short iedge, int sink_node) { edge_sink_nodes_[iedge] = sink_node; }
-    void set_edge_switch(short iedge, short switch_index) { edge_switches_[iedge] = switch_index; }
+    void set_edge_sink_node(short iedge, int sink_node);
+    void set_edge_switch(short iedge, short switch_index);
 
 } t_rr_node;
 

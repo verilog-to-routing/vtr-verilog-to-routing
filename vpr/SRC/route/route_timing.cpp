@@ -600,7 +600,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		}
 	}
 
-	VTR_ASSERT_MSG(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity(), "SOURCE should never be congested");
+	VTR_ASSERT_MSG(rr_node[rt_root->inode].occ() <= rr_node[rt_root->inode].capacity(), "SOURCE should never be congested");
 
 	// route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
 	free_route_tree(rt_root);
@@ -646,7 +646,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
         std::string sink_block_name = block[sink_block].name;
 
         vtr::printf_info("Cannot route net '%s' from: block '%s' pin %d, to: block '%s' pin %d, target rr node: %d %s at (%d,%d) -- no possible path.\n",
-                   g_clbs_nlist.net[inet].name, src_block_name.c_str(), src_block_pin, sink_block_name.c_str(), sink_block_pin, target_node, rr_node[target_node].rr_get_type_string(), rr_node[target_node].get_xlow(), rr_node[target_node].get_ylow());
+                   g_clbs_nlist.net[inet].name, src_block_name.c_str(), src_block_pin, sink_block_name.c_str(), sink_block_pin, target_node, rr_node[target_node].type_string(), rr_node[target_node].xlow(), rr_node[target_node].ylow());
 		reset_path_costs();
 		free_route_tree(rt_root);
 		return (false);
@@ -702,7 +702,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
             std::string sink_block_name = block[sink_block].name;
 
             vtr::printf_info("Cannot route net '%s' from: block '%s' pin %d, to: block '%s' pin %d, target rr node: %d %s at (%d,%d) -- no possible path.\n",
-                       g_clbs_nlist.net[inet].name, src_block_name.c_str(), src_block_pin, sink_block_name.c_str(), sink_block_pin, target_node, rr_node[target_node].rr_get_type_string(), rr_node[target_node].get_xlow(), rr_node[target_node].get_ylow());
+                       g_clbs_nlist.net[inet].name, src_block_name.c_str(), src_block_pin, sink_block_name.c_str(), sink_block_pin, target_node, rr_node[target_node].type_string(), rr_node[target_node].xlow(), rr_node[target_node].ylow());
 
 			reset_path_costs();
 			free_route_tree(rt_root);
@@ -881,8 +881,8 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 	float R_upstream = current->R_upstream;
 	int num_edges = rr_node[inode].num_edges();
 
-	int target_x = rr_node[target_node].get_xhigh();
-	int target_y = rr_node[target_node].get_yhigh();
+	int target_x = rr_node[target_node].xhigh();
+	int target_y = rr_node[target_node].yhigh();
 	bool high_fanout = g_clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM;
 
 	for (int iconn = 0; iconn < num_edges; iconn++) {
@@ -890,17 +890,17 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 
 		if (high_fanout) {
 			// since target node is an IPIN, xhigh and xlow are the same (same for y values)
-			if (rr_node[to_node].get_xhigh() < target_x - highfanout_rlim
-					|| rr_node[to_node].get_xlow() > target_x + highfanout_rlim
-					|| rr_node[to_node].get_yhigh() < target_y - highfanout_rlim
-					|| rr_node[to_node].get_ylow() > target_y + highfanout_rlim){
+			if (rr_node[to_node].xhigh() < target_x - highfanout_rlim
+					|| rr_node[to_node].xlow() > target_x + highfanout_rlim
+					|| rr_node[to_node].yhigh() < target_y - highfanout_rlim
+					|| rr_node[to_node].ylow() > target_y + highfanout_rlim){
 				continue; /* Node is outside high fanout bin. */
 			}
 		}
-		else if (rr_node[to_node].get_xhigh() < route_bb[inet].xmin
-				|| rr_node[to_node].get_xlow() > route_bb[inet].xmax
-				|| rr_node[to_node].get_yhigh() < route_bb[inet].ymin
-				|| rr_node[to_node].get_ylow() > route_bb[inet].ymax)
+		else if (rr_node[to_node].xhigh() < route_bb[inet].xmin
+				|| rr_node[to_node].xlow() > route_bb[inet].xmax
+				|| rr_node[to_node].yhigh() < route_bb[inet].ymin
+				|| rr_node[to_node].ylow() > route_bb[inet].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
 
@@ -911,8 +911,8 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 
 		t_rr_type to_type = rr_node[to_node].type();
 		if (to_type == IPIN
-            && (rr_node[to_node].get_xhigh() != target_x
-            || rr_node[to_node].get_yhigh() != target_y))
+            && (rr_node[to_node].xhigh() != target_x
+            || rr_node[to_node].yhigh() != target_y))
 			continue;
 
 		/* new_back_pcost stores the "known" part of the cost to this node -- the   *
@@ -971,7 +971,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
 		return get_lookahead_map_cost(inode, target_node, criticality_fac);
 #else
 		num_segs_same_dir = get_expected_segs_to_target(inode, target_node, &num_segs_ortho_dir);
-		cost_index = rr_node[inode].get_cost_index();
+		cost_index = rr_node[inode].cost_index();
 		ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
 
 		cong_cost =   num_segs_same_dir * rr_indexed_data[cost_index].base_cost
@@ -1017,18 +1017,18 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
 
 	
-	target_x = rr_node[target_node].get_xlow();
-	target_y = rr_node[target_node].get_ylow();
-	cost_index = rr_node[inode].get_cost_index();
+	target_x = rr_node[target_node].xlow();
+	target_y = rr_node[target_node].ylow();
+	cost_index = rr_node[inode].cost_index();
 	inv_length = rr_indexed_data[cost_index].inv_length;
 	ortho_cost_index = rr_indexed_data[cost_index].ortho_cost_index;
 	ortho_inv_length = rr_indexed_data[ortho_cost_index].inv_length;
 	rr_type = rr_node[inode].type();
 
 	if (rr_type == CHANX) {
-		ylow = rr_node[inode].get_ylow();
-		xhigh = rr_node[inode].get_xhigh();
-		xlow = rr_node[inode].get_xlow();
+		ylow = rr_node[inode].ylow();
+		xhigh = rr_node[inode].xhigh();
+		xlow = rr_node[inode].xlow();
 
 		/* Count vertical (orthogonal to inode) segs first. */
 
@@ -1058,9 +1058,9 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	}
 
 	else { /* inode is a CHANY */
-		ylow = rr_node[inode].get_ylow();
-		yhigh = rr_node[inode].get_yhigh();
-		xlow = rr_node[inode].get_xlow();
+		ylow = rr_node[inode].ylow();
+		yhigh = rr_node[inode].yhigh();
+		xlow = rr_node[inode].xlow();
 
 		/* Count horizontal (orthogonal to inode) segs first. */
 
@@ -1121,7 +1121,7 @@ static void update_rr_base_costs(int inet) {
    done within a rectangular 'bin' centered around a target (as opposed to the entire net bounding box) the size of which is returned by this function. */
 static int mark_node_expansion_by_bin(int inet, int target_node,
 		t_rt_node * rt_node) {
-	int target_xlow, target_ylow, target_xhigh, target_yhigh;
+	int tarxlow, tarylow, tarxhigh, taryhigh;
 	int rlim = 1;
 	int inode;
 	float area;
@@ -1129,10 +1129,10 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	t_linked_rt_edge *linked_rt_edge;
 	t_rt_node * child_node;
 
-	target_xlow = rr_node[target_node].get_xlow();
-	target_ylow = rr_node[target_node].get_ylow();
-	target_xhigh = rr_node[target_node].get_xhigh();
-	target_yhigh = rr_node[target_node].get_yhigh();
+	tarxlow = rr_node[target_node].xlow();
+	tarylow = rr_node[target_node].ylow();
+	tarxhigh = rr_node[target_node].xhigh();
+	taryhigh = rr_node[target_node].yhigh();
 
     int num_sinks = g_clbs_nlist.net[inet].num_sinks();
 
@@ -1166,10 +1166,10 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 			child_node = linked_rt_edge->child;
 			inode = child_node->inode;
 			if (!(rr_node[inode].type() == IPIN || rr_node[inode].type() == SINK)) {
-				if (rr_node[inode].get_xlow() <= target_xhigh + rlim
-						&& rr_node[inode].get_xhigh() >= target_xhigh - rlim
-						&& rr_node[inode].get_ylow() <= target_yhigh + rlim
-						&& rr_node[inode].get_yhigh() >= target_yhigh - rlim) {
+				if (rr_node[inode].xlow() <= tarxhigh + rlim
+						&& rr_node[inode].xhigh() >= tarxhigh - rlim
+						&& rr_node[inode].ylow() <= taryhigh + rlim
+						&& rr_node[inode].yhigh() >= taryhigh - rlim) {
 					success = true;
 				}
 			}
@@ -1191,7 +1191,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	}
 
 	/* adjust rlim to account for width/height of block containing the target sink */
-	int target_span = max( target_xhigh - target_xlow, target_yhigh - target_ylow );
+	int target_span = max( tarxhigh - tarxlow, taryhigh - tarylow );
 	rlim += target_span;
 
 	/* redetermine expansion based on rlim */
@@ -1200,10 +1200,10 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		child_node = linked_rt_edge->child;
 		inode = child_node->inode;
 		if (!(rr_node[inode].type() == IPIN || rr_node[inode].type() == SINK)) {
-			if (rr_node[inode].get_xlow() <= target_xhigh + rlim
-					&& rr_node[inode].get_xhigh() >= target_xhigh - rlim
-					&& rr_node[inode].get_ylow() <= target_yhigh + rlim
-					&& rr_node[inode].get_yhigh() >= target_yhigh - rlim) {
+			if (rr_node[inode].xlow() <= tarxhigh + rlim
+					&& rr_node[inode].xhigh() >= tarxhigh - rlim
+					&& rr_node[inode].ylow() <= taryhigh + rlim
+					&& rr_node[inode].yhigh() >= taryhigh - rlim) {
 				child_node->re_expand = true;
 			} else {
 				child_node->re_expand = false;
@@ -1267,8 +1267,8 @@ static bool should_route_net(int inet, const CBRR& connections_inf) {
 
 	for (;;) {
 		int inode = tptr->index;
-		int occ = rr_node[inode].get_occ();
-		int capacity = rr_node[inode].get_capacity();
+		int occ = rr_node[inode].occ();
+		int capacity = rr_node[inode].capacity();
 
 		if (occ > capacity) {
 			return true; /* overuse detected */
@@ -1512,7 +1512,7 @@ static OveruseInfo calculate_overuse_info() {
     size_t worst_overuse = 0;
 	int inode;
 	for(inode = 0; inode < num_rr_nodes; inode++){
-        int overuse = rr_node[inode].get_occ() - rr_node[inode].get_capacity();
+        int overuse = rr_node[inode].occ() - rr_node[inode].capacity();
 		if(overuse > 0) {
 			overused_nodes += 1;
 
@@ -1529,9 +1529,9 @@ static WirelengthInfo calculate_wirelength_info() {
 
 	for (int i = 0; i < num_rr_nodes; ++i) {
 		if (rr_node[i].type() == CHANX || rr_node[i].type() == CHANY) {
-			available_wirelength += rr_node[i].get_capacity() + 
-					rr_node[i].get_xhigh() - rr_node[i].get_xlow() + 
-					rr_node[i].get_yhigh() - rr_node[i].get_ylow();
+			available_wirelength += rr_node[i].capacity() + 
+					rr_node[i].xhigh() - rr_node[i].xlow() + 
+					rr_node[i].yhigh() - rr_node[i].ylow();
 		}
 	}
 

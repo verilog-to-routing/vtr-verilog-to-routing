@@ -84,14 +84,14 @@ static void dump_rr_nodes( fstream &file ){
 
 		/* a node's info is printed entirely on one line */
 		file << " node_" << inode << ": ";
-		file << "rr_type(" << node.rr_get_type_string() << ") ";
-		file << "xlow(" << node.get_xlow() << ") ";
-		file << "xhigh(" << node.get_xhigh() << ") ";
-		file << "ylow(" << node.get_ylow() << ") ";
-		file << "yhigh(" << node.get_yhigh() << ") ";
-		file << "ptc_num(" << node.get_ptc_num() << ") ";
-		file << "fan_in(" << node.get_fan_in() << ") ";
-		file << "direction(" << (int)node.get_direction() << ") ";
+		file << "rr_type(" << node.type_string() << ") ";
+		file << "xlow(" << node.xlow() << ") ";
+		file << "xhigh(" << node.xhigh() << ") ";
+		file << "ylow(" << node.ylow() << ") ";
+		file << "yhigh(" << node.yhigh() << ") ";
+		file << "ptc_num(" << node.ptc_num() << ") ";
+		file << "fan_in(" << node.fan_in() << ") ";
+		file << "direction(" << (int)node.direction() << ") ";
 		file << "R(" << node.R() << ") ";
 		file << "C(" << node.C() << ") ";
 

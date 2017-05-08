@@ -778,7 +778,7 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 	auto inode = rt_root->inode;
 
 	// illegal tree, propagate information back up (actual removal done at an upstream branch point)
-	if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) return true;
+	if (rr_node[inode].occ() > rr_node[inode].capacity()) return true;
 	// legal routing, allowed to do calculations now
 
 	// can calculate R_upstream from just upstream information without considering children
@@ -849,7 +849,7 @@ bool prune_route_tree(t_rt_node* rt_root, float pres_fac, CBRR& connections_inf)
 
 	// SOURCE node should never be congested
 	VTR_ASSERT(rt_root != nullptr);
-	VTR_ASSERT(rr_node[rt_root->inode].get_occ() <= rr_node[rt_root->inode].get_capacity());
+	VTR_ASSERT(rr_node[rt_root->inode].occ() <= rr_node[rt_root->inode].capacity());
 
 	// prune illegal branches from root
 	auto edge = rt_root->u.child_list;
@@ -978,7 +978,7 @@ static void print_node_congestion(const t_rt_node* rt_node) {
 	const auto& node_inf = rr_node_route_inf[inode];
 	const auto& node = rr_node[inode];
 	vtr::printf_info("%2d %2d|%-6d-> ", node_inf.pres_cost, rt_node->Tdel,
-		node.get_occ(), node.get_capacity(), inode);		
+		node.occ(), node.capacity(), inode);		
 }
 
 
@@ -1085,8 +1085,8 @@ bool is_valid_route_tree(const t_rt_node* root) {
 	float C_downstream_children {0};
 	// sink, must not be congested
 	if (!edge) {
-		int occ = rr_node[inode].get_occ();
-		int capacity = rr_node[inode].get_capacity();
+		int occ = rr_node[inode].occ();
+		int capacity = rr_node[inode].capacity();
 		if (occ > capacity) {
 			vtr::printf_info("SINK %d occ %d > cap %d\n", inode, occ, capacity);
 			return false;
@@ -1126,7 +1126,7 @@ bool is_valid_route_tree(const t_rt_node* root) {
 //Returns true if the route tree rooted at 'root' is not congested
 bool is_uncongested_route_tree(const t_rt_node* root) {
     int inode = root->inode;
-    if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) {
+    if (rr_node[inode].occ() > rr_node[inode].capacity()) {
         //This node is congested
         return false;
     }

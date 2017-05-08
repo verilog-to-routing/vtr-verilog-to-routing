@@ -300,10 +300,10 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 	for (iconn = 0; iconn < num_edges; iconn++) {
 		to_node = rr_node[inode].edge_sink_node(iconn);
 
-		if (rr_node[to_node].get_xhigh() < route_bb[inet].xmin
-				|| rr_node[to_node].get_xlow() > route_bb[inet].xmax
-				|| rr_node[to_node].get_yhigh() < route_bb[inet].ymin
-				|| rr_node[to_node].get_ylow() > route_bb[inet].ymax)
+		if (rr_node[to_node].xhigh() < route_bb[inet].xmin
+				|| rr_node[to_node].xlow() > route_bb[inet].xmax
+				|| rr_node[to_node].yhigh() < route_bb[inet].ymin
+				|| rr_node[to_node].ylow() > route_bb[inet].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
 

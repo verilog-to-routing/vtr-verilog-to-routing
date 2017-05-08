@@ -34,7 +34,7 @@ using namespace std;
 
 static void load_channel_occupancies(int **chanx_occ, int **chany_occ);
 
-static void get_length_and_bends_stats(void);
+static void length_and_bends_stats(void);
 
 static void get_channel_occupancy_stats(void);
 
@@ -57,7 +57,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	float area, used_area;
 	int i, j;
 
-	get_length_and_bends_stats();
+	length_and_bends_stats();
 	get_channel_occupancy_stats();
 
 	vtr::printf_info("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
@@ -133,7 +133,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		print_wirelen_prob_dist();
 }
 
-void get_length_and_bends_stats(void) {
+void length_and_bends_stats(void) {
 
 	/* Figures out maximum, minimum and average number of bends and net length   *
 	 * in the routing.                                                           */
@@ -285,14 +285,14 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 			}
 
 			else if (rr_type == CHANX) {
-				j = rr_node[inode].get_ylow();
-				for (i = rr_node[inode].get_xlow(); i <= rr_node[inode].get_xhigh(); i++)
+				j = rr_node[inode].ylow();
+				for (i = rr_node[inode].xlow(); i <= rr_node[inode].xhigh(); i++)
 					chanx_occ[i][j]++;
 			}
 
 			else if (rr_type == CHANY) {
-				i = rr_node[inode].get_xlow();
-				for (j = rr_node[inode].get_ylow(); j <= rr_node[inode].get_yhigh(); j++)
+				i = rr_node[inode].xlow();
+				for (j = rr_node[inode].ylow(); j <= rr_node[inode].yhigh(); j++)
 					chany_occ[i][j]++;
 			}
 
@@ -340,8 +340,8 @@ void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
 
 		else if (curr_type == CHANX || curr_type == CHANY) {
 			segments++;
-			length += 1 + rr_node[inode].get_xhigh() - rr_node[inode].get_xlow()
-					+ rr_node[inode].get_yhigh() - rr_node[inode].get_ylow();
+			length += 1 + rr_node[inode].xhigh() - rr_node[inode].xlow()
+					+ rr_node[inode].yhigh() - rr_node[inode].ylow();
 
 			if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
 				bends++;

@@ -517,11 +517,11 @@ void build_rr_graph(
 	if (graph_type == GRAPH_GLOBAL) {
 		for (int i = 0; i < num_rr_nodes; i++) {
 			if (rr_node[i].type() == CHANX) {
-				int ylow = rr_node[i].get_ylow();
+				int ylow = rr_node[i].ylow();
 				rr_node[i].set_capacity( chan_width.x_list[ylow] );
 			}
 			if (rr_node[i].type() == CHANY) {
-				int xlow = rr_node[i].get_xlow();
+				int xlow = rr_node[i].xlow();
 				rr_node[i].set_capacity( chan_width.y_list[xlow] );
 			}
 		}
@@ -781,7 +781,7 @@ static void remap_rr_node_switch_indices(map<int,int> *switch_fanin){
 			t_rr_node to_node = rr_node[ from_node.edge_sink_node(iedge) ];
 			/* get the switch which this edge uses and its fanin */
 			int switch_index = from_node.edge_switch(iedge);
-			int fanin = to_node.get_fan_in();
+			int fanin = to_node.fan_in();
 
 			if (switch_fanin[switch_index].count(UNDEFINED) == 1){
 				fanin = UNDEFINED;
@@ -1044,7 +1044,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 	 * know the number of OPINs driving each mux presently */
 	int *opin_mux_size = (int *) vtr::malloc(sizeof(int) * num_nodes);
 	for (int i = 0; i < num_nodes; ++i) {
-		opin_mux_size[i] = L_rr_node[i].get_fan_in();
+		opin_mux_size[i] = L_rr_node[i].fan_in();
 	}
 
 	/* Build channels */
@@ -1289,7 +1289,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 				L_rr_node[inode].set_edge_sink_node(ipin, to_node);
 				L_rr_node[inode].set_edge_switch(ipin, delayless_switch);
 
-				L_rr_node[to_node].set_fan_in(L_rr_node[to_node].get_fan_in() + 1);
+				L_rr_node[to_node].set_fan_in(L_rr_node[to_node].fan_in() + 1);
 			}
 
 			L_rr_node[inode].set_cost_index(SOURCE_COST_INDEX);
@@ -1338,7 +1338,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 			L_rr_node[inode].set_edge_sink_node(0, to_node);
 			L_rr_node[inode].set_edge_switch(0, delayless_switch);
 
-			L_rr_node[to_node].set_fan_in(L_rr_node[to_node].get_fan_in() + 1);
+			L_rr_node[to_node].set_fan_in(L_rr_node[to_node].fan_in() + 1);
 
 			L_rr_node[inode].set_cost_index(IPIN_COST_INDEX);
 			L_rr_node[inode].set_type(IPIN);
@@ -1572,7 +1572,7 @@ void alloc_and_load_edges_and_switches(t_rr_node * L_rr_node, const int inode,
 		L_rr_node[inode].set_edge_sink_node(i, list_ptr->edge);
 		L_rr_node[inode].set_edge_switch(i, list_ptr->iswitch);
 
-		L_rr_node[list_ptr->edge].set_fan_in(L_rr_node[list_ptr->edge].get_fan_in() + 1);
+		L_rr_node[list_ptr->edge].set_fan_in(L_rr_node[list_ptr->edge].fan_in() + 1);
 
 		/* Unmark the edge since we are done considering fanout from node. */
 		L_rr_edge_done[list_ptr->edge] = false;
@@ -2226,23 +2226,23 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	t_rr_type rr_type = L_rr_node[inode].type();
 
 	/* Make sure we don't overrun const arrays */
-	VTR_ASSERT((L_rr_node[inode].get_direction()) < (int)(sizeof(direction_name) / sizeof(char *)));
-	VTR_ASSERT((L_rr_node[inode].get_drivers() + 1) < (int)(sizeof(drivers_name) / sizeof(char *)));
+	VTR_ASSERT((L_rr_node[inode].direction()) < (int)(sizeof(direction_name) / sizeof(char *)));
+	VTR_ASSERT((L_rr_node[inode].drivers() + 1) < (int)(sizeof(drivers_name) / sizeof(char *)));
 
-	fprintf(fp, "Node: %d %s ", inode, L_rr_node[inode].rr_get_type_string());
-	if ((L_rr_node[inode].get_xlow() == L_rr_node[inode].get_xhigh())
-			&& (L_rr_node[inode].get_ylow() == L_rr_node[inode].get_yhigh())) {
+	fprintf(fp, "Node: %d %s ", inode, L_rr_node[inode].type_string());
+	if ((L_rr_node[inode].xlow() == L_rr_node[inode].xhigh())
+			&& (L_rr_node[inode].ylow() == L_rr_node[inode].yhigh())) {
 		fprintf(fp, "(%d, %d) ", 
-				L_rr_node[inode].get_xlow(), L_rr_node[inode].get_ylow());
+				L_rr_node[inode].xlow(), L_rr_node[inode].ylow());
 	} else {
 		fprintf(fp, "(%d, %d) to (%d, %d) ", 
-				L_rr_node[inode].get_xlow(), L_rr_node[inode].get_ylow(), 
-				L_rr_node[inode].get_xhigh(), L_rr_node[inode].get_yhigh());
+				L_rr_node[inode].xlow(), L_rr_node[inode].ylow(), 
+				L_rr_node[inode].xhigh(), L_rr_node[inode].yhigh());
 	}
-	fprintf(fp, "Ptc_num: %d ", L_rr_node[inode].get_ptc_num());
-	fprintf(fp, "Length: %d ", L_rr_node[inode].get_length());
-	fprintf(fp, "Direction: %s ", direction_name[L_rr_node[inode].get_direction() + 1]);
-	fprintf(fp, "Drivers: %s ", drivers_name[L_rr_node[inode].get_drivers() + 1]);
+	fprintf(fp, "Ptc_num: %d ", L_rr_node[inode].ptc_num());
+	fprintf(fp, "Length: %d ", L_rr_node[inode].length());
+	fprintf(fp, "Direction: %s ", direction_name[L_rr_node[inode].direction()]);
+	fprintf(fp, "Drivers: %s ", drivers_name[L_rr_node[inode].drivers() + 1]);
 	fprintf(fp, "\n");
 
 	fprintf(fp, "%d edge(s):", L_rr_node[inode].num_edges());
@@ -2255,12 +2255,12 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 		fprintf(fp, " %d", L_rr_node[inode].edge_switch(iconn));
 	fprintf(fp, "\n");
 
-	fprintf(fp, "Occ: %d  Capacity: %d\n", L_rr_node[inode].get_occ(),
-			L_rr_node[inode].get_capacity());
+	fprintf(fp, "Occ: %d  Capacity: %d\n", L_rr_node[inode].occ(),
+			L_rr_node[inode].capacity());
 	if (rr_type != INTRA_CLUSTER_EDGE) {
 		fprintf(fp, "R: %g  C: %g\n", L_rr_node[inode].R(), L_rr_node[inode].C());
 	}
-	fprintf(fp, "Cost_index: %d\n", L_rr_node[inode].get_cost_index());
+	fprintf(fp, "Cost_index: %d\n", L_rr_node[inode].cost_index());
 }
 
 /* Prints all the rr_indexed_data of index to file fp.   */

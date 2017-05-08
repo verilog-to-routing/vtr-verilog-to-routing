@@ -51,8 +51,8 @@ void check_rr_graph(const t_graph_type graph_type,
 
 		/* Ignore any uninitialized rr_graph nodes */
 		if ((rr_node[inode].type() == SOURCE) 
-				&& (rr_node[inode].get_xlow() == 0) && (rr_node[inode].get_ylow() == 0)
-				&& (rr_node[inode].get_xhigh() == 0) && (rr_node[inode].get_yhigh() == 0)) {
+				&& (rr_node[inode].xlow() == 0) && (rr_node[inode].ylow() == 0)
+				&& (rr_node[inode].xhigh() == 0) && (rr_node[inode].yhigh() == 0)) {
 			continue;
 		}
 
@@ -142,16 +142,16 @@ void check_rr_graph(const t_graph_type graph_type,
 				 */
 
 				if(rr_type == IPIN) {
-					type = grid[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()].type;
-					if(Fc_in[type->index][rr_node[inode].get_ptc_num()][0] == 0) {
+					type = grid[rr_node[inode].xlow()][rr_node[inode].ylow()].type;
+					if(Fc_in[type->index][rr_node[inode].ptc_num()][0] == 0) {
 						is_chain = true;
 					}
 				}
 
-				is_fringe =((rr_node[inode].get_xlow() == 1)
-						|| (rr_node[inode].get_ylow() == 1)
-						|| (rr_node[inode].get_xhigh() == L_nx)
-						|| (rr_node[inode].get_yhigh() == L_ny));
+				is_fringe =((rr_node[inode].xlow() == 1)
+						|| (rr_node[inode].ylow() == 1)
+						|| (rr_node[inode].xhigh() == L_nx)
+						|| (rr_node[inode].yhigh() == L_ny));
 				is_wire =(rr_node[inode].type() == CHANX
 						|| rr_node[inode].type() == CHANY);
 
@@ -162,7 +162,7 @@ void check_rr_graph(const t_graph_type graph_type,
 					vtr::printf_warning(__FILE__, __LINE__, 
 						"in check_rr_graph: fringe node %d %s at (%d,%d) has no fanin.\n"
 						"\t This is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
-						inode, rr_node[inode].rr_get_type_string(), rr_node[inode].get_xlow(), rr_node[inode].get_ylow());
+						inode, rr_node[inode].type_string(), rr_node[inode].xlow(), rr_node[inode].ylow());
 					is_fringe_warning_sent = true;
 				}
 			}
@@ -189,12 +189,12 @@ static bool rr_node_is_global_clb_ipin(int inode) {
 	int ipin;
 	t_type_ptr type;
 
-	type = grid[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()].type;
+	type = grid[rr_node[inode].xlow()][rr_node[inode].ylow()].type;
 
 	if (rr_node[inode].type() != IPIN)
 		return (false);
 
-	ipin = rr_node[inode].get_ptc_num();
+	ipin = rr_node[inode].ptc_num();
 
 	return type->is_global_pin[ipin];
 }
@@ -212,13 +212,13 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	float C, R;
 
 	rr_type = rr_node[inode].type();
-	xlow = rr_node[inode].get_xlow();
-	xhigh = rr_node[inode].get_xhigh();
-	ylow = rr_node[inode].get_ylow();
-	yhigh = rr_node[inode].get_yhigh();
-	ptc_num = rr_node[inode].get_ptc_num();
-	capacity = rr_node[inode].get_capacity();
-	cost_index = rr_node[inode].get_cost_index();
+	xlow = rr_node[inode].xlow();
+	xhigh = rr_node[inode].xhigh();
+	ylow = rr_node[inode].ylow();
+	yhigh = rr_node[inode].yhigh();
+	ptc_num = rr_node[inode].ptc_num();
+	capacity = rr_node[inode].capacity();
+	cost_index = rr_node[inode].cost_index();
 	type = NULL;
 
 	if (xlow > xhigh || ylow > yhigh) {
@@ -400,9 +400,9 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
                 int seg_index = rr_indexed_data[cost_index].seg_index;
                 const char* seg_name = segment_inf[seg_index].name;
                 vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) has no out-going edges.\n", 
-                        inode, rr_node[inode].rr_get_type_string(), seg_name, xlow, ylow, xhigh, yhigh);
+                        inode, rr_node[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh);
             } else {
-                vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) ptc=%d has no out-going edges.\n", inode, rr_node[inode].rr_get_type_string(), xlow, ylow, rr_node[inode].get_ptc_num());
+                vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) ptc=%d has no out-going edges.\n", inode, rr_node[inode].type_string(), xlow, ylow, rr_node[inode].ptc_num());
             }
 		}
 	}

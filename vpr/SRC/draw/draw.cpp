@@ -401,7 +401,7 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 	} else {
 		num_congested = 0;
 		for (inode = 0; inode < num_rr_nodes; inode++) {
-			if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) {
+			if (rr_node[inode].occ() > rr_node[inode].capacity()) {
 				num_congested++;
 			}
 		}
@@ -717,8 +717,8 @@ static void draw_congestion(void) {
     float min_congestion_ratio = 1.;
     float max_congestion_ratio = min_congestion_ratio;
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		short occ = rr_node[inode].get_occ();
-        short capacity = rr_node[inode].get_capacity();
+		short occ = rr_node[inode].occ();
+        short capacity = rr_node[inode].capacity();
 
         float congestion_ratio = float(occ) / capacity;
 
@@ -732,8 +732,8 @@ static void draw_congestion(void) {
     vtr::PlasmaColorMap cmap(min_congestion_ratio, max_congestion_ratio);
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		short occ = rr_node[inode].get_occ();
-        short capacity = rr_node[inode].get_capacity();
+		short occ = rr_node[inode].occ();
+        short capacity = rr_node[inode].capacity();
 
         float congestion_ratio = float(occ) / capacity;
 		if (congestion_ratio > 1.) {
@@ -744,11 +744,11 @@ static void draw_congestion(void) {
 			switch (rr_node[inode].type()) {
 			case CHANX:
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
-					occ > rr_node[inode].get_capacity()) {
+					occ > rr_node[inode].capacity()) {
 					draw_rr_chan(inode, congested_color);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
-					if (occ > rr_node[inode].get_capacity())
+					if (occ > rr_node[inode].capacity())
 						draw_rr_chan(inode, congested_color);
 					else
 						draw_rr_chan(inode, BLUE);
@@ -757,11 +757,11 @@ static void draw_congestion(void) {
 
 			case CHANY:
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
-					occ > rr_node[inode].get_capacity()) {
+					occ > rr_node[inode].capacity()) {
 					draw_rr_chan(inode, congested_color);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
-					if (occ > rr_node[inode].get_capacity())
+					if (occ > rr_node[inode].capacity())
 						draw_rr_chan(inode, congested_color);
 					else
 						draw_rr_chan(inode, BLUE);
@@ -771,11 +771,11 @@ static void draw_congestion(void) {
 			case IPIN:
 			case OPIN:
 				if (draw_state->show_congestion == DRAW_CONGESTED &&
-					occ > rr_node[inode].get_capacity()) {
+					occ > rr_node[inode].capacity()) {
 					draw_rr_pin(inode, congested_color);
 				}
 				else if (draw_state->show_congestion == DRAW_CONGESTED_AND_USED) {
-					if (occ > rr_node[inode].get_capacity())
+					if (occ > rr_node[inode].capacity())
 						draw_rr_pin(inode, congested_color);
 					else
 						draw_rr_pin(inode, BLUE);
@@ -867,7 +867,7 @@ static void draw_rr_chan(int inode, const t_color color) {
     VTR_ASSERT(type == CHANX || type == CHANY);
 
     t_bound_box bound_box = draw_get_rr_chan_bbox(inode);
-    e_direction dir = rr_node[inode].get_direction();
+    e_direction dir = rr_node[inode].direction();
 
     //We assume increasing direction, and swap if needed
     t_point start = bound_box.bottom_left();
@@ -898,8 +898,8 @@ static void draw_rr_chan(int inode, const t_color color) {
     int coord_min = -1;
     int coord_max = -1;
     if (type == CHANX) {
-        coord_min = rr_node[inode].get_xlow();
-        coord_max = rr_node[inode].get_xhigh();
+        coord_min = rr_node[inode].xlow();
+        coord_max = rr_node[inode].xhigh();
         if (dir == INC_DIRECTION) {
             mux_dir = RIGHT;
         } else {
@@ -907,8 +907,8 @@ static void draw_rr_chan(int inode, const t_color color) {
         }
     } else {
         VTR_ASSERT(type == CHANY);
-        coord_min = rr_node[inode].get_ylow();
-        coord_max = rr_node[inode].get_yhigh();
+        coord_min = rr_node[inode].ylow();
+        coord_max = rr_node[inode].yhigh();
         if (dir == INC_DIRECTION) {
             mux_dir = TOP;
         } else {
@@ -953,7 +953,7 @@ static void draw_rr_chan(int inode, const t_color color) {
 
         if (switchpoint_min == 0) {
             //Draw a mux at the start of each wire, labelled with it's size (#inputs)
-            draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, rr_node[inode].get_fan_in());
+            draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, rr_node[inode].fan_in());
         } else {
             //Draw arrows and label with switch point
             if (k == coord_min) {
@@ -976,7 +976,7 @@ static void draw_rr_chan(int inode, const t_color color) {
 
         if (switchpoint_max == 0) {
             //Draw a mux at the start of each wire, labelled with it's size (#inputs)
-            draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, rr_node[inode].get_fan_in());
+            draw_mux_with_size(start, mux_dir, WIRE_DRAWING_WIDTH, rr_node[inode].fan_in());
         } else {
             //Draw arrows and label with switch point
             if (k == coord_max) {
@@ -1016,12 +1016,12 @@ static void draw_rr_edges(int inode) {
 		return; /* Nothing to draw. */
 	}
 
-	from_ptc_num = rr_node[inode].get_ptc_num();
+	from_ptc_num = rr_node[inode].ptc_num();
 
 	for (int iedge = 0, l = rr_node[inode].num_edges(); iedge < l; iedge++) {
 		to_node = rr_node[inode].edge_sink_node(iedge);
 		to_type = rr_node[to_node].type();
-		to_ptc_num = rr_node[to_node].get_ptc_num();
+		to_ptc_num = rr_node[to_node].ptc_num();
 
 		switch (from_type) {
 
@@ -1212,16 +1212,16 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 	y1 = chanx_bbox.bottom(); 
 	x2 = chany_bbox.left();
 
-	chanx_xlow = rr_node[chanx_node].get_xlow();
-	chanx_y = rr_node[chanx_node].get_ylow();
-	chany_x = rr_node[chany_node].get_xlow();
-	chany_ylow = rr_node[chany_node].get_ylow();
+	chanx_xlow = rr_node[chanx_node].xlow();
+	chanx_y = rr_node[chanx_node].ylow();
+	chany_x = rr_node[chany_node].xlow();
+	chany_ylow = rr_node[chany_node].ylow();
 
 	if (chanx_xlow <= chany_x) { /* Can draw connection going right */
 		/* Connection not at end of the CHANX segment. */
 		x1 = draw_coords->tile_x[chany_x] + draw_coords->get_tile_width();
 		
-		if (rr_node[chanx_node].get_direction() != BI_DIRECTION) {
+		if (rr_node[chanx_node].direction() != BI_DIRECTION) {
 			if (edge_dir == FROM_X_TO_Y) {
 				if ((chanx_track % 2) == 1) { /* If dec wire, then going left */
 					x1 = draw_coords->tile_x[chany_x + 1];
@@ -1237,7 +1237,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 		/* Connection not at end of the CHANY segment. */
 		y2 = draw_coords->tile_y[chanx_y] + draw_coords->get_tile_width();
 		
-		if (rr_node[chany_node].get_direction() != BI_DIRECTION) {
+		if (rr_node[chany_node].direction() != BI_DIRECTION) {
 			if (edge_dir == FROM_Y_TO_X) {
 				if ((chany_track % 2) == 1) { /* If dec wire, then going down */
 					y2 = draw_coords->tile_y[chanx_y + 1];
@@ -1284,10 +1284,10 @@ static void draw_chanx_to_chanx_edge(int from_node, int to_node,
 	y1 = from_chan.bottom();
 	y2 = to_chan.bottom();
 
-	from_xlow = rr_node[from_node].get_xlow();
-	from_xhigh = rr_node[from_node].get_xhigh();
-	to_xlow = rr_node[to_node].get_xlow();
-	to_xhigh = rr_node[to_node].get_xhigh();
+	from_xlow = rr_node[from_node].xlow();
+	from_xhigh = rr_node[from_node].xhigh();
+	to_xlow = rr_node[to_node].xlow();
+	to_xhigh = rr_node[to_node].xhigh();
 
 	if (to_xhigh < from_xlow) { /* From right to left */
 		/* UDSD Note by WMF: could never happen for INC wires, unless U-turn. For DEC 
@@ -1306,7 +1306,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int to_node,
 	 * will be drawn on top of each other for bidirectional connections.        */
 
 	else {
-		if (rr_node[to_node].get_direction() != BI_DIRECTION) {
+		if (rr_node[to_node].direction() != BI_DIRECTION) {
 			/* must connect to to_node's wire beginning at x2 */
 			if (to_track % 2 == 0) { /* INC wire starts at leftmost edge */
 				VTR_ASSERT(from_xlow < to_xlow);
@@ -1365,12 +1365,12 @@ static void draw_chany_to_chany_edge(int from_node, int to_node,
 	from_chan = draw_get_rr_chan_bbox(from_node);
 	to_chan = draw_get_rr_chan_bbox(to_node);
 
-	// from_x = rr_node[from_node].get_xlow();
-	// to_x = rr_node[to_node].get_xlow();
-	from_ylow = rr_node[from_node].get_ylow();
-	from_yhigh = rr_node[from_node].get_yhigh();
-	to_ylow = rr_node[to_node].get_ylow();
-	to_yhigh = rr_node[to_node].get_yhigh();
+	// from_x = rr_node[from_node].xlow();
+	// to_x = rr_node[to_node].xlow();
+	from_ylow = rr_node[from_node].ylow();
+	from_yhigh = rr_node[from_node].yhigh();
+	to_ylow = rr_node[to_node].ylow();
+	to_yhigh = rr_node[to_node].yhigh();
 
 	/* (x1, y1) point on from_node, (x2, y2) point on to_node. */
 
@@ -1391,7 +1391,7 @@ static void draw_chany_to_chany_edge(int from_node, int to_node,
 
 	/* UDSD Modification by WMF Begin */
 	else {
-		if (rr_node[to_node].get_direction() != BI_DIRECTION) {
+		if (rr_node[to_node].direction() != BI_DIRECTION) {
 			if (to_track % 2 == 0) { /* INC wire starts at bottom edge */
 
 				y2 = to_chan.bottom();
@@ -1444,25 +1444,25 @@ static t_bound_box draw_get_rr_chan_bbox (int inode) {
 
 	switch (rr_node[inode].type()) {
 		case CHANX:
-			bound_box.left() = draw_coords->tile_x[rr_node[inode].get_xlow()];
-	        bound_box.right() = draw_coords->tile_x[rr_node[inode].get_xhigh()] 
+			bound_box.left() = draw_coords->tile_x[rr_node[inode].xlow()];
+	        bound_box.right() = draw_coords->tile_x[rr_node[inode].xhigh()] 
 						        + draw_coords->get_tile_width();
-			bound_box.bottom() = draw_coords->tile_y[rr_node[inode].get_ylow()] 
+			bound_box.bottom() = draw_coords->tile_y[rr_node[inode].ylow()] 
 								+ draw_coords->get_tile_width() 
-								+ (1. + rr_node[inode].get_ptc_num());
-			bound_box.top() = draw_coords->tile_y[rr_node[inode].get_ylow()] 
+								+ (1. + rr_node[inode].ptc_num());
+			bound_box.top() = draw_coords->tile_y[rr_node[inode].ylow()] 
 								+ draw_coords->get_tile_width() 
-								+ (1. + rr_node[inode].get_ptc_num());
+								+ (1. + rr_node[inode].ptc_num());
 			break;
 		case CHANY:
-			bound_box.left() = draw_coords->tile_x[rr_node[inode].get_xlow()] 
+			bound_box.left() = draw_coords->tile_x[rr_node[inode].xlow()] 
 								+ draw_coords->get_tile_width() 
-								+ (1. + rr_node[inode].get_ptc_num());
-			bound_box.right() = draw_coords->tile_x[rr_node[inode].get_xlow()] 
+								+ (1. + rr_node[inode].ptc_num());
+			bound_box.right() = draw_coords->tile_x[rr_node[inode].xlow()] 
 								+ draw_coords->get_tile_width() 
-								+ (1. + rr_node[inode].get_ptc_num());
-			bound_box.bottom() = draw_coords->tile_y[rr_node[inode].get_ylow()];
-			bound_box.top() = draw_coords->tile_y[rr_node[inode].get_yhigh()]
+								+ (1. + rr_node[inode].ptc_num());
+			bound_box.bottom() = draw_coords->tile_y[rr_node[inode].ylow()];
+			bound_box.top() = draw_coords->tile_y[rr_node[inode].yhigh()]
 			                    + draw_coords->get_tile_width();
 			break;
 		default:
@@ -1516,9 +1516,9 @@ static void draw_rr_pin(int inode, const t_color& color) {
 	char str[vtr::BUFSIZE];
 	t_type_ptr type;
 
-	i = rr_node[inode].get_xlow();
-	j = rr_node[inode].get_ylow();
-	ipin = rr_node[inode].get_ptc_num();
+	i = rr_node[inode].xlow();
+	j = rr_node[inode].ylow();
+	ipin = rr_node[inode].ptc_num();
 	type = grid[i][j].type;
 	int width_offset = grid[i][j].width_offset;
 	int height_offset = grid[i][j].height_offset;
@@ -1558,13 +1558,13 @@ void draw_get_rr_pin_coords(t_rr_node* node, int iside,
 	float offset, xc, yc, step;
 	t_type_ptr type;
 
-	i = node->get_xlow() + width_offset;
-	j = node->get_ylow() + height_offset;
+	i = node->xlow() + width_offset;
+	j = node->ylow() + height_offset;
 
 	xc = draw_coords->tile_x[i];
 	yc = draw_coords->tile_y[j];
 
-	ipin = node->get_ptc_num();
+	ipin = node->ptc_num();
 	type = grid[i][j].type;
 	pins_per_sub_tile = grid[i][j].type->num_pins / grid[i][j].type->capacity;
 	k = ipin / pins_per_sub_tile;
@@ -1731,7 +1731,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
             }
             case CHANX: {
                 if (draw_state->draw_route_type == GLOBAL)
-                    chanx_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
+                    chanx_track[rr_node[inode].xlow()][rr_node[inode].ylow()]++;
 
                 int itrack = get_track_num(inode, chanx_track, chany_track);
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color);
@@ -1765,7 +1765,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
             }
             case CHANY: {
                 if (draw_state->draw_route_type == GLOBAL)
-                    chany_track[rr_node[inode].get_xlow()][rr_node[inode].get_ylow()]++;
+                    chany_track[rr_node[inode].xlow()][rr_node[inode].ylow()]++;
 
                 int itrack = get_track_num(inode, chanx_track, chany_track);
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color);
@@ -1814,13 +1814,13 @@ static int get_track_num(int inode, int **chanx_track, int **chany_track) {
 	t_rr_type rr_type;
 
 	if (get_draw_state_vars()->draw_route_type == DETAILED)
-		return (rr_node[inode].get_ptc_num());
+		return (rr_node[inode].ptc_num());
 
 	/* GLOBAL route stuff below. */
 
 	rr_type = rr_node[inode].type();
-	i = rr_node[inode].get_xlow(); /* NB: Global rr graphs must have only unit */
-	j = rr_node[inode].get_ylow(); /* length channel segments.                 */
+	i = rr_node[inode].xlow(); /* NB: Global rr graphs must have only unit */
+	j = rr_node[inode].ylow(); /* length channel segments.                 */
 
 	switch (rr_type) {
 	case CHANX:
@@ -1951,12 +1951,12 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
 			case IPIN:
 			case OPIN:		
 			{
-				int i = rr_node[inode].get_xlow();
-				int j = rr_node[inode].get_ylow();
+				int i = rr_node[inode].xlow();
+				int j = rr_node[inode].ylow();
 				t_type_ptr type = grid[i][j].type;
 				int width_offset = grid[i][j].width_offset;
 				int height_offset = grid[i][j].height_offset;
-				int ipin = rr_node[inode].get_ptc_num();
+				int ipin = rr_node[inode].ptc_num();
 				float xcen, ycen;
 				
 				int iside;
@@ -2025,11 +2025,11 @@ static void highlight_rr_nodes(float x, float y) {
 	hit_node = draw_check_rr_node_hit (x, y);
 
 	if (hit_node != OPEN) {
-		int xlow = rr_node[hit_node].get_xlow();
-		int xhigh = rr_node[hit_node].get_xhigh();
-		int ylow = rr_node[hit_node].get_ylow();
-		int yhigh = rr_node[hit_node].get_yhigh();
-		int ptc_num = rr_node[hit_node].get_ptc_num();
+		int xlow = rr_node[hit_node].xlow();
+		int xhigh = rr_node[hit_node].xhigh();
+		int ylow = rr_node[hit_node].ylow();
+		int yhigh = rr_node[hit_node].yhigh();
+		int ptc_num = rr_node[hit_node].ptc_num();
 
 		if (draw_state->draw_rr_node[hit_node].color != MAGENTA) {
 			/* If the node hasn't been clicked on before, highlight it
@@ -2039,9 +2039,9 @@ static void highlight_rr_nodes(float x, float y) {
 			draw_state->draw_rr_node[hit_node].node_highlighted = true;
 
 			sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) track: %d, %d edges, occ: %d, capacity: %d",
-				    hit_node, rr_node[hit_node].rr_get_type_string(),
+				    hit_node, rr_node[hit_node].type_string(),
 				    xlow, ylow, xhigh, yhigh, ptc_num, rr_node[hit_node].num_edges(), 
-				    rr_node[hit_node].get_occ(), rr_node[hit_node].get_capacity());
+				    rr_node[hit_node].occ(), rr_node[hit_node].capacity());
 
             rr_highlight_message = message;
 
@@ -2175,20 +2175,20 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
         if(hit_node != OPEN) {
             //Update message
 
-            std::string msg = vtr::string_fmt("Moused over rr node #%d: %s", hit_node, rr_node[hit_node].rr_get_type_string());
+            std::string msg = vtr::string_fmt("Moused over rr node #%d: %s", hit_node, rr_node[hit_node].type_string());
             if (rr_node[hit_node].type() == CHANX || rr_node[hit_node].type() == CHANY) {
-                int cost_index = rr_node[hit_node].get_cost_index();
+                int cost_index = rr_node[hit_node].cost_index();
 
                 int seg_index = rr_indexed_data[cost_index].seg_index;
 
                 msg += vtr::string_fmt(" track: %d len: %d seg_type: %s", 
-                            rr_node[hit_node].get_ptc_num(), 
-                            rr_node[hit_node].get_length(),
+                            rr_node[hit_node].ptc_num(), 
+                            rr_node[hit_node].length(),
                             draw_state->arch_info->Segments[seg_index].name
                         );
                 update_message(msg.c_str());
             } else if (rr_node[hit_node].type() == IPIN || rr_node[hit_node].type() == OPIN) {
-                msg += vtr::string_fmt(" pin: %d", rr_node[hit_node].get_ptc_num());
+                msg += vtr::string_fmt(" pin: %d", rr_node[hit_node].ptc_num());
                 update_message(msg.c_str());
             }
         } else {
@@ -2413,10 +2413,10 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	enum e_side iside;
 	t_type_ptr type;
 
-	direction = rr_node[chan_node].get_direction();
-	grid_x = rr_node[pin_node].get_xlow();
-	grid_y = rr_node[pin_node].get_ylow();
-	pin_num = rr_node[pin_node].get_ptc_num();
+	direction = rr_node[chan_node].direction();
+	grid_x = rr_node[pin_node].xlow();
+	grid_y = rr_node[pin_node].ylow();
+	pin_num = rr_node[pin_node].ptc_num();
 	chan_type = rr_node[chan_node].type();
 	type = grid[grid_x][grid_y].type;
 
@@ -2428,8 +2428,8 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 
 	int width = grid[grid_x][grid_y].type->width;
 	int height = grid[grid_x][grid_y].type->height;
-	chan_ylow = rr_node[chan_node].get_ylow();
-	chan_xlow = rr_node[chan_node].get_xlow();
+	chan_ylow = rr_node[chan_node].ylow();
+	chan_xlow = rr_node[chan_node].xlow();
 
 	start = -1;
 	end = -1;
@@ -2437,14 +2437,14 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	switch (chan_type) {
 
 	case CHANX:
-		start = rr_node[chan_node].get_xlow();
-		end = rr_node[chan_node].get_xhigh();
+		start = rr_node[chan_node].xlow();
+		end = rr_node[chan_node].xhigh();
 
 		if (is_opin(pin_num, type)) {
 			if (direction == INC_DIRECTION) {
-				end = rr_node[chan_node].get_xlow();
+				end = rr_node[chan_node].xlow();
 			} else if (direction == DEC_DIRECTION) {
-				start = rr_node[chan_node].get_xhigh();
+				start = rr_node[chan_node].xhigh();
 			}
 		}
 
@@ -2507,13 +2507,13 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 		break;
 
 	case CHANY:
-		start = rr_node[chan_node].get_ylow();
-		end = rr_node[chan_node].get_yhigh();
+		start = rr_node[chan_node].ylow();
+		end = rr_node[chan_node].yhigh();
 		if (is_opin(pin_num, type)) {
 			if (direction == INC_DIRECTION) {
-				end = rr_node[chan_node].get_ylow();
+				end = rr_node[chan_node].ylow();
 			} else if (direction == DEC_DIRECTION) {
-				start = rr_node[chan_node].get_yhigh();
+				start = rr_node[chan_node].yhigh();
 			}
 		}
 
@@ -2602,12 +2602,12 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	pin_side = TOP;
 
 	/* get opin coordinate */
-	opin_grid_x = rr_node[opin_node].get_xlow();
-	opin_grid_y = rr_node[opin_node].get_ylow();
+	opin_grid_x = rr_node[opin_node].xlow();
+	opin_grid_y = rr_node[opin_node].ylow();
 	opin_grid_x = opin_grid_x - grid[opin_grid_x][opin_grid_y].width_offset;
 	opin_grid_y = opin_grid_y - grid[opin_grid_x][opin_grid_y].height_offset;
 
-	opin_pin_num = rr_node[opin_node].get_ptc_num();
+	opin_pin_num = rr_node[opin_node].ptc_num();
 	type = grid[opin_grid_x][opin_grid_y].type;
 	
 	found = false;
@@ -2629,12 +2629,12 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	draw_get_rr_pin_coords(opin_node, pin_side, width_offset, height_offset, &x1, &y1);
 
 	/* get ipin coordinate */
-	ipin_grid_x = rr_node[ipin_node].get_xlow();
-	ipin_grid_y = rr_node[ipin_node].get_ylow();
+	ipin_grid_x = rr_node[ipin_node].xlow();
+	ipin_grid_y = rr_node[ipin_node].ylow();
 	ipin_grid_x = ipin_grid_x - grid[ipin_grid_x][ipin_grid_y].width_offset;
 	ipin_grid_y = ipin_grid_y - grid[ipin_grid_x][ipin_grid_y].height_offset;
 
-	ipin_pin_num = rr_node[ipin_node].get_ptc_num();
+	ipin_pin_num = rr_node[ipin_node].ptc_num();
 	type = grid[ipin_grid_x][ipin_grid_y].type;
 	
 	found = false;

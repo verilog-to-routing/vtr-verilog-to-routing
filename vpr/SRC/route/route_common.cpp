@@ -227,9 +227,9 @@ void get_serial_num(void) {
 		while (tptr != NULL) {
 			inode = tptr->index;
 			serial_num += (inet + 1)
-					* (rr_node[inode].get_xlow() * (nx + 1) - rr_node[inode].get_yhigh());
+					* (rr_node[inode].xlow() * (nx + 1) - rr_node[inode].yhigh());
 
-			serial_num -= rr_node[inode].get_ptc_num() * (inet + 1) * 10;
+			serial_num -= rr_node[inode].ptc_num() * (inet + 1) * 10;
 
 			serial_num -= rr_node[inode].type() * (inet + 1) * 100;
 			serial_num %= 2000000000; /* Prevent overflow */
@@ -395,7 +395,7 @@ bool feasible_routing(void) {
 	int inode;
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		if (rr_node[inode].get_occ() > rr_node[inode].get_capacity()) {
+		if (rr_node[inode].occ() > rr_node[inode].capacity()) {
 			return (false);
 		}
 	}
@@ -441,12 +441,12 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 	 * pres_cost is set according to the overuse that would result from having
 	 * ONE MORE net use this routing node.     */
 
-	int occ = rr_node[inode].get_occ() + add_or_sub;
+	int occ = rr_node[inode].occ() + add_or_sub;
 	rr_node[inode].set_occ(occ);
 	// can't have negative occupancy
 	VTR_ASSERT(occ >= 0);
 
-	int	capacity = rr_node[inode].get_capacity();
+	int	capacity = rr_node[inode].capacity();
 	if (occ < capacity) {
 		rr_node_route_inf[inode].pres_cost = 1.0;
 	} else {
@@ -467,8 +467,8 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 	int inode, occ, capacity;
 
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		occ = rr_node[inode].get_occ();
-		capacity = rr_node[inode].get_capacity();
+		occ = rr_node[inode].occ();
+		capacity = rr_node[inode].capacity();
 
 		if (occ > capacity) {
 			rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
@@ -619,7 +619,7 @@ float get_rr_cong_cost(int inode) {
 	short cost_index;
 	float cost;
 
-	cost_index = rr_node[inode].get_cost_index();
+	cost_index = rr_node[inode].cost_index();
 	cost = rr_indexed_data[cost_index].base_cost
 			* rr_node_route_inf[inode].acc_cost
 			* rr_node_route_inf[inode].pres_cost;
@@ -1295,16 +1295,16 @@ void print_route(const char* placement_file, const char* route_file) {
 				while (tptr != NULL) {
 					inode = tptr->index;
 					rr_type = rr_node[inode].type();
-					ilow = rr_node[inode].get_xlow();
-					jlow = rr_node[inode].get_ylow();
+					ilow = rr_node[inode].xlow();
+					jlow = rr_node[inode].ylow();
 
 					fprintf(fp, "Node:\t%d\t%6s (%d,%d) ", inode, 
-							rr_node[inode].rr_get_type_string(), ilow, jlow);
+							rr_node[inode].type_string(), ilow, jlow);
 
-					if ((ilow != rr_node[inode].get_xhigh())
-							|| (jlow != rr_node[inode].get_yhigh()))
-						fprintf(fp, "to (%d,%d) ", rr_node[inode].get_xhigh(),
-								rr_node[inode].get_yhigh());
+					if ((ilow != rr_node[inode].xhigh())
+							|| (jlow != rr_node[inode].yhigh()))
+						fprintf(fp, "to (%d,%d) ", rr_node[inode].xhigh(),
+								rr_node[inode].yhigh());
 
 					switch (rr_type) {
 
@@ -1334,14 +1334,14 @@ void print_route(const char* placement_file, const char* route_file) {
 					default:
 						vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 								  "in print_route: Unexpected traceback element type: %d (%s).\n", 
-								  rr_type, rr_node[inode].rr_get_type_string());
+								  rr_type, rr_node[inode].type_string());
 						break;
 					}
 
-					fprintf(fp, "%d  ", rr_node[inode].get_ptc_num());
+					fprintf(fp, "%d  ", rr_node[inode].ptc_num());
 
 					if (grid[ilow][jlow].type != IO_TYPE && (rr_type == IPIN || rr_type == OPIN)) {
-						int pin_num = rr_node[inode].get_ptc_num();
+						int pin_num = rr_node[inode].ptc_num();
 						int offset = grid[ilow][jlow].height_offset;
 						int iblock = grid[ilow][jlow - offset].blocks[0];
 						VTR_ASSERT(iblock != OPEN);
@@ -1461,8 +1461,8 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 
 	int occ, capacity;
 
-	occ = rr_node[inode].get_occ() + add_or_sub;
-	capacity = rr_node[inode].get_capacity();
+	occ = rr_node[inode].occ() + add_or_sub;
+	capacity = rr_node[inode].capacity();
 	rr_node[inode].set_occ(occ);
 
 	if (occ < capacity) {
@@ -1491,9 +1491,9 @@ void print_traceback(int inet) {
 	while (head) {
 		int inode {head->index};
 		if (rr_node[inode].type() == SINK) 
-			vtr::printf_info("%d(sink)(%d)->",inode, rr_node[inode].get_occ());
+			vtr::printf_info("%d(sink)(%d)->",inode, rr_node[inode].occ());
 		else 
-			vtr::printf_info("%d(%d)->",inode, rr_node[inode].get_occ());
+			vtr::printf_info("%d(%d)->",inode, rr_node[inode].occ());
 		head = head->next;
 	}
 	vtr::printf_info("\n");

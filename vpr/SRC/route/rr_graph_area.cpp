@@ -171,8 +171,8 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 				/* Ignore any uninitialized rr_graph nodes */
 				if ((rr_node[to_node].type() == SOURCE) 
-						&& (rr_node[to_node].get_xlow() == 0) && (rr_node[to_node].get_ylow() == 0)
-						&& (rr_node[to_node].get_xhigh() == 0) && (rr_node[to_node].get_yhigh() == 0)) {
+						&& (rr_node[to_node].xlow() == 0) && (rr_node[to_node].ylow() == 0)
+						&& (rr_node[to_node].xhigh() == 0) && (rr_node[to_node].yhigh() == 0)) {
 					continue;
 				}
 
@@ -228,24 +228,24 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 			/* Now add in the shared buffer transistors, and reset some flags. */
 
 			if (from_rr_type == CHANX) {
-				for (i = rr_node[from_node].get_xlow() - 1;
-						i <= rr_node[from_node].get_xhigh(); i++) {
+				for (i = rr_node[from_node].xlow() - 1;
+						i <= rr_node[from_node].xhigh(); i++) {
 					ntrans_sharing += shared_buffer_trans[i];
 					shared_buffer_trans[i] = 0.;
 				}
 
-				for (i = rr_node[from_node].get_xlow(); i <= rr_node[from_node].get_xhigh();
+				for (i = rr_node[from_node].xlow(); i <= rr_node[from_node].xhigh();
 						i++)
 					cblock_counted[i] = false;
 
 			} else { /* CHANY */
-				for (j = rr_node[from_node].get_ylow() - 1;
-						j <= rr_node[from_node].get_yhigh(); j++) {
+				for (j = rr_node[from_node].ylow() - 1;
+						j <= rr_node[from_node].yhigh(); j++) {
 					ntrans_sharing += shared_buffer_trans[j];
 					shared_buffer_trans[j] = 0.;
 				}
 
-				for (j = rr_node[from_node].get_ylow(); j <= rr_node[from_node].get_yhigh();
+				for (j = rr_node[from_node].ylow(); j <= rr_node[from_node].yhigh();
 						j++)
 					cblock_counted[j] = false;
 
@@ -372,8 +372,8 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 
 				/* Ignore any uninitialized rr_graph nodes */
 				if ((rr_node[to_node].type() == SOURCE) 
-						&& (rr_node[to_node].get_xlow() == 0) && (rr_node[to_node].get_ylow() == 0)
-						&& (rr_node[to_node].get_xhigh() == 0) && (rr_node[to_node].get_yhigh() == 0)) {
+						&& (rr_node[to_node].xlow() == 0) && (rr_node[to_node].ylow() == 0)
+						&& (rr_node[to_node].xhigh() == 0) && (rr_node[to_node].yhigh() == 0)) {
 					continue;
 				}
 
@@ -386,7 +386,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 						/* Each wire segment begins with a multipexer followed by a driver for unidirectional */
 						/* Each multiplexer contains all the fan-in to that routing node */
 						/* Add up area of multiplexer */
-						ntrans += trans_per_mux(rr_node[to_node].get_fan_in(), trans_sram_bit,
+						ntrans += trans_per_mux(rr_node[to_node].fan_in(), trans_sram_bit,
 								g_rr_switch_inf[switch_index].mux_trans_size);			
 
 						/* Add up area of buffer */
@@ -427,11 +427,11 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 
 			/* Reset some flags */
 			if (from_rr_type == CHANX) {
-				for (i = rr_node[from_node].get_xlow(); i <= rr_node[from_node].get_xhigh(); i++)
+				for (i = rr_node[from_node].xlow(); i <= rr_node[from_node].xhigh(); i++)
 					cblock_counted[i] = false;
 
 			} else { /* CHANY */
-				for (j = rr_node[from_node].get_ylow(); j <= rr_node[from_node].get_yhigh();
+				for (j = rr_node[from_node].ylow(); j <= rr_node[from_node].yhigh();
 						j++)
 					cblock_counted[j] = false;
 
