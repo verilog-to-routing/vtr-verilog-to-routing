@@ -77,12 +77,8 @@ public:
 	float C;
 
 	/* Used by clustering only (TODO, may wish to extend to regular router) */
-	int prev_node;
-	int prev_edge;
 	int net_num;
 	t_pb_graph_pin *pb_graph_pin;
-	t_tnode *tnode;
-	float pack_intrinsic_cost;
 	/* For IPIN, source, and sink nodes, helps identify which location this 
 	rr_node belongs to */
 	int z; 
