@@ -1148,8 +1148,8 @@ void free_rr_graph(void) {
 	/* Before adding any more free calls here, be sure the data is NOT chunk *
 	 * allocated, as ALL the chunk allocated data is already free!           */
 
-	if(net_rr_terminals != NULL) {
-		free(net_rr_terminals);
+	if(g_net_rr_terminals != NULL) {
+		free(g_net_rr_terminals);
 	}
 	for (i = 0; i < g_num_rr_nodes; i++) {
         g_rr_nodes[i].set_num_edges(0);
@@ -1164,7 +1164,7 @@ void free_rr_graph(void) {
 	}
 	free(rr_blk_source);
 	rr_blk_source = NULL;
-	net_rr_terminals = NULL;
+	g_net_rr_terminals = NULL;
 	g_rr_nodes = NULL;
 	g_rr_node_indices = NULL;
 	g_rr_indexed_data = NULL;
@@ -1180,10 +1180,10 @@ void free_rr_graph(void) {
 static void alloc_net_rr_terminals(void) {
 	unsigned int inet;
 
-	net_rr_terminals = (int **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(int *));
+	g_net_rr_terminals = (int **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(int *));
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		net_rr_terminals[inet] = (int *) vtr::chunk_malloc(
+		g_net_rr_terminals[inet] = (int *) vtr::chunk_malloc(
 				g_clbs_nlist.net[inet].pins.size() * sizeof(int),
 				&rr_mem_ch);
 	}
@@ -1191,7 +1191,7 @@ static void alloc_net_rr_terminals(void) {
 
 void load_net_rr_terminals(vtr::t_ivec *** L_rr_node_indices) {
 
-	/* Allocates and loads the net_rr_terminals data structure.  For each net   *
+	/* Allocates and loads the g_net_rr_terminals data structure.  For each net   *
 	 * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
 	 * of the net.  [0..g_clbs_nlist.net.size()-1][0..num_pins-1].  Entry [inet][pnum] stores  *
 	 * the rr index corresponding to the SOURCE (opin) or SINK (ipin) of pnum.  */
@@ -1216,7 +1216,7 @@ void load_net_rr_terminals(vtr::t_ivec *** L_rr_node_indices) {
 
 			inode = get_rr_node_index(i, j, (ipin == 0 ? SOURCE : SINK), /* First pin is driver */
 			iclass, L_rr_node_indices);
-			net_rr_terminals[inet][ipin] = inode;
+			g_net_rr_terminals[inet][ipin] = inode;
 		}
 	}
 }

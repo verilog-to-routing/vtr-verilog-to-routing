@@ -328,7 +328,7 @@ static void breadth_first_add_source_to_heap(int inet) {
 	int inode;
 	float cost;
 
-	inode = net_rr_terminals[inet][0]; /* SOURCE */
+	inode = g_net_rr_terminals[inet][0]; /* SOURCE */
 	cost = get_rr_cong_cost(inode);
 
 	node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);

@@ -454,7 +454,7 @@ static void load_one_net_delay(float **net_delay, unsigned int inet, vector<t_vn
 
 	for (ipin = 1; ipin < nets[inet].pins.size(); ipin++) {
 
-		inode = net_rr_terminals[inet][ipin];
+		inode = g_net_rr_terminals[inet][ipin];
 
 		linked_rc_ptr = rr_node_to_rc_node[inode].next;
 		rc_node = rr_node_to_rc_node[inode].rc_node;

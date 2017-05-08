@@ -2935,9 +2935,9 @@ static std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver
     //Conver the traceback into an easily search-able
     t_rt_node* rt_root = traceback_to_route_tree(driver_clb_net_pin->net);
 
-    VTR_ASSERT(rt_root->inode == net_rr_terminals[driver_clb_net_pin->net][driver_clb_net_pin->net_pin]);
+    VTR_ASSERT(rt_root->inode == g_net_rr_terminals[driver_clb_net_pin->net][driver_clb_net_pin->net_pin]);
 
-    int sink_rr_node = net_rr_terminals[sink_clb_net_pin->net][sink_clb_net_pin->net_pin];
+    int sink_rr_node = g_net_rr_terminals[sink_clb_net_pin->net][sink_clb_net_pin->net_pin];
 
     std::vector<int> rr_nodes_on_path;
 

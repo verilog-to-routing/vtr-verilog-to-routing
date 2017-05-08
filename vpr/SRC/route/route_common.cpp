@@ -638,7 +638,7 @@ void mark_ends(int inet) {
 	int inode;
 
 	for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
-		inode = net_rr_terminals[inet][ipin];
+		inode = g_net_rr_terminals[inet][ipin];
 		rr_node_route_inf[inode].target_flag++;
 	}
 }

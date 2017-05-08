@@ -191,7 +191,7 @@ init_route_tree_to_source(int inet) {
 	rt_root->parent_switch = OPEN;
 	rt_root->re_expand = true;
 
-	inode = net_rr_terminals[inet][0]; /* Net source */
+	inode = g_net_rr_terminals[inet][0]; /* Net source */
 
 	rt_root->inode = inode;
 	rt_root->C_downstream = g_rr_nodes[inode].C();

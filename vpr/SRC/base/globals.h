@@ -123,7 +123,7 @@ extern vtr::t_ivec ***g_rr_node_indices;
 
 extern t_rr_node_state* g_rr_node_state; /* [0..g_num_rr_nodes-1] */
 
-extern int **net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
+extern int **g_net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 
 extern int g_num_arch_switches;
 extern s_arch_switch_inf *g_arch_switch_inf; /* [0..(g_num_arch_switches-1)] */

@@ -613,7 +613,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	/* Build a path from the existing route tree rooted at rt_root to the target_node
 	 * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
 
-	int target_node = net_rr_terminals[inet][target_pin];
+	int target_node = g_net_rr_terminals[inet][target_pin];
 
 	profiling::sink_criticality_start();
 
@@ -1346,7 +1346,7 @@ Connection_based_routing_resources::Connection_based_routing_resources() :
 
 		for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
 			// rr sink node index corresponding to this connection terminal
-			auto rr_sink_node = net_rr_terminals[inet][ipin];
+			auto rr_sink_node = g_net_rr_terminals[inet][ipin];
 
 			net_node_to_pin.insert({rr_sink_node, ipin});
 			net_forcible_reroute_connection_flag.insert({rr_sink_node, false});
@@ -1403,7 +1403,7 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
 				vtr::printf_info("%d cannot find itself (net %d)\n", mapping.first, inet);
 				return false;
 			}
-			VTR_ASSERT(net_rr_terminals[inet][mapping.second] == mapping.first);
+			VTR_ASSERT(g_net_rr_terminals[inet][mapping.second] == mapping.first);
 		}		
 	}	
 	return true;
@@ -1450,7 +1450,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 
 		for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
 			// rr sink node index corresponding to this connection terminal
-			auto rr_sink_node = net_rr_terminals[inet][ipin];
+			auto rr_sink_node = g_net_rr_terminals[inet][ipin];
 
 			// should always be left unset or cleared by rerouting before the end of the iteration
 			VTR_ASSERT(forcible_reroute_connection_flag[inet][rr_sink_node] == false);
