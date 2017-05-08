@@ -2982,13 +2982,13 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 	/* First compute the number of tracks between channel high and channel *
 	 * low, inclusive, in an efficient manner.                             */
 
-	chanx_place_cost_fac[0][0] = chan_width.x_list[0];
+	chanx_place_cost_fac[0][0] = g_chan_width.x_list[0];
 
 	for (high = 1; high <= ny; high++) {
-		chanx_place_cost_fac[high][high] = chan_width.x_list[high];
+		chanx_place_cost_fac[high][high] = g_chan_width.x_list[high];
 		for (low = 0; low < high; low++) {
 			chanx_place_cost_fac[high][low] =
-					chanx_place_cost_fac[high - 1][low] + chan_width.x_list[high];
+					chanx_place_cost_fac[high - 1][low] + g_chan_width.x_list[high];
 		}
 	}
 
@@ -3012,13 +3012,13 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 	/* Now do the same thing for the y-directed channels.  First get the  *
 	 * number of tracks between channel high and channel low, inclusive.  */
 
-	chany_place_cost_fac[0][0] = chan_width.y_list[0];
+	chany_place_cost_fac[0][0] = g_chan_width.y_list[0];
 
 	for (high = 1; high <= nx; high++) {
-		chany_place_cost_fac[high][high] = chan_width.y_list[high];
+		chany_place_cost_fac[high][high] = g_chan_width.y_list[high];
 		for (low = 0; low < high; low++) {
 			chany_place_cost_fac[high][low] =
-					chany_place_cost_fac[high - 1][low] + chan_width.y_list[high];
+					chany_place_cost_fac[high - 1][low] + g_chan_width.y_list[high];
 		}
 	}
 

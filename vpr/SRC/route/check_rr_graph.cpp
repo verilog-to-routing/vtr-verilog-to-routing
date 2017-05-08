@@ -348,11 +348,11 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 
 	case CHANX:
 		if (route_type == DETAILED) {
-			nodes_per_chan = chan_width.max;
+			nodes_per_chan = g_chan_width.max;
 			tracks_per_node = 1;
 		} else {
 			nodes_per_chan = 1;
-			tracks_per_node = chan_width.x_list[ylow];
+			tracks_per_node = g_chan_width.x_list[ylow];
 		}
 
 		if (ptc_num >= nodes_per_chan) {
@@ -368,11 +368,11 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 
 	case CHANY:
 		if (route_type == DETAILED) {
-			nodes_per_chan = chan_width.max;
+			nodes_per_chan = g_chan_width.max;
 			tracks_per_node = 1;
 		} else {
 			nodes_per_chan = 1;
-			tracks_per_node = chan_width.y_list[xlow];
+			tracks_per_node = g_chan_width.y_list[xlow];
 		}
 
 

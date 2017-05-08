@@ -467,7 +467,7 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 	}
 
 	build_rr_graph(graph_type, num_types, dummy_type_descriptors, nx, ny, grid,
-			&chan_width, det_routing_arch->switch_block_type,
+			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
 			g_num_arch_switches, segment_inf,

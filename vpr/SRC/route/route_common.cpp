@@ -263,7 +263,7 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
-			&chan_width, det_routing_arch->switch_block_type,
+			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
 			g_num_arch_switches, segment_inf,
@@ -321,7 +321,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
-			&chan_width, det_routing_arch->switch_block_type,
+			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
 			g_num_arch_switches, segment_inf,

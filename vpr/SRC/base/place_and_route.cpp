@@ -530,7 +530,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	free_rr_graph();
 
 	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
-			&chan_width, det_routing_arch->switch_block_type,
+			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
 			g_num_arch_switches, segment_inf,
@@ -603,60 +603,60 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 	if (nio == 0)
 		nio = 1; /* No zero width channels */
 
-	chan_width.x_list[0] = chan_width.x_list[ny] = nio;
-	chan_width.y_list[0] = chan_width.y_list[nx] = nio;
+	g_chan_width.x_list[0] = g_chan_width.x_list[ny] = nio;
+	g_chan_width.y_list[0] = g_chan_width.y_list[nx] = nio;
 
 	if (ny > 1) {
 		float separation = 1.0 / (ny - 2.0); /* Norm. distance between two channels. */
 		float y = 0.0; /* This avoids div by zero if ny = 2.0 */
-		chan_width.x_list[1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
+		g_chan_width.x_list[1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
 
 		/* No zero width channels */
-		chan_width.x_list[1] = max(chan_width.x_list[1], 1);
+		g_chan_width.x_list[1] = max(g_chan_width.x_list[1], 1);
 
 		for (int i = 1; i < ny - 1; ++i) {
 			y = (float) i / ((float) (ny - 2.0));
-			chan_width.x_list[i + 1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
-			chan_width.x_list[i + 1] = max(chan_width.x_list[i + 1], 1);
+			g_chan_width.x_list[i + 1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
+			g_chan_width.x_list[i + 1] = max(g_chan_width.x_list[i + 1], 1);
 		}
 	}
 
 	if (nx > 1) {
 		float separation = 1.0 / (nx - 2.0); /* Norm. distance between two channels. */
 		float x = 0.0; /* Avoids div by zero if nx = 2.0 */
-		chan_width.y_list[1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-		chan_width.y_list[1] = max(chan_width.y_list[1], 1);
+		g_chan_width.y_list[1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
+		g_chan_width.y_list[1] = max(g_chan_width.y_list[1], 1);
 
 		for (int i = 1; i < nx - 1; ++i) {
 			x = (float) i / ((float) (nx - 2.0));
-			chan_width.y_list[i + 1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-			chan_width.y_list[i + 1] = max(chan_width.y_list[i + 1], 1);
+			g_chan_width.y_list[i + 1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
+			g_chan_width.y_list[i + 1] = max(g_chan_width.y_list[i + 1], 1);
 		}
 	}
 
-	chan_width.max = 0;
-	chan_width.x_max = chan_width.y_max = INT_MIN;
-	chan_width.x_min = chan_width.y_min = INT_MAX;
+	g_chan_width.max = 0;
+	g_chan_width.x_max = g_chan_width.y_max = INT_MIN;
+	g_chan_width.x_min = g_chan_width.y_min = INT_MAX;
 	for (int i = 0; i <= ny ; ++i) {
-		chan_width.max = max(chan_width.max, chan_width.x_list[i]);
-		chan_width.x_max = max(chan_width.x_max, chan_width.x_list[i]);
-		chan_width.x_min = min(chan_width.x_min, chan_width.x_list[i]);
+		g_chan_width.max = max(g_chan_width.max, g_chan_width.x_list[i]);
+		g_chan_width.x_max = max(g_chan_width.x_max, g_chan_width.x_list[i]);
+		g_chan_width.x_min = min(g_chan_width.x_min, g_chan_width.x_list[i]);
 	}
 	for (int i = 0; i <= nx ; ++i) {
-		chan_width.max = max(chan_width.max, chan_width.y_list[i]);
-		chan_width.y_max = max(chan_width.y_max, chan_width.y_list[i]);
-		chan_width.y_min = min(chan_width.y_min, chan_width.y_list[i]);
+		g_chan_width.max = max(g_chan_width.max, g_chan_width.y_list[i]);
+		g_chan_width.y_max = max(g_chan_width.y_max, g_chan_width.y_list[i]);
+		g_chan_width.y_min = min(g_chan_width.y_min, g_chan_width.y_list[i]);
 	}
 
 #ifdef VERBOSE
 	vtr::printf_info("\n");
-	vtr::printf_info("chan_width.x_list:\n");
+	vtr::printf_info("g_chan_width.x_list:\n");
 	for (int i = 0; i <= ny ; ++i)
-		vtr::printf_info("%d  ", chan_width.x_list[i]);
+		vtr::printf_info("%d  ", g_chan_width.x_list[i]);
 	vtr::printf_info("\n");
-	vtr::printf_info("chan_width.y_list:\n");
+	vtr::printf_info("g_chan_width.y_list:\n");
 	for (int i = 0; i <= nx ; ++i)
-		vtr::printf_info("%d  ", chan_width.y_list[i]);
+		vtr::printf_info("%d  ", g_chan_width.y_list[i]);
 	vtr::printf_info("\n");
 #endif
 }

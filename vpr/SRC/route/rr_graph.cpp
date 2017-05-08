@@ -518,11 +518,11 @@ void build_rr_graph(
 		for (int i = 0; i < g_num_rr_nodes; i++) {
 			if (g_rr_nodes[i].type() == CHANX) {
 				int ylow = g_rr_nodes[i].ylow();
-				g_rr_nodes[i].set_capacity( chan_width.x_list[ylow] );
+				g_rr_nodes[i].set_capacity( g_chan_width.x_list[ylow] );
 			}
 			if (g_rr_nodes[i].type() == CHANY) {
 				int xlow = g_rr_nodes[i].xlow();
-				g_rr_nodes[i].set_capacity( chan_width.y_list[xlow] );
+				g_rr_nodes[i].set_capacity( g_chan_width.y_list[xlow] );
 			}
 		}
 	}
@@ -1055,7 +1055,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 			if (i > 0) {
 				build_rr_chan(i, j, CHANX, track_to_pin_lookup, sb_conn_map, switch_block_conn,
 						CHANX_COST_INDEX_START, 
-						max_chan_width, chan_width.x_list[j],
+						max_chan_width, g_chan_width.x_list[j],
 						sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
 						L_rr_node_indices, L_rr_edge_done, L_rr_node, 
 						wire_to_ipin_switch, directionality);
@@ -1063,7 +1063,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 			if (j > 0) {
 				build_rr_chan(i, j, CHANY, track_to_pin_lookup, sb_conn_map, switch_block_conn,
 						CHANX_COST_INDEX_START + num_seg_types, 
-						max_chan_width, chan_width.y_list[i],
+						max_chan_width, g_chan_width.y_list[i],
 						sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
 						L_rr_node_indices, L_rr_edge_done, L_rr_node, 
 						wire_to_ipin_switch, directionality);

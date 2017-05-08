@@ -421,10 +421,10 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
                 num_instances_type[i], type_descriptors[i].name);
     }
     vtr::printf_info("\n");
-    chan_width.x_max = chan_width.y_max = 0;
-    chan_width.x_min = chan_width.y_min = 0;
-    chan_width.x_list = (int *) vtr::malloc((ny + 1) * sizeof(int));
-    chan_width.y_list = (int *) vtr::malloc((nx + 1) * sizeof(int));
+    g_chan_width.x_max = g_chan_width.y_max = 0;
+    g_chan_width.x_min = g_chan_width.y_min = 0;
+    g_chan_width.x_list = (int *) vtr::malloc((ny + 1) * sizeof(int));
+    g_chan_width.y_list = (int *) vtr::malloc((nx + 1) * sizeof(int));
 
     free(num_blocks_type);
     free(num_instances_type);
@@ -617,11 +617,11 @@ bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch) {
 void free_arch(t_arch* Arch) {
 
 	freeGrid();
-	free(chan_width.x_list);
-	free(chan_width.y_list);
+	free(g_chan_width.x_list);
+	free(g_chan_width.y_list);
 
-	chan_width.x_list = chan_width.y_list = NULL;
-	chan_width.max = chan_width.x_max = chan_width.y_max = chan_width.x_min = chan_width.y_min = 0;
+	g_chan_width.x_list = g_chan_width.y_list = NULL;
+	g_chan_width.max = g_chan_width.x_max = g_chan_width.y_max = g_chan_width.x_min = g_chan_width.y_min = 0;
 
 	for (int i = 0; i < Arch->num_switches; ++i) {
 		if (Arch->Switches->name != NULL) {
