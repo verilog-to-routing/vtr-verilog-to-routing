@@ -47,9 +47,9 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
 
 	int iseg, length, i, index;
 
-	num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * num_segment);
+	g_num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * num_segment);
 	rr_indexed_data = (t_rr_indexed_data *) vtr::malloc(
-			num_rr_indexed_data * sizeof(t_rr_indexed_data));
+			g_num_rr_indexed_data * sizeof(t_rr_indexed_data));
 
 	/* For rr_types that aren't CHANX or CHANY, base_cost is valid, but most     *
 	 * * other fields are invalid.  For IPINs, the T_linear field is also valid;   *
@@ -138,7 +138,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 
 	/* Load base costs for CHANX and CHANY segments */
 
-	for (index = CHANX_COST_INDEX_START; index < num_rr_indexed_data; index++) {
+	for (index = CHANX_COST_INDEX_START; index < g_num_rr_indexed_data; index++) {
 			/*       rr_indexed_data[index].base_cost = delay_normalization_fac /
 			 rr_indexed_data[index].inv_length;  */
 
@@ -153,7 +153,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 	 * router, the base_cost values will get changed all the time and being   *
 	 * able to restore them from a saved version is useful.                   */
 
-	for (index = 0; index < num_rr_indexed_data; index++) {
+	for (index = 0; index < g_num_rr_indexed_data; index++) {
 		rr_indexed_data[index].saved_base_cost =
 				rr_indexed_data[index].base_cost;
 	}
@@ -211,15 +211,15 @@ static void load_rr_indexed_data_T_values(int index_start,
 	 * and using them to compute average delay values for this type of segment. */
 
 	int itrack, inode, cost_index;
-	float *C_total, *R_total; /* [0..num_rr_indexed_data - 1] */
-	double *switch_R_total, *switch_T_total; /* [0..num_rr_indexed_data - 1] */
+	float *C_total, *R_total; /* [0..g_num_rr_indexed_data - 1] */
+	double *switch_R_total, *switch_T_total; /* [0..g_num_rr_indexed_data - 1] */
 	short *switches_buffered;
-	int *num_nodes_of_index; /* [0..num_rr_indexed_data - 1] */
+	int *num_nodes_of_index; /* [0..g_num_rr_indexed_data - 1] */
 	float Rnode, Cnode, Rsw, Tsw;
 
-	num_nodes_of_index = (int *) vtr::calloc(num_rr_indexed_data, sizeof(int));
-	C_total = (float *) vtr::calloc(num_rr_indexed_data, sizeof(float));
-	R_total = (float *) vtr::calloc(num_rr_indexed_data, sizeof(float));
+	num_nodes_of_index = (int *) vtr::calloc(g_num_rr_indexed_data, sizeof(int));
+	C_total = (float *) vtr::calloc(g_num_rr_indexed_data, sizeof(float));
+	R_total = (float *) vtr::calloc(g_num_rr_indexed_data, sizeof(float));
 
 	/* August 2014: Not all wire-to-wire switches connecting from some wire segment will 
 	   necessarily have the same delay. i.e. a mux with less inputs will have smaller delay 
@@ -227,9 +227,9 @@ static void load_rr_indexed_data_T_values(int index_start,
 	   get the average R/Tdel values by first averaging them for a single wire segment (first
 	   for loop below), and then by averaging this value over all wire segments in the channel
 	   (second for loop below) */
-	switch_R_total = (double *) vtr::calloc(num_rr_indexed_data, sizeof(double));
-	switch_T_total = (double *) vtr::calloc(num_rr_indexed_data, sizeof(double));
-	switches_buffered = (short *) vtr::calloc(num_rr_indexed_data, sizeof(short));
+	switch_R_total = (double *) vtr::calloc(g_num_rr_indexed_data, sizeof(double));
+	switch_T_total = (double *) vtr::calloc(g_num_rr_indexed_data, sizeof(double));
+	switches_buffered = (short *) vtr::calloc(g_num_rr_indexed_data, sizeof(short));
 
 	/* initialize switches_buffered array */
 	for (int i = index_start; i < index_start + num_indices_to_load; i++){

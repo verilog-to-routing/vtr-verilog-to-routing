@@ -236,7 +236,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 				"in check_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
 	}
 
-	if (cost_index < 0 || cost_index >= num_rr_indexed_data) {
+	if (cost_index < 0 || cost_index >= g_num_rr_indexed_data) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_node: node %d cost index (%d) is out of range.\n", inode, cost_index);
 	}

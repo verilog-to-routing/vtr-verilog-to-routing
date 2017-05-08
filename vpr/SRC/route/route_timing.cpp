@@ -1106,7 +1106,7 @@ static void update_rr_base_costs(int inet) {
 	/* Other reasonable values for factor include fanout and 1 */
 	factor = sqrt(fanout);
 
-	for (index = CHANX_COST_INDEX_START; index < num_rr_indexed_data; index++) {
+	for (index = CHANX_COST_INDEX_START; index < g_num_rr_indexed_data; index++) {
 		if (rr_indexed_data[index].T_quadratic > 0.) { /* pass transistor */
 			rr_indexed_data[index].base_cost =
 					rr_indexed_data[index].saved_base_cost * factor;
