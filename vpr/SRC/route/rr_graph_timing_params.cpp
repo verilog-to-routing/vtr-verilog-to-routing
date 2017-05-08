@@ -82,7 +82,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
 					else if (buffered) {
 						/* Prevent double counting of capacitance for UDSD */
-						if (rr_node[to_node].drivers() != SINGLE) {
+						if (rr_node[to_node].direction() == BI_DIRECTION) {
 							/* For multiple-driver architectures the output capacitance can
 							 * be added now since each edge is actually a driver */
 							rr_node[to_node].set_C(rr_node[to_node].C() + Cout);
@@ -153,7 +153,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 				if (to_rr_type != CHANX && to_rr_type != CHANY)
 					continue;
 
-				if (rr_node[to_node].drivers() != SINGLE) {
+				if (rr_node[to_node].direction() == BI_DIRECTION) {
 					Cout = g_rr_switch_inf[switch_index].Cout;
 					to_node = rr_node[inode].edge_sink_node(iedge); /* Will be CHANX or CHANY */
 					rr_node[to_node].set_C(rr_node[to_node].C() + Cout);
@@ -174,7 +174,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 			to_node = rr_node[inode].edge_sink_node(iedge);
 			to_rr_type = rr_node[to_node].type();
 			if (to_rr_type == CHANX || to_rr_type == CHANY) {
-				if (rr_node[to_node].drivers() == SINGLE) {
+				if (rr_node[to_node].direction() != BI_DIRECTION) {
 					/* Cout was not added in these cases */
 					if (Couts_to_add[to_node] != 0) {
 						/* We've already found a Cout to add to this node

@@ -55,14 +55,6 @@ e_direction t_rr_node::direction() const {
 	return direction_;
 }
 
-e_drivers t_rr_node::drivers() const {
-	if (direction() == BI_DIRECTION) {
-		return MULTI_BUFFERED;
-	} else {
-		return SINGLE;
-	}
-}
-
 short t_rr_node::occ() const {
 	return occ_;
 }

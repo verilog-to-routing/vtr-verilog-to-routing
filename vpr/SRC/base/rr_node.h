@@ -43,11 +43,7 @@
  * direction: if the node represents a track, this field                     *
  *            indicates the direction of the track. Otherwise                *
  *            the value contained in the field should be                     *
- *            ignored.                                                       *
- * drivers: if the node represents a track, this field                       *
- *          indicates the driving architecture of the track.                 *
- *          Otherwise the value contained in the field should                *
- *          be ignored.                                                      */
+ *            ignored.                                                       */
 
 class t_rr_node {
     public: //Accessors
@@ -71,7 +67,6 @@ class t_rr_node {
         short ptc_num() const;
         short cost_index() const;
         e_direction direction() const;
-        e_drivers drivers() const;
 
         float R() const { return R_; }
         float C() const { return C_; }

@@ -307,18 +307,6 @@ t_seg_details *alloc_and_load_seg_details(
 						(itrack % 2) ? DEC_DIRECTION : INC_DIRECTION;
 			}
 
-			switch (segment_inf[i].directionality) {
-			case UNI_DIRECTIONAL:
-				seg_details[cur_track].drivers = SINGLE;
-				break;
-			case BI_DIRECTIONAL:
-				seg_details[cur_track].drivers = MULTI_BUFFERED;
-				break;
-            default:
-                VTR_ASSERT_MSG(false, "Unrecognized track direction");
-                break;
-			}
-
 			seg_details[cur_track].index = i;
 
 			++cur_track;
@@ -417,7 +405,6 @@ t_chan_details* init_chan_details(
 				p_seg_details[i].arch_opin_switch = seg_details[i].arch_opin_switch;
 
 				p_seg_details[i].direction = seg_details[i].direction;
-				p_seg_details[i].drivers = seg_details[i].drivers;
 
 				p_seg_details[i].index = seg_details[i].index;
 				p_seg_details[i].type_name_ptr = seg_details[i].type_name_ptr;
@@ -908,7 +895,6 @@ void dump_seg_details(
 		int max_chan_width,
 		FILE* fp) {
 
-	const char *drivers_names[] = { "multi_buffered", "single" };
 	const char *direction_names[] = { "inc_direction", "dec_direction", "bi_direction" };
 
 	for (int i = 0; i < max_chan_width; i++) {
@@ -931,9 +917,8 @@ void dump_seg_details(
 		fprintf(fp, "Rmetal: %g  Cmetal: %g\n", 
 				seg_details[i].Rmetal, seg_details[i].Cmetal);
 
-		fprintf(fp, "direction: %s  drivers: %s\n",
-				direction_names[seg_details[i].direction],
-				drivers_names[seg_details[i].drivers]);
+		fprintf(fp, "direction: %s\n",
+				direction_names[seg_details[i].direction]);
 
 		fprintf(fp, "cb list:  ");
 		for (int j = 0; j < seg_details[i].length; j++)
@@ -956,41 +941,8 @@ void dump_seg_details(
 		int max_chan_width,
 		const char *fname) {
 
-	FILE *fp;
-	int i, j;
-	const char *drivers_names[] = { "multi_buffered", "single" };
-	const char *direction_names[] = { "inc_direction", "dec_direction",
-			"bi_direction" };
-
-	fp = vtr::fopen(fname, "w");
-
-	for (i = 0; i < max_chan_width; i++) {
-		fprintf(fp, "Track: %d.\n", i);
-		fprintf(fp, "Length: %d,  Start: %d,  Long line: %d  "
-				"arch_wire_switch: %d  arch_opin_switch: %d.\n", seg_details[i].length,
-				seg_details[i].start, seg_details[i].longline,
-				seg_details[i].arch_wire_switch, seg_details[i].arch_opin_switch);
-
-		fprintf(fp, "Rmetal: %g  Cmetal: %g\n", seg_details[i].Rmetal,
-				seg_details[i].Cmetal);
-
-		fprintf(fp, "Direction: %s  Drivers: %s\n",
-				direction_names[seg_details[i].direction],
-				drivers_names[seg_details[i].drivers]);
-
-		fprintf(fp, "cb list:  ");
-		for (j = 0; j < seg_details[i].length; j++)
-			fprintf(fp, "%d ", seg_details[i].cb[j]);
-		fprintf(fp, "\n");
-
-		fprintf(fp, "sb list: ");
-		for (j = 0; j <= seg_details[i].length; j++)
-			fprintf(fp, "%d ", seg_details[i].sb[j]);
-		fprintf(fp, "\n");
-
-		fprintf(fp, "\n");
-	}
-
+	FILE *fp = vtr::fopen(fname, "w");
+    dump_seg_details(seg_details, max_chan_width, fp);
 	fclose(fp);
 }
 

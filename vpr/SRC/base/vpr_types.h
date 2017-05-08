@@ -887,12 +887,6 @@ struct s_det_routing_arch {
 	char *dump_rr_structs_file;
 };
 
-/* legacy routing drivers by Andy Ye (remove or integrate in future) */
-
-enum e_drivers {
-	MULTI_BUFFERED, SINGLE
-};
-
 enum e_direction : unsigned char {
 	INC_DIRECTION = 0, DEC_DIRECTION = 1, BI_DIRECTION = 2, NONE = 3
 };
@@ -917,9 +911,7 @@ enum e_direction : unsigned char {
  *                   at the end of build_rr_graph                           *
  * Cmetal: Capacitance of a routing track, per unit logic block length.     *
  * Rmetal: Resistance of a routing track, per unit logic block length.      *
- * (UDSD by AY) direction: The direction of a routing track.                *
- * (UDSD by AY) drivers: How do signals driving a routing track connect to  *
- *                       the track?                                         *
+ * direction: The direction of a routing track.                             *
  * index: index of the segment type used for this track.                    *
  * type_name_ptr: pointer to name of the segment type this track belongs    *
  *                to. points to the appropriate name in s_segment_inf       */               
@@ -935,8 +927,7 @@ typedef struct s_seg_details {
 	float Rmetal;
 	float Cmetal;
 	bool twisted;
-	enum e_direction direction; /* UDSD by AY */
-	enum e_drivers drivers; /* UDSD by AY */
+	enum e_direction direction;
 	int group_start;
 	int group_size;
 	int seg_start;

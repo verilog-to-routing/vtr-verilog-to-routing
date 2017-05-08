@@ -872,7 +872,6 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 	seg_details->Cmetal = 0.0;
 	seg_details->Rmetal = 0.0;
 	seg_details->start = 1;
-	seg_details->drivers = MULTI_BUFFERED;
 	seg_details->cb = (bool *) vtr::malloc(sizeof(bool) * 1);
 	seg_details->cb[0] = true;
 	seg_details->sb = (bool *) vtr::malloc(sizeof(bool) * 2);
@@ -1527,7 +1526,6 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 		L_rr_node[node].set_ptc_num(track);
 		L_rr_node[node].set_type(chan_type);
 		L_rr_node[node].set_direction(seg_details[track].direction);
-		//L_rr_node[node].set_drivers(seg_details[track].drivers);
 	}
 }
 
@@ -2221,13 +2219,11 @@ void dump_rr_graph(const char *file_name) {
 void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 
 	static const char *direction_name[] = { "NONE", "INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION" };
-	static const char *drivers_name[] = { "OPEN", "MULTI_BUFFER", "SINGLE" };
 
 	t_rr_type rr_type = L_rr_node[inode].type();
 
 	/* Make sure we don't overrun const arrays */
 	VTR_ASSERT((L_rr_node[inode].direction()) < (int)(sizeof(direction_name) / sizeof(char *)));
-	VTR_ASSERT((L_rr_node[inode].drivers() + 1) < (int)(sizeof(drivers_name) / sizeof(char *)));
 
 	fprintf(fp, "Node: %d %s ", inode, L_rr_node[inode].type_string());
 	if ((L_rr_node[inode].xlow() == L_rr_node[inode].xhigh())
@@ -2242,7 +2238,6 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	fprintf(fp, "Ptc_num: %d ", L_rr_node[inode].ptc_num());
 	fprintf(fp, "Length: %d ", L_rr_node[inode].length());
 	fprintf(fp, "Direction: %s ", direction_name[L_rr_node[inode].direction()]);
-	fprintf(fp, "Drivers: %s ", drivers_name[L_rr_node[inode].drivers() + 1]);
 	fprintf(fp, "\n");
 
 	fprintf(fp, "%d edge(s):", L_rr_node[inode].num_edges());
