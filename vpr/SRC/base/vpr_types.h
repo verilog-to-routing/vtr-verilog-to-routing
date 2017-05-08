@@ -103,7 +103,7 @@ enum e_block_pack_status {
 };
 
 /* these are defined later, but need to declare here because it is used */
-typedef class RR_Node t_rr_node;
+class t_rr_node;
 struct s_pack_molecule;
 struct s_pb_stats;
 

@@ -70,6 +70,9 @@ short t_rr_node::length() const {
 	return length_;
 }
 
+void t_rr_node::set_type(t_rr_type new_type) { 
+    type_ = new_type; 
+}
 /*
 	Pass in two coordinate variables describing location of node.
 	They do not have to be in any particular order.
@@ -126,6 +129,14 @@ void t_rr_node::set_direction(e_direction new_direction) {
 
 void t_rr_node::set_occ(short new_occ) {
 	occ_ = new_occ;
+}
+
+void t_rr_node::set_R(float new_R) { 
+    R_ = new_R; 
+}
+
+void t_rr_node::set_C(float new_C) { 
+    C_ = new_C; 
 }
 
 void t_rr_node::set_edge_sink_node(short iedge, int sink_node) { 

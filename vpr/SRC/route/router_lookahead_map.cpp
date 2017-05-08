@@ -222,7 +222,7 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticality_fac){
 	int from_x, from_y, to_x, to_y;
 
-	RR_Node &from_node = rr_node[from_node_ind];
+	t_rr_node &from_node = rr_node[from_node_ind];
 
 	e_rr_type from_type = from_node.type();
 	int from_cost_index = from_node.cost_index();
@@ -432,7 +432,7 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float> &nod
 
 	int parent_ind = parent_entry.rr_node_ind;
 
-	RR_Node &parent_node = rr_node[parent_ind];
+	t_rr_node &parent_node = rr_node[parent_ind];
 
 	for (int iedge = 0; iedge < parent_node.num_edges(); iedge++){
 		int child_node_ind = parent_node.edge_sink_node(iedge);

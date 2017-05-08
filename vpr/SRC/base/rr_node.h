@@ -40,83 +40,86 @@
  *     input capacitance of all switches hanging off the node, the           *
  *     output capacitance of all switches to the node, and the connection    *
  *     box buffer capacitances hanging off it.                               *
- * (UDSD by AY) direction: if the node represents a track, this field        *
- *                         indicates the direction of the track. Otherwise   *
- *                         the value contained in the field should be        *
- *                         ignored.                                          *
- * (UDSD by AY) drivers: if the node represents a track, this field          *
- *                       indicates the driving architecture of the track.    *
- *                       Otherwise the value contained in the field should   *
- *                       be ignored.                                         */
+ * direction: if the node represents a track, this field                     *
+ *            indicates the direction of the track. Otherwise                *
+ *            the value contained in the field should be                     *
+ *            ignored.                                                       *
+ * drivers: if the node represents a track, this field                       *
+ *          indicates the driving architecture of the track.                 *
+ *          Otherwise the value contained in the field should                *
+ *          be ignored.                                                      */
 
-#define NO_PREVIOUS -1
+class t_rr_node {
+    public: //Accessors
+        t_rr_type type() const { return type_; }
+        const char *type_string() const; /* Retrieve type as a string */
 
-typedef class RR_Node {
+        short num_edges() const { return num_edges_; }
+        int edge_sink_node(int iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edge_sink_nodes_[iedge]; }
+        short edge_switch(int iedge) const { VTR_ASSERT_SAFE(iedge < num_edges()); return edge_switches_[iedge]; }
+        short fan_in() const;
 
-private:
-	short xlow_;
-	short ylow_;
-	short length_;
-	
-	short ptc_num_;
-	short cost_index_;
-	short fan_in_;
+        short xlow() const;
+        short ylow() const;
+        short xhigh() const;
+        short yhigh() const;
+        signed short length() const;
 
-	short capacity_;
-	short occ_;
+        short capacity() const;
+        short occ() const;
 
-	enum e_direction direction_;
-	t_rr_type type_;
+        short ptc_num() const;
+        short cost_index() const;
+        e_direction direction() const;
+        e_drivers drivers() const;
 
-    //Note: we use manually managed memory to save space vs std::vector;
-    //      using two std::vector's nearly doubles the size of the class
-    short num_edges_ = 0;
-    int* edge_sink_nodes_ = nullptr;
-    short* edge_switches_ = nullptr;
+        float R() const { return R_; }
+        float C() const { return C_; }
 
-	float R_;
-	float C_;
-public:
-	/* Member functions */
-    t_rr_type type() const { return type_; }
-	const char *type_string() const; /* Retrieve rr_type as a string */
+    public: //Mutators
+        void set_type(t_rr_type new_type);
 
-	short num_edges() const { return num_edges_; }
-    int edge_sink_node(int iedge) const { return edge_sink_nodes_[iedge]; }
-    short edge_switch(int iedge) const { return edge_switches_[iedge]; }
+        void set_num_edges(short);
+        void set_edge_sink_node(short iedge, int sink_node);
+        void set_edge_switch(short iedge, short switch_index);
+        void set_fan_in(short);
 
-	short xlow() const;
-	short ylow() const;
-	short xhigh() const;
-	short yhigh() const;
+        void set_coordinates(short x1, short y1, short x2, short y2);
 
-	short ptc_num() const;
-	short cost_index() const;
-	short capacity() const;
-	short fan_in() const;
-	short occ() const;
-    signed short length() const;
-	enum e_direction direction() const;
-	enum e_drivers drivers() const;
-    float R() const { return R_; }
-    float C() const { return C_; }
+        void set_capacity(short);
+        void set_occ(short);
 
-    void set_type(t_rr_type new_type) { type_ = new_type; }
-	void set_coordinates(short, short, short, short);
-	void set_ptc_num(short);
-	void set_cost_index(short);
-	void set_capacity(short);
-	void set_fan_in(short);
-	void set_num_edges(short);
-	void set_direction(e_direction);
-	void set_occ(short);
-    void set_R(float new_R) { R_ = new_R; }
-    void set_C(float new_C) { C_ = new_C; }
+        void set_ptc_num(short);
+        void set_cost_index(short);
+        void set_direction(e_direction);
 
-    void set_edge_sink_node(short iedge, int sink_node);
-    void set_edge_switch(short iedge, short switch_index);
+        void set_R(float new_R);
+        void set_C(float new_C);
 
-} t_rr_node;
+    private: //Data
+        short xlow_;
+        short ylow_;
+        short length_;
+        
+        short ptc_num_;
+        short cost_index_;
+        short fan_in_;
+
+        short capacity_;
+        short occ_;
+
+        enum e_direction direction_;
+        t_rr_type type_;
+
+        //Note: we use manually managed memory to save space vs std::vector;
+        //      using two std::vector's nearly doubles the size of the class
+        short num_edges_ = 0;
+        int* edge_sink_nodes_ = nullptr;
+        short* edge_switches_ = nullptr;
+
+        float R_;
+        float C_;
+};
 
 
 /* Data that is pointed to by the .cost_index member of t_rr_node.  It's     *
