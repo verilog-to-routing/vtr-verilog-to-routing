@@ -384,10 +384,10 @@ static void free_cost_map(){
    to that pin is stored is added to an entry in the routing_cost_map */
 static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing_cost_map &routing_cost_map){
 	/* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
-	vector<bool> node_expanded( num_rr_nodes, false );
+	vector<bool> node_expanded( g_num_rr_nodes, false );
 	/* for each node keep a list of the cost with which that node has been visited (used to determine whether to push
 	   a candidate node onto the expansion queue */
-	vector<float> node_visited_costs( num_rr_nodes, -1.0 );
+	vector<float> node_visited_costs( g_num_rr_nodes, -1.0 );
 	/* a priority queue for expansion */
 	priority_queue<PQ_Entry> pq;
 

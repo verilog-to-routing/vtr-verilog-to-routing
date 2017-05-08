@@ -400,7 +400,7 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 		update_message(draw_state->default_message);
 	} else {
 		num_congested = 0;
-		for (inode = 0; inode < num_rr_nodes; inode++) {
+		for (inode = 0; inode < g_num_rr_nodes; inode++) {
 			if (g_rr_node_state[inode].occ() > rr_node[inode].capacity()) {
 				num_congested++;
 			}
@@ -492,7 +492,7 @@ void alloc_draw_structs(const t_arch* arch) {
 	/* Space is allocated for draw_rr_node but not initialized because we do *
 	 * not yet know information about the routing resources.				  */
 	draw_state->draw_rr_node = (t_draw_rr_node *) vtr::malloc(
-									num_rr_nodes * sizeof(t_draw_rr_node));
+									g_num_rr_nodes * sizeof(t_draw_rr_node));
 
     draw_state->arch_info = arch;
 
@@ -543,10 +543,10 @@ void init_draw_coords(float width_val) {
 
 	/* Each time routing is on screen, need to reallocate the color of each *
 	 * rr_node, as the number of rr_nodes may change.						*/
-	if (num_rr_nodes != 0) {
+	if (g_num_rr_nodes != 0) {
 		draw_state->draw_rr_node = (t_draw_rr_node *) vtr::realloc(draw_state->draw_rr_node,
-										(num_rr_nodes) * sizeof(t_draw_rr_node));
-		for (i = 0; i < num_rr_nodes; i++) {
+										(g_num_rr_nodes) * sizeof(t_draw_rr_node));
+		for (i = 0; i < g_num_rr_nodes; i++) {
 			draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
 			draw_state->draw_rr_node[i].node_highlighted = false;
 		}
@@ -716,7 +716,7 @@ static void draw_congestion(void) {
 
     float min_congestion_ratio = 1.;
     float max_congestion_ratio = min_congestion_ratio;
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		short occ = g_rr_node_state[inode].occ();
         short capacity = rr_node[inode].capacity();
 
@@ -731,7 +731,7 @@ static void draw_congestion(void) {
 
     vtr::PlasmaColorMap cmap(min_congestion_ratio, max_congestion_ratio);
 
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		short occ = g_rr_node_state[inode].occ();
         short capacity = rr_node[inode].capacity();
 
@@ -806,7 +806,7 @@ void draw_rr(void) {
 
 	setlinestyle(SOLID);
 
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		if (!draw_state->draw_rr_node[inode].node_highlighted) 
 		{
 			/* If not highlighted node, assign color based on type. */
@@ -1913,7 +1913,7 @@ static void draw_highlight_fan_in_fan_out(int hit_node) {
 	}
 
 	/* Highlight the nodes that can fanin to this node in blue. */
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		for (int iedge = 0, l = rr_node[inode].num_edges(); iedge < l; iedge++) {
 			int fanout_node = rr_node[inode].edge_sink_node(iedge);
 			if (fanout_node == hit_node) { 
@@ -1946,7 +1946,7 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		switch (rr_node[inode].type()) {
 			case IPIN:
 			case OPIN:		
@@ -2278,7 +2278,7 @@ static void deselect_all(void) {
 	for (i = 0; i < (int) g_clbs_nlist.net.size(); i++)
 		draw_state->net_color[i] = BLACK;
 
-	for (i = 0; i < num_rr_nodes; i++) {
+	for (i = 0; i < g_num_rr_nodes; i++) {
 		draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
 		draw_state->draw_rr_node[i].node_highlighted = false;
 	}

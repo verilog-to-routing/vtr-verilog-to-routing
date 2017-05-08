@@ -370,14 +370,14 @@ void build_rr_graph(
 	/* END FC */
 	
 	/* Alloc node lookups, count nodes, alloc rr nodes */
-	num_rr_nodes = 0;
+	g_num_rr_nodes = 0;
 
 	rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, L_nx, L_ny,
-			&num_rr_nodes, chan_details_x, chan_details_y);
-	rr_node = (t_rr_node *) vtr::malloc(sizeof(t_rr_node) * num_rr_nodes);
-	memset(rr_node, 0, sizeof(t_rr_node) * num_rr_nodes);
-	bool *L_rr_edge_done = (bool *) vtr::malloc(sizeof(bool) * num_rr_nodes);
-	memset(L_rr_edge_done, 0, sizeof(bool) * num_rr_nodes);
+			&g_num_rr_nodes, chan_details_x, chan_details_y);
+	rr_node = (t_rr_node *) vtr::malloc(sizeof(t_rr_node) * g_num_rr_nodes);
+	memset(rr_node, 0, sizeof(t_rr_node) * g_num_rr_nodes);
+	bool *L_rr_edge_done = (bool *) vtr::malloc(sizeof(bool) * g_num_rr_nodes);
+	memset(L_rr_edge_done, 0, sizeof(bool) * g_num_rr_nodes);
 
 	/* These are data structures used by the the unidir opin mapping. They are used 
 	   to spread connections evenly for each segment type among the available
@@ -505,7 +505,7 @@ void build_rr_graph(
 	/* END OPconst MAP */
 
 	bool Fc_clipped = false;
-	alloc_and_load_rr_graph(num_rr_nodes, rr_node, num_seg_types, 
+	alloc_and_load_rr_graph(g_num_rr_nodes, rr_node, num_seg_types, 
 			seg_details, chan_details_x, chan_details_y,
 			L_rr_edge_done, track_to_pin_lookup, opin_to_track_map,
 			switch_block_conn, sb_conn_map, L_grid, L_nx, L_ny, Fs, unidir_sb_pattern,
@@ -515,7 +515,7 @@ void build_rr_graph(
 
 	/* Update rr_nodes capacities if global routing */
 	if (graph_type == GRAPH_GLOBAL) {
-		for (int i = 0; i < num_rr_nodes; i++) {
+		for (int i = 0; i < g_num_rr_nodes; i++) {
 			if (rr_node[i].type() == CHANX) {
 				int ylow = rr_node[i].ylow();
 				rr_node[i].set_capacity( chan_width.x_list[ylow] );
@@ -549,7 +549,7 @@ void build_rr_graph(
 	compute_router_lookahead(num_seg_types);
 #endif
 
-    g_rr_node_state = new t_rr_node_state[num_rr_nodes];
+    g_rr_node_state = new t_rr_node_state[g_num_rr_nodes];
 
 	/* Free all temp structs */
 	if (seg_details) {
@@ -684,8 +684,8 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const int w
 static int alloc_rr_switch_inf(map<int,int> *switch_fanin){
     int num_rr_switches = 0;
     // map key: switch index specified in arch; map value: fanin for that index
-    map<int, int> *inward_switch_inf = new map<int, int>[num_rr_nodes];
-    for (int inode = 0; inode < num_rr_nodes; inode ++) {
+    map<int, int> *inward_switch_inf = new map<int, int>[g_num_rr_nodes];
+    for (int inode = 0; inode < g_num_rr_nodes; inode ++) {
         t_rr_node from_node = rr_node[inode];
         int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
@@ -698,7 +698,7 @@ static int alloc_rr_switch_inf(map<int,int> *switch_fanin){
     }  
 
     // get unique index / fanin combination based on inward_switch_inf
-    for (int inode = 0; inode < num_rr_nodes; inode ++) {
+    for (int inode = 0; inode < g_num_rr_nodes; inode ++) {
         map<int, int>::iterator itr;
         for (itr = inward_switch_inf[inode].begin(); itr != inward_switch_inf[inode].end(); itr++) {
             int switch_index = itr->first;
@@ -776,7 +776,7 @@ static void load_rr_switch_inf(const int num_arch_switches, map<int,int> *switch
    now we want to remap these indices to point into the global g_rr_switch_inf array 
    which contains switch info at different fan-in values */
 static void remap_rr_node_switch_indices(map<int,int> *switch_fanin){
-	for (int inode = 0; inode < num_rr_nodes; inode++){
+	for (int inode = 0; inode < g_num_rr_nodes; inode++){
 		t_rr_node from_node = rr_node[inode];
 		int num_edges = from_node.num_edges();
 		for (int iedge = 0; iedge < num_edges; iedge++){
@@ -1151,7 +1151,7 @@ void free_rr_graph(void) {
 	if(net_rr_terminals != NULL) {
 		free(net_rr_terminals);
 	}
-	for (i = 0; i < num_rr_nodes; i++) {
+	for (i = 0; i < g_num_rr_nodes; i++) {
         rr_node[i].set_num_edges(0);
 	}
 
@@ -1168,7 +1168,7 @@ void free_rr_graph(void) {
 	rr_node = NULL;
 	rr_node_indices = NULL;
 	rr_indexed_data = NULL;
-	num_rr_nodes = 0;
+	g_num_rr_nodes = 0;
 
 	delete[] g_rr_switch_inf;
 	g_rr_switch_inf = NULL;
@@ -2208,7 +2208,7 @@ void dump_rr_graph(const char *file_name) {
 
 	FILE *fp = vtr::fopen(file_name, "w");
 
-	for (int inode = 0; inode < num_rr_nodes; ++inode) {
+	for (int inode = 0; inode < g_num_rr_nodes; ++inode) {
 		print_rr_node(fp, rr_node, inode);
 		fprintf(fp, "\n");
 	}

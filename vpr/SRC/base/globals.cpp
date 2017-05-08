@@ -73,14 +73,14 @@ std::string g_routing_id; //SHA256 digest of .route file
 
 /******** Structures defining the FPGA routing architecture ********/
 
-int num_rr_nodes = 0;
-t_rr_node *rr_node = NULL; /* [0..(num_rr_nodes-1)] */
+int g_num_rr_nodes = 0;
+t_rr_node *rr_node = NULL; /* [0..(g_num_rr_nodes-1)] */
 vtr::t_ivec ***rr_node_indices = NULL;
 
 int num_rr_indexed_data = 0;
 t_rr_indexed_data *rr_indexed_data = NULL; /* [0..(num_rr_indexed_data-1)] */
 
-t_rr_node_state* g_rr_node_state = NULL; /* [0..(num_rr_nodes)-1] */
+t_rr_node_state* g_rr_node_state = NULL; /* [0..(g_num_rr_nodes)-1] */
 
 /* Gives the rr_node indices of net terminals. */
 

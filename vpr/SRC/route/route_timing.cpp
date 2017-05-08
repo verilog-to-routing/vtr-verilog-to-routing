@@ -1511,7 +1511,7 @@ static OveruseInfo calculate_overuse_info() {
     size_t total_overuse = 0;
     size_t worst_overuse = 0;
 	int inode;
-	for(inode = 0; inode < num_rr_nodes; inode++){
+	for(inode = 0; inode < g_num_rr_nodes; inode++){
         int overuse = g_rr_node_state[inode].occ() - rr_node[inode].capacity();
 		if(overuse > 0) {
 			overused_nodes += 1;
@@ -1520,14 +1520,14 @@ static OveruseInfo calculate_overuse_info() {
             worst_overuse = std::max(worst_overuse, size_t(overuse));
         }
 	}
-	return OveruseInfo(num_rr_nodes, overused_nodes, total_overuse, worst_overuse);
+	return OveruseInfo(g_num_rr_nodes, overused_nodes, total_overuse, worst_overuse);
 }
 
 static WirelengthInfo calculate_wirelength_info() {
 	size_t used_wirelength = 0;
 	size_t available_wirelength = 0;
 
-	for (int i = 0; i < num_rr_nodes; ++i) {
+	for (int i = 0; i < g_num_rr_nodes; ++i) {
 		if (rr_node[i].type() == CHANX || rr_node[i].type() == CHANY) {
 			available_wirelength += rr_node[i].capacity() + 
 					rr_node[i].xhigh() - rr_node[i].xlow() + 

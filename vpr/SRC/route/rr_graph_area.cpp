@@ -99,7 +99,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	 * something that is 1.5x or 2x the largest buffer, so this may be a bit     *
 	 * optimistic (but I still think it's pretty reasonable).                    */
 
-	int *num_inputs_to_cblock; /* [0..num_rr_nodes-1], but all entries not    */
+	int *num_inputs_to_cblock; /* [0..g_num_rr_nodes-1], but all entries not    */
 
 	/* corresponding to IPINs will be 0.           */
 
@@ -142,7 +142,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 		trans_track_to_cblock_buf = 0;
 	}
 
-	num_inputs_to_cblock = (int *) vtr::calloc(num_rr_nodes, sizeof(int));
+	num_inputs_to_cblock = (int *) vtr::calloc(g_num_rr_nodes, sizeof(int));
 
 	maxlen = max(nx, ny) + 1;
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
@@ -154,7 +154,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	sharable_switch_trans = alloc_and_load_sharable_switch_trans(num_switch,
 			R_minW_nmos, R_minW_pmos);
 
-	for (from_node = 0; from_node < num_rr_nodes; from_node++) {
+	for (from_node = 0; from_node < g_num_rr_nodes; from_node++) {
 
 		from_rr_type = rr_node[from_node].type();
 
@@ -303,7 +303,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 		int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, 
 		const float trans_sram_bit) {
 	bool * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
-	int *num_inputs_to_cblock; /* [0..num_rr_nodes-1], but all entries not    */
+	int *num_inputs_to_cblock; /* [0..g_num_rr_nodes-1], but all entries not    */
 
 	/* corresponding to IPINs will be 0.           */
 
@@ -318,7 +318,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 	   switches of all rr nodes. Thus we keep track of which muxes we have already
 	   counted via the variable below. */
 	bool *chan_node_switch_done;
-	chan_node_switch_done = (bool *) vtr::calloc(num_rr_nodes, sizeof(bool));
+	chan_node_switch_done = (bool *) vtr::calloc(g_num_rr_nodes, sizeof(bool));
 
 	/* The variable below is an accumulator variable that will add up all the   *
 	 * transistors in the routing.  Make double so that it doesn't stop         *
@@ -349,12 +349,12 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 		trans_track_to_cblock_buf = 0;
 	}
 
-	num_inputs_to_cblock = (int *) vtr::calloc(num_rr_nodes, sizeof(int));
+	num_inputs_to_cblock = (int *) vtr::calloc(g_num_rr_nodes, sizeof(int));
 	maxlen = max(nx, ny) + 1;
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 
 	ntrans = 0;
-	for (from_node = 0; from_node < num_rr_nodes; from_node++) {
+	for (from_node = 0; from_node < g_num_rr_nodes; from_node++) {
 
 		from_rr_type = rr_node[from_node].type();
 
@@ -490,7 +490,7 @@ static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch
 
 	trans_count = 0.;
 	
-	for (i = 0; i < num_rr_nodes; i++) {
+	for (i = 0; i < g_num_rr_nodes; i++) {
 		num_inputs = num_inputs_to_cblock[i];
 		trans_count += trans_per_cblock[num_inputs];
 	}

@@ -5,7 +5,7 @@
 
 /************** Global variables shared only by the rr_* modules. ************/
 
-extern bool *rr_edge_done; /* [0..num_rr_nodes-1].  Used to keep track  *
+extern bool *rr_edge_done; /* [0..g_num_rr_nodes-1].  Used to keep track  *
  * of whether or not a node has been put in  *
  * an edge list yet. true if a node is already listed in the edges array *
  * that's being constructed. Ensure that there are no duplicate edges.   */

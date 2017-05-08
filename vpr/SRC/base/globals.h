@@ -112,8 +112,8 @@ extern struct s_trace **trace_head, **trace_tail;
 extern std::string g_routing_id; //SHA256 digest of .route file
 
 /* Structures to define the routing architecture of the FPGA.           */
-extern int num_rr_nodes;
-extern t_rr_node *rr_node; /* [0..num_rr_nodes-1]          */
+extern int g_num_rr_nodes;
+extern t_rr_node *rr_node; /* [0..g_num_rr_nodes-1]          */
 
 extern int num_rr_indexed_data;
 extern t_rr_indexed_data *rr_indexed_data; /* [0 .. num_rr_indexed_data-1] */
@@ -121,7 +121,7 @@ extern t_rr_indexed_data *rr_indexed_data; /* [0 .. num_rr_indexed_data-1] */
 extern vtr::t_ivec ***rr_node_indices;
 
 
-extern t_rr_node_state* g_rr_node_state; /* [0..num_rr_nodes-1] */
+extern t_rr_node_state* g_rr_node_state; /* [0..g_num_rr_nodes-1] */
 
 extern int **net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 

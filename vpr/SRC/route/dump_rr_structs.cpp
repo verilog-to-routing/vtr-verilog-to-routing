@@ -77,9 +77,9 @@ void dump_rr_structs( const char *filename ){
 static void dump_rr_nodes( fstream &file ){
 	/* specify that we're in the rr node section and how many nodes there are */
 	file << endl;
-	file << ".rr_node(" << num_rr_nodes << ")" << endl;
+	file << ".rr_node(" << g_num_rr_nodes << ")" << endl;
 
-	for (int inode = 0; inode < num_rr_nodes; inode++){
+	for (int inode = 0; inode < g_num_rr_nodes; inode++){
 		t_rr_node node = rr_node[inode];
 
 		/* a node's info is printed entirely on one line */

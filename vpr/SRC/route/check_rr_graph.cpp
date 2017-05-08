@@ -26,9 +26,9 @@ void check_rr_graph(const t_graph_type graph_type,
 		const int num_rr_switches, int ***Fc_in,
         const t_segment_inf* segment_inf) {
 
-	int *num_edges_from_current_to_node; /* [0..num_rr_nodes-1] */
-	int *total_edges_to_node; /* [0..num_rr_nodes-1] */
-	char *switch_types_from_current_to_node; /* [0..num_rr_nodes-1] */
+	int *num_edges_from_current_to_node; /* [0..g_num_rr_nodes-1] */
+	int *total_edges_to_node; /* [0..g_num_rr_nodes-1] */
+	char *switch_types_from_current_to_node; /* [0..g_num_rr_nodes-1] */
 	int inode, iedge, to_node, num_edges;
 	short switch_type;
 	t_rr_type rr_type, to_rr_type;
@@ -41,13 +41,13 @@ void check_rr_graph(const t_graph_type graph_type,
 		route_type = GLOBAL;
 	}
 
-	total_edges_to_node = (int *) vtr::calloc(num_rr_nodes, sizeof(int));
-	num_edges_from_current_to_node = (int *) vtr::calloc(num_rr_nodes,
+	total_edges_to_node = (int *) vtr::calloc(g_num_rr_nodes, sizeof(int));
+	num_edges_from_current_to_node = (int *) vtr::calloc(g_num_rr_nodes,
 			sizeof(int));
-	switch_types_from_current_to_node = (char *) vtr::calloc(num_rr_nodes,
+	switch_types_from_current_to_node = (char *) vtr::calloc(g_num_rr_nodes,
 			sizeof(char));
 
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 
 		/* Ignore any uninitialized rr_graph nodes */
 		if ((rr_node[inode].type() == SOURCE) 
@@ -66,7 +66,7 @@ void check_rr_graph(const t_graph_type graph_type,
 		for (iedge = 0; iedge < num_edges; iedge++) {
 			to_node = rr_node[inode].edge_sink_node(iedge);
 
-			if (to_node < 0 || to_node >= num_rr_nodes) {
+			if (to_node < 0 || to_node >= g_num_rr_nodes) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_rr_graph: node %d has an edge %d.\n"
 				"\tEdge is out of range.\n", inode, to_node);
@@ -126,7 +126,7 @@ void check_rr_graph(const t_graph_type graph_type,
 	 * now I check that everything is reachable.                                */
 	is_fringe_warning_sent = false;
 
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		rr_type = rr_node[inode].type();
 
 		if (rr_type != SOURCE) {

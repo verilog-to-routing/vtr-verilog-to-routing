@@ -104,7 +104,7 @@ typedef struct {
  * draw_rr_node: stores the state information of each routing resource.  
  *				 Used to control drawing each routing resource when 
  *				 ROUTING is on screen.
- *				 [0..num_rr_nodes-1]
+ *				 [0..g_num_rr_nodes-1]
  */
 struct t_draw_state {
 	pic_type pic_on_screen;

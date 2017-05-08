@@ -40,7 +40,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 	buffer_Cin = (float *) vtr::calloc(maxlen, sizeof(float));
 
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 
 		from_rr_type = rr_node[inode].type();
 
@@ -167,8 +167,8 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	 * Current structures only keep switch information from a node to the next node and
 	 * not the reverse.  Therefore I need to go through all the possible edges to figure 
 	 * out what the Cout's should be */
-	Couts_to_add = (float *) vtr::calloc(num_rr_nodes, sizeof(float));
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	Couts_to_add = (float *) vtr::calloc(g_num_rr_nodes, sizeof(float));
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		for (iedge = 0; iedge < rr_node[inode].num_edges(); iedge++) {
 			switch_index = rr_node[inode].edge_switch(iedge);
 			to_node = rr_node[inode].edge_sink_node(iedge);
@@ -194,7 +194,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 			}
 		}
 	}
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		rr_node[inode].set_C(rr_node[inode].C() + Couts_to_add[inode]);
 	}
 	free(Couts_to_add);

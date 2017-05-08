@@ -787,7 +787,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 	g_power_commonly_used->total_cb_buffer_size = 0.;
 
 	/* Reset rr graph net indices */
-	for (rr_node_idx = 0; rr_node_idx < num_rr_nodes; rr_node_idx++) {
+	for (rr_node_idx = 0; rr_node_idx < g_num_rr_nodes; rr_node_idx++) {
 		rr_node_power[rr_node_idx].net_num = OPEN;
 		rr_node_power[rr_node_idx].num_inputs = 0;
 		rr_node_power[rr_node_idx].selected_input = 0;
@@ -848,7 +848,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 	}
 
 	/* Calculate power of all routing entities */
-	for (rr_node_idx = 0; rr_node_idx < num_rr_nodes; rr_node_idx++) {
+	for (rr_node_idx = 0; rr_node_idx < g_num_rr_nodes; rr_node_idx++) {
 		t_power_usage sub_power_usage;
 		t_rr_node * node = &rr_node[rr_node_idx];
 		t_rr_node_power * node_power = &rr_node_power[rr_node_idx];
@@ -1161,9 +1161,9 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 	}
 
 	/* Initialize RR Graph Structures */
-	rr_node_power = (t_rr_node_power*) vtr::calloc(num_rr_nodes,
+	rr_node_power = (t_rr_node_power*) vtr::calloc(g_num_rr_nodes,
 			sizeof(t_rr_node_power));
-	for (rr_node_idx = 0; rr_node_idx < num_rr_nodes; rr_node_idx++) {
+	for (rr_node_idx = 0; rr_node_idx < g_num_rr_nodes; rr_node_idx++) {
 		rr_node_power[rr_node_idx].driver_switch_type = OPEN;
 
 	}
@@ -1173,7 +1173,7 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 	max_IPIN_fanin = 0;
 	max_seg_to_seg_fanout = 0;
 	max_seg_to_IPIN_fanout = 0;
-	for (rr_node_idx = 0; rr_node_idx < num_rr_nodes; rr_node_idx++) {
+	for (rr_node_idx = 0; rr_node_idx < g_num_rr_nodes; rr_node_idx++) {
 		int switch_idx;
 		int fanout_to_IPIN = 0;
 		int fanout_to_seg = 0;
@@ -1226,7 +1226,7 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 #endif
 
 	/* Populate driver switch type */
-	for (rr_node_idx = 0; rr_node_idx < num_rr_nodes; rr_node_idx++) {
+	for (rr_node_idx = 0; rr_node_idx < g_num_rr_nodes; rr_node_idx++) {
 		t_rr_node * node = &rr_node[rr_node_idx];
 		int edge_idx;
 
@@ -1243,7 +1243,7 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 
 	/* Find Max Fanout of Routing Buffer	 */
 	max_seg_fanout = 0;
-	for (rr_node_idx = 0; rr_node_idx < num_rr_nodes; rr_node_idx++) {
+	for (rr_node_idx = 0; rr_node_idx < g_num_rr_nodes; rr_node_idx++) {
 		t_rr_node * node = &rr_node[rr_node_idx];
 
 		switch (node->type()) {
@@ -1328,7 +1328,7 @@ bool power_uninit(void) {
 	int msg_idx;
 	bool error = false;
 
-	for (rr_node_idx = 0; rr_node_idx < num_rr_nodes; rr_node_idx++) {
+	for (rr_node_idx = 0; rr_node_idx < g_num_rr_nodes; rr_node_idx++) {
 		t_rr_node * node = &rr_node[rr_node_idx];
 		t_rr_node_power * node_power = &rr_node_power[rr_node_idx];
 

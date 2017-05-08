@@ -40,7 +40,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 	int max_pins, inode, prev_node;
 	unsigned int inet, ipin;
 	bool valid, connects;
-	bool * connected_to_route; /* [0 .. num_rr_nodes-1] */
+	bool * connected_to_route; /* [0 .. g_num_rr_nodes-1] */
 	struct s_trace *tptr;
 	bool * pin_done;
 
@@ -60,7 +60,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 	check_locally_used_clb_opins(clb_opins_used_locally, route_type, segment_inf);
 
-	connected_to_route = (bool *) vtr::calloc(num_rr_nodes, sizeof(bool));
+	connected_to_route = (bool *) vtr::calloc(g_num_rr_nodes, sizeof(bool));
 
 	max_pins = 0;
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
@@ -505,7 +505,7 @@ static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_local
 
 	/* First set the occupancy of everything to zero. */
 
-	for (inode = 0; inode < num_rr_nodes; inode++)
+	for (inode = 0; inode < g_num_rr_nodes; inode++)
 		g_rr_node_state[inode].set_occ(0);
 
 	/* Now go through each net and count the tracks and pins used everywhere */
@@ -594,9 +594,9 @@ static void check_node_and_range(int inode, enum e_route_type route_type, const 
 	/* Checks that inode is within the legal range, then calls check_node to    *
 	 * check that everything else about the node is OK.                         */
 
-	if (inode < 0 || inode >= num_rr_nodes) { 		
+	if (inode < 0 || inode >= g_num_rr_nodes) { 		
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
-				"in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, num_rr_nodes - 1);
+				"in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, g_num_rr_nodes - 1);
 	}
 	check_node(inode, route_type, segment_inf);
 }

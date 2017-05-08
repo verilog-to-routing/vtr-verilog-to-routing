@@ -30,7 +30,7 @@ using namespace std;
 /* Array below allows mapping from any rr_node to any rt_node currently in
  * the rt_tree.                                                              */
 
-static t_rt_node **rr_node_to_rt_node = NULL; /* [0..num_rr_nodes-1] */
+static t_rt_node **rr_node_to_rt_node = NULL; /* [0..g_num_rr_nodes-1] */
 
 
 /* Frees lists for fast addition and deletion of nodes and edges. */
@@ -83,7 +83,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
         }
 	}
 
-	rr_node_to_rt_node = (t_rt_node **) vtr::malloc(num_rr_nodes * sizeof(t_rt_node *));
+	rr_node_to_rt_node = (t_rt_node **) vtr::malloc(g_num_rr_nodes * sizeof(t_rt_node *));
 
     return true;
 }

@@ -153,9 +153,9 @@ void load_net_delay_from_routing(float **net_delay, vector<t_vnet> & nets,
 	t_rc_node *rc_node_free_list, *rc_root;
 	t_linked_rc_edge *rc_edge_free_list;
 	unsigned int inet;
-	t_linked_rc_ptr *rr_node_to_rc_node; /* [0..num_rr_nodes-1]  */
+	t_linked_rc_ptr *rr_node_to_rc_node; /* [0..g_num_rr_nodes-1]  */
 
-	rr_node_to_rc_node = (t_linked_rc_ptr *) vtr::calloc(num_rr_nodes,
+	rr_node_to_rc_node = (t_linked_rc_ptr *) vtr::calloc(g_num_rr_nodes,
 			sizeof(t_linked_rc_ptr));
 
 	rc_node_free_list = NULL;

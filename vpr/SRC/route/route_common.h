@@ -63,7 +63,7 @@ typedef struct {
 
 /**************** Variables shared by all route_files ***********************/
 
-extern t_rr_node_route_inf *rr_node_route_inf; /* [0..num_rr_nodes-1] */
+extern t_rr_node_route_inf *rr_node_route_inf; /* [0..g_num_rr_nodes-1] */
 extern struct s_bb *route_bb; /* [0..num_nets-1]     */
 
 /******* Subroutines in route_common used only by other router modules ******/

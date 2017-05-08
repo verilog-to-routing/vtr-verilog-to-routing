@@ -41,7 +41,7 @@ using namespace std;
 
 /***************** Variables shared only by route modules *******************/
 
-t_rr_node_route_inf *rr_node_route_inf = NULL; /* [0..num_rr_nodes-1] */
+t_rr_node_route_inf *rr_node_route_inf = NULL; /* [0..g_num_rr_nodes-1] */
 
 struct s_bb *route_bb = NULL; /* [0..g_clbs_nlist.net.size()-1]. Limits area in which each  */
 
@@ -394,7 +394,7 @@ bool feasible_routing(void) {
 
 	int inode;
 
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		if (g_rr_node_state[inode].occ() > rr_node[inode].capacity()) {
 			return (false);
 		}
@@ -466,7 +466,7 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 
 	int inode, occ, capacity;
 
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		occ = g_rr_node_state[inode].occ();
 		capacity = rr_node[inode].capacity();
 
@@ -880,9 +880,9 @@ void alloc_and_load_rr_node_route_structs(void) {
 			"in alloc_and_load_rr_node_route_structs: old rr_node_route_inf array exists.\n");
 	}
 
-	rr_node_route_inf = (t_rr_node_route_inf *) vtr::malloc(num_rr_nodes * sizeof(t_rr_node_route_inf));
+	rr_node_route_inf = (t_rr_node_route_inf *) vtr::malloc(g_num_rr_nodes * sizeof(t_rr_node_route_inf));
 
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
 		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
 		rr_node_route_inf[inode].pres_cost = 1.0;
@@ -901,7 +901,7 @@ void reset_rr_node_route_structs(void) {
 
 	VTR_ASSERT(rr_node_route_inf != NULL);
 
-	for (inode = 0; inode < num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_num_rr_nodes; inode++) {
 		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
 		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
 		rr_node_route_inf[inode].pres_cost = 1.0;
