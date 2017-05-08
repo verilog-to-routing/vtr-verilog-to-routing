@@ -194,9 +194,9 @@ init_route_tree_to_source(int inet) {
 	inode = net_rr_terminals[inet][0]; /* Net source */
 
 	rt_root->inode = inode;
-	rt_root->C_downstream = rr_node[inode].C;
-	rt_root->R_upstream = rr_node[inode].R;
-	rt_root->Tdel = 0.5 * rr_node[inode].R * rr_node[inode].C;
+	rt_root->C_downstream = rr_node[inode].C();
+	rt_root->R_upstream = rr_node[inode].R();
+	rt_root->Tdel = 0.5 * rr_node[inode].R() * rr_node[inode].C();
 	rr_node_to_rt_node[inode] = rt_root;
 
 	return (rt_root);
@@ -225,8 +225,7 @@ update_route_tree(struct s_heap * hptr) {
 	if (subtree_parent_rt_node != NULL) { /* Parent exists. */
 		Tdel_start = subtree_parent_rt_node->Tdel;
 		iswitch = unbuffered_subtree_rt_root->parent_switch;
-		Tdel_start += g_rr_switch_inf[iswitch].R
-				* unbuffered_subtree_rt_root->C_downstream;
+		Tdel_start += g_rr_switch_inf[iswitch].R * unbuffered_subtree_rt_root->C_downstream;
 		Tdel_start += g_rr_switch_inf[iswitch].Tdel;
 	} else { /* Subtree starts at SOURCE */
 		Tdel_start = 0.;
@@ -261,7 +260,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	sink_rt_node = alloc_rt_node();
 	sink_rt_node->u.child_list = NULL;
 	sink_rt_node->inode = inode;
-	C_downstream = rr_node[inode].C;
+	C_downstream = rr_node[inode].C();
 	sink_rt_node->C_downstream = C_downstream;
 	rr_node_to_rt_node[inode] = sink_rt_node;
 
@@ -297,9 +296,9 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 		rt_node->inode = inode;
 
 		if (g_rr_switch_inf[iswitch].buffered == false)
-			C_downstream += rr_node[inode].C;
+			C_downstream += rr_node[inode].C();
 		else
-			C_downstream = rr_node[inode].C;
+			C_downstream = rr_node[inode].C();
 
 		rt_node->C_downstream = C_downstream;
 		rr_node_to_rt_node[inode] = rt_node;
@@ -348,7 +347,7 @@ static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node) {
 	inode = rt_node->inode;
 	parent_rt_node = rt_node->parent_node;
 
-	R_upstream = g_rr_switch_inf[iswitch].R + rr_node[inode].R;
+	R_upstream = g_rr_switch_inf[iswitch].R + rr_node[inode].R();
 
 	if (g_rr_switch_inf[iswitch].buffered == false)
 		R_upstream += parent_rt_node->R_upstream;
@@ -373,9 +372,9 @@ static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node) {
 		inode = rt_node->inode;
 
 		if (g_rr_switch_inf[iswitch].buffered)
-			R_upstream = g_rr_switch_inf[iswitch].R + rr_node[inode].R;
+			R_upstream = g_rr_switch_inf[iswitch].R + rr_node[inode].R();
 		else
-			R_upstream += g_rr_switch_inf[iswitch].R + rr_node[inode].R;
+			R_upstream += g_rr_switch_inf[iswitch].R + rr_node[inode].R();
 
 		rt_node->R_upstream = R_upstream;
 		linked_rt_edge = rt_node->u.child_list;
@@ -428,7 +427,7 @@ void load_route_tree_Tdel(t_rt_node * subtree_rt_root, float Tarrival) {
 	 * along a wire segment's length.  See discussion in net_delay.c if you want
 	 * to change this.                                                           */
 
-	Tdel = Tarrival + 0.5 * subtree_rt_root->C_downstream * rr_node[inode].R;
+	Tdel = Tarrival + 0.5 * subtree_rt_root->C_downstream * rr_node[inode].R();
 	subtree_rt_root->Tdel = Tdel;
 
 	/* Now expand the children of this node to load their Tdel values (depth-
@@ -785,9 +784,9 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 	// can calculate R_upstream from just upstream information without considering children
 	auto parent_switch = rt_root->parent_switch;
 	if (g_rr_switch_inf[parent_switch].buffered)
-		R_upstream = g_rr_switch_inf[parent_switch].R + rr_node[inode].R;
+		R_upstream = g_rr_switch_inf[parent_switch].R + rr_node[inode].R();
 	else
-		R_upstream += g_rr_switch_inf[parent_switch].R + rr_node[inode].R;
+		R_upstream += g_rr_switch_inf[parent_switch].R + rr_node[inode].R();
 	rt_root->R_upstream = R_upstream;
 
 	auto edge = rt_root->u.child_list;
@@ -835,7 +834,7 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 	VTR_ASSERT(rt_root->u.child_list != nullptr);
 
 	// the sum of its children and its own capacitance
-	rt_root->C_downstream = C_downstream_children + rr_node[inode].C;
+	rt_root->C_downstream = C_downstream_children + rr_node[inode].C();
 	return false;
 }
 
@@ -1064,20 +1063,20 @@ bool is_valid_route_tree(const t_rt_node* root) {
 	short iswitch = root->parent_switch;
 	if (root->parent_node) {
 		if (g_rr_switch_inf[iswitch].buffered) {
-			if (root->R_upstream != rr_node[inode].R + g_rr_switch_inf[iswitch].R) {
+			if (root->R_upstream != rr_node[inode].R() + g_rr_switch_inf[iswitch].R) {
 				vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, 
-					rr_node[inode].R + g_rr_switch_inf[iswitch].R);
+					rr_node[inode].R() + g_rr_switch_inf[iswitch].R);
 				return false;
 			}
 		}
-		else if (root->R_upstream != rr_node[inode].R + root->parent_node->R_upstream + g_rr_switch_inf[iswitch].R) {
+		else if (root->R_upstream != rr_node[inode].R() + root->parent_node->R_upstream + g_rr_switch_inf[iswitch].R) {
 			vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, 
-				rr_node[inode].R + root->parent_node->R_upstream + g_rr_switch_inf[iswitch].R);
+				rr_node[inode].R() + root->parent_node->R_upstream + g_rr_switch_inf[iswitch].R);
 			return false;
 		}
 	}
-	else if (root->R_upstream != rr_node[inode].R) {
-		vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, rr_node[inode].R);
+	else if (root->R_upstream != rr_node[inode].R()) {
+		vtr::printf_info("%d mismatch R upstream %e supposed %e\n", inode, root->R_upstream, rr_node[inode].R());
 		return false;
 	}
 
@@ -1116,8 +1115,8 @@ bool is_valid_route_tree(const t_rt_node* root) {
 		edge = edge->next;
 	}
 
-	if (root->C_downstream != C_downstream_children + rr_node[inode].C) {
-		vtr::printf_info("mismatch C downstream %e supposed %e\n", root->C_downstream, C_downstream_children + rr_node[inode].C);
+	if (root->C_downstream != C_downstream_children + rr_node[inode].C()) {
+		vtr::printf_info("mismatch C downstream %e supposed %e\n", root->C_downstream, C_downstream_children + rr_node[inode].C());
 		return false;
 	}
 

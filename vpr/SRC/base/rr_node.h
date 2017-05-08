@@ -68,12 +68,12 @@ private:
 	enum e_direction direction;
 	t_rr_type type_;
 
+	float R_;
+	float C_;
+
 public:
 	int *edges;
 	short *switches;
-
-	float R;
-	float C;
 
 	/* Member functions */
     t_rr_type type() const { return type_; }
@@ -91,6 +91,8 @@ public:
     signed short get_length() const;
 	enum e_direction get_direction() const;
 	enum e_drivers get_drivers() const;
+    float R() const { return R_; }
+    float C() const { return C_; }
 
     void set_type(t_rr_type new_type) { type_ = new_type; }
 	void set_coordinates(short, short, short, short);
@@ -101,6 +103,8 @@ public:
 	void set_num_edges(short);
 	void set_direction(e_direction);
 	void set_occ(short);
+    void set_R(float new_R) { R_ = new_R; }
+    void set_C(float new_C) { C_ = new_C; }
 
 } t_rr_node;
 

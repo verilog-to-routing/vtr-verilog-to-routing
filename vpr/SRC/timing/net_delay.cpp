@@ -376,7 +376,7 @@ static float load_rc_tree_C(t_rc_node * rc_node) {
 
 	linked_rc_edge = rc_node->u.child_list;
 	inode = rc_node->inode;
-	C = rr_node[inode].C;
+	C = rr_node[inode].C();
 
 	while (linked_rc_edge != NULL) { /* For all children */
 		iswitch = linked_rc_edge->iswitch;
@@ -408,7 +408,7 @@ static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival) {
 
 	Tdel = T_arrival;
 	inode = rc_node->inode;
-	Rmetal = rr_node[inode].R;
+	Rmetal = rr_node[inode].R();
 
 	/* NB:  rr_node[inode].C gives the capacitance of this node, while          *
 	 * rc_node->C_downstream gives the unbuffered downstream capacitance rooted *

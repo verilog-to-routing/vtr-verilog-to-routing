@@ -415,8 +415,8 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	}
 
 	/* Check that the capacitance and resistance are reasonable. */
-	C = rr_node[inode].C;
-	R = rr_node[inode].R;
+	C = rr_node[inode].C();
+	R = rr_node[inode].R();
 
 	if (rr_type == CHANX || rr_type == CHANY) {
 		if (C < 0. || R < 0.) {

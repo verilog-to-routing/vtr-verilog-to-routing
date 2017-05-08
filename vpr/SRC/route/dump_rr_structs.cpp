@@ -92,8 +92,8 @@ static void dump_rr_nodes( fstream &file ){
 		file << "ptc_num(" << node.get_ptc_num() << ") ";
 		file << "fan_in(" << node.get_fan_in() << ") ";
 		file << "direction(" << (int)node.get_direction() << ") ";
-		file << "R(" << node.R << ") ";
-		file << "C(" << node.C << ") ";
+		file << "R(" << node.R() << ") ";
+		file << "C(" << node.C() << ") ";
 
 		/* print edges and switches */
 		file << endl << "  .edges(" << node.get_num_edges() << ")" << endl;	//specify how many edges/switches there are

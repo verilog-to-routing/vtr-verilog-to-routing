@@ -1327,8 +1327,8 @@ static void build_rr_sinks_sources(const int i, const int j,
 		//if this needs to change, rr_node.{h,c} need to be modified accordingly
 		VTR_ASSERT(type->width == 1);
 		L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
-		L_rr_node[inode].R = 0;
-		L_rr_node[inode].C = 0;
+		L_rr_node[inode].set_R(0);
+		L_rr_node[inode].set_C(0);
 		L_rr_node[inode].set_ptc_num(iclass);
 		L_rr_node[inode].set_direction((enum e_direction)OPEN);
 	}
@@ -1369,8 +1369,8 @@ static void build_rr_sinks_sources(const int i, const int j,
 		L_rr_node[inode].set_capacity(1);
 		L_rr_node[inode].set_occ(0);
 		L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
-		L_rr_node[inode].C = 0;
-		L_rr_node[inode].R = 0;
+		L_rr_node[inode].set_C(0);
+		L_rr_node[inode].set_R(0);
 		L_rr_node[inode].set_ptc_num(ipin);
 		L_rr_node[inode].set_direction((enum e_direction)OPEN);
 	}
@@ -1534,8 +1534,8 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 		}
 
 		int length = end - start + 1;
-		L_rr_node[node].R = length * seg_details[track].Rmetal;
-		L_rr_node[node].C = length * seg_details[track].Cmetal;
+		L_rr_node[node].set_R(length * seg_details[track].Rmetal);
+		L_rr_node[node].set_C(length * seg_details[track].Cmetal);
 
 		L_rr_node[node].set_ptc_num(track);
 		L_rr_node[node].set_type(chan_type);
@@ -2275,7 +2275,7 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	fprintf(fp, "Occ: %d  Capacity: %d\n", L_rr_node[inode].get_occ(),
 			L_rr_node[inode].get_capacity());
 	if (rr_type != INTRA_CLUSTER_EDGE) {
-		fprintf(fp, "R: %g  C: %g\n", L_rr_node[inode].R, L_rr_node[inode].C);
+		fprintf(fp, "R: %g  C: %g\n", L_rr_node[inode].R(), L_rr_node[inode].C());
 	}
 	fprintf(fp, "Cost_index: %d\n", L_rr_node[inode].get_cost_index());
 }

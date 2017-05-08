@@ -246,8 +246,8 @@ static void load_rr_indexed_data_T_values(int index_start,
 			continue;
 		cost_index = rr_node[inode].get_cost_index();
 		num_nodes_of_index[cost_index]++;
-		C_total[cost_index] += rr_node[inode].C;
-		R_total[cost_index] += rr_node[inode].R;
+		C_total[cost_index] += rr_node[inode].C();
+		R_total[cost_index] += rr_node[inode].R();
 
 		/* get average switch parameters */
 		int num_edges = rr_node[inode].get_num_edges();

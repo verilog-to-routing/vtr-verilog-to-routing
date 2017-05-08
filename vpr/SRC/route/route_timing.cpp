@@ -930,9 +930,9 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 			new_R_upstream = R_upstream + g_rr_switch_inf[iswitch].R;
 		}
 
-		float Tdel = rr_node[to_node].C * (new_R_upstream + 0.5 * rr_node[to_node].R);
+		float Tdel = rr_node[to_node].C() * (new_R_upstream + 0.5 * rr_node[to_node].R());
 		Tdel += g_rr_switch_inf[iswitch].Tdel;
-		new_R_upstream += rr_node[to_node].R;
+		new_R_upstream += rr_node[to_node].R();
 		new_back_pcost += criticality_fac * Tdel;
 
 		if (bend_cost != 0.) {

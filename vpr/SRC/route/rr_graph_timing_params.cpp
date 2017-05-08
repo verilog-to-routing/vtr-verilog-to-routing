@@ -76,8 +76,8 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 					 * input capacitance of the largest one.                        */
 
 					if (!buffered && inode < to_node) { /* Pass transistor. */
-						rr_node[inode].C += Cin;
-						rr_node[to_node].C += Cout;
+						rr_node[inode].set_C(rr_node[inode].C() + Cin);
+						rr_node[to_node].set_C(rr_node[to_node].C() + Cout);
 					}
 
 					else if (buffered) {
@@ -85,7 +85,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 						if (rr_node[to_node].get_drivers() != SINGLE) {
 							/* For multiple-driver architectures the output capacitance can
 							 * be added now since each edge is actually a driver */
-							rr_node[to_node].C += Cout;
+							rr_node[to_node].set_C(rr_node[to_node].C() + Cout);
 						}
 						isblock = seg_index_of_sblock(inode, to_node);
 						buffer_Cin[isblock] = max(buffer_Cin[isblock], Cin);
@@ -101,12 +101,12 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 						   at least one logic block input connects. */
 						icblock = seg_index_of_cblock(from_rr_type, to_node);
 						if (cblock_counted[icblock] == false) {
-							rr_node[inode].C += C_ipin_cblock;
+							rr_node[inode].set_C(rr_node[inode].C() + C_ipin_cblock);
 							cblock_counted[icblock] = true;
 						}
 					} else {
 						/* No track buffer. Simply add the capacitance onto the wire */
-						rr_node[inode].C += C_ipin_cblock;
+						rr_node[inode].set_C(rr_node[inode].C() + C_ipin_cblock);
 					}
 				}
 			} /* End loop over all edges of a node. */
@@ -137,7 +137,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 			}
 
 			for (isblock = iseg_low - 1; isblock <= iseg_high; isblock++) {
-				rr_node[inode].C += buffer_Cin[isblock]; /* Biggest buf Cin at loc */
+				rr_node[inode].set_C(rr_node[inode].C() + buffer_Cin[isblock]); /* Biggest buf Cin at loc */
 				buffer_Cin[isblock] = 0.;
 			}
 
@@ -157,7 +157,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 				if (rr_node[to_node].get_drivers() != SINGLE) {
 					Cout = g_rr_switch_inf[switch_index].Cout;
 					to_node = rr_node[inode].edges[iedge]; /* Will be CHANX or CHANY */
-					rr_node[to_node].C += Cout;
+					rr_node[to_node].set_C(rr_node[to_node].C() + Cout);
 				}
 			}
 		}
@@ -196,7 +196,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 		}
 	}
 	for (inode = 0; inode < num_rr_nodes; inode++) {
-		rr_node[inode].C += Couts_to_add[inode];
+		rr_node[inode].set_C(rr_node[inode].C() + Couts_to_add[inode]);
 	}
 	free(Couts_to_add);
 	free(cblock_counted);

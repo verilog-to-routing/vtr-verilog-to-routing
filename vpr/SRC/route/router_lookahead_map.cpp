@@ -160,11 +160,11 @@ public:
 		}
 
 		/* get delay info for this node */
-		this->delay = parent_delay + rr_node[set_rr_node_ind].C * (new_R_upstream + 0.5 * rr_node[set_rr_node_ind].R);
+		this->delay = parent_delay + rr_node[set_rr_node_ind].C() * (new_R_upstream + 0.5 * rr_node[set_rr_node_ind].R());
 		if (switch_ind != UNDEFINED){
 			this->delay += g_rr_switch_inf[switch_ind].Tdel;
 		}
-		new_R_upstream += rr_node[set_rr_node_ind].R;
+		new_R_upstream += rr_node[set_rr_node_ind].R();
 		this->R_upstream = new_R_upstream;
 
 		/* get congestion info for this node */
