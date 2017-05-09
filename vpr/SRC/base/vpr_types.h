@@ -372,7 +372,7 @@ typedef struct s_tnode {
 #endif
 
 	/* Valid values for TN_FF_SINK, TN_FF_SOURCE, TN_FF_CLOCK, TN_INPAD_SOURCE, and TN_OUTPAD_SINK only: */
-	int clock_domain; /* Index of the clock in g_sdc->constrained_clocks which this flip-flop or I/O is constrained on. */
+	int clock_domain; /* Index of the clock in g_ctx.sdc->constrained_clocks which this flip-flop or I/O is constrained on. */
 	float clock_delay; /* The time taken for a clock signal to get to the flip-flop or I/O (assumed 0 for I/Os). */
 
 	/* Used in post-packing timing graph only: */
@@ -434,7 +434,7 @@ typedef struct s_override_constraint {
 	/* A special-case constraint to override the default, calculated, timing constraint.  Holds data from
 	 set_clock_groups, set_false_path, set_max_delay, and set_multicycle_path commands. Can hold data for
 	 clock-to-clock, clock-to-flip-flop, flip-flop-to-clock or flip-flop-to-flip-flop constraints, each of
-	 which has its own array (g_sdc->cc_constraints, g_sdc->cf_constraints, g_sdc->fc_constraints, and g_sdc->ff_constraints). */
+	 which has its own array (g_ctx.sdc->cc_constraints, g_ctx.sdc->cf_constraints, g_ctx.sdc->fc_constraints, and g_ctx.sdc->ff_constraints). */
 	char ** source_list; /* Array of net names of flip-flops or clocks */
 	char ** sink_list;
 	int num_source;
@@ -447,7 +447,7 @@ typedef struct s_override_constraint {
 typedef struct s_timing_constraints { /* Container structure for all SDC timing constraints. 
  See top-level comment to read_sdc.c for details on members. */
 	int num_constrained_clocks; /* number of clocks with timing constraints */
-	t_clock * constrained_clocks; /* [0..g_sdc->num_constrained_clocks - 1] array of clocks with timing constraints */
+	t_clock * constrained_clocks; /* [0..g_ctx.sdc->num_constrained_clocks - 1] array of clocks with timing constraints */
 
 	float ** domain_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
 
@@ -548,7 +548,7 @@ typedef struct s_grid_tile {
 
 /* Stores the bounding box of a net in terms of the minimum and  *
  * maximum coordinates of the blocks forming the net, clipped to *
- * the region (1..g_nx, 1..g_ny).                                    */
+ * the region (1..g_ctx.nx, 1..g_ctx.ny).                                    */
 struct s_bb {
 	int xmin;
 	int xmax;
@@ -991,7 +991,7 @@ typedef struct s_trace {
 
 #define NO_PREVIOUS -1
 
-/* Index of the SOURCE, SINK, OPIN, IPIN, etc. member of g_rr_indexed_data.    */
+/* Index of the SOURCE, SINK, OPIN, IPIN, etc. member of g_ctx.rr_indexed_data.    */
 enum e_cost_indices {
 	SOURCE_COST_INDEX = 0,
 	SINK_COST_INDEX,

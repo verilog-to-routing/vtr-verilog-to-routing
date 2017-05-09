@@ -1,4 +1,4 @@
 #include "globals.h"
 
-VprContext g_ctx.vpr_ctx;
+VprContext g_ctx;
 

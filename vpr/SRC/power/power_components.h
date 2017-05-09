@@ -71,9 +71,6 @@ struct s_power_breakdown {
 };
 
 /************************* FUNCTION DECLARATIONS ********************/
-extern t_power_components g_power_by_component;
-
-/************************* FUNCTION DECLARATIONS ********************/
 
 void power_components_init(void);
 void power_components_uninit(void);

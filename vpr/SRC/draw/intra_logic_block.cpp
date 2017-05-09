@@ -60,14 +60,14 @@ void draw_internal_alloc_blk() {
 	/* Create a vector holding coordinate information for each type of physical logic
 	 * block.
 	 */
-	draw_coords->blk_info.resize(g_num_block_types);
+	draw_coords->blk_info.resize(g_ctx.num_block_types);
 
-	for (i = 0; i < g_num_block_types; ++i) {
+	for (i = 0; i < g_ctx.num_block_types; ++i) {
 		/* Empty block has no sub_blocks */
-		if (&g_block_types[i] == EMPTY_TYPE)
+		if (&g_ctx.block_types[i] == g_ctx.EMPTY_TYPE)
 			continue;
 		
-		pb_graph_head = g_block_types[i].pb_graph_head;
+		pb_graph_head = g_ctx.block_types[i].pb_graph_head;
 		
 		/* Create an vector with size equal to the total number of pins for each type 
 		 * of physical logic block, in order to uniquely identify each sub-block in 
@@ -85,10 +85,10 @@ void draw_internal_init_blk() {
 
 	t_pb_graph_node *pb_graph_head_node;
 
-	for (int i = 0; i < g_num_block_types; ++i) {
+	for (int i = 0; i < g_ctx.num_block_types; ++i) {
 		/* Empty block has no sub_blocks */
-		s_type_descriptor& type_desc = g_block_types[i];
-		if (&type_desc == EMPTY_TYPE)
+		s_type_descriptor& type_desc = g_ctx.block_types[i];
+		if (&type_desc == g_ctx.EMPTY_TYPE)
 			continue;
 
 		pb_graph_head_node = type_desc.pb_graph_head;
@@ -103,7 +103,7 @@ void draw_internal_init_blk() {
 		// note, that all clbs of the same type are the same size,
 		// and that consequently we have *one* model for each type.
 		clb_bbox.bottom_left() = t_point(0,0);
-		if (type_desc.width > (g_nx + 2) || type_desc.height > (g_ny + 2)) {
+		if (type_desc.width > (g_ctx.nx + 2) || type_desc.height > (g_ctx.ny + 2)) {
 			// in this case, the clb certainly wont't fit, but this prevents
 			// an out-of-bounds access, and provides some sort of (probably right)
 			// value
@@ -134,29 +134,29 @@ void draw_internal_init_blk() {
 
 
 void draw_internal_draw_subblk() {
-	for (int i = 0; i <= (g_nx + 1); i++) {
-		for (int j = 0; j <= (g_ny + 1); j++) {
+	for (int i = 0; i <= (g_ctx.nx + 1); i++) {
+		for (int j = 0; j <= (g_ctx.ny + 1); j++) {
 			/* Only the first block of a group should control drawing */
-			if (g_grid[i][j].width_offset > 0 || g_grid[i][j].height_offset > 0) 
+			if (g_ctx.grid[i][j].width_offset > 0 || g_ctx.grid[i][j].height_offset > 0) 
 				continue;
 
 			/* Don't draw if tile is empty. This includes corners. */
-			if (g_grid[i][j].type == EMPTY_TYPE)
+			if (g_ctx.grid[i][j].type == g_ctx.EMPTY_TYPE)
 				continue;
 
-			int num_sub_tiles = g_grid[i][j].type->capacity;
+			int num_sub_tiles = g_ctx.grid[i][j].type->capacity;
 			for (int k = 0; k < num_sub_tiles; ++k) {
 				/* Don't draw if block is empty. */
-				if (g_grid[i][j].blocks[k] == EMPTY_BLOCK || g_grid[i][j].blocks[k] == INVALID_BLOCK)
+				if (g_ctx.grid[i][j].blocks[k] == EMPTY_BLOCK || g_ctx.grid[i][j].blocks[k] == INVALID_BLOCK)
 					continue;
 
 				/* Get block ID */
-				int bnum = g_grid[i][j].blocks[k];
+				int bnum = g_ctx.grid[i][j].blocks[k];
 				/* Safety check, that physical blocks exists in the CLB */
-				if (g_blocks[bnum].pb == NULL)
+				if (g_ctx.blocks[bnum].pb == NULL)
 					continue;
 
-				draw_internal_pb(&g_blocks[bnum], g_blocks[bnum].pb, t_bound_box(0,0,0,0));
+				draw_internal_pb(&g_ctx.blocks[bnum], g_ctx.blocks[bnum].pb, t_bound_box(0,0,0,0));
 			}
 		}
 	}
@@ -259,9 +259,9 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 	const float FRACTION_CHILD_MARGIN_X = 0.025;
 	const float FRACTION_CHILD_MARGIN_Y = 0.04;
 
-	int capacity = g_block_types[type_descrip_index].capacity;
-	if (capacity > 1 && g_nx > 0 && g_ny > 0 && g_grid[1][0].usage != 0
-		&& type_descrip_index == g_grid[1][0].type->index) {
+	int capacity = g_ctx.block_types[type_descrip_index].capacity;
+	if (capacity > 1 && g_ctx.nx > 0 && g_ctx.ny > 0 && g_ctx.grid[1][0].usage != 0
+		&& type_descrip_index == g_ctx.grid[1][0].type->index) {
 
 		// that should test for io blocks, and setting capacity_divisor > 1
 		// will squish every thing down
@@ -457,21 +457,21 @@ void draw_logical_connections() {
 	t_draw_state* draw_state = get_draw_state_vars();
 
 	// iterate over all the atom nets
-    for(auto net_id : g_atom_nl.nets()) {
+    for(auto net_id : g_ctx.atom_nl.nets()) {
 
-        AtomPinId driver_pin_id = g_atom_nl.net_driver(net_id);
-        AtomBlockId src_blk_id = g_atom_nl.pin_block(driver_pin_id);
-		const t_pb_graph_node* src_pb_gnode = g_atom_lookup.atom_pb_graph_node(src_blk_id);
-		t_block* src_clb = &g_blocks[g_atom_lookup.atom_clb(src_blk_id)];
+        AtomPinId driver_pin_id = g_ctx.atom_nl.net_driver(net_id);
+        AtomBlockId src_blk_id = g_ctx.atom_nl.pin_block(driver_pin_id);
+		const t_pb_graph_node* src_pb_gnode = g_ctx.atom_lookup.atom_pb_graph_node(src_blk_id);
+		t_block* src_clb = &g_ctx.blocks[g_ctx.atom_lookup.atom_clb(src_blk_id)];
 		bool src_is_selected = sel_subblk_info.is_in_selected_subtree(src_pb_gnode, src_clb);
 		bool src_is_src_of_selected = sel_subblk_info.is_source_of_selected(src_pb_gnode, src_clb);
 
 		// iterate over the sinks
-        for(auto sink_pin_id : g_atom_nl.net_sinks(net_id)) {
+        for(auto sink_pin_id : g_ctx.atom_nl.net_sinks(net_id)) {
 
-            AtomBlockId sink_blk_id = g_atom_nl.pin_block(sink_pin_id);
-            const t_pb_graph_node* sink_pb_gnode = g_atom_lookup.atom_pb_graph_node(sink_blk_id);
-			t_block* sink_clb = &g_blocks[g_atom_lookup.atom_clb(sink_blk_id)];
+            AtomBlockId sink_blk_id = g_ctx.atom_nl.pin_block(sink_pin_id);
+            const t_pb_graph_node* sink_pb_gnode = g_ctx.atom_lookup.atom_pb_graph_node(sink_blk_id);
+			t_block* sink_clb = &g_ctx.blocks[g_ctx.atom_lookup.atom_clb(sink_blk_id)];
 
 			if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
 				setcolor(DRIVES_IT_COLOR);
@@ -505,14 +505,14 @@ void find_pin_index_at_model_scope(
 	const AtomPinId pin_id, const AtomBlockId blk_id,
 	int* pin_index, int* total_pins) {
 
-    AtomPortId port_id = g_atom_nl.pin_port(pin_id);
-    const t_model_ports* model_port = g_atom_nl.port_model(port_id);
+    AtomPortId port_id = g_ctx.atom_nl.pin_port(pin_id);
+    const t_model_ports* model_port = g_ctx.atom_nl.port_model(port_id);
 
     //Total up the port widths
     //  Note that we do this on the model since the atom netlist doesn't include unused ports
     int pin_cnt = 0;
     *pin_index = -1; //initialize
-    const t_model* model = g_atom_nl.block_model(blk_id);
+    const t_model* model = g_ctx.atom_nl.block_model(blk_id);
     for (const t_model_ports* port : {model->inputs, model->outputs}) {
         while(port) {
 
@@ -520,7 +520,7 @@ void find_pin_index_at_model_scope(
                 //This is the port the pin is associated with, record it's index
 
                 //Get the pin index in the port
-                int atom_port_index = g_atom_nl.pin_port_bit(pin_id);
+                int atom_port_index = g_ctx.atom_nl.pin_port_bit(pin_id);
 
                 //The index of this pin in the model is the pins counted so-far 
                 //(i.e. accross previous ports) plus the index in the port
@@ -553,7 +553,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
 	drawline(src_point.x, src_point.y,
 		sink_point.x, sink_point.y);
 
-	if (g_atom_lookup.atom_clb(g_atom_nl.pin_block(src_pin)) == g_atom_lookup.atom_clb(g_atom_nl.pin_block(sink_pin))) {
+	if (g_ctx.atom_lookup.atom_clb(g_ctx.atom_nl.pin_block(src_pin)) == g_ctx.atom_lookup.atom_clb(g_ctx.atom_nl.pin_block(sink_pin))) {
 		// if they are in the same clb, put one arrow in the center
 		float center_x = (src_point.x + sink_point.x) / 2;
 		float center_y = (src_point.y + sink_point.y) / 2;
@@ -576,7 +576,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
  */
 static bool is_top_lvl_block_highlighted(const t_block& clb) {
 	t_draw_state *draw_state;
-	ptrdiff_t blk_id = &clb - g_blocks;
+	ptrdiff_t blk_id = &clb - g_ctx.blocks;
 
 	/* Call accessor function to retrieve global variables. */
 	draw_state = get_draw_state_vars();
@@ -713,37 +713,37 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 	sources.clear();
 	in_selected_subtree.clear();
 
-	// vtr::printf_info("selecting in clb #%ld\n", new_containing_block - g_blocks);
+	// vtr::printf_info("selecting in clb #%ld\n", new_containing_block - g_ctx.blocks);
 	if (has_selection()) {
 		add_all_children(selected_pb, containing_block, in_selected_subtree);
 
-		for (auto blk_id : g_atom_nl.blocks()) {
-            const t_block* clb = &g_blocks[g_atom_lookup.atom_clb(blk_id)];
-            const t_pb_graph_node* pb_graph_node = g_atom_lookup.atom_pb_graph_node(blk_id);
+		for (auto blk_id : g_ctx.atom_nl.blocks()) {
+            const t_block* clb = &g_ctx.blocks[g_ctx.atom_lookup.atom_clb(blk_id)];
+            const t_pb_graph_node* pb_graph_node = g_ctx.atom_lookup.atom_pb_graph_node(blk_id);
 			// find the atom block that corrisponds to this pb.
 			if ( is_in_selected_subtree(pb_graph_node, clb) ) {
 
                 //Collect the sources of all nets driving this node
-                for(auto pin_id : g_atom_nl.block_input_pins(blk_id)) {
-                    AtomNetId net_id = g_atom_nl.pin_net(pin_id);
-                    AtomPinId driver_pin_id = g_atom_nl.net_driver(net_id);
+                for(auto pin_id : g_ctx.atom_nl.block_input_pins(blk_id)) {
+                    AtomNetId net_id = g_ctx.atom_nl.pin_net(pin_id);
+                    AtomPinId driver_pin_id = g_ctx.atom_nl.net_driver(net_id);
 
-                    AtomBlockId src_blk = g_atom_nl.pin_block(driver_pin_id);
+                    AtomBlockId src_blk = g_ctx.atom_nl.pin_block(driver_pin_id);
 
-                    const t_block* src_clb = &g_blocks[g_atom_lookup.atom_clb(src_blk)];
-                    const t_pb_graph_node* src_pb_graph_node = g_atom_lookup.atom_pb_graph_node(src_blk);
+                    const t_block* src_clb = &g_ctx.blocks[g_ctx.atom_lookup.atom_clb(src_blk)];
+                    const t_pb_graph_node* src_pb_graph_node = g_ctx.atom_lookup.atom_pb_graph_node(src_blk);
 
                     sources.insert(gnode_clb_pair(src_pb_graph_node, src_clb));
                 }
 
                 //Collect the sinks of all nets driven by this node
-                for(auto pin_id : g_atom_nl.block_output_pins(blk_id)) {
-                    AtomNetId net_id = g_atom_nl.pin_net(pin_id);
-                    for(auto sink_pin_id : g_atom_nl.net_sinks(net_id)) {
-                        AtomBlockId sink_blk = g_atom_nl.pin_block(sink_pin_id);
+                for(auto pin_id : g_ctx.atom_nl.block_output_pins(blk_id)) {
+                    AtomNetId net_id = g_ctx.atom_nl.pin_net(pin_id);
+                    for(auto sink_pin_id : g_ctx.atom_nl.net_sinks(net_id)) {
+                        AtomBlockId sink_blk = g_ctx.atom_nl.pin_block(sink_pin_id);
 
-                        const t_block* sink_clb = &g_blocks[g_atom_lookup.atom_clb(sink_blk)];
-                        const t_pb_graph_node* sink_pb_graph_node = g_atom_lookup.atom_pb_graph_node(sink_blk);
+                        const t_block* sink_clb = &g_ctx.blocks[g_ctx.atom_lookup.atom_clb(sink_blk)];
+                        const t_pb_graph_node* sink_pb_graph_node = g_ctx.atom_lookup.atom_pb_graph_node(sink_blk);
 
                         sinks.insert(gnode_clb_pair(sink_pb_graph_node, sink_clb));
                     }
@@ -793,8 +793,8 @@ t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(int clb_index_, const t_
 }
 
 t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const AtomPinId atom_pin) :
-	clb_index(g_atom_lookup.atom_clb(g_atom_nl.pin_block(atom_pin))),
-	pb_gnode(g_atom_lookup.atom_pb_graph_node(g_atom_nl.pin_block(atom_pin))) {
+	clb_index(g_ctx.atom_lookup.atom_clb(g_ctx.atom_nl.pin_block(atom_pin))),
+	pb_gnode(g_ctx.atom_lookup.atom_pb_graph_node(g_ctx.atom_nl.pin_block(atom_pin))) {
 }
 
 bool t_selected_sub_block_info::clb_pin_tuple::operator==(const clb_pin_tuple& rhs) const {

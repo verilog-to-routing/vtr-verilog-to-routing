@@ -15,10 +15,10 @@ inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist&
     , netlist_lookup_(netlist_lookup)
     , net_delay_(net_delay)
     , atom_delay_calc_(netlist, netlist_lookup)
-    , edge_delay_cache_(g_timing_graph->edges().size(), tatum::Time(NAN))
-    , driver_clb_delay_cache_(g_timing_graph->edges().size(), tatum::Time(NAN))
-    , sink_clb_delay_cache_(g_timing_graph->edges().size(), tatum::Time(NAN))
-    , net_pin_cache_(g_timing_graph->edges().size(), std::pair<const t_net_pin*,const t_net_pin*>(nullptr,nullptr))
+    , edge_delay_cache_(g_ctx.timing_graph->edges().size(), tatum::Time(NAN))
+    , driver_clb_delay_cache_(g_ctx.timing_graph->edges().size(), tatum::Time(NAN))
+    , sink_clb_delay_cache_(g_ctx.timing_graph->edges().size(), tatum::Time(NAN))
+    , net_pin_cache_(g_ctx.timing_graph->edges().size(), std::pair<const t_net_pin*,const t_net_pin*>(nullptr,nullptr))
     {}
 
 inline tatum::Time PostClusterDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge) const { 
@@ -188,8 +188,8 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
 
             AtomNetId atom_net = netlist_.pin_net(atom_sink_pin);
-            VTR_ASSERT(g_blocks[clb_src_block].pb_route[src_pb_route_id].atom_net_id == atom_net);
-            VTR_ASSERT(g_blocks[clb_sink_block].pb_route[sink_pb_route_id].atom_net_id == atom_net);
+            VTR_ASSERT(g_ctx.blocks[clb_src_block].pb_route[src_pb_route_id].atom_net_id == atom_net);
+            VTR_ASSERT(g_ctx.blocks[clb_sink_block].pb_route[sink_pb_route_id].atom_net_id == atom_net);
 
             //NOTE: even if both the source and sink atoms are contained in the same top-level
             //      CLB, the connection between them may not have been absorbed, and may go 
@@ -210,7 +210,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                 VTR_ASSERT(driver_clb_net_pin == nullptr);
 
                 int net = sink_clb_net_pin->net;
-                driver_clb_net_pin = &g_clbs_nlist.net[net].pins[0];
+                driver_clb_net_pin = &g_ctx.clbs_nlist.net[net].pins[0];
                 VTR_ASSERT(driver_clb_net_pin != nullptr);
                 VTR_ASSERT(driver_clb_net_pin->block == clb_src_block);
 

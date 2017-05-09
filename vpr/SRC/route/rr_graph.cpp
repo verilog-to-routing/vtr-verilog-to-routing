@@ -300,15 +300,15 @@ void build_rr_graph(
 			&chan_details_x, &chan_details_y);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CHAN_DETAILS)) {
-		dump_chan_details( chan_details_x, chan_details_y, max_chan_width, g_nx, g_ny,
+		dump_chan_details( chan_details_x, chan_details_y, max_chan_width, g_ctx.nx, g_ctx.ny,
 				getEchoFileName(E_ECHO_CHAN_DETAILS));
 	}
 	/* END CHAN_DETAILS */
 
 	/* START FC */
 	/* Determine the actual value of Fc */
-	int ***Fc_in = NULL; /* [0..g_num_block_types-1][0..num_pins-1][0..num_segments-1] */
-	int ***Fc_out = NULL; /* [0..g_num_block_types-1][0..num_pins-1][0..num_segments-1] */
+	int ***Fc_in = NULL; /* [0..g_ctx.num_block_types-1][0..num_pins-1][0..num_segments-1] */
+	int ***Fc_out = NULL; /* [0..g_ctx.num_block_types-1][0..num_pins-1][0..num_segments-1] */
 
 	/* get maximum number of pins across all blocks */
 	int max_pins = types[0].num_pins;
@@ -352,11 +352,11 @@ void build_rr_graph(
 		}
 
 		for (int i = 1; i < L_num_types; ++i) { /* Skip "<EMPTY>" */
-			for (int j = 0; j < g_block_types[i].num_pins; ++j) {
+			for (int j = 0; j < g_ctx.block_types[i].num_pins; ++j) {
 				for (int k = 0; k < num_seg_types; k++){
 #ifdef VERBOSE
                     vtr::printf_info("Fc Actual Values: type = %s, pin = %d, seg = %d (%s), Fc_out = %d, Fc_in = %d.\n",
-                            g_block_types[i].name, j, k, segment_inf[k].name, Fc_out[i][j][k], Fc_in[i][j][k]);
+                            g_ctx.block_types[i].name, j, k, segment_inf[k].name, Fc_out[i][j][k], Fc_in[i][j][k]);
 #endif /* VERBOSE */
                     VTR_ASSERT_MSG(Fc_out[i][j][k] == 0 || Fc_in[i][j][k] == 0, 
                                   "Pins must be inputs or outputs (i.e. can not have both non-zero Fc_out and Fc_in)");
@@ -370,19 +370,19 @@ void build_rr_graph(
 	/* END FC */
 	
 	/* Alloc node lookups, count nodes, alloc rr nodes */
-	g_num_rr_nodes = 0;
+	g_ctx.num_rr_nodes = 0;
 
-	g_rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, L_nx, L_ny,
-			&g_num_rr_nodes, chan_details_x, chan_details_y);
-	g_rr_nodes = new t_rr_node[g_num_rr_nodes];
-	bool *L_rr_edge_done = (bool *) vtr::malloc(sizeof(bool) * g_num_rr_nodes);
-	memset(L_rr_edge_done, 0, sizeof(bool) * g_num_rr_nodes);
+	g_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, L_nx, L_ny,
+			&g_ctx.num_rr_nodes, chan_details_x, chan_details_y);
+	g_ctx.rr_nodes = new t_rr_node[g_ctx.num_rr_nodes];
+	bool *L_rr_edge_done = (bool *) vtr::malloc(sizeof(bool) * g_ctx.num_rr_nodes);
+	memset(L_rr_edge_done, 0, sizeof(bool) * g_ctx.num_rr_nodes);
 
 	/* These are data structures used by the the unidir opin mapping. They are used 
 	   to spread connections evenly for each segment type among the available
 	   wire start points */
-	int ***Fc_xofs = NULL; /* [0..g_ny-1][0..g_nx-1][0..num_seg_types-1] */
-	int ***Fc_yofs = NULL; /* [0..g_nx-1][0..g_ny-1][0..num_seg_types-1] */
+	int ***Fc_xofs = NULL; /* [0..g_ctx.ny-1][0..g_ctx.nx-1][0..num_seg_types-1] */
+	int ***Fc_yofs = NULL; /* [0..g_ctx.nx-1][0..g_ctx.ny-1][0..num_seg_types-1] */
 	if (UNI_DIRECTIONAL == directionality) {
 		Fc_xofs = vtr::alloc_matrix3<int>(0, L_ny, 0, L_nx, 0, num_seg_types-1);
 		Fc_yofs = vtr::alloc_matrix3<int>(0, L_nx, 0, L_ny, 0, num_seg_types-1);
@@ -445,8 +445,8 @@ void build_rr_graph(
 	/* START IPconst MAP */
 	/* Create ipin map lookups */
 
-	int ******ipin_to_track_map = NULL; /* [0..g_num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
-	vtr::t_ivec *****track_to_pin_lookup = NULL; /* [0..g_num_block_types-1][0..max_chan_width-1][0..width][0..height][0..3] */
+	int ******ipin_to_track_map = NULL; /* [0..g_ctx.num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
+	vtr::t_ivec *****track_to_pin_lookup = NULL; /* [0..g_ctx.num_block_types-1][0..max_chan_width-1][0..width][0..height][0..3] */
 
 	ipin_to_track_map = (int ******) vtr::malloc(sizeof(int *****) * L_num_types);
 	track_to_pin_lookup = (vtr::t_ivec *****) vtr::malloc(sizeof(vtr::t_ivec ****) * L_num_types);
@@ -463,7 +463,7 @@ void build_rr_graph(
 
 	/* START OPconst MAP */
 	/* Create opin map lookups */
-	int ******opin_to_track_map = NULL; /* [0..g_num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
+	int ******opin_to_track_map = NULL; /* [0..g_ctx.num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
 
 	if (BI_DIRECTIONAL == directionality) {
 		//bool test_metrics_outp = false;
@@ -504,24 +504,24 @@ void build_rr_graph(
 	/* END OPconst MAP */
 
 	bool Fc_clipped = false;
-	alloc_and_load_rr_graph(g_num_rr_nodes, g_rr_nodes, num_seg_types, 
+	alloc_and_load_rr_graph(g_ctx.num_rr_nodes, g_ctx.rr_nodes, num_seg_types, 
 			seg_details, chan_details_x, chan_details_y,
 			L_rr_edge_done, track_to_pin_lookup, opin_to_track_map,
 			switch_block_conn, sb_conn_map, L_grid, L_nx, L_ny, Fs, unidir_sb_pattern,
-			Fc_out, Fc_xofs, Fc_yofs, g_rr_node_indices, max_chan_width,
+			Fc_out, Fc_xofs, Fc_yofs, g_ctx.rr_node_indices, max_chan_width,
 			delayless_switch, directionality, wire_to_arch_ipin_switch, &Fc_clipped, 
 			directs, num_directs, clb_to_clb_directs);
 
 	/* Update rr_nodes capacities if global routing */
 	if (graph_type == GRAPH_GLOBAL) {
-		for (int i = 0; i < g_num_rr_nodes; i++) {
-			if (g_rr_nodes[i].type() == CHANX) {
-				int ylow = g_rr_nodes[i].ylow();
-				g_rr_nodes[i].set_capacity( g_chan_width.x_list[ylow] );
+		for (int i = 0; i < g_ctx.num_rr_nodes; i++) {
+			if (g_ctx.rr_nodes[i].type() == CHANX) {
+				int ylow = g_ctx.rr_nodes[i].ylow();
+				g_ctx.rr_nodes[i].set_capacity( g_ctx.chan_width.x_list[ylow] );
 			}
-			if (g_rr_nodes[i].type() == CHANY) {
-				int xlow = g_rr_nodes[i].xlow();
-				g_rr_nodes[i].set_capacity( g_chan_width.y_list[xlow] );
+			if (g_ctx.rr_nodes[i].type() == CHANY) {
+				int xlow = g_ctx.rr_nodes[i].xlow();
+				g_ctx.rr_nodes[i].set_capacity( g_ctx.chan_width.y_list[xlow] );
 			}
 		}
 	}
@@ -548,7 +548,7 @@ void build_rr_graph(
 	compute_router_lookahead(num_seg_types);
 #endif
 
-    g_rr_node_state = new t_rr_node_state[g_num_rr_nodes];
+    g_ctx.rr_node_state = new t_rr_node_state[g_ctx.num_rr_nodes];
 
 	/* Free all temp structs */
 	if (seg_details) {
@@ -628,7 +628,7 @@ void build_rr_graph(
    Returns the number of rr switches created.
    Also returns, through a pointer, the index of a representative ipin cblock switch.
 	- Currently we're not allowing a designer to specify an ipin cblock switch with
-	  multiple fan-ins, so there's just one of these switches in the g_rr_switch_inf array.
+	  multiple fan-ins, so there's just one of these switches in the g_ctx.rr_switch_inf array.
 	  But in the future if we allow this, we can return an index to a representative switch
 
    The rr_switch_inf switches are derived from the arch_switch_inf switches 
@@ -639,11 +639,11 @@ void build_rr_graph(
    of rr_nodes to index into the rr_switch_inf array. */
 static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const int wire_to_arch_ipin_switch, int *wire_to_rr_ipin_switch){
 	/* we will potentially be creating a couple of versions of each arch switch where
-	   each version corresponds to a different fan-in. We will need to fill g_rr_switch_inf
+	   each version corresponds to a different fan-in. We will need to fill g_ctx.rr_switch_inf
 	   with this expanded list of switches. 
 	   To do this we will use an array of maps where each map corresponds to a different arch switch.
 	   So for each arch switch we will use this map to keep track of the different fan-ins that it uses (map key)
-	   and which index in the g_rr_switch_inf array this arch switch / fanin combination will be placed in */
+	   and which index in the g_ctx.rr_switch_inf array this arch switch / fanin combination will be placed in */
 	map< int, int > *switch_fanin;
 	switch_fanin = new map<int,int>[num_arch_switches];
 
@@ -678,14 +678,14 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const int w
 	return num_rr_switches;
 }
 
-/* Allocates space for the global g_rr_switch_inf variable and returns the 
+/* Allocates space for the global g_ctx.rr_switch_inf variable and returns the 
    number of rr switches that were allocated */
 static int alloc_rr_switch_inf(map<int,int> *switch_fanin){
     int num_rr_switches = 0;
     // map key: switch index specified in arch; map value: fanin for that index
-    map<int, int> *inward_switch_inf = new map<int, int>[g_num_rr_nodes];
-    for (int inode = 0; inode < g_num_rr_nodes; inode ++) {
-        const t_rr_node& from_node = g_rr_nodes[inode];
+    map<int, int> *inward_switch_inf = new map<int, int>[g_ctx.num_rr_nodes];
+    for (int inode = 0; inode < g_ctx.num_rr_nodes; inode ++) {
+        const t_rr_node& from_node = g_ctx.rr_nodes[inode];
         int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int switch_index = from_node.edge_switch(iedge);
@@ -697,12 +697,12 @@ static int alloc_rr_switch_inf(map<int,int> *switch_fanin){
     }  
 
     // get unique index / fanin combination based on inward_switch_inf
-    for (int inode = 0; inode < g_num_rr_nodes; inode ++) {
+    for (int inode = 0; inode < g_ctx.num_rr_nodes; inode ++) {
         map<int, int>::iterator itr;
         for (itr = inward_switch_inf[inode].begin(); itr != inward_switch_inf[inode].end(); itr++) {
             int switch_index = itr->first;
             int fanin = itr->second;
-            if (g_arch_switch_inf[switch_index].Tdel_map.count(UNDEFINED) == 1) {
+            if (g_ctx.arch_switch_inf[switch_index].Tdel_map.count(UNDEFINED) == 1) {
                 fanin = UNDEFINED;
             }
             if (switch_fanin[switch_index].count(fanin) == 0) {
@@ -714,21 +714,21 @@ static int alloc_rr_switch_inf(map<int,int> *switch_fanin){
     delete[] inward_switch_inf;
 
 	/* allocate space for the rr_switch_inf array (it's freed later in vpr_api.c-->free_arch) */
-	g_rr_switch_inf = new s_rr_switch_inf[num_rr_switches];
+	g_ctx.rr_switch_inf = new s_rr_switch_inf[num_rr_switches];
 
 	return num_rr_switches;
 }
 
-/* load the global g_rr_switch_inf variable. also keep track of, for each arch switch, what 
+/* load the global g_ctx.rr_switch_inf variable. also keep track of, for each arch switch, what 
    index of the rr_switch_inf array each version of its fanin has been mapped to (through switch_fanin map) */
 static void load_rr_switch_inf(const int num_arch_switches, map<int,int> *switch_fanin){
 	int i_rr_switch = 0;
-    if (g_switch_fanin_remap != NULL) {
+    if (g_ctx.switch_fanin_remap != NULL) {
         // at this stage, we rebuild the rr_graph (probably in binary search)
-        // so old g_switch_fanin_remap is obsolete
-        delete [] g_switch_fanin_remap;
+        // so old g_ctx.switch_fanin_remap is obsolete
+        delete [] g_ctx.switch_fanin_remap;
     }
-    g_switch_fanin_remap = new map<int, int>[num_arch_switches];
+    g_ctx.switch_fanin_remap = new map<int, int>[num_arch_switches];
 	for (int i_arch_switch = 0; i_arch_switch < num_arch_switches; i_arch_switch++){
 		map<int,int>::iterator it;
 		for (it = switch_fanin[i_arch_switch].begin(); it != switch_fanin[i_arch_switch].end(); it++){
@@ -736,12 +736,12 @@ static void load_rr_switch_inf(const int num_arch_switches, map<int,int> *switch
 			   combination maps to (within rr_switch_inf) in it->second) */
 			int fanin = it->first;
 			it->second = i_rr_switch;
-            // setup g_switch_fanin_remap, for future swich usage analysis
-            g_switch_fanin_remap[i_arch_switch][fanin] = i_rr_switch;            
+            // setup g_ctx.switch_fanin_remap, for future swich usage analysis
+            g_ctx.switch_fanin_remap[i_arch_switch][fanin] = i_rr_switch;            
 
 			/* figure out, by looking at the arch switch's Tdel map, what the delay of the new
 			   rr switch should be */
-			map<int,double> &Tdel_map = g_arch_switch_inf[i_arch_switch].Tdel_map;
+			map<int,double> &Tdel_map = g_ctx.arch_switch_inf[i_arch_switch].Tdel_map;
 			double rr_switch_Tdel;
 			if (Tdel_map.count(UNDEFINED) == 1){
 				/* the switch specified a single constant delay. i.e., it did not
@@ -754,16 +754,16 @@ static void load_rr_switch_inf(const int num_arch_switches, map<int,int> *switch
 			}
 
 			/* copy over the arch switch to rr_switch_inf[i_rr_switch], but with the changed Tdel value */
-			g_rr_switch_inf[i_rr_switch].buffered = g_arch_switch_inf[i_arch_switch].buffered;
-			g_rr_switch_inf[i_rr_switch].R = g_arch_switch_inf[i_arch_switch].R;
-			g_rr_switch_inf[i_rr_switch].Cin = g_arch_switch_inf[i_arch_switch].Cin;
-			g_rr_switch_inf[i_rr_switch].Cout = g_arch_switch_inf[i_arch_switch].Cout;
-			g_rr_switch_inf[i_rr_switch].Tdel = rr_switch_Tdel;
-			g_rr_switch_inf[i_rr_switch].mux_trans_size = g_arch_switch_inf[i_arch_switch].mux_trans_size;
-			g_rr_switch_inf[i_rr_switch].buf_size = g_arch_switch_inf[i_arch_switch].buf_size;
-			g_rr_switch_inf[i_rr_switch].name = g_arch_switch_inf[i_arch_switch].name;
-			g_rr_switch_inf[i_rr_switch].power_buffer_type = g_arch_switch_inf[i_arch_switch].power_buffer_type;
-			g_rr_switch_inf[i_rr_switch].power_buffer_size = g_arch_switch_inf[i_arch_switch].power_buffer_size;
+			g_ctx.rr_switch_inf[i_rr_switch].buffered = g_ctx.arch_switch_inf[i_arch_switch].buffered;
+			g_ctx.rr_switch_inf[i_rr_switch].R = g_ctx.arch_switch_inf[i_arch_switch].R;
+			g_ctx.rr_switch_inf[i_rr_switch].Cin = g_ctx.arch_switch_inf[i_arch_switch].Cin;
+			g_ctx.rr_switch_inf[i_rr_switch].Cout = g_ctx.arch_switch_inf[i_arch_switch].Cout;
+			g_ctx.rr_switch_inf[i_rr_switch].Tdel = rr_switch_Tdel;
+			g_ctx.rr_switch_inf[i_rr_switch].mux_trans_size = g_ctx.arch_switch_inf[i_arch_switch].mux_trans_size;
+			g_ctx.rr_switch_inf[i_rr_switch].buf_size = g_ctx.arch_switch_inf[i_arch_switch].buf_size;
+			g_ctx.rr_switch_inf[i_rr_switch].name = g_ctx.arch_switch_inf[i_arch_switch].name;
+			g_ctx.rr_switch_inf[i_rr_switch].power_buffer_type = g_ctx.arch_switch_inf[i_arch_switch].power_buffer_type;
+			g_ctx.rr_switch_inf[i_rr_switch].power_buffer_size = g_ctx.arch_switch_inf[i_arch_switch].power_buffer_size;
 
 			/* have created a switch in the rr_switch_inf array */
 			i_rr_switch++;
@@ -771,15 +771,15 @@ static void load_rr_switch_inf(const int num_arch_switches, map<int,int> *switch
 	}
 }
 
-/* switch indices of each rr_node original point into the global g_arch_switch_inf array.
-   now we want to remap these indices to point into the global g_rr_switch_inf array 
+/* switch indices of each rr_node original point into the global g_ctx.arch_switch_inf array.
+   now we want to remap these indices to point into the global g_ctx.rr_switch_inf array 
    which contains switch info at different fan-in values */
 static void remap_rr_node_switch_indices(map<int,int> *switch_fanin){
-	for (int inode = 0; inode < g_num_rr_nodes; inode++){
-		t_rr_node& from_node = g_rr_nodes[inode];
+	for (int inode = 0; inode < g_ctx.num_rr_nodes; inode++){
+		t_rr_node& from_node = g_ctx.rr_nodes[inode];
 		int num_edges = from_node.num_edges();
 		for (int iedge = 0; iedge < num_edges; iedge++){
-			const t_rr_node& to_node = g_rr_nodes[ from_node.edge_sink_node(iedge) ];
+			const t_rr_node& to_node = g_ctx.rr_nodes[ from_node.edge_sink_node(iedge) ];
 			/* get the switch which this edge uses and its fanin */
 			int switch_index = from_node.edge_switch(iedge);
 			int fanin = to_node.fan_in();
@@ -799,13 +799,13 @@ static void rr_graph_externals(
 		const t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
 		int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type) {
 
-	add_rr_graph_C_from_switches(g_rr_switch_inf[wire_to_rr_ipin_switch].Cin);
-	alloc_and_load_rr_indexed_data(segment_inf, num_seg_types, g_rr_node_indices,
+	add_rr_graph_C_from_switches(g_ctx.rr_switch_inf[wire_to_rr_ipin_switch].Cin);
+	alloc_and_load_rr_indexed_data(segment_inf, num_seg_types, g_ctx.rr_node_indices,
 			max_chan_width, wire_to_rr_ipin_switch, base_cost_type);
 
 	alloc_net_rr_terminals();
-	load_net_rr_terminals(g_rr_node_indices);
-	alloc_and_load_rr_clb_source(g_rr_node_indices);
+	load_net_rr_terminals(g_ctx.rr_node_indices);
+	alloc_and_load_rr_clb_source(g_ctx.rr_node_indices);
 }
 
 static bool **alloc_and_load_perturb_ipins(const int L_num_types,
@@ -998,7 +998,7 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
 static void free_type_pin_to_track_map(int ******ipin_to_track_map,
 		t_type_ptr types) {
 
-	for (int i = 0; i < g_num_block_types; ++i) {
+	for (int i = 0; i < g_ctx.num_block_types; ++i) {
         vtr::free_matrix5(ipin_to_track_map[i], 0, types[i].num_pins - 1,
 				0, types[i].width - 1, 0, types[i].height - 1, 
 				0, 3, 0);
@@ -1010,7 +1010,7 @@ static void free_type_pin_to_track_map(int ******ipin_to_track_map,
 static void free_type_track_to_pin_map(vtr::t_ivec***** track_to_pin_map,
 		t_type_ptr types, int max_chan_width) {
 
-	for (int i = 0; i < g_num_block_types; i++) {
+	for (int i = 0; i < g_ctx.num_block_types; i++) {
 		if (track_to_pin_map[i] != NULL) {
 			for (int track = 0; track < max_chan_width; ++track) {
 				for (int width = 0; width < types[i].width; ++width) {
@@ -1097,7 +1097,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 			if (i > 0) {
 				build_rr_chan(i, j, CHANX, track_to_pin_lookup, sb_conn_map, switch_block_conn,
 						CHANX_COST_INDEX_START, 
-						max_chan_width, g_chan_width.x_list[j],
+						max_chan_width, g_ctx.chan_width.x_list[j],
 						sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
 						L_rr_node_indices, L_rr_edge_done, L_rr_node, 
 						wire_to_ipin_switch, directionality);
@@ -1105,7 +1105,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 			if (j > 0) {
 				build_rr_chan(i, j, CHANY, track_to_pin_lookup, sb_conn_map, switch_block_conn,
 						CHANX_COST_INDEX_START + num_seg_types, 
-						max_chan_width, g_chan_width.y_list[i],
+						max_chan_width, g_ctx.chan_width.y_list[i],
 						sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
 						L_rr_node_indices, L_rr_edge_done, L_rr_node, 
 						wire_to_ipin_switch, directionality);
@@ -1190,74 +1190,74 @@ void free_rr_graph(void) {
 	/* Before adding any more free calls here, be sure the data is NOT chunk *
 	 * allocated, as ALL the chunk allocated data is already free!           */
 
-	if(g_net_rr_terminals != NULL) {
-		free(g_net_rr_terminals);
+	if(g_ctx.net_rr_terminals != NULL) {
+		free(g_ctx.net_rr_terminals);
 	}
 
-	VTR_ASSERT(g_rr_node_indices);
-	free_rr_node_indices(g_rr_node_indices);
+	VTR_ASSERT(g_ctx.rr_node_indices);
+	free_rr_node_indices(g_ctx.rr_node_indices);
 
-	free(g_rr_indexed_data);
-	for (i = 0; i < g_num_blocks; i++) {
-		free(g_rr_blk_source[i]);
+	free(g_ctx.rr_indexed_data);
+	for (i = 0; i < g_ctx.num_blocks; i++) {
+		free(g_ctx.rr_blk_source[i]);
 	}
-	free(g_rr_blk_source);
-	g_rr_blk_source = NULL;
-	g_net_rr_terminals = NULL;
-	g_rr_node_indices = NULL;
-	g_rr_indexed_data = NULL;
-	g_num_rr_nodes = 0;
+	free(g_ctx.rr_blk_source);
+	g_ctx.rr_blk_source = NULL;
+	g_ctx.net_rr_terminals = NULL;
+	g_ctx.rr_node_indices = NULL;
+	g_ctx.rr_indexed_data = NULL;
+	g_ctx.num_rr_nodes = 0;
 
-	delete[] g_rr_switch_inf;
-	g_rr_switch_inf = NULL;
+	delete[] g_ctx.rr_switch_inf;
+	g_ctx.rr_switch_inf = NULL;
 
-	delete[] g_rr_nodes;
-	g_rr_nodes = NULL;
+	delete[] g_ctx.rr_nodes;
+	g_ctx.rr_nodes = NULL;
 
-    delete[] g_rr_node_state;
-    g_rr_node_state = NULL;
+    delete[] g_ctx.rr_node_state;
+    g_ctx.rr_node_state = NULL;
 }
 
 static void alloc_net_rr_terminals(void) {
 	unsigned int inet;
 
-	g_net_rr_terminals = (int **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(int *));
+	g_ctx.net_rr_terminals = (int **) vtr::malloc(g_ctx.clbs_nlist.net.size() * sizeof(int *));
 
-	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		g_net_rr_terminals[inet] = (int *) vtr::chunk_malloc(
-				g_clbs_nlist.net[inet].pins.size() * sizeof(int),
+	for (inet = 0; inet < g_ctx.clbs_nlist.net.size(); inet++) {
+		g_ctx.net_rr_terminals[inet] = (int *) vtr::chunk_malloc(
+				g_ctx.clbs_nlist.net[inet].pins.size() * sizeof(int),
 				&rr_mem_ch);
 	}
 }
 
 void load_net_rr_terminals(vtr::t_ivec *** L_rr_node_indices) {
 
-	/* Allocates and loads the g_net_rr_terminals data structure.  For each net   *
+	/* Allocates and loads the g_ctx.net_rr_terminals data structure.  For each net   *
 	 * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
-	 * of the net.  [0..g_clbs_nlist.net.size()-1][0..num_pins-1].  Entry [inet][pnum] stores  *
+	 * of the net.  [0..g_ctx.clbs_nlist.net.size()-1][0..num_pins-1].  Entry [inet][pnum] stores  *
 	 * the rr index corresponding to the SOURCE (opin) or SINK (ipin) of pnum.  */
 
 	int inode, iblk, i, j, node_block_pin, iclass;
 	unsigned int ipin, inet;
 	t_type_ptr type;
 
-	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		for (ipin = 0; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
-			iblk = g_clbs_nlist.net[inet].pins[ipin].block;
-			i = g_blocks[iblk].x;
-			j = g_blocks[iblk].y;
-			type = g_blocks[iblk].type;
+	for (inet = 0; inet < g_ctx.clbs_nlist.net.size(); inet++) {
+		for (ipin = 0; ipin < g_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+			iblk = g_ctx.clbs_nlist.net[inet].pins[ipin].block;
+			i = g_ctx.blocks[iblk].x;
+			j = g_ctx.blocks[iblk].y;
+			type = g_ctx.blocks[iblk].type;
 
 			/* In the routing graph, each (x, y) location has unique pins on it
 			 * so when there is capacity, blocks are packed and their pin numbers
 			 * are offset to get their actual rr_node */
-			node_block_pin = g_clbs_nlist.net[inet].pins[ipin].block_pin;
+			node_block_pin = g_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
 
 			iclass = type->pin_class[node_block_pin];
 
 			inode = get_rr_node_index(i, j, (ipin == 0 ? SOURCE : SINK), /* First pin is driver */
 			iclass, L_rr_node_indices);
-			g_net_rr_terminals[inet][ipin] = inode;
+			g_ctx.net_rr_terminals[inet][ipin] = inode;
 		}
 	}
 }
@@ -1267,7 +1267,7 @@ static void alloc_and_load_rr_clb_source(vtr::t_ivec *** L_rr_node_indices) {
 	/* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
 	 * in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
 	 * they are used only to reserve pins for locally used OPINs in the router. *
-	 * [0..g_num_blocks-1][0..num_class-1].  The values for blocks that are pads  *
+	 * [0..g_ctx.num_blocks-1][0..num_class-1].  The values for blocks that are pads  *
 	 * are NOT valid.                                                           */
 
 	int iblk, i, j, iclass, inode;
@@ -1275,16 +1275,16 @@ static void alloc_and_load_rr_clb_source(vtr::t_ivec *** L_rr_node_indices) {
 	t_rr_type rr_type;
 	t_type_ptr type;
 
-	g_rr_blk_source = (int **) vtr::malloc(g_num_blocks * sizeof(int *));
+	g_ctx.rr_blk_source = (int **) vtr::malloc(g_ctx.num_blocks * sizeof(int *));
 
-	for (iblk = 0; iblk < g_num_blocks; iblk++) {
-		type = g_blocks[iblk].type;
+	for (iblk = 0; iblk < g_ctx.num_blocks; iblk++) {
+		type = g_ctx.blocks[iblk].type;
 		get_class_range_for_block(iblk, &class_low, &class_high);
-		g_rr_blk_source[iblk] = (int *) vtr::malloc(type->num_class * sizeof(int));
+		g_ctx.rr_blk_source[iblk] = (int *) vtr::malloc(type->num_class * sizeof(int));
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			if (iclass >= class_low && iclass <= class_high) {
-				i = g_blocks[iblk].x;
-				j = g_blocks[iblk].y;
+				i = g_ctx.blocks[iblk].x;
+				j = g_ctx.blocks[iblk].y;
 
 				if (type->class_inf[iclass].type == DRIVER)
 					rr_type = SOURCE;
@@ -1293,9 +1293,9 @@ static void alloc_and_load_rr_clb_source(vtr::t_ivec *** L_rr_node_indices) {
 
 				inode = get_rr_node_index(i, j, rr_type, iclass,
 						L_rr_node_indices);
-				g_rr_blk_source[iblk][iclass] = inode;
+				g_ctx.rr_blk_source[iblk][iclass] = inode;
 			} else {
-				g_rr_blk_source[iblk][iclass] = OPEN;
+				g_ctx.rr_blk_source[iblk][iclass] = OPEN;
 			}
 		}
 	}
@@ -1359,7 +1359,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 		/* Things common to both SOURCEs and SINKs.   */
 		L_rr_node[inode].set_capacity(class_inf[iclass].num_pins);
 		//assuming that type->width is always 1.
-		//if this needs to change, g_rr_nodes.{h,c} need to be modified accordingly
+		//if this needs to change, g_ctx.rr_nodes.{h,c} need to be modified accordingly
 		VTR_ASSERT(type->width == 1);
 		L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
 		L_rr_node[inode].set_R(0);
@@ -1422,16 +1422,16 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 	   coordinates based on channel type */
 	int seg_coord = x_coord;
 	int chan_coord = y_coord;
-	int seg_dimension = g_nx;
-	int chan_dimension = g_ny;
+	int seg_dimension = g_ctx.nx;
+	int chan_dimension = g_ctx.ny;
 	const t_chan_details *from_chan_details = chan_details_x;
 	const t_chan_details *opposite_chan_details = chan_details_y;
 	t_rr_type opposite_chan_type = CHANY;
 	if (chan_type == CHANY){
 		seg_coord = y_coord;
 		chan_coord = x_coord;
-		seg_dimension = g_ny;
-		chan_dimension = g_nx;
+		seg_dimension = g_ctx.ny;
+		chan_dimension = g_ctx.nx;
 		from_chan_details = chan_details_y;
 		opposite_chan_details = chan_details_x;
 		opposite_chan_type = CHANX;
@@ -1579,10 +1579,10 @@ void watch_edges(int inode, t_linked_edge * edge_list_head) {
 	list_ptr = edge_list_head;
 	i = 0;
 
-	print_rr_node(stdout, g_rr_nodes, inode);
+	print_rr_node(stdout, g_ctx.rr_nodes, inode);
 	while (list_ptr != NULL) {
 		to_node = list_ptr->edge;
-		print_rr_node(stdout, g_rr_nodes, to_node);
+		print_rr_node(stdout, g_ctx.rr_nodes, to_node);
 		list_ptr = list_ptr->next;
 		i++;
 	}
@@ -2251,8 +2251,8 @@ void dump_rr_graph(const char *file_name) {
 
 	FILE *fp = vtr::fopen(file_name, "w");
 
-	for (int inode = 0; inode < g_num_rr_nodes; ++inode) {
-		print_rr_node(fp, g_rr_nodes, inode);
+	for (int inode = 0; inode < g_ctx.num_rr_nodes; ++inode) {
+		print_rr_node(fp, g_ctx.rr_nodes, inode);
 		fprintf(fp, "\n");
 	}
 
@@ -2301,21 +2301,21 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 	fprintf(fp, "Cost_index: %d\n", L_rr_node[inode].cost_index());
 }
 
-/* Prints all the g_rr_indexed_data of index to file fp.   */
+/* Prints all the g_ctx.rr_indexed_data of index to file fp.   */
 void print_rr_indexed_data(FILE * fp, int index) {
 
 	fprintf(fp, "Index: %d\n", index);
 
-	fprintf(fp, "ortho_cost_index: %d  ", g_rr_indexed_data[index].ortho_cost_index);
-	fprintf(fp, "base_cost: %g  ", g_rr_indexed_data[index].saved_base_cost);
-	fprintf(fp, "saved_base_cost: %g\n", g_rr_indexed_data[index].saved_base_cost);
+	fprintf(fp, "ortho_cost_index: %d  ", g_ctx.rr_indexed_data[index].ortho_cost_index);
+	fprintf(fp, "base_cost: %g  ", g_ctx.rr_indexed_data[index].saved_base_cost);
+	fprintf(fp, "saved_base_cost: %g\n", g_ctx.rr_indexed_data[index].saved_base_cost);
 
-	fprintf(fp, "Seg_index: %d  ", g_rr_indexed_data[index].seg_index);
-	fprintf(fp, "inv_length: %g\n", g_rr_indexed_data[index].inv_length);
+	fprintf(fp, "Seg_index: %d  ", g_ctx.rr_indexed_data[index].seg_index);
+	fprintf(fp, "inv_length: %g\n", g_ctx.rr_indexed_data[index].inv_length);
 
-	fprintf(fp, "T_linear: %g  ", g_rr_indexed_data[index].T_linear);
-	fprintf(fp, "T_quadratic: %g  ", g_rr_indexed_data[index].T_quadratic);
-	fprintf(fp, "C_load: %g\n", g_rr_indexed_data[index].C_load);
+	fprintf(fp, "T_linear: %g  ", g_ctx.rr_indexed_data[index].T_linear);
+	fprintf(fp, "T_quadratic: %g  ", g_ctx.rr_indexed_data[index].T_quadratic);
+	fprintf(fp, "C_load: %g\n", g_ctx.rr_indexed_data[index].C_load);
 }
 
 static void build_unidir_rr_opins(const int i, const int j,
@@ -2379,7 +2379,7 @@ static void build_unidir_rr_opins(const int i, const int j,
 						t_rr_type chan_type = (vert ? CHANX : CHANY);
 						int chan = (vert ? (j + height) : (i + width));
 						int seg = (vert ? (i + width) : (j + height));
-						int max_len = (vert ? g_nx : g_ny);
+						int max_len = (vert ? g_ctx.nx : g_ctx.ny);
 						int ***Fc_ofs = (vert ? Fc_xofs : Fc_yofs);
 						if (false == pos_dir) {
 							--chan;
@@ -2392,10 +2392,10 @@ static void build_unidir_rr_opins(const int i, const int j,
 						if (seg < 1) {
 							continue;
 						}
-						if (seg > (vert ? g_nx : g_ny)) {
+						if (seg > (vert ? g_ctx.nx : g_ctx.ny)) {
 							continue;
 						}
-						if (chan > (vert ? g_ny : g_nx)) {
+						if (chan > (vert ? g_ctx.ny : g_ctx.nx)) {
 							continue;
 						}
 
@@ -2425,7 +2425,7 @@ static void build_unidir_rr_opins(const int i, const int j,
 		/* Add the edges */
 		int opin_node_index = get_rr_node_index(i, j, OPIN, pin_index, L_rr_node_indices);
 		VTR_ASSERT(opin_node_index >= 0);
-		alloc_and_load_edges_and_switches(g_rr_nodes, opin_node_index, num_edges,
+		alloc_and_load_edges_and_switches(g_ctx.rr_nodes, opin_node_index, num_edges,
 				L_rr_edge_done, edge_list);
 		while (edge_list != NULL) {
 			t_linked_edge *next_edge = edge_list->next;
@@ -2461,13 +2461,13 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
 		parse_direct_pin_name(directs[i].from_pin, directs[i].line, &start_pin_index, &end_pin_index, pb_type_name, port_name);
 
 		// Figure out which type, port, and pin is used
-		for (j = 0; j < g_num_block_types; j++) {
-			if(strcmp(g_block_types[j].name, pb_type_name) == 0) {
+		for (j = 0; j < g_ctx.num_block_types; j++) {
+			if(strcmp(g_ctx.block_types[j].name, pb_type_name) == 0) {
 				break;
 			}
 		}
-		VTR_ASSERT(j < g_num_block_types);
-		clb_to_clb_directs[i].from_clb_type = &g_block_types[j];
+		VTR_ASSERT(j < g_ctx.num_block_types);
+		clb_to_clb_directs[i].from_clb_type = &g_ctx.block_types[j];
 		pb_type = clb_to_clb_directs[i].from_clb_type->pb_type;
 
 		for (j = 0; j < pb_type->num_ports; j++) {
@@ -2490,13 +2490,13 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
 		parse_direct_pin_name(directs[i].to_pin, directs[i].line, &start_pin_index, &end_pin_index, pb_type_name, port_name);
 
 		// Figure out which type, port, and pin is used
-		for (j = 0; j < g_num_block_types; j++) {
-			if(strcmp(g_block_types[j].name, pb_type_name) == 0) {
+		for (j = 0; j < g_ctx.num_block_types; j++) {
+			if(strcmp(g_ctx.block_types[j].name, pb_type_name) == 0) {
 				break;
 			}
 		}
-		VTR_ASSERT(j < g_num_block_types);
-		clb_to_clb_directs[i].to_clb_type = &g_block_types[j];
+		VTR_ASSERT(j < g_ctx.num_block_types);
+		clb_to_clb_directs[i].to_clb_type = &g_ctx.block_types[j];
 		pb_type = clb_to_clb_directs[i].to_clb_type->pb_type;
 
 		for (j = 0; j < pb_type->num_ports; j++) {
@@ -2557,7 +2557,7 @@ static int get_opin_direct_connecions(int x, int y, int opin,
 	int max_index, min_index, offset, swap;
 	int new_edges;
 
-	curr_type = g_grid[x][y].type;
+	curr_type = g_ctx.grid[x][y].type;
 	edge_list_head = *edge_list_ptr;
 	new_edges = 0;
 
@@ -2567,13 +2567,13 @@ static int get_opin_direct_connecions(int x, int y, int opin,
 		if(clb_to_clb_directs[i].from_clb_type == curr_type) { //We are at a valid starting point
 
             //Offset must be in range
-            if(x + directs[i].x_offset < g_nx + 1 &&
+            if(x + directs[i].x_offset < g_ctx.nx + 1 &&
                x + directs[i].x_offset > 0 &&
-               y + directs[i].y_offset < g_ny + 1 &&
+               y + directs[i].y_offset < g_ctx.ny + 1 &&
                y + directs[i].y_offset > 0) {
             
                 //Only add connections if the target clb type matches the type in the direct specification
-                target_type = g_grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
+                target_type = g_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
                 if(clb_to_clb_directs[i].to_clb_type == target_type) {
 
                     /* Compute index of opin with regards to given pins */ 
@@ -2605,8 +2605,8 @@ static int get_opin_direct_connecions(int x, int y, int opin,
                         }
 
                         /* Add new ipin edge to list of edges */
-                        width_offset = g_grid[x + directs[i].x_offset][y + directs[i].y_offset].width_offset;
-                        height_offset = g_grid[x + directs[i].x_offset][y + directs[i].y_offset].height_offset;
+                        width_offset = g_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].width_offset;
+                        height_offset = g_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].height_offset;
                         inode = get_rr_node_index(x + directs[i].x_offset - width_offset, y + directs[i].y_offset - height_offset, 
                                 IPIN, ipin, L_rr_node_indices);
                         edge_list_head = insert_in_edge_list(edge_list_head, inode, clb_to_clb_directs[i].switch_index);

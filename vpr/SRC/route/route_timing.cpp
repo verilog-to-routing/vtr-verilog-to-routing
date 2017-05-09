@@ -103,7 +103,7 @@ static bool should_route_net(int inet, const CBRR& connections_inf);
 static bool early_exit_heuristic(const WirelengthInfo& wirelength_info);
 struct more_sinks_than {
 	inline bool operator() (const int& net_index1, const int& net_index2) {
-		return g_clbs_nlist.net[net_index1].num_sinks() > g_clbs_nlist.net[net_index2].num_sinks();
+		return g_ctx.clbs_nlist.net[net_index1].num_sinks() > g_ctx.clbs_nlist.net[net_index2].num_sinks();
 	}
 };
 
@@ -140,8 +140,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	profiling::profiling_initialization(get_max_pins_per_net());
 
 	//sort so net with most sinks is first.
-	auto sorted_nets = vector<int>(g_clbs_nlist.net.size());
-	for (size_t i = 0; i < g_clbs_nlist.net.size(); ++i) {
+	auto sorted_nets = vector<int>(g_ctx.clbs_nlist.net.size());
+	for (size_t i = 0; i < g_ctx.clbs_nlist.net.size(); ++i) {
 		sorted_nets[i] = i;
 	}
 	std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than());
@@ -162,9 +162,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
     /* Set delay of global signals to zero. Non-global net delays are set by
        update_net_delays_from_route_tree() inside timing_driven_route_net(), 
        which is only called for non-global nets. */
-	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-		if (g_clbs_nlist.net[inet].is_global) {
-			for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
+	for (unsigned int inet = 0; inet < g_ctx.clbs_nlist.net.size(); ++inet) {
+		if (g_ctx.clbs_nlist.net[inet].is_global) {
+			for (unsigned int ipin = 1; ipin < g_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
 				net_delay[inet][ipin] = 0.;
 			}
 		}
@@ -200,9 +200,9 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 		clock_t begin = clock();
 
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
-		for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-			g_clbs_nlist.net[inet].is_routed = false;
-			g_clbs_nlist.net[inet].is_fixed = false;
+		for (unsigned int inet = 0; inet < g_ctx.clbs_nlist.net.size(); ++inet) {
+			g_ctx.clbs_nlist.net[inet].is_routed = false;
+			g_ctx.clbs_nlist.net[inet].is_fixed = false;
 		}
 
         std::shared_ptr<SetupTimingInfo> route_timing_info;
@@ -222,7 +222,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
         /*
          * Route each net
          */
-		for (unsigned int i = 0; i < g_clbs_nlist.net.size(); ++i) {
+		for (unsigned int i = 0; i < g_ctx.clbs_nlist.net.size(); ++i) {
 			bool is_routable = try_timing_driven_route_net(
                     sorted_nets[i],
                     itry,
@@ -359,8 +359,8 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 			/* If timing analysis is not enabled, make sure that the criticalities and the
 			   net_delays stay as 0 so that wirelength can be optimized. */
 			
-			for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-				for (unsigned int ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
+			for (unsigned int inet = 0; inet < g_ctx.clbs_nlist.net.size(); ++inet) {
+				for (unsigned int ipin = 1; ipin < g_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
 #ifdef ENABLE_CLASSIC_VPR_STA
 					slacks->timing_criticality[inet][ipin] = 0.;
 #endif
@@ -402,9 +402,9 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 
 	connections_inf.prepare_routing_for_net(inet);
 
-	if (g_clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
+	if (g_ctx.clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
 		is_routed = true;
-	} else if (g_clbs_nlist.net[inet].is_global) { /* Skip global nets. */
+	} else if (g_ctx.clbs_nlist.net[inet].is_global) { /* Skip global nets. */
 		is_routed = true;
 	} else if (should_route_net(inet, connections_inf) == false) {
 		is_routed = true;
@@ -422,11 +422,11 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
                 pb_gpin_lookup,
                 timing_info);
 
-		profiling::net_fanout_end(g_clbs_nlist.net[inet].num_sinks());
+		profiling::net_fanout_end(g_ctx.clbs_nlist.net[inet].num_sinks());
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
-			g_clbs_nlist.net[inet].is_routed = true;
+			g_ctx.clbs_nlist.net[inet].is_routed = true;
 		} else {
 			vtr::printf_info("Routing failed.\n");
 		}
@@ -500,10 +500,10 @@ int get_max_pins_per_net(void) {
 	int max_pins_per_net;
 
 	max_pins_per_net = 0;
-	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		if (g_clbs_nlist.net[inet].is_global == false) {
+	for (inet = 0; inet < g_ctx.clbs_nlist.net.size(); inet++) {
+		if (g_ctx.clbs_nlist.net[inet].is_global == false) {
 			max_pins_per_net = max(max_pins_per_net,
-					(int) g_clbs_nlist.net[inet].pins.size());
+					(int) g_ctx.clbs_nlist.net[inet].pins.size());
 		}
 	}
 
@@ -530,7 +530,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	 * to route this net, even ignoring congestion, it returns false.  In this  *
 	 * case the rr_graph is disconnected and you can give up.                   */
 
-	unsigned int num_sinks = g_clbs_nlist.net[inet].num_sinks();
+	unsigned int num_sinks = g_ctx.clbs_nlist.net[inet].num_sinks();
 
 	t_rt_node* rt_root = setup_routing_resources(itry, inet, num_sinks, pres_fac, min_incremental_reroute_fanout, connections_inf, rt_node_of_sink);
 	// after this point the route tree is correct
@@ -592,15 +592,15 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	// may have to update timing delay of the previously legally reached sinks since downstream capacitance could be changed
 	update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
 
-	if (!g_clbs_nlist.net[inet].is_global) {
-		for (unsigned ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ++ipin) {
+	if (!g_ctx.clbs_nlist.net[inet].is_global) {
+		for (unsigned ipin = 1; ipin < g_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
 			if (net_delay[ipin] == 0) {	// should be SOURCE->OPIN->IPIN->SINK
-				VTR_ASSERT(g_rr_nodes[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type() == OPIN);
+				VTR_ASSERT(g_ctx.rr_nodes[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type() == OPIN);
 			}
 		}
 	}
 
-	VTR_ASSERT_MSG(g_rr_node_state[rt_root->inode].occ() <= g_rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
+	VTR_ASSERT_MSG(g_ctx.rr_node_state[rt_root->inode].occ() <= g_ctx.rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
 
 	// route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
 	free_route_tree(rt_root);
@@ -613,7 +613,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	/* Build a path from the existing route tree rooted at rt_root to the target_node
 	 * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
 
-	int target_node = g_net_rr_terminals[inet][target_pin];
+	int target_node = g_ctx.net_rr_terminals[inet][target_pin];
 
 	profiling::sink_criticality_start();
 
@@ -621,7 +621,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	
 	if (itarget > 0 && itry > 5) {
 		/* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
-		VTR_ASSERT(g_rr_nodes[rt_root->inode].type() == SOURCE);
+		VTR_ASSERT(g_ctx.rr_nodes[rt_root->inode].type() == SOURCE);
 		rt_root->re_expand = false;
 	}
 
@@ -633,20 +633,20 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 
 	VTR_ASSERT_SAFE(heap_::is_valid());
 
-	// cheapest s_heap (gives index to g_rr_nodes) in current route tree to be expanded on
+	// cheapest s_heap (gives index to g_ctx.rr_nodes) in current route tree to be expanded on
 	struct s_heap* cheapest {get_heap_head()};
 
 	if (cheapest == NULL) { /* Infeasible routing.  No possible path for net. */
-        int src_block = g_clbs_nlist.net[inet].pins[0].block;
-        int src_block_pin = g_clbs_nlist.net[inet].pins[0].block_pin;
-        int sink_block = g_clbs_nlist.net[inet].pins[target_pin].block;
-        int sink_block_pin = g_clbs_nlist.net[inet].pins[target_pin].block_pin;
+        int src_block = g_ctx.clbs_nlist.net[inet].pins[0].block;
+        int src_block_pin = g_ctx.clbs_nlist.net[inet].pins[0].block_pin;
+        int sink_block = g_ctx.clbs_nlist.net[inet].pins[target_pin].block;
+        int sink_block_pin = g_ctx.clbs_nlist.net[inet].pins[target_pin].block_pin;
 
-        std::string src_block_name = g_blocks[src_block].name;
-        std::string sink_block_name = g_blocks[sink_block].name;
+        std::string src_block_name = g_ctx.blocks[src_block].name;
+        std::string sink_block_name = g_ctx.blocks[sink_block].name;
 
         vtr::printf_info("Cannot route net '%s' from: block '%s' pin %d, to: block '%s' pin %d, target rr node: %d %s at (%d,%d) -- no possible path.\n",
-                   g_clbs_nlist.net[inet].name, src_block_name.c_str(), src_block_pin, sink_block_name.c_str(), sink_block_pin, target_node, g_rr_nodes[target_node].type_string(), g_rr_nodes[target_node].xlow(), g_rr_nodes[target_node].ylow());
+                   g_ctx.clbs_nlist.net[inet].name, src_block_name.c_str(), src_block_pin, sink_block_name.c_str(), sink_block_pin, target_node, g_ctx.rr_nodes[target_node].type_string(), g_ctx.rr_nodes[target_node].xlow(), g_ctx.rr_nodes[target_node].ylow());
 		reset_path_costs();
 		free_route_tree(rt_root);
 		return (false);
@@ -693,16 +693,16 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 		cheapest = get_heap_head();
 
 		if (cheapest == NULL) { /* Impossible routing.  No path for net. */
-            int src_block = g_clbs_nlist.net[inet].pins[0].block;
-            int src_block_pin = g_clbs_nlist.net[inet].pins[0].block_pin;
-            int sink_block = g_clbs_nlist.net[inet].pins[target_pin].block;
-            int sink_block_pin = g_clbs_nlist.net[inet].pins[target_pin].block_pin;
+            int src_block = g_ctx.clbs_nlist.net[inet].pins[0].block;
+            int src_block_pin = g_ctx.clbs_nlist.net[inet].pins[0].block_pin;
+            int sink_block = g_ctx.clbs_nlist.net[inet].pins[target_pin].block;
+            int sink_block_pin = g_ctx.clbs_nlist.net[inet].pins[target_pin].block_pin;
 
-            std::string src_block_name = g_blocks[src_block].name;
-            std::string sink_block_name = g_blocks[sink_block].name;
+            std::string src_block_name = g_ctx.blocks[src_block].name;
+            std::string sink_block_name = g_ctx.blocks[sink_block].name;
 
             vtr::printf_info("Cannot route net '%s' from: block '%s' pin %d, to: block '%s' pin %d, target rr node: %d %s at (%d,%d) -- no possible path.\n",
-                       g_clbs_nlist.net[inet].name, src_block_name.c_str(), src_block_pin, sink_block_name.c_str(), sink_block_pin, target_node, g_rr_nodes[target_node].type_string(), g_rr_nodes[target_node].xlow(), g_rr_nodes[target_node].ylow());
+                       g_ctx.clbs_nlist.net[inet].name, src_block_name.c_str(), src_block_pin, sink_block_name.c_str(), sink_block_pin, target_node, g_ctx.rr_nodes[target_node].type_string(), g_ctx.rr_nodes[target_node].xlow(), g_ctx.rr_nodes[target_node].ylow());
 
 			reset_path_costs();
 			free_route_tree(rt_root);
@@ -754,7 +754,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		profiling::net_rerouted();
 
 		// rip up the whole net
-		pathfinder_update_path_cost(g_trace_head[inet], -1, pres_fac);
+		pathfinder_update_path_cost(g_ctx.trace_head[inet], -1, pres_fac);
 		free_traceback(inet);
 
 		rt_root = init_route_tree_to_source(inet);
@@ -786,7 +786,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 		bool destroyed = prune_route_tree(rt_root, pres_fac, connections_inf); 
 
 		// entire traceback is still freed since the pruned tree will need to have its pres_cost updated
-		pathfinder_update_path_cost(g_trace_head[inet], -1, pres_fac);
+		pathfinder_update_path_cost(g_ctx.trace_head[inet], -1, pres_fac);
 		free_traceback(inet);
 
 		// if entirely pruned, have just the source (not removed from pathfinder costs)
@@ -799,7 +799,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 			// sync traceback into a state that matches the route tree
 			traceback_from_route_tree(inet, rt_root, num_sinks - remaining_targets.size());
 			// put the updated costs of the route tree nodes back into pathfinder
-			pathfinder_update_path_cost(g_trace_head[inet], 1, pres_fac);
+			pathfinder_update_path_cost(g_ctx.trace_head[inet], 1, pres_fac);
 		}
 
 		// give lookup on the reached sinks
@@ -879,28 +879,28 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 	int inode = current->index;
 	float old_back_pcost = current->backward_path_cost;
 	float R_upstream = current->R_upstream;
-	int num_edges = g_rr_nodes[inode].num_edges();
+	int num_edges = g_ctx.rr_nodes[inode].num_edges();
 
-	int target_x = g_rr_nodes[target_node].xhigh();
-	int target_y = g_rr_nodes[target_node].yhigh();
-	bool high_fanout = g_clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM;
+	int target_x = g_ctx.rr_nodes[target_node].xhigh();
+	int target_y = g_ctx.rr_nodes[target_node].yhigh();
+	bool high_fanout = g_ctx.clbs_nlist.net[inet].num_sinks() >= HIGH_FANOUT_NET_LIM;
 
 	for (int iconn = 0; iconn < num_edges; iconn++) {
-		int to_node = g_rr_nodes[inode].edge_sink_node(iconn);
+		int to_node = g_ctx.rr_nodes[inode].edge_sink_node(iconn);
 
 		if (high_fanout) {
 			// since target node is an IPIN, xhigh and xlow are the same (same for y values)
-			if (g_rr_nodes[to_node].xhigh() < target_x - highfanout_rlim
-					|| g_rr_nodes[to_node].xlow() > target_x + highfanout_rlim
-					|| g_rr_nodes[to_node].yhigh() < target_y - highfanout_rlim
-					|| g_rr_nodes[to_node].ylow() > target_y + highfanout_rlim){
+			if (g_ctx.rr_nodes[to_node].xhigh() < target_x - highfanout_rlim
+					|| g_ctx.rr_nodes[to_node].xlow() > target_x + highfanout_rlim
+					|| g_ctx.rr_nodes[to_node].yhigh() < target_y - highfanout_rlim
+					|| g_ctx.rr_nodes[to_node].ylow() > target_y + highfanout_rlim){
 				continue; /* Node is outside high fanout bin. */
 			}
 		}
-		else if (g_rr_nodes[to_node].xhigh() < route_bb[inet].xmin
-				|| g_rr_nodes[to_node].xlow() > route_bb[inet].xmax
-				|| g_rr_nodes[to_node].yhigh() < route_bb[inet].ymin
-				|| g_rr_nodes[to_node].ylow() > route_bb[inet].ymax)
+		else if (g_ctx.rr_nodes[to_node].xhigh() < route_bb[inet].xmin
+				|| g_ctx.rr_nodes[to_node].xlow() > route_bb[inet].xmax
+				|| g_ctx.rr_nodes[to_node].yhigh() < route_bb[inet].ymin
+				|| g_ctx.rr_nodes[to_node].ylow() > route_bb[inet].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
 
@@ -909,10 +909,10 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 		 * more promising routes, but makes route-throughs (via CLBs) impossible.   *
 		 * Change this if you want to investigate route-throughs.                   */
 
-		t_rr_type to_type = g_rr_nodes[to_node].type();
+		t_rr_type to_type = g_ctx.rr_nodes[to_node].type();
 		if (to_type == IPIN
-            && (g_rr_nodes[to_node].xhigh() != target_x
-            || g_rr_nodes[to_node].yhigh() != target_y))
+            && (g_ctx.rr_nodes[to_node].xhigh() != target_x
+            || g_ctx.rr_nodes[to_node].yhigh() != target_y))
 			continue;
 
 		/* new_back_pcost stores the "known" part of the cost to this node -- the   *
@@ -923,21 +923,21 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 		float new_back_pcost = old_back_pcost
 				+ (1. - criticality_fac) * get_rr_cong_cost(to_node);
 		
-		int iswitch = g_rr_nodes[inode].edge_switch(iconn);
-		if (g_rr_switch_inf[iswitch].buffered) {
-			new_R_upstream = g_rr_switch_inf[iswitch].R;
+		int iswitch = g_ctx.rr_nodes[inode].edge_switch(iconn);
+		if (g_ctx.rr_switch_inf[iswitch].buffered) {
+			new_R_upstream = g_ctx.rr_switch_inf[iswitch].R;
 		} else {
-			new_R_upstream = R_upstream + g_rr_switch_inf[iswitch].R;
+			new_R_upstream = R_upstream + g_ctx.rr_switch_inf[iswitch].R;
 		}
 
-		float Tdel = g_rr_nodes[to_node].C() * (new_R_upstream + 0.5 * g_rr_nodes[to_node].R());
-		Tdel += g_rr_switch_inf[iswitch].Tdel;
-		new_R_upstream += g_rr_nodes[to_node].R();
+		float Tdel = g_ctx.rr_nodes[to_node].C() * (new_R_upstream + 0.5 * g_ctx.rr_nodes[to_node].R());
+		Tdel += g_ctx.rr_switch_inf[iswitch].Tdel;
+		new_R_upstream += g_ctx.rr_nodes[to_node].R();
 		new_back_pcost += criticality_fac * Tdel;
 
 		if (bend_cost != 0.) {
-			t_rr_type from_type = g_rr_nodes[inode].type();
-			to_type = g_rr_nodes[to_node].type();
+			t_rr_type from_type = g_ctx.rr_nodes[inode].type();
+			to_type = g_ctx.rr_nodes[to_node].type();
 			if ((from_type == CHANX && to_type == CHANY)
 					|| (from_type == CHANY && to_type == CHANX))
 				new_back_pcost += bend_cost;
@@ -963,7 +963,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
 	int cost_index, ortho_cost_index, num_segs_same_dir, num_segs_ortho_dir;
 	float expected_cost, cong_cost, Tdel;
 
-	rr_type = g_rr_nodes[inode].type();
+	rr_type = g_ctx.rr_nodes[inode].type();
 
 	if (rr_type == CHANX || rr_type == CHANY) {
 
@@ -971,27 +971,27 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
 		return get_lookahead_map_cost(inode, target_node, criticality_fac);
 #else
 		num_segs_same_dir = get_expected_segs_to_target(inode, target_node, &num_segs_ortho_dir);
-		cost_index = g_rr_nodes[inode].cost_index();
-		ortho_cost_index = g_rr_indexed_data[cost_index].ortho_cost_index;
+		cost_index = g_ctx.rr_nodes[inode].cost_index();
+		ortho_cost_index = g_ctx.rr_indexed_data[cost_index].ortho_cost_index;
 
-		cong_cost =   num_segs_same_dir * g_rr_indexed_data[cost_index].base_cost
-				    + num_segs_ortho_dir * g_rr_indexed_data[ortho_cost_index].base_cost;
-		cong_cost +=   g_rr_indexed_data[IPIN_COST_INDEX].base_cost
-				     + g_rr_indexed_data[SINK_COST_INDEX].base_cost;
+		cong_cost =   num_segs_same_dir * g_ctx.rr_indexed_data[cost_index].base_cost
+				    + num_segs_ortho_dir * g_ctx.rr_indexed_data[ortho_cost_index].base_cost;
+		cong_cost +=   g_ctx.rr_indexed_data[IPIN_COST_INDEX].base_cost
+				     + g_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost;
 
-		Tdel =   num_segs_same_dir * g_rr_indexed_data[cost_index].T_linear
-               + num_segs_ortho_dir * g_rr_indexed_data[ortho_cost_index].T_linear
-               + num_segs_same_dir * num_segs_same_dir * g_rr_indexed_data[cost_index].T_quadratic
-               + num_segs_ortho_dir * num_segs_ortho_dir * g_rr_indexed_data[ortho_cost_index].T_quadratic
-               + R_upstream * (num_segs_same_dir * g_rr_indexed_data[cost_index].C_load + num_segs_ortho_dir * g_rr_indexed_data[ortho_cost_index].C_load);
+		Tdel =   num_segs_same_dir * g_ctx.rr_indexed_data[cost_index].T_linear
+               + num_segs_ortho_dir * g_ctx.rr_indexed_data[ortho_cost_index].T_linear
+               + num_segs_same_dir * num_segs_same_dir * g_ctx.rr_indexed_data[cost_index].T_quadratic
+               + num_segs_ortho_dir * num_segs_ortho_dir * g_ctx.rr_indexed_data[ortho_cost_index].T_quadratic
+               + R_upstream * (num_segs_same_dir * g_ctx.rr_indexed_data[cost_index].C_load + num_segs_ortho_dir * g_ctx.rr_indexed_data[ortho_cost_index].C_load);
 
-		Tdel += g_rr_indexed_data[IPIN_COST_INDEX].T_linear;
+		Tdel += g_ctx.rr_indexed_data[IPIN_COST_INDEX].T_linear;
 
 		expected_cost = criticality_fac * Tdel + (1. - criticality_fac) * cong_cost;
 		return (expected_cost);
 #endif
 	} else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
-		return (g_rr_indexed_data[SINK_COST_INDEX].base_cost);
+		return (g_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
 	} else { /* Change this if you want to investigate route-throughs */
 		return (0.);
 	}
@@ -1017,18 +1017,18 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	float inv_length, ortho_inv_length, ylow, yhigh, xlow, xhigh;
 
 	
-	target_x = g_rr_nodes[target_node].xlow();
-	target_y = g_rr_nodes[target_node].ylow();
-	cost_index = g_rr_nodes[inode].cost_index();
-	inv_length = g_rr_indexed_data[cost_index].inv_length;
-	ortho_cost_index = g_rr_indexed_data[cost_index].ortho_cost_index;
-	ortho_inv_length = g_rr_indexed_data[ortho_cost_index].inv_length;
-	rr_type = g_rr_nodes[inode].type();
+	target_x = g_ctx.rr_nodes[target_node].xlow();
+	target_y = g_ctx.rr_nodes[target_node].ylow();
+	cost_index = g_ctx.rr_nodes[inode].cost_index();
+	inv_length = g_ctx.rr_indexed_data[cost_index].inv_length;
+	ortho_cost_index = g_ctx.rr_indexed_data[cost_index].ortho_cost_index;
+	ortho_inv_length = g_ctx.rr_indexed_data[ortho_cost_index].inv_length;
+	rr_type = g_ctx.rr_nodes[inode].type();
 
 	if (rr_type == CHANX) {
-		ylow = g_rr_nodes[inode].ylow();
-		xhigh = g_rr_nodes[inode].xhigh();
-		xlow = g_rr_nodes[inode].xlow();
+		ylow = g_ctx.rr_nodes[inode].ylow();
+		xhigh = g_ctx.rr_nodes[inode].xhigh();
+		xlow = g_ctx.rr_nodes[inode].xlow();
 
 		/* Count vertical (orthogonal to inode) segs first. */
 
@@ -1058,9 +1058,9 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	}
 
 	else { /* inode is a CHANY */
-		ylow = g_rr_nodes[inode].ylow();
-		yhigh = g_rr_nodes[inode].yhigh();
-		xlow = g_rr_nodes[inode].xlow();
+		ylow = g_ctx.rr_nodes[inode].ylow();
+		yhigh = g_ctx.rr_nodes[inode].yhigh();
+		xlow = g_ctx.rr_nodes[inode].xlow();
 
 		/* Count horizontal (orthogonal to inode) segs first. */
 
@@ -1101,18 +1101,18 @@ static void update_rr_base_costs(int inet) {
 	float fanout, factor;
 	int index;
 
-	fanout = g_clbs_nlist.net[inet].num_sinks();
+	fanout = g_ctx.clbs_nlist.net[inet].num_sinks();
 
 	/* Other reasonable values for factor include fanout and 1 */
 	factor = sqrt(fanout);
 
-	for (index = CHANX_COST_INDEX_START; index < g_num_rr_indexed_data; index++) {
-		if (g_rr_indexed_data[index].T_quadratic > 0.) { /* pass transistor */
-			g_rr_indexed_data[index].base_cost =
-					g_rr_indexed_data[index].saved_base_cost * factor;
+	for (index = CHANX_COST_INDEX_START; index < g_ctx.num_rr_indexed_data; index++) {
+		if (g_ctx.rr_indexed_data[index].T_quadratic > 0.) { /* pass transistor */
+			g_ctx.rr_indexed_data[index].base_cost =
+					g_ctx.rr_indexed_data[index].saved_base_cost * factor;
 		} else {
-			g_rr_indexed_data[index].base_cost =
-					g_rr_indexed_data[index].saved_base_cost;
+			g_ctx.rr_indexed_data[index].base_cost =
+					g_ctx.rr_indexed_data[index].saved_base_cost;
 		}
 	}
 }
@@ -1129,12 +1129,12 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	t_linked_rt_edge *linked_rt_edge;
 	t_rt_node * child_node;
 
-	tarxlow = g_rr_nodes[target_node].xlow();
-	tarylow = g_rr_nodes[target_node].ylow();
-	tarxhigh = g_rr_nodes[target_node].xhigh();
-	taryhigh = g_rr_nodes[target_node].yhigh();
+	tarxlow = g_ctx.rr_nodes[target_node].xlow();
+	tarylow = g_ctx.rr_nodes[target_node].ylow();
+	tarxhigh = g_ctx.rr_nodes[target_node].xhigh();
+	taryhigh = g_ctx.rr_nodes[target_node].yhigh();
 
-    int num_sinks = g_clbs_nlist.net[inet].num_sinks();
+    int num_sinks = g_ctx.clbs_nlist.net[inet].num_sinks();
 
 	if (num_sinks < HIGH_FANOUT_NET_LIM) {
 		/* This algorithm only applies to high fanout nets */
@@ -1142,7 +1142,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	}
 	if (rt_node == NULL || rt_node->u.child_list == NULL) {
 		/* If unknown traceback, set radius of bin to be size of chip */
-		rlim = max(g_nx + 2, g_ny + 2);
+		rlim = max(g_ctx.nx + 2, g_ctx.ny + 2);
 		return rlim;
 	}
 
@@ -1165,11 +1165,11 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		while (linked_rt_edge != NULL && success == false) {
 			child_node = linked_rt_edge->child;
 			inode = child_node->inode;
-			if (!(g_rr_nodes[inode].type() == IPIN || g_rr_nodes[inode].type() == SINK)) {
-				if (g_rr_nodes[inode].xlow() <= tarxhigh + rlim
-						&& g_rr_nodes[inode].xhigh() >= tarxhigh - rlim
-						&& g_rr_nodes[inode].ylow() <= taryhigh + rlim
-						&& g_rr_nodes[inode].yhigh() >= taryhigh - rlim) {
+			if (!(g_ctx.rr_nodes[inode].type() == IPIN || g_ctx.rr_nodes[inode].type() == SINK)) {
+				if (g_ctx.rr_nodes[inode].xlow() <= tarxhigh + rlim
+						&& g_ctx.rr_nodes[inode].xhigh() >= tarxhigh - rlim
+						&& g_ctx.rr_nodes[inode].ylow() <= taryhigh + rlim
+						&& g_ctx.rr_nodes[inode].yhigh() >= taryhigh - rlim) {
 					success = true;
 				}
 			}
@@ -1177,9 +1177,9 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		}
 
 		if (success == false) {
-			if (rlim > max(g_nx + 2, g_ny + 2)) {
+			if (rlim > max(g_ctx.nx + 2, g_ctx.ny + 2)) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
-					 "VPR internal error, net %s has paths that are not found in traceback.\n", g_clbs_nlist.net[inet].name);
+					 "VPR internal error, net %s has paths that are not found in traceback.\n", g_ctx.clbs_nlist.net[inet].name);
 			}
 			/* if sink not in bin, increase bin size until fit */
 			rlim *= 2;
@@ -1199,11 +1199,11 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	while (linked_rt_edge != NULL) {
 		child_node = linked_rt_edge->child;
 		inode = child_node->inode;
-		if (!(g_rr_nodes[inode].type() == IPIN || g_rr_nodes[inode].type() == SINK)) {
-			if (g_rr_nodes[inode].xlow() <= tarxhigh + rlim
-					&& g_rr_nodes[inode].xhigh() >= tarxhigh - rlim
-					&& g_rr_nodes[inode].ylow() <= taryhigh + rlim
-					&& g_rr_nodes[inode].yhigh() >= taryhigh - rlim) {
+		if (!(g_ctx.rr_nodes[inode].type() == IPIN || g_ctx.rr_nodes[inode].type() == SINK)) {
+			if (g_ctx.rr_nodes[inode].xlow() <= tarxhigh + rlim
+					&& g_ctx.rr_nodes[inode].xhigh() >= tarxhigh - rlim
+					&& g_ctx.rr_nodes[inode].ylow() <= taryhigh + rlim
+					&& g_ctx.rr_nodes[inode].yhigh() >= taryhigh - rlim) {
 				child_node->re_expand = true;
 			} else {
 				child_node->re_expand = false;
@@ -1227,12 +1227,12 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
 	/*struct s_linked_vptr *ch_list_head_net_delay_check;*/
 
-	net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch, g_clbs_nlist.net,
-		g_clbs_nlist.net.size());
-	load_net_delay_from_routing(net_delay_check, g_clbs_nlist.net, g_clbs_nlist.net.size());
+	net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch, g_ctx.clbs_nlist.net,
+		g_ctx.clbs_nlist.net.size());
+	load_net_delay_from_routing(net_delay_check, g_ctx.clbs_nlist.net, g_ctx.clbs_nlist.net.size());
 
-	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
+	for (inet = 0; inet < g_ctx.clbs_nlist.net.size(); inet++) {
+		for (ipin = 1; ipin < g_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 			if (net_delay_check[inet][ipin] == 0.) { /* Should be only GLOBAL nets */
 				if (fabs(net_delay[inet][ipin]) > ERROR_TOL) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -1258,7 +1258,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
 /* Detect if net should be routed or not */
 static bool should_route_net(int inet, const CBRR& connections_inf) {
-	t_trace * tptr = g_trace_head[inet];
+	t_trace * tptr = g_ctx.trace_head[inet];
 
 	if (tptr == NULL) {
 		/* No routing yet. */
@@ -1267,14 +1267,14 @@ static bool should_route_net(int inet, const CBRR& connections_inf) {
 
 	for (;;) {
 		int inode = tptr->index;
-		int occ = g_rr_node_state[inode].occ();
-		int capacity = g_rr_nodes[inode].capacity();
+		int occ = g_ctx.rr_node_state[inode].occ();
+		int capacity = g_ctx.rr_nodes[inode].capacity();
 
 		if (occ > capacity) {
 			return true; /* overuse detected */
 		}
 
-		if (g_rr_nodes[inode].type() == SINK) {
+		if (g_ctx.rr_nodes[inode].type() == SINK) {
 			// even if net is fully routed, not complete if parts of it should get ripped up (EXPERIMENTAL)
 			if (connections_inf.should_force_reroute_connection(inode)) {
 				return true;
@@ -1328,7 +1328,7 @@ Connection_based_routing_resources::Connection_based_routing_resources() :
 	remaining_targets.reserve(max_sink_pins_per_net);
 	reached_rt_sinks.reserve(max_sink_pins_per_net);
 
-	size_t routing_num_nets = g_clbs_nlist.net.size();
+	size_t routing_num_nets = g_ctx.clbs_nlist.net.size();
 	rr_sink_node_to_pin.resize(routing_num_nets);
 	lower_bound_connection_delay.resize(routing_num_nets);
 	forcible_reroute_connection_flag.resize(routing_num_nets);
@@ -1339,14 +1339,14 @@ Connection_based_routing_resources::Connection_based_routing_resources() :
 		auto& net_lower_bound_connection_delay = lower_bound_connection_delay[inet];
 		auto& net_forcible_reroute_connection_flag = forcible_reroute_connection_flag[inet];
 
-		unsigned int num_pins = g_clbs_nlist.net[inet].pins.size();
+		unsigned int num_pins = g_ctx.clbs_nlist.net[inet].pins.size();
 		net_node_to_pin.reserve(num_pins - 1);	// not looking up on the SOURCE pin
 		net_lower_bound_connection_delay.reserve(num_pins - 1);	// will be filled in after the 1st iteration's
 		net_forcible_reroute_connection_flag.reserve(num_pins - 1);	// all false to begin with
 
 		for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
 			// rr sink node index corresponding to this connection terminal
-			auto rr_sink_node = g_net_rr_terminals[inet][ipin];
+			auto rr_sink_node = g_ctx.net_rr_terminals[inet][ipin];
 
 			net_node_to_pin.insert({rr_sink_node, ipin});
 			net_forcible_reroute_connection_flag.insert({rr_sink_node, false});
@@ -1356,7 +1356,7 @@ Connection_based_routing_resources::Connection_based_routing_resources() :
 
 void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(vector<int>& rr_sink_nodes) const {
 
-	/* Turn a vector of g_rr_nodes indices, assumed to be of sinks for a net *
+	/* Turn a vector of g_ctx.rr_nodes indices, assumed to be of sinks for a net *
 	 * into the pin indices of the same net. */
 
 	VTR_ASSERT(current_inet != (unsigned)NO_PREVIOUS);	// not uninitialized
@@ -1394,7 +1394,7 @@ void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(co
 }
 
 bool Connection_based_routing_resources::sanity_check_lookup() const {
-	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
+	for (unsigned int inet = 0; inet < g_ctx.clbs_nlist.net.size(); ++inet) {
 		const auto& net_node_to_pin = rr_sink_node_to_pin[inet];
 
 		for (auto mapping : net_node_to_pin) {
@@ -1403,7 +1403,7 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
 				vtr::printf_info("%d cannot find itself (net %d)\n", mapping.first, inet);
 				return false;
 			}
-			VTR_ASSERT(g_net_rr_terminals[inet][mapping.second] == mapping.first);
+			VTR_ASSERT(g_ctx.net_rr_terminals[inet][mapping.second] == mapping.first);
 		}		
 	}	
 	return true;
@@ -1415,13 +1415,13 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(const
 	   This will be used later to judge the optimality of a connection, with suboptimal ones being candidates
 	   for forced reroute */
 
-	size_t routing_num_nets = g_clbs_nlist.net.size();
+	size_t routing_num_nets = g_ctx.clbs_nlist.net.size();
 
 	for (unsigned int inet = 0; inet < routing_num_nets; ++inet) {
 
 		auto& net_lower_bound_connection_delay = lower_bound_connection_delay[inet];
 
-		unsigned int num_pins = g_clbs_nlist.net[inet].pins.size();
+		unsigned int num_pins = g_ctx.clbs_nlist.net[inet].pins.size();
 
 		for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
 			net_lower_bound_connection_delay.push_back(net_delay[inet][ipin]);
@@ -1442,15 +1442,15 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 
 	bool any_connection_rerouted = false;	// true if any connection has been marked for rerouting
 
-	size_t routing_num_nets = g_clbs_nlist.net.size();
+	size_t routing_num_nets = g_ctx.clbs_nlist.net.size();
 
 	for (unsigned int inet = 0; inet < routing_num_nets; ++inet) {
 
-		unsigned int num_pins = g_clbs_nlist.net[inet].pins.size();
+		unsigned int num_pins = g_ctx.clbs_nlist.net[inet].pins.size();
 
 		for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
 			// rr sink node index corresponding to this connection terminal
-			auto rr_sink_node = g_net_rr_terminals[inet][ipin];
+			auto rr_sink_node = g_ctx.net_rr_terminals[inet][ipin];
 
 			// should always be left unset or cleared by rerouting before the end of the iteration
 			VTR_ASSERT(forcible_reroute_connection_flag[inet][rr_sink_node] == false);
@@ -1511,8 +1511,8 @@ static OveruseInfo calculate_overuse_info() {
     size_t total_overuse = 0;
     size_t worst_overuse = 0;
 	int inode;
-	for(inode = 0; inode < g_num_rr_nodes; inode++){
-        int overuse = g_rr_node_state[inode].occ() - g_rr_nodes[inode].capacity();
+	for(inode = 0; inode < g_ctx.num_rr_nodes; inode++){
+        int overuse = g_ctx.rr_node_state[inode].occ() - g_ctx.rr_nodes[inode].capacity();
 		if(overuse > 0) {
 			overused_nodes += 1;
 
@@ -1520,24 +1520,24 @@ static OveruseInfo calculate_overuse_info() {
             worst_overuse = std::max(worst_overuse, size_t(overuse));
         }
 	}
-	return OveruseInfo(g_num_rr_nodes, overused_nodes, total_overuse, worst_overuse);
+	return OveruseInfo(g_ctx.num_rr_nodes, overused_nodes, total_overuse, worst_overuse);
 }
 
 static WirelengthInfo calculate_wirelength_info() {
 	size_t used_wirelength = 0;
 	size_t available_wirelength = 0;
 
-	for (int i = 0; i < g_num_rr_nodes; ++i) {
-		if (g_rr_nodes[i].type() == CHANX || g_rr_nodes[i].type() == CHANY) {
-			available_wirelength += g_rr_nodes[i].capacity() + 
-					g_rr_nodes[i].xhigh() - g_rr_nodes[i].xlow() + 
-					g_rr_nodes[i].yhigh() - g_rr_nodes[i].ylow();
+	for (int i = 0; i < g_ctx.num_rr_nodes; ++i) {
+		if (g_ctx.rr_nodes[i].type() == CHANX || g_ctx.rr_nodes[i].type() == CHANY) {
+			available_wirelength += g_ctx.rr_nodes[i].capacity() + 
+					g_ctx.rr_nodes[i].xhigh() - g_ctx.rr_nodes[i].xlow() + 
+					g_ctx.rr_nodes[i].yhigh() - g_ctx.rr_nodes[i].ylow();
 		}
 	}
 
-	for (unsigned int inet = 0; inet < g_clbs_nlist.net.size(); ++inet) {
-		if (g_clbs_nlist.net[inet].is_global == false
-            && g_clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
+	for (unsigned int inet = 0; inet < g_ctx.clbs_nlist.net.size(); ++inet) {
+		if (g_ctx.clbs_nlist.net[inet].is_global == false
+            && g_ctx.clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
 			int bends, wirelength, segments;
 			get_num_bends_and_length(inet, &bends, &wirelength, &segments);
 

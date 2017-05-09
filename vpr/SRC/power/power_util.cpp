@@ -69,7 +69,7 @@ float power_perc_dynamic(t_power_usage * power_usage) {
 }
 
 void power_log_msg(e_power_log_type log_type, const char * msg) {
-	log_msg(&g_power_output->logs[log_type], msg);
+	log_msg(&g_ctx.power_output->logs[log_type], msg);
 }
 
 const char * transistor_type_name(e_tx_type type) {
@@ -86,9 +86,9 @@ float pin_dens(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
 	float density = 0.;
 
 	if (pb) {
-		AtomNetId net_id = g_blocks[iblk].pb_route[pin->pin_count_in_cluster].atom_net_id;
+		AtomNetId net_id = g_ctx.blocks[iblk].pb_route[pin->pin_count_in_cluster].atom_net_id;
 		if (net_id) {
-			density = g_atom_net_power[net_id].density;
+			density = g_ctx.atom_net_power[net_id].density;
 		}
 	}
 
@@ -100,9 +100,9 @@ float pin_prob(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
 	float prob = 1.;
 
 	if (pb) {
-		AtomNetId net_id = g_blocks[iblk].pb_route[pin->pin_count_in_cluster].atom_net_id;
+		AtomNetId net_id = g_ctx.blocks[iblk].pb_route[pin->pin_count_in_cluster].atom_net_id;
 		if (net_id) {
-			prob = g_atom_net_power[net_id].probability;
+			prob = g_ctx.atom_net_power[net_id].probability;
 		}
 	}
 
@@ -277,7 +277,7 @@ float clb_net_density(int net_idx) {
 	if (net_idx == OPEN) {
 		return 0.;
 	} else {
-		return clb_net_power[net_idx].density;
+		return g_ctx.clb_net_power[net_idx].density;
 	}
 }
 
@@ -285,7 +285,7 @@ float clb_net_prob(int net_idx) {
 	if (net_idx == OPEN) {
 		return 0.;
 	} else {
-		return clb_net_power[net_idx].probability;
+		return g_ctx.clb_net_power[net_idx].probability;
 	}
 }
 
@@ -324,8 +324,8 @@ void output_logs(FILE * fp, t_log * logs, int num_logs) {
 
 float power_buffer_size_from_logical_effort(float C_load) {
 	return max(1.0f,
-			C_load / g_power_commonly_used->INV_1X_C_in
-					/ (2 * g_power_arch->logical_effort_factor));
+			C_load / g_ctx.power_commonly_used->INV_1X_C_in
+					/ (2 * g_ctx.power_arch->logical_effort_factor));
 }
 
 void power_print_title(FILE * fp, const char * title) {
@@ -351,13 +351,13 @@ t_mux_arch * power_get_mux_arch(int num_mux_inputs, float transistor_size) {
 	/* Find the mux archs for the given transistor size */
 	std::map<float, t_power_mux_info*>::iterator it;
 
-	it = g_power_commonly_used->mux_info.find(transistor_size);
+	it = g_ctx.power_commonly_used->mux_info.find(transistor_size);
 
-	if (it == g_power_commonly_used->mux_info.end()) {
+	if (it == g_ctx.power_commonly_used->mux_info.end()) {
 		mux_info = new t_power_mux_info;
 		mux_info->mux_arch = NULL;
 		mux_info->mux_arch_max_size = 0;
-		g_power_commonly_used->mux_info[transistor_size] = mux_info;
+		g_ctx.power_commonly_used->mux_info[transistor_size] = mux_info;
 	} else {
 		mux_info = it->second;
 	}

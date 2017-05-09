@@ -59,29 +59,29 @@ void power_print_spice_comparison(void) {
 	char * SRAM_bits = NULL;
 	int sram_idx;
 //
-	g_solution_inf.T_crit = 1.0e-8;
+	g_ctx.solution_inf.T_crit = 1.0e-8;
 //
 //
-//	 fprintf(g_power_output->out, "Energy of INV (High Activity)\n");
+//	 fprintf(g_ctx.power_output->out, "Energy of INV (High Activity)\n");
 //	 for (i = 0; i < (sizeof(inv_sizes) / sizeof(float)); i++) {
 //	 power_usage_inverter(&sub_power_usage, 2, 0.5, inv_sizes[i],
 //	 power_callib_period);
-//	 fprintf(g_power_output->out, "%g\t%g\n", inv_sizes[i],
+//	 fprintf(g_ctx.power_output->out, "%g\t%g\n", inv_sizes[i],
 //	 (sub_power_usage.dynamic + sub_power_usage.leakage)
-//	 * g_solution_inf.T_crit);
+//	 * g_ctx.solution_inf.T_crit);
 //	 }
 //
-//	 fprintf(g_power_output->out, "Energy of INV (No Activity)\n");
+//	 fprintf(g_ctx.power_output->out, "Energy of INV (No Activity)\n");
 //	 for (i = 0; i < (sizeof(inv_sizes) / sizeof(float)); i++) {
 //	 power_usage_inverter(&sub_power_usage, 0, 1, inv_sizes[i],
 //	 power_callib_period);
-//	 fprintf(g_power_output->out, "%g\t%g\n", inv_sizes[i],
+//	 fprintf(g_ctx.power_output->out, "%g\t%g\n", inv_sizes[i],
 //	 (sub_power_usage.dynamic + sub_power_usage.leakage)
-//	 * g_solution_inf.T_crit);
+//	 * g_ctx.solution_inf.T_crit);
 //	 }
 //	 }
 //
-//	 fprintf(g_power_output->out, "Energy of Mux (High Activity)\n");
+//	 fprintf(g_ctx.power_output->out, "Energy of Mux (High Activity)\n");
 //	 for (i = 0; i < (sizeof(mux_sizes) / sizeof(int)); i++) {
 //	 t_power_usage mux_power_usage;
 //
@@ -96,12 +96,12 @@ void power_print_spice_comparison(void) {
 //	 power_usage_mux_multilevel(&mux_power_usage,
 //	 power_get_mux_arch(mux_sizes[i]), prob, dens, 0, false,
 //	 power_callib_period);
-//	 fprintf(g_power_output->out, "%d\t%g\n", mux_sizes[i],
+//	 fprintf(g_ctx.power_output->out, "%d\t%g\n", mux_sizes[i],
 //	 (mux_power_usage.dynamic + mux_power_usage.leakage)
-//	 * g_solution_inf.T_crit);
+//	 * g_ctx.solution_inf.T_crit);
 //	 }
 //
-//	 fprintf(g_power_output->out, "Energy of Mux (No Activity)\n");
+//	 fprintf(g_ctx.power_output->out, "Energy of Mux (No Activity)\n");
 //	 for (i = 0; i < (sizeof(mux_sizes) / sizeof(int)); i++) {
 //	 t_power_usage mux_power_usage;
 //
@@ -121,30 +121,30 @@ void power_print_spice_comparison(void) {
 //	 power_usage_mux_multilevel(&mux_power_usage,
 //	 power_get_mux_arch(mux_sizes[i]), prob, dens, 0, false,
 //	 power_callib_period);
-//	 fprintf(g_power_output->out, "%d\t%g\n", mux_sizes[i],
+//	 fprintf(g_ctx.power_output->out, "%d\t%g\n", mux_sizes[i],
 //	 (mux_power_usage.dynamic + mux_power_usage.leakage)
-//	 * g_solution_inf.T_crit);
+//	 * g_ctx.solution_inf.T_crit);
 //	 }
 //
-//	 fprintf(g_power_output->out, "Energy of Buffer (High Activity)\n");
+//	 fprintf(g_ctx.power_output->out, "Energy of Buffer (High Activity)\n");
 //	 for (i = 0; i < (sizeof(buffer_sizes) / sizeof(float)); i++) {
 //	 power_usage_buffer(&sub_power_usage, buffer_sizes[i], 0.5, 2, false,
 //	 power_callib_period);
-//	 fprintf(g_power_output->out, "%g\t%g\n", buffer_sizes[i],
+//	 fprintf(g_ctx.power_output->out, "%g\t%g\n", buffer_sizes[i],
 //	 (sub_power_usage.dynamic + sub_power_usage.leakage)
-//	 * g_solution_inf.T_crit);
+//	 * g_ctx.solution_inf.T_crit);
 //	 }
 //
-//	 fprintf(g_power_output->out, "Energy of Buffer (No Activity)\n");
+//	 fprintf(g_ctx.power_output->out, "Energy of Buffer (No Activity)\n");
 //	 for (i = 0; i < (sizeof(buffer_sizes) / sizeof(float)); i++) {
 //	 power_usage_buffer(&sub_power_usage, buffer_sizes[i], 1, 0, false,
 //	 power_callib_period);
-//	 fprintf(g_power_output->out, "%g\t%g\n", buffer_sizes[i],
+//	 fprintf(g_ctx.power_output->out, "%g\t%g\n", buffer_sizes[i],
 //	 (sub_power_usage.dynamic + sub_power_usage.leakage)
-//	 * g_solution_inf.T_crit);
+//	 * g_ctx.solution_inf.T_crit);
 //	 }
 //
-	fprintf(g_power_output->out, "Energy of LUT (High Activity)\n");
+	fprintf(g_ctx.power_output->out, "Energy of LUT (High Activity)\n");
 	for (i = 0; i < (sizeof(LUT_sizes) / sizeof(int)); i++) {
 		for (j = 1; j <= LUT_sizes[i]; j++) {
 			SRAM_bits = (char*) vtr::realloc(SRAM_bits,
@@ -175,15 +175,15 @@ void power_print_spice_comparison(void) {
 		float p[6] = { 0.5, 0.5, 0.5, 0.5, 0.5, 0.5 };
 		float d[6] = { 1, 1, 1, 1, 1, 1 };
 		power_usage_mux_multilevel(&power_usage_mux, power_get_mux_arch(6, 1.0),
-				p, d, 0, true, g_solution_inf.T_crit);
+				p, d, 0, true, g_ctx.solution_inf.T_crit);
 
 		power_add_usage(&sub_power_usage, &power_usage_mux);
 
-		fprintf(g_power_output->out, "%d\t%g\n", LUT_sizes[i],
+		fprintf(g_ctx.power_output->out, "%d\t%g\n", LUT_sizes[i],
 				power_sum_usage(&sub_power_usage));
 	}
 //
-//	 fprintf(g_power_output->out, "Energy of LUT (No Activity)\n");
+//	 fprintf(g_ctx.power_output->out, "Energy of LUT (No Activity)\n");
 //	 for (i = 0; i < (sizeof(LUT_sizes) / sizeof(int)); i++) {
 //	 for (j = 1; j <= LUT_sizes[i]; j++) {
 //	 SRAM_bits = (char*) vtr::realloc(SRAM_bits,
@@ -208,24 +208,24 @@ void power_print_spice_comparison(void) {
 //	 }
 //	 power_usage_lut(&sub_power_usage, LUT_sizes[i], SRAM_bits, prob, dens,
 //	 power_callib_period);
-//	 fprintf(g_power_output->out, "%d\t%g\n", LUT_sizes[i],
+//	 fprintf(g_ctx.power_output->out, "%d\t%g\n", LUT_sizes[i],
 //	 (sub_power_usage.dynamic + sub_power_usage.leakage)
-//	 * g_solution_inf.T_crit * 2);
+//	 * g_ctx.solution_inf.T_crit * 2);
 //	 }
 //
-	fprintf(g_power_output->out, "Energy of FF (High Activity)\n");
+	fprintf(g_ctx.power_output->out, "Energy of FF (High Activity)\n");
 	power_usage_ff(&sub_power_usage, 1.0, 0.5, 3, 0.5, 1, 0.5, 2,
 			power_callib_period);
-	fprintf(g_power_output->out, "%g\n",
+	fprintf(g_ctx.power_output->out, "%g\n",
 			(sub_power_usage.dynamic + sub_power_usage.leakage));
 //
-//	 fprintf(g_power_output->out, "Energy of FF (No Activity)\n");
+//	 fprintf(g_ctx.power_output->out, "Energy of FF (No Activity)\n");
 //	 power_usage_ff(&sub_power_usage, 1, 0, 1, 0, 1, 0, power_callib_period);
-//	 fprintf(g_power_output->out, "%g\n",
+//	 fprintf(g_ctx.power_output->out, "%g\n",
 //	 (sub_power_usage.dynamic + sub_power_usage.leakage)
-//	 * g_solution_inf.T_crit * 2);
+//	 * g_ctx.solution_inf.T_crit * 2);
 //
-//	 fprintf(g_power_output->out, "Energy of SB (High Activity)\n");
+//	 fprintf(g_ctx.power_output->out, "Energy of SB (High Activity)\n");
 //	 for (i = 0; i < (sizeof(sb_buffer_sizes) / sizeof(float)); i++) {
 //	 t_power_usage sb_power_usage;
 //
@@ -247,13 +247,13 @@ void power_print_spice_comparison(void) {
 //	 power_callib_period);
 //	 power_add_usage(&sb_power_usage, &sub_power_usage);
 //
-//	 fprintf(g_power_output->out, "%d\t%.0f\t%g\n", sb_mux_sizes[i],
+//	 fprintf(g_ctx.power_output->out, "%d\t%.0f\t%g\n", sb_mux_sizes[i],
 //	 sb_buffer_sizes[i],
 //	 (sb_power_usage.dynamic + sb_power_usage.leakage)
-//	 * g_solution_inf.T_crit);
+//	 * g_ctx.solution_inf.T_crit);
 //	 }
 //
-//	 fprintf(g_power_output->out, "Energy of SB (No Activity)\n");
+//	 fprintf(g_ctx.power_output->out, "Energy of SB (No Activity)\n");
 //	 for (i = 0; i < (sizeof(sb_buffer_sizes) / sizeof(float)); i++) {
 //	 t_power_usage sb_power_usage;
 //
@@ -280,10 +280,10 @@ void power_print_spice_comparison(void) {
 //	 power_callib_period);
 //	 power_add_usage(&sb_power_usage, &sub_power_usage);
 //
-//	 fprintf(g_power_output->out, "%d\t%.0f\t%g\n", sb_mux_sizes[i],
+//	 fprintf(g_ctx.power_output->out, "%d\t%.0f\t%g\n", sb_mux_sizes[i],
 //	 sb_buffer_sizes[i],
 //	 (sb_power_usage.dynamic + sb_power_usage.leakage)
-//	 * g_solution_inf.T_crit);
+//	 * g_ctx.solution_inf.T_crit);
 //}
 	//free variables
 	free(dens);
@@ -398,16 +398,16 @@ float power_usage_ff_for_callibration(int num_inputs, float transistor_size) {
 void power_callibrate(void) {
 	/* Buffers and Mux must be done before LUT/FF */
 
-	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER]->callibrate();
-	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR]->callibrate();
-	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX]->callibrate();
-	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT]->callibrate();
-	g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF]->callibrate();
+	g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER]->callibrate();
+	g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR]->callibrate();
+	g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX]->callibrate();
+	g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT]->callibrate();
+	g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF]->callibrate();
 }
 
 void power_print_callibration(void) {
-	power_print_title(g_power_output->out, "Callibration Data");
+	power_print_title(g_ctx.power_output->out, "Callibration Data");
 	for (int i = 0; i < POWER_CALLIB_COMPONENT_MAX; i++) {
-		g_power_commonly_used->component_callibration[i]->print(g_power_output->out);
+		g_ctx.power_commonly_used->component_callibration[i]->print(g_ctx.power_output->out);
 	}
 }

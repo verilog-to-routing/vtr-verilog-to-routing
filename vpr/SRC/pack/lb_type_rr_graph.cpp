@@ -52,11 +52,11 @@ static void print_lb_type_rr_graph(FILE *fp, const vector<t_lb_type_rr_node> &lb
 */
 vector<t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph() {
 	vector<t_lb_type_rr_node> *lb_type_rr_graphs;
-	lb_type_rr_graphs = new vector<t_lb_type_rr_node> [g_num_block_types];
+	lb_type_rr_graphs = new vector<t_lb_type_rr_node> [g_ctx.num_block_types];
 
-	for(int i = 0; i < g_num_block_types; i++) {
-		if(&g_block_types[i] != EMPTY_TYPE) {
-			 alloc_and_load_lb_type_rr_graph_for_type(&g_block_types[i], lb_type_rr_graphs[i]);
+	for(int i = 0; i < g_ctx.num_block_types; i++) {
+		if(&g_ctx.block_types[i] != g_ctx.EMPTY_TYPE) {
+			 alloc_and_load_lb_type_rr_graph_for_type(&g_ctx.block_types[i], lb_type_rr_graphs[i]);
 
 			 /* Now that the data is loaded, reallocate to the precise amount of memory needed to prevent insidious bugs */
 			 /* I should be using shrinktofit() but as of 2013, C++ 11 is yet not well supported so I can't call this function in gcc */
@@ -68,8 +68,8 @@ vector<t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph() {
 
 /* Free routing resource graph for all logic block types */
 void free_all_lb_type_rr_graph(vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
-	for(int itype = 0; itype < g_num_block_types; itype++) {
-		if(&g_block_types[itype] != EMPTY_TYPE) {
+	for(int itype = 0; itype < g_ctx.num_block_types; itype++) {
+		if(&g_ctx.block_types[itype] != g_ctx.EMPTY_TYPE) {
 			int graph_size = lb_type_rr_graphs[itype].size();
 			for(int inode = 0; inode < graph_size; inode++) {				
 				t_lb_type_rr_node *node = &lb_type_rr_graphs[itype][inode];
@@ -141,10 +141,10 @@ void echo_lb_type_rr_graphs(char *filename, vector<t_lb_type_rr_node> *lb_type_r
 	FILE *fp;
 	fp = vtr::fopen(filename, "w");
 
-	for(int itype = 0; itype < g_num_block_types; itype++) {
-		if(&g_block_types[itype] != EMPTY_TYPE) {
+	for(int itype = 0; itype < g_ctx.num_block_types; itype++) {
+		if(&g_ctx.block_types[itype] != g_ctx.EMPTY_TYPE) {
 			fprintf(fp, "--------------------------------------------------------------\n");
-			fprintf(fp, "Intra-Logic Block Routing Resource For Type %s\n", g_block_types[itype].name);
+			fprintf(fp, "Intra-Logic Block Routing Resource For Type %s\n", g_ctx.block_types[itype].name);
 			fprintf(fp, "--------------------------------------------------------------\n");
 			fprintf(fp, "\n");
 			print_lb_type_rr_graph(fp, lb_type_rr_graphs[itype]);

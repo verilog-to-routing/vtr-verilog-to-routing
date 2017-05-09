@@ -150,10 +150,10 @@ void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id)
     std::map<AtomBlockId, bool>& atoms_added = *router_data->atoms_added;
 
 	if(atoms_added.count(blk_id) > 0) {
-		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Atom %s added twice to router\n", g_atom_nl.block_name(blk_id).c_str());
+		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, "Atom %s added twice to router\n", g_ctx.atom_nl.block_name(blk_id).c_str());
 	}
 
-	pb = g_atom_lookup.atom_pb(blk_id);
+	pb = g_ctx.atom_lookup.atom_pb(blk_id);
 
     VTR_ASSERT(pb);
 	
@@ -161,7 +161,7 @@ void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id)
 
 	set_reset_pb_modes(router_data, pb, true);
 
-    for(auto pin_id : g_atom_nl.block_pins(blk_id)) {
+    for(auto pin_id : g_ctx.atom_nl.block_pins(blk_id)) {
         add_pin_to_rt_terminals(router_data, pin_id);
     }
 
@@ -172,7 +172,7 @@ void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id)
 void remove_atom_from_target(t_lb_router_data *router_data, const AtomBlockId blk_id) {
 	map <AtomBlockId, bool> & atoms_added = *router_data->atoms_added;
 
-	const t_pb* pb = g_atom_lookup.atom_pb(blk_id);
+	const t_pb* pb = g_ctx.atom_lookup.atom_pb(blk_id);
 	
 	if(atoms_added.count(blk_id) == 0) {
 		return;
@@ -180,7 +180,7 @@ void remove_atom_from_target(t_lb_router_data *router_data, const AtomBlockId bl
 	
 	set_reset_pb_modes(router_data, pb, false);
 		
-    for(auto pin_id : g_atom_nl.block_pins(blk_id)) {
+    for(auto pin_id : g_ctx.atom_nl.block_pins(blk_id)) {
         remove_pin_from_rt_terminals(router_data, pin_id);
     }
     
@@ -322,7 +322,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data) {
 			is_routed = is_route_success(router_data);
 		} else {
 			--inet;
-			vtr::printf_info("Routing net %s is impossible\n", g_atom_nl.net_name(lb_nets[inet].atom_net_id).c_str());
+			vtr::printf_info("Routing net %s is impossible\n", g_ctx.atom_nl.net_name(lb_nets[inet].atom_net_id).c_str());
 			is_routed = false;
 		}
 		router_data->pres_con_fac *= router_data->params.pres_fac_mult;
@@ -444,11 +444,11 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 	bool found = false;
 	unsigned int ipos;
 
-    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_lookup, pin_id);
+    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_ctx.atom_nl, g_ctx.atom_lookup, pin_id);
     VTR_ASSERT(pb_graph_pin);
 
-    AtomPortId port_id = g_atom_nl.pin_port(pin_id);
-    AtomNetId net_id = g_atom_nl.pin_net(pin_id);
+    AtomPortId port_id = g_ctx.atom_nl.pin_port(pin_id);
+    AtomNetId net_id = g_ctx.atom_nl.pin_net(pin_id);
 
 	if(!net_id) {
 		/* This is not a valid net */
@@ -491,7 +491,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 
     VTR_ASSERT(lb_nets[ipos].atom_pins.size() == lb_nets[ipos].terminals.size());
 
-	if(g_atom_nl.port_type(port_id) == AtomPortType::OUTPUT) {
+	if(g_ctx.atom_nl.port_type(port_id) == AtomPortType::OUTPUT) {
 		/* Net driver pin takes 0th position in terminals */
 		int sink_terminal;
 		VTR_ASSERT(lb_nets[ipos].terminals[0] == get_lb_type_rr_graph_ext_source_index(lb_type));
@@ -501,7 +501,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 		VTR_ASSERT(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE);
 		
 
-		if(lb_nets[ipos].terminals.size() < g_atom_nl.net_pins(net_id).size()) {
+		if(lb_nets[ipos].terminals.size() < g_ctx.atom_nl.net_pins(net_id).size()) {
 			/* Must route out of cluster, put out of cluster sink terminal as first terminal */
 			if(lb_nets[ipos].terminals.size() == 1) {
 				sink_terminal = get_lb_type_rr_graph_ext_sink_index(lb_type);
@@ -520,8 +520,8 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 		}
 	} else {
         //This is an input to a primitive
-        VTR_ASSERT(g_atom_nl.port_type(port_id) == AtomPortType::INPUT
-                   || g_atom_nl.port_type(port_id) == AtomPortType::CLOCK);
+        VTR_ASSERT(g_ctx.atom_nl.port_type(port_id) == AtomPortType::INPUT
+                   || g_ctx.atom_nl.port_type(port_id) == AtomPortType::CLOCK);
 
         //Get the rr node index associated with the pin
 		int pin_index = pb_graph_pin->pin_count_in_cluster;
@@ -533,7 +533,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 		int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
 		VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
 
-		if(lb_nets[ipos].terminals.size() == g_atom_nl.net_pins(net_id).size() &&
+		if(lb_nets[ipos].terminals.size() == g_ctx.atom_nl.net_pins(net_id).size() &&
 			lb_nets[ipos].terminals[1] == get_lb_type_rr_graph_ext_sink_index(lb_type)) {
 
 		    /* If all sinks of net are all contained in the logic block, then the net does 
@@ -549,7 +549,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
     VTR_ASSERT(lb_nets[ipos].atom_pins.size() == lb_nets[ipos].terminals.size());
 
 	int num_lb_terminals = lb_nets[ipos].terminals.size();
-	VTR_ASSERT(num_lb_terminals <= (int) g_atom_nl.net_pins(net_id).size());
+	VTR_ASSERT(num_lb_terminals <= (int) g_ctx.atom_nl.net_pins(net_id).size());
 	VTR_ASSERT(num_lb_terminals >= 0);
 }
 
@@ -564,10 +564,10 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 	bool found = false;
 	unsigned int ipos;
 
-    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_lookup, pin_id);
+    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_ctx.atom_nl, g_ctx.atom_lookup, pin_id);
 
-    AtomPortId port_id = g_atom_nl.pin_port(pin_id);
-    AtomNetId net_id = g_atom_nl.pin_net(pin_id);
+    AtomPortId port_id = g_ctx.atom_nl.pin_port(pin_id);
+    AtomNetId net_id = g_ctx.atom_nl.pin_net(pin_id);
 
 	if(!net_id) {
 		/* This is not a valid net */
@@ -588,7 +588,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 	
     VTR_ASSERT(lb_nets[ipos].atom_pins.size() == lb_nets[ipos].terminals.size());
 
-    auto port_type = g_atom_nl.port_type(port_id);
+    auto port_type = g_ctx.atom_nl.port_type(port_id);
 	if(port_type == AtomPortType::OUTPUT) {
 		/* Net driver pin takes 0th position in terminals */
 		int sink_terminal;
@@ -713,7 +713,7 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
                 AtomPinId atom_pin = lb_nets[ilb_net].atom_pins[iterm];
                 VTR_ASSERT(atom_pin);
 
-                const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_atom_nl, g_atom_lookup, atom_pin);
+                const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_ctx.atom_nl, g_ctx.atom_lookup, atom_pin);
                 VTR_ASSERT(pb_graph_pin);
 
                 if(!pb_graph_pin->port->equivalent) continue; //Only need to remap equivalent ports
@@ -725,7 +725,7 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
                             "Found duplicate nets connected to logically equivalent pins. "
                             "Remapping intra lb net %d (atom net %zu '%s') from common sink "
                             "pb_route %d to fixed pin pb_route %d\n",
-                            ilb_net, size_t(lb_nets[ilb_net].atom_net_id), g_atom_nl.net_name(lb_nets[ilb_net].atom_net_id).c_str(),
+                            ilb_net, size_t(lb_nets[ilb_net].atom_net_id), g_ctx.atom_nl.net_name(lb_nets[ilb_net].atom_net_id).c_str(),
                             kv.first, pin_index);
 
                 VTR_ASSERT(lb_type_graph[pin_index].type == LB_INTERMEDIATE);
@@ -993,7 +993,7 @@ static void print_route(char *filename, t_lb_router_data *router_data) {
 
 	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
 		AtomNetId net_id = lb_nets[inet].atom_net_id;
-		fprintf(fp, "net %s num targets %d \n", g_atom_nl.net_name(net_id).c_str(), (int)lb_nets[inet].terminals.size());
+		fprintf(fp, "net %s num targets %d \n", g_ctx.atom_nl.net_name(net_id).c_str(), (int)lb_nets[inet].terminals.size());
 		print_trace(fp, lb_nets[inet].rt_tree);
 		fprintf(fp, "\n\n");
 	}

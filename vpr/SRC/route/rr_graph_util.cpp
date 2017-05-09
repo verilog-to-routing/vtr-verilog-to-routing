@@ -44,10 +44,10 @@ int seg_index_of_cblock(t_rr_type from_rr_type, int to_node) {
 	 * box from from_rr_type (CHANX or CHANY) to to_node (IPIN).                 */
 
 	if (from_rr_type == CHANX)
-		return (g_rr_nodes[to_node].xlow());
+		return (g_ctx.rr_nodes[to_node].xlow());
 	else
 		/* CHANY */
-		return (g_rr_nodes[to_node].ylow());
+		return (g_ctx.rr_nodes[to_node].ylow());
 }
 
 int seg_index_of_sblock(int from_node, int to_node) {
@@ -57,21 +57,21 @@ int seg_index_of_sblock(int from_node, int to_node) {
 	 * switch box on the left side of a CHANX segment at (i,j) has seg_index =   *
 	 * i-1, while the switch box on the right side of that segment has seg_index *
 	 * = i.  CHANY stuff works similarly.  Hence the range of values returned is *
-	 * 0 to g_nx (if from_node is a CHANX) or 0 to g_ny (if from_node is a CHANY).   */
+	 * 0 to g_ctx.nx (if from_node is a CHANX) or 0 to g_ctx.ny (if from_node is a CHANY).   */
 
 	t_rr_type from_rr_type, to_rr_type;
 
-	from_rr_type = g_rr_nodes[from_node].type();
-	to_rr_type = g_rr_nodes[to_node].type();
+	from_rr_type = g_ctx.rr_nodes[from_node].type();
+	to_rr_type = g_ctx.rr_nodes[to_node].type();
 
 	if (from_rr_type == CHANX) {
 		if (to_rr_type == CHANY) {
-			return (g_rr_nodes[to_node].xlow());
+			return (g_ctx.rr_nodes[to_node].xlow());
 		} else if (to_rr_type == CHANX) {
-			if (g_rr_nodes[to_node].xlow() > g_rr_nodes[from_node].xlow()) { /* Going right */
-				return (g_rr_nodes[from_node].xhigh());
+			if (g_ctx.rr_nodes[to_node].xlow() > g_ctx.rr_nodes[from_node].xlow()) { /* Going right */
+				return (g_ctx.rr_nodes[from_node].xhigh());
 			} else { /* Going left */
-				return (g_rr_nodes[to_node].xhigh());
+				return (g_ctx.rr_nodes[to_node].xhigh());
 			}
 		} else {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -83,12 +83,12 @@ int seg_index_of_sblock(int from_node, int to_node) {
 	/* End from_rr_type is CHANX */
 	else if (from_rr_type == CHANY) {
 		if (to_rr_type == CHANX) {
-			return (g_rr_nodes[to_node].ylow());
+			return (g_ctx.rr_nodes[to_node].ylow());
 		} else if (to_rr_type == CHANY) {
-			if (g_rr_nodes[to_node].ylow() > g_rr_nodes[from_node].ylow()) { /* Going up */
-				return (g_rr_nodes[from_node].yhigh());
+			if (g_ctx.rr_nodes[to_node].ylow() > g_ctx.rr_nodes[from_node].ylow()) { /* Going up */
+				return (g_ctx.rr_nodes[from_node].yhigh());
 			} else { /* Going down */
-				return (g_rr_nodes[to_node].yhigh());
+				return (g_ctx.rr_nodes[to_node].yhigh());
 			}
 		} else {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 

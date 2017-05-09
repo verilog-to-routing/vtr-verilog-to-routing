@@ -174,32 +174,32 @@ void SetupVPR(t_options *Options,
 	SetupPowerOpts(*Options, PowerOpts, Arch);
 
 	if (readArchFile == true) {
-		XmlReadArch(Options->ArchFile, TimingEnabled, Arch, &g_block_types,
-				&g_num_block_types);
+		XmlReadArch(Options->ArchFile, TimingEnabled, Arch, &g_ctx.block_types,
+				&g_ctx.num_block_types);
 	}
 
 	*user_models = Arch->models;
 	*library_models = Arch->model_library;
 
 	/* TODO: this is inelegant, I should be populating this information in XmlReadArch */
-	EMPTY_TYPE = NULL;
-	FILL_TYPE = NULL;
-	IO_TYPE = NULL;
-	for (i = 0; i < g_num_block_types; i++) {
-		if (strcmp(g_block_types[i].name, "<EMPTY>") == 0) {
-			EMPTY_TYPE = &g_block_types[i];
-		} else if (strcmp(g_block_types[i].name, "io") == 0) {
-			IO_TYPE = &g_block_types[i];
+	g_ctx.EMPTY_TYPE = NULL;
+	g_ctx.FILL_TYPE = NULL;
+	g_ctx.IO_TYPE = NULL;
+	for (i = 0; i < g_ctx.num_block_types; i++) {
+		if (strcmp(g_ctx.block_types[i].name, "<EMPTY>") == 0) {
+			g_ctx.EMPTY_TYPE = &g_ctx.block_types[i];
+		} else if (strcmp(g_ctx.block_types[i].name, "io") == 0) {
+			g_ctx.IO_TYPE = &g_ctx.block_types[i];
 		} else {
-			for (j = 0; j < g_block_types[i].num_grid_loc_def; j++) {
-				if (g_block_types[i].grid_loc_def[j].grid_loc_type == FILL) {
-					VTR_ASSERT(FILL_TYPE == NULL);
-					FILL_TYPE = &g_block_types[i];
+			for (j = 0; j < g_ctx.block_types[i].num_grid_loc_def; j++) {
+				if (g_ctx.block_types[i].grid_loc_def[j].grid_loc_type == FILL) {
+					VTR_ASSERT(g_ctx.FILL_TYPE == NULL);
+					g_ctx.FILL_TYPE = &g_ctx.block_types[i];
 				}
 			}
 		}
 	}
-	VTR_ASSERT(EMPTY_TYPE != NULL && FILL_TYPE != NULL && IO_TYPE != NULL);
+	VTR_ASSERT(g_ctx.EMPTY_TYPE != NULL && g_ctx.FILL_TYPE != NULL && g_ctx.IO_TYPE != NULL);
 
 	*Segments = Arch->Segments;
 	RoutingArch->num_segment = Arch->num_segments;
@@ -260,7 +260,7 @@ void SetupVPR(t_options *Options,
 	}
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
-		EchoArch(getEchoFileName(E_ECHO_ARCH), g_block_types, g_num_block_types,
+		EchoArch(getEchoFileName(E_ECHO_ARCH), g_ctx.block_types, g_ctx.num_block_types,
 				Arch);
 	}
 
@@ -307,20 +307,20 @@ static void SetupSwitches(const t_arch& Arch,
 		const struct s_arch_switch_inf *ArchSwitches, int NumArchSwitches) {
 
 	int switches_to_copy = NumArchSwitches;
-	g_num_arch_switches = NumArchSwitches;
+	g_ctx.num_arch_switches = NumArchSwitches;
 
 	/* If ipin cblock info has not been read in from a switch, then we will
 	   create a new switch for it. Otherwise, the switch already exists */
 	if (NULL == Arch.ipin_cblock_switch_name){
-		/* Depends on g_num_arch_switches */
-		RoutingArch->wire_to_arch_ipin_switch = g_num_arch_switches;
-		++g_num_arch_switches;
+		/* Depends on g_ctx.num_arch_switches */
+		RoutingArch->wire_to_arch_ipin_switch = g_ctx.num_arch_switches;
+		++g_ctx.num_arch_switches;
 		++NumArchSwitches;
 	} else {
 		/* need to find the index of the input cblock switch */
 		int ipin_cblock_switch_index = -1;
 		char *ipin_cblock_switch_name = Arch.ipin_cblock_switch_name;
-		for (int iswitch = 0; iswitch < g_num_arch_switches; iswitch++){
+		for (int iswitch = 0; iswitch < g_ctx.num_arch_switches; iswitch++){
 			char *iswitch_name = ArchSwitches[iswitch].name;
 			if (0 == strcmp(ipin_cblock_switch_name, iswitch_name)){
 				ipin_cblock_switch_index = iswitch;
@@ -334,25 +334,25 @@ static void SetupSwitches(const t_arch& Arch,
 		RoutingArch->wire_to_arch_ipin_switch = ipin_cblock_switch_index;
 	}
 
-	/* Depends on g_num_arch_switches */
-	RoutingArch->delayless_switch = g_num_arch_switches;
+	/* Depends on g_ctx.num_arch_switches */
+	RoutingArch->delayless_switch = g_ctx.num_arch_switches;
 	RoutingArch->global_route_switch = RoutingArch->delayless_switch;
-	++g_num_arch_switches;
+	++g_ctx.num_arch_switches;
 
 	/* Alloc the list now that we know the final num_arch_switches value */
-	g_arch_switch_inf = new s_arch_switch_inf[g_num_arch_switches];
+	g_ctx.arch_switch_inf = new s_arch_switch_inf[g_ctx.num_arch_switches];
 	for (int iswitch = 0; iswitch < switches_to_copy; iswitch++){
-		g_arch_switch_inf[iswitch] = ArchSwitches[iswitch];
+		g_ctx.arch_switch_inf[iswitch] = ArchSwitches[iswitch];
 	}
 
 	/* Delayless switch for connecting sinks and sources with their pins. */
-	g_arch_switch_inf[RoutingArch->delayless_switch].buffered = true;
-	g_arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
-	g_arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
-	g_arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
-	g_arch_switch_inf[RoutingArch->delayless_switch].Tdel_map[UNDEFINED] = 0.;
-	g_arch_switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
-	g_arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
+	g_ctx.arch_switch_inf[RoutingArch->delayless_switch].buffered = true;
+	g_ctx.arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
+	g_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
+	g_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
+	g_ctx.arch_switch_inf[RoutingArch->delayless_switch].Tdel_map[UNDEFINED] = 0.;
+	g_ctx.arch_switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
+	g_ctx.arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
 
 	/* If ipin cblock info has *not* been read in from a switch, then we have
 	   created a new switch for it, and now need to set its values */
@@ -360,18 +360,18 @@ static void SetupSwitches(const t_arch& Arch,
 		/* The wire to ipin switch for all types. Curently all types
 		 * must share ipin switch. Some of the timing code would
 		 * need to be changed otherwise. */
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buffered = true;
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].R = 0.;
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cin = Arch.C_ipin_cblock;
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout = 0.;
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Tdel_map[UNDEFINED] = Arch.T_ipin_cblock;
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].mux_trans_size = Arch.ipin_mux_trans_size;
+		g_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buffered = true;
+		g_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].R = 0.;
+		g_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cin = Arch.C_ipin_cblock;
+		g_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout = 0.;
+		g_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Tdel_map[UNDEFINED] = Arch.T_ipin_cblock;
+		g_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
+		g_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].mux_trans_size = Arch.ipin_mux_trans_size;
 
 		/* Assume the ipin cblock output to lblock input buffer below is 4x     *
 		 * minimum drive strength (enough to drive a fanout of up to 16 pretty  * 
 		 * nicely) -- should cover a reasonable wiring C plus the fanout.       */
-		g_arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buf_size = trans_per_buf(Arch.R_minW_nmos / 4., Arch.R_minW_nmos, Arch.R_minW_pmos);
+		g_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].buf_size = trans_per_buf(Arch.R_minW_nmos / 4., Arch.R_minW_nmos, Arch.R_minW_pmos);
 	}
 
 
@@ -816,10 +816,10 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 			Arch->power = (t_power_arch*) vtr::malloc(sizeof(t_power_arch));
 		if (!Arch->clocks)
 			Arch->clocks = (t_clock_arch*) vtr::malloc(sizeof(t_clock_arch));
-		g_clock_arch = Arch->clocks;
+		g_ctx.clock_arch = Arch->clocks;
 	} else {
 		Arch->power = NULL;
 		Arch->clocks = NULL;
-		g_clock_arch = NULL;
+		g_ctx.clock_arch = NULL;
 	}
 }

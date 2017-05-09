@@ -441,25 +441,25 @@ void obstruct_chan_details(
 			if (!trim_obs_channels)
 				continue;
 
-			if (g_grid[x][y].type == EMPTY_TYPE)
+			if (g_ctx.grid[x][y].type == g_ctx.EMPTY_TYPE)
 				continue;
-			if (g_grid[x][y].width_offset > 0 || g_grid[x][y].height_offset > 0)
+			if (g_ctx.grid[x][y].width_offset > 0 || g_ctx.grid[x][y].height_offset > 0)
 				continue;
-			if (g_grid[x][y].type->width == 1 && g_grid[x][y].type->height == 1)
+			if (g_ctx.grid[x][y].type->width == 1 && g_ctx.grid[x][y].type->height == 1)
 				continue;
 
-			if (g_grid[x][y].type->height > 1) {
-				for (int dx = 0; dx <= g_grid[x][y].type->width - 1; ++dx) {
-					for (int dy = 0; dy < g_grid[x][y].type->height - 1; ++dy) {
+			if (g_ctx.grid[x][y].type->height > 1) {
+				for (int dx = 0; dx <= g_ctx.grid[x][y].type->width - 1; ++dx) {
+					for (int dy = 0; dy < g_ctx.grid[x][y].type->height - 1; ++dy) {
 						for (int track = 0; track < nodes_per_chan->max; ++track) {
 							chan_details_x[x+dx][y+dy][track].length = 0;
 						}
 					}
 				}
 			}
-			if (g_grid[x][y].type->width > 1) {
-				for (int dy = 0; dy <= g_grid[x][y].type->height - 1; ++dy) {
-					for (int dx = 0; dx < g_grid[x][y].type->width - 1; ++dx) {
+			if (g_ctx.grid[x][y].type->width > 1) {
+				for (int dy = 0; dy <= g_ctx.grid[x][y].type->height - 1; ++dy) {
+					for (int dx = 0; dx < g_ctx.grid[x][y].type->width - 1; ++dx) {
 						for (int track = 0; track < nodes_per_chan->max; ++track) {
 							chan_details_y[x+dx][y+dy][track].length = 0;
 						}
@@ -476,26 +476,26 @@ void obstruct_chan_details(
 			if (!trim_empty_channels)
 				continue;
 
-			if (g_grid[x][y].type == IO_TYPE) {
+			if (g_ctx.grid[x][y].type == g_ctx.IO_TYPE) {
 				if ((x == 0) || (y == 0))
 					continue;
 			}
-			if (g_grid[x][y].type == EMPTY_TYPE) {
-				if ((x == L_nx) && (g_grid[x+1][y].type == IO_TYPE))
+			if (g_ctx.grid[x][y].type == g_ctx.EMPTY_TYPE) {
+				if ((x == L_nx) && (g_ctx.grid[x+1][y].type == g_ctx.IO_TYPE))
 					continue;
-				if ((y == L_ny) && (g_grid[x][y+1].type == IO_TYPE))
+				if ((y == L_ny) && (g_ctx.grid[x][y+1].type == g_ctx.IO_TYPE))
 					continue;
 			}
 
-			if ((g_grid[x][y].type == IO_TYPE) || (g_grid[x][y].type == EMPTY_TYPE)) {
-				if ((g_grid[x][y+1].type == IO_TYPE) || (g_grid[x][y+1].type == EMPTY_TYPE)) {
+			if ((g_ctx.grid[x][y].type == g_ctx.IO_TYPE) || (g_ctx.grid[x][y].type == g_ctx.EMPTY_TYPE)) {
+				if ((g_ctx.grid[x][y+1].type == g_ctx.IO_TYPE) || (g_ctx.grid[x][y+1].type == g_ctx.EMPTY_TYPE)) {
 					for (int track = 0; track < nodes_per_chan->max; ++track) {
 						chan_details_x[x][y][track].length = 0;
 					}
 				}
 			}
-			if ((g_grid[x][y].type == IO_TYPE) || (g_grid[x][y].type == EMPTY_TYPE)) {
-				if ((g_grid[x+1][y].type == IO_TYPE) || (g_grid[x+1][y].type == EMPTY_TYPE)) {
+			if ((g_ctx.grid[x][y].type == g_ctx.IO_TYPE) || (g_ctx.grid[x][y].type == g_ctx.EMPTY_TYPE)) {
+				if ((g_ctx.grid[x+1][y].type == g_ctx.IO_TYPE) || (g_ctx.grid[x+1][y].type == g_ctx.EMPTY_TYPE)) {
 					for (int track = 0; track < nodes_per_chan->max; ++track) {
 						chan_details_y[x][y][track].length = 0;
 					}
@@ -705,13 +705,13 @@ int get_bidir_opin_connections(
 	t_type_ptr type;
 	t_rr_type to_type;
 
-	type = g_grid[i][j].type;
-	int width_offset = g_grid[i][j].width_offset;
-	int height_offset = g_grid[i][j].height_offset;
+	type = g_ctx.grid[i][j].type;
+	int width_offset = g_ctx.grid[i][j].width_offset;
+	int height_offset = g_ctx.grid[i][j].height_offset;
 
 	num_conn = 0;
 
-	/* [0..g_num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
+	/* [0..g_ctx.num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
 	for (iside = 0; iside < 4; iside++) {
 
 		/* Figure out coords of channel segment based on side */
@@ -724,10 +724,10 @@ int get_bidir_opin_connections(
 		seg = ((to_type == CHANX) ? tr_i : tr_j);
 
 		/* Don't connect where no tracks on fringes */
-		if ((tr_i < 0) || (tr_i > g_nx)) {
+		if ((tr_i < 0) || (tr_i > g_ctx.nx)) {
 			continue;
 		}
-		if ((tr_j < 0) || (tr_j > g_ny)) {
+		if ((tr_j < 0) || (tr_j > g_ctx.ny)) {
 			continue;
 		}
 		if ((CHANX == to_type) && (tr_i < 1)) {
@@ -1173,8 +1173,8 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 	/* Count indices for block nodes */
 	for (i = 0; i <= (L_nx + 1); i++) {
 		for (j = 0; j <= (L_ny + 1); j++) {
-			if (g_grid[i][j].width_offset == 0 && g_grid[i][j].height_offset == 0) {
-				type = g_grid[i][j].type;
+			if (g_ctx.grid[i][j].width_offset == 0 && g_ctx.grid[i][j].height_offset == 0) {
+				type = g_ctx.grid[i][j].type;
 
 				/* Load the pin class lookups. The ptc nums for SINK and SOURCE
 				 * are disjoint so they can share the list. */
@@ -1208,10 +1208,10 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 	/* Point offset blocks of a large block to base block */
 	for (i = 0; i <= (L_nx + 1); i++) {
 		for (j = 0; j <= (L_ny + 1); j++) {
-			if (g_grid[i][j].width_offset > 0 || g_grid[i][j].height_offset > 0) {
+			if (g_ctx.grid[i][j].width_offset > 0 || g_ctx.grid[i][j].height_offset > 0) {
 				/* NOTE: this only supports horizontal and/or vertical large blocks */
-				indices[SINK][i][j] = indices[SINK][i - g_grid[i][j].width_offset][j - g_grid[i][j].height_offset];
-				indices[IPIN][i][j] = indices[IPIN][i - g_grid[i][j].width_offset][j - g_grid[i][j].height_offset];
+				indices[SINK][i][j] = indices[SINK][i - g_ctx.grid[i][j].width_offset][j - g_ctx.grid[i][j].height_offset];
+				indices[IPIN][i][j] = indices[IPIN][i - g_ctx.grid[i][j].width_offset][j - g_ctx.grid[i][j].height_offset];
 			}
 		}
 	}
@@ -1234,9 +1234,9 @@ void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 
 	/* This function must unallocate the structure allocated in 
 	 * alloc_and_load_rr_node_indices. */
-	for (i = 0; i <= (g_nx + 1); ++i) {
-		for (j = 0; j <= (g_ny + 1); ++j) {
-			if (g_grid[i][j].width_offset > 0 || g_grid[i][j].height_offset > 0) {
+	for (i = 0; i <= (g_ctx.nx + 1); ++i) {
+		for (j = 0; j <= (g_ctx.ny + 1); ++j) {
+			if (g_ctx.grid[i][j].width_offset > 0 || g_ctx.grid[i][j].height_offset > 0) {
 				/* Vertical large blocks reference is same as offset 0 */
 				L_rr_node_indices[SINK][i][j].list = NULL;
 				L_rr_node_indices[IPIN][i][j].list = NULL;
@@ -1256,11 +1256,11 @@ void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 	free(L_rr_node_indices[IPIN]);
 
 	/* free CHANY rr node indices */
-	for (i = 0; i <= (g_nx + 1); ++i) {
+	for (i = 0; i <= (g_ctx.nx + 1); ++i) {
 		if (L_rr_node_indices[CHANY][i] == NULL){
 			continue;
 		}
-		for (j = 0; j <= (g_ny + 1); ++j) {
+		for (j = 0; j <= (g_ctx.ny + 1); ++j) {
 			if (L_rr_node_indices[CHANY][i][j].list == NULL) {
 				continue;
 			}
@@ -1271,11 +1271,11 @@ void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 	free(L_rr_node_indices[CHANY]);
 
 	/* free CHANX rr node indices */
-	for (i = 0; i < (g_ny + 1); ++i) {
+	for (i = 0; i < (g_ctx.ny + 1); ++i) {
 		if (L_rr_node_indices[CHANX][i] == NULL){
 			continue;
 		}
-		for (j = 0; j < (g_nx + 1); ++j) {
+		for (j = 0; j < (g_ctx.nx + 1); ++j) {
 			if (L_rr_node_indices[CHANX][i][j].list == NULL) {
 				continue;
 			}
@@ -1315,10 +1315,10 @@ int get_rr_node_index(
 	vtr::t_ivec lookup;
 
 	VTR_ASSERT(ptc >= 0);
-	VTR_ASSERT(x >= 0 && x <= (g_nx + 1));
-	VTR_ASSERT(y >= 0 && y <= (g_ny + 1));
+	VTR_ASSERT(x >= 0 && x <= (g_ctx.nx + 1));
+	VTR_ASSERT(y >= 0 && y <= (g_ctx.ny + 1));
 
-	type = g_grid[x][y].type;
+	type = g_ctx.grid[x][y].type;
 
 	/* Currently need to swap x and y for CHANX because of chan, seg convention */
 	if (CHANX == rr_type) {
@@ -1395,9 +1395,9 @@ int find_average_rr_node_index(
 		for (int x = 0; x <= L_nx; ++x) {
 			for (int y = 0; y <= L_ny; ++y) {
 
-				if (g_grid[x][y].type == EMPTY_TYPE)
+				if (g_ctx.grid[x][y].type == g_ctx.EMPTY_TYPE)
 					continue;
-				if (g_grid[x][y].type == IO_TYPE)
+				if (g_ctx.grid[x][y].type == g_ctx.IO_TYPE)
 					continue;
 
 				inode = get_rr_node_index(x, y,
@@ -1446,7 +1446,7 @@ int get_track_to_pins(
 				}
 
 				/* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
-				if (g_grid[x][y].type == EMPTY_TYPE)
+				if (g_ctx.grid[x][y].type == g_ctx.EMPTY_TYPE)
 					continue;
 
 				/* Move from logical (straight) to physical (twisted) track index 
@@ -1457,9 +1457,9 @@ int get_track_to_pins(
 				phy_track %= tracks_per_chan;
 
 				/* We need the type to find the ipin map for this type */
-				type = g_grid[x][y].type;
-				int width_offset = g_grid[x][y].width_offset;
-				int height_offset = g_grid[x][y].height_offset;
+				type = g_ctx.grid[x][y].type;
+				int width_offset = g_ctx.grid[x][y].width_offset;
+				int height_offset = g_ctx.grid[x][y].height_offset;
 
 				max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side].nelem;
 				for (iconn = 0; iconn < max_conn; iconn++) {
@@ -1649,7 +1649,7 @@ int get_track_to_tracks(
 							&& (DEC_DIRECTION == from_seg_details[from_track].direction)) {
 						num_conn += get_unidir_track_to_chan_seg(
 								from_track, to_chan,
-								to_seg, to_sb, to_type, max_chan_width, g_nx, g_ny,
+								to_seg, to_sb, to_type, max_chan_width, g_ctx.nx, g_ctx.ny,
 								from_side_a, to_side, Fs_per_side,
 								sblock_pattern, L_rr_node_indices, to_seg_details,
 								L_rr_edge_done, &Fs_clipped, edge_list);
@@ -1686,7 +1686,7 @@ int get_track_to_tracks(
 							&& (INC_DIRECTION == from_seg_details[from_track].direction)) {
 						num_conn += get_unidir_track_to_chan_seg(
 								from_track, to_chan,
-								to_seg, to_sb, to_type, max_chan_width, g_nx, g_ny, 
+								to_seg, to_sb, to_type, max_chan_width, g_ctx.nx, g_ctx.ny, 
 								from_side_b, to_side, Fs_per_side, 
 								sblock_pattern, L_rr_node_indices, to_seg_details, 
 								L_rr_edge_done, &Fs_clipped, edge_list);
@@ -1963,7 +1963,7 @@ static void get_switch_type(
 	/* Connect forward if we are a sblock */
 	if (is_from_sblock) {
 		switch_types[used] = to_node_switch;
-		if (false == g_arch_switch_inf[to_node_switch].buffered) {
+		if (false == g_ctx.arch_switch_inf[to_node_switch].buffered) {
 			forward_pass_trans = true;
 		}
 		++used;
@@ -1971,7 +1971,7 @@ static void get_switch_type(
 
 	/* Check for pass_trans coming backwards */
 	if (is_to_sblock) {
-		if (false == g_arch_switch_inf[from_node_switch].buffered) {
+		if (false == g_ctx.arch_switch_inf[from_node_switch].buffered) {
 			switch_types[used] = from_node_switch;
 			backward_pass_trans = true;
 			++used;
@@ -1987,7 +1987,7 @@ static void get_switch_type(
 		 * pass_trans is bigger (smaller R). */
 		VTR_ASSERT(used < 2);
 		switch_types[used] = min_switch;
-		if (g_arch_switch_inf[max_switch].R < g_arch_switch_inf[min_switch].R) {
+		if (g_ctx.arch_switch_inf[max_switch].R < g_ctx.arch_switch_inf[min_switch].R) {
 			switch_types[used] = max_switch;
 		}
 		++used;
@@ -2057,11 +2057,11 @@ short ******alloc_sblock_pattern_lookup(
 
 	/* Build the pointer lists to form the multidimensional array */
 	short ******sblock_pattern = i_list;
-	i_list += (L_nx + 1); /* Skip forward g_nx+1 items */
+	i_list += (L_nx + 1); /* Skip forward g_ctx.nx+1 items */
 	for (int i = 0; i < (L_nx + 1); ++i) {
 
 		sblock_pattern[i] = j_list;
-		j_list += (L_ny + 1); /* Skip forward g_ny+1 items */
+		j_list += (L_ny + 1); /* Skip forward g_ctx.ny+1 items */
 		for (int j = 0; j < (L_ny + 1); ++j) {
 
 			sblock_pattern[i][j] = from_side_list;
@@ -2124,11 +2124,11 @@ void load_sblock_pattern_lookup(
 	 * because the sblock varies from location to location. The i, j means the owning
 	 * location of the sblock under investigation. */
 
-	/* SB's have coords from (0, 0) to (g_nx, g_ny) */
+	/* SB's have coords from (0, 0) to (g_ctx.nx, g_ctx.ny) */
 	VTR_ASSERT(i >= 0);
-	VTR_ASSERT(i <= g_nx);
+	VTR_ASSERT(i <= g_ctx.nx);
 	VTR_ASSERT(j >= 0);
-	VTR_ASSERT(j <= g_ny);
+	VTR_ASSERT(j <= g_ctx.ny);
 
 	/* May 12 - 15, 2007
 	 *
@@ -2162,7 +2162,7 @@ void load_sblock_pattern_lookup(
 	 * more than 1.
 	 */
 
-	/* SB's range from (0, 0) to (g_nx, g_ny) */
+	/* SB's range from (0, 0) to (g_ctx.nx, g_ctx.ny) */
 	/* First find all four sides' incoming wires */
 	int *wire_mux_on_track[4];
 	int *incoming_wire_label[4];
@@ -2184,12 +2184,12 @@ void load_sblock_pattern_lookup(
 		bool skip = true;
 		switch (side) {
 		case TOP:
-			if (j < g_ny) {
+			if (j < g_ctx.ny) {
 				skip = false;
 			}
 			break;
 		case RIGHT:
-			if (i < g_nx) {
+			if (i < g_ctx.nx) {
 				skip = false;
 			}
 			break;
@@ -2214,7 +2214,7 @@ void load_sblock_pattern_lookup(
 		/* Figure out the channel and segment for a certain direction */
 		bool vert = ((side == TOP) || (side == BOTTOM));
 		bool pos_dir = ((side == TOP) || (side == RIGHT));
-		int chan_len = (vert ? g_ny : g_nx);
+		int chan_len = (vert ? g_ctx.ny : g_ctx.nx);
 		int chan = (vert ? i : j);
 		int sb_seg = (vert ? j : i);
 		int seg = (pos_dir ? (sb_seg + 1) : sb_seg);

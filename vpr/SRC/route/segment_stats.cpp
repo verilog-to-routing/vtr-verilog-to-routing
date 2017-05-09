@@ -41,20 +41,20 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 	seg_occ_by_type = (int *) vtr::calloc(num_segment, sizeof(int));
 	seg_cap_by_type = (int *) vtr::calloc(num_segment, sizeof(int));
 
-	for (inode = 0; inode < g_num_rr_nodes; inode++) {
-		if (g_rr_nodes[inode].type() == CHANX || g_rr_nodes[inode].type() == CHANY) {
-			cost_index = g_rr_nodes[inode].cost_index();
-			seg_type = g_rr_indexed_data[cost_index].seg_index;
+	for (inode = 0; inode < g_ctx.num_rr_nodes; inode++) {
+		if (g_ctx.rr_nodes[inode].type() == CHANX || g_ctx.rr_nodes[inode].type() == CHANY) {
+			cost_index = g_ctx.rr_nodes[inode].cost_index();
+			seg_type = g_ctx.rr_indexed_data[cost_index].seg_index;
 
 			if (!segment_inf[seg_type].longline)
 				length = segment_inf[seg_type].length;
 			else
 				length = LONGLINE;
 
-			seg_occ_by_length[length] += g_rr_node_state[inode].occ();
-			seg_cap_by_length[length] += g_rr_nodes[inode].capacity();
-			seg_occ_by_type[seg_type] += g_rr_node_state[inode].occ();
-			seg_cap_by_type[seg_type] += g_rr_nodes[inode].capacity();
+			seg_occ_by_length[length] += g_ctx.rr_node_state[inode].occ();
+			seg_cap_by_length[length] += g_ctx.rr_nodes[inode].capacity();
+			seg_occ_by_type[seg_type] += g_ctx.rr_node_state[inode].occ();
+			seg_cap_by_type[seg_type] += g_ctx.rr_nodes[inode].capacity();
 
 		}
 	}

@@ -5,10 +5,12 @@
 
 #include "vtr_matrix.h"
 #include "netlist.h"
-#include "atom_netlist_fwd.h"
+#include "atom_netlist.h"
 #include "rr_node.h"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
+#include "power.h"
+#include "power_components.h"
 
 struct VprContext {
     /********************************************************************
@@ -26,16 +28,17 @@ struct VprContext {
     /********************************************************************
      Timing
      ********************************************************************/
-    std::shared_ptr<tatum::TimingGraph> timingraph;
-    std::shared_ptr<tatum::TimingConstraints> timinconstraints;
+    std::shared_ptr<tatum::TimingGraph> timing_graph;
+    std::shared_ptr<tatum::TimingConstraints> timing_constraints;
 
+    t_timing_constraints* sdc; //TODO: remove classic SDC
 
-    struct timinanalysis_profile_info {
-        double timinanalysis_wallclock_time() {
+    struct timing_analysis_profile_info {
+        double timing_analysis_wallclock_time() {
             return sta_wallclock_time + slack_wallclock_time;
         }
 
-        double old_timinanalysis_wallclock_time() {
+        double old_timing_analysis_wallclock_time() {
             return old_sta_wallclock_time + old_delay_annotation_wallclock_time;
         }
 
@@ -47,8 +50,7 @@ struct VprContext {
         double old_delay_annotation_wallclock_time = 0.;
         size_t num_old_sta_full_updates = 0;
     };
-    timinanalysis_profile_info timinanalysis_profile_stats;
-
+    timing_analysis_profile_info timing_analysis_profile_stats;
 
     /********************************************************************
      CLB Netlist
@@ -92,7 +94,7 @@ struct VprContext {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
     struct s_trace **trace_head, **trace_tail;
 
-    std::string routinid; //SHA256 digest of .route file
+    std::string routing_id; //SHA256 digest of .route file
 
     /* Structures to define the routing architecture of the FPGA.           */
     int num_rr_nodes;
@@ -133,6 +135,18 @@ struct VprContext {
     //TODO: Remove these max_internal_delay globals when the classic timing analyzer is removed
     float pb_max_internal_delay; /* biggest internal delay of block */
     const t_pb_type *pbtype_max_internal_delay; /* block type with highest internal delay */
+
+    /*******************************************************************
+     Power
+     ********************************************************************/
+    t_solution_inf solution_inf;
+    t_power_output* power_output;
+    t_power_commonly_used* power_commonly_used;
+    t_power_tech* power_tech;
+    t_power_arch* power_arch;
+    t_net_power * clb_net_power;
+
+    t_power_components power_by_component;
 
     /*******************************************************************
      Clock Network

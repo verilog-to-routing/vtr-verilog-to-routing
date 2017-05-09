@@ -7,7 +7,7 @@
 #define GLOBALS_H
 #include "vpr_context.h"
 
-extern VprContext g_ctx.vpr_ctx;
+extern VprContext g_ctx;
 
 #endif
 

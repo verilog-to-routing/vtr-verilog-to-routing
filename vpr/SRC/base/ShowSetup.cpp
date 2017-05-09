@@ -63,30 +63,30 @@ void ShowSetup(const t_options& options, const t_vpr_setup& vpr_setup) {
 void printClusteredNetlistStats() {
 	int i, j, L_num_p_inputs, L_num_p_outputs;
 	int *num_blocks_type;
-	num_blocks_type = (int*) vtr::calloc(g_num_block_types, sizeof(int));
+	num_blocks_type = (int*) vtr::calloc(g_ctx.num_block_types, sizeof(int));
 
 	vtr::printf_info("\n");
-	vtr::printf_info("Netlist num_nets: %d\n", (int) g_clbs_nlist.net.size());
-	vtr::printf_info("Netlist num_blocks: %d\n", g_num_blocks);
+	vtr::printf_info("Netlist num_nets: %d\n", (int) g_ctx.clbs_nlist.net.size());
+	vtr::printf_info("Netlist num_blocks: %d\n", g_ctx.num_blocks);
 
-	for (i = 0; i < g_num_block_types; i++) {
+	for (i = 0; i < g_ctx.num_block_types; i++) {
 		num_blocks_type[i] = 0;
 	}
 	/* Count I/O input and output pads */
 	L_num_p_inputs = 0;
 	L_num_p_outputs = 0;
 
-	for (i = 0; i < g_num_blocks; i++) {
-		num_blocks_type[g_blocks[i].type->index]++;
-		if (g_blocks[i].type == IO_TYPE) {
-			for (j = 0; j < IO_TYPE->num_pins; j++) {
-				if (g_blocks[i].nets[j] != OPEN) {
-					if (IO_TYPE->class_inf[IO_TYPE->pin_class[j]].type
+	for (i = 0; i < g_ctx.num_blocks; i++) {
+		num_blocks_type[g_ctx.blocks[i].type->index]++;
+		if (g_ctx.blocks[i].type == g_ctx.IO_TYPE) {
+			for (j = 0; j < g_ctx.IO_TYPE->num_pins; j++) {
+				if (g_ctx.blocks[i].nets[j] != OPEN) {
+					if (g_ctx.IO_TYPE->class_inf[g_ctx.IO_TYPE->pin_class[j]].type
 							== DRIVER) {
 						L_num_p_inputs++;
 					} else {
 						VTR_ASSERT(
-								IO_TYPE-> class_inf[IO_TYPE-> pin_class[j]]. type == RECEIVER);
+								g_ctx.IO_TYPE-> class_inf[g_ctx.IO_TYPE-> pin_class[j]]. type == RECEIVER);
 						L_num_p_outputs++;
 					}
 				}
@@ -94,9 +94,9 @@ void printClusteredNetlistStats() {
 		}
 	}
 
-	for (i = 0; i < g_num_block_types; i++) {
-		if (IO_TYPE != &g_block_types[i]) {
-			vtr::printf_info("Netlist %s blocks: %d.\n", g_block_types[i].name, num_blocks_type[i]);
+	for (i = 0; i < g_ctx.num_block_types; i++) {
+		if (g_ctx.IO_TYPE != &g_ctx.block_types[i]) {
+			vtr::printf_info("Netlist %s blocks: %d.\n", g_ctx.block_types[i].name, num_blocks_type[i]);
 		}
 	}
 

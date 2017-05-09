@@ -153,9 +153,9 @@ void load_net_delay_from_routing(float **net_delay, vector<t_vnet> & nets,
 	t_rc_node *rc_node_free_list, *rc_root;
 	t_linked_rc_edge *rc_edge_free_list;
 	unsigned int inet;
-	t_linked_rc_ptr *rr_node_to_rc_node; /* [0..g_num_rr_nodes-1]  */
+	t_linked_rc_ptr *rr_node_to_rc_node; /* [0..g_ctx.num_rr_nodes-1]  */
 
-	rr_node_to_rc_node = (t_linked_rc_ptr *) vtr::calloc(g_num_rr_nodes,
+	rr_node_to_rc_node = (t_linked_rc_ptr *) vtr::calloc(g_ctx.num_rr_nodes,
 			sizeof(t_linked_rc_ptr));
 
 	rc_node_free_list = NULL;
@@ -214,7 +214,7 @@ alloc_and_load_rc_tree(int inet, t_rc_node ** rc_node_free_list_ptr,
 	t_linked_rc_ptr *linked_rc_ptr;
 
 	root_rc = alloc_rc_node(rc_node_free_list_ptr);
-	tptr = g_trace_head[inet];
+	tptr = g_ctx.trace_head[inet];
 
 	if (tptr == NULL) {
 		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
@@ -244,11 +244,11 @@ alloc_and_load_rc_tree(int inet, t_rc_node ** rc_node_free_list_ptr,
 			prev_rc = curr_rc;
 		}
 
-		else if (g_rr_nodes[inode].type() != SINK) { /* Connection to old stuff. */
+		else if (g_ctx.rr_nodes[inode].type() != SINK) { /* Connection to old stuff. */
 
 			prev_node = prev_rc->inode;
-			if (g_rr_nodes[prev_node].type() != SINK) {
-				vtr::printf_info("prev node %d, type is actually %d\n", prev_node, g_rr_nodes[prev_node].type());
+			if (g_ctx.rr_nodes[prev_node].type() != SINK) {
+				vtr::printf_info("prev node %d, type is actually %d\n", prev_node, g_ctx.rr_nodes[prev_node].type());
 				vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
 						"in alloc_and_load_rc_tree: Routing of net %d is not a tree.\n", inet);
 			}
@@ -376,14 +376,14 @@ static float load_rc_tree_C(t_rc_node * rc_node) {
 
 	linked_rc_edge = rc_node->u.child_list;
 	inode = rc_node->inode;
-	C = g_rr_nodes[inode].C();
+	C = g_ctx.rr_nodes[inode].C();
 
 	while (linked_rc_edge != NULL) { /* For all children */
 		iswitch = linked_rc_edge->iswitch;
 		child_node = linked_rc_edge->child;
 		C_downstream = load_rc_tree_C(child_node);
 
-		if (g_rr_switch_inf[iswitch].buffered == false)
+		if (g_ctx.rr_switch_inf[iswitch].buffered == false)
 			C += C_downstream;
 
 		linked_rc_edge = linked_rc_edge->next;
@@ -408,9 +408,9 @@ static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival) {
 
 	Tdel = T_arrival;
 	inode = rc_node->inode;
-	Rmetal = g_rr_nodes[inode].R();
+	Rmetal = g_ctx.rr_nodes[inode].R();
 
-	/* NB:  g_rr_nodes[inode].C gives the capacitance of this node, while          *
+	/* NB:  g_ctx.rr_nodes[inode].C gives the capacitance of this node, while          *
 	 * rc_node->C_downstream gives the unbuffered downstream capacitance rooted *
 	 * at this node, including the C of the node itself.  I want to multiply    *
 	 * the C of this node by 0.5 Rmetal, since it's a distributed RC line.      *
@@ -433,8 +433,8 @@ static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival) {
 		iswitch = linked_rc_edge->iswitch;
 		child_node = linked_rc_edge->child;
 
-		Tchild = Tdel + g_rr_switch_inf[iswitch].R * child_node->C_downstream;
-		Tchild += g_rr_switch_inf[iswitch].Tdel; /* Intrinsic switch delay. */
+		Tchild = Tdel + g_ctx.rr_switch_inf[iswitch].R * child_node->C_downstream;
+		Tchild += g_ctx.rr_switch_inf[iswitch].Tdel; /* Intrinsic switch delay. */
 		load_rc_tree_T(child_node, Tchild);
 
 		linked_rc_edge = linked_rc_edge->next;
@@ -454,7 +454,7 @@ static void load_one_net_delay(float **net_delay, unsigned int inet, vector<t_vn
 
 	for (ipin = 1; ipin < nets[inet].pins.size(); ipin++) {
 
-		inode = g_net_rr_terminals[inet][ipin];
+		inode = g_ctx.net_rr_terminals[inet][ipin];
 
 		linked_rc_ptr = rr_node_to_rc_node[inode].next;
 		rc_node = rr_node_to_rc_node[inode].rc_node;
@@ -539,7 +539,7 @@ static void reset_rr_node_to_rc_node(t_linked_rc_ptr * rr_node_to_rc_node,
 	struct s_trace *tptr;
 	int inode;
 
-	tptr = g_trace_head[inet];
+	tptr = g_ctx.trace_head[inet];
 
 	while (tptr != NULL) {
 		inode = tptr->index;

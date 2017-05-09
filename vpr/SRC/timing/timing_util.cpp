@@ -17,7 +17,7 @@ double sec_to_mhz(double seconds) { return (1. / seconds) / 1e6; }
 tatum::TimingPathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     tatum::TimingPathInfo crit_path_info;
 
-    auto cpds = tatum::find_critical_paths(*g_timing_graph, constraints, setup_analyzer);
+    auto cpds = tatum::find_critical_paths(*g_ctx.timing_graph, constraints, setup_analyzer);
 
     //Record the maximum critical path accross all domain pairs
     for(const auto& path_info : cpds) {
@@ -32,7 +32,7 @@ tatum::TimingPathInfo find_longest_critical_path_delay(const tatum::TimingConstr
 tatum::TimingPathInfo find_least_slack_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     tatum::TimingPathInfo crit_path_info;
 
-    auto cpds = tatum::find_critical_paths(*g_timing_graph, constraints, setup_analyzer);
+    auto cpds = tatum::find_critical_paths(*g_ctx.timing_graph, constraints, setup_analyzer);
 
     //Record the maximum critical path accross all domain pairs
     for(const auto& path_info : cpds) {
@@ -46,7 +46,7 @@ tatum::TimingPathInfo find_least_slack_critical_path_delay(const tatum::TimingCo
 
 float find_setup_total_negative_slack(const tatum::SetupTimingAnalyzer& setup_analyzer) {
     float tns = 0.;
-    for(tatum::NodeId node : g_timing_graph->logical_outputs()) {
+    for(tatum::NodeId node : g_ctx.timing_graph->logical_outputs()) {
         for(tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
             float slack = tag.time().value();
             if(slack < 0.) {
@@ -59,7 +59,7 @@ float find_setup_total_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
 
 float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_analyzer) {
     float wns = 0.;
-    for(tatum::NodeId node : g_timing_graph->logical_outputs()) {
+    for(tatum::NodeId node : g_ctx.timing_graph->logical_outputs()) {
         for(tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
             float slack = tag.time().value();
 
@@ -88,7 +88,7 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
     //Find the min and max slacks
     float min_slack = std::numeric_limits<float>::infinity();
     float max_slack = -std::numeric_limits<float>::infinity();
-    for(tatum::NodeId node : g_timing_graph->logical_outputs()) {
+    for(tatum::NodeId node : g_ctx.timing_graph->logical_outputs()) {
         for(tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
             float slack = tag.time().value();
             
@@ -119,7 +119,7 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
         return bucket.max_value < slack;
     };
 
-    for(tatum::NodeId node : g_timing_graph->logical_outputs()) {
+    for(tatum::NodeId node : g_ctx.timing_graph->logical_outputs()) {
         for(tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
             float slack = tag.time().value();
             
@@ -136,7 +136,7 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
 }
 
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
-    auto crit_paths = tatum::find_critical_paths(*g_timing_graph, constraints, setup_analyzer);
+    auto crit_paths = tatum::find_critical_paths(*g_ctx.timing_graph, constraints, setup_analyzer);
 
     auto least_slack_cpd = find_least_slack_critical_path_delay(constraints, setup_analyzer);
     vtr::printf("Final critical path: %g ns", sec_to_nanosec(least_slack_cpd.delay()));
@@ -214,7 +214,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
         std::vector<double> intra_domain_cpds;
         std::vector<double> fanout_weighted_intra_domain_cpds;
         double total_intra_domain_fanout = 0.;
-        auto clock_fanouts = count_clock_fanouts(*g_timing_graph, setup_analyzer);
+        auto clock_fanouts = count_clock_fanouts(*g_ctx.timing_graph, setup_analyzer);
         for(const auto& path : crit_paths) {
             if(path.launch_domain() == path.capture_domain() && !constraints.is_virtual_clock(path.launch_domain())) {
                 intra_domain_cpds.push_back(path.delay());
@@ -274,7 +274,7 @@ std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& t
 
 //Return the criticality of a net's pin in the CLB netlist
 float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const IntraLbPbPinLookup& pb_gpin_lookup, int inet, int ipin) {
-    const t_net_pin& net_pin = g_clbs_nlist.net[inet].pins[ipin];
+    const t_net_pin& net_pin = g_ctx.clbs_nlist.net[inet].pins[ipin];
 
     //There may be multiple atom netlist pins connected to this CLB pin
     std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(net_pin.block, net_pin.block_pin, pb_gpin_lookup);
@@ -366,21 +366,21 @@ void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
 }
 
 void compare_tatum_classic_constraints() {
-    if(g_sdc) {
+    if(g_ctx.sdc) {
         vtr::printf("Comparing timing constraints:\n");
-        for(int launch_clk = 0; launch_clk < g_sdc->num_constrained_clocks; ++launch_clk) {
-            tatum::DomainId launch_domain = g_timing_constraints->find_clock_domain(g_sdc->constrained_clocks[launch_clk].name);
+        for(int launch_clk = 0; launch_clk < g_ctx.sdc->num_constrained_clocks; ++launch_clk) {
+            tatum::DomainId launch_domain = g_ctx.timing_constraints->find_clock_domain(g_ctx.sdc->constrained_clocks[launch_clk].name);
             VTR_ASSERT(launch_domain);
 
-            for(int capture_clk = 0; capture_clk < g_sdc->num_constrained_clocks; ++capture_clk) {
-                tatum::DomainId capture_domain = g_timing_constraints->find_clock_domain(g_sdc->constrained_clocks[capture_clk].name);
+            for(int capture_clk = 0; capture_clk < g_ctx.sdc->num_constrained_clocks; ++capture_clk) {
+                tatum::DomainId capture_domain = g_ctx.timing_constraints->find_clock_domain(g_ctx.sdc->constrained_clocks[capture_clk].name);
                 VTR_ASSERT(capture_domain);
                 
-                tatum::Time constraint = g_timing_constraints->setup_constraint(launch_domain, capture_domain);
+                tatum::Time constraint = g_ctx.timing_constraints->setup_constraint(launch_domain, capture_domain);
 
                 vtr::printf("  %s -> %s Classic: %g Tatum: %g\n", 
-                            g_sdc->constrained_clocks[launch_clk].name, g_sdc->constrained_clocks[capture_clk].name,
-                            g_sdc->domain_constraint[launch_clk][capture_clk],
+                            g_ctx.sdc->constrained_clocks[launch_clk].name, g_ctx.sdc->constrained_clocks[capture_clk].name,
+                            g_ctx.sdc->domain_constraint[launch_clk][capture_clk],
                             constraint.value());
             }
         }

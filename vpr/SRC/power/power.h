@@ -297,14 +297,6 @@ struct s_mux_node {
 	bool level_restorer; /* Whether the output of this mux is level restored */
 };
 
-/************************* GLOBALS **********************************/
-extern t_solution_inf g_solution_inf;
-extern t_power_output * g_power_output;
-extern t_power_commonly_used * g_power_commonly_used;
-extern t_power_tech * g_power_tech;
-extern t_power_arch * g_power_arch;
-extern t_net_power * clb_net_power;
-
 /************************* FUNCTION DECLARATIONS ********************/
 
 /* Call before using power module */

@@ -31,32 +31,32 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	int icblock, isblock, iseg_low, iseg_high;
 	float Cin, Cout;
 	t_rr_type from_rr_type, to_rr_type;
-	bool * cblock_counted; /* [0..max(g_nx,g_ny)] -- 0th element unused. */
-	float *buffer_Cin; /* [0..max(g_nx,g_ny)] */
+	bool * cblock_counted; /* [0..max(g_ctx.nx,g_ctx.ny)] -- 0th element unused. */
+	float *buffer_Cin; /* [0..max(g_ctx.nx,g_ctx.ny)] */
 	bool buffered;
 	float *Couts_to_add; /* UDSD */
 
-	maxlen = max(g_nx, g_ny) + 1;
+	maxlen = max(g_ctx.nx, g_ctx.ny) + 1;
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 	buffer_Cin = (float *) vtr::calloc(maxlen, sizeof(float));
 
-	for (inode = 0; inode < g_num_rr_nodes; inode++) {
+	for (inode = 0; inode < g_ctx.num_rr_nodes; inode++) {
 
-		from_rr_type = g_rr_nodes[inode].type();
+		from_rr_type = g_ctx.rr_nodes[inode].type();
 
 		if (from_rr_type == CHANX || from_rr_type == CHANY) {
 
-			for (iedge = 0; iedge < g_rr_nodes[inode].num_edges(); iedge++) {
+			for (iedge = 0; iedge < g_ctx.rr_nodes[inode].num_edges(); iedge++) {
 
-				to_node = g_rr_nodes[inode].edge_sink_node(iedge);
-				to_rr_type = g_rr_nodes[to_node].type();
+				to_node = g_ctx.rr_nodes[inode].edge_sink_node(iedge);
+				to_rr_type = g_ctx.rr_nodes[to_node].type();
 
 				if (to_rr_type == CHANX || to_rr_type == CHANY) {
 
-					switch_index = g_rr_nodes[inode].edge_switch(iedge);
-					Cin = g_rr_switch_inf[switch_index].Cin;
-					Cout = g_rr_switch_inf[switch_index].Cout;
-					buffered = g_rr_switch_inf[switch_index].buffered;
+					switch_index = g_ctx.rr_nodes[inode].edge_switch(iedge);
+					Cin = g_ctx.rr_switch_inf[switch_index].Cin;
+					Cout = g_ctx.rr_switch_inf[switch_index].Cout;
+					buffered = g_ctx.rr_switch_inf[switch_index].buffered;
 
 					/* If both the switch from inode to to_node and the switch from *
 					 * to_node back to inode use bidirectional switches (i.e. pass  *
@@ -76,16 +76,16 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 					 * input capacitance of the largest one.                        */
 
 					if (!buffered && inode < to_node) { /* Pass transistor. */
-						g_rr_nodes[inode].set_C(g_rr_nodes[inode].C() + Cin);
-						g_rr_nodes[to_node].set_C(g_rr_nodes[to_node].C() + Cout);
+						g_ctx.rr_nodes[inode].set_C(g_ctx.rr_nodes[inode].C() + Cin);
+						g_ctx.rr_nodes[to_node].set_C(g_ctx.rr_nodes[to_node].C() + Cout);
 					}
 
 					else if (buffered) {
 						/* Prevent double counting of capacitance for UDSD */
-						if (g_rr_nodes[to_node].direction() == BI_DIRECTION) {
+						if (g_ctx.rr_nodes[to_node].direction() == BI_DIRECTION) {
 							/* For multiple-driver architectures the output capacitance can
 							 * be added now since each edge is actually a driver */
-							g_rr_nodes[to_node].set_C(g_rr_nodes[to_node].C() + Cout);
+							g_ctx.rr_nodes[to_node].set_C(g_ctx.rr_nodes[to_node].C() + Cout);
 						}
 						isblock = seg_index_of_sblock(inode, to_node);
 						buffer_Cin[isblock] = max(buffer_Cin[isblock], Cin);
@@ -101,12 +101,12 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 						   at least one logic block input connects. */
 						icblock = seg_index_of_cblock(from_rr_type, to_node);
 						if (cblock_counted[icblock] == false) {
-							g_rr_nodes[inode].set_C(g_rr_nodes[inode].C() + C_ipin_cblock);
+							g_ctx.rr_nodes[inode].set_C(g_ctx.rr_nodes[inode].C() + C_ipin_cblock);
 							cblock_counted[icblock] = true;
 						}
 					} else {
 						/* No track buffer. Simply add the capacitance onto the wire */
-						g_rr_nodes[inode].set_C(g_rr_nodes[inode].C() + C_ipin_cblock);
+						g_ctx.rr_nodes[inode].set_C(g_ctx.rr_nodes[inode].C() + C_ipin_cblock);
 					}
 				}
 			} /* End loop over all edges of a node. */
@@ -116,20 +116,20 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 			/* Method below would be faster for very unpopulated segments, but I  *
 			 * think it would be slower overall for most FPGAs, so commented out. */
 
-			/*   for (iedge=0;iedge<g_rr_nodes[inode].num_edges();iedge++) {
-			 * to_node = g_rr_nodes[inode].edges[iedge];
-			 * if (g_rr_nodes[to_node].type() == IPIN) {
+			/*   for (iedge=0;iedge<g_ctx.rr_nodes[inode].num_edges();iedge++) {
+			 * to_node = g_ctx.rr_nodes[inode].edges[iedge];
+			 * if (g_ctx.rr_nodes[to_node].type() == IPIN) {
 			 * icblock = seg_index_of_cblock (from_rr_type, to_node);
 			 * cblock_counted[icblock] = false;
 			 * }
 			 * }     */
 
 			if (from_rr_type == CHANX) {
-				iseg_low = g_rr_nodes[inode].xlow();
-				iseg_high = g_rr_nodes[inode].xhigh();
+				iseg_low = g_ctx.rr_nodes[inode].xlow();
+				iseg_high = g_ctx.rr_nodes[inode].xhigh();
 			} else { /* CHANY */
-				iseg_low = g_rr_nodes[inode].ylow();
-				iseg_high = g_rr_nodes[inode].yhigh();
+				iseg_low = g_ctx.rr_nodes[inode].ylow();
+				iseg_high = g_ctx.rr_nodes[inode].yhigh();
 			}
 
 			for (icblock = iseg_low; icblock <= iseg_high; icblock++) {
@@ -137,7 +137,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 			}
 
 			for (isblock = iseg_low - 1; isblock <= iseg_high; isblock++) {
-				g_rr_nodes[inode].set_C(g_rr_nodes[inode].C() + buffer_Cin[isblock]); /* Biggest buf Cin at loc */
+				g_ctx.rr_nodes[inode].set_C(g_ctx.rr_nodes[inode].C() + buffer_Cin[isblock]); /* Biggest buf Cin at loc */
 				buffer_Cin[isblock] = 0.;
 			}
 
@@ -145,18 +145,18 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 		/* End node is CHANX or CHANY */
 		else if (from_rr_type == OPIN) {
 
-			for (iedge = 0; iedge < g_rr_nodes[inode].num_edges(); iedge++) {
-				switch_index = g_rr_nodes[inode].edge_switch(iedge);
-				to_node = g_rr_nodes[inode].edge_sink_node(iedge);
-				to_rr_type = g_rr_nodes[to_node].type();
+			for (iedge = 0; iedge < g_ctx.rr_nodes[inode].num_edges(); iedge++) {
+				switch_index = g_ctx.rr_nodes[inode].edge_switch(iedge);
+				to_node = g_ctx.rr_nodes[inode].edge_sink_node(iedge);
+				to_rr_type = g_ctx.rr_nodes[to_node].type();
 
 				if (to_rr_type != CHANX && to_rr_type != CHANY)
 					continue;
 
-				if (g_rr_nodes[to_node].direction() == BI_DIRECTION) {
-					Cout = g_rr_switch_inf[switch_index].Cout;
-					to_node = g_rr_nodes[inode].edge_sink_node(iedge); /* Will be CHANX or CHANY */
-					g_rr_nodes[to_node].set_C(g_rr_nodes[to_node].C() + Cout);
+				if (g_ctx.rr_nodes[to_node].direction() == BI_DIRECTION) {
+					Cout = g_ctx.rr_switch_inf[switch_index].Cout;
+					to_node = g_ctx.rr_nodes[inode].edge_sink_node(iedge); /* Will be CHANX or CHANY */
+					g_ctx.rr_nodes[to_node].set_C(g_ctx.rr_nodes[to_node].C() + Cout);
 				}
 			}
 		}
@@ -167,35 +167,35 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	 * Current structures only keep switch information from a node to the next node and
 	 * not the reverse.  Therefore I need to go through all the possible edges to figure 
 	 * out what the Cout's should be */
-	Couts_to_add = (float *) vtr::calloc(g_num_rr_nodes, sizeof(float));
-	for (inode = 0; inode < g_num_rr_nodes; inode++) {
-		for (iedge = 0; iedge < g_rr_nodes[inode].num_edges(); iedge++) {
-			switch_index = g_rr_nodes[inode].edge_switch(iedge);
-			to_node = g_rr_nodes[inode].edge_sink_node(iedge);
-			to_rr_type = g_rr_nodes[to_node].type();
+	Couts_to_add = (float *) vtr::calloc(g_ctx.num_rr_nodes, sizeof(float));
+	for (inode = 0; inode < g_ctx.num_rr_nodes; inode++) {
+		for (iedge = 0; iedge < g_ctx.rr_nodes[inode].num_edges(); iedge++) {
+			switch_index = g_ctx.rr_nodes[inode].edge_switch(iedge);
+			to_node = g_ctx.rr_nodes[inode].edge_sink_node(iedge);
+			to_rr_type = g_ctx.rr_nodes[to_node].type();
 			if (to_rr_type == CHANX || to_rr_type == CHANY) {
-				if (g_rr_nodes[to_node].direction() != BI_DIRECTION) {
+				if (g_ctx.rr_nodes[to_node].direction() != BI_DIRECTION) {
 					/* Cout was not added in these cases */
 					if (Couts_to_add[to_node] != 0) {
 						/* We've already found a Cout to add to this node
 						 * We could take the max of all possibilities but
 						 * instead I will fail if there are conflicting Couts */
 						if (Couts_to_add[to_node]
-								!= g_rr_switch_inf[switch_index].Cout) {
+								!= g_ctx.rr_switch_inf[switch_index].Cout) {
 							vpr_throw(VPR_ERROR_ROUTE, __FILE__,__LINE__,
 								"A single driver resource (%i) is driven by different Cout's (%e!=%e)\n",
 									to_node, Couts_to_add[to_node],
-									g_rr_switch_inf[switch_index].Cout);
+									g_ctx.rr_switch_inf[switch_index].Cout);
 						}
 					}
-					Couts_to_add[to_node] = g_rr_switch_inf[switch_index].Cout;
+					Couts_to_add[to_node] = g_ctx.rr_switch_inf[switch_index].Cout;
 
 				}
 			}
 		}
 	}
-	for (inode = 0; inode < g_num_rr_nodes; inode++) {
-		g_rr_nodes[inode].set_C(g_rr_nodes[inode].C() + Couts_to_add[inode]);
+	for (inode = 0; inode < g_ctx.num_rr_nodes; inode++) {
+		g_ctx.rr_nodes[inode].set_C(g_ctx.rr_nodes[inode].C() + Couts_to_add[inode]);
 	}
 	free(Couts_to_add);
 	free(cblock_counted);

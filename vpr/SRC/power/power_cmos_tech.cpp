@@ -35,6 +35,7 @@
 
 #include "vpr_error.h"
 
+#include "globals.h"
 #include "power_cmos_tech.h"
 #include "power.h"
 #include "power_util.h"
@@ -45,10 +46,11 @@
 using namespace std;
 using namespace pugiutil;
 
-/************************* GLOBALS **********************************/
-static t_transistor_inf * g_transistor_last_searched;
-static t_power_buffer_strength_inf * g_buffer_strength_last_searched;
-static t_power_mux_volt_inf * g_mux_volt_last_searched;
+/************************* FILE SCOPE **********************************/
+static t_transistor_inf * f_transistor_last_searched;
+static t_power_buffer_strength_inf * f_buffer_strength_last_searched;
+static t_power_mux_volt_inf * f_mux_volt_last_searched;
+static t_power_nmos_leakage_inf * f_power_searching_nmos_leakage_info;
 
 /************************* FUNCTION DECLARATIONS ********************/
 
@@ -92,14 +94,14 @@ void power_tech_load_xml_file(const char * cmos_tech_behavior_filepath) {
 
 
     auto tech_size = get_attribute(technology, "size", loc_data);
-    g_power_tech->tech_size = tech_size.as_float();
+    g_ctx.power_tech->tech_size = tech_size.as_float();
 
     auto operating_point = get_single_child(technology, "operating_point", loc_data);
-    g_power_tech->temperature = get_attribute(operating_point, "temperature", loc_data).as_float();
-    g_power_tech->Vdd = get_attribute(operating_point, "Vdd", loc_data).as_float();
+    g_ctx.power_tech->temperature = get_attribute(operating_point, "temperature", loc_data).as_float();
+    g_ctx.power_tech->Vdd = get_attribute(operating_point, "Vdd", loc_data).as_float();
 
     auto p_to_n = get_single_child(technology, "p_to_n", loc_data);
-    g_power_tech->PN_ratio = get_attribute(p_to_n, "ratio", loc_data).as_float();
+    g_ctx.power_tech->PN_ratio = get_attribute(p_to_n, "ratio", loc_data).as_float();
 
 	/* Transistor Information 
      *  We expect two <transistor> sections for P and N types
@@ -164,28 +166,28 @@ static void power_tech_xml_load_component(pugi::xml_node parent, const pugiutil:
 
 static void power_tech_xml_load_components(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
 
-	g_power_commonly_used->component_callibration =
+	g_ctx.power_commonly_used->component_callibration =
 			(PowerSpicedComponent**) vtr::calloc(POWER_CALLIB_COMPONENT_MAX,
 					sizeof(PowerSpicedComponent*));
 
 	power_tech_xml_load_component(parent, loc_data,
-			&g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER],
+			&g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER],
 			"buf", power_usage_buf_for_callibration);
 
 	power_tech_xml_load_component(parent, loc_data,
-			&g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR],
+			&g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR],
 			"buf_levr", power_usage_buf_levr_for_callibration);
 
 	power_tech_xml_load_component(parent, loc_data,
-			&g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF],
+			&g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF],
 			"dff", power_usage_ff_for_callibration);
 
 	power_tech_xml_load_component(parent, loc_data,
-			&g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX],
+			&g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX],
 			"mux", power_usage_mux_for_callibration);
 
 	power_tech_xml_load_component(parent, loc_data,
-			&g_power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT],
+			&g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT],
 			"lut", power_usage_lut_for_callibration);
 
 }
@@ -201,13 +203,13 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
 	int nmos_idx;
 
     num_nmos_sizes = count_children(parent, "nmos", loc_data);
-	g_power_tech->num_nmos_leakage_info = num_nmos_sizes;
-	g_power_tech->nmos_leakage_info = (t_power_nmos_leakage_inf*) vtr::calloc(num_nmos_sizes, sizeof(t_power_nmos_leakage_inf));
+	g_ctx.power_tech->num_nmos_leakage_info = num_nmos_sizes;
+	g_ctx.power_tech->nmos_leakage_info = (t_power_nmos_leakage_inf*) vtr::calloc(num_nmos_sizes, sizeof(t_power_nmos_leakage_inf));
 
     auto me = get_first_child(parent, "nmos", loc_data);
 	nmos_idx = 0;
 	while (me) {
-		t_power_nmos_leakage_inf * nmos_info = &g_power_tech->nmos_leakage_info[nmos_idx];
+		t_power_nmos_leakage_inf * nmos_info = &g_ctx.power_tech->nmos_leakage_info[nmos_idx];
 		nmos_info->nmos_size = get_attribute(me, "size", loc_data).as_float(0.);
 
         num_leakage_pairs = count_children(me, "nmos_leakage", loc_data);
@@ -242,14 +244,14 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
 	/* Process all nmos sizes */
     num_nmos_sizes = count_children(parent, "nmos", loc_data);
     VTR_ASSERT(num_nmos_sizes > 0);
-	g_power_tech->num_nmos_mux_info = num_nmos_sizes;
-	g_power_tech->nmos_mux_info = (t_power_nmos_mux_inf*) vtr::calloc(
+	g_ctx.power_tech->num_nmos_mux_info = num_nmos_sizes;
+	g_ctx.power_tech->nmos_mux_info = (t_power_nmos_mux_inf*) vtr::calloc(
 	        num_nmos_sizes, sizeof(t_power_nmos_mux_inf));
 
     auto me = get_first_child(parent, "nmos", loc_data);
 	nmos_idx = 0;
 	while (me) {
-		t_power_nmos_mux_inf * nmos_inf = &g_power_tech->nmos_mux_info[nmos_idx];
+		t_power_nmos_mux_inf * nmos_inf = &g_ctx.power_tech->nmos_mux_info[nmos_idx];
         nmos_inf->nmos_size = get_attribute(me, "size", loc_data).as_float(0.0);
 
 		/* Process all multiplexer sizes */
@@ -313,9 +315,9 @@ static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const p
     auto prop = get_attribute(parent, "type", loc_data);
 	trans_inf = NULL;
 	if (strcmp(prop.value(), "nmos") == 0) {
-		trans_inf = &g_power_tech->NMOS_inf;
+		trans_inf = &g_ctx.power_tech->NMOS_inf;
 	} else if (strcmp(prop.value(), "pmos") == 0) {
-		trans_inf = &g_power_tech->PMOS_inf;
+		trans_inf = &g_ctx.power_tech->PMOS_inf;
 	} else {
         vpr_throw(VPR_ERROR_POWER, loc_data.filename_c_str(), loc_data.line(parent),
                   "Unrecognized transistor type '%s', expected 'nmos' or 'pmos'\n", prop.value());
@@ -386,9 +388,9 @@ bool power_find_transistor_info(t_transistor_size_inf ** lower,
 	/* Find the appropriate global transistor records */
 	trans_info = NULL;
 	if (type == NMOS) {
-		trans_info = &g_power_tech->NMOS_inf;
+		trans_info = &g_ctx.power_tech->NMOS_inf;
 	} else if (type == PMOS) {
-		trans_info = &g_power_tech->PMOS_inf;
+		trans_info = &g_ctx.power_tech->PMOS_inf;
 	} else {
 		VTR_ASSERT(0);
 	}
@@ -402,7 +404,7 @@ bool power_find_transistor_info(t_transistor_size_inf ** lower,
 	}
 
 	/* Make note of the transistor record we are searching in, and the bounds */
-	g_transistor_last_searched = trans_info;
+	f_transistor_last_searched = trans_info;
 	min_size = trans_info->size_inf[0].size;
 	max_size = trans_info->size_inf[trans_info->num_size_entries - 1].size;
 
@@ -447,7 +449,6 @@ bool power_find_transistor_info(t_transistor_size_inf ** lower,
  * - upper: (Return value) The upper-bound matching V/I pair
  * - v_ds: The drain/source voltage to search for
  */
-t_power_nmos_leakage_inf * g_power_searching_nmos_leakage_info;
 void power_find_nmos_leakage(t_power_nmos_leakage_inf * nmos_leakage_info,
 		t_power_nmos_leakage_pair ** lower, t_power_nmos_leakage_pair ** upper,
 		float v_ds) {
@@ -456,7 +457,7 @@ void power_find_nmos_leakage(t_power_nmos_leakage_inf * nmos_leakage_info,
 
 	key.v_ds = v_ds;
 
-	g_power_searching_nmos_leakage_info = nmos_leakage_info;
+	f_power_searching_nmos_leakage_info = nmos_leakage_info;
 
 	found = (t_power_nmos_leakage_pair*) bsearch(&key,
 			nmos_leakage_info->leakage_pairs,
@@ -529,7 +530,7 @@ void power_find_buffer_sc_levr(t_power_buffer_sc_levr_inf ** lower,
 
 	key.mux_size = input_mux_size;
 
-	g_buffer_strength_last_searched = buffer_strength;
+	f_buffer_strength_last_searched = buffer_strength;
 	found = (t_power_buffer_sc_levr_inf*) bsearch(&key,
 			buffer_strength->sc_levr_inf, buffer_strength->num_levr_entries,
 			sizeof(t_power_buffer_sc_levr_inf), power_compare_buffer_sc_levr);
@@ -563,7 +564,7 @@ static int power_compare_leakage_pair(const void * key_void, const void * elem_v
 	const t_power_nmos_leakage_pair * next = (const t_power_nmos_leakage_pair*) elem + 1;
 
 	/* Compare against last? */
-	if (elem == &g_power_searching_nmos_leakage_info->leakage_pairs[g_power_searching_nmos_leakage_info->num_leakage_pairs - 1]) {
+	if (elem == &f_power_searching_nmos_leakage_info->leakage_pairs[f_power_searching_nmos_leakage_info->num_leakage_pairs - 1]) {
 		if (key->v_ds >= elem->v_ds) {
 			return 0;
 		} else {
@@ -598,7 +599,7 @@ void power_find_mux_volt_inf(t_power_mux_volt_pair ** lower,
 
 	key.v_in = v_in;
 
-	g_mux_volt_last_searched = volt_inf;
+	f_mux_volt_last_searched = volt_inf;
 	found = (t_power_mux_volt_pair*) bsearch(&key, volt_inf->mux_voltage_pairs,
 			volt_inf->num_voltage_pairs, sizeof(t_power_mux_volt_pair),
 			power_compare_voltage_pair);
@@ -627,7 +628,7 @@ static int power_compare_buffer_sc_levr(const void * key_void,
 
 	/* Compare against last? */
 	if (elem
-			== &g_buffer_strength_last_searched->sc_levr_inf[g_buffer_strength_last_searched->num_levr_entries
+			== &f_buffer_strength_last_searched->sc_levr_inf[f_buffer_strength_last_searched->num_levr_entries
 					- 1]) {
 		if (key->mux_size >= elem->mux_size) {
 			return 0;
@@ -637,7 +638,7 @@ static int power_compare_buffer_sc_levr(const void * key_void,
 	}
 
 	/* Compare against first? */
-	if (elem == &g_buffer_strength_last_searched->sc_levr_inf[0]) {
+	if (elem == &f_buffer_strength_last_searched->sc_levr_inf[0]) {
 		if (key->mux_size < elem->mux_size) {
 			return 0;
 		}
@@ -690,7 +691,7 @@ static int power_compare_transistor_size(const void * key_void,
 
 	/* Check if we are comparing against the last element */
 	if (elem
-			== &g_transistor_last_searched->size_inf[g_transistor_last_searched->num_size_entries
+			== &f_transistor_last_searched->size_inf[f_transistor_last_searched->num_size_entries
 					- 1]) {
 		/* Match if the desired value is larger than the largest item in the list */
 		if (key->size >= elem->size) {
@@ -701,7 +702,7 @@ static int power_compare_transistor_size(const void * key_void,
 	}
 
 	/* Check if we are comparing against the first element */
-	if (elem == &g_transistor_last_searched->size_inf[0]) {
+	if (elem == &f_transistor_last_searched->size_inf[0]) {
 		/* Match the smallest if it is smaller than the smallest */
 		if (key->size < elem->size) {
 			return 0;
@@ -733,7 +734,7 @@ static int power_compare_voltage_pair(const void * key_void,
 
 	/* Check if we are comparing against the last element */
 	if (elem
-			== &g_mux_volt_last_searched->mux_voltage_pairs[g_mux_volt_last_searched->num_voltage_pairs
+			== &f_mux_volt_last_searched->mux_voltage_pairs[f_mux_volt_last_searched->num_voltage_pairs
 					- 1]) {
 		/* Match if the desired value is larger than the largest item in the list */
 		if (key->v_in >= elem->v_in) {

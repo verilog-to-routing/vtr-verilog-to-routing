@@ -752,15 +752,15 @@ class NetlistWriterVisitor : public NetlistVisitor {
             , delay_calc_(delay_calc) {
 
             //Initialize the pin to tnode look-up
-            for(AtomPinId pin : g_atom_nl.pins()) {
-                AtomBlockId blk = g_atom_nl.pin_block(pin);
-                int clb_idx = g_atom_lookup.atom_clb(blk);
+            for(AtomPinId pin : g_ctx.atom_nl.pins()) {
+                AtomBlockId blk = g_ctx.atom_nl.pin_block(pin);
+                int clb_idx = g_ctx.atom_lookup.atom_clb(blk);
 
-                const t_pb_graph_pin* gpin = g_atom_lookup.atom_pin_pb_graph_pin(pin);
+                const t_pb_graph_pin* gpin = g_ctx.atom_lookup.atom_pin_pb_graph_pin(pin);
                 VTR_ASSERT(gpin);
                 int pb_pin_idx = gpin->pin_count_in_cluster;
 
-                tatum::NodeId tnode_id = g_atom_lookup.atom_pin_tnode(pin);
+                tatum::NodeId tnode_id = g_ctx.atom_lookup.atom_pin_tnode(pin);
 
                 auto key = std::make_pair(clb_idx, pb_pin_idx);
                 auto value = std::make_pair(key, tnode_id);
@@ -783,7 +783,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         }
 
         void visit_atom_impl(const t_pb* atom) override { 
-            const t_model* model = g_atom_nl.block_model(g_atom_lookup.pb_atom(atom));
+            const t_model* model = g_ctx.atom_nl.block_model(g_ctx.atom_lookup.pb_atom(atom));
 
             if(model->name == std::string("input")) {
                 inputs_.emplace_back(make_io(atom, PortType::IN));
@@ -1391,10 +1391,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
                         //Delays
                         //
                         //We record the souce sink tnodes and thier delays here
-                        for(tatum::EdgeId edge : g_timing_graph->node_out_edges(src_tnode)) {
-                            double delay = delay_calc_->max_edge_delay(*g_timing_graph, edge);
+                        for(tatum::EdgeId edge : g_ctx.timing_graph->node_out_edges(src_tnode)) {
+                            double delay = delay_calc_->max_edge_delay(*g_ctx.timing_graph, edge);
 
-                            auto sink_tnode = g_timing_graph->edge_sink_node(edge);
+                            auto sink_tnode = g_ctx.timing_graph->edge_sink_node(edge);
                             tnode_delay_matrix[sink_tnode].emplace_back(port->name, ipin, delay);
                         }
                     }
@@ -1503,10 +1503,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
                         //Delays
                         //
                         //We record the souce sink tnodes and thier delays here
-                        for(tatum::EdgeId edge : g_timing_graph->node_out_edges(src_tnode)) {
-                            double delay = delay_calc_->max_edge_delay(*g_timing_graph, edge);
+                        for(tatum::EdgeId edge : g_ctx.timing_graph->node_out_edges(src_tnode)) {
+                            double delay = delay_calc_->max_edge_delay(*g_ctx.timing_graph, edge);
 
-                            auto sink_tnode = g_timing_graph->edge_sink_node(edge);
+                            auto sink_tnode = g_ctx.timing_graph->edge_sink_node(edge);
                             tnode_delay_matrix[sink_tnode].emplace_back(port->name, ipin, delay);
                         }
 #endif
@@ -1557,9 +1557,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb* top_pb = find_top_cb(curr); 
 
             const t_block* top_block = nullptr;
-            for(int i = 0; i < g_num_blocks; i++) {
-                if(g_blocks[i].pb == top_pb) {
-                    top_block = &g_blocks[i];
+            for(int i = 0; i < g_ctx.num_blocks; i++) {
+                if(g_ctx.blocks[i].pb == top_pb) {
+                    top_block = &g_ctx.blocks[i];
                     break;
                 }
             }
@@ -1582,8 +1582,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Returns the tnode ID of the given atom's connected cluster pin
         tatum::NodeId find_tnode(const t_pb* atom, int cluster_pin_idx) {
 
-            AtomBlockId blk_id = g_atom_lookup.pb_atom(atom);
-            int clb_index = g_atom_lookup.atom_clb(blk_id);
+            AtomBlockId blk_id = g_ctx.atom_lookup.pb_atom(atom);
+            int clb_index = g_ctx.atom_lookup.atom_clb(blk_id);
 
             auto key = std::make_pair(clb_index, cluster_pin_idx);
             auto iter = pin_id_to_tnode_lookup_.find(key);
@@ -1598,7 +1598,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Returns a LogicVec representing the LUT mask of the given LUT atom
         LogicVec load_lut_mask(size_t num_inputs, //LUT size
                               const t_pb* atom) { //LUT primitive
-            const t_model* model = g_atom_nl.block_model(g_atom_lookup.pb_atom(atom));
+            const t_model* model = g_ctx.atom_nl.block_model(g_ctx.atom_lookup.pb_atom(atom));
             VTR_ASSERT(model->name == std::string("names"));
 
 #ifdef DEBUG_LUT_MASK
@@ -1610,7 +1610,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
 
             //Retrieve the truth table
-            const auto& truth_table = g_atom_nl.block_truth_table(g_atom_lookup.pb_atom(atom));
+            const auto& truth_table = g_ctx.atom_nl.block_truth_table(g_ctx.atom_lookup.pb_atom(atom));
 
             //Apply the permutation
             auto permuted_truth_table = permute_truth_table(truth_table, num_inputs, permute);
@@ -1651,7 +1651,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             //
             //We walk through the logical inputs to this atom (i.e. in the original truth table/netlist)
             //and find the corresponding input in the implementation atom (i.e. in the current netlist)
-            auto ports = g_atom_nl.block_input_ports(g_atom_lookup.pb_atom(atom_pb));
+            auto ports = g_ctx.atom_nl.block_input_ports(g_ctx.atom_lookup.pb_atom(atom_pb));
             if(ports.size() == 1) {
                 const t_pb_graph_node* gnode = atom_pb->pb_graph_node;
                 VTR_ASSERT(gnode->num_input_ports == 1);
@@ -1669,7 +1669,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                     if(impl_input_net_id) {
                         //If there is a valid net connected in the implementation
-                        AtomNetId logical_net_id = g_atom_nl.port_net(port_id, orig_index);
+                        AtomNetId logical_net_id = g_ctx.atom_nl.port_net(port_id, orig_index);
                         VTR_ASSERT(impl_input_net_id == logical_net_id);
 
                         //Mark the permutation.
@@ -1829,10 +1829,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Returns the delay in pico-seconds from source_tnode to sink_tnode
         double get_delay_ps(tatum::NodeId source_tnode, tatum::NodeId sink_tnode) {
-            tatum::EdgeId edge = g_timing_graph->find_edge(source_tnode, sink_tnode);
+            tatum::EdgeId edge = g_ctx.timing_graph->find_edge(source_tnode, sink_tnode);
             VTR_ASSERT(edge);
 
-            double delay_sec = delay_calc_->max_edge_delay(*g_timing_graph, edge);
+            double delay_sec = delay_calc_->max_edge_delay(*g_ctx.timing_graph, edge);
 
             return ::get_delay_ps(delay_sec); //Class overload hides file-scope by default
         }

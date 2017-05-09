@@ -50,6 +50,6 @@ typedef struct s_rt_node t_rt_node;
  *                the total C of the subtree rooted at the current node,     *
  *                including the C of the current node.                       *
  * R_upstream:  Total upstream resistance from this rt_node to the net       *
- *              source, including any g_rr_nodes[].R of this node.           *
+ *              source, including any g_ctx.rr_nodes[].R of this node.           *
  * Tdel:  Time delay for the signal to get from the net source to this node. *
  *        Includes the time to go through this node.                         */

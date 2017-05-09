@@ -44,12 +44,12 @@ bool try_breadth_first_route(struct s_router_opts router_opts,
 	for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
 
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
-		for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-			g_clbs_nlist.net[inet].is_routed = false;
-			g_clbs_nlist.net[inet].is_fixed = false;
+		for (inet = 0; inet < g_ctx.clbs_nlist.net.size(); inet++) {
+			g_ctx.clbs_nlist.net[inet].is_routed = false;
+			g_ctx.clbs_nlist.net[inet].is_fixed = false;
 		}
 
-		for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+		for (inet = 0; inet < g_ctx.clbs_nlist.net.size(); inet++) {
 			is_routable = try_breadth_first_route_net(inet, pres_fac, 
 					router_opts);
 			if (!is_routable) {
@@ -93,27 +93,27 @@ bool try_breadth_first_route_net(int inet, float pres_fac,
 
 	bool is_routed = false;
 
-	if (g_clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
+	if (g_ctx.clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
 
 		is_routed = true;
 
-	} else if (g_clbs_nlist.net[inet].is_global) { /* Skip global nets. */
+	} else if (g_ctx.clbs_nlist.net[inet].is_global) { /* Skip global nets. */
 
 		is_routed = true;
 
 	} else {
 
-		pathfinder_update_path_cost(g_trace_head[inet], -1, pres_fac);
+		pathfinder_update_path_cost(g_ctx.trace_head[inet], -1, pres_fac);
 		is_routed = breadth_first_route_net(inet, router_opts.bend_cost);
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
-			g_clbs_nlist.net[inet].is_routed = true;
+			g_ctx.clbs_nlist.net[inet].is_routed = true;
 		} else {
 			vtr::printf_info("Routing failed.\n");
 		}
 
-		pathfinder_update_path_cost(g_trace_head[inet], 1, pres_fac);
+		pathfinder_update_path_cost(g_ctx.trace_head[inet], 1, pres_fac);
 	}
 	return (is_routed);
 }
@@ -146,13 +146,13 @@ static bool breadth_first_route_net(int inet, float bend_cost) {
 	tptr = NULL;
 	remaining_connections_to_sink = 0;
 
-	for (i = 1; i < g_clbs_nlist.net[inet].pins.size(); i++) { /* Need n-1 wires to connect n pins */
+	for (i = 1; i < g_ctx.clbs_nlist.net[inet].pins.size(); i++) { /* Need n-1 wires to connect n pins */
 		breadth_first_expand_trace_segment(tptr, remaining_connections_to_sink);
 		current = get_heap_head();
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
 			vtr::printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-					inet, g_clbs_nlist.net[inet].name, i);
+					inet, g_ctx.clbs_nlist.net[inet].name, i);
 			reset_path_costs(); /* Clean up before leaving. */
 			return (false);
 		}
@@ -180,7 +180,7 @@ static bool breadth_first_route_net(int inet, float bend_cost) {
 
 			if (current == NULL) { /* Impossible routing. No path for net. */
 				vtr::printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-						inet, g_clbs_nlist.net[inet].name, i);
+						inet, g_ctx.clbs_nlist.net[inet].name, i);
 				reset_path_costs();
 				return (false);
 			}
@@ -222,7 +222,7 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 	int inode, sink_node, last_ipin_node;
 
 	tptr = start_ptr;
-	if(tptr != NULL && g_rr_nodes[tptr->index].type() == SINK) {
+	if(tptr != NULL && g_ctx.rr_nodes[tptr->index].type() == SINK) {
 		/* During logical equivalence case, only use one opin */
 		tptr = tptr->next;
 	}
@@ -256,7 +256,7 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 			inode = tptr->index;
 			node_to_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
 
-			if (g_rr_nodes[inode].type() == IPIN)
+			if (g_ctx.rr_nodes[inode].type() == IPIN)
 				last_ipin_node = inode;
 
 			tptr = next_ptr;
@@ -296,22 +296,22 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 	t_rr_type from_type, to_type;
 	float tot_cost;
 
-	num_edges = g_rr_nodes[inode].num_edges();
+	num_edges = g_ctx.rr_nodes[inode].num_edges();
 	for (iconn = 0; iconn < num_edges; iconn++) {
-		to_node = g_rr_nodes[inode].edge_sink_node(iconn);
+		to_node = g_ctx.rr_nodes[inode].edge_sink_node(iconn);
 
-		if (g_rr_nodes[to_node].xhigh() < route_bb[inet].xmin
-				|| g_rr_nodes[to_node].xlow() > route_bb[inet].xmax
-				|| g_rr_nodes[to_node].yhigh() < route_bb[inet].ymin
-				|| g_rr_nodes[to_node].ylow() > route_bb[inet].ymax)
+		if (g_ctx.rr_nodes[to_node].xhigh() < route_bb[inet].xmin
+				|| g_ctx.rr_nodes[to_node].xlow() > route_bb[inet].xmax
+				|| g_ctx.rr_nodes[to_node].yhigh() < route_bb[inet].ymin
+				|| g_ctx.rr_nodes[to_node].ylow() > route_bb[inet].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
 
 		tot_cost = pcost + get_rr_cong_cost(to_node);
 
 		if (bend_cost != 0.) {
-			from_type = g_rr_nodes[inode].type();
-			to_type = g_rr_nodes[to_node].type();
+			from_type = g_ctx.rr_nodes[inode].type();
+			to_type = g_ctx.rr_nodes[to_node].type();
 			if ((from_type == CHANX && to_type == CHANY)
 					|| (from_type == CHANY && to_type == CHANX))
 				tot_cost += bend_cost;
@@ -328,7 +328,7 @@ static void breadth_first_add_source_to_heap(int inet) {
 	int inode;
 	float cost;
 
-	inode = g_net_rr_terminals[inet][0]; /* SOURCE */
+	inode = g_ctx.net_rr_terminals[inet][0]; /* SOURCE */
 	cost = get_rr_cong_cost(inode);
 
 	node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);

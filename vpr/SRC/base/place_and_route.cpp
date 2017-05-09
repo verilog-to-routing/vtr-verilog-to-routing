@@ -71,20 +71,20 @@ bool place_and_route(struct s_placer_opts placer_opts,
 	bool success = false;
 	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
-	vtr::t_ivec **clb_opins_used_locally = NULL; /* [0..g_num_blocks-1][0..num_class-1] */
+	vtr::t_ivec **clb_opins_used_locally = NULL; /* [0..g_ctx.num_blocks-1][0..num_class-1] */
 	clock_t begin, end;
 
 	int max_pins_per_clb = 0;
-	for (int i = 0; i < g_num_block_types; ++i) {
-		if (g_block_types[i].num_pins > max_pins_per_clb) {
-			max_pins_per_clb = g_block_types[i].num_pins;
+	for (int i = 0; i < g_ctx.num_block_types; ++i) {
+		if (g_ctx.block_types[i].num_pins > max_pins_per_clb) {
+			max_pins_per_clb = g_ctx.block_types[i].num_pins;
 		}
 	}
 
 	if (!placer_opts.doPlacement || placer_opts.place_freq == PLACE_NEVER) {
 		/* Read the placement from a file */
-		read_place(filename_opts.NetFile, filename_opts.PlaceFile, g_nx, g_ny, g_num_blocks, g_blocks);
-		sync_grid_to_blocks(g_num_blocks, g_nx, g_ny, g_grid);
+		read_place(filename_opts.NetFile, filename_opts.PlaceFile, g_ctx.nx, g_ctx.ny, g_ctx.num_blocks, g_ctx.blocks);
+		sync_grid_to_blocks(g_ctx.num_blocks, g_ctx.nx, g_ctx.ny, g_ctx.grid);
 	} else {
 		VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
 		begin = clock();
@@ -94,14 +94,14 @@ bool place_and_route(struct s_placer_opts placer_opts,
                 timing_inf, 
 #endif
                 arch->Directs, arch->num_directs);
-		print_place(filename_opts.NetFile, g_clbs_nlist.netlist_id.c_str(), filename_opts.PlaceFile);
+		print_place(filename_opts.NetFile, g_ctx.clbs_nlist.netlist_id.c_str(), filename_opts.PlaceFile);
 		end = clock();
 
 		vtr::printf_info("Placement took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
 	}
 	begin = clock();
-	post_place_sync(g_num_blocks);
+	post_place_sync(g_ctx.num_blocks);
 
 	fflush(stdout);
 
@@ -120,12 +120,12 @@ bool place_and_route(struct s_placer_opts placer_opts,
 
     //Routing
     //Initialize the delay calculator
-    float **net_delay = alloc_net_delay(&net_delay_ch, g_clbs_nlist.net, g_clbs_nlist.net.size());
+    float **net_delay = alloc_net_delay(&net_delay_ch, g_ctx.clbs_nlist.net, g_ctx.clbs_nlist.net.size());
 
     std::shared_ptr<SetupTimingInfo> timing_info = nullptr;
     std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
     if(timing_inf.timing_analysis_enabled) {
-        routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_atom_nl, g_atom_lookup, net_delay);
+        routing_delay_calc = std::make_shared<RoutingDelayCalculator>(g_ctx.atom_nl, g_ctx.atom_lookup, net_delay);
 
         timing_info = make_setup_timing_info(routing_delay_calc);
     }
@@ -135,16 +135,16 @@ bool place_and_route(struct s_placer_opts placer_opts,
 	/* If channel width not fixed, use binary search to find min W */
 	if (NO_FIXED_CHANNEL_WIDTH == width_fac) {
         //Binary search for the min channel width
-		g_solution_inf.channel_width = binary_search_place_and_route(placer_opts, 
+		g_ctx.solution_inf.channel_width = binary_search_place_and_route(placer_opts, 
                 filename_opts,
 				arch,
                 router_opts.verify_binary_search, router_opts.min_channel_width_hint,
                 annealing_sched, router_opts,
 				det_routing_arch, segment_inf, net_delay, timing_info);
-		success = (g_solution_inf.channel_width > 0 ? true : false);
+		success = (g_ctx.solution_inf.channel_width > 0 ? true : false);
 	} else {
         //Route at the specified channel width
-		g_solution_inf.channel_width = width_fac;
+		g_ctx.solution_inf.channel_width = width_fac;
 		if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
 			if (width_fac % 2 != 0) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -174,7 +174,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
         if(timing_inf.timing_analysis_enabled) {
             if(isEchoFileEnabled(E_ECHO_FINAL_ROUTING_TIMING_GRAPH)) {
                 tatum::write_echo(getEchoFileName(E_ECHO_FINAL_ROUTING_TIMING_GRAPH),
-                                  *g_timing_graph, *g_timing_constraints, *routing_delay_calc, timing_info->analyzer());
+                                  *g_ctx.timing_graph, *g_ctx.timing_constraints, *routing_delay_calc, timing_info->analyzer());
             }
         }
 
@@ -183,7 +183,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 			vtr::printf_info("Circuit is unroutable with a channel width factor of %d.\n", width_fac);
 			sprintf(msg, "Routing failed with a channel width factor of %d. ILLEGAL routing shown.", width_fac);
 		} else {
-			check_route(router_opts.route_type, g_num_rr_switches, clb_opins_used_locally, segment_inf);
+			check_route(router_opts.route_type, g_ctx.num_rr_switches, clb_opins_used_locally, segment_inf);
 			get_serial_num();
 
 			vtr::printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
@@ -211,9 +211,9 @@ bool place_and_route(struct s_placer_opts placer_opts,
 	}
 
 	if (clb_opins_used_locally != NULL) {
-		for (int i = 0; i < g_num_blocks; ++i) {
+		for (int i = 0; i < g_ctx.num_blocks; ++i) {
 			free_ivec_vector(clb_opins_used_locally[i], 0,
-					g_blocks[i].type->num_class - 1);
+					g_ctx.blocks[i].type->num_class - 1);
 		}
 		free(clb_opins_used_locally);
 		clb_opins_used_locally = NULL;
@@ -231,8 +231,8 @@ bool place_and_route(struct s_placer_opts placer_opts,
     if (router_opts.switch_usage_analysis) {
         print_switch_usage();
     }
-    delete [] g_switch_fanin_remap;
-    g_switch_fanin_remap = NULL;
+    delete [] g_ctx.switch_fanin_remap;
+    g_ctx.switch_fanin_remap = NULL;
 
 	return(success);
 }
@@ -263,7 +263,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	vtr::t_ivec **clb_opins_used_locally, **saved_clb_opins_used_locally;
 
-	/* [0..g_num_blocks-1][0..num_class-1] */
+	/* [0..g_ctx.num_blocks-1][0..num_class-1] */
 	int attempt_count;
 	int udsd_multiplier;
 	int warnings;
@@ -279,8 +279,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	}
 
 	max_pins_per_clb = 0;
-	for (i = 0; i < g_num_block_types; i++) {
-		max_pins_per_clb = max(max_pins_per_clb, g_block_types[i].num_pins);
+	for (i = 0; i < g_ctx.num_block_types; i++) {
+		max_pins_per_clb = max(max_pins_per_clb, g_ctx.block_types[i].num_pins);
 	}
 
 	clb_opins_used_locally = alloc_route_structs();
@@ -508,7 +508,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 						saved_clb_opins_used_locally);
 
 				if (placer_opts.place_freq == PLACE_ALWAYS) {
-                    print_place(filename_opts.NetFile, g_clbs_nlist.netlist_id.c_str(), 
+                    print_place(filename_opts.NetFile, g_ctx.clbs_nlist.netlist_id.c_str(), 
                                 filename_opts.PlaceFile);
 				}
 			}
@@ -529,11 +529,11 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	free_rr_graph();
 
-	build_rr_graph(graph_type, g_num_block_types, g_block_types, g_nx, g_ny, g_grid,
-			&g_chan_width, det_routing_arch->switch_block_type,
+	build_rr_graph(graph_type, g_ctx.num_block_types, g_ctx.block_types, g_ctx.nx, g_ctx.ny, g_ctx.grid,
+			&g_ctx.chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
-			g_num_arch_switches, segment_inf,
+			g_ctx.num_arch_switches, segment_inf,
 			det_routing_arch->global_route_switch,
 			det_routing_arch->delayless_switch,
 			det_routing_arch->wire_to_arch_ipin_switch, 
@@ -543,12 +543,12 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 			arch->Directs, arch->num_directs, false, 
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
-			&g_num_rr_switches,
+			&g_ctx.num_rr_switches,
 			&warnings);
 
 	restore_routing(best_routing, clb_opins_used_locally,
 			saved_clb_opins_used_locally);
-	check_route(router_opts.route_type, g_num_rr_switches,
+	check_route(router_opts.route_type, g_ctx.num_rr_switches,
 			clb_opins_used_locally, segment_inf);
 	get_serial_num();
 
@@ -568,9 +568,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	sprintf(msg, "Routing succeeded with a channel width factor of %d.", final);
 	update_screen(ScreenUpdatePriority::MAJOR, msg, ROUTING, timing_info);
 
-	for (i = 0; i < g_num_blocks; i++) {
+	for (i = 0; i < g_ctx.num_blocks; i++) {
 		free_ivec_vector(clb_opins_used_locally[i], 0,
-				g_blocks[i].type->num_class - 1);
+				g_ctx.blocks[i].type->num_class - 1);
 	}
 	free(clb_opins_used_locally);
 	clb_opins_used_locally = NULL;
@@ -603,60 +603,60 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 	if (nio == 0)
 		nio = 1; /* No zero width channels */
 
-	g_chan_width.x_list[0] = g_chan_width.x_list[g_ny] = nio;
-	g_chan_width.y_list[0] = g_chan_width.y_list[g_nx] = nio;
+	g_ctx.chan_width.x_list[0] = g_ctx.chan_width.x_list[g_ctx.ny] = nio;
+	g_ctx.chan_width.y_list[0] = g_ctx.chan_width.y_list[g_ctx.nx] = nio;
 
-	if (g_ny > 1) {
-		float separation = 1.0 / (g_ny - 2.0); /* Norm. distance between two channels. */
-		float y = 0.0; /* This avoids div by zero if g_ny = 2.0 */
-		g_chan_width.x_list[1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
+	if (g_ctx.ny > 1) {
+		float separation = 1.0 / (g_ctx.ny - 2.0); /* Norm. distance between two channels. */
+		float y = 0.0; /* This avoids div by zero if g_ctx.ny = 2.0 */
+		g_ctx.chan_width.x_list[1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
 
 		/* No zero width channels */
-		g_chan_width.x_list[1] = max(g_chan_width.x_list[1], 1);
+		g_ctx.chan_width.x_list[1] = max(g_ctx.chan_width.x_list[1], 1);
 
-		for (int i = 1; i < g_ny - 1; ++i) {
-			y = (float) i / ((float) (g_ny - 2.0));
-			g_chan_width.x_list[i + 1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
-			g_chan_width.x_list[i + 1] = max(g_chan_width.x_list[i + 1], 1);
+		for (int i = 1; i < g_ctx.ny - 1; ++i) {
+			y = (float) i / ((float) (g_ctx.ny - 2.0));
+			g_ctx.chan_width.x_list[i + 1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
+			g_ctx.chan_width.x_list[i + 1] = max(g_ctx.chan_width.x_list[i + 1], 1);
 		}
 	}
 
-	if (g_nx > 1) {
-		float separation = 1.0 / (g_nx - 2.0); /* Norm. distance between two channels. */
-		float x = 0.0; /* Avoids div by zero if g_nx = 2.0 */
-		g_chan_width.y_list[1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-		g_chan_width.y_list[1] = max(g_chan_width.y_list[1], 1);
+	if (g_ctx.nx > 1) {
+		float separation = 1.0 / (g_ctx.nx - 2.0); /* Norm. distance between two channels. */
+		float x = 0.0; /* Avoids div by zero if g_ctx.nx = 2.0 */
+		g_ctx.chan_width.y_list[1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
+		g_ctx.chan_width.y_list[1] = max(g_ctx.chan_width.y_list[1], 1);
 
-		for (int i = 1; i < g_nx - 1; ++i) {
-			x = (float) i / ((float) (g_nx - 2.0));
-			g_chan_width.y_list[i + 1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-			g_chan_width.y_list[i + 1] = max(g_chan_width.y_list[i + 1], 1);
+		for (int i = 1; i < g_ctx.nx - 1; ++i) {
+			x = (float) i / ((float) (g_ctx.nx - 2.0));
+			g_ctx.chan_width.y_list[i + 1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
+			g_ctx.chan_width.y_list[i + 1] = max(g_ctx.chan_width.y_list[i + 1], 1);
 		}
 	}
 
-	g_chan_width.max = 0;
-	g_chan_width.x_max = g_chan_width.y_max = INT_MIN;
-	g_chan_width.x_min = g_chan_width.y_min = INT_MAX;
-	for (int i = 0; i <= g_ny ; ++i) {
-		g_chan_width.max = max(g_chan_width.max, g_chan_width.x_list[i]);
-		g_chan_width.x_max = max(g_chan_width.x_max, g_chan_width.x_list[i]);
-		g_chan_width.x_min = min(g_chan_width.x_min, g_chan_width.x_list[i]);
+	g_ctx.chan_width.max = 0;
+	g_ctx.chan_width.x_max = g_ctx.chan_width.y_max = INT_MIN;
+	g_ctx.chan_width.x_min = g_ctx.chan_width.y_min = INT_MAX;
+	for (int i = 0; i <= g_ctx.ny ; ++i) {
+		g_ctx.chan_width.max = max(g_ctx.chan_width.max, g_ctx.chan_width.x_list[i]);
+		g_ctx.chan_width.x_max = max(g_ctx.chan_width.x_max, g_ctx.chan_width.x_list[i]);
+		g_ctx.chan_width.x_min = min(g_ctx.chan_width.x_min, g_ctx.chan_width.x_list[i]);
 	}
-	for (int i = 0; i <= g_nx ; ++i) {
-		g_chan_width.max = max(g_chan_width.max, g_chan_width.y_list[i]);
-		g_chan_width.y_max = max(g_chan_width.y_max, g_chan_width.y_list[i]);
-		g_chan_width.y_min = min(g_chan_width.y_min, g_chan_width.y_list[i]);
+	for (int i = 0; i <= g_ctx.nx ; ++i) {
+		g_ctx.chan_width.max = max(g_ctx.chan_width.max, g_ctx.chan_width.y_list[i]);
+		g_ctx.chan_width.y_max = max(g_ctx.chan_width.y_max, g_ctx.chan_width.y_list[i]);
+		g_ctx.chan_width.y_min = min(g_ctx.chan_width.y_min, g_ctx.chan_width.y_list[i]);
 	}
 
 #ifdef VERBOSE
 	vtr::printf_info("\n");
-	vtr::printf_info("g_chan_width.x_list:\n");
-	for (int i = 0; i <= g_ny ; ++i)
-		vtr::printf_info("%d  ", g_chan_width.x_list[i]);
+	vtr::printf_info("g_ctx.chan_width.x_list:\n");
+	for (int i = 0; i <= g_ctx.ny ; ++i)
+		vtr::printf_info("%d  ", g_ctx.chan_width.x_list[i]);
 	vtr::printf_info("\n");
-	vtr::printf_info("g_chan_width.y_list:\n");
-	for (int i = 0; i <= g_nx ; ++i)
-		vtr::printf_info("%d  ", g_chan_width.y_list[i]);
+	vtr::printf_info("g_ctx.chan_width.y_list:\n");
+	for (int i = 0; i <= g_ctx.nx ; ++i)
+		vtr::printf_info("%d  ", g_ctx.chan_width.y_list[i]);
 	vtr::printf_info("\n");
 #endif
 }
