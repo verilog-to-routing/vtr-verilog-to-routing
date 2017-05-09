@@ -6,13 +6,13 @@ void NetlistWalker::walk() {
     
     visitor_.visit_top(g_atom_nl.netlist_name().c_str());
 
-    for(int i = 0; i < num_blocks; i++) {
+    for(int i = 0; i < g_num_blocks; i++) {
 
         //Visit the top-level block
-        visitor_.visit_clb(block[i].pb); 
+        visitor_.visit_clb(g_blocks[i].pb); 
 
-        //Visit all the blocks primitives
-        walk_atoms(block[i].pb);
+        //Visit all the block's primitives
+        walk_atoms(g_blocks[i].pb);
     }
 
     visitor_.finish();

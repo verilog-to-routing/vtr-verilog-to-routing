@@ -487,7 +487,7 @@ void alloc_draw_structs(const t_arch* arch) {
 
 	draw_state->net_color = (t_color *) vtr::malloc(g_clbs_nlist.net.size() * sizeof(t_color));
 
-	draw_state->block_color = (t_color *) vtr::malloc(num_blocks * sizeof(t_color));
+	draw_state->block_color = (t_color *) vtr::malloc(g_num_blocks * sizeof(t_color));
 
 	/* Space is allocated for draw_rr_node but not initialized because we do *
 	 * not yet know information about the routing resources.				  */
@@ -651,7 +651,7 @@ static void drawplace(void) {
 					if (j == 0 || j == g_ny + 1) {
 						settextrotation(90);
 					}
-					drawtext_in(abs_clb_bbox, block[bnum].name);
+					drawtext_in(abs_clb_bbox, g_blocks[bnum].name);
 					if (j == 0 || j == g_ny + 1) {
 						settextrotation(saved_rotation);
 					}
@@ -691,11 +691,11 @@ static void drawnets(void) {
 
 		setcolor(draw_state->net_color[inet]);
 		b1 = g_clbs_nlist.net[inet].pins[0].block; /* The DRIVER */
-		t_point driver_center = draw_coords->get_absolute_clb_bbox(block[b1]).get_center();
+		t_point driver_center = draw_coords->get_absolute_clb_bbox(g_blocks[b1]).get_center();
 
 		for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 			b2 = g_clbs_nlist.net[inet].pins[ipin].block;
-			t_point sink_center = draw_coords->get_absolute_clb_bbox(block[b2]).get_center();
+			t_point sink_center = draw_coords->get_absolute_clb_bbox(g_blocks[b2]).get_center();
 			drawline(driver_center, sink_center);
 
 			/* Uncomment to draw a chain instead of a star. */
@@ -2117,7 +2117,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			for (int k = 0; k < grid_tile->type->capacity; ++k) {
 				clb_index = grid_tile->blocks[k];
 				if (clb_index != EMPTY_BLOCK) {
-					clb = &block[clb_index];
+					clb = &g_blocks[clb_index];
 					clb_bbox = draw_coords->get_absolute_clb_bbox(*clb);
 					if (clb_bbox.intersects(abs_x, abs_y)) {
 						break;
@@ -2210,7 +2210,7 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 	t_draw_state* draw_state = get_draw_state_vars();
 
 	for (k = 0; k < type->num_pins; k++) { /* Each pin on a CLB */
-		netnum = block[bnum].nets[k];
+		netnum = g_blocks[bnum].nets[k];
 
 		if (netnum == OPEN)
 			continue;
@@ -2271,7 +2271,7 @@ static void deselect_all(void) {
 	int i;
 
 	/* Create some colour highlighting */
-	for (i = 0; i < num_blocks; i++) {
+	for (i = 0; i < g_num_blocks; i++) {
 		draw_reset_blk_color(i);
 	}
 
@@ -2292,10 +2292,10 @@ static void draw_reset_blk_color(int i) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
 
-	if (block[i].type->index < 3) {
+	if (g_blocks[i].type->index < 3) {
 			draw_state->block_color[i] = LIGHTGREY;
-	} else if (block[i].type->index < 3 + MAX_BLOCK_COLOURS) {
-			draw_state->block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS + block[i].type->index - 3);
+	} else if (g_blocks[i].type->index < 3 + MAX_BLOCK_COLOURS) {
+			draw_state->block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS + g_blocks[i].type->index - 3);
 	} else {
 			draw_state->block_color[i] = (enum color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1);
 	}

@@ -151,10 +151,10 @@ void read_user_pad_loc(const char *pad_loc_file) {
 				pad_loc_file);
 		
 	hash_table = alloc_hash_table();
-	for (iblk = 0; iblk < num_blocks; iblk++) {
-		if (block[iblk].type == IO_TYPE) {
-			insert_in_hash_table(hash_table, block[iblk].name, iblk);
-			block[iblk].x = OPEN; /* Mark as not seen yet. */
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
+		if (g_blocks[iblk].type == IO_TYPE) {
+			insert_in_hash_table(hash_table, g_blocks[iblk].name, iblk);
+			g_blocks[iblk].x = OPEN; /* Mark as not seen yet. */
 		}
 	}
 
@@ -224,7 +224,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		i = xtmp;
 		j = ytmp;
 
-		if (block[bnum].x != OPEN) {
+		if (g_blocks[bnum].x != OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Block %s is listed twice in pad file.\n", bname);
 		}
@@ -234,14 +234,14 @@ void read_user_pad_loc(const char *pad_loc_file) {
 					"Block #%d (%s) location, (%d,%d) is out of range.\n", bnum, bname, i, j);
 		}
 
-		block[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
-		block[bnum].y = j; /* I need to set .x only as a done flag.         */
-		block[bnum].z = k;
-		block[bnum].is_fixed = true;
+		g_blocks[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
+		g_blocks[bnum].y = j; /* I need to set .x only as a done flag.         */
+		g_blocks[bnum].z = k;
+		g_blocks[bnum].is_fixed = true;
 
 		if (g_grid[i][j].type != IO_TYPE) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"Attempt to place IO block %s at illegal location (%d, %d).\n", bname, i, j);
+					"Attempt to place IO g_blocks %s at illegal location (%d, %d).\n", bname, i, j);
 		}
 
 		if (k >= IO_TYPE->capacity || k < 0) {
@@ -254,10 +254,10 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
 	}
 
-	for (iblk = 0; iblk < num_blocks; iblk++) {
-		if (block[iblk].type == IO_TYPE && block[iblk].x == OPEN) {
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
+		if (g_blocks[iblk].type == IO_TYPE && g_blocks[iblk].x == OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"IO block %s location was not specified in the pad file.\n", block[iblk].name);
+					"IO g_blocks %s location was not specified in the pad file.\n", g_blocks[iblk].name);
 		}
 	}
 
@@ -288,12 +288,12 @@ void print_place(const char* net_file,
 	fprintf(fp, "#block name\tx\ty\tsubblk\tblock number\n");
 	fprintf(fp, "#----------\t--\t--\t------\t------------\n");
 
-	for (i = 0; i < num_blocks; i++) {
-		fprintf(fp, "%s\t", block[i].name);
-		if (strlen(block[i].name) < 8)
+	for (i = 0; i < g_num_blocks; i++) {
+		fprintf(fp, "%s\t", g_blocks[i].name);
+		if (strlen(g_blocks[i].name) < 8)
 			fprintf(fp, "\t");
 
-		fprintf(fp, "%d\t%d\t%d", block[i].x, block[i].y, block[i].z);
+		fprintf(fp, "%d\t%d\t%d", g_blocks[i].x, g_blocks[i].y, g_blocks[i].z);
 		fprintf(fp, "\t#%d\n", i);
 	}
 	fclose(fp);

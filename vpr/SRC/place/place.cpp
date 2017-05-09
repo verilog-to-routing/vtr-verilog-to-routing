@@ -125,7 +125,7 @@ static float **temp_point_to_point_timing_cost = NULL;
 static float **point_to_point_delay_cost = NULL;
 static float **temp_point_to_point_delay_cost = NULL;
 
-/* [0..num_blocks-1][0..pins_per_clb-1]. Indicates which pin on the net */
+/* [0..g_num_blocks-1][0..pins_per_clb-1]. Indicates which pin on the net */
 /* this block corresponds to, this is only required during timing-driven */
 /* placement. It is used to allow us to update individual connections on */
 /* each net */
@@ -488,7 +488,7 @@ void try_place(struct s_placer_opts placer_opts,
     }
     vtr::printf_info("\n");
 
-	move_lim = (int) (annealing_sched.inner_num * pow(num_blocks, 1.3333));
+	move_lim = (int) (annealing_sched.inner_num * pow(g_num_blocks, 1.3333));
 
 	if (placer_opts.inner_loop_recompute_divider != 0) {
 		inner_recompute_limit = (int) 
@@ -1101,7 +1101,7 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 	if (annealing_sched.type == USER_SCHED)
 		return (annealing_sched.init_t);
 
-	move_lim = min(max_moves, num_blocks);
+	move_lim = min(max_moves, g_num_blocks);
 
 	num_accepted = 0;
 	av = 0.;
@@ -1157,9 +1157,9 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 	int x_from, y_from, z_from, b_to;
 	int abort_swap = false;
 
-	x_from = block[b_from].x;
-	y_from = block[b_from].y;
-	z_from = block[b_from].z;
+	x_from = g_blocks[b_from].x;
+	y_from = g_blocks[b_from].y;
+	z_from = g_blocks[b_from].z;
 
 	b_to = g_grid[x_to][y_to].blocks[z_to];
 
@@ -1167,9 +1167,9 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 	if (b_to == EMPTY_BLOCK) {
 
 		// Swap the block, dont swap the nets yet
-		block[b_from].x = x_to;
-		block[b_from].y = y_to;
-		block[b_from].z = z_to;
+		g_blocks[b_from].x = x_to;
+		g_blocks[b_from].y = y_to;
+		g_blocks[b_from].z = z_to;
 
 		// Sets up the blocks moved
 		imoved_blk = blocks_affected.num_moved_blocks;
@@ -1194,13 +1194,13 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 		}
 
 		// Swap the block, dont swap the nets yet
-		block[b_to].x = x_from;
-		block[b_to].y = y_from;
-		block[b_to].z = z_from;
+		g_blocks[b_to].x = x_from;
+		g_blocks[b_to].y = y_from;
+		g_blocks[b_to].z = z_from;
 
-		block[b_from].x = x_to;
-		block[b_from].y = y_to;
-		block[b_from].z = z_to;
+		g_blocks[b_from].x = x_to;
+		g_blocks[b_from].y = y_to;
+		g_blocks[b_from].z = z_to;
 		
 		// Sets up the blocks moved
 		imoved_blk = blocks_affected.num_moved_blocks;
@@ -1243,9 +1243,9 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 	int curr_b_from, curr_x_from, curr_y_from, curr_z_from, curr_x_to, curr_y_to, curr_z_to;
 	int abort_swap = false;
 	
-	x_from = block[b_from].x;
-	y_from = block[b_from].y;
-	z_from = block[b_from].z;
+	x_from = g_blocks[b_from].x;
+	y_from = g_blocks[b_from].y;
+	z_from = g_blocks[b_from].z;
 
 	get_imacro_from_iblk(&imacro, b_from, pl_macros, num_pl_macros);
 	if ( imacro != -1) {
@@ -1262,9 +1262,9 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 			// cannot use the old from and to info
 			curr_b_from = pl_macros[imacro].members[imember].blk_index;
 			
-			curr_x_from = block[curr_b_from].x;
-			curr_y_from = block[curr_b_from].y;
-			curr_z_from = block[curr_b_from].z;
+			curr_x_from = g_blocks[curr_b_from].x;
+			curr_y_from = g_blocks[curr_b_from].y;
+			curr_z_from = g_blocks[curr_b_from].z;
 
 			curr_x_to = curr_x_from + x_swap_offset;
 			curr_y_to = curr_y_from + y_swap_offset;
@@ -1309,7 +1309,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 
 	num_ts_called ++;
 
-    if(num_blocks == 0) {
+    if(g_num_blocks == 0) {
         //Empty netlist, no valid swap possible
         return ABORTED;
     }
@@ -1322,8 +1322,8 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	timing_delta_c = 0;
 	delay_delta_c = 0.0;
 	
-	/* Pick a random block to be swapped with another random block    */
-	b_from = vtr::irand(num_blocks - 1);
+	/* Pick a random block to be swapped with another random g_blocks    */
+	b_from = vtr::irand(g_num_blocks - 1);
 
 	/* If the pins are fixed we never move them from their initial    *
 	 * random locations.  The code below could be made more efficient *
@@ -1331,27 +1331,27 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	 * but this shouldn't cause any significant slowdown and won't be *
 	 * broken if I ever change the parser so that the pins aren't     *
 	 * necessarily at the start of the block list.                    */
-	while (block[b_from].is_fixed == true) {
-		b_from = vtr::irand(num_blocks - 1);
+	while (g_blocks[b_from].is_fixed == true) {
+		b_from = vtr::irand(g_num_blocks - 1);
 	}
 
-	x_from = block[b_from].x;
-	y_from = block[b_from].y;
-	z_from = block[b_from].z;
+	x_from = g_blocks[b_from].x;
+	y_from = g_blocks[b_from].y;
+	z_from = g_blocks[b_from].z;
 
-	if (!find_to(block[b_from].type, rlim, x_from, y_from, &x_to, &y_to, &z_to))
+	if (!find_to(g_blocks[b_from].type, rlim, x_from, y_from, &x_to, &y_to, &z_to))
 		return REJECTED;
 
 #if 0
 	int b_to = g_grid[x_to][y_to].blocks[z_to];
 	vtr::printf_info( "swap [%d][%d][%d] %s \"%s\" <=> [%d][%d][%d] %s \"%s\"\n",
-		x_from, y_from, z_from, g_grid[x_from][y_from].type->name, b_from != -1 ? block[b_from].name : "",
-		x_to, y_to, z_to, g_grid[x_to][y_to].type->name, b_to != -1 ? block[b_to].name : "");
+		x_from, y_from, z_from, g_grid[x_from][y_from].type->name, b_from != -1 ? g_blocks[b_from].name : "",
+		x_to, y_to, z_to, g_grid[x_to][y_to].type->name, b_to != -1 ? g_blocks[b_to].name : "");
 #endif
 
 	/* Make the switch in order to make computing the new bounding *
 	 * box simpler.  If the cost increase is too high, switch them *
-	 * back.  (block data structures switched, clbs not switched   *
+	 * back.  (g_blocks data structures switched, clbs not switched   *
 	 * until success of move is determined.)                       *
 	 * Also check that whether those are the only 2 blocks         *
 	 * to be moved - check for carry chains and other placement    *
@@ -1378,9 +1378,9 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 			bnum = blocks_affected.moved_blocks[iblk].block_num;
 
 			/* Go through all the pins in the moved block */
-			for (iblk_pin = 0; iblk_pin < block[bnum].type->num_pins; iblk_pin++)
+			for (iblk_pin = 0; iblk_pin < g_blocks[bnum].type->num_pins; iblk_pin++)
 			{
-				inet = block[bnum].nets[iblk_pin];
+				inet = g_blocks[bnum].nets[iblk_pin];
 				if (inet == OPEN)
 					continue;
 				if (g_clbs_nlist.net[inet].is_global)
@@ -1393,10 +1393,10 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				} else {
 					update_bb(inet, &ts_bb_coord_new[inet],
 							&ts_bb_edge_new[inet], 
-							blocks_affected.moved_blocks[iblk].xold + block[bnum].type->pin_width[iblk_pin],
-							blocks_affected.moved_blocks[iblk].yold + block[bnum].type->pin_height[iblk_pin],
-							blocks_affected.moved_blocks[iblk].xnew + block[bnum].type->pin_width[iblk_pin],
-							blocks_affected.moved_blocks[iblk].ynew + block[bnum].type->pin_height[iblk_pin]);
+							blocks_affected.moved_blocks[iblk].xold + g_blocks[bnum].type->pin_width[iblk_pin],
+							blocks_affected.moved_blocks[iblk].yold + g_blocks[bnum].type->pin_height[iblk_pin],
+							blocks_affected.moved_blocks[iblk].xnew + g_blocks[bnum].type->pin_width[iblk_pin],
+							blocks_affected.moved_blocks[iblk].ynew + g_blocks[bnum].type->pin_height[iblk_pin]);
 				}
 			}
 		}
@@ -1489,13 +1489,13 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				bb_updated_before[inet] = NOT_UPDATED_YET;
 			}
 
-			/* Restore the block data structures to their state before the move. */
+			/* Restore the g_blocks data structures to their state before the move. */
 			for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 				b_from = blocks_affected.moved_blocks[iblk].block_num;
 
-				block[b_from].x = blocks_affected.moved_blocks[iblk].xold;
-				block[b_from].y = blocks_affected.moved_blocks[iblk].yold;
-				block[b_from].z = blocks_affected.moved_blocks[iblk].zold;
+				g_blocks[b_from].x = blocks_affected.moved_blocks[iblk].xold;
+				g_blocks[b_from].y = blocks_affected.moved_blocks[iblk].yold;
+				g_blocks[b_from].z = blocks_affected.moved_blocks[iblk].zold;
 			}
 		}
 
@@ -1507,13 +1507,13 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 		return (keep_switch);
 	} else {
 
-		/* Restore the block data structures to their state before the move. */
+		/* Restore the g_blocks data structures to their state before the move. */
 		for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 			b_from = blocks_affected.moved_blocks[iblk].block_num;
 
-			block[b_from].x = blocks_affected.moved_blocks[iblk].xold;
-			block[b_from].y = blocks_affected.moved_blocks[iblk].yold;
-			block[b_from].z = blocks_affected.moved_blocks[iblk].zold;
+			g_blocks[b_from].x = blocks_affected.moved_blocks[iblk].xold;
+			g_blocks[b_from].y = blocks_affected.moved_blocks[iblk].yold;
+			g_blocks[b_from].z = blocks_affected.moved_blocks[iblk].zold;
 		}
 
 		/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
@@ -1537,12 +1537,12 @@ static int find_affected_nets(int *nets_to_update) {
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
 
 		/* Go through all the pins in the moved block */
-		for (iblk_pin = 0; iblk_pin < block[bnum].type->num_pins; iblk_pin++)
+		for (iblk_pin = 0; iblk_pin < g_blocks[bnum].type->num_pins; iblk_pin++)
 		{
 			/* Updates the pins_to_nets array, set to -1 if   *
 			 * that pin is not connected to any net or it is a  *
 			 * global pin that does not need to be updated      */
-			inet = block[bnum].nets[iblk_pin];
+			inet = g_blocks[bnum].nets[iblk_pin];
 			if (inet == OPEN)
 				continue;
 			if (g_clbs_nlist.net[inet].is_global)
@@ -1621,7 +1621,7 @@ static bool find_to(t_type_ptr type, float rlim,
 				*pz_to = vtr::irand(g_grid[*px_to][*py_to].type->capacity - 1);
 			}
 			int b_to = g_grid[*px_to][*py_to].blocks[*pz_to];
-			if ((b_to != EMPTY_BLOCK) && (block[b_to].is_fixed == true)) {
+			if ((b_to != EMPTY_BLOCK) && (g_blocks[b_to].is_fixed == true)) {
 				is_legal = false;
 			}
 		}
@@ -1736,16 +1736,16 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 
 
         source_block = g_clbs_nlist.net[inet].pins[0].block;
-        source_type = block[source_block].type;
+        source_type = g_blocks[source_block].type;
 
         sink_block = g_clbs_nlist.net[inet].pins[ipin].block;
-        sink_type = block[sink_block].type;
+        sink_type = g_blocks[sink_block].type;
 
         VTR_ASSERT(source_type != NULL);
         VTR_ASSERT(sink_type != NULL);
 
-        delta_x = abs(block[sink_block].x - block[source_block].x);
-        delta_y = abs(block[sink_block].y - block[source_block].y);
+        delta_x = abs(g_blocks[sink_block].x - g_blocks[source_block].x);
+        delta_y = abs(g_blocks[sink_block].y - g_blocks[source_block].y);
 
         /* TODO low priority: Could be merged into one look-up table */
         /* Note: This heuristic is terrible on Quality of Results.  
@@ -1794,9 +1794,9 @@ static void update_td_cost(void) {
 	/* Go through all the blocks moved. */
 	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
-		for (iblk_pin = 0; iblk_pin < block[bnum].type->num_pins; iblk_pin++) {
+		for (iblk_pin = 0; iblk_pin < g_blocks[bnum].type->num_pins; iblk_pin++) {
 
-			inet = block[bnum].nets[iblk_pin];
+			inet = g_blocks[bnum].nets[iblk_pin];
 
 			if (inet == OPEN)
 				continue;
@@ -1854,8 +1854,8 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 	{
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
 		/* Go through all the pins in the moved block */
-		for (iblk_pin = 0; iblk_pin < block[bnum].type->num_pins; iblk_pin++) {
-			inet = block[bnum].nets[iblk_pin];
+		for (iblk_pin = 0; iblk_pin < g_blocks[bnum].type->num_pins; iblk_pin++) {
+			inet = g_blocks[bnum].nets[iblk_pin];
 
 			if (inet == OPEN)
 				continue;
@@ -1873,8 +1873,10 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 				 * delta_timing_cost value.                                            */
 				driven_by_moved_block = false;
 				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++)
-				{	if (g_clbs_nlist.net[inet].pins[0].block == blocks_affected.moved_blocks[iblk2].block_num)
+				{	
+                    if (g_clbs_nlist.net[inet].pins[0].block == blocks_affected.moved_blocks[iblk2].block_num) {
 						driven_by_moved_block = true;
+                    }
 				}
 				
 				if (driven_by_moved_block == false) {
@@ -2025,7 +2027,7 @@ static void free_placement_structs(
 		free(point_to_point_timing_cost);
 		free(temp_point_to_point_timing_cost);
 
-        vtr::free_matrix(net_pin_index, 0, num_blocks - 1, 0);
+        vtr::free_matrix(net_pin_index, 0, g_num_blocks - 1, 0);
 	}
 
 	free(net_cost);
@@ -2137,9 +2139,8 @@ static void alloc_and_load_try_swap_structs() {
 			g_clbs_nlist.net.size(), sizeof(struct s_bb));
 	ts_nets_to_update = (int *) vtr::calloc(g_clbs_nlist.net.size(), sizeof(int));
 		
-	/* Allocate with size num_blocks for any number of moved block. */
-	blocks_affected.moved_blocks = (t_pl_moved_block*)vtr::calloc(
-			num_blocks, sizeof(t_pl_moved_block) );
+	/* Allocate with size g_num_blocks for any number of moved blocks. */
+	blocks_affected.moved_blocks = (t_pl_moved_block*) vtr::calloc(g_num_blocks, sizeof(t_pl_moved_block));
 	blocks_affected.num_moved_blocks = 0;
 	
 }
@@ -2161,8 +2162,8 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	bnum = g_clbs_nlist.net[inet].pins[0].block;
 	pnum = g_clbs_nlist.net[inet].pins[0].block_pin;
 
-	x = block[bnum].x + block[bnum].type->pin_width[pnum];
-	y = block[bnum].y + block[bnum].type->pin_height[pnum];
+	x = g_blocks[bnum].x + g_blocks[bnum].type->pin_width[pnum];
+	y = g_blocks[bnum].y + g_blocks[bnum].type->pin_height[pnum];
 
 	x = max(min(x, g_nx), 1);
 	y = max(min(y, g_ny), 1);
@@ -2179,8 +2180,8 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	for (ipin = 1; ipin < n_pins; ipin++) {
 		bnum = g_clbs_nlist.net[inet].pins[ipin].block;
 		pnum = g_clbs_nlist.net[inet].pins[ipin].block_pin;
-		x = block[bnum].x + block[bnum].type->pin_width[pnum];
-		y = block[bnum].y + block[bnum].type->pin_height[pnum];
+		x = g_blocks[bnum].x + g_blocks[bnum].type->pin_width[pnum];
+		y = g_blocks[bnum].y + g_blocks[bnum].type->pin_height[pnum];
 
 		/* Code below counts IO blocks as being within the 1..g_nx, 1..g_ny clb array. *
 		 * This is because channels do not go out of the 0..g_nx, 0..g_ny range, and   *
@@ -2316,8 +2317,8 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 
 	bnum = g_clbs_nlist.net[inet].pins[0].block;
 	pnum = g_clbs_nlist.net[inet].pins[0].block_pin;
-	x = block[bnum].x + block[bnum].type->pin_width[pnum];
-	y = block[bnum].y + block[bnum].type->pin_height[pnum];
+	x = g_blocks[bnum].x + g_blocks[bnum].type->pin_width[pnum];
+	y = g_blocks[bnum].y + g_blocks[bnum].type->pin_height[pnum];
 	
 	xmin = x;
 	ymin = y;
@@ -2327,8 +2328,8 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 	for (k = 1; k < g_clbs_nlist.net[inet].pins.size(); k++) {
 		bnum = g_clbs_nlist.net[inet].pins[k].block;
 		pnum = g_clbs_nlist.net[inet].pins[k].block_pin;
-		x = block[bnum].x + block[bnum].type->pin_width[pnum];
-		y = block[bnum].y + block[bnum].type->pin_height[pnum];
+		x = g_blocks[bnum].x + g_blocks[bnum].type->pin_width[pnum];
+		y = g_blocks[bnum].y + g_blocks[bnum].type->pin_height[pnum];
 
 		if (x < xmin) {
 			xmin = x;
@@ -2696,9 +2697,9 @@ static int try_place_macro(int itype, int ipos, int imacro){
 			member_y = y + pl_macros[imacro].members[imember].y_offset;
 			member_z = z + pl_macros[imacro].members[imember].z_offset;
 					
-			block[pl_macros[imacro].members[imember].blk_index].x = member_x;
-			block[pl_macros[imacro].members[imember].blk_index].y = member_y;
-			block[pl_macros[imacro].members[imember].blk_index].z = member_z;
+			g_blocks[pl_macros[imacro].members[imember].blk_index].x = member_x;
+			g_blocks[pl_macros[imacro].members[imember].blk_index].y = member_y;
+			g_blocks[pl_macros[imacro].members[imember].blk_index].z = member_z;
 
 			g_grid[member_x][member_y].blocks[member_z] = pl_macros[imacro].members[imember].blk_index;
 			g_grid[member_x][member_y].usage++;
@@ -2729,13 +2730,13 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 		
 		// Assume that all the blocks in the macro are of the same type
 		iblk = pl_macros[imacro].members[0].blk_index;
-		itype = block[iblk].type->index;
+		itype = g_blocks[iblk].type->index;
 		if (free_locations[itype] < pl_macros[imacro].num_blocks) {
 			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 					"Initial placement failed.\n"
 					"Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n"
 					"VPR cannot auto-size for your circuit, please resize the FPGA manually.\n", 
-					pl_macros[imacro].num_blocks, block[iblk].name, iblk, g_block_types[itype].name, itype);
+					pl_macros[imacro].num_blocks, g_blocks[iblk].name, iblk, g_block_types[itype].name, itype);
 		}
 
 		// Try to place the macro first, if can be placed - place them, otherwise try again
@@ -2772,7 +2773,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 						"Initial placement failed.\n"
 						"Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n"
 						"Please manually size the FPGA because VPR can't do this yet.\n", 
-						pl_macros[imacro].num_blocks, block[iblk].name, iblk, g_block_types[itype].name, itype);
+						pl_macros[imacro].num_blocks, g_blocks[iblk].name, iblk, g_block_types[itype].name, itype);
 			}
 
 		} else {
@@ -2791,15 +2792,15 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 	int iblk, itype;
 	int ipos, x, y, z;
 
-	for (iblk = 0; iblk < num_blocks; iblk++) {
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
 
-		if (block[iblk].x != EMPTY_BLOCK) {
+		if (g_blocks[iblk].x != EMPTY_BLOCK) {
 			// block placed.
 			continue;
 		}
 
 		/* Don't do IOs if the user specifies IOs; we'll read those locations later. */
-		if (!(block[iblk].type == IO_TYPE && pad_loc_type == USER)) {
+		if (!(g_blocks[iblk].type == IO_TYPE && pad_loc_type == USER)) {
 
 		    /* Randomly select a free location of the appropriate type
 			 * for iblk.  We have a linearized list of all the free locations
@@ -2807,12 +2808,12 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			 * Choose one randomly and put iblk there.  Then we don't want to pick that
 			 * location again, so remove it from the free_locations array.
 			 */
-			itype = block[iblk].type->index;
+			itype = g_blocks[iblk].type->index;
 			if (free_locations[itype] <= 0) {
 				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, 
 						"Initial placement failed.\n"
 						"Could not place block %s (#%d); no free locations of type %s (#%d).\n", 
-						block[iblk].name, iblk, g_block_types[itype].name, itype);
+						g_blocks[iblk].name, iblk, g_block_types[itype].name, itype);
 			}
 
 			initial_placement_location(free_locations, iblk, &ipos, &x, &y, &z);
@@ -2823,13 +2824,13 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			g_grid[x][y].blocks[z] = iblk;
 			g_grid[x][y].usage++;
 
-			block[iblk].x = x;
-			block[iblk].y = y;
-			block[iblk].z = z;
+			g_blocks[iblk].x = x;
+			g_blocks[iblk].y = y;
+			g_blocks[iblk].z = z;
 
             //Mark IOs as fixed if specifying a (fixed) random placement
-            if(block[iblk].type == IO_TYPE && pad_loc_type == RANDOM) {
-                block[iblk].is_fixed = true;
+            if(g_blocks[iblk].type == IO_TYPE && pad_loc_type == RANDOM) {
+                g_blocks[iblk].is_fixed = true;
  			}
 
 			/* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the 
@@ -2837,7 +2838,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 				* just move the last entry in legal_pos to the spot we just used and decrement the 
 				* count of free_locations.
 				*/
-			legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
+			legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used g_blocks position */
 			free_locations[itype]--;
 			
 		}
@@ -2847,7 +2848,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 static void initial_placement_location(int * free_locations, int iblk,
 		int *pipos, int *px_to, int *py_to, int *pz_to) {
 
-	int itype = block[iblk].type->index;
+	int itype = g_blocks[iblk].type->index;
 
 	*pipos = vtr::irand(free_locations[itype] - 1);
 	*px_to = legal_pos[itype][*pipos].x;
@@ -2891,10 +2892,10 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	}
 
 	/* Similarly, mark all blocks as not being placed yet. */
-	for (iblk = 0; iblk < num_blocks; iblk++) {
-		block[iblk].x = -1;
-		block[iblk].y = -1;
-		block[iblk].z = -1;
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
+		g_blocks[iblk].x = -1;
+		g_blocks[iblk].y = -1;
+		g_blocks[iblk].z = -1;
 	}
 
 	initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
@@ -3079,11 +3080,11 @@ static void check_place(float bb_cost, float timing_cost,
 		}
 	}
 
-	bdone = (int *) vtr::malloc(num_blocks * sizeof(int));
-	for (i = 0; i < num_blocks; i++)
+	bdone = (int *) vtr::malloc(g_num_blocks * sizeof(int));
+	for (i = 0; i < g_num_blocks; i++)
 		bdone[i] = 0;
 
-	/* Step through g_grid array. Check it against block array. */
+	/* Step through g_grid array. Check it against g_blocks array. */
 	for (i = 0; i <= (g_nx + 1); i++)
 		for (j = 0; j <= (g_ny + 1); j++) {
 			if (g_grid[i][j].usage > g_grid[i][j].type->capacity) {
@@ -3098,13 +3099,13 @@ static void check_place(float bb_cost, float timing_cost,
 				if (EMPTY_BLOCK == bnum || INVALID_BLOCK == bnum)
 					continue;
 
-				if (block[bnum].type != g_grid[i][j].type) {
+				if (g_blocks[bnum].type != g_grid[i][j].type) {
 					vtr::printf_error(__FILE__, __LINE__,
 							"Block %d type does not match grid location (%d,%d) type.\n",
 							bnum, i, j);
 					error++;
 				}
-				if ((block[bnum].x != i) || (block[bnum].y != j)) {
+				if ((g_blocks[bnum].x != i) || (g_blocks[bnum].y != j)) {
 					vtr::printf_error(__FILE__, __LINE__,
 							"Block %d location conflicts with grid(%d,%d) data.\n", 
 							bnum, i, j);
@@ -3121,8 +3122,8 @@ static void check_place(float bb_cost, float timing_cost,
 			}
 		}
 
-	/* Check that every block exists in the g_grid and block arrays somewhere. */
-	for (i = 0; i < num_blocks; i++)
+	/* Check that every block exists in the g_grid and g_blocks arrays somewhere. */
+	for (i = 0; i < g_num_blocks; i++)
 		if (bdone[i] != 1) {
 			vtr::printf_error(__FILE__, __LINE__,
 					"Block %d listed %d times in data structures.\n",
@@ -3141,14 +3142,14 @@ static void check_place(float bb_cost, float timing_cost,
 			member_iblk = pl_macros[imacro].members[imember].blk_index;
 
 			// Compute the suppossed member's x,y,z location
-			member_x = block[head_iblk].x + pl_macros[imacro].members[imember].x_offset;
-			member_y = block[head_iblk].y + pl_macros[imacro].members[imember].y_offset;
-			member_z = block[head_iblk].z + pl_macros[imacro].members[imember].z_offset;
+			member_x = g_blocks[head_iblk].x + pl_macros[imacro].members[imember].x_offset;
+			member_y = g_blocks[head_iblk].y + pl_macros[imacro].members[imember].y_offset;
+			member_z = g_blocks[head_iblk].z + pl_macros[imacro].members[imember].z_offset;
 
-			// Check the block data structure first
-			if (block[member_iblk].x != member_x 
-					|| block[member_iblk].y != member_y 
-					|| block[member_iblk].z != member_z) {
+			// Check the g_blocks data structure first
+			if (g_blocks[member_iblk].x != member_x 
+					|| g_blocks[member_iblk].y != member_y 
+					|| g_blocks[member_iblk].z != member_z) {
 				vtr::printf_error(__FILE__, __LINE__,
 						"Block %d in pl_macro #%d is not placed in the proper orientation.\n", 
 						member_iblk, imacro);
@@ -3194,8 +3195,8 @@ static void print_clb_placement(const char *fname) {
 	fprintf(fp, "Complex block placements:\n\n");
 
 	fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
-	for(i = 0; i < num_blocks; i++) {
-		fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, block[i].name, block[i].x, block[i].y, block[i].z);
+	for(i = 0; i < g_num_blocks; i++) {
+		fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, g_blocks[i].name, g_blocks[i].x, g_blocks[i].y, g_blocks[i].z);
 	}
 	
 	fclose(fp);	

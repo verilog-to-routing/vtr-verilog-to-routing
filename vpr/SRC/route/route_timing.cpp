@@ -642,8 +642,8 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
         int sink_block = g_clbs_nlist.net[inet].pins[target_pin].block;
         int sink_block_pin = g_clbs_nlist.net[inet].pins[target_pin].block_pin;
 
-        std::string src_block_name = block[src_block].name;
-        std::string sink_block_name = block[sink_block].name;
+        std::string src_block_name = g_blocks[src_block].name;
+        std::string sink_block_name = g_blocks[sink_block].name;
 
         vtr::printf_info("Cannot route net '%s' from: block '%s' pin %d, to: block '%s' pin %d, target rr node: %d %s at (%d,%d) -- no possible path.\n",
                    g_clbs_nlist.net[inet].name, src_block_name.c_str(), src_block_pin, sink_block_name.c_str(), sink_block_pin, target_node, g_rr_nodes[target_node].type_string(), g_rr_nodes[target_node].xlow(), g_rr_nodes[target_node].ylow());
@@ -698,8 +698,8 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
             int sink_block = g_clbs_nlist.net[inet].pins[target_pin].block;
             int sink_block_pin = g_clbs_nlist.net[inet].pins[target_pin].block_pin;
 
-            std::string src_block_name = block[src_block].name;
-            std::string sink_block_name = block[sink_block].name;
+            std::string src_block_name = g_blocks[src_block].name;
+            std::string sink_block_name = g_blocks[sink_block].name;
 
             vtr::printf_info("Cannot route net '%s' from: block '%s' pin %d, to: block '%s' pin %d, target rr node: %d %s at (%d,%d) -- no possible path.\n",
                        g_clbs_nlist.net[inet].name, src_block_name.c_str(), src_block_pin, sink_block_name.c_str(), sink_block_pin, target_node, g_rr_nodes[target_node].type_string(), g_rr_nodes[target_node].xlow(), g_rr_nodes[target_node].ylow());

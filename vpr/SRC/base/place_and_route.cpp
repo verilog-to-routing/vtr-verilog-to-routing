@@ -71,7 +71,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 	bool success = false;
 	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
-	vtr::t_ivec **clb_opins_used_locally = NULL; /* [0..num_blocks-1][0..num_class-1] */
+	vtr::t_ivec **clb_opins_used_locally = NULL; /* [0..g_num_blocks-1][0..num_class-1] */
 	clock_t begin, end;
 
 	int max_pins_per_clb = 0;
@@ -83,8 +83,8 @@ bool place_and_route(struct s_placer_opts placer_opts,
 
 	if (!placer_opts.doPlacement || placer_opts.place_freq == PLACE_NEVER) {
 		/* Read the placement from a file */
-		read_place(filename_opts.NetFile, filename_opts.PlaceFile, g_nx, g_ny, num_blocks, block);
-		sync_grid_to_blocks(num_blocks, g_nx, g_ny, g_grid);
+		read_place(filename_opts.NetFile, filename_opts.PlaceFile, g_nx, g_ny, g_num_blocks, g_blocks);
+		sync_grid_to_blocks(g_num_blocks, g_nx, g_ny, g_grid);
 	} else {
 		VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
 		begin = clock();
@@ -101,7 +101,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 
 	}
 	begin = clock();
-	post_place_sync(num_blocks);
+	post_place_sync(g_num_blocks);
 
 	fflush(stdout);
 
@@ -211,9 +211,9 @@ bool place_and_route(struct s_placer_opts placer_opts,
 	}
 
 	if (clb_opins_used_locally != NULL) {
-		for (int i = 0; i < num_blocks; ++i) {
+		for (int i = 0; i < g_num_blocks; ++i) {
 			free_ivec_vector(clb_opins_used_locally[i], 0,
-					block[i].type->num_class - 1);
+					g_blocks[i].type->num_class - 1);
 		}
 		free(clb_opins_used_locally);
 		clb_opins_used_locally = NULL;
@@ -263,7 +263,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	vtr::t_ivec **clb_opins_used_locally, **saved_clb_opins_used_locally;
 
-	/* [0..num_blocks-1][0..num_class-1] */
+	/* [0..g_num_blocks-1][0..num_class-1] */
 	int attempt_count;
 	int udsd_multiplier;
 	int warnings;
@@ -568,9 +568,9 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	sprintf(msg, "Routing succeeded with a channel width factor of %d.", final);
 	update_screen(ScreenUpdatePriority::MAJOR, msg, ROUTING, timing_info);
 
-	for (i = 0; i < num_blocks; i++) {
+	for (i = 0; i < g_num_blocks; i++) {
 		free_ivec_vector(clb_opins_used_locally[i], 0,
-				block[i].type->num_class - 1);
+				g_blocks[i].type->num_class - 1);
 	}
 	free(clb_opins_used_locally);
 	clb_opins_used_locally = NULL;

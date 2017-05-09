@@ -188,8 +188,8 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
 
             AtomNetId atom_net = netlist_.pin_net(atom_sink_pin);
-            VTR_ASSERT(block[clb_src_block].pb_route[src_pb_route_id].atom_net_id == atom_net);
-            VTR_ASSERT(block[clb_sink_block].pb_route[sink_pb_route_id].atom_net_id == atom_net);
+            VTR_ASSERT(g_blocks[clb_src_block].pb_route[src_pb_route_id].atom_net_id == atom_net);
+            VTR_ASSERT(g_blocks[clb_sink_block].pb_route[sink_pb_route_id].atom_net_id == atom_net);
 
             //NOTE: even if both the source and sink atoms are contained in the same top-level
             //      CLB, the connection between them may not have been absorbed, and may go 

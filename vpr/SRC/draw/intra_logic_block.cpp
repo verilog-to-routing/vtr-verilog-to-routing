@@ -153,10 +153,10 @@ void draw_internal_draw_subblk() {
 				/* Get block ID */
 				int bnum = g_grid[i][j].blocks[k];
 				/* Safety check, that physical blocks exists in the CLB */
-				if (block[bnum].pb == NULL)
+				if (g_blocks[bnum].pb == NULL)
 					continue;
 
-				draw_internal_pb(&block[bnum], block[bnum].pb, t_bound_box(0,0,0,0));
+				draw_internal_pb(&g_blocks[bnum], g_blocks[bnum].pb, t_bound_box(0,0,0,0));
 			}
 		}
 	}
@@ -462,7 +462,7 @@ void draw_logical_connections() {
         AtomPinId driver_pin_id = g_atom_nl.net_driver(net_id);
         AtomBlockId src_blk_id = g_atom_nl.pin_block(driver_pin_id);
 		const t_pb_graph_node* src_pb_gnode = g_atom_lookup.atom_pb_graph_node(src_blk_id);
-		t_block* src_clb = &block[g_atom_lookup.atom_clb(src_blk_id)];
+		t_block* src_clb = &g_blocks[g_atom_lookup.atom_clb(src_blk_id)];
 		bool src_is_selected = sel_subblk_info.is_in_selected_subtree(src_pb_gnode, src_clb);
 		bool src_is_src_of_selected = sel_subblk_info.is_source_of_selected(src_pb_gnode, src_clb);
 
@@ -471,7 +471,7 @@ void draw_logical_connections() {
 
             AtomBlockId sink_blk_id = g_atom_nl.pin_block(sink_pin_id);
             const t_pb_graph_node* sink_pb_gnode = g_atom_lookup.atom_pb_graph_node(sink_blk_id);
-			t_block* sink_clb = &block[g_atom_lookup.atom_clb(sink_blk_id)];
+			t_block* sink_clb = &g_blocks[g_atom_lookup.atom_clb(sink_blk_id)];
 
 			if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
 				setcolor(DRIVES_IT_COLOR);
@@ -576,7 +576,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
  */
 static bool is_top_lvl_block_highlighted(const t_block& clb) {
 	t_draw_state *draw_state;
-	ptrdiff_t blk_id = &clb - block;
+	ptrdiff_t blk_id = &clb - g_blocks;
 
 	/* Call accessor function to retrieve global variables. */
 	draw_state = get_draw_state_vars();
@@ -713,12 +713,12 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 	sources.clear();
 	in_selected_subtree.clear();
 
-	// vtr::printf_info("selecting in clb #%ld\n", new_containing_block - block);
+	// vtr::printf_info("selecting in clb #%ld\n", new_containing_block - g_blocks);
 	if (has_selection()) {
 		add_all_children(selected_pb, containing_block, in_selected_subtree);
 
 		for (auto blk_id : g_atom_nl.blocks()) {
-            const t_block* clb = &block[g_atom_lookup.atom_clb(blk_id)];
+            const t_block* clb = &g_blocks[g_atom_lookup.atom_clb(blk_id)];
             const t_pb_graph_node* pb_graph_node = g_atom_lookup.atom_pb_graph_node(blk_id);
 			// find the atom block that corrisponds to this pb.
 			if ( is_in_selected_subtree(pb_graph_node, clb) ) {
@@ -730,7 +730,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 
                     AtomBlockId src_blk = g_atom_nl.pin_block(driver_pin_id);
 
-                    const t_block* src_clb = &block[g_atom_lookup.atom_clb(src_blk)];
+                    const t_block* src_clb = &g_blocks[g_atom_lookup.atom_clb(src_blk)];
                     const t_pb_graph_node* src_pb_graph_node = g_atom_lookup.atom_pb_graph_node(src_blk);
 
                     sources.insert(gnode_clb_pair(src_pb_graph_node, src_clb));
@@ -742,7 +742,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
                     for(auto sink_pin_id : g_atom_nl.net_sinks(net_id)) {
                         AtomBlockId sink_blk = g_atom_nl.pin_block(sink_pin_id);
 
-                        const t_block* sink_clb = &block[g_atom_lookup.atom_clb(sink_blk)];
+                        const t_block* sink_clb = &g_blocks[g_atom_lookup.atom_clb(sink_blk)];
                         const t_pb_graph_node* sink_pb_graph_node = g_atom_lookup.atom_pb_graph_node(sink_blk);
 
                         sinks.insert(gnode_clb_pair(sink_pb_graph_node, sink_clb));

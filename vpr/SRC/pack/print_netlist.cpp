@@ -39,10 +39,10 @@ void print_netlist(char *foutput, char *net_file) {
 	}
 
 	/* Count I/O input and output pads */
-	for (i = 0; i < (unsigned int) num_blocks; i++) {
-		if (block[i].type == IO_TYPE) {
+	for (i = 0; i < (unsigned int) g_num_blocks; i++) {
+		if (g_blocks[i].type == IO_TYPE) {
 			for (j = 0; j < (unsigned int) IO_TYPE->num_pins; j++) {
-				if (block[i].nets[j] != OPEN) {
+				if (g_blocks[i].nets[j] != OPEN) {
 					if (IO_TYPE->class_inf[IO_TYPE->pin_class[j]].type
 							== DRIVER) {
 						L_num_p_inputs++;
@@ -60,10 +60,10 @@ void print_netlist(char *foutput, char *net_file) {
 
 	fprintf(fp, "Input netlist file: %s\n", net_file);
 	fprintf(fp, "L_num_p_inputs: %d, L_num_p_outputs: %d, num_clbs: %d\n",
-			L_num_p_inputs, L_num_p_outputs, num_blocks);
-	fprintf(fp, "num_blocks: %d, num_nets: %d, num_globals: %d\n", num_blocks,
+			L_num_p_inputs, L_num_p_outputs, g_num_blocks);
+	fprintf(fp, "num_blocks: %d, num_nets: %d, num_globals: %d\n", g_num_blocks,
 			(int) g_clbs_nlist.net.size(), num_global_nets);
-	fprintf(fp, "\nNet\tName\t\t#Pins\tDriver\t\tRecvs. (block, pin)\n");
+	fprintf(fp, "\nNet\tName\t\t#Pins\tDriver\t\tRecvs. (blocks, pin)\n");
 
 	for (i = 0; i < g_clbs_nlist.net.size(); i++) {
 		fprintf(fp, "\n%d\t%s\t", i, g_clbs_nlist.net[i].name);
@@ -77,16 +77,16 @@ void print_netlist(char *foutput, char *net_file) {
 
 	fprintf(fp, "\nBlock\tName\t\tType\tPin Connections\n\n");
 
-	for (i = 0; i < (unsigned int)num_blocks; i++) {
-		fprintf(fp, "\n%d\t%s\t", i, block[i].name);
-		if (strlen(block[i].name) < 8)
+	for (i = 0; i < (unsigned int)g_num_blocks; i++) {
+		fprintf(fp, "\n%d\t%s\t", i, g_blocks[i].name);
+		if (strlen(g_blocks[i].name) < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
-		fprintf(fp, "%s", block[i].type->name);
+		fprintf(fp, "%s", g_blocks[i].type->name);
 
-		max_pin = block[i].type->num_pins;
+		max_pin = g_blocks[i].type->num_pins;
 
 		for (j = 0; j < (unsigned int) max_pin; j++)
-			print_pinnum(fp, block[i].nets[j]);
+			print_pinnum(fp, g_blocks[i].nets[j]);
 	}
 
 	fprintf(fp, "\n");

@@ -24,15 +24,15 @@ std::shared_ptr<tatum::TimingConstraints> g_timing_constraints;
 timing_analysis_profile_info g_timing_analysis_profile_stats;
 
 /******** Clustered netlist ********/
-int num_blocks = 0;
-struct s_block *block = NULL;
+int g_num_blocks = 0;
+struct s_block *g_blocks = NULL;
 
 t_netlist g_clbs_nlist;
 
-/* This identifies the t_type_ptr of an IO block */
 int g_num_block_types = 0;
 struct s_type_descriptor *g_block_types = NULL;
 
+/* These identifies the t_type_ptr of an special blocks */
 t_type_ptr IO_TYPE = NULL;
 t_type_ptr EMPTY_TYPE = NULL;
 t_type_ptr FILL_TYPE = NULL;
@@ -44,16 +44,9 @@ std::string g_placement_id; //SHA256 digest of .place file
 int g_nx = 0;
 int g_ny = 0;
 
-/* true if this is a global clb pin -- an input pin to which the netlist can *
- * connect global signals, but which does not connect into the normal        *
- * routing via muxes etc.  Marking pins like this (only clocks in my work)   *
- * stops them from screwing up the input switch pattern in the rr_graph      *
- * generator and from creating extra switches that the area model would      *
- * count.                                                                    */
-
 t_chan_width g_chan_width;
 
-struct s_grid_tile **g_grid = NULL; /* [0..(g_nx+1)][0..(g_ny+1)] Physical block list */
+struct s_grid_tile **g_grid = NULL; /* [0..(g_nx+1)][0..(g_ny+1)] Physical block grid */
 
 /******** Structures defining the routing ********/
 
@@ -90,7 +83,7 @@ map<int, int> *g_switch_fanin_remap = NULL; /* an array of map. array index: [0.
 
 /* Stores the SOURCE and SINK nodes of all CLBs (not valid for pads).     */
 
-int **g_rr_blk_source = NULL; /* [0..(num_blocks-1)][0..(num_class-1)] */
+int **g_rr_blk_source = NULL; /* [0..(g_num_blocks-1)][0..(num_class-1)] */
 
 /* primiary inputs removed from circuit */
 vtr::t_linked_vptr *circuit_p_io_removed = NULL;

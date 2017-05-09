@@ -19,7 +19,7 @@
 ***************************************************************************/
 
 
-/* Describes different types of intra-logic block routing resource nodes */
+/* Describes different types of intra-logic g_blocks routing resource nodes */
 enum e_lb_rr_type {
 	LB_SOURCE = 0, LB_SINK, LB_INTERMEDIATE, NUM_LB_RR_TYPES
 };
@@ -30,22 +30,22 @@ extern const char* lb_rr_type_str[];
 * Packing Algorithm Data Structures
 ***************************************************************************/
 
-/* Stores statistical information for a physical block such as costs and usages */
+/* Stores statistical information for a physical g_blocks such as costs and usages */
 typedef struct s_pb_stats {
 	/* Packing statistics */
 	std::map<AtomBlockId, float> gain; /* Attraction (inverse of cost) function */
 
-	std::map<AtomBlockId, float> timinggain; /* The timing criticality score of this atom block. 
+	std::map<AtomBlockId, float> timinggain; /* The timing criticality score of this atom g_blocks. 
 	                                            Determined by the most critical atom net 
-                                                between this atom block and any atom block in 
+                                                between this atom g_blocks and any atom g_blocks in 
                                                 the current pb */
 	std::map<AtomBlockId, float> connectiongain; /* Weighted sum of connections to attraction function */
-	std::map<AtomBlockId, float> sharinggain; /* How many nets on an atom block are already in the pb under consideration */
+	std::map<AtomBlockId, float> sharinggain; /* How many nets on an atom g_blocks are already in the pb under consideration */
 
 	/* This is the gain used for hill-climbing. It stores*
-	 * the reduction in the number of pins that adding this atom block to the the*
+	 * the reduction in the number of pins that adding this atom g_blocks to the the*
 	 * current pb will have. This reflects the fact that sometimes the *
-	 * addition of an atom block to a pb may reduce the number of inputs     *
+	 * addition of an atom g_blocks to a pb may reduce the number of inputs     *
 	 * required if it shares inputs with all other BLEs and it's output is  *
 	 * used by all other child pbs in this parent pb.                               */
 	std::map<AtomBlockId, float> hillgain;
@@ -78,7 +78,7 @@ typedef struct s_pb_stats {
     std::vector<std::vector<AtomNetId>> lookahead_output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
 
 	/* Array of feasible blocks to select from [0..max_array_size-1] 
-	 Sorted in ascending gain order so that the last block is the most desirable (this makes it easy to pop blocks off the list
+	 Sorted in ascending gain order so that the last g_blocks is the most desirable (this makes it easy to pop blocks off the list
 	 */
 	struct s_pack_molecule **feasible_blocks;
 	int num_feasible_blocks; /* [0..num_marked_models-1] */
@@ -96,11 +96,11 @@ struct t_lb_type_rr_node_edge {
 	float intrinsic_cost;
 };
 
-/* Describes a routing resource node within a logic block type */
+/* Describes a routing resource node within a logic g_blocks type */
 struct t_lb_type_rr_node {
 	short capacity;			/* Number of nets that can simultaneously use this node */
 	short *num_fanout;		/* [0..num_modes - 1] Mode dependant fanout */
-	enum e_lb_rr_type type;	/* Type of logic block resource node */	
+	enum e_lb_rr_type type;	/* Type of logic g_blocks resource node */	
 
 	t_lb_type_rr_node_edge **outedges;						/* [0..num_modes - 1][0..num_fanout-1] index and cost of out edges */
 
@@ -123,7 +123,7 @@ struct t_lb_type_rr_node {
 * Intra-Logic Block Routing Data Structures (by instance)
 ***************************************************************************/
 
-/* A routing traceback data structure, provides a logic block instance specific trace lookup directly from the t_lb_type_rr_node array index 
+/* A routing traceback data structure, provides a logic g_blocks instance specific trace lookup directly from the t_lb_type_rr_node array index 
    After packing, routing info for each CLB will have an array of t_lb_traceback to store routing info within the CLB
 */
 struct t_lb_traceback {
@@ -136,7 +136,7 @@ struct t_lb_traceback {
 * Intra-Logic Block Router Data Structures
 ***************************************************************************/
 
-/* Describes the status of a logic block routing resource node for a given logic block instance */
+/* Describes the status of a logic g_blocks routing resource node for a given logic g_blocks instance */
 struct t_lb_rr_node_stats {
 	int occ;								/* Number of nets currently using this lb_rr_node */
 	int mode;								/* Mode that this rr_node is set to */
@@ -151,7 +151,7 @@ struct t_lb_rr_node_stats {
 };
 
 /* 
-  Data structure forming the route tree of a net within one logic block.  
+  Data structure forming the route tree of a net within one logic g_blocks.  
   
   A net is implemented using routing resource nodes.  The t_lb_trace data structure records one of the nodes used by the net and the connections
   to other nodes
@@ -161,7 +161,7 @@ struct t_lb_trace {
     std::vector<t_lb_trace> next_nodes;		/* index of previous edge that drives current node */	
 };
 
-/* Represents a net used inside a logic block and the physical nodes used by the net */
+/* Represents a net used inside a logic g_blocks and the physical nodes used by the net */
 struct t_intra_lb_net {
     AtomNetId atom_net_id;              /* index of atom net this intra_lb_net represents */
     std::vector<int> terminals;			/* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
@@ -175,7 +175,7 @@ struct t_intra_lb_net {
 	}
 };
 
-/* Stores tuning parameters used by intra-logic block router */
+/* Stores tuning parameters used by intra-logic g_blocks router */
 struct t_lb_router_params {
 	int max_iterations;
 	float pres_fac;
@@ -185,8 +185,8 @@ struct t_lb_router_params {
 
 /* Node expanded by router */
 struct t_expansion_node {
-	int node_index;		/* Index of logic block rr node this expansion node represents */
-	int prev_index;		/* Index of logic block rr node that drives this expansion node */
+	int node_index;		/* Index of logic g_blocks rr node this expansion node represents */
+	int prev_index;		/* Index of logic g_blocks rr node that drives this expansion node */
 	float cost;
 
 	t_expansion_node() {
@@ -224,21 +224,21 @@ struct t_explored_node_tb {
 	}
 };
 
-/* Stores all data needed by intra-logic block router */
+/* Stores all data needed by intra-logic g_blocks router */
 struct t_lb_router_data {
 	/* Physical Architecture Info */
-    std::vector<t_lb_type_rr_node> *lb_type_graph;	/* Pointer to physical intra-logic block type rr graph */
+    std::vector<t_lb_type_rr_node> *lb_type_graph;	/* Pointer to physical intra-logic g_blocks type rr graph */
 	
 	/* Logical Netlist Info */
-    std::vector<t_intra_lb_net> *intra_lb_nets;		/* Pointer to vector of intra logic block nets and their connections */
+    std::vector<t_intra_lb_net> *intra_lb_nets;		/* Pointer to vector of intra logic g_blocks nets and their connections */
 	
 	/* Saved nets */
-    std::vector<t_intra_lb_net> *saved_lb_nets;		/* Save vector of intra logic block nets and their connections */
+    std::vector<t_intra_lb_net> *saved_lb_nets;		/* Save vector of intra logic g_blocks nets and their connections */
 	
     std::map<AtomBlockId, bool> *atoms_added;		/* map that records which atoms are added to cluster router */
 
 	/* Logical-to-physical mapping info */
-	t_lb_rr_node_stats *lb_rr_node_stats;		/* [0..lb_type_graph->size()-1] Stats for each logic block rr node instance */
+	t_lb_rr_node_stats *lb_rr_node_stats;		/* [0..lb_type_graph->size()-1] Stats for each logic g_blocks rr node instance */
 	bool is_routed;							/* Stores whether or not the current logical-to-physical mapping has a routed solution */
 	
 	/* Stores state info during Pathfinder iterative routing */

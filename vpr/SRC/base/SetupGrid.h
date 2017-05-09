@@ -5,7 +5,7 @@
  Author: Jason Luu
  Date: October 8, 2008
 
- Initializes and allocates the physical logic block g_grid for VPR.
+ Initializes and allocates the physical logic block grid for VPR.
 
  */
 

@@ -47,10 +47,10 @@ using namespace std;
 /*locations, this value should not change  */
 #define NET_USED 0		/*we use net at location zero of the net    */
 /*structure                                 */
-#define NET_USED_SOURCE_BLOCK 0	/*net.block[0] is source block */
-#define NET_USED_SINK_BLOCK 1	/*net.block[1] is sink block */
-#define SOURCE_BLOCK 0		/*block[0] is source */
-#define SINK_BLOCK 1		/*block[1] is sink */
+#define NET_USED_SOURCE_BLOCK 0	/*net.block[0] is source g_blocks */
+#define NET_USED_SINK_BLOCK 1	/*net.block[1] is sink g_blocks */
+#define SOURCE_BLOCK 0		/*g_blocks[0] is source */
+#define SINK_BLOCK 1		/*g_blocks[1] is sink */
 
 #define BLOCK_COUNT 2		/*use 2 blocks to compute delay between  */
 /*the various FPGA locations             */
@@ -228,10 +228,10 @@ static void free_delay_lookup_netlists() {
 static void free_block() {
 	//Free temporary CLB blocks data structure
 	for (int i = 0; i < BLOCK_COUNT; i++) {
-		free(block[i].name);
-		free(block[i].nets);
+		free(g_blocks[i].name);
+		free(g_blocks[i].nets);
 	}
-	free(block);
+	free(g_blocks);
 }
 
 
@@ -263,7 +263,7 @@ static void alloc_vnet(){
 /**************************************/
 static void alloc_block(void) {
 
-	/*allocates block structure, and assigns values to known parameters */
+	/*allocates g_blocks structure, and assigns values to known parameters */
 	/*type and x,y fields are left undefined at this stage since they  */
 	/*are not known until we start moving blocks through the clb array */
 
@@ -275,18 +275,18 @@ static void alloc_block(void) {
 		max_pins = max(max_pins, g_block_types[i].num_pins);
 	}
 
-	num_blocks = BLOCK_COUNT;
-	block = (struct s_block *) vtr::malloc(num_blocks * sizeof(struct s_block));
+	g_num_blocks = BLOCK_COUNT;
+	g_blocks = (struct s_block *) vtr::malloc(g_num_blocks * sizeof(struct s_block));
 
 	for (ix_b = 0; ix_b < BLOCK_COUNT; ix_b++) {
 		len = strlen("TEMP_BLOCK");
-		block[ix_b].name = (char *) vtr::malloc((len + 1) * sizeof(char));
-		strcpy(block[ix_b].name, "TEMP_BLOCK");
+		g_blocks[ix_b].name = (char *) vtr::malloc((len + 1) * sizeof(char));
+		strcpy(g_blocks[ix_b].name, "TEMP_BLOCK");
 
-		block[ix_b].nets = (int *) vtr::malloc(max_pins * sizeof(int));
-		block[ix_b].nets[0] = 0;
+		g_blocks[ix_b].nets = (int *) vtr::malloc(max_pins * sizeof(int));
+		g_blocks[ix_b].nets[0] = 0;
 		for (ix_p = 1; ix_p < max_pins; ix_p++)
-			block[ix_b].nets[ix_p] = OPEN;
+			g_blocks[ix_b].nets[ix_p] = OPEN;
 	}
 }
 
@@ -384,8 +384,8 @@ static void alloc_and_assign_internal_structures(struct s_block **original_block
     std::swap(g_clbs_nlist, original_clbs_nlist);
 
     //Save the original CLB blocks
-	*original_block = block;
-	*original_num_blocks = num_blocks;
+	*original_block = g_blocks;
+	*original_num_blocks = g_num_blocks;
 
     //Create the new temporary atom and CLB netlists
     alloc_delay_lookup_netlists();
@@ -410,8 +410,8 @@ static void free_and_reset_internal_structures(struct s_block *original_block, i
     std::swap(original_clbs_nlist, g_clbs_nlist);
 
     //Revert to the original blocks
-	block = original_block;
-	num_blocks = original_num_blocks;
+	g_blocks = original_block;
+	g_num_blocks = original_num_blocks;
 
     vtr::free_matrix(net_delay, 0, NET_COUNT - 1, 1);
 }
@@ -510,9 +510,9 @@ static void free_routing_structs() {
 			rt_node_of_sink);
 	
 	if (clb_opins_used_locally != NULL) {
-		for (i = 0; i < num_blocks; i++) {
+		for (i = 0; i < g_num_blocks; i++) {
 			free_ivec_vector(clb_opins_used_locally[i], 0,
-					block[i].type->num_class - 1);
+					g_blocks[i].type->num_class - 1);
 		}
 		free(clb_opins_used_locally);
 		clb_opins_used_locally = NULL;
@@ -524,25 +524,25 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 		int source_y_loc, int source_z_loc, t_type_ptr sink_type,
 		int sink_x_loc, int sink_y_loc, int sink_z_loc) {
 	/*all routing occurs between block 0 (source) and block 1 (sink) */
-	block[SOURCE_BLOCK].type = source_type;
-	block[SOURCE_BLOCK].x = source_x_loc;
-	block[SOURCE_BLOCK].y = source_y_loc;
-	block[SOURCE_BLOCK].z = source_z_loc;
-	block[SOURCE_BLOCK].pb = nullptr;
-	block[SOURCE_BLOCK].pb_route = nullptr;
+	g_blocks[SOURCE_BLOCK].type = source_type;
+	g_blocks[SOURCE_BLOCK].x = source_x_loc;
+	g_blocks[SOURCE_BLOCK].y = source_y_loc;
+	g_blocks[SOURCE_BLOCK].z = source_z_loc;
+	g_blocks[SOURCE_BLOCK].pb = nullptr;
+	g_blocks[SOURCE_BLOCK].pb_route = nullptr;
 
-	block[SINK_BLOCK].type = sink_type;
-	block[SINK_BLOCK].x = sink_x_loc;
-	block[SINK_BLOCK].y = sink_y_loc;
-	block[SINK_BLOCK].z = sink_z_loc;
-	block[SINK_BLOCK].pb = nullptr;
-	block[SINK_BLOCK].pb_route = nullptr;
+	g_blocks[SINK_BLOCK].type = sink_type;
+	g_blocks[SINK_BLOCK].x = sink_x_loc;
+	g_blocks[SINK_BLOCK].y = sink_y_loc;
+	g_blocks[SINK_BLOCK].z = sink_z_loc;
+	g_blocks[SINK_BLOCK].pb = nullptr;
+	g_blocks[SINK_BLOCK].pb_route = nullptr;
 
 	g_grid[source_x_loc][source_y_loc].blocks[source_z_loc] = SOURCE_BLOCK;
 	g_grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = SINK_BLOCK;
 
-	g_clbs_nlist.net[NET_USED].pins[NET_USED_SOURCE_BLOCK].block_pin = get_best_pin(DRIVER, block[SOURCE_BLOCK].type);
-	g_clbs_nlist.net[NET_USED].pins[NET_USED_SINK_BLOCK].block_pin = get_best_pin(RECEIVER, block[SINK_BLOCK].type);
+	g_clbs_nlist.net[NET_USED].pins[NET_USED_SOURCE_BLOCK].block_pin = get_best_pin(DRIVER, g_blocks[SOURCE_BLOCK].type);
+	g_clbs_nlist.net[NET_USED].pins[NET_USED_SINK_BLOCK].block_pin = get_best_pin(RECEIVER, g_blocks[SINK_BLOCK].type);
 
 	g_grid[source_x_loc][source_y_loc].usage += 1;
 	g_grid[sink_x_loc][sink_y_loc].usage += 1;
@@ -1003,7 +1003,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 	/*required because we are using the net structure */
 	/*in these routines to find delays between blocks */
 	t_netlist orig_clbs_nlist;
-	struct s_block *original_block; /*same def as original_nets, but for block  */
+	struct s_block *original_blocks; /*same def as original_nets, but for g_blocks  */
 	int original_num_blocks;
     AtomNetlist orig_atom_nlist;
 
@@ -1011,7 +1011,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 
 	load_simplified_device();
 
-	alloc_and_assign_internal_structures(&original_block, &original_num_blocks, orig_clbs_nlist, orig_atom_nlist);
+	alloc_and_assign_internal_structures(&original_blocks, &original_num_blocks, orig_clbs_nlist, orig_atom_nlist);
 	setup_chan_width(router_opts, chan_width_dist);
 
 	alloc_routing_structs(router_opts, det_routing_arch, segment_inf,
@@ -1028,7 +1028,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 
 	restore_original_device();
 
-	free_and_reset_internal_structures(original_block, original_num_blocks, orig_clbs_nlist, orig_atom_nlist);
+	free_and_reset_internal_structures(original_blocks, original_num_blocks, orig_clbs_nlist, orig_atom_nlist);
 
     clock_t end = clock();
 

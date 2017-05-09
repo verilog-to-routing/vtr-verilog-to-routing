@@ -86,7 +86,7 @@ float pin_dens(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
 	float density = 0.;
 
 	if (pb) {
-		AtomNetId net_id = block[iblk].pb_route[pin->pin_count_in_cluster].atom_net_id;
+		AtomNetId net_id = g_blocks[iblk].pb_route[pin->pin_count_in_cluster].atom_net_id;
 		if (net_id) {
 			density = g_atom_net_power[net_id].density;
 		}
@@ -100,7 +100,7 @@ float pin_prob(t_pb * pb, t_pb_graph_pin * pin, int iblk) {
 	float prob = 1.;
 
 	if (pb) {
-		AtomNetId net_id = block[iblk].pb_route[pin->pin_count_in_cluster].atom_net_id;
+		AtomNetId net_id = g_blocks[iblk].pb_route[pin->pin_count_in_cluster].atom_net_id;
 		if (net_id) {
 			prob = g_atom_net_power[net_id].probability;
 		}

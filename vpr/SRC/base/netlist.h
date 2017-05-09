@@ -4,7 +4,7 @@
  * 
  * This file contains the global netlist data structures and its associated 
  * load/echo functions. t_netlist contains 2 vectors: one contains all the nets 
- * the other the blocks. To-do: implement block data structure. 
+ * the other the blocks. To-do: implement g_blocks data structure. 
  */
 
 

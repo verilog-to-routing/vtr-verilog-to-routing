@@ -623,7 +623,7 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 
 				if (g_grid[x][y].blocks[z] != EMPTY_BLOCK
 						&& g_grid[x][y].blocks[z] != INVALID_BLOCK) {
-					pb = block[g_grid[x][y].blocks[z]].pb;
+					pb = g_blocks[g_grid[x][y].blocks[z]].pb;
 				}
 
 				/* Calculate power of this CLB */

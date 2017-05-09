@@ -166,7 +166,7 @@ static int ** f_direct_type_from_blk_pin = NULL;
 
 /* f_imacro_from_blk_pin maps a blk_num to the corresponding macro index.           *
  * If the block is not part of a macro, the value OPEN (-1) is stored.              *
- * [0...num_blocks-1]                                                               */
+ * [0...g_num_blocks-1]                                                               */
 static int * f_imacro_from_iblk = NULL;
 
 
@@ -198,23 +198,23 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 	int imember;
 
 	num_macro = 0;
-	for (iblk = 0; iblk < num_blocks; iblk++) {
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
 
-		num_blk_pins = block[iblk].type->num_pins;
+		num_blk_pins = g_blocks[iblk].type->num_pins;
 		for (to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
 			
-			to_inet = block[iblk].nets[to_iblk_pin];
-			to_idirect = f_idirect_from_blk_pin[block[iblk].type->index][to_iblk_pin];
-			to_src_or_sink = f_direct_type_from_blk_pin[block[iblk].type->index][to_iblk_pin];
+			to_inet = g_blocks[iblk].nets[to_iblk_pin];
+			to_idirect = f_idirect_from_blk_pin[g_blocks[iblk].type->index][to_iblk_pin];
+			to_src_or_sink = f_direct_type_from_blk_pin[g_blocks[iblk].type->index][to_iblk_pin];
 			
 			// Find to_pins (SINKs) with possible direct connection but are not 
 			// connected to any net (Possible head of macro)
 			if ( to_src_or_sink == SINK && to_idirect != OPEN && to_inet == OPEN ) {
 
 				for (from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
-					from_inet = block[iblk].nets[from_iblk_pin];
-					from_idirect = f_idirect_from_blk_pin[block[iblk].type->index][from_iblk_pin];
-					from_src_or_sink = f_direct_type_from_blk_pin[block[iblk].type->index][from_iblk_pin];
+					from_inet = g_blocks[iblk].nets[from_iblk_pin];
+					from_idirect = f_idirect_from_blk_pin[g_blocks[iblk].type->index][from_iblk_pin];
+					from_src_or_sink = f_direct_type_from_blk_pin[g_blocks[iblk].type->index][from_iblk_pin];
 
 					// Find from_pins with the same possible direct connection that are connected.
 					// Confirmed head of macro
@@ -244,9 +244,9 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 							next_iblk = g_clbs_nlist.net[curr_inet].pins[1].block;
 							
 							// Assume that the from_iblk_pin index is the same for the next block
-							VTR_ASSERT(f_idirect_from_blk_pin[block[next_iblk].type->index][from_iblk_pin] == from_idirect
-									&& f_direct_type_from_blk_pin[block[next_iblk].type->index][from_iblk_pin] == SOURCE);
-							next_inet = block[next_iblk].nets[from_iblk_pin];
+							VTR_ASSERT(f_idirect_from_blk_pin[g_blocks[next_iblk].type->index][from_iblk_pin] == from_idirect
+									&& f_direct_type_from_blk_pin[g_blocks[next_iblk].type->index][from_iblk_pin] == SOURCE);
+							next_inet = g_blocks[next_iblk].nets[from_iblk_pin];
 
 							// Mark down this block as a member of the macro
 							imember = pl_macro_num_members[num_macro];
@@ -293,7 +293,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	 * For pl_macro_member_blk_num, allocate for the first dimension   *
 	 * only at first. Allocate for the second dimemsion when I know    *
 	 * the size. Otherwise, the array is going to be of size           *
-	 * num_blocks^2 (There are big benckmarks VPR that have num_blocks *
+	 * g_num_blocks^2 (There are big benckmarks VPR that have g_num_blocks *
 	 * in the 100k's range).                                           *
 	 *                                                                 *
 	 * The placement macro array is freed by the caller(s).            */
@@ -310,10 +310,10 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 			&f_idirect_from_blk_pin, &f_direct_type_from_blk_pin);
 
 	/* Allocate maximum memory for temporary variables. */
-	pl_macro_num_members = (int *) vtr::calloc (num_blocks , sizeof(int));
-	pl_macro_idirect = (int *) vtr::calloc (num_blocks , sizeof(int));
-	pl_macro_member_blk_num = (int **) vtr::calloc (num_blocks , sizeof(int*));
-	pl_macro_member_blk_num_of_this_blk = (int *) vtr::calloc (num_blocks , sizeof(int));
+	pl_macro_num_members = (int *) vtr::calloc (g_num_blocks , sizeof(int));
+	pl_macro_idirect = (int *) vtr::calloc (g_num_blocks , sizeof(int));
+	pl_macro_member_blk_num = (int **) vtr::calloc (g_num_blocks , sizeof(int*));
+	pl_macro_member_blk_num_of_this_blk = (int *) vtr::calloc (g_num_blocks , sizeof(int));
 
 	/* Compute required size:                                                *
 	 * Go through all the pins with possible direct connections in           *
@@ -364,7 +364,7 @@ void get_imacro_from_iblk(int * imacro, int iblk, t_pl_macro * macros, int num_m
 	 * iblk belongs to a placement macro or not.                             *
 	 *                                                                       *
 	 * The array f_imacro_from_iblk is used for the mapping for speed reason *
-	 * [0...num_blocks-1]                                                    */
+	 * [0...g_num_blocks-1]                                                    */
 
 	/* If the array is not allocated and loaded, allocate it.                */ 
 	if (f_imacro_from_iblk == NULL) {
@@ -400,8 +400,8 @@ static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros)
 	int imacro, imember, iblk;
 
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_imacro_from_iblk = (int *)vtr::malloc(num_blocks * sizeof(int));
-	for(iblk = 0; iblk < num_blocks; iblk ++) {
+	temp_imacro_from_iblk = (int *)vtr::malloc(g_num_blocks * sizeof(int));
+	for(iblk = 0; iblk < g_num_blocks; iblk ++) {
 		temp_imacro_from_iblk[iblk] = OPEN;
 	}
 	

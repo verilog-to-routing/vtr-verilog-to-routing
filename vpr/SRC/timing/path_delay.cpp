@@ -780,11 +780,11 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 
 	/* allocate space for tnodes */
 	num_tnodes = 0;
-	for (int i = 0; i < num_blocks; i++) {
+	for (int i = 0; i < g_num_blocks; i++) {
 		num_nodes_in_block = 0;
-		int itype = block[i].type->index;
-		for (j = 0; j < block[i].pb->pb_graph_node->total_pb_pins; j++) {
-			if (block[i].pb_route[j].atom_net_id) {
+		int itype = g_blocks[i].type->index;
+		for (j = 0; j < g_blocks[i].pb->pb_graph_node->total_pb_pins; j++) {
+			if (g_blocks[i].pb_route[j].atom_net_id) {
 				if (intra_lb_pb_pin_lookup[itype][j]->type == PB_PIN_INPAD
 					|| intra_lb_pb_pin_lookup[itype][j]->type == PB_PIN_OUTPAD
 					|| intra_lb_pb_pin_lookup[itype][j]->type == PB_PIN_SEQUENTIAL) {
@@ -801,10 +801,10 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 	/* load tnodes with all info except edge info */
 	/* populate tnode lookups for edge info */
 	inode = 0;
-	for (int i = 0; i < num_blocks; i++) {
-		int itype = block[i].type->index;
-		for (j = 0; j < block[i].pb->pb_graph_node->total_pb_pins; j++) {
-			if (block[i].pb_route[j].atom_net_id) {
+	for (int i = 0; i < g_num_blocks; i++) {
+		int itype = g_blocks[i].type->index;
+		for (j = 0; j < g_blocks[i].pb->pb_graph_node->total_pb_pins; j++) {
+			if (g_blocks[i].pb_route[j].atom_net_id) {
 				VTR_ASSERT(tnode[inode].pb_graph_pin == NULL);
 				load_tnode(intra_lb_pb_pin_lookup[itype][j], i, &inode);
 			}
@@ -829,7 +829,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		 */
 		count = 0;
 		iblock = tnode[i].block;
-		int itype = block[iblock].type->index;
+		int itype = g_blocks[iblock].type->index;
 		switch (tnode[i].type) {
 		case TN_INPAD_OPIN:
 		case TN_INTERMEDIATE_NODE:
@@ -840,7 +840,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			/* fanout is determined by intra-cluster connections */
 			/* Allocate space for edges  */
 			i_pin_id = tnode[i].pb_graph_pin->pin_count_in_cluster;
-			intra_lb_route = block[iblock].pb_route;
+			intra_lb_route = g_blocks[iblock].pb_route;
 			ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 
 			if (ipb_graph_pin->parent_node->pb_type->max_internal_delay
@@ -898,7 +898,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			if (timing_inf.timing_analysis_enabled)
 			{
 				i_pin_id = tnode[i].pb_graph_pin->pin_count_in_cluster;
-				intra_lb_route = block[iblock].pb_route;
+				intra_lb_route = g_blocks[iblock].pb_route;
 				ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 				tnode[i].num_edges = ipb_graph_pin->num_pin_timing;
 				tnode[i].out_edges = (t_tedge *) vtr::chunk_malloc(
@@ -926,7 +926,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		case TN_CB_OPIN:
 			/* load up net info */
 			i_pin_id = tnode[i].pb_graph_pin->pin_count_in_cluster;
-			intra_lb_route = block[iblock].pb_route;
+			intra_lb_route = g_blocks[iblock].pb_route;
 			ipb_graph_pin = intra_lb_pb_pin_lookup[itype][i_pin_id];
 
 			VTR_ASSERT(intra_lb_route[i_pin_id].atom_net_id);
@@ -939,39 +939,39 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 					&tedge_ch);
 			for (j = 1; j < (int) g_clbs_nlist.net[inet].pins.size(); j++) {
 				dblock = g_clbs_nlist.net[inet].pins[j].block;
-				normalization = block[dblock].type->num_pins
-						/ block[dblock].type->capacity;
+				normalization = g_blocks[dblock].type->num_pins
+						/ g_blocks[dblock].type->capacity;
 				normalized_pin = g_clbs_nlist.net[inet].pins[j].block_pin
 						% normalization;
-				d_intra_lb_route = block[dblock].pb_route;
+				d_intra_lb_route = g_blocks[dblock].pb_route;
 				dpin = OPEN;
 				dport = OPEN;
 				count = 0;
 
-				for (k = 0; k < block[dblock].pb->pb_graph_node->num_input_ports && dpin == OPEN; k++) {
+				for (k = 0; k < g_blocks[dblock].pb->pb_graph_node->num_input_ports && dpin == OPEN; k++) {
 					if (normalized_pin >= count 
-                        && (count + block[dblock].pb->pb_graph_node->num_input_pins[k] > normalized_pin)) {
+                        && (count + g_blocks[dblock].pb->pb_graph_node->num_input_pins[k] > normalized_pin)) {
 						dpin = normalized_pin - count;
 						dport = k;
 						break;
 					}
-					count += block[dblock].pb->pb_graph_node->num_input_pins[k];
+					count += g_blocks[dblock].pb->pb_graph_node->num_input_pins[k];
 				}
 				if (dpin == OPEN) {
-					for (k = 0; k < block[dblock].pb->pb_graph_node->num_output_ports && dpin == OPEN; k++) {
-						count += block[dblock].pb->pb_graph_node->num_output_pins[k];
+					for (k = 0; k < g_blocks[dblock].pb->pb_graph_node->num_output_ports && dpin == OPEN; k++) {
+						count += g_blocks[dblock].pb->pb_graph_node->num_output_pins[k];
 					}
-					for (k = 0; k < block[dblock].pb->pb_graph_node->num_clock_ports && dpin == OPEN; k++) {
+					for (k = 0; k < g_blocks[dblock].pb->pb_graph_node->num_clock_ports && dpin == OPEN; k++) {
 						if (normalized_pin >= count 
-                            && (count + block[dblock].pb->pb_graph_node->num_clock_pins[k] > normalized_pin)) {
+                            && (count + g_blocks[dblock].pb->pb_graph_node->num_clock_pins[k] > normalized_pin)) {
 							dpin = normalized_pin - count;
 							dport = k;
 						}
-						count += block[dblock].pb->pb_graph_node->num_clock_pins[k];
+						count += g_blocks[dblock].pb->pb_graph_node->num_clock_pins[k];
 					}
 					VTR_ASSERT(dpin != OPEN);
 
-                    t_pb_graph_node* pb_gnode = block[dblock].pb->pb_graph_node;
+                    t_pb_graph_node* pb_gnode = g_blocks[dblock].pb->pb_graph_node;
                     int pin_count_in_cluster = pb_gnode->clock_pins[dport][dpin].pin_count_in_cluster;
                     int inet_check = g_atom_lookup.clb_net(d_intra_lb_route[pin_count_in_cluster].atom_net_id);
 					VTR_ASSERT(inet == inet_check);
@@ -981,7 +981,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 				} else {
 					VTR_ASSERT(dpin != OPEN);
 
-                    t_pb_graph_node* pb_gnode = block[dblock].pb->pb_graph_node;
+                    t_pb_graph_node* pb_gnode = g_blocks[dblock].pb->pb_graph_node;
                     int pin_count_in_cluster = pb_gnode->input_pins[dport][dpin].pin_count_in_cluster;
                     int inet_check = g_atom_lookup.clb_net(d_intra_lb_route[pin_count_in_cluster].atom_net_id);
 					VTR_ASSERT(inet == inet_check);
@@ -3143,7 +3143,7 @@ void get_tnode_block_and_output_net(int inode, int *iblk_ptr, int *inet_ptr) {
 
 	if (tnode_type == TN_CB_OPIN) {
 		ipin = tnode[inode].pb_graph_pin->pin_count_in_cluster;
-		AtomNetId atom_net_id = block[iblk].pb_route[ipin].atom_net_id;
+		AtomNetId atom_net_id = g_blocks[iblk].pb_route[ipin].atom_net_id;
 		VTR_ASSERT(atom_net_id);
 		inet = g_atom_lookup.clb_net(atom_net_id);
 	} else {
@@ -3385,7 +3385,7 @@ static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pi
             //Now that we have a complex block pin, we can look-up its connected net in the CLB netlist
             pb_graph_pin = tnode[inode_search].pb_graph_pin;
             int ipin = pb_graph_pin->pin_count_in_cluster; //Pin into the CLB
-            int inet = block[tnode[inode_search].block].nets[ipin]; //Net index into the clb netlist
+            int inet = g_blocks[tnode[inode_search].block].nets[ipin]; //Net index into the clb netlist
             VTR_ASSERT(inet != OPEN);
 
             return g_clbs_nlist.net[inet].name;
@@ -3829,10 +3829,10 @@ static void print_spaces(FILE * fp, int num_spaces) {
 int **alloc_and_load_tnode_lookup_from_pin_id() {
 	int **tnode_lookup;
 
-	tnode_lookup = new int* [num_blocks];
+	tnode_lookup = new int* [g_num_blocks];
 
-	for (int i = 0; i < num_blocks; i++) {
-		int num_pins = block[i].type->pb_graph_head->total_pb_pins;
+	for (int i = 0; i < g_num_blocks; i++) {
+		int num_pins = g_blocks[i].type->pb_graph_head->total_pb_pins;
 		tnode_lookup[i] = new int[num_pins];
 		for (int j = 0; j < num_pins; j++) {
 			tnode_lookup[i][j] = OPEN;
@@ -3858,7 +3858,7 @@ int **alloc_and_load_tnode_lookup_from_pin_id() {
 }
 
 void free_tnode_lookup_from_pin_id(int **tnode_lookup) {
-	for (int i = 0; i < num_blocks; i++) {
+	for (int i = 0; i < g_num_blocks; i++) {
 		delete[] tnode_lookup[i];
 	}
 	delete[] tnode_lookup;

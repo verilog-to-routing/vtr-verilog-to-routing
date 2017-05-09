@@ -260,7 +260,7 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 	pb_graph_pin = tnode[inode].pb_graph_pin;
 
 	fprintf(fp, "Node: %d  %s Block #%d (%s)\n", inode, tnode_type_names[type],
-		iblk, block[iblk].name);
+		iblk, g_blocks[iblk].name);
 
 	if (pb_graph_pin == NULL) {
 		VTR_ASSERT(
@@ -289,13 +289,13 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 	}
 
 	if (type == TN_CB_OPIN) {
-		AtomNetId atom_net_id = block[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+		AtomNetId atom_net_id = g_blocks[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 		inet = g_atom_lookup.clb_net(atom_net_id);
         VTR_ASSERT(inet != OPEN);
 		fprintf(fp, "External-to-Block Net: #%d (%s).  Pins on net: %d.\n",
 			inet, g_clbs_nlist.net[inet].name, (int) g_clbs_nlist.net[inet].pins.size());
 	} else if (pb_graph_pin != NULL) {
-		AtomNetId net_id = block[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+		AtomNetId net_id = g_blocks[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 		fprintf(fp, "Internal Net: %s.  Pins on net: %zu.\n",
 			g_atom_nl.net_name(net_id).c_str(), g_atom_nl.net_pins(net_id).size());
 	}

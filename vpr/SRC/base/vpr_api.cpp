@@ -306,7 +306,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 
 	/* Read in netlist file for placement and routing */
 	if (vpr_setup.FileNameOpts.NetFile) {
-		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, &num_blocks, &block, &g_clbs_nlist);
+		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, &g_num_blocks, &g_blocks, &g_clbs_nlist);
 
 		/* This is done so that all blocks have subblocks and can be treated the same */
 		check_netlist();
@@ -314,7 +314,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 		if(vpr_setup.gen_netlist_as_blif) {
 			char *name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName) + 16) * sizeof(char));
 			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName);
-			output_blif(&Arch, block, num_blocks, name);
+			output_blif(&Arch, g_blocks, g_num_blocks, name);
 			free(name);
 		}
 	}
@@ -322,15 +322,15 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 	/* Output the current settings to console. */
 	printClusteredNetlistStats();
 
-    int current = std::max(vtr::nint((float)sqrt((float)num_blocks)), 1); /* current is the value of the smaller side of the FPGA */
+    int current = std::max(vtr::nint((float)sqrt((float)g_num_blocks)), 1); /* current is the value of the smaller side of the FPGA */
     int low = 1;
     int high = -1;
 
     int *num_instances_type = (int*) vtr::calloc(g_num_block_types, sizeof(int));
     int *num_blocks_type = (int*) vtr::calloc(g_num_block_types, sizeof(int));
 
-    for (int i = 0; i < num_blocks; ++i) {
-        num_blocks_type[block[i].type->index]++;
+    for (int i = 0; i < g_num_blocks; ++i) {
+        num_blocks_type[g_blocks[i].type->index]++;
     }
 
     if (Arch.clb_grid.IsAuto) {
@@ -876,20 +876,20 @@ void free_circuit() {
 	//Free new net structures
 	free_global_nlist_net(&g_clbs_nlist);
 
-	if (block != NULL) {
-		for (int i = 0; i < num_blocks; ++i) {
-			if (block[i].pb != NULL) {
-				free_pb(block[i].pb);
-				delete block[i].pb;
+	if (g_blocks != NULL) {
+		for (int i = 0; i < g_num_blocks; ++i) {
+			if (g_blocks[i].pb != NULL) {
+				free_pb(g_blocks[i].pb);
+				delete g_blocks[i].pb;
 			}
-			free(block[i].nets);
-			free(block[i].net_pins);
-			free(block[i].name);
-			delete [] block[i].pb_route;
+			free(g_blocks[i].nets);
+			free(g_blocks[i].net_pins);
+			free(g_blocks[i].name);
+			delete [] g_blocks[i].pb_route;
 		}
 	}
-	free(block);
-	block = NULL;
+	free(g_blocks);
+	g_blocks = NULL;
 }
 
 void vpr_free_vpr_data_structures(t_arch& Arch,

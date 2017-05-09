@@ -68,7 +68,7 @@ float t_draw_coords::get_tile_height() {
 }
 
 t_bound_box t_draw_coords::get_pb_bbox(int clb_index, const t_pb_graph_node& pb_gnode) {
-	return get_pb_bbox(block[clb_index], pb_gnode);
+	return get_pb_bbox(g_blocks[clb_index], pb_gnode);
 }
 
 t_bound_box t_draw_coords::get_pb_bbox(const t_block& clb, const t_pb_graph_node& pb_gnode) {
@@ -138,7 +138,7 @@ t_bound_box t_draw_coords::get_absolute_pb_bbox(const t_block& clb, const t_pb_g
 }
 
 t_bound_box t_draw_coords::get_absolute_pb_bbox(const int clb_index, const t_pb_graph_node* pb_gnode) {
-	return get_absolute_pb_bbox(block[clb_index], pb_gnode);
+	return get_absolute_pb_bbox(g_blocks[clb_index], pb_gnode);
 }
 
 t_bound_box t_draw_coords::get_absolute_clb_bbox(const t_block& clb) {

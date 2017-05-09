@@ -154,8 +154,8 @@ void save_routing(struct s_trace **best_routing,
 
 	/* Save which OPINs are locally used.                           */
 
-	for (iblk = 0; iblk < num_blocks; iblk++) {
-		type = block[iblk].type;
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
+		type = g_blocks[iblk].type;
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
@@ -193,8 +193,8 @@ void restore_routing(struct s_trace **best_routing,
 
 	/* Save which OPINs are locally used.                           */
 
-	for (iblk = 0; iblk < num_blocks; iblk++) {
-		type = block[iblk].type;
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
+		type = g_blocks[iblk].type;
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
@@ -737,10 +737,10 @@ alloc_saved_routing(vtr::t_ivec ** clb_opins_used_locally,
 			sizeof(struct s_trace *));
 
 	saved_clb_opins_used_locally = (vtr::t_ivec **) vtr::malloc(
-			num_blocks * sizeof(vtr::t_ivec *));
+			g_num_blocks * sizeof(vtr::t_ivec *));
 
-	for (iblk = 0; iblk < num_blocks; iblk++) {
-		type = block[iblk].type;
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
+		type = g_blocks[iblk].type;
 		saved_clb_opins_used_locally[iblk] = (vtr::t_ivec *) vtr::malloc(
 				type->num_class * sizeof(vtr::t_ivec));
 		for (iclass = 0; iclass < type->num_class; iclass++) {
@@ -774,10 +774,10 @@ alloc_and_load_clb_opins_used_locally(void) {
 	t_type_ptr type;
 
 	clb_opins_used_locally = (vtr::t_ivec **) vtr::malloc(
-			num_blocks * sizeof(vtr::t_ivec *));
+			g_num_blocks * sizeof(vtr::t_ivec *));
 
-	for (iblk = 0; iblk < num_blocks; iblk++) {
-		type = block[iblk].type;
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
+		type = g_blocks[iblk].type;
 		get_class_range_for_block(iblk, &class_low, &class_high);
 		clb_opins_used_locally[iblk] = (vtr::t_ivec *) vtr::malloc(
 				type->num_class * sizeof(vtr::t_ivec));
@@ -790,8 +790,8 @@ alloc_and_load_clb_opins_used_locally(void) {
 				continue;
 			}
 		
-			if ((block[iblk].nets[clb_pin] != OPEN
-					&& g_clbs_nlist.net[block[iblk].nets[clb_pin]].num_sinks() == 0) || block[iblk].nets[clb_pin] == OPEN) {
+			if ((g_blocks[iblk].nets[clb_pin] != OPEN
+					&& g_clbs_nlist.net[g_blocks[iblk].nets[clb_pin]].num_sinks() == 0) || g_blocks[iblk].nets[clb_pin] == OPEN) {
 				iclass = type->pin_class[clb_pin];
 				if(type->class_inf[iclass].type == DRIVER) {
 					/* Check to make sure class is in same range as that assigned to block */
@@ -861,9 +861,9 @@ void free_saved_routing(struct s_trace **best_routing,
 	int i;
 
 	free(best_routing);
-	for (i = 0; i < num_blocks; i++) {
+	for (i = 0; i < g_num_blocks; i++) {
 		free_ivec_vector(saved_clb_opins_used_locally[i], 0,
-				block[i].type->num_class - 1);
+				g_blocks[i].type->num_class - 1);
 	}
 	free(saved_clb_opins_used_locally);
 }
@@ -938,10 +938,10 @@ static void load_route_bb(int bb_factor) {
 	int xmax, ymax, xmin, ymin, x, y;
 
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
-		x = block[g_clbs_nlist.net[inet].pins[0].block].x
-			+ block[g_clbs_nlist.net[inet].pins[0].block].type->pin_width[g_clbs_nlist.net[inet].pins[0].block_pin];
-		y = block[g_clbs_nlist.net[inet].pins[0].block].y
-			+ block[g_clbs_nlist.net[inet].pins[0].block].type->pin_height[g_clbs_nlist.net[inet].pins[0].block_pin];
+		x = g_blocks[g_clbs_nlist.net[inet].pins[0].block].x
+			+ g_blocks[g_clbs_nlist.net[inet].pins[0].block].type->pin_width[g_clbs_nlist.net[inet].pins[0].block_pin];
+		y = g_blocks[g_clbs_nlist.net[inet].pins[0].block].y
+			+ g_blocks[g_clbs_nlist.net[inet].pins[0].block].type->pin_height[g_clbs_nlist.net[inet].pins[0].block_pin];
 
 		xmin = x;
 		ymin = y;
@@ -949,10 +949,10 @@ static void load_route_bb(int bb_factor) {
 		ymax = y;
 
 		for (k = 1; k < g_clbs_nlist.net[inet].pins.size(); k++) {
-			x = block[g_clbs_nlist.net[inet].pins[k].block].x
-				+ block[g_clbs_nlist.net[inet].pins[k].block].type->pin_width[g_clbs_nlist.net[inet].pins[k].block_pin];
-			y = block[g_clbs_nlist.net[inet].pins[k].block].y
-				+ block[g_clbs_nlist.net[inet].pins[k].block].type->pin_height[g_clbs_nlist.net[inet].pins[k].block_pin];
+			x = g_blocks[g_clbs_nlist.net[inet].pins[k].block].x
+				+ g_blocks[g_clbs_nlist.net[inet].pins[k].block].type->pin_width[g_clbs_nlist.net[inet].pins[k].block_pin];
+			y = g_blocks[g_clbs_nlist.net[inet].pins[k].block].y
+				+ g_blocks[g_clbs_nlist.net[inet].pins[k].block].type->pin_height[g_clbs_nlist.net[inet].pins[k].block_pin];
 
 			if (x < xmin) {
 				xmin = x;
@@ -1369,10 +1369,10 @@ void print_route(const char* placement_file, const char* route_file) {
 				bnum = g_clbs_nlist.net[inet].pins[ipin].block;
 
 				node_block_pin = g_clbs_nlist.net[inet].pins[ipin].block_pin;
-				iclass = block[bnum].type->pin_class[node_block_pin];
+				iclass = g_blocks[bnum].type->pin_class[node_block_pin];
 
 				fprintf(fp, "Block %s (#%d) at (%d, %d), Pin class %d.\n",
-						block[bnum].name, bnum, block[bnum].x, block[bnum].y,
+						g_blocks[bnum].name, bnum, g_blocks[bnum].x, g_blocks[bnum].y,
 						iclass);
 			}
 		}
@@ -1411,8 +1411,8 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 	t_type_ptr type;
 
 	if (rip_up_local_opins) {
-		for (iblk = 0; iblk < num_blocks; iblk++) {
-			type = block[iblk].type;
+		for (iblk = 0; iblk < g_num_blocks; iblk++) {
+			type = g_blocks[iblk].type;
 			for (iclass = 0; iclass < type->num_class; iclass++) {
 				num_local_opin = clb_opins_used_locally[iblk][iclass].nelem;
 				/* Always 0 for pads and for RECEIVER (IPIN) classes */
@@ -1424,8 +1424,8 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 		}
 	}
 
-	for (iblk = 0; iblk < num_blocks; iblk++) {
-		type = block[iblk].type;
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
+		type = g_blocks[iblk].type;
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			num_local_opin = clb_opins_used_locally[iblk][iclass].nelem;
 			/* Always 0 for pads and for RECEIVER (IPIN) classes */

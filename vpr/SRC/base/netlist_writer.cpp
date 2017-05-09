@@ -1557,9 +1557,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb* top_pb = find_top_cb(curr); 
 
             const t_block* top_block = nullptr;
-            for(int i = 0; i < num_blocks; i++) {
-                if(block[i].pb == top_pb) {
-                    top_block = &block[i];
+            for(int i = 0; i < g_num_blocks; i++) {
+                if(g_blocks[i].pb == top_pb) {
+                    top_block = &g_blocks[i];
                     break;
                 }
             }

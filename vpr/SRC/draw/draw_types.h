@@ -99,8 +99,8 @@ typedef struct {
  * default_message: default screen message on screen
  * net_color: color in which each net should be drawn. 
  *			  [0..g_clbs_nlist.net.size()-1]
- * block_color: color in which each block should be drawn.
- *			    [0..num_blocks-1]
+ * block_color: color in which each blocks should be drawn.
+ *			    [0..g_num_blocks-1]
  * draw_rr_node: stores the state information of each routing resource.  
  *				 Used to control drawing each routing resource when 
  *				 ROUTING is on screen.
@@ -155,7 +155,7 @@ struct t_draw_pb_type_info {
  *			 Set when init_draw_coords is called.
  * blk_info: a list of drawing information for each type of
  *           block, one for each type. Access it with
- *           block[block_id].type->index
+ *           g_blocks[block_id].type->index
  */
 struct t_draw_coords {
 	float *tile_x, *tile_y;

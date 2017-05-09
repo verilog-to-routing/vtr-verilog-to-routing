@@ -536,8 +536,8 @@ typedef struct s_net {
  * width_offset: Number of grid tiles reserved based on width (right) of a block
  * height_offset: Number of grid tiles reserved based on height (top) of a block
  * usage: Number of blocks used in this grid tile
- * blocks[]: Array of CLBs placed in a physical position, EMPTY means
- no block at that index */
+ * blocks[]: Array of CLBs placed in a physical position, EMPTY means no block at 
+ *           that index */
 typedef struct s_grid_tile {
 	t_type_ptr type;
 	int width_offset;

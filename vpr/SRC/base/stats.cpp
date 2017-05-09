@@ -79,12 +79,12 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	vtr::printf_info("\tTotal logic block area (Warning, need to add pitch of routing to blocks with height > 3): %g\n", area);
 
 	used_area = 0;
-	for (i = 0; i < num_blocks; i++) {
-		if (block[i].type != IO_TYPE) {
-			if (block[i].type->area == UNDEFINED) {
-				used_area += grid_logic_tile_area * block[i].type->width * block[i].type->height;
+	for (i = 0; i < g_num_blocks; i++) {
+		if (g_blocks[i].type != IO_TYPE) {
+			if (g_blocks[i].type->area == UNDEFINED) {
+				used_area += grid_logic_tile_area * g_blocks[i].type->width * g_blocks[i].type->height;
 			} else {
-				used_area += block[i].type->area;
+				used_area += g_blocks[i].type->area;
 			}
 		}
 	}
@@ -456,14 +456,14 @@ void print_lambda(void) {
 	float lambda;
 	t_type_ptr type;
 
-	for (bnum = 0; bnum < num_blocks; bnum++) {
-		type = block[bnum].type;
+	for (bnum = 0; bnum < g_num_blocks; bnum++) {
+		type = g_blocks[bnum].type;
 		VTR_ASSERT(type != NULL);
 		if (type != IO_TYPE) {
 			for (ipin = 0; ipin < type->num_pins; ipin++) {
 				iclass = type->pin_class[ipin];
 				if (type->class_inf[iclass].type == RECEIVER) {
-					inet = block[bnum].nets[ipin];
+					inet = g_blocks[bnum].nets[ipin];
 					if (inet != OPEN) /* Pin is connected? */
 						if (g_clbs_nlist.net[inet].is_global == false) /* Not a global clock */
 							num_inputs_used++;
@@ -472,7 +472,7 @@ void print_lambda(void) {
 		}
 	}
 
-	lambda = (float) num_inputs_used / (float) num_blocks;
+	lambda = (float) num_inputs_used / (float) g_num_blocks;
 	vtr::printf_info("Average lambda (input pins used per clb) is: %g\n", lambda);
 }
 

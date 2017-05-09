@@ -67,7 +67,7 @@ void printClusteredNetlistStats() {
 
 	vtr::printf_info("\n");
 	vtr::printf_info("Netlist num_nets: %d\n", (int) g_clbs_nlist.net.size());
-	vtr::printf_info("Netlist num_blocks: %d\n", num_blocks);
+	vtr::printf_info("Netlist num_blocks: %d\n", g_num_blocks);
 
 	for (i = 0; i < g_num_block_types; i++) {
 		num_blocks_type[i] = 0;
@@ -76,11 +76,11 @@ void printClusteredNetlistStats() {
 	L_num_p_inputs = 0;
 	L_num_p_outputs = 0;
 
-	for (i = 0; i < num_blocks; i++) {
-		num_blocks_type[block[i].type->index]++;
-		if (block[i].type == IO_TYPE) {
+	for (i = 0; i < g_num_blocks; i++) {
+		num_blocks_type[g_blocks[i].type->index]++;
+		if (g_blocks[i].type == IO_TYPE) {
 			for (j = 0; j < IO_TYPE->num_pins; j++) {
-				if (block[i].nets[j] != OPEN) {
+				if (g_blocks[i].nets[j] != OPEN) {
 					if (IO_TYPE->class_inf[IO_TYPE->pin_class[j]].type
 							== DRIVER) {
 						L_num_p_inputs++;

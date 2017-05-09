@@ -711,11 +711,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	*****************************************************************/
 	check_clustering(num_clb, clb);
 
-	block = clb;
+	g_blocks = clb;
 
 	output_clustering(clb, num_clb, intra_lb_routing, global_clocks, is_clock, arch->architecture_id, out_fname, false);
 	
-	block = NULL;
+	g_blocks = NULL;
 	for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++){
 		free_intra_lb_nets(intra_lb_routing[irt]);
 	}

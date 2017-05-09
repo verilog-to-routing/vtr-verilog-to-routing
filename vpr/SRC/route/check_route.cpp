@@ -177,7 +177,7 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 	ifound = 0;
 
 	for (iblk = 0; iblk < type->capacity; iblk++) {
-		bnum = g_grid[i][j].blocks[iblk]; /* Hardcoded to one block */
+		bnum = g_grid[i][j].blocks[iblk]; /* Hardcoded to one g_blocks */
 		for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) { /* All net SINKs */
 			if (g_clbs_nlist.net[inet].pins[ipin].block == bnum) {
 				node_block_pin = g_clbs_nlist.net[inet].pins[ipin].block_pin;
@@ -230,7 +230,7 @@ static void check_source(int inode, int inet) {
 	bnum = g_clbs_nlist.net[inet].pins[0].block; 
 	type = g_grid[i][j].type;
 
-	if (block[bnum].x != i || block[bnum].y != j) {		
+	if (g_blocks[bnum].x != i || g_blocks[bnum].y != j) {		
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_source: net SOURCE is in wrong location (%d,%d).\n", i, j);
 	}
@@ -539,8 +539,8 @@ static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_local
 	 * (CLB outputs used up by being directly wired to subblocks used only      *
 	 * locally).                                                                */
 
-	for (iblk = 0; iblk < num_blocks; iblk++) {
-		for (iclass = 0; iclass < block[iblk].type->num_class; iclass++) {
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
+		for (iclass = 0; iclass < g_blocks[iblk].type->num_class; iclass++) {
 			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
 			/* Will always be 0 for pads or SINK classes. */
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
@@ -560,8 +560,8 @@ static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 	int iclass, iblk, num_local_opins, inode, ipin;
 	t_rr_type rr_type;
 
-	for (iblk = 0; iblk < num_blocks; iblk++) {
-		for (iclass = 0; iclass < block[iblk].type->num_class; iclass++) {
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
+		for (iclass = 0; iclass < g_blocks[iblk].type->num_class; iclass++) {
 			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
 			/* Always 0 for pads and for SINK classes */
 
@@ -576,15 +576,15 @@ static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%d (%s)\n"
 						"\tClass %d local OPIN is wrong rr_type -- rr_node #%d of type %d.\n",
-						iblk, block[iblk].name, iclass, inode, rr_type);
+						iblk, g_blocks[iblk].name, iclass, inode, rr_type);
 				}
 
 				ipin = g_rr_nodes[inode].ptc_num();
-				if (block[iblk].type->pin_class[ipin] != iclass) {
+				if (g_blocks[iblk].type->pin_class[ipin] != iclass) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%d (%s):\n"
 						"\tExpected class %d local OPIN has class %d -- rr_node #: %d.\n",
-						iblk, block[iblk].name, iclass,	block[iblk].type->pin_class[ipin], inode);
+						iblk, g_blocks[iblk].name, iclass,	g_blocks[iblk].type->pin_class[ipin], inode);
 				}
 			}
 		}

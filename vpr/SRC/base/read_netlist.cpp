@@ -72,10 +72,9 @@ static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId at
 /**
  * Initializes the block_list with info from a netlist 
  * net_file - Name of the netlist file to read
- * num_blocks - number of CLBs in netlist 
- * block_list - array of blocks in netlist [0..num_blocks - 1]
- * num_nets - number of nets in netlist
- * net_list - nets in netlist [0..num_nets - 1]
+ * L_num_blocks - number of CLBs in netlist 
+ * block_list - array of blocks in netlist [0..L_num_blocks - 1]
+ * t_netlist - Net realted information
  */
 void read_netlist(const char *net_file, const t_arch* arch,
 		int *L_num_blocks, struct s_block *block_list[],
@@ -1122,7 +1121,7 @@ static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId at
     int clb_index = g_atom_lookup.atom_clb(atom_blk);
     VTR_ASSERT(clb_index >= 0);
 
-    const t_pb_route* pb_route = &block[clb_index].pb_route[gpin->pin_count_in_cluster];
+    const t_pb_route* pb_route = &g_blocks[clb_index].pb_route[gpin->pin_count_in_cluster];
 
     if(!pb_route->atom_net_id) {
         return;

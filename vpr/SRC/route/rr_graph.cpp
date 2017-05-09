@@ -1194,7 +1194,7 @@ void free_rr_graph(void) {
 	free_rr_node_indices(g_rr_node_indices);
 
 	free(g_rr_indexed_data);
-	for (i = 0; i < num_blocks; i++) {
+	for (i = 0; i < g_num_blocks; i++) {
 		free(g_rr_blk_source[i]);
 	}
 	free(g_rr_blk_source);
@@ -1240,9 +1240,9 @@ void load_net_rr_terminals(vtr::t_ivec *** L_rr_node_indices) {
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		for (ipin = 0; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
 			iblk = g_clbs_nlist.net[inet].pins[ipin].block;
-			i = block[iblk].x;
-			j = block[iblk].y;
-			type = block[iblk].type;
+			i = g_blocks[iblk].x;
+			j = g_blocks[iblk].y;
+			type = g_blocks[iblk].type;
 
 			/* In the routing graph, each (x, y) location has unique pins on it
 			 * so when there is capacity, blocks are packed and their pin numbers
@@ -1263,7 +1263,7 @@ static void alloc_and_load_rr_clb_source(vtr::t_ivec *** L_rr_node_indices) {
 	/* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
 	 * in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
 	 * they are used only to reserve pins for locally used OPINs in the router. *
-	 * [0..num_blocks-1][0..num_class-1].  The values for blocks that are pads  *
+	 * [0..g_num_blocks-1][0..num_class-1].  The values for blocks that are pads  *
 	 * are NOT valid.                                                           */
 
 	int iblk, i, j, iclass, inode;
@@ -1271,16 +1271,16 @@ static void alloc_and_load_rr_clb_source(vtr::t_ivec *** L_rr_node_indices) {
 	t_rr_type rr_type;
 	t_type_ptr type;
 
-	g_rr_blk_source = (int **) vtr::malloc(num_blocks * sizeof(int *));
+	g_rr_blk_source = (int **) vtr::malloc(g_num_blocks * sizeof(int *));
 
-	for (iblk = 0; iblk < num_blocks; iblk++) {
-		type = block[iblk].type;
+	for (iblk = 0; iblk < g_num_blocks; iblk++) {
+		type = g_blocks[iblk].type;
 		get_class_range_for_block(iblk, &class_low, &class_high);
 		g_rr_blk_source[iblk] = (int *) vtr::malloc(type->num_class * sizeof(int));
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			if (iclass >= class_low && iclass <= class_high) {
-				i = block[iblk].x;
-				j = block[iblk].y;
+				i = g_blocks[iblk].x;
+				j = g_blocks[iblk].y;
 
 				if (type->class_inf[iclass].type == DRIVER)
 					rr_type = SOURCE;
