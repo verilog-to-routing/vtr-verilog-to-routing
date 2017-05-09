@@ -845,11 +845,11 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 
 			if (ipb_graph_pin->parent_node->pb_type->max_internal_delay
 					!= UNDEFINED) {
-				if (pb_max_internal_delay == UNDEFINED) {
-					pb_max_internal_delay = ipb_graph_pin->parent_node->pb_type->max_internal_delay;
+				if (g_pb_max_internal_delay == UNDEFINED) {
+					g_pb_max_internal_delay = ipb_graph_pin->parent_node->pb_type->max_internal_delay;
 					pbtype_max_internal_delay = ipb_graph_pin->parent_node->pb_type;
-				} else if (pb_max_internal_delay < ipb_graph_pin->parent_node->pb_type->max_internal_delay) {
-					pb_max_internal_delay = ipb_graph_pin->parent_node->pb_type->max_internal_delay;
+				} else if (g_pb_max_internal_delay < ipb_graph_pin->parent_node->pb_type->max_internal_delay) {
+					g_pb_max_internal_delay = ipb_graph_pin->parent_node->pb_type->max_internal_delay;
 					pbtype_max_internal_delay = ipb_graph_pin->parent_node->pb_type;
 				}
 			}
@@ -3544,8 +3544,8 @@ float get_critical_path_delay(void) {
 			}
 		}
 	}
-	if (pb_max_internal_delay != UNDEFINED && pb_max_internal_delay > critical_path_delay) {
-		critical_path_delay = pb_max_internal_delay;
+	if (g_pb_max_internal_delay != UNDEFINED && g_pb_max_internal_delay > critical_path_delay) {
+		critical_path_delay = g_pb_max_internal_delay;
     }
 
 	return critical_path_delay * 1e9; /* Convert to nanoseconds */
@@ -3571,7 +3571,7 @@ void print_timing_stats(void) {
         }
     }
 
-	/* Find critical path delay. If the pb_max_internal_delay is greater than this, it becomes
+	/* Find critical path delay. If the g_pb_max_internal_delay is greater than this, it becomes
 	 the limiting factor on critical path delay, so print that instead, with a special message. */
     critical_path_delay = get_critical_path_delay();
     vtr::printf_info("Final critical path: %g ns", critical_path_delay);
@@ -3920,11 +3920,11 @@ static void mark_max_block_delay(const std::unordered_map<AtomBlockId,t_pb_graph
             const t_pb_type* pb_type = gnode->pb_type;
 
 			if (pb_type->max_internal_delay != UNDEFINED) {
-				if (pb_max_internal_delay == UNDEFINED) {
-					pb_max_internal_delay = pb_type->max_internal_delay;
+				if (g_pb_max_internal_delay == UNDEFINED) {
+					g_pb_max_internal_delay = pb_type->max_internal_delay;
 					pbtype_max_internal_delay = pb_type;
-				} else if (pb_max_internal_delay < pb_type->max_internal_delay) {
-					pb_max_internal_delay = pb_type->max_internal_delay;
+				} else if (g_pb_max_internal_delay < pb_type->max_internal_delay) {
+					g_pb_max_internal_delay = pb_type->max_internal_delay;
 					pbtype_max_internal_delay = pb_type;
 				}
 			}
