@@ -936,9 +936,8 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
                     float conns_per_pin = fac * sets_per_seg_type[iseg] * fc_spec.fc_value;
                     flt_total_connections = conns_per_pin * fc_spec.pins.size();
                 } else {
-
                     VTR_ASSERT(fc_spec.fc_type == e_fc_type::ABSOLUTE);
-                    flt_total_connections = fc_spec.fc_value;
+                    flt_total_connections = fc_spec.fc_value * fc_spec.pins.size();
                 }
 
                 //Round to integer
