@@ -847,10 +847,10 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 					!= UNDEFINED) {
 				if (g_pb_max_internal_delay == UNDEFINED) {
 					g_pb_max_internal_delay = ipb_graph_pin->parent_node->pb_type->max_internal_delay;
-					pbtype_max_internal_delay = ipb_graph_pin->parent_node->pb_type;
+					g_pbtype_max_internal_delay = ipb_graph_pin->parent_node->pb_type;
 				} else if (g_pb_max_internal_delay < ipb_graph_pin->parent_node->pb_type->max_internal_delay) {
 					g_pb_max_internal_delay = ipb_graph_pin->parent_node->pb_type->max_internal_delay;
-					pbtype_max_internal_delay = ipb_graph_pin->parent_node->pb_type;
+					g_pbtype_max_internal_delay = ipb_graph_pin->parent_node->pb_type;
 				}
 			}
 
@@ -3922,10 +3922,10 @@ static void mark_max_block_delay(const std::unordered_map<AtomBlockId,t_pb_graph
 			if (pb_type->max_internal_delay != UNDEFINED) {
 				if (g_pb_max_internal_delay == UNDEFINED) {
 					g_pb_max_internal_delay = pb_type->max_internal_delay;
-					pbtype_max_internal_delay = pb_type;
+					g_pbtype_max_internal_delay = pb_type;
 				} else if (g_pb_max_internal_delay < pb_type->max_internal_delay) {
 					g_pb_max_internal_delay = pb_type->max_internal_delay;
-					pbtype_max_internal_delay = pb_type;
+					g_pbtype_max_internal_delay = pb_type;
 				}
 			}
         }

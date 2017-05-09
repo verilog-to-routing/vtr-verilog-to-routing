@@ -147,9 +147,9 @@ struct s_linked_f_pointer *g_linked_f_pointer_free_head;*/
 /*******************************************************************
  Timing related globals
  ********************************************************************/
-
+//TODO: Remove these max_internal_delay globals when the classic timing analyzer is removed
 extern float g_pb_max_internal_delay; /* biggest internal delay of block */
-extern const t_pb_type *pbtype_max_internal_delay; /* block type with highest internal delay */
+extern const t_pb_type *g_pbtype_max_internal_delay; /* block type with highest internal delay */
 
 /*******************************************************************
  Clock Network
