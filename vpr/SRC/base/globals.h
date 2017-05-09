@@ -96,9 +96,6 @@ extern struct s_type_descriptor *type_descriptors;
 /* default output name */
 extern char *default_output_name;
 
-/* Default area of a 1x1 logic tile (excludes routing) on the FPGA */
-extern float grid_logic_tile_area;
-
 /*******************************************************************
  Routing related globals
  ********************************************************************/

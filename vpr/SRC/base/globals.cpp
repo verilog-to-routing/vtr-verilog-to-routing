@@ -13,8 +13,6 @@
 /******** General global variables ********/
 int binary_search = -1;
 
-float grid_logic_tile_area = 0;
-
 char *default_output_name = NULL;
 
 /******** Atom Netlist ********/

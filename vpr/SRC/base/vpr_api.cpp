@@ -1012,8 +1012,11 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
 	routing_stats(vpr_setup.RouterOpts.full_stats, vpr_setup.RouterOpts.route_type,
 			g_num_rr_switches, vpr_setup.Segments,
-			vpr_setup.RoutingArch.num_segment, vpr_setup.RoutingArch.R_minW_nmos,
-			vpr_setup.RoutingArch.R_minW_pmos, vpr_setup.RoutingArch.directionality,
+			vpr_setup.RoutingArch.num_segment, 
+            vpr_setup.RoutingArch.R_minW_nmos,
+			vpr_setup.RoutingArch.R_minW_pmos, 
+            Arch.grid_logic_tile_area,
+            vpr_setup.RoutingArch.directionality,
 			vpr_setup.RoutingArch.wire_to_rr_ipin_switch,
 			vpr_setup.TimingEnabled, net_delay
 #ifdef ENABLE_CLASSIC_VPR_STA

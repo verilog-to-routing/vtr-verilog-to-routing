@@ -230,7 +230,6 @@ void SetupVPR(t_options *Options,
 
 	/* init global variables */
     vtr::out_file_prefix = Options->out_file_prefix;
-	grid_logic_tile_area = Arch->grid_logic_tile_area;
 
 	/* Set seed for pseudo-random placement, default seed to 1 */
 	PlacerOpts->seed = 1;
