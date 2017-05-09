@@ -93,9 +93,6 @@ extern t_type_ptr FILL_TYPE;
 extern int num_types;
 extern struct s_type_descriptor *type_descriptors;
 
-/* default output name */
-extern char *default_output_name;
-
 /*******************************************************************
  Routing related globals
  ********************************************************************/

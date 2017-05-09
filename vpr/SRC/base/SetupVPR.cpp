@@ -72,7 +72,7 @@ void SetupVPR(t_options *Options,
     }
 
     std::string cct_base_name = vtr::basename(Options->CircuitName);
-    default_output_name = vtr::strdup(cct_base_name.c_str());
+    std::string default_output_name = cct_base_name;
 
 	/* init default filenames */
 	if (Options->BlifFile == NULL ) {
@@ -90,28 +90,28 @@ void SetupVPR(t_options *Options,
 	}
 
 	if (Options->NetFile == NULL ) {
-		len = strlen(default_output_name) + 5; /* circuit_name.net/0*/
+		len = strlen(default_output_name.c_str()) + 5; /* circuit_name.net/0*/
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
 		Options->NetFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->NetFile, "%s.net", default_output_name);
+			sprintf(Options->NetFile, "%s.net", default_output_name.c_str());
 		} else {
-			sprintf(Options->NetFile, "%s%s.net", Options->out_file_prefix, default_output_name);
+			sprintf(Options->NetFile, "%s%s.net", Options->out_file_prefix, default_output_name.c_str());
 		}
 	}
 
 	if (Options->PlaceFile == NULL ) {
-		len = strlen(default_output_name) + 7; /* circuit_name.place/0*/
+		len = strlen(default_output_name.c_str()) + 7; /* circuit_name.place/0*/
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
 		Options->PlaceFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->PlaceFile, "%s.place", default_output_name);
+			sprintf(Options->PlaceFile, "%s.place", default_output_name.c_str());
 		} else {
-			sprintf(Options->PlaceFile, "%s%s.place", Options->out_file_prefix, default_output_name);
+			sprintf(Options->PlaceFile, "%s%s.place", Options->out_file_prefix, default_output_name.c_str());
 		}
 	}
 
@@ -122,38 +122,38 @@ void SetupVPR(t_options *Options,
 		}
 		Options->RouteFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->RouteFile, "%s.route", default_output_name);
+			sprintf(Options->RouteFile, "%s.route", default_output_name.c_str());
 		} else {
-			sprintf(Options->RouteFile, "%s%s.route", Options->out_file_prefix, default_output_name);
+			sprintf(Options->RouteFile, "%s%s.route", Options->out_file_prefix, default_output_name.c_str());
 		}
 	}
 	if (Options->ActFile == NULL ) {
-		len = strlen(default_output_name) + 7; /* circuit_name.route/0*/
+		len = strlen(default_output_name.c_str()) + 7; /* circuit_name.route/0*/
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
 		Options->ActFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->ActFile, "%s.act", default_output_name);
+			sprintf(Options->ActFile, "%s.act", default_output_name.c_str());
 		} else {
-			sprintf(Options->ActFile, "%s%s.act", Options->out_file_prefix, default_output_name);
+			sprintf(Options->ActFile, "%s%s.act", Options->out_file_prefix, default_output_name.c_str());
 		}
 	}
 
 	if (Options->PowerFile == NULL ) {
-		len = strlen(default_output_name) + 7; /* circuit_name.route/0*/
+		len = strlen(default_output_name.c_str()) + 7; /* circuit_name.route/0*/
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
 		Options->PowerFile = (char*) vtr::calloc(len, sizeof(char));
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->PowerFile, "%s.power", default_output_name);
+			sprintf(Options->PowerFile, "%s.power", default_output_name.c_str());
 		} else {
-			sprintf(Options->ActFile, "%s%s.power", Options->out_file_prefix, default_output_name);
+			sprintf(Options->ActFile, "%s%s.power", Options->out_file_prefix, default_output_name.c_str());
 		}
 	}
 
-	alloc_and_load_output_file_names(default_output_name);
+	alloc_and_load_output_file_names(default_output_name.c_str());
 
 	FileNameOpts->CircuitName = Options->CircuitName;
 	FileNameOpts->ArchFile = Options->ArchFile;

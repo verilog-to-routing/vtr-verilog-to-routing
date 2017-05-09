@@ -13,8 +13,6 @@
 /******** General global variables ********/
 int binary_search = -1;
 
-char *default_output_name = NULL;
-
 /******** Atom Netlist ********/
 AtomNetlist g_atom_nl;
 
