@@ -63,13 +63,13 @@ void ShowSetup(const t_options& options, const t_vpr_setup& vpr_setup) {
 void printClusteredNetlistStats() {
 	int i, j, L_num_p_inputs, L_num_p_outputs;
 	int *num_blocks_type;
-	num_blocks_type = (int*) vtr::calloc(num_types, sizeof(int));
+	num_blocks_type = (int*) vtr::calloc(g_num_block_types, sizeof(int));
 
 	vtr::printf_info("\n");
 	vtr::printf_info("Netlist num_nets: %d\n", (int) g_clbs_nlist.net.size());
 	vtr::printf_info("Netlist num_blocks: %d\n", num_blocks);
 
-	for (i = 0; i < num_types; i++) {
+	for (i = 0; i < g_num_block_types; i++) {
 		num_blocks_type[i] = 0;
 	}
 	/* Count I/O input and output pads */
@@ -94,9 +94,9 @@ void printClusteredNetlistStats() {
 		}
 	}
 
-	for (i = 0; i < num_types; i++) {
-		if (IO_TYPE != &type_descriptors[i]) {
-			vtr::printf_info("Netlist %s blocks: %d.\n", type_descriptors[i].name, num_blocks_type[i]);
+	for (i = 0; i < g_num_block_types; i++) {
+		if (IO_TYPE != &g_block_types[i]) {
+			vtr::printf_info("Netlist %s blocks: %d.\n", g_block_types[i].name, num_blocks_type[i]);
 		}
 	}
 

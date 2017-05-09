@@ -262,7 +262,7 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
-	build_rr_graph(graph_type, num_types, type_descriptors, g_nx, g_ny, g_grid,
+	build_rr_graph(graph_type, g_num_block_types, g_block_types, g_nx, g_ny, g_grid,
 			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
@@ -320,7 +320,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
-	build_rr_graph(graph_type, num_types, type_descriptors, g_nx, g_ny, g_grid,
+	build_rr_graph(graph_type, g_num_block_types, g_block_types, g_nx, g_ny, g_grid,
 			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
@@ -361,7 +361,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 	} else { /* TIMING_DRIVEN route */
 		vtr::printf_info("Confirming router algorithm: TIMING_DRIVEN.\n");
 
-        IntraLbPbPinLookup intra_lb_pb_pin_lookup(type_descriptors, num_types);
+        IntraLbPbPinLookup intra_lb_pb_pin_lookup(g_block_types, g_num_block_types);
 
 
 		success = try_timing_driven_route(router_opts, net_delay, 

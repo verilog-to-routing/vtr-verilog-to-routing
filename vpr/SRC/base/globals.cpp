@@ -34,8 +34,8 @@ struct s_block *block = NULL;
 t_netlist g_clbs_nlist;
 
 /* This identifies the t_type_ptr of an IO block */
-int num_types = 0;
-struct s_type_descriptor *type_descriptors = NULL;
+int g_num_block_types = 0;
+struct s_type_descriptor *g_block_types = NULL;
 
 t_type_ptr IO_TYPE = NULL;
 t_type_ptr EMPTY_TYPE = NULL;

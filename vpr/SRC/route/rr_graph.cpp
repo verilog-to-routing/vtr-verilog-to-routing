@@ -307,8 +307,8 @@ void build_rr_graph(
 
 	/* START FC */
 	/* Determine the actual value of Fc */
-	int ***Fc_in = NULL; /* [0..num_types-1][0..num_pins-1][0..num_segments-1] */
-	int ***Fc_out = NULL; /* [0..num_types-1][0..num_pins-1][0..num_segments-1] */
+	int ***Fc_in = NULL; /* [0..g_num_block_types-1][0..num_pins-1][0..num_segments-1] */
+	int ***Fc_out = NULL; /* [0..g_num_block_types-1][0..num_pins-1][0..num_segments-1] */
 
 	/* get maximum number of pins across all blocks */
 	int max_pins = types[0].num_pins;
@@ -353,10 +353,10 @@ void build_rr_graph(
 
 #ifdef VERBOSE
 		for (int i = 1; i < L_num_types; ++i) { /* Skip "<EMPTY>" */
-			for (int j = 0; j < type_descriptors[i].num_pins; ++j) {
+			for (int j = 0; j < g_block_types[i].num_pins; ++j) {
 				for (int k = 0; k < num_seg_types; k++){
                     vtr::printf_info("Fc Actual Values: type = %s, pin = %d, seg = %d (%s), Fc_out = %d, Fc_in = %d.\n",
-                            type_descriptors[i].name, j, k, segment_inf[k].name, Fc_out[i][j][k], Fc_in[i][j][k]);
+                            g_block_types[i].name, j, k, segment_inf[k].name, Fc_out[i][j][k], Fc_in[i][j][k]);
 				}
 			}
 		}
@@ -443,8 +443,8 @@ void build_rr_graph(
 	/* START IPconst MAP */
 	/* Create ipin map lookups */
 
-	int ******ipin_to_track_map = NULL; /* [0..num_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
-	vtr::t_ivec *****track_to_pin_lookup = NULL; /* [0..num_types-1][0..max_chan_width-1][0..width][0..height][0..3] */
+	int ******ipin_to_track_map = NULL; /* [0..g_num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
+	vtr::t_ivec *****track_to_pin_lookup = NULL; /* [0..g_num_block_types-1][0..max_chan_width-1][0..width][0..height][0..3] */
 
 	ipin_to_track_map = (int ******) vtr::malloc(sizeof(int *****) * L_num_types);
 	track_to_pin_lookup = (vtr::t_ivec *****) vtr::malloc(sizeof(vtr::t_ivec ****) * L_num_types);
@@ -461,7 +461,7 @@ void build_rr_graph(
 
 	/* START OPconst MAP */
 	/* Create opin map lookups */
-	int ******opin_to_track_map = NULL; /* [0..num_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
+	int ******opin_to_track_map = NULL; /* [0..g_num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
 
 	if (BI_DIRECTIONAL == directionality) {
 		//bool test_metrics_outp = false;
@@ -994,7 +994,7 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
 static void free_type_pin_to_track_map(int ******ipin_to_track_map,
 		t_type_ptr types) {
 
-	for (int i = 0; i < num_types; ++i) {
+	for (int i = 0; i < g_num_block_types; ++i) {
         vtr::free_matrix5(ipin_to_track_map[i], 0, types[i].num_pins - 1,
 				0, types[i].width - 1, 0, types[i].height - 1, 
 				0, 3, 0);
@@ -1006,7 +1006,7 @@ static void free_type_pin_to_track_map(int ******ipin_to_track_map,
 static void free_type_track_to_pin_map(vtr::t_ivec***** track_to_pin_map,
 		t_type_ptr types, int max_chan_width) {
 
-	for (int i = 0; i < num_types; i++) {
+	for (int i = 0; i < g_num_block_types; i++) {
 		if (track_to_pin_map[i] != NULL) {
 			for (int track = 0; track < max_chan_width; ++track) {
 				for (int width = 0; width < types[i].width; ++width) {
@@ -2456,13 +2456,13 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
 		parse_direct_pin_name(directs[i].from_pin, directs[i].line, &start_pin_index, &end_pin_index, pb_type_name, port_name);
 
 		// Figure out which type, port, and pin is used
-		for (j = 0; j < num_types; j++) {
-			if(strcmp(type_descriptors[j].name, pb_type_name) == 0) {
+		for (j = 0; j < g_num_block_types; j++) {
+			if(strcmp(g_block_types[j].name, pb_type_name) == 0) {
 				break;
 			}
 		}
-		VTR_ASSERT(j < num_types);
-		clb_to_clb_directs[i].from_clb_type = &type_descriptors[j];
+		VTR_ASSERT(j < g_num_block_types);
+		clb_to_clb_directs[i].from_clb_type = &g_block_types[j];
 		pb_type = clb_to_clb_directs[i].from_clb_type->pb_type;
 
 		for (j = 0; j < pb_type->num_ports; j++) {
@@ -2485,13 +2485,13 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
 		parse_direct_pin_name(directs[i].to_pin, directs[i].line, &start_pin_index, &end_pin_index, pb_type_name, port_name);
 
 		// Figure out which type, port, and pin is used
-		for (j = 0; j < num_types; j++) {
-			if(strcmp(type_descriptors[j].name, pb_type_name) == 0) {
+		for (j = 0; j < g_num_block_types; j++) {
+			if(strcmp(g_block_types[j].name, pb_type_name) == 0) {
 				break;
 			}
 		}
-		VTR_ASSERT(j < num_types);
-		clb_to_clb_directs[i].to_clb_type = &type_descriptors[j];
+		VTR_ASSERT(j < g_num_block_types);
+		clb_to_clb_directs[i].to_clb_type = &g_block_types[j];
 		pb_type = clb_to_clb_directs[i].to_clb_type->pb_type;
 
 		for (j = 0; j < pb_type->num_ports; j++) {

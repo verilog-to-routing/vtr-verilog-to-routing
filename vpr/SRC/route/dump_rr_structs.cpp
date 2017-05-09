@@ -36,7 +36,7 @@ static void dump_rr_node_indices( fstream &file );
 	- rr nodes (g_rr_nodes)
 	- rr switches (g_rr_switch_inf)
 	- the grid (g_grid)
-	- physical block types (type_descriptors)
+	- physical block types (g_block_types)
 	- node index lookups (rr_node_indices)
 	
 TODO: document the format for each section
@@ -134,10 +134,10 @@ static void dump_rr_switches( fstream &file ){
 static void dump_block_types( fstream &file ){
 	/* specify that we're in the physical block type section, and how many types there are */
 	file << endl;
-	file << ".block_type(" << num_types << ")" << endl;
+	file << ".block_type(" << g_num_block_types << ")" << endl;
 
-	for (int itype = 0; itype < num_types; itype++){
-		s_type_descriptor btype = type_descriptors[itype];
+	for (int itype = 0; itype < g_num_block_types; itype++){
+		s_type_descriptor btype = g_block_types[itype];
 
 		file << " type_" << itype << ": ";
 		file << "name(" << btype.name << ") ";

@@ -154,14 +154,14 @@ using namespace std;
  * direct connection. Values stored is the index of the possible direct connection  *
  * as specified in the arch file, OPEN (-1) is stored for pins that could not be    *
  * part of a direct chain conneciton.                                               *
- * [0...num_types-1][0...num_pins-1]                                                */
+ * [0...g_num_block_types-1][0...num_pins-1]                                                */
 static int ** f_idirect_from_blk_pin = NULL;
 
 /* f_direct_type_from_blk_pin array stores the value SOURCE if the pin is the       *
  * from_pin, SINK if the pin is the to_pin in the direct connection as specified in *
  * the arch file, OPEN (-1) is stored for pins that could not be part of a direct   *
  * chain conneciton.                                                                *
- * [0...num_types-1][0...num_pins-1]                                                */
+ * [0...g_num_block_types-1][0...num_pins-1]                                                */
 static int ** f_direct_type_from_blk_pin = NULL;
 
 /* f_imacro_from_blk_pin maps a blk_num to the corresponding macro index.           *
@@ -424,7 +424,7 @@ void free_placement_macros_structs(void) {
 	// This frees up the two arrays and set the pointers to NULL
 	int itype;
 	if ( f_idirect_from_blk_pin != NULL ) {
-		for (itype = 1; itype < num_types; itype++) {
+		for (itype = 1; itype < g_num_block_types; itype++) {
 			free(f_idirect_from_blk_pin[itype]);
 		}
 		free(f_idirect_from_blk_pin);
@@ -432,7 +432,7 @@ void free_placement_macros_structs(void) {
 	}
 
 	if ( f_direct_type_from_blk_pin != NULL ) {
-		for (itype = 1; itype < num_types; itype++) {
+		for (itype = 1; itype < g_num_block_types; itype++) {
 			free(f_direct_type_from_blk_pin[itype]);
 		}
 		free(f_direct_type_from_blk_pin);

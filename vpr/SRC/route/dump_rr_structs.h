@@ -8,7 +8,7 @@
 	- rr nodes (g_rr_nodes)
 	- rr switches (g_rr_switch_inf)
 	- the grid (grid)
-	- physical block types (type_descriptors)
+	- physical block types (g_block_types)
 	- node index lookups (rr_node_indices) */
 void dump_rr_structs( const char *filename );
 

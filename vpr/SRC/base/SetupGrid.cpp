@@ -105,7 +105,7 @@ void alloc_and_load_grid(int *num_instances_type) {
 
 	// And, refresh (ie. reset and update) the "num_instances_type" array
 	// (while also forcing any remaining INVALID_BLOCK blocks to EMPTY_TYPE)
-	alloc_and_load_num_instances_type(g_grid, g_nx, g_ny,	num_instances_type, num_types);
+	alloc_and_load_num_instances_type(g_grid, g_nx, g_ny,	num_instances_type, g_num_block_types);
 
 	CheckGrid();
 
@@ -243,19 +243,19 @@ static t_type_ptr find_type_col(const int x) {
 	priority = FILL_TYPE->grid_loc_def[0].priority;
 	column_type = FILL_TYPE;
 
-	for (i = 0; i < num_types; i++) {
-		if (&type_descriptors[i] == IO_TYPE
-				|| &type_descriptors[i] == EMPTY_TYPE
-				|| &type_descriptors[i] == FILL_TYPE)
+	for (i = 0; i < g_num_block_types; i++) {
+		if (&g_block_types[i] == IO_TYPE
+				|| &g_block_types[i] == EMPTY_TYPE
+				|| &g_block_types[i] == FILL_TYPE)
 			continue;
-		num_loc = type_descriptors[i].num_grid_loc_def;
+		num_loc = g_block_types[i].num_grid_loc_def;
 		for (j = 0; j < num_loc; j++) {
-			if (priority < type_descriptors[i].grid_loc_def[j].priority) {
+			if (priority < g_block_types[i].grid_loc_def[j].priority) {
 				match = false;
-				if (type_descriptors[i].grid_loc_def[j].grid_loc_type
+				if (g_block_types[i].grid_loc_def[j].grid_loc_type
 						== COL_REPEAT) {
-					start = type_descriptors[i].grid_loc_def[j].start_col;
-					repeat = type_descriptors[i].grid_loc_def[j].repeat;
+					start = g_block_types[i].grid_loc_def[j].start_col;
+					repeat = g_block_types[i].grid_loc_def[j].repeat;
 					if (start < 0) {
 						start += (g_nx + 1);
 					}
@@ -266,16 +266,16 @@ static t_type_ptr find_type_col(const int x) {
 							match = true;
 						}
 					}
-				} else if (type_descriptors[i].grid_loc_def[j].grid_loc_type
+				} else if (g_block_types[i].grid_loc_def[j].grid_loc_type
 						== COL_REL) {
-					rel = type_descriptors[i].grid_loc_def[j].col_rel;
+					rel = g_block_types[i].grid_loc_def[j].col_rel;
 					if (vtr::nint(rel * g_nx) == x) {
 						match = true;
 					}
 				}
 				if (match) {
-					priority = type_descriptors[i].grid_loc_def[j].priority;
-					column_type = &type_descriptors[i];
+					priority = g_block_types[i].grid_loc_def[j].priority;
+					column_type = &g_block_types[i];
 				}
 			}
 		}

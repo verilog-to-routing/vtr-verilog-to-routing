@@ -554,10 +554,10 @@ void init_draw_coords(float width_val) {
 
 	draw_coords->tile_width = width_val;
 	draw_coords->pin_size = 0.3;
-	for (i = 0; i < num_types; ++i) {
-		if (type_descriptors[i].num_pins > 0) {
+	for (i = 0; i < g_num_block_types; ++i) {
+		if (g_block_types[i].num_pins > 0) {
 			draw_coords->pin_size = min(draw_coords->pin_size,
-					(draw_coords->get_tile_width() / (4.0F * type_descriptors[i].num_pins)));
+					(draw_coords->get_tile_width() / (4.0F * g_block_types[i].num_pins)));
 		}
 	}
 

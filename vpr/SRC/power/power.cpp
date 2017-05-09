@@ -590,9 +590,9 @@ static void power_reset_pb_type(t_pb_type * pb_type) {
 static void power_reset_tile_usage(void) {
 	int type_idx;
 
-	for (type_idx = 0; type_idx < num_types; type_idx++) {
-		if (type_descriptors[type_idx].pb_type) {
-			power_reset_pb_type(type_descriptors[type_idx].pb_type);
+	for (type_idx = 0; type_idx < g_num_block_types; type_idx++) {
+		if (g_block_types[type_idx].pb_type) {
+			power_reset_pb_type(g_block_types[type_idx].pb_type);
 		}
 	}
 }
@@ -1136,9 +1136,9 @@ void power_init_pb_pins_rec(t_pb_graph_node * pb_node) {
 void power_pb_pins_init() {
 	int type_idx;
 
-	for (type_idx = 0; type_idx < num_types; type_idx++) {
-		if (type_descriptors[type_idx].pb_graph_head) {
-			power_init_pb_pins_rec(type_descriptors[type_idx].pb_graph_head);
+	for (type_idx = 0; type_idx < g_num_block_types; type_idx++) {
+		if (g_block_types[type_idx].pb_graph_head) {
+			power_init_pb_pins_rec(g_block_types[type_idx].pb_graph_head);
 		}
 	}
 }
@@ -1493,12 +1493,12 @@ static void power_print_clb_detailed(FILE * fp) {
 
 	float clb_power_total = power_component_get_usage_sum(
 			POWER_COMPONENT_PB);
-	for (type_idx = 0; type_idx < num_types; type_idx++) {
-		if (!type_descriptors[type_idx].pb_type) {
+	for (type_idx = 0; type_idx < g_num_block_types; type_idx++) {
+		if (!g_block_types[type_idx].pb_type) {
 			continue;
 		}
 
-		power_print_pb_usage_recursive(fp, type_descriptors[type_idx].pb_type,
+		power_print_pb_usage_recursive(fp, g_block_types[type_idx].pb_type,
 				0, clb_power_total, clb_power_total);
 	}
 }
@@ -1804,10 +1804,10 @@ static void power_print_breakdown_pb(FILE * fp) {
 	power_print_breakdown_entry(fp, 0, POWER_BREAKDOWN_ENTRY_TYPE_TITLE, NULL,
 			0., 0., 0., NULL);
 
-	for (int type_idx = 0; type_idx < num_types; type_idx++) {
-		if (type_descriptors[type_idx].pb_type) {
+	for (int type_idx = 0; type_idx < g_num_block_types; type_idx++) {
+		if (g_block_types[type_idx].pb_type) {
 			power_print_breakdown_pb_rec(g_power_output->out,
-					type_descriptors[type_idx].pb_type, 0);
+					g_block_types[type_idx].pb_type, 0);
 		}
 	}
 	fprintf(fp, "\n");

@@ -28,7 +28,7 @@ void sync_grid_to_blocks(const int L_num_blocks,
 //Class for looking up pb graph pins from block pin indicies
 class IntraLbPbPinLookup {
     public:
-        IntraLbPbPinLookup(t_type_descriptor* block_types, int num_types);
+        IntraLbPbPinLookup(t_type_descriptor* block_types, int num_block_types);
         IntraLbPbPinLookup(const IntraLbPbPinLookup& rhs);
         IntraLbPbPinLookup& operator=(IntraLbPbPinLookup rhs);
         ~IntraLbPbPinLookup();

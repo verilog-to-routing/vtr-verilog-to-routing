@@ -326,8 +326,8 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     int low = 1;
     int high = -1;
 
-    int *num_instances_type = (int*) vtr::calloc(num_types, sizeof(int));
-    int *num_blocks_type = (int*) vtr::calloc(num_types, sizeof(int));
+    int *num_instances_type = (int*) vtr::calloc(g_num_block_types, sizeof(int));
+    int *num_blocks_type = (int*) vtr::calloc(g_num_block_types, sizeof(int));
 
     for (int i = 0; i < num_blocks; ++i) {
         num_blocks_type[block[i].type->index]++;
@@ -352,7 +352,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 
             /* Test if netlist fits in grid */
             bool fit = true;
-            for (int i = 0; i < num_types; ++i) {
+            for (int i = 0; i < g_num_block_types; ++i) {
                 if (num_blocks_type[i] > num_instances_type[i]) {
                     fit = false;
                     break;
@@ -400,13 +400,13 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     vtr::printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", g_nx, g_ny);
 
     /* Test if netlist fits in grid */
-    for (int i = 0; i < num_types; ++i) {
+    for (int i = 0; i < g_num_block_types; ++i) {
         if (num_blocks_type[i] > num_instances_type[i]) {
 
             vtr::printf_error(__FILE__, __LINE__,
                     "Not enough physical locations for type %s, "
                     "number of blocks is %d but number of locations is %d.\n",
-                    type_descriptors[i].name, num_blocks_type[i],
+                    g_block_types[i].name, num_blocks_type[i],
                     num_instances_type[i]);
             exit(1);
         }
@@ -414,11 +414,11 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 
     vtr::printf_info("\n");
     vtr::printf_info("Resource usage...\n");
-    for (int i = 0; i < num_types; ++i) {
+    for (int i = 0; i < g_num_block_types; ++i) {
         vtr::printf_info("\tNetlist      %d\tblocks of type: %s\n",
-                num_blocks_type[i], type_descriptors[i].name);
+                num_blocks_type[i], g_block_types[i].name);
         vtr::printf_info("\tArchitecture %d\tblocks of type: %s\n",
-                num_instances_type[i], type_descriptors[i].name);
+                num_instances_type[i], g_block_types[i].name);
     }
     vtr::printf_info("\n");
     g_chan_width.x_max = g_chan_width.y_max = 0;
@@ -745,50 +745,50 @@ static void free_complex_block_types(void) {
 
 	free_all_pb_graph_nodes();
 
-	for (int i = 0; i < num_types; ++i) {
-		free(type_descriptors[i].name);
+	for (int i = 0; i < g_num_block_types; ++i) {
+		free(g_block_types[i].name);
 
-		if (&type_descriptors[i] == EMPTY_TYPE) {
+		if (&g_block_types[i] == EMPTY_TYPE) {
 			continue;
 		}
 
-		for (int width = 0; width < type_descriptors[i].width; ++width) {
-			for (int height = 0; height < type_descriptors[i].height; ++height) {
+		for (int width = 0; width < g_block_types[i].width; ++width) {
+			for (int height = 0; height < g_block_types[i].height; ++height) {
 				for (int side = 0; side < 4; ++side) {
-					for (int pin = 0; pin < type_descriptors[i].num_pin_loc_assignments[width][height][side]; ++pin) {
-						if (type_descriptors[i].pin_loc_assignments[width][height][side][pin])
-							free(type_descriptors[i].pin_loc_assignments[width][height][side][pin]);
+					for (int pin = 0; pin < g_block_types[i].num_pin_loc_assignments[width][height][side]; ++pin) {
+						if (g_block_types[i].pin_loc_assignments[width][height][side][pin])
+							free(g_block_types[i].pin_loc_assignments[width][height][side][pin]);
 					}
-					free(type_descriptors[i].pinloc[width][height][side]);
-					free(type_descriptors[i].pin_loc_assignments[width][height][side]);
+					free(g_block_types[i].pinloc[width][height][side]);
+					free(g_block_types[i].pin_loc_assignments[width][height][side]);
 				}
-				free(type_descriptors[i].pinloc[width][height]);
-				free(type_descriptors[i].pin_loc_assignments[width][height]);
-				free(type_descriptors[i].num_pin_loc_assignments[width][height]);
+				free(g_block_types[i].pinloc[width][height]);
+				free(g_block_types[i].pin_loc_assignments[width][height]);
+				free(g_block_types[i].num_pin_loc_assignments[width][height]);
 			}
-			free(type_descriptors[i].pinloc[width]);
-			free(type_descriptors[i].pin_loc_assignments[width]);
-			free(type_descriptors[i].num_pin_loc_assignments[width]);
+			free(g_block_types[i].pinloc[width]);
+			free(g_block_types[i].pin_loc_assignments[width]);
+			free(g_block_types[i].num_pin_loc_assignments[width]);
 		}
-		free(type_descriptors[i].pinloc);
-		free(type_descriptors[i].pin_loc_assignments);
-		free(type_descriptors[i].num_pin_loc_assignments);
+		free(g_block_types[i].pinloc);
+		free(g_block_types[i].pin_loc_assignments);
+		free(g_block_types[i].num_pin_loc_assignments);
 
-		free(type_descriptors[i].pin_width);
-		free(type_descriptors[i].pin_height);
+		free(g_block_types[i].pin_width);
+		free(g_block_types[i].pin_height);
 
-		for (int j = 0; j < type_descriptors[i].num_class; ++j) {
-			free(type_descriptors[i].class_inf[j].pinlist);
+		for (int j = 0; j < g_block_types[i].num_class; ++j) {
+			free(g_block_types[i].class_inf[j].pinlist);
 		}
-		free(type_descriptors[i].class_inf);
-		free(type_descriptors[i].is_global_pin);
-		free(type_descriptors[i].pin_class);
-		free(type_descriptors[i].grid_loc_def);
+		free(g_block_types[i].class_inf);
+		free(g_block_types[i].is_global_pin);
+		free(g_block_types[i].pin_class);
+		free(g_block_types[i].grid_loc_def);
 
-		free_pb_type(type_descriptors[i].pb_type);
-		free(type_descriptors[i].pb_type);
+		free_pb_type(g_block_types[i].pb_type);
+		free(g_block_types[i].pb_type);
 	}
-	delete[] type_descriptors;
+	delete[] g_block_types;
 }
 
 static void free_pb_type(t_pb_type *pb_type) {

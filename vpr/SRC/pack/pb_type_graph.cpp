@@ -110,21 +110,21 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 	int i, errors;
 	edges_head = NULL;
 	num_edges_head = NULL;
-	for (i = 0; i < num_types; i++) {
-		if (type_descriptors[i].pb_type) {
+	for (i = 0; i < g_num_block_types; i++) {
+		if (g_block_types[i].pb_type) {
 			pin_count_in_cluster = 0;
-			type_descriptors[i].pb_graph_head = (t_pb_graph_node*) vtr::calloc(1,
+			g_block_types[i].pb_graph_head = (t_pb_graph_node*) vtr::calloc(1,
 					sizeof(t_pb_graph_node));
-			alloc_and_load_pb_graph(type_descriptors[i].pb_graph_head, NULL,
-					type_descriptors[i].pb_type, 0, load_power_structures);
-			type_descriptors[i].pb_graph_head->total_pb_pins =
+			alloc_and_load_pb_graph(g_block_types[i].pb_graph_head, NULL,
+					g_block_types[i].pb_type, 0, load_power_structures);
+			g_block_types[i].pb_graph_head->total_pb_pins =
 					pin_count_in_cluster;
-			alloc_and_load_pin_locations_from_pb_graph(&type_descriptors[i]);
+			alloc_and_load_pin_locations_from_pb_graph(&g_block_types[i]);
 			load_pin_classes_in_pb_graph_head(
-					type_descriptors[i].pb_graph_head);
+					g_block_types[i].pb_graph_head);
 		} else {
-			type_descriptors[i].pb_graph_head = NULL;
-			VTR_ASSERT(&type_descriptors[i] == EMPTY_TYPE);
+			g_block_types[i].pb_graph_head = NULL;
+			VTR_ASSERT(&g_block_types[i] == EMPTY_TYPE);
 		}
 	}
 
@@ -133,10 +133,10 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 		vtr::printf_error(__FILE__, __LINE__, "in pb graph");
 		exit(1);
 	}
-	for (i = 0; i < num_types; i++) {
-		if (type_descriptors[i].pb_type) {
+	for (i = 0; i < g_num_block_types; i++) {
+		if (g_block_types[i].pb_type) {
 			load_pb_graph_pin_to_pin_annotations(
-					type_descriptors[i].pb_graph_head);
+					g_block_types[i].pb_graph_head);
 		}
 	}
 }
@@ -147,12 +147,12 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 void free_all_pb_graph_nodes(void) {
 
 	int i;
-	for (i = 0; i < num_types; i++) {
-		if (type_descriptors[i].pb_type) {
+	for (i = 0; i < g_num_block_types; i++) {
+		if (g_block_types[i].pb_type) {
 			pin_count_in_cluster = 0;
-			if (type_descriptors[i].pb_graph_head) {
-				free_pb_graph(type_descriptors[i].pb_graph_head);
-				free(type_descriptors[i].pb_graph_head);
+			if (g_block_types[i].pb_graph_head) {
+				free_pb_graph(g_block_types[i].pb_graph_head);
+				free(g_block_types[i].pb_graph_head);
 			}
 		}
 	}
@@ -171,10 +171,10 @@ void echo_pb_graph(char * filename) {
 	fprintf(fp, "Physical Blocks Graph\n");
 	fprintf(fp, "--------------------------------------------\n\n");
 
-	for (i = 0; i < num_types; i++) {
-		fprintf(fp, "type %s\n", type_descriptors[i].name);
-		if (type_descriptors[i].pb_graph_head)
-			echo_pb_rec(type_descriptors[i].pb_graph_head, 1, fp);
+	for (i = 0; i < g_num_block_types; i++) {
+		fprintf(fp, "type %s\n", g_block_types[i].name);
+		if (g_block_types[i].pb_graph_head)
+			echo_pb_rec(g_block_types[i].pb_graph_head, 1, fp);
 	}
 
 	fclose(fp);
@@ -193,9 +193,9 @@ static int check_pb_graph(void) {
 	 5.  All pins are connected to edges (warning)
 	 */
 	num_errors = 0;
-	for (i = 0; i < num_types; i++) {
-		if(type_descriptors[i].pb_type){
-			check_pb_node_rec(type_descriptors[i].pb_graph_head);
+	for (i = 0; i < g_num_block_types; i++) {
+		if(g_block_types[i].pb_type){
+			check_pb_node_rec(g_block_types[i].pb_graph_head);
 		}
 	}
 	return num_errors;

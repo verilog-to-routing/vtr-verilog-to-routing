@@ -769,9 +769,9 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 
 	f_net_to_driver_tnode = (int*)vtr::malloc(num_timing_nets() * sizeof(int));
 
-	intra_lb_pb_pin_lookup = new t_pb_graph_pin**[num_types];
-	for (int i = 0; i < num_types; i++) {
-		intra_lb_pb_pin_lookup[i] = alloc_and_load_pb_graph_pin_lookup_from_index(&type_descriptors[i]);
+	intra_lb_pb_pin_lookup = new t_pb_graph_pin**[g_num_block_types];
+	for (int i = 0; i < g_num_block_types; i++) {
+		intra_lb_pb_pin_lookup[i] = alloc_and_load_pb_graph_pin_lookup_from_index(&g_block_types[i]);
 	}
 
 	for (size_t i = 0; i < num_timing_nets(); i++) {
@@ -1035,7 +1035,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
     vtr::printf_info("Disconnected %d redundant timing edges to constant generators\n", const_gen_edge_break_count);
 
 	
-	for (int i = 0; i < num_types; i++) {
+	for (int i = 0; i < g_num_block_types; i++) {
 		free_pb_graph_pin_lookup_from_index(intra_lb_pb_pin_lookup[i]);
 	}
 	free_tnode_lookup_from_pin_id(lookup_tnode_from_pin_id);

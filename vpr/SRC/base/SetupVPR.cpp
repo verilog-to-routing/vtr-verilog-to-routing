@@ -174,8 +174,8 @@ void SetupVPR(t_options *Options,
 	SetupPowerOpts(*Options, PowerOpts, Arch);
 
 	if (readArchFile == true) {
-		XmlReadArch(Options->ArchFile, TimingEnabled, Arch, &type_descriptors,
-				&num_types);
+		XmlReadArch(Options->ArchFile, TimingEnabled, Arch, &g_block_types,
+				&g_num_block_types);
 	}
 
 	*user_models = Arch->models;
@@ -185,16 +185,16 @@ void SetupVPR(t_options *Options,
 	EMPTY_TYPE = NULL;
 	FILL_TYPE = NULL;
 	IO_TYPE = NULL;
-	for (i = 0; i < num_types; i++) {
-		if (strcmp(type_descriptors[i].name, "<EMPTY>") == 0) {
-			EMPTY_TYPE = &type_descriptors[i];
-		} else if (strcmp(type_descriptors[i].name, "io") == 0) {
-			IO_TYPE = &type_descriptors[i];
+	for (i = 0; i < g_num_block_types; i++) {
+		if (strcmp(g_block_types[i].name, "<EMPTY>") == 0) {
+			EMPTY_TYPE = &g_block_types[i];
+		} else if (strcmp(g_block_types[i].name, "io") == 0) {
+			IO_TYPE = &g_block_types[i];
 		} else {
-			for (j = 0; j < type_descriptors[i].num_grid_loc_def; j++) {
-				if (type_descriptors[i].grid_loc_def[j].grid_loc_type == FILL) {
+			for (j = 0; j < g_block_types[i].num_grid_loc_def; j++) {
+				if (g_block_types[i].grid_loc_def[j].grid_loc_type == FILL) {
 					VTR_ASSERT(FILL_TYPE == NULL);
-					FILL_TYPE = &type_descriptors[i];
+					FILL_TYPE = &g_block_types[i];
 				}
 			}
 		}
@@ -260,7 +260,7 @@ void SetupVPR(t_options *Options,
 	}
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
-		EchoArch(getEchoFileName(E_ECHO_ARCH), type_descriptors, num_types,
+		EchoArch(getEchoFileName(E_ECHO_ARCH), g_block_types, g_num_block_types,
 				Arch);
 	}
 

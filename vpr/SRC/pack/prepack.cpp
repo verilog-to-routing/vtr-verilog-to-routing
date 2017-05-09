@@ -95,17 +95,17 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 	/* alloc and initialize array of packing patterns based on architecture complex blocks */
 	nhash = alloc_hash_table();
 	ncount = 0;
-	for (i = 0; i < num_types; i++) {
+	for (i = 0; i < g_num_block_types; i++) {
 		discover_pattern_names_in_pb_graph_node(
-				type_descriptors[i].pb_graph_head, nhash, &ncount);
+				g_block_types[i].pb_graph_head, nhash, &ncount);
 	}
 
 	list_of_packing_patterns = alloc_and_init_pattern_list_from_hash(ncount, nhash);
 
 	/* load packing patterns by traversing the edges to find edges belonging to pattern */
 	for (i = 0; i < ncount; i++) {
-		for (j = 0; j < num_types; j++) {
-			expansion_edge = find_expansion_edge_of_pattern(i, type_descriptors[j].pb_graph_head);
+		for (j = 0; j < g_num_block_types; j++) {
+			expansion_edge = find_expansion_edge_of_pattern(i, g_block_types[j].pb_graph_head);
 			if (expansion_edge == NULL) {
 				continue;
 			}
@@ -1097,9 +1097,9 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const 
 	best_cost = UNDEFINED;
 	best = NULL;
 	current = NULL;
-	for(i = 0; i < num_types; i++) {
+	for(i = 0; i < g_num_block_types; i++) {
 		cost = UNDEFINED;
-		current = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, type_descriptors[i].pb_graph_head, &cost);
+		current = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, g_block_types[i].pb_graph_head, &cost);
 		if(cost != UNDEFINED) {
 			if(best_cost == UNDEFINED || best_cost > cost) {
 				best_cost = cost;

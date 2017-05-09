@@ -86,12 +86,12 @@ extern t_type_ptr IO_TYPE;
 extern t_type_ptr EMPTY_TYPE;
 extern t_type_ptr FILL_TYPE;
 
-/* type_descriptors are blocks that can be moved by the placer
+/* g_block_types are blocks that can be moved by the placer
  such as: I/Os, CLBs, memories, multipliers, etc
  Different types of physical block are contained in type descriptors
  */
-extern int num_types;
-extern struct s_type_descriptor *type_descriptors;
+extern int g_num_block_types;
+extern struct s_type_descriptor *g_block_types;
 
 /*******************************************************************
  Routing related globals

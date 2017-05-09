@@ -60,14 +60,14 @@ void draw_internal_alloc_blk() {
 	/* Create a vector holding coordinate information for each type of physical logic
 	 * block.
 	 */
-	draw_coords->blk_info.resize(num_types);
+	draw_coords->blk_info.resize(g_num_block_types);
 
-	for (i = 0; i < num_types; ++i) {
+	for (i = 0; i < g_num_block_types; ++i) {
 		/* Empty block has no sub_blocks */
-		if (&type_descriptors[i] == EMPTY_TYPE)
+		if (&g_block_types[i] == EMPTY_TYPE)
 			continue;
 		
-		pb_graph_head = type_descriptors[i].pb_graph_head;
+		pb_graph_head = g_block_types[i].pb_graph_head;
 		
 		/* Create an vector with size equal to the total number of pins for each type 
 		 * of physical logic block, in order to uniquely identify each sub-block in 
@@ -85,9 +85,9 @@ void draw_internal_init_blk() {
 
 	t_pb_graph_node *pb_graph_head_node;
 
-	for (int i = 0; i < num_types; ++i) {
+	for (int i = 0; i < g_num_block_types; ++i) {
 		/* Empty block has no sub_blocks */
-		s_type_descriptor& type_desc = type_descriptors[i];
+		s_type_descriptor& type_desc = g_block_types[i];
 		if (&type_desc == EMPTY_TYPE)
 			continue;
 
@@ -259,7 +259,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 	const float FRACTION_CHILD_MARGIN_X = 0.025;
 	const float FRACTION_CHILD_MARGIN_Y = 0.04;
 
-	int capacity = type_descriptors[type_descrip_index].capacity;
+	int capacity = g_block_types[type_descrip_index].capacity;
 	if (capacity > 1 && g_nx > 0 && g_ny > 0 && g_grid[1][0].usage != 0
 		&& type_descrip_index == g_grid[1][0].type->index) {
 

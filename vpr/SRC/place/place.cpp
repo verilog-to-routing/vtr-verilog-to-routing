@@ -96,7 +96,7 @@ large enough to be on the order of timing costs for normal constraints. */
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
 static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..g_clbs_nlist.net.size()-1] */
 
-static t_legal_pos **legal_pos = NULL; /* [0..num_types-1][0..type_tsize - 1] */
+static t_legal_pos **legal_pos = NULL; /* [0..g_num_block_types-1][0..type_tsize - 1] */
 static int *num_legal_pos = NULL; /* [0..num_legal_pos-1] */
 
 /* [0...g_clbs_nlist.net.size()-1]                                               *
@@ -352,7 +352,7 @@ void try_place(struct s_placer_opts placer_opts,
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
 
 	/* Allocated here because it goes into timing critical code where each memory allocation is expensive */
-    IntraLbPbPinLookup pb_gpin_lookup(type_descriptors, num_types);
+    IntraLbPbPinLookup pb_gpin_lookup(g_block_types, g_num_block_types);
 
 
 	/* init file scope variables */
@@ -2065,8 +2065,8 @@ static void alloc_and_load_placement_structs(
 	load_legal_placements();
 
 	max_pins_per_clb = 0;
-	for (i = 0; i < num_types; i++) {
-		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[i].num_pins);
+	for (i = 0; i < g_num_block_types; i++) {
+		max_pins_per_clb = max(max_pins_per_clb, g_block_types[i].num_pins);
 	}
 
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -2574,8 +2574,8 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 static void alloc_legal_placements() {
 	int i, j, k;
 
-	legal_pos = (t_legal_pos **) vtr::malloc(num_types * sizeof(t_legal_pos *));
-	num_legal_pos = (int *) vtr::calloc(num_types, sizeof(int));
+	legal_pos = (t_legal_pos **) vtr::malloc(g_num_block_types * sizeof(t_legal_pos *));
+	num_legal_pos = (int *) vtr::calloc(g_num_block_types, sizeof(int));
 	
 	/* Initialize all occupancy to zero. */
 
@@ -2593,7 +2593,7 @@ static void alloc_legal_placements() {
 		}
 	}
 
-	for (i = 0; i < num_types; i++) {
+	for (i = 0; i < g_num_block_types; i++) {
 		legal_pos[i] = (t_legal_pos *) vtr::malloc(num_legal_pos[i] * sizeof(t_legal_pos));
 	}
 }
@@ -2602,7 +2602,7 @@ static void load_legal_placements() {
 	int i, j, k, itype;
 	int *index;
 
-	index = (int *) vtr::calloc(num_types, sizeof(int));
+	index = (int *) vtr::calloc(g_num_block_types, sizeof(int));
 
 	for (i = 0; i <= g_nx + 1; i++) {
 		for (j = 0; j <= g_ny + 1; j++) {
@@ -2625,7 +2625,7 @@ static void load_legal_placements() {
 
 static void free_legal_placements() {
 	int i;
-	for (i = 0; i < num_types; i++) {
+	for (i = 0; i < g_num_block_types; i++) {
 		free(legal_pos[i]);
 	}
 	free(legal_pos); /* Free the mapping list */
@@ -2735,7 +2735,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 					"Initial placement failed.\n"
 					"Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n"
 					"VPR cannot auto-size for your circuit, please resize the FPGA manually.\n", 
-					pl_macros[imacro].num_blocks, block[iblk].name, iblk, type_descriptors[itype].name, itype);
+					pl_macros[imacro].num_blocks, block[iblk].name, iblk, g_block_types[itype].name, itype);
 		}
 
 		// Try to place the macro first, if can be placed - place them, otherwise try again
@@ -2772,7 +2772,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 						"Initial placement failed.\n"
 						"Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n"
 						"Please manually size the FPGA because VPR can't do this yet.\n", 
-						pl_macros[imacro].num_blocks, block[iblk].name, iblk, type_descriptors[itype].name, itype);
+						pl_macros[imacro].num_blocks, block[iblk].name, iblk, g_block_types[itype].name, itype);
 			}
 
 		} else {
@@ -2812,7 +2812,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, 
 						"Initial placement failed.\n"
 						"Could not place block %s (#%d); no free locations of type %s (#%d).\n", 
-						block[iblk].name, iblk, type_descriptors[itype].name, itype);
+						block[iblk].name, iblk, g_block_types[itype].name, itype);
 			}
 
 			initial_placement_location(free_locations, iblk, &ipos, &x, &y, &z);
@@ -2864,14 +2864,14 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	 * The number of such locations is given by num_legal_pos[itype].
 	 */
 	int i, j, k, iblk, itype, x, y, z, ipos;
-	int *free_locations; /* [0..num_types-1]. 
+	int *free_locations; /* [0..g_num_block_types-1]. 
 						  * Stores how many locations there are for this type that *might* still be free.
 						  * That is, this stores the number of entries in legal_pos[itype] that are worth considering
 						  * as you look for a free location.
 						  */
 
-	free_locations = (int *) vtr::malloc(num_types * sizeof(int));
-	for (itype = 0; itype < num_types; itype++) {
+	free_locations = (int *) vtr::malloc(g_num_block_types * sizeof(int));
+	for (itype = 0; itype < g_num_block_types; itype++) {
 		free_locations[itype] = num_legal_pos[itype];
 	}
 	
@@ -2882,7 +2882,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 		for (j = 0; j <= g_ny + 1; j++) {
 			g_grid[i][j].usage = 0;
 			itype = g_grid[i][j].type->index;
-			for (k = 0; k < type_descriptors[itype].capacity; k++) {
+			for (k = 0; k < g_block_types[itype].capacity; k++) {
 				if (g_grid[i][j].blocks[k] != INVALID_BLOCK) {
 					g_grid[i][j].blocks[k] = EMPTY_BLOCK;
 				}
@@ -2900,7 +2900,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
 
 	// All the macros are placed, update the legal_pos[][] array
-	for (itype = 0; itype < num_types; itype++) {
+	for (itype = 0; itype < g_num_block_types; itype++) {
 		VTR_ASSERT(free_locations[itype] >= 0);
 		for (ipos = 0; ipos < free_locations[itype]; ipos++) {
 			x = legal_pos[itype][ipos].x;

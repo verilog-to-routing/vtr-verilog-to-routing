@@ -35,18 +35,18 @@ using namespace std;
 
  /* f_port_from_blk_pin array allow us to quickly find what port a block *
  * pin corresponds to.                                                   *
- * [0...num_types-1][0...blk_pin_count-1]                                *
+ * [0...g_num_block_types-1][0...blk_pin_count-1]                                *
  *                                                                       */
 static int ** f_port_from_blk_pin = NULL;
 
 /* f_port_pin_from_blk_pin array allow us to quickly find what port pin a*
  * block pin corresponds to.                                             *
- * [0...num_types-1][0...blk_pin_count-1]                                */
+ * [0...g_num_block_types-1][0...blk_pin_count-1]                                */
 static int ** f_port_pin_from_blk_pin = NULL;
 
 /* f_port_pin_to_block_pin array allows us to quickly find what block    *
  * pin a port pin corresponds to.                                        *
- * [0...num_types-1][0...num_ports-1][0...num_port_pins-1]               */
+ * [0...g_num_block_types-1][0...num_ports-1][0...num_port_pins-1]               */
 static int *** f_blk_pin_from_port_pin = NULL;
 
 
@@ -232,7 +232,7 @@ IntraLbPbPinLookup& IntraLbPbPinLookup::operator=(IntraLbPbPinLookup rhs) {
 }
 
 IntraLbPbPinLookup::~IntraLbPbPinLookup() {
-	for (int itype = 0; itype < num_types; itype++) {
+	for (int itype = 0; itype < g_num_block_types; itype++) {
 		free_pb_graph_pin_lookup_from_index(intra_lb_pb_pin_lookup_[itype]);
 	}
 
@@ -1228,8 +1228,8 @@ int ** alloc_and_load_net_pin_index() {
 	t_type_ptr type;
 
 	/* Compute required size. */
-	for (itype = 0; itype < num_types; itype++)
-		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[itype].num_pins);
+	for (itype = 0; itype < g_num_block_types; itype++)
+		max_pins_per_clb = max(max_pins_per_clb, g_block_types[itype].num_pins);
 	
 	/* Allocate for maximum size. */
 	temp_net_pin_index = vtr::alloc_matrix<int>(0, num_blocks - 1, 0, max_pins_per_clb - 1);
@@ -1278,11 +1278,11 @@ void get_port_pin_from_blk_pin(int blk_type_index, int blk_pin, int * port,
 	 *                                                                       *
 	 * f_port_from_blk_pin array allow us to quickly find what port a        *
 	 * block pin corresponds to.                                             *
-	 * [0...num_types-1][0...blk_pin_count-1]                                *
+	 * [0...g_num_block_types-1][0...blk_pin_count-1]                                *
 	 *                                                                       *
 	 * f_port_pin_from_blk_pin array allow us to quickly find what port      *
 	 * pin a block pin corresponds to.                                       *
-	 * [0...num_types-1][0...blk_pin_count-1]                                */
+	 * [0...g_num_block_types-1][0...blk_pin_count-1]                                */
 
 	/* If either one of the arrays is not allocated and loaded, it is        *
 	 * corrupted, so free both of them.                                      */ 
@@ -1312,7 +1312,7 @@ void free_port_pin_from_blk_pin(void) {
 	int itype;
 	
 	if (f_port_from_blk_pin != NULL) {
-		for (itype = 1; itype < num_types; itype++) {
+		for (itype = 1; itype < g_num_block_types; itype++) {
 			free(f_port_from_blk_pin[itype]);
 		}
 		free(f_port_from_blk_pin);
@@ -1321,7 +1321,7 @@ void free_port_pin_from_blk_pin(void) {
 	}
 
 	if (f_port_pin_from_blk_pin != NULL) {
-		for (itype = 1; itype < num_types; itype++) {
+		for (itype = 1; itype < g_num_block_types; itype++) {
 			free(f_port_pin_from_blk_pin[itype]);
 		}
 		free(f_port_pin_from_blk_pin);
@@ -1344,11 +1344,11 @@ static void alloc_and_load_port_pin_from_blk_pin(void) {
 	int blk_pin_count, num_port_pins, num_ports;
 
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_port_from_blk_pin = (int **) vtr::malloc(num_types* sizeof(int*));
-	temp_port_pin_from_blk_pin = (int **) vtr::malloc(num_types* sizeof(int*));
-	for (itype = 1; itype < num_types; itype++) {
+	temp_port_from_blk_pin = (int **) vtr::malloc(g_num_block_types* sizeof(int*));
+	temp_port_pin_from_blk_pin = (int **) vtr::malloc(g_num_block_types* sizeof(int*));
+	for (itype = 1; itype < g_num_block_types; itype++) {
 		
-		blk_pin_count = type_descriptors[itype].num_pins;
+		blk_pin_count = g_block_types[itype].num_pins;
 
 		temp_port_from_blk_pin[itype] = (int *) vtr::malloc(blk_pin_count* sizeof(int));
 		temp_port_pin_from_blk_pin[itype] = (int *) vtr::malloc(blk_pin_count* sizeof(int));
@@ -1360,15 +1360,15 @@ static void alloc_and_load_port_pin_from_blk_pin(void) {
 	}
 
 	/* Load the values */
-	/* itype starts from 1 since type_descriptors[0] is the EMPTY_TYPE. */
-	for (itype = 1; itype < num_types; itype++) {
+	/* itype starts from 1 since g_block_types[0] is the EMPTY_TYPE. */
+	for (itype = 1; itype < g_num_block_types; itype++) {
 
 		blk_pin_count = 0;
-		num_ports = type_descriptors[itype].pb_type->num_ports;
+		num_ports = g_block_types[itype].pb_type->num_ports;
 
 		for (iport = 0; iport < num_ports; iport++) {
 
-			num_port_pins = type_descriptors[itype].pb_type->ports[iport].num_pins;
+			num_port_pins = g_block_types[itype].pb_type->ports[iport].num_pins;
 
 			for (iport_pin = 0; iport_pin < num_port_pins; iport_pin++) {
 
@@ -1394,7 +1394,7 @@ void get_blk_pin_from_port_pin(int blk_type_index, int port,int port_pin,
 	 *                                                                       *
 	 * f_port_pin_to_block_pin array allows us to quickly find what block    *
 	 * pin a port pin corresponds to.                                        *
-	 * [0...num_types-1][0...num_ports-1][0...num_port_pins-1]               */
+	 * [0...g_num_block_types-1][0...num_ports-1][0...num_port_pins-1]               */
 
 	/* If the array is not allocated and loaded, allocate it.                */ 
 	if (f_blk_pin_from_port_pin == NULL) {
@@ -1417,8 +1417,8 @@ void free_blk_pin_from_port_pin(void) {
 	
 	if (f_blk_pin_from_port_pin != NULL) {
 		
-		for (itype = 1; itype < num_types; itype++) {
-			num_ports = type_descriptors[itype].pb_type->num_ports;
+		for (itype = 1; itype < g_num_block_types; itype++) {
+			num_ports = g_block_types[itype].pb_type->num_ports;
 			for (iport = 0; iport < num_ports; iport++) {
 				free(f_blk_pin_from_port_pin[itype][iport]);
 			}
@@ -1442,12 +1442,12 @@ static void alloc_and_load_blk_pin_from_port_pin(void) {
 	int blk_pin_count, num_port_pins, num_ports;
 
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_blk_pin_from_port_pin = (int ***) vtr::malloc(num_types * sizeof(int**));
-	for (itype = 1; itype < num_types; itype++) {
-		num_ports = type_descriptors[itype].pb_type->num_ports;
+	temp_blk_pin_from_port_pin = (int ***) vtr::malloc(g_num_block_types * sizeof(int**));
+	for (itype = 1; itype < g_num_block_types; itype++) {
+		num_ports = g_block_types[itype].pb_type->num_ports;
 		temp_blk_pin_from_port_pin[itype] = (int **) vtr::malloc(num_ports * sizeof(int*));
 		for (iport = 0; iport < num_ports; iport++) {
-			num_port_pins = type_descriptors[itype].pb_type->ports[iport].num_pins;
+			num_port_pins = g_block_types[itype].pb_type->ports[iport].num_pins;
 			temp_blk_pin_from_port_pin[itype][iport] = (int *) vtr::malloc(num_port_pins * sizeof(int));
 			
 			for(iport_pin = 0; iport_pin < num_port_pins; iport_pin ++) {
@@ -1457,12 +1457,12 @@ static void alloc_and_load_blk_pin_from_port_pin(void) {
 	}
 	
 	/* Load the values */
-	/* itype starts from 1 since type_descriptors[0] is the EMPTY_TYPE. */
-	for (itype = 1; itype < num_types; itype++) {
+	/* itype starts from 1 since g_block_types[0] is the EMPTY_TYPE. */
+	for (itype = 1; itype < g_num_block_types; itype++) {
 		blk_pin_count = 0;
-		num_ports = type_descriptors[itype].pb_type->num_ports;
+		num_ports = g_block_types[itype].pb_type->num_ports;
 		for (iport = 0; iport < num_ports; iport++) {
-			num_port_pins = type_descriptors[itype].pb_type->ports[iport].num_pins;
+			num_port_pins = g_block_types[itype].pb_type->ports[iport].num_pins;
 			for (iport_pin = 0; iport_pin < num_port_pins; iport_pin++) {
 				temp_blk_pin_from_port_pin[itype][iport][iport_pin] = blk_pin_count;
 				blk_pin_count++;
@@ -1585,7 +1585,7 @@ static void mark_direct_of_pins(int start_pin_index, int end_pin_index, int ityp
 								
 		//iterate through all segment connections and check if all Fc's are 0
 		bool all_fcs_0 = true;
-        for (const auto& fc_spec : type_descriptors[itype].fc_specs) {
+        for (const auto& fc_spec : g_block_types[itype].fc_specs) {
             for(int ipin : fc_spec.pins) {
                 if(iblk_pin == ipin && fc_spec.fc_value > 0) {
                     all_fcs_0 = false;
@@ -1626,15 +1626,15 @@ static void mark_direct_of_ports (int idirect, int direct_type, char * pb_type_n
 	int itype, iport;
 
 	// Go through all the block types
-	for (itype = 1; itype < num_types; itype++) {
+	for (itype = 1; itype < g_num_block_types; itype++) {
 
 		// Find blocks with the same pb_type_name
-		if (strcmp(type_descriptors[itype].pb_type->name, pb_type_name) == 0) {
-			num_ports = type_descriptors[itype].pb_type->num_ports;
+		if (strcmp(g_block_types[itype].pb_type->name, pb_type_name) == 0) {
+			num_ports = g_block_types[itype].pb_type->num_ports;
 			for (iport = 0; iport < num_ports; iport++) {
 				// Find ports with the same port_name
-				if (strcmp(type_descriptors[itype].pb_type->ports[iport].name, port_name) == 0) {
-					num_port_pins = type_descriptors[itype].pb_type->ports[iport].num_pins;
+				if (strcmp(g_block_types[itype].pb_type->ports[iport].name, port_name) == 0) {
+					num_port_pins = g_block_types[itype].pb_type->ports[iport].num_pins;
 
 					// Check whether the end_pin_index is valid
 					if (end_pin_index > num_port_pins) {
@@ -1693,11 +1693,11 @@ void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs,
 	int from_start_pin_index = -1, from_end_pin_index = -1;
 		
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_idirect_from_blk_pin = (int **) vtr::malloc(num_types * sizeof(int *));
-	temp_direct_type_from_blk_pin = (int **) vtr::malloc(num_types * sizeof(int *));
-	for (itype = 1; itype < num_types; itype++) {
+	temp_idirect_from_blk_pin = (int **) vtr::malloc(g_num_block_types * sizeof(int *));
+	temp_direct_type_from_blk_pin = (int **) vtr::malloc(g_num_block_types * sizeof(int *));
+	for (itype = 1; itype < g_num_block_types; itype++) {
 		
-		num_type_pins = type_descriptors[itype].num_pins;
+		num_type_pins = g_block_types[itype].num_pins;
 
 		temp_idirect_from_blk_pin[itype] = (int *) vtr::malloc(num_type_pins * sizeof(int));
 		temp_direct_type_from_blk_pin[itype] = (int *) vtr::malloc(num_type_pins * sizeof(int));

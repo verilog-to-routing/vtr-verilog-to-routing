@@ -711,7 +711,7 @@ int get_bidir_opin_connections(
 
 	num_conn = 0;
 
-	/* [0..num_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
+	/* [0..g_num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
 	for (iside = 0; iside < 4; iside++) {
 
 		/* Figure out coords of channel segment based on side */

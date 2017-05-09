@@ -32,7 +32,7 @@ using namespace std;
 
 /****************** Static variables local to this module ************************/
 
-static t_pb_graph_pin ***pb_graph_pin_lookup_from_index_by_type = NULL; /* [0..num_types-1][0..num_pb_graph_pins-1] lookup pointer to pb_graph_pin from pb_graph_pin index */
+static t_pb_graph_pin ***pb_graph_pin_lookup_from_index_by_type = NULL; /* [0..g_num_block_types-1][0..num_pb_graph_pins-1] lookup pointer to pb_graph_pin from pb_graph_pin index */
 
 
 /**************** Subroutine definitions ************************************/
@@ -507,9 +507,9 @@ static void print_stats(t_block *clb, int num_clusters) {
 
 	num_clb_types = num_clb_inputs_used = num_clb_outputs_used = NULL;
 
-	num_clb_types = (int*) vtr::calloc(num_types, sizeof(int));
-	num_clb_inputs_used = (int*) vtr::calloc(num_types, sizeof(int));
-	num_clb_outputs_used = (int*) vtr::calloc(num_types, sizeof(int));
+	num_clb_types = (int*) vtr::calloc(g_num_block_types, sizeof(int));
+	num_clb_inputs_used = (int*) vtr::calloc(g_num_block_types, sizeof(int));
+	num_clb_outputs_used = (int*) vtr::calloc(g_num_block_types, sizeof(int));
 
 
     for(auto net_id : g_atom_nl.nets()) {
@@ -553,13 +553,13 @@ static void print_stats(t_block *clb, int num_clusters) {
 		num_clb_types[clb[icluster].type->index]++;
 	}
 
-	for (itype = 0; itype < num_types; itype++) {
+	for (itype = 0; itype < g_num_block_types; itype++) {
 		if (num_clb_types[itype] == 0) {
 			vtr::printf_info("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
-					type_descriptors[itype].name, num_clb_types[itype], 0.0, 0.0);
+					g_block_types[itype].name, num_clb_types[itype], 0.0, 0.0);
 		} else {
 			vtr::printf_info("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
-					type_descriptors[itype].name, num_clb_types[itype],
+					g_block_types[itype].name, num_clb_types[itype],
 					(float) num_clb_inputs_used[itype] / (float) num_clb_types[itype],
 					(float) num_clb_outputs_used[itype] / (float) num_clb_types[itype]);
 		}
@@ -597,9 +597,9 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 		}
 	}
 
-	pb_graph_pin_lookup_from_index_by_type = new t_pb_graph_pin **[num_types];
-	for(int itype = 0; itype < num_types; itype++) {
-		pb_graph_pin_lookup_from_index_by_type[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&type_descriptors[itype]);
+	pb_graph_pin_lookup_from_index_by_type = new t_pb_graph_pin **[g_num_block_types];
+	for(int itype = 0; itype < g_num_block_types; itype++) {
+		pb_graph_pin_lookup_from_index_by_type[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&g_block_types[itype]);
 	}
 
 	
@@ -673,7 +673,7 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 		}
 	}
 
-	for(int itype = 0; itype < num_types; itype++) {
+	for(int itype = 0; itype < g_num_block_types; itype++) {
 		free_pb_graph_pin_lookup_from_index (pb_graph_pin_lookup_from_index_by_type[itype]);
 	}
 	delete[] pb_graph_pin_lookup_from_index_by_type;

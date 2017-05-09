@@ -286,9 +286,9 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	VTR_ASSERT(vtr::atoi(tokens[2].data) == index);
 
 	found = false;
-	for (i = 0; i < num_types; i++) {
-		if (strcmp(type_descriptors[i].name, tokens[0].data) == 0) {
-			cb[index].type = &type_descriptors[i];
+	for (i = 0; i < g_num_block_types; i++) {
+		if (strcmp(g_block_types[i].name, tokens[0].data) == 0) {
+			cb[index].type = &g_block_types[i];
 			pb_type = cb[index].type->pb_type;
 			found = true;
 			break;

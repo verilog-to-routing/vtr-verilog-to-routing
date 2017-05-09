@@ -326,7 +326,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		detailed_routing_stage, *hill_climbing_inputs_avail;
 
 	int *num_used_instances_type, *num_instances_type; 
-	/* [0..num_types] Holds array for total number of each cluster_type available */
+	/* [0..g_num_block_types] Holds array for total number of each cluster_type available */
 
 	bool early_exit, is_cluster_legal;
 	enum e_block_pack_status block_pack_status;
@@ -368,12 +368,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		cur_molecule = cur_molecule->next;
 	}
 
-	for (i = 0; i < num_types; i++) {
-		if (EMPTY_TYPE == &type_descriptors[i])
+	for (i = 0; i < g_num_block_types; i++) {
+		if (EMPTY_TYPE == &g_block_types[i])
 			continue;
 		cur_cluster_size = get_max_primitives_in_pb_type(
-				type_descriptors[i].pb_type);
-		cur_pb_depth = get_max_depth_of_pb_type(type_descriptors[i].pb_type);
+				g_block_types[i].pb_type);
+		cur_pb_depth = get_max_depth_of_pb_type(g_block_types[i].pb_type);
 		if (cur_cluster_size > max_cluster_size) {
 			max_cluster_size = cur_cluster_size;
 		}
@@ -404,8 +404,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	blocks_since_last_analysis = 0;
 	early_exit = false;
 	num_blocks_hill_added = 0;
-	num_used_instances_type = (int*) vtr::calloc(num_types, sizeof(int));
-	num_instances_type = (int*) vtr::calloc(num_types, sizeof(int));
+	num_used_instances_type = (int*) vtr::calloc(g_num_block_types, sizeof(int));
+	num_instances_type = (int*) vtr::calloc(g_num_block_types, sizeof(int));
 
 	VTR_ASSERT(max_cluster_size < MAX_SHORT);
 	/* Limit maximum number of elements for each cluster */
@@ -1912,9 +1912,9 @@ static void start_new_cluster(
 	success = false;
 	while (!success) {
 		count = 0;
-		for (i = 0; i < num_types; i++) {
+		for (i = 0; i < g_num_block_types; i++) {
 			if (num_used_instances_type[i] < num_instances_type[i]) {
-				new_cluster->type = &type_descriptors[i];
+				new_cluster->type = &g_block_types[i];
 				if (new_cluster->type == EMPTY_TYPE) {
 					continue;
 				}
@@ -1923,7 +1923,7 @@ static void start_new_cluster(
 				alloc_and_load_pb_stats(new_cluster->pb);
 				new_cluster->pb->parent_pb = NULL;
 
-				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i], &type_descriptors[i]);
+				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i], &g_block_types[i]);
 				for (j = 0; j < new_cluster->type->pb_graph_head->pb_type->num_modes && !success; j++) {
 					new_cluster->pb->mode = j;
 					reset_cluster_placement_stats(&cluster_placement_stats[i]);
@@ -1947,7 +1947,7 @@ static void start_new_cluster(
 				count++;
 			}
 		}
-		if (count == num_types - 1) {
+		if (count == g_num_block_types - 1) {
 			if (molecule->type == MOLECULE_FORCED_PACK) {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 						"Can not find any logic block that can implement molecule.\n"

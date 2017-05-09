@@ -75,9 +75,9 @@ bool place_and_route(struct s_placer_opts placer_opts,
 	clock_t begin, end;
 
 	int max_pins_per_clb = 0;
-	for (int i = 0; i < num_types; ++i) {
-		if (type_descriptors[i].num_pins > max_pins_per_clb) {
-			max_pins_per_clb = type_descriptors[i].num_pins;
+	for (int i = 0; i < g_num_block_types; ++i) {
+		if (g_block_types[i].num_pins > max_pins_per_clb) {
+			max_pins_per_clb = g_block_types[i].num_pins;
 		}
 	}
 
@@ -279,8 +279,8 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	}
 
 	max_pins_per_clb = 0;
-	for (i = 0; i < num_types; i++) {
-		max_pins_per_clb = max(max_pins_per_clb, type_descriptors[i].num_pins);
+	for (i = 0; i < g_num_block_types; i++) {
+		max_pins_per_clb = max(max_pins_per_clb, g_block_types[i].num_pins);
 	}
 
 	clb_opins_used_locally = alloc_route_structs();
@@ -529,7 +529,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	free_rr_graph();
 
-	build_rr_graph(graph_type, num_types, type_descriptors, g_nx, g_ny, g_grid,
+	build_rr_graph(graph_type, g_num_block_types, g_block_types, g_nx, g_ny, g_grid,
 			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,

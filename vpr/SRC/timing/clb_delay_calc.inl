@@ -7,7 +7,7 @@
  */
 
 inline ClbDelayCalc::ClbDelayCalc()
-    : intra_lb_pb_pin_lookup_(type_descriptors, num_types) {}
+    : intra_lb_pb_pin_lookup_(g_block_types, g_num_block_types) {}
 
 inline float ClbDelayCalc::clb_input_to_internal_sink_delay(const t_net_pin* clb_input_pin, int internal_sink_pin) const {
     int pb_ipin = find_clb_pb_pin(clb_input_pin->block, clb_input_pin->block_pin);

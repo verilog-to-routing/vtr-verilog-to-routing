@@ -517,9 +517,9 @@ static double power_MTAs_L(float L_size) {
 static void power_size_pb(void) {
 	int type_idx;
 
-	for (type_idx = 0; type_idx < num_types; type_idx++) {
-		if (type_descriptors[type_idx].pb_graph_head) {
-			power_size_pb_rec(type_descriptors[type_idx].pb_graph_head);
+	for (type_idx = 0; type_idx < g_num_block_types; type_idx++) {
+		if (g_block_types[type_idx].pb_graph_head) {
+			power_size_pb_rec(g_block_types[type_idx].pb_graph_head);
 		}
 	}
 }

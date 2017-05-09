@@ -54,23 +54,23 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 /****************************************/
 
 /**
- * [0..num_pb_types-1] array of cluster placement stats, one for each type_descriptors 
+ * [0..num_pb_types-1] array of cluster placement stats, one for each g_block_types 
  */
 t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
 	t_cluster_placement_stats *cluster_placement_stats_list;
 	int i;
 
-	cluster_placement_stats_list = (t_cluster_placement_stats *) vtr::calloc(num_types,
+	cluster_placement_stats_list = (t_cluster_placement_stats *) vtr::calloc(g_num_block_types,
 			sizeof(t_cluster_placement_stats));
-	for (i = 0; i < num_types; i++) {
-		if (EMPTY_TYPE != &type_descriptors[i]) {
+	for (i = 0; i < g_num_block_types; i++) {
+		if (EMPTY_TYPE != &g_block_types[i]) {
 			cluster_placement_stats_list[i].valid_primitives = (t_cluster_placement_primitive **) vtr::calloc(
-					get_max_primitives_in_pb_type(type_descriptors[i].pb_type)
+					get_max_primitives_in_pb_type(g_block_types[i].pb_type)
  							+ 1, sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
 			cluster_placement_stats_list[i].curr_molecule = NULL;
 			load_cluster_placement_stats_for_pb_graph_node(
 					&cluster_placement_stats_list[i],
-					type_descriptors[i].pb_graph_head);
+					g_block_types[i].pb_graph_head);
 		}
 	}
 	return cluster_placement_stats_list;
@@ -224,7 +224,7 @@ void free_cluster_placement_stats(
 		t_cluster_placement_stats *cluster_placement_stats_list) {
 	t_cluster_placement_primitive *cur, *next;
 	int i, j;
-	for (i = 0; i < num_types; i++) {
+	for (i = 0; i < g_num_block_types; i++) {
 		cur = cluster_placement_stats_list[i].tried;
 		while (cur != NULL) {
 			next = cur->next_primitive;

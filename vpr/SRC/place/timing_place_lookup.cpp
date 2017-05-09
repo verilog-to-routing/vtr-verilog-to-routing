@@ -272,7 +272,7 @@ static void alloc_block(void) {
 
 	max_pins = 0;
 	for (i = 0; i < NUM_TYPES_USED; i++) {
-		max_pins = max(max_pins, type_descriptors[i].num_pins);
+		max_pins = max(max_pins, g_block_types[i].num_pins);
 	}
 
 	num_blocks = BLOCK_COUNT;
@@ -298,9 +298,9 @@ static void load_simplified_device(void) {
 	EMPTY_TYPE_BACKUP = EMPTY_TYPE;
 	IO_TYPE_BACKUP = IO_TYPE;
 	FILL_TYPE_BACKUP = FILL_TYPE;
-	type_descriptors_backup = type_descriptors;
-	num_types_backup = num_types;
-	num_types = NUM_TYPES_USED;
+	type_descriptors_backup = g_block_types;
+	num_types_backup = g_num_block_types;
+	g_num_block_types = NUM_TYPES_USED;
 
 	/* Fill in homogeneous core type info */
 	dummy_type_descriptors[0] = *EMPTY_TYPE;
@@ -309,7 +309,7 @@ static void load_simplified_device(void) {
 	dummy_type_descriptors[1].index = 1;
 	dummy_type_descriptors[2] = *FILL_TYPE;
 	dummy_type_descriptors[2].index = 2;
-	type_descriptors = dummy_type_descriptors;
+	g_block_types = dummy_type_descriptors;
 	EMPTY_TYPE = &dummy_type_descriptors[0];
 	IO_TYPE = &dummy_type_descriptors[1];
 	FILL_TYPE = &dummy_type_descriptors[2];
@@ -344,8 +344,8 @@ static void restore_original_device(void) {
 	IO_TYPE = IO_TYPE_BACKUP;
 	EMPTY_TYPE = EMPTY_TYPE_BACKUP;
 	FILL_TYPE = FILL_TYPE_BACKUP;
-	type_descriptors = type_descriptors_backup;
-	num_types = num_types_backup;
+	g_block_types = type_descriptors_backup;
+	g_num_block_types = num_types_backup;
 
 	/* free allocatd data */
 	for (i = 0; i < g_nx + 2; i++) {
@@ -466,7 +466,7 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 				GRAPH_BIDIR : GRAPH_UNIDIR);
 	}
 
-	build_rr_graph(graph_type, num_types, dummy_type_descriptors, g_nx, g_ny, g_grid,
+	build_rr_graph(graph_type, g_num_block_types, dummy_type_descriptors, g_nx, g_ny, g_grid,
 			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
@@ -574,7 +574,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	CBRR dummy_connections_inf;
 	dummy_connections_inf.prepare_routing_for_net(NET_USED);
 
-    IntraLbPbPinLookup dummy_pb_pin_lookup(type_descriptors, num_types);
+    IntraLbPbPinLookup dummy_pb_pin_lookup(g_block_types, g_num_block_types);
 
 	timing_driven_route_net(NET_USED, itry, pres_fac,
 			router_opts.max_criticality, router_opts.criticality_exp,
