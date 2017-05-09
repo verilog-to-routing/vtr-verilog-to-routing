@@ -415,8 +415,9 @@ They describe how a complex block interfaces with the inter-block world.
         .. code-block:: xml
 
             <fc_override fc_type="frac" fc_val="0" port_name="cin"/>
+            <fc_override fc_type="frac" fc_val="0" port_name="cout"/>
 
-        Where the attribute ``port_name`` is the name of the pin (``cin`` in this example).
+        Where the attribute ``port_name`` is the name of the pin (``cin`` and ``cout`` in this example).
 
         **Segment Override Example:**
 
