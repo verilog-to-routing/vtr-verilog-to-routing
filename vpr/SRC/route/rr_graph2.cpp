@@ -724,10 +724,10 @@ int get_bidir_opin_connections(
 		seg = ((to_type == CHANX) ? tr_i : tr_j);
 
 		/* Don't connect where no tracks on fringes */
-		if ((tr_i < 0) || (tr_i > nx)) {
+		if ((tr_i < 0) || (tr_i > g_nx)) {
 			continue;
 		}
-		if ((tr_j < 0) || (tr_j > ny)) {
+		if ((tr_j < 0) || (tr_j > g_ny)) {
 			continue;
 		}
 		if ((CHANX == to_type) && (tr_i < 1)) {
@@ -1234,8 +1234,8 @@ void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 
 	/* This function must unallocate the structure allocated in 
 	 * alloc_and_load_rr_node_indices. */
-	for (i = 0; i <= (nx + 1); ++i) {
-		for (j = 0; j <= (ny + 1); ++j) {
+	for (i = 0; i <= (g_nx + 1); ++i) {
+		for (j = 0; j <= (g_ny + 1); ++j) {
 			if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0) {
 				/* Vertical large blocks reference is same as offset 0 */
 				L_rr_node_indices[SINK][i][j].list = NULL;
@@ -1256,11 +1256,11 @@ void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 	free(L_rr_node_indices[IPIN]);
 
 	/* free CHANY rr node indices */
-	for (i = 0; i <= (nx + 1); ++i) {
+	for (i = 0; i <= (g_nx + 1); ++i) {
 		if (L_rr_node_indices[CHANY][i] == NULL){
 			continue;
 		}
-		for (j = 0; j <= (ny + 1); ++j) {
+		for (j = 0; j <= (g_ny + 1); ++j) {
 			if (L_rr_node_indices[CHANY][i][j].list == NULL) {
 				continue;
 			}
@@ -1271,11 +1271,11 @@ void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 	free(L_rr_node_indices[CHANY]);
 
 	/* free CHANX rr node indices */
-	for (i = 0; i < (ny + 1); ++i) {
+	for (i = 0; i < (g_ny + 1); ++i) {
 		if (L_rr_node_indices[CHANX][i] == NULL){
 			continue;
 		}
-		for (j = 0; j < (nx + 1); ++j) {
+		for (j = 0; j < (g_nx + 1); ++j) {
 			if (L_rr_node_indices[CHANX][i][j].list == NULL) {
 				continue;
 			}
@@ -1315,8 +1315,8 @@ int get_rr_node_index(
 	vtr::t_ivec lookup;
 
 	VTR_ASSERT(ptc >= 0);
-	VTR_ASSERT(x >= 0 && x <= (nx + 1));
-	VTR_ASSERT(y >= 0 && y <= (ny + 1));
+	VTR_ASSERT(x >= 0 && x <= (g_nx + 1));
+	VTR_ASSERT(y >= 0 && y <= (g_ny + 1));
 
 	type = grid[x][y].type;
 
@@ -1649,7 +1649,7 @@ int get_track_to_tracks(
 							&& (DEC_DIRECTION == from_seg_details[from_track].direction)) {
 						num_conn += get_unidir_track_to_chan_seg(
 								from_track, to_chan,
-								to_seg, to_sb, to_type, max_chan_width, nx, ny,
+								to_seg, to_sb, to_type, max_chan_width, g_nx, g_ny,
 								from_side_a, to_side, Fs_per_side,
 								sblock_pattern, L_rr_node_indices, to_seg_details,
 								L_rr_edge_done, &Fs_clipped, edge_list);
@@ -1686,7 +1686,7 @@ int get_track_to_tracks(
 							&& (INC_DIRECTION == from_seg_details[from_track].direction)) {
 						num_conn += get_unidir_track_to_chan_seg(
 								from_track, to_chan,
-								to_seg, to_sb, to_type, max_chan_width, nx, ny, 
+								to_seg, to_sb, to_type, max_chan_width, g_nx, g_ny, 
 								from_side_b, to_side, Fs_per_side, 
 								sblock_pattern, L_rr_node_indices, to_seg_details, 
 								L_rr_edge_done, &Fs_clipped, edge_list);
@@ -2057,11 +2057,11 @@ short ******alloc_sblock_pattern_lookup(
 
 	/* Build the pointer lists to form the multidimensional array */
 	short ******sblock_pattern = i_list;
-	i_list += (L_nx + 1); /* Skip forward nx+1 items */
+	i_list += (L_nx + 1); /* Skip forward g_nx+1 items */
 	for (int i = 0; i < (L_nx + 1); ++i) {
 
 		sblock_pattern[i] = j_list;
-		j_list += (L_ny + 1); /* Skip forward ny+1 items */
+		j_list += (L_ny + 1); /* Skip forward g_ny+1 items */
 		for (int j = 0; j < (L_ny + 1); ++j) {
 
 			sblock_pattern[i][j] = from_side_list;
@@ -2124,11 +2124,11 @@ void load_sblock_pattern_lookup(
 	 * because the sblock varies from location to location. The i, j means the owning
 	 * location of the sblock under investigation. */
 
-	/* SB's have coords from (0, 0) to (nx, ny) */
+	/* SB's have coords from (0, 0) to (g_nx, g_ny) */
 	VTR_ASSERT(i >= 0);
-	VTR_ASSERT(i <= nx);
+	VTR_ASSERT(i <= g_nx);
 	VTR_ASSERT(j >= 0);
-	VTR_ASSERT(j <= ny);
+	VTR_ASSERT(j <= g_ny);
 
 	/* May 12 - 15, 2007
 	 *
@@ -2162,7 +2162,7 @@ void load_sblock_pattern_lookup(
 	 * more than 1.
 	 */
 
-	/* SB's range from (0, 0) to (nx, ny) */
+	/* SB's range from (0, 0) to (g_nx, g_ny) */
 	/* First find all four sides' incoming wires */
 	int *wire_mux_on_track[4];
 	int *incoming_wire_label[4];
@@ -2184,12 +2184,12 @@ void load_sblock_pattern_lookup(
 		bool skip = true;
 		switch (side) {
 		case TOP:
-			if (j < ny) {
+			if (j < g_ny) {
 				skip = false;
 			}
 			break;
 		case RIGHT:
-			if (i < nx) {
+			if (i < g_nx) {
 				skip = false;
 			}
 			break;
@@ -2214,7 +2214,7 @@ void load_sblock_pattern_lookup(
 		/* Figure out the channel and segment for a certain direction */
 		bool vert = ((side == TOP) || (side == BOTTOM));
 		bool pos_dir = ((side == TOP) || (side == RIGHT));
-		int chan_len = (vert ? ny : nx);
+		int chan_len = (vert ? g_ny : g_nx);
 		int chan = (vert ? i : j);
 		int sb_seg = (vert ? j : i);
 		int seg = (pos_dir ? (sb_seg + 1) : sb_seg);

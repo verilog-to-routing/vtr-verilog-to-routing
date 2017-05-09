@@ -103,8 +103,8 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 	/* corresponding to IPINs will be 0.           */
 
-	bool * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
-	float *shared_buffer_trans; /* [0..max_nx,ny)] */
+	bool * cblock_counted; /* [0..max(g_nx,g_ny)] -- 0th element unused. */
+	float *shared_buffer_trans; /* [0..max_nx,g_ny)] */
 	float *unsharable_switch_trans, *sharable_switch_trans; /* [0..num_switch-1] */
 
 	t_rr_type from_rr_type, to_rr_type;
@@ -144,7 +144,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 
 	num_inputs_to_cblock = (int *) vtr::calloc(g_num_rr_nodes, sizeof(int));
 
-	maxlen = max(nx, ny) + 1;
+	maxlen = max(g_nx, g_ny) + 1;
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 	shared_buffer_trans = (float *) vtr::calloc(maxlen, sizeof(float));
 
@@ -293,16 +293,16 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	vtr::printf_info("\n");
 	vtr::printf_info("Routing area (in minimum width transistor areas)...\n");
 	vtr::printf_info("\tAssuming no buffer sharing (pessimistic). Total: %#g, per logic tile: %#g\n", 
-			ntrans_no_sharing, ntrans_no_sharing / (float) (nx * ny));
+			ntrans_no_sharing, ntrans_no_sharing / (float) (g_nx * g_ny));
 	vtr::printf_info("\tAssuming buffer sharing (slightly optimistic). Total: %#g, per logic tile: %#g\n", 
-			ntrans_sharing, ntrans_sharing / (float) (nx * ny));
+			ntrans_sharing, ntrans_sharing / (float) (g_nx * g_ny));
 	vtr::printf_info("\n");
 }
 
 void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/, 
 		int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, 
 		const float trans_sram_bit) {
-	bool * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
+	bool * cblock_counted; /* [0..max(g_nx,g_ny)] -- 0th element unused. */
 	int *num_inputs_to_cblock; /* [0..g_num_rr_nodes-1], but all entries not    */
 
 	/* corresponding to IPINs will be 0.           */
@@ -350,7 +350,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 	}
 
 	num_inputs_to_cblock = (int *) vtr::calloc(g_num_rr_nodes, sizeof(int));
-	maxlen = max(nx, ny) + 1;
+	maxlen = max(g_nx, g_ny) + 1;
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 
 	ntrans = 0;
@@ -459,7 +459,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 
 	vtr::printf_info("\n");
 	vtr::printf_info("Routing area (in minimum width transistor areas)...\n");
-	vtr::printf_info("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float) (nx * ny));
+	vtr::printf_info("\tTotal routing area: %#g, per logic tile: %#g\n", ntrans, ntrans / (float) (g_nx * g_ny));
 }
 
 static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch,

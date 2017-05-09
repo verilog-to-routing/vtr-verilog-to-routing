@@ -103,7 +103,7 @@ void draw_internal_init_blk() {
 		// note, that all clbs of the same type are the same size,
 		// and that consequently we have *one* model for each type.
 		clb_bbox.bottom_left() = t_point(0,0);
-		if (type_desc.width > (nx + 2) || type_desc.height > (ny + 2)) {
+		if (type_desc.width > (g_nx + 2) || type_desc.height > (g_ny + 2)) {
 			// in this case, the clb certainly wont't fit, but this prevents
 			// an out-of-bounds access, and provides some sort of (probably right)
 			// value
@@ -134,8 +134,8 @@ void draw_internal_init_blk() {
 
 
 void draw_internal_draw_subblk() {
-	for (int i = 0; i <= (nx + 1); i++) {
-		for (int j = 0; j <= (ny + 1); j++) {
+	for (int i = 0; i <= (g_nx + 1); i++) {
+		for (int j = 0; j <= (g_ny + 1); j++) {
 			/* Only the first block of a group should control drawing */
 			if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0) 
 				continue;
@@ -260,7 +260,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 	const float FRACTION_CHILD_MARGIN_Y = 0.04;
 
 	int capacity = type_descriptors[type_descrip_index].capacity;
-	if (capacity > 1 && nx > 0 && ny > 0 && grid[1][0].usage != 0
+	if (capacity > 1 && g_nx > 0 && g_ny > 0 && grid[1][0].usage != 0
 		&& type_descrip_index == grid[1][0].type->index) {
 
 		// that should test for io blocks, and setting capacity_divisor > 1

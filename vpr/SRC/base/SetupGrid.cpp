@@ -37,33 +37,33 @@ void alloc_and_load_grid(int *num_instances_type) {
 
 	/* To remove this limitation, change ylow etc. in t_rr_node to        *
 	 * * be ints instead.  Used shorts to save memory.                      */
-	if ((nx > 32766) || (ny > 32766)) {
+	if ((g_nx > 32766) || (g_ny > 32766)) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-			"nx and ny must be less than 32767, since the router uses shorts (16-bit) to store coordinates.\n"
-			"nx: %d, ny: %d\n", nx, ny);
+			"Device width and height must be less than 32767, since the router uses shorts (16-bit) to store coordinates.\n"
+			"g_nx: %d, g_ny: %d\n", g_nx, g_ny);
 	}
 
-	VTR_ASSERT(nx >= 1 && ny >= 1);
+	VTR_ASSERT(g_nx >= 1 && g_ny >= 1);
 
-	grid = vtr::alloc_matrix<struct s_grid_tile>(0, (nx + 1), 0, (ny + 1));
+	grid = vtr::alloc_matrix<struct s_grid_tile>(0, (g_nx + 1), 0, (g_ny + 1));
 
 	/* Clear the full grid to have no type (NULL), no capacity, etc */
-	for (int x = 0; x <= (nx + 1); ++x) {
-		for (int y = 0; y <= (ny + 1); ++y) {
+	for (int x = 0; x <= (g_nx + 1); ++x) {
+		for (int y = 0; y <= (g_ny + 1); ++y) {
 			memset(&grid[x][y], 0, (sizeof(struct s_grid_tile)));
 		}
 	}
 
-	for (int x = 0; x <= nx + 1; ++x) {
-		for (int y = 0; y <= ny + 1; ++y) {
+	for (int x = 0; x <= g_nx + 1; ++x) {
+		for (int y = 0; y <= g_ny + 1; ++y) {
 
 			t_type_ptr type = 0;
-			if ((x == 0 && y == 0) || (x == 0 && y == ny + 1) || (x == nx + 1 && y == 0) || (x == nx + 1 && y == ny + 1)) {
+			if ((x == 0 && y == 0) || (x == 0 && y == g_ny + 1) || (x == g_nx + 1 && y == 0) || (x == g_nx + 1 && y == g_ny + 1)) {
 
 				// Assume corners are empty type (by default)
 				type = EMPTY_TYPE;
 
-			} else if (x == 0 || y == 0 || x == nx + 1 || y == ny + 1) {
+			} else if (x == 0 || y == 0 || x == g_nx + 1 || y == g_ny + 1) {
 
 				// Assume edges are IO type (by default)
 				type = IO_TYPE;
@@ -77,7 +77,7 @@ void alloc_and_load_grid(int *num_instances_type) {
 				type = find_type_col(x);
 			}
 
-			if (x + type->width - 1 <= nx && y + type->height - 1 <= ny) {
+			if (x + type->width - 1 <= g_nx && y + type->height - 1 <= g_ny) {
 				for (int x_offset = 0; x_offset < type->width; ++x_offset) {
 					for (int y_offset = 0; y_offset < type->height; ++y_offset) {
 						grid[x+x_offset][y+y_offset].type = type;
@@ -105,13 +105,13 @@ void alloc_and_load_grid(int *num_instances_type) {
 
 	// And, refresh (ie. reset and update) the "num_instances_type" array
 	// (while also forcing any remaining INVALID_BLOCK blocks to EMPTY_TYPE)
-	alloc_and_load_num_instances_type(grid, nx, ny,	num_instances_type, num_types);
+	alloc_and_load_num_instances_type(grid, g_nx, g_ny,	num_instances_type, num_types);
 
 	CheckGrid();
 
 #if 0
-	for (int y = 0; y <= ny + 1; ++y) {
-		for (int x = 0; x <= nx + 1; ++x) {
+	for (int y = 0; y <= g_ny + 1; ++y) {
+		for (int x = 0; x <= g_nx + 1; ++x) {
 			vtr::printf_info("[%d][%d] %s\n", x, y, grid[x][y].type->name);
 		}
 	}
@@ -120,9 +120,9 @@ void alloc_and_load_grid(int *num_instances_type) {
 #ifdef SHOW_ARCH
 	/* debug code */
 	dump = my_fopen("grid_type_dump.txt", "w", 0);
-	for (j = (ny + 1); j >= 0; --j)
+	for (j = (g_ny + 1); j >= 0; --j)
 	{
-		for (i = 0; i <= (nx + 1); ++i)
+		for (i = 0; i <= (g_nx + 1); ++i)
 		{
 			fprintf(dump, "%c", grid[i][j].type->name[1]);
 		}
@@ -190,12 +190,12 @@ void freeGrid(void) {
 		return;
 	}
 
-	for (i = 0; i <= (nx + 1); ++i) {
-		for (j = 0; j <= (ny + 1); ++j) {
+	for (i = 0; i <= (g_nx + 1); ++i) {
+		for (j = 0; j <= (g_ny + 1); ++j) {
 			free(grid[i][j].blocks);
 		}
 	}
-    vtr::free_matrix(grid, 0, nx + 1, 0);
+    vtr::free_matrix(grid, 0, g_nx + 1, 0);
 	grid = NULL;
 }
 
@@ -204,8 +204,8 @@ static void CheckGrid(void) {
 	int i, j;
 
 	/* Check grid is valid */
-	for (i = 0; i <= (nx + 1); ++i) {
-		for (j = 0; j <= (ny + 1); ++j) {
+	for (i = 0; i <= (g_nx + 1); ++i) {
+		for (j = 0; j <= (g_ny + 1); ++j) {
 			if (NULL == grid[i][j].type) {
 				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "grid[%d][%d] has no type.\n", i, j);
 			}
@@ -257,7 +257,7 @@ static t_type_ptr find_type_col(const int x) {
 					start = type_descriptors[i].grid_loc_def[j].start_col;
 					repeat = type_descriptors[i].grid_loc_def[j].repeat;
 					if (start < 0) {
-						start += (nx + 1);
+						start += (g_nx + 1);
 					}
 					if (x == start) {
 						match = true;
@@ -269,7 +269,7 @@ static t_type_ptr find_type_col(const int x) {
 				} else if (type_descriptors[i].grid_loc_def[j].grid_loc_type
 						== COL_REL) {
 					rel = type_descriptors[i].grid_loc_def[j].col_rel;
-					if (vtr::nint(rel * nx) == x) {
+					if (vtr::nint(rel * g_nx) == x) {
 						match = true;
 					}
 				}

@@ -608,8 +608,8 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 	power_reset_tile_usage();
 
 	/* Loop through all grid locations */
-	for (x = 0; x < nx + 2; x++) {
-		for (y = 0; y < ny + 2; y++) {
+	for (x = 0; x < g_nx + 2; x++) {
+		for (y = 0; y < g_ny + 2; y++) {
 
 			if ((grid[x][y].width_offset != 0)
 					|| (grid[x][y].height_offset != 0)
@@ -730,13 +730,13 @@ static void power_usage_clock_single(t_power_usage * power_usage,
 	length = 0;
 
 	/* 1. IO to chip center */
-	length += (ny + 2) / 2;
+	length += (g_ny + 2) / 2;
 
 	/* 2. H-Tree to 4 quadrants */
-	length += ny / 2 + 2 * nx;
+	length += g_ny / 2 + 2 * g_nx;
 
 	/* 3. Ribs - to */
-	length += nx / 2 * ny;
+	length += g_nx / 2 * g_ny;
 
 	buffer_power.dynamic = length * clock_buffer_power.dynamic;
 	buffer_power.leakage = length * clock_buffer_power.leakage;
@@ -1679,7 +1679,7 @@ static void power_print_summary(FILE * fp, const t_vpr_setup& vpr_setup) {
 	fprintf(fp, "Voltage: %.2f\n", g_power_tech->Vdd);
 	fprintf(fp, "Temperature: %g\n", g_power_tech->temperature);
 	fprintf(fp, "Critical Path: %g\n", g_solution_inf.T_crit);
-	fprintf(fp, "Size of FPGA: %d x %d\n", nx, ny);
+	fprintf(fp, "Size of FPGA: %d x %d\n", g_nx, g_ny);
 	fprintf(fp, "Channel Width: %d\n", g_solution_inf.channel_width);
 	fprintf(fp, "\n");
 }

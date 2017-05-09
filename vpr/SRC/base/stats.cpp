@@ -63,8 +63,8 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	vtr::printf_info("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
 	area = 0;
-	for (i = 1; i <= nx; i++) {
-		for (j = 1; j <= ny; j++) {
+	for (i = 1; i <= g_nx; i++) {
+		for (j = 1; j <= g_ny; j++) {
 			if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
 				if (grid[i][j].type->area == UNDEFINED) {
 					area += grid_logic_tile_area * grid[i][j].type->width * grid[i][j].type->height;
@@ -196,11 +196,11 @@ static void get_channel_occupancy_stats(void) {
 
 	/* Determines how many tracks are used in each channel.                    */
 
-	int **chanx_occ; /* [1..nx][0..ny] */
-	int **chany_occ; /* [0..nx][1..ny] */
+	int **chanx_occ; /* [1..g_nx][0..g_ny] */
+	int **chany_occ; /* [0..g_nx][1..g_ny] */
 
-	chanx_occ = vtr::alloc_matrix<int>(1, nx, 0, ny);
-	chany_occ = vtr::alloc_matrix<int>(0, nx, 1, ny);
+	chanx_occ = vtr::alloc_matrix<int>(1, g_nx, 0, g_ny);
+	chany_occ = vtr::alloc_matrix<int>(0, g_nx, 1, g_ny);
 	load_channel_occupancies(chanx_occ, chany_occ);
 
 	vtr::printf_info("\n");
@@ -208,16 +208,16 @@ static void get_channel_occupancy_stats(void) {
 	vtr::printf_info("                      ---- ------- ------- --------\n");
 
 	int total_x = 0;
-	for (int j = 0; j <= ny; ++j) {
+	for (int j = 0; j <= g_ny; ++j) {
 		total_x += g_chan_width.x_list[j];
 		float ave_occ = 0.0;
 		int max_occ = -1;
 
-		for (int i = 1; i <= nx; ++i) {
+		for (int i = 1; i <= g_nx; ++i) {
 			max_occ = max(chanx_occ[i][j], max_occ);
 			ave_occ += chanx_occ[i][j];
 		}
-		ave_occ /= nx;
+		ave_occ /= g_nx;
 		vtr::printf_info("                      %4d %7d %7.3f %8d\n", j, max_occ, ave_occ, g_chan_width.x_list[j]);
 	}
 
@@ -225,16 +225,16 @@ static void get_channel_occupancy_stats(void) {
 	vtr::printf_info("                      ---- ------- ------- --------\n");
 
 	int total_y = 0;
-	for (int i = 0; i <= nx; ++i) {
+	for (int i = 0; i <= g_nx; ++i) {
 		total_y += g_chan_width.y_list[i];
 		float ave_occ = 0.0;
 		int max_occ = -1;
 
-		for (int j = 1; j <= ny; ++j) {
+		for (int j = 1; j <= g_ny; ++j) {
 			max_occ = max(chany_occ[i][j], max_occ);
 			ave_occ += chany_occ[i][j];
 		}
-		ave_occ /= ny;
+		ave_occ /= g_ny;
 		vtr::printf_info("                      %4d %7d %7.3f %8d\n", i, max_occ, ave_occ, g_chan_width.y_list[i]);
 	}
 
@@ -242,8 +242,8 @@ static void get_channel_occupancy_stats(void) {
 	vtr::printf_info("Total tracks in x-direction: %d, in y-direction: %d\n", total_x, total_y);
 	vtr::printf_info("\n");
 
-    vtr::free_matrix(chanx_occ, 1, nx, 0);
-	vtr::free_matrix(chany_occ, 0, nx, 1);
+    vtr::free_matrix(chanx_occ, 1, g_nx, 0);
+	vtr::free_matrix(chany_occ, 0, g_nx, 1);
 }
 
 static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
@@ -258,12 +258,12 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 
 	/* First set the occupancy of everything to zero. */
 
-	for (i = 1; i <= nx; i++)
-		for (j = 0; j <= ny; j++)
+	for (i = 1; i <= g_nx; i++)
+		for (j = 0; j <= g_ny; j++)
 			chanx_occ[i][j] = 0;
 
-	for (i = 0; i <= nx; i++)
-		for (j = 1; j <= ny; j++)
+	for (i = 0; i <= g_nx; i++)
+		for (j = 1; j <= g_ny; j++)
 			chany_occ[i][j] = 0;
 
 	/* Now go through each net and count the tracks and pins used everywhere */
@@ -369,7 +369,7 @@ void print_wirelen_prob_dist(void) {
 	float av_length;
 	int prob_dist_size, i, incr;
 
-	prob_dist_size = nx + ny + 10;
+	prob_dist_size = g_nx + g_ny + 10;
 	prob_dist = (float *) vtr::calloc(prob_dist_size, sizeof(float));
 	norm_fac = 0.;
 

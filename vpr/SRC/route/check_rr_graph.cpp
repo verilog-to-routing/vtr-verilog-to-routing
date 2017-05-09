@@ -226,7 +226,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 				"in check_node: rr endpoints are (%d,%d) and (%d,%d).\n", xlow, ylow, xhigh, yhigh);
 	}
 
-	if (xlow < 0 || xhigh > nx + 1 || ylow < 0 || yhigh > ny + 1) {
+	if (xlow < 0 || xhigh > g_nx + 1 || ylow < 0 || yhigh > g_ny + 1) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_node: rr endpoints (%d,%d) and (%d,%d) are out of range.\n",  xlow, ylow, xhigh, yhigh);
 	}
@@ -263,7 +263,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 		break;
 
 	case CHANX:
-		if (xlow < 1 || xhigh > nx || yhigh > ny || yhigh != ylow) {
+		if (xlow < 1 || xhigh > g_nx || yhigh > g_ny || yhigh != ylow) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n",  xlow, ylow, xhigh, yhigh);
 		}
@@ -274,7 +274,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 		break;
 
 	case CHANY:
-		if (xhigh > nx || ylow < 1 || yhigh > ny || xlow != xhigh) {
+		if (xhigh > g_nx || ylow < 1 || yhigh > g_ny || xlow != xhigh) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"Error in check_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n",  xlow, ylow, xhigh, yhigh);
 		}

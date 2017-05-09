@@ -33,10 +33,10 @@ print_relative_pos_distr(void)
 	unsigned int sink_pin
 	double **relapos_distr;
 
-	total_conn = (int *)vtr::malloc((nx + ny + 1) * sizeof(int));
-	relapos = (int **)vtr::malloc((nx + ny + 1) * sizeof(int *));
-	relapos_distr = (double **)vtr::malloc((nx + ny + 1) * sizeof(double *));
-	for (len = 0; len <= nx + ny; len++)
+	total_conn = (int *)vtr::malloc((g_nx + g_ny + 1) * sizeof(int));
+	relapos = (int **)vtr::malloc((g_nx + g_ny + 1) * sizeof(int *));
+	relapos_distr = (double **)vtr::malloc((g_nx + g_ny + 1) * sizeof(double *));
+	for (len = 0; len <= g_nx + g_ny; len++)
 	{
 		relapos[len] = (int *)vtr::calloc(len / 2 + 1, sizeof(int));
 		relapos_distr[len] =
@@ -83,7 +83,7 @@ print_relative_pos_distr(void)
 	fopen("/jayar/b/b5/fang/vpr_test/wirelength/relapos2.bin", "rb+");
 #endif /* PRINT_REL_POS_DISTR */
 
-	for (len = 0; len <= nx + ny; len++)
+	for (len = 0; len <= g_nx + g_ny; len++)
 	{
 		sum = 0;
 		for (rp = 0; rp <= len / 2; rp++)
@@ -123,7 +123,7 @@ print_relative_pos_distr(void)
 	}
 
 	fprintf(stdout, "Source to sink relative positions:\n");
-	for (len = 1; len <= nx + ny; len++)
+	for (len = 1; len <= g_nx + g_ny; len++)
 	{
 		if (total_conn[len] != 0)
 		{
@@ -139,7 +139,7 @@ print_relative_pos_distr(void)
 	}
 
 	free((void *)total_conn);
-	for (len = 0; len <= nx + ny; len++)
+	for (len = 0; len <= g_nx + g_ny; len++)
 	{
 		free((void *)relapos[len]);
 		free((void *)relapos_distr[len]);

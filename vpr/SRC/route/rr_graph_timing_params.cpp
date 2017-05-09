@@ -31,12 +31,12 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	int icblock, isblock, iseg_low, iseg_high;
 	float Cin, Cout;
 	t_rr_type from_rr_type, to_rr_type;
-	bool * cblock_counted; /* [0..max(nx,ny)] -- 0th element unused. */
-	float *buffer_Cin; /* [0..max(nx,ny)] */
+	bool * cblock_counted; /* [0..max(g_nx,g_ny)] -- 0th element unused. */
+	float *buffer_Cin; /* [0..max(g_nx,g_ny)] */
 	bool buffered;
 	float *Couts_to_add; /* UDSD */
 
-	maxlen = max(nx, ny) + 1;
+	maxlen = max(g_nx, g_ny) + 1;
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 	buffer_Cin = (float *) vtr::calloc(maxlen, sizeof(float));
 

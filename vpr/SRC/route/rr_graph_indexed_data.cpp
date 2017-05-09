@@ -76,9 +76,9 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
 		g_rr_indexed_data[index].ortho_cost_index = index + num_segment;
 
 		if (segment_inf[iseg].longline)
-			length = nx;
+			length = g_nx;
 		else
-			length = min(segment_inf[iseg].length, nx);
+			length = min(segment_inf[iseg].length, g_nx);
 
 		g_rr_indexed_data[index].inv_length = 1. / length;
 		g_rr_indexed_data[index].seg_index = iseg;
@@ -95,9 +95,9 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
 		g_rr_indexed_data[index].ortho_cost_index = index - num_segment;
 
 		if (segment_inf[iseg].longline)
-			length = ny;
+			length = g_ny;
 		else
-			length = min(segment_inf[iseg].length, ny);
+			length = min(segment_inf[iseg].length, g_ny);
 
 		g_rr_indexed_data[index].inv_length = 1. / length;
 		g_rr_indexed_data[index].seg_index = iseg;
@@ -172,7 +172,7 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 	Tdel_sum = 0.;
 
 	for (itrack = 0; itrack < nodes_per_chan; itrack++) {
-		inode = find_average_rr_node_index(nx, ny, CHANX, itrack, 
+		inode = find_average_rr_node_index(g_nx, g_ny, CHANX, itrack, 
 				L_rr_node_indices);
 		if (inode == -1)
 			continue;
@@ -185,7 +185,7 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 	}
 
 	for (itrack = 0; itrack < nodes_per_chan; itrack++) {
-		inode = find_average_rr_node_index(nx, ny, CHANY, itrack, 
+		inode = find_average_rr_node_index(g_nx, g_ny, CHANY, itrack, 
 				L_rr_node_indices);
 		if (inode == -1)
 			continue;
@@ -240,7 +240,7 @@ static void load_rr_indexed_data_T_values(int index_start,
 	 * channel segment, near the middle of the fpga.                            */
 
 	for (itrack = 0; itrack < nodes_per_chan; itrack++) {
-		inode = find_average_rr_node_index(nx, ny, rr_type, itrack,
+		inode = find_average_rr_node_index(g_nx, g_ny, rr_type, itrack,
 				L_rr_node_indices);
 		if (inode == -1)
 			continue;

@@ -227,7 +227,7 @@ void get_serial_num(void) {
 		while (tptr != NULL) {
 			inode = tptr->index;
 			serial_num += (inet + 1)
-					* (g_rr_nodes[inode].xlow() * (nx + 1) - g_rr_nodes[inode].yhigh());
+					* (g_rr_nodes[inode].xlow() * (g_nx + 1) - g_rr_nodes[inode].yhigh());
 
 			serial_num -= g_rr_nodes[inode].ptc_num() * (inet + 1) * 10;
 
@@ -262,7 +262,7 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
-	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
+	build_rr_graph(graph_type, num_types, type_descriptors, g_nx, g_ny, grid,
 			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
@@ -320,7 +320,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
-	build_rr_graph(graph_type, num_types, type_descriptors, nx, ny, grid,
+	build_rr_graph(graph_type, num_types, type_descriptors, g_nx, g_ny, grid,
 			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
@@ -712,7 +712,7 @@ void alloc_route_static_structs(void) {
 	g_trace_head = (struct s_trace **) vtr::calloc(g_clbs_nlist.net.size(), sizeof(struct s_trace *));
 	g_trace_tail = (struct s_trace **) vtr::malloc(g_clbs_nlist.net.size() * sizeof(struct s_trace *));
 
-	heap_size = nx * ny;
+	heap_size = g_nx * g_ny;
 	heap = (struct s_heap **) vtr::malloc(heap_size * sizeof(struct s_heap *));
 	heap--; /* heap stores from [1..heap_size] */
 	heap_tail = 1;
@@ -928,11 +928,11 @@ static void load_route_bb(int bb_factor) {
 	 * limited to channels contained with the net bounding box expanded    *
 	 * by bb_factor channels on each side.  For example, if bb_factor is   *
 	 * 0, the maze router must route each net within its bounding box.     *
-	 * If bb_factor = nx, the maze router will search every channel in     *
+	 * If bb_factor = g_nx, the maze router will search every channel in     *
 	 * the FPGA if necessary.  The bounding boxes returned by this routine *
 	 * are different from the ones used by the placer in that they are     * 
-	 * clipped to lie within (0,0) and (nx+1,ny+1) rather than (1,1) and   *
-	 * (nx,ny).                                                            */
+	 * clipped to lie within (0,0) and (g_nx+1,g_ny+1) rather than (1,1) and   *
+	 * (g_nx,g_ny).                                                            */
 
 	unsigned int k, inet;
 	int xmax, ymax, xmin, ymin, x, y;
@@ -976,9 +976,9 @@ static void load_route_bb(int bb_factor) {
 		 * chip area.                                                          */
 
 		route_bb[inet].xmin = max(xmin - bb_factor, 0);
-		route_bb[inet].xmax = min(xmax + bb_factor, nx + 1);
+		route_bb[inet].xmax = min(xmax + bb_factor, g_nx + 1);
 		route_bb[inet].ymin = max(ymin - bb_factor, 0);
-		route_bb[inet].ymax = min(ymax + bb_factor, ny + 1);
+		route_bb[inet].ymax = min(ymax + bb_factor, g_ny + 1);
 	}
 }
 
@@ -1281,7 +1281,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
     fprintf(fp, "Placement_File: %s Placement_ID: %s\n", placement_file, g_placement_id.c_str());
 
-	fprintf(fp, "Array size: %d x %d logic blocks.\n", nx, ny);
+	fprintf(fp, "Array size: %d x %d logic blocks.\n", g_nx, g_ny);
 	fprintf(fp, "\nRouting:");
 	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
 		if (g_clbs_nlist.net[inet].is_global == false) {

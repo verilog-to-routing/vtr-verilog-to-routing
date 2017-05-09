@@ -150,7 +150,7 @@ static t_pl_blocks_to_be_moved blocks_affected;
  * of the net bounding box in each dimension, divided by the average    *
  * number of tracks in that direction; for other cost functions they    *
  * will never be used.                                                  *
- *                [0...ny]                [0...nx]                      */
+ *                [0...g_ny]                [0...g_nx]                      */
 static float **chanx_place_cost_fac, **chany_place_cost_fac;
 
 /* The following arrays are used by the try_swap function for speed.   */
@@ -506,7 +506,7 @@ void try_place(struct s_placer_opts placer_opts,
 	if (move_lim <= 0)
 		move_lim = 1;
 
-	rlim = (float) max(nx + 1, ny + 1);
+	rlim = (float) max(g_nx + 1, g_ny + 1);
 
 	first_rlim = rlim; /*used in timing-driven placement for exponent computation */
 	final_rlim = 1;
@@ -1034,7 +1034,7 @@ static void update_rlim(float *rlim, float success_rat) {
 	float upper_lim;
 
 	*rlim = (*rlim) * (1. - 0.44 + success_rat);
-	upper_lim = max(nx + 1, ny + 1);
+	upper_lim = max(g_nx + 1, g_ny + 1);
 	*rlim = min(*rlim, upper_lim);
 	*rlim = max(*rlim, (float)1.);
 }
@@ -1271,7 +1271,7 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 			curr_z_to = curr_z_from + z_swap_offset;
 			
 			// Make sure that the swap_to location is still on the chip
-			if (curr_x_to < 1 || curr_x_to > nx || curr_y_to < 1 || curr_y_to > ny || curr_z_to < 0) {
+			if (curr_x_to < 1 || curr_x_to > g_nx || curr_y_to < 1 || curr_y_to > g_ny || curr_z_to < 0) {
 				abort_swap = true;
 			} else {
 				abort_swap = setup_blocks_affected(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
@@ -1566,7 +1566,7 @@ static bool find_to(t_type_ptr type, float rlim,
 		int *px_to, int *py_to, int *pz_to) {
 
 	/* Returns the point to which I want to swap, properly range limited. 
-	 * rlim must always be between 1 and nx (inclusive) for this routine  
+	 * rlim must always be between 1 and g_nx (inclusive) for this routine  
 	 * to work.  Assumes that a column only contains blocks of the same type.
 	 */
 
@@ -1578,16 +1578,16 @@ static bool find_to(t_type_ptr type, float rlim,
 
 	VTR_ASSERT(type == grid[x_from][y_from].type);
 
-	rlx = (int)min((float)nx + 1, rlim); 
-	rly = (int)min((float)ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */
+	rlx = (int)min((float)g_nx + 1, rlim); 
+	rly = (int)min((float)g_ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */
 	active_area = 4 * rlx * rly;
 
 	min_x = max(0, x_from - rlx);
-	max_x = min(nx + 1, x_from + rlx);
+	max_x = min(g_nx + 1, x_from + rlx);
 	min_y = max(0, y_from - rly);
-	max_y = min(ny + 1, y_from + rly);
+	max_y = min(g_ny + 1, y_from + rly);
 
-	if (rlx < 1 || rlx > nx + 1) {
+	if (rlx < 1 || rlx > g_nx + 1) {
 		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in find_to: rlx = %d\n", rlx);
 	}
 
@@ -1626,11 +1626,11 @@ static bool find_to(t_type_ptr type, float rlim,
 			}
 		}
 
-		VTR_ASSERT(*px_to >= 0 && *px_to <= nx + 1);
-		VTR_ASSERT(*py_to >= 0 && *py_to <= ny + 1);
+		VTR_ASSERT(*px_to >= 0 && *px_to <= g_nx + 1);
+		VTR_ASSERT(*py_to >= 0 && *py_to <= g_ny + 1);
 	} while (is_legal == false);
 
-	if (*px_to < 0 || *px_to > nx + 1 || *py_to < 0 || *py_to > ny + 1) {
+	if (*px_to < 0 || *px_to > g_nx + 1 || *py_to < 0 || *py_to > g_ny + 1) {
 		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in routine find_to: (x_to,y_to) = (%d,%d)\n", *px_to, *py_to);
 	}
 
@@ -1645,17 +1645,17 @@ static void find_to_location(t_type_ptr type, float rlim,
 	int itype = type->index;
 
 
-	int rlx = (int)min((float)nx + 1, rlim); 
-	int rly = (int)min((float)ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */
+	int rlx = (int)min((float)g_nx + 1, rlim); 
+	int rly = (int)min((float)g_ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */
 	int active_area = 4 * rlx * rly;
 
 	int min_x = max(0, x_from - rlx);
-	int max_x = min(nx + 1, x_from + rlx);
+	int max_x = min(g_nx + 1, x_from + rlx);
 	int min_y = max(0, y_from - rly);
-	int max_y = min(ny + 1, y_from + rly);
+	int max_y = min(g_ny + 1, y_from + rly);
 
 	*pz_to = 0;
-	if (nx / 4 < rlx || ny / 4 < rly || num_legal_pos[itype] < active_area) {
+	if (g_nx / 4 < rlx || g_ny / 4 < rly || num_legal_pos[itype] < active_area) {
 		int ipos = vtr::irand(num_legal_pos[itype] - 1);
 		*px_to = legal_pos[itype][ipos].x;
 		*py_to = legal_pos[itype][ipos].y;
@@ -2164,8 +2164,8 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	x = block[bnum].x + block[bnum].type->pin_width[pnum];
 	y = block[bnum].y + block[bnum].type->pin_height[pnum];
 
-	x = max(min(x, nx), 1);
-	y = max(min(y, ny), 1);
+	x = max(min(x, g_nx), 1);
+	y = max(min(y, g_ny), 1);
 
 	xmin = x;
 	ymin = y;
@@ -2182,15 +2182,15 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 		x = block[bnum].x + block[bnum].type->pin_width[pnum];
 		y = block[bnum].y + block[bnum].type->pin_height[pnum];
 
-		/* Code below counts IO blocks as being within the 1..nx, 1..ny clb array. *
-		 * This is because channels do not go out of the 0..nx, 0..ny range, and   *
+		/* Code below counts IO blocks as being within the 1..g_nx, 1..g_ny clb array. *
+		 * This is because channels do not go out of the 0..g_nx, 0..g_ny range, and   *
 		 * I always take all channels impinging on the bounding box to be within   *
 		 * that bounding box.  Hence, this "movement" of IO blocks does not affect *
 		 * the which channels are included within the bounding box, and it         *
 		 * simplifies the code a lot.                                              */
 
-		x = max(min(x, nx), 1);
-		y = max(min(y, ny), 1);
+		x = max(min(x, g_nx), 1);
+		y = max(min(y, g_ny), 1);
 
 		if (x == xmin) {
 			xmin_edge++;
@@ -2344,16 +2344,16 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 	}
 
 	/* Now I've found the coordinates of the bounding box.  There are no *
-	 * channels beyond nx and ny, so I want to clip to that.  As well,   *
+	 * channels beyond g_nx and g_ny, so I want to clip to that.  As well,   *
 	 * since I'll always include the channel immediately below and the   *
 	 * channel immediately to the left of the bounding box, I want to    *
 	 * clip to 1 in both directions as well (since minimum channel index *
 	 * is 0).  See route.c for a channel diagram.                        */
 
-	bb_coord_new->xmin = max(min(xmin, nx), 1);
-	bb_coord_new->ymin = max(min(ymin, ny), 1);
-	bb_coord_new->xmax = max(min(xmax, nx), 1);
-	bb_coord_new->ymax = max(min(ymax, ny), 1);
+	bb_coord_new->xmin = max(min(xmin, g_nx), 1);
+	bb_coord_new->ymin = max(min(ymin, g_ny), 1);
+	bb_coord_new->xmax = max(min(xmax, g_nx), 1);
+	bb_coord_new->ymax = max(min(ymax, g_ny), 1);
 }
 
 static void update_bb(int inet, struct s_bb *bb_coord_new,
@@ -2374,10 +2374,10 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 	
 	struct s_bb *curr_bb_edge, *curr_bb_coord;
 		
-	xnew = max(min(xnew, nx), 1);
-	ynew = max(min(ynew, ny), 1);
-	xold = max(min(xold, nx), 1);
-	yold = max(min(yold, ny), 1);
+	xnew = max(min(xnew, g_nx), 1);
+	ynew = max(min(ynew, g_ny), 1);
+	xold = max(min(xold, g_nx), 1);
+	yold = max(min(yold, g_ny), 1);
 
 	/* Check if the net had been updated before. */
 	if (bb_updated_before[inet] == GOT_FROM_SCRATCH)
@@ -2579,8 +2579,8 @@ static void alloc_legal_placements() {
 	
 	/* Initialize all occupancy to zero. */
 
-	for (i = 0; i <= nx + 1; i++) {
-		for (j = 0; j <= ny + 1; j++) {
+	for (i = 0; i <= g_nx + 1; i++) {
+		for (j = 0; j <= g_ny + 1; j++) {
 			grid[i][j].usage = 0;
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
 				if (grid[i][j].blocks[k] != INVALID_BLOCK) {
@@ -2604,8 +2604,8 @@ static void load_legal_placements() {
 
 	index = (int *) vtr::calloc(num_types, sizeof(int));
 
-	for (i = 0; i <= nx + 1; i++) {
-		for (j = 0; j <= ny + 1; j++) {
+	for (i = 0; i <= g_nx + 1; i++) {
+		for (j = 0; j <= g_ny + 1; j++) {
 			for (k = 0; k < grid[i][j].type->capacity; k++) {
 				if (grid[i][j].blocks[k] == INVALID_BLOCK) {
 					continue;
@@ -2652,7 +2652,7 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 		// Then check whether the location could still accomodate more blocks
 		// Also check whether the member position is valid, that is the member's location
 		// still within the chip's dimemsion and the member_z is allowed at that location on the grid
-		if (member_x <= nx+1 && member_y <= ny+1
+		if (member_x <= g_nx+1 && member_y <= g_ny+1
 				&& grid[member_x][member_y].type->index == itype
 				&& grid[member_x][member_y].blocks[member_z] == EMPTY_BLOCK) {
 			// Can still accomodate blocks here, check the next position
@@ -2878,8 +2878,8 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	/* We'll use the grid to record where everything goes. Initialize to the grid has no 
 	 * blocks placed anywhere.
 	 */
-	for (i = 0; i <= nx + 1; i++) {
-		for (j = 0; j <= ny + 1; j++) {
+	for (i = 0; i <= g_nx + 1; i++) {
+		for (j = 0; j <= g_ny + 1; j++) {
 			grid[i][j].usage = 0;
 			itype = grid[i][j].type->index;
 			for (k = 0; k < type_descriptors[itype].capacity; k++) {
@@ -2940,12 +2940,12 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 static void free_fast_cost_update(void) {
 	int i;
 
-	for (i = 0; i <= ny; i++)
+	for (i = 0; i <= g_ny; i++)
 		free(chanx_place_cost_fac[i]);
 	free(chanx_place_cost_fac);
 	chanx_place_cost_fac = NULL;
 
-	for (i = 0; i <= nx; i++)
+	for (i = 0; i <= g_nx; i++)
 		free(chany_place_cost_fac[i]);
 	free(chany_place_cost_fac);
 	chany_place_cost_fac = NULL;
@@ -2971,12 +2971,12 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 	 * subhigh must be greater than or equal to sublow, we only need to       *
 	 * allocate storage for the lower half of a matrix.                       */
 
-	chanx_place_cost_fac = (float **) vtr::malloc((ny + 1) * sizeof(float *));
-	for (i = 0; i <= ny; i++)
+	chanx_place_cost_fac = (float **) vtr::malloc((g_ny + 1) * sizeof(float *));
+	for (i = 0; i <= g_ny; i++)
 		chanx_place_cost_fac[i] = (float *) vtr::malloc((i + 1) * sizeof(float));
 
-	chany_place_cost_fac = (float **) vtr::malloc((nx + 1) * sizeof(float *));
-	for (i = 0; i <= nx; i++)
+	chany_place_cost_fac = (float **) vtr::malloc((g_nx + 1) * sizeof(float *));
+	for (i = 0; i <= g_nx; i++)
 		chany_place_cost_fac[i] = (float *) vtr::malloc((i + 1) * sizeof(float));
 
 	/* First compute the number of tracks between channel high and channel *
@@ -2984,7 +2984,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 
 	chanx_place_cost_fac[0][0] = g_chan_width.x_list[0];
 
-	for (high = 1; high <= ny; high++) {
+	for (high = 1; high <= g_ny; high++) {
 		chanx_place_cost_fac[high][high] = g_chan_width.x_list[high];
 		for (low = 0; low < high; low++) {
 			chanx_place_cost_fac[high][low] =
@@ -3000,7 +3000,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 	 * longer a simple "average number of tracks"; it is some power of     *
 	 * that, allowing greater penalization of narrow channels.             */
 
-	for (high = 0; high <= ny; high++)
+	for (high = 0; high <= g_ny; high++)
 		for (low = 0; low <= high; low++) {
 			chanx_place_cost_fac[high][low] = (high - low + 1.)
 					/ chanx_place_cost_fac[high][low];
@@ -3014,7 +3014,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 
 	chany_place_cost_fac[0][0] = g_chan_width.y_list[0];
 
-	for (high = 1; high <= nx; high++) {
+	for (high = 1; high <= g_nx; high++) {
 		chany_place_cost_fac[high][high] = g_chan_width.y_list[high];
 		for (low = 0; low < high; low++) {
 			chany_place_cost_fac[high][low] =
@@ -3025,7 +3025,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 	/* Now compute the inverse of the average number of tracks per channel * 
 	 * between high and low.  Take to specified power.                     */
 
-	for (high = 0; high <= nx; high++)
+	for (high = 0; high <= g_nx; high++)
 		for (low = 0; low <= high; low++) {
 			chany_place_cost_fac[high][low] = (high - low + 1.)
 					/ chany_place_cost_fac[high][low];
@@ -3084,8 +3084,8 @@ static void check_place(float bb_cost, float timing_cost,
 		bdone[i] = 0;
 
 	/* Step through grid array. Check it against block array. */
-	for (i = 0; i <= (nx + 1); i++)
-		for (j = 0; j <= (ny + 1); j++) {
+	for (i = 0; i <= (g_nx + 1); i++)
+		for (j = 0; j <= (g_ny + 1); j++) {
 			if (grid[i][j].usage > grid[i][j].type->capacity) {
 				vtr::printf_error(__FILE__, __LINE__,
 						"Block at grid location (%d,%d) overused. Usage is %d.\n", 

@@ -389,9 +389,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		hill_climbing_inputs_avail = NULL; /* if used, die hard */
 	}
 
-	/* TODO: make better estimate for nx and ny, was initializing nx = ny = 1 */
-	nx = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.W);
-	ny = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.H);
+	/* TODO: make better estimate for g_nx and g_ny, was initializing g_nx = g_ny = 1 */
+	g_nx = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.W);
+	g_ny = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.H);
 
 	check_clocks(is_clock);
 #if 0
@@ -1904,7 +1904,7 @@ static void start_new_cluster(
 	new_cluster->y = UNDEFINED;
 	new_cluster->z = UNDEFINED;
 
-	if ((nx > 1) && (ny > 1)) {
+	if ((g_nx > 1) && (g_ny > 1)) {
 		alloc_and_load_grid(num_instances_type);
 		freeGrid();
 	}
@@ -1965,18 +1965,18 @@ static void start_new_cluster(
 		/* Expand FPGA size and recalculate number of available cluster types*/
 		if (!success) {
 			if (aspect >= 1.0) {
-				ny++;
-				nx = vtr::nint(ny * aspect);
+				g_ny++;
+				g_nx = vtr::nint(g_ny * aspect);
 			} else {
-				nx++;
-				ny = vtr::nint(nx / aspect);
+				g_nx++;
+				g_ny = vtr::nint(g_nx / aspect);
 			}
 			vtr::printf_info("Not enough resources expand FPGA size to x = %d y = %d.\n",
-					nx, ny);
-			if ((nx > MAX_SHORT) || (ny > MAX_SHORT)) {
+					g_nx, g_ny);
+			if ((g_nx > MAX_SHORT) || (g_ny > MAX_SHORT)) {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-						"Circuit cannot pack into architecture, architecture size (nx = %d, ny = %d) exceeds packer range.\n",
-						nx, ny);
+						"Circuit cannot pack into architecture, architecture size (g_nx = %d, g_ny = %d) exceeds packer range.\n",
+						g_nx, g_ny);
 			}
 			alloc_and_load_grid(num_instances_type);
 			freeGrid();

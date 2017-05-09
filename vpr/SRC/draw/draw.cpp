@@ -479,8 +479,8 @@ void alloc_draw_structs(const t_arch* arch) {
 	/* Allocate the structures needed to draw the placement and routing.  Set *
 	 * up the default colors for blocks and nets.                             */
 
-	draw_coords->tile_x = (float *) vtr::malloc((nx + 2) * sizeof(float));
-	draw_coords->tile_y = (float *) vtr::malloc((ny + 2) * sizeof(float));
+	draw_coords->tile_x = (float *) vtr::malloc((g_nx + 2) * sizeof(float));
+	draw_coords->tile_y = (float *) vtr::malloc((g_ny + 2) * sizeof(float));
 
 	/* For sub-block drawings inside clbs */
 	draw_internal_alloc_blk();
@@ -562,26 +562,26 @@ void init_draw_coords(float width_val) {
 	}
 
 	j = 0;
-	for (i = 0; i < (nx + 1); i++) {
+	for (i = 0; i < (g_nx + 1); i++) {
 		draw_coords->tile_x[i] = (i * draw_coords->get_tile_width()) + j;
 		j += g_chan_width.y_list[i] + 1; /* N wires need N+1 units of space */
 	}
-	draw_coords->tile_x[nx + 1] = ((nx + 1) * draw_coords->get_tile_width()) + j;
+	draw_coords->tile_x[g_nx + 1] = ((g_nx + 1) * draw_coords->get_tile_width()) + j;
 
 	j = 0;
-	for (i = 0; i < (ny + 1); ++i) {
+	for (i = 0; i < (g_ny + 1); ++i) {
 		draw_coords->tile_y[i] = (i * draw_coords->get_tile_width()) + j;
 		j += g_chan_width.x_list[i] + 1;
 	}
-	draw_coords->tile_y[ny + 1] = ((ny + 1) * draw_coords->get_tile_width()) + j;
+	draw_coords->tile_y[g_ny + 1] = ((g_ny + 1) * draw_coords->get_tile_width()) + j;
 
 	/* Load coordinates of sub-blocks inside the clbs */
 	draw_internal_init_blk();
 
 	set_visible_world(
 		0.0, 0.0,
-		draw_coords->tile_y[ny + 1] + draw_coords->get_tile_width(), 
-		draw_coords->tile_x[nx + 1] + draw_coords->get_tile_width()
+		draw_coords->tile_y[g_ny + 1] + draw_coords->get_tile_width(), 
+		draw_coords->tile_x[g_nx + 1] + draw_coords->get_tile_width()
 	);
 }
 
@@ -598,8 +598,8 @@ static void drawplace(void) {
 
 	setlinewidth(0);
 
-	for (i = 0; i <= (nx + 1); i++) {
-		for (j = 0; j <= (ny + 1); j++) {
+	for (i = 0; i <= (g_nx + 1); i++) {
+		for (j = 0; j <= (g_ny + 1); j++) {
 			/* Only the first block of a group should control drawing */
 			if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0) 
 				continue;
@@ -648,18 +648,18 @@ static void drawplace(void) {
 				/* Draw text if the space has parts of the netlist */
 				if (bnum != EMPTY_BLOCK && bnum != INVALID_BLOCK) {
 					float saved_rotation = gettextrotation();
-					if (j == 0 || j == ny + 1) {
+					if (j == 0 || j == g_ny + 1) {
 						settextrotation(90);
 					}
 					drawtext_in(abs_clb_bbox, block[bnum].name);
-					if (j == 0 || j == ny + 1) {
+					if (j == 0 || j == g_ny + 1) {
 						settextrotation(saved_rotation);
 					}
 				}
 
 				/* Draw text for block type so that user knows what block */
 				if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
-					if (i > 0 && i <= nx && j > 0 && j <= ny) {
+					if (i > 0 && i <= g_nx && j > 0 && j <= g_ny) {
 						drawtext(abs_clb_bbox.get_center() - t_point(0, abs_clb_bbox.get_width()/4),
 								grid[i][j].type->name, abs_clb_bbox);
 					}
@@ -1683,24 +1683,24 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
 
-	static int **chanx_track = NULL; /* [1..nx][0..ny] */
-	static int **chany_track = NULL; /* [0..nx][1..ny] */
+	static int **chanx_track = NULL; /* [1..g_nx][0..g_ny] */
+	static int **chany_track = NULL; /* [0..g_nx][1..g_ny] */
 	if (draw_state->draw_route_type == GLOBAL) {
 		/* Allocate some temporary storage if it's not already available. */
 		if (chanx_track == NULL) {
-			chanx_track = vtr::alloc_matrix<int>(1, nx, 0, ny);
+			chanx_track = vtr::alloc_matrix<int>(1, g_nx, 0, g_ny);
 		}
 
 		if (chany_track == NULL) {
-			chany_track = vtr::alloc_matrix<int>(0, nx, 1, ny);
+			chany_track = vtr::alloc_matrix<int>(0, g_nx, 1, g_ny);
 		}
 
-		for (int i = 1; i <= nx; i++)
-			for (int j = 0; j <= ny; j++)
+		for (int i = 1; i <= g_nx; i++)
+			for (int j = 0; j <= g_ny; j++)
 				chanx_track[i][j] = (-1);
 
-		for (int i = 0; i <= nx; i++)
-			for (int j = 1; j <= ny; j++)
+		for (int i = 0; i <= g_nx; i++)
+			for (int j = 1; j <= g_ny; j++)
 				chany_track[i][j] = (-1);
 	}
 
@@ -2103,12 +2103,12 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	t_bound_box clb_bbox(0,0,0,0);
 
 	// iterate over grid x
-	for (int i = 0; i <= nx + 1; ++i) {
+	for (int i = 0; i <= g_nx + 1; ++i) {
 		if (draw_coords->tile_x[i] > abs_x) {
 			break; // we've gone to far in the x direction
 		}
 		// iterate over grid y
-		for(int j = 0; j <= ny + 1; ++j) {
+		for(int j = 0; j <= g_ny + 1; ++j) {
 			if (draw_coords->tile_y[j] > abs_y) {
 				break; // we've gone to far in the y direction
 			}

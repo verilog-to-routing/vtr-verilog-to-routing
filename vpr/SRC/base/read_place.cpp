@@ -158,8 +158,8 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		}
 	}
 
-	for (i = 0; i <= nx + 1; i++) {
-		for (j = 0; j <= ny + 1; j++) {
+	for (i = 0; i <= g_nx + 1; i++) {
+		for (j = 0; j <= g_ny + 1; j++) {
 			if (grid[i][j].type == IO_TYPE) {
 				for (k = 0; k < IO_TYPE->capacity; k++) {
 					if (grid[i][j].blocks[k] != INVALID_BLOCK) {
@@ -229,7 +229,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 					"Block %s is listed twice in pad file.\n", bname);
 		}
 
-		if (i < 0 || i > nx + 1 || j < 0 || j > ny + 1) {
+		if (i < 0 || i > g_nx + 1 || j < 0 || j > g_ny + 1) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
 					"Block #%d (%s) location, (%d,%d) is out of range.\n", bnum, bname, i, j);
 		}
@@ -284,7 +284,7 @@ void print_place(const char* net_file,
 	fprintf(fp, "Netlist_File: %s Netlist_ID: %s\n", 
             net_file,
             net_id);
-	fprintf(fp, "Array size: %d x %d logic blocks\n\n", nx, ny);
+	fprintf(fp, "Array size: %d x %d logic blocks\n\n", g_nx, g_ny);
 	fprintf(fp, "#block name\tx\ty\tsubblk\tblock number\n");
 	fprintf(fp, "#----------\t--\t--\t------\t------------\n");
 

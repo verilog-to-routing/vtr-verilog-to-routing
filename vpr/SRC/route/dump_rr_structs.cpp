@@ -202,10 +202,10 @@ static void dump_block_types( fstream &file ){
 static void dump_grid( fstream &file ){
 	/* specify that we're in the grid section and how many grid elements there are */
 	file << endl;
-	file << ".grid(" << (nx+2) << ", " << (ny+2) << ")" << endl;
+	file << ".grid(" << (g_nx+2) << ", " << (g_ny+2) << ")" << endl;
 
-	for (int ix = 0; ix <= nx+1; ix++){
-		for (int iy = 0; iy <= ny+1; iy++){
+	for (int ix = 0; ix <= g_nx+1; ix++){
+		for (int iy = 0; iy <= g_ny+1; iy++){
 			s_grid_tile grid_tile = grid[ix][iy];
 	
 			file << " grid_x" << ix << "_y" << iy << ": ";
@@ -226,8 +226,8 @@ static void dump_grid( fstream &file ){
 static void dump_rr_node_indices( fstream &file ){
 	/* specify that we're in the grid section and how many grid elements there are */
 	file << endl;
-	/* rr_node_indices are [0..NUM_RR_TYPES-1][0..nx+2][0..ny+2]. each entry then contains a vtr::t_ivec with nelem entries */
-	file << ".rr_node_indices(" << NUM_RR_TYPES-1 << ", " << nx+2 << ", " << ny+2 << ")" << endl;
+	/* rr_node_indices are [0..NUM_RR_TYPES-1][0..g_nx+2][0..g_ny+2]. each entry then contains a vtr::t_ivec with nelem entries */
+	file << ".rr_node_indices(" << NUM_RR_TYPES-1 << ", " << g_nx+2 << ", " << g_ny+2 << ")" << endl;
 
 	/* note that the rr_node_indices structure uses the chan/seg convention. in terms of coordinates, this affects CHANX nodes
 	   in which case chan=y and seg=x, whereas for all other nodes chan=x and seg=y. i'm not sure how non-square FPGAs are handled in that case... */
@@ -237,8 +237,8 @@ static void dump_rr_node_indices( fstream &file ){
 			/* skip if not allocated */
 			continue;
 		}
-		for (int ix = 0; ix < nx+2; ix++){
-			for (int iy = 0; iy < ny+2; iy++){
+		for (int ix = 0; ix < g_nx+2; ix++){
+			for (int iy = 0; iy < g_ny+2; iy++){
 				t_rr_type rr_type = (t_rr_type)itype;
 
 				/* because indexing into this structure uses the chan/seg convention, we need to swap the x and y values

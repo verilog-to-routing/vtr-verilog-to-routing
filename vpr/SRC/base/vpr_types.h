@@ -548,7 +548,7 @@ typedef struct s_grid_tile {
 
 /* Stores the bounding box of a net in terms of the minimum and  *
  * maximum coordinates of the blocks forming the net, clipped to *
- * the region (1..nx, 1..ny).                                    */
+ * the region (1..g_nx, 1..g_ny).                                    */
 struct s_bb {
 	int xmin;
 	int xmax;

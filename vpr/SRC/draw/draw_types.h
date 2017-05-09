@@ -145,7 +145,7 @@ struct t_draw_pb_type_info {
  * tile_x and tile_y: together form two axes that make a
  * COORDINATE SYSTEM for grid_tiles, which goes from 
  * (tile_x[0],tile_y[0]) at the lower left corner of the FPGA 
- * to (tile_x[nx+1]+tile_width, tile_y[ny+1]+tile_width) in 
+ * to (tile_x[g_nx+1]+tile_width, tile_y[g_ny+1]+tile_width) in 
  * the upper right corner.       
  * tile_width: Width (and height) of a grid_tile.
  *			 Set when init_draw_coords is called.

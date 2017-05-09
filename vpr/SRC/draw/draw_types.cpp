@@ -101,7 +101,7 @@ t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_ind
 	}
 
 	// reflect it over the line x=y
-	if (grid_x == nx + 1 || grid_x == 0) {
+	if (grid_x == g_nx + 1 || grid_x == 0) {
 		std::swap(result.right(), result.top());
 		std::swap(result.left(), result.bottom());
 	}
@@ -112,9 +112,9 @@ t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_ind
 
 		result += t_point(this->tile_x[grid_x], this->tile_y[grid_y]);
 		if (sub_block_index != 0) {
-			if (grid_x == 0 || grid_x == nx + 1) {
+			if (grid_x == 0 || grid_x == g_nx + 1) {
 				result += t_point(0, sub_blk_offset);
-			} else if (grid_y == 0 || grid_y == ny + 1) {
+			} else if (grid_y == 0 || grid_y == g_ny + 1) {
 				result += t_point(sub_blk_offset, 0);
 			}
 		}

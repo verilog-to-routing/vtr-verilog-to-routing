@@ -49,8 +49,8 @@ std::string g_placement_id; //SHA256 digest of .place file
 
 /******** Physical architecture ********/
 
-int nx = 0;
-int ny = 0;
+int g_nx = 0;
+int g_ny = 0;
 
 /* true if this is a global clb pin -- an input pin to which the netlist can *
  * connect global signals, but which does not connect into the normal        *
@@ -61,7 +61,7 @@ int ny = 0;
 
 t_chan_width g_chan_width;
 
-struct s_grid_tile **grid = NULL; /* [0..(nx+1)][0..(ny+1)] Physical block list */
+struct s_grid_tile **grid = NULL; /* [0..(g_nx+1)][0..(g_ny+1)] Physical block list */
 
 /******** Structures defining the routing ********/
 

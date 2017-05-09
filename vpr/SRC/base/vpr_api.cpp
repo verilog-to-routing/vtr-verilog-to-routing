@@ -299,7 +299,7 @@ void vpr_init(const int argc, const char **argv,
 }
 
 /*
- * Sets globals: nx, ny
+ * Sets globals: g_nx, g_ny
  * Allocs globals: chan_width_x, chan_width_y, grid
  * Depends on num_clbs, pins_per_clb */
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
@@ -340,13 +340,13 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 
             /* Generate grid */
             if (Arch.clb_grid.Aspect >= 1.0) {
-                ny = current;
-                nx = vtr::nint(current * Arch.clb_grid.Aspect);
+                g_ny = current;
+                g_nx = vtr::nint(current * Arch.clb_grid.Aspect);
             } else {
-                nx = current;
-                ny = vtr::nint(current / Arch.clb_grid.Aspect);
+                g_nx = current;
+                g_ny = vtr::nint(current / Arch.clb_grid.Aspect);
             }
-            vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", nx, ny);
+            vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", g_nx, g_ny);
             alloc_and_load_grid(num_instances_type);
             freeGrid();
 
@@ -383,21 +383,21 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 
         /* Generate grid */
         if (Arch.clb_grid.Aspect >= 1.0) {
-            ny = current;
-            nx = vtr::nint(current * Arch.clb_grid.Aspect);
+            g_ny = current;
+            g_nx = vtr::nint(current * Arch.clb_grid.Aspect);
         } else {
-            nx = current;
-            ny = vtr::nint(current / Arch.clb_grid.Aspect);
+            g_nx = current;
+            g_ny = vtr::nint(current / Arch.clb_grid.Aspect);
         }
         alloc_and_load_grid(num_instances_type);
-        vtr::printf_info("FPGA auto-sized to x = %d y = %d\n", nx, ny);
+        vtr::printf_info("FPGA auto-sized to x = %d y = %d\n", g_nx, g_ny);
     } else {
-        nx = Arch.clb_grid.W;
-        ny = Arch.clb_grid.H;
+        g_nx = Arch.clb_grid.W;
+        g_ny = Arch.clb_grid.H;
         alloc_and_load_grid(num_instances_type);
     }
 
-    vtr::printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", nx, ny);
+    vtr::printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", g_nx, g_ny);
 
     /* Test if netlist fits in grid */
     for (int i = 0; i < num_types; ++i) {
@@ -423,8 +423,8 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     vtr::printf_info("\n");
     g_chan_width.x_max = g_chan_width.y_max = 0;
     g_chan_width.x_min = g_chan_width.y_min = 0;
-    g_chan_width.x_list = (int *) vtr::malloc((ny + 1) * sizeof(int));
-    g_chan_width.y_list = (int *) vtr::malloc((nx + 1) * sizeof(int));
+    g_chan_width.x_list = (int *) vtr::malloc((g_ny + 1) * sizeof(int));
+    g_chan_width.y_list = (int *) vtr::malloc((g_nx + 1) * sizeof(int));
 
     free(num_blocks_type);
     free(num_instances_type);

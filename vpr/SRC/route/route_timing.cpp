@@ -1142,7 +1142,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	}
 	if (rt_node == NULL || rt_node->u.child_list == NULL) {
 		/* If unknown traceback, set radius of bin to be size of chip */
-		rlim = max(nx + 2, ny + 2);
+		rlim = max(g_nx + 2, g_ny + 2);
 		return rlim;
 	}
 
@@ -1177,7 +1177,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		}
 
 		if (success == false) {
-			if (rlim > max(nx + 2, ny + 2)) {
+			if (rlim > max(g_nx + 2, g_ny + 2)) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 					 "VPR internal error, net %s has paths that are not found in traceback.\n", g_clbs_nlist.net[inet].name);
 			}

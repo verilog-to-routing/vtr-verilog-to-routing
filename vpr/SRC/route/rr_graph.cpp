@@ -300,7 +300,7 @@ void build_rr_graph(
 			&chan_details_x, &chan_details_y);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CHAN_DETAILS)) {
-		dump_chan_details( chan_details_x, chan_details_y, max_chan_width, nx, ny,
+		dump_chan_details( chan_details_x, chan_details_y, max_chan_width, g_nx, g_ny,
 				getEchoFileName(E_ECHO_CHAN_DETAILS));
 	}
 	/* END CHAN_DETAILS */
@@ -379,8 +379,8 @@ void build_rr_graph(
 	/* These are data structures used by the the unidir opin mapping. They are used 
 	   to spread connections evenly for each segment type among the available
 	   wire start points */
-	int ***Fc_xofs = NULL; /* [0..ny-1][0..nx-1][0..num_seg_types-1] */
-	int ***Fc_yofs = NULL; /* [0..nx-1][0..ny-1][0..num_seg_types-1] */
+	int ***Fc_xofs = NULL; /* [0..g_ny-1][0..g_nx-1][0..num_seg_types-1] */
+	int ***Fc_yofs = NULL; /* [0..g_nx-1][0..g_ny-1][0..num_seg_types-1] */
 	if (UNI_DIRECTIONAL == directionality) {
 		Fc_xofs = vtr::alloc_matrix3<int>(0, L_ny, 0, L_nx, 0, num_seg_types-1);
 		Fc_yofs = vtr::alloc_matrix3<int>(0, L_nx, 0, L_ny, 0, num_seg_types-1);
@@ -1418,16 +1418,16 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 	   coordinates based on channel type */
 	int seg_coord = x_coord;
 	int chan_coord = y_coord;
-	int seg_dimension = nx;
-	int chan_dimension = ny;
+	int seg_dimension = g_nx;
+	int chan_dimension = g_ny;
 	const t_chan_details *from_chan_details = chan_details_x;
 	const t_chan_details *opposite_chan_details = chan_details_y;
 	t_rr_type opposite_chan_type = CHANY;
 	if (chan_type == CHANY){
 		seg_coord = y_coord;
 		chan_coord = x_coord;
-		seg_dimension = ny;
-		chan_dimension = nx;
+		seg_dimension = g_ny;
+		chan_dimension = g_nx;
 		from_chan_details = chan_details_y;
 		opposite_chan_details = chan_details_x;
 		opposite_chan_type = CHANX;
@@ -2374,7 +2374,7 @@ static void build_unidir_rr_opins(const int i, const int j,
 						t_rr_type chan_type = (vert ? CHANX : CHANY);
 						int chan = (vert ? (j + height) : (i + width));
 						int seg = (vert ? (i + width) : (j + height));
-						int max_len = (vert ? nx : ny);
+						int max_len = (vert ? g_nx : g_ny);
 						int ***Fc_ofs = (vert ? Fc_xofs : Fc_yofs);
 						if (false == pos_dir) {
 							--chan;
@@ -2387,10 +2387,10 @@ static void build_unidir_rr_opins(const int i, const int j,
 						if (seg < 1) {
 							continue;
 						}
-						if (seg > (vert ? nx : ny)) {
+						if (seg > (vert ? g_nx : g_ny)) {
 							continue;
 						}
-						if (chan > (vert ? ny : nx)) {
+						if (chan > (vert ? g_ny : g_nx)) {
 							continue;
 						}
 
@@ -2562,9 +2562,9 @@ static int get_opin_direct_connecions(int x, int y, int opin,
 		if(clb_to_clb_directs[i].from_clb_type == curr_type) { //We are at a valid starting point
 
             //Offset must be in range
-            if(x + directs[i].x_offset < nx + 1 &&
+            if(x + directs[i].x_offset < g_nx + 1 &&
                x + directs[i].x_offset > 0 &&
-               y + directs[i].y_offset < ny + 1 &&
+               y + directs[i].y_offset < g_ny + 1 &&
                y + directs[i].y_offset > 0) {
             
                 //Only add connections if the target clb type matches the type in the direct specification

@@ -77,9 +77,9 @@ extern std::string g_placement_id; //SHA256 digest of .place file
  Physical FPGA architecture globals 
  *********************************************************************/
 
-/* x and y dimensions of the FPGA itself, the core of the FPGA is from [1..nx][1..ny], the I/Os form a perimeter surrounding the core */
-extern int nx, ny;
-extern struct s_grid_tile **grid; /* FPGA complex blocks grid [0..nx+1][0..ny+1] */
+/* x and y dimensions of the FPGA itself, the core of the FPGA is from [1..g_nx][1..g_ny], the I/Os form a perimeter surrounding the core */
+extern int g_nx, g_ny;
+extern struct s_grid_tile **grid; /* FPGA complex blocks grid [0..g_nx+1][0..g_ny+1] */
 
 /* Special pointers to identify special blocks on an FPGA: I/Os, unused, and default */
 extern t_type_ptr IO_TYPE;

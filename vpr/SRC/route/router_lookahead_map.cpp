@@ -187,11 +187,11 @@ public:
 
 /* provides delay/congestion estimates to travel specified distances 
    in the x/y direction */
-typedef vector< vector< vector< vector<Cost_Entry> > > > t_cost_map;        //[0..1][[0..num_seg_types-1]0..nx][0..ny]	-- [0..1] entry is to 
+typedef vector< vector< vector< vector<Cost_Entry> > > > t_cost_map;        //[0..1][[0..num_seg_types-1]0..g_nx][0..g_ny]	-- [0..1] entry is to 
                                                                             //distinguish between CHANX/CHANY start nodes respectively
 /* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type. 
    the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
-typedef vector< vector<Expansion_Cost_Entry> > t_routing_cost_map;		//[0..nx][0..ny]
+typedef vector< vector<Expansion_Cost_Entry> > t_routing_cost_map;		//[0..g_nx][0..g_ny]
 
 
 /******** File-Scope Variables ********/
@@ -274,11 +274,11 @@ void compute_router_lookahead(int num_segments){
 		for (e_rr_type chan_type : {CHANX, CHANY}){
 			/* allocate the cost map for this iseg/chan_type */
 			t_routing_cost_map routing_cost_map;
-			routing_cost_map.assign( nx+2, vector<Expansion_Cost_Entry>(ny+2, Expansion_Cost_Entry()) );
+			routing_cost_map.assign( g_nx+2, vector<Expansion_Cost_Entry>(g_ny+2, Expansion_Cost_Entry()) );
 
 			for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2){
 				/* get the rr node index from which to start routing */
-				int start_node_ind = get_start_node_ind(REF_X, REF_Y, nx, ny, chan_type, iseg, track_offset);
+				int start_node_ind = get_start_node_ind(REF_X, REF_Y, g_nx, g_ny, chan_type, iseg, track_offset);
 
 				if (start_node_ind == UNDEFINED){
 					continue;
@@ -301,8 +301,8 @@ void compute_router_lookahead(int num_segments){
 	//printing out delay maps
 	//for (int iseg = 0; iseg < num_segments; iseg++){
 	//	for (int chan_index : {0,1}){
-	//		for (int iy = 0; iy < ny+1; iy++){
-	//			for (int ix = 0; ix < nx+1; ix++){
+	//		for (int iy = 0; iy < g_ny+1; iy++){
+	//			for (int ix = 0; ix < g_nx+1; ix++){
 	//				printf("%.3e\t", f_cost_map[chan_index][iseg][ix][iy].delay);
 	//			}
 	//			printf("\n");
@@ -367,8 +367,8 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 
 /* allocates space for cost map entries */
 static void alloc_cost_map(int num_segments){
-	vector<Cost_Entry> ny_entries( ny+2, Cost_Entry() );
-	vector< vector<Cost_Entry> > nx_entries( nx+2, ny_entries );
+	vector<Cost_Entry> ny_entries( g_ny+2, Cost_Entry() );
+	vector< vector<Cost_Entry> > nx_entries( g_nx+2, ny_entries );
 	vector< vector< vector<Cost_Entry> > > segment_entries( num_segments, nx_entries );
 	f_cost_map.assign( 2, segment_entries );
 }
