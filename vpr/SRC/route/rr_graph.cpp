@@ -980,8 +980,8 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
                         Result[itype][ipin][iseg] = sets_per_seg_type[iseg] * fac;
                     }
 
-                    VTR_ASSERT_MSG(Result[itype][ipin][iseg] > 0, "Absolute Fc must be positive");
-                    VTR_ASSERT_MSG(Result[itype][ipin][iseg] % fac == 0, "Absolute Fc must be divisible by 1 (bidir architecture) or 2 (unidir architecture)");
+                    VTR_ASSERT_MSG(Result[itype][ipin][iseg] >= 0, "Calculated absolute Fc must be positive");
+                    VTR_ASSERT_MSG(Result[itype][ipin][iseg] % fac == 0, "Calculated absolute Fc must be divisible by 1 (bidir architecture) or 2 (unidir architecture)");
                 }
             }
         }
