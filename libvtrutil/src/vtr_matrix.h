@@ -5,6 +5,7 @@
 
 #include "vtr_list.h"
 #include "vtr_memory.h"
+#include "vtr_assert.h"
 
 namespace vtr {
 
@@ -17,10 +18,16 @@ namespace vtr {
         int i;
         T** ptr;
 
-        ptr = (T**) vtr::malloc((nrmax - nrmin + 1) * sizeof(T*));
+        int nrows = nrmax - nrmin + 1;
+        int ncols = ncmax - ncmin + 1;
+
+        VTR_ASSERT_MSG(nrows >= 0, "Allocated matrix must have zero-or-more rows");
+        VTR_ASSERT_MSG(ncols >= 0, "Allocated matrix must have zero-or-more columns");
+
+        ptr = (T**) vtr::malloc(nrows * sizeof(T*));
         ptr -= nrmin;
         for (i = nrmin; i <= nrmax; i++) {
-            ptr[i] = (T *) vtr::malloc((ncmax - ncmin + 1) * sizeof(T));
+            ptr[i] = (T *) vtr::malloc(ncols * sizeof(T));
             ptr[i] -= ncmin;
         }
         return ptr;
@@ -36,7 +43,10 @@ namespace vtr {
         int i;
         T*** ptr;
 
-        ptr = (T***) vtr::malloc((nrmax - nrmin + 1) * sizeof(T**));
+        int nrows = nrmax - nrmin + 1;
+        VTR_ASSERT_MSG(nrows >= 0, "Allocated matrix must have zero-or-more rows");
+
+        ptr = (T***) vtr::malloc(nrows * sizeof(T**));
         ptr -= nrmin;
         for (i = nrmin; i <= nrmax; i++) {
             ptr[i] = alloc_matrix<T>(ncmin, ncmax, ndmin, ndmax);
@@ -53,7 +63,10 @@ namespace vtr {
         int i;
         T ****ptr;
 
-        ptr = (T ****) vtr::malloc((nrmax - nrmin + 1) * sizeof(T ***));
+        int nrows = nrmax - nrmin + 1;
+        VTR_ASSERT_MSG(nrows >= 0, "Allocated matrix must have zero-or-more rows");
+
+        ptr = (T ****) vtr::malloc(nrows * sizeof(T ***));
         ptr -= nrmin;
         for (i = nrmin; i <= nrmax; i++) {
             ptr[i] = alloc_matrix3<T>(ncmin, ncmax, ndmin, ndmax, nemin, nemax);
@@ -70,7 +83,10 @@ namespace vtr {
         int i;
         T *****ptr;
 
-        ptr = (T *****) vtr::malloc((nrmax - nrmin + 1) * sizeof(T ****));
+        int nrows = nrmax - nrmin + 1;
+        VTR_ASSERT_MSG(nrows >= 0, "Allocated matrix must have zero-or-more rows");
+
+        ptr = (T *****) vtr::malloc(nrows * sizeof(T ****));
         ptr -= nrmin;
         for (i = nrmin; i <= nrmax; i++) {
             ptr[i] = alloc_matrix4<T>(ncmin, ncmax, ndmin, ndmax, nemin, nemax, nfmin, nfmax);
