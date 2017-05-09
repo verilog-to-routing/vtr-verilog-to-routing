@@ -315,24 +315,24 @@ static void load_simplified_device(void) {
 	FILL_TYPE = &dummy_type_descriptors[2];
 
 	/* Fill in homogeneous core grid info */
-	grid_backup = grid;
-	grid = vtr::alloc_matrix<struct s_grid_tile>(0, g_nx + 1, 0, g_ny + 1);
+	grid_backup = g_grid;
+	g_grid = vtr::alloc_matrix<struct s_grid_tile>(0, g_nx + 1, 0, g_ny + 1);
 	for (i = 0; i < g_nx + 2; i++) {
 		for (j = 0; j < g_ny + 2; j++) {
 			if ((i == 0 && j == 0) || (i == g_nx + 1 && j == 0)
 					|| (i == 0 && j == g_ny + 1)
 					|| (i == g_nx + 1 && j == g_ny + 1)) {
-				grid[i][j].type = EMPTY_TYPE;
+				g_grid[i][j].type = EMPTY_TYPE;
 			} else if (i == 0 || i == g_nx + 1 || j == 0 || j == g_ny + 1) {
-				grid[i][j].type = IO_TYPE;
+				g_grid[i][j].type = IO_TYPE;
 			} else {
-				grid[i][j].type = FILL_TYPE;
+				g_grid[i][j].type = FILL_TYPE;
 			}
-			grid[i][j].width_offset = 0;
-			grid[i][j].height_offset = 0;
-			grid[i][j].blocks = (int*)vtr::malloc(grid[i][j].type->capacity * sizeof(int));
-			for (k = 0; k < grid[i][j].type->capacity; k++) {
-				grid[i][j].blocks[k] = EMPTY_BLOCK;
+			g_grid[i][j].width_offset = 0;
+			g_grid[i][j].height_offset = 0;
+			g_grid[i][j].blocks = (int*)vtr::malloc(g_grid[i][j].type->capacity * sizeof(int));
+			for (k = 0; k < g_grid[i][j].type->capacity; k++) {
+				g_grid[i][j].blocks[k] = EMPTY_BLOCK;
 			}
 		}
 	}
@@ -350,11 +350,11 @@ static void restore_original_device(void) {
 	/* free allocatd data */
 	for (i = 0; i < g_nx + 2; i++) {
 		for (j = 0; j < g_ny + 2; j++) {
-			free(grid[i][j].blocks);
+			free(g_grid[i][j].blocks);
 		}
 	}
-    vtr::free_matrix(grid, 0, g_nx + 1, 0);
-	grid = grid_backup;
+    vtr::free_matrix(g_grid, 0, g_nx + 1, 0);
+	g_grid = grid_backup;
 }
 
 /**************************************/
@@ -363,10 +363,10 @@ static void reset_placement(void) {
 
 	for (i = 0; i <= g_nx + 1; i++) {
 		for (j = 0; j <= g_ny + 1; j++) {
-			grid[i][j].usage = 0;
-			for (k = 0; k < grid[i][j].type->capacity; k++) {
-				if (grid[i][j].blocks[k] != INVALID_BLOCK) {
-					grid[i][j].blocks[k] = EMPTY_BLOCK;
+			g_grid[i][j].usage = 0;
+			for (k = 0; k < g_grid[i][j].type->capacity; k++) {
+				if (g_grid[i][j].blocks[k] != INVALID_BLOCK) {
+					g_grid[i][j].blocks[k] = EMPTY_BLOCK;
 				}
 			}
 		}
@@ -466,7 +466,7 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 				GRAPH_BIDIR : GRAPH_UNIDIR);
 	}
 
-	build_rr_graph(graph_type, num_types, dummy_type_descriptors, g_nx, g_ny, grid,
+	build_rr_graph(graph_type, num_types, dummy_type_descriptors, g_nx, g_ny, g_grid,
 			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
@@ -538,14 +538,14 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 	block[SINK_BLOCK].pb = nullptr;
 	block[SINK_BLOCK].pb_route = nullptr;
 
-	grid[source_x_loc][source_y_loc].blocks[source_z_loc] = SOURCE_BLOCK;
-	grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = SINK_BLOCK;
+	g_grid[source_x_loc][source_y_loc].blocks[source_z_loc] = SOURCE_BLOCK;
+	g_grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = SINK_BLOCK;
 
 	g_clbs_nlist.net[NET_USED].pins[NET_USED_SOURCE_BLOCK].block_pin = get_best_pin(DRIVER, block[SOURCE_BLOCK].type);
 	g_clbs_nlist.net[NET_USED].pins[NET_USED_SINK_BLOCK].block_pin = get_best_pin(RECEIVER, block[SINK_BLOCK].type);
 
-	grid[source_x_loc][source_y_loc].usage += 1;
-	grid[sink_x_loc][sink_y_loc].usage += 1;
+	g_grid[source_x_loc][source_y_loc].usage += 1;
+	g_grid[sink_x_loc][sink_y_loc].usage += 1;
 
 }
 
@@ -588,10 +588,10 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 
 	net_delay_value = net_delay[NET_USED][NET_USED_SINK_BLOCK];
 
-	grid[source_x_loc][source_y_loc].usage = 0;
-	grid[source_x_loc][source_y_loc].blocks[source_z_loc] = EMPTY_BLOCK;
-	grid[sink_x_loc][sink_y_loc].usage = 0;
-	grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = EMPTY_BLOCK;
+	g_grid[source_x_loc][source_y_loc].usage = 0;
+	g_grid[source_x_loc][source_y_loc].blocks[source_z_loc] = EMPTY_BLOCK;
+	g_grid[sink_x_loc][sink_y_loc].usage = 0;
+	g_grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = EMPTY_BLOCK;
 
 	return (net_delay_value);
 }

@@ -601,16 +601,16 @@ static void drawplace(void) {
 	for (i = 0; i <= (g_nx + 1); i++) {
 		for (j = 0; j <= (g_ny + 1); j++) {
 			/* Only the first block of a group should control drawing */
-			if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0) 
+			if (g_grid[i][j].width_offset > 0 || g_grid[i][j].height_offset > 0) 
 				continue;
 
 
-			num_sub_tiles = grid[i][j].type->capacity;
+			num_sub_tiles = g_grid[i][j].type->capacity;
 			/* Don't draw if tile capacity is zero. eg. corners. */
 			if (num_sub_tiles == 0) {
 				continue;
 			}
-			height = grid[i][j].type->height;
+			height = g_grid[i][j].type->height;
 
 			for (k = 0; k < num_sub_tiles; ++k) {
 				/* Graphics will look unusual for multiple height and capacity */
@@ -620,7 +620,7 @@ static void drawplace(void) {
 				t_bound_box abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
 
 				/* Look at the tile at start of large block */
-				bnum = grid[i][j].blocks[k];
+				bnum = g_grid[i][j].blocks[k];
 
 				/* Fill background for the clb. Do not fill if "show_blk_internal" 
 				 * is toggled. 
@@ -630,10 +630,10 @@ static void drawplace(void) {
 					fillrect(abs_clb_bbox);
 				} else {
 					/* colour empty blocks a particular colour depending on type  */
-					if (grid[i][j].type->index < 3) {
+					if (g_grid[i][j].type->index < 3) {
 						setcolor(WHITE);
-					} else if (grid[i][j].type->index < 3 + MAX_BLOCK_COLOURS) {
-						setcolor(BISQUE + grid[i][j].type->index - 3);
+					} else if (g_grid[i][j].type->index < 3 + MAX_BLOCK_COLOURS) {
+						setcolor(BISQUE + g_grid[i][j].type->index - 3);
 					} else {
 						setcolor(BISQUE + MAX_BLOCK_COLOURS - 1);
 					}
@@ -658,10 +658,10 @@ static void drawplace(void) {
 				}
 
 				/* Draw text for block type so that user knows what block */
-				if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
+				if (g_grid[i][j].width_offset == 0 && g_grid[i][j].height_offset == 0) {
 					if (i > 0 && i <= g_nx && j > 0 && j <= g_ny) {
 						drawtext(abs_clb_bbox.get_center() - t_point(0, abs_clb_bbox.get_width()/4),
-								grid[i][j].type->name, abs_clb_bbox);
+								g_grid[i][j].type->name, abs_clb_bbox);
 					}
 				}
 			}
@@ -1519,15 +1519,15 @@ static void draw_rr_pin(int inode, const t_color& color) {
 	i = g_rr_nodes[inode].xlow();
 	j = g_rr_nodes[inode].ylow();
 	ipin = g_rr_nodes[inode].ptc_num();
-	type = grid[i][j].type;
-	int width_offset = grid[i][j].width_offset;
-	int height_offset = grid[i][j].height_offset;
+	type = g_grid[i][j].type;
+	int width_offset = g_grid[i][j].width_offset;
+	int height_offset = g_grid[i][j].height_offset;
 
 	setcolor(color);
 
 	/* TODO: This is where we can hide fringe physical pins and also identify globals (hide, color, show) */
 	for (iside = 0; iside < 4; iside++) {
-		if (type->pinloc[grid[i][j].width_offset][grid[i][j].height_offset][iside][ipin]) { /* Pin exists on this side. */
+		if (type->pinloc[g_grid[i][j].width_offset][g_grid[i][j].height_offset][iside][ipin]) { /* Pin exists on this side. */
 			draw_get_rr_pin_coords(inode, iside, width_offset, height_offset, &xcen, &ycen);
 			fillrect(xcen - draw_coords->pin_size, ycen - draw_coords->pin_size, 
 					 xcen + draw_coords->pin_size, ycen + draw_coords->pin_size);
@@ -1565,8 +1565,8 @@ void draw_get_rr_pin_coords(t_rr_node* node, int iside,
 	yc = draw_coords->tile_y[j];
 
 	ipin = node->ptc_num();
-	type = grid[i][j].type;
-	pins_per_sub_tile = grid[i][j].type->num_pins / grid[i][j].type->capacity;
+	type = g_grid[i][j].type;
+	pins_per_sub_tile = g_grid[i][j].type->num_pins / g_grid[i][j].type->capacity;
 	k = ipin / pins_per_sub_tile;
 
 	/* Since pins numbers go across all sub_tiles in a block in order
@@ -1953,9 +1953,9 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
 			{
 				int i = g_rr_nodes[inode].xlow();
 				int j = g_rr_nodes[inode].ylow();
-				t_type_ptr type = grid[i][j].type;
-				int width_offset = grid[i][j].width_offset;
-				int height_offset = grid[i][j].height_offset;
+				t_type_ptr type = g_grid[i][j].type;
+				int width_offset = g_grid[i][j].width_offset;
+				int height_offset = g_grid[i][j].height_offset;
 				int ipin = g_rr_nodes[inode].ptc_num();
 				float xcen, ycen;
 				
@@ -2113,7 +2113,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 				break; // we've gone to far in the y direction
 			}
 			// iterate over sub_blocks
-			t_grid_tile* grid_tile = &grid[i][j];
+			t_grid_tile* grid_tile = &g_grid[i][j];
 			for (int k = 0; k < grid_tile->type->capacity; ++k) {
 				clb_index = grid_tile->blocks[k];
 				if (clb_index != EMPTY_BLOCK) {
@@ -2418,16 +2418,16 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	grid_y = g_rr_nodes[pin_node].ylow();
 	pin_num = g_rr_nodes[pin_node].ptc_num();
 	chan_type = g_rr_nodes[chan_node].type();
-	type = grid[grid_x][grid_y].type;
+	type = g_grid[grid_x][grid_y].type;
 
 	/* large block begins at primary tile (offset == 0) */
-	int width_offset = grid[grid_x][grid_y].width_offset;
-	int height_offset = grid[grid_x][grid_y].height_offset;
+	int width_offset = g_grid[grid_x][grid_y].width_offset;
+	int height_offset = g_grid[grid_x][grid_y].height_offset;
 	grid_x = grid_x - width_offset;
 	grid_y = grid_y - height_offset;
 
-	int width = grid[grid_x][grid_y].type->width;
-	int height = grid[grid_x][grid_y].type->height;
+	int width = g_grid[grid_x][grid_y].type->width;
+	int height = g_grid[grid_x][grid_y].type->height;
 	chan_ylow = g_rr_nodes[chan_node].ylow();
 	chan_xlow = g_rr_nodes[chan_node].xlow();
 
@@ -2473,9 +2473,9 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 			//other than the perimeter.
 				iside=TOP;
 				for (int side1 = 0; side1 < 4; ++side1) {
-			for (int width1 = 0; width1 < grid[grid_x][grid_y].type->width; ++width1) {
-				for (int height1= 0; height1 < grid[grid_x][grid_y].type->height; ++height1) {
-					if (grid[grid_x][grid_y].type->pinloc[width1][height1][side1][pin_num])
+			for (int width1 = 0; width1 < g_grid[grid_x][grid_y].type->width; ++width1) {
+				for (int height1= 0; height1 < g_grid[grid_x][grid_y].type->height; ++height1) {
+					if (g_grid[grid_x][grid_y].type->pinloc[width1][height1][side1][pin_num])
 					{
 						height_offset = height1;
 						width_offset = width1;
@@ -2489,7 +2489,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 			draw_pin_off = -draw_coords->pin_size;
 		}
 
-		VTR_ASSERT(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
+		VTR_ASSERT(g_grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
 
 		draw_get_rr_pin_coords(pin_node, iside, width_offset, height_offset, &x1, &y1);
 		chan_bbox = draw_get_rr_chan_bbox(chan_node);
@@ -2538,11 +2538,11 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 			 * this will fail.  With the correct routing graph, the assertion will not
 			 * be triggered.  This also takes care of connecting a wire once to multiple
 			 * physical pins on the same side. */
-			if (grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]) {
+			if (g_grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]) {
 				break;
 			}
 		}
-		VTR_ASSERT(grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
+		VTR_ASSERT(g_grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
 
 		draw_get_rr_pin_coords(pin_node, iside, width_offset, height_offset, &x1, &y1);
 		chan_bbox = draw_get_rr_chan_bbox(chan_node);
@@ -2604,11 +2604,11 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	/* get opin coordinate */
 	opin_grid_x = g_rr_nodes[opin_node].xlow();
 	opin_grid_y = g_rr_nodes[opin_node].ylow();
-	opin_grid_x = opin_grid_x - grid[opin_grid_x][opin_grid_y].width_offset;
-	opin_grid_y = opin_grid_y - grid[opin_grid_x][opin_grid_y].height_offset;
+	opin_grid_x = opin_grid_x - g_grid[opin_grid_x][opin_grid_y].width_offset;
+	opin_grid_y = opin_grid_y - g_grid[opin_grid_x][opin_grid_y].height_offset;
 
 	opin_pin_num = g_rr_nodes[opin_node].ptc_num();
-	type = grid[opin_grid_x][opin_grid_y].type;
+	type = g_grid[opin_grid_x][opin_grid_y].type;
 	
 	found = false;
 	for (int width = 0; width < type->width && !found; ++width) {
@@ -2631,11 +2631,11 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	/* get ipin coordinate */
 	ipin_grid_x = g_rr_nodes[ipin_node].xlow();
 	ipin_grid_y = g_rr_nodes[ipin_node].ylow();
-	ipin_grid_x = ipin_grid_x - grid[ipin_grid_x][ipin_grid_y].width_offset;
-	ipin_grid_y = ipin_grid_y - grid[ipin_grid_x][ipin_grid_y].height_offset;
+	ipin_grid_x = ipin_grid_x - g_grid[ipin_grid_x][ipin_grid_y].width_offset;
+	ipin_grid_y = ipin_grid_y - g_grid[ipin_grid_x][ipin_grid_y].height_offset;
 
 	ipin_pin_num = g_rr_nodes[ipin_node].ptc_num();
-	type = grid[ipin_grid_x][ipin_grid_y].type;
+	type = g_grid[ipin_grid_x][ipin_grid_y].type;
 	
 	found = false;
 	for (int width = 0; width < type->width && !found; ++width) {

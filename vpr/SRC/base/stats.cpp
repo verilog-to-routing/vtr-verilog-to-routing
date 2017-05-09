@@ -65,11 +65,11 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	area = 0;
 	for (i = 1; i <= g_nx; i++) {
 		for (j = 1; j <= g_ny; j++) {
-			if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
-				if (grid[i][j].type->area == UNDEFINED) {
-					area += grid_logic_tile_area * grid[i][j].type->width * grid[i][j].type->height;
+			if (g_grid[i][j].width_offset == 0 && g_grid[i][j].height_offset == 0) {
+				if (g_grid[i][j].type->area == UNDEFINED) {
+					area += grid_logic_tile_area * g_grid[i][j].type->width * g_grid[i][j].type->height;
 				} else {
-					area += grid[i][j].type->area;
+					area += g_grid[i][j].type->area;
 				}
 			}
 		}

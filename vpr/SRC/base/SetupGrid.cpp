@@ -2,7 +2,7 @@
  Author: Jason Luu
  Date: October 8, 2008
 
- Initializes and allocates the physical logic block grid for VPR.
+ Initializes and allocates the physical logic block g_grid for VPR.
 
  */
 
@@ -45,12 +45,12 @@ void alloc_and_load_grid(int *num_instances_type) {
 
 	VTR_ASSERT(g_nx >= 1 && g_ny >= 1);
 
-	grid = vtr::alloc_matrix<struct s_grid_tile>(0, (g_nx + 1), 0, (g_ny + 1));
+	g_grid = vtr::alloc_matrix<struct s_grid_tile>(0, (g_nx + 1), 0, (g_ny + 1));
 
-	/* Clear the full grid to have no type (NULL), no capacity, etc */
+	/* Clear the full g_grid to have no type (NULL), no capacity, etc */
 	for (int x = 0; x <= (g_nx + 1); ++x) {
 		for (int y = 0; y <= (g_ny + 1); ++y) {
-			memset(&grid[x][y], 0, (sizeof(struct s_grid_tile)));
+			memset(&g_grid[x][y], 0, (sizeof(struct s_grid_tile)));
 		}
 	}
 
@@ -70,7 +70,7 @@ void alloc_and_load_grid(int *num_instances_type) {
 
 			} else {
 
-				if (grid[x][y].width_offset > 0 || grid[x][y].height_offset > 0)
+				if (g_grid[x][y].width_offset > 0 || g_grid[x][y].height_offset > 0)
 					continue;
 
 				// Assume core are not empty and not IO types (by default)
@@ -80,39 +80,39 @@ void alloc_and_load_grid(int *num_instances_type) {
 			if (x + type->width - 1 <= g_nx && y + type->height - 1 <= g_ny) {
 				for (int x_offset = 0; x_offset < type->width; ++x_offset) {
 					for (int y_offset = 0; y_offset < type->height; ++y_offset) {
-						grid[x+x_offset][y+y_offset].type = type;
-						grid[x+x_offset][y+y_offset].width_offset = x_offset;
-						grid[x+x_offset][y+y_offset].height_offset = y_offset;
-						grid[x+x_offset][y+y_offset].blocks = (int *) vtr::malloc(sizeof(int) * max(1,type->capacity));
+						g_grid[x+x_offset][y+y_offset].type = type;
+						g_grid[x+x_offset][y+y_offset].width_offset = x_offset;
+						g_grid[x+x_offset][y+y_offset].height_offset = y_offset;
+						g_grid[x+x_offset][y+y_offset].blocks = (int *) vtr::malloc(sizeof(int) * max(1,type->capacity));
 						for (int i = 0; i < max(1,type->capacity); ++i) {
-							grid[x+x_offset][y+y_offset].blocks[i] = EMPTY_BLOCK;
+							g_grid[x+x_offset][y+y_offset].blocks[i] = EMPTY_BLOCK;
 						}
 					}
 				}
 			} else if (type == IO_TYPE ) {
-				grid[x][y].type = type;
-				grid[x][y].blocks = (int *) vtr::malloc(sizeof(int) * max(1,type->capacity));
+				g_grid[x][y].type = type;
+				g_grid[x][y].blocks = (int *) vtr::malloc(sizeof(int) * max(1,type->capacity));
 				for (int i = 0; i < max(1,type->capacity); ++i) {
-					grid[x][y].blocks[i] = EMPTY_BLOCK;
+					g_grid[x][y].blocks[i] = EMPTY_BLOCK;
 				}
 			} else {
-				grid[x][y].type = EMPTY_TYPE;
-				grid[x][y].blocks = (int *) vtr::malloc(sizeof(int));
-				grid[x][y].blocks[0] = EMPTY_BLOCK;
+				g_grid[x][y].type = EMPTY_TYPE;
+				g_grid[x][y].blocks = (int *) vtr::malloc(sizeof(int));
+				g_grid[x][y].blocks[0] = EMPTY_BLOCK;
 			}
 		}
 	}
 
 	// And, refresh (ie. reset and update) the "num_instances_type" array
 	// (while also forcing any remaining INVALID_BLOCK blocks to EMPTY_TYPE)
-	alloc_and_load_num_instances_type(grid, g_nx, g_ny,	num_instances_type, num_types);
+	alloc_and_load_num_instances_type(g_grid, g_nx, g_ny,	num_instances_type, num_types);
 
 	CheckGrid();
 
 #if 0
 	for (int y = 0; y <= g_ny + 1; ++y) {
 		for (int x = 0; x <= g_nx + 1; ++x) {
-			vtr::printf_info("[%d][%d] %s\n", x, y, grid[x][y].type->name);
+			vtr::printf_info("[%d][%d] %s\n", x, y, g_grid[x][y].type->name);
 		}
 	}
 #endif
@@ -124,7 +124,7 @@ void alloc_and_load_grid(int *num_instances_type) {
 	{
 		for (i = 0; i <= (g_nx + 1); ++i)
 		{
-			fprintf(dump, "%c", grid[i][j].type->name[1]);
+			fprintf(dump, "%c", g_grid[i][j].type->name[1]);
 		}
 		fprintf(dump, "\n");
 	}
@@ -186,17 +186,17 @@ static void alloc_and_load_num_instances_type(
 void freeGrid(void) {
 
 	int i, j;
-	if (grid == NULL) {
+	if (g_grid == NULL) {
 		return;
 	}
 
 	for (i = 0; i <= (g_nx + 1); ++i) {
 		for (j = 0; j <= (g_ny + 1); ++j) {
-			free(grid[i][j].blocks);
+			free(g_grid[i][j].blocks);
 		}
 	}
-    vtr::free_matrix(grid, 0, g_nx + 1, 0);
-	grid = NULL;
+    vtr::free_matrix(g_grid, 0, g_nx + 1, 0);
+	g_grid = NULL;
 }
 
 static void CheckGrid(void) {
@@ -206,26 +206,26 @@ static void CheckGrid(void) {
 	/* Check grid is valid */
 	for (i = 0; i <= (g_nx + 1); ++i) {
 		for (j = 0; j <= (g_ny + 1); ++j) {
-			if (NULL == grid[i][j].type) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "grid[%d][%d] has no type.\n", i, j);
+			if (NULL == g_grid[i][j].type) {
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "g_grid[%d][%d] has no type.\n", i, j);
 			}
 
-			if (grid[i][j].usage != 0) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "grid[%d][%d] has non-zero usage (%d) before netlist load.\n", i, j, grid[i][j].usage);
+			if (g_grid[i][j].usage != 0) {
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "g_grid[%d][%d] has non-zero usage (%d) before netlist load.\n", i, j, g_grid[i][j].usage);
 			}
 
-			if ((grid[i][j].width_offset < 0)
-					|| (grid[i][j].width_offset >= grid[i][j].type->width)) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "grid[%d][%d] has invalid width offset (%d).\n", i, j, grid[i][j].width_offset);
+			if ((g_grid[i][j].width_offset < 0)
+					|| (g_grid[i][j].width_offset >= g_grid[i][j].type->width)) {
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "g_grid[%d][%d] has invalid width offset (%d).\n", i, j, g_grid[i][j].width_offset);
 			}
-			if ((grid[i][j].height_offset < 0)
-					|| (grid[i][j].height_offset >= grid[i][j].type->height)) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "grid[%d][%d] has invalid height offset (%d).\n", i, j, grid[i][j].height_offset);
+			if ((g_grid[i][j].height_offset < 0)
+					|| (g_grid[i][j].height_offset >= g_grid[i][j].type->height)) {
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "g_grid[%d][%d] has invalid height offset (%d).\n", i, j, g_grid[i][j].height_offset);
 			}
 
-			if ((NULL == grid[i][j].blocks)
-					&& (grid[i][j].type->capacity > 0)) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "grid[%d][%d] has no block list allocated.\n", i, j);
+			if ((NULL == g_grid[i][j].blocks)
+					&& (g_grid[i][j].type->capacity > 0)) {
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "g_grid[%d][%d] has no block list allocated.\n", i, j);
 			}
 		}
 	}

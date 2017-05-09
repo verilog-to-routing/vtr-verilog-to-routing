@@ -137,21 +137,21 @@ void draw_internal_draw_subblk() {
 	for (int i = 0; i <= (g_nx + 1); i++) {
 		for (int j = 0; j <= (g_ny + 1); j++) {
 			/* Only the first block of a group should control drawing */
-			if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0) 
+			if (g_grid[i][j].width_offset > 0 || g_grid[i][j].height_offset > 0) 
 				continue;
 
 			/* Don't draw if tile is empty. This includes corners. */
-			if (grid[i][j].type == EMPTY_TYPE)
+			if (g_grid[i][j].type == EMPTY_TYPE)
 				continue;
 
-			int num_sub_tiles = grid[i][j].type->capacity;
+			int num_sub_tiles = g_grid[i][j].type->capacity;
 			for (int k = 0; k < num_sub_tiles; ++k) {
 				/* Don't draw if block is empty. */
-				if (grid[i][j].blocks[k] == EMPTY_BLOCK || grid[i][j].blocks[k] == INVALID_BLOCK)
+				if (g_grid[i][j].blocks[k] == EMPTY_BLOCK || g_grid[i][j].blocks[k] == INVALID_BLOCK)
 					continue;
 
 				/* Get block ID */
-				int bnum = grid[i][j].blocks[k];
+				int bnum = g_grid[i][j].blocks[k];
 				/* Safety check, that physical blocks exists in the CLB */
 				if (block[bnum].pb == NULL)
 					continue;
@@ -260,8 +260,8 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 	const float FRACTION_CHILD_MARGIN_Y = 0.04;
 
 	int capacity = type_descriptors[type_descrip_index].capacity;
-	if (capacity > 1 && g_nx > 0 && g_ny > 0 && grid[1][0].usage != 0
-		&& type_descrip_index == grid[1][0].type->index) {
+	if (capacity > 1 && g_nx > 0 && g_ny > 0 && g_grid[1][0].usage != 0
+		&& type_descrip_index == g_grid[1][0].type->index) {
 
 		// that should test for io blocks, and setting capacity_divisor > 1
 		// will squish every thing down

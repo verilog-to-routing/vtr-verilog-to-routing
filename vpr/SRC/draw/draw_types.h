@@ -184,7 +184,7 @@ struct t_draw_coords {
 	t_bound_box get_absolute_pb_bbox(const int clb_index, const t_pb_graph_node* pb_gnode);
 
 	/**
-	 * Return a bounding box for the clb at grid[grid_x][grid_y].blocks[sub_block_index],
+	 * Return a bounding box for the clb at g_grid[grid_x][grid_y].blocks[sub_block_index],
 	 * even if it is empty.
 	 */
 	t_bound_box get_absolute_clb_bbox(const t_block& clb);

@@ -160,10 +160,10 @@ void read_user_pad_loc(const char *pad_loc_file) {
 
 	for (i = 0; i <= g_nx + 1; i++) {
 		for (j = 0; j <= g_ny + 1; j++) {
-			if (grid[i][j].type == IO_TYPE) {
+			if (g_grid[i][j].type == IO_TYPE) {
 				for (k = 0; k < IO_TYPE->capacity; k++) {
-					if (grid[i][j].blocks[k] != INVALID_BLOCK) {
-						grid[i][j].blocks[k] = EMPTY_BLOCK; /* Flag for err. check */
+					if (g_grid[i][j].blocks[k] != INVALID_BLOCK) {
+						g_grid[i][j].blocks[k] = EMPTY_BLOCK; /* Flag for err. check */
 					}
 				}
 			}
@@ -239,7 +239,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		block[bnum].z = k;
 		block[bnum].is_fixed = true;
 
-		if (grid[i][j].type != IO_TYPE) {
+		if (g_grid[i][j].type != IO_TYPE) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
 					"Attempt to place IO block %s at illegal location (%d, %d).\n", bname, i, j);
 		}
@@ -248,8 +248,8 @@ void read_user_pad_loc(const char *pad_loc_file) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Block %s subblock number (%d) is out of range.\n", bname, k);
 		}
-		grid[i][j].blocks[k] = bnum;
-		grid[i][j].usage++;
+		g_grid[i][j].blocks[k] = bnum;
+		g_grid[i][j].usage++;
 
 		ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
 	}

@@ -300,7 +300,7 @@ void vpr_init(const int argc, const char **argv,
 
 /*
  * Sets globals: g_nx, g_ny
- * Allocs globals: chan_width_x, chan_width_y, grid
+ * Allocs globals: chan_width_x, chan_width_y, g_grid
  * Depends on num_clbs, pins_per_clb */
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 

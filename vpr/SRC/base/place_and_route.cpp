@@ -84,7 +84,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 	if (!placer_opts.doPlacement || placer_opts.place_freq == PLACE_NEVER) {
 		/* Read the placement from a file */
 		read_place(filename_opts.NetFile, filename_opts.PlaceFile, g_nx, g_ny, num_blocks, block);
-		sync_grid_to_blocks(num_blocks, g_nx, g_ny, grid);
+		sync_grid_to_blocks(num_blocks, g_nx, g_ny, g_grid);
 	} else {
 		VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
 		begin = clock();
@@ -529,7 +529,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 
 	free_rr_graph();
 
-	build_rr_graph(graph_type, num_types, type_descriptors, g_nx, g_ny, grid,
+	build_rr_graph(graph_type, num_types, type_descriptors, g_nx, g_ny, g_grid,
 			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,

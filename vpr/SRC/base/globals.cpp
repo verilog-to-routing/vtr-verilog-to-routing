@@ -61,7 +61,7 @@ int g_ny = 0;
 
 t_chan_width g_chan_width;
 
-struct s_grid_tile **grid = NULL; /* [0..(g_nx+1)][0..(g_ny+1)] Physical block list */
+struct s_grid_tile **g_grid = NULL; /* [0..(g_nx+1)][0..(g_ny+1)] Physical block list */
 
 /******** Structures defining the routing ********/
 

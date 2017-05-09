@@ -611,23 +611,23 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 	for (x = 0; x < g_nx + 2; x++) {
 		for (y = 0; y < g_ny + 2; y++) {
 
-			if ((grid[x][y].width_offset != 0)
-					|| (grid[x][y].height_offset != 0)
-					|| (grid[x][y].type == EMPTY_TYPE)) {
+			if ((g_grid[x][y].width_offset != 0)
+					|| (g_grid[x][y].height_offset != 0)
+					|| (g_grid[x][y].type == EMPTY_TYPE)) {
 				continue;
 			}
 
-			for (z = 0; z < grid[x][y].type->capacity; z++) {
+			for (z = 0; z < g_grid[x][y].type->capacity; z++) {
 				t_pb * pb = NULL;
 				t_power_usage pb_power;
 
-				if (grid[x][y].blocks[z] != EMPTY_BLOCK
-						&& grid[x][y].blocks[z] != INVALID_BLOCK) {
-					pb = block[grid[x][y].blocks[z]].pb;
+				if (g_grid[x][y].blocks[z] != EMPTY_BLOCK
+						&& g_grid[x][y].blocks[z] != INVALID_BLOCK) {
+					pb = block[g_grid[x][y].blocks[z]].pb;
 				}
 
 				/* Calculate power of this CLB */
-				power_usage_pb(&pb_power, pb, grid[x][y].type->pb_graph_head, grid[x][y].blocks[z]);
+				power_usage_pb(&pb_power, pb, g_grid[x][y].type->pb_graph_head, g_grid[x][y].blocks[z]);
 				power_add_usage(power_usage, &pb_power);
 			}
 		}

@@ -1161,7 +1161,7 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 	y_from = block[b_from].y;
 	z_from = block[b_from].z;
 
-	b_to = grid[x_to][y_to].blocks[z_to];
+	b_to = g_grid[x_to][y_to].blocks[z_to];
 
 	// Check whether the to_location is empty
 	if (b_to == EMPTY_BLOCK) {
@@ -1343,10 +1343,10 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 		return REJECTED;
 
 #if 0
-	int b_to = grid[x_to][y_to].blocks[z_to];
+	int b_to = g_grid[x_to][y_to].blocks[z_to];
 	vtr::printf_info( "swap [%d][%d][%d] %s \"%s\" <=> [%d][%d][%d] %s \"%s\"\n",
-		x_from, y_from, z_from, grid[x_from][y_from].type->name, b_from != -1 ? block[b_from].name : "",
-		x_to, y_to, z_to, grid[x_to][y_to].type->name, b_to != -1 ? block[b_to].name : "");
+		x_from, y_from, z_from, g_grid[x_from][y_from].type->name, b_from != -1 ? block[b_from].name : "",
+		x_to, y_to, z_to, g_grid[x_to][y_to].type->name, b_to != -1 ? block[b_to].name : "");
 #endif
 
 	/* Make the switch in order to make computing the new bounding *
@@ -1468,14 +1468,14 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 
 				b_from = blocks_affected.moved_blocks[iblk].block_num;
 
-				grid[x_to][y_to].blocks[z_to] = b_from;
+				g_grid[x_to][y_to].blocks[z_to] = b_from;
 
 				if (blocks_affected.moved_blocks[iblk].swapped_to_was_empty) {
-					grid[x_to][y_to].usage++;
+					g_grid[x_to][y_to].usage++;
 				}
 				if (blocks_affected.moved_blocks[iblk].swapped_from_is_empty) {
-					grid[x_from][y_from].usage--;
-					grid[x_from][y_from].blocks[z_from] = EMPTY_BLOCK;
+					g_grid[x_from][y_from].usage--;
+					g_grid[x_from][y_from].blocks[z_from] = EMPTY_BLOCK;
 				}
 			
 			} // Finish updating clb for all blocks
@@ -1576,7 +1576,7 @@ static bool find_to(t_type_ptr type, float rlim,
 	bool is_legal;
 	int itype;
 
-	VTR_ASSERT(type == grid[x_from][y_from].type);
+	VTR_ASSERT(type == g_grid[x_from][y_from].type);
 
 	rlx = (int)min((float)g_nx + 1, rlim); 
 	rly = (int)min((float)g_ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */
@@ -1612,15 +1612,15 @@ static bool find_to(t_type_ptr type, float rlim,
 			is_legal = false;
 		} else if(*px_to > max_x || *px_to < min_x || *py_to > max_y || *py_to < min_y) {
 			is_legal = false;
-		} else if(grid[*px_to][*py_to].type != grid[x_from][y_from].type) {
+		} else if(g_grid[*px_to][*py_to].type != g_grid[x_from][y_from].type) {
 			is_legal = false;
 		} else {
 			/* Find z_to and test to validate that the "to" block is *not* fixed */
 			*pz_to = 0;
-			if (grid[*px_to][*py_to].type->capacity > 1) {
-				*pz_to = vtr::irand(grid[*px_to][*py_to].type->capacity - 1);
+			if (g_grid[*px_to][*py_to].type->capacity > 1) {
+				*pz_to = vtr::irand(g_grid[*px_to][*py_to].type->capacity - 1);
 			}
-			int b_to = grid[*px_to][*py_to].blocks[*pz_to];
+			int b_to = g_grid[*px_to][*py_to].blocks[*pz_to];
 			if ((b_to != EMPTY_BLOCK) && (block[b_to].is_fixed == true)) {
 				is_legal = false;
 			}
@@ -1634,7 +1634,7 @@ static bool find_to(t_type_ptr type, float rlim,
 		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in routine find_to: (x_to,y_to) = (%d,%d)\n", *px_to, *py_to);
 	}
 
-	VTR_ASSERT(type == grid[*px_to][*py_to].type);
+	VTR_ASSERT(type == g_grid[*px_to][*py_to].type);
 	return true;
 }
 
@@ -1665,8 +1665,8 @@ static void find_to_location(t_type_ptr type, float rlim,
 		int y_rel = vtr::irand(max(0, max_y - min_y));
 		*px_to = min_x + x_rel;
 		*py_to = min_y + y_rel;
-		*px_to = (*px_to) - grid[*px_to][*py_to].width_offset; /* align it */
-		*py_to = (*py_to) - grid[*px_to][*py_to].height_offset; /* align it */
+		*px_to = (*px_to) - g_grid[*px_to][*py_to].width_offset; /* align it */
+		*py_to = (*py_to) - g_grid[*px_to][*py_to].height_offset; /* align it */
 	}
 }
 
@@ -2581,12 +2581,12 @@ static void alloc_legal_placements() {
 
 	for (i = 0; i <= g_nx + 1; i++) {
 		for (j = 0; j <= g_ny + 1; j++) {
-			grid[i][j].usage = 0;
-			for (k = 0; k < grid[i][j].type->capacity; k++) {
-				if (grid[i][j].blocks[k] != INVALID_BLOCK) {
-					grid[i][j].blocks[k] = EMPTY_BLOCK;
-					if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
-						num_legal_pos[grid[i][j].type->index]++;
+			g_grid[i][j].usage = 0;
+			for (k = 0; k < g_grid[i][j].type->capacity; k++) {
+				if (g_grid[i][j].blocks[k] != INVALID_BLOCK) {
+					g_grid[i][j].blocks[k] = EMPTY_BLOCK;
+					if (g_grid[i][j].width_offset == 0 && g_grid[i][j].height_offset == 0) {
+						num_legal_pos[g_grid[i][j].type->index]++;
 					}
 				}
 			}
@@ -2606,12 +2606,12 @@ static void load_legal_placements() {
 
 	for (i = 0; i <= g_nx + 1; i++) {
 		for (j = 0; j <= g_ny + 1; j++) {
-			for (k = 0; k < grid[i][j].type->capacity; k++) {
-				if (grid[i][j].blocks[k] == INVALID_BLOCK) {
+			for (k = 0; k < g_grid[i][j].type->capacity; k++) {
+				if (g_grid[i][j].blocks[k] == INVALID_BLOCK) {
 					continue;
 				}
-				if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
-					itype = grid[i][j].type->index;
+				if (g_grid[i][j].width_offset == 0 && g_grid[i][j].height_offset == 0) {
+					itype = g_grid[i][j].type->index;
 					legal_pos[itype][index[itype]].x = i;
 					legal_pos[itype][index[itype]].y = j;
 					legal_pos[itype][index[itype]].z = k;
@@ -2653,8 +2653,8 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 		// Also check whether the member position is valid, that is the member's location
 		// still within the chip's dimemsion and the member_z is allowed at that location on the grid
 		if (member_x <= g_nx+1 && member_y <= g_ny+1
-				&& grid[member_x][member_y].type->index == itype
-				&& grid[member_x][member_y].blocks[member_z] == EMPTY_BLOCK) {
+				&& g_grid[member_x][member_y].type->index == itype
+				&& g_grid[member_x][member_y].blocks[member_z] == EMPTY_BLOCK) {
 			// Can still accomodate blocks here, check the next position
 			continue;
 		} else {
@@ -2680,7 +2680,7 @@ static int try_place_macro(int itype, int ipos, int imacro){
 	z = legal_pos[itype][ipos].z;
 			
 	// If that location is occupied, do nothing.
-	if (grid[x][y].blocks[z] != EMPTY_BLOCK) {
+	if (g_grid[x][y].blocks[z] != EMPTY_BLOCK) {
 		return (macro_placed);
 	} 
 	
@@ -2700,8 +2700,8 @@ static int try_place_macro(int itype, int ipos, int imacro){
 			block[pl_macros[imacro].members[imember].blk_index].y = member_y;
 			block[pl_macros[imacro].members[imember].blk_index].z = member_z;
 
-			grid[member_x][member_y].blocks[member_z] = pl_macros[imacro].members[imember].blk_index;
-			grid[member_x][member_y].usage++;
+			g_grid[member_x][member_y].blocks[member_z] = pl_macros[imacro].members[imember].blk_index;
+			g_grid[member_x][member_y].usage++;
 
 			// Could not ensure that the randomiser would not pick this location again
 			// So, would have to do a lazy removal - whenever I come across a block that could not be placed, 
@@ -2818,10 +2818,10 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			initial_placement_location(free_locations, iblk, &ipos, &x, &y, &z);
 
 			// Make sure that the position is EMPTY_BLOCK before placing the block down
-			VTR_ASSERT(grid[x][y].blocks[z] == EMPTY_BLOCK);
+			VTR_ASSERT(g_grid[x][y].blocks[z] == EMPTY_BLOCK);
 
-			grid[x][y].blocks[z] = iblk;
-			grid[x][y].usage++;
+			g_grid[x][y].blocks[z] = iblk;
+			g_grid[x][y].usage++;
 
 			block[iblk].x = x;
 			block[iblk].y = y;
@@ -2880,11 +2880,11 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	 */
 	for (i = 0; i <= g_nx + 1; i++) {
 		for (j = 0; j <= g_ny + 1; j++) {
-			grid[i][j].usage = 0;
-			itype = grid[i][j].type->index;
+			g_grid[i][j].usage = 0;
+			itype = g_grid[i][j].type->index;
 			for (k = 0; k < type_descriptors[itype].capacity; k++) {
-				if (grid[i][j].blocks[k] != INVALID_BLOCK) {
-					grid[i][j].blocks[k] = EMPTY_BLOCK;
+				if (g_grid[i][j].blocks[k] != INVALID_BLOCK) {
+					g_grid[i][j].blocks[k] = EMPTY_BLOCK;
 				}
 			}
 		}
@@ -2908,7 +2908,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 			z = legal_pos[itype][ipos].z;
 			
 			// Check if that location is occupied.  If it is, remove from legal_pos
-			if (grid[x][y].blocks[z] != EMPTY_BLOCK && grid[x][y].blocks[z] != INVALID_BLOCK) {
+			if (g_grid[x][y].blocks[z] != EMPTY_BLOCK && g_grid[x][y].blocks[z] != INVALID_BLOCK) {
 				legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1];
 				free_locations[itype]--;
 
@@ -3083,22 +3083,22 @@ static void check_place(float bb_cost, float timing_cost,
 	for (i = 0; i < num_blocks; i++)
 		bdone[i] = 0;
 
-	/* Step through grid array. Check it against block array. */
+	/* Step through g_grid array. Check it against block array. */
 	for (i = 0; i <= (g_nx + 1); i++)
 		for (j = 0; j <= (g_ny + 1); j++) {
-			if (grid[i][j].usage > grid[i][j].type->capacity) {
+			if (g_grid[i][j].usage > g_grid[i][j].type->capacity) {
 				vtr::printf_error(__FILE__, __LINE__,
 						"Block at grid location (%d,%d) overused. Usage is %d.\n", 
-						i, j, grid[i][j].usage);
+						i, j, g_grid[i][j].usage);
 				error++;
 			}
 			usage_check = 0;
-			for (k = 0; k < grid[i][j].type->capacity; k++) {
-				bnum = grid[i][j].blocks[k];
+			for (k = 0; k < g_grid[i][j].type->capacity; k++) {
+				bnum = g_grid[i][j].blocks[k];
 				if (EMPTY_BLOCK == bnum || INVALID_BLOCK == bnum)
 					continue;
 
-				if (block[bnum].type != grid[i][j].type) {
+				if (block[bnum].type != g_grid[i][j].type) {
 					vtr::printf_error(__FILE__, __LINE__,
 							"Block %d type does not match grid location (%d,%d) type.\n",
 							bnum, i, j);
@@ -3113,15 +3113,15 @@ static void check_place(float bb_cost, float timing_cost,
 				++usage_check;
 				bdone[bnum]++;
 			}
-			if (usage_check != grid[i][j].usage) {
+			if (usage_check != g_grid[i][j].usage) {
 				vtr::printf_error(__FILE__, __LINE__,
 						"Location (%d,%d) usage is %d, but has actual usage %d.\n",
-						i, j, grid[i][j].usage, usage_check);
+						i, j, g_grid[i][j].usage, usage_check);
 				error++;
 			}
 		}
 
-	/* Check that every block exists in the grid and block arrays somewhere. */
+	/* Check that every block exists in the g_grid and block arrays somewhere. */
 	for (i = 0; i < num_blocks; i++)
 		if (bdone[i] != 1) {
 			vtr::printf_error(__FILE__, __LINE__,
@@ -3155,8 +3155,8 @@ static void check_place(float bb_cost, float timing_cost,
 				error++;
 			}
 
-			// Then check the grid data structure
-			if (grid[member_x][member_y].blocks[member_z] != member_iblk) {
+			// Then check the g_grid data structure
+			if (g_grid[member_x][member_y].blocks[member_z] != member_iblk) {
 				vtr::printf_error(__FILE__, __LINE__,
 						"Block %d in pl_macro #%d is not placed in the proper orientation.\n", 
 						member_iblk, imacro);

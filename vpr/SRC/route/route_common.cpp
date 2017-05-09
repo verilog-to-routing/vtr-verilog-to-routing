@@ -262,7 +262,7 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
-	build_rr_graph(graph_type, num_types, type_descriptors, g_nx, g_ny, grid,
+	build_rr_graph(graph_type, num_types, type_descriptors, g_nx, g_ny, g_grid,
 			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
@@ -320,7 +320,7 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
-	build_rr_graph(graph_type, num_types, type_descriptors, g_nx, g_ny, grid,
+	build_rr_graph(graph_type, num_types, type_descriptors, g_nx, g_ny, g_grid,
 			&g_chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
@@ -1310,7 +1310,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 					case IPIN:
 					case OPIN:
-						if (grid[ilow][jlow].type == IO_TYPE) {
+						if (g_grid[ilow][jlow].type == IO_TYPE) {
 							fprintf(fp, " Pad: ");
 						} else { /* IO Pad. */
 							fprintf(fp, " Pin: ");
@@ -1324,7 +1324,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 					case SOURCE:
 					case SINK:
-						if (grid[ilow][jlow].type == IO_TYPE) {
+						if (g_grid[ilow][jlow].type == IO_TYPE) {
 							fprintf(fp, " Pad: ");
 						} else { /* IO Pad. */
 							fprintf(fp, " Class: ");
@@ -1340,10 +1340,10 @@ void print_route(const char* placement_file, const char* route_file) {
 
 					fprintf(fp, "%d  ", g_rr_nodes[inode].ptc_num());
 
-					if (grid[ilow][jlow].type != IO_TYPE && (rr_type == IPIN || rr_type == OPIN)) {
+					if (g_grid[ilow][jlow].type != IO_TYPE && (rr_type == IPIN || rr_type == OPIN)) {
 						int pin_num = g_rr_nodes[inode].ptc_num();
-						int offset = grid[ilow][jlow].height_offset;
-						int iblock = grid[ilow][jlow - offset].blocks[0];
+						int offset = g_grid[ilow][jlow].height_offset;
+						int iblock = g_grid[ilow][jlow - offset].blocks[0];
 						VTR_ASSERT(iblock != OPEN);
 						t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
 						t_pb_type *pb_type = pb_pin->parent_node->pb_type;

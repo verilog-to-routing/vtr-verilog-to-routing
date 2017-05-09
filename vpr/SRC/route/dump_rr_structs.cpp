@@ -35,7 +35,7 @@ static void dump_rr_node_indices( fstream &file );
 /* The main function for dumping rr structs to a specified file. The structures dumped are:
 	- rr nodes (g_rr_nodes)
 	- rr switches (g_rr_switch_inf)
-	- the grid (grid)
+	- the grid (g_grid)
 	- physical block types (type_descriptors)
 	- node index lookups (rr_node_indices)
 	
@@ -63,7 +63,7 @@ void dump_rr_structs( const char *filename ){
 	dump_block_types(fid);
 
 	/* dump the grid structure */
-	cout << "Dummping grid" << endl;
+	cout << "Dummping g_grid" << endl;
 	dump_grid(fid);
 
 	/* dump the rr node indices */
@@ -206,7 +206,7 @@ static void dump_grid( fstream &file ){
 
 	for (int ix = 0; ix <= g_nx+1; ix++){
 		for (int iy = 0; iy <= g_ny+1; iy++){
-			s_grid_tile grid_tile = grid[ix][iy];
+			s_grid_tile grid_tile = g_grid[ix][iy];
 	
 			file << " grid_x" << ix << "_y" << iy << ": ";
 			file << "block_type_index(" << grid_tile.type->index << ") ";
@@ -224,7 +224,6 @@ static void dump_grid( fstream &file ){
 
 /* dumps the rr node indices which help look up which rr node is at which physical location */
 static void dump_rr_node_indices( fstream &file ){
-	/* specify that we're in the grid section and how many grid elements there are */
 	file << endl;
 	/* rr_node_indices are [0..NUM_RR_TYPES-1][0..g_nx+2][0..g_ny+2]. each entry then contains a vtr::t_ivec with nelem entries */
 	file << ".rr_node_indices(" << NUM_RR_TYPES-1 << ", " << g_nx+2 << ", " << g_ny+2 << ")" << endl;

@@ -133,7 +133,7 @@ void print_tabs(FILE * fpout, int num_tab) {
 	}
 }
 
-/* Points the grid structure back to the blocks list */
+/* Points the g_grid structure back to the blocks list */
 void sync_grid_to_blocks(const int L_num_blocks,
 		const int L_nx, const int L_ny,
 		struct s_grid_tile **L_grid) {

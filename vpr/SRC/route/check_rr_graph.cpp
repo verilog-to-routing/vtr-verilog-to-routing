@@ -142,7 +142,7 @@ void check_rr_graph(const t_graph_type graph_type,
 				 */
 
 				if(rr_type == IPIN) {
-					type = grid[g_rr_nodes[inode].xlow()][g_rr_nodes[inode].ylow()].type;
+					type = g_grid[g_rr_nodes[inode].xlow()][g_rr_nodes[inode].ylow()].type;
 					if(Fc_in[type->index][g_rr_nodes[inode].ptc_num()][0] == 0) {
 						is_chain = true;
 					}
@@ -189,7 +189,7 @@ static bool rr_node_is_global_clb_ipin(int inode) {
 	int ipin;
 	t_type_ptr type;
 
-	type = grid[g_rr_nodes[inode].xlow()][g_rr_nodes[inode].ylow()].type;
+	type = g_grid[g_rr_nodes[inode].xlow()][g_rr_nodes[inode].ylow()].type;
 
 	if (g_rr_nodes[inode].type() != IPIN)
 		return (false);
@@ -250,7 +250,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	case IPIN:
 	case OPIN:
 		/* This is used later as well */
-		type = grid[xlow][ylow].type;
+		type = g_grid[xlow][ylow].type;
 
 		if (type == NULL) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -403,7 +403,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
                         inode, g_rr_nodes[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh);
             } else if (g_rr_nodes[inode].type() == IPIN || g_rr_nodes[inode].type() == OPIN) {
                 vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) block_type=%s ptc=%d has no out-going edges.\n", 
-                        inode, g_rr_nodes[inode].type_string(), xlow, ylow, grid[xlow][ylow].type->name, g_rr_nodes[inode].ptc_num());
+                        inode, g_rr_nodes[inode].type_string(), xlow, ylow, g_grid[xlow][ylow].type->name, g_rr_nodes[inode].ptc_num());
             } else {
                 vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) ptc=%d has no out-going edges.\n", 
                         inode, g_rr_nodes[inode].type_string(), xlow, ylow, g_rr_nodes[inode].ptc_num());

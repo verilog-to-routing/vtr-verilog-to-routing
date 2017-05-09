@@ -2552,7 +2552,7 @@ static int get_opin_direct_connecions(int x, int y, int opin,
 	int max_index, min_index, offset, swap;
 	int new_edges;
 
-	curr_type = grid[x][y].type;
+	curr_type = g_grid[x][y].type;
 	edge_list_head = *edge_list_ptr;
 	new_edges = 0;
 
@@ -2568,7 +2568,7 @@ static int get_opin_direct_connecions(int x, int y, int opin,
                y + directs[i].y_offset > 0) {
             
                 //Only add connections if the target clb type matches the type in the direct specification
-                target_type = grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
+                target_type = g_grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
                 if(clb_to_clb_directs[i].to_clb_type == target_type) {
 
                     /* Compute index of opin with regards to given pins */ 
@@ -2600,8 +2600,8 @@ static int get_opin_direct_connecions(int x, int y, int opin,
                         }
 
                         /* Add new ipin edge to list of edges */
-                        width_offset = grid[x + directs[i].x_offset][y + directs[i].y_offset].width_offset;
-                        height_offset = grid[x + directs[i].x_offset][y + directs[i].y_offset].height_offset;
+                        width_offset = g_grid[x + directs[i].x_offset][y + directs[i].y_offset].width_offset;
+                        height_offset = g_grid[x + directs[i].x_offset][y + directs[i].y_offset].height_offset;
                         inode = get_rr_node_index(x + directs[i].x_offset - width_offset, y + directs[i].y_offset - height_offset, 
                                 IPIN, ipin, L_rr_node_indices);
                         edge_list_head = insert_in_edge_list(edge_list_head, inode, clb_to_clb_directs[i].switch_index);

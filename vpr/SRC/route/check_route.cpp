@@ -171,13 +171,13 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 	VTR_ASSERT(g_rr_nodes[inode].type() == SINK);
 	i = g_rr_nodes[inode].xlow();
 	j = g_rr_nodes[inode].ylow();
-	type = grid[i][j].type;
+	type = g_grid[i][j].type;
 	/* For sinks, ptc_num is the class */
 	ptc_num = g_rr_nodes[inode].ptc_num(); 
 	ifound = 0;
 
 	for (iblk = 0; iblk < type->capacity; iblk++) {
-		bnum = grid[i][j].blocks[iblk]; /* Hardcoded to one block */
+		bnum = g_grid[i][j].blocks[iblk]; /* Hardcoded to one block */
 		for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) { /* All net SINKs */
 			if (g_clbs_nlist.net[inet].pins[ipin].block == bnum) {
 				node_block_pin = g_clbs_nlist.net[inet].pins[ipin].block_pin;
@@ -228,7 +228,7 @@ static void check_source(int inode, int inet) {
 	ptc_num = g_rr_nodes[inode].ptc_num(); 
 	/* First node_block for net is the source */
 	bnum = g_clbs_nlist.net[inet].pins[0].block; 
-	type = grid[i][j].type;
+	type = g_grid[i][j].type;
 
 	if (block[bnum].x != i || block[bnum].y != j) {		
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
@@ -349,8 +349,8 @@ static bool check_adjacent(int from_node, int to_node) {
 		if (from_xlow == to_xlow && from_ylow == to_ylow
 				&& from_xhigh == to_xhigh && from_yhigh == to_yhigh) {
 
-			from_grid_type = grid[from_xlow][from_ylow].type;
-			to_grid_type = grid[to_xlow][to_ylow].type;
+			from_grid_type = g_grid[from_xlow][from_ylow].type;
+			to_grid_type = g_grid[to_xlow][to_ylow].type;
 			VTR_ASSERT(from_grid_type == to_grid_type);
 
 			iclass = to_grid_type->pin_class[to_ptc];
@@ -380,8 +380,8 @@ static bool check_adjacent(int from_node, int to_node) {
 		if (from_xlow == to_xlow && from_ylow == to_ylow
 				&& from_xhigh == to_xhigh && from_yhigh == to_yhigh) {
 
-			from_grid_type = grid[from_xlow][from_ylow].type;
-			to_grid_type = grid[to_xlow][to_ylow].type;
+			from_grid_type = g_grid[from_xlow][from_ylow].type;
+			to_grid_type = g_grid[to_xlow][to_ylow].type;
 			VTR_ASSERT(from_grid_type == to_grid_type);
 
 			iclass = from_grid_type->pin_class[from_ptc];
