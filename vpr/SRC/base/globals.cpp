@@ -9,10 +9,6 @@
 #include "tatum/TimingConstraints.hpp"
 #include <map>
 
-
-/******** General global variables ********/
-int binary_search = -1;
-
 /******** Atom Netlist ********/
 AtomNetlist g_atom_nl;
 
