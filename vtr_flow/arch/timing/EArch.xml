@@ -623,8 +623,8 @@
 
 
         <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10">
-          <pin name="cin" fc_type="frac" fc_val="0"/>
-          <pin name="cout" fc_type="frac" fc_val="0"/>
+            <fc_override port_name="cin" fc_type="frac" fc_val="0"/>
+            <fc_override port_name="cout" fc_type="frac" fc_val="0"/>
         </fc>
 
         <pinlocations pattern="spread"/>

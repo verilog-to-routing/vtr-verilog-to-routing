@@ -130,8 +130,8 @@
 				<func type="rb" formula="W-t-2"/>
 			</switchfuncs>
 			<wireconn from_type="l2s" to_type="l2s" from_switchpoint="0,1" to_switchpoint="0" num_conns_type="from"/>
-			<wireconn from_type="l4g" to_type="l4g" from_switchpoint="0"   to_switchpoint="0" num_conns_type="from"/>
-			<wireconn from_type="l4g" to_type="l2s" from_switchpoint="0"   to_switchpoint="0" num_conns_type="from"/>
+			<wireconn from_type="l4g" to_type="l4g" from_switchpoint="0" to_switchpoint="0" num_conns_type="from"/>
+			<wireconn from_type="l4g" to_type="l2s" from_switchpoint="0" to_switchpoint="0" num_conns_type="from"/>
 		</switchblock>
 
 		<switchblock name="wilton_straight" type="unidir">
@@ -179,8 +179,10 @@
         </mode>
 
         <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
-		<segment name="l4g" in_val="0" out_val="0.200000"/>
-	</fc>
+            <fc_override port_name="outpad" seg_name="l4g" fc_type="frac" fc_val="0"/>
+            <fc_override port_name="clock" seg_name="l4g" fc_type="frac" fc_val="0"/>
+            <fc_override port_name="inpad" seg_name="l4g" fc_type="frac" fc_val="0.200000"/>
+        </fc>
 
         <!-- IOs go on the periphery of the FPGA, for consistency, 
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
@@ -272,9 +274,18 @@
         <direct name="directO" input="ble4[7:0].out" output="clb.O"/>
       </interconnect>
 
-        <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
-		<segment name="l4g" in_val="0" out_val="0.200000"/>
-	</fc>
+      <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
+          <fc_override port_name="I0" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I1" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I2" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I3" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I4" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I5" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I6" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I7" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="clk" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="O" seg_name="l4g" fc_type="frac" fc_val="0.200000"/>
+      </fc>
 
       <pinlocations pattern="spread"/>
 
@@ -465,9 +476,12 @@
 
       </mode>
 
-        <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
-		<segment name="l4g" in_val="0" out_val="0.200000"/>
-	</fc>
+      <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
+          <fc_override port_name="a" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="b" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="out" seg_name="l4g" fc_type="frac" fc_val="0.200000"/>
+      </fc>
+
       <pinlocations pattern="spread"/>
 
       <!-- Place this multiplier block every 22 columns from (and including) the eights column -->
@@ -973,9 +987,16 @@
       </mode>
 
 
-        <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
-		<segment name="l4g" in_val="0" out_val="0.200000"/>
-	</fc>
+      <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
+          <fc_override port_name="addr1" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="addr2" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="data" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="we1" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="we2" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="clk" seg_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="out" seg_name="l4g" fc_type="frac" fc_val="0.200000"/>
+      </fc>
+
       <pinlocations pattern="spread"/>
 
       <!-- Place this memory block every 22 columns from (and including) the nineteenth column -->

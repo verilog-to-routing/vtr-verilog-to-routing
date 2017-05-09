@@ -343,8 +343,8 @@ to isolate one chain from the next
         </interconnect>
 
         <fc default_in_type="frac" default_in_val="0.2" default_out_type="frac" default_out_val="0.05">
-          <pin name="cin" fc_type="frac" fc_val="0"/>
-          <pin name="cout" fc_type="frac" fc_val="0"/>
+            <fc_override port_name="cin" fc_type="frac" fc_val="0"/>
+            <fc_override port_name="cout" fc_type="frac" fc_val="0"/>
         </fc>
 
         <!-- Two sided connectivity CLB architecture--> 
