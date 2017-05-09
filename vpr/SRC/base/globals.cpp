@@ -85,9 +85,6 @@ map<int, int> *g_switch_fanin_remap = NULL; /* an array of map. array index: [0.
 
 int **g_rr_blk_source = NULL; /* [0..(g_num_blocks-1)][0..(num_class-1)] */
 
-/* primiary inputs removed from circuit */
-vtr::t_linked_vptr *circuit_p_io_removed = NULL;
-
 /********** Structures representing timing graph information */
 float g_pb_max_internal_delay = UNDEFINED; /* biggest internal delay of physical block */
 const t_pb_type *g_pbtype_max_internal_delay = NULL; /* physical block type with highest internal delay */
