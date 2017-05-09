@@ -788,7 +788,7 @@ static void free_complex_block_types(void) {
 		free_pb_type(type_descriptors[i].pb_type);
 		free(type_descriptors[i].pb_type);
 	}
-	free(type_descriptors);
+	delete[] type_descriptors;
 }
 
 static void free_pb_type(t_pb_type *pb_type) {

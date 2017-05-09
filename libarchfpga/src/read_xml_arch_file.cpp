@@ -1708,7 +1708,7 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
     if (node.name() != std::string("fc_override")) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
-                "Unexpeted node of type '%s' (expected only 'fc_override')",
+                "Unexpeted node of type '%s' (expected optional 'fc_override')",
                 node.name());
     }
 
@@ -2118,8 +2118,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 	 * 1: empty psuedo-type
 	 */
 	*NumTypes = count_children(Node, "pb_type", loc_data) + 1;
-	*Types = (t_type_descriptor *) vtr::malloc(
-			sizeof(t_type_descriptor) * (*NumTypes));
+	*Types = new t_type_descriptor[*NumTypes];
 
 	cb_type_descriptors = *Types;
 
