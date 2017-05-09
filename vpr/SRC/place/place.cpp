@@ -376,7 +376,7 @@ void try_place(struct s_placer_opts placer_opts,
 	init_chan(width_fac, chan_width_dist);
 
 	alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts,
-			directs, det_routing_arch->num_segment);
+			directs, num_directs);
 
 	initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file);
 	init_draw_coords((float) width_fac);
