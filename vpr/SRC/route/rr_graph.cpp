@@ -374,8 +374,7 @@ void build_rr_graph(
 
 	g_rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, L_nx, L_ny,
 			&g_num_rr_nodes, chan_details_x, chan_details_y);
-	g_rr_nodes = (t_rr_node *) vtr::malloc(sizeof(t_rr_node) * g_num_rr_nodes);
-	memset(g_rr_nodes, 0, sizeof(t_rr_node) * g_num_rr_nodes);
+	g_rr_nodes = new t_rr_node[g_num_rr_nodes];
 	bool *L_rr_edge_done = (bool *) vtr::malloc(sizeof(bool) * g_num_rr_nodes);
 	memset(L_rr_edge_done, 0, sizeof(bool) * g_num_rr_nodes);
 
@@ -686,7 +685,7 @@ static int alloc_rr_switch_inf(map<int,int> *switch_fanin){
     // map key: switch index specified in arch; map value: fanin for that index
     map<int, int> *inward_switch_inf = new map<int, int>[g_num_rr_nodes];
     for (int inode = 0; inode < g_num_rr_nodes; inode ++) {
-        t_rr_node from_node = g_rr_nodes[inode];
+        const t_rr_node& from_node = g_rr_nodes[inode];
         int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int switch_index = from_node.edge_switch(iedge);
@@ -777,10 +776,10 @@ static void load_rr_switch_inf(const int num_arch_switches, map<int,int> *switch
    which contains switch info at different fan-in values */
 static void remap_rr_node_switch_indices(map<int,int> *switch_fanin){
 	for (int inode = 0; inode < g_num_rr_nodes; inode++){
-		t_rr_node from_node = g_rr_nodes[inode];
+		t_rr_node& from_node = g_rr_nodes[inode];
 		int num_edges = from_node.num_edges();
 		for (int iedge = 0; iedge < num_edges; iedge++){
-			t_rr_node to_node = g_rr_nodes[ from_node.edge_sink_node(iedge) ];
+			const t_rr_node& to_node = g_rr_nodes[ from_node.edge_sink_node(iedge) ];
 			/* get the switch which this edge uses and its fanin */
 			int switch_index = from_node.edge_switch(iedge);
 			int fanin = to_node.fan_in();
@@ -1151,13 +1150,10 @@ void free_rr_graph(void) {
 	if(g_net_rr_terminals != NULL) {
 		free(g_net_rr_terminals);
 	}
-	for (i = 0; i < g_num_rr_nodes; i++) {
-        g_rr_nodes[i].set_num_edges(0);
-	}
 
 	VTR_ASSERT(g_rr_node_indices);
 	free_rr_node_indices(g_rr_node_indices);
-	free(g_rr_nodes);
+
 	free(g_rr_indexed_data);
 	for (i = 0; i < num_blocks; i++) {
 		free(g_rr_blk_source[i]);
@@ -1165,13 +1161,15 @@ void free_rr_graph(void) {
 	free(g_rr_blk_source);
 	g_rr_blk_source = NULL;
 	g_net_rr_terminals = NULL;
-	g_rr_nodes = NULL;
 	g_rr_node_indices = NULL;
 	g_rr_indexed_data = NULL;
 	g_num_rr_nodes = 0;
 
 	delete[] g_rr_switch_inf;
 	g_rr_switch_inf = NULL;
+
+	delete[] g_rr_nodes;
+	g_rr_nodes = NULL;
 
     delete[] g_rr_node_state;
     g_rr_node_state = NULL;

@@ -80,7 +80,7 @@ static void dump_rr_nodes( fstream &file ){
 	file << ".rr_nodes(" << g_num_rr_nodes << ")" << endl;
 
 	for (int inode = 0; inode < g_num_rr_nodes; inode++){
-		t_rr_node node = g_rr_nodes[inode];
+		const t_rr_node& node = g_rr_nodes[inode];
 
 		/* a node's info is printed entirely on one line */
 		file << " node_" << inode << ": ";

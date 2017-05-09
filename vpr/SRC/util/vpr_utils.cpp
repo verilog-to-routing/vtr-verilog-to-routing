@@ -1810,7 +1810,7 @@ void print_switch_usage() {
     // map key: switch index; map value: count (fanin)
     map<int, int> *inward_switch_inf = new map<int, int>[g_num_rr_nodes];
     for (int inode = 0; inode < g_num_rr_nodes; inode++) {
-        t_rr_node from_node = g_rr_nodes[inode];
+        const t_rr_node& from_node = g_rr_nodes[inode];
         int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int switch_index = from_node.edge_switch(iedge);

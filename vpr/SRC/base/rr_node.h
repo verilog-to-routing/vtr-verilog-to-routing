@@ -1,8 +1,7 @@
-#include "vpr_types.h"
-
 #ifndef RR_NODE_H
 #define RR_NODE_H
-
+#include <memory>
+#include "vpr_types.h"
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -80,7 +79,6 @@ class t_rr_node {
         void set_coordinates(short x1, short y1, short x2, short y2);
 
         void set_capacity(short);
-        void set_occ(short);
 
         void set_ptc_num(short);
         void set_cost_index(short);
@@ -90,28 +88,27 @@ class t_rr_node {
         void set_C(float new_C);
 
     private: //Data
-        short xlow_;
-        short ylow_;
-        short length_;
-        
-        short ptc_num_;
-        short cost_index_;
-        short fan_in_;
+        short xlow_ = -1;
+        short ylow_ = -1;
+        short length_ = -1;
 
-        short capacity_;
-        short occ_;
+        short ptc_num_ = -1;
+        short cost_index_ = -1;
+        short fan_in_ = 0;
 
-        enum e_direction direction_;
-        t_rr_type type_;
+        short capacity_ = -1;
+
+        enum e_direction direction_ = NONE;
+        t_rr_type type_ = NUM_RR_TYPES;
 
         //Note: we use manually managed memory to save space vs std::vector;
         //      using two std::vector's nearly doubles the size of the class
         short num_edges_ = 0;
-        int* edge_sink_nodes_ = nullptr;
-        short* edge_switches_ = nullptr;
+        std::unique_ptr<int[]> edge_sink_nodes_ = nullptr;
+        std::unique_ptr<short[]> edge_switches_ = nullptr;
 
-        float R_;
-        float C_;
+        float R_ = 0.;
+        float C_ = 0.;
 };
 
 
