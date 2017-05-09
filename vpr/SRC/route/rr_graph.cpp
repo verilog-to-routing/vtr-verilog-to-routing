@@ -211,8 +211,6 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 		const int global_route_switch,
 		int * num_seg_details = 0);
 
-/* UDSD Modifications by WMF End */
-
 static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
 		const int num_seg_types, const int *sets_per_seg_type,
 		const int max_chan_width,
@@ -889,7 +887,7 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 	return seg_details;
 }
 
-/* Calculates the number of track connects from each block pin to each segment type */
+/* Calculates the number of track connections from each block pin to each segment type */
 static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
 		const int num_seg_types, const int *sets_per_seg_type,
 		const int max_chan_width,
@@ -909,7 +907,15 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
 
 	VTR_ASSERT((max_chan_width % fac) == 0);
 
+    //Initialize Fc of all blocks to zero
 	Result = vtr::alloc_matrix3<int>(0, L_num_types-1, 0, max_pins-1, 0, num_seg_types-1);
+    for (int itype = 0; itype < L_num_types; ++itype) {
+        for (int ipin = 0; ipin < max_pins; ++ipin) {
+            for (int iseg = 0; iseg < num_seg_types; ++iseg) {
+                Result[itype][ipin][iseg] = 0;
+            }
+        }
+    }
 
 	for (int itype = 1; itype < L_num_types; ++itype) { //Skip <EMPTY>
         for (const t_fc_specification fc_spec : types[itype].fc_specs) {
@@ -975,6 +981,7 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
                         Result[itype][ipin][iseg] = sets_per_seg_type[iseg] * fac;
                     }
 
+                    VTR_ASSERT_MSG(Result[itype][ipin][iseg] > 0, "Absolute Fc must be positive");
                     VTR_ASSERT_MSG(Result[itype][ipin][iseg] % fac == 0, "Absolute Fc must be divisible by 1 (bidir architecture) or 2 (unidir architecture)");
                 }
             }
