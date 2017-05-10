@@ -13,6 +13,8 @@ void print_tnode_info(FILE* fp, int inode, char* identifier);
 void print_endpoint_timing(char* filename) {
     FILE* fp = vtr::fopen(filename, "w");
 
+    auto& cluster_ctx = g_ctx.clustering();
+
     int** tnode_lookup_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
     
     fprintf(fp, "{\n");
@@ -25,9 +27,10 @@ void print_endpoint_timing(char* filename) {
             outpad_sink_tnodes.push_back(inode);
         }
     }
+
     for(size_t i = 0; i < outpad_sink_tnodes.size(); ++i) {
         int inode = outpad_sink_tnodes[i];
-        char* identifier = g_ctx.blocks[tnode[inode].block].name + 4; //Trim out:
+        char* identifier = cluster_ctx.blocks[tnode[inode].block].name + 4; //Trim out:
         print_tnode_info(fp, inode, identifier);
 
         if(i != outpad_sink_tnodes.size() - 1) {

@@ -14,6 +14,7 @@
 
 struct Context {
     //Contexts are uncopyable
+    Context() = default;
     Context(Context&) = delete;
     Context& operator=(Context&) = delete;
 };
@@ -41,11 +42,11 @@ struct TimingContext : public Context {
     t_timing_constraints* sdc; //TODO: remove classic SDC
 
     struct timing_analysis_profile_info {
-        double timing_analysis_wallclock_time() {
+        double timing_analysis_wallclock_time() const {
             return sta_wallclock_time + slack_wallclock_time;
         }
 
-        double old_timing_analysis_wallclock_time() {
+        double old_timing_analysis_wallclock_time() const {
             return old_sta_wallclock_time + old_delay_annotation_wallclock_time;
         }
 
@@ -144,7 +145,7 @@ struct PowerContext : public Context {
 };
 
 //State relating to clustering
-struct ClusterContext : public Context {
+struct ClusteringContext : public Context {
     /********************************************************************
      CLB Netlist
      ********************************************************************/
@@ -160,13 +161,16 @@ struct ClusterContext : public Context {
 
 
 //State relating to placement
-struct PlaceContext : public Context {
+struct PlacementContext : public Context {
     //TODO: move blocks .x/.y/.z out of clustered netlist into here
+
+    std::vector<t_block_loc> block_locs;
+
     std::string placement_id; //SHA256 digest of .place file
 };
 
 //State relating to routing
-struct RouteContext : public Context {
+struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
     struct s_trace **trace_head, **trace_tail;
 
@@ -193,14 +197,14 @@ class VprContext {
         const PowerContext& power() const { return power_; }
         PowerContext& mutable_power() { return power_; }
 
-        const ClusterContext& clustering() const { return clustering_; }
-        ClusterContext& mutable_clustering() { return clustering_; }
+        const ClusteringContext& clustering() const { return clustering_; }
+        ClusteringContext& mutable_clustering() { return clustering_; }
 
-        const PlaceContext& placement() const { return placement_; }
-        PlaceContext& mutable_placement() { return placement_; }
+        const PlacementContext& placement() const { return placement_; }
+        PlacementContext& mutable_placement() { return placement_; }
 
-        const RouteContext& routing() const { return routing_; }
-        RouteContext& mutable_routing() { return routing_; }
+        const RoutingContext& routing() const { return routing_; }
+        RoutingContext& mutable_routing() { return routing_; }
     private:
         DeviceContext device_;
 

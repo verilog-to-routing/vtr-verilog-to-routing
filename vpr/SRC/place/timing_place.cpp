@@ -31,18 +31,19 @@ static void free_crit(vtr::t_chunk *chunk_list_ptr);
 static float ** alloc_crit(vtr::t_chunk *chunk_list_ptr) {
 
 	/* Allocates space for the timing_place_crit data structure *
-	 * [0..g_ctx.clbs_nlist.net.size()-1][1..num_pins-1].  I chunk the data to save space on large    *
+	 * [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1].  I chunk the data to save space on large    *
 	 * problems.                                                                   */
 
-	float **local_crit; /* [0..g_ctx.clbs_nlist.net.size()-1][1..num_pins-1] */
+    auto& cluster_ctx = g_ctx.clustering();
+	float **local_crit; /* [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1] */
 	float *tmp_ptr;
 	unsigned int inet;
 
-	local_crit = (float **) vtr::malloc(g_ctx.clbs_nlist.net.size() * sizeof(float *));
+	local_crit = (float **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float *));
 
-	for (inet = 0; inet < g_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 		tmp_ptr = (float *) vtr::chunk_malloc(
-				(g_ctx.clbs_nlist.net[inet].num_sinks()) * sizeof(float), chunk_list_ptr);
+				(cluster_ctx.clbs_nlist.net[inet].num_sinks()) * sizeof(float), chunk_list_ptr);
 		local_crit[inet] = tmp_ptr - 1; /* [1..num_sinks] */
 	}
 
@@ -83,10 +84,11 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 	  For every pin on every net (or, equivalently, for every tedge ending 
 	  in that pin), timing_place_crit = criticality^(criticality exponent) */
 
-	for (size_t inet = 0; inet < g_ctx.clbs_nlist.net.size(); inet++) {
-		if (g_ctx.clbs_nlist.net[inet].is_global)
+    auto& cluster_ctx = g_ctx.clustering();
+	for (size_t inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+		if (cluster_ctx.clbs_nlist.net[inet].is_global)
 			continue;
-		for (size_t ipin = 1; ipin < g_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+		for (size_t ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 
             float clb_pin_crit = calculate_clb_net_pin_criticality(timing_info, pb_gpin_lookup, inet, ipin);
 

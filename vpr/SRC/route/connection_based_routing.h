@@ -17,7 +17,7 @@ class Connection_based_routing_resources {
 	// conceptually works like rr_sink_node_to_pin[inet][sink_rr_node_index] to get the pin index for that net
 	// each net maps SINK node index -> PIN index for net
 	// only need to be built once at the start since the SINK nodes never change
-	// the reverse lookup of g_ctx.net_rr_terminals
+	// the reverse lookup of route_ctx.net_rr_terminals
 	std::vector<std::unordered_map<int,int>> rr_sink_node_to_pin;
 
 	// a property of each net, but only valid after pruning the previous route tree

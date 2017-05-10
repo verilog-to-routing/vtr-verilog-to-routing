@@ -92,16 +92,17 @@ void power_tech_load_xml_file(const char * cmos_tech_behavior_filepath) {
 
     get_attribute(technology, "file", loc_data); //Check exists
 
+    auto& power_ctx = g_ctx.power();
 
     auto tech_size = get_attribute(technology, "size", loc_data);
-    g_ctx.power_tech->tech_size = tech_size.as_float();
+    power_ctx.tech->tech_size = tech_size.as_float();
 
     auto operating_point = get_single_child(technology, "operating_point", loc_data);
-    g_ctx.power_tech->temperature = get_attribute(operating_point, "temperature", loc_data).as_float();
-    g_ctx.power_tech->Vdd = get_attribute(operating_point, "Vdd", loc_data).as_float();
+    power_ctx.tech->temperature = get_attribute(operating_point, "temperature", loc_data).as_float();
+    power_ctx.tech->Vdd = get_attribute(operating_point, "Vdd", loc_data).as_float();
 
     auto p_to_n = get_single_child(technology, "p_to_n", loc_data);
-    g_ctx.power_tech->PN_ratio = get_attribute(p_to_n, "ratio", loc_data).as_float();
+    power_ctx.tech->PN_ratio = get_attribute(p_to_n, "ratio", loc_data).as_float();
 
 	/* Transistor Information 
      *  We expect two <transistor> sections for P and N types
@@ -165,29 +166,30 @@ static void power_tech_xml_load_component(pugi::xml_node parent, const pugiutil:
 }
 
 static void power_tech_xml_load_components(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
+    auto& power_ctx = g_ctx.power();
 
-	g_ctx.power_commonly_used->component_callibration =
+	power_ctx.commonly_used->component_callibration =
 			(PowerSpicedComponent**) vtr::calloc(POWER_CALLIB_COMPONENT_MAX,
 					sizeof(PowerSpicedComponent*));
 
 	power_tech_xml_load_component(parent, loc_data,
-			&g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER],
+			&power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER],
 			"buf", power_usage_buf_for_callibration);
 
 	power_tech_xml_load_component(parent, loc_data,
-			&g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR],
+			&power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR],
 			"buf_levr", power_usage_buf_levr_for_callibration);
 
 	power_tech_xml_load_component(parent, loc_data,
-			&g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF],
+			&power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF],
 			"dff", power_usage_ff_for_callibration);
 
 	power_tech_xml_load_component(parent, loc_data,
-			&g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX],
+			&power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX],
 			"mux", power_usage_mux_for_callibration);
 
 	power_tech_xml_load_component(parent, loc_data,
-			&g_ctx.power_commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT],
+			&power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT],
 			"lut", power_usage_lut_for_callibration);
 
 }
@@ -201,15 +203,16 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
 	int num_leakage_pairs;
 	int i;
 	int nmos_idx;
+    auto& power_ctx = g_ctx.power();
 
     num_nmos_sizes = count_children(parent, "nmos", loc_data);
-	g_ctx.power_tech->num_nmos_leakage_info = num_nmos_sizes;
-	g_ctx.power_tech->nmos_leakage_info = (t_power_nmos_leakage_inf*) vtr::calloc(num_nmos_sizes, sizeof(t_power_nmos_leakage_inf));
+	power_ctx.tech->num_nmos_leakage_info = num_nmos_sizes;
+	power_ctx.tech->nmos_leakage_info = (t_power_nmos_leakage_inf*) vtr::calloc(num_nmos_sizes, sizeof(t_power_nmos_leakage_inf));
 
     auto me = get_first_child(parent, "nmos", loc_data);
 	nmos_idx = 0;
 	while (me) {
-		t_power_nmos_leakage_inf * nmos_info = &g_ctx.power_tech->nmos_leakage_info[nmos_idx];
+		t_power_nmos_leakage_inf * nmos_info = &power_ctx.tech->nmos_leakage_info[nmos_idx];
 		nmos_info->nmos_size = get_attribute(me, "size", loc_data).as_float(0.);
 
         num_leakage_pairs = count_children(me, "nmos_leakage", loc_data);
@@ -240,18 +243,19 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
 	int num_nmos_sizes;
 	int num_mux_sizes;
 	int i, j, nmos_idx;
+    auto& power_ctx = g_ctx.power();
 
 	/* Process all nmos sizes */
     num_nmos_sizes = count_children(parent, "nmos", loc_data);
     VTR_ASSERT(num_nmos_sizes > 0);
-	g_ctx.power_tech->num_nmos_mux_info = num_nmos_sizes;
-	g_ctx.power_tech->nmos_mux_info = (t_power_nmos_mux_inf*) vtr::calloc(
+	power_ctx.tech->num_nmos_mux_info = num_nmos_sizes;
+	power_ctx.tech->nmos_mux_info = (t_power_nmos_mux_inf*) vtr::calloc(
 	        num_nmos_sizes, sizeof(t_power_nmos_mux_inf));
 
     auto me = get_first_child(parent, "nmos", loc_data);
 	nmos_idx = 0;
 	while (me) {
-		t_power_nmos_mux_inf * nmos_inf = &g_ctx.power_tech->nmos_mux_info[nmos_idx];
+		t_power_nmos_mux_inf * nmos_inf = &power_ctx.tech->nmos_mux_info[nmos_idx];
         nmos_inf->nmos_size = get_attribute(me, "size", loc_data).as_float(0.0);
 
 		/* Process all multiplexer sizes */
@@ -310,14 +314,15 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
 static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
 	t_transistor_inf * trans_inf;
 	int i;
+    auto& power_ctx = g_ctx.power();
 
 	/* Get transistor type: NMOS or PMOS */
     auto prop = get_attribute(parent, "type", loc_data);
 	trans_inf = NULL;
 	if (strcmp(prop.value(), "nmos") == 0) {
-		trans_inf = &g_ctx.power_tech->NMOS_inf;
+		trans_inf = &power_ctx.tech->NMOS_inf;
 	} else if (strcmp(prop.value(), "pmos") == 0) {
-		trans_inf = &g_ctx.power_tech->PMOS_inf;
+		trans_inf = &power_ctx.tech->PMOS_inf;
 	} else {
         vpr_throw(VPR_ERROR_POWER, loc_data.filename_c_str(), loc_data.line(parent),
                   "Unrecognized transistor type '%s', expected 'nmos' or 'pmos'\n", prop.value());
@@ -382,15 +387,16 @@ bool power_find_transistor_info(t_transistor_size_inf ** lower,
 	t_transistor_inf * trans_info;
 	float min_size, max_size;
 	bool error = false;
+    auto& power_ctx = g_ctx.power();
 
 	key.size = size;
 
 	/* Find the appropriate global transistor records */
 	trans_info = NULL;
 	if (type == NMOS) {
-		trans_info = &g_ctx.power_tech->NMOS_inf;
+		trans_info = &power_ctx.tech->NMOS_inf;
 	} else if (type == PMOS) {
-		trans_info = &g_ctx.power_tech->PMOS_inf;
+		trans_info = &power_ctx.tech->PMOS_inf;
 	} else {
 		VTR_ASSERT(0);
 	}

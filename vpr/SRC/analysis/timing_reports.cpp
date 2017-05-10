@@ -19,10 +19,14 @@ void generate_timing_stats(const SetupTimingInfo& timing_info) {
     vtr::printf("================\n");
 #endif
     vtr::printf("\n");
-    print_setup_timing_summary(*g_ctx.timing_constraints, *timing_info.setup_analyzer());
 
-    VprTimingGraphNameResolver name_resolver(g_ctx.atom_nl, g_ctx.atom_lookup);
-    tatum::TimingReporter timing_reporter(name_resolver, *g_ctx.timing_graph, *g_ctx.timing_constraints);
+    auto& timing_ctx = g_ctx.timing();
+    auto& atom_ctx = g_ctx.atom();
+
+    print_setup_timing_summary(*timing_ctx.constraints, *timing_info.setup_analyzer());
+
+    VprTimingGraphNameResolver name_resolver(atom_ctx.nlist, atom_ctx.lookup);
+    tatum::TimingReporter timing_reporter(name_resolver, *timing_ctx.graph, *timing_ctx.constraints);
 
     timing_reporter.report_timing_setup("report_timing.setup.rpt", *timing_info.setup_analyzer());
     timing_reporter.report_unconstrained_endpoints_setup("report_unconstrained_timing_endpoints.rpt", *timing_info.setup_analyzer());

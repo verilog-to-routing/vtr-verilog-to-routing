@@ -30,7 +30,7 @@ struct s_heap {
  *                      to the target.                                      *
  * R_upstream: Used only by the timing-driven router.  Stores the upstream  *
  *             resistance to ground from this node, including the           *
- *             resistance of the node itself (g_ctx.rr_nodes[index].R).            */
+ *             resistance of the node itself (device_ctx.rr_nodes[index].R).            */
 
 typedef struct {
 	int prev_node;
@@ -63,7 +63,7 @@ typedef struct {
 
 /**************** Variables shared by all route_files ***********************/
 
-extern t_rr_node_route_inf *rr_node_route_inf; /* [0..g_ctx.num_rr_nodes-1] */
+extern t_rr_node_route_inf *rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 extern struct s_bb *route_bb; /* [0..num_nets-1]     */
 
 /******* Subroutines in route_common used only by other router modules ******/

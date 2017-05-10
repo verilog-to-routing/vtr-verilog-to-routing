@@ -47,10 +47,10 @@ using namespace std;
 /*locations, this value should not change  */
 #define NET_USED 0		/*we use net at location zero of the net    */
 /*structure                                 */
-#define NET_USED_SOURCE_BLOCK 0	/*net.block[0] is source g_ctx.blocks */
-#define NET_USED_SINK_BLOCK 1	/*net.block[1] is sink g_ctx.blocks */
-#define SOURCE_BLOCK 0		/*g_ctx.blocks[0] is source */
-#define SINK_BLOCK 1		/*g_ctx.blocks[1] is sink */
+#define NET_USED_SOURCE_BLOCK 0	/*net.block[0] is source cluster_ctx.blocks */
+#define NET_USED_SINK_BLOCK 1	/*net.block[1] is sink cluster_ctx.blocks */
+#define SOURCE_BLOCK 0		/*cluster_ctx.blocks[0] is source */
+#define SINK_BLOCK 1		/*cluster_ctx.blocks[1] is sink */
 
 #define BLOCK_COUNT 2		/*use 2 blocks to compute delay between  */
 /*the various FPGA locations             */
@@ -221,17 +221,21 @@ static void alloc_delay_lookup_netlists() {
 }
 
 static void free_delay_lookup_netlists() {
-    free_global_nlist_net(&g_ctx.clbs_nlist);
+    auto& cluster_ctx = g_ctx.mutable_clustering();
+
+    free_global_nlist_net(&cluster_ctx.clbs_nlist);
     free_block();
 }
 
 static void free_block() {
 	//Free temporary CLB blocks data structure
+    auto& cluster_ctx = g_ctx.clustering();
+
 	for (int i = 0; i < BLOCK_COUNT; i++) {
-		free(g_ctx.blocks[i].name);
-		free(g_ctx.blocks[i].nets);
+		free(cluster_ctx.blocks[i].name);
+		free(cluster_ctx.blocks[i].nets);
 	}
-	free(g_ctx.blocks);
+	free(cluster_ctx.blocks);
 }
 
 
@@ -242,18 +246,20 @@ static void alloc_vnet(){
 
 	int i, len;
 
-	g_ctx.clbs_nlist.net.resize(NET_COUNT);
+    auto& cluster_ctx = g_ctx.mutable_clustering();
+
+	cluster_ctx.clbs_nlist.net.resize(NET_COUNT);
 	for(i = 0; i < NET_COUNT; i++){
 		len = strlen("TEMP_NET");
-		g_ctx.clbs_nlist.net[i].name = (char *) vtr::malloc((len + 1) * sizeof(char));
-		g_ctx.clbs_nlist.net[i].is_routed = false;
-		g_ctx.clbs_nlist.net[i].is_fixed = false;
-		g_ctx.clbs_nlist.net[i].is_global = false;
-		strcpy(g_ctx.clbs_nlist.net[NET_USED].name, "TEMP_NET");
+		cluster_ctx.clbs_nlist.net[i].name = (char *) vtr::malloc((len + 1) * sizeof(char));
+		cluster_ctx.clbs_nlist.net[i].is_routed = false;
+		cluster_ctx.clbs_nlist.net[i].is_fixed = false;
+		cluster_ctx.clbs_nlist.net[i].is_global = false;
+		strcpy(cluster_ctx.clbs_nlist.net[NET_USED].name, "TEMP_NET");
 	
-		g_ctx.clbs_nlist.net[i].pins.resize(BLOCK_COUNT);
-		g_ctx.clbs_nlist.net[i].pins[NET_USED_SOURCE_BLOCK].block = NET_USED_SOURCE_BLOCK;
-		g_ctx.clbs_nlist.net[i].pins[NET_USED_SINK_BLOCK].block = NET_USED_SINK_BLOCK;
+		cluster_ctx.clbs_nlist.net[i].pins.resize(BLOCK_COUNT);
+		cluster_ctx.clbs_nlist.net[i].pins[NET_USED_SOURCE_BLOCK].block = NET_USED_SOURCE_BLOCK;
+		cluster_ctx.clbs_nlist.net[i].pins[NET_USED_SINK_BLOCK].block = NET_USED_SINK_BLOCK;
 
 		/*the values for nodes[].block_pin are assigned in assign_blocks_and_route_net */
 	}
@@ -263,30 +269,33 @@ static void alloc_vnet(){
 /**************************************/
 static void alloc_block(void) {
 
-	/*allocates g_ctx.blocks structure, and assigns values to known parameters */
+	/*allocates cluster_ctx.blocks structure, and assigns values to known parameters */
 	/*type and x,y fields are left undefined at this stage since they  */
 	/*are not known until we start moving blocks through the clb array */
 
 	int ix_b, ix_p, len, i;
 	int max_pins;
 
+    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_ctx.mutable_clustering();
+
 	max_pins = 0;
 	for (i = 0; i < NUM_TYPES_USED; i++) {
-		max_pins = max(max_pins, g_ctx.block_types[i].num_pins);
+		max_pins = max(max_pins, device_ctx.block_types[i].num_pins);
 	}
 
-	g_ctx.num_blocks = BLOCK_COUNT;
-	g_ctx.blocks = (struct s_block *) vtr::malloc(g_ctx.num_blocks * sizeof(struct s_block));
+	cluster_ctx.num_blocks = BLOCK_COUNT;
+	cluster_ctx.blocks = (struct s_block *) vtr::malloc(cluster_ctx.num_blocks * sizeof(struct s_block));
 
 	for (ix_b = 0; ix_b < BLOCK_COUNT; ix_b++) {
 		len = strlen("TEMP_BLOCK");
-		g_ctx.blocks[ix_b].name = (char *) vtr::malloc((len + 1) * sizeof(char));
-		strcpy(g_ctx.blocks[ix_b].name, "TEMP_BLOCK");
+		cluster_ctx.blocks[ix_b].name = (char *) vtr::malloc((len + 1) * sizeof(char));
+		strcpy(cluster_ctx.blocks[ix_b].name, "TEMP_BLOCK");
 
-		g_ctx.blocks[ix_b].nets = (int *) vtr::malloc(max_pins * sizeof(int));
-		g_ctx.blocks[ix_b].nets[0] = 0;
+		cluster_ctx.blocks[ix_b].nets = (int *) vtr::malloc(max_pins * sizeof(int));
+		cluster_ctx.blocks[ix_b].nets[0] = 0;
 		for (ix_p = 1; ix_p < max_pins; ix_p++)
-			g_ctx.blocks[ix_b].nets[ix_p] = OPEN;
+			cluster_ctx.blocks[ix_b].nets[ix_p] = OPEN;
 	}
 }
 
@@ -294,45 +303,47 @@ static void alloc_block(void) {
 static void load_simplified_device(void) {
 	int i, j, k;
 
+    auto& device_ctx = g_ctx.mutable_device();
+
 	/* Backup original globals */
-	EMPTY_TYPE_BACKUP = g_ctx.EMPTY_TYPE;
-	IO_TYPE_BACKUP = g_ctx.IO_TYPE;
-	FILL_TYPE_BACKUP = g_ctx.FILL_TYPE;
-	type_descriptors_backup = g_ctx.block_types;
-	num_types_backup = g_ctx.num_block_types;
-	g_ctx.num_block_types = NUM_TYPES_USED;
+	EMPTY_TYPE_BACKUP = device_ctx.EMPTY_TYPE;
+	IO_TYPE_BACKUP = device_ctx.IO_TYPE;
+	FILL_TYPE_BACKUP = device_ctx.FILL_TYPE;
+	type_descriptors_backup = device_ctx.block_types;
+	num_types_backup = device_ctx.num_block_types;
+	device_ctx.num_block_types = NUM_TYPES_USED;
 
 	/* Fill in homogeneous core type info */
-	dummy_type_descriptors[0] = *g_ctx.EMPTY_TYPE;
+	dummy_type_descriptors[0] = *device_ctx.EMPTY_TYPE;
 	dummy_type_descriptors[0].index = 0;
-	dummy_type_descriptors[1] = *g_ctx.IO_TYPE;
+	dummy_type_descriptors[1] = *device_ctx.IO_TYPE;
 	dummy_type_descriptors[1].index = 1;
-	dummy_type_descriptors[2] = *g_ctx.FILL_TYPE;
+	dummy_type_descriptors[2] = *device_ctx.FILL_TYPE;
 	dummy_type_descriptors[2].index = 2;
-	g_ctx.block_types = dummy_type_descriptors;
-	g_ctx.EMPTY_TYPE = &dummy_type_descriptors[0];
-	g_ctx.IO_TYPE = &dummy_type_descriptors[1];
-	g_ctx.FILL_TYPE = &dummy_type_descriptors[2];
+	device_ctx.block_types = dummy_type_descriptors;
+	device_ctx.EMPTY_TYPE = &dummy_type_descriptors[0];
+	device_ctx.IO_TYPE = &dummy_type_descriptors[1];
+	device_ctx.FILL_TYPE = &dummy_type_descriptors[2];
 
 	/* Fill in homogeneous core grid info */
-	grid_backup = g_ctx.grid;
-	g_ctx.grid = vtr::alloc_matrix<struct s_grid_tile>(0, g_ctx.nx + 1, 0, g_ctx.ny + 1);
-	for (i = 0; i < g_ctx.nx + 2; i++) {
-		for (j = 0; j < g_ctx.ny + 2; j++) {
-			if ((i == 0 && j == 0) || (i == g_ctx.nx + 1 && j == 0)
-					|| (i == 0 && j == g_ctx.ny + 1)
-					|| (i == g_ctx.nx + 1 && j == g_ctx.ny + 1)) {
-				g_ctx.grid[i][j].type = g_ctx.EMPTY_TYPE;
-			} else if (i == 0 || i == g_ctx.nx + 1 || j == 0 || j == g_ctx.ny + 1) {
-				g_ctx.grid[i][j].type = g_ctx.IO_TYPE;
+	grid_backup = device_ctx.grid;
+	device_ctx.grid = vtr::alloc_matrix<struct s_grid_tile>(0, device_ctx.nx + 1, 0, device_ctx.ny + 1);
+	for (i = 0; i < device_ctx.nx + 2; i++) {
+		for (j = 0; j < device_ctx.ny + 2; j++) {
+			if ((i == 0 && j == 0) || (i == device_ctx.nx + 1 && j == 0)
+					|| (i == 0 && j == device_ctx.ny + 1)
+					|| (i == device_ctx.nx + 1 && j == device_ctx.ny + 1)) {
+				device_ctx.grid[i][j].type = device_ctx.EMPTY_TYPE;
+			} else if (i == 0 || i == device_ctx.nx + 1 || j == 0 || j == device_ctx.ny + 1) {
+				device_ctx.grid[i][j].type = device_ctx.IO_TYPE;
 			} else {
-				g_ctx.grid[i][j].type = g_ctx.FILL_TYPE;
+				device_ctx.grid[i][j].type = device_ctx.FILL_TYPE;
 			}
-			g_ctx.grid[i][j].width_offset = 0;
-			g_ctx.grid[i][j].height_offset = 0;
-			g_ctx.grid[i][j].blocks = (int*)vtr::malloc(g_ctx.grid[i][j].type->capacity * sizeof(int));
-			for (k = 0; k < g_ctx.grid[i][j].type->capacity; k++) {
-				g_ctx.grid[i][j].blocks[k] = EMPTY_BLOCK;
+			device_ctx.grid[i][j].width_offset = 0;
+			device_ctx.grid[i][j].height_offset = 0;
+			device_ctx.grid[i][j].blocks = (int*)vtr::malloc(device_ctx.grid[i][j].type->capacity * sizeof(int));
+			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
+				device_ctx.grid[i][j].blocks[k] = EMPTY_BLOCK;
 			}
 		}
 	}
@@ -340,33 +351,37 @@ static void load_simplified_device(void) {
 static void restore_original_device(void) {
 	int i, j;
 
+    auto& device_ctx = g_ctx.mutable_device();
+
 	/* restore previous globals */
-	g_ctx.IO_TYPE = IO_TYPE_BACKUP;
-	g_ctx.EMPTY_TYPE = EMPTY_TYPE_BACKUP;
-	g_ctx.FILL_TYPE = FILL_TYPE_BACKUP;
-	g_ctx.block_types = type_descriptors_backup;
-	g_ctx.num_block_types = num_types_backup;
+	device_ctx.IO_TYPE = IO_TYPE_BACKUP;
+	device_ctx.EMPTY_TYPE = EMPTY_TYPE_BACKUP;
+	device_ctx.FILL_TYPE = FILL_TYPE_BACKUP;
+	device_ctx.block_types = type_descriptors_backup;
+	device_ctx.num_block_types = num_types_backup;
 
 	/* free allocatd data */
-	for (i = 0; i < g_ctx.nx + 2; i++) {
-		for (j = 0; j < g_ctx.ny + 2; j++) {
-			free(g_ctx.grid[i][j].blocks);
+	for (i = 0; i < device_ctx.nx + 2; i++) {
+		for (j = 0; j < device_ctx.ny + 2; j++) {
+			free(device_ctx.grid[i][j].blocks);
 		}
 	}
-    vtr::free_matrix(g_ctx.grid, 0, g_ctx.nx + 1, 0);
-	g_ctx.grid = grid_backup;
+    vtr::free_matrix(device_ctx.grid, 0, device_ctx.nx + 1, 0);
+	device_ctx.grid = grid_backup;
 }
 
 /**************************************/
 static void reset_placement(void) {
 	int i, j, k;
 
-	for (i = 0; i <= g_ctx.nx + 1; i++) {
-		for (j = 0; j <= g_ctx.ny + 1; j++) {
-			g_ctx.grid[i][j].usage = 0;
-			for (k = 0; k < g_ctx.grid[i][j].type->capacity; k++) {
-				if (g_ctx.grid[i][j].blocks[k] != INVALID_BLOCK) {
-					g_ctx.grid[i][j].blocks[k] = EMPTY_BLOCK;
+    auto& device_ctx = g_ctx.mutable_device();
+
+	for (i = 0; i <= device_ctx.nx + 1; i++) {
+		for (j = 0; j <= device_ctx.ny + 1; j++) {
+			device_ctx.grid[i][j].usage = 0;
+			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
+				if (device_ctx.grid[i][j].blocks[k] != INVALID_BLOCK) {
+					device_ctx.grid[i][j].blocks[k] = EMPTY_BLOCK;
 				}
 			}
 		}
@@ -377,15 +392,18 @@ static void reset_placement(void) {
 static void alloc_and_assign_internal_structures(struct s_block **original_block,
 		int *original_num_blocks, t_netlist& original_clbs_nlist, AtomNetlist& original_atom_nlist) {
 
+    auto& atom_ctx = g_ctx.mutable_atom();
+    auto& cluster_ctx = g_ctx.mutable_clustering();
+
     //Save the original atom netlist
-    std::swap(original_atom_nlist, g_ctx.atom_nl);
+    std::swap(original_atom_nlist, atom_ctx.nlist);
 
     //Save the original CLB nets
-    std::swap(g_ctx.clbs_nlist, original_clbs_nlist);
+    std::swap(cluster_ctx.clbs_nlist, original_clbs_nlist);
 
     //Save the original CLB blocks
-	*original_block = g_ctx.blocks;
-	*original_num_blocks = g_ctx.num_blocks;
+	*original_block = cluster_ctx.blocks;
+	*original_num_blocks = cluster_ctx.num_blocks;
 
     //Create the new temporary atom and CLB netlists
     alloc_delay_lookup_netlists();
@@ -398,20 +416,22 @@ static void alloc_and_assign_internal_structures(struct s_block **original_block
 
 /**************************************/
 static void free_and_reset_internal_structures(struct s_block *original_block, int original_num_blocks, t_netlist& original_clbs_nlist, AtomNetlist& original_atom_nlist) {
+    auto& atom_ctx = g_ctx.mutable_atom();
+    auto& cluster_ctx = g_ctx.mutable_clustering();
+
     /*reset gloabal data structures to the state that they were in before these */
 	/*lookup computation routines were called */
-
     free_delay_lookup_netlists();
 
     //Revert the atom netlist back to original
-    std::swap(original_atom_nlist, g_ctx.atom_nl);
+    std::swap(original_atom_nlist, atom_ctx.nlist);
 
     //Revert the CLBs netlist back to original
-    std::swap(original_clbs_nlist, g_ctx.clbs_nlist);
+    std::swap(original_clbs_nlist, cluster_ctx.clbs_nlist);
 
     //Revert to the original blocks
-	g_ctx.blocks = original_block;
-	g_ctx.num_blocks = original_num_blocks;
+	cluster_ctx.blocks = original_block;
+	cluster_ctx.num_blocks = original_num_blocks;
 
     vtr::free_matrix(net_delay, 0, NET_COUNT - 1, 1);
 }
@@ -428,7 +448,8 @@ static void setup_chan_width(struct s_router_opts router_opts,
         //We use the number of pins on the FILL_TYPE, since
         //while building the placement timing model we use a
         //uniformly filled FPGA architecture.
-		width_fac = 4 * g_ctx.FILL_TYPE->num_pins; 
+        auto& device_ctx = g_ctx.device();
+		width_fac = 4 * device_ctx.FILL_TYPE->num_pins; 
         /*this is 2x the value that binary search starts */
         /*this should be enough to allow most pins to   */
         /*connect to tracks in the architecture */
@@ -449,11 +470,13 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 	int warnings;
 	t_graph_type graph_type;
 
+    auto& device_ctx = g_ctx.mutable_device();
+
 	/*calls routines that set up routing resource graph and associated structures */
 
 	/*must set up dummy blocks for the first pass through to setup locally used opins */
 	/* Only one block per tile */
-	assign_locations(g_ctx.FILL_TYPE, 1, 1, 0, g_ctx.FILL_TYPE, g_ctx.nx, g_ctx.ny, 0);
+	assign_locations(device_ctx.FILL_TYPE, 1, 1, 0, device_ctx.FILL_TYPE, device_ctx.nx, device_ctx.ny, 0);
 
 	clb_opins_used_locally = alloc_route_structs();
 
@@ -466,11 +489,11 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 				GRAPH_BIDIR : GRAPH_UNIDIR);
 	}
 
-	build_rr_graph(graph_type, g_ctx.num_block_types, dummy_type_descriptors, g_ctx.nx, g_ctx.ny, g_ctx.grid,
-			&g_ctx.chan_width, det_routing_arch->switch_block_type,
+	build_rr_graph(graph_type, device_ctx.num_block_types, dummy_type_descriptors, device_ctx.nx, device_ctx.ny, device_ctx.grid,
+			&device_ctx.chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
-			g_ctx.num_arch_switches, segment_inf,
+			device_ctx.num_arch_switches, segment_inf,
 			det_routing_arch->global_route_switch,
 			det_routing_arch->delayless_switch, 
 			det_routing_arch->wire_to_arch_ipin_switch,
@@ -485,7 +508,7 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 			true, 
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
-			&g_ctx.num_rr_switches,
+			&device_ctx.num_rr_switches,
 			&warnings);
 
 	alloc_and_load_rr_node_route_structs();
@@ -493,13 +516,16 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 	alloc_timing_driven_route_structs(&pin_criticality, &sink_order,
 			&rt_node_of_sink);
 
-	bb_factor = g_ctx.nx + g_ctx.ny; /*set it to a huge value */
+	bb_factor = device_ctx.nx + device_ctx.ny; /*set it to a huge value */
 	init_route_structs(bb_factor);
 }
 
 /**************************************/
 static void free_routing_structs() {
 	int i;
+
+    auto& cluster_ctx = g_ctx.clustering();
+
 	free_rr_graph();
 
 	free_rr_node_route_structs();
@@ -510,9 +536,9 @@ static void free_routing_structs() {
 			rt_node_of_sink);
 	
 	if (clb_opins_used_locally != NULL) {
-		for (i = 0; i < g_ctx.num_blocks; i++) {
+		for (i = 0; i < cluster_ctx.num_blocks; i++) {
 			free_ivec_vector(clb_opins_used_locally[i], 0,
-					g_ctx.blocks[i].type->num_class - 1);
+					cluster_ctx.blocks[i].type->num_class - 1);
 		}
 		free(clb_opins_used_locally);
 		clb_opins_used_locally = NULL;
@@ -523,29 +549,32 @@ static void free_routing_structs() {
 static void assign_locations(t_type_ptr source_type, int source_x_loc,
 		int source_y_loc, int source_z_loc, t_type_ptr sink_type,
 		int sink_x_loc, int sink_y_loc, int sink_z_loc) {
+    auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& device_ctx = g_ctx.mutable_device();
+
 	/*all routing occurs between block 0 (source) and block 1 (sink) */
-	g_ctx.blocks[SOURCE_BLOCK].type = source_type;
-	g_ctx.blocks[SOURCE_BLOCK].x = source_x_loc;
-	g_ctx.blocks[SOURCE_BLOCK].y = source_y_loc;
-	g_ctx.blocks[SOURCE_BLOCK].z = source_z_loc;
-	g_ctx.blocks[SOURCE_BLOCK].pb = nullptr;
-	g_ctx.blocks[SOURCE_BLOCK].pb_route = nullptr;
+	cluster_ctx.blocks[SOURCE_BLOCK].type = source_type;
+	cluster_ctx.blocks[SOURCE_BLOCK].x = source_x_loc;
+	cluster_ctx.blocks[SOURCE_BLOCK].y = source_y_loc;
+	cluster_ctx.blocks[SOURCE_BLOCK].z = source_z_loc;
+	cluster_ctx.blocks[SOURCE_BLOCK].pb = nullptr;
+	cluster_ctx.blocks[SOURCE_BLOCK].pb_route = nullptr;
 
-	g_ctx.blocks[SINK_BLOCK].type = sink_type;
-	g_ctx.blocks[SINK_BLOCK].x = sink_x_loc;
-	g_ctx.blocks[SINK_BLOCK].y = sink_y_loc;
-	g_ctx.blocks[SINK_BLOCK].z = sink_z_loc;
-	g_ctx.blocks[SINK_BLOCK].pb = nullptr;
-	g_ctx.blocks[SINK_BLOCK].pb_route = nullptr;
+	cluster_ctx.blocks[SINK_BLOCK].type = sink_type;
+	cluster_ctx.blocks[SINK_BLOCK].x = sink_x_loc;
+	cluster_ctx.blocks[SINK_BLOCK].y = sink_y_loc;
+	cluster_ctx.blocks[SINK_BLOCK].z = sink_z_loc;
+	cluster_ctx.blocks[SINK_BLOCK].pb = nullptr;
+	cluster_ctx.blocks[SINK_BLOCK].pb_route = nullptr;
 
-	g_ctx.grid[source_x_loc][source_y_loc].blocks[source_z_loc] = SOURCE_BLOCK;
-	g_ctx.grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = SINK_BLOCK;
+	device_ctx.grid[source_x_loc][source_y_loc].blocks[source_z_loc] = SOURCE_BLOCK;
+	device_ctx.grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = SINK_BLOCK;
 
-	g_ctx.clbs_nlist.net[NET_USED].pins[NET_USED_SOURCE_BLOCK].block_pin = get_best_pin(DRIVER, g_ctx.blocks[SOURCE_BLOCK].type);
-	g_ctx.clbs_nlist.net[NET_USED].pins[NET_USED_SINK_BLOCK].block_pin = get_best_pin(RECEIVER, g_ctx.blocks[SINK_BLOCK].type);
+	cluster_ctx.clbs_nlist.net[NET_USED].pins[NET_USED_SOURCE_BLOCK].block_pin = get_best_pin(DRIVER, cluster_ctx.blocks[SOURCE_BLOCK].type);
+	cluster_ctx.clbs_nlist.net[NET_USED].pins[NET_USED_SINK_BLOCK].block_pin = get_best_pin(RECEIVER, cluster_ctx.blocks[SINK_BLOCK].type);
 
-	g_ctx.grid[source_x_loc][source_y_loc].usage += 1;
-	g_ctx.grid[sink_x_loc][sink_y_loc].usage += 1;
+	device_ctx.grid[source_x_loc][source_y_loc].usage += 1;
+	device_ctx.grid[sink_x_loc][sink_y_loc].usage += 1;
 
 }
 
@@ -557,6 +586,8 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	/*places blocks at the specified locations, and routes a net between them */
 	/*returns the delay of this net */
 
+    auto& device_ctx = g_ctx.device();
+
 	/* Only one block per tile */
 	int source_z_loc = 0;
 	int sink_z_loc = 0;
@@ -566,7 +597,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	assign_locations(source_type, source_x_loc, source_y_loc, source_z_loc,
 			sink_type, sink_x_loc, sink_y_loc, sink_z_loc);
 
-	load_net_rr_terminals(g_ctx.rr_node_indices);
+	load_net_rr_terminals(device_ctx.rr_node_indices);
 
 	int itry = 1;
 	float pres_fac = 0.0; /* ignore congestion */
@@ -574,7 +605,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	CBRR dummy_connections_inf;
 	dummy_connections_inf.prepare_routing_for_net(NET_USED);
 
-    IntraLbPbPinLookup dummy_pb_pin_lookup(g_ctx.block_types, g_ctx.num_block_types);
+    IntraLbPbPinLookup dummy_pb_pin_lookup(device_ctx.block_types, device_ctx.num_block_types);
 
 	timing_driven_route_net(NET_USED, itry, pres_fac,
 			router_opts.max_criticality, router_opts.criticality_exp,
@@ -588,10 +619,10 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 
 	net_delay_value = net_delay[NET_USED][NET_USED_SINK_BLOCK];
 
-	g_ctx.grid[source_x_loc][source_y_loc].usage = 0;
-	g_ctx.grid[source_x_loc][source_y_loc].blocks[source_z_loc] = EMPTY_BLOCK;
-	g_ctx.grid[sink_x_loc][sink_y_loc].usage = 0;
-	g_ctx.grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = EMPTY_BLOCK;
+	device_ctx.grid[source_x_loc][source_y_loc].usage = 0;
+	device_ctx.grid[source_x_loc][source_y_loc].blocks[source_z_loc] = EMPTY_BLOCK;
+	device_ctx.grid[sink_x_loc][sink_y_loc].usage = 0;
+	device_ctx.grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = EMPTY_BLOCK;
 
 	return (net_delay_value);
 }
@@ -599,31 +630,32 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 /**************************************/
 static void alloc_delta_arrays(void) {
 	int id_x, id_y;
+    auto& device_ctx = g_ctx.device();
 
-	delta_clb_to_clb = vtr::alloc_matrix<float>(0, g_ctx.nx - 1, 0, g_ctx.ny - 1);
-	delta_io_to_clb = vtr::alloc_matrix<float>(0, g_ctx.nx, 0, g_ctx.ny);
-	delta_clb_to_io = vtr::alloc_matrix<float>(0, g_ctx.nx, 0, g_ctx.ny);
-	delta_io_to_io = vtr::alloc_matrix<float>(0, g_ctx.nx + 1, 0, g_ctx.ny + 1);
+	delta_clb_to_clb = vtr::alloc_matrix<float>(0, device_ctx.nx - 1, 0, device_ctx.ny - 1);
+	delta_io_to_clb = vtr::alloc_matrix<float>(0, device_ctx.nx, 0, device_ctx.ny);
+	delta_clb_to_io = vtr::alloc_matrix<float>(0, device_ctx.nx, 0, device_ctx.ny);
+	delta_io_to_io = vtr::alloc_matrix<float>(0, device_ctx.nx + 1, 0, device_ctx.ny + 1);
 
 	/*initialize all of the array locations to -1 */
 
-	for (id_x = 0; id_x <= g_ctx.nx; id_x++) {
-		for (id_y = 0; id_y <= g_ctx.ny; id_y++) {
+	for (id_x = 0; id_x <= device_ctx.nx; id_x++) {
+		for (id_y = 0; id_y <= device_ctx.ny; id_y++) {
 			delta_io_to_clb[id_x][id_y] = IMPOSSIBLE;
 		}
 	}
-	for (id_x = 0; id_x <= g_ctx.nx - 1; id_x++) {
-		for (id_y = 0; id_y <= g_ctx.ny - 1; id_y++) {
+	for (id_x = 0; id_x <= device_ctx.nx - 1; id_x++) {
+		for (id_y = 0; id_y <= device_ctx.ny - 1; id_y++) {
 			delta_clb_to_clb[id_x][id_y] = IMPOSSIBLE;
 		}
 	}
-	for (id_x = 0; id_x <= g_ctx.nx; id_x++) {
-		for (id_y = 0; id_y <= g_ctx.ny; id_y++) {
+	for (id_x = 0; id_x <= device_ctx.nx; id_x++) {
+		for (id_y = 0; id_y <= device_ctx.ny; id_y++) {
 			delta_clb_to_io[id_x][id_y] = IMPOSSIBLE;
 		}
 	}
-	for (id_x = 0; id_x <= g_ctx.nx + 1; id_x++) {
-		for (id_y = 0; id_y <= g_ctx.ny + 1; id_y++) {
+	for (id_x = 0; id_x <= device_ctx.nx + 1; id_x++) {
+		for (id_y = 0; id_y <= device_ctx.ny + 1; id_y++) {
 			delta_io_to_io[id_x][id_y] = IMPOSSIBLE;
 		}
 	}
@@ -631,11 +663,12 @@ static void alloc_delta_arrays(void) {
 
 /**************************************/
 static void free_delta_arrays(void) {
+    auto& device_ctx = g_ctx.device();
 
-    vtr::free_matrix(delta_io_to_clb, 0, g_ctx.nx, 0);
-	vtr::free_matrix(delta_clb_to_clb, 0, g_ctx.nx - 1, 0);
-	vtr::free_matrix(delta_clb_to_io, 0, g_ctx.nx, 0);
-	vtr::free_matrix(delta_io_to_io, 0, g_ctx.nx + 1, 0);
+    vtr::free_matrix(delta_io_to_clb, 0, device_ctx.nx, 0);
+	vtr::free_matrix(delta_clb_to_clb, 0, device_ctx.nx - 1, 0);
+	vtr::free_matrix(delta_clb_to_io, 0, device_ctx.nx, 0);
+	vtr::free_matrix(delta_io_to_io, 0, device_ctx.nx + 1, 0);
 
 }
 
@@ -678,24 +711,25 @@ static void compute_delta_clb_to_clb(struct s_router_opts router_opts, int longe
 	int start_x, start_y, end_x, end_y;
 	int delta_x, delta_y;
 	t_type_ptr source_type, sink_type;
+    auto& device_ctx = g_ctx.device();
 
-	source_type = g_ctx.FILL_TYPE;
-	sink_type = g_ctx.FILL_TYPE;
+	source_type = device_ctx.FILL_TYPE;
+	sink_type = device_ctx.FILL_TYPE;
 
-	if (longest_length < 0.5 * (g_ctx.nx)) {
+	if (longest_length < 0.5 * (device_ctx.nx)) {
 		start_x = longest_length;
 	} else {
-		start_x = (int) (0.5 * g_ctx.nx);
+		start_x = (int) (0.5 * device_ctx.nx);
 	}
-	end_x = g_ctx.nx;
+	end_x = device_ctx.nx;
 	source_x = start_x;
 
-	if (longest_length < 0.5 * (g_ctx.ny)) {
+	if (longest_length < 0.5 * (device_ctx.ny)) {
 		start_y = longest_length;
 	} else {
-		start_y = (int) (0.5 * g_ctx.ny);
+		start_y = (int) (0.5 * device_ctx.ny);
 	}
-	end_y = g_ctx.ny;
+	end_y = device_ctx.ny;
 	source_y = start_y;
 
 	/*don't put the sink all the way to the corner, until it is necessary */
@@ -771,20 +805,21 @@ static void compute_delta_io_to_clb(struct s_router_opts router_opts) {
 	int source_x, source_y;
 	int start_x, start_y, end_x, end_y;
 	t_type_ptr source_type, sink_type;
+    auto& device_ctx = g_ctx.device();
 
-	source_type = g_ctx.IO_TYPE;
-	sink_type = g_ctx.FILL_TYPE;
+	source_type = device_ctx.IO_TYPE;
+	sink_type = device_ctx.FILL_TYPE;
 
 	delta_io_to_clb[0][0] = IMPOSSIBLE;
-	delta_io_to_clb[g_ctx.nx][g_ctx.ny] = IMPOSSIBLE;
+	delta_io_to_clb[device_ctx.nx][device_ctx.ny] = IMPOSSIBLE;
 
 	source_x = 0;
 	source_y = 1;
 
 	start_x = 1;
-	end_x = g_ctx.nx;
+	end_x = device_ctx.nx;
 	start_y = 1;
-	end_y = g_ctx.ny;
+	end_y = device_ctx.ny;
 	generic_compute_matrix(&delta_io_to_clb, source_type, sink_type, source_x,
 			source_y, start_x, end_x, start_y, end_y, router_opts);
 
@@ -794,14 +829,14 @@ static void compute_delta_io_to_clb(struct s_router_opts router_opts) {
 	start_x = 1;
 	end_x = 1;
 	start_y = 1;
-	end_y = g_ctx.ny;
+	end_y = device_ctx.ny;
 	generic_compute_matrix(&delta_io_to_clb, source_type, sink_type, source_x,
 			source_y, start_x, end_x, start_y, end_y, router_opts);
 
 	start_x = 1;
-	end_x = g_ctx.nx;
-	start_y = g_ctx.ny;
-	end_y = g_ctx.ny;
+	end_x = device_ctx.nx;
+	start_y = device_ctx.ny;
+	end_y = device_ctx.ny;
 	generic_compute_matrix(&delta_io_to_clb, source_type, sink_type, source_x,
 			source_y, start_x, end_x, start_y, end_y, router_opts);
 }
@@ -811,17 +846,18 @@ static void compute_delta_clb_to_io(struct s_router_opts router_opts) {
 	int source_x, source_y, sink_x, sink_y;
 	int delta_x, delta_y;
 	t_type_ptr source_type, sink_type;
+    auto& device_ctx = g_ctx.device();
 
-	source_type = g_ctx.FILL_TYPE;
-	sink_type = g_ctx.IO_TYPE;
+	source_type = device_ctx.FILL_TYPE;
+	sink_type = device_ctx.IO_TYPE;
 
 	delta_clb_to_io[0][0] = IMPOSSIBLE;
-	delta_clb_to_io[g_ctx.nx][g_ctx.ny] = IMPOSSIBLE;
+	delta_clb_to_io[device_ctx.nx][device_ctx.ny] = IMPOSSIBLE;
 
 	sink_x = 0;
 	sink_y = 1;
-	for (source_x = 1; source_x <= g_ctx.nx; source_x++) {
-		for (source_y = 1; source_y <= g_ctx.ny; source_y++) {
+	for (source_x = 1; source_x <= device_ctx.nx; source_x++) {
+		for (source_y = 1; source_y <= device_ctx.ny; source_y++) {
 			delta_x = abs(source_x - sink_x);
 			delta_y = abs(source_y - sink_y);
 
@@ -835,7 +871,7 @@ static void compute_delta_clb_to_io(struct s_router_opts router_opts) {
 	sink_y = 0;
 	source_x = 1;
 	delta_x = abs(source_x - sink_x);
-	for (source_y = 1; source_y <= g_ctx.ny; source_y++) {
+	for (source_y = 1; source_y <= device_ctx.ny; source_y++) {
 		delta_y = abs(source_y - sink_y);
 		delta_clb_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
@@ -844,9 +880,9 @@ static void compute_delta_clb_to_io(struct s_router_opts router_opts) {
 
 	sink_x = 1;
 	sink_y = 0;
-	source_y = g_ctx.ny;
+	source_y = device_ctx.ny;
 	delta_y = abs(source_y - sink_y);
-	for (source_x = 2; source_x <= g_ctx.nx; source_x++) {
+	for (source_x = 2; source_x <= device_ctx.nx; source_x++) {
 		delta_x = abs(source_x - sink_x);
 		delta_clb_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
@@ -859,23 +895,24 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts) {
 	int source_x, source_y, sink_x, sink_y;
 	int delta_x, delta_y;
 	t_type_ptr source_type, sink_type;
+    auto& device_ctx = g_ctx.device();
 
-	source_type = g_ctx.IO_TYPE;
-	sink_type = g_ctx.IO_TYPE;
+	source_type = device_ctx.IO_TYPE;
+	sink_type = device_ctx.IO_TYPE;
 
 	delta_io_to_io[0][0] = 0; /*delay to itself is 0 (this can happen) */
-	delta_io_to_io[g_ctx.nx + 1][g_ctx.ny + 1] = IMPOSSIBLE;
-	delta_io_to_io[0][g_ctx.ny] = IMPOSSIBLE;
-	delta_io_to_io[g_ctx.nx][0] = IMPOSSIBLE;
-	delta_io_to_io[g_ctx.nx][g_ctx.ny + 1] = IMPOSSIBLE;
-	delta_io_to_io[g_ctx.nx + 1][g_ctx.ny] = IMPOSSIBLE;
+	delta_io_to_io[device_ctx.nx + 1][device_ctx.ny + 1] = IMPOSSIBLE;
+	delta_io_to_io[0][device_ctx.ny] = IMPOSSIBLE;
+	delta_io_to_io[device_ctx.nx][0] = IMPOSSIBLE;
+	delta_io_to_io[device_ctx.nx][device_ctx.ny + 1] = IMPOSSIBLE;
+	delta_io_to_io[device_ctx.nx + 1][device_ctx.ny] = IMPOSSIBLE;
 
 	source_x = 0;
 	source_y = 1;
 	sink_x = 0;
 	delta_x = abs(sink_x - source_x);
 
-	for (sink_y = 2; sink_y <= g_ctx.ny; sink_y++) {
+	for (sink_y = 2; sink_y <= device_ctx.ny; sink_y++) {
 		delta_y = abs(sink_y - source_y);
 		delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
@@ -885,10 +922,10 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts) {
 
 	source_x = 0;
 	source_y = 1;
-	sink_x = g_ctx.nx + 1;
+	sink_x = device_ctx.nx + 1;
 	delta_x = abs(sink_x - source_x);
 
-	for (sink_y = 1; sink_y <= g_ctx.ny; sink_y++) {
+	for (sink_y = 1; sink_y <= device_ctx.ny; sink_y++) {
 		delta_y = abs(sink_y - source_y);
 		delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
@@ -901,7 +938,7 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts) {
 	sink_y = 0;
 	delta_y = abs(sink_y - source_y);
 
-	for (sink_x = 2; sink_x <= g_ctx.nx; sink_x++) {
+	for (sink_x = 2; sink_x <= device_ctx.nx; sink_x++) {
 		delta_x = abs(sink_x - source_x);
 		delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
@@ -911,10 +948,10 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts) {
 
 	source_x = 1;
 	source_y = 0;
-	sink_y = g_ctx.ny + 1;
+	sink_y = device_ctx.ny + 1;
 	delta_y = abs(sink_y - source_y);
 
-	for (sink_x = 1; sink_x <= g_ctx.nx; sink_x++) {
+	for (sink_x = 1; sink_x <= device_ctx.nx; sink_x++) {
 		delta_x = abs(sink_x - source_x);
 		delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
 				source_type, source_x, source_y, sink_type, sink_x, sink_y,
@@ -923,9 +960,9 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts) {
 	}
 
 	source_x = 0;
-	sink_y = g_ctx.ny + 1;
-	for (source_y = 1; source_y <= g_ctx.ny; source_y++) {
-		for (sink_x = 1; sink_x <= g_ctx.nx; sink_x++) {
+	sink_y = device_ctx.ny + 1;
+	for (source_y = 1; source_y <= device_ctx.ny; source_y++) {
+		for (sink_x = 1; sink_x <= device_ctx.nx; sink_x++) {
 			delta_y = abs(source_y - sink_y);
 			delta_x = abs(source_x - sink_x);
 			delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(
@@ -982,10 +1019,12 @@ static void compute_delta_arrays(struct s_router_opts router_opts, int longest_l
 }
 
 static void print_delta_delays_echo(const char* filename) {
-	print_array(vtr::string_fmt(filename, "delta_clb_to_clb"), delta_clb_to_clb, 0, g_ctx.nx - 1, 0, g_ctx.ny - 1);
-	print_array(vtr::string_fmt(filename, "delta_io_to_clb"), delta_io_to_clb, 0, g_ctx.nx, 0, g_ctx.ny);
-	print_array(vtr::string_fmt(filename, "delta_clb_to_io"), delta_clb_to_io, 0, g_ctx.nx, 0, g_ctx.ny);
-	print_array(vtr::string_fmt(filename, "delta_io_to_io"), delta_io_to_io, 0, g_ctx.nx + 1, 0, g_ctx.ny + 1);
+    auto& device_ctx = g_ctx.device();
+
+	print_array(vtr::string_fmt(filename, "delta_clb_to_clb"), delta_clb_to_clb, 0, device_ctx.nx - 1, 0, device_ctx.ny - 1);
+	print_array(vtr::string_fmt(filename, "delta_io_to_clb"), delta_io_to_clb, 0, device_ctx.nx, 0, device_ctx.ny);
+	print_array(vtr::string_fmt(filename, "delta_clb_to_io"), delta_clb_to_io, 0, device_ctx.nx, 0, device_ctx.ny);
+	print_array(vtr::string_fmt(filename, "delta_io_to_io"), delta_io_to_io, 0, device_ctx.nx + 1, 0, device_ctx.ny + 1);
 }
 
 /******* Globally Accessable Functions **********/
@@ -1003,7 +1042,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 	/*required because we are using the net structure */
 	/*in these routines to find delays between blocks */
 	t_netlist orig_clbs_nlist;
-	struct s_block *original_blocks; /*same def as original_nets, but for g_ctx.blocks  */
+	struct s_block *original_blocks; /*same def as original_nets, but for cluster_ctx.blocks  */
 	int original_num_blocks;
     AtomNetlist orig_atom_nlist;
 

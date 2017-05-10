@@ -26,9 +26,9 @@ void check_rr_graph(const t_graph_type graph_type,
 		const int num_rr_switches, int ***Fc_in,
         const t_segment_inf* segment_inf) {
 
-	int *num_edges_from_current_to_node; /* [0..g_ctx.num_rr_nodes-1] */
-	int *total_edges_to_node; /* [0..g_ctx.num_rr_nodes-1] */
-	char *switch_types_from_current_to_node; /* [0..g_ctx.num_rr_nodes-1] */
+	int *num_edges_from_current_to_node; /* [0..device_ctx.num_rr_nodes-1] */
+	int *total_edges_to_node; /* [0..device_ctx.num_rr_nodes-1] */
+	char *switch_types_from_current_to_node; /* [0..device_ctx.num_rr_nodes-1] */
 	int inode, iedge, to_node, num_edges;
 	short switch_type;
 	t_rr_type rr_type, to_rr_type;
@@ -41,32 +41,34 @@ void check_rr_graph(const t_graph_type graph_type,
 		route_type = GLOBAL;
 	}
 
-	total_edges_to_node = (int *) vtr::calloc(g_ctx.num_rr_nodes, sizeof(int));
-	num_edges_from_current_to_node = (int *) vtr::calloc(g_ctx.num_rr_nodes,
+    auto& device_ctx = g_ctx.device();
+
+	total_edges_to_node = (int *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(int));
+	num_edges_from_current_to_node = (int *) vtr::calloc(device_ctx.num_rr_nodes,
 			sizeof(int));
-	switch_types_from_current_to_node = (char *) vtr::calloc(g_ctx.num_rr_nodes,
+	switch_types_from_current_to_node = (char *) vtr::calloc(device_ctx.num_rr_nodes,
 			sizeof(char));
 
-	for (inode = 0; inode < g_ctx.num_rr_nodes; inode++) {
+	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
 
 		/* Ignore any uninitialized rr_graph nodes */
-		if ((g_ctx.rr_nodes[inode].type() == SOURCE) 
-				&& (g_ctx.rr_nodes[inode].xlow() == 0) && (g_ctx.rr_nodes[inode].ylow() == 0)
-				&& (g_ctx.rr_nodes[inode].xhigh() == 0) && (g_ctx.rr_nodes[inode].yhigh() == 0)) {
+		if ((device_ctx.rr_nodes[inode].type() == SOURCE) 
+				&& (device_ctx.rr_nodes[inode].xlow() == 0) && (device_ctx.rr_nodes[inode].ylow() == 0)
+				&& (device_ctx.rr_nodes[inode].xhigh() == 0) && (device_ctx.rr_nodes[inode].yhigh() == 0)) {
 			continue;
 		}
 
-		rr_type = g_ctx.rr_nodes[inode].type();
-		num_edges = g_ctx.rr_nodes[inode].num_edges();
+		rr_type = device_ctx.rr_nodes[inode].type();
+		num_edges = device_ctx.rr_nodes[inode].num_edges();
 
 		check_node(inode, route_type, segment_inf);
 
 		/* Check all the connectivity (edges, etc.) information.                    */
 
 		for (iedge = 0; iedge < num_edges; iedge++) {
-			to_node = g_ctx.rr_nodes[inode].edge_sink_node(iedge);
+			to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
 
-			if (to_node < 0 || to_node >= g_ctx.num_rr_nodes) {
+			if (to_node < 0 || to_node >= device_ctx.num_rr_nodes) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_rr_graph: node %d has an edge %d.\n"
 				"\tEdge is out of range.\n", inode, to_node);
@@ -75,7 +77,7 @@ void check_rr_graph(const t_graph_type graph_type,
 			num_edges_from_current_to_node[to_node]++;
 			total_edges_to_node[to_node]++;
 
-			switch_type = g_ctx.rr_nodes[inode].edge_switch(iedge);
+			switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 
 			if (switch_type < 0 || switch_type >= num_rr_switches) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -84,7 +86,7 @@ void check_rr_graph(const t_graph_type graph_type,
 				inode, switch_type);
 			}
 
-			if (g_ctx.rr_switch_inf[switch_type].buffered)
+			if (device_ctx.rr_switch_inf[switch_type].buffered)
 				switch_types_from_current_to_node[to_node] |= BUF_FLAG;
 			else
 				switch_types_from_current_to_node[to_node] |= PTRANS_FLAG;
@@ -92,10 +94,10 @@ void check_rr_graph(const t_graph_type graph_type,
 		} /* End for all edges of node. */
 
 		for (iedge = 0; iedge < num_edges; iedge++) {
-			to_node = g_ctx.rr_nodes[inode].edge_sink_node(iedge);
+			to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
 
 			if (num_edges_from_current_to_node[to_node] > 1) {
-				to_rr_type = g_ctx.rr_nodes[to_node].type();
+				to_rr_type = device_ctx.rr_nodes[to_node].type();
 
 				if ((to_rr_type != CHANX && to_rr_type != CHANY)
 						|| (rr_type != CHANX && rr_type != CHANY)) {
@@ -126,8 +128,8 @@ void check_rr_graph(const t_graph_type graph_type,
 	 * now I check that everything is reachable.                                */
 	is_fringe_warning_sent = false;
 
-	for (inode = 0; inode < g_ctx.num_rr_nodes; inode++) {
-		rr_type = g_ctx.rr_nodes[inode].type();
+	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+		rr_type = device_ctx.rr_nodes[inode].type();
 
 		if (rr_type != SOURCE) {
 			if (total_edges_to_node[inode] < 1
@@ -142,18 +144,18 @@ void check_rr_graph(const t_graph_type graph_type,
 				 */
 
 				if(rr_type == IPIN) {
-					type = g_ctx.grid[g_ctx.rr_nodes[inode].xlow()][g_ctx.rr_nodes[inode].ylow()].type;
-					if(Fc_in[type->index][g_ctx.rr_nodes[inode].ptc_num()][0] == 0) {
+					type = device_ctx.grid[device_ctx.rr_nodes[inode].xlow()][device_ctx.rr_nodes[inode].ylow()].type;
+					if(Fc_in[type->index][device_ctx.rr_nodes[inode].ptc_num()][0] == 0) {
 						is_chain = true;
 					}
 				}
 
-				is_fringe =((g_ctx.rr_nodes[inode].xlow() == 1)
-						|| (g_ctx.rr_nodes[inode].ylow() == 1)
-						|| (g_ctx.rr_nodes[inode].xhigh() == L_nx)
-						|| (g_ctx.rr_nodes[inode].yhigh() == L_ny));
-				is_wire =(g_ctx.rr_nodes[inode].type() == CHANX
-						|| g_ctx.rr_nodes[inode].type() == CHANY);
+				is_fringe =((device_ctx.rr_nodes[inode].xlow() == 1)
+						|| (device_ctx.rr_nodes[inode].ylow() == 1)
+						|| (device_ctx.rr_nodes[inode].xhigh() == L_nx)
+						|| (device_ctx.rr_nodes[inode].yhigh() == L_ny));
+				is_wire =(device_ctx.rr_nodes[inode].type() == CHANX
+						|| device_ctx.rr_nodes[inode].type() == CHANY);
 
 				if (!is_chain && !is_fringe && !is_wire) {
 					vtr::printf_error(__FILE__, __LINE__,
@@ -162,7 +164,7 @@ void check_rr_graph(const t_graph_type graph_type,
 					vtr::printf_warning(__FILE__, __LINE__, 
 						"in check_rr_graph: fringe node %d %s at (%d,%d) has no fanin.\n"
 						"\t This is possible on a fringe node based on low Fc_out, N, and certain lengths.\n",
-						inode, g_ctx.rr_nodes[inode].type_string(), g_ctx.rr_nodes[inode].xlow(), g_ctx.rr_nodes[inode].ylow());
+						inode, device_ctx.rr_nodes[inode].type_string(), device_ctx.rr_nodes[inode].xlow(), device_ctx.rr_nodes[inode].ylow());
 					is_fringe_warning_sent = true;
 				}
 			}
@@ -189,12 +191,14 @@ static bool rr_node_is_global_clb_ipin(int inode) {
 	int ipin;
 	t_type_ptr type;
 
-	type = g_ctx.grid[g_ctx.rr_nodes[inode].xlow()][g_ctx.rr_nodes[inode].ylow()].type;
+    auto& device_ctx = g_ctx.device();
 
-	if (g_ctx.rr_nodes[inode].type() != IPIN)
+	type = device_ctx.grid[device_ctx.rr_nodes[inode].xlow()][device_ctx.rr_nodes[inode].ylow()].type;
+
+	if (device_ctx.rr_nodes[inode].type() != IPIN)
 		return (false);
 
-	ipin = g_ctx.rr_nodes[inode].ptc_num();
+	ipin = device_ctx.rr_nodes[inode].ptc_num();
 
 	return type->is_global_pin[ipin];
 }
@@ -211,14 +215,16 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	int nodes_per_chan, tracks_per_node, num_edges, cost_index;
 	float C, R;
 
-	rr_type = g_ctx.rr_nodes[inode].type();
-	xlow = g_ctx.rr_nodes[inode].xlow();
-	xhigh = g_ctx.rr_nodes[inode].xhigh();
-	ylow = g_ctx.rr_nodes[inode].ylow();
-	yhigh = g_ctx.rr_nodes[inode].yhigh();
-	ptc_num = g_ctx.rr_nodes[inode].ptc_num();
-	capacity = g_ctx.rr_nodes[inode].capacity();
-	cost_index = g_ctx.rr_nodes[inode].cost_index();
+    auto& device_ctx = g_ctx.device();
+
+	rr_type = device_ctx.rr_nodes[inode].type();
+	xlow = device_ctx.rr_nodes[inode].xlow();
+	xhigh = device_ctx.rr_nodes[inode].xhigh();
+	ylow = device_ctx.rr_nodes[inode].ylow();
+	yhigh = device_ctx.rr_nodes[inode].yhigh();
+	ptc_num = device_ctx.rr_nodes[inode].ptc_num();
+	capacity = device_ctx.rr_nodes[inode].capacity();
+	cost_index = device_ctx.rr_nodes[inode].cost_index();
 	type = NULL;
 
 	if (xlow > xhigh || ylow > yhigh) {
@@ -226,7 +232,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 				"in check_node: rr endpoints are (%d,%d) and (%d,%d).\n", xlow, ylow, xhigh, yhigh);
 	}
 
-	if (xlow < 0 || xhigh > g_ctx.nx + 1 || ylow < 0 || yhigh > g_ctx.ny + 1) {
+	if (xlow < 0 || xhigh > device_ctx.nx + 1 || ylow < 0 || yhigh > device_ctx.ny + 1) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_node: rr endpoints (%d,%d) and (%d,%d) are out of range.\n",  xlow, ylow, xhigh, yhigh);
 	}
@@ -236,7 +242,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 				"in check_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
 	}
 
-	if (cost_index < 0 || cost_index >= g_ctx.num_rr_indexed_data) {
+	if (cost_index < 0 || cost_index >= device_ctx.num_rr_indexed_data) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_node: node %d cost index (%d) is out of range.\n", inode, cost_index);
 	}
@@ -250,7 +256,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	case IPIN:
 	case OPIN:
 		/* This is used later as well */
-		type = g_ctx.grid[xlow][ylow].type;
+		type = device_ctx.grid[xlow][ylow].type;
 
 		if (type == NULL) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -263,7 +269,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 		break;
 
 	case CHANX:
-		if (xlow < 1 || xhigh > g_ctx.nx || yhigh > g_ctx.ny || yhigh != ylow) {
+		if (xlow < 1 || xhigh > device_ctx.nx || yhigh > device_ctx.ny || yhigh != ylow) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"in check_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n",  xlow, ylow, xhigh, yhigh);
 		}
@@ -274,7 +280,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 		break;
 
 	case CHANY:
-		if (xhigh > g_ctx.nx || ylow < 1 || yhigh > g_ctx.ny || xlow != xhigh) {
+		if (xhigh > device_ctx.nx || ylow < 1 || yhigh > device_ctx.ny || xlow != xhigh) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 				"Error in check_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n",  xlow, ylow, xhigh, yhigh);
 		}
@@ -348,11 +354,11 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 
 	case CHANX:
 		if (route_type == DETAILED) {
-			nodes_per_chan = g_ctx.chan_width.max;
+			nodes_per_chan = device_ctx.chan_width.max;
 			tracks_per_node = 1;
 		} else {
 			nodes_per_chan = 1;
-			tracks_per_node = g_ctx.chan_width.x_list[ylow];
+			tracks_per_node = device_ctx.chan_width.x_list[ylow];
 		}
 
 		if (ptc_num >= nodes_per_chan) {
@@ -368,11 +374,11 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 
 	case CHANY:
 		if (route_type == DETAILED) {
-			nodes_per_chan = g_ctx.chan_width.max;
+			nodes_per_chan = device_ctx.chan_width.max;
 			tracks_per_node = 1;
 		} else {
 			nodes_per_chan = 1;
-			tracks_per_node = g_ctx.chan_width.y_list[xlow];
+			tracks_per_node = device_ctx.chan_width.y_list[xlow];
 		}
 
 
@@ -389,24 +395,24 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	}
 
 	/* Check that the number of (out) edges is reasonable. */
-	num_edges = g_ctx.rr_nodes[inode].num_edges();
+	num_edges = device_ctx.rr_nodes[inode].num_edges();
 
 	if (rr_type != SINK && rr_type != IPIN) {
 		if (num_edges <= 0) {
 			/* Just a warning, since a very poorly routable rr-graph could have nodes with no edges.  *
 			 * If such a node was ever used in a final routing (not just in an rr_graph), other       *
 			 * error checks in check_routing will catch it.                                           */ 
-            if (g_ctx.rr_nodes[inode].type() == CHANX || g_ctx.rr_nodes[inode].type() == CHANY) {
-                int seg_index = g_ctx.rr_indexed_data[cost_index].seg_index;
+            if (device_ctx.rr_nodes[inode].type() == CHANX || device_ctx.rr_nodes[inode].type() == CHANY) {
+                int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
                 const char* seg_name = segment_inf[seg_index].name;
                 vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) has no out-going edges.\n", 
-                        inode, g_ctx.rr_nodes[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh);
-            } else if (g_ctx.rr_nodes[inode].type() == IPIN || g_ctx.rr_nodes[inode].type() == OPIN) {
+                        inode, device_ctx.rr_nodes[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh);
+            } else if (device_ctx.rr_nodes[inode].type() == IPIN || device_ctx.rr_nodes[inode].type() == OPIN) {
                 vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) block_type=%s ptc=%d has no out-going edges.\n", 
-                        inode, g_ctx.rr_nodes[inode].type_string(), xlow, ylow, g_ctx.grid[xlow][ylow].type->name, g_ctx.rr_nodes[inode].ptc_num());
+                        inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.grid[xlow][ylow].type->name, device_ctx.rr_nodes[inode].ptc_num());
             } else {
                 vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) ptc=%d has no out-going edges.\n", 
-                        inode, g_ctx.rr_nodes[inode].type_string(), xlow, ylow, g_ctx.rr_nodes[inode].ptc_num());
+                        inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.rr_nodes[inode].ptc_num());
             }
 		}
 	}
@@ -419,8 +425,8 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	}
 
 	/* Check that the capacitance and resistance are reasonable. */
-	C = g_ctx.rr_nodes[inode].C();
-	R = g_ctx.rr_nodes[inode].R();
+	C = device_ctx.rr_nodes[inode].C();
+	R = device_ctx.rr_nodes[inode].R();
 
 	if (rr_type == CHANX || rr_type == CHANY) {
 		if (C < 0. || R < 0.) {
@@ -448,34 +454,36 @@ static void check_pass_transistors(int from_node) {
 	short from_switch_type;
 	bool trans_matched;
 
-	from_rr_type = g_ctx.rr_nodes[from_node].type();
+    auto& device_ctx = g_ctx.device();
+
+	from_rr_type = device_ctx.rr_nodes[from_node].type();
 	if (from_rr_type != CHANX && from_rr_type != CHANY)
 		return;
 
-	from_num_edges = g_ctx.rr_nodes[from_node].num_edges();
+	from_num_edges = device_ctx.rr_nodes[from_node].num_edges();
 
 	for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
-		to_node = g_ctx.rr_nodes[from_node].edge_sink_node(from_edge);
-		to_rr_type = g_ctx.rr_nodes[to_node].type();
+		to_node = device_ctx.rr_nodes[from_node].edge_sink_node(from_edge);
+		to_rr_type = device_ctx.rr_nodes[to_node].type();
 
 		if (to_rr_type != CHANX && to_rr_type != CHANY)
 			continue;
 
-		from_switch_type = g_ctx.rr_nodes[from_node].edge_switch(from_edge);
+		from_switch_type = device_ctx.rr_nodes[from_node].edge_switch(from_edge);
 
-		if (g_ctx.rr_switch_inf[from_switch_type].buffered)
+		if (device_ctx.rr_switch_inf[from_switch_type].buffered)
 			continue;
 
 		/* We know that we have a pass transitor from from_node to to_node.  Now *
 		 * check that there is a corresponding edge from to_node back to         *
 		 * from_node.                                                            */
 
-		to_num_edges = g_ctx.rr_nodes[to_node].num_edges();
+		to_num_edges = device_ctx.rr_nodes[to_node].num_edges();
 		trans_matched = false;
 
 		for (to_edge = 0; to_edge < to_num_edges; to_edge++) {
-			if (g_ctx.rr_nodes[to_node].edge_sink_node(to_edge) == from_node
-					&& g_ctx.rr_nodes[to_node].edge_switch(to_edge) == from_switch_type) {
+			if (device_ctx.rr_nodes[to_node].edge_sink_node(to_edge) == from_node
+					&& device_ctx.rr_nodes[to_node].edge_switch(to_edge) == from_switch_type) {
 				trans_matched = true;
 				break;
 			}

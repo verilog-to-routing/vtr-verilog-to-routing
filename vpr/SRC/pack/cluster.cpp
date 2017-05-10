@@ -326,7 +326,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		detailed_routing_stage, *hill_climbing_inputs_avail;
 
 	int *num_used_instances_type, *num_instances_type; 
-	/* [0..g_ctx.num_block_types] Holds array for total number of each cluster_type available */
+	/* [0..device_ctx.num_block_types] Holds array for total number of each cluster_type available */
 
 	bool early_exit, is_cluster_legal;
 	enum e_block_pack_status block_pack_status;
@@ -338,15 +338,18 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
 	t_lb_net_stats *clb_inter_blk_nets = NULL; /* [0..num_clusters-1] */
 
+    auto& atom_ctx = g_ctx.atom();
+    auto& device_ctx = g_ctx.mutable_device();
+
 	vector < vector <t_intra_lb_net> * > intra_lb_routing;
 
     std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
     std::shared_ptr<SetupTimingInfo> timing_info;
 
 	/* TODO: This is memory inefficient, fix if causes problems */
-	clb = (t_block*)vtr::calloc(g_ctx.atom_nl.blocks().size(), sizeof(t_block));
+	clb = (t_block*)vtr::calloc(atom_ctx.nlist.blocks().size(), sizeof(t_block));
 	num_clb = 0;
-	clb_inter_blk_nets = new t_lb_net_stats[g_ctx.atom_nl.blocks().size()];
+	clb_inter_blk_nets = new t_lb_net_stats[atom_ctx.nlist.blocks().size()];
 
 	istart = NULL;
 
@@ -368,12 +371,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		cur_molecule = cur_molecule->next;
 	}
 
-	for (i = 0; i < g_ctx.num_block_types; i++) {
-		if (g_ctx.EMPTY_TYPE == &g_ctx.block_types[i])
+	for (i = 0; i < device_ctx.num_block_types; i++) {
+		if (device_ctx.EMPTY_TYPE == &device_ctx.block_types[i])
 			continue;
 		cur_cluster_size = get_max_primitives_in_pb_type(
-				g_ctx.block_types[i].pb_type);
-		cur_pb_depth = get_max_depth_of_pb_type(g_ctx.block_types[i].pb_type);
+				device_ctx.block_types[i].pb_type);
+		cur_pb_depth = get_max_depth_of_pb_type(device_ctx.block_types[i].pb_type);
 		if (cur_cluster_size > max_cluster_size) {
 			max_cluster_size = cur_cluster_size;
 		}
@@ -389,9 +392,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		hill_climbing_inputs_avail = NULL; /* if used, die hard */
 	}
 
-	/* TODO: make better estimate for g_ctx.nx and g_ctx.ny, was initializing g_ctx.nx = g_ctx.ny = 1 */
-	g_ctx.nx = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.W);
-	g_ctx.ny = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.H);
+	/* TODO: make better estimate for device_ctx.nx and device_ctx.ny, was initializing device_ctx.nx = device_ctx.ny = 1 */
+	device_ctx.nx = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.W);
+	device_ctx.ny = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.H);
 
 	check_clocks(is_clock);
 #if 0
@@ -404,8 +407,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	blocks_since_last_analysis = 0;
 	early_exit = false;
 	num_blocks_hill_added = 0;
-	num_used_instances_type = (int*) vtr::calloc(g_ctx.num_block_types, sizeof(int));
-	num_instances_type = (int*) vtr::calloc(g_ctx.num_block_types, sizeof(int));
+	num_used_instances_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
+	num_instances_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
 	VTR_ASSERT(max_cluster_size < MAX_SHORT);
 	/* Limit maximum number of elements for each cluster */
@@ -416,15 +419,16 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         /*
          * Initialize the timing analyzer
          */
-        clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(g_ctx.atom_nl, g_ctx.atom_lookup, inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
+        clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
         timing_info = make_setup_timing_info(clustering_delay_calc);
 
         //Calculate the initial timing
         timing_info->update();
 
         if(isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH)) {
+            auto& timing_ctx = g_ctx.timing();
             tatum::write_echo(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH), 
-                              *g_ctx.timing_graph, *g_ctx.timing_constraints, *clustering_delay_calc, timing_info->analyzer());
+                              *timing_ctx.graph, *timing_ctx.constraints, *clustering_delay_calc, timing_info->analyzer());
         }
 
 
@@ -449,21 +453,21 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         free_timing_graph(slacks);
 #endif
 
-		for (auto blk_id : g_ctx.atom_nl.blocks()) {
+		for (auto blk_id : atom_ctx.nlist.blocks()) {
 			critindexarray.push_back(blk_id);
 			seed_blend_index_array.push_back(blk_id);
 		}
 
         //Calculate criticality of each block
-        for(AtomBlockId blk : g_ctx.atom_nl.blocks()) {
-            for(AtomPinId in_pin : g_ctx.atom_nl.block_input_pins(blk)) {
+        for(AtomBlockId blk : atom_ctx.nlist.blocks()) {
+            for(AtomPinId in_pin : atom_ctx.nlist.block_input_pins(blk)) {
                 //Max criticality over incomming nets
                 float crit = timing_info->setup_pin_criticality(in_pin);
                 block_criticality[blk] = std::max(block_criticality[blk], crit);
             }
         }
 
-        for(auto blk_id : g_ctx.atom_nl.blocks()) {
+        for(auto blk_id : atom_ctx.nlist.blocks()) {
 			/* Score seed gain of each block as a weighted sum of timing criticality, 
              * number of tightly coupled blocks connected to it, and number of external inputs */
 			float seed_blend_fac = 0.5;
@@ -578,8 +582,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                 auto blk_id = next_molecule->atom_block_ids[next_molecule->root];
                 VTR_ASSERT(blk_id);
 
-                std::string blk_name = g_ctx.atom_nl.block_name(blk_id);
-                const t_model* blk_model = g_ctx.atom_nl.block_model(blk_id);
+                std::string blk_name = atom_ctx.nlist.block_name(blk_id);
+                const t_model* blk_model = atom_ctx.nlist.block_model(blk_id);
 #endif
 
 				if (block_pack_status != BLK_PASSED) {
@@ -682,7 +686,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				/* store info that will be used later in packing from pb_stats and free the rest */
 				t_pb_stats *pb_stats = clb[num_clb - 1].pb->pb_stats;
 				for(const AtomNetId mnet_id : pb_stats->marked_nets) {
-					int external_terminals = g_ctx.atom_nl.net_pins(mnet_id).size() - pb_stats->num_pins_of_net_in_pb[mnet_id];
+					int external_terminals = atom_ctx.nlist.net_pins(mnet_id).size() - pb_stats->num_pins_of_net_in_pb[mnet_id];
 					/* Check if external terminals of net is within the fanout limit and that there exists external terminals */
 					if(external_terminals < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE && external_terminals > 0) {
 						clb_inter_blk_nets[num_clb - 1].nets_in_lb.push_back(mnet_id);
@@ -711,11 +715,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	*****************************************************************/
 	check_clustering(num_clb, clb);
 
-	g_ctx.blocks = clb;
+    auto& cluster_ctx = g_ctx.mutable_clustering();
+	cluster_ctx.blocks = clb;
 
 	output_clustering(clb, num_clb, intra_lb_routing, global_clocks, is_clock, arch->architecture_id, out_fname, false);
 	
-	g_ctx.blocks = NULL;
+	cluster_ctx.blocks = NULL;
 	for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++){
 		free_intra_lb_nets(intra_lb_routing[irt]);
 	}
@@ -759,18 +764,19 @@ static void check_clocks(const std::unordered_set<AtomNetId>& is_clock) {
 	/* Checks that nets used as clock inputs to latches are never also used *
 	 * as VPACK_LUT inputs.  It's electrically questionable, and more importantly *
 	 * would break the clustering code.                                     */
+    auto& atom_ctx = g_ctx.atom();
 
-    for(auto blk_id : g_ctx.atom_nl.blocks()) {
-		if (g_ctx.atom_nl.block_type(blk_id) != AtomBlockType::OUTPAD) {
-            for(auto pin_id : g_ctx.atom_nl.block_input_pins(blk_id)) {
-                auto net_id = g_ctx.atom_nl.pin_net(pin_id);
+    for(auto blk_id : atom_ctx.nlist.blocks()) {
+		if (atom_ctx.nlist.block_type(blk_id) != AtomBlockType::OUTPAD) {
+            for(auto pin_id : atom_ctx.nlist.block_input_pins(blk_id)) {
+                auto net_id = atom_ctx.nlist.pin_net(pin_id);
                 if (is_clock.count(net_id)) {
                     vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
                             "Error in check_clocks.\n"
                             "Net %s is a clock, but also connects to a logic block input on atom block %s.\n"
                             "This would break the current clustering implementation and is electrically "
                             "questionable, so clustering has been aborted.\n",
-                            g_ctx.atom_nl.net_name(net_id).c_str(), g_ctx.atom_nl.block_name(blk_id).c_str());
+                            atom_ctx.nlist.net_name(net_id).c_str(), atom_ctx.nlist.block_name(blk_id).c_str());
                 }
             }
 		}
@@ -779,7 +785,9 @@ static void check_clocks(const std::unordered_set<AtomNetId>& is_clock) {
 
 /* Determine if atom block is in pb */
 static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb *pb) {
-	const t_pb* cur_pb = g_ctx.atom_lookup.atom_pb(blk_id);
+    auto& atom_ctx = g_ctx.atom();
+
+	const t_pb* cur_pb = atom_ctx.lookup.atom_pb(blk_id);
 	while (cur_pb) {
 		if (cur_pb == pb) {
 			return true;
@@ -890,12 +898,13 @@ static void alloc_and_init_clustering(int max_molecule_inputs,
 	free(molecule_array);
 
 	/* load net info */
-    for(AtomNetId net : g_ctx.atom_nl.nets()) {
-        AtomPinId driver_pin = g_ctx.atom_nl.net_driver(net);
-        AtomBlockId driver_block = g_ctx.atom_nl.pin_block(driver_pin);
+    auto& atom_ctx = g_ctx.atom();
+    for(AtomNetId net : atom_ctx.nlist.nets()) {
+        AtomPinId driver_pin = atom_ctx.nlist.net_driver(net);
+        AtomBlockId driver_block = atom_ctx.nlist.pin_block(driver_pin);
 
-        for(AtomPinId sink_pin : g_ctx.atom_nl.net_sinks(net)) {
-            AtomBlockId sink_block = g_ctx.atom_nl.pin_block(sink_pin);
+        for(AtomPinId sink_pin : atom_ctx.nlist.net_sinks(net)) {
+            AtomBlockId sink_block = atom_ctx.nlist.pin_block(sink_pin);
 
             if(driver_block == sink_block) {
                 net_output_feeds_driving_block_input[net]++;
@@ -948,7 +957,8 @@ static bool primitive_feasible(const AtomBlockId blk_id, t_pb *cur_pb) {
 
 	VTR_ASSERT(cur_pb_type->num_modes == 0); /* primitive */
 
-    AtomBlockId cur_pb_blk_id = g_ctx.atom_lookup.pb_atom(cur_pb);
+    auto& atom_ctx = g_ctx.atom();
+    AtomBlockId cur_pb_blk_id = atom_ctx.lookup.pb_atom(cur_pb);
 	if (cur_pb_blk_id && cur_pb_blk_id != blk_id) {
 
 		/* This pb already has a different logical block */
@@ -983,6 +993,7 @@ static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_
      * Note that this routine does not check pin feasibility against the cur_pb_type; so
      * primitive_type_feasible() should also be called on blk_id before concluding it is feasible.
      */
+    auto& atom_ctx = g_ctx.atom();
     VTR_ASSERT(cur_pb_type->class_type == MEMORY_CLASS);
 
     //First, identify the 'data' ports by looking at the cur_pb_type
@@ -1015,8 +1026,8 @@ static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_
             //driving the output net
 
             //Get the ports from each primitive
-            auto blk_port_id = g_ctx.atom_nl.find_port(blk_id, port);
-            auto sib_port_id = g_ctx.atom_nl.find_port(sibling_blk_id, port);
+            auto blk_port_id = atom_ctx.nlist.find_port(blk_id, port);
+            auto sib_port_id = atom_ctx.nlist.find_port(sibling_blk_id, port);
 
             //Check that all nets (including unconnected nets) match
             for(int ipin = 0; ipin < port->size; ++ipin) {
@@ -1029,10 +1040,10 @@ static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_
                 //Note that if the port did not exist, the net is left
                 //as invalid/disconneced
                 if(blk_port_id) {
-                    blk_net_id = g_ctx.atom_nl.port_net(blk_port_id, ipin);    
+                    blk_net_id = atom_ctx.nlist.port_net(blk_port_id, ipin);    
                 }
                 if(sib_port_id) {
-                    sib_net_id = g_ctx.atom_nl.port_net(sib_port_id, ipin);    
+                    sib_net_id = atom_ctx.nlist.port_net(sib_port_id, ipin);    
                 }
 
                 //The sibling and block must have the same (possibly disconnected)
@@ -1234,6 +1245,7 @@ static enum e_block_pack_status try_pack_molecule(
 	t_pb *cur_pb;
 	bool is_root_of_chain;
 	t_pb_graph_pin *chain_root_pin;
+    auto& atom_ctx = g_ctx.atom();
 
 	
 	parent = NULL;
@@ -1290,10 +1302,10 @@ static enum e_block_pack_status try_pack_molecule(
 						/* Chained molecules often take up lots of area and are important, 
                          * if a chain is packed in, want to rename logic block to match chain name */
                         AtomBlockId chain_root_blk_id = molecule->atom_block_ids[molecule->pack_pattern->root_block->block_id];
-						cur_pb = g_ctx.atom_lookup.atom_pb(chain_root_blk_id)->parent_pb;
+						cur_pb = atom_ctx.lookup.atom_pb(chain_root_blk_id)->parent_pb;
 						while(cur_pb != NULL) {
 						    free(cur_pb->name);
-						    cur_pb->name = vtr::strdup(g_ctx.atom_nl.block_name(chain_root_blk_id).c_str());
+						    cur_pb->name = vtr::strdup(atom_ctx.nlist.block_name(chain_root_blk_id).c_str());
 						    cur_pb = cur_pb->parent_pb;
                         }
 					}
@@ -1353,6 +1365,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 	t_pb *pb, *parent_pb;
 	const t_pb_type *pb_type;
 
+    auto& atom_ctx = g_ctx.mutable_atom();
 
 	my_parent = NULL;
 
@@ -1372,9 +1385,9 @@ static enum e_block_pack_status try_place_atom_block_rec(
 	/* Create siblings if siblings are not allocated */
 	if (parent_pb->child_pbs == NULL) {
 		VTR_ASSERT(parent_pb->name == NULL);
-        g_ctx.atom_lookup.set_atom_pb(AtomBlockId::INVALID(), parent_pb);
+        atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), parent_pb);
 
-		parent_pb->name = vtr::strdup(g_ctx.atom_nl.block_name(blk_id).c_str());
+		parent_pb->name = vtr::strdup(atom_ctx.nlist.block_name(blk_id).c_str());
 		parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
 		set_reset_pb_modes(router_data, parent_pb, true);
         const t_mode* mode = &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode];
@@ -1386,7 +1399,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 			for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
 				parent_pb->child_pbs[i][j].parent_pb = parent_pb;
 
-                g_ctx.atom_lookup.set_atom_pb(AtomBlockId::INVALID(), &parent_pb->child_pbs[i][j]);
+                atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), &parent_pb->child_pbs[i][j]);
 
 				parent_pb->child_pbs[i][j].pb_graph_node =
 						&(parent_pb->pb_graph_node->child_pb_graph_nodes[parent_pb->mode][i][j]);
@@ -1414,15 +1427,15 @@ static enum e_block_pack_status try_place_atom_block_rec(
 	is_primitive = (pb_type->num_modes == 0);
 
 	if (is_primitive) {
-		VTR_ASSERT(!g_ctx.atom_lookup.pb_atom(pb)
-                    && g_ctx.atom_lookup.atom_pb(blk_id) == NULL 
-                    && g_ctx.atom_lookup.atom_clb(blk_id) == NO_CLUSTER);
+		VTR_ASSERT(!atom_ctx.lookup.pb_atom(pb)
+                    && atom_ctx.lookup.atom_pb(blk_id) == NULL 
+                    && atom_ctx.lookup.atom_clb(blk_id) == NO_CLUSTER);
 		/* try pack to location */
-		pb->name = vtr::strdup(g_ctx.atom_nl.block_name(blk_id).c_str());
+		pb->name = vtr::strdup(atom_ctx.nlist.block_name(blk_id).c_str());
 
         //Update the atom netlist mappings
-        g_ctx.atom_lookup.set_atom_clb(blk_id, clb_index);
-        g_ctx.atom_lookup.set_atom_pb(blk_id, pb);
+        atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
+        atom_ctx.lookup.set_atom_pb(blk_id, pb);
 
 		add_atom_as_target(router_data, blk_id);
 		if (!primitive_feasible(blk_id, pb)) {
@@ -1433,9 +1446,9 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		if (block_pack_status == BLK_PASSED && is_root_of_chain == true) {
 			/* is carry chain, must check if this carry chain spans multiple logic blocks or not */
             t_model_ports *root_port = chain_root_pin->port->model_port;
-            auto port_id = g_ctx.atom_nl.find_port(blk_id, root_port);
+            auto port_id = atom_ctx.nlist.find_port(blk_id, root_port);
             if(port_id) {
-                auto chain_net_id = g_ctx.atom_nl.port_net(port_id, chain_root_pin->pin_number);
+                auto chain_net_id = atom_ctx.nlist.port_net(port_id, chain_root_pin->pin_number);
 
                 if(chain_net_id) {
                     /* this carry chain spans multiple logic blocks, must match up correctly with previous chain for this to route */
@@ -1456,16 +1469,18 @@ static enum e_block_pack_status try_place_atom_block_rec(
 static void revert_place_atom_block(const AtomBlockId blk_id, t_lb_router_data *router_data,
     const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules) {
 
+    auto& atom_ctx = g_ctx.mutable_atom();
+
     //We cast away const here since we may free the pb, and it is
     //being removed from the active mapping.
     //
     //In general most code works fine accessing cosnt t_pb*,
-    //which is why we store them as such in g_ctx.atom_lookup
-    t_pb* pb = const_cast<t_pb*>(g_ctx.atom_lookup.atom_pb(blk_id)); 
+    //which is why we store them as such in atom_ctx.lookup
+    t_pb* pb = const_cast<t_pb*>(atom_ctx.lookup.atom_pb(blk_id)); 
 
     //Update the atom netlist mapping
-    g_ctx.atom_lookup.set_atom_clb(blk_id, NO_CLUSTER);
-    g_ctx.atom_lookup.set_atom_pb(blk_id, NULL);
+    atom_ctx.lookup.set_atom_clb(blk_id, NO_CLUSTER);
+    atom_ctx.lookup.set_atom_pb(blk_id, NULL);
 
 	if (pb != NULL) {
 		/* When freeing molecules, the current block might already have been freed by a prior revert 
@@ -1509,16 +1524,17 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 
 	num_internal_connections = num_open_connections = num_stuck_connections = 0;
 
-	int clb_index = g_ctx.atom_lookup.atom_clb(clustered_blk_id);
+    auto& atom_ctx = g_ctx.atom();
+	int clb_index = atom_ctx.lookup.atom_clb(clustered_blk_id);
 
 	/* may wish to speed things up by ignoring clock nets since they are high fanout */
 
-    for(auto pin_id : g_ctx.atom_nl.net_pins(net_id)) {
-        auto blk_id = g_ctx.atom_nl.pin_block(pin_id);
-		if (g_ctx.atom_lookup.atom_clb(blk_id) == clb_index
-				&& is_atom_blk_in_pb(blk_id, g_ctx.atom_lookup.atom_pb(clustered_blk_id))) {
+    for(auto pin_id : atom_ctx.nlist.net_pins(net_id)) {
+        auto blk_id = atom_ctx.nlist.pin_block(pin_id);
+		if (atom_ctx.lookup.atom_clb(blk_id) == clb_index
+				&& is_atom_blk_in_pb(blk_id, atom_ctx.lookup.atom_pb(clustered_blk_id))) {
 			num_internal_connections++;
-		} else if (g_ctx.atom_lookup.atom_clb(blk_id) == OPEN) {
+		} else if (atom_ctx.lookup.atom_clb(blk_id) == OPEN) {
 			num_open_connections++;
 		} else {
 			num_stuck_connections++;
@@ -1526,11 +1542,11 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 	}
 
 	if (net_relation_to_clustered_block == OUTPUT) {
-        for(auto pin_id : g_ctx.atom_nl.net_sinks(net_id)) {
-            auto blk_id = g_ctx.atom_nl.pin_block(pin_id);
+        for(auto pin_id : atom_ctx.nlist.net_sinks(net_id)) {
+            auto blk_id = atom_ctx.nlist.pin_block(pin_id);
             VTR_ASSERT(blk_id);
 
-			if (g_ctx.atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
+			if (atom_ctx.lookup.atom_clb(blk_id) == NO_CLUSTER) {
 				/* TODO: Gain function accurate only if net has one connection to block, 
                  * TODO: Should we handle case where net has multi-connection to block? 
                  *       Gain computation is only off by a bit in this case */
@@ -1550,10 +1566,10 @@ static void update_connection_gain_values(const AtomNetId net_id, const AtomBloc
 		/*Calculate the connectiongain for the atom block which is driving *
 		 *the atom net that is an input to an atom block in the cluster */
 
-        auto driver_pin_id = g_ctx.atom_nl.net_driver(net_id);
-        auto blk_id = g_ctx.atom_nl.pin_block(driver_pin_id);
+        auto driver_pin_id = atom_ctx.nlist.net_driver(net_id);
+        auto blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
 
-		if (g_ctx.atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
+		if (atom_ctx.lookup.atom_clb(blk_id) == NO_CLUSTER) {
 			if(cur_pb->pb_stats->connectiongain.count(blk_id) == 0) {
 				cur_pb->pb_stats->connectiongain[blk_id] = 0;
 			}
@@ -1575,17 +1591,19 @@ static void update_timing_gain_values(const AtomNetId net_id,
 	 *net_id requires updating.   */
 	float timinggain;
 
+    auto& atom_ctx = g_ctx.atom();
+
 	/* Check if this atom net lists its driving atom block twice.  If so, avoid  *
 	 * double counting this atom block by skipping the first (driving) pin. */
-    auto pins = g_ctx.atom_nl.net_pins(net_id);
+    auto pins = atom_ctx.nlist.net_pins(net_id);
 	if (net_output_feeds_driving_block_input[net_id] != 0)
-        pins = g_ctx.atom_nl.net_sinks(net_id);
+        pins = atom_ctx.nlist.net_sinks(net_id);
 
 	if (net_relation_to_clustered_block == OUTPUT
 			&& !is_global.count(net_id)) {
         for(auto pin_id : pins) {
-            auto blk_id = g_ctx.atom_nl.pin_block(pin_id);
-			if (g_ctx.atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
+            auto blk_id = atom_ctx.nlist.pin_block(pin_id);
+			if (atom_ctx.lookup.atom_clb(blk_id) == NO_CLUSTER) {
 
                 timinggain = timing_info.setup_pin_criticality(pin_id);
 
@@ -1602,11 +1620,11 @@ static void update_timing_gain_values(const AtomNetId net_id,
 			&& !is_global.count(net_id)) {
 		/*Calculate the timing gain for the atom block which is driving *
 		 *the atom net that is an input to a atom block in the cluster */
-        auto driver_pin = g_ctx.atom_nl.net_driver(net_id);
-        auto new_blk_id = g_ctx.atom_nl.pin_block(driver_pin);
+        auto driver_pin = atom_ctx.nlist.net_driver(net_id);
+        auto new_blk_id = atom_ctx.nlist.pin_block(driver_pin);
 
-		if (g_ctx.atom_lookup.atom_clb(new_blk_id) == NO_CLUSTER) {
-			for (auto pin_id : g_ctx.atom_nl.net_sinks(net_id)) {
+		if (atom_ctx.lookup.atom_clb(new_blk_id) == NO_CLUSTER) {
+			for (auto pin_id : atom_ctx.nlist.net_sinks(net_id)) {
 
                 timinggain = timing_info.setup_pin_criticality(pin_id);
 
@@ -1638,9 +1656,10 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 	 * cluster. The timinggain is the criticality of the most critical*
 	 * atom net between this atom block and an atom block in the cluster.             */
 
-	t_pb* cur_pb = g_ctx.atom_lookup.atom_pb(clustered_blk_id)->parent_pb;
+    auto& atom_ctx = g_ctx.atom();
+	t_pb* cur_pb = atom_ctx.lookup.atom_pb(clustered_blk_id)->parent_pb;
 
-	if (g_ctx.atom_nl.net_sinks(net_id).size() > AAPACK_MAX_NET_SINKS_IGNORE) {
+	if (atom_ctx.nlist.net_sinks(net_id).size() > AAPACK_MAX_NET_SINKS_IGNORE) {
 		/* Optimization: It can be too runtime costly for marking all sinks for 
          * a high fanout-net that probably has no hope of ever getting packed, 
          * thus ignore those high fanout nets */
@@ -1651,7 +1670,7 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 				cur_pb = cur_pb->parent_pb;
 			}
 			AtomNetId stored_net = cur_pb->pb_stats->tie_break_high_fanout_net;
-			if(!stored_net || g_ctx.atom_nl.net_sinks(net_id).size() < g_ctx.atom_nl.net_sinks(stored_net).size()) {
+			if(!stored_net || atom_ctx.nlist.net_sinks(net_id).size() < atom_ctx.nlist.net_sinks(stored_net).size()) {
 				cur_pb->pb_stats->tie_break_high_fanout_net = net_id;
 			}
 		}
@@ -1672,16 +1691,16 @@ static void mark_and_update_partial_gain(const AtomNetId net_id, enum e_gain_upd
 			/* Check if this net is connected to it's driver block multiple times (i.e. as both an output and input)
              * If so, avoid double counting by skipping the first (driving) pin. */
 
-            auto pins = g_ctx.atom_nl.net_pins(net_id);
+            auto pins = atom_ctx.nlist.net_pins(net_id);
 			if (net_output_feeds_driving_block_input[net_id] != 0)
                 //We implicitly assume here that net_output_feeds_driver_block_input[net_id] is 2
                 //(i.e. the net loops back to the block only once)
-			    pins = g_ctx.atom_nl.net_sinks(net_id);	
+			    pins = atom_ctx.nlist.net_sinks(net_id);	
 
 			if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
                 for(auto pin_id : pins) {
-                    auto blk_id = g_ctx.atom_nl.pin_block(pin_id);
-					if (g_ctx.atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
+                    auto blk_id = atom_ctx.nlist.pin_block(pin_id);
+					if (atom_ctx.lookup.atom_clb(blk_id) == NO_CLUSTER) {
 
 						if (cur_pb->pb_stats->sharinggain.count(blk_id) == 0) {
 							cur_pb->pb_stats->marked_blocks.push_back(blk_id);
@@ -1721,6 +1740,7 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 
 	/*Updates the total  gain array to reflect the desired tradeoff between*
 	 *input sharing (sharinggain) and path_length minimization (timinggain)*/
+    auto& atom_ctx = g_ctx.atom();
 	t_pb * cur_pb = pb;
 	while (cur_pb) {
 
@@ -1735,8 +1755,8 @@ static void update_total_gain(float alpha, float beta, bool timing_driven,
 
 			/* Todo: This was used to explore different normalization options, can 
              * be made more efficient once we decide on which one to use*/
-			int num_used_input_pins = g_ctx.atom_nl.block_input_pins(blk_id).size();
-			int num_used_output_pins = g_ctx.atom_nl.block_output_pins(blk_id).size();
+			int num_used_input_pins = atom_ctx.nlist.block_input_pins(blk_id).size();
+			int num_used_output_pins = atom_ctx.nlist.block_output_pins(blk_id).size();
 			/* end todo */
 
 			/* Calculate area-only cost function */
@@ -1794,6 +1814,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 	 * make local routing of this clock very short, and none of my      *
 	 * benchmarks actually generate local clocks (all come from pads).  */
 
+    auto& atom_ctx = g_ctx.mutable_atom();
 	molecule_size = get_array_size_of_molecule(molecule);
 	cb = NULL;
 
@@ -1804,9 +1825,9 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 		}
 
         //Update atom netlist mapping
-        g_ctx.atom_lookup.set_atom_clb(blk_id, clb_index);
+        atom_ctx.lookup.set_atom_clb(blk_id, clb_index);
 
-		cur_pb = g_ctx.atom_lookup.atom_pb(blk_id)->parent_pb;
+		cur_pb = atom_ctx.lookup.atom_pb(blk_id)->parent_pb;
 		while (cur_pb) {
 			/* reset list of feasible blocks */
 			cur_pb->pb_stats->num_feasible_blocks = NOT_VALID;
@@ -1818,8 +1839,8 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 		}
 
         /* Outputs first */
-        for(auto pin_id : g_ctx.atom_nl.block_output_pins(blk_id)) {
-            auto net_id = g_ctx.atom_nl.pin_net(pin_id);
+        for(auto pin_id : atom_ctx.nlist.block_output_pins(blk_id)) {
+            auto net_id = atom_ctx.nlist.pin_net(pin_id);
             if (!is_clock.count(net_id) || !global_clocks) {
                 mark_and_update_partial_gain(net_id, GAIN, blk_id,
                         timing_driven,
@@ -1836,8 +1857,8 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         }
 
         /* Next Inputs */
-        for(auto pin_id : g_ctx.atom_nl.block_input_pins(blk_id)) {
-            auto net_id = g_ctx.atom_nl.pin_net(pin_id);
+        for(auto pin_id : atom_ctx.nlist.block_input_pins(blk_id)) {
+            auto net_id = atom_ctx.nlist.pin_net(pin_id);
             mark_and_update_partial_gain(net_id, GAIN, blk_id,
                     timing_driven, connection_driven,
                     INPUT, 
@@ -1851,8 +1872,8 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 		 * sense for that to happen, and I check this in the check_clocks     *
 		 * function.  Don't disable that sanity check.                        */
         //TODO: lift above restriction (does happen on some circuits)
-        for(auto pin_id : g_ctx.atom_nl.block_clock_pins(blk_id)) {
-            auto net_id = g_ctx.atom_nl.pin_net(pin_id);
+        for(auto pin_id : atom_ctx.nlist.block_clock_pins(blk_id)) {
+            auto net_id = atom_ctx.nlist.pin_net(pin_id);
             if (global_clocks) {
                 mark_and_update_partial_gain(net_id, NO_GAIN, blk_id,
                         timing_driven, connection_driven, INPUT, 
@@ -1867,7 +1888,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
         }
 
 		update_total_gain(alpha, beta, timing_driven, connection_driven,
-				g_ctx.atom_lookup.atom_pb(blk_id)->parent_pb);
+				atom_ctx.lookup.atom_pb(blk_id)->parent_pb);
 
 		commit_lookahead_pins_used(cb);
 	}
@@ -1890,11 +1911,14 @@ static void start_new_cluster(
 	bool success;
 	int count;
 
+    auto& atom_ctx = g_ctx.atom();
+    auto& device_ctx = g_ctx.mutable_device();
+
 	VTR_ASSERT(new_cluster->name == NULL);
 	/* Check if this cluster is really empty */
 
 	/* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
-    const std::string& root_atom_name = g_ctx.atom_nl.block_name(molecule->atom_block_ids[molecule->root]);
+    const std::string& root_atom_name = atom_ctx.nlist.block_name(molecule->atom_block_ids[molecule->root]);
 	new_cluster->name = (char*) vtr::malloc((root_atom_name.size() + 4) * sizeof(char));
 	sprintf(new_cluster->name, "cb.%s", root_atom_name.c_str());
 	new_cluster->nets = NULL;
@@ -1904,7 +1928,7 @@ static void start_new_cluster(
 	new_cluster->y = UNDEFINED;
 	new_cluster->z = UNDEFINED;
 
-	if ((g_ctx.nx > 1) && (g_ctx.ny > 1)) {
+	if ((device_ctx.nx > 1) && (device_ctx.ny > 1)) {
 		alloc_and_load_grid(num_instances_type);
 		freeGrid();
 	}
@@ -1912,10 +1936,10 @@ static void start_new_cluster(
 	success = false;
 	while (!success) {
 		count = 0;
-		for (i = 0; i < g_ctx.num_block_types; i++) {
+		for (i = 0; i < device_ctx.num_block_types; i++) {
 			if (num_used_instances_type[i] < num_instances_type[i]) {
-				new_cluster->type = &g_ctx.block_types[i];
-				if (new_cluster->type == g_ctx.EMPTY_TYPE) {
+				new_cluster->type = &device_ctx.block_types[i];
+				if (new_cluster->type == device_ctx.EMPTY_TYPE) {
 					continue;
 				}
 				new_cluster->pb = new t_pb;
@@ -1923,7 +1947,7 @@ static void start_new_cluster(
 				alloc_and_load_pb_stats(new_cluster->pb);
 				new_cluster->pb->parent_pb = NULL;
 
-				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i], &g_ctx.block_types[i]);
+				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i], &device_ctx.block_types[i]);
 				for (j = 0; j < new_cluster->type->pb_graph_head->pb_type->num_modes && !success; j++) {
 					new_cluster->pb->mode = j;
 					reset_cluster_placement_stats(&cluster_placement_stats[i]);
@@ -1947,7 +1971,7 @@ static void start_new_cluster(
 				count++;
 			}
 		}
-		if (count == g_ctx.num_block_types - 1) {
+		if (count == device_ctx.num_block_types - 1) {
 			if (molecule->type == MOLECULE_FORCED_PACK) {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 						"Can not find any logic block that can implement molecule.\n"
@@ -1965,18 +1989,18 @@ static void start_new_cluster(
 		/* Expand FPGA size and recalculate number of available cluster types*/
 		if (!success) {
 			if (aspect >= 1.0) {
-				g_ctx.ny++;
-				g_ctx.nx = vtr::nint(g_ctx.ny * aspect);
+				device_ctx.ny++;
+				device_ctx.nx = vtr::nint(device_ctx.ny * aspect);
 			} else {
-				g_ctx.nx++;
-				g_ctx.ny = vtr::nint(g_ctx.nx / aspect);
+				device_ctx.nx++;
+				device_ctx.ny = vtr::nint(device_ctx.nx / aspect);
 			}
 			vtr::printf_info("Not enough resources expand FPGA size to x = %d y = %d.\n",
-					g_ctx.nx, g_ctx.ny);
-			if ((g_ctx.nx > MAX_SHORT) || (g_ctx.ny > MAX_SHORT)) {
+					device_ctx.nx, device_ctx.ny);
+			if ((device_ctx.nx > MAX_SHORT) || (device_ctx.ny > MAX_SHORT)) {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-						"Circuit cannot pack into architecture, architecture size (g_ctx.nx = %d, g_ctx.ny = %d) exceeds packer range.\n",
-						g_ctx.nx, g_ctx.ny);
+						"Circuit cannot pack into architecture, architecture size (device_ctx.nx = %d, device_ctx.ny = %d) exceeds packer range.\n",
+						device_ctx.nx, device_ctx.ny);
 			}
 			alloc_and_load_grid(num_instances_type);
 			freeGrid();
@@ -2010,6 +2034,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 
 	t_pack_molecule *molecule;
 	molecule = NULL;
+    auto& atom_ctx = g_ctx.atom();
 
 	if (gain_mode == HILL_CLIMBING) {
 		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
@@ -2021,7 +2046,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 		cur_pb->pb_stats->num_feasible_blocks = 0;
 		cur_pb->pb_stats->explore_transitive_fanout = true; /* If no legal molecules found, enable exploration of molecules two hops away */
 		for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
-			if (g_ctx.atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
+			if (atom_ctx.lookup.atom_clb(blk_id) == NO_CLUSTER) {
 
                 auto rng = atom_molecules.equal_range(blk_id);
                 for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
@@ -2030,7 +2055,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 						success = true;
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 							if (molecule->atom_block_ids[j]) {
-								VTR_ASSERT(g_ctx.atom_lookup.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
+								VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
 								auto blk_id2 = molecule->atom_block_ids[j];
 								if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) { 
                                     /* TODO: debating whether to check if placement exists for molecule 
@@ -2060,14 +2085,14 @@ static t_pack_molecule *get_highest_gain_molecule(
 		AtomNetId net_id = cur_pb->pb_stats->tie_break_high_fanout_net;
 
 		count = 0;
-        for(auto pin_id : g_ctx.atom_nl.net_pins(net_id)) {
+        for(auto pin_id : atom_ctx.nlist.net_pins(net_id)) {
             if(count >= AAPACK_MAX_HIGH_FANOUT_EXPLORE) {
                 break;
             }
 
-            AtomBlockId blk_id = g_ctx.atom_nl.pin_block(pin_id);
+            AtomBlockId blk_id = atom_ctx.nlist.pin_block(pin_id);
 
-			if (g_ctx.atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
+			if (atom_ctx.lookup.atom_clb(blk_id) == NO_CLUSTER) {
 
                 auto rng = atom_molecules.equal_range(blk_id);
                 for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
@@ -2076,7 +2101,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 						success = true;
 						for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 							if (molecule->atom_block_ids[j]) {
-								VTR_ASSERT(g_ctx.atom_lookup.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
+								VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
 								auto blk_id2 = molecule->atom_block_ids[j];
 								if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id2)) { 
                                     /* TODO: debating whether to check if placement exists for molecule (more 
@@ -2118,7 +2143,7 @@ static t_pack_molecule *get_highest_gain_molecule(
 					success = true;
 					for (j = 0; j < get_array_size_of_molecule(molecule); j++) {
 						if (molecule->atom_block_ids[j]) {
-							VTR_ASSERT(g_ctx.atom_lookup.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
+							VTR_ASSERT(atom_ctx.lookup.atom_clb(molecule->atom_block_ids[j]) == NO_CLUSTER);
 							auto blk_id = molecule->atom_block_ids[j];
 							if (!exists_free_primitive_for_atom_block(cluster_placement_stats_ptr, blk_id)) { 
                                 /* TODO: debating whether to check if placement exists for molecule (more 
@@ -2204,6 +2229,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 /* TODO: Add more error checking! */
 static void check_clustering(int num_clb, t_block *clb) {
     std::unordered_set<AtomBlockId> atoms_checked;
+    auto& atom_ctx = g_ctx.atom();
 
     if(num_clb == 0) {
         vtr::printf_warning(__FILE__, __LINE__, "Packing produced no clustered blocks");
@@ -2212,25 +2238,25 @@ static void check_clustering(int num_clb, t_block *clb) {
 	/* 
 	 * Check that each atom block connects to one physical primitive and that the primitive links up to the parent clb
 	 */
-    for(auto blk_id : g_ctx.atom_nl.blocks()) {
+    for(auto blk_id : atom_ctx.nlist.blocks()) {
         //Each atom should be part of a pb
-        const t_pb* atom_pb = g_ctx.atom_lookup.atom_pb(blk_id);
+        const t_pb* atom_pb = atom_ctx.lookup.atom_pb(blk_id);
         if(!atom_pb) {
 			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 					"Atom block %s is not mapped to a pb\n",
-					g_ctx.atom_nl.block_name(blk_id).c_str());
+					atom_ctx.nlist.block_name(blk_id).c_str());
         }
 
         //Check the reverse mapping is consistent
-		if (g_ctx.atom_lookup.pb_atom(atom_pb) != blk_id) {
+		if (atom_ctx.lookup.pb_atom(atom_pb) != blk_id) {
 			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 					"pb %s does not contain atom block %s but atom block %s maps to pb.\n",
                     atom_pb->name,
-					g_ctx.atom_nl.block_name(blk_id).c_str(), 
-                    g_ctx.atom_nl.block_name(blk_id).c_str());
+					atom_ctx.nlist.block_name(blk_id).c_str(), 
+                    atom_ctx.nlist.block_name(blk_id).c_str());
 		}
 
-		VTR_ASSERT(g_ctx.atom_nl.block_name(blk_id) == atom_pb->name);
+		VTR_ASSERT(atom_ctx.nlist.block_name(blk_id) == atom_pb->name);
 
         const t_pb* cur_pb = atom_pb;
 		while (cur_pb->parent_pb) {
@@ -2238,11 +2264,11 @@ static void check_clustering(int num_clb, t_block *clb) {
 			VTR_ASSERT(cur_pb->name);
 		}
 
-        int iclb = g_ctx.atom_lookup.atom_clb(blk_id);
+        int iclb = atom_ctx.lookup.atom_clb(blk_id);
         if(iclb == NO_CLUSTER) {
 			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 					"Atom %s is not mapped to a CLB\n",
-					g_ctx.atom_nl.block_name(blk_id).c_str());
+					atom_ctx.nlist.block_name(blk_id).c_str());
         }
 
 		if (cur_pb != clb[iclb].pb) {
@@ -2257,11 +2283,11 @@ static void check_clustering(int num_clb, t_block *clb) {
 		check_cluster_atom_blocks(clb[i].pb, atoms_checked);
 	}
 
-	for (auto blk_id : g_ctx.atom_nl.blocks()) {
+	for (auto blk_id : atom_ctx.nlist.blocks()) {
 		if (!atoms_checked.count(blk_id)) {
 			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 					"Atom block %s not found in any cluster.\n",
-					g_ctx.atom_nl.block_name(blk_id).c_str());
+					atom_ctx.nlist.block_name(blk_id).c_str());
 		}
 	}
 }
@@ -2270,24 +2296,24 @@ static void check_clustering(int num_clb, t_block *clb) {
 static void check_cluster_atom_blocks(t_pb *pb, std::unordered_set<AtomBlockId>& blocks_checked) {
 	int i, j;
 	const t_pb_type *pb_type;
-	bool has_child;
+	bool has_child = false;
+    auto& atom_ctx = g_ctx.atom();
 
-	has_child = false;
 	pb_type = pb->pb_graph_node->pb_type;
 	if (pb_type->num_modes == 0) {
 		/* primitive */
-        auto blk_id = g_ctx.atom_lookup.pb_atom(pb);
+        auto blk_id = atom_ctx.lookup.pb_atom(pb);
 		if (blk_id) {
 			if (blocks_checked.count(blk_id)) {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 						"pb %s contains atom block %s but atom block is already contained in another pb.\n",
-						pb->name, g_ctx.atom_nl.block_name(blk_id).c_str());
+						pb->name, atom_ctx.nlist.block_name(blk_id).c_str());
 			}
 			blocks_checked.insert(blk_id);
-			if (pb != g_ctx.atom_lookup.atom_pb(blk_id)) {
+			if (pb != atom_ctx.lookup.atom_pb(blk_id)) {
 				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 						"pb %s contains atom block %s but atom block does not link to pb.\n",
-						pb->name, g_ctx.atom_nl.block_name(blk_id).c_str());
+						pb->name, atom_ctx.nlist.block_name(blk_id).c_str());
 			}
 		}
 	} else {
@@ -2313,6 +2339,7 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
 
 	AtomBlockId blk_id;
 	t_pack_molecule *molecule = NULL, *best = NULL;
+    auto& atom_ctx = g_ctx.atom();
 
     VTR_ASSERT(seed_blend_index_array.size() == critindexarray.size());
 
@@ -2324,7 +2351,7 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int * seedindex, const st
 			blk_id = critindexarray[(*seedindex)++];
 		}
 
-		if (g_ctx.atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
+		if (atom_ctx.lookup.atom_clb(blk_id) == NO_CLUSTER) {
 
             auto rng = atom_molecules.equal_range(blk_id);
             for(const auto& kv : vtr::make_range(rng.first, rng.second)) {
@@ -2355,6 +2382,7 @@ static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float
 	float gain;
 	int i;
 	int num_introduced_inputs_of_indirectly_related_block;
+    auto& atom_ctx = g_ctx.atom();
 
 	gain = 0;
 	num_introduced_inputs_of_indirectly_related_block = 0;
@@ -2366,14 +2394,14 @@ static float get_molecule_gain(t_pack_molecule *molecule, map<AtomBlockId, float
 			} else {
 				/* This block has no connection with current cluster, penalize molecule for having this block 
 				 */
-                for(auto pin_id : g_ctx.atom_nl.block_input_pins(blk_id)) {
-                    auto net_id = g_ctx.atom_nl.pin_net(pin_id);
+                for(auto pin_id : atom_ctx.nlist.block_input_pins(blk_id)) {
+                    auto net_id = atom_ctx.nlist.pin_net(pin_id);
                     VTR_ASSERT(net_id);
 
-                    auto driver_pin_id = g_ctx.atom_nl.net_driver(net_id);
+                    auto driver_pin_id = atom_ctx.nlist.net_driver(net_id);
                     VTR_ASSERT(driver_pin_id);
 
-                    auto driver_blk_id = g_ctx.atom_nl.pin_block(driver_pin_id);
+                    auto driver_blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
 
                     num_introduced_inputs_of_indirectly_related_block++;
                     for (int iblk = 0; iblk < get_array_size_of_molecule(molecule); iblk++) {
@@ -2432,7 +2460,8 @@ static void try_update_lookahead_pins_used(t_pb *cur_pb) {
 		}
 	} else {
 
-        AtomBlockId blk_id = g_ctx.atom_lookup.pb_atom(cur_pb);
+        auto& atom_ctx = g_ctx.atom();
+        AtomBlockId blk_id = atom_ctx.lookup.pb_atom(cur_pb);
 		if (pb_type->blif_model != NULL && blk_id) {
 			compute_and_mark_lookahead_pins_used(blk_id);
 		}
@@ -2470,14 +2499,16 @@ static void reset_lookahead_pins_used(t_pb *cur_pb) {
 
 /* Determine if pins of speculatively packed pb are legal */
 static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id) {
-	const t_pb* cur_pb = g_ctx.atom_lookup.atom_pb(blk_id);
+    auto& atom_ctx = g_ctx.atom();
+
+	const t_pb* cur_pb = atom_ctx.lookup.atom_pb(blk_id);
     VTR_ASSERT(cur_pb != NULL);
 
 	/* Walk through inputs, outputs, and clocks marking pins off of the same class */
-    for(auto pin_id : g_ctx.atom_nl.block_pins(blk_id)) {
-        auto net_id = g_ctx.atom_nl.pin_net(pin_id);
+    for(auto pin_id : atom_ctx.nlist.block_pins(blk_id)) {
+        auto net_id = atom_ctx.nlist.pin_net(pin_id);
 
-        const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(g_ctx.atom_nl, g_ctx.atom_lookup, pin_id);
+        const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_ctx.nlist, atom_ctx.lookup, pin_id);
         compute_and_mark_lookahead_pins_used_for_pin(pb_graph_pin, cur_pb, net_id);
     }
 }
@@ -2493,6 +2524,8 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *p
 
 	bool skip, found;
 
+    auto& atom_ctx = g_ctx.atom();
+
 	cur_pb = primitive_pb->parent_pb;
 
 	while (cur_pb) {
@@ -2500,26 +2533,26 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *p
 		pin_class = pb_graph_pin->parent_pin_class[depth];
 		VTR_ASSERT(pin_class != OPEN);
 
-        auto driver_blk_id = g_ctx.atom_nl.net_driver_block(net_id);
+        auto driver_blk_id = atom_ctx.nlist.net_driver_block(net_id);
 
 		if (pb_graph_pin->port->type == IN_PORT) {
 			/* find location of net driver if exist in clb, NULL otherwise */
-            auto driver_pin_id = g_ctx.atom_nl.net_driver(net_id);
+            auto driver_pin_id = atom_ctx.nlist.net_driver(net_id);
 
-            auto prim_blk_id = g_ctx.atom_lookup.pb_atom(primitive_pb);
+            auto prim_blk_id = atom_ctx.lookup.pb_atom(primitive_pb);
 
-            const t_pb* driver_pb = g_ctx.atom_lookup.atom_pb(driver_blk_id);
+            const t_pb* driver_pb = atom_ctx.lookup.atom_pb(driver_blk_id);
 
 			output_pb_graph_pin = NULL;
-			if (g_ctx.atom_lookup.atom_clb(driver_blk_id) == g_ctx.atom_lookup.atom_clb(prim_blk_id)) {
+			if (atom_ctx.lookup.atom_clb(driver_blk_id) == atom_ctx.lookup.atom_clb(prim_blk_id)) {
 				pb_type = driver_pb->pb_graph_node->pb_type;
 				output_port = 0;
 				found = false;
 				for (int i = 0; i < pb_type->num_ports && !found; i++) {
 					prim_port = &pb_type->ports[i];
 					if (prim_port->type == OUT_PORT) {
-                        auto driver_port_id = g_ctx.atom_nl.pin_port(driver_pin_id);
-                        auto driver_model_port = g_ctx.atom_nl.port_model(driver_port_id);
+                        auto driver_port_id = atom_ctx.nlist.pin_port(driver_pin_id);
+                        auto driver_model_port = atom_ctx.nlist.port_model(driver_port_id);
 						if (pb_type->ports[i].model_port == driver_model_port) {
 							found = true;
 							break;
@@ -2528,7 +2561,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *p
 					}
 				}
 				VTR_ASSERT(found);
-				output_pb_graph_pin = &(driver_pb->pb_graph_node->output_pins[output_port][g_ctx.atom_nl.pin_port_bit(driver_pin_id)]);
+				output_pb_graph_pin = &(driver_pb->pb_graph_node->output_pins[output_port][atom_ctx.nlist.pin_port_bit(driver_pin_id)]);
 			}
 
 			skip = false;
@@ -2572,7 +2605,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *p
              */
 
 			bool net_exits_cluster = true;
-            int num_net_sinks = static_cast<int>(g_ctx.atom_nl.net_sinks(net_id).size());
+            int num_net_sinks = static_cast<int>(atom_ctx.nlist.net_sinks(net_id).size());
 
 			if (pb_graph_pin->num_connectable_primtive_input_pins[depth] >= num_net_sinks) {
                 //It is possible the net is completely absorbed in the cluster,
@@ -2595,10 +2628,10 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *p
 
                 //Check if all the net sinks are, in fact, inside this cluster
                 bool all_sinks_in_cur_cluster = true;
-                int driver_clb = g_ctx.atom_lookup.atom_clb(driver_blk_id);
-                for(auto pin_id : g_ctx.atom_nl.net_sinks(net_id)) {
-                    auto sink_blk_id = g_ctx.atom_nl.pin_block(pin_id);
-					if (g_ctx.atom_lookup.atom_clb(sink_blk_id) != driver_clb) {
+                int driver_clb = atom_ctx.lookup.atom_clb(driver_blk_id);
+                for(auto pin_id : atom_ctx.nlist.net_sinks(net_id)) {
+                    auto sink_blk_id = atom_ctx.nlist.pin_block(pin_id);
+					if (atom_ctx.lookup.atom_clb(sink_blk_id) != driver_clb) {
                         all_sinks_in_cur_cluster = false;
 						break;
 					}
@@ -2631,11 +2664,12 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *p
 
 int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id) {
     size_t num_reachable_sinks = 0;
+    auto& atom_ctx = g_ctx.atom();
 
     //Record the sink pb graph pins we are looking for
     std::unordered_set<const t_pb_graph_pin*> sink_pb_gpins;
-    for(const AtomPinId pin_id : g_ctx.atom_nl.net_sinks(net_id)) {
-        const t_pb_graph_pin* sink_pb_gpin = find_pb_graph_pin(g_ctx.atom_nl, g_ctx.atom_lookup, pin_id);
+    for(const AtomPinId pin_id : atom_ctx.nlist.net_sinks(net_id)) {
+        const t_pb_graph_pin* sink_pb_gpin = find_pb_graph_pin(atom_ctx.nlist, atom_ctx.lookup, pin_id);
         VTR_ASSERT(sink_pb_gpin);
 
         sink_pb_gpins.insert(sink_pb_gpin);
@@ -2647,7 +2681,7 @@ int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const i
 
         if(sink_pb_gpins.count(reachable_pb_gpin)) {
             ++num_reachable_sinks;
-            if(num_reachable_sinks == g_ctx.atom_nl.net_sinks(net_id).size()) {
+            if(num_reachable_sinks == atom_ctx.nlist.net_sinks(net_id).size()) {
                 return true;
             }
         }
@@ -2737,17 +2771,19 @@ static void load_transitive_fanout_candidates(int cluster_index,
                                               const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 											  t_pb_stats *pb_stats,
 											  t_lb_net_stats *clb_inter_blk_nets) {
+    auto& atom_ctx = g_ctx.atom();
+
     for(const auto net_id : pb_stats->marked_nets) {
-		if(g_ctx.atom_nl.net_pins(net_id).size() < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE + 1) {
-            for(const auto pin_id : g_ctx.atom_nl.net_pins(net_id)) {
-                AtomBlockId atom_blk_id = g_ctx.atom_nl.pin_block(pin_id);
-                int tclb = g_ctx.atom_lookup.atom_clb(atom_blk_id); //The transitive CLB
+		if(atom_ctx.nlist.net_pins(net_id).size() < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE + 1) {
+            for(const auto pin_id : atom_ctx.nlist.net_pins(net_id)) {
+                AtomBlockId atom_blk_id = atom_ctx.nlist.pin_block(pin_id);
+                int tclb = atom_ctx.lookup.atom_clb(atom_blk_id); //The transitive CLB
 				if(tclb != cluster_index && tclb != NO_CLUSTER) {
 					/* Explore transitive connections from already packed cluster */
 					for(AtomNetId tnet : clb_inter_blk_nets[tclb].nets_in_lb) {
-                        for(AtomPinId tpin : g_ctx.atom_nl.net_pins(tnet)) {
-                            auto blk_id = g_ctx.atom_nl.pin_block(tpin);
-							if(g_ctx.atom_lookup.atom_clb(blk_id) == NO_CLUSTER) {
+                        for(AtomPinId tpin : atom_ctx.nlist.net_pins(tnet)) {
+                            auto blk_id = atom_ctx.nlist.pin_block(tpin);
+							if(atom_ctx.lookup.atom_clb(blk_id) == NO_CLUSTER) {
 								/* This transitive atom is not packed, score and add */
 								std::vector<t_pack_molecule *> &transitive_fanout_candidates = *(pb_stats->transitive_fanout_candidates);
 
@@ -2786,19 +2822,20 @@ static void load_transitive_fanout_candidates(int cluster_index,
 
 static void print_block_criticalities(const char * fname) {
 	/* Prints criticality and critindexarray for each atom block to a file. */
+    auto& atom_ctx = g_ctx.atom();
 	
 	FILE * fp = vtr::fopen(fname, "w");
 
     //For prett formatting determine the maximum name length
     int max_name_len = strlen("atom_block_name");
-    for(auto blk_id : g_ctx.atom_nl.blocks()) {
-        max_name_len = std::max(max_name_len, (int) g_ctx.atom_nl.block_name(blk_id).size());
+    for(auto blk_id : atom_ctx.nlist.blocks()) {
+        max_name_len = std::max(max_name_len, (int) atom_ctx.nlist.block_name(blk_id).size());
     }
 
     fprintf(fp, "%-*s %s %s %s %s\n", max_name_len, "atom_block_name", "criticality", "critindexarray", "seed_blend_gain", "seed_blend_gain_index");
 
-    for(auto blk_id : g_ctx.atom_nl.blocks()) {
-        std::string name = g_ctx.atom_nl.block_name(blk_id);
+    for(auto blk_id : atom_ctx.nlist.blocks()) {
+        std::string name = atom_ctx.nlist.block_name(blk_id);
 		fprintf(fp, "%-*s ", max_name_len, name.c_str());
 
 		fprintf(fp, "%*f ", (int) strlen("criticality"), block_criticality[blk_id]);

@@ -43,11 +43,13 @@ int seg_index_of_cblock(t_rr_type from_rr_type, int to_node) {
 	/* Returns the segment number (distance along the channel) of the connection *
 	 * box from from_rr_type (CHANX or CHANY) to to_node (IPIN).                 */
 
+    auto& device_ctx = g_ctx.device();
+
 	if (from_rr_type == CHANX)
-		return (g_ctx.rr_nodes[to_node].xlow());
+		return (device_ctx.rr_nodes[to_node].xlow());
 	else
 		/* CHANY */
-		return (g_ctx.rr_nodes[to_node].ylow());
+		return (device_ctx.rr_nodes[to_node].ylow());
 }
 
 int seg_index_of_sblock(int from_node, int to_node) {
@@ -57,21 +59,23 @@ int seg_index_of_sblock(int from_node, int to_node) {
 	 * switch box on the left side of a CHANX segment at (i,j) has seg_index =   *
 	 * i-1, while the switch box on the right side of that segment has seg_index *
 	 * = i.  CHANY stuff works similarly.  Hence the range of values returned is *
-	 * 0 to g_ctx.nx (if from_node is a CHANX) or 0 to g_ctx.ny (if from_node is a CHANY).   */
+	 * 0 to device_ctx.nx (if from_node is a CHANX) or 0 to device_ctx.ny (if from_node is a CHANY).   */
 
 	t_rr_type from_rr_type, to_rr_type;
 
-	from_rr_type = g_ctx.rr_nodes[from_node].type();
-	to_rr_type = g_ctx.rr_nodes[to_node].type();
+    auto& device_ctx = g_ctx.device();
+
+	from_rr_type = device_ctx.rr_nodes[from_node].type();
+	to_rr_type = device_ctx.rr_nodes[to_node].type();
 
 	if (from_rr_type == CHANX) {
 		if (to_rr_type == CHANY) {
-			return (g_ctx.rr_nodes[to_node].xlow());
+			return (device_ctx.rr_nodes[to_node].xlow());
 		} else if (to_rr_type == CHANX) {
-			if (g_ctx.rr_nodes[to_node].xlow() > g_ctx.rr_nodes[from_node].xlow()) { /* Going right */
-				return (g_ctx.rr_nodes[from_node].xhigh());
+			if (device_ctx.rr_nodes[to_node].xlow() > device_ctx.rr_nodes[from_node].xlow()) { /* Going right */
+				return (device_ctx.rr_nodes[from_node].xhigh());
 			} else { /* Going left */
-				return (g_ctx.rr_nodes[to_node].xhigh());
+				return (device_ctx.rr_nodes[to_node].xhigh());
 			}
 		} else {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -83,12 +87,12 @@ int seg_index_of_sblock(int from_node, int to_node) {
 	/* End from_rr_type is CHANX */
 	else if (from_rr_type == CHANY) {
 		if (to_rr_type == CHANX) {
-			return (g_ctx.rr_nodes[to_node].ylow());
+			return (device_ctx.rr_nodes[to_node].ylow());
 		} else if (to_rr_type == CHANY) {
-			if (g_ctx.rr_nodes[to_node].ylow() > g_ctx.rr_nodes[from_node].ylow()) { /* Going up */
-				return (g_ctx.rr_nodes[from_node].yhigh());
+			if (device_ctx.rr_nodes[to_node].ylow() > device_ctx.rr_nodes[from_node].ylow()) { /* Going up */
+				return (device_ctx.rr_nodes[from_node].yhigh());
 			} else { /* Going down */
-				return (g_ctx.rr_nodes[to_node].yhigh());
+				return (device_ctx.rr_nodes[to_node].yhigh());
 			}
 		} else {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 

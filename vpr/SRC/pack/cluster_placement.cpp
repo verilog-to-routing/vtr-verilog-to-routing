@@ -54,23 +54,25 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 /****************************************/
 
 /**
- * [0..num_pb_types-1] array of cluster placement stats, one for each g_ctx.block_types 
+ * [0..num_pb_types-1] array of cluster placement stats, one for each device_ctx.block_types 
  */
 t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
 	t_cluster_placement_stats *cluster_placement_stats_list;
 	int i;
 
-	cluster_placement_stats_list = (t_cluster_placement_stats *) vtr::calloc(g_ctx.num_block_types,
+    auto& device_ctx = g_ctx.device();
+
+	cluster_placement_stats_list = (t_cluster_placement_stats *) vtr::calloc(device_ctx.num_block_types,
 			sizeof(t_cluster_placement_stats));
-	for (i = 0; i < g_ctx.num_block_types; i++) {
-		if (g_ctx.EMPTY_TYPE != &g_ctx.block_types[i]) {
+	for (i = 0; i < device_ctx.num_block_types; i++) {
+		if (device_ctx.EMPTY_TYPE != &device_ctx.block_types[i]) {
 			cluster_placement_stats_list[i].valid_primitives = (t_cluster_placement_primitive **) vtr::calloc(
-					get_max_primitives_in_pb_type(g_ctx.block_types[i].pb_type)
+					get_max_primitives_in_pb_type(device_ctx.block_types[i].pb_type)
  							+ 1, sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
 			cluster_placement_stats_list[i].curr_molecule = NULL;
 			load_cluster_placement_stats_for_pb_graph_node(
 					&cluster_placement_stats_list[i],
-					g_ctx.block_types[i].pb_graph_head);
+					device_ctx.block_types[i].pb_graph_head);
 		}
 	}
 	return cluster_placement_stats_list;
@@ -224,7 +226,9 @@ void free_cluster_placement_stats(
 		t_cluster_placement_stats *cluster_placement_stats_list) {
 	t_cluster_placement_primitive *cur, *next;
 	int i, j;
-	for (i = 0; i < g_ctx.num_block_types; i++) {
+    auto& device_ctx = g_ctx.device();
+
+	for (i = 0; i < device_ctx.num_block_types; i++) {
 		cur = cluster_placement_stats_list[i].tried;
 		while (cur != NULL) {
 			next = cur->next_primitive;
@@ -785,6 +789,8 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 
 	feasible = true;
 
+    auto& atom_ctx = g_ctx.atom();
+
     AtomBlockId blk_id = molecule->atom_block_ids[molecule->root];
 
 	for(i = 0; feasible && i < root->num_output_ports; i++) {
@@ -793,27 +799,27 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 
 				model_port = root->output_pins[i][j].port->model_port;
 
-                AtomPortId port_id = g_ctx.atom_nl.find_port(blk_id, model_port);
+                AtomPortId port_id = atom_ctx.nlist.find_port(blk_id, model_port);
                 if(port_id) {
-                    AtomNetId net_id = g_ctx.atom_nl.port_net(port_id, j);
+                    AtomNetId net_id = atom_ctx.nlist.port_net(port_id, j);
     
                     if(net_id) {
                         /* This output pin has a dedicated connection to one output, make sure that molecule works */
                         if(molecule->type == MOLECULE_SINGLE_ATOM) {
                             feasible = false; /* There is only one case where an atom can fit in here, so by default, feasibility is false unless proven otherwise */
-                            auto sinks = g_ctx.atom_nl.net_sinks(net_id);
+                            auto sinks = atom_ctx.nlist.net_sinks(net_id);
                             if(sinks.size() == 1) {
                                 AtomPinId sink_pin = *sinks.begin();
-                                AtomBlockId sink_blk = g_ctx.atom_nl.pin_block(sink_pin);
+                                AtomBlockId sink_blk = atom_ctx.nlist.pin_block(sink_pin);
     
-                                if(g_ctx.atom_lookup.atom_clb(sink_blk) == clb_index) {
-                                    const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(g_ctx.atom_nl, g_ctx.atom_lookup, sink_pin);
+                                if(atom_ctx.lookup.atom_clb(sink_blk) == clb_index) {
+                                    const t_pb_graph_pin* sink_pb_graph_pin = find_pb_graph_pin(atom_ctx.nlist, atom_ctx.lookup, sink_pin);
                                     while(sink_pb_graph_pin->num_output_edges != 0) {
                                         VTR_ASSERT(sink_pb_graph_pin->num_output_edges == 1);
                                         VTR_ASSERT(sink_pb_graph_pin->output_edges[0]->num_output_pins == 1);
                                         sink_pb_graph_pin = sink_pb_graph_pin->output_edges[0]->output_pins[0];
                                     }
-                                    const t_pb_graph_node* sink_pb_graph_node = g_ctx.atom_lookup.atom_pb_graph_node(sink_blk);
+                                    const t_pb_graph_node* sink_pb_graph_node = atom_ctx.lookup.atom_pb_graph_node(sink_blk);
                                     if(sink_pb_graph_pin->parent_node == sink_pb_graph_node) {
                                         /* There is a atom block mapped to the physical position that pulls in the atom in question */
                                         feasible = true;

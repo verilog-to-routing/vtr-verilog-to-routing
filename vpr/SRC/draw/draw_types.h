@@ -98,13 +98,13 @@ typedef struct {
  * draw_route_type: GLOBAL or DETAILED
  * default_message: default screen message on screen
  * net_color: color in which each net should be drawn. 
- *			  [0..g_ctx.clbs_nlist.net.size()-1]
+ *			  [0..cluster_ctx.clbs_nlist.net.size()-1]
  * block_color: color in which each blocks should be drawn.
- *			    [0..g_ctx.num_blocks-1]
+ *			    [0..cluster_ctx.num_blocks-1]
  * draw_rr_node: stores the state information of each routing resource.  
  *				 Used to control drawing each routing resource when 
  *				 ROUTING is on screen.
- *				 [0..g_ctx.num_rr_nodes-1]
+ *				 [0..device_ctx.num_rr_nodes-1]
  */
 struct t_draw_state {
 	pic_type pic_on_screen;
@@ -145,7 +145,7 @@ struct t_draw_pb_type_info {
  * tile_x and tile_y: together form two axes that make a
  * COORDINATE SYSTEM for grid_tiles, which goes from 
  * (tile_x[0],tile_y[0]) at the lower left corner of the FPGA 
- * to (tile_x[g_ctx.nx+1]+tile_width, tile_y[g_ctx.ny+1]+tile_width) in 
+ * to (tile_x[device_ctx.nx+1]+tile_width, tile_y[device_ctx.ny+1]+tile_width) in 
  * the upper right corner.       
  * tile_width: Width (and height) of a grid_tile.
  *			 Set when init_draw_coords is called.
@@ -155,7 +155,7 @@ struct t_draw_pb_type_info {
  *			 Set when init_draw_coords is called.
  * blk_info: a list of drawing information for each type of
  *           block, one for each type. Access it with
- *           g_ctx.blocks[block_id].type->index
+ *           cluster_ctx.blocks[block_id].type->index
  */
 struct t_draw_coords {
 	float *tile_x, *tile_y;
@@ -184,7 +184,7 @@ struct t_draw_coords {
 	t_bound_box get_absolute_pb_bbox(const int clb_index, const t_pb_graph_node* pb_gnode);
 
 	/**
-	 * Return a bounding box for the clb at g_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
+	 * Return a bounding box for the clb at device_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
 	 * even if it is empty.
 	 */
 	t_bound_box get_absolute_clb_bbox(const t_block& clb);

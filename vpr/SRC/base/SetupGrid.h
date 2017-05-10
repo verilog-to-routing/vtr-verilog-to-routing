@@ -9,7 +9,7 @@
 
  */
 
-void alloc_and_load_grid(int *num_instances_type); /* [0..g_ctx.num_block_types-1] */
+void alloc_and_load_grid(int *num_instances_type); /* [0..device_ctx.num_block_types-1] */
 void freeGrid(void);
 
 #endif

@@ -263,7 +263,8 @@ void vpr_init(const int argc, const char **argv,
     fflush(stdout);
 
     /* Read blif file and sweep unused components */
-    g_ctx.atom_nl = read_and_process_blif(vpr_setup->PackerOpts.blif_file_name,
+    auto& atom_ctx = g_ctx.mutable_atom();
+    atom_ctx.nlist = read_and_process_blif(vpr_setup->PackerOpts.blif_file_name,
                                       vpr_setup->user_models, 
                                       vpr_setup->library_models,
                                       vpr_setup->NetlistOpts.absorb_buffer_luts,
@@ -276,20 +277,22 @@ void vpr_init(const int argc, const char **argv,
     if(vpr_setup->PowerOpts.do_power) {
         //Load the net activity file for power estimation
         vtr::ScopedPrintTimer t("Load Activity File");
-        g_ctx.atom_net_power = read_activity(g_ctx.atom_nl, vpr_setup->FileNameOpts.ActFile);
+        auto& power_ctx = g_ctx.mutable_power();
+        power_ctx.atom_net_power = read_activity(atom_ctx.nlist, vpr_setup->FileNameOpts.ActFile);
     }
 
     //Initialize timing graph and constraints
     if(vpr_setup->TimingEnabled) {
+        auto& timing_ctx = g_ctx.mutable_timing();
         {
             vtr::ScopedPrintTimer t("Build Timing Graph");
-            g_ctx.timing_graph = TimingGraphBuilder(g_ctx.atom_nl, g_ctx.atom_lookup).timing_graph();
-            vtr::printf("  Timing Graph Nodes: %zu\n", g_ctx.timing_graph->nodes().size());
-            vtr::printf("  Timing Graph Edges: %zu\n", g_ctx.timing_graph->edges().size());
+            timing_ctx.graph = TimingGraphBuilder(atom_ctx.nlist, atom_ctx.lookup).timing_graph();
+            vtr::printf("  Timing Graph Nodes: %zu\n", timing_ctx.graph->nodes().size());
+            vtr::printf("  Timing Graph Edges: %zu\n", timing_ctx.graph->edges().size());
         }
         {
             vtr::ScopedPrintTimer t("Load Timing Constraints");
-            g_ctx.timing_constraints = read_sdc2(vpr_setup->Timing, g_ctx.atom_nl, g_ctx.atom_lookup, *g_ctx.timing_graph);
+            timing_ctx.constraints = read_sdc2(vpr_setup->Timing, atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph);
         }
     }
 
@@ -299,14 +302,17 @@ void vpr_init(const int argc, const char **argv,
 }
 
 /*
- * Sets globals: g_ctx.nx, g_ctx.ny
- * Allocs globals: chan_width_x, chan_width_y, g_ctx.grid
+ * Sets globals: device_ctx.nx, device_ctx.ny
+ * Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
  * Depends on num_clbs, pins_per_clb */
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
 	/* Read in netlist file for placement and routing */
+    auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& device_ctx = g_ctx.mutable_device();
+
 	if (vpr_setup.FileNameOpts.NetFile) {
-		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, &g_ctx.num_blocks, &g_ctx.blocks, &g_ctx.clbs_nlist);
+		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, &cluster_ctx.num_blocks, &cluster_ctx.blocks, &cluster_ctx.clbs_nlist);
 
 		/* This is done so that all blocks have subblocks and can be treated the same */
 		check_netlist();
@@ -314,7 +320,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 		if(vpr_setup.gen_netlist_as_blif) {
 			char *name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName) + 16) * sizeof(char));
 			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName);
-			output_blif(&Arch, g_ctx.blocks, g_ctx.num_blocks, name);
+			output_blif(&Arch, cluster_ctx.blocks, cluster_ctx.num_blocks, name);
 			free(name);
 		}
 	}
@@ -322,15 +328,15 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 	/* Output the current settings to console. */
 	printClusteredNetlistStats();
 
-    int current = std::max(vtr::nint((float)sqrt((float)g_ctx.num_blocks)), 1); /* current is the value of the smaller side of the FPGA */
+    int current = std::max(vtr::nint((float)sqrt((float)cluster_ctx.num_blocks)), 1); /* current is the value of the smaller side of the FPGA */
     int low = 1;
     int high = -1;
 
-    int *num_instances_type = (int*) vtr::calloc(g_ctx.num_block_types, sizeof(int));
-    int *num_blocks_type = (int*) vtr::calloc(g_ctx.num_block_types, sizeof(int));
+    int *num_instances_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
+    int *num_blocks_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
-    for (int i = 0; i < g_ctx.num_blocks; ++i) {
-        num_blocks_type[g_ctx.blocks[i].type->index]++;
+    for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
+        num_blocks_type[cluster_ctx.blocks[i].type->index]++;
     }
 
     if (Arch.clb_grid.IsAuto) {
@@ -340,19 +346,19 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 
             /* Generate grid */
             if (Arch.clb_grid.Aspect >= 1.0) {
-                g_ctx.ny = current;
-                g_ctx.nx = vtr::nint(current * Arch.clb_grid.Aspect);
+                device_ctx.ny = current;
+                device_ctx.nx = vtr::nint(current * Arch.clb_grid.Aspect);
             } else {
-                g_ctx.nx = current;
-                g_ctx.ny = vtr::nint(current / Arch.clb_grid.Aspect);
+                device_ctx.nx = current;
+                device_ctx.ny = vtr::nint(current / Arch.clb_grid.Aspect);
             }
-            vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", g_ctx.nx, g_ctx.ny);
+            vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", device_ctx.nx, device_ctx.ny);
             alloc_and_load_grid(num_instances_type);
             freeGrid();
 
             /* Test if netlist fits in grid */
             bool fit = true;
-            for (int i = 0; i < g_ctx.num_block_types; ++i) {
+            for (int i = 0; i < device_ctx.num_block_types; ++i) {
                 if (num_blocks_type[i] > num_instances_type[i]) {
                     fit = false;
                     break;
@@ -383,30 +389,30 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 
         /* Generate grid */
         if (Arch.clb_grid.Aspect >= 1.0) {
-            g_ctx.ny = current;
-            g_ctx.nx = vtr::nint(current * Arch.clb_grid.Aspect);
+            device_ctx.ny = current;
+            device_ctx.nx = vtr::nint(current * Arch.clb_grid.Aspect);
         } else {
-            g_ctx.nx = current;
-            g_ctx.ny = vtr::nint(current / Arch.clb_grid.Aspect);
+            device_ctx.nx = current;
+            device_ctx.ny = vtr::nint(current / Arch.clb_grid.Aspect);
         }
         alloc_and_load_grid(num_instances_type);
-        vtr::printf_info("FPGA auto-sized to x = %d y = %d\n", g_ctx.nx, g_ctx.ny);
+        vtr::printf_info("FPGA auto-sized to x = %d y = %d\n", device_ctx.nx, device_ctx.ny);
     } else {
-        g_ctx.nx = Arch.clb_grid.W;
-        g_ctx.ny = Arch.clb_grid.H;
+        device_ctx.nx = Arch.clb_grid.W;
+        device_ctx.ny = Arch.clb_grid.H;
         alloc_and_load_grid(num_instances_type);
     }
 
-    vtr::printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", g_ctx.nx, g_ctx.ny);
+    vtr::printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", device_ctx.nx, device_ctx.ny);
 
     /* Test if netlist fits in grid */
-    for (int i = 0; i < g_ctx.num_block_types; ++i) {
+    for (int i = 0; i < device_ctx.num_block_types; ++i) {
         if (num_blocks_type[i] > num_instances_type[i]) {
 
             vtr::printf_error(__FILE__, __LINE__,
                     "Not enough physical locations for type %s, "
                     "number of blocks is %d but number of locations is %d.\n",
-                    g_ctx.block_types[i].name, num_blocks_type[i],
+                    device_ctx.block_types[i].name, num_blocks_type[i],
                     num_instances_type[i]);
             exit(1);
         }
@@ -414,17 +420,17 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 
     vtr::printf_info("\n");
     vtr::printf_info("Resource usage...\n");
-    for (int i = 0; i < g_ctx.num_block_types; ++i) {
+    for (int i = 0; i < device_ctx.num_block_types; ++i) {
         vtr::printf_info("\tNetlist      %d\tblocks of type: %s\n",
-                num_blocks_type[i], g_ctx.block_types[i].name);
+                num_blocks_type[i], device_ctx.block_types[i].name);
         vtr::printf_info("\tArchitecture %d\tblocks of type: %s\n",
-                num_instances_type[i], g_ctx.block_types[i].name);
+                num_instances_type[i], device_ctx.block_types[i].name);
     }
     vtr::printf_info("\n");
-    g_ctx.chan_width.x_max = g_ctx.chan_width.y_max = 0;
-    g_ctx.chan_width.x_min = g_ctx.chan_width.y_min = 0;
-    g_ctx.chan_width.x_list = (int *) vtr::malloc((g_ctx.ny + 1) * sizeof(int));
-    g_ctx.chan_width.y_list = (int *) vtr::malloc((g_ctx.nx + 1) * sizeof(int));
+    device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = 0;
+    device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
+    device_ctx.chan_width.x_list = (int *) vtr::malloc((device_ctx.ny + 1) * sizeof(int));
+    device_ctx.chan_width.y_list = (int *) vtr::malloc((device_ctx.nx + 1) * sizeof(int));
 
     free(num_blocks_type);
     free(num_instances_type);
@@ -514,16 +520,18 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 	float Fc_in, Fc_out;
 	int W = 100;	//W is unknown pre-packing, so *if* we need W here, we will assume a value of 100
 
+    auto& device_ctx = g_ctx.device();
+
 	directionality = vpr_setup.RoutingArch.directionality;
 	Fs = vpr_setup.RoutingArch.Fs;
 	Fc_in = 0, Fc_out = 0;
 
-	/* get Fc_in/out for g_ctx.FILL_TYPE block (i.e. logic blocks) */
-    VTR_ASSERT(g_ctx.FILL_TYPE->fc_specs.size() > 0);
+	/* get Fc_in/out for device_ctx.FILL_TYPE block (i.e. logic blocks) */
+    VTR_ASSERT(device_ctx.FILL_TYPE->fc_specs.size() > 0);
 
     //Estimate the maximum Fc_in/Fc_out
 
-    for (const t_fc_specification& fc_spec : g_ctx.FILL_TYPE->fc_specs) {
+    for (const t_fc_specification& fc_spec : device_ctx.FILL_TYPE->fc_specs) {
         float Fc = fc_spec.fc_value;
 
         if (fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE) {
@@ -533,8 +541,8 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
         VTR_ASSERT_MSG(Fc >= 0 && Fc <= 1., "Fc should be fractional");
 
         for (int ipin : fc_spec.pins) {
-            int iclass = g_ctx.FILL_TYPE->pin_class[ipin];
-            e_pin_type pin_type = g_ctx.FILL_TYPE->class_inf[iclass].type;
+            int iclass = device_ctx.FILL_TYPE->pin_class[ipin];
+            e_pin_type pin_type = device_ctx.FILL_TYPE->class_inf[iclass].type;
 
             if (pin_type == DRIVER) {
                 Fc_out = std::max(Fc, Fc_out);
@@ -571,7 +579,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 
 
 	/* Fan-in to opin/ipin/wire switches depends on whether the architecture is unidirectional/bidirectional */
-	(*opin_switch_fanin) = 2 * g_ctx.FILL_TYPE->num_drivers/4 * Fc_out;
+	(*opin_switch_fanin) = 2 * device_ctx.FILL_TYPE->num_drivers/4 * Fc_out;
 	(*wire_switch_fanin) = Fs;
 	(*ipin_switch_fanin) = Fc_in;
 	if (directionality == UNI_DIRECTIONAL){
@@ -613,13 +621,14 @@ bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch) {
 
 /* Free architecture data structures */
 void free_arch(t_arch* Arch) {
+    auto& device_ctx = g_ctx.mutable_device();
 
 	freeGrid();
-	free(g_ctx.chan_width.x_list);
-	free(g_ctx.chan_width.y_list);
+	free(device_ctx.chan_width.x_list);
+	free(device_ctx.chan_width.y_list);
 
-	g_ctx.chan_width.x_list = g_ctx.chan_width.y_list = NULL;
-	g_ctx.chan_width.max = g_ctx.chan_width.x_max = g_ctx.chan_width.y_max = g_ctx.chan_width.x_min = g_ctx.chan_width.y_min = 0;
+	device_ctx.chan_width.x_list = device_ctx.chan_width.y_list = NULL;
+	device_ctx.chan_width.max = device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
 
 	for (int i = 0; i < Arch->num_switches; ++i) {
 		if (Arch->Switches->name != NULL) {
@@ -627,9 +636,9 @@ void free_arch(t_arch* Arch) {
 		}
 	}
 	delete[] Arch->Switches;
-	delete[] g_ctx.arch_switch_inf;
+	delete[] device_ctx.arch_switch_inf;
 	Arch->Switches = NULL;
-	g_ctx.arch_switch_inf = NULL;
+	device_ctx.arch_switch_inf = NULL;
 	for (int i = 0; i < Arch->num_segments; ++i) {
 		free(Arch->Segments[i].cb);
 		Arch->Segments[i].cb = NULL;
@@ -745,50 +754,52 @@ static void free_complex_block_types(void) {
 
 	free_all_pb_graph_nodes();
 
-	for (int i = 0; i < g_ctx.num_block_types; ++i) {
-		free(g_ctx.block_types[i].name);
+    auto& device_ctx = g_ctx.mutable_device();
 
-		if (&g_ctx.block_types[i] == g_ctx.EMPTY_TYPE) {
+	for (int i = 0; i < device_ctx.num_block_types; ++i) {
+		free(device_ctx.block_types[i].name);
+
+		if (&device_ctx.block_types[i] == device_ctx.EMPTY_TYPE) {
 			continue;
 		}
 
-		for (int width = 0; width < g_ctx.block_types[i].width; ++width) {
-			for (int height = 0; height < g_ctx.block_types[i].height; ++height) {
+		for (int width = 0; width < device_ctx.block_types[i].width; ++width) {
+			for (int height = 0; height < device_ctx.block_types[i].height; ++height) {
 				for (int side = 0; side < 4; ++side) {
-					for (int pin = 0; pin < g_ctx.block_types[i].num_pin_loc_assignments[width][height][side]; ++pin) {
-						if (g_ctx.block_types[i].pin_loc_assignments[width][height][side][pin])
-							free(g_ctx.block_types[i].pin_loc_assignments[width][height][side][pin]);
+					for (int pin = 0; pin < device_ctx.block_types[i].num_pin_loc_assignments[width][height][side]; ++pin) {
+						if (device_ctx.block_types[i].pin_loc_assignments[width][height][side][pin])
+							free(device_ctx.block_types[i].pin_loc_assignments[width][height][side][pin]);
 					}
-					free(g_ctx.block_types[i].pinloc[width][height][side]);
-					free(g_ctx.block_types[i].pin_loc_assignments[width][height][side]);
+					free(device_ctx.block_types[i].pinloc[width][height][side]);
+					free(device_ctx.block_types[i].pin_loc_assignments[width][height][side]);
 				}
-				free(g_ctx.block_types[i].pinloc[width][height]);
-				free(g_ctx.block_types[i].pin_loc_assignments[width][height]);
-				free(g_ctx.block_types[i].num_pin_loc_assignments[width][height]);
+				free(device_ctx.block_types[i].pinloc[width][height]);
+				free(device_ctx.block_types[i].pin_loc_assignments[width][height]);
+				free(device_ctx.block_types[i].num_pin_loc_assignments[width][height]);
 			}
-			free(g_ctx.block_types[i].pinloc[width]);
-			free(g_ctx.block_types[i].pin_loc_assignments[width]);
-			free(g_ctx.block_types[i].num_pin_loc_assignments[width]);
+			free(device_ctx.block_types[i].pinloc[width]);
+			free(device_ctx.block_types[i].pin_loc_assignments[width]);
+			free(device_ctx.block_types[i].num_pin_loc_assignments[width]);
 		}
-		free(g_ctx.block_types[i].pinloc);
-		free(g_ctx.block_types[i].pin_loc_assignments);
-		free(g_ctx.block_types[i].num_pin_loc_assignments);
+		free(device_ctx.block_types[i].pinloc);
+		free(device_ctx.block_types[i].pin_loc_assignments);
+		free(device_ctx.block_types[i].num_pin_loc_assignments);
 
-		free(g_ctx.block_types[i].pin_width);
-		free(g_ctx.block_types[i].pin_height);
+		free(device_ctx.block_types[i].pin_width);
+		free(device_ctx.block_types[i].pin_height);
 
-		for (int j = 0; j < g_ctx.block_types[i].num_class; ++j) {
-			free(g_ctx.block_types[i].class_inf[j].pinlist);
+		for (int j = 0; j < device_ctx.block_types[i].num_class; ++j) {
+			free(device_ctx.block_types[i].class_inf[j].pinlist);
 		}
-		free(g_ctx.block_types[i].class_inf);
-		free(g_ctx.block_types[i].is_global_pin);
-		free(g_ctx.block_types[i].pin_class);
-		free(g_ctx.block_types[i].grid_loc_def);
+		free(device_ctx.block_types[i].class_inf);
+		free(device_ctx.block_types[i].is_global_pin);
+		free(device_ctx.block_types[i].pin_class);
+		free(device_ctx.block_types[i].grid_loc_def);
 
-		free_pb_type(g_ctx.block_types[i].pb_type);
-		free(g_ctx.block_types[i].pb_type);
+		free_pb_type(device_ctx.block_types[i].pb_type);
+		free(device_ctx.block_types[i].pb_type);
 	}
-	delete[] g_ctx.block_types;
+	delete[] device_ctx.block_types;
 }
 
 static void free_pb_type(t_pb_type *pb_type) {
@@ -874,22 +885,24 @@ static void free_pb_type(t_pb_type *pb_type) {
 void free_circuit() {
 
 	//Free new net structures
-	free_global_nlist_net(&g_ctx.clbs_nlist);
+    auto& cluster_ctx = g_ctx.mutable_clustering();
 
-	if (g_ctx.blocks != NULL) {
-		for (int i = 0; i < g_ctx.num_blocks; ++i) {
-			if (g_ctx.blocks[i].pb != NULL) {
-				free_pb(g_ctx.blocks[i].pb);
-				delete g_ctx.blocks[i].pb;
+	free_global_nlist_net(&cluster_ctx.clbs_nlist);
+
+	if (cluster_ctx.blocks != NULL) {
+		for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
+			if (cluster_ctx.blocks[i].pb != NULL) {
+				free_pb(cluster_ctx.blocks[i].pb);
+				delete cluster_ctx.blocks[i].pb;
 			}
-			free(g_ctx.blocks[i].nets);
-			free(g_ctx.blocks[i].net_pins);
-			free(g_ctx.blocks[i].name);
-			delete [] g_ctx.blocks[i].pb_route;
+			free(cluster_ctx.blocks[i].nets);
+			free(cluster_ctx.blocks[i].net_pins);
+			free(cluster_ctx.blocks[i].name);
+			delete [] cluster_ctx.blocks[i].pb_route;
 		}
 	}
-	free(g_ctx.blocks);
-	g_ctx.blocks = NULL;
+	free(cluster_ctx.blocks);
+	cluster_ctx.blocks = NULL;
 }
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
@@ -990,7 +1003,12 @@ char *vpr_get_output_file_name(enum e_output_files ename) {
 void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     if(!vpr_setup.AnalysisOpts.doAnalysis) return;
 
-    if(g_ctx.trace_head == nullptr) {
+    auto& route_ctx = g_ctx.routing();
+    auto& cluster_ctx = g_ctx.clustering();
+    auto& device_ctx = g_ctx.device();
+    auto& atom_ctx = g_ctx.atom();
+
+    if(route_ctx.trace_head == nullptr) {
         VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
 
@@ -1001,8 +1019,8 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 #endif
 	if (vpr_setup.TimingEnabled) {
         //Load the net delays
-        net_delay = alloc_net_delay(&net_delay_ch, g_ctx.clbs_nlist.net, g_ctx.clbs_nlist.net.size());
-        load_net_delay_from_routing(net_delay, g_ctx.clbs_nlist.net, g_ctx.clbs_nlist.net.size());
+        net_delay = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+        load_net_delay_from_routing(net_delay, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         slacks = alloc_and_load_timing_graph(vpr_setup.Timing);
@@ -1011,7 +1029,7 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
 
 	routing_stats(vpr_setup.RouterOpts.full_stats, vpr_setup.RouterOpts.route_type,
-			g_ctx.num_rr_switches, vpr_setup.Segments,
+			device_ctx.num_rr_switches, vpr_setup.Segments,
 			vpr_setup.RoutingArch.num_segment, 
             vpr_setup.RoutingArch.R_minW_nmos,
 			vpr_setup.RoutingArch.R_minW_pmos, 
@@ -1027,13 +1045,14 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 	if (vpr_setup.TimingEnabled) {
 
         //Do final timing analysis
-        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(g_ctx.atom_nl, g_ctx.atom_lookup, net_delay);
+        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
         auto timing_info = make_setup_timing_info(analysis_delay_calc);
         timing_info->update();
 
         if(isEchoFileEnabled(E_ECHO_ANALYSIS_TIMING_GRAPH)) {
+            auto& timing_ctx = g_ctx.timing();
             tatum::write_echo(getEchoFileName(E_ECHO_ANALYSIS_TIMING_GRAPH),
-                    *g_ctx.timing_graph, *g_ctx.timing_constraints, *analysis_delay_calc, timing_info->analyzer());
+                    *timing_ctx.graph, *timing_ctx.constraints, *analysis_delay_calc, timing_info->analyzer());
         }
 
         //Timing stats
@@ -1041,7 +1060,7 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
         //Write the post-syntesis netlist
         if(vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
-            netlist_writer(g_ctx.atom_nl.netlist_name().c_str(), analysis_delay_calc);
+            netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc);
         }
         
         //Do power analysis
@@ -1069,9 +1088,11 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
         VPR_THROW(VPR_ERROR_POWER, "Power analysis only supported on single-clock circuits");
     }
 
+    auto& power_ctx = g_ctx.mutable_power();
+
 	/* Get the critical path of this clock */
-	g_ctx.solution_inf.T_crit = timing_info.least_slack_critical_path().delay();
-	VTR_ASSERT(g_ctx.solution_inf.T_crit > 0.);
+	power_ctx.solution_inf.T_crit = timing_info.least_slack_critical_path().delay();
+	VTR_ASSERT(power_ctx.solution_inf.T_crit > 0.);
 
 	vtr::printf_info("\n\nPower Estimation:\n");
 	vtr::printf_info("-----------------\n");

@@ -139,9 +139,9 @@
  * It is in the form of array of structs instead of
  * structs of arrays for cache efficiency. 
  * Could have more data members for other macro type.
- * blk_index: The g_ctx.blocks index of this block. 
- * x_offset: The x_offset of the previous block to this g_ctx.blocks. 
- * y_offset: The y_offset of the previous block to this g_ctx.blocks. 
+ * blk_index: The cluster_ctx.blocks index of this block. 
+ * x_offset: The x_offset of the previous block to this cluster_ctx.blocks. 
+ * y_offset: The y_offset of the previous block to this cluster_ctx.blocks. 
  */
 typedef struct s_pl_macro_member{
 	int blk_index;
