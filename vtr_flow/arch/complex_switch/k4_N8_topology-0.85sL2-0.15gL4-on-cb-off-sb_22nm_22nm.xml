@@ -12,7 +12,8 @@
       * Custom switch blocks descriptions, modified connection block descriptions and routing mux delay tables are used describe this topology.
       * Custom switch block descriptions have been elongated somewhat to expose more of the format features.
       * See VTR documentation for more info on the enhanced inter-LB interconnect specifications.
- --><architecture>
+ -->
+<architecture>
   
   <!-- ODIN II specific config -->
   <models>
@@ -148,7 +149,7 @@
 		</switchblock>
 	</switchblocklist>
 
-      <complexblocklist>
+    <complexblocklist>
       <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
       <pb_type name="io" capacity="8">
         <input name="outpad" num_pins="1"/>
@@ -179,9 +180,9 @@
         </mode>
 
         <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
-            <fc_override port_name="outpad" seg_name="l4g" fc_type="frac" fc_val="0"/>
-            <fc_override port_name="clock" seg_name="l4g" fc_type="frac" fc_val="0"/>
-            <fc_override port_name="inpad" seg_name="l4g" fc_type="frac" fc_val="0.200000"/>
+            <fc_override port_name="outpad" segment_name="l4g" fc_type="frac" fc_val="0"/>
+            <fc_override port_name="inpad" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
+            <fc_override port_name="clock" segment_name="l4g" fc_type="frac" fc_val="0"/>
         </fc>
 
         <!-- IOs go on the periphery of the FPGA, for consistency, 
@@ -275,16 +276,16 @@
       </interconnect>
 
       <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
-          <fc_override port_name="I0" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="I1" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="I2" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="I3" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="I4" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="I5" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="I6" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="I7" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="clk" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="O" seg_name="l4g" fc_type="frac" fc_val="0.200000"/>
+          <fc_override port_name="I0" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I1" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I2" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I3" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I4" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I5" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I6" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I7" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="clk" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="O" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
       </fc>
 
       <pinlocations pattern="spread"/>
@@ -477,9 +478,9 @@
       </mode>
 
       <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
-          <fc_override port_name="a" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="b" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="out" seg_name="l4g" fc_type="frac" fc_val="0.200000"/>
+          <fc_override port_name="a" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="b" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="out" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
       </fc>
 
       <pinlocations pattern="spread"/>
@@ -988,13 +989,13 @@
 
 
       <fc default_in_type="frac" default_in_val="0.200000" default_out_type="frac" default_out_val="0.200000">
-          <fc_override port_name="addr1" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="addr2" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="data" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="we1" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="we2" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="clk" seg_name="l4g" fc_type="frac" fc_val="0"/>
-          <fc_override port_name="out" seg_name="l4g" fc_type="frac" fc_val="0.200000"/>
+          <fc_override port_name="addr1" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="addr2" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="data" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="we1" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="we2" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="clk" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="out" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
       </fc>
 
       <pinlocations pattern="spread"/>
