@@ -23,7 +23,9 @@
 enum e_lb_rr_type {
 	LB_SOURCE = 0, LB_SINK, LB_INTERMEDIATE, NUM_LB_RR_TYPES
 };
-extern const char* lb_rr_type_str[];
+const std::vector<const char*> lb_rr_type_str {
+    "LB_SOURCE", "LB_SINK", "LB_INTERMEDIATE", "INVALID"
+};
 
 
 /**************************************************************************
