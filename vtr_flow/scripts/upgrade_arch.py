@@ -56,10 +56,14 @@ def main():
 
     modified = False
     if "add_model_timing" in args.features:
-        modified = modified or add_model_timing(arch)
+        result = add_model_timing(arch)
+        if result:
+            modified = True
 
     if "upgrade_fc_overrides" in args.features:
-        modified = modified or upgrade_fc_overrides(arch)
+        result = upgrade_fc_overrides(arch)
+        if result:
+            modified = True
 
     if modified:
         if args.debug:
