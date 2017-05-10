@@ -2127,6 +2127,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	int clb_index = -2;
     auto& device_ctx = g_ctx.device();
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.placement();
 
 	/* Control + mouse click to select multiple nets. */
 	if (!button_info.ctrl_pressed)
@@ -2191,7 +2192,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	} else {
 		/* Highlight block and fan-in/fan-outs. */
 		draw_highlight_blocks_color(clb->type, clb_index);
-		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, clb->name, clb->x, clb->y);
+		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, clb->name, place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
 	}
 
 	update_message(msg);

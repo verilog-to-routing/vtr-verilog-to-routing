@@ -626,14 +626,6 @@ struct s_block {
 
 	t_pb *pb; /* Internal-to-block hierarchy */
 	t_pb_route *pb_route; /* Internal-to-block routing [0..pb->pb_graph_node->total_pb_pins-1]*/
-
-    //TODO move block placement state into PlacementContext
-	int x;
-	int y;
-	int z;
-
-	unsigned int is_fixed : 1;
-    unsigned int nets_and_pins_synced_to_z_coordinate : 1;
 };
 typedef struct s_block t_block;
 

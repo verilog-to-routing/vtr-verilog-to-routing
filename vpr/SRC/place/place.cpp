@@ -348,11 +348,17 @@ void try_place(struct s_placer_opts placer_opts,
 	t_slack * slacks = NULL;
 #endif
 
+    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.mutable_placement();
+
+    place_ctx.block_locs.clear();
+    place_ctx.block_locs.resize(cluster_ctx.num_blocks);
+
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
 
 	/* Allocated here because it goes into timing critical code where each memory allocation is expensive */
-    auto& device_ctx = g_ctx.device();
     IntraLbPbPinLookup pb_gpin_lookup(device_ctx.block_types, device_ctx.num_block_types);
 
 
@@ -491,8 +497,6 @@ void try_place(struct s_placer_opts placer_opts,
         print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
     }
     vtr::printf_info("\n");
-
-    auto& cluster_ctx = g_ctx.clustering();
 
 	move_lim = (int) (annealing_sched.inner_num * pow(cluster_ctx.num_blocks, 1.3333));
 
@@ -1171,12 +1175,13 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 	int x_from, y_from, z_from, b_to;
 	int abort_swap = false;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    //auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.mutable_placement();
     auto& device_ctx = g_ctx.device();
 
-	x_from = cluster_ctx.blocks[b_from].x;
-	y_from = cluster_ctx.blocks[b_from].y;
-	z_from = cluster_ctx.blocks[b_from].z;
+	x_from = place_ctx.block_locs[b_from].x;
+	y_from = place_ctx.block_locs[b_from].y;
+	z_from = place_ctx.block_locs[b_from].z;
 
 	b_to = device_ctx.grid[x_to][y_to].blocks[z_to];
 
@@ -1184,9 +1189,9 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 	if (b_to == EMPTY_BLOCK) {
 
 		// Swap the block, dont swap the nets yet
-		cluster_ctx.blocks[b_from].x = x_to;
-		cluster_ctx.blocks[b_from].y = y_to;
-		cluster_ctx.blocks[b_from].z = z_to;
+		place_ctx.block_locs[b_from].x = x_to;
+		place_ctx.block_locs[b_from].y = y_to;
+		place_ctx.block_locs[b_from].z = z_to;
 
 		// Sets up the blocks moved
 		imoved_blk = blocks_affected.num_moved_blocks;
@@ -1211,13 +1216,13 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 		}
 
 		// Swap the block, dont swap the nets yet
-		cluster_ctx.blocks[b_to].x = x_from;
-		cluster_ctx.blocks[b_to].y = y_from;
-		cluster_ctx.blocks[b_to].z = z_from;
+		place_ctx.block_locs[b_to].x = x_from;
+		place_ctx.block_locs[b_to].y = y_from;
+		place_ctx.block_locs[b_to].z = z_from;
 
-		cluster_ctx.blocks[b_from].x = x_to;
-		cluster_ctx.blocks[b_from].y = y_to;
-		cluster_ctx.blocks[b_from].z = z_to;
+		place_ctx.block_locs[b_from].x = x_to;
+		place_ctx.block_locs[b_from].y = y_to;
+		place_ctx.block_locs[b_from].z = z_to;
 		
 		// Sets up the blocks moved
 		imoved_blk = blocks_affected.num_moved_blocks;
@@ -1260,12 +1265,12 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 	int curr_b_from, curr_x_from, curr_y_from, curr_z_from, curr_x_to, curr_y_to, curr_z_to;
 	int abort_swap = false;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.placement();
     auto& device_ctx = g_ctx.device();
 	
-	x_from = cluster_ctx.blocks[b_from].x;
-	y_from = cluster_ctx.blocks[b_from].y;
-	z_from = cluster_ctx.blocks[b_from].z;
+	x_from = place_ctx.block_locs[b_from].x;
+	y_from = place_ctx.block_locs[b_from].y;
+	z_from = place_ctx.block_locs[b_from].z;
 
 	get_imacro_from_iblk(&imacro, b_from, pl_macros, num_pl_macros);
 	if ( imacro != -1) {
@@ -1282,9 +1287,9 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 			// cannot use the old from and to info
 			curr_b_from = pl_macros[imacro].members[imember].blk_index;
 			
-			curr_x_from = cluster_ctx.blocks[curr_b_from].x;
-			curr_y_from = cluster_ctx.blocks[curr_b_from].y;
-			curr_z_from = cluster_ctx.blocks[curr_b_from].z;
+			curr_x_from = place_ctx.block_locs[curr_b_from].x;
+			curr_y_from = place_ctx.block_locs[curr_b_from].y;
+			curr_z_from = place_ctx.block_locs[curr_b_from].z;
 
 			curr_x_to = curr_x_from + x_swap_offset;
 			curr_y_to = curr_y_from + y_swap_offset;
@@ -1326,7 +1331,9 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	float delta_c, bb_delta_c, timing_delta_c, delay_delta_c;
 	int inet, iblk, bnum, iblk_pin, inet_affected;
 	int abort_swap = false;
+
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.mutable_placement();
 
 	num_ts_called ++;
 
@@ -1343,7 +1350,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	timing_delta_c = 0;
 	delay_delta_c = 0.0;
 	
-	/* Pick a random block to be swapped with another random cluster_ctx.blocks    */
+	/* Pick a random block to be swapped with another random block    */
 	b_from = vtr::irand(cluster_ctx.num_blocks - 1);
 
 	/* If the pins are fixed we never move them from their initial    *
@@ -1352,13 +1359,13 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	 * but this shouldn't cause any significant slowdown and won't be *
 	 * broken if I ever change the parser so that the pins aren't     *
 	 * necessarily at the start of the block list.                    */
-	while (cluster_ctx.blocks[b_from].is_fixed == true) {
+	while (place_ctx.block_locs[b_from].is_fixed == true) {
 		b_from = vtr::irand(cluster_ctx.num_blocks - 1);
 	}
 
-	x_from = cluster_ctx.blocks[b_from].x;
-	y_from = cluster_ctx.blocks[b_from].y;
-	z_from = cluster_ctx.blocks[b_from].z;
+	x_from = place_ctx.block_locs[b_from].x;
+	y_from = place_ctx.block_locs[b_from].y;
+	z_from = place_ctx.block_locs[b_from].z;
 
 	if (!find_to(cluster_ctx.blocks[b_from].type, rlim, x_from, y_from, &x_to, &y_to, &z_to))
 		return REJECTED;
@@ -1366,13 +1373,13 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 #if 0
 	int b_to = device_ctx.grid[x_to][y_to].blocks[z_to];
 	vtr::printf_info( "swap [%d][%d][%d] %s \"%s\" <=> [%d][%d][%d] %s \"%s\"\n",
-		x_from, y_from, z_from, device_ctx.grid[x_from][y_from].type->name, b_from != -1 ? cluster_ctx.blocks[b_from].name : "",
-		x_to, y_to, z_to, device_ctx.grid[x_to][y_to].type->name, b_to != -1 ? cluster_ctx.blocks[b_to].name : "");
+		x_from, y_from, z_from, device_ctx.grid[x_from][y_from].type->name, b_from != -1 ? place_ctx.block_locs[b_from].name : "",
+		x_to, y_to, z_to, device_ctx.grid[x_to][y_to].type->name, b_to != -1 ? place_ctx.block_locs[b_to].name : "");
 #endif
 
 	/* Make the switch in order to make computing the new bounding *
 	 * box simpler.  If the cost increase is too high, switch them *
-	 * back.  (cluster_ctx.blocks data structures switched, clbs not switched   *
+	 * back.  (place_ctx.block_locs data structures switched, clbs not switched   *
 	 * until success of move is determined.)                       *
 	 * Also check that whether those are the only 2 blocks         *
 	 * to be moved - check for carry chains and other placement    *
@@ -1512,13 +1519,13 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				bb_updated_before[inet] = NOT_UPDATED_YET;
 			}
 
-			/* Restore the cluster_ctx.blocks data structures to their state before the move. */
+			/* Restore the place_ctx.block_locs data structures to their state before the move. */
 			for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 				b_from = blocks_affected.moved_blocks[iblk].block_num;
 
-				cluster_ctx.blocks[b_from].x = blocks_affected.moved_blocks[iblk].xold;
-				cluster_ctx.blocks[b_from].y = blocks_affected.moved_blocks[iblk].yold;
-				cluster_ctx.blocks[b_from].z = blocks_affected.moved_blocks[iblk].zold;
+				place_ctx.block_locs[b_from].x = blocks_affected.moved_blocks[iblk].xold;
+				place_ctx.block_locs[b_from].y = blocks_affected.moved_blocks[iblk].yold;
+				place_ctx.block_locs[b_from].z = blocks_affected.moved_blocks[iblk].zold;
 			}
 		}
 
@@ -1530,13 +1537,13 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 		return (keep_switch);
 	} else {
 
-		/* Restore the cluster_ctx.blocks data structures to their state before the move. */
+		/* Restore the place_ctx.block_locs data structures to their state before the move. */
 		for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 			b_from = blocks_affected.moved_blocks[iblk].block_num;
 
-			cluster_ctx.blocks[b_from].x = blocks_affected.moved_blocks[iblk].xold;
-			cluster_ctx.blocks[b_from].y = blocks_affected.moved_blocks[iblk].yold;
-			cluster_ctx.blocks[b_from].z = blocks_affected.moved_blocks[iblk].zold;
+			place_ctx.block_locs[b_from].x = blocks_affected.moved_blocks[iblk].xold;
+			place_ctx.block_locs[b_from].y = blocks_affected.moved_blocks[iblk].yold;
+			place_ctx.block_locs[b_from].z = blocks_affected.moved_blocks[iblk].zold;
 		}
 
 		/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
@@ -1602,7 +1609,7 @@ static bool find_to(t_type_ptr type, float rlim,
 	int itype;
 
     auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.placement();
 
 	VTR_ASSERT(type == device_ctx.grid[x_from][y_from].type);
 
@@ -1649,7 +1656,7 @@ static bool find_to(t_type_ptr type, float rlim,
 				*pz_to = vtr::irand(device_ctx.grid[*px_to][*py_to].type->capacity - 1);
 			}
 			int b_to = device_ctx.grid[*px_to][*py_to].blocks[*pz_to];
-			if ((b_to != EMPTY_BLOCK) && (cluster_ctx.blocks[b_to].is_fixed == true)) {
+			if ((b_to != EMPTY_BLOCK) && (place_ctx.block_locs[b_to].is_fixed == true)) {
 				is_legal = false;
 			}
 		}
@@ -1758,6 +1765,7 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 	/*returns the delay of one point to point connection */
 
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.placement();
     auto& device_ctx = g_ctx.device();
 
 	float delay_source_to_sink = 0.;
@@ -1779,8 +1787,8 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
         VTR_ASSERT(source_type != NULL);
         VTR_ASSERT(sink_type != NULL);
 
-        delta_x = abs(cluster_ctx.blocks[sink_block].x - cluster_ctx.blocks[source_block].x);
-        delta_y = abs(cluster_ctx.blocks[sink_block].y - cluster_ctx.blocks[source_block].y);
+        delta_x = abs(place_ctx.block_locs[sink_block].x - place_ctx.block_locs[source_block].x);
+        delta_y = abs(place_ctx.block_locs[sink_block].y - place_ctx.block_locs[source_block].y);
 
         /* TODO low priority: Could be merged into one look-up table */
         /* Note: This heuristic is terrible on Quality of Results.  
@@ -2210,6 +2218,7 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	unsigned int ipin, n_pins;
 
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.placement();
     auto& device_ctx = g_ctx.device();
 
 	n_pins = cluster_ctx.clbs_nlist.net[inet].pins.size();
@@ -2217,8 +2226,8 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	bnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
 	pnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
 
-	x = cluster_ctx.blocks[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
-	y = cluster_ctx.blocks[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
+	x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
+	y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
 
 	x = max(min(x, device_ctx.nx), 1);
 	y = max(min(y, device_ctx.ny), 1);
@@ -2235,8 +2244,8 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	for (ipin = 1; ipin < n_pins; ipin++) {
 		bnum = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
 		pnum = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
-		x = cluster_ctx.blocks[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
-		y = cluster_ctx.blocks[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
+		x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
+		y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
 
 		/* Code below counts IO blocks as being within the 1..device_ctx.nx, 1..device_ctx.ny clb array. *
 		 * This is because channels do not go out of the 0..device_ctx.nx, 0..device_ctx.ny range, and   *
@@ -2373,12 +2382,13 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 	unsigned int k;
 
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.placement();
     auto& device_ctx = g_ctx.device();
 
 	bnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
 	pnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
-	x = cluster_ctx.blocks[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
-	y = cluster_ctx.blocks[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
+	x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
+	y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
 	
 	xmin = x;
 	ymin = y;
@@ -2388,8 +2398,8 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 	for (k = 1; k < cluster_ctx.clbs_nlist.net[inet].pins.size(); k++) {
 		bnum = cluster_ctx.clbs_nlist.net[inet].pins[k].block;
 		pnum = cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin;
-		x = cluster_ctx.blocks[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
-		y = cluster_ctx.blocks[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
+		x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
+		y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
 
 		if (x < xmin) {
 			xmin = x;
@@ -2759,7 +2769,7 @@ static int try_place_macro(int itype, int ipos, int imacro){
 	int macro_can_be_placed = check_macro_can_be_placed(imacro, itype, x, y, z);
 
 	if (macro_can_be_placed) {
-        auto& cluster_ctx = g_ctx.clustering();
+        auto& place_ctx = g_ctx.mutable_placement();
 		
 		// Place down the macro
 		macro_placed = true;
@@ -2769,9 +2779,10 @@ static int try_place_macro(int itype, int ipos, int imacro){
 			member_y = y + pl_macros[imacro].members[imember].y_offset;
 			member_z = z + pl_macros[imacro].members[imember].z_offset;
 					
-			cluster_ctx.blocks[pl_macros[imacro].members[imember].blk_index].x = member_x;
-			cluster_ctx.blocks[pl_macros[imacro].members[imember].blk_index].y = member_y;
-			cluster_ctx.blocks[pl_macros[imacro].members[imember].blk_index].z = member_z;
+            int iblk = pl_macros[imacro].members[imember].blk_index;
+			place_ctx.block_locs[iblk].x = member_x;
+			place_ctx.block_locs[iblk].y = member_y;
+			place_ctx.block_locs[iblk].z = member_z;
 
 			device_ctx.grid[member_x][member_y].blocks[member_z] = pl_macros[imacro].members[imember].blk_index;
 			device_ctx.grid[member_x][member_y].usage++;
@@ -2867,11 +2878,12 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 	int iblk, itype;
 	int ipos, x, y, z;
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.mutable_placement();
     auto& device_ctx = g_ctx.device();
 
 	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
 
-		if (cluster_ctx.blocks[iblk].x != EMPTY_BLOCK) {
+		if (place_ctx.block_locs[iblk].x != EMPTY_BLOCK) {
 			// block placed.
 			continue;
 		}
@@ -2901,13 +2913,13 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			device_ctx.grid[x][y].blocks[z] = iblk;
 			device_ctx.grid[x][y].usage++;
 
-			cluster_ctx.blocks[iblk].x = x;
-			cluster_ctx.blocks[iblk].y = y;
-			cluster_ctx.blocks[iblk].z = z;
+			place_ctx.block_locs[iblk].x = x;
+			place_ctx.block_locs[iblk].y = y;
+			place_ctx.block_locs[iblk].z = z;
 
             //Mark IOs as fixed if specifying a (fixed) random placement
             if(cluster_ctx.blocks[iblk].type == device_ctx.IO_TYPE && pad_loc_type == RANDOM) {
-                cluster_ctx.blocks[iblk].is_fixed = true;
+                place_ctx.block_locs[iblk].is_fixed = true;
  			}
 
 			/* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the 
@@ -2915,7 +2927,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 				* just move the last entry in legal_pos to the spot we just used and decrement the 
 				* count of free_locations.
 				*/
-			legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used cluster_ctx.blocks position */
+			legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
 			free_locations[itype]--;
 			
 		}
@@ -2951,6 +2963,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 						  */
     auto& device_ctx = g_ctx.device();
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.mutable_placement();
 
 	free_locations = (int *) vtr::malloc(device_ctx.num_block_types * sizeof(int));
 	for (itype = 0; itype < device_ctx.num_block_types; itype++) {
@@ -2974,9 +2987,9 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 	/* Similarly, mark all blocks as not being placed yet. */
 	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		cluster_ctx.blocks[iblk].x = -1;
-		cluster_ctx.blocks[iblk].y = -1;
-		cluster_ctx.blocks[iblk].z = -1;
+		place_ctx.block_locs[iblk].x = OPEN;
+		place_ctx.block_locs[iblk].y = OPEN;
+		place_ctx.block_locs[iblk].z = OPEN;
 	}
 
 	initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
@@ -3164,13 +3177,14 @@ static void check_place(float bb_cost, float timing_cost,
 	}
 
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.placement();
     auto& device_ctx = g_ctx.device();
 
 	bdone = (int *) vtr::malloc(cluster_ctx.num_blocks * sizeof(int));
 	for (i = 0; i < cluster_ctx.num_blocks; i++)
 		bdone[i] = 0;
 
-	/* Step through device_ctx.grid array. Check it against cluster_ctx.blocks array. */
+	/* Step through device_ctx.grid array. Check it against blocks */
 	for (i = 0; i <= (device_ctx.nx + 1); i++)
 		for (j = 0; j <= (device_ctx.ny + 1); j++) {
 			if (device_ctx.grid[i][j].usage > device_ctx.grid[i][j].type->capacity) {
@@ -3191,7 +3205,7 @@ static void check_place(float bb_cost, float timing_cost,
 							bnum, i, j);
 					error++;
 				}
-				if ((cluster_ctx.blocks[bnum].x != i) || (cluster_ctx.blocks[bnum].y != j)) {
+				if ((place_ctx.block_locs[bnum].x != i) || (place_ctx.block_locs[bnum].y != j)) {
 					vtr::printf_error(__FILE__, __LINE__,
 							"Block %d location conflicts with grid(%d,%d) data.\n", 
 							bnum, i, j);
@@ -3228,14 +3242,14 @@ static void check_place(float bb_cost, float timing_cost,
 			member_iblk = pl_macros[imacro].members[imember].blk_index;
 
 			// Compute the suppossed member's x,y,z location
-			member_x = cluster_ctx.blocks[head_iblk].x + pl_macros[imacro].members[imember].x_offset;
-			member_y = cluster_ctx.blocks[head_iblk].y + pl_macros[imacro].members[imember].y_offset;
-			member_z = cluster_ctx.blocks[head_iblk].z + pl_macros[imacro].members[imember].z_offset;
+			member_x = place_ctx.block_locs[head_iblk].x + pl_macros[imacro].members[imember].x_offset;
+			member_y = place_ctx.block_locs[head_iblk].y + pl_macros[imacro].members[imember].y_offset;
+			member_z = place_ctx.block_locs[head_iblk].z + pl_macros[imacro].members[imember].z_offset;
 
-			// Check the cluster_ctx.blocks data structure first
-			if (cluster_ctx.blocks[member_iblk].x != member_x 
-					|| cluster_ctx.blocks[member_iblk].y != member_y 
-					|| cluster_ctx.blocks[member_iblk].z != member_z) {
+			// Check the place_ctx.block_locs data structure first
+			if (place_ctx.block_locs[member_iblk].x != member_x 
+					|| place_ctx.block_locs[member_iblk].y != member_y 
+					|| place_ctx.block_locs[member_iblk].z != member_z) {
 				vtr::printf_error(__FILE__, __LINE__,
 						"Block %d in pl_macro #%d is not placed in the proper orientation.\n", 
 						member_iblk, imacro);
@@ -3277,13 +3291,14 @@ static void print_clb_placement(const char *fname) {
 	FILE *fp;
 	int i;
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.placement();
 	
 	fp = vtr::fopen(fname, "w");
 	fprintf(fp, "Complex block placements:\n\n");
 
 	fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
 	for(i = 0; i < cluster_ctx.num_blocks; i++) {
-		fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.blocks[i].name, cluster_ctx.blocks[i].x, cluster_ctx.blocks[i].y, cluster_ctx.blocks[i].z);
+		fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.blocks[i].name, place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].z);
 	}
 	
 	fclose(fp);	

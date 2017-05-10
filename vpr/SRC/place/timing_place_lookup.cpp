@@ -278,6 +278,7 @@ static void alloc_block(void) {
 
     auto& device_ctx = g_ctx.device();
     auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& place_ctx = g_ctx.mutable_placement();
 
 	max_pins = 0;
 	for (i = 0; i < NUM_TYPES_USED; i++) {
@@ -286,6 +287,8 @@ static void alloc_block(void) {
 
 	cluster_ctx.num_blocks = BLOCK_COUNT;
 	cluster_ctx.blocks = (struct s_block *) vtr::malloc(cluster_ctx.num_blocks * sizeof(struct s_block));
+
+    place_ctx.block_locs.resize(BLOCK_COUNT);
 
 	for (ix_b = 0; ix_b < BLOCK_COUNT; ix_b++) {
 		len = strlen("TEMP_BLOCK");
@@ -550,22 +553,23 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 		int source_y_loc, int source_z_loc, t_type_ptr sink_type,
 		int sink_x_loc, int sink_y_loc, int sink_z_loc) {
     auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& place_ctx = g_ctx.mutable_placement();
     auto& device_ctx = g_ctx.mutable_device();
 
 	/*all routing occurs between block 0 (source) and block 1 (sink) */
 	cluster_ctx.blocks[SOURCE_BLOCK].type = source_type;
-	cluster_ctx.blocks[SOURCE_BLOCK].x = source_x_loc;
-	cluster_ctx.blocks[SOURCE_BLOCK].y = source_y_loc;
-	cluster_ctx.blocks[SOURCE_BLOCK].z = source_z_loc;
 	cluster_ctx.blocks[SOURCE_BLOCK].pb = nullptr;
 	cluster_ctx.blocks[SOURCE_BLOCK].pb_route = nullptr;
+	place_ctx.block_locs[SOURCE_BLOCK].x = source_x_loc;
+	place_ctx.block_locs[SOURCE_BLOCK].y = source_y_loc;
+	place_ctx.block_locs[SOURCE_BLOCK].z = source_z_loc;
 
 	cluster_ctx.blocks[SINK_BLOCK].type = sink_type;
-	cluster_ctx.blocks[SINK_BLOCK].x = sink_x_loc;
-	cluster_ctx.blocks[SINK_BLOCK].y = sink_y_loc;
-	cluster_ctx.blocks[SINK_BLOCK].z = sink_z_loc;
 	cluster_ctx.blocks[SINK_BLOCK].pb = nullptr;
 	cluster_ctx.blocks[SINK_BLOCK].pb_route = nullptr;
+	place_ctx.block_locs[SINK_BLOCK].x = sink_x_loc;
+	place_ctx.block_locs[SINK_BLOCK].y = sink_y_loc;
+	place_ctx.block_locs[SINK_BLOCK].z = sink_z_loc;
 
 	device_ctx.grid[source_x_loc][source_y_loc].blocks[source_z_loc] = SOURCE_BLOCK;
 	device_ctx.grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = SINK_BLOCK;

@@ -472,13 +472,13 @@ const t_net_pin* find_pb_route_clb_input_net_pin(int clb, int sink_pb_pin_id) {
 
 //Return the pb pin index corresponding to the pin clb_pin on block clb
 int find_clb_pb_pin(int clb, int clb_pin) {
-    //TODO: remove cluster_ctx dependance
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.placement();
 
     VTR_ASSERT_MSG(clb_pin < cluster_ctx.blocks[clb].type->num_pins, "Must be a valid top-level pin");
 
     int pb_pin = -1;
-    if(cluster_ctx.blocks[clb].nets_and_pins_synced_to_z_coordinate) {
+    if(place_ctx.block_locs[clb].nets_and_pins_synced_to_z_coordinate) {
         //Pins have been offset by z-coordinate, need to remove offset
 
         t_type_ptr type = cluster_ctx.blocks[clb].type;
@@ -486,7 +486,7 @@ int find_clb_pb_pin(int clb, int clb_pin) {
         int num_basic_block_pins = type->num_pins / type->capacity;
         /* Logical location and physical location is offset by z * max_num_block_pins */
 
-        pb_pin = clb_pin - cluster_ctx.blocks[clb].z * num_basic_block_pins;
+        pb_pin = clb_pin - place_ctx.block_locs[clb].z * num_basic_block_pins;
     } else {
         //No offset
         pb_pin = clb_pin;
@@ -499,16 +499,17 @@ int find_clb_pb_pin(int clb, int clb_pin) {
 
 int find_pb_pin_clb_pin(int clb, int pb_pin) {
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.placement();
 
     int clb_pin = -1;
-    if(cluster_ctx.blocks[clb].nets_and_pins_synced_to_z_coordinate) {
+    if(place_ctx.block_locs[clb].nets_and_pins_synced_to_z_coordinate) {
         //Pins have been offset by z-coordinate, need to remove offset
         t_type_ptr type = cluster_ctx.blocks[clb].type;
         VTR_ASSERT(type->num_pins % type->capacity == 0);
         int num_basic_block_pins = type->num_pins / type->capacity;
         /* Logical location and physical location is offset by z * max_num_block_pins */
 
-        clb_pin = pb_pin + cluster_ctx.blocks[clb].z * num_basic_block_pins;
+        clb_pin = pb_pin + place_ctx.block_locs[clb].z * num_basic_block_pins;
     } else {
         //No offset
         clb_pin = pb_pin;
@@ -587,11 +588,12 @@ void get_class_range_for_block(const int iblk,
 
 	/* Assumes that the placement has been done so each block has a set of pins allocated to it */
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.placement();
 
 	t_type_ptr type = cluster_ctx.blocks[iblk].type;
 	VTR_ASSERT(type->num_class % type->capacity == 0);
-	*class_low = cluster_ctx.blocks[iblk].z * (type->num_class / type->capacity);
-	*class_high = (cluster_ctx.blocks[iblk].z + 1) * (type->num_class / type->capacity) - 1;
+	*class_low = place_ctx.block_locs[iblk].z * (type->num_class / type->capacity);
+	*class_high = (place_ctx.block_locs[iblk].z + 1) * (type->num_class / type->capacity) - 1;
 }
 
 int get_max_primitives_in_pb_type(t_pb_type *pb_type) {
@@ -2003,7 +2005,8 @@ void place_sync_all_external_block_connections() {
 
 void place_sync_external_block_connections(int iblk) {
     auto& cluster_ctx = g_ctx.mutable_clustering();
-    VTR_ASSERT_MSG(cluster_ctx.blocks[iblk].nets_and_pins_synced_to_z_coordinate == false, "Block net and pins must not be already synced");
+    auto& place_ctx = g_ctx.mutable_placement();
+    VTR_ASSERT_MSG(place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate == false, "Block net and pins must not be already synced");
 
     t_type_ptr type = cluster_ctx.blocks[iblk].type;
     VTR_ASSERT(type->num_pins % type->capacity == 0);
@@ -2013,21 +2016,21 @@ void place_sync_external_block_connections(int iblk) {
     /* Sync external blocks and nets */
     for (int j = 0; j < max_num_block_pins; j++) {
         int inet = cluster_ctx.blocks[iblk].nets[j];
-        if (inet != OPEN && cluster_ctx.blocks[iblk].z > 0) {
-            VTR_ASSERT(cluster_ctx.blocks[iblk].nets[j + cluster_ctx.blocks[iblk].z * max_num_block_pins] == OPEN);
-            VTR_ASSERT(cluster_ctx.blocks[iblk].net_pins[j + cluster_ctx.blocks[iblk].z * max_num_block_pins] == OPEN);
+        if (inet != OPEN && place_ctx.block_locs[iblk].z > 0) {
+            VTR_ASSERT(cluster_ctx.blocks[iblk].nets[j + place_ctx.block_locs[iblk].z * max_num_block_pins] == OPEN);
+            VTR_ASSERT(cluster_ctx.blocks[iblk].net_pins[j + place_ctx.block_locs[iblk].z * max_num_block_pins] == OPEN);
 
-            //Update the cluster_ctx.blocks to net references
-            cluster_ctx.blocks[iblk].nets[j + cluster_ctx.blocks[iblk].z * max_num_block_pins] = cluster_ctx.blocks[iblk].nets[j];
-            cluster_ctx.blocks[iblk].net_pins[j + cluster_ctx.blocks[iblk].z * max_num_block_pins] = cluster_ctx.blocks[iblk].net_pins[j];
+            //Update the block to net references
+            cluster_ctx.blocks[iblk].nets[j + place_ctx.block_locs[iblk].z * max_num_block_pins] = cluster_ctx.blocks[iblk].nets[j];
+            cluster_ctx.blocks[iblk].net_pins[j + place_ctx.block_locs[iblk].z * max_num_block_pins] = cluster_ctx.blocks[iblk].net_pins[j];
             cluster_ctx.blocks[iblk].nets[j] = OPEN;
             cluster_ctx.blocks[iblk].net_pins[j] = OPEN;
 
-            //Update the net to cluster_ctx.blocks references
+            //Update the net to block references
             size_t k = 0;
             for (k = 0; k < cluster_ctx.clbs_nlist.net[inet].pins.size(); k++) {
                 if (cluster_ctx.clbs_nlist.net[inet].pins[k].block == iblk && cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin == j) {
-                    cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin = j + cluster_ctx.blocks[iblk].z * max_num_block_pins;
+                    cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin = j + place_ctx.block_locs[iblk].z * max_num_block_pins;
                     break;
                 }
             }
@@ -2036,6 +2039,6 @@ void place_sync_external_block_connections(int iblk) {
     }
 
     //Mark the block as synced
-    cluster_ctx.blocks[iblk].nets_and_pins_synced_to_z_coordinate = true;
+    place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate = true;
 
 }

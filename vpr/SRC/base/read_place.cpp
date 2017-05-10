@@ -121,11 +121,6 @@ void read_place(const char* net_file,
                           block_name.c_str());
             }
 
-            //Set the location
-            //blk->x = block_x;
-            //blk->y = block_y;
-            blk->z = block_z;
-
             if (place_ctx.block_locs.size() != static_cast<size_t>(L_num_blocks)) {
                 //Resize if needed
                 place_ctx.block_locs.resize(L_num_blocks);
@@ -174,7 +169,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
 		if (cluster_ctx.blocks[iblk].type == device_ctx.IO_TYPE) {
 			insert_in_hash_table(hash_table, cluster_ctx.blocks[iblk].name, iblk);
-			cluster_ctx.blocks[iblk].x = OPEN; /* Mark as not seen yet. */
+			place_ctx.block_locs[iblk].x = OPEN; /* Mark as not seen yet. */
 		}
 	}
 
@@ -244,7 +239,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		i = xtmp;
 		j = ytmp;
 
-		if (cluster_ctx.blocks[bnum].x != OPEN) {
+		if (place_ctx.block_locs[bnum].x != OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Block %s is listed twice in pad file.\n", bname);
 		}
@@ -254,19 +249,14 @@ void read_user_pad_loc(const char *pad_loc_file) {
 					"Block #%d (%s) location, (%d,%d) is out of range.\n", bnum, bname, i, j);
 		}
 
-		cluster_ctx.blocks[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
-		cluster_ctx.blocks[bnum].y = j; /* I need to set .x only as a done flag.         */
-		cluster_ctx.blocks[bnum].z = k;
-		cluster_ctx.blocks[bnum].is_fixed = true;
-
-        place_ctx.block_locs[bnum].x = i;
-        place_ctx.block_locs[bnum].y = j;
+        place_ctx.block_locs[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
+        place_ctx.block_locs[bnum].y = j; /* We need to set .x only as a done flag.         */
         place_ctx.block_locs[bnum].z = k;
         place_ctx.block_locs[bnum].is_fixed = true;
 
 		if (device_ctx.grid[i][j].type != device_ctx.IO_TYPE) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"Attempt to place IO cluster_ctx.blocks %s at illegal location (%d, %d).\n", bname, i, j);
+					"Attempt to place IO block %s at illegal location (%d, %d).\n", bname, i, j);
 		}
 
 		if (k >= device_ctx.IO_TYPE->capacity || k < 0) {
@@ -280,9 +270,9 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	}
 
 	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		if (cluster_ctx.blocks[iblk].type == device_ctx.IO_TYPE && cluster_ctx.blocks[iblk].x == OPEN) {
+		if (cluster_ctx.blocks[iblk].type == device_ctx.IO_TYPE && place_ctx.block_locs[iblk].x == OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"IO cluster_ctx.blocks %s location was not specified in the pad file.\n", cluster_ctx.blocks[iblk].name);
+					"IO block %s location was not specified in the pad file.\n", cluster_ctx.blocks[iblk].name);
 		}
 	}
 
@@ -306,6 +296,7 @@ void print_place(const char* net_file,
 
     auto& device_ctx = g_ctx.device();
     auto& cluster_ctx = g_ctx.clustering();
+    auto& place_ctx = g_ctx.mutable_placement();
 
 	fp = fopen(place_file, "w");
 
@@ -321,13 +312,12 @@ void print_place(const char* net_file,
 		if (strlen(cluster_ctx.blocks[i].name) < 8)
 			fprintf(fp, "\t");
 
-		fprintf(fp, "%d\t%d\t%d", cluster_ctx.blocks[i].x, cluster_ctx.blocks[i].y, cluster_ctx.blocks[i].z);
+		fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].z);
 		fprintf(fp, "\t#%d\n", i);
 	}
 	fclose(fp);
 
     //Calculate the ID of the placement
-    auto& place_ctx = g_ctx.mutable_placement();
     place_ctx.placement_id = vtr::secure_digest_file(place_file);
 }
 

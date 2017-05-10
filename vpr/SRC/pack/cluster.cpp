@@ -1924,9 +1924,6 @@ static void start_new_cluster(
 	new_cluster->nets = NULL;
 	new_cluster->type = NULL;
 	new_cluster->pb = NULL;
-	new_cluster->x = UNDEFINED;
-	new_cluster->y = UNDEFINED;
-	new_cluster->z = UNDEFINED;
 
 	if ((device_ctx.nx > 1) && (device_ctx.ny > 1)) {
 		alloc_and_load_grid(num_instances_type);
