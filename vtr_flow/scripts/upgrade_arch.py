@@ -188,7 +188,7 @@ def upgrade_fc_overrides(arch):
 
                 new_attrib = OrderedDict()
                 new_attrib["port_name"] = input.attrib['name']
-                new_attrib["seg_name"] = seg_name
+                new_attrib["segment_name"] = seg_name
                 new_attrib["fc_type"] = fc_in_type
                 new_attrib["fc_val"] = in_val
 
@@ -198,7 +198,7 @@ def upgrade_fc_overrides(arch):
 
                 new_attrib = OrderedDict()
                 new_attrib["port_name"] = output.attrib['name']
-                new_attrib["seg_name"] = seg_name
+                new_attrib["segment_name"] = seg_name
                 new_attrib["fc_type"] = fc_out_type
                 new_attrib["fc_val"] = out_val
 
