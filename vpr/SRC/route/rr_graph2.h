@@ -3,13 +3,6 @@
 
 #include "build_switchblocks.h"
 
-/************** Global variables shared only by the rr_* modules. ************/
-
-extern bool *rr_edge_done; /* [0..device_ctx.num_rr_nodes-1].  Used to keep track  *
- * of whether or not a node has been put in  *
- * an edge list yet. true if a node is already listed in the edges array *
- * that's being constructed. Ensure that there are no duplicate edges.   */
-
 /******************* Types shared by rr_graph2 functions *********************/
 
 enum e_seg_details_type {
