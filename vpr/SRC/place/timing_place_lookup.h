@@ -7,7 +7,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 		const int num_directs);
 void free_place_lookup_structs(void);
 
-extern float **delta_io_to_clb;
-extern float **delta_clb_to_clb;
-extern float **delta_clb_to_io;
-extern float **delta_io_to_io;
+float get_delta_io_to_clb(int delta_x, int delta_y);
+float get_delta_clb_to_clb(int delta_x, int delta_y);
+float get_delta_clb_to_io(int delta_x, int delta_y);
+float get_delta_io_to_io(int delta_x, int delta_y);
