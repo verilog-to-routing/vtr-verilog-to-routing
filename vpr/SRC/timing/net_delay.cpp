@@ -149,7 +149,7 @@ void load_net_delay_from_routing(float **net_delay, const vector<t_vnet> & nets,
 	 * the rr_graph and the routing traceback must be completely constructed     *
 	 * before this routine is called, and the net_delay array must have been     *
 	 * allocated.                                                                */
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	t_rc_node *rc_node_free_list, *rc_root;
 	t_linked_rc_edge *rc_edge_free_list;
@@ -214,8 +214,8 @@ alloc_and_load_rc_tree(int inet, t_rc_node ** rc_node_free_list_ptr,
 	short iswitch;
 	t_linked_rc_ptr *linked_rc_ptr;
 
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	root_rc = alloc_rc_node(rc_node_free_list_ptr);
 	tptr = route_ctx.trace_head[inet];
@@ -376,7 +376,7 @@ static float load_rc_tree_C(t_rc_node * rc_node) {
 	short iswitch;
 	float C, C_downstream;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	linked_rc_edge = rc_node->u.child_list;
 	inode = rc_node->inode;
@@ -410,7 +410,7 @@ static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival) {
 	short iswitch;
 	int inode;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	Tdel = T_arrival;
 	inode = rc_node->inode;
@@ -458,7 +458,7 @@ static void load_one_net_delay(float **net_delay, unsigned int inet, const vecto
 	t_rc_node *rc_node;
 	t_linked_rc_ptr *linked_rc_ptr, *next_ptr;
 
-    auto& route_ctx = g_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	for (ipin = 1; ipin < nets[inet].pins.size(); ipin++) {
 
@@ -547,7 +547,7 @@ static void reset_rr_node_to_rc_node(t_linked_rc_ptr * rr_node_to_rc_node,
 	struct s_trace *tptr;
 	int inode;
 
-    auto& route_ctx = g_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	tptr = route_ctx.trace_head[inet];
 

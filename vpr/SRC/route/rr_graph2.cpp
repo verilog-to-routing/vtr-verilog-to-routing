@@ -434,7 +434,7 @@ void obstruct_chan_details(
 		t_chan_details* chan_details_x,
 		t_chan_details* chan_details_y) {
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Iterate grid to find and obstruct based on multi-width/height blocks */
 	for (int x = 0; x <= L_nx; ++x) {
@@ -707,7 +707,7 @@ int get_bidir_opin_connections(
 	t_type_ptr type;
 	t_rr_type to_type;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	type = device_ctx.grid[i][j].type;
 	int width_offset = device_ctx.grid[i][j].width_offset;
@@ -1164,7 +1164,7 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 	vtr::t_ivec tmp;
 	t_type_ptr type;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Alloc the lookup table */
 	indices = (vtr::t_ivec ***) vtr::calloc(NUM_RR_TYPES, sizeof(vtr::t_ivec **));
@@ -1238,7 +1238,7 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 	int i, j;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* This function must unallocate the structure allocated in 
 	 * alloc_and_load_rr_node_indices. */
@@ -1322,7 +1322,7 @@ int get_rr_node_index(
 	t_type_ptr type;
 	vtr::t_ivec lookup;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	VTR_ASSERT(ptc >= 0);
 	VTR_ASSERT(x >= 0 && x <= (device_ctx.nx + 1));
@@ -1403,7 +1403,7 @@ int find_average_rr_node_index(
 	}
 	if (inode == -1) {
 
-        auto& device_ctx = g_ctx.device();
+        auto& device_ctx = g_vpr_ctx.device();
 
 		for (int x = 0; x <= L_nx; ++x) {
 			for (int y = 0; y <= L_ny; ++y) {
@@ -1438,7 +1438,7 @@ int get_track_to_pins(
 	int j, pass, iconn, phy_track, end, to_node, max_conn, ipin, side, x, y, num_conn;
 	t_type_ptr type;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* End of this wire */
 	end = get_seg_end(seg_details, track, seg, chan, chan_length);
@@ -1533,7 +1533,7 @@ int get_track_to_tracks(
 	enum e_side from_side_a, from_side_b, to_side;
 	bool custom_switch_block;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* check whether a custom switch block will be used */
 	custom_switch_block = false;
@@ -1971,7 +1971,7 @@ static void get_switch_type(
 	bool backward_pass_trans;
 	int used, min_switch, max_switch;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	switch_types[0] = OPEN; /* No switch */
 	switch_types[1] = OPEN;
@@ -2143,7 +2143,7 @@ void load_sblock_pattern_lookup(
 	 * because the sblock varies from location to location. The i, j means the owning
 	 * location of the sblock under investigation. */
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* SB's have coords from (0, 0) to (device_ctx.nx, device_ctx.ny) */
 	VTR_ASSERT(i >= 0);

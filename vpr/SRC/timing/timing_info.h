@@ -146,7 +146,7 @@ class SetupHoldTimingInfo : public SetupTimingInfo, public HoldTimingInfo {
 template<class DelayCalc>
 std::unique_ptr<SetupTimingInfo> make_setup_timing_info(std::shared_ptr<DelayCalc> delay_calculator) {
 
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
 
@@ -158,7 +158,7 @@ std::unique_ptr<SetupTimingInfo> make_setup_timing_info(std::shared_ptr<DelayCal
 template<class DelayCalc>
 std::unique_ptr<HoldTimingInfo> make_hold_timing_info(std::shared_ptr<DelayCalc> delay_calculator) {
 
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
 
@@ -170,7 +170,7 @@ std::unique_ptr<HoldTimingInfo> make_hold_timing_info(std::shared_ptr<DelayCalc>
 template<class DelayCalc>
 std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr<DelayCalc> delay_calculator) {
 
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
 

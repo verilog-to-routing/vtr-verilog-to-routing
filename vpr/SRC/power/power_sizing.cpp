@@ -73,8 +73,8 @@ static double power_count_transistors_connectionbox(void) {
 	int CLB_inputs;
 	float buffer_size;
 
-    auto& device_ctx = g_ctx.device();
-    auto& power_ctx = g_ctx.power();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	VTR_ASSERT(device_ctx.FILL_TYPE->pb_graph_head->num_input_ports == 1);
 	CLB_inputs = device_ctx.FILL_TYPE->pb_graph_head->num_input_pins[0];
@@ -108,7 +108,7 @@ double power_count_transistors_buffer(float buffer_size) {
 	int stage_idx;
 	double transistor_cnt = 0.;
 
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	stages = power_calc_buffer_num_stages(buffer_size,
 			power_ctx.arch->logical_effort_factor);
@@ -225,7 +225,7 @@ static double power_count_transistors_interc(t_interconnect * interc) {
 		 * - The number of muxes required for bus based multiplexors is equivalent to
 		 * the width of the bus (num_pins_per_port).
 		 */
-        auto& power_ctx = g_ctx.power();
+        auto& power_ctx = g_vpr_ctx.power();
 		transistor_cnt += interc->interconnect_power->num_output_ports
 				* interc->interconnect_power->num_pins_per_port
 				* power_count_transistors_mux(
@@ -244,7 +244,7 @@ static double power_count_transistors_interc(t_interconnect * interc) {
 void power_sizing_init(const t_arch * arch) {
 	float transistors_per_tile;
 
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	// tech size = 2 lambda, so lambda^2/4.0 = tech^2
 	f_MTA_area = ((POWER_MTA_L * POWER_MTA_W)/ 4.0)*pow(power_ctx.tech->tech_size,
@@ -271,7 +271,7 @@ void power_sizing_init(const t_arch * arch) {
  * switch box, 2 connection boxes)
  */
 static double power_transistors_per_tile(const t_arch * arch) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	double transistor_cnt = 0.;
 
@@ -365,7 +365,7 @@ static double power_count_transistors_switchbox(const t_arch * arch) {
 	double transistors_per_buf_mux = 0.;
 	int seg_idx;
 
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	/* Buffer */
 	transistors_per_buf_mux += power_count_transistors_buffer(
@@ -400,7 +400,7 @@ static double power_count_transistors_switchbox(const t_arch * arch) {
 static double power_count_transistors_primitive(t_pb_type * pb_type) {
 	double transistor_cnt;
 
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	if (strcmp(pb_type->blif_model, ".names") == 0) {
 		/* LUT */
@@ -426,7 +426,7 @@ static double power_count_transistors_primitive(t_pb_type * pb_type) {
  * Returns the transistor count of an SRAM cell
  */
 static double power_count_transistor_SRAM_bit(void) {
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 	return power_ctx.arch->transistors_per_SRAM_bit;
 }
 
@@ -483,7 +483,7 @@ static double power_count_transistors_LUT(int LUT_inputs,
 
 static double power_count_transistors_trans_gate(float size) {
 	double transistor_cnt = 0.;
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	transistor_cnt += power_MTAs(size);
 	transistor_cnt += power_MTAs(size * power_ctx.tech->PN_ratio);
@@ -493,7 +493,7 @@ static double power_count_transistors_trans_gate(float size) {
 
 static double power_count_transistors_inv(float size) {
 	double transistor_cnt = 0.;
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	/* NMOS */
 	transistor_cnt += power_MTAs(size);
@@ -534,7 +534,7 @@ static double power_MTAs_L(float L_size) {
 static void power_size_pb(void) {
 	int type_idx;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
 		if (device_ctx.block_types[type_idx].pb_graph_head) {
@@ -548,7 +548,7 @@ static void power_size_pb_rec(t_pb_graph_node * pb_node) {
 	int mode_idx, type_idx, pb_idx;
 	bool size_buffers_and_wires = true;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	if (!power_method_is_transistor_level(
 			pb_node->pb_type->pb_type_power->estimation_method)
@@ -687,7 +687,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin * pin,
 
 	t_pb_type * this_pb_type = pin->parent_node->pb_type;
 
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	/*
 	 if (strcmp(pin->parent_node->pb_type->name, "clb") == 0) {

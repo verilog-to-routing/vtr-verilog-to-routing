@@ -257,7 +257,7 @@ void build_rr_graph(
 	int max_chan_width = (is_global_graph ? 1 : nodes_per_chan->max);
 	VTR_ASSERT(max_chan_width > 0);
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	t_clb_to_clb_directs *clb_to_clb_directs = NULL;
 	if(num_directs > 0) {
@@ -550,7 +550,7 @@ void build_rr_graph(
 	compute_router_lookahead(num_seg_types);
 #endif
 
-    auto& route_ctx = g_ctx.mutable_routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     route_ctx.rr_node_state = new t_rr_node_state[device_ctx.num_rr_nodes];
 
@@ -685,7 +685,7 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const int w
 /* Allocates space for the global device_ctx.rr_switch_inf variable and returns the 
    number of rr switches that were allocated */
 static int alloc_rr_switch_inf(map<int,int> *switch_fanin){
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int num_rr_switches = 0;
     // map key: switch index specified in arch; map value: fanin for that index
@@ -728,7 +728,7 @@ static int alloc_rr_switch_inf(map<int,int> *switch_fanin){
 /* load the global device_ctx.rr_switch_inf variable. also keep track of, for each arch switch, what 
    index of the rr_switch_inf array each version of its fanin has been mapped to (through switch_fanin map) */
 static void load_rr_switch_inf(const int num_arch_switches, map<int,int> *switch_fanin){
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	int i_rr_switch = 0;
     if (device_ctx.switch_fanin_remap != NULL) {
@@ -783,7 +783,7 @@ static void load_rr_switch_inf(const int num_arch_switches, map<int,int> *switch
    now we want to remap these indices to point into the global device_ctx.rr_switch_inf array 
    which contains switch info at different fan-in values */
 static void remap_rr_node_switch_indices(map<int,int> *switch_fanin){
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++){
 		t_rr_node& from_node = device_ctx.rr_nodes[inode];
@@ -808,7 +808,7 @@ static void remap_rr_node_switch_indices(map<int,int> *switch_fanin){
 static void rr_graph_externals(
 		const t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
 		int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	add_rr_graph_C_from_switches(device_ctx.rr_switch_inf[wire_to_rr_ipin_switch].Cin);
 	alloc_and_load_rr_indexed_data(segment_inf, num_seg_types, device_ctx.rr_node_indices,
@@ -1008,7 +1008,7 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
 /* frees the ipin to track mapping for each physical grid type */
 static void free_type_pin_to_track_map(int ******ipin_to_track_map,
 		t_type_ptr types) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (int i = 0; i < device_ctx.num_block_types; ++i) {
         vtr::free_matrix5(ipin_to_track_map[i], 0, types[i].num_pins - 1,
@@ -1021,7 +1021,7 @@ static void free_type_pin_to_track_map(int ******ipin_to_track_map,
 /* frees the track to ipin mapping for each physical grid type */
 static void free_type_track_to_pin_map(vtr::t_ivec***** track_to_pin_map,
 		t_type_ptr types, int max_chan_width) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (int i = 0; i < device_ctx.num_block_types; i++) {
 		if (track_to_pin_map[i] != NULL) {
@@ -1104,7 +1104,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 	}
 
 	/* Build channels */
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 	VTR_ASSERT(Fs % 3 == 0);
 	for (int i = 0; i <= L_nx; ++i) {
 		for (int j = 0; j <= L_ny; ++j) {
@@ -1203,9 +1203,9 @@ void free_rr_graph(void) {
 
 	/* Before adding any more free calls here, be sure the data is NOT chunk *
 	 * allocated, as ALL the chunk allocated data is already free!           */
-    auto& route_ctx = g_ctx.mutable_routing();
-    auto& device_ctx = g_ctx.mutable_device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	if(route_ctx.net_rr_terminals != NULL) {
 		free(route_ctx.net_rr_terminals);
@@ -1237,8 +1237,8 @@ void free_rr_graph(void) {
 
 static void alloc_net_rr_terminals(void) {
 	unsigned int inet;
-    auto& route_ctx = g_ctx.mutable_routing();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	route_ctx.net_rr_terminals = (int **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(int *));
 
@@ -1260,9 +1260,9 @@ void load_net_rr_terminals(vtr::t_ivec *** L_rr_node_indices) {
 	unsigned int ipin, inet;
 	t_type_ptr type;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.placement();
-    auto& route_ctx = g_ctx.mutable_routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 		for (ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
@@ -1298,9 +1298,9 @@ static void alloc_and_load_rr_clb_source(vtr::t_ivec *** L_rr_node_indices) {
 	t_rr_type rr_type;
 	t_type_ptr type;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.placement();
-    auto& route_ctx = g_ctx.mutable_routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	route_ctx.rr_blk_source = (int **) vtr::malloc(cluster_ctx.num_blocks * sizeof(int *));
 
@@ -1448,7 +1448,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 	/* this function builds both x and y-directed channel segments, so set up our 
 	   coordinates based on channel type */
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	int seg_coord = x_coord;
 	int chan_coord = y_coord;
@@ -1606,7 +1606,7 @@ void watch_edges(int inode, t_linked_edge * edge_list_head) {
 	t_linked_edge *list_ptr;
 	int i, to_node;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	list_ptr = edge_list_head;
 	i = 0;
@@ -2280,7 +2280,7 @@ static vtr::t_ivec ****alloc_and_load_track_to_pin_lookup(
  * (everything -- connectivity, occupancy, cost, etc.) into a file.  Used *
  * only for debugging.                                                    */
 void dump_rr_graph(const char *file_name) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	FILE *fp = vtr::fopen(file_name, "w");
 
@@ -2336,7 +2336,7 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 
 /* Prints all the device_ctx.rr_indexed_data of index to file fp.   */
 void print_rr_indexed_data(FILE * fp, int index) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	fprintf(fp, "Index: %d\n", index);
 
@@ -2364,7 +2364,7 @@ static void build_unidir_rr_opins(const int i, const int j,
 	/* This routine returns a list of the opins rr_nodes on each
 	 * side/width/height of the block. You must free the result with
 	 * free_matrix. */
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	*Fc_clipped = false;
 
@@ -2482,7 +2482,7 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
 	int start_pin_index, end_pin_index;
 	t_pb_type *pb_type;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	clb_to_clb_directs = (t_clb_to_clb_directs*)vtr::calloc(num_directs, sizeof(t_clb_to_clb_directs));
 
@@ -2594,7 +2594,7 @@ static int get_opin_direct_connecions(int x, int y, int opin,
 	int max_index, min_index, offset, swap;
 	int new_edges;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	curr_type = device_ctx.grid[x][y].type;
 	edge_list_head = *edge_list_ptr;

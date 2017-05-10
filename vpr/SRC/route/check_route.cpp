@@ -44,9 +44,9 @@ void check_route(enum e_route_type route_type, int num_switches,
 	struct s_trace *tptr;
 	bool * pin_done;
 
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	vtr::printf_info("\n");
 	vtr::printf_info("Checking to ensure routing is legal...\n");
@@ -171,8 +171,8 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 	int i, j, ifound, ptc_num, bnum, iclass, node_block_pin, iblk;
 	unsigned int ipin;
 	t_type_ptr type;
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	VTR_ASSERT(device_ctx.rr_nodes[inode].type() == SINK);
 	i = device_ctx.rr_nodes[inode].xlow();
@@ -221,9 +221,9 @@ static void check_source(int inode, int inet) {
 	t_rr_type rr_type;
 	t_type_ptr type;
 	int i, j, ptc_num, bnum, node_block_pin, iclass;
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
 	rr_type = device_ctx.rr_nodes[inode].type();
 	if (rr_type != SOURCE) {
@@ -261,7 +261,7 @@ static void check_switch(struct s_trace *tptr, int num_switch) {
 	int inode;
 	short switch_type;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	inode = tptr->index;
 	switch_type = tptr->iswitch;
@@ -296,7 +296,7 @@ static void reset_flags(int inet, bool * connected_to_route) {
 	struct s_trace *tptr;
 	int inode;
 
-    auto& route_ctx = g_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	tptr = route_ctx.trace_head[inet];
 
@@ -324,7 +324,7 @@ static bool check_adjacent(int from_node, int to_node) {
 	t_rr_type from_type, to_type;
 	t_type_ptr from_grid_type, to_grid_type;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	reached = false;
 
@@ -491,7 +491,7 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
 	int chanx_y, chanx_xlow, chanx_xhigh;
 	int chany_x, chany_ylow, chany_yhigh;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	chanx_y = device_ctx.rr_nodes[chanx_node].ylow();
 	chanx_xlow = device_ctx.rr_nodes[chanx_node].xlow();
@@ -522,9 +522,9 @@ static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_local
 	unsigned inet;
 	struct s_trace *tptr;
 
-    auto& route_ctx = g_ctx.routing();
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* First set the occupancy of everything to zero. */
 
@@ -581,8 +581,8 @@ static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 	int iclass, iblk, num_local_opins, inode, ipin;
 	t_rr_type rr_type;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
 		for (iclass = 0; iclass < cluster_ctx.blocks[iblk].type->num_class; iclass++) {
@@ -620,7 +620,7 @@ static void check_node_and_range(int inode, enum e_route_type route_type, const 
 	/* Checks that inode is within the legal range, then calls check_node to    *
 	 * check that everything else about the node is OK.                         */
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	if (inode < 0 || inode >= device_ctx.num_rr_nodes) { 		
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			

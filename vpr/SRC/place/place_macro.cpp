@@ -196,7 +196,7 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 	int next_iblk, next_inet, curr_inet;
 	int num_blk_pins, num_macro; 
 	int imember;
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	num_macro = 0;
 	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
@@ -303,7 +303,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	int imacro, imember, num_macro;
 	int *pl_macro_idirect, *pl_macro_num_members, **pl_macro_member_blk_num, 
 			*pl_macro_member_blk_num_of_this_blk;
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 	
 	t_pl_macro * macro = NULL;
 	
@@ -400,7 +400,7 @@ static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros)
 
 	int * temp_imacro_from_iblk = NULL;
 	int imacro, imember, iblk;
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* Allocate and initialize the values to OPEN (-1). */
 	temp_imacro_from_iblk = (int *)vtr::malloc(cluster_ctx.num_blocks * sizeof(int));
@@ -425,7 +425,7 @@ void free_placement_macros_structs(void) {
 	/* This function frees up all the static data structures used. */
 
 	// This frees up the two arrays and set the pointers to NULL
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 	int itype;
 	if ( f_idirect_from_blk_pin != NULL ) {
 		for (itype = 1; itype < device_ctx.num_block_types; itype++) {

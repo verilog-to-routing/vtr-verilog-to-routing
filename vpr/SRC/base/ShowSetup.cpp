@@ -64,8 +64,8 @@ void printClusteredNetlistStats() {
 	int i, j, L_num_p_inputs, L_num_p_outputs;
 	int *num_blocks_type;
 
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	num_blocks_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 

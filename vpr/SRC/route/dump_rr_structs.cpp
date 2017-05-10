@@ -75,7 +75,7 @@ void dump_rr_structs( const char *filename ){
 
 /* dumps all routing resource nodes to specified file */
 static void dump_rr_nodes( fstream &file ){
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* specify that we're in the rr node section and how many nodes there are */
 	file << endl;
@@ -111,7 +111,7 @@ static void dump_rr_nodes( fstream &file ){
 
 /* dumps all rr switches to specified file */
 static void dump_rr_switches( fstream &file ){
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* specify that we're in the rr switch section and how many switches there are */
 	file << endl;
@@ -136,7 +136,7 @@ static void dump_rr_switches( fstream &file ){
 
 /* dumps all physical block types (CLB, memory, mult, etc) to the specified file */
 static void dump_block_types( fstream &file ){
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* specify that we're in the physical block type section, and how many types there are */
 	file << endl;
@@ -206,7 +206,7 @@ static void dump_block_types( fstream &file ){
 
 /* dumps the grid structure which specifies which physical block type is at what coordinate */
 static void dump_grid( fstream &file ){
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* specify that we're in the grid section and how many grid elements there are */
 	file << endl;
@@ -232,7 +232,7 @@ static void dump_grid( fstream &file ){
 
 /* dumps the rr node indices which help look up which rr node is at which physical location */
 static void dump_rr_node_indices( fstream &file ){
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	file << endl;
 	/* rr_node_indices are [0..NUM_RR_TYPES-1][0..device_ctx.nx+2][0..device_ctx.ny+2]. each entry then contains a vtr::t_ivec with nelem entries */

@@ -41,7 +41,7 @@ void check_netlist() {
 	
 	/* This routine checks that the netlist makes sense         */
 
-    auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
 	net_hash_table = alloc_hash_table();
 
@@ -101,8 +101,8 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 
 	unsigned int ipin, num_pins, iblk, node_block_pin, error;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	num_pins = (cluster_ctx.clbs_nlist.net[inet].pins.size());
 	error = 0;
@@ -156,8 +156,8 @@ static int check_clb_conn(int iblk, int num_conn) {
 	int iclass, ipin, error;
 	t_type_ptr type;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	error = 0;
 	type = cluster_ctx.blocks[iblk].type;
@@ -216,7 +216,7 @@ static int check_clb_conn(int iblk, int num_conn) {
 */
 static int check_clb_internal_nets(unsigned int iblk) {
 	
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 	
 	int error = 0;
 	t_pb_route * pb_route = cluster_ctx.blocks[iblk].pb_route;
@@ -260,7 +260,7 @@ static int check_for_duplicated_names(void) {
 	int clb_count;
 	struct s_hash **clb_hash_table, *clb_h_ptr;
 	
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	clb_hash_table = alloc_hash_table();
 	
@@ -290,7 +290,7 @@ static int get_num_conn(int bnum) {
 	int i, num_conn;
 	t_type_ptr type;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	type = cluster_ctx.blocks[bnum].type;
 

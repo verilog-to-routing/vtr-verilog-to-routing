@@ -263,7 +263,7 @@ void vpr_init(const int argc, const char **argv,
     fflush(stdout);
 
     /* Read blif file and sweep unused components */
-    auto& atom_ctx = g_ctx.mutable_atom();
+    auto& atom_ctx = g_vpr_ctx.mutable_atom();
     atom_ctx.nlist = read_and_process_blif(vpr_setup->PackerOpts.blif_file_name,
                                       vpr_setup->user_models, 
                                       vpr_setup->library_models,
@@ -277,13 +277,13 @@ void vpr_init(const int argc, const char **argv,
     if(vpr_setup->PowerOpts.do_power) {
         //Load the net activity file for power estimation
         vtr::ScopedPrintTimer t("Load Activity File");
-        auto& power_ctx = g_ctx.mutable_power();
+        auto& power_ctx = g_vpr_ctx.mutable_power();
         power_ctx.atom_net_power = read_activity(atom_ctx.nlist, vpr_setup->FileNameOpts.ActFile);
     }
 
     //Initialize timing graph and constraints
     if(vpr_setup->TimingEnabled) {
-        auto& timing_ctx = g_ctx.mutable_timing();
+        auto& timing_ctx = g_vpr_ctx.mutable_timing();
         {
             vtr::ScopedPrintTimer t("Build Timing Graph");
             timing_ctx.graph = TimingGraphBuilder(atom_ctx.nlist, atom_ctx.lookup).timing_graph();
@@ -308,8 +308,8 @@ void vpr_init(const int argc, const char **argv,
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
 	/* Read in netlist file for placement and routing */
-    auto& cluster_ctx = g_ctx.mutable_clustering();
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	if (vpr_setup.FileNameOpts.NetFile) {
 		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, &cluster_ctx.num_blocks, &cluster_ctx.blocks, &cluster_ctx.clbs_nlist);
@@ -520,7 +520,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 	float Fc_in, Fc_out;
 	int W = 100;	//W is unknown pre-packing, so *if* we need W here, we will assume a value of 100
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	directionality = vpr_setup.RoutingArch.directionality;
 	Fs = vpr_setup.RoutingArch.Fs;
@@ -621,7 +621,7 @@ bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch) {
 
 /* Free architecture data structures */
 void free_arch(t_arch* Arch) {
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	freeGrid();
 	free(device_ctx.chan_width.x_list);
@@ -754,7 +754,7 @@ static void free_complex_block_types(void) {
 
 	free_all_pb_graph_nodes();
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	for (int i = 0; i < device_ctx.num_block_types; ++i) {
 		free(device_ctx.block_types[i].name);
@@ -885,7 +885,7 @@ static void free_pb_type(t_pb_type *pb_type) {
 void free_circuit() {
 
 	//Free new net structures
-    auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
 	free_global_nlist_net(&cluster_ctx.clbs_nlist);
 
@@ -1003,10 +1003,10 @@ char *vpr_get_output_file_name(enum e_output_files ename) {
 void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     if(!vpr_setup.AnalysisOpts.doAnalysis) return;
 
-    auto& route_ctx = g_ctx.routing();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
-    auto& atom_ctx = g_ctx.atom();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     if(route_ctx.trace_head == nullptr) {
         VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
@@ -1050,7 +1050,7 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         timing_info->update();
 
         if(isEchoFileEnabled(E_ECHO_ANALYSIS_TIMING_GRAPH)) {
-            auto& timing_ctx = g_ctx.timing();
+            auto& timing_ctx = g_vpr_ctx.timing();
             tatum::write_echo(getEchoFileName(E_ECHO_ANALYSIS_TIMING_GRAPH),
                     *timing_ctx.graph, *timing_ctx.constraints, *analysis_delay_calc, timing_info->analyzer());
         }
@@ -1088,7 +1088,7 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
         VPR_THROW(VPR_ERROR_POWER, "Power analysis only supported on single-clock circuits");
     }
 
-    auto& power_ctx = g_ctx.mutable_power();
+    auto& power_ctx = g_vpr_ctx.mutable_power();
 
 	/* Get the critical path of this clock */
 	power_ctx.solution_inf.T_crit = timing_info.least_slack_critical_path().delay();

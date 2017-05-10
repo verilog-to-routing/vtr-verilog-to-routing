@@ -68,18 +68,18 @@ float t_draw_coords::get_tile_height() {
 }
 
 t_bound_box t_draw_coords::get_pb_bbox(int clb_index, const t_pb_graph_node& pb_gnode) {
-    auto& place_ctx = g_ctx.placement();
+    auto& place_ctx = g_vpr_ctx.placement();
 	return get_pb_bbox(place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y ,place_ctx.block_locs[clb_index].z, pb_gnode);
 }
 
 t_bound_box t_draw_coords::get_pb_bbox(const t_block& clb, const t_pb_graph_node& pb_gnode) {
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
     int clb_index = &clb - cluster_ctx.blocks;
 	return get_pb_bbox(clb_index, pb_gnode);
 }
 
 t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 	const int clb_type_id = device_ctx.grid[grid_x][grid_y].type->index;
 	t_draw_pb_type_info& blk_type_info = this->blk_info.at(clb_type_id);
 
@@ -142,7 +142,7 @@ t_bound_box t_draw_coords::get_absolute_pb_bbox(const t_block& clb, const t_pb_g
 }
 
 t_bound_box t_draw_coords::get_absolute_pb_bbox(const int clb_index, const t_pb_graph_node* pb_gnode) {
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 	return get_absolute_pb_bbox(cluster_ctx.blocks[clb_index], pb_gnode);
 }
 
@@ -151,6 +151,6 @@ t_bound_box t_draw_coords::get_absolute_clb_bbox(const t_block& clb) {
 }
 
 t_bound_box t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 	return get_pb_bbox(grid_x, grid_y, sub_block_index, *device_ctx.grid[grid_x][grid_y].type->pb_graph_head);
 }

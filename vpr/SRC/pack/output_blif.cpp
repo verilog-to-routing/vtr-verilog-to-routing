@@ -74,7 +74,7 @@ static void print_net_name(AtomNetId net_id, int *column, FILE * fpout) {
 		str_ptr = new char [6];
 		sprintf(str_ptr, "open");
 	} else {
-        auto& atom_ctx = g_ctx.atom();
+        auto& atom_ctx = g_vpr_ctx.atom();
 		str_ptr = new char[strlen(atom_ctx.nlist.net_name(net_id).c_str()) + 7];
 		sprintf(str_ptr, "__|e%s", atom_ctx.nlist.net_name(net_id).c_str());
 	}
@@ -90,7 +90,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 	const t_pb_graph_node *pb_graph_node;
 	t_pb_type *pb_type;
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	clb_index = atom_ctx.lookup.atom_clb(atom_blk);
 	VTR_ASSERT(clb_index != OPEN);
@@ -475,7 +475,7 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 		return;
 	}
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	fpout = vtr::fopen(out_fname, "w");
 

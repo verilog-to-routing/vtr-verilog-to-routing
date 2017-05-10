@@ -751,7 +751,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             , sdf_os_(sdf_os)
             , delay_calc_(delay_calc) {
 
-            auto& atom_ctx = g_ctx.atom();
+            auto& atom_ctx = g_vpr_ctx.atom();
 
             //Initialize the pin to tnode look-up
             for(AtomPinId pin : atom_ctx.nlist.pins()) {
@@ -785,7 +785,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         }
 
         void visit_atom_impl(const t_pb* atom) override { 
-            auto& atom_ctx = g_ctx.atom();
+            auto& atom_ctx = g_vpr_ctx.atom();
 
             const t_model* model = atom_ctx.nlist.block_model(atom_ctx.lookup.pb_atom(atom));
 
@@ -1355,7 +1355,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Returns an Instance object representing a Multiplier
         std::shared_ptr<Instance> make_multiply_instance(const t_pb* atom)  {
-            auto& timing_ctx = g_ctx.timing();
+            auto& timing_ctx = g_vpr_ctx.timing();
 
             const t_block* top_block = find_top_block(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
@@ -1451,7 +1451,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Returns an Instance object representing an Adder
         std::shared_ptr<Instance> make_adder_instance(const t_pb* atom)  {
-            auto& timing_ctx = g_ctx.timing();
+            auto& timing_ctx = g_vpr_ctx.timing();
 
             const t_block* top_block = find_top_block(atom);
             const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
@@ -1562,7 +1562,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Returns the netlist block associated with the given pb
         const t_block* find_top_block(const t_pb* curr) {
-            auto& cluster_ctx = g_ctx.clustering();
+            auto& cluster_ctx = g_vpr_ctx.clustering();
 
             const t_pb* top_pb = find_top_cb(curr); 
 
@@ -1591,7 +1591,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Returns the tnode ID of the given atom's connected cluster pin
         tatum::NodeId find_tnode(const t_pb* atom, int cluster_pin_idx) {
-            auto& atom_ctx = g_ctx.atom();
+            auto& atom_ctx = g_vpr_ctx.atom();
 
             AtomBlockId blk_id = atom_ctx.lookup.pb_atom(atom);
             int clb_index = atom_ctx.lookup.atom_clb(blk_id);
@@ -1609,7 +1609,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Returns a LogicVec representing the LUT mask of the given LUT atom
         LogicVec load_lut_mask(size_t num_inputs, //LUT size
                               const t_pb* atom) { //LUT primitive
-            auto& atom_ctx = g_ctx.atom();
+            auto& atom_ctx = g_vpr_ctx.atom();
 
             const t_model* model = atom_ctx.nlist.block_model(atom_ctx.lookup.pb_atom(atom));
             VTR_ASSERT(model->name == std::string("names"));
@@ -1650,7 +1650,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //  The net in the atom netlist which was originally connected to pin i, is connected
         //  to pin permute[i] in the implementation.
         std::vector<int> determine_lut_permutation(size_t num_inputs, const t_pb* atom_pb) {
-            auto& atom_ctx = g_ctx.atom();
+            auto& atom_ctx = g_vpr_ctx.atom();
 
             std::vector<int> permute(num_inputs, OPEN);
 
@@ -1844,7 +1844,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Returns the delay in pico-seconds from source_tnode to sink_tnode
         double get_delay_ps(tatum::NodeId source_tnode, tatum::NodeId sink_tnode) {
-            auto& timing_ctx = g_ctx.timing();
+            auto& timing_ctx = g_vpr_ctx.timing();
 
             tatum::EdgeId edge = timing_ctx.graph->find_edge(source_tnode, sink_tnode);
             VTR_ASSERT(edge);

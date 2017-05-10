@@ -151,7 +151,7 @@ public:
 	PQ_Entry(int set_rr_node_ind, int switch_ind, float parent_delay, float parent_R_upstream, float parent_congestion_upstream){
 		this->rr_node_ind = set_rr_node_ind;
 
-        auto& device_ctx = g_ctx.device();
+        auto& device_ctx = g_vpr_ctx.device();
 
 		float new_R_upstream = 0;
 		if (switch_ind != UNDEFINED){
@@ -224,7 +224,7 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticality_fac){
 	int from_x, from_y, to_x, to_y;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	t_rr_node &from_node = device_ctx.rr_nodes[from_node_ind];
 
@@ -267,7 +267,7 @@ void compute_router_lookahead(int num_segments){
 		return;
 	}
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	clock_t start_time = clock();
 
@@ -346,7 +346,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 		direction = DEC_DIRECTION;
 	}
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	vtr::t_ivec channel_node_list = device_ctx.rr_node_indices[rr_type][chan_coord][seg_coord];
 
@@ -375,7 +375,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 
 /* allocates space for cost map entries */
 static void alloc_cost_map(int num_segments){
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	vector<Cost_Entry> ny_entries( device_ctx.ny+2, Cost_Entry() );
 	vector< vector<Cost_Entry> > nx_entries( device_ctx.nx+2, ny_entries );
@@ -393,7 +393,7 @@ static void free_cost_map(){
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
    to that pin is stored is added to an entry in the routing_cost_map */
 static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing_cost_map &routing_cost_map){
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
 	vector<bool> node_expanded( device_ctx.num_rr_nodes, false );
@@ -442,7 +442,7 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float> &node_visited_costs, vector<bool> &node_expanded, priority_queue<PQ_Entry> &pq){
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	int parent_ind = parent_entry.rr_node_ind;
 

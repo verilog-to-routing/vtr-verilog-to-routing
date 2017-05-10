@@ -43,7 +43,7 @@ int seg_index_of_cblock(t_rr_type from_rr_type, int to_node) {
 	/* Returns the segment number (distance along the channel) of the connection *
 	 * box from from_rr_type (CHANX or CHANY) to to_node (IPIN).                 */
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	if (from_rr_type == CHANX)
 		return (device_ctx.rr_nodes[to_node].xlow());
@@ -63,7 +63,7 @@ int seg_index_of_sblock(int from_node, int to_node) {
 
 	t_rr_type from_rr_type, to_rr_type;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	from_rr_type = device_ctx.rr_nodes[from_node].type();
 	to_rr_type = device_ctx.rr_nodes[to_node].type();

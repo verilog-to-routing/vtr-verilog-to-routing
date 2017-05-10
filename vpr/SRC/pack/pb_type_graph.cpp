@@ -110,7 +110,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 	int i, errors;
 	edges_head = NULL;
 	num_edges_head = NULL;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		if (device_ctx.block_types[i].pb_type) {
@@ -148,7 +148,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
  */
 void free_all_pb_graph_nodes(void) {
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (int i = 0; i < device_ctx.num_block_types; i++) {
 		if (device_ctx.block_types[i].pb_type) {
@@ -174,7 +174,7 @@ void echo_pb_graph(char * filename) {
 	fprintf(fp, "Physical Blocks Graph\n");
 	fprintf(fp, "--------------------------------------------\n\n");
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		fprintf(fp, "type %s\n", device_ctx.block_types[i].name);
 		if (device_ctx.block_types[i].pb_graph_head)
@@ -197,7 +197,7 @@ static int check_pb_graph(void) {
 	 5.  All pins are connected to edges (warning)
 	 */
 	num_errors = 0;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		if(device_ctx.block_types[i].pb_type){
 			check_pb_node_rec(device_ctx.block_types[i].pb_graph_head);

@@ -26,8 +26,8 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 	int *seg_occ_by_type, *seg_cap_by_type; /* [0..num_segment-1]      */
 	float utilization;
 
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	max_segment_length = 0;
 	for (seg_type = 0; seg_type < num_segment; seg_type++) {

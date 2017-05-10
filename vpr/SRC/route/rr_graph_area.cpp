@@ -98,7 +98,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch,
 	 * (largest) buffer is implemented.  In practice, you might want to build    *
 	 * something that is 1.5x or 2x the largest buffer, so this may be a bit     *
 	 * optimistic (but I still think it's pretty reasonable).                    */
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	int *num_inputs_to_cblock; /* [0..device_ctx.num_rr_nodes-1], but all entries not    */
 
@@ -304,7 +304,7 @@ void count_unidir_routing_transistors(t_segment_inf * /*segment_inf*/,
 		int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, 
 		const float trans_sram_bit) {
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	bool * cblock_counted; /* [0..max(device_ctx.nx,device_ctx.ny)] -- 0th element unused. */
 	int *num_inputs_to_cblock; /* [0..device_ctx.num_rr_nodes-1], but all entries not    */
@@ -478,7 +478,7 @@ static float get_cblock_trans(int *num_inputs_to_cblock, int wire_to_ipin_switch
 	float trans_count;
 	int i, num_inputs;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	trans_per_cblock = (float *) vtr::malloc(
 			(max_inputs_to_cblock + 1) * sizeof(float));
@@ -518,7 +518,7 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit,
 	float *unsharable_switch_trans, Rpass;
 	int i;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	unsharable_switch_trans = (float *) vtr::malloc(num_switch * sizeof(float));
 
@@ -550,7 +550,7 @@ alloc_and_load_sharable_switch_trans(int num_switch,
 	float *sharable_switch_trans, Rbuf;
 	int i;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	sharable_switch_trans = (float *) vtr::malloc(num_switch * sizeof(float));
 

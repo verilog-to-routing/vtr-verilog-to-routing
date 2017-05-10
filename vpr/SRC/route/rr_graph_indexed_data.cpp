@@ -47,7 +47,7 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
 
 	int iseg, length, i, index;
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	device_ctx.num_rr_indexed_data = CHANX_COST_INDEX_START + (2 * num_segment);
 	device_ctx.rr_indexed_data = (t_rr_indexed_data *) vtr::malloc(
@@ -122,7 +122,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 	float delay_normalization_fac;
 	int index;
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	if (base_cost_type == DELAY_NORMALIZED) {
 		delay_normalization_fac = get_delay_normalization_fac(nodes_per_chan,
@@ -173,7 +173,7 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 	int inode, itrack, cost_index;
 	float Tdel, Tdel_sum, frac_num_seg;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	Tdel_sum = 0.;
 
@@ -223,7 +223,7 @@ static void load_rr_indexed_data_T_values(int index_start,
 	int *num_nodes_of_index; /* [0..device_ctx.num_rr_indexed_data - 1] */
 	float Rnode, Cnode, Rsw, Tsw;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	num_nodes_of_index = (int *) vtr::calloc(device_ctx.num_rr_indexed_data, sizeof(int));
 	C_total = (float *) vtr::calloc(device_ctx.num_rr_indexed_data, sizeof(float));

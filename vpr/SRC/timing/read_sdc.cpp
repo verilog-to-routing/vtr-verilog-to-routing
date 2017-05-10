@@ -214,7 +214,7 @@ class SdcCallback : public sdcparse::Callback {
 void read_sdc(t_timing_inf timing_inf) {
 	int source_clock_domain, sink_clock_domain, iinput, ioutput, icc, isource, isink;
 	
-    auto& timing_ctx = g_ctx.mutable_timing();
+    auto& timing_ctx = g_vpr_ctx.mutable_timing();
 
 	/* Make sure we haven't called this subroutine before. */
 	VTR_ASSERT(!timing_ctx.sdc);
@@ -367,7 +367,7 @@ void vpr_sdc_error(const int line_number, const std::string& /*near_text*/, cons
 static bool apply_create_clock(const sdcparse::CreateClock& sdc_create_clock, int lineno) {
     bool found;
 
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     if(sdc_create_clock.is_virtual) { 
         /* Store the clock's name, period and edges in the local array sdc_clocks. */
@@ -595,7 +595,7 @@ static bool apply_set_io_delay(const sdcparse::SetIoDelay& sdc_set_io_delay, int
      * max_delay 
      */
     
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     const sdcparse::StringGroup& port_group = sdc_set_io_delay.target_ports;
     for (size_t iport = 0; iport < port_group.strings.size(); iport++) {
@@ -650,7 +650,7 @@ static bool apply_set_io_delay(const sdcparse::SetIoDelay& sdc_set_io_delay, int
 }
 
 static bool is_valid_clock_name(const char* clock_name) {
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     bool found = false;
     for(int iclk = 0; iclk < timing_ctx.sdc->num_constrained_clocks; iclk++) {
@@ -701,7 +701,7 @@ static void use_default_timing_constraints(void) {
 
 	int source_clock_domain, sink_clock_domain;
 
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 	
 	/* Find all netlist clocks and add them as constrained clocks. */
 	count_netlist_clocks_as_constrained_clocks();
@@ -774,7 +774,7 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 
 	/* Count how many clocks and I/Os are in the netlist. 
 	Store the names of each clock and each I/O in netlist_clocks and netlist_ios. */
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     for(auto blk_id : atom_ctx.nlist.blocks()) {
 
@@ -868,8 +868,8 @@ static void alloc_and_load_netlist_clocks_and_ios(void) {
 
 static void count_netlist_clocks_as_constrained_clocks(void) {
 	/* Counts how many clocks are in the netlist, and adds them to the array timing_ctx.sdc->constrained_clocks. */
-    auto& timing_ctx = g_ctx.timing();
-    auto& atom_ctx = g_ctx.atom();
+    auto& timing_ctx = g_vpr_ctx.timing();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	timing_ctx.sdc->num_constrained_clocks = 0;
 	
@@ -902,7 +902,7 @@ static void count_netlist_clocks_as_constrained_clocks(void) {
 
 static void add_clock(std::string net_name) {
     /* Now that we've found a clock, let's see if we've counted it already */
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     bool found = false;
     for (int i = 0; !found && i < timing_ctx.sdc->num_constrained_clocks; i++) {
@@ -923,8 +923,8 @@ static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_del
 	/* Count how many I/Os are in the netlist, adds them to the arrays timing_ctx.sdc->constrained_inputs/
 	timing_ctx.sdc->constrained_outputs with an I/O delay of 0 and constrains them to clock clock_name. */
 
-    auto& atom_ctx = g_ctx.atom();
-    auto& timing_ctx = g_ctx.timing();
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     for(auto blk_id : atom_ctx.nlist.blocks()) {
         AtomBlockType type = atom_ctx.nlist.block_type(blk_id);
@@ -969,7 +969,7 @@ static void count_netlist_ios_as_constrained_ios(char * clock_name, float io_del
 static int find_constrained_clock(char * ptr) {
 /* Given a string ptr, find whether it's the name of a clock in the array timing_ctx.sdc->constrained_clocks.  *
  * if it is, return the clock's index in timing_ctx.sdc->constrained_clocks; if it's not, return -1. */
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
 	int index;
 	for (index = 0; index < timing_ctx.sdc->num_constrained_clocks; index++) {
@@ -983,7 +983,7 @@ static int find_constrained_clock(char * ptr) {
 static int find_cc_constraint(char * source_clock_name, char * sink_clock_name) {
 	/* Given a pair of source and sink clock domains, find out if there's an override constraint between them.
 	If there is, return the index in timing_ctx.sdc->cc_constraints; if there is not, return -1. */
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
 	int icc, isource, isink;
 
@@ -1011,7 +1011,7 @@ static void add_override_constraint(char ** from_list, int num_from, char ** to_
 	if false, we just set the override constraint entry to point to the existing list. The latter is 
 	more efficient, but it's almost impossible to free multiple identical pointers without freeing
 	the same thing twice and causing an error. */
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
 	t_override_constraint ** constraint_array; 
 	/* Because we are reallocating the array and possibly changing 
@@ -1168,7 +1168,7 @@ static bool regex_match (const char * string, const char * regular_expression) {
 }
 
 void free_sdc_related_structs(void) {
-    auto& timing_ctx = g_ctx.mutable_timing();
+    auto& timing_ctx = g_vpr_ctx.mutable_timing();
 
 	if (!timing_ctx.sdc) return;
 

@@ -58,7 +58,7 @@ void power_print_spice_comparison(void) {
 	float * prob = NULL;
 	char * SRAM_bits = NULL;
 	int sram_idx;
-    auto& power_ctx = g_ctx.mutable_power();
+    auto& power_ctx = g_vpr_ctx.mutable_power();
 //
 	power_ctx.solution_inf.T_crit = 1.0e-8;
 //
@@ -398,7 +398,7 @@ float power_usage_ff_for_callibration(int num_inputs, float transistor_size) {
 
 void power_callibrate(void) {
 	/* Buffers and Mux must be done before LUT/FF */
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER]->callibrate();
 	power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR]->callibrate();
@@ -408,7 +408,7 @@ void power_callibrate(void) {
 }
 
 void power_print_callibration(void) {
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	power_print_title(power_ctx.output->out, "Callibration Data");
 	for (int i = 0; i < POWER_CALLIB_COMPONENT_MAX; i++) {

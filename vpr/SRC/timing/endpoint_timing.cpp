@@ -13,7 +13,7 @@ void print_tnode_info(FILE* fp, int inode, char* identifier);
 void print_endpoint_timing(char* filename) {
     FILE* fp = vtr::fopen(filename, "w");
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     int** tnode_lookup_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
     

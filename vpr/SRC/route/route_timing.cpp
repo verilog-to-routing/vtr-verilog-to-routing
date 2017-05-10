@@ -103,7 +103,7 @@ static bool should_route_net(int inet, const CBRR& connections_inf);
 static bool early_exit_heuristic(const WirelengthInfo& wirelength_info);
 struct more_sinks_than {
 	inline bool operator() (const int& net_index1, const int& net_index2) {
-        auto& cluster_ctx = g_ctx.clustering();
+        auto& cluster_ctx = g_vpr_ctx.clustering();
 		return cluster_ctx.clbs_nlist.net[net_index1].num_sinks() > cluster_ctx.clbs_nlist.net[net_index2].num_sinks();
 	}
 };
@@ -140,7 +140,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 	//Initialize and properly size the lookups for profiling
 	profiling::profiling_initialization(get_max_pins_per_net());
 
-    auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
 	//sort so net with most sinks is first.
 	auto sorted_nets = vector<int>(cluster_ctx.clbs_nlist.net.size());
@@ -401,7 +401,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
         const IntraLbPbPinLookup& pb_gpin_lookup,
         std::shared_ptr<SetupTimingInfo> timing_info) {
 
-    auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
 	bool is_routed = false;
 
@@ -504,7 +504,7 @@ int get_max_pins_per_net(void) {
 	unsigned int inet;
 	int max_pins_per_net;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	max_pins_per_net = 0;
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
@@ -536,9 +536,9 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 	 * way resulted in overuse of resources (congestion).  If there is no way   *
 	 * to route this net, even ignoring congestion, it returns false.  In this  *
 	 * case the rr_graph is disconnected and you can give up.                   */
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	unsigned int num_sinks = cluster_ctx.clbs_nlist.net[inet].num_sinks();
 
@@ -622,9 +622,9 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 
 	/* Build a path from the existing route tree rooted at rt_root to the target_node
 	 * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
-    auto& route_ctx = g_ctx.routing();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	int target_node = route_ctx.net_rr_terminals[inet][target_pin];
 
@@ -757,7 +757,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 	 * 	find and store the rt nodes that have been reached in incremental_rerouting_resources.reached_rt_sinks
 	 *	mark the rr_node sinks as targets to be reached */
 
-    auto& route_ctx = g_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	t_rt_node* rt_root;
 
@@ -889,8 +889,8 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 	 * the expanded bounding box specified in route_bb are not added to the     *
 	 * heap.                                                                    */
 
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	float new_R_upstream;
 
@@ -981,7 +981,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
 	int cost_index, ortho_cost_index, num_segs_same_dir, num_segs_ortho_dir;
 	float expected_cost, cong_cost, Tdel;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	rr_type = device_ctx.rr_nodes[inode].type();
 
@@ -1031,7 +1031,7 @@ static int get_expected_segs_to_target(int inode, int target_node,
 	 * to reach target_node (not including inode) in each direction (the same    *
 	 * direction (horizontal or vertical) as inode and the orthogonal direction).*/
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	t_rr_type rr_type;
 	int target_x, target_y, num_segs_same_dir, cost_index, ortho_cost_index;
@@ -1120,8 +1120,8 @@ static void update_rr_base_costs(int inet) {
 	/* Changes the base costs of different types of rr_nodes according to the  *
 	 * criticality, fanout, etc. of the current net being routed (inet).       */
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	float fanout, factor;
 	int index;
@@ -1147,8 +1147,8 @@ static void update_rr_base_costs(int inet) {
 static int mark_node_expansion_by_bin(int inet, int target_node,
 		t_rt_node * rt_node) {
 
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	int tarxlow, tarylow, tarxhigh, taryhigh;
 	int rlim = 1;
@@ -1248,7 +1248,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
 	/* Checks that the net delays computed incrementally during timing driven    *
 	 * routing match those computed from scratch by the net_delay.c module.      */
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	unsigned int inet, ipin;
 	float **net_delay_check;
@@ -1288,8 +1288,8 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
 /* Detect if net should be routed or not */
 static bool should_route_net(int inet, const CBRR& connections_inf) {
-    auto& route_ctx = g_ctx.routing();
-    auto& device_ctx = g_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	t_trace * tptr = route_ctx.trace_head[inet];
 
@@ -1355,8 +1355,8 @@ Connection_based_routing_resources::Connection_based_routing_resources() :
 	 * reached_rt_sinks will also reserve enough space, but instead of
 	 * indices, it will store the pointers to route tree nodes */
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	// can have as many targets as sink pins (total number of pins - SOURCE pin)
 	// supposed to be used as persistent vector growing with push_back and clearing at the start of each net routing iteration
@@ -1430,8 +1430,8 @@ void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(co
 }
 
 bool Connection_based_routing_resources::sanity_check_lookup() const {
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	for (unsigned int inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); ++inet) {
 		const auto& net_node_to_pin = rr_sink_node_to_pin[inet];
@@ -1454,7 +1454,7 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(const
 	   This will be used later to judge the optimality of a connection, with suboptimal ones being candidates
 	   for forced reroute */
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	size_t routing_num_nets = cluster_ctx.clbs_nlist.net.size();
 
@@ -1481,8 +1481,8 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 			2. the connection is suboptimal, in comparison to lower_bound_connection_delay  
 	*/
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	bool any_connection_rerouted = false;	// true if any connection has been marked for rerouting
 
@@ -1551,8 +1551,8 @@ void Connection_based_routing_resources::clear_force_reroute_for_net() {
 }
 
 static OveruseInfo calculate_overuse_info() {
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	size_t overused_nodes = 0;
     size_t total_overuse = 0;
@@ -1571,8 +1571,8 @@ static OveruseInfo calculate_overuse_info() {
 }
 
 static WirelengthInfo calculate_wirelength_info() {
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	size_t used_wirelength = 0;
 	size_t available_wirelength = 0;

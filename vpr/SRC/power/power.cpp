@@ -131,9 +131,9 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 	power_zero_usage(power_usage);
 	power_zero_usage(&sub_power_usage);
 
-    auto& atom_ctx = g_ctx.atom();
-    auto& device_ctx = g_ctx.device();
-    auto& power_ctx = g_ctx.power();
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	if (strcmp(pb_graph_node->pb_type->blif_model, ".names") == 0) {
 		/* LUT */
@@ -213,7 +213,7 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
 	t_pb_graph_pin * pin, int iblk) {
 	float scale_factor;
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	power_zero_usage(power_usage);
 
@@ -237,7 +237,7 @@ void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
 	t_power_usage sub_power_usage;
 	float buffer_size = 0.;
 	double C_wire;
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	power_zero_usage(power_usage);
 
@@ -319,7 +319,7 @@ static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
 	float dens_avg;
 	int num_pins;
 
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	power_zero_usage(power_usage);
 
@@ -592,7 +592,7 @@ static void power_reset_pb_type(t_pb_type * pb_type) {
 static void power_reset_tile_usage(void) {
 	int type_idx;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
 		if (device_ctx.block_types[type_idx].pb_type) {
@@ -606,8 +606,8 @@ static void power_reset_tile_usage(void) {
  */
 static void power_usage_blocks(t_power_usage * power_usage) {
 	int x, y, z;
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	power_zero_usage(power_usage);
 
@@ -647,7 +647,7 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 static void power_usage_clock(t_power_usage * power_usage,
 		t_clock_arch * clock_arch) {
 	int clock_idx;
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	/* Initialization */
 	power_usage->dynamic = 0.;
@@ -713,8 +713,8 @@ static void power_usage_clock_single(t_power_usage * power_usage,
 	t_power_usage wire_power;
 	float C_segment;
 	float buffer_size;
-    auto& power_ctx = g_ctx.power();
-    auto& device_ctx = g_ctx.device();
+    auto& power_ctx = g_vpr_ctx.power();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	power_usage->dynamic = 0.;
 	power_usage->leakage = 0.;
@@ -786,10 +786,10 @@ static void power_usage_routing(t_power_usage * power_usage,
 		const t_det_routing_arch * routing_arch, t_segment_inf * segment_inf) {
 	int rr_node_idx;
 	int edge_idx;
-    auto& power_ctx = g_ctx.power();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& power_ctx = g_vpr_ctx.power();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	power_zero_usage(power_usage);
 
@@ -1148,7 +1148,7 @@ void power_init_pb_pins_rec(t_pb_graph_node * pb_node) {
 
 void power_pb_pins_init() {
 	int type_idx;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
 		if (device_ctx.block_types[type_idx].pb_graph_head) {
@@ -1164,10 +1164,10 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 	int max_seg_to_IPIN_fanout;
 	int max_seg_to_seg_fanout;
 	int max_seg_fanout;
-    auto& power_ctx = g_ctx.mutable_power();
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& atom_ctx = g_ctx.atom();
+    auto& power_ctx = g_vpr_ctx.mutable_power();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	/* Copy probability/density values to new netlist */
 	if (!power_ctx.clb_net_power) {
@@ -1285,7 +1285,7 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 bool power_init(const char * power_out_filepath,
 		const char * cmos_tech_behavior_filepath, const t_arch * arch,
 		const t_det_routing_arch * routing_arch) {
-    auto& power_ctx = g_ctx.mutable_power();
+    auto& power_ctx = g_vpr_ctx.mutable_power();
 	bool error = false;
 
 	/* Set global power architecture & options */
@@ -1345,8 +1345,8 @@ bool power_uninit(void) {
 	int log_idx;
 	int rr_node_idx;
 	int msg_idx;
-    auto& device_ctx = g_ctx.device();
-    auto& power_ctx = g_ctx.power();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& power_ctx = g_vpr_ctx.power();
 	bool error = false;
 
 	for (rr_node_idx = 0; rr_node_idx < device_ctx.num_rr_nodes; rr_node_idx++) {
@@ -1511,7 +1511,7 @@ static void power_print_pb_usage_recursive(FILE * fp, t_pb_type * type,
 
 static void power_print_clb_detailed(FILE * fp) {
 	int type_idx;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	float clb_power_total = power_component_get_usage_sum(
 			POWER_COMPONENT_PB);
@@ -1528,7 +1528,7 @@ static void power_print_clb_detailed(FILE * fp) {
 
 /*
  static void power_print_stats(FILE * fp) {
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
  fprintf(fp, "Max Segment Fanout: %d\n",
  power_ctx.commonly_used->max_seg_fanout);
  fprintf(fp, "Max Segment->Segment Fanout: %d\n",
@@ -1682,8 +1682,8 @@ static void power_print_breakdown_pb_rec(FILE * fp, t_pb_type * pb_type,
 static void power_print_summary(FILE * fp, const t_vpr_setup& vpr_setup) {
 	char * arch;
 	char * arch_new;
-    auto& power_ctx = g_ctx.power();
-    auto& device_ctx = g_ctx.device();
+    auto& power_ctx = g_vpr_ctx.power();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Extract filename from full path */
 	arch = vpr_setup.FileNameOpts.ArchFile;
@@ -1722,7 +1722,7 @@ e_power_ret_code power_total(float * run_time_s, const t_vpr_setup& vpr_setup,
 	clock_t t_start;
 	clock_t t_end;
 	t_power_usage clb_power_usage;
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	t_start = clock();
 
@@ -1830,8 +1830,8 @@ static void power_print_breakdown_pb(FILE * fp) {
 	power_print_breakdown_entry(fp, 0, POWER_BREAKDOWN_ENTRY_TYPE_TITLE, NULL,
 			0., 0., 0., NULL);
 
-    auto& device_ctx = g_ctx.device();
-    auto& power_ctx = g_ctx.power();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	for (int type_idx = 0; type_idx < device_ctx.num_block_types; type_idx++) {
 		if (device_ctx.block_types[type_idx].pb_type) {
@@ -1847,7 +1847,7 @@ static void power_print_breakdown_pb(FILE * fp) {
  */
 static void power_print_breakdown_component(FILE * fp, const char * name,
 		e_power_component_type type, int indent_level) {
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 	power_print_breakdown_entry(fp, indent_level,
 			POWER_BREAKDOWN_ENTRY_TYPE_COMPONENT, name,
 			power_sum_usage(&power_ctx.by_component.components[type]),

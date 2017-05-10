@@ -387,8 +387,8 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 
 	/* Turns the congestion display on and off.   */
 	t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	char msg[vtr::BUFSIZE];
 	int inode, num_congested;
@@ -477,8 +477,8 @@ void alloc_draw_structs(const t_arch* arch) {
 	/* Call accessor functions to retrieve global variables. */
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 	t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* Allocate the structures needed to draw the placement and routing.  Set *
 	 * up the default colors for blocks and nets.                             */
@@ -538,7 +538,7 @@ void init_draw_coords(float width_val) {
 	 * clb.                                                                     */
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	int i;
 	int j;
@@ -596,7 +596,7 @@ static void drawplace(void) {
 	 * while empty ones are lighter colours and have a dashed border.      */
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	int i, j, k, bnum;
 	int num_sub_tiles;
@@ -658,7 +658,7 @@ static void drawplace(void) {
 						settextrotation(90);
 					}
 
-                    auto& cluster_ctx = g_ctx.clustering();
+                    auto& cluster_ctx = g_vpr_ctx.clustering();
 					drawtext_in(abs_clb_bbox, cluster_ctx.blocks[bnum].name);
 					if (j == 0 || j == device_ctx.ny + 1) {
 						settextrotation(saved_rotation);
@@ -686,7 +686,7 @@ static void drawnets(void) {
 
 	unsigned ipin, inet;
 	int b1, b2;
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	setlinestyle(SOLID);
 	setlinewidth(0);
@@ -717,8 +717,8 @@ static void draw_congestion(void) {
 
 	/* Draws all the overused routing resources (i.e. congestion) in RED.   */
 	t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	int inode;
 
@@ -805,7 +805,7 @@ void draw_rr(void) {
 	/* Draws the routing resources that exist in the FPGA, if the user wants *
 	 * them drawn.                                                           */
 	t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	int inode;
 
@@ -874,7 +874,7 @@ void draw_rr(void) {
 }
 
 static void draw_rr_chan(int inode, const t_color color) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
     t_rr_type type = device_ctx.rr_nodes[inode].type();
 
@@ -1018,7 +1018,7 @@ static void draw_rr_edges(int inode) {
 	/* Draws all the edges that the user wants shown between inode and what it *
 	 * connects to.  inode is assumed to be a CHANX, CHANY, or IPIN.           */
 	t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	t_rr_type from_type, to_type;
 	int to_node, from_ptc_num, to_ptc_num;
@@ -1210,7 +1210,7 @@ static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track,
 
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Draws an edge (SBOX connection) between an x-directed channel and a    *
 	 * y-directed channel.                                                    */
@@ -1286,7 +1286,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int to_node,
 
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	float x1, x2, y1, y2;
 	t_bound_box from_chan, to_chan;
@@ -1369,7 +1369,7 @@ static void draw_chany_to_chany_edge(int from_node, int to_node,
 
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 	
 	/* Draws a connection between two y-channel segments.  Passing in the track *
 	 * numbers allows this routine to be used for both rr_graph and routing     *
@@ -1459,7 +1459,7 @@ static t_bound_box draw_get_rr_chan_bbox (int inode) {
 	t_bound_box bound_box;
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	switch (device_ctx.rr_nodes[inode].type()) {
 		case CHANX:
@@ -1534,7 +1534,7 @@ static void draw_rr_pin(int inode, const t_color& color) {
 	float xcen, ycen;
 	char str[vtr::BUFSIZE];
 	t_type_ptr type;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	i = device_ctx.rr_nodes[inode].xlow();
 	j = device_ctx.rr_nodes[inode].ylow();
@@ -1565,7 +1565,7 @@ static void draw_rr_pin(int inode, const t_color& color) {
 void draw_get_rr_pin_coords(int inode, int iside, 
 		int width_offset, int height_offset, 
 		float *xcen, float *ycen) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 	draw_get_rr_pin_coords(&device_ctx.rr_nodes[inode], iside, width_offset, height_offset, xcen, ycen);
 }
 
@@ -1578,7 +1578,7 @@ void draw_get_rr_pin_coords(t_rr_node* node, int iside,
 	int i, j, k, ipin, pins_per_sub_tile;
 	float offset, xc, yc, step;
 	t_type_ptr type;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	i = node->xlow() + width_offset;
 	j = node->ylow() + height_offset;
@@ -1642,9 +1642,9 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 	int inode;
 	struct s_trace *tptr;
 	t_rr_type rr_type;
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	setlinestyle(SOLID);
 
@@ -1707,7 +1707,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	static int **chanx_track = NULL; /* [1..device_ctx.nx][0..device_ctx.ny] */
 	static int **chany_track = NULL; /* [0..device_ctx.nx][1..device_ctx.ny] */
@@ -1838,7 +1838,7 @@ static int get_track_num(int inode, int **chanx_track, int **chany_track) {
 
 	int i, j;
 	t_rr_type rr_type;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	if (get_draw_state_vars()->draw_route_type == DETAILED)
 		return (device_ctx.rr_nodes[inode].ptc_num());
@@ -1890,8 +1890,8 @@ static bool draw_if_net_highlighted (int inet) {
 static void highlight_nets(char *message, int hit_node) {
 	unsigned int inet;
 	struct s_trace *tptr;
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	t_draw_state* draw_state = get_draw_state_vars();
 	
@@ -1924,7 +1924,7 @@ static void draw_highlight_fan_in_fan_out(int hit_node) {
 	int inode;
 
 	t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Highlight the fanout nodes in red. */
 	for (int iedge = 0, l = device_ctx.rr_nodes[hit_node].num_edges(); iedge < l; iedge++) {
@@ -1975,7 +1975,7 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
 	t_bound_box bound_box;
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
 		switch (device_ctx.rr_nodes[inode].type()) {
@@ -2042,8 +2042,8 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
 static void highlight_rr_nodes(float x, float y) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	int hit_node = OPEN;  // i.e. -1, no node selected.
 	char message[250] = "";
@@ -2125,9 +2125,9 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 
 	char msg[vtr::BUFSIZE];
 	int clb_index = -2;
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
 	/* Control + mouse click to select multiple nets. */
 	if (!button_info.ctrl_pressed)
@@ -2206,7 +2206,7 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
 
 	if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
 
-        auto& device_ctx = g_ctx.device();
+        auto& device_ctx = g_vpr_ctx.device();
 
         int hit_node = draw_check_rr_node_hit(mouse_x, mouse_y);
 
@@ -2246,7 +2246,7 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 	unsigned ipin;
 
 	t_draw_state* draw_state = get_draw_state_vars();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (k = 0; k < type->num_pins; k++) { /* Each pin on a CLB */
 		netnum = cluster_ctx.blocks[bnum].nets[k];
@@ -2307,8 +2307,8 @@ static void deselect_all(void) {
 
 
 	t_draw_state* draw_state = get_draw_state_vars();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 	int i;
 
 	/* Create some colour highlighting */
@@ -2332,7 +2332,7 @@ static void deselect_all(void) {
 static void draw_reset_blk_color(int i) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	if (cluster_ctx.blocks[i].type->index < 3) {
 			draw_state->block_color[i] = LIGHTGREY;
@@ -2443,7 +2443,7 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 	/* TODO: Fix this for global routing, currently for detailed only */
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	t_rr_type chan_type;
 	int grid_x, grid_y, pin_num, chan_xlow, chan_ylow;
@@ -2636,7 +2636,7 @@ static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	float xend, yend;
 	enum e_side pin_side;
 	t_type_ptr type;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	VTR_ASSERT(device_ctx.rr_nodes[opin_node].type() == OPIN);
 	VTR_ASSERT(device_ctx.rr_nodes[ipin_node].type() == IPIN);
@@ -2771,14 +2771,14 @@ static inline t_bound_box draw_mux(t_point origin, e_side orientation, float hei
 
 
 t_point tnode_draw_coord(tatum::NodeId node) {
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     AtomPinId pin = atom_ctx.lookup.tnode_atom_pin(node);
     return atom_pin_draw_coord(pin);
 }
 
 t_point atom_pin_draw_coord(AtomPinId pin) {
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
     int clb_index = atom_ctx.lookup.atom_clb(blk);
@@ -2809,7 +2809,7 @@ static void draw_crit_path() {
     tatum::TimingPathCollector path_collector;
 
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     if (draw_state->show_crit_path == DRAW_NO_CRIT_PATH) {
         return;
@@ -2917,9 +2917,9 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
     std::vector<t_point> points;
 
 
-    auto& atom_ctx = g_ctx.atom();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& timing_ctx = g_ctx.timing();
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     AtomPinId atom_src_pin = atom_ctx.lookup.tnode_atom_pin(src_tnode);
     AtomPinId atom_sink_pin = atom_ctx.lookup.tnode_atom_pin(sink_tnode);
@@ -2984,7 +2984,7 @@ static std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver
     VTR_ASSERT(driver_clb_net_pin->net == sink_clb_net_pin->net);
     VTR_ASSERT(driver_clb_net_pin->net_pin == 0);
 
-    auto& route_ctx = g_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.routing();
 
     bool allocated_route_tree_structs = alloc_route_tree_timing_structs(true); //Needed for traceback_to_route_tree
 
@@ -3037,7 +3037,7 @@ bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_
 
 //Find the switch between two rr nodes
 static short find_switch(int prev_inode, int inode) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
     for (int i = 0; i < device_ctx.rr_nodes[prev_inode].num_edges(); ++i) {
         if (device_ctx.rr_nodes[prev_inode].edge_sink_node(i) == inode) {
             return device_ctx.rr_nodes[prev_inode].edge_switch(i);

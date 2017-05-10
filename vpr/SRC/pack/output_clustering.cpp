@@ -71,7 +71,7 @@ static void print_net_name(AtomNetId net_id, int *column, int num_tabs, FILE * f
 	if (!net_id) {
 		str_ptr = "open";
     } else {
-        auto& atom_ctx = g_ctx.atom();
+        auto& atom_ctx = g_vpr_ctx.atom();
 		str_ptr = atom_ctx.nlist.net_name(net_id).c_str();
     }
 
@@ -350,7 +350,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
             if(pb_type->ports[i].equivalent && pb_type->parent_mode != NULL && pb_type->num_modes == 0) {
                 //This is a primitive with equivalent inputs
 
-                auto& atom_ctx = g_ctx.atom();
+                auto& atom_ctx = g_vpr_ctx.atom();
                 AtomBlockId atom_blk = atom_ctx.nlist.find_block(pb->name);
                 VTR_ASSERT(atom_blk);
 
@@ -508,8 +508,8 @@ static void print_stats(t_block *clb, int num_clusters) {
 
 	int *num_clb_types, *num_clb_inputs_used, *num_clb_outputs_used;
 
-    auto& device_ctx = g_ctx.device();
-    auto& atom_ctx = g_ctx.atom();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	num_clb_types = num_clb_inputs_used = num_clb_outputs_used = NULL;
 
@@ -595,8 +595,8 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 
 	FILE *fpout;
 	int column;
-    auto& device_ctx = g_ctx.device();
-    auto& atom_ctx = g_ctx.atom();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	if(!intra_lb_routing.empty()) {
 		VTR_ASSERT((int)intra_lb_routing.size() == num_clusters);
@@ -687,6 +687,6 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	delete[] pb_graph_pin_lookup_from_index_by_type;
 
     //Calculate the ID of the clustering
-    auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     cluster_ctx.clbs_nlist.netlist_id = vtr::secure_digest_file(out_fname);
 }

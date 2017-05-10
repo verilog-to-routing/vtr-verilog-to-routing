@@ -92,7 +92,7 @@ void power_tech_load_xml_file(const char * cmos_tech_behavior_filepath) {
 
     get_attribute(technology, "file", loc_data); //Check exists
 
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
     auto tech_size = get_attribute(technology, "size", loc_data);
     power_ctx.tech->tech_size = tech_size.as_float();
@@ -166,7 +166,7 @@ static void power_tech_xml_load_component(pugi::xml_node parent, const pugiutil:
 }
 
 static void power_tech_xml_load_components(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	power_ctx.commonly_used->component_callibration =
 			(PowerSpicedComponent**) vtr::calloc(POWER_CALLIB_COMPONENT_MAX,
@@ -203,7 +203,7 @@ static void power_tech_xml_load_nmos_st_leakages(pugi::xml_node parent, const pu
 	int num_leakage_pairs;
 	int i;
 	int nmos_idx;
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
     num_nmos_sizes = count_children(parent, "nmos", loc_data);
 	power_ctx.tech->num_nmos_leakage_info = num_nmos_sizes;
@@ -243,7 +243,7 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
 	int num_nmos_sizes;
 	int num_mux_sizes;
 	int i, j, nmos_idx;
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	/* Process all nmos sizes */
     num_nmos_sizes = count_children(parent, "nmos", loc_data);
@@ -314,7 +314,7 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
 static void process_tech_xml_load_transistor_info(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
 	t_transistor_inf * trans_inf;
 	int i;
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	/* Get transistor type: NMOS or PMOS */
     auto prop = get_attribute(parent, "type", loc_data);
@@ -387,7 +387,7 @@ bool power_find_transistor_info(t_transistor_size_inf ** lower,
 	t_transistor_inf * trans_info;
 	float min_size, max_size;
 	bool error = false;
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	key.size = size;
 

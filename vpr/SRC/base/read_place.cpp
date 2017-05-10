@@ -28,8 +28,8 @@ void read_place(const char* net_file,
                         place_file);
     }
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.mutable_placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     std::string line;
     int lineno = 0;
@@ -154,9 +154,9 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	FILE *fp;
 	char buf[vtr::BUFSIZE], bname[vtr::BUFSIZE], *ptr;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
-    auto& place_ctx = g_ctx.mutable_placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	vtr::printf_info("\n");
 	vtr::printf_info("Reading locations of IO pads from '%s'.\n", pad_loc_file);
@@ -294,9 +294,9 @@ void print_place(const char* net_file,
 	FILE *fp;
 	int i;
 
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	fp = fopen(place_file, "w");
 

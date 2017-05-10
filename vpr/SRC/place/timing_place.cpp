@@ -34,7 +34,7 @@ static float ** alloc_crit(vtr::t_chunk *chunk_list_ptr) {
 	 * [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1].  I chunk the data to save space on large    *
 	 * problems.                                                                   */
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 	float **local_crit; /* [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1] */
 	float *tmp_ptr;
 	unsigned int inet;
@@ -84,7 +84,7 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 	  For every pin on every net (or, equivalently, for every tedge ending 
 	  in that pin), timing_place_crit = criticality^(criticality exponent) */
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (size_t inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 		if (cluster_ctx.clbs_nlist.net[inet].is_global)
 			continue;

@@ -50,7 +50,7 @@ static void power_usage_mux_rec(t_power_usage * power_usage, float * out_prob,
  */
 void power_components_init(void) {
 	int i;
-    auto& power_ctx = g_ctx.mutable_power();
+    auto& power_ctx = g_vpr_ctx.mutable_power();
 
 	power_ctx.by_component.components = (t_power_usage*) vtr::calloc(
 			POWER_COMPONENT_MAX_NUM, sizeof(t_power_usage));
@@ -63,7 +63,7 @@ void power_components_init(void) {
  * Module un-initializer function, called by power_uninit
  */
 void power_components_uninit(void) {
-    auto& power_ctx = g_ctx.mutable_power();
+    auto& power_ctx = g_vpr_ctx.mutable_power();
 	free(power_ctx.by_component.components);
 }
 
@@ -74,7 +74,7 @@ void power_components_uninit(void) {
  */
 void power_component_add_usage(t_power_usage * power_usage,
 		e_power_component_type component_idx) {
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 	power_add_usage(&power_ctx.by_component.components[component_idx],
 			power_usage);
 }
@@ -86,7 +86,7 @@ void power_component_add_usage(t_power_usage * power_usage,
  */
 void power_component_get_usage(t_power_usage * power_usage,
 		e_power_component_type component_idx) {
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 	memcpy(power_usage, &power_ctx.by_component.components[component_idx],
 			sizeof(t_power_usage));
 }
@@ -96,7 +96,7 @@ void power_component_get_usage(t_power_usage * power_usage,
  * - component_idx: Type of component
  */
 float power_component_get_usage_sum(e_power_component_type component_idx) {
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 	return power_sum_usage(&power_ctx.by_component.components[component_idx]);
 }
 
@@ -160,7 +160,7 @@ void power_usage_ff(t_power_usage * power_usage, float size, float D_prob,
 	power_add_usage(power_usage, &sub_power_usage);
 
 	/* Callibration */
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 	callibration = power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF];
 	if (callibration->is_done_callibration()) {
 		scale_factor = callibration->scale_factor(1, size);
@@ -224,7 +224,7 @@ void power_usage_lut(t_power_usage * power_usage, int lut_size,
 
 	bool level_restorer_this_level = false;
 
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	power_zero_usage(power_usage);
 
@@ -417,8 +417,8 @@ void power_usage_local_interc_mux(t_power_usage * power_usage, t_pb * pb,
 	t_power_usage MUX_power;
 	t_interconnect * interc = interc_pins->interconnect;
 	t_interconnect_power * interc_power = interc->interconnect_power;
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& power_ctx = g_ctx.power();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	power_zero_usage(power_usage);
 
@@ -545,7 +545,7 @@ void power_usage_mux_multilevel(t_power_usage * power_usage,
 	PowerSpicedComponent * callibration;
 	float scale_factor;
 	int * selector_values = (int*) vtr::calloc(mux_arch->levels, sizeof(int));
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	VTR_ASSERT(selected_input != OPEN);
 
@@ -587,7 +587,7 @@ static void power_usage_mux_rec(t_power_usage * power_usage, float * out_prob,
 	float * in_dens;
 	float * v_in;
 	t_power_usage sub_power_usage;
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	/* Single input mux is really just a wire, and has no power.
 	 * Ensure that it has no children before returning. */
@@ -659,7 +659,7 @@ void power_usage_buffer(t_power_usage * power_usage, float size, float in_prob,
 		return;
 	}
 
-    auto& power_ctx = g_ctx.power();
+    auto& power_ctx = g_vpr_ctx.power();
 
 	num_stages = power_calc_buffer_num_stages(size,
 			power_ctx.arch->logical_effort_factor);

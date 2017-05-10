@@ -52,7 +52,7 @@ static void print_lb_type_rr_graph(FILE *fp, const vector<t_lb_type_rr_node> &lb
 */
 vector<t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph() {
 	vector<t_lb_type_rr_node> *lb_type_rr_graphs;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	lb_type_rr_graphs = new vector<t_lb_type_rr_node> [device_ctx.num_block_types];
 
@@ -70,7 +70,7 @@ vector<t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph() {
 
 /* Free routing resource graph for all logic block types */
 void free_all_lb_type_rr_graph(vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for(int itype = 0; itype < device_ctx.num_block_types; itype++) {
 		if(&device_ctx.block_types[itype] != device_ctx.EMPTY_TYPE) {
@@ -145,7 +145,7 @@ void echo_lb_type_rr_graphs(char *filename, vector<t_lb_type_rr_node> *lb_type_r
 	FILE *fp;
 	fp = vtr::fopen(filename, "w");
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 	for(int itype = 0; itype < device_ctx.num_block_types; itype++) {
 		if(&device_ctx.block_types[itype] != device_ctx.EMPTY_TYPE) {
 			fprintf(fp, "--------------------------------------------------------------\n");

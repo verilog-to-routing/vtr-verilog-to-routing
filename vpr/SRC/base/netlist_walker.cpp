@@ -4,8 +4,8 @@
 
 void NetlistWalker::walk() {
     
-    auto& atom_ctx = g_ctx.atom();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     visitor_.visit_top(atom_ctx.nlist.netlist_name().c_str());
 

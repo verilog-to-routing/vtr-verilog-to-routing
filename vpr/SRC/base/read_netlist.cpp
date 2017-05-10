@@ -84,8 +84,8 @@ void read_netlist(const char *net_file, const t_arch* arch,
 	struct s_block *blist;
     std::vector<std::string> circuit_inputs, circuit_outputs, circuit_clocks;
 
-    auto& atom_ctx = g_ctx.mutable_atom();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.mutable_atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	int num_primitives = 0;
 
@@ -266,8 +266,8 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	int i;
 	const t_pb_type * pb_type = NULL;
 
-    auto& device_ctx = g_ctx.device();
-    auto& atom_ctx = g_ctx.mutable_atom();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
 	/* parse cb attributes */
 	cb[index].pb = new t_pb;
@@ -353,7 +353,7 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 	t_token *tokens;
 	int num_tokens;
 
-    auto& atom_ctx = g_ctx.mutable_atom();
+    auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
     auto inputs = pugiutil::get_single_child(Parent, "inputs", loc_data);
 	processPorts(inputs, pb, pb_route, loc_data);
@@ -539,7 +539,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
 	int *num_ptrs, num_sets;
 	bool found;
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     for(auto Cur = pugiutil::get_first_child(Parent, "port", loc_data, pugiutil::OPTIONAL); Cur; Cur = Cur.next_sibling("port")) {
 
@@ -821,7 +821,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 	int *count;
 	int netnum, num_tokens;
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	ext_nhash = alloc_hash_table();
 
@@ -992,7 +992,7 @@ static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_ro
 	t_pb_type *pb_type;
 	bool const_gen;
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	if (pb->pb_graph_node->pb_type->blif_model == NULL) {
 		for (i = 0; i < pb->pb_graph_node->pb_type->modes[pb->mode].num_pb_type_children; i++) {
@@ -1078,7 +1078,7 @@ static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin) {
 //Walk through the atom netlist looking up and storing the t_pb_graph_pin associated with
 //each connected AtomPinId
 static void load_atom_pin_mapping() {
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     for(const AtomBlockId blk : atom_ctx.nlist.blocks()) {
         const t_pb* pb = atom_ctx.lookup.atom_pb(blk);
@@ -1133,8 +1133,8 @@ static void load_atom_pin_mapping() {
 }
 
 static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin) {
-    auto& atom_ctx = g_ctx.mutable_atom();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.mutable_atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     VTR_ASSERT(atom_ctx.nlist.port_block(atom_port) == atom_blk);
 

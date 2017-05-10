@@ -63,7 +63,7 @@ void try_pack(struct s_packer_opts *packer_opts,
 
 	is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     size_t num_p_inputs = 0;
     size_t num_p_outputs = 0;
@@ -138,7 +138,7 @@ float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_swi
 	/* The intrinsic delay may depend on fanin to the switch. If the delay map of a 
 	   switch from the architecture file has multiple (#inputs, delay) entries, we
 	   interpolate/extrapolate to get the delay at 'switch_fanin'. */
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	std::map<int, double> *Tdel_map = &device_ctx.arch_switch_inf[switch_index].Tdel_map;
 	if (Tdel_map->size() == 1){
@@ -165,7 +165,7 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
     std::unordered_set<AtomNetId> is_clock;
 
 	/* Want to identify all the clock nets.  */
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     for(auto blk_id : atom_ctx.nlist.blocks()) {
         for(auto pin_id : atom_ctx.nlist.block_clock_pins(blk_id)) {

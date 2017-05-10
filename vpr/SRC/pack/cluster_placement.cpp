@@ -60,7 +60,7 @@ t_cluster_placement_stats *alloc_and_load_cluster_placement_stats(void) {
 	t_cluster_placement_stats *cluster_placement_stats_list;
 	int i;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	cluster_placement_stats_list = (t_cluster_placement_stats *) vtr::calloc(device_ctx.num_block_types,
 			sizeof(t_cluster_placement_stats));
@@ -226,7 +226,7 @@ void free_cluster_placement_stats(
 		t_cluster_placement_stats *cluster_placement_stats_list) {
 	t_cluster_placement_primitive *cur, *next;
 	int i, j;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		cur = cluster_placement_stats_list[i].tried;
@@ -789,7 +789,7 @@ static bool root_passes_early_filter(const t_pb_graph_node *root, const t_pack_m
 
 	feasible = true;
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     AtomBlockId blk_id = molecule->atom_block_ids[molecule->root];
 

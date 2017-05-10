@@ -147,7 +147,7 @@ void free_router_data(t_lb_router_data *router_data) {
 /* Add pins of netlist atom to to current routing drivers/targets */
 void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id) {
 	const t_pb *pb;
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     std::map<AtomBlockId, bool>& atoms_added = *router_data->atoms_added;
 
@@ -173,7 +173,7 @@ void add_atom_as_target(t_lb_router_data *router_data, const AtomBlockId blk_id)
 
 /* Remove pins of netlist atom from current routing drivers/targets */
 void remove_atom_from_target(t_lb_router_data *router_data, const AtomBlockId blk_id) {
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	map <AtomBlockId, bool> & atoms_added = *router_data->atoms_added;
 
@@ -327,7 +327,7 @@ bool try_intra_lb_route(t_lb_router_data *router_data) {
 			is_routed = is_route_success(router_data);
 		} else {
 			--inet;
-            auto& atom_ctx = g_ctx.atom();
+            auto& atom_ctx = g_vpr_ctx.atom();
 			vtr::printf_info("Routing net %s is impossible\n", atom_ctx.nlist.net_name(lb_nets[inet].atom_net_id).c_str());
 			is_routed = false;
 		}
@@ -449,7 +449,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data *router_data, const AtomPin
 	t_type_ptr lb_type = router_data->lb_type;
 	bool found = false;
 	unsigned int ipos;
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_ctx.nlist, atom_ctx.lookup, pin_id);
     VTR_ASSERT(pb_graph_pin);
@@ -570,7 +570,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 	t_type_ptr lb_type = router_data->lb_type;
 	bool found = false;
 	unsigned int ipos;
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_ctx.nlist, atom_ctx.lookup, pin_id);
 
@@ -697,7 +697,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data *router_data, const At
 //(instead of the common sink). This ensures a legal routing is produced and that the duplicate pins
 //are not 'missing' in the clustered netlist.
 static void fix_duplicate_equivalent_pins(t_lb_router_data *router_data) {
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	vector <t_lb_type_rr_node> & lb_type_graph = *router_data->lb_type_graph;
 	vector <t_intra_lb_net> & lb_nets = *router_data->intra_lb_nets;
@@ -1001,7 +1001,7 @@ static void print_route(char *filename, t_lb_router_data *router_data) {
 
 	fprintf(fp, "\n\n----------------------------------------------------\n\n");
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	for(unsigned int inet = 0; inet < lb_nets.size(); inet++) {
 		AtomNetId net_id = lb_nets[inet].atom_net_id;

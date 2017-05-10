@@ -41,7 +41,7 @@ void check_rr_graph(const t_graph_type graph_type,
 		route_type = GLOBAL;
 	}
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	total_edges_to_node = (int *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(int));
 	num_edges_from_current_to_node = (int *) vtr::calloc(device_ctx.num_rr_nodes,
@@ -191,7 +191,7 @@ static bool rr_node_is_global_clb_ipin(int inode) {
 	int ipin;
 	t_type_ptr type;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	type = device_ctx.grid[device_ctx.rr_nodes[inode].xlow()][device_ctx.rr_nodes[inode].ylow()].type;
 
@@ -215,7 +215,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 	int nodes_per_chan, tracks_per_node, num_edges, cost_index;
 	float C, R;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	rr_type = device_ctx.rr_nodes[inode].type();
 	xlow = device_ctx.rr_nodes[inode].xlow();
@@ -454,7 +454,7 @@ static void check_pass_transistors(int from_node) {
 	short from_switch_type;
 	bool trans_matched;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	from_rr_type = device_ctx.rr_nodes[from_node].type();
 	if (from_rr_type != CHANX && from_rr_type != CHANY)

@@ -36,7 +36,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	bool buffered;
 	float *Couts_to_add; /* UDSD */
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	maxlen = max(device_ctx.nx, device_ctx.ny) + 1;
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));

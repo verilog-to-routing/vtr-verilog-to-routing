@@ -19,7 +19,7 @@ using namespace std;
  * block:		net.pins[0..pins.size()-1].block. 
  *				Block to which the nodes of this pin connect. The source 
  *				block is net.pins[0].block and the sink blocks are the remaining pins.
- *				When this is in the g_ctx.clb_netlist, it is an index into block[]
+ *				When this is in the g_vpr_ctx.clb_netlist, it is an index into block[]
  * block_pin:   Pin index (on a block) to which each net terminal connects. 
  * net:         Net index to which this pin is associated
  * net_pin:     Pin index (in the net) of this pin (e.g. net_pin == 0 means this pin is a driver)

@@ -60,7 +60,7 @@ void draw_internal_alloc_blk() {
 	/* Create a vector holding coordinate information for each type of physical logic
 	 * block.
 	 */
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 	draw_coords->blk_info.resize(device_ctx.num_block_types);
 
 	for (i = 0; i < device_ctx.num_block_types; ++i) {
@@ -86,7 +86,7 @@ void draw_internal_init_blk() {
 
 	t_pb_graph_node *pb_graph_head_node;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 	for (int i = 0; i < device_ctx.num_block_types; ++i) {
 		/* Empty block has no sub_blocks */
 		s_type_descriptor& type_desc = device_ctx.block_types[i];
@@ -136,8 +136,8 @@ void draw_internal_init_blk() {
 
 
 void draw_internal_draw_subblk() {
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (int i = 0; i <= (device_ctx.nx + 1); i++) {
 		for (int j = 0; j <= (device_ctx.ny + 1); j++) {
@@ -264,7 +264,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 	const float FRACTION_CHILD_MARGIN_X = 0.025;
 	const float FRACTION_CHILD_MARGIN_Y = 0.04;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 	int capacity = device_ctx.block_types[type_descrip_index].capacity;
 	if (capacity > 1 && device_ctx.nx > 0 && device_ctx.ny > 0 && device_ctx.grid[1][0].usage != 0
 		&& type_descrip_index == device_ctx.grid[1][0].type->index) {
@@ -462,8 +462,8 @@ void draw_logical_connections() {
 	const t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
 	t_draw_state* draw_state = get_draw_state_vars();
 
-    auto& atom_ctx = g_ctx.atom();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	// iterate over all the atom nets
     for(auto net_id : atom_ctx.nlist.nets()) {
@@ -514,7 +514,7 @@ void find_pin_index_at_model_scope(
 	const AtomPinId pin_id, const AtomBlockId blk_id,
 	int* pin_index, int* total_pins) {
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     AtomPortId port_id = atom_ctx.nlist.pin_port(pin_id);
     const t_model_ports* model_port = atom_ctx.nlist.port_model(port_id);
@@ -564,7 +564,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
 	drawline(src_point.x, src_point.y,
 		sink_point.x, sink_point.y);
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 	if (atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(src_pin)) == atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(sink_pin))) {
 		// if they are in the same clb, put one arrow in the center
 		float center_x = (src_point.x + sink_point.x) / 2;
@@ -588,7 +588,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
  */
 static bool is_top_lvl_block_highlighted(const t_block& clb) {
 	t_draw_state *draw_state;
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	ptrdiff_t blk_id = &clb - cluster_ctx.blocks;
 
@@ -727,8 +727,8 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 	sources.clear();
 	in_selected_subtree.clear();
 
-    auto& atom_ctx = g_ctx.atom();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	if (has_selection()) {
 		add_all_children(selected_pb, containing_block, in_selected_subtree);
@@ -809,7 +809,7 @@ t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(int clb_index_, const t_
 }
 
 t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const AtomPinId atom_pin) {
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	clb_index = atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(atom_pin));
 	pb_gnode = atom_ctx.lookup.atom_pb_graph_node(atom_ctx.nlist.pin_block(atom_pin));

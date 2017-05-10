@@ -254,7 +254,7 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 	vtr::t_linked_int *next_crit_node;
 	float Tdel;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	inode = critical_path_node->data;
 	type = tnode[inode].type;
@@ -290,7 +290,7 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 		fprintf(fp, "\n");
 	}
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	if (type == TN_CB_OPIN) {
 		AtomNetId atom_net_id = cluster_ctx.blocks[iblk].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;

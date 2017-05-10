@@ -348,9 +348,9 @@ void try_place(struct s_placer_opts placer_opts,
 	t_slack * slacks = NULL;
 #endif
 
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     place_ctx.block_locs.clear();
     place_ctx.block_locs.resize(cluster_ctx.num_blocks);
@@ -411,7 +411,7 @@ void try_place(struct s_placer_opts placer_opts,
         /*
          * Initialize timing analysis
          */
-        auto& atom_ctx = g_ctx.atom();
+        auto& atom_ctx = g_vpr_ctx.atom();
         placement_delay_calc = std::make_shared<PlacementDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, point_to_point_delay_cost);
         timing_info = make_setup_timing_info(placement_delay_calc);
 
@@ -425,7 +425,7 @@ void try_place(struct s_placer_opts placer_opts,
 
         //Write out the initial timing echo file
         if(isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH)) {
-            auto& timing_ctx = g_ctx.timing();
+            auto& timing_ctx = g_vpr_ctx.timing();
 
             tatum::write_echo(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH),
                     *timing_ctx.graph, *timing_ctx.constraints, *placement_delay_calc, timing_info->analyzer());
@@ -785,7 +785,7 @@ void try_place(struct s_placer_opts placer_opts,
 		critical_path = timing_info->least_slack_critical_path();
 
         if(isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH)) {
-            auto& timing_ctx = g_ctx.timing();
+            auto& timing_ctx = g_vpr_ctx.timing();
 
             tatum::write_echo(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH),
                     *timing_ctx.graph, *timing_ctx.constraints, *placement_delay_calc, timing_info->analyzer());
@@ -1006,7 +1006,7 @@ static int count_connections() {
 
 	count = 0;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 
 		if (cluster_ctx.clbs_nlist.net[inet].is_global)
@@ -1045,7 +1045,7 @@ static void update_rlim(float *rlim, float success_rat) {
 	 * a floating point rlim to allow gradual transitions at low temps.  */
 
 	float upper_lim;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	*rlim = (*rlim) * (1. - 0.44 + success_rat);
 	upper_lim = max(device_ctx.nx + 1, device_ctx.ny + 1);
@@ -1087,7 +1087,7 @@ static int exit_crit(float t, float cost,
 		}
 	}
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* Automatic annealing schedule */
     float t_exit = 0.005 * cost / cluster_ctx.clbs_nlist.net.size();
@@ -1117,7 +1117,7 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 	if (annealing_sched.type == USER_SCHED)
 		return (annealing_sched.init_t);
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	move_lim = min(max_moves, cluster_ctx.num_blocks);
 
@@ -1175,9 +1175,9 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 	int x_from, y_from, z_from, b_to;
 	int abort_swap = false;
 
-    //auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.mutable_placement();
-    auto& device_ctx = g_ctx.device();
+    //auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	x_from = place_ctx.block_locs[b_from].x;
 	y_from = place_ctx.block_locs[b_from].y;
@@ -1265,8 +1265,8 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 	int curr_b_from, curr_x_from, curr_y_from, curr_z_from, curr_x_to, curr_y_to, curr_z_to;
 	int abort_swap = false;
 
-    auto& place_ctx = g_ctx.placement();
-    auto& device_ctx = g_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
 	
 	x_from = place_ctx.block_locs[b_from].x;
 	y_from = place_ctx.block_locs[b_from].y;
@@ -1332,8 +1332,8 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	int inet, iblk, bnum, iblk_pin, inet_affected;
 	int abort_swap = false;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.mutable_placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	num_ts_called ++;
 
@@ -1484,7 +1484,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 
 			/* Update clb data structures since we kept the move. */
 			/* Swap physical location */
-            auto& device_ctx = g_ctx.device();
+            auto& device_ctx = g_vpr_ctx.device();
 			for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 
 				x_to = blocks_affected.moved_blocks[iblk].xnew;
@@ -1560,7 +1560,7 @@ static int find_affected_nets(int *nets_to_update) {
 
 	int iblk, iblk_pin, inet, bnum, num_affected_nets;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	num_affected_nets = 0;
 	/* Go through all the blocks moved */
@@ -1608,8 +1608,8 @@ static bool find_to(t_type_ptr type, float rlim,
 	bool is_legal;
 	int itype;
 
-    auto& device_ctx = g_ctx.device();
-    auto& place_ctx = g_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
 
 	VTR_ASSERT(type == device_ctx.grid[x_from][y_from].type);
 
@@ -1677,7 +1677,7 @@ static void find_to_location(t_type_ptr type, float rlim,
 		int x_from, int y_from, 
 		int *px_to, int *py_to, int *pz_to) {
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	int itype = type->index;
 
@@ -1745,7 +1745,7 @@ static float recompute_bb_cost(void) {
 	unsigned int inet;
 	float cost;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	cost = 0;
 
@@ -1764,9 +1764,9 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 
 	/*returns the delay of one point to point connection */
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.placement();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	float delay_source_to_sink = 0.;
 
@@ -1819,7 +1819,7 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 
 //Recompute all point to point delays, updating point_to_point_delay_cost
 static void comp_td_point_to_point_delays() {
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for(size_t inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); ++inet) {
         for(size_t ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
@@ -1836,7 +1836,7 @@ static void update_td_cost(void) {
 	unsigned int ipin;
 	int iblk, iblk2, bnum, driven_by_moved_block;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 	
 	/* Go through all the blocks moved. */
 	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
@@ -1893,7 +1893,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 	float delta_timing_cost, delta_delay_cost, temp_delay;
 	int iblk, iblk2, bnum, iblk_pin, driven_by_moved_block;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	delta_timing_cost = 0.;
 	delta_delay_cost = 0.;
@@ -1966,7 +1966,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	float loc_timing_cost, loc_connection_delay_sum, temp_delay_cost,
 			temp_timing_cost;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	loc_timing_cost = 0.;
 	loc_connection_delay_sum = 0.;
@@ -2011,7 +2011,7 @@ static float comp_bb_cost(enum cost_methods method) {
 	float cost;
 	double expected_wirelength;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	cost = 0;
 	expected_wirelength = 0.0;
@@ -2054,7 +2054,7 @@ static void free_placement_structs(
 	unsigned int inet;
 	int imacro;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	free_legal_placements();
 	free_fast_cost_update();
@@ -2118,8 +2118,8 @@ static void alloc_and_load_placement_structs(
 	int max_pins_per_clb, i;
 	unsigned int inet, ipin;
 
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	alloc_legal_placements();
 	load_legal_placements();
@@ -2191,7 +2191,7 @@ static void alloc_and_load_placement_structs(
 static void alloc_and_load_try_swap_structs() {
 	/* Allocate the local bb_coordinate storage, etc. only once. */
 	/* Allocate with size cluster_ctx.clbs_nlist.net.size() for any number of nets affected. */
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	ts_bb_coord_new = (struct s_bb *) vtr::calloc(
 			cluster_ctx.clbs_nlist.net.size(), sizeof(struct s_bb));
@@ -2217,9 +2217,9 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	int xmin_edge, xmax_edge, ymin_edge, ymax_edge;
 	unsigned int ipin, n_pins;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.placement();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	n_pins = cluster_ctx.clbs_nlist.net[inet].pins.size();
 	
@@ -2303,7 +2303,7 @@ static double get_net_wirelength_estimate(int inet, struct s_bb *bbptr) {
 	 * its coordinate bounding box.                                         */
 
 	double ncost, crossing;
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* Get the expected "crossing count" of a net, based on its number *
 	 * of pins.  Extrapolate for very large nets.                      */
@@ -2339,7 +2339,7 @@ static float get_net_cost(int inet, struct s_bb *bbptr) {
 	 * box.                                                                 */
 
 	float ncost, crossing;
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* Get the expected "crossing count" of a net, based on its number *
 	 * of pins.  Extrapolate for very large nets.                      */
@@ -2381,9 +2381,9 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 	int bnum, pnum;
 	unsigned int k;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.placement();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	bnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
 	pnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
@@ -2445,7 +2445,7 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 	
 	struct s_bb *curr_bb_edge, *curr_bb_coord;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 		
 	xnew = max(min(xnew, device_ctx.nx), 1);
 	ynew = max(min(ynew, device_ctx.ny), 1);
@@ -2647,7 +2647,7 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 static void alloc_legal_placements() {
 	int i, j, k;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	legal_pos = (t_legal_pos **) vtr::malloc(device_ctx.num_block_types * sizeof(t_legal_pos *));
 	num_legal_pos = (int *) vtr::calloc(device_ctx.num_block_types, sizeof(int));
@@ -2677,7 +2677,7 @@ static void load_legal_placements() {
 	int i, j, k, itype;
 	int *index;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	index = (int *) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
@@ -2701,7 +2701,7 @@ static void load_legal_placements() {
 }
 
 static void free_legal_placements() {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (int i = 0; i < device_ctx.num_block_types; i++) {
 		free(legal_pos[i]);
@@ -2717,7 +2717,7 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 	int imember;
 	int member_x, member_y, member_z;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	// Every macro can be placed until proven otherwise
 	int macro_can_be_placed = true;
@@ -2752,7 +2752,7 @@ static int try_place_macro(int itype, int ipos, int imacro){
 
 	int x, y, z, member_x, member_y, member_z, imember;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	int macro_placed = false;
 
@@ -2769,7 +2769,7 @@ static int try_place_macro(int itype, int ipos, int imacro){
 	int macro_can_be_placed = check_macro_can_be_placed(imacro, itype, x, y, z);
 
 	if (macro_can_be_placed) {
-        auto& place_ctx = g_ctx.mutable_placement();
+        auto& place_ctx = g_vpr_ctx.mutable_placement();
 		
 		// Place down the macro
 		macro_placed = true;
@@ -2805,8 +2805,8 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 	int macro_placed;
 	int imacro, iblk, itype, itry, ipos;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Macros are harder to place.  Do them first */
 	for (imacro = 0; imacro < num_pl_macros; imacro++) {
@@ -2877,9 +2877,9 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 	
 	int iblk, itype;
 	int ipos, x, y, z;
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.mutable_placement();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
 
@@ -2937,7 +2937,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 static void initial_placement_location(int * free_locations, int iblk,
 		int *pipos, int *px_to, int *py_to, int *pz_to) {
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	int itype = cluster_ctx.blocks[iblk].type->index;
 
@@ -2961,9 +2961,9 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 						  * That is, this stores the number of entries in legal_pos[itype] that are worth considering
 						  * as you look for a free location.
 						  */
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	free_locations = (int *) vtr::malloc(device_ctx.num_block_types * sizeof(int));
 	for (itype = 0; itype < device_ctx.num_block_types; itype++) {
@@ -3034,7 +3034,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 
 static void free_fast_cost_update(void) {
 	int i;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (i = 0; i <= device_ctx.ny; i++)
 		free(chanx_place_cost_fac[i]);
@@ -3062,7 +3062,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 	 * larger numbers make narrower channels more expensive.                 */
 
 	int low, high, i;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Access arrays below as chan?_place_cost_fac[subhigh][sublow].  Since   *
 	 * subhigh must be greater than or equal to sublow, we only need to       *
@@ -3176,9 +3176,9 @@ static void check_place(float bb_cost, float timing_cost,
 		}
 	}
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.placement();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	bdone = (int *) vtr::malloc(cluster_ctx.num_blocks * sizeof(int));
 	for (i = 0; i < cluster_ctx.num_blocks; i++)
@@ -3290,8 +3290,8 @@ static void print_clb_placement(const char *fname) {
 
 	FILE *fp;
 	int i;
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 	
 	fp = vtr::fopen(fname, "w");
 	fprintf(fp, "Complex block placements:\n\n");

@@ -35,7 +35,7 @@ bool try_breadth_first_route(struct s_router_opts router_opts,
 	int itry;
 	unsigned int inet;
 
-    auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
 	/* Usually the first iteration uses a very small (or 0) pres_fac to find  *
 	 * the shortest path and get a congestion map.  For fast compiles, I set  *
@@ -95,8 +95,8 @@ bool try_breadth_first_route_net(int inet, float pres_fac,
 
 	bool is_routed = false;
 
-    auto& cluster_ctx = g_ctx.mutable_clustering();
-    auto& route_ctx = g_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	if (cluster_ctx.clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
 
@@ -144,7 +144,7 @@ static bool breadth_first_route_net(int inet, float bend_cost) {
 	struct s_heap *current;
 	struct s_trace *tptr;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	free_traceback(inet);
 	breadth_first_add_source_to_heap(inet);
@@ -229,7 +229,7 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 	struct s_trace *tptr, *next_ptr;
 	int inode, sink_node, last_ipin_node;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	tptr = start_ptr;
 	if(tptr != NULL && device_ctx.rr_nodes[tptr->index].type() == SINK) {
@@ -306,7 +306,7 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 	t_rr_type from_type, to_type;
 	float tot_cost;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	num_edges = device_ctx.rr_nodes[inode].num_edges();
 	for (iconn = 0; iconn < num_edges; iconn++) {
@@ -340,7 +340,7 @@ static void breadth_first_add_source_to_heap(int inet) {
 	int inode;
 	float cost;
 
-    auto& route_ctx = g_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	inode = route_ctx.net_rr_terminals[inet][0]; /* SOURCE */
 	cost = get_rr_cong_cost(inode);

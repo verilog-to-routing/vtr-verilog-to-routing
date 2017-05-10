@@ -91,7 +91,7 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 	struct s_hash **nhash;
 	t_pack_patterns *list_of_packing_patterns;
 	t_pb_graph_edge *expansion_edge;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* alloc and initialize array of packing patterns based on architecture complex blocks */
 	nhash = alloc_hash_table();
@@ -745,7 +745,7 @@ t_pack_molecule *alloc_and_load_pack_molecules(
 	t_pack_molecule *list_of_molecules_head;
 	t_pack_molecule *cur_molecule;
 	bool *is_used;
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	is_used = (bool*)vtr::calloc(num_packing_patterns, sizeof(bool));
 
@@ -944,7 +944,7 @@ static bool try_expand_molecule(t_pack_molecule *molecule,
 	bool *is_block_optional;
 	t_pack_pattern_connections *cur_pack_pattern_connection;
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	is_block_optional = molecule->pack_pattern->is_block_optional;
 	is_optional = is_block_optional[current_pattern_block->block_id];
@@ -1047,7 +1047,7 @@ static void print_pack_molecules(const char *fname,
 	int i;
 	FILE *fp;
 	const t_pack_molecule *list_of_molecules_current;
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	fp = std::fopen(fname, "w");
 	fprintf(fp, "# of pack patterns %d\n", num_pack_patterns);
@@ -1099,7 +1099,7 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const 
 	int i;
 	float cost, best_cost;
 	t_pb_graph_node *current, *best;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	best_cost = UNDEFINED;
 	best = NULL;
@@ -1116,7 +1116,7 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const 
 	}
 
     if(!best) {
-        auto& atom_ctx = g_ctx.atom();
+        auto& atom_ctx = g_vpr_ctx.atom();
         VPR_THROW(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
                   atom_ctx.nlist.block_model(blk_id)->name);
     }
@@ -1203,7 +1203,7 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 	t_pb_graph_node *root_pb_graph_node;
 	t_model_ports *model_port;
 	
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	VTR_ASSERT(list_of_pack_pattern->is_chain == true);
 	root_ipin = list_of_pack_pattern->chain_root_pin;

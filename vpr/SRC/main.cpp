@@ -81,7 +81,7 @@ int main(int argc, const char **argv) {
 	
 		entire_flow_end = clock();
 
-        auto& timing_ctx = g_ctx.timing();
+        auto& timing_ctx = g_vpr_ctx.timing();
         vtr::printf_info("Timing analysis took %g seconds (%g STA, %g slack) (%d full updates).\n", 
                             timing_ctx.stats.timing_analysis_wallclock_time(), 
                             timing_ctx.stats.sta_wallclock_time, 

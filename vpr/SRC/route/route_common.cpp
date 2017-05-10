@@ -132,8 +132,8 @@ void save_routing(struct s_trace **best_routing,
 	struct s_trace *tptr, *tempptr;
 	t_type_ptr type;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 
@@ -184,8 +184,8 @@ void restore_routing(struct s_trace **best_routing,
 	int iblk, ipin, iclass, num_local_opins;
 	t_type_ptr type;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 
@@ -222,9 +222,9 @@ void get_serial_num(void) {
 	int serial_num, inode;
 	struct s_trace *tptr;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.routing();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	serial_num = 0;
 
@@ -254,7 +254,7 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 		t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs) {
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	t_graph_type graph_type;
 	if (router_opts.route_type == GLOBAL) {
@@ -314,8 +314,8 @@ bool try_route(int width_fac, struct s_router_opts router_opts,
 	 * architecture (connection and switch boxes) of the FPGA; it is used   *
 	 * only if a DETAILED routing has been selected.                        */
 
-    auto& device_ctx = g_ctx.mutable_device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	t_graph_type graph_type;
 	if (router_opts.route_type == GLOBAL) {
@@ -407,8 +407,8 @@ bool feasible_routing(void) {
 	 * That is, are all rr_node capacity limitations respected?  It assumes    *
 	 * that the occupancy arrays are up to date when it is called.             */
 
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
 		if (route_ctx.rr_node_state[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
@@ -436,7 +436,7 @@ void pathfinder_update_path_cost(struct s_trace *route_segment_start,
 	if (tptr == NULL) /* No routing yet. */
 		return;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (;;) {
 		pathfinder_update_single_node_cost(tptr->index, add_or_sub, pres_fac);
@@ -459,8 +459,8 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 	 * pres_cost is set according to the overuse that would result from having
 	 * ONE MORE net use this routing node.     */
 
-    auto& route_ctx = g_ctx.routing();
-    auto& device_ctx = g_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	int occ = route_ctx.rr_node_state[inode].occ() + add_or_sub;
 	route_ctx.rr_node_state[inode].set_occ(occ);
@@ -486,8 +486,8 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 	 * DATE.                                                                     */
 
 	int inode, occ, capacity;
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
 		occ = route_ctx.rr_node_state[inode].occ();
@@ -513,7 +513,7 @@ void init_route_structs(int bb_factor) {
 	/* Call this before you route any nets.  It frees any old traceback and   *
 	 * sets the list of rr_nodes touched to empty.                            */
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (unsigned int i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++)
 		free_traceback(i);
@@ -556,8 +556,8 @@ update_traceback(struct s_heap *hptr, int inet) {
 
 	t_rr_type rr_type;
 
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	// hptr points to the end of a connection
 	inode = hptr->index;
@@ -645,7 +645,7 @@ float get_rr_cong_cost(int inode) {
 	short cost_index;
 	float cost;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	cost_index = device_ctx.rr_nodes[inode].cost_index();
 	cost = device_ctx.rr_indexed_data[cost_index].base_cost
@@ -665,8 +665,8 @@ void mark_ends(int inet) {
 	unsigned int ipin;
 	int inode;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 		inode = route_ctx.net_rr_terminals[inet][ipin];
@@ -710,7 +710,7 @@ void free_traceback(int inet) {
 
 	struct s_trace *tptr, *tempptr;
 
-    auto& route_ctx = g_ctx.mutable_routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	if(route_ctx.trace_head == NULL) {
 		return;
@@ -742,9 +742,9 @@ alloc_route_structs(void) {
 }
 
 void alloc_route_static_structs(void) {
-    auto& route_ctx = g_ctx.mutable_routing();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	route_ctx.trace_head = (struct s_trace **) vtr::calloc(cluster_ctx.clbs_nlist.net.size(), sizeof(struct s_trace *));
 	route_ctx.trace_tail = (struct s_trace **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(struct s_trace *));
@@ -770,7 +770,7 @@ alloc_saved_routing(vtr::t_ivec ** clb_opins_used_locally,
 	int iblk, iclass, num_local_opins;
 	t_type_ptr type;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	best_routing = (struct s_trace **) vtr::calloc(cluster_ctx.clbs_nlist.net.size(),
 			sizeof(struct s_trace *));
@@ -812,8 +812,8 @@ alloc_and_load_clb_opins_used_locally(void) {
 	int class_low, class_high;
 	t_type_ptr type;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	clb_opins_used_locally = (vtr::t_ivec **) vtr::malloc(
 			cluster_ctx.num_blocks * sizeof(vtr::t_ivec *));
@@ -863,8 +863,8 @@ void free_trace_structs(void) {
 	/*routines use the trace values */
 	unsigned int i;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.mutable_routing();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++)
 		free_traceback(i);
@@ -905,7 +905,7 @@ void free_saved_routing(struct s_trace **best_routing,
 	/* Frees the data structures needed to save a routing.                     */
 	int i;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	free(best_routing);
 	for (i = 0; i < cluster_ctx.num_blocks; i++) {
@@ -927,7 +927,7 @@ void alloc_and_load_rr_node_route_structs(void) {
 			"in alloc_and_load_rr_node_route_structs: old rr_node_route_inf array exists.\n");
 	}
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	rr_node_route_inf = (t_rr_node_route_inf *) vtr::malloc(device_ctx.num_rr_nodes * sizeof(t_rr_node_route_inf));
 
@@ -950,7 +950,7 @@ void reset_rr_node_route_structs(void) {
 
 	VTR_ASSERT(rr_node_route_inf != NULL);
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
 		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
@@ -988,9 +988,9 @@ static void load_route_bb(int bb_factor) {
 	unsigned int k, inet;
 	int xmax, ymax, xmin, ymin, x, y;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& place_ctx = g_ctx.placement();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         int idriver_blk = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
@@ -1334,10 +1334,10 @@ void print_route(const char* placement_file, const char* route_file) {
 
 	fp = fopen(route_file, "w");
 
-    auto& place_ctx = g_ctx.placement();
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.mutable_routing();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     fprintf(fp, "Placement_File: %s Placement_ID: %s\n", placement_file, place_ctx.placement_id.c_str());
 
@@ -1470,9 +1470,9 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 	struct s_heap *heap_head_ptr;
 	t_type_ptr type;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.routing();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	if (rip_up_local_opins) {
 		for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
@@ -1525,8 +1525,8 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 
 	int occ, capacity;
 
-    auto& route_ctx = g_ctx.routing();
-    auto& device_ctx = g_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	occ = route_ctx.rr_node_state[inode].occ() + add_or_sub;
 	capacity = device_ctx.rr_nodes[inode].capacity();
@@ -1553,8 +1553,8 @@ void free_chunk_memory_trace(void) {
 // utility and debugging functions -----------------------
 void print_traceback(int inet) {
 	// linearly print linked list
-    auto& route_ctx = g_ctx.routing();
-    auto& device_ctx = g_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	vtr::printf_info("traceback %d: ", inet);
 	t_trace* head = route_ctx.trace_head[inet];

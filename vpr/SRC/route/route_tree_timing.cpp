@@ -83,7 +83,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
         }
 	}
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	rr_node_to_rt_node = (t_rt_node **) vtr::malloc(device_ctx.num_rr_nodes * sizeof(t_rt_node *));
 
@@ -187,8 +187,8 @@ init_route_tree_to_source(int inet) {
 	t_rt_node *rt_root;
 	int inode;
 
-    auto& route_ctx = g_ctx.routing();
-    auto& device_ctx = g_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	rt_root = alloc_rt_node();
 	rt_root->u.child_list = NULL;
@@ -220,7 +220,7 @@ update_route_tree(struct s_heap * hptr) {
 	float Tdel_start;
 	short iswitch;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	start_of_new_path_rt_node = add_path_to_route_tree(hptr, &sink_rt_node);
 	load_new_path_R_upstream(start_of_new_path_rt_node);
@@ -256,7 +256,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
 	t_linked_rt_edge *linked_rt_edge;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	inode = hptr->index;
 
@@ -351,7 +351,7 @@ static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node) {
 	t_rt_node *rt_node, *parent_rt_node;
 	t_linked_rt_edge *linked_rt_edge;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	rt_node = start_of_new_path_rt_node;
 	iswitch = rt_node->parent_switch;
@@ -404,7 +404,7 @@ update_unbuffered_ancestors_C_downstream(t_rt_node * start_of_new_path_rt_node) 
 	short iswitch;
 	float C_downstream_addition;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	rt_node = start_of_new_path_rt_node;
 	C_downstream_addition = rt_node->C_downstream;
@@ -434,7 +434,7 @@ void load_route_tree_Tdel(t_rt_node * subtree_rt_root, float Tarrival) {
 	t_linked_rt_edge *linked_rt_edge;
 	float Tdel, Tchild;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	inode = subtree_rt_root->inode;
 
@@ -552,7 +552,7 @@ void update_net_delays_from_route_tree(float *net_delay,
 	/* Goes through all the sinks of this net and copies their delay values from
 	 * the route_tree to the net_delay array.                                    */
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (unsigned int isink = 1; isink < cluster_ctx.clbs_nlist.net[inet].pins.size(); isink++) {
 		net_delay[isink] = rt_node_of_sink[isink]->Tdel;
 	}
@@ -577,8 +577,8 @@ t_rt_node* traceback_to_route_tree(int inet) {
 	 * returns the root of the converted route tree
 	 * initially points at the traceback equivalent of root 							  */
 
-    auto& route_ctx = g_ctx.routing();
-    auto& device_ctx = g_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	t_trace* head {route_ctx.trace_head[inet]};
 	// always called after the 1st iteration, so should exist
@@ -724,7 +724,7 @@ t_trace* traceback_from_route_tree(int inet, const t_rt_node* root, int num_rout
 	 * properly sets route_ctx.trace_head and route_ctx.trace_tail for this net
 	 * returns the trace head for inet 					 					 */
 
-    auto& route_ctx = g_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	t_trace* head {alloc_trace_data()};
 	head->index = root->inode;
@@ -796,8 +796,8 @@ static bool prune_illegal_branches_from_route_tree(t_rt_node* rt_root, float pre
 
 	VTR_ASSERT(rt_root != nullptr);
 
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	auto inode = rt_root->inode;
 
@@ -874,8 +874,8 @@ bool prune_route_tree(t_rt_node* rt_root, float pres_fac, CBRR& connections_inf)
 	// SOURCE node should never be congested
 	VTR_ASSERT(rt_root != nullptr);
 
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	VTR_ASSERT(route_ctx.rr_node_state[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity());
 
@@ -986,7 +986,7 @@ void print_edge(const t_linked_rt_edge* edge) {
 
 
 static void print_node(const t_rt_node* rt_node) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	int inode = rt_node->inode;
 	t_rr_type node_type = device_ctx.rr_nodes[inode].type();
@@ -1004,8 +1004,8 @@ static void print_node_inf(const t_rt_node* rt_node) {
 
 
 static void print_node_congestion(const t_rt_node* rt_node) {
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	int inode = rt_node->inode;
 	const auto& node_inf = rr_node_route_inf[inode];
@@ -1093,8 +1093,8 @@ bool is_valid_skeleton_tree(const t_rt_node* root) {
 
 bool is_valid_route_tree(const t_rt_node* root) {
 	// check upstream resistance
-    auto& device_ctx = g_ctx.device();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	int inode = root->inode;
 	short iswitch = root->parent_switch;
@@ -1162,8 +1162,8 @@ bool is_valid_route_tree(const t_rt_node* root) {
 
 //Returns true if the route tree rooted at 'root' is not congested
 bool is_uncongested_route_tree(const t_rt_node* root) {
-    auto& route_ctx = g_ctx.routing();
-    auto& device_ctx = g_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
 
     int inode = root->inode;
     if (route_ctx.rr_node_state[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {

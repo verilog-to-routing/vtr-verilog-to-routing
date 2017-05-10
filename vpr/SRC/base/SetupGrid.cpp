@@ -35,7 +35,7 @@ void alloc_and_load_grid(int *num_instances_type) {
 	FILE *dump;
 #endif
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	/* To remove this limitation, change ylow etc. in t_rr_node to        *
 	 * * be ints instead.  Used shorts to save memory.                      */
@@ -139,7 +139,7 @@ static void alloc_and_load_num_instances_type(
 		t_grid_tile** L_grid, int L_nx, int L_ny,
 		int* L_num_instances_type, int L_num_types) {
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (int i = 0; i < L_num_types; ++i) {
 		L_num_instances_type[i] = 0;
@@ -188,7 +188,7 @@ static void alloc_and_load_num_instances_type(
 }
 
 void freeGrid(void) {
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	int i, j;
 	if (device_ctx.grid == NULL) {
@@ -208,7 +208,7 @@ static void CheckGrid(void) {
 
 	int i, j;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Check grid is valid */
 	for (i = 0; i <= (device_ctx.nx + 1); ++i) {
@@ -247,7 +247,7 @@ static t_type_ptr find_type_col(const int x) {
 	int priority, num_loc;
 	t_type_ptr column_type;
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	priority = device_ctx.FILL_TYPE->grid_loc_def[0].priority;
 	column_type = device_ctx.FILL_TYPE;

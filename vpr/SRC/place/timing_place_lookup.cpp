@@ -221,7 +221,7 @@ static void alloc_delay_lookup_netlists() {
 }
 
 static void free_delay_lookup_netlists() {
-    auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     free_global_nlist_net(&cluster_ctx.clbs_nlist);
     free_block();
@@ -229,7 +229,7 @@ static void free_delay_lookup_netlists() {
 
 static void free_block() {
 	//Free temporary CLB blocks data structure
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (int i = 0; i < BLOCK_COUNT; i++) {
 		free(cluster_ctx.blocks[i].name);
@@ -246,7 +246,7 @@ static void alloc_vnet(){
 
 	int i, len;
 
-    auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
 	cluster_ctx.clbs_nlist.net.resize(NET_COUNT);
 	for(i = 0; i < NET_COUNT; i++){
@@ -276,9 +276,9 @@ static void alloc_block(void) {
 	int ix_b, ix_p, len, i;
 	int max_pins;
 
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.mutable_clustering();
-    auto& place_ctx = g_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	max_pins = 0;
 	for (i = 0; i < NUM_TYPES_USED; i++) {
@@ -306,7 +306,7 @@ static void alloc_block(void) {
 static void load_simplified_device(void) {
 	int i, j, k;
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	/* Backup original globals */
 	EMPTY_TYPE_BACKUP = device_ctx.EMPTY_TYPE;
@@ -354,7 +354,7 @@ static void load_simplified_device(void) {
 static void restore_original_device(void) {
 	int i, j;
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	/* restore previous globals */
 	device_ctx.IO_TYPE = IO_TYPE_BACKUP;
@@ -377,7 +377,7 @@ static void restore_original_device(void) {
 static void reset_placement(void) {
 	int i, j, k;
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	for (i = 0; i <= device_ctx.nx + 1; i++) {
 		for (j = 0; j <= device_ctx.ny + 1; j++) {
@@ -395,8 +395,8 @@ static void reset_placement(void) {
 static void alloc_and_assign_internal_structures(struct s_block **original_block,
 		int *original_num_blocks, t_netlist& original_clbs_nlist, AtomNetlist& original_atom_nlist) {
 
-    auto& atom_ctx = g_ctx.mutable_atom();
-    auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& atom_ctx = g_vpr_ctx.mutable_atom();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     //Save the original atom netlist
     std::swap(original_atom_nlist, atom_ctx.nlist);
@@ -419,8 +419,8 @@ static void alloc_and_assign_internal_structures(struct s_block **original_block
 
 /**************************************/
 static void free_and_reset_internal_structures(struct s_block *original_block, int original_num_blocks, t_netlist& original_clbs_nlist, AtomNetlist& original_atom_nlist) {
-    auto& atom_ctx = g_ctx.mutable_atom();
-    auto& cluster_ctx = g_ctx.mutable_clustering();
+    auto& atom_ctx = g_vpr_ctx.mutable_atom();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     /*reset gloabal data structures to the state that they were in before these */
 	/*lookup computation routines were called */
@@ -451,7 +451,7 @@ static void setup_chan_width(struct s_router_opts router_opts,
         //We use the number of pins on the FILL_TYPE, since
         //while building the placement timing model we use a
         //uniformly filled FPGA architecture.
-        auto& device_ctx = g_ctx.device();
+        auto& device_ctx = g_vpr_ctx.device();
 		width_fac = 4 * device_ctx.FILL_TYPE->num_pins; 
         /*this is 2x the value that binary search starts */
         /*this should be enough to allow most pins to   */
@@ -473,7 +473,7 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 	int warnings;
 	t_graph_type graph_type;
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	/*calls routines that set up routing resource graph and associated structures */
 
@@ -527,7 +527,7 @@ static void alloc_routing_structs(struct s_router_opts router_opts,
 static void free_routing_structs() {
 	int i;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	free_rr_graph();
 
@@ -552,9 +552,9 @@ static void free_routing_structs() {
 static void assign_locations(t_type_ptr source_type, int source_x_loc,
 		int source_y_loc, int source_z_loc, t_type_ptr sink_type,
 		int sink_x_loc, int sink_y_loc, int sink_z_loc) {
-    auto& cluster_ctx = g_ctx.mutable_clustering();
-    auto& place_ctx = g_ctx.mutable_placement();
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	/*all routing occurs between block 0 (source) and block 1 (sink) */
 	cluster_ctx.blocks[SOURCE_BLOCK].type = source_type;
@@ -590,7 +590,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	/*places blocks at the specified locations, and routes a net between them */
 	/*returns the delay of this net */
 
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Only one block per tile */
 	int source_z_loc = 0;
@@ -634,7 +634,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 /**************************************/
 static void alloc_delta_arrays(void) {
 	int id_x, id_y;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	delta_clb_to_clb = vtr::alloc_matrix<float>(0, device_ctx.nx - 1, 0, device_ctx.ny - 1);
 	delta_io_to_clb = vtr::alloc_matrix<float>(0, device_ctx.nx, 0, device_ctx.ny);
@@ -667,7 +667,7 @@ static void alloc_delta_arrays(void) {
 
 /**************************************/
 static void free_delta_arrays(void) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
     vtr::free_matrix(delta_io_to_clb, 0, device_ctx.nx, 0);
 	vtr::free_matrix(delta_clb_to_clb, 0, device_ctx.nx - 1, 0);
@@ -715,7 +715,7 @@ static void compute_delta_clb_to_clb(struct s_router_opts router_opts, int longe
 	int start_x, start_y, end_x, end_y;
 	int delta_x, delta_y;
 	t_type_ptr source_type, sink_type;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	source_type = device_ctx.FILL_TYPE;
 	sink_type = device_ctx.FILL_TYPE;
@@ -809,7 +809,7 @@ static void compute_delta_io_to_clb(struct s_router_opts router_opts) {
 	int source_x, source_y;
 	int start_x, start_y, end_x, end_y;
 	t_type_ptr source_type, sink_type;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	source_type = device_ctx.IO_TYPE;
 	sink_type = device_ctx.FILL_TYPE;
@@ -850,7 +850,7 @@ static void compute_delta_clb_to_io(struct s_router_opts router_opts) {
 	int source_x, source_y, sink_x, sink_y;
 	int delta_x, delta_y;
 	t_type_ptr source_type, sink_type;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	source_type = device_ctx.FILL_TYPE;
 	sink_type = device_ctx.IO_TYPE;
@@ -899,7 +899,7 @@ static void compute_delta_io_to_io(struct s_router_opts router_opts) {
 	int source_x, source_y, sink_x, sink_y;
 	int delta_x, delta_y;
 	t_type_ptr source_type, sink_type;
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	source_type = device_ctx.IO_TYPE;
 	sink_type = device_ctx.IO_TYPE;
@@ -1023,7 +1023,7 @@ static void compute_delta_arrays(struct s_router_opts router_opts, int longest_l
 }
 
 static void print_delta_delays_echo(const char* filename) {
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	print_array(vtr::string_fmt(filename, "delta_clb_to_clb"), delta_clb_to_clb, 0, device_ctx.nx - 1, 0, device_ctx.ny - 1);
 	print_array(vtr::string_fmt(filename, "delta_io_to_clb"), delta_io_to_clb, 0, device_ctx.nx, 0, device_ctx.ny);

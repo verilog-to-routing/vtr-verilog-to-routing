@@ -58,9 +58,9 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	float area, used_area;
 	int i, j;
 
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& atom_ctx = g_ctx.atom();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
 	length_and_bends_stats();
 	get_channel_occupancy_stats();
@@ -150,7 +150,7 @@ void length_and_bends_stats(void) {
 	float av_bends, av_length, av_segments;
 	int num_global_nets, num_clb_opins_reserved;
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	max_bends = 0;
 	total_bends = 0;
@@ -202,7 +202,7 @@ void length_and_bends_stats(void) {
 static void get_channel_occupancy_stats(void) {
 
 	/* Determines how many tracks are used in each channel.                    */
-    auto& device_ctx = g_ctx.device();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	int **chanx_occ; /* [1..device_ctx.nx][0..device_ctx.ny] */
 	int **chany_occ; /* [0..device_ctx.nx][1..device_ctx.ny] */
@@ -264,9 +264,9 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 	struct s_trace *tptr;
 	t_rr_type rr_type;
 
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& route_ctx = g_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	/* First set the occupancy of everything to zero. */
 
@@ -318,8 +318,8 @@ void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
 
 	/* Counts and returns the number of bends, wirelength, and number of routing *
 	 * resource segments in net inet's routing.                                  */
-    auto& route_ctx = g_ctx.routing();
-    auto& device_ctx = g_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	struct s_trace *tptr, *prevptr;
 	int inode;
@@ -375,8 +375,8 @@ void print_wirelen_prob_dist(void) {
 	/* Prints out the probability distribution of the wirelength / number   *
 	 * input pins on a net -- i.e. simulates 2-point net length probability *
 	 * distribution.                                                        */
-    auto& device_ctx = g_ctx.device();
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	float *prob_dist;
 	float norm_fac, two_point_length;
@@ -471,8 +471,8 @@ void print_lambda(void) {
 	float lambda;
 	t_type_ptr type;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	for (bnum = 0; bnum < cluster_ctx.num_blocks; bnum++) {
 		type = cluster_ctx.blocks[bnum].type;
@@ -498,7 +498,7 @@ int count_netlist_clocks(void) {
 
 	/* Count how many clocks are in the netlist. */
 
-    auto& atom_ctx = g_ctx.atom();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     std::set<std::string> clock_names;
 

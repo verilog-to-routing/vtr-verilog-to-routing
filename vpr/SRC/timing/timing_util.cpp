@@ -17,7 +17,7 @@ double sec_to_mhz(double seconds) { return (1. / seconds) / 1e6; }
 tatum::TimingPathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     tatum::TimingPathInfo crit_path_info;
 
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     auto cpds = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
 
@@ -34,7 +34,7 @@ tatum::TimingPathInfo find_longest_critical_path_delay(const tatum::TimingConstr
 tatum::TimingPathInfo find_least_slack_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     tatum::TimingPathInfo crit_path_info;
 
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     auto cpds = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
 
@@ -49,7 +49,7 @@ tatum::TimingPathInfo find_least_slack_critical_path_delay(const tatum::TimingCo
 }
 
 float find_setup_total_negative_slack(const tatum::SetupTimingAnalyzer& setup_analyzer) {
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     float tns = 0.;
     for(tatum::NodeId node : timing_ctx.graph->logical_outputs()) {
@@ -64,7 +64,7 @@ float find_setup_total_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
 }
 
 float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_analyzer) {
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     float wns = 0.;
     for(tatum::NodeId node : timing_ctx.graph->logical_outputs()) {
@@ -91,7 +91,7 @@ float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, ta
 }
 
 std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins) {
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     std::vector<HistogramBucket> histogram;
 
@@ -146,7 +146,7 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
 }
 
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     auto crit_paths = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
 
@@ -286,7 +286,7 @@ std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& t
 
 //Return the criticality of a net's pin in the CLB netlist
 float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const IntraLbPbPinLookup& pb_gpin_lookup, int inet, int ipin) {
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     const t_net_pin& net_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin];
 
@@ -380,7 +380,7 @@ void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
 }
 
 void compare_tatum_classic_constraints() {
-    auto& timing_ctx = g_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     if(timing_ctx.sdc) {
         vtr::printf("Comparing timing constraints:\n");

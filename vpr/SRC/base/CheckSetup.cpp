@@ -71,7 +71,7 @@ void CheckSetup(const struct s_placer_opts PlacerOpts,
 
 	for (i = 0; i < RoutingArch.num_segment; ++i) {
 		Tmp = Segments[i].arch_opin_switch;
-        auto& device_ctx = g_ctx.device();
+        auto& device_ctx = g_vpr_ctx.device();
 		if (false == device_ctx.arch_switch_inf[Tmp].buffered) {
 			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 					"arch_opin_switch (#%d) of segment type #%d is not buffered.\n", Tmp, i);

@@ -74,9 +74,9 @@ bool place_and_route(struct s_placer_opts placer_opts,
 	vtr::t_ivec **clb_opins_used_locally = NULL; /* [0..cluster_ctx.num_blocks-1][0..num_class-1] */
 	clock_t begin, end;
 
-    auto& device_ctx = g_ctx.mutable_device();
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& power_ctx = g_ctx.mutable_power();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& power_ctx = g_vpr_ctx.mutable_power();
 
 	int max_pins_per_clb = 0;
 	for (int i = 0; i < device_ctx.num_block_types; ++i) {
@@ -129,7 +129,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
     std::shared_ptr<SetupTimingInfo> timing_info = nullptr;
     std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
     if(timing_inf.timing_analysis_enabled) {
-        auto& atom_ctx = g_ctx.atom();
+        auto& atom_ctx = g_vpr_ctx.atom();
 
         routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
 
@@ -179,7 +179,7 @@ bool place_and_route(struct s_placer_opts placer_opts,
 
         if(timing_inf.timing_analysis_enabled) {
             if(isEchoFileEnabled(E_ECHO_FINAL_ROUTING_TIMING_GRAPH)) {
-                auto& timing_ctx = g_ctx.timing();
+                auto& timing_ctx = g_vpr_ctx.timing();
                 tatum::write_echo(getEchoFileName(E_ECHO_FINAL_ROUTING_TIMING_GRAPH),
                                   *timing_ctx.graph, *timing_ctx.constraints, *routing_delay_calc, timing_info->analyzer());
             }
@@ -268,7 +268,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 #endif
     bool using_minw_hint = false;
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	vtr::t_ivec **clb_opins_used_locally, **saved_clb_opins_used_locally;
 
@@ -517,7 +517,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 						saved_clb_opins_used_locally);
 
 				if (placer_opts.place_freq == PLACE_ALWAYS) {
-                    auto& cluster_ctx = g_ctx.clustering();
+                    auto& cluster_ctx = g_vpr_ctx.clustering();
                     print_place(filename_opts.NetFile, cluster_ctx.clbs_nlist.netlist_id.c_str(), 
                                 filename_opts.PlaceFile);
 				}
@@ -578,7 +578,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	sprintf(msg, "Routing succeeded with a channel width factor of %d.", final);
 	update_screen(ScreenUpdatePriority::MAJOR, msg, ROUTING, timing_info);
 
-    auto& cluster_ctx = g_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (i = 0; i < cluster_ctx.num_blocks; i++) {
 		free_ivec_vector(clb_opins_used_locally[i], 0,
 				cluster_ctx.blocks[i].type->num_class - 1);
@@ -604,7 +604,7 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 	 * tracks wide.  The channel distributions read from the architecture  *
 	 * file are scaled by cfactor.                                         */
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	float chan_width_io = chan_width_dist.chan_width_io;
 	t_chan chan_x_dist = chan_width_dist.chan_x_dist;

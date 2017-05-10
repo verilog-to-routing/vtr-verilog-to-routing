@@ -15,10 +15,10 @@ inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist&
     , netlist_lookup_(netlist_lookup)
     , net_delay_(net_delay)
     , atom_delay_calc_(netlist, netlist_lookup)
-    , edge_delay_cache_(g_ctx.timing().graph->edges().size(), tatum::Time(NAN))
-    , driver_clb_delay_cache_(g_ctx.timing().graph->edges().size(), tatum::Time(NAN))
-    , sink_clb_delay_cache_(g_ctx.timing().graph->edges().size(), tatum::Time(NAN))
-    , net_pin_cache_(g_ctx.timing().graph->edges().size(), std::pair<const t_net_pin*,const t_net_pin*>(nullptr,nullptr))
+    , edge_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
+    , driver_clb_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
+    , sink_clb_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
+    , net_pin_cache_(g_vpr_ctx.timing().graph->edges().size(), std::pair<const t_net_pin*,const t_net_pin*>(nullptr,nullptr))
     {}
 
 inline tatum::Time PostClusterDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge) const { 
@@ -187,7 +187,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             int src_pb_route_id = src_gpin->pin_count_in_cluster;
             int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
 
-            auto& cluster_ctx = g_ctx.clustering();
+            auto& cluster_ctx = g_vpr_ctx.clustering();
 
             AtomNetId atom_net = netlist_.pin_net(atom_sink_pin);
             VTR_ASSERT(cluster_ctx.blocks[clb_src_block].pb_route[src_pb_route_id].atom_net_id == atom_net);

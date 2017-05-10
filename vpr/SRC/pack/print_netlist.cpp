@@ -31,8 +31,8 @@ void print_netlist(char *foutput, char *net_file) {
 	L_num_p_inputs = 0;
 	L_num_p_outputs = 0;
 
-    auto& cluster_ctx = g_ctx.clustering();
-    auto& device_ctx = g_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Count number of global nets */
 	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {

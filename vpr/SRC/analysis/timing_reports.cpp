@@ -20,8 +20,8 @@ void generate_timing_stats(const SetupTimingInfo& timing_info) {
 #endif
     vtr::printf("\n");
 
-    auto& timing_ctx = g_ctx.timing();
-    auto& atom_ctx = g_ctx.atom();
+    auto& timing_ctx = g_vpr_ctx.timing();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     print_setup_timing_summary(*timing_ctx.constraints, *timing_info.setup_analyzer());
 

@@ -66,7 +66,7 @@ void SetupVPR(t_options *Options,
               t_power_opts * PowerOpts) {
 	int i, j, len;
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	if (!Options->CircuitName) {
         vpr_throw(VPR_ERROR_BLIF_F,__FILE__, __LINE__, 
@@ -308,7 +308,7 @@ static void SetupSwitches(const t_arch& Arch,
 		struct s_det_routing_arch *RoutingArch,
 		const struct s_arch_switch_inf *ArchSwitches, int NumArchSwitches) {
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	int switches_to_copy = NumArchSwitches;
 	device_ctx.num_arch_switches = NumArchSwitches;
@@ -809,7 +809,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 		t_arch * Arch) {
 
-    auto& device_ctx = g_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	if (Options.Count[OT_POWER]) {
 		power_opts->do_power = true;
