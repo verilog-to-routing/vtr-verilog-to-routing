@@ -39,12 +39,6 @@ using namespace std;
 #include "path_delay.h"
  
 
-/***************** Variables shared only by route modules *******************/
-
-struct s_bb *route_bb = NULL; /* [0..cluster_ctx.clbs_nlist.net.size()-1]. Limits area in which each  */
-
-/* net must be routed.                         */
-
 /**************** Static variables local to route_common.c ******************/
 
 static struct s_heap **heap; /* Indexed from [1..heap_size] */
@@ -754,7 +748,7 @@ void alloc_route_static_structs(void) {
 	heap--; /* heap stores from [1..heap_size] */
 	heap_tail = 1;
 
-	route_bb = (struct s_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(struct s_bb));
+	route_ctx.route_bb = (t_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_bb));
 }
 
 struct s_trace **
@@ -881,16 +875,18 @@ void free_route_structs() {
 
 	/* Frees the temporary storage needed only during the routing.  The  *
 	 * final routing result is not freed.                                */
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
 	if(heap != NULL) {
         //coverity[offset_free]
 		free(heap + 1);
 	}
-	if(route_bb != NULL) {
-		free(route_bb);
+	if(route_ctx.route_bb != NULL) {
+		free(route_ctx.route_bb);
 	}
 
 	heap = NULL; /* Defensive coding:  crash hard if I use these. */
-	route_bb = NULL;
+	route_ctx.route_bb = NULL;
 
 	/*free the memory chunks that were used by heap and linked f pointer */
 	free_chunk_memory(&heap_ch);
@@ -996,6 +992,7 @@ static void load_route_bb(int bb_factor) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         int idriver_blk = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
@@ -1035,10 +1032,10 @@ static void load_route_bb(int bb_factor) {
 		/* Expand the net bounding box by bb_factor, then clip to the physical *
 		 * chip area.                                                          */
 
-		route_bb[inet].xmin = max(xmin - bb_factor, 0);
-		route_bb[inet].xmax = min(xmax + bb_factor, device_ctx.nx + 1);
-		route_bb[inet].ymin = max(ymin - bb_factor, 0);
-		route_bb[inet].ymax = min(ymax + bb_factor, device_ctx.ny + 1);
+		route_ctx.route_bb[inet].xmin = max(xmin - bb_factor, 0);
+		route_ctx.route_bb[inet].xmax = min(xmax + bb_factor, device_ctx.nx + 1);
+		route_ctx.route_bb[inet].ymin = max(ymin - bb_factor, 0);
+		route_ctx.route_bb[inet].ymax = min(ymax + bb_factor, device_ctx.ny + 1);
 	}
 }
 

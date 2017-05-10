@@ -135,7 +135,7 @@ static int **net_pin_index = NULL;
  * blocks on each of a net's bounding box (to allow efficient updates),      *
  * respectively.                                                             */
 
-static struct s_bb *bb_coords = NULL, *bb_num_on_edges = NULL;
+static t_bb *bb_coords = NULL, *bb_num_on_edges = NULL;
 
 /* Store the information on the blocks to be moved in a swap during     *
  * placement, in the form of array of structs instead of struct with    *
@@ -155,8 +155,8 @@ static float **chanx_place_cost_fac, **chany_place_cost_fac;
 
 /* The following arrays are used by the try_swap function for speed.   */
 /* [0...cluster_ctx.clbs_nlist.net.size()-1] */
-static struct s_bb *ts_bb_coord_new = NULL;
-static struct s_bb *ts_bb_edge_new = NULL;
+static t_bb *ts_bb_coord_new = NULL;
+static t_bb *ts_bb_edge_new = NULL;
 static int *ts_nets_to_update = NULL;
 
 /* The pl_macros array stores all the carry chains placement macros.   *
@@ -275,19 +275,19 @@ static void find_to_location(t_type_ptr type, float rlim,
 		int x_from, int y_from, 
 		int *px_to, int *py_to, int *pz_to);
 
-static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new);
+static void get_non_updateable_bb(int inet, t_bb *bb_coord_new);
 
-static void update_bb(int inet, struct s_bb *bb_coord_new,
-		struct s_bb *bb_edge_new, int xold, int yold, int xnew, int ynew);
+static void update_bb(int inet, t_bb *bb_coord_new,
+		t_bb *bb_edge_new, int xold, int yold, int xnew, int ynew);
 		
 static int find_affected_nets(int *nets_to_update);
 
-static float get_net_cost(int inet, struct s_bb *bb_ptr);
+static float get_net_cost(int inet, t_bb *bb_ptr);
 
-static void get_bb_from_scratch(int inet, struct s_bb *coords,
-		struct s_bb *num_on_edges);
+static void get_bb_from_scratch(int inet, t_bb *coords,
+		t_bb *num_on_edges);
 
-static double get_net_wirelength_estimate(int inet, struct s_bb *bbptr);
+static double get_net_wirelength_estimate(int inet, t_bb *bbptr);
 
 static void free_try_swap_arrays(void);
 
@@ -2176,8 +2176,8 @@ static void alloc_and_load_placement_structs(
 		temp_net_cost[inet] = -1.;
 	}
 	
-	bb_coords = (struct s_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(struct s_bb));
-	bb_num_on_edges = (struct s_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(struct s_bb));
+	bb_coords = (t_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_bb));
+	bb_num_on_edges = (t_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_bb));
 	
 	alloc_and_load_for_fast_cost_update(place_cost_exp);
 		
@@ -2193,10 +2193,10 @@ static void alloc_and_load_try_swap_structs() {
 	/* Allocate with size cluster_ctx.clbs_nlist.net.size() for any number of nets affected. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	ts_bb_coord_new = (struct s_bb *) vtr::calloc(
-			cluster_ctx.clbs_nlist.net.size(), sizeof(struct s_bb));
-	ts_bb_edge_new = (struct s_bb *) vtr::calloc(
-			cluster_ctx.clbs_nlist.net.size(), sizeof(struct s_bb));
+	ts_bb_coord_new = (t_bb *) vtr::calloc(
+			cluster_ctx.clbs_nlist.net.size(), sizeof(t_bb));
+	ts_bb_edge_new = (t_bb *) vtr::calloc(
+			cluster_ctx.clbs_nlist.net.size(), sizeof(t_bb));
 	ts_nets_to_update = (int *) vtr::calloc(cluster_ctx.clbs_nlist.net.size(), sizeof(int));
 		
 	/* Allocate with size cluster_ctx.num_blocks for any number of moved blocks. */
@@ -2205,8 +2205,8 @@ static void alloc_and_load_try_swap_structs() {
 	
 }
 
-static void get_bb_from_scratch(int inet, struct s_bb *coords,
-		struct s_bb *num_on_edges) {
+static void get_bb_from_scratch(int inet, t_bb *coords,
+		t_bb *num_on_edges) {
 
 	/* This routine finds the bounding box of each net from scratch (i.e.    *
 	 * from only the block location information).  It updates both the       *
@@ -2297,7 +2297,7 @@ static void get_bb_from_scratch(int inet, struct s_bb *coords,
 	num_on_edges->ymax = ymax_edge;
 }
 
-static double get_net_wirelength_estimate(int inet, struct s_bb *bbptr) {
+static double get_net_wirelength_estimate(int inet, t_bb *bbptr) {
 
 	/* WMF: Finds the estimate of wirelength due to one net by looking at   *
 	 * its coordinate bounding box.                                         */
@@ -2333,7 +2333,7 @@ static double get_net_wirelength_estimate(int inet, struct s_bb *bbptr) {
 	return (ncost);
 }
 
-static float get_net_cost(int inet, struct s_bb *bbptr) {
+static float get_net_cost(int inet, t_bb *bbptr) {
 
 	/* Finds the cost due to one net by looking at its coordinate bounding  *
 	 * box.                                                                 */
@@ -2367,7 +2367,7 @@ static float get_net_cost(int inet, struct s_bb *bbptr) {
 	return (ncost);
 }
 
-static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
+static void get_non_updateable_bb(int inet, t_bb *bb_coord_new) {
 
 	/* Finds the bounding box of a net and stores its coordinates in the  *
 	 * bb_coord_new data structure.  This routine should only be called   *
@@ -2427,8 +2427,8 @@ static void get_non_updateable_bb(int inet, struct s_bb *bb_coord_new) {
 	bb_coord_new->ymax = max(min(ymax, device_ctx.ny), 1);
 }
 
-static void update_bb(int inet, struct s_bb *bb_coord_new,
-		struct s_bb *bb_edge_new, int xold, int yold, int xnew, int ynew) {
+static void update_bb(int inet, t_bb *bb_coord_new,
+		t_bb *bb_edge_new, int xold, int yold, int xnew, int ynew) {
 
 	/* Updates the bounding box of a net by storing its coordinates in    *
 	 * the bb_coord_new data structure and the number of blocks on each   *
@@ -2443,7 +2443,7 @@ static void update_bb(int inet, struct s_bb *bb_coord_new,
 	 * The x and y coordinates are the pin's x and y coordinates.         */
 	/* IO blocks are considered to be one cell in for simplicity.         */
 	
-	struct s_bb *curr_bb_edge, *curr_bb_coord;
+	t_bb *curr_bb_edge, *curr_bb_coord;
 
     auto& device_ctx = g_vpr_ctx.device();
 		

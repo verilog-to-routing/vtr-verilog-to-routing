@@ -891,6 +891,7 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	float new_R_upstream;
 
@@ -915,10 +916,10 @@ static void timing_driven_expand_neighbours(struct s_heap *current,
 				continue; /* Node is outside high fanout bin. */
 			}
 		}
-		else if (device_ctx.rr_nodes[to_node].xhigh() < route_bb[inet].xmin
-				|| device_ctx.rr_nodes[to_node].xlow() > route_bb[inet].xmax
-				|| device_ctx.rr_nodes[to_node].yhigh() < route_bb[inet].ymin
-				|| device_ctx.rr_nodes[to_node].ylow() > route_bb[inet].ymax)
+		else if (device_ctx.rr_nodes[to_node].xhigh() < route_ctx.route_bb[inet].xmin
+				|| device_ctx.rr_nodes[to_node].xlow() > route_ctx.route_bb[inet].xmax
+				|| device_ctx.rr_nodes[to_node].yhigh() < route_ctx.route_bb[inet].ymin
+				|| device_ctx.rr_nodes[to_node].ylow() > route_ctx.route_bb[inet].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
 
@@ -1149,6 +1150,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	int tarxlow, tarylow, tarxhigh, taryhigh;
 	int rlim = 1;
@@ -1175,8 +1177,8 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		return rlim;
 	}
 
-	area = (route_bb[inet].xmax - route_bb[inet].xmin)
-			* (route_bb[inet].ymax - route_bb[inet].ymin);
+	area = (route_ctx.route_bb[inet].xmax - route_ctx.route_bb[inet].xmin)
+			* (route_ctx.route_bb[inet].ymax - route_ctx.route_bb[inet].ymin);
 	if (area <= 0) {
 		area = 1;
 	}

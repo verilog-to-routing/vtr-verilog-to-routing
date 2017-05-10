@@ -309,15 +309,16 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 	float tot_cost;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	num_edges = device_ctx.rr_nodes[inode].num_edges();
 	for (iconn = 0; iconn < num_edges; iconn++) {
 		to_node = device_ctx.rr_nodes[inode].edge_sink_node(iconn);
 
-		if (device_ctx.rr_nodes[to_node].xhigh() < route_bb[inet].xmin
-				|| device_ctx.rr_nodes[to_node].xlow() > route_bb[inet].xmax
-				|| device_ctx.rr_nodes[to_node].yhigh() < route_bb[inet].ymin
-				|| device_ctx.rr_nodes[to_node].ylow() > route_bb[inet].ymax)
+		if (device_ctx.rr_nodes[to_node].xhigh() < route_ctx.route_bb[inet].xmin
+				|| device_ctx.rr_nodes[to_node].xlow() > route_ctx.route_bb[inet].xmax
+				|| device_ctx.rr_nodes[to_node].yhigh() < route_ctx.route_bb[inet].ymin
+				|| device_ctx.rr_nodes[to_node].ylow() > route_ctx.route_bb[inet].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
 

@@ -33,10 +33,6 @@ struct s_heap {
 };
 
 
-/**************** Variables shared by all route_files ***********************/
-
-extern struct s_bb *route_bb; /* [0..num_nets-1]     */
-
 /******* Subroutines in route_common used only by other router modules ******/
 
 void pathfinder_update_path_cost(struct s_trace *route_segment_start,
