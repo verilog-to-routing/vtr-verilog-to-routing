@@ -1962,17 +1962,18 @@ void print_usage_by_wire_length() {
 
 AtomBlockId find_tnode_atom_block(int inode) {
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     AtomBlockId blk_id;
     AtomPinId pin_id;
-    auto type = tnode[inode].type;
+    auto type = timing_ctx.tnodes[inode].type;
     if(type == TN_INPAD_SOURCE || type == TN_FF_SOURCE) {
         //A source does not map directly to a netlist pin,
         //so we walk to it's assoicated OPIN
-        VTR_ASSERT_MSG(tnode[inode].num_edges == 1, "Source nodes must have a single output edge");
-        int i_opin_node = tnode[inode].out_edges[0].to_node;
+        VTR_ASSERT_MSG(timing_ctx.tnodes[inode].num_edges == 1, "Source nodes must have a single output edge");
+        int i_opin_node = timing_ctx.tnodes[inode].out_edges[0].to_node;
 
-        VTR_ASSERT(tnode[i_opin_node].type == TN_INPAD_OPIN ||tnode[i_opin_node].type == TN_FF_OPIN);
+        VTR_ASSERT(timing_ctx.tnodes[i_opin_node].type == TN_INPAD_OPIN ||timing_ctx.tnodes[i_opin_node].type == TN_FF_OPIN);
 
         pin_id = atom_ctx.lookup.classic_tnode_atom_pin(i_opin_node);
         
@@ -1982,9 +1983,9 @@ AtomBlockId find_tnode_atom_block(int inode) {
 
         //By convention the sink pin is at one index before the sink itself
         int i_ipin_node = inode - 1;
-        VTR_ASSERT(tnode[i_ipin_node].type == TN_OUTPAD_IPIN || tnode[i_ipin_node].type == TN_FF_IPIN);
-        VTR_ASSERT(tnode[i_ipin_node].num_edges == 1);
-        VTR_ASSERT(tnode[i_ipin_node].out_edges[0].to_node == inode);
+        VTR_ASSERT(timing_ctx.tnodes[i_ipin_node].type == TN_OUTPAD_IPIN || timing_ctx.tnodes[i_ipin_node].type == TN_FF_IPIN);
+        VTR_ASSERT(timing_ctx.tnodes[i_ipin_node].num_edges == 1);
+        VTR_ASSERT(timing_ctx.tnodes[i_ipin_node].out_edges[0].to_node == inode);
 
         pin_id = atom_ctx.lookup.classic_tnode_atom_pin(i_ipin_node);
     } else {

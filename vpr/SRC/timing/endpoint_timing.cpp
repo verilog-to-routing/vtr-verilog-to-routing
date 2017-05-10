@@ -14,6 +14,7 @@ void print_endpoint_timing(char* filename) {
     FILE* fp = vtr::fopen(filename, "w");
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     int** tnode_lookup_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
     
@@ -22,15 +23,15 @@ void print_endpoint_timing(char* filename) {
 
     std::vector<int> outpad_sink_tnodes;
 
-    for(int inode = 0; inode < num_tnodes; inode++) {
-        if(tnode[inode].type == TN_OUTPAD_SINK) {
+    for(int inode = 0; inode < timing_ctx.num_tnodes; inode++) {
+        if(timing_ctx.tnodes[inode].type == TN_OUTPAD_SINK) {
             outpad_sink_tnodes.push_back(inode);
         }
     }
 
     for(size_t i = 0; i < outpad_sink_tnodes.size(); ++i) {
         int inode = outpad_sink_tnodes[i];
-        char* identifier = cluster_ctx.blocks[tnode[inode].block].name + 4; //Trim out:
+        char* identifier = cluster_ctx.blocks[timing_ctx.tnodes[inode].block].name + 4; //Trim out:
         print_tnode_info(fp, inode, identifier);
 
         if(i != outpad_sink_tnodes.size() - 1) {
@@ -49,19 +50,20 @@ void print_endpoint_timing(char* filename) {
 }
 
 void print_tnode_info(FILE* fp, int inode, char* identifier) {
+    auto& timing_ctx = g_vpr_ctx.timing();
     fprintf(fp, "    {\n");
     fprintf(fp, "      \"node_identifier\": \"%s\",\n", identifier);
     fprintf(fp, "      \"tnode_id\": \"%d\",\n", inode);
 
-    if(tnode[inode].type == TN_OUTPAD_SINK) {
+    if(timing_ctx.tnodes[inode].type == TN_OUTPAD_SINK) {
         fprintf(fp, "      \"tnode_type\": \"TN_OUTPAD_SINK\",\n");
     } else {
-        VTR_ASSERT(tnode[inode].type == TN_FF_SINK);
+        VTR_ASSERT(timing_ctx.tnodes[inode].type == TN_FF_SINK);
         fprintf(fp, "      \"tnode_type\": \"TN_FF_SINK\",\n");
     }
 
-    double T_arr = tnode[inode].T_arr;
-    double T_req = tnode[inode].T_req;
+    double T_arr = timing_ctx.tnodes[inode].T_arr;
+    double T_req = timing_ctx.tnodes[inode].T_req;
 
     if(T_arr <= HUGE_NEGATIVE_FLOAT) {
         //Un-specified (e.g. driven by constant generator

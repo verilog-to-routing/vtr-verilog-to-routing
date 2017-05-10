@@ -58,20 +58,22 @@ alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr) {
 	int *tnode_num_fanin;
 	t_tedge *tedge;
 
-	tnode_num_fanin = (int *) vtr::calloc(num_tnodes, sizeof(int));
+    auto& timing_ctx = g_vpr_ctx.timing();
+
+	tnode_num_fanin = (int *) vtr::calloc(timing_ctx.num_tnodes, sizeof(int));
 	error = 0;
 	num_sinks = 0;
 
-	for (inode = 0; inode < num_tnodes; inode++) {
-		num_edges = tnode[inode].num_edges;
+	for (inode = 0; inode < timing_ctx.num_tnodes; inode++) {
+		num_edges = timing_ctx.tnodes[inode].num_edges;
 
 		if (num_edges > 0) {
-			tedge = tnode[inode].out_edges;
+			tedge = timing_ctx.tnodes[inode].out_edges;
 			for (iedge = 0; iedge < num_edges; iedge++) {
 				to_node = tedge[iedge].to_node;
 				if(to_node == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
 
-				if (to_node < 0 || to_node >= num_tnodes) {
+				if (to_node < 0 || to_node >= timing_ctx.num_tnodes) {
 					vtr::printf_error(__FILE__, __LINE__, 
 							"in alloc_and_load_tnode_fanin_and_check_edges:\n");
 					vtr::printf_error(__FILE__, __LINE__, 
@@ -119,9 +121,10 @@ int alloc_and_load_timing_graph_levels(void) {
 			i;
 	t_tedge *tedge;
 
-	/* [0..num_tnodes-1]. # of in-edges to each tnode that have not yet been    *
-	 * seen in this traversal.                                                  */
+    auto& timing_ctx = g_vpr_ctx.timing();
 
+	/* [0..timing_ctx.num_tnodes-1]. # of in-edges to each tnode that have not yet been    *
+	 * seen in this traversal.                                                  */
 	int *tnode_fanin_left;
 
 	tnode_fanin_left = alloc_and_load_tnode_fanin_and_check_edges(&num_sinks);
@@ -129,19 +132,19 @@ int alloc_and_load_timing_graph_levels(void) {
 	free_list_head = NULL;
 	nodes_at_level_head = NULL;
 
-	/* Very conservative -> max number of levels = num_tnodes.  Realloc later.  *
+	/* Very conservative -> max number of levels = timing_ctx.num_tnodes.  Realloc later.  *
 	 * Temporarily need one extra level on the end because I look at the first  *
 	 * empty level.                                                             */
 
 	tnodes_at_level = (vtr::t_ivec *) vtr::malloc(
-			(num_tnodes + 1) * sizeof(vtr::t_ivec));
+			(timing_ctx.num_tnodes + 1) * sizeof(vtr::t_ivec));
 
 	/* Scan through the timing graph, putting all the primary input nodes (no    *
 	 * fanin) into level 0 of the level structure.                               */
 
 	num_at_level = 0;
 
-	for (inode = 0; inode < num_tnodes; inode++) {
+	for (inode = 0; inode < timing_ctx.num_tnodes; inode++) {
 		if (tnode_fanin_left[inode] == 0) {
 			num_at_level++;
 			nodes_at_level_head = insert_in_int_list(nodes_at_level_head, inode,
@@ -160,8 +163,8 @@ int alloc_and_load_timing_graph_levels(void) {
 
 		for (i = 0; i < tnodes_at_level[num_levels - 1].nelem; i++) {
 			inode = tnodes_at_level[num_levels - 1].list[i];
-			tedge = tnode[inode].out_edges;
-			num_edges = tnode[inode].num_edges;
+			tedge = timing_ctx.tnodes[inode].out_edges;
+			num_edges = timing_ctx.tnodes[inode].num_edges;
 
 			for (iedge = 0; iedge < num_edges; iedge++) {
 				to_node = tedge[iedge].to_node;
@@ -202,6 +205,8 @@ void check_timing_graph() {
 
 	int num_tnodes_check, ilevel, error;
 
+    auto& timing_ctx = g_vpr_ctx.timing();
+
 	error = 0;
 	num_tnodes_check = 0;
 
@@ -210,12 +215,12 @@ void check_timing_graph() {
 	for (ilevel = 0; ilevel < num_tnode_levels; ilevel++)
 		num_tnodes_check += tnodes_at_level[ilevel].nelem;
 
-	if (num_tnodes_check != num_tnodes) {
+	if (num_tnodes_check != timing_ctx.num_tnodes) {
 		vtr::printf_error(__FILE__, __LINE__, 
 				"Error in check_timing_graph: %d tnodes appear in the tnode level structure. Expected %d.\n", 
-				num_tnodes_check, num_tnodes);
+				num_tnodes_check, timing_ctx.num_tnodes);
 		vtr::printf_info("Checking the netlist for combinational cycles:\n");
-		if (num_tnodes > num_tnodes_check) {
+		if (timing_ctx.num_tnodes > num_tnodes_check) {
             std::vector< std::vector<int> > tnode_comb_loops = detect_timing_graph_combinational_loops();
 
             //Inform user about Combinational Loops
@@ -255,11 +260,12 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 	float Tdel;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
 	inode = critical_path_node->data;
-	type = tnode[inode].type;
-	iblk = tnode[inode].block;
-	pb_graph_pin = tnode[inode].pb_graph_pin;
+	type = timing_ctx.tnodes[inode].type;
+	iblk = timing_ctx.tnodes[inode].block;
+	pb_graph_pin = timing_ctx.tnodes[inode].pb_graph_pin;
 
 	fprintf(fp, "Node: %d  %s Block #%d (%s)\n", inode, tnode_type_names[type],
 		iblk, cluster_ctx.blocks[iblk].name);
@@ -277,13 +283,13 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 		fprintf(fp, "\n");
 	}
 
-	fprintf(fp, "T_arr: %g  T_req: %g  ", tnode[inode].T_arr,
-			tnode[inode].T_req);
+	fprintf(fp, "T_arr: %g  T_req: %g  ", timing_ctx.tnodes[inode].T_arr,
+			timing_ctx.tnodes[inode].T_req);
 
 	next_crit_node = critical_path_node->next;
 	if (next_crit_node != NULL) {
 		downstream_node = next_crit_node->data;
-		Tdel = tnode[downstream_node].T_arr - tnode[inode].T_arr;
+		Tdel = timing_ctx.tnodes[downstream_node].T_arr - timing_ctx.tnodes[inode].T_arr;
 		fprintf(fp, "Tdel: %g\n", Tdel);
 	} else { /* last node, no Tdel. */
 		Tdel = 0.;
@@ -374,6 +380,7 @@ void break_timing_graph_combinational_loop(std::vector<int>& loop_tnodes) {
     int i_first_tnode;
     int i_edge;
     int i_to_tnode;
+    auto& timing_ctx = g_vpr_ctx.timing();
 
     VTR_ASSERT(loop_tnodes.size() >= 2); //Must have atleast 2 nodes for a valid cycle
 
@@ -383,8 +390,8 @@ void break_timing_graph_combinational_loop(std::vector<int>& loop_tnodes) {
     // in the loop set that will be cut
     i_first_tnode = loop_tnodes[0];
 
-    for(i_edge = 0; i_edge < tnode[i_first_tnode].num_edges; i_edge++) {
-        i_to_tnode = tnode[i_first_tnode].out_edges[i_edge].to_node;
+    for(i_edge = 0; i_edge < timing_ctx.tnodes[i_first_tnode].num_edges; i_edge++) {
+        i_to_tnode = timing_ctx.tnodes[i_first_tnode].out_edges[i_edge].to_node;
 
         if(std::find(loop_tnodes.begin(), loop_tnodes.end(), i_to_tnode) != loop_tnodes.end()) {
             //This edge does fanout into the loop_tnodes set
@@ -392,10 +399,10 @@ void break_timing_graph_combinational_loop(std::vector<int>& loop_tnodes) {
             vtr::printf_warning(__FILE__, __LINE__, "Disconnecting timing graph edge from tnode %d to tnode %d to break combinational cycle\n", i_first_tnode, i_to_tnode);
 
             //Mark the original target node as a combinational loop breakpoint
-            tnode[i_to_tnode].is_comb_loop_breakpoint = true; 
+            timing_ctx.tnodes[i_to_tnode].is_comb_loop_breakpoint = true; 
 
             //Mark the edge as invalid
-            tnode[i_first_tnode].out_edges[i_edge].to_node = DO_NOT_ANALYSE;
+            timing_ctx.tnodes[i_first_tnode].out_edges[i_edge].to_node = DO_NOT_ANALYSE;
 
             return;
         }
@@ -425,13 +432,15 @@ std::vector<std::vector<int> > identify_strongly_connected_components(size_t min
     int index = 0; //The current index of the traversal
     std::vector<std::vector<int> > tnode_sccs;
 
+    auto& timing_ctx = g_vpr_ctx.timing();
+
     //Allocate book-keeping information
-    int* tnode_indexes = (int*) vtr::calloc(num_tnodes, sizeof(int));
-    int* tnode_lowlinks = (int*) vtr::calloc(num_tnodes, sizeof(int));
-    bool* tnode_instack = (bool*) vtr::calloc(num_tnodes, sizeof(bool));
+    int* tnode_indexes = (int*) vtr::calloc(timing_ctx.num_tnodes, sizeof(int));
+    int* tnode_lowlinks = (int*) vtr::calloc(timing_ctx.num_tnodes, sizeof(int));
+    bool* tnode_instack = (bool*) vtr::calloc(timing_ctx.num_tnodes, sizeof(bool));
 
     //Initialize everything to unvisited
-    for(i = 0; i < num_tnodes; i++) {
+    for(i = 0; i < timing_ctx.num_tnodes; i++) {
         tnode_indexes[i] = -1;
         tnode_lowlinks[i] = -1;
         tnode_instack[i] = false;
@@ -441,7 +450,7 @@ std::vector<std::vector<int> > identify_strongly_connected_components(size_t min
     std::stack<int> tnode_stack;
 
     //We ensure that every node gets traversed
-    for(i = 0 ; i < num_tnodes; i++) {
+    for(i = 0 ; i < timing_ctx.num_tnodes; i++) {
         if(tnode_indexes[i] == -1) {
             strongconnect(index, tnode_indexes, tnode_lowlinks, tnode_instack, tnode_stack, tnode_sccs, min_size, i);
         }
@@ -462,6 +471,8 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tn
     int iscc_element; //Index for the current SCC element (used when poping stack)
     int to_node_index; //Index to the sink node for the current edge
 
+    auto& timing_ctx = g_vpr_ctx.timing();
+
     //Mark this node as visited
     tnode_indexes[inode] = index;
     tnode_lowlinks[inode] = index;
@@ -472,8 +483,8 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tn
     tnode_instack[inode] = true;
 
     //Fanout of inode
-    for(iedge = 0; iedge < tnode[inode].num_edges; iedge++) {
-        to_node_index = tnode[inode].out_edges[iedge].to_node;
+    for(iedge = 0; iedge < timing_ctx.tnodes[inode].num_edges; iedge++) {
+        to_node_index = timing_ctx.tnodes[inode].out_edges[iedge].to_node;
         if(to_node_index == DO_NOT_ANALYSE) continue; //Skip marked invalid nodes
 
         if(tnode_indexes[to_node_index] == -1) {
@@ -520,14 +531,16 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tn
 }
 
 void print_comb_loop(std::vector<int>& loop_tnodes) {
+    auto& timing_ctx = g_vpr_ctx.timing();
+
     vtr::printf_info("Comb Loop:\n");
     for(std::vector<int>::iterator it = loop_tnodes.begin(); it != loop_tnodes.end(); it++) {
         int i_tnode = *it;
-        if(tnode[i_tnode].pb_graph_pin != NULL) {
+        if(timing_ctx.tnodes[i_tnode].pb_graph_pin != NULL) {
             vtr::printf_info("\ttnode: %d %s.%s[%d]\n", i_tnode,
-                            tnode[i_tnode].pb_graph_pin->parent_node->pb_type->name, 
-                            tnode[i_tnode].pb_graph_pin->port->name, 
-                            tnode[i_tnode].pb_graph_pin->pin_number);
+                            timing_ctx.tnodes[i_tnode].pb_graph_pin->parent_node->pb_type->name, 
+                            timing_ctx.tnodes[i_tnode].pb_graph_pin->port->name, 
+                            timing_ctx.tnodes[i_tnode].pb_graph_pin->pin_number);
         } else {
             vtr::printf_info("\ttnode: %d\n", i_tnode);
         }
