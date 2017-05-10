@@ -1730,7 +1730,7 @@ static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::lo
             fc_override.fc_type = string_to_fc_type(attrib.value(), node, loc_data);
             seen_fc_type = true;
         } else if (attrib.name() == std::string("fc_val")) {
-            fc_override.fc_value = vtr::atoi(attrib.value());
+            fc_override.fc_value = vtr::atof(attrib.value());
             seen_fc_value = true;
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
