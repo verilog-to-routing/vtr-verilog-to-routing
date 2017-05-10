@@ -25,21 +25,21 @@ using namespace std;
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void SetupPackerOpts(const t_options& Options, const bool TimingEnabled,
 		const t_arch& Arch, const char *net_file,
-		struct s_packer_opts *PackerOpts);
+		t_packer_opts *PackerOpts);
 static void SetupPlacerOpts(const t_options& Options, const bool TimingEnabled,
-		struct s_placer_opts *PlacerOpts);
+		t_placer_opts *PlacerOpts);
 static void SetupAnnealSched(const t_options& Options,
-		struct s_annealing_sched *AnnealSched);
+		t_annealing_sched *AnnealSched);
 static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
-		struct s_router_opts *RouterOpts);
+		t_router_opts *RouterOpts);
 static void SetupRoutingArch(const t_arch& Arch,
-		struct s_det_routing_arch *RoutingArch);
+		t_det_routing_arch *RoutingArch);
 static void SetupTiming(const t_options& Options, const t_arch& Arch,
 		const bool TimingEnabled,
 		t_timing_inf * Timing);
 static void SetupSwitches(const t_arch& Arch,
-		struct s_det_routing_arch *RoutingArch,
-		const struct s_arch_switch_inf *ArchSwitches, int NumArchSwitches);
+		t_det_routing_arch *RoutingArch,
+		const t_arch_switch_inf *ArchSwitches, int NumArchSwitches);
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 		t_arch * Arch);
@@ -49,17 +49,17 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 void SetupVPR(t_options *Options, 
               const bool TimingEnabled,
               const bool readArchFile, 
-              struct s_file_name_opts *FileNameOpts,
+              t_file_name_opts *FileNameOpts,
               t_arch * Arch,
               t_model ** user_models, 
               t_model ** library_models,
               t_netlist_opts* NetlistOpts,
-              struct s_packer_opts *PackerOpts,
-              struct s_placer_opts *PlacerOpts,
-              struct s_annealing_sched *AnnealSched,
-              struct s_router_opts *RouterOpts,
+              t_packer_opts *PackerOpts,
+              t_placer_opts *PlacerOpts,
+              t_annealing_sched *AnnealSched,
+              t_router_opts *RouterOpts,
               t_analysis_opts* AnalysisOpts,
-              struct s_det_routing_arch *RoutingArch,
+              t_det_routing_arch *RoutingArch,
               vector <t_lb_type_rr_node> **PackerRRGraphs,
               t_segment_inf ** Segments, t_timing_inf * Timing,
               bool * ShowGraphics, int *GraphPause,
@@ -305,8 +305,8 @@ static void SetupTiming(const t_options& Options, const t_arch& Arch,
 /* This loads up VPR's arch_switch_inf data by combining the switches from 
  * the arch file with the special switches that VPR needs. */
 static void SetupSwitches(const t_arch& Arch,
-		struct s_det_routing_arch *RoutingArch,
-		const struct s_arch_switch_inf *ArchSwitches, int NumArchSwitches) {
+		t_det_routing_arch *RoutingArch,
+		const t_arch_switch_inf *ArchSwitches, int NumArchSwitches) {
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -384,7 +384,7 @@ static void SetupSwitches(const t_arch& Arch,
 /* Sets up routing structures. Since checks are already done, this
  * just copies values across */
 static void SetupRoutingArch(const t_arch& Arch,
-		struct s_det_routing_arch *RoutingArch) {
+		t_det_routing_arch *RoutingArch) {
 
 	RoutingArch->switch_block_type = Arch.SBType;
 	RoutingArch->R_minW_nmos = Arch.R_minW_nmos;
@@ -400,7 +400,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 }
 
 static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
-		struct s_router_opts *RouterOpts) {
+		t_router_opts *RouterOpts) {
 	RouterOpts->astar_fac = 1.2; /* DEFAULT */
 	if (Options.Count[OT_ASTAR_FAC]) {
 		RouterOpts->astar_fac = Options.astar_fac;
@@ -569,7 +569,7 @@ static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
 }
 
 static void SetupAnnealSched(const t_options& Options,
-		struct s_annealing_sched *AnnealSched) {
+		t_annealing_sched *AnnealSched) {
 	AnnealSched->alpha_t = 0.8; /* DEFAULT */
 	if (Options.Count[OT_ALPHA_T]) {
 		AnnealSched->alpha_t = Options.PlaceAlphaT;
@@ -613,7 +613,7 @@ static void SetupAnnealSched(const t_options& Options,
  */
 void SetupPackerOpts(const t_options& Options, const bool TimingEnabled,
 		const t_arch& Arch, const char *net_file,
-		struct s_packer_opts *PackerOpts) {
+		t_packer_opts *PackerOpts) {
 
 	if (Arch.clb_grid.IsAuto) {
 		PackerOpts->aspect = Arch.clb_grid.Aspect;
@@ -715,7 +715,7 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
 /* Sets up the s_placer_opts structure based on users input. Error checking,
  * such as checking for conflicting params is assumed to be done beforehand */
 static void SetupPlacerOpts(const t_options& Options, const bool TimingEnabled,
-		struct s_placer_opts *PlacerOpts) {
+		t_placer_opts *PlacerOpts) {
 
 	PlacerOpts->doPlacement = false; /* DEFAULT */
 	if (Options.Count[OT_PLACE]) {

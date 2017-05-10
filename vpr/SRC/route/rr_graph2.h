@@ -111,7 +111,7 @@ bool is_sblock(
 int get_bidir_opin_connections(
 		const int i, const int j,
 		const int ipin,
-		struct s_linked_edge **edge_list,
+		t_linked_edge **edge_list,
 		int ******opin_to_track_map,
 		const int Fc,
 		bool *L_rr_edge_done,
@@ -151,7 +151,7 @@ int get_track_to_tracks(
 		const int max_chan_width,
 		const int Fs_per_side,
 		short ******sblock_pattern,
-		struct s_linked_edge **edge_list,
+		t_linked_edge **edge_list,
 		const t_seg_details *from_seg_details,
 		const t_seg_details *to_seg_details,
 		const t_chan_details *to_chan_details,

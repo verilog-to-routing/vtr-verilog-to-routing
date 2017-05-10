@@ -84,7 +84,7 @@ static t_type_ptr EMPTY_TYPE_BACKUP;
 static t_type_ptr FILL_TYPE_BACKUP;
 static t_type_descriptor dummy_type_descriptors[NUM_TYPES_USED];
 static t_type_descriptor *type_descriptors_backup;
-static struct s_grid_tile **grid_backup;
+static t_grid_tile **grid_backup;
 static int num_types_backup;
 
 vtr::t_ivec **clb_opins_used_locally;
@@ -104,17 +104,17 @@ static void free_block(void);
 static void load_simplified_device(void);
 static void restore_original_device(void);
 
-static void alloc_and_assign_internal_structures(struct s_block **original_block,
+static void alloc_and_assign_internal_structures(t_block **original_block,
 		int *original_num_blocks, t_netlist& original_clbs_nlist, AtomNetlist& original_atom_nlist);
 
-static void free_and_reset_internal_structures(struct s_block *original_block,
+static void free_and_reset_internal_structures(t_block *original_block,
 		int original_num_blocks, t_netlist& original_clbs_nlist, AtomNetlist& original_atom_nlist);
 
-static void setup_chan_width(struct s_router_opts router_opts,
+static void setup_chan_width(t_router_opts router_opts,
 		t_chan_width_dist chan_width_dist);
 
-static void alloc_routing_structs(struct s_router_opts router_opts,
-		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+static void alloc_routing_structs(t_router_opts router_opts,
+		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		const t_direct_inf *directs, 
 		const int num_directs);
 
@@ -126,7 +126,7 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 
 static float assign_blocks_and_route_net(t_type_ptr source_type,
 		int source_x_loc, int source_y_loc, t_type_ptr sink_type,
-		int sink_x_loc, int sink_y_loc, struct s_router_opts router_opts);
+		int sink_x_loc, int sink_y_loc, t_router_opts router_opts);
 
 static void alloc_delta_arrays(void);
 
@@ -134,22 +134,22 @@ static void free_delta_arrays(void);
 
 static void generic_compute_matrix(float ***matrix_ptr, t_type_ptr source_type,
 		t_type_ptr sink_type, int source_x, int source_y, int start_x,
-		int end_x, int start_y, int end_y, struct s_router_opts router_opts);
+		int end_x, int start_y, int end_y, t_router_opts router_opts);
 
-static void compute_delta_clb_to_clb(struct s_router_opts router_opts, int longest_length);
+static void compute_delta_clb_to_clb(t_router_opts router_opts, int longest_length);
 
-static void compute_delta_io_to_clb(struct s_router_opts router_opts);
+static void compute_delta_io_to_clb(t_router_opts router_opts);
 
-static void compute_delta_clb_to_io(struct s_router_opts router_opts);
+static void compute_delta_clb_to_io(t_router_opts router_opts);
 
-static void compute_delta_io_to_io(struct s_router_opts router_opts);
+static void compute_delta_io_to_io(t_router_opts router_opts);
 
-static void compute_delta_arrays(struct s_router_opts router_opts, int longest_length);
+static void compute_delta_arrays(t_router_opts router_opts, int longest_length);
 
 static int get_best_pin(enum e_pin_type pintype, t_type_ptr type);
 
 static int get_longest_segment_length(
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf);
+		t_det_routing_arch det_routing_arch, t_segment_inf * segment_inf);
 static void reset_placement(void);
 
 static void print_delta_delays_echo(const char* filename);
@@ -195,7 +195,7 @@ static int get_best_pin(enum e_pin_type pintype, t_type_ptr type) {
 
 /**************************************/
 static int get_longest_segment_length(
-		struct s_det_routing_arch det_routing_arch, t_segment_inf * segment_inf) {
+		t_det_routing_arch det_routing_arch, t_segment_inf * segment_inf) {
 
 	int i, length;
 
@@ -283,7 +283,7 @@ static void alloc_block(void) {
 	}
 
 	cluster_ctx.num_blocks = BLOCK_COUNT;
-	cluster_ctx.blocks = (struct s_block *) vtr::malloc(cluster_ctx.num_blocks * sizeof(struct s_block));
+	cluster_ctx.blocks = (t_block *) vtr::malloc(cluster_ctx.num_blocks * sizeof(t_block));
 
     place_ctx.block_locs.resize(BLOCK_COUNT);
 
@@ -327,7 +327,7 @@ static void load_simplified_device(void) {
 
 	/* Fill in homogeneous core grid info */
 	grid_backup = device_ctx.grid;
-	device_ctx.grid = vtr::alloc_matrix<struct s_grid_tile>(0, device_ctx.nx + 1, 0, device_ctx.ny + 1);
+	device_ctx.grid = vtr::alloc_matrix<t_grid_tile>(0, device_ctx.nx + 1, 0, device_ctx.ny + 1);
 	for (i = 0; i < device_ctx.nx + 2; i++) {
 		for (j = 0; j < device_ctx.ny + 2; j++) {
 			if ((i == 0 && j == 0) || (i == device_ctx.nx + 1 && j == 0)
@@ -389,7 +389,7 @@ static void reset_placement(void) {
 }
 
 /**************************************/
-static void alloc_and_assign_internal_structures(struct s_block **original_block,
+static void alloc_and_assign_internal_structures(t_block **original_block,
 		int *original_num_blocks, t_netlist& original_clbs_nlist, AtomNetlist& original_atom_nlist) {
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
@@ -415,7 +415,7 @@ static void alloc_and_assign_internal_structures(struct s_block **original_block
 }
 
 /**************************************/
-static void free_and_reset_internal_structures(struct s_block *original_block, int original_num_blocks, t_netlist& original_clbs_nlist, AtomNetlist& original_atom_nlist) {
+static void free_and_reset_internal_structures(t_block *original_block, int original_num_blocks, t_netlist& original_clbs_nlist, AtomNetlist& original_atom_nlist) {
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
@@ -437,7 +437,7 @@ static void free_and_reset_internal_structures(struct s_block *original_block, i
 }
 
 /**************************************/
-static void setup_chan_width(struct s_router_opts router_opts,
+static void setup_chan_width(t_router_opts router_opts,
 		t_chan_width_dist chan_width_dist) {
 	/*we give plenty of tracks, this increases routability for the */
 	/*lookup table generation */
@@ -461,8 +461,8 @@ static void setup_chan_width(struct s_router_opts router_opts,
 }
 
 /**************************************/
-static void alloc_routing_structs(struct s_router_opts router_opts,
-		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+static void alloc_routing_structs(t_router_opts router_opts,
+		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		const t_direct_inf *directs, 
 		const int num_directs) {
 
@@ -582,7 +582,7 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 /**************************************/
 static float assign_blocks_and_route_net(t_type_ptr source_type,
 		int source_x_loc, int source_y_loc, t_type_ptr sink_type,
-		int sink_x_loc, int sink_y_loc, struct s_router_opts router_opts) {
+		int sink_x_loc, int sink_y_loc, t_router_opts router_opts) {
 
 	/*places blocks at the specified locations, and routes a net between them */
 	/*returns the delay of this net */
@@ -676,7 +676,7 @@ static void free_delta_arrays(void) {
 /**************************************/
 static void generic_compute_matrix(float ***matrix_ptr, t_type_ptr source_type,
 		t_type_ptr sink_type, int source_x, int source_y, int start_x,
-		int end_x, int start_y, int end_y, struct s_router_opts router_opts) {
+		int end_x, int start_y, int end_y, t_router_opts router_opts) {
 
 	int delta_x, delta_y;
 	int sink_x, sink_y;
@@ -698,7 +698,7 @@ static void generic_compute_matrix(float ***matrix_ptr, t_type_ptr source_type,
 }
 
 /**************************************/
-static void compute_delta_clb_to_clb(struct s_router_opts router_opts, int longest_length) {
+static void compute_delta_clb_to_clb(t_router_opts router_opts, int longest_length) {
 
 	/*this routine must compute delay values in a slightly different way than the */
 	/*other compute routines. We cannot use a location close to the edge as the  */
@@ -802,7 +802,7 @@ static void compute_delta_clb_to_clb(struct s_router_opts router_opts, int longe
 }
 
 /**************************************/
-static void compute_delta_io_to_clb(struct s_router_opts router_opts) {
+static void compute_delta_io_to_clb(t_router_opts router_opts) {
 	int source_x, source_y;
 	int start_x, start_y, end_x, end_y;
 	t_type_ptr source_type, sink_type;
@@ -843,7 +843,7 @@ static void compute_delta_io_to_clb(struct s_router_opts router_opts) {
 }
 
 /**************************************/
-static void compute_delta_clb_to_io(struct s_router_opts router_opts) {
+static void compute_delta_clb_to_io(t_router_opts router_opts) {
 	int source_x, source_y, sink_x, sink_y;
 	int delta_x, delta_y;
 	t_type_ptr source_type, sink_type;
@@ -892,7 +892,7 @@ static void compute_delta_clb_to_io(struct s_router_opts router_opts) {
 }
 
 /**************************************/
-static void compute_delta_io_to_io(struct s_router_opts router_opts) {
+static void compute_delta_io_to_io(t_router_opts router_opts) {
 	int source_x, source_y, sink_x, sink_y;
 	int delta_x, delta_y;
 	t_type_ptr source_type, sink_type;
@@ -1003,7 +1003,7 @@ print_array(std::string filename, float **array_to_print,
 }
 
 /**************************************/
-static void compute_delta_arrays(struct s_router_opts router_opts, int longest_length) {
+static void compute_delta_arrays(t_router_opts router_opts, int longest_length) {
 
 	vtr::printf_info("Computing delta_io_to_io lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_io_to_io(router_opts);
@@ -1031,8 +1031,8 @@ static void print_delta_delays_echo(const char* filename) {
 /******* Globally Accessable Functions **********/
 
 /**************************************/
-void compute_delay_lookup_tables(struct s_router_opts router_opts,
-		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+void compute_delay_lookup_tables(t_router_opts router_opts,
+		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_chan_width_dist chan_width_dist, const t_direct_inf *directs, 
 		const int num_directs) {
 
@@ -1043,7 +1043,7 @@ void compute_delay_lookup_tables(struct s_router_opts router_opts,
 	/*required because we are using the net structure */
 	/*in these routines to find delays between blocks */
 	t_netlist orig_clbs_nlist;
-	struct s_block *original_blocks; /*same def as original_nets, but for cluster_ctx.blocks  */
+	t_block *original_blocks; /*same def as original_nets, but for cluster_ctx.blocks  */
 	int original_num_blocks;
     AtomNetlist orig_atom_nlist;
 

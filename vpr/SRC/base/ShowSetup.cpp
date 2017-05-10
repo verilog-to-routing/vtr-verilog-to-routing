@@ -11,16 +11,16 @@
 #include "ShowSetup.h"
 
 /******** Function Prototypes ********/
-static void ShowPackerOpts(const struct s_packer_opts& PackerOpts);
+static void ShowPackerOpts(const t_packer_opts& PackerOpts);
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts);
 static void ShowPlacerOpts(const t_options& Options,
-		const struct s_placer_opts& PlacerOpts,
-		const struct s_annealing_sched& AnnealSched);
-static void ShowRouterOpts(const struct s_router_opts& RouterOpts);
+		const t_placer_opts& PlacerOpts,
+		const t_annealing_sched& AnnealSched);
+static void ShowRouterOpts(const t_router_opts& RouterOpts);
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts);
 
-static void ShowAnnealSched(const struct s_annealing_sched& AnnealSched);
-static void ShowRoutingArch(const struct s_det_routing_arch& RoutingArch);
+static void ShowAnnealSched(const t_annealing_sched& AnnealSched);
+static void ShowRoutingArch(const t_det_routing_arch& RoutingArch);
 
 /******** Function Implementations ********/
 
@@ -111,7 +111,7 @@ void printClusteredNetlistStats() {
 	free(num_blocks_type);
 }
 
-static void ShowRoutingArch(const struct s_det_routing_arch& RoutingArch) {
+static void ShowRoutingArch(const t_det_routing_arch& RoutingArch) {
 
 	vtr::printf_info("RoutingArch.directionality: ");
 	switch (RoutingArch.directionality) {
@@ -152,7 +152,7 @@ static void ShowRoutingArch(const struct s_det_routing_arch& RoutingArch) {
 	vtr::printf_info("\n");
 }
 
-static void ShowAnnealSched(const struct s_annealing_sched& AnnealSched) {
+static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
 
 	vtr::printf_info("AnnealSched.type: ");
 	switch (AnnealSched.type) {
@@ -175,7 +175,7 @@ static void ShowAnnealSched(const struct s_annealing_sched& AnnealSched) {
 	}
 }
 
-static void ShowRouterOpts(const struct s_router_opts& RouterOpts) {
+static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 
 	vtr::printf_info("RouterOpts.route_type: ");
 	switch (RouterOpts.route_type) {
@@ -303,8 +303,8 @@ static void ShowRouterOpts(const struct s_router_opts& RouterOpts) {
 }
 
 static void ShowPlacerOpts(const t_options& Options,
-		const struct s_placer_opts& PlacerOpts,
-		const struct s_annealing_sched& AnnealSched) {
+		const t_placer_opts& PlacerOpts,
+		const t_annealing_sched& AnnealSched) {
 
 	vtr::printf_info("PlacerOpts.place_freq: ");
 	switch (PlacerOpts.place_freq) {
@@ -386,7 +386,7 @@ static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
 	vtr::printf_info("\n");
 }
 
-static void ShowPackerOpts(const struct s_packer_opts& PackerOpts) {
+static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
 
 	vtr::printf_info("PackerOpts.allow_unrelated_clustering: %s", (PackerOpts.allow_unrelated_clustering ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.alpha_clustering: %f\n", PackerOpts.alpha);

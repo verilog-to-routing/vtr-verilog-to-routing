@@ -808,7 +808,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 
 	/* Populate net indices into rr graph */
 	for (size_t net_idx = 0; net_idx < cluster_ctx.clbs_nlist.net.size(); net_idx++) {
-		struct s_trace * trace;
+		t_trace * trace;
 
 		for (trace = route_ctx.trace_head[net_idx]; trace != NULL; trace = trace->next) {
 			rr_node_power[trace->index].visited = false;
@@ -818,7 +818,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 
 	/* Populate net indices into rr graph */
 	for (size_t net_idx = 0; net_idx < cluster_ctx.clbs_nlist.net.size(); net_idx++) {
-		struct s_trace * trace;
+		t_trace * trace;
 
 		for (trace = route_ctx.trace_head[net_idx]; trace != NULL; trace = trace->next) {
 			t_rr_node * node = &device_ctx.rr_nodes[trace->index];

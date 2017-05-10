@@ -32,19 +32,19 @@ using namespace std;
 
 #include "router_lookahead_map.h"
 
-typedef struct s_mux {
+struct t_mux {
 	int size;
-	struct s_mux *next;
-} t_mux;
+	t_mux *next;
+};
 
-typedef struct s_mux_size_distribution {
+struct t_mux_size_distribution {
 	int mux_count;
 	int max_index;
 	int *distr;
-	struct s_mux_size_distribution *next;
-} t_mux_size_distribution;
+	t_mux_size_distribution *next;
+};
 
-typedef struct s_clb_to_clb_directs {
+struct t_clb_to_clb_directs {
 	t_type_descriptor *from_clb_type;
 	int from_clb_pin_start_index;
 	int from_clb_pin_end_index;
@@ -52,9 +52,7 @@ typedef struct s_clb_to_clb_directs {
 	int to_clb_pin_start_index;
 	int to_clb_pin_end_index;
 	int switch_index; //The switch type used by this direct connection
-} t_clb_to_clb_directs;
-
-/* UDSD Modifications by WMF End */
+};
 
 /******************* Variables local to this module. ***********************/
 
@@ -87,13 +85,13 @@ static void build_bidir_rr_opins(
 		t_rr_node * L_rr_node, vtr::t_ivec *** L_rr_node_indices,
 		int ******opin_to_track_map, int ***Fc_out,
 		bool * L_rr_edge_done, const t_seg_details * seg_details,
-		struct s_grid_tile **L_grid,
+		t_grid_tile **L_grid,
 		const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
 		const int num_seg_types);
 
 static void build_unidir_rr_opins(
 		const int i, const int j,
-		struct s_grid_tile **L_grid, int ***Fc_out,
+		t_grid_tile **L_grid, int ***Fc_out,
 		const int max_chan_width,
 		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y, 
 		int ***Fc_xofs, int ***Fc_yofs,
@@ -117,7 +115,7 @@ static void alloc_and_load_rr_graph(
 		vtr::t_ivec *****track_to_pin_lookup,
 		int ******opin_to_track_map, vtr::t_ivec ***switch_block_conn,
 		t_sb_connection_map *sb_conn_map,
-		struct s_grid_tile **L_grid, const int L_nx, const int L_ny, const int Fs,
+		t_grid_tile **L_grid, const int L_nx, const int L_ny, const int Fs,
 		short ******sblock_pattern, int ***Fc_out, int ***Fc_xofs,
 		int ***Fc_yofs, vtr::t_ivec *** L_rr_node_indices,
 		const int max_chan_width,
@@ -160,7 +158,7 @@ static bool **alloc_and_load_perturb_ipins(
 static void build_rr_sinks_sources(
 		const int i, const int j,
 		t_rr_node * L_rr_node, vtr::t_ivec *** L_rr_node_indices,
-		const int delayless_switch, struct s_grid_tile **L_grid);
+		const int delayless_switch, t_grid_tile **L_grid);
 
 static void build_rr_chan(
 		const int i, const int j, const t_rr_type chan_type,
@@ -222,8 +220,8 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
 void build_rr_graph(
 		const t_graph_type graph_type, const int L_num_types,
 		const t_type_ptr types, const int L_nx, const int L_ny,
-		struct s_grid_tile **L_grid, 
-		struct s_chan_width *nodes_per_chan,
+		t_grid_tile **L_grid, 
+		t_chan_width *nodes_per_chan,
 		const enum e_switch_block_type sb_type, const int Fs,
 		const vector<t_switchblock_inf> switchblocks, 
 		const int num_seg_types, const int num_arch_switches, 
@@ -1054,7 +1052,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 		vtr::t_ivec *****track_to_pin_lookup,
 		int ******opin_to_track_map, vtr::t_ivec ***switch_block_conn,
 		t_sb_connection_map *sb_conn_map,
-		struct s_grid_tile **L_grid, const int L_nx, const int L_ny, const int Fs,
+		t_grid_tile **L_grid, const int L_nx, const int L_ny, const int Fs,
 		short ******sblock_pattern, int ***Fc_out, int ***Fc_xofs,
 		int ***Fc_yofs, vtr::t_ivec *** L_rr_node_indices,
 		const int max_chan_width, 
@@ -1134,7 +1132,7 @@ static void build_bidir_rr_opins(const int i, const int j,
 		t_rr_node * L_rr_node, vtr::t_ivec *** L_rr_node_indices,
 		int ******opin_to_track_map, int ***Fc_out,
 		bool * L_rr_edge_done, const t_seg_details * seg_details,
-		struct s_grid_tile **L_grid,
+		t_grid_tile **L_grid,
 		const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
 		const int num_seg_types) {
 
@@ -1160,7 +1158,7 @@ static void build_bidir_rr_opins(const int i, const int j,
 		}
 
 		int num_edges = 0;
-		struct s_linked_edge *edge_list = NULL;
+		t_linked_edge *edge_list = NULL;
 		if(total_pin_Fc > 0) {
 			for (int width = 0; width < type->width; ++width) {
 				for (int height = 0; height < type->height; ++height) {
@@ -1180,7 +1178,7 @@ static void build_bidir_rr_opins(const int i, const int j,
 		alloc_and_load_edges_and_switches(L_rr_node, node_index, num_edges,
 				L_rr_edge_done, edge_list);
 		while (edge_list != NULL) {
-			struct s_linked_edge *next_edge = edge_list->next;
+			t_linked_edge *next_edge = edge_list->next;
 			free(edge_list);
 			edge_list = next_edge;
 		}
@@ -1330,7 +1328,7 @@ static void alloc_and_load_rr_clb_source(vtr::t_ivec *** L_rr_node_indices) {
 
 static void build_rr_sinks_sources(const int i, const int j,
 		t_rr_node * L_rr_node, vtr::t_ivec *** L_rr_node_indices,
-		const int delayless_switch, struct s_grid_tile **L_grid) {
+		const int delayless_switch, t_grid_tile **L_grid) {
 
 	/* Loads IPIN, SINK, SOURCE, and OPIN. 
 	 * Loads IPconst to SINK edges, and SOURCE to OPconst edges */
@@ -1342,7 +1340,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 
 	t_type_ptr type = L_grid[i][j].type;
 	int num_class = type->num_class;
-	struct s_class *class_inf = type->class_inf;
+	t_class *class_inf = type->class_inf;
 	int num_pins = type->num_pins;
 	int *pin_class = type->pin_class;
 
@@ -1489,7 +1487,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 		if (seg_coord > start)										
 			continue; /* Not the start of this segment. */
 
-		struct s_linked_edge *edge_list = NULL;
+		t_linked_edge *edge_list = NULL;
 
 		t_seg_details * from_seg_details = chan_details_x[start][y_coord];
 		if (chan_type == CHANY){
@@ -1576,7 +1574,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 				L_rr_edge_done, edge_list);
 
 		while (edge_list != NULL) {
-			struct s_linked_edge *next_edge = edge_list->next;
+			t_linked_edge *next_edge = edge_list->next;
 			free(edge_list);
 			edge_list = next_edge;
 		}
@@ -2353,7 +2351,7 @@ void print_rr_indexed_data(FILE * fp, int index) {
 }
 
 static void build_unidir_rr_opins(const int i, const int j,
-		struct s_grid_tile **L_grid, int ***Fc_out, const int max_chan_width, 
+		t_grid_tile **L_grid, int ***Fc_out, const int max_chan_width, 
 		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y,
 		int ***Fc_xofs, int ***Fc_yofs,
 		bool * L_rr_edge_done,

@@ -20,7 +20,7 @@ t_block* find_block(t_block* blocks, int num_blocks, std::string name);
 void read_place(const char* net_file, 
                 const char* place_file,
                 const int L_nx, const int L_ny,
-		        const int L_num_blocks, struct s_block block_list[]) {
+		        const int L_num_blocks, t_block block_list[]) {
     std::ifstream fstream(place_file); 
     if (!fstream) {
         vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
@@ -149,7 +149,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 
 	/* Reads in the locations of the IO pads from a file. */
 
-	struct s_hash **hash_table, *h_ptr;
+	t_hash **hash_table, *h_ptr;
 	int iblk, i, j, xtmp, ytmp, bnum, k;
 	FILE *fp;
 	char buf[vtr::BUFSIZE], bname[vtr::BUFSIZE], *ptr;

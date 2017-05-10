@@ -33,7 +33,7 @@ const std::vector<const char*> lb_rr_type_str {
 ***************************************************************************/
 
 /* Stores statistical information for a physical cluster_ctx.blocks such as costs and usages */
-typedef struct s_pb_stats {
+struct t_pb_stats {
 	/* Packing statistics */
 	std::map<AtomBlockId, float> gain; /* Attraction (inverse of cost) function */
 
@@ -82,9 +82,9 @@ typedef struct s_pb_stats {
 	/* Array of feasible blocks to select from [0..max_array_size-1] 
 	 Sorted in ascending gain order so that the last cluster_ctx.blocks is the most desirable (this makes it easy to pop blocks off the list
 	 */
-	struct s_pack_molecule **feasible_blocks;
+	t_pack_molecule **feasible_blocks;
 	int num_feasible_blocks; /* [0..num_marked_models-1] */
-} t_pb_stats;
+};
 
 
 
@@ -106,7 +106,7 @@ struct t_lb_type_rr_node {
 
 	t_lb_type_rr_node_edge **outedges;						/* [0..num_modes - 1][0..num_fanout-1] index and cost of out edges */
 
-	struct s_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists, NULL otherwise */
+	t_pb_graph_pin *pb_graph_pin;	/* pb_graph_pin associated with this lb_rr_node if exists, NULL otherwise */
 	float intrinsic_cost;					/* cost of this node */
 	
 	t_lb_type_rr_node() {

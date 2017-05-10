@@ -94,7 +94,7 @@ struct DeviceContext : public Context {
      *********************************************************************/
     /* x and y dimensions of the FPGA itself, the core of the FPGA is from [1..nx][1..ny], the I/Os form a perimeter surrounding the core */
     int nx, ny;
-    struct s_grid_tile **grid; /* FPGA complex blocks grid [0..nx+1][0..ny+1] */
+    t_grid_tile **grid; /* FPGA complex blocks grid [0..nx+1][0..ny+1] */
 
     /* Special pointers to identify special blocks on an FPGA: I/Os, unused, and default */
     t_type_ptr IO_TYPE;
@@ -106,7 +106,7 @@ struct DeviceContext : public Context {
      Different types of physical block are contained in type descriptors
      */
     int num_block_types;
-    struct s_type_descriptor *block_types;
+    t_type_descriptor *block_types;
 
     /*******************************************************************
      Routing related
@@ -182,7 +182,7 @@ struct ClusteringContext : public Context {
      ********************************************************************/
     /* blocks in the clustered netlist */
     int num_blocks;
-    struct s_block *blocks;
+    t_block *blocks;
 
     /* External-to-complex blocks, post-packed netlist [NETS ONLY]*/
     t_netlist clbs_nlist;
@@ -209,7 +209,7 @@ struct PlacementContext : public Context {
 //or related router algorithmic state.
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
-    struct s_trace **trace_head, **trace_tail;
+    t_trace **trace_head, **trace_tail;
 
     t_rr_node_state* rr_node_state; /* [0..num_rr_nodes-1] */
 

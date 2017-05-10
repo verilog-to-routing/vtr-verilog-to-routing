@@ -12,7 +12,7 @@
 void read_netlist(const char *net_file, 
 		const t_arch *arch,
 		int *L_num_blocks, 
-		struct s_block *block_list[],
+		t_block *block_list[],
 		t_netlist* clb_nlist);
 
 #endif

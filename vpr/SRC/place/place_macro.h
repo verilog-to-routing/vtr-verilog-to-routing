@@ -143,21 +143,21 @@
  * x_offset: The x_offset of the previous block to this cluster_ctx.blocks. 
  * y_offset: The y_offset of the previous block to this cluster_ctx.blocks. 
  */
-typedef struct s_pl_macro_member{
+struct t_pl_macro_member{
 	int blk_index;
 	int x_offset;
 	int y_offset;	 
 	int z_offset;
-} t_pl_macro_member;
+};
 
 /* num_blocks: The number of blocks this macro contains.
  * members: An array of blocks in this macro [0¡­num_macro-1].
  * idirect: The direct index as specified in the arch file
  */
-typedef struct s_pl_macro{
+struct t_pl_macro {
 	int num_blocks;
 	t_pl_macro_member* members;
-} t_pl_macro;
+};
 
 /* These are the function declarations. */
 int alloc_and_load_placement_macros(t_direct_inf* directs, int num_segments, t_pl_macro ** chains);

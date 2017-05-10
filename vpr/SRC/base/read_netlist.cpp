@@ -45,13 +45,13 @@ static void processComplexBlock(pugi::xml_node Parent, t_block *cb,
         const pugiutil::loc_data& loc_data);
 
 static void alloc_and_init_netlist_from_hash(const int ncount,
-		struct s_hash **nhash, t_netlist* clb_nlist);
+		t_hash **nhash, t_netlist* clb_nlist);
 
-static int add_net_to_hash(struct s_hash **nhash, const char *net_name,
+static int add_net_to_hash(t_hash **nhash, const char *net_name,
 		int *ncount);
 
 static void load_external_nets_and_cb(const int L_num_blocks,
-		const struct s_block block_list[],
+		const t_block block_list[],
 		const std::vector<std::string>& circuit_clocks,
         t_netlist* clb_nlist);
 
@@ -60,7 +60,7 @@ static void load_interal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb
 static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin);
 
 static void mark_constant_generators(const int L_num_blocks,
-		const struct s_block block_list[]);
+		const t_block block_list[]);
 
 static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route);
 
@@ -77,11 +77,11 @@ static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId at
  * t_netlist - Net realted information
  */
 void read_netlist(const char *net_file, const t_arch* arch,
-		int *L_num_blocks, struct s_block *block_list[],
+		int *L_num_blocks, t_block *block_list[],
 		t_netlist* clb_nlist) {
 	clock_t begin = clock();
 	size_t bcount = 0;
-	struct s_block *blist;
+	t_block *blist;
     std::vector<std::string> circuit_inputs, circuit_outputs, circuit_clocks;
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
@@ -191,7 +191,7 @@ void read_netlist(const char *net_file, const t_arch* arch,
             vtr::printf_warning(__FILE__, __LINE__, "Packed netlist contains no clustered blocks\n");
         }
 
-        blist = (struct s_block *) vtr::calloc(bcount, sizeof(t_block));
+        blist = (t_block *) vtr::calloc(bcount, sizeof(t_block));
 
         /* Process netlist */
 
@@ -492,9 +492,9 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
  * nhash - hashtable of nets
  * returns array of nets stored in hashtable
  */
-static void alloc_and_init_netlist_from_hash(int net_count, struct s_hash **nhash, t_netlist* nlist) {
-	struct s_hash_iterator hash_iter;
-	struct s_hash *curr_net;
+static void alloc_and_init_netlist_from_hash(int net_count, t_hash **nhash, t_netlist* nlist) {
+	t_hash_iterator hash_iter;
+	t_hash *curr_net;
 
     VTR_ASSERT(nlist->net.size() == 0);
 
@@ -515,8 +515,8 @@ static void alloc_and_init_netlist_from_hash(int net_count, struct s_hash **nhas
  * Adds net to hashtable of nets.  If the net is "open", then this is a keyword so do not add it.  
  * If the net already exists, increase the count on that net 
  */
-static int add_net_to_hash(struct s_hash **nhash, const char *net_name, int *ncount) {
-	struct s_hash *hash_value;
+static int add_net_to_hash(t_hash **nhash, const char *net_name, int *ncount) {
+	t_hash *hash_value;
 
 	if (strcmp(net_name, "open") == 0) {
 		return OPEN;
@@ -811,11 +811,11 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
  * This function updates the nets list and the connections between that list and the complex block
  */
 static void load_external_nets_and_cb(const int L_num_blocks,
-		const struct s_block block_list[],
+		const t_block block_list[],
 		const std::vector<std::string>& circuit_clocks,
         t_netlist* clb_nlist) {
 	int i, j, k, ipin;
-	struct s_hash **ext_nhash;
+	t_hash **ext_nhash;
     int ext_ncount = 0;
 	t_pb_graph_pin *pb_graph_pin;
 	int *count;
@@ -979,7 +979,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 
 
 static void mark_constant_generators(const int L_num_blocks,
-		const struct s_block block_list[]) {
+		const t_block block_list[]) {
 	int i;
 	for (i = 0; i < L_num_blocks; i++) {
 		mark_constant_generators_rec(block_list[i].pb,

@@ -473,7 +473,7 @@ ProcessOption(char **Args, t_options * Options) {
 
 static char **
 ReadBaseToken(char **Args, enum e_OptionBaseToken *Token) {
-	struct s_TokenPair *Cur;
+	t_TokenPair *Cur;
 
 	/* Empty string is end of tokens marker */
 	if (NULL == *Args)
@@ -495,7 +495,7 @@ ReadBaseToken(char **Args, enum e_OptionBaseToken *Token) {
 
 static char **
 ReadToken(char **Args, enum e_OptionArgToken *Token) {
-	struct s_TokenPair *Cur;
+	t_TokenPair *Cur;
 
 	/* Empty string is end of tokens marker */
 	if (NULL == *Args)

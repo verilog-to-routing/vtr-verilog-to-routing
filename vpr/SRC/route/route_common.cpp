@@ -41,17 +41,17 @@ using namespace std;
 
 /**************** Static variables local to route_common.c ******************/
 
-static struct s_heap **heap; /* Indexed from [1..heap_size] */
+static t_heap **heap; /* Indexed from [1..heap_size] */
 static int heap_size; /* Number of slots in the heap array */
 static int heap_tail; /* Index of first unused slot in the heap array */
 
 /* For managing my own list of currently free heap data structures.     */
-static struct s_heap *heap_free_head = NULL;
+static t_heap *heap_free_head = NULL;
 /* For keeping track of the sudo malloc memory for the heap*/
 static vtr::t_chunk heap_ch = {NULL, 0, NULL};
 
 /* For managing my own list of currently free trace data structures.    */
-static struct s_trace *trace_free_head = NULL;
+static t_trace *trace_free_head = NULL;
 /* For keeping track of the sudo malloc memory for the trace*/
 static vtr::t_chunk trace_ch = {NULL, 0, NULL};
 
@@ -59,8 +59,8 @@ static int num_trace_allocated = 0; /* To watch for memory leaks. */
 static int num_heap_allocated = 0;
 static int num_linked_f_pointer_allocated = 0;
 
-static struct s_linked_f_pointer *rr_modified_head = NULL;
-static struct s_linked_f_pointer *linked_f_pointer_free_head = NULL;
+static t_linked_f_pointer *rr_modified_head = NULL;
+static t_linked_f_pointer *linked_f_pointer_free_head = NULL;
 
 static vtr::t_chunk linked_f_pointer_ch = {NULL, 0, NULL};
 
@@ -97,9 +97,9 @@ static vtr::t_chunk linked_f_pointer_ch = {NULL, 0, NULL};
 
 static void load_route_bb(int bb_factor);
 
-static void add_to_heap(struct s_heap *hptr);
-static struct s_heap *alloc_heap_data(void);
-static struct s_linked_f_pointer *alloc_linked_f_pointer(void);
+static void add_to_heap(t_heap *hptr);
+static t_heap *alloc_heap_data(void);
+static t_linked_f_pointer *alloc_linked_f_pointer(void);
 
 static vtr::t_ivec **alloc_and_load_clb_opins_used_locally(void);
 static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
@@ -107,7 +107,7 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 
 /************************** Subroutine definitions ***************************/
 
-void save_routing(struct s_trace **best_routing,
+void save_routing(t_trace **best_routing,
 		vtr::t_ivec ** clb_opins_used_locally,
 		vtr::t_ivec ** saved_clb_opins_used_locally) {
 
@@ -121,7 +121,7 @@ void save_routing(struct s_trace **best_routing,
 
 	unsigned int inet;
 	int iblk, iclass, ipin, num_local_opins;
-	struct s_trace *tptr, *tempptr;
+	t_trace *tptr, *tempptr;
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -161,7 +161,7 @@ void save_routing(struct s_trace **best_routing,
 	}
 }
 
-void restore_routing(struct s_trace **best_routing,
+void restore_routing(t_trace **best_routing,
 		vtr::t_ivec ** clb_opins_used_locally,
 		vtr::t_ivec ** saved_clb_opins_used_locally) {
 
@@ -212,7 +212,7 @@ void get_serial_num(void) {
 
 	unsigned int inet;
 	int serial_num, inode;
-	struct s_trace *tptr;
+	t_trace *tptr;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -241,8 +241,8 @@ void get_serial_num(void) {
 	vtr::printf_info("Serial number (magic cookie) for the routing is: %d\n", serial_num);
 }
 
-void try_graph(int width_fac, struct s_router_opts router_opts,
-		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+void try_graph(int width_fac, t_router_opts router_opts,
+		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_chan_width_dist chan_width_dist,
 		t_direct_inf *directs, int num_directs) {
 
@@ -288,8 +288,8 @@ void try_graph(int width_fac, struct s_router_opts router_opts,
 	vtr::printf_info("Build rr_graph took %g seconds.\n", (float)(end - begin) / CLOCKS_PER_SEC);
 }
 
-bool try_route(int width_fac, struct s_router_opts router_opts,
-		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+bool try_route(int width_fac, t_router_opts router_opts,
+		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		float **net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
@@ -411,7 +411,7 @@ bool feasible_routing(void) {
 	return (true);
 }
 
-void pathfinder_update_path_cost(struct s_trace *route_segment_start,
+void pathfinder_update_path_cost(t_trace *route_segment_start,
 		int add_or_sub, float pres_fac) {
 
 	/* This routine updates the occupancy and pres_cost of the rr_nodes that are *
@@ -422,7 +422,7 @@ void pathfinder_update_path_cost(struct s_trace *route_segment_start,
 	 * net is added to the routing.  The size of pres_fac determines how severly *
 	 * oversubscribed rr_nodes are penalized.                                    */
 
-	struct s_trace *tptr;
+	t_trace *tptr;
 
 	tptr = route_segment_start;
 	if (tptr == NULL) /* No routing yet. */
@@ -524,8 +524,8 @@ void init_route_structs(int bb_factor) {
 	}
 }
 
-struct s_trace *
-update_traceback(struct s_heap *hptr, int inet) {
+t_trace *
+update_traceback(t_heap *hptr, int inet) {
 
 	/* This routine adds the most recently finished wire segment to the         *
 	 * traceback linked list.  The first connection starts with the net SOURCE  *
@@ -540,7 +540,7 @@ update_traceback(struct s_heap *hptr, int inet) {
 	 * memory for easier code maintenance.  This routine returns a pointer to   *
 	 * the first "new" node in the traceback (node not previously in trace).    */
 
-	struct s_trace *tptr, *prevptr, *temptail, *ret_ptr;
+	t_trace *tptr, *prevptr, *temptail, *ret_ptr;
 	int inode;
 	short iedge;
 
@@ -599,7 +599,7 @@ void reset_path_costs(void) {
 	/* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for all channel segments   *
 	 * touched by previous routing phases.                                     */
 
-	struct s_linked_f_pointer *mod_ptr;
+	t_linked_f_pointer *mod_ptr;
 
 	int num_mod_ptrs;
 
@@ -687,7 +687,7 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
 	if (total_cost >= route_ctx.rr_node_route_inf[inode].path_cost)
 		return;
 
-	s_heap* hptr = alloc_heap_data();
+	t_heap* hptr = alloc_heap_data();
 	hptr->index = inode;
 	hptr->cost = total_cost;
 	hptr->u.prev_node = prev_node;
@@ -702,7 +702,7 @@ void free_traceback(int inet) {
 	/* Puts the entire traceback (old routing) for this net on the free list *
 	 * and sets the route_ctx.trace_head pointers etc. for the net to NULL.            */
 
-	struct s_trace *tptr, *tempptr;
+	t_trace *tptr, *tempptr;
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -740,18 +740,18 @@ void alloc_route_static_structs(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-	route_ctx.trace_head = (struct s_trace **) vtr::calloc(cluster_ctx.clbs_nlist.net.size(), sizeof(struct s_trace *));
-	route_ctx.trace_tail = (struct s_trace **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(struct s_trace *));
+	route_ctx.trace_head = (t_trace **) vtr::calloc(cluster_ctx.clbs_nlist.net.size(), sizeof(t_trace *));
+	route_ctx.trace_tail = (t_trace **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_trace *));
 
 	heap_size = device_ctx.nx * device_ctx.ny;
-	heap = (struct s_heap **) vtr::malloc(heap_size * sizeof(struct s_heap *));
+	heap = (t_heap **) vtr::malloc(heap_size * sizeof(t_heap *));
 	heap--; /* heap stores from [1..heap_size] */
 	heap_tail = 1;
 
 	route_ctx.route_bb = (t_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_bb));
 }
 
-struct s_trace **
+t_trace **
 alloc_saved_routing(vtr::t_ivec ** clb_opins_used_locally,
 		vtr::t_ivec *** saved_clb_opins_used_locally_ptr) {
 
@@ -759,15 +759,15 @@ alloc_saved_routing(vtr::t_ivec ** clb_opins_used_locally,
 	 * allowing the routing to be recovered later (e.g. after a another routing  *
 	 * is attempted).                                                            */
 
-	struct s_trace **best_routing;
+	t_trace **best_routing;
 	vtr::t_ivec **saved_clb_opins_used_locally;
 	int iblk, iclass, num_local_opins;
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	best_routing = (struct s_trace **) vtr::calloc(cluster_ctx.clbs_nlist.net.size(),
-			sizeof(struct s_trace *));
+	best_routing = (t_trace **) vtr::calloc(cluster_ctx.clbs_nlist.net.size(),
+			sizeof(t_trace *));
 
 	saved_clb_opins_used_locally = (vtr::t_ivec **) vtr::malloc(
 			cluster_ctx.num_blocks * sizeof(vtr::t_ivec *));
@@ -895,7 +895,7 @@ void free_route_structs() {
 	linked_f_pointer_free_head = NULL;
 }
 
-void free_saved_routing(struct s_trace **best_routing,
+void free_saved_routing(t_trace **best_routing,
 		vtr::t_ivec ** saved_clb_opins_used_locally) {
 
 	/* Frees the data structures needed to save a routing.                     */
@@ -1045,7 +1045,7 @@ void add_to_mod_list(float *fptr) {
 	 * linked list that indicates all the pathcosts that have been *
 	 * modified thus far.                                          */
 
-	struct s_linked_f_pointer *mod_ptr;
+	t_linked_f_pointer *mod_ptr;
 
 	mod_ptr = alloc_linked_f_pointer();
 
@@ -1070,7 +1070,7 @@ namespace heap_ {
 
 	// make a heap rooted at index i by **sifting down** in O(lgn) time
 	void sift_down(size_t hole) {
-		s_heap* head {heap[hole]};
+		t_heap* head {heap[hole]};
 		size_t child {left(hole)};
 		while ((int)child < heap_tail) {
 			if ((int)child + 1 < heap_tail && heap[child + 1]->cost < heap[child]->cost)
@@ -1096,7 +1096,7 @@ namespace heap_ {
 
 
 	// O(lgn) sifting up to maintain heap property after insertion (should sift down when building heap)
-	void sift_up(size_t leaf, s_heap* const node) {
+	void sift_up(size_t leaf, t_heap* const node) {
 		while ((leaf > 1) && (node->cost < heap[parent(leaf)]->cost)) {
 			// sift hole up
 			heap[leaf] = heap[parent(leaf)];
@@ -1109,14 +1109,14 @@ namespace heap_ {
 	void expand_heap_if_full() {
 		if (heap_tail > heap_size) { /* Heap is full */
 			heap_size *= 2;
-			heap = (struct s_heap **) vtr::realloc((void *) (heap + 1),
-					heap_size * sizeof(struct s_heap *));
+			heap = (t_heap **) vtr::realloc((void *) (heap + 1),
+					heap_size * sizeof(t_heap *));
 			heap--; /* heap goes from [1..heap_size] */
 		}		
 	}
 
 	// adds an element to the back of heap and expand if necessary, but does not maintain heap property
-	void push_back(s_heap* const hptr) {
+	void push_back(t_heap* const hptr) {
 		expand_heap_if_full();
 		heap[heap_tail] = hptr;
 		++heap_tail;
@@ -1134,7 +1134,7 @@ namespace heap_ {
 		if (total_cost >= route_ctx.rr_node_route_inf[inode].path_cost)
 			return;
 
-		s_heap* hptr = alloc_heap_data();
+		t_heap* hptr = alloc_heap_data();
 		hptr->index = inode;
 		hptr->cost = total_cost;
 		hptr->u.prev_node = prev_node;
@@ -1165,11 +1165,11 @@ namespace heap_ {
 	void verify_extract_top() {
 		constexpr float float_epsilon = 1e-20;
 		std::cout << "copying heap\n";
-		std::vector<s_heap*> heap_copy {heap + 1, heap + heap_tail};
+		std::vector<t_heap*> heap_copy {heap + 1, heap + heap_tail};
 		// sort based on cost with cheapest first
 		VTR_ASSERT(heap_copy.size() == size());
 		std::sort(begin(heap_copy), end(heap_copy), 
-			[](const s_heap* a, const s_heap* b){
+			[](const t_heap* a, const t_heap* b){
 			return a->cost < b->cost;
 		});
 		std::cout << "starting to compare top elements\n";
@@ -1186,7 +1186,7 @@ namespace heap_ {
 	}
 }
 // adds to heap and maintains heap quality
-static void add_to_heap(struct s_heap *hptr) {
+static void add_to_heap(t_heap *hptr) {
 	heap_::expand_heap_if_full();
 	// start with undefined hole
 	++heap_tail;	
@@ -1198,14 +1198,14 @@ bool is_empty_heap(void) {
 	return (bool)(heap_tail == 1);
 }
 
-struct s_heap *
+t_heap *
 get_heap_head(void) {
 
 	/* Returns a pointer to the smallest element on the heap, or NULL if the     *
 	 * heap is empty.  Invalid (index == OPEN) entries on the heap are never     *
 	 * returned -- they are just skipped over.                                   */
 
-	struct s_heap *cheapest;
+	t_heap *cheapest;
 	size_t hole, child;
 
 	do {
@@ -1242,13 +1242,13 @@ void empty_heap(void) {
 	heap_tail = 1;
 }
 
-static struct s_heap *
+static t_heap *
 alloc_heap_data(void) {
 
-	struct s_heap *temp_ptr;
+	t_heap *temp_ptr;
 
 	if (heap_free_head == NULL) { /* No elements on the free list */
-		heap_free_head = (struct s_heap *) vtr::chunk_malloc(sizeof(struct s_heap),&heap_ch);
+		heap_free_head = (t_heap *) vtr::chunk_malloc(sizeof(t_heap),&heap_ch);
 		heap_free_head->u.next = NULL;
 	}
 
@@ -1258,7 +1258,7 @@ alloc_heap_data(void) {
 	return (temp_ptr);
 }
 
-void free_heap_data(struct s_heap *hptr) {
+void free_heap_data(t_heap *hptr) {
 
 	hptr->u.next = heap_free_head;
 	heap_free_head = hptr;
@@ -1277,13 +1277,13 @@ void invalidate_heap_entries(int sink_node, int ipin_node) {
 	}
 }
 
-struct s_trace *
+t_trace *
 alloc_trace_data(void) {
 
-	struct s_trace *temp_ptr;
+	t_trace *temp_ptr;
 
 	if (trace_free_head == NULL) { /* No elements on the free list */
-		trace_free_head = (struct s_trace *) vtr::chunk_malloc(sizeof(struct s_trace),&trace_ch);
+		trace_free_head = (t_trace *) vtr::chunk_malloc(sizeof(t_trace),&trace_ch);
 		trace_free_head->next = NULL;
 	}
 	temp_ptr = trace_free_head;
@@ -1292,7 +1292,7 @@ alloc_trace_data(void) {
 	return (temp_ptr);
 }
 
-void free_trace_data(struct s_trace *tptr) {
+void free_trace_data(t_trace *tptr) {
 
 	/* Puts the traceback structure pointed to by tptr on the free list. */
 
@@ -1301,18 +1301,18 @@ void free_trace_data(struct s_trace *tptr) {
 	num_trace_allocated--;
 }
 
-static struct s_linked_f_pointer *
+static t_linked_f_pointer *
 alloc_linked_f_pointer(void) {
 
 	/* This routine returns a linked list element with a float pointer as *
 	 * the node data.                                                     */
 
 	/*int i;*/
-	struct s_linked_f_pointer *temp_ptr;
+	t_linked_f_pointer *temp_ptr;
 
 	if (linked_f_pointer_free_head == NULL) {
 		/* No elements on the free list */	
-	linked_f_pointer_free_head = (struct s_linked_f_pointer *) vtr::chunk_malloc(sizeof(struct s_linked_f_pointer),&linked_f_pointer_ch);
+	linked_f_pointer_free_head = (t_linked_f_pointer *) vtr::chunk_malloc(sizeof(t_linked_f_pointer),&linked_f_pointer_ch);
 	linked_f_pointer_free_head->next = NULL;
 	}
 
@@ -1332,7 +1332,7 @@ void print_route(const char* placement_file, const char* route_file) {
 	int inode, bnum, ilow, jlow, node_block_pin, iclass;
 	unsigned int ipin;
 	t_rr_type rr_type;
-	struct s_trace *tptr;
+	t_trace *tptr;
 	FILE *fp;
 
 	fp = fopen(route_file, "w");
@@ -1470,7 +1470,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 	int iblk, num_local_opin, inode, from_node, iconn, num_edges, to_node;
 	int iclass, ipin;
 	float cost;
-	struct s_heap *heap_head_ptr;
+	t_heap *heap_head_ptr;
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();

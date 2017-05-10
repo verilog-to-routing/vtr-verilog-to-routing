@@ -13,7 +13,7 @@ using namespace std;
 
 static bool breadth_first_route_net(int inet, float bend_cost);
 
-static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
+static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 		int remaining_connections_to_sink);
 
 static void breadth_first_expand_neighbours(int inode, float pcost, 
@@ -23,7 +23,7 @@ static void breadth_first_add_source_to_heap(int inet);
 
 /************************ Subroutine definitions ****************************/
 
-bool try_breadth_first_route(struct s_router_opts router_opts,
+bool try_breadth_first_route(t_router_opts router_opts,
 		vtr::t_ivec ** clb_opins_used_locally) {
 
 	/* Iterated maze router ala Pathfinder Negotiated Congestion algorithm,  *
@@ -91,7 +91,7 @@ bool try_breadth_first_route(struct s_router_opts router_opts,
 }
 
 bool try_breadth_first_route_net(int inet, float pres_fac, 
-		struct s_router_opts router_opts) {
+		t_router_opts router_opts) {
 
 	bool is_routed = false;
 
@@ -141,8 +141,8 @@ static bool breadth_first_route_net(int inet, float bend_cost) {
 	int inode, prev_node, remaining_connections_to_sink;
 	unsigned int i;
 	float pcost, new_pcost;
-	struct s_heap *current;
-	struct s_trace *tptr;
+	t_heap *current;
+	t_trace *tptr;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -208,7 +208,7 @@ static bool breadth_first_route_net(int inet, float bend_cost) {
 	return (true);
 }
 
-static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
+static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 		int remaining_connections_to_sink) {
 
 	/* Adds all the rr_nodes in the traceback segment starting at tptr (and     *
@@ -227,7 +227,7 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 	 * the same logic block, and since the and-inputs are logically-equivalent, *
 	 * this means two connections to the same SINK.                             */
 
-	struct s_trace *tptr, *next_ptr;
+	t_trace *tptr, *next_ptr;
 	int inode, sink_node, last_ipin_node;
 
     auto& device_ctx = g_vpr_ctx.device();

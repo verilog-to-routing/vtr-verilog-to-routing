@@ -114,8 +114,8 @@ void set_timing_place_crit(int inet, int ipin, float val) {
 
 /**************************************/
 void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
-		struct s_router_opts router_opts,
-		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+		t_router_opts router_opts,
+		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		const t_direct_inf *directs, 
 		const int num_directs) {
 

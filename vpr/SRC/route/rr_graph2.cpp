@@ -35,7 +35,7 @@ static int get_bidir_track_to_chan_seg(
 		const bool from_is_sblock, const int from_switch,
 		bool * L_rr_edge_done,
 		const enum e_directionality directionality,
-		struct s_linked_edge **edge_list);
+		t_linked_edge **edge_list);
 
 static int get_unidir_track_to_chan_seg(
 		const int from_track, const int to_chan, const int to_seg, const int to_sb,
@@ -44,7 +44,7 @@ static int get_unidir_track_to_chan_seg(
 		const int Fs_per_side,
 		short ******sblock_pattern, vtr::t_ivec *** L_rr_node_indices,
 		const t_seg_details * seg_details, bool * L_rr_edge_done,
-		bool * Fs_clipped, struct s_linked_edge **edge_list);
+		bool * Fs_clipped, t_linked_edge **edge_list);
 
 static int get_track_to_chan_seg(
 		const int from_track, const int to_chan, const int to_seg,
@@ -53,7 +53,7 @@ static int get_track_to_chan_seg(
 		vtr::t_ivec ***L_rr_node_indices, 
 		t_sb_connection_map *sb_conn_map,
 		bool * L_rr_edge_done, 
-		s_linked_edge **edge_list);
+		t_linked_edge **edge_list);
 
 static int vpr_to_phy_track(
 		const int itrack, const int chan_num, const int seg_num,
@@ -696,7 +696,7 @@ int get_seg_end(const t_seg_details * seg_details, const int itrack, const int i
  * pointed to by *edge_list_ptr.                                             */
 int get_bidir_opin_connections(
 		const int i, const int j, const int ipin,
-		struct s_linked_edge **edge_list, 
+		t_linked_edge **edge_list, 
 		int ******opin_to_track_map,
 		const int Fc, bool * L_rr_edge_done,
 		vtr::t_ivec *** L_rr_node_indices, const t_seg_details * seg_details) {
@@ -1515,7 +1515,7 @@ int get_track_to_tracks(
 		const t_rr_type from_type, const int to_seg, const t_rr_type to_type,
 		const int chan_len, const int max_chan_width,
 		const int Fs_per_side, short ******sblock_pattern,
-		struct s_linked_edge **edge_list,
+		t_linked_edge **edge_list,
 		const t_seg_details * from_seg_details,
 		const t_seg_details * to_seg_details,
 		const t_chan_details * to_chan_details,
@@ -1723,7 +1723,7 @@ static int get_bidir_track_to_chan_seg(
 		const bool from_is_sblock, const int from_switch,
 		bool * L_rr_edge_done,
 		const enum e_directionality directionality,
-		struct s_linked_edge **edge_list) {
+		t_linked_edge **edge_list) {
 
 	int iconn, to_track, to_node, to_switch, num_conn, to_x, to_y, i;
 	bool to_is_sblock;
@@ -1789,7 +1789,7 @@ static int get_track_to_chan_seg(
 		vtr::t_ivec ***L_rr_node_indices, 
 		t_sb_connection_map *sb_conn_map,
 		bool * L_rr_edge_done, 
-		s_linked_edge **edge_list){
+		t_linked_edge **edge_list){
 
 	int edge_count = 0;
 	int to_x, to_y;
@@ -1852,7 +1852,7 @@ static int get_unidir_track_to_chan_seg(
 		const int Fs_per_side,
 		short ******sblock_pattern, vtr::t_ivec *** L_rr_node_indices,
 		const t_seg_details * seg_details, bool * L_rr_edge_done,
-		bool * Fs_clipped, struct s_linked_edge **edge_list) {
+		bool * Fs_clipped, t_linked_edge **edge_list) {
 
 	int num_labels = 0;
 	int *mux_labels = NULL;

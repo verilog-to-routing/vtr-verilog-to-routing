@@ -48,7 +48,7 @@ static t_linked_rt_edge *alloc_linked_rt_edge(void);
 
 static void free_linked_rt_edge(t_linked_rt_edge * rt_edge);
 
-static t_rt_node *add_path_to_route_tree(struct s_heap *hptr,
+static t_rt_node *add_path_to_route_tree(t_heap *hptr,
 		t_rt_node ** sink_rt_node_ptr);
 
 static void load_new_path_R_upstream(t_rt_node * start_of_new_path_rt_node);
@@ -208,7 +208,7 @@ init_route_tree_to_source(int inet) {
 }
 
 t_rt_node*
-update_route_tree(struct s_heap * hptr) {
+update_route_tree(t_heap * hptr) {
 
 	/* Adds the most recently finished wire segment to the routing tree, and
 	 * updates the Tdel, etc. numbers for the rest of the routing tree.  hptr
@@ -244,7 +244,7 @@ update_route_tree(struct s_heap * hptr) {
 }
 
 static t_rt_node*
-add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
+add_path_to_route_tree(t_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 
 	/* Adds the most recent wire segment, ending at the SINK indicated by hptr,
 	 * to the routing tree.  It returns the first (most upstream) new rt_node,

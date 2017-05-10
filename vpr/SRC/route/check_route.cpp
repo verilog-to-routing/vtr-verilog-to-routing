@@ -18,7 +18,7 @@ using namespace std;
 static void check_node_and_range(int inode, enum e_route_type route_type, const t_segment_inf* segment_inf);
 static void check_source(int inode, int inet);
 static void check_sink(int inode, int inet, bool * pin_done);
-static void check_switch(struct s_trace *tptr, int num_switch);
+static void check_switch(t_trace *tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(int inet, bool * connected_to_route);
@@ -41,7 +41,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 	unsigned int inet, ipin;
 	bool valid, connects;
 	bool * connected_to_route; /* [0 .. device_ctx.num_rr_nodes-1] */
-	struct s_trace *tptr;
+	t_trace *tptr;
 	bool * pin_done;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -253,7 +253,7 @@ static void check_source(int inode, int inet) {
 	}
 }
 
-static void check_switch(struct s_trace *tptr, int num_switch) {
+static void check_switch(t_trace *tptr, int num_switch) {
 
 	/* Checks that the switch leading from this traceback element to the next *
 	 * one is a legal switch type.                                            */
@@ -293,7 +293,7 @@ static void reset_flags(int inet, bool * connected_to_route) {
 	 * next net for connectivity (and the default state of the flags       * 
 	 * should always be zero after they have been used).                   */
 
-	struct s_trace *tptr;
+	t_trace *tptr;
 	int inode;
 
     auto& route_ctx = g_vpr_ctx.routing();
@@ -520,7 +520,7 @@ static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_local
 
 	int inode, iblk, iclass, ipin, num_local_opins;
 	unsigned inet;
-	struct s_trace *tptr;
+	t_trace *tptr;
 
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();

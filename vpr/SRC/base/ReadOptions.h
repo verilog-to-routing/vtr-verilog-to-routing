@@ -3,8 +3,7 @@
 
 #include "OptionTokens.h"
 
-typedef struct s_options t_options;
-struct s_options {
+struct t_options {
 	/* File names */
 	char *ArchFile;
 	char *CircuitName;

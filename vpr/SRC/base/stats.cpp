@@ -261,7 +261,7 @@ static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
 
 	int i, j, inode;
 	unsigned int inet, l;
-	struct s_trace *tptr;
+	t_trace *tptr;
 	t_rr_type rr_type;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -321,7 +321,7 @@ void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-	struct s_trace *tptr, *prevptr;
+	t_trace *tptr, *prevptr;
 	int inode;
 	t_rr_type curr_type, prev_type;
 	int bends, length, segments;

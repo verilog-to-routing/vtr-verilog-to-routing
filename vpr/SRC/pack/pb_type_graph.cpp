@@ -97,8 +97,8 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
 
 static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node);
 static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin);
-static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
-				const struct s_pb_graph_edge_comparator & edge2);
+static bool operator<(const t_pb_graph_edge_comparator & edge1,
+				const t_pb_graph_edge_comparator & edge2);
 static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin, 
 	const int i_pin, map<int, int>& edges_map, int* line_num);
 
@@ -1777,8 +1777,8 @@ static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin){
  *			 used for comparing key types in edges_map that		
  *			 checks for repeated edges in the pb_graph		
  */
-static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
-				const struct s_pb_graph_edge_comparator & edge2){
+static bool operator<(const t_pb_graph_edge_comparator & edge1,
+				const t_pb_graph_edge_comparator & edge2){
 	return (edge1.input_pin_id_in_cluster < edge2.input_pin_id_in_cluster) || 
 		(edge1.output_pin_id_in_cluster < edge2.output_pin_id_in_cluster);
 }

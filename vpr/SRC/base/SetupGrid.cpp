@@ -47,12 +47,12 @@ void alloc_and_load_grid(int *num_instances_type) {
 
 	VTR_ASSERT(device_ctx.nx >= 1 && device_ctx.ny >= 1);
 
-	device_ctx.grid = vtr::alloc_matrix<struct s_grid_tile>(0, (device_ctx.nx + 1), 0, (device_ctx.ny + 1));
+	device_ctx.grid = vtr::alloc_matrix<t_grid_tile>(0, (device_ctx.nx + 1), 0, (device_ctx.ny + 1));
 
 	/* Clear the full device_ctx.grid to have no type (NULL), no capacity, etc */
 	for (int x = 0; x <= (device_ctx.nx + 1); ++x) {
 		for (int y = 0; y <= (device_ctx.ny + 1); ++y) {
-			memset(&device_ctx.grid[x][y], 0, (sizeof(struct s_grid_tile)));
+			memset(&device_ctx.grid[x][y], 0, (sizeof(t_grid_tile)));
 		}
 	}
 

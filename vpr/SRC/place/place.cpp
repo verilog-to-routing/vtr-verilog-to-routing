@@ -77,13 +77,11 @@ enum swap_result {
 	REJECTED, ACCEPTED, ABORTED
 };
 
-struct s_placer_statistics {
+struct t_placer_statistics {
 	double av_cost, av_bb_cost, av_timing_cost,
 	       sum_of_squares, av_delay_cost;
 	int success_sum;
 };
-
-typedef struct s_placer_statistics t_placer_statistics;
 
 #define MAX_INV_TIMING_COST 1.e9
 /* Stops inverse timing cost from going to infinity with very lax timing constraints, 
@@ -190,12 +188,12 @@ static const float cross_count[50] = { /* [0..49] */1.0, 1.0, 1.0, 1.0828, 1.153
 #endif
 
 static void alloc_and_load_placement_structs(
-		float place_cost_exp, struct s_placer_opts placer_opts,
+		float place_cost_exp, t_placer_opts placer_opts,
 		t_direct_inf *directs, int num_directs);
 
 static void alloc_and_load_try_swap_structs();
 
-static void free_placement_structs(struct s_placer_opts placer_opts);
+static void free_placement_structs(t_placer_opts placer_opts);
 
 static void alloc_and_load_for_fast_cost_update(float place_cost_exp);
 
@@ -237,18 +235,18 @@ static void check_place(float bb_cost, float timing_cost,
 
 static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 		float *timing_cost_ptr,
-		struct s_annealing_sched annealing_sched, int max_moves, float rlim,
+		t_annealing_sched annealing_sched, int max_moves, float rlim,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
 		float *delay_cost_ptr);
 
 static void update_t(float *t, float rlim, float success_rat,
-		struct s_annealing_sched annealing_sched);
+		t_annealing_sched annealing_sched);
 
 static void update_rlim(float *rlim, float success_rat);
 
 static int exit_crit(float t, float cost,
-		struct s_annealing_sched annealing_sched);
+		t_annealing_sched annealing_sched);
 
 static int count_connections(void);
 
@@ -291,7 +289,7 @@ static double get_net_wirelength_estimate(int inet, t_bb *bbptr);
 
 static void free_try_swap_arrays(void);
 
-static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
+static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 	int num_connections, float crit_exponent, float bb_cost,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
@@ -303,7 +301,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 #endif
     SetupTimingInfo& timing_info);
 
-static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
+static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
 	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
@@ -316,10 +314,10 @@ static void placement_inner_loop(float t, float rlim, struct s_placer_opts place
     SetupTimingInfo& timing_info);
 
 /*****************************************************************************/
-void try_place(struct s_placer_opts placer_opts,
-		struct s_annealing_sched annealing_sched,
-		t_chan_width_dist chan_width_dist, struct s_router_opts router_opts,
-		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+void try_place(t_placer_opts placer_opts,
+		t_annealing_sched annealing_sched,
+		t_chan_width_dist chan_width_dist, t_router_opts router_opts,
+		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 #ifdef ENABLE_CLASSIC_VPR_STA
 		t_timing_inf timing_inf, 
 #endif
@@ -864,7 +862,7 @@ void try_place(struct s_placer_opts placer_opts,
 }
 
 /* Function to recompute the criticalities before the inner loop of the annealing */
-static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
+static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 	int num_connections, float crit_exponent, float bb_cost,
 	float * place_delay_value, float * timing_cost, float * delay_cost,
 	int * outer_crit_iter_count, float * inverse_prev_timing_cost,
@@ -913,7 +911,7 @@ static void outer_loop_recompute_criticalities(struct s_placer_opts placer_opts,
 }
 
 /* Function which contains the inner loop of the simulated annealing */
-static void placement_inner_loop(float t, float rlim, struct s_placer_opts placer_opts,
+static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 	float inverse_prev_bb_cost, float inverse_prev_timing_cost, int move_lim,
 	float crit_exponent, int inner_recompute_limit,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
@@ -1055,7 +1053,7 @@ static void update_rlim(float *rlim, float success_rat) {
 
 /* Update the temperature according to the annealing schedule selected. */
 static void update_t(float *t, float rlim, float success_rat,
-		struct s_annealing_sched annealing_sched) {
+		t_annealing_sched annealing_sched) {
 
 	/*  float fac; */
 
@@ -1075,7 +1073,7 @@ static void update_t(float *t, float rlim, float success_rat,
 }
 
 static int exit_crit(float t, float cost,
-		struct s_annealing_sched annealing_sched) {
+		t_annealing_sched annealing_sched) {
 
 	/* Return 1 when the exit criterion is met.                        */
 
@@ -1104,7 +1102,7 @@ static int exit_crit(float t, float cost,
 
 static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 		float *timing_cost_ptr,
-		struct s_annealing_sched annealing_sched, int max_moves, float rlim,
+		t_annealing_sched annealing_sched, int max_moves, float rlim,
 		enum e_place_algorithm place_algorithm, float timing_tradeoff,
 		float inverse_prev_bb_cost, float inverse_prev_timing_cost,
 		float *delay_cost_ptr) {
@@ -2044,7 +2042,7 @@ static float comp_bb_cost(enum cost_methods method) {
 }
 
 static void free_placement_structs(
-		struct s_placer_opts placer_opts) {
+		t_placer_opts placer_opts) {
 
 	/* Frees the major structures needed by the placer (and not needed       *
 	 * elsewhere).   */
@@ -2107,7 +2105,7 @@ static void free_placement_structs(
 }
 
 static void alloc_and_load_placement_structs(
-		float place_cost_exp, struct s_placer_opts placer_opts,
+		float place_cost_exp, t_placer_opts placer_opts,
 		t_direct_inf *directs, int num_directs) {
 
 	/* Allocates the major structures needed only by the placer, primarily for *

@@ -20,10 +20,10 @@
  * R_upstream: Used only by the timing-driven router.  Stores the upstream  *
  *             resistance to ground from this node, including the           *
  *             resistance of the node itself (device_ctx.rr_nodes[index].R).*/
-struct s_heap {
+struct t_heap {
 	union {
 		int prev_node;
-		struct s_heap *next;
+		t_heap *next;
 	} u;
 	float cost;
 	float backward_path_cost;
@@ -35,13 +35,13 @@ struct s_heap {
 
 /******* Subroutines in route_common used only by other router modules ******/
 
-void pathfinder_update_path_cost(struct s_trace *route_segment_start,
+void pathfinder_update_path_cost(t_trace *route_segment_start,
 		int add_or_sub, float pres_fac);
 void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac);
 
 void pathfinder_update_cost(float pres_fac, float acc_fac);
 
-struct s_trace *update_traceback(struct s_heap *hptr, int inet);
+t_trace *update_traceback(t_heap *hptr, int inet);
 
 void reset_path_costs(void);
 
@@ -62,8 +62,8 @@ void add_to_mod_list(float *fptr);
 namespace heap_ {
 	void build_heap();
 	void sift_down(size_t hole);
-	void sift_up(size_t tail, s_heap* const hptr);
-	void push_back(s_heap* const hptr);
+	void sift_up(size_t tail, t_heap* const hptr);
+	void push_back(t_heap* const hptr);
 	void push_back_node(int inode, float total_cost, int prev_node, int prev_edge,
 		float backward_path_cost, float R_upstream);
 	bool is_valid();
@@ -72,11 +72,11 @@ namespace heap_ {
 	void verify_extract_top();
 }
 
-struct s_heap *get_heap_head(void);
+t_heap *get_heap_head(void);
 
 void empty_heap(void);
 
-void free_heap_data(struct s_heap *hptr);
+void free_heap_data(t_heap *hptr);
 
 void invalidate_heap_entries(int sink_node, int ipin_node);
 

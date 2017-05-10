@@ -21,7 +21,7 @@ void CheckArch(const t_arch& Arch) {
 }
 
 static void CheckSwitches(const t_arch& Arch) {
-	struct s_arch_switch_inf *CurSwitch;
+	t_arch_switch_inf *CurSwitch;
 	int i;
 	int ipin_cblock_switch_index = UNDEFINED;
 

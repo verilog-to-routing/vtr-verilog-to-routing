@@ -2,10 +2,10 @@
 #define VPR_PLACE_H
 
 #include "vpr_types.h"
-void try_place(struct s_placer_opts placer_opts,
-		struct s_annealing_sched annealing_sched,
-		t_chan_width_dist chan_width_dist, struct s_router_opts router_opts,
-		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+void try_place(t_placer_opts placer_opts,
+		t_annealing_sched annealing_sched,
+		t_chan_width_dist chan_width_dist, t_router_opts router_opts,
+		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 #ifdef ENABLE_CLASSIC_VPR_STA
 		t_timing_inf timing_inf, 
 #endif

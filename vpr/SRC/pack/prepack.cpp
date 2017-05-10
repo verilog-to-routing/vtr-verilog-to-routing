@@ -32,15 +32,15 @@ using namespace std;
 /*****************************************/
 /*Local Function Declaration			 */
 /*****************************************/
-static int add_pattern_name_to_hash(struct s_hash **nhash,
+static int add_pattern_name_to_hash(t_hash **nhash,
 		const char *pattern_name, int *ncount);
 static void discover_pattern_names_in_pb_graph_node(
-		t_pb_graph_node *pb_graph_node, struct s_hash **nhash,
+		t_pb_graph_node *pb_graph_node, t_hash **nhash,
 		int *ncount);
 static void forward_infer_pattern(t_pb_graph_pin *pb_graph_pin);
 static void backward_infer_pattern(t_pb_graph_pin *pb_graph_pin);
 static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
-		struct s_hash **nhash);
+		t_hash **nhash);
 static t_pb_graph_edge * find_expansion_edge_of_pattern(const int pattern_index,
 		const t_pb_graph_node *pb_graph_node);
 static void forward_expand_pack_pattern_from_edge(
@@ -88,7 +88,7 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id, const 
 t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 	int i, j, ncount, k;
 	int L_num_blocks;
-	struct s_hash **nhash;
+	t_hash **nhash;
 	t_pack_patterns *list_of_packing_patterns;
 	t_pb_graph_edge *expansion_edge;
     auto& device_ctx = g_vpr_ctx.device();
@@ -150,9 +150,9 @@ t_pack_patterns *alloc_and_load_pack_patterns(int *num_packing_patterns) {
 /**
  * Adds pack pattern name to hashtable of pack pattern names.
  */
-static int add_pattern_name_to_hash(struct s_hash **nhash,
+static int add_pattern_name_to_hash(t_hash **nhash,
 		const char *pattern_name, int *ncount) {
-	struct s_hash *hash_value;
+	t_hash *hash_value;
 
 	hash_value = insert_in_hash_table(nhash, pattern_name, *ncount);
 	if (hash_value->count == 1) {
@@ -168,7 +168,7 @@ static int add_pattern_name_to_hash(struct s_hash **nhash,
  *				For cases where a pattern inference is "obvious", mark it as obvious.
  */
 static void discover_pattern_names_in_pb_graph_node(
-		t_pb_graph_node *pb_graph_node, struct s_hash **nhash,
+		t_pb_graph_node *pb_graph_node, t_hash **nhash,
 		int *ncount) {
 	int i, j, k, m;
 	int index;
@@ -319,10 +319,10 @@ static void backward_infer_pattern(t_pb_graph_pin *pb_graph_pin) {
  * so that it can be identified and loaded with more complete information later
  */
 static t_pack_patterns *alloc_and_init_pattern_list_from_hash(const int ncount,
-		struct s_hash **nhash) {
+		t_hash **nhash) {
 	t_pack_patterns *nlist;
-	struct s_hash_iterator hash_iter;
-	struct s_hash *curr_pattern;
+	t_hash_iterator hash_iter;
+	t_hash *curr_pattern;
 
 	nlist = (t_pack_patterns*)vtr::calloc(ncount, sizeof(t_pack_patterns));
 

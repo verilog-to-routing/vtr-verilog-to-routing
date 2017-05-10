@@ -134,7 +134,7 @@ class t_rr_node {
  * C_load:  Load capacitance seen by the driver for each segment added to    *
  *          the chain driven by the driver.  0 for buffered segments.        */
 
-typedef struct s_rr_indexed_data {
+struct t_rr_indexed_data {
 	float base_cost;
 	float saved_base_cost;
 	int ortho_cost_index;
@@ -149,7 +149,7 @@ typedef struct s_rr_indexed_data {
 	 * multiplying it by the length per tile (meters/tile).
 	 * This is only the wire capacitance, not including any switches */
 	float C_tile_per_m;
-} t_rr_indexed_data;
+};
 
 /* Contains ephemeral routing related rr_node state.
  * Actual data related to the structure of the RR graph should be in t_rr_node

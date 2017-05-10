@@ -50,7 +50,7 @@ public:
 	}
 };
 
-struct s_hash_Switchblock_Lookup{
+struct t_hash_Switchblock_Lookup{
 	size_t operator()(const Switchblock_Lookup &obj) const{
         //TODO: use vtr::hash_combine
 		size_t result;
@@ -64,11 +64,11 @@ struct s_hash_Switchblock_Lookup{
 
 /* contains the index of the destination wire segment within a channel
    and the index of the switch used to connect to it */
-typedef struct s_switchblock_edge {
+struct t_switchblock_edge {
 	short from_wire;
 	short to_wire;
 	short switch_ind;	
-} t_switchblock_edge;
+};
 
 /* Switchblock connections are made as [x][y][from_side][to_side][from_wire_ind].
    The Switchblock_Lookup class specifies these dimensions.
@@ -76,7 +76,7 @@ typedef struct s_switchblock_edge {
    of the map is a vector of destination wires.
    A matrix specifying connections for all switchblocks in an FPGA would be sparse and possibly very large
    so we use an unordered map to take advantage of the sparsity. */
-typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, s_hash_Switchblock_Lookup > t_sb_connection_map;
+typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, t_hash_Switchblock_Lookup > t_sb_connection_map;
 
 
 
@@ -86,7 +86,7 @@ typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, 
 t_sb_connection_map * alloc_and_load_switchblock_permutations( t_chan_details * chan_details_x, 
 				t_chan_details * chan_details_y, int nx, int ny, 
 				std::vector<t_switchblock_inf> switchblocks, 
-				s_chan_width *nodes_per_chan, enum e_directionality directionality);
+				t_chan_width *nodes_per_chan, enum e_directionality directionality);
 
 /* deallocates switch block connections sparse array */
 void free_switchblock_permutations(t_sb_connection_map *sb_conns);

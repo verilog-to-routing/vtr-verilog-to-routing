@@ -117,9 +117,9 @@ enum e_detailed_routing_stages {
 
 
 /* Linked list structure.  Stores one integer (iblk). */
-struct s_molecule_link {
+struct t_molecule_link {
 	t_pack_molecule *moleculeptr;
-	struct s_molecule_link *next;
+	t_molecule_link *next;
 };
 
 /* Store stats on nets used by packed block, useful for determining transitively connected blocks 
@@ -132,9 +132,9 @@ struct t_lb_net_stats {
  * unclustered blocks with a certain number of *external* inputs.        *
  * [0..lut_size].  Unclustered_list_head[i] points to the head of the    *
  * list of blocks with i inputs to be hooked up via external interconnect. */
-static struct s_molecule_link *unclustered_list_head;
+static t_molecule_link *unclustered_list_head;
 int unclustered_list_head_size;
-static struct s_molecule_link *memory_pool; /*Declared here so I can free easily.*/
+static t_molecule_link *memory_pool; /*Declared here so I can free easily.*/
 
 /* Does the atom block that drives the output of this atom net also appear as a   *
  * receiver (input) pin of the atom net?If so, then by how much? 
@@ -858,14 +858,14 @@ static void alloc_and_init_clustering(int max_molecule_inputs,
 	 * initializes them.                                                   */
 
 	int i, ext_inps;
-	struct s_molecule_link *next_ptr;
+	t_molecule_link *next_ptr;
 	t_pack_molecule *cur_molecule;
 	t_pack_molecule **molecule_array;
 	int max_molecule_size;
 
 	/* alloc and load list of molecules to pack */
-	unclustered_list_head = (struct s_molecule_link *) vtr::calloc(
-			max_molecule_inputs + 1, sizeof(struct s_molecule_link));
+	unclustered_list_head = (t_molecule_link *) vtr::calloc(
+			max_molecule_inputs + 1, sizeof(t_molecule_link));
 	unclustered_list_head_size = max_molecule_inputs + 1;
 
 	for (i = 0; i <= max_molecule_inputs; i++) {
@@ -884,8 +884,8 @@ static void alloc_and_init_clustering(int max_molecule_inputs,
 	qsort((void*) molecule_array, num_molecules, sizeof(t_pack_molecule*),
 			compare_molecule_gain);
 
-	memory_pool = (struct s_molecule_link *) vtr::malloc(
-			num_molecules * sizeof(struct s_molecule_link));
+	memory_pool = (t_molecule_link *) vtr::malloc(
+			num_molecules * sizeof(t_molecule_link));
 	next_ptr = memory_pool;
 
 	for (i = 0; i < num_molecules; i++) {
@@ -1074,7 +1074,7 @@ static t_pack_molecule *get_molecule_by_num_ext_inputs(
 	 * to get a atom block regardless of clock constraints just set clocks_ *
 	 * avail > 0.                                                      */
 
-	struct s_molecule_link *ptr, *prev_ptr;
+	t_molecule_link *ptr, *prev_ptr;
 	int i;
 	bool success;
 
@@ -1166,7 +1166,7 @@ static t_pack_molecule* get_seed_logical_molecule_with_most_ext_inputs(
 	 * found, the routine returns NO_CLUSTER.                                 */
 
 	int ext_inps;
-	struct s_molecule_link *ptr;
+	t_molecule_link *ptr;
 
 	for (ext_inps = max_molecule_inputs; ext_inps >= 0; ext_inps--) {
 		ptr = unclustered_list_head[ext_inps].next;

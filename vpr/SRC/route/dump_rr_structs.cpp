@@ -214,7 +214,7 @@ static void dump_grid( fstream &file ){
 
 	for (int ix = 0; ix <= device_ctx.nx+1; ix++){
 		for (int iy = 0; iy <= device_ctx.ny+1; iy++){
-			s_grid_tile grid_tile = device_ctx.grid[ix][iy];
+			t_grid_tile grid_tile = device_ctx.grid[ix][iy];
 	
 			file << " grid_x" << ix << "_y" << iy << ": ";
 			file << "block_type_index(" << grid_tile.type->index << ") ";

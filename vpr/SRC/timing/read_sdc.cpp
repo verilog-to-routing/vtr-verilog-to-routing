@@ -72,18 +72,18 @@ exclusive_groups, used when parsing set_clock_groups commands into timing_ctx.sd
 
 /****************** Types local to this module **************************/
 
-typedef struct s_sdc_clock {
+struct t_sdc_clock {
 	char * name;
 	float period;
 	float rising_edge;
 	float falling_edge;
-} t_sdc_clock;
+};
 /* Stores the name, period and offset of each constrained clock. */
 
-typedef struct s_sdc_exclusive_group {
+struct t_sdc_exclusive_group {
 	char ** clock_names;
 	int num_clock_names;
-} t_sdc_exclusive_group;
+};
 /* Used to temporarily separate clock names into exclusive groups when parsing the 
 command set_clock_groups -exclusive. */
 

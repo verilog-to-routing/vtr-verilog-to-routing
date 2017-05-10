@@ -80,7 +80,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 		float target_criticality, float astar_fac);
 
-static void timing_driven_expand_neighbours(struct s_heap *current, 
+static void timing_driven_expand_neighbours(t_heap *current, 
 		int inet,
 		float bend_cost, float criticality_fac, int target_node,
 		float astar_fac, int highfanout_rlim);
@@ -120,7 +120,7 @@ static int round_up(float x);
 
 
 /************************ Subroutine definitions *****************************/
-bool try_timing_driven_route(struct s_router_opts router_opts,
+bool try_timing_driven_route(t_router_opts router_opts,
 		float **net_delay, 
         const IntraLbPbPinLookup& pb_gpin_lookup,
         std::shared_ptr<SetupTimingInfo> timing_info,
@@ -394,7 +394,7 @@ bool try_timing_driven_route(struct s_router_opts router_opts,
 
 
 bool try_timing_driven_route_net(int inet, int itry, float pres_fac, 
-		struct s_router_opts router_opts,
+		t_router_opts router_opts,
 		CBRR& connections_inf,
 		float* pin_criticality,
 		t_rt_node** rt_node_of_sink, float** net_delay,
@@ -647,7 +647,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	VTR_ASSERT_SAFE(heap_::is_valid());
 
 	// cheapest s_heap (gives index to device_ctx.rr_nodes) in current route tree to be expanded on
-	struct s_heap* cheapest {get_heap_head()};
+	t_heap* cheapest {get_heap_head()};
 
 	if (cheapest == NULL) { /* Infeasible routing.  No possible path for net. */
         int src_block = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
@@ -880,7 +880,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 	}
 }
 
-static void timing_driven_expand_neighbours(struct s_heap *current, 
+static void timing_driven_expand_neighbours(t_heap *current, 
 		int inet,
 		float bend_cost, float criticality_fac, int target_node,
 		float astar_fac, int highfanout_rlim) {
@@ -1257,7 +1257,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
 	vtr::t_chunk list_head_net_delay_check_ch = {NULL, 0, NULL};
 
-	/*struct s_linked_vptr *ch_list_head_net_delay_check;*/
+	/*t_linked_vptr *ch_list_head_net_delay_check;*/
 
 	net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch, cluster_ctx.clbs_nlist.net,
 		cluster_ctx.clbs_nlist.net.size());

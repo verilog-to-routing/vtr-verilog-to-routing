@@ -1640,7 +1640,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 
 	unsigned int inet;
 	int inode;
-	struct s_trace *tptr;
+	t_trace *tptr;
 	t_rr_type rr_type;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -1889,7 +1889,7 @@ static bool draw_if_net_highlighted (int inet) {
  */
 static void highlight_nets(char *message, int hit_node) {
 	unsigned int inet;
-	struct s_trace *tptr;
+	t_trace *tptr;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 

@@ -64,12 +64,12 @@ typedef enum {
 } e_power_component_type;
 
 /************************* STRUCTS **********************************/
-typedef struct s_power_breakdown t_power_components;
 
-struct s_power_breakdown {
+struct t_power_breakdown {
 	t_power_usage * components;
 };
 
+typedef t_power_breakdown t_power_components;
 /************************* FUNCTION DECLARATIONS ********************/
 
 void power_components_init(void);

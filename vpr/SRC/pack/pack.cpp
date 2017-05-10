@@ -26,7 +26,7 @@ using namespace std;
 
 static std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
 
-void try_pack(struct s_packer_opts *packer_opts, 
+void try_pack(t_packer_opts *packer_opts, 
         const t_arch * arch,
 		const t_model *user_models,
         const t_model *library_models,

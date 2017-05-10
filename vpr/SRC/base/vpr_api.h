@@ -63,16 +63,16 @@ void vpr_print_usage(void);
 void vpr_read_options(const int argc, const char **argv, t_options * options);
 /* Read in arch and circuit */
 void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
-		const bool readArchFile, struct s_file_name_opts *FileNameOpts,
+		const bool readArchFile, t_file_name_opts *FileNameOpts,
 		t_arch * Arch,
 		t_model ** user_models, t_model ** library_models,
 		t_netlist_opts* NetlistOpts,
-		struct s_packer_opts *PackerOpts,
-		struct s_placer_opts *PlacerOpts,
-		struct s_annealing_sched *AnnealSched,
-		struct s_router_opts *RouterOpts,
+		t_packer_opts *PackerOpts,
+		t_placer_opts *PlacerOpts,
+		t_annealing_sched *AnnealSched,
+		t_router_opts *RouterOpts,
 		t_analysis_opts* AnalysisOpts,
-		struct s_det_routing_arch *RoutingArch,
+		t_det_routing_arch *RoutingArch,
 		vector <t_lb_type_rr_node> **PackerRRGraph,
 		t_segment_inf ** Segments, t_timing_inf * Timing,
 		bool * ShowGraphics, int *GraphPause,
@@ -81,9 +81,9 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 void vpr_check_options(const t_options& Options, const bool TimingEnabled);
 void vpr_check_arch(const t_arch& Arch);
 /* Verify settings don't conflict or otherwise not make sense */
-void vpr_check_setup(const struct s_placer_opts PlacerOpts,
-		const struct s_router_opts RouterOpts,
-		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
+void vpr_check_setup(const t_placer_opts PlacerOpts,
+		const t_router_opts RouterOpts,
+		const t_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans);
 /* Show current setup */
 void vpr_show_setup(const t_options& options, const t_vpr_setup& vpr_setup);

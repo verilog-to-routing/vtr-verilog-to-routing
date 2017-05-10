@@ -36,7 +36,7 @@ static int get_num_conn(int bnum);
 void check_netlist() {
 	unsigned int i;
 	int error, num_conn;
-	struct s_hash **net_hash_table, *h_net_ptr;
+	t_hash **net_hash_table, *h_net_ptr;
 
 	
 	/* This routine checks that the netlist makes sense         */
@@ -258,7 +258,7 @@ static int check_clb_internal_nets(unsigned int iblk) {
 static int check_for_duplicated_names(void) {
 	int iblk, error;
 	int clb_count;
-	struct s_hash **clb_hash_table, *clb_h_ptr;
+	t_hash **clb_hash_table, *clb_h_ptr;
 	
     auto& cluster_ctx = g_vpr_ctx.clustering();
 

@@ -41,13 +41,13 @@ using namespace std;
 
 /******************* Subroutines local to this module ************************/
 
-static int binary_search_place_and_route(struct s_placer_opts placer_opts,
-		struct s_file_name_opts filename_opts, 
+static int binary_search_place_and_route(t_placer_opts placer_opts,
+		t_file_name_opts filename_opts, 
         const t_arch* arch, 
 		bool verify_binary_search, int min_chan_width_hint,
-		struct s_annealing_sched annealing_sched,
-		struct s_router_opts router_opts,
-		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+		t_annealing_sched annealing_sched,
+		t_router_opts router_opts,
+		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         float** net_delay,
         std::shared_ptr<SetupTimingInfo> timing_info);
 
@@ -57,12 +57,12 @@ void post_place_sync(const int L_num_blocks);
 
 /************************* Subroutine Definitions ****************************/
 
-bool place_and_route(struct s_placer_opts placer_opts, 
-		struct s_file_name_opts filename_opts, 
+bool place_and_route(t_placer_opts placer_opts, 
+		t_file_name_opts filename_opts, 
 		const t_arch* arch, 
-		struct s_annealing_sched annealing_sched,
-		struct s_router_opts router_opts,
-		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+		t_annealing_sched annealing_sched,
+		t_router_opts router_opts,
+		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
 		t_timing_inf timing_inf) {
 
 	/* This routine controls the overall placement and routing of a circuit. */
@@ -244,13 +244,13 @@ bool place_and_route(struct s_placer_opts placer_opts,
 	return(success);
 }
 
-static int binary_search_place_and_route(struct s_placer_opts placer_opts,
-		struct s_file_name_opts filename_opts, 
+static int binary_search_place_and_route(t_placer_opts placer_opts,
+		t_file_name_opts filename_opts, 
         const t_arch* arch, 
 		bool verify_binary_search, int min_chan_width_hint,
-		struct s_annealing_sched annealing_sched,
-		struct s_router_opts router_opts,
-		struct s_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+		t_annealing_sched annealing_sched,
+		t_router_opts router_opts,
+		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         float** net_delay,
         std::shared_ptr<SetupTimingInfo> timing_info) {
 
@@ -258,7 +258,7 @@ static int binary_search_place_and_route(struct s_placer_opts placer_opts,
 	 * tracks per channel required to successfully route a circuit, and returns *
 	 * that minimum width_fac.                                                  */
 
-	struct s_trace **best_routing; /* Saves the best routing found so far. */
+	t_trace **best_routing; /* Saves the best routing found so far. */
 	int current, low, high, final;
 	int max_pins_per_clb, i;
 	bool success, prev_success, prev2_success, Fc_clipped = false;

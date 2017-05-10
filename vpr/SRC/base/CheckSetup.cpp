@@ -8,9 +8,9 @@
 #include "read_xml_arch_file.h"
 #include "CheckSetup.h"
 
-void CheckSetup(const struct s_placer_opts PlacerOpts,
-		const struct s_router_opts RouterOpts,
-		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
+void CheckSetup(const t_placer_opts PlacerOpts,
+		const t_router_opts RouterOpts,
+		const t_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans) {
 	int i;
 	int Tmp;

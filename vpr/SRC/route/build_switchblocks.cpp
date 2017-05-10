@@ -279,7 +279,7 @@ static int adjust_formula_result(int dest_wire, int src_W, int dest_W, int conne
 t_sb_connection_map * alloc_and_load_switchblock_permutations( t_chan_details * chan_details_x, 
 				t_chan_details * chan_details_y, int nx, int ny, 
 				vector<t_switchblock_inf> switchblocks, 
-				s_chan_width *nodes_per_chan, e_directionality directionality){
+				t_chan_width *nodes_per_chan, e_directionality directionality){
 
 	/* get a single number for channel width */
 	int channel_width = nodes_per_chan->max;
