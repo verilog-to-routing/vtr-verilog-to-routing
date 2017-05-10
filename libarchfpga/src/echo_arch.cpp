@@ -78,10 +78,10 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
 		fprintf(Echo, "\twidth: %d\n", Types[i].width);
 		fprintf(Echo, "\theight: %d\n", Types[i].height);
 		for (const t_fc_specification& fc_spec : Types[i].fc_specs) {
-            fprintf(Echo, "fc_type: ");
-            if (fc_spec.fc_type == e_fc_type::ABSOLUTE) {
+            fprintf(Echo, "fc_value_type: ");
+            if (fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE) {
                 fprintf(Echo, "ABSOLUTE");
-            } else if (fc_spec.fc_type == e_fc_type::FRACTIONAL) {
+            } else if (fc_spec.fc_value_type == e_fc_value_type::FRACTIONAL) {
                 fprintf(Echo, "FRACTIONAL");
             } else {
                 VTR_ASSERT(false);

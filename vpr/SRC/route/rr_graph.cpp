@@ -213,7 +213,7 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 
 static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
 		const int num_seg_types, const int *sets_per_seg_type,
-		const int max_chan_width,
+		const int max_chan_width, const e_fc_type fc_type,
 		const enum e_directionality directionality, 
 		bool *Fc_clipped, const bool ignore_Fc_0);
 
@@ -340,27 +340,29 @@ void build_rr_graph(
 	} else {
 		bool Fc_clipped = false;
 		Fc_in = alloc_and_load_actual_fc(L_num_types, types, max_pins, num_seg_types, sets_per_seg_type, max_chan_width,
-				directionality, &Fc_clipped, ignore_Fc_0);
+				e_fc_type::IN, directionality, &Fc_clipped, ignore_Fc_0);
 		if (Fc_clipped) {
 			*Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
 		}
 		Fc_clipped = false;
 		Fc_out = alloc_and_load_actual_fc(L_num_types, types, max_pins, num_seg_types, sets_per_seg_type, max_chan_width,
-				directionality, &Fc_clipped, ignore_Fc_0);
+				e_fc_type::OUT, directionality, &Fc_clipped, ignore_Fc_0);
 		if (Fc_clipped) {
 			*Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
 		}
 
-#ifdef VERBOSE
 		for (int i = 1; i < L_num_types; ++i) { /* Skip "<EMPTY>" */
 			for (int j = 0; j < g_block_types[i].num_pins; ++j) {
 				for (int k = 0; k < num_seg_types; k++){
+#ifdef VERBOSE
                     vtr::printf_info("Fc Actual Values: type = %s, pin = %d, seg = %d (%s), Fc_out = %d, Fc_in = %d.\n",
                             g_block_types[i].name, j, k, segment_inf[k].name, Fc_out[i][j][k], Fc_in[i][j][k]);
+#endif /* VERBOSE */
+                    VTR_ASSERT_MSG(Fc_out[i][j][k] == 0 || Fc_in[i][j][k] == 0, 
+                                  "Pins must be inputs or outputs (i.e. can not have both non-zero Fc_out and Fc_in)");
 				}
 			}
 		}
-#endif /* VERBOSE */
 	}
 
 	bool **perturb_ipins = alloc_and_load_perturb_ipins(L_num_types, num_seg_types,
@@ -890,7 +892,7 @@ static t_seg_details *alloc_and_load_global_route_seg_details(
 /* Calculates the number of track connections from each block pin to each segment type */
 static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr types, const int max_pins,
 		const int num_seg_types, const int *sets_per_seg_type,
-		const int max_chan_width,
+		const int max_chan_width, const e_fc_type fc_type,
 		const enum e_directionality directionality, 
 		bool *Fc_clipped, const bool ignore_Fc_0) {
 
@@ -920,6 +922,8 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
 	for (int itype = 1; itype < L_num_types; ++itype) { //Skip <EMPTY>
         for (const t_fc_specification fc_spec : types[itype].fc_specs) {
 
+            if (fc_type != fc_spec.fc_type) continue;
+
             int iseg = fc_spec.seg_index;
 
             if(fc_spec.fc_value == 0 && ignore_Fc_0 == false) {
@@ -932,11 +936,11 @@ static int ***alloc_and_load_actual_fc(const int L_num_types, const t_type_ptr t
             
                 //Calculate how many connections there should be accross all the pins in this fc_spec
                 float flt_total_connections;
-                if (fc_spec.fc_type == e_fc_type::FRACTIONAL) {
+                if (fc_spec.fc_value_type == e_fc_value_type::FRACTIONAL) {
                     float conns_per_pin = fac * sets_per_seg_type[iseg] * fc_spec.fc_value;
                     flt_total_connections = conns_per_pin * fc_spec.pins.size();
                 } else {
-                    VTR_ASSERT(fc_spec.fc_type == e_fc_type::ABSOLUTE);
+                    VTR_ASSERT(fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE);
                     flt_total_connections = fc_spec.fc_value * fc_spec.pins.size();
                 }
 
@@ -2188,6 +2192,7 @@ static vtr::t_ivec ****alloc_and_load_track_to_pin_lookup(
 
 					for (int conn = 0; conn < num_tracks; ++conn) {
 						int track = pin_to_track_map[pin][width][height][side][conn];
+                        VTR_ASSERT(track < max_chan_width);
 						track_to_pin_lookup[track][width][height][side].nelem++;
 					}
 				}

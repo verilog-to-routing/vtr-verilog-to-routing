@@ -66,7 +66,7 @@ using namespace pugiutil;
 struct t_fc_override {
     std::string port_name;
     std::string seg_name;
-    e_fc_type fc_type;
+    e_fc_value_type fc_value_type;
     float fc_value;
 };
 
@@ -103,7 +103,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch
 		const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiutil::loc_data& loc_data);
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
-static e_fc_type string_to_fc_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
+static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
 static void ProcessSizingTimingIpinCblock(pugi::xml_node Node,
 		struct s_arch *arch, const bool timing_enabled, const pugiutil::loc_data& loc_data);
@@ -1626,21 +1626,21 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch
 /* Takes in the node ptr for the 'fc' elements and initializes
  * the appropriate fields of type. */
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiutil::loc_data& loc_data) {
-    e_fc_type default_fc_in_type = e_fc_type::FRACTIONAL;
-    e_fc_type default_fc_out_type = e_fc_type::FRACTIONAL;
+    e_fc_value_type default_fc_in_value_type = e_fc_value_type::FRACTIONAL;
+    e_fc_value_type default_fc_out_value_type = e_fc_value_type::FRACTIONAL;
     float default_fc_in_value = std::numeric_limits<float>::quiet_NaN();
     float default_fc_out_value = std::numeric_limits<float>::quiet_NaN();
 
 	/* Load the default fc_in */
 	auto default_fc_in_attrib = get_attribute(Node, "default_in_type", loc_data);
-    default_fc_in_type = string_to_fc_type(default_fc_in_attrib.value(), Node, loc_data);
+    default_fc_in_value_type = string_to_fc_value_type(default_fc_in_attrib.value(), Node, loc_data);
 
     auto default_in_val_attrib = get_attribute(Node, "default_in_val", loc_data);
     default_fc_in_value = vtr::atof(default_in_val_attrib.value());
 
 	/* Load the default fc_out */
 	auto default_fc_out_attrib = get_attribute(Node, "default_out_type", loc_data);
-    default_fc_out_type = string_to_fc_type(default_fc_out_attrib.value(), Node, loc_data);
+    default_fc_out_value_type = string_to_fc_value_type(default_fc_out_attrib.value(), Node, loc_data);
 
     auto default_out_val_attrib = get_attribute(Node, "default_out_val", loc_data);
     default_fc_out_value = vtr::atof(default_out_val_attrib.value());
@@ -1669,25 +1669,60 @@ static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_
                 const t_port* port = &pb_type->ports[iport];
 
                 t_fc_specification fc_spec;
+
                 fc_spec.seg_index = iseg;
 
-                //Apply the defaults
+                //Apply type and defaults
                 if (port->type == IN_PORT) {
-                    fc_spec.fc_type = default_fc_in_type;
+                    fc_spec.fc_type = e_fc_type::IN;
+                    fc_spec.fc_value_type = default_fc_in_value_type;
                     fc_spec.fc_value = default_fc_in_value;
                 } else {
                     VTR_ASSERT(port->type == OUT_PORT);
-                    fc_spec.fc_type = default_fc_out_type;
+                    fc_spec.fc_type = e_fc_type::OUT;
+                    fc_spec.fc_value_type = default_fc_out_value_type;
                     fc_spec.fc_value = default_fc_out_value;
                 }
 
                 //Apply any matching overrides
+                bool default_overriden = false;
                 for(const auto& fc_override : fc_overrides) {
-                    if (fc_override.port_name == port->name || fc_override.seg_name == segments[iseg].name) {
+                    bool apply_override = false;
+                    if (!fc_override.port_name.empty() && !fc_override.seg_name.empty()) {
+                        //Both port and seg names are specified require exact match on both
+                        if (fc_override.port_name == port->name && fc_override.seg_name == segments[iseg].name) {
+                            apply_override = true;
+                        }
+                        
+                    } else if (!fc_override.port_name.empty()) {
+                        VTR_ASSERT(fc_override.seg_name.empty());
+                        //Only the port name specified, require it to match
+                        if (fc_override.port_name == port->name) {
+                            apply_override = true;
+                        }
+                    } else {
+                        VTR_ASSERT(!fc_override.seg_name.empty());
+                        VTR_ASSERT(fc_override.port_name.empty());
+                        //Only the seg name specified, require it to match
+                        if (fc_override.seg_name == segments[iseg].name) {
+                            apply_override = true;
+                        }
+                    }
+
+                    if (apply_override) {
                         //Exact match, or partial match to either port or seg name
-                        // Note that we continue searching, this ensures that the last matching override is applied last
-                        fc_spec.fc_type = fc_override.fc_type;
+                        // Note that we continue searching, this ensures that the last matching override (in file order)
+                        // is applied last
+
+                        if (default_overriden) {
+                            //Warn if multiple overrides match
+                            vtr::printf_warning(loc_data.filename_c_str(), loc_data.line(Node), "Multiple matching Fc overrides found; the last will be applied\n");
+                        }
+
+                        fc_spec.fc_value_type = fc_override.fc_value_type;
                         fc_spec.fc_value = fc_override.fc_value;
+
+                        default_overriden = true;
                     }
                 }
 
@@ -1727,7 +1762,7 @@ static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::lo
             fc_override.seg_name = attrib.value();
             seen_port_or_seg |= true;
         } else if (attrib.name() == std::string("fc_type")) {
-            fc_override.fc_type = string_to_fc_type(attrib.value(), node, loc_data);
+            fc_override.fc_value_type = string_to_fc_value_type(attrib.value(), node, loc_data);
             seen_fc_type = true;
         } else if (attrib.name() == std::string("fc_val")) {
             fc_override.fc_value = vtr::atof(attrib.value());
@@ -1756,20 +1791,20 @@ static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::lo
     return fc_override;
 }
 
-static e_fc_type string_to_fc_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
-    e_fc_type fc_type = e_fc_type::FRACTIONAL;
+static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+    e_fc_value_type fc_value_type = e_fc_value_type::FRACTIONAL;
 
     if (str == "frac") {
-        fc_type = e_fc_type::FRACTIONAL;
+        fc_value_type = e_fc_value_type::FRACTIONAL;
     } else if (str == "abs") {
-        fc_type = e_fc_type::ABSOLUTE;
+        fc_value_type = e_fc_value_type::ABSOLUTE;
     } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                 "Invalid fc_type '%s'. Must be 'abs' or 'frac'.\n",
                 str.c_str());
     }
 
-    return fc_type;
+    return fc_value_type;
 }
 
 /* Thie processes attributes of the 'type' tag */

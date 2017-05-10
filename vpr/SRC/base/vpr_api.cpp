@@ -526,7 +526,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
     for (const t_fc_specification& fc_spec : FILL_TYPE->fc_specs) {
         float Fc = fc_spec.fc_value;
 
-        if (fc_spec.fc_type == e_fc_type::ABSOLUTE) {
+        if (fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE) {
             //Convert to estimated fractional
             Fc /= W;
         }

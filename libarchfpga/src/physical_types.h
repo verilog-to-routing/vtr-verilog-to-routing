@@ -270,16 +270,23 @@ struct s_port_power {
 
 //The type of Fc specification
 enum class e_fc_type {
+    IN, //The fc specification for an input pin
+    OUT //The fc specification for an output pin
+};
+
+//The value type of the Fc specification
+enum class e_fc_value_type {
     FRACTIONAL,   //Fractional Fc specification (i.e. fraction of routing channel tracks)
-    ABSOLUTE     //Absolute Fc specification (i.e. absolute number of tracks)
+    ABSOLUTE      //Absolute Fc specification (i.e. absolute number of tracks)
 };
 
 //Describes the Fc specification for a set of pins and a segment
 struct t_fc_specification {
-    e_fc_type fc_type;      //How to interpret the Fc value
-    float fc_value;         //The Fc value
-    int seg_index;          //The target segment index
-    std::vector<int> pins;  //The block pins collectively effected by this Fc
+    e_fc_type fc_type;              //What type of Fc
+    e_fc_value_type fc_value_type;  //How to interpret the Fc value
+    float fc_value;                 //The Fc value
+    int seg_index;                  //The target segment index
+    std::vector<int> pins;          //The block pins collectively effected by this Fc
 };
 
 /* Describes the type for a physical logic block
