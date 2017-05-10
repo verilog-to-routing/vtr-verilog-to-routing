@@ -773,7 +773,7 @@ void try_place(struct s_placer_opts placer_opts,
 		 *in bounding_box mode */
 		for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++)
 			for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++)
-				timing_place_crit[inet][ipin] = 0; /*dummy crit values */
+				set_timing_place_crit(inet, ipin, 0); /*dummy crit values */
 		comp_td_costs(&timing_cost, &delay_cost); /*computes point_to_point_delay_cost */
 	}
 
@@ -1932,8 +1932,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 					temp_delay = comp_td_point_to_point_delay(inet, net_pin);
 					temp_point_to_point_delay_cost[inet][net_pin] = temp_delay;
 
-					temp_point_to_point_timing_cost[inet][net_pin] =
-						timing_place_crit[inet][net_pin] * temp_delay;
+					temp_point_to_point_timing_cost[inet][net_pin] = get_timing_place_crit(inet, net_pin) * temp_delay;
 					delta_timing_cost += temp_point_to_point_timing_cost[inet][net_pin] - point_to_point_timing_cost[inet][net_pin];
 					delta_delay_cost += temp_point_to_point_delay_cost[inet][net_pin] - point_to_point_delay_cost[inet][net_pin];
 				}
@@ -1943,8 +1942,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 					temp_delay = comp_td_point_to_point_delay(inet, ipin);
 					temp_point_to_point_delay_cost[inet][ipin] = temp_delay;
 
-					temp_point_to_point_timing_cost[inet][ipin] =
-						timing_place_crit[inet][ipin] * temp_delay;
+					temp_point_to_point_timing_cost[inet][ipin] = get_timing_place_crit(inet, ipin) * temp_delay;
 					delta_timing_cost += temp_point_to_point_timing_cost[inet][ipin] - point_to_point_timing_cost[inet][ipin];
 					delta_delay_cost += temp_point_to_point_delay_cost[inet][ipin] - point_to_point_delay_cost[inet][ipin];
 
@@ -1977,7 +1975,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 			for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 
 				temp_delay_cost = comp_td_point_to_point_delay(inet, ipin);
-				temp_timing_cost = temp_delay_cost * timing_place_crit[inet][ipin];
+				temp_timing_cost = temp_delay_cost * get_timing_place_crit(inet, ipin);
 
 				loc_connection_delay_sum += temp_delay_cost;
 				point_to_point_delay_cost[inet][ipin] = temp_delay_cost;

@@ -17,9 +17,9 @@ using namespace std;
 
 #include "timing_info.h"
 
-float **timing_place_crit; /*available externally */
+static float **f_timing_place_crit;
 
-static vtr::t_chunk timing_place_crit_ch = {NULL, 0, NULL};
+static vtr::t_chunk f_timing_place_crit_ch = {NULL, 0, NULL};
 
 /******** prototypes ******************/
 static float **alloc_crit(vtr::t_chunk *chunk_list_ptr);
@@ -30,7 +30,7 @@ static void free_crit(vtr::t_chunk *chunk_list_ptr);
 
 static float ** alloc_crit(vtr::t_chunk *chunk_list_ptr) {
 
-	/* Allocates space for the timing_place_crit data structure *
+	/* Allocates space for the f_timing_place_crit data structure *
 	 * [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1].  I chunk the data to save space on large    *
 	 * problems.                                                                   */
 
@@ -83,9 +83,9 @@ void print_sink_delays(const char* fname) {
 
 /**************************************/
 void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const IntraLbPbPinLookup& pb_gpin_lookup) {
-	/* Performs a 1-to-1 mapping from criticality to timing_place_crit.  
+	/* Performs a 1-to-1 mapping from criticality to f_timing_place_crit.  
 	  For every pin on every net (or, equivalently, for every tedge ending 
-	  in that pin), timing_place_crit = criticality^(criticality exponent) */
+	  in that pin), f_timing_place_crit = criticality^(criticality exponent) */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (size_t inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
@@ -98,9 +98,18 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
             /* The placer likes a great deal of contrast between criticalities. 
             Since path criticality varies much more than timing, we "sharpen" timing 
             criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
-            timing_place_crit[inet][ipin] = pow(clb_pin_crit, crit_exponent);
+            f_timing_place_crit[inet][ipin] = pow(clb_pin_crit, crit_exponent);
 		}
 	}
+}
+
+
+float get_timing_place_crit(int inet, int ipin) {
+    return f_timing_place_crit[inet][ipin];
+}
+
+void set_timing_place_crit(int inet, int ipin, float val) {
+    f_timing_place_crit[inet][ipin] = val;
 }
 
 /**************************************/
@@ -113,14 +122,14 @@ void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 	compute_delay_lookup_tables(router_opts, det_routing_arch, segment_inf,
 			chan_width_dist, directs, num_directs);
 	
-	timing_place_crit = alloc_crit(&timing_place_crit_ch);
+	f_timing_place_crit = alloc_crit(&f_timing_place_crit_ch);
 }
 
 /**************************************/
 void free_lookups_and_criticalities() {
 
-	free(timing_place_crit);
-	free_crit(&timing_place_crit_ch);
+	free(f_timing_place_crit);
+	free_crit(&f_timing_place_crit_ch);
 
 	free_place_lookup_structs();
 }
