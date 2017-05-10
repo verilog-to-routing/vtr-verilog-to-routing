@@ -12,14 +12,24 @@
 #include "power.h"
 #include "power_components.h"
 
+//A Context is collection of state relating to a particular part of VPR
+//
+//This is a base class who's only purpose is to disable copying of contexts.
+//This ensures that attempting to use a context by value (instead of by reference)
+//will result in a compilation error.
+//
+//No data or member functions should be defined in this class!
 struct Context {
-    //Contexts are uncopyable
+    //Contexts are non-copyable
     Context() = default;
     Context(Context&) = delete;
     Context& operator=(Context&) = delete;
 };
 
 //State relating to the atom-level netlist
+//
+//This should contain only data structures related to user specified netlist
+//being implemented onto the target device.
 struct AtomContext : public Context {
     /********************************************************************
      Atom Netlist
@@ -27,11 +37,14 @@ struct AtomContext : public Context {
     /* Atom netlist */
     AtomNetlist nlist;
 
-    /* Mappins to/from the Atom Netlist */
+    /* Mappings to/from the Atom Netlist */
     AtomLookup lookup;
 };
 
 //State relating to timing
+//
+//This should contain only data structures related to timing analysis, 
+//or related timing analysis algorithmic state.
 struct TimingContext : public Context {
     /********************************************************************
      Timing
@@ -62,11 +75,12 @@ struct TimingContext : public Context {
 };
 
 //State relating the device
+//
+//This should contain only data structures describing the targeted device.
 struct DeviceContext : public Context {
     /*********************************************************************
      Physical FPGA architecture 
      *********************************************************************/
-
     /* x and y dimensions of the FPGA itself, the core of the FPGA is from [1..nx][1..ny], the I/Os form a perimeter surrounding the core */
     int nx, ny;
     struct s_grid_tile **grid; /* FPGA complex blocks grid [0..nx+1][0..ny+1] */
@@ -127,6 +141,9 @@ struct DeviceContext : public Context {
 };
 
 //State relating to power analysis
+//
+//This should contain only data structures related to power analysis, 
+//or related power analysis algorithmic state.
 struct PowerContext : public Context {
     /*******************************************************************
      Power
@@ -145,6 +162,9 @@ struct PowerContext : public Context {
 };
 
 //State relating to clustering
+//
+//This should contain only data structures that describe the current 
+//clustring/packing, or related clusterer/packer algorithmic state.
 struct ClusteringContext : public Context {
     /********************************************************************
      CLB Netlist
@@ -161,6 +181,9 @@ struct ClusteringContext : public Context {
 
 
 //State relating to placement
+//
+//This should contain only data structures that describe the current placement, 
+//or related placer algorithm state.
 struct PlacementContext : public Context {
     //TODO: move blocks .x/.y/.z out of clustered netlist into here
 
@@ -170,6 +193,9 @@ struct PlacementContext : public Context {
 };
 
 //State relating to routing
+//
+//This should contain only data structures that describe the current routing, 
+//or related router algorithmic state.
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
     struct s_trace **trace_head, **trace_tail;
@@ -183,13 +209,35 @@ struct RoutingContext : public Context {
     std::string routing_id; //SHA256 digest of .route file
 };
 
+//This object encapsulates VPR's state. There is typically a single instance which is
+//accessed via the global variable g_vpr_ctx (see globals.h/.cpp).
+//
+//It is divided up into separate sub-contexts of logically related data structures.
+//
+//Each sub-context can be accessed via member functions which return a reference to the sub-context:
+//  * The default the member function (e.g. device()) return an const (immutable) reference providing 
+//    read-only access to the context. This should be the preferred from, as the compiler will detect
+//    unintentional state changes.
+//  * The 'mutable' member function (e.g. mutable_device()) will return a non-const (mutable) reference 
+//    allowing modification of the context. This should only be used on an as-needed basis.
+//
+//Typicall usage in VPR would be to call the appropriate accessor to get a reference to the context of
+//interest, and then operate on it:
+//
+//      void my_awsome_algorithm() {
+//          auto& device_ctx = g_vpr_ctx.device();
+//
+//          //Do something awsome with the device...
+//      }
+//
+//Note that the returned contexts are not copyable, so they must be taken by reference.
 class VprContext {
     public:
-        const DeviceContext& device() const { return device_; }
-        DeviceContext& mutable_device() { return device_; }
-
         const AtomContext& atom() const { return atom_; }
         AtomContext& mutable_atom() { return atom_; }
+
+        const DeviceContext& device() const { return device_; }
+        DeviceContext& mutable_device() { return device_; }
 
         const TimingContext& timing() const { return timing_; }
         TimingContext& mutable_timing() { return timing_; }

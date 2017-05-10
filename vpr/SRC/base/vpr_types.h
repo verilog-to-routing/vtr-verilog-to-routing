@@ -611,12 +611,8 @@ typedef struct s_legal_pos {
  name: identifier for this block
  type: the type of physical block this user circuit block can map into
  nets: nets that connect to other user circuit blocks
- x: x-coordinate
- y: y-coordinate
- z: occupancy coordinate
  pb: Physical block representing the clustering of this CLB
  pb_pin_route_stats: [0..num_pb_graph_pins-1] Representation of intra logic block routing within CLB
- is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing
  */
 struct s_block {
 	char *name;
@@ -629,6 +625,14 @@ struct s_block {
 };
 typedef struct s_block t_block;
 
+/*
+ * Represents the placement location of a clustered block (i.e. t_block)
+ * x: x-coordinate
+ * y: y-coordinate
+ * z: occupancy coordinate
+ * is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing
+ * nets_and_pins_synced_to_z_coordinate: true if the associated t_block's pins have been synced to the z location (i.e. after placement)
+ */
 struct t_block_loc {
     int x = OPEN;
     int y = OPEN;
