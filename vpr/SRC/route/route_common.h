@@ -1,17 +1,6 @@
 /************ Defines and types shared by all route files ********************/
 #pragma once
 #include <vector>
-struct s_heap {
-	union {
-		int prev_node;
-		struct s_heap *next;
-	} u;
-	float cost;
-	float backward_path_cost;
-	float R_upstream;
-	int index;
-	int prev_edge;
-};
 
 /* Used by the heap as its fundamental data structure.                      * 
  * index:   Index (ID) of this routing resource node.                       * 
@@ -30,40 +19,22 @@ struct s_heap {
  *                      to the target.                                      *
  * R_upstream: Used only by the timing-driven router.  Stores the upstream  *
  *             resistance to ground from this node, including the           *
- *             resistance of the node itself (device_ctx.rr_nodes[index].R).            */
-
-typedef struct {
-	int prev_node;
-	float pres_cost;
-	float acc_cost;
-	float path_cost;
+ *             resistance of the node itself (device_ctx.rr_nodes[index].R).*/
+struct s_heap {
+	union {
+		int prev_node;
+		struct s_heap *next;
+	} u;
+	float cost;
 	float backward_path_cost;
-	short prev_edge;
-	short target_flag;
-} t_rr_node_route_inf;
+	float R_upstream;
+	int index;
+	int prev_edge;
+};
 
-/* Extra information about each rr_node needed only during routing (i.e.    *
- * during the maze expansion).                                              *
- *                                                                          *
- * prev_node:  Index of the previous node used to reach this one;           *
- *             used to generate the traceback.  If there is no              *
- *             predecessor, prev_node = NO_PREVIOUS.                        *
- * pres_cost:  Present congestion cost term for this node.                  *
- * acc_cost:   Accumulated cost term from previous Pathfinder iterations.   *
- * path_cost:  Total cost of the path up to and including this node +       *
- *             the expected cost to the target if the timing_driven router  *
- *             is being used.                                               *
- * backward_path_cost:  Total cost of the path up to and including this     *
- *                      node.  Not used by breadth-first router.            *
- * prev_edge:  Index of the edge (from 0 to num_edges-1) that was used      *
- *             to reach this node from the previous node.  If there is      *
- *             no predecessor, prev_edge = NO_PREVIOUS.                     *
- * target_flag:  Is this node a target (sink) for the current routing?      *
- *               Number of times this node must be reached to fully route.  */
 
 /**************** Variables shared by all route_files ***********************/
 
-extern t_rr_node_route_inf *rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 extern struct s_bb *route_bb; /* [0..num_nets-1]     */
 
 /******* Subroutines in route_common used only by other router modules ******/

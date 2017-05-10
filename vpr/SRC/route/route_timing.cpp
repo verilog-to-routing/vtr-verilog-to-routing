@@ -622,7 +622,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 
 	/* Build a path from the existing route tree rooted at rt_root to the target_node
 	 * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -668,13 +668,13 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	float old_total_cost, new_total_cost, old_back_cost, new_back_cost;
 	int inode = cheapest->index;
 	while (inode != target_node) {
-		old_total_cost = rr_node_route_inf[inode].path_cost;
+		old_total_cost = route_ctx.rr_node_route_inf[inode].path_cost;
 		new_total_cost = cheapest->cost;
 
 		if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 			old_back_cost = HUGE_POSITIVE_FLOAT;
 		else
-			old_back_cost = rr_node_route_inf[inode].backward_path_cost;
+			old_back_cost = route_ctx.rr_node_route_inf[inode].backward_path_cost;
 
 		new_back_cost = cheapest->backward_path_cost;
 
@@ -687,15 +687,15 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 		 * re-expansion based on a higher total cost.                          */
 
 		if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
-			rr_node_route_inf[inode].prev_node = cheapest->u.prev_node;
-			rr_node_route_inf[inode].prev_edge = cheapest->prev_edge;
-			rr_node_route_inf[inode].path_cost = new_total_cost;
-			rr_node_route_inf[inode].backward_path_cost = new_back_cost;
+			route_ctx.rr_node_route_inf[inode].prev_node = cheapest->u.prev_node;
+			route_ctx.rr_node_route_inf[inode].prev_edge = cheapest->prev_edge;
+			route_ctx.rr_node_route_inf[inode].path_cost = new_total_cost;
+			route_ctx.rr_node_route_inf[inode].backward_path_cost = new_back_cost;
 
 			// tag this node's path cost to be reset to HUGE_POSITIVE_FLOAT by reset_path_costs after routing to this sink
 			// path_cost is specific for each sink (different expected cost)
 			if (old_total_cost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
-				add_to_mod_list(&rr_node_route_inf[inode].path_cost);
+				add_to_mod_list(&route_ctx.rr_node_route_inf[inode].path_cost);
 
 			timing_driven_expand_neighbours(cheapest, inet, bend_cost,
 					target_criticality, target_node, astar_fac,
@@ -735,7 +735,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 	 * route_tree structure is destroyed; only the traceback is needed at that  *
 	 * point.                                                                   */
 
-	rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
+	route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
 	t_trace* new_route_start_tptr = update_traceback(cheapest, inet);
 	rt_node_of_sink[target_pin] = update_route_tree(cheapest);
 	free_heap_data(cheapest);

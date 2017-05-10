@@ -145,6 +145,7 @@ static bool breadth_first_route_net(int inet, float bend_cost) {
 	struct s_trace *tptr;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	free_traceback(inet);
 	breadth_first_add_source_to_heap(inet);
@@ -167,17 +168,17 @@ static bool breadth_first_route_net(int inet, float bend_cost) {
 
 		inode = current->index;
 
-		while (rr_node_route_inf[inode].target_flag == 0) {
-			pcost = rr_node_route_inf[inode].path_cost;
+		while (route_ctx.rr_node_route_inf[inode].target_flag == 0) {
+			pcost = route_ctx.rr_node_route_inf[inode].path_cost;
 			new_pcost = current->cost;
 			if (pcost > new_pcost) { /* New path is lowest cost. */
-				rr_node_route_inf[inode].path_cost = new_pcost;
+				route_ctx.rr_node_route_inf[inode].path_cost = new_pcost;
 				prev_node = current->u.prev_node;
-				rr_node_route_inf[inode].prev_node = prev_node;
-				rr_node_route_inf[inode].prev_edge = current->prev_edge;
+				route_ctx.rr_node_route_inf[inode].prev_node = prev_node;
+				route_ctx.rr_node_route_inf[inode].prev_edge = current->prev_edge;
 
 				if (pcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
-					add_to_mod_list(&rr_node_route_inf[inode].path_cost);
+					add_to_mod_list(&route_ctx.rr_node_route_inf[inode].path_cost);
 
 				breadth_first_expand_neighbours(inode, new_pcost, inet,
 						bend_cost);
@@ -196,8 +197,8 @@ static bool breadth_first_route_net(int inet, float bend_cost) {
 			inode = current->index;
 		}
 
-		rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
-		remaining_connections_to_sink = rr_node_route_inf[inode].target_flag;
+		route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
+		remaining_connections_to_sink = route_ctx.rr_node_route_inf[inode].target_flag;
 		tptr = update_traceback(current, inet);
 		free_heap_data(current);
 	}
@@ -230,6 +231,7 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 	int inode, sink_node, last_ipin_node;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	tptr = start_ptr;
 	if(tptr != NULL && device_ctx.rr_nodes[tptr->index].type() == SINK) {
@@ -279,13 +281,13 @@ static void breadth_first_expand_trace_segment(struct s_trace *start_ptr,
 		 * doglegs are allowed in the graph, we won't be able to use this IPIN to   *
 		 * do a dogleg, since it won't be re-expanded.  Shouldn't be a big problem. */
 
-		rr_node_route_inf[last_ipin_node].path_cost = -HUGE_POSITIVE_FLOAT;
+		route_ctx.rr_node_route_inf[last_ipin_node].path_cost = -HUGE_POSITIVE_FLOAT;
 
 		/* Also need to mark the SINK as having high cost, so another connection can *
 		 * be made to it.                                                            */
 
 		sink_node = tptr->index;
-		rr_node_route_inf[sink_node].path_cost = HUGE_POSITIVE_FLOAT;
+		route_ctx.rr_node_route_inf[sink_node].path_cost = HUGE_POSITIVE_FLOAT;
 
 		/* Finally, I need to remove any pending connections to this SINK via the    *
 		 * IPIN I just used (since they would result in congestion).  Scan through   *

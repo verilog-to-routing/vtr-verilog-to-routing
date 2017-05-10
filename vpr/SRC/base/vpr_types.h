@@ -987,7 +987,6 @@ const std::vector<const char*> rr_node_typename {
  *               each net. A '0' indicates a terminal node, '1' means a    *
  *               single child, '+1' defines branch with 2 or more children.*
  * next:    Pointer to the next traceback element in this route.           */
-
 typedef struct s_trace {
 	struct s_trace *next;
 	int index;
@@ -995,6 +994,36 @@ typedef struct s_trace {
 	int num_siblings;
 	short iswitch;
 } t_trace;
+
+/* Extra information about each rr_node needed only during routing (i.e.    *
+ * during the maze expansion).                                              *
+ *                                                                          *
+ * prev_node:  Index of the previous node used to reach this one;           *
+ *             used to generate the traceback.  If there is no              *
+ *             predecessor, prev_node = NO_PREVIOUS.                        *
+ * pres_cost:  Present congestion cost term for this node.                  *
+ * acc_cost:   Accumulated cost term from previous Pathfinder iterations.   *
+ * path_cost:  Total cost of the path up to and including this node +       *
+ *             the expected cost to the target if the timing_driven router  *
+ *             is being used.                                               *
+ * backward_path_cost:  Total cost of the path up to and including this     *
+ *                      node.  Not used by breadth-first router.            *
+ * prev_edge:  Index of the edge (from 0 to num_edges-1) that was used      *
+ *             to reach this node from the previous node.  If there is      *
+ *             no predecessor, prev_edge = NO_PREVIOUS.                     *
+ * target_flag:  Is this node a target (sink) for the current routing?      *
+ *               Number of times this node must be reached to fully route.  */
+typedef struct {
+	int prev_node;
+	float pres_cost;
+	float acc_cost;
+	float path_cost;
+	float backward_path_cost;
+	short prev_edge;
+	short target_flag;
+} t_rr_node_route_inf;
+
+
 
 #define NO_PREVIOUS -1
 

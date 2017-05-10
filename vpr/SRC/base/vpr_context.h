@@ -206,6 +206,8 @@ struct RoutingContext : public Context {
 
     int **rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
+    t_rr_node_route_inf *rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
+
     std::string routing_id; //SHA256 digest of .route file
 };
 

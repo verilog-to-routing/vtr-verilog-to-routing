@@ -41,8 +41,6 @@ using namespace std;
 
 /***************** Variables shared only by route modules *******************/
 
-t_rr_node_route_inf *rr_node_route_inf = NULL; /* [0..device_ctx.num_rr_nodes-1] */
-
 struct s_bb *route_bb = NULL; /* [0..cluster_ctx.clbs_nlist.net.size()-1]. Limits area in which each  */
 
 /* net must be routed.                         */
@@ -459,7 +457,7 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 	 * pres_cost is set according to the overuse that would result from having
 	 * ONE MORE net use this routing node.     */
 
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
 
 	int occ = route_ctx.rr_node_state[inode].occ() + add_or_sub;
@@ -469,10 +467,9 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 
 	int	capacity = device_ctx.rr_nodes[inode].capacity();
 	if (occ < capacity) {
-		rr_node_route_inf[inode].pres_cost = 1.0;
+		route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
 	} else {
-		rr_node_route_inf[inode].pres_cost = 1.0
-				+ (occ + 1 - capacity) * pres_fac;
+		route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
 	}
 }
 void pathfinder_update_cost(float pres_fac, float acc_fac) {
@@ -487,23 +484,22 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 
 	int inode, occ, capacity;
     auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
 		occ = route_ctx.rr_node_state[inode].occ();
 		capacity = device_ctx.rr_nodes[inode].capacity();
 
 		if (occ > capacity) {
-			rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
-			rr_node_route_inf[inode].pres_cost = 1.0
-					+ (occ + 1 - capacity) * pres_fac;
+			route_ctx.rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
+			route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
 		}
 
 		/* If occ == capacity, we don't need to increase acc_cost, but a change    *
 		 * in pres_fac could have made it necessary to recompute the cost anyway.  */
 
 		else if (occ == capacity) {
-			rr_node_route_inf[inode].pres_cost = 1.0 + pres_fac;
+			route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + pres_fac;
 		}
 	}
 }
@@ -588,8 +584,8 @@ update_traceback(struct s_heap *hptr, int inet) {
 		prevptr->next = tptr;
 		tptr = prevptr;
 
-		iedge = rr_node_route_inf[inode].prev_edge;
-		inode = rr_node_route_inf[inode].prev_node;
+		iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
+		inode = route_ctx.rr_node_route_inf[inode].prev_node;
 	}
 
 	if (route_ctx.trace_tail[inet] != NULL) {
@@ -646,11 +642,12 @@ float get_rr_cong_cost(int inode) {
 	float cost;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	cost_index = device_ctx.rr_nodes[inode].cost_index();
 	cost = device_ctx.rr_indexed_data[cost_index].base_cost
-			* rr_node_route_inf[inode].acc_cost
-			* rr_node_route_inf[inode].pres_cost;
+			* route_ctx.rr_node_route_inf[inode].acc_cost
+			* route_ctx.rr_node_route_inf[inode].pres_cost;
 	return (cost);
 }
 
@@ -666,18 +663,19 @@ void mark_ends(int inet) {
 	int inode;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 		inode = route_ctx.net_rr_terminals[inet][ipin];
-		rr_node_route_inf[inode].target_flag++;
+		route_ctx.rr_node_route_inf[inode].target_flag++;
 	}
 }
 
 void mark_remaining_ends(const vector<int>& remaining_sinks) {
 	// like mark_ends, but only performs it for the remaining sinks of a net
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 	for (int sink_node : remaining_sinks)
-		++rr_node_route_inf[sink_node].target_flag;
+		++route_ctx.rr_node_route_inf[sink_node].target_flag;
 }
 
 void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
@@ -690,7 +688,9 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
 	 * easy.  The backward_path_cost and R_upstream values are used only by the *
 	 * timing-driven router -- the breadth-first router ignores them.           */
 
-	if (total_cost >= rr_node_route_inf[inode].path_cost)
+    auto& route_ctx = g_vpr_ctx.routing();
+
+	if (total_cost >= route_ctx.rr_node_route_inf[inode].path_cost)
 		return;
 
 	s_heap* hptr = alloc_heap_data();
@@ -922,22 +922,24 @@ void alloc_and_load_rr_node_route_structs(void) {
 
 	int inode;
 
-	if (rr_node_route_inf != NULL) {
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+	if (route_ctx.rr_node_route_inf != NULL) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in alloc_and_load_rr_node_route_structs: old rr_node_route_inf array exists.\n");
 	}
 
     auto& device_ctx = g_vpr_ctx.device();
 
-	rr_node_route_inf = (t_rr_node_route_inf *) vtr::malloc(device_ctx.num_rr_nodes * sizeof(t_rr_node_route_inf));
+	route_ctx.rr_node_route_inf = (t_rr_node_route_inf *) vtr::malloc(device_ctx.num_rr_nodes * sizeof(t_rr_node_route_inf));
 
 	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
-		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
-		rr_node_route_inf[inode].pres_cost = 1.0;
-		rr_node_route_inf[inode].acc_cost = 1.0;
-		rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
-		rr_node_route_inf[inode].target_flag = 0;
+		route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
+		route_ctx.rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
+		route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
+		route_ctx.rr_node_route_inf[inode].acc_cost = 1.0;
+		route_ctx.rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
+		route_ctx.rr_node_route_inf[inode].target_flag = 0;
 	}
 }
 
@@ -948,17 +950,19 @@ void reset_rr_node_route_structs(void) {
 
 	int inode;
 
-	VTR_ASSERT(rr_node_route_inf != NULL);
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+	VTR_ASSERT(route_ctx.rr_node_route_inf != NULL);
 
     auto& device_ctx = g_vpr_ctx.device();
 
 	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
-		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
-		rr_node_route_inf[inode].pres_cost = 1.0;
-		rr_node_route_inf[inode].acc_cost = 1.0;
-		rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
-		rr_node_route_inf[inode].target_flag = 0;
+		route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
+		route_ctx.rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
+		route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
+		route_ctx.rr_node_route_inf[inode].acc_cost = 1.0;
+		route_ctx.rr_node_route_inf[inode].path_cost = HUGE_POSITIVE_FLOAT;
+		route_ctx.rr_node_route_inf[inode].target_flag = 0;
 	}
 }
 
@@ -966,9 +970,10 @@ void free_rr_node_route_structs(void) {
 
 	/* Frees the extra information about each rr_node that is needed only      *
 	 * during routing.                                                         */
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	free(rr_node_route_inf);
-	rr_node_route_inf = NULL; /* Mark as free */
+	free(route_ctx.rr_node_route_inf);
+	route_ctx.rr_node_route_inf = NULL; /* Mark as free */
 }
 
 /* RESEARCH TODO: Bounding box heuristic needs to be redone for heterogeneous blocks */
@@ -1128,7 +1133,8 @@ namespace heap_ {
 		   but do not fix heap property yet as that is more efficiently done from
 		   bottom up with build_heap    */
 	
-		if (total_cost >= rr_node_route_inf[inode].path_cost)
+        auto& route_ctx = g_vpr_ctx.routing();
+		if (total_cost >= route_ctx.rr_node_route_inf[inode].path_cost)
 			return;
 
 		s_heap* hptr = alloc_heap_data();
@@ -1525,7 +1531,7 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 
 	int occ, capacity;
 
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
 
 	occ = route_ctx.rr_node_state[inode].occ() + add_or_sub;
@@ -1533,11 +1539,11 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 	route_ctx.rr_node_state[inode].set_occ(occ);
 
 	if (occ < capacity) {
-		rr_node_route_inf[inode].pres_cost = 1.0;
+		route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
 	} else {
-		rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
+		route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
 		if (add_or_sub == 1) {
-			rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
+			route_ctx.rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
 		}
 	}
 }

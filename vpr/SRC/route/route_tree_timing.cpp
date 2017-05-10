@@ -257,6 +257,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	t_linked_rt_edge *linked_rt_edge;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	inode = hptr->index;
 
@@ -290,7 +291,7 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
 	// inode is node index of previous node
 	// NO_PREVIOUS tags a previously routed node
 
-	while (rr_node_route_inf[inode].prev_node != NO_PREVIOUS) {
+	while (route_ctx.rr_node_route_inf[inode].prev_node != NO_PREVIOUS) {
 
 		linked_rt_edge = alloc_linked_rt_edge();
 		linked_rt_edge->child = downstream_rt_node;
@@ -318,8 +319,8 @@ add_path_to_route_tree(struct s_heap *hptr, t_rt_node ** sink_rt_node_ptr) {
             rt_node->re_expand = true;
 
 		downstream_rt_node = rt_node;
-		iedge = rr_node_route_inf[inode].prev_edge;
-		inode = rr_node_route_inf[inode].prev_node;
+		iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
+		inode = route_ctx.rr_node_route_inf[inode].prev_node;
 		iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
 	}
 
@@ -469,14 +470,16 @@ void load_route_tree_rr_route_inf(t_rt_node* root) {
 
 	VTR_ASSERT(root != nullptr);
 
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
 	t_linked_rt_edge* edge {root->u.child_list};
 	
 	for (;;) {
 		int inode = root->inode;
-		rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
-		rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
+		route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
+		route_ctx.rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
 		// path cost should be HUGE_POSITIVE_FLOAT to indicate it's unset
-		VTR_ASSERT_SAFE(equal_approx(rr_node_route_inf[inode].path_cost, HUGE_POSITIVE_FLOAT));
+		VTR_ASSERT_SAFE(equal_approx(route_ctx.rr_node_route_inf[inode].path_cost, HUGE_POSITIVE_FLOAT));
 
 		// reached a sink
 		if (!edge) {return;}
@@ -996,8 +999,10 @@ static void print_node(const t_rt_node* rt_node) {
 
 
 static void print_node_inf(const t_rt_node* rt_node) {
+    auto& route_ctx = g_vpr_ctx.routing();
+
 	int inode = rt_node->inode;
-	const auto& node_inf = rr_node_route_inf[inode];
+	const auto& node_inf = route_ctx.rr_node_route_inf[inode];
 	vtr::printf_info("%5.1e %5.1e%6d%3d|%-6d-> ", node_inf.path_cost, node_inf.backward_path_cost,
 		node_inf.prev_node, node_inf.prev_edge, inode);	
 }
@@ -1008,7 +1013,7 @@ static void print_node_congestion(const t_rt_node* rt_node) {
     auto& route_ctx = g_vpr_ctx.routing();
 
 	int inode = rt_node->inode;
-	const auto& node_inf = rr_node_route_inf[inode];
+	const auto& node_inf = route_ctx.rr_node_route_inf[inode];
 	const auto& node = device_ctx.rr_nodes[inode];
 	const auto& node_state = route_ctx.rr_node_state[inode];
 	vtr::printf_info("%2d %2d|%-6d-> ", node_inf.pres_cost, rt_node->Tdel,
