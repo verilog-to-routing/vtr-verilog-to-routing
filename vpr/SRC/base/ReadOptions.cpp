@@ -480,7 +480,7 @@ ReadBaseToken(char **Args, enum e_OptionBaseToken *Token) {
 		Error(*Args);
 
 	/* Linear search for the pair */
-	Cur = OptionBaseTokenList;
+	Cur = g_OptionBaseTokenList;
 	while (Cur->Str) {
 		if (strcmp(*Args, Cur->Str) == 0) {
 			*Token = (enum e_OptionBaseToken) Cur->Enum;
@@ -502,7 +502,7 @@ ReadToken(char **Args, enum e_OptionArgToken *Token) {
 		Error(*Args);
 
 	/* Linear search for the pair */
-	Cur = OptionArgTokenList;
+	Cur = g_OptionArgTokenList;
 	while (Cur->Str) {
 		if (strcmp(*Args, Cur->Str) == 0) {
 			*Token = (enum e_OptionArgToken)Cur->Enum;

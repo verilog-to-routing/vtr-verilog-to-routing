@@ -1,9 +1,9 @@
 #include "vpr_types.h"
 #include "OptionTokens.h"
 
-/* OptionBaseTokenList is for command line arg tokens. We will track how 
+/* g_OptionBaseTokenList is for command line arg tokens. We will track how 
  * many times each of these things exist in a file */
-struct s_TokenPair OptionBaseTokenList[] = {
+struct s_TokenPair g_OptionBaseTokenList[] = {
 		{ "version", OT_VERSION }, 
 		{ "disp", OT_DISP }, 
 		{ "congestion_analysis", OT_CONGESTION_ANALYSIS },
@@ -89,7 +89,7 @@ struct s_TokenPair OptionBaseTokenList[] = {
 		{ NULL, OT_BASE_UNKNOWN } /* End of list marker */
 };
 
-struct s_TokenPair OptionArgTokenList[] = { 
+struct s_TokenPair g_OptionArgTokenList[] = { 
 		{ "on", OT_ON }, 
 		{ "off", OT_OFF },
 		{ "random", OT_RANDOM }, 

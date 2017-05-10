@@ -162,7 +162,7 @@ enum e_OptionArgToken {
 	OT_ARG_UNKNOWN /* Must be last since used for counting enum items */
 };
 
-extern struct s_TokenPair OptionBaseTokenList[];
-extern struct s_TokenPair OptionArgTokenList[];
+extern struct s_TokenPair g_OptionBaseTokenList[];
+extern struct s_TokenPair g_OptionArgTokenList[];
 
 #endif

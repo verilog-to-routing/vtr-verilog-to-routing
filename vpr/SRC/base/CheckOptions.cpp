@@ -29,7 +29,7 @@ void CheckOptions(const t_options& options, bool timing_enabled) {
 	}
 
 	/* Check that options aren't over specified */
-	const s_TokenPair* Cur = OptionBaseTokenList;
+	const s_TokenPair* Cur = g_OptionBaseTokenList;
 	while (Cur->Str) {
 		if (options.Count[Cur->Enum] > 1) {
 			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
@@ -133,7 +133,7 @@ void check_for_stage_options(const t_options& options, e_OptionBaseToken start, 
 
     //Walk through all possible options and see if any in the exclusive interval (start, end)
     //have been set
-    s_TokenPair* Cur = OptionBaseTokenList;
+    s_TokenPair* Cur = g_OptionBaseTokenList;
     while (Cur->Str) {
         auto enum_val = Cur->Enum;
 
