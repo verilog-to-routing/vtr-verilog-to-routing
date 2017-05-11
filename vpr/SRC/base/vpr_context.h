@@ -29,7 +29,7 @@ struct Context {
 //State relating to the atom-level netlist
 //
 //This should contain only data structures related to user specified netlist
-//being implemented onto the target device.
+//being implemented by VPR onto the target device.
 struct AtomContext : public Context {
     /********************************************************************
      Atom Netlist
@@ -49,7 +49,13 @@ struct TimingContext : public Context {
     /********************************************************************
      Timing
      ********************************************************************/
+
+    //The current timing graph. 
+    //This represents the timing dependencies between pins of the atom netlist
     std::shared_ptr<tatum::TimingGraph> graph;
+
+    //The current timing constraints, as loaded from an SDC file (or set by default).
+    //These specify how timing analysis is performed (e.g. target clock periods)
     std::shared_ptr<tatum::TimingConstraints> constraints;
 
     struct timing_analysis_profile_info {
@@ -182,12 +188,13 @@ struct ClusteringContext : public Context {
      ********************************************************************/
     /* blocks in the clustered netlist */
     int num_blocks;
-    t_block *blocks;
+    t_block *blocks; //[0..num_blocks-1]
 
     /* External-to-complex blocks, post-packed netlist [NETS ONLY]*/
     t_netlist clbs_nlist;
 
-    std::string clustering_id; //SHA256 digest of the .net file
+    //SHA256 digest of the .net file (used for unique identification and consistency checking)
+    std::string clustering_id; 
 };
 
 
@@ -197,12 +204,13 @@ struct ClusteringContext : public Context {
 //or related placer algorithm state.
 struct PlacementContext : public Context {
     //Clustered block placement locations
-    std::vector<t_block_loc> block_locs;
+    std::vector<t_block_loc> block_locs; //[0..cluster_ctx.num_blocks-1]
 
     //Clustered block associated with each grid location (i.e. inverse of block_locs)
-    std::vector<std::vector<t_grid_blocks>> grid_blocks;
+    std::vector<std::vector<t_grid_blocks>> grid_blocks; //[0..device_ctx.nx+1][0..device_ctx.ny+1]
 
-    std::string placement_id; //SHA256 digest of .place file
+    //SHA256 digest of the .place file (used for unique identification and consistency checking)
+    std::string placement_id;
 };
 
 //State relating to routing
@@ -224,7 +232,8 @@ struct RoutingContext : public Context {
     //Limits area in which each net must be routed.
     t_bb* route_bb = NULL; /* [0..cluster_ctx.clbs_nlist.net.size()-1]*/
 
-    std::string routing_id; //SHA256 digest of .route file
+    //SHA256 digest of the .route file (used for unique identification and consistency checking)
+    std::string routing_id;
 };
 
 //This object encapsulates VPR's state. There is typically a single instance which is
@@ -234,22 +243,38 @@ struct RoutingContext : public Context {
 //
 //Each sub-context can be accessed via member functions which return a reference to the sub-context:
 //  * The default the member function (e.g. device()) return an const (immutable) reference providing 
-//    read-only access to the context. This should be the preferred from, as the compiler will detect
+//    read-only access to the context. This should be the preferred form, as the compiler will detect
 //    unintentional state changes.
 //  * The 'mutable' member function (e.g. mutable_device()) will return a non-const (mutable) reference 
 //    allowing modification of the context. This should only be used on an as-needed basis.
 //
-//Typicall usage in VPR would be to call the appropriate accessor to get a reference to the context of
-//interest, and then operate on it:
+//Typical usage in VPR would be to call the appropriate accessor to get a reference to the context of
+//interest, and then operate on it.
 //
-//      void my_awsome_algorithm() {
-//          auto& device_ctx = g_vpr_ctx.device();
 //
-//          //Do something awsome with the device...
+//For example if we were performing an action which required access to the current placement, we would do:
+//
+//      void my_analysis_algorithm() {
+//          //Get read-only access to the placement
+//          auto& place_ctx = g_vpr_ctx.placement();
+//
+//          //Do something that depends on (but does not change)
+//          //the current placement...
+//
+//      }
+//
+//If we needed to modify the placement (e.g. we were implementing another placement algorithm) we would do:
+//
+//      void my_placement_algorithm() {
+//          //Get read-write access to the placement
+//          auto& place_ctx = g_vpr_ctx.mutable_placement();
+//
+//          //Do something that modifies the placement
+//          //...
 //      }
 //
 //Note that the returned contexts are not copyable, so they must be taken by reference.
-class VprContext {
+class VprContext : public Context {
     public:
         const AtomContext& atom() const { return atom_; }
         AtomContext& mutable_atom() { return atom_; }
