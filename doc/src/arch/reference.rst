@@ -1212,3 +1212,19 @@ The full format is documented below.
         The surrounding ``<wireconn>``'s destination set is the union of all contained ``<to>`` tags.
 
         .. seealso:: ``<from>`` for attribute descriptions.
+
+
+    As an example, consider the following ``<wireconn>`` specification:
+        
+    .. code-block:: xml
+
+        <wireconn num_conns_type="to"/>
+            <from type="L4" switchpoint="0,1,2,3"/>
+            <from type="L16" switchpoint="0,4,8,12"/>
+            <to type="L4" switchpoint="0/>
+        </wireconn>
+        
+    This specifies that the 'from' set is the union of L4 switchpoints 0, 1, 2 and 3; and L16 switchpoints 0, 4, 8 and 12. 
+    The 'to' set is all L4 switchpoint 0's.
+    Note that since different switchpoints are selected from different segment types it is not possible to specify this without using ``<from>`` sub-tags.
+
