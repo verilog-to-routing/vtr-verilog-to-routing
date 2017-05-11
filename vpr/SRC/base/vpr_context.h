@@ -196,9 +196,11 @@ struct ClusteringContext : public Context {
 //This should contain only data structures that describe the current placement, 
 //or related placer algorithm state.
 struct PlacementContext : public Context {
-    //TODO: move blocks .x/.y/.z out of clustered netlist into here
-
+    //Clustered block placement locations
     std::vector<t_block_loc> block_locs;
+
+    //Clustered block associated with each grid location (i.e. inverse of block_locs)
+    std::vector<std::vector<t_grid_blocks>> grid_blocks;
 
     std::string placement_id; //SHA256 digest of .place file
 };

@@ -597,6 +597,7 @@ static void drawplace(void) {
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
 
 	int i, j, k, bnum;
 	int num_sub_tiles;
@@ -626,7 +627,7 @@ static void drawplace(void) {
 				t_bound_box abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i,j,k);
 
 				/* Look at the tile at start of large block */
-				bnum = device_ctx.grid[i][j].blocks[k];
+				bnum = place_ctx.grid_blocks[i][j].blocks[k];
 
 				/* Fill background for the clb. Do not fill if "show_blk_internal" 
 				 * is toggled. 
@@ -2151,7 +2152,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			// iterate over sub_blocks
 			t_grid_tile* grid_tile = &device_ctx.grid[i][j];
 			for (int k = 0; k < grid_tile->type->capacity; ++k) {
-				clb_index = grid_tile->blocks[k];
+				clb_index = place_ctx.grid_blocks[i][j].blocks[k];
 				if (clb_index != EMPTY_BLOCK) {
 					clb = &cluster_ctx.blocks[clb_index];
 					clb_bbox = draw_coords->get_absolute_clb_bbox(*clb);

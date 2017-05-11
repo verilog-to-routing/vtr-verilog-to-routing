@@ -177,8 +177,8 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		for (j = 0; j <= device_ctx.ny + 1; j++) {
 			if (device_ctx.grid[i][j].type == device_ctx.IO_TYPE) {
 				for (k = 0; k < device_ctx.IO_TYPE->capacity; k++) {
-					if (device_ctx.grid[i][j].blocks[k] != INVALID_BLOCK) {
-						device_ctx.grid[i][j].blocks[k] = EMPTY_BLOCK; /* Flag for err. check */
+					if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
+						place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK; /* Flag for err. check */
 					}
 				}
 			}
@@ -263,8 +263,8 @@ void read_user_pad_loc(const char *pad_loc_file) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Block %s subblock number (%d) is out of range.\n", bname, k);
 		}
-		device_ctx.grid[i][j].blocks[k] = bnum;
-		device_ctx.grid[i][j].usage++;
+		place_ctx.grid_blocks[i][j].blocks[k] = bnum;
+		place_ctx.grid_blocks[i][j].usage++;
 
 		ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
 	}

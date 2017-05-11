@@ -301,7 +301,7 @@ static void alloc_block(void) {
 
 /**************************************/
 static void load_simplified_device(void) {
-	int i, j, k;
+	int i, j;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -341,16 +341,10 @@ static void load_simplified_device(void) {
 			}
 			device_ctx.grid[i][j].width_offset = 0;
 			device_ctx.grid[i][j].height_offset = 0;
-			device_ctx.grid[i][j].blocks = (int*)vtr::malloc(device_ctx.grid[i][j].type->capacity * sizeof(int));
-			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
-				device_ctx.grid[i][j].blocks[k] = EMPTY_BLOCK;
-			}
 		}
 	}
 }
 static void restore_original_device(void) {
-	int i, j;
-
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	/* restore previous globals */
@@ -360,12 +354,7 @@ static void restore_original_device(void) {
 	device_ctx.block_types = type_descriptors_backup;
 	device_ctx.num_block_types = num_types_backup;
 
-	/* free allocatd data */
-	for (i = 0; i < device_ctx.nx + 2; i++) {
-		for (j = 0; j < device_ctx.ny + 2; j++) {
-			free(device_ctx.grid[i][j].blocks);
-		}
-	}
+	/* free allocated data */
     vtr::free_matrix(device_ctx.grid, 0, device_ctx.nx + 1, 0);
 	device_ctx.grid = grid_backup;
 }
@@ -374,16 +363,17 @@ static void restore_original_device(void) {
 static void reset_placement(void) {
 	int i, j, k;
 
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	for (i = 0; i <= device_ctx.nx + 1; i++) {
 		for (j = 0; j <= device_ctx.ny + 1; j++) {
-			device_ctx.grid[i][j].usage = 0;
 			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
-				if (device_ctx.grid[i][j].blocks[k] != INVALID_BLOCK) {
-					device_ctx.grid[i][j].blocks[k] = EMPTY_BLOCK;
+				if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
+					place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK;
 				}
 			}
+			place_ctx.grid_blocks[i][j].usage = 0;
 		}
 	}
 }
@@ -551,7 +541,6 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 		int sink_x_loc, int sink_y_loc, int sink_z_loc) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	/*all routing occurs between block 0 (source) and block 1 (sink) */
 	cluster_ctx.blocks[SOURCE_BLOCK].type = source_type;
@@ -568,14 +557,14 @@ static void assign_locations(t_type_ptr source_type, int source_x_loc,
 	place_ctx.block_locs[SINK_BLOCK].y = sink_y_loc;
 	place_ctx.block_locs[SINK_BLOCK].z = sink_z_loc;
 
-	device_ctx.grid[source_x_loc][source_y_loc].blocks[source_z_loc] = SOURCE_BLOCK;
-	device_ctx.grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = SINK_BLOCK;
+	place_ctx.grid_blocks[source_x_loc][source_y_loc].blocks[source_z_loc] = SOURCE_BLOCK;
+	place_ctx.grid_blocks[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = SINK_BLOCK;
 
 	cluster_ctx.clbs_nlist.net[NET_USED].pins[NET_USED_SOURCE_BLOCK].block_pin = get_best_pin(DRIVER, cluster_ctx.blocks[SOURCE_BLOCK].type);
 	cluster_ctx.clbs_nlist.net[NET_USED].pins[NET_USED_SINK_BLOCK].block_pin = get_best_pin(RECEIVER, cluster_ctx.blocks[SINK_BLOCK].type);
 
-	device_ctx.grid[source_x_loc][source_y_loc].usage += 1;
-	device_ctx.grid[sink_x_loc][sink_y_loc].usage += 1;
+	place_ctx.grid_blocks[source_x_loc][source_y_loc].usage += 1;
+	place_ctx.grid_blocks[sink_x_loc][sink_y_loc].usage += 1;
 
 }
 
@@ -588,6 +577,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 	/*returns the delay of this net */
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	/* Only one block per tile */
 	int source_z_loc = 0;
@@ -620,10 +610,10 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 
 	net_delay_value = net_delay[NET_USED][NET_USED_SINK_BLOCK];
 
-	device_ctx.grid[source_x_loc][source_y_loc].usage = 0;
-	device_ctx.grid[source_x_loc][source_y_loc].blocks[source_z_loc] = EMPTY_BLOCK;
-	device_ctx.grid[sink_x_loc][sink_y_loc].usage = 0;
-	device_ctx.grid[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = EMPTY_BLOCK;
+	place_ctx.grid_blocks[source_x_loc][source_y_loc].usage = 0;
+	place_ctx.grid_blocks[source_x_loc][source_y_loc].blocks[source_z_loc] = EMPTY_BLOCK;
+	place_ctx.grid_blocks[sink_x_loc][sink_y_loc].usage = 0;
+	place_ctx.grid_blocks[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = EMPTY_BLOCK;
 
 	return (net_delay_value);
 }

@@ -134,35 +134,25 @@ void print_tabs(FILE * fpout, int num_tab) {
 }
 
 /* Points the device_ctx.grid structure back to the blocks list */
-void sync_grid_to_blocks(const int L_num_blocks,
-		const int L_nx, const int L_ny,
-		t_grid_tile **L_grid) {
+void sync_grid_to_blocks() {
 
-	int i, j, k;
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Reset usage and allocate blocks list if needed */
-	for (j = 0; j <= (L_ny + 1); ++j) {
-		for (i = 0; i <= (L_nx + 1); ++i) {
-			L_grid[i][j].usage = 0;
-			if (L_grid[i][j].type) {
-				/* If already allocated, leave it since size doesn't change */
-				if (NULL == L_grid[i][j].blocks) {
-					L_grid[i][j].blocks = (int *) vtr::malloc(
-							sizeof(int) * L_grid[i][j].type->capacity);
-
-					/* Set them as unconnected */
-					for (k = 0; k < L_grid[i][j].type->capacity; ++k) {
-						L_grid[i][j].blocks[k] = EMPTY_BLOCK;
-					}
-				}
-			}
-		}
-	}
+    place_ctx.grid_blocks.resize(device_ctx.nx + 2);
+    for (int x = 0; x < (device_ctx.nx + 2); ++x) {
+        place_ctx.grid_blocks[x].resize(device_ctx.ny + 2);
+        for (int y = 0; y < (device_ctx.ny + 2); ++y) {
+            for (int z = 0; z < device_ctx.grid[x][y].type->capacity; ++z) {
+                place_ctx.grid_blocks[x][y].blocks[z] = EMPTY_BLOCK;
+            }
+        }
+    }
 
 	/* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-	for (i = 0; i < L_num_blocks; ++i) {
+	for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
 
         int blk_x = place_ctx.block_locs[i].x;
         int blk_y = place_ctx.block_locs[i].y;
@@ -170,47 +160,39 @@ void sync_grid_to_blocks(const int L_num_blocks,
 
 		/* Check range of block coords */
 		if (blk_x < 0 || blk_y < 0
-				|| (blk_x + cluster_ctx.blocks[i].type->width - 1) > (L_nx + 1)
-				|| (blk_y + cluster_ctx.blocks[i].type->height - 1) > (L_ny + 1)
+				|| (blk_x + cluster_ctx.blocks[i].type->width - 1) > (device_ctx.nx + 1)
+				|| (blk_y + cluster_ctx.blocks[i].type->height - 1) > (device_ctx.ny + 1)
 				|| blk_z < 0 || blk_z > (cluster_ctx.blocks[i].type->capacity)) {
-			vtr::printf_error(__FILE__, __LINE__,
-					"Block %d is at invalid location (%d, %d, %d).\n", 
+			VPR_THROW(VPR_ERROR_PLACE, "Block %d is at invalid location (%d, %d, %d).\n", 
 					i, blk_x, blk_y, blk_z);
-			exit(1);
 		}
 
 		/* Check types match */
-		if (cluster_ctx.blocks[i].type != L_grid[blk_x][blk_y].type) {
-			vtr::printf_error(__FILE__, __LINE__,
-					"A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n", 
+		if (cluster_ctx.blocks[i].type != device_ctx.grid[blk_x][blk_y].type) {
+            VPR_THROW(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n", 
 					blk_x, blk_y,
-                    cluster_ctx.blocks[i].type->name, L_grid[blk_x][blk_y].type->name);
-			exit(1);
+                    cluster_ctx.blocks[i].type->name, device_ctx.grid[blk_x][blk_y].type->name);
 		}
 
 		/* Check already in use */
-		if ((EMPTY_BLOCK != L_grid[blk_x][blk_y].blocks[blk_z])
-				&& (INVALID_BLOCK != L_grid[blk_x][blk_y].blocks[blk_z])) {
-			vtr::printf_error(__FILE__, __LINE__,
-					"Location (%d, %d, %d) is used more than once.\n", 
+		if ((EMPTY_BLOCK != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])
+				&& (INVALID_BLOCK != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])) {
+            VPR_THROW(VPR_ERROR_PLACE, "Location (%d, %d, %d) is used more than once.\n", 
 					blk_x, blk_y, blk_z);
-			exit(1);
 		}
 
-		if (L_grid[blk_x][blk_y].width_offset != 0 || L_grid[blk_x][blk_y].height_offset != 0) {
-			vtr::printf_error(__FILE__, __LINE__,
-					"Large block not aligned in placment for cluster_ctx.blocks %d at (%d, %d, %d).",
+		if (device_ctx.grid[blk_x][blk_y].width_offset != 0 || device_ctx.grid[blk_x][blk_y].height_offset != 0) {
+            VPR_THROW(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %d at (%d, %d, %d).",
 					i, blk_x, blk_y, blk_z);
-			exit(1);
 		}
 
 		/* Set the block */
 		for (int width = 0; width < cluster_ctx.blocks[i].type->width; ++width) {
 			for (int height = 0; height < cluster_ctx.blocks[i].type->height; ++height) {
-				L_grid[blk_x + width][blk_y + height].blocks[blk_z] = i;
-				L_grid[blk_x + width][blk_y + height].usage++;
-				VTR_ASSERT(L_grid[blk_x + width][blk_y + height].width_offset == width);
-				VTR_ASSERT(L_grid[blk_x + width][blk_y + height].height_offset == height);
+				place_ctx.grid_blocks[blk_x + width][blk_y + height].blocks[blk_z] = i;
+				place_ctx.grid_blocks[blk_x + width][blk_y + height].usage++;
+				VTR_ASSERT(device_ctx.grid[blk_x + width][blk_y + height].width_offset == width);
+				VTR_ASSERT(device_ctx.grid[blk_x + width][blk_y + height].height_offset == height);
 			}
 		}
 	}

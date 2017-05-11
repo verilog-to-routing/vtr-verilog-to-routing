@@ -36,6 +36,7 @@ void alloc_and_load_grid(int *num_instances_type) {
 #endif
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	/* To remove this limitation, change ylow etc. in t_rr_node to        *
 	 * * be ints instead.  Used shorts to save memory.                      */
@@ -49,12 +50,19 @@ void alloc_and_load_grid(int *num_instances_type) {
 
 	device_ctx.grid = vtr::alloc_matrix<t_grid_tile>(0, (device_ctx.nx + 1), 0, (device_ctx.ny + 1));
 
+
 	/* Clear the full device_ctx.grid to have no type (NULL), no capacity, etc */
 	for (int x = 0; x <= (device_ctx.nx + 1); ++x) {
 		for (int y = 0; y <= (device_ctx.ny + 1); ++y) {
 			memset(&device_ctx.grid[x][y], 0, (sizeof(t_grid_tile)));
 		}
 	}
+
+    //Ensure ther is space in the reverse grid to block look-up
+    place_ctx.grid_blocks.resize(device_ctx.nx + 2);
+	for (int x = 0; x < device_ctx.nx + 2; ++x) {
+        place_ctx.grid_blocks[x].resize(device_ctx.ny + 2);
+    }
 
 	for (int x = 0; x <= device_ctx.nx + 1; ++x) {
 		for (int y = 0; y <= device_ctx.ny + 1; ++y) {
@@ -85,22 +93,22 @@ void alloc_and_load_grid(int *num_instances_type) {
 						device_ctx.grid[x+x_offset][y+y_offset].type = type;
 						device_ctx.grid[x+x_offset][y+y_offset].width_offset = x_offset;
 						device_ctx.grid[x+x_offset][y+y_offset].height_offset = y_offset;
-						device_ctx.grid[x+x_offset][y+y_offset].blocks = (int *) vtr::malloc(sizeof(int) * max(1,type->capacity));
+						place_ctx.grid_blocks[x+x_offset][y+y_offset].blocks.resize(max(1,type->capacity));
 						for (int i = 0; i < max(1,type->capacity); ++i) {
-							device_ctx.grid[x+x_offset][y+y_offset].blocks[i] = EMPTY_BLOCK;
+							place_ctx.grid_blocks[x+x_offset][y+y_offset].blocks[i] = EMPTY_BLOCK;
 						}
 					}
 				}
 			} else if (type == device_ctx.IO_TYPE ) {
 				device_ctx.grid[x][y].type = type;
-				device_ctx.grid[x][y].blocks = (int *) vtr::malloc(sizeof(int) * max(1,type->capacity));
+				place_ctx.grid_blocks[x][y].blocks.resize(max(1,type->capacity));
 				for (int i = 0; i < max(1,type->capacity); ++i) {
-					device_ctx.grid[x][y].blocks[i] = EMPTY_BLOCK;
+					place_ctx.grid_blocks[x][y].blocks[i] = EMPTY_BLOCK;
 				}
 			} else {
 				device_ctx.grid[x][y].type = device_ctx.EMPTY_TYPE;
-				device_ctx.grid[x][y].blocks = (int *) vtr::malloc(sizeof(int));
-				device_ctx.grid[x][y].blocks[0] = EMPTY_BLOCK;
+				place_ctx.grid_blocks[x][y].blocks.resize(1);
+				place_ctx.grid_blocks[x][y].blocks[0] = EMPTY_BLOCK;
 			}
 		}
 	}
@@ -140,6 +148,7 @@ static void alloc_and_load_num_instances_type(
 		int* L_num_instances_type, int L_num_types) {
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	for (int i = 0; i < L_num_types; ++i) {
 		L_num_instances_type[i] = 0;
@@ -154,8 +163,8 @@ static void alloc_and_load_num_instances_type(
 			bool isValid = false;
 			for (int z = 0; z < L_grid[x][y].type->capacity; ++z) {
 
-				if (L_grid[x][y].blocks[z] == INVALID_BLOCK) {
-					L_grid[x][y].blocks[z] = EMPTY_BLOCK;
+				if (place_ctx.grid_blocks[x][y].blocks[z] == INVALID_BLOCK) {
+					place_ctx.grid_blocks[x][y].blocks[z] = EMPTY_BLOCK;
 				} else {
 					isValid = true;
 				}
@@ -190,16 +199,10 @@ static void alloc_and_load_num_instances_type(
 void freeGrid(void) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-	int i, j;
 	if (device_ctx.grid == NULL) {
 		return;
 	}
 
-	for (i = 0; i <= (device_ctx.nx + 1); ++i) {
-		for (j = 0; j <= (device_ctx.ny + 1); ++j) {
-			free(device_ctx.grid[i][j].blocks);
-		}
-	}
     vtr::free_matrix(device_ctx.grid, 0, device_ctx.nx + 1, 0);
 	device_ctx.grid = NULL;
 }
@@ -209,6 +212,7 @@ static void CheckGrid(void) {
 	int i, j;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
 
 	/* Check grid is valid */
 	for (i = 0; i <= (device_ctx.nx + 1); ++i) {
@@ -217,8 +221,8 @@ static void CheckGrid(void) {
 				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "device_ctx.grid[%d][%d] has no type.\n", i, j);
 			}
 
-			if (device_ctx.grid[i][j].usage != 0) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "device_ctx.grid[%d][%d] has non-zero usage (%d) before netlist load.\n", i, j, device_ctx.grid[i][j].usage);
+			if (place_ctx.grid_blocks[i][j].usage != 0) {
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "place_ctx.grid[%d][%d] has non-zero usage (%d) before netlist load.\n", i, j, place_ctx.grid_blocks[i][j].usage);
 			}
 
 			if ((device_ctx.grid[i][j].width_offset < 0)
@@ -230,9 +234,8 @@ static void CheckGrid(void) {
 				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "device_ctx.grid[%d][%d] has invalid height offset (%d).\n", i, j, device_ctx.grid[i][j].height_offset);
 			}
 
-			if ((NULL == device_ctx.grid[i][j].blocks)
-					&& (device_ctx.grid[i][j].type->capacity > 0)) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "device_ctx.grid[%d][%d] has no block list allocated.\n", i, j);
+			if (place_ctx.grid_blocks[i][j].blocks.empty() && (device_ctx.grid[i][j].type->capacity > 0)) {
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "place_ctx.grid[%d][%d] has no block list allocated.\n", i, j);
 			}
 		}
 	}

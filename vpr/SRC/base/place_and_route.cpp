@@ -88,7 +88,7 @@ bool place_and_route(t_placer_opts placer_opts,
 	if (!placer_opts.doPlacement || placer_opts.place_freq == PLACE_NEVER) {
 		/* Read the placement from a file */
 		read_place(filename_opts.NetFile, filename_opts.PlaceFile, device_ctx.nx, device_ctx.ny, cluster_ctx.num_blocks, cluster_ctx.blocks);
-		sync_grid_to_blocks(cluster_ctx.num_blocks, device_ctx.nx, device_ctx.ny, device_ctx.grid);
+		sync_grid_to_blocks();
 	} else {
 		VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
 		begin = clock();

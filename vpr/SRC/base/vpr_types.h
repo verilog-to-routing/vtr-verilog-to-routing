@@ -531,15 +531,11 @@ struct t_net {
  * type:  Pointer to type descriptor, NULL for illegal, IO_TYPE for io 
  * width_offset: Number of grid tiles reserved based on width (right) of a block
  * height_offset: Number of grid tiles reserved based on height (top) of a block
- * usage: Number of blocks used in this grid tile
- * blocks[]: Array of CLBs placed in a physical position, EMPTY means no block at 
- *           that index */
+ */
 struct t_grid_tile {
 	t_type_ptr type;
 	int width_offset;
 	int height_offset;
-	int usage;
-	int *blocks;
 };
 
 /* Stores the bounding box of a net in terms of the minimum and  *
@@ -635,6 +631,17 @@ struct t_block_loc {
 
 	bool is_fixed = false;
     bool nets_and_pins_synced_to_z_coordinate = false;
+};
+
+/*
+ * Stores the clustered blocks placed at a particular grid location
+ */
+struct t_grid_blocks {
+    //How many valid blocks are in use at this location
+    int usage;
+
+    //The clustered blocks associated with this grid location
+    std::vector<int> blocks; 
 };
 
 /* Names of various files */

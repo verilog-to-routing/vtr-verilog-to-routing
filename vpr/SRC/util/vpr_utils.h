@@ -17,9 +17,7 @@ int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node);
 void get_class_range_for_block(const int iblk, int *class_low,
 		int *class_high);
 
-void sync_grid_to_blocks(const int L_num_blocks,
-		const int L_nx, const int L_ny,
-		t_grid_tile **L_grid);
+void sync_grid_to_blocks();
 
 /**************************************************************
 * Intra-Logic Block Utility Functions

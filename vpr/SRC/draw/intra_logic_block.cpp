@@ -138,6 +138,7 @@ void draw_internal_init_blk() {
 void draw_internal_draw_subblk() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
 	for (int i = 0; i <= (device_ctx.nx + 1); i++) {
 		for (int j = 0; j <= (device_ctx.ny + 1); j++) {
@@ -152,11 +153,11 @@ void draw_internal_draw_subblk() {
 			int num_sub_tiles = device_ctx.grid[i][j].type->capacity;
 			for (int k = 0; k < num_sub_tiles; ++k) {
 				/* Don't draw if block is empty. */
-				if (device_ctx.grid[i][j].blocks[k] == EMPTY_BLOCK || device_ctx.grid[i][j].blocks[k] == INVALID_BLOCK)
+				if (place_ctx.grid_blocks[i][j].blocks[k] == EMPTY_BLOCK || place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK)
 					continue;
 
 				/* Get block ID */
-				int bnum = device_ctx.grid[i][j].blocks[k];
+				int bnum = place_ctx.grid_blocks[i][j].blocks[k];
 				/* Safety check, that physical blocks exists in the CLB */
 				if (cluster_ctx.blocks[bnum].pb == NULL)
 					continue;
@@ -252,6 +253,9 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 	float parent_drawing_width, parent_drawing_height;
 	float sub_tile_x, sub_tile_y;
 	float child_width, child_height;
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
+
 	// get the bbox for this pb type
 	t_bound_box& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
 
@@ -264,9 +268,8 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 	const float FRACTION_CHILD_MARGIN_X = 0.025;
 	const float FRACTION_CHILD_MARGIN_Y = 0.04;
 
-    auto& device_ctx = g_vpr_ctx.device();
 	int capacity = device_ctx.block_types[type_descrip_index].capacity;
-	if (capacity > 1 && device_ctx.nx > 0 && device_ctx.ny > 0 && device_ctx.grid[1][0].usage != 0
+	if (capacity > 1 && device_ctx.nx > 0 && device_ctx.ny > 0 && place_ctx.grid_blocks[1][0].usage != 0
 		&& type_descrip_index == device_ctx.grid[1][0].type->index) {
 
 		// that should test for io blocks, and setting capacity_divisor > 1

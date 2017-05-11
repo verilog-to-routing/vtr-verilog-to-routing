@@ -608,6 +608,7 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 	int x, y, z;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
 	power_zero_usage(power_usage);
 
@@ -627,13 +628,14 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 				t_pb * pb = NULL;
 				t_power_usage pb_power;
 
-				if (device_ctx.grid[x][y].blocks[z] != EMPTY_BLOCK
-						&& device_ctx.grid[x][y].blocks[z] != INVALID_BLOCK) {
-					pb = cluster_ctx.blocks[device_ctx.grid[x][y].blocks[z]].pb;
+                int iblk = place_ctx.grid_blocks[x][y].blocks[z];
+
+				if (iblk != EMPTY_BLOCK && iblk != INVALID_BLOCK) {
+					pb = cluster_ctx.blocks[iblk].pb;
 				}
 
 				/* Calculate power of this CLB */
-				power_usage_pb(&pb_power, pb, device_ctx.grid[x][y].type->pb_graph_head, device_ctx.grid[x][y].blocks[z]);
+				power_usage_pb(&pb_power, pb, device_ctx.grid[x][y].type->pb_graph_head, iblk);
 				power_add_usage(power_usage, &pb_power);
 			}
 		}

@@ -173,6 +173,7 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 	t_type_ptr type;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
 	VTR_ASSERT(device_ctx.rr_nodes[inode].type() == SINK);
 	i = device_ctx.rr_nodes[inode].xlow();
@@ -183,7 +184,7 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 	ifound = 0;
 
 	for (iblk = 0; iblk < type->capacity; iblk++) {
-		bnum = device_ctx.grid[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx.blocks */
+		bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx.blocks */
 		for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) { /* All net SINKs */
 			if (cluster_ctx.clbs_nlist.net[inet].pins[ipin].block == bnum) {
 				node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;

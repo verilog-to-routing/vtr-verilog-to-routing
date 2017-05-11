@@ -1175,13 +1175,12 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 
     //auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& device_ctx = g_vpr_ctx.device();
 
 	x_from = place_ctx.block_locs[b_from].x;
 	y_from = place_ctx.block_locs[b_from].y;
 	z_from = place_ctx.block_locs[b_from].z;
 
-	b_to = device_ctx.grid[x_to][y_to].blocks[z_to];
+	b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
 
 	// Check whether the to_location is empty
 	if (b_to == EMPTY_BLOCK) {
@@ -1482,7 +1481,6 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 
 			/* Update clb data structures since we kept the move. */
 			/* Swap physical location */
-            auto& device_ctx = g_vpr_ctx.device();
 			for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 
 				x_to = blocks_affected.moved_blocks[iblk].xnew;
@@ -1496,14 +1494,14 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				b_from = blocks_affected.moved_blocks[iblk].block_num;
 
 
-				device_ctx.grid[x_to][y_to].blocks[z_to] = b_from;
+				place_ctx.grid_blocks[x_to][y_to].blocks[z_to] = b_from;
 
 				if (blocks_affected.moved_blocks[iblk].swapped_to_was_empty) {
-					device_ctx.grid[x_to][y_to].usage++;
+					place_ctx.grid_blocks[x_to][y_to].usage++;
 				}
 				if (blocks_affected.moved_blocks[iblk].swapped_from_is_empty) {
-					device_ctx.grid[x_from][y_from].usage--;
-					device_ctx.grid[x_from][y_from].blocks[z_from] = EMPTY_BLOCK;
+					place_ctx.grid_blocks[x_from][y_from].usage--;
+					place_ctx.grid_blocks[x_from][y_from].blocks[z_from] = EMPTY_BLOCK;
 				}
 			
 			} // Finish updating clb for all blocks
@@ -1653,7 +1651,7 @@ static bool find_to(t_type_ptr type, float rlim,
 			if (device_ctx.grid[*px_to][*py_to].type->capacity > 1) {
 				*pz_to = vtr::irand(device_ctx.grid[*px_to][*py_to].type->capacity - 1);
 			}
-			int b_to = device_ctx.grid[*px_to][*py_to].blocks[*pz_to];
+			int b_to = place_ctx.grid_blocks[*px_to][*py_to].blocks[*pz_to];
 			if ((b_to != EMPTY_BLOCK) && (place_ctx.block_locs[b_to].is_fixed == true)) {
 				is_legal = false;
 			}
@@ -2644,6 +2642,7 @@ static void alloc_legal_placements() {
 	int i, j, k;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	legal_pos = (t_legal_pos **) vtr::malloc(device_ctx.num_block_types * sizeof(t_legal_pos *));
 	num_legal_pos = (int *) vtr::calloc(device_ctx.num_block_types, sizeof(int));
@@ -2652,10 +2651,10 @@ static void alloc_legal_placements() {
 
 	for (i = 0; i <= device_ctx.nx + 1; i++) {
 		for (j = 0; j <= device_ctx.ny + 1; j++) {
-			device_ctx.grid[i][j].usage = 0;
+			place_ctx.grid_blocks[i][j].usage = 0;
 			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
-				if (device_ctx.grid[i][j].blocks[k] != INVALID_BLOCK) {
-					device_ctx.grid[i][j].blocks[k] = EMPTY_BLOCK;
+				if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
+					place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK;
 					if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
 						num_legal_pos[device_ctx.grid[i][j].type->index]++;
 					}
@@ -2674,13 +2673,14 @@ static void load_legal_placements() {
 	int *index;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
 
 	index = (int *) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
 	for (i = 0; i <= device_ctx.nx + 1; i++) {
 		for (j = 0; j <= device_ctx.ny + 1; j++) {
 			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
-				if (device_ctx.grid[i][j].blocks[k] == INVALID_BLOCK) {
+				if (place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK) {
 					continue;
 				}
 				if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
@@ -2714,6 +2714,7 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 	int member_x, member_y, member_z;
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
 
 	// Every macro can be placed until proven otherwise
 	int macro_can_be_placed = true;
@@ -2730,7 +2731,7 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 		// still within the chip's dimemsion and the member_z is allowed at that location on the grid
 		if (member_x <= device_ctx.nx+1 && member_y <= device_ctx.ny+1
 				&& device_ctx.grid[member_x][member_y].type->index == itype
-				&& device_ctx.grid[member_x][member_y].blocks[member_z] == EMPTY_BLOCK) {
+				&& place_ctx.grid_blocks[member_x][member_y].blocks[member_z] == EMPTY_BLOCK) {
 			// Can still accomodate blocks here, check the next position
 			continue;
 		} else {
@@ -2748,7 +2749,7 @@ static int try_place_macro(int itype, int ipos, int imacro){
 
 	int x, y, z, member_x, member_y, member_z, imember;
 
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	int macro_placed = false;
 
@@ -2758,14 +2759,13 @@ static int try_place_macro(int itype, int ipos, int imacro){
 	z = legal_pos[itype][ipos].z;
 			
 	// If that location is occupied, do nothing.
-	if (device_ctx.grid[x][y].blocks[z] != EMPTY_BLOCK) {
+	if (place_ctx.grid_blocks[x][y].blocks[z] != EMPTY_BLOCK) {
 		return (macro_placed);
 	} 
 	
 	int macro_can_be_placed = check_macro_can_be_placed(imacro, itype, x, y, z);
 
 	if (macro_can_be_placed) {
-        auto& place_ctx = g_vpr_ctx.mutable_placement();
 		
 		// Place down the macro
 		macro_placed = true;
@@ -2780,8 +2780,8 @@ static int try_place_macro(int itype, int ipos, int imacro){
 			place_ctx.block_locs[iblk].y = member_y;
 			place_ctx.block_locs[iblk].z = member_z;
 
-			device_ctx.grid[member_x][member_y].blocks[member_z] = pl_macros[imacro].members[imember].blk_index;
-			device_ctx.grid[member_x][member_y].usage++;
+			place_ctx.grid_blocks[member_x][member_y].blocks[member_z] = pl_macros[imacro].members[imember].blk_index;
+			place_ctx.grid_blocks[member_x][member_y].usage++;
 
 			// Could not ensure that the randomiser would not pick this location again
 			// So, would have to do a lazy removal - whenever I come across a block that could not be placed, 
@@ -2904,10 +2904,10 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			initial_placement_location(free_locations, iblk, &ipos, &x, &y, &z);
 
 			// Make sure that the position is EMPTY_BLOCK before placing the block down
-			VTR_ASSERT(device_ctx.grid[x][y].blocks[z] == EMPTY_BLOCK);
+			VTR_ASSERT(place_ctx.grid_blocks[x][y].blocks[z] == EMPTY_BLOCK);
 
-			device_ctx.grid[x][y].blocks[z] = iblk;
-			device_ctx.grid[x][y].usage++;
+			place_ctx.grid_blocks[x][y].blocks[z] = iblk;
+			place_ctx.grid_blocks[x][y].usage++;
 
 			place_ctx.block_locs[iblk].x = x;
 			place_ctx.block_locs[iblk].y = y;
@@ -2971,11 +2971,11 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	 */
 	for (i = 0; i <= device_ctx.nx + 1; i++) {
 		for (j = 0; j <= device_ctx.ny + 1; j++) {
-			device_ctx.grid[i][j].usage = 0;
+			place_ctx.grid_blocks[i][j].usage = 0;
 			itype = device_ctx.grid[i][j].type->index;
 			for (k = 0; k < device_ctx.block_types[itype].capacity; k++) {
-				if (device_ctx.grid[i][j].blocks[k] != INVALID_BLOCK) {
-					device_ctx.grid[i][j].blocks[k] = EMPTY_BLOCK;
+				if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
+					place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK;
 				}
 			}
 		}
@@ -2999,7 +2999,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 			z = legal_pos[itype][ipos].z;
 			
 			// Check if that location is occupied.  If it is, remove from legal_pos
-			if (device_ctx.grid[x][y].blocks[z] != EMPTY_BLOCK && device_ctx.grid[x][y].blocks[z] != INVALID_BLOCK) {
+			if (place_ctx.grid_blocks[x][y].blocks[z] != EMPTY_BLOCK && place_ctx.grid_blocks[x][y].blocks[z] != INVALID_BLOCK) {
 				legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1];
 				free_locations[itype]--;
 
@@ -3180,18 +3180,18 @@ static void check_place(float bb_cost, float timing_cost,
 	for (i = 0; i < cluster_ctx.num_blocks; i++)
 		bdone[i] = 0;
 
-	/* Step through device_ctx.grid array. Check it against blocks */
+	/* Step through device grid and placement. Check it against blocks */
 	for (i = 0; i <= (device_ctx.nx + 1); i++)
 		for (j = 0; j <= (device_ctx.ny + 1); j++) {
-			if (device_ctx.grid[i][j].usage > device_ctx.grid[i][j].type->capacity) {
+			if (place_ctx.grid_blocks[i][j].usage > device_ctx.grid[i][j].type->capacity) {
 				vtr::printf_error(__FILE__, __LINE__,
 						"Block at grid location (%d,%d) overused. Usage is %d.\n", 
-						i, j, device_ctx.grid[i][j].usage);
+						i, j, place_ctx.grid_blocks[i][j].usage);
 				error++;
 			}
 			usage_check = 0;
 			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
-				bnum = device_ctx.grid[i][j].blocks[k];
+				bnum = place_ctx.grid_blocks[i][j].blocks[k];
 				if (EMPTY_BLOCK == bnum || INVALID_BLOCK == bnum)
 					continue;
 
@@ -3210,10 +3210,10 @@ static void check_place(float bb_cost, float timing_cost,
 				++usage_check;
 				bdone[bnum]++;
 			}
-			if (usage_check != device_ctx.grid[i][j].usage) {
+			if (usage_check != place_ctx.grid_blocks[i][j].usage) {
 				vtr::printf_error(__FILE__, __LINE__,
 						"Location (%d,%d) usage is %d, but has actual usage %d.\n",
-						i, j, device_ctx.grid[i][j].usage, usage_check);
+						i, j, place_ctx.grid_blocks[i][j].usage, usage_check);
 				error++;
 			}
 		}
@@ -3252,8 +3252,8 @@ static void check_place(float bb_cost, float timing_cost,
 				error++;
 			}
 
-			// Then check the device_ctx.grid data structure
-			if (device_ctx.grid[member_x][member_y].blocks[member_z] != member_iblk) {
+			// Then check the place_ctx.grid data structure
+			if (place_ctx.grid_blocks[member_x][member_y].blocks[member_z] != member_iblk) {
 				vtr::printf_error(__FILE__, __LINE__,
 						"Block %d in pl_macro #%d is not placed in the proper orientation.\n", 
 						member_iblk, imacro);
