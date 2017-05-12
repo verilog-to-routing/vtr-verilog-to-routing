@@ -173,7 +173,7 @@ class NdMatrixBase {
         }
 
         //Returns true if there are no elements in the matrix
-        bool empty() {
+        bool empty() const {
             return size() == 0;
         }
 

@@ -1263,7 +1263,7 @@ vtr::Matrix<int> alloc_and_load_net_pin_index() {
 		max_pins_per_clb = max(max_pins_per_clb, device_ctx.block_types[itype].num_pins);
 	
 	/* Allocate for maximum size. */
-    vtr::Matrix<int> temp_net_pin_index({cluster_ctx.num_blocks, max_pins_per_clb}, OPEN);
+    vtr::Matrix<int> temp_net_pin_index({size_t(cluster_ctx.num_blocks), size_t(max_pins_per_clb)}, OPEN);
 
 	/* Load the values */
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {

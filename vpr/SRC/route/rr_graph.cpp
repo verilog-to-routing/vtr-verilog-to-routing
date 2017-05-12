@@ -113,7 +113,7 @@ static void alloc_and_load_rr_graph(
 		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y, 
 		bool * L_rr_edge_done,
 		vtr::t_ivec *****track_to_pin_lookup,
-		int ******opin_to_track_map, vtr::t_ivec ***switch_block_conn,
+		int ******opin_to_track_map, const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn,
 		t_sb_connection_map *sb_conn_map,
 		const vtr::Matrix<t_grid_tile>& L_grid, const int L_nx, const int L_ny, const int Fs,
 		short ******sblock_pattern, int ***Fc_out, int ***Fc_xofs,
@@ -163,7 +163,7 @@ static void build_rr_sinks_sources(
 static void build_rr_chan(
 		const int i, const int j, const t_rr_type chan_type,
 		vtr::t_ivec *****track_to_pin_lookup, t_sb_connection_map *sb_conn_map,
-		vtr::t_ivec ***switch_block_conn, const int cost_index_offset,
+		const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn, const int cost_index_offset,
 		const int max_chan_width, const int tracks_per_chan,
 		short ******sblock_pattern, const int Fs_per_side,
 		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y, 
@@ -398,7 +398,7 @@ void build_rr_graph(
 
 	/* START SB LOOKUP */
 	/* Alloc and load the switch block lookup */
-	vtr::t_ivec ***switch_block_conn = NULL;
+    vtr::NdMatrix<vtr::t_ivec,3> switch_block_conn;
 	short ******unidir_sb_pattern = NULL;
 	t_sb_connection_map *sb_conn_map = NULL;	//for custom switch blocks
 
@@ -410,8 +410,7 @@ void build_rr_graph(
 					chan_details_y, L_nx, L_ny, switchblocks, 
 					nodes_per_chan, directionality);
 		} else {
-			switch_block_conn = alloc_and_load_switch_block_conn(max_chan_width,
-					sb_type, Fs);
+			switch_block_conn = alloc_and_load_switch_block_conn(max_chan_width, sb_type, Fs);
 		}
 	} else {
 		VTR_ASSERT(UNI_DIRECTIONAL == directionality);
@@ -573,10 +572,6 @@ void build_rr_graph(
 	if (perturb_ipins) {
 		vtr::free_matrix(perturb_ipins, 0, L_num_types-1, 0);
 		perturb_ipins = NULL;
-	}
-	if (switch_block_conn) {
-		free_switch_block_conn(switch_block_conn, max_chan_width);
-		switch_block_conn = NULL;
 	}
 	if (sb_conn_map) {
 		free_switchblock_permutations(sb_conn_map);
@@ -1050,7 +1045,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y, 
 		bool * L_rr_edge_done,
 		vtr::t_ivec *****track_to_pin_lookup,
-		int ******opin_to_track_map, vtr::t_ivec ***switch_block_conn,
+		int ******opin_to_track_map, const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn,
 		t_sb_connection_map *sb_conn_map,
 		const vtr::Matrix<t_grid_tile>& L_grid, const int L_nx, const int L_ny, const int Fs,
 		short ******sblock_pattern, int ***Fc_out, int ***Fc_xofs,
@@ -1435,7 +1430,7 @@ static void build_rr_sinks_sources(const int i, const int j,
    node properties such as cost, occupancy and capacity */
 static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type chan_type,
 		vtr::t_ivec *****track_to_pin_lookup, t_sb_connection_map *sb_conn_map,
-		vtr::t_ivec ***switch_block_conn, const int cost_index_offset,
+		const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn, const int cost_index_offset,
 		const int max_chan_width, const int tracks_per_chan,
 		short ******sblock_pattern, const int Fs_per_side,
 		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y,
@@ -1471,7 +1466,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 	   description */
 	bool custom_switch_block = false;
 	if (sb_conn_map != NULL){
-		VTR_ASSERT(sblock_pattern == NULL && switch_block_conn == NULL);
+		VTR_ASSERT(sblock_pattern == NULL && switch_block_conn.empty());
 		custom_switch_block = true;
 	}
 

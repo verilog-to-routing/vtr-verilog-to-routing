@@ -158,7 +158,7 @@ int get_track_to_tracks(
 		const enum e_directionality directionality,
 		vtr::t_ivec ***L_rr_node_indices,
 		bool *L_rr_edge_done,
-		vtr::t_ivec ***switch_block_conn,
+		const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn,
 		t_sb_connection_map *sb_conn_map);
 
 short ******alloc_sblock_pattern_lookup(

@@ -31,29 +31,24 @@
 /* Allocates and loads the switch_block_conn data structure.  This structure *
  * lists which tracks connect to which at each switch block. This is for
  * bidir. */
-vtr::t_ivec ***
-alloc_and_load_switch_block_conn(const int nodes_per_chan,
-		const enum e_switch_block_type switch_block_type, const int Fs) {
-	int from_track;
-	vtr::t_ivec ***switch_block_conn = NULL;
+vtr::NdMatrix<vtr::t_ivec,3> alloc_and_load_switch_block_conn(const size_t nodes_per_chan,
+                                const e_switch_block_type switch_block_type, 
+                                const int Fs) {
 
 	/* Currently Fs must be 3 since each track maps once to each other side */
 	VTR_ASSERT(3 == Fs);
 
-	switch_block_conn = vtr::alloc_matrix3<vtr::t_ivec>(0, 3, 0, 3, 0, (nodes_per_chan - 1));
+    vtr::NdMatrix<vtr::t_ivec,3> switch_block_conn({{{0, 4}, {0, 4}, {0, nodes_per_chan}}});
 
 	for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 		for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
-			for (from_track = 0; from_track < nodes_per_chan; from_track++) {
+			for (size_t from_track = 0; from_track < nodes_per_chan; from_track++) {
 				if (from_side != to_side) {
 					switch_block_conn[from_side][to_side][from_track].nelem = 1;
-					switch_block_conn[from_side][to_side][from_track].list =
-							(int *) vtr::malloc(sizeof(int));
+					switch_block_conn[from_side][to_side][from_track].list = (int *) vtr::malloc(sizeof(int));
 
-					switch_block_conn[from_side][to_side][from_track].list[0] =
-							get_simple_switch_block_track(from_side, to_side,
-									from_track, switch_block_type,
-									nodes_per_chan);
+					switch_block_conn[from_side][to_side][from_track].list[0] = get_simple_switch_block_track(from_side, to_side, 
+                                                                                  from_track, switch_block_type, nodes_per_chan);
 				} else { /* from_side == to_side -> no connection. */
 					switch_block_conn[from_side][to_side][from_track].nelem = 0;
 					switch_block_conn[from_side][to_side][from_track].list = NULL;
@@ -63,16 +58,13 @@ alloc_and_load_switch_block_conn(const int nodes_per_chan,
 	}
 
 	if (getEchoEnabled()) {
-		int i, j, k, l;
-		FILE *out;
-
-		out = vtr::fopen("switch_block_conn.echo", "w");
-		for (l = 0; l < 4; ++l) {
-			for (k = 0; k < 4; ++k) {
+		FILE *out = vtr::fopen("switch_block_conn.echo", "w");
+		for (int l = 0; l < 4; ++l) {
+			for (int k = 0; k < 4; ++k) {
 				fprintf(out, "Side %d to %d\n", l, k);
-				for (j = 0; j < nodes_per_chan; ++j) {
-					fprintf(out, "%d: ", j);
-					for (i = 0; i < switch_block_conn[l][k][j].nelem; ++i) {
+				for (size_t j = 0; j < nodes_per_chan; ++j) {
+					fprintf(out, "%zu: ", j);
+					for (int i = 0; i < switch_block_conn[l][k][j].nelem; ++i) {
 						fprintf(out, "%d ", switch_block_conn[l][k][j].list[i]);
 					}
 					fprintf(out, "\n");
@@ -83,13 +75,6 @@ alloc_and_load_switch_block_conn(const int nodes_per_chan,
 		fclose(out);
 	}
 	return switch_block_conn;
-}
-
-void free_switch_block_conn(vtr::t_ivec ***switch_block_conn,
-		int nodes_per_chan) {
-	/* Frees the switch_block_conn data structure. */
-
-	free_ivec_matrix3(switch_block_conn, 0, 3, 0, 3, 0, nodes_per_chan - 1);
 }
 
 #define SBOX_ERROR -1

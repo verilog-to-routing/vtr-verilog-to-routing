@@ -1521,7 +1521,7 @@ int get_track_to_tracks(
 		const t_chan_details * to_chan_details,
 		const enum e_directionality directionality,
 		vtr::t_ivec *** L_rr_node_indices, bool * L_rr_edge_done,
-		vtr::t_ivec ***switch_block_conn, 
+		const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn, 
 		t_sb_connection_map *sb_conn_map) {
 
 	int num_conn;
@@ -1539,7 +1539,7 @@ int get_track_to_tracks(
 	custom_switch_block = false;
 	if (sb_conn_map){
 		custom_switch_block = true;
-		VTR_ASSERT(switch_block_conn == NULL);
+		VTR_ASSERT(switch_block_conn.empty());
 	}
 
 	VTR_ASSERT(from_seg == get_seg_start(from_seg_details, from_track, from_chan, from_seg));
