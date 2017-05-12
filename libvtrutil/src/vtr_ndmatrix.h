@@ -259,7 +259,7 @@ class NdMatrixBase {
         //Swap two NdMatrixBase objects
         friend void swap(NdMatrixBase<T,N>& m1, NdMatrixBase<T,N>& m2) {
             using std::swap;
-            swap(m1.dim_ranges, m2.dim_ranges);
+            swap(m1.dim_ranges_, m2.dim_ranges_);
             swap(m1.data_, m2.data_);
         }
 
