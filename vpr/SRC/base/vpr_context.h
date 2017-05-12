@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "vtr_matrix.h"
-#include "vtr_matrix2.h"
+#include "vtr_ndmatrix.h"
 #include "netlist.h"
 #include "atom_netlist.h"
 #include "rr_node.h"
@@ -209,7 +209,7 @@ struct PlacementContext : public Context {
 
     //Clustered block associated with each grid location (i.e. inverse of block_locs)
     //std::vector<std::vector<t_grid_blocks>> grid_blocks; //[0..device_ctx.nx+1][0..device_ctx.ny+1]
-    vtr::Matrix<t_grid_blocks,2> grid_blocks; //[0..device_ctx.nx+1][0..device_ctx.ny+1]
+    vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.nx+1][0..device_ctx.ny+1]
 
     //SHA256 digest of the .place file (used for unique identification and consistency checking)
     std::string placement_id;

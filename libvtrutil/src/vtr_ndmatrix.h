@@ -1,5 +1,5 @@
-#ifndef VTR_MATRIX2_H
-#define VTR_MATRIX2_H
+#ifndef VTR_ND_MATRIX_H
+#define VTR_ND_MATRIX_H
 #include <array>
 #include <memory>
 
@@ -25,10 +25,10 @@ class DimRange {
         size_t end_index_ = 0;
 };
 
-//Proxy class for a sub-matrix of a Matrix class.
+//Proxy class for a sub-matrix of a NdMatrix class.
 //This is used to allow chaining of array indexing [] operators in a natural way.
 //
-//Each instance of this class peels off one-dimension and returns a MatrixProxy representing
+//Each instance of this class peels off one-dimension and returns a NdMatrixProxy representing
 //the resulting sub-matrix. This is repeated recursively until we hit the 1-dimensional base-case.
 //
 //Since this expansion happens at compiler time all the proxy classes get optimized away, 
@@ -36,7 +36,7 @@ class DimRange {
 //
 //Recursive case: N-dimensional array
 template<typename T, size_t N>
-class MatrixProxy {
+class NdMatrixProxy {
     public:
         static_assert(N > 0, "Must have at least one dimension");
 
@@ -46,13 +46,13 @@ class MatrixProxy {
         //  idim: The dimension associated with this proxy
         //  dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
         //  start: Pointer to the start of the sub-matrix this proxy represents
-        MatrixProxy<T,N>(const DimRange* dim_ranges, size_t idim, size_t dim_stride, T* start)
+        NdMatrixProxy<T,N>(const DimRange* dim_ranges, size_t idim, size_t dim_stride, T* start)
             : dim_ranges_(dim_ranges)
             , idim_(idim)
             , dim_stride_(dim_stride)
             , start_(start) {}
 
-        const MatrixProxy<T,N-1> operator[](size_t index) const {
+        const NdMatrixProxy<T,N-1> operator[](size_t index) const {
             VTR_ASSERT_SAFE_MSG(index >= dim_ranges_[idim_].begin_index(), "Index out of range (below dimension minimum)");
             VTR_ASSERT_SAFE_MSG(index < dim_ranges_[idim_].end_index(), "Index out of range (above dimension maximum)");
 
@@ -64,15 +64,15 @@ class MatrixProxy {
             size_t next_dim_stride = dim_stride_ / dim_ranges_[idim_ + 1].size();
 
             //Strip off one dimension
-            return MatrixProxy<T,N-1>(dim_ranges_,                           //Pass the dimension information
+            return NdMatrixProxy<T,N-1>(dim_ranges_,                           //Pass the dimension information
                                       idim_ + 1,                             //Pass the next dimension
                                       next_dim_stride,                       //Pass the stride for the next dimension
                                       start_ + dim_stride_*effective_index); //Advance to index in this dimension
         }
 
-        MatrixProxy<T,N-1> operator[](size_t index) {
+        NdMatrixProxy<T,N-1> operator[](size_t index) {
             //Call the const version and cast-away constness
-            return const_cast<const MatrixProxy<T,N>*>(this)->operator[](index);
+            return const_cast<const NdMatrixProxy<T,N>*>(this)->operator[](index);
         }
 
     private:
@@ -84,9 +84,9 @@ class MatrixProxy {
 
 //Base case: 1-dimensional array
 template<typename T>
-class MatrixProxy<T,1> {
+class NdMatrixProxy<T,1> {
     public:
-        MatrixProxy<T,1>(const DimRange* dim_ranges, size_t idim, size_t dim_stride, T* start)
+        NdMatrixProxy<T,1>(const DimRange* dim_ranges, size_t idim, size_t dim_stride, T* start)
             : dim_ranges_(dim_ranges)
             , idim_(idim)
             , dim_stride_(dim_stride)
@@ -108,7 +108,7 @@ class MatrixProxy<T,1> {
 
         T& operator[](size_t index) {
             //Call the const version and cast-away constness
-            return const_cast<T&>(const_cast<const MatrixProxy<T,1>*>(this)->operator[](index));
+            return const_cast<T&>(const_cast<const NdMatrixProxy<T,1>*>(this)->operator[](index));
         }
 
     private:
@@ -120,7 +120,7 @@ class MatrixProxy<T,1> {
 
 //Base class for an N-dimensional matrix supporting arbitrary index ranges per dimension.
 //This class implements all of the matrix handling (lifetime etc.) except for indexing 
-//(which is implemented in the Matrix class). Indexing is split out to allows specialization 
+//(which is implemented in the NdMatrix class). Indexing is split out to allows specialization 
 //of indexing for N = 1.
 //
 //Implementation:
@@ -135,12 +135,12 @@ class MatrixProxy<T,1> {
 //Since the indexing calculations are visible to the compiler at compile time they can be
 //optimized to be efficient.
 template<typename T, size_t N>
-class MatrixBase {
+class NdMatrixBase {
     public:
         static_assert(N >= 1, "Minimum dimension 1");
 
         //An empty matrix (all dimensions size zero)
-        MatrixBase() {
+        NdMatrixBase() {
             clear();
         }
 
@@ -149,7 +149,7 @@ class MatrixBase {
         //      [0..dim_sizes[1]-1]
         //      ...
         //with optional fill value
-        MatrixBase(std::array<size_t,N> dim_sizes, T value=T()) {
+        NdMatrixBase(std::array<size_t,N> dim_sizes, T value=T()) {
             resize(dim_sizes, value);
         }
 
@@ -158,7 +158,7 @@ class MatrixBase {
         //      [dim_ranges[1].begin_index() ... dim_ranges[1].end_index()-1]
         //      ...
         //with optional fill value
-        MatrixBase(std::array<DimRange,N> dim_ranges, T value=T()) {
+        NdMatrixBase(std::array<DimRange,N> dim_ranges, T value=T()) {
             resize(dim_ranges, value);
         }
     public: //Accessors
@@ -237,27 +237,27 @@ class MatrixBase {
         }
     public: //Lifetime management
         //Copy constructor
-        MatrixBase(const MatrixBase& other)
-            : MatrixBase(other.dim_ranges_) {
+        NdMatrixBase(const NdMatrixBase& other)
+            : NdMatrixBase(other.dim_ranges_) {
             std::copy(other.data_.get(), other.data_.get() + other.size(), data_.get());
         }
 
         //Move constructor
-        MatrixBase(MatrixBase&& other)
-            : MatrixBase() {
+        NdMatrixBase(NdMatrixBase&& other)
+            : NdMatrixBase() {
             swap(*this, other);
         }
 
         //Copy/move assignment
         //
         //Note that rhs is taken by value (copy-swap idiom)
-        MatrixBase& operator=(MatrixBase rhs) {
+        NdMatrixBase& operator=(NdMatrixBase rhs) {
             swap(*this, rhs);
             return *this;
         }
 
-        //Swap two MatrixBase objects
-        friend void swap(MatrixBase<T,N>& m1, MatrixBase<T,N>& m2) {
+        //Swap two NdMatrixBase objects
+        friend void swap(NdMatrixBase<T,N>& m1, NdMatrixBase<T,N>& m2) {
             using std::swap;
             swap(m1.dim_ranges, m2.dim_ranges);
             swap(m1.data_, m2.data_);
@@ -283,7 +283,7 @@ class MatrixBase {
 //Examples:
 //
 //      //A 2-dimensional matrix with indicies [0..4][0..9]
-//      Matrix<int,2> m1({5,10});
+//      NdMatrix<int,2> m1({5,10});
 //
 //      //Accessing an element
 //      int i = m4[3][5];
@@ -293,21 +293,21 @@ class MatrixBase {
 //
 //      //A 2-dimensional matrix with indicies [2..6][5..9]
 //      // Note that C++ requires one more set of curly brace than you would expect
-//      Matrix<int,2> m2({{{2,7},{5,10}}}); 
+//      NdMatrix<int,2> m2({{{2,7},{5,10}}}); 
 //
 //      //A 3-dimensional matrix with indicies [0..4][0..9][0..19]
-//      Matrix<int,3> m3({5,10,20});
+//      NdMatrix<int,3> m3({5,10,20});
 //
 //      //A 3-dimensional matrix with indicies [2..6][1..19][50..89]
-//      Matrix<int,3> m4({{{2,7}, {1,20}, {50,90}}});
+//      NdMatrix<int,3> m4({{{2,7}, {1,20}, {50,90}}});
 //
 //      //A 2-dimensional matrix with indicies [2..6][1..20], with all entries
 //      //intialized to 42
-//      Matrix<int,2> m4({{{2,7}, {1,21}}}, 42);
+//      NdMatrix<int,2> m4({{{2,7}, {1,21}}}, 42);
 //
 //      //A 2-dimensional matrix with indicies [0..4][0..9], with all entries
 //      //initialized to 42
-//      Matrix<int,2> m1({5,10}, 42);
+//      NdMatrix<int,2> m1({5,10}, 42);
 //
 //      //Filling all entries with value 101
 //      m1.fill(101);
@@ -317,20 +317,20 @@ class MatrixBase {
 //
 //      //Resizing an existing matrix (all elements set to value 88)
 //      m1.resize({15,55}, 88)
-template<typename T, size_t N=2>
-class Matrix : public MatrixBase<T,N> {
+template<typename T, size_t N>
+class NdMatrix : public NdMatrixBase<T,N> {
     //General case
     static_assert(N >= 2, "Minimum dimension 2");
 
     public:
         //Use the base constructors
-        using MatrixBase<T,N>::MatrixBase;
+        using NdMatrixBase<T,N>::NdMatrixBase;
     public:
         //Access an element
         //
         //Returns a proxy-object to allow chained array-style indexing  (N >= 2 case)
         //template<typename = typename std::enable_if<N >= 2>::type, typename T1=T>
-        const MatrixProxy<T,N-1> operator[](size_t index) const {
+        const NdMatrixProxy<T,N-1> operator[](size_t index) const {
             VTR_ASSERT_SAFE_MSG(index >= this->dim_ranges_[0].begin_index(), "Index out of range (below dimension minimum)");
             VTR_ASSERT_SAFE_MSG(index < this->dim_ranges_[0].end_index(), "Index out of range (above dimension maximum)");
 
@@ -345,7 +345,7 @@ class Matrix : public MatrixBase<T,N> {
             size_t next_dim_stride = dim_stride / this->dim_size(1);
 
             //Peel off the first dimension
-            return MatrixProxy<T,N-1>(this->dim_ranges_.data(),                        //Pass the dimension information
+            return NdMatrixProxy<T,N-1>(this->dim_ranges_.data(),                        //Pass the dimension information
                                       1,                                               //Pass the next dimension
                                       next_dim_stride,                                 //Pass the stride for the next dimension
                                       this->data_.get() + dim_stride*effective_index); //Advance to index in this dimension
@@ -354,18 +354,18 @@ class Matrix : public MatrixBase<T,N> {
         //Access an element
         //
         //Returns a proxy-object to allow chained array-style indexing 
-        MatrixProxy<T,N-1> operator[](size_t index) {
+        NdMatrixProxy<T,N-1> operator[](size_t index) {
             //Call the const version, since returned by value don't need to worry about const
-            return const_cast<const Matrix<T,N>*>(this)->operator[](index);
+            return const_cast<const NdMatrix<T,N>*>(this)->operator[](index);
         }
 };
 
 template<typename T>
-class Matrix<T,1> : public MatrixBase<T,1> {
+class NdMatrix<T,1> : public NdMatrixBase<T,1> {
     //Specialization for N = 1
     public:
         //Use the base constructors
-        using MatrixBase<T,1>::MatrixBase;
+        using NdMatrixBase<T,1>::NdMatrixBase;
     public:
         //Access an element (immutable)
         const T& operator[](size_t index) const {
@@ -378,10 +378,15 @@ class Matrix<T,1> : public MatrixBase<T,1> {
         //Access an element (mutable)
         T& operator[](size_t index) {
             //Call the const version, and cast away const-ness
-            return const_cast<T&>(const_cast<const Matrix<T,1>*>(this)->operator[](index));
+            return const_cast<T&>(const_cast<const NdMatrix<T,1>*>(this)->operator[](index));
         }
 
 };
+
+
+//Convenient short forms for common NdMatricies
+template<typename T>
+using Matrix = NdMatrix<T,2>;
 
 } //namespace
 #endif
