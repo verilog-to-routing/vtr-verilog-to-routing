@@ -25,7 +25,7 @@ static void CheckGrid(void);
 static t_type_ptr find_type_col(const int x);
 
 static void alloc_and_load_num_instances_type(
-		t_grid_tile** L_grid, int L_nx, int L_ny,
+		vtr::Matrix<t_grid_tile>& L_grid, int L_nx, int L_ny,
 		int* L_num_instances_type, int L_num_types);
 
 /* Create and fill FPGA architecture grid.         */
@@ -47,8 +47,10 @@ void alloc_and_load_grid(int *num_instances_type) {
 	}
 
 	VTR_ASSERT(device_ctx.nx >= 1 && device_ctx.ny >= 1);
+    size_t nx = device_ctx.nx;
+    size_t ny = device_ctx.ny;
 
-	device_ctx.grid = vtr::alloc_matrix<t_grid_tile>(0, (device_ctx.nx + 1), 0, (device_ctx.ny + 1));
+	device_ctx.grid = vtr::Matrix<t_grid_tile>({nx + 2, ny + 2});
 
 
 	/* Clear the full device_ctx.grid to have no type (NULL), no capacity, etc */
@@ -112,7 +114,7 @@ void alloc_and_load_grid(int *num_instances_type) {
 
 	// And, refresh (ie. reset and update) the "num_instances_type" array
 	// (while also forcing any remaining INVALID_BLOCK blocks to device_ctx.EMPTY_TYPE)
-	alloc_and_load_num_instances_type(device_ctx.grid, device_ctx.nx, device_ctx.ny,	num_instances_type, device_ctx.num_block_types);
+	alloc_and_load_num_instances_type(device_ctx.grid, device_ctx.nx, device_ctx.ny, num_instances_type, device_ctx.num_block_types);
 
 	CheckGrid();
 
@@ -141,7 +143,7 @@ void alloc_and_load_grid(int *num_instances_type) {
 
 //===========================================================================//
 static void alloc_and_load_num_instances_type(
-		t_grid_tile** L_grid, int L_nx, int L_ny,
+		vtr::Matrix<t_grid_tile>& L_grid, int L_nx, int L_ny,
 		int* L_num_instances_type, int L_num_types) {
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -196,12 +198,7 @@ static void alloc_and_load_num_instances_type(
 void freeGrid(void) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-	if (device_ctx.grid == NULL) {
-		return;
-	}
-
-    vtr::free_matrix(device_ctx.grid, 0, device_ctx.nx + 1, 0);
-	device_ctx.grid = NULL;
+	device_ctx.grid.clear();
 }
 
 static void CheckGrid(void) {

@@ -101,7 +101,7 @@ struct DeviceContext : public Context {
      *********************************************************************/
     /* x and y dimensions of the FPGA itself, the core of the FPGA is from [1..nx][1..ny], the I/Os form a perimeter surrounding the core */
     int nx, ny;
-    t_grid_tile **grid; /* FPGA complex blocks grid [0..nx+1][0..ny+1] */
+    vtr::Matrix<t_grid_tile> grid; /* FPGA complex blocks grid [0..nx+1][0..ny+1] */
 
     /* Special pointers to identify special blocks on an FPGA: I/Os, unused, and default */
     t_type_ptr IO_TYPE;

@@ -31,7 +31,7 @@ void build_rr_graph(
 		const t_type_ptr types, 
 		const int L_nx, 
 		const int L_ny,
-		t_grid_tile **L_grid, 
+		const vtr::Matrix<t_grid_tile>& L_grid, 
 		t_chan_width *nodes_per_chan,
 		const enum e_switch_block_type sb_type, 
 		const int Fs,

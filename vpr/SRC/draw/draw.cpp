@@ -2150,7 +2150,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 				break; // we've gone to far in the y direction
 			}
 			// iterate over sub_blocks
-			t_grid_tile* grid_tile = &device_ctx.grid[i][j];
+			const t_grid_tile* grid_tile = &device_ctx.grid[i][j];
 			for (int k = 0; k < grid_tile->type->capacity; ++k) {
 				clb_index = place_ctx.grid_blocks[i][j].blocks[k];
 				if (clb_index != EMPTY_BLOCK) {

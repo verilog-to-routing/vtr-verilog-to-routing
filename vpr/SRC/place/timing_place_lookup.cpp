@@ -84,7 +84,7 @@ static t_type_ptr EMPTY_TYPE_BACKUP;
 static t_type_ptr FILL_TYPE_BACKUP;
 static t_type_descriptor dummy_type_descriptors[NUM_TYPES_USED];
 static t_type_descriptor *type_descriptors_backup;
-static t_grid_tile **grid_backup;
+static vtr::Matrix<t_grid_tile> grid_backup;
 static int num_types_backup;
 
 vtr::t_ivec **clb_opins_used_locally;
@@ -322,8 +322,10 @@ static void load_simplified_device(void) {
 	device_ctx.FILL_TYPE = &dummy_type_descriptors[2];
 
 	/* Fill in homogeneous core grid info */
-	grid_backup = device_ctx.grid;
-	device_ctx.grid = vtr::alloc_matrix<t_grid_tile>(0, device_ctx.nx + 1, 0, device_ctx.ny + 1);
+    std::swap(device_ctx.grid, grid_backup);
+    size_t nx = device_ctx.nx;
+    size_t ny = device_ctx.ny;
+	device_ctx.grid.resize({nx + 2, ny + 2});
 	for (i = 0; i < device_ctx.nx + 2; i++) {
 		for (j = 0; j < device_ctx.ny + 2; j++) {
 			if ((i == 0 && j == 0) || (i == device_ctx.nx + 1 && j == 0)
@@ -351,8 +353,8 @@ static void restore_original_device(void) {
 	device_ctx.num_block_types = num_types_backup;
 
 	/* free allocated data */
-    vtr::free_matrix(device_ctx.grid, 0, device_ctx.nx + 1, 0);
-	device_ctx.grid = grid_backup;
+    std::swap(grid_backup, device_ctx.grid);
+    grid_backup.clear();
 }
 
 /**************************************/
