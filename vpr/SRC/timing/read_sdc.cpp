@@ -305,7 +305,8 @@ void read_sdc(t_timing_inf timing_inf) {
 	}
 
 	/* Allocate matrix of timing constraints [0..timing_ctx.sdc->num_constrained_clocks-1][0..timing_ctx.sdc->num_constrained_clocks-1] and initialize to 0 */
-	timing_ctx.sdc->domain_constraint = vtr::alloc_matrix<float>(0, timing_ctx.sdc->num_constrained_clocks-1, 0, timing_ctx.sdc->num_constrained_clocks-1);
+    size_t num_constrained_clocks = timing_ctx.sdc->num_constrained_clocks;
+	timing_ctx.sdc->domain_constraint = vtr::Matrix<float>({num_constrained_clocks, num_constrained_clocks});
 	
 	/* Based on the information from sdc_clocks, calculate constraints for all paths except ones with an override constraint. */
 	for (source_clock_domain = 0; source_clock_domain < timing_ctx.sdc->num_constrained_clocks; source_clock_domain++) {
@@ -710,7 +711,7 @@ static void use_default_timing_constraints(void) {
 
 	if (timing_ctx.sdc->num_constrained_clocks <= 1) {
 		/* Create one constrained clock with period 0... */
-		timing_ctx.sdc->domain_constraint = vtr::alloc_matrix<float>(0, 0, 0, 0);
+		timing_ctx.sdc->domain_constraint = vtr::Matrix<float>({1,1});
 		timing_ctx.sdc->domain_constraint[0][0] = 0.;
 		
         vtr::printf_info("\n");
@@ -748,7 +749,8 @@ static void use_default_timing_constraints(void) {
 		count_netlist_ios_as_constrained_ios(timing_ctx.sdc->constrained_clocks[timing_ctx.sdc->num_constrained_clocks - 1].name, 0.);
 
 		/* Allocate matrix of timing constraints [0..timing_ctx.sdc->num_constrained_clocks-1][0..timing_ctx.sdc->num_constrained_clocks-1] */
-		timing_ctx.sdc->domain_constraint = vtr::alloc_matrix<float>(0, timing_ctx.sdc->num_constrained_clocks-1, 0, timing_ctx.sdc->num_constrained_clocks-1);
+        size_t num_constrained_clocks = timing_ctx.sdc->num_constrained_clocks;
+		timing_ctx.sdc->domain_constraint = vtr::Matrix<float>({num_constrained_clocks, num_constrained_clocks});
 
 		for (source_clock_domain = 0; source_clock_domain < timing_ctx.sdc->num_constrained_clocks; source_clock_domain++) {
 			for (sink_clock_domain = 0; sink_clock_domain < timing_ctx.sdc->num_constrained_clocks; sink_clock_domain++) {
@@ -1181,7 +1183,6 @@ void free_sdc_related_structs(void) {
 	free_io_constraint(timing_ctx.sdc->constrained_inputs, timing_ctx.sdc->num_constrained_inputs);
 	free_io_constraint(timing_ctx.sdc->constrained_outputs, timing_ctx.sdc->num_constrained_outputs);
 	free_clock_constraint(timing_ctx.sdc->constrained_clocks, timing_ctx.sdc->num_constrained_clocks);
-    vtr::free_matrix(timing_ctx.sdc->domain_constraint, 0, timing_ctx.sdc->num_constrained_clocks - 1, 0);
 	free(timing_ctx.sdc);
 	timing_ctx.sdc = NULL;
 }

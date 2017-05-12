@@ -31,7 +31,9 @@
 #include <unordered_map>
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
+
 #include "vtr_assert.h"
+#include "vtr_ndmatrix.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -445,7 +447,7 @@ struct t_timing_constraints { /* Container structure for all SDC timing constrai
 	int num_constrained_clocks; /* number of clocks with timing constraints */
 	t_clock * constrained_clocks; /* [0..timing_ctx.sdc->num_constrained_clocks - 1] array of clocks with timing constraints */
 
-	float ** domain_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
+    vtr::Matrix<float> domain_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
 
 	int num_constrained_inputs; /* number of inputs with timing constraints */
 	t_io * constrained_inputs; /* [0..num_constrained_inputs - 1] array of inputs with timing constraints */
