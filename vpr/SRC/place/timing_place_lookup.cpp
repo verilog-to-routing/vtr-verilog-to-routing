@@ -5,7 +5,7 @@
 using namespace std;
 
 #include "vtr_assert.h"
-#include "vtr_matrix.h"
+#include "vtr_ndmatrix.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
 
@@ -66,10 +66,10 @@ using namespace std;
 /*the delta arrays are used to contain the best case routing delay */
 /*between different locations on the FPGA. */
 
-static float** f_delta_io_to_clb;
-static float** f_delta_clb_to_clb;
-static float** f_delta_clb_to_io;
-static float** f_delta_io_to_io;
+static vtr::Matrix<float> f_delta_io_to_clb;
+static vtr::Matrix<float> f_delta_clb_to_clb;
+static vtr::Matrix<float> f_delta_clb_to_io;
+static vtr::Matrix<float> f_delta_io_to_io;
 
 /* I could have allocated these as local variables, and passed them all */
 /* around, but was too lazy, since this is a small file, it should not  */
@@ -132,7 +132,7 @@ static void alloc_delta_arrays(void);
 
 static void free_delta_arrays(void);
 
-static void generic_compute_matrix(float ***matrix_ptr, t_type_ptr source_type,
+static void generic_compute_matrix(vtr::Matrix<float>& matrix, t_type_ptr source_type,
 		t_type_ptr sink_type, int source_x, int source_y, int start_x,
 		int end_x, int start_y, int end_y, t_router_opts router_opts);
 
@@ -153,11 +153,7 @@ static int get_longest_segment_length(
 static void reset_placement(void);
 
 static void print_delta_delays_echo(const char* filename);
-static void print_array(std::string filename, float **array_to_print,
-		int x1,
-		int x2,
-		int y1,
-		int y2);
+static void print_matrix(std::string filename, const vtr::Matrix<float>& array_to_print);
 /**************************************/
 
 static int get_best_pin(enum e_pin_type pintype, t_type_ptr type) {
@@ -620,51 +616,28 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 
 /**************************************/
 static void alloc_delta_arrays(void) {
-	int id_x, id_y;
     auto& device_ctx = g_vpr_ctx.device();
 
-	f_delta_clb_to_clb = vtr::alloc_matrix<float>(0, device_ctx.nx - 1, 0, device_ctx.ny - 1);
-	f_delta_io_to_clb = vtr::alloc_matrix<float>(0, device_ctx.nx, 0, device_ctx.ny);
-	f_delta_clb_to_io = vtr::alloc_matrix<float>(0, device_ctx.nx, 0, device_ctx.ny);
-	f_delta_io_to_io = vtr::alloc_matrix<float>(0, device_ctx.nx + 1, 0, device_ctx.ny + 1);
-
 	/*initialize all of the array locations to -1 */
-
-	for (id_x = 0; id_x <= device_ctx.nx; id_x++) {
-		for (id_y = 0; id_y <= device_ctx.ny; id_y++) {
-			f_delta_io_to_clb[id_x][id_y] = IMPOSSIBLE;
-		}
-	}
-	for (id_x = 0; id_x <= device_ctx.nx - 1; id_x++) {
-		for (id_y = 0; id_y <= device_ctx.ny - 1; id_y++) {
-			f_delta_clb_to_clb[id_x][id_y] = IMPOSSIBLE;
-		}
-	}
-	for (id_x = 0; id_x <= device_ctx.nx; id_x++) {
-		for (id_y = 0; id_y <= device_ctx.ny; id_y++) {
-			f_delta_clb_to_io[id_x][id_y] = IMPOSSIBLE;
-		}
-	}
-	for (id_x = 0; id_x <= device_ctx.nx + 1; id_x++) {
-		for (id_y = 0; id_y <= device_ctx.ny + 1; id_y++) {
-			f_delta_io_to_io[id_x][id_y] = IMPOSSIBLE;
-		}
-	}
+    size_t nx = device_ctx.nx;
+    size_t ny = device_ctx.ny;
+	f_delta_clb_to_clb.resize({nx, ny}, IMPOSSIBLE);
+	f_delta_io_to_clb.resize({nx+1, ny+1}, IMPOSSIBLE);
+	f_delta_clb_to_io.resize({nx+1, ny+1}, IMPOSSIBLE);
+	f_delta_io_to_io.resize({nx+2, ny+2}, IMPOSSIBLE);
 }
 
 /**************************************/
 static void free_delta_arrays(void) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    vtr::free_matrix(f_delta_io_to_clb, 0, device_ctx.nx, 0);
-	vtr::free_matrix(f_delta_clb_to_clb, 0, device_ctx.nx - 1, 0);
-	vtr::free_matrix(f_delta_clb_to_io, 0, device_ctx.nx, 0);
-	vtr::free_matrix(f_delta_io_to_io, 0, device_ctx.nx + 1, 0);
-
+    //Reclaim memory
+    f_delta_clb_to_clb.clear();
+    f_delta_io_to_clb.clear();
+    f_delta_clb_to_io.clear();
+    f_delta_io_to_io.clear();
 }
 
 /**************************************/
-static void generic_compute_matrix(float ***matrix_ptr, t_type_ptr source_type,
+static void generic_compute_matrix(vtr::Matrix<float>& matrix, t_type_ptr source_type,
 		t_type_ptr sink_type, int source_x, int source_y, int start_x,
 		int end_x, int start_y, int end_y, t_router_opts router_opts) {
 
@@ -680,7 +653,7 @@ static void generic_compute_matrix(float ***matrix_ptr, t_type_ptr source_type,
 				continue; /*do not compute distance from a block to itself     */
 			/*if a value is desired, pre-assign it somewhere else */
 
-			(*matrix_ptr)[delta_x][delta_y] = assign_blocks_and_route_net(
+			matrix[delta_x][delta_y] = assign_blocks_and_route_net(
 					source_type, source_x, source_y, sink_type, sink_x, sink_y,
 					router_opts);
 		}
@@ -811,7 +784,7 @@ static void compute_delta_io_to_clb(t_router_opts router_opts) {
 	end_x = device_ctx.nx;
 	start_y = 1;
 	end_y = device_ctx.ny;
-	generic_compute_matrix(&f_delta_io_to_clb, source_type, sink_type, source_x,
+	generic_compute_matrix(f_delta_io_to_clb, source_type, sink_type, source_x,
 			source_y, start_x, end_x, start_y, end_y, router_opts);
 
 	source_x = 1;
@@ -821,14 +794,14 @@ static void compute_delta_io_to_clb(t_router_opts router_opts) {
 	end_x = 1;
 	start_y = 1;
 	end_y = device_ctx.ny;
-	generic_compute_matrix(&f_delta_io_to_clb, source_type, sink_type, source_x,
+	generic_compute_matrix(f_delta_io_to_clb, source_type, sink_type, source_x,
 			source_y, start_x, end_x, start_y, end_y, router_opts);
 
 	start_x = 1;
 	end_x = device_ctx.nx;
 	start_y = device_ctx.ny;
 	end_y = device_ctx.ny;
-	generic_compute_matrix(&f_delta_io_to_clb, source_type, sink_type, source_x,
+	generic_compute_matrix(f_delta_io_to_clb, source_type, sink_type, source_x,
 			source_y, start_x, end_x, start_y, end_y, router_opts);
 }
 
@@ -966,25 +939,19 @@ static void compute_delta_io_to_io(t_router_opts router_opts) {
 
 /**************************************/
 static void
-print_array(std::string filename, float **array_to_print,
-		int x1,
-		int x2,
-		int y1,
-		int y2)
-{
+print_matrix(std::string filename, const vtr::Matrix<float>& matrix) {
     FILE* f = vtr::fopen(filename.c_str(), "w");
 
     fprintf(f, "         ");
-    for(int delta_x = x1; delta_x <= x2; ++delta_x) {
-        fprintf(f, " %9d", delta_x);
+    for(size_t delta_x = matrix.begin_index(0); delta_x < matrix.end_index(0); ++delta_x) {
+        fprintf(f, " %9zu", delta_x);
     }
     fprintf(f, "\n");
 
-    for(int delta_y = y1; delta_y <= y2; ++delta_y) {
-        fprintf(f, "%9d", delta_y);
-        for(int delta_x = x1; delta_x <= x2; ++delta_x) {
-			fprintf(f, " %9.2e",
-					array_to_print[delta_x][delta_y]);
+    for(size_t delta_y = matrix.begin_index(1); delta_y < matrix.end_index(1); ++delta_y) {
+        fprintf(f, "%9zu", delta_y);
+        for(size_t delta_x = matrix.begin_index(0); delta_x < matrix.end_index(0); ++delta_x) {
+			fprintf(f, " %9.2e", matrix[delta_x][delta_y]);
         }
         fprintf(f, "\n");
     }
@@ -1010,12 +977,10 @@ static void compute_delta_arrays(t_router_opts router_opts, int longest_length) 
 }
 
 static void print_delta_delays_echo(const char* filename) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-	print_array(vtr::string_fmt(filename, "delta_clb_to_clb"), f_delta_clb_to_clb, 0, device_ctx.nx - 1, 0, device_ctx.ny - 1);
-	print_array(vtr::string_fmt(filename, "delta_io_to_clb"), f_delta_io_to_clb, 0, device_ctx.nx, 0, device_ctx.ny);
-	print_array(vtr::string_fmt(filename, "delta_clb_to_io"), f_delta_clb_to_io, 0, device_ctx.nx, 0, device_ctx.ny);
-	print_array(vtr::string_fmt(filename, "delta_io_to_io"), f_delta_io_to_io, 0, device_ctx.nx + 1, 0, device_ctx.ny + 1);
+	print_matrix(vtr::string_fmt(filename, "delta_clb_to_clb"), f_delta_clb_to_clb);
+	print_matrix(vtr::string_fmt(filename, "delta_io_to_clb"), f_delta_io_to_clb);
+	print_matrix(vtr::string_fmt(filename, "delta_clb_to_io"), f_delta_clb_to_io);
+	print_matrix(vtr::string_fmt(filename, "delta_io_to_io"), f_delta_io_to_io);
 }
 
 /******* Globally Accessable Functions **********/
