@@ -140,11 +140,8 @@ class MatrixBase {
         static_assert(N >= 1, "Minimum dimension 1");
 
         //An empty matrix (all dimensions size zero)
-        MatrixBase()
-            : data_(nullptr) {
-            for(int i = 0; i < dim_ranges_.size(); ++i) {
-                dim_ranges[i] = {0, 0};
-            }
+        MatrixBase() {
+            clear();
         }
 
         //Specified dimension sizes:
@@ -165,7 +162,7 @@ class MatrixBase {
             resize(dim_ranges, value);
         }
     public: //Accessors
-        //Returns the size (number of elements) in the matrix
+        //Returns the size of the matrix (number of elements) 
         size_t size() const {
             //Size is the product of all dimension sizes
             size_t cnt = dim_size(0);
@@ -231,6 +228,13 @@ class MatrixBase {
             fill(value);
         }
 
+        //Reset the matrix to size zero
+        void clear() {
+            data_.reset(nullptr);
+            for(size_t i = 0; i < dim_ranges_.size(); ++i) {
+                dim_ranges_[i] = {0, 0};
+            }
+        }
     public: //Lifetime management
         //Copy constructor
         MatrixBase(const MatrixBase& other)
