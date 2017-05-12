@@ -59,10 +59,7 @@ void alloc_and_load_grid(int *num_instances_type) {
 	}
 
     //Ensure ther is space in the reverse grid to block look-up
-    place_ctx.grid_blocks.resize(device_ctx.nx + 2);
-	for (int x = 0; x < device_ctx.nx + 2; ++x) {
-        place_ctx.grid_blocks[x].resize(device_ctx.ny + 2);
-    }
+    place_ctx.grid_blocks.resize({device_ctx.nx + 2u, device_ctx.ny + 2u});
 
 	for (int x = 0; x <= device_ctx.nx + 1; ++x) {
 		for (int y = 0; y <= device_ctx.ny + 1; ++y) {

@@ -140,12 +140,15 @@ void sync_grid_to_blocks() {
     auto& device_ctx = g_vpr_ctx.device();
 
 	/* Reset usage and allocate blocks list if needed */
-    place_ctx.grid_blocks.resize(device_ctx.nx + 2);
+    auto& grid_blocks = place_ctx.grid_blocks;
+    grid_blocks.resize({device_ctx.nx + 2u, device_ctx.ny + 2u});
     for (int x = 0; x < (device_ctx.nx + 2); ++x) {
-        place_ctx.grid_blocks[x].resize(device_ctx.ny + 2);
         for (int y = 0; y < (device_ctx.ny + 2); ++y) {
+            auto& grid_block = grid_blocks[x][y];
+            grid_block.blocks.resize(device_ctx.grid[x][y].type->capacity);
+
             for (int z = 0; z < device_ctx.grid[x][y].type->capacity; ++z) {
-                place_ctx.grid_blocks[x][y].blocks[z] = EMPTY_BLOCK;
+                grid_block.blocks[z] = EMPTY_BLOCK;
             }
         }
     }

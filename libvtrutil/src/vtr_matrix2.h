@@ -139,29 +139,30 @@ class MatrixBase {
     public:
         static_assert(N >= 1, "Minimum dimension 1");
 
+        //An empty matrix (all dimensions size zero)
+        MatrixBase()
+            : data_(nullptr) {
+            for(int i = 0; i < dim_ranges_.size(); ++i) {
+                dim_ranges[i] = {0, 0};
+            }
+        }
+
         //Specified dimension sizes:
         //      [0..dim_sizes[0]-1]
         //      [0..dim_sizes[1]-1]
         //      ...
         //with optional fill value
         MatrixBase(std::array<size_t,N> dim_sizes, T value=T()) {
-            //Convert dimension to range [0..dim-1]
-            for(size_t i = 0; i < dim_sizes.size(); ++i) {
-                dim_ranges_[i] = {0, dim_sizes[i]-1};
-            }
-            alloc();
-            fill(value);
+            resize(dim_sizes, value);
         }
 
         //Specified dimension index ranges:
-        //      [dim_ranges[0].min_index() ... dim_ranges[1].max_index()]
-        //      [dim_ranges[1].min_index() ... dim_ranges[1].max_index()]
+        //      [dim_ranges[0].begin_index() ... dim_ranges[1].end_index()-1]
+        //      [dim_ranges[1].begin_index() ... dim_ranges[1].end_index()-1]
         //      ...
         //with optional fill value
-        MatrixBase(std::array<DimRange,N> dim_ranges, T value=T())
-            : dim_ranges_(dim_ranges) {
-            alloc();
-            fill(value);
+        MatrixBase(std::array<DimRange,N> dim_ranges, T value=T()) {
+            resize(dim_ranges, value);
         }
     public: //Accessors
         //Returns the size (number of elements) in the matrix
@@ -205,6 +206,29 @@ class MatrixBase {
         //Set all elements to 'value'
         void fill(T value) {
             std::fill(data_.get(), data_.get() + size(), value);
+        }
+
+        //Resize the matrix to the specified dimensions
+        //
+        //If 'value' is specified all elements will be initialized to it,
+        //otherwise they will be default constructed.
+        void resize(std::array<size_t,N> dim_sizes, T value=T()) {
+            //Convert dimension to range [0..dim)
+            for(size_t i = 0; i < dim_sizes.size(); ++i) {
+                dim_ranges_[i] = {0, dim_sizes[i]};
+            }
+            alloc();
+            fill(value);
+        }
+
+        //Resize the matrix to the specified dimension ranges
+        //
+        //If 'value' is specified all elements will be initialized to it,
+        //otherwise they will be default constructed.
+        void resize(std::array<DimRange,N> dim_ranges, T value=T()) {
+            dim_ranges_ = dim_ranges;
+            alloc();
+            fill(value);
         }
 
     public: //Lifetime management
@@ -277,6 +301,14 @@ class MatrixBase {
 //      //initialized to 42
 //      Matrix<int,2> m1({5,10}, 42);
 //
+//      //Filling all entries with value 101
+//      m1.fill(101);
+//
+//      //Resizing an existing matrix (all values reset to default constucted value)
+//      m1.resize({5,5})
+//
+//      //Resizing an existing matrix (all elements set to value 88)
+//      m1.resize({15,55}, 88)
 template<typename T, size_t N>
 class Matrix : public MatrixBase<T,N> {
     //General case
