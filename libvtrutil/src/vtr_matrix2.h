@@ -118,7 +118,7 @@ class MatrixProxy<T,1> {
         T* start_;
 };
 
-//Base class for an n-dimensional matrix supporting arbitrary index ranges per dimension.
+//Base class for an N-dimensional matrix supporting arbitrary index ranges per dimension.
 //This class implements all of the matrix handling (lifetime etc.) except for indexing 
 //(which is implemented in the Matrix class). Indexing is split out to allows specialization 
 //of indexing for N = 1.
@@ -274,7 +274,11 @@ class MatrixBase {
         std::unique_ptr<T[]> data_ = nullptr;
 };
 
-//An n-dimensional matrix supporting arbitrary index ranges per dimension
+//An N-dimensional matrix supporting arbitrary (continuous) index ranges 
+//per dimension. 
+//
+//If no second template parameter is provided defaults to a 2-dimensional
+//matrix
 //
 //Examples:
 //
@@ -313,7 +317,7 @@ class MatrixBase {
 //
 //      //Resizing an existing matrix (all elements set to value 88)
 //      m1.resize({15,55}, 88)
-template<typename T, size_t N>
+template<typename T, size_t N=2>
 class Matrix : public MatrixBase<T,N> {
     //General case
     static_assert(N >= 2, "Minimum dimension 2");
