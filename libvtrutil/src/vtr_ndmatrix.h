@@ -172,6 +172,11 @@ class NdMatrixBase {
             return cnt;
         }
 
+        //Returns true if there are no elements in the matrix
+        bool empty() {
+            return size() == 0;
+        }
+
         //Returns the number of dimensions (i.e. N)
         size_t ndims() const {
             return dim_ranges_.size();
