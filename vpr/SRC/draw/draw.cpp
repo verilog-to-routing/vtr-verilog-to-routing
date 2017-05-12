@@ -126,7 +126,7 @@ static void draw_chanx_to_chanx_edge(int from_node, int to_node,
 static void draw_chanx_to_chany_edge(int chanx_node, int chanx_track, int chany_node, 
 									 int chany_track, enum e_edge_dir edge_dir,
 									 short switch_type);
-static int get_track_num(int inode, int **chanx_track, int **chany_track);
+static int get_track_num(int inode, const vtr::Matrix<int>& chanx_track, const vtr::Matrix<int>& chany_track);
 static bool draw_if_net_highlighted (int inet);
 static void draw_highlight_fan_in_fan_out(int hit_node);
 static void highlight_nets(char *message, int hit_node);
@@ -1710,16 +1710,18 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-	static int **chanx_track = NULL; /* [1..device_ctx.nx][0..device_ctx.ny] */
-	static int **chany_track = NULL; /* [0..device_ctx.nx][1..device_ctx.ny] */
+	static vtr::Matrix<int> chanx_track; /* [1..device_ctx.nx][0..device_ctx.ny] */
+	static vtr::Matrix<int> chany_track; /* [0..device_ctx.nx][1..device_ctx.ny] */
 	if (draw_state->draw_route_type == GLOBAL) {
 		/* Allocate some temporary storage if it's not already available. */
-		if (chanx_track == NULL) {
-			chanx_track = vtr::alloc_matrix<int>(1, device_ctx.nx, 0, device_ctx.ny);
+        size_t nx = device_ctx.nx;
+        size_t ny = device_ctx.ny;
+		if (chanx_track.empty()) {
+			chanx_track = vtr::Matrix<int>({{{1, nx+1}, {0, ny+1}}});
 		}
 
-		if (chany_track == NULL) {
-			chany_track = vtr::alloc_matrix<int>(0, device_ctx.nx, 1, device_ctx.ny);
+		if (chany_track.empty()) {
+			chany_track = vtr::Matrix<int>({{{0, nx+1}, {1, ny+1}}});
 		}
 
 		for (int i = 1; i <= device_ctx.nx; i++)
@@ -1833,7 +1835,7 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
     }
 }
 
-static int get_track_num(int inode, int **chanx_track, int **chany_track) {
+static int get_track_num(int inode, const vtr::Matrix<int>& chanx_track, const vtr::Matrix<int>& chany_track) {
 
 	/* Returns the track number of this routing resource node.   */
 

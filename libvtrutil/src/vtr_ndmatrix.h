@@ -145,8 +145,8 @@ class NdMatrixBase {
         }
 
         //Specified dimension sizes:
-        //      [0..dim_sizes[0]-1]
-        //      [0..dim_sizes[1]-1]
+        //      [0..dim_sizes[0])
+        //      [0..dim_sizes[1])
         //      ...
         //with optional fill value
         NdMatrixBase(std::array<size_t,N> dim_sizes, T value=T()) {
@@ -154,8 +154,8 @@ class NdMatrixBase {
         }
 
         //Specified dimension index ranges:
-        //      [dim_ranges[0].begin_index() ... dim_ranges[1].end_index()-1]
-        //      [dim_ranges[1].begin_index() ... dim_ranges[1].end_index()-1]
+        //      [dim_ranges[0].begin_index() ... dim_ranges[1].end_index())
+        //      [dim_ranges[1].begin_index() ... dim_ranges[1].end_index())
         //      ...
         //with optional fill value
         NdMatrixBase(std::array<DimRange,N> dim_ranges, T value=T()) {
