@@ -127,7 +127,7 @@ static float **temp_point_to_point_delay_cost = NULL;
 /* this block corresponds to, this is only required during timing-driven */
 /* placement. It is used to allow us to update individual connections on */
 /* each net */
-static int **net_pin_index = NULL;
+static vtr::Matrix<int> net_pin_index;
 
 /* [0..cluster_ctx.clbs_nlist.net.size()-1].  Store the bounding box coordinates and the number of    *
  * blocks on each of a net's bounding box (to allow efficient updates),      *
@@ -2076,7 +2076,7 @@ static void free_placement_structs(
 		free(point_to_point_timing_cost);
 		free(temp_point_to_point_timing_cost);
 
-        vtr::free_matrix(net_pin_index, 0, cluster_ctx.num_blocks - 1, 0);
+        net_pin_index.clear();
 	}
 
 	free(net_cost);

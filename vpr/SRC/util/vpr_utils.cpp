@@ -1245,14 +1245,14 @@ void free_pb_stats(t_pb *pb) {
     }
 }
 
-int ** alloc_and_load_net_pin_index() {
+vtr::Matrix<int> alloc_and_load_net_pin_index() {
 
 	/* Allocates and loads net_pin_index array, this array allows us to quickly   *
 	 * find what pin on the net a block pin corresponds to. Returns the pointer   *
 	 * to the 2D net_pin_index array.                                             */
 
 	unsigned int netpin, inet;
-	int blk, iblk, ipin, itype, **temp_net_pin_index, max_pins_per_clb = 0;
+	int blk, iblk, ipin, itype, max_pins_per_clb = 0;
 	t_type_ptr type;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -1263,15 +1263,7 @@ int ** alloc_and_load_net_pin_index() {
 		max_pins_per_clb = max(max_pins_per_clb, device_ctx.block_types[itype].num_pins);
 	
 	/* Allocate for maximum size. */
-	temp_net_pin_index = vtr::alloc_matrix<int>(0, cluster_ctx.num_blocks - 1, 0, max_pins_per_clb - 1);
-
-	/* Initialize values to OPEN */
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		type = cluster_ctx.blocks[iblk].type;
-		for (ipin = 0; ipin < type->num_pins; ipin++) {
-			temp_net_pin_index[iblk][ipin] = OPEN;
-		}
-	}
+    vtr::Matrix<int> temp_net_pin_index({cluster_ctx.num_blocks, max_pins_per_clb}, OPEN);
 
 	/* Load the values */
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
