@@ -947,8 +947,7 @@ struct t_seg_details {
 };
 
 /* Defines a 2-D array of t_seg_details data structures (one per channel)   */
-
-typedef t_seg_details** t_chan_details;
+typedef vtr::Matrix<t_seg_details*> t_chan_details;
 
 /* A linked list of float pointers.  Used for keeping track of   *
  * which pathcosts in the router have been changed.              */

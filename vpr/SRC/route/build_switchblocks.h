@@ -83,8 +83,8 @@ typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, 
 /************ Functions ************/
 
 /* allocate and build switch block permutation map */
-t_sb_connection_map * alloc_and_load_switchblock_permutations( t_chan_details * chan_details_x, 
-				t_chan_details * chan_details_y, int nx, int ny, 
+t_sb_connection_map * alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, 
+                int nx, int ny, 
 				std::vector<t_switchblock_inf> switchblocks, 
 				t_chan_width *nodes_per_chan, enum e_directionality directionality);
 

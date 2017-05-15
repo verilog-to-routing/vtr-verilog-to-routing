@@ -15,8 +15,8 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 		const int max_chan_width,
 		const int L_nx, const int L_ny, 
 		int *index, 
-		const t_chan_details *chan_details_x,
-		const t_chan_details *chan_details_y);
+		const t_chan_details& chan_details_x,
+		const t_chan_details& chan_details_y);
 
 void free_rr_node_indices(vtr::t_ivec ***L_rr_node_indices);
 
@@ -47,9 +47,9 @@ void alloc_and_load_chan_details(
 		const bool trim_obs_channels,
 		const int num_seg_details,
 		const t_seg_details *seg_details,
-		t_chan_details **chan_details_x,
-		t_chan_details **chan_details_y);
-t_chan_details *init_chan_details( 
+		t_chan_details& chan_details_x,
+		t_chan_details& chan_details_y);
+t_chan_details init_chan_details( 
 		const int L_nx, const int L_ny,
 		const t_chan_width *nodes_per_chan,
 		const int num_seg_details,
@@ -60,26 +60,26 @@ void obstruct_chan_details(
 		const t_chan_width *nodes_per_chan,
 		const bool trim_empty_channels,
 		const bool trim_obs_channels,
-		t_chan_details *chan_details_x,
-		t_chan_details *chan_details_y);
+		t_chan_details& chan_details_x,
+		t_chan_details& chan_details_y);
 void adjust_chan_details(
 		const int L_nx, const int L_ny,
 		const t_chan_width *nodes_per_chan,
-		t_chan_details *chan_details_x,
-		t_chan_details *chan_details_y);
+		t_chan_details& chan_details_x,
+		t_chan_details& chan_details_y);
 void adjust_seg_details(
 		const int x, const int y,
 		const int L_nx, const int L_ny,
 		const t_chan_width *nodes_per_chan,
-		t_chan_details *chan_details,
+		t_chan_details& chan_details,
 		const enum e_seg_details_type seg_details_type);
 
 void free_seg_details(
 		t_seg_details *seg_details,
 		const int max_chan_width); 
 void free_chan_details(
-		t_chan_details *chan_details_x,
-		t_chan_details *chan_details_y,
+		t_chan_details& chan_details_x,
+		t_chan_details& chan_details_y,
 		const int max_chan_width,
 		const int L_nx, const int L_ny);
 
@@ -154,7 +154,7 @@ int get_track_to_tracks(
 		t_linked_edge **edge_list,
 		const t_seg_details *from_seg_details,
 		const t_seg_details *to_seg_details,
-		const t_chan_details *to_chan_details,
+		const t_chan_details& to_chan_details,
 		const enum e_directionality directionality,
 		vtr::t_ivec ***L_rr_node_indices,
 		bool *L_rr_edge_done,
@@ -169,8 +169,8 @@ void free_sblock_pattern_lookup(
 void load_sblock_pattern_lookup(
 		const int i, const int j,
 		const t_chan_width *nodes_per_chan,
-		const t_chan_details *chan_details_x,
-		const t_chan_details *chan_details_y,
+		const t_chan_details& chan_details_x,
+		const t_chan_details& chan_details_y,
 		const int Fs,
 		const enum e_switch_block_type switch_block_type,
 		short ******sblock_pattern);
@@ -188,8 +188,8 @@ void dump_seg_details(
 		int max_chan_width,
 		FILE *fp);
 void dump_chan_details(
-		const t_chan_details *chan_details_x,
-		const t_chan_details *chan_details_y,
+		const t_chan_details& chan_details_x,
+		const t_chan_details& chan_details_y,
 		int max_chan_width,
 		const int L_nx, int const L_ny,
 		const char *fname);

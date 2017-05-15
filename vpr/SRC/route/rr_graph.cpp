@@ -93,7 +93,7 @@ static void build_unidir_rr_opins(
 		const int i, const int j,
 		const vtr::Matrix<t_grid_tile>& L_grid, int ***Fc_out,
 		const int max_chan_width,
-		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y, 
+		const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, 
 		int ***Fc_xofs, int ***Fc_yofs,
 		bool * L_rr_edge_done,
 		bool * Fc_clipped, vtr::t_ivec *** L_rr_node_indices, 
@@ -110,7 +110,7 @@ static void alloc_and_load_rr_graph(
 		const int num_nodes,
 		t_rr_node * L_rr_node, const int num_seg_types,
 		const t_seg_details * seg_details, 
-		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y, 
+		const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, 
 		bool * L_rr_edge_done,
 		vtr::t_ivec *****track_to_pin_lookup,
 		int ******opin_to_track_map, const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn,
@@ -166,7 +166,7 @@ static void build_rr_chan(
 		const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn, const int cost_index_offset,
 		const int max_chan_width, const int tracks_per_chan,
 		short ******sblock_pattern, const int Fs_per_side,
-		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y, 
+		const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, 
 		vtr::t_ivec *** L_rr_node_indices,
 		bool * L_rr_edge_done, t_rr_node * L_rr_node,
 		const int wire_to_ipin_switch, const enum e_directionality directionality);
@@ -291,16 +291,16 @@ void build_rr_graph(
 	/* END SEG_DETAILS */
 
 	/* START CHAN_DETAILS */
-	t_chan_details *chan_details_x = NULL;
-	t_chan_details *chan_details_y = NULL;
+	t_chan_details chan_details_x;
+	t_chan_details chan_details_y;
 
 	alloc_and_load_chan_details(L_nx, L_ny, nodes_per_chan, 
 			trim_empty_channels, trim_obs_channels,
 			num_seg_details, seg_details,
-			&chan_details_x, &chan_details_y);
+			chan_details_x, chan_details_y);
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CHAN_DETAILS)) {
-		dump_chan_details( chan_details_x, chan_details_y, max_chan_width, device_ctx.nx, device_ctx.ny,
+		dump_chan_details(chan_details_x, chan_details_y, max_chan_width, device_ctx.nx, device_ctx.ny,
 				getEchoFileName(E_ECHO_CHAN_DETAILS));
 	}
 	/* END CHAN_DETAILS */
@@ -373,7 +373,7 @@ void build_rr_graph(
 	device_ctx.num_rr_nodes = 0;
 
 	device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, L_nx, L_ny,
-			&device_ctx.num_rr_nodes, chan_details_x, chan_details_y);
+			                        &device_ctx.num_rr_nodes, chan_details_x, chan_details_y);
 	device_ctx.rr_nodes = new t_rr_node[device_ctx.num_rr_nodes];
 	bool *L_rr_edge_done = (bool *) vtr::malloc(sizeof(bool) * device_ctx.num_rr_nodes);
 	memset(L_rr_edge_done, 0, sizeof(bool) * device_ctx.num_rr_nodes);
@@ -406,9 +406,9 @@ void build_rr_graph(
 		switch_block_conn = alloc_and_load_switch_block_conn(1, SUBSET, 3);
 	} else if (BI_DIRECTIONAL == directionality) {
 		if (sb_type == CUSTOM){
-			sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x,
-					chan_details_y, L_nx, L_ny, switchblocks, 
-					nodes_per_chan, directionality);
+			sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y, 
+                                                                  L_nx, L_ny, 
+                                                                  switchblocks, nodes_per_chan, directionality);
 		} else {
 			switch_block_conn = alloc_and_load_switch_block_conn(max_chan_width, sb_type, Fs);
 		}
@@ -416,9 +416,9 @@ void build_rr_graph(
 		VTR_ASSERT(UNI_DIRECTIONAL == directionality);
 
 		if (sb_type == CUSTOM){
-			sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x,
-					chan_details_y, L_nx, L_ny, switchblocks, 
-					nodes_per_chan, directionality);
+			sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y, 
+                                                                  L_nx, L_ny,
+                                                                  switchblocks, nodes_per_chan, directionality);
 		} else {
 			/* it looks like we get unbalanced muxing from this switch block code with Fs > 3 */
 			VTR_ASSERT(Fs == 3);
@@ -556,10 +556,8 @@ void build_rr_graph(
 		free_seg_details(seg_details, max_chan_width);
 		seg_details = NULL;
 	}
-	if (chan_details_x || chan_details_y) {
+	if (!chan_details_x.empty() || !chan_details_y.empty()) {
 		free_chan_details(chan_details_x, chan_details_y, max_chan_width, L_nx, L_ny);
-		chan_details_x = NULL;
-		chan_details_y = NULL;
 	}
 	if (Fc_in) {
         vtr::free_matrix3(Fc_in, 0, L_num_types-1, 0, max_pins-1, 0);
@@ -1042,7 +1040,7 @@ static void free_type_track_to_pin_map(vtr::t_ivec***** track_to_pin_map,
 static void alloc_and_load_rr_graph(const int num_nodes,
 		t_rr_node * L_rr_node, const int num_seg_types,
 		const t_seg_details * seg_details, 
-		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y, 
+		const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, 
 		bool * L_rr_edge_done,
 		vtr::t_ivec *****track_to_pin_lookup,
 		int ******opin_to_track_map, const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn,
@@ -1433,7 +1431,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 		const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn, const int cost_index_offset,
 		const int max_chan_width, const int tracks_per_chan,
 		short ******sblock_pattern, const int Fs_per_side,
-		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y,
+		const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
 		vtr::t_ivec *** L_rr_node_indices,
 		bool * L_rr_edge_done, t_rr_node * L_rr_node,
 		const int wire_to_ipin_switch, const enum e_directionality directionality) {
@@ -1447,16 +1445,14 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 	int chan_coord = y_coord;
 	int seg_dimension = device_ctx.nx;
 	int chan_dimension = device_ctx.ny;
-	const t_chan_details *from_chan_details = chan_details_x;
-	const t_chan_details *opposite_chan_details = chan_details_y;
+	const t_chan_details& from_chan_details = (chan_type == CHANX) ? chan_details_x : chan_details_y;
+	const t_chan_details& opposite_chan_details = (chan_type == CHANX) ? chan_details_y : chan_details_x;;
 	t_rr_type opposite_chan_type = CHANY;
 	if (chan_type == CHANY){
 		seg_coord = y_coord;
 		chan_coord = x_coord;
 		seg_dimension = device_ctx.ny;
 		chan_dimension = device_ctx.nx;
-		from_chan_details = chan_details_y;
-		opposite_chan_details = chan_details_x;
 		opposite_chan_type = CHANX;
 	}
 
@@ -2347,7 +2343,7 @@ void print_rr_indexed_data(FILE * fp, int index) {
 
 static void build_unidir_rr_opins(const int i, const int j,
 		const vtr::Matrix<t_grid_tile>& L_grid, int ***Fc_out, const int max_chan_width, 
-		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y,
+		const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
 		int ***Fc_xofs, int ***Fc_yofs,
 		bool * L_rr_edge_done,
 		bool * Fc_clipped, vtr::t_ivec *** L_rr_node_indices,
