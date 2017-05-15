@@ -113,7 +113,7 @@ int get_bidir_opin_connections(
 		const int i, const int j,
 		const int ipin,
 		t_linked_edge **edge_list,
-		int ******opin_to_track_map,
+		const t_pin_to_track_lookup& opin_to_track_map,
 		const int Fc,
 		bool *L_rr_edge_done,
 		vtr::t_ivec ***L_rr_node_indices,
