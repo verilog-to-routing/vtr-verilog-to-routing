@@ -67,7 +67,7 @@ static vtr::t_chunk rr_mem_ch = {NULL, 0, NULL};
 
 /********************* Subroutines local to this module. *******************/
 static vtr::NdMatrix<int,5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
-		int **Fc, const t_type_ptr Type, const bool *perturb_switch_pattern,
+		int **Fc, const t_type_ptr Type, const std::vector<bool>& perturb_switch_pattern,
 		const e_directionality directionality,
 		const int num_seg_types, const int *sets_per_seg_type);
 
@@ -141,7 +141,7 @@ static void load_perturbed_switch_pattern(
 		const int x_chan_width, const int y_chan_width, const int Fc, 
 		const enum e_directionality directionality);
 
-static bool* alloc_and_load_perturb_opins(const t_type_ptr type, int **Fc_out, const int max_chan_width,
+static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type, int **Fc_out, const int max_chan_width,
 		const int num_seg_types, const t_segment_inf *segment_inf);
 
 #ifdef ENABLE_CHECK_ALL_TRACKS
@@ -152,7 +152,7 @@ static void check_all_tracks_reach_pins(
 		enum e_pin_type ipin_or_opin);
 #endif
 
-static bool **alloc_and_load_perturb_ipins(
+static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(
         const int L_num_types, 
 		const int num_seg_types,
 		const int *sets_per_seg_type,
@@ -366,7 +366,7 @@ void build_rr_graph(
 		}
 	}
 
-	bool **perturb_ipins = alloc_and_load_perturb_ipins(L_num_types, num_seg_types,
+	auto perturb_ipins = alloc_and_load_perturb_ipins(L_num_types, num_seg_types,
 			sets_per_seg_type, Fc_in, Fc_out, directionality);
 	/* END FC */
 	
@@ -455,13 +455,11 @@ void build_rr_graph(
 
 	if (BI_DIRECTIONAL == directionality) {
 		for (int i = 0; i < L_num_types; ++i) {
-			bool *perturb_opins = alloc_and_load_perturb_opins(&types[i], Fc_out[i],
+			auto perturb_opins = alloc_and_load_perturb_opins(&types[i], Fc_out[i],
 					max_chan_width,	num_seg_types, segment_inf);
 			opin_to_track_map[i] = alloc_and_load_pin_to_track_map(DRIVER,
 					Fc_out[i], &types[i], perturb_opins, directionality,
 					num_seg_types, sets_per_seg_type);
-
-			free(perturb_opins);
 		} 
 	}
 	/* END OPconst MAP */
@@ -530,10 +528,6 @@ void build_rr_graph(
 	if (Fc_out) {
 		vtr::free_matrix3(Fc_out, 0, L_num_types-1, 0, max_pins-1, 0);
 		Fc_out = NULL;
-	}
-	if (perturb_ipins) {
-		vtr::free_matrix(perturb_ipins, 0, L_num_types-1, 0);
-		perturb_ipins = NULL;
 	}
 	if (sb_conn_map) {
 		free_switchblock_permutations(sb_conn_map);
@@ -757,13 +751,16 @@ static void rr_graph_externals(
 	alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
 }
 
-static bool **alloc_and_load_perturb_ipins(const int L_num_types,
+static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_num_types,
 		const int num_seg_types,
 		const int *sets_per_seg_type,
 		int ***Fc_in, int ***Fc_out, 
 		const enum e_directionality directionality) {
 
-	bool **result = vtr::alloc_matrix<bool>(0, L_num_types-1, 0, num_seg_types-1);
+    std::vector<std::vector<bool>> result(L_num_types);
+    for (auto& seg_type_bools : result) {
+        seg_type_bools.resize(num_seg_types, false);
+    }
 
 	/* factor to account for unidir vs bidir */
 	int fac = 1;
@@ -1582,7 +1579,7 @@ void alloc_and_load_edges_and_switches(t_rr_node * L_rr_node, const int inode,
 /* allocate pin to track map for each segment type individually and then combine into a single
    vector */
 static vtr::NdMatrix<int,5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
-		int **Fc, const t_type_ptr Type, const bool *perturb_switch_pattern,
+		int **Fc, const t_type_ptr Type, const std::vector<bool>& perturb_switch_pattern,
 		const e_directionality directionality,
 		const int num_seg_types, const int *sets_per_seg_type) {
 
@@ -2558,7 +2555,7 @@ static int get_opin_direct_connecions(int x, int y, int opin,
 *  This is to prevent pathological cases where the output pin connections are		*
 *  spaced such that the connection pattern always skips some types of wire (w.r.t.	*
 *  starting points)									*/
-static bool* alloc_and_load_perturb_opins(const t_type_ptr type, int **Fc_out, 
+static std::vector<bool> alloc_and_load_perturb_opins(const t_type_ptr type, int **Fc_out, 
 		const int max_chan_width, const int num_seg_types, const t_segment_inf *segment_inf){
 	
 	int i, Fc_max, iclass, num_wire_types;
@@ -2568,7 +2565,7 @@ static bool* alloc_and_load_perturb_opins(const t_type_ptr type, int **Fc_out,
 	float n = 0;
 	float threshold = 0.07;
 
-	bool *perturb_opins = (bool *) vtr::calloc( num_seg_types, sizeof(bool) );
+    std::vector<bool> perturb_opins(num_seg_types, false);
 
 	i = Fc_max = iclass = 0;
 	if (num_seg_types > 1){
