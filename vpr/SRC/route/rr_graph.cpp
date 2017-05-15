@@ -68,7 +68,7 @@ static int *****alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
 		const e_directionality directionality,
 		const int num_seg_types, const int *sets_per_seg_type);
 
-static int *****alloc_and_load_pin_to_seg_type(
+static vtr::NdMatrix<int,5> alloc_and_load_pin_to_seg_type(
 		const e_pin_type pin_type,
 		const int seg_type_tracks, const int Fc, 
 		const t_type_ptr Type, const bool perturb_switch_pattern,
@@ -125,14 +125,14 @@ static void alloc_and_load_rr_graph(
 		const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs);
 
 static void load_uniform_switch_pattern(
-		int *****tracks_connected_to_pin, const int num_phys_pins,
+		vtr::NdMatrix<int,5>& tracks_connected_to_pin, const int num_phys_pins,
 		const int *pin_num_ordering, const int *side_ordering,
 		const int *width_ordering, const int *height_ordering, 
 		const int x_chan_width, const int y_chan_width, const int Fc, 
 		const enum e_directionality directionality);
 
 static void load_perturbed_switch_pattern(
-		int *****tracks_connected_to_pin, const int num_phys_pins,
+		vtr::NdMatrix<int,5>& tracks_connected_to_pin, const int num_phys_pins,
 		const int *pin_num_ordering, const int *side_ordering,
 		const int *width_ordering, const int *height_ordering, 
 		const int x_chan_width, const int y_chan_width, const int Fc, 
@@ -1691,9 +1691,7 @@ static int *****alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
 		}
 
 		/* get pin connections to tracks of the current segment type */
-		int *****pin_to_seg_type_map = NULL;	/* [0..num_pins-1][0..width-1][0..height-1][0..3][0..Fc-1] */
-
-		pin_to_seg_type_map = alloc_and_load_pin_to_seg_type(pin_type,
+		auto pin_to_seg_type_map = alloc_and_load_pin_to_seg_type(pin_type,
 				seg_type_tracks, max_Fc, Type, perturb_switch_pattern[iseg], directionality);
 
 		/* connections in pin_to_seg_type_map are within that seg type -- i.e. in the [0,seg_type_tracks-1] range.
@@ -1717,14 +1715,6 @@ static int *****alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
 			}
 		}
 
-		/* free temporary loop variables */
-        vtr::free_matrix5(pin_to_seg_type_map, 0, Type->num_pins-1,
-				0, Type->width-1, 
-				0, Type->height-1,
-				0, 3,
-				0);
-		pin_to_seg_type_map = NULL;
-
 		/* next seg type will start at this track index */
 		seg_type_start_track += seg_type_tracks;
 	}
@@ -1740,7 +1730,7 @@ static int *****alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
 }
 
 
-static int *****alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
+static vtr::NdMatrix<int,5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
 		const int seg_type_tracks, const int Fc, 
 		const t_type_ptr Type, const bool perturb_switch_pattern,
 		const e_directionality directionality) {
@@ -1750,8 +1740,6 @@ static int *****alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
 	   Fc values */
 
 
-	int *****tracks_connected_to_pin; /* [0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
-
 	/* NB:  This wastes some space.  Could set tracks_..._pin[ipin][ioff][iside] = 
 	 * NULL if there is no pin on that side, or that pin is of the wrong type. 
 	 * Probably not enough memory to worry about, esp. as it's temporary.      
@@ -1759,24 +1747,17 @@ static int *****alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
 	 * tracks_connected_to_pin[ipin][iside][0] = OPEN.                               */
 
 	if (Type->num_pins < 1) {
-		return NULL;
+		return vtr::NdMatrix<int,5>();
 	}
 
-	tracks_connected_to_pin = vtr::alloc_matrix5<int>(0, Type->num_pins - 1,
-			0, Type->width - 1, 0, Type->height - 1, 0, 3, 0, Fc);
 
-	for (int pin = 0; pin < Type->num_pins; ++pin) {
-		for (int width = 0; width < Type->width; ++width) {
-			for (int height = 0; height < Type->height; ++height) {
-				for (int side = 0; side < 4; ++side) {
-					for (int fc = 0; fc < Fc; ++fc) {
-						tracks_connected_to_pin[pin][width][height][side][fc] = OPEN; /* Unconnected. */
-					}
-				}
-			}
-		}
-	}
-
+    auto tracks_connected_to_pin = vtr::NdMatrix<int,5>({
+                                                         size_t(Type->num_pins), //[0..num_pins-1]
+                                                         size_t(Type->width),    //[0..width-1]
+                                                         size_t(Type->height),   //[0..height-1]
+                                                         4,                      //[0..sides-1]
+                                                         size_t(Fc)},            //[0..Fc-1]
+                                                        OPEN); //Unconnected
     //Number of *physical* pins on each side.
     auto num_dir = vtr::NdMatrix<int,3>({
                                          size_t(Type->width),   //[0..width-1]
@@ -1786,14 +1767,13 @@ static int *****alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
                                         0);
 
     //List of pins of correct type on each side. Max possible space alloced for simplicity
-    //  Initialize to invalid, as a defensive coding technique
     auto dir_list = vtr::NdMatrix<int,4>({
                                           size_t(Type->width),    //[0..width-1]
                                           size_t(Type->height),   //[0..height-1]
                                           4,                      //[0..3]
                                           size_t(Type->num_pins)  //[0..num_pins-1]
                                          }, 
-                                         -1);
+                                         -1); //Defensive coding: Initialize to invalid
 
     auto num_done_per_dir = vtr::NdMatrix<int,3>({
                                                   size_t(Type->width),   //[0..width-1]
@@ -1967,7 +1947,7 @@ static int *****alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
 }
 
 static void load_uniform_switch_pattern(
-		int *****tracks_connected_to_pin, const int num_phys_pins,
+		vtr::NdMatrix<int,5>& tracks_connected_to_pin, const int num_phys_pins,
 		const int *pin_num_ordering, const int *side_ordering,
 		const int *width_ordering, const int *height_ordering, 
  		const int x_chan_width, const int y_chan_width, const int Fc,
@@ -2032,7 +2012,7 @@ static void load_uniform_switch_pattern(
 }
 
 static void load_perturbed_switch_pattern(
-		int *****tracks_connected_to_pin, const int num_phys_pins,
+		vtr::NdMatrix<int,5>& tracks_connected_to_pin, const int num_phys_pins,
 		const int *pin_num_ordering, const int *side_ordering,
 		const int *width_ordering, const int *height_ordering, 
  		const int x_chan_width, const int y_chan_width, const int Fc,
