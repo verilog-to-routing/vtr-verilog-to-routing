@@ -1252,8 +1252,7 @@ vtr::Matrix<int> alloc_and_load_net_pin_index() {
 	 * to the 2D net_pin_index array.                                             */
 
 	unsigned int netpin, inet;
-	int blk, iblk, ipin, itype, max_pins_per_clb = 0;
-	t_type_ptr type;
+	int blk, itype, max_pins_per_clb = 0;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
