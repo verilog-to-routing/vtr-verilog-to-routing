@@ -275,7 +275,7 @@ class NdMatrixBase {
         }
 
     protected:
-        std::array<DimRange,N> dim_ranges_ = {};
+        std::array<DimRange,N> dim_ranges_;
         std::unique_ptr<T[]> data_ = nullptr;
 };
 
