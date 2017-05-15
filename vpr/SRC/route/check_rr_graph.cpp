@@ -23,7 +23,7 @@ static void check_pass_transistors(int from_node);
 
 void check_rr_graph(const t_graph_type graph_type, 
 		const int L_nx, const int L_ny,
-		const int num_rr_switches, int ***Fc_in,
+		const int num_rr_switches, const std::vector<vtr::Matrix<int>>& Fc_in,
         const t_segment_inf* segment_inf) {
 
 	int *num_edges_from_current_to_node; /* [0..device_ctx.num_rr_nodes-1] */
