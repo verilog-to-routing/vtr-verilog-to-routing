@@ -32,6 +32,8 @@ using namespace std;
 
 #include "router_lookahead_map.h"
 
+#include "rr_types.h"
+
 struct t_mux {
 	int size;
 	t_mux *next;
@@ -54,6 +56,7 @@ struct t_clb_to_clb_directs {
 	int switch_index; //The switch type used by this direct connection
 };
 
+
 /******************* Variables local to this module. ***********************/
 
 
@@ -74,7 +77,7 @@ static vtr::NdMatrix<int,5> alloc_and_load_pin_to_seg_type(
 		const t_type_ptr Type, const bool perturb_switch_pattern,
 		const e_directionality directionality);
 
-static vtr::t_ivec ****alloc_and_load_track_to_pin_lookup(
+static vtr::NdMatrix<vtr::t_ivec,4> alloc_and_load_track_to_pin_lookup(
 		int *****pin_to_track_map, int **Fc, 
 		const int width, const int height,
 		const int num_pins, const int max_chan_width,
@@ -112,7 +115,7 @@ static void alloc_and_load_rr_graph(
 		const t_seg_details * seg_details, 
 		const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, 
 		bool * L_rr_edge_done,
-		vtr::t_ivec *****track_to_pin_lookup,
+		const t_track_to_pin_lookup& track_to_pin_lookup,
 		int ******opin_to_track_map, const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn,
 		t_sb_connection_map *sb_conn_map,
 		const vtr::Matrix<t_grid_tile>& L_grid, const int L_nx, const int L_ny, const int Fs,
@@ -163,7 +166,8 @@ static void build_rr_sinks_sources(
 
 static void build_rr_chan(
 		const int i, const int j, const t_rr_type chan_type,
-		vtr::t_ivec *****track_to_pin_lookup, t_sb_connection_map *sb_conn_map,
+		const t_track_to_pin_lookup& track_to_pin_lookup, 
+        t_sb_connection_map *sb_conn_map,
 		const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn, const int cost_index_offset,
 		const int max_chan_width, const int tracks_per_chan,
 		short ******sblock_pattern, const int Fs_per_side,
@@ -203,7 +207,7 @@ static void free_type_pin_to_track_map(
 		t_type_ptr types);
 
 static void free_type_track_to_pin_map(
-		vtr::t_ivec *****track_to_pin_map,
+		t_track_to_pin_lookup& track_to_pin_map,
 		t_type_ptr types, int max_chan_width);
 
 static t_seg_details *alloc_and_load_global_route_seg_details(
@@ -434,18 +438,20 @@ void build_rr_graph(
 	/* Create ipin map lookups */
 
 	int ******ipin_to_track_map = NULL; /* [0..device_ctx.num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
-	vtr::t_ivec *****track_to_pin_lookup = NULL; /* [0..device_ctx.num_block_types-1][0..max_chan_width-1][0..width][0..height][0..3] */
+    t_track_to_pin_lookup track_to_pin_lookup; /* [0..device_ctx.num_block_types-1][0..max_chan_width-1][0..width][0..height][0..3] */
 
 	ipin_to_track_map = (int ******) vtr::malloc(sizeof(int *****) * L_num_types);
-	track_to_pin_lookup = (vtr::t_ivec *****) vtr::malloc(sizeof(vtr::t_ivec ****) * L_num_types);
 	for (int itype = 0; itype < L_num_types; ++itype) {
 		
 		ipin_to_track_map[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
 			Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
 			num_seg_types, sets_per_seg_type);
-		track_to_pin_lookup[itype] = alloc_and_load_track_to_pin_lookup(
+
+		auto type_track_to_pin_lookup = alloc_and_load_track_to_pin_lookup(
 				ipin_to_track_map[itype], Fc_in[itype], types[itype].width, types[itype].height,
 				types[itype].num_pins, max_chan_width, num_seg_types);
+
+        track_to_pin_lookup.push_back(type_track_to_pin_lookup);
 	}
 	/* END IPconst MAP */
 
@@ -991,12 +997,12 @@ static void free_type_pin_to_track_map(int ******ipin_to_track_map,
 }
 
 /* frees the track to ipin mapping for each physical grid type */
-static void free_type_track_to_pin_map(vtr::t_ivec***** track_to_pin_map,
+static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
 		t_type_ptr types, int max_chan_width) {
     auto& device_ctx = g_vpr_ctx.device();
 
 	for (int i = 0; i < device_ctx.num_block_types; i++) {
-		if (track_to_pin_map[i] != NULL) {
+		if (!track_to_pin_map[i].empty()) {
 			for (int track = 0; track < max_chan_width; ++track) {
 				for (int width = 0; width < types[i].width; ++width) {
 					for (int height = 0; height < types[i].height; ++height) {
@@ -1008,12 +1014,8 @@ static void free_type_track_to_pin_map(vtr::t_ivec***** track_to_pin_map,
 					}
 				}
 			}
-            vtr::free_matrix4(track_to_pin_map[i], 0, max_chan_width - 1,
-					0, types[i].width - 1, 0, types[i].height - 1, 
-					0);
 		}
 	}
-	free(track_to_pin_map);
 }
 
 /* Does the actual work of allocating the rr_graph and filling all the *
@@ -1023,7 +1025,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 		const t_seg_details * seg_details, 
 		const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, 
 		bool * L_rr_edge_done,
-		vtr::t_ivec *****track_to_pin_lookup,
+		const t_track_to_pin_lookup& track_to_pin_lookup,
 		int ******opin_to_track_map, const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn,
 		t_sb_connection_map *sb_conn_map,
 		const vtr::Matrix<t_grid_tile>& L_grid, const int L_nx, const int L_ny, const int Fs,
@@ -1409,7 +1411,8 @@ static void build_rr_sinks_sources(const int i, const int j,
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes
    node properties such as cost, occupancy and capacity */
 static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type chan_type,
-		vtr::t_ivec *****track_to_pin_lookup, t_sb_connection_map *sb_conn_map,
+		const t_track_to_pin_lookup& track_to_pin_lookup, 
+        t_sb_connection_map *sb_conn_map,
 		const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn, const int cost_index_offset,
 		const int max_chan_width, const int tracks_per_chan,
 		short ******sblock_pattern, const int Fs_per_side,
@@ -2116,13 +2119,12 @@ static void check_all_tracks_reach_pins(t_type_ptr type,
 /* Allocates and loads the track to ipin lookup for each physical grid type. This
  * is the same information as the ipin_to_track map but accessed in a different way. */
 
-static vtr::t_ivec ****alloc_and_load_track_to_pin_lookup(
+static vtr::NdMatrix<vtr::t_ivec,4> alloc_and_load_track_to_pin_lookup(
 		int *****pin_to_track_map, int **Fc,
 		const int type_width, const int type_height,
 		const int num_pins, const int max_chan_width,
 		const int num_seg_types) {
 
-	vtr::t_ivec ****track_to_pin_lookup;
 	/* [0..max_chan_width-1][0..width][0..height][0..3].  For each track number 
 	 * it stores a vector for each of the four sides.  x-directed channels will 
 	 * use the TOP and   BOTTOM vectors to figure out what clb input pins they 
@@ -2136,12 +2138,11 @@ static vtr::t_ivec ****alloc_and_load_track_to_pin_lookup(
 	 * here is always in the perspective of the CLB                            */
 
 	if (num_pins < 1) {
-		return NULL;
+		return vtr::NdMatrix<vtr::t_ivec,4>();
 	}
 
 	/* Alloc and zero the the lookup table */
-	track_to_pin_lookup = vtr::alloc_matrix4<vtr::t_ivec>(0, max_chan_width - 1,
-			0, type_width - 1, 0, type_height - 1, 0, 3);
+	auto track_to_pin_lookup = vtr::NdMatrix<vtr::t_ivec,4>({size_t(max_chan_width), size_t(type_width), size_t(type_height), 4});
 
 	for (int track = 0; track < max_chan_width; ++track) {
 		for (int width = 0; width < type_width; ++width) {

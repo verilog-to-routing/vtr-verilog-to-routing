@@ -2,6 +2,7 @@
 #define RR_GRAPH2_H
 
 #include "build_switchblocks.h"
+#include "rr_types.h"
 
 /******************* Types shared by rr_graph2 functions *********************/
 
@@ -136,7 +137,7 @@ int get_unidir_opin_connections(
 int get_track_to_pins(
 		int seg, int chan, int track, int tracks_per_chan,
 		t_linked_edge **edge_list_ptr, vtr::t_ivec ***L_rr_node_indices,
-		vtr::t_ivec *****track_to_pin_lookup, t_seg_details *seg_details,
+		const t_track_to_pin_lookup& track_to_pin_lookup, t_seg_details *seg_details,
 		enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
 		enum e_directionality directionality);
 

@@ -13,6 +13,7 @@ using namespace std;
 #include "rr_graph2.h"
 #include "rr_graph_sbox.h"
 #include "read_xml_arch_file.h"
+#include "rr_types.h"
 
 #define UN_SET -1
 
@@ -1429,7 +1430,8 @@ int find_average_rr_node_index(
 int get_track_to_pins(
 		int seg, int chan, int track, int tracks_per_chan,
 		t_linked_edge ** edge_list_ptr, vtr::t_ivec *** L_rr_node_indices,
-		vtr::t_ivec *****track_to_pin_lookup, t_seg_details * seg_details,
+		const t_track_to_pin_lookup& track_to_pin_lookup, 
+        t_seg_details * seg_details,
 		enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
 		enum e_directionality directionality) {
 
