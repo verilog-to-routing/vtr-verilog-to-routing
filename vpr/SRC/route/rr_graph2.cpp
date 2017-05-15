@@ -772,7 +772,8 @@ int get_bidir_opin_connections(
 int get_unidir_opin_connections(
 		const int chan, const int seg, int Fc, const int seg_type_index,
 		const t_rr_type chan_type, const t_seg_details * seg_details,
-		t_linked_edge ** edge_list_ptr, int ***Fc_ofs,
+		t_linked_edge ** edge_list_ptr, 
+        vtr::NdMatrix<int,3>& Fc_ofs,
 		bool * L_rr_edge_done, const int max_len,
 		const int max_chan_width, vtr::t_ivec *** L_rr_node_indices,
 		bool * Fc_clipped) {

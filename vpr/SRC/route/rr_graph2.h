@@ -126,7 +126,7 @@ int get_unidir_opin_connections(
 		const t_rr_type chan_type,
 		const t_seg_details *seg_details,
 		t_linked_edge **edge_list_ptr,
-		int ***Fc_ofs,
+        vtr::NdMatrix<int,3>& Fc_ofs,
 		bool *L_rr_edge_done,
 		const int max_len,
 		const int max_chan_width,

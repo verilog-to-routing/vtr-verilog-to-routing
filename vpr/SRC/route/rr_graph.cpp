@@ -94,7 +94,7 @@ static void build_unidir_rr_opins(
 		const vtr::Matrix<t_grid_tile>& L_grid, int ***Fc_out,
 		const int max_chan_width,
 		const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, 
-		int ***Fc_xofs, int ***Fc_yofs,
+        vtr::NdMatrix<int,3>& Fc_xofs, vtr::NdMatrix<int,3>& Fc_yofs,
 		bool * L_rr_edge_done,
 		bool * Fc_clipped, vtr::t_ivec *** L_rr_node_indices, 
 		const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
@@ -116,8 +116,9 @@ static void alloc_and_load_rr_graph(
 		int ******opin_to_track_map, const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn,
 		t_sb_connection_map *sb_conn_map,
 		const vtr::Matrix<t_grid_tile>& L_grid, const int L_nx, const int L_ny, const int Fs,
-		short ******sblock_pattern, int ***Fc_out, int ***Fc_xofs,
-		int ***Fc_yofs, vtr::t_ivec *** L_rr_node_indices,
+		short ******sblock_pattern, int ***Fc_out,
+        vtr::NdMatrix<int,3>& Fc_xofs, vtr::NdMatrix<int,3>& Fc_yofs,
+        vtr::t_ivec *** L_rr_node_indices,
 		const int max_chan_width,
 		const int delayless_switch, const enum e_directionality directionality,
 		const int wire_to_ipin_switch, bool * Fc_clipped, 
@@ -381,20 +382,8 @@ void build_rr_graph(
 	/* These are data structures used by the the unidir opin mapping. They are used 
 	   to spread connections evenly for each segment type among the available
 	   wire start points */
-	int ***Fc_xofs = NULL; /* [0..device_ctx.ny-1][0..device_ctx.nx-1][0..num_seg_types-1] */
-	int ***Fc_yofs = NULL; /* [0..device_ctx.nx-1][0..device_ctx.ny-1][0..num_seg_types-1] */
-	if (UNI_DIRECTIONAL == directionality) {
-		Fc_xofs = vtr::alloc_matrix3<int>(0, L_ny, 0, L_nx, 0, num_seg_types-1);
-		Fc_yofs = vtr::alloc_matrix3<int>(0, L_nx, 0, L_ny, 0, num_seg_types-1);
-		for (int i = 0; i <= L_nx; ++i) {
-			for (int j = 0; j <= L_ny; ++j) {
-				for (int iseg = 0; iseg < num_seg_types; ++iseg){
-					Fc_xofs[j][i][iseg] = 0;
-					Fc_yofs[i][j][iseg] = 0;
-				}
-			}
-		}
-	}
+    vtr::NdMatrix<int,3> Fc_xofs({size_t(L_ny + 1), size_t(L_nx + 1), size_t(num_seg_types)}, 0); //[0..L_ny][0..L_nx][0..num_seg_types-1]
+    vtr::NdMatrix<int,3> Fc_yofs({size_t(L_nx + 1), size_t(L_ny + 1), size_t(num_seg_types)}, 0); //[0..L_nx][0..L_ny][0..num_seg_types-1]
 
 	/* START SB LOOKUP */
 	/* Alloc and load the switch block lookup */
@@ -578,14 +567,6 @@ void build_rr_graph(
 	if (L_rr_edge_done) {
 		free(L_rr_edge_done);
 		L_rr_edge_done = NULL;
-	}
-	if (Fc_xofs) {
-		vtr::free_matrix3(Fc_xofs, 0, L_ny, 0, L_nx, 0);
-		Fc_xofs = NULL;
-	}
-	if (Fc_yofs) {
-        vtr::free_matrix3(Fc_yofs, 0, L_nx, 0, L_ny, 0);
-		Fc_yofs = NULL;
 	}
 	if (unidir_sb_pattern) {
        		free_sblock_pattern_lookup(unidir_sb_pattern);
@@ -1046,8 +1027,9 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 		int ******opin_to_track_map, const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn,
 		t_sb_connection_map *sb_conn_map,
 		const vtr::Matrix<t_grid_tile>& L_grid, const int L_nx, const int L_ny, const int Fs,
-		short ******sblock_pattern, int ***Fc_out, int ***Fc_xofs,
-		int ***Fc_yofs, vtr::t_ivec *** L_rr_node_indices,
+		short ******sblock_pattern, int ***Fc_out, 
+        vtr::NdMatrix<int,3>& Fc_xofs, vtr::NdMatrix<int,3>& Fc_yofs, 
+        vtr::t_ivec *** L_rr_node_indices,
 		const int max_chan_width, 
 		const int delayless_switch, const enum e_directionality directionality,
 		const int wire_to_ipin_switch, bool * Fc_clipped,
@@ -2344,7 +2326,7 @@ void print_rr_indexed_data(FILE * fp, int index) {
 static void build_unidir_rr_opins(const int i, const int j,
 		const vtr::Matrix<t_grid_tile>& L_grid, int ***Fc_out, const int max_chan_width, 
 		const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
-		int ***Fc_xofs, int ***Fc_yofs,
+        vtr::NdMatrix<int,3>& Fc_xofs, vtr::NdMatrix<int,3>& Fc_yofs,
 		bool * L_rr_edge_done,
 		bool * Fc_clipped, vtr::t_ivec *** L_rr_node_indices,
 		const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
@@ -2404,7 +2386,7 @@ static void build_unidir_rr_opins(const int i, const int j,
 						int chan = (vert ? (j + height) : (i + width));
 						int seg = (vert ? (i + width) : (j + height));
 						int max_len = (vert ? device_ctx.nx : device_ctx.ny);
-						int ***Fc_ofs = (vert ? Fc_xofs : Fc_yofs);
+                        vtr::NdMatrix<int,3>& Fc_ofs = (vert ? Fc_xofs : Fc_yofs);
 						if (false == pos_dir) {
 							--chan;
 						}
