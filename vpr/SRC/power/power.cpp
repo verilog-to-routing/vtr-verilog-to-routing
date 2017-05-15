@@ -26,12 +26,13 @@
 #include <csignal>
 #include <ctime>
 #include <cmath>
-#include "vtr_assert.h"
 #include <ctype.h>
 using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_log.h"
+#include "vtr_assert.h"
+#include "vtr_memory.h"
 
 #include "power.h"
 #include "power_components.h"

@@ -27,6 +27,7 @@ using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_assert.h"
+#include "vtr_memory.h"
 
 #include "power_sizing.h"
 #include "power.h"

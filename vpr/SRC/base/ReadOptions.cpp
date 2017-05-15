@@ -3,6 +3,7 @@
 using namespace std;
 
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"

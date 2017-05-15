@@ -2,6 +2,7 @@
 
 #include "vtr_matrix.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "rr_graph_sbox.h"

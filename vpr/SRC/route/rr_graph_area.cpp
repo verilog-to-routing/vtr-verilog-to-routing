@@ -4,6 +4,7 @@ using namespace std;
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_math.h"
+#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"

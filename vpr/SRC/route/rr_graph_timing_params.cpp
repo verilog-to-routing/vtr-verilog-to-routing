@@ -1,5 +1,6 @@
 #include <cstdio>
-using namespace std;
+
+#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -10,6 +11,7 @@ using namespace std;
 #include "rr_graph2.h"
 #include "rr_graph_timing_params.h"
 
+using namespace std;
 /****************** Subroutine definitions *********************************/
 
 void add_rr_graph_C_from_switches(float C_ipin_cblock) {

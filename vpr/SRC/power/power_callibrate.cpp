@@ -20,8 +20,10 @@
  */
 
 /************************* INCLUDES *********************************/
-#include "vtr_assert.h"
 #include <iostream>
+
+#include "vtr_assert.h"
+#include "vtr_memory.h"
 
 #include "power_callibrate.h"
 #include "power_components.h"

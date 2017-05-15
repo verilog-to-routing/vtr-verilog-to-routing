@@ -4,6 +4,7 @@
 #include "vtr_matrix.h"
 #include "vtr_util.h"
 #include "vtr_error.h"
+#include "vtr_memory.h"
 
 namespace vtr {
 
@@ -20,66 +21,6 @@ void free_ivec_vector(t_ivec *ivec_vector, int nrmin, int nrmax) {
     //coverity[offset_free]
 	free(ivec_vector + nrmin);
 }
-
-void free_ivec_matrix(t_ivec **ivec_matrix, int nrmin, int nrmax,
-		int ncmin, int ncmax) {
-
-	/* Frees a 2D matrix of integer vectors (ivecs).                     */
-
-	int i, j;
-
-	for (i = nrmin; i <= nrmax; i++) {
-		for (j = ncmin; j <= ncmax; j++) {
-			if (ivec_matrix[i][j].nelem != 0) {
-				free(ivec_matrix[i][j].list);
-			}
-		}
-	}
-
-    vtr::free_matrix(ivec_matrix, nrmin, nrmax, ncmin);
-}
-
-void free_ivec_matrix3(t_ivec ***ivec_matrix3, int nrmin, int nrmax,
-		int ncmin, int ncmax, int ndmin, int ndmax) {
-
-	/* Frees a 3D matrix of integer vectors (ivecs).                     */
-
-	int i, j, k;
-
-	for (i = nrmin; i <= nrmax; i++) {
-		for (j = ncmin; j <= ncmax; j++) {
-			for (k = ndmin; k <= ndmax; k++) {
-				if (ivec_matrix3[i][j][k].nelem != 0) {
-					free(ivec_matrix3[i][j][k].list);
-				}
-			}
-		}
-	}
-
-    vtr::free_matrix3(ivec_matrix3, nrmin, nrmax, ncmin, ncmax, ndmin);
-}
-
-void print_int_matrix3(int ***vptr, int nrmin, int nrmax, int ncmin, int ncmax,
-		int ndmin, int ndmax, char *file) {
-	FILE *outfile;
-	int i, j, k;
-
-	outfile = vtr::fopen(file, "w");
-
-	for (k = nrmin; k <= nrmax; ++k) {
-		fprintf(outfile, "Plane %d\n", k);
-		for (j = ncmin; j <= ncmax; ++j) {
-			for (i = ndmin; i <= ndmax; ++i) {
-				fprintf(outfile, "%d ", vptr[k][j][i]);
-			}
-			fprintf(outfile, "\n");
-		}
-		fprintf(outfile, "\n");
-	}
-
-    vtr::fclose(outfile);
-}
-
 
 void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
 		int num_items, t_ivec *ivec, t_linked_int ** free_list_head_ptr) {

@@ -20,11 +20,11 @@
 
 #include <cstdio>
 #include <cstring>
-using namespace std;
-
-#include "vtr_assert.h"
 #include <vector>
 #include <cmath>
+
+#include "vtr_assert.h"
+#include "vtr_memory.h"
 
 #include "vtr_util.h"
 #include "physical_types.h"
@@ -32,6 +32,8 @@ using namespace std;
 #include "globals.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
+
+using namespace std;
 
 /*****************************************************************************************
 * Internal functions declarations

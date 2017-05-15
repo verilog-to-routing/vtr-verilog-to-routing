@@ -1,6 +1,8 @@
 #ifndef NET_DELAY_H
 #define NET_DELAY_H
 
+#include "vtr_memory.h"
+
 float **alloc_net_delay(vtr::t_chunk *chunk_list_ptr,
 		const vector<t_vnet> & nets, unsigned int n_nets);
 

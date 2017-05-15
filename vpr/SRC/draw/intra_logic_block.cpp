@@ -20,8 +20,11 @@
 
 #include <cstdio>
 #include <algorithm>
-#include "vtr_assert.h"
 #include <string.h>
+
+#include "vtr_assert.h"
+#include "vtr_memory.h"
+
 using namespace std;
 
 #include "intra_logic_block.h"
