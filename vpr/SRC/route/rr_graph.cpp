@@ -1749,10 +1749,7 @@ static int *****alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
 	   the looping below will have to be modified if we want to account for pin-based
 	   Fc values */
 
-	int ***num_dir; /* [0..width][0..height][0..3] - Number of *physical* pins on each side. */
-	int ****dir_list; /* [0..width][0..height][0..3][0..num_pins-1] - List of pins of correct type on each side. Max possible space alloced for simplicity */
 
-	int ***num_done_per_dir; /* [0..width][0..height][0..3] */
 	int *****tracks_connected_to_pin; /* [0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
 
 	/* NB:  This wastes some space.  Could set tracks_..._pin[ipin][ioff][iside] = 
@@ -1780,20 +1777,30 @@ static int *****alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
 		}
 	}
 
-	num_dir = vtr::alloc_matrix3<int>(0, Type->width - 1, 0, Type->height - 1, 0, 3);
-	dir_list = vtr::alloc_matrix4<int>(0, Type->width - 1, 0, Type->height - 1, 0, 3, 0, Type->num_pins - 1);
+    //Number of *physical* pins on each side.
+    auto num_dir = vtr::NdMatrix<int,3>({
+                                         size_t(Type->width),   //[0..width-1]
+                                         size_t(Type->height),  //[0..height-1]
+                                         4                      //[0..3]
+                                        },
+                                        0);
 
-	/* Defensive coding.  Try to crash hard if I use an unset entry.  */
-	for (int width = 0; width < Type->width; ++width)
-		for (int height = 0; height < Type->height; ++height)
-			for (int side = 0; side < 4; ++side)
-				for (int pin = 0; pin < Type->num_pins; ++pin)
-					dir_list[width][height][side][pin] = (-1);
+    //List of pins of correct type on each side. Max possible space alloced for simplicity
+    //  Initialize to invalid, as a defensive coding technique
+    auto dir_list = vtr::NdMatrix<int,4>({
+                                          size_t(Type->width),    //[0..width-1]
+                                          size_t(Type->height),   //[0..height-1]
+                                          4,                      //[0..3]
+                                          size_t(Type->num_pins)  //[0..num_pins-1]
+                                         }, 
+                                         -1);
 
-	for (int width = 0; width < Type->width; ++width)
-		for (int height = 0; height < Type->height; ++height)
-			for (int side = 0; side < 4; ++side)
-				num_dir[width][height][side] = 0;
+    auto num_done_per_dir = vtr::NdMatrix<int,3>({
+                                                  size_t(Type->width),   //[0..width-1]
+                                                  size_t(Type->height),  //[0..height-1]
+                                                  4                      //[0..3]
+                                                 },
+                                                 0);
 
 	for (int pin = 0; pin < Type->num_pins; ++pin) {
 		int pin_class = Type->pin_class[pin];
@@ -1822,14 +1829,6 @@ static int *****alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
 		for (int height = 0; height < Type->height; ++height) {
 			for (int side = 0; side < 4; ++side)
 				num_phys_pins += num_dir[width][height][side]; /* Num. physical pins per type */
-		}
-	}
-	num_done_per_dir = vtr::alloc_matrix3<int>(0, Type->width - 1, 0, Type->height - 1, 0, 3);
-	for (int width = 0; width < Type->width; ++width) {
-		for (int height = 0; height < Type->height; ++height) {
-			for (int side = 0; side < 4; ++side) {
-				num_done_per_dir[width][height][side] = 0;
-			}
 		}
 	}
 	int *pin_num_ordering = (int *) vtr::malloc(num_phys_pins * sizeof(int));
@@ -1959,9 +1958,6 @@ static int *****alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
 #endif
 
 	/* Free all temporary storage. */
-    vtr::free_matrix3(num_dir, 0, Type->width - 1, 0, Type->height - 1, 0);
-	vtr::free_matrix4(dir_list, 0, Type->width - 1, 0, Type->height - 1, 0, 3, 0);
-	vtr::free_matrix3(num_done_per_dir, 0, Type->width - 1, 0, Type->height - 1, 0);
 	free(pin_num_ordering);
 	free(side_ordering);
 	free(width_ordering);
