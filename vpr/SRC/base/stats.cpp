@@ -8,6 +8,7 @@ using namespace std;
 #include "vtr_matrix.h"
 #include "vtr_log.h"
 #include "vtr_math.h"
+#include "vtr_ndmatrix.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -32,7 +33,7 @@ using namespace std;
 
 /********************** Subroutines local to this module *********************/
 
-static void load_channel_occupancies(int **chanx_occ, int **chany_occ);
+static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<int>& chany_occ);
 
 static void length_and_bends_stats(void);
 
@@ -204,11 +205,17 @@ static void get_channel_occupancy_stats(void) {
 	/* Determines how many tracks are used in each channel.                    */
     auto& device_ctx = g_vpr_ctx.device();
 
-	int **chanx_occ; /* [1..device_ctx.nx][0..device_ctx.ny] */
-	int **chany_occ; /* [0..device_ctx.nx][1..device_ctx.ny] */
+	auto chanx_occ = vtr::Matrix<int>({{
+                                        {1, size_t(device_ctx.nx+1)}, //[1..device_ctx.nx]
+                                        {0, size_t(device_ctx.ny+1)}  //[0..device_ctx.ny]
+                                      }}, 
+                                      0);
 
-	chanx_occ = vtr::alloc_matrix<int>(1, device_ctx.nx, 0, device_ctx.ny);
-	chany_occ = vtr::alloc_matrix<int>(0, device_ctx.nx, 1, device_ctx.ny);
+	auto chany_occ = vtr::Matrix<int>({{
+                                        {0, size_t(device_ctx.nx+1)}, //[0..device_ctx.nx]
+                                        {1, size_t(device_ctx.ny+1)}  //[1..device_ctx.ny]
+                                      }},
+                                      0);
 	load_channel_occupancies(chanx_occ, chany_occ);
 
 	vtr::printf_info("\n");
@@ -249,12 +256,9 @@ static void get_channel_occupancy_stats(void) {
 	vtr::printf_info("\n");
 	vtr::printf_info("Total tracks in x-direction: %d, in y-direction: %d\n", total_x, total_y);
 	vtr::printf_info("\n");
-
-    vtr::free_matrix(chanx_occ, 1, device_ctx.nx, 0);
-	vtr::free_matrix(chany_occ, 0, device_ctx.nx, 1);
 }
 
-static void load_channel_occupancies(int **chanx_occ, int **chany_occ) {
+static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<int>& chany_occ) {
 
 	/* Loads the two arrays passed in with the total occupancy at each of the  *
 	 * channel segments in the FPGA.                                           */
