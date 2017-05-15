@@ -102,15 +102,15 @@ static void add_to_heap(t_heap *hptr);
 static t_heap *alloc_heap_data(void);
 static t_linked_f_pointer *alloc_linked_f_pointer(void);
 
-static vtr::t_ivec **alloc_and_load_clb_opins_used_locally(void);
+static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void);
 static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 		float pres_fac, float acc_fac);
 
 /************************** Subroutine definitions ***************************/
 
 void save_routing(t_trace **best_routing,
-		vtr::t_ivec ** clb_opins_used_locally,
-		vtr::t_ivec ** saved_clb_opins_used_locally) {
+		const t_clb_opins_used& clb_opins_used_locally,
+		t_clb_opins_used& saved_clb_opins_used_locally) {
 
 	/* This routing frees any routing currently held in best routing,       *
 	 * then copies over the current routing (held in route_ctx.trace_head), and       *
@@ -121,9 +121,7 @@ void save_routing(t_trace **best_routing,
 	 * since this is also part of the routing.                              */
 
 	unsigned int inet;
-	int iblk, iclass, ipin, num_local_opins;
 	t_trace *tptr, *tempptr;
-	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -149,22 +147,12 @@ void save_routing(t_trace **best_routing,
 	}
 
 	/* Save which OPINs are locally used.                           */
-
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		type = cluster_ctx.blocks[iblk].type;
-		for (iclass = 0; iclass < type->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
-			for (ipin = 0; ipin < num_local_opins; ipin++) {
-				saved_clb_opins_used_locally[iblk][iclass].list[ipin] =
-						clb_opins_used_locally[iblk][iclass].list[ipin];
-			}
-		}
-	}
+    saved_clb_opins_used_locally = clb_opins_used_locally;
 }
 
 void restore_routing(t_trace **best_routing,
-		vtr::t_ivec ** clb_opins_used_locally,
-		vtr::t_ivec ** saved_clb_opins_used_locally) {
+		t_clb_opins_used&  clb_opins_used_locally,
+		const t_clb_opins_used&  saved_clb_opins_used_locally) {
 
 	/* Deallocates any current routing in route_ctx.trace_head, and replaces it with    *
 	 * the routing in best_routing.  Best_routing is set to NULL to show that *
@@ -174,8 +162,6 @@ void restore_routing(t_trace **best_routing,
 	 * routine.  Also restores the locally used opin data.                    */
 
 	unsigned int inet;
-	int iblk, ipin, iclass, num_local_opins;
-	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -190,19 +176,8 @@ void restore_routing(t_trace **best_routing,
 		best_routing[inet] = NULL; /* No stored routing. */
 	}
 
-	/* Save which OPINs are locally used.                           */
-
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		type = cluster_ctx.blocks[iblk].type;
-		for (iclass = 0; iclass < type->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
-			for (ipin = 0; ipin < num_local_opins; ipin++) {
-				clb_opins_used_locally[iblk][iclass].list[ipin] =
-						saved_clb_opins_used_locally[iblk][iclass].list[ipin];
-			}
-		}
-
-	}
+	/* Restore which OPINs are locally used.                           */
+    clb_opins_used_locally = saved_clb_opins_used_locally;
 }
 
 void get_serial_num(void) {
@@ -296,7 +271,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
         t_slack * slacks,
 #endif
         std::shared_ptr<SetupTimingInfo> timing_info,
-		t_chan_width_dist chan_width_dist, vtr::t_ivec ** clb_opins_used_locally,
+		t_chan_width_dist chan_width_dist, t_clb_opins_used& clb_opins_used_locally,
 		t_direct_inf *directs, int num_directs,
         ScreenUpdatePriority first_iteration_priority) {
 
@@ -723,15 +698,12 @@ void free_traceback(int inet) {
 	route_ctx.trace_tail[inet] = NULL;
 }
 
-vtr::t_ivec **
-alloc_route_structs(void) {
+t_clb_opins_used alloc_route_structs(void) {
 
 	/* Allocates the data structures needed for routing.    */
 
-	vtr::t_ivec **clb_opins_used_locally;
-
 	alloc_route_static_structs();
-	clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
+	t_clb_opins_used clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
 
 	return (clb_opins_used_locally);
 }
@@ -752,74 +724,43 @@ void alloc_route_static_structs(void) {
 	route_ctx.route_bb = (t_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_bb));
 }
 
-t_trace **
-alloc_saved_routing(vtr::t_ivec ** clb_opins_used_locally,
-		vtr::t_ivec *** saved_clb_opins_used_locally_ptr) {
+t_trace ** alloc_saved_routing() {
 
 	/* Allocates data structures into which the key routing data can be saved,   *
 	 * allowing the routing to be recovered later (e.g. after a another routing  *
 	 * is attempted).                                                            */
 
 	t_trace **best_routing;
-	vtr::t_ivec **saved_clb_opins_used_locally;
-	int iblk, iclass, num_local_opins;
-	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	best_routing = (t_trace **) vtr::calloc(cluster_ctx.clbs_nlist.net.size(),
 			sizeof(t_trace *));
 
-	saved_clb_opins_used_locally = (vtr::t_ivec **) vtr::malloc(
-			cluster_ctx.num_blocks * sizeof(vtr::t_ivec *));
-
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		type = cluster_ctx.blocks[iblk].type;
-		saved_clb_opins_used_locally[iblk] = (vtr::t_ivec *) vtr::malloc(
-				type->num_class * sizeof(vtr::t_ivec));
-		for (iclass = 0; iclass < type->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
-			saved_clb_opins_used_locally[iblk][iclass].nelem = num_local_opins;
-
-			if (num_local_opins == 0) {
-				saved_clb_opins_used_locally[iblk][iclass].list = NULL;
-			} else {
-				saved_clb_opins_used_locally[iblk][iclass].list =
-						(int *) vtr::malloc(num_local_opins * sizeof(int));
-			}
-		}
-	}
-
-	*saved_clb_opins_used_locally_ptr = saved_clb_opins_used_locally;
 	return (best_routing);
 }
 
 /* TODO: super hacky, jluu comment, I need to rethink this whole function, without it, logically equivalent output pins incorrectly use more pins than needed.  I force that CLB output pin uses at most one output pin  */
-static vtr::t_ivec **
-alloc_and_load_clb_opins_used_locally(void) {
+static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
 
 	/* Allocates and loads the data needed to make the router reserve some CLB  *
 	 * output pins for connections made locally within a CLB (if the netlist    *
 	 * specifies that this is necessary).                                       */
 
-	vtr::t_ivec **clb_opins_used_locally;
-	int iblk, clb_pin, iclass, num_local_opins;
+	t_clb_opins_used clb_opins_used_locally;
+	int iblk, clb_pin, iclass;
 	int class_low, class_high;
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-	clb_opins_used_locally = (vtr::t_ivec **) vtr::malloc(
-			cluster_ctx.num_blocks * sizeof(vtr::t_ivec *));
+	clb_opins_used_locally.resize(cluster_ctx.num_blocks);
 
 	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
 		type = cluster_ctx.blocks[iblk].type;
 		get_class_range_for_block(iblk, &class_low, &class_high);
-		clb_opins_used_locally[iblk] = (vtr::t_ivec *) vtr::malloc(
-				type->num_class * sizeof(vtr::t_ivec));
-		for (iclass = 0; iclass < type->num_class; iclass++)
-			clb_opins_used_locally[iblk][iclass].nelem = 0;
+		clb_opins_used_locally[iblk].resize(type->num_class);
 
 		for (clb_pin = 0; clb_pin < type->num_pins; clb_pin++) {
 			// another hack to avoid I/Os, whole function needs a rethink
@@ -833,19 +774,9 @@ alloc_and_load_clb_opins_used_locally(void) {
 				if(type->class_inf[iclass].type == DRIVER) {
 					/* Check to make sure class is in same range as that assigned to block */
 					VTR_ASSERT(iclass >= class_low && iclass <= class_high);
-					clb_opins_used_locally[iblk][iclass].nelem++;
+					clb_opins_used_locally[iblk][iclass].emplace_back();
 				}
 			}
-		}
-
-		for (iclass = 0; iclass < type->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
-
-			if (num_local_opins == 0)
-				clb_opins_used_locally[iblk][iclass].list = NULL;
-			else
-				clb_opins_used_locally[iblk][iclass].list = (int *) vtr::malloc(
-						num_local_opins * sizeof(int));
 		}
 	}
 
@@ -896,20 +827,10 @@ void free_route_structs() {
 	linked_f_pointer_free_head = NULL;
 }
 
-void free_saved_routing(t_trace **best_routing,
-		vtr::t_ivec ** saved_clb_opins_used_locally) {
+void free_saved_routing(t_trace **best_routing) {
 
 	/* Frees the data structures needed to save a routing.                     */
-	int i;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
 	free(best_routing);
-	for (i = 0; i < cluster_ctx.num_blocks; i++) {
-		free_ivec_vector(saved_clb_opins_used_locally[i], 0,
-				cluster_ctx.blocks[i].type->num_class - 1);
-	}
-	free(saved_clb_opins_used_locally);
 }
 
 void alloc_and_load_rr_node_route_structs(void) {
@@ -1460,7 +1381,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 /* TODO: jluu: I now always enforce logically equivalent outputs to use at most one output pin, should rethink how to do this */
 void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins,
-		vtr::t_ivec ** clb_opins_used_locally) {
+		t_clb_opins_used& clb_opins_used_locally) {
 
 	/* In the past, this function implicitly allowed LUT duplication when there are free LUTs. 
 	 This was especially important for logical equivalence; however, now that we have a very general
@@ -1482,10 +1403,10 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 		for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
 			type = cluster_ctx.blocks[iblk].type;
 			for (iclass = 0; iclass < type->num_class; iclass++) {
-				num_local_opin = clb_opins_used_locally[iblk][iclass].nelem;
+				num_local_opin = clb_opins_used_locally[iblk][iclass].size();
 				/* Always 0 for pads and for RECEIVER (IPIN) classes */
 				for (ipin = 0; ipin < num_local_opin; ipin++) {
-					inode = clb_opins_used_locally[iblk][iclass].list[ipin];
+					inode = clb_opins_used_locally[iblk][iclass][ipin];
 					adjust_one_rr_occ_and_apcost(inode, -1, pres_fac, acc_fac);
 				}
 			}
@@ -1495,7 +1416,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
 		type = cluster_ctx.blocks[iblk].type;
 		for (iclass = 0; iclass < type->num_class; iclass++) {
-			num_local_opin = clb_opins_used_locally[iblk][iclass].nelem;
+			num_local_opin = clb_opins_used_locally[iblk][iclass].size();
 			/* Always 0 for pads and for RECEIVER (IPIN) classes */
 
 			if (num_local_opin != 0) { /* Have to reserve (use) some OPINs */
@@ -1511,7 +1432,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 					heap_head_ptr = get_heap_head();
 					inode = heap_head_ptr->index;
 					adjust_one_rr_occ_and_apcost(inode, 1, pres_fac, acc_fac);
-					clb_opins_used_locally[iblk][iclass].list[ipin] = inode;
+					clb_opins_used_locally[iblk][iclass][ipin] = inode;
 					free_heap_data(heap_head_ptr);
 				}
 

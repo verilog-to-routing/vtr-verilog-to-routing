@@ -71,7 +71,7 @@ bool place_and_route(t_placer_opts placer_opts,
 	bool success = false;
 	vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
-	vtr::t_ivec **clb_opins_used_locally = NULL; /* [0..cluster_ctx.num_blocks-1][0..num_class-1] */
+	t_clb_opins_used clb_opins_used_locally; /* [0..cluster_ctx.num_blocks-1][0..num_class-1] */
 	clock_t begin, end;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -217,15 +217,6 @@ bool place_and_route(t_placer_opts placer_opts,
 		fflush(stdout);
 	}
 
-	if (clb_opins_used_locally != NULL) {
-		for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
-			free_ivec_vector(clb_opins_used_locally[i], 0,
-					cluster_ctx.blocks[i].type->num_class - 1);
-		}
-		free(clb_opins_used_locally);
-		clb_opins_used_locally = NULL;
-	}
-
 	/* Frees up all the data structure used in vpr_utils. */
 	free_port_pin_from_blk_pin();
 	free_blk_pin_from_port_pin();
@@ -270,7 +261,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-	vtr::t_ivec **clb_opins_used_locally, **saved_clb_opins_used_locally;
+	t_clb_opins_used clb_opins_used_locally, saved_clb_opins_used_locally;
 
 	/* [0..cluster_ctx.num_blocks-1][0..num_class-1] */
 	int attempt_count;
@@ -293,8 +284,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 	}
 
 	clb_opins_used_locally = alloc_route_structs();
-	best_routing = alloc_saved_routing(clb_opins_used_locally,
-			&saved_clb_opins_used_locally);
+	best_routing = alloc_saved_routing();
 
 #ifdef ENABLE_CLASSIC_VPR_STA
 	slacks = alloc_and_load_timing_graph(timing_inf);
@@ -578,15 +568,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 	sprintf(msg, "Routing succeeded with a channel width factor of %d.", final);
 	update_screen(ScreenUpdatePriority::MAJOR, msg, ROUTING, timing_info);
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (i = 0; i < cluster_ctx.num_blocks; i++) {
-		free_ivec_vector(clb_opins_used_locally[i], 0,
-				cluster_ctx.blocks[i].type->num_class - 1);
-	}
-	free(clb_opins_used_locally);
-	clb_opins_used_locally = NULL;
-
-	free_saved_routing(best_routing, saved_clb_opins_used_locally);
+	free_saved_routing(best_routing);
 	fflush(stdout);
 	
 #ifdef ENABLE_CLASSIC_VPR_STA

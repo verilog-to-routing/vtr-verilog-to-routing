@@ -127,7 +127,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks, 
 #endif
-        vtr::t_ivec ** clb_opins_used_locally,
+        t_clb_opins_used& clb_opins_used_locally,
 #ifdef ENABLE_CLASSIC_VPR_STA
         , const t_timing_inf &timing_inf
 #endif

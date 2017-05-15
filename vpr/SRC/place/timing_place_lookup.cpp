@@ -88,8 +88,6 @@ static t_type_descriptor *type_descriptors_backup;
 static vtr::Matrix<t_grid_tile> grid_backup;
 static int num_types_backup;
 
-vtr::t_ivec **clb_opins_used_locally;
-
 /*** Function Prototypes *****/
 
 static void alloc_delay_lookup_netlists();
@@ -470,7 +468,7 @@ static void alloc_routing_structs(t_router_opts router_opts,
 	/* Only one block per tile */
 	assign_locations(device_ctx.FILL_TYPE, 1, 1, 0, device_ctx.FILL_TYPE, device_ctx.nx, device_ctx.ny, 0);
 
-	clb_opins_used_locally = alloc_route_structs();
+	alloc_route_structs();
 
 	free_rr_graph();
 
@@ -514,10 +512,6 @@ static void alloc_routing_structs(t_router_opts router_opts,
 
 /**************************************/
 static void free_routing_structs() {
-	int i;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
 	free_rr_graph();
 
 	free_rr_node_route_structs();
@@ -526,15 +520,6 @@ static void free_routing_structs() {
 
 	free_timing_driven_route_structs(pin_criticality, sink_order,
 			rt_node_of_sink);
-	
-	if (clb_opins_used_locally != NULL) {
-		for (i = 0; i < cluster_ctx.num_blocks; i++) {
-			free_ivec_vector(clb_opins_used_locally[i], 0,
-					cluster_ctx.blocks[i].type->num_class - 1);
-		}
-		free(clb_opins_used_locally);
-		clb_opins_used_locally = NULL;
-	}
 }
 
 /**************************************/

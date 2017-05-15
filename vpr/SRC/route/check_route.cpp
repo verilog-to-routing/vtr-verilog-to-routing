@@ -23,14 +23,14 @@ static void check_switch(t_trace *tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(int inet, bool * connected_to_route);
-static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_locally);
-static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
+static void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_locally);
+static void check_locally_used_clb_opins(const t_clb_opins_used&  clb_opins_used_locally,
 		enum e_route_type route_type, const t_segment_inf* segment_inf);
 
 /************************ Subroutine definitions ****************************/
 
 void check_route(enum e_route_type route_type, int num_switches,
-		vtr::t_ivec ** clb_opins_used_locally, const t_segment_inf* segment_inf) {
+		const t_clb_opins_used& clb_opins_used_locally, const t_segment_inf* segment_inf) {
 
 	/* This routine checks that a routing:  (1) Describes a properly         *
 	 * connected path for each net, (2) this path connects all the           *
@@ -512,7 +512,7 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
 	return (1);
 }
 
-static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_locally) {
+static void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_locally) {
 
 	/*
      * This routine updates the occ field in the route_ctx.rr_node_state structure 
@@ -564,17 +564,17 @@ static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_local
 
 	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
 		for (iclass = 0; iclass < cluster_ctx.blocks[iblk].type->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
+			num_local_opins = clb_opins_used_locally[iblk][iclass].size();
 			/* Will always be 0 for pads or SINK classes. */
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
-				inode = clb_opins_used_locally[iblk][iclass].list[ipin];
+				inode = clb_opins_used_locally[iblk][iclass][ipin];
 				route_ctx.rr_node_state[inode].set_occ(route_ctx.rr_node_state[inode].occ() + 1);
 			}
 		}
 	}
 }
 
-static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
+static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
 		enum e_route_type route_type, const t_segment_inf* segment_inf) {
 
 	/* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
@@ -588,11 +588,11 @@ static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 
 	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
 		for (iclass = 0; iclass < cluster_ctx.blocks[iblk].type->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
+			num_local_opins = clb_opins_used_locally[iblk][iclass].size();
 			/* Always 0 for pads and for SINK classes */
 
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
-				inode = clb_opins_used_locally[iblk][iclass].list[ipin];
+				inode = clb_opins_used_locally[iblk][iclass][ipin];
 				check_node_and_range(inode, route_type, segment_inf); /* Node makes sense? */
 
 				/* Now check that node is an OPIN of the right type. */

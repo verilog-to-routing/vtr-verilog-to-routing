@@ -10,6 +10,7 @@ namespace vtr {
     /* Integer vector.  nelem stores length, list[0..nelem-1] stores list of    *
      * integers.                                                                */
 
+    //TODO: Convert all uses of this data structure to std::vector and elete
     typedef struct s_ivec {
         int nelem;
         int *list;

@@ -32,6 +32,7 @@ struct t_heap {
 	int prev_edge;
 };
 
+typedef std::vector<std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 /******* Subroutines in route_common used only by other router modules ******/
 
@@ -94,7 +95,7 @@ void alloc_route_static_structs(void);
 void free_trace_structs(void);
 
 void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins,
-		vtr::t_ivec ** clb_opins_used_locally);
+		t_clb_opins_used& clb_opins_used_locally);
 
 void free_chunk_memory_trace(void);
 
