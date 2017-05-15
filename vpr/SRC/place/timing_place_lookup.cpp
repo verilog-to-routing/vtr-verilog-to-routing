@@ -75,7 +75,7 @@ static vtr::Matrix<float> f_delta_io_to_io;
 /* around, but was too lazy, since this is a small file, it should not  */
 /* be a big problem */
 
-static float** f_net_delay;
+static std::vector<std::vector<float>> f_net_delay;
 static float *pin_criticality;
 static int *sink_order;
 static t_rt_node **rt_node_of_sink;
@@ -397,7 +397,10 @@ static void alloc_and_assign_internal_structures(t_block **original_block,
     alloc_delay_lookup_netlists();
 
 	/* [0..num_nets-1][1..num_pins-1] */
-	f_net_delay = vtr::alloc_matrix<float>(0, NET_COUNT - 1, 1, BLOCK_COUNT - 1);
+	f_net_delay.resize(NET_COUNT);
+    for(auto& net_delay : f_net_delay) {
+        net_delay.resize(BLOCK_COUNT);
+    }
 
 	reset_placement();
 }
@@ -421,7 +424,7 @@ static void free_and_reset_internal_structures(t_block *original_block, int orig
 	cluster_ctx.blocks = original_block;
 	cluster_ctx.num_blocks = original_num_blocks;
 
-    vtr::free_matrix(f_net_delay, 0, NET_COUNT - 1, 1);
+    f_net_delay.clear();
 }
 
 /**************************************/
@@ -602,7 +605,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 			dummy_connections_inf,
 			pin_criticality, 
             router_opts.min_incremental_reroute_fanout, rt_node_of_sink, 
-			f_net_delay[NET_USED],
+			f_net_delay[NET_USED].data(),
             dummy_pb_pin_lookup,
             nullptr); //We pass in no timing info, indicating we want a min-delay routing
 
