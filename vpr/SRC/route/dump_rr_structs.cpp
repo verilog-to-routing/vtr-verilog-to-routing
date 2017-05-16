@@ -33,10 +33,10 @@ static void dump_rr_node_indices( fstream &file );
 /**** Function Definitions ****/
 
 /* The main function for dumping rr structs to a specified file. The structures dumped are:
-	- rr nodes (g_rr_nodes)
-	- rr switches (g_rr_switch_inf)
-	- the grid (g_grid)
-	- physical block types (g_block_types)
+	- rr nodes (device_ctx.rr_nodes)
+	- rr switches (device_ctx.rr_switch_inf)
+	- the grid (device_ctx.grid)
+	- physical block types (device_ctx.block_types)
 	- node index lookups (rr_node_indices)
 	
 TODO: document the format for each section
@@ -63,7 +63,7 @@ void dump_rr_structs( const char *filename ){
 	dump_block_types(fid);
 
 	/* dump the grid structure */
-	cout << "Dummping g_grid" << endl;
+	cout << "Dummping device_ctx.grid" << endl;
 	dump_grid(fid);
 
 	/* dump the rr node indices */
@@ -75,12 +75,14 @@ void dump_rr_structs( const char *filename ){
 
 /* dumps all routing resource nodes to specified file */
 static void dump_rr_nodes( fstream &file ){
+    auto& device_ctx = g_vpr_ctx.device();
+
 	/* specify that we're in the rr node section and how many nodes there are */
 	file << endl;
-	file << ".rr_nodes(" << g_num_rr_nodes << ")" << endl;
+	file << ".rr_nodes(" << device_ctx.num_rr_nodes << ")" << endl;
 
-	for (int inode = 0; inode < g_num_rr_nodes; inode++){
-		const t_rr_node& node = g_rr_nodes[inode];
+	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++){
+		const t_rr_node& node = device_ctx.rr_nodes[inode];
 
 		/* a node's info is printed entirely on one line */
 		file << " node_" << inode << ": ";
@@ -109,12 +111,14 @@ static void dump_rr_nodes( fstream &file ){
 
 /* dumps all rr switches to specified file */
 static void dump_rr_switches( fstream &file ){
+    auto& device_ctx = g_vpr_ctx.device();
+
 	/* specify that we're in the rr switch section and how many switches there are */
 	file << endl;
-	file << ".rr_switch(" << g_num_rr_switches << ")" << endl;
+	file << ".rr_switch(" << device_ctx.num_rr_switches << ")" << endl;
 
-	for (int iswitch = 0; iswitch < g_num_rr_switches; iswitch++){
-		s_rr_switch_inf rr_switch = g_rr_switch_inf[iswitch];
+	for (int iswitch = 0; iswitch < device_ctx.num_rr_switches; iswitch++){
+		s_rr_switch_inf rr_switch = device_ctx.rr_switch_inf[iswitch];
 		
 		file << " switch_" << iswitch << ": ";
 		file << "buffered(" << (int)rr_switch.buffered << ") ";
@@ -132,12 +136,14 @@ static void dump_rr_switches( fstream &file ){
 
 /* dumps all physical block types (CLB, memory, mult, etc) to the specified file */
 static void dump_block_types( fstream &file ){
+    auto& device_ctx = g_vpr_ctx.device();
+
 	/* specify that we're in the physical block type section, and how many types there are */
 	file << endl;
-	file << ".block_type(" << g_num_block_types << ")" << endl;
+	file << ".block_type(" << device_ctx.num_block_types << ")" << endl;
 
-	for (int itype = 0; itype < g_num_block_types; itype++){
-		s_type_descriptor btype = g_block_types[itype];
+	for (int itype = 0; itype < device_ctx.num_block_types; itype++){
+		s_type_descriptor btype = device_ctx.block_types[itype];
 
 		file << " type_" << itype << ": ";
 		file << "name(" << btype.name << ") ";
@@ -200,13 +206,15 @@ static void dump_block_types( fstream &file ){
 
 /* dumps the grid structure which specifies which physical block type is at what coordinate */
 static void dump_grid( fstream &file ){
+    auto& device_ctx = g_vpr_ctx.device();
+
 	/* specify that we're in the grid section and how many grid elements there are */
 	file << endl;
-	file << ".grid(" << (g_nx+2) << ", " << (g_ny+2) << ")" << endl;
+	file << ".grid(" << (device_ctx.nx+2) << ", " << (device_ctx.ny+2) << ")" << endl;
 
-	for (int ix = 0; ix <= g_nx+1; ix++){
-		for (int iy = 0; iy <= g_ny+1; iy++){
-			s_grid_tile grid_tile = g_grid[ix][iy];
+	for (int ix = 0; ix <= device_ctx.nx+1; ix++){
+		for (int iy = 0; iy <= device_ctx.ny+1; iy++){
+			t_grid_tile grid_tile = device_ctx.grid[ix][iy];
 	
 			file << " grid_x" << ix << "_y" << iy << ": ";
 			file << "block_type_index(" << grid_tile.type->index << ") ";
@@ -224,20 +232,22 @@ static void dump_grid( fstream &file ){
 
 /* dumps the rr node indices which help look up which rr node is at which physical location */
 static void dump_rr_node_indices( fstream &file ){
+    auto& device_ctx = g_vpr_ctx.device();
+
 	file << endl;
-	/* rr_node_indices are [0..NUM_RR_TYPES-1][0..g_nx+2][0..g_ny+2]. each entry then contains a vtr::t_ivec with nelem entries */
-	file << ".rr_node_indices(" << NUM_RR_TYPES-1 << ", " << g_nx+2 << ", " << g_ny+2 << ")" << endl;
+	/* rr_node_indices are [0..NUM_RR_TYPES-1][0..device_ctx.nx+2][0..device_ctx.ny+2]. each entry then contains a vtr::t_ivec with nelem entries */
+	file << ".rr_node_indices(" << NUM_RR_TYPES-1 << ", " << device_ctx.nx+2 << ", " << device_ctx.ny+2 << ")" << endl;
 
 	/* note that the rr_node_indices structure uses the chan/seg convention. in terms of coordinates, this affects CHANX nodes
 	   in which case chan=y and seg=x, whereas for all other nodes chan=x and seg=y. i'm not sure how non-square FPGAs are handled in that case... */
 	
 	for (int itype = 0; itype < NUM_RR_TYPES; itype++){
-		if (g_rr_node_indices[itype] == NULL){
+		if (device_ctx.rr_node_indices[itype] == NULL){
 			/* skip if not allocated */
 			continue;
 		}
-		for (int ix = 0; ix < g_nx+2; ix++){
-			for (int iy = 0; iy < g_ny+2; iy++){
+		for (int ix = 0; ix < device_ctx.nx+2; ix++){
+			for (int iy = 0; iy < device_ctx.ny+2; iy++){
 				t_rr_type rr_type = (t_rr_type)itype;
 
 				/* because indexing into this structure uses the chan/seg convention, we need to swap the x and y values
@@ -249,12 +259,12 @@ static void dump_rr_node_indices( fstream &file ){
 					y = ix;
 				}
 
-				if (g_rr_node_indices[rr_type][ix] == NULL){
+				if (device_ctx.rr_node_indices[rr_type][ix] == NULL){
 					/* skip if not allocated */
 					continue;
 				}
 
-				vtr::t_ivec vec = g_rr_node_indices[rr_type][ix][iy];
+				vtr::t_ivec vec = device_ctx.rr_node_indices[rr_type][ix][iy];
 
 				if (vec.nelem == 0){
 					/* skip if vector not allocated */

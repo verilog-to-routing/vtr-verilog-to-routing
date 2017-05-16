@@ -4,6 +4,7 @@ using namespace std;
 #include "vtr_util.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -13,6 +14,7 @@ using namespace std;
 #include "rr_graph2.h"
 #include "rr_graph_sbox.h"
 #include "read_xml_arch_file.h"
+#include "rr_types.h"
 
 #define UN_SET -1
 
@@ -25,7 +27,7 @@ static void get_switch_type(
 static void load_chan_rr_indices(
 		const int max_chan_width, const int chan_len,
 		const int num_chans, const t_rr_type type, 
-		const t_chan_details * chan_details,
+		const t_chan_details& chan_details,
 		int *index, vtr::t_ivec *** indices);
 
 static int get_bidir_track_to_chan_seg(
@@ -35,7 +37,7 @@ static int get_bidir_track_to_chan_seg(
 		const bool from_is_sblock, const int from_switch,
 		bool * L_rr_edge_done,
 		const enum e_directionality directionality,
-		struct s_linked_edge **edge_list);
+		t_linked_edge **edge_list);
 
 static int get_unidir_track_to_chan_seg(
 		const int from_track, const int to_chan, const int to_seg, const int to_sb,
@@ -44,7 +46,7 @@ static int get_unidir_track_to_chan_seg(
 		const int Fs_per_side,
 		short ******sblock_pattern, vtr::t_ivec *** L_rr_node_indices,
 		const t_seg_details * seg_details, bool * L_rr_edge_done,
-		bool * Fs_clipped, struct s_linked_edge **edge_list);
+		bool * Fs_clipped, t_linked_edge **edge_list);
 
 static int get_track_to_chan_seg(
 		const int from_track, const int to_chan, const int to_seg,
@@ -53,7 +55,7 @@ static int get_track_to_chan_seg(
 		vtr::t_ivec ***L_rr_node_indices, 
 		t_sb_connection_map *sb_conn_map,
 		bool * L_rr_edge_done, 
-		s_linked_edge **edge_list);
+		t_linked_edge **edge_list);
 
 static int vpr_to_phy_track(
 		const int itrack, const int chan_num, const int seg_num,
@@ -333,32 +335,32 @@ void alloc_and_load_chan_details(
 		const bool trim_obs_channels,
 		const int num_seg_details,
 		const t_seg_details* seg_details,
-		t_chan_details** chan_details_x,
-		t_chan_details** chan_details_y) {
+		t_chan_details& chan_details_x,
+		t_chan_details& chan_details_y) {
 
-	*chan_details_x = init_chan_details(L_nx, L_ny, nodes_per_chan,
-			num_seg_details, seg_details, SEG_DETAILS_X);
- 	*chan_details_y = init_chan_details(L_nx, L_ny, nodes_per_chan,
-			num_seg_details, seg_details, SEG_DETAILS_Y);
+	chan_details_x = init_chan_details(L_nx, L_ny, nodes_per_chan,
+	   	                num_seg_details, seg_details, SEG_DETAILS_X);
+ 	chan_details_y = init_chan_details(L_nx, L_ny, nodes_per_chan,
+			            num_seg_details, seg_details, SEG_DETAILS_Y);
 
 	/* Obstruct channel segment details based on grid block widths/heights */
 	obstruct_chan_details(L_nx, L_ny, nodes_per_chan, 
 			trim_empty_channels, trim_obs_channels,
-			*chan_details_x, *chan_details_y);
+			chan_details_x, chan_details_y);
 
 	/* Adjust segment start/end based on obstructed channels, if any */
 	adjust_chan_details(L_nx, L_ny, nodes_per_chan, 
-			*chan_details_x, *chan_details_y);
+			chan_details_x, chan_details_y);
 }
 
-t_chan_details* init_chan_details( 
+t_chan_details init_chan_details( 
 		const int L_nx, const int L_ny,
 		const t_chan_width* nodes_per_chan,
 		const int num_seg_details,
 		const t_seg_details* seg_details,
 		const enum e_seg_details_type seg_details_type) {
 
-	t_chan_details* pa_chan_details = (t_chan_details*) vtr::alloc_matrix<t_seg_details>(0, L_nx, 0, L_ny);
+	t_chan_details chan_details = vtr::Matrix<t_seg_details*>({size_t(L_nx+1), size_t(L_ny+1)});
 
 	for (int x = 0; x <= L_nx; ++x) {
 		for (int y = 0; y <= L_ny; ++y) {
@@ -420,10 +422,10 @@ t_chan_details* init_chan_details(
 					}
 				}
 			}
-			pa_chan_details[x][y] = p_seg_details;
+			chan_details[x][y] = p_seg_details;
 		}
 	}
-	return pa_chan_details;
+	return chan_details;
 }
 
 void obstruct_chan_details(
@@ -431,8 +433,10 @@ void obstruct_chan_details(
 		const t_chan_width* nodes_per_chan,
 		const bool trim_empty_channels,
 		const bool trim_obs_channels,
-		t_chan_details* chan_details_x,
-		t_chan_details* chan_details_y) {
+		t_chan_details& chan_details_x,
+		t_chan_details& chan_details_y) {
+
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Iterate grid to find and obstruct based on multi-width/height blocks */
 	for (int x = 0; x <= L_nx; ++x) {
@@ -441,25 +445,25 @@ void obstruct_chan_details(
 			if (!trim_obs_channels)
 				continue;
 
-			if (g_grid[x][y].type == EMPTY_TYPE)
+			if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)
 				continue;
-			if (g_grid[x][y].width_offset > 0 || g_grid[x][y].height_offset > 0)
+			if (device_ctx.grid[x][y].width_offset > 0 || device_ctx.grid[x][y].height_offset > 0)
 				continue;
-			if (g_grid[x][y].type->width == 1 && g_grid[x][y].type->height == 1)
+			if (device_ctx.grid[x][y].type->width == 1 && device_ctx.grid[x][y].type->height == 1)
 				continue;
 
-			if (g_grid[x][y].type->height > 1) {
-				for (int dx = 0; dx <= g_grid[x][y].type->width - 1; ++dx) {
-					for (int dy = 0; dy < g_grid[x][y].type->height - 1; ++dy) {
+			if (device_ctx.grid[x][y].type->height > 1) {
+				for (int dx = 0; dx <= device_ctx.grid[x][y].type->width - 1; ++dx) {
+					for (int dy = 0; dy < device_ctx.grid[x][y].type->height - 1; ++dy) {
 						for (int track = 0; track < nodes_per_chan->max; ++track) {
 							chan_details_x[x+dx][y+dy][track].length = 0;
 						}
 					}
 				}
 			}
-			if (g_grid[x][y].type->width > 1) {
-				for (int dy = 0; dy <= g_grid[x][y].type->height - 1; ++dy) {
-					for (int dx = 0; dx < g_grid[x][y].type->width - 1; ++dx) {
+			if (device_ctx.grid[x][y].type->width > 1) {
+				for (int dy = 0; dy <= device_ctx.grid[x][y].type->height - 1; ++dy) {
+					for (int dx = 0; dx < device_ctx.grid[x][y].type->width - 1; ++dx) {
 						for (int track = 0; track < nodes_per_chan->max; ++track) {
 							chan_details_y[x+dx][y+dy][track].length = 0;
 						}
@@ -476,26 +480,26 @@ void obstruct_chan_details(
 			if (!trim_empty_channels)
 				continue;
 
-			if (g_grid[x][y].type == IO_TYPE) {
+			if (device_ctx.grid[x][y].type == device_ctx.IO_TYPE) {
 				if ((x == 0) || (y == 0))
 					continue;
 			}
-			if (g_grid[x][y].type == EMPTY_TYPE) {
-				if ((x == L_nx) && (g_grid[x+1][y].type == IO_TYPE))
+			if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE) {
+				if ((x == L_nx) && (device_ctx.grid[x+1][y].type == device_ctx.IO_TYPE))
 					continue;
-				if ((y == L_ny) && (g_grid[x][y+1].type == IO_TYPE))
+				if ((y == L_ny) && (device_ctx.grid[x][y+1].type == device_ctx.IO_TYPE))
 					continue;
 			}
 
-			if ((g_grid[x][y].type == IO_TYPE) || (g_grid[x][y].type == EMPTY_TYPE)) {
-				if ((g_grid[x][y+1].type == IO_TYPE) || (g_grid[x][y+1].type == EMPTY_TYPE)) {
+			if ((device_ctx.grid[x][y].type == device_ctx.IO_TYPE) || (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)) {
+				if ((device_ctx.grid[x][y+1].type == device_ctx.IO_TYPE) || (device_ctx.grid[x][y+1].type == device_ctx.EMPTY_TYPE)) {
 					for (int track = 0; track < nodes_per_chan->max; ++track) {
 						chan_details_x[x][y][track].length = 0;
 					}
 				}
 			}
-			if ((g_grid[x][y].type == IO_TYPE) || (g_grid[x][y].type == EMPTY_TYPE)) {
-				if ((g_grid[x+1][y].type == IO_TYPE) || (g_grid[x+1][y].type == EMPTY_TYPE)) {
+			if ((device_ctx.grid[x][y].type == device_ctx.IO_TYPE) || (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)) {
+				if ((device_ctx.grid[x+1][y].type == device_ctx.IO_TYPE) || (device_ctx.grid[x+1][y].type == device_ctx.EMPTY_TYPE)) {
 					for (int track = 0; track < nodes_per_chan->max; ++track) {
 						chan_details_y[x][y][track].length = 0;
 					}
@@ -508,8 +512,8 @@ void obstruct_chan_details(
 void adjust_chan_details(
 		const int L_nx, const int L_ny,
 		const t_chan_width* nodes_per_chan,
-		t_chan_details* chan_details_x,
-		t_chan_details* chan_details_y) {
+		t_chan_details& chan_details_x,
+		t_chan_details& chan_details_y) {
 
 	for (int y = 0; y <= L_ny; ++y) {
 		for (int x = 0; x <= L_nx; ++x) {
@@ -540,7 +544,7 @@ void adjust_seg_details(
 		const int x, const int y,
 		const int L_nx, const int L_ny,
 		const t_chan_width* nodes_per_chan,
-		t_chan_details* chan_details,
+		t_chan_details& chan_details,
 		const enum e_seg_details_type seg_details_type) {
 
 	int seg_index = (seg_details_type == SEG_DETAILS_X ? x : y);
@@ -591,8 +595,8 @@ void free_seg_details(
 }
 
 void free_chan_details(
-		t_chan_details * pa_chan_details_x, 
-		t_chan_details * pa_chan_details_y, 
+		t_chan_details& chan_details_x, 
+		t_chan_details& chan_details_y, 
 		const int max_chan_width,
 		const int L_nx, const int L_ny) {
 
@@ -600,20 +604,20 @@ void free_chan_details(
 	for (int x = 0; x <= L_nx; ++x) {
 		for (int y = 0; y <= L_ny; ++y) {
 
-			t_seg_details* p_seg_details = pa_chan_details_x[x][y];
+			t_seg_details* p_seg_details = chan_details_x[x][y];
 			free_seg_details(p_seg_details, max_chan_width);
 		}
 	}
 	for (int x = 0; x <= L_nx; ++x) {
 		for (int y = 0; y <= L_ny; ++y) {
 
-			t_seg_details* p_seg_details = pa_chan_details_y[x][y];
+			t_seg_details* p_seg_details = chan_details_y[x][y];
 			free_seg_details(p_seg_details, max_chan_width);
 		}
 	}
 
-    vtr::free_matrix(pa_chan_details_x,0, L_nx, 0);
-	vtr::free_matrix(pa_chan_details_y,0, L_nx, 0);
+    chan_details_x.clear();
+    chan_details_y.clear();
 }
 
 /* Returns the segment number at which the segment this track lies on        *
@@ -694,8 +698,8 @@ int get_seg_end(const t_seg_details * seg_details, const int itrack, const int i
  * pointed to by *edge_list_ptr.                                             */
 int get_bidir_opin_connections(
 		const int i, const int j, const int ipin,
-		struct s_linked_edge **edge_list, 
-		int ******opin_to_track_map,
+		t_linked_edge **edge_list, 
+		const t_pin_to_track_lookup& opin_to_track_map,
 		const int Fc, bool * L_rr_edge_done,
 		vtr::t_ivec *** L_rr_node_indices, const t_seg_details * seg_details) {
 
@@ -705,13 +709,15 @@ int get_bidir_opin_connections(
 	t_type_ptr type;
 	t_rr_type to_type;
 
-	type = g_grid[i][j].type;
-	int width_offset = g_grid[i][j].width_offset;
-	int height_offset = g_grid[i][j].height_offset;
+    auto& device_ctx = g_vpr_ctx.device();
+
+	type = device_ctx.grid[i][j].type;
+	int width_offset = device_ctx.grid[i][j].width_offset;
+	int height_offset = device_ctx.grid[i][j].height_offset;
 
 	num_conn = 0;
 
-	/* [0..g_num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
+	/* [0..device_ctx.num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
 	for (iside = 0; iside < 4; iside++) {
 
 		/* Figure out coords of channel segment based on side */
@@ -724,10 +730,10 @@ int get_bidir_opin_connections(
 		seg = ((to_type == CHANX) ? tr_i : tr_j);
 
 		/* Don't connect where no tracks on fringes */
-		if ((tr_i < 0) || (tr_i > g_nx)) {
+		if ((tr_i < 0) || (tr_i > device_ctx.nx)) {
 			continue;
 		}
-		if ((tr_j < 0) || (tr_j > g_ny)) {
+		if ((tr_j < 0) || (tr_j > device_ctx.ny)) {
 			continue;
 		}
 		if ((CHANX == to_type) && (tr_i < 1)) {
@@ -768,7 +774,8 @@ int get_bidir_opin_connections(
 int get_unidir_opin_connections(
 		const int chan, const int seg, int Fc, const int seg_type_index,
 		const t_rr_type chan_type, const t_seg_details * seg_details,
-		t_linked_edge ** edge_list_ptr, int ***Fc_ofs,
+		t_linked_edge ** edge_list_ptr, 
+        vtr::NdMatrix<int,3>& Fc_ofs,
 		bool * L_rr_edge_done, const int max_len,
 		const int max_chan_width, vtr::t_ivec *** L_rr_node_indices,
 		bool * Fc_clipped) {
@@ -949,8 +956,8 @@ void dump_seg_details(
 /* Dumps out a 2D array of chan_details structures to file fname.  Used     *
  * only for debugging.                                                      */
 void dump_chan_details(
-		const t_chan_details* pa_chan_details_x,
-		const t_chan_details* pa_chan_details_y,
+		const t_chan_details& chan_details_x,
+		const t_chan_details& chan_details_y,
 		int max_chan_width,
 		const int L_nx, int const L_ny,
 		const char *fname) {
@@ -964,7 +971,7 @@ void dump_chan_details(
 				fprintf(fp, "chan_details_x: [%d][%d]\n", x, y);
 				fprintf(fp, "========================\n");
 
-				const t_seg_details* seg_details = pa_chan_details_x[x][y];
+				const t_seg_details* seg_details = chan_details_x[x][y];
 				dump_seg_details(seg_details, max_chan_width, fp);
 			}
 		}
@@ -975,7 +982,7 @@ void dump_chan_details(
 				fprintf(fp, "chan_details_y: [%d][%d]\n", x, y);
 				fprintf(fp, "========================\n");
 
-				const t_seg_details* seg_details = pa_chan_details_y[x][y];
+				const t_seg_details* seg_details = chan_details_y[x][y];
 				dump_seg_details(seg_details, max_chan_width, fp);
 			}
 		}
@@ -1095,7 +1102,7 @@ void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, vtr::t_ivec **
 static void load_chan_rr_indices(
 		const int max_chan_width, const int chan_len, 
 		const int num_chans, const t_rr_type type, 
-		const t_chan_details * chan_details,
+		const t_chan_details& chan_details,
 		int *index, vtr::t_ivec *** indices) {
 
 	indices[type] = (vtr::t_ivec **) vtr::calloc(num_chans, sizeof(vtr::t_ivec *));
@@ -1149,7 +1156,7 @@ static void load_chan_rr_indices(
 
 vtr::t_ivec ***alloc_and_load_rr_node_indices(
 		const int max_chan_width, const int L_nx, const int L_ny, int *index,
-		const t_chan_details * chan_details_x, const t_chan_details * chan_details_y) {
+		const t_chan_details& chan_details_x, const t_chan_details& chan_details_y) {
 
 	/* Allocates and loads all the structures needed for fast lookups of the   *
 	 * index of an rr_node.  rr_node_indices is a matrix containing the index  *
@@ -1159,6 +1166,8 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 	vtr::t_ivec ***indices;
 	vtr::t_ivec tmp;
 	t_type_ptr type;
+
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* Alloc the lookup table */
 	indices = (vtr::t_ivec ***) vtr::calloc(NUM_RR_TYPES, sizeof(vtr::t_ivec **));
@@ -1173,8 +1182,8 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 	/* Count indices for block nodes */
 	for (i = 0; i <= (L_nx + 1); i++) {
 		for (j = 0; j <= (L_ny + 1); j++) {
-			if (g_grid[i][j].width_offset == 0 && g_grid[i][j].height_offset == 0) {
-				type = g_grid[i][j].type;
+			if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+				type = device_ctx.grid[i][j].type;
 
 				/* Load the pin class lookups. The ptc nums for SINK and SOURCE
 				 * are disjoint so they can share the list. */
@@ -1208,10 +1217,10 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 	/* Point offset blocks of a large block to base block */
 	for (i = 0; i <= (L_nx + 1); i++) {
 		for (j = 0; j <= (L_ny + 1); j++) {
-			if (g_grid[i][j].width_offset > 0 || g_grid[i][j].height_offset > 0) {
+			if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0) {
 				/* NOTE: this only supports horizontal and/or vertical large blocks */
-				indices[SINK][i][j] = indices[SINK][i - g_grid[i][j].width_offset][j - g_grid[i][j].height_offset];
-				indices[IPIN][i][j] = indices[IPIN][i - g_grid[i][j].width_offset][j - g_grid[i][j].height_offset];
+				indices[SINK][i][j] = indices[SINK][i - device_ctx.grid[i][j].width_offset][j - device_ctx.grid[i][j].height_offset];
+				indices[IPIN][i][j] = indices[IPIN][i - device_ctx.grid[i][j].width_offset][j - device_ctx.grid[i][j].height_offset];
 			}
 		}
 	}
@@ -1232,11 +1241,13 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 	int i, j;
 
+    auto& device_ctx = g_vpr_ctx.device();
+
 	/* This function must unallocate the structure allocated in 
 	 * alloc_and_load_rr_node_indices. */
-	for (i = 0; i <= (g_nx + 1); ++i) {
-		for (j = 0; j <= (g_ny + 1); ++j) {
-			if (g_grid[i][j].width_offset > 0 || g_grid[i][j].height_offset > 0) {
+	for (i = 0; i <= (device_ctx.nx + 1); ++i) {
+		for (j = 0; j <= (device_ctx.ny + 1); ++j) {
+			if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0) {
 				/* Vertical large blocks reference is same as offset 0 */
 				L_rr_node_indices[SINK][i][j].list = NULL;
 				L_rr_node_indices[IPIN][i][j].list = NULL;
@@ -1256,11 +1267,11 @@ void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 	free(L_rr_node_indices[IPIN]);
 
 	/* free CHANY rr node indices */
-	for (i = 0; i <= (g_nx + 1); ++i) {
+	for (i = 0; i <= (device_ctx.nx + 1); ++i) {
 		if (L_rr_node_indices[CHANY][i] == NULL){
 			continue;
 		}
-		for (j = 0; j <= (g_ny + 1); ++j) {
+		for (j = 0; j <= (device_ctx.ny + 1); ++j) {
 			if (L_rr_node_indices[CHANY][i][j].list == NULL) {
 				continue;
 			}
@@ -1271,11 +1282,11 @@ void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 	free(L_rr_node_indices[CHANY]);
 
 	/* free CHANX rr node indices */
-	for (i = 0; i < (g_ny + 1); ++i) {
+	for (i = 0; i < (device_ctx.ny + 1); ++i) {
 		if (L_rr_node_indices[CHANX][i] == NULL){
 			continue;
 		}
-		for (j = 0; j < (g_nx + 1); ++j) {
+		for (j = 0; j < (device_ctx.nx + 1); ++j) {
 			if (L_rr_node_indices[CHANX][i][j].list == NULL) {
 				continue;
 			}
@@ -1314,11 +1325,13 @@ int get_rr_node_index(
 	t_type_ptr type;
 	vtr::t_ivec lookup;
 
-	VTR_ASSERT(ptc >= 0);
-	VTR_ASSERT(x >= 0 && x <= (g_nx + 1));
-	VTR_ASSERT(y >= 0 && y <= (g_ny + 1));
+    auto& device_ctx = g_vpr_ctx.device();
 
-	type = g_grid[x][y].type;
+	VTR_ASSERT(ptc >= 0);
+	VTR_ASSERT(x >= 0 && x <= (device_ctx.nx + 1));
+	VTR_ASSERT(y >= 0 && y <= (device_ctx.ny + 1));
+
+	type = device_ctx.grid[x][y].type;
 
 	/* Currently need to swap x and y for CHANX because of chan, seg convention */
 	if (CHANX == rr_type) {
@@ -1392,12 +1405,15 @@ int find_average_rr_node_index(
 					rr_type, ptc, L_rr_node_indices);
 	}
 	if (inode == -1) {
+
+        auto& device_ctx = g_vpr_ctx.device();
+
 		for (int x = 0; x <= L_nx; ++x) {
 			for (int y = 0; y <= L_ny; ++y) {
 
-				if (g_grid[x][y].type == EMPTY_TYPE)
+				if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)
 					continue;
-				if (g_grid[x][y].type == IO_TYPE)
+				if (device_ctx.grid[x][y].type == device_ctx.IO_TYPE)
 					continue;
 
 				inode = get_rr_node_index(x, y,
@@ -1415,7 +1431,8 @@ int find_average_rr_node_index(
 int get_track_to_pins(
 		int seg, int chan, int track, int tracks_per_chan,
 		t_linked_edge ** edge_list_ptr, vtr::t_ivec *** L_rr_node_indices,
-		vtr::t_ivec *****track_to_pin_lookup, t_seg_details * seg_details,
+		const t_track_to_pin_lookup& track_to_pin_lookup, 
+        t_seg_details * seg_details,
 		enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
 		enum e_directionality directionality) {
 
@@ -1424,6 +1441,8 @@ int get_track_to_pins(
 	t_linked_edge *edge_list_head;
 	int j, pass, iconn, phy_track, end, to_node, max_conn, ipin, side, x, y, num_conn;
 	t_type_ptr type;
+
+    auto& device_ctx = g_vpr_ctx.device();
 
 	/* End of this wire */
 	end = get_seg_end(seg_details, track, seg, chan, chan_length);
@@ -1446,7 +1465,7 @@ int get_track_to_pins(
 				}
 
 				/* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
-				if (g_grid[x][y].type == EMPTY_TYPE)
+				if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)
 					continue;
 
 				/* Move from logical (straight) to physical (twisted) track index 
@@ -1457,9 +1476,9 @@ int get_track_to_pins(
 				phy_track %= tracks_per_chan;
 
 				/* We need the type to find the ipin map for this type */
-				type = g_grid[x][y].type;
-				int width_offset = g_grid[x][y].width_offset;
-				int height_offset = g_grid[x][y].height_offset;
+				type = device_ctx.grid[x][y].type;
+				int width_offset = device_ctx.grid[x][y].width_offset;
+				int height_offset = device_ctx.grid[x][y].height_offset;
 
 				max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side].nelem;
 				for (iconn = 0; iconn < max_conn; iconn++) {
@@ -1500,13 +1519,13 @@ int get_track_to_tracks(
 		const t_rr_type from_type, const int to_seg, const t_rr_type to_type,
 		const int chan_len, const int max_chan_width,
 		const int Fs_per_side, short ******sblock_pattern,
-		struct s_linked_edge **edge_list,
+		t_linked_edge **edge_list,
 		const t_seg_details * from_seg_details,
 		const t_seg_details * to_seg_details,
-		const t_chan_details * to_chan_details,
+		const t_chan_details& to_chan_details,
 		const enum e_directionality directionality,
 		vtr::t_ivec *** L_rr_node_indices, bool * L_rr_edge_done,
-		vtr::t_ivec ***switch_block_conn, 
+		const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn, 
 		t_sb_connection_map *sb_conn_map) {
 
 	int num_conn;
@@ -1518,11 +1537,13 @@ int get_track_to_tracks(
 	enum e_side from_side_a, from_side_b, to_side;
 	bool custom_switch_block;
 
+    auto& device_ctx = g_vpr_ctx.device();
+
 	/* check whether a custom switch block will be used */
 	custom_switch_block = false;
 	if (sb_conn_map){
 		custom_switch_block = true;
-		VTR_ASSERT(switch_block_conn == NULL);
+		VTR_ASSERT(switch_block_conn.empty());
 	}
 
 	VTR_ASSERT(from_seg == get_seg_start(from_seg_details, from_track, from_chan, from_seg));
@@ -1649,7 +1670,7 @@ int get_track_to_tracks(
 							&& (DEC_DIRECTION == from_seg_details[from_track].direction)) {
 						num_conn += get_unidir_track_to_chan_seg(
 								from_track, to_chan,
-								to_seg, to_sb, to_type, max_chan_width, g_nx, g_ny,
+								to_seg, to_sb, to_type, max_chan_width, device_ctx.nx, device_ctx.ny,
 								from_side_a, to_side, Fs_per_side,
 								sblock_pattern, L_rr_node_indices, to_seg_details,
 								L_rr_edge_done, &Fs_clipped, edge_list);
@@ -1686,7 +1707,7 @@ int get_track_to_tracks(
 							&& (INC_DIRECTION == from_seg_details[from_track].direction)) {
 						num_conn += get_unidir_track_to_chan_seg(
 								from_track, to_chan,
-								to_seg, to_sb, to_type, max_chan_width, g_nx, g_ny, 
+								to_seg, to_sb, to_type, max_chan_width, device_ctx.nx, device_ctx.ny, 
 								from_side_b, to_side, Fs_per_side, 
 								sblock_pattern, L_rr_node_indices, to_seg_details, 
 								L_rr_edge_done, &Fs_clipped, edge_list);
@@ -1706,7 +1727,7 @@ static int get_bidir_track_to_chan_seg(
 		const bool from_is_sblock, const int from_switch,
 		bool * L_rr_edge_done,
 		const enum e_directionality directionality,
-		struct s_linked_edge **edge_list) {
+		t_linked_edge **edge_list) {
 
 	int iconn, to_track, to_node, to_switch, num_conn, to_x, to_y, i;
 	bool to_is_sblock;
@@ -1772,7 +1793,7 @@ static int get_track_to_chan_seg(
 		vtr::t_ivec ***L_rr_node_indices, 
 		t_sb_connection_map *sb_conn_map,
 		bool * L_rr_edge_done, 
-		s_linked_edge **edge_list){
+		t_linked_edge **edge_list){
 
 	int edge_count = 0;
 	int to_x, to_y;
@@ -1835,7 +1856,7 @@ static int get_unidir_track_to_chan_seg(
 		const int Fs_per_side,
 		short ******sblock_pattern, vtr::t_ivec *** L_rr_node_indices,
 		const t_seg_details * seg_details, bool * L_rr_edge_done,
-		bool * Fs_clipped, struct s_linked_edge **edge_list) {
+		bool * Fs_clipped, t_linked_edge **edge_list) {
 
 	int num_labels = 0;
 	int *mux_labels = NULL;
@@ -1954,6 +1975,8 @@ static void get_switch_type(
 	bool backward_pass_trans;
 	int used, min_switch, max_switch;
 
+    auto& device_ctx = g_vpr_ctx.device();
+
 	switch_types[0] = OPEN; /* No switch */
 	switch_types[1] = OPEN;
 	used = 0;
@@ -1963,7 +1986,7 @@ static void get_switch_type(
 	/* Connect forward if we are a sblock */
 	if (is_from_sblock) {
 		switch_types[used] = to_node_switch;
-		if (false == g_arch_switch_inf[to_node_switch].buffered) {
+		if (false == device_ctx.arch_switch_inf[to_node_switch].buffered) {
 			forward_pass_trans = true;
 		}
 		++used;
@@ -1971,7 +1994,7 @@ static void get_switch_type(
 
 	/* Check for pass_trans coming backwards */
 	if (is_to_sblock) {
-		if (false == g_arch_switch_inf[from_node_switch].buffered) {
+		if (false == device_ctx.arch_switch_inf[from_node_switch].buffered) {
 			switch_types[used] = from_node_switch;
 			backward_pass_trans = true;
 			++used;
@@ -1987,7 +2010,7 @@ static void get_switch_type(
 		 * pass_trans is bigger (smaller R). */
 		VTR_ASSERT(used < 2);
 		switch_types[used] = min_switch;
-		if (g_arch_switch_inf[max_switch].R < g_arch_switch_inf[min_switch].R) {
+		if (device_ctx.arch_switch_inf[max_switch].R < device_ctx.arch_switch_inf[min_switch].R) {
 			switch_types[used] = max_switch;
 		}
 		++used;
@@ -2057,11 +2080,11 @@ short ******alloc_sblock_pattern_lookup(
 
 	/* Build the pointer lists to form the multidimensional array */
 	short ******sblock_pattern = i_list;
-	i_list += (L_nx + 1); /* Skip forward g_nx+1 items */
+	i_list += (L_nx + 1); /* Skip forward device_ctx.nx+1 items */
 	for (int i = 0; i < (L_nx + 1); ++i) {
 
 		sblock_pattern[i] = j_list;
-		j_list += (L_ny + 1); /* Skip forward g_ny+1 items */
+		j_list += (L_ny + 1); /* Skip forward device_ctx.ny+1 items */
 		for (int j = 0; j < (L_ny + 1); ++j) {
 
 			sblock_pattern[i][j] = from_side_list;
@@ -2116,7 +2139,7 @@ void free_sblock_pattern_lookup(
 
 void load_sblock_pattern_lookup(
 		const int i, const int j, const t_chan_width *nodes_per_chan,
-		const t_chan_details *chan_details_x, const t_chan_details *chan_details_y, 
+		const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, 
 		const int /*Fs*/, const enum e_switch_block_type switch_block_type,
 		short ******sblock_pattern) {
 
@@ -2124,11 +2147,13 @@ void load_sblock_pattern_lookup(
 	 * because the sblock varies from location to location. The i, j means the owning
 	 * location of the sblock under investigation. */
 
-	/* SB's have coords from (0, 0) to (g_nx, g_ny) */
+    auto& device_ctx = g_vpr_ctx.device();
+
+	/* SB's have coords from (0, 0) to (device_ctx.nx, device_ctx.ny) */
 	VTR_ASSERT(i >= 0);
-	VTR_ASSERT(i <= g_nx);
+	VTR_ASSERT(i <= device_ctx.nx);
 	VTR_ASSERT(j >= 0);
-	VTR_ASSERT(j <= g_ny);
+	VTR_ASSERT(j <= device_ctx.ny);
 
 	/* May 12 - 15, 2007
 	 *
@@ -2162,7 +2187,7 @@ void load_sblock_pattern_lookup(
 	 * more than 1.
 	 */
 
-	/* SB's range from (0, 0) to (g_nx, g_ny) */
+	/* SB's range from (0, 0) to (device_ctx.nx, device_ctx.ny) */
 	/* First find all four sides' incoming wires */
 	int *wire_mux_on_track[4];
 	int *incoming_wire_label[4];
@@ -2184,12 +2209,12 @@ void load_sblock_pattern_lookup(
 		bool skip = true;
 		switch (side) {
 		case TOP:
-			if (j < g_ny) {
+			if (j < device_ctx.ny) {
 				skip = false;
 			}
 			break;
 		case RIGHT:
-			if (i < g_nx) {
+			if (i < device_ctx.nx) {
 				skip = false;
 			}
 			break;
@@ -2214,7 +2239,7 @@ void load_sblock_pattern_lookup(
 		/* Figure out the channel and segment for a certain direction */
 		bool vert = ((side == TOP) || (side == BOTTOM));
 		bool pos_dir = ((side == TOP) || (side == RIGHT));
-		int chan_len = (vert ? g_ny : g_nx);
+		int chan_len = (vert ? device_ctx.ny : device_ctx.nx);
 		int chan = (vert ? i : j);
 		int sb_seg = (vert ? j : i);
 		int seg = (pos_dir ? (sb_seg + 1) : sb_seg);

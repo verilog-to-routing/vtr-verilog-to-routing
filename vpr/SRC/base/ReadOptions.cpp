@@ -3,6 +3,7 @@
 using namespace std;
 
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -473,14 +474,14 @@ ProcessOption(char **Args, t_options * Options) {
 
 static char **
 ReadBaseToken(char **Args, enum e_OptionBaseToken *Token) {
-	struct s_TokenPair *Cur;
+	t_TokenPair *Cur;
 
 	/* Empty string is end of tokens marker */
 	if (NULL == *Args)
 		Error(*Args);
 
 	/* Linear search for the pair */
-	Cur = OptionBaseTokenList;
+	Cur = g_OptionBaseTokenList;
 	while (Cur->Str) {
 		if (strcmp(*Args, Cur->Str) == 0) {
 			*Token = (enum e_OptionBaseToken) Cur->Enum;
@@ -495,14 +496,14 @@ ReadBaseToken(char **Args, enum e_OptionBaseToken *Token) {
 
 static char **
 ReadToken(char **Args, enum e_OptionArgToken *Token) {
-	struct s_TokenPair *Cur;
+	t_TokenPair *Cur;
 
 	/* Empty string is end of tokens marker */
 	if (NULL == *Args)
 		Error(*Args);
 
 	/* Linear search for the pair */
-	Cur = OptionArgTokenList;
+	Cur = g_OptionArgTokenList;
 	while (Cur->Str) {
 		if (strcmp(*Args, Cur->Str) == 0) {
 			*Token = (enum e_OptionArgToken)Cur->Enum;

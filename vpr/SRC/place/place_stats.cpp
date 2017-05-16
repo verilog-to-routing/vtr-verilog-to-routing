@@ -33,29 +33,29 @@ print_relative_pos_distr(void)
 	unsigned int sink_pin
 	double **relapos_distr;
 
-	total_conn = (int *)vtr::malloc((g_nx + g_ny + 1) * sizeof(int));
-	relapos = (int **)vtr::malloc((g_nx + g_ny + 1) * sizeof(int *));
-	relapos_distr = (double **)vtr::malloc((g_nx + g_ny + 1) * sizeof(double *));
-	for (len = 0; len <= g_nx + g_ny; len++)
+	total_conn = (int *)vtr::malloc((device_ctx.nx + device_ctx.ny + 1) * sizeof(int));
+	relapos = (int **)vtr::malloc((device_ctx.nx + device_ctx.ny + 1) * sizeof(int *));
+	relapos_distr = (double **)vtr::malloc((device_ctx.nx + device_ctx.ny + 1) * sizeof(double *));
+	for (len = 0; len <= device_ctx.nx + device_ctx.ny; len++)
 	{
 		relapos[len] = (int *)vtr::calloc(len / 2 + 1, sizeof(int));
 		relapos_distr[len] =
 		(double *)vtr::calloc((len / 2 + 1), sizeof(double));
 	}
 
-	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
+	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++)
 	{
-		if (g_clbs_nlist.net[inet].is_global == false)
+		if (cluster_ctx.clbs_nlist.net[inet].is_global == false)
 		{
 
-			src_x = g_blocks[g_clbs_nlist.net[inet].pins[0].g_blocks].x;
-			src_y = g_blocks[g_clbs_nlist.net[inet].pins[0].g_blocks].y;
+			src_x = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[0].cluster_ctx.blocks].x;
+			src_y = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[0].cluster_ctx.blocks].y;
 
-			for (sink_pin = 1; sink_pin < g_clbs_nlist.net[inet].pins.size();
+			for (sink_pin = 1; sink_pin < cluster_ctx.clbs_nlist.net[inet].pins.size();
 					sink_pin++)
 			{
-				dst_x = g_blocks[g_clbs_nlist.net[inet].pins[sink_pin].g_blocks].x;
-				dst_y = g_blocks[g_clbs_nlist.net[inet].pins[sink_pin].g_blocks].y;
+				dst_x = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[sink_pin].cluster_ctx.blocks].x;
+				dst_y = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[sink_pin].cluster_ctx.blocks].y;
 
 				del_x = ABS_DIFF(dst_x, src_x);
 				del_y = ABS_DIFF(dst_y, src_y);
@@ -83,7 +83,7 @@ print_relative_pos_distr(void)
 	fopen("/jayar/b/b5/fang/vpr_test/wirelength/relapos2.bin", "rb+");
 #endif /* PRINT_REL_POS_DISTR */
 
-	for (len = 0; len <= g_nx + g_ny; len++)
+	for (len = 0; len <= device_ctx.nx + device_ctx.ny; len++)
 	{
 		sum = 0;
 		for (rp = 0; rp <= len / 2; rp++)
@@ -123,7 +123,7 @@ print_relative_pos_distr(void)
 	}
 
 	fprintf(stdout, "Source to sink relative positions:\n");
-	for (len = 1; len <= g_nx + g_ny; len++)
+	for (len = 1; len <= device_ctx.nx + device_ctx.ny; len++)
 	{
 		if (total_conn[len] != 0)
 		{
@@ -139,7 +139,7 @@ print_relative_pos_distr(void)
 	}
 
 	free((void *)total_conn);
-	for (len = 0; len <= g_nx + g_ny; len++)
+	for (len = 0; len <= device_ctx.nx + device_ctx.ny; len++)
 	{
 		free((void *)relapos[len]);
 		free((void *)relapos_distr[len]);

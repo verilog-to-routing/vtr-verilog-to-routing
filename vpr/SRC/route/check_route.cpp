@@ -3,6 +3,7 @@ using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -18,18 +19,18 @@ using namespace std;
 static void check_node_and_range(int inode, enum e_route_type route_type, const t_segment_inf* segment_inf);
 static void check_source(int inode, int inet);
 static void check_sink(int inode, int inet, bool * pin_done);
-static void check_switch(struct s_trace *tptr, int num_switch);
+static void check_switch(t_trace *tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(int inet, bool * connected_to_route);
-static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_locally);
-static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
+static void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_locally);
+static void check_locally_used_clb_opins(const t_clb_opins_used&  clb_opins_used_locally,
 		enum e_route_type route_type, const t_segment_inf* segment_inf);
 
 /************************ Subroutine definitions ****************************/
 
 void check_route(enum e_route_type route_type, int num_switches,
-		vtr::t_ivec ** clb_opins_used_locally, const t_segment_inf* segment_inf) {
+		const t_clb_opins_used& clb_opins_used_locally, const t_segment_inf* segment_inf) {
 
 	/* This routine checks that a routing:  (1) Describes a properly         *
 	 * connected path for each net, (2) this path connects all the           *
@@ -40,9 +41,13 @@ void check_route(enum e_route_type route_type, int num_switches,
 	int max_pins, inode, prev_node;
 	unsigned int inet, ipin;
 	bool valid, connects;
-	bool * connected_to_route; /* [0 .. g_num_rr_nodes-1] */
-	struct s_trace *tptr;
+	bool * connected_to_route; /* [0 .. device_ctx.num_rr_nodes-1] */
+	t_trace *tptr;
 	bool * pin_done;
+
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
 
 	vtr::printf_info("\n");
 	vtr::printf_info("Checking to ensure routing is legal...\n");
@@ -60,27 +65,27 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 	check_locally_used_clb_opins(clb_opins_used_locally, route_type, segment_inf);
 
-	connected_to_route = (bool *) vtr::calloc(g_num_rr_nodes, sizeof(bool));
+	connected_to_route = (bool *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(bool));
 
 	max_pins = 0;
-	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++)
-		max_pins = max(max_pins, (int) g_clbs_nlist.net[inet].pins.size());
+	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++)
+		max_pins = max(max_pins, (int) cluster_ctx.clbs_nlist.net[inet].pins.size());
 
 	pin_done = (bool *) vtr::malloc(max_pins * sizeof(bool));
 
 	/* Now check that all nets are indeed connected. */
 
-	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 
-		if (g_clbs_nlist.net[inet].is_global || g_clbs_nlist.net[inet].num_sinks() == 0) /* Skip global nets. */
+		if (cluster_ctx.clbs_nlist.net[inet].is_global || cluster_ctx.clbs_nlist.net[inet].num_sinks() == 0) /* Skip global nets. */
 			continue;
 
-		for (ipin = 0; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++)
+		for (ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++)
 			pin_done[ipin] = false;
 
 		/* Check the SOURCE of the net. */
 
-		tptr = g_trace_head[inet];
+		tptr = route_ctx.trace_head[inet];
 		if (tptr == NULL) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_route: net %d has no routing.\n", inet);
@@ -104,7 +109,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 			check_node_and_range(inode, route_type, segment_inf);
 			check_switch(tptr, num_switches);
 
-			if (g_rr_nodes[prev_node].type() == SINK) {
+			if (device_ctx.rr_nodes[prev_node].type() == SINK) {
 				if (connected_to_route[inode] == false) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_route: node %d does not link into existing routing for net %d.\n", inode, inet);
@@ -118,7 +123,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 						"in check_route: found non-adjacent segments in traceback while checking net %d.\n", inet);
 				}
 
-				if (connected_to_route[inode] && g_rr_nodes[inode].type() != SINK) {
+				if (connected_to_route[inode] && device_ctx.rr_nodes[inode].type() != SINK) {
 
 					/* Note:  Can get multiple connections to the same logically-equivalent     *
 					 * SINK in some logic blocks.                                               */
@@ -129,7 +134,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 				connected_to_route[inode] = true; /* Mark as in path. */
 
-				if (g_rr_nodes[inode].type() == SINK)
+				if (device_ctx.rr_nodes[inode].type() == SINK)
 					check_sink(inode, inet, pin_done);
 
 			} /* End of prev_node type != SINK */
@@ -137,12 +142,12 @@ void check_route(enum e_route_type route_type, int num_switches,
 			tptr = tptr->next;
 		} /* End while */
 
-		if (g_rr_nodes[prev_node].type() != SINK) {
+		if (device_ctx.rr_nodes[prev_node].type() != SINK) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_route: net %d does not end with a SINK.\n", inet);
 		}
 
-		for (ipin = 0; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) {
+		for (ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 			if (pin_done[ipin] == false) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 				
 					"in check_route: net %d does not connect to pin %d.\n", inet, ipin);
@@ -167,20 +172,23 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 	int i, j, ifound, ptc_num, bnum, iclass, node_block_pin, iblk;
 	unsigned int ipin;
 	t_type_ptr type;
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
-	VTR_ASSERT(g_rr_nodes[inode].type() == SINK);
-	i = g_rr_nodes[inode].xlow();
-	j = g_rr_nodes[inode].ylow();
-	type = g_grid[i][j].type;
+	VTR_ASSERT(device_ctx.rr_nodes[inode].type() == SINK);
+	i = device_ctx.rr_nodes[inode].xlow();
+	j = device_ctx.rr_nodes[inode].ylow();
+	type = device_ctx.grid[i][j].type;
 	/* For sinks, ptc_num is the class */
-	ptc_num = g_rr_nodes[inode].ptc_num(); 
+	ptc_num = device_ctx.rr_nodes[inode].ptc_num(); 
 	ifound = 0;
 
 	for (iblk = 0; iblk < type->capacity; iblk++) {
-		bnum = g_grid[i][j].blocks[iblk]; /* Hardcoded to one g_blocks */
-		for (ipin = 1; ipin < g_clbs_nlist.net[inet].pins.size(); ipin++) { /* All net SINKs */
-			if (g_clbs_nlist.net[inet].pins[ipin].block == bnum) {
-				node_block_pin = g_clbs_nlist.net[inet].pins[ipin].block_pin;
+		bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx.blocks */
+		for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) { /* All net SINKs */
+			if (cluster_ctx.clbs_nlist.net[inet].pins[ipin].block == bnum) {
+				node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
 				iclass = type->pin_class[node_block_pin];
 				if (iclass == ptc_num) {
 					/* Could connect to same pin class on the same clb more than once.  Only   *
@@ -195,7 +203,7 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 		}
 	}
 
-	if (ifound > 1 && type == IO_TYPE) {
+	if (ifound > 1 && type == device_ctx.IO_TYPE) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
 			"in check_sink: found %d terminals of net %d of pad %d at location (%d, %d).\n", ifound, inet, ptc_num, i, j);
 	}
@@ -204,7 +212,7 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
 				 "in check_sink: node %d does not connect to any terminal of net %s #%d.\n"
 				 "This error is usually caused by incorrectly specified logical equivalence in your architecture file.\n"
-				 "You should try to respecify what pins are equivalent or turn logical equivalence off.\n", inode, g_clbs_nlist.net[inet].name, inet);
+				 "You should try to respecify what pins are equivalent or turn logical equivalence off.\n", inode, cluster_ctx.clbs_nlist.net[inet].name, inet);
 	}
 }
 
@@ -215,27 +223,30 @@ static void check_source(int inode, int inet) {
 	t_rr_type rr_type;
 	t_type_ptr type;
 	int i, j, ptc_num, bnum, node_block_pin, iclass;
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
-	rr_type = g_rr_nodes[inode].type();
+	rr_type = device_ctx.rr_nodes[inode].type();
 	if (rr_type != SOURCE) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
 			"in check_source: net %d begins with a node of type %d.\n", inet, rr_type);
 	}
 
-	i = g_rr_nodes[inode].xlow();
-	j = g_rr_nodes[inode].ylow();
+	i = device_ctx.rr_nodes[inode].xlow();
+	j = device_ctx.rr_nodes[inode].ylow();
 	/* for sinks and sources, ptc_num is class */
-	ptc_num = g_rr_nodes[inode].ptc_num(); 
+	ptc_num = device_ctx.rr_nodes[inode].ptc_num(); 
 	/* First node_block for net is the source */
-	bnum = g_clbs_nlist.net[inet].pins[0].block; 
-	type = g_grid[i][j].type;
+	bnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block; 
+	type = device_ctx.grid[i][j].type;
 
-	if (g_blocks[bnum].x != i || g_blocks[bnum].y != j) {		
+	if (place_ctx.block_locs[bnum].x != i || place_ctx.block_locs[bnum].y != j) {		
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_source: net SOURCE is in wrong location (%d,%d).\n", i, j);
 	}
 
-	node_block_pin = g_clbs_nlist.net[inet].pins[0].block_pin;
+	node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
 	iclass = type->pin_class[node_block_pin];
 
 	if (ptc_num != iclass) {		
@@ -244,7 +255,7 @@ static void check_source(int inode, int inet) {
 	}
 }
 
-static void check_switch(struct s_trace *tptr, int num_switch) {
+static void check_switch(t_trace *tptr, int num_switch) {
 
 	/* Checks that the switch leading from this traceback element to the next *
 	 * one is a legal switch type.                                            */
@@ -252,10 +263,12 @@ static void check_switch(struct s_trace *tptr, int num_switch) {
 	int inode;
 	short switch_type;
 
+    auto& device_ctx = g_vpr_ctx.device();
+
 	inode = tptr->index;
 	switch_type = tptr->iswitch;
 
-	if (g_rr_nodes[inode].type() != SINK) {
+	if (device_ctx.rr_nodes[inode].type() != SINK) {
 		if (switch_type < 0 || switch_type >= num_switch) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_switch: rr_node %d left via switch type %d.\n"
@@ -282,10 +295,12 @@ static void reset_flags(int inet, bool * connected_to_route) {
 	 * next net for connectivity (and the default state of the flags       * 
 	 * should always be zero after they have been used).                   */
 
-	struct s_trace *tptr;
+	t_trace *tptr;
 	int inode;
 
-	tptr = g_trace_head[inet];
+    auto& route_ctx = g_vpr_ctx.routing();
+
+	tptr = route_ctx.trace_head[inet];
 
 	while (tptr != NULL) {
 		inode = tptr->index;
@@ -311,10 +326,12 @@ static bool check_adjacent(int from_node, int to_node) {
 	t_rr_type from_type, to_type;
 	t_type_ptr from_grid_type, to_grid_type;
 
+    auto& device_ctx = g_vpr_ctx.device();
+
 	reached = false;
 
-	for (iconn = 0; iconn < g_rr_nodes[from_node].num_edges(); iconn++) {
-		if (g_rr_nodes[from_node].edge_sink_node(iconn) == to_node) {
+	for (iconn = 0; iconn < device_ctx.rr_nodes[from_node].num_edges(); iconn++) {
+		if (device_ctx.rr_nodes[from_node].edge_sink_node(iconn) == to_node) {
 			reached = true;
 			break;
 		}
@@ -329,18 +346,18 @@ static bool check_adjacent(int from_node, int to_node) {
 
 	num_adj = 0;
 
-	from_type = g_rr_nodes[from_node].type();
-	from_xlow = g_rr_nodes[from_node].xlow();
-	from_ylow = g_rr_nodes[from_node].ylow();
-	from_xhigh = g_rr_nodes[from_node].xhigh();
-	from_yhigh = g_rr_nodes[from_node].yhigh();
-	from_ptc = g_rr_nodes[from_node].ptc_num();
-	to_type = g_rr_nodes[to_node].type();
-	to_xlow = g_rr_nodes[to_node].xlow();
-	to_ylow = g_rr_nodes[to_node].ylow();
-	to_xhigh = g_rr_nodes[to_node].xhigh();
-	to_yhigh = g_rr_nodes[to_node].yhigh();
-	to_ptc = g_rr_nodes[to_node].ptc_num();
+	from_type = device_ctx.rr_nodes[from_node].type();
+	from_xlow = device_ctx.rr_nodes[from_node].xlow();
+	from_ylow = device_ctx.rr_nodes[from_node].ylow();
+	from_xhigh = device_ctx.rr_nodes[from_node].xhigh();
+	from_yhigh = device_ctx.rr_nodes[from_node].yhigh();
+	from_ptc = device_ctx.rr_nodes[from_node].ptc_num();
+	to_type = device_ctx.rr_nodes[to_node].type();
+	to_xlow = device_ctx.rr_nodes[to_node].xlow();
+	to_ylow = device_ctx.rr_nodes[to_node].ylow();
+	to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
+	to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
+	to_ptc = device_ctx.rr_nodes[to_node].ptc_num();
 
 	switch (from_type) {
 
@@ -349,8 +366,8 @@ static bool check_adjacent(int from_node, int to_node) {
 		if (from_xlow == to_xlow && from_ylow == to_ylow
 				&& from_xhigh == to_xhigh && from_yhigh == to_yhigh) {
 
-			from_grid_type = g_grid[from_xlow][from_ylow].type;
-			to_grid_type = g_grid[to_xlow][to_ylow].type;
+			from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
+			to_grid_type = device_ctx.grid[to_xlow][to_ylow].type;
 			VTR_ASSERT(from_grid_type == to_grid_type);
 
 			iclass = to_grid_type->pin_class[to_ptc];
@@ -380,8 +397,8 @@ static bool check_adjacent(int from_node, int to_node) {
 		if (from_xlow == to_xlow && from_ylow == to_ylow
 				&& from_xhigh == to_xhigh && from_yhigh == to_yhigh) {
 
-			from_grid_type = g_grid[from_xlow][from_ylow].type;
-			to_grid_type = g_grid[to_xlow][to_ylow].type;
+			from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
+			to_grid_type = device_ctx.grid[to_xlow][to_ylow].type;
 			VTR_ASSERT(from_grid_type == to_grid_type);
 
 			iclass = from_grid_type->pin_class[from_ptc];
@@ -394,8 +411,8 @@ static bool check_adjacent(int from_node, int to_node) {
 		if (to_type == IPIN) {
 			num_adj += 1; //adjacent
 		} else if (to_type == CHANX) {
-			from_xhigh = g_rr_nodes[from_node].xhigh();
-			to_xhigh = g_rr_nodes[to_node].xhigh();
+			from_xhigh = device_ctx.rr_nodes[from_node].xhigh();
+			to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
 			if (from_ylow == to_ylow) {
 				/* UDSD Modification by WMF Begin */
 				/*For Fs > 3, can connect to overlapping wire segment */
@@ -426,8 +443,8 @@ static bool check_adjacent(int from_node, int to_node) {
 		if (to_type == IPIN) {
 			num_adj += 1; //adjacent
 		} else if (to_type == CHANY) {
-			from_yhigh = g_rr_nodes[from_node].yhigh();
-			to_yhigh = g_rr_nodes[to_node].yhigh();
+			from_yhigh = device_ctx.rr_nodes[from_node].yhigh();
+			to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
 			if (from_xlow == to_xlow) {
 				/* UDSD Modification by WMF Begin */
 				if (to_yhigh == from_ylow - 1 || from_yhigh == to_ylow - 1) {
@@ -476,13 +493,15 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
 	int chanx_y, chanx_xlow, chanx_xhigh;
 	int chany_x, chany_ylow, chany_yhigh;
 
-	chanx_y = g_rr_nodes[chanx_node].ylow();
-	chanx_xlow = g_rr_nodes[chanx_node].xlow();
-	chanx_xhigh = g_rr_nodes[chanx_node].xhigh();
+    auto& device_ctx = g_vpr_ctx.device();
 
-	chany_x = g_rr_nodes[chany_node].xlow();
-	chany_ylow = g_rr_nodes[chany_node].ylow();
-	chany_yhigh = g_rr_nodes[chany_node].yhigh();
+	chanx_y = device_ctx.rr_nodes[chanx_node].ylow();
+	chanx_xlow = device_ctx.rr_nodes[chanx_node].xlow();
+	chanx_xhigh = device_ctx.rr_nodes[chanx_node].xhigh();
+
+	chany_x = device_ctx.rr_nodes[chany_node].xlow();
+	chany_ylow = device_ctx.rr_nodes[chany_node].ylow();
+	chany_yhigh = device_ctx.rr_nodes[chany_node].yhigh();
 
 	if (chany_ylow > chanx_y + 1 || chany_yhigh < chanx_y)
 		return (0);
@@ -493,39 +512,43 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
 	return (1);
 }
 
-static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_locally) {
+static void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_locally) {
 
 	/*
-     * This routine updates the occ field in the g_rr_node_state structure 
+     * This routine updates the occ field in the route_ctx.rr_node_state structure 
      * according to the resource usage of the current routing.  It does a 
      * brute force recompute from scratch that is useful for sanity checking.
      */
 
 	int inode, iblk, iclass, ipin, num_local_opins;
 	unsigned inet;
-	struct s_trace *tptr;
+	t_trace *tptr;
+
+    auto& route_ctx = g_vpr_ctx.routing();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* First set the occupancy of everything to zero. */
 
-	for (inode = 0; inode < g_num_rr_nodes; inode++)
-		g_rr_node_state[inode].set_occ(0);
+	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++)
+		route_ctx.rr_node_state[inode].set_occ(0);
 
 	/* Now go through each net and count the tracks and pins used everywhere */
 
-	for (inet = 0; inet < g_clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 
-		if (g_clbs_nlist.net[inet].is_global) /* Skip global nets. */
+		if (cluster_ctx.clbs_nlist.net[inet].is_global) /* Skip global nets. */
 			continue;
 
-		tptr = g_trace_head[inet];
+		tptr = route_ctx.trace_head[inet];
 		if (tptr == NULL)
 			continue;
 
 		for (;;) {
 			inode = tptr->index;
-			g_rr_node_state[inode].set_occ(g_rr_node_state[inode].occ() + 1);
+			route_ctx.rr_node_state[inode].set_occ(route_ctx.rr_node_state[inode].occ() + 1);
 
-			if (g_rr_nodes[inode].type() == SINK) {
+			if (device_ctx.rr_nodes[inode].type() == SINK) {
 				tptr = tptr->next; /* Skip next segment. */
 				if (tptr == NULL)
 					break;
@@ -539,19 +562,19 @@ static void recompute_occupancy_from_scratch(vtr::t_ivec ** clb_opins_used_local
 	 * (CLB outputs used up by being directly wired to subblocks used only      *
 	 * locally).                                                                */
 
-	for (iblk = 0; iblk < g_num_blocks; iblk++) {
-		for (iclass = 0; iclass < g_blocks[iblk].type->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
+	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
+		for (iclass = 0; iclass < cluster_ctx.blocks[iblk].type->num_class; iclass++) {
+			num_local_opins = clb_opins_used_locally[iblk][iclass].size();
 			/* Will always be 0 for pads or SINK classes. */
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
-				inode = clb_opins_used_locally[iblk][iclass].list[ipin];
-				g_rr_node_state[inode].set_occ(g_rr_node_state[inode].occ() + 1);
+				inode = clb_opins_used_locally[iblk][iclass][ipin];
+				route_ctx.rr_node_state[inode].set_occ(route_ctx.rr_node_state[inode].occ() + 1);
 			}
 		}
 	}
 }
 
-static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
+static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
 		enum e_route_type route_type, const t_segment_inf* segment_inf) {
 
 	/* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
@@ -560,31 +583,34 @@ static void check_locally_used_clb_opins(vtr::t_ivec ** clb_opins_used_locally,
 	int iclass, iblk, num_local_opins, inode, ipin;
 	t_rr_type rr_type;
 
-	for (iblk = 0; iblk < g_num_blocks; iblk++) {
-		for (iclass = 0; iclass < g_blocks[iblk].type->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+
+	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
+		for (iclass = 0; iclass < cluster_ctx.blocks[iblk].type->num_class; iclass++) {
+			num_local_opins = clb_opins_used_locally[iblk][iclass].size();
 			/* Always 0 for pads and for SINK classes */
 
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
-				inode = clb_opins_used_locally[iblk][iclass].list[ipin];
+				inode = clb_opins_used_locally[iblk][iclass][ipin];
 				check_node_and_range(inode, route_type, segment_inf); /* Node makes sense? */
 
 				/* Now check that node is an OPIN of the right type. */
 
-				rr_type = g_rr_nodes[inode].type();
+				rr_type = device_ctx.rr_nodes[inode].type();
 				if (rr_type != OPIN) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%d (%s)\n"
 						"\tClass %d local OPIN is wrong rr_type -- rr_node #%d of type %d.\n",
-						iblk, g_blocks[iblk].name, iclass, inode, rr_type);
+						iblk, cluster_ctx.blocks[iblk].name, iclass, inode, rr_type);
 				}
 
-				ipin = g_rr_nodes[inode].ptc_num();
-				if (g_blocks[iblk].type->pin_class[ipin] != iclass) {
+				ipin = device_ctx.rr_nodes[inode].ptc_num();
+				if (cluster_ctx.blocks[iblk].type->pin_class[ipin] != iclass) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%d (%s):\n"
 						"\tExpected class %d local OPIN has class %d -- rr_node #: %d.\n",
-						iblk, g_blocks[iblk].name, iclass,	g_blocks[iblk].type->pin_class[ipin], inode);
+						iblk, cluster_ctx.blocks[iblk].name, iclass,	cluster_ctx.blocks[iblk].type->pin_class[ipin], inode);
 				}
 			}
 		}
@@ -596,9 +622,11 @@ static void check_node_and_range(int inode, enum e_route_type route_type, const 
 	/* Checks that inode is within the legal range, then calls check_node to    *
 	 * check that everything else about the node is OK.                         */
 
-	if (inode < 0 || inode >= g_num_rr_nodes) { 		
+    auto& device_ctx = g_vpr_ctx.device();
+
+	if (inode < 0 || inode >= device_ctx.num_rr_nodes) { 		
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
-				"in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, g_num_rr_nodes - 1);
+				"in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.num_rr_nodes - 1);
 	}
 	check_node(inode, route_type, segment_inf);
 }

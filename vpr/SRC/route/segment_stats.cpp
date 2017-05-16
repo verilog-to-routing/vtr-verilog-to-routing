@@ -2,6 +2,7 @@
 using namespace std;
 
 #include "vtr_log.h"
+#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -26,6 +27,9 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 	int *seg_occ_by_type, *seg_cap_by_type; /* [0..num_segment-1]      */
 	float utilization;
 
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+
 	max_segment_length = 0;
 	for (seg_type = 0; seg_type < num_segment; seg_type++) {
 		if (segment_inf[seg_type].longline == false)
@@ -41,20 +45,20 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 	seg_occ_by_type = (int *) vtr::calloc(num_segment, sizeof(int));
 	seg_cap_by_type = (int *) vtr::calloc(num_segment, sizeof(int));
 
-	for (inode = 0; inode < g_num_rr_nodes; inode++) {
-		if (g_rr_nodes[inode].type() == CHANX || g_rr_nodes[inode].type() == CHANY) {
-			cost_index = g_rr_nodes[inode].cost_index();
-			seg_type = g_rr_indexed_data[cost_index].seg_index;
+	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+		if (device_ctx.rr_nodes[inode].type() == CHANX || device_ctx.rr_nodes[inode].type() == CHANY) {
+			cost_index = device_ctx.rr_nodes[inode].cost_index();
+			seg_type = device_ctx.rr_indexed_data[cost_index].seg_index;
 
 			if (!segment_inf[seg_type].longline)
 				length = segment_inf[seg_type].length;
 			else
 				length = LONGLINE;
 
-			seg_occ_by_length[length] += g_rr_node_state[inode].occ();
-			seg_cap_by_length[length] += g_rr_nodes[inode].capacity();
-			seg_occ_by_type[seg_type] += g_rr_node_state[inode].occ();
-			seg_cap_by_type[seg_type] += g_rr_nodes[inode].capacity();
+			seg_occ_by_length[length] += route_ctx.rr_node_state[inode].occ();
+			seg_cap_by_length[length] += device_ctx.rr_nodes[inode].capacity();
+			seg_occ_by_type[seg_type] += route_ctx.rr_node_state[inode].occ();
+			seg_cap_by_type[seg_type] += device_ctx.rr_nodes[inode].capacity();
 
 		}
 	}

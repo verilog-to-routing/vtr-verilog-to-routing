@@ -8,9 +8,9 @@
 #include "read_xml_arch_file.h"
 #include "CheckSetup.h"
 
-void CheckSetup(const struct s_placer_opts PlacerOpts,
-		const struct s_router_opts RouterOpts,
-		const struct s_det_routing_arch RoutingArch, const t_segment_inf * Segments,
+void CheckSetup(const t_placer_opts PlacerOpts,
+		const t_router_opts RouterOpts,
+		const t_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans) {
 	int i;
 	int Tmp;
@@ -71,7 +71,8 @@ void CheckSetup(const struct s_placer_opts PlacerOpts,
 
 	for (i = 0; i < RoutingArch.num_segment; ++i) {
 		Tmp = Segments[i].arch_opin_switch;
-		if (false == g_arch_switch_inf[Tmp].buffered) {
+        auto& device_ctx = g_vpr_ctx.device();
+		if (false == device_ctx.arch_switch_inf[Tmp].buffered) {
 			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 					"arch_opin_switch (#%d) of segment type #%d is not buffered.\n", Tmp, i);
 		}

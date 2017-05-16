@@ -7,7 +7,7 @@
  */
 
 inline ClbDelayCalc::ClbDelayCalc()
-    : intra_lb_pb_pin_lookup_(g_block_types, g_num_block_types) {}
+    : intra_lb_pb_pin_lookup_(g_vpr_ctx.device().block_types, g_vpr_ctx.device().num_block_types) {}
 
 inline float ClbDelayCalc::clb_input_to_internal_sink_delay(const t_net_pin* clb_input_pin, int internal_sink_pin) const {
     int pb_ipin = find_clb_pb_pin(clb_input_pin->block, clb_input_pin->block_pin);
@@ -31,11 +31,13 @@ inline float ClbDelayCalc::clb_input_to_clb_output_delay(const t_net_pin* clb_in
 }
 
 inline float ClbDelayCalc::trace_max_delay(int clb, int src_pb_route_id, int sink_pb_route_id) const {
-    VTR_ASSERT(src_pb_route_id < g_blocks[clb].pb->pb_graph_node->total_pb_pins);
-    VTR_ASSERT(sink_pb_route_id < g_blocks[clb].pb->pb_graph_node->total_pb_pins);
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    VTR_ASSERT(src_pb_route_id < cluster_ctx.blocks[clb].pb->pb_graph_node->total_pb_pins);
+    VTR_ASSERT(sink_pb_route_id < cluster_ctx.blocks[clb].pb->pb_graph_node->total_pb_pins);
 
 
-    const t_pb_route* pb_routes = g_blocks[clb].pb_route;
+    const t_pb_route* pb_routes = cluster_ctx.blocks[clb].pb_route;
 
     AtomNetId atom_net = pb_routes[src_pb_route_id].atom_net_id;
 
@@ -70,9 +72,11 @@ inline float ClbDelayCalc::pb_route_max_delay(int clb_block, int pb_route_idx) c
 }
 
 inline const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(int clb_block, int pb_route_idx) const {
-    int type_index = g_blocks[clb_block].type->index;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int upstream_pb_route_idx = g_blocks[clb_block].pb_route[pb_route_idx].driver_pb_pin_id;
+    int type_index = cluster_ctx.blocks[clb_block].type->index;
+
+    int upstream_pb_route_idx = cluster_ctx.blocks[clb_block].pb_route[pb_route_idx].driver_pb_pin_id;
 
     if(upstream_pb_route_idx >= 0) {
 

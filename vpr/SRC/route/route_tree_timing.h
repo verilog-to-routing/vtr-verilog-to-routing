@@ -2,6 +2,7 @@
 #include <vector>
 #include "route_tree_type.h"
 #include "connection_based_routing.h"
+#include "route_common.h"
 
 
 /**************** Subroutines exported by route_tree_timing.c ***************/
@@ -15,7 +16,7 @@ t_rt_node *init_route_tree_to_source(int inet);
 
 void free_route_tree(t_rt_node * rt_node);
 
-t_rt_node *update_route_tree(struct s_heap *hptr);
+t_rt_node *update_route_tree(t_heap *hptr);
 
 void update_net_delays_from_route_tree(float *net_delay,
 		const t_rt_node* const * rt_node_of_sink, int inet);

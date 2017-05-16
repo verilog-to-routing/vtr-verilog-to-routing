@@ -1,5 +1,6 @@
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -11,16 +12,16 @@
 #include "ShowSetup.h"
 
 /******** Function Prototypes ********/
-static void ShowPackerOpts(const struct s_packer_opts& PackerOpts);
+static void ShowPackerOpts(const t_packer_opts& PackerOpts);
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts);
 static void ShowPlacerOpts(const t_options& Options,
-		const struct s_placer_opts& PlacerOpts,
-		const struct s_annealing_sched& AnnealSched);
-static void ShowRouterOpts(const struct s_router_opts& RouterOpts);
+		const t_placer_opts& PlacerOpts,
+		const t_annealing_sched& AnnealSched);
+static void ShowRouterOpts(const t_router_opts& RouterOpts);
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts);
 
-static void ShowAnnealSched(const struct s_annealing_sched& AnnealSched);
-static void ShowRoutingArch(const struct s_det_routing_arch& RoutingArch);
+static void ShowAnnealSched(const t_annealing_sched& AnnealSched);
+static void ShowRoutingArch(const t_det_routing_arch& RoutingArch);
 
 /******** Function Implementations ********/
 
@@ -63,30 +64,34 @@ void ShowSetup(const t_options& options, const t_vpr_setup& vpr_setup) {
 void printClusteredNetlistStats() {
 	int i, j, L_num_p_inputs, L_num_p_outputs;
 	int *num_blocks_type;
-	num_blocks_type = (int*) vtr::calloc(g_num_block_types, sizeof(int));
+
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+	num_blocks_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
 	vtr::printf_info("\n");
-	vtr::printf_info("Netlist num_nets: %d\n", (int) g_clbs_nlist.net.size());
-	vtr::printf_info("Netlist num_blocks: %d\n", g_num_blocks);
+	vtr::printf_info("Netlist num_nets: %d\n", (int) cluster_ctx.clbs_nlist.net.size());
+	vtr::printf_info("Netlist num_blocks: %d\n", cluster_ctx.num_blocks);
 
-	for (i = 0; i < g_num_block_types; i++) {
+	for (i = 0; i < device_ctx.num_block_types; i++) {
 		num_blocks_type[i] = 0;
 	}
 	/* Count I/O input and output pads */
 	L_num_p_inputs = 0;
 	L_num_p_outputs = 0;
 
-	for (i = 0; i < g_num_blocks; i++) {
-		num_blocks_type[g_blocks[i].type->index]++;
-		if (g_blocks[i].type == IO_TYPE) {
-			for (j = 0; j < IO_TYPE->num_pins; j++) {
-				if (g_blocks[i].nets[j] != OPEN) {
-					if (IO_TYPE->class_inf[IO_TYPE->pin_class[j]].type
+	for (i = 0; i < cluster_ctx.num_blocks; i++) {
+		num_blocks_type[cluster_ctx.blocks[i].type->index]++;
+		if (cluster_ctx.blocks[i].type == device_ctx.IO_TYPE) {
+			for (j = 0; j < device_ctx.IO_TYPE->num_pins; j++) {
+				if (cluster_ctx.blocks[i].nets[j] != OPEN) {
+					if (device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[j]].type
 							== DRIVER) {
 						L_num_p_inputs++;
 					} else {
 						VTR_ASSERT(
-								IO_TYPE-> class_inf[IO_TYPE-> pin_class[j]]. type == RECEIVER);
+								device_ctx.IO_TYPE-> class_inf[device_ctx.IO_TYPE-> pin_class[j]]. type == RECEIVER);
 						L_num_p_outputs++;
 					}
 				}
@@ -94,9 +99,9 @@ void printClusteredNetlistStats() {
 		}
 	}
 
-	for (i = 0; i < g_num_block_types; i++) {
-		if (IO_TYPE != &g_block_types[i]) {
-			vtr::printf_info("Netlist %s blocks: %d.\n", g_block_types[i].name, num_blocks_type[i]);
+	for (i = 0; i < device_ctx.num_block_types; i++) {
+		if (device_ctx.IO_TYPE != &device_ctx.block_types[i]) {
+			vtr::printf_info("Netlist %s blocks: %d.\n", device_ctx.block_types[i].name, num_blocks_type[i]);
 		}
 	}
 
@@ -107,7 +112,7 @@ void printClusteredNetlistStats() {
 	free(num_blocks_type);
 }
 
-static void ShowRoutingArch(const struct s_det_routing_arch& RoutingArch) {
+static void ShowRoutingArch(const t_det_routing_arch& RoutingArch) {
 
 	vtr::printf_info("RoutingArch.directionality: ");
 	switch (RoutingArch.directionality) {
@@ -148,7 +153,7 @@ static void ShowRoutingArch(const struct s_det_routing_arch& RoutingArch) {
 	vtr::printf_info("\n");
 }
 
-static void ShowAnnealSched(const struct s_annealing_sched& AnnealSched) {
+static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
 
 	vtr::printf_info("AnnealSched.type: ");
 	switch (AnnealSched.type) {
@@ -171,7 +176,7 @@ static void ShowAnnealSched(const struct s_annealing_sched& AnnealSched) {
 	}
 }
 
-static void ShowRouterOpts(const struct s_router_opts& RouterOpts) {
+static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 
 	vtr::printf_info("RouterOpts.route_type: ");
 	switch (RouterOpts.route_type) {
@@ -299,8 +304,8 @@ static void ShowRouterOpts(const struct s_router_opts& RouterOpts) {
 }
 
 static void ShowPlacerOpts(const t_options& Options,
-		const struct s_placer_opts& PlacerOpts,
-		const struct s_annealing_sched& AnnealSched) {
+		const t_placer_opts& PlacerOpts,
+		const t_annealing_sched& AnnealSched) {
 
 	vtr::printf_info("PlacerOpts.place_freq: ");
 	switch (PlacerOpts.place_freq) {
@@ -382,7 +387,7 @@ static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
 	vtr::printf_info("\n");
 }
 
-static void ShowPackerOpts(const struct s_packer_opts& PackerOpts) {
+static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
 
 	vtr::printf_info("PackerOpts.allow_unrelated_clustering: %s", (PackerOpts.allow_unrelated_clustering ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.alpha_clustering: %f\n", PackerOpts.alpha);

@@ -137,6 +137,7 @@
 using namespace std;
 
 #include "vtr_assert.h"
+#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "physical_types.h"
@@ -154,19 +155,19 @@ using namespace std;
  * direct connection. Values stored is the index of the possible direct connection  *
  * as specified in the arch file, OPEN (-1) is stored for pins that could not be    *
  * part of a direct chain conneciton.                                               *
- * [0...g_num_block_types-1][0...num_pins-1]                                                */
+ * [0...device_ctx.num_block_types-1][0...num_pins-1]                                                */
 static int ** f_idirect_from_blk_pin = NULL;
 
 /* f_direct_type_from_blk_pin array stores the value SOURCE if the pin is the       *
  * from_pin, SINK if the pin is the to_pin in the direct connection as specified in *
  * the arch file, OPEN (-1) is stored for pins that could not be part of a direct   *
  * chain conneciton.                                                                *
- * [0...g_num_block_types-1][0...num_pins-1]                                                */
+ * [0...device_ctx.num_block_types-1][0...num_pins-1]                                                */
 static int ** f_direct_type_from_blk_pin = NULL;
 
 /* f_imacro_from_blk_pin maps a blk_num to the corresponding macro index.           *
  * If the block is not part of a macro, the value OPEN (-1) is stored.              *
- * [0...g_num_blocks-1]                                                               */
+ * [0...cluster_ctx.num_blocks-1]                                                               */
 static int * f_imacro_from_iblk = NULL;
 
 
@@ -196,25 +197,26 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 	int next_iblk, next_inet, curr_inet;
 	int num_blk_pins, num_macro; 
 	int imember;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	num_macro = 0;
-	for (iblk = 0; iblk < g_num_blocks; iblk++) {
+	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
 
-		num_blk_pins = g_blocks[iblk].type->num_pins;
+		num_blk_pins = cluster_ctx.blocks[iblk].type->num_pins;
 		for (to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
 			
-			to_inet = g_blocks[iblk].nets[to_iblk_pin];
-			to_idirect = f_idirect_from_blk_pin[g_blocks[iblk].type->index][to_iblk_pin];
-			to_src_or_sink = f_direct_type_from_blk_pin[g_blocks[iblk].type->index][to_iblk_pin];
+			to_inet = cluster_ctx.blocks[iblk].nets[to_iblk_pin];
+			to_idirect = f_idirect_from_blk_pin[cluster_ctx.blocks[iblk].type->index][to_iblk_pin];
+			to_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.blocks[iblk].type->index][to_iblk_pin];
 			
 			// Find to_pins (SINKs) with possible direct connection but are not 
 			// connected to any net (Possible head of macro)
 			if ( to_src_or_sink == SINK && to_idirect != OPEN && to_inet == OPEN ) {
 
 				for (from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
-					from_inet = g_blocks[iblk].nets[from_iblk_pin];
-					from_idirect = f_idirect_from_blk_pin[g_blocks[iblk].type->index][from_iblk_pin];
-					from_src_or_sink = f_direct_type_from_blk_pin[g_blocks[iblk].type->index][from_iblk_pin];
+					from_inet = cluster_ctx.blocks[iblk].nets[from_iblk_pin];
+					from_idirect = f_idirect_from_blk_pin[cluster_ctx.blocks[iblk].type->index][from_iblk_pin];
+					from_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.blocks[iblk].type->index][from_iblk_pin];
 
 					// Find from_pins with the same possible direct connection that are connected.
 					// Confirmed head of macro
@@ -240,13 +242,13 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 							curr_inet = next_inet;
 							
 							// Assume that carry chains only has 1 sink - direct connection
-							VTR_ASSERT(g_clbs_nlist.net[curr_inet].num_sinks() == 1);
-							next_iblk = g_clbs_nlist.net[curr_inet].pins[1].block;
+							VTR_ASSERT(cluster_ctx.clbs_nlist.net[curr_inet].num_sinks() == 1);
+							next_iblk = cluster_ctx.clbs_nlist.net[curr_inet].pins[1].block;
 							
 							// Assume that the from_iblk_pin index is the same for the next block
-							VTR_ASSERT(f_idirect_from_blk_pin[g_blocks[next_iblk].type->index][from_iblk_pin] == from_idirect
-									&& f_direct_type_from_blk_pin[g_blocks[next_iblk].type->index][from_iblk_pin] == SOURCE);
-							next_inet = g_blocks[next_iblk].nets[from_iblk_pin];
+							VTR_ASSERT(f_idirect_from_blk_pin[cluster_ctx.blocks[next_iblk].type->index][from_iblk_pin] == from_idirect
+									&& f_direct_type_from_blk_pin[cluster_ctx.blocks[next_iblk].type->index][from_iblk_pin] == SOURCE);
+							next_inet = cluster_ctx.blocks[next_iblk].nets[from_iblk_pin];
 
 							// Mark down this block as a member of the macro
 							imember = pl_macro_num_members[num_macro];
@@ -293,7 +295,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	 * For pl_macro_member_blk_num, allocate for the first dimension   *
 	 * only at first. Allocate for the second dimemsion when I know    *
 	 * the size. Otherwise, the array is going to be of size           *
-	 * g_num_blocks^2 (There are big benckmarks VPR that have g_num_blocks *
+	 * cluster_ctx.num_blocks^2 (There are big benckmarks VPR that have cluster_ctx.num_blocks *
 	 * in the 100k's range).                                           *
 	 *                                                                 *
 	 * The placement macro array is freed by the caller(s).            */
@@ -302,6 +304,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	int imacro, imember, num_macro;
 	int *pl_macro_idirect, *pl_macro_num_members, **pl_macro_member_blk_num, 
 			*pl_macro_member_blk_num_of_this_blk;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 	
 	t_pl_macro * macro = NULL;
 	
@@ -310,10 +313,10 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 			&f_idirect_from_blk_pin, &f_direct_type_from_blk_pin);
 
 	/* Allocate maximum memory for temporary variables. */
-	pl_macro_num_members = (int *) vtr::calloc (g_num_blocks , sizeof(int));
-	pl_macro_idirect = (int *) vtr::calloc (g_num_blocks , sizeof(int));
-	pl_macro_member_blk_num = (int **) vtr::calloc (g_num_blocks , sizeof(int*));
-	pl_macro_member_blk_num_of_this_blk = (int *) vtr::calloc (g_num_blocks , sizeof(int));
+	pl_macro_num_members = (int *) vtr::calloc (cluster_ctx.num_blocks , sizeof(int));
+	pl_macro_idirect = (int *) vtr::calloc (cluster_ctx.num_blocks , sizeof(int));
+	pl_macro_member_blk_num = (int **) vtr::calloc (cluster_ctx.num_blocks , sizeof(int*));
+	pl_macro_member_blk_num_of_this_blk = (int *) vtr::calloc (cluster_ctx.num_blocks , sizeof(int));
 
 	/* Compute required size:                                                *
 	 * Go through all the pins with possible direct connections in           *
@@ -364,7 +367,7 @@ void get_imacro_from_iblk(int * imacro, int iblk, t_pl_macro * macros, int num_m
 	 * iblk belongs to a placement macro or not.                             *
 	 *                                                                       *
 	 * The array f_imacro_from_iblk is used for the mapping for speed reason *
-	 * [0...g_num_blocks-1]                                                    */
+	 * [0...cluster_ctx.num_blocks-1]                                                    */
 
 	/* If the array is not allocated and loaded, allocate it.                */ 
 	if (f_imacro_from_iblk == NULL) {
@@ -398,10 +401,11 @@ static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros)
 
 	int * temp_imacro_from_iblk = NULL;
 	int imacro, imember, iblk;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_imacro_from_iblk = (int *)vtr::malloc(g_num_blocks * sizeof(int));
-	for(iblk = 0; iblk < g_num_blocks; iblk ++) {
+	temp_imacro_from_iblk = (int *)vtr::malloc(cluster_ctx.num_blocks * sizeof(int));
+	for(iblk = 0; iblk < cluster_ctx.num_blocks; iblk ++) {
 		temp_imacro_from_iblk[iblk] = OPEN;
 	}
 	
@@ -422,9 +426,10 @@ void free_placement_macros_structs(void) {
 	/* This function frees up all the static data structures used. */
 
 	// This frees up the two arrays and set the pointers to NULL
+    auto& device_ctx = g_vpr_ctx.device();
 	int itype;
 	if ( f_idirect_from_blk_pin != NULL ) {
-		for (itype = 1; itype < g_num_block_types; itype++) {
+		for (itype = 1; itype < device_ctx.num_block_types; itype++) {
 			free(f_idirect_from_blk_pin[itype]);
 		}
 		free(f_idirect_from_blk_pin);
@@ -432,7 +437,7 @@ void free_placement_macros_structs(void) {
 	}
 
 	if ( f_direct_type_from_blk_pin != NULL ) {
-		for (itype = 1; itype < g_num_block_types; itype++) {
+		for (itype = 1; itype < device_ctx.num_block_types; itype++) {
 			free(f_direct_type_from_blk_pin[itype]);
 		}
 		free(f_direct_type_from_blk_pin);

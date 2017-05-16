@@ -31,14 +31,13 @@
 #include <unordered_map>
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
+
 #include "vtr_assert.h"
+#include "vtr_ndmatrix.h"
 
 /*******************************************************************************
  * Global data types and constants
  ******************************************************************************/
-typedef struct s_power_opts t_power_opts;
-typedef struct s_net_power t_net_power;
-
 /*#define CREATE_ECHO_FILES*//* prints echo files */
 /*#define DEBUG_FAILED_PACKING_CANDIDATES*//*Displays candidates during packing that failed */
 /*#define PRINT_SINK_DELAYS*//*prints the sink delays to files */
@@ -104,8 +103,8 @@ enum e_block_pack_status {
 
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
-struct s_pack_molecule;
-struct s_pb_stats;
+struct t_pack_molecule;
+struct t_pb_stats;
 
 /* A t_pb represents an instance of a clustered block, which may be:
  *    1) A top level clustered block which is placeable at a location in FPGA device 
@@ -118,8 +117,7 @@ struct s_pb_stats;
  * t_pb (in combination with t_pb_route) implement the mapping from the netlist elements to architectural
  * instances.
  */
-typedef struct s_pb t_pb;
-typedef struct s_pb {
+struct t_pb {
 	char *name = nullptr; /* Name of this physical block */
 	t_pb_graph_node *pb_graph_node = nullptr; /* pointer to pb_graph_node this pb corresponds to */
 
@@ -128,7 +126,7 @@ typedef struct s_pb {
 	t_pb **child_pbs = nullptr; /* children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1] */
 	t_pb *parent_pb = nullptr; /* pointer to parent node */
 
-	struct s_pb_stats *pb_stats = nullptr; /* statistics for current pb */
+	t_pb_stats *pb_stats = nullptr; /* statistics for current pb */
 
 	int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
 
@@ -229,7 +227,7 @@ private:
     std::map<const t_pb_graph_pin*,BitIndex> pin_rotations_; //Contains the atom netlist port bit index associated 
                                                        //with any primitive pins which have been rotated during clustering
 
-} t_pb;
+};
 
 /* Representation of intra-logic block routing */
 struct t_pb_route {
@@ -255,7 +253,7 @@ enum e_pack_pattern_molecule_type {
  * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.  Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
  * Assumes that the root of a chain is the primitive that starts the chain or is driven from outside the logic block
  */
-typedef struct s_pack_molecule {
+struct t_pack_molecule {
 	enum e_pack_pattern_molecule_type type; /* what kind of molecule is this? */
 	t_pack_patterns *pack_pattern; /* If this is a forced_pack molecule, pattern this molecule matches */
 	t_model_chain_pattern *chain_pattern; /* If this is a chain molecule, chain that this molecule matches */
@@ -269,21 +267,21 @@ typedef struct s_pack_molecule {
 	float base_gain; /* Intrinsic "goodness" score for molecule independant of rest of netlist */
 
 	int num_ext_inputs; /* number of input pins used by molecule that are not self-contained by pattern molecule matches */
-	struct s_pack_molecule *next;
-} t_pack_molecule;
+	t_pack_molecule *next;
+};
 
 /**
  * Stats keeper for placement information during packing
  * Contains linked lists to placement locations based on status of primitive
  */
-typedef struct s_cluster_placement_stats {
+struct t_cluster_placement_stats {
 	int num_pb_types; /* num primitive pb_types inside complex block */
 	const t_pack_molecule *curr_molecule; /* current molecule being considered for packing */
 	t_cluster_placement_primitive **valid_primitives; /* [0..num_pb_types-1] ptrs to linked list of valid primitives, for convenience, each linked list head is empty */
 	t_cluster_placement_primitive *in_flight; /* ptrs to primitives currently being considered */
 	t_cluster_placement_primitive *tried; /* ptrs to primitives that are open but current logic block unable to pack to */
 	t_cluster_placement_primitive *invalid; /* ptrs to primitives that are invalid */
-} t_cluster_placement_stats;
+};
 
 /* Built-in library models */
 #define MODEL_LOGIC "names"
@@ -310,13 +308,13 @@ typedef struct s_cluster_placement_stats {
 
 /* Timing graph information */
 
-typedef struct s_tedge {
+struct t_tedge {
 	/* Edge in the timing graph. */
 	int to_node; /* index of node at the sink end of this edge */
 	float Tdel; /* delay to go to to_node along this edge */
-} t_tedge;
+};
 
-typedef enum {
+enum e_tnode_type {
 	/* Types of tnodes (timing graph nodes). */
 	TN_INPAD_SOURCE, /* input to an input I/O pad */
 	TN_INPAD_OPIN, /* output from an input I/O pad */
@@ -336,9 +334,9 @@ typedef enum {
     TN_CLOCK_SOURCE, /* An on-chip clock generator such as a pll */
     TN_CLOCK_OPIN, /* Output pin from an on-chip clock source - comes from TN_CLOCK_SOURCE */
 	TN_CONSTANT_GEN_SOURCE /* source of a constant logic 1 or 0 */
-} e_tnode_type;
+};
 
-typedef struct s_prepacked_tnode_data {
+struct t_prepacked_tnode_data {
 	/* Data only used by prepacked tnodes. Stored separately so it
 	 doesn't need to be allocated in the post-packed netlist. */
 	int model_port, model_pin; /* technology mapped model pin */
@@ -349,9 +347,9 @@ typedef struct s_prepacked_tnode_data {
 	float normalized_total_critical_paths; /* critical path count (normalized with respect to max count) */
 	float normalized_T_arr; /* arrival time (normalized with respect to max time) */
 #endif
-} t_prepacked_tnode_data;
+};
 
-typedef struct s_tnode {
+struct t_tnode {
 	/* Node in the timing graph. Note: we combine 2 members into a bit field. */
 	e_tnode_type type; /* see the above enum */
 	t_tedge *out_edges; /* [0..num_edges - 1] array of edges fanning out from this tnode.
@@ -372,7 +370,7 @@ typedef struct s_tnode {
 #endif
 
 	/* Valid values for TN_FF_SINK, TN_FF_SOURCE, TN_FF_CLOCK, TN_INPAD_SOURCE, and TN_OUTPAD_SINK only: */
-	int clock_domain; /* Index of the clock in g_sdc->constrained_clocks which this flip-flop or I/O is constrained on. */
+	int clock_domain; /* Index of the clock in timing_ctx.sdc->constrained_clocks which this flip-flop or I/O is constrained on. */
 	float clock_delay; /* The time taken for a clock signal to get to the flip-flop or I/O (assumed 0 for I/Os). */
 
 	/* Used in post-packing timing graph only: */
@@ -383,28 +381,28 @@ typedef struct s_tnode {
 
 	unsigned int is_comb_loop_breakpoint : 1; /* Indicates that this tnode had input edges purposely
 											     disconnected to break a combinational loop */
-} t_tnode;
+};
 
 /* Other structures storing timing information */
 
-typedef struct s_clock {
+struct t_clock {
 	/* Stores information on clocks given timing constraints.
 	 Used in SDC parsing and timing analysis. */
 	char * name;
 	bool is_netlist_clock; /* Is this a netlist or virtual (external) clock? */
 	int fanout;
-} t_clock;
+};
 
-typedef struct s_io {
+struct t_io {
 	/* Stores information on I/Os given timing constraints.
 	 Used in SDC parsing and timing analysis. */
 	char * name; /* I/O port name with an SDC constraint */
 	char * clock_name; /* Clock it was constrained on */
 	float delay; /* Delay through the I/O in this constraint */
 	int file_line_number; /* line in the SDC file I/O was constrained on - used for error reporting */
-} t_io;
+};
 
-typedef struct s_timing_stats {
+struct t_timing_stats {
 	/* Timing statistics for final reporting for each constraint
 	 (pair of constrained source and sink clock domains).
 
@@ -421,20 +419,20 @@ typedef struct s_timing_stats {
 
 	float ** cpd;
 	float ** least_slack;
-} t_timing_stats;
+};
 
-typedef struct s_slack {
+struct t_slack {
 	/* Matrices storing slacks and criticalities of each sink pin on each net
 	 [0..net.size()-1][1..num_pins-1] for post-packed netlists. */
 	float ** slack;
 	float ** timing_criticality;
-} t_slack;
+};
 
-typedef struct s_override_constraint {
+struct t_override_constraint {
 	/* A special-case constraint to override the default, calculated, timing constraint.  Holds data from
 	 set_clock_groups, set_false_path, set_max_delay, and set_multicycle_path commands. Can hold data for
 	 clock-to-clock, clock-to-flip-flop, flip-flop-to-clock or flip-flop-to-flip-flop constraints, each of
-	 which has its own array (g_sdc->cc_constraints, g_sdc->cf_constraints, g_sdc->fc_constraints, and g_sdc->ff_constraints). */
+	 which has its own array (timing_ctx.sdc->cc_constraints, timing_ctx.sdc->cf_constraints, timing_ctx.sdc->fc_constraints, and timing_ctx.sdc->ff_constraints). */
 	char ** source_list; /* Array of net names of flip-flops or clocks */
 	char ** sink_list;
 	int num_source;
@@ -442,14 +440,14 @@ typedef struct s_override_constraint {
 	float constraint;
 	int num_multicycles;
 	int file_line_number; /* line in the SDC file clock was constrained on - used for error reporting */
-} t_override_constraint;
+};
 
-typedef struct s_timing_constraints { /* Container structure for all SDC timing constraints. 
+struct t_timing_constraints { /* Container structure for all SDC timing constraints. 
  See top-level comment to read_sdc.c for details on members. */
 	int num_constrained_clocks; /* number of clocks with timing constraints */
-	t_clock * constrained_clocks; /* [0..g_sdc->num_constrained_clocks - 1] array of clocks with timing constraints */
+	t_clock * constrained_clocks; /* [0..timing_ctx.sdc->num_constrained_clocks - 1] array of clocks with timing constraints */
 
-	float ** domain_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
+    vtr::Matrix<float> domain_constraint; /* [0..num_constrained_clocks - 1 (source)][0..num_constrained_clocks - 1 (destination)] */
 
 	int num_constrained_inputs; /* number of inputs with timing constraints */
 	t_io * constrained_inputs; /* [0..num_constrained_inputs - 1] array of inputs with timing constraints */
@@ -468,7 +466,7 @@ typedef struct s_timing_constraints { /* Container structure for all SDC timing 
 
 	int num_ff_constraints; /* number of special-case flipflop-to-flipflop constraints */
 	t_override_constraint * ff_constraints; /*  [0..num_ff_constraints - 1] array of such constraints */
-} t_timing_constraints;
+};
 
 /***************************************************************************
  * Placement and routing data types
@@ -496,7 +494,7 @@ enum e_pad_loc_type {
 };
 
 /* Power data for t_net structure */
-struct s_net_power {
+struct t_net_power {
 	/* Signal probability - long term probability that signal is logic-high*/
 	float probability;
 
@@ -519,7 +517,7 @@ struct s_net_power {
  * is_fixed: not routed (has been pre-routed)
  * is_global: not routed
  * is_const_gen: constant generator (does not affect timing) */
-typedef struct s_net {
+struct t_net {
 	char *name;
 	int num_sinks;
 	int *node_block;
@@ -529,27 +527,23 @@ typedef struct s_net {
 	unsigned int is_fixed : 1;
 	unsigned int is_global : 1;
 	unsigned int is_const_gen : 1;
-} t_net;
+};
 
 /* s_grid_tile is the minimum tile of the fpga                         
  * type:  Pointer to type descriptor, NULL for illegal, IO_TYPE for io 
  * width_offset: Number of grid tiles reserved based on width (right) of a block
  * height_offset: Number of grid tiles reserved based on height (top) of a block
- * usage: Number of blocks used in this grid tile
- * blocks[]: Array of CLBs placed in a physical position, EMPTY means no block at 
- *           that index */
-typedef struct s_grid_tile {
+ */
+struct t_grid_tile {
 	t_type_ptr type;
 	int width_offset;
 	int height_offset;
-	int usage;
-	int *blocks;
-} t_grid_tile;
+};
 
 /* Stores the bounding box of a net in terms of the minimum and  *
  * maximum coordinates of the blocks forming the net, clipped to *
- * the region (1..g_nx, 1..g_ny).                                    */
-struct s_bb {
+ * the region (1..device_ctx.nx, 1..device_ctx.ny).                                    */
+struct t_bb {
 	int xmin;
 	int xmax;
 	int ymin;
@@ -559,7 +553,7 @@ struct s_bb {
 /* capacity:   Capacity of this region, in tracks.               *
  * occupancy:  Expected number of tracks that will be occupied.  *
  * cost:       Current cost of this usage.                       */
-struct s_place_region {
+struct t_place_region {
 	float capacity;
 	float inv_capacity;
 	float occupancy;
@@ -574,7 +568,7 @@ struct s_place_region {
  * yold: the y_coord that the block is moved from               *
  * xnew: the x_coord that the block is moved to                 *
  */
-typedef struct s_pl_moved_block {
+struct t_pl_moved_block {
 	int block_num;
 	int xold;
 	int xnew;
@@ -584,7 +578,7 @@ typedef struct s_pl_moved_block {
 	int znew;
 	int swapped_to_was_empty;
 	int swapped_from_is_empty;
-} t_pl_moved_block;
+};
 
 /* Stores the list of blocks to be moved in a swap during       *
  * placement.                                                   *
@@ -594,49 +588,66 @@ typedef struct s_pl_moved_block {
  *               information on the move.                       *
  *               [0...num_moved_blocks-1]                       *
  */
-typedef struct s_pl_blocks_to_be_moved {
+struct t_pl_blocks_to_be_moved {
 	int num_moved_blocks;
 	t_pl_moved_block * moved_blocks;
-} t_pl_blocks_to_be_moved;
+};
 
 /* legal positions for type */
-typedef struct s_legal_pos {
+struct t_legal_pos {
 	int x;
 	int y;
 	int z;
-} t_legal_pos;
+};
 
 /*
  Represents a clustered logic block of a user circuit that fits into one unit of space in an FPGA grid block
  name: identifier for this block
  type: the type of physical block this user circuit block can map into
  nets: nets that connect to other user circuit blocks
- x: x-coordinate
- y: y-coordinate
- z: occupancy coordinate
  pb: Physical block representing the clustering of this CLB
  pb_pin_route_stats: [0..num_pb_graph_pins-1] Representation of intra logic block routing within CLB
- is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing
  */
-struct s_block {
+struct t_block {
 	char *name;
 	t_type_ptr type;
 	int *nets;
 	int *net_pins;
-	int x;
-	int y;
-	int z;
 
 	t_pb *pb; /* Internal-to-block hierarchy */
 	t_pb_route *pb_route; /* Internal-to-block routing [0..pb->pb_graph_node->total_pb_pins-1]*/
-
-	unsigned int is_fixed : 1;
-    unsigned int nets_and_pins_synced_to_z_coordinate : 1;
 };
-typedef struct s_block t_block;
+
+/*
+ * Represents the placement location of a clustered block (i.e. t_block)
+ * x: x-coordinate
+ * y: y-coordinate
+ * z: occupancy coordinate
+ * is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing
+ * nets_and_pins_synced_to_z_coordinate: true if the associated t_block's pins have been synced to the z location (i.e. after placement)
+ */
+struct t_block_loc {
+    int x = OPEN;
+    int y = OPEN;
+    int z = OPEN;
+
+	bool is_fixed = false;
+    bool nets_and_pins_synced_to_z_coordinate = false;
+};
+
+/*
+ * Stores the clustered blocks placed at a particular grid location
+ */
+struct t_grid_blocks {
+    //How many valid blocks are in use at this location
+    int usage;
+
+    //The clustered blocks associated with this grid location
+    std::vector<int> blocks; 
+};
 
 /* Names of various files */
-struct s_file_name_opts {
+struct t_file_name_opts {
 	char *ArchFile;
 	char *CircuitName;
 	char *BlifFile;
@@ -665,7 +676,7 @@ enum e_packer_algorithm {
 	PACK_GREEDY, PACK_BRUTE_FORCE
 };
 
-struct s_packer_opts {
+struct t_packer_opts {
 	const char *blif_file_name;
 	const char *sdc_file_name;
 	const char *output_file;
@@ -691,7 +702,7 @@ struct s_packer_opts {
  * remaining information is used only for USER_SCHED, and have the        *
  * obvious meanings.                                                      */
 
-struct s_annealing_sched {
+struct t_annealing_sched {
 	enum sched_type type;
 	float inner_num;
 	float init_t;
@@ -728,7 +739,7 @@ enum e_place_algorithm {
 	BOUNDING_BOX_PLACE, PATH_TIMING_DRIVEN_PLACE
 };
 
-struct s_placer_opts {
+struct t_placer_opts {
 	enum e_place_algorithm place_algorithm;
 	float timing_tradeoff;
 	float place_cost_exp;
@@ -806,8 +817,7 @@ enum e_routing_failure_predictor {
 
 #define NO_FIXED_CHANNEL_WIDTH -1
 
-typedef struct s_router_opts t_router_opts;
-struct s_router_opts {
+struct t_router_opts {
 	float first_iter_pres_fac;
 	float initial_pres_fac;
 	float pres_fac_mult;
@@ -869,8 +879,7 @@ struct t_analysis_opts {
  *                       build_rr_graph() to a file specified by this       *
  *                       variable                                           */
 
-typedef struct s_det_routing_arch t_det_routing_arch;
-struct s_det_routing_arch {
+struct t_det_routing_arch {
 	enum e_directionality directionality; /* UDSD by AY */
 	int Fs;
 	enum e_switch_block_type switch_block_type;
@@ -916,7 +925,7 @@ enum e_direction : unsigned char {
  * type_name_ptr: pointer to name of the segment type this track belongs    *
  *                to. points to the appropriate name in s_segment_inf       */               
 
-typedef struct s_seg_details {
+struct t_seg_details {
 	int length;
 	int start;
 	bool longline;
@@ -935,17 +944,16 @@ typedef struct s_seg_details {
 	int index;
 	float Cmetal_per_m; /* Used for power */
 	const char *type_name_ptr;
-} t_seg_details;
+};
 
 /* Defines a 2-D array of t_seg_details data structures (one per channel)   */
-
-typedef t_seg_details** t_chan_details;
+typedef vtr::Matrix<t_seg_details*> t_chan_details;
 
 /* A linked list of float pointers.  Used for keeping track of   *
  * which pathcosts in the router have been changed.              */
 
-struct s_linked_f_pointer {
-	struct s_linked_f_pointer *next;
+struct t_linked_f_pointer {
+	t_linked_f_pointer *next;
 	float *fptr;
 };
 
@@ -980,18 +988,47 @@ const std::vector<const char*> rr_node_typename {
  *               each net. A '0' indicates a terminal node, '1' means a    *
  *               single child, '+1' defines branch with 2 or more children.*
  * next:    Pointer to the next traceback element in this route.           */
-
-typedef struct s_trace {
-	struct s_trace *next;
+struct t_trace {
+	t_trace *next;
 	int index;
 	int iblock;
 	int num_siblings;
 	short iswitch;
-} t_trace;
+};
+
+/* Extra information about each rr_node needed only during routing (i.e.    *
+ * during the maze expansion).                                              *
+ *                                                                          *
+ * prev_node:  Index of the previous node used to reach this one;           *
+ *             used to generate the traceback.  If there is no              *
+ *             predecessor, prev_node = NO_PREVIOUS.                        *
+ * pres_cost:  Present congestion cost term for this node.                  *
+ * acc_cost:   Accumulated cost term from previous Pathfinder iterations.   *
+ * path_cost:  Total cost of the path up to and including this node +       *
+ *             the expected cost to the target if the timing_driven router  *
+ *             is being used.                                               *
+ * backward_path_cost:  Total cost of the path up to and including this     *
+ *                      node.  Not used by breadth-first router.            *
+ * prev_edge:  Index of the edge (from 0 to num_edges-1) that was used      *
+ *             to reach this node from the previous node.  If there is      *
+ *             no predecessor, prev_edge = NO_PREVIOUS.                     *
+ * target_flag:  Is this node a target (sink) for the current routing?      *
+ *               Number of times this node must be reached to fully route.  */
+struct t_rr_node_route_inf {
+	int prev_node;
+	float pres_cost;
+	float acc_cost;
+	float path_cost;
+	float backward_path_cost;
+	short prev_edge;
+	short target_flag;
+};
+
+
 
 #define NO_PREVIOUS -1
 
-/* Index of the SOURCE, SINK, OPIN, IPIN, etc. member of g_rr_indexed_data.    */
+/* Index of the SOURCE, SINK, OPIN, IPIN, etc. member of device_ctx.rr_indexed_data.    */
 enum e_cost_indices {
 	SOURCE_COST_INDEX = 0,
 	SINK_COST_INDEX,
@@ -1001,12 +1038,12 @@ enum e_cost_indices {
 };
 
 /* Power estimation options */
-struct s_power_opts {
+struct t_power_opts {
 	bool do_power; /* Perform power estimation? */
 };
 
 /* Channel width data */
-typedef struct s_chan_width {
+struct t_chan_width {
 	int max;
 	int x_max;
 	int y_max;
@@ -1014,10 +1051,10 @@ typedef struct s_chan_width {
 	int y_min;
 	int *x_list;
 	int *y_list;
-} t_chan_width;
+};
 
 /* Type to store our list of token to enum pairings */
-struct s_TokenPair {
+struct t_TokenPair {
 	const char *Str;
 	int Enum;
 };
@@ -1025,18 +1062,18 @@ struct s_TokenPair {
 struct t_lb_type_rr_node; /* Defined in pack_types.h */
 
 /* Store settings for VPR */
-typedef struct s_vpr_setup {
+struct t_vpr_setup {
 	bool TimingEnabled; /* Is VPR timing enabled */
-	struct s_file_name_opts FileNameOpts; /* File names */
+	t_file_name_opts FileNameOpts; /* File names */
 	t_model * user_models; /* blif models defined by the user */
 	t_model * library_models; /* blif models in VPR */
 	t_netlist_opts NetlistOpts; /* Options for packer */
-	struct s_packer_opts PackerOpts; /* Options for packer */
-	struct s_placer_opts PlacerOpts; /* Options for placer */
-	struct s_annealing_sched AnnealSched; /* Placement option annealing schedule */
-	struct s_router_opts RouterOpts; /* router options */
+	t_packer_opts PackerOpts; /* Options for packer */
+	t_placer_opts PlacerOpts; /* Options for placer */
+	t_annealing_sched AnnealSched; /* Placement option annealing schedule */
+	t_router_opts RouterOpts; /* router options */
     t_analysis_opts AnalysisOpts; /* Analysis options */
-	struct s_det_routing_arch RoutingArch; /* routing architecture */
+	t_det_routing_arch RoutingArch; /* routing architecture */
 	std::vector <t_lb_type_rr_node> *PackerRRGraph;
 	t_segment_inf * Segments; /* wires in routing architecture */
 	t_timing_inf Timing; /* timing information */
@@ -1045,6 +1082,6 @@ typedef struct s_vpr_setup {
 	bool gen_netlist_as_blif; /* option to print out post-pack/pre-place netlist as blif */
 	int GraphPause; /* user interactiveness graphics option */
 	t_power_opts PowerOpts;
-} t_vpr_setup;
+};
 
 #endif

@@ -2,13 +2,7 @@
 #define RR_GRAPH2_H
 
 #include "build_switchblocks.h"
-
-/************** Global variables shared only by the rr_* modules. ************/
-
-extern bool *rr_edge_done; /* [0..g_num_rr_nodes-1].  Used to keep track  *
- * of whether or not a node has been put in  *
- * an edge list yet. true if a node is already listed in the edges array *
- * that's being constructed. Ensure that there are no duplicate edges.   */
+#include "rr_types.h"
 
 /******************* Types shared by rr_graph2 functions *********************/
 
@@ -22,8 +16,8 @@ vtr::t_ivec ***alloc_and_load_rr_node_indices(
 		const int max_chan_width,
 		const int L_nx, const int L_ny, 
 		int *index, 
-		const t_chan_details *chan_details_x,
-		const t_chan_details *chan_details_y);
+		const t_chan_details& chan_details_x,
+		const t_chan_details& chan_details_y);
 
 void free_rr_node_indices(vtr::t_ivec ***L_rr_node_indices);
 
@@ -54,9 +48,9 @@ void alloc_and_load_chan_details(
 		const bool trim_obs_channels,
 		const int num_seg_details,
 		const t_seg_details *seg_details,
-		t_chan_details **chan_details_x,
-		t_chan_details **chan_details_y);
-t_chan_details *init_chan_details( 
+		t_chan_details& chan_details_x,
+		t_chan_details& chan_details_y);
+t_chan_details init_chan_details( 
 		const int L_nx, const int L_ny,
 		const t_chan_width *nodes_per_chan,
 		const int num_seg_details,
@@ -67,26 +61,26 @@ void obstruct_chan_details(
 		const t_chan_width *nodes_per_chan,
 		const bool trim_empty_channels,
 		const bool trim_obs_channels,
-		t_chan_details *chan_details_x,
-		t_chan_details *chan_details_y);
+		t_chan_details& chan_details_x,
+		t_chan_details& chan_details_y);
 void adjust_chan_details(
 		const int L_nx, const int L_ny,
 		const t_chan_width *nodes_per_chan,
-		t_chan_details *chan_details_x,
-		t_chan_details *chan_details_y);
+		t_chan_details& chan_details_x,
+		t_chan_details& chan_details_y);
 void adjust_seg_details(
 		const int x, const int y,
 		const int L_nx, const int L_ny,
 		const t_chan_width *nodes_per_chan,
-		t_chan_details *chan_details,
+		t_chan_details& chan_details,
 		const enum e_seg_details_type seg_details_type);
 
 void free_seg_details(
 		t_seg_details *seg_details,
 		const int max_chan_width); 
 void free_chan_details(
-		t_chan_details *chan_details_x,
-		t_chan_details *chan_details_y,
+		t_chan_details& chan_details_x,
+		t_chan_details& chan_details_y,
 		const int max_chan_width,
 		const int L_nx, const int L_ny);
 
@@ -118,8 +112,8 @@ bool is_sblock(
 int get_bidir_opin_connections(
 		const int i, const int j,
 		const int ipin,
-		struct s_linked_edge **edge_list,
-		int ******opin_to_track_map,
+		t_linked_edge **edge_list,
+		const t_pin_to_track_lookup& opin_to_track_map,
 		const int Fc,
 		bool *L_rr_edge_done,
 		vtr::t_ivec ***L_rr_node_indices,
@@ -133,7 +127,7 @@ int get_unidir_opin_connections(
 		const t_rr_type chan_type,
 		const t_seg_details *seg_details,
 		t_linked_edge **edge_list_ptr,
-		int ***Fc_ofs,
+        vtr::NdMatrix<int,3>& Fc_ofs,
 		bool *L_rr_edge_done,
 		const int max_len,
 		const int max_chan_width,
@@ -143,7 +137,7 @@ int get_unidir_opin_connections(
 int get_track_to_pins(
 		int seg, int chan, int track, int tracks_per_chan,
 		t_linked_edge **edge_list_ptr, vtr::t_ivec ***L_rr_node_indices,
-		vtr::t_ivec *****track_to_pin_lookup, t_seg_details *seg_details,
+		const t_track_to_pin_lookup& track_to_pin_lookup, t_seg_details *seg_details,
 		enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
 		enum e_directionality directionality);
 
@@ -158,14 +152,14 @@ int get_track_to_tracks(
 		const int max_chan_width,
 		const int Fs_per_side,
 		short ******sblock_pattern,
-		struct s_linked_edge **edge_list,
+		t_linked_edge **edge_list,
 		const t_seg_details *from_seg_details,
 		const t_seg_details *to_seg_details,
-		const t_chan_details *to_chan_details,
+		const t_chan_details& to_chan_details,
 		const enum e_directionality directionality,
 		vtr::t_ivec ***L_rr_node_indices,
 		bool *L_rr_edge_done,
-		vtr::t_ivec ***switch_block_conn,
+		const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn,
 		t_sb_connection_map *sb_conn_map);
 
 short ******alloc_sblock_pattern_lookup(
@@ -176,8 +170,8 @@ void free_sblock_pattern_lookup(
 void load_sblock_pattern_lookup(
 		const int i, const int j,
 		const t_chan_width *nodes_per_chan,
-		const t_chan_details *chan_details_x,
-		const t_chan_details *chan_details_y,
+		const t_chan_details& chan_details_x,
+		const t_chan_details& chan_details_y,
 		const int Fs,
 		const enum e_switch_block_type switch_block_type,
 		short ******sblock_pattern);
@@ -195,8 +189,8 @@ void dump_seg_details(
 		int max_chan_width,
 		FILE *fp);
 void dump_chan_details(
-		const t_chan_details *chan_details_x,
-		const t_chan_details *chan_details_y,
+		const t_chan_details& chan_details_x,
+		const t_chan_details& chan_details_y,
 		int max_chan_width,
 		const int L_nx, int const L_ny,
 		const char *fname);

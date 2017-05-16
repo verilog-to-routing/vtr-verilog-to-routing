@@ -18,6 +18,7 @@ using namespace std;
 #include "vtr_util.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_memory.h"
 
 #include "vpr_error.h"
 #include "vpr_types.h"
@@ -97,8 +98,8 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins * interc_pins,
 
 static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node);
 static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin);
-static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
-				const struct s_pb_graph_edge_comparator & edge2);
+static bool operator<(const t_pb_graph_edge_comparator & edge1,
+				const t_pb_graph_edge_comparator & edge2);
 static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin, 
 	const int i_pin, map<int, int>& edges_map, int* line_num);
 
@@ -110,21 +111,23 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 	int i, errors;
 	edges_head = NULL;
 	num_edges_head = NULL;
-	for (i = 0; i < g_num_block_types; i++) {
-		if (g_block_types[i].pb_type) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+	for (i = 0; i < device_ctx.num_block_types; i++) {
+		if (device_ctx.block_types[i].pb_type) {
 			pin_count_in_cluster = 0;
-			g_block_types[i].pb_graph_head = (t_pb_graph_node*) vtr::calloc(1,
+			device_ctx.block_types[i].pb_graph_head = (t_pb_graph_node*) vtr::calloc(1,
 					sizeof(t_pb_graph_node));
-			alloc_and_load_pb_graph(g_block_types[i].pb_graph_head, NULL,
-					g_block_types[i].pb_type, 0, load_power_structures);
-			g_block_types[i].pb_graph_head->total_pb_pins =
+			alloc_and_load_pb_graph(device_ctx.block_types[i].pb_graph_head, NULL,
+					device_ctx.block_types[i].pb_type, 0, load_power_structures);
+			device_ctx.block_types[i].pb_graph_head->total_pb_pins =
 					pin_count_in_cluster;
-			alloc_and_load_pin_locations_from_pb_graph(&g_block_types[i]);
+			alloc_and_load_pin_locations_from_pb_graph(&device_ctx.block_types[i]);
 			load_pin_classes_in_pb_graph_head(
-					g_block_types[i].pb_graph_head);
+					device_ctx.block_types[i].pb_graph_head);
 		} else {
-			g_block_types[i].pb_graph_head = NULL;
-			VTR_ASSERT(&g_block_types[i] == EMPTY_TYPE);
+			device_ctx.block_types[i].pb_graph_head = NULL;
+			VTR_ASSERT(&device_ctx.block_types[i] == device_ctx.EMPTY_TYPE);
 		}
 	}
 
@@ -133,10 +136,10 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
 		vtr::printf_error(__FILE__, __LINE__, "in pb graph");
 		exit(1);
 	}
-	for (i = 0; i < g_num_block_types; i++) {
-		if (g_block_types[i].pb_type) {
+	for (i = 0; i < device_ctx.num_block_types; i++) {
+		if (device_ctx.block_types[i].pb_type) {
 			load_pb_graph_pin_to_pin_annotations(
-					g_block_types[i].pb_graph_head);
+					device_ctx.block_types[i].pb_graph_head);
 		}
 	}
 }
@@ -146,13 +149,14 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
  */
 void free_all_pb_graph_nodes(void) {
 
-	int i;
-	for (i = 0; i < g_num_block_types; i++) {
-		if (g_block_types[i].pb_type) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+	for (int i = 0; i < device_ctx.num_block_types; i++) {
+		if (device_ctx.block_types[i].pb_type) {
 			pin_count_in_cluster = 0;
-			if (g_block_types[i].pb_graph_head) {
-				free_pb_graph(g_block_types[i].pb_graph_head);
-				free(g_block_types[i].pb_graph_head);
+			if (device_ctx.block_types[i].pb_graph_head) {
+				free_pb_graph(device_ctx.block_types[i].pb_graph_head);
+				free(device_ctx.block_types[i].pb_graph_head);
 			}
 		}
 	}
@@ -171,10 +175,11 @@ void echo_pb_graph(char * filename) {
 	fprintf(fp, "Physical Blocks Graph\n");
 	fprintf(fp, "--------------------------------------------\n\n");
 
-	for (i = 0; i < g_num_block_types; i++) {
-		fprintf(fp, "type %s\n", g_block_types[i].name);
-		if (g_block_types[i].pb_graph_head)
-			echo_pb_rec(g_block_types[i].pb_graph_head, 1, fp);
+    auto& device_ctx = g_vpr_ctx.device();
+	for (i = 0; i < device_ctx.num_block_types; i++) {
+		fprintf(fp, "type %s\n", device_ctx.block_types[i].name);
+		if (device_ctx.block_types[i].pb_graph_head)
+			echo_pb_rec(device_ctx.block_types[i].pb_graph_head, 1, fp);
 	}
 
 	fclose(fp);
@@ -193,9 +198,10 @@ static int check_pb_graph(void) {
 	 5.  All pins are connected to edges (warning)
 	 */
 	num_errors = 0;
-	for (i = 0; i < g_num_block_types; i++) {
-		if(g_block_types[i].pb_type){
-			check_pb_node_rec(g_block_types[i].pb_graph_head);
+    auto& device_ctx = g_vpr_ctx.device();
+	for (i = 0; i < device_ctx.num_block_types; i++) {
+		if(device_ctx.block_types[i].pb_type){
+			check_pb_node_rec(device_ctx.block_types[i].pb_graph_head);
 		}
 	}
 	return num_errors;
@@ -1772,8 +1778,8 @@ static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin){
  *			 used for comparing key types in edges_map that		
  *			 checks for repeated edges in the pb_graph		
  */
-static bool operator<(const struct s_pb_graph_edge_comparator & edge1,
-				const struct s_pb_graph_edge_comparator & edge2){
+static bool operator<(const t_pb_graph_edge_comparator & edge1,
+				const t_pb_graph_edge_comparator & edge2){
 	return (edge1.input_pin_id_in_cluster < edge2.input_pin_id_in_cluster) || 
 		(edge1.output_pin_id_in_cluster < edge2.output_pin_id_in_cluster);
 }

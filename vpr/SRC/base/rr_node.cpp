@@ -1,7 +1,7 @@
 #include "rr_node.h"
 #include "globals.h"
 
-/* Member function of "struct s_rr_node" used to retrieve a routing *
+/* Member function of "t_rr_node" used to retrieve a routing *
  * resource type string by its index, which is defined by           *
  * "t_rr_type type".												*/
 const char *t_rr_node::type_string() const {

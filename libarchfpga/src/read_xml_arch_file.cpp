@@ -49,7 +49,7 @@
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
-#include "vtr_matrix.h"
+#include "vtr_memory.h"
 #include "vtr_digest.h"
 
 #include "arch_types.h"

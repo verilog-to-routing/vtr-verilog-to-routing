@@ -7,24 +7,24 @@ using namespace std;
 
 #include "hash.h"
 
-struct s_hash **
+t_hash **
 alloc_hash_table(void) {
 
 	/* Creates a hash table with HASHSIZE different locations (hash values).   */
 
-	struct s_hash **hash_table;
+	t_hash **hash_table;
 
-	hash_table = (struct s_hash **) vtr::calloc(sizeof(struct s_hash *),
+	hash_table = (t_hash **) vtr::calloc(sizeof(t_hash *),
 			HASHSIZE);
 	return (hash_table);
 }
 
-void free_hash_table(struct s_hash **hash_table) {
+void free_hash_table(t_hash **hash_table) {
 
 	/* Frees all the storage associated with a hash table. */
 
 	int i;
-	struct s_hash *h_ptr, *temp_ptr;
+	t_hash *h_ptr, *temp_ptr;
 
 	for (i = 0; i < HASHSIZE; i++) {
 		h_ptr = hash_table[i];
@@ -39,26 +39,26 @@ void free_hash_table(struct s_hash **hash_table) {
 	free(hash_table);
 }
 
-struct s_hash_iterator start_hash_table_iterator(void) {
+t_hash_iterator start_hash_table_iterator(void) {
 
 	/* Call this routine before you start going through all the elements in    *
 	 * a hash table.  It sets the internal indices to the start of the table.  */
 
-	struct s_hash_iterator hash_iterator;
+	t_hash_iterator hash_iterator;
 
 	hash_iterator.i = -1;
 	hash_iterator.h_ptr = NULL;
 	return (hash_iterator);
 }
 
-struct s_hash *
-get_next_hash(struct s_hash **hash_table, struct s_hash_iterator *hash_iterator) {
+t_hash *
+get_next_hash(t_hash **hash_table, t_hash_iterator *hash_iterator) {
 
 	/* Returns the next occupied hash entry, and moves the iterator structure    *
 	 * forward so the next call gets the next entry.                             */
 
 	int i;
-	struct s_hash *h_ptr;
+	t_hash *h_ptr;
 
 	i = hash_iterator->i;
 	h_ptr = hash_iterator->h_ptr;
@@ -76,8 +76,8 @@ get_next_hash(struct s_hash **hash_table, struct s_hash_iterator *hash_iterator)
 	return (h_ptr);
 }
 
-struct s_hash *
-insert_in_hash_table(struct s_hash **hash_table, const char *name,
+t_hash *
+insert_in_hash_table(t_hash **hash_table, const char *name,
 		int next_free_index) {
 
 	/* Adds the string pointed to by name to the hash table, and returns the    *
@@ -87,7 +87,7 @@ insert_in_hash_table(struct s_hash **hash_table, const char *name,
 	 * created.                                                                 */
 
 	int i;
-	struct s_hash *h_ptr, *prev_ptr;
+	t_hash *h_ptr, *prev_ptr;
 
 	i = hash_value(name);
 	prev_ptr = NULL;
@@ -105,7 +105,7 @@ insert_in_hash_table(struct s_hash **hash_table, const char *name,
 
 	/* Name string wasn't in the hash table.  Add it. */
 
-	h_ptr = (struct s_hash *) vtr::malloc(sizeof(struct s_hash));
+	h_ptr = (t_hash *) vtr::malloc(sizeof(t_hash));
 	if (prev_ptr == NULL) {
 		hash_table[i] = h_ptr;
 	} else {
@@ -119,14 +119,14 @@ insert_in_hash_table(struct s_hash **hash_table, const char *name,
 	return (h_ptr);
 }
 
-struct s_hash *
-get_hash_entry(struct s_hash **hash_table, const char *name) {
+t_hash *
+get_hash_entry(t_hash **hash_table, const char *name) {
 
 	/* Returns the hash entry with this name, or NULL if there is no            *
 	 * corresponding entry.                                                     */
 
 	int i;
-	struct s_hash *h_ptr;
+	t_hash *h_ptr;
 
 	i = hash_value(name);
 	h_ptr = hash_table[i];
@@ -160,7 +160,7 @@ int hash_value(const char *name) {
 	return (val);
 }
 
-void get_hash_stats(struct s_hash **hash_table, char *hash_table_name){
+void get_hash_stats(t_hash **hash_table, char *hash_table_name){
 
 	/* Checks to see how well elements are distributed within the hash table.     *
 	 * Will traverse through the hash_table and count the length of the linked    *
@@ -171,7 +171,7 @@ void get_hash_stats(struct s_hash **hash_table, char *hash_table_name){
 	int num_NULL = 0, total_elements = 0,  max_num = 0, curr_num;
 	double avg_num = 0;
 	int i;
-	struct s_hash *h_ptr;
+	t_hash *h_ptr;
 
 	for (i = 0; i<HASHSIZE; i++){
 	h_ptr = hash_table[i];

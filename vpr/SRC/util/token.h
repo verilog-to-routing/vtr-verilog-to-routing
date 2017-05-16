@@ -19,11 +19,10 @@ enum e_token_type {
 	TOKEN_DOT
 };
 
-struct s_token {
+struct t_token {
 	enum e_token_type type;
 	char *data;
 };
-typedef struct s_token t_token;
 
 t_token *GetTokensFromString(const char* inString, int * num_tokens);
 

@@ -22,6 +22,7 @@
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_memory.h"
 
 #include "read_xml_arch_file.h"
 #include "vpr_types.h"

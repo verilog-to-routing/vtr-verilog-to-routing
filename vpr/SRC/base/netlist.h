@@ -4,7 +4,7 @@
  * 
  * This file contains the global netlist data structures and its associated 
  * load/echo functions. t_netlist contains 2 vectors: one contains all the nets 
- * the other the blocks. To-do: implement g_blocks data structure. 
+ * the other the blocks. To-do: implement cluster_ctx.blocks data structure. 
  */
 
 
@@ -19,7 +19,7 @@ using namespace std;
  * block:		net.pins[0..pins.size()-1].block. 
  *				Block to which the nodes of this pin connect. The source 
  *				block is net.pins[0].block and the sink blocks are the remaining pins.
- *				When this is in the g_clb_netlist, it is an index into block[]
+ *				When this is in the g_vpr_ctx.clb_netlist, it is an index into block[]
  * block_pin:   Pin index (on a block) to which each net terminal connects. 
  * net:         Net index to which this pin is associated
  * net_pin:     Pin index (in the net) of this pin (e.g. net_pin == 0 means this pin is a driver)
@@ -50,6 +50,8 @@ struct t_vnet{
 	char* name;
 	t_net_power * net_power; // Daniel to-do: Take out?
 	// named bitfields (alternative to bitmasks)
+
+    //TODO transfer net routing state to to RoutingContext
 	unsigned int is_routed    : 1;
 	unsigned int is_fixed     : 1;
 	unsigned int is_global    : 1;
@@ -63,7 +65,7 @@ struct t_vnet{
 
 	// Returns the number of sinks of the net, computed by looking 
 	// at the the nodes vector's size. 
-	int num_sinks(){
+	int num_sinks() const {
 		return (int) (pins.size() ? pins.size() - 1 : 0);
 	}
 };
@@ -71,7 +73,7 @@ struct t_vnet{
 /* 
  * Note: Indices for t_netlist.net[] are also used as ID's/indices in 
  * 		  several other parallel(global) data structures, e.g.   
- * 		  g_net_rr_terminals[]. 
+ * 		  route_ctx.net_rr_terminals[]. 
  */
 
 struct t_netlist{
@@ -81,8 +83,8 @@ struct t_netlist{
     std::string netlist_id;
 };
 
-void echo_global_nlist_net(const t_netlist* g_nlist);
+void echo_global_nlist_net(const t_netlist* nlist);
 
-void free_global_nlist_net(t_netlist* g_nlist);
+void free_global_nlist_net(t_netlist* nlist);
 
 #endif

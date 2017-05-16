@@ -26,7 +26,7 @@ using namespace std;
 
 static std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
 
-void try_pack(struct s_packer_opts *packer_opts, 
+void try_pack(t_packer_opts *packer_opts, 
         const t_arch * arch,
 		const t_model *user_models,
         const t_model *library_models,
@@ -63,10 +63,12 @@ void try_pack(struct s_packer_opts *packer_opts,
 
 	is_clock = alloc_and_load_is_clock(packer_opts->global_clocks);
 
+    auto& atom_ctx = g_vpr_ctx.atom();
+
     size_t num_p_inputs = 0;
     size_t num_p_outputs = 0;
-    for(auto blk_id : g_atom_nl.blocks()) {
-        auto type = g_atom_nl.block_type(blk_id);
+    for(auto blk_id : atom_ctx.nlist.blocks()) {
+        auto type = atom_ctx.nlist.block_type(blk_id);
         if(type == AtomBlockType::INPAD) {
             ++num_p_inputs;
         } else if(type == AtomBlockType::OUTPAD) {
@@ -77,7 +79,7 @@ void try_pack(struct s_packer_opts *packer_opts,
 	vtr::printf_info("\n");
 	vtr::printf_info("After removing unused inputs...\n");
 	vtr::printf_info("\ttotal blocks: %zu, total nets: %zu, total inputs: %zu, total outputs: %zu\n",
-		g_atom_nl.blocks().size(), g_atom_nl.nets().size(), num_p_inputs, num_p_outputs);
+		atom_ctx.nlist.blocks().size(), atom_ctx.nlist.nets().size(), num_p_inputs, num_p_outputs);
 
 	vtr::printf_info("Begin prepacking.\n");
 	list_of_packing_patterns = alloc_and_load_pack_patterns(&num_packing_patterns);
@@ -136,14 +138,16 @@ float get_arch_switch_info(short switch_index, int switch_fanin, float &Tdel_swi
 	/* The intrinsic delay may depend on fanin to the switch. If the delay map of a 
 	   switch from the architecture file has multiple (#inputs, delay) entries, we
 	   interpolate/extrapolate to get the delay at 'switch_fanin'. */
-	std::map<int, double> *Tdel_map = &g_arch_switch_inf[switch_index].Tdel_map;
+    auto& device_ctx = g_vpr_ctx.device();
+
+	std::map<int, double> *Tdel_map = &device_ctx.arch_switch_inf[switch_index].Tdel_map;
 	if (Tdel_map->size() == 1){
 		Tdel_switch = (Tdel_map->begin())->second;
 	} else {
 		Tdel_switch = vtr::linear_interpolate_or_extrapolate(Tdel_map, switch_fanin);
 	}
-	R_switch = g_arch_switch_inf[switch_index].R;
-	Cout_switch = g_arch_switch_inf[switch_index].Cout;
+	R_switch = device_ctx.arch_switch_inf[switch_index].R;
+	Cout_switch = device_ctx.arch_switch_inf[switch_index].Cout;
 
 	/* The delay through a loaded switch is its intrinsic (unloaded) 
 	delay plus the product of its resistance and output capacitance. */
@@ -161,10 +165,11 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
     std::unordered_set<AtomNetId> is_clock;
 
 	/* Want to identify all the clock nets.  */
+    auto& atom_ctx = g_vpr_ctx.atom();
 
-    for(auto blk_id : g_atom_nl.blocks()) {
-        for(auto pin_id : g_atom_nl.block_clock_pins(blk_id)) {
-            auto net_id = g_atom_nl.pin_net(pin_id);
+    for(auto blk_id : atom_ctx.nlist.blocks()) {
+        for(auto pin_id : atom_ctx.nlist.block_clock_pins(blk_id)) {
+            auto net_id = atom_ctx.nlist.pin_net(pin_id);
             if (!is_clock.count(net_id)) {
                 is_clock.insert(net_id);
                 num_clocks++;

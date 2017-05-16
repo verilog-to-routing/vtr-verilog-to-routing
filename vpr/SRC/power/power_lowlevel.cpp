@@ -47,34 +47,36 @@ static float power_calc_leakage_gate(e_tx_type transistor_type, float size);
 void power_lowlevel_init() {
 	float C_d, C_s, C_g;
 
+    auto& power_ctx = g_vpr_ctx.power();
+
 	power_calc_transistor_capacitance(&C_d, &C_s, &C_g, NMOS, 1.0);
-	g_power_commonly_used->NMOS_1X_C_d = C_d;
-	g_power_commonly_used->NMOS_1X_C_g = C_g;
-	g_power_commonly_used->NMOS_1X_C_s = C_s;
+	power_ctx.commonly_used->NMOS_1X_C_d = C_d;
+	power_ctx.commonly_used->NMOS_1X_C_g = C_g;
+	power_ctx.commonly_used->NMOS_1X_C_s = C_s;
 
 	power_calc_transistor_capacitance(&C_d, &C_s, &C_g, PMOS,
-			g_power_tech->PN_ratio);
-	g_power_commonly_used->PMOS_1X_C_d = C_d;
-	g_power_commonly_used->PMOS_1X_C_g = C_g;
-	g_power_commonly_used->PMOS_1X_C_s = C_s;
+			power_ctx.tech->PN_ratio);
+	power_ctx.commonly_used->PMOS_1X_C_d = C_d;
+	power_ctx.commonly_used->PMOS_1X_C_g = C_g;
+	power_ctx.commonly_used->PMOS_1X_C_s = C_s;
 
-	g_power_commonly_used->NMOS_1X_st_leakage = power_calc_leakage_st(NMOS,
+	power_ctx.commonly_used->NMOS_1X_st_leakage = power_calc_leakage_st(NMOS,
 			1.0);
-	g_power_commonly_used->PMOS_1X_st_leakage = power_calc_leakage_st(PMOS,
-			1.0 * g_power_tech->PN_ratio);
+	power_ctx.commonly_used->PMOS_1X_st_leakage = power_calc_leakage_st(PMOS,
+			1.0 * power_ctx.tech->PN_ratio);
 
-	g_power_commonly_used->INV_1X_C_in = g_power_commonly_used->NMOS_1X_C_g
-			+ g_power_commonly_used->PMOS_1X_C_g;
-	g_power_commonly_used->INV_1X_C = g_power_commonly_used->NMOS_1X_C_g
-			+ g_power_commonly_used->PMOS_1X_C_g
-			+ g_power_commonly_used->NMOS_1X_C_d
-			+ g_power_commonly_used->PMOS_1X_C_d;
+	power_ctx.commonly_used->INV_1X_C_in = power_ctx.commonly_used->NMOS_1X_C_g
+			+ power_ctx.commonly_used->PMOS_1X_C_g;
+	power_ctx.commonly_used->INV_1X_C = power_ctx.commonly_used->NMOS_1X_C_g
+			+ power_ctx.commonly_used->PMOS_1X_C_g
+			+ power_ctx.commonly_used->NMOS_1X_C_d
+			+ power_ctx.commonly_used->PMOS_1X_C_d;
 
 	power_calc_transistor_capacitance(&C_d, &C_s, &C_g, NMOS, 2.0);
-	g_power_commonly_used->INV_2X_C = C_g + C_d;
+	power_ctx.commonly_used->INV_2X_C = C_g + C_d;
 	power_calc_transistor_capacitance(&C_d, &C_s, &C_g, PMOS,
-			2.0 * g_power_tech->PN_ratio);
-	g_power_commonly_used->INV_2X_C += C_g + C_d;
+			2.0 * power_ctx.tech->PN_ratio);
+	power_ctx.commonly_used->INV_2X_C += C_g + C_d;
 
 }
 
@@ -85,7 +87,8 @@ void power_lowlevel_init() {
  */
 float power_calc_node_switching(float capacitance, float density,
 		float period) {
-	return 0.5 * g_power_tech->Vdd * g_power_tech->Vdd * capacitance * density
+    auto& power_ctx = g_vpr_ctx.power();
+	return 0.5 * power_ctx.tech->Vdd * power_ctx.tech->Vdd * capacitance * density
 			/ period;
 }
 
@@ -97,7 +100,8 @@ float power_calc_node_switching(float capacitance, float density,
  */
 static float power_calc_node_switching_v(float capacitance, float density,
 		float period, float voltage) {
-	return 0.5 * voltage * g_power_tech->Vdd * capacitance * density / period;
+    auto& power_ctx = g_vpr_ctx.power();
+	return 0.5 * voltage * power_ctx.tech->Vdd * capacitance * density / period;
 }
 
 /**
@@ -112,7 +116,8 @@ void power_usage_inverter(t_power_usage * power_usage, float in_dens,
 	float C_drain, C_gate, C_source;
 	float C_inv;
 
-	float PMOS_size = g_power_tech->PN_ratio * size;
+    auto& power_ctx = g_vpr_ctx.power();
+	float PMOS_size = power_ctx.tech->PN_ratio * size;
 	float NMOS_size = size;
 
 	power_usage->dynamic = 0.;
@@ -193,7 +198,8 @@ void power_calc_inverter_with_input(t_power_usage * power_usage,
 	float C_inv;
 	float C_in;
 
-	float PMOS_size = g_power_tech->PN_ratio * size;
+    auto& power_ctx = g_vpr_ctx.power();
+	float PMOS_size = power_ctx.tech->PN_ratio * size;
 	float NMOS_size = size;
 
 	power_usage->dynamic = 0.;
@@ -306,7 +312,8 @@ static float power_calc_leakage_st(e_tx_type transistor_type, float size) {
 				+ percent_upper * tx_info_upper->leakage_subthreshold;
 	}
 
-	return current * g_power_tech->Vdd;
+    auto& power_ctx = g_vpr_ctx.power();
+	return current * power_ctx.tech->Vdd;
 }
 
 /**
@@ -341,7 +348,8 @@ static float power_calc_leakage_gate(e_tx_type transistor_type, float size) {
 				+ percent_upper * tx_info_upper->leakage_gate;
 	}
 
-	return current * g_power_tech->Vdd;
+    auto& power_ctx = g_vpr_ctx.power();
+	return current * power_ctx.tech->Vdd;
 }
 
 /**
@@ -363,26 +371,24 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
 
 	VTR_ASSERT(size >= 1.0);
 
+    auto& power_ctx = g_vpr_ctx.power();
+
 	// Check if nmos size is beyond range
-	if (size
-			>= g_power_tech->nmos_leakage_info[g_power_tech->num_nmos_leakage_info
-					- 1].nmos_size) {
-		nmos_low =
-				&g_power_tech->nmos_leakage_info[g_power_tech->num_nmos_leakage_info
-						- 1];
+	if (size >= power_ctx.tech->nmos_leakage_info[power_ctx.tech->num_nmos_leakage_info - 1].nmos_size) {
+		nmos_low = &power_ctx.tech->nmos_leakage_info[power_ctx.tech->num_nmos_leakage_info - 1];
 		over_range = true;
 	} else {
-		for (int i = 1; i < g_power_tech->num_nmos_leakage_info; i++) {
-			if (size < g_power_tech->nmos_leakage_info[i].nmos_size) {
-				nmos_low = &g_power_tech->nmos_leakage_info[i - 1];
-				nmos_high = &g_power_tech->nmos_leakage_info[i];
+		for (int i = 1; i < power_ctx.tech->num_nmos_leakage_info; i++) {
+			if (size < power_ctx.tech->nmos_leakage_info[i].nmos_size) {
+				nmos_low = &power_ctx.tech->nmos_leakage_info[i - 1];
+				nmos_high = &power_ctx.tech->nmos_leakage_info[i];
 				break;
 			}
 		}
 	}
 
 	if (size
-			> g_power_tech->nmos_leakage_info[g_power_tech->num_nmos_leakage_info
+			> power_ctx.tech->nmos_leakage_info[power_ctx.tech->num_nmos_leakage_info
 					- 1].nmos_size) {
 		power_log_msg(POWER_LOG_ERROR,
 				"The architectures uses multiplexers with \
@@ -398,7 +404,7 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
 		float perc_upper = (v_ds - lower->v_ds) / (upper->v_ds - lower->v_ds);
 		i_ds = (1 - perc_upper) * lower->i_ds + perc_upper * upper->i_ds;
 	}
-	power_low = i_ds * g_power_tech->Vdd;
+	power_low = i_ds * power_ctx.tech->Vdd;
 
     if (over_range) {
         return power_low;
@@ -412,7 +418,7 @@ static float power_calc_leakage_st_pass_transistor(float size, float v_ds) {
 					/ (upper->v_ds - lower->v_ds);
 			i_ds = (1 - perc_upper) * lower->i_ds + perc_upper * upper->i_ds;
 		}
-		power_high = i_ds * g_power_tech->Vdd;
+		power_high = i_ds * power_ctx.tech->Vdd;
 
 		float perc_upper = (size - nmos_low->nmos_size)
 				/ (nmos_high->nmos_size - nmos_low->nmos_size);
@@ -446,18 +452,20 @@ void power_usage_MUX2_transmission(t_power_usage * power_usage, float size,
 		float * in_dens, float * in_prob, float sel_dens, float out_dens,
 		float period) {
 
+    auto& power_ctx = g_vpr_ctx.power();
+
 	power_zero_usage(power_usage);
 
 	float leakage_n, leakage_p;
 	leakage_n = power_calc_leakage_st(NMOS, size);
-	leakage_p = power_calc_leakage_st(PMOS, size * g_power_tech->PN_ratio);
+	leakage_p = power_calc_leakage_st(PMOS, size * power_ctx.tech->PN_ratio);
 
 	float C_g_n, C_d_n, C_s_n;
 	power_calc_transistor_capacitance(&C_d_n, &C_s_n, &C_g_n, NMOS, size);
 
 	float C_g_p, C_d_p, C_s_p;
 	power_calc_transistor_capacitance(&C_d_p, &C_s_p, &C_g_p, PMOS,
-			size * g_power_tech->PN_ratio);
+			size * power_ctx.tech->PN_ratio);
 
 	/* A transmission gate leaks if the selected input != other input  */
 	power_usage->leakage += (in_prob[0] * (1 - in_prob[1])
@@ -543,7 +551,8 @@ void power_usage_mux_singlelevel_static(t_power_usage * power_usage,
 	in_prob_avg /= (num_inputs - 1);
 
 	if (v_out_restored) {
-		*v_out = g_power_tech->Vdd;
+        auto& power_ctx = g_vpr_ctx.power();
+		*v_out = power_ctx.tech->Vdd;
 	} else {
 		*v_out = power_calc_mux_v_out(num_inputs, transistor_size,
 				v_in_selected, in_prob_avg);
@@ -596,17 +605,19 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
 	t_power_nmos_mux_inf * mux_nmos_inf_lower = NULL;
 	t_power_nmos_mux_inf * mux_nmos_inf_upper = NULL;
 
+    auto& power_ctx = g_vpr_ctx.power();
+
 // Check if nmos size is beyond range
 	if (transistor_size
-			>= g_power_tech->nmos_mux_info[g_power_tech->num_nmos_mux_info - 1].nmos_size) {
+			>= power_ctx.tech->nmos_mux_info[power_ctx.tech->num_nmos_mux_info - 1].nmos_size) {
 		mux_nmos_inf_lower =
-				&g_power_tech->nmos_mux_info[g_power_tech->num_nmos_mux_info - 1];
+				&power_ctx.tech->nmos_mux_info[power_ctx.tech->num_nmos_mux_info - 1];
 		over_range = true;
 	} else {
-		for (int i = 1; i < g_power_tech->num_nmos_mux_info; i++) {
-			if (transistor_size < g_power_tech->nmos_mux_info[i].nmos_size) {
-				mux_nmos_inf_lower = &g_power_tech->nmos_mux_info[i - 1];
-				mux_nmos_inf_upper = &g_power_tech->nmos_mux_info[i];
+		for (int i = 1; i < power_ctx.tech->num_nmos_mux_info; i++) {
+			if (transistor_size < power_ctx.tech->nmos_mux_info[i].nmos_size) {
+				mux_nmos_inf_lower = &power_ctx.tech->nmos_mux_info[i - 1];
+				mux_nmos_inf_upper = &power_ctx.tech->nmos_mux_info[i];
 				break;
 			}
 		}
@@ -615,7 +626,7 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in,
     VTR_ASSERT(mux_nmos_inf_lower);
 
 	if (transistor_size
-			> g_power_tech->nmos_mux_info[g_power_tech->num_nmos_mux_info - 1].nmos_size) {
+			> power_ctx.tech->nmos_mux_info[power_ctx.tech->num_nmos_mux_info - 1].nmos_size) {
 		power_log_msg(POWER_LOG_ERROR,
 				"The architectures uses multiplexers with \
 				transistors sizes larger than what is defined in the <multiplexers> \
@@ -752,20 +763,22 @@ void power_usage_level_restorer(t_power_usage * power_usage,
 			in_prob, 1.0, 2.0, period);
 	power_add_usage(power_usage, &sub_power_usage);
 
+    auto& power_ctx = g_vpr_ctx.power();
+
 	/* Pull-up PMOS */
-	if (g_power_tech->PMOS_inf.long_trans_inf == NULL) {
+	if (power_ctx.tech->PMOS_inf.long_trans_inf == NULL) {
 		power_log_msg(POWER_LOG_ERROR,
 				"No long transistor information exists.  Cannot determine transistor properties.");
 		return;
 	}
-	C = g_power_tech->PMOS_inf.long_trans_inf->C_d
-			+ g_power_tech->PMOS_inf.long_trans_inf->C_g;
-	C_in = g_power_tech->PMOS_inf.long_trans_inf->C_d;
+	C = power_ctx.tech->PMOS_inf.long_trans_inf->C_d
+			+ power_ctx.tech->PMOS_inf.long_trans_inf->C_g;
+	C_in = power_ctx.tech->PMOS_inf.long_trans_inf->C_d;
 
 	input_dyn_power += power_calc_node_switching(C_in, in_dens, period);
 	power_usage->dynamic += power_calc_node_switching(C, in_dens, period);
 	power_usage->leakage += (1 - in_prob)
-			* g_power_tech->PMOS_inf.long_trans_inf->leakage_subthreshold;
+			* power_ctx.tech->PMOS_inf.long_trans_inf->leakage_subthreshold;
 
 	*dyn_power_in = input_dyn_power;
 }
@@ -787,9 +800,10 @@ float power_calc_buffer_sc(int stages, float gain, bool level_restorer,
 	t_power_buffer_strength_inf * strength_lower;
 	t_power_buffer_strength_inf * strength_upper;
 	float sc;
+    auto& power_ctx = g_vpr_ctx.power();
 
 	/* Find information for given buffer size */
-	size_inf = &g_power_tech->buffer_size_inf[stages];
+	size_inf = &power_ctx.tech->buffer_size_inf[stages];
 
 	/* Find information for a given size/strength */
 	power_find_buffer_strength_inf(&strength_lower, &strength_upper, size_inf,
@@ -853,9 +867,10 @@ static float power_calc_buffer_sc_levr(
 float power_calc_buffer_size_from_Cout(float C_out) {
 	int i;
 	float C_found;
+    auto& power_ctx = g_vpr_ctx.power();
 
-	t_transistor_inf * nmos_info = &g_power_tech->NMOS_inf;
-	t_transistor_inf * pmos_info = &g_power_tech->PMOS_inf;
+	t_transistor_inf * nmos_info = &power_ctx.tech->NMOS_inf;
+	t_transistor_inf * pmos_info = &power_ctx.tech->PMOS_inf;
 
 	VTR_ASSERT(nmos_info->num_size_entries == pmos_info->num_size_entries);
 

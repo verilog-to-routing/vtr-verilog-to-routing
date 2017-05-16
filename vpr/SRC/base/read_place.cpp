@@ -20,13 +20,16 @@ t_block* find_block(t_block* blocks, int num_blocks, std::string name);
 void read_place(const char* net_file, 
                 const char* place_file,
                 const int L_nx, const int L_ny,
-		        const int L_num_blocks, struct s_block block_list[]) {
+		        const int L_num_blocks, t_block block_list[]) {
     std::ifstream fstream(place_file); 
     if (!fstream) {
         vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
                         "'%s' - Cannot open place file.\n", 
                         place_file);
     }
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     std::string line;
     int lineno = 0;
@@ -60,12 +63,12 @@ void read_place(const char* net_file,
             std::string place_netlist_id = tokens[3];
             std::string place_netlist_file = tokens[1];
 
-            if (place_netlist_id != g_clbs_nlist.netlist_id) {
+            if (place_netlist_id != cluster_ctx.clbs_nlist.netlist_id) {
                 vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, 
                           "The packed netlist file that generated placement (File: '%s' ID: '%s')"
                           " does not match current netlist (File: '%s' ID: '%s')", 
                           place_netlist_file.c_str(), place_netlist_id.c_str(), 
-                          net_file, g_clbs_nlist.netlist_id.c_str());
+                          net_file, cluster_ctx.clbs_nlist.netlist_id.c_str());
             }
 
             seen_netlist_id = true;
@@ -118,10 +121,18 @@ void read_place(const char* net_file,
                           block_name.c_str());
             }
 
+            if (place_ctx.block_locs.size() != static_cast<size_t>(L_num_blocks)) {
+                //Resize if needed
+                place_ctx.block_locs.resize(L_num_blocks);
+            }
+
+            int iblk = blk - block_list;
+            VTR_ASSERT(iblk >= 0 && iblk < L_num_blocks);
+
             //Set the location
-            blk->x = block_x;
-            blk->y = block_y;
-            blk->z = block_z;
+            place_ctx.block_locs[iblk].x = block_x;
+            place_ctx.block_locs[iblk].y = block_y;
+            place_ctx.block_locs[iblk].z = block_z;
 
         } else {
             //Unrecognized
@@ -131,17 +142,21 @@ void read_place(const char* net_file,
         }
     }
 
-    g_placement_id = vtr::secure_digest_file(place_file);
+    place_ctx.placement_id = vtr::secure_digest_file(place_file);
 }
 
 void read_user_pad_loc(const char *pad_loc_file) {
 
 	/* Reads in the locations of the IO pads from a file. */
 
-	struct s_hash **hash_table, *h_ptr;
+	t_hash **hash_table, *h_ptr;
 	int iblk, i, j, xtmp, ytmp, bnum, k;
 	FILE *fp;
 	char buf[vtr::BUFSIZE], bname[vtr::BUFSIZE], *ptr;
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	vtr::printf_info("\n");
 	vtr::printf_info("Reading locations of IO pads from '%s'.\n", pad_loc_file);
@@ -151,19 +166,19 @@ void read_user_pad_loc(const char *pad_loc_file) {
 				pad_loc_file);
 		
 	hash_table = alloc_hash_table();
-	for (iblk = 0; iblk < g_num_blocks; iblk++) {
-		if (g_blocks[iblk].type == IO_TYPE) {
-			insert_in_hash_table(hash_table, g_blocks[iblk].name, iblk);
-			g_blocks[iblk].x = OPEN; /* Mark as not seen yet. */
+	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
+		if (cluster_ctx.blocks[iblk].type == device_ctx.IO_TYPE) {
+			insert_in_hash_table(hash_table, cluster_ctx.blocks[iblk].name, iblk);
+			place_ctx.block_locs[iblk].x = OPEN; /* Mark as not seen yet. */
 		}
 	}
 
-	for (i = 0; i <= g_nx + 1; i++) {
-		for (j = 0; j <= g_ny + 1; j++) {
-			if (g_grid[i][j].type == IO_TYPE) {
-				for (k = 0; k < IO_TYPE->capacity; k++) {
-					if (g_grid[i][j].blocks[k] != INVALID_BLOCK) {
-						g_grid[i][j].blocks[k] = EMPTY_BLOCK; /* Flag for err. check */
+	for (i = 0; i <= device_ctx.nx + 1; i++) {
+		for (j = 0; j <= device_ctx.ny + 1; j++) {
+			if (device_ctx.grid[i][j].type == device_ctx.IO_TYPE) {
+				for (k = 0; k < device_ctx.IO_TYPE->capacity; k++) {
+					if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
+						place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK; /* Flag for err. check */
 					}
 				}
 			}
@@ -224,40 +239,40 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		i = xtmp;
 		j = ytmp;
 
-		if (g_blocks[bnum].x != OPEN) {
+		if (place_ctx.block_locs[bnum].x != OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Block %s is listed twice in pad file.\n", bname);
 		}
 
-		if (i < 0 || i > g_nx + 1 || j < 0 || j > g_ny + 1) {
+		if (i < 0 || i > device_ctx.nx + 1 || j < 0 || j > device_ctx.ny + 1) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
 					"Block #%d (%s) location, (%d,%d) is out of range.\n", bnum, bname, i, j);
 		}
 
-		g_blocks[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
-		g_blocks[bnum].y = j; /* I need to set .x only as a done flag.         */
-		g_blocks[bnum].z = k;
-		g_blocks[bnum].is_fixed = true;
+        place_ctx.block_locs[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
+        place_ctx.block_locs[bnum].y = j; /* We need to set .x only as a done flag.         */
+        place_ctx.block_locs[bnum].z = k;
+        place_ctx.block_locs[bnum].is_fixed = true;
 
-		if (g_grid[i][j].type != IO_TYPE) {
+		if (device_ctx.grid[i][j].type != device_ctx.IO_TYPE) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"Attempt to place IO g_blocks %s at illegal location (%d, %d).\n", bname, i, j);
+					"Attempt to place IO block %s at illegal location (%d, %d).\n", bname, i, j);
 		}
 
-		if (k >= IO_TYPE->capacity || k < 0) {
+		if (k >= device_ctx.IO_TYPE->capacity || k < 0) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Block %s subblock number (%d) is out of range.\n", bname, k);
 		}
-		g_grid[i][j].blocks[k] = bnum;
-		g_grid[i][j].usage++;
+		place_ctx.grid_blocks[i][j].blocks[k] = bnum;
+		place_ctx.grid_blocks[i][j].usage++;
 
 		ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
 	}
 
-	for (iblk = 0; iblk < g_num_blocks; iblk++) {
-		if (g_blocks[iblk].type == IO_TYPE && g_blocks[iblk].x == OPEN) {
+	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
+		if (cluster_ctx.blocks[iblk].type == device_ctx.IO_TYPE && place_ctx.block_locs[iblk].x == OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"IO g_blocks %s location was not specified in the pad file.\n", g_blocks[iblk].name);
+					"IO block %s location was not specified in the pad file.\n", cluster_ctx.blocks[iblk].name);
 		}
 	}
 
@@ -279,27 +294,31 @@ void print_place(const char* net_file,
 	FILE *fp;
 	int i;
 
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
 	fp = fopen(place_file, "w");
 
 	fprintf(fp, "Netlist_File: %s Netlist_ID: %s\n", 
             net_file,
             net_id);
-	fprintf(fp, "Array size: %d x %d logic blocks\n\n", g_nx, g_ny);
+	fprintf(fp, "Array size: %d x %d logic blocks\n\n", device_ctx.nx, device_ctx.ny);
 	fprintf(fp, "#block name\tx\ty\tsubblk\tblock number\n");
 	fprintf(fp, "#----------\t--\t--\t------\t------------\n");
 
-	for (i = 0; i < g_num_blocks; i++) {
-		fprintf(fp, "%s\t", g_blocks[i].name);
-		if (strlen(g_blocks[i].name) < 8)
+	for (i = 0; i < cluster_ctx.num_blocks; i++) {
+		fprintf(fp, "%s\t", cluster_ctx.blocks[i].name);
+		if (strlen(cluster_ctx.blocks[i].name) < 8)
 			fprintf(fp, "\t");
 
-		fprintf(fp, "%d\t%d\t%d", g_blocks[i].x, g_blocks[i].y, g_blocks[i].z);
+		fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].z);
 		fprintf(fp, "\t#%d\n", i);
 	}
 	fclose(fp);
 
     //Calculate the ID of the placement
-    g_placement_id = vtr::secure_digest_file(place_file);
+    place_ctx.placement_id = vtr::secure_digest_file(place_file);
 }
 
 t_block* find_block(t_block* blocks, int nblocks, std::string name) {

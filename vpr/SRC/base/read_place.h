@@ -7,7 +7,7 @@ void read_place(
 		const int L_nx,
 		const int L_ny,
 		const int L_num_blocks,
-		struct s_block block_list[]);
+		t_block block_list[]);
 
 void print_place(const char* net_file, 
                  const char* net_id, 

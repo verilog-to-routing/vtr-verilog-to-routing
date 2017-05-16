@@ -1,36 +1,20 @@
 #pragma once
 
 /************** Types and defines exported by route_tree_timing.c ************/
-
-struct s_linked_rt_edge {
-	struct s_rt_node *child;
-	short iswitch;
-	struct s_linked_rt_edge *next;
-};
-
-typedef struct s_linked_rt_edge t_linked_rt_edge;
+struct t_rt_node;
 
 /* Linked list listing the children of an rt_node.                           *
  * child:  Pointer to an rt_node (child of the current node).                *
  * iswitch:  Index of the switch type used to connect to the child node.     *
  * next:   Pointer to the next linked_rt_edge in the linked list (allows     *
  *         you to get the next child of the current rt_node).                */
-
-struct s_rt_node {
-	union {
-		t_linked_rt_edge *child_list;
-		struct s_rt_node *next;
-	} u;
-	struct s_rt_node *parent_node;
-	short parent_switch;
-	short re_expand;
-	int inode;
-	float C_downstream;
-	float R_upstream;
-	float Tdel;
+struct t_linked_rt_edge {
+	t_rt_node *child;
+	short iswitch;
+	t_linked_rt_edge *next;
 };
 
-typedef struct s_rt_node t_rt_node;
+
 
 /* Structure describing one node in a routing tree (used to get net delays   *
  * incrementally during routing, as pieces are being added).                 *
@@ -50,6 +34,20 @@ typedef struct s_rt_node t_rt_node;
  *                the total C of the subtree rooted at the current node,     *
  *                including the C of the current node.                       *
  * R_upstream:  Total upstream resistance from this rt_node to the net       *
- *              source, including any g_rr_nodes[].R of this node.           *
+ *              source, including any device_ctx.rr_nodes[].R of this node.           *
  * Tdel:  Time delay for the signal to get from the net source to this node. *
  *        Includes the time to go through this node.                         */
+struct t_rt_node {
+	union {
+		t_linked_rt_edge *child_list;
+		t_rt_node *next;
+	} u;
+	t_rt_node *parent_node;
+	short parent_switch;
+	short re_expand;
+	int inode;
+	float C_downstream;
+	float R_upstream;
+	float Tdel;
+};
+

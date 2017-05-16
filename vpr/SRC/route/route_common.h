@@ -1,17 +1,6 @@
 /************ Defines and types shared by all route files ********************/
 #pragma once
 #include <vector>
-struct s_heap {
-	union {
-		int prev_node;
-		struct s_heap *next;
-	} u;
-	float cost;
-	float backward_path_cost;
-	float R_upstream;
-	int index;
-	int prev_edge;
-};
 
 /* Used by the heap as its fundamental data structure.                      * 
  * index:   Index (ID) of this routing resource node.                       * 
@@ -30,51 +19,30 @@ struct s_heap {
  *                      to the target.                                      *
  * R_upstream: Used only by the timing-driven router.  Stores the upstream  *
  *             resistance to ground from this node, including the           *
- *             resistance of the node itself (g_rr_nodes[index].R).            */
-
-typedef struct {
-	int prev_node;
-	float pres_cost;
-	float acc_cost;
-	float path_cost;
+ *             resistance of the node itself (device_ctx.rr_nodes[index].R).*/
+struct t_heap {
+	union {
+		int prev_node;
+		t_heap *next;
+	} u;
+	float cost;
 	float backward_path_cost;
-	short prev_edge;
-	short target_flag;
-} t_rr_node_route_inf;
+	float R_upstream;
+	int index;
+	int prev_edge;
+};
 
-/* Extra information about each rr_node needed only during routing (i.e.    *
- * during the maze expansion).                                              *
- *                                                                          *
- * prev_node:  Index of the previous node used to reach this one;           *
- *             used to generate the traceback.  If there is no              *
- *             predecessor, prev_node = NO_PREVIOUS.                        *
- * pres_cost:  Present congestion cost term for this node.                  *
- * acc_cost:   Accumulated cost term from previous Pathfinder iterations.   *
- * path_cost:  Total cost of the path up to and including this node +       *
- *             the expected cost to the target if the timing_driven router  *
- *             is being used.                                               *
- * backward_path_cost:  Total cost of the path up to and including this     *
- *                      node.  Not used by breadth-first router.            *
- * prev_edge:  Index of the edge (from 0 to num_edges-1) that was used      *
- *             to reach this node from the previous node.  If there is      *
- *             no predecessor, prev_edge = NO_PREVIOUS.                     *
- * target_flag:  Is this node a target (sink) for the current routing?      *
- *               Number of times this node must be reached to fully route.  */
-
-/**************** Variables shared by all route_files ***********************/
-
-extern t_rr_node_route_inf *rr_node_route_inf; /* [0..g_num_rr_nodes-1] */
-extern struct s_bb *route_bb; /* [0..num_nets-1]     */
+typedef std::vector<std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 /******* Subroutines in route_common used only by other router modules ******/
 
-void pathfinder_update_path_cost(struct s_trace *route_segment_start,
+void pathfinder_update_path_cost(t_trace *route_segment_start,
 		int add_or_sub, float pres_fac);
 void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac);
 
 void pathfinder_update_cost(float pres_fac, float acc_fac);
 
-struct s_trace *update_traceback(struct s_heap *hptr, int inet);
+t_trace *update_traceback(t_heap *hptr, int inet);
 
 void reset_path_costs(void);
 
@@ -95,8 +63,8 @@ void add_to_mod_list(float *fptr);
 namespace heap_ {
 	void build_heap();
 	void sift_down(size_t hole);
-	void sift_up(size_t tail, s_heap* const hptr);
-	void push_back(s_heap* const hptr);
+	void sift_up(size_t tail, t_heap* const hptr);
+	void push_back(t_heap* const hptr);
 	void push_back_node(int inode, float total_cost, int prev_node, int prev_edge,
 		float backward_path_cost, float R_upstream);
 	bool is_valid();
@@ -105,11 +73,11 @@ namespace heap_ {
 	void verify_extract_top();
 }
 
-struct s_heap *get_heap_head(void);
+t_heap *get_heap_head(void);
 
 void empty_heap(void);
 
-void free_heap_data(struct s_heap *hptr);
+void free_heap_data(t_heap *hptr);
 
 void invalidate_heap_entries(int sink_node, int ipin_node);
 
@@ -127,7 +95,7 @@ void alloc_route_static_structs(void);
 void free_trace_structs(void);
 
 void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins,
-		vtr::t_ivec ** clb_opins_used_locally);
+		t_clb_opins_used& clb_opins_used_locally);
 
 void free_chunk_memory_trace(void);
 
