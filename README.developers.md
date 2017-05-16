@@ -1,7 +1,7 @@
 Commit Proceedures
 ==================
 
-For devlopers with commit rights on GitHub
+For developers with commit rights on GitHub
 ------------------------------------------
 The guiding principle in internal development is to submit your work into the repository without breaking other people's work.
 When you commit, make sure that the repository compiles, that the flow runs, and that you did not clobber someone else's work.
