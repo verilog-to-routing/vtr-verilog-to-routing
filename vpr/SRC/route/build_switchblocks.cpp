@@ -910,7 +910,7 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
                 //Since we are implementing the reverse connection we have swapped from and to.
                 //
                 //Coverity flags this (false positive), so annotatate so coverity ignores it:
-                //coverity[swapped_arguments]
+                // coverity[swapped_arguments]
                 Switchblock_Lookup sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.to_side, sb_conn.from_side);
                 (*sb_conns)[sb_conn_reverse].push_back(sb_reverse_edge);
             }

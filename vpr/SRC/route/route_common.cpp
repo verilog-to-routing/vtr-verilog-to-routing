@@ -810,7 +810,7 @@ void free_route_structs() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	if(heap != NULL) {
-        //coverity[offset_free]
+        // coverity[offset_free]
 		free(heap + 1);
 	}
 	if(route_ctx.route_bb != NULL) {

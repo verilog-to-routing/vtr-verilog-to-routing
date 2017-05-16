@@ -18,7 +18,7 @@ void free_ivec_vector(t_ivec *ivec_vector, int nrmin, int nrmax) {
 		if (ivec_vector[i].nelem != 0)
 			free(ivec_vector[i].list);
 
-    //coverity[offset_free]
+    // coverity[offset_free]
 	free(ivec_vector + nrmin);
 }
 
