@@ -115,13 +115,13 @@ To submit a build to coverity do the following:
 
 1. [Download](https://scan.coverity.com/download) the coverity build tool
 
-2. Configure VTR to perform a *debug* build. This ensures that all assertions are enabled, without assertions coverity may report bugs that are gaurded against by assertions.
+2. Configure VTR to perform a *debug* build. This ensures that all assertions are enabled, without assertions coverity may report bugs that are gaurded against by assertions. We also set VTR asserts to the highest level.
 
     ```shell
     #From the VTR root
     mkdir -p build
     cd build
-    CC=gcc CXX=g++ cmake -DCMAKE_BUILD_TYPE=debug ..
+    CC=gcc CXX=g++ cmake -DCMAKE_BUILD_TYPE=debug -DVTR_ASSERT_LEVEL=3 ..
     ```
 
 Note that we explicitly asked for gcc and g++, the coverity build tool defaults to these compilers, and may not like the default 'cc' or 'c++' (even if they are linked to gcc/g++).
@@ -136,7 +136,7 @@ Note that we explicitly asked for gcc and g++, the coverity build tool defaults 
 4. Archive the output directory
 
     ```shell
-    tar -czvf cov-int vtr_coverity.tar.gz
+    tar -czvf vtr_coverity.tar.gz cov-int
     ```
 
 5. Submit the archive through the coverity web interface
