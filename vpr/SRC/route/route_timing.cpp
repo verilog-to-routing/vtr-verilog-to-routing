@@ -1152,7 +1152,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	int tarxlow, tarylow, tarxhigh, taryhigh;
+	int target_xlow, target_ylow, target_xhigh, target_yhigh;
 	int rlim = 1;
 	int inode;
 	float area;
@@ -1160,10 +1160,10 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	t_linked_rt_edge *linked_rt_edge;
 	t_rt_node * child_node;
 
-	tarxlow = device_ctx.rr_nodes[target_node].xlow();
-	tarylow = device_ctx.rr_nodes[target_node].ylow();
-	tarxhigh = device_ctx.rr_nodes[target_node].xhigh();
-	taryhigh = device_ctx.rr_nodes[target_node].yhigh();
+	target_xlow = device_ctx.rr_nodes[target_node].xlow();
+	target_ylow = device_ctx.rr_nodes[target_node].ylow();
+	target_xhigh = device_ctx.rr_nodes[target_node].xhigh();
+	target_yhigh = device_ctx.rr_nodes[target_node].yhigh();
 
     int num_sinks = cluster_ctx.clbs_nlist.net[inet].num_sinks();
 
@@ -1197,10 +1197,10 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 			child_node = linked_rt_edge->child;
 			inode = child_node->inode;
 			if (!(device_ctx.rr_nodes[inode].type() == IPIN || device_ctx.rr_nodes[inode].type() == SINK)) {
-				if (device_ctx.rr_nodes[inode].xlow() <= tarxhigh + rlim
-						&& device_ctx.rr_nodes[inode].xhigh() >= tarxhigh - rlim
-						&& device_ctx.rr_nodes[inode].ylow() <= taryhigh + rlim
-						&& device_ctx.rr_nodes[inode].yhigh() >= taryhigh - rlim) {
+				if (device_ctx.rr_nodes[inode].xlow() <= target_xhigh + rlim
+						&& device_ctx.rr_nodes[inode].xhigh() >= target_xhigh - rlim
+						&& device_ctx.rr_nodes[inode].ylow() <= target_yhigh + rlim
+						&& device_ctx.rr_nodes[inode].yhigh() >= target_yhigh - rlim) {
 					success = true;
 				}
 			}
@@ -1222,7 +1222,7 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 	}
 
 	/* adjust rlim to account for width/height of block containing the target sink */
-	int target_span = max( tarxhigh - tarxlow, taryhigh - tarylow );
+	int target_span = max( target_xhigh - target_xlow, target_yhigh - target_ylow );
 	rlim += target_span;
 
 	/* redetermine expansion based on rlim */
@@ -1231,10 +1231,10 @@ static int mark_node_expansion_by_bin(int inet, int target_node,
 		child_node = linked_rt_edge->child;
 		inode = child_node->inode;
 		if (!(device_ctx.rr_nodes[inode].type() == IPIN || device_ctx.rr_nodes[inode].type() == SINK)) {
-			if (device_ctx.rr_nodes[inode].xlow() <= tarxhigh + rlim
-					&& device_ctx.rr_nodes[inode].xhigh() >= tarxhigh - rlim
-					&& device_ctx.rr_nodes[inode].ylow() <= taryhigh + rlim
-					&& device_ctx.rr_nodes[inode].yhigh() >= taryhigh - rlim) {
+			if (device_ctx.rr_nodes[inode].xlow() <= target_xhigh + rlim
+					&& device_ctx.rr_nodes[inode].xhigh() >= target_xhigh - rlim
+					&& device_ctx.rr_nodes[inode].ylow() <= target_yhigh + rlim
+					&& device_ctx.rr_nodes[inode].yhigh() >= target_yhigh - rlim) {
 				child_node->re_expand = true;
 			} else {
 				child_node->re_expand = false;
