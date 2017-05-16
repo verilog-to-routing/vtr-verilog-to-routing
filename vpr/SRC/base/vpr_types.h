@@ -103,8 +103,8 @@ enum e_block_pack_status {
 
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
-class t_pack_molecule;
-class t_pb_stats;
+struct t_pack_molecule;
+struct t_pb_stats;
 
 /* A t_pb represents an instance of a clustered block, which may be:
  *    1) A top level clustered block which is placeable at a location in FPGA device 
