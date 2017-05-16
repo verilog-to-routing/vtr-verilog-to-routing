@@ -36,13 +36,13 @@ add_custom_target(version ALL
 
 add_custom_command(OUTPUT ${VTR_VERSION_FILE_OUT}
     COMMAND ${CMAKE_COMMAND} 
-                    -D IN_FILE=${VTR_VERSION_FILE_IN}
-                    -D OUT_FILE=${VTR_VERSION_FILE_OUT}
-                    -D VTR_VERSION_MAJOR=${VTR_VERSION_MAJOR}
-                    -D VTR_VERSION_MINOR=${VTR_VERSION_MINOR}
-                    -D VTR_VERSION_PATCH=${VTR_VERSION_PATCH}
-                    -D VTR_VERSION_PRERELEASE=${VTR_VERSION_PRERELEASE}
-                    -D VTR_COMPILER_INFO=${VTR_COMPILER_INFO}
+                    -D IN_FILE="${VTR_VERSION_FILE_IN}"
+                    -D OUT_FILE="${VTR_VERSION_FILE_OUT}"
+                    -D VTR_VERSION_MAJOR="${VTR_VERSION_MAJOR}"
+                    -D VTR_VERSION_MINOR="${VTR_VERSION_MINOR}"
+                    -D VTR_VERSION_PATCH="${VTR_VERSION_PATCH}"
+                    -D VTR_VERSION_PRERELEASE="${VTR_VERSION_PRERELEASE}"
+                    -D VTR_COMPILER_INFO="${VTR_COMPILER_INFO}"
                     -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/configure_version.cmake
     MAIN_DEPENDENCY ${VTR_VERSION_FILE_IN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

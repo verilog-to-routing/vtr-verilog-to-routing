@@ -2,6 +2,7 @@
 #define VPR_ERROR_H
 
 #include "vtr_error.h"
+#include <cstdarg>
 
 enum e_vpr_error {
 	VPR_ERROR_UNKNOWN = 0, 

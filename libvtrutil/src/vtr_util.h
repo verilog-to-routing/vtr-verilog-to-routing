@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <cstdarg>
 
 namespace vtr {
 
