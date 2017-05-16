@@ -18,17 +18,6 @@
 #include "read_xml_arch_file.h"
 
 #include "path_delay.h"
-/************* Variables (globals) shared by all path_delay modules **********/
-
-int num_tnode_levels; /* Number of levels in the timing graph. */
-
-vtr::t_ivec *tnodes_at_level;
-/* [0..num__tnode_levels - 1].  Count and list of tnodes at each level of    
- * the timing graph, to make topological searches easier. Level-0 nodes are
- * sources to the timing graph (types TN_FF_SOURCE, TN_INPAD_SOURCE
- * and TN_CONSTANT_GEN_SOURCE). Level-N nodes are in the immediate fanout of 
- * nodes with level at most N-1. */
-
 /******************* Subroutines local to this module ************************/
 
 static int *alloc_and_load_tnode_fanin_and_check_edges(int *num_sinks_ptr);
@@ -122,7 +111,7 @@ int alloc_and_load_timing_graph_levels(void) {
 			i;
 	t_tedge *tedge;
 
-    auto& timing_ctx = g_vpr_ctx.timing();
+    auto& timing_ctx = g_vpr_ctx.mutable_timing();
 
 	/* [0..timing_ctx.num_tnodes-1]. # of in-edges to each tnode that have not yet been    *
 	 * seen in this traversal.                                                  */
@@ -137,7 +126,7 @@ int alloc_and_load_timing_graph_levels(void) {
 	 * Temporarily need one extra level on the end because I look at the first  *
 	 * empty level.                                                             */
 
-	tnodes_at_level = (vtr::t_ivec *) vtr::malloc(
+	timing_ctx.tnodes_at_level = (vtr::t_ivec *) vtr::malloc(
 			(timing_ctx.num_tnodes + 1) * sizeof(vtr::t_ivec));
 
 	/* Scan through the timing graph, putting all the primary input nodes (no    *
@@ -154,7 +143,7 @@ int alloc_and_load_timing_graph_levels(void) {
 	}
 
 	alloc_ivector_and_copy_int_list(&nodes_at_level_head, num_at_level,
-			&tnodes_at_level[0], &free_list_head);
+			&timing_ctx.tnodes_at_level[0], &free_list_head);
 
 	num_levels = 0;
 
@@ -162,8 +151,8 @@ int alloc_and_load_timing_graph_levels(void) {
 		num_levels++;
 		num_at_level = 0;
 
-		for (i = 0; i < tnodes_at_level[num_levels - 1].nelem; i++) {
-			inode = tnodes_at_level[num_levels - 1].list[i];
+		for (i = 0; i < timing_ctx.tnodes_at_level[num_levels - 1].nelem; i++) {
+			inode = timing_ctx.tnodes_at_level[num_levels - 1].list[i];
 			tedge = timing_ctx.tnodes[inode].out_edges;
 			num_edges = timing_ctx.tnodes[inode].num_edges;
 
@@ -182,12 +171,11 @@ int alloc_and_load_timing_graph_levels(void) {
 		}
 
 		alloc_ivector_and_copy_int_list(&nodes_at_level_head, num_at_level,
-				&tnodes_at_level[num_levels], &free_list_head);
+				&timing_ctx.tnodes_at_level[num_levels], &free_list_head);
 	}
 
-	tnodes_at_level = (vtr::t_ivec *) vtr::realloc(tnodes_at_level,
-			num_levels * sizeof(vtr::t_ivec));
-	num_tnode_levels = num_levels;
+	timing_ctx.tnodes_at_level = (vtr::t_ivec *) vtr::realloc(timing_ctx.tnodes_at_level, num_levels * sizeof(vtr::t_ivec));
+	timing_ctx.num_tnode_levels = num_levels;
 
 	free(tnode_fanin_left);
 	free_int_list(&free_list_head);
@@ -213,8 +201,8 @@ void check_timing_graph() {
 
 	/* TODO: Rework error checks for I/Os*/
 
-	for (ilevel = 0; ilevel < num_tnode_levels; ilevel++)
-		num_tnodes_check += tnodes_at_level[ilevel].nelem;
+	for (ilevel = 0; ilevel < timing_ctx.num_tnode_levels; ilevel++)
+		num_tnodes_check += timing_ctx.tnodes_at_level[ilevel].nelem;
 
 	if (num_tnodes_check != timing_ctx.num_tnodes) {
 		vtr::printf_error(__FILE__, __LINE__, 
