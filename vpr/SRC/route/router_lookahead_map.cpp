@@ -25,6 +25,7 @@ See Section 3.2.4 in Oleg Petelin's MASc thesis (2016) for more discussion.
 #include "globals.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
+#include "vtr_assert.h"
 #include "router_lookahead_map.h"
 
 using namespace std;
@@ -148,31 +149,27 @@ public:
 	float R_upstream;
 	float congestion_upstream;
 
-	PQ_Entry(int set_rr_node_ind, int switch_ind, float parent_delay, float parent_R_upstream, float parent_congestion_upstream){
+	PQ_Entry(int set_rr_node_ind, int switch_ind, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node){
 		this->rr_node_ind = set_rr_node_ind;
 
-        auto& device_ctx = g_vpr_ctx.device();
-
-		float new_R_upstream = 0;
-		if (switch_ind != UNDEFINED){
-			new_R_upstream = device_ctx.rr_switch_inf[switch_ind].R;	
-			if (!device_ctx.rr_switch_inf[switch_ind].buffered){
-				new_R_upstream += parent_R_upstream;
-			}
-		}
-
-		/* get delay info for this node */
-		this->delay = parent_delay + device_ctx.rr_nodes[set_rr_node_ind].C() * (new_R_upstream + 0.5 * device_ctx.rr_nodes[set_rr_node_ind].R());
-		if (switch_ind != UNDEFINED){
-			this->delay += device_ctx.rr_switch_inf[switch_ind].Tdel;
-		}
-		new_R_upstream += device_ctx.rr_nodes[set_rr_node_ind].R();
-		this->R_upstream = new_R_upstream;
-
-		/* get congestion info for this node */
-		int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
+		auto& device_ctx = g_vpr_ctx.device();
+		this->delay = parent_delay;
 		this->congestion_upstream = parent_congestion_upstream;
-		if (switch_ind != UNDEFINED){
+		if (!starting_node){
+			int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
+			//this->delay += g_rr_nodes[set_rr_node_ind].C() * (g_rr_switch_inf[switch_ind].R + 0.5*g_rr_nodes[set_rr_node_ind].R()) + 
+			//              g_rr_switch_inf[switch_ind].Tdel;
+
+			//FIXME going to use the delay data that the VPR7 lookahead uses. For some reason the delay calculation above calculates
+			//    a value that's just a little smaller compared to what VPR7 lookahead gets. While the above calculation should be more accurate,
+			//    I have found that it produces the same CPD results but with worse runtime.
+			//
+			//    TODO: figure out whether anything's wrong with the calculation above and use that instead. If not, add the other
+			//          terms like T_quadratic and R_upstream to the calculation below (they are == 0 or UNDEFINED for buffered archs I think)
+			VTR_ASSERT(device_ctx.rr_indexed_data[cost_index].T_quadratic <= 0.);
+			VTR_ASSERT(device_ctx.rr_indexed_data[cost_index].C_load <= 0.);
+			this->delay += device_ctx.rr_indexed_data[cost_index].T_linear;
+
 			this->congestion_upstream += device_ctx.rr_indexed_data[cost_index].base_cost;
 		}
 
@@ -216,16 +213,15 @@ static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_ro
 static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_type);
 /* returns a cost entry in the f_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
 static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int chan_index);
+/* returns the absolute delta_x and delta_y offset required to reach to_node from from_node */
+static void get_xy_deltas(int from_node_ind, int to_node_ind, int *delta_x, int *delta_y);
 
 
 /******** Function Definitions ********/
 /* queries the lookahead_map (should have been computed prior to routing) to get the expected cost
    from the specified source to the specified target */
 float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticality_fac){
-	int from_x, from_y, to_x, to_y;
-
-    auto& device_ctx = g_vpr_ctx.device();
-
+	auto& device_ctx = g_vpr_ctx.device();
 	t_rr_node &from_node = device_ctx.rr_nodes[from_node_ind];
 
 	e_rr_type from_type = from_node.type();
@@ -234,13 +230,10 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 
 	assert(from_seg_index >= 0);
 
-	from_x = from_node.xlow();
-	from_y = from_node.ylow();
-	to_x = device_ctx.rr_nodes[to_node_ind].xlow();
-	to_y = device_ctx.rr_nodes[to_node_ind].ylow();
-
-	int delta_x = abs(from_x - to_x);
-	int delta_y = abs(from_y - to_y);
+	int delta_x, delta_y;
+	get_xy_deltas(from_node_ind, to_node_ind, &delta_x, &delta_y);
+	delta_x = abs(delta_x);
+	delta_y = abs(delta_y);
 
 	/* now get the expected cost from our lookahead map */
 	int from_chan_index = 0;
@@ -253,7 +246,6 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 	float expected_congestion = cost_entry.congestion;
 
 	float expected_cost = criticality_fac * expected_delay + (1.0 - criticality_fac) * expected_congestion;
-
 	return expected_cost;
 }
 
@@ -267,7 +259,7 @@ void compute_router_lookahead(int num_segments){
 		return;
 	}
 
-    auto& device_ctx = g_vpr_ctx.device();
+	auto& device_ctx = g_vpr_ctx.device();
 
 	clock_t start_time = clock();
 
@@ -282,16 +274,19 @@ void compute_router_lookahead(int num_segments){
 			t_routing_cost_map routing_cost_map;
 			routing_cost_map.assign( device_ctx.nx+2, vector<Expansion_Cost_Entry>(device_ctx.ny+2, Expansion_Cost_Entry()) );
 
-			for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2){
-				/* get the rr node index from which to start routing */
-				int start_node_ind = get_start_node_ind(REF_X, REF_Y, device_ctx.nx, device_ctx.ny, chan_type, iseg, track_offset);
+			for (int ref_inc=0; ref_inc<3; ref_inc++){
+				for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2){
+					/* get the rr node index from which to start routing */
+					int start_node_ind = get_start_node_ind(REF_X+ref_inc, REF_Y+ref_inc, device_ctx.nx, device_ctx.ny, 
+					                                        chan_type, iseg, track_offset);
 
-				if (start_node_ind == UNDEFINED){
-					continue;
+					if (start_node_ind == UNDEFINED){
+						continue;
+					}
+					
+					/* run Dijkstra's algorithm */
+					run_dijkstra(start_node_ind, REF_X+ref_inc, REF_Y+ref_inc, routing_cost_map);
 				}
-
-				/* run Dijkstra's algorithm */
-				run_dijkstra(start_node_ind, REF_X, REF_Y, routing_cost_map);
 			}
 			
 			/* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
@@ -346,7 +341,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 		direction = DEC_DIRECTION;
 	}
 
-    auto& device_ctx = g_vpr_ctx.device();
+	auto& device_ctx = g_vpr_ctx.device();
 
 	vtr::t_ivec channel_node_list = device_ctx.rr_node_indices[rr_type][chan_coord][seg_coord];
 
@@ -389,11 +384,10 @@ static void free_cost_map(){
 	f_cost_map.clear();
 }
 
-
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
    to that pin is stored is added to an entry in the routing_cost_map */
 static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing_cost_map &routing_cost_map){
-    auto& device_ctx = g_vpr_ctx.device();
+	auto& device_ctx = g_vpr_ctx.device();
 
 	/* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
 	vector<bool> node_expanded( device_ctx.num_rr_nodes, false );
@@ -404,7 +398,7 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
 	priority_queue<PQ_Entry> pq;
 
 	/* first entry has no upstream delay or congestion */
-	PQ_Entry first_entry(start_node_ind, UNDEFINED, 0, 0, 0);
+	PQ_Entry first_entry(start_node_ind, UNDEFINED, 0, 0, 0, true);
 
 	pq.push( first_entry );
 
@@ -426,8 +420,8 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
 			int ipin_y = device_ctx.rr_nodes[node_ind].ylow();
 
 			if (ipin_x >= start_x && ipin_y >= start_y){
-				int delta_x = ipin_x - start_x;
-				int delta_y = ipin_y - start_y;
+				int delta_x, delta_y;
+				get_xy_deltas(start_node_ind, node_ind, &delta_x, &delta_y);
 
 				routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
 			}
@@ -441,8 +435,7 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float> &node_visited_costs, vector<bool> &node_expanded, priority_queue<PQ_Entry> &pq){
-
-    auto& device_ctx = g_vpr_ctx.device();
+	auto& device_ctx = g_vpr_ctx.device();
 
 	int parent_ind = parent_entry.rr_node_ind;
 
@@ -458,7 +451,7 @@ static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float> &nod
 		}
 
 		PQ_Entry child_entry(child_node_ind, switch_ind, parent_entry.delay,
-		                             parent_entry.R_upstream, parent_entry.congestion_upstream);
+		                             parent_entry.R_upstream, parent_entry.congestion_upstream, false);
 
 		assert(child_entry.cost >= 0);
 
@@ -651,5 +644,72 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry(){
 	return representative_entry;
 }
 
+/* returns the absolute delta_x and delta_y offset required to reach to_node from from_node */
+static void get_xy_deltas(int from_node_ind, int to_node_ind, int *delta_x, int *delta_y){
+	auto& device_ctx = g_vpr_ctx.device();
+
+	t_rr_node &from = device_ctx.rr_nodes[from_node_ind];
+	t_rr_node &to = device_ctx.rr_nodes[to_node_ind];
+
+	/* get chan/seg coordinates of the from/to nodes. seg coordinate is along the wire,
+           chan coordinate is orthogonal to the wire */
+	int from_seg_low = from.xlow();
+	int from_seg_high = from.xhigh();
+	int from_chan = from.ylow();
+	int to_seg = to.xlow();
+	int to_chan = to.ylow();
+	if (from.type() == CHANY){
+		from_seg_low = from.ylow();
+		from_seg_high = from.yhigh();
+		from_chan = from.xlow();
+		to_seg = to.ylow();
+		to_chan = to.xlow();
+	}
+
+	/* now we want to count the minimum number of *channel segments* between the from and to nodes */
+	int delta_seg, delta_chan;
+	
+	/* orthogonal to wire */
+	int no_need_to_pass_by_clb = 0;	//if we need orthogonal wires then we don't need to pass by the target CLB along the current wire direction
+	if (to_chan > from_chan + 1){
+		/* above */
+		delta_chan = to_chan - from_chan;
+		no_need_to_pass_by_clb = 1;
+	} else if (to_chan < from_chan){
+		/* below */
+		delta_chan = from_chan - to_chan + 1;
+		no_need_to_pass_by_clb = 1;
+	} else {
+		/* adjacent to current channel */
+		delta_chan = 0;
+		no_need_to_pass_by_clb = 0;
+	}
+
+	/* along same direction as wire. */
+	if (to_seg > from_seg_high){
+		/* ahead */
+		delta_seg = to_seg - from_seg_high - no_need_to_pass_by_clb;
+	} else if (to_seg < from_seg_low){
+		/* behind */
+		delta_seg = from_seg_low - to_seg - no_need_to_pass_by_clb;
+	} else {
+		/* along the span of the wire */
+		delta_seg = 0;
+	}
+
+	/* account for wire direction. lookahead map was computed by looking up and to the right starting at INC wires. for targets
+	   that are opposite of the wire direction, let's add 1 to delta_seg */
+	if ( (to_seg < from_seg_low && from.direction() == INC_DIRECTION) ||
+	     (to_seg > from_seg_high && from.direction() == DEC_DIRECTION) ){
+		delta_seg++;
+	}
+
+	*delta_x = delta_seg;
+	*delta_y = delta_chan;
+	if (from.type() == CHANY){
+		*delta_x = delta_chan;
+		*delta_y = delta_seg;
+	}
+}
 
 
