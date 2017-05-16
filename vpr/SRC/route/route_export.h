@@ -15,6 +15,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 		float **net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
+        const t_timing_inf& timing_inf,
 #endif
         std::shared_ptr<SetupTimingInfo> timing_info,
 		t_chan_width_dist chan_width_dist, t_clb_opins_used& clb_opins_used_locally,

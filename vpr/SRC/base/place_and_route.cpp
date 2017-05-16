@@ -49,6 +49,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 		t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         float** net_delay,
+        const t_timing_inf& timing_inf,
         std::shared_ptr<SetupTimingInfo> timing_info);
 
 static float comp_width(t_chan * chan, float x, float separation);
@@ -146,7 +147,11 @@ bool place_and_route(t_placer_opts placer_opts,
 				arch,
                 router_opts.verify_binary_search, router_opts.min_channel_width_hint,
                 annealing_sched, router_opts,
-				det_routing_arch, segment_inf, net_delay, timing_info);
+				det_routing_arch, segment_inf, net_delay, 
+#ifdef ENABLE_CLASSIC_VPR_STA
+                timing_inf,
+#endif
+                timing_info);
 		success = (power_ctx.solution_inf.channel_width > 0 ? true : false);
 	} else {
         //Route at the specified channel width
@@ -171,6 +176,7 @@ bool place_and_route(t_placer_opts placer_opts,
 				segment_inf, net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
                 slacks, 
+                timing_inf,
 #endif
                 timing_info,
                 arch->Chans,
@@ -243,6 +249,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 		t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         float** net_delay,
+        const t_timing_inf& timing_inf,
         std::shared_ptr<SetupTimingInfo> timing_info) {
 
 	/* This routine performs a binary search to find the minimum number of      *
@@ -379,6 +386,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 				net_delay, 
 #ifdef ENABLE_CLASSIC_VPR_STA
                 slacks, 
+                timing_inf,
 #endif
                 timing_info,
                 arch->Chans,
@@ -496,6 +504,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 					segment_inf, net_delay, 
 #ifdef ENABLE_CLASSIC_VPR_STA
                     slacks,
+                    timing_inf,
 #endif
                     timing_info,
 					arch->Chans, clb_opins_used_locally, arch->Directs, arch->num_directs,

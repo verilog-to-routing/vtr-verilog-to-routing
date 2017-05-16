@@ -126,11 +126,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
         std::shared_ptr<SetupTimingInfo> timing_info,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks, 
+        const t_timing_inf &timing_inf,
 #endif
         t_clb_opins_used& clb_opins_used_locally,
-#ifdef ENABLE_CLASSIC_VPR_STA
-        , const t_timing_inf &timing_inf
-#endif
         ScreenUpdatePriority first_iteration_priority) {
 
 	/* Timing-driven routing algorithm.  The timing graph (includes slack)   *
