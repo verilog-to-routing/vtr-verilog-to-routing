@@ -49,7 +49,9 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 		t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         float** net_delay,
+#ifdef ENABLE_CLASSIC_VPR_STA
         const t_timing_inf& timing_inf,
+#endif
         std::shared_ptr<SetupTimingInfo> timing_info);
 
 static float comp_width(t_chan * chan, float x, float separation);
@@ -249,7 +251,9 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 		t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         float** net_delay,
+#ifdef ENABLE_CLASSIC_VPR_STA
         const t_timing_inf& timing_inf,
+#endif
         std::shared_ptr<SetupTimingInfo> timing_info) {
 
 	/* This routine performs a binary search to find the minimum number of      *
