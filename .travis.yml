@@ -16,5 +16,6 @@ branches:
   only:
   - jeanlego
 script: make && make install
-
-
+cache: ccache
+  directories:
+  - /home/travis/build/jeanlego/vtr-verilog-to-routing/
