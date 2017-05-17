@@ -1,7 +1,7 @@
+dist: trusty
+sudo: required
 language: c
 before_install:
-- sudo apt-get update -qq
-- sudo apt-get dist-upgrade -qq
 - sudo apt-get update -qq
 - sudo apt-get install -qq   - build-essential libx11-dev cmake flex bison ctags clang
 compiler:
