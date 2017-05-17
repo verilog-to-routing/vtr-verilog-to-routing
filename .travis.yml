@@ -5,11 +5,15 @@ before_install:
 - sudo apt-get update -qq
 - sudo apt-get install -qq   - build-essential libx11-dev cmake flex bison ctags clang
 compiler:
-  - clang
   - gcc
 # safelist
 branches:
   only:
   - jeanlego
 script: make && make install
+
+env:
+  global:
+    - CXX=g++-4.8
+    - NODE_ENV=development
   
