@@ -252,6 +252,72 @@ In this case the internal path delay is 1ns (200ps + 740ps + 60ps) limiting the 
       <T_clock_to_Q max="300e-12" port="mem_sp.out" clock="clk"/>
     </pb_type>
 
+.. _seq_sp_ram_comb_inputs_timing_modeling:
+
+Sequential block (with internal paths and combinational input)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A primitive may have a mix of sequential and combinational inputs.
+
+The model below specifies a mostly sequential single-port RAM.
+The ports ``addr``, and ``data`` are sequential inputs, while the port ``we`` is a combinational input.
+The port ``out`` is a sequential output.
+``clk`` is the common clock.
+
+.. figure:: seq_comb_sp_ram.*
+    :width: 75%
+
+    Sequential single port ram with a combinational input
+
+.. code-block:: xml
+
+      <model name="single_port_ram_seq">
+        <input_ports>
+          <port name="we" combinational_sink_ports="out"/>
+          <port name="addr" clock="clk" combinational_sink_ports="out"/>
+          <port name="data" clock="clk" combinational_sink_ports="out"/>
+          <port name="clk" is_clock="1"/>
+        </input_ports>
+        <output_ports>
+          <port name="out" clock="clk"/>
+        </output_ports>
+      </model>
+
+
+We use register delays similar to :ref:`seq_sp_ram_timing_modeling`.
+However we also specify the purely combinational delay between the combinational ``we`` input and sequential output ``out`` (800ps).
+Note that the setup time of the output register still effects the ``we`` to ``out`` path for an effective delay of 860ps.
+
+.. code-block:: xml
+
+    <pb_type name="mem_sp" blif_model=".subckt single_port_ram_seq" num_pb="1">
+      <input name="addr" num_pins="9"/>
+      <input name="data" num_pins="64"/>
+      <input name="we" num_pins="1"/>
+      <output name="out" num_pins="64"/>
+      <clock name="clk" num_pins="1"/>
+
+      <!-- External input register timing -->
+      <T_setup value="50e-12" port="mem_sp.addr" clock="clk"/>
+      <T_setup value="50e-12" port="mem_sp.data" clock="clk"/>
+
+      <!-- Internal input register timing -->
+      <T_clock_to_Q max="200e-12" port="mem_sp.addr" clock="clk"/>
+      <T_clock_to_Q max="200e-12" port="mem_sp.data" clock="clk"/>
+
+      <!-- External combinational delay -->
+      <delay_constant max="800e-12" in_port="mem_sp.we" out_port="mem_sp.out"/>
+
+      <!-- Internal combinational delay -->
+      <delay_constant max="740e-12" in_port="mem_sp.addr" out_port="mem_sp.out"/>
+      <delay_constant max="740e-12" in_port="mem_sp.data" out_port="mem_sp.out"/>
+
+      <!-- Internal output register timing -->
+      <T_setup value="60e-12" port="mem_sp.out" clock="clk"/>
+
+      <!-- External output register timing -->
+      <T_clock_to_Q max="300e-12" port="mem_sp.out" clock="clk"/>
+    </pb_type>
+
 
 .. _multiclock_dp_ram_timing_modeling:
 
