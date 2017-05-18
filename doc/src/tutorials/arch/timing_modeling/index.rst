@@ -271,7 +271,7 @@ The port ``out`` is a sequential output.
 .. code-block:: xml
     :emphasize-lines: 3
 
-      <model name="single_port_ram_seq">
+      <model name="single_port_ram_seq_comb">
         <input_ports>
           <port name="we" combinational_sink_ports="out"/>
           <port name="addr" clock="clk" combinational_sink_ports="out"/>
@@ -291,7 +291,7 @@ Note that the setup time of the output register still effects the ``we`` to ``ou
 .. code-block:: xml
     :emphasize-lines: 17
 
-    <pb_type name="mem_sp" blif_model=".subckt single_port_ram_seq" num_pb="1">
+    <pb_type name="mem_sp" blif_model=".subckt single_port_ram_seq_comb" num_pb="1">
       <input name="addr" num_pins="9"/>
       <input name="data" num_pins="64"/>
       <input name="we" num_pins="1"/>
