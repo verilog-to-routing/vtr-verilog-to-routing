@@ -117,7 +117,7 @@ void TimingGraphBuilder::add_io_to_timing_graph(const AtomBlockId blk) {
 }
 
 void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
-    std::set<std::string> output_ports_requiring_internal_sinks;
+    std::set<std::string> output_ports_used_as_combinational_sinks;
 
     //Create the input pins
     for(AtomPinId input_pin : netlist_.block_input_pins(blk)) {
@@ -139,18 +139,19 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
             tnode = tg_->add_node(NodeType::SINK);
 
             if(!model_port->combinational_sink_ports.empty()) {
-                //There is an internal sequential connection within this primitive
+                //There is an internal combinational connection starting at this sequential input
 
                 //Create the internal source
                 NodeId internal_tnode = tg_->add_node(NodeType::SOURCE);
                 netlist_lookup_.set_atom_pin_tnode(input_pin, internal_tnode, BlockTnode::INTERNAL);
-
-                //Record the output port which will need an internal sink created
-                output_ports_requiring_internal_sinks.insert(model_port->combinational_sink_ports.begin(),
-                                                             model_port->combinational_sink_ports.end());
             }
         }
 
+        //Record any output port which will be used as a combinational sink
+        output_ports_used_as_combinational_sinks.insert(model_port->combinational_sink_ports.begin(),
+                                                        model_port->combinational_sink_ports.end());
+
+        //Save the pin to external tnode mapping
         netlist_lookup_.set_atom_pin_tnode(input_pin, tnode);
     }
 
@@ -211,8 +212,10 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                 //Has an associated clock => sequential output
                 tnode = tg_->add_node(NodeType::SOURCE);
 
+                if(output_ports_used_as_combinational_sinks.count(model_port->name)) {
+                    //There is a combinational path within the primitive terminating at this sequential output
 
-                if(output_ports_requiring_internal_sinks.count(model_port->name)) {
+                    //Create the internal sink node
                     NodeId internal_tnode = tg_->add_node(NodeType::SINK);
                     netlist_lookup_.set_atom_pin_tnode(output_pin, internal_tnode, BlockTnode::INTERNAL);
                 }
