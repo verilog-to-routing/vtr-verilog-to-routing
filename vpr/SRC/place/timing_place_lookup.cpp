@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cmath>
 #include <time.h>
+#include <limits>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -499,7 +500,7 @@ static void alloc_routing_structs(t_router_opts router_opts,
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warnings);
+			&warnings, router_opts.rr_graph_to_file);
 
 	alloc_and_load_rr_node_route_structs();
 
@@ -585,7 +586,7 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
 
     IntraLbPbPinLookup dummy_pb_pin_lookup(device_ctx.block_types, device_ctx.num_block_types);
 
-	timing_driven_route_net(NET_USED, itry, pres_fac,
+	bool successfully_routed = timing_driven_route_net(NET_USED, itry, pres_fac,
 			router_opts.max_criticality, router_opts.criticality_exp,
 			router_opts.astar_fac, router_opts.bend_cost, 
 			dummy_connections_inf,
@@ -595,7 +596,17 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
             dummy_pb_pin_lookup,
             nullptr); //We pass in no timing info, indicating we want a min-delay routing
 
-	net_delay_value = f_net_delay[NET_USED][NET_USED_SINK_BLOCK];
+    if (successfully_routed) {
+        net_delay_value = f_net_delay[NET_USED][NET_USED_SINK_BLOCK];
+    } else {
+        vtr::printf_warning(__FILE__, __LINE__, 
+                "Unable to route between blocks at (%d,%d) and (%d,%d) to characterize delay (setting to inf)\n", 
+                source_x_loc, source_y_loc, sink_x_loc, sink_y_loc);
+
+        //We set the delay to +inf, since this architecture will likely be unroutable
+        net_delay_value = std::numeric_limits<float>::infinity();
+    }
+
 
 	place_ctx.grid_blocks[source_x_loc][source_y_loc].usage = 0;
 	place_ctx.grid_blocks[source_x_loc][source_y_loc].blocks[source_z_loc] = EMPTY_BLOCK;
