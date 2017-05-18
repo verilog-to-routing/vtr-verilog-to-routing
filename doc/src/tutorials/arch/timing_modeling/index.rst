@@ -269,6 +269,7 @@ The port ``out`` is a sequential output.
     Sequential single port ram with a combinational input
 
 .. code-block:: xml
+    :emphasize-lines: 3
 
       <model name="single_port_ram_seq">
         <input_ports>
@@ -288,6 +289,7 @@ However we also specify the purely combinational delay between the combinational
 Note that the setup time of the output register still effects the ``we`` to ``out`` path for an effective delay of 860ps.
 
 .. code-block:: xml
+    :emphasize-lines: 17
 
     <pb_type name="mem_sp" blif_model=".subckt single_port_ram_seq" num_pb="1">
       <input name="addr" num_pins="9"/>
