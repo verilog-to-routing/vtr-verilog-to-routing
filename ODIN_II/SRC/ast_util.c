@@ -971,32 +971,6 @@ char *make_module_param_name(ast_node_t *module_param_list, char *module_name)
 
 
 /*---------------------------------------------------------------------------------------------
- * (function: calculate)
- * Calculate binary operations
- *-------------------------------------------------------------------------------------------*/
-long calculate(long operand0, long operand1, short type)
-{
-	long result = 0;
-	switch(type){
-		case ADD:
-			result = operand0 + operand1;
-			break;
-		case MINUS:
-			result = operand0 - operand1;
-			break;
-		case MULTIPLY:
-			result = operand0 * operand1;
-			break;
-		case DIVIDE:
-			result = operand0 / operand1;
-			break;
-		default:
-			break;
-	}
-	return result;
-}
-
-/*---------------------------------------------------------------------------------------------
  * (function: move_ast_node)
  * move node from src to dest
  *-------------------------------------------------------------------------------------------*/
@@ -1047,4 +1021,100 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
 	}
 
 	return node_copy;
+}
+
+
+/*---------------------------------------------------------------------------------------------
+ * (function: calculate)
+ * Calculate binary operations
+ *-------------------------------------------------------------------------------------------*/
+long calculate(long operand0, long operand1, short type){
+	long result = 0;
+	long long temp =calculate_binary((long long) operand0, (long long) operand1,type);
+	if(!(temp & WRONG_CALCULATION)){
+		return (long) temp;
+	}
+	return result;
+}
+
+
+/*---------------------------------------------------------------------------------------------
+ * (function: calculate_unary)
+ *-------------------------------------------------------------------------------------------*/
+long long calculate_unary(long long operand_0, short type_of_ops){
+	if(operand_0 !=  WRONG_CALCULATION){
+		switch (type_of_ops){
+			case LOGICAL_NOT:
+				return !operand_0;
+			case BITWISE_NOT:
+				return ~operand_0;
+			case MINUS:
+				return -operand_0;
+			default:
+				break;
+		}
+	}
+	return WRONG_CALCULATION;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: calculate_binary)
+ *-------------------------------------------------------------------------------------------*/
+long long calculate_binary(long long operand_0, long long operand_1, short type_of_ops){
+	if(!(operand_0 & WRONG_CALCULATION) && !(operand_1 & WRONG_CALCULATION)){
+		switch (type_of_ops){
+			case ADD:
+				return operand_0 + operand_1;
+			case MINUS:
+				return operand_0 - operand_1;
+			case MULTIPLY:
+				return operand_0 * operand_1;
+			case DIVIDE:
+				return operand_0 / operand_1;
+			case BITWISE_XOR:
+				return operand_0 ^ operand_1;
+			case BITWISE_XNOR:
+				return ~(operand_0 ^ operand_1);
+			case BITWISE_AND:
+				return operand_0 & operand_1;
+			case BITWISE_NAND:
+				return ~(operand_0 & operand_1);
+			case BITWISE_OR:
+				return operand_0 | operand_1;
+			case BITWISE_NOR:
+				return ~(operand_0 | operand_1);
+			case SL:
+				return operand_0 << operand_1;
+			case SR:
+				return operand_0 >> operand_1;
+			case LOGICAL_AND:
+				return operand_0 && operand_1;
+			case LOGICAL_OR:
+				return operand_0 || operand_1;
+			default:
+				break;
+		}
+	}
+	return WRONG_CALCULATION;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: node_is_constant)
+ *-------------------------------------------------------------------------------------------*/
+long long node_is_constant(ast_node_t *node){
+	if (node != NULL && node->type == NUMBERS){
+		/* check if it's a constant depending on the number type */
+		switch (node->types.number.base){
+			case DEC: case HEX: case OCT: case BIN:
+				if (node->types.number.value == -1){
+					break;
+				}
+			case(LONG_LONG):
+				return (long long) node->types.number.value;
+				break;
+            default:
+				break;
+		}
+	}
+	return WRONG_CALCULATION;
 }
