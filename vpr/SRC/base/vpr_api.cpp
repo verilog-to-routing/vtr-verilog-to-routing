@@ -110,6 +110,7 @@ void vpr_print_usage(void) {
 	vtr::printf_info("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
 	vtr::printf_info("\t[--blif_file <string>] [--net_file <string>] [--place_file <string>]\n");
 	vtr::printf_info("\t[--route_file <string>] [--sdc_file <string>] [--echo_file on | off]\n");
+	vtr::printf_info("\t[--write_rr_graph on | off]\n");
 	vtr::printf_info("\n");
 	vtr::printf_info("Netlist Options:\n");
 	vtr::printf_info("\t[--absorb_buffer_luts on | off]\n");

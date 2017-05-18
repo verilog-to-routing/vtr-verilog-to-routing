@@ -51,7 +51,8 @@ void build_rr_graph(
 		const char *dump_rr_structs_file,
 		int *wire_to_rr_ipin_switch,
 		int *num_rr_switches,
-		int *Warnings);
+		int *Warnings,
+		const bool rr_graph_to_file);
 
 void free_rr_graph(void);
 

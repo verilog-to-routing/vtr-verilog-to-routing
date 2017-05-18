@@ -257,7 +257,7 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warning_count);
+			&warning_count, router_opts.rr_graph_to_file);
 
 	clock_t end = clock();
 
@@ -319,7 +319,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warning_count);
+			&warning_count, router_opts.rr_graph_to_file);
 
 	clock_t end = clock();
 

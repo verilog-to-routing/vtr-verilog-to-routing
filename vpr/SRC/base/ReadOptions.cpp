@@ -444,6 +444,8 @@ ProcessOption(char **Args, t_options * Options) {
 		return ReadRouterAlgorithm(Args, &Options->RouterAlgorithm);
 	case OT_BASE_COST_TYPE:
 		return ReadBaseCostType(Args, &Options->base_cost_type);
+	case OT_WRITE_RR_GRAPH:
+		return ReadOnOff(Args, &Options->rr_graph_to_file);
 
 		/* Routing options valid only for timing-driven routing */
 	case OT_ASTAR_FAC:

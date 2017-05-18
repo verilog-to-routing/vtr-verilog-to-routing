@@ -91,6 +91,7 @@ struct t_options {
 	bool TrimObsChan;
 	enum e_router_algorithm RouterAlgorithm;
 	enum e_base_cost_type base_cost_type;
+	bool rr_graph_to_file;
 
 	/* Timing-driven router options only */
 	float astar_fac;

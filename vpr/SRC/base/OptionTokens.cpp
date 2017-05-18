@@ -85,7 +85,7 @@ t_TokenPair g_OptionBaseTokenList[] = {
 		{ "routing_failure_predictor", OT_ROUTING_FAILURE_PREDICTOR }, /* Routing failure predictor */
 		{ "dump_rr_structs_file", OT_DUMP_RR_STRUCTS_FILE },
 		{ "analysis", OT_ANALYSIS }, 
-
+		{ "write_rr_graph", OT_WRITE_RR_GRAPH }, 
 		{ NULL, OT_BASE_UNKNOWN } /* End of list marker */
 };
 

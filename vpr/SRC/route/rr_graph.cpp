@@ -30,6 +30,7 @@ using namespace std;
 #include "dump_rr_structs.h"
 #include "cb_metrics.h"
 #include "build_switchblocks.h"
+#include "rr_graph_writer.h"
 
 #include "router_lookahead_map.h"
 
@@ -237,7 +238,8 @@ void build_rr_graph(
 		const bool ignore_Fc_0, const char *dump_rr_structs_file,
 		int *wire_to_rr_ipin_switch,
 		int *num_rr_switches,
-		int *Warnings) {
+		int *Warnings,
+		const bool rr_graph_to_file) {
 
 	vtr::printf_info("Starting build routing resource graph...\n");
     clock_t begin = clock();
@@ -499,6 +501,11 @@ void build_rr_graph(
 	if (dump_rr_structs_file){
 		dump_rr_structs(dump_rr_structs_file);
 	}
+
+	if (rr_graph_to_file){
+		write_rr_graph("RR_GRAPH.xml", segment_inf, num_seg_types);
+	}
+
 
 #ifdef USE_MAP_LOOKAHEAD
 	compute_router_lookahead(num_seg_types);
