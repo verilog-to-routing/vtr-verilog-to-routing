@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "cudd.h"
 #include "ace.h"
 #include "st.h"
+#include "allocation_def.h"
 
 #define ACE_P0TO1(P1,PS)		((P1)==0.0)?0.0:(((P1)==1.0)?1.0:0.5*PS/(1.0-(P1)))
 #define ACE_P1TO0(P1,PS)		((P1)==0.0)?1.0:(((P1)==0.0)?0.0:0.5*PS/(P1))
@@ -59,7 +60,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 typedef unsigned int *pset;
 
-#define ALLOC(type, num)	((type *) malloc(sizeof(type) * (num)))
+#define ALLOC(type, num)	ALLOCATE_ME(num,type)
 
 #define set_remove(set, e)      (set[WHICH_WORD(e)] &= ~ (1 << WHICH_BIT(e)))
 #define set_insert(set, e)      (set[WHICH_WORD(e)] |= 1 << WHICH_BIT(e))
@@ -465,7 +466,7 @@ ace_cube_t * ace_cube_dup(ace_cube_t * cube) {
     int i;
     ace_cube_t * cube_copy;
 
-    cube_copy = (ace_cube_t * ) malloc(sizeof(ace_cube_t));
+    cube_copy = (ace_cube_t * ) calloc(1,sizeof(ace_cube_t));
     cube_copy->static_prob = cube->static_prob;
     cube_copy->num_literals = cube->num_literals;
     cube_copy->cube = set_new (2 * cube->num_literals);
@@ -499,7 +500,7 @@ ace_cube_t * ace_cube_new_dc(int num_literals) {
     int i;
     ace_cube_t * new_cube;
 
-    new_cube = (ace_cube_t * ) malloc(sizeof(ace_cube_t));
+    new_cube = (ace_cube_t * ) calloc(1,sizeof(ace_cube_t));
     new_cube->num_literals = num_literals;
     new_cube->static_prob = 1.0;
     new_cube->cube = set_new (2 * num_literals);
@@ -616,7 +617,7 @@ double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd, ace_cube_t * c
 
     i = Cudd_Regular(bdd)->index;
 
-    current_prob = ( double * ) malloc(sizeof(double));
+    current_prob = ( double * ) calloc(1,sizeof(double));
 
     if (Cudd_IsComplement(bdd)) {
 	bdd_if1 = Cudd_E(bdd);

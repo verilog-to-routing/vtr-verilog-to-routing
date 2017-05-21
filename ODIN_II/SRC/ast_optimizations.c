@@ -28,6 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ast_optimizations.h"
 #include "parse_making_ast.h"
 #include "verilog_bison.h"
+#include "allocation_def.h"
 
 /* --------------------------------------------------------------------------------------------
  --------------------------------------------------------------------------------------------
@@ -73,7 +74,7 @@ info_ast_visit_t *reduceAST_traverse_node(ast_node_t *node, ast_node_t *from, in
 		}	
 
 		/* allocate the information for all the returned children info */
-		children_info = (info_ast_visit_t**)malloc(sizeof(info_ast_visit_t*)*node->num_children);	
+		children_info = (info_ast_visit_t**)calloc(node->num_children,sizeof(info_ast_visit_t*));	
 
 		/* traverse all the children */
 		for (i = 0; i < node->num_children; i++)
@@ -188,7 +189,7 @@ info_ast_visit_t *constantFold(ast_node_t *node)
 		}	
 
 		/* allocate the information for all the returned children info */
-		children_info = (info_ast_visit_t**)malloc(sizeof(info_ast_visit_t*)*node->num_children);	
+		children_info = (info_ast_visit_t**)calloc(node->num_children,sizeof(info_ast_visit_t*));	
 
 		/* traverse all the children */
 		for (i = 0; i < node->num_children; i++)

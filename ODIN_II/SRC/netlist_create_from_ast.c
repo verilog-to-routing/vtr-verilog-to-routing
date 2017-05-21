@@ -42,6 +42,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "ast_elaborate.h"
+#include "allocation_def.h"
 
 /* NAMING CONVENTIONS
  {previous_string}.module_name+instance_name
@@ -335,10 +336,8 @@ void create_netlist()
 			// now isolate the original module name
 			char *underscores = strstr(module_param_name, "___");
 			oassert(underscores);
-			int len = underscores - module_param_name;
-			char *module_name = (char *)malloc((len+1)*sizeof(char));
-			strncpy(module_name, module_param_name, len);
-			module_name[len] = '\0';
+			char *module_name = (char *)calloc(underscores - module_param_name + 1,sizeof(char));
+			strncpy(module_name, module_param_name, underscores - module_param_name + 1);
 			// verify that it does exist
 			long sc_spot2 = sc_lookup_string(module_names_to_idx, module_name);
 			oassert(sc_spot2 > -1);
@@ -634,7 +633,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 		if (node->num_children > 0)
 		{
 			child_skip_list = (short*)calloc(node->num_children, sizeof(short));
-			children_signal_list = (signal_list_t**)malloc(sizeof(signal_list_t*)*node->num_children);
+			children_signal_list = (signal_list_t**)calloc(node->num_children,sizeof(signal_list_t*));
 		}
 
 		/* ------------------------------------------------------------------------------*/
@@ -2773,8 +2772,8 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 	else if (var_declare == NULL)
 	{
 		/* if you have the name and just want a pin then use this method */
-		pin_lists = (char_list_t*)malloc(sizeof(char_list_t)*1);
-		pin_lists->strings = (char**)malloc(sizeof(char*));
+		pin_lists = (char_list_t*)calloc(1,sizeof(char_list_t));
+		pin_lists->strings = (char**)calloc(1,sizeof(char*));
 		pin_lists->strings[0] = name;
 		pin_lists->num_strings = 1;
 	}
@@ -3273,7 +3272,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			/* create the unique name for this gate */
 			//ff_node->name = node_name(ff_node, instance_name_prefix);
 			/* Name the flipflop based on the name of its output pin */
-			char *ff_name = (char *)malloc(sizeof(char) * (strlen(pin->name) + strlen("_FF_NODE") + 1));
+			char *ff_name = (char *)calloc(strlen(pin->name) + strlen("_FF_NODE") + 1,sizeof(char));
 			strcpy(ff_name, pin->name);
 			strcat(ff_name, "_FF_NODE");
 			ff_node->name = ff_name;
@@ -3964,7 +3963,7 @@ signal_list_t *create_if_question_mux_expressions(ast_node_t *if_ast, nnode_t *i
 	int i;
 
 	/* make storage for statements and expressions */
-	if_expressions = (signal_list_t**)malloc(sizeof(signal_list_t*)*2);
+	if_expressions = (signal_list_t**)calloc(2,sizeof(signal_list_t*));
 
 	/* now we will process the statements and add to the other ports */
 	for (i = 0; i < 2; i++)
@@ -4080,7 +4079,7 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 	int i;
 
 	/* make storage for statements and expressions */
-	if_statements = (signal_list_t**)malloc(sizeof(signal_list_t*)*2);
+	if_statements = (signal_list_t**)calloc(2,sizeof(signal_list_t*));
 
 	/* now we will process the statements and add to the other ports */
 	for (i = 0; i < 2; i++)
@@ -4156,7 +4155,7 @@ void create_case_control_signals(ast_node_t *case_list_of_items, ast_node_t *com
 		{
 			/* IF - this is a normal case item, then process the case match and the details of the statement */
 			signal_list_t *case_compare_expression;
-			signal_list_t **case_compares = (signal_list_t **)malloc(sizeof(signal_list_t*)*2);
+			signal_list_t **case_compares = (signal_list_t **)calloc(2,sizeof(signal_list_t*));
 			ast_node_t *logical_equal = create_node_w_type(BINARY_OPERATION, -1, -1);
 			logical_equal->types.operation.op = LOGICAL_EQUAL;
 
@@ -4214,7 +4213,7 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 	int i;
 
 	/* make storage for statements and expressions */
-	case_statement = (signal_list_t**)malloc(sizeof(signal_list_t*)*(case_list_of_items->num_children));
+	case_statement = (signal_list_t**)calloc((case_list_of_items->num_children),sizeof(signal_list_t*));
 
 	/* now we will process the statements and add to the other ports */
 	for (i = 0; i < case_list_of_items->num_children; i++)
@@ -4256,7 +4255,7 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 	int out_index = 0;
 
 	/* allocate and initialize indexes */
-	per_case_statement_idx = (int*)calloc(sizeof(int), num_statement_lists);
+	per_case_statement_idx = (int*)calloc(num_statement_lists,sizeof(int));
 
 	/* make the uber list and sort it */
 	combined_lists = combine_lists_without_freeing_originals(statement_lists, num_statement_lists);
@@ -4440,7 +4439,7 @@ int find_smallest_non_numerical(ast_node_t *node, signal_list_t **input_list, in
 	int i;
 	int smallest;
 	int smallest_idx;
-	short *tested = (short*)calloc(sizeof(short), num_input_lists);
+	short *tested = (short*)calloc(num_input_lists,sizeof(short));
 	short found_non_numerical = FALSE;
 
 	while(found_non_numerical == FALSE)
@@ -4573,7 +4572,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 		block_connect->children[1]->hb_port = (void *)hb_ports;
 	}
 
-	signal_list_t **in_list = (signal_list_t **)malloc(sizeof(signal_list_t *)*block_list->num_children);
+	signal_list_t **in_list = (signal_list_t **)calloc(block_list->num_children,sizeof(signal_list_t *));
 	int out_port_size1 = 0;
 	int out_port_size2 = 0;
 	int current_idx = 0;
@@ -4645,7 +4644,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 					block->children[1]->children[0]->types.identifier,
 					ip_name, -1);
 
-			t_memory_port_sizes *ps = (t_memory_port_sizes *)malloc(sizeof(t_memory_port_sizes));
+			t_memory_port_sizes *ps = (t_memory_port_sizes *)calloc(1,sizeof(t_memory_port_sizes));
 			ps->size = out_port_size;
 			ps->name = alias_name;
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
@@ -4774,7 +4773,7 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 	if (i != block_list->num_children)
 		error_message(NETLIST_ERROR, block->line_number, block->file_number, "Not all ports defined in hard block %s\n", ip_name);
 
-	signal_list_t **in_list = (signal_list_t **)malloc(sizeof(signal_list_t *)*block_list->num_children);
+	signal_list_t **in_list = (signal_list_t **)calloc(block_list->num_children,sizeof(signal_list_t *));
 	int out_port_size = 0;
 	for (i = 0; i < block_list->num_children; i++)
 	{
@@ -4832,7 +4831,7 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 					block->children[1]->children[0]->types.identifier,
 					ip_name, -1
 			);
-			t_memory_port_sizes *ps = (t_memory_port_sizes *)malloc(sizeof(t_memory_port_sizes));
+			t_memory_port_sizes *ps = (t_memory_port_sizes *)calloc(1,sizeof(t_memory_port_sizes));
 			ps->size = out_port_size;
 			ps->name = alias_name;
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
@@ -4912,7 +4911,7 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 	);
 
 	int i;
-	signal_list_t **in_list = (signal_list_t **)malloc(sizeof(signal_list_t *)*block_list->num_children);
+	signal_list_t **in_list = (signal_list_t **)calloc(block_list->num_children,sizeof(signal_list_t *));
 	int out_port_size = 0;
 	int current_idx = 0;
 	for (i = 0; i < block_list->num_children; i++)
@@ -4969,7 +4968,7 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 					block->children[1]->children[0]->types.identifier,
 					block_connect->types.identifier, -1
 			);
-			t_memory_port_sizes *ps = (t_memory_port_sizes *)malloc(sizeof(t_memory_port_sizes));
+			t_memory_port_sizes *ps = (t_memory_port_sizes *)calloc(1,sizeof(t_memory_port_sizes));
 			ps->size = out_port_size;
 			ps->name = alias_name;
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
@@ -5063,7 +5062,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 	);
 
 	int i;
-	signal_list_t **in_list = (signal_list_t **)malloc(sizeof(signal_list_t *)*block_list->num_children);
+	signal_list_t **in_list = (signal_list_t **)calloc(block_list->num_children,sizeof(signal_list_t *));
 	int out1_size = 0;
 	int out2_size = 0;
 	int current_idx = 0;
@@ -5135,7 +5134,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 			allocate_more_output_pins(block_node, port_size);
 			add_output_port_information(block_node, port_size);
 
-			t_memory_port_sizes *ps = (t_memory_port_sizes *)malloc(sizeof(t_memory_port_sizes));
+			t_memory_port_sizes *ps = (t_memory_port_sizes *)calloc(1,sizeof(t_memory_port_sizes));
 			ps->size = port_size;
 			ps->name = strdup(alias_name);
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
@@ -5297,7 +5296,7 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 		block_connect->children[1]->hb_port = (void *)hb_ports;
 	}
 
-	in_list = (signal_list_t **)malloc(sizeof(signal_list_t *)*block_list->num_children);
+	in_list = (signal_list_t **)calloc(block_list->num_children,sizeof(signal_list_t *));
 	for (i = 0; i < block_list->num_children; i++)
 	{
 		int port_size;

@@ -28,7 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <assert.h>
 
 #include "vtr_util.h"
-
+#include "allocation_def.h"
 #include "globals.h"
 #include "netlist_utils.h"
 #include "errors.h"
@@ -431,12 +431,12 @@ void
 add_subblock_to_node(nnode_t *current_block, const std::vector<std::vector<std::string>& tokens_list, int num_subblocks, t_type_ptr type)
 {
 	int i, j, k;
-	nnode_t **subblock_nodes = (nnode_t**)malloc(sizeof(nnode_t*)*num_subblocks);
+	nnode_t **subblock_nodes = (nnode_t**)calloc(num_subblocks,sizeof(nnode_t*));
 	npin_t *node_output_pin;
 	nnet_t *new_net;
 	int live_index_count;
-	int *input_idx = (int*)malloc(sizeof(int)*current_block->num_input_pins);
-	int *output_idx = (int*)malloc(sizeof(int)*current_block->num_output_pins);
+	int *input_idx = (int*)calloc(current_block->num_input_pins,sizeof(int));
+	int *output_idx = (int*)calloc(current_block->num_output_pins,sizeof(int));
 
 	/* allocate the internal netlist */
 	current_block->internal_netlist = allocate_netlist();
@@ -489,7 +489,7 @@ add_subblock_to_node(nnode_t *current_block, const std::vector<std::vector<std::
 		if (current_block->output_pins[i] != NULL)
 		{
 			nnode_t *new_output_node;
-			char *output_name = (char*)malloc(sizeof(char)*(strlen(current_block->output_pins[i]->net->name)+1+4));
+			char *output_name = (char*)calloc(strlen(current_block->output_pins[i]->net->name)+1+4,sizeof(char));
 			sprintf(output_name, "out:%s", current_block->output_pins[i]->net->name);
 
 			/* create a new node for this input */

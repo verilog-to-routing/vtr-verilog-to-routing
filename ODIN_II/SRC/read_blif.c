@@ -35,6 +35,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_check.h"
 #include "simulate_blif.h"
 #include "vtr_util.h"
+#include "allocation_def.h"
 
 #define TOKENS     " \t\n"
 #define GND_NAME   "gnd"
@@ -256,7 +257,7 @@ short assign_node_type_from_node_name(char * output_name)
 	if((start >= end) || (end == 0)) return GENERIC;
 
 	// Stores the extracted string
-	char *extracted_string = (char*)malloc(sizeof(char)*((end-start+2)));
+	char *extracted_string = (char*)calloc(end-start+2,sizeof(char));
 	int i, j;
 	for(i = start + 1, j = 0; i < end; i++, j++)
 	{
@@ -326,7 +327,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	while ((ptr = vtr::strtok (NULL, TOKENS, file, buffer)) != NULL)
 	{
 		if(input_token_count == 0)
-			names = (char**)malloc((sizeof(char*)));
+			names = (char**)calloc(1,(sizeof(char*)));
 		else
 			names = (char**)realloc(names, (sizeof(char*))* (input_token_count + 1));
 		names[input_token_count++] = strdup(ptr);
@@ -511,8 +512,8 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   	}
 
 	// Split the name parameters at the equals sign.
-	char **mappings = (char**)malloc(sizeof(char*) * count);
-	char **names    = (char**)malloc(sizeof(char*) * count);
+	char **mappings = (char**)calloc(count,sizeof(char*));
+	char **names    = (char**)calloc(count,sizeof(char*));
 	int i = 0;
 	for (i = 0; i < count; i++)
 	{
@@ -1272,13 +1273,13 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 			// match .model followed buy the subcircuit name.
 			if (token && !strcmp(token,".model") && !strcmp(vtr::strtok(NULL,TOKENS, file, buffer), name_subckt))
 			{
-				model = (hard_block_model *)malloc(sizeof(hard_block_model));
+				model = (hard_block_model *)calloc(1,sizeof(hard_block_model));
 				model->name = strdup(name_subckt);
-				model->inputs = (hard_block_pins *)malloc(sizeof(hard_block_pins));
+				model->inputs = (hard_block_pins *)calloc(1,sizeof(hard_block_pins));
 				model->inputs->count = 0;
 				model->inputs->names = NULL;
 
-				model->outputs = (hard_block_pins *)malloc(sizeof(hard_block_pins));
+				model->outputs = (hard_block_pins *)calloc(1,sizeof(hard_block_pins));
 				model->outputs->count = 0;
 				model->outputs->names = NULL;
 
@@ -1386,7 +1387,7 @@ hashtable_t *index_names(char **names, int count)
 	int i;
 	for (i = 0; i < count; i++)
 	{
-		int *offset = (int *)malloc(sizeof(int));
+		int *offset = (int *)calloc(1,sizeof(int));
 		*offset = i;
 		index->add(index, names[i], sizeof(char) * strlen(names[i]), offset);
 	}
@@ -1415,7 +1416,7 @@ hashtable_t *associate_names(char **names1, char **names2, int count)
 hard_block_ports *get_hard_block_ports(char **pins, int count)
 {
 	// Count the input port sizes.
-	hard_block_ports *ports = (hard_block_ports *)malloc(sizeof(hard_block_ports));
+	hard_block_ports *ports = (hard_block_ports *)calloc(1,sizeof(hard_block_ports));
 	ports->count = 0;
 	ports->sizes = 0;
 	ports->names = 0;
@@ -1597,7 +1598,7 @@ hard_block_model *get_hard_block_model(char *name, hard_block_ports *ports, hard
  */
 hard_block_models *create_hard_block_models()
 {
-	hard_block_models *m = (hard_block_models *)malloc(sizeof(hard_block_models));
+	hard_block_models *m = (hard_block_models *)calloc(1,sizeof(hard_block_models));
 	m->models = 0;
 	m->count  = 0;
 	m->index  = create_hashtable(100);

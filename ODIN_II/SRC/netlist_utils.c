@@ -30,7 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_utils.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
-
+#include "allocation_def.h"
 
 extern global_args_t global_args;
 /*---------------------------------------------------------------------------------------------
@@ -578,7 +578,7 @@ void connect_nodes(nnode_t *out_node, int out_idx, nnode_t *in_node, int in_idx)
 signal_list_t *init_signal_list()
 {
 	signal_list_t *list;
-	list = (signal_list_t*)malloc(sizeof(signal_list_t));
+	list = (signal_list_t*)calloc(1,sizeof(signal_list_t));
 
 	list->count = 0;
 	list->pins = NULL;

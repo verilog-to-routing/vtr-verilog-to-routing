@@ -32,6 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ast_util.h"
 #include "activity_estimation.h"
 #include "netlist_check.h"
+#include "allocation_def.h"
 
 #define DEFAULT_STATIC_PROBABILITY .5
 #define DEFAULT_TRANSITION_DENSITY .5
@@ -102,7 +103,7 @@ void calc_transition_density(netlist_t *netlist)
 			if (current_node->type == BLIF_FUNCTION)
 			{
 				/* only one output */
-				act_data->transition_density = (double*)malloc(sizeof(double)); // only one output
+				act_data->transition_density = (double*)calloc(1,sizeof(double)); // only one output
 	
 				if (current_node->num_input_pins == 1)
 				{
@@ -155,7 +156,7 @@ void calc_transition_density(netlist_t *netlist)
 				oassert(input_node->unique_node_data_id == ACTIVATION);
 		
 				/* just store since allocated in the initialization */
-				act_data->transition_density = (double*)malloc(sizeof(double));
+				act_data->transition_density = (double*)calloc(1,sizeof(double));
 				act_data->transition_density[0] = 2 * (input_data->static_probability[input_node_pin] * (1-input_data->static_probability[input_node_pin])); 
 			}
 			else if (current_node->type == OUTPUT_NODE)
@@ -166,7 +167,7 @@ void calc_transition_density(netlist_t *netlist)
 				oassert(input_node->unique_node_data_id == ACTIVATION);
 		
 				/* allocate and stre through */
-				act_data->transition_density = (double*)malloc(sizeof(double));
+				act_data->transition_density = (double*)calloc(1,sizeof(double));
 				act_data->transition_density[0] = input_data->static_probability[input_node_pin];
 			}
 			else if ((current_node->type == INPUT_NODE) || (current_node->type == VCC_NODE) || (current_node->type == GND_NODE))
@@ -198,7 +199,7 @@ void initialize_probabilities(char *input_file, netlist_t *netlist)
 			oassert(current_node->unique_node_data_id == RESET);
 
 			current_node->unique_node_data_id = ACTIVATION;
-			act_data = (activation_t*)malloc(sizeof(activation_t));
+			act_data = (activation_t*)calloc(1,sizeof(activation_t));
 			current_node->node_data = (void*)act_data;
 	
 			if (current_node->type == INPUT_NODE)
@@ -218,9 +219,9 @@ void initialize_probabilities(char *input_file, netlist_t *netlist)
 				else
 				{
 					/* initialize all the initial probabilities */
-					act_data->static_probability = (double*)malloc(sizeof(double));
-					act_data->transition_probability = (double*)malloc(sizeof(double));
-					act_data->transition_density = (double*)malloc(sizeof(double));
+					act_data->static_probability = (double*)calloc(1,sizeof(double));
+					act_data->transition_probability = (double*)calloc(1,sizeof(double));
+					act_data->transition_density = (double*)calloc(1,sizeof(double));
 
 					act_data->static_probability[0] = DEFAULT_STATIC_PROBABILITY;
 					act_data->transition_probability[0] = -1;
@@ -230,9 +231,9 @@ void initialize_probabilities(char *input_file, netlist_t *netlist)
 			else if (current_node->type == GND_NODE)
 			{
 				/* initialize all the initial probabilities */
-				act_data->static_probability = (double*)malloc(sizeof(double));
-				act_data->transition_probability = (double*)malloc(sizeof(double));
-				act_data->transition_density = (double*)malloc(sizeof(double));
+				act_data->static_probability = (double*)calloc(1,sizeof(double));
+				act_data->transition_probability = (double*)calloc(1,sizeof(double));
+				act_data->transition_density = (double*)calloc(1,sizeof(double));
 
 				act_data->static_probability[0] = 0.0;
 				act_data->transition_probability[0] = -1;
@@ -242,9 +243,9 @@ void initialize_probabilities(char *input_file, netlist_t *netlist)
 			else if (current_node->type == VCC_NODE)
 			{
 				/* initialize all the initial probabilities */
-				act_data->static_probability = (double*)malloc(sizeof(double));
-				act_data->transition_probability = (double*)malloc(sizeof(double));
-				act_data->transition_density = (double*)malloc(sizeof(double));
+				act_data->static_probability = (double*)calloc(1,sizeof(double));
+				act_data->transition_probability = (double*)calloc(1,sizeof(double));
+				act_data->transition_density = (double*)calloc(1,sizeof(double));
 
 				act_data->static_probability[0] = 1.0;
 				act_data->transition_probability[0] = -1;
@@ -254,9 +255,9 @@ void initialize_probabilities(char *input_file, netlist_t *netlist)
 			else if (current_node->type == FF_NODE)
 			{
 				/* initialize all the initial probabilities */
-				act_data->static_probability = (double*)malloc(sizeof(double));
-				act_data->transition_probability = (double*)malloc(sizeof(double));
-				act_data->transition_density = (double*)malloc(sizeof(double));
+				act_data->static_probability = (double*)calloc(1,sizeof(double));
+				act_data->transition_probability = (double*)calloc(1,sizeof(double));
+				act_data->transition_density = (double*)calloc(1,sizeof(double));
 
 				act_data->static_probability[0] = DEFAULT_STATIC_PROBABILITY;
 				act_data->transition_probability[0] = -1;
@@ -296,7 +297,7 @@ void calc_probabilities_and_init_act_data(netlist_t *netlist)
 					if (rep == 0)
 					{
 						/* only one output */
-						act_data->static_probability = (double*)malloc(sizeof(double));
+						act_data->static_probability = (double*)calloc(1,sizeof(double));
 					}
 	
 					for (k = 0; k < function_size; k++)
@@ -356,7 +357,7 @@ void calc_probabilities_and_init_act_data(netlist_t *netlist)
 					if (rep == 0)
 					{
 						/* only one output */
-						act_data->static_probability = (double*)malloc(sizeof(double));
+						act_data->static_probability = (double*)calloc(1,sizeof(double));
 					}
 	
 					act_data->static_probability[0] = input_data->static_probability[input_node_pin];
@@ -374,7 +375,7 @@ void calc_probabilities_and_init_act_data(netlist_t *netlist)
 				if (rep == 0)
 				{
 					/* calculate transition probability */
-					act_data->transition_probability = (double*)malloc(sizeof(double)*current_node->num_output_pins);
+					act_data->transition_probability = (double*)calloc(current_node->num_output_pins,sizeof(double));
 				}
 
 				for (k = 0; k < current_node->num_output_pins; k++)
@@ -404,7 +405,7 @@ short *boolean_difference(nnode_t *node, int variable_spot)
 	/* calculate the size of the boolean difference */
 	function_size = pow2(node->num_input_pins-1);
 
-	return_function = (short*)calloc(sizeof(short), function_size);
+	return_function = (short*)calloc(function_size,sizeof(short));
 
 	for (i = 0; i < function_size; i++)
 	{
@@ -529,9 +530,9 @@ double calc_density(nnode_t *node, int variable_spot, short *boolean_difference)
  *-------------------------------------------------------------------------------------------*/
 void output_activation_file_ace_and_function_file(char *output_filename, int lut_size, netlist_t *LUT_netlist, netlist_t *CLUSTER_netlist)
 {
-	char *ace_file_name = (char*)malloc(sizeof(char)*(strlen(output_filename)+4+1));
-	char *ac2_file_name = (char*)malloc(sizeof(char)*(strlen(output_filename)+4+1));
-	char *function_file_name = (char*)malloc(sizeof(char)*(strlen(output_filename)+4+1));
+	char *ace_file_name = (char*)calloc((strlen(output_filename)+4+1),sizeof(char));
+	char *ac2_file_name = (char*)calloc((strlen(output_filename)+4+1),sizeof(char));
+	char *function_file_name = (char*)calloc((strlen(output_filename)+4+1),sizeof(char));
 	int i, j, k, l;
 	FILE *ace_out;
 	FILE *ac2_out;
@@ -658,7 +659,7 @@ void output_activation_file_ace_and_function_file(char *output_filename, int lut
 		for (k = 0; k < internal_subblocks->num_internal_nodes; k++)
 		{
 			nnode_t *current_subblock = internal_subblocks->internal_nodes[k];
-			char *output_search_name = (char*)malloc(sizeof(char)*(strlen(current_subblock->name)+1+4));
+			char *output_search_name = (char*)calloc((strlen(current_subblock->name)+1+4),sizeof(char));
 			sprintf(output_search_name, "out:%s", current_subblock->name);
 
 			if ((sc_spot = sc_lookup_string(internal_subblocks->nodes_sc, output_search_name)) != -1)

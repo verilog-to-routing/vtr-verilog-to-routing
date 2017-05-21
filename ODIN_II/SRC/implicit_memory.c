@@ -25,6 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "implicit_memory.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
+#include "allocation_def.h"
 
 // Hashes the implicit memory name to the implicit_memory structure.
 hashtable_t *implicit_memories;
@@ -96,7 +97,7 @@ implicit_memory *create_implicit_memory_block(int data_width, long long words, c
 
 	char *full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, -1);
 
-	implicit_memory *memory = (implicit_memory *)malloc(sizeof(implicit_memory));
+	implicit_memory *memory = (implicit_memory *)calloc(1,sizeof(implicit_memory));
 	memory->node = node;
 	memory->addr_width = addr_width;
 	memory->data_width = data_width;

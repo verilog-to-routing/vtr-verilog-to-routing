@@ -31,7 +31,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "netlist_stats.h"
 #include "multipliers.h"
-
+#include "allocation_def.h"
 
 /*------------------------------------------------------------------------
  * (function: netlist_stats)
@@ -46,7 +46,7 @@ void netlist_stats(netlist_t *netlist, char *path, char *name)
 	fp = fopen(path_and_file, "w");
 
 	/* allocate the stat structure */
-	netlist->stats = (netlist_stats_t*)malloc(sizeof(netlist_stats_t));
+	netlist->stats = (netlist_stats_t*)calloc(1,sizeof(netlist_stats_t));
 	netlist->stats->fanin_distribution = NULL;
 	netlist->stats->num_fanin_distribution = 0;
 	netlist->stats->fanout_distribution = NULL;
@@ -282,8 +282,8 @@ void calculate_combinational_shapes(netlist_t *netlist)
 {
 	int i;
 
-	netlist->stats->combinational_shape = (int **)malloc(sizeof(int*)*netlist->num_sequential_levels);
-	netlist->stats->num_combinational_shape_for_sequential_level = (int *)malloc(sizeof(int)*netlist->num_sequential_levels);
+	netlist->stats->combinational_shape = (int **)calloc(netlist->num_sequential_levels,sizeof(int*));
+	netlist->stats->num_combinational_shape_for_sequential_level = (int *)calloc(netlist->num_sequential_levels,sizeof(int));
 
 	/* initializ the shape records */
 	for (i = 0; i < netlist->num_sequential_levels; i++)

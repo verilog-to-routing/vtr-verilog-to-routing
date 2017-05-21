@@ -36,6 +36,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "verilog_bison_user_defined.h"
 #include "verilog_preprocessor.h"
 #include "hard_blocks.h" 
+#include "allocation_def.h"
 
 extern int yylineno;
 
@@ -128,7 +129,7 @@ void parse_to_ast()
 	if (global_args.verilog_file != NULL)
 	{
 		/* make a consitant file list so we can access in compiler ... replicating what read config does for the filenames */
-		configuration.list_of_file_names = (char**)malloc(sizeof(char*));
+		configuration.list_of_file_names = (char**)calloc(1,sizeof(char*));
 		configuration.num_list_of_file_names = 1;
 		configuration.list_of_file_names[0] = global_args.verilog_file;
 
@@ -1509,10 +1510,10 @@ ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *exp
 ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ , ast_node_t * /*expression2*/ , ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
 {
 
-    char *number_0 = (char*)malloc(5 * sizeof(char));
+    char *number_0 = (char*)calloc(5,sizeof(char));
     strcpy(number_0,"0");
 
-    char *number_31 = (char*)malloc(5 * sizeof(char));
+    char *number_31 = (char*)calloc(5,sizeof(char));
     strcpy(number_31,"31");    
 
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
@@ -1727,7 +1728,7 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 {
 	ast_node_t *new_node = NULL;
 	ast_node_t *ref_node;
-	char *module_instance_name = (char*)malloc(1024 * sizeof(char));
+	char *module_instance_name = (char*)calloc(1024,sizeof(char));
 	module_instance_name = NULL;
 	int i, j;
 	//long sc_spot;

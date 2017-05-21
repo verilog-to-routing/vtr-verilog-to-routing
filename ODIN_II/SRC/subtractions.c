@@ -34,7 +34,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 #include "errors.h"
 #include "print_tags.h"
-
+#include "allocation_def.h"
 #include "vtr_util.h"
 
 using vtr::t_linked_vptr;
@@ -105,7 +105,7 @@ void declare_hard_adder_for_sub(nnode_t *node)
 	}
 
 	/* Does not exist - must create an instance*/
-	tmp = (t_adder *)malloc(sizeof(t_adder));
+	tmp = (t_adder *)calloc(1,sizeof(t_adder));
 	tmp->next = (t_adder *)hard_adders->instances;
 	hard_adders->instances = tmp;
 	tmp->size_a = width_a;
@@ -122,14 +122,14 @@ void declare_hard_adder_for_sub(nnode_t *node)
 void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
 	char *new_name;
-	int len, sanity, i;
-
+	int i;
+	size_t len, sanity; 
 	declare_hard_adder_for_sub(node);
 
 	/* Need to give node proper name */
-	len = strlen(node->name);
-	len = len + 20; /* 20 chars should hold mul specs */
-	new_name = (char*)malloc(len);
+	/* 20 chars should hold mul specs */
+	len = strlen(node->name) + 20;
+	new_name = (char*)calloc(len,sizeof(char));
 
 	/* wide input first :) */
 	if (node->input_port_sizes[0] > node->input_port_sizes[1])
@@ -137,16 +137,15 @@ void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t * /
 	else
 		sanity = sprintf(new_name, "%s", node->name);
 
-	if (len <= sanity) /* buffer not large enough */
-		oassert(FALSE);
+	/* buffer not large enough */
+	oassert(len > sanity);
 
 	/* Give names to the output pins */
 	for (i = 0; i < node->num_output_pins;  i++)
 	{
 		if (node->output_pins[i]->name ==NULL)
 		{
-			len = strlen(node->name) + 20; /* 6 chars for pin idx */
-			new_name = (char*)malloc(len);
+			new_name = (char*)calloc(len,sizeof(char));
 			sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
 			node->output_pins[i]->name = new_name;
 		}
@@ -210,12 +209,12 @@ void init_split_adder_for_sub(nnode_t *node, nnode_t *ptr, int a, int sizea, int
 
 	/* Set new port sizes and parameters */
 	ptr->num_input_port_sizes = 3;
-	ptr->input_port_sizes = (int *)malloc(3 * sizeof(int));
+	ptr->input_port_sizes = (int *)calloc(3,sizeof(int));
 	ptr->input_port_sizes[0] = current_sizea;
 	ptr->input_port_sizes[1] = current_sizeb;
 	ptr->input_port_sizes[2] = cin;
 	ptr->num_output_port_sizes = 2;
-	ptr->output_port_sizes = (int *)malloc(2 * sizeof(int));
+	ptr->output_port_sizes = (int *)calloc(2,sizeof(int));
 	ptr->output_port_sizes[0] = cout;
 
 	/* The size of output port sumout equals the maxim size of a and b  */
@@ -226,7 +225,7 @@ void init_split_adder_for_sub(nnode_t *node, nnode_t *ptr, int a, int sizea, int
 
 	/* Set the number of pins and re-locate previous pin entries */
 	ptr->num_input_pins = current_sizea + current_sizeb + cin;
-	ptr->input_pins = (npin_t**)malloc(sizeof(void *) * (current_sizea + current_sizeb + cin));
+	ptr->input_pins = (npin_t**)calloc((current_sizea + current_sizeb + cin),sizeof(npin_t*));
 	//the normal sub: if flaga or flagb = 1, the input pins should be empty.
 	//the unary sub: all input pins for a should be null, input pins for b should be connected to node
 	if(node->num_input_port_sizes == 1)
@@ -336,7 +335,7 @@ void init_split_adder_for_sub(nnode_t *node, nnode_t *ptr, int a, int sizea, int
 		output = current_sizeb + cout;
 
 	ptr->num_output_pins = output;
-	ptr->output_pins = (npin_t**)malloc(sizeof(void *) * output);
+	ptr->output_pins = (npin_t**)calloc(output,sizeof(npin_t*));
 	for (i = 0; i < output; i++)
 		ptr->output_pins[i] = NULL;
 
@@ -379,8 +378,8 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 		oassert(nodeo->input_port_sizes[0] == b);
 	}
 
-	node  = (nnode_t**)malloc(sizeof(nnode_t*)*(count));
-	not_node = (nnode_t**)malloc(sizeof(nnode_t*)*(b));
+	node  = (nnode_t**)calloc(count,sizeof(nnode_t*));
+	not_node = (nnode_t**)calloc(b,sizeof(nnode_t*));
 
 	for(i = 0; i < b; i++)
 	{
@@ -394,7 +393,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 	for(i = 0; i < count; i++)
 	{
 		node[i] = allocate_nnode();
-		node[i]->name = (char *)malloc(strlen(nodeo->name) + 20);
+		node[i]->name = (char *)calloc(strlen(nodeo->name) + 20,sizeof(char));
 		sprintf(node[i]->name, "%s-%d", nodeo->name, i);
 		if(i == count - 1)
 		{

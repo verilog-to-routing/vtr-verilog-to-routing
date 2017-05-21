@@ -33,6 +33,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "errors.h"
 #include "odin_util.h"
 #include "vtr_util.h"
+#include "allocation_def.h"
 
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
@@ -68,7 +69,7 @@ char *make_full_ref_name(const char *previous, char *module_name, char *module_i
 	}
 	else
 	{
-		return_string = (char *)malloc(sizeof(char)*1);
+		return_string = (char *)calloc(1,sizeof(char));
 		return_string[0] = '\0';
 	}
 
@@ -172,7 +173,7 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
 {
 	int i;
-	char *return_val = (char*)malloc(sizeof(char)*(num_bits+1));
+	char *return_val = (char*)calloc(num_bits+1,sizeof(char));
 	int mask = 1;
 
 	for (i = num_bits-1; i >= 0; i--)
@@ -564,13 +565,12 @@ long long int my_power(long long int x, long long int y)
 
 /*---------------------------------------------------------------------------------------------
  *  (function: make_string_based_on_id )
+ * DONE allow ay string length and process further if problem.
  *-------------------------------------------------------------------------------------------*/
 char *make_string_based_on_id(nnode_t *node)
 {
-	char *return_string = (char*)malloc(sizeof(char)*(20+2)); // any unique id greater than 20 characters means trouble
-
+	char *return_string = (char*)calloc(snprintf(NULL, 0, "n%ld", node->unique_id)+1,sizeof(char)); // any unique id greater than 20 characters means trouble
 	sprintf(return_string, "n%ld", node->unique_id);
-
 	return return_string;
 }
 
@@ -584,7 +584,7 @@ char *make_simple_name(char *input, const char *flatten_string, char flatten_cha
 	char *return_string = NULL;
 	oassert(input != NULL);
 
-	return_string = (char*)malloc(sizeof(char)*(strlen(input)+1));
+	return_string = (char*)calloc(strlen(input)+1,sizeof(char));
 
 	for (i = 0; i < strlen(input); i++)
 	{ 
@@ -598,8 +598,6 @@ char *make_simple_name(char *input, const char *flatten_string, char flatten_cha
 			}
 		}
 	}
-
-	return_string[strlen(input)] = '\0';	
 
 	return return_string;
 }
@@ -615,7 +613,7 @@ void *my_malloc_struct(size_t bytes_to_alloc)
 	// ways to stop the execution at the point when a specific structure is built...note it needs to be m_id - 1 ... it's unique_id in most data structures
 	//oassert(m_id != 193);
 
-	allocated = malloc(bytes_to_alloc);
+	allocated = calloc(1,bytes_to_alloc);
 	if(allocated == NULL)
 	{
 		fprintf(stderr,"MEMORY FAILURE\n");
@@ -694,7 +692,7 @@ char *append_string(const char *string, const char *appendage, ...)
 	va_end(ap);
 
 
-	char *new_string = (char *)malloc(strlen(string) + strlen(buffer) + 1);
+	char *new_string = (char *)calloc(strlen(string) + strlen(buffer) + 1,sizeof(char));
 	strcpy(new_string, string);
 	strcat(new_string, buffer);
 	return new_string;

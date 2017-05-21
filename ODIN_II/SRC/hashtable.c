@@ -25,6 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include "hashtable.h"
 #include "types.h"
+#include "allocation_def.h"
 
 void         ___hashtable_add                (hashtable_t *h, const void *key, size_t key_length, void *item);
 void*        ___hashtable_remove             (hashtable_t *h, const void *key, size_t key_length);
@@ -44,7 +45,7 @@ hashtable_t* create_hashtable(int store_size)
 		exit(1);
 	}
 
-	hashtable_t *h = (hashtable_t *)malloc(sizeof(hashtable_t));
+	hashtable_t *h = (hashtable_t *)calloc(1,sizeof(hashtable_t));
 	
 	h->store_size = store_size; 
 	h->store = (hashtable_node_t **)calloc(store_size, sizeof(hashtable_node_t*)); 
@@ -100,10 +101,10 @@ void ___hashtable_destroy_free_items(hashtable_t *h)
 
 void  ___hashtable_add(hashtable_t *h, const void *key, size_t key_length, void *item)
 {
-	hashtable_node_t *node = (hashtable_node_t *)malloc(sizeof(hashtable_node_t));
+	hashtable_node_t *node = (hashtable_node_t *)calloc(1,sizeof(hashtable_node_t));
 
 	node->key_length = key_length; 
-	node->key        = malloc(key_length);
+	node->key        = calloc(1,key_length);
 	node->item       = item;
 	node->next       = NULL;	
 
@@ -162,7 +163,7 @@ void* ___hashtable_get(hashtable_t *h, const void *key, size_t key_length)
 
 void** ___hashtable_get_all(hashtable_t *h) {		
 	int count = 0;
-	void **items = (void **)malloc(h->count * sizeof(void*));  
+	void **items = (void **)calloc(h->count,sizeof(void*));  
 
 	int i;
 	for (i = 0; i < h->store_size; i++)

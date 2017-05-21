@@ -38,6 +38,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "memories.h"
 #include "adders.h"
 #include "subtractions.h"
+#include "allocation_def.h"
 
 void depth_first_traversal_to_partial_map(short marker_value, netlist_t *netlist);
 void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, netlist_t *netlist);
@@ -353,7 +354,7 @@ void instantiate_multi_port_mux(nnode_t *node, short mark, netlist_t * /*netlist
 	num_ports = node->num_input_port_sizes;
 	port_offset = node->input_port_sizes[1];
 
-	muxes = (nnode_t**)malloc(sizeof(nnode_t*)*(num_ports-1));
+	muxes = (nnode_t**)calloc(num_ports-1,sizeof(nnode_t*));
 	for(i = 0; i < num_ports-1; i++)
 	{
 		muxes[i] = make_2port_gate(MUX_2, width_of_one_hot_logic, width_of_one_hot_logic, 1, node, mark);
@@ -395,7 +396,7 @@ void instantiate_not_logic(nnode_t *node, short mark, netlist_t * /*netlist*/)
 	nnode_t **new_not_cells;
 	int i;
 
-	new_not_cells = (nnode_t**)malloc(sizeof(nnode_t*)*width);
+	new_not_cells = (nnode_t**)calloc(width,sizeof(nnode_t*));
 
 	for (i = 0; i < width; i++)
 	{
@@ -615,7 +616,7 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 			oassert(FALSE);
 			break;
 	}
-	new_logic_cells = (nnode_t**)malloc(sizeof(nnode_t*)*width);
+	new_logic_cells = (nnode_t**)calloc(width,sizeof(nnode_t*));
 	for (i = 0; i < width; i++)
 	{
 		/* instantiate the cells */
@@ -676,8 +677,8 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	width_a = node->input_port_sizes[0];
 	width_b = node->input_port_sizes[1];
 
-	new_add_cells  = (nnode_t**)malloc(sizeof(nnode_t*)*width);
-	new_carry_cells = (nnode_t**)malloc(sizeof(nnode_t*)*width);
+	new_add_cells  = (nnode_t**)calloc(width,sizeof(nnode_t*));
+	new_carry_cells = (nnode_t**)calloc(width,sizeof(nnode_t*));
 
 	/* create the adder units and the zero unit */
 	for (i = 0; i < width; i++)
@@ -797,9 +798,9 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 	width_a = node->input_port_sizes[0];
 	width_b = node->input_port_sizes[1];
 
-	new_add_cells = (nnode_t**)malloc(sizeof(nnode_t*)*width);
-	new_carry_cells = (nnode_t**)malloc(sizeof(nnode_t*)*width);
-	new_not_cells = (nnode_t**)malloc(sizeof(nnode_t*)*width);
+	new_add_cells = (nnode_t**)calloc(width,sizeof(nnode_t*));
+	new_carry_cells = (nnode_t**)calloc(width,sizeof(nnode_t*));
+	new_not_cells = (nnode_t**)calloc(width,sizeof(nnode_t*));
 
 	/* create the adder units and the zero unit */
 	for (i = 0; i < width; i++)
@@ -924,9 +925,9 @@ void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist)
 	oassert(node->num_input_port_sizes == 1);
 	width = node->output_port_sizes[0];
 
-	new_add_cells = (nnode_t**)malloc(sizeof(nnode_t*)*width);
-	new_carry_cells = (nnode_t**)malloc(sizeof(nnode_t*)*width);
-	new_not_cells = (nnode_t**)malloc(sizeof(nnode_t*)*width);
+	new_add_cells = (nnode_t**)calloc(width,sizeof(nnode_t*));
+	new_carry_cells = (nnode_t**)calloc(width,sizeof(nnode_t*));
+	new_not_cells = (nnode_t**)calloc(width,sizeof(nnode_t*));
 
 	/* create the adder units and the zero unit */
 	for (i = 0; i < width; i++)
@@ -1161,9 +1162,9 @@ void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist)
 	/* collects all the GT signals and determines if gt */
 	logical_or_gate = make_1port_logic_gate(LOGICAL_OR, width_max, node, mark);
 	/* collects a chain if any 1 happens than the GT cells output 0 */
-	or_cells = (nnode_t**)malloc(sizeof(nnode_t*)*width_max-1);
+	or_cells = (nnode_t**)calloc(width_max-1,sizeof(nnode_t*));
 	/* each cell checks if A > B and sends out a 1 if history has no 1s (3rd input) */
-	gt_cells = (nnode_t**)malloc(sizeof(nnode_t*)*width_max);
+	gt_cells = (nnode_t**)calloc(width_max,sizeof(nnode_t*));
 
 	for (i = 0; i < width_max; i++)
 	{

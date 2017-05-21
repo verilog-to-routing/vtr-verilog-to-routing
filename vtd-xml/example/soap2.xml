@@ -1,0 +1,47 @@
+<?xml version='1.0' ?>
+<env:Envelope xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns="abc"> 
+ <env:Header xmlns="cd">
+  <m:reservation xmlns:m="http://travelcompany.example.org/reservation" 
+	  xmlns:n="abc" xmlns:g="abc"
+     env:role="http://www.w3.org/2003/05/soap-envelope/role/next"
+        env:mustUnderstand="true">
+   <m:reference>uuid:093a2da1-q345-739r-ba5d-pqff98fe8j7d</m:reference>
+   <m:dateAndTime>2001-11-29T13:20:00.000-05:00</m:dateAndTime>
+  </m:reservation>
+  <n:passenger xmlns:n="http://mycompany.example.com/employees"
+     env:role="http://www.w3.org/2003/05/soap-envelope/role/next"
+       env:mustUnderstand="true">
+   <n:name>Whoever</n:name>
+  </n:passenger>
+  <z:travelPolicy 
+    xmlns:z="http://mycompany.example.com/policies" 
+      env:mustUnderstand="true">
+   <z:class>economy</z:class>
+   <z:fareBasis>non-refundable</z:fareBasis>
+   <z:exceptions>none</z:exceptions>
+  </z:travelPolicy>
+ </env:Header>
+ <env:Body>
+  <p:itinerary 
+    xmlns:p="http://travelcompany.example.org/reservation/travel">
+   <p:departure>
+     <p:departing>New York</p:departing>
+     <p:arriving>Los Angeles</p:arriving>
+     <p:departureDate>2001-12-14</p:departureDate>
+     <p:departureTime>late afternoon</p:departureTime>
+     <p:seatPreference>aisle</p:seatPreference>
+   </p:departure>
+   <p:return>
+     <p:departing>Los Angeles</p:departing>
+     <p:arriving>New York</p:arriving>
+     <p:departureDate>2001-12-20</p:departureDate>
+     <p:departureTime>mid morning</p:departureTime>
+     <p:seatPreference/>
+   </p:return>
+  </p:itinerary>
+  <q:lodging 
+    xmlns:q="http://travelcompany.example.org/reservation/hotels">
+   <q:preference>none</q:preference>
+  </q:lodging>
+ </env:Body>
+</env:Envelope>

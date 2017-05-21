@@ -33,6 +33,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "string_cache.h"
 #include "netlist_check.h"
 #include "netlist_visualizer.h"
+#include "allocation_def.h"
 
 void levelize_backwards(netlist_t *netlist);
 void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *netlist);
@@ -412,7 +413,7 @@ void levelize_forwards(netlist_t *netlist)
 					if (output_node->node_data == NULL)
 					{
 						/* if this fanout hasn't been visited yet this will be null */
-						fanouts_visited = (int*)malloc(sizeof(int)*(output_node->num_input_pins));
+						fanouts_visited = (int*)calloc((output_node->num_input_pins),sizeof(int));
 						
 						for (idx = 0; idx < output_node->num_input_pins; idx++)
 						{
@@ -638,7 +639,7 @@ void levelize_backwards(netlist_t *netlist)
 				{
 					int idx;
 					/* if this fanout hasn't been visited yet this will be null */
-					fanouts_visited = (int*)malloc(sizeof(int)*(fanout_net->num_fanout_pins));
+					fanouts_visited = (int*)calloc(fanout_net->num_fanout_pins,sizeof(int));
 					
 					for (idx = 0; idx < fanout_net->num_fanout_pins; idx++)
 					{
