@@ -34,11 +34,11 @@ add_definitions(-DVPR6 -DUSING_BISON -DYYERROR_VERBOSE)
 include_directories(${EXEC_INCLUDE_DIRS} ${PARSER_INCLUDE_DIRS})
 
 #Create the executable
-add_executable(odin_II.exe ${EXEC_SOURCES} ${EXEC_HEADERS} ${FLEX_VerilogLexer_OUTPUTS} ${BISON_VerilogParser_OUTPUT_SOURCE})
-target_link_libraries(odin_II.exe
+add_executable(odin_II ${EXEC_SOURCES} ${EXEC_HEADERS} ${FLEX_VerilogLexer_OUTPUTS} ${BISON_VerilogParser_OUTPUT_SOURCE})
+target_link_libraries(odin_II
                         libvtrutil
                         libarchfpga
                         libabc
                         ${CMAKE_DL_LIBS})
 
-install(TARGETS odin_II.exe DESTINATION bin)
+install(TARGETS odin_II DESTINATION bin)
