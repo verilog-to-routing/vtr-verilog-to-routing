@@ -49,7 +49,7 @@ use File::Basename;
 use lib "$FindBin::Bin/perl_libs/XML-TreePP-0.41/lib";
 use XML::TreePP;
 
-# check the parametes.  Note PERL does not consider the script itself a parameter.
+# Check the parameters.  Note PERL does not consider the script itself a parameter.
 my $number_arguments = @ARGV;
 if ( $number_arguments < 2 ) {
 	print(
@@ -90,7 +90,7 @@ my $ext;
 my $starting_stage          = stage_index("odin");
 my $ending_stage            = stage_index("vpr");
 my $specific_vpr_stage      = "";
-my $keep_intermediate_files = 0;
+my $keep_intermediate_files = 1;
 my $keep_result_files       = 0;
 my $has_memory              = 1;
 my $timing_driven           = "on";
