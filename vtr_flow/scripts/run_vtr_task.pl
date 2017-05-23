@@ -38,7 +38,6 @@ use File::Spec;
 use File::Basename;
 use File::Path qw(make_path);
 use List::MoreUtils qw(uniq);
-use IPC::Open2;
 use POSIX qw(strftime);
 
 # Function Prototypes
@@ -140,7 +139,7 @@ foreach (@task_files) {
 
 if ( $#tasks == -1 ) {
 	die "\n"
-	  . "Incorect usage.  You must specify at least one task to execute\n"
+	  . "Incorrect usage.  You must specify at least one task to execute\n"
 	  . "\n"
 	  . "USAGE:\n"
 	  . "run_vtr_task.pl <TASK1> <TASK2> ... \n" . "\n"
@@ -179,8 +178,8 @@ sub run_single_task {
 	my $cmos_tech_path = "";
 
 	my $task     = shift(@_);
-	my $task_dir = "$vtr_flow_path/tasks/$task";
-	chdir($task_dir) or die "Task directory does not exist ($task_dir): $!";
+	(my $task_dir = "$vtr_flow_path/tasks/$task") =~ s/\s+$//; # trim right white spaces for chdir to work on Windows
+	chdir($task_dir) or die "Task directory does not exist ($task_dir): $!\n";
 
 	print "\n$task\n";
 	print "-----------------------------------------\n";
