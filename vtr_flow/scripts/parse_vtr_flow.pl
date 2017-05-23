@@ -91,8 +91,7 @@ for my $parse_entry (@parse_data) {
 			print $1;
 		}
 		else {
-			print "\tNot found in $file_to_parse_path\r\n";
-			print $default_not_found,"\n";
+			print $default_not_found;
 		}
         # tab separation even at end of line to indicate last element
         print "\t";
