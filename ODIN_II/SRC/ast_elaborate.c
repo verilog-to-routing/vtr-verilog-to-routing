@@ -135,8 +135,8 @@ void optimize_for_tree()
 				modify_expression(expression, infix_expression, value_string);
 				translate_expression(infix_expression, postfix_expression);
 				v_value = calculation(postfix_expression);
-				memset(infix_expression, 0, Max_size);
-				memset(postfix_expression, 0, Max_size);
+				memset(infix_expression, 0, sizeof(char)*Max_size);
+				memset(postfix_expression, 0, sizeof(char)*Max_size);
 
 			}
 			check_intermediate_variable(temp_parent_node, flash_variable);

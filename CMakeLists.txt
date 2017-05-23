@@ -201,6 +201,20 @@ add_subdirectory(abc_with_bb_support)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
 
+#Add extra compilation flags to suppress warnings from some libraries
+# Note that target_compile_options() *appends* to the current compilation options of
+# the specified target
+
+#PugiXml has some deliberate switch fallthrough cases (as indicated by comments), but they
+#are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes. 
+#Since we don't want to change PugiXml (it is developed externally), we relax the warning 
+#level so no fallthrough warnings are generated
+CHECK_CXX_COMPILER_FLAG("-Wimplicit-fallthrough" COMPILER_SUPPORTS_-Wimplicit-fallthrough)
+if(COMPILER_SUPPORTS_-Wimplicit-fallthrough)
+    target_compile_options(libpugixml PRIVATE "-Wimplicit-fallthrough=0")
+endif()
+
+
 #Set output locations to be in the main source tree under the relevant folder
 set_target_properties(liblog test_log
     PROPERTIES

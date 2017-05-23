@@ -142,3 +142,15 @@ Note that we explicitly asked for gcc and g++, the coverity build tool defaults 
 5. Submit the archive through the coverity web interface
 
 Once the build has been analyzed you can browse the latest results throught the coverity web interface
+
+No files emitted
+----------------
+If you get the following warning from cov-build:
+
+    [WARNING] No files were emitted.
+
+You may need to configure coverity to 'know' about your compiler. For example:
+
+    ```shell
+    cov-configure --compiler `which gcc-7`
+    ```

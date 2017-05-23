@@ -312,6 +312,7 @@ ProcessOption(char **Args, t_options * Options) {
 		/* General Options */
 	case OT_VERSION:
         Options->show_version = true;
+        return Args;
 	case OT_DISP:
 		return ReadOnOff(Args, &Options->show_graphics);
 	case OT_CONGESTION_ANALYSIS:
