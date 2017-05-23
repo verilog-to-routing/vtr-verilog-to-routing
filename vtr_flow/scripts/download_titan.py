@@ -71,6 +71,10 @@ def main():
             print "Downloading {}".format(tar_gz_url)
             download_url(tar_gz_filename, tar_gz_url)
 
+            print "Verifying {}".format(tar_gz_url)
+            if not md5_matches(tar_gz_filename, external_md5):
+                raise CheckSumError(tar_gz_filename)
+
             print "Extracting {}".format(tar_gz_url)
             extract_to_vtr_flow_dir(args, tar_gz_filename)
 
