@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "string_cache.h"
+#include "vtr_util.h"
 
 unsigned long
 string_hash(STRING_CACHE * sc,
@@ -122,7 +123,7 @@ sc_add_string(STRING_CACHE * sc,
 	}
     i = sc->free;
     sc->free++;
-    sc->string[i] = strdup(string);
+    sc->string[i] = vtr::strdup(string);
     sc->data[i] = NULL;
     hash = string_hash(sc, string) % sc->string_hash_size;
     sc->next_string[i] = sc->string_hash[hash];

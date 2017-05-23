@@ -30,7 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_utils.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
-
+#include "vtr_util.h"
 
 extern global_args_t global_args;
 /*---------------------------------------------------------------------------------------------
@@ -260,9 +260,9 @@ npin_t* copy_input_npin(npin_t* copy_pin)
 	npin_t *new_pin = allocate_npin();
 	oassert(copy_pin->type == INPUT);
 
-	new_pin->name = copy_pin->name?strdup(copy_pin->name):0;
+	new_pin->name = copy_pin->name?vtr::strdup(copy_pin->name):0;
 	new_pin->type = copy_pin->type;
-	new_pin->mapping = copy_pin->mapping?strdup(copy_pin->mapping):0;
+	new_pin->mapping = copy_pin->mapping?vtr::strdup(copy_pin->mapping):0;
 	new_pin->is_default = copy_pin->is_default;
 	if (copy_pin->net != NULL)
 	{

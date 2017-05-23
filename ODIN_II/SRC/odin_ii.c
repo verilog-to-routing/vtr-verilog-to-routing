@@ -52,6 +52,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "odin_ii_func.h"
+#include "vtr_util.h"
 
 int current_parse_file;
 t_arch Arch;
@@ -71,9 +72,9 @@ int main(int argc, char **argv)
 	int num_types;
 
 	/* Some initialization */
-	one_string = strdup("ONE_VCC_CNS");
-	zero_string = strdup("ZERO_GND_ZERO");
-	pad_string = strdup("ZERO_PAD_ZERO");
+	one_string = vtr::strdup("ONE_VCC_CNS");
+	zero_string = vtr::strdup("ZERO_GND_ZERO");
+	pad_string = vtr::strdup("ZERO_PAD_ZERO");
 
 
 	printf("--------------------------------------------------------------------\n");

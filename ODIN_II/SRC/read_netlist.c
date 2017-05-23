@@ -351,7 +351,7 @@ add_block (char *node_name, const std::vector<std::string>& pin_tokens, t_type_p
 			
 					/* now add the net and store it in the string hash */
 					new_net = allocate_nnet();
-					new_net->name = strdup(pin_tokens[k].c_str());
+					new_net->name = vtr::strdup(pin_tokens[k].c_str());
 					add_a_driver_pin_to_net(new_net, node_output_pin);
 				
 					/* add to the driver hash */
@@ -409,7 +409,7 @@ add_block (char *node_name, const std::vector<std::string>& pin_tokens, t_type_p
 					driver_net = (nnet_t*)netlist->nets_sc->data[sc_spot];
 	
 					node_input_pin = allocate_npin();
-					node_input_pin->name = strdup(pin_tokens[k].c_str());
+					node_input_pin->name = vtr::strdup(pin_tokens[k].c_str());
 					/* add to the driver net */
 					add_a_fanout_pin_to_net(driver_net, node_input_pin);
 	
@@ -522,7 +522,7 @@ add_subblock_to_node(nnode_t *current_block, const std::vector<std::vector<std::
 	{
 		subblock_nodes[i] = allocate_nnode();
 		/* the name of the node is the second token since the first is "subblock:" */
-		subblock_nodes[i]->name = strdup(tokens_list[i][1].c_str());
+		subblock_nodes[i]->name = vtr::strdup(tokens_list[i][1].c_str());
 
 		allocate_more_node_input_pins(subblock_nodes[i], type->max_subblock_inputs + 1); /* + 1 for clock */
 		allocate_more_node_output_pins(subblock_nodes[i], type->max_subblock_outputs);

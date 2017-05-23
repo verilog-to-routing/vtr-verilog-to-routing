@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include "verilog_preprocessor.h"
 #include "types.h"
+#include "vtr_util.h"
 
 /* Globals */
 struct veri_Includes veri_includes;
@@ -159,7 +160,7 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 				fprintf(stderr, "\tWarning: The value of %s has been redefined to %s, the previous value was %s\n\n",
 					symbol, value, def_iterator->value);
 				free(def_iterator->value);
-				def_iterator->value = (char *)strdup(value);
+				def_iterator->value = (char *)vtr::strdup(value);
 			}
 
 			free(new_def);
@@ -168,8 +169,8 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 	}
 	
 	/* Create the new define and initalize it. */
-	new_def->symbol = (char *)strdup(symbol);
-	new_def->value = (value == NULL)? NULL : (char *)strdup(value);
+	new_def->symbol = (char *)vtr::strdup(symbol);
+	new_def->value = (value == NULL)? NULL : (char *)vtr::strdup(value);
 	new_def->line = line;
 	new_def->defined_in = defined_in;
 	
@@ -213,7 +214,7 @@ veri_include* add_veri_include(char *path, int line, veri_include *included_from
 		}
 	}
 	
-	new_inc->path = (char *)strdup(path);
+	new_inc->path = (char *)vtr::strdup(path);
 	new_inc->included_from = included_from;
 	new_inc->line = line;
 	
@@ -278,11 +279,11 @@ FILE* open_source_file(char* filename)
 	char* path;
 	if (global_args.verilog_file != NULL) //ODIN_II was called with the -V option.
 	{
-		path = (char *) strdup(global_args.verilog_file);
+		path = (char *) vtr::strdup(global_args.verilog_file);
 	}
 	else if(global_args.config_file != NULL) //ODIN_II was called with the -c option.
 	{
-		path = (char *) strdup(configuration.list_of_file_names[current_parse_file]);
+		path = (char *) vtr::strdup(configuration.list_of_file_names[current_parse_file]);
 	}
 	else
 	{

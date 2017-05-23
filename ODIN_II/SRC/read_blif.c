@@ -329,7 +329,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			names = (char**)malloc((sizeof(char*)));
 		else
 			names = (char**)realloc(names, (sizeof(char*))* (input_token_count + 1));
-		names[input_token_count++] = strdup(ptr);
+		names[input_token_count++] = vtr::strdup(ptr);
 	}
 
 	/* assigning the new_node */
@@ -342,11 +342,11 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			input_token_count = 5;
 			names = (char**)realloc(names, sizeof(char*) * input_token_count);
 
-			if(clock_name) names[3] = strdup(clock_name);
+			if(clock_name) names[3] = vtr::strdup(clock_name);
 			else           names[3] = NULL;
 
-			names[4] = strdup(names[2]);
-			names[2] = strdup("re");
+			names[4] = vtr::strdup(names[2]);
+			names[2] = vtr::strdup("re");
 		}
 		else
 		{
@@ -457,7 +457,7 @@ char* search_clock_name(FILE* file)
 				while((ptr = vtr::strtok (NULL, TOKENS, file, buffer)))
 				{
 					input_names = (char**)realloc(input_names,sizeof(char*) * (input_names_count + 1));
-					input_names[input_names_count++] = strdup(ptr);
+					input_names[input_names_count++] = vtr::strdup(ptr);
 				}
 			}
 			else if(!strcmp(ptr,".names") || !strcmp(ptr,".latch"))
@@ -485,7 +485,7 @@ char* search_clock_name(FILE* file)
 	fsetpos(file,&pos);
 
 	if (found) return input_names[0];
-	else       return strdup(DEFAULT_CLOCK_NAME);
+	else       return vtr::strdup(DEFAULT_CLOCK_NAME);
 }
 
 
@@ -507,7 +507,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	while ((token = vtr::strtok (NULL, TOKENS, file, buffer)) != NULL)
   	{
 		names_parameters          = (char**)realloc(names_parameters, sizeof(char*)*(count + 1));
-		names_parameters[count++] = strdup(token);
+		names_parameters[count++] = vtr::strdup(token);
   	}
 
 	// Split the name parameters at the equals sign.
@@ -516,8 +516,8 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	int i = 0;
 	for (i = 0; i < count; i++)
 	{
-		mappings[i] = strdup(strtok(names_parameters[i], "="));
-		names[i]    = strdup(strtok(NULL, "="));
+		mappings[i] = vtr::strdup(strtok(names_parameters[i], "="));
+		names[i]    = vtr::strdup(strtok(NULL, "="));
 	}
 
 	// Associate mappings with their connections.
@@ -552,7 +552,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	new_node->name = make_full_ref_name(buffer, NULL, NULL, NULL,-1);
 
 	// Determine the type of hard block.
-	char *subcircuit_name_prefix = strdup(subcircuit_name);
+	char *subcircuit_name_prefix = vtr::strdup(subcircuit_name);
 	subcircuit_name_prefix[5] = '\0';
 	if (!strcmp(subcircuit_name, "multiply") || !strcmp(subcircuit_name_prefix, "mult_"))
 		new_node->type = MULTIPLY;
@@ -592,7 +592,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   			error_message(NETLIST_ERROR, file_line_number, -1, "Invalid hard block mapping: %s", mapping);
 
 		npin_t *new_pin = allocate_npin();
-		new_pin->name = strdup(name);
+		new_pin->name = vtr::strdup(name);
 		new_pin->type = INPUT;
 		new_pin->mapping = get_hard_block_port_name(mapping);
 
@@ -608,14 +608,14 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   		if (!name) error_message(NETLIST_ERROR, file_line_number, -1,"Invalid hard block mapping: %s", model->outputs->names[i]);
 
 		npin_t *new_pin = allocate_npin();
-		new_pin->name = strdup(name);
+		new_pin->name = vtr::strdup(name);
 		new_pin->type = OUTPUT;
 		new_pin->mapping = get_hard_block_port_name(mapping);
 
 		add_output_pin_to_node(new_node, new_pin, i);
 
 		nnet_t *new_net = allocate_nnet();
-		new_net->name = strdup(name);
+		new_net->name = vtr::strdup(name);
 
 		add_driver_pin_to_net(new_net,new_pin);
 
@@ -627,7 +627,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	new_node->related_ast_node = (ast_node_t *)calloc(1, sizeof(ast_node_t));
 	new_node->related_ast_node->children = (ast_node_t **)calloc(1,sizeof(ast_node_t *));
 	new_node->related_ast_node->children[0] = (ast_node_t *)calloc(1, sizeof(ast_node_t));
-	new_node->related_ast_node->children[0]->types.identifier = strdup(subcircuit_name);
+	new_node->related_ast_node->children[0]->types.identifier = vtr::strdup(subcircuit_name);
 
   	/*add this node to verilog_netlist as an internal node */
   	verilog_netlist->internal_nodes = (nnode_t **)realloc(verilog_netlist->internal_nodes, sizeof(nnode_t*) * (verilog_netlist->num_internal_nodes + 1));
@@ -656,7 +656,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	while ((ptr = vtr::strtok (NULL, TOKENS, file, buffer)))
 	{
 		names = (char**)realloc(names, sizeof(char*) * (input_count + 1));
-		names[input_count++]= strdup(ptr);
+		names[input_count++]= vtr::strdup(ptr);
 	}
 
 	/* assigning the new_node */
@@ -725,7 +725,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			add_input_port_information(new_node, 1);
 
 			npin_t *new_pin = allocate_npin();
-			new_pin->name = strdup(GND_NAME);
+			new_pin->name = vtr::strdup(GND_NAME);
 			new_pin->type = INPUT;
 			add_input_pin_to_node(new_node, new_pin,0);
 		}
@@ -736,7 +736,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			add_input_port_information(new_node, 1);
 
 			npin_t *new_pin = allocate_npin();
-			new_pin->name = strdup(VCC_NAME);
+			new_pin->name = vtr::strdup(VCC_NAME);
 			new_pin->type = INPUT;
 			add_input_pin_to_node(new_node, new_pin,0);
 		}
@@ -811,21 +811,21 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 			break;
 
 		bit_map = (char**)realloc(bit_map,sizeof(char*) * (line_count_bitmap + 1));
-		bit_map[line_count_bitmap++] = strdup(vtr::strtok(buffer,TOKENS, file, buffer));
+		bit_map[line_count_bitmap++] = vtr::strdup(vtr::strtok(buffer,TOKENS, file, buffer));
 		if (output_bit_map != NULL) free(output_bit_map);
-		output_bit_map = strdup(vtr::strtok(NULL,TOKENS, file, buffer));
+		output_bit_map = vtr::strdup(vtr::strtok(NULL,TOKENS, file, buffer));
 	}
 
 	if (!strcmp(output_bit_map, One))
 	{
 		free(output_bit_map);
-		output_bit_map = strdup(One);
+		output_bit_map = vtr::strdup(One);
 		node->generic_output = 1;
 	}
 	else
 	{
 		free(output_bit_map);
-		output_bit_map = strdup(Zero);
+		output_bit_map = vtr::strdup(Zero);
 		node->generic_output = 0;
 	}
 
@@ -1041,14 +1041,14 @@ void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
 
 		/* Create the pin connection for the net */
 		npin_t *new_pin = allocate_npin();
-		new_pin->name = strdup(temp_string);
+		new_pin->name = vtr::strdup(temp_string);
 		new_pin->type = OUTPUT;
 
 		/* hookup the pin, net, and node */
 		add_output_pin_to_node(new_node, new_pin, 0);
 
 		nnet_t *new_net = allocate_nnet();
-		new_net->name = strdup(temp_string);
+		new_net->name = vtr::strdup(temp_string);
 
 		add_driver_pin_to_net(new_net, new_pin);
 
@@ -1170,27 +1170,27 @@ void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *ou
 
 	/* CREATE the driver for the ZERO */
 	BLIF_ZERO_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, zero_string, -1);
-	verilog_netlist->gnd_node->name = strdup(GND_NAME);
+	verilog_netlist->gnd_node->name = vtr::strdup(GND_NAME);
 
 	output_nets_hash->add(output_nets_hash, (void *)verilog_netlist->gnd_node->name, strlen(verilog_netlist->gnd_node->name)*sizeof(char), verilog_netlist->zero_net);
 
-	verilog_netlist->zero_net->name = strdup(BLIF_ZERO_STRING);
+	verilog_netlist->zero_net->name = vtr::strdup(BLIF_ZERO_STRING);
 
 	/* CREATE the driver for the ONE and store twice */
 	BLIF_ONE_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, one_string, -1);
-	verilog_netlist->vcc_node->name = strdup(VCC_NAME);
+	verilog_netlist->vcc_node->name = vtr::strdup(VCC_NAME);
 
 	output_nets_hash->add(output_nets_hash, (void *)verilog_netlist->vcc_node->name, strlen(verilog_netlist->vcc_node->name)*sizeof(char), verilog_netlist->one_net);
 
-	verilog_netlist->one_net->name = strdup(BLIF_ONE_STRING);
+	verilog_netlist->one_net->name = vtr::strdup(BLIF_ONE_STRING);
 
 	/* CREATE the driver for the PAD */
 	BLIF_PAD_STRING = make_full_ref_name(instance_name_prefix, NULL, NULL, pad_string, -1);
-	verilog_netlist->pad_node->name = strdup(HBPAD_NAME);
+	verilog_netlist->pad_node->name = vtr::strdup(HBPAD_NAME);
 
 	output_nets_hash->add(output_nets_hash, (void *)verilog_netlist->pad_node->name, strlen(verilog_netlist->pad_node->name)*sizeof(char), verilog_netlist->pad_net);
 
-	verilog_netlist->pad_net->name = strdup(BLIF_PAD_STRING);
+	verilog_netlist->pad_net->name = vtr::strdup(BLIF_PAD_STRING);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1273,7 +1273,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 			if (token && !strcmp(token,".model") && !strcmp(vtr::strtok(NULL,TOKENS, file, buffer), name_subckt))
 			{
 				model = (hard_block_model *)malloc(sizeof(hard_block_model));
-				model->name = strdup(name_subckt);
+				model->name = vtr::strdup(name_subckt);
 				model->inputs = (hard_block_pins *)malloc(sizeof(hard_block_pins));
 				model->inputs->count = 0;
 				model->inputs->names = NULL;
@@ -1292,7 +1292,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 						while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
 						{
 							model->inputs->names = (char **)realloc(model->inputs->names, sizeof(char *) * (model->inputs->count + 1));
-							model->inputs->names[model->inputs->count++] = strdup(name);
+							model->inputs->names[model->inputs->count++] = vtr::strdup(name);
 						}
 					}
 					else if(!strcmp(first_word, ".outputs"))
@@ -1301,7 +1301,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 						while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
 						{
 							model->outputs->names = (char **)realloc(model->outputs->names, sizeof(char *) * (model->outputs->count + 1));
-							model->outputs->names[model->outputs->count++] = strdup(name);
+							model->outputs->names[model->outputs->count++] = vtr::strdup(name);
 						}
 					}
 					else if(!strcmp(first_word, ".end"))
@@ -1518,7 +1518,7 @@ char *generate_hard_block_ports_signature(hard_block_ports *ports)
 		sprintf(buffer1, "%s_%d_", ports->names[j], ports->sizes[j]);
 		strcat(buffer, buffer1);
 	}
-	return strdup(buffer);
+	return vtr::strdup(buffer);
 }
 
 /*
@@ -1526,12 +1526,12 @@ char *generate_hard_block_ports_signature(hard_block_ports *ports)
  * before the first instance of "[". The string is
  * presumably of the form "port[pin_number]"
  *
- * The retuned string is strduped and must be freed.
+ * The retuned string is vtr::strduped and must be freed.
  * The original string is unaffected.
  */
 char *get_hard_block_port_name(char *name)
 {
-	name = strdup(name);
+	name = vtr::strdup(name);
 	if (strchr(name,'['))
 		return strtok(name,"[");
 	else
@@ -1551,7 +1551,7 @@ long get_hard_block_pin_number(char *original_name)
 	if (!strchr(original_name,'['))
 		return -1;
 
-	char *name = strdup(original_name);
+	char *name = vtr::strdup(original_name);
 	strtok(name,"[");
 	char *endptr;
 	char *pin_number_string = strtok(NULL,"]");

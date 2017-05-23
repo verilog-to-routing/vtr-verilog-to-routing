@@ -28,6 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "types.h"
 #include "globals.h"
 #include "verilog_bison.h"
+#include "vtr_util.h"
 
 /* the define below helps with watching the parser go token by token */
 #define MP {if (to_view_parse) {printf("%d %s\n", yylineno, yytext);}}
@@ -39,6 +40,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 %option noyywrap
 %option nounput
 %option noinput
+%option never-interactive
 
 %%
 
@@ -113,11 +115,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 <INITIAL>"~&"			{ MP; return voNAND;}
 <INITIAL>"~|"			{ MP; return voNOR;}
 
-<INITIAL>[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = strdup(yytext); return vSYMBOL_ID; }
-<INITIAL>`[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = strdup(yytext); return vSYMBOL_ID; }
-<INITIAL>[0-9]*'[bhod][a-zA-Z0-9]*			{ MP; yylval.num_value = strdup(yytext); return vNUMBER_ID; }
-<INITIAL>[0-9]+						{ MP; yylval.num_value = strdup(yytext); return vNUMBER_ID; }
-<INITIAL>#[0-9]+					{ MP; yylval.num_value = strdup(yytext+1); return vDELAY_ID; }
+<INITIAL>[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }
+<INITIAL>`[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }
+<INITIAL>[0-9]*'[bhod][a-zA-Z0-9]*			{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER_ID; }
+<INITIAL>[0-9]+						{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER_ID; }
+<INITIAL>#[0-9]+					{ MP; yylval.num_value = vtr::strdup(yytext+1); return vDELAY_ID; }
 
 	/* return operators */
 <INITIAL>[}{;:\[\],()#=.@&!?<>%|^~+*/-]		{ MP; return yytext[0]; }

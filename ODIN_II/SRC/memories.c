@@ -30,6 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "hard_blocks.h"
 #include "memories.h"
 #include "partial_map.h"
+#include "vtr_util.h"
 
 using vtr::t_linked_vptr;
 
@@ -145,7 +146,7 @@ void remap_input_port_to_memory(nnode_t *node, signal_list_t *signals, const cha
 	for (i = 0; i < signals->count; i++, j++)
 	{
 		npin_t *pin = signals->pins[i];
-		pin->mapping = strdup(port_name);
+		pin->mapping = vtr::strdup(port_name);
 		remap_pin_to_new_node(pin, node, j);
 	}
 }
@@ -181,7 +182,7 @@ void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, const ch
 		npin_t *pin = signalsvar->pins[i];
 		//if (pin->node && pin->node->input_pins && pin->node->input_pins[pin->pin_node_idx])
 		//	pin->node->input_pins[pin->pin_node_idx] = NULL;
-		pin->mapping = strdup(port_name);
+		pin->mapping = vtr::strdup(port_name);
 		//if (pin->node)
 		//	remap_pin_to_new_node(pin, node, j);
 		//else
@@ -216,7 +217,7 @@ void remap_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char 
 	for (i = 0; i < signalsvar->count; i++, j++)
 	{
 		npin_t *pin = signalsvar->pins[i];
-		pin->mapping = strdup(port_name);
+		pin->mapping = vtr::strdup(port_name);
 		remap_pin_to_new_node(pin, node, j);
 	}
 }
@@ -250,7 +251,7 @@ void add_output_port_to_memory(nnode_t *node, signal_list_t *signals, const char
 	for (i = 0; i < signals->count; i++, j++)
 	{
 		npin_t *pin = signals->pins[i];
-		pin->mapping = strdup(port_name);
+		pin->mapping = vtr::strdup(port_name);
 		add_output_pin_to_node(node, pin, j);
 	}
 }
@@ -439,10 +440,10 @@ void split_sp_memory_depth(nnode_t *node, int split_size)
 		remap_pin_to_new_node(pin, mux, 0);
 
 		connect_nodes(new_mem_node1, i, mux, 2);
-		new_mem_node1->output_pins[i]->mapping = strdup("out");
+		new_mem_node1->output_pins[i]->mapping = vtr::strdup("out");
 
 		connect_nodes(new_mem_node2, i, mux, 3);
-		new_mem_node2->output_pins[i]->mapping = strdup("out");
+		new_mem_node2->output_pins[i]->mapping = vtr::strdup("out");
 	}
 
 	free_sp_ram_signals(signals);
@@ -584,10 +585,10 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
 		remap_pin_to_new_node(pin, mux, 0);
 
 		connect_nodes(new_mem_node1, i, mux, 2);
-		new_mem_node1->output_pins[i]->mapping = strdup("out1");
+		new_mem_node1->output_pins[i]->mapping = vtr::strdup("out1");
 
 		connect_nodes(new_mem_node2, i, mux, 3);
-		new_mem_node2->output_pins[i]->mapping = strdup("out1");
+		new_mem_node2->output_pins[i]->mapping = vtr::strdup("out1");
 	}
 
 	/* Copy over the output pins for the new memory */
@@ -608,10 +609,10 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
 		remap_pin_to_new_node(pin, mux, 0);
 
 		connect_nodes(new_mem_node1, pin_index, mux, 2);
-		new_mem_node1->output_pins[pin_index]->mapping = strdup("out2");
+		new_mem_node1->output_pins[pin_index]->mapping = vtr::strdup("out2");
 
 		connect_nodes(new_mem_node2, pin_index, mux, 3);
-		new_mem_node2->output_pins[pin_index]->mapping = strdup("out2");
+		new_mem_node2->output_pins[pin_index]->mapping = vtr::strdup("out2");
 	}
 
 	free_dp_ram_signals(signals);
@@ -1218,7 +1219,7 @@ void pad_memory_output_port(nnode_t *node, netlist_t * /*netlist*/, t_model *mod
 			npin_t *new_pin = allocate_npin();
 			// Pad outputs with a unique and descriptive name to avoid collisions.
 			new_pin->name = append_string("", "unconnected_memory_output~%d", pad_pin_number++);
-			new_pin->mapping = strdup(port_name);
+			new_pin->mapping = vtr::strdup(port_name);
 			add_output_pin_to_node(node, new_pin, i);
 		}
 		node->output_port_sizes[port_number] = target_size;
@@ -1259,7 +1260,7 @@ void pad_memory_input_port(nnode_t *node, netlist_t *netlist, t_model *model, co
 		for (i = port_index + port_size; i < port_index + target_size; i++)
 		{
 			add_input_pin_to_node(node, get_pad_pin(netlist), i);
-			node->input_pins[i]->mapping = strdup(port_name);
+			node->input_pins[i]->mapping = vtr::strdup(port_name);
 		}
 
 		node->input_port_sizes[port_number] = target_size;

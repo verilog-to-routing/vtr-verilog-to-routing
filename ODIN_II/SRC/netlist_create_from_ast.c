@@ -42,6 +42,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "ast_elaborate.h"
+#include "vtr_util.h"
 
 /* NAMING CONVENTIONS
  {previous_string}.module_name+instance_name
@@ -4612,7 +4613,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 
 			/* Name any grounded ports in the block mapping */
 			for (j = port_size; j < port_size; j++)
-				block_node->input_pins[current_idx+j]->mapping = strdup(ip_name);
+				block_node->input_pins[current_idx+j]->mapping = vtr::strdup(ip_name);
 			current_idx += port_size;
 		}
 	}
@@ -4809,7 +4810,7 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 
 			/* Name any grounded ports in the block mapping */
 			for (j = port_size; j < port_size; j++)
-				block_node->input_pins[current_idx+j]->mapping = strdup(ip_name);
+				block_node->input_pins[current_idx+j]->mapping = vtr::strdup(ip_name);
 			current_idx += port_size;
 		}
 	}
@@ -4946,7 +4947,7 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 
 			// Name any grounded ports in the block mapping
 			for (j = port_size; j < port_size; j++)
-				block_node->input_pins[current_idx+j]->mapping = strdup(ip_name);
+				block_node->input_pins[current_idx+j]->mapping = vtr::strdup(ip_name);
 			current_idx += port_size;
 		}
 	}
@@ -5103,7 +5104,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 
 			// Name any grounded ports in the block mapping
 			for (j = port_size; j < port_size; j++)
-				block_node->input_pins[current_idx+j]->mapping = strdup(ip_name);
+				block_node->input_pins[current_idx+j]->mapping = vtr::strdup(ip_name);
 
 			current_idx += port_size;
 		}
@@ -5137,7 +5138,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 
 			t_memory_port_sizes *ps = (t_memory_port_sizes *)malloc(sizeof(t_memory_port_sizes));
 			ps->size = port_size;
-			ps->name = strdup(alias_name);
+			ps->name = vtr::strdup(alias_name);
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
 
 			// make the implicit output list and hook up the outputs
@@ -5355,7 +5356,7 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 
 			/* Name any grounded ports in the block mapping */
 			for (j = min_size; j < port_size; j++)
-				block_node->input_pins[current_idx+j]->mapping = strdup(ip_name);
+				block_node->input_pins[current_idx+j]->mapping = vtr::strdup(ip_name);
 			current_idx += port_size;
 		}
 		else

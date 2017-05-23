@@ -29,10 +29,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "types.h"
 #include "ast_util.h"
 #include "ast_elaborate.h"
+#include "ctype.h"
+#include "netlist_create_from_ast.h"
 #include "parse_making_ast.h"
 #include "verilog_bison.h"
-#include "netlist_create_from_ast.h"
-#include "ctype.h"
+#include "vtr_util.h"
 
 #define read_node  1
 #define write_node 2
@@ -407,11 +408,11 @@ void check_and_replace(ast_node_t *node, char *p2[])
 				break;
 
 		case BLOCKING_STATEMENT:
-			p2[count++] = strdup("=");
+			p2[count++] = vtr::strdup("=");
 			break;
 
 		case NON_BLOCKING_STATEMENT:
-			p2[count++] = strdup("<=");
+			p2[count++] = vtr::strdup("<=");
 			break;
 
 		case NUMBERS:
@@ -422,16 +423,16 @@ void check_and_replace(ast_node_t *node, char *p2[])
 			switch(node->types.operation.op)
 			{
 				case ADD:
-					p2[count++] = strdup("+");
+					p2[count++] = vtr::strdup("+");
 					break;
 				case MINUS:
-					p2[count++] = strdup("-");
+					p2[count++] = vtr::strdup("-");
 					break;
 				case MULTIPLY:
-					p2[count++] = strdup("*");
+					p2[count++] = vtr::strdup("*");
 					break;
 				case DIVIDE:
-					p2[count++] = strdup("/");
+					p2[count++] = vtr::strdup("/");
 					break;
 
 				default:
@@ -557,7 +558,7 @@ void change_to_number_node(ast_node_t *node, char *number)
 		node->types.number.base = DEC;
 		string_pointer = number;
 		node->types.number.size = strlen((string_pointer));
-		node->types.number.number = strdup((string_pointer));
+		node->types.number.number = vtr::strdup((string_pointer));
 	}
 
 	if (flag_constant_decimal == FALSE)

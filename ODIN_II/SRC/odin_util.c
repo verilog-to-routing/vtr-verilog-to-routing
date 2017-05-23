@@ -44,9 +44,9 @@ char *make_signal_name(char *signal_name, int bit)
 
 	oassert(signal_name != NULL);
 	if (bit == -1)
-		return strdup(signal_name);
+		return vtr::strdup(signal_name);
 
-	return_string = strdup(signal_name);
+	return_string = vtr::strdup(signal_name);
 	return_string = (char*)realloc(return_string, sizeof(char)*(strlen(return_string)+1+10+1));
 	sprintf(return_string, "%s-%d", return_string, bit);
 	return return_string;	
@@ -64,7 +64,7 @@ char *make_full_ref_name(const char *previous, char *module_name, char *module_i
 
 	if (previous)
 	{
-		return_string = strdup(previous);
+		return_string = vtr::strdup(previous);
 	}
 	else
 	{
@@ -247,7 +247,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 		error_message(PARSE_ERROR, -1, -1, "Invalid hex number: %s.\n", orig_string);
 
 	char *bit_string = (char *)calloc(1,sizeof(char));
-	char *string     = strdup(orig_string);
+	char *string     = vtr::strdup(orig_string);
 	int   size       = strlen(string);
 
 	// Change to big endian. (We want to add higher order bits at the end.)
@@ -285,12 +285,12 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 	// Change to little endian
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
-	return_string = strdup(bit_string);
+	return_string = vtr::strdup(bit_string);
 	free(bit_string);
 	
     }
     else if(is_dont_care_number == 1){
-       char *string = strdup(orig_string); 
+       char *string = vtr::strdup(orig_string); 
        int   size       = strlen(string); 
        char *bit_string = (char *)calloc(1,sizeof(char));
        int count = 0;
@@ -324,7 +324,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 
         reverse_string(bit_string, binary_size);
 
-        return_string = strdup(bit_string);
+        return_string = vtr::strdup(bit_string);
 	    free(bit_string);
 
         
@@ -351,7 +351,7 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 		error_message(PARSE_ERROR, -1, -1, "Invalid octal number: %s.\n", orig_string);
 
 	char *bit_string = (char *)calloc(1,sizeof(char));
-	char *string     = strdup(orig_string);
+	char *string     = vtr::strdup(orig_string);
 	int   size       = strlen(string);
 
 	// Change to big endian. (We want to add higher order bits at the end.)
@@ -389,7 +389,7 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 	// Change to little endian
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
-	char *return_string = strdup(bit_string);
+	char *return_string = vtr::strdup(bit_string);
 	free(bit_string);
 	return return_string;
 }
@@ -425,7 +425,7 @@ char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, cha
 	// Change to little endian
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
-	char *return_string = strdup(bit_string);
+	char *return_string = vtr::strdup(bit_string);
 	free(bit_string);
 	return return_string;
 }
@@ -504,9 +504,9 @@ int is_binary_string(char *string)
 char *get_pin_name(char *name)
 {	// Remove everything before the ^
 	if (strchr(name, '^'))
-		return strdup(strchr(name, '^') + 1);
+		return vtr::strdup(strchr(name, '^') + 1);
 	else
-		return strdup(name);
+		return vtr::strdup(name);
 }
 
 

@@ -30,6 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "read_xml_util.h"
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
+#include "vtr_util.h"
 
 using namespace pugiutil;
 
@@ -106,7 +107,7 @@ void read_verilog_files(pugi::xml_node a_node, config_t *config, const pugiutil:
 		if (global_args.verilog_file == NULL)
 		{
 			config->list_of_file_names = (char**)realloc(config->list_of_file_names, sizeof(char*)*(config->num_list_of_file_names+1));
-			config->list_of_file_names[config->num_list_of_file_names] = strdup(child.child_value());
+			config->list_of_file_names[config->num_list_of_file_names] = vtr::strdup(child.child_value());
 			config->num_list_of_file_names ++;
 		}
 		child = child.next_sibling(child.name());
@@ -124,13 +125,13 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiutil::loc_d
 	child = get_single_child(a_node, "output_type", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		config->output_type = strdup(child.child_value());
+		config->output_type = vtr::strdup(child.child_value());
 	}
 
 	child = get_single_child(a_node, "output_path_and_name", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		global_args.output_file = strdup(child.child_value());
+		global_args.output_file = vtr::strdup(child.child_value());
 	}
 
 	child = get_single_child(a_node, "target", loc_data, OPTIONAL);
@@ -145,7 +146,7 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiutil::loc_d
 				printf("Error: Arch file specified in config file AND command line\n");
 				exit(-1);
 			}
-			global_args.arch_file = strdup(child.child_value());
+			global_args.arch_file = vtr::strdup(child.child_value());
 		}
 	}
 	return;
@@ -173,7 +174,7 @@ void read_debug_switches(pugi::xml_node a_node, config_t *config, const pugiutil
 	child = get_single_child(a_node, "debug_output_path", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		config->debug_output_path = strdup(child.child_value());
+		config->debug_output_path = vtr::strdup(child.child_value());
 	}
 
 	child = get_single_child(a_node, "print_parse_tokens", loc_data, OPTIONAL);

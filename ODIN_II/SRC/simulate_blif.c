@@ -22,6 +22,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 #include "simulate_blif.h"
 #include "math.h"
+#include "vtr_util.h"
 
 #ifndef max
 #define max(a,b) (((a) > (b))? (a) : (b))
@@ -1549,11 +1550,11 @@ void compute_hard_ip_node(nnode_t *node, int cycle)
 	{
 		char *filename = (char *)malloc(sizeof(char)*strlen(node->name));
 
-		if (!index(node->name, '.'))
+		if (!strchr(node->name, '.'))
 			error_message(SIMULATION_ERROR, 0, -1,
 					"Couldn't extract the name of a shared library for hard-block simulation");
 
-		snprintf(filename, sizeof(char)*strlen(node->name), "%s.so", index(node->name, '.')+1);
+		snprintf(filename, sizeof(char)*strlen(node->name), "%s.so", strchr(node->name, '.')+1);
 
 		void *handle = dlopen(filename, RTLD_LAZY);
 
@@ -2207,7 +2208,7 @@ void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long dept
 		// Only process lines which are not empty.
 		if (strlen(buffer))
 		{
-			char *line = strdup(buffer);
+			char *line = vtr::strdup(buffer);
 			// MIF files are case insensitive
 			string_to_upper(line);
 
@@ -2271,7 +2272,7 @@ void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long dept
 
 					// If is something after the equals sign and before the semicolon, add the symbol=value association to the symbol table.
 					if (token)
-						symbols->add(symbols, symbol, sizeof(char) * strlen(symbol), strdup(token));
+						symbols->add(symbols, symbol, sizeof(char) * strlen(symbol), vtr::strdup(token));
 					else if(!strcmp(buffer, "CONTENT")) {}
 					// We found "CONTENT" followed on the next line by "BEGIN". That means we're at the end of the parameters.
 					else if(!strcmp(buffer, "BEGIN") && !strcmp(last_line, "CONTENT"))
@@ -2327,7 +2328,7 @@ void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long dept
 
 			if (last_line)
 				free(last_line);
-			last_line = strdup(buffer);
+			last_line = vtr::strdup(buffer);
 		}
 	}
 	if (last_line)
@@ -2686,7 +2687,7 @@ int compare_test_vectors(test_vector *v1, test_vector *v2)
  */
 test_vector *parse_test_vector(char *buffer)
 {
-	buffer = strdup(buffer);
+	buffer = vtr::strdup(buffer);
 	test_vector *v = (test_vector *)malloc(sizeof(test_vector));
 	v->values = 0;
 	v->counts = 0;
@@ -3110,12 +3111,12 @@ pin_names *parse_pin_name_list(char *list)
 	// Parse the list of additional pins passed via the -p option.
 	if (list)
 	{
-		char *pin_list = strdup(list);
+		char *pin_list = vtr::strdup(list);
 		char *token    = strtok(pin_list, ",");
 		while (token)
 		{
 			p->pins = (char **)realloc(p->pins, sizeof(char *) * (p->count + 1));
-			p->pins[p->count++] = strdup(token);
+			p->pins[p->count++] = vtr::strdup(token);
 			token = strtok(NULL, ",");
 		}
 		free(pin_list);
@@ -3220,7 +3221,7 @@ char *get_mif_filename(nnode_t *node)
 
 	strcat(filename, ".mif");
 
-	filename = strdup(filename);
+	filename = vtr::strdup(filename);
 	return filename;
 }
 
@@ -3329,7 +3330,7 @@ int count_test_vectors(FILE *in)
  */
 int is_vector(char *buffer)
 {
-	char *line = strdup(buffer);
+	char *line = vtr::strdup(buffer);
 	trim_string(line," \t\r\n");
 
 	if (line[0] != '#' && strlen(line))

@@ -35,6 +35,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "hard_blocks.h"
 #include "adders.h"
 #include "subtractions.h"
+#include "vtr_util.h"
 
 void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *netlist);
 void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *fp);
@@ -230,9 +231,9 @@ void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *ne
 {
 	int i;
 
-	netlist->gnd_node->name = strdup("gnd");
-	netlist->vcc_node->name = strdup("vcc");
-	netlist->pad_node->name = strdup("unconn");
+	netlist->gnd_node->name = vtr::strdup("gnd");
+	netlist->vcc_node->name = vtr::strdup("vcc");
+	netlist->pad_node->name = vtr::strdup("unconn");
 	/* now traverse the ground, vcc, and unconn pins */
 	depth_traverse_output_blif(netlist->gnd_node, marker_value, fp);
 	depth_traverse_output_blif(netlist->vcc_node, marker_value, fp);
