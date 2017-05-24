@@ -39,7 +39,7 @@ For external developers
 -----------------------
 VTR welcomes external contributions. 
 
-The general proceedure is to file an issue on GitHub propossing your changes, and then create an associated pull request.
+The general proceedure is to file an issue on GitHub proposing your changes, and then create an associated pull request.
 
 Here are some general guidelines:
 

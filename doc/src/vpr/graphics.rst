@@ -11,7 +11,7 @@ Compiling with Graphics Support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The build system will attempt to build VPR with graphics support by default.
 
-If all the reuired libraries are found the build system will report::
+If all the required libraries are found the build system will report::
 
     -- EasyGL: graphics enabled
 
