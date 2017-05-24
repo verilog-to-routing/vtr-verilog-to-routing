@@ -31,6 +31,9 @@ def parse_args():
     description = textwrap.dedent("""
                     Download and extract a Titan benchmark release into a
                     VTR-style directory structure.
+
+                    If a previous matching titan release tar.gz file is found
+                    does nothing (unless --force is specified).
                   """)
     parser = argparse.ArgumentParser(
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -71,7 +74,11 @@ def main():
             print "Downloading {}".format(tar_gz_url)
             download_url(tar_gz_filename, tar_gz_url)
 
-            print "Extracting {}".format(tar_gz_url)
+            print "Verifying {}".format(tar_gz_url)
+            if not md5_matches(tar_gz_filename, external_md5):
+                raise CheckSumError(tar_gz_filename)
+
+            print "Extracting {}".format(tar_gz_filename)
             extract_to_vtr_flow_dir(args, tar_gz_filename)
 
     except DownloadError as e:
@@ -155,6 +162,7 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
     arch_dir = os.path.join(args.vtr_flow_dir, "arch")
     benchmarks_dir = os.path.join(args.vtr_flow_dir, "benchmarks")
     titan_benchmarks_extract_dir = os.path.join(benchmarks_dir, 'titan_blif')
+    titan_other_benchmarks_extract_dir = os.path.join(benchmarks_dir, 'titan_other_blif')
     titan_arch_extract_dir = os.path.join(arch_dir, 'titan')
 
     if not args.force:
@@ -181,8 +189,10 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
             for filename in filenames:
                 src_file_path = os.path.join(dirpath, filename)
                 dst_file_path = None
-                if filename.endswith(".blif"):
+                if fnmatch.fnmatch(src_file_path, "*/titan_release*/benchmarks/titan23/*/*/*.blif"):
                     dst_file_path = os.path.join(titan_benchmarks_extract_dir, filename)
+                elif fnmatch.fnmatch(src_file_path, "*/titan_release*/benchmarks/other_benchmarks/*/*/*.blif"):
+                    dst_file_path = os.path.join(titan_other_benchmarks_extract_dir, filename)
                 else:
                     assert filename.endswith(".xml")
                     dst_file_path = os.path.join(titan_arch_extract_dir, filename)
@@ -198,6 +208,9 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
 def extract_callback(members):
     for tarinfo in members:
         if fnmatch.fnmatch(tarinfo.name, "titan_release*/benchmarks/titan23/*/*/*.blif"):
+            print tarinfo.name
+            yield tarinfo
+        elif fnmatch.fnmatch(tarinfo.name, "titan_release*/benchmarks/other_benchmarks/*/*/*.blif"):
             print tarinfo.name
             yield tarinfo
         elif fnmatch.fnmatch(tarinfo.name, "titan_release*/arch/stratixiv*.xml"):
