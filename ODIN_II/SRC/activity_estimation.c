@@ -32,7 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ast_util.h"
 #include "activity_estimation.h"
 #include "netlist_check.h"
-#include "allocation_def.h"
+
 
 #define DEFAULT_STATIC_PROBABILITY .5
 #define DEFAULT_TRANSITION_DENSITY .5
@@ -546,20 +546,22 @@ void output_activation_file_ace_and_function_file(char *output_filename, int lut
 	sprintf(function_file_name, "%s.fun", output_filename);
 
 	ace_out = fopen(ace_file_name, "w");
-	if (ace_out == NULL)
-	{
+	if (!ace_out){
 		error_message(ACTIVATION_ERROR, -1, -1, "Could not open output file %s\n", ace_file_name);
 	}
+	free(ace_out);
+	
 	ac2_out = fopen(ac2_file_name, "w");
-	if (ac2_out == NULL)
-	{
+	if (!ac2_out){
 		error_message(ACTIVATION_ERROR, -1, -1, "Could not open output file %s\n", ac2_file_name);
 	}
+	free(ac2_out);
+	
 	function_out = fopen(function_file_name, "w");
-	if (function_out == NULL)
-	{
+	if (!function_out){
 		error_message(ACTIVATION_ERROR, -1, -1, "Could not open output file %s\n", function_file_name);
 	}
+	free(function_out);
 
 	/* Go through the LUT netlist and print out the ace files */
 	for (i = 0; i < LUT_netlist->num_forward_levels; i++)

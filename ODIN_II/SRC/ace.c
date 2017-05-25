@@ -26,7 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "cudd.h"
 #include "ace.h"
 #include "st.h"
-#include "allocation_def.h"
+
 
 #define ACE_P0TO1(P1,PS)		((P1)==0.0)?0.0:(((P1)==1.0)?1.0:0.5*PS/(1.0-(P1)))
 #define ACE_P1TO0(P1,PS)		((P1)==0.0)?1.0:(((P1)==0.0)?0.0:0.5*PS/(P1))
@@ -60,7 +60,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 typedef unsigned int *pset;
 
-#define ALLOC(type, num)	ALLOCATE_ME(num,type)
+#define ALLOC(type, num)	(type*)calloc(num,sizeof(type))
 
 #define set_remove(set, e)      (set[WHICH_WORD(e)] &= ~ (1 << WHICH_BIT(e)))
 #define set_insert(set, e)      (set[WHICH_WORD(e)] |= 1 << WHICH_BIT(e))
@@ -333,6 +333,8 @@ void compute_switching_activities ( netlist_t *net ) {
             }
         }
     }
+    Cudd_RecursiveDeref(dd,Cudd_ReadOne(dd));
+    Cudd_Quit(dd); 
 }
 
 

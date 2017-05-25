@@ -33,7 +33,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "verilog_bison.h"
 #include "netlist_create_from_ast.h"
 #include "ctype.h"
-#include "allocation_def.h"
+
 
 #define read_node  1
 #define write_node 2
@@ -116,8 +116,13 @@ void optimize_for_tree()
 			}
 			temp_parent_node = (ast_node_t*)calloc(1,sizeof(ast_node_t));
 			oassert(list_for_node[j]->children[0]->children[0]->types.identifier);
+			
+			if(v_name){
+				free(v_name);
+			}
 			v_name = (char*)calloc(strlen(list_for_node[j]->children[0]->children[0]->types.identifier)+1,sizeof(char));
 			sprintf(v_name, "%s", list_for_node[j]->children[0]->children[0]->types.identifier);
+			
 			initial = list_for_node[j]->children[0]->children[1]->types.number.value;
 			v_value = initial;
 			terminal = list_for_node[j]->children[1]->children[1]->types.number.value;
@@ -130,7 +135,7 @@ void optimize_for_tree()
 				T  = (ast_node_t*)calloc(1,sizeof(ast_node_t));
 				copy_tree((list_for_node[j])->children[3], T);
 				add_child_to_node(temp_parent_node, T);
-				value_string = (char*)calloc(1,sizeof(int));
+				value_string = (char*)calloc(sizeof(long long)*8+1,sizeof(char));
 				sprintf(value_string, "%lld", v_value);
 				modify_expression(expression, infix_expression, value_string);
 				translate_expression(infix_expression, postfix_expression);
@@ -678,7 +683,7 @@ void remove_intermediate_variable(ast_node_t *node, char list[10][20])
 	{
 		for (j = 0; j < count_write; j++)
 		{
-			temp = (char*)calloc(20,sizeof(char));
+			temp = (char*)calloc(strlen(list[j])+1,sizeof(char));
 			new_node = (ast_node_t *)calloc(1,sizeof(ast_node_t));
 			sprintf(temp, "%s", list[j]);
 			search_marked_node(node->children[i], 2, temp, &write); //search for "write" nodes
@@ -1360,7 +1365,6 @@ void delete_continuous_multiply(int *build)
 void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num)
 {
 	char num[12] = {0};
-	int len;
 
 	switch(temp->flag)
 	{
@@ -1375,7 +1379,6 @@ void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num)
 		break;
 
 		case 3:
-			len = strlen(temp->type.variable);
 			initial_node(node, IDENTIFIERS, line_num, file_num);
 			node->types.identifier = (char*)calloc(strlen(temp->type.variable)+1,sizeof(char));
 			strcpy(node->types.identifier, temp->type.variable);

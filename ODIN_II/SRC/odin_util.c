@@ -33,8 +33,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "errors.h"
 #include "odin_util.h"
 #include "vtr_util.h"
-#include "allocation_def.h"
 
+
+
+	
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
 // return signal_name-bit
@@ -61,51 +63,65 @@ char *make_signal_name(char *signal_name, int bit)
  *-------------------------------------------------------------------------------------------*/
 char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit)
 {
-	char *return_string;
+	
+	char dots[] = ".";
+	char plus[] = "+";
+	char expo[] = "^";
+	char diez[] = "~";
+	char nada[] = "";
+	char *return_string = nada;
+	char *prev_buf = nada;
+	char *modu_buf = nada;
+	char *inst_buf = nada;
+	char *sign_buf = nada;
+	char *bits_buf = nada;
+	char *expo_buf = nada;
+	char *dots_buf = nada;
+	char *diez_buf = nada;
+	char *plus_buf = nada;
 
-	if (previous)
-	{
-		return_string = strdup(previous);
+	
+	if(previous){
+		prev_buf = strdup(previous);
 	}
-	else
-	{
-		return_string = (char *)calloc(1,sizeof(char));
-		return_string[0] = '\0';
+	if(module_name){
+		inst_buf = strdup(module_instance_name);
+		modu_buf = strdup(module_name);
+		dots_buf = dots;
+		plus_buf = plus;
 	}
-
-	if (module_name)
-	{
-		return_string = (char *)realloc(return_string,
-				sizeof(char)*(
-						 strlen(return_string)
-						+1
-						+strlen(module_name)
-						+1
-						+strlen(module_instance_name)
-						+1
-				)
-		);
-		sprintf(return_string, "%s.%s+%s", return_string, module_name, module_instance_name);
+	
+	if (signal_name){ 
+		if(previous || module_name){
+			expo_buf = expo;
+		}
+		sign_buf = strdup(signal_name);
 	}
-	if (signal_name && (previous || module_name))
-	{
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+2+strlen(signal_name)+1));
-		strcat(return_string, "^");
-		strcat(return_string, signal_name);
+	if(bit != -1){
+		bits_buf = (char*)calloc(1+8*sizeof(bit),sizeof(char));
+		sprintf(bits_buf, "%ld",bit);
+		diez_buf = diez;
 	}
-	else if (signal_name)
-	{
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+1+strlen(signal_name)+1));
-		strcat(return_string, signal_name);
+	
+	int lengthy = 1 + strlen(prev_buf) + strlen(modu_buf) + strlen(inst_buf) + strlen(sign_buf) + strlen(bits_buf) + strlen(expo_buf) + strlen(dots_buf) + strlen(diez_buf) + strlen(plus_buf);
+	return_string = (char*)calloc(lengthy,sizeof(char));
+	sprintf(return_string,"%s%s%s%s%s%s%s%s%s", prev_buf,dots_buf,modu_buf,plus_buf,inst_buf,expo_buf,sign_buf,diez_buf,bits_buf);
+	
+	if(prev_buf != nada){
+		free(prev_buf);
 	}
-	if (bit != -1)
-	{
-		oassert(signal_name != NULL);
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+1+30+1));
-		sprintf(return_string, "%s~%ld", return_string, bit);
+	if(modu_buf != nada){
+		free(modu_buf);
 	}
-
-	return_string = (char *)realloc(return_string, sizeof(char)*strlen(return_string)+1);
+	if(inst_buf != nada){
+		free(inst_buf);
+	}
+	if(sign_buf != nada){
+		free(sign_buf);
+	}
+	if(bits_buf != nada){
+		free(bits_buf);
+	}	
 	return return_string;	
 }
 

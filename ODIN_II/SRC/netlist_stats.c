@@ -31,7 +31,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "netlist_stats.h"
 #include "multipliers.h"
-#include "allocation_def.h"
+
 
 /*------------------------------------------------------------------------
  * (function: netlist_stats)

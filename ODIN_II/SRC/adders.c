@@ -35,7 +35,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "errors.h"
 #include "subtractions.h"
 #include "print_tags.h"
-#include "allocation_def.h"
+
 #include "vtr_list.h"
 
 using vtr::t_linked_vptr;
@@ -155,11 +155,11 @@ void declare_hard_adder(nnode_t *node)
 	int width_a, width_b, width_sumout;
 
 	/* See if this size instance of adder exists? */
-	if (hard_adders == NULL)
-	{
+	if (!hard_adders){
 		printf(ERRTAG "Instantiating adder where adders do not exist\n");
 	}
 	tmp = (t_adder *)hard_adders->instances;
+	
 	width_a = node->input_port_sizes[0];
 	width_b = node->input_port_sizes[1];
 	width_sumout = node->output_port_sizes[1];
@@ -189,33 +189,18 @@ void declare_hard_adder(nnode_t *node)
  *-------------------------------------------------------------------------*/
 void instantiate_hard_adder(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
-	char *new_name;
-	int len, sanity, i;
-
+	int i;
 	declare_hard_adder(node);
-
-	/* Need to give node proper name */
-	/* 20 chars should hold mul specs */
-	new_name = (char*)calloc(strlen(node->name)+20,sizeof(char));
-
-	/* wide input first :) */
-	if (node->input_port_sizes[0] > node->input_port_sizes[1])
-		sanity = sprintf(new_name, "%s", node->name);
-	else
-		sanity = sprintf(new_name, "%s", node->name);
-
-	if (strlen(node->name)+20 <= sanity) /* buffer not large enough */
-		oassert(FALSE);
 
 	/* Give names to the output pins */
 	for (i = 0; i < node->num_output_pins;  i++)
 	{
-		if (node->output_pins[i]->name == NULL)
-		{
-			new_name = (char*)calloc(strlen(node->name) + 20,sizeof(char));
-			sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
-			node->output_pins[i]->name = new_name;
+		if (node->output_pins[i]->name){
+			free(node->output_pins[i]->name);
 		}
+		size_t length = snprintf(NULL,0,"%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
+		node->output_pins[i]->name = (char*)calloc(length +1,sizeof(char));
+		sprintf(node->output_pins[i]->name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
 	}
 
 	node->traverse_visited = mark;
@@ -718,7 +703,8 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 
 	for(i = 0; i < count; i++)
 	{
-		node[i] = allocate_nnode();
+		node[i] = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+		allocate_nnode(node[i]);
 		node[i]->name = (char *)calloc(strlen(nodeo->name) + 20,sizeof(char));
 		sprintf(node[i]->name, "%s-%d", nodeo->name, i);
 		if(i == count - 1)
@@ -774,7 +760,9 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 		connect_nodes(netlist->gnd_node, 0, node[0], 0);
 		connect_nodes(netlist->gnd_node, 0, node[0], sizea);
 		//hang the first sumout
-		node[0]->output_pins[1] = allocate_npin();
+		
+		node[0]->output_pins[1] = (npin_t *)my_malloc_struct(sizeof(npin_t));
+		allocate_npin(node[0]->output_pins[1]);
 		node[0]->output_pins[1]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, 1);
 	}
 
@@ -824,11 +812,13 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 					remap_pin_to_new_node(nodeo->output_pins[j], node[0], j + 2);
 				else
 				{
-					node[0]->output_pins[j + 2] = allocate_npin();
+					node[0]->output_pins[j + 2] = (npin_t *)my_malloc_struct(sizeof(npin_t));
+					allocate_npin(node[0]->output_pins[j + 2]);
 					node[0]->output_pins[j + 2]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, j + 2);
 				}
 				//hang the first cout
-				node[0]->output_pins[0] = allocate_npin();
+				node[0]->output_pins[0] = (npin_t *)my_malloc_struct(sizeof(npin_t));
+				allocate_npin(node[0]->output_pins[0]);
 				node[0]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[0]->name, 0, 0);
 			}
 		}
@@ -858,13 +848,15 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 					remap_pin_to_new_node(nodeo->output_pins[(count - 1) * sizea + j - 1], node[count - 1], j + 1);
 				else
 				{
-					node[count - 1]->output_pins[j + 1] = allocate_npin();
+					node[count - 1]->output_pins[j + 1] = (npin_t *)my_malloc_struct(sizeof(npin_t));
+					allocate_npin(node[count - 1]->output_pins[j + 1]);
 					// Pad outputs with a unique and descriptive name to avoid collisions.
 					node[count - 1]->output_pins[j + 1]->name = append_string("", "%s~dummy_output~%d~%d", node[count - 1]->name, count - 1, j + 1);
 				}
 			}
 			//Hang the last cout
-			node[count - 1]->output_pins[0] = allocate_npin();
+			node[count - 1]->output_pins[0] = (npin_t *)my_malloc_struct(sizeof(npin_t));
+			allocate_npin(node[count - 1]->output_pins[0]);
 			// Pad outputs with a unique and descriptive name to avoid collisions.
 			node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[count - 1]->name, count - 1, 0);
 		}
@@ -877,7 +869,8 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 				remap_pin_to_new_node(nodeo->output_pins[nodeo->num_output_pins - 1], node[count - 1], 0);
 			else
 			{
-				node[count - 1]->output_pins[0] = allocate_npin();
+				node[count - 1]->output_pins[0] = (npin_t *)my_malloc_struct(sizeof(npin_t));
+				allocate_npin(node[count - 1]->output_pins[0]);
 				// Pad outputs with a unique and descriptive name to avoid collisions.
 				node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[count - 1]->name, count - 1, 0);
 			}

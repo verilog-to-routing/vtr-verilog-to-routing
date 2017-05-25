@@ -35,7 +35,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "hard_blocks.h"
 #include "adders.h"
 #include "subtractions.h"
-#include "allocation_def.h"
+
 
 void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *netlist);
 void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *fp);
@@ -58,14 +58,15 @@ void output_blif(char *file_name, netlist_t *netlist)
 	short first_time_inputs = FALSE;
 	short first_time_outputs = FALSE;
 	FILE *out;
-	char *out_file;
+	
 
 	/* open the file for output */
 	if (global_args.high_level_block != NULL)
 	{
-		out_file = (char*)calloc(1+strlen(file_name)+strlen(global_args.high_level_block)+6,sizeof(char));
+		char *out_file = (char*)calloc(1+strlen(file_name)+strlen(global_args.high_level_block)+6,sizeof(char));
 		sprintf(out_file, "%s_%s.blif", file_name, global_args.high_level_block);
 		out = fopen(out_file, "w");
+		free(out_file);
 	}
 	else
 	{

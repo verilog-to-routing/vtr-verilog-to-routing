@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include "verilog_preprocessor.h"
 #include "types.h"
-#include "allocation_def.h"
+
 /* Globals */
 struct veri_Includes veri_includes;
 struct veri_Defines veri_defines;

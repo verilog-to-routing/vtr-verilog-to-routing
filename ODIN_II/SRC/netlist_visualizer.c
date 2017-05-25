@@ -29,7 +29,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 #include "netlist_utils.h"
 #include "odin_util.h"
-#include "allocation_def.h"
+
 
 void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_number);
 void depth_first_traversal_graph_display(FILE *out, short marker_value, netlist_t *netllist);

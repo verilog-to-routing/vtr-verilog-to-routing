@@ -38,7 +38,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "memories.h"
 #include "adders.h"
 #include "subtractions.h"
-#include "allocation_def.h"
+
 
 void depth_first_traversal_to_partial_map(short marker_value, netlist_t *netlist);
 void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, netlist_t *netlist);
@@ -750,7 +750,8 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 					remap_pin_to_new_node(node->output_pins[i + 1], new_add_cells[i], 0);
 				else
 				{
-					new_add_cells[i]->output_pins[0] = allocate_npin();
+					new_add_cells[i]->output_pins[0] = (npin_t *)my_malloc_struct(sizeof(npin_t));
+					allocate_npin(new_add_cells[i]->output_pins[0]);
 					new_add_cells[i]->output_pins[0]->name = append_string("", "%s~dummy_output~%d", new_add_cells[i]->name, 0);
 				}
 			}
@@ -759,7 +760,8 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 					remap_pin_to_new_node(node->output_pins[0], new_add_cells[i], 0);
 				else
 				{
-					new_add_cells[i]->output_pins[0] = allocate_npin();
+					new_add_cells[i]->output_pins[0] = (npin_t *)my_malloc_struct(sizeof(npin_t));
+					allocate_npin(new_add_cells[i]->output_pins[0]);
 					new_add_cells[i]->output_pins[0]->name = append_string("", "%s~dummy_output~%d", new_add_cells[i]->name, 0);
 				}
 		}

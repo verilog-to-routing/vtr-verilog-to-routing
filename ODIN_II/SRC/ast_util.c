@@ -34,7 +34,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ast_util.h"
 #include "odin_util.h"
 #include "ast_optimizations.h"
-#include "allocation_def.h"
+
 
 char **get_name_of_pins_number(ast_node_t *var_node, int start, int width);
 
@@ -491,7 +491,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 			}
 			}
 			else {
-				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missssing declaration of this symbol %s\n", temp_string);						
+				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missssing declaration of this symbol %s\n", temp_string);
 			}
 		}
 		else if (concat_top->children[i]->type == ARRAY_REF)

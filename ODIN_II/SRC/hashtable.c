@@ -20,12 +20,14 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "hashtable.h"
 #include "types.h"
-#include "allocation_def.h"
+
+
 
 void         ___hashtable_add                (hashtable_t *h, const void *key, size_t key_length, void *item);
 void*        ___hashtable_remove             (hashtable_t *h, const void *key, size_t key_length);

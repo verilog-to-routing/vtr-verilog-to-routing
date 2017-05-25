@@ -21,6 +21,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
+
 int simplify_ast();
 void optimize_for_tree();
 void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *list_parent[]);

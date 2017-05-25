@@ -21,6 +21,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */ 
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,7 +34,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "string_cache.h"
 #include "netlist_check.h"
 #include "netlist_visualizer.h"
-#include "allocation_def.h"
+
+
+
 
 void levelize_backwards(netlist_t *netlist);
 void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *netlist);

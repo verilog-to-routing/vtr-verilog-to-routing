@@ -20,12 +20,13 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
+
 #include "types.h"
 #include "hashtable.h"
 #include "implicit_memory.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
-#include "allocation_def.h"
+
 
 // Hashes the implicit memory name to the implicit_memory structure.
 hashtable_t *implicit_memories;
@@ -44,7 +45,9 @@ implicit_memory *lookup_implicit_memory(char *instance_name_prefix, char *identi
 implicit_memory *lookup_implicit_memory(char *instance_name_prefix, char *identifier)
 {
 	char *memory_string = make_full_ref_name(instance_name_prefix, NULL, NULL, identifier, -1);
-	return (implicit_memory *)implicit_memories->get(implicit_memories, memory_string, strlen(memory_string));
+	implicit_memory * to_return = (implicit_memory *)implicit_memories->get(implicit_memories, memory_string, strlen(memory_string));
+	free(memory_string);
+	return to_return;
 }
 
 /*
@@ -85,7 +88,8 @@ implicit_memory *create_implicit_memory_block(int data_width, long long words, c
 	if (addr_width > MEMORY_DEPTH_LIMIT)
 		error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %d exceeds ODIN depth bound of %d.", name, addr_width, MEMORY_DEPTH_LIMIT);
 
-	nnode_t *node = allocate_nnode();
+	nnode_t *node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(node);
 	node->type = MEMORY;
 	node->name = hard_node_name(node, instance_name_prefix, implicit_string, name);
 
@@ -213,7 +217,8 @@ void add_dummy_output_port_to_implicit_memory(implicit_memory *memory, int size,
 	int i;
 	for (i = 0; i < size; i++)
 	{
-		npin_t *dummy_pin = allocate_npin();
+		npin_t *dummy_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+		allocate_npin(dummy_pin);
 		// Pad outputs with a unique and descriptive name to avoid collisions.
 		dummy_pin->name = append_string("", "dummy_implicit_memory_output~%d", dummy_output_pin_number++);
 		add_pin_to_signal_list(signals, dummy_pin);

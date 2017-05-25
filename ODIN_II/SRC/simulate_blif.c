@@ -22,7 +22,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 #include "simulate_blif.h"
 #include "math.h"
-#include "allocation_def.h"
+
 #ifndef max
 #define max(a,b) (((a) > (b))? (a) : (b))
 #define min(a,b) ((a) > (b)? (b) : (a))
@@ -2347,7 +2347,8 @@ void assign_node_to_line(nnode_t *node, lines_t *l, int type, int single_pin)
 	// Make sure the node has an output pin.
 	if (!node->num_output_pins)
 	{
-		npin_t *pin = allocate_npin();
+		npin_t *pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+		allocate_npin(pin);
 		allocate_more_output_pins(node, 1);
 		add_output_pin_to_node(node, pin, 0);
 	}

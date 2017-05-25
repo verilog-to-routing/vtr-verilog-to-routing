@@ -36,7 +36,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "verilog_bison_user_defined.h"
 #include "verilog_preprocessor.h"
 #include "hard_blocks.h" 
-#include "allocation_def.h"
+
 
 extern int yylineno;
 
@@ -1807,6 +1807,7 @@ void newConstant(char *id, char *number, int line_number)
 	defines_for_file_sc->data[sc_spot] = (void*)number_node;
 	/* mark node as shared */
 	number_node->shared_node = TRUE;
+	free(id);
 }
 
 /* --------------------------------------------------------------------------------------------

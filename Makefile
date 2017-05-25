@@ -15,7 +15,7 @@
 # Possible values:
 #    release
 #    debug
-BUILD_TYPE = release
+BUILD_TYPE = debug
 
 #Allows users to pass parameters to cmake
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"

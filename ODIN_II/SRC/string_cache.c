@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "allocation_def.h"
+
 #include "string_cache.h"
 
 unsigned long
