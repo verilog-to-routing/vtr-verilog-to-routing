@@ -209,8 +209,8 @@ add_subdirectory(ace2)
 #are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes. 
 #Since we don't want to change PugiXml (it is developed externally), we relax the warning 
 #level so no fallthrough warnings are generated
-CHECK_CXX_COMPILER_FLAG("-Wimplicit-fallthrough" COMPILER_SUPPORTS_-Wimplicit-fallthrough)
-if(COMPILER_SUPPORTS_-Wimplicit-fallthrough)
+CHECK_CXX_COMPILER_FLAG("-Wimplicit-fallthrough=0" COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
+if(COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
     target_compile_options(libpugixml PRIVATE "-Wimplicit-fallthrough=0")
 endif()
 
