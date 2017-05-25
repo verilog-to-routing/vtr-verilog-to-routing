@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "queue.h"
 #include "types.h"
 
+
 void   ___queue_add(queue_t *q, void *item);
 void  *___queue_remove(queue_t *q);
 void **___queue_remove_all(queue_t *q);
@@ -34,7 +35,7 @@ void   ___queue_destroy(queue_t *q);
 
 queue_t* create_queue()
 {
-	queue_t *q = (queue_t *)malloc(sizeof(queue_t));
+	queue_t *q = (queue_t *)calloc(1,sizeof(queue_t));
 
 	q->head = NULL;
 	q->tail = NULL;
@@ -57,7 +58,7 @@ void ___queue_destroy(queue_t *q)
 
 void ___queue_add(queue_t *q, void *item)
 {
-	queue_node_t *node = (queue_node_t *)malloc(sizeof(queue_node_t));
+	queue_node_t *node = (queue_node_t *)calloc(1,sizeof(queue_node_t));
 
 	node->next = NULL;
 	node->item = item;
@@ -98,7 +99,7 @@ void **___queue_remove_all(queue_t *q)
 	void **items = NULL; 
 	if (!q->is_empty(q))
 	{
-		items = (void **)malloc(q->count * sizeof(void *)); 
+		items = (void **)calloc(q->count,sizeof(void *)); 
 		int count = 0; 
 		void *item;
 		while ((item = q->remove(q)))

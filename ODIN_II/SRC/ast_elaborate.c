@@ -34,6 +34,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_create_from_ast.h"
 #include "ctype.h"
 
+
 #define read_node  1
 #define write_node 2
 
@@ -79,8 +80,8 @@ void optimize_for_tree()
 	ast_node_t *T;
 	int i, j, k;
 
-	ast_node_t *list_for_node[N] = {0};
-	ast_node_t *list_parent[N] = {0};
+	ast_node_t *list_for_node[N] = { 0 };
+	ast_node_t *list_parent[N] = { 0 };
 
 	find_most_unique_count(); // find out the most unique_count prepared for new AST nodes
 
@@ -99,7 +100,7 @@ void optimize_for_tree()
 			char *expression[Max_size];
 			char *infix_expression[Max_size];
 			char *postfix_expression[Max_size];
-			char node_write[10][20];
+			char node_write[10][20] = { 0 };
 			char *value_string;
 			int mark_variable = 0;
 			int *flash_variable = &mark_variable;
@@ -113,10 +114,15 @@ void optimize_for_tree()
 				infix_expression[k] = NULL;
 				postfix_expression[k] = NULL;
 			}
-			temp_parent_node = (ast_node_t*)malloc(sizeof(ast_node_t));
-			memset(node_write, 0, sizeof(node_write));
-			v_name = (char*)malloc(sizeof(list_for_node[j]->children[0]->children[0]->types.identifier)+1);
+			temp_parent_node = (ast_node_t*)calloc(1,sizeof(ast_node_t));
+			oassert(list_for_node[j]->children[0]->children[0]->types.identifier);
+			
+			if(v_name){
+				free(v_name);
+			}
+			v_name = (char*)calloc(strlen(list_for_node[j]->children[0]->children[0]->types.identifier)+1,sizeof(char));
 			sprintf(v_name, "%s", list_for_node[j]->children[0]->children[0]->types.identifier);
+			
 			initial = list_for_node[j]->children[0]->children[1]->types.number.value;
 			v_value = initial;
 			terminal = list_for_node[j]->children[1]->children[1]->types.number.value;
@@ -126,10 +132,10 @@ void optimize_for_tree()
 
 			while(v_value < terminal)
 			{
-				T  = (ast_node_t*)malloc(sizeof(ast_node_t));
+				T  = (ast_node_t*)calloc(1,sizeof(ast_node_t));
 				copy_tree((list_for_node[j])->children[3], T);
 				add_child_to_node(temp_parent_node, T);
-				value_string = (char*)malloc(sizeof(int));
+				value_string = (char*)calloc(sizeof(long long)*8+1,sizeof(char));
 				sprintf(value_string, "%lld", v_value);
 				modify_expression(expression, infix_expression, value_string);
 				translate_expression(infix_expression, postfix_expression);
@@ -209,7 +215,7 @@ void copy_tree(ast_node_t *node, ast_node_t *new_node)
 				else
 				{
 					len = sizeof(node->types.identifier);
-					new_node->types.identifier = (char*)malloc(len+1);
+					new_node->types.identifier = (char*)calloc(len+1,sizeof(char));
 					initial_node(new_node, node->type, node->line_number, node->file_number);
 					strcpy(new_node->types.identifier, node->types.identifier);
 					complete_node(node, new_node);
@@ -219,11 +225,11 @@ void copy_tree(ast_node_t *node, ast_node_t *new_node)
 			case NUMBERS:
 				initial_node(new_node, node->type, node->line_number, node->file_number);
 				new_node->types.number = node->types.number;
-				len = sizeof(node->types.number.number);
-				new_node->types.number.number = (char*)malloc(len+1);
+				oassert(node->types.number.number);
+				new_node->types.number.number = (char*)calloc(strlen(node->types.number.number)+1,sizeof(char));
 				strcpy(new_node->types.number.number, node->types.number.number);
-				len = sizeof(node->types.number.binary_string);
-				new_node->types.number.binary_string = (char*)malloc(len+1);
+				oassert(node->types.number.binary_string);
+				new_node->types.number.binary_string = (char*)calloc(strlen(node->types.number.binary_string)+1,sizeof(char));
 				strcpy(new_node->types.number.binary_string, node->types.number.binary_string);
 				complete_node(node, new_node);
 				break;
@@ -240,12 +246,12 @@ void copy_tree(ast_node_t *node, ast_node_t *new_node)
 
 		else
 		{
-			new_node->children = (ast_node_t**)malloc(n*sizeof(ast_node_t*));
+			new_node->children = (ast_node_t**)calloc(n,sizeof(ast_node_t*));
 			for(i=0; i<n; i++)
 			{
 				if (node->children[i] != NULL)
 				{
-					new_node->children[i] = (ast_node_t*)malloc(sizeof(ast_node_t));
+					new_node->children[i] = (ast_node_t*)calloc(1,sizeof(ast_node_t));
 					copy_tree(node->children[i], new_node->children[i]);
 				}
 				else
@@ -677,8 +683,8 @@ void remove_intermediate_variable(ast_node_t *node, char list[10][20])
 	{
 		for (j = 0; j < count_write; j++)
 		{
-			temp = (char*)malloc(sizeof(char)*20);
-			new_node = (ast_node_t *)malloc(sizeof(ast_node_t));
+			temp = (char*)calloc(strlen(list[j])+1,sizeof(char));
+			new_node = (ast_node_t *)calloc(1,sizeof(ast_node_t));
 			sprintf(temp, "%s", list[j]);
 			search_marked_node(node->children[i], 2, temp, &write); //search for "write" nodes
 			search_marked_node(node->children[i+1], 1, temp, &read); // search for "read" nodes
@@ -800,7 +806,7 @@ void reduce_assignment_expression()
 					free_whole_tree(list_assign[j]->children[1]);
 					line_num = list_assign[j]->line_number;
 					file_num = list_assign[j]->file_number;
-					T = (ast_node_t*)malloc(sizeof(ast_node_t));
+					T = (ast_node_t*)calloc(1,sizeof(ast_node_t));
 					construct_new_tree(tail, T, line_num, file_num);
 					list_assign[j]->children[1] = T;
 				}
@@ -921,7 +927,7 @@ void reduce_enode_list()
 void store_exp_list(ast_node_t *node)
 {
 	enode *temp;
-	head = (enode*)malloc(sizeof(enode));
+	head = (enode*)calloc(1,sizeof(enode));
 	p = head;
 	record_tree_info(node);
 	temp = head;
@@ -967,8 +973,7 @@ void record_tree_info(ast_node_t *node)
 void create_enode(ast_node_t *node)
 {
 	enode *s;
-	s = (enode*)malloc(sizeof(enode));
-	memset(s->type.variable, 0, 10) ;
+	s = (enode*)calloc(1,sizeof(enode));
 	s->flag = -1;
 	s->priority = -1;
 	s->id = node->unique_count;
@@ -1104,8 +1109,7 @@ void adjoin_constant(int *build)
 enode *replace_enode(int data, enode *t, int mark)
 {
 	enode *replace;
-	replace = (enode*)malloc(sizeof(enode));
-	memset(replace->type.variable, 0, 10);
+	replace = (enode*)calloc(1,sizeof(enode));
 	replace->type.data = data;
 	replace->flag = 1;
 	replace->priority = 0;
@@ -1266,9 +1270,9 @@ void construct_new_tree(enode *tail, ast_node_t *node, int line_num, int file_nu
 
 	if (prio == 1 || prio == 2)
 	{
-		node->children = (ast_node_t**)malloc(2*sizeof(ast_node_t*));
-		node->children[0] = (ast_node_t*)malloc(sizeof(ast_node_t));
-		node->children[1] = (ast_node_t*)malloc(sizeof(ast_node_t));
+		node->children = (ast_node_t**)calloc(2,sizeof(ast_node_t*));
+		node->children[0] = (ast_node_t*)calloc(1,sizeof(ast_node_t));
+		node->children[1] = (ast_node_t*)calloc(1,sizeof(ast_node_t));
 		construct_new_tree(tail1, node->children[0], line_num, file_num);
 		construct_new_tree(tail2, node->children[1], line_num, file_num);
 	}
@@ -1361,7 +1365,6 @@ void delete_continuous_multiply(int *build)
 void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num)
 {
 	char num[12] = {0};
-	int len;
 
 	switch(temp->flag)
 	{
@@ -1376,9 +1379,8 @@ void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num)
 		break;
 
 		case 3:
-			len = strlen(temp->type.variable);
 			initial_node(node, IDENTIFIERS, line_num, file_num);
-			node->types.identifier = (char*)malloc(len+1);
+			node->types.identifier = (char*)calloc(strlen(temp->type.variable)+1,sizeof(char));
 			strcpy(node->types.identifier, temp->type.variable);
 		break;
 
@@ -1619,7 +1621,7 @@ void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 				}
 				if (mark == 1)
 				{
-					new_head = (enode*)malloc(sizeof(enode));
+					new_head = (enode*)calloc(1,sizeof(enode));
 					tail = copy_enode_list(new_head, end->next, s);
 					tail = tail->pre;
 					free(tail->next);
@@ -1661,7 +1663,7 @@ void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 				}
 				if (mark == 1)
 				{
-					new_head = (enode*)malloc(sizeof(enode));
+					new_head = (enode*)calloc(1,sizeof(enode));
 					tail = copy_enode_list(new_head, s, begin->pre);
 					tail = tail->pre;
 					free(tail->next);
@@ -1692,7 +1694,7 @@ enode *copy_enode_list(enode *new_head, enode *begin, enode *end)
 	for (temp = begin; temp != end->next; temp = temp->next)
 	{
 		copy_enode(temp, new_enode);
-		next_enode = (enode*)malloc(sizeof(enode));
+		next_enode = (enode*)calloc(1,sizeof(enode));
 		new_enode->next = next_enode;
 		next_enode->pre = new_enode;
 		new_enode = next_enode;
@@ -1799,6 +1801,7 @@ void check_operation(enode *begin, enode *end)
 /*---------------------------------------------------------------------------
  * (function: reduce_parameter)
  * replace parameters with their values in the AST
+ * TODO figure this one out... why memset?? 
  *-------------------------------------------------------------------------*/
 void reduce_parameter()
 {

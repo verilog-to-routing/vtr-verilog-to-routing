@@ -34,6 +34,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "vtr_util.h"
 
+
+
+	
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
 // return signal_name-bit
@@ -60,51 +63,65 @@ char *make_signal_name(char *signal_name, int bit)
  *-------------------------------------------------------------------------------------------*/
 char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit)
 {
-	char *return_string;
+	
+	char dots[] = ".";
+	char plus[] = "+";
+	char expo[] = "^";
+	char diez[] = "~";
+	char nada[] = "";
+	char *return_string = nada;
+	char *prev_buf = nada;
+	char *modu_buf = nada;
+	char *inst_buf = nada;
+	char *sign_buf = nada;
+	char *bits_buf = nada;
+	char *expo_buf = nada;
+	char *dots_buf = nada;
+	char *diez_buf = nada;
+	char *plus_buf = nada;
 
-	if (previous)
-	{
-		return_string = strdup(previous);
+	
+	if(previous){
+		prev_buf = strdup(previous);
 	}
-	else
-	{
-		return_string = (char *)malloc(sizeof(char)*1);
-		return_string[0] = '\0';
+	if(module_name){
+		inst_buf = strdup(module_instance_name);
+		modu_buf = strdup(module_name);
+		dots_buf = dots;
+		plus_buf = plus;
 	}
-
-	if (module_name)
-	{
-		return_string = (char *)realloc(return_string,
-				sizeof(char)*(
-						 strlen(return_string)
-						+1
-						+strlen(module_name)
-						+1
-						+strlen(module_instance_name)
-						+1
-				)
-		);
-		sprintf(return_string, "%s.%s+%s", return_string, module_name, module_instance_name);
+	
+	if (signal_name){ 
+		if(previous || module_name){
+			expo_buf = expo;
+		}
+		sign_buf = strdup(signal_name);
 	}
-	if (signal_name && (previous || module_name))
-	{
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+2+strlen(signal_name)+1));
-		strcat(return_string, "^");
-		strcat(return_string, signal_name);
+	if(bit != -1){
+		bits_buf = (char*)calloc(1+8*sizeof(bit),sizeof(char));
+		sprintf(bits_buf, "%ld",bit);
+		diez_buf = diez;
 	}
-	else if (signal_name)
-	{
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+1+strlen(signal_name)+1));
-		strcat(return_string, signal_name);
+	
+	int lengthy = 1 + strlen(prev_buf) + strlen(modu_buf) + strlen(inst_buf) + strlen(sign_buf) + strlen(bits_buf) + strlen(expo_buf) + strlen(dots_buf) + strlen(diez_buf) + strlen(plus_buf);
+	return_string = (char*)calloc(lengthy,sizeof(char));
+	sprintf(return_string,"%s%s%s%s%s%s%s%s%s", prev_buf,dots_buf,modu_buf,plus_buf,inst_buf,expo_buf,sign_buf,diez_buf,bits_buf);
+	
+	if(prev_buf != nada){
+		free(prev_buf);
 	}
-	if (bit != -1)
-	{
-		oassert(signal_name != NULL);
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+1+30+1));
-		sprintf(return_string, "%s~%ld", return_string, bit);
+	if(modu_buf != nada){
+		free(modu_buf);
 	}
-
-	return_string = (char *)realloc(return_string, sizeof(char)*strlen(return_string)+1);
+	if(inst_buf != nada){
+		free(inst_buf);
+	}
+	if(sign_buf != nada){
+		free(sign_buf);
+	}
+	if(bits_buf != nada){
+		free(bits_buf);
+	}	
 	return return_string;	
 }
 
@@ -172,7 +189,7 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
 {
 	int i;
-	char *return_val = (char*)malloc(sizeof(char)*(num_bits+1));
+	char *return_val = (char*)calloc(num_bits+1,sizeof(char));
 	int mask = 1;
 
 	for (i = num_bits-1; i >= 0; i--)
@@ -564,13 +581,12 @@ long long int my_power(long long int x, long long int y)
 
 /*---------------------------------------------------------------------------------------------
  *  (function: make_string_based_on_id )
+ * DONE allow ay string length and process further if problem.
  *-------------------------------------------------------------------------------------------*/
 char *make_string_based_on_id(nnode_t *node)
 {
-	char *return_string = (char*)malloc(sizeof(char)*(20+2)); // any unique id greater than 20 characters means trouble
-
+	char *return_string = (char*)calloc(snprintf(NULL, 0, "n%ld", node->unique_id)+1,sizeof(char)); // any unique id greater than 20 characters means trouble
 	sprintf(return_string, "n%ld", node->unique_id);
-
 	return return_string;
 }
 
@@ -584,7 +600,7 @@ char *make_simple_name(char *input, const char *flatten_string, char flatten_cha
 	char *return_string = NULL;
 	oassert(input != NULL);
 
-	return_string = (char*)malloc(sizeof(char)*(strlen(input)+1));
+	return_string = (char*)calloc(strlen(input)+1,sizeof(char));
 
 	for (i = 0; i < strlen(input); i++)
 	{ 
@@ -598,8 +614,6 @@ char *make_simple_name(char *input, const char *flatten_string, char flatten_cha
 			}
 		}
 	}
-
-	return_string[strlen(input)] = '\0';	
 
 	return return_string;
 }
@@ -615,7 +629,7 @@ void *my_malloc_struct(size_t bytes_to_alloc)
 	// ways to stop the execution at the point when a specific structure is built...note it needs to be m_id - 1 ... it's unique_id in most data structures
 	//oassert(m_id != 193);
 
-	allocated = malloc(bytes_to_alloc);
+	allocated = calloc(1,bytes_to_alloc);
 	if(allocated == NULL)
 	{
 		fprintf(stderr,"MEMORY FAILURE\n");
@@ -694,7 +708,7 @@ char *append_string(const char *string, const char *appendage, ...)
 	va_end(ap);
 
 
-	char *new_string = (char *)malloc(strlen(string) + strlen(buffer) + 1);
+	char *new_string = (char *)calloc(strlen(string) + strlen(buffer) + 1,sizeof(char));
 	strcpy(new_string, string);
 	strcat(new_string, buffer);
 	return new_string;

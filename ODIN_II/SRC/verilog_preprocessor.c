@@ -118,7 +118,7 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 {
 	int i;
 	veri_define *def_iterator = veri_defines.defined_constants[0];
-	veri_define *new_def = (veri_define *)malloc(sizeof(veri_define));
+	veri_define *new_def = (veri_define *)calloc(1,sizeof(veri_define));
 	if (new_def == NULL) 
 	{
 		perror("new_def : malloc ");
@@ -187,7 +187,7 @@ veri_include* add_veri_include(char *path, int line, veri_include *included_from
 {
 	int i;
 	veri_include *inc_iterator = veri_includes.included_files[0];
-	veri_include *new_inc = (veri_include *)malloc(sizeof(veri_include));
+	veri_include *new_inc = (veri_include *)calloc(1,sizeof(veri_include));
 	if (new_inc == NULL) 
 	{
 		perror("new_inc : malloc ");
@@ -683,7 +683,7 @@ void push(veri_flag_stack *stack, int flag)
 {
 	if(stack != NULL)
 	{
-		veri_flag_node *new_node = (veri_flag_node *)malloc(sizeof(veri_flag_node));
+		veri_flag_node *new_node = (veri_flag_node *)calloc(1,sizeof(veri_flag_node));
 		new_node->next = stack->top;
 		new_node->flag = flag;
 		

@@ -1,6 +1,5 @@
 /*
 Copyright (c) 2009 Peter Andrew Jamieson (jamieson.peter@gmail.com)
-
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
 files (the "Software"), to deal in the Software without
@@ -9,10 +8,8 @@ copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the
 Software is furnished to do so, subject to the following
 conditions:
-
 The above copyright notice and this permission notice shall be
 included in all copies or substantial portions of the Software.
-
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -31,6 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ast_optimizations.h"
 #include "parse_making_ast.h"
 #include "verilog_bison.h"
+
 
 /* --------------------------------------------------------------------------------------------
  --------------------------------------------------------------------------------------------
@@ -76,7 +74,7 @@ info_ast_visit_t *reduceAST_traverse_node(ast_node_t *node, ast_node_t *from, in
 		}	
 
 		/* allocate the information for all the returned children info */
-		children_info = (info_ast_visit_t**)malloc(sizeof(info_ast_visit_t*)*node->num_children);	
+		children_info = (info_ast_visit_t**)calloc(node->num_children,sizeof(info_ast_visit_t*));	
 
 		/* traverse all the children */
 		for (i = 0; i < node->num_children; i++)
@@ -191,7 +189,7 @@ info_ast_visit_t *constantFold(ast_node_t *node)
 		}	
 
 		/* allocate the information for all the returned children info */
-		children_info = (info_ast_visit_t**)malloc(sizeof(info_ast_visit_t*)*node->num_children);	
+		children_info = (info_ast_visit_t**)calloc(node->num_children,sizeof(info_ast_visit_t*));	
 
 		/* traverse all the children */
 		for (i = 0; i < node->num_children; i++)

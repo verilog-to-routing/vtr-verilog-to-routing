@@ -38,7 +38,8 @@ long unique_node_name_id = 0;
  *---------------------------------------------------------------------*/
 npin_t *get_pad_pin(netlist_t *netlist)
 {
-	npin_t *pad_fanout_pin = allocate_npin();	
+	npin_t *pad_fanout_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+	allocate_npin(pad_fanout_pin);	
 	pad_fanout_pin->name = strdup(pad_string);
 	add_fanout_pin_to_net(netlist->pad_net, pad_fanout_pin);
 	return pad_fanout_pin;
@@ -50,7 +51,8 @@ npin_t *get_pad_pin(netlist_t *netlist)
  *---------------------------------------------------------------------*/
 npin_t *get_zero_pin(netlist_t *netlist)
 {
-	npin_t *zero_fanout_pin = allocate_npin();	
+	npin_t *zero_fanout_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+	allocate_npin(zero_fanout_pin);	
 	zero_fanout_pin->name = strdup(zero_string);
 	add_fanout_pin_to_net(netlist->zero_net, zero_fanout_pin);
 	return zero_fanout_pin;
@@ -62,7 +64,8 @@ npin_t *get_zero_pin(netlist_t *netlist)
  *-------------------------------------------------------------------------------------------*/
 npin_t *get_one_pin(netlist_t *netlist)
 {
-	npin_t *one_fanout_pin = allocate_npin();	
+	npin_t *one_fanout_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+	allocate_npin(one_fanout_pin);	
 	one_fanout_pin->name = strdup(one_string);
 	add_fanout_pin_to_net(netlist->one_net, one_fanout_pin);
 	return one_fanout_pin;
@@ -92,9 +95,8 @@ nnode_t *make_not_gate_with_input(npin_t *input_pin, nnode_t *node, short mark)
  *-----------------------------------------------------------------------*/
 nnode_t *make_not_gate(nnode_t *node, short mark)
 {
-	nnode_t *logic_node;	
-
-	logic_node = allocate_nnode();
+	nnode_t *logic_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(logic_node);
 	logic_node->traverse_visited = mark;
 	logic_node->type = LOGICAL_NOT;
 	logic_node->name = node_name(logic_node, node->name);
@@ -113,9 +115,8 @@ nnode_t *make_not_gate(nnode_t *node, short mark)
  *-------------------------------------------------------------------------------------------*/
 nnode_t *make_1port_gate(operation_list type, int width_input, int width_output, nnode_t *node, short mark)
 {
-	nnode_t *logic_node;	
-
-	logic_node = allocate_nnode();
+	nnode_t *logic_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(logic_node);
 	logic_node->traverse_visited = mark;
 	logic_node->type = type;
 	logic_node->name = node_name(logic_node, node->name);
@@ -167,7 +168,8 @@ nnode_t *make_1port_logic_gate_with_inputs(operation_list type, int width, signa
  *-------------------------------------------------------------------------------------------*/
 nnode_t *make_3port_gate(operation_list type, int width_port1, int width_port2, int width_port3, int width_output, nnode_t *node, short mark)
 {
-	nnode_t *logic_node = allocate_nnode();
+	nnode_t *logic_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(logic_node);
 	logic_node->traverse_visited = mark;
 	logic_node->type = type;
 	logic_node->name = node_name(logic_node, node->name);
@@ -194,7 +196,8 @@ nnode_t *make_3port_gate(operation_list type, int width_port1, int width_port2, 
  *-------------------------------------------------------------------------------------------*/
 nnode_t *make_2port_gate(operation_list type, int width_port1, int width_port2, int width_output, nnode_t *node, short mark)
 {
-	nnode_t *logic_node = allocate_nnode();
+	nnode_t *logic_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(logic_node);
 	logic_node->traverse_visited = mark;
 	logic_node->type = type;
 	logic_node->name = node_name(logic_node, node->name);
@@ -219,7 +222,8 @@ nnode_t *make_2port_gate(operation_list type, int width_port1, int width_port2, 
 nnode_t *make_nport_gate(operation_list type, int port_sizes, int width, int width_output, nnode_t *node, short mark)
 {
     int i;
-	nnode_t *logic_node = allocate_nnode();
+	nnode_t *logic_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(logic_node);
 	logic_node->traverse_visited = mark;
 	logic_node->type = type;
 	logic_node->name = node_name(logic_node, node->name);
@@ -466,9 +470,8 @@ char *node_name(nnode_t *node, char *instance_name_prefix)
  *-----------------------------------------------------------------------*/
 nnode_t *make_mult_block(nnode_t *node, short mark)
 {
-	nnode_t *logic_node;	
-
-	logic_node = allocate_nnode();
+	nnode_t *logic_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(logic_node);
 	logic_node->traverse_visited = mark;
 	logic_node->type = MULTIPLY;
 	logic_node->name = node_name(logic_node, node->name);

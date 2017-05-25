@@ -30,6 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_utils.h"
 #include "odin_util.h"
 
+
 void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_number);
 void depth_first_traversal_graph_display(FILE *out, short marker_value, netlist_t *netllist);
 
@@ -212,7 +213,7 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 	char *temp_string;
 	char *temp_string2;
 
-	stack_of_nodes = (nnode_t**)malloc(sizeof(nnode_t*)*1);
+	stack_of_nodes = (nnode_t**)calloc(1,sizeof(nnode_t*));
 	stack_of_nodes[0] = node;
 
 	while (index_in_stack != num_stack_of_nodes)
@@ -314,7 +315,7 @@ void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t 
 	int index_in_stack = 0;
 	int num_stack_of_nodes = 1;
 
-	stack_of_nodes = (nnode_t**)malloc(sizeof(nnode_t*)*1);
+	stack_of_nodes = (nnode_t**)calloc(1,sizeof(nnode_t*));
 	stack_of_nodes[0] = node;
 
 	while (index_in_stack != num_stack_of_nodes)

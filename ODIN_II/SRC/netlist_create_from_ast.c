@@ -20,6 +20,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,6 +43,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "ast_elaborate.h"
+
 
 /* NAMING CONVENTIONS
  {previous_string}.module_name+instance_name
@@ -335,10 +337,8 @@ void create_netlist()
 			// now isolate the original module name
 			char *underscores = strstr(module_param_name, "___");
 			oassert(underscores);
-			int len = underscores - module_param_name;
-			char *module_name = (char *)malloc((len+1)*sizeof(char));
-			strncpy(module_name, module_param_name, len);
-			module_name[len] = '\0';
+			char *module_name = (char *)calloc(underscores - module_param_name + 1,sizeof(char));
+			strncpy(module_name, module_param_name, underscores - module_param_name + 1);
 			// verify that it does exist
 			long sc_spot2 = sc_lookup_string(module_names_to_idx, module_name);
 			oassert(sc_spot2 > -1);
@@ -634,7 +634,7 @@ signal_list_t *netlist_expand_ast_of_module(ast_node_t* node, char *instance_nam
 		if (node->num_children > 0)
 		{
 			child_skip_list = (short*)calloc(node->num_children, sizeof(short));
-			children_signal_list = (signal_list_t**)malloc(sizeof(signal_list_t*)*node->num_children);
+			children_signal_list = (signal_list_t**)calloc(node->num_children,sizeof(signal_list_t*));
 		}
 
 		/* ------------------------------------------------------------------------------*/
@@ -1087,8 +1087,6 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	int i, j;
 	long sc_spot;
 	ast_node_t *module_items = module->children[2];
-	npin_t *new_pin;
-
 	oassert(module_items->type == MODULE_ITEMS);
 
 	/* search for VAR_DECLARE_LISTS */
@@ -1115,30 +1113,45 @@ void create_top_driver_nets(ast_node_t* module, char *instance_name_prefix)
 	}
 
 	/* create the constant nets */
-	verilog_netlist->zero_net = allocate_nnet();
-	verilog_netlist->gnd_node = allocate_nnode();
+	verilog_netlist->zero_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+	allocate_nnet(verilog_netlist->zero_net);
+	
+	verilog_netlist->gnd_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(verilog_netlist->gnd_node);
+	
 	verilog_netlist->gnd_node->type = GND_NODE;
 	allocate_more_output_pins(verilog_netlist->gnd_node, 1);
 	add_output_port_information(verilog_netlist->gnd_node, 1);
-	new_pin = allocate_npin();
+	npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+	allocate_npin(new_pin);
 	add_output_pin_to_node(verilog_netlist->gnd_node, new_pin, 0);
 	add_driver_pin_to_net(verilog_netlist->zero_net, new_pin);
-
-	verilog_netlist->one_net = allocate_nnet();
-	verilog_netlist->vcc_node = allocate_nnode();
+	
+	verilog_netlist->one_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+	allocate_nnet(verilog_netlist->one_net);
+	
+	verilog_netlist->vcc_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(verilog_netlist->vcc_node);
+	
 	verilog_netlist->vcc_node->type = VCC_NODE;
 	allocate_more_output_pins(verilog_netlist->vcc_node, 1);
 	add_output_port_information(verilog_netlist->vcc_node, 1);
-	new_pin = allocate_npin();
+	
+	new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+	allocate_npin(new_pin);
 	add_output_pin_to_node(verilog_netlist->vcc_node, new_pin, 0);
 	add_driver_pin_to_net(verilog_netlist->one_net, new_pin);
-
-	verilog_netlist->pad_net = allocate_nnet();
-	verilog_netlist->pad_node = allocate_nnode();
+	
+	verilog_netlist->pad_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+	allocate_nnet(verilog_netlist->pad_net);
+	verilog_netlist->pad_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(verilog_netlist->pad_node);
 	verilog_netlist->pad_node->type = PAD_NODE;
 	allocate_more_output_pins(verilog_netlist->pad_node, 1);
 	add_output_port_information(verilog_netlist->pad_node, 1);
-	new_pin = allocate_npin();
+	
+	new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+	allocate_npin(new_pin);
 	add_output_pin_to_node(verilog_netlist->pad_node, new_pin, 0);
 	add_driver_pin_to_net(verilog_netlist->pad_net, new_pin);
 
@@ -1215,7 +1228,6 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 					{
 						char *full_name;
 						ast_node_t *var_declare = module_items->children[i]->children[j];
-						npin_t *new_pin;
 
 						/* decide what type of variable this is */
 						if (var_declare->children[1] == NULL)
@@ -1230,13 +1242,14 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 								error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
 										"Output pin (%s) is not hooked up!!!\n", full_name);
 							}
-
-							new_pin = allocate_npin();
+							npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+							allocate_npin(new_pin);
 							/* hookup this pin to this net */
 							add_fanout_pin_to_net((nnet_t*)output_nets_sc->data[sc_spot], new_pin);
 
 							/* create the node */
-							new_node = allocate_nnode();
+							new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+							allocate_nnode(new_node);
 							new_node->related_ast_node = module_items->children[i]->children[j];
 							new_node->name = full_name;
 							new_node->type = OUTPUT_NODE;
@@ -1269,12 +1282,14 @@ void create_top_output_nodes(ast_node_t* module, char *instance_name_prefix)
 									error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
 											"Output pin (%s) is not hooked up!!!\n", full_name);
 								}
-								new_pin = allocate_npin();
+								npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+								allocate_npin(new_pin);
 								/* hookup this pin to this net */
 								add_fanout_pin_to_net((nnet_t*)output_nets_sc->data[sc_spot], new_pin);
 
 								/* create the node */
-								new_node = allocate_nnode();
+								new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+								allocate_nnode(new_node);
 								new_node->related_ast_node = module_items->children[i]->children[j];
 								new_node->name = full_name;
 								new_node->type = OUTPUT_NODE;
@@ -1326,7 +1341,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		/* FOR single driver signal since spots 1, 2, 3, 4 are NULL */
 
 		/* create the net */
-		new_net = allocate_nnet();
+		new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+		allocate_nnet(new_net);
 
 		/* make the string to add to the string cache */
 		temp_string = make_full_ref_name(instance_name_prefix, NULL, NULL, var_declare->children[0]->types.identifier, -1);
@@ -1368,7 +1384,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		for (i = node_min->types.number.value; i <= node_max->types.number.value; i++)
 		{
 			/* create the net */
-			new_net = allocate_nnet();
+			new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+			allocate_nnet(new_net);
 
 			/* create the string to add to the cache */
 			temp_string = make_full_ref_name(instance_name_prefix, NULL, NULL, var_declare->children[0]->types.identifier, i);
@@ -1445,7 +1462,6 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 	char *temp_string;
 	long sc_spot;
 	nnet_t *new_net = NULL;
-	npin_t *new_pin;
 	nnode_t *new_node;
 
 	if (var_declare->children[1] == NULL)
@@ -1453,7 +1469,8 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 		/* FOR single driver signal since spots 1, 2, 3, 4 are NULL */
 
 		/* create the net */
-		new_net = allocate_nnet();
+		new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+		allocate_nnet(new_net);
 
 		temp_string = make_full_ref_name(instance_name_prefix, NULL, NULL, var_declare->children[0]->types.identifier, -1);
 
@@ -1468,8 +1485,10 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 		new_net->name = temp_string;
 
 		/* create this node and make the pin connection to the net */
-		new_pin = allocate_npin();
-		new_node = allocate_nnode();
+		npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+		allocate_npin(new_pin);
+		new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+		allocate_nnode(new_node);
 		new_node->name = temp_string;
 
 		new_node->related_ast_node = var_declare;
@@ -1498,7 +1517,8 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 		for (i = node_min->types.number.value; i <= node_max->types.number.value; i++)
 		{
 			/* create the net */
-			new_net = allocate_nnet();
+			new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+			allocate_nnet(new_net);
 
 			/* FOR single driver signal */
 			temp_string = make_full_ref_name(instance_name_prefix, NULL, NULL, var_declare->children[0]->types.identifier, i);
@@ -1514,8 +1534,10 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char *instanc
 			new_net->name = temp_string;
 
 			/* create this node and make the pin connection to the net */
-			new_pin = allocate_npin();
-			new_node = allocate_nnode();
+			npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+			allocate_npin(new_pin);
+			new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+			allocate_nnode(new_node);
 
 			new_node->related_ast_node = var_declare;
 			new_node->name = temp_string;
@@ -1860,14 +1882,8 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
 				?OUT_PORT:IN_PORT;
 		if ((port_dir == OUT_PORT) || (port_dir == INOUT_PORT))
 		{
-			char *name_of_hb_input;
-			char *full_name;
-			char *alias_name;
-
-			name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, -1, instance_name_prefix);
-			full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_hb_input, -1);
-			free(name_of_hb_input);
-			alias_name = make_full_ref_name(instance_name_prefix,
+			
+			char *alias_name = make_full_ref_name(instance_name_prefix,
 					hb_instance->children[0]->types.identifier,
 					hb_instance->children[1]->children[0]->types.identifier,
 					hb_connect_list->children[i]->children[0]->types.identifier, -1);
@@ -1884,6 +1900,8 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
 				 * everyone can see it at this level.
 				 *
 				 * Make the new string for the alias name */
+				char *full_name;
+				char *name_of_hb_input;
 				if (port_size > 1)
 				{
 					name_of_hb_input = get_name_of_pin_at_bit(hb_instance_var_node, j, instance_name_prefix);
@@ -2705,9 +2723,9 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				   assigned on a higher-level module since the flip-flop node will have
 				   already been instantiated without any initial value. */
 
-                npin_t *new_pin2;
 				nnet_t *output_net = (nnet_t*)output_nets_sc->data[sc_spot_output];
-                new_pin2 = allocate_npin();
+                npin_t *new_pin2 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+                allocate_npin(new_pin2);
                 add_fanout_pin_to_net(output_net, new_pin2);
                 add_pin_to_signal_list(return_list, new_pin2);
 				nnet_t *input_new_net = (nnet_t*)output_nets_sc->data[sc_spot_input_new];
@@ -2761,9 +2779,9 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 	signal_list_t *return_sig_list = init_signal_list();
 	long sc_spot;
 	long sc_spot_output;
-	npin_t *new_pin;
-	nnet_t *new_in_net;
 	char_list_t *pin_lists = NULL;
+
+
 
 	if (name == NULL)
 	{
@@ -2773,8 +2791,8 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 	else if (var_declare == NULL)
 	{
 		/* if you have the name and just want a pin then use this method */
-		pin_lists = (char_list_t*)malloc(sizeof(char_list_t)*1);
-		pin_lists->strings = (char**)malloc(sizeof(char*));
+		pin_lists = (char_list_t*)calloc(1,sizeof(char_list_t));
+		pin_lists->strings = (char**)calloc(1,sizeof(char*));
 		pin_lists->strings[0] = name;
 		pin_lists->num_strings = 1;
 	}
@@ -2786,7 +2804,8 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 
 	for (i = 0; i < pin_lists->num_strings; i++)
 	{
-		new_pin = allocate_npin();
+		npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+		allocate_npin(new_pin);
 		new_pin->name = pin_lists->strings[i];
 
 		/* check if the instantiation pin exists. */
@@ -2808,7 +2827,8 @@ signal_list_t *create_pins(ast_node_t* var_declare, char *name, char *instance_n
 			 * string cache in case it's an input pin */
 			if ((sc_spot = sc_lookup_string(input_nets_sc, pin_lists->strings[i])) == -1)
 			{
-				new_in_net = allocate_nnet();
+				nnet_t *new_in_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+				allocate_nnet(new_in_net);
 
 				sc_spot = sc_add_string(input_nets_sc, pin_lists->strings[i]);
 				input_nets_sc->data[sc_spot] = (void*)new_in_net;
@@ -2859,14 +2879,14 @@ signal_list_t *create_output_pin(ast_node_t* var_declare, char *instance_name_pr
 	char *name_of_pin;
 	char *full_name;
 	signal_list_t *return_sig_list = init_signal_list();
-	npin_t *new_pin;
+	npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
 
 	/* get the name of the pin */
 	name_of_pin = get_name_of_pin_at_bit(var_declare, -1, instance_name_prefix);
 	full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name_of_pin, -1);
 	free(name_of_pin);
 
-	new_pin = allocate_npin();
+	allocate_npin(new_pin);
 	new_pin->name = full_name;
 
 	add_pin_to_signal_list(return_sig_list, new_pin);
@@ -2949,12 +2969,17 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		signal_list_t *outputs = init_signal_list();
 		for (i = 0; i < right_memory->data_width; i++)
 		{
-			npin_t *pin = allocate_npin();
+			npin_t *pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+			allocate_npin(pin);
 			add_pin_to_signal_list(outputs, pin);
 			pin->name = make_full_ref_name("", NULL, NULL, right_memory->node->name, i);
-			nnet_t *net = allocate_nnet();
+			
+			nnet_t *net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+			allocate_nnet(net);
 			add_driver_pin_to_net(net, pin);
-			pin = allocate_npin();
+			
+			pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+			allocate_npin(pin);
 			add_fanout_pin_to_net(net, pin);
 			//right_outputs->pins[i] = pin;
 			add_pin_to_signal_list(right_outputs, pin);
@@ -3266,14 +3291,15 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			if(pin->node) list_dependence_type[i] = pin->node->related_ast_node->type;
 
 			/* HERE create the ff node and hookup everything */
-			nnode_t *ff_node = allocate_nnode();
+			nnode_t *ff_node= (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+			allocate_nnode(ff_node);
 			ff_node->related_ast_node = always_node;
 
 			ff_node->type = FF_NODE;
 			/* create the unique name for this gate */
 			//ff_node->name = node_name(ff_node, instance_name_prefix);
 			/* Name the flipflop based on the name of its output pin */
-			char *ff_name = (char *)malloc(sizeof(char) * (strlen(pin->name) + strlen("_FF_NODE") + 1));
+			char *ff_name = (char *)calloc(strlen(pin->name) + strlen("_FF_NODE") + 1,sizeof(char));
 			strcpy(ff_name, pin->name);
 			strcat(ff_name, "_FF_NODE");
 			ff_node->name = ff_name;
@@ -3311,7 +3337,8 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 
 			/* add the clock to the flip_flop */
 			/* add a fanout pin */
-			npin_t *fanout_pin_of_clock = allocate_npin();
+			npin_t *fanout_pin_of_clock = (npin_t *)my_malloc_struct(sizeof(npin_t));
+			allocate_npin(fanout_pin_of_clock);
 			add_fanout_pin_to_net(clock_net, fanout_pin_of_clock);
 			add_input_pin_to_node(ff_node, fanout_pin_of_clock, 1);
 
@@ -3319,7 +3346,8 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 			add_input_pin_to_node(ff_node, pin, 0);
 
 			/* finally hookup the output pin of the flip flop to the orginal driver net */
-			npin_t *ff_output_pin = allocate_npin();
+			npin_t *ff_output_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+			allocate_npin(ff_output_pin);
 			add_output_pin_to_node(ff_node, ff_output_pin, 0);
 
 			if(net->driver_pin)
@@ -3381,7 +3409,8 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 
 		if (!memory->clock_added)
 		{
-			npin_t *clock_pin = allocate_npin();
+			npin_t *clock_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+			allocate_npin(clock_pin);
 			add_fanout_pin_to_net(clock_net, clock_pin);
 			signal_list_t *clock = init_signal_list();
 			add_pin_to_signal_list(clock, clock_pin);
@@ -3425,7 +3454,8 @@ void terminate_continuous_assignment(ast_node_t *node, signal_list_t* assignment
 			if (net->name == NULL)
 				net->name = pin->name;
 
-			nnode_t *buf_node = allocate_nnode();
+			nnode_t *buf_node= (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+			allocate_nnode(buf_node);
 			buf_node->type = BUF_NODE;
 			/* create the unique name for this gate */
 			buf_node->name = node_name(buf_node, instance_name_prefix);
@@ -3441,7 +3471,8 @@ void terminate_continuous_assignment(ast_node_t *node, signal_list_t* assignment
 			add_input_pin_to_node(buf_node, buf_input_pin, 0);
 
 			/* finally hookup the output pin of the buffer to the orginal driver net */
-			npin_t *buf_output_pin = allocate_npin();
+			npin_t *buf_output_pin  = (npin_t *)my_malloc_struct(sizeof(npin_t));
+			allocate_npin(buf_output_pin);
 			add_output_pin_to_node(buf_node, buf_output_pin, 0);
 
 			if(net->driver_pin != NULL)
@@ -3481,46 +3512,28 @@ void terminate_continuous_assignment(ast_node_t *node, signal_list_t* assignment
  * (function: alias_output_assign_pins_to_inputs)
  * 	Makes the names of the pins in the input list have the name of the output assignment
  *-------------------------------------------------------------------------------------------*/
-int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *input_list, ast_node_t *node)
-{
+int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *input_list, ast_node_t *node){
 	int i;
-
-	if (output_list->num_strings >= input_list->count)
-	{
-		for (i = 0; i < input_list->count; i++)
-		{
-			input_list->pins[i]->name = output_list->strings[i];
-			input_list->pins[i]->node = allocate_nnode();
-			input_list->pins[i]->node->related_ast_node = node;
-		}
-		for (i = input_list->count; i < output_list->num_strings; i++)
-		{
-			if (global_args.all_warnings)
+	for (i = 0; i < output_list->num_strings; i++){
+		if (output_list->num_strings >= input_list->count && i >= input_list->count){
+			if (global_args.all_warnings){
 				warning_message(NETLIST_ERROR, node->line_number, node->file_number,
 						"More nets to drive than drivers, padding with ZEROs for driver %s\n", output_list->strings[i]);
-
+			}
 			add_pin_to_signal_list(input_list, get_zero_pin(verilog_netlist));
-			input_list->pins[i]->name = output_list->strings[i];
-			input_list->pins[i]->node = allocate_nnode();
-			input_list->pins[i]->node->related_ast_node = node;
 		}
-
-		return output_list->num_strings;
+	
+		input_list->pins[i]->name = output_list->strings[i];
+		input_list->pins[i]->node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+		allocate_nnode(input_list->pins[i]->node);
+		input_list->pins[i]->node->related_ast_node = node;
 	}
-	else
-	{
-		for (i = 0; i < output_list->num_strings; i++)
-		{
-			input_list->pins[i]->name = output_list->strings[i];
-			input_list->pins[i]->node = allocate_nnode();
-			input_list->pins[i]->node->related_ast_node = node;
-		}
-
-		if (global_args.all_warnings)
-			warning_message(NETLIST_ERROR, node->line_number, node->file_number,
-					"Alias: More driver pins than nets to drive: sometimes using decimal numbers causes this problem\n");
-		return output_list->num_strings;
+	if(output_list->num_strings < input_list->count && global_args.all_warnings){
+		warning_message(NETLIST_ERROR, node->line_number, node->file_number,
+				"Alias: More driver pins than nets to drive: sometimes using decimal numbers causes this problem\n");
 	}
+
+	return output_list->num_strings;
 }
 
 /*--------------------------------------------------------------------------
@@ -3533,7 +3546,7 @@ signal_list_t *create_gate(ast_node_t* gate, char *instance_name_prefix)
 
 	signal_list_t *in_1, **in;
 	signal_list_t *out_1 = NULL;
-	nnode_t *gate_node;
+	
 
 	ast_node_t *gate_instance;
     int i, j;
@@ -3553,7 +3566,8 @@ signal_list_t *create_gate(ast_node_t* gate, char *instance_name_prefix)
 		    oassert((in_1 != NULL) && (out_1 != NULL));
 
 		    /* create the node */
-		    gate_node = allocate_nnode();
+		    nnode_t *gate_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+		    allocate_nnode(gate_node);
 		    /* store all the relevant info */
 		    gate_node->related_ast_node = gate;
 		    gate_node->type = gate->types.operation.op;
@@ -3593,7 +3607,8 @@ signal_list_t *create_gate(ast_node_t* gate, char *instance_name_prefix)
             oassert((out_1 != NULL));
 
 		    /* create the node */
-		    gate_node = allocate_nnode();
+		    nnode_t *gate_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+		    allocate_nnode(gate_node);
 		    /* store all the relevant info */
 		    gate_node->related_ast_node = gate;
 		    gate_node->type = gate->types.operation.op;
@@ -3641,14 +3656,14 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 {
 	int i;
 	signal_list_t *return_list = init_signal_list();
-	nnode_t *operation_node;
 	int max_input_port_width = -1;
 	int output_port_width = -1;
 	int input_port_width = -1;
 	int current_idx;
 
 	/* create the node */
-	operation_node = allocate_nnode();
+	nnode_t *operation_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(operation_node);
 	/* store all the relevant info */
 	operation_node->related_ast_node = op;
 	operation_node->type = op->types.operation.op;
@@ -3837,12 +3852,14 @@ signal_list_t *create_operation_node(ast_node_t *op, signal_list_t **input_lists
 	/* make the inplicit output list and hook up the outputs */
 	for (i = 0; i < output_port_width; i++)
 	{
-		npin_t *new_pin1;
-		npin_t *new_pin2;
-		nnet_t *new_net;
-		new_pin1 = allocate_npin();
-		new_pin2 = allocate_npin();
-		new_net = allocate_nnet();
+		npin_t *new_pin1 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+		npin_t *new_pin2 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+		
+		allocate_npin(new_pin1);
+		allocate_npin(new_pin2);
+		
+		nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+		allocate_nnet(new_net);
 		new_net->name = operation_node->name;
 		/* hook the output pin into the node */
 		add_output_pin_to_node(operation_node, new_pin1, i);
@@ -3936,10 +3953,10 @@ signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instan
 signal_list_t *create_if_for_question(ast_node_t *if_ast, char *instance_name_prefix)
 {
 	signal_list_t *return_list;
-	nnode_t *if_node;
-
+	
 	/* create the node */
-	if_node = allocate_nnode();
+	nnode_t *if_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(if_node);
 	/* store all the relevant info */
 	if_node->related_ast_node = if_ast;
 	if_node->type = MULTI_PORT_MUX; // port 1 = control, port 2+ = mux options
@@ -3964,7 +3981,7 @@ signal_list_t *create_if_question_mux_expressions(ast_node_t *if_ast, nnode_t *i
 	int i;
 
 	/* make storage for statements and expressions */
-	if_expressions = (signal_list_t**)malloc(sizeof(signal_list_t*)*2);
+	if_expressions = (signal_list_t**)calloc(2,sizeof(signal_list_t*));
 
 	/* now we will process the statements and add to the other ports */
 	for (i = 0; i < 2; i++)
@@ -3992,10 +4009,10 @@ signal_list_t *create_if_question_mux_expressions(ast_node_t *if_ast, nnode_t *i
 signal_list_t *create_if(ast_node_t *if_ast, char *instance_name_prefix)
 {
 	signal_list_t *return_list;
-	nnode_t *if_node;
 
 	/* create the node */
-	if_node = allocate_nnode();
+	nnode_t *if_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(if_node);
 	/* store all the relevant info */
 	if_node->related_ast_node = if_ast;
 	if_node->type = MULTI_PORT_MUX; // port 1 = control, port 2+ = mux options
@@ -4080,7 +4097,7 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 	int i;
 
 	/* make storage for statements and expressions */
-	if_statements = (signal_list_t**)malloc(sizeof(signal_list_t*)*2);
+	if_statements = (signal_list_t**)calloc(2,sizeof(signal_list_t*));
 
 	/* now we will process the statements and add to the other ports */
 	for (i = 0; i < 2; i++)
@@ -4110,12 +4127,12 @@ signal_list_t *create_if_mux_statements(ast_node_t *if_ast, nnode_t *if_node, ch
 signal_list_t *create_case(ast_node_t *case_ast, char *instance_name_prefix)
 {
 	signal_list_t *return_list;
-	nnode_t *case_node;
 	ast_node_t *case_list_of_items;
 	ast_node_t *case_match_input;
 
 	/* create the node */
-	case_node = allocate_nnode();
+	nnode_t *case_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(case_node);
 	/* store all the relevant info */
 	case_node->related_ast_node = case_ast;
 	case_node->type = MULTI_PORT_MUX; // port 1 = control, port 2+ = mux options
@@ -4156,7 +4173,7 @@ void create_case_control_signals(ast_node_t *case_list_of_items, ast_node_t *com
 		{
 			/* IF - this is a normal case item, then process the case match and the details of the statement */
 			signal_list_t *case_compare_expression;
-			signal_list_t **case_compares = (signal_list_t **)malloc(sizeof(signal_list_t*)*2);
+			signal_list_t **case_compares = (signal_list_t **)calloc(2,sizeof(signal_list_t*));
 			ast_node_t *logical_equal = create_node_w_type(BINARY_OPERATION, -1, -1);
 			logical_equal->types.operation.op = LOGICAL_EQUAL;
 
@@ -4214,7 +4231,7 @@ signal_list_t *create_case_mux_statements(ast_node_t *case_list_of_items, nnode_
 	int i;
 
 	/* make storage for statements and expressions */
-	case_statement = (signal_list_t**)malloc(sizeof(signal_list_t*)*(case_list_of_items->num_children));
+	case_statement = (signal_list_t**)calloc((case_list_of_items->num_children),sizeof(signal_list_t*));
 
 	/* now we will process the statements and add to the other ports */
 	for (i = 0; i < case_list_of_items->num_children; i++)
@@ -4256,7 +4273,7 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 	int out_index = 0;
 
 	/* allocate and initialize indexes */
-	per_case_statement_idx = (int*)calloc(sizeof(int), num_statement_lists);
+	per_case_statement_idx = (int*)calloc(num_statement_lists,sizeof(int));
 
 	/* make the uber list and sort it */
 	combined_lists = combine_lists_without_freeing_originals(statement_lists, num_statement_lists);
@@ -4265,12 +4282,13 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 	for (i = 0; i < combined_lists->count; i++)
 	{
 		int i_skip = 0; // iskip is the number of statemnts that do have this signal so we can skip in the combine list
-		npin_t *new_pin1;
-		npin_t *new_pin2;
-		nnet_t *new_net;
-		new_pin1 = allocate_npin();
-		new_pin2 = allocate_npin();
-		new_net = allocate_nnet();
+		npin_t *new_pin1 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+		npin_t *new_pin2 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+		allocate_npin(new_pin1);
+		allocate_npin(new_pin2);
+		
+		nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+		allocate_nnet(new_net);
 
 		/* allocate a port the width of all the signals ... one MUX */
 		allocate_more_input_pins(mux_node, num_statement_lists);
@@ -4377,12 +4395,13 @@ signal_list_t *create_mux_expressions(signal_list_t **expression_lists, nnode_t 
 
 	for (i = 0; i < max_index; i++)
 	{
-		npin_t *new_pin1;
-		npin_t *new_pin2;
-		nnet_t *new_net;
-		new_pin1 = allocate_npin();
-		new_pin2 = allocate_npin();
-		new_net = allocate_nnet();
+		npin_t *new_pin1 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+		npin_t *new_pin2 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+		allocate_npin(new_pin1);
+		allocate_npin(new_pin2);
+		
+		nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+		allocate_nnet(new_net);
 
 		/* allocate a port the width of all the signals ... one MUX */
 		allocate_more_input_pins(mux_node, num_expression_lists);
@@ -4440,7 +4459,7 @@ int find_smallest_non_numerical(ast_node_t *node, signal_list_t **input_list, in
 	int i;
 	int smallest;
 	int smallest_idx;
-	short *tested = (short*)calloc(sizeof(short), num_input_lists);
+	short *tested = (short*)calloc(num_input_lists,sizeof(short));
 	short found_non_numerical = FALSE;
 
 	while(found_non_numerical == FALSE)
@@ -4538,7 +4557,8 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 	ast_node_t *block_connect;
 
 	/* create the node */
-	nnode_t *block_node = allocate_nnode();
+	nnode_t *block_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(block_node);
 	/* store all of the relevant info */
 	block_node->related_ast_node = block;
 	block_node->type = HARD_IP;
@@ -4573,7 +4593,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 		block_connect->children[1]->hb_port = (void *)hb_ports;
 	}
 
-	signal_list_t **in_list = (signal_list_t **)malloc(sizeof(signal_list_t *)*block_list->num_children);
+	signal_list_t **in_list = (signal_list_t **)calloc(block_list->num_children,sizeof(signal_list_t *));
 	int out_port_size1 = 0;
 	int out_port_size2 = 0;
 	int current_idx = 0;
@@ -4645,7 +4665,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 					block->children[1]->children[0]->types.identifier,
 					ip_name, -1);
 
-			t_memory_port_sizes *ps = (t_memory_port_sizes *)malloc(sizeof(t_memory_port_sizes));
+			t_memory_port_sizes *ps = (t_memory_port_sizes *)calloc(1,sizeof(t_memory_port_sizes));
 			ps->size = out_port_size;
 			ps->name = alias_name;
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
@@ -4663,11 +4683,15 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 				);
 
 
-				npin_t *new_pin1 = allocate_npin();
+				npin_t *new_pin1 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+				allocate_npin(new_pin1);
 				new_pin1->mapping = make_signal_name(hb_ports->name, -1);
 				new_pin1->name = pin_name;
-				npin_t *new_pin2 = allocate_npin();
-				nnet_t *new_net = allocate_nnet();
+				npin_t *new_pin2 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+				allocate_npin(new_pin2);
+				
+				nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+				allocate_nnet(new_net);
 				new_net->name = hb_ports->name;
 				/* hook the output pin into the node */
 				add_output_pin_to_node(block_node, new_pin1, current_out_idx + j);
@@ -4712,7 +4736,8 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 	int current_idx = 0;
 
 	/* create the node */
-	nnode_t *block_node = allocate_nnode();
+	nnode_t *block_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(block_node);
 	/* store all of the relevant info */
 	block_node->related_ast_node = block;
 	block_node->type = HARD_IP;
@@ -4774,7 +4799,7 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 	if (i != block_list->num_children)
 		error_message(NETLIST_ERROR, block->line_number, block->file_number, "Not all ports defined in hard block %s\n", ip_name);
 
-	signal_list_t **in_list = (signal_list_t **)malloc(sizeof(signal_list_t *)*block_list->num_children);
+	signal_list_t **in_list = (signal_list_t **)calloc(block_list->num_children,sizeof(signal_list_t *));
 	int out_port_size = 0;
 	for (i = 0; i < block_list->num_children; i++)
 	{
@@ -4832,7 +4857,7 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 					block->children[1]->children[0]->types.identifier,
 					ip_name, -1
 			);
-			t_memory_port_sizes *ps = (t_memory_port_sizes *)malloc(sizeof(t_memory_port_sizes));
+			t_memory_port_sizes *ps = (t_memory_port_sizes *)calloc(1,sizeof(t_memory_port_sizes));
 			ps->size = out_port_size;
 			ps->name = alias_name;
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
@@ -4848,12 +4873,15 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 					(out_port_size > 1) ? j : -1
 				);
 
-				npin_t *new_pin1 = allocate_npin();
+				npin_t *new_pin1 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+				allocate_npin(new_pin1);
 				new_pin1->mapping = make_signal_name(hb_ports->name, -1);
 				new_pin1->name = pin_name;
-				npin_t *new_pin2 = allocate_npin();
+				npin_t *new_pin2 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+				allocate_npin(new_pin2);
 
-				nnet_t *new_net = allocate_nnet();
+				nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+				allocate_nnet(new_net);
 				new_net->name = hb_ports->name;
 				/* hook the output pin into the node */
 				add_output_pin_to_node(block_node, new_pin1, current_out_idx + j);
@@ -4899,7 +4927,8 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 	block->type = RAM;
 
 	// create the node
-	nnode_t *block_node = allocate_nnode();
+	nnode_t *block_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(block_node);
 	// store all of the relevant info
 	block_node->related_ast_node = block;
 	block_node->type = HARD_IP;
@@ -4912,7 +4941,7 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 	);
 
 	int i;
-	signal_list_t **in_list = (signal_list_t **)malloc(sizeof(signal_list_t *)*block_list->num_children);
+	signal_list_t **in_list = (signal_list_t **)calloc(block_list->num_children,sizeof(signal_list_t *));
 	int out_port_size = 0;
 	int current_idx = 0;
 	for (i = 0; i < block_list->num_children; i++)
@@ -4969,7 +4998,7 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 					block->children[1]->children[0]->types.identifier,
 					block_connect->types.identifier, -1
 			);
-			t_memory_port_sizes *ps = (t_memory_port_sizes *)malloc(sizeof(t_memory_port_sizes));
+			t_memory_port_sizes *ps = (t_memory_port_sizes *)calloc(1,sizeof(t_memory_port_sizes));
 			ps->size = out_port_size;
 			ps->name = alias_name;
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
@@ -4997,13 +5026,17 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 					);
 				}
 
-				npin_t *new_pin1 = allocate_npin();
+				npin_t *new_pin1 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+				allocate_npin(new_pin1);
 				new_pin1->mapping = ip_name;
 				new_pin1->name = pin_name;
 
-				npin_t *new_pin2 = allocate_npin();
+				npin_t *new_pin2 = (npin_t *)my_malloc_struct(sizeof(npin_t)); 
+				allocate_npin(new_pin2);
 
-				nnet_t *new_net = allocate_nnet();
+				nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+				allocate_nnet(new_net);
+				
 				new_net->name = ip_name;
 
 				// hook the output pin into the node
@@ -5050,7 +5083,8 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 	block->type = RAM;
 
 	// create the node
-	nnode_t *block_node = allocate_nnode();
+	nnode_t *block_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(block_node);
 	// store all of the relevant info
 	block_node->related_ast_node = block;
 	block_node->type = HARD_IP;
@@ -5063,7 +5097,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 	);
 
 	int i;
-	signal_list_t **in_list = (signal_list_t **)malloc(sizeof(signal_list_t *)*block_list->num_children);
+	signal_list_t **in_list = (signal_list_t **)calloc(block_list->num_children,sizeof(signal_list_t *));
 	int out1_size = 0;
 	int out2_size = 0;
 	int current_idx = 0;
@@ -5135,7 +5169,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 			allocate_more_output_pins(block_node, port_size);
 			add_output_port_information(block_node, port_size);
 
-			t_memory_port_sizes *ps = (t_memory_port_sizes *)malloc(sizeof(t_memory_port_sizes));
+			t_memory_port_sizes *ps = (t_memory_port_sizes *)calloc(1,sizeof(t_memory_port_sizes));
 			ps->size = port_size;
 			ps->name = strdup(alias_name);
 			memory_port_size_list = insert_in_vptr_list(memory_port_size_list, ps);
@@ -5152,13 +5186,16 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 						(port_size > 1) ? j : -1
 				);
 
-				npin_t *new_pin1 = allocate_npin();
+				npin_t *new_pin1 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+				allocate_npin(new_pin1);
 				new_pin1->mapping = ip_name;
 				new_pin1->name = pin_name;
 
-				npin_t *new_pin2 = allocate_npin();
+				npin_t *new_pin2 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+				allocate_npin(new_pin2);
 
-				nnet_t *new_net = allocate_nnet();
+				nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+				allocate_nnet(new_net);
 				new_net->name = ip_name;
 
 				// hook the output pin into the node
@@ -5200,7 +5237,6 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 {
 	signal_list_t **in_list, *return_list;
-	nnode_t *block_node;
 	ast_node_t *block_instance = block->children[1];
 	ast_node_t *block_list = block_instance->children[1];
 	ast_node_t *block_connect;
@@ -5257,7 +5293,8 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 	current_out_idx = 0;
 
 	/* create the node */
-	block_node = allocate_nnode();
+	nnode_t *block_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	allocate_nnode(block_node);
 	/* store all of the relevant info */
 	block_node->related_ast_node = block;
 	block_node->type = HARD_IP;
@@ -5297,7 +5334,7 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 		block_connect->children[1]->hb_port = (void *)hb_ports;
 	}
 
-	in_list = (signal_list_t **)malloc(sizeof(signal_list_t *)*block_list->num_children);
+	in_list = (signal_list_t **)calloc(block_list->num_children,sizeof(signal_list_t *));
 	for (i = 0; i < block_list->num_children; i++)
 	{
 		int port_size;
@@ -5372,7 +5409,7 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 				{
 					npin_t *new_pin1;
 					npin_t *new_pin2;
-					nnet_t *new_net;
+
 					char *pin_name;
 					long sc_spot;
 
@@ -5380,13 +5417,19 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 						pin_name = make_full_ref_name(block_node->name, NULL, NULL, hb_ports->name, j);
 					else
 						pin_name = make_full_ref_name(block_node->name, NULL, NULL, hb_ports->name, -1);
-
-					new_pin1 = allocate_npin();
+					
+					new_pin1 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+					allocate_npin(new_pin1);
 					new_pin1->mapping = make_signal_name(hb_ports->name, -1);
 
 					new_pin1->name = pin_name;
-					new_pin2 = allocate_npin();
-					new_net = allocate_nnet();
+					
+					new_pin2 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+					allocate_npin(new_pin2);
+					
+					nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+					allocate_nnet(new_net);
+					
 					new_net->name = hb_ports->name;
 					/* hook the output pin into the node */
 					add_output_pin_to_node(block_node, new_pin1, current_out_idx + j);
@@ -5417,9 +5460,8 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 		/* make the implicit output list and hook up the outputs */
 		for (j = 0; j < mult_size; j++)
 		{
-			npin_t *new_pin1;
-			npin_t *new_pin2;
-			nnet_t *new_net;
+
+
 			char *pin_name;
 			long sc_spot;
 
@@ -5428,14 +5470,20 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 			else
 				pin_name = make_full_ref_name(block_node->name, NULL, NULL, hb_ports->name, -1);
 
-			new_pin1 = allocate_npin();
+			npin_t *new_pin1 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+			npin_t *new_pin2 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+			allocate_npin(new_pin1);
+ 			allocate_npin(new_pin2);
+ 			
+ 			nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+			allocate_nnet(new_net);
+			
 			if (hb_ports->size > 1)
 				new_pin1->mapping = make_signal_name(hb_ports->name, j);
 			else
 				new_pin1->mapping = make_signal_name(hb_ports->name, -1);
 
-			new_pin2 = allocate_npin();
-			new_net = allocate_nnet();
+
 			new_net->name = hb_ports->name;
 			/* hook the output pin into the node */
 			add_output_pin_to_node(block_node, new_pin1, current_out_idx + j);
@@ -5463,15 +5511,18 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 
 		for (j = 0; j < adder_size + 1; j++)
 		{
-			npin_t *new_pin1;
-			npin_t *new_pin2;
-			nnet_t *new_net;
+
+			
 			char *pin_name;
 			long sc_spot;
-
-			new_pin1 = allocate_npin();
-			new_pin2 = allocate_npin();
-			new_net = allocate_nnet();
+			
+			npin_t *new_pin1 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+			npin_t *new_pin2 = (npin_t *)my_malloc_struct(sizeof(npin_t));
+			allocate_npin(new_pin1);
+			allocate_npin(new_pin2);
+			
+			nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+			allocate_nnet(new_net);
 			/*For sumout - make the implicit output list and hook up the outputs */
 			if(j < adder_size)
 			{

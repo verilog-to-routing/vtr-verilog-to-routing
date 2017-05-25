@@ -116,8 +116,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 <INITIAL>[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = strdup(yytext); return vSYMBOL_ID; }
 <INITIAL>`[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = strdup(yytext); return vSYMBOL_ID; }
 <INITIAL>[0-9]*'[bhod][a-zA-Z0-9]*			{ MP; yylval.num_value = strdup(yytext); return vNUMBER_ID; }
-<INITIAL>[0-9]+						{ MP; yylval.num_value = strdup(yytext); return vNUMBER_ID; }
+<INITIAL>[0-9]+						{ MP; yylval.num_value = strdup(yytext);  return vNUMBER_ID; }
 <INITIAL>#[0-9]+					{ MP; yylval.num_value = strdup(yytext+1); return vDELAY_ID; }
+
 
 	/* return operators */
 <INITIAL>[}{;:\[\],()#=.@&!?<>%|^~+*/-]		{ MP; return yytext[0]; }

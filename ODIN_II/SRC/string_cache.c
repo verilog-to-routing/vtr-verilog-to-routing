@@ -41,7 +41,7 @@ generate_sc_hash(STRING_CACHE * sc)
     sc->next_string = (long *)sc_do_alloc(sc->size, sizeof(long));
     memset(sc->string_hash, 0xff, sc->string_hash_size * sizeof(long));
     memset(sc->next_string, 0xff, sc->size * sizeof(long));
-    for(i = 0; i < sc->free; i++)
+    for(i = 0; i < sc->freedom; i++)
 	{
 	    hash = string_hash(sc, sc->string[i]) % sc->string_hash_size;
 	    sc->next_string[i] = sc->string_hash[hash];
@@ -60,7 +60,7 @@ sc_new_string_cache(void)
     sc->string_hash_size = 0;
     sc->string_hash = NULL;
     sc->next_string = NULL;
-    sc->free = 0;
+    sc->freedom = 0;
     sc->string = (char **)sc_do_alloc(sc->size, sizeof(char *));
     sc->data = (void **)sc_do_alloc(sc->size, sizeof(void *));
     sc->mod = 834535547;
@@ -102,26 +102,26 @@ sc_add_string(STRING_CACHE * sc,
     i = sc_lookup_string(sc, string);
     if(i >= 0)
 		return i;
-    if(sc->free >= sc->size)
+    if(sc->freedom >= sc->size)
 	{
 	    sc->size = sc->size * 2 + 10;
 
 	    a = sc_do_alloc(sc->size, sizeof(char *));
-	    if(sc->free > 0)
-		memcpy(a, sc->string, sc->free * sizeof(char *));
+	    if(sc->freedom > 0)
+		memcpy(a, sc->string, sc->freedom * sizeof(char *));
 	    free(sc->string);
 	    sc->string = (char **)a;
 
 	    a = sc_do_alloc(sc->size, sizeof(void *));
-	    if(sc->free > 0)
-		memcpy(a, sc->data, sc->free * sizeof(void *));
+	    if(sc->freedom > 0)
+		memcpy(a, sc->data, sc->freedom * sizeof(void *));
 	    free(sc->data);
 	    sc->data = (void **)a;
 
 	    generate_sc_hash(sc);
 	}
-    i = sc->free;
-    sc->free++;
+    i = sc->freedom;
+    sc->freedom++;
     sc->string[i] = strdup(string);
     sc->data[i] = NULL;
     hash = string_hash(sc, string) % sc->string_hash_size;
@@ -136,7 +136,7 @@ sc_valid_id(STRING_CACHE * sc,
 {
     if(string_id < 0)
 	return 0;
-    if(string_id >= sc->free)
+    if(string_id >= sc->freedom)
 	return 0;
     return 1;
 }
@@ -168,7 +168,7 @@ STRING_CACHE * sc_free_string_cache(STRING_CACHE * sc)
     long i;
 
     if(sc == NULL) return NULL;
-    for(i = 0; i < sc->free; i++)
+    for(i = 0; i < sc->freedom; i++)
 	if (sc->string != NULL)
 	    free(sc->string[i]);
     free(sc->string);
