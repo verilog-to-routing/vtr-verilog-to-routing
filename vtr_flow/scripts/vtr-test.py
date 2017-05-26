@@ -36,11 +36,11 @@ def vtr_command_argparser(prog=None):
 
                     Run the regression tests 'vtr_basic' and 'vtr_strong':
 
-                        %(prog)s vtr_reg_basic vtr_strong
+                        %(prog)s vtr_basic vtr_strong
 
                     Run the regression tests 'vtr_basic' and 'vtr_strong' with 8 parallel workers:
 
-                        %(prog)s vtr_reg_basic vtr_strong -j8
+                        %(prog)s vtr_basic vtr_strong -j8
                 """
              )
 
@@ -89,8 +89,8 @@ def vtr_command_main(arg_list, prog=None):
 
     print_verbose(BASIC_VERBOSITY, args.verbosity, "# {} {}\n".format(prog, ' '.join(arg_list)))
 
-    num_func_failures = -1
-    num_qor_failures = -1
+    num_func_failures = 0
+    num_qor_failures = 0
 
     try:
         #Run any ODIN tests
