@@ -23,7 +23,7 @@ ALL_LOG_VERBOSITY = 4
 
 class Job:
 
-    def __init__(self, task_name, job_name, command, work_dir):
+    def __init__(self, task_name, job_name, work_dir, command):
         self._task_name = task_name
         self._job_name = job_name
         self._command = command
@@ -159,73 +159,61 @@ def vtr_command_main(arg_list, prog=None):
 
 def run_tasks(args, configs):
 
+    #We could potentially support other 'run' systems (e.g. a cluster),
+    #rather than just the local machine
     if args.system == "local":
         assert args.j > 0, "Invalid number of processors"
 
-        #Generate the arguments for each script invocation
-        all_worker_args = build_worker_args(args, configs)
-
-        jobs = []
-        for worker_args in all_worker_args:
-            cmd_args = [worker_args['arch'],
-                        worker_args['circuit'],
-                        "-v", str(max(0, args.verbosity - 1)) #Less verbose
-                        ]
-            cmd = worker_args['exec'] + cmd_args
-            job = Job(worker_args['task_name'], worker_args['job_name'], cmd, worker_args['work_dir'])
-            jobs.append(job)
+        #Generate the jobs, each corresponding to an invocation of vtr flow
+        jobs = create_jobs(args, configs)
 
         return run_parallel(args, jobs)
     else:
         raise VtrError("Unrecognized run system {system}".format(system=args.system))
 
-def build_worker_args(args, configs):
-    all_worker_args = []
-
-    cmd_runner = CommandRunner(track_memory=False,
-                               verbose=True if args.verbosity > 1 else False,
-                                )
-
+def create_jobs(args, configs):
+    jobs = []
     for config in configs:
         for arch, circuit in itertools.product(config.archs, config.circuits):
+            abs_arch_filepath = resolve_vtr_source_file(config, arch, config.arch_dir)
+            abs_circuit_filepath = resolve_vtr_source_file(config, circuit, config.circuit_dir)
+
             executable = None
             if config.script_path:
+                #Custom flow script
                 executable = [config.script_path]
             else:
+                #Default flow script
                 executable = [find_vtr_file('vtr', is_executabe=True), 'flow']
 
-            script_params = []
+            #Collect any extra script params from the config file
+            script_params = [abs_arch_filepath, abs_circuit_filepath]
             script_params += config.script_params
 
+            #Apply any special config based parameters
             if config.cmos_tech_behavior:
-                script_params += ["--power_tech", resolve_vtr_source_file(config, config.cmos_tech_behavior, "tech")]
+                script_params += ["--power", resolve_vtr_source_file(config, config.cmos_tech_behavior, "tech")]
 
             if config.pad_file:
                 script_params += ["--fix_pins", resolve_vtr_source_file(config, config.pad_file)]
+
+            #We specify less verbosity to the sub-script
+            # This keeps the amount of output reasonable
+            script_params += ["-v", str(max(0, args.verbosity - 1))]
+
+            cmd = executable + script_params
 
             work_dir = os.path.join(config.task_name, os.path.basename(arch), os.path.basename(circuit))
 
             job_name = os.path.join(arch, circuit)
 
-            worker_info = {
-                            'task_name': config.task_name,
-                            'job_name': job_name, 
-                            'exec': executable, 
-                            'arch': resolve_vtr_source_file(config, arch, config.arch_dir),
-                            'circuit': resolve_vtr_source_file(config, circuit, config.circuit_dir), 
-                            'script_args': script_params, 
-                            'work_dir': work_dir, 
-                            'cmd_runner': cmd_runner,
-                            'verbosity': args.verbosity
-                            } 
+            jobs.append(Job(config.task_name, job_name, work_dir, cmd))
 
-            all_worker_args.append(worker_info)
-
-    return all_worker_args
+    return jobs
 
 def run_parallel(args, queued_jobs):
     """
-    Run each external command in commands with at most j commands running in parllel
+    Run each external command in commands with at most args.j commands running in parllel
     """
 
     #We pop off the jobs of queued_jobs, which python does from the end,
@@ -257,7 +245,7 @@ def run_parallel(args, queued_jobs):
                 log_file = open(log_filepath, 'w+')
 
                 #print "Starting {}: {}".format(job.task_name(), job.job_name())
-
+                #print job.command()
                 proc = subprocess.Popen(job.command(), 
                                         cwd=work_dir, 
                                         stderr=subprocess.STDOUT, 
@@ -336,15 +324,15 @@ def print_log(log_file, indent="    "):
     log_file.seek(curr_pos)
 
 
-def resolve_vtr_source_file(config, filename, base_dir=None):
+def resolve_vtr_source_file(config, filename, base_dir=""):
     """
     Resolves an filename with a base_dir
 
     Checks the following in order:
         1) filename as absolute path
         2) filename under config directory
-        2) base_dir as absolute path (join filename with base_dir)
-        3) filename and base_dir are relative paths (join under vtr_root)
+        3) base_dir as absolute path (join filename with base_dir)
+        4) filename and base_dir are relative paths (join under vtr_root)
     """
     
     #Absolute path
@@ -370,7 +358,7 @@ def resolve_vtr_source_file(config, filename, base_dir=None):
             return joined_path
 
     #Not found
-    return None
+    raise ValueError("Failed to resolve VTR source file {}".format(filename))
 
 if __name__ == "__main__":
     retval = main()
