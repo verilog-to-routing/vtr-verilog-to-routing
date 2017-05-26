@@ -332,6 +332,7 @@ def run_vpr_relax_W(architecture, circuit, command_runner=CommandRunner(), work_
         #Don't look for min W if routing was not run
         return
 
+
     min_W = determine_min_W(os.path.join(work_dir, vpr_min_W_log))
 
     relaxed_W = relax_W(min_W, relax_W_factor)
@@ -340,6 +341,12 @@ def run_vpr_relax_W(architecture, circuit, command_runner=CommandRunner(), work_
 
     vpr_args['route'] = True #Re-route only
     vpr_args['route_chan_width'] = relaxed_W #At a fixed channel width
+
+    #VPR does not support performing routing when fixed pins 
+    # are specified, and placement is not run; so remove the option
+    if 'fix_pins' in vpr_args:
+        del vpr_args['fix_pins']
+
     run_vpr(architecture, circuit, command_runner, work_dir, log_filename=vpr_crit_path_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
     
 
