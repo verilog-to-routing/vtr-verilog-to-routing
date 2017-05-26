@@ -4,6 +4,8 @@ import sys
 import argparse
 import itertools
 import textwrap
+import subprocess
+import time
 from datetime import datetime
 from multiprocessing import Pool
 
@@ -14,6 +16,30 @@ from verilogtorouting.error import *
 from verilogtorouting.util import load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES
 from verilogtorouting.task import load_task_config, TaskConfig, find_task_config_file
 from verilogtorouting.flow import CommandRunner
+
+BASIC_VERBOSITY = 1
+FAILED_LOG_VERBOSITY = 2
+ALL_LOG_VERBOSITY = 4
+
+class Job:
+
+    def __init__(self, task_name, job_name, command, work_dir):
+        self._task_name = task_name
+        self._job_name = job_name
+        self._command = command
+        self._work_dir = work_dir
+
+    def task_name(self):
+        return self._task_name
+
+    def job_name(self):
+        return self._job_name
+
+    def command(self):
+        return self._command
+
+    def work_dir(self):
+        return self._work_dir
 
 def vtr_command_argparser(prog=None):
     description = textwrap.dedent(
@@ -76,7 +102,7 @@ def vtr_command_argparser(prog=None):
 
     parser.add_argument("-v", "--verbosity",
                         choices=VERBOSITY_CHOICES,
-                        default=1,
+                        default=2,
                         type=int,
                         help="Sets the verbosity of the script. Higher values produce more output.")
 
@@ -86,11 +112,12 @@ def main():
     vtr_command_main(sys.argv[1:])
 
 def vtr_command_main(arg_list, prog=None):
-    #import pudb
-    #pudb.set_trace()
+    start = datetime.now()
 
     #Load the arguments
     args = vtr_command_argparser(prog).parse_args(arg_list)
+
+    print_verbose(BASIC_VERBOSITY, args.verbosity, "# {} {}\n".format(prog, ' '.join(arg_list)))
 
     try:
         task_names = args.task
@@ -103,6 +130,7 @@ def vtr_command_main(arg_list, prog=None):
         configs = [load_task_config(config_file) for config_file in config_files]
 
         run_tasks(args, configs)
+
     except CommandError as e:
         print "Error: {msg}".format(msg=e.msg)
         print "\tfull command: ", e.cmd
@@ -112,11 +140,11 @@ def vtr_command_main(arg_list, prog=None):
     except VtrError as e:
         print "Error:", e.msg
         sys.exit(1)
-
+    finally:
+        print_verbose(BASIC_VERBOSITY, args.verbosity, "\n{} took {}".format(prog, format_elapsed_time(datetime.now() - start)))
     sys.exit(0)
 
 def run_tasks(args, configs):
-    start = datetime.now()
 
     if args.system == "local":
         assert args.j > 0, "Invalid number of processors"
@@ -124,105 +152,19 @@ def run_tasks(args, configs):
         #Generate the arguments for each script invocation
         all_worker_args = build_worker_args(args, configs)
 
-        if args.j == 1:
+        jobs = []
+        for worker_args in all_worker_args:
+            cmd_args = [worker_args['arch'],
+                        worker_args['circuit'],
+                        "-v", str(max(0, args.verbosity - 1)) #Less verbose
+                        ]
+            cmd = worker_args['exec'] + cmd_args
+            job = Job(worker_args['task_name'], worker_args['job_name'], cmd, worker_args['work_dir'])
+            jobs.append(job)
 
-            #Run serially
-            for worker_args in all_worker_args:
-                local_worker(worker_args)
-
-        else:
-            #Run in parallel
-
-            #Generate a pool of workers
-            pool = Pool(processes=args.j)
-
-            try:
-                #map_async will call local_worker on every element of all_worker_args
-                #the pool will handle the allocation of invocations to the worker processes
-                #
-                #We use map_asyc with a .get(timeout) to allow for clean keyboard interrupts
-                # for discussion see: https://stackoverflow.com/questions/1408356
-                res = pool.map_async(local_worker, all_worker_args)
-
-                pool.close()
-
-                res.get(args.timeout)
-            except KeyboardInterrupt:
-                print "Recieved keyboard interrupt, terminating workers..."
-                pool.terminate()
+        run_parallel(args, jobs)
     else:
         raise VtrError("Unrecognized run system {system}".format(system=args.system))
-
-    end = datetime.now()
-    elapsed = end - start
-    print_verbose(1, args.verbosity, "Executing {} task(s) took {}".format(len(configs), format_elapsed_time(elapsed)))
-
-
-def local_worker(worker_args):
-    """
-    Runs a single component of a task (i.e. a script invocation)
-    based on the arguments provided in worker_args.
-    """
-
-    TIME_FMT = "%a %Y-%m-%d %H:%M:%S %z"
-    ELAPSED_FMT = "%H:%M:%S"
-
-    start = datetime.now()
-
-    try:
-        verbosity = worker_args['verbosity']
-
-        #Pad out the task names so they alighn nicely
-        operation = "{:<" + str(worker_args['task_name_length']) + "}"
-        operation = operation.format(worker_args['task_name'])
-
-
-        print_verbose(1, verbosity,  "Starting {operation} at {time}".format(operation=operation,
-                                                                             time=start.strftime(TIME_FMT)))
-
-        cmd_runner = worker_args['cmd_runner']
-        work_dir = worker_args['work_dir']
-
-        #Make the directory to run in
-        mkdir_p(work_dir)
-
-        #Build the command
-        cmd = worker_args['exec'] + [worker_args['arch'], worker_args['circuit']]
-        #if os.path.basename(cmd[0]) == "run_vtr_flow.py":
-            ##Add default params to run_vtr_flow if they are not overriden
-            #if '--work_dir' not in worker_args['script_args']:
-                #cmd += ["--work_dir", "."]
-            #if '--v' not in worker_args['script_args'] and '--verbosity' not in worker_args['script_args']:
-                #cmd += ["-v", str(verbosity)]
-
-        cmd += worker_args['script_args']
-
-
-        #print_verbose(2, verbosity, "\t" + str(cmd))
-
-        output, returncode = cmd_runner.run_system_command(cmd, work_dir=work_dir, indent_depth=1)
-        assert returncode == 0
-    except CommandError as e:
-        end = datetime.now()
-        elapsed = end - start
-        print_verbose(1, verbosity, "Failed   {operation} at {time} (elapsed {length})".format(operation=operation,
-                                                                                           time=end.strftime(TIME_FMT), 
-                                                                                           length=format_elapsed_time(elapsed)))
-    except KeyboardInterrupt as e:
-        end = datetime.now()
-        elapsed = end - start
-        print_verbose(1, verbosity, "Killed   {operation} at {time} (elapsed {length})".format(operation=operation,
-                                                                                           time=end.strftime(TIME_FMT), 
-                                                                                           length=format_elapsed_time(elapsed)))
-        #Since this is run as a subprocess we need to exit (rather than just return)
-        sys.exit(1)
-
-    else:
-        end = datetime.now()
-        elapsed = end - start
-        print_verbose(1, verbosity, "Finished {operation} at {time} (elapsed {length})".format(operation=operation,
-                                                                                           time=end.strftime(TIME_FMT), 
-                                                                                           length=format_elapsed_time(elapsed)))
 
 def build_worker_args(args, configs):
     all_worker_args = []
@@ -240,12 +182,7 @@ def build_worker_args(args, configs):
                 executable = [find_vtr_file('vtr', is_executabe=True), 'flow']
 
             script_params = []
-            if config.script_params:
-                script_params += config.script_params
-            else:
-                script_params += ["-v", str(min(0, args.verbosity - 1)), #Less verbose output
-                                  "--work_dir", ".", #Run in the current directory
-                                    ]
+            script_params += config.script_params
 
             if config.cmos_tech_behavior:
                 script_params += ["--power_tech", resolve_vtr_source_file(config, config.cmos_tech_behavior, "tech")]
@@ -255,10 +192,11 @@ def build_worker_args(args, configs):
 
             work_dir = os.path.join(config.task_name, os.path.basename(arch), os.path.basename(circuit))
 
-            task_name = config.task_name + ": " + work_dir
+            job_name = os.path.join(arch, circuit)
 
             worker_info = {
-                            'task_name': task_name, 
+                            'task_name': config.task_name,
+                            'job_name': job_name, 
                             'exec': executable, 
                             'arch': resolve_vtr_source_file(config, arch, config.arch_dir),
                             'circuit': resolve_vtr_source_file(config, circuit, config.circuit_dir), 
@@ -270,19 +208,108 @@ def build_worker_args(args, configs):
 
             all_worker_args.append(worker_info)
 
-    #Figure out the max task name length for nice output formatting
-    max_len = None
-    for worker_args in all_worker_args:
-        length = len(worker_args['task_name'])
-        if max_len == None or length > max_len:
-            max_len = length
-
-    for worker_args in all_worker_args:
-        worker_args['task_name_length'] = max_len
-    
-
-
     return all_worker_args
+
+def run_parallel(args, queued_jobs):
+    """
+    Run each external command in commands with at most j commands running in parllel
+    """
+
+    max_taskname_len = 0
+    for job in queued_jobs:
+        max_taskname_len = max(max_taskname_len, len(job.task_name()))
+
+    running_procs = []
+
+    try:
+        while len(queued_jobs) > 0 or len(running_procs) > 0: #Outstanding or running jobs
+
+            #Launch outstanding jobs if workers are available
+            while len(queued_jobs) > 0 and len(running_procs) < args.j:
+                job = queued_jobs.pop()
+
+                #Make the working directory
+                work_dir = job.work_dir()
+                mkdir_p(work_dir)
+
+                log_filepath = os.path.join(work_dir, "vtr_flow.log")
+
+                log_file = open(log_filepath, 'w+')
+
+                proc = subprocess.Popen(job.command(), 
+                                        cwd=work_dir, 
+                                        stderr=subprocess.STDOUT, 
+                                        stdout=log_file)
+
+                running_procs.append((proc, job, log_file))
+
+
+            while len(running_procs) > 0:
+                #Are any of the workers finished?
+                for i in xrange(len(running_procs)):
+                    proc, job, log_file = running_procs[i]
+
+                    status = proc.poll()
+                    if status is not None:
+                        #Process has completed
+                        if status == 0:
+                            print_verbose(BASIC_VERBOSITY, args.verbosity, 
+                                         "Finished {:<{w}}: {}".format(job.task_name(), job.job_name(), w=max_taskname_len))
+
+                            if args.verbosity >= ALL_LOG_VERBOSITY:
+                                print_log(log_file)
+                        else:
+                            print_verbose(BASIC_VERBOSITY, args.verbosity, 
+                                         "Failed   {:<{w}}: {}".format(job.task_name(), job.job_name(), w=max_taskname_len))
+
+                            if args.verbosity >= FAILED_LOG_VERBOSITY:
+                                print_log(log_file)
+
+                        log_file.close()
+
+                        #Remove the jobs from the run queue
+                        del running_procs[i]
+                        break
+
+                if len(running_procs) < args.j:
+                    #There are idle workers, allow new jobs to start
+                    break;
+
+                #Don't constantly poll
+                time.sleep(0.1)
+
+    except KeyboardInterrupt as e:
+        print "Recieved KeyboardInterrupt -- halting workers"
+        for proc, job, log_file in running_procs:
+            proc.terminate()
+            log_file.close()
+
+        #Remove any procs finished after terminate
+        running_procs = [(proc, job, log_file) for proc, job, log_file in running_procs if proc.returncode is None]
+
+    finally:
+        if len(running_procs) > 0:
+            print "Killing {} worker processes".format(len(running_procs))
+            for proc, job, log_file in running_procs:
+                proc.kill()
+                log_file.close()
+
+
+def print_log(log_file, indent="    "):
+    #Save positino
+    curr_pos = log_file.tell()
+
+    log_file.seek(0) #Rewind to start
+
+    #Print log
+    for line in log_file:
+        line = line.rstrip()
+        print indent + line
+    print ""
+
+    #Return to original position
+    log_file.seek(curr_pos)
+
 
 def resolve_vtr_source_file(config, filename, base_dir=None):
     """
