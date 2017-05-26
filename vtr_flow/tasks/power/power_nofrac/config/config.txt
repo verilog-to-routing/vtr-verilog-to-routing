@@ -2,7 +2,7 @@
 # Configuration file for running experiments
 ##############################################
 
-script_params=-power
+script_params=
 
 cmos_tech_behavior=PTM_45nm/45nm.xml
 

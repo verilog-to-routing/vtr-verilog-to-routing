@@ -1,5 +1,4 @@
-#
-############################################
+##############################################
 # Configuration file for running experiments
 ##############################################
 
@@ -28,5 +27,5 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-valgrind
+script_params= --valgrind
 

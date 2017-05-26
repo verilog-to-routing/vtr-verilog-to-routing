@@ -29,4 +29,4 @@ parse_file=vpr_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 # Parameters for vtr flow
-script_params=-no_mem -vpr_route_chan_width 72
+script_params= --route_chan_width 72

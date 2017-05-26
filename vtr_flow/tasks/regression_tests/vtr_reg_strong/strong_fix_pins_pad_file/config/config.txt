@@ -26,5 +26,7 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
+pad_file = stereovision3.pad
+
 # Script parameters
-script_params =-fix_pins /tasks/regression_tests/fix_pins_pad_file/stereovision3.pad
+script_params =

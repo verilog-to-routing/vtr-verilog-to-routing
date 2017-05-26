@@ -41,5 +41,5 @@ parse_file=vpr_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-no_mem -starting_stage vpr -check_equivalent
+script_params= --starting_stage vpr --ending_stage lec
 

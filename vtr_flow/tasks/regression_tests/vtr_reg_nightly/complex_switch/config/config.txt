@@ -41,5 +41,5 @@ qor_parse_file=qor_fixed_chan_width.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
-script_params=-track_memory_usage -vpr_route_chan_width 200
+script_params= --route_chan_width 200
 

@@ -27,4 +27,4 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-gen_postsynthesis_netlist -track_memory_usage
+script_params= --gen_postsynthesis_netlist on

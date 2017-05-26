@@ -38,4 +38,4 @@ qor_parse_file=qor_standard.txt
 # Pass requirements
 pass_requirements_file=pass_requirements.txt
 
-script_params=-valgrind -vpr_route_chan_width 200
+script_params= --valgrind --route_chan_width 200
