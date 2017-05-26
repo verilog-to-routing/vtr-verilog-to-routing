@@ -50,9 +50,6 @@ def run_vtr_flow(architecture_file, circuit_file,
     circuit_name, circuit_ext = os.path.splitext(circuit_file_basename)
     architecture_name, architecture_ext = os.path.splitext(architecture_file_basename)
 
-    print_verbose(1, verbosity, "{arch}/{circuit}...".format(arch=architecture_name, circuit=circuit_name), endl=False)
-    print_verbose(2, verbosity, "")
-
     mkdir_p(work_dir)
 
     #Define useful filenames
@@ -83,11 +80,8 @@ def run_vtr_flow(architecture_file, circuit_file,
     # RTL Elaboration & Synthesis
     #
     if should_run_stage(VTR_STAGE.odin, start_stage, end_stage):
-        if circuit_ext == ".blif":
-            print_verbose(2, verbosity, " Skipping Odin II (circuit is already in BLIF)")
-
-        else:
-            print_verbose(2, verbosity, " Running Odin II")
+        if circuit_ext != ".blif":
+            print_verbose(1, verbosity, "Running Odin II")
 
             run_odin(architecture_file_basename, next_stage_netlist, 
                      output_netlist=post_odin_netlist, 
@@ -103,7 +97,7 @@ def run_vtr_flow(architecture_file, circuit_file,
     # Logic Optimization & Technology Mapping
     #
     if should_run_stage(VTR_STAGE.abc, start_stage, end_stage):
-        print_verbose(2, verbosity, " Running ABC")
+        print_verbose(1, verbosity, "Running ABC")
 
         run_abc(architecture_file_basename, next_stage_netlist, 
                 output_netlist=post_abc_netlist, 
@@ -123,7 +117,7 @@ def run_vtr_flow(architecture_file, circuit_file,
         #The user provided a tech file, so do power analysis
 
         if should_run_stage(VTR_STAGE.ace, start_stage, end_stage):
-            print_verbose(2, verbosity, " Running ACE")
+            print_verbose(1, verbosity, "Running ACE")
 
             run_ace(next_stage_netlist, output_netlist=post_ace_netlist, 
                     output_activity_file=post_ace_activity_file, 
@@ -156,7 +150,7 @@ def run_vtr_flow(architecture_file, circuit_file,
 
         if "route_chan_width" in vpr_args:
             #The User specified a fixed channel width
-            print_verbose(2, verbosity, " Running VPR (at fixed channel width)")
+            print_verbose(1, verbosity, "Running VPR (at fixed channel width)")
             run_vpr(architecture_file_basename, pre_vpr_netlist, 
                     output_netlist=post_vpr_netlist,
                     command_runner=command_runner, 
@@ -178,7 +172,7 @@ def run_vtr_flow(architecture_file, circuit_file,
     # Logical Equivalence Checks (LEC)
     #
     if should_run_stage(VTR_STAGE.lec, start_stage, end_stage):
-        print_verbose(2, verbosity, " Running ABC Logical Equivalence Check")
+        print_verbose(1, verbosity, "Running ABC Logical Equivalence Check")
         run_abc_lec(lec_base_netlist, post_vpr_netlist, command_runner=command_runner, log_filename="abc.lec.out")
 
 
@@ -189,11 +183,10 @@ def run_vtr_flow(architecture_file, circuit_file,
     if not parse_config_file:
         parse_config_file = find_vtr_file(os.path.join("vpr_standard.txt")) #Default config
 
-    print_verbose(2, verbosity, " Parsing results")
+    print_verbose(1, verbosity, "Parsing results")
     metrics = parse_vtr_flow(parse_config_file, work_dir)
     write_tab_delimitted_csv(os.path.join(work_dir, "parse_results.txt"), [metrics])
 
-    print_verbose(1, verbosity, "OK")
     return metrics
 
 def parse_vtr_flow(parse_config_file, work_dir):
@@ -331,7 +324,7 @@ def run_vpr_relax_W(architecture, circuit, command_runner=CommandRunner(), work_
     vpr_min_W_log = '.'.join([logfile_base, "min_W", "out"])
     vpr_crit_path_log = '.'.join([logfile_base, "crit_path", "out"])
 
-    print_verbose(2, verbosity, " Running VPR (determining minimum channel width)" )
+    print_verbose(1, verbosity, "Running VPR (determining minimum channel width)" )
 
     run_vpr(architecture, circuit, command_runner, work_dir, log_filename=vpr_min_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
 
@@ -343,7 +336,7 @@ def run_vpr_relax_W(architecture, circuit, command_runner=CommandRunner(), work_
 
     relaxed_W = relax_W(min_W, relax_W_factor)
 
-    print_verbose(2, verbosity, " Running VPR (determining critical path at {fac}x minimum channel width)".format(fac=relax_W_factor))
+    print_verbose(1, verbosity, "Running VPR (determining critical path at {fac}x minimum channel width)".format(fac=relax_W_factor))
 
     vpr_args['route'] = True #Re-route only
     vpr_args['route_chan_width'] = relaxed_W #At a fixed channel width
