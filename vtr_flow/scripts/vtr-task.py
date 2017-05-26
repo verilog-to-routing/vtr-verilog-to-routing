@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pyt
 
 import verilogtorouting as vtr
 from verilogtorouting.error import *
-from verilogtorouting.util import load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES, argparse_str2bool
+from verilogtorouting.util import load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES, argparse_str2bool, get_next_run_dir
 from verilogtorouting.task import load_task_config, TaskConfig, find_task_config_file
 from verilogtorouting.flow import CommandRunner
 
@@ -111,6 +111,11 @@ def vtr_command_argparser(prog=None):
                         type=int,
                         help="Sets the verbosity of the script. Higher values produce more output.")
 
+    parser.add_argument("--work_dir",
+                        default=None,
+                        help="Directory to store intermediate and result files."
+                             "If None, set to the relevante directory under $VTR_ROOT/vtr_flow/tasks.")
+
     parser.add_argument("--print_metadata",
                         default=True,
                         type=argparse_str2bool,
@@ -174,6 +179,8 @@ def run_tasks(args, configs):
 def create_jobs(args, configs):
     jobs = []
     for config in configs:
+        task_run_dir = create_new_run_dir(args, config)
+
         for arch, circuit in itertools.product(config.archs, config.circuits):
             abs_arch_filepath = resolve_vtr_source_file(config, arch, config.arch_dir)
             abs_circuit_filepath = resolve_vtr_source_file(config, circuit, config.circuit_dir)
@@ -203,13 +210,31 @@ def create_jobs(args, configs):
 
             cmd = executable + script_params
 
-            work_dir = os.path.join(config.task_name, os.path.basename(arch), os.path.basename(circuit))
+            work_dir = os.path.join(task_run_dir, os.path.basename(arch), os.path.basename(circuit))
 
             job_name = os.path.join(arch, circuit)
 
             jobs.append(Job(config.task_name, job_name, work_dir, cmd))
 
     return jobs
+
+def create_new_run_dir(args, config):
+
+    task_dir = None
+    if args.work_dir:
+        task_dir = os.path.join(args.work_dir, config.task_name)
+
+    else:
+        #Task dir is just above the config directory
+        task_dir = os.path.dirname(config.config_dir)
+        assert os.path.isdir(task_dir)
+
+    run_dir = get_next_run_dir(task_dir)
+
+    mkdir_p(run_dir)
+
+    return run_dir
+
 
 def run_parallel(args, queued_jobs):
     """

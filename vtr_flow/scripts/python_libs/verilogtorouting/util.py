@@ -401,3 +401,32 @@ def argparse_str2bool(str_val):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+def get_next_run_dir(base_dir):
+    """
+    Returns the next unused run directory within base_dir.
+
+    Does not create the directory
+    """
+    latest_run_number = get_latest_run_number(base_dir)
+
+    return os.path.join(base_dir, run_dir_name(latest_run_number + 1))
+
+def get_latest_run_number(base_dir):
+    run_number = 0
+    run_dir = os.path.join(base_dir, run_dir_name(run_number))
+    while os.path.exists(run_dir):
+        run_number += 1
+        run_dir = os.path.join(base_dir, run_dir_name(run_number))
+
+    #Currently one-past the last existing run dir,
+    #to get latest existing, subtract one
+    return run_number - 1
+
+
+def run_dir_name(run_num):
+    """
+    Returns the formatted directory name for a specific run number
+    """
+    return "run{:03d}".format(run_num)

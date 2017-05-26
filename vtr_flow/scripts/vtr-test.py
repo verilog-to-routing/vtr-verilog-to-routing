@@ -76,6 +76,10 @@ def vtr_command_argparser(prog=None):
                         type=int,
                         help="Sets the verbosity of the script. Higher values produce more output.")
 
+    parser.add_argument("--work_dir",
+                        default=None,
+                        help="Directory to store intermediate and result files."
+                             "If None, set to the relevante directory under $VTR_ROOT/vtr_flow/tasks.")
     return parser
 
 def main():
@@ -164,7 +168,8 @@ def run_tasks(args, task_lists):
     vtr_task_cmd += ['-l'] + task_lists
     vtr_task_cmd += ['-j', str(args.j),
                      '-v', str(max(0, args.verbosity - 1)),
-                     '--print_metadata', 'False']
+                     '--work_dir', args.work_dir,
+                     '--print_metadata', 'True']
 
     #Exit code is number of failures
     return subprocess.call(vtr_task_cmd)
