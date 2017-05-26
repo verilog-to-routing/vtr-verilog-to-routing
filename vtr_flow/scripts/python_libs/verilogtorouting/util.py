@@ -293,7 +293,7 @@ def find_file_from_vtr_root(filename, vtr_root, is_executabe=False):
     return None
 
 def find_vtr_root():
-    for env_var in ['VTR_ROOT', 'VTR']:
+    for env_var in ['VTR_ROOT']:
         if env_var in os.environ:
             return os.environ[env_var]
 
@@ -374,3 +374,12 @@ def format_elapsed_time(time_delta):
     h, m = divmod(m, 60)
 
     return "{:02}:{:02}:{:02}".format(h, m, s)
+
+def argparse_str2bool(str_val):
+    str_val = str_val.lower()
+    if str_val in ['yes', 'on', 'true', '1']:
+        return True
+    elif str_val in ['no', 'off', 'false', '0']:
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')

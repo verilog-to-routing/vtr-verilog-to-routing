@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pyt
 
 import verilogtorouting as vtr
 from verilogtorouting.error import *
-from verilogtorouting.util import load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES
+from verilogtorouting.util import load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES, argparse_str2bool
 from verilogtorouting.task import load_task_config, TaskConfig, find_task_config_file
 from verilogtorouting.flow import CommandRunner
 
@@ -63,6 +63,10 @@ def vtr_command_argparser(prog=None):
                     Run 'timing_chain' with 4 jobs running in parallel:
 
                         %(prog)s timing_chain -j4
+
+                Exit Code
+                ---------
+                    The exit code equals the number failures (i.e. exit code 0 indicates no failures).
                 """
              )
 
@@ -81,6 +85,7 @@ def vtr_command_argparser(prog=None):
                         help="Tasks to be run")
 
     parser.add_argument('-l', '--list_file',
+                        nargs="*",
                         metavar="TASK_LIST_FILE",
                         help="A file listing tasks to be run")
 
@@ -106,6 +111,11 @@ def vtr_command_argparser(prog=None):
                         type=int,
                         help="Sets the verbosity of the script. Higher values produce more output.")
 
+    parser.add_argument("--print_metadata",
+                        default=True,
+                        type=argparse_str2bool,
+                        help="Print meta-data like command-line arguments and run-time")
+
     return parser
 
 def main():
@@ -117,32 +127,35 @@ def vtr_command_main(arg_list, prog=None):
     #Load the arguments
     args = vtr_command_argparser(prog).parse_args(arg_list)
 
-    print_verbose(BASIC_VERBOSITY, args.verbosity, "# {} {}\n".format(prog, ' '.join(arg_list)))
+    if args.print_metadata:
+        print "# {} {}\n".format(prog, ' '.join(arg_list))
 
     try:
         task_names = args.task
 
-        if args.list_file:
-            task_names += load_list_file(args.list_file)
+        for list_file in args.list_file:
+            task_names += load_list_file(list_file)
 
         config_files = [find_task_config_file(task_name) for task_name in task_names]
 
         configs = [load_task_config(config_file) for config_file in config_files]
 
-        run_tasks(args, configs)
+        num_failed = run_tasks(args, configs)
 
     except CommandError as e:
         print "Error: {msg}".format(msg=e.msg)
         print "\tfull command: ", e.cmd
         print "\treturncode  : ", e.returncode
         print "\tlog file    : ", e.log
-        sys.exit(1)
+        sys.exit(-1)
     except VtrError as e:
         print "Error:", e.msg
-        sys.exit(1)
+        sys.exit(-1)
     finally:
-        print_verbose(BASIC_VERBOSITY, args.verbosity, "\n{} took {}".format(prog, format_elapsed_time(datetime.now() - start)))
-    sys.exit(0)
+        if args.print_metadata:
+            print "\n{} took {}".format(prog, format_elapsed_time(datetime.now() - start))
+
+    sys.exit(num_failed)
 
 def run_tasks(args, configs):
 
@@ -162,7 +175,7 @@ def run_tasks(args, configs):
             job = Job(worker_args['task_name'], worker_args['job_name'], cmd, worker_args['work_dir'])
             jobs.append(job)
 
-        run_parallel(args, jobs)
+        return run_parallel(args, jobs)
     else:
         raise VtrError("Unrecognized run system {system}".format(system=args.system))
 
@@ -215,12 +228,19 @@ def run_parallel(args, queued_jobs):
     Run each external command in commands with at most j commands running in parllel
     """
 
+    #We pop off the jobs of queued_jobs, which python does from the end,
+    #so reverse the list now so we get the expected order
+    queued_jobs = list(reversed(queued_jobs))
+
+    #Find the max taskname length for pretty printing
     max_taskname_len = 0
     for job in queued_jobs:
         max_taskname_len = max(max_taskname_len, len(job.task_name()))
 
+    #Queue of currently running subprocesses
     running_procs = []
 
+    num_failed = 0
     try:
         while len(queued_jobs) > 0 or len(running_procs) > 0: #Outstanding or running jobs
 
@@ -235,6 +255,8 @@ def run_parallel(args, queued_jobs):
                 log_filepath = os.path.join(work_dir, "vtr_flow.log")
 
                 log_file = open(log_filepath, 'w+')
+
+                #print "Starting {}: {}".format(job.task_name(), job.job_name())
 
                 proc = subprocess.Popen(job.command(), 
                                         cwd=work_dir, 
@@ -259,6 +281,8 @@ def run_parallel(args, queued_jobs):
                             if args.verbosity >= ALL_LOG_VERBOSITY:
                                 print_log(log_file)
                         else:
+                            #Failed
+                            num_failed += 1
                             print_verbose(BASIC_VERBOSITY, args.verbosity, 
                                          "Failed   {:<{w}}: {}".format(job.task_name(), job.job_name(), w=max_taskname_len))
 
@@ -294,6 +318,7 @@ def run_parallel(args, queued_jobs):
                 proc.kill()
                 log_file.close()
 
+    return num_failed
 
 def print_log(log_file, indent="    "):
     #Save positino
