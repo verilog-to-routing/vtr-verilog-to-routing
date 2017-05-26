@@ -254,11 +254,23 @@ def find_vtr_file(filename, is_executabe=False):
         2) The inferred vtr root from environment variables or the script file location
 
     """
+    #We assume exectuables are specified in the unix style (no .exe),
+    # if it was specified with .exe, strip it off
+    filebase, ext = os.path.splitext(filename)
+    if ext == ".exe":
+        filename = filebase
+
     #
-    #Next check if it is on the path (provided it is executable)
+    #Check if it is on the path (provided it is executable)
     #
     if is_executabe:
+        #Search first for the non-exe version
         result = distutils_spawn.find_executable(filename)
+        if result:
+            return result
+
+        #If not found try the .exe version
+        result = distutils_spawn.find_executable(filename + '.exe')
         if result:
             return result
 
@@ -268,6 +280,12 @@ def find_vtr_file(filename, is_executabe=False):
     result = find_file_from_vtr_root(filename, vtr_root, is_executabe=is_executabe)
     if result:
         return result
+
+    #Since we stripped off the .exe, try looking for the .exe version as a last resort (i.e. on Windows/cygwin)
+    if is_executable:
+        result = find_file_from_vtr_root(filename + '.exe', vtr_root, is_executabe=is_executabe)
+        if result:
+            return result
 
     raise ValueError("Could not find {type} {file}".format(type="executable" if is_executabe else "file",file=filename))
 

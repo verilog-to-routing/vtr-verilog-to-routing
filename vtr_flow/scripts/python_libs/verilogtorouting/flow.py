@@ -228,7 +228,7 @@ def run_odin(architecture_file, circuit_file,
     mkdir_p(work_dir)
 
     if odin_exec == None:
-        odin_exec = find_vtr_file('odin_II.exe', is_executabe=True)
+        odin_exec = find_vtr_file('odin_II', is_executabe=True)
 
     if odin_config == None:
         odin_base_config = find_vtr_file('basic_odin_config_split.xml')
