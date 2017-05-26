@@ -8,6 +8,7 @@ import time
 import shutil
 import re
 import textwrap
+from datetime import datetime
 
 from collections import OrderedDict
 
@@ -15,7 +16,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pyt
 
 from verilogtorouting.flow import run_vtr_flow, VTR_STAGE, vtr_stages, CommandRunner
 from verilogtorouting.error import *
-from verilogtorouting.util import print_verbose, RawDefaultHelpFormatter, VERBOSITY_CHOICES, find_vtr_file
+from verilogtorouting.util import print_verbose, RawDefaultHelpFormatter, VERBOSITY_CHOICES, find_vtr_file, format_elapsed_time
+
+
+BASIC_VERBOSITY = 1
+
+
 
 class VtrStageArgparseAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
@@ -59,7 +65,7 @@ def vtr_command_argparser(prog=None):
 
                     Produce more output (e.g. individual tool outputs):
 
-                        %(prog)s arch.xml circuit.v -v 3
+                        %(prog)s arch.xml circuit.v -v 2
 
 
                     Route at a fixed channel width:
@@ -169,8 +175,12 @@ def main():
     vtr_command_main(sys.argv[1:])
 
 def vtr_command_main(arg_list, prog=None):
+    start = datetime.now()
+
     #Load the arguments
     args, unkown_args = vtr_command_argparser(prog).parse_known_args(arg_list)
+
+    print_verbose(BASIC_VERBOSITY, args.verbosity, "# {} {}\n".format(prog, ' '.join(arg_list)))
 
     abs_path_arch_file = os.path.abspath(args.architecture_file)
     abs_path_circuit_file = os.path.abspath(args.circuit_file)
@@ -181,7 +191,7 @@ def vtr_command_main(arg_list, prog=None):
     command_runner = CommandRunner(track_memory=args.track_memory_usage, 
                                    max_memory_mb=args.memory_limit, 
                                    timeout_sec=args.timeout,
-                                   verbose=True if args.verbosity >= 3 else False,
+                                   verbose=True if args.verbosity >= 2 else False,
                                    echo_cmd=True if args.verbosity >= 4 else False)
     try:
         vpr_args = process_unkown_args(unkown_args)
@@ -201,7 +211,7 @@ def vtr_command_main(arg_list, prog=None):
     except CommandError as e:
         #An external command failed
         print "Error: {msg}".format(msg=e.msg)
-        print "\tfull command: ", e.cmd
+        print "\tfull command: ", ' '.join(e.cmd)
         print "\treturncode  : ", e.returncode
         print "\tlog file    : ", e.log
         sys.exit(1)
@@ -216,6 +226,12 @@ def vtr_command_main(arg_list, prog=None):
         #Generic VTR errors
         print "Error: ", e.msg
         sys.exit(3)
+
+    except KeyboardInterrupt as e:
+        print "{} recieved keyboard interrupt".format(prog)
+        sys.exit(4)
+    finally:
+        print_verbose(BASIC_VERBOSITY, args.verbosity, "\n{} took {}".format(prog, format_elapsed_time(datetime.now() - start)))
 
     sys.exit(0)
 
