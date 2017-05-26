@@ -214,7 +214,7 @@ def parse_vtr_flow(parse_config_file, work_dir):
 
         filepath = os.path.join(work_dir, parse_pattern.filename())
         if os.path.exists(filepath):
-            with open(parse_pattern.filename()) as f:
+            with open(filepath) as f:
                 for line in f:
                     match = parse_pattern.regex().match(line)
                     if match:
