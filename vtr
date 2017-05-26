@@ -4,8 +4,9 @@
 # --------
 # This is a centralized script for running VTR.
 # 
-# It wraps various other scripts for running VTR and parsing the results
+# It wraps various other scripts for running VTR and parses the results
 # into sub-commands.
+
 # This provides a straight forward interface based on sub-commands
 # (like 'git commit').
 # 
@@ -33,12 +34,17 @@
 # Each command script is expected to implement the following two methods:
 #
 #       def vtr_command_argparser(prog=None):
-#           pass
-#
+#           #Setup the argument parser
+#           #... 
+#           return argparser
+
 # and
 #
 #       def vtr_command_main(arg_list, prog=None):
-#           pass
+#           args = vtr_command_argparser(prog).parse_args(arg_list)
+#
+#           #Do something useful, based on args
+#           #...
 #
 # vtr_command_argparser() takes the program name as it's first argument and returns
 # the argparse.ArgumentParser used by the command (this is used to implement the 'help'
@@ -149,7 +155,7 @@ def argument_parser(vtr_commands):
 
                         Get help with the 'task' subcommand:
 
-                            %(prog)s flow
+                            %(prog)s task
 
                     """
               )
@@ -165,7 +171,7 @@ def argument_parser(vtr_commands):
     for command, module in vtr_commands.iteritems():
 
         if not hasattr(module, "vtr_command_argparser"):
-            raise AttributeError("VTR command '{}' is missing required function ({})".format(command, e.message))
+            raise AttributeError("VTR command '{}' is missing required function '{}'".format(command, "vtr_command_argparser"))
         else:
             description = module.vtr_command_argparser().description
 
@@ -198,7 +204,7 @@ def main():
             help_prog = "{} {}".format(os.path.basename(sys.argv[0]), args.sub_command)
 
             if not hasattr(VTR_COMMANDS[args.sub_command], "vtr_command_argparser"):
-                raise AttributeError("VTR command '{}' is missing required function ({})".format(args.sub_command, e.message))
+                raise AttributeError("VTR command '{}' is missing required function '{}'".format(args.sub_command, "vtr_command_argparser"))
             else:
                 cmd_parser = VTR_COMMANDS[args.sub_command].vtr_command_argparser(help_prog)
 
@@ -211,8 +217,8 @@ def main():
 
     elif args.command in VTR_COMMANDS:
         #Run the appropraite command
-        if not hasattr(VTR_COMMANDS[args.command], "vtr_command_argparser"):
-            raise AttributeError("VTR command '{}' is missing required function ({})".format(args.command, e.message))
+        if not hasattr(VTR_COMMANDS[args.command], "vtr_command_main"):
+            raise AttributeError("VTR command '{}' is missing required function '{}'".format(args.command, vtr_command_main))
         else:
             VTR_COMMANDS[args.command].vtr_command_main(unkown_args, prog=prog)
 
@@ -222,14 +228,6 @@ def main():
         sys.exit(1)
 
     sys.exit(0)
-
-
-def determine_vtr_root():
-    if 'VTR_ROOT' in os.environ:
-        return os.environ['VTR_ROOT']
-    else:
-        #Infer from the directory containing this script file
-        return os.path.dirname(os.path.abspath(__file__))
 
 
 if __name__ == "__main__":
