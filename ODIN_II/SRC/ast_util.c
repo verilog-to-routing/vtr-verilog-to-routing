@@ -33,7 +33,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "errors.h"
 #include "ast_util.h"
 #include "odin_util.h"
-#include "ast_optimizations.h"
 
 
 char **get_name_of_pins_number(ast_node_t *var_node, int start, int width);
@@ -474,8 +473,8 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 			else if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[3] == NULL)
 			{
 				/* reverse thorugh the range since highest bit in index will be lower in the string indx */
-				rnode[1] = resolve_node(instance_name_prefix, ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1]);
-				rnode[2] = resolve_node(instance_name_prefix, ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]);
+				rnode[1] = resolve_node(FALSE, instance_name_prefix, ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1]);
+				rnode[2] = resolve_node(FALSE, instance_name_prefix, ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]);
 				oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 
 				for (j = rnode[1]->types.number.value - rnode[2]->types.number.value; j >= 0; j--)
@@ -502,8 +501,8 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 		}
 		else if (concat_top->children[i]->type == RANGE_REF)
 		{
-			rnode[1] = resolve_node(instance_name_prefix, concat_top->children[i]->children[1]);
-			rnode[2] = resolve_node(instance_name_prefix, concat_top->children[i]->children[2]);
+			rnode[1] = resolve_node(FALSE, instance_name_prefix, concat_top->children[i]->children[1]);
+			rnode[2] = resolve_node(FALSE, instance_name_prefix, concat_top->children[i]->children[2]);
 			oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 			oassert(rnode[1]->types.number.value >= rnode[2]->types.number.value);
 			int width = abs(rnode[1]->types.number.value - rnode[2]->types.number.value) + 1;
@@ -594,8 +593,8 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	}
 	else if (var_node->type == RANGE_REF)
 	{
-		rnode[1] = resolve_node(instance_name_prefix, var_node->children[1]);
-		rnode[2] = resolve_node(instance_name_prefix, var_node->children[2]);
+		rnode[1] = resolve_node(FALSE, instance_name_prefix, var_node->children[1]);
+		rnode[2] = resolve_node(FALSE, instance_name_prefix, var_node->children[2]);
 		oassert(var_node->children[0]->type == IDENTIFIERS);
 		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 		oassert((rnode[1]->types.number.value >= rnode[2]->types.number.value+bit) && bit >= 0);
@@ -731,16 +730,16 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 	{
 		width = 1;
 		return_string = (char**)calloc(1,sizeof(char*));
-		rnode[1] = resolve_node(instance_name_prefix, var_node->children[1]);
+		rnode[1] = resolve_node(FALSE, instance_name_prefix, var_node->children[1]);
 		oassert(rnode[1]->type == NUMBERS);
 		oassert(var_node->children[0]->type == IDENTIFIERS);
 		return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->children[0]->types.identifier, rnode[1]->types.number.value);
 	}
 	else if (var_node->type == RANGE_REF)
 	{
-		rnode[0] = resolve_node(instance_name_prefix, var_node->children[0]);
-		rnode[1] = resolve_node(instance_name_prefix, var_node->children[1]);
-		rnode[2] = resolve_node(instance_name_prefix, var_node->children[2]);
+		rnode[0] = resolve_node(FALSE, instance_name_prefix, var_node->children[0]);
+		rnode[1] = resolve_node(FALSE, instance_name_prefix, var_node->children[1]);
+		rnode[2] = resolve_node(FALSE, instance_name_prefix, var_node->children[2]);
 		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 		width = abs(rnode[1]->types.number.value - rnode[2]->types.number.value) + 1;
 		if (rnode[0]->type == IDENTIFIERS)
@@ -762,7 +761,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		ast_node_t *sym_node;
 		
 		// try and resolve var_node
-		sym_node = resolve_node(instance_name_prefix, var_node);
+		sym_node = resolve_node(FALSE, instance_name_prefix, var_node);
 
 		if (sym_node == var_node)
 		{
@@ -790,8 +789,8 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 			else if (sym_node->children[3] == NULL)
 			{
 				int index = 0;
-				rnode[1] = resolve_node(instance_name_prefix, sym_node->children[1]);
-				rnode[2] = resolve_node(instance_name_prefix, sym_node->children[2]);
+				rnode[1] = resolve_node(FALSE, instance_name_prefix, sym_node->children[1]);
+				rnode[2] = resolve_node(FALSE, instance_name_prefix, sym_node->children[2]);
 				oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 				width = (rnode[1]->types.number.value - rnode[2]->types.number.value + 1);
 				return_string = (char**)calloc(width,sizeof(char*));
@@ -886,13 +885,12 @@ char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_n
  * Also try and fold any BINARY_OPERATIONs now that an IDENTIFIER has been
  * resolved
  */
-ast_node_t *resolve_node(char *module_name, ast_node_t *node)
+ast_node_t *resolve_node(short initial, char *module_name, ast_node_t *node)
 {
 	if (node)
 	{
 		long sc_spot;
 		int i;
-		info_ast_visit_t *node_details;
 		STRING_CACHE *local_param_table_sc;
 
 		ast_node_t *node_copy;
@@ -900,40 +898,46 @@ ast_node_t *resolve_node(char *module_name, ast_node_t *node)
 		memcpy(node_copy, node, sizeof(ast_node_t));
 		node_copy->children = (ast_node_t **)calloc(node_copy->num_children,sizeof(ast_node_t*));
 
-		for (i = 0; i < node->num_children; i++)
-		{
-			node_copy->children[i] = resolve_node(module_name, node->children[i]);
+		for (i = 0; i < node->num_children; i++){
+			node_copy->children[i] = resolve_node(initial, module_name, node->children[i]);
 		}
-
-		switch (node->type)
-		{
+		
+		long long result = WRONG_CALCULATION;
+		switch (node->type){
+			
 			case IDENTIFIERS:
-			oassert(module_name);
-			sc_spot = sc_lookup_string(global_param_table_sc, module_name);
-			oassert(sc_spot != -1);
-			local_param_table_sc = (STRING_CACHE *)global_param_table_sc->data[sc_spot];
-			sc_spot = sc_lookup_string(local_param_table_sc, node->types.identifier);
-			if (sc_spot != -1)
-			{
-				node = ((ast_node_t *)local_param_table_sc->data[sc_spot]);
-				oassert(node->type == NUMBERS);
-			}
+				if(!initial){
+					oassert(module_name);
+					sc_spot = sc_lookup_string(global_param_table_sc, module_name);
+					oassert(sc_spot != -1);
+					local_param_table_sc = (STRING_CACHE *)global_param_table_sc->data[sc_spot];
+					sc_spot = sc_lookup_string(local_param_table_sc, node->types.identifier);
+					if (sc_spot != -1)
+					{
+						node = ((ast_node_t *)local_param_table_sc->data[sc_spot]);
+						oassert(node->type == NUMBERS);
+					}
+				}
 			break;
+			
+			case UNARY_OPERATION:
+				if(initial){
+					result = calculate_unary(node_is_constant(node_copy->children[0]), node_copy->types.operation.op);
+				}
+				break;
 
 			case BINARY_OPERATION:
-			node_copy->shared_node = TRUE;
-			node_details = constantFold(node_copy);
-			node_copy->shared_node = FALSE;
-			if (node_details && node_details->is_constant_folded == TRUE)
-			{
-				node = node_details->from;
-				free(node_details);
-				oassert(node->type == NUMBERS);
-			}
-			break;
+				result = calculate_binary(node_is_constant(node_copy->children[0]), node_is_constant(node_copy->children[1]), node_copy->types.operation.op);
+				break;
+			
 
 			default:
-			break;
+				break;
+		}
+		if(result != WRONG_CALCULATION){
+			node_copy->shared_node = TRUE;
+			node = create_tree_node_long_long_number(result, 128, node_copy->line_number, node_copy->file_number);
+			node_copy->shared_node = FALSE;
 		}
 
 		free(node_copy->children);
@@ -1062,7 +1066,7 @@ long long calculate_unary(long long operand_0, short type_of_ops){
  * (function: calculate_binary)
  *-------------------------------------------------------------------------------------------*/
 long long calculate_binary(long long operand_0, long long operand_1, short type_of_ops){
-	if(!(operand_0 & WRONG_CALCULATION) && !(operand_1 & WRONG_CALCULATION)){
+	if((operand_0 != WRONG_CALCULATION) && (operand_1 != WRONG_CALCULATION)){
 		switch (type_of_ops){
 			case ADD:
 				return operand_0 + operand_1;
@@ -1103,7 +1107,7 @@ long long calculate_binary(long long operand_0, long long operand_1, short type_
  * (function: node_is_constant)
  *-------------------------------------------------------------------------------------------*/
 long long node_is_constant(ast_node_t *node){
-	if (node != NULL && node->type == NUMBERS){
+	if (node && node->type == NUMBERS){
 		/* check if it's a constant depending on the number type */
 		switch (node->types.number.base){
 			case DEC: case HEX: case OCT: case BIN:

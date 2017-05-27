@@ -43,7 +43,6 @@ typedef struct global_args_read_blif_t_t global_args_read_blif_t;
 
 typedef struct ast_node_t_t ast_node_t;
 typedef struct typ_t typ;
-typedef struct info_ast_visit_t_t info_ast_visit_t;
 
 typedef struct sim_state_t_t sim_state_t;
 typedef struct nnode_t_t nnode_t;
@@ -404,18 +403,6 @@ struct ast_node_t_t
 	short is_read_write;
 
 	void *additional_data; // this is a point where you can add additional data for your optimization or technique
-};
-
-struct info_ast_visit_t_t
-{
-	ast_node_t *me;
-	ast_node_t *from;
-	int from_child_position;
-
-	short is_constant;
-	long long value;
-
-	short is_constant_folded;
 };
 #endif // AST_TYPES_H
 

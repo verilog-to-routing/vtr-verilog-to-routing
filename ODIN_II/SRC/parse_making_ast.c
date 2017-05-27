@@ -32,7 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ast_util.h"
 #include "parse_making_ast.h"
 #include "string_cache.h"
-#include "ast_optimizations.h"
+
 #include "verilog_bison_user_defined.h"
 #include "verilog_preprocessor.h"
 #include "hard_blocks.h" 
@@ -324,7 +324,7 @@ void next_parsed_verilog_file(ast_node_t *file_items_list)
 	int i;
 	/* optimization entry point */
 	printf("Optimizing module by AST based optimizations\n");
-	optimizations_on_AST(file_items_list);
+	cleanup_hard_blocks();
 
 	if (configuration.output_ast_graphs == 1)
 	{
@@ -876,7 +876,7 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number)
 {
-	info_ast_visit_t *node_details = NULL;
+
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(BINARY_OPERATION, line_number, current_parse_file);
 	/* store the operation type */
@@ -885,19 +885,13 @@ ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, as
 	allocate_children_to_node(new_node, 2, expression1, expression2);
 
 	/* see if this binary expression can have some constant folding */
-	node_details = constantFold(new_node);
-	if ((node_details != NULL) && (node_details->is_constant_folded == TRUE))
-	{
-		new_node = node_details->from;
-		free(node_details);
-	}
+	new_node = resolve_node(TRUE, NULL, new_node);
 
 	return new_node;
 }
 
 ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number)
 {
-	info_ast_visit_t *node_details = NULL;
 	/* create a node for this array reference */
 	ast_node_t* new_node, *node;
 	ast_node_t *node_copy;
@@ -937,12 +931,7 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 	error_message(NETLIST_ERROR, line_number, current_parse_file, "Operation not supported by Odin\n");
         }
 	/* see if this binary expression can have some constant folding */
-	node_details = constantFold(new_node);
-	if ((node_details != NULL) && (node_details->is_constant_folded == TRUE))
-	{
-		new_node = node_details->from;
-		free(node_details);
-	}
+	new_node = resolve_node(TRUE, NULL, new_node);
 
 	return new_node;
 }
@@ -951,7 +940,6 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int line_number)
 {
-	info_ast_visit_t *node_details = NULL;
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(UNARY_OPERATION, line_number, current_parse_file);
 	/* store the operation type */
@@ -960,12 +948,7 @@ ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int 
 	allocate_children_to_node(new_node, 1, expression);
 
 	/* see if this binary expression can have some constant folding */
-	node_details = constantFold(new_node);
-	if ((node_details != NULL) && (node_details->is_constant_folded == TRUE))
-	{
-		new_node = node_details->from;
-		free(node_details);
-	}
+	new_node = resolve_node(TRUE, NULL, new_node);
 
 	return new_node;
 }
