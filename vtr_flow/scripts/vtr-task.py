@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pyt
 
 import verilogtorouting as vtr
 from verilogtorouting.error import *
-from verilogtorouting.util import load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES, argparse_str2bool, get_next_run_dir
+from verilogtorouting.util import load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES, argparse_str2bool, get_next_run_dir, get_latest_run_dir
 from verilogtorouting.task import load_task_config, TaskConfig, find_task_config_file
 from verilogtorouting.flow import CommandRunner
 
@@ -23,17 +23,24 @@ ALL_LOG_VERBOSITY = 4
 
 class Job:
 
-    def __init__(self, task_name, job_name, work_dir, command):
+    def __init__(self, task_name, arch, circuit, work_dir, command):
         self._task_name = task_name
-        self._job_name = job_name
+        self._arch = arch
+        self._circuit = circuit
         self._command = command
         self._work_dir = work_dir
 
     def task_name(self):
         return self._task_name
 
+    def arch(self):
+        return self._arch
+
+    def circuit(self):
+        return self._circuit
+
     def job_name(self):
-        return self._job_name
+        return os.path.join(self.arch(), self.circuit())
 
     def command(self):
         return self._command
@@ -86,6 +93,7 @@ def vtr_command_argparser(prog=None):
 
     parser.add_argument('-l', '--list_file',
                         nargs="*",
+                        default=[],
                         metavar="TASK_LIST_FILE",
                         help="A file listing tasks to be run")
 
@@ -145,7 +153,9 @@ def vtr_command_main(arg_list, prog=None):
 
         configs = [load_task_config(config_file) for config_file in config_files]
 
-        num_failed = run_tasks(args, configs)
+        num_failed, jobs = run_tasks(args, configs)
+
+        parse_tasks(args, configs, jobs)
 
     except CommandError as e:
         print "Error: {msg}".format(msg=e.msg)
@@ -172,9 +182,50 @@ def run_tasks(args, configs):
         #Generate the jobs, each corresponding to an invocation of vtr flow
         jobs = create_jobs(args, configs)
 
-        return run_parallel(args, jobs)
+        return run_parallel(args, jobs), jobs
     else:
         raise VtrError("Unrecognized run system {system}".format(system=args.system))
+
+def parse_tasks(args, configs, jobs):
+    for config in configs:
+        config_jobs = [job for job in jobs if job.task_name() == config.task_name]
+        parse_task(args, config, config_jobs)
+
+def parse_task(args, config, config_jobs):
+    run_dir = find_latest_run_dir(args, config)
+
+    #Sanity check, all jobs should have run under run_dir
+    for job in config_jobs:
+        assert os.path.dirname(os.path.dirname(job.work_dir())) == run_dir
+
+    #Record max widths for pretty printing
+    max_arch_len = len("architecture")
+    max_circuit_len = len("circuit")
+    for job in config_jobs:
+        max_arch_len = max(max_arch_len, len(job.arch()))
+        max_circuit_len = max(max_circuit_len, len(job.circuit()))
+
+    task_parse_results_filepath = os.path.join(run_dir, "parse_results.txt")
+    with open(task_parse_results_filepath, "w") as out_f:
+
+        #Start the header
+        print >>out_f, "{:<{arch_width}}\t{:<{circuit_width}}\t".format("architecture", "circuit", arch_width=max_arch_len, circuit_width=max_circuit_len),
+        header = True
+
+        for job in config_jobs:
+            job_parse_results_filepath = os.path.join(job.work_dir(), "parse_results.txt")
+            with open(job_parse_results_filepath) as in_f:
+                lines = in_f.readlines()
+
+                assert len(lines) == 2
+
+                if header:
+                    #First line is the header
+                    print >>out_f, lines[0],
+                    header = False
+
+                #Second line is the data
+                print >>out_f, "{:<{arch_width}}\t{:<{circuit_width}}\t{}".format(job.arch(), job.circuit(), lines[1], arch_width=max_arch_len, circuit_width=max_circuit_len),
 
 def create_jobs(args, configs):
     jobs = []
@@ -212,14 +263,29 @@ def create_jobs(args, configs):
 
             work_dir = os.path.join(task_run_dir, os.path.basename(arch), os.path.basename(circuit))
 
-            job_name = os.path.join(arch, circuit)
-
-            jobs.append(Job(config.task_name, job_name, work_dir, cmd))
+            jobs.append(Job(config.task_name, arch, circuit, work_dir, cmd))
 
     return jobs
 
 def create_new_run_dir(args, config):
+    task_dir = find_task_dir(args, config)
 
+    run_dir = get_next_run_dir(task_dir)
+
+    mkdir_p(run_dir)
+
+    return run_dir
+
+def find_latest_run_dir(args, config):
+    task_dir = find_task_dir(args, config)
+
+    run_dir = get_latest_run_dir(task_dir)
+
+    assert os.path.isdir(run_dir)
+
+    return run_dir
+
+def find_task_dir(args, config):
     task_dir = None
     if args.work_dir:
         task_dir = os.path.join(args.work_dir, config.task_name)
@@ -229,12 +295,7 @@ def create_new_run_dir(args, config):
         task_dir = os.path.dirname(config.config_dir)
         assert os.path.isdir(task_dir)
 
-    run_dir = get_next_run_dir(task_dir)
-
-    mkdir_p(run_dir)
-
-    return run_dir
-
+    return task_dir
 
 def run_parallel(args, queued_jobs):
     """
@@ -242,7 +303,8 @@ def run_parallel(args, queued_jobs):
     """
 
     #We pop off the jobs of queued_jobs, which python does from the end,
-    #so reverse the list now so we get the expected order
+    #so reverse the list now so we get the expected order. This also ensures
+    #we are working with a copy of the jobs
     queued_jobs = list(reversed(queued_jobs))
 
     #Find the max taskname length for pretty printing
@@ -328,7 +390,7 @@ def run_parallel(args, queued_jobs):
         if len(running_procs) > 0:
             print "Killing {} worker processes".format(len(running_procs))
             for proc, job, log_file in running_procs:
-                proc.kill()
+                #proc.kill()
                 log_file.close()
 
     return num_failed
@@ -386,5 +448,4 @@ def resolve_vtr_source_file(config, filename, base_dir=""):
     raise ValueError("Failed to resolve VTR source file {}".format(filename))
 
 if __name__ == "__main__":
-    retval = main()
-    sys.exit(retval)
+    main()

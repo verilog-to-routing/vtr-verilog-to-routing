@@ -413,7 +413,16 @@ def get_next_run_dir(base_dir):
 
     return os.path.join(base_dir, run_dir_name(latest_run_number + 1))
 
+def get_latest_run_dir(base_dir):
+    """
+    Returns the run directory with the highest run number in base_dir
+    """
+    return os.path.join(base_dir, run_dir_name(get_latest_run_number(base_dir)))
+
 def get_latest_run_number(base_dir):
+    """
+    Returns the highest run number of all run directories with in base_dir
+    """
     run_number = 0
     run_dir = os.path.join(base_dir, run_dir_name(run_number))
     while os.path.exists(run_dir):
