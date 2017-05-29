@@ -31,7 +31,7 @@ class TaskConfig:
         self.parse_file = parse_file
         self.script_path = script_path
         self.script_params = script_params
-        self.pass_requirements = pass_requirements_file
+        self.pass_requirements_file = pass_requirements_file
         self.sdc_dir = sdc_dir
         self.qor_parse_file = qor_parse_file
         self.cmos_tech_behavior = cmos_tech_behavior

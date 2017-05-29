@@ -80,6 +80,12 @@ def vtr_command_argparser(prog=None):
                         default=None,
                         help="Directory to store intermediate and result files."
                              "If None, set to the relevante directory under $VTR_ROOT/vtr_flow/tasks.")
+
+    parser.add_argument("--debug",
+                        default=False,
+                        action="store_true",
+                        help="Produce additional debug output")
+
     return parser
 
 def main():
@@ -119,10 +125,10 @@ def vtr_command_main(arg_list, prog=None):
         if args.create_golden:
             #Create golden results
             num_qor_failures = 0
-            create_golden_tasks(args, vtr_task_list_files)
+            create_golden_task_results(args, vtr_task_list_files)
         else:
             #Check against golden results
-            num_qor_failures += check_qor_tasks(args, vtr_task_list_files)
+            num_qor_failures += check_tasks_qor(args, vtr_task_list_files)
 
 
         #Final summary
@@ -169,32 +175,36 @@ def run_tasks(args, task_lists):
     vtr_task_cmd += ['-j', str(args.j),
                      '-v', str(max(0, args.verbosity - 1)),
                      '--work_dir', args.work_dir,
-                     #'--print_metadata', 'True']
-                     '--print_metadata', 'False']
+                     '--print_metadata', str(args.debug)
+                     ]
 
     #Exit code is number of failures
     return subprocess.call(vtr_task_cmd)
 
-def check_qor_tasks(args, task_lists):
+def check_tasks_qor(args, task_lists):
     num_qor_failures = 0
-    for task_list in task_lists:
-        with open(task_list) as f:
-            for task in f:
-                num_qor_failures += check_qor_task(args, task)
+    vtr_task_cmd = ['vtr', 'task'] 
+    vtr_task_cmd += ['-l'] + task_lists
+    vtr_task_cmd += ['-v', str(max(0, args.verbosity - 1)),
+                     '--work_dir', args.work_dir,
+                     '--check_golden',
+                     '--print_metadata', str(args.debug)
+                     ]
 
-    return num_qor_failures
+    #Exit code is number of failures
+    return subprocess.call(vtr_task_cmd)
 
-def check_qor_task(args, task):
-    return -1
+def create_tasks_golden_result(args, task_list):
+    vtr_task_cmd = ['vtr', 'task'] 
+    vtr_task_cmd += ['-l'] + task_lists
+    vtr_task_cmd += ['-v', str(max(0, args.verbosity - 1)),
+                     '--work_dir', args.work_dir,
+                     '--create_golden',
+                     '--print_metadata', str(args.debug)
+                     ]
 
-def create_golden_tasks(args, task_list):
-    for task_list in task_lists:
-        with open(task_list) as f:
-            for task in f:
-                create_task_golden_results(args, task)
-
-def create_golden_task(args, task):
-    pass
+    #Exit code is number of failures
+    return subprocess.call(vtr_task_cmd)
 
 if __name__ == "__main__":
     main()

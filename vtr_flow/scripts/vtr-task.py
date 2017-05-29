@@ -6,6 +6,7 @@ import itertools
 import textwrap
 import subprocess
 import time
+import shutil
 from datetime import datetime
 from multiprocessing import Pool
 
@@ -16,6 +17,7 @@ from verilogtorouting.error import *
 from verilogtorouting.util import load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES, argparse_str2bool, get_next_run_dir, get_latest_run_dir
 from verilogtorouting.task import load_task_config, TaskConfig, find_task_config_file
 from verilogtorouting.flow import CommandRunner
+from verilogtorouting.inspect import load_pass_requirements, load_parse_results
 
 BASIC_VERBOSITY = 1
 FAILED_LOG_VERBOSITY = 2
@@ -45,8 +47,8 @@ class Job:
     def command(self):
         return self._command
 
-    def work_dir(self):
-        return self._work_dir
+    def work_dir(self, run_dir):
+        return os.path.join(run_dir, self._work_dir)
 
 def vtr_command_argparser(prog=None):
     description = textwrap.dedent(
@@ -100,8 +102,20 @@ def vtr_command_argparser(prog=None):
     parser.add_argument("--parse",
                         default=False,
                         action="store_true",
-                        dest="parse_only",
+                        dest="parse",
                         help="Perform only parsing on the latest task run")
+
+    parser.add_argument("--create_golden",
+                        default=False,
+                        action="store_true",
+                        dest="create_golden",
+                        help="Update or create golden results for the specified task")
+
+    parser.add_argument("--check_golden",
+                        default=False,
+                        action="store_true",
+                        dest="check_golden",
+                        help="Check the latest task run against golden results")
 
     parser.add_argument('--system',
                         choices=['local'],
@@ -125,7 +139,6 @@ def vtr_command_argparser(prog=None):
                         type=int,
                         help="Sets the verbosity of the script. Higher values produce more output.")
 
-
     parser.add_argument("--work_dir",
                         default=None,
                         help="Directory to store intermediate and result files."
@@ -147,10 +160,19 @@ def vtr_command_main(arg_list, prog=None):
     #Load the arguments
     args = vtr_command_argparser(prog).parse_args(arg_list)
 
+    args.run = True
+    if args.parse or args.create_golden or args.check_golden:
+        #Don't run if parsing or handling golden results
+        args.run = False
+
+    if args.run:
+        #Always parse if running
+        args.parse = True
+
     if args.print_metadata:
         print "# {} {}\n".format(prog, ' '.join(arg_list))
 
-    num_failed = 0
+    num_failed = -1
     try:
         task_names = args.task
 
@@ -168,14 +190,14 @@ def vtr_command_main(arg_list, prog=None):
         print "\tfull command: ", e.cmd
         print "\treturncode  : ", e.returncode
         print "\tlog file    : ", e.log
-        sys.exit(-1)
+    except InspectError as e:
+        print "Error: {msg}".format(msg=e.msg)
+        print "\tfile: ", e.filename
     except VtrError as e:
         print "Error:", e.msg
-        sys.exit(-1)
     finally:
         if args.print_metadata:
-            print "\n{} took {}".format(prog, format_elapsed_time(datetime.now() - start))
-
+            print "\n{} took {} (exiting {})".format(prog, format_elapsed_time(datetime.now() - start), num_failed)
     sys.exit(num_failed)
 
 def run_tasks(args, configs):
@@ -192,10 +214,20 @@ def run_tasks(args, configs):
         #Generate the jobs, each corresponding to an invocation of vtr flow
         jobs = create_jobs(args, configs)
 
-        if not args.parse_only:
-            num_failed = run_parallel(args, jobs)
+        if args.run:
+            num_failed = run_parallel(args, configs, jobs)
 
-        parse_tasks(args, configs, jobs)
+        if args.parse:
+            print_verbose(BASIC_VERBOSITY, args.verbosity, "")
+            parse_tasks(args, configs, jobs)
+
+        if args.create_golden:
+            print_verbose(BASIC_VERBOSITY, args.verbosity, "")
+            create_golden_results_for_tasks(args, configs)
+
+        if args.check_golden:
+            print_verbose(BASIC_VERBOSITY, args.verbosity, "")
+            num_failed += check_golden_results_for_tasks(args, configs)
 
     else:
         raise VtrError("Unrecognized run system {system}".format(system=args.system))
@@ -219,12 +251,14 @@ def parse_task(args, config, config_jobs, task_metrics_filepath=None, flow_metri
     """
     run_dir = find_latest_run_dir(args, config)
 
+    print_verbose(BASIC_VERBOSITY, args.verbosity, "Parsing task run {}".format(run_dir))
+
+    for job in config_jobs:
+        #Re-run parsing only
+        subprocess.call(job.command() + ["--parse"] , cwd=job.work_dir(run_dir))
+
     if task_metrics_filepath is None:
         task_metrics_filepath = task_parse_results_filepath = os.path.join(run_dir, "parse_results.txt")
-
-    #Sanity check, all jobs should have run under run_dir
-    for job in config_jobs:
-        assert os.path.dirname(os.path.dirname(job.work_dir())) == run_dir
 
     #Record max widths for pretty printing
     max_arch_len = len("architecture")
@@ -244,7 +278,7 @@ def parse_task(args, config, config_jobs, task_metrics_filepath=None, flow_metri
             #
             #The job results file is basically the same format, but excludes the architecture and circuit fields,
             #which we prefix to each line of the task result file
-            job_parse_results_filepath = os.path.join(job.work_dir(), flow_metrics_basename)
+            job_parse_results_filepath = os.path.join(run_dir, job.arch(), job.circuit(), flow_metrics_basename)
             if os.path.isfile(job_parse_results_filepath):
                 with open(job_parse_results_filepath) as in_f:
                     lines = in_f.readlines()
@@ -261,12 +295,134 @@ def parse_task(args, config, config_jobs, task_metrics_filepath=None, flow_metri
             else:
                 print_verbose(BASIC_VERBOSITY, args.verbosity, "Warning: Flow result file not found (task QoR will be incomplete): {} ".format(job_parse_results_filepath))
 
+def create_golden_results_for_tasks(args, configs):
+    for config in configs:
+        create_golden_results_for_task(args, config)
+
+def create_golden_results_for_task(args, config):
+    """
+    Copies the latest task run's parse_results.txt into the config directory as golden_results.txt
+    """
+    run_dir = find_latest_run_dir(args, config)
+
+    task_results = os.path.join(run_dir, "parse_results.txt")
+    golden_results_filepath = os.path.join(config.config_dir, "golden_results.txt")
+
+    print_verbose(BASIC_VERBOSITY, args.verbosity, "Creating golden task results from {} -> {}".format(run_dir, golden_results_filepath))
+
+    shutil.copy(task_results, golden_results_filepath)
+
+def check_golden_results_for_tasks(args, configs):
+    num_qor_failures = 0
+
+    for config in configs:
+        num_qor_failures += check_golden_results_for_task(args, config)
+
+    return num_qor_failures
+
+def check_golden_results_for_task(args, config):
+    """
+    Copies the latest task run's parse_results.txt into the config directory as golden_results.txt
+    """
+    num_qor_failures = 0
+    run_dir = find_latest_run_dir(args, config)
+
+    if not config.pass_requirements_file:
+        print_verbose(BASIC_VERBOSITY, args.verbosity, 
+                      "Warning: no pass requirements file for task {}, QoR will not be checked".format(config.task_name))
+    else:
+        print_verbose(BASIC_VERBOSITY, args.verbosity, 
+                "Checking QoR: {}".format(run_dir))
+
+        #Load the pass requirements file
+        pass_req_filepath = os.path.join(find_vtr_root(), 'vtr_flow', 'parse', 'pass_requirements', config.pass_requirements_file)
+        pass_requirements = load_pass_requirements(pass_req_filepath)
+
+        #Load the task's parse results
+        task_results_filepath = os.path.join(run_dir, "parse_results.txt")
+        task_results = load_parse_results(task_results_filepath)
+         
+        #Load the golden reference
+        golden_results_filepath = os.path.join(config.config_dir, "golden_results.txt")
+        golden_results = load_parse_results(golden_results_filepath)
+
+        #Verify that the architecture and circuit are specified
+        for param in ["architecture", "circuit"]:
+            if param not in task_results.primary_keys():
+                raise InspectError("Required param '{}' missing from task results: {}".format(param, task_results_filepath), task_results_filepath)
+
+            if param not in golden_results.primary_keys():
+                raise InspectError("Required param '{}' missing from golden results: {}".format(param, golden_results_filepath), golden_results_filepath)
+
+        #Verify that all params and pass requirement metric are included in both the golden and task results
+        # We do not worry about non-pass_requriements elements being different or missing
+        for metric in pass_requirements.keys():
+            for (arch, circuit), result in task_results.all_metrics().iteritems():
+                if metric not in result:
+                    print_verbose(BASIC_VERBOSITY, args.verbosity,
+                        "Warning: Required metric '{}' missing from task results".format(metric), task_results_filepath) 
+                    #raise InspectError("Required metric '{}' missing from task results".format(metric), parse_results_filepath) 
+
+            for (arch, circuit), result in golden_results.all_metrics().iteritems():
+                if metric not in result:
+                    print_verbose(BASIC_VERBOSITY, args.verbosity,
+                        "Warning: Required metric '{}' missing from golden results".format(metric), golden_results_filepath) 
+                    #raise InspectError("Required metric '{}' missing from golden results".format(metric), golden_results_filepath) 
+
+        #Load the primary keys for golden and task
+        golden_primary_keys = []
+        for (arch, circuit), metrics in golden_results.all_metrics().iteritems():
+            golden_primary_keys.append((arch, circuit))
+
+        task_primary_keys = []
+        for (arch, circuit), metrics in task_results.all_metrics().iteritems():
+            task_primary_keys.append((arch, circuit))
+
+        #Ensure that task has all the golden cases
+        for arch, circuit in golden_primary_keys:
+            if task_results.metrics(arch, circuit) == None:
+                raise InspectError("Required case {}/{} missing from task results: {}".format(arch, circuit), parse_results_filepath) 
+    
+        #Warn about any elements in task that are not found in golden
+        for arch, circuit in task_primary_keys:
+            if golden_results.metrics(arch, circuit) == None:
+                print_verbose(BASIC_VERBOSITY, args.verbosity,
+                             "Warning: Task includes result for {}/{} missing in golden results".format(arch, circuit))
+
+        #Verify that task results pass each metric for all cases in golden
+        for (arch, circuit) in golden_primary_keys:
+            golden_metrics = golden_results.metrics(arch, circuit)
+            task_metrics = task_results.metrics(arch, circuit)
+
+            for metric in pass_requirements.keys():
+
+                if not metric in golden_metrics:
+                    print_verbose(BASIC_VERBOSITY, args.verbosity, "Warning: Metric {} missing from golden results".format(metric))
+                    continue
+
+                if not metric in task_metrics:
+                    print_verbose(BASIC_VERBOSITY, args.verbosity, "Warning: Metric {} missing from task results".format(metric))
+                    continue
+
+                try:
+                    metric_passed, reason = pass_requirements[metric].check_passed(golden_metrics[metric], task_metrics[metric])
+                except InspectError as e:
+                    metric_passed = False
+                    reason = e.msg
+
+                if not metric_passed:
+                    print_verbose(BASIC_VERBOSITY, args.verbosity, "    FAILED {}/{} {}: {}".format(arch, circuit, metric, reason))
+                    num_qor_failures += 1
+
+    if num_qor_failures == 0:
+        print_verbose(BASIC_VERBOSITY, args.verbosity, 
+                      "    PASSED")
+
+    return num_qor_failures
+
 def create_jobs(args, configs):
     jobs = []
     for config in configs:
-        task_dir = find_task_dir(args, config)
-        task_run_dir = get_next_run_dir(task_dir)
-
         for arch, circuit in itertools.product(config.archs, config.circuits):
             abs_arch_filepath = resolve_vtr_source_file(config, arch, config.arch_dir)
             abs_circuit_filepath = resolve_vtr_source_file(config, circuit, config.circuit_dir)
@@ -290,13 +446,16 @@ def create_jobs(args, configs):
             if config.pad_file:
                 script_params += ["--fix_pins", resolve_vtr_source_file(config, config.pad_file)]
 
+            if config.parse_file:
+                script_params += ["--parse_config_file", resolve_vtr_source_file(config, config.parse_file, os.path.join("parse", "parse_config"))]
+
             #We specify less verbosity to the sub-script
             # This keeps the amount of output reasonable
             script_params += ["-v", str(max(0, args.verbosity - 1))]
 
             cmd = executable + script_params
 
-            work_dir = os.path.join(task_run_dir, os.path.basename(arch), os.path.basename(circuit))
+            work_dir = os.path.join(arch, circuit)
 
             jobs.append(Job(config.task_name, arch, circuit, work_dir, cmd))
 
@@ -323,10 +482,17 @@ def find_task_dir(args, config):
 
     return task_dir
 
-def run_parallel(args, queued_jobs):
+def run_parallel(args, configs, queued_jobs):
     """
     Run each external command in commands with at most args.j commands running in parllel
     """
+    #Determine the run dir for each config
+    run_dirs = {}
+    for config in configs:
+        task_dir = find_task_dir(args, config)
+        task_run_dir = get_next_run_dir(task_dir)
+        run_dirs[config.task_name] = task_run_dir
+
 
     #We pop off the jobs of queued_jobs, which python does from the end,
     #so reverse the list now so we get the expected order. This also ensures
@@ -350,7 +516,7 @@ def run_parallel(args, queued_jobs):
                 job = queued_jobs.pop()
 
                 #Make the working directory
-                work_dir = job.work_dir()
+                work_dir = job.work_dir(run_dirs[config.task_name])
                 mkdir_p(work_dir)
 
                 log_filepath = os.path.join(work_dir, "vtr_flow.log")

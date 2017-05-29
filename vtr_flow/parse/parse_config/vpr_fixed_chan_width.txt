@@ -27,7 +27,7 @@ placed_setup_TNS_est;vpr.out;Placement estimated setup Total Negative Slack \(sT
 placed_setup_WNS_est;vpr.out;Placement estimated setup Worst Negative Slack \(sWNS\): (.*) ns
 
 #VPR Routing Metrics
-routed_wirelength;vpr.out;Total wirelength: (.*), average
+routed_wirelength;vpr.out;\s*Total wirelength: (.*), average
 crit_path_route_success_iteration;vpr.out;Successfully routed after (\d+) routing iterations
 
 #VPR Analysis (final implementation) Metrics
@@ -41,6 +41,6 @@ place_time;vpr.out;Placement took (.*) seconds
 crit_path_route_time;vpr.out;Routing took (.*) seconds
 
 #Memory usage
-max_vpr_mem;vpr.out;Maximum resident set size \(kbytes\): (\d+)
-max_odin_mem;odin.out;Maximum resident set size \(kbytes\): (\d+)
-max_abc_mem;abc.out;Maximum resident set size \(kbytes\): (\d+)
+max_vpr_mem;vpr.out;\s*Maximum resident set size \(kbytes\): (\d+)
+max_odin_mem;odin.out;\s*Maximum resident set size \(kbytes\): (\d+)
+max_abc_mem;abc.out;\s*Maximum resident set size \(kbytes\): (\d+)

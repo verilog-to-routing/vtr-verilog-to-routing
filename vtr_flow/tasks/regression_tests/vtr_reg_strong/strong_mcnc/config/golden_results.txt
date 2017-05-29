@@ -1,4 +1,4 @@
 arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-k4_N4_90nm.xml	diffeq.blif	3019530-dirty	success	24	7.25276	0.555924	1.23173	9.8034	0.620156	13030	-1	-1	51444	1935	1974	1075	378	64	39	-1	-1		
-k4_N4_90nm.xml	ex5p.blif	3019530-dirty	success	42	6.03206	0.325721	0.87273	23.3343	0.899065	16272	-1	-1	34012	1072	1135	818	279	8	63	-1	-1		
-k4_N4_90nm.xml	s298.blif	3019530-dirty	success	28	11.5074	0.663298	1.48121	27.0418	1.2492	19278	-1	-1	52904	1942	1948	1012	494	4	6	-1	-1		
+k4_N4_90nm.xml	diffeq.blif	3019530-dirty	success	24	7.25276	0.555924	1.23173	9.8034	0.620156	13030	-1	-1	51444	1935	1974	1075	378	64	39				
+k4_N4_90nm.xml	ex5p.blif	3019530-dirty	success	42	6.03206	0.325721	0.87273	23.3343	0.899065	16272	-1	-1	34012	1072	1135	818	279	8	63				
+k4_N4_90nm.xml	s298.blif	3019530-dirty	success	28	11.5074	0.663298	1.48121	27.0418	1.2492	19278	-1	-1	52904	1942	1948	1012	494	4	6				

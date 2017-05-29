@@ -30,6 +30,109 @@ class ParsePattern:
     def default_value(self):
         return self._default_value
 
+class PassRequirement(object):
+    def __init__(self, metric):
+        self._metric = metric
+        self._type = type
+
+    def metric(self):
+        return self._metric
+
+    def type(self):
+        raise NotImplementedError()
+
+    def check_passed(golden_value, check_value):
+        raise NotImplementedError()
+
+class EqualPassRequirement(PassRequirement):
+    def __init__(self, metric):
+        super(EqualPassRequirement, self).__init__(metric)
+
+    def type(self):
+        return "Equal"
+
+    def check_passed(self, golden_value, check_value):
+        if golden_value == check_value:
+            return True, ""
+        else:
+            return False, "Task value '{}' does not match golden value '{}'".format(golden_value, check_value)
+
+class RangePassRequirement(PassRequirement):
+
+    def __init__(self, metric, min_value=None, max_value=None):
+        super(RangePassRequirement, self).__init__(metric)
+
+        if max_value < min_value:
+            raise InspectError("Invalid range specification (max value larger than min value)")
+
+        self._min_value = min_value
+        self._max_value = max_value
+
+    def type(self):
+        return "Range"
+
+    def min_value(self):
+        return self._min_value
+
+    def max_value(self):
+        return self._max_value
+
+    def check_passed(self, golden_value, check_value):
+        if golden_value == None and check_value == None:
+            return True, "both golden and check are None"
+        elif golden_value == None and check_value != None:
+            return False, "golden value is None, but check value is {}".format(check_value)
+        elif golden_value != None and check_value == None:
+            return False, "golden value is {}, but check value is None".format(golden_value)
+
+        assert golden_value != None
+        assert check_value != None
+
+        try:
+            golden_value = float(golden_value)
+        except ValueError as e:
+            raise InspectError("Failed to convert golden value '{}' to float".format(golden_value))
+
+        try:
+            check_value = float(check_value)
+        except ValueError as e:
+            raise InspectError("Failed to convert check value '{}' to float".format(check_value))
+
+        if golden_value == 0.: #Avoid division by zero
+
+            if golden_value == check_value:
+                return True, "golden and check both equal 0"
+            else:
+                return False, "unable to normalize relative value (golden value is zero)".format(norm_check_value, min_value(), max_value())
+
+        else:
+            norm_check_value = check_value / golden_value
+
+            if self.min_value() <= norm_check_value <= self.max_value():
+                return True, "relative value within range"
+            else:
+                return False, "relative value {} outside of range [{},{}]".format(norm_check_value, min_value(), max_value())
+
+class ParseResults:
+    def __init__(self):
+        self._metrics = OrderedDict()
+
+    def primary_keys(self):
+        return ("architecture", "circuit")
+
+    def add_result(self, arch, circuit, parse_result):
+        self._metrics[(arch, circuit)] = parse_result
+
+    def metrics(self, arch, circuit):
+        if (arch, circuit) in self._metrics:
+            return self._metrics[(arch, circuit)]
+        else:
+            return None
+
+    def all_metrics(self):
+        return self._metrics
+
+
 def load_parse_patterns(parse_config_filepath):
     parse_patterns = OrderedDict()
 
@@ -57,6 +160,86 @@ def load_parse_patterns(parse_config_filepath):
             raise InspectError("Invalid parse format line: '{}'".format(line), parse_config_filepath)
 
     return parse_patterns
+
+def load_pass_requirements(pass_requirements_filepath):
+    parse_patterns = OrderedDict()
+
+    for line in load_config_lines(pass_requirements_filepath):
+
+        components = line.split(';')
+
+    
+        if len(components) == 2:
+
+            metric = components[0]
+            expr = components[1]
+
+            if metric not in parse_patterns:
+                func, params_str = expr.split("(")
+                params_str = params_str.rstrip(")")
+                if params_str == "":
+                    params = []
+                else:
+                    params = params_str.split(",")
+
+                if func == "Range":
+                    if len(params) != 2:
+                        raise InspectError("Range() pass requirement function requires two arguments", pass_requirements_filepath)
+
+                    parse_patterns[metric] = RangePassRequirement(metric, float(params[0]), float(params[1]))
+                elif func == "Equal":
+                    if len(params) != 0:
+                        raise InspectError("Equal() pass requirement function requires no arguments", pass_requirements_filepath)
+                    parse_patterns[metric] = EqualPassRequirement(metric)
+                else:
+                    raise InspectError("Unexpected pass requirement function '{}' for metric '{}'".format(func, metric), pass_requirements_filepath)
+
+            else:
+                raise InspectError("Duplicate pass requirement for '{}'".format(name), pass_requirements_filepath)
+
+        else:
+            raise InspectError("Invalid pass requirement format line: '{}'".format(line), pass_requirements_filepath)
+
+    return parse_patterns
+
+def load_parse_results(parse_results_filepath, primary_key_set=None):
+    header = []
+
+    parse_results = ParseResults()
+
+    with open(parse_results_filepath) as f:
+        for lineno, row in enumerate(f):
+            elements = [elem.strip() for elem in row.split("\t")]
+
+            if lineno == 0:
+                header = elements
+            else:
+                primary_keys = OrderedDict()
+                result = OrderedDict()
+
+                arch=None
+                circuit=None
+                for i, elem in enumerate(elements):
+                    metric = header[i]
+
+                    if elem == "":
+                        elem = None
+
+                    if metric == "arch":
+                        metric = "architecture"
+
+                    if metric == "architecture":
+                        arch = elem
+                    elif metric == "circuit":
+                        circuit = elem
+
+                    result[metric] = elem
+
+                assert arch and circuit
+                
+                parse_results.add_result(arch, circuit, result)
+
+    return parse_results
 
 def determine_lut_size(architecture_file):
     """

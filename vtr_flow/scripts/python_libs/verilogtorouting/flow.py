@@ -41,7 +41,6 @@ def run_vtr_flow(architecture_file, circuit_file,
     if vpr_args == None:
         vpr_args = OrderedDict()
 
-    vpr_args['asdf'] = None
     #
     #Initial setup
     #

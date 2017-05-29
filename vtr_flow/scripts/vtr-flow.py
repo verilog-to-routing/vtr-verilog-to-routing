@@ -242,7 +242,7 @@ def vtr_command_main(arg_list, prog=None):
         parse_vtr_flow(abs_work_dir, args.parse_config_file, verbosity=args.verbosity)
     finally:
         print_verbose(BASIC_VERBOSITY, args.verbosity, "\n{} took {}".format(prog, format_elapsed_time(datetime.now() - start)))
-        sys.exit(exit_status)
+    sys.exit(exit_status)
 
 def process_unkown_args(unkown_args):
     #We convert the unkown_args into a dictionary, which is eventually 
