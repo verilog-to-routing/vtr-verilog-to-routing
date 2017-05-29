@@ -210,7 +210,7 @@ def parse_tasks(args, configs, jobs):
         config_jobs = [job for job in jobs if job.task_name() == config.task_name]
         parse_task(args, config, config_jobs)
 
-def parse_task(args, config, config_jobs):
+def parse_task(args, config, config_jobs, task_metrics_filepath=None, flow_metrics_basename="parse_results.txt"):
     """
     Parse a single task run.
 
@@ -218,6 +218,9 @@ def parse_task(args, config, config_jobs):
     which is an amalgam of the parse_rests.txt's produced by each job (flow invocation)
     """
     run_dir = find_latest_run_dir(args, config)
+
+    if task_metrics_filepath is None:
+        task_metrics_filepath = task_parse_results_filepath = os.path.join(run_dir, "parse_results.txt")
 
     #Sanity check, all jobs should have run under run_dir
     for job in config_jobs:
@@ -230,7 +233,6 @@ def parse_task(args, config, config_jobs):
         max_arch_len = max(max_arch_len, len(job.arch()))
         max_circuit_len = max(max_circuit_len, len(job.circuit()))
 
-    task_parse_results_filepath = os.path.join(run_dir, "parse_results.txt")
     with open(task_parse_results_filepath, "w") as out_f:
 
         #Start the header
@@ -242,19 +244,22 @@ def parse_task(args, config, config_jobs):
             #
             #The job results file is basically the same format, but excludes the architecture and circuit fields,
             #which we prefix to each line of the task result file
-            job_parse_results_filepath = os.path.join(job.work_dir(), "parse_results.txt")
-            with open(job_parse_results_filepath) as in_f:
-                lines = in_f.readlines()
+            job_parse_results_filepath = os.path.join(job.work_dir(), flow_metrics_basename)
+            if os.path.isfile(job_parse_results_filepath):
+                with open(job_parse_results_filepath) as in_f:
+                    lines = in_f.readlines()
 
-                assert len(lines) == 2
+                    assert len(lines) == 2
 
-                if header:
-                    #First line is the header
-                    print >>out_f, lines[0],
-                    header = False
+                    if header:
+                        #First line is the header
+                        print >>out_f, lines[0],
+                        header = False
 
-                #Second line is the data
-                print >>out_f, "{:<{arch_width}}\t{:<{circuit_width}}\t{}".format(job.arch(), job.circuit(), lines[1], arch_width=max_arch_len, circuit_width=max_circuit_len),
+                    #Second line is the data
+                    print >>out_f, "{:<{arch_width}}\t{:<{circuit_width}}\t{}".format(job.arch(), job.circuit(), lines[1], arch_width=max_arch_len, circuit_width=max_circuit_len),
+            else:
+                print_verbose(BASIC_VERBOSITY, args.verbosity, "Warning: Flow result file not found (task QoR will be incomplete): {} ".format(job_parse_results_filepath))
 
 def create_jobs(args, configs):
     jobs = []

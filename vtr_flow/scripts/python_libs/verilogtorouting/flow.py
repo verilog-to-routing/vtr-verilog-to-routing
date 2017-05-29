@@ -30,7 +30,7 @@ def run_vtr_flow(architecture_file, circuit_file,
 
         power_tech_file  : Technology power file.  Enables power analysis and runs ace
 
-        work_dir         : Directory to run in
+        work_dir         : Directory to run in (created if non-existant)
         start_stage      : Stage of the flow to start at
         end_stage        : Stage of the flow to finish at
         command_runner   : A CommandRunner object used to run system commands
@@ -41,6 +41,7 @@ def run_vtr_flow(architecture_file, circuit_file,
     if vpr_args == None:
         vpr_args = OrderedDict()
 
+    vpr_args['asdf'] = None
     #
     #Initial setup
     #
@@ -175,32 +176,20 @@ def run_vtr_flow(architecture_file, circuit_file,
         print_verbose(1, verbosity, "Running ABC Logical Equivalence Check")
         run_abc_lec(lec_base_netlist, post_vpr_netlist, command_runner=command_runner, log_filename="abc.lec.out")
 
-
-
-    #
-    # Parse the results
-    #
-    if not parse_config_file:
-        parse_config_file = find_vtr_file(os.path.join("vpr_standard.txt")) #Default config
-
+def parse_vtr_flow(work_dir, parse_config_file=None, metrics_filepath=None, verbosity=1):
     print_verbose(1, verbosity, "Parsing results")
-    metrics = parse_vtr_flow(parse_config_file, work_dir)
-    write_tab_delimitted_csv(os.path.join(work_dir, "parse_results.txt"), [metrics])
 
-    return metrics
-
-def parse_vtr_flow(parse_config_file, work_dir):
     parse_patterns = load_parse_patterns(parse_config_file) 
 
-    parse_results = OrderedDict()
+    metrics = OrderedDict()
 
     #Set defaults
     for parse_pattern in parse_patterns.values():
 
         if parse_pattern.default_value() != None:
-            parse_results[parse_pattern.name()] = parse_pattern.default_value()
+            metrics[parse_pattern.name()] = parse_pattern.default_value()
         else:
-            parse_results[parse_pattern.name()] = ""
+            metrics[parse_pattern.name()] = ""
 
     #Process each pattern
     for parse_pattern in parse_patterns.values():
@@ -212,9 +201,14 @@ def parse_vtr_flow(parse_config_file, work_dir):
                     match = parse_pattern.regex().match(line)
                     if match:
                         #Extract the first group value
-                        parse_results[parse_pattern.name()] = match.groups()[0]
+                        metrics[parse_pattern.name()] = match.groups()[0]
 
-    return parse_results
+    if metrics_filepath is None:
+        metrics_filepath = os.path.join(work_dir, "parse_results.txt")
+
+    write_tab_delimitted_csv(metrics_filepath, [metrics])
+
+    return metrics
 
 def run_odin(architecture_file, circuit_file, 
              output_netlist, 

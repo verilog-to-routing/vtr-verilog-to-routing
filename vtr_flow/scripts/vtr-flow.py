@@ -14,7 +14,7 @@ from collections import OrderedDict
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python_libs'))
 
-from verilogtorouting.flow import run_vtr_flow, VTR_STAGE, vtr_stages, CommandRunner
+from verilogtorouting.flow import run_vtr_flow, parse_vtr_flow, VTR_STAGE, vtr_stages, CommandRunner
 from verilogtorouting.error import *
 from verilogtorouting.util import print_verbose, RawDefaultHelpFormatter, VERBOSITY_CHOICES, find_vtr_file, format_elapsed_time
 
@@ -76,9 +76,9 @@ def vtr_command_argparser(prog=None):
                         rather then attempting to find the minimum channel width (VPR's default behaviour).
 
 
-                    Run in the current directory (rather than in a temporary directory):
+                    Run in the directory 'test' (rather than in a temporary directory):
 
-                        %(prog)s arch.xml circuit.v --work_dir .
+                        %(prog)s arch.xml circuit.v --work_dir test
 
 
                     Enable power analysis:
@@ -131,6 +131,12 @@ def vtr_command_argparser(prog=None):
                         default=find_vtr_file("vpr_standard.txt"),
                         help="Parse file to run after flow completion")
 
+    parser.add_argument("--parse",
+                        default=False,
+                        action="store_true",
+                        dest="parse_only",
+                        help="Perform only parsing (assumes a previous run exists in work_dir)")
+
 
     #
     # Power arguments
@@ -149,7 +155,7 @@ def vtr_command_argparser(prog=None):
 
     house_keeping.add_argument("--work_dir",
                                default=".",
-                               help="Directory to store intermediate and result files.")
+                               help="Directory to run the flow in (will be created if non-existant).")
 
     house_keeping.add_argument("--track_memory_usage",
                                choices=on_off_choices,
@@ -193,47 +199,50 @@ def vtr_command_main(arg_list, prog=None):
                                    timeout_sec=args.timeout,
                                    verbose=True if args.verbosity >= 2 else False,
                                    echo_cmd=True if args.verbosity >= 4 else False)
+    exit_status = 0
     try:
-        vpr_args = process_unkown_args(unkown_args)
+        if not args.parse_only:
+            try:
+                vpr_args = process_unkown_args(unkown_args)
 
-        #Run the flow
-        run_vtr_flow(abs_path_arch_file, 
-                     abs_path_circuit_file, 
-                     power_tech_file=args.power_tech,
-                     work_dir=abs_work_dir,
-                     start_stage=args.start, 
-                     end_stage=args.end,
-                     command_runner=command_runner,
-                     parse_config_file=args.parse_config_file,
-                     verbosity=args.verbosity,
-                     vpr_args=vpr_args
-                     )
-    except CommandError as e:
-        #An external command failed
-        print "Error: {msg}".format(msg=e.msg)
-        print "\tfull command: ", ' '.join(e.cmd)
-        print "\treturncode  : ", e.returncode
-        print "\tlog file    : ", e.log
-        sys.exit(1)
+                #Run the flow
+                run_vtr_flow(abs_path_arch_file, 
+                             abs_path_circuit_file, 
+                             power_tech_file=args.power_tech,
+                             work_dir=abs_work_dir,
+                             start_stage=args.start, 
+                             end_stage=args.end,
+                             command_runner=command_runner,
+                             verbosity=args.verbosity,
+                             vpr_args=vpr_args
+                             )
+            except CommandError as e:
+                #An external command failed
+                print "Error: {msg}".format(msg=e.msg)
+                print "\tfull command: ", ' '.join(e.cmd)
+                print "\treturncode  : ", e.returncode
+                print "\tlog file    : ", e.log
+                exit_status = 1
+            except InspectError as e:
+                #Something went wrong gathering information
+                print "Error: {msg}".format(msg=e.msg)
+                print "\tfile        : ", e.filename
+                exit_status = 2
 
-    except InspectError as e:
-        #Something went wrong gathering information
-        print "Error: {msg}".format(msg=e.msg)
-        print "\tfile        : ", e.filename
-        sys.exit(2)
+            except VtrError as e:
+                #Generic VTR errors
+                print "Error: ", e.msg
+                exit_status = 3
 
-    except VtrError as e:
-        #Generic VTR errors
-        print "Error: ", e.msg
-        sys.exit(3)
+            except KeyboardInterrupt as e:
+                print "{} recieved keyboard interrupt".format(prog)
+                exit_status = 4
 
-    except KeyboardInterrupt as e:
-        print "{} recieved keyboard interrupt".format(prog)
-        sys.exit(4)
+        #Parse the flow results
+        parse_vtr_flow(abs_work_dir, args.parse_config_file, verbosity=args.verbosity)
     finally:
         print_verbose(BASIC_VERBOSITY, args.verbosity, "\n{} took {}".format(prog, format_elapsed_time(datetime.now() - start)))
-
-    sys.exit(0)
+        sys.exit(exit_status)
 
 def process_unkown_args(unkown_args):
     #We convert the unkown_args into a dictionary, which is eventually 
