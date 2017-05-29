@@ -167,7 +167,6 @@ def load_pass_requirements(pass_requirements_filepath):
     for line in load_config_lines(pass_requirements_filepath):
 
         components = line.split(';')
-
     
         if len(components) == 2:
 
@@ -195,7 +194,7 @@ def load_pass_requirements(pass_requirements_filepath):
                     raise InspectError("Unexpected pass requirement function '{}' for metric '{}'".format(func, metric), pass_requirements_filepath)
 
             else:
-                raise InspectError("Duplicate pass requirement for '{}'".format(name), pass_requirements_filepath)
+                raise InspectError("Duplicate pass requirement for '{}'".format(metric), pass_requirements_filepath)
 
         else:
             raise InspectError("Invalid pass requirement format line: '{}'".format(line), pass_requirements_filepath)

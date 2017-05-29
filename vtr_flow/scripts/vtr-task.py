@@ -315,6 +315,7 @@ def create_golden_results_for_task(args, config):
 def check_golden_results_for_tasks(args, configs):
     num_qor_failures = 0
 
+    print_verbose(BASIC_VERBOSITY, args.verbosity, "Checking QoR:")
     for config in configs:
         num_qor_failures += check_golden_results_for_task(args, config)
 
@@ -331,8 +332,6 @@ def check_golden_results_for_task(args, config):
         print_verbose(BASIC_VERBOSITY, args.verbosity, 
                       "Warning: no pass requirements file for task {}, QoR will not be checked".format(config.task_name))
     else:
-        print_verbose(BASIC_VERBOSITY, args.verbosity, 
-                "Checking QoR: {}".format(run_dir))
 
         #Load the pass requirements file
         pass_req_filepath = os.path.join(find_vtr_root(), 'vtr_flow', 'parse', 'pass_requirements', config.pass_requirements_file)
@@ -411,12 +410,12 @@ def check_golden_results_for_task(args, config):
                     reason = e.msg
 
                 if not metric_passed:
-                    print_verbose(BASIC_VERBOSITY, args.verbosity, "    FAILED {}/{} {}: {}".format(arch, circuit, metric, reason))
+                    print_verbose(BASIC_VERBOSITY, args.verbosity, "    FAILED {} {}/{}: {} {}".format(config.task_name, arch, circuit, metric, reason))
                     num_qor_failures += 1
 
     if num_qor_failures == 0:
         print_verbose(BASIC_VERBOSITY, args.verbosity, 
-                      "    PASSED")
+                      "    PASSED {}".format(config.task_name))
 
     return num_qor_failures
 
