@@ -97,6 +97,12 @@ def vtr_command_argparser(prog=None):
                         metavar="TASK_LIST_FILE",
                         help="A file listing tasks to be run")
 
+    parser.add_argument("--parse",
+                        default=False,
+                        action="store_true",
+                        dest="parse_only",
+                        help="Perform only parsing on the latest task run")
+
     parser.add_argument('--system',
                         choices=['local'],
                         default='local',
@@ -118,6 +124,7 @@ def vtr_command_argparser(prog=None):
                         default=2,
                         type=int,
                         help="Sets the verbosity of the script. Higher values produce more output.")
+
 
     parser.add_argument("--work_dir",
                         default=None,
@@ -143,6 +150,7 @@ def vtr_command_main(arg_list, prog=None):
     if args.print_metadata:
         print "# {} {}\n".format(prog, ' '.join(arg_list))
 
+    num_failed = 0
     try:
         task_names = args.task
 
@@ -153,9 +161,7 @@ def vtr_command_main(arg_list, prog=None):
 
         configs = [load_task_config(config_file) for config_file in config_files]
 
-        num_failed, jobs = run_tasks(args, configs)
-
-        parse_tasks(args, configs, jobs)
+        num_failed = run_tasks(args, configs)
 
     except CommandError as e:
         print "Error: {msg}".format(msg=e.msg)
@@ -173,6 +179,10 @@ def vtr_command_main(arg_list, prog=None):
     sys.exit(num_failed)
 
 def run_tasks(args, configs):
+    """
+    Runs the specified set of tasks (configs)
+    """
+    num_failed = 0
 
     #We could potentially support other 'run' systems (e.g. a cluster),
     #rather than just the local machine
@@ -182,16 +192,31 @@ def run_tasks(args, configs):
         #Generate the jobs, each corresponding to an invocation of vtr flow
         jobs = create_jobs(args, configs)
 
-        return run_parallel(args, jobs), jobs
+        if not args.parse_only:
+            num_failed = run_parallel(args, jobs)
+
+        parse_tasks(args, configs, jobs)
+
     else:
         raise VtrError("Unrecognized run system {system}".format(system=args.system))
 
+    return num_failed
+
 def parse_tasks(args, configs, jobs):
+    """
+    Parse the selection of tasks specified in configs and associated jobs
+    """
     for config in configs:
         config_jobs = [job for job in jobs if job.task_name() == config.task_name]
         parse_task(args, config, config_jobs)
 
 def parse_task(args, config, config_jobs):
+    """
+    Parse a single task run.
+
+    This generates a file parse_results.txt in the task's working directory,
+    which is an amalgam of the parse_rests.txt's produced by each job (flow invocation)
+    """
     run_dir = find_latest_run_dir(args, config)
 
     #Sanity check, all jobs should have run under run_dir
@@ -213,6 +238,10 @@ def parse_task(args, config, config_jobs):
         header = True
 
         for job in config_jobs:
+            #Open the job results file
+            #
+            #The job results file is basically the same format, but excludes the architecture and circuit fields,
+            #which we prefix to each line of the task result file
             job_parse_results_filepath = os.path.join(job.work_dir(), "parse_results.txt")
             with open(job_parse_results_filepath) as in_f:
                 lines = in_f.readlines()
@@ -230,7 +259,8 @@ def parse_task(args, config, config_jobs):
 def create_jobs(args, configs):
     jobs = []
     for config in configs:
-        task_run_dir = create_new_run_dir(args, config)
+        task_dir = find_task_dir(args, config)
+        task_run_dir = get_next_run_dir(task_dir)
 
         for arch, circuit in itertools.product(config.archs, config.circuits):
             abs_arch_filepath = resolve_vtr_source_file(config, arch, config.arch_dir)
@@ -266,15 +296,6 @@ def create_jobs(args, configs):
             jobs.append(Job(config.task_name, arch, circuit, work_dir, cmd))
 
     return jobs
-
-def create_new_run_dir(args, config):
-    task_dir = find_task_dir(args, config)
-
-    run_dir = get_next_run_dir(task_dir)
-
-    mkdir_p(run_dir)
-
-    return run_dir
 
 def find_latest_run_dir(args, config):
     task_dir = find_task_dir(args, config)
@@ -396,7 +417,7 @@ def run_parallel(args, queued_jobs):
     return num_failed
 
 def print_log(log_file, indent="    "):
-    #Save positino
+    #Save position
     curr_pos = log_file.tell()
 
     log_file.seek(0) #Rewind to start

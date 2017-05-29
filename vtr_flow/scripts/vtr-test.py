@@ -169,7 +169,8 @@ def run_tasks(args, task_lists):
     vtr_task_cmd += ['-j', str(args.j),
                      '-v', str(max(0, args.verbosity - 1)),
                      '--work_dir', args.work_dir,
-                     '--print_metadata', 'True']
+                     #'--print_metadata', 'True']
+                     '--print_metadata', 'False']
 
     #Exit code is number of failures
     return subprocess.call(vtr_task_cmd)
