@@ -60,6 +60,7 @@ import os
 import textwrap
 import importlib
 from fnmatch import fnmatch
+from collections import OrderedDict
 
 def determine_vtr_root():
     """
@@ -78,7 +79,7 @@ def import_vtr_commands(vtr_root):
     Loads the vtr-*.py scripts from $VTR_ROOT/vtr_flow/scripts as modules 
     Returns a dictionary mapping from the command name to it's module
     """
-    commands = {}
+    unordered_commands = {}
 
     vtr_command_dir = os.path.join(vtr_root, "vtr_flow", "scripts")
     sys.path.insert(0, vtr_command_dir)
@@ -89,7 +90,18 @@ def import_vtr_commands(vtr_root):
 
             command_name = command_base.split('-', 1)[1]
 
-            commands[command_name] = importlib.import_module(command_base)
+            unordered_commands[command_name] = importlib.import_module(command_base)
+
+    #Re-build the command dictionary in preferred order, this ensures
+    #the preferred (i.e. common) commands appear first in the help
+    commands = OrderedDict()
+    for command_name in ["flow", "task"]:
+        if command_name in unordered_commands:
+            commands[command_name] = unordered_commands[command_name]
+            del unordered_commands[command_name]
+
+    for command_name, module in unordered_commands.iteritems():
+        commands[command_name] = module
 
     return commands
 

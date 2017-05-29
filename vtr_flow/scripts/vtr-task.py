@@ -126,7 +126,7 @@ def vtr_command_argparser(prog=None):
                         default=1,
                         type=int,
                         metavar="NUM_PROC",
-                        help="How many processors to use for parallel execution.")
+                        help="How many processors to use for execution.")
 
     parser.add_argument('--timeout',
                         default=30*24*60*60, #30 days
@@ -142,7 +142,7 @@ def vtr_command_argparser(prog=None):
     parser.add_argument("--work_dir",
                         default=None,
                         help="Directory to store intermediate and result files."
-                             "If None, set to the relevante directory under $VTR_ROOT/vtr_flow/tasks.")
+                             "If None, set to the relevant directory under $VTR_ROOT/vtr_flow/tasks.")
 
     parser.add_argument("--print_metadata",
                         default=True,

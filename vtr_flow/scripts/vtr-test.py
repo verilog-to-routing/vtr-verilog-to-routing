@@ -68,7 +68,7 @@ def vtr_command_argparser(prog=None):
                         default=1,
                         type=int,
                         metavar="NUM_PROC",
-                        help="How many processors to use for parallel execution.")
+                        help="How many processors to use for execution.")
 
     parser.add_argument("-v", "--verbosity",
                         choices=VERBOSITY_CHOICES,
