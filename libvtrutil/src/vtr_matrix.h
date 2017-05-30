@@ -11,10 +11,10 @@ namespace vtr {
      * integers.                                                                */
 
     //TODO: Convert all uses of this data structure to std::vector and elete
-    typedef struct s_ivec {
+    struct t_ivec {
         int nelem;
         int *list;
-    } t_ivec;
+    };
 
     void alloc_ivector_and_copy_int_list(t_linked_int ** list_head_ptr,
             int num_items, t_ivec *ivec, t_linked_int ** free_list_head_ptr);

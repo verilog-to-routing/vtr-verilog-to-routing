@@ -5,14 +5,14 @@
 
 namespace vtr {
 
-struct s_linked_vptr *insert_in_vptr_list(struct s_linked_vptr *head, void *vptr_to_add) {
+t_linked_vptr *insert_in_vptr_list(t_linked_vptr *head, void *vptr_to_add) {
 
 	/* Inserts a new element at the head of a linked list of void pointers. *
 	 * Returns the new head of the list.                                    */
 
-	struct s_linked_vptr *linked_vptr;
+	t_linked_vptr *linked_vptr;
 
-	linked_vptr = (struct s_linked_vptr *) vtr::malloc(sizeof(struct s_linked_vptr));
+	linked_vptr = (t_linked_vptr *) vtr::malloc(sizeof(t_linked_vptr));
 
 	linked_vptr->data_vptr = vptr_to_add;
 	linked_vptr->next = head;
@@ -21,8 +21,8 @@ struct s_linked_vptr *insert_in_vptr_list(struct s_linked_vptr *head, void *vptr
 
 /* Deletes the element at the head of a linked list of void pointers. *
  * Returns the new head of the list.                                    */
-struct s_linked_vptr *delete_in_vptr_list(struct s_linked_vptr *head) {
-	struct s_linked_vptr *linked_vptr;
+t_linked_vptr *delete_in_vptr_list(t_linked_vptr *head) {
+	t_linked_vptr *linked_vptr;
 
 	if (head == NULL )
 		return NULL ;
