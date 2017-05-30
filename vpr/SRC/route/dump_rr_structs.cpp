@@ -118,7 +118,7 @@ static void dump_rr_switches( fstream &file ){
 	file << ".rr_switch(" << device_ctx.num_rr_switches << ")" << endl;
 
 	for (int iswitch = 0; iswitch < device_ctx.num_rr_switches; iswitch++){
-		s_rr_switch_inf rr_switch = device_ctx.rr_switch_inf[iswitch];
+		t_rr_switch_inf rr_switch = device_ctx.rr_switch_inf[iswitch];
 		
 		file << " switch_" << iswitch << ": ";
 		file << "buffered(" << (int)rr_switch.buffered << ") ";
@@ -143,7 +143,7 @@ static void dump_block_types( fstream &file ){
 	file << ".block_type(" << device_ctx.num_block_types << ")" << endl;
 
 	for (int itype = 0; itype < device_ctx.num_block_types; itype++){
-		s_type_descriptor btype = device_ctx.block_types[itype];
+		t_type_descriptor btype = device_ctx.block_types[itype];
 
 		file << " type_" << itype << ": ";
 		file << "name(" << btype.name << ") ";
@@ -173,7 +173,7 @@ static void dump_block_types( fstream &file ){
 		file << endl;
 		file << "  .classes(" << num_class << ")" << endl;
 		for (int iclass = 0; iclass < num_class; iclass++){
-			s_class class_inf = btype.class_inf[iclass];
+			t_class class_inf = btype.class_inf[iclass];
 			file << "   " << iclass << ": " << "pin_type(" << class_inf.type << ") ";
 			file << "num_pins(" << class_inf.num_pins << ") ";
 			

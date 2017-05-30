@@ -128,11 +128,11 @@ exit $num_golden_failures;
 
 sub parse_single_task {
 	my $task_name = shift;
-	my $task_path = $task_name;
-	
+	(my $task_path = $task_name) =~ s/\s+$//;
+
     # first see if task_name is the task path
 	if (! -e "$task_path/config/config.txt") {
-	    $task_path = "$vtr_flow_path/tasks/$task_name";
+	    ($task_path = "$vtr_flow_path/tasks/$task_name") =~ s/\s+$//;
     }
 
 	open( CONFIG, "<$task_path/config/config.txt" )
@@ -270,7 +270,7 @@ sub summarize_qor {
 	my $first = 1;
 	
 	my $task = @tasks[0];
-	my $task_path = "$vtr_flow_path/tasks/$task";
+	(my $task_path = "$vtr_flow_path/tasks/$task") =~ s/\s+$//;
 	
 	my $output_path = $task_path;
 	my $exp_id = last_exp_id($task_path);
@@ -291,9 +291,9 @@ sub summarize_qor {
 
 	foreach my $task (@tasks) {
 		chomp($task);
-		$task_path = "$vtr_flow_path/tasks/$task";
+		($task_path = "$vtr_flow_path/tasks/$task") =~ s/\s+$//;
 		$exp_id = last_exp_id($task_path);
-		my $run_path = "$task_path/${run_prefix}${exp_id}";
+		(my $run_path = "$task_path/${run_prefix}${exp_id}") =~ s/\s+$//;
 
 		open( RESULTS_FILE, "$run_path/qor_results.txt" );
 		my $output = <RESULTS_FILE>;
@@ -320,13 +320,13 @@ sub calc_geomean {
 	my $first = 0;
 
 	my $task = @tasks[0];
-	my $task_path = "$vtr_flow_path/tasks/$task";
+	(my $task_path = "$vtr_flow_path/tasks/$task") =~ s/\s+$//;
 	
 	my $output_path = $task_path;
 	my $exp_id = last_exp_id($task_path);
 
 	if ( ( ( $#tasks + 1 ) > 1 ) | ( -e "$task_path/../task_list.txt" ) ) {
-		$output_path = "$task_path/../"; 
+		($output_path = "$task_path/../") =~ s/\s+$//; 
 	}
 	if ( !-e "$output_path/qor_geomean.txt" ) {
 		open( OUTPUT_FILE, ">$output_path/qor_geomean.txt" );
@@ -478,7 +478,7 @@ sub last_exp_id {
         return $run_id_no_pad;
     }
 
-    die("Unkown experiment id");
+    die("Unknown experiment id");
 } 
 
 sub check_golden {
@@ -493,8 +493,8 @@ sub check_golden {
     print "\n" if $verbose;
 
 	# Code to check the results against the golden results
-	my $golden_file = "$task_path/config/golden_results.txt";
-	my $test_file   = "$run_path/parse_results.txt";
+	(my $golden_file = "$task_path/config/golden_results.txt") =~ s/\s+$//;
+	(my $test_file   = "$run_path/parse_results.txt") =~ s/s+$//;
 
 	my $pass_req_file;
 	open( CONFIG_FILE, "$task_path/config/config.txt" );

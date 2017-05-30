@@ -28,12 +28,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <ctype.h>
 #include <stdarg.h>
 #include <math.h>
-#include "globals.h"
-#include "types.h"
-#include "errors.h"
 #include "ast_util.h"
+#include "ast_optimizations.h"
+#include "errors.h"
+#include "globals.h"
 #include "odin_util.h"
-
+#include "types.h"
+#include "vtr_util.h"
 
 char **get_name_of_pins_number(ast_node_t *var_node, int start, int width);
 
@@ -155,7 +156,7 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int /*file_nu
 		/* size is the rest of the string */
 		new_node->types.number.size = strlen((string_pointer));
 		/* assign the remainder of the number to a string */
-		new_node->types.number.number = strdup((string_pointer));
+		new_node->types.number.number = vtr::strdup((string_pointer));
 	}	
 	else
 	{
@@ -181,7 +182,7 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int /*file_nu
 
 		/* check if the size matches the design specified size */
 		if(index_string_pointer > 0){
-			temp_string = strdup(number); 
+			temp_string = vtr::strdup(number); 
 			temp_string[index_string_pointer] = '\0';
 			/* size is the rest of the string */
 			new_node->types.number.is_full = 0;
@@ -196,7 +197,7 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int /*file_nu
 		string_pointer += 2;
 
 		/* assign the remainder of the number to a string */
-		new_node->types.number.number = strdup((string_pointer));
+		new_node->types.number.number = vtr::strdup((string_pointer));
 	}
 
 	/* check for decimal numbers without the formal 2'd... format */
@@ -622,15 +623,15 @@ char **get_name_of_pins_number(ast_node_t *var_node, int /*start*/, int width)
 			char c = var_node->types.number.binary_string[j];
 			switch(c)
 			{
-			case '1': return_string[i] = strdup("ONE_VCC_CNS"); break;
-			case '0': return_string[i] = strdup("ZERO_GND_ZERO"); break;
-			case 'x': return_string[i] = strdup("ZERO_GND_ZERO"); break; 
+			case '1': return_string[i] = vtr::strdup("ONE_VCC_CNS"); break;
+			case '0': return_string[i] = vtr::strdup("ZERO_GND_ZERO"); break;
+			case 'x': return_string[i] = vtr::strdup("ZERO_GND_ZERO"); break; 
 			default: error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.number.binary_string);
 			}
 		}
 		else
 			// if the index is too big for the number pad with zero
-			return_string[i] = strdup("ZERO_GND_ZERO");
+			return_string[i] = vtr::strdup("ZERO_GND_ZERO");
 	}	
 	return return_string;
 }
@@ -938,9 +939,9 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
 	node_copy = (ast_node_t *)calloc(1,sizeof(ast_node_t));
 	memcpy(node_copy, node, sizeof(ast_node_t));
 
-	//Copy contents
+	//Copy contents 
 	if(node_copy->types.identifier != NULL){
-		node_copy->types.identifier = strdup(node_copy->types.identifier);
+		node_copy->types.identifier = vtr::strdup(node_copy->types.identifier);
 	}
 
 	//Recursively copy its children

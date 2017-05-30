@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "implicit_memory.h"
 #include "node_creation_library.h"
 #include "odin_util.h"
+#include "vtr_util.h"
 
 
 // Hashes the implicit memory name to the implicit_memory structure.
@@ -97,7 +98,7 @@ implicit_memory *create_implicit_memory_block(int data_width, long long words, c
 	node->related_ast_node = (ast_node_t *)calloc(1, sizeof(ast_node_t));
 	node->related_ast_node->children = (ast_node_t **)calloc(1,sizeof(ast_node_t *));
 	node->related_ast_node->children[0] = (ast_node_t *)calloc(1, sizeof(ast_node_t));
-	node->related_ast_node->children[0]->types.identifier = strdup("dual_port_ram");
+	node->related_ast_node->children[0]->types.identifier = vtr::strdup("dual_port_ram");
 
 	char *full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, -1);
 
@@ -354,5 +355,5 @@ void collapse_implicit_memory_to_single_port_ram(implicit_memory *memory)
 	}
 
 	ast_node_t *ast_node = node->related_ast_node;
-	ast_node->children[0]->types.identifier = strdup("single_port_ram");
+	ast_node->children[0]->types.identifier = vtr::strdup("single_port_ram");
 }

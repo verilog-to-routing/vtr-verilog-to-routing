@@ -275,12 +275,9 @@ void TimingGraph::disable_edge(const EdgeId edge, bool disable) {
 }
 
 EdgeType TimingGraph::edge_type(const EdgeId edge) const {
-#if 0
-#else
     TATUM_ASSERT(valid_edge_id(edge));
 
     return edge_types_[edge];
-#endif
 }
 
 EdgeId TimingGraph::find_edge(const tatum::NodeId src_node, const tatum::NodeId sink_node) const {
@@ -701,12 +698,12 @@ bool TimingGraph::validate_structure() const {
             } else if (src_type == NodeType::SINK) {
                 throw tatum::Error("SINK nodes should not have out-going edges");
             } else if (src_type == NodeType::IPIN) {
-                if(sink_type != NodeType::OPIN) {
-                    throw tatum::Error("IPIN nodes should only drive OPIN nodes");
+                if(sink_type != NodeType::OPIN && sink_type != NodeType::SINK) {
+                    throw tatum::Error("IPIN nodes should only drive OPIN or SINK nodes");
                 }
 
                 if(out_edge_type != EdgeType::PRIMITIVE_COMBINATIONAL) {
-                    throw tatum::Error("IPIN to OPIN edges should always be PRIMITIVE_COMBINATIONAL type edges");
+                    throw tatum::Error("IPIN to OPIN/SINK edges should always be PRIMITIVE_COMBINATIONAL type edges");
                 }
 
             } else if (src_type == NodeType::OPIN) {

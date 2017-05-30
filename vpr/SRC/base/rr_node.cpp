@@ -55,6 +55,21 @@ e_direction t_rr_node::direction() const {
 	return direction_;
 }
 
+const char* t_rr_node::direction_string() const{
+	if (direction_ ==0){
+		return "INC";
+	}else if (direction_ == 1){
+		return "DEC";
+	}else if (direction_==2){
+		return "BI";
+	}else if (direction_==3){
+		return "NONE";
+	}
+	
+	return "NONE";
+}
+
+
 short t_rr_node::length() const {
 	return length_;
 }

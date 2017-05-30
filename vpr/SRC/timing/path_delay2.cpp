@@ -243,7 +243,8 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 	static const char *tnode_type_names[] = { "TN_INPAD_SOURCE", "TN_INPAD_OPIN",
 			"TN_OUTPAD_IPIN", "TN_OUTPAD_SINK", "TN_CB_IPIN", "TN_CB_OPIN",
 			"TN_INTERMEDIATE_NODE", "TN_PRIMITIVE_IPIN", "TN_PRIMITIVE_OPIN", "TN_FF_IPIN",
-			"TN_FF_OPIN", "TN_FF_SINK", "TN_FF_SOURCE", "TN_FF_CLOCK", "TN_CONSTANT_GEN_SOURCE" };
+			"TN_FF_OPIN", "TN_FF_SINK", "TN_FF_SOURCE", "TN_FF_CLOCK", "TN_CLOCK_SOURCE", "TN_CLOCK_OPIN", 
+            "TN_CONSTANT_GEN_SOURCE" };
 
 	vtr::t_linked_int *next_crit_node;
 	float Tdel;

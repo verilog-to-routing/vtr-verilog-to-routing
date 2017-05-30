@@ -843,6 +843,7 @@ struct t_router_opts {
     bool switch_usage_analysis;
 	bool doRouting;
 	enum e_routing_failure_predictor routing_failure_predictor;
+	bool rr_graph_to_file;
 };
 
 struct t_analysis_opts {

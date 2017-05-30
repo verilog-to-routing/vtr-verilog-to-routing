@@ -32,6 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "hard_blocks.h"
 #include "memories.h"
 #include "partial_map.h"
+#include "vtr_util.h"
 
 
 using vtr::t_linked_vptr;

@@ -64,6 +64,7 @@ class t_rr_node {
         short ptc_num() const;
         short cost_index() const;
         e_direction direction() const;
+	const char *direction_string() const;
 
         float R() const { return R_; }
         float C() const { return C_; }

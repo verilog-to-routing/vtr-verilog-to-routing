@@ -36,6 +36,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "verilog_bison_user_defined.h"
 #include "verilog_preprocessor.h"
 #include "hard_blocks.h" 
+#include "vtr_util.h"
 
 
 extern int yylineno;
@@ -908,10 +909,10 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 			int len1 = expression1->types.number.value;
 			long long powRes = pow(len1, len);
 			sprintf(temp, "%lld", powRes);
-			new_node = newNumberNode(strdup(temp), line_number);
+			new_node = newNumberNode(vtr::strdup(temp), line_number);
 		} else {
 			if (len == 0){
-				new_node = newNumberNode(strdup("1"), line_number);
+				new_node = newNumberNode(vtr::strdup("1"), line_number);
 			} else {	
 				new_node = expression1;
 				for(int i=1; i < len; ++i){ 	

@@ -26,6 +26,12 @@ On unix-like systems run `make` from the root VTR directory.
 
 For more details see [here](BUILDING.md).
 
+Docker Cloud9 Deployment
+========================
+We provide a Dockerfile that sets up all the necessary packages for VTR to run. Also, the Dockerfile sets up Cloud9, a workspace management system that runs on your browser and allows you to run (and modify) VTR remotely.
+
+For more details see [here](DOCKER_DEPLOY.md).
+
 Documentation
 =============
 VTR's full documentation is available [here](https://docs.verilogtorouting.org).
@@ -93,6 +99,6 @@ Professors: Kenneth Kent, Vaughn Betz, Jonathan Rose, Jason Anderson, Peter Jami
 
 Graduate Students: Kevin Murray, Jason Luu, Oleg Petelin, Jeffrey Goeders, Chi Wai Yu, Andrew Somerville, Ian Kuon, Alexander Marquardt, Andy Ye, Wei Mark Fang, Tim Liu, Charles Chiasson, Panagiotis (Panos) Patros
 
-Summer Students: Opal Densmore, Ted Campbell, Cong Wang, Peter Milankov, Scott Whitty, Michael Wainberg, Suya Liu, Miad Nasr, Nooruddin Ahmed, Thien Yu, Long Yu Wang, Matthew J.P. Walker, Amer Hesson, Sheng Zhong, Hanqing Zeng, Vidya Sankaranarayanan, Jia Min Wang, Eugene Sha
+Summer Students: Opal Densmore, Ted Campbell, Cong Wang, Peter Milankov, Scott Whitty, Michael Wainberg, Suya Liu, Miad Nasr, Nooruddin Ahmed, Thien Yu, Long Yu Wang, Matthew J.P. Walker, Amer Hesson, Sheng Zhong, Hanqing Zeng, Vidya Sankaranarayanan, Jia Min Wang, Eugene Sha, Jean-Philippe Legault
 
 Companies: Altera Corporation, Texas Instruments

@@ -122,6 +122,7 @@ set(FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK
     "-Wno-switch-default"   #Flex/bison generate switch statments w/o default cases
     "-Wno-unused-parameter" #Flex produces functions with unused params in re-entrant mode
     "-Wno-missing-declarations" #Flex misses some declarations in re-entrant mode
+    "-Wimplicit-fallthrough=0" #Bison produces some cases with explicit
     )
 foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     CHECK_CXX_COMPILER_FLAG(${flag} COMPILER_SUPPORTS_${flag})
@@ -201,6 +202,20 @@ add_subdirectory(abc_with_bb_support)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
 
+#Add extra compilation flags to suppress warnings from some libraries
+# Note that target_compile_options() *appends* to the current compilation options of
+# the specified target
+
+#PugiXml has some deliberate switch fallthrough cases (as indicated by comments), but they
+#are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes. 
+#Since we don't want to change PugiXml (it is developed externally), we relax the warning 
+#level so no fallthrough warnings are generated
+CHECK_CXX_COMPILER_FLAG("-Wimplicit-fallthrough=0" COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
+if(COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
+    target_compile_options(libpugixml PRIVATE "-Wimplicit-fallthrough=0")
+endif()
+
+
 #Set output locations to be in the main source tree under the relevant folder
 set_target_properties(liblog test_log
     PROPERTIES
@@ -262,7 +277,7 @@ set_target_properties(ace
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ace2"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ace2"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ace2")
-set_target_properties(odin_II.exe
+set_target_properties(odin_II
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II"

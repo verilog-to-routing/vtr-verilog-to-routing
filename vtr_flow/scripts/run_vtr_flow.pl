@@ -49,7 +49,7 @@ use File::Basename;
 use lib "$FindBin::Bin/perl_libs/XML-TreePP-0.41/lib";
 use XML::TreePP;
 
-# check the parametes.  Note PERL does not consider the script itself a parameter.
+# Check the parameters.  Note PERL does not consider the script itself a parameter.
 my $number_arguments = @ARGV;
 if ( $number_arguments < 2 ) {
 	print(
@@ -70,6 +70,7 @@ sub file_find_and_replace;
 sub xml_find_LUT_Kvalue;
 sub xml_find_mem_size;
 sub find_and_move_newest;
+sub exe_for_platform;
 
 my $temp_dir = "./temp";
 
@@ -284,11 +285,17 @@ if ( !-e $pad_file_path ) {
 	my $pad_file_path;
 }
 
-my $vpr_path; if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) { $vpr_path = "$vtr_flow_path/../vpr/vpr"; ( -r $vpr_path or -r "${vpr_path}.exe" ) or die "Cannot find vpr exectuable ($vpr_path)"; } my $odin2_path; my $odin_config_file_name; my $odin_config_file_path;
+my $vpr_path; 
+if ( $stage_idx_vpr >= $starting_stage and $stage_idx_vpr <= $ending_stage ) { 
+	$vpr_path = exe_for_platform("$vtr_flow_path/../vpr/vpr"); 
+	( -r $vpr_path or -r "${vpr_path}.exe" ) or die "Cannot find vpr exectuable ($vpr_path)"; 
+} 
+
+my $odin2_path; my $odin_config_file_name; my $odin_config_file_path;
 if (    $stage_idx_odin >= $starting_stage
 	and $stage_idx_odin <= $ending_stage )
 {
-	$odin2_path = "$vtr_flow_path/../ODIN_II/odin_II.exe";
+	$odin2_path = exe_for_platform("$vtr_flow_path/../ODIN_II/odin_II");
 	( -e $odin2_path )
 	  or die "Cannot find ODIN_II executable ($odin2_path)";
 
@@ -813,6 +820,10 @@ exit $error_code;
 # Returns: "timeout", "exited", "success", "crashed"
 ################################################################################
 sub system_with_timeout {
+	# Check for existence of /usr/bin/time module
+	unless (-f $memory_tracker) {
+		die "system_with_timeout: /usr/bin/time does not exist"
+	}
 
 	# Check args
 	( $#_ > 2 )   or die "system_with_timeout: not enough args\n";
@@ -1136,3 +1147,13 @@ sub find_postsynthesis_netlist {
         return;
     }
 }
+
+# Returns the executable extension based on the platform
+sub exe_for_platform {
+	my $file_name = shift();
+	if ($^O eq "cygwin" or $^O eq "MSWIN32") {
+		$file_name = $file_name . ".exe";
+	}
+	return $file_name;
+}
+

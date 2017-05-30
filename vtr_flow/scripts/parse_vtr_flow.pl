@@ -85,6 +85,8 @@ for my $parse_entry (@parse_data) {
 		$/ = "\n";
 		
 		my $regexp = @$parse_entry[2];
+		$regexp =~ s/\s+$//;
+
 		if ( $parse_file_lines =~ m/$regexp/gm ) {
 			print $1;
 		}

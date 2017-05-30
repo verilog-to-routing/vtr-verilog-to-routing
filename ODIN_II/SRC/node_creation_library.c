@@ -29,6 +29,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_utils.h"
 #include "odin_util.h"
 #include "node_creation_library.h"
+#include "vtr_util.h"
 
 long unique_node_name_id = 0;
 
@@ -40,7 +41,7 @@ npin_t *get_pad_pin(netlist_t *netlist)
 {
 	npin_t *pad_fanout_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
 	allocate_npin(pad_fanout_pin);	
-	pad_fanout_pin->name = strdup(pad_string);
+	pad_fanout_pin->name = vtr::strdup(pad_string);
 	add_fanout_pin_to_net(netlist->pad_net, pad_fanout_pin);
 	return pad_fanout_pin;
 }
@@ -53,7 +54,7 @@ npin_t *get_zero_pin(netlist_t *netlist)
 {
 	npin_t *zero_fanout_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
 	allocate_npin(zero_fanout_pin);	
-	zero_fanout_pin->name = strdup(zero_string);
+	zero_fanout_pin->name = vtr::strdup(zero_string);
 	add_fanout_pin_to_net(netlist->zero_net, zero_fanout_pin);
 	return zero_fanout_pin;
 }
@@ -66,7 +67,7 @@ npin_t *get_one_pin(netlist_t *netlist)
 {
 	npin_t *one_fanout_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
 	allocate_npin(one_fanout_pin);	
-	one_fanout_pin->name = strdup(one_string);
+	one_fanout_pin->name = vtr::strdup(one_string);
 	add_fanout_pin_to_net(netlist->one_net, one_fanout_pin);
 	return one_fanout_pin;
 }

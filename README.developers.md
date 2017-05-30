@@ -39,7 +39,7 @@ For external developers
 -----------------------
 VTR welcomes external contributions. 
 
-The general proceedure is to file an issue on GitHub propossing your changes, and then create an associated pull request.
+The general proceedure is to file an issue on GitHub proposing your changes, and then create an associated pull request.
 
 Here are some general guidelines:
 
@@ -142,3 +142,15 @@ Note that we explicitly asked for gcc and g++, the coverity build tool defaults 
 5. Submit the archive through the coverity web interface
 
 Once the build has been analyzed you can browse the latest results throught the coverity web interface
+
+No files emitted
+----------------
+If you get the following warning from cov-build:
+
+    [WARNING] No files were emitted.
+
+You may need to configure coverity to 'know' about your compiler. For example:
+
+    ```shell
+    cov-configure --compiler `which gcc-7`
+    ```
