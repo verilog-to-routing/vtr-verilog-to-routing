@@ -29,7 +29,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdarg.h>
 #include <math.h>
 #include "ast_util.h"
-#include "ast_optimizations.h"
 #include "errors.h"
 #include "globals.h"
 #include "odin_util.h"

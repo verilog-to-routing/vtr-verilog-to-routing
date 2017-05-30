@@ -191,7 +191,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 		error_message(PARSE_ERROR, -1, -1, "Invalid hex number: %s.\n", orig_string);
 
 	char *bit_string = (char *)calloc(1,sizeof(char));
-	char *string     = vtr::vtr::strdup(orig_string);
+	char *string     = vtr::strdup(orig_string);
 	int   size       = strlen(string);
 
 	// Change to big endian. (We want to add higher order bits at the end.)
@@ -234,7 +234,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 	
     }
     else if(is_dont_care_number == 1){
-       char *string = vtr::vtr::strdup(orig_string); 
+       char *string = vtr::strdup(orig_string); 
        int   size       = strlen(string); 
        char *bit_string = (char *)calloc(1,sizeof(char));
        int count = 0;
@@ -295,7 +295,7 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 		error_message(PARSE_ERROR, -1, -1, "Invalid octal number: %s.\n", orig_string);
 
 	char *bit_string = (char *)calloc(1,sizeof(char));
-	char *string     = vtr::vtr::strdup(orig_string);
+	char *string     = vtr::strdup(orig_string);
 	int   size       = strlen(string);
 
 	// Change to big endian. (We want to add higher order bits at the end.)
@@ -448,9 +448,9 @@ int is_binary_string(char *string)
 char *get_pin_name(char *name)
 {	// Remove everything before the ^
 	if (strchr(name, '^'))
-		return vtr::vtr::strdup(strchr(name, '^') + 1);
+		return vtr::strdup(strchr(name, '^') + 1);
 	else
-		return vtr::vtr::strdup(name);
+		return vtr::strdup(name);
 }
 
 
