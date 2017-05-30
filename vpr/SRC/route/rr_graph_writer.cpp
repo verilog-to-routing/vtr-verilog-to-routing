@@ -99,7 +99,7 @@ void write_rr_switches(fstream &fp){
 	fp << "\t<switches>"<< endl;
 
 	for (int switchNum=0; switchNum<device_ctx.num_rr_switches; switchNum++){
-		s_rr_switch_inf rr_switch = device_ctx.rr_switch_inf[switchNum];
+		t_rr_switch_inf rr_switch = device_ctx.rr_switch_inf[switchNum];
 
 		fp << "\t\t<switch id=\""<< switchNum;
 		if (rr_switch.name){
@@ -126,7 +126,7 @@ void write_rr_block_types(fstream &fp){
 	fp << "\t<block_types>"<< endl;
 
 	for (int blockType = 0; blockType < device_ctx.num_block_types; blockType++){
-		s_type_descriptor btype = device_ctx.block_types[blockType];
+		t_type_descriptor btype = device_ctx.block_types[blockType];
 
 		fp << "\t\t<block_type id=\""<< btype.index;
 
@@ -137,7 +137,7 @@ void write_rr_block_types(fstream &fp){
 		fp <<"\" width=\"" << btype.width<<"\" height=\"" << btype.height<< "\">" << endl;
 
 		for (int classNum = 0; classNum< btype.num_class; classNum++){
-			s_class class_inf = btype.class_inf[classNum];
+			t_class class_inf = btype.class_inf[classNum];
 			
 			char const* pin_type;
 			switch (class_inf.type){

@@ -10,7 +10,7 @@
 
 using vtr::t_linked_vptr;
 
-static void PrintArchInfo(FILE* Echo, const struct s_arch *arch);
+static void PrintArchInfo(FILE* Echo, const t_arch *arch);
 static void PrintPb_types_rec(FILE* Echo, const t_pb_type * pb_type,
 		int level);
 static void PrintPb_types_recPower(FILE* Echo,
@@ -19,7 +19,7 @@ static void PrintPb_types_recPower(FILE* Echo,
 /* Output the data from architecture data so user can verify it
  * was interpretted correctly. */
 void EchoArch(const char *EchoFile, const t_type_descriptor* Types, 
-              const int NumTypes, const struct s_arch *arch) {
+              const int NumTypes, const t_arch *arch) {
 	int i, j;
 	FILE * Echo;
 	t_model * cur_model;
@@ -106,7 +106,7 @@ void EchoArch(const char *EchoFile, const t_type_descriptor* Types,
 }
 
 //Added May 2013 Daniel Chen, help dump arch info after loading from XML
-static void PrintArchInfo(FILE * Echo, const struct s_arch *arch) {
+static void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 	int i, j;
 
 	fprintf(Echo, "Printing architecture... \n\n");

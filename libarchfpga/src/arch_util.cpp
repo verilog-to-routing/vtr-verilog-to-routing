@@ -63,7 +63,7 @@ t_port * findPortByName(const char * name, t_pb_type * pb_type,
 	return port;
 }
 
-void SetupEmptyType(struct s_type_descriptor* cb_type_descriptors,
+void SetupEmptyType(t_type_descriptor* cb_type_descriptors,
                     t_type_ptr EMPTY_TYPE) {
 	t_type_descriptor * type;
 	type = &cb_type_descriptors[EMPTY_TYPE->index];
@@ -596,7 +596,7 @@ e_power_estimation_method power_method_inherited(
 	}
 }
 
-void CreateModelLibrary(struct s_arch *arch) {
+void CreateModelLibrary(t_arch *arch) {
 	t_model* model_library;
 
 	model_library = new t_model[4];
@@ -695,7 +695,7 @@ void CreateModelLibrary(struct s_arch *arch) {
 	arch->model_library = model_library;
 }
 
-void SyncModelsPbTypes(struct s_arch *arch,
+void SyncModelsPbTypes(t_arch *arch,
 		const t_type_descriptor * Types, const int NumTypes) {
 	int i;
 	for (i = 0; i < NumTypes; i++) {
@@ -705,7 +705,7 @@ void SyncModelsPbTypes(struct s_arch *arch,
 	}
 }
 
-void SyncModelsPbTypes_rec(struct s_arch *arch,
+void SyncModelsPbTypes_rec(t_arch *arch,
 		t_pb_type * pb_type) {
 	int i, j, p;
 	t_model *model_match_prim, *cur_model;
@@ -816,7 +816,7 @@ void SyncModelsPbTypes_rec(struct s_arch *arch,
 	}
 }
 
-void UpdateAndCheckModels(struct s_arch *arch) {
+void UpdateAndCheckModels(t_arch *arch) {
 	t_model * cur_model;
 	t_model_ports *port;
 	int i, j;

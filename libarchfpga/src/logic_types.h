@@ -21,8 +21,7 @@ enum PORTS {
 	IN_PORT, OUT_PORT, INOUT_PORT, ERR_PORT
 };
 
-typedef struct s_model_ports t_model_ports;
-struct s_model_ports {
+struct t_model_ports {
 	enum PORTS dir = ERR_PORT; /* port direction */
 	char *name = nullptr; /* name of this port */
 	int size = 0; /* maximum number of pins */
@@ -32,22 +31,22 @@ struct s_model_ports {
     std::string clock; /* The clock associated with this pin (if the pin is sequential) */
     std::vector<std::string> combinational_sink_ports; /* The other ports on this model which are combinationally driven by this port */
 
-	struct s_model_ports *next = nullptr; /* next port */
+	t_model_ports *next = nullptr; /* next port */
 
 	int index = -1; /* indexing for array look-up */
 };
 
-typedef struct s_model {
+struct t_model {
 	char *name = nullptr; /* name of this logic model */
 	t_model_ports *inputs = nullptr; /* linked list of input/clock ports */
 	t_model_ports *outputs = nullptr; /* linked list of output ports */
 	void *instances = nullptr;
 	int used = 0;
     vtr::t_linked_vptr *pb_types = nullptr; /* Physical block types that implement this model */
-	struct s_model *next = nullptr; /* next model (linked list) */
+	t_model *next = nullptr; /* next model (linked list) */
 
 	int index = -1;
-} t_model;
+};
 
 #endif
 

@@ -92,7 +92,7 @@ void draw_internal_init_blk() {
     auto& device_ctx = g_vpr_ctx.device();
 	for (int i = 0; i < device_ctx.num_block_types; ++i) {
 		/* Empty block has no sub_blocks */
-		s_type_descriptor& type_desc = device_ctx.block_types[i];
+		t_type_descriptor& type_desc = device_ctx.block_types[i];
 		if (&type_desc == device_ctx.EMPTY_TYPE)
 			continue;
 

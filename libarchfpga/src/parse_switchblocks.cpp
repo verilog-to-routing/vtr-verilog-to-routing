@@ -119,16 +119,16 @@ static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn);
 
 /*---- Functions for Parsing the Symbolic Switchblock Formulas ----*/
 /* returns integer result according to specified formula and data */
-static int parse_formula( const char *formula, const s_formula_data &mydata );
+static int parse_formula( const char *formula, const t_formula_data &mydata );
 
 /* returns integer result according to specified piece-wise formula and data */
-static int parse_piecewise_formula( const char *formula, const s_formula_data &mydata );
+static int parse_piecewise_formula( const char *formula, const t_formula_data &mydata );
 
 /* converts specified formula to a vector in reverse-polish notation */
-static void formula_to_rpn( const char* formula, const s_formula_data &mydata, 
+static void formula_to_rpn( const char* formula, const t_formula_data &mydata, 
 				vector<Formula_Object> &rpn_output );
 
-static void get_formula_object( const char *ch, int &ichar, const s_formula_data &mydata,
+static void get_formula_object( const char *ch, int &ichar, const t_formula_data &mydata,
 				 Formula_Object *fobj );
 
 /* returns integer specifying precedence of passed-in operator. higher integer 
@@ -532,7 +532,7 @@ static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn) {
 /*---- Functions for Parsing the Symbolic Switchblock Formulas ----*/
 
 /* returns integer result according to the specified switchblock formula and data. formula may be piece-wise */
-int get_sb_formula_raw_result( const char* formula, const s_formula_data &mydata ){
+int get_sb_formula_raw_result( const char* formula, const t_formula_data &mydata ){
 	/* the result of the formula will be an integer */
 	int result = -1;
 
@@ -556,7 +556,7 @@ int get_sb_formula_raw_result( const char* formula, const s_formula_data &mydata
 
 
 /* returns integer result according to specified non-piece-wise formula and data */
-static int parse_formula( const char *formula, const s_formula_data &mydata ){
+static int parse_formula( const char *formula, const t_formula_data &mydata ){
 	int result = -1;
 
 	/* output in reverse-polish notation */
@@ -586,7 +586,7 @@ static int parse_formula( const char *formula, const s_formula_data &mydata ){
    
        {start_0:end_0} formula_0; ... {start_i;end_i} formula_i; ... 
 */
-static int parse_piecewise_formula( const char *formula, const s_formula_data &mydata ){
+static int parse_piecewise_formula( const char *formula, const t_formula_data &mydata ){
 	int result = -1;
 	int str_ind = 0;
 	int str_size = 0;
@@ -699,7 +699,7 @@ static bool goto_next_char( int *str_ind, const string &pw_formula, char ch){
 
 /* Parses the specified formula using a shunting yard algorithm (see wikipedia). The function's result 
    is stored in the rpn_output vector in reverse-polish notation */
-static void formula_to_rpn( const char* formula, const s_formula_data &mydata, 
+static void formula_to_rpn( const char* formula, const t_formula_data &mydata, 
 				vector<Formula_Object> &rpn_output ){
 
 	stack<Formula_Object> op_stack;		/* stack for handling operators and brackets in formula */
@@ -761,7 +761,7 @@ static void formula_to_rpn( const char* formula, const s_formula_data &mydata,
    which help determine which numeric value, if any, gets assigned to fobj
    ichar is incremented by the corresponding count if the need to step through the 
    character array arises */
-static void get_formula_object( const char *ch, int &ichar, const s_formula_data &mydata,
+static void get_formula_object( const char *ch, int &ichar, const t_formula_data &mydata,
 				 Formula_Object *fobj ){
 
 	/* the character can either be part of a number, or it can be an object like W, t, (, +, etc

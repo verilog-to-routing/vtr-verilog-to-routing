@@ -17,7 +17,7 @@ extern "C" {
 /* function declarations */
 void
 XmlReadArch(const char *ArchFile, const bool timing_enabled,
-		struct s_arch *arch, t_type_descriptor ** Types,
+		t_arch *arch, t_type_descriptor ** Types,
 		int *NumTypes);
 
 const char* get_arch_file_name();
