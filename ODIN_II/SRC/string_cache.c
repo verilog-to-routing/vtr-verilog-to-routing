@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include "types.h"
 #include "string_cache.h"
 
 unsigned long
@@ -33,9 +33,9 @@ generate_sc_hash(STRING_CACHE * sc)
     long hash;
 
     if(sc->string_hash != NULL)
-		free(sc->string_hash);
+		free_me(sc->string_hash);
     if(sc->next_string != NULL)
-		free(sc->next_string);
+		free_me(sc->next_string);
     sc->string_hash_size = sc->size * 2 + 11;
     sc->string_hash = (long *)sc_do_alloc(sc->string_hash_size, sizeof(long));
     sc->next_string = (long *)sc_do_alloc(sc->size, sizeof(long));
@@ -109,13 +109,13 @@ sc_add_string(STRING_CACHE * sc,
 	    a = sc_do_alloc(sc->size, sizeof(char *));
 	    if(sc->freedom > 0)
 		memcpy(a, sc->string, sc->freedom * sizeof(char *));
-	    free(sc->string);
+	    free_me(sc->string);
 	    sc->string = (char **)a;
 
 	    a = sc_do_alloc(sc->size, sizeof(void *));
 	    if(sc->freedom > 0)
 		memcpy(a, sc->data, sc->freedom * sizeof(void *));
-	    free(sc->data);
+	    free_me(sc->data);
 	    sc->data = (void **)a;
 
 	    generate_sc_hash(sc);
@@ -170,25 +170,25 @@ STRING_CACHE * sc_free_string_cache(STRING_CACHE * sc)
     if(sc == NULL) return NULL;
     for(i = 0; i < sc->freedom; i++)
 	if (sc->string != NULL)
-	    free(sc->string[i]);
-    free(sc->string);
+	    free_me(sc->string[i]);
+    free_me(sc->string);
     sc->string = NULL;
     if(sc->data != NULL)
 	{
-//	    free(sc->data);
+//	    free_me(sc->data);
 	    sc->data = NULL;
 	}
     if(sc->string_hash != NULL)
 	{
-	    free(sc->string_hash);
+	    free_me(sc->string_hash);
 	    sc->string_hash = NULL;
 	}
     if(sc->next_string != NULL)
 	{
-	    free(sc->next_string);
+	    free_me(sc->next_string);
 	    sc->next_string = NULL;
 	}
-    free(sc);
+    free_me(sc);
     sc = NULL;
     return sc;
 }

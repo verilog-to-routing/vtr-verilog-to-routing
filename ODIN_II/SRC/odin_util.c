@@ -22,6 +22,8 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */ 
+#include <string>
+#include <sstream>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,16 +45,11 @@ OTHER DEALINGS IN THE SOFTWARE.
  *------------------------------------------------------------------------*/
 char *make_signal_name(char *signal_name, int bit)
 {
-	char *return_string;
-
-	oassert(signal_name != NULL);
-	if (bit == -1)
-		return strdup(signal_name);
-
-	return_string = strdup(signal_name);
-	return_string = (char*)realloc(return_string, sizeof(char)*(strlen(return_string)+1+10+1));
-	sprintf(return_string, "%s-%d", return_string, bit);
-	return return_string;	
+	oassert(signal_name);
+	std::stringstream return_string;
+	return_string << signal_name;
+	if (bit != -1) return_string << "-" << std::dec << bit;
+	return strdup(return_string.str().c_str());		
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -64,86 +61,16 @@ char *make_signal_name(char *signal_name, int bit)
 char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit)
 {
 	
-	char dots[] = ".";
-	char plus[] = "+";
-	char expo[] = "^";
-	char diez[] = "~";
-	char nada[] = "";
-	char *return_string = nada;
-	char *prev_buf = nada;
-	char *modu_buf = nada;
-	char *inst_buf = nada;
-	char *sign_buf = nada;
-	char *bits_buf = nada;
-	char *expo_buf = nada;
-	char *dots_buf = nada;
-	char *diez_buf = nada;
-	char *plus_buf = nada;
-
-	
-	if(previous){
-		prev_buf = strdup(previous);
-	}
-	if(module_name){
-		inst_buf = strdup(module_instance_name);
-		modu_buf = strdup(module_name);
-		dots_buf = dots;
-		plus_buf = plus;
-	}
-	
-	if (signal_name){ 
-		if(previous || module_name){
-			expo_buf = expo;
-		}
-		sign_buf = strdup(signal_name);
-	}
+	std::stringstream return_string;
+	if(previous)								 return_string << previous;
+	if(module_name) 							 return_string	<< "." << module_name << "+" << module_instance_name;
+	if(signal_name && (previous || module_name)) return_string << "^";
+	if(signal_name)								 return_string << signal_name;
 	if(bit != -1){
-		bits_buf = (char*)calloc(1+8*sizeof(bit),sizeof(char));
-		sprintf(bits_buf, "%ld",bit);
-		diez_buf = diez;
-	}
-	
-	int lengthy = 1 + strlen(prev_buf) + strlen(modu_buf) + strlen(inst_buf) + strlen(sign_buf) + strlen(bits_buf) + strlen(expo_buf) + strlen(dots_buf) + strlen(diez_buf) + strlen(plus_buf);
-	return_string = (char*)calloc(lengthy,sizeof(char));
-	sprintf(return_string,"%s%s%s%s%s%s%s%s%s", prev_buf,dots_buf,modu_buf,plus_buf,inst_buf,expo_buf,sign_buf,diez_buf,bits_buf);
-	
-	if(prev_buf != nada){
-		free(prev_buf);
-	}
-	if(modu_buf != nada){
-		free(modu_buf);
-	}
-	if(inst_buf != nada){
-		free(inst_buf);
-	}
-	if(sign_buf != nada){
-		free(sign_buf);
-	}
-	if(bits_buf != nada){
-		free(bits_buf);
-	}	
-	return return_string;	
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: twos_complement)
- * Changes a bit string to its twos complement value
- *-------------------------------------------------------------------------------------------*/
-char *twos_complement(char *str)
-{
-	int length = strlen(str) - 1;
-	int i;
-	int flag = 0;
-
-	for (i = length; i >= 0; i--)
-	{
-		if (flag)
-			str[i] = (str[i] == '1') ? '0' : '1';
-
-		if ((str[i] == '1') && (flag == 0))
-			flag = 1;
-	}
-	return str;
+		oassert(signal_name);
+		return_string	<< "~" << std::dec << bit ;
+	}								 
+	return strdup(return_string.str().c_str());	
 }
 
 /*
@@ -287,7 +214,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 			bit_string[count]   = '\0';
 		}
 	}
-	free(string);
+	free_me(string);
 
 	// Pad with zeros to binary_size.
 	while (count < binary_size)
@@ -303,7 +230,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
 	return_string = strdup(bit_string);
-	free(bit_string);
+	free_me(bit_string);
 	
     }
     else if(is_dont_care_number == 1){
@@ -328,7 +255,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 		    }
 	    }
 
-        free(string);
+        free_me(string);
 
         while (count < binary_size)
 	    {
@@ -342,7 +269,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
         reverse_string(bit_string, binary_size);
 
         return_string = strdup(bit_string);
-	    free(bit_string);
+	    free_me(bit_string);
 
         
 
@@ -391,7 +318,7 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 			bit_string[count]   = '\0';
 		}
 	}
-	free(string);
+	free_me(string);
 
 	// Pad with zeros to binary_size.
 	while (count < binary_size)
@@ -407,7 +334,7 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
 	char *return_string = strdup(bit_string);
-	free(bit_string);
+	free_me(bit_string);
 	return return_string;
 }
 
@@ -443,7 +370,7 @@ char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, cha
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
 	char *return_string = strdup(bit_string);
-	free(bit_string);
+	free_me(bit_string);
 	return return_string;
 }
 
@@ -558,7 +485,7 @@ int get_pin_number(char *name)
 	if (tilde) pin_number = strtol(tilde+1,NULL,10);
 	else       pin_number = -1;
 
-	free(pin_name);
+	free_me(pin_name);
 	return pin_number;
 }
 

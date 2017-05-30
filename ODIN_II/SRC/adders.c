@@ -196,7 +196,7 @@ void instantiate_hard_adder(nnode_t *node, short mark, netlist_t * /*netlist*/)
 	for (i = 0; i < node->num_output_pins;  i++)
 	{
 		if (node->output_pins[i]->name){
-			free(node->output_pins[i]->name);
+			free_me(node->output_pins[i]->name);
 		}
 		size_t length = snprintf(NULL,0,"%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
 		node->output_pins[i]->name = (char*)calloc(length +1,sizeof(char));
@@ -878,15 +878,15 @@ void split_adder(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int cin, in
 	}
 
 	/* Probably more to do here in freeing the old node! */
-	free(nodeo->name);
-	free(nodeo->input_port_sizes);
-	free(nodeo->output_port_sizes);
+	free_me(nodeo->name);
+	free_me(nodeo->input_port_sizes);
+	free_me(nodeo->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	free(nodeo->input_pins);
-	free(nodeo->output_pins);
-	free(nodeo);
-	free(node);
+	free_me(nodeo->input_pins);
+	free_me(nodeo->output_pins);
+	free_me(nodeo);
+	free_me(node);
 	return;
 }
 
@@ -1183,7 +1183,7 @@ void remove_list_node(t_linked_vptr *pre, t_linked_vptr *next)
 		pre->next = next->next;
 	else
 		pre->next = NULL;
-	free(next);
+	free_me(next);
 
 }
 
@@ -1252,8 +1252,8 @@ void free_op_nodes(nnode_t *node)
 		{
 			net = node->output_pins[i]->net;
 			if (net->fanout_pins != NULL)
-				free(net->fanout_pins);
-			free(net);
+				free_me(net->fanout_pins);
+			free_me(net);
 			node->output_pins[i]->net = NULL;
 		}
 	}

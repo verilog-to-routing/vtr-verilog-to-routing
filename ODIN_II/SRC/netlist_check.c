@@ -544,7 +544,7 @@ void levelize_forwards_clean_checking_for_combo_loop_and_liveness(short ast_base
 								error_message(NETLIST_ERROR, -1, -1, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %d.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
 						}
 						/* free the data and reset to be used elsewhere */
-						free(fanouts_visited);
+						free_me(fanouts_visited);
 						output_node->unique_node_data_id = RESET;
 					}
 
@@ -770,7 +770,7 @@ void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *
 					}
 
 					/* free the data and reset to be used elsewhere */
-					free(fanouts_visited);
+					free_me(fanouts_visited);
 					fanout_net->unique_net_data_id = -1;
 				}
 			}

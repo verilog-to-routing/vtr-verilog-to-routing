@@ -118,7 +118,7 @@ void optimize_for_tree()
 			oassert(list_for_node[j]->children[0]->children[0]->types.identifier);
 			
 			if(v_name){
-				free(v_name);
+				free_me(v_name);
 			}
 			v_name = (char*)calloc(strlen(list_for_node[j]->children[0]->children[0]->types.identifier)+1,sizeof(char));
 			sprintf(v_name, "%s", list_for_node[j]->children[0]->children[0]->types.identifier);
@@ -153,8 +153,8 @@ void optimize_for_tree()
 				keep_all_branch(temp_parent_node, list_parent[j], idx);
 			}
 			reallocate_node(list_parent[j], idx);
-			free(temp_parent_node);
-			free(v_name);
+			free_me(temp_parent_node);
+			free_me(v_name);
 		}
 	}
 }
@@ -476,45 +476,6 @@ void modify_expression(char *exp[], char *infix_exp[], char *value)
 }
 
 /*---------------------------------------------------------------------------
- * (function: free_whole_tree)
- *-------------------------------------------------------------------------*/
-void free_whole_tree(ast_node_t *node)
-{
-	int i;
-
-	if (node == NULL)
-		return;
-
-	if (node->num_children != 0)
-	{
-		for (i = 0; i < node->num_children; i++)
-			free_whole_tree(node->children[i]);
-	}
-
-	if (node->children != NULL)
-		free(node->children);
-
-	switch(node->type)
-		{
-			case IDENTIFIERS:
-				if (node->types.identifier != NULL)
-					free(node->types.identifier);
-				break;
-			case NUMBERS:
-				if (node->types.number.number != NULL)
-					free(node->types.number.number);
-				if (node->types.number.binary_string != NULL)
-					free(node->types.number.binary_string);
-				break;
-			default:
-				break;
-		}
-
-	free(node);
-
-}
-
-/*---------------------------------------------------------------------------
  * (function: initial_node)
  *-------------------------------------------------------------------------*/
 void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number)
@@ -595,7 +556,7 @@ void reallocate_node(ast_node_t *node, int idx)
 {
 	int i;
 
-	free_whole_tree(node->children[idx]);
+	free_ast_tree_branch(node->children[idx]);
 
 	for (i = idx; i < node->num_children; i++)
 		node->children[i] = node->children[i+1];
@@ -697,11 +658,11 @@ void remove_intermediate_variable(ast_node_t *node, char list[10][20])
 
 				}
 
-			free(temp);
+			free_me(temp);
 
 		}
 
-		free_whole_tree(node->children[i]);
+		free_ast_tree_branch(node->children[i]);
 		node->children[i] = NULL;
 	}
 
@@ -754,13 +715,13 @@ void free_single_node(ast_node_t *node)
 		return;
 
 	if (node->children != NULL)
-		free(node->children);
+		free_me(node->children);
 
 	if (node->type == IDENTIFIERS)
 		if (node->types.identifier != NULL)
-			free(node->types.identifier);
+			free_me(node->types.identifier);
 
-	free(node);
+	free_me(node);
 
 }
 
@@ -803,7 +764,7 @@ void reduce_assignment_expression()
 				if (build == 1)
 				{
 					tail = find_tail(head);
-					free_whole_tree(list_assign[j]->children[1]);
+					free_ast_tree_branch(list_assign[j]->children[1]);
 					line_num = list_assign[j]->line_number;
 					file_num = list_assign[j]->file_number;
 					T = (ast_node_t*)calloc(1,sizeof(ast_node_t));
@@ -875,8 +836,8 @@ void reduce_enode_list()
 		head = head->next->next;
 		head->pre = NULL;
 
-		free(temp->next);
-		free(temp);
+		free_me(temp->next);
+		free_me(temp);
 	}
 
 	if(head == NULL){
@@ -897,11 +858,11 @@ void reduce_enode_list()
 					temp->pre->pre->next = temp->next;
 					temp->next->pre = temp->pre->pre;
 				}
-				free(temp->pre);
+				free_me(temp->pre);
 
 				enode *toBeDeleted = temp;
 				temp = temp->next;
-				free(toBeDeleted);
+				free_me(toBeDeleted);
 			} else if (temp->type.data < 0)
 			{
 				if (temp->pre->type.operation == '+')
@@ -934,7 +895,7 @@ void store_exp_list(ast_node_t *node)
 	head = head->next;
 	head->pre = NULL;
 	p->next = NULL;
-	free(temp);
+	free_me(temp);
 
 }
 
@@ -1133,8 +1094,8 @@ enode *replace_enode(int data, enode *t, int mark)
 			replace->next = NULL;
 		else
 			t->next->next->next->pre = replace;
-		free(t->next->next);
-		free(t->next);
+		free_me(t->next->next);
+		free_me(t->next);
 	}
 	else
 	{
@@ -1142,7 +1103,7 @@ enode *replace_enode(int data, enode *t, int mark)
 		t->next->pre = replace;
 	}
 
-	free(t);
+	free_me(t);
 	return replace;
 
 }
@@ -1197,8 +1158,8 @@ void combine_constant(int *build)
 							s2->next->pre = s2->pre->pre;
 						}
 
-						free(s2->pre);
-						free(s2);
+						free_me(s2->pre);
+						free_me(s2);
 						if (replace == head)
 						{
 							temp = replace;
@@ -1341,8 +1302,8 @@ void delete_continuous_multiply(int *build)
 						}
 						mark = 2;
 						*build = 1;
-						free(t->pre);
-						free(t);
+						free_me(t->pre);
+						free_me(t);
 						break;
 					}
 					break;
@@ -1430,7 +1391,7 @@ void free_exp_list()
 	for (temp = head; temp != NULL; temp = next)
 	{
 		next = temp->next;
-		free(temp);
+		free_me(temp);
 	}
 }
 
@@ -1624,7 +1585,7 @@ void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 					new_head = (enode*)calloc(1,sizeof(enode));
 					tail = copy_enode_list(new_head, end->next, s);
 					tail = tail->pre;
-					free(tail->next);
+					free_me(tail->next);
 					partial->next = new_head;
 					new_head->pre = partial;
 					tail->next = p2;
@@ -1666,7 +1627,7 @@ void change_exp_list(enode *begin, enode *end, enode *s, int flag)
 					new_head = (enode*)calloc(1,sizeof(enode));
 					tail = copy_enode_list(new_head, s, begin->pre);
 					tail = tail->pre;
-					free(tail->next);
+					free_me(tail->next);
 					p2->next = new_head;
 					new_head->pre = p2;
 					tail->next = partial;
@@ -1912,7 +1873,7 @@ void change_ast_node(ast_node_t *node, int value)
 {
 	char num[1024] = {0};
 	if (node->types.identifier != NULL)
-			free(node->types.identifier);
+			free_me(node->types.identifier);
 	node->type = NUMBERS;
 	sprintf(num, "%d", value);
 	change_to_number_node(node, num);

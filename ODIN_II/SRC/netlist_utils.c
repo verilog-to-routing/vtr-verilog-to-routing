@@ -106,7 +106,7 @@ void free_nnode(nnode_t *to_free)
 		}
 		if (to_free->input_pins != NULL)
 		{
-			free(to_free->input_pins);
+			free_me(to_free->input_pins);
 			to_free->input_pins = NULL;
 		}
 
@@ -120,20 +120,20 @@ void free_nnode(nnode_t *to_free)
 		}
 		if (to_free->output_pins != NULL)
 		{
-			free(to_free->output_pins);
+			free_me(to_free->output_pins);
 			to_free->output_pins = NULL;
 		}
 
 		if (to_free->input_port_sizes != NULL)
-			free(to_free->input_port_sizes);
+			free_me(to_free->input_port_sizes);
 		if (to_free->output_port_sizes != NULL)
-			free(to_free->output_port_sizes);
+			free_me(to_free->output_port_sizes);
 
 		if (to_free->undriven_pins)
-			free(to_free->undriven_pins);
+			free_me(to_free->undriven_pins);
 
 		/* now free the node */
-		free(to_free);
+		free_me(to_free);
 	}
 }
 
@@ -272,7 +272,7 @@ npin_t* copy_input_npin(npin_t* copy_pin)
 void free_npin(npin_t *to_free)
 {
 	if (to_free) {
-		free(to_free);
+		free_me(to_free);
 	}
 }
 
@@ -304,7 +304,7 @@ void free_nnet(nnet_t *to_free)
 {
 	if (to_free != NULL)
 	{
-		free(to_free);
+		free_me(to_free);
 	}
 }
 
@@ -719,11 +719,11 @@ void free_signal_list(signal_list_t *list)
 		return;
 
 	if (list->pins != NULL)
-		free(list->pins);
+		free_me(list->pins);
 
 	list->count = 0;
 
-	free(list);
+	free_me(list);
 }
 
 /*---------------------------------------------------------------------------

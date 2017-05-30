@@ -73,13 +73,13 @@ void ___hashtable_destroy(hashtable_t *h)
 		while((node = h->store[i]))
 		{
 			h->store[i] = node->next; 
-			free(node->key);
-			free(node); 
+			free_me(node->key);
+			free_me(node); 
 			h->count--; 
 		}
 	} 
-	free(h->store);
-	free(h);
+	free_me(h->store);
+	free_me(h);
 }
 
 void ___hashtable_destroy_free_items(hashtable_t *h)
@@ -90,15 +90,15 @@ void ___hashtable_destroy_free_items(hashtable_t *h)
 		hashtable_node_t* node;
 		while((node = h->store[i]))
 		{
-			free(node->item);
+			free_me(node->item);
 			h->store[i] = node->next;
-			free(node->key);
-			free(node);
+			free_me(node->key);
+			free_me(node);
 			h->count--;
 		}
 	}
-	free(h->store);
-	free(h);
+	free_me(h->store);
+	free_me(h);
 }
 
 void  ___hashtable_add(hashtable_t *h, const void *key, size_t key_length, void *item)
@@ -140,8 +140,8 @@ void* ___hashtable_remove(hashtable_t *h, const void *key, size_t key_length)
 	{
 		item = node->item; 
 		*node_location = node->next;
-		free(node->key);
-		free(node); 		 
+		free_me(node->key);
+		free_me(node); 		 
 		h->count--; 
 	}
 	

@@ -1369,7 +1369,7 @@ void free_sp_ram_signals(sp_ram_signals *signalsvar)
 	free_signal_list(signalsvar->addr);
 	free_signal_list(signalsvar->out);
 
-	free(signalsvar);
+	free_me(signalsvar);
 }
 
 dp_ram_signals *get_dp_ram_signals(nnode_t *node)
@@ -1451,7 +1451,7 @@ void free_dp_ram_signals(dp_ram_signals *signalsvar)
 	free_signal_list(signalsvar->out1);
 	free_signal_list(signalsvar->out2);
 
-	free(signalsvar);
+	free_me(signalsvar);
 }
 
 /*
@@ -1533,7 +1533,7 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 		instantiate_multi_port_mux(output_mux, mark, netlist);
 	}
 
-	free(and_gates);
+	free_me(and_gates);
 
 	// Free signal lists.
 	free_sp_ram_signals(signals);
@@ -1665,9 +1665,9 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 		instantiate_multi_port_mux(output_mux2, mark, netlist);
 	}
 
-	free(and1_gates);
-	free(and2_gates);
-	free(or_gates);
+	free_me(and1_gates);
+	free_me(and2_gates);
+	free_me(or_gates);
 
 	// Free signal lists.
 	free_dp_ram_signals(signals);

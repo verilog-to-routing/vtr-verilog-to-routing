@@ -287,7 +287,7 @@ void cleanup_parser()
 			sc_free_string_cache(defines_for_module_sc[i]);
 		}
 		
-		free(defines_for_module_sc);
+		free_me(defines_for_module_sc);
 	}
 }
 
@@ -1337,7 +1337,7 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	size_module_instantiations++;
 
     }
-    free(module_named_instance);
+    free_me(module_named_instance);
 	return new_master_node;
 }
 /*-------------------------------------------------------------------------
@@ -1790,7 +1790,7 @@ void newConstant(char *id, char *number, int line_number)
 	defines_for_file_sc->data[sc_spot] = (void*)number_node;
 	/* mark node as shared */
 	number_node->shared_node = TRUE;
-	free(id);
+	free_me(id);
 }
 
 /* --------------------------------------------------------------------------------------------
@@ -2207,13 +2207,13 @@ long calculate_operation(ast_node_t *node)
 		else if(node->children[1]->type == BINARY_OPERATION)
 			operand1 = calculate_operation(node->children[1]);
 
-		result = calculate(operand0, operand1, node->types.operation.op);
-		if(result < 0)
+		result = calculate_binary((long long)operand0,(long long) operand1, node->types.operation.op);
+		if(result < 0 || result == WRONG_CALCULATION)
 		{
 			error_message(PARSE_ERROR, node->line_number, current_parse_file,
 							"Negative numbers are used in the range in ODIN II!");
 		}
-		return result;
+		return (long)result;
 	}
 	else
 		error_message(PARSE_ERROR, node->line_number, current_parse_file,

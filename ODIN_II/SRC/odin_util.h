@@ -7,7 +7,6 @@
 char *make_signal_name(char *signal_name, int bit);
 char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit);
 
-char *twos_complement(char *str);
 int is_string_of_radix(char *string, int radix);
 char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_size);
 long long convert_string_of_radix_to_long_long(char *orig_string, int radix);

@@ -234,7 +234,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 	/* Cleanup everything */
 	if (adders_for_partial_products != NULL)
 	{
-		free(adders_for_partial_products);
+		free_me(adders_for_partial_products);
 	}
 	/* generate the AND partial products */
 	for (i = 0; i < multiplicand_width; i++)
@@ -242,12 +242,12 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 		/* create the memory for each AND gate needed for the levels of partial products */
 		if (partial_products[i] != NULL)
 		{
-			free(partial_products[i]);
+			free_me(partial_products[i]);
 		}
 	}
 	if (partial_products != NULL)
 	{
-		free(partial_products);
+		free_me(partial_products);
 	}
 }
 
@@ -391,7 +391,7 @@ void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlis
 	for (i = 0; i < node->num_output_pins;  i++)
 	{
 		if (node->output_pins[i]->name){
-			free(node->output_pins[i]->name);
+			free_me(node->output_pins[i]->name);
 		}
 		size_t length = snprintf(NULL,0,"%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
 		node->output_pins[i]->name = (char*)calloc(length +1,sizeof(char));
@@ -401,7 +401,7 @@ void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlis
 	
 	//if(i>0){
 	//	if(node->name){
-	//		free(node->name);
+	//		free_me(node->name);
 	//	}
 	//	node->name = node->output_pins[i-1]->name;
 	//}else{
@@ -415,7 +415,7 @@ void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlis
 			node->name = (char*)calloc(length +1,sizeof(char));
 			sprintf(node->name, "%s_%d_%d_%d", temp_name, node->input_port_sizes[1], node->input_port_sizes[0], node->output_port_sizes[0]);
 		}
-		free(temp_name);
+		free_me(temp_name);
 
 	//}
 	
@@ -798,14 +798,14 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 		remap_pin_to_new_node(node->output_pins[i], addbig, i);
 
 	/* Probably more to do here in freeing the old node! */
-	free(node->name);
-	free(node->input_port_sizes);
-	free(node->output_port_sizes);
+	free_me(node->name);
+	free_me(node->input_port_sizes);
+	free_me(node->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	free(node->input_pins); 
-	free(node->output_pins); 
-	free(node);
+	free_me(node->input_pins); 
+	free_me(node->output_pins); 
+	free_me(node);
 
 	return;
 }
@@ -878,14 +878,14 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 		remap_pin_to_new_node(node->output_pins[i], addsmall, i-a0);
 
 	/* Probably more to do here in freeing the old node! */
-	free(node->name);
-	free(node->input_port_sizes);
-	free(node->output_port_sizes);
+	free_me(node->name);
+	free_me(node->input_port_sizes);
+	free_me(node->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	free(node->input_pins); 
-	free(node->output_pins); 
-	free(node);
+	free_me(node->input_pins); 
+	free_me(node->output_pins); 
+	free_me(node);
 	return;
 }
 
@@ -957,14 +957,14 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 		remap_pin_to_new_node(node->output_pins[i], addsmall, i-b0);
 
 	/* Probably more to do here in freeing the old node! */
-	free(node->name);
-	free(node->input_port_sizes);
-	free(node->output_port_sizes);
+	free_me(node->name);
+	free_me(node->input_port_sizes);
+	free_me(node->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	free(node->input_pins); 
-	free(node->output_pins); 
-	free(node);
+	free_me(node->input_pins); 
+	free_me(node->output_pins); 
+	free_me(node);
 	return;
 }
 

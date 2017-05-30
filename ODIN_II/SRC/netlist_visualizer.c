@@ -127,7 +127,7 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 		{
 			fprintf(fp, "\t\"%s\"\n", temp_string);
 		}
-		free(temp_string);
+		free_me(temp_string);
 
 		for (i = 0; i < node->num_output_pins; i++)
 		{
@@ -168,8 +168,8 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 					fprintf(fp, "[label=\"%s\"]", next_net->fanout_pins[j]->name);
 				fprintf(fp, ";\n");
 
-				free(temp_string);
-				free(temp_string2);
+				free_me(temp_string);
+				free_me(temp_string2);
 
 				/* recursive call point */
 				depth_first_traverse_visualize(next_node, fp, traverse_mark_number);
@@ -249,7 +249,7 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 		{
 			fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string, current_node->forward_level, current_node->backward_level);
 		}
-		free(temp_string);
+		free_me(temp_string);
 
 		/* at each node visit all the outputs */
 		for (j = 0; j < current_node->num_output_pins; j++)
@@ -285,8 +285,8 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 
 				fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string, temp_string2, current_node->output_pins[j]->net->fanout_pins[k]->name);
 
-				free(temp_string);
-				free(temp_string2);
+				free_me(temp_string);
+				free_me(temp_string2);
 
 				if ((next_node->traverse_visited != marker_value) && (next_node->type != FF_NODE))
 				{
@@ -350,7 +350,7 @@ void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t 
 				fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string, current_node->forward_level, current_node->backward_level);
 			}
 		}
-		free(temp_string);
+		free_me(temp_string);
 
 		/* at each node visit all the outputs */
 		for (j = 0; j < current_node->num_input_pins; j++)
@@ -372,8 +372,8 @@ void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t 
 
 			fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string2, temp_string, current_node->input_pins[j]->name);
 
-			free(temp_string);
-			free(temp_string2);
+			free_me(temp_string);
+			free_me(temp_string2);
 
 			if ((next_node->traverse_visited != marker_value) && (next_node->type != FF_NODE))
 			{

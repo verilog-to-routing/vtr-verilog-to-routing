@@ -411,7 +411,7 @@ void instantiate_not_logic(nnode_t *node, short mark, netlist_t * /*netlist*/)
 		remap_pin_to_new_node(node->output_pins[i], new_not_cells[i], 0);
 	}
 
-	free(new_not_cells);
+	free_me(new_not_cells);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -650,7 +650,7 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
 		remap_pin_to_new_node(node->output_pins[i], new_logic_cells[i], 0);
 	}
 
-	free(new_logic_cells);
+	free_me(new_logic_cells);
 }
 
 /*--------------------------------------------------------------------------
@@ -775,8 +775,8 @@ void instantiate_add_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
 	}
 
-	free(new_add_cells);
-	free(new_carry_cells);
+	free_me(new_add_cells);
+	free_me(new_carry_cells);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -906,9 +906,9 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
 	}
 
-	free(new_add_cells);
-	free(new_carry_cells);
-	free(new_not_cells);
+	free_me(new_add_cells);
+	free_me(new_carry_cells);
+	free_me(new_not_cells);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1015,9 +1015,9 @@ void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist)
 			connect_nodes(new_carry_cells[i-1], 0, new_carry_cells[i], 0);
 	}
 
-	free(new_add_cells);
-	free(new_carry_cells);
-	free(new_not_cells);
+	free_me(new_add_cells);
+	free_me(new_carry_cells);
+	free_me(new_not_cells);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1251,9 +1251,9 @@ void instantiate_GT(nnode_t *node, short type, short mark, netlist_t *netlist)
 	oassert(logical_or_gate->num_output_pins == 1);
 
 	instantiate_bitwise_logic(xor_gate, BITWISE_XOR, mark, netlist);
-	free(xor_gate);
-	free(gt_cells);
-	free(or_cells);
+	free_me(xor_gate);
+	free_me(gt_cells);
+	free_me(or_cells);
 }
 
 /*---------------------------------------------------------------------------------------------

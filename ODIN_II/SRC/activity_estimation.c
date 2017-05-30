@@ -142,7 +142,7 @@ void calc_transition_density(netlist_t *netlist)
 						density_val = density_val + calc_density(current_node, m, boolean_difference_function);
 
 						/* free the array */
-						free(boolean_difference_function);
+						free_me(boolean_difference_function);
 					}
 
 					act_data->transition_density[0] = density_val;
@@ -549,19 +549,19 @@ void output_activation_file_ace_and_function_file(char *output_filename, int lut
 	if (!ace_out){
 		error_message(ACTIVATION_ERROR, -1, -1, "Could not open output file %s\n", ace_file_name);
 	}
-	free(ace_out);
+	free_me(ace_out);
 	
 	ac2_out = fopen(ac2_file_name, "w");
 	if (!ac2_out){
 		error_message(ACTIVATION_ERROR, -1, -1, "Could not open output file %s\n", ac2_file_name);
 	}
-	free(ac2_out);
+	free_me(ac2_out);
 	
 	function_out = fopen(function_file_name, "w");
 	if (!function_out){
 		error_message(ACTIVATION_ERROR, -1, -1, "Could not open output file %s\n", function_file_name);
 	}
-	free(function_out);
+	free_me(function_out);
 
 	/* Go through the LUT netlist and print out the ace files */
 	for (i = 0; i < LUT_netlist->num_forward_levels; i++)
@@ -682,7 +682,7 @@ void output_activation_file_ace_and_function_file(char *output_filename, int lut
 				fprintf (ac2_out, "intercluster_net_density %s %f\n", current_subblock->name, act_data->transition_density[0]);
 			}
 
-			free(output_search_name);
+			free_me(output_search_name);
 		}
 	}
 
@@ -865,13 +865,13 @@ void cleanup_activation(netlist_t *netlist)
 			oassert(act_data != NULL);
 
 			if (act_data->static_probability != NULL)
-				free(act_data->static_probability);
+				free_me(act_data->static_probability);
 			if (act_data->transition_density != NULL)
-				free(act_data->transition_density);
+				free_me(act_data->transition_density);
 			if (act_data->transition_probability != NULL)
-				free(act_data->transition_probability);
+				free_me(act_data->transition_probability);
 
-			free(act_data);
+			free_me(act_data);
 			current_node->unique_node_data_id = RESET;
 		}
 	}

@@ -66,7 +66,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 		char *out_file = (char*)calloc(1+strlen(file_name)+strlen(global_args.high_level_block)+6,sizeof(char));
 		sprintf(out_file, "%s_%s.blif", file_name, global_args.high_level_block);
 		out = fopen(out_file, "w");
-		free(out_file);
+		free_me(out_file);
 	}
 	else
 	{
@@ -550,7 +550,7 @@ void define_logical_function(nnode_t *node, short /*type*/, FILE *out)
 				{
 					temp_string = convert_long_long_to_bit_string(i, node->num_input_pins);
 					fprintf(out, "%s", temp_string);
-					free(temp_string);
+					free_me(temp_string);
 					fprintf(out, " 1\n");
 				}
 			}
@@ -566,7 +566,7 @@ void define_logical_function(nnode_t *node, short /*type*/, FILE *out)
 				{
 					temp_string = convert_long_long_to_bit_string(i, node->num_input_pins);
 					fprintf(out, "%s", temp_string);
-					free(temp_string);
+					free_me(temp_string);
 					fprintf(out, " 1\n");
 				}
 			}

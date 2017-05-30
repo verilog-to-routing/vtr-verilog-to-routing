@@ -58,7 +58,7 @@ int cleanup_veri_preproc()
 	def_iterator = NULL;
 	veri_defines.current_index = 0;
 	veri_defines.current_size = 0;
-	free(veri_defines.defined_constants);
+	free_me(veri_defines.defined_constants);
 
 	for (i = 0; i < veri_includes.current_index && i < veri_includes.current_size; inc_iterator = veri_includes.included_files[++i]) 
 	{
@@ -67,7 +67,7 @@ int cleanup_veri_preproc()
 	inc_iterator = NULL;
 	veri_includes.current_index = 0;
 	veri_includes.current_size = 0;
-	free(veri_includes.included_files);
+	free_me(veri_includes.included_files);
 	
 	//fprintf(stderr, " --- Finished\n");
 
@@ -82,13 +82,13 @@ void clean_veri_define(veri_define *current)
 	if (current != NULL) 
 	{
 		//fprintf(stderr, "\tCleaning Symbol: %s, ", current->symbol);
-		free(current->symbol);
+		free_me(current->symbol);
 		//fprintf(stderr, "Value: %s ", current->value);
-		free(current->value);
+		free_me(current->value);
 		
 		current->defined_in = NULL;
 		
-		free(current);
+		free_me(current);
 		current=NULL;
 		//fprintf(stderr, "...done\n");
 	}
@@ -102,9 +102,9 @@ void clean_veri_include(veri_include *current)
 	if (current != NULL)
 	{
 		//fprintf(stderr, "\tCleaning Include: %s ", current->path);
-		free(current->path);
+		free_me(current->path);
 		
-		free(current);
+		free_me(current);
 		current = NULL;
 		//fprintf(stderr, "...done\n");
 	}
@@ -145,7 +145,7 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 #ifndef BLOCK_EMPTY_DEFINES
 			{
 				fprintf(stderr, "\tWarning: The new value of %s is empty\n\n", symbol);	
-				free(def_iterator->value);
+				free_me(def_iterator->value);
 				def_iterator->value =NULL;
 			}
 #else		
@@ -158,11 +158,11 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 			{
 				fprintf(stderr, "\tWarning: The value of %s has been redefined to %s, the previous value was %s\n\n",
 					symbol, value, def_iterator->value);
-				free(def_iterator->value);
+				free_me(def_iterator->value);
 				def_iterator->value = (char *)strdup(value);
 			}
 
-			free(new_def);
+			free_me(new_def);
 			return -2;
 		}
 	}
@@ -208,7 +208,7 @@ veri_include* add_veri_include(char *path, int line, veri_include *included_from
 		if (0 == strcmp(path, inc_iterator->path))
 		{
 			printf("Warning: including %s multiple times\n", path);
-//			free(new_inc);
+//			free_me(new_inc);
 //			return NULL;
 		}
 	}
@@ -293,7 +293,7 @@ FILE* open_source_file(char* filename)
 	char* last_slash = strrchr(path, '/');
 	if (last_slash == NULL) /* No other path to try to find the file */
 	{
-		free(path);
+		free_me(path);
 		return NULL;
 	}
 	*(last_slash + 1) = '\0';
@@ -304,7 +304,7 @@ FILE* open_source_file(char* filename)
 	{
 		fprintf(stderr, "Warning: Unable to find %s in the present working directory, opening %s instead\n", 
 				filename, path);
-		free(path);
+		free_me(path);
 		return src_file;
 	}
 	
@@ -623,7 +623,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 		token = NULL;
 	}
 	fclose(source);
-	free(skip);
+	free_me(skip);
 }
 
 /* General Utility methods ------------------------------------------------- */
@@ -673,7 +673,7 @@ int pop(veri_flag_stack *stack)
 		int flag = top->flag;
 		
 		stack->top = top->next;
-		free(top);
+		free_me(top);
 	
 		return flag;
 	}

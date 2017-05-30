@@ -310,7 +310,7 @@ short assign_node_type_from_node_name(char * output_name)
 	else if (!strcmp(extracted_string,"ADD"))            to_return = ADD;
 	else if (!strcmp(extracted_string,"MINUS"))          to_return = MINUS;
 	
-	free(extracted_string);
+	free_me(extracted_string);
 	return to_return;
 }
 
@@ -426,8 +426,8 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	output_nets_hash->add(output_nets_hash, new_node->name, strlen(new_node->name)*sizeof(char), new_net);
 
 	/* Free the char** names */
-	free(names);
-	free(ptr);
+	free_me(names);
+	free_me(ptr);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -478,7 +478,7 @@ char* search_clock_name(FILE* file)
 					{
 						if(!strcmp(ptr,input_names[i]))
 						{
-							free(input_names[i]);
+							free_me(input_names[i]);
 							input_names[i] = input_names[--input_names_count];
 						}
 					}
@@ -536,9 +536,9 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	qsort(mappings,  count,  sizeof(char *), compare_hard_block_pin_names);
 
 	for(i = 0; i < count; i++)
-		free(names_parameters[i]);
+		free_me(names_parameters[i]);
 
-	free(names_parameters);
+	free_me(names_parameters);
 
 	// Index the mappings in a hard_block_ports struct.
 	hard_block_ports *ports = get_hard_block_ports(mappings, count);
@@ -572,7 +572,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 			new_node->type = MINUS;
 	else
 		new_node->type = MEMORY;
-	free(subcircuit_name_prefix);
+	free_me(subcircuit_name_prefix);
 
 	/* Add input and output ports to the new node. */
 	{
@@ -648,8 +648,8 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 
   	free_hard_block_ports(ports);
   	mapping_index->destroy_free_items(mapping_index);
-  	free(mappings);
-  	free(names);
+  	free_me(mappings);
+  	free_me(names);
 
 
 }
@@ -787,7 +787,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		output_nets_hash->add(output_nets_hash, new_node->name, strlen(new_node->name)*sizeof(char), new_net);
 
 		/* Free the char** names */
-		free(names);
+		free_me(names);
 	}
 }
 
@@ -831,19 +831,19 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 
 		bit_map = (char**)realloc(bit_map,sizeof(char*) * (line_count_bitmap + 1));
 		bit_map[line_count_bitmap++] = strdup(vtr::strtok(buffer,TOKENS, file, buffer));
-		if (output_bit_map != NULL) free(output_bit_map);
+		if (output_bit_map != NULL) free_me(output_bit_map);
 		output_bit_map = strdup(vtr::strtok(NULL,TOKENS, file, buffer));
 	}
 
 	if (!strcmp(output_bit_map, One))
 	{
-		free(output_bit_map);
+		free_me(output_bit_map);
 		output_bit_map = strdup(One);
 		node->generic_output = 1;
 	}
 	else
 	{
-		free(output_bit_map);
+		free_me(output_bit_map);
 		output_bit_map = strdup(Zero);
 		node->generic_output = 0;
 	}
@@ -1400,8 +1400,8 @@ static int compare_hard_block_pin_names(const void *p1, const void *p2)
 	char *port_name1 = get_hard_block_port_name(name1);
 	char *port_name2 = get_hard_block_port_name(name2);
 	int portname_difference = strcmp(port_name1, port_name2);
-	free(port_name1);
-	free(port_name2);
+	free_me(port_name1);
+	free_me(port_name2);
 
 	// If the portnames are the same, compare the pin numbers.
 	if (!portname_difference)
@@ -1600,7 +1600,7 @@ long get_hard_block_pin_number(char *original_name)
 	if (pin_number_string == endptr)
 		error_message(NETLIST_ERROR,file_line_number, -1,"The given port name \"%s\" does not contain a valid pin number.", original_name);
 
-	free(name);
+	free_me(name);
 
 	return pin_number;
 }
@@ -1674,8 +1674,8 @@ void free_hard_block_models(hard_block_models *models)
 	for (i = 0; i < models->count; i++)
 		free_hard_block_model(models->models[i]);
 
-	free(models->models);
-	free(models);
+	free_me(models->models);
+	free_me(models);
 }
 
 
@@ -1690,7 +1690,7 @@ void free_hard_block_model(hard_block_model *model)
 	free_hard_block_ports(model->input_ports);
 	free_hard_block_ports(model->output_ports);
 
-	free(model);
+	free_me(model);
 }
 
 /*
@@ -1699,12 +1699,12 @@ void free_hard_block_model(hard_block_model *model)
 void free_hard_block_pins(hard_block_pins *p)
 {
 	while (p->count--)
-		free(p->names[p->count]);
+		free_me(p->names[p->count]);
 
-	free(p->names);
+	free_me(p->names);
 
 	p->index->destroy_free_items(p->index);
-	free(p);
+	free_me(p);
 }
 
 /*
@@ -1713,12 +1713,12 @@ void free_hard_block_pins(hard_block_pins *p)
 void free_hard_block_ports(hard_block_ports *p)
 {
 	while(p->count--)
-		free(p->names[p->count]);
+		free_me(p->names[p->count]);
 
-	free(p->signature);
-	free(p->names);
-	free(p->sizes);
+	free_me(p->signature);
+	free_me(p->names);
+	free_me(p->sizes);
 
 	p->index->destroy_free_items(p->index);
-	free(p);
+	free_me(p);
 }

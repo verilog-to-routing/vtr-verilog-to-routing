@@ -63,104 +63,39 @@ ast_node_t* create_node_w_type(ids id, int line_number, int file_number)
 	return new_node;
 }
 
-/*---------------------------------------------------------------------------------------------
- * (function: free_child_in_tree)
- * frees all children below too
- *-------------------------------------------------------------------------------------------*/
-void free_child_in_tree(ast_node_t *from, int idx_removal)
-{
-	ast_node_t *child = from->children[idx_removal];
-	int i;
-	
-	if ((child == NULL) || (child->shared_node == TRUE))
-		return;
-	
-	/* free all it's children .... and so on recursively */
-	for (i = 0; i < child->num_children; i++)
-	{
-		free_child_in_tree(child->children[i], i);	
-	}
-	
-	if (child->children != NULL)
-		free(child->children);
-
-	switch(child->type)
-	{
-		case IDENTIFIERS:
-			if (child->types.identifier != NULL)
-				free(child->types.identifier);
-			break;
-		case NUMBERS:
-			if (child->types.number.number != NULL)
-				free(child->types.number.number);
-			break;
-		default:
-			break;
-	}
-
-	free(child);	
-	from->children[idx_removal] = NULL;
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: free_ast_node)
- *-------------------------------------------------------------------------------------------*/
-void free_ast_node(ast_node_t *child)
+/*---------------------------------------------------------------------------
+ * (function: free_ast_tree_branch)
+ *-------------------------------------------------------------------------*/
+void free_ast_tree_branch(ast_node_t *node)
 {
 	int i;
+
+	if (node && !node->shared_node){
+		for (i = 0; i < node->num_children; i++)
+			free_ast_tree_branch(node->children[i]);
 	
-	if ((child == NULL) || (child->shared_node == TRUE))
-		return;
+		if (node->children != NULL)
+			free_me(node->children);
 	
-	/* free all it's children .... and so on recursively */
-	for (i = 0; i < child->num_children; i++)
-	{
-		free_child_in_tree(child, i);	
-	}
+		switch(node->type)
+			{
+				case IDENTIFIERS:
+					if (node->types.identifier != NULL)
+						free_me(node->types.identifier);
+					break;
+				case NUMBERS:
+					if (node->types.number.number != NULL)
+						free_me(node->types.number.number);
+					if (node->types.number.binary_string != NULL)
+						free_me(node->types.number.binary_string);
+					break;
+				default:
+					break;
+			}
 	
-	if (child->children != NULL)
-		free(child->children);
-
-	switch(child->type)
-	{
-		case IDENTIFIERS:
-			if (child->types.identifier != NULL)
-				free(child->types.identifier);
-			break;
-		case NUMBERS:
-			if (child->types.number.number != NULL)
-				free(child->types.number.number);
-			break;
-		default:
-			break;
-	}
-
-	free(child);	
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: free_ast_node_only)
- *-------------------------------------------------------------------------------------------*/
-void free_ast_node_only(ast_node_t *child)
-{
-	if (child->children != NULL)
-		free(child->children);
-
-	switch(child->type)
-	{
-		case IDENTIFIERS:
-			if (child->types.identifier != NULL)
-				free(child->types.identifier);
-			break;
-		case NUMBERS:
-			if (child->types.number.number != NULL)
-				free(child->types.number.number);
-			break;
-		default:
-			break;
+		free_me(node);
 	}
 
-	free(child);	
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -177,25 +112,13 @@ ast_node_t* create_tree_node_id(char* string, int line_number, int /*file_number
 /*---------------------------------------------------------------------------------------------
  * (function: *create_tree_node_long_long_number)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *create_tree_node_long_long_number(long long number, int constant_bit_size, int line_number, int /*file_number*/)
+ast_node_t *create_tree_node_long_long_number(long long number, int line_number, int /*file_number*/)
 {
-	int flag = 0;
 	ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
 	new_node->types.number.base = LONG_LONG;
 	new_node->types.number.value = number;
-
-	if (number < 0)
-	{
-		flag = 1;
-		number = number * -1;
-	}
-
-	oassert (ceil((log(number+1))/log(2)) <= constant_bit_size);
-	new_node->types.number.binary_size = constant_bit_size;
-
-	new_node->types.number.binary_string = convert_long_long_to_bit_string(number, new_node->types.number.binary_size);
-	if (flag == 1)
-		twos_complement(new_node->types.number.binary_string);
+	new_node->types.number.binary_size = sizeof(number)*8;
+	new_node->types.number.binary_string = convert_long_long_to_bit_string(number,sizeof(number)*8);
 
 	return new_node;
 }
@@ -462,7 +385,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 			long sc_spot;
 			if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) != -1)
 			{				
-				free(temp_string);
+				free_me(temp_string);
 
 			if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1] == NULL)
 			{
@@ -778,7 +701,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
             else {
                 error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", temp_string);
             }
-			free(temp_string);
+			free_me(temp_string);
 
 			if (sym_node->children[1] == NULL || sym_node->type == BLOCKING_STATEMENT)
 			{
@@ -936,12 +859,12 @@ ast_node_t *resolve_node(short initial, char *module_name, ast_node_t *node)
 		}
 		if(result != WRONG_CALCULATION){
 			node_copy->shared_node = TRUE;
-			node = create_tree_node_long_long_number(result, 128, node_copy->line_number, node_copy->file_number);
+			node = create_tree_node_long_long_number(result, node_copy->line_number, node_copy->file_number);
 			node_copy->shared_node = FALSE;
 		}
 
-		free(node_copy->children);
-		free(node_copy);
+		free_me(node_copy->children);
+		free_me(node_copy);
 	}
 	return node;
 }
@@ -1026,20 +949,6 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
 	}
 
 	return node_copy;
-}
-
-
-/*---------------------------------------------------------------------------------------------
- * (function: calculate)
- * Calculate binary operations
- *-------------------------------------------------------------------------------------------*/
-long calculate(long operand0, long operand1, short type){
-	long result = 0;
-	long long temp =calculate_binary((long long) operand0, (long long) operand1,type);
-	if(!(temp & WRONG_CALCULATION)){
-		return (long) temp;
-	}
-	return result;
 }
 
 

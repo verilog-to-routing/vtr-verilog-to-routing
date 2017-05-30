@@ -46,7 +46,7 @@ implicit_memory *lookup_implicit_memory(char *instance_name_prefix, char *identi
 {
 	char *memory_string = make_full_ref_name(instance_name_prefix, NULL, NULL, identifier, -1);
 	implicit_memory * to_return = (implicit_memory *)implicit_memories->get(implicit_memories, memory_string, strlen(memory_string));
-	free(memory_string);
+	free_me(memory_string);
 	return to_return;
 }
 
@@ -184,7 +184,7 @@ void free_implicit_memory_index_and_finalize_memories()
 		for (i = 0; i < implicit_memories->count; i++)
 			finalize_implicit_memory(memories[i]);
 
-		free(memories);
+		free_me(memories);
 		implicit_memories->destroy_free_items(implicit_memories);
 		implicit_memories = NULL;
 	}

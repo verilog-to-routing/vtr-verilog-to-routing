@@ -53,7 +53,7 @@ queue_t* create_queue()
 void ___queue_destroy(queue_t *q)
 {
 	while (q->remove(q)); 
-	free(q);
+	free_me(q);
 }
 
 void ___queue_add(queue_t *q, void *item)
@@ -82,7 +82,7 @@ void* ___queue_remove(queue_t *q)
 		queue_node_t *node = q->head;
 		item = node->item;
 		q->head = node->next;
-		free(node);
+		free_me(node);
 		q->count--;	
 
 		if (!q->count)

@@ -85,7 +85,7 @@ void output_ace_info_node ( char *name, ace_obj_info_t *info, FILE *act_out );
 pset set_clear(pset r, int size);
 ace_cube_t * ace_cube_dup(ace_cube_t * cube);
 ace_cube_t * ace_cube_new_dc(int num_literals);
-void ace_cube_free(ace_cube_t * cube);
+void ace_cube_free_me(ace_cube_t * cube);
 DdNode * build_bdd_for_node ( DdManager * dd, nnode_t *node );
 void ace_bdd_count_paths(DdManager * mgr, DdNode * bdd, int * num_one_paths, int * num_zero_paths);
 double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd, ace_cube_t * cube, nnode_t *node , st_table *visited, int phase );
@@ -520,9 +520,9 @@ ace_cube_t * ace_cube_new_dc(int num_literals) {
  * (function: ace_cube_free )
  *
  *-------------------------------------------------------------------------------------------*/
-void ace_cube_free(ace_cube_t * cube) {
-    free(cube->cube);
-    free(cube);
+void ace_cube_free_me(ace_cube_t * cube) {
+    free_me(cube->cube);
+    free_me(cube);
 }
 
 
@@ -724,7 +724,7 @@ double calc_switch_prob_recur(DdManager * mgr, DdNode * bdd_next, DdNode * bdd, 
     set_insert(cube1->cube, 2 * i + 1);
     switch_prob_t = calc_switch_prob_recur(mgr, bdd_next, bdd_if1, cube1, node,
 					   P1 * info->static_prob, phase );
-    ace_cube_free(cube1);
+    ace_cube_free_me(cube1);
 
     /* Recursive call down the ELSE branch */
     cube0 = ace_cube_dup(cube);
@@ -732,7 +732,7 @@ double calc_switch_prob_recur(DdManager * mgr, DdNode * bdd_next, DdNode * bdd, 
     set_remove(cube0->cube, 2 * i + 1);
     switch_prob_e = calc_switch_prob_recur(mgr, bdd_next, bdd_if0,  cube0, node,
 					   P1 * (1.0 - info->static_prob), phase );
-    ace_cube_free(cube0);
+    ace_cube_free_me(cube0);
 
     return (switch_prob_t + switch_prob_e);
 }

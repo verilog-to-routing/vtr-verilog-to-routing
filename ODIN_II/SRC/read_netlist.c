@@ -514,7 +514,7 @@ add_subblock_to_node(nnode_t *current_block, const std::vector<std::vector<std::
 			new_output_node->type = OUTPUT_NODE;
 			/* create the unique name for this gate */
 			new_output_node->name = make_full_ref_name(NULL, NULL, NULL, output_name, -1);
-			free(output_name);
+			free_me(output_name);
 			/* add node to netlist */
 			add_node_to_netlist(current_block->internal_netlist, new_output_node, -1);
 
@@ -645,8 +645,8 @@ add_subblock_to_node(nnode_t *current_block, const std::vector<std::vector<std::
 	}
 
 	/* free the list */
-	free(output_idx);
-	free(input_idx);
+	free_me(output_idx);
+	free_me(input_idx);
 }
 
 /*---------------------------------------------------------------------------------------------

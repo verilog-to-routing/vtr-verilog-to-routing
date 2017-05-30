@@ -74,6 +74,7 @@ typedef struct chain_information_t_t chain_information_t;
 */
 # define WRONG_CALCULATION (long long)1 << (sizeof(long long)*8-1)
 
+#define free_me(X) if(X){free(X);X=NULL;}
 /* unique numbers to mark the nodes as we DFS traverse the netlist */
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
 #define OUTPUT_TRAVERSE_VALUE 12
