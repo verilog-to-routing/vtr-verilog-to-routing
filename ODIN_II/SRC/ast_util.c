@@ -847,10 +847,9 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 					sc_spot = sc_lookup_string(local_param_table_sc, node->types.identifier);
 					if (sc_spot != -1){
 						ast_node_t *newNode = (ast_node_t *)local_param_table_sc->data[sc_spot];
-						if (newNode->types.variable.is_parameter == TRUE)
+						if (node_is_constant(newNode) != WRONG_CALCULATION)
 						{
 							node = newNode;
-							oassert(node->type == NUMBERS);
 						}
 					}
 				}
