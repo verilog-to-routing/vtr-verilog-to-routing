@@ -790,7 +790,8 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
         for(int ipin = 0; ipin < (int) pins.size(); ++ipin) {
             if(pin_mapping[ipin] == open) continue; //No mapping for this physical pin to atom pin
 
-            int atom_pin_index = std::stoi(pin_mapping[ipin]);
+            int atom_pin_index = -1;
+            atom_pin_index = std::stoi(pin_mapping[ipin]);
 
             if(atom_pin_index < 0) {
                 vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(pin_rot_map),
