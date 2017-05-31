@@ -123,7 +123,7 @@ enum e_OptionBaseToken {
                 OT_CRITICALITY_EXP,
             OT__END_TIMING_ROUTE_OPTIONS, //Marker
         OT__END_ROUTE_OPTIONS = OT__END_TIMING_ROUTE_OPTIONS, //Marker
-            OT_WRITE_RR_GRAPH,
+            OT_WRITE_RR_GRAPH, OT_READ_RR_GRAPH,
 
     //Analysis options (post routing)
     OT_ANALYSIS,

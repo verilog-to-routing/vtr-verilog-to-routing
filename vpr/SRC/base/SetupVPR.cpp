@@ -567,7 +567,8 @@ static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
 		RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
 	}
 
-	RouterOpts->rr_graph_to_file = Options.rr_graph_to_file;
+	RouterOpts->write_rr_graph_name = Options.write_rr_graph_name;
+        RouterOpts->read_rr_graph_name = Options.read_rr_graph_name;
 }
 
 static void SetupAnnealSched(const t_options& Options,

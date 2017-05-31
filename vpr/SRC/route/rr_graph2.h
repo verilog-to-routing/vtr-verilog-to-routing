@@ -2,6 +2,7 @@
 #define RR_GRAPH2_H
 
 #include "build_switchblocks.h"
+#include "rr_graph_util.h"
 #include "rr_types.h"
 
 /******************* Types shared by rr_graph2 functions *********************/

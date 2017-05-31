@@ -479,7 +479,7 @@ static void alloc_routing_structs(t_router_opts router_opts,
 		graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ?
 				GRAPH_BIDIR : GRAPH_UNIDIR);
 	}
-
+        
 	build_rr_graph(graph_type, device_ctx.num_block_types, dummy_type_descriptors, device_ctx.nx, device_ctx.ny, device_ctx.grid,
 			&device_ctx.chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
@@ -500,7 +500,8 @@ static void alloc_routing_structs(t_router_opts router_opts,
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warnings, router_opts.rr_graph_to_file);
+			&warnings, router_opts.write_rr_graph_name,
+                        router_opts.read_rr_graph_name, true);
 
 	alloc_and_load_rr_node_route_structs();
 
@@ -606,7 +607,6 @@ static float assign_blocks_and_route_net(t_type_ptr source_type,
         //We set the delay to +inf, since this architecture will likely be unroutable
         net_delay_value = std::numeric_limits<float>::infinity();
     }
-
 
 	place_ctx.grid_blocks[source_x_loc][source_y_loc].usage = 0;
 	place_ctx.grid_blocks[source_x_loc][source_y_loc].blocks[source_z_loc] = EMPTY_BLOCK;
@@ -972,7 +972,6 @@ static void compute_delta_arrays(t_router_opts router_opts, int longest_length) 
 	compute_delta_clb_to_io(router_opts);
 	vtr::printf_info("Computing delta_clb_to_clb lookup matrix, may take a few seconds, please wait...\n");
 	compute_delta_clb_to_clb(router_opts, longest_length);
-
     if(isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
         print_delta_delays_echo(getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
     }

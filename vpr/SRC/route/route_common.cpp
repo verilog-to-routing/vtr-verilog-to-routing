@@ -242,6 +242,7 @@ void try_graph(int width_fac, t_router_opts router_opts,
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
+                cout <<"Try graph" <<endl;
 	build_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
 			&device_ctx.chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
@@ -257,7 +258,8 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warning_count, router_opts.rr_graph_to_file);
+			&warning_count, router_opts.write_rr_graph_name,
+                        router_opts.read_rr_graph_name, false);
 
 	clock_t end = clock();
 
@@ -304,6 +306,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
+        
 	build_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
 			&device_ctx.chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
@@ -319,7 +322,8 @@ bool try_route(int width_fac, t_router_opts router_opts,
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warning_count, router_opts.rr_graph_to_file);
+			&warning_count, router_opts.write_rr_graph_name,
+                        router_opts.read_rr_graph_name, false);
 
 	clock_t end = clock();
 
@@ -428,7 +432,7 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
-
+    
 	int occ = route_ctx.rr_node_state[inode].occ() + add_or_sub;
 	route_ctx.rr_node_state[inode].set_occ(occ);
 	// can't have negative occupancy

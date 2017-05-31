@@ -1,0 +1,20 @@
+/* Defines the function used to load an rr graph written in xml format into vpr*/
+
+#ifndef RR_GRAPH_READER_H
+#define RR_GRAPH_READER_H
+
+void load_rr_file(const t_graph_type graph_type,
+        const int L_nx,
+        const int L_ny,
+        t_chan_width *nodes_per_chan,
+        const int num_seg_types,
+        const t_segment_inf * segment_inf,
+        const enum e_base_cost_type base_cost_type,
+        int *wire_to_rr_ipin_switch,
+        int *num_rr_switches,
+        const char* write_rr_graph_name,
+        const char* read_rr_graph_name);
+
+
+#endif /* RR_GRAPH_READER_H */
+
