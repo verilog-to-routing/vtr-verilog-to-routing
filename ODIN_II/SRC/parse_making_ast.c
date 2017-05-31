@@ -32,11 +32,12 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ast_util.h"
 #include "parse_making_ast.h"
 #include "string_cache.h"
-#include "ast_optimizations.h"
+
 #include "verilog_bison_user_defined.h"
 #include "verilog_preprocessor.h"
 #include "hard_blocks.h" 
 #include "vtr_util.h"
+
 
 extern int yylineno;
 
@@ -129,7 +130,7 @@ void parse_to_ast()
 	if (global_args.verilog_file != NULL)
 	{
 		/* make a consitant file list so we can access in compiler ... replicating what read config does for the filenames */
-		configuration.list_of_file_names = (char**)malloc(sizeof(char*));
+		configuration.list_of_file_names = (char**)calloc(1,sizeof(char*));
 		configuration.num_list_of_file_names = 1;
 		configuration.list_of_file_names[0] = global_args.verilog_file;
 
@@ -287,7 +288,7 @@ void cleanup_parser()
 			sc_free_string_cache(defines_for_module_sc[i]);
 		}
 		
-		free(defines_for_module_sc);
+		free_me(defines_for_module_sc);
 	}
 }
 
@@ -324,7 +325,7 @@ void next_parsed_verilog_file(ast_node_t *file_items_list)
 	int i;
 	/* optimization entry point */
 	printf("Optimizing module by AST based optimizations\n");
-	optimizations_on_AST(file_items_list);
+	cleanup_hard_blocks();
 
 	if (configuration.output_ast_graphs == 1)
 	{
@@ -876,7 +877,7 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number)
 {
-	info_ast_visit_t *node_details = NULL;
+
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(BINARY_OPERATION, line_number, current_parse_file);
 	/* store the operation type */
@@ -885,19 +886,13 @@ ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, as
 	allocate_children_to_node(new_node, 2, expression1, expression2);
 
 	/* see if this binary expression can have some constant folding */
-	node_details = constantFold(new_node);
-	if ((node_details != NULL) && (node_details->is_constant_folded == TRUE))
-	{
-		new_node = node_details->from;
-		free(node_details);
-	}
+	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE, NULL, new_node);
 
 	return new_node;
 }
 
 ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number)
 {
-	info_ast_visit_t *node_details = NULL;
 	/* create a node for this array reference */
 	ast_node_t* new_node, *node;
 	ast_node_t *node_copy;
@@ -937,12 +932,7 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 	error_message(NETLIST_ERROR, line_number, current_parse_file, "Operation not supported by Odin\n");
         }
 	/* see if this binary expression can have some constant folding */
-	node_details = constantFold(new_node);
-	if ((node_details != NULL) && (node_details->is_constant_folded == TRUE))
-	{
-		new_node = node_details->from;
-		free(node_details);
-	}
+	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE, NULL, new_node);
 
 	return new_node;
 }
@@ -951,7 +941,6 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int line_number)
 {
-	info_ast_visit_t *node_details = NULL;
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(UNARY_OPERATION, line_number, current_parse_file);
 	/* store the operation type */
@@ -960,13 +949,7 @@ ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int 
 	allocate_children_to_node(new_node, 1, expression);
 
 	/* see if this binary expression can have some constant folding */
-	node_details = constantFold(new_node);
-	if ((node_details != NULL) && (node_details->is_constant_folded == TRUE))
-	{
-		new_node = node_details->from;
-		free(node_details);
-	}
-
+	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE, NULL, new_node);
 	return new_node;
 }
 
@@ -1354,7 +1337,7 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	size_module_instantiations++;
 
     }
-    free(module_named_instance);
+    free_me(module_named_instance);
 	return new_master_node;
 }
 /*-------------------------------------------------------------------------
@@ -1510,10 +1493,10 @@ ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *exp
 ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ , ast_node_t * /*expression2*/ , ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
 {
 
-    char *number_0 = (char*)malloc(5 * sizeof(char));
+    char *number_0 = (char*)calloc(5,sizeof(char));
     strcpy(number_0,"0");
 
-    char *number_31 = (char*)malloc(5 * sizeof(char));
+    char *number_31 = (char*)calloc(5,sizeof(char));
     strcpy(number_31,"31");    
 
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
@@ -1728,7 +1711,7 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 {
 	ast_node_t *new_node = NULL;
 	ast_node_t *ref_node;
-	char *module_instance_name = (char*)malloc(1024 * sizeof(char));
+	char *module_instance_name = (char*)calloc(1024,sizeof(char));
 	module_instance_name = NULL;
 	int i, j;
 	//long sc_spot;
@@ -1807,6 +1790,7 @@ void newConstant(char *id, char *number, int line_number)
 	defines_for_file_sc->data[sc_spot] = (void*)number_node;
 	/* mark node as shared */
 	number_node->shared_node = TRUE;
+	free_me(id);
 }
 
 /* --------------------------------------------------------------------------------------------
@@ -2171,69 +2155,14 @@ long calculate_operation(ast_node_t *node)
 {
 	if (node == NULL || node->num_children < 2)
 			return 0;
-	ast_node_t *newNode;
-
-	long result, operand0 = 0, operand1 = 0;
-	/*Only calculate binary operation currently*/
-	if (node->type == BINARY_OPERATION)
+	ast_node_t *newNode = resolve_node(defines_for_module_sc[num_modules], TRUE, NULL, node);
+	long long result = node_is_constant(newNode);
+	free(newNode);
+	if(result < 0 || result == WRONG_CALCULATION)
 	{
-		/*calculate the first operand*/
-		if(node->children[0]->type == IDENTIFIERS){
-			long sc_spot;
-			if((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], node->children[0]->types.identifier)) != -1)
-			{
-				newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
-				if (newNode->types.variable.is_parameter == TRUE)
-				{
-					operand0 = newNode->types.number.value;
-				}
-				else
-					error_message(PARSE_ERROR, node->children[0]->line_number, current_parse_file,
-						"parameter %s don't match\n", node->children[0]->types.identifier);
-			}
-			else
-				error_message(PARSE_ERROR, node->children[0]->line_number, current_parse_file,
-					"parameter %s don't match\n", node->children[0]->types.identifier);
-		}
-		else if(node->children[0]->type == NUMBERS)
-			operand0 = node->children[0]->types.number.value;
-		else if(node->children[0]->type == BINARY_OPERATION)
-			operand0 = calculate_operation(node->children[0]);
-
-		/*calculate the second operand*/
-		if(node->children[1]->type == IDENTIFIERS){
-			long sc_spot;
-			if((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], node->children[1]->types.identifier)) != -1)
-			{
-				newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
-				if (newNode->types.variable.is_parameter == TRUE)
-				{
-					operand1 = newNode->types.number.value;
-				}
-				else
-					error_message(PARSE_ERROR, node->children[1]->line_number, current_parse_file,
-						"parameter %s don't match\n", node->children[1]->types.identifier);
-			}
-			else
-				error_message(PARSE_ERROR, node->children[1]->line_number, current_parse_file,
-					"parameter %s don't match\n", node->children[1]->types.identifier);
-		}
-		else if(node->children[1]->type == NUMBERS)
-			operand1 = node->children[1]->types.number.value;
-		else if(node->children[1]->type == BINARY_OPERATION)
-			operand1 = calculate_operation(node->children[1]);
-
-		result = calculate(operand0, operand1, node->types.operation.op);
-		if(result < 0)
-		{
-			error_message(PARSE_ERROR, node->line_number, current_parse_file,
-							"Negative numbers are used in the range in ODIN II!");
-		}
-		return result;
-	}
-	else
 		error_message(PARSE_ERROR, node->line_number, current_parse_file,
-				"ODIN II only can handle Binary Operation in Range!");
-
-	return 0;
+						"Negative numbers are used in the range in ODIN II!");
+		return 0;
+	}
+	return (long)result;
 }

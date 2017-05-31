@@ -21,6 +21,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
+
 int simplify_ast();
 void optimize_for_tree();
 void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *list_parent[]);
@@ -31,7 +32,6 @@ int calculation(char *post_exp[]);
 void translate_expression(char *exp[],char *post_exp[]);
 void check_and_replace(ast_node_t *node, char *p[]);
 void modify_expression(char *exp[], char *infix_exp[], char *value);
-void free_whole_tree(ast_node_t *node);
 void initial_node(ast_node_t *node, ids id, int line_number, int file_number);
 void change_to_number_node(ast_node_t *node, char *number);
 void reallocate_node(ast_node_t *node, int idx);

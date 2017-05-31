@@ -8,20 +8,25 @@
 // how to void remap_input_pin_to_new_node(nnode_t *from_node, int from_node_pin, nnode_t *to_node, int to_node_pin)
 //	remap_int_to_new_node(from_node->input_pins[from_node_pin], to_node, to_node_pin);
 //
-nnode_t* allocate_nnode();
-npin_t* allocate_npin();
+void allocate_nnode(nnode_t *node);
+void allocate_npin(npin_t *pin);
+void allocate_nnet(nnet_t *net);
+
+void allocate_more_input_pins(nnode_t *node, int width);
+void allocate_more_output_pins(nnode_t *node, int width);
+
 npin_t *get_zero_pin(netlist_t *netlist);
 npin_t *get_pad_pin(netlist_t *netlist);
 npin_t *get_one_pin(netlist_t *netlist);
+
 npin_t* copy_input_npin(npin_t* copy_pin);
 npin_t* copy_output_npin(npin_t* copy_pin);
-nnet_t* allocate_nnet();
+
 void free_nnode(nnode_t *to_free);
 void free_npin(npin_t *to_free);
 void free_nnet(nnet_t *to_free);
 
-void allocate_more_input_pins(nnode_t *node, int width);
-void allocate_more_output_pins(nnode_t *node, int width);
+
 
 void move_input_pin(nnode_t *node, int old_idx, int new_idx);
 void move_output_pin(nnode_t *node, int old_idx, int new_idx);

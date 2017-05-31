@@ -345,7 +345,7 @@ static void SetupSwitches(const t_arch& Arch,
 	++device_ctx.num_arch_switches;
 
 	/* Alloc the list now that we know the final num_arch_switches value */
-	device_ctx.arch_switch_inf = new s_arch_switch_inf[device_ctx.num_arch_switches];
+	device_ctx.arch_switch_inf = new t_arch_switch_inf[device_ctx.num_arch_switches];
 	for (int iswitch = 0; iswitch < switches_to_copy; iswitch++){
 		device_ctx.arch_switch_inf[iswitch] = ArchSwitches[iswitch];
 	}

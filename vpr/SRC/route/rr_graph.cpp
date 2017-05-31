@@ -653,7 +653,7 @@ static int alloc_rr_switch_inf(map<int, int> *switch_fanin) {
     delete[] inward_switch_inf;
 
     /* allocate space for the rr_switch_inf array (it's freed later in vpr_api.c-->free_arch) */
-    device_ctx.rr_switch_inf = new s_rr_switch_inf[num_rr_switches];
+    device_ctx.rr_switch_inf = new t_rr_switch_inf[num_rr_switches];
 
     return num_rr_switches;
 }

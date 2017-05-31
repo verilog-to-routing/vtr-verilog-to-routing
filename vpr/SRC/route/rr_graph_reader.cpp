@@ -149,7 +149,7 @@ void load_rr_file(const t_graph_type graph_type,
 
         int numSwitches = count_children(next_component, "switch", loc_data);
         *num_rr_switches = numSwitches;
-        device_ctx.rr_switch_inf = new s_rr_switch_inf[numSwitches];
+        device_ctx.rr_switch_inf = new t_rr_switch_inf[numSwitches];
 
         process_switches(next_component, loc_data);
 
@@ -487,7 +487,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         block_info.num_class = count_children(Block, "pin_class", loc_data, OPTIONAL);
 
         for (int classNum = 0; classNum < block_info.num_class; classNum++) {
-            s_class class_inf = block_info.class_inf[classNum];
+            auto& class_inf = block_info.class_inf[classNum];
             e_pin_type type;
 
             const char* typeInfo = get_attribute(pin_class, "type", loc_data).value();

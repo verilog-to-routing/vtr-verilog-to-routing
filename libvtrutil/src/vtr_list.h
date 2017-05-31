@@ -4,15 +4,15 @@
 namespace vtr {
     /* Linked lists of void pointers and integers, respectively. */
 
-    typedef struct s_linked_vptr {
+    struct t_linked_vptr {
         void *data_vptr;
-        struct s_linked_vptr *next;
-    } t_linked_vptr;
+        struct t_linked_vptr *next;
+    };
 
-    typedef struct s_linked_int {
+    struct t_linked_int {
         int data;
-        struct s_linked_int *next;
-    } t_linked_int;
+        t_linked_int *next;
+    };
 
     t_linked_vptr *insert_in_vptr_list(t_linked_vptr *head,
             void *vptr_to_add);

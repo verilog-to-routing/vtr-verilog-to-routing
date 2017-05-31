@@ -3072,7 +3072,7 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 
 	/* Make sure total_logic_delay and total_net_delay add 
 	up to critical path delay,within 5 decimal places. */
-	VTR_ASSERT(total_logic_delay + total_net_delay - get_critical_path_delay()/1e9 < 1e-5);
+	VTR_ASSERT(std::isnan(get_critical_path_delay()) || total_logic_delay + total_net_delay - get_critical_path_delay()/1e9 < 1e-5);
 
 	fclose(fp);
 	free_pin_id_to_pb_mapping(pin_id_to_pb_mapping);

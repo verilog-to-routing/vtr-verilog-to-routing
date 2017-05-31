@@ -21,6 +21,7 @@ void write_rr_block_types(fstream &fp);
 void write_rr_segments(fstream &fp, const t_segment_inf *segment_inf, const int num_seg_types);
 
 /************************ Subroutine definitions ****************************/
+
 /* This function is used to write the rr_graph into xml format into a a file with name: file_name */
 void write_rr_graph(const char *file_name, const t_segment_inf *segment_inf, const int num_seg_types) {
     fstream fp;
@@ -60,15 +61,15 @@ void write_rr_channel(fstream &fp) {
             "\" x_min=\"" << device_ctx.chan_width.x_min <<
             "\" y_min=\"" << device_ctx.chan_width.y_min <<
             "\" x_max=\"" << device_ctx.chan_width.x_max <<
-            "\" y_max=\"" << device_ctx.chan_width.y_max << "\"/>"<< endl;
+            "\" y_max=\"" << device_ctx.chan_width.y_max << "\"/>" << endl;
 
     int* list = device_ctx.chan_width.x_list;
-    for(int i = 0; i <= device_ctx.ny; i++) {
-        fp << "\t\t<x_list index =\"" << i << "\" info=\"" << list[i] << "\"/>"<< endl;
+    for (int i = 0; i <= device_ctx.ny; i++) {
+        fp << "\t\t<x_list index =\"" << i << "\" info=\"" << list[i] << "\"/>" << endl;
     }
     list = device_ctx.chan_width.y_list;
-    for(int i = 0; i <= device_ctx.nx; i++) {
-        fp << "\t\t<y_list index =\"" << i << "\" info=\"" << list[i] <<"\"/>" << endl;
+    for (int i = 0; i <= device_ctx.nx; i++) {
+        fp << "\t\t<y_list index =\"" << i << "\" info=\"" << list[i] << "\"/>" << endl;
     }
     fp << "\t</channels>" << endl;
 }
@@ -124,7 +125,7 @@ void write_rr_switches(fstream &fp) {
     fp << "\t<switches>" << endl;
 
     for (int iSwitch = 0; iSwitch < device_ctx.num_rr_switches; iSwitch++) {
-        s_rr_switch_inf rr_switch = device_ctx.rr_switch_inf[iSwitch];
+        t_rr_switch_inf rr_switch = device_ctx.rr_switch_inf[iSwitch];
 
         fp << "\t\t<switch id=\"" << iSwitch;
         if (rr_switch.name) {
@@ -149,7 +150,7 @@ void write_rr_block_types(fstream &fp) {
     fp << "\t<block_types>" << endl;
 
     for (int iBlock = 0; iBlock < device_ctx.num_block_types; iBlock++) {
-        s_type_descriptor btype = device_ctx.block_types[iBlock];
+        auto& btype = device_ctx.block_types[iBlock];
 
         fp << "\t\t<block_type id=\"" << btype.index;
 
@@ -165,7 +166,7 @@ void write_rr_block_types(fstream &fp) {
         fp << "\" width=\"" << btype.width << "\" height=\"" << btype.height << "\">" << endl;
 
         for (int iClass = 0; iClass < btype.num_class; iClass++) {
-            s_class class_inf = btype.class_inf[iClass];
+            auto& class_inf = btype.class_inf[iClass];
 
             char const* pin_type;
             switch (class_inf.type) {

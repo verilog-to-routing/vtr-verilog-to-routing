@@ -133,7 +133,7 @@ void free_chunk_memory(t_chunk *chunk_info) {
 
 	/* Frees the memory allocated by a sequence of calls to my_chunk_malloc. */
 
-	struct s_linked_vptr *curr_ptr, *prev_ptr;
+	t_linked_vptr *curr_ptr, *prev_ptr;
 
 	curr_ptr = chunk_info->chunk_ptr_head;
 
