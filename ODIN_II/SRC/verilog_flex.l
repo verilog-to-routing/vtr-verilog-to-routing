@@ -121,6 +121,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 <INITIAL>[0-9]+						{ MP; yylval.num_value = vtr::strdup(yytext); return vNUMBER_ID; }
 <INITIAL>#[0-9]+					{ MP; yylval.num_value = vtr::strdup(yytext+1); return vDELAY_ID; }
 
+
 	/* return operators */
 <INITIAL>[}{;:\[\],()#=.@&!?<>%|^~+*/-]		{ MP; return yytext[0]; }
 

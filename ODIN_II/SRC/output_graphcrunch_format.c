@@ -131,8 +131,8 @@ void depth_first_traversal_graphcrunch_display(nnode_t *node, FILE *fp, int trav
 
 				fprintf(fp, "%s\t%s\n", temp_string, temp_string2);
 
-				free(temp_string);
-				free(temp_string2);
+				free_me(temp_string);
+				free_me(temp_string2);
 
 				/* recursive call point */
 				depth_first_traversal_graphcrunch_display(next_node, fp, traverse_mark_number);

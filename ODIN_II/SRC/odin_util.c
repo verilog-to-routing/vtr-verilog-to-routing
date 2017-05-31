@@ -22,6 +22,8 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */ 
+#include <string>
+#include <sstream>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,22 +36,20 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "vtr_util.h"
 
+
+
+	
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
 // return signal_name-bit
  *------------------------------------------------------------------------*/
 char *make_signal_name(char *signal_name, int bit)
 {
-	char *return_string;
-
-	oassert(signal_name != NULL);
-	if (bit == -1)
-		return vtr::strdup(signal_name);
-
-	return_string = vtr::strdup(signal_name);
-	return_string = (char*)realloc(return_string, sizeof(char)*(strlen(return_string)+1+10+1));
-	sprintf(return_string, "%s-%d", return_string, bit);
-	return return_string;	
+	oassert(signal_name);
+	std::stringstream return_string;
+	return_string << signal_name;
+	if (bit != -1) return_string << "-" << std::dec << bit;
+	return vtr::strdup(return_string.str().c_str());		
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -60,73 +60,17 @@ char *make_signal_name(char *signal_name, int bit)
  *-------------------------------------------------------------------------------------------*/
 char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit)
 {
-	char *return_string;
-
-	if (previous)
-	{
-		return_string = vtr::strdup(previous);
-	}
-	else
-	{
-		return_string = (char *)malloc(sizeof(char)*1);
-		return_string[0] = '\0';
-	}
-
-	if (module_name)
-	{
-		return_string = (char *)realloc(return_string,
-				sizeof(char)*(
-						 strlen(return_string)
-						+1
-						+strlen(module_name)
-						+1
-						+strlen(module_instance_name)
-						+1
-				)
-		);
-		sprintf(return_string, "%s.%s+%s", return_string, module_name, module_instance_name);
-	}
-	if (signal_name && (previous || module_name))
-	{
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+2+strlen(signal_name)+1));
-		strcat(return_string, "^");
-		strcat(return_string, signal_name);
-	}
-	else if (signal_name)
-	{
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+1+strlen(signal_name)+1));
-		strcat(return_string, signal_name);
-	}
-	if (bit != -1)
-	{
-		oassert(signal_name != NULL);
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+1+30+1));
-		sprintf(return_string, "%s~%ld", return_string, bit);
-	}
-
-	return_string = (char *)realloc(return_string, sizeof(char)*strlen(return_string)+1);
-	return return_string;	
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: twos_complement)
- * Changes a bit string to its twos complement value
- *-------------------------------------------------------------------------------------------*/
-char *twos_complement(char *str)
-{
-	int length = strlen(str) - 1;
-	int i;
-	int flag = 0;
-
-	for (i = length; i >= 0; i--)
-	{
-		if (flag)
-			str[i] = (str[i] == '1') ? '0' : '1';
-
-		if ((str[i] == '1') && (flag == 0))
-			flag = 1;
-	}
-	return str;
+	
+	std::stringstream return_string;
+	if(previous)								 return_string << previous;
+	if(module_name) 							 return_string	<< "." << module_name << "+" << module_instance_name;
+	if(signal_name && (previous || module_name)) return_string << "^";
+	if(signal_name)								 return_string << signal_name;
+	if(bit != -1){
+		oassert(signal_name);
+		return_string	<< "~" << std::dec << bit ;
+	}								 
+	return vtr::strdup(return_string.str().c_str());	
 }
 
 /*
@@ -172,7 +116,7 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
 {
 	int i;
-	char *return_val = (char*)malloc(sizeof(char)*(num_bits+1));
+	char *return_val = (char*)calloc(num_bits+1,sizeof(char));
 	int mask = 1;
 
 	for (i = num_bits-1; i >= 0; i--)
@@ -270,7 +214,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 			bit_string[count]   = '\0';
 		}
 	}
-	free(string);
+	free_me(string);
 
 	// Pad with zeros to binary_size.
 	while (count < binary_size)
@@ -286,7 +230,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
 	return_string = vtr::strdup(bit_string);
-	free(bit_string);
+	free_me(bit_string);
 	
     }
     else if(is_dont_care_number == 1){
@@ -311,7 +255,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 		    }
 	    }
 
-        free(string);
+        free_me(string);
 
         while (count < binary_size)
 	    {
@@ -325,7 +269,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
         reverse_string(bit_string, binary_size);
 
         return_string = vtr::strdup(bit_string);
-	    free(bit_string);
+	    free_me(bit_string);
 
         
 
@@ -374,7 +318,7 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 			bit_string[count]   = '\0';
 		}
 	}
-	free(string);
+	free_me(string);
 
 	// Pad with zeros to binary_size.
 	while (count < binary_size)
@@ -390,7 +334,7 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
 	char *return_string = vtr::strdup(bit_string);
-	free(bit_string);
+	free_me(bit_string);
 	return return_string;
 }
 
@@ -426,7 +370,7 @@ char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, cha
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
 	char *return_string = vtr::strdup(bit_string);
-	free(bit_string);
+	free_me(bit_string);
 	return return_string;
 }
 
@@ -541,7 +485,7 @@ int get_pin_number(char *name)
 	if (tilde) pin_number = strtol(tilde+1,NULL,10);
 	else       pin_number = -1;
 
-	free(pin_name);
+	free_me(pin_name);
 	return pin_number;
 }
 
@@ -564,13 +508,12 @@ long long int my_power(long long int x, long long int y)
 
 /*---------------------------------------------------------------------------------------------
  *  (function: make_string_based_on_id )
+ * DONE allow ay string length and process further if problem.
  *-------------------------------------------------------------------------------------------*/
 char *make_string_based_on_id(nnode_t *node)
 {
-	char *return_string = (char*)malloc(sizeof(char)*(20+2)); // any unique id greater than 20 characters means trouble
-
+	char *return_string = (char*)calloc(snprintf(NULL, 0, "n%ld", node->unique_id)+1,sizeof(char)); // any unique id greater than 20 characters means trouble
 	sprintf(return_string, "n%ld", node->unique_id);
-
 	return return_string;
 }
 
@@ -584,7 +527,7 @@ char *make_simple_name(char *input, const char *flatten_string, char flatten_cha
 	char *return_string = NULL;
 	oassert(input != NULL);
 
-	return_string = (char*)malloc(sizeof(char)*(strlen(input)+1));
+	return_string = (char*)calloc(strlen(input)+1,sizeof(char));
 
 	for (i = 0; i < strlen(input); i++)
 	{ 
@@ -598,8 +541,6 @@ char *make_simple_name(char *input, const char *flatten_string, char flatten_cha
 			}
 		}
 	}
-
-	return_string[strlen(input)] = '\0';	
 
 	return return_string;
 }
@@ -615,7 +556,7 @@ void *my_malloc_struct(size_t bytes_to_alloc)
 	// ways to stop the execution at the point when a specific structure is built...note it needs to be m_id - 1 ... it's unique_id in most data structures
 	//oassert(m_id != 193);
 
-	allocated = malloc(bytes_to_alloc);
+	allocated = calloc(1,bytes_to_alloc);
 	if(allocated == NULL)
 	{
 		fprintf(stderr,"MEMORY FAILURE\n");
@@ -694,7 +635,7 @@ char *append_string(const char *string, const char *appendage, ...)
 	va_end(ap);
 
 
-	char *new_string = (char *)malloc(strlen(string) + strlen(buffer) + 1);
+	char *new_string = (char *)calloc(strlen(string) + strlen(buffer) + 1,sizeof(char));
 	strcpy(new_string, string);
 	strcat(new_string, buffer);
 	return new_string;

@@ -24,7 +24,7 @@
 typedef struct {
 	long size;
 	long string_hash_size;
-	long free;
+	long freedom;
 	long mod;
 	long mul;
 	char **string;

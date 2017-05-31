@@ -43,7 +43,6 @@ typedef struct global_args_read_blif_t_t global_args_read_blif_t;
 
 typedef struct ast_node_t_t ast_node_t;
 typedef struct typ_t typ;
-typedef struct info_ast_visit_t_t info_ast_visit_t;
 
 typedef struct sim_state_t_t sim_state_t;
 typedef struct nnode_t_t nnode_t;
@@ -68,7 +67,14 @@ typedef struct chain_information_t_t chain_information_t;
 #define ACTIVATION_ERROR -7
 /* for errors in the netlist simulation */
 #define SIMULATION_ERROR -8
+/* for errors in the calculation 
+*	largest hex value it can take 
+*	avoids using include limit.h since it may (or may not) conflict with naming.
+*	also keep it "portable" is long long reall necessary tho? long would suffice and c99 wouldnt be essential
+*/
+# define WRONG_CALCULATION (long long)1 << (sizeof(long long)*8-1)
 
+#define free_me(X) if(X){free(X);X=NULL;}
 /* unique numbers to mark the nodes as we DFS traverse the netlist */
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
 #define OUTPUT_TRAVERSE_VALUE 12
@@ -398,18 +404,6 @@ struct ast_node_t_t
 	short is_read_write;
 
 	void *additional_data; // this is a point where you can add additional data for your optimization or technique
-};
-
-struct info_ast_visit_t_t
-{
-	ast_node_t *me;
-	ast_node_t *from;
-	int from_child_position;
-
-	short is_constant;
-	long long value;
-
-	short is_constant_folded;
 };
 #endif // AST_TYPES_H
 
