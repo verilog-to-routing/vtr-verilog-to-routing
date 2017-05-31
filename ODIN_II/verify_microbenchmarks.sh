@@ -29,14 +29,14 @@ do
 	############################
 	# With the arch file
 	rm output_vectors
-	echo ./odin_II.exe -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors"
-	./odin_II.exe -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors" 2> log || exit 1
+	echo ./odin_II -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors"
+	valgrind -v ./odin_II -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors" 2> log || exit 1
 	[ -e "output_vectors" ] || exit 1
 
 	# Without the arch file
 	rm output_vectors
-	echo ./odin_II.exe -E -V "$benchmark" -t "$input_vectors" -T "$output_vectors"
-	./odin_II.exe -E -V "$benchmark" -t "$input_vectors" -T "$output_vectors" 2> log || exit 1
+	echo ./odin_II -E -V "$benchmark" -t "$input_vectors" -T "$output_vectors"
+	valgrind -v ./odin_II -E -V "$benchmark" -t "$input_vectors" -T "$output_vectors" 2> log || exit 1
 	[ -e "output_vectors" ] || exit 1
 
 	############################
@@ -44,24 +44,24 @@ do
 	############################
 	# With the arch file. 	
 	rm "temp.blif"
-	echo ./odin_II.exe -E -a $ARCH -V "$benchmark" -o "temp.blif"
-	./odin_II.exe -E -a $ARCH -V "$benchmark" -o "temp.blif" 2> log || exit 1
+	echo ./odin_II -E -a $ARCH -V "$benchmark" -o "temp.blif"
+	valgrind -v ./odin_II -E -a $ARCH -V "$benchmark" -o "temp.blif" 2> log || exit 1
 	[ -e "temp.blif" ] || exit 1
 
 	rm output_vectors
-	echo ./odin_II.exe -E -a $ARCH -b "temp.blif" -t "$input_vectors" -T "$output_vectors"
-	./odin_II.exe -E -a $ARCH -b "temp.blif" -t "$input_vectors" -T "$output_vectors" 2> log || exit 1
+	echo ./odin_II -E -a $ARCH -b "temp.blif" -t "$input_vectors" -T "$output_vectors"
+	valgrind -v ./odin_II -E -a $ARCH -b "temp.blif" -t "$input_vectors" -T "$output_vectors" 2> log || exit 1
 	[ -e "output_vectors" ] || exit 1
 
 	# Without the arch file. 	
 	rm "temp.blif"
-	echo ./odin_II.exe -E -V "$benchmark" -o "temp.blif"
-	./odin_II.exe -E -V "$benchmark" -o "temp.blif" 2> log || exit 1
+	echo ./odin_II -E -V "$benchmark" -o "temp.blif"
+	valgrind -v ./odin_II -E -V "$benchmark" -o "temp.blif" 2> log || exit 1
 	[ -e "temp.blif" ] || exit 1
 
 	rm output_vectors
-	echo ./odin_II.exe -E -b "temp.blif" -t "$input_vectors" -T "$output_vectors" 
-	./odin_II.exe -E -b "temp.blif" -t "$input_vectors" -T "$output_vectors" 2> log || exit 1
+	echo ./odin_II -E -b "temp.blif" -t "$input_vectors" -T "$output_vectors" 
+	valgrind -v ./odin_II -E -b "temp.blif" -t "$input_vectors" -T "$output_vectors" 2> log || exit 1
 	[ -e "output_vectors" ] || exit 1
 
 

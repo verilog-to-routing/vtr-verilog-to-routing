@@ -886,7 +886,7 @@ ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, as
 	allocate_children_to_node(new_node, 2, expression1, expression2);
 
 	/* see if this binary expression can have some constant folding */
-	new_node = resolve_node(TRUE, NULL, new_node);
+	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE, NULL, new_node);
 
 	return new_node;
 }
@@ -932,7 +932,7 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 	error_message(NETLIST_ERROR, line_number, current_parse_file, "Operation not supported by Odin\n");
         }
 	/* see if this binary expression can have some constant folding */
-	new_node = resolve_node(TRUE, NULL, new_node);
+	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE, NULL, new_node);
 
 	return new_node;
 }
@@ -949,8 +949,7 @@ ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int 
 	allocate_children_to_node(new_node, 1, expression);
 
 	/* see if this binary expression can have some constant folding */
-	new_node = resolve_node(TRUE, NULL, new_node);
-
+	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE, NULL, new_node);
 	return new_node;
 }
 
@@ -2156,69 +2155,14 @@ long calculate_operation(ast_node_t *node)
 {
 	if (node == NULL || node->num_children < 2)
 			return 0;
-	ast_node_t *newNode;
-
-	long result, operand0 = 0, operand1 = 0;
-	/*Only calculate binary operation currently*/
-	if (node->type == BINARY_OPERATION)
+	ast_node_t *newNode = resolve_node(defines_for_module_sc[num_modules], TRUE, NULL, node);
+	long long result = node_is_constant(newNode);
+	free(newNode);
+	if(result < 0 || result == WRONG_CALCULATION)
 	{
-		/*calculate the first operand*/
-		if(node->children[0]->type == IDENTIFIERS){
-			long sc_spot;
-			if((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], node->children[0]->types.identifier)) != -1)
-			{
-				newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
-				if (newNode->types.variable.is_parameter == TRUE)
-				{
-					operand0 = newNode->types.number.value;
-				}
-				else
-					error_message(PARSE_ERROR, node->children[0]->line_number, current_parse_file,
-						"parameter %s don't match\n", node->children[0]->types.identifier);
-			}
-			else
-				error_message(PARSE_ERROR, node->children[0]->line_number, current_parse_file,
-					"parameter %s don't match\n", node->children[0]->types.identifier);
-		}
-		else if(node->children[0]->type == NUMBERS)
-			operand0 = node->children[0]->types.number.value;
-		else if(node->children[0]->type == BINARY_OPERATION)
-			operand0 = calculate_operation(node->children[0]);
-
-		/*calculate the second operand*/
-		if(node->children[1]->type == IDENTIFIERS){
-			long sc_spot;
-			if((sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], node->children[1]->types.identifier)) != -1)
-			{
-				newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
-				if (newNode->types.variable.is_parameter == TRUE)
-				{
-					operand1 = newNode->types.number.value;
-				}
-				else
-					error_message(PARSE_ERROR, node->children[1]->line_number, current_parse_file,
-						"parameter %s don't match\n", node->children[1]->types.identifier);
-			}
-			else
-				error_message(PARSE_ERROR, node->children[1]->line_number, current_parse_file,
-					"parameter %s don't match\n", node->children[1]->types.identifier);
-		}
-		else if(node->children[1]->type == NUMBERS)
-			operand1 = node->children[1]->types.number.value;
-		else if(node->children[1]->type == BINARY_OPERATION)
-			operand1 = calculate_operation(node->children[1]);
-
-		result = calculate_binary((long long)operand0,(long long) operand1, node->types.operation.op);
-		if(result < 0 || result == WRONG_CALCULATION)
-		{
-			error_message(PARSE_ERROR, node->line_number, current_parse_file,
-							"Negative numbers are used in the range in ODIN II!");
-		}
-		return (long)result;
-	}
-	else
 		error_message(PARSE_ERROR, node->line_number, current_parse_file,
-				"ODIN II only can handle Binary Operation in Range!");
-
-	return 0;
+						"Negative numbers are used in the range in ODIN II!");
+		return 0;
+	}
+	return (long)result;
 }
