@@ -102,16 +102,16 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 	multiplicand_offset_index = width_a;
 	multiplier_offset_index = 0;
 
-	adders_for_partial_products = (nnode_t**)calloc(multiplicand_width-1,sizeof(nnode_t*));
+	adders_for_partial_products = (nnode_t**)malloc(sizeof(nnode_t*)*multiplicand_width-1);
 
 	/* need to generate partial products for each bit in width B. */
-	partial_products = (nnode_t***)calloc(multiplicand_width,sizeof(nnode_t**));
+	partial_products = (nnode_t***)malloc(sizeof(nnode_t**)*multiplicand_width);
 
 	/* generate the AND partial products */
 	for (i = 0; i < multiplicand_width; i++)
 	{
 		/* create the memory for each AND gate needed for the levels of partial products */
-		partial_products[i] = (nnode_t**)calloc(multiplier_width,sizeof(nnode_t*));
+		partial_products[i] = (nnode_t**)malloc(sizeof(nnode_t*)*multiplier_width);
 		
 		if (i < multiplicand_width - 1)
 		{
@@ -234,7 +234,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 	/* Cleanup everything */
 	if (adders_for_partial_products != NULL)
 	{
-		free_me(adders_for_partial_products);
+		free(adders_for_partial_products);
 	}
 	/* generate the AND partial products */
 	for (i = 0; i < multiplicand_width; i++)
@@ -242,12 +242,12 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 		/* create the memory for each AND gate needed for the levels of partial products */
 		if (partial_products[i] != NULL)
 		{
-			free_me(partial_products[i]);
+			free(partial_products[i]);
 		}
 	}
 	if (partial_products != NULL)
 	{
-		free_me(partial_products);
+		free(partial_products);
 	}
 }
 
@@ -260,7 +260,7 @@ void init_mult_distribution()
 	int i, j;
 
 	oassert(hard_multipliers != NULL);
-	mults = (int *)calloc((hard_multipliers->inputs->size + 1) * (1 + hard_multipliers->inputs->next->size),sizeof(int));
+	mults = (int *)malloc(sizeof(int) * (hard_multipliers->inputs->size + 1) * (1 + hard_multipliers->inputs->next->size));
 	for (i = 0; i <= hard_multipliers->inputs->size; i++)
 		for (j = 0; j <= hard_multipliers->inputs->next->size; j++)
 			mults[i * hard_multipliers->inputs->size + j] = 0;
@@ -368,7 +368,7 @@ void declare_hard_multiplier(nnode_t *node)
 	}
 
 	/* Does not exist - must create an instance */
-	tmp = (t_multiplier *)calloc(1,sizeof(t_multiplier));
+	tmp = (t_multiplier *)malloc(sizeof(t_multiplier));
 	tmp->next = (t_multiplier *)hard_multipliers->instances;
 	hard_multipliers->instances = tmp;
 	tmp->size_a = width_a;
@@ -382,46 +382,41 @@ void declare_hard_multiplier(nnode_t *node)
  *-------------------------------------------------------------------------*/
 void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
-	int i;
+	char *new_name;
+	int len, sanity, i;
 
 	declare_hard_multiplier(node);
-	
-	
+
+	/* Need to give node proper name */
+	len = strlen(node->name);
+	len = len + 20; /* 20 chars should hold mul specs */
+	new_name = (char*)malloc(len);
+
+	/* wide input first :) */
+	if (node->input_port_sizes[0] > node->input_port_sizes[1])
+		sanity = sprintf(new_name, "%s_%d_%d_%d", node->name, node->input_port_sizes[0], node->input_port_sizes[1], node->output_port_sizes[0]);
+	else
+		sanity = sprintf(new_name, "%s_%d_%d_%d", node->name, node->input_port_sizes[1], node->input_port_sizes[0], node->output_port_sizes[0]);
+
+	if (len <= sanity) /* buffer not large enough */
+		oassert(FALSE);
+
 	/* Give names to the output pins */
 	for (i = 0; i < node->num_output_pins;  i++)
 	{
-		if (node->output_pins[i]->name){
-			free_me(node->output_pins[i]->name);
+		if (node->output_pins[i]->name)
+		{
+			free(node->output_pins[i]->name);
 		}
-		size_t length = snprintf(NULL,0,"%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
-		node->output_pins[i]->name = (char*)calloc(length +1,sizeof(char));
-		sprintf(node->output_pins[i]->name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
+		len = strlen(node->name) + 6; /* 6 chars for pin idx */
+		new_name = (char*)malloc(len);
+		sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
+		node->output_pins[i]->name = new_name;
 	}
-	
-	
-	//if(i>0){
-	//	if(node->name){
-	//		free_me(node->name);
-	//	}
-	//	node->name = node->output_pins[i-1]->name;
-	//}else{
-		char *temp_name = node->name;
-		if (node->input_port_sizes[0] > node->input_port_sizes[1]){
-			size_t length = snprintf(NULL,0,"%s_%d_%d_%d", temp_name, node->input_port_sizes[0], node->input_port_sizes[1], node->output_port_sizes[0]);
-			node->name = (char*)calloc(length +1,sizeof(char));
-			sprintf(node->name, "%s_%d_%d_%d", temp_name, node->input_port_sizes[0], node->input_port_sizes[1], node->output_port_sizes[0]);
-		}else{
-			size_t length = snprintf(NULL,0,"%s_%d_%d_%d", temp_name, node->input_port_sizes[1], node->input_port_sizes[0], node->output_port_sizes[0]);
-			node->name = (char*)calloc(length +1,sizeof(char));
-			sprintf(node->name, "%s_%d_%d_%d", temp_name, node->input_port_sizes[1], node->input_port_sizes[0], node->output_port_sizes[0]);
-		}
-		free_me(temp_name);
-
-	//}
-	
+	free(node->name);
+	node->name = new_name;
 	node->traverse_visited = mark;
 	return;
-	
 }
 
 
@@ -616,16 +611,16 @@ void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int off
 
 	/* Set new port sizes and parameters */
 	ptr->num_input_port_sizes = 2;
-	ptr->input_port_sizes = (int *)calloc(2,sizeof(int));
+	ptr->input_port_sizes = (int *)malloc(2 * sizeof(int));
 	ptr->input_port_sizes[0] = a;
 	ptr->input_port_sizes[1] = b;
 	ptr->num_output_port_sizes = 1;
-	ptr->output_port_sizes = (int *)calloc(1,sizeof(int));
+	ptr->output_port_sizes = (int *)malloc(sizeof(int));
 	ptr->output_port_sizes[0] = a + b;
 
 	/* Set the number of pins and re-locate previous pin entries */
 	ptr->num_input_pins = a + b;
-	ptr->input_pins = (npin_t**)calloc((a + b),sizeof(npin_t*));
+	ptr->input_pins = (npin_t**)malloc(sizeof(void *) * (a + b));
 	for (i = 0; i < a; i++)
 	{
 		ptr->input_pins[i] = node->input_pins[i+offa];
@@ -639,7 +634,7 @@ void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int off
 
 	/* Prep output pins for connecting to cascaded multipliers */
 	ptr->num_output_pins = a + b;
-	ptr->output_pins = (npin_t**)calloc((a + b),sizeof(npin_t*));
+	ptr->output_pins = (npin_t**)malloc(sizeof(void *) * (a + b));
 	for (i = 0; i < a + b; i++)
 		ptr->output_pins[i] = NULL;
 
@@ -667,22 +662,23 @@ void init_cascade_adder(nnode_t *node, nnode_t *a, int b)
 
 	/* Set new port sizes and parameters */
 	node->num_input_port_sizes = 2;
-	node->input_port_sizes = (int *)calloc(2,sizeof(int));
+	node->input_port_sizes = (int *)malloc(2 * sizeof(int));
 	node->input_port_sizes[0] = a->output_port_sizes[0];
 	node->input_port_sizes[1] = b;
 	node->num_output_port_sizes = 1;
-	node->output_port_sizes = (int *)calloc(1,sizeof(int));
+	node->output_port_sizes = (int *)malloc(sizeof(int));
 	node->output_port_sizes[0] = size;
 
 	/* Set the number of input pins and clear pin entries */
 	node->num_input_pins = a->output_port_sizes[0] + b;
-	node->input_pins = (npin_t**)calloc((a->output_port_sizes[0] + b),sizeof(npin_t*));
+	node->input_pins = (npin_t**)malloc(sizeof(void *) * 
+		(a->output_port_sizes[0] + b));
 	for (i = 0; i < a->output_port_sizes[0] + b; i++)
 		node->input_pins[i] = NULL;
 
 	/* Set the number of output pins and clear pin entries */
 	node->num_output_pins = size;
-	node->output_pins = (npin_t**)calloc(size,sizeof(npin_t*));
+	node->output_pins = (npin_t**)malloc(sizeof(void *) * size);
 	for (i = 0; i < size; i++)
 		node->output_pins[i] = NULL;
 
@@ -725,53 +721,47 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 	oassert(node->input_port_sizes[1] == (b0 + b1));
 	
 	/* New node for small multiply */
-	a0b0 = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(a0b0);
-	a0b0->name = (char *)calloc(strlen(node->name) + 3,sizeof(char));
+	a0b0 = allocate_nnode();
+	a0b0->name = (char *)malloc(strlen(node->name) + 3);
 	strcpy(a0b0->name, node->name);
 	strcat(a0b0->name, "-0");
 	init_split_multiplier(node, a0b0, 0, a0, 0, b0);
 	mult_list = insert_in_vptr_list(mult_list, a0b0);
 
 	/* New node for big multiply */
-	a1b1 = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(a1b1);
-	a1b1->name = (char *)calloc(strlen(node->name) + 3,sizeof(char));
+	a1b1 = allocate_nnode();
+	a1b1->name = (char *)malloc(strlen(node->name) + 3);
 	strcpy(a1b1->name, node->name);
 	strcat(a1b1->name, "-3");
 	init_split_multiplier(node, a1b1, a0, a1, b0, b1);
 	mult_list = insert_in_vptr_list(mult_list, a1b1);
 
 	/* New node for 2nd multiply */
-	a0b1 = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(a0b1);
-	a0b1->name = (char *)calloc(strlen(node->name) + 3,sizeof(char));
+	a0b1 = allocate_nnode();
+	a0b1->name = (char *)malloc(strlen(node->name) + 3);
 	strcpy(a0b1->name, node->name);
 	strcat(a0b1->name, "-1");
 	init_split_multiplier(node, a0b1, 0, a0, b0, b1);
 	mult_list = insert_in_vptr_list(mult_list, a0b1);
 
 	/* New node for 3rd multiply */
-	a1b0 = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(a1b0);
-	a1b0->name = (char *)calloc(strlen(node->name) + 3,sizeof(char));
+	a1b0 = allocate_nnode();
+	a1b0->name = (char *)malloc(strlen(node->name) + 3);
 	strcpy(a1b0->name, node->name);
 	strcat(a1b0->name, "-2");
 	init_split_multiplier(node, a1b0, a0, a1, 0, b0);
 	mult_list = insert_in_vptr_list(mult_list, a1b0);
 
 	/* New node for the initial add */
-	addsmall = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(addsmall);
-	addsmall->name = (char *)calloc(strlen(node->name) + 6,sizeof(char));
+	addsmall = allocate_nnode();
+	addsmall->name = (char *)malloc(strlen(node->name) + 6);
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
 	init_cascade_adder(addsmall, a1b0, a0b1->output_port_sizes[0]);
 	
 	/* New node for the BIG add */
-	addbig = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(addbig);
-	addbig->name = (char *)calloc(strlen(node->name) + 6,sizeof(char));
+	addbig = allocate_nnode();
+	addbig->name = (char *)malloc(strlen(node->name) + 6);
 	strcpy(addbig->name, node->name);
 	strcat(addbig->name, "-add1");
 	init_cascade_adder(addbig, addsmall,
@@ -798,14 +788,14 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 		remap_pin_to_new_node(node->output_pins[i], addbig, i);
 
 	/* Probably more to do here in freeing the old node! */
-	free_me(node->name);
-	free_me(node->input_port_sizes);
-	free_me(node->output_port_sizes);
+	free(node->name);
+	free(node->input_port_sizes);
+	free(node->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	free_me(node->input_pins); 
-	free_me(node->output_pins); 
-	free_me(node);
+	free(node->input_pins); 
+	free(node->output_pins); 
+	free(node);
 
 	return;
 }
@@ -837,27 +827,24 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 	oassert(node->input_port_sizes[1] == b);
 	
 	/* New node for a0b multiply */
-	a0b = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(a0b);
-	a0b->name = (char *)calloc(strlen(node->name) + 3,sizeof(char));
+	a0b = allocate_nnode();
+	a0b->name = (char *)malloc(strlen(node->name) + 3);
 	strcpy(a0b->name, node->name);
 	strcat(a0b->name, "-0");
 	init_split_multiplier(node, a0b, 0, a0, 0, b);
 	mult_list = insert_in_vptr_list(mult_list, a0b);
 
 	/* New node for a1b multiply */
-	a1b = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(a1b);
-	a1b->name = (char *)calloc(strlen(node->name) + 3,sizeof(char));
+	a1b = allocate_nnode();
+	a1b->name = (char *)malloc(strlen(node->name) + 3);
 	strcpy(a1b->name, node->name);
 	strcat(a1b->name, "-1");
 	init_split_multiplier(node, a1b, a0, a1, 0, b);
 	mult_list = insert_in_vptr_list(mult_list, a1b);
 
 	/* New node for the add */
-	addsmall = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(addsmall);
-	addsmall->name = (char *)calloc(strlen(node->name) + 6,sizeof(char));
+	addsmall = allocate_nnode();
+	addsmall->name = (char *)malloc(strlen(node->name) + 6);
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
 	init_cascade_adder(addsmall, a1b, a1 + b);
@@ -878,14 +865,14 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 		remap_pin_to_new_node(node->output_pins[i], addsmall, i-a0);
 
 	/* Probably more to do here in freeing the old node! */
-	free_me(node->name);
-	free_me(node->input_port_sizes);
-	free_me(node->output_port_sizes);
+	free(node->name);
+	free(node->input_port_sizes);
+	free(node->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	free_me(node->input_pins); 
-	free_me(node->output_pins); 
-	free_me(node);
+	free(node->input_pins); 
+	free(node->output_pins); 
+	free(node);
 	return;
 }
 
@@ -916,27 +903,24 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 	oassert(node->input_port_sizes[1] == (b0 + b1));
 	
 	/* New node for ab0 multiply */
-	ab0 = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(ab0);
-	ab0->name = (char *)calloc(strlen(node->name) + 3,sizeof(char));
+	ab0 = allocate_nnode();
+	ab0->name = (char *)malloc(strlen(node->name) + 3);
 	strcpy(ab0->name, node->name);
 	strcat(ab0->name, "-0");
 	init_split_multiplier(node, ab0, 0, a, 0, b0);
 	mult_list = insert_in_vptr_list(mult_list, ab0);
 
 	/* New node for ab1 multiply */
-	ab1 = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(ab1);
-	ab1->name = (char *)calloc(strlen(node->name) + 3,sizeof(char));
+	ab1 = allocate_nnode();
+	ab1->name = (char *)malloc(strlen(node->name) + 3);
 	strcpy(ab1->name, node->name);
 	strcat(ab1->name, "-1");
 	init_split_multiplier(node, ab1, 0, a, b0, b1);
 	mult_list = insert_in_vptr_list(mult_list, ab1);
 
 	/* New node for the add */
-	addsmall = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(addsmall);
-	addsmall->name = (char *)calloc(strlen(node->name) + 6,sizeof(char));
+	addsmall = allocate_nnode();
+	addsmall->name = (char *)malloc(strlen(node->name) + 6);
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
 	init_cascade_adder(addsmall, ab1, a + b1);
@@ -957,14 +941,14 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 		remap_pin_to_new_node(node->output_pins[i], addsmall, i-b0);
 
 	/* Probably more to do here in freeing the old node! */
-	free_me(node->name);
-	free_me(node->input_port_sizes);
-	free_me(node->output_port_sizes);
+	free(node->name);
+	free(node->input_port_sizes);
+	free(node->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	free_me(node->input_pins); 
-	free_me(node->output_pins); 
-	free_me(node);
+	free(node->input_pins); 
+	free(node->output_pins); 
+	free(node);
 	return;
 }
 
@@ -1072,8 +1056,7 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist)
 		for (i = 0; i < diffout; i++)
 		{
 			// Add new pins to the higher order spots.
-			npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-			allocate_npin(new_pin);
+			npin_t *new_pin = allocate_npin();
 			// Pad outputs with a unique and descriptive name to avoid collisions.
 			new_pin->name = append_string("", "unconnected_multiplier_output~%d", pad_pin_number++);
 			add_output_pin_to_node(node, new_pin, i + sizeout);

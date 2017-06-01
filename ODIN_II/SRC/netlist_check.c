@@ -21,7 +21,6 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */ 
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,9 +33,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "string_cache.h"
 #include "netlist_check.h"
 #include "netlist_visualizer.h"
-
-
-
 
 void levelize_backwards(netlist_t *netlist);
 void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *netlist);
@@ -416,7 +412,7 @@ void levelize_forwards(netlist_t *netlist)
 					if (output_node->node_data == NULL)
 					{
 						/* if this fanout hasn't been visited yet this will be null */
-						fanouts_visited = (int*)calloc((output_node->num_input_pins),sizeof(int));
+						fanouts_visited = (int*)malloc(sizeof(int)*(output_node->num_input_pins));
 						
 						for (idx = 0; idx < output_node->num_input_pins; idx++)
 						{
@@ -544,7 +540,7 @@ void levelize_forwards_clean_checking_for_combo_loop_and_liveness(short ast_base
 								error_message(NETLIST_ERROR, -1, -1, "!!!Combinational loop on forward pass.  Node %s is missing a driven pin idx %d.  Isn't neccessarily the culprit of the combinational loop.  Odin only detects combinational loops, but currently doesn't pinpoint.\n", output_node->name, idx);
 						}
 						/* free the data and reset to be used elsewhere */
-						free_me(fanouts_visited);
+						free(fanouts_visited);
 						output_node->unique_node_data_id = RESET;
 					}
 
@@ -642,7 +638,7 @@ void levelize_backwards(netlist_t *netlist)
 				{
 					int idx;
 					/* if this fanout hasn't been visited yet this will be null */
-					fanouts_visited = (int*)calloc(fanout_net->num_fanout_pins,sizeof(int));
+					fanouts_visited = (int*)malloc(sizeof(int)*(fanout_net->num_fanout_pins));
 					
 					for (idx = 0; idx < fanout_net->num_fanout_pins; idx++)
 					{
@@ -770,7 +766,7 @@ void levelize_backwards_clean_checking_for_liveness(short ast_based, netlist_t *
 					}
 
 					/* free the data and reset to be used elsewhere */
-					free_me(fanouts_visited);
+					free(fanouts_visited);
 					fanout_net->unique_net_data_id = -1;
 				}
 			}

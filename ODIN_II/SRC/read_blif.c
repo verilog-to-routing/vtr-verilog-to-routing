@@ -36,7 +36,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "simulate_blif.h"
 #include "vtr_util.h"
 
-
 #define TOKENS     " \t\n"
 #define GND_NAME   "gnd"
 #define VCC_NAME   "vcc"
@@ -257,7 +256,7 @@ short assign_node_type_from_node_name(char * output_name)
 	if((start >= end) || (end == 0)) return GENERIC;
 
 	// Stores the extracted string
-	char *extracted_string = (char*)calloc(end-start+2,sizeof(char));
+	char *extracted_string = (char*)malloc(sizeof(char)*((end-start+2)));
 	int i, j;
 	for(i = start + 1, j = 0; i < end; i++, j++)
 	{
@@ -265,53 +264,50 @@ short assign_node_type_from_node_name(char * output_name)
 	}
 
 	extracted_string[j]='\0';
-	short to_return = GENERIC;
 
-	if      (!strcmp(extracted_string,"GT"))             to_return = GT;
-	else if (!strcmp(extracted_string,"LT"))             to_return = LT;
-	else if (!strcmp(extracted_string,"ADDER_FUNC"))     to_return = ADDER_FUNC;
-	else if (!strcmp(extracted_string,"CARRY_FUNC"))     to_return = CARRY_FUNC;
-	else if (!strcmp(extracted_string,"BITWISE_NOT"))    to_return = BITWISE_NOT;
-	else if (!strcmp(extracted_string,"LOGICAL_AND"))    to_return = LOGICAL_AND;
-	else if (!strcmp(extracted_string,"LOGICAL_OR"))     to_return = LOGICAL_OR;
-	else if (!strcmp(extracted_string,"LOGICAL_XOR"))    to_return = LOGICAL_XOR;
-	else if (!strcmp(extracted_string,"LOGICAL_XNOR"))   to_return = LOGICAL_XNOR;
-	else if (!strcmp(extracted_string,"LOGICAL_NAND"))   to_return = LOGICAL_NAND;
-	else if (!strcmp(extracted_string,"LOGICAL_NOR"))    to_return = LOGICAL_NOR;
-	else if (!strcmp(extracted_string,"LOGICAL_EQUAL"))  to_return = LOGICAL_EQUAL;
-	else if (!strcmp(extracted_string,"NOT_EQUAL"))      to_return = NOT_EQUAL;
-	else if (!strcmp(extracted_string,"LOGICAL_NOT"))    to_return = LOGICAL_NOT;
-	else if (!strcmp(extracted_string,"MUX_2"))          to_return = MUX_2;
-	else if (!strcmp(extracted_string,"FF_NODE"))        to_return = FF_NODE;
-	else if (!strcmp(extracted_string,"MULTIPLY"))       to_return = MULTIPLY;
-	else if (!strcmp(extracted_string,"HARD_IP"))        to_return = HARD_IP;
-	else if (!strcmp(extracted_string,"INPUT_NODE"))     to_return = INPUT_NODE;
-	else if (!strcmp(extracted_string,"OUTPUT_NODE"))    to_return = OUTPUT_NODE;
-	else if (!strcmp(extracted_string,"PAD_NODE"))       to_return = PAD_NODE;
-	else if (!strcmp(extracted_string,"CLOCK_NODE"))     to_return = CLOCK_NODE;
-	else if (!strcmp(extracted_string,"GND_NODE"))       to_return = GND_NODE;
-	else if (!strcmp(extracted_string,"VCC_NODE"))       to_return = VCC_NODE;
-	else if (!strcmp(extracted_string,"BITWISE_AND"))    to_return = BITWISE_AND;
-	else if (!strcmp(extracted_string,"BITWISE_NAND"))   to_return = BITWISE_NAND;
-	else if (!strcmp(extracted_string,"BITWISE_NOR"))    to_return = BITWISE_NOR;
-	else if (!strcmp(extracted_string,"BITWISE_XNOR"))   to_return = BITWISE_XNOR;
-	else if (!strcmp(extracted_string,"BITWISE_XOR"))    to_return = BITWISE_XOR;
-	else if (!strcmp(extracted_string,"BITWISE_OR"))     to_return = BITWISE_OR;
-	else if (!strcmp(extracted_string,"BUF_NODE"))       to_return = BUF_NODE;
-	else if (!strcmp(extracted_string,"MULTI_PORT_MUX")) to_return = MULTI_PORT_MUX;
-	else if (!strcmp(extracted_string,"SL"))             to_return = SL;
-	else if (!strcmp(extracted_string,"SR"))             to_return = SR;
-	else if (!strcmp(extracted_string,"CASE_EQUAL"))     to_return = CASE_EQUAL;
-	else if (!strcmp(extracted_string,"CASE_NOT_EQUAL")) to_return = CASE_NOT_EQUAL;
-	else if (!strcmp(extracted_string,"DIVIDE"))         to_return = DIVIDE;
-	else if (!strcmp(extracted_string,"MODULO"))         to_return = MODULO;
-	else if (!strcmp(extracted_string,"GTE"))            to_return = GTE;
-	else if (!strcmp(extracted_string,"LTE"))            to_return = LTE;
-	else if (!strcmp(extracted_string,"ADD"))            to_return = ADD;
-	else if (!strcmp(extracted_string,"MINUS"))          to_return = MINUS;
-	
-	free_me(extracted_string);
-	return to_return;
+	if      (!strcmp(extracted_string,"GT"))             return GT;
+	else if (!strcmp(extracted_string,"LT"))             return LT;
+	else if (!strcmp(extracted_string,"ADDER_FUNC"))     return ADDER_FUNC;
+	else if (!strcmp(extracted_string,"CARRY_FUNC"))     return CARRY_FUNC;
+	else if (!strcmp(extracted_string,"BITWISE_NOT"))    return BITWISE_NOT;
+	else if (!strcmp(extracted_string,"LOGICAL_AND"))    return LOGICAL_AND;
+	else if (!strcmp(extracted_string,"LOGICAL_OR"))     return LOGICAL_OR;
+	else if (!strcmp(extracted_string,"LOGICAL_XOR"))    return LOGICAL_XOR;
+	else if (!strcmp(extracted_string,"LOGICAL_XNOR"))   return LOGICAL_XNOR;
+	else if (!strcmp(extracted_string,"LOGICAL_NAND"))   return LOGICAL_NAND;
+	else if (!strcmp(extracted_string,"LOGICAL_NOR"))    return LOGICAL_NOR;
+	else if (!strcmp(extracted_string,"LOGICAL_EQUAL"))  return LOGICAL_EQUAL;
+	else if (!strcmp(extracted_string,"NOT_EQUAL"))      return NOT_EQUAL;
+	else if (!strcmp(extracted_string,"LOGICAL_NOT"))    return LOGICAL_NOT;
+	else if (!strcmp(extracted_string,"MUX_2"))          return MUX_2;
+	else if (!strcmp(extracted_string,"FF_NODE"))        return FF_NODE;
+	else if (!strcmp(extracted_string,"MULTIPLY"))       return MULTIPLY;
+	else if (!strcmp(extracted_string,"HARD_IP"))        return HARD_IP;
+	else if (!strcmp(extracted_string,"INPUT_NODE"))     return INPUT_NODE;
+	else if (!strcmp(extracted_string,"OUTPUT_NODE"))    return OUTPUT_NODE;
+	else if (!strcmp(extracted_string,"PAD_NODE"))       return PAD_NODE;
+	else if (!strcmp(extracted_string,"CLOCK_NODE"))     return CLOCK_NODE;
+	else if (!strcmp(extracted_string,"GND_NODE"))       return GND_NODE;
+	else if (!strcmp(extracted_string,"VCC_NODE"))       return VCC_NODE;
+	else if (!strcmp(extracted_string,"BITWISE_AND"))    return BITWISE_AND;
+	else if (!strcmp(extracted_string,"BITWISE_NAND"))   return BITWISE_NAND;
+	else if (!strcmp(extracted_string,"BITWISE_NOR"))    return BITWISE_NOR;
+	else if (!strcmp(extracted_string,"BITWISE_XNOR"))   return BITWISE_XNOR;
+	else if (!strcmp(extracted_string,"BITWISE_XOR"))    return BITWISE_XOR;
+	else if (!strcmp(extracted_string,"BITWISE_OR"))     return BITWISE_OR;
+	else if (!strcmp(extracted_string,"BUF_NODE"))       return BUF_NODE;
+	else if (!strcmp(extracted_string,"MULTI_PORT_MUX")) return MULTI_PORT_MUX;
+	else if (!strcmp(extracted_string,"SL"))             return SL;
+	else if (!strcmp(extracted_string,"SR"))             return SR;
+	else if (!strcmp(extracted_string,"CASE_EQUAL"))     return CASE_EQUAL;
+	else if (!strcmp(extracted_string,"CASE_NOT_EQUAL")) return CASE_NOT_EQUAL;
+	else if (!strcmp(extracted_string,"DIVIDE"))         return DIVIDE;
+	else if (!strcmp(extracted_string,"MODULO"))         return MODULO;
+	else if (!strcmp(extracted_string,"GTE"))            return GTE;
+	else if (!strcmp(extracted_string,"LTE"))            return LTE;
+	else if (!strcmp(extracted_string,"ADD"))            return ADD;
+	else if (!strcmp(extracted_string,"MINUS"))          return MINUS;
+	else                                                 return GENERIC;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -330,7 +326,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	while ((ptr = vtr::strtok (NULL, TOKENS, file, buffer)) != NULL)
 	{
 		if(input_token_count == 0)
-			names = (char**)calloc(1,(sizeof(char*)));
+			names = (char**)malloc((sizeof(char*)));
 		else
 			names = (char**)realloc(names, (sizeof(char*))* (input_token_count + 1));
 		names[input_token_count++] = vtr::strdup(ptr);
@@ -358,8 +354,7 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		}
 	}
 
-	nnode_t *new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(new_node);
+	nnode_t *new_node = allocate_nnode();
 	new_node->related_ast_node = NULL;
 	new_node->type = FF_NODE;
 
@@ -392,14 +387,12 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	}
 
 	/* add names and type information to the created input pins */
-	npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-	allocate_npin(new_pin);
+	npin_t *new_pin = allocate_npin();
 	new_pin->name = names[0];
 	new_pin->type = INPUT;
 	add_input_pin_to_node(new_node, new_pin,0);
-	
-	new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-	allocate_npin(new_pin);
+
+	new_pin = allocate_npin();
 	new_pin->name = names[3];
 	new_pin->type = INPUT;
 	add_input_pin_to_node(new_node, new_pin,1);
@@ -412,12 +405,10 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	verilog_netlist->ff_nodes[verilog_netlist->num_ff_nodes++] = new_node;
 
 	/*add name information and a net(driver) for the output */
-	nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
-	allocate_nnet(new_net);
+	nnet_t *new_net = allocate_nnet();
 	new_net->name = new_node->name;
 
-	new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-	allocate_npin(new_pin);
+	new_pin = allocate_npin();
 	new_pin->name = new_node->name;
 	new_pin->type = OUTPUT;
 	add_output_pin_to_node(new_node, new_pin, 0);
@@ -426,8 +417,8 @@ void create_latch_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	output_nets_hash->add(output_nets_hash, new_node->name, strlen(new_node->name)*sizeof(char), new_net);
 
 	/* Free the char** names */
-	free_me(names);
-	free_me(ptr);
+	free(names);
+	free(ptr);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -478,7 +469,7 @@ char* search_clock_name(FILE* file)
 					{
 						if(!strcmp(ptr,input_names[i]))
 						{
-							free_me(input_names[i]);
+							free(input_names[i]);
 							input_names[i] = input_names[--input_names_count];
 						}
 					}
@@ -520,8 +511,8 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   	}
 
 	// Split the name parameters at the equals sign.
-	char **mappings = (char**)calloc(count,sizeof(char*));
-	char **names    = (char**)calloc(count,sizeof(char*));
+	char **mappings = (char**)malloc(sizeof(char*) * count);
+	char **names    = (char**)malloc(sizeof(char*) * count);
 	int i = 0;
 	for (i = 0; i < count; i++)
 	{
@@ -536,9 +527,9 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	qsort(mappings,  count,  sizeof(char *), compare_hard_block_pin_names);
 
 	for(i = 0; i < count; i++)
-		free_me(names_parameters[i]);
+		free(names_parameters[i]);
 
-	free_me(names_parameters);
+	free(names_parameters);
 
 	// Index the mappings in a hard_block_ports struct.
 	hard_block_ports *ports = get_hard_block_ports(mappings, count);
@@ -553,8 +544,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
  		add_hard_block_model(model, ports, models);
  	}
 
-	nnode_t *new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(new_node);
+	nnode_t *new_node = allocate_nnode();
 
 	// Name the node subcircuit_name~hard_block_number so that the name is unique.
 	static long hard_block_number = 0;
@@ -572,7 +562,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 			new_node->type = MINUS;
 	else
 		new_node->type = MEMORY;
-	free_me(subcircuit_name_prefix);
+	free(subcircuit_name_prefix);
 
 	/* Add input and output ports to the new node. */
 	{
@@ -601,9 +591,8 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
   		if (!name)
   			error_message(NETLIST_ERROR, file_line_number, -1, "Invalid hard block mapping: %s", mapping);
 
-		npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-		allocate_npin(new_pin);
-		new_pin->name = strdup(name);
+		npin_t *new_pin = allocate_npin();
+		new_pin->name = vtr::strdup(name);
 		new_pin->type = INPUT;
 		new_pin->mapping = get_hard_block_port_name(mapping);
 
@@ -618,17 +607,15 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 
   		if (!name) error_message(NETLIST_ERROR, file_line_number, -1,"Invalid hard block mapping: %s", model->outputs->names[i]);
 
-		npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-		allocate_npin(new_pin);
-		new_pin->name = strdup(name);
+		npin_t *new_pin = allocate_npin();
+		new_pin->name = vtr::strdup(name);
 		new_pin->type = OUTPUT;
 		new_pin->mapping = get_hard_block_port_name(mapping);
 
 		add_output_pin_to_node(new_node, new_pin, i);
 
-		nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
-		allocate_nnet(new_net);
-		new_net->name = strdup(name);
+		nnet_t *new_net = allocate_nnet();
+		new_net->name = vtr::strdup(name);
 
 		add_driver_pin_to_net(new_net,new_pin);
 
@@ -648,8 +635,8 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 
   	free_hard_block_ports(ports);
   	mapping_index->destroy_free_items(mapping_index);
-  	free_me(mappings);
-  	free_me(names);
+  	free(mappings);
+  	free(names);
 
 
 }
@@ -673,8 +660,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 	}
 
 	/* assigning the new_node */
-	nnode_t *new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(new_node);
+	nnode_t *new_node = allocate_nnode();
 	new_node->related_ast_node = NULL;
 
 	/* gnd vcc unconn already created as top module so ignore them */
@@ -726,8 +712,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		int i;
 		for(i = 0; i <= input_count-2; i++)
 		{
-			npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-			allocate_npin(new_pin);
+			npin_t *new_pin = allocate_npin();
 			new_pin->name = names[i];
 			new_pin->type = INPUT;
 			add_input_pin_to_node(new_node, new_pin, i);
@@ -739,9 +724,8 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			allocate_more_input_pins(new_node,1);
 			add_input_port_information(new_node, 1);
 
-			npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-			allocate_npin(new_pin);
-			new_pin->name = strdup(GND_NAME);
+			npin_t *new_pin = allocate_npin();
+			new_pin->name = vtr::strdup(GND_NAME);
 			new_pin->type = INPUT;
 			add_input_pin_to_node(new_node, new_pin,0);
 		}
@@ -751,9 +735,8 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 			allocate_more_input_pins(new_node,1);
 			add_input_port_information(new_node, 1);
 
-			npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-			allocate_npin(new_pin);
-			new_pin->name = strdup(VCC_NAME);
+			npin_t *new_pin = allocate_npin();
+			new_pin->name = vtr::strdup(VCC_NAME);
 			new_pin->type = INPUT;
 			add_input_pin_to_node(new_node, new_pin,0);
 		}
@@ -771,15 +754,13 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 
 		/*add name information and a net(driver) for the output */
 
-		npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-		allocate_npin(new_pin);
+		npin_t *new_pin = allocate_npin();
 		new_pin->name = new_node->name;
 		new_pin->type = OUTPUT;
 
 		add_output_pin_to_node(new_node, new_pin, 0);
 
-		nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
-		allocate_nnet(new_net);
+		nnet_t *new_net = allocate_nnet();
 		new_net->name = new_node->name;
 
 		add_driver_pin_to_net(new_net,new_pin);
@@ -787,7 +768,7 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 		output_nets_hash->add(output_nets_hash, new_node->name, strlen(new_node->name)*sizeof(char), new_net);
 
 		/* Free the char** names */
-		free_me(names);
+		free(names);
 	}
 }
 
@@ -830,21 +811,21 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 			break;
 
 		bit_map = (char**)realloc(bit_map,sizeof(char*) * (line_count_bitmap + 1));
-		bit_map[line_count_bitmap++] = strdup(vtr::strtok(buffer,TOKENS, file, buffer));
-		if (output_bit_map != NULL) free_me(output_bit_map);
-		output_bit_map = strdup(vtr::strtok(NULL,TOKENS, file, buffer));
+		bit_map[line_count_bitmap++] = vtr::strdup(vtr::strtok(buffer,TOKENS, file, buffer));
+		if (output_bit_map != NULL) free(output_bit_map);
+		output_bit_map = vtr::strdup(vtr::strtok(NULL,TOKENS, file, buffer));
 	}
 
 	if (!strcmp(output_bit_map, One))
 	{
-		free_me(output_bit_map);
-		output_bit_map = strdup(One);
+		free(output_bit_map);
+		output_bit_map = vtr::strdup(One);
 		node->generic_output = 1;
 	}
 	else
 	{
-		free_me(output_bit_map);
-		output_bit_map = strdup(Zero);
+		free(output_bit_map);
+		output_bit_map = vtr::strdup(Zero);
 		node->generic_output = 0;
 	}
 
@@ -1046,8 +1027,7 @@ void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
 
 		/* create a new top input node and net*/
 
-		nnode_t *new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-		allocate_nnode(new_node);
+		nnode_t *new_node = allocate_nnode();
 
 		new_node->related_ast_node = NULL;
 		new_node->type = INPUT_NODE;
@@ -1060,17 +1040,15 @@ void add_top_input_nodes(FILE *file, hashtable_t *output_nets_hash)
 		add_output_port_information(new_node, 1);
 
 		/* Create the pin connection for the net */
-		npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-		allocate_npin(new_pin);
-		new_pin->name = strdup(temp_string);
+		npin_t *new_pin = allocate_npin();
+		new_pin->name = vtr::strdup(temp_string);
 		new_pin->type = OUTPUT;
 
 		/* hookup the pin, net, and node */
 		add_output_pin_to_node(new_node, new_pin, 0);
 
-		nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
-		allocate_nnet(new_net);
-		new_net->name = strdup(temp_string);
+		nnet_t *new_net = allocate_nnet();
+		new_net->name = vtr::strdup(temp_string);
 
 		add_driver_pin_to_net(new_net, new_pin);
 
@@ -1103,8 +1081,7 @@ void rb_create_top_output_nodes(FILE *file)
 		/*add_a_fanout_pin_to_net((nnet_t*)output_nets_sc->data[sc_spot], new_pin);*/
 
 		/* create a new top output node and */
-		nnode_t *new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-		allocate_nnode(new_node);
+		nnode_t *new_node = allocate_nnode();
 		new_node->related_ast_node = NULL;
 		new_node->type = OUTPUT_NODE;
 
@@ -1116,8 +1093,7 @@ void rb_create_top_output_nodes(FILE *file)
 		add_input_port_information(new_node, 1);
 
 		/* Create the pin connection for the net */
-		npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-		allocate_npin(new_pin);
+		npin_t *new_pin = allocate_npin();
 		new_pin->name   = temp_string;
 		/* hookup the pin, net, and node */
 		add_input_pin_to_node(new_node, new_pin, 0);
@@ -1158,53 +1134,37 @@ function: Creates the drivers for the top module
 
 void rb_create_top_driver_nets(const char *instance_name_prefix, hashtable_t *output_nets_hash)
 {
-	
+	npin_t *new_pin;
 	/* create the constant nets */
-
 
 	/* ZERO net */
 	/* description given for the zero net is same for other two */
-	verilog_netlist->zero_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
-	allocate_nnet(verilog_netlist->zero_net); // allocate memory to net pointer
-	
-	verilog_netlist->gnd_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(verilog_netlist->gnd_node); // allocate memory to node pointer
+	verilog_netlist->zero_net = allocate_nnet(); // allocate memory to net pointer
+	verilog_netlist->gnd_node = allocate_nnode(); // allocate memory to node pointer
 	verilog_netlist->gnd_node->type = GND_NODE;  // mark the type
 	allocate_more_output_pins(verilog_netlist->gnd_node, 1);// alloacate 1 output pin pointer to this node
 	add_output_port_information(verilog_netlist->gnd_node, 1);// add port info. this port has 1 pin ,till now number of port for this is one
-	
-	npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-	allocate_npin(new_pin);
+	new_pin = allocate_npin();
 	add_output_pin_to_node(verilog_netlist->gnd_node, new_pin, 0);// add this pin to output pin pointer array of this node
 	add_driver_pin_to_net(verilog_netlist->zero_net,new_pin);// add this pin to net as driver pin
 
 	/*ONE net*/
-	verilog_netlist->one_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
-	allocate_nnet(verilog_netlist->one_net);
-	
-	verilog_netlist->vcc_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(verilog_netlist->vcc_node);
+	verilog_netlist->one_net = allocate_nnet();
+	verilog_netlist->vcc_node = allocate_nnode();
 	verilog_netlist->vcc_node->type = VCC_NODE;
 	allocate_more_output_pins(verilog_netlist->vcc_node, 1);
 	add_output_port_information(verilog_netlist->vcc_node, 1);
-	
-	new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-	allocate_npin(new_pin);
+	new_pin = allocate_npin();
 	add_output_pin_to_node(verilog_netlist->vcc_node, new_pin, 0);
 	add_driver_pin_to_net(verilog_netlist->one_net, new_pin);
 
 	/* Pad net */
-	verilog_netlist->pad_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
-	allocate_nnet(verilog_netlist->pad_net);
-	
-	verilog_netlist->pad_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(verilog_netlist->pad_node);
+	verilog_netlist->pad_net = allocate_nnet();
+	verilog_netlist->pad_node = allocate_nnode();
 	verilog_netlist->pad_node->type = PAD_NODE;
 	allocate_more_output_pins(verilog_netlist->pad_node, 1);
 	add_output_port_information(verilog_netlist->pad_node, 1);
-	
-	new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-	allocate_npin(new_pin);
+	new_pin = allocate_npin();
 	add_output_pin_to_node(verilog_netlist->pad_node, new_pin, 0);
 	add_driver_pin_to_net(verilog_netlist->pad_net, new_pin);
 
@@ -1312,13 +1272,13 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 			// match .model followed buy the subcircuit name.
 			if (token && !strcmp(token,".model") && !strcmp(vtr::strtok(NULL,TOKENS, file, buffer), name_subckt))
 			{
-				model = (hard_block_model *)calloc(1,sizeof(hard_block_model));
-				model->name = strdup(name_subckt);
-				model->inputs = (hard_block_pins *)calloc(1,sizeof(hard_block_pins));
+				model = (hard_block_model *)malloc(sizeof(hard_block_model));
+				model->name = vtr::strdup(name_subckt);
+				model->inputs = (hard_block_pins *)malloc(sizeof(hard_block_pins));
 				model->inputs->count = 0;
 				model->inputs->names = NULL;
 
-				model->outputs = (hard_block_pins *)calloc(1,sizeof(hard_block_pins));
+				model->outputs = (hard_block_pins *)malloc(sizeof(hard_block_pins));
 				model->outputs->count = 0;
 				model->outputs->names = NULL;
 
@@ -1400,8 +1360,8 @@ static int compare_hard_block_pin_names(const void *p1, const void *p2)
 	char *port_name1 = get_hard_block_port_name(name1);
 	char *port_name2 = get_hard_block_port_name(name2);
 	int portname_difference = strcmp(port_name1, port_name2);
-	free_me(port_name1);
-	free_me(port_name2);
+	free(port_name1);
+	free(port_name2);
 
 	// If the portnames are the same, compare the pin numbers.
 	if (!portname_difference)
@@ -1426,7 +1386,7 @@ hashtable_t *index_names(char **names, int count)
 	int i;
 	for (i = 0; i < count; i++)
 	{
-		int *offset = (int *)calloc(1,sizeof(int));
+		int *offset = (int *)malloc(sizeof(int));
 		*offset = i;
 		index->add(index, names[i], sizeof(char) * strlen(names[i]), offset);
 	}
@@ -1455,7 +1415,7 @@ hashtable_t *associate_names(char **names1, char **names2, int count)
 hard_block_ports *get_hard_block_ports(char **pins, int count)
 {
 	// Count the input port sizes.
-	hard_block_ports *ports = (hard_block_ports *)calloc(1,sizeof(hard_block_ports));
+	hard_block_ports *ports = (hard_block_ports *)malloc(sizeof(hard_block_ports));
 	ports->count = 0;
 	ports->sizes = 0;
 	ports->names = 0;
@@ -1566,7 +1526,7 @@ char *generate_hard_block_ports_signature(hard_block_ports *ports)
  * before the first instance of "[". The string is
  * presumably of the form "port[pin_number]"
  *
- * The retuned string is vtr::strduped and must be freed.
+ * The retuned string is strduped and must be freed.
  * The original string is unaffected.
  */
 char *get_hard_block_port_name(char *name)
@@ -1600,7 +1560,7 @@ long get_hard_block_pin_number(char *original_name)
 	if (pin_number_string == endptr)
 		error_message(NETLIST_ERROR,file_line_number, -1,"The given port name \"%s\" does not contain a valid pin number.", original_name);
 
-	free_me(name);
+	free(name);
 
 	return pin_number;
 }
@@ -1637,7 +1597,7 @@ hard_block_model *get_hard_block_model(char *name, hard_block_ports *ports, hard
  */
 hard_block_models *create_hard_block_models()
 {
-	hard_block_models *m = (hard_block_models *)calloc(1,sizeof(hard_block_models));
+	hard_block_models *m = (hard_block_models *)malloc(sizeof(hard_block_models));
 	m->models = 0;
 	m->count  = 0;
 	m->index  = create_hashtable(100);
@@ -1674,8 +1634,8 @@ void free_hard_block_models(hard_block_models *models)
 	for (i = 0; i < models->count; i++)
 		free_hard_block_model(models->models[i]);
 
-	free_me(models->models);
-	free_me(models);
+	free(models->models);
+	free(models);
 }
 
 
@@ -1690,7 +1650,7 @@ void free_hard_block_model(hard_block_model *model)
 	free_hard_block_ports(model->input_ports);
 	free_hard_block_ports(model->output_ports);
 
-	free_me(model);
+	free(model);
 }
 
 /*
@@ -1699,12 +1659,12 @@ void free_hard_block_model(hard_block_model *model)
 void free_hard_block_pins(hard_block_pins *p)
 {
 	while (p->count--)
-		free_me(p->names[p->count]);
+		free(p->names[p->count]);
 
-	free_me(p->names);
+	free(p->names);
 
 	p->index->destroy_free_items(p->index);
-	free_me(p);
+	free(p);
 }
 
 /*
@@ -1713,12 +1673,12 @@ void free_hard_block_pins(hard_block_pins *p)
 void free_hard_block_ports(hard_block_ports *p)
 {
 	while(p->count--)
-		free_me(p->names[p->count]);
+		free(p->names[p->count]);
 
-	free_me(p->signature);
-	free_me(p->names);
-	free_me(p->sizes);
+	free(p->signature);
+	free(p->names);
+	free(p->sizes);
 
 	p->index->destroy_free_items(p->index);
-	free_me(p);
+	free(p);
 }

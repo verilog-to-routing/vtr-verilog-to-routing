@@ -32,11 +32,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "vtr_util.h"
 
+
 extern global_args_t global_args;
 /*---------------------------------------------------------------------------------------------
  * (function: allocate_nnode)
  *-------------------------------------------------------------------------------------------*/
-void allocate_nnode(nnode_t *new_node) {
+nnode_t* allocate_nnode() {
+	nnode_t *new_node;
+
+	new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
 
 	new_node->name = NULL;
 	new_node->type = NO_OP;
@@ -83,6 +87,8 @@ void allocate_nnode(nnode_t *new_node) {
 	new_node->initial_value = 0;
 
 	new_node->generic_output = -1;
+
+	return new_node;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -106,7 +112,7 @@ void free_nnode(nnode_t *to_free)
 		}
 		if (to_free->input_pins != NULL)
 		{
-			free_me(to_free->input_pins);
+			free(to_free->input_pins);
 			to_free->input_pins = NULL;
 		}
 
@@ -120,20 +126,20 @@ void free_nnode(nnode_t *to_free)
 		}
 		if (to_free->output_pins != NULL)
 		{
-			free_me(to_free->output_pins);
+			free(to_free->output_pins);
 			to_free->output_pins = NULL;
 		}
 
 		if (to_free->input_port_sizes != NULL)
-			free_me(to_free->input_port_sizes);
+			free(to_free->input_port_sizes);
 		if (to_free->output_port_sizes != NULL)
-			free_me(to_free->output_port_sizes);
+			free(to_free->output_port_sizes);
 
 		if (to_free->undriven_pins)
-			free_me(to_free->undriven_pins);
+			free(to_free->undriven_pins);
 
 		/* now free the node */
-		free_me(to_free);
+		free(to_free);
 	}
 }
 
@@ -186,9 +192,9 @@ void allocate_more_output_pins(nnode_t *node, int width)
  *-------------------------------------------------------------------------------------------*/
 void add_output_port_information(nnode_t *node, int port_width)
 {
-		node->output_port_sizes = (int *)realloc(node->output_port_sizes, sizeof(int)*(node->num_output_port_sizes+1));
-		node->output_port_sizes[node->num_output_port_sizes] = port_width;
-		node->num_output_port_sizes++;
+	node->output_port_sizes = (int *)realloc(node->output_port_sizes, sizeof(int)*(node->num_output_port_sizes+1));
+	node->output_port_sizes[node->num_output_port_sizes] = port_width;
+	node->num_output_port_sizes++;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -204,7 +210,10 @@ void add_input_port_information(nnode_t *node, int port_width)
 /*---------------------------------------------------------------------------------------------
  * (function: allocate_npin)
  *-------------------------------------------------------------------------------------------*/
-void allocate_npin(npin_t *new_pin) {
+npin_t* allocate_npin() {
+	npin_t *new_pin;
+
+	new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
 
 	new_pin->name = NULL;
 	new_pin->type = NO_ID;
@@ -224,6 +233,7 @@ void allocate_npin(npin_t *new_pin) {
 
 	new_pin->ace_info = NULL;
 
+	return new_pin;
 }
 /*-------------------------------------------------------------------------
  * (function: copy_output_npin)
@@ -231,8 +241,7 @@ void allocate_npin(npin_t *new_pin) {
  *-----------------------------------------------------------------------*/
 npin_t* copy_output_npin(npin_t* copy_pin)
 {
-	npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-	allocate_npin(new_pin);
+	npin_t *new_pin = allocate_npin();
 	oassert(copy_pin->type == OUTPUT);
 
 	new_pin->name = copy_pin->name;
@@ -249,8 +258,7 @@ npin_t* copy_output_npin(npin_t* copy_pin)
  *-----------------------------------------------------------------------*/
 npin_t* copy_input_npin(npin_t* copy_pin)
 {
-	npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-	allocate_npin(new_pin);
+	npin_t *new_pin = allocate_npin();
 	oassert(copy_pin->type == INPUT);
 
 	new_pin->name = copy_pin->name?vtr::strdup(copy_pin->name):0;
@@ -272,15 +280,18 @@ npin_t* copy_input_npin(npin_t* copy_pin)
 void free_npin(npin_t *to_free)
 {
 	if (to_free) {
-		free_me(to_free);
+		free(to_free);
 	}
 }
 
 /*---------------------------------------------------------------------------------------------
  * (function: allocate_nnet)
  *-------------------------------------------------------------------------------------------*/
-void allocate_nnet(nnet_t *new_net)
+nnet_t* allocate_nnet()
 {
+	nnet_t *new_net;
+
+	new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
 
 	new_net->name = NULL;
 	new_net->driver_pin = NULL;
@@ -294,6 +305,7 @@ void allocate_nnet(nnet_t *new_net)
 	new_net->has_initial_value = FALSE;
 	new_net->initial_value = 0;
 
+	return new_net;
 }
 
 /*-------------------------------------------------------------------------
@@ -304,7 +316,7 @@ void free_nnet(nnet_t *to_free)
 {
 	if (to_free != NULL)
 	{
-		free_me(to_free);
+		free(to_free);
 	}
 }
 
@@ -526,12 +538,12 @@ void remap_pin_to_new_node(npin_t *pin, nnode_t *new_node, int pin_idx)
  *----------------------------------------------------------------------*/
 void connect_nodes(nnode_t *out_node, int out_idx, nnode_t *in_node, int in_idx)
 {
-	npin_t *new_in_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
+	npin_t *new_in_pin;
 
 	oassert(out_node->num_output_pins > out_idx);
 	oassert(in_node->num_input_pins > in_idx);
 
-	allocate_npin(new_in_pin);
+	new_in_pin = allocate_npin();
 
 	/* create the pin that hooks up to the input */
 	add_input_pin_to_node(in_node, new_in_pin, in_idx);
@@ -539,11 +551,10 @@ void connect_nodes(nnode_t *out_node, int out_idx, nnode_t *in_node, int in_idx)
 	if (out_node->output_pins[out_idx] == NULL)
 	{
 		/* IF - this node has no output net or pin */
-		npin_t *new_out_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-
-		nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
-		allocate_nnet(new_net);
-		allocate_npin(new_out_pin);
+		npin_t *new_out_pin;
+		nnet_t *new_net;
+		new_net = allocate_nnet();
+		new_out_pin = allocate_npin();
 
 		/* create the pin that hooks up to the input */
 		add_output_pin_to_node(out_node, new_out_pin, out_idx);
@@ -568,7 +579,7 @@ void connect_nodes(nnode_t *out_node, int out_idx, nnode_t *in_node, int in_idx)
 signal_list_t *init_signal_list()
 {
 	signal_list_t *list;
-	list = (signal_list_t*)calloc(1,sizeof(signal_list_t));
+	list = (signal_list_t*)malloc(sizeof(signal_list_t));
 
 	list->count = 0;
 	list->pins = NULL;
@@ -687,14 +698,12 @@ signal_list_t *make_output_pins_for_existing_node(nnode_t* node, int width)
 
 	for (i = 0; i < width; i++)
 	{
-		npin_t *new_pin1 = (npin_t *)my_malloc_struct(sizeof(npin_t));
-		npin_t *new_pin2 = (npin_t *)my_malloc_struct(sizeof(npin_t));
-
-		allocate_npin(new_pin1);
-		allocate_npin(new_pin2);
-		
-		nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
-		allocate_nnet(new_net);
+		npin_t *new_pin1;
+		npin_t *new_pin2;
+		nnet_t *new_net;
+		new_pin1 = allocate_npin();
+		new_pin2 = allocate_npin();
+		new_net = allocate_nnet();
 		new_net->name = node->name;
 		/* hook the output pin into the node */
 		add_output_pin_to_node(node, new_pin1, i);
@@ -719,11 +728,11 @@ void free_signal_list(signal_list_t *list)
 		return;
 
 	if (list->pins != NULL)
-		free_me(list->pins);
+		free(list->pins);
 
 	list->count = 0;
 
-	free_me(list);
+	free(list);
 }
 
 /*---------------------------------------------------------------------------

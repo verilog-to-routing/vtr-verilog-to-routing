@@ -67,14 +67,7 @@ typedef struct chain_information_t_t chain_information_t;
 #define ACTIVATION_ERROR -7
 /* for errors in the netlist simulation */
 #define SIMULATION_ERROR -8
-/* for errors in the calculation 
-*	largest hex value it can take 
-*	avoids using include limit.h since it may (or may not) conflict with naming.
-*	also keep it "portable" is long long reall necessary tho? long would suffice and c99 wouldnt be essential
-*/
-# define WRONG_CALCULATION (long long)1 << (sizeof(long long)*8-1)
 
-#define free_me(X) if(X){free(X);X=NULL;}
 /* unique numbers to mark the nodes as we DFS traverse the netlist */
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
 #define OUTPUT_TRAVERSE_VALUE 12

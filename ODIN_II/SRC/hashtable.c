@@ -20,14 +20,11 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "hashtable.h"
 #include "types.h"
-
-
 
 void         ___hashtable_add                (hashtable_t *h, const void *key, size_t key_length, void *item);
 void*        ___hashtable_remove             (hashtable_t *h, const void *key, size_t key_length);
@@ -47,7 +44,7 @@ hashtable_t* create_hashtable(int store_size)
 		exit(1);
 	}
 
-	hashtable_t *h = (hashtable_t *)calloc(1,sizeof(hashtable_t));
+	hashtable_t *h = (hashtable_t *)malloc(sizeof(hashtable_t));
 	
 	h->store_size = store_size; 
 	h->store = (hashtable_node_t **)calloc(store_size, sizeof(hashtable_node_t*)); 
@@ -73,13 +70,13 @@ void ___hashtable_destroy(hashtable_t *h)
 		while((node = h->store[i]))
 		{
 			h->store[i] = node->next; 
-			free_me(node->key);
-			free_me(node); 
+			free(node->key);
+			free(node); 
 			h->count--; 
 		}
 	} 
-	free_me(h->store);
-	free_me(h);
+	free(h->store);
+	free(h);
 }
 
 void ___hashtable_destroy_free_items(hashtable_t *h)
@@ -90,23 +87,23 @@ void ___hashtable_destroy_free_items(hashtable_t *h)
 		hashtable_node_t* node;
 		while((node = h->store[i]))
 		{
-			free_me(node->item);
+			free(node->item);
 			h->store[i] = node->next;
-			free_me(node->key);
-			free_me(node);
+			free(node->key);
+			free(node);
 			h->count--;
 		}
 	}
-	free_me(h->store);
-	free_me(h);
+	free(h->store);
+	free(h);
 }
 
 void  ___hashtable_add(hashtable_t *h, const void *key, size_t key_length, void *item)
 {
-	hashtable_node_t *node = (hashtable_node_t *)calloc(1,sizeof(hashtable_node_t));
+	hashtable_node_t *node = (hashtable_node_t *)malloc(sizeof(hashtable_node_t));
 
 	node->key_length = key_length; 
-	node->key        = calloc(1,key_length);
+	node->key        = malloc(key_length);
 	node->item       = item;
 	node->next       = NULL;	
 
@@ -140,8 +137,8 @@ void* ___hashtable_remove(hashtable_t *h, const void *key, size_t key_length)
 	{
 		item = node->item; 
 		*node_location = node->next;
-		free_me(node->key);
-		free_me(node); 		 
+		free(node->key);
+		free(node); 		 
 		h->count--; 
 	}
 	
@@ -165,7 +162,7 @@ void* ___hashtable_get(hashtable_t *h, const void *key, size_t key_length)
 
 void** ___hashtable_get_all(hashtable_t *h) {		
 	int count = 0;
-	void **items = (void **)calloc(h->count,sizeof(void*));  
+	void **items = (void **)malloc(h->count * sizeof(void*));  
 
 	int i;
 	for (i = 0; i < h->store_size; i++)

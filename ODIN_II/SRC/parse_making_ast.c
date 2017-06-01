@@ -32,12 +32,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ast_util.h"
 #include "parse_making_ast.h"
 #include "string_cache.h"
-
 #include "verilog_bison_user_defined.h"
 #include "verilog_preprocessor.h"
 #include "hard_blocks.h" 
 #include "vtr_util.h"
-
 
 extern int yylineno;
 
@@ -288,7 +286,7 @@ void cleanup_parser()
 			sc_free_string_cache(defines_for_module_sc[i]);
 		}
 		
-		free_me(defines_for_module_sc);
+		free(defines_for_module_sc);
 	}
 }
 
@@ -326,7 +324,6 @@ void next_parsed_verilog_file(ast_node_t *file_items_list)
 	/* optimization entry point */
 	printf("Optimizing module by AST based optimizations\n");
 	cleanup_hard_blocks();
-
 	if (configuration.output_ast_graphs == 1)
 	{
 		/* IF - we want outputs for the graphViz files of each module */
@@ -458,6 +455,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 	ast_node_t *range_max = 0;
 	ast_node_t *newNode = 0;
 
+
     for (i = 0; i < symbol_list->num_children; i++)
 	{
 		/* checks range is legal.  */
@@ -473,7 +471,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			/* Do lookup in sc_add_string */
 			/* Verify node->type.variables.is_parameter == TRUE */
 			/* If type is BINARY_OPERATION, Calculate it*/
-			/* ELSE REPORT ERROR */            
+			/* ELSE REPORT ERROR */
 
 			    if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
 			    {
@@ -657,8 +655,8 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						    && ((symbol_list->children[0]->children[1]->type == NUMBERS) || (symbol_list->children[0]->children[1]->type == IDENTIFIERS) || (symbol_list->children[0]->children[1]->type == BINARY_OPERATION))
 						    && ((symbol_list->children[0]->children[2]->type == NUMBERS) || (symbol_list->children[0]->children[2]->type == IDENTIFIERS)|| (symbol_list->children[0]->children[2]->type == BINARY_OPERATION)))
 		    {
-
-                if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
+				
+                	if (symbol_list->children[0]->children[1]->type == IDENTIFIERS)
 			        {
 				        if ((sc_spot = sc_lookup_string(defines_for_function_sc[num_functions], symbol_list->children[0]->children[1]->types.identifier)) != -1)
 				        {
@@ -721,8 +719,9 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 			        //ODIN doesn't support negative number in index now.
 			        if(range_temp_min < 0 || range_temp_max < 0)
 				        warning_message(NETLIST_ERROR, symbol_list->children[0]->children[0]->line_number, current_parse_file, "Odin doesn't support negative number in index.");
-
                 }
+                
+                
 
 		        if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
 		        {
@@ -877,7 +876,6 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, ast_node_t *expression2, int line_number)
 {
-
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(BINARY_OPERATION, line_number, current_parse_file);
 	/* store the operation type */
@@ -886,8 +884,7 @@ ast_node_t *newBinaryOperation(operation_list op_id, ast_node_t *expression1, as
 	allocate_children_to_node(new_node, 2, expression1, expression2);
 
 	/* see if this binary expression can have some constant folding */
-	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE, NULL, new_node);
-
+	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
 	return new_node;
 }
 
@@ -932,7 +929,7 @@ ast_node_t *newExpandPower(operation_list op_id, ast_node_t *expression1, ast_no
 	error_message(NETLIST_ERROR, line_number, current_parse_file, "Operation not supported by Odin\n");
         }
 	/* see if this binary expression can have some constant folding */
-	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE, NULL, new_node);
+	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
 
 	return new_node;
 }
@@ -949,7 +946,8 @@ ast_node_t *newUnaryOperation(operation_list op_id, ast_node_t *expression, int 
 	allocate_children_to_node(new_node, 1, expression);
 
 	/* see if this binary expression can have some constant folding */
-	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE, NULL, new_node);
+	new_node = resolve_node(defines_for_module_sc[num_modules],TRUE,NULL,new_node);
+
 	return new_node;
 }
 
@@ -1337,7 +1335,7 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	size_module_instantiations++;
 
     }
-    free_me(module_named_instance);
+    free(module_named_instance);
 	return new_master_node;
 }
 /*-------------------------------------------------------------------------
@@ -1790,7 +1788,6 @@ void newConstant(char *id, char *number, int line_number)
 	defines_for_file_sc->data[sc_spot] = (void*)number_node;
 	/* mark node as shared */
 	number_node->shared_node = TRUE;
-	free_me(id);
 }
 
 /* --------------------------------------------------------------------------------------------
@@ -2151,18 +2148,18 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 	}
 }
 
-long calculate_operation(ast_node_t *node)
-{
-	if (node == NULL || node->num_children < 2)
-			return 0;
+long calculate_operation(ast_node_t *node){
 	ast_node_t *newNode = resolve_node(defines_for_module_sc[num_modules], TRUE, NULL, node);
-	long long result = node_is_constant(newNode);
-	free(newNode);
-	if(result < 0 || result == WRONG_CALCULATION)
-	{
-		error_message(PARSE_ERROR, node->line_number, current_parse_file,
-						"Negative numbers are used in the range in ODIN II!");
+	if(node_is_constant(newNode)){
+		long long result = newNode->types.number.value;
+		if(result >= 0){
+			return (long)result;
+		}else{
+			error_message(PARSE_ERROR, node->line_number, current_parse_file,"Negative numbers are used in the range in ODIN II!");
+			return 0;
+		}
+	}else{
+		error_message(PARSE_ERROR, node->line_number, current_parse_file,"could not resolve parameter in range");
 		return 0;
 	}
-	return (long)result;
 }
