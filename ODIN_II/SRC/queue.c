@@ -25,7 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include "queue.h"
 #include "types.h"
-
+#include "vtr_memory.h"
 
 void   ___queue_add(queue_t *q, void *item);
 void  *___queue_remove(queue_t *q);
@@ -35,7 +35,7 @@ void   ___queue_destroy(queue_t *q);
 
 queue_t* create_queue()
 {
-	queue_t *q = (queue_t *)calloc(1,sizeof(queue_t));
+	queue_t *q = (queue_t *)vtr::malloc(sizeof(queue_t));
 
 	q->head = NULL;
 	q->tail = NULL;
@@ -53,12 +53,12 @@ queue_t* create_queue()
 void ___queue_destroy(queue_t *q)
 {
 	while (q->remove(q)); 
-	free_me(q);
+	vtr::free(q);
 }
 
 void ___queue_add(queue_t *q, void *item)
 {
-	queue_node_t *node = (queue_node_t *)calloc(1,sizeof(queue_node_t));
+	queue_node_t *node = (queue_node_t *)vtr::malloc(sizeof(queue_node_t));
 
 	node->next = NULL;
 	node->item = item;
@@ -82,7 +82,7 @@ void* ___queue_remove(queue_t *q)
 		queue_node_t *node = q->head;
 		item = node->item;
 		q->head = node->next;
-		free_me(node);
+		vtr::free(node);
 		q->count--;	
 
 		if (!q->count)
@@ -99,7 +99,7 @@ void **___queue_remove_all(queue_t *q)
 	void **items = NULL; 
 	if (!q->is_empty(q))
 	{
-		items = (void **)calloc(q->count,sizeof(void *)); 
+		items = (void **)vtr::malloc(q->count * sizeof(void *)); 
 		int count = 0; 
 		void *item;
 		while ((item = q->remove(q)))

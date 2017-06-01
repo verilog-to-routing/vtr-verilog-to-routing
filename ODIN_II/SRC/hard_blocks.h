@@ -26,7 +26,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "types.h"
 
-
 extern STRING_CACHE *hard_block_names;
 
 extern void register_hard_blocks();

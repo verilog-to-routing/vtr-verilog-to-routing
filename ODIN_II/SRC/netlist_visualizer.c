@@ -29,7 +29,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 #include "netlist_utils.h"
 #include "odin_util.h"
-
+#include "vtr_memory.h"
 
 void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_number);
 void depth_first_traversal_graph_display(FILE *out, short marker_value, netlist_t *netllist);
@@ -127,7 +127,7 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 		{
 			fprintf(fp, "\t\"%s\"\n", temp_string);
 		}
-		free_me(temp_string);
+		vtr::free(temp_string);
 
 		for (i = 0; i < node->num_output_pins; i++)
 		{
@@ -153,13 +153,13 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 				if (node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
-					temp_string = (char*)realloc(temp_string, sizeof(char)*strlen(temp_string)+1+2);
+					temp_string = (char*)vtr::realloc(temp_string, sizeof(char)*strlen(temp_string)+1+2);
 					sprintf(temp_string, "%s_O", temp_string);
 				}
 				if (next_node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
-					temp_string2 = (char*)realloc(temp_string2, sizeof(char)*strlen(temp_string2)+1+2);
+					temp_string2 = (char*)vtr::realloc(temp_string2, sizeof(char)*strlen(temp_string2)+1+2);
 					sprintf(temp_string2, "%s_O", temp_string2);
 				}
 
@@ -168,8 +168,8 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 					fprintf(fp, "[label=\"%s\"]", next_net->fanout_pins[j]->name);
 				fprintf(fp, ";\n");
 
-				free_me(temp_string);
-				free_me(temp_string2);
+				vtr::free(temp_string);
+				vtr::free(temp_string2);
 
 				/* recursive call point */
 				depth_first_traverse_visualize(next_node, fp, traverse_mark_number);
@@ -213,7 +213,7 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 	char *temp_string;
 	char *temp_string2;
 
-	stack_of_nodes = (nnode_t**)calloc(1,sizeof(nnode_t*));
+	stack_of_nodes = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*1);
 	stack_of_nodes[0] = node;
 
 	while (index_in_stack != num_stack_of_nodes)
@@ -249,7 +249,7 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 		{
 			fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string, current_node->forward_level, current_node->backward_level);
 		}
-		free_me(temp_string);
+		vtr::free(temp_string);
 
 		/* at each node visit all the outputs */
 		for (j = 0; j < current_node->num_output_pins; j++)
@@ -273,25 +273,25 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 				if (current_node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
-					temp_string = (char*)realloc(temp_string, sizeof(char)*strlen(temp_string)+1+2);
+					temp_string = (char*)vtr::realloc(temp_string, sizeof(char)*strlen(temp_string)+1+2);
 					sprintf(temp_string, "%s_O", temp_string);
 				}
 				if (next_node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
-					temp_string2 = (char*)realloc(temp_string2, sizeof(char)*strlen(temp_string2)+1+2);
+					temp_string2 = (char*)vtr::realloc(temp_string2, sizeof(char)*strlen(temp_string2)+1+2);
 					sprintf(temp_string2, "%s_O", temp_string2);
 				}
 
 				fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string, temp_string2, current_node->output_pins[j]->net->fanout_pins[k]->name);
 
-				free_me(temp_string);
-				free_me(temp_string2);
+				vtr::free(temp_string);
+				vtr::free(temp_string2);
 
 				if ((next_node->traverse_visited != marker_value) && (next_node->type != FF_NODE))
 				{
 					/* IF - not visited yet then add to list */
-					stack_of_nodes = (nnode_t**)realloc(stack_of_nodes, sizeof(nnode_t*)*(num_stack_of_nodes+1));
+					stack_of_nodes = (nnode_t**)vtr::realloc(stack_of_nodes, sizeof(nnode_t*)*(num_stack_of_nodes+1));
 					stack_of_nodes[num_stack_of_nodes] = next_node;
 					num_stack_of_nodes ++;
 				}
@@ -315,7 +315,7 @@ void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t 
 	int index_in_stack = 0;
 	int num_stack_of_nodes = 1;
 
-	stack_of_nodes = (nnode_t**)calloc(1,sizeof(nnode_t*));
+	stack_of_nodes = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*1);
 	stack_of_nodes[0] = node;
 
 	while (index_in_stack != num_stack_of_nodes)
@@ -350,7 +350,7 @@ void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t 
 				fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string, current_node->forward_level, current_node->backward_level);
 			}
 		}
-		free_me(temp_string);
+		vtr::free(temp_string);
 
 		/* at each node visit all the outputs */
 		for (j = 0; j < current_node->num_input_pins; j++)
@@ -372,13 +372,13 @@ void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t 
 
 			fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string2, temp_string, current_node->input_pins[j]->name);
 
-			free_me(temp_string);
-			free_me(temp_string2);
+			vtr::free(temp_string);
+			vtr::free(temp_string2);
 
 			if ((next_node->traverse_visited != marker_value) && (next_node->type != FF_NODE))
 			{
 				/* IF - not visited yet then add to list */
-				stack_of_nodes = (nnode_t**)realloc(stack_of_nodes, sizeof(nnode_t*)*(num_stack_of_nodes+1));
+				stack_of_nodes = (nnode_t**)vtr::realloc(stack_of_nodes, sizeof(nnode_t*)*(num_stack_of_nodes+1));
 				stack_of_nodes[num_stack_of_nodes] = next_node;
 				num_stack_of_nodes ++;
 			}

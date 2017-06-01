@@ -32,7 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ast_util.h"
 #include "activity_estimation.h"
 #include "netlist_check.h"
-
+#include "vtr_memory.h"
 
 #define DEFAULT_STATIC_PROBABILITY .5
 #define DEFAULT_TRANSITION_DENSITY .5
@@ -103,7 +103,7 @@ void calc_transition_density(netlist_t *netlist)
 			if (current_node->type == BLIF_FUNCTION)
 			{
 				/* only one output */
-				act_data->transition_density = (double*)calloc(1,sizeof(double)); // only one output
+				act_data->transition_density = (double*)vtr::malloc(sizeof(double)); // only one output
 	
 				if (current_node->num_input_pins == 1)
 				{
@@ -142,7 +142,7 @@ void calc_transition_density(netlist_t *netlist)
 						density_val = density_val + calc_density(current_node, m, boolean_difference_function);
 
 						/* free the array */
-						free_me(boolean_difference_function);
+						vtr::free(boolean_difference_function);
 					}
 
 					act_data->transition_density[0] = density_val;
@@ -156,7 +156,7 @@ void calc_transition_density(netlist_t *netlist)
 				oassert(input_node->unique_node_data_id == ACTIVATION);
 		
 				/* just store since allocated in the initialization */
-				act_data->transition_density = (double*)calloc(1,sizeof(double));
+				act_data->transition_density = (double*)vtr::malloc(sizeof(double));
 				act_data->transition_density[0] = 2 * (input_data->static_probability[input_node_pin] * (1-input_data->static_probability[input_node_pin])); 
 			}
 			else if (current_node->type == OUTPUT_NODE)
@@ -167,7 +167,7 @@ void calc_transition_density(netlist_t *netlist)
 				oassert(input_node->unique_node_data_id == ACTIVATION);
 		
 				/* allocate and stre through */
-				act_data->transition_density = (double*)calloc(1,sizeof(double));
+				act_data->transition_density = (double*)vtr::malloc(sizeof(double));
 				act_data->transition_density[0] = input_data->static_probability[input_node_pin];
 			}
 			else if ((current_node->type == INPUT_NODE) || (current_node->type == VCC_NODE) || (current_node->type == GND_NODE))
@@ -199,7 +199,7 @@ void initialize_probabilities(char *input_file, netlist_t *netlist)
 			oassert(current_node->unique_node_data_id == RESET);
 
 			current_node->unique_node_data_id = ACTIVATION;
-			act_data = (activation_t*)calloc(1,sizeof(activation_t));
+			act_data = (activation_t*)vtr::malloc(sizeof(activation_t));
 			current_node->node_data = (void*)act_data;
 	
 			if (current_node->type == INPUT_NODE)
@@ -219,9 +219,9 @@ void initialize_probabilities(char *input_file, netlist_t *netlist)
 				else
 				{
 					/* initialize all the initial probabilities */
-					act_data->static_probability = (double*)calloc(1,sizeof(double));
-					act_data->transition_probability = (double*)calloc(1,sizeof(double));
-					act_data->transition_density = (double*)calloc(1,sizeof(double));
+					act_data->static_probability = (double*)vtr::malloc(sizeof(double));
+					act_data->transition_probability = (double*)vtr::malloc(sizeof(double));
+					act_data->transition_density = (double*)vtr::malloc(sizeof(double));
 
 					act_data->static_probability[0] = DEFAULT_STATIC_PROBABILITY;
 					act_data->transition_probability[0] = -1;
@@ -231,9 +231,9 @@ void initialize_probabilities(char *input_file, netlist_t *netlist)
 			else if (current_node->type == GND_NODE)
 			{
 				/* initialize all the initial probabilities */
-				act_data->static_probability = (double*)calloc(1,sizeof(double));
-				act_data->transition_probability = (double*)calloc(1,sizeof(double));
-				act_data->transition_density = (double*)calloc(1,sizeof(double));
+				act_data->static_probability = (double*)vtr::malloc(sizeof(double));
+				act_data->transition_probability = (double*)vtr::malloc(sizeof(double));
+				act_data->transition_density = (double*)vtr::malloc(sizeof(double));
 
 				act_data->static_probability[0] = 0.0;
 				act_data->transition_probability[0] = -1;
@@ -243,9 +243,9 @@ void initialize_probabilities(char *input_file, netlist_t *netlist)
 			else if (current_node->type == VCC_NODE)
 			{
 				/* initialize all the initial probabilities */
-				act_data->static_probability = (double*)calloc(1,sizeof(double));
-				act_data->transition_probability = (double*)calloc(1,sizeof(double));
-				act_data->transition_density = (double*)calloc(1,sizeof(double));
+				act_data->static_probability = (double*)vtr::malloc(sizeof(double));
+				act_data->transition_probability = (double*)vtr::malloc(sizeof(double));
+				act_data->transition_density = (double*)vtr::malloc(sizeof(double));
 
 				act_data->static_probability[0] = 1.0;
 				act_data->transition_probability[0] = -1;
@@ -255,9 +255,9 @@ void initialize_probabilities(char *input_file, netlist_t *netlist)
 			else if (current_node->type == FF_NODE)
 			{
 				/* initialize all the initial probabilities */
-				act_data->static_probability = (double*)calloc(1,sizeof(double));
-				act_data->transition_probability = (double*)calloc(1,sizeof(double));
-				act_data->transition_density = (double*)calloc(1,sizeof(double));
+				act_data->static_probability = (double*)vtr::malloc(sizeof(double));
+				act_data->transition_probability = (double*)vtr::malloc(sizeof(double));
+				act_data->transition_density = (double*)vtr::malloc(sizeof(double));
 
 				act_data->static_probability[0] = DEFAULT_STATIC_PROBABILITY;
 				act_data->transition_probability[0] = -1;
@@ -297,7 +297,7 @@ void calc_probabilities_and_init_act_data(netlist_t *netlist)
 					if (rep == 0)
 					{
 						/* only one output */
-						act_data->static_probability = (double*)calloc(1,sizeof(double));
+						act_data->static_probability = (double*)vtr::malloc(sizeof(double));
 					}
 	
 					for (k = 0; k < function_size; k++)
@@ -357,7 +357,7 @@ void calc_probabilities_and_init_act_data(netlist_t *netlist)
 					if (rep == 0)
 					{
 						/* only one output */
-						act_data->static_probability = (double*)calloc(1,sizeof(double));
+						act_data->static_probability = (double*)vtr::malloc(sizeof(double));
 					}
 	
 					act_data->static_probability[0] = input_data->static_probability[input_node_pin];
@@ -375,7 +375,7 @@ void calc_probabilities_and_init_act_data(netlist_t *netlist)
 				if (rep == 0)
 				{
 					/* calculate transition probability */
-					act_data->transition_probability = (double*)calloc(current_node->num_output_pins,sizeof(double));
+					act_data->transition_probability = (double*)vtr::malloc(sizeof(double)*current_node->num_output_pins);
 				}
 
 				for (k = 0; k < current_node->num_output_pins; k++)
@@ -405,7 +405,7 @@ short *boolean_difference(nnode_t *node, int variable_spot)
 	/* calculate the size of the boolean difference */
 	function_size = pow2(node->num_input_pins-1);
 
-	return_function = (short*)calloc(function_size,sizeof(short));
+	return_function = (short*)vtr::calloc(sizeof(short), function_size);
 
 	for (i = 0; i < function_size; i++)
 	{
@@ -530,9 +530,9 @@ double calc_density(nnode_t *node, int variable_spot, short *boolean_difference)
  *-------------------------------------------------------------------------------------------*/
 void output_activation_file_ace_and_function_file(char *output_filename, int lut_size, netlist_t *LUT_netlist, netlist_t *CLUSTER_netlist)
 {
-	char *ace_file_name = (char*)calloc((strlen(output_filename)+4+1),sizeof(char));
-	char *ac2_file_name = (char*)calloc((strlen(output_filename)+4+1),sizeof(char));
-	char *function_file_name = (char*)calloc((strlen(output_filename)+4+1),sizeof(char));
+	char *ace_file_name = (char*)vtr::malloc(sizeof(char)*(strlen(output_filename)+4+1));
+	char *ac2_file_name = (char*)vtr::malloc(sizeof(char)*(strlen(output_filename)+4+1));
+	char *function_file_name = (char*)vtr::malloc(sizeof(char)*(strlen(output_filename)+4+1));
 	int i, j, k, l;
 	FILE *ace_out;
 	FILE *ac2_out;
@@ -546,22 +546,20 @@ void output_activation_file_ace_and_function_file(char *output_filename, int lut
 	sprintf(function_file_name, "%s.fun", output_filename);
 
 	ace_out = fopen(ace_file_name, "w");
-	if (!ace_out){
+	if (ace_out == NULL)
+	{
 		error_message(ACTIVATION_ERROR, -1, -1, "Could not open output file %s\n", ace_file_name);
 	}
-	free_me(ace_out);
-	
 	ac2_out = fopen(ac2_file_name, "w");
-	if (!ac2_out){
+	if (ac2_out == NULL)
+	{
 		error_message(ACTIVATION_ERROR, -1, -1, "Could not open output file %s\n", ac2_file_name);
 	}
-	free_me(ac2_out);
-	
 	function_out = fopen(function_file_name, "w");
-	if (!function_out){
+	if (function_out == NULL)
+	{
 		error_message(ACTIVATION_ERROR, -1, -1, "Could not open output file %s\n", function_file_name);
 	}
-	free_me(function_out);
 
 	/* Go through the LUT netlist and print out the ace files */
 	for (i = 0; i < LUT_netlist->num_forward_levels; i++)
@@ -661,7 +659,7 @@ void output_activation_file_ace_and_function_file(char *output_filename, int lut
 		for (k = 0; k < internal_subblocks->num_internal_nodes; k++)
 		{
 			nnode_t *current_subblock = internal_subblocks->internal_nodes[k];
-			char *output_search_name = (char*)calloc((strlen(current_subblock->name)+1+4),sizeof(char));
+			char *output_search_name = (char*)vtr::malloc(sizeof(char)*(strlen(current_subblock->name)+1+4));
 			sprintf(output_search_name, "out:%s", current_subblock->name);
 
 			if ((sc_spot = sc_lookup_string(internal_subblocks->nodes_sc, output_search_name)) != -1)
@@ -682,7 +680,7 @@ void output_activation_file_ace_and_function_file(char *output_filename, int lut
 				fprintf (ac2_out, "intercluster_net_density %s %f\n", current_subblock->name, act_data->transition_density[0]);
 			}
 
-			free_me(output_search_name);
+			vtr::free(output_search_name);
 		}
 	}
 
@@ -865,13 +863,13 @@ void cleanup_activation(netlist_t *netlist)
 			oassert(act_data != NULL);
 
 			if (act_data->static_probability != NULL)
-				free_me(act_data->static_probability);
+				vtr::free(act_data->static_probability);
 			if (act_data->transition_density != NULL)
-				free_me(act_data->transition_density);
+				vtr::free(act_data->transition_density);
 			if (act_data->transition_probability != NULL)
-				free_me(act_data->transition_probability);
+				vtr::free(act_data->transition_probability);
 
-			free_me(act_data);
+			vtr::free(act_data);
 			current_node->unique_node_data_id = RESET;
 		}
 	}

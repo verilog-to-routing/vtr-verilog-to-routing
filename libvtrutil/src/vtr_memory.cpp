@@ -7,7 +7,19 @@
 #include "vtr_error.h"
 #include "vtr_util.h"
 
+/*----------------------------------------------------------------------------------
+ *	TODO great candidate for Garbage collector Boehm sweep would make things easier
+ *	for untrained people, especially in c
+ *--------------------------------------------------------------------------------*/
+
 namespace vtr {
+	
+void free(void *some){
+	if(some){
+		std::free(some);
+		some = NULL;
+	}
+}
 
 void* calloc(size_t nelem, size_t size) {
 	void *ret;

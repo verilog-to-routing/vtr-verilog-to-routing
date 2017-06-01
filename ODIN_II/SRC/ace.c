@@ -26,7 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "cudd.h"
 #include "ace.h"
 #include "st.h"
-
+#include "vtr_memory.h"
 
 #define ACE_P0TO1(P1,PS)		((P1)==0.0)?0.0:(((P1)==1.0)?1.0:0.5*PS/(1.0-(P1)))
 #define ACE_P1TO0(P1,PS)		((P1)==0.0)?1.0:(((P1)==0.0)?0.0:0.5*PS/(P1))
@@ -60,7 +60,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 typedef unsigned int *pset;
 
-#define ALLOC(type, num)	(type*)calloc(num,sizeof(type))
+#define ALLOC(type, num)	((type *) malloc(sizeof(type) * (num)))
 
 #define set_remove(set, e)      (set[WHICH_WORD(e)] &= ~ (1 << WHICH_BIT(e)))
 #define set_insert(set, e)      (set[WHICH_WORD(e)] |= 1 << WHICH_BIT(e))
@@ -85,7 +85,6 @@ void output_ace_info_node ( char *name, ace_obj_info_t *info, FILE *act_out );
 pset set_clear(pset r, int size);
 ace_cube_t * ace_cube_dup(ace_cube_t * cube);
 ace_cube_t * ace_cube_new_dc(int num_literals);
-void ace_cube_free_me(ace_cube_t * cube);
 DdNode * build_bdd_for_node ( DdManager * dd, nnode_t *node );
 void ace_bdd_count_paths(DdManager * mgr, DdNode * bdd, int * num_one_paths, int * num_zero_paths);
 double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd, ace_cube_t * cube, nnode_t *node , st_table *visited, int phase );
@@ -333,8 +332,7 @@ void compute_switching_activities ( netlist_t *net ) {
             }
         }
     }
-    Cudd_RecursiveDeref(dd,Cudd_ReadOne(dd));
-    Cudd_Quit(dd); 
+    Cudd_Quit(dd);
 }
 
 
@@ -468,7 +466,7 @@ ace_cube_t * ace_cube_dup(ace_cube_t * cube) {
     int i;
     ace_cube_t * cube_copy;
 
-    cube_copy = (ace_cube_t * ) calloc(1,sizeof(ace_cube_t));
+    cube_copy = (ace_cube_t * ) malloc(sizeof(ace_cube_t));
     cube_copy->static_prob = cube->static_prob;
     cube_copy->num_literals = cube->num_literals;
     cube_copy->cube = set_new (2 * cube->num_literals);
@@ -502,7 +500,7 @@ ace_cube_t * ace_cube_new_dc(int num_literals) {
     int i;
     ace_cube_t * new_cube;
 
-    new_cube = (ace_cube_t * ) calloc(1,sizeof(ace_cube_t));
+    new_cube = (ace_cube_t * ) malloc(sizeof(ace_cube_t));
     new_cube->num_literals = num_literals;
     new_cube->static_prob = 1.0;
     new_cube->cube = set_new (2 * num_literals);
@@ -513,16 +511,6 @@ ace_cube_t * ace_cube_new_dc(int num_literals) {
     }
 
     return (new_cube);
-}
-
-
-/*---------------------------------------------------------------------------------------------
- * (function: ace_cube_free )
- *
- *-------------------------------------------------------------------------------------------*/
-void ace_cube_free_me(ace_cube_t * cube) {
-    free_me(cube->cube);
-    free_me(cube);
 }
 
 
@@ -619,7 +607,7 @@ double calc_cube_switch_prob_recur(DdManager * mgr, DdNode * bdd, ace_cube_t * c
 
     i = Cudd_Regular(bdd)->index;
 
-    current_prob = ( double * ) calloc(1,sizeof(double));
+    current_prob = ( double * ) malloc(sizeof(double));
 
     if (Cudd_IsComplement(bdd)) {
 	bdd_if1 = Cudd_E(bdd);
@@ -724,15 +712,16 @@ double calc_switch_prob_recur(DdManager * mgr, DdNode * bdd_next, DdNode * bdd, 
     set_insert(cube1->cube, 2 * i + 1);
     switch_prob_t = calc_switch_prob_recur(mgr, bdd_next, bdd_if1, cube1, node,
 					   P1 * info->static_prob, phase );
-    ace_cube_free_me(cube1);
-
+    vtr::free(cube1->cube);
+    vtr::free(cube1);
     /* Recursive call down the ELSE branch */
     cube0 = ace_cube_dup(cube);
     set_insert(cube0->cube, 2 * i);
     set_remove(cube0->cube, 2 * i + 1);
     switch_prob_e = calc_switch_prob_recur(mgr, bdd_next, bdd_if0,  cube0, node,
 					   P1 * (1.0 - info->static_prob), phase );
-    ace_cube_free_me(cube0);
+    vtr::free(cube0->cube);
+    vtr::free(cube0);
 
     return (switch_prob_t + switch_prob_e);
 }

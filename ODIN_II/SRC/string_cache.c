@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "types.h"
-#include "string_cache.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
+#include "string_cache.h"
 
 unsigned long
 string_hash(STRING_CACHE * sc,
@@ -34,15 +34,15 @@ generate_sc_hash(STRING_CACHE * sc)
     long hash;
 
     if(sc->string_hash != NULL)
-		free_me(sc->string_hash);
+		vtr::free(sc->string_hash);
     if(sc->next_string != NULL)
-		free_me(sc->next_string);
+		vtr::free(sc->next_string);
     sc->string_hash_size = sc->size * 2 + 11;
     sc->string_hash = (long *)sc_do_alloc(sc->string_hash_size, sizeof(long));
     sc->next_string = (long *)sc_do_alloc(sc->size, sizeof(long));
     memset(sc->string_hash, 0xff, sc->string_hash_size * sizeof(long));
     memset(sc->next_string, 0xff, sc->size * sizeof(long));
-    for(i = 0; i < sc->freedom; i++)
+    for(i = 0; i < sc->free; i++)
 	{
 	    hash = string_hash(sc, sc->string[i]) % sc->string_hash_size;
 	    sc->next_string[i] = sc->string_hash[hash];
@@ -61,7 +61,7 @@ sc_new_string_cache(void)
     sc->string_hash_size = 0;
     sc->string_hash = NULL;
     sc->next_string = NULL;
-    sc->freedom = 0;
+    sc->free = 0;
     sc->string = (char **)sc_do_alloc(sc->size, sizeof(char *));
     sc->data = (void **)sc_do_alloc(sc->size, sizeof(void *));
     sc->mod = 834535547;
@@ -103,27 +103,27 @@ sc_add_string(STRING_CACHE * sc,
     i = sc_lookup_string(sc, string);
     if(i >= 0)
 		return i;
-    if(sc->freedom >= sc->size)
+    if(sc->free >= sc->size)
 	{
 	    sc->size = sc->size * 2 + 10;
 
 	    a = sc_do_alloc(sc->size, sizeof(char *));
-	    if(sc->freedom > 0)
-		memcpy(a, sc->string, sc->freedom * sizeof(char *));
-	    free_me(sc->string);
+	    if(sc->free > 0)
+		memcpy(a, sc->string, sc->free * sizeof(char *));
+	    vtr::free(sc->string);
 	    sc->string = (char **)a;
 
 	    a = sc_do_alloc(sc->size, sizeof(void *));
-	    if(sc->freedom > 0)
-		memcpy(a, sc->data, sc->freedom * sizeof(void *));
-	    free_me(sc->data);
+	    if(sc->free > 0)
+		memcpy(a, sc->data, sc->free * sizeof(void *));
+	    vtr::free(sc->data);
 	    sc->data = (void **)a;
 
 	    generate_sc_hash(sc);
 	}
-    i = sc->freedom;
-    sc->freedom++;
-    sc->string[i] =vtr::strdup(string);
+    i = sc->free;
+    sc->free++;
+    sc->string[i] = vtr::strdup(string);
     sc->data[i] = NULL;
     hash = string_hash(sc, string) % sc->string_hash_size;
     sc->next_string[i] = sc->string_hash[hash];
@@ -137,7 +137,7 @@ sc_valid_id(STRING_CACHE * sc,
 {
     if(string_id < 0)
 	return 0;
-    if(string_id >= sc->freedom)
+    if(string_id >= sc->free)
 	return 0;
     return 1;
 }
@@ -152,14 +152,14 @@ sc_do_alloc(long a,
 	a = 1;
     if(b < 1)
 	b = 1;
-    r = calloc(a, b);
+    r = vtr::calloc(a, b);
     while(r == NULL)
 	{
 	    fprintf(stderr,
 		    "Failed to allocated %ld chunks of %ld bytes (%ld bytes total)\n",
 		    a, b, a * b);
 	    sleep(1);
-	    r = calloc(a, b);
+	    r = vtr::calloc(a, b);
 	}
     return r;
 }
@@ -169,27 +169,27 @@ STRING_CACHE * sc_free_string_cache(STRING_CACHE * sc)
     long i;
 
     if(sc == NULL) return NULL;
-    for(i = 0; i < sc->freedom; i++)
+    for(i = 0; i < sc->free; i++)
 	if (sc->string != NULL)
-	    free_me(sc->string[i]);
-    free_me(sc->string);
+	    vtr::free(sc->string[i]);
+    vtr::free(sc->string);
     sc->string = NULL;
     if(sc->data != NULL)
 	{
-//	    free_me(sc->data);
+//	    vtr::free(sc->data);
 	    sc->data = NULL;
 	}
     if(sc->string_hash != NULL)
 	{
-	    free_me(sc->string_hash);
+	    vtr::free(sc->string_hash);
 	    sc->string_hash = NULL;
 	}
     if(sc->next_string != NULL)
 	{
-	    free_me(sc->next_string);
+	    vtr::free(sc->next_string);
 	    sc->next_string = NULL;
 	}
-    free_me(sc);
+    vtr::free(sc);
     sc = NULL;
     return sc;
 }

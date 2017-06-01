@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 
 #include "vtr_error.h"
+
 #include "globals.h"
 #include "types.h"
 #include "netlist_utils.h"
@@ -140,6 +141,7 @@ int main(int argc, char **argv)
 	report_sub_distribution();
 	deregister_hard_blocks();
 	#endif
+
 	return 0;
 } 
 

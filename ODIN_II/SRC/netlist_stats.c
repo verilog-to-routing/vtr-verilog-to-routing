@@ -31,6 +31,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "netlist_stats.h"
 #include "multipliers.h"
+#include "vtr_memory.h"
 
 
 /*------------------------------------------------------------------------
@@ -46,7 +47,7 @@ void netlist_stats(netlist_t *netlist, char *path, char *name)
 	fp = fopen(path_and_file, "w");
 
 	/* allocate the stat structure */
-	netlist->stats = (netlist_stats_t*)calloc(1,sizeof(netlist_stats_t));
+	netlist->stats = (netlist_stats_t*)vtr::malloc(sizeof(netlist_stats_t));
 	netlist->stats->fanin_distribution = NULL;
 	netlist->stats->num_fanin_distribution = 0;
 	netlist->stats->fanout_distribution = NULL;
@@ -282,8 +283,8 @@ void calculate_combinational_shapes(netlist_t *netlist)
 {
 	int i;
 
-	netlist->stats->combinational_shape = (int **)calloc(netlist->num_sequential_levels,sizeof(int*));
-	netlist->stats->num_combinational_shape_for_sequential_level = (int *)calloc(netlist->num_sequential_levels,sizeof(int));
+	netlist->stats->combinational_shape = (int **)vtr::malloc(sizeof(int*)*netlist->num_sequential_levels);
+	netlist->stats->num_combinational_shape_for_sequential_level = (int *)vtr::malloc(sizeof(int)*netlist->num_sequential_levels);
 
 	/* initializ the shape records */
 	for (i = 0; i < netlist->num_sequential_levels; i++)
@@ -368,20 +369,20 @@ void depth_first_traversal_graphcrunch_stats(nnode_t *node, FILE *fp, int traver
 				if (node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
-					temp_string = (char*)realloc(temp_string, sizeof(char)*strlen(temp_string)+1+2);
+					temp_string = (char*)vtr::realloc(temp_string, sizeof(char)*strlen(temp_string)+1+2);
 					sprintf(temp_string, "%s_O", temp_string);
 				}
 				if (next_node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
-					temp_string2 = (char*)realloc(temp_string2, sizeof(char)*strlen(temp_string2)+1+2);
+					temp_string2 = (char*)vtr::realloc(temp_string2, sizeof(char)*strlen(temp_string2)+1+2);
 					sprintf(temp_string2, "%s_O", temp_string2);
 				}
 
 				fprintf(fp, "%s\t%s\n", temp_string, temp_string2);
 
-				free_me(temp_string);
-				free_me(temp_string2);
+				vtr::free(temp_string);
+				vtr::free(temp_string2);
 
 				/* recursive call point */
 				depth_first_traversal_graphcrunch_stats(next_node, fp, traverse_mark_number);
@@ -430,7 +431,7 @@ void add_to_distribution(int **distrib_ptr, int *distrib_size, int new_element)
 	else
 	{
 		(*distrib_size)++;
-		(*distrib_ptr) = (int*)realloc((*distrib_ptr), sizeof(int)*(new_element+1));
+		(*distrib_ptr) = (int*)vtr::realloc((*distrib_ptr), sizeof(int)*(new_element+1));
 		(*distrib_ptr)[new_element]++;
 	}
 }

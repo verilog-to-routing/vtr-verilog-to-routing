@@ -21,8 +21,6 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */ 
 
-
-
 #include <string.h>
 #include <math.h>
 #include "globals.h"
@@ -33,7 +31,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "memories.h"
 #include "partial_map.h"
 #include "vtr_util.h"
-
+#include "vtr_memory.h"
 
 using vtr::t_linked_vptr;
 
@@ -149,7 +147,7 @@ void remap_input_port_to_memory(nnode_t *node, signal_list_t *signals, const cha
 	for (i = 0; i < signals->count; i++, j++)
 	{
 		npin_t *pin = signals->pins[i];
-		pin->mapping = strdup(port_name);
+		pin->mapping = vtr::strdup(port_name);
 		remap_pin_to_new_node(pin, node, j);
 	}
 }
@@ -185,7 +183,7 @@ void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, const ch
 		npin_t *pin = signalsvar->pins[i];
 		//if (pin->node && pin->node->input_pins && pin->node->input_pins[pin->pin_node_idx])
 		//	pin->node->input_pins[pin->pin_node_idx] = NULL;
-		pin->mapping = strdup(port_name);
+		pin->mapping = vtr::strdup(port_name);
 		//if (pin->node)
 		//	remap_pin_to_new_node(pin, node, j);
 		//else
@@ -220,7 +218,7 @@ void remap_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char 
 	for (i = 0; i < signalsvar->count; i++, j++)
 	{
 		npin_t *pin = signalsvar->pins[i];
-		pin->mapping = strdup(port_name);
+		pin->mapping = vtr::strdup(port_name);
 		remap_pin_to_new_node(pin, node, j);
 	}
 }
@@ -254,7 +252,7 @@ void add_output_port_to_memory(nnode_t *node, signal_list_t *signals, const char
 	for (i = 0; i < signals->count; i++, j++)
 	{
 		npin_t *pin = signals->pins[i];
-		pin->mapping = strdup(port_name);
+		pin->mapping = vtr::strdup(port_name);
 		add_output_pin_to_node(node, pin, j);
 	}
 }
@@ -368,10 +366,8 @@ void split_sp_memory_depth(nnode_t *node, int split_size)
 		add_pin_to_signal_list(new_addr, signals->addr->pins[i]);
 
 	/* Create the new memory node */
-	nnode_t *new_mem_node1 =(nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(new_mem_node1);
-	nnode_t *new_mem_node2 = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(new_mem_node2);
+	nnode_t *new_mem_node1 = allocate_nnode();
+	nnode_t *new_mem_node2 = allocate_nnode();
 
 	// Append the new name with an __S or __H
 	new_mem_node1->name = append_string(node->name, "__S");
@@ -445,10 +441,10 @@ void split_sp_memory_depth(nnode_t *node, int split_size)
 		remap_pin_to_new_node(pin, mux, 0);
 
 		connect_nodes(new_mem_node1, i, mux, 2);
-		new_mem_node1->output_pins[i]->mapping = strdup("out");
+		new_mem_node1->output_pins[i]->mapping = vtr::strdup("out");
 
 		connect_nodes(new_mem_node2, i, mux, 3);
-		new_mem_node2->output_pins[i]->mapping = strdup("out");
+		new_mem_node2->output_pins[i]->mapping = vtr::strdup("out");
 	}
 
 	free_sp_ram_signals(signals);
@@ -492,10 +488,9 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
 		add_pin_to_signal_list(new_addr2, signals->addr2->pins[i]);
 
 	/* Create the new memory node */
-	nnode_t *new_mem_node1 =(nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	nnode_t *new_mem_node2 =(nnode_t *)my_malloc_struct(sizeof(nnode_t));
-	allocate_nnode(new_mem_node1);
-	allocate_nnode(new_mem_node2);
+	nnode_t *new_mem_node1 = allocate_nnode();
+	nnode_t *new_mem_node2 = allocate_nnode();
+
 	// Append the new name with an __S or __H
 	new_mem_node1->name = append_string(node->name, "__S");
 	new_mem_node2->name = append_string(node->name, "__H");
@@ -591,10 +586,10 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
 		remap_pin_to_new_node(pin, mux, 0);
 
 		connect_nodes(new_mem_node1, i, mux, 2);
-		new_mem_node1->output_pins[i]->mapping = strdup("out1");
+		new_mem_node1->output_pins[i]->mapping = vtr::strdup("out1");
 
 		connect_nodes(new_mem_node2, i, mux, 3);
-		new_mem_node2->output_pins[i]->mapping = strdup("out1");
+		new_mem_node2->output_pins[i]->mapping = vtr::strdup("out1");
 	}
 
 	/* Copy over the output pins for the new memory */
@@ -615,10 +610,10 @@ void split_dp_memory_depth(nnode_t *node, int split_size)
 		remap_pin_to_new_node(pin, mux, 0);
 
 		connect_nodes(new_mem_node1, pin_index, mux, 2);
-		new_mem_node1->output_pins[pin_index]->mapping = strdup("out2");
+		new_mem_node1->output_pins[pin_index]->mapping = vtr::strdup("out2");
 
 		connect_nodes(new_mem_node2, pin_index, mux, 3);
-		new_mem_node2->output_pins[pin_index]->mapping = strdup("out2");
+		new_mem_node2->output_pins[pin_index]->mapping = vtr::strdup("out2");
 	}
 
 	free_dp_ram_signals(signals);
@@ -657,8 +652,7 @@ void split_sp_memory_width(nnode_t *node, int target_size)
 		int output_pins_moved = 0;
 		for (i = 0; i < num_memories; i++)
 		{
-			nnode_t *new_node= (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-			allocate_nnode(new_node);
+			nnode_t *new_node = allocate_nnode();
 			new_node->name = append_string(node->name, "-%d",i);
 			sp_memory_list = insert_in_vptr_list(sp_memory_list, new_node);
 
@@ -783,8 +777,7 @@ void split_dp_memory_width(nnode_t *node, int target_size)
 		int out2_pins_moved  = 0;
 		for (i = 0; i < num_memories; i++)
 		{
-			nnode_t *new_node= (nnode_t *)my_malloc_struct(sizeof(nnode_t));
-			allocate_nnode(new_node);
+			nnode_t *new_node = allocate_nnode();
 			new_node->name = append_string(node->name, "-%d",i);
 			dp_memory_list = insert_in_vptr_list(dp_memory_list, new_node);
 
@@ -1224,11 +1217,10 @@ void pad_memory_output_port(nnode_t *node, netlist_t * /*netlist*/, t_model *mod
 		for (i = port_index + port_size; i < port_index + target_size; i++)
 		{
 			// Add new pins to the higher order spots.
-			npin_t *new_pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-			allocate_npin(new_pin);
+			npin_t *new_pin = allocate_npin();
 			// Pad outputs with a unique and descriptive name to avoid collisions.
 			new_pin->name = append_string("", "unconnected_memory_output~%d", pad_pin_number++);
-			new_pin->mapping = strdup(port_name);
+			new_pin->mapping = vtr::strdup(port_name);
 			add_output_pin_to_node(node, new_pin, i);
 		}
 		node->output_port_sizes[port_number] = target_size;
@@ -1269,7 +1261,7 @@ void pad_memory_input_port(nnode_t *node, netlist_t *netlist, t_model *model, co
 		for (i = port_index + port_size; i < port_index + target_size; i++)
 		{
 			add_input_pin_to_node(node, get_pad_pin(netlist), i);
-			node->input_pins[i]->mapping = strdup(port_name);
+			node->input_pins[i]->mapping = vtr::strdup(port_name);
 		}
 
 		node->input_port_sizes[port_number] = target_size;
@@ -1315,7 +1307,7 @@ sp_ram_signals *get_sp_ram_signals(nnode_t *node)
 	oassert(is_sp_ram(node));
 
 	ast_node_t *ast_node = node->related_ast_node;
-	sp_ram_signals *signals = (sp_ram_signals *)calloc(1,sizeof(sp_ram_signals));
+	sp_ram_signals *signals = (sp_ram_signals *)vtr::malloc(sizeof(sp_ram_signals));
 
 	// Separate the input signals according to their mapping.
 	signals->addr = init_signal_list();
@@ -1370,7 +1362,7 @@ void free_sp_ram_signals(sp_ram_signals *signalsvar)
 	free_signal_list(signalsvar->addr);
 	free_signal_list(signalsvar->out);
 
-	free_me(signalsvar);
+	vtr::free(signalsvar);
 }
 
 dp_ram_signals *get_dp_ram_signals(nnode_t *node)
@@ -1378,7 +1370,7 @@ dp_ram_signals *get_dp_ram_signals(nnode_t *node)
 	oassert(is_dp_ram(node));
 
 	ast_node_t *ast_node = node->related_ast_node;
-	dp_ram_signals *signals = (dp_ram_signals *)calloc(1,sizeof(dp_ram_signals));
+	dp_ram_signals *signals = (dp_ram_signals *)vtr::malloc(sizeof(dp_ram_signals));
 
 	// Separate the input signals according to their mapping.
 	signals->addr1 = init_signal_list();
@@ -1416,7 +1408,8 @@ dp_ram_signals *get_dp_ram_signals(nnode_t *node)
 	}
 
 	// Sanity checks.
-	oassert(signals->clk && signals->we1 && signals->we2);
+	oassert(signals->clk != NULL);
+	oassert(signals->we1 != NULL && signals->we2 != NULL);
 	oassert(signals->addr1->count >= 1 && signals->data1->count >= 1);
 	oassert(signals->addr2->count >= 1 && signals->data2->count >= 1);
 	oassert(signals->addr1->count == signals->addr2->count);
@@ -1452,7 +1445,7 @@ void free_dp_ram_signals(dp_ram_signals *signalsvar)
 	free_signal_list(signalsvar->out1);
 	free_signal_list(signalsvar->out2);
 
-	free_me(signalsvar);
+	vtr::free(signalsvar);
 }
 
 /*
@@ -1470,7 +1463,7 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 	// The total number of memory addresses. (2^address_bits)
 	int num_addr = decoder->count;
 
-	nnode_t **and_gates = (nnode_t **)calloc(num_addr,sizeof(nnode_t *));
+	nnode_t **and_gates = (nnode_t **)vtr::malloc(sizeof(nnode_t *) * num_addr);
 
 	int i;
 	for (i = 0; i < num_addr; i++)
@@ -1534,7 +1527,7 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 		instantiate_multi_port_mux(output_mux, mark, netlist);
 	}
 
-	free_me(and_gates);
+	vtr::free(and_gates);
 
 	// Free signal lists.
 	free_sp_ram_signals(signals);
@@ -1564,9 +1557,9 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 	int data_width = signals->data1->count;
 
 	// Arrays of common gates, one per address.
-	nnode_t **and1_gates = (nnode_t **)calloc(num_addr,sizeof(nnode_t *));
-	nnode_t **and2_gates = (nnode_t **)calloc(num_addr,sizeof(nnode_t *));
-	nnode_t **or_gates =   (nnode_t **)calloc(num_addr,sizeof(nnode_t *));
+	nnode_t **and1_gates = (nnode_t **)vtr::malloc(sizeof(nnode_t *) * num_addr);
+	nnode_t **and2_gates = (nnode_t **)vtr::malloc(sizeof(nnode_t *) * num_addr);
+	nnode_t **or_gates = (nnode_t **)vtr::malloc(sizeof(nnode_t *) * num_addr);
 
 	int i;
 	for (i = 0; i < num_addr; i++)
@@ -1666,9 +1659,9 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 		instantiate_multi_port_mux(output_mux2, mark, netlist);
 	}
 
-	free_me(and1_gates);
-	free_me(and2_gates);
-	free_me(or_gates);
+	vtr::free(and1_gates);
+	vtr::free(and2_gates);
+	vtr::free(or_gates);
 
 	// Free signal lists.
 	free_dp_ram_signals(signals);
@@ -1695,21 +1688,17 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 	{
 		nnode_t *not_g = make_not_gate(node, mark);
 		remap_pin_to_new_node(input_list->pins[i], not_g, 0);
-		npin_t *not_output  = (npin_t *)my_malloc_struct(sizeof(npin_t));
-		allocate_npin(not_output);
+		npin_t *not_output = allocate_npin();
 		add_output_pin_to_node(not_g, not_output, 0);
-		nnet_t *net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
-		allocate_nnet(net);
+		nnet_t *net = allocate_nnet();
 		add_driver_pin_to_net(net, not_output);
-		
-		not_output  = (npin_t *)my_malloc_struct(sizeof(npin_t));
-		allocate_npin(not_output);
+		not_output = allocate_npin();
 		add_fanout_pin_to_net(net, not_output);
 		add_pin_to_signal_list(not_gates, not_output);
 
-		npin_t *pin = (npin_t *)my_malloc_struct(sizeof(npin_t));
-		allocate_npin(pin);
+		npin_t *pin = allocate_npin();
 		net = input_list->pins[i]->net;
+
 		add_fanout_pin_to_net(net, pin);
 
 		input_list->pins[i] = pin;
@@ -1738,14 +1727,11 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 		}
 
 		// Add output pin, net, and fanout pin.
-		npin_t *output = (npin_t *)my_malloc_struct(sizeof(npin_t));
-		allocate_npin(output);
-		nnet_t *net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
-		allocate_nnet(net);
+		npin_t *output = allocate_npin();
+		nnet_t *net = allocate_nnet();
 		add_output_pin_to_node(and_g, output, 0);
 		add_driver_pin_to_net(net, output);
-		output = (npin_t *)my_malloc_struct(sizeof(npin_t));
-		allocate_npin(output);
+		output = allocate_npin();
 		add_fanout_pin_to_net(net, output);
 
 		// Add the fanout pin (decoder output) to the return list.

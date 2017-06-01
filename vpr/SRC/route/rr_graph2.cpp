@@ -159,7 +159,7 @@ int *get_seg_track_counts(
 
 	/* Free temps */
 	if (demand) {
-		free(demand);
+		vtr::free(demand);
 		demand = NULL;
 	}
 
@@ -316,7 +316,7 @@ t_seg_details *alloc_and_load_seg_details(
 	} /* End for each segment type. */
 
 	/* free variables */
-	free(sets_per_seg_type);
+	vtr::free(sets_per_seg_type);
 
 	if (num_seg_details) {
 		*num_seg_details = cur_track;
@@ -588,10 +588,10 @@ void free_seg_details(
 
 	/* Frees all the memory allocated to an array of seg_details structures. */
 	for (int i = 0; i < max_chan_width; ++i) {
-		free(seg_details[i].cb);
-		free(seg_details[i].sb);
+		vtr::free(seg_details[i].cb);
+		vtr::free(seg_details[i].sb);
 	}
-	free(seg_details);
+	vtr::free(seg_details);
 }
 
 void free_chan_details(
@@ -849,11 +849,11 @@ int get_unidir_opin_connections(
 	}
 
 	if (inc_muxes) {
-		free(inc_muxes);
+		vtr::free(inc_muxes);
 		inc_muxes = NULL;
 	}
 	if (dec_muxes) {
-		free(dec_muxes);
+		vtr::free(dec_muxes);
 		dec_muxes = NULL;
 	}
 
@@ -1254,17 +1254,17 @@ void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 				continue;
 			}
 			if (L_rr_node_indices[SINK][i][j].list != NULL) {
-				free(L_rr_node_indices[SINK][i][j].list);
+				vtr::free(L_rr_node_indices[SINK][i][j].list);
 			}
 			if (L_rr_node_indices[IPIN][i][j].list != NULL) {
-				free(L_rr_node_indices[IPIN][i][j].list);
+				vtr::free(L_rr_node_indices[IPIN][i][j].list);
 			}
 		}
-		free(L_rr_node_indices[SINK][i]);
-		free(L_rr_node_indices[IPIN][i]);
+		vtr::free(L_rr_node_indices[SINK][i]);
+		vtr::free(L_rr_node_indices[IPIN][i]);
 	}
-	free(L_rr_node_indices[SINK]);
-	free(L_rr_node_indices[IPIN]);
+	vtr::free(L_rr_node_indices[SINK]);
+	vtr::free(L_rr_node_indices[IPIN]);
 
 	/* free CHANY rr node indices */
 	for (i = 0; i <= (device_ctx.nx + 1); ++i) {
@@ -1275,11 +1275,11 @@ void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 			if (L_rr_node_indices[CHANY][i][j].list == NULL) {
 				continue;
 			}
-			free(L_rr_node_indices[CHANY][i][j].list);
+			vtr::free(L_rr_node_indices[CHANY][i][j].list);
 		}
-		free(L_rr_node_indices[CHANY][i]);
+		vtr::free(L_rr_node_indices[CHANY][i]);
 	}
-	free(L_rr_node_indices[CHANY]);
+	vtr::free(L_rr_node_indices[CHANY]);
 
 	/* free CHANX rr node indices */
 	for (i = 0; i < (device_ctx.ny + 1); ++i) {
@@ -1290,13 +1290,13 @@ void free_rr_node_indices(vtr::t_ivec *** L_rr_node_indices) {
 			if (L_rr_node_indices[CHANX][i][j].list == NULL) {
 				continue;
 			}
-			free(L_rr_node_indices[CHANX][i][j].list);
+			vtr::free(L_rr_node_indices[CHANX][i][j].list);
 		}
-		free(L_rr_node_indices[CHANX][i]);
+		vtr::free(L_rr_node_indices[CHANX][i]);
 	}
-	free(L_rr_node_indices[CHANX]);
+	vtr::free(L_rr_node_indices[CHANX]);
 
-	free(L_rr_node_indices);
+	vtr::free(L_rr_node_indices);
 }
 
 int get_rr_node_index(
@@ -1883,7 +1883,7 @@ static int get_unidir_track_to_chan_seg(
 	/* Can't connect if no muxes. */
 	if (num_labels < 1) {
 		if (mux_labels) {
-			free(mux_labels);
+			vtr::free(mux_labels);
 			mux_labels = NULL;
 		}
 		return 0;
@@ -1924,7 +1924,7 @@ static int get_unidir_track_to_chan_seg(
 	}
 
 	if (mux_labels) {
-		free(mux_labels);
+		vtr::free(mux_labels);
 		mux_labels = NULL;
 	}
 	return count;
@@ -2129,12 +2129,12 @@ void free_sblock_pattern_lookup(
 	 * we can still access them. The comments beside
 	 * each one indicate the corresponding name used when
 	 * allocating them. */
-	free(*****sblock_pattern); /* from_track_types */
-	free(****sblock_pattern); /* from_track_list */
-	free(***sblock_pattern); /* to_side_list */
-	free(**sblock_pattern); /* from_side_list */
-	free(*sblock_pattern); /* j_list */
-	free(sblock_pattern); /* i_list */
+	vtr::free(*****sblock_pattern); /* from_track_types */
+	vtr::free(****sblock_pattern); /* from_track_list */
+	vtr::free(***sblock_pattern); /* to_side_list */
+	vtr::free(**sblock_pattern); /* from_side_list */
+	vtr::free(*sblock_pattern); /* j_list */
+	vtr::free(sblock_pattern); /* i_list */
 }
 
 void load_sblock_pattern_lookup(
@@ -2371,10 +2371,10 @@ void load_sblock_pattern_lookup(
 
 	for (int side = 0; side < 4; ++side) {
 		if (incoming_wire_label[side]) {
-			free(incoming_wire_label[side]);
+			vtr::free(incoming_wire_label[side]);
 		}
 		if (wire_mux_on_track[side]) {
-			free(wire_mux_on_track[side]);
+			vtr::free(wire_mux_on_track[side]);
 		}
 	}
 }

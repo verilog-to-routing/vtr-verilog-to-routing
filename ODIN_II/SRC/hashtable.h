@@ -24,7 +24,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define HASHTABLE_H
 #define hashtable_t struct hashtable_t_t
 #define hashtable_node_t struct hashtable_node_t_t
-
 #include<sys/types.h>
 #include<stdint.h>
 

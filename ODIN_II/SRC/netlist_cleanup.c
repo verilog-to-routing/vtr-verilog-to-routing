@@ -20,7 +20,6 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */ 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -28,6 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 #include "errors.h"
 #include "netlist_utils.h"
+#include "vtr_memory.h"
 
 
 /* Used in the nnode_t.node_data field to mark if the node was already visited
@@ -66,7 +66,7 @@ void remove_unused_logic(netlist_t *netlist);
 
 node_list_t* insert_node_list(node_list_t* node_list, nnode_t *node){
 	node_list->node = node;
-	node_list->next = (node_list_t*)calloc(1, sizeof(node_list_t));
+	node_list->next = (node_list_t*)vtr::calloc(1, sizeof(node_list_t));
 	return node_list->next;
 }
 

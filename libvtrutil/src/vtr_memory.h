@@ -18,6 +18,7 @@ namespace vtr {
                     * byte in the current chunk		*/
     };
 
+    void free(void *some);
     void* calloc(size_t nelem, size_t size);
     void* malloc(size_t size);
     void* realloc(void *ptr, size_t size);

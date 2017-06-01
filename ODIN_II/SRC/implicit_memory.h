@@ -23,7 +23,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _IMPLICIT_MEMORY_H_
 #define _IMPLICIT_MEMORY_H_
 
-
 extern hashtable_t *implicit_memories;
 extern hashtable_t *implicit_memory_inputs;
 
