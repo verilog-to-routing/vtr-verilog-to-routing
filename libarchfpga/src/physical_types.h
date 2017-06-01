@@ -936,7 +936,7 @@ struct t_rr_switch_inf {
 	float Tdel;
 	float mux_trans_size;
 	float buf_size;
-	char *name;
+	const char *name;
 	e_power_buffer_type power_buffer_type;
 	float power_buffer_size;
 

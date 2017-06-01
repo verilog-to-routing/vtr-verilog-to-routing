@@ -32,246 +32,245 @@ static char **ReadOnOff(char **Args, bool * Val);
 static char **ReadClusterSeed(char **Args, enum e_cluster_seed *Type);
 static char **ReadFixPins(char **Args, char **PinFile);
 static char **ReadPlaceAlgorithm(char **Args,
-		enum e_place_algorithm *Algo);
+        enum e_place_algorithm *Algo);
 static char **ReadRouterAlgorithm(char **Args,
-		enum e_router_algorithm *Algo);
+        enum e_router_algorithm *Algo);
 static char **ReadPackerAlgorithm(char **Args,
-		enum e_packer_algorithm *Algo);
+        enum e_packer_algorithm *Algo);
 static char **ReadRoutingPredictor(char **Args,
-		enum e_routing_failure_predictor *RoutingPred);
+        enum e_routing_failure_predictor *RoutingPred);
 static char **ReadBaseCostType(char **Args,
-		enum e_base_cost_type *BaseCostType);
+        enum e_base_cost_type *BaseCostType);
 static char **ReadRouteType(char **Args, enum e_route_type *Type);
 static char **ReadString(char **Args, char **Val);
 static char **ReadChar(char **Args, char *Val);
 
 /******** Globally Accessible Function ********/
+
 /* Determines whether timing analysis should be on or off. 
  Unless otherwise specified, always default to timing.
  */
 bool IsTimingEnabled(const t_options *Options) {
-	/* First priority to the '--timing_analysis' flag */
-	if (Options->Count[OT_TIMING_ANALYSIS]) {
-		return Options->TimingAnalysis;
-	}
-	return true;
+    /* First priority to the '--timing_analysis' flag */
+    if (Options->Count[OT_TIMING_ANALYSIS]) {
+        return Options->TimingAnalysis;
+    }
+    return true;
 }
 
 /* Determines whether file echo should be on or off. 
  Unless otherwise specified, always default to on.
  */
 bool IsEchoEnabled(const t_options *Options) {
-	/* First priority to the '--echo_file' flag */
-	if (Options->Count[OT_CREATE_ECHO_FILE]) {
-		return Options->CreateEchoFile;
-	}
-	return false;
+    /* First priority to the '--echo_file' flag */
+    if (Options->Count[OT_CREATE_ECHO_FILE]) {
+        return Options->CreateEchoFile;
+    }
+    return false;
 }
 
-
 bool getEchoEnabled(void) {
-	return EchoEnabled;
+    return EchoEnabled;
 }
 
 void setEchoEnabled(bool echo_enabled) {
-	/* enable echo outputs */
-	EchoEnabled = echo_enabled;
-	if(echoFileEnabled == NULL) {
-		/* initialize default echo options */
-		alloc_and_load_echo_file_info();
-	}
+    /* enable echo outputs */
+    EchoEnabled = echo_enabled;
+    if (echoFileEnabled == NULL) {
+        /* initialize default echo options */
+        alloc_and_load_echo_file_info();
+    }
 }
 
 void setAllEchoFileEnabled(bool value) {
-	int i;
-	for(i = 0; i < (int) E_ECHO_END_TOKEN; i++) {
-		echoFileEnabled[i] = value;
-	}
+    int i;
+    for (i = 0; i < (int) E_ECHO_END_TOKEN; i++) {
+        echoFileEnabled[i] = value;
+    }
 }
 
 void setEchoFileEnabled(enum e_echo_files echo_option, bool value) {
-	echoFileEnabled[(int)echo_option] = value;
+    echoFileEnabled[(int) echo_option] = value;
 }
 
 void setEchoFileName(enum e_echo_files echo_option, const char *name) {
-	if(echoFileNames[(int)echo_option] != NULL) {
-		free(echoFileNames[(int)echo_option]);
-	}
-	echoFileNames[(int)echo_option] = vtr::strdup(name);
+    if (echoFileNames[(int) echo_option] != NULL) {
+        free(echoFileNames[(int) echo_option]);
+    }
+    echoFileNames[(int) echo_option] = vtr::strdup(name);
 }
 
 bool isEchoFileEnabled(enum e_echo_files echo_option) {
-	if(echoFileEnabled == NULL) {
-		return false;
-	} else {
-		return echoFileEnabled[(int)echo_option];
-	}
+    if (echoFileEnabled == NULL) {
+        return false;
+    } else {
+        return echoFileEnabled[(int) echo_option];
+    }
 }
+
 char *getEchoFileName(enum e_echo_files echo_option) {
-	return echoFileNames[(int)echo_option];
+    return echoFileNames[(int) echo_option];
 }
 
 void alloc_and_load_echo_file_info() {
-	echoFileEnabled = (bool*)vtr::calloc((int) E_ECHO_END_TOKEN, sizeof(bool));
-	echoFileNames = (char**)vtr::calloc((int) E_ECHO_END_TOKEN, sizeof(char*));
+    echoFileEnabled = (bool*)vtr::calloc((int) E_ECHO_END_TOKEN, sizeof (bool));
+    echoFileNames = (char**) vtr::calloc((int) E_ECHO_END_TOKEN, sizeof (char*));
 
-	setAllEchoFileEnabled(getEchoEnabled());
+    setAllEchoFileEnabled(getEchoEnabled());
 
     //Timing Graphs
-	setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "timing_graph.pre_pack.echo");
-	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_initial.echo");
-	setEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_final.echo");
-	setEchoFileName(E_ECHO_FINAL_ROUTING_TIMING_GRAPH, "timing_graph.route_final.echo");
-	setEchoFileName(E_ECHO_ANALYSIS_TIMING_GRAPH, "timing_graph.analysis.echo");
+    setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "timing_graph.pre_pack.echo");
+    setEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_initial.echo");
+    setEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH, "timing_graph.place_final.echo");
+    setEchoFileName(E_ECHO_FINAL_ROUTING_TIMING_GRAPH, "timing_graph.route_final.echo");
+    setEchoFileName(E_ECHO_ANALYSIS_TIMING_GRAPH, "timing_graph.analysis.echo");
 
-	setEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT, "initial_clb_placement.echo");
-	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_SLACK, "initial_placement_slack.echo");
-	setEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY, "initial_placement_criticality.echo");
-	setEchoFileName(E_ECHO_END_CLB_PLACEMENT, "end_clb_placement.echo");
-	setEchoFileName(E_ECHO_PLACEMENT_SINK_DELAYS, "placement_sink_delays.echo");
-	setEchoFileName(E_ECHO_FINAL_PLACEMENT_SLACK, "final_placement_slack.echo");
-	setEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY, "final_placement_criticality.echo");
-	setEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH, "placement_crit_path.echo");
-	setEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL, "placement_delta_delay_model.%s.echo");
-	setEchoFileName(E_ECHO_PB_GRAPH, "pb_graph.echo");
-	setEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH, "lb_type_rr_graph.echo");
-	setEchoFileName(E_ECHO_ARCH, "arch.echo");
-	setEchoFileName(E_ECHO_PLACEMENT_CRITICAL_PATH, "placement_critical_path.echo");
-	setEchoFileName(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS, "placement_lower_bound_sink_delays.echo");
-	setEchoFileName(E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS, "placement_logic_sink_delays.echo");
-	setEchoFileName(E_ECHO_ROUTING_SINK_DELAYS, "routing_sink_delays.echo");
-	setEchoFileName(E_ECHO_POST_PACK_NETLIST, "post_pack_netlist.blif");
-	setEchoFileName(E_ECHO_BLIF_INPUT, "blif_input.echo");
-	setEchoFileName(E_ECHO_COMPRESSED_NETLIST, "compressed_netlist.echo");
-	setEchoFileName(E_ECHO_NET_DELAY, "net_delay.echo");
-	setEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO, "clustering_timing_info.echo");
-	setEchoFileName(E_ECHO_PRE_PACKING_SLACK, "pre_packing_slack.echo");
-	setEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY, "pre_packing_criticality.echo");
-	setEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES, "clustering_block_criticalities.echo");
-	setEchoFileName(E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS, "pre_packing_molecules_and_patterns.echo");
-	setEchoFileName(E_ECHO_MEM, "mem.echo");
-	setEchoFileName(E_ECHO_RR_GRAPH, "rr_graph.echo");
-	setEchoFileName(E_ECHO_TIMING_CONSTRAINTS, "timing_constraints.echo");	
-	setEchoFileName(E_ECHO_CRITICAL_PATH, "critical_path.echo");	
-	setEchoFileName(E_ECHO_SLACK, "slack.echo");	
-	setEchoFileName(E_ECHO_COMPLETE_NET_TRACE, "complete_net_trace.echo");
-	setEchoFileName(E_ECHO_SEG_DETAILS, "seg_details.txt");
-	setEchoFileName(E_ECHO_CHAN_DETAILS, "chan_details.txt");
-	setEchoFileName(E_ECHO_SBLOCK_PATTERN, "sblock_pattern.txt");
-	setEchoFileName(E_ECHO_ENDPOINT_TIMING, "endpoint_timing.echo.json");
+    setEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT, "initial_clb_placement.echo");
+    setEchoFileName(E_ECHO_INITIAL_PLACEMENT_SLACK, "initial_placement_slack.echo");
+    setEchoFileName(E_ECHO_INITIAL_PLACEMENT_CRITICALITY, "initial_placement_criticality.echo");
+    setEchoFileName(E_ECHO_END_CLB_PLACEMENT, "end_clb_placement.echo");
+    setEchoFileName(E_ECHO_PLACEMENT_SINK_DELAYS, "placement_sink_delays.echo");
+    setEchoFileName(E_ECHO_FINAL_PLACEMENT_SLACK, "final_placement_slack.echo");
+    setEchoFileName(E_ECHO_FINAL_PLACEMENT_CRITICALITY, "final_placement_criticality.echo");
+    setEchoFileName(E_ECHO_PLACEMENT_CRIT_PATH, "placement_crit_path.echo");
+    setEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL, "placement_delta_delay_model.%s.echo");
+    setEchoFileName(E_ECHO_PB_GRAPH, "pb_graph.echo");
+    setEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH, "lb_type_rr_graph.echo");
+    setEchoFileName(E_ECHO_ARCH, "arch.echo");
+    setEchoFileName(E_ECHO_PLACEMENT_CRITICAL_PATH, "placement_critical_path.echo");
+    setEchoFileName(E_ECHO_PLACEMENT_LOWER_BOUND_SINK_DELAYS, "placement_lower_bound_sink_delays.echo");
+    setEchoFileName(E_ECHO_PLACEMENT_LOGIC_SINK_DELAYS, "placement_logic_sink_delays.echo");
+    setEchoFileName(E_ECHO_ROUTING_SINK_DELAYS, "routing_sink_delays.echo");
+    setEchoFileName(E_ECHO_POST_PACK_NETLIST, "post_pack_netlist.blif");
+    setEchoFileName(E_ECHO_BLIF_INPUT, "blif_input.echo");
+    setEchoFileName(E_ECHO_COMPRESSED_NETLIST, "compressed_netlist.echo");
+    setEchoFileName(E_ECHO_NET_DELAY, "net_delay.echo");
+    setEchoFileName(E_ECHO_CLUSTERING_TIMING_INFO, "clustering_timing_info.echo");
+    setEchoFileName(E_ECHO_PRE_PACKING_SLACK, "pre_packing_slack.echo");
+    setEchoFileName(E_ECHO_PRE_PACKING_CRITICALITY, "pre_packing_criticality.echo");
+    setEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES, "clustering_block_criticalities.echo");
+    setEchoFileName(E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS, "pre_packing_molecules_and_patterns.echo");
+    setEchoFileName(E_ECHO_MEM, "mem.echo");
+    setEchoFileName(E_ECHO_RR_GRAPH, "rr_graph.echo");
+    setEchoFileName(E_ECHO_TIMING_CONSTRAINTS, "timing_constraints.echo");
+    setEchoFileName(E_ECHO_CRITICAL_PATH, "critical_path.echo");
+    setEchoFileName(E_ECHO_SLACK, "slack.echo");
+    setEchoFileName(E_ECHO_COMPLETE_NET_TRACE, "complete_net_trace.echo");
+    setEchoFileName(E_ECHO_SEG_DETAILS, "seg_details.txt");
+    setEchoFileName(E_ECHO_CHAN_DETAILS, "chan_details.txt");
+    setEchoFileName(E_ECHO_SBLOCK_PATTERN, "sblock_pattern.txt");
+    setEchoFileName(E_ECHO_ENDPOINT_TIMING, "endpoint_timing.echo.json");
 }
 
 void free_echo_file_info() {
-	int i;
-	if(echoFileEnabled != NULL) {
-		for(i = 0; i < (int) E_ECHO_END_TOKEN; i++) {
-			if(echoFileNames[i] != NULL) {
-				free(echoFileNames[i]);
-			}
-		}
-		free(echoFileNames);
-		free(echoFileEnabled);
-		echoFileNames = NULL;
-		echoFileEnabled = NULL;
-	}
+    int i;
+    if (echoFileEnabled != NULL) {
+        for (i = 0; i < (int) E_ECHO_END_TOKEN; i++) {
+            if (echoFileNames[i] != NULL) {
+                free(echoFileNames[i]);
+            }
+        }
+        free(echoFileNames);
+        free(echoFileEnabled);
+        echoFileNames = NULL;
+        echoFileEnabled = NULL;
+    }
 }
 
 void setOutputFileName(enum e_output_files ename, const char *name, const char *default_name) {
-	if(outputFileNames == NULL) {
-		alloc_and_load_output_file_names(default_name);
-	}
-	if(outputFileNames[(int)ename] != NULL) {
-		free(outputFileNames[(int)ename]);
-	}
-	outputFileNames[(int)ename] = vtr::strdup(name);
+    if (outputFileNames == NULL) {
+        alloc_and_load_output_file_names(default_name);
+    }
+    if (outputFileNames[(int) ename] != NULL) {
+        free(outputFileNames[(int) ename]);
+    }
+    outputFileNames[(int) ename] = vtr::strdup(name);
 }
 
 char *getOutputFileName(enum e_output_files ename) {
-	return outputFileNames[(int)ename];
+    return outputFileNames[(int) ename];
 }
 
 void alloc_and_load_output_file_names(const char *default_name) {
-	char *name;
+    char *name;
 
-	if(outputFileNames == NULL) {
+    if (outputFileNames == NULL) {
 
-		outputFileNames = (char**)vtr::calloc((int)E_FILE_END_TOKEN, sizeof(char*));
+        outputFileNames = (char**) vtr::calloc((int) E_FILE_END_TOKEN, sizeof (char*));
 
-		name = (char*)vtr::malloc((strlen(default_name) + 40) * sizeof(char));
-		sprintf(name, "%s.critical_path.out", default_name);
-		setOutputFileName(E_CRIT_PATH_FILE, name, default_name);
-	
-		sprintf(name, "%s.slack.out", default_name);
-		setOutputFileName(E_SLACK_FILE, name, default_name);
+        name = (char*) vtr::malloc((strlen(default_name) + 40) * sizeof (char));
+        sprintf(name, "%s.critical_path.out", default_name);
+        setOutputFileName(E_CRIT_PATH_FILE, name, default_name);
 
-		sprintf(name, "%s.criticality.out", default_name);
-		setOutputFileName(E_CRITICALITY_FILE, name, default_name);
+        sprintf(name, "%s.slack.out", default_name);
+        setOutputFileName(E_SLACK_FILE, name, default_name);
 
-		free(name);
-	}
+        sprintf(name, "%s.criticality.out", default_name);
+        setOutputFileName(E_CRITICALITY_FILE, name, default_name);
+
+        free(name);
+    }
 }
 
 void free_output_file_names() {
-	int i;
-	if(outputFileNames != NULL) {
-		for(i = 0; i < (int)E_FILE_END_TOKEN; i++) {
-			if(outputFileNames[i] != NULL) {
-				free(outputFileNames[i]);
-				outputFileNames[i] = NULL;
-			}
-		}
-		free(outputFileNames);
-		outputFileNames = NULL;
-	}
+    int i;
+    if (outputFileNames != NULL) {
+        for (i = 0; i < (int) E_FILE_END_TOKEN; i++) {
+            if (outputFileNames[i] != NULL) {
+                free(outputFileNames[i]);
+                outputFileNames[i] = NULL;
+            }
+        }
+        free(outputFileNames);
+        outputFileNames = NULL;
+    }
 }
-
-
 
 /******** Subroutine implementations ********/
 
 void ReadOptions(int argc, const char **argv, t_options * Options) {
-	char **Args, **head;
-	int offset;
-	
-	/* Clear values and pointers to zero */
-	memset(Options, 0, sizeof(t_options));
+    char **Args, **head;
+    int offset;
 
-	/* Alloc a new pointer list for args with a NULL at end.
-	 * This makes parsing the same as for archfile for consistency.
-	 * Skips the first arg as it is the program image path */
-	--argc;
-	++argv;
-	head = Args = (char **) vtr::malloc(sizeof(char *) * (argc + 1));
-	memcpy(Args, argv, (sizeof(char *) * argc));
-	Args[argc] = NULL;
+    /* Clear values and pointers to zero */
+    memset(Options, 0, sizeof (t_options));
 
-	/* Go through the command line args. If they have hyphens they are 
-	 * options. Otherwise assume they are part of the four mandatory
-	 * arguments */
-	while (*Args) {
-		if (strncmp("--", *Args, 2) == 0) {
-			*Args += 2; /* Skip the prefix */
-			Args = ProcessOption(Args, Options);
-		} else if (strncmp("-", *Args, 1) == 0) {
-			*Args += 1; /* Skip the prefix */
-			Args = ProcessOption(Args, Options);
-		} else if (NULL == Options->ArchFile) {
-			Options->ArchFile = vtr::strdup(*Args);
-			++Args;
-		} else if (NULL == Options->CircuitName) {
-			Options->CircuitName = vtr::strdup(*Args);
-			/*if the user entered the circuit name with the .blif extension, remove it now*/
-			offset = strlen(Options->CircuitName) - 5;
-			if (offset > 0 && !strcmp(Options->CircuitName + offset, ".blif")) {
-				Options->CircuitName[offset] = '\0';
-			}
-			++Args;
-		} else {
-			/* Not an option and arch and net already specified so fail */
-			Error(*Args);
-		}
-	}
-	free(head);
+    /* Alloc a new pointer list for args with a NULL at end.
+     * This makes parsing the same as for archfile for consistency.
+     * Skips the first arg as it is the program image path */
+    --argc;
+    ++argv;
+    head = Args = (char **) vtr::malloc(sizeof (char *) * (argc + 1));
+    memcpy(Args, argv, (sizeof (char *) * argc));
+    Args[argc] = NULL;
+
+    /* Go through the command line args. If they have hyphens they are 
+     * options. Otherwise assume they are part of the four mandatory
+     * arguments */
+    while (*Args) {
+        if (strncmp("--", *Args, 2) == 0) {
+            *Args += 2; /* Skip the prefix */
+            Args = ProcessOption(Args, Options);
+        } else if (strncmp("-", *Args, 1) == 0) {
+            *Args += 1; /* Skip the prefix */
+            Args = ProcessOption(Args, Options);
+        } else if (NULL == Options->ArchFile) {
+            Options->ArchFile = vtr::strdup(*Args);
+            ++Args;
+        } else if (NULL == Options->CircuitName) {
+            Options->CircuitName = vtr::strdup(*Args);
+            /*if the user entered the circuit name with the .blif extension, remove it now*/
+            offset = strlen(Options->CircuitName) - 5;
+            if (offset > 0 && !strcmp(Options->CircuitName + offset, ".blif")) {
+                Options->CircuitName[offset] = '\0';
+            }
+            ++Args;
+        } else {
+            /* Not an option and arch and net already specified so fail */
+            Error(*Args);
+        }
+    }
+    free(head);
 }
 
 static char **
@@ -446,7 +445,10 @@ ProcessOption(char **Args, t_options * Options) {
 	case OT_BASE_COST_TYPE:
 		return ReadBaseCostType(Args, &Options->base_cost_type);
 	case OT_WRITE_RR_GRAPH:
-		return ReadOnOff(Args, &Options->rr_graph_to_file);
+		return ReadString(Args, &Options->write_rr_graph_name);
+        case OT_READ_RR_GRAPH:
+            return ReadString(Args, &Options->read_rr_graph_name);
+
 
 		/* Routing options valid only for timing-driven routing */
 	case OT_ASTAR_FAC:
@@ -477,288 +479,287 @@ ProcessOption(char **Args, t_options * Options) {
 
 static char **
 ReadBaseToken(char **Args, enum e_OptionBaseToken *Token) {
-	t_TokenPair *Cur;
+    t_TokenPair *Cur;
 
-	/* Empty string is end of tokens marker */
-	if (NULL == *Args)
-		Error(*Args);
+    /* Empty string is end of tokens marker */
+    if (NULL == *Args)
+        Error(*Args);
 
-	/* Linear search for the pair */
-	Cur = g_OptionBaseTokenList;
-	while (Cur->Str) {
-		if (strcmp(*Args, Cur->Str) == 0) {
-			*Token = (enum e_OptionBaseToken) Cur->Enum;
-			return ++Args;
-		}
-		++Cur;
-	}
+    /* Linear search for the pair */
+    Cur = g_OptionBaseTokenList;
+    while (Cur->Str) {
+        if (strcmp(*Args, Cur->Str) == 0) {
+            *Token = (enum e_OptionBaseToken) Cur->Enum;
+            return ++Args;
+        }
+        ++Cur;
+    }
 
-	*Token = OT_BASE_UNKNOWN;
-	return ++Args;
+    *Token = OT_BASE_UNKNOWN;
+    return ++Args;
 }
 
 static char **
 ReadToken(char **Args, enum e_OptionArgToken *Token) {
-	t_TokenPair *Cur;
+    t_TokenPair *Cur;
 
-	/* Empty string is end of tokens marker */
-	if (NULL == *Args)
-		Error(*Args);
+    /* Empty string is end of tokens marker */
+    if (NULL == *Args)
+        Error(*Args);
 
-	/* Linear search for the pair */
-	Cur = g_OptionArgTokenList;
-	while (Cur->Str) {
-		if (strcmp(*Args, Cur->Str) == 0) {
-			*Token = (enum e_OptionArgToken)Cur->Enum;
-			return ++Args;
-		}
-		++Cur;
-	}
+    /* Linear search for the pair */
+    Cur = g_OptionArgTokenList;
+    while (Cur->Str) {
+        if (strcmp(*Args, Cur->Str) == 0) {
+            *Token = (enum e_OptionArgToken)Cur->Enum;
+            return ++Args;
+        }
+        ++Cur;
+    }
 
-	*Token = OT_ARG_UNKNOWN;
-	return ++Args;
+    *Token = OT_ARG_UNKNOWN;
+    return ++Args;
 }
 
 /* Called for parse errors. Spits out a message and then exits program. */
 static void Error(const char *Token) {
-	if (Token) {
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-		"Unexpected token '%s' on command line.\n", Token);
-	} else {
-		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, 
-		"Missing token at end of command line.\n");
-	}
+    if (Token) {
+        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                "Unexpected token '%s' on command line.\n", Token);
+    } else {
+        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                "Missing token at end of command line.\n");
+    }
 }
 
 static char **
 ReadClusterSeed(char **Args, enum e_cluster_seed *Type) {
-	enum e_OptionArgToken Token;
-	char **PrevArgs;
+    enum e_OptionArgToken Token;
+    char **PrevArgs;
 
-	PrevArgs = Args;
-	Args = ReadToken(Args, &Token);
-	switch (Token) {
-	case OT_TIMING:
-		*Type = VPACK_TIMING;
-		break;
-	case OT_MAX_INPUTS:
-		*Type = VPACK_MAX_INPUTS;
-		break;
-	case OT_BLEND:
-		*Type = VPACK_BLEND;
-		break;
-	default:
-		Error(*PrevArgs);
-	}
+    PrevArgs = Args;
+    Args = ReadToken(Args, &Token);
+    switch (Token) {
+        case OT_TIMING:
+            *Type = VPACK_TIMING;
+            break;
+        case OT_MAX_INPUTS:
+            *Type = VPACK_MAX_INPUTS;
+            break;
+        case OT_BLEND:
+            *Type = VPACK_BLEND;
+            break;
+        default:
+            Error(*PrevArgs);
+    }
 
-	return Args;
+    return Args;
 }
 
 static char **
 ReadPackerAlgorithm(char **Args, enum e_packer_algorithm *Algo) {
-	enum e_OptionArgToken Token;
-	char **PrevArgs;
+    enum e_OptionArgToken Token;
+    char **PrevArgs;
 
-	PrevArgs = Args;
-	Args = ReadToken(Args, &Token);
-	switch (Token) {
-	case OT_GREEDY:
-		*Algo = PACK_GREEDY;
-		break;
-	case OT_BRUTE_FORCE:
-		*Algo = PACK_BRUTE_FORCE;
-		break;
-	default:
-		Error(*PrevArgs);
-	}
+    PrevArgs = Args;
+    Args = ReadToken(Args, &Token);
+    switch (Token) {
+        case OT_GREEDY:
+            *Algo = PACK_GREEDY;
+            break;
+        case OT_BRUTE_FORCE:
+            *Algo = PACK_BRUTE_FORCE;
+            break;
+        default:
+            Error(*PrevArgs);
+    }
 
-	return Args;
+    return Args;
 }
-
 
 static char **
 ReadRouterAlgorithm(char **Args, enum e_router_algorithm *Algo) {
-	enum e_OptionArgToken Token;
-	char **PrevArgs;
+    enum e_OptionArgToken Token;
+    char **PrevArgs;
 
-	PrevArgs = Args;
-	Args = ReadToken(Args, &Token);
-	switch (Token) {
-	case OT_BREADTH_FIRST:
-		*Algo = BREADTH_FIRST;
-		break;
-	case OT_NO_TIMING:
-		*Algo = NO_TIMING;
-		break;
-	case OT_TIMING_DRIVEN:
-		*Algo = TIMING_DRIVEN;
-		break;
-	default:
-		Error(*PrevArgs);
-	}
+    PrevArgs = Args;
+    Args = ReadToken(Args, &Token);
+    switch (Token) {
+        case OT_BREADTH_FIRST:
+            *Algo = BREADTH_FIRST;
+            break;
+        case OT_NO_TIMING:
+            *Algo = NO_TIMING;
+            break;
+        case OT_TIMING_DRIVEN:
+            *Algo = TIMING_DRIVEN;
+            break;
+        default:
+            Error(*PrevArgs);
+    }
 
-	return Args;
+    return Args;
 }
 
 static char **
 ReadRoutingPredictor(char **Args, enum e_routing_failure_predictor *RoutingPred) {
-	enum e_OptionArgToken Token;
-	char **PrevArgs;
+    enum e_OptionArgToken Token;
+    char **PrevArgs;
 
-	PrevArgs = Args;
-	Args = ReadToken(Args, &Token);
-	switch (Token) {
-	case OT_OFF:
-		*RoutingPred = OFF;
-		break;
-	case OT_ROUTING_FAILURE_SAFE:
-		*RoutingPred = SAFE;
-		break;
-	case OT_ROUTING_FAILURE_AGGRESSIVE:
-		*RoutingPred = AGGRESSIVE;
-		break;
-	default:
-		Error(*PrevArgs);
-	}
+    PrevArgs = Args;
+    Args = ReadToken(Args, &Token);
+    switch (Token) {
+        case OT_OFF:
+            *RoutingPred = OFF;
+            break;
+        case OT_ROUTING_FAILURE_SAFE:
+            *RoutingPred = SAFE;
+            break;
+        case OT_ROUTING_FAILURE_AGGRESSIVE:
+            *RoutingPred = AGGRESSIVE;
+            break;
+        default:
+            Error(*PrevArgs);
+    }
 
-	return Args;
+    return Args;
 }
 
 static char **
 ReadBaseCostType(char **Args, enum e_base_cost_type *BaseCostType) {
-	enum e_OptionArgToken Token;
-	char **PrevArgs;
+    enum e_OptionArgToken Token;
+    char **PrevArgs;
 
-	PrevArgs = Args;
-	Args = ReadToken(Args, &Token);
-	switch (Token) {
-	case OT_DELAY_NORMALIZED:
-		*BaseCostType = DELAY_NORMALIZED;
-		break;
-	case OT_DEMAND_ONLY:
-		*BaseCostType = DEMAND_ONLY;
-		break;
-	default:
-		Error(*PrevArgs);
-	}
+    PrevArgs = Args;
+    Args = ReadToken(Args, &Token);
+    switch (Token) {
+        case OT_DELAY_NORMALIZED:
+            *BaseCostType = DELAY_NORMALIZED;
+            break;
+        case OT_DEMAND_ONLY:
+            *BaseCostType = DEMAND_ONLY;
+            break;
+        default:
+            Error(*PrevArgs);
+    }
 
-	return Args;
+    return Args;
 }
 
 static char **
 ReadRouteType(char **Args, enum e_route_type *Type) {
-	enum e_OptionArgToken Token;
-	char **PrevArgs;
+    enum e_OptionArgToken Token;
+    char **PrevArgs;
 
-	PrevArgs = Args;
-	Args = ReadToken(Args, &Token);
-	switch (Token) {
-	case OT_GLOBAL:
-		*Type = GLOBAL;
-		break;
-	case OT_DETAILED:
-		*Type = DETAILED;
-		break;
-	default:
-		Error(*PrevArgs);
-	}
+    PrevArgs = Args;
+    Args = ReadToken(Args, &Token);
+    switch (Token) {
+        case OT_GLOBAL:
+            *Type = GLOBAL;
+            break;
+        case OT_DETAILED:
+            *Type = DETAILED;
+            break;
+        default:
+            Error(*PrevArgs);
+    }
 
-	return Args;
+    return Args;
 }
 
 static char **
 ReadPlaceAlgorithm(char **Args, enum e_place_algorithm *Algo) {
-	enum e_OptionArgToken Token;
-	char **PrevArgs;
+    enum e_OptionArgToken Token;
+    char **PrevArgs;
 
-	PrevArgs = Args;
-	Args = ReadToken(Args, &Token);
-	switch (Token) {
-	case OT_BOUNDING_BOX:
-		*Algo = BOUNDING_BOX_PLACE;
-		break;
-	case OT_PATH_TIMING_DRIVEN:
-		*Algo = PATH_TIMING_DRIVEN_PLACE;
-		break;
-	default:
-		Error(*PrevArgs);
-	}
+    PrevArgs = Args;
+    Args = ReadToken(Args, &Token);
+    switch (Token) {
+        case OT_BOUNDING_BOX:
+            *Algo = BOUNDING_BOX_PLACE;
+            break;
+        case OT_PATH_TIMING_DRIVEN:
+            *Algo = PATH_TIMING_DRIVEN_PLACE;
+            break;
+        default:
+            Error(*PrevArgs);
+    }
 
-	return Args;
+    return Args;
 }
 
 static char **
 ReadFixPins(char **Args, char **PinFile) {
-	enum e_OptionArgToken Token;
-	int Len;
-	char **PrevArgs = Args;
+    enum e_OptionArgToken Token;
+    int Len;
+    char **PrevArgs = Args;
 
-	Args = ReadToken(Args, &Token);
-	if (OT_RANDOM != Token) {
-		Len = 1 + strlen(*PrevArgs);
-		*PinFile = (char *) vtr::malloc(Len * sizeof(char));
-		memcpy(*PinFile, *PrevArgs, Len);
-	}
-	return Args;
+    Args = ReadToken(Args, &Token);
+    if (OT_RANDOM != Token) {
+        Len = 1 + strlen(*PrevArgs);
+        *PinFile = (char *) vtr::malloc(Len * sizeof (char));
+        memcpy(*PinFile, *PrevArgs, Len);
+    }
+    return Args;
 }
 
 static char **
 ReadOnOff(char **Args, bool * Val) {
-	enum e_OptionArgToken Token;
-	char **PrevArgs;
+    enum e_OptionArgToken Token;
+    char **PrevArgs;
 
-	PrevArgs = Args;
-	Args = ReadToken(Args, &Token);
-	switch (Token) {
-	case OT_ON:
-		*Val = true;
-		break;
-	case OT_OFF:
-		*Val = false;
-		break;
-	default:
-		Error(*PrevArgs);
-	}
-	return Args;
+    PrevArgs = Args;
+    Args = ReadToken(Args, &Token);
+    switch (Token) {
+        case OT_ON:
+            *Val = true;
+            break;
+        case OT_OFF:
+            *Val = false;
+            break;
+        default:
+            Error(*PrevArgs);
+    }
+    return Args;
 }
 
 static char **
 ReadInt(char **Args, int *Val) {
-	if (NULL == *Args)
-		Error(*Args);
-	if ((**Args > '9') || (**Args < '0'))
-		Error(*Args);
+    if (NULL == *Args)
+        Error(*Args);
+    if ((**Args > '9') || (**Args < '0'))
+        Error(*Args);
 
-	*Val = vtr::atoi(*Args);
+    *Val = vtr::atoi(*Args);
 
-	return ++Args;
+    return ++Args;
 }
 
 static char **
 ReadFloat(char ** Args, float *Val) {
-	if (NULL == *Args) {
-		Error(*Args);
-	}
+    if (NULL == *Args) {
+        Error(*Args);
+    }
 
-	if ((**Args != '-') && (**Args != '.')
-			&& ((**Args > '9') || (**Args < '0'))) {
-		Error(*Args);
-	}
+    if ((**Args != '-') && (**Args != '.')
+            && ((**Args > '9') || (**Args < '0'))) {
+        Error(*Args);
+    }
 
-	*Val = vtr::atof(*Args);
+    *Val = vtr::atof(*Args);
 
-	return ++Args;
+    return ++Args;
 }
 
 static char **
 ReadString(char **Args, char **Val) {
-	if (NULL == *Args) {
-		Error(*Args);
-	}
+    if (NULL == *Args) {
+        Error(*Args);
+    }
 
-	*Val = vtr::strdup(*Args);
+    *Val = vtr::strdup(*Args);
 
-	return ++Args;
+    return ++Args;
 }
 
 static char **
