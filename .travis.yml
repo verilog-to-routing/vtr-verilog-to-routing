@@ -24,7 +24,7 @@ coverity_scan:
 # safelist
 branches:
   only:
-  - jeanlego
+  - master
 script: make && make install
 cache: bundler
 
