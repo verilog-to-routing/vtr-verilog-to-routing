@@ -143,7 +143,9 @@ sub parse_single_task {
 	my @circuits;
 	my $parse_file;
 	my $qor_parse_file;
+        my $second_parse_file;
 	my @archs;
+        my $counter = 0;
 	foreach my $line (@config_data) {
 
 		# Ignore comments
@@ -163,7 +165,20 @@ sub parse_single_task {
 			push( @archs, $value );
 		}
 		elsif ( $key eq "parse_file" ) {
-			$parse_file = expand_user_path($value);
+                        if ($task_name eq "regression_tests/vtr_reg_strong/strong_verify_rr_graph"){
+                                $counter = $counter +1;
+                                if ($counter eq 2){
+                                    #second time parse file
+                                    $second_parse_file = expand_user_path($value);
+                                    $counter = 0;
+                                }
+                                else{      
+                                    $parse_file = expand_user_path($value);
+                                }
+                        }
+                        else{
+                            $parse_file = expand_user_path($value);
+                        }
 		}
 		elsif ( $key eq "qor_parse_file" ) {
 			$qor_parse_file = expand_user_path($value);
@@ -175,7 +190,11 @@ sub parse_single_task {
 		die "Task $task_name has no parse file specified.\n";
 	}
 	$parse_file = get_important_file($task_path, $vtr_flow_path, $parse_file);
-	
+
+        if ($second_parse_file){
+            $second_parse_file = get_important_file($task_path, $vtr_flow_path, $second_parse_file);
+	}
+
 	# Get Max Run #
 	opendir(DIR, $task_path);
 	my @folders = readdir(DIR);
@@ -219,12 +238,33 @@ sub parse_single_task {
 			my $output = <RESULTS_FILE>;
 			close(RESULTS_FILE);
 			print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
+                        if ($second_parse_file){
+                            $first = 1;
+                             open( OUTPUT_FILE, ">$run_path/parse_results_2.txt" );
+                            system(
+				"$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $second_parse_file > $run_path/$arch/$circuit/parse_results_2.txt"
+                            );
+                            open( RESULTS_FILE, "$run_path/$arch/$circuit/parse_results_2.txt" );
+                            # first line is heading
+                            my $output = <RESULTS_FILE>;
+                            if ($first) {
+				print OUTPUT_FILE "arch\tcircuit\t$output";
+				$first = 0;
+                            }
+                             # second line is actual value
+                            my $output = <RESULTS_FILE>;
+                            close(RESULTS_FILE);
+                            print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
+                        }
 		}
 	}
 	close(OUTPUT_FILE);
 
     if ($pretty_print_results) {
-        pretty_print_table("$run_path/parse_results.txt")
+        pretty_print_table("$run_path/parse_results.txt");
+        if ($second_parse_file) {
+            pretty_print_table("$run_path/parse_results_2.txt");
+        }
     }
 
 	if ($parse_qor) {
@@ -256,8 +296,16 @@ sub parse_single_task {
 
 	if ($check_golden) {
         #Returns 1 if failed
-		return check_golden( $task_name, $task_path, $run_path );
+            if ($second_parse_file eq ""){
+                return check_golden( $task_name, $task_path, $run_path );
+            }
 	}
+
+        if ($second_parse_file){
+        #returns 1 if failed
+            return check_rr_graph ( $task_name, $task_path, $run_path);
+        }
+
     return 0; #Pass
 }
 
@@ -688,6 +736,225 @@ sub check_golden {
 					$failed = 1;
 					print
 					  "[Fail] $circuitarch $value: result = $test_value golden = $golden_value\n";
+				}
+			}
+		}
+	}
+
+	if (!$failed) {
+		print "[Pass]\n";
+	}
+    return $failed;
+}
+
+
+sub check_rr_graph {
+	my $task_name = shift;
+	my $task_path = shift;
+	my $run_path  = shift;
+
+    #Did this golden check pass?
+	my $failed = 0;
+
+	print "$task_name...";
+    print "\n" if $verbose;
+
+	# Code to check the results against the golden results
+	(my $test_file_1 = "$run_path/parse_results.txt") =~ s/\s+$//;
+	(my $test_file_2 = "$run_path/parse_results_2.txt") =~ s/s+$//;
+
+	my $pass_req_file;
+	open( CONFIG_FILE, "$task_path/config/config.txt" );
+	my $lines = do { local $/; <CONFIG_FILE>; };
+	close(CONFIG_FILE);
+
+	# Search config file
+	if ( $lines =~ /^\s*pass_requirements_file\s*=\s*(\S+)\s*$/m ) { }
+	else {
+		print
+		  "[ERROR] No 'pass_requirements_file' in task configuration file ($task_path/config/config.txt)\n";
+        $failed = 1;
+		return $failed;
+	}
+
+	my $pass_req_filename = $1;
+
+	# Search for pass requirement file
+	$pass_req_filename = expand_user_path($pass_req_filename);
+	if ( -e "$task_path/config/$pass_req_filename" ) {
+		$pass_req_file = "$task_path/config/$pass_req_filename";
+	}
+	elsif ( -e "$vtr_flow_path/parse/pass_requirements/$pass_req_filename" ) {
+		$pass_req_file =
+		  "$vtr_flow_path/parse/pass_requirements/$pass_req_filename";
+	}
+	elsif ( -e $pass_req_filename ) {
+		$pass_req_file = $pass_req_filename;
+	}
+	else {
+		print
+		  "[ERROR] Cannot find pass_requirements_file.  Checked for $task_path/config/$pass_req_filename or $vtr_flow_path/parse/$pass_req_filename or $pass_req_filename\n";
+        $failed = 0;
+		return $failed;
+	}
+
+	my $line;
+
+	my @golden_data;
+	my @test_data;
+	my @pass_req_data;
+
+	my @params;
+	my %type;
+	my %min_threshold;
+	my %max_threshold;
+
+	##############################################################
+	# Read files
+	##############################################################
+	if ( !-r $test_file_2 ) {
+		print "[ERROR] Failed to open $test_file_2: $!";
+        $failed = 1;
+		return $failed;
+	}
+	open( GOLDEN_DATA, "<$test_file_2" );
+	@golden_data = <GOLDEN_DATA>;
+	close(GOLDEN_DATA);
+
+	if ( !-r $pass_req_file ) {
+		print "[ERROR] Failed to open $pass_req_file: $!";
+        $failed = 1;
+		return $failed;
+	}
+	open( PASS_DATA, "<$pass_req_file" );
+	@pass_req_data = <PASS_DATA>;
+	close(PASS_DATA);
+
+	if ( !-r $test_file_1 ) {
+		print "[ERROR] Failed to open $test_file_1: $!";
+        $failed = 1;
+		return $failed;
+	}
+	open( TEST_DATA, "<$test_file_1" );
+	@test_data = <TEST_DATA>;
+	close(TEST_DATA);
+
+	##############################################################
+	# Process and check all parameters for consistency
+	##############################################################
+	my $golden_params = shift @golden_data;
+	my $test_params   = shift @test_data;
+
+	my @golden_params = split( /\t/, $golden_params );    # get parameters of golden results
+	my @test_params = split( /\t/, $test_params );      # get parameters of test results
+
+    my @golden_params = map(trim($_), @golden_params);
+    my @test_params = map(trim($_), @test_params);
+
+	# Check to ensure all parameters to compare are consistent
+	foreach $line (@pass_req_data) {
+
+		# Ignore comments
+		if ( $line =~ /^\s*#.*$/ or $line =~ /^\s*$/ ) { next; }
+
+		my @data = split( /;/, $line );
+		my $name = trim( $data[0] );
+		$type{$name} = trim( $data[1] );
+		if ( trim( $data[1] ) eq "Range" ) {
+			$min_threshold{$name} = trim( $data[2] );
+			$max_threshold{$name} = trim( $data[3] );
+		}
+
+		#Ensure item is in golden results
+		if ( !grep { $_ eq $name } @golden_params ) {
+			print "[ERROR] $name is not in the results from reading in rr graph file.\n";
+            $failed = 1;
+			return $failed;
+		}
+
+		# Ensure item is in new results
+		if ( !grep { $_ eq $name } @test_params ) {
+			print "[ERROR] $name is not in the results from writing out the rr graph file.\n";
+            $failed = 1;
+		}
+
+		push( @params, $name );
+	}
+
+	##############################################################
+	# Compare test data with golden data
+	##############################################################
+	if ( ( scalar @test_data ) != ( scalar @golden_data ) ) {
+		print
+		  "[ERROR] Different number of entries in results and results from reading rr graph.\n";
+          $failed = 1;
+	}
+
+	# Iterate through each line of the test results data and compare with the golden data
+	foreach $line (@test_data) {
+		my @test_line   = split( /\t/, $line );
+		my @golden_line = split( /\t/, shift @golden_data );
+
+        my $golden_arch = trim(@golden_line[0]);
+        my $golden_circuit = trim(@golden_line[1]);
+        my $test_arch = trim(@test_line[0]);
+        my $test_circuit = trim(@test_line[1]);
+
+		if (   ( $test_circuit ne $test_circuit )
+			or ( $test_arch ne $test_arch ) ) {
+
+			print "[ERROR] Circuit/Architecture mismatch between read in results ($golden_arch/$golden_circuit) and result ($test_arch/$test_circuit).\n";
+            $failed = 1;
+			return $failed;
+		}
+		my $circuitarch = "$test_arch/$test_circuit";
+
+		# Check each parameter where the type determines what to check for
+		foreach my $value (@params) {
+			my $test_index = List::Util::first { $test_params[$_] eq $value } 0 .. $#test_params;
+			my $golden_index = List::Util::first { $golden_params[$_] eq $value } 0 .. $#golden_params;
+			my $test_value   = trim(@test_line[$test_index]);
+			my $golden_value = trim(@golden_line[$golden_index]);
+
+
+			if ( $type{$value} eq "Range" ) {
+
+				# Check because of division by 0
+				if ( $golden_value == 0 ) {
+					if ( $test_value != 0 ) {
+						print
+						  "[Fail] $circuitarch $value: result = $test_value read_in result = $golden_value\n";
+						$failed = 1;
+						return $failed;
+					}
+				}
+				else {
+					my $ratio = $test_value / $golden_value;
+                    
+                    if($verbose) {
+                        print "\tParam: $value\n";
+                        print "\t\tTest: $test_value\n";
+                        print "\t\tGolden Value: $golden_value\n";
+                        print "\t\tRatio: $ratio\n";
+                    }
+
+					if (   $ratio < $min_threshold{$value}
+						or $ratio > $max_threshold{$value} )
+					{
+						print
+						  "[Fail] $circuitarch $value: result = $test_value read in result = $golden_value\n";
+						$failed = 1;
+						return $failed;
+					}
+				}
+			}
+			else {
+
+				# If the type is unknown, check for an exact match
+				if ( $test_value ne $golden_value ) {
+					$failed = 1;
+					print
+					  "[Fail] $circuitarch $value: result = $test_value read in result = $golden_value\n";
 				}
 			}
 		}

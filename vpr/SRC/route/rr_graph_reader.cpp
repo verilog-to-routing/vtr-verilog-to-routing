@@ -178,6 +178,8 @@ void load_rr_file(const t_graph_type graph_type,
         route_ctx.rr_node_state = new t_rr_node_state[device_ctx.num_rr_nodes];
 
 
+        dump_rr_structs("structs2.txt");
+
         float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
         vtr::printf_info("Build routing resource graph took %g seconds\n", elapsed_time);
 
@@ -528,6 +530,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         Block = Block.next_sibling(Block.name());
     }
 }
+
 /* Segments was initialized already. This function checks 
  * if it corresponds to the RR graph. Errors out if it doesn't correspond*/
 void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const t_segment_inf * segment_inf) {
@@ -580,13 +583,29 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
     for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
         auto& node = device_ctx.rr_nodes[inode];
         if (node.type() == SOURCE || node.type() == SINK) {
-            indices[SINK][node.xlow()][node.ylow()].nelem++;
+            for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
+                for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
+                    indices[SINK][ix][iy].nelem++;
+                }
+            }
         } else if (node.type() == IPIN || node.type() == OPIN) {
-            indices[IPIN][node.xlow()][node.ylow()].nelem++;
+            for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
+                for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
+                    indices[IPIN][ix][iy].nelem++;
+                }
+            }
         } else if (node.type() == CHANX) {
-            indices[node.type()][node.ylow()][node.xlow()].nelem++;
+            for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
+                for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
+                    indices[node.type()][iy][ix].nelem++;
+                }
+            }
         } else if (node.type() == CHANY) {
-            indices[node.type()][node.xlow()][node.ylow()].nelem++;
+            for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
+                for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
+                    indices[node.type()][ix][iy].nelem++;
+                }
+            }
         }
     }
 
@@ -601,26 +620,44 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
             }
         }
     }
+    int count;
     /* Assigns the right node number for each look up list*/
     for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
         auto& node = device_ctx.rr_nodes[inode];
 
         if (node.type() == SOURCE || node.type() == SINK) {
-            int count = indices[SINK][node.xlow()][node.ylow()].nelem;
-            indices[SINK][node.xlow()][node.ylow()].list[count] = inode;
-            indices[SINK][node.xlow()][node.ylow()].nelem++;
+            for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
+                for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
+                    count = indices[SINK][ix][iy].nelem;
+                    indices[SINK][ix][iy].list[count] = inode;
+                    indices[SINK][ix][iy].nelem++;
+                }
+            }
         } else if (node.type() == IPIN || node.type() == OPIN) {
-            int count = indices[IPIN][node.xlow()][node.ylow()].nelem;
-            indices[IPIN][node.xlow()][node.ylow()].list[count] = inode;
-            indices[IPIN][node.xlow()][node.ylow()].nelem++;
-        } else if (node.type() == CHANX) {
-            int count = indices[CHANX][node.ylow()][node.xlow()].nelem;
-            indices[CHANX][node.ylow()][node.xlow()].list[count] = inode;
-            indices[CHANX][node.ylow()][node.xlow()].nelem++;
+            for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
+                for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
+                    count = indices[IPIN][ix][iy].nelem;
+                    indices[IPIN][ix][iy].list[count] = inode;
+                    indices[IPIN][ix][iy].nelem++;
+                }
+            }
+        }
+        if (node.type() == CHANX) {
+            for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
+                for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
+                    count = node.ptc_num();
+                    indices[CHANX][iy][ix].list[count] = inode;
+                    indices[CHANX][iy][ix].nelem++;
+                }
+            }
         } else if (node.type() == CHANY) {
-            int count = indices[CHANY][node.xlow()][node.ylow()].nelem;
-            indices[CHANY][node.xlow()][node.ylow()].list[count] = inode;
-            indices[CHANY][node.xlow()][node.ylow()].nelem++;
+            for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
+                for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
+                    count = node.ptc_num();
+                    indices[CHANY][ix][iy].list[count] = inode;
+                    indices[CHANY][ix][iy].nelem++;
+                }
+            }
         }
     }
     indices[SOURCE] = indices[SINK];
