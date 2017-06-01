@@ -40,7 +40,14 @@ class WirelengthInfo {
 
         size_t available_wirelength() const { return available_wirelength_; }
         size_t used_wirelength() const { return used_wirelength_; }
-        float used_wirelength_ratio() const { return float(used_wirelength()) / available_wirelength(); }
+        float used_wirelength_ratio() const { 
+            if (available_wirelength() > 0) {
+                return float(used_wirelength()) / available_wirelength(); 
+            } else {
+                VTR_ASSERT(used_wirelength() == 0);
+                return 0.;
+            }
+        }
 
     private:
         size_t available_wirelength_;
