@@ -1967,6 +1967,8 @@ static void load_uniform_switch_pattern(
 
             int max_chan_width = (side == 0 || side == 2 ? x_chan_width : y_chan_width);
             float step_size = (float) max_chan_width / (float) (Fc * num_phys_pins);
+
+            VTR_ASSERT(Fc > 0);
             float fc_step = (float) max_chan_width / (float) Fc;
 
             float ftrack = (i * step_size) + (j * fc_step);
