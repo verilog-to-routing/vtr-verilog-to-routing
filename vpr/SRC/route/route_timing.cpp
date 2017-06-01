@@ -57,7 +57,14 @@ class OveruseInfo {
 
         size_t total_nodes() const { return total_nodes_; }
         size_t overused_nodes() const { return overused_nodes_; }
-        float overused_node_ratio() const { return float(overused_nodes()) / total_nodes(); }
+        float overused_node_ratio() const { 
+            if (total_nodes() > 0) {
+                return float(overused_nodes()) / total_nodes();
+            } else {
+                VTR_ASSERT(overused_nodes() == 0);
+                return 0.; 
+            }
+        }
         size_t total_overuse() const { return total_overuse_; }
         size_t worst_overuse() const { return worst_overuse_; }
 
