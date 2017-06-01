@@ -35,6 +35,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "errors.h"
 #include "odin_util.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
@@ -208,7 +209,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 	if (!is_hex_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid hex number: %s.\n", orig_string);
 
-	char *bit_string = (char *)calloc(1,sizeof(char));
+	char *bit_string = (char *)vtr::calloc(1,sizeof(char));
 	char *string     = vtr::strdup(orig_string);
 	int   size       = strlen(string);
 
@@ -227,17 +228,17 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 		{
 			char bit = value % 2;
 			value /= 2;
-			bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+			bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 			bit_string[count++] = '0' + bit;
 			bit_string[count]   = '\0';
 		}
 	}
-	free(string);
+	vtr::free(string);
 
 	// Pad with zeros to binary_size.
 	while (count < binary_size)
 	{
-		bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+		bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 		bit_string[count++] = '0';
 		bit_string[count]   = '\0';
 	}
@@ -248,13 +249,13 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
 	return_string = vtr::strdup(bit_string);
-	free(bit_string);
+	vtr::free(bit_string);
 	
     }
     else if(is_dont_care_number == 1){
        char *string = vtr::strdup(orig_string); 
        int   size       = strlen(string); 
-       char *bit_string = (char *)calloc(1,sizeof(char));
+       char *bit_string = (char *)vtr::calloc(1,sizeof(char));
        int count = 0;
        int i;
        for (i = 0; i < size; i++)
@@ -267,17 +268,17 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 		    {
 			    //char bit = value % 2;
 			    //value /= 2;
-			    bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+			    bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 			    bit_string[count++] = string[i];
 			    bit_string[count]   = '\0';
 		    }
 	    }
 
-        free(string);
+        vtr::free(string);
 
         while (count < binary_size)
 	    {
-		    bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+		    bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 		    bit_string[count++] = '0';
 		    bit_string[count]   = '\0';
 	    }
@@ -287,7 +288,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
         reverse_string(bit_string, binary_size);
 
         return_string = vtr::strdup(bit_string);
-	    free(bit_string);
+	    vtr::free(bit_string);
 
         
 
@@ -312,7 +313,7 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 	if (!is_octal_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid octal number: %s.\n", orig_string);
 
-	char *bit_string = (char *)calloc(1,sizeof(char));
+	char *bit_string = (char *)vtr::calloc(1,sizeof(char));
 	char *string     = vtr::strdup(orig_string);
 	int   size       = strlen(string);
 
@@ -331,17 +332,17 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 		{
 			char bit = value % 2;
 			value /= 2;
-			bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+			bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 			bit_string[count++] = '0' + bit;
 			bit_string[count]   = '\0';
 		}
 	}
-	free(string);
+	vtr::free(string);
 
 	// Pad with zeros to binary_size.
 	while (count < binary_size)
 	{
-		bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+		bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 		bit_string[count++] = '0';
 		bit_string[count]   = '\0';
 	}
@@ -352,7 +353,7 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
 	char *return_string = vtr::strdup(bit_string);
-	free(bit_string);
+	vtr::free(bit_string);
 	return return_string;
 }
 
@@ -366,7 +367,7 @@ char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, cha
 		error_message(PARSE_ERROR, -1, -1, "Invalid binary number: %s.\n", orig_string);
 
 	int   count      = strlen(orig_string);
-	char *bit_string = (char *)calloc(count + 1, sizeof(char));
+	char *bit_string = (char *)vtr::calloc(count + 1, sizeof(char));
 
 	// Copy the original string into the buffer.
 	strcat(bit_string, orig_string);
@@ -377,7 +378,7 @@ char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, cha
 	// Pad with zeros to binary_size.
 	while (count < binary_size)
 	{
-		bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+		bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 		bit_string[count++] = '0';
 		bit_string[count]   = '\0';
 	}
@@ -388,7 +389,7 @@ char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, cha
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
 	char *return_string = vtr::strdup(bit_string);
-	free(bit_string);
+	vtr::free(bit_string);
 	return return_string;
 }
 
@@ -503,7 +504,7 @@ int get_pin_number(char *name)
 	if (tilde) pin_number = strtol(tilde+1,NULL,10);
 	else       pin_number = -1;
 
-	free(pin_name);
+	vtr::free(pin_name);
 	return pin_number;
 }
 
@@ -571,13 +572,12 @@ char *make_simple_name(char *input, const char *flatten_string, char flatten_cha
  *-----------------------------------------------------------------*/
 void *my_malloc_struct(size_t bytes_to_alloc)
 {
-	void *allocated = NULL;
+	void *allocated = vtr::calloc(1, bytes_to_alloc);
 	static long int m_id = 0;
 
 	// ways to stop the execution at the point when a specific structure is built...note it needs to be m_id - 1 ... it's unique_id in most data structures
 	//oassert(m_id != 193);
 
-	allocated = malloc(bytes_to_alloc);
 	if(allocated == NULL)
 	{
 		fprintf(stderr,"MEMORY FAILURE\n");
@@ -585,9 +585,7 @@ void *my_malloc_struct(size_t bytes_to_alloc)
 	}
 
 	/* mark the unique_id */
-	*((long int*)allocated) = m_id;
-
-	m_id++;
+	*((long int*)allocated) = m_id++;
 
 	return allocated;
 }

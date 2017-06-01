@@ -7,6 +7,7 @@
 #include "verilog_preprocessor.h"
 #include "types.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 /* Globals */
 struct veri_Includes veri_includes;
@@ -21,19 +22,19 @@ FILE *remove_comments(FILE *source);
  */
 int init_veri_preproc()
 {
-	veri_includes.included_files = (veri_include **) calloc(DefaultSize, sizeof(veri_include *));
+	veri_includes.included_files = (veri_include **) vtr::calloc(DefaultSize, sizeof(veri_include *));
 	if (veri_includes.included_files == NULL) 
 	{
-		perror("veri_includes.included_files : calloc ");
+		perror("veri_includes.included_files : vtr::calloc ");
 		return -1;
 	}
 	veri_includes.current_size = DefaultSize;
 	veri_includes.current_index = 0;
 	
-	veri_defines.defined_constants = (veri_define **) calloc(DefaultSize, sizeof(veri_define *));
+	veri_defines.defined_constants = (veri_define **) vtr::calloc(DefaultSize, sizeof(veri_define *));
 	if (veri_defines.defined_constants == NULL) 
 	{
-		perror("veri_defines.defined_constants : calloc ");
+		perror("veri_defines.defined_constants : vtr::calloc ");
 		return -1;
 	}
 	veri_defines.current_size = DefaultSize;
@@ -59,7 +60,7 @@ int cleanup_veri_preproc()
 	def_iterator = NULL;
 	veri_defines.current_index = 0;
 	veri_defines.current_size = 0;
-	free(veri_defines.defined_constants);
+	vtr::free(veri_defines.defined_constants);
 
 	for (i = 0; i < veri_includes.current_index && i < veri_includes.current_size; inc_iterator = veri_includes.included_files[++i]) 
 	{
@@ -68,7 +69,7 @@ int cleanup_veri_preproc()
 	inc_iterator = NULL;
 	veri_includes.current_index = 0;
 	veri_includes.current_size = 0;
-	free(veri_includes.included_files);
+	vtr::free(veri_includes.included_files);
 	
 	//fprintf(stderr, " --- Finished\n");
 
@@ -83,13 +84,13 @@ void clean_veri_define(veri_define *current)
 	if (current != NULL) 
 	{
 		//fprintf(stderr, "\tCleaning Symbol: %s, ", current->symbol);
-		free(current->symbol);
+		vtr::free(current->symbol);
 		//fprintf(stderr, "Value: %s ", current->value);
-		free(current->value);
+		vtr::free(current->value);
 		
 		current->defined_in = NULL;
 		
-		free(current);
+		vtr::free(current);
 		current=NULL;
 		//fprintf(stderr, "...done\n");
 	}
@@ -103,9 +104,9 @@ void clean_veri_include(veri_include *current)
 	if (current != NULL)
 	{
 		//fprintf(stderr, "\tCleaning Include: %s ", current->path);
-		free(current->path);
+		vtr::free(current->path);
 		
-		free(current);
+		vtr::free(current);
 		current = NULL;
 		//fprintf(stderr, "...done\n");
 	}
@@ -119,17 +120,17 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 {
 	int i;
 	veri_define *def_iterator = veri_defines.defined_constants[0];
-	veri_define *new_def = (veri_define *)malloc(sizeof(veri_define));
+	veri_define *new_def = (veri_define *)vtr::malloc(sizeof(veri_define));
 	if (new_def == NULL) 
 	{
-		perror("new_def : malloc ");
+		perror("new_def : vtr::malloc ");
 		return -1;
 	}
 	
 	/* Check to see if there's enough space in our lookup table and reallocate if not. */
 	if (veri_defines.current_index == veri_defines.current_size) 
 	{
-		veri_defines.defined_constants = (veri_define **)realloc(veri_defines.defined_constants, (size_t)(veri_defines.current_size * 2) * sizeof(veri_define *));
+		veri_defines.defined_constants = (veri_define **)vtr::realloc(veri_defines.defined_constants, (size_t)(veri_defines.current_size * 2) * sizeof(veri_define *));
 		//In a perfect world there is a check here to make sure realloc succeded
 		veri_defines.current_size *= 2; 
 	}
@@ -146,7 +147,7 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 #ifndef BLOCK_EMPTY_DEFINES
 			{
 				fprintf(stderr, "\tWarning: The new value of %s is empty\n\n", symbol);	
-				free(def_iterator->value);
+				vtr::free(def_iterator->value);
 				def_iterator->value =NULL;
 			}
 #else		
@@ -159,11 +160,11 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 			{
 				fprintf(stderr, "\tWarning: The value of %s has been redefined to %s, the previous value was %s\n\n",
 					symbol, value, def_iterator->value);
-				free(def_iterator->value);
+				vtr::free(def_iterator->value);
 				def_iterator->value = (char *)vtr::strdup(value);
 			}
 
-			free(new_def);
+			vtr::free(new_def);
 			return -2;
 		}
 	}
@@ -188,17 +189,17 @@ veri_include* add_veri_include(char *path, int line, veri_include *included_from
 {
 	int i;
 	veri_include *inc_iterator = veri_includes.included_files[0];
-	veri_include *new_inc = (veri_include *)malloc(sizeof(veri_include));
+	veri_include *new_inc = (veri_include *)vtr::malloc(sizeof(veri_include));
 	if (new_inc == NULL) 
 	{
-		perror("new_inc : malloc ");
+		perror("new_inc : vtr::malloc ");
 		return NULL;
 	}
 
 	/* Check to see if there's enough space in our lookup table and reallocate if not. */
 	if (veri_includes.current_index == veri_includes.current_size) 
 	{
-		veri_includes.included_files = (veri_include **)realloc(veri_includes.included_files, (size_t)(veri_includes.current_size * 2) * sizeof(veri_include *));
+		veri_includes.included_files = (veri_include **)vtr::realloc(veri_includes.included_files, (size_t)(veri_includes.current_size * 2) * sizeof(veri_include *));
 		//In a perfect world there is a check here to make sure realloc succeded
 		veri_includes.current_size *= 2; 
 	}
@@ -209,7 +210,7 @@ veri_include* add_veri_include(char *path, int line, veri_include *included_from
 		if (0 == strcmp(path, inc_iterator->path))
 		{
 			printf("Warning: including %s multiple times\n", path);
-//			free(new_inc);
+//			vtr::free(new_inc);
 //			return NULL;
 		}
 	}
@@ -294,7 +295,7 @@ FILE* open_source_file(char* filename)
 	char* last_slash = strrchr(path, '/');
 	if (last_slash == NULL) /* No other path to try to find the file */
 	{
-		free(path);
+		vtr::free(path);
 		return NULL;
 	}
 	*(last_slash + 1) = '\0';
@@ -305,7 +306,7 @@ FILE* open_source_file(char* filename)
 	{
 		fprintf(stderr, "Warning: Unable to find %s in the present working directory, opening %s instead\n", 
 				filename, path);
-		free(path);
+		vtr::free(path);
 		return src_file;
 	}
 	
@@ -407,7 +408,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 	FILE *source = remove_comments(original_source);
 
 	int line_number = 1;
-	veri_flag_stack *skip = (veri_flag_stack *)calloc(1, sizeof(veri_flag_stack));;
+	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));;
 	char line[MaxLine];
 	char *token;
 	veri_include *new_include = NULL;
@@ -624,7 +625,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 		token = NULL;
 	}
 	fclose(source);
-	free(skip);
+	vtr::free(skip);
 }
 
 /* General Utility methods ------------------------------------------------- */
@@ -674,7 +675,7 @@ int pop(veri_flag_stack *stack)
 		int flag = top->flag;
 		
 		stack->top = top->next;
-		free(top);
+		vtr::free(top);
 	
 		return flag;
 	}
@@ -684,7 +685,7 @@ void push(veri_flag_stack *stack, int flag)
 {
 	if(stack != NULL)
 	{
-		veri_flag_node *new_node = (veri_flag_node *)malloc(sizeof(veri_flag_node));
+		veri_flag_node *new_node = (veri_flag_node *)vtr::malloc(sizeof(veri_flag_node));
 		new_node->next = stack->top;
 		new_node->flag = flag;
 		

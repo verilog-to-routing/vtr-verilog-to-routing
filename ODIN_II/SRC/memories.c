@@ -31,6 +31,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "memories.h"
 #include "partial_map.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 using vtr::t_linked_vptr;
 
@@ -1306,7 +1307,7 @@ sp_ram_signals *get_sp_ram_signals(nnode_t *node)
 	oassert(is_sp_ram(node));
 
 	ast_node_t *ast_node = node->related_ast_node;
-	sp_ram_signals *signals = (sp_ram_signals *)malloc(sizeof(sp_ram_signals));
+	sp_ram_signals *signals = (sp_ram_signals *)vtr::malloc(sizeof(sp_ram_signals));
 
 	// Separate the input signals according to their mapping.
 	signals->addr = init_signal_list();
@@ -1361,7 +1362,7 @@ void free_sp_ram_signals(sp_ram_signals *signalsvar)
 	free_signal_list(signalsvar->addr);
 	free_signal_list(signalsvar->out);
 
-	free(signalsvar);
+	vtr::free(signalsvar);
 }
 
 dp_ram_signals *get_dp_ram_signals(nnode_t *node)
@@ -1369,7 +1370,7 @@ dp_ram_signals *get_dp_ram_signals(nnode_t *node)
 	oassert(is_dp_ram(node));
 
 	ast_node_t *ast_node = node->related_ast_node;
-	dp_ram_signals *signals = (dp_ram_signals *)malloc(sizeof(dp_ram_signals));
+	dp_ram_signals *signals = (dp_ram_signals *)vtr::malloc(sizeof(dp_ram_signals));
 
 	// Separate the input signals according to their mapping.
 	signals->addr1 = init_signal_list();
@@ -1444,7 +1445,7 @@ void free_dp_ram_signals(dp_ram_signals *signalsvar)
 	free_signal_list(signalsvar->out1);
 	free_signal_list(signalsvar->out2);
 
-	free(signalsvar);
+	vtr::free(signalsvar);
 }
 
 /*
@@ -1462,7 +1463,7 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 	// The total number of memory addresses. (2^address_bits)
 	int num_addr = decoder->count;
 
-	nnode_t **and_gates = (nnode_t **)malloc(sizeof(nnode_t *) * num_addr);
+	nnode_t **and_gates = (nnode_t **)vtr::malloc(sizeof(nnode_t *) * num_addr);
 
 	int i;
 	for (i = 0; i < num_addr; i++)
@@ -1526,7 +1527,7 @@ void instantiate_soft_single_port_ram(nnode_t *node, short mark, netlist_t *netl
 		instantiate_multi_port_mux(output_mux, mark, netlist);
 	}
 
-	free(and_gates);
+	vtr::free(and_gates);
 
 	// Free signal lists.
 	free_sp_ram_signals(signals);
@@ -1556,9 +1557,9 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 	int data_width = signals->data1->count;
 
 	// Arrays of common gates, one per address.
-	nnode_t **and1_gates = (nnode_t **)malloc(sizeof(nnode_t *) * num_addr);
-	nnode_t **and2_gates = (nnode_t **)malloc(sizeof(nnode_t *) * num_addr);
-	nnode_t **or_gates = (nnode_t **)malloc(sizeof(nnode_t *) * num_addr);
+	nnode_t **and1_gates = (nnode_t **)vtr::malloc(sizeof(nnode_t *) * num_addr);
+	nnode_t **and2_gates = (nnode_t **)vtr::malloc(sizeof(nnode_t *) * num_addr);
+	nnode_t **or_gates = (nnode_t **)vtr::malloc(sizeof(nnode_t *) * num_addr);
 
 	int i;
 	for (i = 0; i < num_addr; i++)
@@ -1658,9 +1659,9 @@ void instantiate_soft_dual_port_ram(nnode_t *node, short mark, netlist_t *netlis
 		instantiate_multi_port_mux(output_mux2, mark, netlist);
 	}
 
-	free(and1_gates);
-	free(and2_gates);
-	free(or_gates);
+	vtr::free(and1_gates);
+	vtr::free(and2_gates);
+	vtr::free(or_gates);
 
 	// Free signal lists.
 	free_dp_ram_signals(signals);

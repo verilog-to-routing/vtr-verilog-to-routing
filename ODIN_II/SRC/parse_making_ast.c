@@ -36,6 +36,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "verilog_preprocessor.h"
 #include "hard_blocks.h" 
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 extern int yylineno;
 
@@ -128,7 +129,7 @@ void parse_to_ast()
 	if (global_args.verilog_file != NULL)
 	{
 		/* make a consitant file list so we can access in compiler ... replicating what read config does for the filenames */
-		configuration.list_of_file_names = (char**)calloc(1,sizeof(char*));
+		configuration.list_of_file_names = (char**)vtr::calloc(1,sizeof(char*));
 		configuration.num_list_of_file_names = 1;
 		configuration.list_of_file_names[0] = global_args.verilog_file;
 
@@ -286,7 +287,7 @@ void cleanup_parser()
 			sc_free_string_cache(defines_for_module_sc[i]);
 		}
 		
-		free(defines_for_module_sc);
+		vtr::free(defines_for_module_sc);
 	}
 }
 
@@ -296,7 +297,7 @@ void cleanup_parser()
 void init_parser_for_file()
 {
 	/* crrate a hash for defines so we can look them up when we find them */
-	defines_for_module_sc = (STRING_CACHE**)realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
+	defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
 	defines_for_module_sc[num_modules] = sc_new_string_cache();
 
 	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
@@ -335,7 +336,7 @@ void next_parsed_verilog_file(ast_node_t *file_items_list)
 	}
 
 	/* store the root of this files ast */
-	all_file_items_list = (ast_node_t**)realloc(all_file_items_list, sizeof(ast_node_t*)*(size_all_file_items_list+1));
+	all_file_items_list = (ast_node_t**)vtr::realloc(all_file_items_list, sizeof(ast_node_t*)*(size_all_file_items_list+1));
 	all_file_items_list[size_all_file_items_list] = file_items_list;
 	size_all_file_items_list ++;
 }
@@ -1064,7 +1065,7 @@ ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression
 	char *label;
 	ast_node_t *node;
      
-    label = (char *)calloc(strlen(expression1->types.identifier)+10,sizeof(char));
+    label = (char *)vtr::calloc(strlen(expression1->types.identifier)+10,sizeof(char));
     
 	strcpy(label,expression1->types.identifier);
 
@@ -1241,8 +1242,8 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
     char *unique_name, *aux_name;
     int char_qntd = 100;
     
-    aux_name = (char *)calloc(char_qntd,sizeof(char));
-    unique_name = (char *)calloc(char_qntd,sizeof(char));
+    aux_name = (char *)vtr::calloc(char_qntd,sizeof(char));
+    unique_name = (char *)vtr::calloc(char_qntd,sizeof(char));
     strcpy(unique_name,"function_instance_");
     sprintf(aux_name,"%d",size_function_instantiations_by_module);
     strcat(unique_name,aux_name);
@@ -1269,7 +1270,7 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
 	allocate_children_to_node(new_node, 2, symbol_node, module_named_instance);
 
 	// store the hard block symbol name that this calls in a list that will at the end be asociated with the hard block node
-	block_instantiations_instance = (ast_node_t **)realloc(block_instantiations_instance, sizeof(ast_node_t*)*(size_block_instantiations+1));
+	block_instantiations_instance = (ast_node_t **)vtr::realloc(block_instantiations_instance, sizeof(ast_node_t*)*(size_block_instantiations+1));
 	block_instantiations_instance[size_block_instantiations] = new_node;
 	size_block_instantiations++;
 
@@ -1312,12 +1313,12 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 			// then add it, but set it to the symbol_node, because the 
 			// module in question may not have been parsed yet
 			// later, we convert this symbol node back into a module node
-			ast_modules = (ast_node_t **)realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
+			ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
 			ast_modules[num_modules] = symbol_node;
 			num_modules++;
 			sc_spot = sc_add_string(module_names_to_idx, module_param_name);
 			module_names_to_idx->data[sc_spot] = symbol_node;
-			defines_for_module_sc = (STRING_CACHE**)realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
+			defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
 			defines_for_module_sc[num_modules] = NULL;
 		}
 	}
@@ -1330,12 +1331,12 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
         else add_child_to_node(new_master_node,new_node);        
 
 	/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
-	module_instantiations_instance = (ast_node_t **)realloc(module_instantiations_instance, sizeof(ast_node_t*)*(size_module_instantiations+1));
+	module_instantiations_instance = (ast_node_t **)vtr::realloc(module_instantiations_instance, sizeof(ast_node_t*)*(size_module_instantiations+1));
 	module_instantiations_instance[size_module_instantiations] = new_node;
 	size_module_instantiations++;
 
     }
-    free(module_named_instance);
+    vtr::free(module_named_instance);
 	return new_master_node;
 }
 /*-------------------------------------------------------------------------
@@ -1367,7 +1368,7 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
 	allocate_children_to_node(new_node, 2, symbol_node, function_named_instance);
 
 	/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
-	function_instantiations_instance_by_module = (ast_node_t **)realloc(function_instantiations_instance_by_module, sizeof(ast_node_t*)*(size_function_instantiations_by_module+1));
+	function_instantiations_instance_by_module = (ast_node_t **)vtr::realloc(function_instantiations_instance_by_module, sizeof(ast_node_t*)*(size_function_instantiations_by_module+1));
 	function_instantiations_instance_by_module[size_function_instantiations_by_module] = new_node;
 	size_function_instantiations_by_module++;
 
@@ -1389,16 +1390,16 @@ ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, a
 	}
 
 	char *newChar;
-	newChar = (char *)calloc(strlen(expression1->types.identifier)+10,sizeof(char));
+	newChar = (char *)vtr::calloc(strlen(expression1->types.identifier)+10,sizeof(char));
 	strcpy(newChar,expression1->types.identifier);
 	ast_node_t *newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
 	ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar);
 	ast_node_t *newVarMaked = markAndProcessSymbolListWith(MODULE,WIRE, newVarList);
 	if(size_module_variables_not_defined == 0){
-		module_variables_not_defined = (ast_node_t **)calloc(1, sizeof(ast_node_t*));
+		module_variables_not_defined = (ast_node_t **)vtr::calloc(1, sizeof(ast_node_t*));
 	}
 	else{
-		module_variables_not_defined = (ast_node_t **)realloc(module_variables_not_defined, sizeof(ast_node_t*)*(size_module_variables_not_defined+1));
+		module_variables_not_defined = (ast_node_t **)vtr::realloc(module_variables_not_defined, sizeof(ast_node_t*)*(size_module_variables_not_defined+1));
 	}
 	module_variables_not_defined[size_module_variables_not_defined] = newVarMaked;
 	size_module_variables_not_defined++;
@@ -1423,7 +1424,7 @@ ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *
 
     char *newChar;
 
-    newChar = (char *)calloc(strlen(expression1->types.identifier)+10,sizeof(char));
+    newChar = (char *)vtr::calloc(strlen(expression1->types.identifier)+10,sizeof(char));
 
     strcpy(newChar,expression1->types.identifier);
 
@@ -1434,10 +1435,10 @@ ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *
     ast_node_t *newVarMarked = markAndProcessSymbolListWith(MODULE, WIRE, newVarList);
 
     if(size_module_variables_not_defined == 0){
-       module_variables_not_defined = (ast_node_t **)calloc(1, sizeof(ast_node_t*));
+       module_variables_not_defined = (ast_node_t **)vtr::calloc(1, sizeof(ast_node_t*));
     }
     else{
-       module_variables_not_defined = (ast_node_t **)realloc(module_variables_not_defined, sizeof(ast_node_t*)*(size_module_variables_not_defined+1));
+       module_variables_not_defined = (ast_node_t **)vtr::realloc(module_variables_not_defined, sizeof(ast_node_t*)*(size_module_variables_not_defined+1));
     }
 
     module_variables_not_defined[size_module_variables_not_defined] = newVarMarked;
@@ -1491,10 +1492,10 @@ ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *exp
 ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ , ast_node_t * /*expression2*/ , ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
 {
 
-    char *number_0 = (char*)calloc(5,sizeof(char));
+    char *number_0 = (char*)vtr::calloc(5,sizeof(char));
     strcpy(number_0,"0");
 
-    char *number_31 = (char*)calloc(5,sizeof(char));
+    char *number_31 = (char*)vtr::calloc(5,sizeof(char));
     strcpy(number_31,"31");    
 
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
@@ -1539,7 +1540,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 	new_node->types.function.is_instantiated = FALSE;
 	new_node->types.function.index = num_functions;
 	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
-	ast_modules = (ast_node_t **)realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
+	ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
 	ast_modules[num_modules] = new_node;
 	for(i = 0; i < size_module_variables_not_defined; i++){
 		short variable_found = FALSE;
@@ -1581,10 +1582,10 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 	ast_node_t *symbol_node, *output_node;
 
 
-	function_name = (char *)calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
+	function_name = (char *)vtr::calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
 	strcpy(function_name,list_of_ports->children[0]->children[0]->types.identifier);
 
-	label = (char *)calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
+	label = (char *)vtr::calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
 
 	strcpy(label,list_of_ports->children[0]->children[0]->types.identifier);
 
@@ -1596,7 +1597,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 	add_child_at_the_beginning_of_the_node(list_of_module_items, output_node);
 
-	label = (char *)calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
+	label = (char *)vtr::calloc(strlen(list_of_ports->children[0]->children[0]->types.identifier)+10,sizeof(char));
 
 	strcpy(label,list_of_ports->children[0]->children[0]->types.identifier);
 
@@ -1609,7 +1610,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 		if(list_of_module_items->children[i]->type == VAR_DECLARE_LIST){
 			for(j = 0; j < list_of_module_items->children[i]->num_children; j++) {
 				if(list_of_module_items->children[i]->children[j]->types.variable.is_input){
-                    label = (char *)calloc(strlen(list_of_module_items->children[i]->children[j]->children[0]->types.identifier)+10,sizeof(char));
+                    label = (char *)vtr::calloc(strlen(list_of_module_items->children[i]->children[j]->children[0]->types.identifier)+10,sizeof(char));
                     strcpy(label,list_of_module_items->children[i]->children[j]->children[0]->types.identifier);
                     var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
 					newList_entry(list_of_ports,var_node);
@@ -1635,7 +1636,7 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 	new_node->types.function.is_instantiated = FALSE;
 	
 	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
-	ast_modules = (ast_node_t **)realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
+	ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
 	ast_modules[num_modules] = new_node;
 
 	if ((sc_spot = sc_add_string(module_names_to_idx, function_name)) == -1)
@@ -1659,7 +1660,7 @@ void next_function()
     //num_modules++;
 
 	/* define the string cache for the next function */
-	defines_for_function_sc = (STRING_CACHE**)realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_functions+1));
+	defines_for_function_sc = (STRING_CACHE**)vtr::realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_functions+1));
 	defines_for_function_sc[num_functions] = sc_new_string_cache();
 
 	/* create a new list for the instantiations list */
@@ -1682,7 +1683,7 @@ void next_module()
     num_functions = 0;
 
 	/* define the string cache for the next module */
-	defines_for_module_sc = (STRING_CACHE**)realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
+	defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
 	defines_for_module_sc[num_modules] = sc_new_string_cache();
 
 	/* create a new list for the instantiations list */
@@ -1709,7 +1710,7 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 {
 	ast_node_t *new_node = NULL;
 	ast_node_t *ref_node;
-	char *module_instance_name = (char*)calloc(1024,sizeof(char));
+	char *module_instance_name = (char*)vtr::calloc(1024,sizeof(char));
 	module_instance_name = NULL;
 	int i, j;
 	//long sc_spot;

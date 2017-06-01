@@ -433,8 +433,8 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     device_ctx.chan_width.x_list = (int *) vtr::malloc((device_ctx.ny + 1) * sizeof(int));
     device_ctx.chan_width.y_list = (int *) vtr::malloc((device_ctx.nx + 1) * sizeof(int));
 
-    free(num_blocks_type);
-    free(num_instances_type);
+    vtr::free(num_blocks_type);
+    vtr::free(num_instances_type);
 }
 
 
@@ -625,15 +625,15 @@ void free_arch(t_arch* Arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	freeGrid();
-	free(device_ctx.chan_width.x_list);
-	free(device_ctx.chan_width.y_list);
+	vtr::free(device_ctx.chan_width.x_list);
+	vtr::free(device_ctx.chan_width.y_list);
 
 	device_ctx.chan_width.x_list = device_ctx.chan_width.y_list = NULL;
 	device_ctx.chan_width.max = device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
 
 	for (int i = 0; i < Arch->num_switches; ++i) {
 		if (Arch->Switches->name != NULL) {
-			free(Arch->Switches[i].name);
+			vtr::free(Arch->Switches[i].name);
 		}
 	}
 	delete[] Arch->Switches;
@@ -641,42 +641,42 @@ void free_arch(t_arch* Arch) {
 	Arch->Switches = NULL;
 	device_ctx.arch_switch_inf = NULL;
 	for (int i = 0; i < Arch->num_segments; ++i) {
-		free(Arch->Segments[i].cb);
+		vtr::free(Arch->Segments[i].cb);
 		Arch->Segments[i].cb = NULL;
-		free(Arch->Segments[i].sb);
+		vtr::free(Arch->Segments[i].sb);
 		Arch->Segments[i].sb = NULL;
-		free(Arch->Segments[i].name);
+		vtr::free(Arch->Segments[i].name);
 		Arch->Segments[i].name = NULL;
 	}
-	free(Arch->Segments);
+	vtr::free(Arch->Segments);
 	t_model *model = Arch->models;
 	while (model) {
 		t_model_ports *input_port = model->inputs;
 		while (input_port) {
 			t_model_ports *prev_port = input_port;
 			input_port = input_port->next;
-			free(prev_port->name);
+			vtr::free(prev_port->name);
 			delete prev_port;
 		}
 		t_model_ports *output_port = model->outputs;
 		while (output_port) {
 			t_model_ports *prev_port = output_port;
 			output_port = output_port->next;
-			free(prev_port->name);
+			vtr::free(prev_port->name);
 			delete prev_port;
 		}
 		vtr::t_linked_vptr *vptr = model->pb_types;
 		while (vptr) {
 			vtr::t_linked_vptr *vptr_prev = vptr;
 			vptr = vptr->next;
-			free(vptr_prev);
+			vtr::free(vptr_prev);
 		}
 		t_model *prev_model = model;
 
 		model = model->next;
 		if (prev_model->instances)
-			free(prev_model->instances);
-		free(prev_model->name);
+			vtr::free(prev_model->instances);
+		vtr::free(prev_model->name);
 		delete prev_model;
 	}
 
@@ -685,70 +685,70 @@ void free_arch(t_arch* Arch) {
 		while (vptr) {
 			vtr::t_linked_vptr *vptr_prev = vptr;
 			vptr = vptr->next;
-			free(vptr_prev);
+			vtr::free(vptr_prev);
 		}
 	}
 
 	for (int i = 0; i < Arch->num_directs; ++i) {
-		free(Arch->Directs[i].name);
-		free(Arch->Directs[i].from_pin);
-		free(Arch->Directs[i].to_pin);
+		vtr::free(Arch->Directs[i].name);
+		vtr::free(Arch->Directs[i].from_pin);
+		vtr::free(Arch->Directs[i].to_pin);
 	}
-	free(Arch->Directs);
+	vtr::free(Arch->Directs);
 
-    free(Arch->architecture_id);
+    vtr::free(Arch->architecture_id);
 
-	free(Arch->model_library[0].name);
-	free(Arch->model_library[0].outputs->name);
+	vtr::free(Arch->model_library[0].name);
+	vtr::free(Arch->model_library[0].outputs->name);
 	delete[] Arch->model_library[0].outputs;
-	free(Arch->model_library[1].inputs->name);
+	vtr::free(Arch->model_library[1].inputs->name);
 	delete[] Arch->model_library[1].inputs;
-	free(Arch->model_library[1].name);
-	free(Arch->model_library[2].name);
-	free(Arch->model_library[2].inputs[0].name);
-	free(Arch->model_library[2].inputs[1].name);
+	vtr::free(Arch->model_library[1].name);
+	vtr::free(Arch->model_library[2].name);
+	vtr::free(Arch->model_library[2].inputs[0].name);
+	vtr::free(Arch->model_library[2].inputs[1].name);
 	delete[] Arch->model_library[2].inputs;
-	free(Arch->model_library[2].outputs->name);
+	vtr::free(Arch->model_library[2].outputs->name);
 	delete[] Arch->model_library[2].outputs;
-	free(Arch->model_library[3].name);
-	free(Arch->model_library[3].inputs->name);
+	vtr::free(Arch->model_library[3].name);
+	vtr::free(Arch->model_library[3].inputs->name);
 	delete[] Arch->model_library[3].inputs;
-	free(Arch->model_library[3].outputs->name);
+	vtr::free(Arch->model_library[3].outputs->name);
 	delete[] Arch->model_library[3].outputs;
 	delete[] Arch->model_library;
 
 	if (Arch->clocks) {
-		free(Arch->clocks->clock_inf);
+		vtr::free(Arch->clocks->clock_inf);
 	}
 
 	free_complex_block_types();
 	free_chunk_memory_trace();
 
-	free(Arch->ipin_cblock_switch_name);
+	vtr::free(Arch->ipin_cblock_switch_name);
 }
 
 void free_options(const t_options *options) {
 
-	free(options->ArchFile);
-	free(options->CircuitName);
+	vtr::free(options->ArchFile);
+	vtr::free(options->CircuitName);
 	if (options->ActFile)
-		free(options->ActFile);
+		vtr::free(options->ActFile);
 	if (options->BlifFile)
-		free(options->BlifFile);
+		vtr::free(options->BlifFile);
 	if (options->NetFile)
-		free(options->NetFile);
+		vtr::free(options->NetFile);
 	if (options->PlaceFile)
-		free(options->PlaceFile);
+		vtr::free(options->PlaceFile);
 	if (options->PowerFile)
-		free(options->PowerFile);
+		vtr::free(options->PowerFile);
 	if (options->CmosTechFile)
-		free(options->CmosTechFile);
+		vtr::free(options->CmosTechFile);
 	if (options->RouteFile)
-		free(options->RouteFile);
+		vtr::free(options->RouteFile);
 	if (options->out_file_prefix)
-		free(options->out_file_prefix);
+		vtr::free(options->out_file_prefix);
 	if (options->PinFile)
-		free(options->PinFile);
+		vtr::free(options->PinFile);
 }
 
 static void free_complex_block_types(void) {
@@ -758,7 +758,7 @@ static void free_complex_block_types(void) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	for (int i = 0; i < device_ctx.num_block_types; ++i) {
-		free(device_ctx.block_types[i].name);
+		vtr::free(device_ctx.block_types[i].name);
 
 		if (&device_ctx.block_types[i] == device_ctx.EMPTY_TYPE) {
 			continue;
@@ -769,118 +769,118 @@ static void free_complex_block_types(void) {
 				for (int side = 0; side < 4; ++side) {
 					for (int pin = 0; pin < device_ctx.block_types[i].num_pin_loc_assignments[width][height][side]; ++pin) {
 						if (device_ctx.block_types[i].pin_loc_assignments[width][height][side][pin])
-							free(device_ctx.block_types[i].pin_loc_assignments[width][height][side][pin]);
+							vtr::free(device_ctx.block_types[i].pin_loc_assignments[width][height][side][pin]);
 					}
-					free(device_ctx.block_types[i].pinloc[width][height][side]);
-					free(device_ctx.block_types[i].pin_loc_assignments[width][height][side]);
+					vtr::free(device_ctx.block_types[i].pinloc[width][height][side]);
+					vtr::free(device_ctx.block_types[i].pin_loc_assignments[width][height][side]);
 				}
-				free(device_ctx.block_types[i].pinloc[width][height]);
-				free(device_ctx.block_types[i].pin_loc_assignments[width][height]);
-				free(device_ctx.block_types[i].num_pin_loc_assignments[width][height]);
+				vtr::free(device_ctx.block_types[i].pinloc[width][height]);
+				vtr::free(device_ctx.block_types[i].pin_loc_assignments[width][height]);
+				vtr::free(device_ctx.block_types[i].num_pin_loc_assignments[width][height]);
 			}
-			free(device_ctx.block_types[i].pinloc[width]);
-			free(device_ctx.block_types[i].pin_loc_assignments[width]);
-			free(device_ctx.block_types[i].num_pin_loc_assignments[width]);
+			vtr::free(device_ctx.block_types[i].pinloc[width]);
+			vtr::free(device_ctx.block_types[i].pin_loc_assignments[width]);
+			vtr::free(device_ctx.block_types[i].num_pin_loc_assignments[width]);
 		}
-		free(device_ctx.block_types[i].pinloc);
-		free(device_ctx.block_types[i].pin_loc_assignments);
-		free(device_ctx.block_types[i].num_pin_loc_assignments);
+		vtr::free(device_ctx.block_types[i].pinloc);
+		vtr::free(device_ctx.block_types[i].pin_loc_assignments);
+		vtr::free(device_ctx.block_types[i].num_pin_loc_assignments);
 
-		free(device_ctx.block_types[i].pin_width);
-		free(device_ctx.block_types[i].pin_height);
+		vtr::free(device_ctx.block_types[i].pin_width);
+		vtr::free(device_ctx.block_types[i].pin_height);
 
 		for (int j = 0; j < device_ctx.block_types[i].num_class; ++j) {
-			free(device_ctx.block_types[i].class_inf[j].pinlist);
+			vtr::free(device_ctx.block_types[i].class_inf[j].pinlist);
 		}
-		free(device_ctx.block_types[i].class_inf);
-		free(device_ctx.block_types[i].is_global_pin);
-		free(device_ctx.block_types[i].pin_class);
-		free(device_ctx.block_types[i].grid_loc_def);
+		vtr::free(device_ctx.block_types[i].class_inf);
+		vtr::free(device_ctx.block_types[i].is_global_pin);
+		vtr::free(device_ctx.block_types[i].pin_class);
+		vtr::free(device_ctx.block_types[i].grid_loc_def);
 
 		free_pb_type(device_ctx.block_types[i].pb_type);
-		free(device_ctx.block_types[i].pb_type);
+		vtr::free(device_ctx.block_types[i].pb_type);
 	}
 	delete[] device_ctx.block_types;
 }
 
 static void free_pb_type(t_pb_type *pb_type) {
 
-	free(pb_type->name);
+	vtr::free(pb_type->name);
 	if (pb_type->blif_model)
-		free(pb_type->blif_model);
+		vtr::free(pb_type->blif_model);
 
 	for (int i = 0; i < pb_type->num_modes; ++i) {
 		for (int j = 0; j < pb_type->modes[i].num_pb_type_children; ++j) {
 			free_pb_type(&pb_type->modes[i].pb_type_children[j]);
 		}
-		free(pb_type->modes[i].pb_type_children);
-		free(pb_type->modes[i].name);
+		vtr::free(pb_type->modes[i].pb_type_children);
+		vtr::free(pb_type->modes[i].name);
 		for (int j = 0; j < pb_type->modes[i].num_interconnect; ++j) {
-			free(pb_type->modes[i].interconnect[j].input_string);
-			free(pb_type->modes[i].interconnect[j].output_string);
-			free(pb_type->modes[i].interconnect[j].name);
+			vtr::free(pb_type->modes[i].interconnect[j].input_string);
+			vtr::free(pb_type->modes[i].interconnect[j].output_string);
+			vtr::free(pb_type->modes[i].interconnect[j].name);
 
 			for (int k = 0; k < pb_type->modes[i].interconnect[j].num_annotations; ++k) {
 				if (pb_type->modes[i].interconnect[j].annotations[k].clock)
-					free(pb_type->modes[i].interconnect[j].annotations[k].clock);
+					vtr::free(pb_type->modes[i].interconnect[j].annotations[k].clock);
 				if (pb_type->modes[i].interconnect[j].annotations[k].input_pins) {
-					free(pb_type->modes[i].interconnect[j].annotations[k].input_pins);
+					vtr::free(pb_type->modes[i].interconnect[j].annotations[k].input_pins);
 				}
 				if (pb_type->modes[i].interconnect[j].annotations[k].output_pins) {
-					free(pb_type->modes[i].interconnect[j].annotations[k].output_pins);
+					vtr::free(pb_type->modes[i].interconnect[j].annotations[k].output_pins);
 				}
 				for (int m = 0; m < pb_type->modes[i].interconnect[j].annotations[k].num_value_prop_pairs; ++m) {
-					free(pb_type->modes[i].interconnect[j].annotations[k].value[m]);
+					vtr::free(pb_type->modes[i].interconnect[j].annotations[k].value[m]);
 				}
-				free(pb_type->modes[i].interconnect[j].annotations[k].prop);
-				free(pb_type->modes[i].interconnect[j].annotations[k].value);
+				vtr::free(pb_type->modes[i].interconnect[j].annotations[k].prop);
+				vtr::free(pb_type->modes[i].interconnect[j].annotations[k].value);
 			}
-			free(pb_type->modes[i].interconnect[j].annotations);
+			vtr::free(pb_type->modes[i].interconnect[j].annotations);
 			if (pb_type->modes[i].interconnect[j].interconnect_power)
-				free(pb_type->modes[i].interconnect[j].interconnect_power);
+				vtr::free(pb_type->modes[i].interconnect[j].interconnect_power);
 		}
 		if (pb_type->modes[i].interconnect)
-			free(pb_type->modes[i].interconnect);
+			vtr::free(pb_type->modes[i].interconnect);
 		if (pb_type->modes[i].mode_power)
-			free(pb_type->modes[i].mode_power);
+			vtr::free(pb_type->modes[i].mode_power);
 	}
 	if (pb_type->modes)
-		free(pb_type->modes);
+		vtr::free(pb_type->modes);
 
 	for (int i = 0; i < pb_type->num_annotations; ++i) {
 		for (int j = 0; j < pb_type->annotations[i].num_value_prop_pairs; ++j) {
-			free(pb_type->annotations[i].value[j]);
+			vtr::free(pb_type->annotations[i].value[j]);
 		}
-		free(pb_type->annotations[i].value);
-		free(pb_type->annotations[i].prop);
+		vtr::free(pb_type->annotations[i].value);
+		vtr::free(pb_type->annotations[i].prop);
 		if (pb_type->annotations[i].input_pins) {
-			free(pb_type->annotations[i].input_pins);
+			vtr::free(pb_type->annotations[i].input_pins);
 		}
 		if (pb_type->annotations[i].output_pins) {
-			free(pb_type->annotations[i].output_pins);
+			vtr::free(pb_type->annotations[i].output_pins);
 		}
 		if (pb_type->annotations[i].clock) {
-			free(pb_type->annotations[i].clock);
+			vtr::free(pb_type->annotations[i].clock);
 		}
 	}
 	if (pb_type->num_annotations > 0) {
-		free(pb_type->annotations);
+		vtr::free(pb_type->annotations);
 	}
 
 	if (pb_type->pb_type_power) {
-		free(pb_type->pb_type_power);
+		vtr::free(pb_type->pb_type_power);
 	}
 
 	for (int i = 0; i < pb_type->num_ports; ++i) {
-		free(pb_type->ports[i].name);
+		vtr::free(pb_type->ports[i].name);
 		if (pb_type->ports[i].port_class) {
-			free(pb_type->ports[i].port_class);
+			vtr::free(pb_type->ports[i].port_class);
 		}
 		if (pb_type->ports[i].port_power) {
-			free(pb_type->ports[i].port_power);
+			vtr::free(pb_type->ports[i].port_power);
 		}
 	}
-	free(pb_type->ports);
+	vtr::free(pb_type->ports);
 }
 
 void free_circuit() {
@@ -896,13 +896,13 @@ void free_circuit() {
 				free_pb(cluster_ctx.blocks[i].pb);
 				delete cluster_ctx.blocks[i].pb;
 			}
-			free(cluster_ctx.blocks[i].nets);
-			free(cluster_ctx.blocks[i].net_pins);
-			free(cluster_ctx.blocks[i].name);
+			vtr::free(cluster_ctx.blocks[i].nets);
+			vtr::free(cluster_ctx.blocks[i].net_pins);
+			vtr::free(cluster_ctx.blocks[i].name);
 			delete [] cluster_ctx.blocks[i].pb_route;
 		}
 	}
-	free(cluster_ctx.blocks);
+	vtr::free(cluster_ctx.blocks);
 	cluster_ctx.blocks = NULL;
 }
 
@@ -911,7 +911,7 @@ void vpr_free_vpr_data_structures(t_arch& Arch,
 		t_vpr_setup& vpr_setup) {
 
 	if (vpr_setup.Timing.SDCFile != NULL) {
-		free(vpr_setup.Timing.SDCFile);
+		vtr::free(vpr_setup.Timing.SDCFile);
 		vpr_setup.Timing.SDCFile = NULL;
 	}
 

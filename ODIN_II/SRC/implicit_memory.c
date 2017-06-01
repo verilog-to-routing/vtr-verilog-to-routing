@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "node_creation_library.h"
 #include "odin_util.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 // Hashes the implicit memory name to the implicit_memory structure.
 hashtable_t *implicit_memories;
@@ -90,14 +91,14 @@ implicit_memory *create_implicit_memory_block(int data_width, long long words, c
 	node->name = hard_node_name(node, instance_name_prefix, implicit_string, name);
 
 	// Create a fake ast node.
-	node->related_ast_node = (ast_node_t *)calloc(1, sizeof(ast_node_t));
-	node->related_ast_node->children = (ast_node_t **)calloc(1,sizeof(ast_node_t *));
-	node->related_ast_node->children[0] = (ast_node_t *)calloc(1, sizeof(ast_node_t));
+	node->related_ast_node = (ast_node_t *)vtr::calloc(1, sizeof(ast_node_t));
+	node->related_ast_node->children = (ast_node_t **)vtr::calloc(1,sizeof(ast_node_t *));
+	node->related_ast_node->children[0] = (ast_node_t *)vtr::calloc(1, sizeof(ast_node_t));
 	node->related_ast_node->children[0]->types.identifier = vtr::strdup("dual_port_ram");
 
 	char *full_name = make_full_ref_name(instance_name_prefix, NULL, NULL, name, -1);
 
-	implicit_memory *memory = (implicit_memory *)malloc(sizeof(implicit_memory));
+	implicit_memory *memory = (implicit_memory *)vtr::malloc(sizeof(implicit_memory));
 	memory->node = node;
 	memory->addr_width = addr_width;
 	memory->data_width = data_width;
@@ -180,7 +181,7 @@ void free_implicit_memory_index_and_finalize_memories()
 		for (i = 0; i < implicit_memories->count; i++)
 			finalize_implicit_memory(memories[i]);
 
-		free(memories);
+		vtr::free(memories);
 		implicit_memories->destroy_free_items(implicit_memories);
 		implicit_memories = NULL;
 	}

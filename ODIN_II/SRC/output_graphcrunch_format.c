@@ -29,6 +29,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 #include "netlist_utils.h"
 #include "odin_util.h"
+#include "vtr_memory.h"
 
 void depth_first_traverse_graphcrunch(FILE *out, short marker_value, netlist_t *netlist);
 void depth_first_traversal_graphcrunch_display(nnode_t *node, FILE *fp, int traverse_mark_number);
@@ -119,20 +120,20 @@ void depth_first_traversal_graphcrunch_display(nnode_t *node, FILE *fp, int trav
 				if (node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
-					temp_string = (char*)realloc(temp_string, sizeof(char)*strlen(temp_string)+1+2);
+					temp_string = (char*)vtr::realloc(temp_string, sizeof(char)*strlen(temp_string)+1+2);
 					sprintf(temp_string, "%s_O", temp_string);
 				}
 				if (next_node->type == OUTPUT_NODE)
 				{
 					/* renaming for output nodes */
-					temp_string2 = (char*)realloc(temp_string2, sizeof(char)*strlen(temp_string2)+1+2);
+					temp_string2 = (char*)vtr::realloc(temp_string2, sizeof(char)*strlen(temp_string2)+1+2);
 					sprintf(temp_string2, "%s_O", temp_string2);
 				}
 
 				fprintf(fp, "%s\t%s\n", temp_string, temp_string2);
 
-				free(temp_string);
-				free(temp_string2);
+				vtr::free(temp_string);
+				vtr::free(temp_string2);
 
 				/* recursive call point */
 				depth_first_traversal_graphcrunch_display(next_node, fp, traverse_mark_number);

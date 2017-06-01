@@ -31,6 +31,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 using namespace pugiutil;
 
@@ -106,7 +107,7 @@ void read_verilog_files(pugi::xml_node a_node, config_t *config, const pugiutil:
 	{
 		if (global_args.verilog_file == NULL)
 		{
-			config->list_of_file_names = (char**)realloc(config->list_of_file_names, sizeof(char*)*(config->num_list_of_file_names+1));
+			config->list_of_file_names = (char**)vtr::realloc(config->list_of_file_names, sizeof(char*)*(config->num_list_of_file_names+1));
 			config->list_of_file_names[config->num_list_of_file_names] = vtr::strdup(child.child_value());
 			config->num_list_of_file_names ++;
 		}
