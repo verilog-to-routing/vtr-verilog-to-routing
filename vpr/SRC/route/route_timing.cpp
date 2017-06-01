@@ -470,11 +470,11 @@ void free_timing_driven_route_structs(float *pin_criticality, int *sink_order,
 
 	/* Frees all the stuctures needed only by the timing-driven router.        */
 
-    // coverity[offset_free]
+    // coverity[offset_free : Intentional]
 	free(pin_criticality + 1); /* Starts at index 1. */
-    // coverity[offset_free]
+    // coverity[offset_free : Intentional]
 	free(sink_order + 1);
-    // coverity[offset_free]
+    // coverity[offset_free : Intentional]
 	free(rt_node_of_sink + 1);
 	free_route_tree_timing_structs();
 }
