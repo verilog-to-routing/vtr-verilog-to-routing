@@ -8,13 +8,28 @@ before_install:
 
 install: 
   # C++14
-  - sudo apt-get install -qq build-essential libx11-dev cmake flex bison ctags clang
+  - sudo apt-get install -qq build-essential libx11-dev cmake flex bison ctags clang libnl-3-dev libnl-genl-3-dev
   - sudo apt-get install -qq g++-6
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90
-  
+ 
+addons:
+coverity_scan:
+  project:
+    name: "jeanlego/vtr-verilog"
+    description: "Build submitted via Travis CI"
+  notification_email: jeanphilippe.elgaul@gmail.com
+  build_command:   "make -j 4"
+  branch_pattern: coverity_scan
+ 
 # safelist
 branches:
   only:
   - jeanlego
 script: make && make install
 cache: bundler
+
+env:
+  global:
+   - secure: "4qsKLN_WNZ5RX0ucdr-24A"
+   
+
