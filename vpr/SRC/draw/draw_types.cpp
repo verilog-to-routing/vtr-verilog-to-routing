@@ -22,7 +22,8 @@ t_draw_state::t_draw_state() :
 	net_color(NULL),
 	block_color(NULL),
 	draw_rr_node(NULL),
-    setup_timing_info(nullptr) { 
+    setup_timing_info(nullptr),
+    arch_info(nullptr) { 
 
 }
 

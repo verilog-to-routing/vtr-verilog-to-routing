@@ -149,12 +149,13 @@ public:
 	float R_upstream;
 	float congestion_upstream;
 
-	PQ_Entry(int set_rr_node_ind, int /*switch_ind*/, float parent_delay, float /*parent_R_upstream*/, float parent_congestion_upstream, bool starting_node){
+	PQ_Entry(int set_rr_node_ind, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node){
 		this->rr_node_ind = set_rr_node_ind;
 
 		auto& device_ctx = g_vpr_ctx.device();
 		this->delay = parent_delay;
 		this->congestion_upstream = parent_congestion_upstream;
+		this->R_upstream = parent_R_upstream;
 		if (!starting_node){
 			int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
 			//this->delay += g_rr_nodes[set_rr_node_ind].C() * (g_rr_switch_inf[switch_ind].R + 0.5*g_rr_nodes[set_rr_node_ind].R()) + 
