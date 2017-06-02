@@ -192,7 +192,8 @@ def vtr_command_main(arg_list, prog=None):
         print "\tlog file    : ", e.log
     except InspectError as e:
         print "Error: {msg}".format(msg=e.msg)
-        print "\tfile: ", e.filename
+        if e.filename:
+            print "\tfile: ", e.filename
     except VtrError as e:
         print "Error:", e.msg
     finally:
@@ -255,7 +256,8 @@ def parse_task(args, config, config_jobs, task_metrics_filepath=None, flow_metri
 
     for job in config_jobs:
         #Re-run parsing only
-        subprocess.call(job.command() + ["--parse"] , cwd=job.work_dir(run_dir))
+        cmd = job.command() + ['--parse']
+        subprocess.check_call(cmd, cwd=job.work_dir(run_dir))
 
     if task_metrics_filepath is None:
         task_metrics_filepath = task_parse_results_filepath = os.path.join(run_dir, "parse_results.txt")
@@ -358,15 +360,15 @@ def check_golden_results_for_task(args, config):
         for metric in pass_requirements.keys():
             for (arch, circuit), result in task_results.all_metrics().iteritems():
                 if metric not in result:
-                    print_verbose(BASIC_VERBOSITY, args.verbosity,
-                        "Warning: Required metric '{}' missing from task results".format(metric), task_results_filepath) 
-                    #raise InspectError("Required metric '{}' missing from task results".format(metric), parse_results_filepath) 
+                    #print_verbose(BASIC_VERBOSITY, args.verbosity,
+                        #"Warning: Required metric '{}' missing from task results".format(metric), task_results_filepath) 
+                    raise InspectError("Required metric '{}' missing from task results".format(metric), task_results_filepath) 
 
             for (arch, circuit), result in golden_results.all_metrics().iteritems():
                 if metric not in result:
-                    print_verbose(BASIC_VERBOSITY, args.verbosity,
-                        "Warning: Required metric '{}' missing from golden results".format(metric), golden_results_filepath) 
-                    #raise InspectError("Required metric '{}' missing from golden results".format(metric), golden_results_filepath) 
+                    #print_verbose(BASIC_VERBOSITY, args.verbosity,
+                        #"Warning: Required metric '{}' missing from golden results".format(metric), golden_results_filepath) 
+                    raise InspectError("Required metric '{}' missing from golden results".format(metric), golden_results_filepath) 
 
         #Load the primary keys for golden and task
         golden_primary_keys = []
@@ -465,6 +467,9 @@ def find_latest_run_dir(args, config):
 
     run_dir = get_latest_run_dir(task_dir)
 
+    if not run_dir:
+        raise InspectError("Failed to find run directory for task '{}' in '{}'".format(config.task_name, task_dir))
+
     assert os.path.isdir(run_dir)
 
     return run_dir
@@ -515,7 +520,7 @@ def run_parallel(args, configs, queued_jobs):
                 job = queued_jobs.pop()
 
                 #Make the working directory
-                work_dir = job.work_dir(run_dirs[config.task_name])
+                work_dir = job.work_dir(run_dirs[job.task_name()])
                 mkdir_p(work_dir)
 
                 log_filepath = os.path.join(work_dir, "vtr_flow.log")

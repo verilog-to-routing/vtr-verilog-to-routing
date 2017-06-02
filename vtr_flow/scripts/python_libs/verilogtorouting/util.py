@@ -409,15 +409,31 @@ def get_next_run_dir(base_dir):
 
     Does not create the directory
     """
-    latest_run_number = get_latest_run_number(base_dir)
-
-    return os.path.join(base_dir, run_dir_name(latest_run_number + 1))
+    return os.path.join(base_dir, run_dir_name(get_next_run_number(base_dir)))
 
 def get_latest_run_dir(base_dir):
     """
     Returns the run directory with the highest run number in base_dir
     """
-    return os.path.join(base_dir, run_dir_name(get_latest_run_number(base_dir)))
+    latest_run_number = get_latest_run_number(base_dir)
+
+    if latest_run_number == None:
+        return None
+
+    return os.path.join(base_dir, run_dir_name(latest_run_number))
+
+def get_next_run_number(base_dir):
+    """
+    Returns the next available (i.e. non-existing) run number in base_dir
+    """
+    latest_run_number = get_latest_run_number(base_dir)
+
+    if latest_run_number == None:
+        next_run_number = 0
+    else:
+        next_run_number = latest_run_number + 1
+
+    return next_run_number
 
 def get_latest_run_number(base_dir):
     """
@@ -425,6 +441,11 @@ def get_latest_run_number(base_dir):
     """
     run_number = 0
     run_dir = os.path.join(base_dir, run_dir_name(run_number))
+
+    if not os.path.exists(run_dir):
+        #No existing run directories
+        return None
+
     while os.path.exists(run_dir):
         run_number += 1
         run_dir = os.path.join(base_dir, run_dir_name(run_number))
