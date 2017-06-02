@@ -3,6 +3,7 @@ import sys
 import shutil
 import subprocess
 import time
+import glob
 from collections import OrderedDict
 
 from util import make_enum, print_verbose, mkdir_p, find_vtr_file, file_replace, relax_W, CommandRunner, write_tab_delimitted_csv
@@ -193,14 +194,29 @@ def parse_vtr_flow(work_dir, parse_config_file=None, metrics_filepath=None, verb
     #Process each pattern
     for parse_pattern in parse_patterns.values():
 
-        filepath = os.path.join(work_dir, parse_pattern.filename())
-        if os.path.exists(filepath):
+        #We interpret the parse pattern's filename as a glob pattern
+        filepattern = os.path.join(work_dir, parse_pattern.filename())
+        filepaths = glob.glob(filepattern)
+
+        num_files = len(filepaths)
+
+        if num_files > 1:
+            raise InspectError("File pattern '{}' is ambiguous ({} files matched)".format(parse_pattern.filename()), num_files, filepaths)
+
+        elif num_files == 1:
+            filepath = filepaths[0]
+
+            assert os.path.exists(filepath)
+
             with open(filepath) as f:
                 for line in f:
                     match = parse_pattern.regex().match(line)
                     if match:
                         #Extract the first group value
                         metrics[parse_pattern.name()] = match.groups()[0]
+        else:
+            #No matching file, skip
+            assert num_files == 0
 
     if metrics_filepath is None:
         metrics_filepath = os.path.join(work_dir, "parse_results.txt")
