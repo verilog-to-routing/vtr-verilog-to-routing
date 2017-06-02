@@ -103,30 +103,30 @@ def vtr_command_main(arg_list, prog=None):
     num_qor_failures = 0
 
     try:
-        #Run any ODIN tests
-        for reg_test in args.reg_test:
-            if reg_test.startswith("odin"):
-                num_func_failures += run_odin_test(args, reg_test)
-
-        #Collect the task lists
-        vtr_task_list_files = []
-        for reg_test in args.reg_test:
-            if reg_test.startswith("vtr"):
-
-                base_testname = reg_test.split('_')[-1]
-                task_list_filepath = os.path.join(find_vtr_root(), 
-                                                  'vtr_flow', 'tasks', 'regression_tests', 
-                                                  'vtr_reg_' + base_testname, 'task_list.txt')
-                vtr_task_list_files.append(task_list_filepath)
-
-        #Run the actual tasks, recording functionality failures
-        num_func_failures += run_tasks(args, vtr_task_list_files)
-
         if args.create_golden:
             #Create golden results
             num_qor_failures = 0
             create_tasks_golden_result(args, vtr_task_list_files)
         else:
+            #Run any ODIN tests
+            for reg_test in args.reg_test:
+                if reg_test.startswith("odin"):
+                    num_func_failures += run_odin_test(args, reg_test)
+
+            #Collect the task lists
+            vtr_task_list_files = []
+            for reg_test in args.reg_test:
+                if reg_test.startswith("vtr"):
+
+                    base_testname = reg_test.split('_')[-1]
+                    task_list_filepath = os.path.join(find_vtr_root(), 
+                                                      'vtr_flow', 'tasks', 'regression_tests', 
+                                                      'vtr_reg_' + base_testname, 'task_list.txt')
+                    vtr_task_list_files.append(task_list_filepath)
+
+            #Run the actual tasks, recording functionality failures
+            num_func_failures += run_tasks(args, vtr_task_list_files)
+
             #Check against golden results
             num_qor_failures += check_tasks_qor(args, vtr_task_list_files)
 
