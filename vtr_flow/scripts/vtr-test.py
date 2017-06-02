@@ -174,9 +174,10 @@ def run_tasks(args, task_lists):
     vtr_task_cmd += ['-l'] + task_lists
     vtr_task_cmd += ['-j', str(args.j),
                      '-v', str(max(0, args.verbosity - 1)),
-                     '--work_dir', args.work_dir,
                      '--print_metadata', str(args.debug)
                      ]
+    if args.work_dir:
+        vtr_task_cmd += ["--work_dir", args.workdir]
 
     #Exit code is number of failures
     return subprocess.call(vtr_task_cmd)
@@ -186,10 +187,11 @@ def check_tasks_qor(args, task_lists):
     vtr_task_cmd = ['vtr', 'task'] 
     vtr_task_cmd += ['-l'] + task_lists
     vtr_task_cmd += ['-v', str(max(0, args.verbosity - 1)),
-                     '--work_dir', args.work_dir,
                      '--check_golden',
                      '--print_metadata', str(args.debug)
                      ]
+    if args.work_dir:
+        vtr_task_cmd += ["--work_dir", args.workdir]
 
     #Exit code is number of failures
     return subprocess.call(vtr_task_cmd)
@@ -198,10 +200,11 @@ def create_tasks_golden_result(args, task_list):
     vtr_task_cmd = ['vtr', 'task'] 
     vtr_task_cmd += ['-l'] + task_lists
     vtr_task_cmd += ['-v', str(max(0, args.verbosity - 1)),
-                     '--work_dir', args.work_dir,
                      '--create_golden',
                      '--print_metadata', str(args.debug)
                      ]
+    if args.work_dir:
+        vtr_task_cmd += ["--work_dir", args.workdir]
 
     #Exit code is number of failures
     return subprocess.call(vtr_task_cmd)
