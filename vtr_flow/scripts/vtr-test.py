@@ -125,7 +125,7 @@ def vtr_command_main(arg_list, prog=None):
         if args.create_golden:
             #Create golden results
             num_qor_failures = 0
-            create_golden_task_results(args, vtr_task_list_files)
+            create_tasks_golden_result(args, vtr_task_list_files)
         else:
             #Check against golden results
             num_qor_failures += check_tasks_qor(args, vtr_task_list_files)
@@ -196,7 +196,7 @@ def check_tasks_qor(args, task_lists):
     #Exit code is number of failures
     return subprocess.call(vtr_task_cmd)
 
-def create_tasks_golden_result(args, task_list):
+def create_tasks_golden_result(args, task_lists):
     vtr_task_cmd = ['vtr', 'task'] 
     vtr_task_cmd += ['-l'] + task_lists
     vtr_task_cmd += ['-v', str(max(0, args.verbosity - 1)),
