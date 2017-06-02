@@ -293,7 +293,7 @@ def run_vpr_relax_W(architecture, circuit, command_runner=CommandRunner(), work_
     """
     Runs VPR twice:
       1st: To find the minimum channel width
-      2nd: To find the critical path delay at a relaxed channel width
+      2nd: At relaxed channel width (e.g. for critical path delay)
 
     Arguments
     ---------
@@ -315,7 +315,7 @@ def run_vpr_relax_W(architecture, circuit, command_runner=CommandRunner(), work_
     mkdir_p(work_dir)
 
     vpr_min_W_log = '.'.join([logfile_base, "min_W", "out"])
-    vpr_crit_path_log = '.'.join([logfile_base, "crit_path", "out"])
+    vpr_relaxed_W_log = '.'.join([logfile_base, "relaxed_W", "out"])
 
     print_verbose(1, verbosity, "Running VPR (determining minimum channel width)" )
 
@@ -330,7 +330,7 @@ def run_vpr_relax_W(architecture, circuit, command_runner=CommandRunner(), work_
 
     relaxed_W = relax_W(min_W, relax_W_factor)
 
-    print_verbose(1, verbosity, "Running VPR (determining critical path at {fac}x minimum channel width)".format(fac=relax_W_factor))
+    print_verbose(1, verbosity, "Running VPR (at {fac}x relaxed minimum channel width)".format(fac=relax_W_factor))
 
     vpr_args['route'] = True #Re-route only
     vpr_args['route_chan_width'] = relaxed_W #At a fixed channel width
@@ -340,7 +340,7 @@ def run_vpr_relax_W(architecture, circuit, command_runner=CommandRunner(), work_
     if 'fix_pins' in vpr_args:
         del vpr_args['fix_pins']
 
-    run_vpr(architecture, circuit, command_runner, work_dir, log_filename=vpr_crit_path_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
+    run_vpr(architecture, circuit, command_runner, work_dir, log_filename=vpr_relaxed_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
     
 
 def run_vpr(architecture, circuit, command_runner, work_dir, output_netlist=None, log_filename="vpr.out", vpr_exec=None, vpr_args=None):
