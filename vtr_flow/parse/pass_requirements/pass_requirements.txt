@@ -1,15 +1,39 @@
-vpr_min_W_exit_status;Equal()
-vpr_crit_path_exit_status;Equal()
-min_chan_width;Range(0.80,1.30)
-critical_path_delay;Range(0.80,1.40)
-routed_wirelength;Range(0.60,1.50)
-pack_time;Range(0.10,10.0)
-place_time;Range(0.10,10.0)
-min_chan_width_route_time;Range(0.10,10.0)
-crit_path_route_time;Range(0.10,10.0)
+#General
+vpr_exit_status_min_W;Equal()
+vpr_exit_status_relaxed_W;Equal()
+
+#Input netlist metrics
 num_pre_packed_nets;Range(0.95,1.05)
 num_pre_packed_blocks;Range(0.95,1.05)
+
+#Key Metrics
 num_post_packed_nets;Range(0.80,1.20)
+num_post_packed_blocks;Range(0.80,1.20)
+min_W;Range(0.80,1.20)
+relaxed_W_CPD;Range(0.80,1.20)
+relaxed_W_routed_wirelength;Range(0.60,1.40)
+
+#Device Metrics
+device_width;Range(0.8,1.2)
+device_height;Range(0.8,1.2)
+min_W_logic_area_total;Range(0.8,1.2)
+min_W_logic_area_used;Range(0.8,1.2)
+min_W_routing_area_total;Range(0.8,1.2)
+min_W_routing_area_per_tile;Range(0.8,1.2)
+
+#Power Metrics
+total_power;Range(0.9,1.1)
+routing_power_perc;Range(0.9,1.1)
+clock_power_perc;Range(0.9,1.1)
+tile_power_perc;Range(0.9,1.1)
+
+#Tool run-time
+pack_time;Range(0.10,10.0)
+place_time;Range(0.10,10.0)
+min_W_route_time;Range(0.10,10.0)
+relaxed_W_route_time;Range(0.10,10.0)
+
+#VTR Benchmark Metrics
 num_clb;Range(0.90,1.10)
 num_io;Range(0.95,1.05)
 num_outputs;Range(0.95,1.05)

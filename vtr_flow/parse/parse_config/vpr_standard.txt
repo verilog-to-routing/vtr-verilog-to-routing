@@ -1,9 +1,9 @@
 #General
 vpr_revision;vpr.min_W.out;Revision:\s(.*);unknown
-vpr_min_W_exit_status;vpr.min_W.out;\s*Exit status: (\d+)
-vpr_crit_path_exit_status;vpr.crit_path.out;\s*Exit status: (\d+)
+vpr_exit_status_min_W;vpr.min_W.out;\s*Exit status: (\d+)
+vpr_exit_status_relaxed_W;vpr.relaxed_W.out;\s*Exit status: (\d+)
 
-#VPR Netlist statistics
+#VPR Atom Netlist statistics
 num_pre_packed_nets;vpr.min_W.out;\s*Nets\s*:\s*(\d+)
 num_pre_packed_blocks;vpr.min_W.out;\s*Blocks\s*:\s*(\d+)
 
@@ -21,30 +21,49 @@ num_memories;vpr.min_W.out;Netlist memory blocks:\s*(\d+)
 num_mult;vpr.min_W.out;Netlist mult_36 blocks:\s*(\d+)
 
 #VPR Place Metrics
-placed_wirelength_est;vpr.min_W.out;BB estimate of min-dist \(placement\) wire length: (\d+)
-placed_CPD_est;vpr.min_W.out;Placement estimated critical path delay: (.*) ns
-placed_setup_TNS_est;vpr.min_W.out;Placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
-placed_setup_WNS_est;vpr.min_W.out;Placement estimated setup Worst Negative Slack \(sWNS\): (.*) ns
+placed_wirelength;vpr.min_W.out;BB estimate of min-dist \(placement\) wire length: (\d+)
+placed_CPD;vpr.min_W.out;Placement estimated critical path delay: (.*) ns
+placed_setup_TNS;vpr.min_W.out;Placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
+placed_setup_WNS;vpr.min_W.out;Placement estimated setup Worst Negative Slack \(sWNS\): (.*) ns
 
 #VPR Min W Routing Metrics
-min_chan_width;vpr.min_W.out;Best routing used a channel width factor of (\d+)
-routed_wirelength;vpr.min_W.out;\s*Total wirelength: (.*), average
-min_chan_width_route_success_iteration;vpr.min_W.out;Successfully routed after (\d+) routing iterations
+min_W;vpr.min_W.out;Best routing used a channel width factor of (\d+)
+min_W_routed_wirelength;vpr.min_W.out;\s*Total wirelength: (.*), average
+min_W_route_success_iteration;vpr.min_W.out;Successfully routed after (\d+) routing iterations
+min_W_CPD;vpr.min_W.out;Final critical path: (.*) ns
+min_W_setup_TNS;vpr.min_W.out;Setup Total Negative Slack \(sTNS\): (.*) ns
+min_W_setup_WNS;vpr.min_W.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
 
-#VPR Critical Path Routing Metrics
-crit_path_routed_wirelength;vpr.crit_path.out;\s*Total wirelength: (.*), average
-crit_path_route_success_iteration;vpr.crit_path.out;Successfully routed after (\d+) routing iterations
+#VPR Min W routing architecture metrics
+min_W_logic_area_total;vpr.min_W.out;\s*Total logic block area \(Warning, need to add pitch of routing to blocks with height > 3\): (.*)
+min_W_logic_area_used;vpr.min_W.out;\s*Total used logic block area: (.*)
+min_W_routing_area_total;vpr.min_W.out;\s*Total routing area: (.*), per logic tile: .*
+min_W_routing_area_per_tile;vpr.min_W.out;\s*Total routing area: .*, per logic tile: (.*)
 
-#VPR Analysis (final implementation) Metrics
-critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
-setup_TNS;vpr.crit_path.out;Setup Total Negative Slack \(sTNS\): (.*) ns
-setup_WNS;vpr.crit_path.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
+#VPR Relaxed W Routing Metrics
+relaxed_W_routed_wirelength;vpr.relaxed_W.out;\s*Total wirelength: (.*), average
+relaxed_W_route_success_iteration;vpr.relaxed_W.out;Successfully routed after (\d+) routing iterations
+relaxed_W_CPD;vpr.relaxed_W.out;Final critical path: (.*) ns
+relaxed_W_setup_TNS;vpr.relaxed_W.out;Setup Total Negative Slack \(sTNS\): (.*) ns
+relaxed_W_setup_WNS;vpr.relaxed_W.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
+
+#VPR Relaxed W routing architecture metrics
+relaxed_W_logic_area_total;vpr.relaxed_W.out;\s*Total logic block area \(Warning, need to add pitch of routing to blocks with height > 3\): (.*)
+relaxed_W_logic_area_used;vpr.relaxed_W.out;\s*Total used logic block area: (.*)
+relaxed_W_routing_area_total;vpr.relaxed_W.out;\s*Total routing area: (.*), per logic tile: .*
+relaxed_W_routing_area_per_tile;vpr.relaxed_W.out;\s*Total routing area: .*, per logic tile: (.*)
+
+#Power Metrics
+total_power;*.power;^Total\s+(.*?)\s+
+routing_power_perc;*.power;^\s+Routing\s+\S+\s+(.*?)\s+
+clock_power_perc;*.power;^\s+Clock\s+\S+\s+(.*?)\s+
+tile_power_perc;*.power;^\s+PB Types\s+\S+\s+(.*?)\s+
 
 #VPR Run-time Metrics
 pack_time;vpr.min_W.out;Packing took (.*) seconds
 place_time;vpr.min_W.out;Placement took (.*) seconds
-min_chan_width_route_time;vpr.min_W.out;Routing took (.*) seconds
-crit_path_route_time;vpr.crit_path.out;Routing took (.*) seconds
+min_W_route_time;vpr.min_W.out;Routing took (.*) seconds
+relaxed_W_route_time;vpr.relaxed_W.out;Routing took (.*) seconds
 
 #Memory usage
 max_vpr_mem;vpr.min_W.out;\s*Maximum resident set size \(kbytes\): (\d+)

@@ -1,8 +1,8 @@
 #General
 vpr_revision;vpr.out;Revision:\s(.*);unknown
-vpr_exit_status;vpr.out;\s*Exit status: (\d+)
+vpr_exit_status_fixed_W;vpr.out;\s*Exit status: (\d+)
 
-#VPR Netlist statistics
+#VPR Atom Netlist statistics
 num_pre_packed_nets;vpr.out;\s*Nets\s*:\s*(\d+)
 num_pre_packed_blocks;vpr.out;\s*Blocks\s*:\s*(\d+)
 
@@ -20,26 +20,37 @@ num_memories;vpr.out;Netlist memory blocks:\s*(\d+)
 num_mult;vpr.out;Netlist mult_36 blocks:\s*(\d+)
 
 #VPR Place Metrics
-placed_wirelength_est;vpr.out;BB estimate of min-dist \(placement\) wire length: (\d+)
-placed_CPD_est;vpr.out;Placement estimated critical path delay: (.*) ns
-placed_setup_TNS_est;vpr.out;Placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
-placed_setup_WNS_est;vpr.out;Placement estimated setup Worst Negative Slack \(sWNS\): (.*) ns
+placed_wirelength;vpr.out;BB estimate of min-dist \(placement\) wire length: (\d+)
+placed_CPD;vpr.out;Placement estimated critical path delay: (.*) ns
+placed_setup_TNS;vpr.out;Placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
+placed_setup_WNS;vpr.out;Placement estimated setup Worst Negative Slack \(sWNS\): (.*) ns
 
 #VPR Routing Metrics
-routed_wirelength;vpr.out;\s*Total wirelength: (.*), average
-crit_path_route_success_iteration;vpr.out;Successfully routed after (\d+) routing iterations
+fixed_W;vpr.out;Circuit successfully routed with a channel width factor of (\d+)
+fixed_W_routed_wirelength;vpr.out;\s*Total wirelength: (.*), average
+fixed_W_route_success_iteration;vpr.out;Successfully routed after (\d+) routing iterations
+fixed_W_CPD;vpr.out;Final critical path: (.*) ns
+fixed_W_setup_TNS;vpr.out;Setup Total Negative Slack \(sTNS\): (.*) ns
+fixed_W_setup_WNS;vpr.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
 
-#VPR Analysis (final implementation) Metrics
-critical_path_delay;vpr.out;Final critical path: (.*) ns
-setup_TNS;vpr.out;Setup Total Negative Slack \(sTNS\): (.*) ns
-setup_WNS;vpr.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
+#VPR routing architecture metrics
+fixed_W_logic_area_total;vpr.out;\s*Total logic block area \(Warning, need to add pitch of routing to blocks with height > 3\): (.*)
+fixed_W_logic_area_used;vpr.out;\s*Total used logic block area: (.*)
+fixed_W_routing_area_total;vpr.out;\s*Total routing area: (.*), per logic tile: .*
+fixed_W_routing_area_per_tile;vpr.out;\s*Total routing area: .*, per logic tile: (.*)
+
+#Power Metrics
+total_power;*.power;^Total\s+(.*?)\s+
+routing_power_perc;*.power;^\s+Routing\s+\S+\s+(.*?)\s+
+clock_power_perc;*.power;^\s+Clock\s+\S+\s+(.*?)\s+
+tile_power_perc;*.power;^\s+PB Types\s+\S+\s+(.*?)\s+
 
 #VPR Run-time Metrics
 pack_time;vpr.out;Packing took (.*) seconds
 place_time;vpr.out;Placement took (.*) seconds
-crit_path_route_time;vpr.out;Routing took (.*) seconds
+fixed_W_route_time;vpr.out;Routing took (.*) seconds
 
 #Memory usage
 max_vpr_mem;vpr.out;\s*Maximum resident set size \(kbytes\): (\d+)
 max_odin_mem;odin.out;\s*Maximum resident set size \(kbytes\): (\d+)
-max_abc_mem;abc.out;\s*Maximum resident set size \(kbytes\): (\d+)
+max_abc_mem;abc.opt_techmap.out;\s*Maximum resident set size \(kbytes\): (\d+)

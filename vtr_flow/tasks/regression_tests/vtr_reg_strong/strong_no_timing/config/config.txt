@@ -18,13 +18,13 @@ circuit_list_add=ch_intrinsics.v
 arch_list_add=k6_frac_N10_frac_chain_depop50_mem32K_40nm.xml 
 
 # Parse info and how to parse
-parse_file=vpr_no_timing.txt
+parse_file=vpr_standard.txt
 
 # How to parse QoR info
 qor_parse_file=qor_no_timing.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements_no_timing.txt
+pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params= --timing_analysis off --routing_failure_predictor safe
+script_params= --timing_analysis off
