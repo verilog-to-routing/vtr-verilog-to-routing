@@ -377,33 +377,36 @@ def load_config_lines(filepath, allow_includes=True):
     config_lines = []
 
     blank_regex = re.compile(r"^\s*$")
-    with open(filepath) as f:
-        for line in f:
-            #Trim '\n'
-            line = line.strip()
+    try:
+        with open(filepath) as f:
+            for line in f:
+                #Trim '\n'
+                line = line.strip()
 
-            #Trim comments
-            if '#' in line:
-                line = line.split('#')[0]
+                #Trim comments
+                if '#' in line:
+                    line = line.split('#')[0]
 
-            #Skip blanks
-            if blank_regex.match(line):
-                continue
+                #Skip blanks
+                if blank_regex.match(line):
+                    continue
 
-            if line.startswith("@include"):
-                if allow_includes:
-                    components = line.split()
-                    assert len(components) == 2
+                if line.startswith("@include"):
+                    if allow_includes:
+                        components = line.split()
+                        assert len(components) == 2
 
-                    include_file = components[1].strip('"') #Strip quotes
-                    include_file_abs = os.path.join(os.path.dirname(filepath), include_file)
+                        include_file = components[1].strip('"') #Strip quotes
+                        include_file_abs = os.path.join(os.path.dirname(filepath), include_file)
 
-                    #Recursively load the config
-                    config_lines += load_config_lines(include_file_abs, allow_includes=allow_includes) 
+                        #Recursively load the config
+                        config_lines += load_config_lines(include_file_abs, allow_includes=allow_includes) 
+                    else:
+                        raise InspectError("@include not allowed in this file", filepath)
                 else:
-                    raise InspectError("@include not allowed in this file", filepath)
-            else:
-                config_lines.append(line)
+                    config_lines.append(line)
+    except IOError as e:
+        raise InspectError("Error opening config file ({})".format(e))
 
     return config_lines            
 
