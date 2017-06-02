@@ -1,0 +1,9 @@
+@include "vpr.fixed_chan_width.txt"
+
+#Titan benchmark packing metrics
+num_io;vpr.out;\s*Netlist\s+(\d+)\s+blocks of type: io
+num_PLL;vpr.out;\s*Netlist\s+(\d+)\s+blocks of type: PLL
+num_LAB;vpr.out;\s*Netlist\s+(\d+)\s+blocks of type: LAB
+num_DSP;vpr.out;\s*Netlist\s+(\d+)\s+blocks of type: DSP
+num_M9K;vpr.out;\s*Netlist\s+(\d+)\s+blocks of type: M9K
+num_M144K;vpr.out;\s*Netlist\s+(\d+)\s+blocks of type: M144K

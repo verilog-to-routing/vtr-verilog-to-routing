@@ -12,13 +12,6 @@ num_post_packed_blocks;vpr.out;Netlist num_blocks:\s*(\d+)
 device_width;vpr.out;FPGA auto-sized to x = (\d+) y = \d+
 device_height;vpr.out;FPGA auto-sized to x = \d+ y = (\d+)
 
-#VTR benchmark packing metrics
-num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
-num_io;vpr.out;Netlist inputs pins:\s*(\d+)
-num_outputs;vpr.out;Netlist output pins:\s*(\d+)
-num_memories;vpr.out;Netlist memory blocks:\s*(\d+)
-num_mult;vpr.out;Netlist mult_36 blocks:\s*(\d+)
-
 #VPR Place Metrics
 placed_wirelength;vpr.out;BB estimate of min-dist \(placement\) wire length: (\d+)
 placed_CPD;vpr.out;Placement estimated critical path delay: (.*) ns
@@ -39,12 +32,6 @@ fixed_W_logic_area_used;vpr.out;\s*Total used logic block area: (.*)
 fixed_W_routing_area_total;vpr.out;\s*Total routing area: (.*), per logic tile: .*
 fixed_W_routing_area_per_tile;vpr.out;\s*Total routing area: .*, per logic tile: (.*)
 
-#Power Metrics
-total_power;*.power;^Total\s+(.*?)\s+
-routing_power_perc;*.power;^\s+Routing\s+\S+\s+(.*?)\s+
-clock_power_perc;*.power;^\s+Clock\s+\S+\s+(.*?)\s+
-tile_power_perc;*.power;^\s+PB Types\s+\S+\s+(.*?)\s+
-
 #VPR Run-time Metrics
 pack_time;vpr.out;Packing took (.*) seconds
 place_time;vpr.out;Placement took (.*) seconds
@@ -52,5 +39,3 @@ fixed_W_route_time;vpr.out;Routing took (.*) seconds
 
 #Memory usage
 max_vpr_mem;vpr.out;\s*Maximum resident set size \(kbytes\): (\d+)
-max_odin_mem;odin.out;\s*Maximum resident set size \(kbytes\): (\d+)
-max_abc_mem;abc.opt_techmap.out;\s*Maximum resident set size \(kbytes\): (\d+)

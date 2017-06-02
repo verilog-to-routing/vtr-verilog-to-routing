@@ -1,0 +1,3 @@
+@include "vtr_benchmarks.fixed_chan_width.txt"
+
+num_fpu;vpr.out;Netlist block_FPU blocks:\s*(\d+)

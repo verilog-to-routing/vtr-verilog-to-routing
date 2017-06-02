@@ -1,0 +1,8 @@
+#Chain statistics
+num_adder_primitives;odin.out;The Total Number of Hard Block adders: (\d+)
+max_adder_chain_length;odin.out;The Number of Hard Block adders in the Longest Chain: (\d+)
+num_subtractor_primitives;odin.out;The Total Number of Hard Block subs: (\d+)
+max_subtractor_chain_length;odin.out;The Number of Hard Block subs in the Longest Chain: (\d+)
+
+#Memory usage
+max_odin_mem;odin.out;\s*Maximum resident set size \(kbytes\): (\d+)

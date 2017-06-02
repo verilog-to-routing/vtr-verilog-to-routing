@@ -1,0 +1,12 @@
+@include "vpr.min_chan_width.txt"
+
+#VTR benchmark packing metrics
+num_clb;vpr.min_W.out;Netlist clb blocks:\s*(\d+)
+num_io;vpr.min_W.out;Netlist inputs pins:\s*(\d+)
+num_outputs;vpr.min_W.out;Netlist output pins:\s*(\d+)
+num_memories;vpr.min_W.out;Netlist memory blocks:\s*(\d+)
+num_mult;vpr.min_W.out;Netlist mult_36 blocks:\s*(\d+)
+
+@include "power.basic.txt"
+@include "odin.common.txt"
+@include "abc.common.txt"
