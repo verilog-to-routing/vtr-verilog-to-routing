@@ -21,7 +21,7 @@ class RawDefaultHelpFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.R
 
 class CommandRunner(object):
 
-    def __init__(self, timeout_sec=None, max_memory_mb=None, track_memory=True, verbose=False, echo_cmd=False, indent="\t"):
+    def __init__(self, timeout_sec=None, max_memory_mb=None, track_memory=True, verbose_error=False, verbose=False, echo_cmd=False, indent="\t"):
         """
         An object for running system commands with timeouts, memory limits and varying verbose-ness 
 
@@ -30,6 +30,7 @@ class CommandRunner(object):
             timeout_sec: maximum walk-clock-time of the command in seconds. Default: None
             max_memory_mb: maximum memory usage of the command in megabytes (if supported). Default: None
             track_memory: Whether to track usage of the command (disabled if not supported). Default: True
+            verbose_error: Produce more verbose output if the commadn fails. Default: False
             verbose: Produce more verbose output. Default: False
             echo_cmd: Echo the command before running. Default: False
             indent: The string specifying a single indent (used in verbose mode)
@@ -37,11 +38,12 @@ class CommandRunner(object):
         self._timeout_sec = timeout_sec
         self._max_memory_mb = max_memory_mb
         self._track_memory = track_memory
+        self._verbose_error = verbose_error
         self._verbose = verbose
         self._echo_cmd = echo_cmd
         self._indent = indent
 
-    def run_system_command(self, cmd, work_dir, log_filename=None, exepcted_return_code=0, indent_depth=0):
+    def run_system_command(self, cmd, work_dir, log_filename=None, expected_return_code=0, indent_depth=0):
         """
         Runs the specified command in the system shell.
 
@@ -117,10 +119,6 @@ class CommandRunner(object):
                     #Save the output
                     cmd_output.append(line)
 
-                    #Send to stdout
-                    if self._verbose:
-                        print indent_depth*self._indent + line,
-
                     #Abort if over time limit
                     elapsed_time = time.time() - start_time
                     if self._timeout_sec and elapsed_time > self._timeout_sec:
@@ -139,7 +137,15 @@ class CommandRunner(object):
 
                 cmd_returncode = proc.returncode
 
-        if cmd_returncode != exepcted_return_code:
+        cmd_errored = (cmd_returncode != expected_return_code)
+
+        #Send to stdout
+        if self._verbose or (cmd_errored and self._verbose_error):
+            for line in cmd_output:
+                print indent_depth*self._indent + line,
+
+
+        if cmd_errored:
             raise CommandError(msg="Executable {exec_name} failed".format(exec_name=os.path.basename(orig_cmd[0])), 
                                cmd=cmd,
                                log=os.path.join(work_dir, log_filename),

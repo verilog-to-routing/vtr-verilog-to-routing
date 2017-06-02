@@ -71,7 +71,7 @@ def vtr_command_argparser(prog=None):
                         help="How many processors to use for execution.")
 
     parser.add_argument("-v", "--verbosity",
-                        choices=VERBOSITY_CHOICES,
+                        choices=VERBOSITY_CHOICES + [5],
                         default=2,
                         type=int,
                         help="Sets the verbosity of the script. Higher values produce more output.")
@@ -142,7 +142,7 @@ def vtr_command_main(arg_list, prog=None):
 
         sys.exit(num_func_failures + num_qor_failures)
     finally:
-        print_verbose(BASIC_VERBOSITY, args.verbosity, "\n{} took {}".format(prog, format_elapsed_time(datetime.now() - start)))
+        print_verbose(BASIC_VERBOSITY, args.verbosity, "\n# {} took {} (exiting {})".format(prog, format_elapsed_time(datetime.now() - start), num_func_failures + num_qor_failures))
 
 def run_odin_test(args, test_name):
     odin_reg_script = None

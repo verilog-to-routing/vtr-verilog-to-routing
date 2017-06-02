@@ -197,7 +197,8 @@ def vtr_command_main(arg_list, prog=None):
     command_runner = CommandRunner(track_memory=args.track_memory_usage, 
                                    max_memory_mb=args.memory_limit, 
                                    timeout_sec=args.timeout,
-                                   verbose=True if args.verbosity >= 2 else False,
+                                   verbose_error=True if args.verbosity == 2 else False,
+                                   verbose=True if args.verbosity > 2 else False,
                                    echo_cmd=True if args.verbosity >= 4 else False)
     exit_status = 0
     try:
@@ -247,7 +248,7 @@ def vtr_command_main(arg_list, prog=None):
             exit_status = 2
 
     finally:
-        print_verbose(BASIC_VERBOSITY, args.verbosity, "\n{} took {}".format(prog, format_elapsed_time(datetime.now() - start)))
+        print_verbose(BASIC_VERBOSITY, args.verbosity, "\n# {} took {} (exiting {})".format(prog, format_elapsed_time(datetime.now() - start), exit_status))
     sys.exit(exit_status)
 
 def process_unkown_args(unkown_args):

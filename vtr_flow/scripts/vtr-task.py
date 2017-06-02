@@ -198,7 +198,7 @@ def vtr_command_main(arg_list, prog=None):
         print "Error:", e.msg
     finally:
         if args.print_metadata:
-            print "\n{} took {} (exiting {})".format(prog, format_elapsed_time(datetime.now() - start), num_failed)
+            print "\n# {} took {} (exiting {})".format(prog, format_elapsed_time(datetime.now() - start), num_failed)
     sys.exit(num_failed)
 
 def run_tasks(args, configs):
@@ -258,7 +258,7 @@ def parse_task(args, config, config_jobs, task_metrics_filepath=None, flow_metri
         #Re-run parsing only
         cmd = job.command()
         cmd += ['--parse']
-        cmd += ['-v', str(max(0, args.verbosity-2))]
+        cmd += ['-v', str(max(0, args.verbosity-3))]
         subprocess.check_call(cmd, cwd=job.work_dir(run_dir))
 
     if task_metrics_filepath is None:
@@ -414,7 +414,7 @@ def check_golden_results_for_task(args, config):
                     reason = e.msg
 
                 if not metric_passed:
-                    print_verbose(BASIC_VERBOSITY, args.verbosity, "    FAILED {} {}/{}: {} {}".format(config.task_name, arch, circuit, metric, reason))
+                    print_verbose(BASIC_VERBOSITY, args.verbosity, "    FAILED {} {} {}/{}: {} {}".format(os.path.basename(run_dir), config.task_name, arch, circuit, metric, reason))
                     num_qor_failures += 1
 
     if num_qor_failures == 0:
