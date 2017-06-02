@@ -256,7 +256,9 @@ def parse_task(args, config, config_jobs, task_metrics_filepath=None, flow_metri
 
     for job in config_jobs:
         #Re-run parsing only
-        cmd = job.command() + ['--parse']
+        cmd = job.command()
+        cmd += ['--parse']
+        cmd += ['-v', str(max(0, args.verbosity-2))]
         subprocess.check_call(cmd, cwd=job.work_dir(run_dir))
 
     if task_metrics_filepath is None:
@@ -417,7 +419,7 @@ def check_golden_results_for_task(args, config):
 
     if num_qor_failures == 0:
         print_verbose(BASIC_VERBOSITY, args.verbosity, 
-                      "    PASSED {}".format(config.task_name))
+                      "    PASSED {} {}".format(os.path.basename(run_dir), config.task_name))
 
     return num_qor_failures
 
