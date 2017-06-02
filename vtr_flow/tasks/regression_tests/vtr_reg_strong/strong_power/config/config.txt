@@ -23,9 +23,7 @@ circuit_list_add=diffeq1.v
 arch_list_add=k6_frac_N10_mem32K_40nm.xml
 
 # Parse info and how to parse
-parse_file=vpr_standard.txt
-
-qor_parse_file=qor_standard.txt
+parse_file=vtr_benchmarks.min_chan_width.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements.txt
+pass_requirements_file=vtr_benchmarks.min_chan_width.txt

@@ -18,13 +18,10 @@ circuit_list_add=stereovision3.v
 arch_list_add=k6_N10_mem32K_40nm.xml
 
 # Parse info and how to parse
-parse_file=vpr_fixed_chan_width.txt
-
-# How to parse QoR info
-qor_parse_file=qor_fixed_chan_width.txt
+parse_file=vtr_benchmarks.fixed_chan_width.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements_fixed_chan_width.txt
+pass_requirements_file=vtr_benchmarks.fixed_chan_width.txt
 
 # Script parameters
 script_params = --route_chan_width 100 --router_algorithm breadth_first

@@ -34,13 +34,10 @@ circuit_list_add=rca_5bit.blif
 arch_list_add=k6_frac_N10_40nm.xml
 
 # Parse info and how to parse
-parse_file=vpr_fixed_chan_width.txt
-
-# How to parse QoR info
-qor_parse_file=qor_standard.txt
+parse_file=vtr_benchmarks.fixed_chan_width.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements_fixed_chan_width.txt
+pass_requirements_file=vtr_benchmarks.fixed_chan_width.txt
 
 #Script parameters
 script_params= --route_chan_width 200 --gen_postsynthesis_netlist on --ending_stage lec --sweep_dangling_primary_ios off --sweep_constant_primary_outputs off --starting_stage abc
