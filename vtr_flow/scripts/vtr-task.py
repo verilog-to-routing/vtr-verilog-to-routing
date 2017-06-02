@@ -646,7 +646,7 @@ def resolve_vtr_source_file(config, filename, base_dir=""):
             return joined_path
 
     #Not found
-    raise ValueError("Failed to resolve VTR source file {}".format(filename))
+    raise InspectError("Failed to resolve VTR source file {}".format(filename))
 
 if __name__ == "__main__":
     main()

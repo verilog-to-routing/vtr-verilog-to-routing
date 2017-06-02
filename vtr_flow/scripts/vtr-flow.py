@@ -128,7 +128,7 @@ def vtr_command_argparser(prog=None):
                         help="Verbosity of the script. Higher values produce more output.")
 
     parser.add_argument("--parse_config_file",
-                        default=find_vtr_file("vpr_standard.txt"),
+                        default=None,
                         help="Parse file to run after flow completion")
 
     parser.add_argument("--parse",
@@ -239,7 +239,13 @@ def vtr_command_main(arg_list, prog=None):
                 exit_status = 4
 
         #Parse the flow results
-        parse_vtr_flow(abs_work_dir, args.parse_config_file, verbosity=args.verbosity)
+        try:
+            parse_vtr_flow(abs_work_dir, args.parse_config_file, verbosity=args.verbosity)
+        except InspectError as e:
+            print "Error: {msg}".format(msg=e.msg)
+            print "\tfile        : ", e.filename
+            exit_status = 2
+
     finally:
         print_verbose(BASIC_VERBOSITY, args.verbosity, "\n{} took {}".format(prog, format_elapsed_time(datetime.now() - start)))
     sys.exit(exit_status)
