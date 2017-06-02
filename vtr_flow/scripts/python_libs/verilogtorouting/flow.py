@@ -136,7 +136,6 @@ def run_vtr_flow(architecture_file, circuit_file,
         vpr_args["activity_file"] = post_ace_activity_file
         vpr_args["tech_properties"] = power_tech_file
 
-
     #
     # Pack/Place/Route
     #
@@ -178,6 +177,9 @@ def run_vtr_flow(architecture_file, circuit_file,
 
 def parse_vtr_flow(work_dir, parse_config_file=None, metrics_filepath=None, verbosity=1):
     print_verbose(1, verbosity, "Parsing results")
+
+    if parse_config_file is None:
+        parse_config_file = find_vtr_file("vtr_benchmarks.min_chan_width.txt")
 
     parse_patterns = load_parse_patterns(parse_config_file) 
 
