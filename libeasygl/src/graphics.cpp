@@ -4253,11 +4253,11 @@ static unsigned long x11_convert_to_xcolor (t_color rgb_color) {
     uint_fast8_t red = rgb_color.red;
     uint_fast8_t green = rgb_color.green;
     uint_fast8_t blue = rgb_color.blue;
-    int cmp_bits = x11_state.visual_info.bits_per_rgb;
+    unsigned cmp_bits = x11_state.visual_info.bits_per_rgb;
     
-    xcolor |= (red << 2 * cmp_bits | red << cmp_bits | red) & x11_state.visual_info.red_mask;
-    xcolor |= (green << 2 * cmp_bits | green << cmp_bits | green) & x11_state.visual_info.green_mask;
-    xcolor |= (blue << 2 * cmp_bits | blue << cmp_bits | blue) & x11_state.visual_info.blue_mask;
+    xcolor |= (red << 2u * cmp_bits | red << cmp_bits | red) & x11_state.visual_info.red_mask;
+    xcolor |= (green << 2u * cmp_bits | green << cmp_bits | green) & x11_state.visual_info.green_mask;
+    xcolor |= (blue << 2u * cmp_bits | blue << cmp_bits | blue) & x11_state.visual_info.blue_mask;
     
     return (xcolor);
 }
