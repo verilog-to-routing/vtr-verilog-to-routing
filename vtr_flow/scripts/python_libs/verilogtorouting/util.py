@@ -360,9 +360,17 @@ def load_list_file(list_file):
             values.append(line)
     return values
 
-def load_config_lines(filepath):
+def load_config_lines(filepath, allow_includes=True):
     """
     Loads the lines of a file, stripping blank lines and '#' comments.
+
+    If allow_includes is set then lines of the form:
+
+        @include "another_file.txt"
+
+    will cause the specified file to be included in-line.
+    The @included filename is interpretted as relative to the directory
+    containing filepath.
 
     Returns a list of lines
     """
@@ -382,7 +390,20 @@ def load_config_lines(filepath):
             if blank_regex.match(line):
                 continue
 
-            config_lines.append(line)
+            if line.startswith("@include"):
+                if allow_includes:
+                    components = line.split()
+                    assert len(components) == 2
+
+                    include_file = components[1].strip('"') #Strip quotes
+                    include_file_abs = os.path.join(os.path.dirname(filepath), include_file)
+
+                    #Recursively load the config
+                    config_lines += load_config_lines(include_file_abs, allow_includes=allow_includes) 
+                else:
+                    raise InspectError("@include not allowed in this file", filepath)
+            else:
+                config_lines.append(line)
 
     return config_lines            
 
