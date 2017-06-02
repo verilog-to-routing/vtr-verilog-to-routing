@@ -539,6 +539,7 @@ def run_parallel(args, configs, queued_jobs):
 
             while len(running_procs) > 0:
                 #Are any of the workers finished?
+                procs_to_del = set()
                 for i in xrange(len(running_procs)):
                     proc, job, log_file = running_procs[i]
 
@@ -562,11 +563,15 @@ def run_parallel(args, configs, queued_jobs):
 
                         log_file.close()
 
-                        #Remove the jobs from the run queue
-                        del running_procs[i]
-                        break
+                        #Record jobs to be removed from the run queue
+                        procs_to_del.add(proc)
 
-                if len(running_procs) < args.j:
+                if len(procs_to_del) > 0:
+                    #Remove jobs from run queue
+                    running_procs = [info for info in running_procs if info[0] not in procs_to_del]
+
+                    assert len(running_procs) < args.j
+
                     #There are idle workers, allow new jobs to start
                     break;
 
@@ -586,7 +591,7 @@ def run_parallel(args, configs, queued_jobs):
         if len(running_procs) > 0:
             print "Killing {} worker processes".format(len(running_procs))
             for proc, job, log_file in running_procs:
-                #proc.kill()
+                proc.kill()
                 log_file.close()
 
     return num_failed
