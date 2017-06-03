@@ -37,3 +37,13 @@ Second, ensure that a basic regression test passes:
 
 Third, run and/or modify VTR in the usual way.
 
+Developpement Debugging
+=======================
+the container already comes with clang as the default compiler and with scan-build the do statistical analysis on the build
+set to `debug` in makefile
+
+run `scan-build make -j4` from the root VTR directory.
+to output the html analysis to a specific folder, run `scan-build make -j4 -o /some/folder`
+
+the output is html and viewable in any browser.
+
