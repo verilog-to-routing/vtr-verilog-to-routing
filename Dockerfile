@@ -4,8 +4,7 @@ RUN apt-get update
 RUN apt-get upgrade -y
 # ------------------------------------------------------------------------------
 # Install base
-RUN apt-get install -y supervisor build-essential g++ curl libssl-dev apache2-utils git libxml2-dev sshfs libx11-dev libxft-dev fontconfig libcairo2-dev gcc automake git cmake flex bison ctags libpam-cracklib gdb perl 
-RUN rm -rf /var/lib/apt/lists/*
+RUN apt-get install -y clang time supervisor build-essential  openssh-server g++ clang curl libssl-dev apache2-utils git libxml2-dev sshfs libx11-dev libxft-dev fontconfig libcairo2-dev gcc automake git cmake flex bison ctags gdb perl valgrind 
 RUN sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisor/supervisord.conf
 
 # ------------------------------------------------------------------------------
@@ -13,8 +12,9 @@ RUN sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisor/supervis
 # - Determine runlevel and services at startup [BOOT-5180]
 RUN update-rc.d supervisor defaults
 
-# - Install a PAM module for password strength testing like pam_cracklib or pam_passwdqc [AUTH-9262]
-RUN ln -s /lib/x86_64-linux-gnu/security/pam_cracklib.so /lib/security
+RUN sed -ri 's/^PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+RUN touch /etc/supervisor/conf.d/ssh.conf
 
 # ------------------------------------------------------------------------------
 # Install Node.js
@@ -41,15 +41,6 @@ RUN echo 'stdout_logfile = /var/log/supervisor/cloud9.log' >> /etc/supervisor/co
 RUN echo 'stderr_logfile = /var/log/supervisor/cloud9_errors.log' >> /etc/supervisor/conf.d/cloud9.conf
 RUN echo 'environment = NODE_ENV="production"' >> /etc/supervisor/conf.d/cloud9.conf
 
-RUN apt-get install openssh-server -y
-
-RUN echo 'root:root' |chpasswd
-
-RUN sed -ri 's/^PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
-
-RUN touch /etc/supervisor/conf.d/ssh.conf
-
 RUN echo '[program:ssh]' >> /etc/supervisor/conf.d/ssh.conf
 RUN echo 'command = /usr/sbin/sshd -D' >> /etc/supervisor/conf.d/ssh.conf
 RUN echo 'user = root' >> /etc/supervisor/conf.d/ssh.conf
@@ -57,8 +48,6 @@ RUN echo 'autostart = true' >> /etc/supervisor/conf.d/ssh.conf
 RUN echo 'autorestart = true' >> /etc/supervisor/conf.d/ssh.conf
 RUN echo 'stdout_logfile = /var/log/supervisor/ssh.log' >> /etc/supervisor/conf.d/ssh.conf
 RUN echo 'stderr_logfile = /var/log/supervisor/ssh.log' >> /etc/supervisor/conf.d/ssh.conf
-RUN echo 'environment = NODE_ENV="production"' >> /etc/supervisor/conf.d/cloud9.conf
-
 # ------------------------------------------------------------------------------
 # Add volumes
 RUN mkdir /workspace
@@ -66,16 +55,18 @@ VOLUME /workspace
 
 # ------------------------------------------------------------------------------
 # Clean up APT when done.
-# RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get clean && apt-get autoremove && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------------------------
+# set clang as default compiler because it is more verbose and has a static analyser
+RUN export CC=clang
+RUN export CXX=clang++
 
 # ------------------------------------------------------------------------------
 # Install missing Perl modules
 RUN echo y | cpan
 RUN cpan -fi List::MoreUtils
 
-# ------------------------------------------------------------------------------
-# Install time for timing benchmarks
-RUN apt-get install time
 
 EXPOSE 22
 EXPOSE 8080

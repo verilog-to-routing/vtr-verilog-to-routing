@@ -26,6 +26,18 @@ On unix-like systems run `make` from the root VTR directory.
 
 For more details see [here](BUILDING.md).
 
+Development Debugging
+========
+First make sure you have clang installed.
+define clang as the default compiler:
+  `export CC=clang`
+  `export CXX=clang++`
+
+set to `debug` in makefile
+
+On unix-like systems run `scan-build make` from the root VTR directory.
+to output the html analysis to a specific folder, run `scan-build make -o /some/folder`
+
 Docker Cloud9 Deployment
 ========================
 We provide a Dockerfile that sets up all the necessary packages for VTR to run. Also, the Dockerfile sets up Cloud9, a workspace management system that runs on your browser and allows you to run (and modify) VTR remotely.
