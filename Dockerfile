@@ -67,6 +67,16 @@ RUN export CXX=clang++
 RUN echo y | cpan
 RUN cpan -fi List::MoreUtils
 
+# ------------------------------------------------------------------------------
+# fix ssh folder
+RUN mkdir -p /var/run/sshd
+RUN chmod -Rf 0755 /var/run/sshd
+
+# ------------------------------------------------------------------------------
+# make ssh passwordless since it is localhost only
+RUN mkdir -p ~/.ssh
+RUN ssh-keygen -t rsa -P "" -f ~/.ssh/authorized_keys
+RUN chmod 600 ~/.ssh/authorized_keys
 
 EXPOSE 22
 EXPOSE 8080

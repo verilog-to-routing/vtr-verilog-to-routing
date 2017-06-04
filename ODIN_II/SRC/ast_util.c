@@ -65,42 +65,82 @@ ast_node_t* create_node_w_type(ids id, int line_number, int file_number)
 }
 
 /*---------------------------------------------------------------------------
+ * (function: free_assignement_of_node_keep_tree)
+ * free a node type but stay in tree structure
+ *-------------------------------------------------------------------------*/
+void free_assignement_of_node_keep_tree(ast_node_t *node)
+{
+	if(node){
+		int i;
+		switch(node->type)
+			{
+				case IDENTIFIERS:
+					vtr::free(node->types.identifier);
+					break;
+				
+				case NUMBERS:
+					vtr::free(node->types.number.number);
+					vtr::free(node->types.number.binary_string);
+					break;
+					
+				case CONCATENATE:
+					for(i=0; i<node->types.concat.num_bit_strings; i++){
+						vtr::free(node->types.concat.bit_strings);
+					} 
+
+				default:
+					break;
+			}
+		vtr::free(node->additional_data);
+	}
+}
+/*---------------------------------------------------------------------------
+ * (function: free_single_node)
+ * free a node whose type is IDENTIFERS
+ *-------------------------------------------------------------------------*/
+ast_node_t *free_single_node(ast_node_t *node)
+{
+	if(node){
+		int i;
+		if(node->type){
+			vtr::free(node->types.identifier);
+			//if(!id_only){
+				switch(node->type){
+						case NUMBERS:
+							vtr::free(node->types.number.number);
+							vtr::free(node->types.number.binary_string);
+							break;
+							
+						case CONCATENATE:
+							for(i=0; i<node->types.concat.num_bit_strings; i++){
+								vtr::free(node->types.concat.bit_strings);
+							} 
+		
+						default:
+							break;
+				}
+			//}
+		}
+		//vtr::free(node->additional_data);
+		vtr::free(node->children);
+		vtr::free(node);
+	}
+	return NULL;
+
+}
+
+/*---------------------------------------------------------------------------
  * (function: free_whole_tree)
  *-------------------------------------------------------------------------*/
-void free_whole_tree(ast_node_t *node)
+ast_node_t *free_whole_tree(ast_node_t *node)
 {
 	int i;
 
-	if (node == NULL  || node->shared_node == TRUE)
-		return;
-
-	if (node->num_children != 0)
-	{
+	if (node){
 		for (i = 0; i < node->num_children; i++)
-			free_whole_tree(node->children[i]);
+			node->children[i] = free_whole_tree(node->children[i]);
 	}
-
-	if (node->children != NULL)
-		vtr::free(node->children);
-
-	switch(node->type)
-		{
-			case IDENTIFIERS:
-				if (node->types.identifier != NULL)
-					vtr::free(node->types.identifier);
-				break;
-			case NUMBERS:
-				if (node->types.number.number != NULL)
-					vtr::free(node->types.number.number);
-				if (node->types.number.binary_string != NULL)
-					vtr::free(node->types.number.binary_string);
-				break;
-			default:
-				break;
-		}
-
-	vtr::free(node);
-
+	return free_single_node(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -486,6 +526,33 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 			error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Unsupported operation within a concatenation.\n");
 		}
 	}
+}
+
+/*---------------------------------------------------------------------------
+ * (function: change_to_number_node)
+ * change the original AST node to a NUMBER node or change the value of the node
+ * originate from the function: create_tree_node_number() in ast_util.c
+ *-------------------------------------------------------------------------*/
+void change_to_number_node(ast_node_t *node, long long value)
+{
+	//free_assignement_of_node_keep_tree(node);
+	size_t len = snprintf(NULL,0,"%lld", value);
+	char *number = (char *)vtr::calloc(len+1,sizeof(char));
+	sprintf(number, "%lld", value);
+
+	node->types.number.base = DEC;
+	node->types.number.size = len;
+	node->types.number.number = number;
+
+	if (value == 0){
+		node->types.number.binary_size = 1;
+	}else{
+		node->types.number.binary_size = ceil((log(convert_dec_string_of_size_to_long_long(node->types.number.number, node->types.number.size)+1))/log(2));
+	}
+
+	node->types.number.value = value;
+	node->types.number.binary_string = convert_long_long_to_bit_string(value, node->types.number.binary_size);
+
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -972,13 +1039,6 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: to_bit)
- *-------------------------------------------------------------------------------------------*/ 
-short get_bit(char in){
-	return (short)in-48;
-}
-
-/*---------------------------------------------------------------------------------------------
  * (function: calculate_unary)
  * TODO ! what does verilog say about !d'00001 ?? 
  * we currently make it as small as possible(+1) such that d'00001 becomes (in bin) 01
@@ -1263,4 +1323,25 @@ ast_node_t *node_is_constant(ast_node_t *node){
 		}
 	}
 	return NULL;
+}
+
+/*---------------------------------------------------------------------------
+ * (function: initial_node)
+ *-------------------------------------------------------------------------*/
+void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number, int unique_counter)
+{
+	new_node->type = id;
+	new_node->children = NULL;
+	new_node->num_children = 0;
+	new_node->unique_count = unique_counter; //++count_id;
+	new_node->line_number = line_number;
+	new_node->file_number = file_number;
+	new_node->far_tag = 0;
+	new_node->high_number = 0;
+	new_node->shared_node = 0;
+	new_node->hb_port = 0;
+	new_node->net_node = 0;
+	new_node->is_read_write = 0;
+	new_node->additional_data = 0;
+
 }

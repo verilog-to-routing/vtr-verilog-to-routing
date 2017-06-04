@@ -39,6 +39,7 @@ int is_dont_care_string(char *string);
 char *get_pin_name  (char *name);
 char *get_port_name (char *name);
 int get_pin_number  (char *name);
+short get_bit(char in);
 
 #endif
 

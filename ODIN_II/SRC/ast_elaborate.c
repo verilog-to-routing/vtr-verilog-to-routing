@@ -74,6 +74,7 @@ int simplify_ast()
 /*---------------------------------------------------------------------------
  * (function: optimize_for_tree)
  * simplify the FOR loop syntax tree
+ * TODO fix this.. leaking memmory
  *-------------------------------------------------------------------------*/
 void optimize_for_tree()
 {
@@ -190,9 +191,8 @@ void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *
  *-------------------------------------------------------------------------*/
 void copy_tree(ast_node_t *node, ast_node_t *new_node)
 {
-	int i, n, len;
-	char number[1024] = {0};
-	if (node == NULL)
+	int i, n;
+	if (!node)
 		new_node = NULL;
 
 	else
@@ -203,35 +203,28 @@ void copy_tree(ast_node_t *node, ast_node_t *new_node)
 			case IDENTIFIERS:
 				if(strcmp(node->types.identifier, v_name) == 0)
 				{
-					sprintf(number, "%lld", v_value);
-					initial_node(new_node, NUMBERS, node->line_number, node->file_number);
+					initial_node(new_node, NUMBERS, node->line_number, node->file_number, ++count_id);
 					complete_node(node, new_node);
-					change_to_number_node(new_node, number);
+					change_to_number_node(new_node, v_value);
 				}
 				else
 				{
-					len = sizeof(node->types.identifier);
-					new_node->types.identifier = (char*)vtr::malloc(len+1);
-					initial_node(new_node, node->type, node->line_number, node->file_number);
-					strcpy(new_node->types.identifier, node->types.identifier);
+					initial_node(new_node, node->type, node->line_number, node->file_number, ++count_id);
+					new_node->types.identifier = vtr::strdup(node->types.identifier);
 					complete_node(node, new_node);
 				}
 				break;
 
 			case NUMBERS:
-				initial_node(new_node, node->type, node->line_number, node->file_number);
+				initial_node(new_node, node->type, node->line_number, node->file_number, ++count_id);
 				new_node->types.number = node->types.number;
-				len = sizeof(node->types.number.number);
-				new_node->types.number.number = (char*)vtr::malloc(len+1);
-				strcpy(new_node->types.number.number, node->types.number.number);
-				len = sizeof(node->types.number.binary_string);
-				new_node->types.number.binary_string = (char*)vtr::malloc(len+1);
-				strcpy(new_node->types.number.binary_string, node->types.number.binary_string);
+				new_node->types.number.number = vtr::strdup(node->types.number.number);
+				new_node->types.number.binary_string = vtr::strdup(node->types.number.binary_string);
 				complete_node(node, new_node);
 				break;
 
 			default:
-				initial_node(new_node, node->type, node->line_number, node->file_number);
+				initial_node(new_node, node->type, node->line_number, node->file_number, ++count_id);
 				new_node->types = node->types;
 				complete_node(node, new_node);
 				break;
@@ -472,87 +465,13 @@ void modify_expression(char *exp[], char *infix_exp[], char *value)
 }
 
 /*---------------------------------------------------------------------------
- * (function: initial_node)
- *-------------------------------------------------------------------------*/
-void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number)
-{
-	new_node->type = id;
-	new_node->children = NULL;
-	new_node->num_children = 0;
-	new_node->unique_count = ++count_id;
-	new_node->line_number = line_number;
-	new_node->file_number = file_number;
-	new_node->far_tag = 0;
-	new_node->high_number = 0;
-	new_node->shared_node = 0;
-	new_node->hb_port = 0;
-	new_node->net_node = 0;
-	new_node->is_read_write = 0;
-	new_node->additional_data = 0;
-
-}
-
-/*---------------------------------------------------------------------------
- * (function: change_to_number_node)
- * change the original AST node to a NUMBER node or change the value of the node
- * originate from the function: create_tree_node_number() in ast_util.c
- *-------------------------------------------------------------------------*/
-void change_to_number_node(ast_node_t *node, char *number)
-{
-	char *string_pointer = number;
-	int index_string_pointer = 0;
-	short flag_constant_decimal = FALSE;
-	int len = 0;
-
-	for (string_pointer=number; *string_pointer; string_pointer++)
-	{
-		if (*string_pointer == '\'')
-		{
-			break;
-		}
-		index_string_pointer++;
-	}
-
-	len = strlen(number);
-	if (index_string_pointer == len)
-	{
-		flag_constant_decimal = TRUE;
-		node->types.number.base = DEC;
-		string_pointer = number;
-		node->types.number.size = strlen((string_pointer));
-		node->types.number.number = vtr::strdup((string_pointer));
-	}
-
-	if (flag_constant_decimal == FALSE)
-	{
-		node->types.number.binary_size = node->types.number.size;
-	}
-
-	else
-	{
-		if (strcmp(node->types.number.number, "0") != 0)
-		{
-			node->types.number.binary_size = ceil((log(convert_dec_string_of_size_to_long_long(node->types.number.number, node->types.number.size)+1))/log(2));
-		}
-		else
-		{
-			node->types.number.binary_size = 1;
-		}
-	}
-
-	node->types.number.value = convert_dec_string_of_size_to_long_long(node->types.number.number, node->types.number.size);
-	node->types.number.binary_string = convert_long_long_to_bit_string(node->types.number.value, node->types.number.binary_size);
-
-}
-
-/*---------------------------------------------------------------------------
  * (function: reallocate_node)
  *-------------------------------------------------------------------------*/
 void reallocate_node(ast_node_t *node, int idx)
 {
 	int i;
 
-	free_whole_tree(node->children[idx]);
+	node->children[idx] = free_whole_tree(node->children[idx]);
 
 	for (i = idx; i < node->num_children; i++)
 		node->children[i] = node->children[i+1];
@@ -629,37 +548,29 @@ void mark_node_read(ast_node_t *node, char list[10][20])
  *-------------------------------------------------------------------------*/
 void remove_intermediate_variable(ast_node_t *node, char list[10][20])
 {
-	int i, j, k, n;
-	ast_node_t *write = NULL;
-	ast_node_t *read = NULL;
-	ast_node_t *new_node;
-	char *temp;
-	k = 0;
+	int i, j, n;
+	int k = 0;
 
 	for (i =  0; i < node->num_children-1; i++)
 	{
 		for (j = 0; j < count_write; j++)
 		{
-			temp = (char*)vtr::malloc(sizeof(char)*20);
-			new_node = (ast_node_t *)vtr::malloc(sizeof(ast_node_t));
-			sprintf(temp, "%s", list[j]);
-			search_marked_node(node->children[i], 2, temp, &write); //search for "write" nodes
-			search_marked_node(node->children[i+1], 1, temp, &read); // search for "read" nodes
+			ast_node_t *write = NULL;
+			ast_node_t *read = NULL;
+			ast_node_t *new_node = (ast_node_t *)vtr::malloc(sizeof(ast_node_t));
+			search_marked_node(node->children[i], 2, &list[j][0], &write); //search for "write" nodes
+			search_marked_node(node->children[i+1], 1, &list[j][0], &read); // search for "read" nodes
 			for (n = 0; n < read->num_children; n++)
 				if (read->children[n]->is_read_write == 1)
 				{
 					copy_tree(write->children[1], new_node);
-					free_single_node(read->children[n]);
+					read->children[n] = free_single_node(read->children[n]);
 					read->children[n] = new_node;
 
 				}
-
-			vtr::free(temp);
-
 		}
 
-		free_whole_tree(node->children[i]);
-		node->children[i] = NULL;
+		node->children[i] = free_whole_tree(node->children[i]);
 	}
 
 	for (i = 0; i < node->num_children; i++)
@@ -698,26 +609,6 @@ void search_marked_node(ast_node_t *node, int is, char *temp, ast_node_t **p2)
 
 		}
 	}
-
-}
-
-/*---------------------------------------------------------------------------
- * (function: free_single_node)
- * free a node whose type is IDENTIFERS
- *-------------------------------------------------------------------------*/
-void free_single_node(ast_node_t *node)
-{
-	if (node == NULL)
-		return;
-
-	if (node->children != NULL)
-		vtr::free(node->children);
-
-	if (node->type == IDENTIFIERS)
-		if (node->types.identifier != NULL)
-			vtr::free(node->types.identifier);
-
-	vtr::free(node);
 
 }
 
@@ -1323,15 +1214,11 @@ void delete_continuous_multiply(int *build)
  *-------------------------------------------------------------------------*/
 void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num)
 {
-	char num[12] = {0};
-	int len;
-
 	switch(temp->flag)
 	{
 		case 1:
-			sprintf(num, "%d", temp->type.data);
-			initial_node(node, NUMBERS, line_num, file_num);
-			change_to_number_node(node, num);
+			initial_node(node, NUMBERS, line_num, file_num, ++count_id);
+			change_to_number_node(node, temp->type.data);
 		break;
 
 		case 2:
@@ -1339,10 +1226,8 @@ void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num)
 		break;
 
 		case 3:
-			len = strlen(temp->type.variable);
-			initial_node(node, IDENTIFIERS, line_num, file_num);
-			node->types.identifier = (char*)vtr::malloc(len+1);
-			strcpy(node->types.identifier, temp->type.variable);
+			initial_node(node, IDENTIFIERS, line_num, file_num, ++count_id);
+			node->types.identifier = vtr::strdup(temp->type.variable);
 		break;
 
 		default:
@@ -1356,7 +1241,7 @@ void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num)
  *-------------------------------------------------------------------------*/
 void create_op_node(ast_node_t *node, enode *temp, int line_num, int file_num)
 {
-	initial_node(node, BINARY_OPERATION, line_num, file_num);
+	initial_node(node, BINARY_OPERATION, line_num, file_num, ++count_id);
 	node->num_children = 2;
 	switch(temp->type.operation)
 	{
@@ -1814,30 +1699,23 @@ void find_parameter(ast_node_t *top, ast_node_t *para[], int *count2)
 void remove_para_node(ast_node_t *top, ast_node_t *para[], int num)
 {
 	int i, j;
-	ast_node_t *para_node;
-	ast_node_t *list[1024] = {0};
-	ast_node_t *node;
+	ast_node_t *list[1024] = { 0 };
 	char *name = NULL;
 	long value = 0;
 
 	count_assign = 0;
 	find_assign_node(top, list);
-	if (count_assign!= 0)
-	{
+	if (count_assign!= 0){
 		for (i = 0; i < num; i++)
 		{
-			if (para[i] != NULL && para[i]->children[0] != NULL)
-			{
-				para_node = para[i]->children[0];
-				name = para_node->types.identifier;
+			if (para[i] && para[i]->children[0]){
+				name = para[i]->children[0]->types.identifier;
 			}
-			if (para[i]->children[5] != NULL && para[i]->children[5]->type == NUMBERS)
+			if (node_is_constant(para[i]->children[5]))
 				value = para[i]->children[5]->types.number.value;
 
-			for (j = 0; j < count_assign; j++)
-			{
-				node = list[j];
-				change_para_node(node, name, value);
+			for (j = 0; j < count_assign; j++){
+				change_para_node(list[j], name, value);
 			}
 
 		}
@@ -1847,37 +1725,23 @@ void remove_para_node(ast_node_t *top, ast_node_t *para[], int num)
 /*---------------------------------------------------------------------------
  * (function: change_para_node)
  *-------------------------------------------------------------------------*/
-void change_para_node(ast_node_t *node, char *name, int value)
+void change_para_node(ast_node_t *node, char *name, long long value)
 {
 	int i;
 
-	if (node == NULL)
-		return;
-
-	else
-	{
+	if (node){
 		if (node->type == IDENTIFIERS && strcmp(name, node->types.identifier) == 0)
-			change_ast_node(node, value);
+			change_to_number_node(node, value);
+
+		if (node->num_children != 0){
+			for (i = 0; i < node->num_children; i++){
+				change_para_node(node->children[i], name, value);
+			}
+		}
 	}
-	if (node->num_children != 0)
-		for (i = 0; i < node->num_children; i++)
-			change_para_node(node->children[i], name, value);
 
 }
 
-/*---------------------------------------------------------------------------
- * (function: change_ast_node)
- *-------------------------------------------------------------------------*/
-void change_ast_node(ast_node_t *node, int value)
-{
-	char num[1024] = {0};
-	if (node->types.identifier != NULL)
-			vtr::free(node->types.identifier);
-	node->type = NUMBERS;
-	sprintf(num, "%d", value);
-	change_to_number_node(node, num);
-
-}
 /*---------------------------------------------------------------------------
  * (function: copy_tree)
  * find multiply or divide operation that can be replaced with shift operation
@@ -1885,11 +1749,10 @@ void change_ast_node(ast_node_t *node, int value)
 void shift_operation()
 {
 	int i;
-	ast_node_t *top;
-	for (i = 0; i < num_modules; i++)
-	{
-		top = ast_modules[i];
-		search_certain_operation(top);
+	if(ast_modules){
+		for (i = 0; i < num_modules; i++){
+			search_certain_operation(ast_modules[i]);
+		}
 	}
 
 }
@@ -1901,22 +1764,12 @@ void shift_operation()
 void search_certain_operation(ast_node_t *node)
 {
 	int i;
-	ast_node_t *child;
-
-	if (node == NULL || node->num_children == 0)
-		return;
-
-	for (i = 0; i < node->num_children; i++)
-	{
-		child = node->children[i];
-		if (child != NULL)
-		{
-			if (child->type == BINARY_OPERATION && (child->types.operation.op == MULTIPLY || child->types.operation.op == DIVIDE))
-				check_binary_operation(child);
-			search_certain_operation(child);
+	if (node){
+		for (i = 0; i < node->num_children; i++){
+			check_binary_operation(node->children[i]);
+			search_certain_operation(node->children[i]);
 		}
 	}
-
 }
 
 /*---------------------------------------------------------------------------
@@ -1925,21 +1778,22 @@ void search_certain_operation(ast_node_t *node)
  *-------------------------------------------------------------------------*/
 void check_binary_operation(ast_node_t *node)
 {
-	if (node->types.operation.op == MULTIPLY)
-	{
-		if (node->children[0]->type == IDENTIFIERS && node->children[1]->type == NUMBERS)
-			check_node_number(node, node->children[1], 1); // 1 means multiply and don't need to move children nodes
-		if (node->children[0]->type == NUMBERS && node->children[1]->type == IDENTIFIERS)
-			check_node_number(node, node->children[0], 2); // 2 means multiply and needs to move children nodes
-
+	if(node && node->type == BINARY_OPERATION){
+		switch(node->types.operation.op){
+			case MULTIPLY:
+				if (node->children[0]->type == IDENTIFIERS && node->children[1]->type == NUMBERS)
+					check_node_number(node, node->children[1], 1); // 1 means multiply and don't need to move children nodes
+				if (node->children[0]->type == NUMBERS && node->children[1]->type == IDENTIFIERS)
+					check_node_number(node, node->children[0], 2); // 2 means multiply and needs to move children nodes
+				break;
+			case DIVIDE:
+				if (node->children[0]->type == IDENTIFIERS && node->children[1]->type == NUMBERS)
+					check_node_number(node, node->children[1], 3); // 3 means divide
+				break;
+			default:
+				break;
+		}
 	}
-
-	else if (node->types.operation.op == DIVIDE)
-	{
-		if (node->children[0]->type == IDENTIFIERS && node->children[1]->type == NUMBERS)
-			check_node_number(node, node->children[1], 3); // 3 means divide
-	}
-
 }
 
 /*---------------------------------------------------------------------------
@@ -1949,7 +1803,6 @@ void check_binary_operation(ast_node_t *node)
 void check_node_number(ast_node_t *parent, ast_node_t *child, int flag)
 {
 	long long power = 0;
-	char num[1024] = {0};
 	long long number = child->types.number.value;
 	if (number <= 1)
 		return;
@@ -1960,8 +1813,7 @@ void check_node_number(ast_node_t *parent, ast_node_t *child, int flag)
 	}
 	if (number == 1) // the previous number is a power of 2
 	{
-		sprintf(num, "%lld", power);
-		change_to_number_node(child, num);
+		change_to_number_node(child, power);
 		if (flag == 1) // multiply
 			parent->types.operation.op = SL;
 		else if (flag == 2) // multiply and needs to move children nodes

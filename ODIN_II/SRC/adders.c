@@ -1255,17 +1255,11 @@ void reallocate_pins(nnode_t *node, nnode_t *next_node)
 void free_op_nodes(nnode_t *node)
 {
 	int i;
-	nnet_t *net = NULL;
 	for (i = 0; i < node->num_output_pins; i++)
 	{
 		if (node->output_pins[i]->net != NULL)
-		{
-			net = node->output_pins[i]->net;
-			if (net->fanout_pins != NULL)
-				vtr::free(net->fanout_pins);
-			vtr::free(net);
-			node->output_pins[i]->net = NULL;
-		}
+			vtr::free(node->output_pins[i]->net->fanout_pins);
+		vtr::free(node->output_pins[i]->net);
 	}
 	free_nnode(node);
 

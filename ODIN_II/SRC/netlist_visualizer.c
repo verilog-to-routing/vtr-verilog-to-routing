@@ -203,6 +203,7 @@ void graphVizOutputCombinationalNet(char* path, const char* name, short marker_v
 
 /*---------------------------------------------------------------------------------------------
  * (function: forward_traversal_net_graph_display()
+ *	TODO check if stack of node is freed
  *-------------------------------------------------------------------------------------------*/
 void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *node)
 {
@@ -305,6 +306,7 @@ void forward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *
 
 /*---------------------------------------------------------------------------------------------
  * (function: backward_traversal_net_graph_display()
+ *	TODO check if stack of node is freed
  *-------------------------------------------------------------------------------------------*/
 void backward_traversal_net_graph_display(FILE *fp, short marker_value, nnode_t *node)
 {
