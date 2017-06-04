@@ -675,3 +675,14 @@ void reverse_string(char *string, int length)
 		string[j--] = temp;
 	}
 }
+
+/*---------------------------------------------------------------------------------------------
+ * (function: to_bit)
+ *-------------------------------------------------------------------------------------------*/ 
+short get_bit(char in){
+	if(in == 48 || in == 49){
+		return (short)in-48;
+	}else{
+		fprintf(stderr,"not a valid bit\n");
+	}
+}

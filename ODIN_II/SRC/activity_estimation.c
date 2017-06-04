@@ -380,7 +380,7 @@ void calc_probabilities_and_init_act_data(netlist_t *netlist)
 
 				for (k = 0; k < current_node->num_output_pins; k++)
 				{
-					act_data->transition_probability[k] = 2 * (act_data->static_probability[k] * (1-act_data->static_probability[k])); 
+					act_data->transition_probability[k] = 2 * act_data->static_probability[k] * (1-act_data->static_probability[k]); 
 				}
 			}
 		}
@@ -432,7 +432,10 @@ short *boolean_difference(nnode_t *node, int variable_spot)
 		}
 
 		/* do the boolean xor of this element */
-		return_function[i] = node->associated_function[index] ^ node->associated_function[index+skip_size];
+		// TODO dereference happening here
+		return_function[i] = 0;
+		if(node->associated_function[index] && node->associated_function[index+skip_size])
+			return_function[i] = node->associated_function[index] ^ node->associated_function[index+skip_size];
 	}
 
 	return return_function;
@@ -560,6 +563,9 @@ void output_activation_file_ace_and_function_file(char *output_filename, int lut
 	{
 		error_message(ACTIVATION_ERROR, -1, -1, "Could not open output file %s\n", function_file_name);
 	}
+	vtr::free(ace_file_name);
+	vtr::free(ac2_file_name);
+	vtr::free(function_file_name);
 
 	/* Go through the LUT netlist and print out the ace files */
 	for (i = 0; i < LUT_netlist->num_forward_levels; i++)
@@ -785,7 +791,7 @@ void output_activation_file_ace_and_function_file(char *output_filename, int lut
 				sprintf(density_string, "%s %f", density_string,  input_node_to_ff_act_data->transition_density[0]);
 
 				/* print out the function of this node based on it's inputs function */
-				oassert (lut_node->input_pins[0]->net->driver_pin->node->associated_function != NULL)
+				oassert (lut_node->input_pins[0]->net->driver_pin->node->associated_function)
 				fprintf(function_out, "subblock_function %s ", lut_node->name);
 		
 				for (l = 0; l < pow2(lut_size); l++)
@@ -862,13 +868,9 @@ void cleanup_activation(netlist_t *netlist)
 			activation_t *act_data = (activation_t*)current_node->node_data;
 			oassert(act_data != NULL);
 
-			if (act_data->static_probability != NULL)
-				vtr::free(act_data->static_probability);
-			if (act_data->transition_density != NULL)
-				vtr::free(act_data->transition_density);
-			if (act_data->transition_probability != NULL)
-				vtr::free(act_data->transition_probability);
-
+			vtr::free(act_data->static_probability);
+			vtr::free(act_data->transition_density);
+			vtr::free(act_data->transition_probability);
 			vtr::free(act_data);
 			current_node->unique_node_data_id = RESET;
 		}

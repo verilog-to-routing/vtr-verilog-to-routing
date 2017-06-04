@@ -2150,9 +2150,9 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
 }
 
 long calculate_operation(ast_node_t *node){
-	ast_node_t *newNode = resolve_node(defines_for_module_sc[num_modules], TRUE, NULL, node);
-	if(node_is_constant(newNode)){
-		long long result = newNode->types.number.value;
+	node = resolve_node(defines_for_module_sc[num_modules], TRUE, NULL, node);
+	if(node_is_constant(node)){
+		long long result = node->types.number.value;
 		if(result >= 0){
 			return (long)result;
 		}else{
