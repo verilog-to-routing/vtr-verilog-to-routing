@@ -249,19 +249,19 @@ void finalize_implicit_memory(implicit_memory *memory)
 	for (i = 0; i < node->num_input_pins; i++)
 	{
 		npin_t *pin = node->input_pins[i];
-		if (!strcmp(pin->mapping, "addr1"))
+		if (!vtr::strcmp(pin->mapping, "addr1"))
 			has_addr1 = TRUE;
-		else if (!strcmp(pin->mapping, "addr2"))
+		else if (!vtr::strcmp(pin->mapping, "addr2"))
 			has_addr2 = TRUE;
-		else if (!strcmp(pin->mapping, "data1"))
+		else if (!vtr::strcmp(pin->mapping, "data1"))
 			has_data1 = TRUE;
-		else if (!strcmp(pin->mapping, "data2"))
+		else if (!vtr::strcmp(pin->mapping, "data2"))
 			has_data2 = TRUE;
-		else if (!strcmp(pin->mapping, "we1"))
+		else if (!vtr::strcmp(pin->mapping, "we1"))
 			has_we1 = TRUE;
-		else if (!strcmp(pin->mapping, "we2"))
+		else if (!vtr::strcmp(pin->mapping, "we2"))
 			has_we2 = TRUE;
-		else if (!strcmp(pin->mapping, "clk"))
+		else if (!vtr::strcmp(pin->mapping, "clk"))
 			has_clk = TRUE;
 	}
 
@@ -269,9 +269,9 @@ void finalize_implicit_memory(implicit_memory *memory)
 	for (i = 0; i < node->num_output_pins; i++)
 	{
 		npin_t *pin = node->output_pins[i];
-		if (!strcmp(pin->mapping, "out1"))
+		if (!vtr::strcmp(pin->mapping, "out1"))
 			has_out1 = TRUE;
-		else if (!strcmp(pin->mapping, "out2"))
+		else if (!vtr::strcmp(pin->mapping, "out2"))
 			has_out2 = TRUE;
 	}
 
@@ -316,7 +316,7 @@ void finalize_implicit_memory(implicit_memory *memory)
 	if (hb_model)
 	{
 		hb_model->used = 1;
-		dp_memory_list = insert_in_vptr_list(!strcmp(hard_block_identifier, "single_port_ram")?sp_memory_list:dp_memory_list, node);
+		dp_memory_list = insert_in_vptr_list(!vtr::strcmp(hard_block_identifier, "single_port_ram")?sp_memory_list:dp_memory_list, node);
 	}
 }
 
@@ -337,7 +337,7 @@ void collapse_implicit_memory_to_single_port_ram(implicit_memory *memory)
 	for (i = 0; i < node->num_input_pins; i++)
 	{
 		npin_t *pin = node->input_pins[i];
-		if (strcmp(pin->mapping, "clk"))
+		if (vtr::strcmp(pin->mapping, "clk"))
 			pin->mapping[strlen(pin->mapping)-1] = 0;
 	}
 

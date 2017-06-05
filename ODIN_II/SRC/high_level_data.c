@@ -9,6 +9,7 @@
 #include "ast_util.h"
 #include "odin_util.h"
 #include "high_level_data.h"
+#include "vtr_util.h"
 
 /*---------------------------------------------------------------------------------------------*/
 void update_tree(ast_node_t *node);
@@ -43,7 +44,7 @@ void update_tree(ast_node_t *node)
 	if (node == NULL) 
 		return;
 	
-	if (strcmp(global_args.high_level_block,"if")==0)
+	if (vtr::strcmp(global_args.high_level_block,"if")==0)
 	{
 		switch(node->type)
 		{
@@ -60,7 +61,7 @@ void update_tree(ast_node_t *node)
 				}
 		}
 	}
-	else if (strcmp(global_args.high_level_block,"always")==0)
+	else if (vtr::strcmp(global_args.high_level_block,"always")==0)
 	{
 		switch(node->type)
 		{
@@ -77,7 +78,7 @@ void update_tree(ast_node_t *node)
 				}
 		}
 	}
-	else if (strcmp(global_args.high_level_block,"module")==0)
+	else if (vtr::strcmp(global_args.high_level_block,"module")==0)
 	{
 		switch(node->type)
 		{

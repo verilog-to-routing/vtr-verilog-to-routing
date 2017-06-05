@@ -35,6 +35,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "print_tags.h"
 #include "vtr_memory.h"
+#include "vtr_util.h"
 #include "vtr_list.h"
 
 using vtr::t_linked_vptr;
@@ -322,7 +323,7 @@ void find_hard_multipliers()
 	min_mult = configuration.min_hard_multiplier;
 	while (hard_multipliers != NULL)
 	{
-		if (strcmp(hard_multipliers->name, "multiply") == 0)
+		if (vtr::strcmp(hard_multipliers->name, "multiply") == 0)
 		{
 			init_mult_distribution();
 			return;

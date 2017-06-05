@@ -39,6 +39,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "vtr_memory.h"
+#include "vtr_util.h"
 
 void depth_first_traversal_to_partial_map(short marker_value, netlist_t *netlist);
 void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, netlist_t *netlist);
@@ -66,7 +67,7 @@ void instantiate_soft_logic_ram(nnode_t *node, short mark, netlist_t *netlist);
 void partial_map_top(netlist_t *netlist)
 {
 	/* depending on the output target choose how to do partial mapping */
-	if (strcmp(configuration.output_type, "blif") == 0)
+	if (vtr::strcmp(configuration.output_type, "blif") == 0)
 	{
 		/* do the partial map without any larger structures identified */
 		depth_first_traversal_to_partial_map(PARTIAL_MAP_TRAVERSE_VALUE, netlist);	

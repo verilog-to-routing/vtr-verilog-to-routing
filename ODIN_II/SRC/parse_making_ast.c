@@ -1290,8 +1290,8 @@ ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_in
 	if
 	(
 		   sc_lookup_string(hard_block_names, module_ref_name) != -1
-		|| !strcmp(module_ref_name, "single_port_ram")
-		|| !strcmp(module_ref_name, "dual_port_ram")
+		|| !vtr::strcmp(module_ref_name, "single_port_ram")
+		|| !vtr::strcmp(module_ref_name, "dual_port_ram")
 	)
 	{
 		return newHardBlockInstance(module_ref_name, module_named_instance->children[i], line_number);
@@ -1348,8 +1348,8 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
 	if
 	(
 		   sc_lookup_string(hard_block_names, function_ref_name) != -1
-		|| !strcmp(function_ref_name, "single_port_ram")
-		|| !strcmp(function_ref_name, "dual_port_ram")
+		|| !vtr::strcmp(function_ref_name, "single_port_ram")
+		|| !vtr::strcmp(function_ref_name, "dual_port_ram")
 	)
 	{
 		return newHardBlockInstance(function_ref_name, function_named_instance, line_number);
@@ -1547,7 +1547,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 		for(j = 0; j < list_of_module_items->num_children && variable_found == FALSE; j++){
 		if(list_of_module_items->children[j]->type == VAR_DECLARE_LIST){
 			for(k = 0; k < list_of_module_items->children[j]->num_children; k++){
-				if(strcmp(list_of_module_items->children[j]->children[k]->children[0]->types.identifier,module_variables_not_defined[i]->children[0]->children[0]->types.identifier) == 0) variable_found = TRUE;
+				if(vtr::strcmp(list_of_module_items->children[j]->children[k]->children[0]->types.identifier,module_variables_not_defined[i]->children[0]->children[0]->types.identifier) == 0) variable_found = TRUE;
 				}
 			}
 		}
@@ -1747,7 +1747,7 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 		if(flag == 0)
 		{
 			ref_node = module_instantiations_instance[j];
-			if(strcmp(ref_node->children[1]->children[0]->types.identifier, module_instance_name) == 0)
+			if(vtr::strcmp(ref_node->children[1]->children[0]->types.identifier, module_instance_name) == 0)
 			{
 				if(ref_node->children[1]->children[2])
 					add_child_to_node(ref_node->children[1]->children[2], new_node);

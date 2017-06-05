@@ -99,7 +99,7 @@ int get_memory_port_size(const char *name)
 	mpl = memory_port_size_list;
 	while (mpl != NULL)
 	{
-		if (strcmp(((t_memory_port_sizes *)mpl->data_vptr)->name, name) == 0)
+		if (vtr::strcmp(((t_memory_port_sizes *)mpl->data_vptr)->name, name) == 0)
 			return ((t_memory_port_sizes *)mpl->data_vptr)->size;
 		mpl = mpl->next;
 	}
@@ -132,7 +132,7 @@ void remap_input_port_to_memory(nnode_t *node, signal_list_t *signals, const cha
 	for (i = 0; i < j; i++)
 	{
 		npin_t *pin = node->input_pins[i];
-		if (!strcmp(pin->mapping, port_name))
+		if (!vtr::strcmp(pin->mapping, port_name))
 		{
 			error_message(NETLIST_ERROR, -1, -1,
 					"Attempted to reassign output port %s to memory %s.", port_name, node->name);
@@ -166,7 +166,7 @@ void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, const ch
 	for (i = 0; i < j; i++)
 	{
 		npin_t *pin = node->input_pins[i];
-		if (!strcmp(pin->mapping, port_name))
+		if (!vtr::strcmp(pin->mapping, port_name))
 		{
 			error_message(NETLIST_ERROR, -1, -1,
 					"Attempted to reassign output port %s to memory %s.", port_name, node->name);
@@ -203,7 +203,7 @@ void remap_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, char 
 	for (i = 0; i < j; i++)
 	{
 		npin_t *pin = node->output_pins[i];
-		if (!strcmp(pin->mapping, port_name))
+		if (!vtr::strcmp(pin->mapping, port_name))
 		{
 			error_message(NETLIST_ERROR, -1, -1,
 					"Attempted to reassign output port %s to node %s.", port_name, node->name);
@@ -237,7 +237,7 @@ void add_output_port_to_memory(nnode_t *node, signal_list_t *signals, const char
 	for (i = 0; i < j; i++)
 	{
 		npin_t *pin = node->output_pins[i];
-		if (!strcmp(pin->mapping, port_name))
+		if (!vtr::strcmp(pin->mapping, port_name))
 		{
 			error_message(NETLIST_ERROR, -1, -1,
 					"Attempted to reassign output port %s to node %s.", port_name, node->name);
@@ -1287,7 +1287,7 @@ char is_dp_ram(nnode_t *node)
 char is_ast_sp_ram(ast_node_t *node)
 {
 	char *identifier = node->children[0]->types.identifier;
-	if (!strcmp(identifier, "single_port_ram"))
+	if (!vtr::strcmp(identifier, "single_port_ram"))
 		return TRUE;
 	else
 		return FALSE;
@@ -1296,7 +1296,7 @@ char is_ast_sp_ram(ast_node_t *node)
 char is_ast_dp_ram(ast_node_t *node)
 {
 	char *identifier = node->children[0]->types.identifier;
-	if (!strcmp(identifier, "dual_port_ram"))
+	if (!vtr::strcmp(identifier, "dual_port_ram"))
 		return TRUE;
 	else
 		return FALSE;
@@ -1320,13 +1320,13 @@ sp_ram_signals *get_sp_ram_signals(nnode_t *node)
 	for (i = 0; i < node->num_input_pins; i++)
 	{
 		npin_t *pin = node->input_pins[i];
-		if (!strcmp(pin->mapping, "addr"))
+		if (!vtr::strcmp(pin->mapping, "addr"))
 			add_pin_to_signal_list(signals->addr, pin);
-		else if (!strcmp(pin->mapping, "data"))
+		else if (!vtr::strcmp(pin->mapping, "data"))
 			add_pin_to_signal_list(signals->data, pin);
-		else if (!strcmp(pin->mapping, "we"))
+		else if (!vtr::strcmp(pin->mapping, "we"))
 			signals->we = pin;
-		else if (!strcmp(pin->mapping, "clk"))
+		else if (!vtr::strcmp(pin->mapping, "clk"))
 			signals->clk = pin;
 		else
 			error_message(NETLIST_ERROR, ast_node->line_number, ast_node->file_number,
@@ -1343,7 +1343,7 @@ sp_ram_signals *get_sp_ram_signals(nnode_t *node)
 	for (i = 0; i < node->num_output_pins; i++)
 	{
 		npin_t *pin = node->output_pins[i];
-		if (!strcmp(pin->mapping, "out"))
+		if (!vtr::strcmp(pin->mapping, "out"))
 			add_pin_to_signal_list(signals->out, pin);
 		else
 			error_message(NETLIST_ERROR, ast_node->line_number, ast_node->file_number,
@@ -1387,19 +1387,19 @@ dp_ram_signals *get_dp_ram_signals(nnode_t *node)
 	for (i = 0; i < node->num_input_pins; i++)
 	{
 		npin_t *pin = node->input_pins[i];
-		if (!strcmp(pin->mapping, "addr1"))
+		if (!vtr::strcmp(pin->mapping, "addr1"))
 			add_pin_to_signal_list(signals->addr1, pin);
-		else if (!strcmp(pin->mapping, "addr2"))
+		else if (!vtr::strcmp(pin->mapping, "addr2"))
 			add_pin_to_signal_list(signals->addr2, pin);
-		else if (!strcmp(pin->mapping, "data1"))
+		else if (!vtr::strcmp(pin->mapping, "data1"))
 			add_pin_to_signal_list(signals->data1, pin);
-		else if (!strcmp(pin->mapping, "data2"))
+		else if (!vtr::strcmp(pin->mapping, "data2"))
 			add_pin_to_signal_list(signals->data2, pin);
-		else if (!strcmp(pin->mapping, "we1"))
+		else if (!vtr::strcmp(pin->mapping, "we1"))
 			signals->we1 = pin;
-		else if (!strcmp(pin->mapping, "we2"))
+		else if (!vtr::strcmp(pin->mapping, "we2"))
 			signals->we2 = pin;
-		else if (!strcmp(pin->mapping, "clk"))
+		else if (!vtr::strcmp(pin->mapping, "clk"))
 			signals->clk = pin;
 		else
 			error_message(NETLIST_ERROR, ast_node->line_number, ast_node->file_number,
@@ -1420,9 +1420,9 @@ dp_ram_signals *get_dp_ram_signals(nnode_t *node)
 	for (i = 0; i < node->num_output_pins; i++)
 	{
 		npin_t *pin = node->output_pins[i];
-		if (!strcmp(pin->mapping, "out1"))
+		if (!vtr::strcmp(pin->mapping, "out1"))
 			add_pin_to_signal_list(signals->out1, pin);
-		else if (!strcmp(pin->mapping, "out2"))
+		else if (!vtr::strcmp(pin->mapping, "out2"))
 			add_pin_to_signal_list(signals->out2, pin);
 		else
 			error_message(NETLIST_ERROR, ast_node->line_number, ast_node->file_number,
