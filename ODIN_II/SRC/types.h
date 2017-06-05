@@ -172,6 +172,8 @@ struct global_args_t_t
 	char *sim_hold_low;
 	//
 	int sim_initial_value;
+	// The seed for creating random simulation vector
+	int sim_random_seed;
 };
 
 #endif // TYPES_H
