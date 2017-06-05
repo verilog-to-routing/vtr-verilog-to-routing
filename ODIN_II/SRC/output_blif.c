@@ -163,7 +163,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 	fprintf(out, "\n");
 
 	/* traverse the internals of the flat net-list */
-	if (strcmp(configuration.output_type, "blif") == 0)
+	if (vtr::strcmp(configuration.output_type, "blif") == 0)
 	{
 		depth_first_traversal_to_output(OUTPUT_TRAVERSE_VALUE, out, netlist);
 	}
@@ -200,11 +200,11 @@ void output_blif(char *file_name, netlist_t *netlist)
 				 */
 				char *driver = node->input_pins[0]->net->driver_pin->name;
 				char *output = node->name;
-				if (!driver || !strcmp(driver,output))
+				if (!driver || !vtr::strcmp(driver,output))
 					driver = node->input_pins[0]->net->driver_pin->node->name;
 
 				/* Skip if the driver and output have the same name (i.e. the output of a flip-flop) */
-				if (strcmp(driver,output) != 0) fprintf(out, ".names %s %s\n1 1\n", driver, output);
+				if (vtr::strcmp(driver,output) != 0) fprintf(out, ".names %s %s\n1 1\n", driver, output);
 			}
 
 		}

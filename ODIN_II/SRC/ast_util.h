@@ -19,7 +19,7 @@ void free_assignement_of_node_keep_tree(ast_node_t *node);
 
 char *make_module_param_name(ast_node_t *module_param_list, char *module_name);
 void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_name_prefix);
-void change_to_number_node(ast_node_t *node, long long number);
+void change_to_number_node(ast_node_t *node, long long value, char* value_string, short is_string);
 
 int get_range(ast_node_t* first_node);
 char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_prefix);

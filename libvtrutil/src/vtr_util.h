@@ -47,6 +47,7 @@ namespace vtr {
     char* strncpy(char *dest, const char *src, size_t size);
     char* strdup(const char *str);
     char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf);
+    int strcmp(const char* first, const char* second);
     FILE* fopen(const char *fname, const char *flag);
     int fclose(FILE* f);
     char* fgets(char *buf, int max_size, FILE * fp);

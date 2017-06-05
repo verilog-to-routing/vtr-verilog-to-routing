@@ -566,7 +566,7 @@ add_subblock_to_node(nnode_t *current_block, const std::vector<std::vector<std::
 				/* add pin to node */
 				add_a_input_pin_to_node_spot_idx(subblock_nodes[i], node_input_pin, k);
 			}
-			else if (0 != strcmp ("open", tokens_list[i][idx].c_str()))
+			else if (0 != vtr::strcmp ("open", tokens_list[i][idx].c_str()))
 			{
 				/* IF this is connected to an input find out which one */
 				int in_idx = input_idx[atoi(tokens_list[i][idx].c_str())];
@@ -584,7 +584,7 @@ add_subblock_to_node(nnode_t *current_block, const std::vector<std::vector<std::
 		for (k = 0; k < type->max_subblock_outputs; ++k)
 		{
 			idx = 2 + type->max_subblock_inputs + k;
-			if (0 != strcmp ("open", tokens_list[i][idx].c_str()))
+			if (0 != vtr::strcmp ("open", tokens_list[i][idx].c_str()))
 			{
 				/* IF this output goes to a cluster output pin then hook it up */
 				int pin_idx = atoi(tokens_list[i][idx].c_str()) - type->num_receivers;
@@ -612,7 +612,7 @@ add_subblock_to_node(nnode_t *current_block, const std::vector<std::vector<std::
 			}
 		}
 		idx = 2 + type->max_subblock_inputs + type->max_subblock_outputs;
-		if (0 != strcmp ("open", tokens_list[i][idx].c_str()))
+		if (0 != vtr::strcmp ("open", tokens_list[i][idx].c_str()))
 		{
 			int clock_idx = input_idx[atoi (tokens_list[i][idx].c_str()) - (type->num_receivers + type->num_drivers)];
 			npin_t *node_input_pin = allocate_npin();
@@ -654,12 +654,12 @@ get_type_by_name (
 	*overide = NORMAL;
 
 	/* .input and .output are special names that map to the basic IO type */
-	if (0 == strcmp (".input", name))
+	if (0 == vtr::strcmp (".input", name))
 	{
 		*overide = INPAD;
 		return IO_type;
 	}
-	if (0 == strcmp (".output", name))
+	if (0 == vtr::strcmp (".output", name))
 	{
 		*overide = OUTPAD;
 		return IO_type;
@@ -669,7 +669,7 @@ get_type_by_name (
 	 * types for it to be a problem */
 	for (i = 0; i < ntypes; ++i)
 	{
-		if (0 == strcmp (block_types[i].name, name))
+		if (0 == vtr::strcmp (block_types[i].name, name))
 		{
 			return (block_types + i);
 		}

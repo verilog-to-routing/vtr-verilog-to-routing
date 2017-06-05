@@ -201,11 +201,11 @@ void copy_tree(ast_node_t *node, ast_node_t *new_node)
 		switch (node->type)
 		{
 			case IDENTIFIERS:
-				if(strcmp(node->types.identifier, v_name) == 0)
+				if(vtr::strcmp(node->types.identifier, v_name) == 0)
 				{
 					initial_node(new_node, NUMBERS, node->line_number, node->file_number, ++count_id);
 					complete_node(node, new_node);
-					change_to_number_node(new_node, v_value);
+					change_to_number_node(new_node, v_value, NULL, false);
 				}
 				else
 				{
@@ -301,7 +301,7 @@ int calculation(char *post_exp[])
   for(i = 0; i < Max_size - 1; ++i) {
         pop.data[i] = 0;
   }
-  pop.data[Max_size] = -1;
+  pop.data[Max_size-1] = -1;
 
   for (i = 0; post_exp[i] != NULL; i++)
   {
@@ -449,12 +449,12 @@ void modify_expression(char *exp[], char *infix_exp[], char *value)
 	i = 0;
 	k = 0;
 
-	while((strcmp(exp[i], "=") != 0) && i < Max_size)
+	while((vtr::strcmp(exp[i], "=") != 0) && i < Max_size)
 		i++;
 
 	for (j = i + 1; exp[j] != NULL; j++)
 	{
-		if (strcmp(exp[j], v_name) == 0)
+		if (vtr::strcmp(exp[j], v_name) == 0)
 			infix_exp[k++] = value;
 
 		else
@@ -532,7 +532,7 @@ void mark_node_read(ast_node_t *node, char list[10][20])
 	if (node->type == IDENTIFIERS)
 	{
 		for (i = 0; i < 10; i++)
-			if (strcmp(node->types.identifier, list[i]) == 0 && node->is_read_write != 2)
+			if (vtr::strcmp(node->types.identifier, list[i]) == 0 && node->is_read_write != 2)
 				node->is_read_write = 1;
 	}
 
@@ -600,7 +600,7 @@ void search_marked_node(ast_node_t *node, int is, char *temp, ast_node_t **p2)
 		{
 			if (node->children[i]->type == IDENTIFIERS)
 			{
-				if( strcmp(node->children[0]->types.identifier, temp) == 0 && node->children[0]->is_read_write == is)
+				if( vtr::strcmp(node->children[0]->types.identifier, temp) == 0 && node->children[0]->is_read_write == is)
 					*p2 = node;
 			}
 
@@ -1218,7 +1218,7 @@ void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num)
 	{
 		case 1:
 			initial_node(node, NUMBERS, line_num, file_num, ++count_id);
-			change_to_number_node(node, temp->type.data);
+			change_to_number_node(node, temp->type.data, NULL, false);
 		break;
 
 		case 2:
@@ -1730,8 +1730,8 @@ void change_para_node(ast_node_t *node, char *name, long long value)
 	int i;
 
 	if (node){
-		if (node->type == IDENTIFIERS && strcmp(name, node->types.identifier) == 0)
-			change_to_number_node(node, value);
+		if (node->type == IDENTIFIERS && vtr::strcmp(name, node->types.identifier) == 0)
+			change_to_number_node(node, value, NULL, false);
 
 		if (node->num_children != 0){
 			for (i = 0; i < node->num_children; i++){
@@ -1813,7 +1813,7 @@ void check_node_number(ast_node_t *parent, ast_node_t *child, int flag)
 	}
 	if (number == 1) // the previous number is a power of 2
 	{
-		change_to_number_node(child, power);
+		change_to_number_node(child, power, NULL, false);
 		if (flag == 1) // multiply
 			parent->types.operation.op = SL;
 		else if (flag == 2) // multiply and needs to move children nodes

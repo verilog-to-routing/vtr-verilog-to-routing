@@ -676,7 +676,7 @@ static int compare_npin_t_names(const void *p1, const void *p2)
 {
 	npin_t *pin1 = *(npin_t * const *)p1;
 	npin_t *pin2 = *(npin_t * const *)p2;
-	return strcmp(pin1->name, pin2->name);
+	return vtr::strcmp(pin1->name, pin2->name);
 }
 
 void sort_signal_list_alphabetically(signal_list_t *list)
@@ -1036,7 +1036,7 @@ int get_output_pin_index_from_mapping(nnode_t *node, const char *name)
 	for (i = 0; i < node->num_output_pins; i++)
 	{
 		npin_t *pin = node->output_pins[i];
-		if (!strcmp(pin->mapping, name))
+		if (!vtr::strcmp(pin->mapping, name))
 			return i;
 	}
 
@@ -1057,7 +1057,7 @@ int get_output_port_index_from_mapping(nnode_t *node, const char *name)
 		for (j = 0; j < node->output_port_sizes[i]; j++, pin_number++)
 		{
 			npin_t *pin = node->output_pins[pin_number];
-			if (!strcmp(pin->mapping, name))
+			if (!vtr::strcmp(pin->mapping, name))
 				return i;
 		}
 	}
@@ -1073,7 +1073,7 @@ int get_input_pin_index_from_mapping(nnode_t *node, const char *name)
 	for (i = 0; i < node->num_input_pins; i++)
 	{
 		npin_t *pin = node->input_pins[i];
-		if (!strcmp(pin->mapping, name))
+		if (!vtr::strcmp(pin->mapping, name))
 			return i;
 	}
 
@@ -1094,7 +1094,7 @@ int get_input_port_index_from_mapping(nnode_t *node, const char *name)
 		for (j = 0; j < node->input_port_sizes[i]; j++, pin_number++)
 		{
 			npin_t *pin = node->input_pins[pin_number];
-			if (!strcmp(pin->mapping, name))
+			if (!vtr::strcmp(pin->mapping, name))
 				return i;
 		}
 	}
