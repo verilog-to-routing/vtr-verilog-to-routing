@@ -117,7 +117,7 @@ struct t_draw_state {
 	bool show_graphics;
 	int gr_automode;
 	e_route_type draw_route_type;
-	char default_message[vtr::BUFSIZE];
+	char default_message[vtr::bufsize];
 	t_color *net_color, *block_color;
 	t_draw_rr_node *draw_rr_node;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;

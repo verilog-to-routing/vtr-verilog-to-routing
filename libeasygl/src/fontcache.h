@@ -15,7 +15,14 @@
 #include <sys/timeb.h>
 #include <math.h>
 
-#include "graphics.h"
+// Set X11 by default, if neither NO_GRAPHICS NOR WIN32 are defined
+#ifndef NO_GRAPHICS
+#ifndef WIN32
+#ifndef X11
+#define X11
+#endif
+#endif // !WIN32
+#endif // ~NO_GRAPHICS
 
 #ifdef X11
 #include <X11/Xlib.h>
@@ -52,10 +59,11 @@
 #define FONT_CACHE_SIZE_FOR_ZEROS 40
 #define FONT_CACHE_SIZE_FOR_ROTATED 1000
 #define NUM_FONT_TYPES 3
+#define PI 3.141592654
 
 using namespace std;
 
-#if defined WIN32
+#ifdef WIN32
 typedef LOGFONT* font_ptr;
 #elif defined X11
 typedef XftFont* font_ptr;

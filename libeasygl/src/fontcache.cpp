@@ -1,5 +1,4 @@
 #include "fontcache.h"
-#include "graphics_state.h"
 
 /**
  * Linux/Mac:
@@ -31,6 +30,7 @@ const char* const fontname_config[]{
  ******************************************/
 
 #ifdef X11
+#include "graphics_state.h"
 void FontCache::close_font(font_ptr font) {
     XftFontClose(t_x11_state::getInstance()->display, font);
 }
@@ -38,6 +38,7 @@ void FontCache::close_font(font_ptr font) {
 void FontCache::close_font(font_ptr font) {
     free(font);
 }
+void WIN32_DELETE_ERROR(); //Forward declaration
 #else
 void FontCache::close_font(font_ptr /*font*/) {
 }
@@ -105,7 +106,7 @@ font_ptr FontCache::do_font_loading(
         exit(1);
     }
 #elif defined WIN32
-    LOGFONT *lf = retval = (LOGFONT*) my_malloc(sizeof (LOGFONT));
+    LOGFONT *lf = retval = (LOGFONT*) malloc(sizeof (LOGFONT));
     ZeroMemory(lf, sizeof (LOGFONT));
     // lfHeight specifies the desired height of characters in logical units.
     // A positive value of lfHeight will request a font that is appropriate
@@ -122,9 +123,16 @@ font_ptr FontCache::do_font_loading(
     lf->lfEscapement = (LONG) degrees * 10;
     lf->lfOrientation = (LONG) degrees * 10;
     HFONT testfont;
+
+	// Convert lf->lfFaceName from a char_t* to a wc_chart*
+	// "The length of this string must not exceed 32 TCHAR values" 
+	// Source: https://msdn.microsoft.com/en-us/library/windows/desktop/dd145037(v=vs.85).aspx
+	wchar_t wcFaceName[32];
+	std::mbstowcs(wcFaceName, lf->lfFaceName, 32);
+
     for (int ifont = 0; ifont < NUM_FONT_TYPES; ++ifont) {
         MultiByteToWideChar(CP_UTF8, 0, fontname_config[ifont], -1,
-            lf->lfFaceName, sizeof (lf->lfFaceName) / sizeof (wchar_t));
+            wcFaceName, sizeof (lf->lfFaceName) / sizeof (wchar_t));
 
         testfont = CreateFontIndirect(lf);
         if (testfont == NULL) {

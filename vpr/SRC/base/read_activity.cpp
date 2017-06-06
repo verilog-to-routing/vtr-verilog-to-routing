@@ -29,7 +29,7 @@ static bool add_activity_to_net(const AtomNetlist& netlist, std::unordered_map<A
 }
 
 std::unordered_map<AtomNetId,t_net_power> read_activity(const AtomNetlist& netlist, char * activity_file) {
-	char buf[vtr::BUFSIZE];
+	char buf[vtr::bufsize];
 	char * ptr;
 	char * word1;
 	char * word2;
@@ -50,14 +50,14 @@ std::unordered_map<AtomNetId,t_net_power> read_activity(const AtomNetlist& netli
 				"Error: could not open activity file: %s\n", activity_file);
 	}
 
-	ptr = vtr::fgets(buf, vtr::BUFSIZE, act_file_hdl);
+	ptr = vtr::fgets(buf, vtr::bufsize, act_file_hdl);
 	while (ptr != NULL) {
 		word1 = strtok(buf, TOKENS);
 		word2 = strtok(NULL, TOKENS);
 		word3 = strtok(NULL, TOKENS);
 		add_activity_to_net(netlist, atom_net_power, word1, vtr::atof(word2), vtr::atof(word3));
 
-		ptr = vtr::fgets(buf, vtr::BUFSIZE, act_file_hdl);
+		ptr = vtr::fgets(buf, vtr::bufsize, act_file_hdl);
 	}
 	fclose(act_file_hdl);
 

@@ -3,6 +3,7 @@
 
 #include "easygl_constants.h"
 #include "fontcache.h"
+#include "graphics_types.h"
 
 /**********************************
  * Common Preprocessor Directives *
@@ -18,6 +19,16 @@
 #include <sys/timeb.h>
 #include <math.h>
 
+// Set X11 by default, if neither NO_GRAPHICS nor WIN32 are defined
+#ifndef NO_GRAPHICS
+#ifndef WIN32
+#ifndef X11
+#define X11
+#endif
+#endif // !WIN32
+#endif // !NO_GRAPHICS
+
+
 #ifdef X11
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -28,7 +39,7 @@
 #include <cairo-xlib.h>
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) || defined(CYGWIN)
 #include <windows.h>
 #include <WindowsX.h>
 #endif
@@ -89,15 +100,12 @@ public:
     cairo_t *ctx = nullptr;
 
     static t_x11_state *getInstance();
-
 private:
     // Pointer to the most recently constructed state. Is set to NULL upon any destruction
     static t_x11_state *instance;
 };
 
-#endif // X11
-
-#ifdef WIN32
+#elif defined(WIN32)
 
 /*************************************************************
  * WIN32 Structure Definitions                               *
@@ -137,15 +145,18 @@ typedef enum {
  */
 class t_win32_state {
 public:
-    t_win32_state();
+	t_win32_state();
+	t_win32_state(bool, t_window_button_state, int);
     ~t_win32_state();
 
     bool InEventLoop;
     t_window_button_state windowAdjustFlag;
     int adjustButton;
     RECT adjustRect;
-    HWND hMainWnd, hGraphicsWnd, hButtonsWnd, hStatusWnd;
-    HDC hGraphicsDC;
+    HWND hMainWnd, hGraphicsWnd, hButtonsWnd, hStatusWnd; // <Addition/Mod: Charles>
+    HDC hGraphicsDC;	// Current Active Drawing buffer // <Addition/Mod: Charles>
+	HDC hGraphicsDCPassive;	// Front Buffer for display purpose // <Addition/Mod: Charles>
+	HGDIOBJ hGraphicsPassive;	// Backup of old drawing context object, usage see set_drawing_buffer() // <Addition/Mod: Charles>
     HPEN hGraphicsPen;
     HBRUSH hGraphicsBrush, hGrayBrush;
     HFONT hGraphicsFont;

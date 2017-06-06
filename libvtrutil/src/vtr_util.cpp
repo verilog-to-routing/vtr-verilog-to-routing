@@ -257,7 +257,7 @@ char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
             return (val);
 
         /* return unless we have a null value and a continuation line */
-        if (vtr::fgets(buf, BUFSIZE, fp) == NULL )
+        if (vtr::fgets(buf, bufsize, fp) == NULL )
             return (NULL );
 
         val = std::strtok(buf, tokens);
@@ -349,7 +349,7 @@ char* fgets(char *buf, int max_size, FILE * fp) {
 
     /* Buffer is full but line has not terminated, so error */
     throw VtrError(string_fmt("Error on line %d -- line is too long for input buffer.\n"
-                              "All lines must be at most %d characters long.\n", BUFSIZE - 2),
+                              "All lines must be at most %d characters long.\n", bufsize - 2),
                     __FILE__, __LINE__);
     return NULL;
 }
@@ -403,9 +403,9 @@ bool check_file_name_extension(const char* file_name,
 }
 
 std::vector<std::string> ReadLineTokens(FILE * InFile, int *LineNum) {
-    std::unique_ptr<char[]> buf(new char[vtr::BUFSIZE]);
+    std::unique_ptr<char[]> buf(new char[vtr::bufsize]);
 
-    const char* line = vtr::fgets(buf.get(), vtr::BUFSIZE, InFile);
+    const char* line = vtr::fgets(buf.get(), vtr::bufsize, InFile);
 
     ++(*LineNum);
 

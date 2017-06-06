@@ -152,7 +152,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	t_hash **hash_table, *h_ptr;
 	int iblk, i, j, xtmp, ytmp, bnum, k;
 	FILE *fp;
-	char buf[vtr::BUFSIZE], bname[vtr::BUFSIZE], *ptr;
+	char buf[vtr::bufsize], bname[vtr::bufsize], *ptr;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -185,20 +185,20 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		}
 	}
 
-	ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
+	ptr = vtr::fgets(buf, vtr::bufsize, fp);
 
 	while (ptr != NULL) {
 		ptr = vtr::strtok(buf, TOKENS, fp, buf);
 		if (ptr == NULL) {
-			ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
+			ptr = vtr::fgets(buf, vtr::bufsize, fp);
 			continue; /* Skip blank or comment lines. */
 		}
 
-        if(strlen(ptr) + 1 < vtr::BUFSIZE) {
+        if(strlen(ptr) + 1 < vtr::bufsize) {
             strcpy(bname, ptr);
         } else {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
-					"Block name exceeded buffer size of %zu characters", vtr::BUFSIZE);
+					"Block name exceeded buffer size of %zu characters", vtr::bufsize);
         }
 
 		ptr = vtr::strtok(NULL, TOKENS, fp, buf);
@@ -232,7 +232,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		if (h_ptr == NULL) {
 			vtr::printf_warning(__FILE__, __LINE__, 
 					"[Line %d] Block %s invalid, no such IO pad.\n", vtr::get_file_line_number_of_last_opened_file(), bname);
-			ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
+			ptr = vtr::fgets(buf, vtr::bufsize, fp);
 			continue;
 		}
 		bnum = h_ptr->index;
@@ -266,7 +266,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		place_ctx.grid_blocks[i][j].blocks[k] = bnum;
 		place_ctx.grid_blocks[i][j].usage++;
 
-		ptr = vtr::fgets(buf, vtr::BUFSIZE, fp);
+		ptr = vtr::fgets(buf, vtr::bufsize, fp);
 	}
 
 	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {

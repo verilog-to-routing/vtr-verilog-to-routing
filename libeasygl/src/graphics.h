@@ -61,6 +61,7 @@ void event_loop(void (*act_on_mousebutton) (float x, float y, t_event_buttonPres
  */
 void init_graphics(const std::string& window_name, int cindex_background);
 void init_graphics(const std::string& window_name, const t_color& background);
+void change_graphics_background(const t_color& background);	// <Addition/Mod: Charles>
 
 /* Sets world coordinates of the graphics window so that the 
  * lower-left corner of the screen has world coordinate (xl, yb) and the
@@ -79,7 +80,6 @@ void set_visible_world(const t_bound_box& bounds);
 
 
 /**
- * Returns a rectangle with the bounds of the drawn world -- i.e. what are 
  * Returns a rectangle with the bounds of the drawn world -- i.e. what are 
  * the edges in your chosen (world) coordinate system that match the edges of
  * the window? Useful for figuring out how zoomed in or out you are.
@@ -310,6 +310,9 @@ void fillellipticarc(const t_point& center, float radx, float rady, float starta
  */
 
 void drawtext(float xc, float yc, const std::string& text, float boundx=FLT_MAX, float boundy=FLT_MAX);
+float gettextwidth(const std::string& text);	// In the coodirnate system current drawing at // <Addition/Mod: Charles>
+void drawtextleftaligned(float xc, float yc, const std::string& text, float boundx = FLT_MAX, float boundy = FLT_MAX);	// <Addition/Mod: Charles>
+void drawtextrightaligned(float xc, float yc, const std::string& text, float boundx = FLT_MAX, float boundy = FLT_MAX);	// <Addition/Mod: Charles>
 void drawtext(const t_point& text_center, const std::string& text, float boundx=FLT_MAX, float boundy=FLT_MAX);
 void drawtext(const t_point& text_center, const std::string& text, const t_bound_box& bounds);
 void drawtext(
@@ -459,7 +462,6 @@ int init_postscript(const char *fname); /* Returns 1 if successful */
 /* Closes file and directs output to screen again.       */
 void close_postscript(void);
 
-
 /******************** DEBUGGING FUNCTIONS **********************************/
 
 /* Data structure below is for debugging the easygl API itself; you normally
@@ -483,8 +485,8 @@ typedef struct {
 void get_report_structure(t_report*);
 
 
-/**************** Extra functions available only in WIN32. *******/
-#ifdef WIN32
+/**************** Extra functions available only in WIN32 (and Cygwin). *******/
+#if defined(WIN32) || defined(CYGWIN)
 /* VB: TODO: I should make any generally useful functions below work in
  * X11 as well, and probably delete anything else.
  */
@@ -495,6 +497,13 @@ void get_report_structure(t_report*);
 void win32_drawcurve(t_point *points, int npoints);
 void win32_fillcurve(t_point *points, int npoints);
 
-#endif // WIN32
+/* Error message reporters.
+*/
+void WIN32_DELETE_ERROR();
+
+//void win32_handle_mousewheel_zooming(WPARAM wParam, LPARAM lParam, bool draw_screen);
+//void win32_handle_button_info(t_event_buttonPressed &button_info, UINT message, WPARAM wParam);
+
+#endif // WIN32/CYGWIN
 
 #endif // GRAPHICS_H

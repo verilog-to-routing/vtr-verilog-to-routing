@@ -264,13 +264,13 @@ using namespace std;
 
 #endif /* X11 Preprocessor Directives */
 
-#ifdef WIN32
+#if defined(WIN32) || defined(CYGWIN)
 
 /*************************************************************
  * Microsoft Windows (WIN32) Specific Preprocessor Directives *
  *************************************************************/
 
-#pragma warning(disable : 4996)   // Turn off annoying warnings about strcmp.
+//#pragma warning(disable : 4996)		// Turn off annoying warnings about strcmp.
 
 #ifndef UNICODE
 #define UNICODE // force windows api into unicode (usually UTF-16) mode.
@@ -451,7 +451,7 @@ static const char *ps_cnames[NUM_COLOR] = {
  *************************************************/
 
 // Stores all state variables for X Windows
-t_x11_state x11_state;
+t_x11_state x11_state {};
 
 #endif /* X11 file scope variables */
 
@@ -469,8 +469,7 @@ static wchar_t szAppName[256], szGraphicsName[] = L"VPR Graphics",
     szStatusName[] = L"VPR Status", szButtonsName[] = L"VPR Buttons";
 
 /* Stores all state variables for Win32 */
-static t_win32_state win32_state = {false, WINDOW_DEACTIVATED, -1};
-
+static t_win32_state win32_state {false, WINDOW_DEACTIVATED, -1};
 #endif /* WIN32 file scope variables */
 
 
@@ -501,11 +500,14 @@ static float y_to_post(float worldy);
 static void force_setcolor(int cindex);
 static void force_setcolor(const t_color& new_color);
 static void update_brushes();
-static void force_setlinestyle(int linestyle, int capstyle = CapButt);
+static void force_setlinestyle(int linestyle, int capstyle = 1);	// <Modification> as #define CapButt 1 in X.h
 static void force_setlinewidth(int linewidth);
 static void force_settextattrs(int pointsize, int degrees);
 
+// <Modification>
+#ifndef WIN32
 static bool use_cairo();
+#endif
 
 static void reset_common_state();
 static void build_default_menu(void);
@@ -615,7 +617,6 @@ static void win32_GraphicsWND_handle_WM_MOUSEMOVE(LPARAM lParam, int &X, int &Y,
 
 // Functions for displaying errors in a message box on windows.
 static void WIN32_SELECT_ERROR();
-static void WIN32_DELETE_ERROR();
 static void WIN32_CREATE_ERROR();
 static void WIN32_DRAW_ERROR();
 
@@ -805,11 +806,12 @@ static float y_to_post(float y) {
     return ps_coord_y;
 }
 
-
+#ifndef WIN32
 static bool use_cairo()
 {
     return (gl_state.foreground_color.alpha != 255);
 }
+#endif
 
 /* Sets the current graphics context colour to cindex, regardless of whether we think it is 
  * needed or not. 
@@ -1192,8 +1194,9 @@ static void map_button(int bnum) {
             button_state.button[bnum].ytop,
             button_state.button[bnum].width,
             button_state.button[bnum].height,
-            win32_state.hButtonsWnd, (HMENU) (200 + bnum),
-            (HINSTANCE) GetWindowLong(win32_state.hMainWnd, GWL_HINSTANCE),
+            win32_state.hButtonsWnd, 
+			(HMENU) (200 + (intptr_t) bnum),
+            (HINSTANCE) GetWindowLongPtr(win32_state.hMainWnd, GWLP_HINSTANCE),
             NULL
             );
 
@@ -1385,6 +1388,11 @@ void init_graphics(const std::string& window_name, const t_color& background) {
     gl_state.initialized = true;
 }
 
+void change_graphics_background(const t_color & background)
+{
+	gl_state.background_color = background;
+}
+
 static void reset_common_state() {
     gl_state.foreground_color = t_color::predef_colors[BLACK];
     gl_state.currentlinestyle = SOLID;
@@ -1557,9 +1565,9 @@ event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed bu
 
     win32_invalidate_screen();
 
-    // timout timer, for event loop. Supposed to be 2 seconds, but isn't?
+    // timeout timer, for event loop. Supposed to be 2 seconds, but isn't?
     // UINT_PTR timeout_timer = SetTimer(NULL, NULL, 2000, NULL);
-    bool dropped_something = false;
+    //bool dropped_something = false;
 
     // Windows event dropping explanation:
     // like X11, it will drop events which match is_droppable_event(...), and
@@ -1585,7 +1593,7 @@ event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed bu
                         // if dropping scroll event, do the scroll, but don't redraw.
                         win32_handle_mousewheel_zooming(msg.wParam, msg.lParam, false);
                     }
-                    dropped_something = true;
+                    //dropped_something = true;
                     continue;
                 }
             }
@@ -2330,7 +2338,7 @@ void drawtext(float xc, float yc, const std::string& str_text, float boundx, flo
         WIN32_DRAW_ERROR();
     }
 
-    SIZE textsize;
+//	SIZE textsize;
 
     if (!GetTextExtentPoint32W(
         win32_state.hGraphicsDC,
@@ -2390,7 +2398,7 @@ void drawtext(float xc, float yc, const std::string& str_text, float boundx, flo
         yc + (-coord_height + X11_ymagicoffset) / 2.0
         ),
 #elif defined WIN32
-        t_point(xc - coord_width / 2, yc - wrld_height / 2),
+        t_point(xc - coord_width / 2, yc - coord_height / 2),
 #endif
         coord_width,
         coord_height
@@ -2566,7 +2574,7 @@ draw_message(void) {
 void
 update_message(const string& msg) {
     strncpy(gl_state.statusMessage, msg.c_str(), BUFSIZE);
-    gl_state.statusMessage[BUFSIZE-1] = '\0'; //Ensure null terimination
+    gl_state.statusMessage[BUFSIZE-1] = '\0'; //Ensure null termination
     draw_message();
 #ifdef X11
     // Make this appear immediately.  Win32 does that automaticaly.
@@ -2838,11 +2846,13 @@ adjustwin(void (*drawscreen) (void)) {
         | ButtonPressMask); */
 #else /* Win32 */
     /* Implemented as WM_LB... events */
-
     /* Begin window adjust */
     if (win32_state.windowAdjustFlag == WINDOW_DEACTIVATED) {
         win32_state.windowAdjustFlag = WAITING_FOR_FIRST_CORNER_POINT;
     }
+
+	(void) drawscreen; // Supress unused parameter warnings for Win32
+
 #endif
 }
 
@@ -2889,13 +2899,13 @@ postscript(void (*drawscreen) (void)) {
 
 static void
 proceed(void (*drawscreen) (void)) {
-    (void) drawscreen; // suppress unused warning
+    (void) drawscreen; // Supress unused parameter warnings for Win32
     gl_state.ProceedPressed = true;
 }
 
 static void
 quit(void (*drawscreen) (void)) {
-    (void) drawscreen; // suppress unused warning
+    (void) drawscreen; // Supress unused parameter warnings for Win32
     close_graphics();
     exit(0);
 }
@@ -2931,6 +2941,12 @@ close_graphics(void) {
     memset(&x11_state.visual_info, 0, sizeof (x11_state.visual_info)); // dont need to free this
 
     XCloseDisplay(x11_state.display);
+
+	// Destroy cairo things
+	cairo_destroy(x11_state.ctx);
+	cairo_surface_destroy(x11_state.cairo_surface);
+	x11_state.ctx = NULL;      // Important to NULL these pointers in case init_cairo is called again
+	x11_state.cairo_surface = NULL;
 #elif defined WIN32
     // Destroy the window
     if (!DestroyWindow(win32_state.hMainWnd))
@@ -2949,12 +2965,6 @@ close_graphics(void) {
     if (!UnregisterClassW(szButtonsName, GetModuleHandle(NULL)))
         WIN32_DRAW_ERROR();
 #endif
-
-    // Destroy cairo things
-    cairo_destroy(x11_state.ctx);
-    cairo_surface_destroy(x11_state.cairo_surface);
-    x11_state.ctx = NULL;      // Important to NULL these pointers in case init_cairo is called again
-    x11_state.cairo_surface = NULL;
 
     gl_state.initialized = false;
 }
@@ -3394,6 +3404,11 @@ void set_drawing_buffer(t_draw_to draw_mode) {
     }
     gl_state.current_draw_to = draw_mode;
 #endif /* X11 */
+
+#ifdef WIN32
+	(void) draw_mode; // Gets rid of unused parameter warning in WIN32
+#endif /* WIN32 */
+
 }
 
 void copy_off_screen_buffer_to_screen() {
@@ -3415,12 +3430,13 @@ void copy_off_screen_buffer_to_screen() {
 /*************************************************
  * begin loading and drawing from file functions *
  *************************************************/
-
+#ifndef WIN32
 Surface load_png_from_file(const char* file_path) {
     return Surface(file_path);
 }
 
 void draw_surface(const Surface& surface, float x, float y) {
+#ifdef X11
     cairo_surface_t* cairo_surface = surface.impl_->getSurface();
     if (cairo_surface != NULL) {
         cairo_set_source_surface(x11_state.ctx, cairo_surface,
@@ -3430,6 +3446,8 @@ void draw_surface(const Surface& surface, float x, float y) {
     else {
         cerr << "Surface was not initialized" << endl;
     }
+#endif // X11
+
 }
 
 void draw_surface(const Surface& surface, t_point upper_left) {
@@ -3442,7 +3460,7 @@ void draw_surface(const Surface& surface, t_point upper_left) {
 
 static void init_cairo() {
 #ifdef X11
-    // Destory old cairo things
+    // Destroy old cairo things
     cairo_destroy(x11_state.ctx);
     cairo_surface_destroy(x11_state.cairo_surface);
 
@@ -3457,7 +3475,7 @@ static void init_cairo() {
     cairo_set_antialias(x11_state.ctx, CAIRO_ANTIALIAS_NONE); // Turn off anti-aliasing
 #endif // X11
 }
-
+#endif // !WIN32 <Modification>
 
 /* 
  * Functions that are helpful for automarking below. Call before the student
@@ -4369,11 +4387,10 @@ win32_init_graphics(const char *window_name) {
     if (!win32_state.hMainWnd)
         WIN32_DRAW_ERROR();
 
-    /* Set drawing defaults for user-drawable area.  Use whatever the *
+	/* Set drawing defaults for user-drawable area.  Use whatever the *
      * initial values of the current stuff was set to.                */
-
-    if (ShowWindow(win32_state.hMainWnd, SW_SHOWNORMAL))
-        WIN32_DRAW_ERROR();
+	if (ShowWindow(win32_state.hMainWnd, SW_SHOWNORMAL)) // Show if Window is not visible
+		WIN32_DRAW_ERROR();
     build_default_menu();
     if (!UpdateWindow(win32_state.hMainWnd))
         WIN32_DRAW_ERROR();
@@ -4387,11 +4404,11 @@ WIN32_MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
         case WM_CREATE:
             win32_state.hStatusWnd = CreateWindowW(szStatusName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
-                0, 0, 0, 0, hwnd, (HMENU) 102, (HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
+                0, 0, 0, 0, hwnd, (HMENU) 102, (HINSTANCE) GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
             win32_state.hButtonsWnd = CreateWindowW(szButtonsName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
-                0, 0, 0, 0, hwnd, (HMENU) 103, (HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
+                0, 0, 0, 0, hwnd, (HMENU) 103, (HINSTANCE) GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
             win32_state.hGraphicsWnd = CreateWindowW(szGraphicsName, NULL, WS_CHILDWINDOW | WS_VISIBLE,
-                0, 0, 0, 0, hwnd, (HMENU) 101, (HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE), NULL);
+                0, 0, 0, 0, hwnd, (HMENU) 101, (HINSTANCE) GetWindowLongPtr(hwnd, GWLP_HINSTANCE), NULL);
             return 0;
 
         case WM_SIZE:
@@ -4409,7 +4426,6 @@ WIN32_MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
             if (!MoveWindow(win32_state.hButtonsWnd, trans_coord.top_width - MWIDTH, 0, MWIDTH,
                 trans_coord.top_height, TRUE))
                 WIN32_DRAW_ERROR();
-
             return 0;
 
             // WC : added to solve window resizing problem
@@ -4421,13 +4437,13 @@ WIN32_MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
             return 0;
 
-
         case WM_DESTROY:
             if (!DeleteObject(win32_state.hGrayBrush))
                 WIN32_DELETE_ERROR();
             PostQuitMessage(0);
             return 0;
 
+		case WM_CHAR:
         case WM_KEYDOWN:
             if (gl_state.get_keypress_input && win32_keypress_ptr != NULL)
                 win32_keypress_ptr((char) wParam, 0);  // TODO: add extended (keysym) codes
@@ -4442,12 +4458,14 @@ WIN32_MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
             // program.
             t_event_buttonPressed button_info;
             win32_handle_button_info(button_info, message, wParam);
-
             win32_handle_mousewheel_zooming(wParam, lParam, true);
             return 0;
+
         case WM_TIMER:
             win32_drawscreen_ptr();
             // fall out.
+
+		default: {} // For compiler warnings
     }
 
     return DefWindowProc(hwnd, message, wParam, lParam);
@@ -4455,12 +4473,13 @@ WIN32_MainWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
 static LRESULT CALLBACK
 WIN32_GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
-    static TEXTMETRIC tm;
+//    static TEXTMETRIC tm; /* Commented out as it was unused */
 
     PAINTSTRUCT ps;
     static RECT oldAdjustRect;
     static HPEN hDotPen = 0;
-    static int X, Y, i;
+    static int X, Y;
+//	static int i; /* Commented out as it was unused */
 
     switch (message) {
         case WM_CREATE:
@@ -4486,9 +4505,7 @@ WIN32_GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
         case WM_SIZE:
             /* Window has been resized.  New client area dimensions can be retrieved from
-             * lParam using LOWORD() and HIWORD() macros. 
-             */
-
+             * lParam using LOWORD() and HIWORD() macros. */
             update_transform();
             return 0;
 
@@ -4526,6 +4543,8 @@ WIN32_GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
         case WM_MOUSEMOVE:
             win32_GraphicsWND_handle_WM_MOUSEMOVE(lParam, X, Y, oldAdjustRect);
             return 0;
+
+		default: {} // For compiler warnings
     }
 
     return DefWindowProc(hwnd, message, wParam, lParam);
@@ -4786,6 +4805,8 @@ WIN32_StatusWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
         case WM_DESTROY:
             PostQuitMessage(0);
             return 0;
+
+		default: {} // For compiler warnings
     }
 
     return DefWindowProc(hwnd, message, wParam, lParam);
@@ -4888,6 +4909,8 @@ WIN32_ButtonsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
                 WIN32_DELETE_ERROR();
             PostQuitMessage(0);
             return 0;
+
+		default: {} // For compiler warnings
     }
 
     return DefWindowProc(hwnd, message, wParam, lParam);
@@ -4895,18 +4918,22 @@ WIN32_ButtonsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
 static void WIN32_SELECT_ERROR() {
     wchar_t msg[BUFSIZE];
-    wsprintf(msg, L"Error %i: Couldn't select graphics object on line %d of graphics.c\n",
-        GetLastError(), __LINE__);
+	wsprintf((char *) msg, 
+		"Error %i: Couldn't select graphics object on line %d of graphics.c\n",
+        GetLastError(), 
+		__LINE__);
 
     wprintf(msg);
     MessageBoxW(NULL, msg, NULL, MB_OK);
     exit(-1);
 }
 
-static void WIN32_DELETE_ERROR() {
+void WIN32_DELETE_ERROR() {
     wchar_t msg[BUFSIZE];
-    wsprintf(msg, L"Error %i: Couldn't delete graphics object on line %d of graphics.c\n",
-        GetLastError(), __LINE__);
+    wsprintf((char *) msg, 
+		"Error %i: Couldn't delete graphics object on line %d of graphics.c\n",
+        GetLastError(),
+		__LINE__);
 
     wprintf(msg);
     MessageBoxW(NULL, msg, NULL, MB_OK);
@@ -4915,8 +4942,10 @@ static void WIN32_DELETE_ERROR() {
 
 static void WIN32_CREATE_ERROR() {
     wchar_t msg[BUFSIZE];
-    wsprintf(msg, L"Error %i: Couldn't create graphics object on line %d of graphics.c\n",
-        GetLastError(), __LINE__);
+    wsprintf((char *) msg, 
+		"Error %i: Couldn't create graphics object on line %d of graphics.c\n",
+        GetLastError(), 
+		__LINE__);
 
     wprintf(msg);
     MessageBoxW(NULL, msg, NULL, MB_OK);
@@ -4925,8 +4954,10 @@ static void WIN32_CREATE_ERROR() {
 
 static void WIN32_DRAW_ERROR() {
     wchar_t msg[BUFSIZE];
-    wsprintf(msg, L"Error %i: Couldn't draw graphics object on line %d of graphics.c\n",
-        GetLastError(), __LINE__);
+    wsprintf((char *) msg, 
+		"Error %i: Couldn't draw graphics object on line %d of graphics.c\n",
+        GetLastError(), 
+		__LINE__);
 
     wprintf(msg);
     MessageBoxW(NULL, msg, NULL, MB_OK);
@@ -4949,6 +4980,7 @@ static void win32_reset_state() {
     win32_state.hGraphicsBrush = 0;
     win32_state.hGrayBrush = 0;
     win32_state.hGraphicsDC = 0;
+	win32_state.hGraphicsDCPassive = 0;	// <Addition/Mod: Charles>
     win32_state.hGraphicsFont = 0;
 
     /* These are used for the "Window" graphics button. They keep track of whether we're entering
@@ -5046,6 +5078,8 @@ static void win32_handle_button_info(t_event_buttonPressed &button_info,
             else
                 button_info.button = 5;
             break;
+		default:
+			break;
     }
 
 #ifdef VERBOSE
@@ -5093,9 +5127,8 @@ static void _drawcurve(t_point *points, int npoints, int fill) {
         /* implement X11 version here */
 #else /* Win32 */
         // create POINT array
-        HPEN hOldPen;
+        HPEN hOldPen = CreatePen(PS_NULL, 0, RGB(0,0,0));
         POINT pts[MAXPTS];
-        int i;
 
         for (i = 0; i < npoints; i++) {
             pts[i].x = xworld_to_scrn(points[i].x);
@@ -5132,14 +5165,13 @@ static void _drawcurve(t_point *points, int npoints, int fill) {
         }
 #endif
     } else {
-        int i;
 
         fprintf(gl_state.ps, "newpath\n");
         fprintf(gl_state.ps, "%.2f %.2f moveto\n", x_to_post(points[0].x),
             y_to_post(points[0].y));
         for (i = 1; i < npoints; i += 3)
             fprintf(gl_state.ps, "%.2f %.2f %.2f %.2f %.2f %.2f curveto\n",
-            x_to_post(points[i].x), yworld_to_post(points[i].y),
+            x_to_post(points[i].x), y_to_post(points[i].y),
             x_to_post(points[i + 1].x), y_to_post(points[i + 1].y),
             x_to_post(points[i + 2].x), y_to_post(points[i + 2].y));
         if (!fill)

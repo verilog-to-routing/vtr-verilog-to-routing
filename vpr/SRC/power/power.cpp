@@ -199,7 +199,7 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 		power_add_usage(power_usage, &sub_power_usage);
 
 	} else {
-		char msg[vtr::BUFSIZE];
+		char msg[vtr::bufsize];
 		sprintf(msg, "No dynamic power defined for BLIF model: %s",
 				pb_graph_node->pb_type->blif_model);
 		power_log_msg(POWER_LOG_WARNING, msg);
