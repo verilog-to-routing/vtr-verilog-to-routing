@@ -1,0 +1,13 @@
+vpr_status;String
+pack_time;Range;0.10;10.0
+place_time;Range;0.10;10.0
+crit_path_route_time;Range;0.10;10.0
+num_pre_packed_nets;String
+num_pre_packed_blocks;String
+num_post_packed_nets;String
+num_clb;String
+num_io;String
+num_outputs;String
+num_memories;String
+num_mult;String
+error;String

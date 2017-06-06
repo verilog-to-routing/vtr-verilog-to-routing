@@ -198,6 +198,10 @@ struct BlifAllocCallback : public blifparse::Callback {
             } else if(type != blifparse::LatchType::RISING_EDGE) {
                 vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Only rising edge latches supported\n");
             }
+
+            if (control.empty()) {
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Latch must have a clock\n");
+            }
             
             const t_model* blk_model = find_model("latch");
 

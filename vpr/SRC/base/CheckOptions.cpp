@@ -56,6 +56,11 @@ void CheckOptions(const t_options& options, bool timing_enabled) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
 				"-route_chan_width option must be specified if dumping rr structs is requested (-dump_rr_structs_file option)\n");
 	}
+        /* If reading an external XML RR graph, routing should have a specified channel width */
+	if (options.Count[OT_READ_RR_GRAPH] && !options.Count[OT_ROUTE_CHAN_WIDTH]){
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+				"-route_chan_width option must be specified if reading an rr graph is requested (-read_rr_graph option)\n");
+	}
 
     /* Warn about stage related parameters that are being specified when the stage is not going to run */
 

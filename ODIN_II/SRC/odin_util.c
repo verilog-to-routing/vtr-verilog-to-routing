@@ -22,6 +22,8 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */ 
+#include <string>
+#include <sstream>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +35,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "errors.h"
 #include "odin_util.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
@@ -40,16 +43,11 @@ OTHER DEALINGS IN THE SOFTWARE.
  *------------------------------------------------------------------------*/
 char *make_signal_name(char *signal_name, int bit)
 {
-	char *return_string;
-
-	oassert(signal_name != NULL);
-	if (bit == -1)
-		return vtr::strdup(signal_name);
-
-	return_string = vtr::strdup(signal_name);
-	return_string = (char*)realloc(return_string, sizeof(char)*(strlen(return_string)+1+10+1));
-	sprintf(return_string, "%s-%d", return_string, bit);
-	return return_string;	
+	oassert(signal_name);
+	std::stringstream return_string;
+	return_string << signal_name;
+	if (bit != -1) return_string << "-" << std::dec << bit;
+	return vtr::strdup(return_string.str().c_str());		
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -60,52 +58,17 @@ char *make_signal_name(char *signal_name, int bit)
  *-------------------------------------------------------------------------------------------*/
 char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit)
 {
-	char *return_string;
-
-	if (previous)
-	{
-		return_string = vtr::strdup(previous);
-	}
-	else
-	{
-		return_string = (char *)malloc(sizeof(char)*1);
-		return_string[0] = '\0';
-	}
-
-	if (module_name)
-	{
-		return_string = (char *)realloc(return_string,
-				sizeof(char)*(
-						 strlen(return_string)
-						+1
-						+strlen(module_name)
-						+1
-						+strlen(module_instance_name)
-						+1
-				)
-		);
-		sprintf(return_string, "%s.%s+%s", return_string, module_name, module_instance_name);
-	}
-	if (signal_name && (previous || module_name))
-	{
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+2+strlen(signal_name)+1));
-		strcat(return_string, "^");
-		strcat(return_string, signal_name);
-	}
-	else if (signal_name)
-	{
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+1+strlen(signal_name)+1));
-		strcat(return_string, signal_name);
-	}
-	if (bit != -1)
-	{
-		oassert(signal_name != NULL);
-		return_string = (char *)realloc(return_string, sizeof(char)*(strlen(return_string)+1+30+1));
-		sprintf(return_string, "%s~%ld", return_string, bit);
-	}
-
-	return_string = (char *)realloc(return_string, sizeof(char)*strlen(return_string)+1);
-	return return_string;	
+	
+	std::stringstream return_string;
+	if(previous)								 return_string << previous;
+	if(module_name) 							 return_string	<< "." << module_name << "+" << module_instance_name;
+	if(signal_name && (previous || module_name)) return_string << "^";
+	if(signal_name)								 return_string << signal_name;
+	if(bit != -1){
+		oassert(signal_name);
+		return_string	<< "~" << std::dec << bit ;
+	}								 
+	return vtr::strdup(return_string.str().c_str());	
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -246,7 +209,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 	if (!is_hex_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid hex number: %s.\n", orig_string);
 
-	char *bit_string = (char *)calloc(1,sizeof(char));
+	char *bit_string = (char *)vtr::calloc(1,sizeof(char));
 	char *string     = vtr::strdup(orig_string);
 	int   size       = strlen(string);
 
@@ -265,17 +228,17 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 		{
 			char bit = value % 2;
 			value /= 2;
-			bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+			bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 			bit_string[count++] = '0' + bit;
 			bit_string[count]   = '\0';
 		}
 	}
-	free(string);
+	vtr::free(string);
 
 	// Pad with zeros to binary_size.
 	while (count < binary_size)
 	{
-		bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+		bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 		bit_string[count++] = '0';
 		bit_string[count]   = '\0';
 	}
@@ -286,13 +249,13 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
 	return_string = vtr::strdup(bit_string);
-	free(bit_string);
+	vtr::free(bit_string);
 	
     }
     else if(is_dont_care_number == 1){
        char *string = vtr::strdup(orig_string); 
        int   size       = strlen(string); 
-       char *bit_string = (char *)calloc(1,sizeof(char));
+       char *bit_string = (char *)vtr::calloc(1,sizeof(char));
        int count = 0;
        int i;
        for (i = 0; i < size; i++)
@@ -305,17 +268,17 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 		    {
 			    //char bit = value % 2;
 			    //value /= 2;
-			    bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+			    bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 			    bit_string[count++] = string[i];
 			    bit_string[count]   = '\0';
 		    }
 	    }
 
-        free(string);
+        vtr::free(string);
 
         while (count < binary_size)
 	    {
-		    bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+		    bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 		    bit_string[count++] = '0';
 		    bit_string[count]   = '\0';
 	    }
@@ -325,7 +288,7 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
         reverse_string(bit_string, binary_size);
 
         return_string = vtr::strdup(bit_string);
-	    free(bit_string);
+	    vtr::free(bit_string);
 
         
 
@@ -350,7 +313,7 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 	if (!is_octal_string(orig_string))
 		error_message(PARSE_ERROR, -1, -1, "Invalid octal number: %s.\n", orig_string);
 
-	char *bit_string = (char *)calloc(1,sizeof(char));
+	char *bit_string = (char *)vtr::calloc(1,sizeof(char));
 	char *string     = vtr::strdup(orig_string);
 	int   size       = strlen(string);
 
@@ -369,17 +332,17 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 		{
 			char bit = value % 2;
 			value /= 2;
-			bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+			bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 			bit_string[count++] = '0' + bit;
 			bit_string[count]   = '\0';
 		}
 	}
-	free(string);
+	vtr::free(string);
 
 	// Pad with zeros to binary_size.
 	while (count < binary_size)
 	{
-		bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+		bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 		bit_string[count++] = '0';
 		bit_string[count]   = '\0';
 	}
@@ -390,7 +353,7 @@ char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_siz
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
 	char *return_string = vtr::strdup(bit_string);
-	free(bit_string);
+	vtr::free(bit_string);
 	return return_string;
 }
 
@@ -404,7 +367,7 @@ char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, cha
 		error_message(PARSE_ERROR, -1, -1, "Invalid binary number: %s.\n", orig_string);
 
 	int   count      = strlen(orig_string);
-	char *bit_string = (char *)calloc(count + 1, sizeof(char));
+	char *bit_string = (char *)vtr::calloc(count + 1, sizeof(char));
 
 	// Copy the original string into the buffer.
 	strcat(bit_string, orig_string);
@@ -415,7 +378,7 @@ char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, cha
 	// Pad with zeros to binary_size.
 	while (count < binary_size)
 	{
-		bit_string = (char *)realloc(bit_string, sizeof(char) * (count + 2));
+		bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
 		bit_string[count++] = '0';
 		bit_string[count]   = '\0';
 	}
@@ -426,7 +389,7 @@ char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, cha
 	reverse_string(bit_string, binary_size);
 	// Copy out only the bits before the truncation.
 	char *return_string = vtr::strdup(bit_string);
-	free(bit_string);
+	vtr::free(bit_string);
 	return return_string;
 }
 
@@ -541,7 +504,7 @@ int get_pin_number(char *name)
 	if (tilde) pin_number = strtol(tilde+1,NULL,10);
 	else       pin_number = -1;
 
-	free(pin_name);
+	vtr::free(pin_name);
 	return pin_number;
 }
 
@@ -609,13 +572,12 @@ char *make_simple_name(char *input, const char *flatten_string, char flatten_cha
  *-----------------------------------------------------------------*/
 void *my_malloc_struct(size_t bytes_to_alloc)
 {
-	void *allocated = NULL;
+	void *allocated = vtr::calloc(1, bytes_to_alloc);
 	static long int m_id = 0;
 
 	// ways to stop the execution at the point when a specific structure is built...note it needs to be m_id - 1 ... it's unique_id in most data structures
 	//oassert(m_id != 193);
 
-	allocated = malloc(bytes_to_alloc);
 	if(allocated == NULL)
 	{
 		fprintf(stderr,"MEMORY FAILURE\n");
@@ -623,9 +585,7 @@ void *my_malloc_struct(size_t bytes_to_alloc)
 	}
 
 	/* mark the unique_id */
-	*((long int*)allocated) = m_id;
-
-	m_id++;
+	*((long int*)allocated) = m_id++;
 
 	return allocated;
 }

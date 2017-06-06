@@ -31,6 +31,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "node_creation_library.h"
 #include "odin_util.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
+
 
 extern global_args_t global_args;
 /*---------------------------------------------------------------------------------------------
@@ -111,7 +113,7 @@ void free_nnode(nnode_t *to_free)
 		}
 		if (to_free->input_pins != NULL)
 		{
-			free(to_free->input_pins);
+			vtr::free(to_free->input_pins);
 			to_free->input_pins = NULL;
 		}
 
@@ -125,20 +127,20 @@ void free_nnode(nnode_t *to_free)
 		}
 		if (to_free->output_pins != NULL)
 		{
-			free(to_free->output_pins);
+			vtr::free(to_free->output_pins);
 			to_free->output_pins = NULL;
 		}
 
 		if (to_free->input_port_sizes != NULL)
-			free(to_free->input_port_sizes);
+			vtr::free(to_free->input_port_sizes);
 		if (to_free->output_port_sizes != NULL)
-			free(to_free->output_port_sizes);
+			vtr::free(to_free->output_port_sizes);
 
 		if (to_free->undriven_pins)
-			free(to_free->undriven_pins);
+			vtr::free(to_free->undriven_pins);
 
 		/* now free the node */
-		free(to_free);
+		vtr::free(to_free);
 	}
 }
 
@@ -156,7 +158,7 @@ void allocate_more_input_pins(nnode_t *node, int width)
 		return;
 	}
 
-	node->input_pins = (npin_t**)realloc(node->input_pins, sizeof(npin_t*)*(node->num_input_pins+width));
+	node->input_pins = (npin_t**)vtr::realloc(node->input_pins, sizeof(npin_t*)*(node->num_input_pins+width));
 	for (i = 0; i < width; i++)
 	{
 		node->input_pins[node->num_input_pins+i] = NULL;
@@ -178,7 +180,7 @@ void allocate_more_output_pins(nnode_t *node, int width)
 		return;
 	}
 
-	node->output_pins = (npin_t**)realloc(node->output_pins, sizeof(npin_t*)*(node->num_output_pins+width));
+	node->output_pins = (npin_t**)vtr::realloc(node->output_pins, sizeof(npin_t*)*(node->num_output_pins+width));
 	for (i = 0; i < width; i++)
 	{
 		node->output_pins[node->num_output_pins+i] = NULL;
@@ -191,7 +193,7 @@ void allocate_more_output_pins(nnode_t *node, int width)
  *-------------------------------------------------------------------------------------------*/
 void add_output_port_information(nnode_t *node, int port_width)
 {
-	node->output_port_sizes = (int *)realloc(node->output_port_sizes, sizeof(int)*(node->num_output_port_sizes+1));
+	node->output_port_sizes = (int *)vtr::realloc(node->output_port_sizes, sizeof(int)*(node->num_output_port_sizes+1));
 	node->output_port_sizes[node->num_output_port_sizes] = port_width;
 	node->num_output_port_sizes++;
 }
@@ -201,7 +203,7 @@ void add_output_port_information(nnode_t *node, int port_width)
  *-------------------------------------------------------------------------------------------*/
 void add_input_port_information(nnode_t *node, int port_width)
 {
-	node->input_port_sizes = (int *)realloc(node->input_port_sizes, sizeof(int)*(node->num_input_port_sizes+1));
+	node->input_port_sizes = (int *)vtr::realloc(node->input_port_sizes, sizeof(int)*(node->num_input_port_sizes+1));
 	node->input_port_sizes[node->num_input_port_sizes] = port_width;
 	node->num_input_port_sizes++;
 }
@@ -279,7 +281,7 @@ npin_t* copy_input_npin(npin_t* copy_pin)
 void free_npin(npin_t *to_free)
 {
 	if (to_free) {
-		free(to_free);
+		vtr::free(to_free);
 	}
 }
 
@@ -315,7 +317,7 @@ void free_nnet(nnet_t *to_free)
 {
 	if (to_free != NULL)
 	{
-		free(to_free);
+		vtr::free(to_free);
 	}
 }
 
@@ -384,7 +386,7 @@ void add_fanout_pin_to_net(nnet_t *net, npin_t *pin)
 	oassert(pin != NULL);
 	oassert(pin->type != OUTPUT);
 	/* assumes the pin spots have been allocated and the pin */
-	net->fanout_pins = (npin_t**)realloc(net->fanout_pins, sizeof(npin_t*)*(net->num_fanout_pins+1));
+	net->fanout_pins = (npin_t**)vtr::realloc(net->fanout_pins, sizeof(npin_t*)*(net->num_fanout_pins+1));
 	net->fanout_pins[net->num_fanout_pins] = pin;
 	net->num_fanout_pins++;
 	/* record the node and pin spot in the pin */
@@ -578,7 +580,7 @@ void connect_nodes(nnode_t *out_node, int out_idx, nnode_t *in_node, int in_idx)
 signal_list_t *init_signal_list()
 {
 	signal_list_t *list;
-	list = (signal_list_t*)malloc(sizeof(signal_list_t));
+	list = (signal_list_t*)vtr::malloc(sizeof(signal_list_t));
 
 	list->count = 0;
 	list->pins = NULL;
@@ -594,7 +596,7 @@ signal_list_t *init_signal_list()
  *-------------------------------------------------------------------------------------------*/
 void add_pin_to_signal_list(signal_list_t *list, npin_t* pin)
 {
-	list->pins = (npin_t**)realloc(list->pins, sizeof(npin_t*)*(list->count+1));
+	list->pins = (npin_t**)vtr::realloc(list->pins, sizeof(npin_t*)*(list->count+1));
 	list->pins[list->count] = pin;
 	list->count++;
 }
@@ -727,11 +729,11 @@ void free_signal_list(signal_list_t *list)
 		return;
 
 	if (list->pins != NULL)
-		free(list->pins);
+		vtr::free(list->pins);
 
 	list->count = 0;
 
-	free(list);
+	vtr::free(list);
 }
 
 /*---------------------------------------------------------------------------
@@ -964,32 +966,32 @@ void add_node_to_netlist(netlist_t *netlist, nnode_t *node, short special_node)
 	{
 		/* This is for clocks, gnd, and vcc */
 		/* store the input nodes for traversal */
-		netlist->top_input_nodes = (nnode_t**)realloc(netlist->top_input_nodes, sizeof(nnode_t*)*(netlist->num_top_input_nodes+1));
+		netlist->top_input_nodes = (nnode_t**)vtr::realloc(netlist->top_input_nodes, sizeof(nnode_t*)*(netlist->num_top_input_nodes+1));
 		netlist->top_input_nodes[netlist->num_top_input_nodes] = node;
 		netlist->num_top_input_nodes++;
 	}
 	else if (node->type == INPUT_NODE)
 	{
 		/* store the input nodes for traversal */
-		netlist->top_input_nodes = (nnode_t**)realloc(netlist->top_input_nodes, sizeof(nnode_t*)*(netlist->num_top_input_nodes+1));
+		netlist->top_input_nodes = (nnode_t**)vtr::realloc(netlist->top_input_nodes, sizeof(nnode_t*)*(netlist->num_top_input_nodes+1));
 		netlist->top_input_nodes[netlist->num_top_input_nodes] = node;
 		netlist->num_top_input_nodes++;
 	}
 	else if (node->type == OUTPUT_NODE)
 	{
-		netlist->top_output_nodes = (nnode_t**)realloc(netlist->top_output_nodes, sizeof(nnode_t*)*(netlist->num_top_output_nodes+1));
+		netlist->top_output_nodes = (nnode_t**)vtr::realloc(netlist->top_output_nodes, sizeof(nnode_t*)*(netlist->num_top_output_nodes+1));
 		netlist->top_output_nodes[netlist->num_top_output_nodes] = node;
 		netlist->num_top_output_nodes++;
 	}
 	else if (node->type == FF_NODE)
 	{
-		netlist->ff_nodes = (nnode_t**)realloc(netlist->ff_nodes, sizeof(nnode_t*)*(netlist->num_ff_nodes+1));
+		netlist->ff_nodes = (nnode_t**)vtr::realloc(netlist->ff_nodes, sizeof(nnode_t*)*(netlist->num_ff_nodes+1));
 		netlist->ff_nodes[netlist->num_ff_nodes] = node;
 		netlist->num_ff_nodes++;
 	}
 	else
 	{
-		netlist->internal_nodes = (nnode_t**)realloc(netlist->internal_nodes, sizeof(nnode_t*)*(netlist->num_internal_nodes+1));
+		netlist->internal_nodes = (nnode_t**)vtr::realloc(netlist->internal_nodes, sizeof(nnode_t*)*(netlist->num_internal_nodes+1));
 		netlist->internal_nodes[netlist->num_internal_nodes] = node;
 		netlist->num_internal_nodes++;
 	}
@@ -1016,7 +1018,7 @@ mark_clock_node (
 	clock_net = (nnet_t*)netlist->nets_sc->data[sc_spot];
 	clock_node = clock_net->driver_pin->node;
 
-	netlist->clocks = (nnode_t**)realloc(netlist->clocks, sizeof(nnode_t*)*(netlist->num_clocks+1));
+	netlist->clocks = (nnode_t**)vtr::realloc(netlist->clocks, sizeof(nnode_t*)*(netlist->num_clocks+1));
 	netlist->clocks[netlist->num_clocks] = clock_node;
 	netlist->num_clocks++;
 

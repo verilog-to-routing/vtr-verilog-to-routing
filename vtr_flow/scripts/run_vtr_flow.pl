@@ -118,6 +118,7 @@ my $valgrind 		    = 0;
 my @valgrind_args	    = ("--leak-check=full", "--errors-for-leak-kinds=none", "--error-exitcode=1");
 my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
+my $verify_rr_graph         = 0;
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -212,6 +213,9 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-min_hard_adder_size" ) {
 		$min_hard_adder_size = shift(@ARGV);
 	}
+        elsif ( $token eq "-verify_rr_graph" ){
+                $verify_rr_graph = 1;
+        }
     # else forward the argument
 	else {
         push @forwarded_vpr_args, $token;
@@ -665,17 +669,83 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		if (-e $pad_file_path){
 			push( @vpr_args, "-fix_pins" );				  
 			push( @vpr_args, "$pad_file_path");
-		}
+		}        
+                if ($verify_rr_graph){
+			push( @vpr_args, "-write_rr_graph" );				  
+			push( @vpr_args, 'RR_graph_result.xml');
+
+                }
 		push( @vpr_args, "$switch_usage_analysis");
 		push( @vpr_args, @forwarded_vpr_args);
 		push( @vpr_args, $specific_vpr_stage);
 
-
-		$q = &system_with_timeout(
+                if ($verify_rr_graph){
+                    $q = &system_with_timeout(
+			$vpr_path,                    "vpr_write_rr_graph.out",
+			$timeout,                     $temp_dir,
+			@vpr_args
+                    );
+                }
+                else{
+                    $q = &system_with_timeout(
 			$vpr_path,                    "vpr.out",
 			$timeout,                     $temp_dir,
 			@vpr_args
-		);
+                    );
+                }   
+
+
+                #run vpr again with the generated rr graph
+                if ($verify_rr_graph){
+                    # move the most recent necessary result files to temp directory for specific vpr stage
+                    if ($specific_vpr_stage eq "--place" or $specific_vpr_stage eq "--route") {
+                        my $found_prev = &find_and_move_newest("$benchmark_name", "net");
+                        if ($found_prev and $specific_vpr_stage eq "--route") {
+                         &find_and_move_newest("$benchmark_name", "place");
+                        }
+                  }
+                        my @vpr_args;
+            		push( @vpr_args, $architecture_file_name );
+                    	push( @vpr_args, "$benchmark_name" );
+            		push( @vpr_args, "--blif_file"	);
+                	push( @vpr_args, "$prevpr_output_file_name");
+                        push( @vpr_args, "--timing_analysis" );   
+        		push( @vpr_args, "$timing_driven");
+        		push( @vpr_args, "--timing_driven_clustering" );
+        		push( @vpr_args, "$timing_driven");
+        		push( @vpr_args, "--route_chan_width" );   
+        		push( @vpr_args, "$min_chan_width" );
+        		push( @vpr_args, "--max_router_iterations" );
+        		push( @vpr_args, "$max_router_iterations");
+        		push( @vpr_args, "--cluster_seed_type" );       
+        		push( @vpr_args, "$vpr_cluster_seed_type");
+        		push( @vpr_args, @vpr_power_args);
+        		push( @vpr_args, "--gen_postsynthesis_netlist" );
+        		push( @vpr_args, "$gen_postsynthesis_netlist");
+        		if (-e $sdc_file_path){
+                            push( @vpr_args, "--sdc_file" );				  
+                            push( @vpr_args, "$sdc_file_path");
+        		}
+        		if (-e $pad_file_path){
+                            push( @vpr_args, "-fix_pins" );				  
+                            push( @vpr_args, "$pad_file_path");
+                        }        
+                        if ($verify_rr_graph){
+                            push( @vpr_args, "-read_rr_graph" );				  
+                            push( @vpr_args, 'RR_graph_result.xml');
+
+                        }
+                        push( @vpr_args, "$switch_usage_analysis");
+                        push( @vpr_args, @forwarded_vpr_args);
+                        push( @vpr_args, $specific_vpr_stage);
+
+
+                        $q = &system_with_timeout(
+                                $vpr_path,                    "vpr_read_in.out",
+                                $timeout,                     $temp_dir,
+                                @vpr_args
+                        );
+                }
 	}
 	
 	#Removed check for existing vpr_route_output_path in order to pass when routing is turned off (only pack/place)			

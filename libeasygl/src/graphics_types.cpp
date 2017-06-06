@@ -5,7 +5,7 @@
 using namespace std;
 
 // Predefined colours
-const vector<t_color> t_color::predef_colors = {
+const std::array<t_color,29> t_color::predef_colors = {
     t_color(0xFF, 0xFF, 0xFF), // "white"
     t_color(0x00, 0x00, 0x00), // "black"
     t_color(0x8C, 0x8C, 0x8C), // "grey55"

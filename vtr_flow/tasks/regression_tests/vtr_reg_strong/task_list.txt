@@ -18,3 +18,4 @@ regression_tests/vtr_reg_strong/strong_manual_annealing
 regression_tests/vtr_reg_strong/strong_pack
 regression_tests/vtr_reg_strong/strong_pack_and_place
 regression_tests/vtr_reg_strong/strong_fc_abs
+regression_tests/vtr_reg_strong/strong_verify_rr_graph

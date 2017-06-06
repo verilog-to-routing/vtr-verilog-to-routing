@@ -1315,8 +1315,6 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                 auto iter = expected_lowest_cost_pb_gnode.find(blk_id);
                                 VTR_ASSERT(iter != expected_lowest_cost_pb_gnode.end());
 
-                                from_pb_graph_pin = get_pb_graph_node_pin_from_model_port_pin(model_port, k, 
-                                                        iter->second);
                                 timing_ctx.tnodes[inode + 1].type = TN_CLOCK_SOURCE;
                                 timing_ctx.tnodes[inode + 1].block = OPEN;
                                 timing_ctx.tnodes[inode + 1].num_edges = 1;

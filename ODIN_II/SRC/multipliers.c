@@ -34,7 +34,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "errors.h"
 #include "adders.h"
 #include "print_tags.h"
-
+#include "vtr_memory.h"
 #include "vtr_list.h"
 
 using vtr::t_linked_vptr;
@@ -102,16 +102,16 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 	multiplicand_offset_index = width_a;
 	multiplier_offset_index = 0;
 
-	adders_for_partial_products = (nnode_t**)malloc(sizeof(nnode_t*)*multiplicand_width-1);
+	adders_for_partial_products = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*multiplicand_width-1);
 
 	/* need to generate partial products for each bit in width B. */
-	partial_products = (nnode_t***)malloc(sizeof(nnode_t**)*multiplicand_width);
+	partial_products = (nnode_t***)vtr::malloc(sizeof(nnode_t**)*multiplicand_width);
 
 	/* generate the AND partial products */
 	for (i = 0; i < multiplicand_width; i++)
 	{
 		/* create the memory for each AND gate needed for the levels of partial products */
-		partial_products[i] = (nnode_t**)malloc(sizeof(nnode_t*)*multiplier_width);
+		partial_products[i] = (nnode_t**)vtr::malloc(sizeof(nnode_t*)*multiplier_width);
 		
 		if (i < multiplicand_width - 1)
 		{
@@ -234,7 +234,7 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 	/* Cleanup everything */
 	if (adders_for_partial_products != NULL)
 	{
-		free(adders_for_partial_products);
+		vtr::free(adders_for_partial_products);
 	}
 	/* generate the AND partial products */
 	for (i = 0; i < multiplicand_width; i++)
@@ -242,12 +242,12 @@ void instantiate_simple_soft_multiplier(nnode_t *node, short mark, netlist_t *ne
 		/* create the memory for each AND gate needed for the levels of partial products */
 		if (partial_products[i] != NULL)
 		{
-			free(partial_products[i]);
+			vtr::free(partial_products[i]);
 		}
 	}
 	if (partial_products != NULL)
 	{
-		free(partial_products);
+		vtr::free(partial_products);
 	}
 }
 
@@ -260,7 +260,7 @@ void init_mult_distribution()
 	int i, j;
 
 	oassert(hard_multipliers != NULL);
-	mults = (int *)malloc(sizeof(int) * (hard_multipliers->inputs->size + 1) * (1 + hard_multipliers->inputs->next->size));
+	mults = (int *)vtr::malloc(sizeof(int) * (hard_multipliers->inputs->size + 1) * (1 + hard_multipliers->inputs->next->size));
 	for (i = 0; i <= hard_multipliers->inputs->size; i++)
 		for (j = 0; j <= hard_multipliers->inputs->next->size; j++)
 			mults[i * hard_multipliers->inputs->size + j] = 0;
@@ -368,7 +368,7 @@ void declare_hard_multiplier(nnode_t *node)
 	}
 
 	/* Does not exist - must create an instance */
-	tmp = (t_multiplier *)malloc(sizeof(t_multiplier));
+	tmp = (t_multiplier *)vtr::malloc(sizeof(t_multiplier));
 	tmp->next = (t_multiplier *)hard_multipliers->instances;
 	hard_multipliers->instances = tmp;
 	tmp->size_a = width_a;
@@ -390,7 +390,7 @@ void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlis
 	/* Need to give node proper name */
 	len = strlen(node->name);
 	len = len + 20; /* 20 chars should hold mul specs */
-	new_name = (char*)malloc(len);
+	new_name = (char*)vtr::malloc(len);
 
 	/* wide input first :) */
 	if (node->input_port_sizes[0] > node->input_port_sizes[1])
@@ -406,14 +406,14 @@ void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlis
 	{
 		if (node->output_pins[i]->name)
 		{
-			free(node->output_pins[i]->name);
+			vtr::free(node->output_pins[i]->name);
 		}
 		len = strlen(node->name) + 6; /* 6 chars for pin idx */
-		new_name = (char*)malloc(len);
+		new_name = (char*)vtr::malloc(len);
 		sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
 		node->output_pins[i]->name = new_name;
 	}
-	free(node->name);
+	vtr::free(node->name);
 	node->name = new_name;
 	node->traverse_visited = mark;
 	return;
@@ -611,16 +611,16 @@ void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int off
 
 	/* Set new port sizes and parameters */
 	ptr->num_input_port_sizes = 2;
-	ptr->input_port_sizes = (int *)malloc(2 * sizeof(int));
+	ptr->input_port_sizes = (int *)vtr::malloc(2 * sizeof(int));
 	ptr->input_port_sizes[0] = a;
 	ptr->input_port_sizes[1] = b;
 	ptr->num_output_port_sizes = 1;
-	ptr->output_port_sizes = (int *)malloc(sizeof(int));
+	ptr->output_port_sizes = (int *)vtr::malloc(sizeof(int));
 	ptr->output_port_sizes[0] = a + b;
 
 	/* Set the number of pins and re-locate previous pin entries */
 	ptr->num_input_pins = a + b;
-	ptr->input_pins = (npin_t**)malloc(sizeof(void *) * (a + b));
+	ptr->input_pins = (npin_t**)vtr::malloc(sizeof(void *) * (a + b));
 	for (i = 0; i < a; i++)
 	{
 		ptr->input_pins[i] = node->input_pins[i+offa];
@@ -634,7 +634,7 @@ void init_split_multiplier(nnode_t *node, nnode_t *ptr, int offa, int a, int off
 
 	/* Prep output pins for connecting to cascaded multipliers */
 	ptr->num_output_pins = a + b;
-	ptr->output_pins = (npin_t**)malloc(sizeof(void *) * (a + b));
+	ptr->output_pins = (npin_t**)vtr::malloc(sizeof(void *) * (a + b));
 	for (i = 0; i < a + b; i++)
 		ptr->output_pins[i] = NULL;
 
@@ -662,23 +662,23 @@ void init_cascade_adder(nnode_t *node, nnode_t *a, int b)
 
 	/* Set new port sizes and parameters */
 	node->num_input_port_sizes = 2;
-	node->input_port_sizes = (int *)malloc(2 * sizeof(int));
+	node->input_port_sizes = (int *)vtr::malloc(2 * sizeof(int));
 	node->input_port_sizes[0] = a->output_port_sizes[0];
 	node->input_port_sizes[1] = b;
 	node->num_output_port_sizes = 1;
-	node->output_port_sizes = (int *)malloc(sizeof(int));
+	node->output_port_sizes = (int *)vtr::malloc(sizeof(int));
 	node->output_port_sizes[0] = size;
 
 	/* Set the number of input pins and clear pin entries */
 	node->num_input_pins = a->output_port_sizes[0] + b;
-	node->input_pins = (npin_t**)malloc(sizeof(void *) * 
+	node->input_pins = (npin_t**)vtr::malloc(sizeof(void *) * 
 		(a->output_port_sizes[0] + b));
 	for (i = 0; i < a->output_port_sizes[0] + b; i++)
 		node->input_pins[i] = NULL;
 
 	/* Set the number of output pins and clear pin entries */
 	node->num_output_pins = size;
-	node->output_pins = (npin_t**)malloc(sizeof(void *) * size);
+	node->output_pins = (npin_t**)vtr::malloc(sizeof(void *) * size);
 	for (i = 0; i < size; i++)
 		node->output_pins[i] = NULL;
 
@@ -722,7 +722,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 	
 	/* New node for small multiply */
 	a0b0 = allocate_nnode();
-	a0b0->name = (char *)malloc(strlen(node->name) + 3);
+	a0b0->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a0b0->name, node->name);
 	strcat(a0b0->name, "-0");
 	init_split_multiplier(node, a0b0, 0, a0, 0, b0);
@@ -730,7 +730,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 
 	/* New node for big multiply */
 	a1b1 = allocate_nnode();
-	a1b1->name = (char *)malloc(strlen(node->name) + 3);
+	a1b1->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a1b1->name, node->name);
 	strcat(a1b1->name, "-3");
 	init_split_multiplier(node, a1b1, a0, a1, b0, b1);
@@ -738,7 +738,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 
 	/* New node for 2nd multiply */
 	a0b1 = allocate_nnode();
-	a0b1->name = (char *)malloc(strlen(node->name) + 3);
+	a0b1->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a0b1->name, node->name);
 	strcat(a0b1->name, "-1");
 	init_split_multiplier(node, a0b1, 0, a0, b0, b1);
@@ -746,7 +746,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 
 	/* New node for 3rd multiply */
 	a1b0 = allocate_nnode();
-	a1b0->name = (char *)malloc(strlen(node->name) + 3);
+	a1b0->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a1b0->name, node->name);
 	strcat(a1b0->name, "-2");
 	init_split_multiplier(node, a1b0, a0, a1, 0, b0);
@@ -754,14 +754,14 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 
 	/* New node for the initial add */
 	addsmall = allocate_nnode();
-	addsmall->name = (char *)malloc(strlen(node->name) + 6);
+	addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
 	init_cascade_adder(addsmall, a1b0, a0b1->output_port_sizes[0]);
 	
 	/* New node for the BIG add */
 	addbig = allocate_nnode();
-	addbig->name = (char *)malloc(strlen(node->name) + 6);
+	addbig->name = (char *)vtr::malloc(strlen(node->name) + 6);
 	strcpy(addbig->name, node->name);
 	strcat(addbig->name, "-add1");
 	init_cascade_adder(addbig, addsmall,
@@ -788,14 +788,14 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1)
 		remap_pin_to_new_node(node->output_pins[i], addbig, i);
 
 	/* Probably more to do here in freeing the old node! */
-	free(node->name);
-	free(node->input_port_sizes);
-	free(node->output_port_sizes);
+	vtr::free(node->name);
+	vtr::free(node->input_port_sizes);
+	vtr::free(node->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	free(node->input_pins); 
-	free(node->output_pins); 
-	free(node);
+	vtr::free(node->input_pins); 
+	vtr::free(node->output_pins); 
+	vtr::free(node);
 
 	return;
 }
@@ -828,7 +828,7 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 	
 	/* New node for a0b multiply */
 	a0b = allocate_nnode();
-	a0b->name = (char *)malloc(strlen(node->name) + 3);
+	a0b->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a0b->name, node->name);
 	strcat(a0b->name, "-0");
 	init_split_multiplier(node, a0b, 0, a0, 0, b);
@@ -836,7 +836,7 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 
 	/* New node for a1b multiply */
 	a1b = allocate_nnode();
-	a1b->name = (char *)malloc(strlen(node->name) + 3);
+	a1b->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(a1b->name, node->name);
 	strcat(a1b->name, "-1");
 	init_split_multiplier(node, a1b, a0, a1, 0, b);
@@ -844,7 +844,7 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 
 	/* New node for the add */
 	addsmall = allocate_nnode();
-	addsmall->name = (char *)malloc(strlen(node->name) + 6);
+	addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
 	init_cascade_adder(addsmall, a1b, a1 + b);
@@ -865,14 +865,14 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
 		remap_pin_to_new_node(node->output_pins[i], addsmall, i-a0);
 
 	/* Probably more to do here in freeing the old node! */
-	free(node->name);
-	free(node->input_port_sizes);
-	free(node->output_port_sizes);
+	vtr::free(node->name);
+	vtr::free(node->input_port_sizes);
+	vtr::free(node->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	free(node->input_pins); 
-	free(node->output_pins); 
-	free(node);
+	vtr::free(node->input_pins); 
+	vtr::free(node->output_pins); 
+	vtr::free(node);
 	return;
 }
 
@@ -904,7 +904,7 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 	
 	/* New node for ab0 multiply */
 	ab0 = allocate_nnode();
-	ab0->name = (char *)malloc(strlen(node->name) + 3);
+	ab0->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(ab0->name, node->name);
 	strcat(ab0->name, "-0");
 	init_split_multiplier(node, ab0, 0, a, 0, b0);
@@ -912,7 +912,7 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 
 	/* New node for ab1 multiply */
 	ab1 = allocate_nnode();
-	ab1->name = (char *)malloc(strlen(node->name) + 3);
+	ab1->name = (char *)vtr::malloc(strlen(node->name) + 3);
 	strcpy(ab1->name, node->name);
 	strcat(ab1->name, "-1");
 	init_split_multiplier(node, ab1, 0, a, b0, b1);
@@ -920,7 +920,7 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 
 	/* New node for the add */
 	addsmall = allocate_nnode();
-	addsmall->name = (char *)malloc(strlen(node->name) + 6);
+	addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
 	strcpy(addsmall->name, node->name);
 	strcat(addsmall->name, "-add0");
 	init_cascade_adder(addsmall, ab1, a + b1);
@@ -941,14 +941,14 @@ void split_multiplier_b(nnode_t *node, int a, int b1, int b0)
 		remap_pin_to_new_node(node->output_pins[i], addsmall, i-b0);
 
 	/* Probably more to do here in freeing the old node! */
-	free(node->name);
-	free(node->input_port_sizes);
-	free(node->output_port_sizes);
+	vtr::free(node->name);
+	vtr::free(node->input_port_sizes);
+	vtr::free(node->output_port_sizes);
 
 	/* Free arrays NOT the pins since relocated! */
-	free(node->input_pins); 
-	free(node->output_pins); 
-	free(node);
+	vtr::free(node->input_pins); 
+	vtr::free(node->output_pins); 
+	vtr::free(node);
 	return;
 }
 

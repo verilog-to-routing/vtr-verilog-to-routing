@@ -25,6 +25,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include "hashtable.h"
 #include "types.h"
+#include "vtr_memory.h"
 
 void         ___hashtable_add                (hashtable_t *h, const void *key, size_t key_length, void *item);
 void*        ___hashtable_remove             (hashtable_t *h, const void *key, size_t key_length);
@@ -47,7 +48,7 @@ hashtable_t* create_hashtable(int store_size)
 	hashtable_t *h = (hashtable_t *)malloc(sizeof(hashtable_t));
 	
 	h->store_size = store_size; 
-	h->store = (hashtable_node_t **)calloc(store_size, sizeof(hashtable_node_t*)); 
+	h->store = (hashtable_node_t **)vtr::calloc(store_size, sizeof(hashtable_node_t*)); 
 	h->count = 0;
 
 	h->add                = ___hashtable_add;
@@ -70,13 +71,13 @@ void ___hashtable_destroy(hashtable_t *h)
 		while((node = h->store[i]))
 		{
 			h->store[i] = node->next; 
-			free(node->key);
-			free(node); 
+			vtr::free(node->key);
+			vtr::free(node); 
 			h->count--; 
 		}
 	} 
-	free(h->store);
-	free(h);
+	vtr::free(h->store);
+	vtr::free(h);
 }
 
 void ___hashtable_destroy_free_items(hashtable_t *h)
@@ -87,15 +88,15 @@ void ___hashtable_destroy_free_items(hashtable_t *h)
 		hashtable_node_t* node;
 		while((node = h->store[i]))
 		{
-			free(node->item);
+			vtr::free(node->item);
 			h->store[i] = node->next;
-			free(node->key);
-			free(node);
+			vtr::free(node->key);
+			vtr::free(node);
 			h->count--;
 		}
 	}
-	free(h->store);
-	free(h);
+	vtr::free(h->store);
+	vtr::free(h);
 }
 
 void  ___hashtable_add(hashtable_t *h, const void *key, size_t key_length, void *item)
@@ -137,8 +138,8 @@ void* ___hashtable_remove(hashtable_t *h, const void *key, size_t key_length)
 	{
 		item = node->item; 
 		*node_location = node->next;
-		free(node->key);
-		free(node); 		 
+		vtr::free(node->key);
+		vtr::free(node); 		 
 		h->count--; 
 	}
 	

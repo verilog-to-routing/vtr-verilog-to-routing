@@ -86,6 +86,7 @@ t_TokenPair g_OptionBaseTokenList[] = {
 		{ "dump_rr_structs_file", OT_DUMP_RR_STRUCTS_FILE },
 		{ "analysis", OT_ANALYSIS }, 
 		{ "write_rr_graph", OT_WRITE_RR_GRAPH }, 
+                { "read_rr_graph", OT_READ_RR_GRAPH},
 		{ NULL, OT_BASE_UNKNOWN } /* End of list marker */
 };
 

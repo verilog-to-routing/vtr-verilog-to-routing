@@ -1116,7 +1116,7 @@ std::regex glob_pattern_to_regex(const std::string& glob_pattern) {
     //
     //To convert a glob to a regex we need to:
     //   Convert '.' to "\.", so literal '.' in glob is treated as literal in the regex
-    //   Convert '*' to ".*" so literal '*' in regex matches any sequence
+    //   Convert '*' to ".*" so literal '*' in glob matches any sequence
 
     std::string regex_str = vtr::replace_all(glob_pattern, ".", "\\.");
     regex_str = vtr::replace_all(regex_str, "*", ".*");

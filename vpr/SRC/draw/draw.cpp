@@ -1694,7 +1694,6 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 				if (tptr == NULL)
 					break;
 				inode = tptr->index;
-				rr_type = device_ctx.rr_nodes[inode].type();
                 rr_nodes_to_draw.push_back(inode);
 
 			}

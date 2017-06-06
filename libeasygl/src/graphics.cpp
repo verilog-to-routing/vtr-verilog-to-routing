@@ -534,7 +534,7 @@ static void unmap_button(int bnum);
 
 static bool is_droppable_event(
 #ifdef X11
-    XEvent* event
+    const XEvent* event
 #elif defined WIN32
     MSG* message
 #endif
@@ -555,7 +555,7 @@ static void x11_event_loop(void (*act_on_mousebutton)
     void (*act_on_keypress)(char key_pressed, int keysym),
     void (*drawscreen) (void));
 
-static bool x11_drop_redundant_panning (XEvent report, 
+static bool x11_drop_redundant_panning (const XEvent& report, 
                unsigned int& last_skipped_button_press_button);
 static void x11_redraw_all_if_needed (void (*drawscreen) (void));
 static Bool x11_test_if_exposed(Display *disp, XEvent *event_ptr,
@@ -568,8 +568,8 @@ static void x11_turn_on_off(int pressed);
 static void x11_drawmenu(void);
 static void menutext(XftDraw* draw, int xc, int yc, const char *text);
 
-static void x11_handle_expose(XEvent report, void (*drawscreen) (void));
-static void x11_handle_configure_notify(XEvent report, void (*drawscreen) (void));
+static void x11_handle_expose(const XEvent& report, void (*drawscreen) (void));
+static void x11_handle_configure_notify(const XEvent& report, void (*drawscreen) (void));
 static void x11_handle_button_info(t_event_buttonPressed *button_info,
     int buttonNumber, int Xbutton_state);
 
@@ -1500,7 +1500,7 @@ update_ps_transform(void) {
 
 static bool is_droppable_event(
 #ifdef X11
-    XEvent* event
+    const XEvent* event
 #elif defined WIN32
     MSG* message
 #endif
@@ -3889,7 +3889,7 @@ x11_event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPresse
 // If this routine returns true, the event loop should drop an event (not 
 // process the event passed into this routine). If this routine returns false,
 // the calling routine should process the event in report.
-static bool x11_drop_redundant_panning (XEvent report, 
+static bool x11_drop_redundant_panning (const XEvent& report, 
                unsigned int& last_skipped_button_press_button) {
     
    if (is_droppable_event(&report) && XQLength(x11_state.display) > 0) {
@@ -4167,7 +4167,7 @@ static void x11_drawmenu(void) {
     }
 }
 
-static void x11_handle_expose(XEvent report, void (*drawscreen) (void)) {
+static void x11_handle_expose(const XEvent& report, void (*drawscreen) (void)) {
 #ifdef VERBOSE
     printf("Got an expose event.\n");
     printf("Count is: %d.\n", report.xexpose.count);
@@ -4230,7 +4230,7 @@ static void x11_redraw_all_if_needed (void (*drawscreen) (void)) {
 }
 
 
-static void x11_handle_configure_notify(XEvent report, void (*drawscreen) (void)) {
+static void x11_handle_configure_notify(const XEvent& report, void (*drawscreen) (void)) {
     trans_coord.top_width = report.xconfigure.width;
     trans_coord.top_height = report.xconfigure.height;
     update_transform();
@@ -4265,11 +4265,11 @@ static unsigned long x11_convert_to_xcolor (t_color rgb_color) {
     uint_fast8_t red = rgb_color.red;
     uint_fast8_t green = rgb_color.green;
     uint_fast8_t blue = rgb_color.blue;
-    int cmp_bits = x11_state.visual_info.bits_per_rgb;
+    unsigned cmp_bits = x11_state.visual_info.bits_per_rgb;
     
-    xcolor |= (red << 2 * cmp_bits | red << cmp_bits | red) & x11_state.visual_info.red_mask;
-    xcolor |= (green << 2 * cmp_bits | green << cmp_bits | green) & x11_state.visual_info.green_mask;
-    xcolor |= (blue << 2 * cmp_bits | blue << cmp_bits | blue) & x11_state.visual_info.blue_mask;
+    xcolor |= (red << 2u * cmp_bits | red << cmp_bits | red) & x11_state.visual_info.red_mask;
+    xcolor |= (green << 2u * cmp_bits | green << cmp_bits | green) & x11_state.visual_info.green_mask;
+    xcolor |= (blue << 2u * cmp_bits | blue << cmp_bits | blue) & x11_state.visual_info.blue_mask;
     
     return (xcolor);
 }

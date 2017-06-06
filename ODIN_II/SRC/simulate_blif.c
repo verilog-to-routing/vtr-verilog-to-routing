@@ -23,6 +23,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "simulate_blif.h"
 #include "math.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
+#include <string>
+#include <sstream>
 
 #ifndef max
 #define max(a,b) (((a) > (b))? (a) : (b))
@@ -90,6 +93,8 @@ void simulate_netlist(netlist_t *netlist)
 		// Passed via the -g option.
 		num_vectors = global_args.sim_num_test_vectors;
 		printf("Simulating %d new vectors.\n", num_vectors); fflush(stdout);
+		
+		srand(global_args.sim_random_seed);
 	}
 
 	// Setup data structures for activity estimation
@@ -387,19 +392,19 @@ stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, line
 				queue->add(queue,node2);
 			}
 		}
-		free(children);
+		vtr::free(children);
 
 		node->in_queue = FALSE;
 
 		// Add the node to the ordered nodes array.
-		ordered_nodes = (nnode_t **)realloc(ordered_nodes, sizeof(nnode_t *) * (num_ordered_nodes + 1));
+		ordered_nodes = (nnode_t **)vtr::realloc(ordered_nodes, sizeof(nnode_t *) * (num_ordered_nodes + 1));
 		ordered_nodes[num_ordered_nodes++] = node;
 	}
 	queue->destroy(queue);
 
 	// Reorganise the ordered nodes into stages for parallel computation.
 	stages_t *s = stage_ordered_nodes(ordered_nodes, num_ordered_nodes);
-	free(ordered_nodes);
+	vtr::free(ordered_nodes);
 
 	return s;
 }
@@ -408,10 +413,10 @@ stages_t *simulate_first_cycle(netlist_t *netlist, int cycle, pin_names *p, line
  * Puts the ordered nodes in stages, each of which can be computed in parallel.
  */
 stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
-	stages_t *s = (stages_t *)malloc(sizeof(stages_t));
-	s->stages = (nnode_t ***)calloc(1,sizeof(nnode_t**));
-	s->counts = (int *)calloc(1,sizeof(int));
-	s->num_children = (int *)calloc(1,sizeof(int));
+	stages_t *s = (stages_t *)vtr::malloc(sizeof(stages_t));
+	s->stages = (nnode_t ***)vtr::calloc(1,sizeof(nnode_t**));
+	s->counts = (int *)vtr::calloc(1,sizeof(int));
+	s->num_children = (int *)vtr::calloc(1,sizeof(int));
 	s->count  = 1;
 	s->num_connections = 0;
 	s->num_nodes = num_ordered_nodes;
@@ -447,9 +452,9 @@ stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
 		// Start a new stage if this node is related to any node in the current stage.
 		if (is_child_of_stage || is_stage_child_of)
 		{
-			s->stages       = (nnode_t ***)realloc(s->stages, sizeof(nnode_t**) * (s->count+1));
-			s->counts       = (int *)realloc(s->counts, sizeof(int)       * (s->count+1));
-			s->num_children = (int *)realloc(s->num_children, sizeof(int) * (s->count+1));
+			s->stages       = (nnode_t ***)vtr::realloc(s->stages, sizeof(nnode_t**) * (s->count+1));
+			s->counts       = (int *)vtr::realloc(s->counts, sizeof(int)       * (s->count+1));
+			s->num_children = (int *)vtr::realloc(s->num_children, sizeof(int) * (s->count+1));
 			stage = s->count++;
 			s->stages[stage] = 0;
 			s->counts[stage] = 0;
@@ -463,7 +468,7 @@ stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
 		}
 
 		// Add the node to the current stage.
-		s->stages[stage] = (nnode_t **)realloc(s->stages[stage],sizeof(nnode_t*) * (s->counts[stage]+1));
+		s->stages[stage] = (nnode_t **)vtr::realloc(s->stages[stage],sizeof(nnode_t*) * (s->counts[stage]+1));
 		s->stages[stage][s->counts[stage]++] = node;
 
 		// Index the node.
@@ -478,13 +483,13 @@ stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_nodes) {
 
 		s->num_children[stage] += num_children;
 
-		free(children);
+		vtr::free(children);
 	}
 	stage_children->destroy(stage_children);
 	stage_nodes   ->destroy(stage_nodes);
 
-	s->sequential_times = (double *)calloc(s->count, sizeof(double));
-	s->parallel_times   = (double *)calloc(s->count, sizeof(double));
+	s->sequential_times = (double *)vtr::calloc(s->count, sizeof(double));
+	s->parallel_times   = (double *)vtr::calloc(s->count, sizeof(double));
 
 	return s;
 }
@@ -891,7 +896,7 @@ void flag_undriven_input_pins(nnode_t *node)
 
 			if (!already_flagged)
 			{
-				node->undriven_pins = (npin_t **)realloc(node->undriven_pins, sizeof(npin_t *) * (node->num_undriven_pins + 1));
+				node->undriven_pins = (npin_t **)vtr::realloc(node->undriven_pins, sizeof(npin_t *) * (node->num_undriven_pins + 1));
 				node->undriven_pins[node->num_undriven_pins++] = pin;
 
 				warning_message(SIMULATION_ERROR,0,-1,"A node (%s) has an undriven input pin.", node->name);
@@ -1079,9 +1084,9 @@ nnode_t **get_children_of(nnode_t *node, int *num_children)
 						net->driver_pin->unique_id
 				);
 
-				free(net_name);
-				free(pin_name);
-				free(node_name);
+				vtr::free(net_name);
+				vtr::free(pin_name);
+				vtr::free(node_name);
 			}
 
 			int j;
@@ -1112,7 +1117,7 @@ nnode_t **get_children_of(nnode_t *node, int *num_children)
 					else
 					{
 						// Add child.
-						children = (nnode_t **)realloc(children, sizeof(nnode_t*) * (count + 1));
+						children = (nnode_t **)vtr::realloc(children, sizeof(nnode_t*) * (count + 1));
 						children[count++] = child_node;
 					}
 				}
@@ -1162,9 +1167,9 @@ int *get_children_pinnumber_of(nnode_t *node, int *num_children)
 						net->driver_pin->unique_id
 				);
 
-				free(net_name);
-				free(pin_name);
-				free(node_name);
+				vtr::free(net_name);
+				vtr::free(pin_name);
+				vtr::free(node_name);
 			}
 
 			int j;
@@ -1195,7 +1200,7 @@ int *get_children_pinnumber_of(nnode_t *node, int *num_children)
 					else
 					{
 						// Add child.
-						pin_numbers = (int *)realloc(pin_numbers, sizeof(int) * (count + 1));
+						pin_numbers = (int *)vtr::realloc(pin_numbers, sizeof(int) * (count + 1));
 						pin_numbers[count++] = i;
 					}
 				}
@@ -1249,9 +1254,9 @@ nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_p
 					net->driver_pin->unique_id
 			);
 
-			free(net_name);
-			free(pin_name);
-			free(node_name);
+			vtr::free(net_name);
+			vtr::free(pin_name);
+			vtr::free(node_name);
 		}
 
 		int j;
@@ -1282,7 +1287,7 @@ nnode_t **get_children_of_nodepin(nnode_t *node, int *num_children, int output_p
 				else
 				{
 					// Add child.
-					children = (nnode_t **)realloc(children, sizeof(nnode_t*) * (count + 1));
+					children = (nnode_t **)vtr::realloc(children, sizeof(nnode_t*) * (count + 1));
 					children[count++] = child_node;
 				}
 			}
@@ -1400,8 +1405,8 @@ void initialize_pin(npin_t *pin)
 	}
 	else
 	{
-		pin->values = (signed char *)malloc(SIM_WAVE_LENGTH * sizeof(signed char));
-		pin->cycle  = (int *)malloc(sizeof(int));
+		pin->values = (signed char *)vtr::malloc(SIM_WAVE_LENGTH * sizeof(signed char));
+		pin->cycle  = (int *)vtr::malloc(sizeof(int));
 	}
 
 	int i;
@@ -1543,18 +1548,18 @@ void compute_hard_ip_node(nnode_t *node, int cycle)
 	oassert(node->input_port_sizes[0] > 0);
 	oassert(node->output_port_sizes[0] > 0);
 
-	int *input_pins = (int *)malloc(sizeof(int)*node->num_input_pins);
-	int *output_pins = (int *)malloc(sizeof(int)*node->num_output_pins);
+	int *input_pins = (int *)vtr::malloc(sizeof(int)*node->num_input_pins);
+	int *output_pins = (int *)vtr::malloc(sizeof(int)*node->num_output_pins);
 
 	if (!node->simulate_block_cycle)
 	{
-		char *filename = (char *)malloc(sizeof(char)*strlen(node->name));
+		char *filename = (char *)vtr::malloc(sizeof(char)*strlen(node->name));
 
-		if (!strchr(node->name, '.'))
+		if (!index(node->name, '.'))
 			error_message(SIMULATION_ERROR, 0, -1,
 					"Couldn't extract the name of a shared library for hard-block simulation");
 
-		snprintf(filename, sizeof(char)*strlen(node->name), "%s.so", strchr(node->name, '.')+1);
+		snprintf(filename, sizeof(char)*strlen(node->name), "%s.so", index(node->name, '.')+1);
 
 		void *handle = dlopen(filename, RTLD_LAZY);
 
@@ -1574,7 +1579,7 @@ void compute_hard_ip_node(nnode_t *node, int cycle)
 
 		node->simulate_block_cycle = func_pointer;
 
-		free(filename);
+		vtr::free(filename);
 	}
 
 	int i;
@@ -1587,8 +1592,8 @@ void compute_hard_ip_node(nnode_t *node, int cycle)
 	for (i = 0; i < node->num_output_pins; i++)
 		update_pin_value(node->output_pins[i], output_pins[i], cycle);
 
-	free(input_pins);
-	free(output_pins);
+	vtr::free(input_pins);
+	vtr::free(output_pins);
 }
 
 /*
@@ -1618,8 +1623,8 @@ void compute_multiply_node(nnode_t *node, int cycle)
 	}
 	else
 	{
-		int *a = (int *)malloc(sizeof(int)*node->input_port_sizes[0]);
-		int *b = (int *)malloc(sizeof(int)*node->input_port_sizes[1]);
+		int *a = (int *)vtr::malloc(sizeof(int)*node->input_port_sizes[0]);
+		int *b = (int *)vtr::malloc(sizeof(int)*node->input_port_sizes[1]);
 
 		for (i = 0; i < node->input_port_sizes[0]; i++)
 			a[i] = get_pin_value(node->input_pins[i],cycle);
@@ -1632,9 +1637,9 @@ void compute_multiply_node(nnode_t *node, int cycle)
 		for (i = 0; i < node->num_output_pins; i++)
 			update_pin_value(node->output_pins[i], result[i], cycle);
 
-		free(result);
-		free(a);
-		free(b);
+		vtr::free(result);
+		vtr::free(a);
+		vtr::free(b);
 	}
 
 }
@@ -1688,7 +1693,7 @@ void compute_generic_node(nnode_t *node, int cycle)
 int *multiply_arrays(int *a, int a_length, int *b, int b_length)
 {
 	int result_size = a_length + b_length;
-	int *result = (int *)calloc(sizeof(int), result_size);
+	int *result = (int *)vtr::calloc(sizeof(int), result_size);
 
 	int i;
 	for (i = 0; i < a_length; i++)
@@ -1723,9 +1728,9 @@ void compute_add_node(nnode_t *node, int cycle, int type)
 	int i, num;
 	int flag = 0;
 
-	int *a = (int *)malloc(sizeof(int)*node->input_port_sizes[0]);
-	int *b = (int *)malloc(sizeof(int)*node->input_port_sizes[1]);
-	int *c = (int *)malloc(sizeof(int)*node->input_port_sizes[2]);
+	int *a = (int *)vtr::malloc(sizeof(int)*node->input_port_sizes[0]);
+	int *b = (int *)vtr::malloc(sizeof(int)*node->input_port_sizes[1]);
+	int *c = (int *)vtr::malloc(sizeof(int)*node->input_port_sizes[2]);
 
 	num = node->input_port_sizes[0]+ node->input_port_sizes[1];
 	//if cin connect to unconn(PAD_NODE), a[0] connect to ground(GND_NODE) and b[0] connect to ground, flag = 0 the initial adder for addition
@@ -1763,10 +1768,10 @@ void compute_add_node(nnode_t *node, int cycle, int type)
 
 	update_pin_value(node->output_pins[0], result[(node->num_output_pins - 1)], cycle);
 
-	free(result);
-	free(a);
-	free(b);
-	free(c);
+	vtr::free(result);
+	vtr::free(a);
+	vtr::free(b);
+	vtr::free(c);
 
 }
 
@@ -1780,7 +1785,7 @@ void compute_add_node(nnode_t *node, int cycle, int type)
 int *add_arrays(int *a, int a_length, int *b, int b_length, int *c, int /*c_length*/, int /*flag*/)
 {
 	int result_size = max(a_length , b_length) + 1;
-	int *result = (int *)calloc(sizeof(int), result_size);
+	int *result = (int *)vtr::calloc(sizeof(int), result_size);
 
 	int i;
 	int temp_carry_in;
@@ -1879,8 +1884,8 @@ void compute_unary_sub_node(nnode_t *node, int cycle)
 	}
 	else
 	{
-		int *a = (int *)malloc(sizeof(int)*node->input_port_sizes[0]);
-		int *c = (int *)malloc(sizeof(int)*node->input_port_sizes[1]);
+		int *a = (int *)vtr::malloc(sizeof(int)*node->input_port_sizes[0]);
+		int *c = (int *)vtr::malloc(sizeof(int)*node->input_port_sizes[1]);
 
 		for (i = 0; i < node->input_port_sizes[0]; i++)
 			a[i] = get_pin_value(node->input_pins[i],cycle);
@@ -1899,9 +1904,9 @@ void compute_unary_sub_node(nnode_t *node, int cycle)
 
 		update_pin_value(node->output_pins[0], result[(node->num_output_pins - 1)], cycle);
 
-		free(result);
-		free(a);
-		free(c);
+		vtr::free(result);
+		vtr::free(a);
+		vtr::free(c);
 	}
 
 }
@@ -1916,7 +1921,7 @@ void compute_unary_sub_node(nnode_t *node, int cycle)
 int *unary_sub_arrays(int *a, int a_length, int *c, int /*c_length*/)
 {
 	int result_size = a_length + 1;
-	int *result = (int *)calloc(sizeof(int), result_size);
+	int *result = (int *)vtr::calloc(sizeof(int), result_size);
 
 	int i;
 	int temp_carry_in;
@@ -2101,7 +2106,7 @@ long compute_memory_address(signal_list_t *addr, int cycle)
 void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 {
 	long max_address = 1 << addr_width;
-	node->memory_data = (signed char *)malloc(sizeof(signed char) * max_address * data_width);
+	node->memory_data = (signed char *)vtr::malloc(sizeof(signed char) * max_address * data_width);
 
 	// Initialise the memory to -1.
 	int i;
@@ -2120,7 +2125,7 @@ void instantiate_memory(nnode_t *node, int data_width, int addr_width)
 		assign_memory_from_mif_file(mif, filename, data_width, addr_width, node->memory_data);
 		fclose(mif);
 	}
-	free(filename);
+	vtr::free(filename);
 }
 
 /*
@@ -2323,16 +2328,16 @@ void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long dept
 				{
 					error_message(SIMULATION_ERROR, line_number, -1, "%s: MIF syntax error: %s", filename, line);
 				}
-				free(line);
+				vtr::free(line);
 			}
 
 			if (last_line)
-				free(last_line);
+				vtr::free(last_line);
 			last_line = vtr::strdup(buffer);
 		}
 	}
 	if (last_line)
-		free(last_line);
+		vtr::free(last_line);
 
 	symbols->destroy_free_items(symbols);
 
@@ -2365,7 +2370,7 @@ void assign_node_to_line(nnode_t *node, lines_t *l, int type, int single_pin)
 	}
 	// Search the lines for the port name.
 	int j = find_portname_in_lines(port_name, l);
-	free(port_name);
+	vtr::free(port_name);
 
 	if (single_pin)
 	{
@@ -2398,8 +2403,8 @@ void assign_node_to_line(nnode_t *node, lines_t *l, int type, int single_pin)
 void insert_pin_into_line(npin_t *pin, int pin_number, line_t *line, int type)
 {
 	// Allocate memory for the new pin.
-	line->pins        = (npin_t **)realloc(line->pins,        sizeof(npin_t*) * (line->number_of_pins + 1));
-	line->pin_numbers = (int *)realloc(line->pin_numbers, sizeof(npin_t*) * (line->number_of_pins + 1));
+	line->pins        = (npin_t **)vtr::realloc(line->pins,        sizeof(npin_t*) * (line->number_of_pins + 1));
+	line->pin_numbers = (int *)vtr::realloc(line->pin_numbers, sizeof(npin_t*) * (line->number_of_pins + 1));
 
 	// Find the proper place to insert this pin, and make room for it.
 	int i;
@@ -2432,7 +2437,7 @@ void insert_pin_into_line(npin_t *pin, int pin_number, line_t *line, int type)
  */
 lines_t *create_lines(netlist_t *netlist, int type)
 {
-	lines_t *l = (lines_t *)malloc(sizeof(lines_t));
+	lines_t *l = (lines_t *)vtr::malloc(sizeof(lines_t));
 	l->lines = 0;
 	l->count = 0;
 
@@ -2450,12 +2455,12 @@ lines_t *create_lines(netlist_t *netlist, int type)
 			if (find_portname_in_lines(port_name, l) == -1)
 			{
 				line_t *line = create_line(port_name);
-				l->lines = (line_t **)realloc(l->lines, sizeof(line_t *)*(l->count + 1));
+				l->lines = (line_t **)vtr::realloc(l->lines, sizeof(line_t *)*(l->count + 1));
 				l->lines[l->count++] = line;
 			}
 			assign_node_to_line(node, l, type, 0);
 		}
-		free(port_name);
+		vtr::free(port_name);
 	}
 	return l;
 }
@@ -2468,7 +2473,7 @@ void write_vector_headers(FILE *file, lines_t *l)
 {
 	char* headers = generate_vector_header(l);
 	fprintf(file, "%s", headers);
-	free(headers);
+	vtr::free(headers);
 	fflush(file);
 }
 
@@ -2513,7 +2518,7 @@ int verify_test_vector_headers(FILE *in, lines_t *l)
 							"Vector header mismatch: \n "
 							"  Found:    %s "
 							"  Expected: %s", read_buffer, expected_header);
-					free(expected_header);
+					vtr::free(expected_header);
 					return FALSE;
 				}
 				else
@@ -2575,13 +2580,13 @@ int find_portname_in_lines(char* port_name, lines_t *l)
  */
 line_t *create_line(char *name)
 {
-	line_t *line = (line_t *)malloc(sizeof(line_t));
+	line_t *line = (line_t *)vtr::malloc(sizeof(line_t));
 
 	line->number_of_pins = 0;
 	line->pins = 0;
 	line->pin_numbers = 0;
 	line->type = -1;
-	line->name = (char *)malloc(sizeof(char)*(strlen(name)+1));
+	line->name = (char *)vtr::malloc(sizeof(char)*(strlen(name)+1));
 
 	strcpy(line->name, name);
 
@@ -2593,7 +2598,7 @@ line_t *create_line(char *name)
  */
 char *generate_vector_header(lines_t *l)
 {
-	char *header = (char *)calloc(BUFFER_MAX_SIZE, sizeof(char));
+	char *header = (char *)vtr::calloc(BUFFER_MAX_SIZE, sizeof(char));
 	if (l->count)
 	{
 		int j;
@@ -2612,7 +2617,7 @@ char *generate_vector_header(lines_t *l)
 	{
 		header[0] = '\n';
 	}
-	header = (char *)realloc(header, sizeof(char)*(strlen(header)+1));
+	header = (char *)vtr::realloc(header, sizeof(char)*(strlen(header)+1));
 	return header;
 }
 
@@ -2688,7 +2693,7 @@ int compare_test_vectors(test_vector *v1, test_vector *v2)
 test_vector *parse_test_vector(char *buffer)
 {
 	buffer = vtr::strdup(buffer);
-	test_vector *v = (test_vector *)malloc(sizeof(test_vector));
+	test_vector *v = (test_vector *)vtr::malloc(sizeof(test_vector));
 	v->values = 0;
 	v->counts = 0;
 	v->count  = 0;
@@ -2699,8 +2704,8 @@ test_vector *parse_test_vector(char *buffer)
 	char *token = strtok(buffer, delim);
 	while (token)
 	{
-		v->values = (signed char **)realloc(v->values, sizeof(signed char *) * (v->count + 1));
-		v->counts = (int *)realloc(v->counts, sizeof(int) * (v->count + 1));
+		v->values = (signed char **)vtr::realloc(v->values, sizeof(signed char *) * (v->count + 1));
+		v->counts = (int *)vtr::realloc(v->counts, sizeof(int) * (v->count + 1));
 		v->values[v->count] = 0;
 		v->counts[v->count] = 0;
 
@@ -2724,7 +2729,7 @@ test_vector *parse_test_vector(char *buffer)
 							bit = value % 2;
 							value /= 2;
 						}
-						v->values[v->count] = (signed char *)realloc(v->values[v->count], sizeof(signed char) * (v->counts[v->count] + 1));
+						v->values[v->count] = (signed char *)vtr::realloc(v->values[v->count], sizeof(signed char) * (v->counts[v->count] + 1));
 						v->values[v->count][v->counts[v->count]++] = bit;
 				}
 			}
@@ -2738,14 +2743,14 @@ test_vector *parse_test_vector(char *buffer)
 				if      (token[i] == '0') value = 0;
 				else if (token[i] == '1') value = 1;
 
-				v->values[v->count] = (signed char *)realloc(v->values[v->count], sizeof(signed char) * (v->counts[v->count] + 1));
+				v->values[v->count] = (signed char *)vtr::realloc(v->values[v->count], sizeof(signed char) * (v->counts[v->count] + 1));
 				v->values[v->count][v->counts[v->count]++] = value;
 			}
 		}
 		v->count++;
 		token = strtok(NULL, delim);
 	}
-	free(buffer);
+	vtr::free(buffer);
 	return v;
 }
 
@@ -2756,7 +2761,7 @@ test_vector *parse_test_vector(char *buffer)
  */
 test_vector *generate_random_test_vector(lines_t *l, int cycle, hashtable_t *hold_high_index, hashtable_t *hold_low_index)
 {
-	test_vector *v = (test_vector *)malloc(sizeof(test_vector));
+	test_vector *v = (test_vector *)vtr::malloc(sizeof(test_vector));
 	v->values = 0;
 	v->counts = 0;
 	v->count = 0;
@@ -2764,8 +2769,8 @@ test_vector *generate_random_test_vector(lines_t *l, int cycle, hashtable_t *hol
 	int i;
 	for (i = 0; i < l->count; i++)
 	{
-		v->values = (signed char **)realloc(v->values, sizeof(signed char *) * (v->count + 1));
-		v->counts = (int *)realloc(v->counts, sizeof(int) * (v->count + 1));
+		v->values = (signed char **)vtr::realloc(v->values, sizeof(signed char *) * (v->count + 1));
+		v->counts = (int *)vtr::realloc(v->counts, sizeof(int) * (v->count + 1));
 		v->values[v->count] = 0;
 		v->counts[v->count] = 0;
 
@@ -2793,7 +2798,7 @@ test_vector *generate_random_test_vector(lines_t *l, int cycle, hashtable_t *hol
 					value = (rand() % 2);
 			}
 
-			v->values[v->count] = (signed char *)realloc(v->values[v->count], sizeof(signed char) * (v->counts[v->count] + 1));
+			v->values[v->count] = (signed char *)vtr::realloc(v->values[v->count], sizeof(signed char) * (v->counts[v->count] + 1));
 			v->values[v->count][v->counts[v->count]++] = value;
 		}
 		v->count++;
@@ -2827,10 +2832,11 @@ void write_wave_to_file(lines_t *l, FILE* file, int cycle_offset, int wave_lengt
  */
 void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 {
-	char buffer[BUFFER_MAX_SIZE];
+	std::stringstream buffer;
 	int i;
 	for (i = 0; i < l->count; i++)
 	{
+		buffer.str(std::string());
 		line_t *line = l->lines[i];
 		int num_pins = line->number_of_pins;
 
@@ -2839,25 +2845,17 @@ void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 			if ((num_pins + 1) > BUFFER_MAX_SIZE)
 				error_message(SIMULATION_ERROR, 0, -1, "Buffer overflow anticipated while writing vector for line %s.", line->name);
 
-			buffer[0] = 0;
-
 			int j;
-			int known_values = 0;
 			for (j = num_pins - 1; j >= 0 ; j--)
 			{
 				signed char value = get_line_pin_value(line, j, cycle);
-
+		
 				if (value > 1){
 					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %d read from line %s.", value, line->name);
-					}
-
-				if (value < 0)
-				{
-					strcat(buffer, "x");
-				}
-				else
-				{	known_values++;
-					sprintf(buffer, "%s%d", buffer, value);
+				}else if(value < 0){
+					buffer << "x";
+				}else{	
+					buffer << std::dec <<(int)value;
 				}
 			}
 			// If there are no known values, print a single capital X.
@@ -2870,8 +2868,7 @@ void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 			// +1 for ceiling, +1 for null, +2 for "OX"
 			if ((num_pins/4 + 1 + 1 + 2) > BUFFER_MAX_SIZE)
 				error_message(SIMULATION_ERROR, 0, -1, "Buffer overflow anticipated while writing vector for line %s.", line->name);
-
-			sprintf(buffer, "0X");
+			buffer << "0X";
 
 			int hex_digit = 0;
 			int j;
@@ -2886,17 +2883,17 @@ void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 
 				if (!(j % 4))
 				{
-					sprintf(buffer, "%s%X", buffer, hex_digit);
+					buffer << std::hex << hex_digit;
 					hex_digit = 0;
 				}
 			}
 		}
-
+		buffer << " ";
 		// Expand the value to fill to space under the header. (Gets ugly sometimes.)
 		//while (strlen(buffer) < strlen(l->lines[i]->name))
 		//	strcat(buffer," ");
-
-		fprintf(file,"%s ",buffer);
+		
+		fprintf(file,"%s",buffer.str().c_str());
 	}
 	fprintf(file, "\n");
 }
@@ -2919,7 +2916,7 @@ void write_wave_to_modelsim_file(netlist_t *netlist, lines_t *l, FILE* modelsim_
 			{
 				char *port_name = get_port_name(node->name);
 				fprintf(modelsim_out, "force %s 0 0, 1 50 -repeat 100\n", port_name);
-				free(port_name);
+				vtr::free(port_name);
 			}
 		}
 	}
@@ -3090,7 +3087,7 @@ hashtable_t *index_pin_name_list(pin_names *list)
 	int i;
 	for (i = 0; i < list->count; i++)
 	{
-		int *id = (int *)malloc(sizeof(int));
+		int *id = (int *)vtr::malloc(sizeof(int));
 		*id = i;
 		index->add(index, list->pins[i], sizeof(char)*strlen(list->pins[i]), id);
 	}
@@ -3104,7 +3101,7 @@ hashtable_t *index_pin_name_list(pin_names *list)
  */
 pin_names *parse_pin_name_list(char *list)
 {
-	pin_names *p = (pin_names *)malloc(sizeof(pin_names));
+	pin_names *p = (pin_names *)vtr::malloc(sizeof(pin_names));
 	p->pins  = 0;
 	p->count = 0;
 
@@ -3115,11 +3112,11 @@ pin_names *parse_pin_name_list(char *list)
 		char *token    = strtok(pin_list, ",");
 		while (token)
 		{
-			p->pins = (char **)realloc(p->pins, sizeof(char *) * (p->count + 1));
+			p->pins = (char **)vtr::realloc(p->pins, sizeof(char *) * (p->count + 1));
 			p->pins[p->count++] = vtr::strdup(token);
 			token = strtok(NULL, ",");
 		}
-		free(pin_list);
+		vtr::free(pin_list);
 	}
 	return p;
 }
@@ -3195,11 +3192,11 @@ void add_additional_items_to_lines(nnode_t *node, pin_names *p, lines_t *l)
 				if (find_portname_in_lines(port_name, l) == -1)
 				{
 					line_t *line = create_line(port_name);
-					l->lines = (line_t **)realloc(l->lines, sizeof(line_t *)*((l->count)+1));
+					l->lines = (line_t **)vtr::realloc(l->lines, sizeof(line_t *)*((l->count)+1));
 					l->lines[l->count++] = line;
 				}
 				assign_node_to_line(node, l, OUTPUT, single_pin);
-				free(port_name);
+				vtr::free(port_name);
 			}
 		}
 	}
@@ -3288,18 +3285,18 @@ signed char get_line_pin_value(line_t *line, int pin_num, int cycle)
 char *vector_value_to_hex(signed char *value, int length)
 {
 	char *tmp;
-	char *string = (char *)calloc((length + 1),sizeof(char));
+	char *string = (char *)vtr::calloc((length + 1),sizeof(char));
 	int j;
 	for (j = 0; j < length; j++)
 		string[j] = value[j] + '0';
 
 	reverse_string(string,strlen(string));
 
-	char *hex_string = (char *)malloc(sizeof(char) * ((length/4 + 1) + 1));
+	char *hex_string = (char *)vtr::malloc(sizeof(char) * ((length/4 + 1) + 1));
 
 	sprintf(hex_string, "%X ", (unsigned int)strtol(string, &tmp, 2));
 
-	free(string);
+	vtr::free(string);
 
 	return hex_string;
 }
@@ -3335,12 +3332,12 @@ int is_vector(char *buffer)
 
 	if (line[0] != '#' && strlen(line))
 	{
-		free(line);
+		vtr::free(line);
 		return TRUE;
 	}
 	else
 	{
-		free(line);
+		vtr::free(line);
 		return FALSE;
 	}
 }
@@ -3368,13 +3365,13 @@ void free_lines(lines_t *l)
 	int i;
 	for (i = 0; i < l->count; i++)
 	{
-		free(l->lines[i]->name);
-		free(l->lines[i]->pins);
-		free(l->lines[i]);
+		vtr::free(l->lines[i]->name);
+		vtr::free(l->lines[i]->pins);
+		vtr::free(l->lines[i]);
 	}
 
-	free(l->lines);
-	free(l);
+	vtr::free(l->lines);
+	vtr::free(l);
 }
 
 /*
@@ -3383,10 +3380,10 @@ void free_lines(lines_t *l)
 void free_stages(stages_t *s)
 {
 	while (s->count--)
-		free(s->stages[s->count]);
-	free(s->stages);
-	free(s->counts);
-	free(s);
+		vtr::free(s->stages[s->count]);
+	vtr::free(s->stages);
+	vtr::free(s->counts);
+	vtr::free(s);
 }
 
 /*
@@ -3395,10 +3392,10 @@ void free_stages(stages_t *s)
 void free_test_vector(test_vector* v)
 {
 	while (v->count--)
-			free(v->values[v->count]);
-	free(v->values);
-	free(v->counts);
-	free(v);
+			vtr::free(v->values[v->count]);
+	vtr::free(v->values);
+	vtr::free(v->counts);
+	vtr::free(v);
 }
 
 /*
@@ -3407,10 +3404,10 @@ void free_test_vector(test_vector* v)
 void free_pin_name_list(pin_names *p)
 {
 	while (p->count--)
-		free(p->pins[p->count]);
+		vtr::free(p->pins[p->count]);
 
-	free(p->pins);
-	free(p);
+	vtr::free(p->pins);
+	vtr::free(p);
 }
 
 /*
@@ -3525,7 +3522,7 @@ void print_ancestry(nnode_t *bottom_node, int n)
 	{
 		char *name = get_pin_name(node->name);
 		printf("  %s (%ld):\n", name, node->unique_id);
-		free(name);
+		vtr::free(name);
 		int i;
 		for (i = 0; i < node->num_input_pins; i++)
 		{
@@ -3535,7 +3532,7 @@ void print_ancestry(nnode_t *bottom_node, int n)
 			queue->add(queue, node2);
 			char *name2 = get_pin_name(node2->name);
 			printf("\t%s %s (%ld)\n", pin->mapping, name2, node2->unique_id);fflush(stdout);
-			free(name2);
+			vtr::free(name2);
 		}
 
 		/*int count = 0;
@@ -3563,7 +3560,7 @@ void print_ancestry(nnode_t *bottom_node, int n)
 								{
 									char *name = get_pin_name(node->name);
 									printf("\t%s %s (%ld)\n", pin->mapping, name, node->unique_id);fflush(stdout);
-									free(name);
+									vtr::free(name);
 								}
 								else
 								{
@@ -3636,7 +3633,7 @@ nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 			index->add(index, &node->unique_id, sizeof(long), (void *)1);
 			char *name = get_pin_name(node->name);
 			printf("  %s (%ld) %d %d\n", name, node->unique_id, node->num_input_pins, node->num_output_pins);
-			free(name);
+			vtr::free(name);
 
 			int i;
 			for (i = 0; i < node->num_input_pins; i++)
@@ -3659,7 +3656,7 @@ nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
 				}
 				char *name2 = get_pin_name(node2->name);
 				printf("\t(%s) %s (%ld) %d %d %s \n", pin->mapping, name2, node2->unique_id, node2->num_input_pins, node2->num_output_pins, is_undriven?"*":"");
-				free(name2);
+				vtr::free(name2);
 			}
 			printf("  ------------\n");
 		}

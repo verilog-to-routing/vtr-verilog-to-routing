@@ -36,6 +36,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "adders.h"
 #include "subtractions.h"
 #include "vtr_util.h"
+#include "vtr_memory.h"
 
 void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *netlist);
 void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *fp);
@@ -63,7 +64,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 	/* open the file for output */
 	if (global_args.high_level_block != NULL)
 	{
-		out_file = (char*)malloc(sizeof(char)*(1+strlen(file_name)+strlen(global_args.high_level_block)+6));
+		out_file = (char*)vtr::malloc(sizeof(char)*(1+strlen(file_name)+strlen(global_args.high_level_block)+6));
 		sprintf(out_file, "%s_%s.blif", file_name, global_args.high_level_block);
 		out = fopen(out_file, "w");
 	}
@@ -549,7 +550,7 @@ void define_logical_function(nnode_t *node, short /*type*/, FILE *out)
 				{
 					temp_string = convert_long_long_to_bit_string(i, node->num_input_pins);
 					fprintf(out, "%s", temp_string);
-					free(temp_string);
+					vtr::free(temp_string);
 					fprintf(out, " 1\n");
 				}
 			}
@@ -565,7 +566,7 @@ void define_logical_function(nnode_t *node, short /*type*/, FILE *out)
 				{
 					temp_string = convert_long_long_to_bit_string(i, node->num_input_pins);
 					fprintf(out, "%s", temp_string);
-					free(temp_string);
+					vtr::free(temp_string);
 					fprintf(out, " 1\n");
 				}
 			}

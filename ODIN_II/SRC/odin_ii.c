@@ -178,6 +178,7 @@ void print_usage()
 			"     -H <Comma-separated list of primary inputs to hold low at \n"
 			"         cycle 0, and high for all subsequent cycles.>\n"
 			"     -3 Generate three valued logic. (Default is binary.)\n"
+			"     -r <Random seed> (Default is 0.)\n"
 			"  -t <input vector file>: Supply a predefined input vector file\n"
 			"  -U Default initial register value. Set to -U0, -U1 or -UX (unknown). Default: X\n"
 
@@ -211,7 +212,7 @@ void get_options(int argc, char **argv)
 	
 
 	/* Parse the command line options.  */
-	const char *optString = "hc:V:WREh:o:a:B:b:N:f:s:S:p:g:t:T:L:H:GA3U::";
+	const char *optString = "hc:V:WREh:o:a:B:b:N:f:s:S:p:g:r:t:T:L:H:GA3U::";
 	int opt = getopt(argc, argv, optString);
 	while(opt != -1) 
 	{
@@ -257,6 +258,9 @@ void get_options(int argc, char **argv)
 			break;
 			case 'g':
 				global_args.sim_num_test_vectors = atoi(optarg);
+			break;
+			case 'r':
+				global_args.sim_random_seed = atoi(optarg);
 			break;
 			case '3':
 				global_args.sim_generate_three_valued_logic = 1;
