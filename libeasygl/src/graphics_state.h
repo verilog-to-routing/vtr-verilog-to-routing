@@ -28,7 +28,6 @@
 #endif // !WIN32
 #endif // !NO_GRAPHICS
 
-
 #ifdef X11
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

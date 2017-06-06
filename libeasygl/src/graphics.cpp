@@ -451,7 +451,7 @@ static const char *ps_cnames[NUM_COLOR] = {
  *************************************************/
 
 // Stores all state variables for X Windows
-t_x11_state x11_state {};
+t_x11_state x11_state;
 
 #endif /* X11 file scope variables */
 
@@ -1567,7 +1567,6 @@ event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed bu
 
     // timeout timer, for event loop. Supposed to be 2 seconds, but isn't?
     // UINT_PTR timeout_timer = SetTimer(NULL, NULL, 2000, NULL);
-    //bool dropped_something = false;
 
     // Windows event dropping explanation:
     // like X11, it will drop events which match is_droppable_event(...), and
@@ -1593,7 +1592,6 @@ event_loop(void (*act_on_mousebutton)(float x, float y, t_event_buttonPressed bu
                         // if dropping scroll event, do the scroll, but don't redraw.
                         win32_handle_mousewheel_zooming(msg.wParam, msg.lParam, false);
                     }
-                    //dropped_something = true;
                     continue;
                 }
             }
@@ -2338,8 +2336,6 @@ void drawtext(float xc, float yc, const std::string& str_text, float boundx, flo
         WIN32_DRAW_ERROR();
     }
 
-//	SIZE textsize;
-
     if (!GetTextExtentPoint32W(
         win32_state.hGraphicsDC,
         WIN32_wchar_text,
@@ -2850,9 +2846,7 @@ adjustwin(void (*drawscreen) (void)) {
     if (win32_state.windowAdjustFlag == WINDOW_DEACTIVATED) {
         win32_state.windowAdjustFlag = WAITING_FOR_FIRST_CORNER_POINT;
     }
-
-	(void) drawscreen; // Supress unused parameter warnings for Win32
-
+	(void) drawscreen; // Suppress unused parameter warnings for Win32
 #endif
 }
 
@@ -2899,13 +2893,13 @@ postscript(void (*drawscreen) (void)) {
 
 static void
 proceed(void (*drawscreen) (void)) {
-    (void) drawscreen; // Supress unused parameter warnings for Win32
+    (void) drawscreen; // Suppress unused parameter warnings for Win32
     gl_state.ProceedPressed = true;
 }
 
 static void
 quit(void (*drawscreen) (void)) {
-    (void) drawscreen; // Supress unused parameter warnings for Win32
+    (void) drawscreen; // Suppress unused parameter warnings for Win32
     close_graphics();
     exit(0);
 }
@@ -4479,7 +4473,6 @@ WIN32_GraphicsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     static RECT oldAdjustRect;
     static HPEN hDotPen = 0;
     static int X, Y;
-//	static int i; /* Commented out as it was unused */
 
     switch (message) {
         case WM_CREATE:
@@ -4918,10 +4911,8 @@ WIN32_ButtonsWND(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
 
 static void WIN32_SELECT_ERROR() {
     wchar_t msg[BUFSIZE];
-	wsprintf((char *) msg, 
-		"Error %i: Couldn't select graphics object on line %d of graphics.c\n",
-        GetLastError(), 
-		__LINE__);
+	wsprintf((char *) msg, "Error %i: Couldn't select graphics object on line %d of graphics.c\n",
+        GetLastError(),	__LINE__);
 
     wprintf(msg);
     MessageBoxW(NULL, msg, NULL, MB_OK);
@@ -4930,10 +4921,8 @@ static void WIN32_SELECT_ERROR() {
 
 void WIN32_DELETE_ERROR() {
     wchar_t msg[BUFSIZE];
-    wsprintf((char *) msg, 
-		"Error %i: Couldn't delete graphics object on line %d of graphics.c\n",
-        GetLastError(),
-		__LINE__);
+    wsprintf((char *) msg, "Error %i: Couldn't delete graphics object on line %d of graphics.c\n",
+        GetLastError(),	__LINE__);
 
     wprintf(msg);
     MessageBoxW(NULL, msg, NULL, MB_OK);
@@ -4942,10 +4931,8 @@ void WIN32_DELETE_ERROR() {
 
 static void WIN32_CREATE_ERROR() {
     wchar_t msg[BUFSIZE];
-    wsprintf((char *) msg, 
-		"Error %i: Couldn't create graphics object on line %d of graphics.c\n",
-        GetLastError(), 
-		__LINE__);
+    wsprintf((char *) msg, "Error %i: Couldn't create graphics object on line %d of graphics.c\n",
+        GetLastError(),	__LINE__);
 
     wprintf(msg);
     MessageBoxW(NULL, msg, NULL, MB_OK);
@@ -4954,10 +4941,8 @@ static void WIN32_CREATE_ERROR() {
 
 static void WIN32_DRAW_ERROR() {
     wchar_t msg[BUFSIZE];
-    wsprintf((char *) msg, 
-		"Error %i: Couldn't draw graphics object on line %d of graphics.c\n",
-        GetLastError(), 
-		__LINE__);
+    wsprintf((char *) msg, "Error %i: Couldn't draw graphics object on line %d of graphics.c\n",
+        GetLastError(),	__LINE__);
 
     wprintf(msg);
     MessageBoxW(NULL, msg, NULL, MB_OK);

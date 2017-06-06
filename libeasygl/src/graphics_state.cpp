@@ -17,7 +17,6 @@ t_x11_state *t_x11_state::getInstance()
 {
 	return instance;
 }
-
 #endif // X11
 
 #ifdef WIN32
