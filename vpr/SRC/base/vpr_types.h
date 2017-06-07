@@ -800,7 +800,10 @@ struct t_placer_opts {
  * doRouting: true if routing is supposed to be done, false otherwise	    *
  * routing_failure_predictor: sets the configuration to be used by the	    *
  * routing failure predictor, how aggressive the threshold used to judge
- * and abort routings deemed unroutable */
+ * and abort routings deemed unroutable 
+ * write_rr_graph_name: stores the file name of the output rr graph
+ * read_rr_graph_name:  stores the file name of the rr graph to be 
+ *                      read by vpr*/
 
 enum e_route_type {
 	GLOBAL, DETAILED
@@ -879,7 +882,9 @@ struct t_analysis_opts {
  * R_minW_pmos:  Resistance (in Ohms) of a minimum width pmos transistor.   *
  * dump_rr_structs_file: routing resource structures will be dumped in      *
  *                       build_rr_graph() to a file specified by this       *
- *                       variable                                           */
+ *                       variable                                           
+ * wire_to_rr_ipin_switch: keeps track of the type of switch that connects
+ *                         wires to ipins*/
 
 struct t_det_routing_arch {
 	enum e_directionality directionality; /* UDSD by AY */
