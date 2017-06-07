@@ -2838,8 +2838,7 @@ adjustwin(void (*drawscreen) (void)) {
                 break;  // Other event type: ignore it.
         }
     }
-    /* XSelectInput (x11_state.display, x11_state.toplevel, ExposureMask | StructureNotifyMask
-        | ButtonPressMask); */
+
 #else /* Win32 */
     /* Implemented as WM_LB... events */
     /* Begin window adjust */
@@ -3399,10 +3398,31 @@ void set_drawing_buffer(t_draw_to draw_mode) {
     gl_state.current_draw_to = draw_mode;
 #endif /* X11 */
 
-#ifdef WIN32
-	(void) draw_mode; // Gets rid of unused parameter warning in WIN32
-#endif /* WIN32 */
+#ifdef WIN32	// https://www.gamedev.net/topic/411559-win32-double-buffering/, http://stackoverflow.com/questions/14153387/double-buffering-win32-c, http://stackoverflow.com/questions/3895305/winapi-double-buffering
+	static HDC bufDC = CreateCompatibleDC(win32_state.hGraphicsDC);
+	HBITMAP bufBMP = CreateCompatibleBitmap(win32_state.hGraphicsDC, trans_coord.top_width, trans_coord.top_height);
+	if (draw_mode == ON_SCREEN) 
+	{
+		if (win32_state.hGraphicsDC == bufDC)
+		{
+			SelectObject(win32_state.hGraphicsDCPassive, win32_state.hGraphicsPassive);
+			// Swap and select draw buffer
+			win32_state.hGraphicsDC = win32_state.hGraphicsDCPassive;
+			win32_state.hGraphicsDCPassive = bufDC;
+		}
+	}
+	else if (draw_mode == OFF_SCREEN)
+	{
+		if (win32_state.hGraphicsDC != bufDC)
+		{
+			// Swap and select draw buffer
+			win32_state.hGraphicsDCPassive = win32_state.hGraphicsDC;
+			win32_state.hGraphicsDC = bufDC;
+			win32_state.hGraphicsPassive = SelectObject(bufDC, bufBMP);
+		}
+	}
 
+#endif /* WIN32 */
 }
 
 void copy_off_screen_buffer_to_screen() {
@@ -3419,6 +3439,10 @@ void copy_off_screen_buffer_to_screen() {
 
     XFlush(x11_state.display);
 #endif /* X11 */
+	
+#ifdef WIN32
+	BitBlt(win32_state.hGraphicsDCPassive, 0, 0, trans_coord.top_width, trans_coord.top_height, win32_state.hGraphicsDC, 0, 0, SRCCOPY);
+#endif	// <Addition/Mod: Charles>
 }
 
 /*************************************************
@@ -3430,7 +3454,6 @@ Surface load_png_from_file(const char* file_path) {
 }
 
 void draw_surface(const Surface& surface, float x, float y) {
-#ifdef X11
     cairo_surface_t* cairo_surface = surface.impl_->getSurface();
     if (cairo_surface != NULL) {
         cairo_set_source_surface(x11_state.ctx, cairo_surface,
@@ -3440,8 +3463,6 @@ void draw_surface(const Surface& surface, float x, float y) {
     else {
         cerr << "Surface was not initialized" << endl;
     }
-#endif // X11
-
 }
 
 void draw_surface(const Surface& surface, t_point upper_left) {
@@ -4557,8 +4578,8 @@ win32_GraphicsWND_handle_WM_PAINT(HWND hwnd, PAINTSTRUCT &ps, HPEN &hDotPen, REC
         WIN32_DRAW_ERROR();
 
     if (win32_state.InEventLoop) {
-
         // if program was still executing the "Window" command and drawing rubber band
+
         if (win32_state.windowAdjustFlag == WAITING_FOR_SECOND_CORNER_POINT) {
             /* ps.rcPaint specifies the screen coordinates of the window's client area 
              * in which drawing is requested. This information is used to indicate that 
@@ -4573,11 +4594,12 @@ win32_GraphicsWND_handle_WM_PAINT(HWND hwnd, PAINTSTRUCT &ps, HPEN &hDotPen, REC
             hDotPen = CreatePen(PS_DASH, 1, convert_to_win_color(gl_state.background_color));
             if (!hDotPen)
                 WIN32_CREATE_ERROR();
-            if (!SetROP2(win32_state.hGraphicsDC, R2_XORPEN))
+			// The "Passive" buffer should show the rubber band rectangle drawing
+            if (!SetROP2(win32_state.hGraphicsDCPassive, R2_XORPEN))
                 WIN32_SELECT_ERROR();
-            if (!SelectObject(win32_state.hGraphicsDC, GetStockObject(NULL_BRUSH)))
+            if (!SelectObject(win32_state.hGraphicsDCPassive, GetStockObject(NULL_BRUSH)))
                 WIN32_SELECT_ERROR();
-            if (!SelectObject(win32_state.hGraphicsDC, hDotPen))
+            if (!SelectObject(win32_state.hGraphicsDCPassive, hDotPen))
                 WIN32_SELECT_ERROR();
 
             // Don't need to erase old rubber band if the window has been minimized and
@@ -4586,17 +4608,16 @@ win32_GraphicsWND_handle_WM_PAINT(HWND hwnd, PAINTSTRUCT &ps, HPEN &hDotPen, REC
             if (ps.rcPaint.right != (trans_coord.top_width - MWIDTH - 1)
                 || ps.rcPaint.bottom != (trans_coord.top_height - T_AREA_HEIGHT - 1)) {
                 // Erase old rubber band before drawing a new one
-                if (!Rectangle(win32_state.hGraphicsDC, oldAdjustRect.left, oldAdjustRect.top,
+                if (!Rectangle(win32_state.hGraphicsDCPassive, oldAdjustRect.left, oldAdjustRect.top,
                     oldAdjustRect.right, oldAdjustRect.bottom))
                     WIN32_DRAW_ERROR();
             }
 
             // Draw new rubber band
-            if (!Rectangle(win32_state.hGraphicsDC, win32_state.adjustRect.left,
+            if (!Rectangle(win32_state.hGraphicsDCPassive, win32_state.adjustRect.left,
                 win32_state.adjustRect.top, win32_state.adjustRect.right,
                 win32_state.adjustRect.bottom))
                 WIN32_DRAW_ERROR();
-
             oldAdjustRect = win32_state.adjustRect;
             if (!SetROP2(win32_state.hGraphicsDC, R2_COPYPEN))
                 WIN32_SELECT_ERROR();
@@ -4632,15 +4653,14 @@ static void win32_GraphicsWND_handle_WM_LRBUTTONDOWN(UINT message, WPARAM wParam
         // First you push the button, then you click for one corner, then you click for the other
         // corner.
         if (win32_state.windowAdjustFlag == WAITING_FOR_FIRST_CORNER_POINT) {
-            win32_state.windowAdjustFlag = WAITING_FOR_SECOND_CORNER_POINT;
+			win32_state.windowAdjustFlag = WAITING_FOR_SECOND_CORNER_POINT;
             X = win32_state.adjustRect.left = win32_state.adjustRect.right = LOWORD(lParam);
             Y = win32_state.adjustRect.top = win32_state.adjustRect.bottom = HIWORD(lParam);
             oldAdjustRect = win32_state.adjustRect;
         } else {
             int i;
             int adjustx[2], adjusty[2];
-
-            win32_state.windowAdjustFlag = WINDOW_DEACTIVATED;
+			win32_state.windowAdjustFlag = WINDOW_DEACTIVATED;
             button_state.button[win32_state.adjustButton].ispressed = 0;
             SendMessage(button_state.button[win32_state.adjustButton].hwnd, BM_SETSTATE, 0, 0);
 
@@ -4724,7 +4744,6 @@ win32_GraphicsWND_handle_WM_MOUSEMOVE(LPARAM lParam, int &X, int &Y, RECT &oldAd
         int xPos, yPos;
         xPos = GET_X_LPARAM(lParam);
         yPos = GET_Y_LPARAM(lParam);
-
         panning_execute(xPos, yPos, win32_drawscreen_ptr);
     } else if (gl_state.get_mouse_move_input && win32_mousemove_ptr != NULL) {
         win32_mousemove_ptr(xscrn_to_world(LOWORD(lParam)), yscrn_to_world(HIWORD(lParam)));
