@@ -2,7 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <string.h>
-
+#include <iomanip>
 #include "vpr_error.h"
 #include "globals.h"
 #include "read_xml_arch_file.h"
@@ -88,7 +88,8 @@ void write_rr_node(fstream &fp) {
         fp << "\t\t\t<loc xlow=\"" << node.xlow() << "\" ylow=\"" << node.ylow() <<
                 "\" xhigh=\"" << node.xhigh() << "\" yhigh=\"" << node.yhigh() <<
                 "\" ptc=\"" << node.ptc_num() << "\"/>" << endl;
-        fp << "\t\t\t<timing R=\"" << node.R() << "\" C=\"" << node.C() << "\"/>" << endl;
+        fp << "\t\t\t<timing R=\"" << setprecision(30)<< node.R() 
+                << "\" C=\"" << setprecision(30)<<node.C() << "\"/>" << endl;
         fp << "\t\t\t<segment cost_index=\"" << node.cost_index();
 
         if (device_ctx.rr_indexed_data[node.cost_index()].seg_index != -1) {
@@ -110,9 +111,10 @@ void write_rr_segments(fstream &fp, const t_segment_inf *segment_inf, const int 
 
     for (int iseg = 0; iseg < num_seg_types; iseg++) {
         fp << "\t\t<segment id=\"" << iseg <<
-                "\" name=\"" << segment_inf[iseg].name << "\"/>" << endl;
-        fp << "\t\t\t<timing R_per_meter=\"" << segment_inf[iseg].Rmetal <<
-                "\" C_per_meter=\"" << segment_inf[iseg].Cmetal << "\"/>" << endl;
+                "\" name=\"" << segment_inf[iseg].name << "\">" << endl;
+        fp << "\t\t\t<timing R_per_meter=\"" << setprecision(30) <<segment_inf[iseg].Rmetal <<
+                "\" C_per_meter=\"" <<setprecision(30) << segment_inf[iseg].Cmetal << "\"/>" << endl;
+        fp << "\t\t</segment>" << endl;
     }
     fp << "\t</segments>" << endl << endl;
 }
@@ -131,15 +133,15 @@ void write_rr_switches(fstream &fp) {
             fp << "\" name=\"" << rr_switch.name;
         }
         fp << "\" buffered=\"" << (int) rr_switch.buffered << "\">" << endl;
-        fp << "\t\t\t<timing R=\"" << rr_switch.R << "\" Cin=\"" << rr_switch.Cin <<
-                "\" Cout=\"" << rr_switch.Cout <<
-                "\" Tdel=\"" << rr_switch.Tdel << "\"/>" << endl;
-        fp << "\t\t\t<sizing mux_trans_size=\"" << rr_switch.mux_trans_size <<
-                "\" buf_size=\"" << rr_switch.buf_size << "\"/>" << endl;
+        fp << "\t\t\t<timing R=\"" << setprecision(30) <<rr_switch.R << 
+                "\" Cin=\"" << setprecision(30) <<rr_switch.Cin <<
+                "\" Cout=\"" << setprecision(30) <<rr_switch.Cout <<
+                "\" Tdel=\"" << setprecision(30) <<rr_switch.Tdel << "\"/>" << endl;
+        fp << "\t\t\t<sizing mux_trans_size=\"" << setprecision(30) <<rr_switch.mux_trans_size <<
+                "\" buf_size=\"" << setprecision(30) <<rr_switch.buf_size << "\"/>" << endl;
         fp << "\t\t</switch>" << endl;
     }
     fp << "\t</switches>" << endl << endl;
-
 }
 
 /* Block information is printed out in xml format. This includes general,

@@ -165,19 +165,14 @@ sub parse_single_task {
 			push( @archs, $value );
 		}
 		elsif ( $key eq "parse_file" ) {
-                        if ($task_name eq "regression_tests/vtr_reg_strong/strong_verify_rr_graph"){
-                                $counter = $counter +1;
-                                if ($counter eq 2){
+                        if ($counter eq 1){
                                     #second time parse file
                                     $second_parse_file = expand_user_path($value);
                                     $counter = 0;
-                                }
-                                else{      
-                                    $parse_file = expand_user_path($value);
-                                }
                         }
                         else{
                             $parse_file = expand_user_path($value);
+                            $counter = $counter + 1;
                         }
 		}
 		elsif ( $key eq "qor_parse_file" ) {
@@ -238,27 +233,36 @@ sub parse_single_task {
 			my $output = <RESULTS_FILE>;
 			close(RESULTS_FILE);
 			print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
-                        if ($second_parse_file){
-                            $first = 1;
-                             open( OUTPUT_FILE, ">$run_path/parse_results_2.txt" );
-                            system(
-				"$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $second_parse_file > $run_path/$arch/$circuit/parse_results_2.txt"
-                            );
-                            open( RESULTS_FILE, "$run_path/$arch/$circuit/parse_results_2.txt" );
-                            # first line is heading
-                            my $output = <RESULTS_FILE>;
-                            if ($first) {
-				print OUTPUT_FILE "arch\tcircuit\t$output";
-				$first = 0;
-                            }
-                             # second line is actual value
-                            my $output = <RESULTS_FILE>;
-                            close(RESULTS_FILE);
-                            print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
-                        }
 		}
 	}
 	close(OUTPUT_FILE);
+
+    #parse the second file the same way as the first if checking rr graph
+    if($second_parse_file){
+        my $run_path = "$task_path/${run_prefix}${exp_id}";
+
+	my $first = 1;
+	open( OUTPUT_FILE, ">$run_path/parse_results_2.txt" );
+	foreach my $arch (@archs) {
+		foreach my $circuit (@circuits) {
+			system(
+				"$vtr_flow_path/scripts/parse_vtr_flow.pl $run_path/$arch/$circuit $second_parse_file > $run_path/$arch/$circuit/parse_results_2.txt"
+			);
+			open( RESULTS_FILE, "$run_path/$arch/$circuit/parse_results_2.txt" );
+            # first line is heading
+			my $output = <RESULTS_FILE>;
+			if ($first) {
+				print OUTPUT_FILE "arch\tcircuit\t$output";
+				$first = 0;
+			}
+            # second line is actual value
+			my $output = <RESULTS_FILE>;
+			close(RESULTS_FILE);
+			print OUTPUT_FILE $arch . "\t" . $circuit . "\t" . $output;
+		}
+	}
+	close(OUTPUT_FILE);
+    }
 
     if ($pretty_print_results) {
         pretty_print_table("$run_path/parse_results.txt");
@@ -294,17 +298,17 @@ sub parse_single_task {
 			"$run_path/../config/golden_results.txt" );
 	}
 
+        if ($second_parse_file){
+        #returns 1 if failed
+            return check_rr_graph ( $task_name, $task_path, $run_path);
+        }
+
 	if ($check_golden) {
         #Returns 1 if failed
             if ($second_parse_file eq ""){
                 return check_golden( $task_name, $task_path, $run_path );
             }
 	}
-
-        if ($second_parse_file){
-        #returns 1 if failed
-            return check_rr_graph ( $task_name, $task_path, $run_path);
-        }
 
     return 0; #Pass
 }

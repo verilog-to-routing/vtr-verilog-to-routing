@@ -11,7 +11,7 @@ void load_rr_file(const t_graph_type graph_type,
         const t_segment_inf * segment_inf,
         const enum e_base_cost_type base_cost_type,
         int *wire_to_rr_ipin_switch,
-        int *num_rr_switches,
+        int *num_rr_switches, 
         const char* write_rr_graph_name,
         const char* read_rr_graph_name);
 
