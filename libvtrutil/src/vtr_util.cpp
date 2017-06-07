@@ -209,7 +209,6 @@ char* strncpy(char *dest, const char *src, size_t size) {
 
 char* strdup(const char *str) {
     
-    // we want it to crash hard if it doesnt exist so don't check.
     if (str == NULL ) {
         return NULL ;
     }

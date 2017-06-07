@@ -7,7 +7,7 @@ PRE-REQUISITES
 3. flex
 4. gcc 5.x
 5. cmake 2.8.12 (minimum version)
-6. cairo
+6. time 
 
 These packages are not included in this install and are left to the user. (On linux systems, these packages are generally available through your distribution's package management system.)
 
@@ -19,7 +19,7 @@ ODIN uses CMake as it's build system. CMake provides a protable cross-platform b
 
 For unix-like systems we provide a wrapper Makefile which supports the traditional make and make clean commands, but calls CMake behind the scenes.
 
-To build ODIN, run "make odin_II" from the vtr root directory.
+To build ODIN, run "make odin_II.exe" from the vtr root directory.
 
 
 USAGE
