@@ -74,26 +74,21 @@ void free_assignement_of_node_keep_tree(ast_node_t *node)
 {
 	if(node){
 		int i;
-		switch(node->type)
-			{
-				case IDENTIFIERS:
-					vtr::free(node->types.identifier);
-					break;
+		vtr::free(node->types.identifier);
+		switch(node->type){
+			case NUMBERS:
+				vtr::free(node->types.number.number);
+				vtr::free(node->types.number.binary_string);
+				break;
 				
-				case NUMBERS:
-					vtr::free(node->types.number.number);
-					vtr::free(node->types.number.binary_string);
-					break;
-					
-				case CONCATENATE:
-					for(i=0; i<node->types.concat.num_bit_strings; i++){
-						vtr::free(node->types.concat.bit_strings);
-					} 
+			case CONCATENATE:
+				for(i=0; i<node->types.concat.num_bit_strings; i++){
+					vtr::free(node->types.concat.bit_strings);
+				} 
 
-				default:
-					break;
-			}
-		vtr::free(node->additional_data);
+			default:
+				break;
+		}
 	}
 }
 /*---------------------------------------------------------------------------
@@ -103,27 +98,8 @@ void free_assignement_of_node_keep_tree(ast_node_t *node)
 ast_node_t *free_single_node(ast_node_t *node)
 {
 	if(node){
-		int i;
-		if(node->type){
-			vtr::free(node->types.identifier);
-			//if(!id_only){
-				switch(node->type){
-						case NUMBERS:
-							vtr::free(node->types.number.number);
-							vtr::free(node->types.number.binary_string);
-							break;
-							
-						case CONCATENATE:
-							for(i=0; i<node->types.concat.num_bit_strings; i++){
-								vtr::free(node->types.concat.bit_strings);
-							} 
-		
-						default:
-							break;
-				}
-			//}
-		}
-		//vtr::free(node->additional_data);
+		free_assignement_of_node_keep_tree(node);
+		vtr::free(node->additional_data);
 		vtr::free(node->children);
 		vtr::free(node);
 	}
@@ -1035,9 +1011,9 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
 	memcpy(node_copy, node, sizeof(ast_node_t));
 
 	//Copy contents
-	if(node_copy->types.identifier != NULL){
-		node_copy->types.identifier = vtr::strdup(node_copy->types.identifier);
-	}
+	node_copy->types.identifier = vtr::strdup(node->types.identifier);
+	node_copy->types.number.number = vtr::strdup(node->types.number.number);
+	node_copy->types.number.binary_string = vtr::strdup(node->types.number.binary_string);
 
 	//Recursively copy its children
 	for(i = 0; i < node->num_children; i++){

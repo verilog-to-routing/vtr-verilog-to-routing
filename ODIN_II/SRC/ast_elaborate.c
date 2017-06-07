@@ -47,8 +47,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define Max_size 64
 
 int num_for = 0;
-char *v_name;
-long long v_value;
 int count_id = 0;
 int count_assign = 0;
 int count;
@@ -79,8 +77,7 @@ int simplify_ast()
 void optimize_for_tree()
 {
 	ast_node_t *top;
-	ast_node_t *T;
-	int i, j, k;
+	int i, j;
 
 	ast_node_t *list_for_node[N] = {0};
 	ast_node_t *list_parent[N] = {0};
@@ -97,61 +94,47 @@ void optimize_for_tree()
 		/* simplify every FOR node */
 		for (j = 0; j < num_for; j++)
 		{
-			int initial, terminal;
-			int idx;
+			
+			long long v_value = list_for_node[j]->children[0]->children[1]->types.number.value;
+			long long terminal = list_for_node[j]->children[1]->children[1]->types.number.value;
 			char *expression[Max_size];
-			char *infix_expression[Max_size];
-			char *postfix_expression[Max_size];
 			char node_write[10][20];
-			char *value_string;
-			int mark_variable = 0;
-			int *flash_variable = &mark_variable;
-			ast_node_t *temp_parent_node = NULL; //used to connect copied branches from the for loop
+			memset(expression, 0, Max_size);
+			memset(node_write, 0, sizeof(node_write));
+			
+			ast_node_t *temp_parent_node = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));; //used to connect copied branches from the for loop
 			count_write = 0;
 			count = 0;
-			idx = check_index(list_parent[j], list_for_node[j]); //the index of the FOR node belonging to its parent node may change after every for loop support iteration, so it needs to be checked again
-			for (k = 0; k < Max_size; k++) //initial *expression[], *infix_expression[], *postfix_expression[]
-			{
-				expression[k] = NULL;
-				infix_expression[k] = NULL;
-				postfix_expression[k] = NULL;
-			}
-			temp_parent_node = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
-			memset(node_write, 0, sizeof(node_write));
-			v_name = (char*)vtr::malloc(sizeof(list_for_node[j]->children[0]->children[0]->types.identifier)+1);
-			sprintf(v_name, "%s", list_for_node[j]->children[0]->children[0]->types.identifier);
-			initial = list_for_node[j]->children[0]->children[1]->types.number.value;
-			v_value = initial;
-			terminal = list_for_node[j]->children[1]->children[1]->types.number.value;
+			
 			record_expression(list_for_node[j]->children[2], expression);
 			mark_node_write(list_for_node[j]->children[3], node_write);
 			mark_node_read(list_for_node[j]->children[3], node_write);
 
 			while(v_value < terminal)
 			{
-				T  = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
-				copy_tree((list_for_node[j])->children[3], T);
-				add_child_to_node(temp_parent_node, T);
-				value_string = (char*)vtr::malloc(sizeof(int));
-				sprintf(value_string, "%lld", v_value);
-				modify_expression(expression, infix_expression, value_string);
-				translate_expression(infix_expression, postfix_expression);
-				v_value = calculation(postfix_expression);
+				add_child_to_node(temp_parent_node, 
+									get_copy_tree((list_for_node[j])->children[3], 
+										v_value, 
+										list_for_node[j]->children[0]->children[0]->types.identifier
+										)
+									);
+									
+				char *infix_expression[Max_size];
+				char *postfix_expression[Max_size];
 				memset(infix_expression, 0, Max_size);
 				memset(postfix_expression, 0, Max_size);
-
+				
+				modify_expression(expression, infix_expression, v_value, list_for_node[j]->children[0]->children[0]->types.identifier);
+				translate_expression(infix_expression, postfix_expression);
+				v_value = calculation(postfix_expression);
 			}
-			check_intermediate_variable(temp_parent_node, flash_variable);
-			if (mark_variable == 0) //there are no intermediate variables involved in operations so just keep the last branch from the node
-				keep_all_branch(temp_parent_node, list_parent[j], idx);
-			else
-			{
-				remove_intermediate_variable(temp_parent_node, node_write);
-				keep_all_branch(temp_parent_node, list_parent[j], idx);
-			}
+			if (has_intermediate_variable(temp_parent_node)) //there are intermediate variables involved in operations so remove the last branch from the node
+				remove_intermediate_variable(temp_parent_node, node_write, v_value, list_for_node[j]->children[0]->children[0]->types.identifier);
+			
+			int idx = check_index(list_parent[j], list_for_node[j]); //the index of the FOR node belonging to its parent node may change after every for loop support iteration, so it needs to be checked again	
+			keep_all_branch(temp_parent_node, list_parent[j], idx);
 			reallocate_node(list_parent[j], idx);
 			vtr::free(temp_parent_node);
-			vtr::free(v_name);
 		}
 	}
 }
@@ -186,84 +169,33 @@ void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *
 
 }
 
+
+
 /*---------------------------------------------------------------------------
- * (function: copy_tree)
+ * (function: get_copy_tree)
  *-------------------------------------------------------------------------*/
-void copy_tree(ast_node_t *node, ast_node_t *new_node)
+ast_node_t *get_copy_tree(ast_node_t *node, long long virtual_value, char *virtual_name)
 {
-	int i, n;
 	if (!node)
-		new_node = NULL;
-
-	else
-	{
-		n = node->num_children;
-		switch (node->type)
-		{
-			case IDENTIFIERS:
-				if(vtr::strcmp(node->types.identifier, v_name) == 0)
-				{
-					initial_node(new_node, NUMBERS, node->line_number, node->file_number, ++count_id);
-					complete_node(node, new_node);
-					change_to_number_node(new_node, v_value, NULL, false);
-				}
-				else
-				{
-					initial_node(new_node, node->type, node->line_number, node->file_number, ++count_id);
-					new_node->types.identifier = vtr::strdup(node->types.identifier);
-					complete_node(node, new_node);
-				}
-				break;
-
-			case NUMBERS:
-				initial_node(new_node, node->type, node->line_number, node->file_number, ++count_id);
-				new_node->types.number = node->types.number;
-				new_node->types.number.number = vtr::strdup(node->types.number.number);
-				new_node->types.number.binary_string = vtr::strdup(node->types.number.binary_string);
-				complete_node(node, new_node);
-				break;
-
-			default:
-				initial_node(new_node, node->type, node->line_number, node->file_number, ++count_id);
-				new_node->types = node->types;
-				complete_node(node, new_node);
-				break;
-		}
-
-		if (n == 0)
-		new_node->children = NULL;
-
-		else
-		{
-			new_node->children = (ast_node_t**)vtr::malloc(n*sizeof(ast_node_t*));
-			for(i=0; i<n; i++)
-			{
-				if (node->children[i] != NULL)
-				{
-					new_node->children[i] = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
-					copy_tree(node->children[i], new_node->children[i]);
-				}
-				else
-					new_node->children[i] = NULL;
-			}
-		}
+		return NULL;
+	
+	ast_node_t *new_node = (ast_node_t *)vtr::malloc(sizeof(ast_node_t));
+	memcpy(new_node, node, sizeof(ast_node_t));
+		//Copy contents
+	new_node->types.identifier = vtr::strdup(node->types.identifier);
+	new_node->types.number.number = vtr::strdup(node->types.number.number);
+	new_node->types.number.binary_string = vtr::strdup(node->types.number.binary_string);
+	
+	new_node->unique_count = ++count_id;
+	
+	if (node->type == IDENTIFIERS && vtr::strcmp(node->types.identifier, virtual_name) == 0)
+		change_to_number_node(new_node, virtual_value, NULL, false);
+	
+	new_node->children = (ast_node_t**)vtr::malloc(node->num_children*sizeof(ast_node_t*));
+	for(int i=0; i<node->num_children; i++){
+		new_node->children[i] = get_copy_tree(node->children[i],virtual_value,virtual_name);
 	}
-
-}
-
-/*---------------------------------------------------------------------------
- * (function: complete_node)
- *-------------------------------------------------------------------------*/
-void complete_node(ast_node_t *node, ast_node_t *new_node)
-{
-	new_node->num_children = node->num_children;
-	new_node->far_tag = node->far_tag;
-	new_node->high_number = node->high_number;
-	new_node->shared_node = node->shared_node;
-	new_node->hb_port = node->hb_port;
-	new_node->net_node = node->net_node;
-	new_node->is_read_write = node->is_read_write;
-	new_node->additional_data = node->additional_data;
+	return new_node;
 }
 
 /*---------------------------------------------------------------------------
@@ -443,7 +375,7 @@ void check_and_replace(ast_node_t *node, char *p2[])
 /*---------------------------------------------------------------------------
  * (function: modify_expression)
  *-------------------------------------------------------------------------*/
-void modify_expression(char *exp[], char *infix_exp[], char *value)
+void modify_expression(char *exp[], char *infix_exp[], long long value, char* compare_to)
 {
 	int i, j, k;
 	i = 0;
@@ -454,8 +386,8 @@ void modify_expression(char *exp[], char *infix_exp[], char *value)
 
 	for (j = i + 1; exp[j] != NULL; j++)
 	{
-		if (vtr::strcmp(exp[j], v_name) == 0)
-			infix_exp[k++] = value;
+		if (vtr::strcmp(exp[j], compare_to) == 0)
+			sprintf(infix_exp[k++],"%lld",value);
 
 		else
 			infix_exp[k++] = exp[j];
@@ -546,7 +478,7 @@ void mark_node_read(ast_node_t *node, char list[10][20])
  * (function: remove_intermediate_variable)
  * remove the intermediate variables, and prune the syntax tree of FOR loop
  *-------------------------------------------------------------------------*/
-void remove_intermediate_variable(ast_node_t *node, char list[10][20])
+void remove_intermediate_variable(ast_node_t *node, char list[10][20], long long virtual_value, char* virtual_name)
 {
 	int i, j, n;
 	int k = 0;
@@ -557,24 +489,22 @@ void remove_intermediate_variable(ast_node_t *node, char list[10][20])
 		{
 			ast_node_t *write = NULL;
 			ast_node_t *read = NULL;
-			ast_node_t *new_node = (ast_node_t *)vtr::malloc(sizeof(ast_node_t));
 			search_marked_node(node->children[i], 2, &list[j][0], &write); //search for "write" nodes
 			search_marked_node(node->children[i+1], 1, &list[j][0], &read); // search for "read" nodes
-			for (n = 0; n < read->num_children; n++)
+			for (n = 0; n < read->num_children; n++){
 				if (read->children[n]->is_read_write == 1)
 				{
-					copy_tree(write->children[1], new_node);
-					read->children[n] = free_single_node(read->children[n]);
-					read->children[n] = new_node;
-
+					free_single_node(read->children[n]);
+					read->children[n] = get_copy_tree(write->children[1],virtual_value,virtual_name);
 				}
+			}
 		}
 
 		node->children[i] = free_whole_tree(node->children[i]);
 	}
 
 	for (i = 0; i < node->num_children; i++)
-		if (node->children[i] != NULL)
+		if (node->children[i])
 			node->children[k++] = node->children[i];
 
 	for (i = k; i < node->num_children; i++)
@@ -1832,28 +1762,23 @@ void check_node_number(ast_node_t *parent, ast_node_t *child, int flag)
  * (function: check_intermediate_variable)
  * check if there are intermediate variables
  *-------------------------------------------------------------------------*/
-void check_intermediate_variable(ast_node_t *node, int *mark)
-{
-	int i;
-
-	if (node == NULL)
-			return;
-	else
-	{
+short has_intermediate_variable(ast_node_t *node){
+	if (node){
 		if (node->is_read_write == 1 || node->is_read_write == 2)
-		{
-			*mark = 1;
-			return;
+			return TRUE;
+	
+		for (int i = 0; i < node->num_children; i++){
+			if(has_intermediate_variable(node->children[i]))
+				return TRUE;
 		}
-		else
-			for (i = 0; i < node->num_children; i++)
-				check_intermediate_variable(node->children[i], mark);
 	}
+	return FALSE;
 }
 
 /*---------------------------------------------------------------------------
  * (function: keep_all_branch)
  * keep all the branches and allocate them to the parent node of the FOR node
+ TODO ########## POINTER DEREFERENCE!!! ###############
  *-------------------------------------------------------------------------*/
 void keep_all_branch(ast_node_t *temp_node, ast_node_t *for_parent, int mark)
 {
@@ -1863,12 +1788,11 @@ void keep_all_branch(ast_node_t *temp_node, ast_node_t *for_parent, int mark)
 	{
 		for_parent->children = (ast_node_t**)vtr::realloc(for_parent->children, sizeof(ast_node_t*)*(for_parent->num_children+1));
 		for_parent->num_children ++;
-		if (temp_node->children[i] != NULL)
-		{
+		if (temp_node->children[i]){
 			for (j = for_parent->num_children - 1; j > index; j--)
 				for_parent->children[j] = for_parent->children[j-1];
-			for_parent->children[index+1] = temp_node->children[i];
-			index++;
+				
+			for_parent->children[++index] = temp_node->children[i];
 		}
 	}
 }
