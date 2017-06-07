@@ -21,7 +21,6 @@ void write_rr_block_types(fstream &fp);
 void write_rr_segments(fstream &fp, const t_segment_inf *segment_inf, const int num_seg_types);
 
 /************************ Subroutine definitions ****************************/
-
 /* This function is used to write the rr_graph into xml format into a a file with name: file_name */
 void write_rr_graph(const char *file_name, const t_segment_inf *segment_inf, const int num_seg_types) {
     fstream fp;

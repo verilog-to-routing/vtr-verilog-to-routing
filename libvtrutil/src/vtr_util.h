@@ -43,7 +43,7 @@ namespace vtr {
      * Legacy c-style function replacements, typically these add extra error checking
      * and/or correct 'unexpected' behaviour of the standard c-functions
      */
-    constexpr size_t BUFSIZE = 32768; /* Maximum line length for various parsing proc. */
+    constexpr size_t bufsize = 32768; /* Maximum line length for various parsing proc. */
     char* strncpy(char *dest, const char *src, size_t size);
     char* strdup(const char *str);
     char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf);

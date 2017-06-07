@@ -1,0 +1,46 @@
+#General
+vpr_revision;vpr_read_in.out;Revision:\s(.*);unknown
+vpr_status;output.txt;vpr_status=(.*)
+error;output.txt;error=(.*)
+
+#VPR Netlist statistics
+num_pre_packed_nets;vpr_read_in.out;\s*Nets\s*:\s*(\d+)
+num_pre_packed_blocks;vpr_read_in.out;\s*Blocks\s*:\s*(\d+)
+
+#VPR Packing Metrics
+num_post_packed_nets;vpr_read_in.out;Netlist num_nets:\s*(\d+)
+num_post_packed_blocks;vpr_read_in.out;Netlist num_blocks:\s*(\d+)
+device_width;vpr_read_in.out;FPGA auto-sized to x = (\d+) y = \d+
+device_height;vpr_read_in.out;FPGA auto-sized to x = \d+ y = (\d+)
+
+#VTR benchmark packing metrics
+num_clb;vpr_read_in.out;Netlist clb blocks:\s*(\d+)
+num_io;vpr_read_in.out;Netlist inputs pins:\s*(\d+)
+num_outputs;vpr_read_in.out;Netlist output pins:\s*(\d+)
+num_memories;vpr_read_in.out;Netlist memory blocks:\s*(\d+)
+num_mult;vpr_read_in.out;Netlist mult_36 blocks:\s*(\d+)
+
+#VPR Place Metrics
+placed_wirelength_est;vpr_read_in.out;BB estimate of min-dist \(placement\) wire length: (\d+)
+placed_CPD_est;vpr_read_in.out;Placement estimated critical path delay: (.*) ns
+placed_setup_TNS_est;vpr_read_in.out;Placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
+placed_setup_WNS_est;vpr_read_in.out;Placement estimated setup Worst Negative Slack \(sWNS\): (.*) ns
+
+#VPR Routing Metrics
+routed_wirelength;vpr_read_in.out;Total wirelength: (.*), average
+crit_path_route_success_iteration;vpr_read_in.out;Successfully routed after (\d+) routing iterations
+
+#VPR Analysis (final implementation) Metrics
+critical_path_delay;vpr_read_in.out;Final critical path: (.*) ns
+setup_TNS;vpr_read_in.out;Setup Total Negative Slack \(sTNS\): (.*) ns
+setup_WNS;vpr_read_in.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
+
+#VPR Run-time Metrics
+pack_time;vpr_read_in.out;Packing took (.*) seconds
+place_time;vpr_read_in.out;Placement took (.*) seconds
+crit_path_route_time;vpr_read_in.out;Routing took (.*) seconds
+
+#Memory usage
+max_vpr_mem;vpr_read_in.out;Maximum resident set size \(kbytes\): (\d+)
+max_odin_mem;odin.out;Maximum resident set size \(kbytes\): (\d+)
+max_abc_mem;abc.out;Maximum resident set size \(kbytes\): (\d+)

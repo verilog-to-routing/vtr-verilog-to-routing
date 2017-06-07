@@ -340,7 +340,7 @@ void try_place(t_placer_opts placer_opts,
     float sWNS = NAN;
 
 	double std_dev;
-	char msg[vtr::BUFSIZE];
+	char msg[vtr::bufsize];
 	t_placer_statistics stats;
 #ifdef ENABLE_CLASSIC_VPR_STA
 	t_slack * slacks = NULL;

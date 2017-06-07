@@ -645,12 +645,12 @@ void string_to_lower(char *string)
  */
 char *append_string(const char *string, const char *appendage, ...)
 {
-	char buffer[vtr::BUFSIZE];
+	char buffer[vtr::bufsize];
 
 	va_list ap;
 
 	va_start(ap, appendage);
-	vsnprintf(buffer, vtr::BUFSIZE * sizeof(char), appendage, ap);
+	vsnprintf(buffer, vtr::bufsize * sizeof(char), appendage, ap);
 	va_end(ap);
 
 

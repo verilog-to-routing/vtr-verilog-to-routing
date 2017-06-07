@@ -3,6 +3,7 @@
 
 #include "easygl_constants.h"
 #include "fontcache.h"
+#include "graphics_types.h"
 
 /**********************************
  * Common Preprocessor Directives *
@@ -18,6 +19,15 @@
 #include <sys/timeb.h>
 #include <math.h>
 
+// Set X11 by default, if neither NO_GRAPHICS nor WIN32 are defined
+#ifndef NO_GRAPHICS
+#ifndef WIN32
+#ifndef X11
+#define X11
+#endif
+#endif // !WIN32
+#endif // !NO_GRAPHICS
+
 #ifdef X11
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -28,7 +38,7 @@
 #include <cairo-xlib.h>
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) || defined(CYGWIN)
 #include <windows.h>
 #include <WindowsX.h>
 #endif
@@ -89,15 +99,12 @@ public:
     cairo_t *ctx = nullptr;
 
     static t_x11_state *getInstance();
-
 private:
     // Pointer to the most recently constructed state. Is set to NULL upon any destruction
     static t_x11_state *instance;
 };
 
-#endif // X11
-
-#ifdef WIN32
+#elif defined(WIN32)
 
 /*************************************************************
  * WIN32 Structure Definitions                               *
@@ -137,15 +144,18 @@ typedef enum {
  */
 class t_win32_state {
 public:
-    t_win32_state();
+	t_win32_state();
+	t_win32_state(bool, t_window_button_state, int);
     ~t_win32_state();
 
     bool InEventLoop;
     t_window_button_state windowAdjustFlag;
     int adjustButton;
     RECT adjustRect;
-    HWND hMainWnd, hGraphicsWnd, hButtonsWnd, hStatusWnd;
-    HDC hGraphicsDC;
+    HWND hMainWnd, hGraphicsWnd, hButtonsWnd, hStatusWnd; // <Addition/Mod: Charles>
+    HDC hGraphicsDC;	// Current Active Drawing buffer // <Addition/Mod: Charles>
+	HDC hGraphicsDCPassive;	// Front Buffer for display purpose // <Addition/Mod: Charles>
+	HGDIOBJ hGraphicsPassive;	// Backup of old drawing context object, usage see set_drawing_buffer() // <Addition/Mod: Charles>
     HPEN hGraphicsPen;
     HBRUSH hGraphicsBrush, hGrayBrush;
     HFONT hGraphicsFont;
@@ -206,37 +216,27 @@ typedef enum {
  * just for safety.
  */
 struct t_gl_state {
-    bool initialized;
-    t_display_type disp_type;
-    t_color background_color;
-    t_color foreground_color;
-    int currentlinestyle;
-    int currentlinecap;
-    int currentlinewidth;
-    int currentfontsize;
-    int currentfontrotation;
-    t_coordinate_system currentcoordinatesystem;
-    t_draw_to current_draw_to;  
-    e_draw_mode current_draw_mode;
+    bool initialized = false;
+    t_display_type disp_type = SCREEN;
+    t_color background_color = t_color(0xFF, 0xFF, 0xCC);
+    t_color foreground_color = BLACK;
+    int currentlinestyle = SOLID;
+    int currentlinecap = 0;
+    int currentlinewidth = 0;
+    int currentfontsize = 12;
+    int currentfontrotation = 0;
+    t_coordinate_system currentcoordinatesystem = GL_WORLD;
+    t_draw_to current_draw_to = ON_SCREEN;
+    e_draw_mode current_draw_mode = DRAW_NORMAL;
     FILE *ps = nullptr;
-    bool ProceedPressed;
-    char statusMessage[BUFSIZE];
+    bool ProceedPressed = false;
+    char statusMessage[BUFSIZE] = "";
     FontCache font_info;
-    bool get_keypress_input, get_mouse_move_input;
-    bool redraw_needed;
+    bool get_keypress_input = false;
+    bool get_mouse_move_input = false;
+    bool redraw_needed = false;
     bool disable_event_loop = false;
     bool redirect_to_postscript = false;
-
-    t_gl_state() {
-        initialized = false;
-        disp_type = SCREEN;
-        currentlinecap = 0;
-        currentlinestyle = 0;
-        currentcoordinatesystem = GL_WORLD;
-        background_color = t_color(0xFF, 0xFF, 0xCC);
-        disable_event_loop = false;
-        redirect_to_postscript = false;
-    }
 };
 
 #endif // GRAPHICS_STATE_H

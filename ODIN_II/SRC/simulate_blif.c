@@ -93,6 +93,8 @@ void simulate_netlist(netlist_t *netlist)
 		// Passed via the -g option.
 		num_vectors = global_args.sim_num_test_vectors;
 		printf("Simulating %d new vectors.\n", num_vectors); fflush(stdout);
+		
+		srand(global_args.sim_random_seed);
 	}
 
 	// Setup data structures for activity estimation

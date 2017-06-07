@@ -19,21 +19,34 @@ set(GRAPHICS_DEFINES "")
 
 if(EASYGL_ENABLE_GRAPHICS)
     #Check for dependancies
-    if(WIN32)
+    set(FOUND_EASYGL_DEPENDANCIES true)
+	find_package(Cairo)
+	
+	if(NOT CAIRO_FOUND)
+        set(FOUND_EASYGL_DEPENDANCIES  false)
+		message(WARNING "EasyGL: Failed to find required cairo library (on debian/ubuntu try 'sudo apt-get install libcairo2-dev' to install)")
+    endif()
+
+	if(WIN32 OR CYGWIN)
         #Windows
         #TODO: this is untested
-        list(GRAPHICS_DEFINES APPEND "-DWIN32")
+		message(STATUS "EasyGL: Windows detected")
+        list(APPEND GRAPHICS_DEFINES "-DWIN32")
+		list(APPEND GRAPHICS_LIBRARIES ${CAIRO_LIBRARIES} gdi32 User32)
+        list(APPEND GRAPHICS_INCLUDES ${CAIRO_INCLUDE_DIRS})
     else()
         #Assume unix-like
 
         #Look for X11 and font libraries
-        message(STATUS "EasyGL: Looking for X11 and font libraries")
-        find_package(X11 COMPONENTS X11 Xft)
-        find_package(Freetype)
+        message(STATUS "EasyGL: UNIX detected, looking for X11 and font libraries")
         find_package(Fontconfig)
-        find_package(Cairo)
+		find_package(X11 COMPONENTS X11 Xft)
+        find_package(Freetype)
 
-        set(FOUND_EASYGL_DEPENDANCIES true)
+		if(NOT FONTCONFIG_FOUND)
+			set(FOUND_EASYGL_DEPENDANCIES  false)
+			message(WARNING "EasyGL: Failed to find required fontconfig library (on debian/ubuntu try 'sudo apt-get install fontconfig' to install)")
+		endif()
 
         if(NOT X11_FOUND)
             set(FOUND_EASYGL_DEPENDANCIES  false)
@@ -43,16 +56,6 @@ if(EASYGL_ENABLE_GRAPHICS)
         if(NOT FREETYPE_FOUND)
             set(FOUND_EASYGL_DEPENDANCIES  false)
             message(WARNING "EasyGL: Failed to find required Xft library (on debian/ubuntu try 'sudo apt-get install libxft-dev' to install)")
-        endif()
-
-        if(NOT FONTCONFIG_FOUND)
-            set(FOUND_EASYGL_DEPENDANCIES  false)
-            message(WARNING "EasyGL: Failed to find required fontconfig library (on debian/ubuntu try 'sudo apt-get install fontconfig' to install)")
-        endif()
-
-        if(NOT CAIRO_FOUND)
-            set(FOUND_EASYGL_DEPENDANCIES  false)
-            message(WARNING "EasyGL: Failed to find required cairo library (on debian/ubuntu try 'sudo apt-get install libcairo2-dev' to install)")
         endif()
 
         if(FOUND_EASYGL_DEPENDANCIES)

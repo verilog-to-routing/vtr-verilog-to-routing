@@ -27,6 +27,13 @@ t_win32_state::t_win32_state()
 	instance = this;
 }
 
+t_win32_state::t_win32_state(bool _InEventLoop, t_window_button_state _windowAdjustFlag, int _adjustButton)
+{
+	InEventLoop = _InEventLoop;
+	windowAdjustFlag = _windowAdjustFlag;
+	adjustButton = _adjustButton;
+}
+
 t_win32_state::~t_win32_state()
 {
 	instance = NULL;

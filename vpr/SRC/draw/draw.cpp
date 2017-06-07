@@ -215,7 +215,7 @@ void update_screen(ScreenUpdatePriority priority, const char *msg, enum pic_type
 	}
 	/* Save the main message. */
 
-	vtr::strncpy(draw_state->default_message, msg, vtr::BUFSIZE);
+	vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
 
     draw_state->setup_timing_info = setup_timing_info;
 
@@ -391,7 +391,7 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	char msg[vtr::BUFSIZE];
+	char msg[vtr::bufsize];
 	int inode, num_congested;
 
 	e_draw_congestion new_state = (enum e_draw_congestion) (((int)draw_state->show_congestion + 1) 
@@ -738,7 +738,7 @@ static void draw_congestion(void) {
         max_congestion_ratio = std::max(max_congestion_ratio, congestion_ratio);
     }
 
-    char msg[vtr::BUFSIZE];
+    char msg[vtr::bufsize];
     sprintf(msg, "Overuse ratio range (%.2f, %.2f]", min_congestion_ratio, max_congestion_ratio);
     update_message(msg);
 
@@ -1534,7 +1534,7 @@ static void draw_rr_pin(int inode, const t_color& color) {
 
 	int ipin, i, j, iside;
 	float xcen, ycen;
-	char str[vtr::BUFSIZE];
+	char str[vtr::bufsize];
 	t_type_ptr type;
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -1694,7 +1694,6 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 				if (tptr == NULL)
 					break;
 				inode = tptr->index;
-				rr_type = device_ctx.rr_nodes[inode].type();
                 rr_nodes_to_draw.push_back(inode);
 
 			}
@@ -2127,7 +2126,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
-	char msg[vtr::BUFSIZE];
+	char msg[vtr::bufsize];
 	int clb_index = -2;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();

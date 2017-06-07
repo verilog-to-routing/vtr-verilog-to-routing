@@ -40,9 +40,6 @@ public:
             //External net delay
             return tatum::Time(inter_cluster_net_delay_);
         }
-
-        VTR_ASSERT_MSG(false, "Unreachable");
-        return tatum::Time(NAN);
     }
 
     tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 

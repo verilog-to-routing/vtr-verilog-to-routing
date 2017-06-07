@@ -40,7 +40,14 @@ class WirelengthInfo {
 
         size_t available_wirelength() const { return available_wirelength_; }
         size_t used_wirelength() const { return used_wirelength_; }
-        float used_wirelength_ratio() const { return float(used_wirelength()) / available_wirelength(); }
+        float used_wirelength_ratio() const { 
+            if (available_wirelength() > 0) {
+                return float(used_wirelength()) / available_wirelength(); 
+            } else {
+                VTR_ASSERT(used_wirelength() == 0);
+                return 0.;
+            }
+        }
 
     private:
         size_t available_wirelength_;
@@ -57,7 +64,14 @@ class OveruseInfo {
 
         size_t total_nodes() const { return total_nodes_; }
         size_t overused_nodes() const { return overused_nodes_; }
-        float overused_node_ratio() const { return float(overused_nodes()) / total_nodes(); }
+        float overused_node_ratio() const { 
+            if (total_nodes() > 0) {
+                return float(overused_nodes()) / total_nodes();
+            } else {
+                VTR_ASSERT(overused_nodes() == 0);
+                return 0.; 
+            }
+        }
         size_t total_overuse() const { return total_overuse_; }
         size_t worst_overuse() const { return worst_overuse_; }
 
@@ -470,11 +484,11 @@ void free_timing_driven_route_structs(float *pin_criticality, int *sink_order,
 
 	/* Frees all the stuctures needed only by the timing-driven router.        */
 
-    // coverity[offset_free]
+    // coverity[offset_free : Intentional]
 	free(pin_criticality + 1); /* Starts at index 1. */
-    // coverity[offset_free]
+    // coverity[offset_free : Intentional]
 	free(sink_order + 1);
-    // coverity[offset_free]
+    // coverity[offset_free : Intentional]
 	free(rt_node_of_sink + 1);
 	free_route_tree_timing_structs();
 }

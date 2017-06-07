@@ -1,11 +1,11 @@
-#ifndef EASYGL_SURAFCE_IMPL_H
-#define EASYGL_SURAFCE_IMPL_H
+#ifndef EASYGL_SURFACE_IMPL_H
+#define EASYGL_SURFACE_IMPL_H
 
 #include <memory>
 
 #ifndef NO_GRAPHICS
-# include <cairo.h>
-# include <cairo-xlib.h>
+#include <cairo.h>
+#include <cairo-xlib.h>
 #else
 //Graphics disabled, may not have access to cairo headers so define a dummy type
 typedef void cairo_surface_t;

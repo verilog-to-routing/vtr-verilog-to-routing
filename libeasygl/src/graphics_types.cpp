@@ -5,7 +5,7 @@
 using namespace std;
 
 // Predefined colours
-const vector<t_color> t_color::predef_colors = {
+const std::array<t_color,29> t_color::predef_colors = {
     t_color(0xFF, 0xFF, 0xFF), // "white"
     t_color(0x00, 0x00, 0x00), // "black"
     t_color(0x8C, 0x8C, 0x8C), // "grey55"
@@ -307,12 +307,12 @@ bool t_color::operator==(color_types rhs) const {
 
 #else /* WITHOUT GRAPHICS */
 
-color_types t_color::operator=(color_types /*color_enum*/) {
+color_types t_color::operator=(color_types color_enum) {
     *this = t_color(0, 0, 0);
     return BLACK;
 }
 
-bool t_color::operator==(color_types /*rhs*/) const {
+bool t_color::operator==(color_types rhs) const {
     return false;
 }
 

@@ -412,7 +412,7 @@ static double power_count_transistors_primitive(t_pb_type * pb_type) {
 		transistor_cnt = power_count_transistors_FF(power_ctx.arch->FF_size);
 	} else {
 		/* Other */
-		char msg[vtr::BUFSIZE];
+		char msg[vtr::bufsize];
 
 		sprintf(msg, "No transistor counter function for BLIF model: %s",
 				pb_type->blif_model);

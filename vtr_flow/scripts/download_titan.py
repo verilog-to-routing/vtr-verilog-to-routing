@@ -11,7 +11,6 @@ import textwrap
 import tarfile
 import fnmatch
 import errno
-import pudb
 import tempfile
 import shutil
 

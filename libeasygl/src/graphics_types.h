@@ -2,7 +2,7 @@
 #define GRAPHICS_TYPES_H
 
 #include <string>
-#include <vector>
+#include <array>
 #include <iostream>
 
 #include "easygl_constants.h"
@@ -163,7 +163,7 @@ public:
     bool operator==(color_types rhs) const;
     bool operator!=(color_types rhs) const;
     
-    static const std::vector<t_color> predef_colors;
+    static const std::array<t_color,29> predef_colors;
 };
 
 #endif /* GRAPHICS_TYPES_H */

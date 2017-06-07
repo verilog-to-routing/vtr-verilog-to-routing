@@ -156,6 +156,11 @@ void hash256_block(RaIter1 message_digest, RaIter2 first, RaIter2 /*last*/){
 
 template<typename InIter>
 void output_hex(InIter first, InIter last, std::ostream& os){
+    std::ios::fmtflags orig_flags = os.flags();
+    std::streamsize orig_width = os.width();
+    char orig_fill = os.fill();
+
+
 	os.setf(std::ios::hex, std::ios::basefield);
 	while(first != last){
 		os.width(2);
@@ -163,7 +168,9 @@ void output_hex(InIter first, InIter last, std::ostream& os){
 		os << static_cast<unsigned int>(*first);
 		++first;
 	}	
-	os.setf(std::ios::dec, std::ios::basefield);
+	os.flags(orig_flags);
+    os.fill(orig_fill);
+    os.width(orig_width);
 }
 
 template<typename InIter>
