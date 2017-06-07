@@ -1070,6 +1070,7 @@ short match_ports(nnode_t *node, nnode_t *next_node, operation_list oper){
 		traverse_operation_node(node->related_ast_node, component_s, oper) && 
 		traverse_operation_node(next_node->related_ast_node, component_o, oper))
 	{
+		//breaks things. something is pushing a null string.
 		//oassert(component_s[0] && component_o[1] && component_s[1] && component_o[0]);
 		switch (oper)
 		{
