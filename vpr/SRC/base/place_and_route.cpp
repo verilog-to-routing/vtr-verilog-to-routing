@@ -69,7 +69,7 @@ bool place_and_route(t_placer_opts placer_opts,
         t_timing_inf timing_inf) {
 
     /* This routine controls the overall placement and routing of a circuit. */
-    char msg[vtr::BUFSIZE];
+    char msg[vtr::bufsize];
 
     bool success = false;
     vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
@@ -264,7 +264,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
     int current, low, high, final;
     int max_pins_per_clb, i;
     bool success, prev_success, prev2_success, Fc_clipped = false;
-    char msg[vtr::BUFSIZE];
+    char msg[vtr::bufsize];
 #ifdef ENABLE_CLASSIC_VPR_STA
     t_slack * slacks = NULL;
 #endif
