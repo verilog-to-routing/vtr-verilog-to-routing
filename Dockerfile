@@ -18,10 +18,7 @@ RUN touch /etc/supervisor/conf.d/ssh.conf
 
 # ------------------------------------------------------------------------------
 # Install Node.js
-RUN git clone https://github.com/c9/install.git /depends
-RUN chmod +x /depends/install.sh
-RUN cd depends
-RUN ./install.sh
+RUN curl -L https://raw.githubusercontent.com/c9/install/master/install.sh | bash
 
 # ------------------------------------------------------------------------------
 # Install Cloud9
