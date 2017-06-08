@@ -410,7 +410,7 @@ std::vector<std::string> ReadLineTokens(FILE * InFile, int *LineNum) {
 
 int strcmp(const char* first, const char* second){
     if(first && second){
-        return strncmp(first, second, vtr::BUFSIZE);
+        return strncmp(first, second, vtr::bufsize);
     }else{
         return -1;
     }
