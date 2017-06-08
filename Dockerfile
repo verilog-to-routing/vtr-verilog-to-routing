@@ -8,12 +8,31 @@ RUN apt-get install -y clang time supervisor build-essential  openssh-server g++
 RUN sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisor/supervisord.conf
 
 # ------------------------------------------------------------------------------
+# set clang as default compiler because it is more verbose and has a static analyser
+RUN export CC=clang
+RUN export CXX=clang++
+
+# ------------------------------------------------------------------------------
+# Install missing Perl modules
+RUN echo y | cpan
+RUN cpan -fi List::MoreUtils
+
+# ------------------------------------------------------------------------------
+# fix ssh folder
+RUN mkdir -p /var/run/sshd
+RUN chmod -Rf 0755 /var/run/sshd
+
+# ------------------------------------------------------------------------------
+# make ssh passwordless since it is localhost only
+RUN mkdir -p ~/.ssh
+RUN ssh-keygen -t rsa -P "" -f ~/.ssh/authorized_keys
+RUN chmod 600 ~/.ssh/authorized_keys
+
+# ------------------------------------------------------------------------------
 # Security changes
 # - Determine runlevel and services at startup [BOOT-5180]
 RUN update-rc.d supervisor defaults
-
 RUN sed -ri 's/^PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-
 RUN touch /etc/supervisor/conf.d/ssh.conf
 
 # ------------------------------------------------------------------------------
@@ -56,27 +75,6 @@ VOLUME /workspace
 # ------------------------------------------------------------------------------
 # Clean up APT when done.
 RUN apt-get clean && apt-get autoremove && rm -rf /var/lib/apt/lists/*
-
-# ------------------------------------------------------------------------------
-# set clang as default compiler because it is more verbose and has a static analyser
-RUN export CC=clang
-RUN export CXX=clang++
-
-# ------------------------------------------------------------------------------
-# Install missing Perl modules
-RUN echo y | cpan
-RUN cpan -fi List::MoreUtils
-
-# ------------------------------------------------------------------------------
-# fix ssh folder
-RUN mkdir -p /var/run/sshd
-RUN chmod -Rf 0755 /var/run/sshd
-
-# ------------------------------------------------------------------------------
-# make ssh passwordless since it is localhost only
-RUN mkdir -p ~/.ssh
-RUN ssh-keygen -t rsa -P "" -f ~/.ssh/authorized_keys
-RUN chmod 600 ~/.ssh/authorized_keys
 
 EXPOSE 22
 EXPOSE 8080
