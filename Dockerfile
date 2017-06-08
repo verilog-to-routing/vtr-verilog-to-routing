@@ -19,6 +19,7 @@ RUN touch /etc/supervisor/conf.d/ssh.conf
 # ------------------------------------------------------------------------------
 # Install Node.js
 RUN curl -L https://raw.githubusercontent.com/c9/install/master/install.sh | bash
+RUN apt-get install -y nodejs
 
 # ------------------------------------------------------------------------------
 # Install Cloud9
