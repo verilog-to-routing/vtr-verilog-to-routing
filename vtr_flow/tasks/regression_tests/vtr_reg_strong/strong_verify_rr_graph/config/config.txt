@@ -15,7 +15,8 @@ sdc_dir=sdc
 circuit_list_add=stereovision3.v
 
 # Add architectures to list to sweep
-arch_list_add=k6_N10_mem32K_40nm.xml
+arch_list_add=k4_N4_90nm.xml
+arch_list_add=k6_frac_N10_40nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_write_rr_graph.txt

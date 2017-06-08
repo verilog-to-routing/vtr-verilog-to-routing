@@ -1,7 +1,9 @@
 vpr_status;String
-pack_time;Range;0.10;10.0
-place_time;Range;0.10;10.0
-crit_path_route_time;Range;0.10;10.0
+crit_path_route_success_iteration;String
+routed_wirelength;String
+setup_TNS;String
+setup_WNS;String
+critical_path_delay;String
 num_pre_packed_nets;String
 num_pre_packed_blocks;String
 num_post_packed_nets;String

@@ -497,13 +497,8 @@ void get_report_structure(t_report*);
 void win32_drawcurve(t_point *points, int npoints);
 void win32_fillcurve(t_point *points, int npoints);
 
-/* Error message reporters.
-*/
+/* Error message reporter */
 void WIN32_DELETE_ERROR();
-
-//void win32_handle_mousewheel_zooming(WPARAM wParam, LPARAM lParam, bool draw_screen);
-//void win32_handle_button_info(t_event_buttonPressed &button_info, UINT message, WPARAM wParam);
-
-#endif // WIN32/CYGWIN
+#endif // WIN32 or CYGWIN
 
 #endif // GRAPHICS_H

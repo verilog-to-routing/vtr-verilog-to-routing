@@ -15,6 +15,7 @@
 #include "vtr_version.h"
 #include <sstream>
 #include "dump_rr_structs.h"
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -42,7 +43,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void process_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
-void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
+void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int *wire_to_rr_ipin_switch, const int num_rr_switches);
 void process_channels(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_rr_node_indices(const int L_nx, const int L_ny);
 void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
@@ -142,9 +143,6 @@ void load_rr_file(const t_graph_type graph_type,
         process_nodes(next_component, loc_data);
 
         /* Loads edges, switches, and node look up tables*/
-        next_component = get_single_child(rr_graph, "rr_edges", loc_data);
-        process_edges(next_component, loc_data);
-
         next_component = get_single_child(rr_graph, "switches", loc_data);
 
         int numSwitches = count_children(next_component, "switch", loc_data);
@@ -152,6 +150,10 @@ void load_rr_file(const t_graph_type graph_type,
         device_ctx.rr_switch_inf = new t_rr_switch_inf[numSwitches];
 
         process_switches(next_component, loc_data);
+        
+        next_component = get_single_child(rr_graph, "rr_edges", loc_data);
+        process_edges(next_component, loc_data, wire_to_rr_ipin_switch, *num_rr_switches);
+
 
         process_rr_node_indices(L_nx, L_ny);
 
@@ -177,8 +179,6 @@ void load_rr_file(const t_graph_type graph_type,
 
         route_ctx.rr_node_state = new t_rr_node_state[device_ctx.num_rr_nodes];
 
-
-        dump_rr_structs("structs2.txt");
 
         float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
         vtr::printf_info("Build routing resource graph took %g seconds\n", elapsed_time);
@@ -209,19 +209,14 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data & loc_data
         rr_switch.buffered = get_attribute(Switch, "buffered", loc_data).as_bool();
         SwitchSubnode = get_single_child(Switch, "timing", loc_data, OPTIONAL);
         if (SwitchSubnode) {
-            rr_switch.R = get_attribute(SwitchSubnode, "R", loc_data).as_float(0);
-            rr_switch.Cin = get_attribute(SwitchSubnode, "Cin", loc_data).as_float(0);
-            rr_switch.Cout = get_attribute(SwitchSubnode, "Cout", loc_data).as_float(0);
-            rr_switch.Tdel = get_attribute(SwitchSubnode, "Tdel", loc_data).as_float(0);
-        } else {
-            rr_switch.R = 0;
-            rr_switch.Cin = 0;
-            rr_switch.Cout = 0;
-            rr_switch.Tdel = 0;
+            rr_switch.R = get_attribute(SwitchSubnode, "R", loc_data).as_float();
+            rr_switch.Cin = get_attribute(SwitchSubnode, "Cin", loc_data).as_float();
+            rr_switch.Cout = get_attribute(SwitchSubnode, "Cout", loc_data).as_float();
+            rr_switch.Tdel = get_attribute(SwitchSubnode, "Tdel", loc_data).as_float();
         }
         SwitchSubnode = get_single_child(Switch, "sizing", loc_data);
-        rr_switch.mux_trans_size = get_attribute(SwitchSubnode, "mux_trans_size", loc_data).as_float(0);
-        rr_switch.buf_size = get_attribute(SwitchSubnode, "buf_size", loc_data).as_float(0);
+        rr_switch.mux_trans_size = get_attribute(SwitchSubnode, "mux_trans_size", loc_data).as_float();
+        rr_switch.buf_size = get_attribute(SwitchSubnode, "buf_size", loc_data).as_float();
 
         Switch = Switch.next_sibling(Switch.name());
     }
@@ -306,41 +301,39 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
             node.set_direction(direction);
         }
 
-        node.set_capacity(get_attribute(rr_node, "capacity", loc_data).as_float(0));
+        node.set_capacity(get_attribute(rr_node, "capacity", loc_data).as_float());
 
         //--------------
         locSubnode = get_single_child(rr_node, "loc", loc_data);
 
         short x1, x2, y1, y2;
-        x1 = get_attribute(locSubnode, "xlow", loc_data).as_float(0);
-        x2 = get_attribute(locSubnode, "xhigh", loc_data).as_float(0);
-        y1 = get_attribute(locSubnode, "ylow", loc_data).as_float(0);
-        y2 = get_attribute(locSubnode, "yhigh", loc_data).as_float(0);
+        x1 = get_attribute(locSubnode, "xlow", loc_data).as_float();
+        x2 = get_attribute(locSubnode, "xhigh", loc_data).as_float();
+        y1 = get_attribute(locSubnode, "ylow", loc_data).as_float();
+        y2 = get_attribute(locSubnode, "yhigh", loc_data).as_float();
 
         node.set_coordinates(x1, y1, x2, y2);
-        node.set_ptc_num(get_attribute(locSubnode, "ptc", loc_data).as_float(0));
+        node.set_ptc_num(get_attribute(locSubnode, "ptc", loc_data).as_float());
 
         //-------
         timingSubnode = get_single_child(rr_node, "timing", loc_data, OPTIONAL);
 
         if (timingSubnode) {
-            node.set_R(get_attribute(timingSubnode, "R", loc_data).as_float(0));
-            node.set_C(get_attribute(timingSubnode, "C", loc_data).as_float(0));
-        } else {
-            node.set_R(0);
-            node.set_C(0);
+            node.set_R(get_attribute(timingSubnode, "R", loc_data).as_float());
+            node.set_C(get_attribute(timingSubnode, "C", loc_data).as_float());
         }
         //-------
 
         segmentSubnode = get_single_child(rr_node, "segment", loc_data);
-        node.set_cost_index(get_attribute(segmentSubnode, "cost_index", loc_data).as_int(0));
+        node.set_cost_index(get_attribute(segmentSubnode, "cost_index", loc_data).as_int());
         node.set_num_edges(0);
 
         rr_node = rr_node.next_sibling(rr_node.name());
     }
 }
 
-void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
+void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data, 
+        int *wire_to_rr_ipin_switch, const int num_rr_switches) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     pugi::xml_node edges;
 
@@ -369,11 +362,28 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
     edges = get_first_child(parent, "edge", loc_data);
     previous_source = -1;
     counter = 0;
+    //initialize an array that keeps track of the number of wire to ipin switches
+    int *count_for_wire_to_ipin_switches = new int[num_rr_switches]();
+    //first is index, second is count
+    pair <int, int> most_frequent_switch (-1,0);
     //set edge in correct rr_node data structure
     while (edges) {
         source_node = get_attribute(edges, "src_node", loc_data).as_int(0);
         sink_node = get_attribute(edges, "sink_node", loc_data).as_int(0);
         switch_id = get_attribute(edges, "switch_id", loc_data).as_int(0);
+
+        //Keeps track of the number of the specific type of switch that connects a wire to an ipin
+        //use the pair data structure to keep the maximum
+        if (device_ctx.rr_nodes[source_node].type() == CHANX || device_ctx.rr_nodes[source_node].type() == CHANY) {
+            if (device_ctx.rr_nodes[sink_node].type() == IPIN) {
+                count_for_wire_to_ipin_switches[switch_id]++;
+                if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second){
+                    most_frequent_switch.first = switch_id;
+                    most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
+                }
+            }
+        }
+
         if (previous_source != source_node) {
             counter = 0;
         } else {
@@ -384,6 +394,9 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         edges = edges.next_sibling(edges.name());
         previous_source = source_node;
     }
+    *wire_to_rr_ipin_switch = most_frequent_switch.first;
+    
+    delete [] count_for_wire_to_ipin_switches;
 }
 
 /* All channel info is read in and loaded into device_ctx.chan_width*/
@@ -394,22 +407,22 @@ void process_channels(pugi::xml_node parent, const pugiutil::loc_data & loc_data
 
     channel = get_first_child(parent, "channel", loc_data);
 
-    device_ctx.chan_width.max = get_attribute(channel, "chan_width_max", loc_data).as_int(0);
-    device_ctx.chan_width.x_min = get_attribute(channel, "x_min", loc_data).as_int(0);
-    device_ctx.chan_width.y_min = get_attribute(channel, "y_min", loc_data).as_int(0);
-    device_ctx.chan_width.x_max = get_attribute(channel, "x_max", loc_data).as_int(0);
-    device_ctx.chan_width.y_max = get_attribute(channel, "y_max", loc_data).as_int(0);
+    device_ctx.chan_width.max = get_attribute(channel, "chan_width_max", loc_data).as_float();
+    device_ctx.chan_width.x_min = get_attribute(channel, "x_min", loc_data).as_float();
+    device_ctx.chan_width.y_min = get_attribute(channel, "y_min", loc_data).as_float();
+    device_ctx.chan_width.x_max = get_attribute(channel, "x_max", loc_data).as_float();
+    device_ctx.chan_width.y_max = get_attribute(channel, "y_max", loc_data).as_float();
 
     channelLists = get_first_child(parent, "x_list", loc_data);
     while (channelLists) {
         index = get_attribute(channelLists, "index", loc_data).as_int(0);
-        device_ctx.chan_width.x_list[index] = get_attribute(channelLists, "info", loc_data).as_int(0);
+        device_ctx.chan_width.x_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
         channelLists = channelLists.next_sibling(channelLists.name());
     }
     channelLists = get_first_child(parent, "y_list", loc_data);
     while (channelLists) {
         index = get_attribute(channelLists, "index", loc_data).as_int(0);
-        device_ctx.chan_width.y_list[index] = get_attribute(channelLists, "info", loc_data).as_int(0);
+        device_ctx.chan_width.y_list[index] = get_attribute(channelLists, "info", loc_data).as_float();
         channelLists = channelLists.next_sibling(channelLists.name());
     }
 
@@ -424,22 +437,22 @@ void verify_grid(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
     Grid = get_first_child(parent, "grid_loc", loc_data);
     for (int i = 0; i < numGrid; i++) {
-        int x = get_attribute(Grid, "x", loc_data).as_int();
-        int y = get_attribute(Grid, "y", loc_data).as_int();
+        int x = get_attribute(Grid, "x", loc_data).as_float();
+        int y = get_attribute(Grid, "y", loc_data).as_float();
 
         t_grid_tile grid_tile = device_ctx.grid[x][y];
 
 
-        if (grid_tile.type->index != get_attribute(Grid, "block_type_id", loc_data).as_int(0)) {
+        if (grid_tile.type->index != get_attribute(Grid, "block_type_id", loc_data).as_float(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Architecture file does not match RR graph's block_type_id");
         }
-        if (grid_tile.width_offset != get_attribute(Grid, "width_offset", loc_data).as_int(0)) {
+        if (grid_tile.width_offset != get_attribute(Grid, "width_offset", loc_data).as_float(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Architecture file does not match RR graph's width_offset");
         }
 
-        if (grid_tile.height_offset != get_attribute(Grid, "height_offset", loc_data).as_int(0)) {
+        if (grid_tile.height_offset != get_attribute(Grid, "height_offset", loc_data).as_float(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Architecture file does not match RR graph's height_offset");
         }
@@ -475,11 +488,11 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
                     "Architecture file does not match RR graph's block name");
         }
 
-        if (block_info.width != get_attribute(Block, "width", loc_data).as_int(0)) {
+        if (block_info.width != get_attribute(Block, "width", loc_data).as_float(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Architecture file does not match RR graph's block width");
         }
-        if (block_info.height != get_attribute(Block, "height", loc_data).as_int(0)) {
+        if (block_info.height != get_attribute(Block, "height", loc_data).as_float(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Architecture file does not match RR graph's block height");
         }
