@@ -143,6 +143,14 @@ VPR runs all three stages of pack, place, and route if none of :option:`-pack`, 
 
     **Default:** ``off``
 
+.. option:: -verify_file_digests { on | off }
+
+    Checks that any intermediate files loaded (e.g. previous packing/placement/routing) are consistent with the current netlist/architecture.
+
+    If set to ``on`` will error if any files in the upstream dependancy have been modified.
+    If set to ``off`` will warn if any files in the upstream dependancy have been modified.
+
+    **Default:** ``on``
 
 .. _netlist_options:
 

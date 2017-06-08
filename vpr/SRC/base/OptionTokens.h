@@ -42,6 +42,7 @@ enum e_OptionBaseToken {
 	OT_PLACE_FILE,
 	OT_ROUTE_FILE,
 	OT_SDC_FILE,
+    OT_VERIFY_FILE_DIGESTS,
 
     //Netlist processing related options
     OT_ABSORB_BUFFER_LUTS,
