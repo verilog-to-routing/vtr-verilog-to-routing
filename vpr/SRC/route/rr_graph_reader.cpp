@@ -15,6 +15,7 @@
 #include "vtr_version.h"
 #include <sstream>
 #include "dump_rr_structs.h"
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -42,7 +43,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void process_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
-void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
+void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int *wire_to_rr_ipin_switch, const int num_rr_switches);
 void process_channels(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_rr_node_indices(const int L_nx, const int L_ny);
 void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
@@ -60,7 +61,7 @@ void load_rr_file(const t_graph_type graph_type,
         const t_segment_inf * segment_inf,
         const enum e_base_cost_type base_cost_type,
         int *wire_to_rr_ipin_switch,
-        int *num_rr_switches, 
+        int *num_rr_switches,
         const char* write_rr_graph_name,
         const char* read_rr_graph_name) {
 
@@ -142,9 +143,6 @@ void load_rr_file(const t_graph_type graph_type,
         process_nodes(next_component, loc_data);
 
         /* Loads edges, switches, and node look up tables*/
-        next_component = get_single_child(rr_graph, "rr_edges", loc_data);
-        process_edges(next_component, loc_data);
-
         next_component = get_single_child(rr_graph, "switches", loc_data);
 
         int numSwitches = count_children(next_component, "switch", loc_data);
@@ -152,6 +150,10 @@ void load_rr_file(const t_graph_type graph_type,
         device_ctx.rr_switch_inf = new t_rr_switch_inf[numSwitches];
 
         process_switches(next_component, loc_data);
+        
+        next_component = get_single_child(rr_graph, "rr_edges", loc_data);
+        process_edges(next_component, loc_data, wire_to_rr_ipin_switch, *num_rr_switches);
+
 
         process_rr_node_indices(L_nx, L_ny);
 
@@ -185,9 +187,6 @@ void load_rr_file(const t_graph_type graph_type,
         if (write_rr_graph_name) {
             write_rr_graph(write_rr_graph_name, segment_inf, num_seg_types);
         }
-//        dump_rr_structs("structs2.txt");
-//        
-//        dump_rr_graph("rr_graph1.echo");
 
     } catch (XmlError& e) {
 
@@ -333,7 +332,8 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
     }
 }
 
-void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
+void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data, 
+        int *wire_to_rr_ipin_switch, const int num_rr_switches) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     pugi::xml_node edges;
 
@@ -362,11 +362,28 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
     edges = get_first_child(parent, "edge", loc_data);
     previous_source = -1;
     counter = 0;
+    //initialize an array that keeps track of the number of wire to ipin switches
+    int *count_for_wire_to_ipin_switches = new int[num_rr_switches]();
+    //first is index, second is count
+    pair <int, int> most_frequent_switch (-1,0);
     //set edge in correct rr_node data structure
     while (edges) {
         source_node = get_attribute(edges, "src_node", loc_data).as_int(0);
         sink_node = get_attribute(edges, "sink_node", loc_data).as_int(0);
         switch_id = get_attribute(edges, "switch_id", loc_data).as_int(0);
+
+        //Keeps track of the number of the specific type of switch that connects a wire to an ipin
+        //use the pair data structure to keep the maximum
+        if (device_ctx.rr_nodes[source_node].type() == CHANX || device_ctx.rr_nodes[source_node].type() == CHANY) {
+            if (device_ctx.rr_nodes[sink_node].type() == IPIN) {
+                count_for_wire_to_ipin_switches[switch_id]++;
+                if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second){
+                    most_frequent_switch.first = switch_id;
+                    most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
+                }
+            }
+        }
+
         if (previous_source != source_node) {
             counter = 0;
         } else {
@@ -377,6 +394,9 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         edges = edges.next_sibling(edges.name());
         previous_source = source_node;
     }
+    *wire_to_rr_ipin_switch = most_frequent_switch.first;
+    
+    delete [] count_for_wire_to_ipin_switches;
 }
 
 /* All channel info is read in and loaded into device_ctx.chan_width*/
