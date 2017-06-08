@@ -307,12 +307,12 @@ bool t_color::operator==(color_types rhs) const {
 
 #else /* WITHOUT GRAPHICS */
 
-color_types t_color::operator=(color_types color_enum) {
+color_types t_color::operator=(color_types /*color_enum*/) {
     *this = t_color(0, 0, 0);
     return BLACK;
 }
 
-bool t_color::operator==(color_types rhs) const {
+bool t_color::operator==(color_types /*rhs*/) const {
     return false;
 }
 

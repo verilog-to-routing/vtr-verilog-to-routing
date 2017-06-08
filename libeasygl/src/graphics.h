@@ -315,9 +315,7 @@ void drawtextleftaligned(float xc, float yc, const std::string& text, float boun
 void drawtextrightaligned(float xc, float yc, const std::string& text, float boundx = FLT_MAX, float boundy = FLT_MAX);	// <Addition/Mod: Charles>
 void drawtext(const t_point& text_center, const std::string& text, float boundx=FLT_MAX, float boundy=FLT_MAX);
 void drawtext(const t_point& text_center, const std::string& text, const t_bound_box& bounds);
-void drawtext(
-        const t_point& text_center, const std::string& text, const t_bound_box& bounds, float tolerance);
-
+void drawtext(const t_point& text_center, const std::string& text, const t_bound_box& bounds, float tolerance);
 void drawtext_in(const t_bound_box& bbox, const std::string& text);
 void drawtext_in(const t_bound_box& bbox, const std::string& text, float tolerance);
 
