@@ -27,6 +27,7 @@ struct t_options {
 	bool CreateEchoFile;
 	bool Generate_Post_Synthesis_Netlist;
     char SlackDefinition;
+    bool verify_file_digests;
 
     /* Atom netlist options */
 	bool absorb_buffer_luts;

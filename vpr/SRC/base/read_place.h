@@ -4,6 +4,7 @@
 void read_place(
 		const char *net_file,
         const char *place_file,
+        bool verify_file_hashes,
 		const int L_nx,
 		const int L_ny,
 		const int L_num_blocks,
