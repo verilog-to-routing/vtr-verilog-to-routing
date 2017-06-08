@@ -810,11 +810,11 @@ static void show_blif_stats(const AtomNetlist& netlist) {
     vtr::printf_info("Blif Circuit Statistics:\n"); 
     vtr::printf_info("  Blocks: %zu\n", netlist.blocks().size()); 
     for(auto kv : block_type_counts) {
-        vtr::printf_info("    %-*s: %5zu\n", max_block_type_len, kv.first.c_str(), kv.second);
+        vtr::printf_info("    %-*s: %7zu\n", max_block_type_len, kv.first.c_str(), kv.second);
     }
     vtr::printf_info("  Nets  : %zu\n", netlist.nets().size()); 
     for(auto kv : net_stats) {
-        vtr::printf_info("    %-*s: %6.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
+        vtr::printf_info("    %-*s: %7.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
     }
 
     if (netlist.blocks().empty()) {
