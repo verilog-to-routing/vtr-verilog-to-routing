@@ -8,6 +8,9 @@
 #include "types.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include <regex.h>
+#include <stdbool.h>
+#include "vtr_util.h"
 
 /* Globals */
 struct veri_Includes veri_includes;
@@ -16,6 +19,8 @@ struct veri_Defines veri_defines;
 /* Function declarations */
 FILE* open_source_file(char* filename);
 FILE *remove_comments(FILE *source);
+FILE *format_verilog_file(FILE *source);
+FILE *format_verilog_variable(FILE * src, FILE *dest);
 
 /*
  * Initialize the preprocessor by allocating sufficient memory and setting sane values
@@ -407,6 +412,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 	// Strip the comments from the source file producing a temporary source file.
 	FILE *source = remove_comments(original_source);
 
+	source = format_verilog_file(source);
 	int line_number = 1;
 	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));;
 	char line[MaxLine];
@@ -691,6 +697,122 @@ void push(veri_flag_stack *stack, int flag)
 		
 		stack->top = new_node;
 	}
+}
+FILE *format_verilog_file(FILE *source)
+{
+	FILE *destination = tmpfile();
+	char searchString [4][7]= {"input","output","reg","wire"};
+	char *readLine;
+	char ch;
+	unsigned i;
+	char temp[10];
+	int j;
+	static const char *pattern = "module\\s+\\S*\\s+\\([a-zA-Z0-9,_ ]+\\);";
+	i = 0;
+	readLine = (char *) malloc (MaxLine);
+	while( (ch = getc(source) ) != ';')
+	{
+		if (ch != '\n')
+			readLine[i++] = ch;
+	}
+	readLine[i++] = ch;
+	readLine[i] = '\0';
+	if (! validate_string_regex(readLine, pattern))
+	{
+	 	rewind(source);
+		return source;
+	}
+	for (i = 0; i < 4; i++)
+	{
+		readLine = search_replace(readLine,searchString[i],"",2);
+	}
+	i = 0;
+	while (i < strlen(readLine))
+	{
+		if(readLine[i] == '[')
+		{
+			j = 0;
+			while(readLine[i] != ']')
+			{
+				temp[j++] = readLine[i];
+				i++;
+			}
+			temp[j++] = readLine[i];
+			temp[j] = '\0';
+			readLine = search_replace(readLine,temp,"",2);
+			i = 0;
+		}
+		else
+			i++;
+	}
+	fputs(readLine, destination);
+	rewind(source);
+	destination = format_verilog_variable(source,destination);
+	rewind(destination);
+	free(readLine);
+/*	while (fgets(readLine, MaxLine, destination))
+	{
+		fprintf(stderr,"%s",readLine);
+	}*/
+	return destination;
+}
+
+FILE *format_verilog_variable(FILE * src, FILE *dest)
+{
+	char ch;
+	int i;
+	char readLine[MaxLine];
+	char *tempLine;
+	char *pos;
+	while( (ch = getc(src) ) != ';')
+	{
+		if(ch == '(')
+		{
+			i = 0;
+			while( (ch = getc(src) ) != ')')
+			{
+				if (ch == ',')
+				{
+					readLine[i++] = ';';
+					readLine[i] = '\0';
+					pos = strstr(readLine,"reg");
+					if (pos != NULL)
+					{
+						tempLine = search_replace(readLine,"reg","",2);
+						fputs(tempLine,dest);
+						tempLine = search_replace(readLine,"output","",2);
+						fputs(tempLine,dest);
+					}
+					else
+					{
+						fputs(readLine, dest);
+					}
+					i = 0;
+				}
+				else
+					readLine[i++] = ch;
+			}
+			readLine[i-1] = ';';
+			readLine[i] = '\0';
+			pos = strstr(readLine,"reg");
+			if (pos != NULL)
+			{
+				tempLine = search_replace(readLine,"reg","",2);
+				fputs(tempLine,dest);
+				tempLine = search_replace(readLine,"output","",2);
+				fputs(tempLine,dest);
+			}
+			else
+			{
+				fputs(readLine, dest);
+			}
+		}
+	}
+	while( (ch = getc(src) ) != EOF)
+	{
+		fputc(ch, dest);
+	}
+	return dest;
 }
 
 /* ------------------------------------------------------------------------- */

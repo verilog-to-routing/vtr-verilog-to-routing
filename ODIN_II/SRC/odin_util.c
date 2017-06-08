@@ -36,7 +36,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
-
+#include <regex.h>
+#include <stdbool.h>
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
 // return signal_name-bit
@@ -675,3 +676,44 @@ void reverse_string(char *string, int length)
 		string[j--] = temp;
 	}
 }
+/*
+Search and replace a string keeping original string intact
+*/
+char *search_replace(char *src, const char *sKey, const char *rKey, int flag)
+{
+	std::string tmp;
+	char *line;
+	line = vtr::strdup(src);
+	tmp = line;
+	switch(flag)
+	{
+		case 1:
+			tmp = vtr::replace_first(tmp,sKey,rKey);
+			sprintf(line,"%s",tmp.c_str());
+			break;
+		case 2:
+			tmp = vtr::replace_all(tmp,sKey,rKey);
+			sprintf(line,"%s",tmp.c_str());
+			break;
+		default:
+			return line;
+	}
+	return line;
+}
+bool validate_string_regex(const char *str, const char *pattern)
+{
+    regex_t re;
+    int ret;
+	
+	if (regcomp(&re, pattern, REG_EXTENDED) != 0)
+        return false;
+
+    ret = regexec(&re, str, (size_t) 0, NULL, 0);
+    regfree(&re);
+
+    if (ret == 0)
+		return false;
+    
+	return true;
+}
+
