@@ -642,7 +642,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			}
 		}
 	}
-# specified channel width
+        # specified channel width
 	else {
         # move the most recent necessary result files to temp directory for specific vpr stage
         if ($specific_vpr_stage eq "--place" or $specific_vpr_stage eq "--route") {
@@ -753,14 +753,20 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                                 @vpr_args
                         );
                 } elsif ($rr_graph_error_check){
+                    #This loads an error filled architecture file to VPR during rr graph read in
+                    #This ensure that the result is still the same with the loaded RR graph.
+                    #RR graph overthrows architecture definition.
                     my $architecture_file_path_new_error = "$temp_dir$error_architecture_file_name";
                     copy( $architecture_file_path, $architecture_file_path_new_error);
                     $architecture_file_path = $architecture_file_path_new_error;
-                        #my $error_architecture_file_name = join "", $architecture_name, "_error", $arch_suffix;
+
+                    #only perform routing for error check. Special care was taken prevent netlist check warnings
                         my @vpr_args;
             		push( @vpr_args, $error_architecture_file_name );
                     	push( @vpr_args, "$benchmark_name" );
 			push( @vpr_args, "--route" );
+			push( @vpr_args, "--verify_file_digests" );
+                        push( @vpr_args, "off" );
             		push( @vpr_args, "--blif_file"	);
                 	push( @vpr_args, "$prevpr_output_file_name");
                         push( @vpr_args, "--timing_analysis" );   
