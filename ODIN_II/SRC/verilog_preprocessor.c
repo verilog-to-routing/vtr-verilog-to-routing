@@ -702,58 +702,54 @@ FILE *format_verilog_file(FILE *source)
 {
 	FILE *destination = tmpfile();
 	char searchString [4][7]= {"input","output","reg","wire"};
-	char *readLine;
+	char *line;
 	char ch;
 	unsigned i;
 	char temp[10];
 	int j;
 	static const char *pattern = "module\\s+\\S*\\s+\\([a-zA-Z0-9,_ ]+\\);";
 	i = 0;
-	readLine = (char *) malloc (MaxLine);
+	line = (char *) malloc (MaxLine);
 	while( (ch = getc(source) ) != ';')
 	{
 		if (ch != '\n')
-			readLine[i++] = ch;
+			line[i++] = ch;
 	}
-	readLine[i++] = ch;
-	readLine[i] = '\0';
-	if (! validate_string_regex(readLine, pattern))
+	line[i++] = ch;
+	line[i] = '\0';
+	if (! validate_string_regex(line, pattern))
 	{
 	 	rewind(source);
 		return source;
 	}
 	for (i = 0; i < 4; i++)
 	{
-		readLine = search_replace(readLine,searchString[i],"",2);
+		line = search_replace(line,searchString[i],"",2);
 	}
 	i = 0;
-	while (i < strlen(readLine))
+	while (i < strlen(line))
 	{
-		if(readLine[i] == '[')
+		if(line[i] == '[')
 		{
 			j = 0;
-			while(readLine[i] != ']')
+			while(line[i] != ']')
 			{
-				temp[j++] = readLine[i];
+				temp[j++] = line[i];
 				i++;
 			}
-			temp[j++] = readLine[i];
+			temp[j++] = line[i];
 			temp[j] = '\0';
-			readLine = search_replace(readLine,temp,"",2);
+			line = search_replace(line,temp,"",2);
 			i = 0;
 		}
 		else
 			i++;
 	}
-	fputs(readLine, destination);
+	fputs(line, destination);
 	rewind(source);
 	destination = format_verilog_variable(source,destination);
 	rewind(destination);
-	free(readLine);
-/*	while (fgets(readLine, MaxLine, destination))
-	{
-		fprintf(stderr,"%s",readLine);
-	}*/
+	free(line);
 	return destination;
 }
 
@@ -761,7 +757,7 @@ FILE *format_verilog_variable(FILE * src, FILE *dest)
 {
 	char ch;
 	int i;
-	char readLine[MaxLine];
+	char line[MaxLine];
 	char *tempLine;
 	char *pos;
 	while( (ch = getc(src) ) != ';')
@@ -773,38 +769,38 @@ FILE *format_verilog_variable(FILE * src, FILE *dest)
 			{
 				if (ch == ',')
 				{
-					readLine[i++] = ';';
-					readLine[i] = '\0';
-					pos = strstr(readLine,"reg");
+					line[i++] = ';';
+					line[i] = '\0';
+					pos = strstr(line,"reg");
 					if (pos != NULL)
 					{
-						tempLine = search_replace(readLine,"reg","",2);
+						tempLine = search_replace(line,"reg","",2);
 						fputs(tempLine,dest);
-						tempLine = search_replace(readLine,"output","",2);
+						tempLine = search_replace(line,"output","",2);
 						fputs(tempLine,dest);
 					}
 					else
 					{
-						fputs(readLine, dest);
+						fputs(line, dest);
 					}
 					i = 0;
 				}
 				else
-					readLine[i++] = ch;
+					line[i++] = ch;
 			}
-			readLine[i-1] = ';';
-			readLine[i] = '\0';
-			pos = strstr(readLine,"reg");
+			line[i-1] = ';';
+			line[i] = '\0';
+			pos = strstr(line,"reg");
 			if (pos != NULL)
 			{
-				tempLine = search_replace(readLine,"reg","",2);
+				tempLine = search_replace(line,"reg","",2);
 				fputs(tempLine,dest);
-				tempLine = search_replace(readLine,"output","",2);
+				tempLine = search_replace(line,"output","",2);
 				fputs(tempLine,dest);
 			}
 			else
 			{
-				fputs(readLine, dest);
+				fputs(line, dest);
 			}
 		}
 	}
