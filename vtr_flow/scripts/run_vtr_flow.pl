@@ -119,6 +119,7 @@ my @valgrind_args	    = ("--leak-check=full", "--errors-for-leak-kinds=none", "-
 my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
 my $verify_rr_graph         = 0;
+my $rr_graph_error_check    = 0;
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -215,6 +216,9 @@ while ( $token = shift(@ARGV) ) {
 	}
         elsif ( $token eq "-verify_rr_graph" ){
                 $verify_rr_graph = 1;
+        }
+        elsif ( $token eq "-rr_graph_error_check" ) {
+                $rr_graph_error_check = 1;
         }
     # else forward the argument
 	else {
@@ -340,7 +344,10 @@ my ($benchmark_name, $tmp_path, $circuit_suffix) = fileparse($circuit_file_path,
 my $circuit_file_name = $benchmark_name . $circuit_suffix;
 
 my ($architecture_name, $tmp_path, $arch_suffix) = fileparse($architecture_file_path, '\.[^\.]*');
+my ($architecture_name_error, $tmp_path, $arch_suffix) = fileparse($architecture_file_path, '\.[^\.]*');
+
 my $architecture_file_name = $architecture_name . $arch_suffix;
+my $error_architecture_file_name = join "", $architecture_name, "_error", $arch_suffix;
 
 print "$architecture_name/$benchmark_name...";
 
@@ -635,7 +642,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			}
 		}
 	}
-# specified channel width
+        # specified channel width
 	else {
         # move the most recent necessary result files to temp directory for specific vpr stage
         if ($specific_vpr_stage eq "--place" or $specific_vpr_stage eq "--route") {
@@ -670,7 +677,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			push( @vpr_args, "-fix_pins" );				  
 			push( @vpr_args, "$pad_file_path");
 		}        
-                if ($verify_rr_graph){
+                if ($verify_rr_graph || $rr_graph_error_check){
 			push( @vpr_args, "-write_rr_graph" );				  
 			push( @vpr_args, 'RR_graph_result.xml');
 
@@ -679,7 +686,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push( @vpr_args, @forwarded_vpr_args);
 		push( @vpr_args, $specific_vpr_stage);
 
-                if ($verify_rr_graph){
+                if ($verify_rr_graph || $rr_graph_error_check){
                     $q = &system_with_timeout(
 			$vpr_path,                    "vpr_write_rr_graph.out",
 			$timeout,                     $temp_dir,
@@ -703,7 +710,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                         if ($found_prev and $specific_vpr_stage eq "--route") {
                          &find_and_move_newest("$benchmark_name", "place");
                         }
-                  }
+                    }
                         my @vpr_args;
             		push( @vpr_args, $architecture_file_name );
                     	push( @vpr_args, "$benchmark_name" );
@@ -745,8 +752,61 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                                 $timeout,                     $temp_dir,
                                 @vpr_args
                         );
+                } elsif ($rr_graph_error_check){
+                    #This loads an error filled architecture file to VPR during rr graph read in
+                    #This ensure that the result is still the same with the loaded RR graph.
+                    #RR graph overthrows architecture definition.
+                    my $architecture_file_path_new_error = "$temp_dir$error_architecture_file_name";
+                    copy( $architecture_file_path, $architecture_file_path_new_error);
+                    $architecture_file_path = $architecture_file_path_new_error;
+
+                    #only perform routing for error check. Special care was taken prevent netlist check warnings
+                        my @vpr_args;
+            		push( @vpr_args, $error_architecture_file_name );
+                    	push( @vpr_args, "$benchmark_name" );
+			push( @vpr_args, "--route" );
+			push( @vpr_args, "--verify_file_digests" );
+                        push( @vpr_args, "off" );
+            		push( @vpr_args, "--blif_file"	);
+                	push( @vpr_args, "$prevpr_output_file_name");
+                        push( @vpr_args, "--timing_analysis" );   
+        		push( @vpr_args, "$timing_driven");
+        		push( @vpr_args, "--timing_driven_clustering" );
+        		push( @vpr_args, "$timing_driven");
+        		push( @vpr_args, "--route_chan_width" );   
+        		push( @vpr_args, "$min_chan_width" );
+        		push( @vpr_args, "--max_router_iterations" );
+        		push( @vpr_args, "$max_router_iterations");
+        		push( @vpr_args, "--cluster_seed_type" );       
+        		push( @vpr_args, "$vpr_cluster_seed_type");
+        		push( @vpr_args, @vpr_power_args);
+        		push( @vpr_args, "--gen_postsynthesis_netlist" );
+        		push( @vpr_args, "$gen_postsynthesis_netlist");
+        		if (-e $sdc_file_path){
+                            push( @vpr_args, "--sdc_file" );				  
+                            push( @vpr_args, "$sdc_file_path");
+        		}
+        		if (-e $pad_file_path){
+                            push( @vpr_args, "-fix_pins" );				  
+                            push( @vpr_args, "$pad_file_path");
+                        }        
+                        if ($verify_rr_graph){
+                            push( @vpr_args, "-read_rr_graph" );				  
+                            push( @vpr_args, 'RR_graph_result.xml');
+                        }
+                        push( @vpr_args, "$switch_usage_analysis");
+                        push( @vpr_args, @forwarded_vpr_args);
+                        push( @vpr_args, $specific_vpr_stage);
+
+
+                        $q = &system_with_timeout(
+                                $vpr_path,                    "vpr_read_in.out",
+                                $timeout,                     $temp_dir,
+                                @vpr_args
+                        );
                 }
-	}
+            }
+	
 	
 	#Removed check for existing vpr_route_output_path in order to pass when routing is turned off (only pack/place)			
 	if ($q eq "success") {

@@ -102,15 +102,16 @@ void vpr_print_title(void) {
 
 /* Display help screen */
 void vpr_print_usage(void) {
+    //TODO: generate this directly from options list
 
 	vtr::printf_info("Usage:  vpr fpga_architecture.xml circuit_name [Options ...]\n");
 	vtr::printf_info("\n");
-	vtr::printf_info("General Options:  [--version] [--disp on | off] [--auto <int>] [--pack]\n");
-	vtr::printf_info("\t[--place] [--route] [--analysis]\n");
+	vtr::printf_info("General Options:  [--version] [--disp on | off] [--auto <int>]\n");
+	vtr::printf_info("\t[--pack] [--place] [--route] [--analysis]\n");
 	vtr::printf_info("\t[--fast] [--full_stats] [--timing_analysis on | off] [--outfile_prefix <string>]\n");
 	vtr::printf_info("\t[--blif_file <string>] [--net_file <string>] [--place_file <string>]\n");
 	vtr::printf_info("\t[--route_file <string>] [--sdc_file <string>] [--echo_file on | off]\n");
-	vtr::printf_info("\t[--write_rr_graph on | off]\n");
+	vtr::printf_info("\t[--write_rr_graph on | off] [--verify_file_digests on | off]\n");
 	vtr::printf_info("\n");
 	vtr::printf_info("Netlist Options:\n");
 	vtr::printf_info("\t[--absorb_buffer_luts on | off]\n");
@@ -313,7 +314,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	if (vpr_setup.FileNameOpts.NetFile) {
-		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, &cluster_ctx.num_blocks, &cluster_ctx.blocks, &cluster_ctx.clbs_nlist);
+		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, vpr_setup.FileNameOpts.verify_file_digests, &cluster_ctx.num_blocks, &cluster_ctx.blocks, &cluster_ctx.clbs_nlist);
 
 		/* This is done so that all blocks have subblocks and can be treated the same */
 		check_netlist();

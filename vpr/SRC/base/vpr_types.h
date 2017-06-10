@@ -658,6 +658,7 @@ struct t_file_name_opts {
 	char *PowerFile;
 	char *CmosTechFile;
 	char *out_file_prefix;
+    bool verify_file_digests;
 };
 
 /* Options for netlist loading */

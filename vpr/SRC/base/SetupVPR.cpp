@@ -158,6 +158,7 @@ void SetupVPR(t_options *Options,
 
 	alloc_and_load_output_file_names(default_output_name.c_str());
 
+    //TODO: Move FileNameOpts setup into separate function
 	FileNameOpts->CircuitName = Options->CircuitName;
 	FileNameOpts->ArchFile = Options->ArchFile;
 	FileNameOpts->BlifFile = Options->BlifFile;
@@ -168,6 +169,11 @@ void SetupVPR(t_options *Options,
 	FileNameOpts->PowerFile = Options->PowerFile;
 	FileNameOpts->CmosTechFile = Options->CmosTechFile;
 	FileNameOpts->out_file_prefix = Options->out_file_prefix;
+
+    FileNameOpts->verify_file_digests = true; //Default
+    if(Options->Count[OT_VERIFY_FILE_DIGESTS]) {
+        FileNameOpts->verify_file_digests = Options->verify_file_digests;
+    }
 
     SetupNetlistOpts(*Options, *NetlistOpts);
 	SetupPlacerOpts(*Options, TimingEnabled, PlacerOpts);

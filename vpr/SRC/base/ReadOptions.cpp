@@ -285,13 +285,12 @@ ProcessOption(char **Args, t_options * Options) {
 		/* If this was previously set by a lower priority source
 		 * (ie. a settings file), reset the provenance and the
 		 * count */
-		if (Options->Provenance[Token])
-		{
+		if (Options->Provenance[Token]) {
 			Options->Provenance[Token] = 0;
 			Options->Count[Token] = 1;
-		}
-		else
+		} else {
 			++Options->Count[Token];
+        }
 	}
 
 	switch (Token) {
@@ -340,6 +339,8 @@ ProcessOption(char **Args, t_options * Options) {
 		return Args;
 	case OT_GENERATE_POST_SYNTHESIS_NETLIST:          
 	  return ReadOnOff(Args, &Options->Generate_Post_Synthesis_Netlist);
+    case OT_VERIFY_FILE_DIGESTS:
+        return ReadOnOff(Args, &Options->verify_file_digests);
 
     //Atom netlist options
 	case OT_ABSORB_BUFFER_LUTS:

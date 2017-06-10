@@ -1334,7 +1334,6 @@ static void build_rr_sinks_sources(const int i, const int j,
             L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
             L_rr_node[inode].set_type(OPIN);
         }
-        //init_fan_in(i, j, L_rr_node, L_rr_node_indices, L_grid);
         /* Common to both DRIVERs and RECEIVERs */
         L_rr_node[inode].set_capacity(1);
         L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);

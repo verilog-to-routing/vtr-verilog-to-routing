@@ -2,7 +2,6 @@
 #define SURFACE_H
 
 #include <memory>
-#include <cairo.h>
 
 class SurfaceImpl;
 
@@ -24,14 +23,12 @@ class Surface {
 
         void setSurface(const char* filePath);
 
-	cairo_surface_t* getSurface() const;
     private:
         //Requires access to the underlying cairo surface object
         friend void draw_surface(const Surface& surface, float x, float y);
 
         friend void swap(Surface& lhs, Surface& rhs);
 		
-		std::shared_ptr<cairo_surface_t> mSurface;
 		
         //We use the PIMPL idiom to avoid the main graphics.h
         //interface becoming dependant on cario headers, which 

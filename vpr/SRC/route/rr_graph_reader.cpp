@@ -1,22 +1,16 @@
 #include <string.h>
-#include <string>
 #include <algorithm>
-
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
-#include "vtr_util.h"
-#include "vtr_log.h"
 #include "globals.h"
 #include "rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_indexed_data.h"
 #include "vtr_version.h"
 #include <sstream>
-#include "dump_rr_structs.h"
 #include <utility>
-
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -28,7 +22,6 @@
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "vpr_error.h"
-#include "check_rr_graph.h"
 
 #include "rr_graph_reader.h"
 
@@ -47,7 +40,8 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
 void process_channels(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_rr_node_indices(const int L_nx, const int L_ny);
 void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
-
+void set_cost_index(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
+        const int L_nx, const int L_ny, const bool is_global_graph, const int num_seg_types);
 
 /************************ Subroutine definitions ****************************/
 
@@ -71,7 +65,6 @@ void load_rr_file(const t_graph_type graph_type,
     pugi::xml_document doc;
     pugiutil::loc_data loc_data;
 
-
     if (vtr::check_file_name_extension(read_rr_graph_name, ".xml") == false) {
         vtr::printf_warning(__FILE__, __LINE__,
                 "Architecture file '%s' may be in incorrect format. "
@@ -79,6 +72,7 @@ void load_rr_file(const t_graph_type graph_type,
                 read_rr_graph_name);
     }
     try {
+	
         //parse the file
         loc_data = pugiutil::load_xml(doc, read_rr_graph_name);
 
@@ -126,7 +120,6 @@ void load_rr_file(const t_graph_type graph_type,
         next_component = get_first_child(rr_graph, "channels", loc_data);
         process_channels(next_component, loc_data);
 
-
         /* Decode the graph_type */
         bool is_global_graph = (GRAPH_GLOBAL == graph_type ? true : false);
 
@@ -150,20 +143,22 @@ void load_rr_file(const t_graph_type graph_type,
         device_ctx.rr_switch_inf = new t_rr_switch_inf[numSwitches];
 
         process_switches(next_component, loc_data);
-        
+
         next_component = get_single_child(rr_graph, "rr_edges", loc_data);
         process_edges(next_component, loc_data, wire_to_rr_ipin_switch, *num_rr_switches);
-
 
         process_rr_node_indices(L_nx, L_ny);
 
         init_fan_in(L_nx, L_ny, device_ctx.rr_nodes, device_ctx.rr_node_indices, device_ctx.grid, device_ctx.num_rr_nodes);
 
+        //seg_id is read in from the rr_graph file. Sets the cost index for CHANX and CHANY segments
+        next_component = get_single_child(rr_graph, "rr_nodes", loc_data);
+        //sets the cost index for sources, sinks, ipin, and opin
+        set_cost_index(next_component, loc_data, L_nx, L_ny, is_global_graph, num_seg_types);
+
         alloc_and_load_rr_indexed_data(segment_inf, num_seg_types, device_ctx.rr_node_indices,
                 max_chan_width, *wire_to_rr_ipin_switch, base_cost_type);
 
-        //seg_id is read in from the rr_graph file 
-        next_component = get_single_child(rr_graph, "rr_nodes", loc_data);
         process_seg_id(next_component, loc_data);
 
         //Load all the external routing data structures
@@ -201,9 +196,9 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data & loc_data
     pugi::xml_node Switch, SwitchSubnode;
 
     Switch = get_first_child(parent, "switch", loc_data);
-    int numSwitches = count_children(parent, "switch", loc_data);
 
-    for (int iSwitch = 0; iSwitch < numSwitches; iSwitch++) {
+    while (Switch) {
+        int iSwitch = get_attribute(Switch, "id", loc_data).as_int();
         auto& rr_switch = device_ctx.rr_switch_inf[iSwitch];
         rr_switch.name = get_attribute(Switch, "name", loc_data, OPTIONAL).as_string(NULL);
         rr_switch.buffered = get_attribute(Switch, "buffered", loc_data).as_bool();
@@ -223,26 +218,31 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data & loc_data
 
 }
 
-/*Reads in the segment id of each node*/
+/*Only CHANX and CHANY compoents have a segment id. This function
+ *reads in the segment id of each node*/
 void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     pugi::xml_node segmentSubnode;
     pugi::xml_node rr_node;
     pugi::xml_attribute attribute;
+    int id;
 
     rr_node = get_first_child(parent, "node", loc_data);
 
-    for (int i = 0; i < device_ctx.num_rr_nodes; i++) {
-        auto& node = device_ctx.rr_nodes[i];
+    while (rr_node) {
+        id = get_attribute(rr_node, "id", loc_data).as_int();
+        auto& node = device_ctx.rr_nodes[id];
 
-        segmentSubnode = get_single_child(rr_node, "segment", loc_data);
-        attribute = get_attribute(segmentSubnode, "segment_id", loc_data, OPTIONAL);
-        if (attribute) {
-            device_ctx.rr_indexed_data[node.cost_index()].seg_index = get_attribute(segmentSubnode, "segment_id", loc_data).as_int(0);
-        } else {
-            device_ctx.rr_indexed_data[node.cost_index()].seg_index = -1;
+        segmentSubnode = get_single_child(rr_node, "segment", loc_data, OPTIONAL);
+        if (segmentSubnode) {
+            attribute = get_attribute(segmentSubnode, "segment_id", loc_data, OPTIONAL);
+            if (attribute) {
+                int seg_id = get_attribute(segmentSubnode, "segment_id", loc_data).as_int(0);
+                device_ctx.rr_indexed_data[node.cost_index()].seg_index = seg_id;
+            } else {
+                device_ctx.rr_indexed_data[node.cost_index()].seg_index = -1;
+            }
         }
-
         rr_node = rr_node.next_sibling(rr_node.name());
     }
 }
@@ -255,10 +255,9 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
     rr_node = get_first_child(parent, "node", loc_data);
 
-    int numNode = count_children(parent, "node", loc_data);
     e_direction direction;
-    for (int i = 0; i < numNode; i++) {
-
+    while (rr_node) {
+        int i = get_attribute(rr_node, "id", loc_data).as_int();
         auto& node = device_ctx.rr_nodes[i];
 
         const char* node_type = get_attribute(rr_node, "type", loc_data).as_string();
@@ -281,6 +280,9 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         } else if (strcmp(node_type, "IPIN") == 0) {
             newType = IPIN;
             node.set_type(newType);
+        } else {
+            vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__,
+                    "Valid inputs for class types are \"CHANX\", \"CHANY\",\"SOURCE\", \"SINK\",\"OPIN\", and \"IPIN\".");
         }
 
         const char* correct_direction = get_attribute(rr_node, "direction", loc_data).as_string(0);
@@ -288,15 +290,12 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
             direction = INC_DIRECTION;
             node.set_direction(direction);
         } else if (strcmp(correct_direction, "DEC") == 0) {
-
             direction = DEC_DIRECTION;
             node.set_direction(direction);
         } else if (strcmp(correct_direction, "BI") == 0) {
-
             direction = BI_DIRECTION;
             node.set_direction(direction);
-        } else if (strcmp(correct_direction, "NONE") == 0) {
-
+        } else {
             direction = NONE;
             node.set_direction(direction);
         }
@@ -322,17 +321,13 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
             node.set_R(get_attribute(timingSubnode, "R", loc_data).as_float());
             node.set_C(get_attribute(timingSubnode, "C", loc_data).as_float());
         }
-        //-------
-
-        segmentSubnode = get_single_child(rr_node, "segment", loc_data);
-        node.set_cost_index(get_attribute(segmentSubnode, "cost_index", loc_data).as_int());
         node.set_num_edges(0);
 
         rr_node = rr_node.next_sibling(rr_node.name());
     }
 }
 
-void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data, 
+void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
         int *wire_to_rr_ipin_switch, const int num_rr_switches) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     pugi::xml_node edges;
@@ -365,7 +360,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
     //initialize an array that keeps track of the number of wire to ipin switches
     int *count_for_wire_to_ipin_switches = new int[num_rr_switches]();
     //first is index, second is count
-    pair <int, int> most_frequent_switch (-1,0);
+    pair <int, int> most_frequent_switch(-1, 0);
     //set edge in correct rr_node data structure
     while (edges) {
         source_node = get_attribute(edges, "src_node", loc_data).as_int(0);
@@ -377,7 +372,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
         if (device_ctx.rr_nodes[source_node].type() == CHANX || device_ctx.rr_nodes[source_node].type() == CHANY) {
             if (device_ctx.rr_nodes[sink_node].type() == IPIN) {
                 count_for_wire_to_ipin_switches[switch_id]++;
-                if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second){
+                if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {
                     most_frequent_switch.first = switch_id;
                     most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
                 }
@@ -395,7 +390,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
         previous_source = source_node;
     }
     *wire_to_rr_ipin_switch = most_frequent_switch.first;
-    
+
     delete [] count_for_wire_to_ipin_switches;
 }
 
@@ -467,15 +462,10 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
     pugi::xml_node Block;
     pugi::xml_node pin_class;
     Block = get_first_child(parent, "block_type", loc_data);
-    int numBlocks = count_children(parent, "block_type", loc_data);
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    for (int i = 0; i < numBlocks; ++i) {
+    while (Block) {
 
-        auto block_info = device_ctx.block_types[i];
-        if (block_info.index != get_attribute(Block, "id", loc_data).as_int(0)) {
-            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                    "Architecture file does not match RR graph's block id");
-        }
+        auto block_info = device_ctx.block_types[get_attribute(Block, "id", loc_data).as_int(0)];
 
         const char* name;
         if (strcmp(get_attribute(Block, "name", loc_data).as_string(NULL), "EMPTY") == 0) {
@@ -513,6 +503,8 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
             } else if (strcmp(typeInfo, "INPUT") == 0) {
                 type = RECEIVER;
             } else {
+                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                        "Valid inputs for class types are \"OPEN\", \"OUTPUT\", and \"INPUT\".");
                 type = OPEN;
             }
 
@@ -548,10 +540,10 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
  * if it corresponds to the RR graph. Errors out if it doesn't correspond*/
 void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const t_segment_inf * segment_inf) {
     pugi::xml_node Segment, subnode;
-    int numSegment = count_children(parent, "segment", loc_data);
 
     Segment = get_first_child(parent, "segment", loc_data);
-    for (int segNum = 0; segNum < numSegment; segNum++) {
+    while (Segment) {
+        int segNum = get_attribute(Segment, "id", loc_data).as_int();
         const char* name = get_attribute(Segment, "name", loc_data).as_string();
         if (strcmp(segment_inf[segNum].name, name) != 0) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
@@ -584,13 +576,21 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
     auto& indices = device_ctx.rr_node_indices;
 
     indices = (vtr::t_ivec ***) vtr::calloc(NUM_RR_TYPES, sizeof (vtr::t_ivec **));
-    for (int itype = 0; itype < NUM_RR_TYPES; ++itype) {
-        indices[itype] = (vtr::t_ivec **) vtr::calloc((L_nx + 2), sizeof (vtr::t_ivec *));
-        for (int ilength = 0; ilength <= (L_nx + 1); ++ilength) {
-            indices[itype][ilength] = (vtr::t_ivec *) vtr::calloc((L_ny + 2), sizeof (vtr::t_ivec));
-        }
-    }
 
+    for (int itype = 0; itype < NUM_RR_TYPES; ++itype) {
+	if (itype != OPIN && itype != SOURCE){
+	        indices[itype] = (vtr::t_ivec **) vtr::calloc((L_nx + 2), sizeof (vtr::t_ivec *));
+		if (itype == CHANX){
+			for(int ilength = 0; ilength<= (L_ny+1); ++ilength){
+				indices[itype][ilength] = (vtr::t_ivec *) vtr::calloc((L_nx + 2), sizeof (vtr::t_ivec));
+			}
+		}else{
+			for(int ilength= 0; ilength <= (L_nx+1); ++ilength){
+          			indices[itype][ilength] = (vtr::t_ivec *) vtr::calloc((L_ny + 2), sizeof (vtr::t_ivec));
+        		}
+		}
+	}
+    }
     /*Counts the length of list
      * CHANX and CHANY 's x and y are swapped due to the chan and seg convention*/
     for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
@@ -602,7 +602,7 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
                 }
             }
         } else if (node.type() == IPIN || node.type() == OPIN) {
-            for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
+            for (int ix = node.xlow(); ix <= node.xhigh(); ix++){
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                     indices[IPIN][ix][iy].nelem++;
                 }
@@ -621,23 +621,32 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
             }
         }
     }
-
     /* Allocates the memory for list */
     for (int itype = 0; itype < NUM_RR_TYPES; itype++) {
-        for (int x = 0; x <= (L_nx + 1); x++) {
-            for (int y = 0; y <= (L_ny + 1); y++) {
-                if (indices[itype][x][y].nelem != 0) {
-                    indices[itype][x][y].list = (int*) vtr::calloc(indices[itype][x][y].nelem, sizeof (int));
-                    indices[itype][x][y].nelem = 0;
-                }
-            }
-        }
+	if (itype != OPIN && itype != SOURCE){
+ 	       for (int x = 0; x <= (L_nx + 1); x++) {
+        		for (int y = 0; y <= (L_ny + 1); y++) {
+                		if (itype != OPIN && itype != SOURCE) {
+					if (itype == CHANX){
+						if (indices[itype][y][x].nelem != 0){
+						indices[itype][y][x].list = (int*) vtr::calloc(indices[itype][y][x].nelem, sizeof(int));
+						indices[itype][y][x].nelem = 0;
+						}	
+					}else{
+						if (indices[itype][x][y].nelem != 0){
+	                    				indices[itype][x][y].list = (int*) vtr::calloc(indices[itype][x][y].nelem, sizeof (int));
+        	            				indices[itype][x][y].nelem = 0;
+						}
+					}
+               		 	}
+		       }
+        	}
+	}
     }
     int count;
     /* Assigns the right node number for each look up list*/
     for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
         auto& node = device_ctx.rr_nodes[inode];
-
         if (node.type() == SOURCE || node.type() == SINK) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
@@ -646,7 +655,7 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
                     indices[SINK][ix][iy].nelem++;
                 }
             }
-        } else if (node.type() == IPIN || node.type() == OPIN) {
+        }else if (node.type() == IPIN || node.type() == OPIN) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                     count = indices[IPIN][ix][iy].nelem;
@@ -654,19 +663,18 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
                     indices[IPIN][ix][iy].nelem++;
                 }
             }
-        }
-        if (node.type() == CHANX) {
+        }else if (node.type() == CHANX) {
             for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
-                    count = node.ptc_num();
+		    count = node.ptc_num();
                     indices[CHANX][iy][ix].list[count] = inode;
                     indices[CHANX][iy][ix].nelem++;
-                }
+		}
             }
-        } else if (node.type() == CHANY) {
+	}else if (node.type() == CHANY) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
-                for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                    count = node.ptc_num();
+                for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {            
+		    count = node.ptc_num();
                     indices[CHANY][ix][iy].list[count] = inode;
                     indices[CHANY][ix][iy].nelem++;
                 }
@@ -676,4 +684,78 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
     indices[SOURCE] = indices[SINK];
     indices[OPIN] = indices[IPIN];
     device_ctx.rr_node_indices = indices;
+}
+
+/* This function uses the FPGA grid to build the cost indices. Source pins, sink pins, ipin, and opin
+ * are set to their unique cost index identifier. CHANX and CHANY cost indicies are set after the 
+ * seg_id is read in from the rr graph*/
+void set_cost_index(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
+        const int L_nx, const int L_ny, const bool is_global_graph, const int num_seg_types) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    for (int i = 0; i <= (L_nx + 1); ++i) {
+        for (int j = 0; j <= (L_ny + 1); ++j) {
+            int inode = 0;
+            t_type_ptr type = device_ctx.grid[i][j].type;
+            int num_class = type->num_class;
+            t_class *class_inf = type->class_inf;
+            int num_pins = type->num_pins;
+            int *pin_class = type->pin_class;
+
+            for (int iclass = 0; iclass < num_class; ++iclass) {
+                if (class_inf[iclass].type == DRIVER) { /* SOURCE */
+                    inode = get_rr_node_index(i, j, SOURCE, iclass, device_ctx.rr_node_indices);
+                    device_ctx.rr_nodes[inode].set_cost_index(SOURCE_COST_INDEX);
+                } else { /* SINK */
+                    VTR_ASSERT(class_inf[iclass].type == RECEIVER);
+                    inode = get_rr_node_index(i, j, SINK, iclass, device_ctx.rr_node_indices);
+                    device_ctx.rr_nodes[inode].set_cost_index(SINK_COST_INDEX);
+                }
+            }
+            for (int ipin = 0; ipin < num_pins; ++ipin) {
+                int iclass = pin_class[ipin];
+                if (class_inf[iclass].type == RECEIVER) {
+                    inode = get_rr_node_index(i, j, IPIN, ipin, device_ctx.rr_node_indices);
+                    device_ctx.rr_nodes[inode].set_cost_index(IPIN_COST_INDEX);
+
+                } else {
+                    VTR_ASSERT(class_inf[iclass].type == DRIVER);
+                    inode = get_rr_node_index(i, j, OPIN, ipin, device_ctx.rr_node_indices);
+                    device_ctx.rr_nodes[inode].set_cost_index(OPIN_COST_INDEX);
+                }
+            }
+        }
+    }
+
+    pugi::xml_node segmentSubnode;
+    pugi::xml_node rr_node;
+    pugi::xml_attribute attribute;
+
+    rr_node = get_first_child(parent, "node", loc_data);
+
+    for (int i = 0; i < device_ctx.num_rr_nodes; i++) {
+        auto& node = device_ctx.rr_nodes[i];
+
+        segmentSubnode = get_single_child(rr_node, "segment", loc_data, OPTIONAL);
+        if (segmentSubnode) {
+            attribute = get_attribute(segmentSubnode, "segment_id", loc_data, OPTIONAL);
+            if (attribute) {
+                int seg_id = get_attribute(segmentSubnode, "segment_id", loc_data).as_int(0);
+                if (device_ctx.rr_nodes[i].type() == CHANX) {
+                    if (is_global_graph) {
+                        node.set_cost_index(CHANX_COST_INDEX_START);
+                    } else {
+                        node.set_cost_index(CHANX_COST_INDEX_START + seg_id);
+                    }
+                } else if (device_ctx.rr_nodes[i].type() == CHANY) {
+                    if (is_global_graph) {
+                        node.set_cost_index(CHANX_COST_INDEX_START + num_seg_types);
+                    } else {
+                        node.set_cost_index(CHANX_COST_INDEX_START + num_seg_types + seg_id);
+                    }
+                }
+            }
+        }
+        rr_node = rr_node.next_sibling(rr_node.name());
+    }
 }
