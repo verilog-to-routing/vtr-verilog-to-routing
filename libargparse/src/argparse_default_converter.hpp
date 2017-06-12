@@ -40,7 +40,7 @@ class DefaultConverter {
         T from_str(std::string str) {
             std::stringstream ss(str);
 
-            T val;
+            T val = T();
             ss >> val;
 
             bool eof = ss.eof();
@@ -110,12 +110,24 @@ class DefaultConverter<std::string> {
         std::vector<std::string> default_choices() { return {}; }
 };
 
-//DefaultConverter specializations for char*
+//DefaultConverter specializations for const char*
 //  This allocates memory that the user is responsible for freeing
 template<>
 class DefaultConverter<const char*> {
     public:
         const char* from_str(std::string str) { 
+            return strdup(str.c_str()); 
+        }
+        std::string to_str(const char* val) { return val; }
+        std::vector<std::string> default_choices() { return {}; }
+};
+
+//DefaultConverter specializations for char*
+//  This allocates memory that the user is responsible for freeing
+template<>
+class DefaultConverter<char*> {
+    public:
+        char* from_str(std::string str) { 
             return strdup(str.c_str()); 
         }
         std::string to_str(const char* val) { return val; }

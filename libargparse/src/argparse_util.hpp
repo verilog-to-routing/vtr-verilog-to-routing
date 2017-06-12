@@ -27,7 +27,7 @@ namespace argparse {
     template<typename Container>
     std::string join(Container container, std::string join_str);
 
-    const char* strdup(const char* str);
+    char* strdup(const char* str);
 
     std::vector<std::string> wrap_width(std::string str, size_t width, std::vector<std::string> split_str={" ", "/"});
 
