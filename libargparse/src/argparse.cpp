@@ -121,8 +121,11 @@ namespace argparse {
                 } else if (arg->action() == Action::STORE_FALSE) {
                     arg->set_dest_to_false();
                 } else if (arg->action() == Action::HELP) {
-                    arg->set_dest_to_value_from_str("true");
+                    arg->set_dest_to_value("true");
                     throw ArgParseHelp();
+                } else if (arg->action() == Action::VERSION) {
+                    arg->set_dest_to_value("true");
+                    throw ArgParseVersion();
                 } else {
                     assert(arg->action() == Action::STORE);
 
@@ -188,7 +191,7 @@ namespace argparse {
 
 
                         try {
-                            arg->set_dest_to_value_from_str(values[0]); 
+                            arg->set_dest_to_value(values[0]); 
                         } catch (const ArgParseConversionError& e) {
                             std::stringstream msg;
                             msg << e.what() << " for " << arg->long_option();
@@ -218,7 +221,7 @@ namespace argparse {
                     positional_args.pop_front();
 
                     try {
-                        arg->set_dest_to_value_from_str(arg_strs[i]); 
+                        arg->set_dest_to_value(arg_strs[i]); 
                     } catch (const ArgParseConversionError& e) {
                         std::stringstream msg;
                         msg << e.what() << " for positional argument " << arg->long_option();
@@ -365,7 +368,7 @@ namespace argparse {
 
         nargs_ = nargs_type;
 
-        check_action();
+        valid_action();
         return *this;
     }
 
@@ -412,6 +415,14 @@ namespace argparse {
     Argument& Argument::show_in(ShowIn show) {
         show_in_ = show;
         return *this;
+    }
+
+    std::string Argument::name() const { 
+        std::string name_str = long_option();
+        if (!short_option().empty()) {
+            name_str += "/" + short_option();
+        }
+        return name_str;
     }
 
     std::string Argument::long_option() const { return long_opt_; }

@@ -1,12 +1,12 @@
 #include "argparse.hpp"
 
+using argparse::ArgValue;
+
 struct Args {
-    bool do_foo;
-    bool enable_bar;
-
-    std::string filename;
-
-    size_t verbosity;
+    ArgValue<bool> do_foo;
+    ArgValue<bool> enable_bar;
+    ArgValue<std::string> filename;
+    ArgValue<size_t> verbosity;
 };
 
 struct OnOff {
