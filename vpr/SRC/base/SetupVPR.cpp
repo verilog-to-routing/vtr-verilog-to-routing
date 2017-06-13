@@ -24,17 +24,15 @@ using namespace std;
 #include "ReadOptions.h"
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
-static void SetupPackerOpts(const t_options& Options, const bool TimingEnabled,
+static void SetupPackerOpts(const t_options& Options,
 		const t_arch& Arch, const char *net_file,
 		t_packer_opts *PackerOpts);
-static void SetupPlacerOpts(const t_options& Options, const bool TimingEnabled,
+static void SetupPlacerOpts(const t_options& Options,
 		t_placer_opts *PlacerOpts);
 static void SetupAnnealSched(const t_options& Options,
 		t_annealing_sched *AnnealSched);
-static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
-		t_router_opts *RouterOpts);
-static void SetupRoutingArch(const t_arch& Arch,
-		t_det_routing_arch *RoutingArch);
+static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts);
+static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch *RoutingArch);
 static void SetupTiming(const t_options& Options, const t_arch& Arch,
 		const bool TimingEnabled,
 		t_timing_inf * Timing);
@@ -174,9 +172,9 @@ void SetupVPR(t_options *Options,
     FileNameOpts->verify_file_digests = Options->verify_file_digests;
 
     SetupNetlistOpts(*Options, *NetlistOpts);
-	SetupPlacerOpts(*Options, TimingEnabled, PlacerOpts);
+	SetupPlacerOpts(*Options, PlacerOpts);
 	SetupAnnealSched(*Options, AnnealSched);
-	SetupRouterOpts(*Options, TimingEnabled, RouterOpts);
+	SetupRouterOpts(*Options, RouterOpts);
 	SetupAnalysisOpts(*Options, *AnalysisOpts);
 	SetupPowerOpts(*Options, PowerOpts, Arch);
 
@@ -214,7 +212,7 @@ void SetupVPR(t_options *Options,
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
 	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
-	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile, PackerOpts);
+	SetupPackerOpts(*Options, *Arch, Options->NetFile, PackerOpts);
 	RoutingArch->dump_rr_structs_file = nullptr;
 
     //Setup the default flow
@@ -395,8 +393,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 	RoutingArch->switchblocks = Arch.switchblocks;
 }
 
-static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
-		t_router_opts *RouterOpts) {
+static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts) {
 	RouterOpts->astar_fac = Options.astar_fac;
 	RouterOpts->bb_factor = Options.bb_factor;
 	RouterOpts->criticality_exp = Options.criticality_exp;
@@ -406,12 +403,12 @@ static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
 	RouterOpts->pres_fac_mult = Options.pres_fac_mult;
 	RouterOpts->route_type = Options.RouteType;
 
-	RouterOpts->full_stats = true;
+	RouterOpts->full_stats = Options.full_stats;
 
     //TODO document these?
-	RouterOpts->congestion_analysis = false;
-	RouterOpts->fanout_analysis = false;
-    RouterOpts->switch_usage_analysis = false;
+	RouterOpts->congestion_analysis = Options.full_stats;
+	RouterOpts->fanout_analysis = Options.full_stats;
+    RouterOpts->switch_usage_analysis = Options.full_stats;
 
 	RouterOpts->verify_binary_search = Options.verify_binary_search;
 	RouterOpts->router_algorithm = Options.RouterAlgorithm;
@@ -465,7 +462,7 @@ static void SetupAnnealSched(const t_options& Options,
 /* Sets up the s_packer_opts structure baesd on users inputs and on the architecture specified.  
  * Error checking, such as checking for conflicting params is assumed to be done beforehand 
  */
-void SetupPackerOpts(const t_options& Options, const bool TimingEnabled,
+void SetupPackerOpts(const t_options& Options,
 		const t_arch& Arch, const char *net_file,
 		t_packer_opts *PackerOpts) {
 
@@ -508,8 +505,7 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
 
 /* Sets up the s_placer_opts structure based on users input. Error checking,
  * such as checking for conflicting params is assumed to be done beforehand */
-static void SetupPlacerOpts(const t_options& Options, const bool TimingEnabled,
-		t_placer_opts *PlacerOpts) {
+static void SetupPlacerOpts(const t_options& Options, t_placer_opts *PlacerOpts) {
 
 	PlacerOpts->doPlacement = Options.do_placement;
 
