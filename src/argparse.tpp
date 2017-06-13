@@ -4,7 +4,7 @@
 namespace argparse {
     
     template<typename T, typename Converter>
-    std::shared_ptr<Argument> make_argument(T& dest, std::string long_opt, std::string short_opt) {
+    std::shared_ptr<Argument> make_argument(ArgValue<T>& dest, std::string long_opt, std::string short_opt) {
         auto ptr = std::make_shared<SingleValueArgument<T, Converter>>(dest, long_opt, short_opt);
 
         //If the conversion object specifies a non-empty set of choices
@@ -22,12 +22,12 @@ namespace argparse {
      */
 
     template<typename T, typename Converter>
-    Argument& ArgumentParser::add_argument(T& dest, std::string option) {
+    Argument& ArgumentParser::add_argument(ArgValue<T>& dest, std::string option) {
         return add_argument<T,Converter>(dest, option, std::string());
     }
 
     template<typename T, typename Converter>
-    Argument& ArgumentParser::add_argument(T& dest, std::string long_opt, std::string short_opt) {
+    Argument& ArgumentParser::add_argument(ArgValue<T>& dest, std::string long_opt, std::string short_opt) {
         return argument_groups_[0].add_argument<T,Converter>(dest, long_opt, short_opt);
     }
 
@@ -35,12 +35,12 @@ namespace argparse {
      * ArgumentGroup
      */
     template<typename T, typename Converter>
-    Argument& ArgumentGroup::add_argument(T& dest, std::string option) {
+    Argument& ArgumentGroup::add_argument(ArgValue<T>& dest, std::string option) {
         return add_argument<T,Converter>(dest, option, std::string());
     }
 
     template<typename T, typename Converter>
-    Argument& ArgumentGroup::add_argument(T& dest, std::string long_opt, std::string short_opt) {
+    Argument& ArgumentGroup::add_argument(ArgValue<T>& dest, std::string long_opt, std::string short_opt) {
         arguments_.push_back(make_argument<T,Converter>(dest, long_opt, short_opt));
 
         auto& arg = arguments_[arguments_.size() - 1];

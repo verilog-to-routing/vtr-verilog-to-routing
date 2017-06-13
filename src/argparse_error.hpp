@@ -15,5 +15,9 @@ namespace argparse {
 
     };
 
+    class ArgParseVersion {
+
+    };
+
 }
 #endif

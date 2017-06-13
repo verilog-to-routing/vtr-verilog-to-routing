@@ -1,87 +1,89 @@
 #include "argparse.hpp"
 #include "argparse_util.hpp"
 
+using argparse::ArgValue;
+
 #define TEST
 
 struct Args {
-    std::string architecture_file;
-    std::string circuit;
+    ArgValue<std::string> architecture_file;
+    ArgValue<std::string> circuit;
 
-    bool disp;
-    bool auto_value;
+    ArgValue<bool> disp;
+    ArgValue<bool> auto_value;
 
-    bool pack;
-    bool place;
-    bool route;
+    ArgValue<bool> pack;
+    ArgValue<bool> place;
+    ArgValue<bool> route;
 
-    bool show_help;
-    bool timing_analysis;
-    const char* slack_definition;
-    bool echo_files;
-    bool verify_file_digests;
+    ArgValue<bool> show_help;
+    ArgValue<bool> timing_analysis;
+    ArgValue<const char*> slack_definition;
+    ArgValue<bool> echo_files;
+    ArgValue<bool> verify_file_digests;
 
-    std::string blif_file;
-    std::string net_file;
-    std::string place_file;
-    std::string route_file;
-    std::string sdc_file;
-    std::string outfile_prefix;
+    ArgValue<std::string> blif_file;
+    ArgValue<std::string> net_file;
+    ArgValue<std::string> place_file;
+    ArgValue<std::string> route_file;
+    ArgValue<std::string> sdc_file;
+    ArgValue<std::string> outfile_prefix;
 
-    bool absorb_buffer_luts;
-    bool sweep_dangling_primary_ios;
-    bool sweep_dangling_nets;
-    bool sweep_dangling_blocks;
-    bool sweep_constant_primary_outputs;
+    ArgValue<bool> absorb_buffer_luts;
+    ArgValue<bool> sweep_dangling_primary_ios;
+    ArgValue<bool> sweep_dangling_nets;
+    ArgValue<bool> sweep_dangling_blocks;
+    ArgValue<bool> sweep_constant_primary_outputs;
 
-    bool connection_driven_clustering;
-    bool allow_unrelated_clustering;
-    float alpha_clustering;
-    float beta_clustering;
-    bool timing_driven_clustering;
-    std::string cluster_seed_type;
+    ArgValue<bool> connection_driven_clustering;
+    ArgValue<bool> allow_unrelated_clustering;
+    ArgValue<float> alpha_clustering;
+    ArgValue<float> beta_clustering;
+    ArgValue<bool> timing_driven_clustering;
+    ArgValue<std::string> cluster_seed_type;
 
-    size_t seed;
-    bool enable_timing_computations;
-    float inner_num;
-    float init_t;
-    float exit_t;
-    float alpha_t;
-    std::string fix_pins;
-    std::string place_algorithm;
-    size_t place_chan_width;
+    ArgValue<size_t> seed;
+    ArgValue<bool> enable_timing_computations;
+    ArgValue<float> inner_num;
+    ArgValue<float> init_t;
+    ArgValue<float> exit_t;
+    ArgValue<float> alpha_t;
+    ArgValue<std::string> fix_pins;
+    ArgValue<std::string> place_algorithm;
+    ArgValue<size_t> place_chan_width;
 
-    float timing_tradeoff;
-    int recompute_crit_iter;
-    int inner_loop_recompute_divider;
-    float td_place_exp_first;
-    float td_place_exp_last;
+    ArgValue<float> timing_tradeoff;
+    ArgValue<int> recompute_crit_iter;
+    ArgValue<int> inner_loop_recompute_divider;
+    ArgValue<float> td_place_exp_first;
+    ArgValue<float> td_place_exp_last;
 
-    int max_router_iterations;
-    float first_iter_pres_fac;
-    float initial_pres_fac;
-    float pres_fac_mult;
-    float acc_fac;
-    int bb_factor;
-    std::string base_cost_type;
-    float bend_cost;
-    std::string route_type;
-    size_t route_chan_width;
-    size_t min_route_chan_width_hint;
-    bool verify_binary_search;
-    std::string router_algorithm;
-    int min_incremental_reroute_fanout;
+    ArgValue<int> max_router_iterations;
+    ArgValue<float> first_iter_pres_fac;
+    ArgValue<float> initial_pres_fac;
+    ArgValue<float> pres_fac_mult;
+    ArgValue<float> acc_fac;
+    ArgValue<int> bb_factor;
+    ArgValue<std::string> base_cost_type;
+    ArgValue<float> bend_cost;
+    ArgValue<std::string> route_type;
+    ArgValue<size_t> route_chan_width;
+    ArgValue<size_t> min_route_chan_width_hint;
+    ArgValue<bool> verify_binary_search;
+    ArgValue<std::string> router_algorithm;
+    ArgValue<int> min_incremental_reroute_fanout;
 
-    float astar_fac;
-    float max_criticality;
-    float criticality_exp;
-    std::string routing_failure_predictor;
+    ArgValue<float> astar_fac;
+    ArgValue<float> max_criticality;
+    ArgValue<float> criticality_exp;
+    ArgValue<std::string> routing_failure_predictor;
 
-    bool power;
-    std::string tech_properties_file;
-    std::string activity_file;
+    ArgValue<bool> power;
+    ArgValue<std::string> tech_properties_file;
+    ArgValue<std::string> activity_file;
 
-    bool full_stats;
-    bool gen_post_synthesis_netlist;
+    ArgValue<bool> full_stats;
+    ArgValue<bool> gen_post_synthesis_netlist;
 };
 
 bool expect_pass(argparse::ArgumentParser& parser, std::vector<std::string> cmd_line);
