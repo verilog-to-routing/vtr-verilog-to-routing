@@ -29,12 +29,12 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 #include "read_options.h"
-#include "OptionTokens.h"
 #include "globals.h"
 #include "read_xml_arch_file.h"
 #include "vpr_utils.h"
 #include "place_macro.h"
 #include "timing_info_fwd.h"
+#include "echo_files.h"
 
 #include "vpr_error.h"
 
@@ -86,7 +86,7 @@ void vpr_check_setup(
 		const t_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans);
 /* Show current setup */
-void vpr_show_setup(const t_options& options, const t_vpr_setup& vpr_setup);
+void vpr_show_setup(const t_vpr_setup& vpr_setup);
 void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info);
 
 /* Output file names management */

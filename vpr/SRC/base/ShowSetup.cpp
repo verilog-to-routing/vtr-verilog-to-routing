@@ -6,8 +6,8 @@
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "OptionTokens.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
+#include "read_options.h"
 #include "read_xml_arch_file.h"
 #include "ShowSetup.h"
 
@@ -24,7 +24,7 @@ static void ShowRoutingArch(const t_det_routing_arch& RoutingArch);
 
 /******** Function Implementations ********/
 
-void ShowSetup(const t_options& options, const t_vpr_setup& vpr_setup) {
+void ShowSetup(const t_vpr_setup& vpr_setup) {
 	vtr::printf_info("Timing analysis: %s\n", (vpr_setup.TimingEnabled? "ON" : "OFF"));
     vtr::printf_info("Slack definition: %c\n", vpr_setup.Timing.slack_definition);
 

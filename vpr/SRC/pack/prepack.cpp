@@ -28,7 +28,7 @@ using namespace std;
 #include "hash.h"
 #include "prepack.h"
 #include "vpr_utils.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 
 /*****************************************/
 /*Local Function Declaration			 */

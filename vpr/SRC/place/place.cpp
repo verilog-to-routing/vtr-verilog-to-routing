@@ -25,7 +25,7 @@ using namespace std;
 #include "timing_place.h"
 #include "place_stats.h"
 #include "read_xml_arch_file.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "vpr_utils.h"
 #include "place_macro.h"
 #include "histogram.h"

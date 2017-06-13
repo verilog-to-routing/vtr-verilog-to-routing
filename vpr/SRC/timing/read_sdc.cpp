@@ -20,7 +20,6 @@ using namespace std;
 #include "read_blif.h"
 #include "path_delay.h"
 #include "path_delay2.h"
-#include "ReadOptions.h"
 #include "slre.h"
 #include "sdcparse.hpp"
 

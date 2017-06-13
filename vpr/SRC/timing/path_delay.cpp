@@ -18,7 +18,7 @@ using namespace std;
 #include "net_delay.h"
 #include "vpr_utils.h"
 #include "read_xml_arch_file.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "read_sdc.h"
 #include "stats.h"
 

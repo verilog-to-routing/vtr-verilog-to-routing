@@ -11,7 +11,6 @@ using namespace std;
 #include "vpr_types.h"
 #include "vpr_error.h"
 
-#include "OptionTokens.h"
 #include "globals.h"
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
@@ -21,7 +20,7 @@ using namespace std;
 #include "rr_graph_area.h"
 #include "echo_arch.h"
 #include "read_options.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void SetupPackerOpts(const t_options& Options,

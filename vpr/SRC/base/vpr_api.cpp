@@ -38,9 +38,8 @@ using namespace std;
 #include "SetupGrid.h"
 #include "stats.h"
 #include "path_delay.h"
-#include "OptionTokens.h"
 #include "read_options.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
 #include "ShowSetup.h"
@@ -147,7 +146,7 @@ void vpr_init(const int argc, const char **argv,
     vtr::printf_info("\n");
 
     /* Determine whether echo is on or off */
-    setEchoEnabled(IsEchoEnabled(options));
+    setEchoEnabled(options->CreateEchoFile);
 
     /* Read in arch and circuit */
     SetupVPR(options, 
@@ -221,7 +220,7 @@ void vpr_init(const int argc, const char **argv,
 
     fflush(stdout);
 
-    ShowSetup(*options, *vpr_setup);
+    ShowSetup(*vpr_setup);
 }
 
 /*
@@ -906,8 +905,8 @@ void vpr_check_setup(
 }
 
 /* Show current setup */
-void vpr_show_setup(const t_options& options, const t_vpr_setup& vpr_setup) {
-	ShowSetup(options, vpr_setup);
+void vpr_show_setup(const t_vpr_setup& vpr_setup) {
+	ShowSetup(vpr_setup);
 }
 
 void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {

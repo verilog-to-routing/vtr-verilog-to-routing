@@ -19,7 +19,6 @@ using namespace std;
 #include "pack.h"
 #include "read_blif.h"
 #include "cluster.h"
-#include "ReadOptions.h"
 
 /* #define DUMP_PB_GRAPH 1 */
 /* #define DUMP_BLIF_INPUT 1 */
