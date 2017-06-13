@@ -552,7 +552,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     route_timing_grp.add_argument<e_routing_failure_predictor,ParseRoutePredictor>(args.routing_failure_predictor, "--routing_failure_predictor")
             .help("Controls how aggressively the router will predict a routing as unsuccessful"
                   " and give up early. This can significantly reducing the run-time required"
-                  " to find the minimum channel width).\n"
+                  " to find the minimum channel width.\n"
                   " * safe: Only abort when it is extremely unlikely a routing will succeed\n"
                   " * aggressive: Further reduce run-time by giving up earlier. This may increase the reported minimum channel width\n"
                   " * off: Only abort when the maximum number of iterations is reached\n")
