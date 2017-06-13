@@ -39,6 +39,9 @@ namespace argparse {
             //Overrides the program name
             ArgumentParser& prog(std::string prog, bool basename_only=true);
 
+            //Sets the program version
+            ArgumentParser& version(std::string version);
+
             //Specifies the epilog text at the bottom of the help description
             ArgumentParser& epilog(std::string prog);
 
@@ -54,14 +57,14 @@ namespace argparse {
             ArgumentGroup& add_argument_group(std::string description_str);
 
             //Like parse_arg_throw(), but catches exceptions and exits the program
-            std::vector<std::shared_ptr<Argument>> parse_args(int argc, const char** argv, int error_exit_code=1, int help_exit_code=0);
+            void parse_args(int argc, const char** argv, int error_exit_code=1, int help_exit_code=0, int version_exit_code=0);
 
             //Parses the specified command-line arguments and sets the appropriat argument values
             // Returns a vector of Arguments which were specified.
             //If an error occurs throws ArgParseError
             //If an help is requested occurs throws ArgParseHelp
-            std::vector<std::shared_ptr<Argument>> parse_args_throw(int argc, const char** argv);
-            std::vector<std::shared_ptr<Argument>> parse_args_throw(std::vector<std::string> args);
+            void parse_args_throw(int argc, const char** argv);
+            void parse_args_throw(std::vector<std::string> args);
 
 
             //Prints the basic usage
@@ -69,9 +72,14 @@ namespace argparse {
 
             //Prints the usage and full help description for each option
             void print_help();
+
+            //Prints the version information
+            void print_version();
         public:
             //Returns the program name
             std::string prog() const;
+
+            std::string version() const;
 
             //Returns the program description (after usage, but before option descriptions)
             std::string description() const;
@@ -88,6 +96,7 @@ namespace argparse {
             std::string prog_;
             std::string description_;
             std::string epilog_;
+            std::string version_;
             std::vector<ArgumentGroup> argument_groups_;
 
             Formatter* formatter_;

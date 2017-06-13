@@ -180,6 +180,11 @@ namespace argparse {
         return ss.str();
     }
 
+    std::string DefaultFormatter::format_version() const {
+        if (!parser_) throw ArgParseError("parser not initialized in help formatter");
+        return parser_->version() + "\n";
+    }
+
     /*
      * Utilities
      */
