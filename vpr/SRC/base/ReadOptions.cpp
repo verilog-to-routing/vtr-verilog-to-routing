@@ -21,6 +21,7 @@ static char **echoFileNames = NULL;
 
 static char **outputFileNames = NULL;
 
+#if 0
 /******** Function prototypes ********/
 
 static char **ReadBaseToken(char **Args, enum e_OptionBaseToken *Token);
@@ -57,16 +58,13 @@ bool IsTimingEnabled(const t_options *Options) {
     }
     return true;
 }
+#endif
 
 /* Determines whether file echo should be on or off. 
  Unless otherwise specified, always default to on.
  */
 bool IsEchoEnabled(const t_options *Options) {
-    /* First priority to the '--echo_file' flag */
-    if (Options->Count[OT_CREATE_ECHO_FILE]) {
-        return Options->CreateEchoFile;
-    }
-    return false;
+    return Options->CreateEchoFile;
 }
 
 bool getEchoEnabled(void) {
@@ -226,6 +224,7 @@ void free_output_file_names() {
     }
 }
 
+#if 0
 /******** Subroutine implementations ********/
 
 void ReadOptions(int argc, const char **argv, t_options * Options) {
@@ -773,4 +772,4 @@ ReadChar(char **Args, char *Val) {
 
     return ++Args;
 }
-
+#endif

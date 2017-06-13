@@ -28,7 +28,7 @@
 
 #include "physical_types.h"
 #include "vpr_types.h"
-#include "ReadOptions.h"
+#include "read_options.h"
 #include "OptionTokens.h"
 #include "globals.h"
 #include "read_xml_arch_file.h"
@@ -81,7 +81,9 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 void vpr_check_options(const t_options& Options, const bool TimingEnabled);
 void vpr_check_arch(const t_arch& Arch);
 /* Verify settings don't conflict or otherwise not make sense */
-void vpr_check_setup(const t_placer_opts PlacerOpts,
+void vpr_check_setup(
+        const t_packer_opts PackerOpts,
+        const t_placer_opts PlacerOpts,
 		const t_router_opts RouterOpts,
 		const t_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans);

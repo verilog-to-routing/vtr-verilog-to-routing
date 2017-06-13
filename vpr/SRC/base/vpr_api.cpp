@@ -39,6 +39,7 @@ using namespace std;
 #include "stats.h"
 #include "path_delay.h"
 #include "OptionTokens.h"
+#include "read_options.h"
 #include "ReadOptions.h"
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
@@ -48,7 +49,6 @@ using namespace std;
 #include "CheckOptions.h"
 #include "rr_graph.h"
 #include "pb_type_graph.h"
-#include "ReadOptions.h"
 #include "route_common.h"
 #include "timing_place_lookup.h"
 #include "route_export.h"
@@ -201,7 +201,7 @@ void vpr_init(const int argc, const char **argv,
     memset(arch, 0, sizeof(t_arch));
 
     /* Read in user options */
-    ReadOptions(argc, argv, options);
+    *options = read_options(argc, argv);
 
     if(options->show_version) {
         //Printed title (which includes version info) above, so all done
@@ -215,7 +215,7 @@ void vpr_init(const int argc, const char **argv,
 
 
     /* Timing option priorities */
-    vpr_setup->TimingEnabled = IsTimingEnabled(options);
+    vpr_setup->TimingEnabled = options->timing_analysis;
 
     /* Verify the rest of the options */
     CheckOptions(*options, vpr_setup->TimingEnabled);
@@ -227,8 +227,6 @@ void vpr_init(const int argc, const char **argv,
 
     /* Determine whether echo is on or off */
     setEchoEnabled(IsEchoEnabled(options));
-    vpr_setup->constant_net_delay = options->constant_net_delay;
-    vpr_setup->gen_netlist_as_blif = (options->Count[OT_GEN_NELIST_AS_BLIF] > 0);
 
     /* Read in arch and circuit */
     SetupVPR(options, 
@@ -256,7 +254,9 @@ void vpr_init(const int argc, const char **argv,
     CheckArch(*arch);
 
     /* Verify settings don't conflict or otherwise not make sense */
-    CheckSetup(vpr_setup->PlacerOpts,
+    CheckSetup(
+            vpr_setup->PackerOpts,
+            vpr_setup->PlacerOpts,
             vpr_setup->RouterOpts,
             vpr_setup->RoutingArch, vpr_setup->Segments, vpr_setup->Timing,
             arch->Chans);
@@ -748,8 +748,8 @@ void free_options(const t_options *options) {
 		vtr::free(options->RouteFile);
 	if (options->out_file_prefix)
 		vtr::free(options->out_file_prefix);
-	if (options->PinFile)
-		vtr::free(options->PinFile);
+	if (options->pad_loc_file)
+		vtr::free(options->pad_loc_file);
 }
 
 static void free_complex_block_types(void) {
@@ -920,8 +920,7 @@ void vpr_free_vpr_data_structures(t_arch& Arch,
 	free_options(&options);
 	free_circuit();
 	free_arch(&Arch);
-	free_echo_file_info();
-	free_output_file_names();
+    free_echo_file_info();
 	free_timing_stats();
 	free_sdc_related_structs();
 }
@@ -945,7 +944,7 @@ void vpr_free_all(t_arch& Arch,
  ****************************************************************************************************/
 /* Read in user options */
 void vpr_read_options(const int argc, const char **argv, t_options * options) {
-	ReadOptions(argc, argv, options);
+    *options = read_options(argc, argv);
 }
 
 /* Read in arch and circuit */
@@ -977,29 +976,19 @@ void vpr_check_arch(const t_arch& Arch) {
 	CheckArch(Arch);
 }
 /* Verify settings don't conflict or otherwise not make sense */
-void vpr_check_setup(const t_placer_opts PlacerOpts,
+void vpr_check_setup(
+        const t_packer_opts PackerOpts,
+        const t_placer_opts PlacerOpts,
 		const t_router_opts RouterOpts,
 		const t_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans) {
-	CheckSetup(PlacerOpts, RouterOpts, RoutingArch,
+	CheckSetup(PackerOpts, PlacerOpts, RouterOpts, RoutingArch,
 			Segments, Timing, Chans);
 }
 
 /* Show current setup */
 void vpr_show_setup(const t_options& options, const t_vpr_setup& vpr_setup) {
 	ShowSetup(options, vpr_setup);
-}
-
-/* Output file names management */
-void vpr_alloc_and_load_output_file_names(const char* default_name) {
-	alloc_and_load_output_file_names(default_name);
-}
-void vpr_set_output_file_name(enum e_output_files ename, const char *name,
-		const char* default_name) {
-	setOutputFileName(ename, name, default_name);
-}
-char *vpr_get_output_file_name(enum e_output_files ename) {
-	return getOutputFileName(ename);
 }
 
 void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {

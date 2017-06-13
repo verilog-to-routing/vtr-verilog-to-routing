@@ -689,7 +689,6 @@ struct t_packer_opts {
 	float beta;
 	float inter_cluster_net_delay;
 	bool auto_compute_inter_cluster_net_delay;
-	bool skip_clustering;
 	bool allow_unrelated_clustering;
 	bool connection_driven;
 	bool doPacking;
@@ -819,7 +818,7 @@ enum e_routing_failure_predictor {
 	OFF, SAFE, AGGRESSIVE
 };
 
-#define NO_FIXED_CHANNEL_WIDTH -1
+constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
 
 struct t_router_opts {
 	float first_iter_pres_fac;

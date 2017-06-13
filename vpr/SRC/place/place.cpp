@@ -391,7 +391,7 @@ void try_place(t_placer_opts placer_opts,
 
 	/* Gets initial cost and loads bounding boxes. */
 
-	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE || placer_opts.enable_timing_computations) {
 		bb_cost = comp_bb_cost(NORMAL);
 
 		crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
@@ -779,6 +779,7 @@ void try_place(t_placer_opts placer_opts,
 			|| placer_opts.enable_timing_computations) {
 
         //Final timing estimate
+        VTR_ASSERT(timing_info);
         timing_info->update(); //Tatum
 		critical_path = timing_info->least_slack_critical_path();
 

@@ -12,6 +12,7 @@
 void check_for_stage_options(const t_options& options, e_OptionBaseToken start, e_OptionBaseToken end, const char* stage_name);
 
 void CheckOptions(const t_options& options, bool timing_enabled) {
+#if 0
     //By default we run all stages
     bool default_flow = (options.Count[OT_PACK] == 0 &&
                          options.Count[OT_PLACE] == 0 &&
@@ -127,10 +128,11 @@ void CheckOptions(const t_options& options, bool timing_enabled) {
                                 "analysis power estimation");
     }
 
+#endif
 }
 
 void check_for_stage_options(const t_options& options, e_OptionBaseToken start, e_OptionBaseToken end, const char* stage_name) {
-
+#if 0
     //The start and end are special markers in e_OptionBaseToken
     //which should never be specified
     VTR_ASSERT(options.Count[start] == 0);
@@ -155,4 +157,5 @@ void check_for_stage_options(const t_options& options, e_OptionBaseToken start, 
         }
         ++Cur;
     }
+#endif
 }

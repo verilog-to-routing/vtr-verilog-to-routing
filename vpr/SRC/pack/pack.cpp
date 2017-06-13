@@ -94,27 +94,22 @@ void try_pack(t_packer_opts *packer_opts,
 		vtr::printf_info("Using inter-cluster delay: %g\n", packer_opts->inter_cluster_net_delay);
 	}
 
-	if (packer_opts->skip_clustering == false) {
-		do_clustering(arch, list_of_pack_molecules, num_models,
-				packer_opts->global_clocks, is_clock, 
-                atom_molecules,
-                expected_lowest_cost_pb_gnode,
-				packer_opts->hill_climbing_flag, packer_opts->output_file,
-				packer_opts->timing_driven, packer_opts->cluster_seed_type,
-				packer_opts->alpha, packer_opts->beta,
-				packer_opts->inter_cluster_net_delay, packer_opts->aspect,
-				packer_opts->allow_unrelated_clustering,
-				packer_opts->connection_driven,
-				packer_opts->packer_algorithm,
-				lb_type_rr_graphs
+    do_clustering(arch, list_of_pack_molecules, num_models,
+            packer_opts->global_clocks, is_clock, 
+            atom_molecules,
+            expected_lowest_cost_pb_gnode,
+            packer_opts->hill_climbing_flag, packer_opts->output_file,
+            packer_opts->timing_driven, packer_opts->cluster_seed_type,
+            packer_opts->alpha, packer_opts->beta,
+            packer_opts->inter_cluster_net_delay, packer_opts->aspect,
+            packer_opts->allow_unrelated_clustering,
+            packer_opts->connection_driven,
+            packer_opts->packer_algorithm,
+            lb_type_rr_graphs
 #ifdef ENABLE_CLASSIC_VPR_STA
-                , timing_inf
+            , timing_inf
 #endif
-                );
-	} else {
-		vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__, 
-				"Skip clustering no longer supported.\n");
-	}
+            );
 
 	/*free list_of_pack_molecules*/
 	free_list_of_pack_patterns(list_of_packing_patterns, num_packing_patterns);

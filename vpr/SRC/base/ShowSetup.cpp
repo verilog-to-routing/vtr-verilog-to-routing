@@ -353,9 +353,7 @@ static void ShowPlacerOpts(const t_options& Options,
 
 		vtr::printf_info("PlacerOpts.place_cost_exp: %f\n", PlacerOpts.place_cost_exp);
 
-		if (Options.Count[OT_PLACE_CHAN_WIDTH]) {
-			vtr::printf_info("PlacerOpts.place_chan_width: %d\n", PlacerOpts.place_chan_width);
-		}
+        vtr::printf_info("PlacerOpts.place_chan_width: %d\n", PlacerOpts.place_chan_width);
 
 		if (PATH_TIMING_DRIVEN_PLACE == PlacerOpts.place_algorithm) {
 			vtr::printf_info("PlacerOpts.inner_loop_recompute_divider: %d\n", PlacerOpts.inner_loop_recompute_divider);
