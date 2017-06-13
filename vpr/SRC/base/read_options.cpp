@@ -4,6 +4,7 @@
 
 #include "vtr_memory.h"
 #include "vtr_log.h"
+#include "vtr_util.h"
 
 #include "vpr_error.h"
 
@@ -172,9 +173,39 @@ struct ParseClusterSeed {
 };
 
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
-    std::string description = "Versatile Place and Route (VPR)";
+    std::string description = "Implements the specified circuit onto the target FPGA architecture"
+                              " by performing packing/placement/routing, and analyzes the result.\n"
+                              "\n"
+                              "Attempts to find the minimum routable channel width, unless a fixed"
+                              " channel width is specified with --route_chan_width."
+                              ;
     auto parser = argparse::ArgumentParser(prog_name, description);
-    parser.epilog("For additional usage information see: https://docs.verilogtorouting.org");
+
+    std::string epilog = vtr::replace_all( 
+        "Usage Examples\n"
+        "--------------\n"
+        "   #Find the minimum routable channel width of my_circuit on my_arch\n"
+        "   {prog} my_arch.xml my_circuit.blif\n"
+        "\n"
+        "   #Show interactive graphics\n"
+        "   {prog} my_arch.xml my_circuit.blif --disp on\n"
+        "\n"
+        "   #Implement at a fixed channel width of 100\n"
+        "   {prog} my_arch.xml my_circuit.blif --route_chan_width 100\n"
+        "\n"
+        "   #Perform packing and placement only\n"
+        "   {prog} my_arch.xml my_circuit.blif --pack --place\n"
+        "\n"
+        "   #Generate post-implementation netlist\n"
+        "   {prog} my_arch.xml my_circuit.blif --gen_post_synthesis_netlist on\n"
+        "\n"
+        "   #Write routing-resource graph to a file\n"
+        "   {prog} my_arch.xml my_circuit.blif --write_rr_graph my_rr_graph.xml\n"
+        "\n"
+        "\n"
+        "For additional documentation see: https://docs.verilogtorouting.org",
+        "{prog}", parser.prog());
+    parser.epilog(epilog);
 
 
     auto& pos_grp = parser.add_argument_group("positional arguments");
@@ -399,10 +430,10 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.pad_loc_file, "--fix_pins")
-            .help("Fixes I/O pad locations during placement. Valid options:"
+            .help("Fixes I/O pad locations during placement. Valid options:\n"
                   " * 'free' allows placement to optimize pad locations\n"
-                  " * 'random' fixes pad locations to an arbitray random assignment\n"
-                  " * or path to file specifying pad locations (.place format with only pads specified)")
+                  " * 'random' fixes pad locations to an arbitray random locations\n"
+                  " * or path to file specifying pad locations (.place format with only pads specified).")
             .default_value("free")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -488,7 +519,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("Sets the basic cost of routing resource nodes:\n"
                   " * demand_only: based on expected demand of node type\n"
                   " * delay_normalized: like demand_only but normalized to magnitude of typical routing resource delay\n"
-                  "(Default: demand_only for bread-first router, delay_normalized for timing-driven router)")
+                  "(Default: demand_only for breadth-first router, delay_normalized for timing-driven router)")
             .choices({"demand_only", "delay_normalized"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 
