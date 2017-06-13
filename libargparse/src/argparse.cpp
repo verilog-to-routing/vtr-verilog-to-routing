@@ -3,6 +3,7 @@
 #include <list>
 #include <cassert>
 #include <string>
+#include <set>
 
 #include "argparse.hpp"
 #include "argparse_util.hpp"
@@ -31,6 +32,11 @@ namespace argparse {
         return *this;
     }
 
+    ArgumentParser& ArgumentParser::version(std::string version_str) {
+        version_ = version_str;
+        return *this;
+    }
+
     ArgumentParser& ArgumentParser::epilog(std::string epilog_str) {
         epilog_ = epilog_str;
         return *this;
@@ -41,14 +47,16 @@ namespace argparse {
         return argument_groups_[argument_groups_.size() - 1];
     }
 
-    std::vector<std::shared_ptr<Argument>> ArgumentParser::parse_args(int argc, const char** argv, int error_exit_code, int help_exit_code) {
-        std::vector<std::shared_ptr<Argument>> specified_arguments;
+    void ArgumentParser::parse_args(int argc, const char** argv, int error_exit_code, int help_exit_code, int version_exit_code) {
         try {
-            specified_arguments = parse_args_throw(argc, argv);
+            parse_args_throw(argc, argv);
         } catch (const argparse::ArgParseHelp&) {
             //Help requested
             print_help();
             std::exit(help_exit_code);
+        } catch (const argparse::ArgParseVersion&) {
+            print_version();
+            std::exit(version_exit_code);
         } catch (const argparse::ArgParseError& e) {
             //Failed to parse
             std::cout << e.what() << "\n";
@@ -57,19 +65,18 @@ namespace argparse {
             print_usage();
             std::exit(error_exit_code);
         }
-        return specified_arguments;
     }
 
-    std::vector<std::shared_ptr<Argument>> ArgumentParser::parse_args_throw(int argc, const char** argv) {
+    void ArgumentParser::parse_args_throw(int argc, const char** argv) {
         std::vector<std::string> arg_strs;
         for (int i = 1; i < argc; ++i) {
             arg_strs.push_back(argv[i]);
         }
 
-        return parse_args_throw(arg_strs);
+        parse_args_throw(arg_strs);
     }
     
-    std::vector<std::shared_ptr<Argument>> ArgumentParser::parse_args_throw(std::vector<std::string> arg_strs) {
+    void ArgumentParser::parse_args_throw(std::vector<std::string> arg_strs) {
         add_help_option_if_unspecified();
 
         //Reset all the defaults
@@ -105,7 +112,7 @@ namespace argparse {
             }
         }
 
-        std::vector<std::shared_ptr<Argument>> specified_arguments;
+        std::set<std::shared_ptr<Argument>> specified_arguments;
 
         //Process the arguments
         for (size_t i = 0; i < arg_strs.size(); i++) {
@@ -114,17 +121,17 @@ namespace argparse {
                 //Start of an argument
                 auto& arg = iter->second;
 
-                specified_arguments.push_back(arg);
+                specified_arguments.insert(arg);
 
                 if (arg->action() == Action::STORE_TRUE) {
                     arg->set_dest_to_true(); 
                 } else if (arg->action() == Action::STORE_FALSE) {
                     arg->set_dest_to_false();
                 } else if (arg->action() == Action::HELP) {
-                    arg->set_dest_to_value("true");
+                    arg->set_dest_to_true(); 
                     throw ArgParseHelp();
                 } else if (arg->action() == Action::VERSION) {
-                    arg->set_dest_to_value("true");
+                    arg->set_dest_to_true(); 
                     throw ArgParseVersion();
                 } else {
                     assert(arg->action() == Action::STORE);
@@ -229,7 +236,7 @@ namespace argparse {
                     }
 
                     auto value = arg_strs[i];
-                    specified_arguments.push_back(arg);
+                    specified_arguments.insert(arg);
                 }
             }
         }
@@ -246,8 +253,7 @@ namespace argparse {
             for (const auto& arg : group.arguments()) {
                 if (arg->required()) {
                     //potentially slow...
-                    auto iter = std::find(specified_arguments.begin(), specified_arguments.end(), arg);
-                    if (iter == specified_arguments.end()) {
+                    if (!specified_arguments.count(arg)) {
                         std::stringstream msg;
                         msg << "Missing required argument: " << arg->long_option();
                         auto short_opt = arg->short_option();
@@ -259,8 +265,6 @@ namespace argparse {
                 }
             }
         }
-
-        return specified_arguments;
     }
 
     void ArgumentParser::print_usage() {
@@ -276,7 +280,13 @@ namespace argparse {
         os_ << formatter_->format_epilog();
     }
 
+    void ArgumentParser::print_version() {
+        formatter_->set_parser(this);
+        os_ << formatter_->format_version();
+    }
+
     std::string ArgumentParser::prog() const { return prog_; }
+    std::string ArgumentParser::version() const { return version_; }
     std::string ArgumentParser::description() const { return description_; }
     std::string ArgumentParser::epilog() const { return epilog_; }
     std::vector<ArgumentGroup> ArgumentParser::argument_groups() const { return argument_groups_; }
@@ -385,7 +395,10 @@ namespace argparse {
     Argument& Argument::action(Action action_type) {
         action_ = action_type;
 
-        if (action_ == Action::STORE_FALSE || action_ == Action::STORE_TRUE || action_ == Action::HELP) {
+        if (   action_ == Action::STORE_FALSE 
+            || action_ == Action::STORE_TRUE 
+            || action_ == Action::HELP 
+            || action_ == Action::VERSION) {
             this->nargs('0');
         } else if (action_ == Action::STORE) {
             this->nargs('1');

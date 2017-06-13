@@ -14,6 +14,7 @@ namespace argparse {
             virtual std::string format_description() const = 0;
             virtual std::string format_arguments() const = 0;
             virtual std::string format_epilog() const = 0;
+            virtual std::string format_version() const = 0;
     };
 
     class DefaultFormatter : public Formatter {
@@ -24,6 +25,7 @@ namespace argparse {
             std::string format_description() const override;
             std::string format_arguments() const override;
             std::string format_epilog() const override;
+            std::string format_version() const override;
         private:
             size_t option_name_width_;
             size_t total_width_;

@@ -14,12 +14,10 @@ Basic Usage
 #include "argparse.hpp"
 
 struct Args {
-    bool do_foo;
-    bool enable_bar;
-
-    std::string filename;
-
-    size_t verbosity;
+    argparse::ArgValue<bool> do_foo;
+    argparse::ArgValue<bool> enable_bar;
+    argparse::ArgValue<std::string> filename;
+    argparse::ArgValue<size_t> verbosity;
 };
 
 int main(int argc, const char** argv) {
