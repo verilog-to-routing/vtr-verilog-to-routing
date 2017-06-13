@@ -6,9 +6,8 @@
 #include "vtr_log.h"
 
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);
-static void set_conditional_defaults(t_options& args, const std::vector<std::shared_ptr<argparse::Argument>>& specified_args);
+static void set_conditional_defaults(t_options& args);
 static bool verify_args(const t_options& args);
-static bool args_were_specified(const std::vector<std::string>& argument_names, const std::vector<std::shared_ptr<argparse::Argument>>& specified_args);
 
 //Read and process VPR's command-line aruments
 t_options read_options(int argc, const char** argv) {
@@ -16,9 +15,9 @@ t_options read_options(int argc, const char** argv) {
 
     auto parser = create_arg_parser(argv[0], args);
 
-    auto specified_args = parser.parse_args(argc, argv);
+    parser.parse_args(argc, argv);
 
-    set_conditional_defaults(args, specified_args);
+    set_conditional_defaults(args);
 
     verify_args(args);
 
@@ -594,9 +593,10 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     return parser;
 }
 
-static void set_conditional_defaults(t_options& args, const std::vector<std::shared_ptr<argparse::Argument>>& specified_args) {
+static void set_conditional_defaults(t_options& args) {
     //Some arguments are set conditionally based on other options.
     //These are resolved here.
+    using argparse::Provenance;
 
     /*
      * Stages
@@ -606,25 +606,26 @@ static void set_conditional_defaults(t_options& args, const std::vector<std::sha
        && !args.do_routing
        && !args.do_analysis) {
         //If no stage options are specified, run all
-        args.do_packing = true;
-        args.do_placement = true;
-        args.do_routing = true;
-        args.do_analysis = true;
+        args.do_packing.set(true, Provenance::INFERRED);
+        args.do_placement.set(true, Provenance::INFERRED);
+        args.do_routing.set(true, Provenance::INFERRED);
+        args.do_analysis.set(true, Provenance::INFERRED);
     }
 
     //Always run analysis after routing
-    if(args.do_routing) {
-        args.do_analysis = true;
+    if(args.do_routing && !args.do_analysis) {
+        args.do_analysis.set(true, Provenance::INFERRED);
     }
 
     /*
      * Packing
      */
     if (args.timing_driven_clustering && !args.timing_analysis) {
-        if (args_were_specified({"--timing_driven_clustering"}, specified_args)) {
-            vtr::printf_warning(__FILE__, __LINE__, "Command-line argument '--timing_driven_clustering' has no effect since timing analysis is disabled"); 
-            args.timing_driven_clustering = args.timing_analysis;
+        if (args.timing_driven_clustering.provenance() == Provenance::SPECIFIED) {
+            vtr::printf_warning(__FILE__, __LINE__, "Command-line argument '%s' has no effect since timing analysis is disabled",
+                                args.timing_driven_clustering.argument_name().c_str()); 
         }
+        args.timing_driven_clustering = args.timing_analysis;
     }
 
     /*
@@ -632,39 +633,41 @@ static void set_conditional_defaults(t_options& args, const std::vector<std::sha
      */
 
     //Which placement algorithm to use?
-    if (!args_were_specified({"--place_algorithm"}, specified_args)) {
+    if (args.PlaceAlgorithm.provenance() != Provenance::SPECIFIED) {
         if(args.timing_analysis) {
-            args.PlaceAlgorithm = PATH_TIMING_DRIVEN_PLACE;
+            args.PlaceAlgorithm.set(PATH_TIMING_DRIVEN_PLACE, Provenance::INFERRED);
         } else {
-            args.PlaceAlgorithm = BOUNDING_BOX_PLACE;
+            args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
         }
     }
 
     //Do we calculate timing info during placement?
-    if (!args_were_specified({"--enable_timing_computations"}, specified_args)) {
-        args.ShowPlaceTiming = args.timing_analysis;
+    if (args.ShowPlaceTiming.provenance() != Provenance::SPECIFIED) {
+        args.ShowPlaceTiming.set(args.timing_analysis, Provenance::INFERRED);
     }
 
     //Are we using the automatic, or user-specified annealing schedule?
-    if (args_were_specified({"--init_t", "--exit_t", "--alpha_t"}, specified_args)) {
-        args.anneal_sched_type = USER_SCHED;
+    if (   args.PlaceInitT.provenance() == Provenance::SPECIFIED
+        || args.PlaceExitT.provenance() == Provenance::SPECIFIED
+        || args.PlaceAlphaT.provenance() == Provenance::SPECIFIED) {
+        args.anneal_sched_type.set(USER_SCHED, Provenance::INFERRED);
     } else {
-        args.anneal_sched_type = AUTO_SCHED;
+        args.anneal_sched_type.set(AUTO_SCHED, Provenance::INFERRED);
     }
 
     //Are the pad locations specified?
-    if (args.pad_loc_file == std::string("free")) {
-        args.pad_loc_type = FREE;
+    if (std::string(args.pad_loc_file) == "free") {
+        args.pad_loc_type.set(FREE, Provenance::INFERRED);
 
         vtr::free(args.pad_loc_file);
-        args.pad_loc_file = nullptr;
-    } else if (args.pad_loc_file == std::string("random")) {
-        args.pad_loc_type = RANDOM;
+        args.pad_loc_file.set(nullptr, Provenance::SPECIFIED);
+    } else if (std::string(args.pad_loc_file) == "random") {
+        args.pad_loc_type.set(RANDOM, Provenance::INFERRED);
 
         vtr::free(args.pad_loc_file);
-        args.pad_loc_file = nullptr;
+        args.pad_loc_file.set(nullptr, Provenance::SPECIFIED);
     } else {
-        args.pad_loc_type = USER;
+        args.pad_loc_type.set(USER, Provenance::INFERRED);
         VTR_ASSERT(args.pad_loc_file != nullptr);
     }
 
@@ -672,31 +675,31 @@ static void set_conditional_defaults(t_options& args, const std::vector<std::sha
      * Routing
      */
     //Which routing algorithm to use?
-    if (!args_were_specified({"--router_algorithm"}, specified_args)) {
+    if (args.RouterAlgorithm.provenance() != Provenance::SPECIFIED) {
         if(args.timing_analysis && args.RouteType != GLOBAL) {
-            args.RouterAlgorithm = TIMING_DRIVEN;
+            args.RouterAlgorithm.set(TIMING_DRIVEN, Provenance::INFERRED);
         } else {
-            args.RouterAlgorithm = NO_TIMING;
+            args.RouterAlgorithm.set(NO_TIMING, Provenance::INFERRED);
         }
     }
 
     //Base cost type
-    if (!args_were_specified({"--base_cost_type"}, specified_args)) {
+    if (args.base_cost_type.provenance() != Provenance::SPECIFIED) {
         if (args.RouterAlgorithm == BREADTH_FIRST || args.RouterAlgorithm == NO_TIMING) {
-            args.base_cost_type = DEMAND_ONLY;
+            args.base_cost_type.set(DEMAND_ONLY, Provenance::INFERRED);
         } else {
             VTR_ASSERT(args.RouterAlgorithm == TIMING_DRIVEN);
-            args.base_cost_type = DELAY_NORMALIZED;
+            args.base_cost_type.set(DELAY_NORMALIZED, Provenance::INFERRED);
         }
     }
 
     //Bend cost
-    if (!args_were_specified({"--bend_cost"}, specified_args)) {
+    if (args.bend_cost.provenance() != Provenance::SPECIFIED) {
         if (args.RouteType == GLOBAL) {
-            args.bend_cost = 1.;
+            args.bend_cost.set(1., Provenance::INFERRED);
         } else {
             VTR_ASSERT(args.RouteType == DETAILED);
-            args.bend_cost = 0.;
+            args.bend_cost.set(0., Provenance::INFERRED);
         }
     }
 }
@@ -705,14 +708,3 @@ static bool verify_args(const t_options& args) {
     return true;
 }
 
-//Returns true if any of the arguments in argument_names were in the list of specified_args
-static bool args_were_specified(const std::vector<std::string>& argument_names, const std::vector<std::shared_ptr<argparse::Argument>>& specified_args) {
-    for(const auto& arg : specified_args) {
-        for(const auto& arg_name : argument_names) {
-            if(arg_name == arg->long_option() || arg_name == arg->short_option()) {
-                return true;
-            }
-        }
-    }
-    return false;
-}

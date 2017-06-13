@@ -66,6 +66,7 @@ void SetupVPR(t_options *Options,
               bool * ShowGraphics, int *GraphPause,
               t_power_opts * PowerOpts) {
 	int i, j, len;
+    using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -74,7 +75,7 @@ void SetupVPR(t_options *Options,
                   "No blif file found in arguments (did you specify an architecture file?)\n");
     }
 
-    std::string cct_base_name = vtr::basename(Options->CircuitName);
+    std::string cct_base_name = vtr::basename(Options->CircuitName.value());
     std::string default_output_name = cct_base_name;
 
 	/* init default filenames */
@@ -83,12 +84,12 @@ void SetupVPR(t_options *Options,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->BlifFile = (char*) vtr::calloc(len, sizeof(char));
+		Options->BlifFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->BlifFile, "%s.blif", Options->CircuitName);
+			sprintf(Options->BlifFile.value(), "%s.blif", Options->CircuitName.value());
 		} else {
-			sprintf(Options->BlifFile, "%s%s.blif", Options->out_file_prefix,
-					Options->CircuitName);
+			sprintf(Options->BlifFile.value(), "%s%s.blif", Options->out_file_prefix.value(),
+					Options->CircuitName.value());
 		}
 	}
 
@@ -97,11 +98,11 @@ void SetupVPR(t_options *Options,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->NetFile = (char*) vtr::calloc(len, sizeof(char));
+		Options->NetFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->NetFile, "%s.net", default_output_name.c_str());
+			sprintf(Options->NetFile.value(), "%s.net", default_output_name.c_str());
 		} else {
-			sprintf(Options->NetFile, "%s%s.net", Options->out_file_prefix, default_output_name.c_str());
+			sprintf(Options->NetFile.value(), "%s%s.net", Options->out_file_prefix.value(), default_output_name.c_str());
 		}
 	}
 
@@ -110,11 +111,11 @@ void SetupVPR(t_options *Options,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->PlaceFile = (char*) vtr::calloc(len, sizeof(char));
+		Options->PlaceFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->PlaceFile, "%s.place", default_output_name.c_str());
+			sprintf(Options->PlaceFile.value(), "%s.place", default_output_name.c_str());
 		} else {
-			sprintf(Options->PlaceFile, "%s%s.place", Options->out_file_prefix, default_output_name.c_str());
+			sprintf(Options->PlaceFile.value(), "%s%s.place", Options->out_file_prefix.value(), default_output_name.c_str());
 		}
 	}
 
@@ -123,11 +124,11 @@ void SetupVPR(t_options *Options,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->RouteFile = (char*) vtr::calloc(len, sizeof(char));
+		Options->RouteFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->RouteFile, "%s.route", default_output_name.c_str());
+			sprintf(Options->RouteFile.value(), "%s.route", default_output_name.c_str());
 		} else {
-			sprintf(Options->RouteFile, "%s%s.route", Options->out_file_prefix, default_output_name.c_str());
+			sprintf(Options->RouteFile.value(), "%s%s.route", Options->out_file_prefix.value(), default_output_name.c_str());
 		}
 	}
 	if (Options->ActFile == NULL ) {
@@ -135,11 +136,11 @@ void SetupVPR(t_options *Options,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->ActFile = (char*) vtr::calloc(len, sizeof(char));
+		Options->ActFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->ActFile, "%s.act", default_output_name.c_str());
+			sprintf(Options->ActFile.value(), "%s.act", default_output_name.c_str());
 		} else {
-			sprintf(Options->ActFile, "%s%s.act", Options->out_file_prefix, default_output_name.c_str());
+			sprintf(Options->ActFile.value(), "%s%s.act", Options->out_file_prefix.value(), default_output_name.c_str());
 		}
 	}
 
@@ -148,11 +149,11 @@ void SetupVPR(t_options *Options,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->PowerFile = (char*) vtr::calloc(len, sizeof(char));
+		Options->PowerFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->PowerFile, "%s.power", default_output_name.c_str());
+			sprintf(Options->PowerFile.value(), "%s.power", default_output_name.c_str());
 		} else {
-			sprintf(Options->ActFile, "%s%s.power", Options->out_file_prefix, default_output_name.c_str());
+			sprintf(Options->ActFile.value(), "%s%s.power", Options->out_file_prefix.value(), default_output_name.c_str());
 		}
 	}
 
@@ -282,7 +283,7 @@ static void SetupTiming(const t_options& Options, const t_arch& Arch,
 	if (Options.SDCFile == NULL ) {
 		Timing->SDCFile = (char*) vtr::calloc(strlen(Options.CircuitName) + 5,
 				sizeof(char)); /* circuit_name.sdc/0*/
-		sprintf(Timing->SDCFile, "%s.sdc", Options.CircuitName);
+		sprintf(Timing->SDCFile, "%s.sdc", Options.CircuitName.value());
 	} else {
 		Timing->SDCFile = (char*) vtr::strdup(Options.SDCFile);
 	}

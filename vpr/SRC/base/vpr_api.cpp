@@ -196,7 +196,6 @@ void vpr_init(const int argc, const char **argv,
     /* Print title message */
     vpr_print_title();
 
-    memset(options, 0, sizeof(t_options));
     memset(vpr_setup, 0, sizeof(t_vpr_setup));
     memset(arch, 0, sizeof(t_arch));
 
@@ -221,8 +220,8 @@ void vpr_init(const int argc, const char **argv,
     CheckOptions(*options, vpr_setup->TimingEnabled);
 
     vtr::printf_info("\n");
-    vtr::printf_info("Architecture file: %s\n", options->ArchFile);
-    vtr::printf_info("Circuit name: %s.blif\n", options->CircuitName);
+    vtr::printf_info("Architecture file: %s\n", options->ArchFile.value());
+    vtr::printf_info("Circuit name: %s.blif\n", options->CircuitName.value());
     vtr::printf_info("\n");
 
     /* Determine whether echo is on or off */

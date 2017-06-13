@@ -2,6 +2,7 @@
 #define READ_OPTIONS_H
 
 #include "vpr_types.h"
+#include "argparse_value.hpp"
 
 enum e_echo_files {
 	E_ECHO_INITIAL_CLB_PLACEMENT = 0,
@@ -61,116 +62,116 @@ enum e_output_files {
 
 struct t_options {
 	/* File names */
-	char *ArchFile;
-	char *CircuitName;
-	char *NetFile;
-	char *PlaceFile;
-	char *RouteFile;
-	char *BlifFile;
-	char *ActFile;
-	char *PowerFile;
-	char *CmosTechFile;
-	char *out_file_prefix;
-	char *SDCFile;
-	char *pad_loc_file;
+	argparse::ArgValue<char*> ArchFile;
+	argparse::ArgValue<char*> CircuitName;
+	argparse::ArgValue<char*> NetFile;
+	argparse::ArgValue<char*> PlaceFile;
+	argparse::ArgValue<char*> RouteFile;
+	argparse::ArgValue<char*> BlifFile;
+	argparse::ArgValue<char*> ActFile;
+	argparse::ArgValue<char*> PowerFile;
+	argparse::ArgValue<char*> CmosTechFile;
+	argparse::ArgValue<char*> out_file_prefix;
+	argparse::ArgValue<char*> SDCFile;
+	argparse::ArgValue<char*> pad_loc_file;
+	argparse::ArgValue<char*> write_rr_graph_file;
+    argparse::ArgValue<char*> read_rr_graph_file;
 
     /* Stage Options */
-    bool do_packing;
-    bool do_placement;
-    bool do_routing;
-    bool do_analysis;
-    bool do_power;
+    argparse::ArgValue<bool> do_packing;
+    argparse::ArgValue<bool> do_placement;
+    argparse::ArgValue<bool> do_routing;
+    argparse::ArgValue<bool> do_analysis;
+    argparse::ArgValue<bool> do_power;
 
     /* Graphics Options */
-    bool show_graphics; //Enable interactive graphics?
-	int GraphPause;
+    argparse::ArgValue<bool> show_graphics; //Enable argparse::ArgValue<int>eractive graphics?
+	argparse::ArgValue<int> GraphPause;
 	/* General options */
-    bool show_help;
-    bool show_version;
-	bool timing_analysis;
-    const char* SlackDefinition;
-	bool CreateEchoFile;
-    bool verify_file_digests;
+    argparse::ArgValue<bool> show_help;
+    argparse::ArgValue<bool> show_version;
+	argparse::ArgValue<bool> timing_analysis;
+    argparse::ArgValue<const char*> SlackDefinition;
+	argparse::ArgValue<bool> CreateEchoFile;
+    argparse::ArgValue<bool> verify_file_digests;
 
     /* Atom netlist options */
-	bool absorb_buffer_luts;
-	bool sweep_dangling_primary_ios;
-	bool sweep_dangling_nets;
-	bool sweep_dangling_blocks;
-	bool sweep_constant_primary_outputs;
+	argparse::ArgValue<bool> absorb_buffer_luts;
+	argparse::ArgValue<bool> sweep_dangling_primary_ios;
+	argparse::ArgValue<bool> sweep_dangling_nets;
+	argparse::ArgValue<bool> sweep_dangling_blocks;
+	argparse::ArgValue<bool> sweep_constant_primary_outputs;
 
 	/* Clustering options */
-	//bool global_clocks;
-	//int cluster_size;
-	//int inputs_per_cluster;
-	//int lut_size;
-	//bool hill_climbing_flag;
-	//bool timing_driven;
-	bool connection_driven_clustering;
-	bool allow_unrelated_clustering;
-	float alpha_clustering;
-	float beta_clustering;
-    bool timing_driven_clustering;
-	e_cluster_seed cluster_seed_type;
-	//int recompute_timing_after;
-	//float block_delay;
-	//float inter_cluster_net_delay;
-	//bool skip_clustering;
+	//argparse::ArgValue<bool> global_clocks;
+	//argparse::ArgValue<int> cluster_size;
+	//argparse::ArgValue<int> inputs_per_cluster;
+	//argparse::ArgValue<int> lut_size;
+	//argparse::ArgValue<bool> hill_climbing_flag;
+	//argparse::ArgValue<bool> timing_driven;
+	argparse::ArgValue<bool> connection_driven_clustering;
+	argparse::ArgValue<bool> allow_unrelated_clustering;
+	argparse::ArgValue<float> alpha_clustering;
+	argparse::ArgValue<float> beta_clustering;
+    argparse::ArgValue<bool> timing_driven_clustering;
+    argparse::ArgValue<e_cluster_seed> cluster_seed_type;
+	//argparse::ArgValue<int> recompute_timing_after;
+	//argparse::ArgValue<float> block_delay;
+	//argparse::ArgValue<float> argparse::ArgValue<int>er_cluster_net_delay;
+	//argparse::ArgValue<bool> skip_clustering;
 	//e_packer_algorithm packer_algorithm;
 
 	/* Placement options */
-	int Seed;
-    bool ShowPlaceTiming;
-	float PlaceInnerNum;
-	float PlaceInitT;
-	float PlaceExitT;
-	float PlaceAlphaT;
-    sched_type anneal_sched_type; 
-	e_place_algorithm PlaceAlgorithm;
-    e_pad_loc_type pad_loc_type;
-	int PlaceChanWidth;
-	//float place_cost_exp;
+	argparse::ArgValue<int> Seed;
+    argparse::ArgValue<bool> ShowPlaceTiming;
+	argparse::ArgValue<float> PlaceInnerNum;
+	argparse::ArgValue<float> PlaceInitT;
+	argparse::ArgValue<float> PlaceExitT;
+	argparse::ArgValue<float> PlaceAlphaT;
+    argparse::ArgValue<sched_type> anneal_sched_type; 
+	argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
+    argparse::ArgValue<e_pad_loc_type> pad_loc_type;
+	argparse::ArgValue<int> PlaceChanWidth;
+	//argparse::ArgValue<float> place_cost_exp;
 
 	/* Timing-driven placement options only */
-	float PlaceTimingTradeoff;
-	int RecomputeCritIter;
-	int inner_loop_recompute_divider;
-	float place_exp_first;
-	float place_exp_last;
+	argparse::ArgValue<float> PlaceTimingTradeoff;
+	argparse::ArgValue<int> RecomputeCritIter;
+	argparse::ArgValue<int> inner_loop_recompute_divider;
+	argparse::ArgValue<float> place_exp_first;
+	argparse::ArgValue<float> place_exp_last;
 
 	/* Router Options */
-	int max_router_iterations;
-	float first_iter_pres_fac;
-	float initial_pres_fac;
-	float pres_fac_mult;
-	float acc_fac;
-	int bb_factor;
-	e_base_cost_type base_cost_type;
-	float bend_cost;
-	e_route_type RouteType;
-	int RouteChanWidth;
-	int min_route_chan_width_hint; //Hint to binary search router about what the min chan width is
-    bool verify_binary_search;
-	e_router_algorithm RouterAlgorithm;
-	int min_incremental_reroute_fanout;
+	argparse::ArgValue<int> max_router_iterations;
+	argparse::ArgValue<float> first_iter_pres_fac;
+	argparse::ArgValue<float> initial_pres_fac;
+	argparse::ArgValue<float> pres_fac_mult;
+	argparse::ArgValue<float> acc_fac;
+	argparse::ArgValue<int> bb_factor;
+	argparse::ArgValue<e_base_cost_type> base_cost_type;
+	argparse::ArgValue<float> bend_cost;
+	argparse::ArgValue<e_route_type> RouteType;
+	argparse::ArgValue<int> RouteChanWidth;
+	argparse::ArgValue<int> min_route_chan_width_hint; //Hint to binary search router about what the min chan width is
+    argparse::ArgValue<bool> verify_binary_search;
+	argparse::ArgValue<e_router_algorithm> RouterAlgorithm;
+	argparse::ArgValue<int> min_incremental_reroute_fanout;
 
-	//bool congestion_analysis;
-	//bool fanout_analysis;
-    //bool switch_usage_analysis;
-	//bool TrimEmptyChan;
-	//bool TrimObsChan;
-	char*  write_rr_graph_file;
-    char * read_rr_graph_file;
+	//argparse::ArgValue<bool> congestion_analysis;
+	//argparse::ArgValue<bool> fanout_analysis;
+    //argparse::ArgValue<bool> switch_usage_analysis;
+	//argparse::ArgValue<bool> TrimEmptyChan;
+	//argparse::ArgValue<bool> TrimObsChan;
 
 	/* Timing-driven router options only */
-	float astar_fac;
-	float max_criticality;
-	float criticality_exp;
-	e_routing_failure_predictor routing_failure_predictor;
+	argparse::ArgValue<float> astar_fac;
+	argparse::ArgValue<float> max_criticality;
+	argparse::ArgValue<float> criticality_exp;
+	argparse::ArgValue<e_routing_failure_predictor> routing_failure_predictor;
 
-	//float constant_net_delay;
-    bool full_stats;
-	bool Generate_Post_Synthesis_Netlist;
+	//argparse::ArgValue<float> constant_net_delay;
+    argparse::ArgValue<bool> full_stats;
+	argparse::ArgValue<bool> Generate_Post_Synthesis_Netlist;
 
 };
 
