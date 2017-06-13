@@ -27,4 +27,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params =-init_t 90 -exit_t 0.001 -alpha_t 0.75 -inner_num 0.5
+script_params =--init_t 90 --exit_t 0.001 --alpha_t 0.75 --inner_num 0.5

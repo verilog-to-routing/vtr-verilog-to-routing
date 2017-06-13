@@ -11,30 +11,27 @@ using namespace std;
 #include "vpr_types.h"
 #include "vpr_error.h"
 
-#include "OptionTokens.h"
-#include "ReadOptions.h"
 #include "globals.h"
 #include "read_xml_arch_file.h"
 #include "SetupVPR.h"
 #include "pb_type_graph.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
-#include "ReadOptions.h"
 #include "rr_graph_area.h"
 #include "echo_arch.h"
+#include "read_options.h"
+#include "echo_files.h"
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
-static void SetupPackerOpts(const t_options& Options, const bool TimingEnabled,
+static void SetupPackerOpts(const t_options& Options,
 		const t_arch& Arch, const char *net_file,
 		t_packer_opts *PackerOpts);
-static void SetupPlacerOpts(const t_options& Options, const bool TimingEnabled,
+static void SetupPlacerOpts(const t_options& Options,
 		t_placer_opts *PlacerOpts);
 static void SetupAnnealSched(const t_options& Options,
 		t_annealing_sched *AnnealSched);
-static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
-		t_router_opts *RouterOpts);
-static void SetupRoutingArch(const t_arch& Arch,
-		t_det_routing_arch *RoutingArch);
+static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts);
+static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch *RoutingArch);
 static void SetupTiming(const t_options& Options, const t_arch& Arch,
 		const bool TimingEnabled,
 		t_timing_inf * Timing);
@@ -66,6 +63,7 @@ void SetupVPR(t_options *Options,
               bool * ShowGraphics, int *GraphPause,
               t_power_opts * PowerOpts) {
 	int i, j, len;
+    using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -74,7 +72,7 @@ void SetupVPR(t_options *Options,
                   "No blif file found in arguments (did you specify an architecture file?)\n");
     }
 
-    std::string cct_base_name = vtr::basename(Options->CircuitName);
+    std::string cct_base_name = vtr::basename(Options->CircuitName.value());
     std::string default_output_name = cct_base_name;
 
 	/* init default filenames */
@@ -83,12 +81,12 @@ void SetupVPR(t_options *Options,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->BlifFile = (char*) vtr::calloc(len, sizeof(char));
+		Options->BlifFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->BlifFile, "%s.blif", Options->CircuitName);
+			sprintf(Options->BlifFile.value(), "%s.blif", Options->CircuitName.value());
 		} else {
-			sprintf(Options->BlifFile, "%s%s.blif", Options->out_file_prefix,
-					Options->CircuitName);
+			sprintf(Options->BlifFile.value(), "%s%s.blif", Options->out_file_prefix.value(),
+					Options->CircuitName.value());
 		}
 	}
 
@@ -97,11 +95,11 @@ void SetupVPR(t_options *Options,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->NetFile = (char*) vtr::calloc(len, sizeof(char));
+		Options->NetFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->NetFile, "%s.net", default_output_name.c_str());
+			sprintf(Options->NetFile.value(), "%s.net", default_output_name.c_str());
 		} else {
-			sprintf(Options->NetFile, "%s%s.net", Options->out_file_prefix, default_output_name.c_str());
+			sprintf(Options->NetFile.value(), "%s%s.net", Options->out_file_prefix.value(), default_output_name.c_str());
 		}
 	}
 
@@ -110,11 +108,11 @@ void SetupVPR(t_options *Options,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->PlaceFile = (char*) vtr::calloc(len, sizeof(char));
+		Options->PlaceFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->PlaceFile, "%s.place", default_output_name.c_str());
+			sprintf(Options->PlaceFile.value(), "%s.place", default_output_name.c_str());
 		} else {
-			sprintf(Options->PlaceFile, "%s%s.place", Options->out_file_prefix, default_output_name.c_str());
+			sprintf(Options->PlaceFile.value(), "%s%s.place", Options->out_file_prefix.value(), default_output_name.c_str());
 		}
 	}
 
@@ -123,11 +121,11 @@ void SetupVPR(t_options *Options,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->RouteFile = (char*) vtr::calloc(len, sizeof(char));
+		Options->RouteFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->RouteFile, "%s.route", default_output_name.c_str());
+			sprintf(Options->RouteFile.value(), "%s.route", default_output_name.c_str());
 		} else {
-			sprintf(Options->RouteFile, "%s%s.route", Options->out_file_prefix, default_output_name.c_str());
+			sprintf(Options->RouteFile.value(), "%s%s.route", Options->out_file_prefix.value(), default_output_name.c_str());
 		}
 	}
 	if (Options->ActFile == NULL ) {
@@ -135,11 +133,11 @@ void SetupVPR(t_options *Options,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->ActFile = (char*) vtr::calloc(len, sizeof(char));
+		Options->ActFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->ActFile, "%s.act", default_output_name.c_str());
+			sprintf(Options->ActFile.value(), "%s.act", default_output_name.c_str());
 		} else {
-			sprintf(Options->ActFile, "%s%s.act", Options->out_file_prefix, default_output_name.c_str());
+			sprintf(Options->ActFile.value(), "%s%s.act", Options->out_file_prefix.value(), default_output_name.c_str());
 		}
 	}
 
@@ -148,11 +146,11 @@ void SetupVPR(t_options *Options,
 		if (Options->out_file_prefix != NULL ) {
 			len += strlen(Options->out_file_prefix);
 		}
-		Options->PowerFile = (char*) vtr::calloc(len, sizeof(char));
+		Options->PowerFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
 		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->PowerFile, "%s.power", default_output_name.c_str());
+			sprintf(Options->PowerFile.value(), "%s.power", default_output_name.c_str());
 		} else {
-			sprintf(Options->ActFile, "%s%s.power", Options->out_file_prefix, default_output_name.c_str());
+			sprintf(Options->ActFile.value(), "%s%s.power", Options->out_file_prefix.value(), default_output_name.c_str());
 		}
 	}
 
@@ -170,15 +168,12 @@ void SetupVPR(t_options *Options,
 	FileNameOpts->CmosTechFile = Options->CmosTechFile;
 	FileNameOpts->out_file_prefix = Options->out_file_prefix;
 
-    FileNameOpts->verify_file_digests = true; //Default
-    if(Options->Count[OT_VERIFY_FILE_DIGESTS]) {
-        FileNameOpts->verify_file_digests = Options->verify_file_digests;
-    }
+    FileNameOpts->verify_file_digests = Options->verify_file_digests;
 
     SetupNetlistOpts(*Options, *NetlistOpts);
-	SetupPlacerOpts(*Options, TimingEnabled, PlacerOpts);
+	SetupPlacerOpts(*Options, PlacerOpts);
 	SetupAnnealSched(*Options, AnnealSched);
-	SetupRouterOpts(*Options, TimingEnabled, RouterOpts);
+	SetupRouterOpts(*Options, RouterOpts);
 	SetupAnalysisOpts(*Options, *AnalysisOpts);
 	SetupPowerOpts(*Options, PowerOpts, Arch);
 
@@ -216,14 +211,14 @@ void SetupVPR(t_options *Options,
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
 	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
-	SetupPackerOpts(*Options, TimingEnabled, *Arch, Options->NetFile, PackerOpts);
-	RoutingArch->dump_rr_structs_file = Options->dump_rr_structs_file;
+	SetupPackerOpts(*Options, *Arch, Options->NetFile, PackerOpts);
+	RoutingArch->dump_rr_structs_file = nullptr;
 
     //Setup the default flow
-    if (   !Options->Count[OT_PACK] 
-        && !Options->Count[OT_PLACE]
-        && !Options->Count[OT_ROUTE] 
-        && !Options->Count[OT_ANALYSIS]) {
+    if (   !Options->do_packing
+        && !Options->do_placement
+        && !Options->do_routing
+        && !Options->do_analysis) {
 
         //run all stages if none specified
         PackerOpts->doPacking = true;
@@ -241,10 +236,7 @@ void SetupVPR(t_options *Options,
     vtr::out_file_prefix = Options->out_file_prefix;
 
 	/* Set seed for pseudo-random placement, default seed to 1 */
-	PlacerOpts->seed = 1;
-	if (Options->Count[OT_SEED]) {
-		PlacerOpts->seed = Options->Seed;
-	}
+	PlacerOpts->seed =  Options->Seed;
 	vtr::srandom(PlacerOpts->seed);
 
 	vtr::printf_info("Building complex block graph.\n");
@@ -258,15 +250,9 @@ void SetupVPR(t_options *Options,
 		echo_pb_graph(getEchoFileName(E_ECHO_PB_GRAPH));
 	}
 
-	*GraphPause = 1; /* DEFAULT */
-	if (Options->Count[OT_AUTO]) {
-		*GraphPause = Options->GraphPause;
-	}
+	*GraphPause = Options->GraphPause;
 
-	*ShowGraphics = false; /* DEFAULT */
-	if (Options->show_graphics) {
-		*ShowGraphics = true;
-	}
+	*ShowGraphics = Options->show_graphics;
 
 	if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
 		EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.block_types, device_ctx.num_block_types,
@@ -294,18 +280,18 @@ static void SetupTiming(const t_options& Options, const t_arch& Arch,
 	if (Options.SDCFile == NULL ) {
 		Timing->SDCFile = (char*) vtr::calloc(strlen(Options.CircuitName) + 5,
 				sizeof(char)); /* circuit_name.sdc/0*/
-		sprintf(Timing->SDCFile, "%s.sdc", Options.CircuitName);
+		sprintf(Timing->SDCFile, "%s.sdc", Options.CircuitName.value());
 	} else {
 		Timing->SDCFile = (char*) vtr::strdup(Options.SDCFile);
 	}
 
     if (Options.SlackDefinition != '\0') {
         Timing->slack_definition = Options.SlackDefinition;
-        VTR_ASSERT(Timing->slack_definition == 'R' || Timing->slack_definition == 'I' ||
-               Timing->slack_definition == 'S' || Timing->slack_definition == 'G' ||
-               Timing->slack_definition == 'C' || Timing->slack_definition == 'N');
+        VTR_ASSERT(Timing->slack_definition == std::string("R") || Timing->slack_definition == std::string("I") ||
+               Timing->slack_definition == std::string("S") || Timing->slack_definition == std::string("G") ||
+               Timing->slack_definition == std::string("C") || Timing->slack_definition == std::string("N"));
     } else {
-        Timing->slack_definition = 'R'; // default
+        Timing->slack_definition = "R"; // default
     }
 }
 
@@ -406,221 +392,76 @@ static void SetupRoutingArch(const t_arch& Arch,
 	RoutingArch->switchblocks = Arch.switchblocks;
 }
 
-static void SetupRouterOpts(const t_options& Options, const bool TimingEnabled,
-		t_router_opts *RouterOpts) {
-	RouterOpts->astar_fac = 1.2; /* DEFAULT */
-	if (Options.Count[OT_ASTAR_FAC]) {
-		RouterOpts->astar_fac = Options.astar_fac;
-	}
+static void SetupRouterOpts(const t_options& Options, t_router_opts *RouterOpts) {
+	RouterOpts->astar_fac = Options.astar_fac;
+	RouterOpts->bb_factor = Options.bb_factor;
+	RouterOpts->criticality_exp = Options.criticality_exp;
+	RouterOpts->max_criticality = Options.max_criticality;
+	RouterOpts->max_router_iterations = Options.max_router_iterations;
+	RouterOpts->min_incremental_reroute_fanout = Options.min_incremental_reroute_fanout;
+	RouterOpts->pres_fac_mult = Options.pres_fac_mult;
+	RouterOpts->route_type = Options.RouteType;
 
-	RouterOpts->bb_factor = 3; /* DEFAULT */
-	if (Options.Count[OT_FAST]) {
-		RouterOpts->bb_factor = 0; /* DEFAULT */
-	}
-	if (Options.Count[OT_BB_FACTOR]) {
-		RouterOpts->bb_factor = Options.bb_factor;
-	}
+	RouterOpts->full_stats = Options.full_stats;
 
-	RouterOpts->criticality_exp = 1.0; /* DEFAULT */
-	if (Options.Count[OT_CRITICALITY_EXP]) {
-		RouterOpts->criticality_exp = Options.criticality_exp;
-	}
+    //TODO document these?
+	RouterOpts->congestion_analysis = Options.full_stats;
+	RouterOpts->fanout_analysis = Options.full_stats;
+    RouterOpts->switch_usage_analysis = Options.full_stats;
 
-	RouterOpts->max_criticality = 0.99; /* DEFAULT */
-	if (Options.Count[OT_MAX_CRITICALITY]) {
-		RouterOpts->max_criticality = Options.max_criticality;
-	}
+	RouterOpts->verify_binary_search = Options.verify_binary_search;
+	RouterOpts->router_algorithm = Options.RouterAlgorithm;
+	RouterOpts->fixed_channel_width = Options.RouteChanWidth;
+	RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
 
-	RouterOpts->max_router_iterations = 50; /* DEFAULT */
-	if (Options.Count[OT_FAST]) {
-		RouterOpts->max_router_iterations = 10;
-	}
-	if (Options.Count[OT_MAX_ROUTER_ITERATIONS]) {
-		RouterOpts->max_router_iterations = Options.max_router_iterations;
-	}
-
-	/* Based on testing, choosing a low threshold can lead to instability
-	   where sometimes route time and critical path are degraded. 64 seems
-	   to be a reasonable choice for most circuits. For nets with a greater
-	   distribution of high fanout nets, choose a larger threshold */
-	RouterOpts->min_incremental_reroute_fanout = 64;	
-	if (Options.Count[OT_MIN_INCREMENTAL_REROUTE_FANOUT]) {
-		RouterOpts->min_incremental_reroute_fanout = Options.min_incremental_reroute_fanout;
-	}
-
-	RouterOpts->pres_fac_mult = 1.3; /* DEFAULT */
-	if (Options.Count[OT_PRES_FAC_MULT]) {
-		RouterOpts->pres_fac_mult = Options.pres_fac_mult;
-	}
-
-	RouterOpts->route_type = DETAILED; /* DEFAULT */
-	if (Options.Count[OT_ROUTE_TYPE]) {
-		RouterOpts->route_type = Options.RouteType;
-	}
-
-	RouterOpts->full_stats = false; /* DEFAULT */
-	if (Options.Count[OT_FULL_STATS]) {
-		RouterOpts->full_stats = true;
-	}
-
-	RouterOpts->congestion_analysis = false;
-	if (Options.Count[OT_CONGESTION_ANALYSIS]) {
-		RouterOpts->congestion_analysis = true;
-	}
-
-	RouterOpts->fanout_analysis = false;
-	if (Options.Count[OT_FANOUT_ANALYSIS]) {
-		RouterOpts->fanout_analysis = true;
-	}
-
-    RouterOpts->switch_usage_analysis = false;
-    if (Options.Count[OT_SWITCH_USAGE_ANALYSIS]) {
-        RouterOpts->switch_usage_analysis = true;
-    }
-
-	RouterOpts->verify_binary_search = false; /* DEFAULT */
-	if (Options.Count[OT_VERIFY_BINARY_SEARCH]) {
-		RouterOpts->verify_binary_search = true;
-	}
-
-	/* Depends on RouteOpts->route_type */
-	RouterOpts->router_algorithm = NO_TIMING; /* DEFAULT */
-	if (TimingEnabled) {
-		RouterOpts->router_algorithm = TIMING_DRIVEN; /* DEFAULT */
-	}
-	if (GLOBAL == RouterOpts->route_type) {
-		RouterOpts->router_algorithm = NO_TIMING; /* DEFAULT */
-	}
-	if (Options.Count[OT_ROUTER_ALGORITHM]) {
-		RouterOpts->router_algorithm = Options.RouterAlgorithm;
-	}
-
-	RouterOpts->fixed_channel_width = NO_FIXED_CHANNEL_WIDTH; /* DEFAULT */
-	if (Options.Count[OT_ROUTE_CHAN_WIDTH]) {
-		RouterOpts->fixed_channel_width = Options.RouteChanWidth;
-	}
-
-	RouterOpts->min_channel_width_hint = -1; /* DEFAULT */
-	if (Options.Count[OT_MIN_ROUTE_CHAN_WIDTH_HINT]) {
-		RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
-	}
-
+    //TODO document these?
 	RouterOpts->trim_empty_channels = false; /* DEFAULT */
-	if (Options.Count[OT_TRIM_EMPTY_CHAN]) {
-		RouterOpts->trim_empty_channels = Options.TrimEmptyChan;
-	}
 	RouterOpts->trim_obs_channels = false; /* DEFAULT */
-	if (Options.Count[OT_TRIM_OBS_CHAN]) {
-		RouterOpts->trim_obs_channels = Options.TrimObsChan;
-	}
 
-	/* Depends on RouterOpts->router_algorithm */
-	RouterOpts->initial_pres_fac = 0.5; /* DEFAULT */
-	if (NO_TIMING == RouterOpts->router_algorithm || Options.Count[OT_FAST]) {
-		RouterOpts->initial_pres_fac = 10000.0; /* DEFAULT */
-	}
-	if (Options.Count[OT_INITIAL_PRES_FAC]) {
-		RouterOpts->initial_pres_fac = Options.initial_pres_fac;
-	}
-
-	/* Depends on RouterOpts->router_algorithm */
-	RouterOpts->base_cost_type = DELAY_NORMALIZED; /* DEFAULT */
-	if (BREADTH_FIRST == RouterOpts->router_algorithm) {
-		RouterOpts->base_cost_type = DEMAND_ONLY; /* DEFAULT */
-	}
-	if (NO_TIMING == RouterOpts->router_algorithm) {
-		RouterOpts->base_cost_type = DEMAND_ONLY; /* DEFAULT */
-	}
-	if (Options.Count[OT_BASE_COST_TYPE]) {
-		RouterOpts->base_cost_type = Options.base_cost_type;
-	}
-
-	/* Depends on RouterOpts->router_algorithm */
-	RouterOpts->first_iter_pres_fac = 0.0; /* DEFAULT */
-	if (NO_TIMING == RouterOpts->router_algorithm || Options.Count[OT_FAST]) {
-		RouterOpts->first_iter_pres_fac = 10000.0; /* DEFAULT */
-	}
-	if (Options.Count[OT_FIRST_ITER_PRES_FAC]) {
-		RouterOpts->first_iter_pres_fac = Options.first_iter_pres_fac;
-	}
-
-	/* Depends on RouterOpts->router_algorithm */
-	RouterOpts->acc_fac = 1.0;
-	if (BREADTH_FIRST == RouterOpts->router_algorithm) {
-		RouterOpts->acc_fac = 0.2;
-	}
-	if (Options.Count[OT_ACC_FAC]) {
-		RouterOpts->acc_fac = Options.acc_fac;
-	}
-
-	/* Depends on RouterOpts->route_type */
-	RouterOpts->bend_cost = 0.0; /* DEFAULT */
-	if (GLOBAL == RouterOpts->route_type) {
-		RouterOpts->bend_cost = 1.0; /* DEFAULT */
-	}
-	if (Options.Count[OT_BEND_COST]) {
-		RouterOpts->bend_cost = Options.bend_cost;
-	}
-
-	RouterOpts->doRouting = false;
-	if (Options.Count[OT_ROUTE]) {
-		RouterOpts->doRouting = true;
-	}
-
-	/* Andre: Default value for the predictor is SAFE */
-	RouterOpts->routing_failure_predictor = SAFE;
-	if (Options.Count[OT_ROUTING_FAILURE_PREDICTOR]) {
-		RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
-	}
-
-	RouterOpts->write_rr_graph_name = Options.write_rr_graph_name;
-        RouterOpts->read_rr_graph_name = Options.read_rr_graph_name;
+	RouterOpts->initial_pres_fac = Options.initial_pres_fac;
+	RouterOpts->base_cost_type = Options.base_cost_type;
+	RouterOpts->first_iter_pres_fac = Options.first_iter_pres_fac;
+	RouterOpts->acc_fac = Options.acc_fac;
+	RouterOpts->bend_cost = Options.bend_cost;
+	RouterOpts->doRouting = Options.do_routing;
+	RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
+	RouterOpts->write_rr_graph_name = Options.write_rr_graph_file;
+    RouterOpts->read_rr_graph_name = Options.read_rr_graph_file;
 }
 
 static void SetupAnnealSched(const t_options& Options,
 		t_annealing_sched *AnnealSched) {
-	AnnealSched->alpha_t = 0.8; /* DEFAULT */
-	if (Options.Count[OT_ALPHA_T]) {
-		AnnealSched->alpha_t = Options.PlaceAlphaT;
-	}
+	AnnealSched->alpha_t = Options.PlaceAlphaT;
 	if (AnnealSched->alpha_t >= 1 || AnnealSched->alpha_t <= 0) {
 		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "alpha_t must be between 0 and 1 exclusive.\n");
 	}
-	AnnealSched->exit_t = 0.01; /* DEFAULT */
-	if (Options.Count[OT_EXIT_T]) {
-		AnnealSched->exit_t = Options.PlaceExitT;
-	}
+
+	AnnealSched->exit_t = Options.PlaceExitT;
 	if (AnnealSched->exit_t <= 0) {
 		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "exit_t must be greater than 0.\n");
 	}
-	AnnealSched->init_t = 100.0; /* DEFAULT */
-	if (Options.Count[OT_INIT_T]) {
-		AnnealSched->init_t = Options.PlaceInitT;
-	}
+
+	AnnealSched->init_t = Options.PlaceInitT;
 	if (AnnealSched->init_t <= 0) {
 		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "init_t must be greater than 0.\n");
 	}
+
 	if (AnnealSched->init_t < AnnealSched->exit_t) {
 		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "init_t must be greater or equal to than exit_t.\n");
 	}
-	AnnealSched->inner_num = 1.0; /* DEFAULT */
-	if (Options.Count[OT_INNER_NUM]) {
-		AnnealSched->inner_num = Options.PlaceInnerNum;
-	}
+
+	AnnealSched->inner_num = Options.PlaceInnerNum;
 	if (AnnealSched->inner_num <= 0) {
-		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "init_t must be greater than 0.\n");
+		vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__, "inner_num must be greater than 0.\n");
 	}
-	AnnealSched->type = AUTO_SCHED; /* DEFAULT */
-	if ((Options.Count[OT_ALPHA_T]) || (Options.Count[OT_EXIT_T])
-			|| (Options.Count[OT_INIT_T])) {
-		AnnealSched->type = USER_SCHED;
-	}
+
+	AnnealSched->type = Options.anneal_sched_type;
 }
 
 /* Sets up the s_packer_opts structure baesd on users inputs and on the architecture specified.  
  * Error checking, such as checking for conflicting params is assumed to be done beforehand 
  */
-void SetupPackerOpts(const t_options& Options, const bool TimingEnabled,
+void SetupPackerOpts(const t_options& Options,
 		const t_arch& Arch, const char *net_file,
 		t_packer_opts *PackerOpts) {
 
@@ -633,186 +474,71 @@ void SetupPackerOpts(const t_options& Options, const bool TimingEnabled,
 
 	PackerOpts->blif_file_name = Options.BlifFile;
 
-	PackerOpts->doPacking = false; /* DEFAULT */
-	if (Options.Count[OT_PACK]) {
-		PackerOpts->doPacking = true;
-	}
+	PackerOpts->doPacking = Options.do_packing;
 
+    //TODO: document?
 	PackerOpts->global_clocks = true; /* DEFAULT */
-	if (Options.Count[OT_GLOBAL_CLOCKS]) {
-		PackerOpts->global_clocks = Options.global_clocks;
-	}
-
 	PackerOpts->hill_climbing_flag = false; /* DEFAULT */
-	if (Options.Count[OT_HILL_CLIMBING_FLAG]) {
-		PackerOpts->hill_climbing_flag = Options.hill_climbing_flag;
-	}
 
-	PackerOpts->skip_clustering = false; /* DEFAULT */
-	if (Options.Count[OT_SKIP_CLUSTERING]) {
-		PackerOpts->skip_clustering = true;
-	}
-	PackerOpts->allow_unrelated_clustering = true; /* DEFAULT */
-	if (Options.Count[OT_ALLOW_UNRELATED_CLUSTERING]) {
-		PackerOpts->allow_unrelated_clustering =
-				Options.allow_unrelated_clustering;
-	}
-	PackerOpts->connection_driven = true; /* DEFAULT */
-	if (Options.Count[OT_CONNECTION_DRIVEN_CLUSTERING]) {
-		PackerOpts->connection_driven = Options.connection_driven;
-	}
+	PackerOpts->allow_unrelated_clustering = Options.allow_unrelated_clustering;
+	PackerOpts->connection_driven = Options.connection_driven_clustering;
+	PackerOpts->timing_driven = Options.timing_driven_clustering;
+	PackerOpts->cluster_seed_type = Options.cluster_seed_type;
+	PackerOpts->alpha = Options.alpha_clustering;
+	PackerOpts->beta = Options.beta_clustering;
 
-	PackerOpts->timing_driven = TimingEnabled; /* DEFAULT */
-	if (Options.Count[OT_TIMING_DRIVEN_CLUSTERING]) {
-		PackerOpts->timing_driven = Options.timing_driven;
-	}
-	PackerOpts->cluster_seed_type = (
-			TimingEnabled ? VPACK_BLEND : VPACK_MAX_INPUTS); /* DEFAULT */
-	if (Options.Count[OT_CLUSTER_SEED]) {
-		PackerOpts->cluster_seed_type = Options.cluster_seed_type;
-	}
-	PackerOpts->alpha = 0.75; /* DEFAULT */
-	if (Options.Count[OT_ALPHA_CLUSTERING]) {
-		PackerOpts->alpha = Options.alpha;
-	}
-	PackerOpts->beta = 0.9; /* DEFAULT */
-	if (Options.Count[OT_BETA_CLUSTERING]) {
-		PackerOpts->beta = Options.beta;
-	}
-
+    //TODO: document?
 	PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
 	PackerOpts->auto_compute_inter_cluster_net_delay = true;
-	if (Options.Count[OT_INTER_CLUSTER_NET_DELAY]) {
-		PackerOpts->inter_cluster_net_delay = Options.inter_cluster_net_delay;
-		PackerOpts->auto_compute_inter_cluster_net_delay = false;
-	}
-
 	PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */
-	if (Options.Count[OT_PACKER_ALGORITHM]) {
-		PackerOpts->packer_algorithm = Options.packer_algorithm;
-	}
 }
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {
     
-    NetlistOpts.absorb_buffer_luts = true; //Default
-    if(Options.Count[OT_ABSORB_BUFFER_LUTS]) {
-        NetlistOpts.absorb_buffer_luts = Options.absorb_buffer_luts;
-    }
-
-    NetlistOpts.sweep_dangling_primary_ios = true; //Default
-    if(Options.Count[OT_SWEEP_DANGLING_PRIMARY_IOS]) {
-        NetlistOpts.sweep_dangling_primary_ios = Options.sweep_dangling_primary_ios;
-    }
-
-    NetlistOpts.sweep_dangling_nets = true; //Default
-    if(Options.Count[OT_SWEEP_DANGLING_NETS]) {
-        NetlistOpts.sweep_dangling_nets = Options.sweep_dangling_nets;
-    }
-
-    NetlistOpts.sweep_dangling_blocks = true; //Default
-    if(Options.Count[OT_SWEEP_DANGLING_BLOCKS]) {
-        NetlistOpts.sweep_dangling_blocks = Options.sweep_dangling_blocks;
-    }
-
-    NetlistOpts.sweep_constant_primary_outputs = false; //Default
-    if(Options.Count[OT_SWEEP_CONSTANT_PRIMARY_OUTPUTS]) {
-        NetlistOpts.sweep_constant_primary_outputs = Options.sweep_constant_primary_outputs;
-    }
+    NetlistOpts.absorb_buffer_luts = Options.absorb_buffer_luts;
+    NetlistOpts.sweep_dangling_primary_ios = Options.sweep_dangling_primary_ios;
+    NetlistOpts.sweep_dangling_nets = Options.sweep_dangling_nets;
+    NetlistOpts.sweep_dangling_blocks = Options.sweep_dangling_blocks;
+    NetlistOpts.sweep_constant_primary_outputs = Options.sweep_constant_primary_outputs;
 }
 
 /* Sets up the s_placer_opts structure based on users input. Error checking,
  * such as checking for conflicting params is assumed to be done beforehand */
-static void SetupPlacerOpts(const t_options& Options, const bool TimingEnabled,
-		t_placer_opts *PlacerOpts) {
+static void SetupPlacerOpts(const t_options& Options, t_placer_opts *PlacerOpts) {
 
-	PlacerOpts->doPlacement = false; /* DEFAULT */
-	if (Options.Count[OT_PLACE]) {
-		PlacerOpts->doPlacement = true;
-	}
+	PlacerOpts->doPlacement = Options.do_placement;
 
-	PlacerOpts->inner_loop_recompute_divider = 0; /* DEFAULT */
-	if (Options.Count[OT_INNER_LOOP_RECOMPUTE_DIVIDER]) {
-		PlacerOpts->inner_loop_recompute_divider =
-				Options.inner_loop_recompute_divider;
-	}
+	PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
 
-	PlacerOpts->place_cost_exp = 1.; /* DEFAULT */
-	if (Options.Count[OT_PLACE_COST_EXP]) {
-		PlacerOpts->place_cost_exp = Options.place_cost_exp;
-	}
+    //TODO: document?
+	PlacerOpts->place_cost_exp = 1;
 
-	PlacerOpts->td_place_exp_first = 1.; /* DEFAULT */
-	if (Options.Count[OT_TD_PLACE_EXP_FIRST]) {
-		PlacerOpts->td_place_exp_first = Options.place_exp_first;
-	}
+	PlacerOpts->td_place_exp_first = Options.place_exp_first;
 
-	PlacerOpts->td_place_exp_last = 8.; /* DEFAULT */
-	if (Options.Count[OT_TD_PLACE_EXP_LAST]) {
-		PlacerOpts->td_place_exp_last = Options.place_exp_last;
-	}
+	PlacerOpts->td_place_exp_last = Options.place_exp_last;
 
-	PlacerOpts->place_algorithm = BOUNDING_BOX_PLACE; /* DEFAULT */
-	if (TimingEnabled) {
-		PlacerOpts->place_algorithm = PATH_TIMING_DRIVEN_PLACE; /* DEFAULT */
-	}
-	if (Options.Count[OT_PLACE_ALGORITHM]) {
-		PlacerOpts->place_algorithm = Options.PlaceAlgorithm;
-	}
+	PlacerOpts->place_algorithm = Options.PlaceAlgorithm;
 
-	PlacerOpts->pad_loc_file = NULL; /* DEFAULT */
-	if (Options.Count[OT_FIX_PINS]) {
-		if (Options.PinFile) {
-			PlacerOpts->pad_loc_file = vtr::strdup(Options.PinFile);
-		}
-	}
+	PlacerOpts->pad_loc_file = Options.pad_loc_file;
+	PlacerOpts->pad_loc_type = Options.pad_loc_type;
 
-	PlacerOpts->pad_loc_type = FREE; /* DEFAULT */
-	if (Options.Count[OT_FIX_PINS]) {
-		PlacerOpts->pad_loc_type = (Options.PinFile ? USER : RANDOM);
-	}
+	PlacerOpts->place_chan_width = Options.PlaceChanWidth;
 
-	PlacerOpts->place_chan_width = 100; /* DEFAULT */
-	if (Options.Count[OT_PLACE_CHAN_WIDTH]) {
-		PlacerOpts->place_chan_width = Options.PlaceChanWidth;
-	}
+	PlacerOpts->recompute_crit_iter = Options.RecomputeCritIter;
 
-	PlacerOpts->recompute_crit_iter = 1; /* DEFAULT */
-	if (Options.Count[OT_RECOMPUTE_CRIT_ITER]) {
-		PlacerOpts->recompute_crit_iter = Options.RecomputeCritIter;
-	}
-
-	PlacerOpts->timing_tradeoff = 0.5; /* DEFAULT */
-	if (Options.Count[OT_TIMING_TRADEOFF]) {
-		PlacerOpts->timing_tradeoff = Options.PlaceTimingTradeoff;
-	}
+	PlacerOpts->timing_tradeoff = Options.PlaceTimingTradeoff;
 
 	/* Depends on PlacerOpts->place_algorithm */
-	PlacerOpts->enable_timing_computations = false; /* DEFAULT */
-	if (PlacerOpts->place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-		PlacerOpts->enable_timing_computations = true; /* DEFAULT */
-	}
-	if (Options.Count[OT_ENABLE_TIMING_COMPUTATIONS]) {
-		PlacerOpts->enable_timing_computations = Options.ShowPlaceTiming;
-	}
+	PlacerOpts->enable_timing_computations = Options.ShowPlaceTiming;
 
+    //TODO: document?
 	PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */
-	if ((Options.Count[OT_ROUTE_CHAN_WIDTH])
-			|| (Options.Count[OT_PLACE_CHAN_WIDTH])) {
-		PlacerOpts->place_freq = PLACE_ONCE;
-	}
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
-	analysis_opts.doAnalysis = false; /* DEFAULT */
-	if (Options.Count[OT_ANALYSIS]) {
-		analysis_opts.doAnalysis = true;
-	}
+	analysis_opts.doAnalysis = Options.do_analysis;
 
-    analysis_opts.gen_post_synthesis_netlist = false; /* DEFAULT */
-	if (Options.Count[OT_GENERATE_POST_SYNTHESIS_NETLIST]) {
-        analysis_opts.gen_post_synthesis_netlist = Options.Generate_Post_Synthesis_Netlist;
-	}
+    analysis_opts.gen_post_synthesis_netlist = Options.Generate_Post_Synthesis_Netlist;
 }
 
 static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
@@ -820,11 +546,7 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts *power_opts,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-	if (Options.Count[OT_POWER]) {
-		power_opts->do_power = true;
-	} else {
-		power_opts->do_power = false;
-	}
+    power_opts->do_power = Options.do_power;
 
 	if (power_opts->do_power) {
 		if (!Arch->power)

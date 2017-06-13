@@ -30,7 +30,6 @@
 #include "hash.h"
 #include "cluster_feasibility_filter.h"
 #include "vpr_utils.h"
-#include "ReadOptions.h"
 
 /* header functions that identify pin classes */
 static void alloc_pin_classes_in_pb_graph_node(

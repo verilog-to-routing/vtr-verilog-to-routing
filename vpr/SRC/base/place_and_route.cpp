@@ -29,7 +29,7 @@ using namespace std;
 #include "net_delay.h"
 #include "timing_place.h"
 #include "read_xml_arch_file.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "route_common.h"
 #include "place_macro.h"
 #include "power.h"

@@ -39,7 +39,7 @@ using namespace std;
 #include "globals.h"
 #include "read_blif.h"
 #include "arch_types.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "hash.h"
 
 static AtomNetlist read_blif(const char *blif_file, 

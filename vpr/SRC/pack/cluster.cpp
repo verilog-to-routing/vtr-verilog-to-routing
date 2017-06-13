@@ -61,7 +61,7 @@ using namespace std;
 #include "path_delay.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "cluster_router.h"
 #include "lb_type_rr_graph.h"
 

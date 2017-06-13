@@ -22,7 +22,7 @@ using namespace std;
 #include "timing_place_lookup.h"
 #include "read_xml_arch_file.h"
 #include "netlist.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "atom_netlist.h"
 
 /*this file contains routines that generate the array containing*/

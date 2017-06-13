@@ -1,7 +1,10 @@
 #ifndef CHECKSETUP_H
 #define CHECKSETUP_H
+#include "vpr_types.h"
 
-void CheckSetup(const t_placer_opts PlacerOpts,
+void CheckSetup(
+        const t_packer_opts PackerOpts,
+        const t_placer_opts PlacerOpts,
 		const t_router_opts RouterOpts,
 		const t_det_routing_arch RoutingArch,
 		const t_segment_inf * Segments,

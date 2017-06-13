@@ -21,7 +21,7 @@ using namespace std;
 #include "net_delay.h"
 #include "path_delay.h"
 #include "read_xml_arch_file.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "endpoint_timing.h"
 
 #include "timing_info.h"

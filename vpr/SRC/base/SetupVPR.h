@@ -2,7 +2,7 @@
 #define SETUPVPR_H
 #include <vector>
 #include "logic_types.h"
-#include "ReadOptions.h"
+#include "read_options.h"
 #include "physical_types.h"
 #include "vpr_types.h"
 
