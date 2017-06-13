@@ -77,7 +77,6 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		bool * ShowGraphics, int *GraphPause,
 		t_power_opts * PowerOpts);
 /* Check inputs are reasonable */
-void vpr_check_options(const t_options& Options, const bool TimingEnabled);
 void vpr_check_arch(const t_arch& Arch);
 /* Verify settings don't conflict or otherwise not make sense */
 void vpr_check_setup(

@@ -5,6 +5,10 @@
 #include "vtr_memory.h"
 #include "vtr_log.h"
 
+#include "vpr_error.h"
+
+using argparse::Provenance;
+
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);
 static void set_conditional_defaults(t_options& args);
 static bool verify_args(const t_options& args);
@@ -170,11 +174,13 @@ struct ParseClusterSeed {
 static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description = "Versatile Place and Route (VPR)";
     auto parser = argparse::ArgumentParser(prog_name, description);
-    //parser.epilog("This is the epilog");
+    parser.epilog("For additional usage information see: https://docs.verilogtorouting.org");
+
 
     auto& pos_grp = parser.add_argument_group("positional arguments");
     pos_grp.add_argument(args.ArchFile, "architecture")
             .help("FPGA Architecture description file (XML)");
+
     pos_grp.add_argument(args.CircuitName, "circuit")
             .help("Circuit file (or circuit name if --blif_file specified)");
 
@@ -286,6 +292,10 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 
     file_grp.add_argument(args.out_file_prefix, "--outfile_prefix")
             .help("Prefix for output files")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.dump_rr_structs_file, "--dump_rr_structs_file")
+            .help("Dumps RR graph related strcutres to a file")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
 
@@ -595,7 +605,6 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 static void set_conditional_defaults(t_options& args) {
     //Some arguments are set conditionally based on other options.
     //These are resolved here.
-    using argparse::Provenance;
 
     /*
      * Stages
@@ -624,7 +633,7 @@ static void set_conditional_defaults(t_options& args) {
             vtr::printf_warning(__FILE__, __LINE__, "Command-line argument '%s' has no effect since timing analysis is disabled",
                                 args.timing_driven_clustering.argument_name().c_str()); 
         }
-        args.timing_driven_clustering = args.timing_analysis;
+        args.timing_driven_clustering.set(args.timing_analysis, Provenance::INFERRED);
     }
 
     /*
@@ -704,6 +713,21 @@ static void set_conditional_defaults(t_options& args) {
 }
 
 static bool verify_args(const t_options& args) {
+    /*
+     * Check for conflicting paramaters
+     */
+    if(args.dump_rr_structs_file.provenance() == Provenance::SPECIFIED
+       && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+				"-route_chan_width option must be specified if dumping rr structs is requested (%s)\n",
+                args.dump_rr_structs_file.argument_name().c_str());
+    }
+
+    if(args.read_rr_graph_file.provenance() == Provenance::SPECIFIED
+       && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+				"-route_chan_width option must be specified if dumping rr structs is requested (%s)\n",
+                args.read_rr_graph_file.argument_name().c_str());
+    }
     return true;
 }
-

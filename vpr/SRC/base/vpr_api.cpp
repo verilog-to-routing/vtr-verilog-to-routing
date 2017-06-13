@@ -46,7 +46,6 @@ using namespace std;
 #include "ShowSetup.h"
 #include "CheckArch.h"
 #include "CheckSetup.h"
-#include "CheckOptions.h"
 #include "rr_graph.h"
 #include "pb_type_graph.h"
 #include "route_common.h"
@@ -141,9 +140,6 @@ void vpr_init(const int argc, const char **argv,
 
     /* Timing option priorities */
     vpr_setup->TimingEnabled = options->timing_analysis;
-
-    /* Verify the rest of the options */
-    CheckOptions(*options, vpr_setup->TimingEnabled);
 
     vtr::printf_info("\n");
     vtr::printf_info("Architecture file: %s\n", options->ArchFile.value());
@@ -894,10 +890,6 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 			user_models, library_models, NetlistOpts, PackerOpts, PlacerOpts,
 			AnnealSched, RouterOpts, AnalysisOpts, RoutingArch, PackerRRGraph, Segments, Timing,
 			ShowGraphics, GraphPause, PowerOpts);
-}
-/* Check inputs are reasonable */
-void vpr_check_options(const t_options& Options, const bool TimingEnabled) {
-	CheckOptions(Options, TimingEnabled);
 }
 void vpr_check_arch(const t_arch& Arch) {
 	CheckArch(Arch);

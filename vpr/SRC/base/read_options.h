@@ -76,6 +76,7 @@ struct t_options {
 	argparse::ArgValue<char*> pad_loc_file;
 	argparse::ArgValue<char*> write_rr_graph_file;
     argparse::ArgValue<char*> read_rr_graph_file;
+    argparse::ArgValue<char*> dump_rr_structs_file;
 
     /* Stage Options */
     argparse::ArgValue<bool> do_packing;
