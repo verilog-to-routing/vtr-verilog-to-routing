@@ -675,15 +675,6 @@ void free_arch(t_arch* Arch) {
 		delete prev_model;
 	}
 
-	for (int i = 0; i < 4; ++i) {
-		vtr::t_linked_vptr *vptr = Arch->model_library[i].pb_types;
-		while (vptr) {
-			vtr::t_linked_vptr *vptr_prev = vptr;
-			vptr = vptr->next;
-			vtr::free(vptr_prev);
-		}
-	}
-
 	for (int i = 0; i < Arch->num_directs; ++i) {
 		vtr::free(Arch->Directs[i].name);
 		vtr::free(Arch->Directs[i].from_pin);
@@ -693,24 +684,35 @@ void free_arch(t_arch* Arch) {
 
     vtr::free(Arch->architecture_id);
 
-	vtr::free(Arch->model_library[0].name);
-	vtr::free(Arch->model_library[0].outputs->name);
-	delete[] Arch->model_library[0].outputs;
-	vtr::free(Arch->model_library[1].inputs->name);
-	delete[] Arch->model_library[1].inputs;
-	vtr::free(Arch->model_library[1].name);
-	vtr::free(Arch->model_library[2].name);
-	vtr::free(Arch->model_library[2].inputs[0].name);
-	vtr::free(Arch->model_library[2].inputs[1].name);
-	delete[] Arch->model_library[2].inputs;
-	vtr::free(Arch->model_library[2].outputs->name);
-	delete[] Arch->model_library[2].outputs;
-	vtr::free(Arch->model_library[3].name);
-	vtr::free(Arch->model_library[3].inputs->name);
-	delete[] Arch->model_library[3].inputs;
-	vtr::free(Arch->model_library[3].outputs->name);
-	delete[] Arch->model_library[3].outputs;
-	delete[] Arch->model_library;
+    if (Arch->model_library) {
+        for (int i = 0; i < 4; ++i) {
+            vtr::t_linked_vptr *vptr = Arch->model_library[i].pb_types;
+            while (vptr) {
+                vtr::t_linked_vptr *vptr_prev = vptr;
+                vptr = vptr->next;
+                vtr::free(vptr_prev);
+            }
+        }
+
+        vtr::free(Arch->model_library[0].name);
+        vtr::free(Arch->model_library[0].outputs->name);
+        delete[] Arch->model_library[0].outputs;
+        vtr::free(Arch->model_library[1].inputs->name);
+        delete[] Arch->model_library[1].inputs;
+        vtr::free(Arch->model_library[1].name);
+        vtr::free(Arch->model_library[2].name);
+        vtr::free(Arch->model_library[2].inputs[0].name);
+        vtr::free(Arch->model_library[2].inputs[1].name);
+        delete[] Arch->model_library[2].inputs;
+        vtr::free(Arch->model_library[2].outputs->name);
+        delete[] Arch->model_library[2].outputs;
+        vtr::free(Arch->model_library[3].name);
+        vtr::free(Arch->model_library[3].inputs->name);
+        delete[] Arch->model_library[3].inputs;
+        vtr::free(Arch->model_library[3].outputs->name);
+        delete[] Arch->model_library[3].outputs;
+        delete[] Arch->model_library;
+    }
 
 	if (Arch->clocks) {
 		vtr::free(Arch->clocks->clock_inf);
