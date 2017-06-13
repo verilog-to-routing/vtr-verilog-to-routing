@@ -202,11 +202,6 @@ void vpr_init(const int argc, const char **argv,
     /* Read in user options */
     *options = read_options(argc, argv);
 
-    if(options->show_version) {
-        //Printed title (which includes version info) above, so all done
-        return;
-    }
-
     //Print out the arguments passed to VPR.
     //This provides a reference in the log file to exactly
     //how VPR was run, aiding in re-producibility

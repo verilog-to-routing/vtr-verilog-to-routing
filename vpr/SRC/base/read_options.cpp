@@ -228,8 +228,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
 
     gen_grp.add_argument<bool,ParseOnOff>(args.show_version, "--version")
             .help("Show version information then exit")
-            .default_value("off")
-            .action(argparse::Action::STORE_TRUE);
+            .action(argparse::Action::VERSION);
 
     gen_grp.add_argument<bool,ParseOnOff>(args.timing_analysis, "--timing_analysis")
             .help("Controls whether timing analysis (and timing driven optimizations) are enabled.")
