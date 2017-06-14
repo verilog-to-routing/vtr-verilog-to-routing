@@ -315,18 +315,20 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     file_grp.add_argument(args.read_rr_graph_file, "--read_rr_graph")
             .help("The routing resource graph file to load."
                   " The loaded routing resource graph overrides any routing architecture specified in the architecture file.")
+            .metavar("RR_GRAPH_FILE")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_rr_graph_file, "--write_rr_graph")
             .help("Writes the routing resource graph to the specified file")
-            .show_in(argparse::ShowIn::HELP_ONLY);
-
-    file_grp.add_argument(args.out_file_prefix, "--outfile_prefix")
-            .help("Prefix for output files")
+            .metavar("RR_GRAPH_FILE")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.dump_rr_structs_file, "--dump_rr_structs_file")
             .help("Dumps RR graph related strcutres to a file")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.out_file_prefix, "--outfile_prefix")
+            .help("Prefix for output files")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
 
@@ -804,14 +806,14 @@ static bool verify_args(const t_options& args) {
     if(args.dump_rr_structs_file.provenance() == Provenance::SPECIFIED
        && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-				"-route_chan_width option must be specified if dumping rr structs is requested (%s)\n",
+				"--route_chan_width option must be specified if dumping rr structs is requested (%s)\n",
                 args.dump_rr_structs_file.argument_name().c_str());
     }
 
     if(args.read_rr_graph_file.provenance() == Provenance::SPECIFIED
        && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-				"-route_chan_width option must be specified if dumping rr structs is requested (%s)\n",
+				"--route_chan_width option must be specified if --read_rr_graph is requested (%s)\n",
                 args.read_rr_graph_file.argument_name().c_str());
     }
     return true;
