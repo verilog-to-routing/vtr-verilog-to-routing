@@ -176,8 +176,10 @@ class SdcParseCallback2 : public sdcparse::Callback {
             auto io_pins = get_ports(cmd.target_ports);
 
             if(io_pins.empty()) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                          "Found no matching primary inputs or primary outputs");
+                //We treat this as a warning, since the primary I/Os in the target may have been swept away
+                vtr::printf_warning( fname_.c_str(), lineno_,
+                          "Found no matching primary inputs or primary outputs for %s\n",
+                          (cmd.type == sdcparse::IoDelayType::INPUT) ? "set_input_delay" : "set_output_delay");
             }
 
             float max_delay = sdc_units_to_seconds(cmd.max_delay);
