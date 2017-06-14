@@ -1,22 +1,16 @@
 #include <string.h>
-#include <string>
 #include <algorithm>
-
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
-#include "vtr_util.h"
-#include "vtr_log.h"
 #include "globals.h"
 #include "rr_graph.h"
 #include "rr_graph2.h"
 #include "rr_graph_indexed_data.h"
 #include "vtr_version.h"
 #include <sstream>
-#include "dump_rr_structs.h"
 #include <utility>
-
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -28,7 +22,6 @@
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "vpr_error.h"
-#include "check_rr_graph.h"
 
 #include "rr_graph_reader.h"
 
@@ -111,7 +104,6 @@ void load_rr_file(const t_graph_type graph_type,
             }
         }
 
-
         //Compare with the architecture file to ensure consistency
         next_component = get_single_child(rr_graph, "grid", loc_data);
         verify_grid(next_component, loc_data);
@@ -156,7 +148,6 @@ void load_rr_file(const t_graph_type graph_type,
         process_edges(next_component, loc_data, wire_to_rr_ipin_switch, *num_rr_switches);
 
         process_rr_node_indices(L_nx, L_ny);
-
 
         init_fan_in(L_nx, L_ny, device_ctx.rr_nodes, device_ctx.rr_node_indices, device_ctx.grid, device_ctx.num_rr_nodes);
 
@@ -290,7 +281,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
             newType = IPIN;
             node.set_type(newType);
         } else {
-            vtr::printf_warning(__FILE__, __LINE__,
+            vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__,
                     "Valid inputs for class types are \"CHANX\", \"CHANY\",\"SOURCE\", \"SINK\",\"OPIN\", and \"IPIN\".");
         }
 

@@ -46,9 +46,9 @@ constexpr int UNIMPLEMENTABLE_EXIT_CODE = 2; //Could not implement (e.g. unrouta
  * 4.  Clean up
  */
 int main(int argc, const char **argv) {
-	t_options Options;
-	t_arch Arch;
-	t_vpr_setup vpr_setup;
+	t_options Options = t_options();
+	t_arch Arch = t_arch();
+	t_vpr_setup vpr_setup = t_vpr_setup();
 	clock_t entire_flow_begin,entire_flow_end;
 
 	entire_flow_begin = clock();
