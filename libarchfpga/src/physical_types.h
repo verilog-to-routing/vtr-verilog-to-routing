@@ -225,8 +225,8 @@ struct t_timing_inf {
 	bool timing_analysis_enabled;
 	float C_ipin_cblock;
 	float T_ipin_cblock;
-	char * SDCFile; 
-    char slack_definition;
+	char* SDCFile; 
+    const char* slack_definition;
 };
 
 enum e_power_wire_type {

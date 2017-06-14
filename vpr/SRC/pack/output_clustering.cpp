@@ -23,7 +23,6 @@ using namespace std;
 #include "cluster_router.h"
 #include "output_clustering.h"
 #include "read_xml_arch_file.h"
-#include "ReadOptions.h"
 #include "vpr_utils.h"
 
 #define LINELENGTH 1024

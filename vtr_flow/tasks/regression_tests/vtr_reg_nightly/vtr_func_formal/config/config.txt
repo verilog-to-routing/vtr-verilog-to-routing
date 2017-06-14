@@ -29,4 +29,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 #Script parameters
-script_params=-vpr_route_chan_width 200 -gen_postsynthesis_netlist -track_memory_usage -check_equivalent -sweep_dangling_primary_ios off -sweep_constant_primary_outputs off
+script_params=-vpr_route_chan_width 200 -gen_post_synthesis_netlist -track_memory_usage -check_equivalent --sweep_dangling_primary_ios off --sweep_constant_primary_outputs off

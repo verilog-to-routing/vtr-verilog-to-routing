@@ -26,7 +26,7 @@ using namespace std;
 #include "rr_graph_indexed_data.h"
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "dump_rr_structs.h"
 #include "cb_metrics.h"
 #include "build_switchblocks.h"

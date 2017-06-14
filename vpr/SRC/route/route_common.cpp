@@ -27,7 +27,7 @@ using namespace std;
 #include "rr_graph.h"
 #include "read_xml_arch_file.h"
 #include "draw.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 
 #include "route_profiling.h"
 

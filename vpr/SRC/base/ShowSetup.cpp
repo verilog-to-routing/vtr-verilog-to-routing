@@ -6,16 +6,15 @@
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "OptionTokens.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
+#include "read_options.h"
 #include "read_xml_arch_file.h"
 #include "ShowSetup.h"
 
 /******** Function Prototypes ********/
 static void ShowPackerOpts(const t_packer_opts& PackerOpts);
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts);
-static void ShowPlacerOpts(const t_options& Options,
-		const t_placer_opts& PlacerOpts,
+static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
 		const t_annealing_sched& AnnealSched);
 static void ShowRouterOpts(const t_router_opts& RouterOpts);
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts);
@@ -25,7 +24,7 @@ static void ShowRoutingArch(const t_det_routing_arch& RoutingArch);
 
 /******** Function Implementations ********/
 
-void ShowSetup(const t_options& options, const t_vpr_setup& vpr_setup) {
+void ShowSetup(const t_vpr_setup& vpr_setup) {
 	vtr::printf_info("Timing analysis: %s\n", (vpr_setup.TimingEnabled? "ON" : "OFF"));
     vtr::printf_info("Slack definition: %c\n", vpr_setup.Timing.slack_definition);
 
@@ -47,7 +46,7 @@ void ShowSetup(const t_options& options, const t_vpr_setup& vpr_setup) {
 		ShowPackerOpts(vpr_setup.PackerOpts);
 	}
 	if (vpr_setup.PlacerOpts.doPlacement) {
-		ShowPlacerOpts(options, vpr_setup.PlacerOpts, vpr_setup.AnnealSched);
+		ShowPlacerOpts(vpr_setup.PlacerOpts, vpr_setup.AnnealSched);
 	}
 	if (vpr_setup.RouterOpts.doRouting) {
 		ShowRouterOpts(vpr_setup.RouterOpts);
@@ -303,8 +302,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 	vtr::printf_info("\n");
 }
 
-static void ShowPlacerOpts(const t_options& Options,
-		const t_placer_opts& PlacerOpts,
+static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
 		const t_annealing_sched& AnnealSched) {
 
 	vtr::printf_info("PlacerOpts.place_freq: ");
@@ -353,9 +351,7 @@ static void ShowPlacerOpts(const t_options& Options,
 
 		vtr::printf_info("PlacerOpts.place_cost_exp: %f\n", PlacerOpts.place_cost_exp);
 
-		if (Options.Count[OT_PLACE_CHAN_WIDTH]) {
-			vtr::printf_info("PlacerOpts.place_chan_width: %d\n", PlacerOpts.place_chan_width);
-		}
+        vtr::printf_info("PlacerOpts.place_chan_width: %d\n", PlacerOpts.place_chan_width);
 
 		if (PATH_TIMING_DRIVEN_PLACE == PlacerOpts.place_algorithm) {
 			vtr::printf_info("PlacerOpts.inner_loop_recompute_divider: %d\n", PlacerOpts.inner_loop_recompute_divider);

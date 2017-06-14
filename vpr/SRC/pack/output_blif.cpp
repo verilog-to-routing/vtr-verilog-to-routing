@@ -23,7 +23,6 @@ using namespace std;
 #include "globals.h"
 #include "atom_netlist.h"
 #include "output_blif.h"
-#include "ReadOptions.h"
 #include "vpr_utils.h"
 
 #define LINELENGTH 1024

@@ -3,17 +3,23 @@
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "globals.h"
-#include "OptionTokens.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "read_xml_arch_file.h"
 #include "CheckSetup.h"
 
-void CheckSetup(const t_placer_opts PlacerOpts,
+void CheckSetup(
+        const t_packer_opts PackerOpts,
+        const t_placer_opts PlacerOpts,
 		const t_router_opts RouterOpts,
 		const t_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans) {
 	int i;
 	int Tmp;
+
+    if(!Timing.timing_analysis_enabled && PackerOpts.timing_driven) {
+		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+				"Packing cannot be timing driven without timing analysis enabled\n");
+    }
 
 	if ((GLOBAL == RouterOpts.route_type)
 			&& (TIMING_DRIVEN == RouterOpts.router_algorithm)) {
@@ -77,6 +83,15 @@ void CheckSetup(const t_placer_opts PlacerOpts,
 					"arch_opin_switch (#%d) of segment type #%d is not buffered.\n", Tmp, i);
 		}
 	}
+
+    if ((PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) && PlacerOpts.place_chan_width < 0) {
+        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                "Place channel width must be positive.\n");
+    }
+    if ((RouterOpts.fixed_channel_width != NO_FIXED_CHANNEL_WIDTH) && RouterOpts.fixed_channel_width < 0) {
+        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                "Routing channel width must be positive.\n");
+    }
 
 	if (UNI_DIRECTIONAL == RoutingArch.directionality) {
 		if ((RouterOpts.fixed_channel_width != NO_FIXED_CHANNEL_WIDTH)
