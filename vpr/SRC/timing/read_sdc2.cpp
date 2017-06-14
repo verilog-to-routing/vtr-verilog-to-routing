@@ -754,7 +754,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
                 if(!found) {
                     vtr::printf_warning(fname_.c_str(), lineno_, 
-                                        "get_ports target name or pattern '%s' matched no clocks\n",
+                                        "get_ports target name or pattern '%s' matched no ports\n",
                                         port_pattern.c_str());
                 }
             }
