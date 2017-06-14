@@ -7,7 +7,6 @@
  * the other the blocks. To-do: implement cluster_ctx.blocks data structure. 
  */
 
-
 #ifndef NETLIST_H
 #define NETLIST_H
 
@@ -48,10 +47,10 @@ struct t_net_pin{
 struct t_vnet{
 	vector<t_net_pin> pins;
 	char* name;
-	t_net_power * net_power; // Daniel to-do: Take out?
+	t_net_power* net_power; // Daniel to-do: Take out?
 	// named bitfields (alternative to bitmasks)
 
-    //TODO transfer net routing state to to RoutingContext
+    //TODO transfer net routing state to RoutingContext
 	unsigned int is_routed    : 1;
 	unsigned int is_fixed     : 1;
 	unsigned int is_global    : 1;
@@ -78,8 +77,7 @@ struct t_vnet{
 
 struct t_netlist{
 	//vector<t_blocks> blocks; To-do: Need to implement later
-	vector<t_vnet>  net;
-
+	vector<t_vnet> net;
     std::string netlist_id;
 };
 

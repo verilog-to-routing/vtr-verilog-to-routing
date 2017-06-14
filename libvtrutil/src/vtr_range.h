@@ -8,7 +8,7 @@ namespace vtr {
  *
  * It allows conveniently returning a range from a single function call
  * without having to explicity expose the underlying container, or make two
- * explicit calls to retireive the associated begin and end iterators.
+ * explicit calls to retrieve the associated begin and end iterators.
  * It also enables the easy use of range-based-for loops.
  *
  * For example:

@@ -108,7 +108,7 @@ static void alloc_pin_classes_in_pb_graph_node(
 						(t_pb_graph_pin ***) vtr::calloc(
 								pb_graph_node->pb_type->depth,
 								sizeof(t_pb_graph_pin**));
-				pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins =
+				pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins =
 						(int*) vtr::calloc(pb_graph_node->pb_type->depth,
 								sizeof(int));
 				for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
@@ -359,13 +359,13 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(
 		}
 		if (current_pb_graph_pin->parent_node->pb_type->num_modes == 0
 				&& current_pb_graph_pin->port->type == IN_PORT) {
-			reference_pin->num_connectable_primtive_input_pins[depth]++;
+			reference_pin->num_connectable_primitive_input_pins[depth]++;
 			reference_pin->list_of_connectable_input_pin_ptrs[depth] =
 					(t_pb_graph_pin**) vtr::realloc(
 							reference_pin->list_of_connectable_input_pin_ptrs[depth],
-							reference_pin->num_connectable_primtive_input_pins[depth]
+							reference_pin->num_connectable_primitive_input_pins[depth]
 									* sizeof(t_pb_graph_pin*));
-			reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primtive_input_pins[depth]
+			reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primitive_input_pins[depth]
 					- 1] = current_pb_graph_pin;
 		}
 	}

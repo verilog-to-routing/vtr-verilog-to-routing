@@ -15,12 +15,12 @@ namespace vtr {
 //Requires that K be convertable to size_t with the size_t operator (i.e. size_t()), and
 //that the conversion results in a linearly increasing index into the underlying vector.
 //
-//This results in a container that is somewat similar to a std::map (i.e. converts from one 
-//type to another), but requires contigously ascending (i.e. linear) keys. Unlike std::map 
+//This results in a container that is somewhat similar to a std::map (i.e. converts from one 
+//type to another), but requires contiguously ascending (i.e. linear) keys. Unlike std::map 
 //only the values are stored (at the specified index/key), reducing memory usage and improving 
 //cache locality. Furthermore, operator[] and find() return the value or iterator directly 
 //associated with the value (like std::vector) rather than a std::pair (like std::map).
-//insert() takes both the key and value as seperate arguments and has no return value.
+//insert() takes both the key and value as separate arguments and has no return value.
 //
 //Additionally, vector_map will silently create values for 'gaps' in the index range (i.e.
 //those elements are initialized with Sentinel::INVALID()).

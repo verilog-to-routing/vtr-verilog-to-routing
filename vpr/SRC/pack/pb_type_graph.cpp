@@ -442,9 +442,9 @@ static void free_pb_graph(t_pb_graph_node *pb_graph_node) {
 						pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs);
 			}
 
-			if (pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins)
+			if (pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins)
 				vtr::free(
-						pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins);
+						pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins);
 		}
 		vtr::free(pb_graph_node->output_pins[i]);
 	}
@@ -1600,8 +1600,8 @@ static void echo_pb_pins(t_pb_graph_pin **pb_graph_pins, const int num_ports,
 					for (k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
 						print_tabs(fp, level + 2);
 						fprintf(fp, "connectable input pins within depth %d: %d\n",
-								k, pb_graph_pins[i][j].num_connectable_primtive_input_pins[k]);
-						for (m = 0; m < pb_graph_pins[i][j].num_connectable_primtive_input_pins[k]; m++) {
+								k, pb_graph_pins[i][j].num_connectable_primitive_input_pins[k]);
+						for (m = 0; m < pb_graph_pins[i][j].num_connectable_primitive_input_pins[k]; m++) {
 							print_tabs(fp, level + 3);
 							fprintf(fp, "pb_graph_node %s[%d].%s[%d] \n",
 									pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->parent_node->pb_type->name,

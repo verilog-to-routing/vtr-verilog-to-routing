@@ -2,7 +2,7 @@
 #define ATOM_NETLIST_FWD_H
 #include "vtr_strong_id.h"
 /*
- * This header forward delcares the AtomNetlist class, and defines common types by it
+ * This header forward declares the AtomNetlist class, and defines common types by it
  */
 
 //Forward delcaration
@@ -36,7 +36,7 @@ typedef vtr::StrongId<atom_port_id_tag> AtomPortId;
 //A unique identifier for a pin in the atom netlist
 typedef vtr::StrongId<atom_pin_id_tag> AtomPinId;
 
-//An signal index in a port
+//A signal index in a port
 typedef unsigned BitIndex;
 
 //The type of a port in the AtomNetlist

@@ -9,7 +9,7 @@
 
  Key background file:
 
- An understanding of libvpr/physical_types.h is crucial to understanding this file.  physical_types.h contains information about the architecture described in the architecture description language
+ An understanding of libarchfpga/physical_types.h is crucial to understanding this file.  physical_types.h contains information about the architecture described in the architecture description language
 
  Key data structures:
 
@@ -234,7 +234,7 @@ struct t_pb_route {
     AtomNetId atom_net_id; /* which net in the atom netlist uses this pin */
 	int driver_pb_pin_id; /* The pb_pin id of the pb_pin that drives this pin */
     std::vector<int> sink_pb_pin_ids; /* The pb_pin id's of the pb_pins driven by this node */
-    const t_pb_graph_pin* pb_graph_pin = nullptr; /* The graph pin associated wit this node */
+    const t_pb_graph_pin* pb_graph_pin = nullptr; /* The graph pin associated with this node */
 
 	t_pb_route() {
 		atom_net_id = AtomNetId::INVALID();
