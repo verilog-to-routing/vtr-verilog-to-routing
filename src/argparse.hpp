@@ -271,6 +271,11 @@ namespace argparse {
             }
 
             void set_dest_to_value(std::string value) override {
+                if (dest_.provenance() == Provenance::SPECIFIED
+                    && dest_.argument_name() == name()) {
+                    throw ArgParseError("Argument " + name() + " specified multiple times");
+                }
+
                 dest_.set(Converter().from_str(value), Provenance::SPECIFIED);
                 dest_.set_argument_name(name());
                 dest_.set_argument_group(group_name());
@@ -318,6 +323,11 @@ namespace argparse {
             }
 
             void set_dest_to_value(std::string value) override {
+                if (dest_.provenance() == Provenance::SPECIFIED
+                    && dest_.argument_name() == name()) {
+                    throw ArgParseError("Argument " + name() + " specified multiple times");
+                }
+
                 dest_.set(Converter().from_str(value), Provenance::SPECIFIED);
                 dest_.set_argument_name(name());
                 dest_.set_argument_group(group_name());

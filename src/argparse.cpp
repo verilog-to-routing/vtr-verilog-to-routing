@@ -191,7 +191,7 @@ namespace argparse {
                             if (find_iter == choices.end()) {
                                 std::stringstream msg;
                                 msg << "Unexpected option value '" << values[0] << "' (expected one of: " << join(choices, ", ");
-                                msg << ") for " << arg->long_option();
+                                msg << ") for " << arg->name();
                                 throw ArgParseError(msg.str());
                             }
                         }
