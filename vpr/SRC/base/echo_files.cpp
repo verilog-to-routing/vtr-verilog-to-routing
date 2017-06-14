@@ -142,22 +142,22 @@ char *getOutputFileName(enum e_output_files ename) {
     return outputFileNames[(int) ename];
 }
 
-void alloc_and_load_output_file_names(const char *default_name) {
+void alloc_and_load_output_file_names(const std::string default_name) {
     char *name;
 
     if (outputFileNames == NULL) {
 
         outputFileNames = (char**) vtr::calloc((int) E_FILE_END_TOKEN, sizeof (char*));
 
-        name = (char*) vtr::malloc((strlen(default_name) + 40) * sizeof (char));
-        sprintf(name, "%s.critical_path.out", default_name);
-        setOutputFileName(E_CRIT_PATH_FILE, name, default_name);
+        name = (char*) vtr::malloc((strlen(default_name.c_str()) + 40) * sizeof (char));
+        sprintf(name, "%s.critical_path.out", default_name.c_str());
+        setOutputFileName(E_CRIT_PATH_FILE, name, default_name.c_str());
 
-        sprintf(name, "%s.slack.out", default_name);
-        setOutputFileName(E_SLACK_FILE, name, default_name);
+        sprintf(name, "%s.slack.out", default_name.c_str());
+        setOutputFileName(E_SLACK_FILE, name, default_name.c_str());
 
-        sprintf(name, "%s.criticality.out", default_name);
-        setOutputFileName(E_CRITICALITY_FILE, name, default_name);
+        sprintf(name, "%s.criticality.out", default_name.c_str());
+        setOutputFileName(E_CRITICALITY_FILE, name, default_name.c_str());
 
         free(name);
     }

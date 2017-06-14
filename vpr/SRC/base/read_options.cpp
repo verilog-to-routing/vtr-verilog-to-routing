@@ -657,6 +657,62 @@ static void set_conditional_defaults(t_options& args) {
     }
 
     /*
+     * Filenames
+     */
+
+    //We may have recieved the full circuit filepath in the circuit name,
+    //remove the extension and any leading path elements
+    VTR_ASSERT(args.CircuitName.provenance() == Provenance::SPECIFIED);
+    auto name_ext = vtr::split_ext(args.CircuitName);
+    args.CircuitName.set(vtr::basename(name_ext[0]), Provenance::SPECIFIED);
+
+    std::string default_output_name = args.CircuitName;
+
+	if (args.BlifFile.provenance() != Provenance::SPECIFIED) {
+        //Use the full path specified in the original circuit name,
+        //and append the expected .blif extension
+        std::string blif_file = name_ext[0] + ".blif";
+		args.BlifFile.set(blif_file, Provenance::INFERRED);
+	}
+
+	if (args.SDCFile.provenance() != Provenance::SPECIFIED) {
+        //Use the full path specified in the original circuit name,
+        //and append the expected .sdc extension
+        std::string sdc_file = name_ext[0] + ".sdc";
+		args.SDCFile.set(sdc_file, Provenance::INFERRED);
+	}
+
+	if (args.NetFile.provenance() != Provenance::SPECIFIED) {
+        std::string net_file = args.out_file_prefix;
+        net_file += default_output_name + ".net";
+		args.NetFile.set(net_file, Provenance::INFERRED);
+	}
+
+	if (args.PlaceFile.provenance() != Provenance::SPECIFIED) {
+        std::string place_file = args.out_file_prefix;
+        place_file += default_output_name + ".place";
+		args.PlaceFile.set(place_file, Provenance::INFERRED);
+	}
+
+	if (args.RouteFile.provenance() != Provenance::SPECIFIED) {
+        std::string route_file = args.out_file_prefix;
+        route_file += default_output_name + ".route";
+		args.RouteFile.set(route_file, Provenance::INFERRED);
+	}
+
+	if (args.ActFile.provenance() != Provenance::SPECIFIED) {
+        std::string activity_file = args.out_file_prefix;
+        activity_file += default_output_name + ".act";
+		args.ActFile.set(activity_file, Provenance::INFERRED);
+	}
+
+	if (args.PowerFile.provenance() != Provenance::SPECIFIED) {
+        std::string power_file = args.out_file_prefix;
+        power_file += default_output_name + ".power";
+		args.PowerFile.set(power_file, Provenance::INFERRED);
+	}
+
+    /*
      * Packing
      */
     if (args.timing_driven_clustering && !args.timing_analysis) {
@@ -698,16 +754,14 @@ static void set_conditional_defaults(t_options& args) {
     if (std::string(args.pad_loc_file) == "free") {
         args.pad_loc_type.set(FREE, Provenance::INFERRED);
 
-        vtr::free(args.pad_loc_file);
-        args.pad_loc_file.set(nullptr, Provenance::SPECIFIED);
+        args.pad_loc_file.set("", Provenance::SPECIFIED);
     } else if (std::string(args.pad_loc_file) == "random") {
         args.pad_loc_type.set(RANDOM, Provenance::INFERRED);
 
-        vtr::free(args.pad_loc_file);
-        args.pad_loc_file.set(nullptr, Provenance::SPECIFIED);
+        args.pad_loc_file.set("", Provenance::SPECIFIED);
     } else {
         args.pad_loc_type.set(USER, Provenance::INFERRED);
-        VTR_ASSERT(args.pad_loc_file != nullptr);
+        VTR_ASSERT(!args.pad_loc_file.value().empty());
     }
 
     /*

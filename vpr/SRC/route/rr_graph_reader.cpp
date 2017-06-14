@@ -56,7 +56,6 @@ void load_rr_file(const t_graph_type graph_type,
         const enum e_base_cost_type base_cost_type,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
-        const char* write_rr_graph_name,
         const char* read_rr_graph_name) {
 
     const char *Prop;
@@ -177,11 +176,6 @@ void load_rr_file(const t_graph_type graph_type,
 
         float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
         vtr::printf_info("Build routing resource graph took %g seconds\n", elapsed_time);
-
-        //Write out rr graph file if needed
-        if (write_rr_graph_name) {
-            write_rr_graph(write_rr_graph_name, segment_inf, num_seg_types);
-        }
 
     } catch (XmlError& e) {
 

@@ -500,8 +500,10 @@ static void alloc_routing_structs(t_router_opts router_opts,
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warnings, router_opts.write_rr_graph_name,
-                        router_opts.read_rr_graph_name, true);
+			&warnings, 
+            router_opts.write_rr_graph_name,
+            router_opts.read_rr_graph_name,
+            true);
 
 	alloc_and_load_rr_node_route_structs();
 

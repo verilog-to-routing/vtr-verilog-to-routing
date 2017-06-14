@@ -90,7 +90,7 @@ bool place_and_route(t_placer_opts placer_opts,
 
     if (!placer_opts.doPlacement || placer_opts.place_freq == PLACE_NEVER) {
         /* Read the placement from a file */
-        read_place(filename_opts.NetFile, filename_opts.PlaceFile, filename_opts.verify_file_digests, device_ctx.nx, device_ctx.ny, cluster_ctx.num_blocks, cluster_ctx.blocks);
+        read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.nx, device_ctx.ny, cluster_ctx.num_blocks, cluster_ctx.blocks);
         sync_grid_to_blocks();
     } else {
         VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
@@ -101,7 +101,7 @@ bool place_and_route(t_placer_opts placer_opts,
                 timing_inf,
 #endif
                 arch->Directs, arch->num_directs);
-        print_place(filename_opts.NetFile, cluster_ctx.clbs_nlist.netlist_id.c_str(), filename_opts.PlaceFile);
+        print_place(filename_opts.NetFile.c_str(), cluster_ctx.clbs_nlist.netlist_id.c_str(), filename_opts.PlaceFile.c_str());
         end = clock();
 
         vtr::printf_info("Placement took %g seconds.\n", (float) (end - begin) / CLOCKS_PER_SEC);
@@ -203,7 +203,7 @@ bool place_and_route(t_placer_opts placer_opts,
 
             vtr::printf_info("Circuit successfully routed with a channel width factor of %d.\n", width_fac);
 
-            print_route(filename_opts.PlaceFile, filename_opts.RouteFile);
+            print_route(filename_opts.PlaceFile.c_str(), filename_opts.RouteFile.c_str());
 
             if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ROUTING_SINK_DELAYS)) {
                 print_sink_delays(getEchoFileName(E_ECHO_ROUTING_SINK_DELAYS));
@@ -521,8 +521,8 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 
                 if (placer_opts.place_freq == PLACE_ALWAYS) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
-                    print_place(filename_opts.NetFile, cluster_ctx.clbs_nlist.netlist_id.c_str(),
-                            filename_opts.PlaceFile);
+                    print_place(filename_opts.NetFile.c_str(), cluster_ctx.clbs_nlist.netlist_id.c_str(),
+                            filename_opts.PlaceFile.c_str());
                 }
             }
 
@@ -557,8 +557,10 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
             det_routing_arch->dump_rr_structs_file,
             &det_routing_arch->wire_to_rr_ipin_switch,
             &device_ctx.num_rr_switches,
-            &warnings, router_opts.write_rr_graph_name,
-            router_opts.read_rr_graph_name, false);
+            &warnings, 
+            router_opts.write_rr_graph_name,
+            router_opts.read_rr_graph_name,
+            false);
 
     restore_routing(best_routing, clb_opins_used_locally,
             saved_clb_opins_used_locally);
@@ -572,7 +574,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
     }
     vtr::printf_info("Best routing used a channel width factor of %d.\n", final);
 
-    print_route(filename_opts.PlaceFile, filename_opts.RouteFile);
+    print_route(filename_opts.PlaceFile.c_str(), filename_opts.RouteFile.c_str());
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ROUTING_SINK_DELAYS)) {
         print_sink_delays(getEchoFileName(E_ECHO_ROUTING_SINK_DELAYS));

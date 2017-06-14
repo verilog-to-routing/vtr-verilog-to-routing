@@ -44,7 +44,7 @@ void try_pack(t_packer_opts *packer_opts,
 	int num_packing_patterns;
 	t_pack_molecule *list_of_pack_molecules, * cur_pack_molecule;
 
-	vtr::printf_info("Begin packing '%s'.\n", packer_opts->blif_file_name);
+	vtr::printf_info("Begin packing '%s'.\n", packer_opts->blif_file_name.c_str());
 
 	/* determine number of models in the architecture */
 	num_models = 0;
@@ -97,7 +97,7 @@ void try_pack(t_packer_opts *packer_opts,
             packer_opts->global_clocks, is_clock, 
             atom_molecules,
             expected_lowest_cost_pb_gnode,
-            packer_opts->hill_climbing_flag, packer_opts->output_file,
+            packer_opts->hill_climbing_flag, packer_opts->output_file.c_str(),
             packer_opts->timing_driven, packer_opts->cluster_seed_type,
             packer_opts->alpha, packer_opts->beta,
             packer_opts->inter_cluster_net_delay, packer_opts->aspect,

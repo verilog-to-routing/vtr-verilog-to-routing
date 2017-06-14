@@ -882,11 +882,11 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_i
         return timing_constraints;
     }
 
-    FILE* sdc_file = fopen(timing_inf.SDCFile, "r");
+    FILE* sdc_file = fopen(timing_inf.SDCFile.c_str(), "r");
     if (sdc_file == nullptr) {
         //No SDC file
 		vtr::printf("\n");
-		vtr::printf("SDC file '%s' not found\n", timing_inf.SDCFile);
+		vtr::printf("SDC file '%s' not found\n", timing_inf.SDCFile.c_str());
         apply_default_timing_constraints(netlist, lookup, *timing_constraints);
         return timing_constraints;
     }
@@ -895,16 +895,16 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_i
 
     //Parse the file
     SdcParseCallback2 callback(netlist, lookup, *timing_constraints, timing_graph);
-    sdc_parse_file(sdc_file, callback, timing_inf.SDCFile);
+    sdc_parse_file(sdc_file, callback, timing_inf.SDCFile.c_str());
     fclose(sdc_file);
 
     if (callback.num_commands() == 0) {
 		vtr::printf("\n");
-		vtr::printf("SDC file '%s' contained no SDC commands\n", timing_inf.SDCFile);
+		vtr::printf("SDC file '%s' contained no SDC commands\n", timing_inf.SDCFile.c_str());
         apply_default_timing_constraints(netlist, lookup, *timing_constraints);
     } else {
 		vtr::printf("\n");
-		vtr::printf("Applied %zu SDC commands from '%s'\n", callback.num_commands(), timing_inf.SDCFile);
+		vtr::printf("Applied %zu SDC commands from '%s'\n", callback.num_commands(), timing_inf.SDCFile.c_str());
     }
     vtr::printf("\n");
 

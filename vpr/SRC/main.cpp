@@ -102,7 +102,7 @@ int main(int argc, const char **argv) {
 				(float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 	
 		/* free data structures */
-		vpr_free_all(Arch, Options, vpr_setup);
+		vpr_free_all(Arch, vpr_setup);
 
 	} catch(const tatum::Error& tatum_error){
         vtr::printf_error(__FILE__, __LINE__, "STA Engine: %s\n", tatum_error.what());

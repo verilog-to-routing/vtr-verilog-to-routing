@@ -258,8 +258,10 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warning_count, router_opts.write_rr_graph_name,
-                        router_opts.read_rr_graph_name, false);
+			&warning_count,
+            router_opts.write_rr_graph_name.c_str(),
+            router_opts.read_rr_graph_name.c_str(),
+            false);
 
 	clock_t end = clock();
 
@@ -322,8 +324,10 @@ bool try_route(int width_fac, t_router_opts router_opts,
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warning_count, router_opts.write_rr_graph_name,
-                        router_opts.read_rr_graph_name, false);
+			&warning_count, 
+            router_opts.write_rr_graph_name.c_str(),
+            router_opts.read_rr_graph_name.c_str(),
+            false);
 
 	clock_t end = clock();
 

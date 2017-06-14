@@ -74,7 +74,6 @@ static void free_pb_type(t_pb_type *pb_type);
 static void free_complex_block_types(void);
 
 static void free_arch(t_arch* Arch);
-static void free_options(const t_options *options);
 static void free_circuit(void);
 
 static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const int wire_segment_length,
@@ -125,7 +124,6 @@ void vpr_init(const int argc, const char **argv,
     /* Print title message */
     vpr_print_title();
 
-    memset(vpr_setup, 0, sizeof(t_vpr_setup));
     memset(arch, 0, sizeof(t_arch));
 
     /* Read in user options */
@@ -141,8 +139,8 @@ void vpr_init(const int argc, const char **argv,
     vpr_setup->TimingEnabled = options->timing_analysis;
 
     vtr::printf_info("\n");
-    vtr::printf_info("Architecture file: %s\n", options->ArchFile.value());
-    vtr::printf_info("Circuit name: %s.blif\n", options->CircuitName.value());
+    vtr::printf_info("Architecture file: %s\n", options->ArchFile.value().c_str());
+    vtr::printf_info("Circuit name: %s.blif\n", options->CircuitName.value().c_str());
     vtr::printf_info("\n");
 
     /* Determine whether echo is on or off */
@@ -186,7 +184,7 @@ void vpr_init(const int argc, const char **argv,
 
     /* Read blif file and sweep unused components */
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    atom_ctx.nlist = read_and_process_blif(vpr_setup->PackerOpts.blif_file_name,
+    atom_ctx.nlist = read_and_process_blif(vpr_setup->PackerOpts.blif_file_name.c_str(),
                                       vpr_setup->user_models, 
                                       vpr_setup->library_models,
                                       vpr_setup->NetlistOpts.absorb_buffer_luts,
@@ -200,7 +198,7 @@ void vpr_init(const int argc, const char **argv,
         //Load the net activity file for power estimation
         vtr::ScopedPrintTimer t("Load Activity File");
         auto& power_ctx = g_vpr_ctx.mutable_power();
-        power_ctx.atom_net_power = read_activity(atom_ctx.nlist, vpr_setup->FileNameOpts.ActFile);
+        power_ctx.atom_net_power = read_activity(atom_ctx.nlist, vpr_setup->FileNameOpts.ActFile.c_str());
     }
 
     //Initialize timing graph and constraints
@@ -233,15 +231,15 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-	if (vpr_setup.FileNameOpts.NetFile) {
-		read_netlist(vpr_setup.FileNameOpts.NetFile, &Arch, vpr_setup.FileNameOpts.verify_file_digests, &cluster_ctx.num_blocks, &cluster_ctx.blocks, &cluster_ctx.clbs_nlist);
+	if (!vpr_setup.FileNameOpts.NetFile.empty()) {
+		read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(), &Arch, vpr_setup.FileNameOpts.verify_file_digests, &cluster_ctx.num_blocks, &cluster_ctx.blocks, &cluster_ctx.clbs_nlist);
 
 		/* This is done so that all blocks have subblocks and can be treated the same */
 		check_netlist();
 
 		if(vpr_setup.gen_netlist_as_blif) {
-			char *name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName) + 16) * sizeof(char));
-			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName);
+			char *name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName.c_str()) + 16) * sizeof(char));
+			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName.c_str());
 			output_blif(&Arch, cluster_ctx.blocks, cluster_ctx.num_blocks, name);
 			free(name);
 		}
@@ -650,30 +648,6 @@ void free_arch(t_arch* Arch) {
 	vtr::free(Arch->ipin_cblock_switch_name);
 }
 
-void free_options(const t_options *options) {
-
-	vtr::free(options->ArchFile);
-	vtr::free(options->CircuitName);
-	if (options->ActFile)
-		vtr::free(options->ActFile);
-	if (options->BlifFile)
-		vtr::free(options->BlifFile);
-	if (options->NetFile)
-		vtr::free(options->NetFile);
-	if (options->PlaceFile)
-		vtr::free(options->PlaceFile);
-	if (options->PowerFile)
-		vtr::free(options->PowerFile);
-	if (options->CmosTechFile)
-		vtr::free(options->CmosTechFile);
-	if (options->RouteFile)
-		vtr::free(options->RouteFile);
-	if (options->out_file_prefix)
-		vtr::free(options->out_file_prefix);
-	if (options->pad_loc_file)
-		vtr::free(options->pad_loc_file);
-}
-
 static void free_complex_block_types(void) {
 
 	free_all_pb_graph_nodes();
@@ -830,16 +804,9 @@ void free_circuit() {
 }
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
-		const t_options& options,
 		t_vpr_setup& vpr_setup) {
 
-	if (vpr_setup.Timing.SDCFile != NULL) {
-		vtr::free(vpr_setup.Timing.SDCFile);
-		vpr_setup.Timing.SDCFile = NULL;
-	}
-
 	free_all_lb_type_rr_graph(vpr_setup.PackerRRGraph);
-	free_options(&options);
 	free_circuit();
 	free_arch(&Arch);
     free_echo_file_info();
@@ -848,7 +815,6 @@ void vpr_free_vpr_data_structures(t_arch& Arch,
 }
 
 void vpr_free_all(t_arch& Arch,
-		const t_options& options,
 		t_vpr_setup& vpr_setup) {
 
 	free_rr_graph();
@@ -856,7 +822,7 @@ void vpr_free_all(t_arch& Arch,
 		free_route_structs();
 	}
 	free_trace_structs();
-	vpr_free_vpr_data_structures(Arch, options, vpr_setup);
+	vpr_free_vpr_data_structures(Arch, vpr_setup);
 }
 
 
@@ -1009,8 +975,8 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
 	vtr::printf_info("Initializing power module\n");
 
 	/* Initialize the power module */
-	bool power_error = power_init(vpr_setup.FileNameOpts.PowerFile,
-			vpr_setup.FileNameOpts.CmosTechFile, &Arch, &vpr_setup.RoutingArch);
+	bool power_error = power_init(vpr_setup.FileNameOpts.PowerFile.c_str(),
+			vpr_setup.FileNameOpts.CmosTechFile.c_str(), &Arch, &vpr_setup.RoutingArch);
 	if (power_error) {
 		vtr::printf_error(__FILE__, __LINE__,
 				"Power initialization failed.\n");

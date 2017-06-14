@@ -45,10 +45,8 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch);
 void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& arch);
-void vpr_free_vpr_data_structures(t_arch& Arch, const t_options& options,
-		t_vpr_setup& vpr_setup);
-void vpr_free_all(t_arch& Arch, const t_options& options,
-		t_vpr_setup& vpr_setup);
+void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
+void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup);
 
 /* Display general info to user */
 void vpr_print_title(void);

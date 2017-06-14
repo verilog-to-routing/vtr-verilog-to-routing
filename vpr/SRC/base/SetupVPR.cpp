@@ -24,7 +24,7 @@ using namespace std;
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void SetupPackerOpts(const t_options& Options,
-		const t_arch& Arch, const char *net_file,
+		const t_arch& Arch,
 		t_packer_opts *PackerOpts);
 static void SetupPlacerOpts(const t_options& Options,
 		t_placer_opts *PlacerOpts);
@@ -62,99 +62,18 @@ void SetupVPR(t_options *Options,
               t_segment_inf ** Segments, t_timing_inf * Timing,
               bool * ShowGraphics, int *GraphPause,
               t_power_opts * PowerOpts) {
-	int i, j, len;
+	int i, j;
     using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-	if (!Options->CircuitName) {
+	if (Options->CircuitName.value() == "") {
         vpr_throw(VPR_ERROR_BLIF_F,__FILE__, __LINE__, 
                   "No blif file found in arguments (did you specify an architecture file?)\n");
     }
 
-    std::string cct_base_name = vtr::basename(Options->CircuitName.value());
-    std::string default_output_name = cct_base_name;
 
-	/* init default filenames */
-	if (Options->BlifFile == NULL ) {
-		len = strlen(Options->CircuitName) + 6; /* circuit_name.blif/0*/
-		if (Options->out_file_prefix != NULL ) {
-			len += strlen(Options->out_file_prefix);
-		}
-		Options->BlifFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
-		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->BlifFile.value(), "%s.blif", Options->CircuitName.value());
-		} else {
-			sprintf(Options->BlifFile.value(), "%s%s.blif", Options->out_file_prefix.value(),
-					Options->CircuitName.value());
-		}
-	}
-
-	if (Options->NetFile == NULL ) {
-		len = strlen(default_output_name.c_str()) + 5; /* circuit_name.net/0*/
-		if (Options->out_file_prefix != NULL ) {
-			len += strlen(Options->out_file_prefix);
-		}
-		Options->NetFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
-		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->NetFile.value(), "%s.net", default_output_name.c_str());
-		} else {
-			sprintf(Options->NetFile.value(), "%s%s.net", Options->out_file_prefix.value(), default_output_name.c_str());
-		}
-	}
-
-	if (Options->PlaceFile == NULL ) {
-		len = strlen(default_output_name.c_str()) + 7; /* circuit_name.place/0*/
-		if (Options->out_file_prefix != NULL ) {
-			len += strlen(Options->out_file_prefix);
-		}
-		Options->PlaceFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
-		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->PlaceFile.value(), "%s.place", default_output_name.c_str());
-		} else {
-			sprintf(Options->PlaceFile.value(), "%s%s.place", Options->out_file_prefix.value(), default_output_name.c_str());
-		}
-	}
-
-	if (Options->RouteFile == NULL ) {
-		len = strlen(Options->CircuitName) + 7; /* circuit_name.route/0*/
-		if (Options->out_file_prefix != NULL ) {
-			len += strlen(Options->out_file_prefix);
-		}
-		Options->RouteFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
-		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->RouteFile.value(), "%s.route", default_output_name.c_str());
-		} else {
-			sprintf(Options->RouteFile.value(), "%s%s.route", Options->out_file_prefix.value(), default_output_name.c_str());
-		}
-	}
-	if (Options->ActFile == NULL ) {
-		len = strlen(default_output_name.c_str()) + 7; /* circuit_name.route/0*/
-		if (Options->out_file_prefix != NULL ) {
-			len += strlen(Options->out_file_prefix);
-		}
-		Options->ActFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
-		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->ActFile.value(), "%s.act", default_output_name.c_str());
-		} else {
-			sprintf(Options->ActFile.value(), "%s%s.act", Options->out_file_prefix.value(), default_output_name.c_str());
-		}
-	}
-
-	if (Options->PowerFile == NULL ) {
-		len = strlen(default_output_name.c_str()) + 7; /* circuit_name.route/0*/
-		if (Options->out_file_prefix != NULL ) {
-			len += strlen(Options->out_file_prefix);
-		}
-		Options->PowerFile.set((char*) vtr::calloc(len, sizeof(char)), Provenance::INFERRED);
-		if (Options->out_file_prefix == NULL ) {
-			sprintf(Options->PowerFile.value(), "%s.power", default_output_name.c_str());
-		} else {
-			sprintf(Options->ActFile.value(), "%s%s.power", Options->out_file_prefix.value(), default_output_name.c_str());
-		}
-	}
-
-	alloc_and_load_output_file_names(default_output_name.c_str());
+	alloc_and_load_output_file_names(Options->CircuitName);
 
     //TODO: Move FileNameOpts setup into separate function
 	FileNameOpts->CircuitName = Options->CircuitName;
@@ -178,7 +97,7 @@ void SetupVPR(t_options *Options,
 	SetupPowerOpts(*Options, PowerOpts, Arch);
 
 	if (readArchFile == true) {
-		XmlReadArch(Options->ArchFile, TimingEnabled, Arch, &device_ctx.block_types,
+		XmlReadArch(Options->ArchFile.value().c_str(), TimingEnabled, Arch, &device_ctx.block_types,
 				&device_ctx.num_block_types);
 	}
 
@@ -211,7 +130,7 @@ void SetupVPR(t_options *Options,
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
 	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
-	SetupPackerOpts(*Options, *Arch, Options->NetFile, PackerOpts);
+	SetupPackerOpts(*Options, *Arch, PackerOpts);
 	RoutingArch->dump_rr_structs_file = nullptr;
 
     //Setup the default flow
@@ -267,7 +186,6 @@ static void SetupTiming(const t_options& Options, const t_arch& Arch,
 
 	/* Don't do anything if they don't want timing */
 	if (false == TimingEnabled) {
-		memset(Timing, 0, sizeof(t_timing_inf));
 		Timing->timing_analysis_enabled = false;
 		return;
 	}
@@ -275,24 +193,12 @@ static void SetupTiming(const t_options& Options, const t_arch& Arch,
 	Timing->C_ipin_cblock = Arch.C_ipin_cblock;
 	Timing->T_ipin_cblock = Arch.T_ipin_cblock;
 	Timing->timing_analysis_enabled = TimingEnabled;
+    Timing->SDCFile = Options.SDCFile;
+    Timing->slack_definition = Options.SlackDefinition;
 
-	/* If the user specified an SDC filename on the command line, look for specified_name.sdc, otherwise look for circuit_name.sdc*/
-	if (Options.SDCFile == NULL ) {
-		Timing->SDCFile = (char*) vtr::calloc(strlen(Options.CircuitName) + 5,
-				sizeof(char)); /* circuit_name.sdc/0*/
-		sprintf(Timing->SDCFile, "%s.sdc", Options.CircuitName.value());
-	} else {
-		Timing->SDCFile = (char*) vtr::strdup(Options.SDCFile);
-	}
-
-    if (Options.SlackDefinition != '\0') {
-        Timing->slack_definition = Options.SlackDefinition;
-        VTR_ASSERT(Timing->slack_definition == std::string("R") || Timing->slack_definition == std::string("I") ||
-               Timing->slack_definition == std::string("S") || Timing->slack_definition == std::string("G") ||
-               Timing->slack_definition == std::string("C") || Timing->slack_definition == std::string("N"));
-    } else {
-        Timing->slack_definition = "R"; // default
-    }
+    VTR_ASSERT(Timing->slack_definition == std::string("R") || Timing->slack_definition == std::string("I") ||
+           Timing->slack_definition == std::string("S") || Timing->slack_definition == std::string("G") ||
+           Timing->slack_definition == std::string("C") || Timing->slack_definition == std::string("N"));
 }
 
 /* This loads up VPR's arch_switch_inf data by combining the switches from 
@@ -462,7 +368,7 @@ static void SetupAnnealSched(const t_options& Options,
  * Error checking, such as checking for conflicting params is assumed to be done beforehand 
  */
 void SetupPackerOpts(const t_options& Options,
-		const t_arch& Arch, const char *net_file,
+		const t_arch& Arch,
 		t_packer_opts *PackerOpts) {
 
 	if (Arch.clb_grid.IsAuto) {
@@ -470,7 +376,7 @@ void SetupPackerOpts(const t_options& Options,
 	} else {
 		PackerOpts->aspect = (float) Arch.clb_grid.H / (float) Arch.clb_grid.W;
 	}
-	PackerOpts->output_file = net_file;
+	PackerOpts->output_file = Options.NetFile;
 
 	PackerOpts->blif_file_name = Options.BlifFile;
 

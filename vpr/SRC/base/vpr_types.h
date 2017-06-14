@@ -648,16 +648,16 @@ struct t_grid_blocks {
 
 /* Names of various files */
 struct t_file_name_opts {
-	char *ArchFile;
-	char *CircuitName;
-	char *BlifFile;
-	char *NetFile;
-	char *PlaceFile;
-	char *RouteFile;
-	char *ActFile;
-	char *PowerFile;
-	char *CmosTechFile;
-	char *out_file_prefix;
+    std::string ArchFile;
+	std::string CircuitName;
+	std::string BlifFile;
+	std::string NetFile;
+	std::string PlaceFile;
+	std::string RouteFile;
+	std::string ActFile;
+	std::string PowerFile;
+	std::string CmosTechFile;
+	std::string out_file_prefix;
     bool verify_file_digests;
 };
 
@@ -678,9 +678,9 @@ enum e_packer_algorithm {
 };
 
 struct t_packer_opts {
-	const char *blif_file_name;
-	const char *sdc_file_name;
-	const char *output_file;
+	std::string blif_file_name;
+	std::string sdc_file_name;
+	std::string output_file;
 	bool global_clocks;
 	bool hill_climbing_flag;
 	bool timing_driven;
@@ -745,7 +745,7 @@ struct t_placer_opts {
 	float place_cost_exp;
 	int place_chan_width;
 	enum e_pad_loc_type pad_loc_type;
-	char *pad_loc_file;
+    std::string pad_loc_file;
 	enum pfreq place_freq;
 	int recompute_crit_iter;
 	bool enable_timing_computations;
@@ -846,8 +846,8 @@ struct t_router_opts {
     bool switch_usage_analysis;
 	bool doRouting;
 	enum e_routing_failure_predictor routing_failure_predictor;
-	char* write_rr_graph_name;
-        char* read_rr_graph_name;
+	std::string write_rr_graph_name;
+    std::string read_rr_graph_name;
 };
 
 struct t_analysis_opts {

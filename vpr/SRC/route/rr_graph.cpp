@@ -235,18 +235,26 @@ void build_rr_graph(
         const bool trim_empty_channels,
         const bool trim_obs_channels,
         const t_direct_inf *directs, const int num_directs,
-        const bool ignore_Fc_0, const char *dump_rr_structs_file,
+        const bool ignore_Fc_0, const char* dump_rr_structs_file,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
         int *Warnings,
-        const char* write_rr_graph_name,
-        const char* read_rr_graph_name, bool for_placement) {
+        const std::string write_rr_graph_name,
+        const std::string read_rr_graph_name, bool for_placement) {
+    //TODO: refactor the actual build code into a separate function called from here, such that
+    //build_rr_graph() just dispatches to the appropriate creation/load function
 
-    if (read_rr_graph_name && !for_placement) {
+    if (!read_rr_graph_name.empty() && !for_placement) {
         load_rr_file(graph_type, L_nx, L_ny,
                 nodes_per_chan, num_seg_types, segment_inf, base_cost_type,
-                wire_to_rr_ipin_switch, num_rr_switches, write_rr_graph_name,
-                read_rr_graph_name);
+                wire_to_rr_ipin_switch, num_rr_switches,
+                read_rr_graph_name.c_str());
+
+        //Write out rr graph file if needed
+        if (!write_rr_graph_name.empty()) {
+            write_rr_graph(write_rr_graph_name.c_str(), segment_inf, num_seg_types);
+        }
+
         return;
     }
 
@@ -511,8 +519,8 @@ void build_rr_graph(
         dump_rr_structs(dump_rr_structs_file);
     }
 
-    if (write_rr_graph_name) {
-        write_rr_graph(write_rr_graph_name, segment_inf, num_seg_types);
+    if (!write_rr_graph_name.empty()) {
+        write_rr_graph(write_rr_graph_name.c_str(), segment_inf, num_seg_types);
     }
 
 #ifdef USE_MAP_LOOKAHEAD

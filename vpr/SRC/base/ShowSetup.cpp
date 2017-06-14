@@ -26,12 +26,12 @@ static void ShowRoutingArch(const t_det_routing_arch& RoutingArch);
 
 void ShowSetup(const t_vpr_setup& vpr_setup) {
 	vtr::printf_info("Timing analysis: %s\n", (vpr_setup.TimingEnabled? "ON" : "OFF"));
-    vtr::printf_info("Slack definition: %c\n", vpr_setup.Timing.slack_definition);
+    vtr::printf_info("Slack definition: %s\n", vpr_setup.Timing.slack_definition.c_str());
 
-	vtr::printf_info("Circuit netlist file: %s\n", vpr_setup.FileNameOpts.NetFile);
-	vtr::printf_info("Circuit placement file: %s\n", vpr_setup.FileNameOpts.PlaceFile);
-	vtr::printf_info("Circuit routing file: %s\n", vpr_setup.FileNameOpts.RouteFile);
-	vtr::printf_info("Circuit SDC file: %s\n", vpr_setup.Timing.SDCFile);
+	vtr::printf_info("Circuit netlist file: %s\n", vpr_setup.FileNameOpts.NetFile.c_str());
+	vtr::printf_info("Circuit placement file: %s\n", vpr_setup.FileNameOpts.PlaceFile.c_str());
+	vtr::printf_info("Circuit routing file: %s\n", vpr_setup.FileNameOpts.RouteFile.c_str());
+	vtr::printf_info("Circuit SDC file: %s\n", vpr_setup.Timing.SDCFile.c_str());
 	vtr::printf_info("\n");
 
 	vtr::printf_info("Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));
@@ -343,7 +343,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
 			vtr::printf_info("RANDOM\n");
 			break;
 		case USER:
-			vtr::printf_info("USER '%s'\n", PlacerOpts.pad_loc_file);
+			vtr::printf_info("USER '%s'\n", PlacerOpts.pad_loc_file.c_str());
 			break;
 		default:
 			vpr_throw(VPR_ERROR_UNKNOWN, __FILE__, __LINE__, "Unknown I/O pad location type\n");

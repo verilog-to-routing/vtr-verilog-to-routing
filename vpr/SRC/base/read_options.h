@@ -6,21 +6,21 @@
 
 struct t_options {
 	/* File names */
-	argparse::ArgValue<char*> ArchFile;
-	argparse::ArgValue<char*> CircuitName;
-	argparse::ArgValue<char*> NetFile;
-	argparse::ArgValue<char*> PlaceFile;
-	argparse::ArgValue<char*> RouteFile;
-	argparse::ArgValue<char*> BlifFile;
-	argparse::ArgValue<char*> ActFile;
-	argparse::ArgValue<char*> PowerFile;
-	argparse::ArgValue<char*> CmosTechFile;
-	argparse::ArgValue<char*> out_file_prefix;
-	argparse::ArgValue<char*> SDCFile;
-	argparse::ArgValue<char*> pad_loc_file;
-	argparse::ArgValue<char*> write_rr_graph_file;
-    argparse::ArgValue<char*> read_rr_graph_file;
-    argparse::ArgValue<char*> dump_rr_structs_file;
+	argparse::ArgValue<std::string> ArchFile;
+	argparse::ArgValue<std::string> CircuitName;
+	argparse::ArgValue<std::string> NetFile;
+	argparse::ArgValue<std::string> PlaceFile;
+	argparse::ArgValue<std::string> RouteFile;
+	argparse::ArgValue<std::string> BlifFile;
+	argparse::ArgValue<std::string> ActFile;
+	argparse::ArgValue<std::string> PowerFile;
+	argparse::ArgValue<std::string> CmosTechFile;
+	argparse::ArgValue<std::string> out_file_prefix;
+	argparse::ArgValue<std::string> SDCFile;
+	argparse::ArgValue<std::string> pad_loc_file;
+	argparse::ArgValue<std::string> write_rr_graph_file;
+    argparse::ArgValue<std::string> read_rr_graph_file;
+    argparse::ArgValue<std::string> dump_rr_structs_file;
 
     /* Stage Options */
     argparse::ArgValue<bool> do_packing;
@@ -36,7 +36,7 @@ struct t_options {
     argparse::ArgValue<bool> show_help;
     argparse::ArgValue<bool> show_version;
 	argparse::ArgValue<bool> timing_analysis;
-    argparse::ArgValue<const char*> SlackDefinition;
+    argparse::ArgValue<std::string> SlackDefinition;
 	argparse::ArgValue<bool> CreateEchoFile;
     argparse::ArgValue<bool> verify_file_digests;
 
