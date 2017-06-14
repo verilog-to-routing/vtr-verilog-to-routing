@@ -434,8 +434,8 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     place_grp.add_argument(args.pad_loc_file, "--fix_pins")
             .help("Fixes I/O pad locations during placement. Valid options:\n"
                   " * 'free' allows placement to optimize pad locations\n"
-                  " * 'random' fixes pad locations to an arbitray random locations\n"
-                  " * or path to file specifying pad locations (.place format with only pads specified).")
+                  " * 'random' fixes pad locations to rbitray locations\n"
+                  " * path to a file specifying pad locations (.place format with only pads specified).")
             .default_value("free")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -572,7 +572,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
-            .help("How aggressive the directed search used by the timing-driven router is."
+            .help("Controls the directedness of the the timing-driven router's exploration."
                   " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
             .default_value("1.2")
             .show_in(argparse::ShowIn::HELP_ONLY);
