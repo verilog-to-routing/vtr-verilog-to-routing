@@ -99,7 +99,7 @@ namespace argparse {
             std::string version_;
             std::vector<ArgumentGroup> argument_groups_;
 
-            Formatter* formatter_;
+            std::unique_ptr<Formatter> formatter_;
             std::ostream& os_;
             ArgValue<bool> show_help_dummy_; //Dummy variable used as destination for automatically generated help option
     };
