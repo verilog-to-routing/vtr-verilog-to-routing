@@ -901,9 +901,6 @@ FILE *process_inout_header(FILE *src, std::string key)
 		fprintf(dst,"%s",tmp.c_str());
 	}
 	rewind(dst);
-	while (fgets(line, MaxLine, dst))
-		fprintf(stderr,"%s",line);
-	exit(0);
 	return dst;
 }
 
