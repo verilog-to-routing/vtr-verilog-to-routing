@@ -666,7 +666,12 @@ static void set_conditional_defaults(t_options& args) {
     //remove the extension and any leading path elements
     VTR_ASSERT(args.CircuitName.provenance() == Provenance::SPECIFIED);
     auto name_ext = vtr::split_ext(args.CircuitName);
-    args.CircuitName.set(vtr::basename(name_ext[0]), Provenance::SPECIFIED);
+
+	if (args.BlifFile.provenance() != Provenance::SPECIFIED) {
+        //If the blif file wasn't explicitly specified, interpret the circuit name
+        //as the blif file, and split off the extension
+        args.CircuitName.set(vtr::basename(name_ext[0]), Provenance::SPECIFIED);
+    }
 
     std::string default_output_name = args.CircuitName;
 
@@ -680,7 +685,7 @@ static void set_conditional_defaults(t_options& args) {
 	if (args.SDCFile.provenance() != Provenance::SPECIFIED) {
         //Use the full path specified in the original circuit name,
         //and append the expected .sdc extension
-        std::string sdc_file = name_ext[0] + ".sdc";
+        std::string sdc_file = default_output_name + ".sdc";
 		args.SDCFile.set(sdc_file, Provenance::INFERRED);
 	}
 
