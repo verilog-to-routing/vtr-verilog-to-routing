@@ -1416,7 +1416,6 @@ static t_pb_graph_pin * get_pb_graph_pin_from_name(const char * port_name,
 
 static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) {
 
-	//int num_sides = 2 * (type->width + type->height);
 	int num_sides = 4 * (type->width * type->height);
 	int side_index = 0;
 	int count = 0;
@@ -1426,19 +1425,6 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 		for (int side = 0; side < 4; ++side) {
 			for (int width = 0; width < type->width; ++width) {
 				for (int height = 0; height < type->height; ++height) {
-/*
-					if (side == TOP && height != type->height - 1) {
-						continue;
-					}
-					if (side == RIGHT && width != type->width - 1) {
-						continue;
-					}
-					if (side == BOTTOM && height != 0) {
-						continue;
-					}
-					if (side == LEFT && width != 0) {
-						continue;
-					}*/
 					for (int pin_offset = 0; pin_offset < (type->num_pins / num_sides ) + 1; ++pin_offset) {
 						int pin_num = side_index + pin_offset * num_sides;
 						if (pin_num < type->num_pins) {
@@ -1461,12 +1447,6 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 			for (int height = 0; height < type->height; ++height) {
 				for (int side = 0; side < 4; ++side) {
 
-					if (side == TOP && height != type->height - 1) {
-						continue;
-					}
-					if (side == BOTTOM && height != 0) {
-						continue;
-					}
 					for (int pin = 0; pin < type->num_pin_loc_assignments[width][height][side]; ++pin) {
 
 						int *num_pb_graph_node_pins = 0; /* number of pins in a set [0..num_sets-1] */
