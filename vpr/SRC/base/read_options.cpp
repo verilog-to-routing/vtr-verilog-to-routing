@@ -272,7 +272,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("on");
 
     gen_grp.add_argument(args.SlackDefinition, "--slack_definition")
-            .help("Sets the slack definition used by the classic timing analyyzer")
+            .help("Sets the slack definition used by the classic timing analyzer")
             .default_value("R")
             .choices({"R", "I", "S", "G", "C", "N"})
             .show_in(argparse::ShowIn::HELP_ONLY);
@@ -434,7 +434,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     place_grp.add_argument(args.pad_loc_file, "--fix_pins")
             .help("Fixes I/O pad locations during placement. Valid options:\n"
                   " * 'free' allows placement to optimize pad locations\n"
-                  " * 'random' fixes pad locations to rbitray locations\n"
+                  " * 'random' fixes pad locations to arbitraray locations\n"
                   " * path to a file specifying pad locations (.place format with only pads specified).")
             .default_value("free")
             .show_in(argparse::ShowIn::HELP_ONLY);
@@ -513,7 +513,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.bb_factor, "--bb_factor")
-            .help("Sets the distance (in channels) outside a connection's bounding box which can be explored")
+            .help("Sets the distance (in channels) outside a connection's bounding box which can be explored during routing")
             .default_value("3")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
