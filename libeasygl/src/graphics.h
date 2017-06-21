@@ -18,11 +18,6 @@
 #endif // !WIN32
 #endif // !NO_GRAPHICS
 
-#ifdef X11
-#include <X11/keysym.h>  // Defines non-ASCII keypresses like XK_left
-                         // Look in (/usr/include/) X11/keysymdef.h for the code names.
-#endif
-
 #define PI 3.141592654
 
 /************** ESSENTIAL FUNCTIONS: SET UP AND CLOSE DOWN ******************/
