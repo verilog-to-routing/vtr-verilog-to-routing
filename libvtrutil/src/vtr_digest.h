@@ -1,6 +1,7 @@
 #ifndef VTR_DIGEST_H
 #define VTR_DIGEST_H
 #include <iosfwd>
+#include <string>
 
 namespace vtr {
 
