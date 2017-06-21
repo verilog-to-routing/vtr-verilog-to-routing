@@ -8,8 +8,6 @@ project("abc_with_bb_support")
 # but must list them directly
 set(EXEC_SOURCES src/base/main/main.c)
 
-add_definitions(-DSIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P})
-
 set(LIB_SOURCES 
     src/base/abc/abcAig.c src/base/abc/abcBlifMv.c src/base/abc/abcCheck.c src/base/abc/abcDfs.c src/base/abc/abcFanio.c 
     src/base/abc/abcFunc.c src/base/abc/abcHie.c src/base/abc/abcLatch.c src/base/abc/abcLib.c src/base/abc/abcMinBase.c 
@@ -121,7 +119,9 @@ list(APPEND LIB_INCLUDE_DIRS
 add_library(libabc STATIC
              ${LIB_SOURCES})
 target_include_directories(libabc PUBLIC ${LIB_INCLUDE_DIRS})
+target_compile_definitions(libabc PUBLIC -DSIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P})
 set_target_properties(libabc PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
+
 
 #Specify link-time dependancies
 target_link_libraries(libabc

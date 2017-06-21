@@ -25,13 +25,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 // precomputed data
-#ifdef _WIN32
-unsigned short s_RwtPracticalClasses[];
-unsigned short s_RwtAigSubgraphs[];
-#else
 static unsigned short s_RwtPracticalClasses[];
 static unsigned short s_RwtAigSubgraphs[];
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
