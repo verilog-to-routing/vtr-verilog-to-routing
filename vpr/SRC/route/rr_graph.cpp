@@ -3,6 +3,7 @@
 #include <cmath>
 #include <algorithm>
 #include <vector>
+#include <ctime>
 #include "vtr_assert.h"
 
 using namespace std;

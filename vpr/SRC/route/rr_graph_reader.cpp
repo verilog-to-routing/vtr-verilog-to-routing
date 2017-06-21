@@ -1,5 +1,6 @@
 #include <string.h>
 #include <algorithm>
+#include <ctime>
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 #include "read_xml_arch_file.h"
