@@ -27,7 +27,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
-#include <dlfcn.h>
 #include <sys/time.h>
 
 #define SIM_WAVE_LENGTH 16

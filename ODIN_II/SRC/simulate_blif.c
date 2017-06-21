@@ -27,6 +27,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 #include <sstream>
 
+#ifndef _WIN32
+#include <dlfcn.h>
+#endif
+
 #ifndef max
 #define max(a,b) (((a) > (b))? (a) : (b))
 #define min(a,b) ((a) > (b)? (b) : (a))
@@ -1548,6 +1552,7 @@ void compute_hard_ip_node(nnode_t *node, int cycle)
 	oassert(node->input_port_sizes[0] > 0);
 	oassert(node->output_port_sizes[0] > 0);
 
+#ifndef _WIN32
 	int *input_pins = (int *)vtr::malloc(sizeof(int)*node->num_input_pins);
 	int *output_pins = (int *)vtr::malloc(sizeof(int)*node->num_output_pins);
 
@@ -1594,6 +1599,10 @@ void compute_hard_ip_node(nnode_t *node, int cycle)
 
 	vtr::free(input_pins);
 	vtr::free(output_pins);
+#else
+    //Not supported
+    oassert(false);
+#endif
 }
 
 /*
