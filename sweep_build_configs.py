@@ -10,12 +10,14 @@ from collections import OrderedDict
 DEFAULT_TARGETS_TO_BUILD=["all"]
 
 DEFAULT_GNU_COMPILER_VERSIONS=["4.9", "5", "6", "7"]
+DEFAULT_MINGW_COMPILER_VERSIONS=["5"]
 DEFAULT_CLANG_COMPILER_VERSIONS=["3.6", "3.8"]
 
-DEFAULT_EASYGL_CONFIGS = ["OFF", "ON"]
+DEFAULT_EASYGL_CONFIGS = ["ON", "OFF"]
 DEFAULT_TATUM_PARALLEL_CONFIGS = ["ON", "OFF"]
 DEFAULT_VTR_ASSERT_LEVELS= ["2", "3"]#, "1", "0"]
 
+MINGW_TOOLCHAIN_FILE="cmake/toolchains/mingw-linux-cross-compile-to-windows.cmake"
 
 ERROR_WARNING_REGEXES = [
         re.compile(r".*warning:.*"),
@@ -28,45 +30,55 @@ SUPPRESSION_ERROR_WARNING_REGEXES = [
     ]
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Test building VTR for multiple different build configurations and compilers")
+    parser = argparse.ArgumentParser(description="Test building VTR for multiple different compilers and build configurations")
 
     parser.add_argument("targets", 
                         nargs="*",
                         default=DEFAULT_TARGETS_TO_BUILD,
                         help="What targets to build (default: %(default)s)")
-    parser.add_argument("--gnu_versions", 
-                        nargs="*",
-                        default=DEFAULT_GNU_COMPILER_VERSIONS,
-                        metavar="GNU_VERSION",
-                        help="What versions of gcc/g++ to test (default: %(default)s)")
-    parser.add_argument("--clang_versions", 
-                        nargs="*",
-                        metavar="CLANG_VERSION",
-                        default=DEFAULT_CLANG_COMPILER_VERSIONS,
-                        help="What versions of clang/clang++ to test (default: %(default)s)")
-    parser.add_argument("--easygl_configs", 
-                        nargs="*",
-                        default=DEFAULT_EASYGL_CONFIGS,
-                        metavar="EASYGL_CONFIG",
-                        help="What EaysGL configurations to test (default: %(default)s)")
-    parser.add_argument("--tatum_parallel_configs", 
-                        nargs="*",
-                        default=DEFAULT_TATUM_PARALLEL_CONFIGS,
-                        metavar="TATUM_PARALLEL_CONFIG",
-                        help="What parallel tatum configurations to test (default: %(default)s)")
-    parser.add_argument("--vtr_assert_levels", 
-                        nargs="*",
-                        default=DEFAULT_VTR_ASSERT_LEVELS,
-                        metavar="VTR_ASSERT_LEVEL",
-                        help="What VTR assert levels to test (default: %(default)s)")
     parser.add_argument("-j", 
                         type=int,
                         default=1,
+                        metavar="NUM_JOBS",
                         help="How many parallel build jobs to allow (passed to make)")
     parser.add_argument("--exit_on_failure",
                         action="store_true",
                         default=False,
                         help="Exit on first failure intead of continuing")
+
+    compiler_args = parser.add_argument_group("Compiler Configurations")
+    compiler_args.add_argument("--gnu_versions", 
+                        nargs="*",
+                        default=DEFAULT_GNU_COMPILER_VERSIONS,
+                        metavar="GNU_VERSION",
+                        help="What versions of gcc/g++ to test (default: %(default)s)")
+    compiler_args.add_argument("--clang_versions", 
+                        nargs="*",
+                        metavar="CLANG_VERSION",
+                        default=DEFAULT_CLANG_COMPILER_VERSIONS,
+                        help="What versions of clang/clang++ to test (default: %(default)s)")
+    compiler_args.add_argument("--mingw_versions", 
+                        nargs="*",
+                        default=DEFAULT_MINGW_COMPILER_VERSIONS,
+                        metavar="MINGW_W64_VERSION",
+                        help="What versions of MinGW-W64 gcc/g++ to test for cross-compilation to Windows (default: %(default)s)")
+
+    config_args = parser.add_argument_group("Build Configurations")
+    config_args.add_argument("--easygl_configs", 
+                        nargs="*",
+                        default=DEFAULT_EASYGL_CONFIGS,
+                        metavar="EASYGL_CONFIG",
+                        help="What EaysGL configurations to test (default: %(default)s)")
+    config_args.add_argument("--tatum_parallel_configs", 
+                        nargs="*",
+                        default=DEFAULT_TATUM_PARALLEL_CONFIGS,
+                        metavar="TATUM_PARALLEL_CONFIG",
+                        help="What parallel tatum configurations to test (default: %(default)s)")
+    config_args.add_argument("--vtr_assert_levels", 
+                        nargs="*",
+                        default=DEFAULT_VTR_ASSERT_LEVELS,
+                        metavar="VTR_ASSERT_LEVEL",
+                        help="What VTR assert levels to test (default: %(default)s)")
 
     return parser.parse_args()
 
@@ -79,27 +91,39 @@ def main():
     for gnu_version in args.gnu_versions:
         cc = "gcc-" + gnu_version
         cxx = "g++-" + gnu_version
-        compilers_to_test.append((cc, cxx))
+        compilers_to_test.append((cc, cxx, OrderedDict()))
 
     for clang_version in args.clang_versions:
         cc = "clang-" + clang_version
         cxx = "clang++-" + clang_version
-        compilers_to_test.append((cc, cxx))
+        compilers_to_test.append((cc, cxx, OrderedDict()))
 
-    #Test all the compilers with the default build config
+    for mingw_version in args.mingw_versions:
+        config = OrderedDict() 
+        config["CMAKE_TOOLCHAIN_FILE"] = MINGW_TOOLCHAIN_FILE
+        if mingw_version != "":
+            prefix = "x86_64-w64-mingw32"
+            config["COMPILER_PREFIX"] = prefix
+            config["MINGW_RC"] = "{}-windres".format(prefix)
+            config["MINGW_CC"] = "{}-gcc-{}".format(prefix, mingw_version)
+            config["MINGW_CXX"] = "{}-g++-{}".format(prefix, mingw_version)
+        else:
+            pass #Use defaults
+        compilers_to_test.append((None, None, config))
+
+    #Test all the regular compilers with the all build configs
     num_failed = 0
     num_configs = 0
     for vtr_assert_level in args.vtr_assert_levels: 
         for easygl_config in args.easygl_configs: 
             for tatum_parallel_config in args.tatum_parallel_configs: 
-                for cc, cxx in compilers_to_test:
+                for cc, cxx, config in compilers_to_test:
                     num_configs += 1
-                    config = OrderedDict()
                     config["EASYGL_ENABLE_GRAPHICS"] = easygl_config
                     config["TATUM_ENABLE_PARALLEL_ANALYSIS"] = tatum_parallel_config
                     config["VTR_ASSERT_LEVEL"] = vtr_assert_level
 
-                    success = build_config(args, cc, cxx, config)
+                    success = build_config(args, config, cc, cxx)
 
                     if not success:
                         num_failed += 1
@@ -107,12 +131,14 @@ def main():
                         if args.exit_on_failure:
                             sys.exit(num_failed)
 
+
+
     if num_failed != 0:
         print "Failed to build {} of {} configurations".format(num_failed, num_configs)
 
     sys.exit(num_failed)
 
-def build_config(args, cc, cxx, config):
+def build_config(args, config, cc=None, cxx=None):
 
     if not compiler_is_found(cc):
         print "Failed to find C compiler {}, skipping".format(cc)
@@ -126,12 +152,30 @@ def build_config(args, cc, cxx, config):
     for key, value in config.iteritems():
         config_strs += ["{}={}".format(key, value)]
 
-    log_file = "build_{}_{}_{}.log".format(cc, cxx, '__'.join(config_strs))
+    log_file = "build.log"
+    # if cc != None:
+        # log_file += "_{}".format(cc)
+    # elif cxx != None:
+        # log_file += "_{}".format(cxx)
+    # #Remove an directory dividers from configs to yield a valid filename
+    # escaped_config_strs = [str.replace("/", "_") for str in config_strs] 
+    # log_file += "_{}.log".format('__'.join(escaped_config_strs))
 
     build_successful = True
     with open(log_file, 'w') as f:
-        print "Building with CC={} CXX={}:".format(cc, cxx)
-        print >>f, "Building with CC={} CXX={}:".format(cc, cxx)
+        print      "Building with"
+        print >>f, "Building with"
+        if cc != None:
+            print      " CC={}".format(cc)
+            print >>f, " CC={}".format(cc)
+        if cxx != None:
+            print      " CXX={}:".format(cxx)
+            print >>f, " CXX={}:".format(cxx)
+        if "CMAKE_TOOLCHAIN_FILE" in config:
+            print      " Toolchain={}".format(config["CMAKE_TOOLCHAIN_FILE"])
+            print >>f, " Toolchain={}".format(config["CMAKE_TOOLCHAIN_FILE"])
+        print      ""
+        print >>f, ""
         f.flush()
 
         build_dir = "build"
@@ -145,11 +189,12 @@ def build_config(args, cc, cxx, config):
         new_env.update(os.environ)
 
         #Override CC and CXX
-        new_env['CC'] = cc
-        new_env['CXX'] = cxx
+        if cc != None:
+            new_env['CC'] = cc
+        if cxx != None:
+            new_env['CXX'] = cxx
 
         #Run CMAKE
-
         cmake_cmd = ["cmake"]
         for key, value in config.iteritems():
             cmake_cmd += ["-D{}={}".format(key, value)]
@@ -201,6 +246,9 @@ def is_valid_warning_error(line):
     return False #Not a problem
 
 def compiler_is_found(execname):
+    if execname == None:
+        #Nothing to find
+        return True
 
     try:
         result = subprocess.check_output([execname, "--version"], stderr=subprocess.PIPE) == 0
