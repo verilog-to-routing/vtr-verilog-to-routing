@@ -8,6 +8,6 @@
 #define YY_NULLPTR nullptr
 #endif
 
-#include "sdc_parser.gen.h" //For the generated Parser class
+#include "sdc_parser.gen.hpp" //For the generated Parser class
 
 #endif
