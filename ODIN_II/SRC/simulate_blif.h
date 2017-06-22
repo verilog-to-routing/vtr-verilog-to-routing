@@ -26,8 +26,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <time.h>
-#include <sys/time.h>
 
 #define SIM_WAVE_LENGTH 16
 #define BUFFER_MAX_SIZE 1024
