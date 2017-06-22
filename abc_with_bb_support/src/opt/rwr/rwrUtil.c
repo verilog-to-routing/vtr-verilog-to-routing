@@ -25,8 +25,15 @@
 ////////////////////////////////////////////////////////////////////////
 
 // precomputed data
+#ifdef _MSC_VER
+//MSVC requires that the size be known at declaration time if the variable
+//is static, so delcare it as non-static instead
+unsigned short s_RwrPracticalClasses[];
+unsigned short s_RwtAigSubgraphs[];
+#else
 static unsigned short s_RwrPracticalClasses[];
 static unsigned short s_RwtAigSubgraphs[];
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 ///                     FUNCTION DEFINITIONS                         ///
