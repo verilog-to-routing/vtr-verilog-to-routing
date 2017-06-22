@@ -25,7 +25,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "read_xml_arch_file.h"
 #include "simulate_blif.h"
-#include <argparse_value.hpp>
+#include "argparse_value.hpp"
+
+#include <stdlib.h>
 
 #ifndef TRUE
 #define TRUE 1
@@ -85,7 +87,8 @@ typedef struct chain_information_t_t chain_information_t;
 #define ACTIVATION 13
 
 //#define oassert(x) {if(!(x)){exit(-1);}} // causes an interrupt in GDB
-#define oassert(x) {if(!(x)){__asm("int3");}} // causes an interrupt in GDB
+//#define oassert(x) {if(!(x)){__asm("int3");}} // causes an interrupt in GDB
+#define oassert(x) {if(!(x)){std::abort();}} // causes an interrupt in GDB
 // bitvector library (PETER_LIB) defines it, so we don't
 
 /* This is the data structure that holds config file details */
