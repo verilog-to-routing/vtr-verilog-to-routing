@@ -16,11 +16,14 @@ target_link_libraries(ace
                         )
 
 #ACE includes some ABC headers which cause warnings - we suppress them here
-#TODO: check for flag support portably
 set(ACE_SUPPRESS_FLAGS 
         -Wno-pointer-to-int-cast 
-        -Wno-int-to-pointer-cast 
-        )
-target_compile_options(ace PRIVATE ${ACE_SUPPRESS_FLAGS})
+        -Wno-int-to-pointer-cast )
+foreach(flag ${WARN_FLAGS_TO_CHECK})
+    CHECK_CXX_COMPILER_FLAG(${flag} COMPILER_SUPPORTS_${flag})
+    if(COMPILER_SUPPORTS_${flag})
+        target_compile_options(ace PRIVATE ${flag})
+    endif()
+endforeach()
 
 install(TARGETS ace DESTINATION bin)
