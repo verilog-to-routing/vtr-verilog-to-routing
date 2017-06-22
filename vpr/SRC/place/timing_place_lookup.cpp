@@ -998,11 +998,12 @@ static float neightbor_val(vtr::Matrix<float> &matrix, int x, int y) {
 
     if (counter == 0) {
         //take in more values for more accuracy
-        sum = 0;
-        counter = 0;
         for (delx = x - 1; delx <= x + 1; delx++) {
             for (dely = y - 1; dely <= y + 1; dely++) {
                 //check out of bounds
+                if (!(delx == x - 1 && dely == y + 1) || !(delx == x + 1 && dely == y + 1) || !(delx == x - 1 && dely == y - 1) || !(delx == x + 1 && dely == y - 1)) {
+                    continue;
+                }
                 if (delx < 0 || dely < 0 || delx >= endx || dely >= endy || (delx == x && dely == y)) {
                     continue;
                 }
@@ -1014,8 +1015,8 @@ static float neightbor_val(vtr::Matrix<float> &matrix, int x, int y) {
             }
         }
     }
-    
-    
+
+
     if (counter != 0) {
         return sum / (float) counter;
     } else {

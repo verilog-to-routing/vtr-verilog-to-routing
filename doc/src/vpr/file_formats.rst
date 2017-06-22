@@ -422,8 +422,12 @@ An example listing for a global net is given below.
 
 Routing Resource Graph File Format (.xml)
 ----------------------------
-The routing resource graph (rr graph) file is an xml file that describes the routing resources within the architecture. This file is generated during the last stage of the rr graph generation during routing with the final channel width. When reading in rr graph from an external file, the rr graph is only used during the routing stage of VPR
-The file is constructed using tags. The top level is the ``rr_graph`` tag. This tag contains all the channel, switches, segments, block, grid, node, and edge information of the architecture. Each of these sections are seperated into separate tags as described below.
+The routing resource graph (rr graph) file is an XML file that describes the routing resources within the FPGA. 
+This file is generated through the last stage of the rr graph generation during routing with the final channel width. 
+When reading in rr graph from an external file, the rr graph is used during the placement and routing section of VPR.
+The file is constructed using tags. The top level is the ``rr_graph`` tag. 
+This tag contains all the channel, switches, segments, block, grid, node, and edge information of the FPGA. 
+Each of these sections are separated into separate tags as described below.
 
 The channel information is contained within the ``channels`` subtag. This describes the minimum and maximum channel width within the architecture. Each ``channels`` tag has the following subtags:
 
@@ -441,7 +445,7 @@ The channel information is contained within the ``channels`` subtag. This descri
     * ``index``
     	Describes the index within the array.
     * ``info``
-    	
+    	The value 
     	
 A ``switches`` tag contains all the switches and its information within the FPGA. It should be noted that for values such as capacitance, Tdel, and sizing info have a decimal precision of 30. This ensures a more accurate calculation when reading in the routing resource graph. Each ``switches`` tag has the following subtags:
 
@@ -566,10 +570,10 @@ The final subtag is the ``rr_edges`` tag that encloses information about all the
 Routing Resource Graph Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following is an example of what a generated routing resource graph file would look like.
+An example of what a generated routing resource graph file would look like is shown below:
 
 .. code-block:: xml
-    :caption: Example of ``<port_rotation_map>`` tag.
+    :caption: Example of a routing resource graph in XML format
     :linenos:
 
     <rr_graph tool_name="vpr" tool_version="82a3c72" tool_comment="Generated from arch file my_arch.xml">
@@ -588,7 +592,7 @@ The following is an example of what a generated routing resource graph file woul
     	</switches>
      	<segments>
         	<segment id="0" name="L4"/>
-            	<timing R_per_meter="201.7" C_per_meter="18e-15"/>
+            	<timing R_per_meter="201.7" C_per_meter="18.110e-15"/>
         	</segment>
     	</segments>
      	<block_types>
@@ -620,5 +624,4 @@ The following is an example of what a generated routing resource graph file woul
         	<edge src_node="1" sink_node="2" switch_id="0"/> 
     	</rr_edges>
     </rr_graph>
-
 .. _end:
