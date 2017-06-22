@@ -23,14 +23,13 @@ if(EASYGL_ENABLE_GRAPHICS)
 
     if(WIN32 OR CYGWIN)
         #Windows
-        #TODO: this is untested
         message(STATUS "EasyGL: Windows detected")
         list(APPEND GRAPHICS_DEFINES "-DWIN32")
         list(APPEND GRAPHICS_LIBRARIES gdi32 User32)
     else()
         #Assume unix-like
 
-        #Look for X11 and font libraries
+        #Look for X11, font and cairo libraries
         message(STATUS "EasyGL: UNIX detected, looking for X11 and font libraries")
         find_package(Fontconfig)
         find_package(X11 COMPONENTS X11 Xft)
