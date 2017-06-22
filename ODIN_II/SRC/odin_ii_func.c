@@ -53,30 +53,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 /*---------------------------------------------------------------------------
  * (function: set_default_options)
  *-------------------------------------------------------------------------*/
-void set_default_options()
+void set_default_config()
 {
-/* Set up the global arguments to their default. */
-	global_args.config_file = NULL;
-	global_args.verilog_file = NULL;
-	global_args.blif_file = NULL;
-	global_args.output_file = vtr::strdup("./default_out.blif");
-	global_args.arch_file = NULL;
-	global_args.activation_blif_file = NULL;
-	global_args.activation_netlist_file = NULL;
-	global_args.high_level_block = NULL;
-	global_args.sim_vector_input_file = NULL;
-	global_args.sim_vector_output_file = NULL;
-	global_args.sim_additional_pins = NULL;
-	global_args.sim_num_test_vectors = 0;
-	global_args.sim_generate_three_valued_logic = 0;
-	global_args.sim_hold_low = NULL;
-	global_args.sim_hold_high = NULL;
-	global_args.sim_output_both_edges = 0;
-	global_args.sim_output_rising_edge = 0;
-	global_args.sim_initial_value = -1;
-	global_args.sim_random_seed = 0;
-	global_args.all_warnings = 0;
-
 	/* Set up the global configuration. */
 	configuration.list_of_file_names = NULL;
 	configuration.num_list_of_file_names = 0;

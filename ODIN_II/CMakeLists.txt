@@ -41,6 +41,7 @@ target_link_libraries(odin_II
                         libvtrutil
                         libarchfpga
                         libabc
+                        libargparse
                         ${CMAKE_DL_LIBS})
 
 install(TARGETS odin_II DESTINATION bin)

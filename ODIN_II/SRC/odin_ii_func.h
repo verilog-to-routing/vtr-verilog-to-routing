@@ -23,7 +23,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #ifndef ODIN_II_FUNC_H
 #define ODIN_II_FUNC_H
-void set_default_options();
+void set_default_config();
 void do_high_level_synthesis();
 void do_simulation_of_netlist();
 void do_activation_estimation(int num_types, t_type_descriptor * type_descriptors);
