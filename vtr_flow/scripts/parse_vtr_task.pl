@@ -300,7 +300,9 @@ sub parse_single_task {
 
         if ($second_parse_file){
         #returns 1 if failed
-            return check_rr_graph ( $task_name, $task_path, $run_path);
+            if ($check_golden) {
+                return check_rr_graph ( $task_name, $task_path, $run_path);
+            }
         }
 
 	if ($check_golden) {

@@ -462,8 +462,8 @@ static void alloc_routing_structs(t_router_opts router_opts,
             det_routing_arch->dump_rr_structs_file,
             &det_routing_arch->wire_to_rr_ipin_switch,
             &device_ctx.num_rr_switches,
-            &warnings, router_opts.write_rr_graph_name,
-            router_opts.read_rr_graph_name);
+            &warnings, router_opts.write_rr_graph_name.c_str(),
+            router_opts.read_rr_graph_name.c_str());
 
     alloc_and_load_rr_node_route_structs();
 
@@ -1002,13 +1002,12 @@ static float neightbor_val(vtr::Matrix<float> &matrix, int x, int y) {
 
     if (counter == 0) {
         //take in more values for more accuracy
+        sum = 0;
+        counter = 0;
         for (delx = x - 1; delx <= x + 1; delx++) {
             for (dely = y - 1; dely <= y + 1; dely++) {
                 //check out of bounds
-                if (!(delx == x - 1 && dely == y + 1) || !(delx == x + 1 && dely == y + 1) || !(delx == x - 1 && dely == y - 1) || !(delx == x + 1 && dely == y - 1)) {
-                    continue;
-                }
-                if (delx < 0 || dely < 0 || delx >= endx || dely >= endy || (delx == x && dely == y)) {
+                if ((delx == x && dely == y) || delx < 0 || dely < 0 || delx >= endx || dely >= endy) {
                     continue;
                 }
                 if (matrix[delx][dely] == EMPTY_DELTA || matrix[delx][dely] == IMPOSSIBLE) {
