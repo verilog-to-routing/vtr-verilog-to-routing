@@ -400,8 +400,6 @@
 
 #include "atom_netlist_fwd.h"
 
-#include "base_netlist.h"
-
 //Forward declaration for private methods
 template<typename I>
 class IdMap;
