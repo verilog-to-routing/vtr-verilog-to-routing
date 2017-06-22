@@ -35,7 +35,7 @@ This will produce the output html in the _build directory.
 You can then view the resulting documention with the web-browser of your choice.
 For instance:
 
-    $ firefox _build/index.html
+    $ firefox _build/html/index.html
 
 
 Documentation Layout

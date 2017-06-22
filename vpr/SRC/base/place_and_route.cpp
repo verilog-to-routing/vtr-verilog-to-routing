@@ -557,10 +557,8 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
             det_routing_arch->dump_rr_structs_file,
             &det_routing_arch->wire_to_rr_ipin_switch,
             &device_ctx.num_rr_switches,
-            &warnings, 
-            router_opts.write_rr_graph_name,
-            router_opts.read_rr_graph_name,
-            false);
+            &warnings, router_opts.write_rr_graph_name,
+            router_opts.read_rr_graph_name);
 
     restore_routing(best_routing, clb_opins_used_locally,
             saved_clb_opins_used_locally);

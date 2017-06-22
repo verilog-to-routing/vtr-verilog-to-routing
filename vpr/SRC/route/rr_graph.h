@@ -44,7 +44,7 @@ void build_rr_graph(
         int *num_rr_switches,
         int *Warnings,
         const std::string write_rr_graph_name,
-        const std::string read_rr_graph_name, bool for_placement);
+        const std::string read_rr_graph_name);
 
 void free_rr_graph(void);
 

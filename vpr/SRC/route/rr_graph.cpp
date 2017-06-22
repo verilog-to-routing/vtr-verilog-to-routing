@@ -196,10 +196,6 @@ void alloc_and_load_edges_and_switches(
         const int num_edges, bool * L_rr_edge_done,
         t_linked_edge * edge_list_head);
 
-//static void alloc_net_rr_terminals(void);
-
-//static void alloc_and_load_rr_clb_source(vtr::t_ivec *** L_rr_node_indices);
-
 static t_clb_to_clb_directs *alloc_and_load_clb_to_clb_directs(const t_direct_inf *directs, const int num_directs,
         const int delayless_switch);
 
@@ -241,11 +237,11 @@ void build_rr_graph(
         int *num_rr_switches,
         int *Warnings,
         const std::string write_rr_graph_name,
-        const std::string read_rr_graph_name, bool for_placement) {
+        const std::string read_rr_graph_name) {
     //TODO: refactor the actual build code into a separate function called from here, such that
     //build_rr_graph() just dispatches to the appropriate creation/load function
 
-    if (!read_rr_graph_name.empty() && !for_placement) {
+    if (!read_rr_graph_name.empty()) {
         load_rr_file(graph_type, L_nx, L_ny,
                 nodes_per_chan, num_seg_types, segment_inf, base_cost_type,
                 wire_to_rr_ipin_switch, num_rr_switches,
@@ -1200,7 +1196,7 @@ void load_net_rr_terminals(vtr::t_ivec *** L_rr_node_indices) {
             node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
 
             iclass = type->pin_class[node_block_pin];
-
+            
             inode = get_rr_node_index(i, j, (ipin == 0 ? SOURCE : SINK), /* First pin is driver */
                     iclass, L_rr_node_indices);
             route_ctx.net_rr_terminals[inet][ipin] = inode;
