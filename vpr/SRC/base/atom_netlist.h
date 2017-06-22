@@ -349,7 +349,7 @@
  *
  * Block pins/Block ports data layout
  * ----------------------------------
- * The pins/ports for each block are stored in a similar manner, for bervity we describe only pins here.
+ * The pins/ports for each block are stored in a similar manner, for brevity we describe only pins here.
  *
  * The pins for each block (i.e. AtomPinId's) are stored in a single vector for each block (the block_pins_ member).
  * This allows us to iterate over all pins (i.e. block_pins()), or specific subsets of pins (e.g. only inputs with 
@@ -373,7 +373,7 @@
  *      output pins: [opin_begin, clock_pin_begin)
  *      clock pins : [clock_pin_begin, end)
  *
- * Since any reallocation would invalidate any iterators to these internal dividers, we seperately store the number
+ * Since any reallocation would invalidate any iterators to these internal dividers, we separately store the number
  * of input/output/clock pins per block (i.e. in block_num_input_pins_, block_num_output_pins_ and 
  * block_num_clock_pins_). The internal dividers can then be easily calculated (e.g. see block_output_pins()), even 
  * if new pins are inserted (provided the counts are updated).
@@ -399,6 +399,8 @@
 #include "logic_types.h" //For t_model
 
 #include "atom_netlist_fwd.h"
+
+#include "base_netlist.h"
 
 //Forward declaration for private methods
 template<typename I>
