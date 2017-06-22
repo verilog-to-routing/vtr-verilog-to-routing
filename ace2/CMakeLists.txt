@@ -11,9 +11,7 @@ add_definitions(-DLIN)
 add_executable(ace ${EXEC_SOURCES} ${EXEC_HEADERS})
 target_link_libraries(ace
                         libabc
-                        m #C math library
-                        ${CMAKE_DL_LIBS}
-                        )
+                        ${CMAKE_DL_LIBS})
 
 #ACE includes some ABC headers which cause warnings - we suppress them here
 set(ACE_SUPPRESS_FLAGS 
