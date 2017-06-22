@@ -20,6 +20,7 @@
 #include <ctime>
 #include <sstream>
 #include <unordered_set>
+#include <cctype> //std::isdigit
 using namespace std;
 
 #include "blifparse.hpp"
