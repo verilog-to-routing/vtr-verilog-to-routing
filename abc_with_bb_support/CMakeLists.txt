@@ -123,10 +123,15 @@ target_compile_definitions(libabc PUBLIC -DSIZEOF_VOID_P=${CMAKE_SIZEOF_VOID_P})
 set_target_properties(libabc PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 
+
 #Specify link-time dependancies
-target_link_libraries(libabc
-                        m #C math library
-                        ${CMAKE_DL_LIBS})
+target_link_libraries(libabc ${CMAKE_DL_LIBS})
+
+if(NOT MSVC)
+    #MSVC includes all math functionality in the regular standard library,
+    #all other *nix-like systems require explicit linkage to libm
+    target_link_libraries(libabc m)
+endif()
 
 #Create the executable
 add_executable(abc ${EXEC_SOURCES})
