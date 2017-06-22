@@ -26,6 +26,7 @@ if(EASYGL_ENABLE_GRAPHICS)
         #TODO: this is untested
         message(STATUS "EasyGL: Windows detected")
         list(APPEND GRAPHICS_DEFINES "-DWIN32")
+        list(APPEND GRAPHICS_LIBRARIES gdi32 User32)
     else()
         #Assume unix-like
 
