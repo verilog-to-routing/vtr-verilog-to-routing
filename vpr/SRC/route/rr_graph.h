@@ -39,7 +39,7 @@ void build_rr_graph(
         const bool trim_empty_channels,
         const bool trim_obs_channels,
         const t_direct_inf *directs, const int num_directs,
-        const bool ignore_Fc_0, const char* dump_rr_structs_file,
+        const char* dump_rr_structs_file,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
         int *Warnings,

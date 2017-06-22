@@ -458,7 +458,6 @@ static void alloc_routing_structs(t_router_opts router_opts,
                         to worry about special cases such as carry chains, since we do
                         delay estimation between the most numerous pins on the block,
                         which should not be carry chain pins. */
-            false,
             det_routing_arch->dump_rr_structs_file,
             &det_routing_arch->wire_to_rr_ipin_switch,
             &device_ctx.num_rr_switches,

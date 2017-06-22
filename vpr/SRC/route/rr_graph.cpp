@@ -213,7 +213,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
         const int num_seg_types, const int *sets_per_seg_type,
         const int max_chan_width, const e_fc_type fc_type,
         const enum e_directionality directionality,
-        bool *Fc_clipped, const bool ignore_Fc_0);
+        bool *Fc_clipped);
 
 /******************* Subroutine definitions *******************************/
 
@@ -232,7 +232,7 @@ void build_rr_graph(
         const bool trim_empty_channels,
         const bool trim_obs_channels,
         const t_direct_inf *directs, const int num_directs,
-        const bool ignore_Fc_0, const char* dump_rr_structs_file,
+        const char* dump_rr_structs_file,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
         int *Warnings,
@@ -352,13 +352,13 @@ void build_rr_graph(
     } else {
         bool Fc_clipped = false;
         Fc_in = alloc_and_load_actual_fc(L_num_types, types, max_pins, num_seg_types, sets_per_seg_type, max_chan_width,
-                e_fc_type::IN, directionality, &Fc_clipped, ignore_Fc_0);
+                e_fc_type::IN, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
         Fc_clipped = false;
         Fc_out = alloc_and_load_actual_fc(L_num_types, types, max_pins, num_seg_types, sets_per_seg_type, max_chan_width,
-                e_fc_type::OUT, directionality, &Fc_clipped, ignore_Fc_0);
+                e_fc_type::OUT, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
@@ -847,7 +847,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
         const int num_seg_types, const int *sets_per_seg_type,
         const int max_chan_width, const e_fc_type fc_type,
         const enum e_directionality directionality,
-        bool *Fc_clipped, const bool ignore_Fc_0) {
+        bool *Fc_clipped) {
 
     //Initialize Fc of all blocks to zero
     auto zeros = vtr::Matrix<int>({size_t(max_pins), size_t(num_seg_types)}, 0);
@@ -870,7 +870,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
 
             int iseg = fc_spec.seg_index;
 
-            if (fc_spec.fc_value == 0 && ignore_Fc_0 == false) {
+            if (fc_spec.fc_value == 0) {
                 /* Special case indicating that this pin does not connect to general-purpose routing */
                 for (int ipin : fc_spec.pins) {
                     Fc[itype][ipin][iseg] = 0;
