@@ -434,54 +434,64 @@ The channel information is contained within the ``channels`` subtag. This descri
 * ``channel``
     This is a required subtag that contains information about the general channel width information. This stores the channel width between x or y directed channels. Each ``channel`` tag has the following attributes:
 
-    * ``chan_width_max``
-    	Stores the maximum channel width value of x or y channels
-    * ``x_min`` ``y_min`` ``x_max`` ``y_max``
-    	Stores the minimum and maximum value of x and y coordinate within the lists
+  * ``chan_width_max``
+    Stores the maximum channel width value of x or y channels
+
+  * ``x_min`` ``y_min`` ``x_max`` ``y_max``
+    Stores the minimum and maximum value of x and y coordinate within the lists
 
 * ``x_list`` ``y_list``
-    This is a required subtag that lists the contents of an x_list and y_list array which stores the width of each channel. The x_list array size as large as the size of the y dimension of the FPGA itself while the y_list has the size of the x_dimension. This x_list tag is repeated for each index within the array. Each x_list or y_list component has the following attributes:
+  This is a required subtag that lists the contents of an x_list and y_list array which stores the width of each channel. The x_list array size as large as the size of the y dimension of the FPGA itself while the y_list has the size of the x_dimension. This x_list tag is repeated for each index within the array. Each x_list or y_list component has the following attributes:
     
-    * ``index``
-    	Describes the index within the array.
-    * ``info``
-    	The value 
+  * ``index``
+    Describes the index within the array.
+
+  * ``info``
+    The width of each channel. The minimum is one track per channel. io channels are io_rat * maximum in interior tracks wide. The channel distributions read from the architecture file are scaled by a constant factor.
     	
 A ``switches`` tag contains all the switches and its information within the FPGA. It should be noted that for values such as capacitance, Tdel, and sizing info have a decimal precision of 30. This ensures a more accurate calculation when reading in the routing resource graph. Each ``switches`` tag has the following subtags:
 
 * ``switch``
     This contains the general information about the switch. It contains the following attributes:
 
-    * ``id``
-  	A unique identifier for that type of switch.
-    * ``name``
-  	An optional general identifier for the switch.
-    * ``buffered``
-  	An integer value that describes whether the switch includes a buffer.
+  * ``id``
+    A unique identifier for that type of switch.
+
+  * ``name``
+    An optional general identifier for the switch.
+
+  * ``buffered``
+    An integer value that describes whether the switch includes a buffer.
+
 * ``timing``
   This optional subtag contains information used for timing analysis. Without it, the program assums all subtags to contain a value of 0.
 
   * ``R`` ``Cin`` ``Cout``
-  	The resistance, input capacitance and output capacitance of the switch
+    The resistance, input capacitance and output capacitance of the switch
+
   * ``Tdel``
-  	Switch's intrinsic delay. It can be outlined that the delay through an unloaded switch is Tdel + R * Cout.
+    Switch's intrinsic delay. It can be outlined that the delay through an unloaded switch is Tdel + R * Cout
+
 * ``sizing``
   The sizing information contains all the information needed for area calculation. It contains the following subtags:
 
   * ``mux_trans_size``
-  	The area of each transistor in the segment's driving mux. This is measured in minimum width transistor units.
+    The area of each transistor in the segment's driving mux. This is measured in minimum width transistor units
+
   * ``buf_size``
-  	The area of the buffer. If this is set to zero, the area is calculated from the resistance.
+    The area of the buffer. If this is set to zero, the area is calculated from the resistance
+
 
 The ``segments`` tag contains all the segments and its information. Note again that the capacitance has a high decimal precision of 30. Each ``segments`` tag has the following subtags:
 
 * ``segment``
-  This tag contains general information about the segment.
+  This tag contains general information about the segment
 
   * ``id``
-  	The index of this segment
+    The index of this segment
+
   * ``name``
-  	The name of this segment
+    The name of this segment
 
 * ``timing``
   This tag stores the timing information of each segment
@@ -492,20 +502,24 @@ The ``segments`` tag contains all the segments and its information. Note again t
 The ``block_types`` tag outlines the information of a placeable complex logic block. This includes generation, pin classes, and pins within each block. It contains the following subtags:
   
 * ``block_type``
-  	This describes generation information about the block using the following attributes:
+  This describes generation information about the block using the following attributes:
 
   * ``id``
-  	The index of the type of the descriptor in the array. This is used for index referencing.
+    The index of the type of the descriptor in the array. This is used for index referencing
+
   * ``name``
-  	A unique identifier for this type of block. Note that an empty block type must be denoted "EMPTY" without the brackets ``<>`` to prevent breaking the xml format. Input and output blocks must be named "io". Other blocks can have any name.
+    A unique identifier for this type of block. Note that an empty block type must be denoted "EMPTY" without the brackets ``<>`` to prevent breaking the xml format. Input and output blocks must be named "io". Other blocks can have any name.
+  
   * ``width`` ``height``
-  	The width and height of a large block in grid tiles.
+    The width and height of a large block in grid tiles.
+
   * ``pin_class``
-        This is a subtag of ``block_type`` that describes class and the pins within each class for configurable logic blocks that share common properties.
+    This is a subtag of ``block_type`` that describes class and the pins within each class for configurable logic blocks that share common properties.
   	
-            * ``type``
-                This describes whether the pin class is a driver or receiver. Valid inputs are "OPEN", "OUTPUT", and "INPUT". 
-            * A list of integers that represent the pin number of the class. These are separated by spaces and lists the CLB pin numbers that belongs to this class.
+    * ``type``
+        This describes whether the pin class is a driver or receiver. Valid inputs are "OPEN", "OUTPUT", and "INPUT"
+
+        * A list of integers that represent the pin number of the class. These are separated by spaces and lists the CLB pin numbers that belongs to this class.
 
 The ``grid`` tag contains information about the grid of the FPGA. Each grid tag has one subtag as outlined below:
  
@@ -513,59 +527,67 @@ The ``grid`` tag contains information about the grid of the FPGA. Each grid tag 
   The grid_loc subtag has attributes that describe its location and other general information.
 
   * ``x`` ``y``
-  	The x and y  coordinate location of this grid tile.
+    The x and y  coordinate location of this grid tile.
+
   * ``block_type_id``
-  	The index of the type of logic block that resides here.
+    The index of the type of logic block that resides here.
+
   * ``width_offset`` ``height_offset``
-  	The number of grid tiles reserved based on the width and height of a block.
+    The number of grid tiles reserved based on the width and height of a block.
  
 The ``rr_nodes`` tag stores information about each node for the routing resource graph. These nodes describe each wire and each logic block pin.
 
 * ``node``
    The ``node`` tag contains information such as the location, timing, and segment through its subtags. It also has its own attributes that indicate what kind of node this is
     
-    * ``id``
-    	The index of the particular routing resource node
-    * ``type``
-    	Indicates whether the node is a wire or a logic block. Valid inputs for class types are "CHANX", "CHANY", "SOURCE", "SINK","OPIN", and "IPIN". Where CHANX and CHANY describe a horizontal (CHANX) and vertical (CHANY) channel. Sources and sinks describes where nets begin and end. OPIN represents output pin and IPIN represent input pin.
-    * ``direction``
-    	If the node represents a track, this field represents the direction of the track as "INC", "DEC", or "BI". In other cases this value be or defaulted to "NONE".
-    * ``capacity``
-    	The number of routes that can use this node.
+  * ``id``
+    The index of the particular routing resource node
+
+  * ``type``
+    Indicates whether the node is a wire or a logic block. Valid inputs for class types are "CHANX", "CHANY", "SOURCE", "SINK","OPIN", and "IPIN". Where CHANX and CHANY describe a horizontal (CHANX) and vertical (CHANY) channel. Sources and sinks describes where nets begin and end. OPIN represents output pin and IPIN represent input pin
+    
+  * ``direction``
+    If the node represents a track, this field represents the direction of the track as "INC", "DEC", or "BI". In other cases this value could be or defaulted to be "NONE"
+  
+  * ``capacity``
+    The number of routes that can use this node
 
     It also has the following subtags:
 
-    * ``loc``
-    	Contains location information for this node. For pins or segments of length one, xlow = xhigh and ylow = yhigh.
+  * ``loc``
+    Contains location information for this node. For pins or segments of length one, xlow = xhigh and ylow = yhigh.
 
-    	* ``xlow`` ``xhigh`` ``ylow`` ``yhigh``
-    		Integer coordinates of the ends of this routing source.
-    	* ``ptc``
-    		This is the pin, track, or class number that depends on the rr_node type.
+    * ``xlow`` ``xhigh`` ``ylow`` ``yhigh``
+      Integer coordinates of the ends of this routing source
 
-    * ``timing``
-    	This optional subtag contains information used for timing analysis
+    * ``ptc``
+      This is the pin, track, or class number that depends on the rr_node type
 
-    	* ``R``
-    		The resistance that goes through this node. This is only the metal resistance, it does not include the resistance of the switch that leads to another routing resource node
-    	* ``C``
-    		The total capacitance of this node. This includes the metal capacitance, input capacitance of all the switches hanging off the node, the output capacitance of all the switches to the node, and the connection box buffer capacitances that hangs off it.
+  * ``timing``
+    This optional subtag contains information used for timing analysis
 
-    * ``segment``
-    	This describes the information of the segment that connects to the node. Its only attribute is the following:
+    * ``R``
+      The resistance that goes through this node. This is only the metal resistance, it does not include the resistance of the switch that leads to another routing resource node
+    	
+    * ``C``
+      The total capacitance of this node. This includes the metal capacitance, input capacitance of all the switches hanging off the node, the output capacitance of all the switches to the node, and the connection box buffer capacitances that hangs off it.
 
-    	* ``segment_id``
-    		This describes the index of the segment type. This value only applies to horizontal and vertical channel types. It can be left empty, or as -1 for other types of nodes.
+  * ``segment``
+      This describes the information of the segment that connects to the node. Its only attribute is the following:
+
+    * ``segment_id``
+      This describes the index of the segment type. This value only applies to horizontal and vertical channel types. It can be left empty, or as -1 for other types of nodes.
 
 The final subtag is the ``rr_edges`` tag that encloses information about all the edges between nodes. Each ``rr_edges`` tag contains multiple subtags named:
 
 * ``edges``
     This subtag repeats for every edge that is present. Each tag contains the following attributes:
 
-    * ``src_node`` ``sink_node``
-    	The index for the source and sink node that this edge connects to.
-    * ``switch_id``
-    	The type of switch that connects the two nodes.
+  * ``src_node`` ``sink_node``
+    The index for the source and sink node that this edge connects to
+
+  * ``switch_id``
+    The type of switch that connects the two nodes.
 
 Routing Resource Graph Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

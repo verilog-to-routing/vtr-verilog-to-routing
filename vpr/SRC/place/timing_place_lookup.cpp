@@ -148,9 +148,13 @@ static int get_longest_segment_length(
 static void reset_placement(void);
 
 static void print_delta_delays_echo(const char* filename);
+
 static void print_matrix(std::string filename, const vtr::Matrix<float>& array_to_print);
+
 static coord_pairs find_non_empty_coord(void);
+
 static void fix_matrix(void);
+
 static float neightbor_val(vtr::Matrix<float> &matrix, int x, int y);
 
 /**************************************/
