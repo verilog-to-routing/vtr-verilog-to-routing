@@ -23,7 +23,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <getopt.h>
 #include <sstream>
 
 #include "vtr_error.h"
