@@ -350,9 +350,6 @@ void try_place(t_placer_opts placer_opts,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    place_ctx.block_locs.clear();
-    place_ctx.block_locs.resize(cluster_ctx.num_blocks);
-
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
 
@@ -375,6 +372,11 @@ void try_place(t_placer_opts placer_opts,
         slacks = alloc_and_load_timing_graph(timing_inf);
 #endif
 	}
+
+    //We are careful to resize the block_locs after building the delta-delay 
+    // lookups (since they change the block locations)
+    place_ctx.block_locs.clear();
+    place_ctx.block_locs.resize(cluster_ctx.num_blocks);
 
 	width_fac = placer_opts.place_chan_width;
 
