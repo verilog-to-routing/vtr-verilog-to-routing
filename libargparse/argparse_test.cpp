@@ -461,12 +461,12 @@ int main(
     std::cout << "\n";
 
     std::vector<std::vector<std::string>> pass_cases = {
-        {"my_arch.xml", "my_circuit.blif", "--analysis"},
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--pack"},
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--timing_analysis", "on"},
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--route_chan_width", "300"},
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--criticality_exp", "2"}, //Float from integer
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--criticality_exp", "2.0"}, //Float
+        {"my_arch1.xml", "my_circuit1.blif", "--analysis"},
+        {"my_arch2.xml", "my_circuit2.blif", "--analysis", "--pack"},
+        {"my_arch3.xml", "my_circuit3.blif", "--analysis", "--timing_analysis", "on"},
+        {"my_arch4.xml", "my_circuit4.blif", "--analysis", "--route_chan_width", "300"},
+        {"my_arch5.xml", "my_circuit5.blif", "--analysis", "--criticality_exp", "2"}, //Float from integer
+        {"my_arch6.xml", "my_circuit6.blif", "--analysis", "--criticality_exp", "2.0"}, //Float
     };
 
     int num_failed = 0;
@@ -481,17 +481,17 @@ int main(
 
     std::vector<std::vector<std::string>> fail_cases = {
         {"--analysis"}, //Missing positional
-        {"my_arch.xml", "--analysis"}, //Missing positional
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "extra"}, //Extra positional
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--route_chan_width"}, //Missing value to option
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--route_chan_width", "off"}, //Wrong option value type
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--disp", "132"}, //Wrong option value
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--route_chan_width", "300", "5"}, //Extra option value
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--pack", "on"}, //Extra option value to toggle option
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--route_chan_width", "300.5"}, //Type mismatch: float->int
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--criticality_exp", "on"}, //Wrong value type for float
-        {"my_arch.xml", "my_circuit.blif", "--analysis", "--slack_definition", "Z"}, //Valid type, but wrong choice
-        {"my_arch.xml", "my_circuit.blif"}, //Missing required
+        {"my_arch7.xml", "--analysis"}, //Missing positional
+        {"my_arch8.xml", "my_circuit8.blif", "--analysis", "extra"}, //Extra positional
+        {"my_arch9.xml", "my_circuit9.blif", "--analysis", "--route_chan_width"}, //Missing value to option
+        {"my_arch10.xml", "my_circuit10.blif", "--analysis", "--route_chan_width", "off"}, //Wrong option value type
+        {"my_arch11.xml", "my_circuit11.blif", "--analysis", "--disp", "132"}, //Wrong option value
+        {"my_arch12.xml", "my_circuit12.blif", "--analysis", "--route_chan_width", "300", "5"}, //Extra option value
+        {"my_arch13.xml", "my_circuit13.blif", "--analysis", "--pack", "on"}, //Extra option value to toggle option
+        {"my_arch14.xml", "my_circuit14.blif", "--analysis", "--route_chan_width", "300.5"}, //Type mismatch: float->int
+        {"my_arch15.xml", "my_circuit15.blif", "--analysis", "--criticality_exp", "on"}, //Wrong value type for float
+        {"my_arch16.xml", "my_circuit16.blif", "--analysis", "--slack_definition", "Z"}, //Valid type, but wrong choice
+        {"my_arch17.xml", "my_circuit17.blif"}, //Missing required
     };
 
     for(const auto& cmd_line : fail_cases) {
@@ -511,11 +511,16 @@ bool expect_pass(argparse::ArgumentParser& parser, std::vector<std::string> cmd_
     try {
         parser.parse_args_throw(cmd_line);
     } catch(const argparse::ArgParseHelp&) {
+        parser.reset_destinations();
+        std::cout << "Parsed help OK [PASS]" << std::endl;
         return true;
     } catch(const argparse::ArgParseError& err) {
         std::cout << err.what() << "  [FAIL]" << std::endl;
+        parser.reset_destinations();
         return false;
     }
+    std::cout << "Parsed OK [PASS]" << std::endl;
+    parser.reset_destinations();
     return true;
 }
 
@@ -524,7 +529,10 @@ bool expect_fail(argparse::ArgumentParser& parser, std::vector<std::string> cmd_
         parser.parse_args_throw(cmd_line);
     } catch(const argparse::ArgParseError& err) {
         std::cout << err.what() << "  [PASS]" << std::endl;
+        parser.reset_destinations();
         return true;
     }
+    std::cout << "Parsed OK when expected fail [FAIL]" << std::endl;
+    parser.reset_destinations();
     return false;
 }

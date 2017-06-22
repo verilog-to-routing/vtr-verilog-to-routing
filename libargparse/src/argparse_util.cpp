@@ -91,7 +91,13 @@ namespace argparse {
     }
 
     std::string basename(std::string filepath) {
+#ifdef _WIN32
+        //Windows uses back-slash as directory divider
+        auto pos = filepath.rfind("\\");
+#else
+        //*nix-like uses forward-slash as directory divider
         auto pos = filepath.rfind("/");
+#endif
         if (pos == std::string::npos) {
             pos = 0;
         } else {

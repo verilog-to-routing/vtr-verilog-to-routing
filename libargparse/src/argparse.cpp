@@ -47,7 +47,7 @@ namespace argparse {
         return argument_groups_[argument_groups_.size() - 1];
     }
 
-    void ArgumentParser::parse_args(int argc, const char** argv, int error_exit_code, int help_exit_code, int version_exit_code) {
+    void ArgumentParser::parse_args(int argc, const char* const* argv, int error_exit_code, int help_exit_code, int version_exit_code) {
         try {
             parse_args_throw(argc, argv);
         } catch (const argparse::ArgParseHelp&) {
@@ -67,7 +67,7 @@ namespace argparse {
         }
     }
 
-    void ArgumentParser::parse_args_throw(int argc, const char** argv) {
+    void ArgumentParser::parse_args_throw(int argc, const char* const* argv) {
         std::vector<std::string> arg_strs;
         for (int i = 1; i < argc; ++i) {
             arg_strs.push_back(argv[i]);
@@ -263,6 +263,14 @@ namespace argparse {
                         throw ArgParseError(msg.str());
                     }
                 }
+            }
+        }
+    }
+
+    void ArgumentParser::reset_destinations() {
+        for (const auto& group : argument_groups()) {
+            for (const auto& arg : group.arguments()) {
+                arg->reset_dest();
             }
         }
     }
