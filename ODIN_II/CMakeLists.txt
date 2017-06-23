@@ -32,7 +32,7 @@ if(FLEX_BISON_WARN_SUPPRESS_FLAGS)
                                 PROPERTIES COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
 endif()
 
-add_definitions(-DVPR6 -DUSING_BISON -DYYERROR_VERBOSE)
+add_definitions(-DUSING_BISON -DYYERROR_VERBOSE)
 include_directories(${EXEC_INCLUDE_DIRS} ${PARSER_INCLUDE_DIRS})
 
 #Create the executable
