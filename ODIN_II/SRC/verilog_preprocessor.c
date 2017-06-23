@@ -6,6 +6,11 @@
 #include "types.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include <regex.h>
+#include <stdbool.h>
+#include "vtr_util.h"
+#include <iostream>
+#include <regex>
 
 /* Globals */
 struct veri_Includes veri_includes;
@@ -14,7 +19,11 @@ struct veri_Defines veri_defines;
 /* Function declarations */
 FILE* open_source_file(char* filename);
 FILE *remove_comments(FILE *source);
-
+FILE *format_verilog_file(FILE *source);
+FILE *format_verilog_variable(FILE * src, FILE *dest);
+FILE *process_inout(FILE *original_file);
+FILE *process_inout_variable(FILE *src, std::string reg, std::string key);
+FILE *process_inout_header(FILE *src, std::string key);
 /*
  * Initialize the preprocessor by allocating sufficient memory and setting sane values
  */
@@ -404,7 +413,9 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 {
 	// Strip the comments from the source file producing a temporary source file.
 	FILE *source = remove_comments(original_source);
-
+	source = format_verilog_file(source);
+	source = process_inout(source);
+	
 	int line_number = 1;
 	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));;
 	char line[MaxLine];
@@ -689,6 +700,206 @@ void push(veri_flag_stack *stack, int flag)
 		
 		stack->top = new_node;
 	}
+}
+FILE *format_verilog_file(FILE *source)
+{
+	FILE *destination = tmpfile();
+	char searchString [4][7]= {"input","output","reg","wire"};
+	char *line;
+	char ch;
+	unsigned i;
+	char temp[10];
+	int j;
+	static const char *pattern = "module\\s+\\S*\\s+\\([a-zA-Z0-9,_ ]+\\);";
+	i = 0;
+	line = (char *) malloc (MaxLine);
+	while( (ch = getc(source) ) != ';')
+	{
+		if (ch != '\n')
+			line[i++] = ch;
+	}
+	line[i++] = ch;
+	line[i] = '\0';
+	if (! validate_string_regex(line, pattern))
+	{
+	 	rewind(source);
+		return source;
+	}
+	for (i = 0; i < 4; i++)
+	{
+		line = search_replace(line,searchString[i],"",2);
+	}
+	i = 0;
+	while (i < strlen(line))
+	{
+		if(line[i] == '[')
+		{
+			j = 0;
+			while(line[i] != ']')
+			{
+				temp[j++] = line[i];
+				i++;
+			}
+			temp[j++] = line[i];
+			temp[j] = '\0';
+			line = search_replace(line,temp,"",2);
+			i = 0;
+		}
+		else
+			i++;
+	}
+	fputs(line, destination);
+	rewind(source);
+	destination = format_verilog_variable(source,destination);
+	rewind(destination);
+	free(line);
+	return destination;
+}
+
+FILE *format_verilog_variable(FILE * src, FILE *dest)
+{
+	char ch;
+	int i;
+	char line[MaxLine];
+	char *tempLine;
+	char *pos;
+	while( (ch = getc(src) ) != ';')
+	{
+		if(ch == '(')
+		{
+			i = 0;
+			while( (ch = getc(src) ) != ')')
+			{
+				if (ch == ',')
+				{
+					line[i++] = ';';
+					line[i] = '\0';
+					pos = strstr(line,"reg");
+					if (pos != NULL)
+					{
+						tempLine = search_replace(line,"reg","",2);
+						fputs(tempLine,dest);
+						tempLine = search_replace(line,"output","",2);
+						fputs(tempLine,dest);
+					}
+					else
+					{
+						fputs(line, dest);
+					}
+					i = 0;
+				}
+				else
+					line[i++] = ch;
+			}
+			line[i-1] = ';';
+			line[i] = '\0';
+			pos = strstr(line,"reg");
+			if (pos != NULL)
+			{
+				tempLine = search_replace(line,"reg","",2);
+				fputs(tempLine,dest);
+				tempLine = search_replace(line,"output","",2);
+				fputs(tempLine,dest);
+			}
+			else
+			{
+				fputs(line, dest);
+			}
+		}
+	}
+	while( (ch = getc(src) ) != EOF)
+	{
+		fputc(ch, dest);
+	}
+	return dest;
+}
+FILE *process_inout(FILE *original_file)
+{
+	char line[MaxLine];
+	FILE *destination = tmpfile();
+	std::string tmp;
+	std::string tmp1;
+	std:: string storage[10];
+	int i = 0;
+	std::regex e ("^.*inout .* ([a-zA-Z0-9]+);");
+	std::smatch matches;
+	int j = 0;
+	while (fgets(line, MaxLine, original_file))
+	{
+		tmp = line;
+		if(std::regex_search(tmp, matches, e)) 
+		{
+			tmp1 = vtr::replace_first(tmp,"inout","output");
+			fprintf(destination,"%s",tmp1.c_str());
+			tmp1 = vtr::replace_first(tmp,"inout","input");
+			tmp = matches[1];
+			storage[i++] = tmp;
+			tmp += "_in";
+			tmp1 = vtr::replace_first(tmp1,matches[1],tmp);
+			fprintf(destination,"%s",tmp1.c_str());
+		} 
+		else 
+		{
+			fprintf(destination,"%s",tmp.c_str());
+		}
+	}
+	rewind(destination);
+	original_file = destination;
+	for (j = 0; j< i; j++)
+	{
+		tmp = "^.*assign " + storage[j] + ".*;";
+		original_file = process_inout_variable(destination,tmp,storage[j]);
+		tmp = "^.*" + storage[j] +"(?:\\s+)?[<=]+.*";
+		original_file = process_inout_variable(original_file,tmp,storage[j]);
+	}
+	for (j = 0; j< i; j++)
+	{
+		tmp = "," + storage[j] + "_in)";
+		original_file = process_inout_header(original_file,tmp);
+	}
+	rewind(original_file);
+
+	return original_file;
+}
+FILE *process_inout_variable(FILE *src, std::string reg, std::string key)
+{
+	FILE *dst = tmpfile();
+	std::regex sm(reg);
+	std::string tmp;
+	char line[MaxLine];
+	std::string modifiedKey;
+	while (fgets(line, MaxLine, src))
+	{
+		tmp = line;
+		if(std::regex_search(tmp, sm)) 
+		{
+			modifiedKey = key + "_in";
+			tmp	= vtr::replace_first(tmp,key,modifiedKey);
+			fprintf(dst,"%s",tmp.c_str());
+		}
+		else
+			fprintf(dst,"%s",tmp.c_str());
+	}
+	rewind(dst);
+	return dst;
+}
+FILE *process_inout_header(FILE *src, std::string key)
+{
+	FILE *dst = tmpfile();
+	std::regex e("^.*module.*[a-zA-Z0-9 ,]+.*");
+	char line[MaxLine];
+	std::string tmp;
+	while (fgets(line, MaxLine, src))
+	{
+		tmp = line;
+		if(std::regex_search(tmp, e))
+		{
+			tmp = vtr::replace_first(tmp,")",key);
+		}
+		fprintf(dst,"%s",tmp.c_str());
+	}
+	rewind(dst);
+	return dst;
 }
 
 /* ------------------------------------------------------------------------- */
