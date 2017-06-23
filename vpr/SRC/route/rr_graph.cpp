@@ -3,7 +3,6 @@
 #include <cmath>
 #include <algorithm>
 #include <vector>
-#include <ctime>
 #include "vtr_assert.h"
 
 using namespace std;
@@ -215,6 +214,26 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
         const enum e_directionality directionality,
         bool *Fc_clipped);
 
+static void create_rr_graph(
+        const t_graph_type graph_type, const int L_num_types,
+        const t_type_ptr types, const int L_nx, const int L_ny,
+        const vtr::Matrix<t_grid_tile>& L_grid,
+        t_chan_width *nodes_per_chan,
+        const enum e_switch_block_type sb_type, const int Fs,
+        const vector<t_switchblock_inf> switchblocks,
+        const int num_seg_types, const int num_arch_switches,
+        const t_segment_inf * segment_inf,
+        const int global_route_switch, const int delayless_switch,
+        const int wire_to_arch_ipin_switch,
+        const enum e_base_cost_type base_cost_type,
+        const bool trim_empty_channels,
+        const bool trim_obs_channels,
+        const t_direct_inf *directs, const int num_directs,
+        const char* dump_rr_structs_file,
+        int *wire_to_rr_ipin_switch,
+        int *num_rr_switches,
+        int *Warnings);
+
 /******************* Subroutine definitions *******************************/
 
 void build_rr_graph(
@@ -238,22 +257,44 @@ void build_rr_graph(
         int *Warnings,
         const std::string write_rr_graph_name,
         const std::string read_rr_graph_name) {
-    //TODO: refactor the actual build code into a separate function called from here, such that
-    //build_rr_graph() just dispatches to the appropriate creation/load function
 
     if (!read_rr_graph_name.empty()) {
         load_rr_file(graph_type, L_nx, L_ny,
                 nodes_per_chan, num_seg_types, segment_inf, base_cost_type,
                 wire_to_rr_ipin_switch, num_rr_switches,
                 read_rr_graph_name.c_str());
-
-        //Write out rr graph file if needed
-        if (!write_rr_graph_name.empty()) {
-            write_rr_graph(write_rr_graph_name.c_str(), segment_inf, num_seg_types);
-        }
-
-        return;
+    } else {
+        create_rr_graph(graph_type, L_num_types, types, L_nx, L_ny, L_grid, nodes_per_chan, sb_type, Fs, switchblocks,
+                num_seg_types, num_arch_switches, segment_inf, global_route_switch, delayless_switch, wire_to_arch_ipin_switch,
+                base_cost_type, trim_empty_channels, trim_obs_channels, directs, num_directs,
+                dump_rr_structs_file, wire_to_rr_ipin_switch, num_rr_switches, Warnings);
     }
+    //Write out rr graph file if needed
+    if (!write_rr_graph_name.empty()) {
+        write_rr_graph(write_rr_graph_name.c_str(), segment_inf, num_seg_types);
+    }
+
+}
+
+static void create_rr_graph(
+        const t_graph_type graph_type, const int L_num_types,
+        const t_type_ptr types, const int L_nx, const int L_ny,
+        const vtr::Matrix<t_grid_tile>& L_grid,
+        t_chan_width *nodes_per_chan,
+        const enum e_switch_block_type sb_type, const int Fs,
+        const vector<t_switchblock_inf> switchblocks,
+        const int num_seg_types, const int num_arch_switches,
+        const t_segment_inf * segment_inf,
+        const int global_route_switch, const int delayless_switch,
+        const int wire_to_arch_ipin_switch,
+        const enum e_base_cost_type base_cost_type,
+        const bool trim_empty_channels,
+        const bool trim_obs_channels,
+        const t_direct_inf *directs, const int num_directs,
+        const char* dump_rr_structs_file,
+        int *wire_to_rr_ipin_switch,
+        int *num_rr_switches,
+        int *Warnings) {
 
     vtr::printf_info("Starting build routing resource graph...\n");
     clock_t begin = clock();
@@ -514,10 +555,6 @@ void build_rr_graph(
     /* dump out rr structs if requested */
     if (dump_rr_structs_file) {
         dump_rr_structs(dump_rr_structs_file);
-    }
-
-    if (!write_rr_graph_name.empty()) {
-        write_rr_graph(write_rr_graph_name.c_str(), segment_inf, num_seg_types);
     }
 
 #ifdef USE_MAP_LOOKAHEAD
@@ -1196,7 +1233,7 @@ void load_net_rr_terminals(vtr::t_ivec *** L_rr_node_indices) {
             node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
 
             iclass = type->pin_class[node_block_pin];
-            
+
             inode = get_rr_node_index(i, j, (ipin == 0 ? SOURCE : SINK), /* First pin is driver */
                     iclass, L_rr_node_indices);
             route_ctx.net_rr_terminals[inet][ipin] = inode;
