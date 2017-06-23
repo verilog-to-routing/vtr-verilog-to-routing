@@ -21,11 +21,14 @@ if(EASYGL_ENABLE_GRAPHICS)
     #Check for dependancies
     set(FOUND_EASYGL_DEPENDANCIES true)
 
-    if(WIN32 OR CYGWIN)
+    if(WIN32)
         #Windows
         message(STATUS "EasyGL: Windows detected")
         list(APPEND GRAPHICS_DEFINES "-DWIN32")
-        list(APPEND GRAPHICS_LIBRARIES gdi32 User32)
+        if(CYGWIN)
+            #CYGWIN requires explicitly linking to the windows platform libraries
+            list(APPEND GRAPHICS_LIBRARIES gdi32 User32)
+        endif()
     else()
         #Assume unix-like
 
