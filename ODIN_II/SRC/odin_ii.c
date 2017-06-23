@@ -138,9 +138,32 @@ int main(int argc, char **argv)
 		// Can't levelize yet since the large muxes can look like combinational loops when they're not
 		check_netlist(verilog_netlist);
 	
-		/* point for all netlist optimizations. */
-		printf("Performing Optimizations of the Netlist\n");
-		netlist_optimizations_top(verilog_netlist);
+		//START ################# NETLIST OPTIMIZATION ############################
+		
+			/* point for all netlist optimizations. */
+			printf("Performing Optimizations of the Netlist\n");
+			netlist_optimizations_top(verilog_netlist);
+			/* Perform a splitting of the multipliers for hard block mults */
+		    reduce_operations(verilog_netlist, MULTIPLY);
+			iterate_multipliers(verilog_netlist);
+			clean_multipliers();
+		
+			/* Perform a splitting of any hard block memories */
+			iterate_memories(verilog_netlist);
+			free_memory_lists();
+		
+			/* Perform a splitting of the adders for hard block add */
+			reduce_operations(verilog_netlist, ADD);
+			iterate_adders(verilog_netlist);
+			clean_adders();
+		
+			/* Perform a splitting of the adders for hard block sub */
+			reduce_operations(verilog_netlist, MINUS);
+			iterate_adders_for_sub(verilog_netlist);
+			clean_adders_for_sub();
+			
+		//END ################# NETLIST OPTIMIZATION ############################
+		
 	
 		if (configuration.output_netlist_graphs )
 		{
