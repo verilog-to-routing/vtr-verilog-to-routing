@@ -214,7 +214,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
         const enum e_directionality directionality,
         bool *Fc_clipped);
 
-static void create_rr_graph(
+static void build_rr_graph(
         const t_graph_type graph_type, const int L_num_types,
         const t_type_ptr types, const int L_nx, const int L_ny,
         const vtr::Matrix<t_grid_tile>& L_grid,
@@ -236,7 +236,7 @@ static void create_rr_graph(
 
 /******************* Subroutine definitions *******************************/
 
-void build_rr_graph(
+void create_rr_graph(
         const t_graph_type graph_type, const int L_num_types,
         const t_type_ptr types, const int L_nx, const int L_ny,
         const vtr::Matrix<t_grid_tile>& L_grid,
@@ -264,7 +264,7 @@ void build_rr_graph(
                 wire_to_rr_ipin_switch, num_rr_switches,
                 read_rr_graph_name.c_str());
     } else {
-        create_rr_graph(graph_type, L_num_types, types, L_nx, L_ny, L_grid, nodes_per_chan, sb_type, Fs, switchblocks,
+        build_rr_graph(graph_type, L_num_types, types, L_nx, L_ny, L_grid, nodes_per_chan, sb_type, Fs, switchblocks,
                 num_seg_types, num_arch_switches, segment_inf, global_route_switch, delayless_switch, wire_to_arch_ipin_switch,
                 base_cost_type, trim_empty_channels, trim_obs_channels, directs, num_directs,
                 dump_rr_structs_file, wire_to_rr_ipin_switch, num_rr_switches, Warnings);
@@ -276,7 +276,7 @@ void build_rr_graph(
 
 }
 
-static void create_rr_graph(
+static void build_rr_graph(
         const t_graph_type graph_type, const int L_num_types,
         const t_type_ptr types, const int L_nx, const int L_ny,
         const vtr::Matrix<t_grid_tile>& L_grid,

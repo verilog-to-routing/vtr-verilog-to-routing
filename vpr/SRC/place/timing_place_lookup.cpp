@@ -442,7 +442,7 @@ static void alloc_routing_structs(t_router_opts router_opts,
                 GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
-    build_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
+    create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
             &device_ctx.chan_width, det_routing_arch->switch_block_type,
             det_routing_arch->Fs, det_routing_arch->switchblocks,
             det_routing_arch->num_segment,
