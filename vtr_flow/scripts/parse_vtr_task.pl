@@ -535,6 +535,9 @@ sub last_exp_id {
     die("Unknown experiment id");
 } 
 
+#TODO: We should refactor check_rr_graph and check_golden into a single common 
+#function, since they duplicate a lot of common code. For example, by passing in the
+#parse results and config files explicitly (removing the task_path/run_path dependency)
 sub check_golden {
 	my $task_name = shift;
 	my $task_path = shift;
@@ -595,6 +598,7 @@ sub check_golden {
 	my %type;
 	my %min_threshold;
 	my %max_threshold;
+	my %abs_diff_threshold;
 
 	##############################################################
 	# Read files
@@ -650,7 +654,17 @@ sub check_golden {
 		if ( trim( $data[1] ) eq "Range" ) {
 			$min_threshold{$name} = trim( $data[2] );
 			$max_threshold{$name} = trim( $data[3] );
-		}
+		} elsif (trim( $data[1] ) eq "RangeAbs") {
+			$min_threshold{$name} = trim( $data[2] );
+			$max_threshold{$name} = trim( $data[3] );
+			$abs_diff_threshold{$name} = trim( $data[4] ); #Third element is absolute threshold
+        } elsif (trim( $data[1] ) eq "Equal") {
+            #Pass
+        } else {
+			print "[ERROR] $name has no comparison check specified (e.g. Range, RangeAbs, Equal).\n";
+            $failed = 1;
+			return $failed;
+        }
 
 		#Ensure item is in golden results
 		if ( !grep { $_ eq $name } @golden_params ) {
@@ -704,7 +718,7 @@ sub check_golden {
 			my $golden_value = trim(@golden_line[$golden_index]);
 
 
-			if ( $type{$value} eq "Range" ) {
+			if ( $type{$value} eq "Range" or $type{$value} eq "RangeAbs") {
 
 				# Check because of division by 0
 				if ( $golden_value == 0 ) {
@@ -717,6 +731,7 @@ sub check_golden {
 				}
 				else {
 					my $ratio = $test_value / $golden_value;
+                    my $abs_diff = abs($test_value - $golden_value);
                     
                     if($verbose) {
                         print "\tParam: $value\n";
@@ -726,23 +741,32 @@ sub check_golden {
                     }
 
 					if (   $ratio < $min_threshold{$value}
-						or $ratio > $max_threshold{$value} )
-					{
-						print
-						  "[Fail] $circuitarch $value: result = $test_value golden = $golden_value\n";
-						$failed = 1;
-						return $failed;
+						or $ratio > $max_threshold{$value} ) {
+                        #Beyond relative threshold
+
+                        if (not exists $abs_diff_threshold{$value}
+                            or $abs_diff > $abs_diff_threshold{$value}) {
+                            #Either no absolute threshold specified, or beyond it
+
+                            print
+                              "[Fail] $circuitarch $value: result = $test_value golden = $golden_value\n";
+                            $failed = 1;
+                            return $failed;
+                        }
 					}
 				}
-			}
-			else {
-
-				# If the type is unknown, check for an exact match
+			} elsif ($type{$value} eq "Equal") {
 				if ( $test_value ne $golden_value ) {
 					$failed = 1;
 					print
-					  "[Fail] $circuitarch $value: result = $test_value golden = $golden_value\n";
+					  "[Fail] $circuitarch $value: result = $test_value read in result = $golden_value\n";
 				}
+			} else {
+				# If the check type is unknown
+                $failed = 1;
+                print
+                  "[Fail] $circuitarch $value: unrecognized check type '$type{$value}' (e.g. Range, RangeAbs, Equal)\n";
+
 			}
 		}
 	}
@@ -754,6 +778,9 @@ sub check_golden {
 }
 
 
+#TODO: We should refactor check_rr_graph and check_golden into a single common 
+#function, since they duplicate a lot of common code. For example, by passing in the
+#parse results and config files explicitly (removing the task_path/run_path dependency)
 sub check_rr_graph {
 	my $task_name = shift;
 	my $task_path = shift;
@@ -814,6 +841,7 @@ sub check_rr_graph {
 	my %type;
 	my %min_threshold;
 	my %max_threshold;
+	my %abs_diff_threshold;
 
 	##############################################################
 	# Read files
@@ -869,7 +897,17 @@ sub check_rr_graph {
 		if ( trim( $data[1] ) eq "Range" ) {
 			$min_threshold{$name} = trim( $data[2] );
 			$max_threshold{$name} = trim( $data[3] );
-		}
+		} elsif (trim( $data[1] ) eq "RangeAbs") {
+			$min_threshold{$name} = trim( $data[2] );
+			$max_threshold{$name} = trim( $data[3] );
+			$abs_diff_threshold{$name} = trim( $data[4] ); #Third element is absolute threshold
+        } elsif (trim( $data[1] ) eq "Equal") {
+            #Pass
+        } else {
+			print "[ERROR] $name has no comparison check specified (e.g. Range, RangeAbs, Equal).\n";
+            $failed = 1;
+			return $failed;
+        }
 
 		#Ensure item is in golden results
 		if ( !grep { $_ eq $name } @golden_params ) {
@@ -923,7 +961,7 @@ sub check_rr_graph {
 			my $golden_value = trim(@golden_line[$golden_index]);
 
 
-			if ( $type{$value} eq "Range" ) {
+			if ( $type{$value} eq "Range" or $type{$value} eq "RangeAbs" ) {
 
 				# Check because of division by 0
 				if ( $golden_value == 0 ) {
@@ -936,6 +974,7 @@ sub check_rr_graph {
 				}
 				else {
 					my $ratio = $test_value / $golden_value;
+                    my $abs_diff = abs($test_value - $golden_value);
                     
                     if($verbose) {
                         print "\tParam: $value\n";
@@ -945,23 +984,32 @@ sub check_rr_graph {
                     }
 
 					if (   $ratio < $min_threshold{$value}
-						or $ratio > $max_threshold{$value} )
-					{
-						print
-						  "[Fail] $circuitarch $value: result = $test_value read in result = $golden_value\n";
-						$failed = 1;
-						return $failed;
+						or $ratio > $max_threshold{$value} ) {
+                        #Beyond relative threshold
+
+                        if (not exists $abs_diff_threshold{$value}
+                            or $abs_diff > $abs_diff_threshold{$value}) {
+                            #Either no absolute threshold specified, or beyond it
+
+                            print
+                              "[Fail] $circuitarch $value: result = $test_value read in result = $golden_value\n";
+                            $failed = 1;
+                            return $failed;
+                        }
 					}
 				}
-			}
-			else {
-
-				# If the type is unknown, check for an exact match
+			} elsif ($type{$value} eq "Equal") {
 				if ( $test_value ne $golden_value ) {
 					$failed = 1;
 					print
 					  "[Fail] $circuitarch $value: result = $test_value read in result = $golden_value\n";
 				}
+			} else {
+				# If the check type is unknown
+                $failed = 1;
+                print
+                  "[Fail] $circuitarch $value: unrecognized check type '$type{$value}' (e.g. Range, RangeAbs, Equal)\n";
+
 			}
 		}
 	}
