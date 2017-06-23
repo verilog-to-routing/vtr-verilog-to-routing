@@ -1,0 +1,8 @@
+.model true
+.inputs
+.outputs o
+
+.names o
+1
+
+.end

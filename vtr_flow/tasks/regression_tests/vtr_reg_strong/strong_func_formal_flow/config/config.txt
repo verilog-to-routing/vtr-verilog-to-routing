@@ -13,6 +13,10 @@ archs_dir=arch/timing
 sdc_dir=sdc
 
 # Add circuits to list to sweep
+circuit_list_add=const_true.blif
+circuit_list_add=const_false.blif
+circuit_list_add=always_true.blif
+circuit_list_add=always_false.blif
 circuit_list_add=and.blif
 circuit_list_add=multiconnected_lut.blif
 circuit_list_add=multiconnected_lut2.blif
