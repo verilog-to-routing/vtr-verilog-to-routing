@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include <ctime>
 #include <algorithm>
 #include <vector>
 #include "vtr_assert.h"
