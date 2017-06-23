@@ -7,7 +7,8 @@ PRE-REQUISITES
 3. flex
 4. gcc 5.x
 5. cmake 2.8.12 (minimum version)
-6. cairo
+6. time 
+7. cairo
 
 These packages are not included in this install and are left to the user. (On linux systems, these packages are generally available through your distribution's package management system.)
 
