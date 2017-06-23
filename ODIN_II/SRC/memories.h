@@ -109,6 +109,5 @@ signal_list_t *create_decoder(nnode_t *node, short mark, signal_list_t *input_li
 
 void add_input_port_to_memory(nnode_t *node, signal_list_t *signalsvar, const char *port_name);
 void add_output_port_to_memory(nnode_t *node, signal_list_t *signalsvar, const char *port_name);
-
 #endif // MEMORIES_H
 

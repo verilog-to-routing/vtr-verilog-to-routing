@@ -24,6 +24,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "types.h"
 #include "globals.h"
 #include "errors.h"
@@ -143,6 +144,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 
 void look_for_clocks(netlist_t *netlist);
 
+void convert_multi_to_single_dimentional_array(ast_node_t *node);
 
 /*----------------------------------------------------------------------------
  * (function: create_param_table_for_module)
@@ -1396,7 +1398,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 		}
 	}
 	/* Implicit memory */
-	else if (var_declare->children[3] != NULL)
+	else if ((var_declare->children[3] != NULL) && (var_declare->children[5] == NULL))
 	{
 		ast_node_t *node_max1 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[1]);
 		ast_node_t *node_min1 = resolve_node(NULL, FALSE, instance_name_prefix, var_declare->children[2]);
@@ -1429,6 +1431,49 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char *instance_name_pre
 
 		int data_width = data_max - data_min + 1;
 		long long words = addr_max - addr_min + 1;
+
+		create_implicit_memory_block(data_width, words, name, instance_name_prefix);
+	}
+	else if (var_declare->children[5] != NULL)
+	{
+		ast_node_t *node_max1 = resolve_node(instance_name_prefix, var_declare->children[1]);
+		ast_node_t *node_min1 = resolve_node(instance_name_prefix, var_declare->children[2]);
+
+		ast_node_t *node_max2 = resolve_node(instance_name_prefix, var_declare->children[3]);
+		ast_node_t *node_min2 = resolve_node(instance_name_prefix, var_declare->children[4]);
+
+		ast_node_t *node_max3 = resolve_node(instance_name_prefix, var_declare->children[5]);
+		ast_node_t *node_min3 = resolve_node(instance_name_prefix, var_declare->children[6]);		
+
+		oassert((node_max1->type == NUMBERS) && (node_min1->type == NUMBERS));
+		oassert((node_max2->type == NUMBERS) && (node_min2->type == NUMBERS));
+		oassert((node_max3->type == NUMBERS) && (node_min3->type == NUMBERS));		
+
+		char *name = var_declare->children[0]->types.identifier;
+
+		long long data_min = node_min1->types.number.value;
+		long long data_max = node_max1->types.number.value;
+
+		if (data_min != 0)
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+					"%s: right memory index must be zero\n", name);
+
+		oassert(data_min <= data_max);
+
+		long long addr_min = node_min2->types.number.value;
+		long long addr_max = node_max2->types.number.value;
+
+		long long addr_min1= node_min3->types.number.value;
+		long long addr_max1= node_max3->types.number.value;
+
+		if (addr_min != 0)
+			error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+					"%s: right memory address index must be zero\n", name);
+
+		oassert(addr_min <= addr_max);
+
+		int data_width = data_max - data_min + 1;
+		long long words = (addr_max - addr_min + 1)*(addr_max1 - addr_min1 + 1)  - 1;
 
 		create_implicit_memory_block(data_width, words, name, instance_name_prefix);
 	}
@@ -1818,7 +1863,8 @@ void create_symbol_table_for_function(ast_node_t* function_items, char * /*funct
  *  Returns the initial value in *value if one is found.
  *  Added by Conor
  *-------------------------------------------------------------------------*/
-int check_for_initial_reg_value(ast_node_t* var_declare, long long *value){
+int check_for_initial_reg_value(ast_node_t* var_declare, long long *value)
+{
 	oassert(var_declare->type == VAR_DECLARE);
 	// Initial value is always the last child, if one exists
 	if(var_declare->children[5] != NULL){
@@ -2200,7 +2246,29 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 			oassert(node2->types.number.value <= node1->types.number.value);
 			port_size = node1->types.number.value - node2->types.number.value + 1;
 		}
-		else if (module_var_node->children[3] != NULL)
+		//---------------------------------------------------------------------------
+		else if (module_var_node->children[5] == NULL)
+		{
+			char *module_name = make_full_ref_name(instance_name_prefix,
+				// module_name
+				module_instance->children[0]->types.identifier,
+				// instance name
+				module_instance->children[1]->children[0]->types.identifier,
+				NULL, -1);
+			ast_node_t *node1 = resolve_node(module_name, module_var_node->children[1]);
+			ast_node_t *node2 = resolve_node(module_name, module_var_node->children[2]);
+			ast_node_t *node3 = resolve_node(module_name, module_var_node->children[3]);
+			ast_node_t *node4 = resolve_node(module_name, module_var_node->children[4]);
+			free(module_name);
+			oassert(node2->type == NUMBERS && node1->type == NUMBERS && node3->type == NUMBERS && node4->type == NUMBERS);
+			/* assume all arrays declared [largest:smallest] */
+			oassert(node2->types.number.value <= node1->types.number.value);
+			oassert(node4->types.number.value <= node3->types.number.value);
+			port_size = node1->types.number.value * node3->types.number.value - 1;
+		}
+
+		//---------------------------------------------------------------------------
+		else if (module_var_node->children[5] != NULL)
 		{
 			/* Implicit memory */
 			printf("Unhandled implicit memory in connect_module_instantiation_and_alias\n");
@@ -2502,7 +2570,31 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 			port_size = node1->types.number.value - node2->types.number.value + 1;
 
 		}
-		else if (module_var_node->children[3] != NULL)
+		//-----------------------------------------------------------------------------------
+		else if (module_var_node->children[5] == NULL)
+		{
+			char *module_name = make_full_ref_name(instance_name_prefix,
+				// module_name
+				module_instance->children[0]->types.identifier,
+				// instance name
+				module_instance->children[1]->children[0]->types.identifier,
+				NULL, -1);
+
+			ast_node_t *node1 = resolve_node(module_name, module_var_node->children[1]);
+			ast_node_t *node2 = resolve_node(module_name, module_var_node->children[2]);
+			ast_node_t *node3 = resolve_node(module_name, module_var_node->children[3]);
+			ast_node_t *node4 = resolve_node(module_name, module_var_node->children[4]);
+			free(module_name);
+			oassert(node2->type == NUMBERS && node1->type == NUMBERS && node3->type == NUMBERS && node4->type == NUMBERS);
+			/* assume all arrays declared [largest:smallest] */
+			oassert(node2->types.number.value <= node1->types.number.value);
+			oassert(node4->types.number.value <= node3->types.number.value);
+			port_size = node1->types.number.value * node3->types.number.value - 1;
+
+		}
+
+		//-----------------------------------------------------------------------------------
+		else if (module_var_node->children[5] != NULL)
 		{
 			/* Implicit memory */
 			printf("Unhandled implicit memory in connect_module_instantiation_and_alias\n");
@@ -2912,6 +3004,11 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 			error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
 							"Invalid addressing mode for implicit memory %s.\n", right_memory->name);
 
+		if(right->children[2] != NULL)
+		{
+			convert_multi_to_single_dimentional_array(right);
+		}
+		
 		signal_list_t* address = netlist_expand_ast_of_module(right->children[1], instance_name_prefix);
 		// Pad/shrink the address to the depth of the memory.
 		{
@@ -2991,6 +3088,11 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 		}
 		else
 		{
+			if(left->children[2] != NULL)
+			{
+				convert_multi_to_single_dimentional_array(left);
+			}
+			
 			// Make sure the memory is addressed.
 			signal_list_t* address = netlist_expand_ast_of_module(left->children[1], instance_name_prefix);
 
@@ -5527,5 +5629,66 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 		add_list = insert_in_vptr_list(add_list, block_node);
 
 	return return_list;
+}
+void convert_multi_to_single_dimentional_array(ast_node_t *node)
+{
+	long array_row = 0;
+	long array_column = 0;
+	char number[1024] = {0};
+	long array_index = 0;
+	long sc_spot = 0;
+	char *temp_string = NULL;
+	long array_size = 0;
+
+	temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[0]->types.identifier, -1);
+	sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+	array_size = local_symbol_table[sc_spot]->types.variable.initial_value;
+
+
+	if ((node->children[1]->type == NUMBERS) && (node->children[2]->type == NUMBERS))
+	{
+		array_row = node->children[1]->types.number.value;	
+		array_column = node->children[2]->types.number.value;
+		array_index = array_row * array_size + array_column;
+		sprintf(number, "%ld", array_index);
+		change_to_number_node(node->children[1],number);
+		
+	}
+	else if ((node->children[1]->type == NUMBERS) && (node->children[2]->type == IDENTIFIERS))
+	{
+		array_row = node->children[1]->types.number.value;	
+		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[2]->types.identifier, -1);
+		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
+		array_index = array_row * array_size + array_column;
+		sprintf(number, "%ld", array_index);
+		change_to_number_node(node->children[1],number);
+
+	}
+	else if ((node->children[1]->type == IDENTIFIERS) && (node->children[2]->type == NUMBERS))
+	{
+		array_column = node->children[2]->types.number.value;	
+		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[1]->types.identifier, -1);
+		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+		array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
+		array_index = array_row * array_size + array_column;
+		sprintf(number, "%ld", array_index);
+		change_to_number_node(node->children[1],number);
+	}
+	else	
+	{
+		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[1]->types.identifier, -1);
+		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+		array_row = local_symbol_table[sc_spot]->types.variable.initial_value;
+		
+		temp_string = make_full_ref_name(NULL, NULL, NULL, node->children[2]->types.identifier, -1);
+		sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
+		array_column = local_symbol_table[sc_spot]->types.variable.initial_value;
+		array_index = array_row * array_size + array_column;
+		
+		sprintf(number, "%ld", array_index);
+		change_to_number_node(node->children[1],number);
+	}
+	return;
 }
 #endif
