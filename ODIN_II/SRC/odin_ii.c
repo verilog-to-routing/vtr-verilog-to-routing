@@ -36,7 +36,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "parse_making_ast.h"
 #include "netlist_create_from_ast.h"
 #include "ast_util.h"
-#include "netlist_optimizations.h"
 #include "read_xml_config_file.h"
 #include "read_xml_arch_file.h"
 #include "partial_map.h"
@@ -61,7 +60,7 @@ global_args_t global_args;
 t_type_descriptor* type_descriptors;
 int block_tag;
 
-void set_default_options();
+void set_default_config();
 void get_options(int argc, char **argv);
 void print_usage();
 
@@ -80,7 +79,7 @@ int main(int argc, char **argv)
 	printf("Email: jamieson.peter@gmail.com and ken@unb.ca for support issues\n\n");
 
 	/* Set up the global arguments to their default. */
-	set_default_options();
+	set_default_config();
 	
 	/* get the command line options */
 	get_options(argc, argv);
@@ -143,7 +142,6 @@ int main(int argc, char **argv)
 	
 			/* point for all netlist optimizations. */
 			printf("Performing Optimizations of the Netlist\n");
-			netlist_optimizations_top(verilog_netlist);
 			/* Perform a splitting of the multipliers for hard block mults */
 		    reduce_operations(verilog_netlist, MULTIPLY);
 			iterate_multipliers(verilog_netlist);
@@ -180,7 +178,7 @@ int main(int argc, char **argv)
 		/* point for outputs.  This includes soft and hard mapping all structures to the
 		 * target format.  Some of these could be considred optimizations */
 		printf("Outputting the netlist to the specified output format\n");
-		output_top(verilog_netlist);
+		output_blif(global_args.output_file, verilog_netlist);
 	
 		elaboration_time = wall_time() - elaboration_time;
 	
