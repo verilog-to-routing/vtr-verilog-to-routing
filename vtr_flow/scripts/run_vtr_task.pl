@@ -383,13 +383,13 @@ sub run_single_task {
             my $sdc_name = fileparse( $circuit, '\.[^.]+$' ) . ".sdc";
             my $sdc = "$sdc_dir/$sdc_name";
             if( -r $sdc) {
-                $command .= " -sdc_file $sdc";
+                $command .= " --sdc_file $sdc";
             }
 
             #Add a hint about the minimum channel width (potentially saves run-time)
             my $expected_min_W = ret_expected_min_W($circuit, $arch, $golden_results_file);
             if($expected_min_W > 0) {
-                $command .= " -min_route_chan_width_hint $expected_min_W";
+                $command .= " --min_route_chan_width_hint $expected_min_W";
             }
 
             #Estimate runtime

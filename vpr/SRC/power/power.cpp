@@ -1683,25 +1683,12 @@ static void power_print_breakdown_pb_rec(FILE * fp, t_pb_type * pb_type,
 }
 
 static void power_print_summary(FILE * fp, const t_vpr_setup& vpr_setup) {
-	char * arch;
-	char * arch_new;
     auto& power_ctx = g_vpr_ctx.power();
     auto& device_ctx = g_vpr_ctx.device();
 
-	/* Extract filename from full path */
-	arch = vpr_setup.FileNameOpts.ArchFile;
-
-	arch_new = strrchr(vpr_setup.FileNameOpts.ArchFile, '/');
-	if (arch_new)
-		arch = arch_new + 1;
-
-	arch_new = strrchr(vpr_setup.FileNameOpts.ArchFile, '\\');
-	if (arch_new)
-		arch = arch_new + 1;
-
 	fprintf(power_ctx.output->out, "Circuit: %s\n",
-			vpr_setup.FileNameOpts.CircuitName);
-	fprintf(power_ctx.output->out, "Architecture: %s\n", arch);
+			vpr_setup.FileNameOpts.CircuitName.c_str());
+	fprintf(power_ctx.output->out, "Architecture: %s\n", vtr::basename(vpr_setup.FileNameOpts.ArchFile).c_str());
 	fprintf(fp, "Technology (nm): %.0f\n",
 			power_ctx.tech->tech_size * CONVERT_NM_PER_M);
 	fprintf(fp, "Voltage: %.2f\n", power_ctx.tech->Vdd);

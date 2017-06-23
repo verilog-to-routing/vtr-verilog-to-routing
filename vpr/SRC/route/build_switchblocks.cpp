@@ -128,10 +128,10 @@ that formulas are evaluated in 'parse_switchblocks.c'):
 #include <cstring>
 #include <algorithm>
 #include <iterator>
-#include <malloc.h>
 #include <iostream>
 
 #include "vtr_assert.h"
+#include "vtr_memory.h"
 
 #include "vpr_error.h"
 
@@ -364,7 +364,7 @@ void free_switchblock_permutations(t_sb_connection_map *sb_conns){
 	   calling malloc_trim forces the program to give unused heap space back to the OS. 
 	   this significantly reduces memory usage during the routing stage when running multiple 
 	   large benchmark circuits in parallel. */
-	malloc_trim(0);
+    vtr::malloc_trim(0);
 	return;
 }
 

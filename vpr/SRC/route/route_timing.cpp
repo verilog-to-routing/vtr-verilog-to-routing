@@ -20,7 +20,7 @@
 #include "path_delay.h"
 #include "net_delay.h"
 #include "stats.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "draw.h"
 #include "routing_success_predictor.h"
 
@@ -1354,10 +1354,10 @@ static bool early_exit_heuristic(const WirelengthInfo& wirelength_info) {
 // incremental rerouting resources class definitions
 Connection_based_routing_resources::Connection_based_routing_resources() : 
 	current_inet (NO_PREVIOUS), 	// not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
-	last_stable_critical_path_delay {0.0},
-	critical_path_growth_tolerance {1.001},
-	connection_criticality_tolerance {0.9},
-	connection_delay_optimality_tolerance {1.1}	{	
+	last_stable_critical_path_delay {0.0f},
+	critical_path_growth_tolerance {1.001f},
+	connection_criticality_tolerance {0.9f},
+	connection_delay_optimality_tolerance {1.1f}	{	
 
 	/* Initialize the persistent data structures for incremental rerouting
 	 * this includes rr_sink_node_to_pin, which provides pin lookup given a

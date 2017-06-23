@@ -13,6 +13,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cinttypes>
 using namespace std;
 
 #include "vtr_util.h"
@@ -442,9 +443,9 @@ static void free_pb_graph(t_pb_graph_node *pb_graph_node) {
 						pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs);
 			}
 
-			if (pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins)
+			if (pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins)
 				vtr::free(
-						pb_graph_node->output_pins[i][j].num_connectable_primtive_input_pins);
+						pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins);
 		}
 		vtr::free(pb_graph_node->output_pins[i]);
 	}
@@ -496,7 +497,7 @@ static void free_pb_graph(t_pb_graph_node *pb_graph_node) {
 		cur = edges_head;
 		cur_num = num_edges_head;
 		edges = (t_pb_graph_edge*) cur->data_vptr;
-		for (i = 0; i < (long) cur_num->data_vptr; i++) {
+		for (i = 0; i < (intptr_t) cur_num->data_vptr; i++) {
 			vtr::free(edges[i].input_pins);
 			vtr::free(edges[i].output_pins);
 			if (edges[i].pack_pattern_indices) {
@@ -886,7 +887,7 @@ static void alloc_and_load_complete_interc_edges(
 	cur = (vtr::t_linked_vptr*) vtr::malloc(sizeof(vtr::t_linked_vptr));
 	cur->next = num_edges_head;
 	num_edges_head = cur;
-	cur->data_vptr = (void *) ((long) in_count * out_count);
+	cur->data_vptr = (void *) ((intptr_t) in_count * out_count);
 
 	for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
 		for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
@@ -974,7 +975,7 @@ static void alloc_and_load_direct_interc_edges(
 	cur = (vtr::t_linked_vptr*) vtr::malloc(sizeof(vtr::t_linked_vptr));
 	cur->next = num_edges_head;
 	num_edges_head = cur;
-	cur->data_vptr = (void *) ((long) num_input_ptrs[0]);
+	cur->data_vptr = (void *) ((intptr_t) num_input_ptrs[0]);
 
 	/* Reallocate memory for pins and load connections between pins and record these updates in the edges */
 	for (i = 0; i < num_input_ptrs[0]; i++) {
@@ -1036,7 +1037,7 @@ static void alloc_and_load_mux_interc_edges(t_interconnect * interconnect,
 	cur = (vtr::t_linked_vptr*) vtr::malloc(sizeof(vtr::t_linked_vptr));
 	cur->next = num_edges_head;
 	num_edges_head = cur;
-	cur->data_vptr = (void *) ((long) num_input_sets);
+	cur->data_vptr = (void *) ((intptr_t) num_input_sets);
 
 	for (i_inset = 0; i_inset < num_input_sets; i_inset++) {
 		for (i_inpin = 0; i_inpin < num_input_ptrs[i_inset]; i_inpin++) {
@@ -1416,7 +1417,6 @@ static t_pb_graph_pin * get_pb_graph_pin_from_name(const char * port_name,
 
 static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) {
 
-	//int num_sides = 2 * (type->width + type->height);
 	int num_sides = 4 * (type->width * type->height);
 	int side_index = 0;
 	int count = 0;
@@ -1426,19 +1426,6 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 		for (int side = 0; side < 4; ++side) {
 			for (int width = 0; width < type->width; ++width) {
 				for (int height = 0; height < type->height; ++height) {
-/*
-					if (side == TOP && height != type->height - 1) {
-						continue;
-					}
-					if (side == RIGHT && width != type->width - 1) {
-						continue;
-					}
-					if (side == BOTTOM && height != 0) {
-						continue;
-					}
-					if (side == LEFT && width != 0) {
-						continue;
-					}*/
 					for (int pin_offset = 0; pin_offset < (type->num_pins / num_sides ) + 1; ++pin_offset) {
 						int pin_num = side_index + pin_offset * num_sides;
 						if (pin_num < type->num_pins) {
@@ -1461,12 +1448,6 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 			for (int height = 0; height < type->height; ++height) {
 				for (int side = 0; side < 4; ++side) {
 
-					if (side == TOP && height != type->height - 1) {
-						continue;
-					}
-					if (side == BOTTOM && height != 0) {
-						continue;
-					}
 					for (int pin = 0; pin < type->num_pin_loc_assignments[width][height][side]; ++pin) {
 
 						int *num_pb_graph_node_pins = 0; /* number of pins in a set [0..num_sets-1] */
@@ -1600,8 +1581,8 @@ static void echo_pb_pins(t_pb_graph_pin **pb_graph_pins, const int num_ports,
 					for (k = 0; k < pb_graph_pins[i][j].parent_node->pb_type->depth; k++) {
 						print_tabs(fp, level + 2);
 						fprintf(fp, "connectable input pins within depth %d: %d\n",
-								k, pb_graph_pins[i][j].num_connectable_primtive_input_pins[k]);
-						for (m = 0; m < pb_graph_pins[i][j].num_connectable_primtive_input_pins[k]; m++) {
+								k, pb_graph_pins[i][j].num_connectable_primitive_input_pins[k]);
+						for (m = 0; m < pb_graph_pins[i][j].num_connectable_primitive_input_pins[k]; m++) {
 							print_tabs(fp, level + 3);
 							fprintf(fp, "pb_graph_node %s[%d].%s[%d] \n",
 									pb_graph_pins[i][j].list_of_connectable_input_pin_ptrs[k][m]->parent_node->pb_type->name,

@@ -8,8 +8,8 @@
  * Overview
  * ========
  * The netlist logically consists of several different components: Blocks, Ports, Pins and Nets
- * Each componenet in the netlist has a unique identifer (AtomBlockId, AtomPortId, AtomPinId, AtomNetId) 
- * used to retireve information about it. In this implementation these ID's are unique throughout the 
+ * Each component in the netlist has a unique identifier (AtomBlockId, AtomPortId, AtomPinId, AtomNetId) 
+ * used to retrieve information about it. In this implementation these ID's are unique throughout the 
  * netlist (i.e. every port in the netlist has a unique ID, even if the ports share a common type).
  *
  * Block
@@ -80,7 +80,7 @@
  *      }
  *  
  * Note that the member functions are associated with the type of componenet (e.g. block_name() yields
- * the name of a block, net_name() yeilds the name of a net).
+ * the name of a block, net_name() yields the name of a net).
  *
  * Tracing cross-references
  * ------------------------
@@ -169,12 +169,12 @@
  *          }
  *      }
  *
- * Here we used the block_input_ports() method which returned an iterable range of all the import ports
+ * Here we used the block_input_ports() method which returned an iterable range of all the input ports
  * associated with blk_id. We then used the port_pins() method to get iterable ranges of all the pins
- * associated with each port, from which we can find the assoicated net.
+ * associated with each port, from which we can find the associated net.
  *
- * Often port information is not relevant so this can be further simplified by iterating over a blocks pins
- * directly (e.g. by calling one of the block_*_pins() funcionts):
+ * Often port information is not relevant so this can be further simplified by iterating over a block's pins
+ * directly (e.g. by calling one of the block_*_pins() functions):
  *
  *      AtomBlkId blk_id;
  *
@@ -250,7 +250,7 @@
  *      AtomPortId blk2_in = netlist.create_port(blk2, "A");
  *      netlist.create_pin(blk2_in, 0, net1, AtomPinType::SINK);
  *
- *      //Create block 2 and hook it up to net1
+ *      //Create block 3 and hook it up to net1
  *      AtomBlockId blk3 = netlist.create_block("block_3", blk_model);
  *      AtomPortId blk3_in = netlist.create_port(blk3, "A");
  *      netlist.create_pin(blk3_in, 0, net1, AtomPinType::SINK);
@@ -283,7 +283,7 @@
  *
  * Verifying the netlist
  * ---------------------
- * Particuarliy after construction and/or modification it is a good idea to check that the netlist is in 
+ * Particularly after construction and/or modification it is a good idea to check that the netlist is in 
  * a valid and consistent state. This can be done with the verify() member function:
  *
  *      netlist.verify()
@@ -334,11 +334,11 @@
  * information. The ID is internally converted to an index to retrieve the required value from it's associated storage.
  *
  * By using nearly-opaque IDs we can change the underlying data layout as need to optimize performance/memory, without
- * distrupting client code.
+ * disrupting client code.
  *
  * Strings
  * -------
- * To minimize memory usage, we store each unqiue string only once in the netlist and give it a unique ID (AtomStringId).
+ * To minimize memory usage, we store each unique string only once in the netlist and give it a unique ID (AtomStringId).
  * Any references to this string then make use of the AtomStringId. 
  *
  * In particular this prevents the (potentially large) strings from begin duplicated multiple times in various look-ups,
@@ -349,7 +349,7 @@
  *
  * Block pins/Block ports data layout
  * ----------------------------------
- * The pins/ports for each block are stored in a similar manner, for bervity we describe only pins here.
+ * The pins/ports for each block are stored in a similar manner, for brevity we describe only pins here.
  *
  * The pins for each block (i.e. AtomPinId's) are stored in a single vector for each block (the block_pins_ member).
  * This allows us to iterate over all pins (i.e. block_pins()), or specific subsets of pins (e.g. only inputs with 
@@ -373,7 +373,7 @@
  *      output pins: [opin_begin, clock_pin_begin)
  *      clock pins : [clock_pin_begin, end)
  *
- * Since any reallocation would invalidate any iterators to these internal dividers, we seperately store the number
+ * Since any reallocation would invalidate any iterators to these internal dividers, we separately store the number
  * of input/output/clock pins per block (i.e. in block_num_input_pins_, block_num_output_pins_ and 
  * block_num_clock_pins_). The internal dividers can then be easily calculated (e.g. see block_output_pins()), even 
  * if new pins are inserted (provided the counts are updated).
@@ -400,7 +400,7 @@
 
 #include "atom_netlist_fwd.h"
 
-//Forward delcaration for private methods
+//Forward declaration for private methods
 template<typename I>
 class IdMap;
 
@@ -447,7 +447,7 @@ class AtomNetlist {
         //Returns the model associated with the block
         const t_model*      block_model         (const AtomBlockId id) const;
 
-        //Returns true if the block is purley combinational (i.e. no input clocks
+        //Returns true if the block is purely combinational (i.e. no input clocks
         //and not a primary input
         bool                block_is_combinational    (const AtomBlockId id) const;
 
@@ -590,13 +590,13 @@ class AtomNetlist {
         //  name: The name of the block
         AtomBlockId find_block  (const std::string& name) const;
 
-        //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVAILD() if not
+        //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
         //Note that this method is typically more efficient than searching by name
         //  blk_id: The ID of the block who's ports will be checked
         //  model_port: The port model to look for
         AtomPortId  find_port   (const AtomBlockId blk_id, const t_model_ports* model_port) const;
 
-        //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVAILD() if not
+        //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
         //Note that this method is typically less efficient than searching by a t_model_port
         //  blk_id: The ID of the block who's ports will be checked
         //  name  : The name of the port to look for
@@ -716,15 +716,15 @@ class AtomNetlist {
         /*
          * Lookups
          */
-        //Returns the AtomStringId of the specifed string if it exists or AtomStringId::INVAILD() if not
+        //Returns the AtomStringId of the specifed string if it exists or AtomStringId::INVALID() if not
         //  str : The string to look for
         AtomStringId find_string(const std::string& str) const;
 
-        //Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVAILD() if not
+        //Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVALID() if not
         //  name_id : The block name to look for
         AtomBlockId find_block(const AtomStringId name_id) const;
 
-        //Returns the AtomNetId of the specifed port if it exists or AtomNetId::INVAILD() if not
+        //Returns the AtomNetId of the specifed port if it exists or AtomNetId::INVALID() if not
         //  name_id: The string ID of the net name to look for
         AtomNetId find_net(const AtomStringId name_id) const;
 

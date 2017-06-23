@@ -101,7 +101,7 @@ The assoicated clock port must have ``is_clock="1"`` specified to indicate it is
       </model>
 
 The physical timing delays are specified on any ``pb_type`` instances of the model.
-In the exmaple below the setup-time of the input is specified as 66ps, while the clock-to-q delay of the output is set to 124ps.
+In the example below the setup-time of the input is specified as 66ps, while the clock-to-q delay of the output is set to 124ps.
 
 .. code-block:: xml
 
@@ -146,7 +146,7 @@ However the output port (``out``) is a combinational output, connected internall
 
 
 In the ``pb_type`` we define the external setup time of the input registers (50ps) as we did for :ref:`dff_timing_modeling`.
-However, also specify the following additional timing information:
+However, we also specify the following additional timing information:
 
  * The internal clock-to-q delay of the input registers (200ps)
  * The combinational delay from the input registers to the ``out`` port (800ps)

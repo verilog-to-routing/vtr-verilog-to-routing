@@ -61,7 +61,7 @@ using namespace std;
 #include "path_delay.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "cluster_router.h"
 #include "lb_type_rr_graph.h"
 
@@ -288,7 +288,7 @@ static void load_transitive_fanout_candidates(int cluster_index,
 											  t_lb_net_stats *clb_inter_blk_nets);
 
 /*****************************************/
-/*globally accessable function*/
+/*globally accessible function*/
 void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		int num_models, bool global_clocks, 
         const std::unordered_set<AtomNetId>& is_clock,
@@ -413,7 +413,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	VTR_ASSERT(max_cluster_size < MAX_SHORT);
 	/* Limit maximum number of elements for each cluster */
-
 
 	if (timing_driven) {
 
@@ -2572,7 +2571,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *p
 					check_pb = check_pb->parent_pb;
 				}
 				if (check_pb != NULL) {
-					for (int i = 0; skip == false && i < output_pb_graph_pin->num_connectable_primtive_input_pins[depth]; i++) {
+					for (int i = 0; skip == false && i < output_pb_graph_pin->num_connectable_primitive_input_pins[depth]; i++) {
 						if (pb_graph_pin == output_pb_graph_pin->list_of_connectable_input_pin_ptrs[depth][i]) {
 							skip = true;
 						}
@@ -2605,7 +2604,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin *p
 			bool net_exits_cluster = true;
             int num_net_sinks = static_cast<int>(atom_ctx.nlist.net_sinks(net_id).size());
 
-			if (pb_graph_pin->num_connectable_primtive_input_pins[depth] >= num_net_sinks) {
+			if (pb_graph_pin->num_connectable_primitive_input_pins[depth] >= num_net_sinks) {
                 //It is possible the net is completely absorbed in the cluster,
                 //since this pin could (potentially) drive all the net's sinks
 
@@ -2674,7 +2673,7 @@ int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const i
     }
 
     //Count how many sink pins are reachable
-    for(int i_prim_pin = 0; i_prim_pin < driver_pb_gpin->num_connectable_primtive_input_pins[depth]; ++i_prim_pin) {
+    for(int i_prim_pin = 0; i_prim_pin < driver_pb_gpin->num_connectable_primitive_input_pins[depth]; ++i_prim_pin) {
         const t_pb_graph_pin* reachable_pb_gpin = driver_pb_gpin->list_of_connectable_input_pin_ptrs[depth][i_prim_pin];
 
         if(sink_pb_gpins.count(reachable_pb_gpin)) {

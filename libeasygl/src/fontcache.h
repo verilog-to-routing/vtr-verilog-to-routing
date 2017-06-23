@@ -34,7 +34,7 @@
 
 #ifdef WIN32
 #include <windows.h>
-#include <WindowsX.h>
+#include <windowsx.h>
 #endif
 
 /**

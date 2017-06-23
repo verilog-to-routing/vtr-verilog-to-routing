@@ -24,7 +24,7 @@ enum {
     RR_GRAPH_WARN_CHAN_WIDTH_CHANGED = 0x02
 };
 
-void build_rr_graph(
+void create_rr_graph(
         const t_graph_type graph_type, const int L_num_types,
         const t_type_ptr types, const int L_nx, const int L_ny,
         const vtr::Matrix<t_grid_tile>& L_grid,
@@ -39,12 +39,12 @@ void build_rr_graph(
         const bool trim_empty_channels,
         const bool trim_obs_channels,
         const t_direct_inf *directs, const int num_directs,
-        const bool ignore_Fc_0, const char *dump_rr_structs_file,
+        const char* dump_rr_structs_file,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
         int *Warnings,
-        const char* write_rr_graph_name,
-        const char* read_rr_graph_name, bool for_placement);
+        const std::string write_rr_graph_name,
+        const std::string read_rr_graph_name);
 
 void free_rr_graph(void);
 

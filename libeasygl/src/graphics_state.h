@@ -40,7 +40,7 @@
 
 #if defined(WIN32) || defined(CYGWIN)
 #include <windows.h>
-#include <WindowsX.h>
+#include <windowsx.h>
 #endif
 
 #define BUFSIZE 1000

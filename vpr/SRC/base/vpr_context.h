@@ -183,7 +183,7 @@ struct PowerContext : public Context {
 //State relating to clustering
 //
 //This should contain only data structures that describe the current 
-//clustring/packing, or related clusterer/packer algorithmic state.
+//clustering/packing, or related clusterer/packer algorithmic state.
 struct ClusteringContext : public Context {
     /********************************************************************
      CLB Netlist
@@ -194,9 +194,6 @@ struct ClusteringContext : public Context {
 
     /* External-to-complex blocks, post-packed netlist [NETS ONLY]*/
     t_netlist clbs_nlist;
-
-    //SHA256 digest of the .net file (used for unique identification and consistency checking)
-    std::string clustering_id; 
 };
 
 

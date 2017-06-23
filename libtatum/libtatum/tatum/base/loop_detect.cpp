@@ -1,4 +1,5 @@
 #include <stack>
+#include <algorithm>
 
 #include "tatum/TimingGraph.hpp"
 #include "tatum/base/loop_detect.hpp"

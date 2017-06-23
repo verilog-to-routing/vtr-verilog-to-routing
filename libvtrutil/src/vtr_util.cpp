@@ -14,7 +14,7 @@
 namespace vtr {
 
 
-char *out_file_prefix = NULL; /* used by fopen */
+std::string out_file_prefix; /* used by fopen */
 static int file_line_number = 0; /* file in line number being parsed (used by fgets) */
 static int cont; /* line continued? (used by strtok)*/
 
@@ -59,6 +59,22 @@ std::vector<std::string> split(const std::string& text, const std::string delims
         tokens.push_back(curr_tok);
     } 
     return tokens;
+}
+
+//Splits off the name and extension (including ".") of the specified filename
+std::array<std::string,2> split_ext(const std::string& filename) {
+    std::array<std::string,2> name_ext;
+    auto pos = filename.find_last_of('.');
+
+    if (pos == std::string::npos) {
+        //No extension
+        pos = filename.size();
+    }
+
+    name_ext[0] = std::string(filename, 0, pos);
+    name_ext[1] = std::string(filename, pos, filename.size() - pos);
+
+    return name_ext;
 }
 
 std::string replace_first(const std::string& input, const std::string& search, const std::string& replace) {
@@ -267,13 +283,13 @@ FILE* fopen(const char *fname, const char *flag) {
     file_line_number = 0;
 
     /* Appends a prefix string for output files */
-    if (out_file_prefix) {
+    if (!out_file_prefix.empty()) {
         if (std::strchr(flag, 'w')) {
             Len = 1; /* NULL char */
-            Len += std::strlen(out_file_prefix);
+            Len += std::strlen(out_file_prefix.c_str());
             Len += std::strlen(fname);
             new_fname = (char *) vtr::malloc(Len * sizeof(char));
-            strcpy(new_fname, out_file_prefix);
+            strcpy(new_fname, out_file_prefix.c_str());
             strcat(new_fname, fname);
             fname = new_fname;
         }

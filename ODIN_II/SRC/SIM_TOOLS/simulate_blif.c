@@ -26,6 +26,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 #include <string>
 #include <sstream>
+#include <chrono>
+
+#ifndef _WIN32
+#include <dlfcn.h>
+#endif
 
 #ifndef max
 #define max(a,b) (((a) > (b))? (a) : (b))
@@ -1548,6 +1553,7 @@ void compute_hard_ip_node(nnode_t *node, int cycle)
 	oassert(node->input_port_sizes[0] > 0);
 	oassert(node->output_port_sizes[0] > 0);
 
+#ifndef _WIN32
 	int *input_pins = (int *)vtr::malloc(sizeof(int)*node->num_input_pins);
 	int *output_pins = (int *)vtr::malloc(sizeof(int)*node->num_output_pins);
 
@@ -1594,6 +1600,10 @@ void compute_hard_ip_node(nnode_t *node, int cycle)
 
 	vtr::free(input_pins);
 	vtr::free(output_pins);
+#else
+    //Not supported
+    oassert(false);
+#endif
 }
 
 /*
@@ -3690,9 +3700,12 @@ nnode_t *print_update_trace(nnode_t *bottom_node, int cycle)
  */
 double wall_time()
 {
-	struct timeval tv;
-	gettimeofday(&tv, 0);
-	return (1000000*tv.tv_sec+tv.tv_usec)/1.0e6;
+    typedef std::chrono::system_clock Time;
+    typedef std::chrono::duration<double> dsec;
+    auto time_point = Time::now();
+    dsec time_since_epoch = time_point.time_since_epoch();
+
+    return time_since_epoch.count();
 }
 
 /*

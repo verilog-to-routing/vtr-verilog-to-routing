@@ -34,6 +34,7 @@ extern "C" {
 #include <string.h>
 #include <assert.h>
 #include <time.h>
+#include <stdint.h>
 
 #include "cuddInt.h"
 #include "hop.h"
@@ -354,10 +355,10 @@ static inline Abc_Obj_t * Abc_NtkAssert( Abc_Ntk_t * pNtk, int i )   { return (A
 static inline Abc_Obj_t * Abc_NtkBox( Abc_Ntk_t * pNtk, int i )      { return (Abc_Obj_t *)Vec_PtrEntry( pNtk->vBoxes, i );  }
 
 // working with complemented attributes of objects
-static inline bool        Abc_ObjIsComplement( Abc_Obj_t * p )       { return (bool)((unsigned long)p & (unsigned long)01);             }
-static inline Abc_Obj_t * Abc_ObjRegular( Abc_Obj_t * p )            { return (Abc_Obj_t *)((unsigned long)p & ~(unsigned long)01);     }
-static inline Abc_Obj_t * Abc_ObjNot( Abc_Obj_t * p )                { return (Abc_Obj_t *)((unsigned long)p ^  (unsigned long)01);     }
-static inline Abc_Obj_t * Abc_ObjNotCond( Abc_Obj_t * p, int c )     { return (Abc_Obj_t *)((unsigned long)p ^  (unsigned long)(c!=0)); }
+static inline bool        Abc_ObjIsComplement( Abc_Obj_t * p )       { return (bool)((uintptr_t)p & (uintptr_t)01);             }
+static inline Abc_Obj_t * Abc_ObjRegular( Abc_Obj_t * p )            { return (Abc_Obj_t *)((uintptr_t)p & ~(uintptr_t)01);     }
+static inline Abc_Obj_t * Abc_ObjNot( Abc_Obj_t * p )                { return (Abc_Obj_t *)((uintptr_t)p ^  (uintptr_t)01);     }
+static inline Abc_Obj_t * Abc_ObjNotCond( Abc_Obj_t * p, int c )     { return (Abc_Obj_t *)((uintptr_t)p ^  (uintptr_t)(c!=0)); }
 
 // reading data members of the object
 static inline unsigned    Abc_ObjType( Abc_Obj_t * pObj )            { return pObj->Type;               }

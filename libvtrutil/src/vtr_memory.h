@@ -26,6 +26,9 @@ namespace vtr {
     void* chunk_malloc(size_t size, t_chunk *chunk_info);
     void free_chunk_memory(t_chunk *chunk_info);
 
+    //Cross platform wrapper around GNU's malloc_trim()
+    // TODO: This is only used in one place within VPR, consider removing it
+    int malloc_trim(size_t pad);
 }
 
 #endif

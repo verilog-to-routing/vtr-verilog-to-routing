@@ -25,6 +25,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "read_xml_arch_file.h"
 #include "simulate_blif.h"
+#include "argparse_value.hpp"
+
+#include <stdlib.h>
 
 #ifndef TRUE
 #define TRUE 1
@@ -84,7 +87,8 @@ typedef struct chain_information_t_t chain_information_t;
 #define ACTIVATION 13
 
 //#define oassert(x) {if(!(x)){exit(-1);}} // causes an interrupt in GDB
-#define oassert(x) {if(!(x)){__asm("int3");}} // causes an interrupt in GDB
+//#define oassert(x) {if(!(x)){__asm("int3");}} // causes an interrupt in GDB
+#define oassert(x) {if(!(x)){std::abort();}} // causes an interrupt in GDB
 // bitvector library (PETER_LIB) defines it, so we don't
 
 /* This is the data structure that holds config file details */
@@ -138,42 +142,45 @@ typedef enum {
 /* the global arguments of the software */
 struct global_args_t_t
 {
-	char *config_file;
-	char *verilog_file;
-	char *blif_file;
-	char *output_file;
-	char *arch_file; // Name of the FPGA architecture file
-	char *activation_blif_file;
-	char *activation_netlist_file;
-	char *high_level_block;
+    argparse::ArgValue<char*> config_file;
+	argparse::ArgValue<char*> verilog_file;
+	argparse::ArgValue<char*> blif_file;
+	argparse::ArgValue<char*> output_file;
+	argparse::ArgValue<char*> arch_file; // Name of the FPGA architecture file
 
-	int all_warnings;
+	argparse::ArgValue<char*> high_level_block; //Legacy option, no longer used
+
+    argparse::ArgValue<bool> write_netlist_as_dot;
+    argparse::ArgValue<bool> write_ast_as_dot;
+    argparse::ArgValue<bool> all_warnings;
+    argparse::ArgValue<bool> show_help;
 
 	/////////////////////
 	// For simulation.
 	/////////////////////
 	// Generate this number of random vectors.
-	int sim_num_test_vectors;
+	argparse::ArgValue<int> sim_num_test_vectors;
 	// Input vectors to simulate instead of generating vectors.
-	char *sim_vector_input_file;
+	argparse::ArgValue<char*> sim_vector_input_file;
 	// Existing output vectors to verify against.
-	char *sim_vector_output_file;
+	argparse::ArgValue<char*> sim_vector_output_file;
 	// Tells the simulator whether or not to generate random vectors which include the unknown logic value.
-	int sim_generate_three_valued_logic;
+	argparse::ArgValue<bool> sim_generate_three_valued_logic;
 	// Output both falling and rising edges in the output_vectors file.
-	int sim_output_both_edges;
+	argparse::ArgValue<bool> sim_output_both_edges;
 	// Output only on rising edge.
-	int sim_output_rising_edge;
+	argparse::ArgValue<bool> sim_output_rising_edge;
 	// Additional pins, nets, and nodes to output.
-	char *sim_additional_pins;
+	argparse::ArgValue<char*> sim_additional_pins;
 	// Comma-separated list of primary input pins to hold high for all cycles but the first.
-	char *sim_hold_high;
+	argparse::ArgValue<char*> sim_hold_high;
 	// Comma-separated list of primary input pins to hold low for all cycles but the first.
-	char *sim_hold_low;
+	argparse::ArgValue<char*> sim_hold_low;
+
 	//
-	int sim_initial_value;
+	argparse::ArgValue<int> sim_initial_value;
 	// The seed for creating random simulation vector
-	int sim_random_seed;
+    argparse::ArgValue<int> sim_random_seed;
 };
 
 #endif // TYPES_H

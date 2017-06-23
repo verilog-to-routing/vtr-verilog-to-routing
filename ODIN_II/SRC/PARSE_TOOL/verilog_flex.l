@@ -41,6 +41,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 %option nounput
 %option noinput
 %option never-interactive
+%option nounistd
 
 %%
 

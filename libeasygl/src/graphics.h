@@ -18,11 +18,6 @@
 #endif // !WIN32
 #endif // !NO_GRAPHICS
 
-#ifdef X11
-#include <X11/keysym.h>  // Defines non-ASCII keypresses like XK_left
-                         // Look in (/usr/include/) X11/keysymdef.h for the code names.
-#endif
-
 #define PI 3.141592654
 
 /************** ESSENTIAL FUNCTIONS: SET UP AND CLOSE DOWN ******************/
@@ -315,9 +310,7 @@ void drawtextleftaligned(float xc, float yc, const std::string& text, float boun
 void drawtextrightaligned(float xc, float yc, const std::string& text, float boundx = FLT_MAX, float boundy = FLT_MAX);	// <Addition/Mod: Charles>
 void drawtext(const t_point& text_center, const std::string& text, float boundx=FLT_MAX, float boundy=FLT_MAX);
 void drawtext(const t_point& text_center, const std::string& text, const t_bound_box& bounds);
-void drawtext(
-        const t_point& text_center, const std::string& text, const t_bound_box& bounds, float tolerance);
-
+void drawtext(const t_point& text_center, const std::string& text, const t_bound_box& bounds, float tolerance);
 void drawtext_in(const t_bound_box& bbox, const std::string& text);
 void drawtext_in(const t_bound_box& bbox, const std::string& text, float tolerance);
 

@@ -34,6 +34,7 @@ extern "C" {
 #include <string.h>
 #include <assert.h>
 #include <time.h>
+#include <stdint.h>
 
 #include "vec.h"
 
@@ -122,10 +123,10 @@ static inline int          Hop_InfoHasBit( unsigned * p, int i )  { return (p[(i
 static inline void         Hop_InfoSetBit( unsigned * p, int i )  { p[(i)>>5] |= (1<<((i) & 31));                   }
 static inline void         Hop_InfoXorBit( unsigned * p, int i )  { p[(i)>>5] ^= (1<<((i) & 31));                   }
 
-static inline Hop_Obj_t *  Hop_Regular( Hop_Obj_t * p )           { return (Hop_Obj_t *)((unsigned long)(p) & ~01);      }
-static inline Hop_Obj_t *  Hop_Not( Hop_Obj_t * p )               { return (Hop_Obj_t *)((unsigned long)(p) ^  01);      }
-static inline Hop_Obj_t *  Hop_NotCond( Hop_Obj_t * p, int c )    { return (Hop_Obj_t *)((unsigned long)(p) ^ (c));      }
-static inline int          Hop_IsComplement( Hop_Obj_t * p )      { return (int )(((unsigned long)p) & 01);              }
+static inline Hop_Obj_t *  Hop_Regular( Hop_Obj_t * p )           { return (Hop_Obj_t *)((uintptr_t)(p) & ~01);      }
+static inline Hop_Obj_t *  Hop_Not( Hop_Obj_t * p )               { return (Hop_Obj_t *)((uintptr_t)(p) ^  01);      }
+static inline Hop_Obj_t *  Hop_NotCond( Hop_Obj_t * p, int c )    { return (Hop_Obj_t *)((uintptr_t)(p) ^ (c));      }
+static inline int          Hop_IsComplement( Hop_Obj_t * p )      { return (int )(((uintptr_t)p) & 01);              }
 
 static inline Hop_Obj_t *  Hop_ManConst0( Hop_Man_t * p )         { return Hop_Not(p->pConst1);                     }
 static inline Hop_Obj_t *  Hop_ManConst1( Hop_Man_t * p )         { return p->pConst1;                              }

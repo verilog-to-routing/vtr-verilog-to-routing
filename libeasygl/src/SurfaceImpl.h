@@ -3,9 +3,13 @@
 
 #include <memory>
 
-#ifndef NO_GRAPHICS
-#include <cairo.h>
-#include <cairo-xlib.h>
+#if !defined(NO_GRAPHICS) && !defined(WIN32)
+# define USE_CAIRO_SURFACE
+#endif
+
+#ifdef USE_CAIRO_SURFACE 
+# include <cairo.h>
+# include <cairo-xlib.h>
 #else
 //Graphics disabled, may not have access to cairo headers so define a dummy type
 typedef void cairo_surface_t;

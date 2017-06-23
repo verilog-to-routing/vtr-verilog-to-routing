@@ -73,7 +73,7 @@ void write_rr_channel(fstream &fp) {
     fp << "\t</channels>" << endl;
 }
 
-/* All relevent rr node info is written out to the graph. 
+/* All relevant rr node info is written out to the graph. 
  * This includes location, timing, and segment info*/
 void write_rr_node(fstream &fp) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -90,12 +90,9 @@ void write_rr_node(fstream &fp) {
                 "\" ptc=\"" << node.ptc_num() << "\"/>" << endl;
         fp << "\t\t\t<timing R=\"" << setprecision(30)<< node.R() 
                 << "\" C=\"" << setprecision(30)<<node.C() << "\"/>" << endl;
-        fp << "\t\t\t<segment cost_index=\"" << node.cost_index();
-
+        
         if (device_ctx.rr_indexed_data[node.cost_index()].seg_index != -1) {
-            fp << "\" segment_id=\"" << device_ctx.rr_indexed_data[node.cost_index()].seg_index << "\"/>" << endl;
-        } else {
-            fp << "\"/>" << endl;
+            fp << "\t\t\t<segment segment_id=\"" << device_ctx.rr_indexed_data[node.cost_index()].seg_index << "\"/>" << endl;
         }
 
         fp << "\t\t</node>" << endl;
@@ -181,6 +178,7 @@ void write_rr_block_types(fstream &fp) {
                     pin_type = "INPUT"; //receiver
                     break;
                 default:
+                    pin_type = "NONE";
                     break;
             }
 

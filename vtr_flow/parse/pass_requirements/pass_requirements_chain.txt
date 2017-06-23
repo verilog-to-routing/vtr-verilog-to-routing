@@ -1,11 +1,11 @@
-vpr_status;String
+vpr_status;Equal
 min_chan_width;Range;0.80;1.30
 critical_path_delay;Range;0.80;1.40
 routed_wirelength;Range;0.60;1.50
-pack_time;Range;0.10;10.0
-place_time;Range;0.10;10.0
-min_chan_width_route_time;Range;0.10;10.0
-crit_path_route_time;Range;0.10;10.0
+pack_time;RangeAbs;0.10;10.0;2
+place_time;RangeAbs;0.10;10.0;2
+min_chan_width_route_time;RangeAbs;0.10;10.0;2
+crit_path_route_time;RangeAbs;0.10;10.0;2
 num_pre_packed_nets;Range;0.95;1.05
 num_pre_packed_blocks;Range;0.95;1.05
 num_post_packed_nets;Range;0.80;1.20
@@ -19,4 +19,4 @@ num_add_blocks;Range;0.9;1.10
 max_add_chain_length;Range;0.9;1.10
 num_sub_blocks;Range;0.9;1.10
 max_sub_chain_length;Range;0.9;1.10
-error;String
+error;Equal

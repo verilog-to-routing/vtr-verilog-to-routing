@@ -25,7 +25,7 @@ using namespace std;
 #include "timing_place.h"
 #include "place_stats.h"
 #include "read_xml_arch_file.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "vpr_utils.h"
 #include "place_macro.h"
 #include "histogram.h"
@@ -215,7 +215,7 @@ static void initial_placement_location(int * free_locations, int iblk,
 		int *pipos, int *px, int *py, int *pz);
 
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
-		char *pad_loc_file);
+		const char *pad_loc_file);
 
 static float comp_bb_cost(enum cost_methods method);
 
@@ -350,9 +350,6 @@ void try_place(t_placer_opts placer_opts,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    place_ctx.block_locs.clear();
-    place_ctx.block_locs.resize(cluster_ctx.num_blocks);
-
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
 
@@ -376,6 +373,11 @@ void try_place(t_placer_opts placer_opts,
 #endif
 	}
 
+    //We are careful to resize the block_locs after building the delta-delay 
+    // lookups (since they change the block locations)
+    place_ctx.block_locs.clear();
+    place_ctx.block_locs.resize(cluster_ctx.num_blocks);
+
 	width_fac = placer_opts.place_chan_width;
 
 	init_chan(width_fac, chan_width_dist);
@@ -383,7 +385,7 @@ void try_place(t_placer_opts placer_opts,
 	alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts,
 			directs, num_directs);
 
-	initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file);
+	initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file.c_str());
 	init_draw_coords((float) width_fac);
 
 
@@ -391,7 +393,7 @@ void try_place(t_placer_opts placer_opts,
 
 	/* Gets initial cost and loads bounding boxes. */
 
-	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE || placer_opts.enable_timing_computations) {
 		bb_cost = comp_bb_cost(NORMAL);
 
 		crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
@@ -779,6 +781,7 @@ void try_place(t_placer_opts placer_opts,
 			|| placer_opts.enable_timing_computations) {
 
         //Final timing estimate
+        VTR_ASSERT(timing_info);
         timing_info->update(); //Tatum
 		critical_path = timing_info->least_slack_critical_path();
 
@@ -2944,7 +2947,7 @@ static void initial_placement_location(int * free_locations, int iblk,
 }
 
 static void initial_placement(enum e_pad_loc_type pad_loc_type,
-		char *pad_loc_file) {
+		const char *pad_loc_file) {
 
 	/* Randomly places the blocks to create an initial placement. We rely on
 	 * the legal_pos array already being loaded.  That legal_pos[itype] is an 

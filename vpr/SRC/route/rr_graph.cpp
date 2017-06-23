@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include <ctime>
 #include <algorithm>
 #include <vector>
 #include "vtr_assert.h"
@@ -26,7 +27,7 @@ using namespace std;
 #include "rr_graph_indexed_data.h"
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "dump_rr_structs.h"
 #include "cb_metrics.h"
 #include "build_switchblocks.h"
@@ -195,10 +196,6 @@ void alloc_and_load_edges_and_switches(
         const int num_edges, bool * L_rr_edge_done,
         t_linked_edge * edge_list_head);
 
-//static void alloc_net_rr_terminals(void);
-
-//static void alloc_and_load_rr_clb_source(vtr::t_ivec *** L_rr_node_indices);
-
 static t_clb_to_clb_directs *alloc_and_load_clb_to_clb_directs(const t_direct_inf *directs, const int num_directs,
         const int delayless_switch);
 
@@ -216,11 +213,9 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
         const int num_seg_types, const int *sets_per_seg_type,
         const int max_chan_width, const e_fc_type fc_type,
         const enum e_directionality directionality,
-        bool *Fc_clipped, const bool ignore_Fc_0);
+        bool *Fc_clipped);
 
-/******************* Subroutine definitions *******************************/
-
-void build_rr_graph(
+static void build_rr_graph(
         const t_graph_type graph_type, const int L_num_types,
         const t_type_ptr types, const int L_nx, const int L_ny,
         const vtr::Matrix<t_grid_tile>& L_grid,
@@ -235,20 +230,72 @@ void build_rr_graph(
         const bool trim_empty_channels,
         const bool trim_obs_channels,
         const t_direct_inf *directs, const int num_directs,
-        const bool ignore_Fc_0, const char *dump_rr_structs_file,
+        const char* dump_rr_structs_file,
+        int *wire_to_rr_ipin_switch,
+        int *num_rr_switches,
+        int *Warnings);
+
+/******************* Subroutine definitions *******************************/
+
+void create_rr_graph(
+        const t_graph_type graph_type, const int L_num_types,
+        const t_type_ptr types, const int L_nx, const int L_ny,
+        const vtr::Matrix<t_grid_tile>& L_grid,
+        t_chan_width *nodes_per_chan,
+        const enum e_switch_block_type sb_type, const int Fs,
+        const vector<t_switchblock_inf> switchblocks,
+        const int num_seg_types, const int num_arch_switches,
+        const t_segment_inf * segment_inf,
+        const int global_route_switch, const int delayless_switch,
+        const int wire_to_arch_ipin_switch,
+        const enum e_base_cost_type base_cost_type,
+        const bool trim_empty_channels,
+        const bool trim_obs_channels,
+        const t_direct_inf *directs, const int num_directs,
+        const char* dump_rr_structs_file,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
         int *Warnings,
-        const char* write_rr_graph_name,
-        const char* read_rr_graph_name, bool for_placement) {
+        const std::string write_rr_graph_name,
+        const std::string read_rr_graph_name) {
 
-    if (read_rr_graph_name && !for_placement) {
+    if (!read_rr_graph_name.empty()) {
         load_rr_file(graph_type, L_nx, L_ny,
                 nodes_per_chan, num_seg_types, segment_inf, base_cost_type,
-                wire_to_rr_ipin_switch, num_rr_switches, write_rr_graph_name,
-                read_rr_graph_name);
-        return;
+                wire_to_rr_ipin_switch, num_rr_switches,
+                read_rr_graph_name.c_str());
+    } else {
+        build_rr_graph(graph_type, L_num_types, types, L_nx, L_ny, L_grid, nodes_per_chan, sb_type, Fs, switchblocks,
+                num_seg_types, num_arch_switches, segment_inf, global_route_switch, delayless_switch, wire_to_arch_ipin_switch,
+                base_cost_type, trim_empty_channels, trim_obs_channels, directs, num_directs,
+                dump_rr_structs_file, wire_to_rr_ipin_switch, num_rr_switches, Warnings);
     }
+    //Write out rr graph file if needed
+    if (!write_rr_graph_name.empty()) {
+        write_rr_graph(write_rr_graph_name.c_str(), segment_inf, num_seg_types);
+    }
+
+}
+
+static void build_rr_graph(
+        const t_graph_type graph_type, const int L_num_types,
+        const t_type_ptr types, const int L_nx, const int L_ny,
+        const vtr::Matrix<t_grid_tile>& L_grid,
+        t_chan_width *nodes_per_chan,
+        const enum e_switch_block_type sb_type, const int Fs,
+        const vector<t_switchblock_inf> switchblocks,
+        const int num_seg_types, const int num_arch_switches,
+        const t_segment_inf * segment_inf,
+        const int global_route_switch, const int delayless_switch,
+        const int wire_to_arch_ipin_switch,
+        const enum e_base_cost_type base_cost_type,
+        const bool trim_empty_channels,
+        const bool trim_obs_channels,
+        const t_direct_inf *directs, const int num_directs,
+        const char* dump_rr_structs_file,
+        int *wire_to_rr_ipin_switch,
+        int *num_rr_switches,
+        int *Warnings) {
 
     vtr::printf_info("Starting build routing resource graph...\n");
     clock_t begin = clock();
@@ -347,13 +394,13 @@ void build_rr_graph(
     } else {
         bool Fc_clipped = false;
         Fc_in = alloc_and_load_actual_fc(L_num_types, types, max_pins, num_seg_types, sets_per_seg_type, max_chan_width,
-                e_fc_type::IN, directionality, &Fc_clipped, ignore_Fc_0);
+                e_fc_type::IN, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
         Fc_clipped = false;
         Fc_out = alloc_and_load_actual_fc(L_num_types, types, max_pins, num_seg_types, sets_per_seg_type, max_chan_width,
-                e_fc_type::OUT, directionality, &Fc_clipped, ignore_Fc_0);
+                e_fc_type::OUT, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
@@ -509,10 +556,6 @@ void build_rr_graph(
     /* dump out rr structs if requested */
     if (dump_rr_structs_file) {
         dump_rr_structs(dump_rr_structs_file);
-    }
-
-    if (write_rr_graph_name) {
-        write_rr_graph(write_rr_graph_name, segment_inf, num_seg_types);
     }
 
 #ifdef USE_MAP_LOOKAHEAD
@@ -842,7 +885,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
         const int num_seg_types, const int *sets_per_seg_type,
         const int max_chan_width, const e_fc_type fc_type,
         const enum e_directionality directionality,
-        bool *Fc_clipped, const bool ignore_Fc_0) {
+        bool *Fc_clipped) {
 
     //Initialize Fc of all blocks to zero
     auto zeros = vtr::Matrix<int>({size_t(max_pins), size_t(num_seg_types)}, 0);
@@ -865,7 +908,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
 
             int iseg = fc_spec.seg_index;
 
-            if (fc_spec.fc_value == 0 && ignore_Fc_0 == false) {
+            if (fc_spec.fc_value == 0) {
                 /* Special case indicating that this pin does not connect to general-purpose routing */
                 for (int ipin : fc_spec.pins) {
                     Fc[itype][ipin][iseg] = 0;
@@ -1334,7 +1377,6 @@ static void build_rr_sinks_sources(const int i, const int j,
             L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
             L_rr_node[inode].set_type(OPIN);
         }
-        //init_fan_in(i, j, L_rr_node, L_rr_node_indices, L_grid);
         /* Common to both DRIVERs and RECEIVERs */
         L_rr_node[inode].set_capacity(1);
         L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);

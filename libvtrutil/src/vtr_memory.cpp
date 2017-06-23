@@ -6,11 +6,7 @@
 #include "vtr_memory.h"
 #include "vtr_error.h"
 #include "vtr_util.h"
-
-/*----------------------------------------------------------------------------------
- *	TODO great candidate for Garbage collector Boehm sweep would make things easier
- *	for untrained people, especially in c
- *--------------------------------------------------------------------------------*/
+#include "malloc.h"
 
 namespace vtr {
 	
@@ -159,5 +155,15 @@ void free_chunk_memory(t_chunk *chunk_info) {
 	chunk_info->mem_avail = 0;
 	chunk_info->next_mem_loc_ptr = NULL;
 }
+
+#ifdef _WIN32
+int malloc_trim(size_t /*pad*/) {
+    return 0;
+}
+#else
+int malloc_trim(size_t pad) {
+    return ::malloc_trim(pad);
+}
+#endif
 
 } //namespace

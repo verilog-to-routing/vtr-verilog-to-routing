@@ -7,6 +7,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 using namespace std;
 
 #include "pugixml.hpp"
@@ -77,7 +78,7 @@ static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId at
  * block_list - array of blocks in netlist [0..L_num_blocks - 1]
  * t_netlist - Net realted information
  */
-void read_netlist(const char *net_file, const t_arch* arch,
+void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_digests,
 		int *L_num_blocks, t_block *block_list[],
 		t_netlist* clb_nlist) {
 	clock_t begin = clock();
@@ -144,11 +145,14 @@ void read_netlist(const char *net_file, const t_arch* arch,
             //to remain compatible with old .net files
             std::string arch_id = architecture_id.value();
             if (arch_id != arch->architecture_id) {
-                //TODO: make this configurable as warning or error
-                vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top),
-                        "Netlist was generated from a different architecture file (loaded architecture ID: %s, netlist file architecture ID: %s)",
-                        arch->architecture_id,
-                        arch_id.c_str());
+                auto msg = vtr::string_fmt("Netlist was generated from a different architecture file"
+                                           " (loaded architecture ID: %s, netlist file architecture ID: %s)",
+                                           arch->architecture_id, arch_id.c_str());
+                if (verify_file_digests) {
+                    vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top), msg.c_str());
+                } else {
+                    vtr::printf_warning(netlist_file_name, loc_data.line(top), "%s\n", msg.c_str());
+                }
             }
         }
 
@@ -161,11 +165,14 @@ void read_netlist(const char *net_file, const t_arch* arch,
             //to remain compatible with old .net files
             std::string atom_nl_id = atom_netlist_id.value();
             if (atom_nl_id != atom_ctx.nlist.netlist_id()) {
-                //TODO: make this configurable as warning or error
-                vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top),
-                        "Netlist was generated from a different atom netlist file (loaded atom netlist ID: %s, packed netlist atom netlist ID: %s)",
-                        atom_nl_id.c_str(),
-                        atom_ctx.nlist.netlist_id().c_str());
+                auto msg = vtr::string_fmt("Netlist was generated from a different atom netlist file"
+                                           " (loaded atom netlist ID: %s, packed netlist atom netlist ID: %s)",
+                                           atom_nl_id.c_str(), atom_ctx.nlist.netlist_id().c_str());
+                if (verify_file_digests) {
+                    vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top), msg.c_str());
+                } else {
+                    vtr::printf_warning(netlist_file_name, loc_data.line(top), "%s\n", msg.c_str());
+                }
             }
         }
 

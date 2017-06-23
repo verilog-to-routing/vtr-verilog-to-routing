@@ -28,7 +28,7 @@ static bool add_activity_to_net(const AtomNetlist& netlist, std::unordered_map<A
 	return true;
 }
 
-std::unordered_map<AtomNetId,t_net_power> read_activity(const AtomNetlist& netlist, char * activity_file) {
+std::unordered_map<AtomNetId,t_net_power> read_activity(const AtomNetlist& netlist, const char * activity_file) {
 	char buf[vtr::bufsize];
 	char * ptr;
 	char * word1;

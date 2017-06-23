@@ -28,13 +28,13 @@
 
 #include "physical_types.h"
 #include "vpr_types.h"
-#include "ReadOptions.h"
-#include "OptionTokens.h"
+#include "read_options.h"
 #include "globals.h"
 #include "read_xml_arch_file.h"
 #include "vpr_utils.h"
 #include "place_macro.h"
 #include "timing_info_fwd.h"
+#include "echo_files.h"
 
 #include "vpr_error.h"
 
@@ -45,15 +45,12 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch);
 void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& arch);
-void vpr_free_vpr_data_structures(t_arch& Arch, const t_options& options,
-		t_vpr_setup& vpr_setup);
-void vpr_free_all(t_arch& Arch, const t_options& options,
-		t_vpr_setup& vpr_setup);
+void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
+void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup);
 
 /* Display general info to user */
 void vpr_print_title(void);
 void vpr_print_args(int argc, const char** argv);
-void vpr_print_usage(void);
 
 /****************************************************************************************************
  * Advanced functions
@@ -78,15 +75,16 @@ void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
 		bool * ShowGraphics, int *GraphPause,
 		t_power_opts * PowerOpts);
 /* Check inputs are reasonable */
-void vpr_check_options(const t_options& Options, const bool TimingEnabled);
 void vpr_check_arch(const t_arch& Arch);
 /* Verify settings don't conflict or otherwise not make sense */
-void vpr_check_setup(const t_placer_opts PlacerOpts,
+void vpr_check_setup(
+        const t_packer_opts PackerOpts,
+        const t_placer_opts PlacerOpts,
 		const t_router_opts RouterOpts,
 		const t_det_routing_arch RoutingArch, const t_segment_inf * Segments,
 		const t_timing_inf Timing, const t_chan_width_dist Chans);
 /* Show current setup */
-void vpr_show_setup(const t_options& options, const t_vpr_setup& vpr_setup);
+void vpr_show_setup(const t_vpr_setup& vpr_setup);
 void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info);
 
 /* Output file names management */
