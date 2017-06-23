@@ -400,11 +400,13 @@
 
 #include "atom_netlist_fwd.h"
 
+#include "base_netlist.h"
+
 //Forward declaration for private methods
 template<typename I>
 class IdMap;
 
-class AtomNetlist {
+class AtomNetlist : public BaseNetlist {
     public: //Public types
         typedef vtr::vector_map<AtomBlockId,AtomBlockId>::const_iterator block_iterator;
         typedef vtr::vector_map<AtomPortId,AtomPortId>::const_iterator port_iterator;
@@ -417,24 +419,14 @@ class AtomNetlist {
         typedef vtr::Range<port_iterator> port_range;
         typedef vtr::Range<pin_iterator> pin_range;
         typedef vtr::Range<net_iterator> net_range;
-    public:
 
+    public:
         //Constructs a netlist
         // name: the name of the netlist (e.g. top-level module)
         // id:   a unique identifier for the netlist (e.g. a secure digest of the input file)
         AtomNetlist(std::string name="", std::string id="");
 
     public: //Public Accessors
-        /*
-         * Netlist
-         */
-        //Retrieve the name of the netlist
-        const std::string&  netlist_name() const;
-
-        //Retrieve the unique identifier for this netlist
-        //This is typically a secure digest of the input file.
-        const std::string&  netlist_id() const;
-
         /*
          * Blocks
          */
@@ -716,15 +708,15 @@ class AtomNetlist {
         /*
          * Lookups
          */
-        //Returns the AtomStringId of the specifed string if it exists or AtomStringId::INVAILD() if not
+        //Returns the AtomStringId of the specifed string if it exists or AtomStringId::INVALID() if not
         //  str : The string to look for
         AtomStringId find_string(const std::string& str) const;
 
-        //Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVAILD() if not
+        //Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVALID() if not
         //  name_id : The block name to look for
         AtomBlockId find_block(const AtomStringId name_id) const;
 
-        //Returns the AtomNetId of the specifed port if it exists or AtomNetId::INVAILD() if not
+        //Returns the AtomNetId of the specifed port if it exists or AtomNetId::INVALID() if not
         //  name_id: The string ID of the net name to look for
         AtomNetId find_net(const AtomStringId name_id) const;
 
@@ -842,8 +834,8 @@ class AtomNetlist {
     private: //Private data
 
         //Netlist data
-        std::string                 netlist_name_;  //Name of the top-level netlist
-        std::string                 netlist_id_;    //Unique identifier for the netlist
+//        std::string                 netlist_name_;  //Name of the top-level netlist
+//        std::string                 netlist_id_;    //Unique identifier for the netlist
         bool                        dirty_;         //Indicates the netlist has invalid entries from remove_*() functions
 
         //Block data
