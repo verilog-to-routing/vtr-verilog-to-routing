@@ -716,15 +716,15 @@ class AtomNetlist {
         /*
          * Lookups
          */
-        //Returns the AtomStringId of the specifed string if it exists or AtomStringId::INVAILD() if not
+        //Returns the AtomStringId of the specifed string if it exists or AtomStringId::INVALID() if not
         //  str : The string to look for
         AtomStringId find_string(const std::string& str) const;
 
-        //Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVAILD() if not
+        //Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVALID() if not
         //  name_id : The block name to look for
         AtomBlockId find_block(const AtomStringId name_id) const;
 
-        //Returns the AtomNetId of the specifed port if it exists or AtomNetId::INVAILD() if not
+        //Returns the AtomNetId of the specifed port if it exists or AtomNetId::INVALID() if not
         //  name_id: The string ID of the net name to look for
         AtomNetId find_net(const AtomStringId name_id) const;
 
