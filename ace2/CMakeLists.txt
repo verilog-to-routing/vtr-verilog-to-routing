@@ -15,11 +15,14 @@ target_link_libraries(ace
 
 #ACE includes some ABC headers which cause warnings - we suppress them here
 set(ACE_SUPPRESS_FLAGS 
-        -Wno-pointer-to-int-cast 
-        -Wno-int-to-pointer-cast )
-foreach(flag ${WARN_FLAGS_TO_CHECK})
-    CHECK_CXX_COMPILER_FLAG(${flag} COMPILER_SUPPORTS_${flag})
-    if(COMPILER_SUPPORTS_${flag})
+        -Wno-pointer-to-int-cast
+        -Wno-int-to-pointer-cast
+        )
+
+include(CheckCCompilerFlag)
+foreach(flag ${ACE_SUPPRESS_FLAGS})
+    CHECK_C_COMPILER_FLAG(${flag} C_COMPILER_SUPPORTS_${flag})
+    if(C_COMPILER_SUPPORTS_${flag})
         target_compile_options(ace PRIVATE ${flag})
     endif()
 endforeach()
