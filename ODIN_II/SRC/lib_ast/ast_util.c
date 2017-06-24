@@ -39,7 +39,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 
 char **get_name_of_pins_number(ast_node_t *var_node, int start, int width);
-
+void update_tree_tag(ast_node_t *node, int cases, int tagged);
 
 // HIGH LEVEL AST TAG
 	static int high_level_id;
