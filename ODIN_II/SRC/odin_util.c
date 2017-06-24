@@ -680,11 +680,10 @@ void reverse_string(char *string, int length)
  * (function: to_bit)
  *-------------------------------------------------------------------------------------------*/ 
 short get_bit(char in){
-	if(in == 48 || in == 49){
+	if(in == 48 || in == 49)
 		return (short)in-48;
-	}else{
-		fprintf(stderr,"not a valid bit\n");
-	}
+	fprintf(stderr,"not a valid bit\n");
+    return -1;
 }
 
 
