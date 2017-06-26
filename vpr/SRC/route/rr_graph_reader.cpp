@@ -19,6 +19,7 @@
 #include "vtr_math.h"
 #include "vtr_log.h"
 #include "rr_graph_writer.h"
+#include "check_rr_graph.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -166,6 +167,7 @@ void load_rr_file(const t_graph_type graph_type,
         load_net_rr_terminals(device_ctx.rr_node_indices);
         alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
 
+        check_rr_graph(graph_type, L_nx, L_ny, *num_rr_switches, device_ctx.block_types, segment_inf);
 
 #ifdef USE_MAP_LOOKAHEAD
         compute_router_lookahead(num_seg_types);
