@@ -721,10 +721,6 @@ class AtomNetlist : public BaseNetlist {
         /*
          * Mutators
          */
-        //Create or return the ID of the specified string
-        //  str: The string whose ID is requested
-        AtomStringId create_string(const std::string& str);
-
         //Updates net cross-references for the specified pin
         void associate_pin_with_net(const AtomPinId pin_id, const AtomPinType type, const AtomNetId net_id); 
 
@@ -805,7 +801,6 @@ class AtomNetlist : public BaseNetlist {
         bool validate_port_sizes() const;
         bool validate_pin_sizes() const;
         bool validate_net_sizes() const;
-        bool validate_string_sizes() const;
 
         //Verify that internal data structure cross-references are consistent
         bool verify_refs() const; //All cross-references
