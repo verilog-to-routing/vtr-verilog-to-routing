@@ -1,3 +1,10 @@
+/* 
+ * Summary
+ * =======
+ * This file defines the BaseNetlist class, which stores the connectivity information 
+ * of the components in a netlist. It is the base class for AtomNetlist and ClusteredNetlist.
+ *
+*/
 #ifndef BASE_NETLIST_H
 #define BASE_NETLIST_H
 
@@ -9,18 +16,10 @@
 
 #include "base_netlist_fwd.h"
 
-/* 
- * Summary
- * =======
- * This file defines the BaseNetlist class, which stores the connectivity information 
- * of the components in a netlist. It is the base class for AtomNetlist and ClusteredNetlist.
- *
-*/
 class BaseNetlist {
 	public: //Public Types
 		typedef vtr::vector_map<NetId, NetId>::const_iterator net_iterator;
 		typedef vtr::vector_map<PinId, PinId>::const_iterator pin_iterator;
-
 
 		typedef vtr::Range<net_iterator> net_range;
 		typedef vtr::Range<pin_iterator> pin_range;
@@ -33,6 +32,11 @@ class BaseNetlist {
 		//Create an empty, or return an existing net in the netlist
 		//  name    : The unique name of the net
 		NetId   create_net(const std::string name); //An empty or existing net
+
+		//Removes a net from the netlist. 
+        //This will mark the net's pins as having no associated.
+        //  net_id  : The net to be removed
+        void remove_net     (const NetId net_id);
 
 
 	public: //Public Accessors
@@ -49,12 +53,14 @@ class BaseNetlist {
 		//Item counts and container info (for debugging)
 		void print_stats() const;
 
+		
 		/*
 		* Nets
 		*/
 		//Returns the name of the specified net
 		const std::string&  net_name(const NetId id) const;
 
+		
 		/* 
 		* Aggregates
 		*/
@@ -63,6 +69,7 @@ class BaseNetlist {
 		//Returns a range consisting of all pins in the netlist
 		pin_range	pins() const;
 
+		
 		/*
 		* Lookups
 		*/
@@ -71,13 +78,13 @@ class BaseNetlist {
 		NetId   find_net(const std::string& name) const;
 
 
-	private: //Private Types
+	protected: //Protected Base Types
 		struct string_id_tag;
 
 		//A unique identifier for a string in the atom netlist
 		typedef vtr::StrongId<string_id_tag> StringId;
 
-	private: //Private Members
+	protected: //Protected Base Members
 		/*
 		 * Lookups
 		 */
@@ -89,6 +96,7 @@ class BaseNetlist {
         //  name_id: The string ID of the net name to look for
         NetId find_net(const StringId name_id) const;
 			 
+		
 		/*
          * Mutators
          */
@@ -96,6 +104,9 @@ class BaseNetlist {
         //  str: The string whose ID is requested
         StringId create_string(const std::string& str);
 
+
+		//Re-builds fast look-ups
+		void rebuild_lookups();
 
 		/*
 		* Sanity Checks
@@ -109,9 +120,10 @@ class BaseNetlist {
 		bool valid_net_id(NetId id) const;
 		bool valid_string_id(StringId id) const;
 
-	private: //Private Data
+	protected: //Protected Data
 		std::string netlist_name_;	//Name of the top-level netlist
 		std::string netlist_id_;	//Unique identifier for the netlist
+		bool dirty_;				//Indicates the netlist has invalid entries from remove_*() functions
 
 		//Net data
         vtr::vector_map<NetId,NetId>              net_ids_;   //Valid net ids
@@ -125,8 +137,8 @@ class BaseNetlist {
         vtr::vector_map<StringId,StringId>   string_ids_;    //Valid string ids
         vtr::vector_map<StringId,std::string>    strings_;       //Strings
 
-	private: //Fast lookups
-//        vtr::vector_map<StringId,BlockId>       block_name_to_block_id_;
+	protected: //Fast lookups
+        vtr::vector_map<StringId,BlockId>       block_name_to_block_id_;
         vtr::vector_map<StringId,NetId>         net_name_to_net_id_;
 		std::unordered_map<std::string, StringId>    string_to_string_id_;
 };

@@ -754,7 +754,7 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* mod
     VTR_ASSERT_MSG(!name.empty(), "Non-Empty block name");
 
     //Check if the block has already been created
-    AtomStringId name_id = create_string(name);
+    AtomStringId name_id = BaseNetlist::create_string(name);
     AtomBlockId blk_id = find_block(name_id);
 
     if(blk_id == AtomBlockId::INVALID()) {
@@ -801,7 +801,7 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const t_model_po
     VTR_ASSERT_MSG(valid_block_id(blk_id), "Valid block id");
 
     //See if the port already exists
-    AtomStringId name_id = create_string(model_port->name);
+    AtomStringId name_id = BaseNetlist::create_string(model_port->name);
     AtomPortId port_id = find_port(blk_id, model_port);
     if(!port_id) {
         //Not found, create it
@@ -887,7 +887,7 @@ AtomNetId AtomNetlist::create_net (const std::string name) {
     VTR_ASSERT_MSG(!name.empty(), "Valid net name");
 
     //Check if the net has already been created
-    AtomStringId name_id = create_string(name);
+    AtomStringId name_id = BaseNetlist::create_string(name);
     AtomNetId net_id = find_net(name_id);
     if(net_id == AtomNetId::INVALID()) {
         //Not found, create it
@@ -1441,10 +1441,7 @@ bool AtomNetlist::valid_net_id(AtomNetId id) const {
 }
 
 bool AtomNetlist::valid_string_id(AtomStringId id) const {
-    if(id == AtomStringId::INVALID()) return false;
-    else if(!string_ids_.contains(id)) return false;
-    else if(string_ids_[id] != id) return false;
-    return true;
+	return BaseNetlist::valid_string_id((BaseNetlist::StringId) id);
 }
 
 bool AtomNetlist::validate_block_sizes() const {
@@ -1707,17 +1704,7 @@ bool AtomNetlist::validate_string_refs() const {
  *
  */
 AtomNetlist::AtomStringId AtomNetlist::find_string (const std::string& str) const {
-    auto iter = string_to_string_id_.find(str);
-    if(iter != string_to_string_id_.end()) {
-        AtomStringId str_id = iter->second;
-
-        VTR_ASSERT(str_id);
-        VTR_ASSERT(strings_[str_id] == str);
-
-        return str_id;
-    } else {
-        return AtomStringId::INVALID();
-    }
+	return static_cast<AtomStringId>(BaseNetlist::find_string(str));
 }
 
 AtomBlockId AtomNetlist::find_block(const AtomStringId name_id) const {
@@ -1754,34 +1741,6 @@ AtomNetId AtomNetlist::find_net(const AtomStringId name_id) const {
     } else {
         return AtomNetId::INVALID();
     }
-}
-
-AtomNetlist::AtomStringId AtomNetlist::create_string (const std::string& str) {
-    AtomStringId str_id = find_string(str);
-    if(!str_id) {
-        //Not found, create
-
-        //Reserve an id
-        str_id = AtomStringId(string_ids_.size());
-        string_ids_.push_back(str_id);
-
-        //Store the reverse look-up
-        auto key = str;
-        string_to_string_id_[key] = str_id;
-
-        //Initialize the data
-        strings_.emplace_back(str);
-    }
-
-    //Check post-conditions: sizes
-    VTR_ASSERT(string_to_string_id_.size() == string_ids_.size());
-    VTR_ASSERT(strings_.size() == string_ids_.size());
-
-    //Check post-conditions: values
-    VTR_ASSERT(strings_[str_id] == str);
-    VTR_ASSERT_SAFE(find_string(str) == str_id);
-
-    return str_id;
 }
 
 void AtomNetlist::associate_pin_with_net(const AtomPinId pin_id, const AtomPinType type, const AtomNetId net_id) {

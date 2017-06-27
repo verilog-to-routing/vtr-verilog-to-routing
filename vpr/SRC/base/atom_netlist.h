@@ -699,10 +699,8 @@ class AtomNetlist : public BaseNetlist {
         void compress();
 
     private: //Private types
-        struct atom_string_id_tag;
-
         //A unique identifier for a string in the atom netlist
-        typedef vtr::StrongId<atom_string_id_tag> AtomStringId;
+        typedef vtr::StrongId<BaseNetlist::string_id_tag> AtomStringId;
 
     private: //Private members
         /*
@@ -872,13 +870,6 @@ class AtomNetlist : public BaseNetlist {
         vtr::vector_map<AtomNetId,AtomNetId>              net_ids_;   //Valid net ids
         vtr::vector_map<AtomNetId,AtomStringId>           net_names_; //Name of each net
         vtr::vector_map<AtomNetId,std::vector<AtomPinId>> net_pins_;  //Pins associated with each net
-
-        //String data
-        // We store each unique string once, and reference it by an StringId
-        // This avoids duplicating the strings in the fast look-ups (i.e. the look-ups
-        // only store the Ids)
-        vtr::vector_map<AtomStringId,AtomStringId>   string_ids_;    //Valid string ids
-        vtr::vector_map<AtomStringId,std::string>    strings_;       //Strings
 
     private: //Fast lookups
 
