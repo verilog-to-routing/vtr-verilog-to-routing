@@ -264,9 +264,9 @@ static void dump_rr_node_indices( fstream &file ){
 					continue;
 				}
 
-				vtr::t_ivec vec = device_ctx.rr_node_indices[rr_type][ix][iy];
+				std::vector<int> vec = device_ctx.rr_node_indices[rr_type][ix][iy];
 
-				if (vec.nelem == 0){
+				if (vec.empty()){
 					/* skip if vector not allocated */
 					continue;
 				}
@@ -280,9 +280,9 @@ static void dump_rr_node_indices( fstream &file ){
 
 				/* print the node corresponding to each ptc index at this type/location */
 				file << endl;
-				file << "  .nodes(" << vec.nelem << ")" << endl;
-				for (int inode = 0; inode < vec.nelem; inode++){
-					file << "   " << inode << ": " << vec.list[inode] << endl;
+				file << "  .nodes(" << vec.size() << ")" << endl;
+				for (unsigned inode = 0; inode < vec.size(); inode++){
+					file << "   " << inode << ": " << vec[inode] << endl;
 				}
 				file << "  .end nodes" << endl;
 			}
