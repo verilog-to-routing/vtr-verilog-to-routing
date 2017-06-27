@@ -46,9 +46,9 @@ constexpr int UNIMPLEMENTABLE_EXIT_CODE = 2; //Could not implement (e.g. unrouta
  * 4.  Clean up
  */
 int main(int argc, const char **argv) {
-	t_options Options;
-	t_arch Arch;
-	t_vpr_setup vpr_setup;
+	t_options Options = t_options();
+	t_arch Arch = t_arch();
+	t_vpr_setup vpr_setup = t_vpr_setup();
 	clock_t entire_flow_begin,entire_flow_end;
 
 	entire_flow_begin = clock();
@@ -102,7 +102,7 @@ int main(int argc, const char **argv) {
 				(float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 	
 		/* free data structures */
-		vpr_free_all(Arch, Options, vpr_setup);
+		vpr_free_all(Arch, vpr_setup);
 
 	} catch(const tatum::Error& tatum_error){
         vtr::printf_error(__FILE__, __LINE__, "STA Engine: %s\n", tatum_error.what());

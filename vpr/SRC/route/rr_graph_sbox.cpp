@@ -7,7 +7,7 @@
 #include "vpr_types.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_util.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 
 /* Switch box:                                                             *
  *                    TOP (CHANY)                                          *

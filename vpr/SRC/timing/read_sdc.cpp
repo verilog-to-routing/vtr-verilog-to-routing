@@ -20,7 +20,6 @@ using namespace std;
 #include "read_blif.h"
 #include "path_delay.h"
 #include "path_delay2.h"
-#include "ReadOptions.h"
 #include "slre.h"
 #include "sdcparse.hpp"
 
@@ -99,7 +98,7 @@ char ** netlist_clocks; /* [0..num_netlist_clocks - 1] array of names of clocks 
 int num_netlist_ios = 0; /* number of clocks in netlist */
 char ** netlist_ios; /* [0..num_netlist_clocks - 1] array of names of ios in netlist */
 
-static const char* sdc_file_name = "<default_SDC>.sdc"; /* Name of SDC file */
+static std::string sdc_file_name = "<default_SDC>.sdc"; /* Name of SDC file */
 
 /***************** Subroutines local to this module *************************/
 
@@ -237,9 +236,9 @@ void read_sdc(t_timing_inf timing_inf) {
 		return;
 	}
 	
-	if ((sdc = fopen(timing_inf.SDCFile, "r")) == NULL) {
+	if ((sdc = fopen(timing_inf.SDCFile.c_str(), "r")) == NULL) {
 		vtr::printf_info("\n");
-		vtr::printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
+		vtr::printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile.c_str());
 		use_default_timing_constraints();
 		return;
 	}
@@ -257,11 +256,11 @@ void read_sdc(t_timing_inf timing_inf) {
 
 	/* Parse the file line-by-line. */
     SdcCallback sdc_callback;
-    sdcparse::sdc_parse_file(sdc, sdc_callback, sdc_file_name);
+    sdcparse::sdc_parse_file(sdc, sdc_callback, sdc_file_name.c_str());
 
 	if (!sdc_callback.got_commands()) { /* blank file or only comments found */
 		vtr::printf_info("\n");
-		vtr::printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile);
+		vtr::printf_info("SDC file '%s' blank or not found.\n", timing_inf.SDCFile.c_str());
 		use_default_timing_constraints();
 		free(netlist_clocks);
 		free(netlist_ios);
@@ -271,7 +270,7 @@ void read_sdc(t_timing_inf timing_inf) {
 	/* Make sure that all virtual clocks referenced in timing_ctx.sdc->constrained_inputs and timing_ctx.sdc->constrained_outputs have been constrained. */
 	for (iinput = 0; iinput < timing_ctx.sdc->num_constrained_inputs; iinput++) {
 		if ((find_constrained_clock(timing_ctx.sdc->constrained_inputs[iinput].clock_name)) == -1) {
-			vpr_throw(VPR_ERROR_SDC, sdc_file_name, timing_ctx.sdc->constrained_inputs[iinput].file_line_number, 
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), timing_ctx.sdc->constrained_inputs[iinput].file_line_number, 
 					"Input %s is associated with an unconstrained clock %s.\n", 
 					timing_ctx.sdc->constrained_inputs[iinput].name, 
 					timing_ctx.sdc->constrained_inputs[iinput].clock_name);
@@ -280,7 +279,7 @@ void read_sdc(t_timing_inf timing_inf) {
 
 	for (ioutput = 0; ioutput < timing_ctx.sdc->num_constrained_outputs; ioutput++) {
 		if ((find_constrained_clock(timing_ctx.sdc->constrained_outputs[ioutput].clock_name)) == -1) {
-			vpr_throw(VPR_ERROR_SDC, sdc_file_name, timing_ctx.sdc->constrained_inputs[iinput].file_line_number,
+			vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), timing_ctx.sdc->constrained_inputs[iinput].file_line_number,
 					"Output %s is associated with an unconstrained clock %s.\n", 
 					timing_ctx.sdc->constrained_outputs[ioutput].name, 
 					timing_ctx.sdc->constrained_outputs[ioutput].clock_name);
@@ -291,14 +290,14 @@ void read_sdc(t_timing_inf timing_inf) {
 	for (icc = 0; icc < timing_ctx.sdc->num_cc_constraints; icc++) {
 		for (isource = 0; isource < timing_ctx.sdc->cc_constraints[icc].num_source; isource++) {
 			if ((find_constrained_clock(timing_ctx.sdc->cc_constraints[icc].source_list[isource])) == -1) {
-				vpr_throw(VPR_ERROR_SDC, sdc_file_name, timing_ctx.sdc->cc_constraints[icc].file_line_number,
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), timing_ctx.sdc->cc_constraints[icc].file_line_number,
 						"Token %s is not a constrained clock.\n", 
 						timing_ctx.sdc->cc_constraints[icc].source_list[isource]);
 			}
 		}
 		for (isink = 0; isink < timing_ctx.sdc->cc_constraints[icc].num_sink; isink++) {
 			if ((find_constrained_clock(timing_ctx.sdc->cc_constraints[icc].sink_list[isink])) == -1) {
-				vpr_throw(VPR_ERROR_SDC, sdc_file_name, timing_ctx.sdc->cc_constraints[icc].file_line_number, 
+				vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), timing_ctx.sdc->cc_constraints[icc].file_line_number, 
 						"Token %s is not a constrained clock.\n",
 						timing_ctx.sdc->cc_constraints[icc].sink_list[isink]);
 			}
@@ -336,7 +335,7 @@ void read_sdc(t_timing_inf timing_inf) {
 
 	vtr::printf_info("\n");
 	vtr::printf_info("SDC file '%s' parsed successfully.\n",
-			 timing_inf.SDCFile ); 
+			 timing_inf.SDCFile.c_str() ); 
 	vtr::printf_info("%d clocks (including virtual clocks), %d inputs and %d outputs were constrained.\n", 
 			 timing_ctx.sdc->num_constrained_clocks, timing_ctx.sdc->num_constrained_inputs, timing_ctx.sdc->num_constrained_outputs);
 	vtr::printf_info("\n");
@@ -413,7 +412,7 @@ static bool apply_create_clock(const sdcparse::CreateClock& sdc_create_clock, in
             }
 
             if (!found) {
-                vpr_throw(VPR_ERROR_SDC, sdc_file_name, lineno, 
+                vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), lineno, 
                         "Clock name or regular expression does not correspond to any nets.\n"
                         "If you'd like to create a virtual clock, use the '-name' keyword.\n");
                 return false;
@@ -460,7 +459,7 @@ static bool apply_set_clock_groups(const sdcparse::SetClockGroups& sdc_set_clock
             }
             if (!found) {
                 if(!is_valid_clock_name(clk_name)) {
-                    vpr_throw(VPR_ERROR_SDC, sdc_file_name, lineno, 
+                    vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), lineno, 
                             "Clock name '%s' does not match to any known clock.\n",
                             clk_name);
                 } else {
@@ -586,7 +585,7 @@ static bool apply_set_io_delay(const sdcparse::SetIoDelay& sdc_set_io_delay, int
 
     //Verify that the provided clock name is valid
     if(!is_valid_clock_name(clock_name)) {
-        vpr_throw(VPR_ERROR_SDC, sdc_file_name, lineno, 
+        vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), lineno, 
                 "Clock name '%s' does not match to any known clock.\n",
                 clock_name);
     }
@@ -643,7 +642,7 @@ static bool apply_set_io_delay(const sdcparse::SetIoDelay& sdc_set_io_delay, int
                 io_type = "Output";
             }
 
-            vpr_throw(VPR_ERROR_SDC, sdc_file_name, lineno, 
+            vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), lineno, 
                     "%s name or regular expression \"%s\" does not correspond to any nets.\n", io_type, port_group.strings[iport].c_str());
             return false;
         }
@@ -1164,7 +1163,7 @@ static bool regex_match (const char * string, const char * regular_expression) {
 	else if (strcmp(error, "No match") == 0) 
 		return false;
 	else {
-		vpr_throw(VPR_ERROR_SDC, sdc_file_name, vtr::get_file_line_number_of_last_opened_file(), 
+		vpr_throw(VPR_ERROR_SDC, sdc_file_name.c_str(), vtr::get_file_line_number_of_last_opened_file(), 
 				"Error matching regular expression \"%s\".\n", regular_expression);
 		return false;
 	}
@@ -1231,6 +1230,6 @@ static void free_clock_constraint(t_clock *& clock_array, int num_clocks) {
 }
 
 const char * get_sdc_file_name(){
-	return sdc_file_name;
+	return sdc_file_name.c_str();
 }
 

@@ -12,12 +12,9 @@
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 
-
-
 /**************************************************************************
 * Packing Algorithm Enumerations
 ***************************************************************************/
-
 
 /* Describes different types of intra-logic cluster_ctx.blocks routing resource nodes */
 enum e_lb_rr_type {

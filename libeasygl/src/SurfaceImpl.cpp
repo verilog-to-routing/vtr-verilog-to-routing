@@ -8,7 +8,7 @@ SurfaceImpl::SurfaceImpl(const char* filePath)
 }
 
 void SurfaceImpl::setSurface(
-#ifndef NO_GRAPHICS
+#ifdef USE_CAIRO_SURFACE
         const char* filePath
 #else
         const char* /*filePath*/
@@ -17,7 +17,7 @@ void SurfaceImpl::setSurface(
     //We load the surface via cairo, and specify the custom cairo deleter
     //std::shared_ptr handles reference counting will automaticly 
     //cleans-up the image data when there are no more references
-#ifndef NO_GRAPHICS
+#ifdef USE_CAIRO_SURFACE
     mSurface = std::shared_ptr<cairo_surface_t>(cairo_image_surface_create_from_png(filePath), cairo_surface_destroy);
     switch(cairo_surface_status(mSurface.get())) {
         case CAIRO_STATUS_SUCCESS:

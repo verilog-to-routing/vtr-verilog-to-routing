@@ -292,7 +292,7 @@ It is easiest to write a ``tb.do`` file to setup and configure the simulation:
 
 .. code-block:: tcl
     :linenos:
-    :caption: Modelsim do file ``tb.do``. Note that :term`$VTR_ROOT` should be replaced with the relevant path.
+    :caption: Modelsim do file ``tb.do``. Note that :term:`$VTR_ROOT` should be replaced with the relevant path.
     :emphasize-lines: 12-14,17,31
 
     #Enable command logging

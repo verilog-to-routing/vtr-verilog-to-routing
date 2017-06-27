@@ -13,6 +13,10 @@ archs_dir=arch/timing
 sdc_dir=sdc
 
 # Add circuits to list to sweep
+circuit_list_add=const_true.blif
+circuit_list_add=const_false.blif
+circuit_list_add=always_true.blif
+circuit_list_add=always_false.blif
 circuit_list_add=multiconnected_lut.blif
 circuit_list_add=multiconnected_lut2.blif
 
@@ -29,4 +33,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 #Script parameters
-script_params=-vpr_route_chan_width 100 -gen_postsynthesis_netlist -track_memory_usage -check_equivalent -sweep_dangling_primary_ios off -sweep_constant_primary_outputs off -starting_stage vpr
+script_params=-vpr_route_chan_width 100 -gen_post_synthesis_netlist -track_memory_usage -check_equivalent --sweep_dangling_primary_ios off --sweep_constant_primary_outputs off -starting_stage vpr

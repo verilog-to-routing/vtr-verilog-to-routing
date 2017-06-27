@@ -11,16 +11,20 @@ add_definitions(-DLIN)
 add_executable(ace ${EXEC_SOURCES} ${EXEC_HEADERS})
 target_link_libraries(ace
                         libabc
-                        m #C math library
-                        ${CMAKE_DL_LIBS}
-                        )
+                        ${CMAKE_DL_LIBS})
 
 #ACE includes some ABC headers which cause warnings - we suppress them here
-#TODO: check for flag support portably
 set(ACE_SUPPRESS_FLAGS 
-        -Wno-pointer-to-int-cast 
-        -Wno-int-to-pointer-cast 
+        -Wno-pointer-to-int-cast
+        -Wno-int-to-pointer-cast
         )
-target_compile_options(ace PRIVATE ${ACE_SUPPRESS_FLAGS})
+
+include(CheckCCompilerFlag)
+foreach(flag ${ACE_SUPPRESS_FLAGS})
+    CHECK_C_COMPILER_FLAG(${flag} C_COMPILER_SUPPORTS_${flag})
+    if(C_COMPILER_SUPPORTS_${flag})
+        target_compile_options(ace PRIVATE ${flag})
+    endif()
+endforeach()
 
 install(TARGETS ace DESTINATION bin)

@@ -73,7 +73,7 @@ void write_rr_channel(fstream &fp) {
     fp << "\t</channels>" << endl;
 }
 
-/* All relevent rr node info is written out to the graph. 
+/* All relevant rr node info is written out to the graph. 
  * This includes location, timing, and segment info*/
 void write_rr_node(fstream &fp) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -201,8 +201,8 @@ void write_rr_grid(fstream &fp) {
 
     fp << "\t<grid>" << endl;
 
-    for (int x = 0; x < device_ctx.nx + 1; x++) {
-        for (int y = 0; y < device_ctx.ny + 1; y++) {
+    for (int x = 0; x <= device_ctx.nx + 1; x++) {
+        for (int y = 0; y <= device_ctx.ny + 1; y++) {
             t_grid_tile grid_tile = device_ctx.grid[x][y];
 
             fp << "\t\t<grid_loc x=\"" << x << "\" y=\"" << y <<

@@ -7,6 +7,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 using namespace std;
 
 #include "pugixml.hpp"

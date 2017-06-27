@@ -54,14 +54,14 @@ include(CheckCXXCompilerFlag)
 #
 # We require c++11 support
 #
-CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14_FLAG)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11_FLAG)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X_FLAG)
+CHECK_CXX_COMPILER_FLAG("-std=c++14" CXX_COMPILER_SUPPORTS_CXX14_FLAG)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" CXX_COMPILER_SUPPORTS_CXX11_FLAG)
+CHECK_CXX_COMPILER_FLAG("-std=c++0x" CXX_COMPILER_SUPPORTS_CXX0X_FLAG)
 #if(COMPILER_SUPPORTS_CXX14_FLAG) #Don't default to C++14 yet
     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-if(COMPILER_SUPPORTS_CXX11_FLAG)
+if(CXX_COMPILER_SUPPORTS_CXX11_FLAG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X_FLAG)
+elseif(CXX_COMPILER_SUPPORTS_CXX0X_FLAG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 else()
     message(WARNING "Could not determine C++11 support for compiler ${CMAKE_CXX_COMPILER}. C++11 support is required.")
@@ -108,8 +108,8 @@ set(WARN_FLAGS_TO_CHECK  #The flags to check if the compiler supports
 #Check and see if the compiler supports the various warning flags,
 #and add valid flags
 foreach(flag ${WARN_FLAGS_TO_CHECK})
-    CHECK_CXX_COMPILER_FLAG(${flag} COMPILER_SUPPORTS_${flag})
-    if(COMPILER_SUPPORTS_${flag})
+    CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
+    if(CXX_COMPILER_SUPPORTS_${flag})
         #Flag supported, so enable it
         set(WARN_FLAGS "${WARN_FLAGS} ${flag}")
     endif()
@@ -125,8 +125,8 @@ set(FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK
     "-Wimplicit-fallthrough=0" #Bison produces some cases with explicit
     )
 foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
-    CHECK_CXX_COMPILER_FLAG(${flag} COMPILER_SUPPORTS_${flag})
-    if(COMPILER_SUPPORTS_${flag})
+    CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
+    if(CXX_COMPILER_SUPPORTS_${flag})
         #Flag supported, so enable it
         set(FLEX_BISON_WARN_SUPPRESS_FLAGS "${FLEX_BISON_WARN_SUPPRESS_FLAGS} ${flag}")
     endif()
@@ -192,6 +192,7 @@ add_subdirectory(liblog)
 add_subdirectory(libpugixml)
 add_subdirectory(libpugiutil)
 add_subdirectory(libvtrutil)
+add_subdirectory(libargparse)
 add_subdirectory(libarchfpga)
 add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
@@ -207,11 +208,11 @@ add_subdirectory(ace2)
 # the specified target
 
 #PugiXml has some deliberate switch fallthrough cases (as indicated by comments), but they
-#are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes. 
+#are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes). 
 #Since we don't want to change PugiXml (it is developed externally), we relax the warning 
 #level so no fallthrough warnings are generated
-CHECK_CXX_COMPILER_FLAG("-Wimplicit-fallthrough=0" COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
-if(COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
+CHECK_CXX_COMPILER_FLAG("-Wimplicit-fallthrough=0" CXX_COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
+if(CXX_COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
     target_compile_options(libpugixml PRIVATE "-Wimplicit-fallthrough=0")
 endif()
 

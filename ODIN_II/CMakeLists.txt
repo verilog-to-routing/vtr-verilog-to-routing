@@ -27,10 +27,12 @@ files_to_dirs(EXEC_HEADERS EXEC_INCLUDE_DIRS)
 set_source_files_properties(${EXEC_SOURCES} ${FLEX_VerilogLexer_OUTPUTS} ${BISON_VerilogParser_OUTPUT_SOURCE} PROPERTIES LANGUAGE CXX)
 
 #Suppress warnings in Flex/Bison generated files
-set_source_files_properties(${FLEX_VerilogLexer_OUTPUTS} ${BISON_VerilogParser_OUTPUT_SOURCE}
-                            PROPERTIES COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
+if(FLEX_BISON_WARN_SUPPRESS_FLAGS)
+    set_source_files_properties(${FLEX_VerilogLexer_OUTPUTS} ${BISON_VerilogParser_OUTPUT_SOURCE}
+                                PROPERTIES COMPILE_FLAGS ${FLEX_BISON_WARN_SUPPRESS_FLAGS})
+endif()
 
-add_definitions(-DVPR6 -DUSING_BISON -DYYERROR_VERBOSE)
+add_definitions(-DUSING_BISON -DYYERROR_VERBOSE)
 include_directories(${EXEC_INCLUDE_DIRS} ${PARSER_INCLUDE_DIRS})
 
 #Create the executable
@@ -39,6 +41,7 @@ target_link_libraries(odin_II
                         libvtrutil
                         libarchfpga
                         libabc
+                        libargparse
                         ${CMAKE_DL_LIBS})
 
 install(TARGETS odin_II DESTINATION bin)

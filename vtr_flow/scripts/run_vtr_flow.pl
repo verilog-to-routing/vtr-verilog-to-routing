@@ -102,7 +102,7 @@ my $routing_failure_predictor = "safe";
 my $tech_file               = "";
 my $do_power                = 0;
 my $check_equivalent		= "off";
-my $gen_postsynthesis_netlist 	= "off";
+my $gen_post_synthesis_netlist 	= "off";
 my $seed					= 1;
 my $min_hard_mult_size		= 3;
 my $min_hard_adder_size		= 1;
@@ -202,8 +202,8 @@ while ( $token = shift(@ARGV) ) {
 		$check_equivalent = "on";
 		$keep_intermediate_files = 1;
 	}
-	elsif ( $token eq "-gen_postsynthesis_netlist" ) {
-		$gen_postsynthesis_netlist = "on";
+	elsif ( $token eq "-gen_post_synthesis_netlist" ) {
+		$gen_post_synthesis_netlist = "on";
 	}
 	elsif ( $token eq "-seed" ) {
 		$seed = shift(@ARGV);
@@ -214,12 +214,12 @@ while ( $token = shift(@ARGV) ) {
 	elsif ( $token eq "-min_hard_adder_size" ) {
 		$min_hard_adder_size = shift(@ARGV);
 	}
-        elsif ( $token eq "-verify_rr_graph" ){
-                $verify_rr_graph = 1;
-        }
-        elsif ( $token eq "-rr_graph_error_check" ) {
-                $rr_graph_error_check = 1;
-        }
+    elsif ( $token eq "-verify_rr_graph" ){
+            $verify_rr_graph = 1;
+    }
+    elsif ( $token eq "-rr_graph_error_check" ) {
+            $rr_graph_error_check = 1;
+    }
     # else forward the argument
 	else {
         push @forwarded_vpr_args, $token;
@@ -567,7 +567,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			push( @vpr_args, "$sdc_file_path");
 		}
 		if (-e $pad_file_path){
-			push( @vpr_args, "-fix_pins" );				  
+			push( @vpr_args, "--fix_pins" );				  
 			push( @vpr_args, "$pad_file_path");
 		}
 		push( @vpr_args, "--seed");			 		  
@@ -624,8 +624,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 				push( @vpr_args, "--cluster_seed_type"   );
 				push( @vpr_args, "$vpr_cluster_seed_type");
 				push( @vpr_args, @vpr_power_args);
-				push( @vpr_args, "--gen_postsynthesis_netlist" );
-				push( @vpr_args, "$gen_postsynthesis_netlist");
+				push( @vpr_args, "--gen_post_synthesis_netlist" );
+				push( @vpr_args, "$gen_post_synthesis_netlist");
 				if (-e $sdc_file_path){
 					push( @vpr_args, "--sdc_file");			 
 					push( @vpr_args, "$sdc_file_path");
@@ -667,21 +667,20 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push( @vpr_args, "--cluster_seed_type" );       
 		push( @vpr_args, "$vpr_cluster_seed_type");
 		push( @vpr_args, @vpr_power_args);
-		push( @vpr_args, "--gen_postsynthesis_netlist" );
-		push( @vpr_args, "$gen_postsynthesis_netlist");
+		push( @vpr_args, "--gen_post_synthesis_netlist" );
+		push( @vpr_args, "$gen_post_synthesis_netlist");
 		if (-e $sdc_file_path){
 			push( @vpr_args, "--sdc_file" );				  
 			push( @vpr_args, "$sdc_file_path");
 		}
 		if (-e $pad_file_path){
-			push( @vpr_args, "-fix_pins" );				  
+			push( @vpr_args, "--fix_pins" );				  
 			push( @vpr_args, "$pad_file_path");
 		}        
-                if ($verify_rr_graph || $rr_graph_error_check){
-			push( @vpr_args, "-write_rr_graph" );				  
-			push( @vpr_args, 'RR_graph_result.xml');
-
-                }
+        if ($verify_rr_graph || $rr_graph_error_check){
+            push( @vpr_args, "--write_rr_graph" );				  
+            push( @vpr_args, 'RR_graph_result.xml');
+        }
 		push( @vpr_args, "$switch_usage_analysis");
 		push( @vpr_args, @forwarded_vpr_args);
 		push( @vpr_args, $specific_vpr_stage);
@@ -727,18 +726,18 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
         		push( @vpr_args, "--cluster_seed_type" );       
         		push( @vpr_args, "$vpr_cluster_seed_type");
         		push( @vpr_args, @vpr_power_args);
-        		push( @vpr_args, "--gen_postsynthesis_netlist" );
-        		push( @vpr_args, "$gen_postsynthesis_netlist");
+        		push( @vpr_args, "--gen_post_synthesis_netlist" );
+        		push( @vpr_args, "$gen_post_synthesis_netlist");
         		if (-e $sdc_file_path){
                             push( @vpr_args, "--sdc_file" );				  
                             push( @vpr_args, "$sdc_file_path");
         		}
         		if (-e $pad_file_path){
-                            push( @vpr_args, "-fix_pins" );				  
+                            push( @vpr_args, "--fix_pins" );				  
                             push( @vpr_args, "$pad_file_path");
                         }        
                         if ($verify_rr_graph){
-                            push( @vpr_args, "-read_rr_graph" );				  
+                            push( @vpr_args, "--read_rr_graph" );				  
                             push( @vpr_args, 'RR_graph_result.xml');
 
                         }
@@ -780,8 +779,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
         		push( @vpr_args, "--cluster_seed_type" );       
         		push( @vpr_args, "$vpr_cluster_seed_type");
         		push( @vpr_args, @vpr_power_args);
-        		push( @vpr_args, "--gen_postsynthesis_netlist" );
-        		push( @vpr_args, "$gen_postsynthesis_netlist");
+        		push( @vpr_args, "--gen_post_synthesis_netlist" );
+        		push( @vpr_args, "$gen_post_synthesis_netlist");
         		if (-e $sdc_file_path){
                             push( @vpr_args, "--sdc_file" );				  
                             push( @vpr_args, "$sdc_file_path");
@@ -791,7 +790,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                             push( @vpr_args, "$pad_file_path");
                         }        
                         if ($verify_rr_graph){
-                            push( @vpr_args, "-read_rr_graph" );				  
+                            push( @vpr_args, "--read_rr_graph" );				  
                             push( @vpr_args, 'RR_graph_result.xml');
                         }
                         push( @vpr_args, "$switch_usage_analysis");

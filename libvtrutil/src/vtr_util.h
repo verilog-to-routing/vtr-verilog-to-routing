@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <cstdarg>
+#include <array>
 
 namespace vtr {
 
@@ -11,6 +12,9 @@ namespace vtr {
     //The split strings (excluding the delimiters) are returned
     std::vector<std::string> split(const char* text, const std::string delims=" \t\n");
     std::vector<std::string> split(const std::string& text, const std::string delims=" \t\n");
+
+    //Splits off the name and extension (including ".") of the specified filename
+    std::array<std::string,2> split_ext(const std::string& filename);
 
     //Returns 'input' with the first instance of 'search' replaced with 'replace'
     std::string replace_first(const std::string& input, const std::string& search, const std::string& replace);
@@ -47,6 +51,7 @@ namespace vtr {
     char* strncpy(char *dest, const char *src, size_t size);
     char* strdup(const char *str);
     char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf);
+    int strcmp(const char* first, const char* second);
     FILE* fopen(const char *fname, const char *flag);
     int fclose(FILE* f);
     char* fgets(char *buf, int max_size, FILE * fp);
@@ -64,7 +69,7 @@ namespace vtr {
                                    const char* file_extension);
 
 
-    extern char *out_file_prefix;
+    extern std::string out_file_prefix;
 
     /*
      * Legacy ReadLine Tokening

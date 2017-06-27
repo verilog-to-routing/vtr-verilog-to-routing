@@ -1,5 +1,7 @@
 #define IMPOSSIBLE -1		/*indicator of an array location that    */
 /*should never be accessed */
+#define EMPTY_DELTA -2		/*indicator of an array location that  */
+/*has an empty block */
 
 void compute_delay_lookup_tables(t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,

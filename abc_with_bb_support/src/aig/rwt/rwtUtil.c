@@ -25,7 +25,9 @@
 ////////////////////////////////////////////////////////////////////////
 
 // precomputed data
-#ifdef _WIN32
+#ifdef _MSC_VER
+//MSVC requires that the size be known at declaration time if the variable
+//is static, so delcare it as non-static instead
 unsigned short s_RwtPracticalClasses[];
 unsigned short s_RwtAigSubgraphs[];
 #else

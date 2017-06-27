@@ -516,6 +516,22 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``64``
 
+.. option:: -write_rr_graph <file>
+
+    Writes out the routing resource graph generated at the last stage of VPR into XML format
+
+    <file> describes the filename for the generated routing resource graph. The output can be read into VPR using :option:`-read_rr_graph`
+
+.. option:: -read_rr_graph <file>
+
+    Reads in the routing resource graph named <file> in the VTR root directory and loads it into the placement and routing stage of VPR.
+    
+    The routing resource graph overthrows all the architecture definitions regarding switches, nodes, and edges. Other information such as grid information, block types, and segment information are matched with the architecture file to ensure accuracy.
+
+    This file should be in XML format and can be easily obtained through :option:`-write_rr_graph`
+
+    .. seealso:: :ref:`Routing Resource XML File <vpr_route_resource_file>`.
+
 .. _timing_driven_router_options:
 
 Timing-Driven Router Options

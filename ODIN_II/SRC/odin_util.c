@@ -32,7 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <errno.h>
 #include "types.h"
 #include "globals.h"
-#include "errors.h"
+
 #include "odin_util.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -177,7 +177,7 @@ long long convert_string_of_radix_to_long_long(char *orig_string, int radix)
 	if (number == LLONG_MAX || number == LLONG_MIN)
 		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
 	#else
-	long long number = strtol(orig_string, NULL, radix);
+	long number = strtol(orig_string, NULL, radix);
 	if (number == LONG_MAX || number == LONG_MIN)
 		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
 	#endif
@@ -715,5 +715,73 @@ bool validate_string_regex(const char *str, const char *pattern)
 		return false;
     
 	return true;
+}
+/*---------------------------------------------------------------------------------------------
+ * (function: to_bit)
+ *-------------------------------------------------------------------------------------------*/ 
+short get_bit(char in){
+	if(in == 48 || in == 49)
+		return (short)in-48;
+	fprintf(stderr,"not a valid bit\n");
+    return -1;
+}
+
+
+/*---------------------------------------------------------------------------------------------
+ * (function: error_message)
+ *-------------------------------------------------------------------------------------------*/
+void error_message(short error_type, int line_number, int file, const char *message, ...)
+{
+	va_list ap;
+
+	fprintf(stderr,"--------------\nOdin has decided you have failed ;)\n\n");
+
+	fprintf(stderr,"ERROR:");
+	if (file != -1)
+		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file]);
+	if (line_number > 0)
+		fprintf(stderr," (Line number: %d)", line_number);
+	if (message != NULL)
+	{
+		fprintf(stderr," ");
+		va_start(ap, message);
+		vfprintf(stderr,message, ap);	
+		va_end(ap); 
+	}
+
+	if (message[strlen(message)-1] != '\n') fprintf(stderr,"\n");
+
+	exit(error_type);
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: warning_message)
+ *-------------------------------------------------------------------------------------------*/
+void warning_message(short /*error_type*/, int line_number, int file, const char *message, ...)
+{
+	va_list ap;
+	static short is_warned = FALSE;
+	static long warning_count = 0;
+	warning_count++;
+
+	if (is_warned == FALSE) {
+		fprintf(stderr,"-------------------------\nOdin has decided you may fail ... WARNINGS:\n\n");
+		is_warned = TRUE;
+	}
+
+	fprintf(stderr,"WARNING (%ld):", warning_count);
+	if (file != -1)
+		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file]);
+	if (line_number > 0)
+		fprintf(stderr," (Line number: %d)", line_number);
+	if (message != NULL) {
+		fprintf(stderr," ");
+
+		va_start(ap, message);
+		vfprintf(stderr,message, ap);	
+		va_end(ap); 
+	}
+
+	if (message[strlen(message)-1] != '\n') fprintf(stderr,"\n");
 }
 

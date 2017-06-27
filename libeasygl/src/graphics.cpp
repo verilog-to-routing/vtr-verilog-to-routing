@@ -277,7 +277,7 @@ using namespace std;
 #endif
 
 #include <windows.h>
-#include <WindowsX.h>
+#include <windowsx.h>
 
 /* Using large values of pixel limits in order to preserve the slope of diagonal 
  * lines when their endpoints are clipped (one at a time) to these pixel limits.
@@ -4362,7 +4362,7 @@ win32_init_graphics(const char *window_name) {
     wndclass.lpszClassName = szAppName;
 
     if (!RegisterClassW(&wndclass)) {
-        printf("Error code: %d\n", GetLastError());
+        printf("Error code: %lu\n", GetLastError());
         MessageBoxW(NULL, L"Initialization of Windows graphics (init_graphics) failed.",
             szAppName, MB_ICONERROR);
         exit(-1);

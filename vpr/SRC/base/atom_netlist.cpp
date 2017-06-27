@@ -758,7 +758,7 @@ bool AtomNetlist::verify_block_invariants() const {
  *
  */
 AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* model, const TruthTable truth_table) {
-    //Must have a non-mepty name
+    //Must have a non-empty name
     VTR_ASSERT_MSG(!name.empty(), "Non-Empty block name");
 
     //Check if the block has already been created

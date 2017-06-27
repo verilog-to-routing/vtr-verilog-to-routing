@@ -18,7 +18,7 @@ using namespace std;
 #include "net_delay.h"
 #include "vpr_utils.h"
 #include "read_xml_arch_file.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 #include "read_sdc.h"
 #include "stats.h"
 
@@ -2088,7 +2088,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
     /* Denominator of criticality for slack_definition == 'S' || slack_definition == 'G' -
     max of all arrival times and all constraints. */
 
-    update_slack = bool(timing_inf.slack_definition == 'S' || timing_inf.slack_definition == 'G');
+    update_slack = bool(timing_inf.slack_definition == std::string("S") || timing_inf.slack_definition == std::string("G"));
 	/* Update slack values for certain slack definitions where they are needed to compute timing criticalities. */
 
     auto& timing_ctx = g_vpr_ctx.mutable_timing();
@@ -2128,7 +2128,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
 
     t_pb*** pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
     
-    if (timing_inf.slack_definition == 'I') {
+    if (timing_inf.slack_definition == std::string("I")) {
         /* Find the smallest slack in the design, if negative. */
         smallest_slack_in_design = find_least_slack(is_prepacked, pin_id_to_pb_mapping);
         if (smallest_slack_in_design > 0) smallest_slack_in_design = 0;
@@ -2155,7 +2155,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
                 do_path_counting(criticality_denom);
 #endif
 
-                if (timing_inf.slack_definition == 'I') {
+                if (timing_inf.slack_definition == std::string("I")) {
                     criticality_denom -= smallest_slack_in_design;
                     /* Remember, smallest_slack_in_design is negative, so we're INCREASING criticality_denom. */
                 }
@@ -2173,7 +2173,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
 				}
 #endif
 
-                if (timing_inf.slack_definition == 'S' || timing_inf.slack_definition == 'G') {
+                if (timing_inf.slack_definition == std::string("S") || timing_inf.slack_definition == std::string("G")) {
 				    /* Set criticality_denom_global to the max of criticality_denom over all traversals. */
 				    criticality_denom_global = max(criticality_denom_global, criticality_denom);
                 }
@@ -2201,9 +2201,9 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
 
 #endif
 
-    if (timing_inf.slack_definition == 'S' || timing_inf.slack_definition == 'G') {
+    if (timing_inf.slack_definition == std::string("S") || timing_inf.slack_definition == std::string("G")) {
         if (!is_final_analysis) {
-            if (timing_inf.slack_definition == 'S') {
+            if (timing_inf.slack_definition == std::string("S")) {
                 /* Find the smallest slack in the design. */
                 for (int i = 0; i < timing_ctx.sdc->num_constrained_clocks; i++) {
                     for (int j = 0; j < timing_ctx.sdc->num_constrained_clocks; j++) {
@@ -2511,7 +2511,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
                 time represents the latest time that all inputs must arrive at a node. */
                 timing_ctx.tnodes[to_node].T_arr = max(timing_ctx.tnodes[to_node].T_arr, timing_ctx.tnodes[inode].T_arr + tedge[iedge].Tdel);
 
-                if (timing_inf.slack_definition == 'R' || timing_inf.slack_definition == 'G') {
+                if (timing_inf.slack_definition == std::string("R") || timing_inf.slack_definition == std::string("G")) {
                     /* Since we updated the destination node (to_node), change the max arrival  
                     time for the forward traversal if to_node's arrival time is greater than 
                     the existing maximum, and it is on the sink clock domain. */
@@ -2650,7 +2650,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	
 				/* Now we know we should analyse this tnode. */
 	
-                if (timing_inf.slack_definition == 'R' || timing_inf.slack_definition == 'G') {
+                if (timing_inf.slack_definition == std::string("R") || timing_inf.slack_definition == std::string("G")) {
 				    /* Assign the required time T_req for this leaf node, taking into account clock skew. T_req is the 
 				    time all inputs to a tnode must arrive by before it would degrade this constraint's critical path delay. 
 
@@ -2805,7 +2805,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	timing_ctx.tnodes[inode].clock_delay over all nodes.  For 'R' and 'N', this works out to the maximum of
 	that value and max_Tarr.  The max_Tarr is implicitly incorporated into the denominator through
 	its inclusion in the required time, but we have to explicitly include it for 'N'. */
-    if (timing_inf.slack_definition == 'N') {
+    if (timing_inf.slack_definition == std::string("N")) {
         return max_Treq + max_Tarr;
     } else {
         return max_Treq;
@@ -2944,11 +2944,11 @@ static void update_slacks(t_slack * slacks, float criticality_denom,
 			slack = T_req - T_arr - Tdel;
 
 			if (!is_final_analysis) {
-                if (timing_inf.slack_definition == 'I') {
+                if (timing_inf.slack_definition == std::string("I")) {
                     /* Shift slack UPWARDS by subtracting the smallest slack in the
                     design (which is negative or zero). */
                     slack -= smallest_slack_in_design;
-                } else if (timing_inf.slack_definition == 'C') {
+                } else if (timing_inf.slack_definition == std::string("C")) {
 				    /* Clip all negative slacks to 0. */
 				    if (slack < 0) slack = 0;
                 }
@@ -2959,13 +2959,13 @@ static void update_slacks(t_slack * slacks, float criticality_denom,
 				slacks->slack[inet][iedge + 1] = min(slack, slacks->slack[inet][iedge + 1]);
 			}
 
-            if (timing_inf.slack_definition != 'S' && timing_inf.slack_definition != 'G') {
+            if (timing_inf.slack_definition != std::string("S") && timing_inf.slack_definition != std::string("G")) {
                 if (!is_final_analysis) { // Criticality is not meaningful using non-normalized slacks.
 
                     /* Since criticality_denom is not the same on each traversal,
                     we have to update criticality separately. */
 
-                    if (timing_inf.slack_definition == 'C') {
+                    if (timing_inf.slack_definition == std::string("C")) {
                         /* For clipped, criticality_denom is the raw maximum required time, and this can
                         be 0 if the constraint was 0, leading to division by 0.  In this case, all of the
                         slacks will be clipped to zero anyways, so we can just set the criticality to 1. */
@@ -3211,7 +3211,7 @@ static void update_normalized_costs(float criticality_denom, long max_critical_i
     updated for tnodes analysed on this traversal if it would give this tnode a higher
     criticality when calculating block criticality for the clusterer. */
 
-    if (timing_inf.slack_definition == 'R' || timing_inf.slack_definition == 'I') {
+    if (timing_inf.slack_definition == std::string("R") || timing_inf.slack_definition == std::string("I")) {
         /*VTR_ASSERT(criticality_denom != 0); */
         /* Possible if timing analysis is being run pre-packing
                                         with all delays set to 0. This is not currently done, 

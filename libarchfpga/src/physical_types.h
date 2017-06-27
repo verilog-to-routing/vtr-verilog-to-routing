@@ -3,7 +3,7 @@
 
  We assume an island style FPGA where complex logic blocks are arranged in a grid and each side of the logic block has access to the inter-block interconnect.  To keep the logic blocks general,
  we allow arbitrary hierarchy, modes, primitives, and interconnect within each complex logic block.  The data structures here describe the properties of the island-style FPGA as well as the details on
- hierarchy, modes, primitives, and intconnect within each logic block.
+ hierarchy, modes, primitives, and interconnects within each logic block.
 
  Data structures that flesh out 
 
@@ -225,8 +225,8 @@ struct t_timing_inf {
 	bool timing_analysis_enabled;
 	float C_ipin_cblock;
 	float T_ipin_cblock;
-	char * SDCFile; 
-    char slack_definition;
+    std::string SDCFile; 
+    std::string slack_definition;
 };
 
 enum e_power_wire_type {
@@ -378,7 +378,7 @@ typedef const t_type_descriptor* t_type_ptr;
  */
 
 /** Describes the type of clustered block if a root (parent_mode == nullptr), an
- *  intermediate level of hierarhcy (parent_mode != nullptr), or a leaf/primtive
+ *  intermediate level of hierarchy (parent_mode != nullptr), or a leaf/primitive
  *  (num_modes == 0, model != nullptr).
  *  
  *  This (along with t_mode) corresponds to the hierarchical specification of 
@@ -452,7 +452,7 @@ struct t_mode {
 	t_pb_type *parent_pb_type;
 	int index;
 
-	/* Power releated members */
+	/* Power related members */
 	t_mode_power * mode_power;
 };
 
@@ -568,7 +568,7 @@ struct t_mode_power {
 	t_power_usage power_usage; /* Power usage of this mode */
 };
 
-/** Info placed between pins in the architecture file (e.g. delay annoatations),
+/** Info placed between pins in the architecture file (e.g. delay annotations),
  * 
  * This is later for additional information.
  *
@@ -733,8 +733,8 @@ struct t_pb_graph_pin {
 	/* Applies to pins of primitive only */
 	int *parent_pin_class; /* [0..depth-1] the grouping of pins that this particular pin belongs to */
 	/* Applies to output pins of primitives only */
-	t_pb_graph_pin ***list_of_connectable_input_pin_ptrs; /* [0..depth-1][0..num_connectable_primtive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
-	int *num_connectable_primtive_input_pins; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
+	t_pb_graph_pin ***list_of_connectable_input_pin_ptrs; /* [0..depth-1][0..num_connectable_primitive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
+	int *num_connectable_primitive_input_pins; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
 
 	bool is_forced_connection; /* This output pin connects to one and only one input pin */
 

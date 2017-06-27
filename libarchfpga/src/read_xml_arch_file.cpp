@@ -367,64 +367,69 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	}
 
 	/* Load the pin locations */
+    //TODO: for width > 1 blocks, will need to support x_offset, y_offset on loc to allow
+    //specify pins accessible from fly-over wire (not along perimeter)
+    VTR_ASSERT_MSG(Type->width == 1, "Architectural blocks with width > 1 not yet supported");
 	if (Type->pin_location_distribution == E_CUSTOM_PIN_DISTR) {
 		Cur = Locations.first_child();
-        std::set<e_side> seen_sides;
+        std::set<std::tuple<e_side,int,int>> seen_sides;
 		while (Cur) {
 			check_node(Cur, "loc", loc_data);
 
 			/* Get offset (ie. height) */
-			int height = get_attribute(Cur, "offset", loc_data, OPTIONAL).as_int(0);
-			if ((height < 0) || (height >= Type->height)) {
-				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-						"'%d' is an invalid offset for type '%s'.\n", height,
-						Type->name);
-			}
+			int offset = get_attribute(Cur, "offset", loc_data, OPTIONAL).as_int(0);
 
 			/* Get side */
 			e_side side = TOP;
+            int x_offset = 0; //Width > 1 not yet supported
+            int y_offset = -1;
 			Prop = get_attribute(Cur, "side", loc_data).value();
 			if (0 == strcmp(Prop, "left")) {
 				side = LEFT;
+                y_offset = offset;
 			} else if (0 == strcmp(Prop, "top")) {
 				side = TOP;
+                y_offset = offset;
 			} else if (0 == strcmp(Prop, "right")) {
 				side = RIGHT;
+                y_offset = offset;
 			} else if (0 == strcmp(Prop, "bottom")) {
 				side = BOTTOM;
+                y_offset = offset;
 			} else {
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"'%s' is not a valid side.\n", Prop);
 			}
 
-            //Check for duplicate side specifications, since the code below silently overwrites if there are duplicates
-            if (seen_sides.count(side)) {
+			if ((x_offset < 0) || (x_offset >= Type->width)) {
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-						"Duplicate pin location side specification. Only a single <loc> per side is permitted.\n");
-            } else {
-                seen_sides.insert(side);
-            }
+						"'%d' is an invalid horizontal offset for type '%s' (must be within [0, %d]).\n", 
+                        x_offset, Type->name, Type->width - 1);
+			}
+			if ((y_offset < 0) || (y_offset >= Type->height)) {
+				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+						"'%d' is an invalid vertical offset for type '%s' (must be within [0, %d]).\n",
+                        y_offset, Type->name, Type->height - 1);
+			}
 
-			/* Check location is on perimeter */
-			if ((TOP == side) && (height != (Type->height - 1))) {
+            //Check for duplicate side specifications, since the code below silently overwrites if there are duplicates
+            auto side_offset = std::make_tuple(side, x_offset, y_offset);
+            if (seen_sides.count(side_offset)) {
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-						"Locations are only allowed on large block perimeter. 'top' side should be at offset %d only.\n",
-						(Type->height - 1));
-			}
-			if ((BOTTOM == side) && (height != 0)) {
-				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-						"Locations are only allowed on large block perimeter. 'bottom' side should be at offset 0 only.\n");
-			}
+						"Duplicate pin location side/offset specification. Only a single <loc> per side and offset is permitted.\n");
+            } else {
+                seen_sides.insert(side_offset);
+            }
 
 			/* Go through lists of pins */
 			const std::vector<std::string> Tokens = vtr::split(Cur.child_value());
 			Count = Tokens.size();
-			Type->num_pin_loc_assignments[0][height][side] = Count;
+			Type->num_pin_loc_assignments[x_offset][y_offset][side] = Count;
 			if (Count > 0) {
-				Type->pin_loc_assignments[0][height][side] = (char**) vtr::calloc(Count, sizeof(char*));
+				Type->pin_loc_assignments[x_offset][y_offset][side] = (char**) vtr::calloc(Count, sizeof(char*));
 				for (int pin = 0; pin < Count; ++pin) {
 					/* Store location assignment */
-					Type->pin_loc_assignments[0][height][side][pin] = vtr::strdup(Tokens[pin].c_str());
+					Type->pin_loc_assignments[x_offset][y_offset][side][pin] = vtr::strdup(Tokens[pin].c_str());
 
 					/* Advance through list of pins in this location */
 				}
@@ -434,7 +439,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 
         //Verify that all top-level pins have had thier locations specified
 
-        //Count up all the specified pins
+        //Record all the specified pins
         std::map<std::string,std::set<int>> port_pins_with_specified_locations;
         for (int w = 0; w < Type->width; ++w) {
             for (int h = 0; h < Type->height; ++h) {

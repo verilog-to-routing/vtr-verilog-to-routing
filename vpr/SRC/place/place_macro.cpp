@@ -144,7 +144,6 @@ using namespace std;
 #include "globals.h"
 #include "place.h"
 #include "read_xml_arch_file.h"
-#include "ReadOptions.h"
 #include "place_macro.h"
 #include "vpr_utils.h"
 

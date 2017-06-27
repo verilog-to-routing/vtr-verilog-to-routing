@@ -27,7 +27,7 @@ using namespace std;
 #include "rr_graph.h"
 #include "read_xml_arch_file.h"
 #include "draw.h"
-#include "ReadOptions.h"
+#include "echo_files.h"
 
 #include "route_profiling.h"
 
@@ -242,8 +242,7 @@ void try_graph(int width_fac, t_router_opts router_opts,
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
-                cout <<"Try graph" <<endl;
-	build_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
+	create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
 			&device_ctx.chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
@@ -254,12 +253,13 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			router_opts.base_cost_type, 
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
-			directs, num_directs, false,
+			directs, num_directs,
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warning_count, router_opts.write_rr_graph_name,
-                        router_opts.read_rr_graph_name, false);
+			&warning_count,
+                        router_opts.write_rr_graph_name.c_str(),
+                        router_opts.read_rr_graph_name.c_str());
 
 	clock_t end = clock();
 
@@ -307,7 +307,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
         
-	build_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
+	create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
 			&device_ctx.chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
@@ -318,12 +318,13 @@ bool try_route(int width_fac, t_router_opts router_opts,
 			router_opts.base_cost_type, 
 			router_opts.trim_empty_channels,
 			router_opts.trim_obs_channels,
-			directs, num_directs, false,
+			directs, num_directs,
 			det_routing_arch->dump_rr_structs_file,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
-			&warning_count, router_opts.write_rr_graph_name,
-                        router_opts.read_rr_graph_name, false);
+			&warning_count, 
+                        router_opts.write_rr_graph_name.c_str(),
+                        router_opts.read_rr_graph_name.c_str());
 
 	clock_t end = clock();
 
@@ -773,7 +774,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
 		
 			if ((cluster_ctx.blocks[iblk].nets[clb_pin] != OPEN
 					&& cluster_ctx.clbs_nlist.net[cluster_ctx.blocks[iblk].nets[clb_pin]].num_sinks() == 0) || cluster_ctx.blocks[iblk].nets[clb_pin] == OPEN) {
-				iclass = type->pin_class[clb_pin];
+                                iclass = type->pin_class[clb_pin];
 				if(type->class_inf[iclass].type == DRIVER) {
 					/* Check to make sure class is in same range as that assigned to block */
 					VTR_ASSERT(iclass >= class_low && iclass <= class_high);

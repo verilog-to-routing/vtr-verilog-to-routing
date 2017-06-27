@@ -301,13 +301,33 @@ class LutInst : public Instance {
 
             //Write out the truth table.
             //
-            //For simplicity we always output the ON set
-            // Using the OFF set for functions that are mostly 'on' 
-            // would reduce the size of the output blif, 
-            // but would add complexity
+            // We can write out the truth table as either a set of minterms (where the function is true),
+            // or a set of maxterms (where the function is false). We choose the representation which produces
+            // the fewest terms (and is smallest to represent in BLIF).
+
+            //Count the number of set minterms
+            size_t num_set_minterms = 0;
+            for(size_t i = 0; i < lut_mask_.size(); ++i) {
+                if (lut_mask_[i] == vtr::LogicValue::TRUE) {
+                    ++num_set_minterms;
+                }
+            }
+
+            vtr::LogicValue output_value;
+            if (num_set_minterms < lut_mask_.size() / 2) {
+                //Less than half the minterms are true, so
+                //output minterms
+                output_value = vtr::LogicValue::TRUE;
+            } else {
+                //Half-or-more minterms are true, so
+                //output maxterms
+                output_value = vtr::LogicValue::FALSE;
+            }
+
             size_t minterms_set = 0;
+            size_t maxterms_set = 0;
             for(size_t minterm = 0; minterm < lut_mask_.size(); minterm++) {
-                if(lut_mask_[minterm] == vtr::LogicValue::TRUE) {
+                if(lut_mask_[minterm] == output_value) {
                     //Convert the minterm to a string of bits
                     std::string bit_str = std::bitset<64>(minterm).to_string();
 
@@ -319,15 +339,29 @@ class LutInst : public Instance {
                     std::string input_values(bit_str.begin(), bit_str.begin() + (lut_size_));
 
                     //Add the row as true
-                    os << indent(depth) << input_values << " 1\n";
-
-                    minterms_set++;
+                    os << indent(depth) << input_values;
+                    
+                    //Specify whether this is a minterm (on-set) or max-term (off-set)
+                    if (output_value == vtr::LogicValue::TRUE) {
+                        os << " 1\n";
+                        minterms_set++;
+                    } else {
+                        VTR_ASSERT(output_value == vtr::LogicValue::FALSE);
+                        os << " 0\n";
+                        maxterms_set++;
+                    }
                 }
             }
-            if(minterms_set == 0) {
-                //To make ABC happy (i.e. avoid complaints about mismatching cover size and fanin)
-                //put in a false value for luts that are always false
-                os << std::string(lut_size_, '-') << " 0\n";
+            if(minterms_set == 0 && maxterms_set == 0) {
+                //Handle the always true/false case
+                if (output_value == vtr::LogicValue::TRUE) {
+                    //Always false
+                    os << " 0\n";
+                } else {
+                    VTR_ASSERT(output_value == vtr::LogicValue::FALSE);
+                    //Always true
+                    os << " 1\n";
+                }
             }
         }
 

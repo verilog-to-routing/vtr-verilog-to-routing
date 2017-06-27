@@ -35,8 +35,7 @@ class AtomLookup {
         const t_pb_graph_node* atom_pb_graph_node(const AtomBlockId blk_id) const;
 
         //Sets the bidirectional mapping between an atom and pb
-        // If either blk_id or pb are not valid any existing mapping
-        // is removed
+        // If either blk_id or pb are not valid any, existing mapping is removed
         void set_atom_pb(const AtomBlockId blk_id, const t_pb* pb);
 
         /*

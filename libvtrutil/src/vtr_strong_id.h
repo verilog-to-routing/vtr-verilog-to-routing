@@ -16,7 +16,7 @@
  * Using a plain basic type is poor style since it makes it unclear that the parameter is
  * an Id.
  *
- * A better example is to use a typdef:
+ * A better example is to use a typedef:
  *
  *      typedef int NetId;
  *
@@ -59,7 +59,7 @@
  *      count_net_teriminals(blk_id); //Compiler Error: NetId expected!
  *
  * StrongId is a template which implements the basic features of an Id, but disallows silent conversions
- * between different types of Ids. It uses another 'tag' type (passsed as the first template parameter)
+ * between different types of Ids. It uses another 'tag' type (passed as the first template parameter)
  * to uniquely identify the type of the Id (preventing conversions between different types of Ids).
  *
  * Usage
