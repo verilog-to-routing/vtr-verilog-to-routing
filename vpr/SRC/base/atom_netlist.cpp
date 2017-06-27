@@ -632,7 +632,7 @@ bool AtomNetlist::verify_sizes() const {
     valid &= validate_port_sizes();
     valid &= validate_pin_sizes();
     valid &= validate_net_sizes();
-    valid &= validate_string_sizes();
+    valid &= BaseNetlist::validate_string_sizes();
     return valid;
 }
 
@@ -1398,7 +1398,7 @@ void AtomNetlist::shrink_to_fit() {
     //String data
     string_ids_.shrink_to_fit();
     strings_.shrink_to_fit();
-    VTR_ASSERT(validate_string_sizes());
+    VTR_ASSERT(BaseNetlist::validate_string_sizes());
 }
 
 /*
@@ -1485,13 +1485,6 @@ bool AtomNetlist::validate_net_sizes() const {
     if(net_names_.size() != net_ids_.size()
         || net_pins_.size() != net_ids_.size()) {
         VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent net data sizes");
-    }
-    return true;
-}
-
-bool AtomNetlist::validate_string_sizes() const {
-    if(strings_.size() != string_ids_.size()) {
-        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent string data sizes");
     }
     return true;
 }
