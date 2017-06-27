@@ -167,6 +167,13 @@ bool BaseNetlist::validate_net_sizes() const {
 	return true;
 }
 
+bool BaseNetlist::validate_string_sizes() const {
+	if (strings_.size() != string_ids_.size()) {
+		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent string data sizes");
+	}
+	return true;
+}
+
 
 /*
 *
