@@ -37,6 +37,14 @@ const std::string& BaseNetlist::net_name(const NetId id) const {
 	return strings_[str_id];
 }
 
+/*
+*
+* Aggregates
+*
+*/
+BaseNetlist::net_range BaseNetlist::nets() const {
+	return vtr::make_range(net_ids_.begin(), net_ids_.end());
+}
 
 /*
 *
@@ -98,6 +106,38 @@ NetId BaseNetlist::create_net(const std::string name) {
 
 }
 
+/*void BaseNetlist::remove_net(const NetId net_id) {
+	VTR_ASSERT(valid_net_id(net_id));
+
+	//Disassociate the pins from the net
+	for (auto pin_id : net_pins(net_id)) {
+		if (pin_id) {
+			pin_nets_[pin_id] = NetId::INVALID();
+		}
+	}
+	//Invalidate look-up
+	StringId name_id = net_names_[net_id];
+	net_name_to_net_id_.insert(name_id, NetId::INVALID());
+
+	//Mark as invalid
+	net_ids_[net_id] = NetId::INVALID();
+
+	//Mark netlist dirty
+	dirty_ = true;
+}*/
+
+
+void BaseNetlist::rebuild_lookups() {
+	//We iterate through the reverse-lookups and update the values (i.e. ids)
+	//to the new id values
+
+	//Nets
+	net_name_to_net_id_.clear();
+	for (auto net_id : nets()) {
+		const auto& key = net_names_[net_id];
+		net_name_to_net_id_.insert(key, net_id);
+	}
+}
 
 /*
 *
