@@ -67,10 +67,10 @@ void print_sink_delays(const char* fname) {
     fp = vtr::fopen(fname, "w");
 
     for (ilevel = timing_ctx.num_tnode_levels - 1; ilevel >= 0; ilevel--) {
-        num_at_level = timing_ctx.tnodes_at_level[ilevel].nelem;
+        num_at_level = timing_ctx.tnodes_at_level[ilevel].size();
 
         for (i = 0; i < num_at_level; i++) {
-            inode = timing_ctx.tnodes_at_level[ilevel].list[i];
+            inode = timing_ctx.tnodes_at_level[ilevel][i];
             num_edges = timing_ctx.tnodes[inode].num_edges;
 
             if (num_edges == 0) { /* sink */

@@ -107,8 +107,8 @@ int alloc_and_load_timing_graph_levels(void) {
 	 * Also returns the number of sinks in the graph (nodes with no fanout).      */
 
 	vtr::t_linked_int *free_list_head, *nodes_at_level_head;
-	int inode, num_at_level, iedge, to_node, num_edges, num_sinks, num_levels,
-			i;
+	int inode, num_at_level, iedge, to_node, num_edges, num_sinks, num_levels;
+        unsigned i;
 	t_tedge *tedge;
 
     auto& timing_ctx = g_vpr_ctx.mutable_timing();
@@ -126,8 +126,7 @@ int alloc_and_load_timing_graph_levels(void) {
 	 * Temporarily need one extra level on the end because I look at the first  *
 	 * empty level.                                                             */
 
-	timing_ctx.tnodes_at_level = (vtr::t_ivec *) vtr::malloc(
-			(timing_ctx.num_tnodes + 1) * sizeof(vtr::t_ivec));
+	timing_ctx.tnodes_at_level.resize(timing_ctx.num_tnodes + 1);
 
 	/* Scan through the timing graph, putting all the primary input nodes (no    *
 	 * fanin) into level 0 of the level structure.                               */
@@ -151,8 +150,8 @@ int alloc_and_load_timing_graph_levels(void) {
 		num_levels++;
 		num_at_level = 0;
 
-		for (i = 0; i < timing_ctx.tnodes_at_level[num_levels - 1].nelem; i++) {
-			inode = timing_ctx.tnodes_at_level[num_levels - 1].list[i];
+		for (i = 0; i < timing_ctx.tnodes_at_level[num_levels - 1].size(); i++) {
+			inode = timing_ctx.tnodes_at_level[num_levels - 1][i];
 			tedge = timing_ctx.tnodes[inode].out_edges;
 			num_edges = timing_ctx.tnodes[inode].num_edges;
 
@@ -174,7 +173,11 @@ int alloc_and_load_timing_graph_levels(void) {
 				&timing_ctx.tnodes_at_level[num_levels], &free_list_head);
 	}
 
-	timing_ctx.tnodes_at_level = (vtr::t_ivec *) vtr::realloc(timing_ctx.tnodes_at_level, num_levels * sizeof(vtr::t_ivec));
+        for (i = 0; i < timing_ctx.tnodes_at_level.size(); i++){
+            timing_ctx.tnodes_at_level[i].clear();
+        }
+	timing_ctx.tnodes_at_level.clear();
+        timing_ctx.tnodes_at_level.resize(num_levels);
 	timing_ctx.num_tnode_levels = num_levels;
 
 	free(tnode_fanin_left);
@@ -202,7 +205,7 @@ void check_timing_graph() {
 	/* TODO: Rework error checks for I/Os*/
 
 	for (ilevel = 0; ilevel < timing_ctx.num_tnode_levels; ilevel++)
-		num_tnodes_check += timing_ctx.tnodes_at_level[ilevel].nelem;
+		num_tnodes_check += timing_ctx.tnodes_at_level[ilevel].size();
 
 	if (num_tnodes_check != timing_ctx.num_tnodes) {
 		vtr::printf_error(__FILE__, __LINE__, 
