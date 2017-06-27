@@ -80,7 +80,7 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(
         const t_type_ptr Type, const bool perturb_switch_pattern,
         const e_directionality directionality);
 
-static vtr::NdMatrix<vtr::t_ivec, 4> alloc_and_load_track_to_pin_lookup(
+static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(
         vtr::NdMatrix<int, 5> pin_to_track_map, const vtr::Matrix<int>& Fc,
         const int width, const int height,
         const int num_pins, const int max_chan_width,
@@ -119,7 +119,7 @@ static void alloc_and_load_rr_graph(
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         bool * L_rr_edge_done,
         const t_track_to_pin_lookup& track_to_pin_lookup,
-        const t_pin_to_track_lookup& opin_to_track_map, const vtr::NdMatrix<vtr::t_ivec, 3>& switch_block_conn,
+        const t_pin_to_track_lookup& opin_to_track_map, const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
         t_sb_connection_map *sb_conn_map,
         const vtr::Matrix<t_grid_tile>& L_grid, const int L_nx, const int L_ny, const int Fs,
         short ******sblock_pattern, const std::vector<vtr::Matrix<int>>&Fc_out,
@@ -171,7 +171,7 @@ static void build_rr_chan(
         const int i, const int j, const t_rr_type chan_type,
         const t_track_to_pin_lookup& track_to_pin_lookup,
         t_sb_connection_map *sb_conn_map,
-        const vtr::NdMatrix<vtr::t_ivec, 3>& switch_block_conn, const int cost_index_offset,
+        const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn, const int cost_index_offset,
         const int max_chan_width, const int tracks_per_chan,
         short ******sblock_pattern, const int Fs_per_side,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
@@ -440,7 +440,7 @@ static void build_rr_graph(
 
     /* START SB LOOKUP */
     /* Alloc and load the switch block lookup */
-    vtr::NdMatrix<vtr::t_ivec, 3> switch_block_conn;
+    vtr::NdMatrix<std::vector<int>, 3> switch_block_conn;
     short ******unidir_sb_pattern = NULL;
     t_sb_connection_map *sb_conn_map = NULL; //for custom switch blocks
 
@@ -987,8 +987,8 @@ static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                 for (int width = 0; width < types[i].width; ++width) {
                     for (int height = 0; height < types[i].height; ++height) {
                         for (int side = 0; side < 4; ++side) {
-                            if (track_to_pin_map[i][track][width][height][side].list != NULL) {
-                                free(track_to_pin_map[i][track][width][height][side].list);
+                            if (!track_to_pin_map[i][track][width][height][side].empty()) {
+                                track_to_pin_map[i][track][width][height][side].clear();
                             }
                         }
                     }
@@ -1006,7 +1006,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         bool * L_rr_edge_done,
         const t_track_to_pin_lookup& track_to_pin_lookup,
-        const t_pin_to_track_lookup& opin_to_track_map, const vtr::NdMatrix<vtr::t_ivec, 3>& switch_block_conn,
+        const t_pin_to_track_lookup& opin_to_track_map, const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
         t_sb_connection_map *sb_conn_map,
         const vtr::Matrix<t_grid_tile>& L_grid, const int L_nx, const int L_ny, const int Fs,
         short ******sblock_pattern, const std::vector<vtr::Matrix<int>>&Fc_out,
@@ -1444,7 +1444,7 @@ void init_fan_in(const int L_nx, const int L_ny,
 static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type chan_type,
         const t_track_to_pin_lookup& track_to_pin_lookup,
         t_sb_connection_map *sb_conn_map,
-        const vtr::NdMatrix<vtr::t_ivec, 3>& switch_block_conn, const int cost_index_offset,
+        const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn, const int cost_index_offset,
         const int max_chan_width, const int tracks_per_chan,
         short ******sblock_pattern, const int Fs_per_side,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
@@ -2133,7 +2133,7 @@ static void check_all_tracks_reach_pins(t_type_ptr type,
 /* Allocates and loads the track to ipin lookup for each physical grid type. This
  * is the same information as the ipin_to_track map but accessed in a different way. */
 
-static vtr::NdMatrix<vtr::t_ivec, 4> alloc_and_load_track_to_pin_lookup(
+static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(
         vtr::NdMatrix<int, 5> pin_to_track_map, const vtr::Matrix<int>& Fc,
         const int type_width, const int type_height,
         const int num_pins, const int max_chan_width,
@@ -2152,18 +2152,18 @@ static vtr::NdMatrix<vtr::t_ivec, 4> alloc_and_load_track_to_pin_lookup(
      * here is always in the perspective of the CLB                            */
 
     if (num_pins < 1) {
-        return vtr::NdMatrix<vtr::t_ivec, 4>();
+        return vtr::NdMatrix<std::vector<int>, 4>();
     }
 
     /* Alloc and zero the the lookup table */
-    auto track_to_pin_lookup = vtr::NdMatrix<vtr::t_ivec, 4>({size_t(max_chan_width), size_t(type_width), size_t(type_height), 4});
+    auto track_to_pin_lookup = vtr::NdMatrix<std::vector<int>, 4>({size_t(max_chan_width), size_t(type_width), size_t(type_height), 4});
 
     for (int track = 0; track < max_chan_width; ++track) {
         for (int width = 0; width < type_width; ++width) {
             for (int height = 0; height < type_height; ++height) {
                 for (int side = 0; side < 4; ++side) {
-                    track_to_pin_lookup[track][width][height][side].nelem = 0;
-                    track_to_pin_lookup[track][width][height][side].list = NULL;
+                    if (!track_to_pin_lookup[track][width][height][side].empty())
+                        track_to_pin_lookup[track][width][height][side].clear();
                 }
             }
         }
@@ -2188,52 +2188,7 @@ static vtr::NdMatrix<vtr::t_ivec, 4> alloc_and_load_track_to_pin_lookup(
                         int track = pin_to_track_map[pin][width][height][side][conn];
                         VTR_ASSERT(track < max_chan_width);
                         VTR_ASSERT(track >= 0);
-                        track_to_pin_lookup[track][width][height][side].nelem++;
-                    }
-                }
-            }
-        }
-    }
-
-    /* Allocate space.  */
-    for (int track = 0; track < max_chan_width; ++track) {
-        for (int width = 0; width < type_width; ++width) {
-            for (int height = 0; height < type_height; ++height) {
-                for (int side = 0; side < 4; ++side) {
-                    track_to_pin_lookup[track][width][height][side].list = NULL; /* Defensive code */
-                    if (track_to_pin_lookup[track][width][height][side].nelem != 0) {
-                        track_to_pin_lookup[track][width][height][side].list =
-                                (int *) vtr::malloc(track_to_pin_lookup[track][width][height][side].nelem * sizeof (int));
-                        track_to_pin_lookup[track][width][height][side].nelem = 0;
-                    }
-                }
-            }
-        }
-    }
-
-    /* Loading pass. */
-    for (int pin = 0; pin < num_pins; ++pin) {
-        for (int width = 0; width < type_width; ++width) {
-            for (int height = 0; height < type_height; ++height) {
-                for (int side = 0; side < 4; ++side) {
-                    if (pin_to_track_map[pin][width][height][side][0] == OPEN)
-                        continue;
-
-                    /* get number of tracks to which this pin connects */
-                    int num_tracks = 0;
-                    for (int iseg = 0; iseg < num_seg_types; iseg++) {
-                        num_tracks += Fc[pin][iseg];
-                    }
-
-                    for (int conn = 0; conn < num_tracks; ++conn) {
-                        int track = pin_to_track_map[pin][width][height][side][conn];
-
-                        VTR_ASSERT(track < max_chan_width);
-                        VTR_ASSERT(track >= 0);
-
-                        int pin_counter = track_to_pin_lookup[track][width][height][side].nelem;
-                        track_to_pin_lookup[track][width][height][side].list[pin_counter] = pin;
-                        track_to_pin_lookup[track][width][height][side].nelem++;
+                        track_to_pin_lookup[track][width][height][side].push_back(pin);
                     }
                 }
             }

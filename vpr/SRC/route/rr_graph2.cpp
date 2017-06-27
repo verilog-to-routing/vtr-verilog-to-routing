@@ -31,7 +31,7 @@ static void load_chan_rr_indices(
         int *index, vector<int> *** indices);
 
 static int get_bidir_track_to_chan_seg(
-        const vtr::t_ivec conn_tracks,
+        const std::vector<int> conn_tracks,
         vector<int> *** L_rr_node_indices, const int to_chan, const int to_seg,
         const int to_sb, const t_rr_type to_type, const t_seg_details * seg_details,
         const bool from_is_sblock, const int from_switch,
@@ -1484,9 +1484,9 @@ int get_track_to_pins(
                 int width_offset = device_ctx.grid[x][y].width_offset;
                 int height_offset = device_ctx.grid[x][y].height_offset;
 
-                max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side].nelem;
+                max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side].size();
                 for (iconn = 0; iconn < max_conn; iconn++) {
-                    ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side].list[iconn];
+                    ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side][iconn];
 
                     /* Check there is a connection and Fc map isn't wrong */
                     to_node = get_rr_node_index(x, y, IPIN, ipin, L_rr_node_indices);
@@ -1528,14 +1528,14 @@ int get_track_to_tracks(
         const t_chan_details& to_chan_details,
         const enum e_directionality directionality,
         vector<int> *** L_rr_node_indices, bool * L_rr_edge_done,
-        const vtr::NdMatrix<vtr::t_ivec, 3>& switch_block_conn,
+        const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
         t_sb_connection_map *sb_conn_map) {
 
     int num_conn;
     int from_switch, sb_seg, start_sb_seg, end_sb_seg;
     int start, end;
     int to_chan, to_sb;
-    vtr::t_ivec conn_tracks;
+    std::vector<int> conn_tracks;
     bool from_is_sblock, is_behind, Fs_clipped;
     enum e_side from_side_a, from_side_b, to_side;
     bool custom_switch_block;
@@ -1724,15 +1724,15 @@ int get_track_to_tracks(
 }
 
 static int get_bidir_track_to_chan_seg(
-        const vtr::t_ivec conn_tracks,
+        const std::vector<int> conn_tracks,
         vector<int> *** L_rr_node_indices, const int to_chan, const int to_seg,
         const int to_sb, const t_rr_type to_type, const t_seg_details * seg_details,
         const bool from_is_sblock, const int from_switch,
         bool * L_rr_edge_done,
         const enum e_directionality directionality,
         t_linked_edge **edge_list) {
-
-    int iconn, to_track, to_node, to_switch, num_conn, to_x, to_y, i;
+    unsigned iconn;
+    int to_track, to_node, to_switch, num_conn, to_x, to_y, i;
     bool to_is_sblock;
     short switch_types[2];
 
@@ -1748,8 +1748,8 @@ static int get_bidir_track_to_chan_seg(
 
     /* Go through the list of tracks we can connect to */
     num_conn = 0;
-    for (iconn = 0; iconn < conn_tracks.nelem; ++iconn) {
-        to_track = conn_tracks.list[iconn];
+    for (iconn = 0; iconn < conn_tracks.size(); ++iconn) {
+        to_track = conn_tracks[iconn];
         to_node = get_rr_node_index(to_x, to_y, to_type, to_track, L_rr_node_indices);
 
         /* Skip edge if already done */

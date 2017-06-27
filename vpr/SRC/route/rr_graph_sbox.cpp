@@ -32,27 +32,25 @@
 /* Allocates and loads the switch_block_conn data structure.  This structure *
  * lists which tracks connect to which at each switch block. This is for
  * bidir. */
-vtr::NdMatrix<vtr::t_ivec,3> alloc_and_load_switch_block_conn(const size_t nodes_per_chan,
+vtr::NdMatrix<std::vector<int>,3> alloc_and_load_switch_block_conn(const size_t nodes_per_chan,
                                 const e_switch_block_type switch_block_type, 
                                 const int Fs) {
 
 	/* Currently Fs must be 3 since each track maps once to each other side */
 	VTR_ASSERT(3 == Fs);
 
-    vtr::NdMatrix<vtr::t_ivec,3> switch_block_conn({{{0, 4}, {0, 4}, {0, nodes_per_chan}}});
+    vtr::NdMatrix<std::vector<int>,3> switch_block_conn({{{0, 4}, {0, 4}, {0, nodes_per_chan}}});
 
 	for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 		for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 			for (size_t from_track = 0; from_track < nodes_per_chan; from_track++) {
 				if (from_side != to_side) {
-					switch_block_conn[from_side][to_side][from_track].nelem = 1;
-					switch_block_conn[from_side][to_side][from_track].list = (int *) vtr::malloc(sizeof(int));
+					switch_block_conn[from_side][to_side][from_track].resize(1);
 
-					switch_block_conn[from_side][to_side][from_track].list[0] = get_simple_switch_block_track(from_side, to_side, 
+					switch_block_conn[from_side][to_side][from_track][0] = get_simple_switch_block_track(from_side, to_side, 
                                                                                   from_track, switch_block_type, nodes_per_chan);
 				} else { /* from_side == to_side -> no connection. */
-					switch_block_conn[from_side][to_side][from_track].nelem = 0;
-					switch_block_conn[from_side][to_side][from_track].list = NULL;
+					switch_block_conn[from_side][to_side][from_track].clear();
 				}
 			}
 		}
@@ -65,8 +63,8 @@ vtr::NdMatrix<vtr::t_ivec,3> alloc_and_load_switch_block_conn(const size_t nodes
 				fprintf(out, "Side %d to %d\n", l, k);
 				for (size_t j = 0; j < nodes_per_chan; ++j) {
 					fprintf(out, "%zu: ", j);
-					for (int i = 0; i < switch_block_conn[l][k][j].nelem; ++i) {
-						fprintf(out, "%d ", switch_block_conn[l][k][j].list[i]);
+					for (unsigned i = 0; i < switch_block_conn[l][k][j].size(); ++i) {
+						fprintf(out, "%d ", switch_block_conn[l][k][j][i]);
 					}
 					fprintf(out, "\n");
 				}
