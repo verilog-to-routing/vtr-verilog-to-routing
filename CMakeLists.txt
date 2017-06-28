@@ -73,8 +73,10 @@ endif()
 set(WARN_FLAGS "") #The actual warning flags to be applied
 
 if(MSVC)
+    #Visual studio warnings
+    # Note that we don't use /Wall since it generates warnings about standard library headers
     set(WARN_FLAGS_TO_CHECK  #The flags to check if the compiler supports
-        "/W4" #Most warnings (Note that we don't use /Wall since it generates warnings about the standard library)
+        "/W4" #Most warnings
         )
 else()
     set(WARN_FLAGS_TO_CHECK  #The flags to check if the compiler supports
