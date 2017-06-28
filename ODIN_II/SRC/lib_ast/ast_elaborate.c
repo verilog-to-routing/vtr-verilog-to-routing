@@ -99,8 +99,8 @@ void optimize_for_tree()
 			long long terminal = list_for_node[j]->children[1]->children[1]->types.number.value;
 			char *expression[Max_size];
 			char node_write[10][20];
-			memset(expression, 0, Max_size);
-			memset(node_write, 0, sizeof(node_write));
+			memset(expression, 0, sizeof(char)*Max_size);
+			memset(node_write, 0, sizeof(char)*sizeof(node_write));
 			
 			ast_node_t *temp_parent_node = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));; //used to connect copied branches from the for loop
 			count_write = 0;
@@ -121,8 +121,8 @@ void optimize_for_tree()
 									
 				char *infix_expression[Max_size];
 				char *postfix_expression[Max_size];
-				memset(infix_expression, 0, Max_size);
-				memset(postfix_expression, 0, Max_size);
+				memset(infix_expression, 0, sizeof(char)*Max_size);
+				memset(postfix_expression, 0, sizeof(char)*Max_size);
 				
 				modify_expression(expression, infix_expression, v_value, list_for_node[j]->children[0]->children[0]->types.identifier);
 				translate_expression(infix_expression, postfix_expression);
