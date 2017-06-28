@@ -424,12 +424,4 @@ std::vector<std::string> ReadLineTokens(FILE * InFile, int *LineNum) {
     return vtr::split(line);
 }
 
-int strcmp(const char* first, const char* second){
-    if(first && second){
-        return strncmp(first, second, vtr::bufsize);
-    }else{
-        return -1;
-    }
-}
-
 } //namespace

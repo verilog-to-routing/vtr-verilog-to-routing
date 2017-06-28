@@ -23,8 +23,6 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */ 
 #include <string.h>
-#include <string>
-#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -75,11 +73,11 @@ void update_tree_tag(ast_node_t *node, int cases, int tagged);
 		high_level_id = -1;
 		
 		short type = 0;
-		if(vtr::strcmp(global_args.high_level_block,"if")==0){
+		if(strcmp(global_args.high_level_block,"if")==0){
 			type = IF;
-		}else if(vtr::strcmp(global_args.high_level_block,"always")==0){
+		}else if(strcmp(global_args.high_level_block,"always")==0){
 			type = ALWAYS;
-		}else if(vtr::strcmp(global_args.high_level_block,"module")==0){
+		}else if(strcmp(global_args.high_level_block,"module")==0){
 			type = MODULE;
 		}
 		
@@ -294,7 +292,7 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int /*file_nu
 	else
 	{
 		/* size is for a constant that needs */
-		if (vtr::strcmp(new_node->types.number.number, "0") != 0)
+		if (strcmp(new_node->types.number.number, "0") != 0)
 		{
 			new_node->types.number.binary_size = ceil((log(convert_dec_string_of_size_to_long_long(new_node->types.number.number, new_node->types.number.size)+1))/log(2));
 		}
@@ -437,7 +435,7 @@ int get_range(ast_node_t* first_node)
 			first_node->children[2]->types.number.value = temp_value;
 		}
 
-		return std::abs(first_node->children[1]->types.number.value - first_node->children[2]->types.number.value) + 1; // 1:0 is 2 spots
+		return abs(first_node->children[1]->types.number.value - first_node->children[2]->types.number.value) + 1; // 1:0 is 2 spots
 	}
 	return -1; // indicates no range
 }
@@ -514,7 +512,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 			rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, concat_top->children[i]->children[2]);
 			oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
 			oassert(rnode[1]->types.number.value >= rnode[2]->types.number.value);
-			int width = std::abs(rnode[1]->types.number.value - rnode[2]->types.number.value) + 1;
+			int width = abs(rnode[1]->types.number.value - rnode[2]->types.number.value) + 1;
 
 			//for (j = rnode[1]->types.number.value - rnode[2]->types.number.value; j >= 0; j--)
 			// Changed to forward to fix concatenation bug.
@@ -562,24 +560,16 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
  * change the original AST node to a NUMBER node or change the value of the node
  * originate from the function: create_tree_node_number() in ast_util.c
  *-------------------------------------------------------------------------*/
-void change_to_number_node(ast_node_t *node, long long value, char* value_string, short is_string)
+void change_to_number_node(ast_node_t *node, long long value)
 {
 	//free_assignement_of_node_keep_tree(node);
-	size_t len;
-	if(!is_string){
-		len = snprintf(NULL,0,"%lld", value);
-		value_string = (char *)vtr::calloc(len+1,sizeof(char));
-		sprintf(value_string, "%lld", value);
-		node->types.number.number = value_string;
-	}else{
-		len = strlen(value_string);
-		value = strtoll(value_string,NULL,10);
-		node->types.number.number = value_string;
-	}
+	size_t len = snprintf(NULL,0,"%lld", value);
+	char *number = (char *)vtr::calloc(len+1,sizeof(char));
+	sprintf(number, "%lld", value);
 
 	node->types.number.base = DEC;
 	node->types.number.size = len;
-
+	node->types.number.number = number;
 
 	if (value == 0){
 		node->types.number.binary_size = 1;
@@ -785,7 +775,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix)
 		rnode[1] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[1]);
 		rnode[2] = resolve_node(NULL, FALSE, instance_name_prefix, var_node->children[2]);
 		oassert(rnode[1]->type == NUMBERS && rnode[2]->type == NUMBERS);
-		width = std::abs(rnode[1]->types.number.value - rnode[2]->types.number.value) + 1;
+		width = abs(rnode[1]->types.number.value - rnode[2]->types.number.value) + 1;
 		if (rnode[0]->type == IDENTIFIERS)
 		{
 			return_string = (char**)vtr::malloc(sizeof(char*)*width);
@@ -983,8 +973,6 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 		
 		if (node_is_constant(newNode)){
 			node = newNode;
-		}else{
-			vtr::free(newNode);
 		}
 
 		vtr::free(node_copy->children);
@@ -1000,22 +988,25 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
  * Make a unique name for a module based on its parameter list
  * e.g. for a "mod #(0,1,2,3) a(b,c,d)" instantiation you get name___0_1_2_3
  */
-char *make_module_param_name(ast_node_t *module_param_list, char *module_name){
-	std::stringstream module_param_name;
-	module_param_name << module_name;
+char *make_module_param_name(ast_node_t *module_param_list, char *module_name)
+{
+	char *module_param_name = (char*)vtr::malloc((strlen(module_name)+1024) * sizeof(char));
+	strcpy(module_param_name, module_name);
+	
 	if (module_param_list)
 	{
 		int i;
 		oassert(module_param_list->num_children > 0);
-		module_param_name << "___";
+		strcat(module_param_name, "___");
 		for (i = 0; i < module_param_list->num_children; i++)
 		{
 			oassert(module_param_list->children[i]->children[5]->type == NUMBERS);
-			module_param_name << "_"; 
-			module_param_name << std::dec << module_param_list->children[i]->children[5]->types.number.value;
+
+			sprintf(module_param_name, "%s_%lld", module_param_name, module_param_list->children[i]->children[5]->types.number.value);
 		}
 	}
-	return vtr::strdup(module_param_name.str().c_str());
+	
+	return module_param_name;
 }
 
 

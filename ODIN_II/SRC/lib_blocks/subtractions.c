@@ -36,8 +36,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "vtr_memory.h"
 #include "vtr_util.h"
-#include <string>
-#include <sstream>
 
 
 using vtr::t_linked_vptr;
@@ -123,15 +121,37 @@ void declare_hard_adder_for_sub(nnode_t *node)
  *-------------------------------------------------------------------------*/
 void instantiate_hard_adder_subtraction(nnode_t *node, short mark, netlist_t * /*netlist*/)
 {
+	char *new_name;
+	int len, sanity, i;
+
 	declare_hard_adder_for_sub(node);
-	for (int i = 0; i < node->num_output_pins;  i++)
+
+	/* Need to give node proper name */
+	len = strlen(node->name);
+	len = len + 20; /* 20 chars should hold mul specs */
+	new_name = (char*)vtr::malloc(len);
+
+	/* wide input first :) */
+	if (node->input_port_sizes[0] > node->input_port_sizes[1])
+		sanity = sprintf(new_name, "%s", node->name);
+	else
+		sanity = sprintf(new_name, "%s", node->name);
+
+	if (len <= sanity) /* buffer not large enough */
+		oassert(FALSE);
+
+	/* Give names to the output pins */
+	for (i = 0; i < node->num_output_pins;  i++)
 	{
-		if (!node->output_pins[i]->name){
-			std::stringstream new_name;
-			new_name << node->name << "[" << std::dec << node->output_pins[i]->pin_node_idx << "]";
-			node->output_pins[i]->name = vtr::strdup(new_name.str().c_str());
+		if (node->output_pins[i]->name ==NULL)
+		{
+			len = strlen(node->name) + 20; /* 6 chars for pin idx */
+			new_name = (char*)vtr::malloc(len);
+			sprintf(new_name, "%s[%d]", node->name, node->output_pins[i]->pin_node_idx);
+			node->output_pins[i]->name = new_name;
 		}
 	}
+
 	node->traverse_visited = mark;
 	return;
 }

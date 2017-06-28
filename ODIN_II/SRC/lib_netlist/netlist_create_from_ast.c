@@ -507,7 +507,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t* current_module, ch
 							if(current_module->types.module.module_instantiations_instance[k]->children[1])
 							{
 								ast_node_t *module_instance = current_module->types.module.module_instantiations_instance[k]->children[1];
-								if(vtr::strcmp(module_instance->children[0]->types.identifier, current_module->children[i]->children[j]->types.identifier) == 0)
+								if(strcmp(module_instance->children[0]->types.identifier, current_module->children[i]->children[j]->types.identifier) == 0)
 								{
 
 									if(module_instance->children[2])
@@ -1852,7 +1852,7 @@ void connect_memory_and_alias(ast_node_t* hb_instance, char *instance_name_prefi
 
 
 		/* We can ignore inputs since they are already resolved */
-		enum PORTS port_dir = (!vtr::strcmp(ip_name, "out") || !vtr::strcmp(ip_name, "out1") || !vtr::strcmp(ip_name, "out2"))
+		enum PORTS port_dir = (!strcmp(ip_name, "out") || !strcmp(ip_name, "out1") || !strcmp(ip_name, "out2"))
 				?OUT_PORT:IN_PORT;
 		if ((port_dir == OUT_PORT) || (port_dir == INOUT_PORT))
 		{
@@ -2003,11 +2003,11 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char *instance_name_p
 			oassert(port_size != 0);
 			port_size = outport_size;
 
-			if(vtr::strcmp(hb_model->name, "adder") == 0)
+			if(strcmp(hb_model->name, "adder") == 0)
 			{
-				if(vtr::strcmp(hb_var_node->types.identifier, "cout") == 0 && flag == 0)
+				if(strcmp(hb_var_node->types.identifier, "cout") == 0 && flag == 0)
 					port_size = 1;
-				else if(vtr::strcmp(hb_var_node->types.identifier, "sumout") == 0 && flag == 0)
+				else if(strcmp(hb_var_node->types.identifier, "sumout") == 0 && flag == 0)
 					port_size = port_size - 1;
 			}
 
@@ -2312,7 +2312,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				/* IF the designer uses port names then make sure they line up */
 				if (module_instance_list->children[i]->children[0] != NULL)
 				{
-					if (vtr::strcmp(module_instance_list->children[i]->children[0]->types.identifier,
+					if (strcmp(module_instance_list->children[i]->children[0]->types.identifier,
 							module_list->children[i]->children[0]->children[0]->types.identifier) != 0
 					)
 					{
@@ -2399,7 +2399,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 				/* IF the designer users port names then make sure they line up */
 				if (module_instance_list->children[i]->children[0] != NULL)
 				{
-					if (vtr::strcmp(module_instance_list->children[i]->children[0]->types.identifier, module_list->children[i]->children[0]->children[0]->types.identifier) != 0)
+					if (strcmp(module_instance_list->children[i]->children[0]->types.identifier, module_list->children[i]->children[0]->children[0]->types.identifier) != 0)
 					{
 						error_message(NETLIST_ERROR, module_list->children[i]->children[0]->line_number, module_list->children[i]->children[0]->file_number,
 								"This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
@@ -2618,7 +2618,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				/* IF the designer uses port names then make sure they line up */
 				if (module_instance_list->children[i]->children[0] != NULL)
 				{
-					if (vtr::strcmp(module_instance_list->children[i]->children[0]->types.identifier,
+					if (strcmp(module_instance_list->children[i]->children[0]->types.identifier,
 							module_list->children[i]->children[0]->children[0]->types.identifier) != 0
 					)
 					{
@@ -2720,7 +2720,7 @@ signal_list_t *connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 				/* IF the designer users port names then make sure they line up */
 				if (i > 0 && module_instance_list->children[i]->children[0] != NULL)
 				{
-					if (vtr::strcmp(module_instance_list->children[i]->children[0]->types.identifier, module_list->children[i]->children[0]->children[0]->types.identifier) != 0)
+					if (strcmp(module_instance_list->children[i]->children[0]->types.identifier, module_list->children[i]->children[0]->children[0]->types.identifier) != 0)
 					{
 						error_message(NETLIST_ERROR, module_list->children[i]->children[0]->line_number, module_list->children[i]->children[0]->file_number,
 								"This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
@@ -3342,7 +3342,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 
                if(list_dependence_pin[j] && list_dependence_pin[j]->net->driver_pin &&
 					list_dependence_type[j] && list_dependence_type[j] == BLOCKING_STATEMENT &&
-						vtr::strcmp(ref_string,assignment->pins[j]->node->name) == 0){
+						strcmp(ref_string,assignment->pins[j]->node->name) == 0){
 
 
                     dependence_variable_position = j;
@@ -3366,7 +3366,7 @@ void terminate_registered_assignment(ast_node_t *always_node, signal_list_t* ass
 		for (j = 0; j < node->num_input_pins; j++)
 		{
 			npin_t *original_pin = node->input_pins[j];
-			if (original_pin->name && pin->name && !vtr::strcmp(original_pin->name, pin->name))
+			if (original_pin->name && pin->name && !strcmp(original_pin->name, pin->name))
 			{
 				pin->mapping = original_pin->mapping;
 				add_input_pin_to_node(node, pin, j);
@@ -3459,7 +3459,7 @@ void terminate_continuous_assignment(ast_node_t *node, signal_list_t* assignment
 		for (j = 0; j < node2->num_input_pins; j++)
 		{
 			npin_t *original_pin = node2->input_pins[j];
-			if (original_pin->name && pin->name && !vtr::strcmp(original_pin->name, pin->name))
+			if (original_pin->name && pin->name && !strcmp(original_pin->name, pin->name))
 			{
 				pin->mapping = original_pin->mapping;
 				add_input_pin_to_node(node2, pin, j);
@@ -4275,7 +4275,7 @@ signal_list_t *create_mux_statements(signal_list_t **statement_lists, nnode_t *m
 			/* check if the current element for this case statement is defined */
 			if (
 						(per_case_statement_idx[j] < (statement_lists[j] ? statement_lists[j]->count : 0))
-					&& (statement_lists[j] ? (vtr::strcmp(combined_lists->pins[i]->name, statement_lists[j]->pins[per_case_statement_idx[j]]->name) == 0) : 0)
+					&& (statement_lists[j] ? (strcmp(combined_lists->pins[i]->name, statement_lists[j]->pins[per_case_statement_idx[j]]->name) == 0) : 0)
 			)
 			{
 				/* If they match then we have a signal with this name and we can attach the pin */
@@ -4533,13 +4533,13 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 		char *ip_name = block_connect->children[0]->types.identifier;
 		hb_ports = hb_model->inputs;
 
-		while (hb_ports && vtr::strcmp(hb_ports->name, ip_name))
+		while (hb_ports && strcmp(hb_ports->name, ip_name))
 			hb_ports = hb_ports->next;
 
 		if (!hb_ports)
 		{
 			hb_ports = hb_model->outputs;
-			while ((hb_ports != NULL) && (vtr::strcmp(hb_ports->name, ip_name) != 0))
+			while ((hb_ports != NULL) && (strcmp(hb_ports->name, ip_name) != 0))
 				hb_ports = hb_ports->next;
 		}
 
@@ -4570,9 +4570,9 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 			/* Create the pins for port if needed */
 			in_list[i] = create_pins(block_port_connect, NULL, instance_name_prefix);
 			port_size = in_list[i]->count;
-			if (vtr::strcmp(hb_ports->name, "data1") == 0)
+			if (strcmp(hb_ports->name, "data1") == 0)
 				out_port_size1 = port_size;
-			if (vtr::strcmp(hb_ports->name, "data2") == 0)
+			if (strcmp(hb_ports->name, "data2") == 0)
 				out_port_size2 = port_size;
 
 			int j;
@@ -4606,7 +4606,7 @@ signal_list_t *create_dual_port_ram_block(ast_node_t* block, char *instance_name
 		char *ip_name = block_connect->types.identifier;
 
 		int out_port_size;
-		if (vtr::strcmp(hb_ports->name, "out1") == 0)
+		if (strcmp(hb_ports->name, "out1") == 0)
 			out_port_size = out_port_size1;
 		else
 			out_port_size = out_port_size2;
@@ -4715,13 +4715,13 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 		ip_name = block_connect->children[0]->types.identifier;
 		hb_ports = hb_model->inputs;
 
-		while (hb_ports && vtr::strcmp(hb_ports->name, ip_name))
+		while (hb_ports && strcmp(hb_ports->name, ip_name))
 			hb_ports = hb_ports->next;
 
 		if (!hb_ports)
 		{
 			hb_ports = hb_model->outputs;
-			while (hb_ports && vtr::strcmp(hb_ports->name, ip_name))
+			while (hb_ports && strcmp(hb_ports->name, ip_name))
 				hb_ports = hb_ports->next;
 		}
 
@@ -4769,7 +4769,7 @@ signal_list_t *create_single_port_ram_block(ast_node_t* block, char *instance_na
 			/* Create the pins for port if needed */
 			in_list[i] = create_pins(block_port_connect, NULL, instance_name_prefix);
 			port_size = in_list[i]->count;
-			if (vtr::strcmp(hb_ports->name, "data") == 0)
+			if (strcmp(hb_ports->name, "data") == 0)
 				out_port_size = port_size;
 
 			int j;
@@ -4900,12 +4900,12 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 
 		char *ip_name = block_connect->types.identifier;
 
-		if (vtr::strcmp(ip_name, "out"))
+		if (strcmp(ip_name, "out"))
 		{
 			// Create the pins for port if needed
 			in_list[i] = create_pins(block_port_connect, NULL, instance_name_prefix);
 			int port_size = in_list[i]->count;
-			if (!vtr::strcmp(ip_name, "data"))
+			if (!strcmp(ip_name, "data"))
 				out_port_size = port_size;
 
 			int j;
@@ -4935,7 +4935,7 @@ signal_list_t *create_soft_single_port_ram_block(ast_node_t* block, char *instan
 		ast_node_t *block_connect = block_list->children[i]->children[0];
 		char *ip_name = block_connect->types.identifier;
 
-		if (!vtr::strcmp(ip_name, "out"))
+		if (!strcmp(ip_name, "out"))
 		{
 			allocate_more_output_pins(block_node, out_port_size);
 			add_output_port_information(block_node, out_port_size);
@@ -5052,7 +5052,7 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 
 		char *ip_name = block_connect->types.identifier;
 
-		int is_output = !vtr::strcmp(ip_name, "out1") || !vtr::strcmp(ip_name, "out2");
+		int is_output = !strcmp(ip_name, "out1") || !strcmp(ip_name, "out2");
 
 		if (!is_output)
 		{
@@ -5060,9 +5060,9 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 			in_list[i] = create_pins(block_port_connect, NULL, instance_name_prefix);
 			int port_size = in_list[i]->count;
 
-			if (!vtr::strcmp(ip_name, "data1"))
+			if (!strcmp(ip_name, "data1"))
 				out1_size = port_size;
-			else if (!vtr::strcmp(ip_name, "data2"))
+			else if (!strcmp(ip_name, "data2"))
 				out2_size = port_size;
 
 			int j;
@@ -5095,8 +5095,8 @@ signal_list_t *create_soft_dual_port_ram_block(ast_node_t* block, char *instance
 		ast_node_t *block_connect = block_list->children[i]->children[0];
 		char *ip_name = block_connect->types.identifier;
 
-		int is_out1 = !vtr::strcmp(ip_name, "out1");
-		int is_out2 = !vtr::strcmp(ip_name, "out2");
+		int is_out1 = !strcmp(ip_name, "out1");
+		int is_out2 = !strcmp(ip_name, "out2");
 		int is_output = is_out1 || is_out2;
 
 		if (is_output)
@@ -5220,11 +5220,11 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 	}
 
 	/* memory's are a special case due to splitting */
-	if (vtr::strcmp(hb_model->name, "multiply") == 0)
+	if (strcmp(hb_model->name, "multiply") == 0)
 	{
 		is_mult = 1;
 	}
-	else if(vtr::strcmp(hb_model->name, "adder") == 0)
+	else if(strcmp(hb_model->name, "adder") == 0)
 	{
 		is_adder = 1;
 	}
@@ -5254,12 +5254,12 @@ signal_list_t *create_hard_block(ast_node_t* block, char *instance_name_prefix)
 		block_connect = block_list->children[i];
 		ip_name = block_connect->children[0]->types.identifier;
 		hb_ports = hb_model->inputs;
-		while ((hb_ports != NULL) && (vtr::strcmp(hb_ports->name, ip_name) != 0))
+		while ((hb_ports != NULL) && (strcmp(hb_ports->name, ip_name) != 0))
 			hb_ports = hb_ports->next;
 		if (hb_ports == NULL)
 		{
 			hb_ports = hb_model->outputs;
-			while ((hb_ports != NULL) && (vtr::strcmp(hb_ports->name, ip_name) != 0))
+			while ((hb_ports != NULL) && (strcmp(hb_ports->name, ip_name) != 0))
 				hb_ports = hb_ports->next;
 		}
 

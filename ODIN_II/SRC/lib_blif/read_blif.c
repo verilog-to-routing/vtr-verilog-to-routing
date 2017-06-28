@@ -203,34 +203,34 @@ int read_tokens (char *buffer, hard_block_models *models, FILE *file, hashtable_
 		else
 		{
 			skip_reading_bit_map= FALSE;
-			if (vtr::strcmp (token, ".inputs") == 0)
+			if (strcmp (token, ".inputs") == 0)
 			{
 				add_top_input_nodes(file, output_nets_hash);// create the top input nodes
 			}
-			else if (vtr::strcmp (token, ".outputs") == 0)
+			else if (strcmp (token, ".outputs") == 0)
 			{
 				rb_create_top_output_nodes(file);// create the top output nodes
 			}
-			else if (vtr::strcmp (token, ".names") == 0)
+			else if (strcmp (token, ".names") == 0)
 			{
 				create_internal_node_and_driver(file, output_nets_hash);
 			}
-			else if (vtr::strcmp(token,".latch") == 0)
+			else if (strcmp(token,".latch") == 0)
 			{
 				create_latch_node_and_driver(file, output_nets_hash);
 			}
-			else if (vtr::strcmp(token,".subckt") == 0)
+			else if (strcmp(token,".subckt") == 0)
 			{
 				create_hard_block_nodes(models, file, output_nets_hash);
 			}
-			else if (vtr::strcmp(token,".end")==0)
+			else if (strcmp(token,".end")==0)
 			{
 				// Marks the end of the main module of the blif
 				// Call function to hook up the nets
 				hook_up_nets(output_nets_hash);
 				return FALSE;
 			}
-			else if (vtr::strcmp(token,".model")==0)
+			else if (strcmp(token,".model")==0)
 			{
 				// Ignore models.
 				dum_parse(buffer, file);
@@ -266,48 +266,48 @@ short assign_node_type_from_node_name(char * output_name)
 
 	extracted_string[j]='\0';
 
-	if      (!vtr::strcmp(extracted_string,"GT"))             return GT;
-	else if (!vtr::strcmp(extracted_string,"LT"))             return LT;
-	else if (!vtr::strcmp(extracted_string,"ADDER_FUNC"))     return ADDER_FUNC;
-	else if (!vtr::strcmp(extracted_string,"CARRY_FUNC"))     return CARRY_FUNC;
-	else if (!vtr::strcmp(extracted_string,"BITWISE_NOT"))    return BITWISE_NOT;
-	else if (!vtr::strcmp(extracted_string,"LOGICAL_AND"))    return LOGICAL_AND;
-	else if (!vtr::strcmp(extracted_string,"LOGICAL_OR"))     return LOGICAL_OR;
-	else if (!vtr::strcmp(extracted_string,"LOGICAL_XOR"))    return LOGICAL_XOR;
-	else if (!vtr::strcmp(extracted_string,"LOGICAL_XNOR"))   return LOGICAL_XNOR;
-	else if (!vtr::strcmp(extracted_string,"LOGICAL_NAND"))   return LOGICAL_NAND;
-	else if (!vtr::strcmp(extracted_string,"LOGICAL_NOR"))    return LOGICAL_NOR;
-	else if (!vtr::strcmp(extracted_string,"LOGICAL_EQUAL"))  return LOGICAL_EQUAL;
-	else if (!vtr::strcmp(extracted_string,"NOT_EQUAL"))      return NOT_EQUAL;
-	else if (!vtr::strcmp(extracted_string,"LOGICAL_NOT"))    return LOGICAL_NOT;
-	else if (!vtr::strcmp(extracted_string,"MUX_2"))          return MUX_2;
-	else if (!vtr::strcmp(extracted_string,"FF_NODE"))        return FF_NODE;
-	else if (!vtr::strcmp(extracted_string,"MULTIPLY"))       return MULTIPLY;
-	else if (!vtr::strcmp(extracted_string,"HARD_IP"))        return HARD_IP;
-	else if (!vtr::strcmp(extracted_string,"INPUT_NODE"))     return INPUT_NODE;
-	else if (!vtr::strcmp(extracted_string,"OUTPUT_NODE"))    return OUTPUT_NODE;
-	else if (!vtr::strcmp(extracted_string,"PAD_NODE"))       return PAD_NODE;
-	else if (!vtr::strcmp(extracted_string,"CLOCK_NODE"))     return CLOCK_NODE;
-	else if (!vtr::strcmp(extracted_string,"GND_NODE"))       return GND_NODE;
-	else if (!vtr::strcmp(extracted_string,"VCC_NODE"))       return VCC_NODE;
-	else if (!vtr::strcmp(extracted_string,"BITWISE_AND"))    return BITWISE_AND;
-	else if (!vtr::strcmp(extracted_string,"BITWISE_NAND"))   return BITWISE_NAND;
-	else if (!vtr::strcmp(extracted_string,"BITWISE_NOR"))    return BITWISE_NOR;
-	else if (!vtr::strcmp(extracted_string,"BITWISE_XNOR"))   return BITWISE_XNOR;
-	else if (!vtr::strcmp(extracted_string,"BITWISE_XOR"))    return BITWISE_XOR;
-	else if (!vtr::strcmp(extracted_string,"BITWISE_OR"))     return BITWISE_OR;
-	else if (!vtr::strcmp(extracted_string,"BUF_NODE"))       return BUF_NODE;
-	else if (!vtr::strcmp(extracted_string,"MULTI_PORT_MUX")) return MULTI_PORT_MUX;
-	else if (!vtr::strcmp(extracted_string,"SL"))             return SL;
-	else if (!vtr::strcmp(extracted_string,"SR"))             return SR;
-	else if (!vtr::strcmp(extracted_string,"CASE_EQUAL"))     return CASE_EQUAL;
-	else if (!vtr::strcmp(extracted_string,"CASE_NOT_EQUAL")) return CASE_NOT_EQUAL;
-	else if (!vtr::strcmp(extracted_string,"DIVIDE"))         return DIVIDE;
-	else if (!vtr::strcmp(extracted_string,"MODULO"))         return MODULO;
-	else if (!vtr::strcmp(extracted_string,"GTE"))            return GTE;
-	else if (!vtr::strcmp(extracted_string,"LTE"))            return LTE;
-	else if (!vtr::strcmp(extracted_string,"ADD"))            return ADD;
-	else if (!vtr::strcmp(extracted_string,"MINUS"))          return MINUS;
+	if      (!strcmp(extracted_string,"GT"))             return GT;
+	else if (!strcmp(extracted_string,"LT"))             return LT;
+	else if (!strcmp(extracted_string,"ADDER_FUNC"))     return ADDER_FUNC;
+	else if (!strcmp(extracted_string,"CARRY_FUNC"))     return CARRY_FUNC;
+	else if (!strcmp(extracted_string,"BITWISE_NOT"))    return BITWISE_NOT;
+	else if (!strcmp(extracted_string,"LOGICAL_AND"))    return LOGICAL_AND;
+	else if (!strcmp(extracted_string,"LOGICAL_OR"))     return LOGICAL_OR;
+	else if (!strcmp(extracted_string,"LOGICAL_XOR"))    return LOGICAL_XOR;
+	else if (!strcmp(extracted_string,"LOGICAL_XNOR"))   return LOGICAL_XNOR;
+	else if (!strcmp(extracted_string,"LOGICAL_NAND"))   return LOGICAL_NAND;
+	else if (!strcmp(extracted_string,"LOGICAL_NOR"))    return LOGICAL_NOR;
+	else if (!strcmp(extracted_string,"LOGICAL_EQUAL"))  return LOGICAL_EQUAL;
+	else if (!strcmp(extracted_string,"NOT_EQUAL"))      return NOT_EQUAL;
+	else if (!strcmp(extracted_string,"LOGICAL_NOT"))    return LOGICAL_NOT;
+	else if (!strcmp(extracted_string,"MUX_2"))          return MUX_2;
+	else if (!strcmp(extracted_string,"FF_NODE"))        return FF_NODE;
+	else if (!strcmp(extracted_string,"MULTIPLY"))       return MULTIPLY;
+	else if (!strcmp(extracted_string,"HARD_IP"))        return HARD_IP;
+	else if (!strcmp(extracted_string,"INPUT_NODE"))     return INPUT_NODE;
+	else if (!strcmp(extracted_string,"OUTPUT_NODE"))    return OUTPUT_NODE;
+	else if (!strcmp(extracted_string,"PAD_NODE"))       return PAD_NODE;
+	else if (!strcmp(extracted_string,"CLOCK_NODE"))     return CLOCK_NODE;
+	else if (!strcmp(extracted_string,"GND_NODE"))       return GND_NODE;
+	else if (!strcmp(extracted_string,"VCC_NODE"))       return VCC_NODE;
+	else if (!strcmp(extracted_string,"BITWISE_AND"))    return BITWISE_AND;
+	else if (!strcmp(extracted_string,"BITWISE_NAND"))   return BITWISE_NAND;
+	else if (!strcmp(extracted_string,"BITWISE_NOR"))    return BITWISE_NOR;
+	else if (!strcmp(extracted_string,"BITWISE_XNOR"))   return BITWISE_XNOR;
+	else if (!strcmp(extracted_string,"BITWISE_XOR"))    return BITWISE_XOR;
+	else if (!strcmp(extracted_string,"BITWISE_OR"))     return BITWISE_OR;
+	else if (!strcmp(extracted_string,"BUF_NODE"))       return BUF_NODE;
+	else if (!strcmp(extracted_string,"MULTI_PORT_MUX")) return MULTI_PORT_MUX;
+	else if (!strcmp(extracted_string,"SL"))             return SL;
+	else if (!strcmp(extracted_string,"SR"))             return SR;
+	else if (!strcmp(extracted_string,"CASE_EQUAL"))     return CASE_EQUAL;
+	else if (!strcmp(extracted_string,"CASE_NOT_EQUAL")) return CASE_NOT_EQUAL;
+	else if (!strcmp(extracted_string,"DIVIDE"))         return DIVIDE;
+	else if (!strcmp(extracted_string,"MODULO"))         return MODULO;
+	else if (!strcmp(extracted_string,"GTE"))            return GTE;
+	else if (!strcmp(extracted_string,"LTE"))            return LTE;
+	else if (!strcmp(extracted_string,"ADD"))            return ADD;
+	else if (!strcmp(extracted_string,"MINUS"))          return MINUS;
 	else                                                 return GENERIC;
 }
 
@@ -449,10 +449,10 @@ char* search_clock_name(FILE* file)
 		char *ptr;
 		if((ptr = vtr::strtok(buffer, TOKENS, file, buffer)))
 		{
-			if(!vtr::strcmp(ptr,".end"))
+			if(!strcmp(ptr,".end"))
 				break;
 
-			if(!vtr::strcmp(ptr,".inputs"))
+			if(!strcmp(ptr,".inputs"))
 			{
 				/* store the inputs in array of string */
 				while((ptr = vtr::strtok (NULL, TOKENS, file, buffer)))
@@ -461,14 +461,14 @@ char* search_clock_name(FILE* file)
 					input_names[input_names_count++] = vtr::strdup(ptr);
 				}
 			}
-			else if(!vtr::strcmp(ptr,".names") || !vtr::strcmp(ptr,".latch"))
+			else if(!strcmp(ptr,".names") || !strcmp(ptr,".latch"))
 			{
 				while((ptr = vtr::strtok (NULL, TOKENS,file, buffer)))
 				{
 					int i;
 					for(i = 0; i < input_names_count; i++)
 					{
-						if(!vtr::strcmp(ptr,input_names[i]))
+						if(!strcmp(ptr,input_names[i]))
 						{
 							vtr::free(input_names[i]);
 							input_names[i] = input_names[--input_names_count];
@@ -555,11 +555,11 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, hashtable_t 
 	// Determine the type of hard block.
 	char *subcircuit_name_prefix = vtr::strdup(subcircuit_name);
 	subcircuit_name_prefix[5] = '\0';
-	if (!vtr::strcmp(subcircuit_name, "multiply") || !vtr::strcmp(subcircuit_name_prefix, "mult_"))
+	if (!strcmp(subcircuit_name, "multiply") || !strcmp(subcircuit_name_prefix, "mult_"))
 		new_node->type = MULTIPLY;
-	else if (!vtr::strcmp(subcircuit_name, "adder") || !vtr::strcmp(subcircuit_name_prefix, "adder"))
+	else if (!strcmp(subcircuit_name, "adder") || !strcmp(subcircuit_name_prefix, "adder"))
 		new_node->type = ADD;
-	else if (!vtr::strcmp(subcircuit_name, "sub") || !vtr::strcmp(subcircuit_name_prefix, "sub"))
+	else if (!strcmp(subcircuit_name, "sub") || !strcmp(subcircuit_name_prefix, "sub"))
 			new_node->type = MINUS;
 	else
 		new_node->type = MEMORY;
@@ -666,9 +666,9 @@ void create_internal_node_and_driver(FILE *file, hashtable_t *output_nets_hash)
 
 	/* gnd vcc unconn already created as top module so ignore them */
 	if (
-			   !vtr::strcmp(names[input_count-1],"gnd")
-			|| !vtr::strcmp(names[input_count-1],"vcc")
-			|| !vtr::strcmp(names[input_count-1],"unconn")
+			   !strcmp(names[input_count-1],"gnd")
+			|| !strcmp(names[input_count-1],"vcc")
+			|| !strcmp(names[input_count-1],"unconn")
 	)
 	{
 		skip_reading_bit_map = TRUE;
@@ -795,8 +795,8 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 		fsetpos(file,&pos);
 
 		char *ptr = vtr::strtok(buffer,"\t\n", file, buffer);
-		if      (!vtr::strcmp(ptr," 0")) return GND_NODE;
-		else if (!vtr::strcmp(ptr," 1")) return VCC_NODE;
+		if      (!strcmp(ptr," 0")) return GND_NODE;
+		else if (!strcmp(ptr," 1")) return VCC_NODE;
 		else if (!ptr)              return GND_NODE;
 		else                        return VCC_NODE;
 	}
@@ -817,7 +817,7 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 		output_bit_map = vtr::strdup(vtr::strtok(NULL,TOKENS, file, buffer));
 	}
 
-	if (!vtr::strcmp(output_bit_map, One))
+	if (!strcmp(output_bit_map, One))
 	{
 		vtr::free(output_bit_map);
 		output_bit_map = vtr::strdup(One);
@@ -841,11 +841,11 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 		if(line_count_bitmap == 1)
 		{
 			// GT
-			if(!vtr::strcmp(bit_map[0],"100"))
+			if(!strcmp(bit_map[0],"100"))
 				return GT;
 
 			// LT
-			if(!vtr::strcmp(bit_map[0],"010"))
+			if(!strcmp(bit_map[0],"010"))
 				return LT;
 
 			/* LOGICAL_AND and LOGICAL_NAND for ABC*/
@@ -854,23 +854,23 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 
 			if(i == input_count)
 			{
-				if (!vtr::strcmp(output_bit_map,"1"))
+				if (!strcmp(output_bit_map,"1"))
 					return LOGICAL_AND;
-				else if (!vtr::strcmp(output_bit_map,"0"))
+				else if (!strcmp(output_bit_map,"0"))
 					return LOGICAL_NAND;
 			}
 
 			/* BITWISE_NOT */
-			if(!vtr::strcmp(bit_map[0],"0"))
+			if(!strcmp(bit_map[0],"0"))
 				return BITWISE_NOT;
 
 			/* LOGICAL_NOR and LOGICAL_OR for ABC */
 			for(i = 0; i < input_count && bit_map[0][i] == '0'; i++);
 			if(i == input_count)
 			{
-				if (!vtr::strcmp(output_bit_map,"1"))
+				if (!strcmp(output_bit_map,"1"))
 					return LOGICAL_NOR;
-				else if (!vtr::strcmp(output_bit_map,"0"))
+				else if (!strcmp(output_bit_map,"0"))
 					return LOGICAL_OR;
 			}
 		}
@@ -878,42 +878,42 @@ short read_bit_map_find_unknown_gate(int input_count, nnode_t *node, FILE *file)
 		else if(line_count_bitmap == 2)
 		{
 			/* LOGICAL_XOR */
-			if((vtr::strcmp(bit_map[0],"01")==0) && (vtr::strcmp(bit_map[1],"10")==0)) return LOGICAL_XOR;
+			if((strcmp(bit_map[0],"01")==0) && (strcmp(bit_map[1],"10")==0)) return LOGICAL_XOR;
 			/* LOGICAL_XNOR */
-			if((vtr::strcmp(bit_map[0],"00")==0) && (vtr::strcmp(bit_map[1],"11")==0)) return LOGICAL_XNOR;
+			if((strcmp(bit_map[0],"00")==0) && (strcmp(bit_map[1],"11")==0)) return LOGICAL_XNOR;
 		}
 		else if (line_count_bitmap == 4)
 		{
 			/* ADDER_FUNC */
 			if (
-					   (!vtr::strcmp(bit_map[0],"001"))
-					&& (!vtr::strcmp(bit_map[1],"010"))
-					&& (!vtr::strcmp(bit_map[2],"100"))
-					&& (!vtr::strcmp(bit_map[3],"111"))
+					   (!strcmp(bit_map[0],"001"))
+					&& (!strcmp(bit_map[1],"010"))
+					&& (!strcmp(bit_map[2],"100"))
+					&& (!strcmp(bit_map[3],"111"))
 			)
 				return ADDER_FUNC;
 			/* CARRY_FUNC */
 			if(
-					   (!vtr::strcmp(bit_map[0],"011"))
-					&& (!vtr::strcmp(bit_map[1],"101"))
-					&& (!vtr::strcmp(bit_map[2],"110"))
-					&& (!vtr::strcmp(bit_map[3],"111"))
+					   (!strcmp(bit_map[0],"011"))
+					&& (!strcmp(bit_map[1],"101"))
+					&& (!strcmp(bit_map[2],"110"))
+					&& (!strcmp(bit_map[3],"111"))
 			)
 				return 	CARRY_FUNC;
 			/* LOGICAL_XOR */
 			if(
-					   (!vtr::strcmp(bit_map[0],"001"))
-					&& (!vtr::strcmp(bit_map[1],"010"))
-					&& (!vtr::strcmp(bit_map[2],"100"))
-					&& (!vtr::strcmp(bit_map[3],"111"))
+					   (!strcmp(bit_map[0],"001"))
+					&& (!strcmp(bit_map[1],"010"))
+					&& (!strcmp(bit_map[2],"100"))
+					&& (!strcmp(bit_map[3],"111"))
 			)
 				return 	LOGICAL_XOR;
 			/* LOGICAL_XNOR */
 			if(
-					   (!vtr::strcmp(bit_map[0],"000"))
-					&& (!vtr::strcmp(bit_map[1],"011"))
-					&& (!vtr::strcmp(bit_map[2],"101"))
-					&& (!vtr::strcmp(bit_map[3],"110"))
+					   (!strcmp(bit_map[0],"000"))
+					&& (!strcmp(bit_map[1],"011"))
+					&& (!strcmp(bit_map[2],"101"))
+					&& (!strcmp(bit_map[3],"110"))
 			)
 				return 	LOGICAL_XNOR;
 		}
@@ -1271,7 +1271,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 		{
 			char *token = vtr::strtok(buffer,TOKENS, file, buffer);
 			// match .model followed buy the subcircuit name.
-			if (token && !vtr::strcmp(token,".model") && !vtr::strcmp(vtr::strtok(NULL,TOKENS, file, buffer), name_subckt))
+			if (token && !strcmp(token,".model") && !strcmp(vtr::strtok(NULL,TOKENS, file, buffer), name_subckt))
 			{
 				model = (hard_block_model *)vtr::malloc(sizeof(hard_block_model));
 				model->name = vtr::strdup(name_subckt);
@@ -1287,7 +1287,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 				while (vtr::fgets(buffer, READ_BLIF_BUFFER, file))
 				{
 					char *first_word = vtr::strtok(buffer, TOKENS, file, buffer);
-					if(!vtr::strcmp(first_word, ".inputs"))
+					if(!strcmp(first_word, ".inputs"))
 					{
 						char *name;
 						while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
@@ -1296,7 +1296,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 							model->inputs->names[model->inputs->count++] = vtr::strdup(name);
 						}
 					}
-					else if(!vtr::strcmp(first_word, ".outputs"))
+					else if(!strcmp(first_word, ".outputs"))
 					{
 						char *name;
 						while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
@@ -1305,7 +1305,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 							model->outputs->names[model->outputs->count++] = vtr::strdup(name);
 						}
 					}
-					else if(!vtr::strcmp(first_word, ".end"))
+					else if(!strcmp(first_word, ".end"))
 					{
 						break;
 					}
@@ -1360,7 +1360,7 @@ static int compare_hard_block_pin_names(const void *p1, const void *p2)
 
 	char *port_name1 = get_hard_block_port_name(name1);
 	char *port_name2 = get_hard_block_port_name(name2);
-	int portname_difference = vtr::strcmp(port_name1, port_name2);
+	int portname_difference = strcmp(port_name1, port_name2);
 	vtr::free(port_name1);
 	vtr::free(port_name2);
 
@@ -1426,7 +1426,7 @@ hard_block_ports *get_hard_block_ports(char **pins, int count)
 	{
 		char *portname = get_hard_block_port_name(pins[i]);
 		// Compare the part of the name before the "["
-		if (!i || vtr::strcmp(prev_portname, portname))
+		if (!i || strcmp(prev_portname, portname))
 		{
 			ports->sizes = (int *)vtr::realloc(ports->sizes, sizeof(int) * (ports->count + 1));
 			ports->names = (char **)vtr::realloc(ports->names, sizeof(char *) * (ports->count + 1));

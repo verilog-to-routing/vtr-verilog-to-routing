@@ -83,7 +83,7 @@ sc_lookup_string(STRING_CACHE * sc,
     i = sc->string_hash[hash];
     while(i >= 0)
 	{
-	    if(!vtr::strcmp(sc->string[i], string))
+	    if(!strcmp(sc->string[i], string))
 		return i;
 	    i = sc->next_string[i];
 	}

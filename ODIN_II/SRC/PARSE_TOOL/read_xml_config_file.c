@@ -269,9 +269,9 @@ void read_optimizations(pugi::xml_node a_node, config_t *config, const pugiutil:
 		prop = get_attribute(child, "split_memory_depth", loc_data, OPTIONAL).as_string(NULL);
 		if (prop != NULL)
 		{
-			if (vtr::strcmp(prop, "min") == 0)
+			if (strcmp(prop, "min") == 0)
 				config->split_memory_depth = -1;
-			else if (vtr::strcmp(prop, "max") == 0)
+			else if (strcmp(prop, "max") == 0)
 				config->split_memory_depth = -2;
 			else
 				config->split_memory_depth = atoi(prop);

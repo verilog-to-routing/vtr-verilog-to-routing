@@ -36,7 +36,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "subtractions.h"
 
 #include "vtr_memory.h"
-#include "vtr_util.h"
+
 #include "vtr_list.h"
 
 using vtr::t_linked_vptr;
@@ -132,7 +132,7 @@ void find_hard_adders()
 
 	while (hard_adders != NULL)
 	{
-		if (vtr::strcmp(hard_adders->name, "adder") == 0)
+		if (strcmp(hard_adders->name, "adder") == 0)
 		{
 			init_add_distribution();
 			return;
@@ -1031,6 +1031,8 @@ void traverse_list(operation_list oper, t_linked_vptr *place)
  *-------------------------------------------------------------------------*/
 void match_node(t_linked_vptr *place, operation_list oper)
 {
+	int flag = 0;
+    int mark = 0;
 	nnode_t *node = NULL;
 	nnode_t *next_node = NULL;
 	node = (nnode_t*)place->data_vptr;
@@ -1040,15 +1042,29 @@ void match_node(t_linked_vptr *place, operation_list oper)
 		next = place->next;
 	while (next != NULL)
 	{
+		flag = 0;
+		mark = 0;
 		next_node = (nnode_t*)next->data_vptr;
-		if (node->num_input_pins == next_node->num_input_pins &&
-			match_ports(node, next_node, oper) &&
-			match_pins(node, next_node)
-		){
-					merge_nodes(node, next_node);
-					remove_list_node(pre, next);
-					next = pre->next;
-		}else{
+		if (node->type == next_node->type)
+		{
+			if (node->num_input_pins == next_node->num_input_pins)
+			{
+				flag = match_ports(node, next_node, oper);
+				if (flag == 1)
+				{
+					mark = match_pins(node, next_node);
+					if (mark == 1)
+					{
+						merge_nodes(node, next_node);
+						remove_list_node(pre, next);
+					}
+				}
+			}
+		}
+		if (mark == 1)
+			next = pre->next;
+		else
+		{
 			pre = next;
 			next= next->next;
 		}
@@ -1059,38 +1075,62 @@ void match_node(t_linked_vptr *place, operation_list oper)
 /*---------------------------------------------------------------------------
  * (function: match_ports)
  *-------------------------------------------------------------------------*/
-short match_ports(nnode_t *node, nnode_t *next_node, operation_list oper){
-	char *component_s[2] = { 0 };
-	char *component_o[2] = { 0 };
-
-	if (node->related_ast_node->types.operation.op == oper &&
-		traverse_operation_node(node->related_ast_node, component_s, oper) && 
-		traverse_operation_node(next_node->related_ast_node, component_o, oper))
+int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
+{
+	int flag = 0;
+	int sign = 0;
+	int *mark = &sign;
+	int mark1 = 1;
+	int mark2 = 1;
+	ast_node_t *ast_node, *ast_node_next;
+	char *component_s[2] = {0};
+	char *component_o[2] = {0};
+	ast_node = node->related_ast_node;
+	ast_node_next = next_node->related_ast_node;
+	if (ast_node->types.operation.op == oper)
 	{
-		//breaks things. something is pushing a null string.
-		//oassert(component_s[0] && component_o[1] && component_s[1] && component_o[0]);
-		switch (oper)
+		traverse_operation_node(ast_node, component_s, oper, mark);
+		if (sign != 1)
 		{
-			case ADD:
-			case MULTIPLY:
-				if (vtr::strcmp(component_s[0], component_o[1]) == 0 && 
-					vtr::strcmp(component_s[1], component_o[0]) == 0)
+			traverse_operation_node(ast_node_next, component_o, oper, mark);
+			if (sign != 1)
+			{
+				switch (oper)
 				{
-					return TRUE;
+					case ADD:
+					case MULTIPLY:
+					{
+						mark1 = strcmp(component_s[0], component_o[0]);
+						if (mark1 == 0)
+							mark2 = strcmp(component_s[1], component_o[1]);
+						else
+						{
+                            assert(component_s[0] && component_o[1] && component_s[1] && component_o[0]);
+							mark1 = strcmp(component_s[0], component_o[1]);
+							mark2 = strcmp(component_s[1], component_o[0]);
+						}
+						if (mark1 == 0 && mark2 == 0)
+							flag = 1;
+					}
+					break;
+
+					case MINUS:
+						mark1 = strcmp(component_s[0], component_o[0]);
+						if (mark1 == 0)
+							mark2 = strcmp(component_s[1], component_s[1]);
+						if (mark2 == 0)
+							flag = 1;
+					break;
+
+					default:
+
+					break;
 				}
-			case MINUS:
-				if (vtr::strcmp(component_s[0], component_o[0]) == 0 && 
-					vtr::strcmp(component_s[1], component_o[1]) == 0)
-				{
-					return TRUE;
-				}
-	
-			default:
-				break;
+			}
 		}
 	}
 
-	return FALSE;
+	return flag;
 }
 
 /*-------------------------------------------------------------------------
@@ -1098,29 +1138,35 @@ short match_ports(nnode_t *node, nnode_t *next_node, operation_list oper){
  *
  * search the ast find the couple of components
  *-----------------------------------------------------------------------*/
-short traverse_operation_node(ast_node_t *node, char *component[], operation_list op){
+void traverse_operation_node(ast_node_t *node, char *component[], operation_list op, int *mark)
+{
 	int i;
-	if (node && node->types.operation.op == op){
-		for (i = 0; i < node->num_children; i++){
-			if(node->children[i] && node->children[i]->type){
-				switch (node->children[i]->type){
-					case IDENTIFIERS:
-						component[i] = node->children[i]->types.identifier;
-						break;
-					case NUMBERS:
-						component[i] = node->children[i]->types.number.number;
-						break;
-					default:
-						return FALSE;
-				}
-			}else{
-				return FALSE;
+
+	if (node == NULL)
+		return;
+
+	if (node->types.operation.op == op)
+	{
+		for (i = 0; i < node->num_children; i++)
+		{
+			*mark = 0;
+			if (node->children[i]->type != IDENTIFIERS && node->children[i]->type != NUMBERS)
+			{
+				*mark = 1;
+				break;
 			}
+			else
+			{
+				if (node->children[i]->type == IDENTIFIERS)
+					component[i] = node->children[i]->types.identifier;
+				else
+					if (node->children[i]->type == NUMBERS)
+						component[i] = node->children[i]->types.number.number;
+			}
+
 		}
-		//if it goes through without breaking then it is successfull
-		return TRUE;
 	}
-	return FALSE;
+
 }
 
 /*---------------------------------------------------------------------------
@@ -1219,16 +1265,31 @@ void free_op_nodes(nnode_t *node)
 /*---------------------------------------------------------------------------
  * (function: match_pins)
  *-------------------------------------------------------------------------*/
-short match_pins(nnode_t *node, nnode_t *next_node)
+int match_pins(nnode_t *node, nnode_t *next_node)
 {
+	int flag = 0;
 	int i, j;
-	for (i = 0; i < node->num_input_pins; i++){
-		for (j = 0;	node->input_pins[i]->net->driver_pin->unique_id 	 
-					!= next_node->input_pins[j]->net->driver_pin->unique_id; j++){
-			if (j == next_node->num_input_pins - 1){
-				return FALSE;
+	long id;
+	for (i = 0; i < node->num_input_pins; i++)
+	{
+		flag = 0;
+		id = node->input_pins[i]->net->driver_pin->unique_id;
+		for (j = 0; j < next_node->num_input_pins; j++)
+		{
+			if (id == next_node->input_pins[j]->net->driver_pin->unique_id)
+			{
+				flag = 1;
+				break;
+			}
+			if (j == next_node->num_input_pins - 1)
+			{
+				flag = -1;
+				break;
 			}
 		}
+		if (flag == -1)
+			break;
 	}
-	return TRUE;
+
+	return flag;
 }
