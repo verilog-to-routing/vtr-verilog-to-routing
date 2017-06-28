@@ -39,9 +39,7 @@ extern global_args_t global_args;
  * (function: allocate_nnode)
  *-------------------------------------------------------------------------------------------*/
 nnode_t* allocate_nnode() {
-	nnode_t *new_node;
-
-	new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
+	nnode_t *new_node = (nnode_t *)my_malloc_struct(sizeof(nnode_t));
 
 	new_node->name = NULL;
 	new_node->type = NO_OP;
@@ -95,53 +93,29 @@ nnode_t* allocate_nnode() {
 /*---------------------------------------------------------------------------------------------
  * (function: free_nnode)
  *-------------------------------------------------------------------------------------------*/
-void free_nnode(nnode_t *to_free)
+nnode_t *free_nnode(nnode_t *to_free)
 {
-	int i;
-
-	if (to_free != NULL)
+	if (to_free)
 	{
 		/* need to free node_data */
 
-		for (i = 0; i < to_free->num_input_pins; i++)
-		{
-			if (to_free->input_pins[i] != NULL)
-			{
-				free_npin(to_free->input_pins[i]);
-				to_free->input_pins[i] = NULL;
-			}
-		}
-		if (to_free->input_pins != NULL)
-		{
-			vtr::free(to_free->input_pins);
-			to_free->input_pins = NULL;
-		}
+		for (int i = 0; i < to_free->num_input_pins; i++)
+			to_free->input_pins[i] = (npin_t*)vtr::free(to_free->input_pins[i]);
+			
+		to_free->input_pins = (npin_t**)vtr::free(to_free->input_pins);
 
-		for (i = 0; i < to_free->num_output_pins; i++)
-		{
-			if (to_free->output_pins[i] != NULL)
-			{
-				free_npin(to_free->output_pins[i]);
-				to_free->output_pins[i] = NULL;
-			}
-		}
-		if (to_free->output_pins != NULL)
-		{
-			vtr::free(to_free->output_pins);
-			to_free->output_pins = NULL;
-		}
+		for (int i = 0; i < to_free->num_output_pins; i++)
+			to_free->output_pins[i] = (npin_t*)vtr::free(to_free->output_pins[i]);
 
-		if (to_free->input_port_sizes != NULL)
-			vtr::free(to_free->input_port_sizes);
-		if (to_free->output_port_sizes != NULL)
-			vtr::free(to_free->output_port_sizes);
+		to_free->output_pins = (npin_t**)vtr::free(to_free->output_pins);
 
-		if (to_free->undriven_pins)
-			vtr::free(to_free->undriven_pins);
+		vtr::free(to_free->input_port_sizes);
+		vtr::free(to_free->output_port_sizes);
+		vtr::free(to_free->undriven_pins);
 
 		/* now free the node */
-		vtr::free(to_free);
 	}
+	return (nnode_t*)vtr::free(to_free);
 }
 
 /*-------------------------------------------------------------------------
@@ -275,24 +249,11 @@ npin_t* copy_input_npin(npin_t* copy_pin)
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: free_npin)
- * 	doesn't free any one else
- *-------------------------------------------------------------------------------------------*/
-void free_npin(npin_t *to_free)
-{
-	if (to_free) {
-		vtr::free(to_free);
-	}
-}
-
-/*---------------------------------------------------------------------------------------------
  * (function: allocate_nnet)
  *-------------------------------------------------------------------------------------------*/
 nnet_t* allocate_nnet()
 {
-	nnet_t *new_net;
-
-	new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
+	nnet_t *new_net = (nnet_t*)my_malloc_struct(sizeof(nnet_t));
 
 	new_net->name = NULL;
 	new_net->driver_pin = NULL;
@@ -307,18 +268,6 @@ nnet_t* allocate_nnet()
 	new_net->initial_value = 0;
 
 	return new_net;
-}
-
-/*-------------------------------------------------------------------------
- * (function: free_nnet)
- * 	free nnet_t struct
- *-----------------------------------------------------------------------*/
-void free_nnet(nnet_t *to_free)
-{
-	if (to_free != NULL)
-	{
-		vtr::free(to_free);
-	}
 }
 
 /*---------------------------------------------------------------------------
@@ -461,7 +410,7 @@ void combine_nets(nnet_t *output_net, nnet_t* input_net, netlist_t *netlist)
 	}
 
 	/* free the driver net */
-	free_nnet(output_net);
+	vtr::free(output_net);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -725,14 +674,10 @@ signal_list_t *make_output_pins_for_existing_node(nnode_t* node, int width)
  *-------------------------------------------------------------------------------------------*/
 void free_signal_list(signal_list_t *list)
 {
-	if (list == NULL)
-		return;
-
-	if (list->pins != NULL)
+	if (list){
 		vtr::free(list->pins);
-
-	list->count = 0;
-
+		list->count = 0;
+	}
 	vtr::free(list);
 }
 
