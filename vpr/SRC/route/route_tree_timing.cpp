@@ -95,7 +95,7 @@ void free_route_tree_timing_structs(void) {
 
 	/* Frees the structures needed to build routing trees, and really frees
 	 * (i.e. calls free) all the data on the free lists.                         */
-
+    
 	t_rt_node *rt_node, *next_node;
 	t_linked_rt_edge *rt_edge, *next_edge;
 
@@ -1186,4 +1186,29 @@ bool is_uncongested_route_tree(const t_rt_node* root) {
 
     //The sub-tree below the curret node is unconngested
     return true;
+}
+
+
+t_rt_node*
+init_route_tree_to_source_no_net(int inode) {
+
+	/* Initializes the routing tree to just the net source, and returns the root
+	 * node of the rt_tree (which is just the net source).                       */
+
+    t_rt_node *rt_root;
+
+    auto& device_ctx = g_vpr_ctx.device();
+
+    rt_root = alloc_rt_node();
+    rt_root->u.child_list = NULL;
+    rt_root->parent_node = NULL;
+    rt_root->parent_switch = OPEN;
+    rt_root->re_expand = true;
+    rt_root->inode = inode;
+    rt_root->C_downstream = device_ctx.rr_nodes[inode].C();
+    rt_root->R_upstream = device_ctx.rr_nodes[inode].R();
+    rt_root->Tdel = 0.5 * device_ctx.rr_nodes[inode].R() * device_ctx.rr_nodes[inode].C();
+    rr_node_to_rt_node[inode] = rt_root;
+
+    return (rt_root);
 }

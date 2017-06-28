@@ -259,7 +259,7 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			&device_ctx.num_rr_switches,
 			&warning_count,
                         router_opts.write_rr_graph_name.c_str(),
-                        router_opts.read_rr_graph_name.c_str());
+                        router_opts.read_rr_graph_name.c_str(), false);
 
 	clock_t end = clock();
 
@@ -324,7 +324,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 			&device_ctx.num_rr_switches,
 			&warning_count, 
                         router_opts.write_rr_graph_name.c_str(),
-                        router_opts.read_rr_graph_name.c_str());
+                        router_opts.read_rr_graph_name.c_str(), false);
 
 	clock_t end = clock();
 
@@ -629,7 +629,7 @@ void mark_ends(int inet) {
 
 	/* Mark all the SINKs of this net as targets by setting their target flags  *
 	 * to the number of times the net must connect to each SINK.  Note that     *
-	 * this number can occassionally be greater than 1 -- think of connecting   *
+	 * this number can occasionally be greater than 1 -- think of connecting   *
 	 * the same net to two inputs of an and-gate (and-gate inputs are logically *
 	 * equivalent, so both will connect to the same SINK).                      */
 
