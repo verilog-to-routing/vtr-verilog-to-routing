@@ -3478,44 +3478,27 @@ void terminate_continuous_assignment(ast_node_t *node, signal_list_t* assignment
  *-------------------------------------------------------------------------------------------*/
 int alias_output_assign_pins_to_inputs(char_list_t *output_list, signal_list_t *input_list, ast_node_t *node)
 {
-	int i;
-
-	if (output_list->num_strings >= input_list->count)
-	{
-		for (i = 0; i < input_list->count; i++)
+		for (int i = 0; i < output_list->num_strings; i++)
 		{
+			if (i >= input_list->count){
+				if (global_args.all_warnings)
+					warning_message(NETLIST_ERROR, node->line_number, node->file_number,
+							"More nets to drive than drivers, padding with ZEROs for driver %s\n", output_list->strings[i]);
+	
+				add_pin_to_signal_list(input_list, get_zero_pin(verilog_netlist));
+			}
+			
 			input_list->pins[i]->name = output_list->strings[i];
+			free_nnode(input_list->pins[i]->node);
 			input_list->pins[i]->node = allocate_nnode();
 			input_list->pins[i]->node->related_ast_node = node;
 		}
-		for (i = input_list->count; i < output_list->num_strings; i++)
-		{
-			if (global_args.all_warnings)
-				warning_message(NETLIST_ERROR, node->line_number, node->file_number,
-						"More nets to drive than drivers, padding with ZEROs for driver %s\n", output_list->strings[i]);
-
-			add_pin_to_signal_list(input_list, get_zero_pin(verilog_netlist));
-			input_list->pins[i]->name = output_list->strings[i];
-			input_list->pins[i]->node = allocate_nnode();
-			input_list->pins[i]->node->related_ast_node = node;
-		}
-
-		return output_list->num_strings;
-	}
-	else
-	{
-		for (i = 0; i < output_list->num_strings; i++)
-		{
-			input_list->pins[i]->name = output_list->strings[i];
-			input_list->pins[i]->node = allocate_nnode();
-			input_list->pins[i]->node->related_ast_node = node;
-		}
-
-		if (global_args.all_warnings)
+		
+		if (global_args.all_warnings && output_list->num_strings < input_list->count)
 			warning_message(NETLIST_ERROR, node->line_number, node->file_number,
 					"Alias: More driver pins than nets to drive: sometimes using decimal numbers causes this problem\n");
+
 		return output_list->num_strings;
-	}
 }
 
 /*--------------------------------------------------------------------------

@@ -10,11 +10,12 @@
 
 namespace vtr {
 	
-void free(void *some){
+void* free(void *some){
 	if(some){
 		std::free(some);
 		some = NULL;
 	}
+	return NULL;
 }
 
 void* calloc(size_t nelem, size_t size) {

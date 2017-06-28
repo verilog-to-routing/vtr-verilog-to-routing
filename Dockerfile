@@ -4,7 +4,7 @@ RUN apt-get update
 RUN apt-get upgrade -y
 # ------------------------------------------------------------------------------
 # Install base
-RUN apt-get install -y clang time supervisor build-essential  openssh-server g++ clang curl libssl-dev apache2-utils git libxml2-dev sshfs libx11-dev libxft-dev fontconfig libcairo2-dev gcc automake git cmake flex bison ctags gdb perl valgrind 
+RUN apt-get install -y clang time supervisor build-essential  openssh-server g++ zip clang curl libssl-dev apache2-utils git libxml2-dev sshfs libx11-dev libxft-dev fontconfig libcairo2-dev gcc automake git cmake flex bison ctags gdb perl valgrind 
 RUN sed -i 's/^\(\[supervisord\]\)$/\1\nnodaemon=true/' /etc/supervisor/supervisord.conf
 
 # ------------------------------------------------------------------------------

@@ -16,9 +16,9 @@ npin_t *get_one_pin(netlist_t *netlist);
 npin_t* copy_input_npin(npin_t* copy_pin);
 npin_t* copy_output_npin(npin_t* copy_pin);
 nnet_t* allocate_nnet();
-void free_nnode(nnode_t *to_free);
-void free_npin(npin_t *to_free);
-void free_nnet(nnet_t *to_free);
+nnode_t* free_nnode(nnode_t *to_free);
+npin_t* free_npin(npin_t *to_free);
+
 
 void allocate_more_input_pins(nnode_t *node, int width);
 void allocate_more_output_pins(nnode_t *node, int width);

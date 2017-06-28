@@ -104,13 +104,9 @@ void depth_first_traverse_parital_map(nnode_t *node, int traverse_mark_number, n
 	nnode_t *next_node;
 	nnet_t *next_net;
 
-	if (node->traverse_visited == traverse_mark_number)
+	if (node->traverse_visited != traverse_mark_number)
 	{
-		return;
-	}
-	else
-	{
-		/* ELSE - this is a new node so depth visit it */
+		/*this is a new node so depth visit it */
 
 		/* mark that we have visitied this node now */
 		node->traverse_visited = traverse_mark_number;
