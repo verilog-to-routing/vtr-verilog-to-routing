@@ -1338,7 +1338,10 @@ ast_node_t *node_is_constant(ast_node_t *node){
 	if (node && node->type == NUMBERS){
 		/* check if it's a constant depending on the number type */
 		switch (node->types.number.base){
-			case DEC: case HEX: case OCT: case BIN:
+			case DEC: //fallthrough
+            case HEX: //fallthrough
+            case OCT: //fallthrough
+            case BIN:
 				if (node->types.number.value == -1){
 					break;
 				}
