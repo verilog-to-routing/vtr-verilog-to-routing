@@ -189,7 +189,7 @@ static int alloc_rr_switch_inf(map<int, int> *switch_fanin);
 
 static void rr_graph_externals(
         const t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
-        int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type);
+        int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type, bool for_placement);
 
 void alloc_and_load_edges_and_switches(
         t_rr_node * L_rr_node, const int inode,
@@ -233,7 +233,7 @@ static void build_rr_graph(
         const char* dump_rr_structs_file,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
-        int *Warnings);
+        int *Warnings, bool for_placement);
 
 /******************* Subroutine definitions *******************************/
 
@@ -257,18 +257,19 @@ void create_rr_graph(
         int *num_rr_switches,
         int *Warnings,
         const std::string write_rr_graph_name,
-        const std::string read_rr_graph_name) {
+        const std::string read_rr_graph_name,
+        bool for_placement) {
 
     if (!read_rr_graph_name.empty()) {
         load_rr_file(graph_type, L_nx, L_ny,
                 nodes_per_chan, num_seg_types, segment_inf, base_cost_type,
                 wire_to_rr_ipin_switch, num_rr_switches,
-                read_rr_graph_name.c_str());
+                read_rr_graph_name.c_str(), for_placement);
     } else {
         build_rr_graph(graph_type, L_num_types, types, L_nx, L_ny, L_grid, nodes_per_chan, sb_type, Fs, switchblocks,
                 num_seg_types, num_arch_switches, segment_inf, global_route_switch, delayless_switch, wire_to_arch_ipin_switch,
                 base_cost_type, trim_empty_channels, trim_obs_channels, directs, num_directs,
-                dump_rr_structs_file, wire_to_rr_ipin_switch, num_rr_switches, Warnings);
+                dump_rr_structs_file, wire_to_rr_ipin_switch, num_rr_switches, Warnings, for_placement);
     }
     //Write out rr graph file if needed
     if (!write_rr_graph_name.empty()) {
@@ -295,7 +296,7 @@ static void build_rr_graph(
         const char* dump_rr_structs_file,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
-        int *Warnings) {
+        int *Warnings, bool for_placement) {
 
     vtr::printf_info("Starting build routing resource graph...\n");
     clock_t begin = clock();
@@ -545,7 +546,7 @@ static void build_rr_graph(
     (*num_rr_switches) = alloc_and_load_rr_switch_inf(num_arch_switches, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
 
     rr_graph_externals(segment_inf, num_seg_types, max_chan_width,
-            *wire_to_rr_ipin_switch, base_cost_type);
+            *wire_to_rr_ipin_switch, base_cost_type, for_placement);
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH)) {
         dump_rr_graph(getEchoFileName(E_ECHO_RR_GRAPH));
     }
@@ -783,7 +784,7 @@ static void remap_rr_node_switch_indices(map<int, int> *switch_fanin) {
 
 static void rr_graph_externals(
         const t_segment_inf * segment_inf, int num_seg_types, int max_chan_width,
-        int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type) {
+        int wire_to_rr_ipin_switch, enum e_base_cost_type base_cost_type, bool for_placement) {
     auto& device_ctx = g_vpr_ctx.device();
 
     add_rr_graph_C_from_switches(device_ctx.rr_switch_inf[wire_to_rr_ipin_switch].Cin);
@@ -791,9 +792,11 @@ static void rr_graph_externals(
             max_chan_width, wire_to_rr_ipin_switch, base_cost_type);
     load_rr_index_segments(num_seg_types);
 
-    alloc_net_rr_terminals();
-    load_net_rr_terminals(device_ctx.rr_node_indices);
-    alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
+    if (!for_placement) {
+        alloc_net_rr_terminals();
+        load_net_rr_terminals(device_ctx.rr_node_indices);
+        alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
+    }
 }
 
 static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_num_types,
@@ -1175,8 +1178,10 @@ void free_rr_graph(void) {
     for (i = 0; i < cluster_ctx.num_blocks; i++) {
         free(route_ctx.rr_blk_source[i]);
     }
-    free(route_ctx.rr_blk_source);
-    route_ctx.rr_blk_source = NULL;
+    if (route_ctx.rr_blk_source != NULL) {
+        free(route_ctx.rr_blk_source);
+        route_ctx.rr_blk_source = NULL;
+    }
     route_ctx.net_rr_terminals = NULL;
     device_ctx.rr_node_indices = NULL;
     device_ctx.rr_indexed_data = NULL;

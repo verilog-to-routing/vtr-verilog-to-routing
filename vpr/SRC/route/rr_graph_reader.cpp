@@ -58,7 +58,7 @@ void load_rr_file(const t_graph_type graph_type,
         const enum e_base_cost_type base_cost_type,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
-        const char* read_rr_graph_name) {
+        const char* read_rr_graph_name, bool for_placement) {
 
     const char *Prop;
     pugi::xml_node next_component;
@@ -73,7 +73,7 @@ void load_rr_file(const t_graph_type graph_type,
                 read_rr_graph_name);
     }
     try {
-	
+
         //parse the file
         loc_data = pugiutil::load_xml(doc, read_rr_graph_name);
 
@@ -163,9 +163,11 @@ void load_rr_file(const t_graph_type graph_type,
         process_seg_id(next_component, loc_data);
 
         //Load all the external routing data structures
-        alloc_net_rr_terminals();
-        load_net_rr_terminals(device_ctx.rr_node_indices);
-        alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
+        if (!for_placement) {
+            alloc_net_rr_terminals();
+            load_net_rr_terminals(device_ctx.rr_node_indices);
+            alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
+        }
 
         check_rr_graph(graph_type, L_nx, L_ny, *num_rr_switches, device_ctx.block_types, segment_inf);
 
@@ -278,7 +280,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
             newType = IPIN;
             node.set_type(newType);
         } else {
-            vpr_throw(VPR_ERROR_OTHER,__FILE__, __LINE__,
+            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Valid inputs for class types are \"CHANX\", \"CHANY\",\"SOURCE\", \"SINK\",\"OPIN\", and \"IPIN\".");
         }
 
@@ -599,7 +601,7 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
                 }
             }
         } else if (node.type() == IPIN || node.type() == OPIN) {
-            for (int ix = node.xlow(); ix <= node.xhigh(); ix++){
+            for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                     indices[IPIN][ix][iy].push_back(inode);
                 }
@@ -630,7 +632,7 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
                     indices[CHANX][iy][ix][count] = inode;
 		}
             }
-	}else if (node.type() == CHANY) {
+        } else if (node.type() == CHANY) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {            
 		    count = node.ptc_num();
