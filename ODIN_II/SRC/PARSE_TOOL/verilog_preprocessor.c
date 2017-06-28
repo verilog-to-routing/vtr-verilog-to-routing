@@ -138,7 +138,7 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 	/* Check previously defined values for collisions. */
 	for (i = 0; i < veri_defines.current_index && i < veri_defines.current_size; def_iterator = veri_defines.defined_constants[++i]) 
 	{
-		if (0 == vtr::strcmp(def_iterator->symbol, symbol)) 
+		if (0 == strcmp(def_iterator->symbol, symbol)) 
 		{
 			fprintf(stderr, "Warning: The constant %s defined on line %d in %s was previously defined on line %d in %s\n",
 				symbol, line, defined_in->path, def_iterator->line, def_iterator->defined_in->path);
@@ -156,7 +156,7 @@ int add_veri_define(char *symbol, char *value, int line, veri_include *defined_i
 				return 0;
 			}
 #endif
-			else if (0 != vtr::strcmp(def_iterator->value, value))
+			else if (0 != strcmp(def_iterator->value, value))
 			{
 				fprintf(stderr, "\tWarning: The value of %s has been redefined to %s, the previous value was %s\n\n",
 					symbol, value, def_iterator->value);
@@ -207,7 +207,7 @@ veri_include* add_veri_include(char *path, int line, veri_include *included_from
 	/* Scan previous includes to make sure the file wasn't included previously. */
 	for (i = 0; i < veri_includes.current_index && i < veri_includes.current_size && inc_iterator != NULL; inc_iterator = veri_includes.included_files[++i])
 	{
-		if (0 == vtr::strcmp(path, inc_iterator->path))
+		if (0 == strcmp(path, inc_iterator->path))
 		{
 			printf("Warning: including %s multiple times\n", path);
 //			vtr::free(new_inc);
@@ -251,7 +251,7 @@ int veri_is_defined(char * symbol)
 	for (i = 0; (i < veri_defines.current_index) && (i < veri_defines.current_size) && (def_iterator != NULL); i++)
 	{
 		def_iterator = veri_defines.defined_constants[i];
-		if (0 == vtr::strcmp(symbol, def_iterator->symbol))
+		if (0 == strcmp(symbol, def_iterator->symbol))
 		{
 			return i;
 		}
@@ -470,7 +470,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			/* If we encounter an `included directive we want to recurse using included_file and 
 			 * new_include in place of source and current_include
 			 */
-			if (top(skip) < 1 && vtr::strcmp(token, "`include") == 0)
+			if (top(skip) < 1 && strcmp(token, "`include") == 0)
 			{
 				printf("%s\n", token);
 
@@ -499,7 +499,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			/* If we encounter a `define directive we want to add it and its value if any to our
 			 * symbol table.
 			 */
-			else if (top(skip) < 1 && vtr::strcmp(token, "`define") == 0)
+			else if (top(skip) < 1 && strcmp(token, "`define") == 0)
 			{
 				char *value = NULL;
 				
@@ -523,7 +523,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 			/* If we encounter a `undef preprocessor directive we want to remove the corresponding
 			 * symbol from our lookup table.
 			 */
-			else if (top(skip) < 1 && vtr::strcmp(token, "`undef") == 0)
+			else if (top(skip) < 1 && strcmp(token, "`undef") == 0)
 			{
 				int is_defined = 0;
 				/* strtok is destructive to the original string which we need to retain unchanged, this fixes it. */
@@ -540,7 +540,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 					veri_defines.defined_constants[veri_defines.current_index--] = NULL;
 				}
 			}
-			else if (vtr::strcmp(token, "`ifdef") == 0)
+			else if (strcmp(token, "`ifdef") == 0)
 			{
 				// if parent is not skipped
 				if ( top(skip) < 1 ) {
@@ -562,7 +562,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 					push( skip, 2 ) ;
 				}
 			}
-			else if (vtr::strcmp(token, "`ifndef") == 0)
+			else if (strcmp(token, "`ifndef") == 0)
 			{
 				// if parent is not skipped
 				if ( top(skip) < 1 ) {
@@ -584,7 +584,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 					push( skip, 2 ) ;
 				}
 			}
-			else if (vtr::strcmp(token, "`else") == 0)
+			else if (strcmp(token, "`else") == 0)
 			{
 				// if skip was 0 (prev. ifdef was 1) 
 				if(top(skip) < 1)
@@ -604,7 +604,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 					// then do nothing 
 				}
 			}
-			else if (vtr::strcmp(token, "`endif") == 0)
+			else if (strcmp(token, "`endif") == 0)
 			{
 				pop(skip);
 			}

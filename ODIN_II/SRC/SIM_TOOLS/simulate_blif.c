@@ -1001,8 +1001,8 @@ int is_node_ready(nnode_t* node, int cycle)
 			npin_t *pin = node->input_pins[i];
 			// The data and write enable inputs rely on the values from the previous cycle.
 			if (
-					   !vtr::strcmp(pin->mapping, "data") || !vtr::strcmp(pin->mapping, "data1") || !vtr::strcmp(pin->mapping, "data2")
-					|| !vtr::strcmp(pin->mapping, "we")   || !vtr::strcmp(pin->mapping, "we1")   || !vtr::strcmp(pin->mapping, "we2")
+					   !strcmp(pin->mapping, "data") || !strcmp(pin->mapping, "data1") || !strcmp(pin->mapping, "data2")
+					|| !strcmp(pin->mapping, "we")   || !strcmp(pin->mapping, "we1")   || !strcmp(pin->mapping, "we2")
 			)
 			{
 				if (get_pin_cycle(pin) < cycle-1)
@@ -1430,7 +1430,7 @@ int is_clock_node(nnode_t *node)
 {
 	return (
 		   (node->type == CLOCK_NODE)
-		|| !vtr::strcmp(node->name,"top^clk") // Strictly for memories.
+		|| !strcmp(node->name,"top^clk") // Strictly for memories.
 	);
 }
 
@@ -2174,13 +2174,13 @@ int parse_mif_radix(char *radix)
 {
 	if (radix)
 	{
-		if (!vtr::strcmp(radix, "HEX"))
+		if (!strcmp(radix, "HEX"))
 			return 16;
-		else if (!vtr::strcmp(radix, "DEC"))
+		else if (!strcmp(radix, "DEC"))
 			return 10;
-		else if (!vtr::strcmp(radix, "OCT"))
+		else if (!strcmp(radix, "OCT"))
 			return 8;
-		else if (!vtr::strcmp(radix, "BIN"))
+		else if (!strcmp(radix, "BIN"))
 			return 2;
 		else
 			return 0;
@@ -2225,7 +2225,7 @@ void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long dept
 				if (strlen(token))
 				{
 					// END; signifies the end of the file.
-					if(!vtr::strcmp(buffer, "END;"))
+					if(!strcmp(buffer, "END;"))
 						break;
 
 					// The part before the : is the address.
@@ -2278,9 +2278,9 @@ void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long dept
 					// If is something after the equals sign and before the semicolon, add the symbol=value association to the symbol table.
 					if (token)
 						symbols->add(symbols, symbol, sizeof(char) * strlen(symbol), vtr::strdup(token));
-					else if(!vtr::strcmp(buffer, "CONTENT")) {}
+					else if(!strcmp(buffer, "CONTENT")) {}
 					// We found "CONTENT" followed on the next line by "BEGIN". That means we're at the end of the parameters.
-					else if(!vtr::strcmp(buffer, "BEGIN") && !vtr::strcmp(last_line, "CONTENT"))
+					else if(!strcmp(buffer, "BEGIN") && !strcmp(last_line, "CONTENT"))
 					{
 						// Sanity check parameters to make sure we have what we need.
 
@@ -2511,7 +2511,7 @@ int verify_test_vector_headers(FILE *in, lines_t *l)
 		{
 			if (buffer_length)
 			{
-				if(vtr::strcmp(l->lines[current_line]->name,buffer))
+				if(strcmp(l->lines[current_line]->name,buffer))
 				{
 					char *expected_header = generate_vector_header(l);
 					warning_message(SIMULATION_ERROR, 0, -1,
@@ -2569,7 +2569,7 @@ int find_portname_in_lines(char* port_name, lines_t *l)
 {
 	int j;
 	for (j = 0; j < l->count; j++)
-		if (!vtr::strcmp(l->lines[j]->name, port_name))
+		if (!strcmp(l->lines[j]->name, port_name))
 			return  j;
 
 	return -1;
@@ -2992,7 +2992,7 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
 	int error = FALSE;
 
 	// The filename cannot be the same as our default output file.
-	if (!vtr::strcmp(output_vector_file,OUTPUT_VECTOR_FILE_NAME))
+	if (!strcmp(output_vector_file,OUTPUT_VECTOR_FILE_NAME))
 	{
 		error = TRUE;
 		warning_message(SIMULATION_ERROR,0,-1,
@@ -3029,7 +3029,7 @@ int verify_output_vectors(char* output_vector_file, int num_vectors)
 				break;
 			}
 			// The headers differ.
-			else if ((cycle == -1) && vtr::strcmp(buffer1,buffer2))
+			else if ((cycle == -1) && strcmp(buffer1,buffer2))
 			{
 				error = TRUE;
 				warning_message(SIMULATION_ERROR, 0, -1, "Vector headers do not match: \n"

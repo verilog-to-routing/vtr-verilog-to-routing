@@ -31,7 +31,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "globals.h"
 #include "hard_blocks.h"
 #include "memories.h"
-#include "vtr_util.h"
 
 
 
@@ -41,7 +40,7 @@ void cache_hard_block_names();
 
 t_model_ports *get_model_port(t_model_ports *ports, const char *name)
 {
-	while (ports && vtr::strcmp(ports->name, name))
+	while (ports && strcmp(ports->name, name))
 		ports = ports->next;
 
 	return ports;
@@ -122,7 +121,7 @@ t_model* find_hard_block(const char *name)
 
 	hard_blocks = Arch.models;
 	while (hard_blocks)
-		if (!vtr::strcmp(hard_blocks->name, name))
+		if (!strcmp(hard_blocks->name, name))
 			return hard_blocks;
 		else
 			hard_blocks = hard_blocks->next;
@@ -142,7 +141,7 @@ void define_hard_block(nnode_t *node, short /*type*/, FILE *out)
 	oassert(node->output_port_sizes[0] > 0);
 
 	//IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in define_add_function and define_mult_function)
-	if(vtr::strcmp(node->related_ast_node->children[0]->types.identifier, "multiply") == 0 || vtr::strcmp(node->related_ast_node->children[0]->types.identifier, "adder") == 0)
+	if(strcmp(node->related_ast_node->children[0]->types.identifier, "multiply") == 0 || strcmp(node->related_ast_node->children[0]->types.identifier, "adder") == 0)
 		return;
 
 	count = fprintf(out, "\n.subckt ");
@@ -228,7 +227,7 @@ void output_hard_blocks(FILE *out)
 		if (hard_blocks->used == 1) /* Hard Block is utilized */
 		{
 			//IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in add_the_blackbox_for_adds and add_the_blackbox_for_mults)
-			if(vtr::strcmp(hard_blocks->name, "adder") == 0 ||vtr::strcmp(hard_blocks->name, "multiply") == 0)
+			if(strcmp(hard_blocks->name, "adder") == 0 ||strcmp(hard_blocks->name, "multiply") == 0)
 			{
 				hard_blocks = hard_blocks->next;
 				break;
@@ -317,22 +316,22 @@ hard_block_port_size(t_model *hb, char *pname)
 	 *  depending on the instance of the hard block. May want to extend
 	 *  this list of blocks in the future.
 	 */
-	if ((vtr::strcmp(hb->name, "single_port_ram") == 0) ||
-		(vtr::strcmp(hb->name, "dual_port_ram") == 0))
+	if ((strcmp(hb->name, "single_port_ram") == 0) ||
+		(strcmp(hb->name, "dual_port_ram") == 0))
 	{
 		return -1;
 	}
 
 	tmp = hb->inputs;
 	while (tmp != NULL)
-		if ((tmp->name != NULL) && (vtr::strcmp(tmp->name, pname) == 0))
+		if ((tmp->name != NULL) && (strcmp(tmp->name, pname) == 0))
 			return tmp->size;
 		else
 			tmp = tmp->next;
 
 	tmp = hb->outputs;
 	while (tmp != NULL)
-		if ((tmp->name != NULL) && (vtr::strcmp(tmp->name, pname) == 0))
+		if ((tmp->name != NULL) && (strcmp(tmp->name, pname) == 0))
 			return tmp->size;
 		else
 			tmp = tmp->next;
@@ -350,14 +349,14 @@ hard_block_port_direction(t_model *hb, char *pname)
 
 	tmp = hb->inputs;
 	while (tmp != NULL)
-		if ((tmp->name != NULL) && (vtr::strcmp(tmp->name, pname) == 0))
+		if ((tmp->name != NULL) && (strcmp(tmp->name, pname) == 0))
 			return tmp->dir;
 		else
 			tmp = tmp->next;
 
 	tmp = hb->outputs;
 	while (tmp != NULL)
-		if ((tmp->name != NULL) && (vtr::strcmp(tmp->name, pname) == 0))
+		if ((tmp->name != NULL) && (strcmp(tmp->name, pname) == 0))
 			return tmp->dir;
 		else
 			tmp = tmp->next;
