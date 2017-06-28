@@ -131,7 +131,10 @@ struct BlifAllocCallback : public blifparse::Callback {
             
             VTR_ASSERT_MSG(blk_model->inputs, ".names model has no input port");
             VTR_ASSERT_MSG(!blk_model->inputs->next, ".names model has multiple input ports");
-            VTR_ASSERT_MSG(blk_model->inputs->size >= static_cast<int>(nets.size()) - 1, ".names model does not match blif .names input size");
+            if (static_cast<int>(nets.size()) - 1 > blk_model->inputs->size) {
+                vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "BLIF .names input size (%zu) greater than .names model input size (%d)",
+                            nets.size() - 1, blk_model->inputs->size);
+            }
 
             VTR_ASSERT_MSG(blk_model->outputs, ".names has no output port");
             VTR_ASSERT_MSG(!blk_model->outputs->next, ".names model has multiple output ports");
