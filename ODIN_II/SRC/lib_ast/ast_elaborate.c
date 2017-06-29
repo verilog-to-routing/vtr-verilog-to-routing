@@ -35,6 +35,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ctype.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include <string>
+#include <iostream>
+#include <vector>
+#include <stack>    
 
 #define read_node  1
 #define write_node 2
@@ -77,36 +81,33 @@ int simplify_ast()
 void optimize_for_tree()
 {
 	ast_node_t *top;
-	int i, j;
-
 	ast_node_t *list_for_node[N] = {0};
 	ast_node_t *list_parent[N] = {0};
 
 	find_most_unique_count(); // find out the most unique_count prepared for new AST nodes
 
 	/* we will find the top module */
-	for (i = 0; i < num_modules; i++)
+	for (int i = 0; i < num_modules; i++)
 	{
 		top = ast_modules[i];
 		/* search the tree looking for FOR node */
 		search_for_node(top, list_for_node, list_parent);
 
 		/* simplify every FOR node */
-		for (j = 0; j < num_for; j++)
+		for (int j = 0; j < num_for; j++)
 		{
 			
 			long long v_value = list_for_node[j]->children[0]->children[1]->types.number.value;
 			long long terminal = list_for_node[j]->children[1]->children[1]->types.number.value;
-			char *expression[Max_size];
+			std::vector<std::string> expression;
 			char node_write[10][20];
-			memset(expression, 0, sizeof(char)*Max_size);
 			memset(node_write, 0, sizeof(char)*sizeof(node_write));
 			
 			ast_node_t *temp_parent_node = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));; //used to connect copied branches from the for loop
 			count_write = 0;
 			count = 0;
-			
-			record_expression(list_for_node[j]->children[2], expression);
+			bool found = FALSE;
+			record_expression(list_for_node[j]->children[2], expression,&found);
 			mark_node_write(list_for_node[j]->children[3], node_write);
 			mark_node_read(list_for_node[j]->children[3], node_write);
 
@@ -119,14 +120,21 @@ void optimize_for_tree()
 										)
 									);
 									
-				char *infix_expression[Max_size];
-				char *postfix_expression[Max_size];
-				memset(infix_expression, 0, sizeof(char)*Max_size);
-				memset(postfix_expression, 0, sizeof(char)*Max_size);
-				
-				modify_expression(expression, infix_expression, v_value, list_for_node[j]->children[0]->children[0]->types.identifier);
-				translate_expression(infix_expression, postfix_expression);
-				v_value = calculation(postfix_expression);
+				std::vector<std::string> infix_exp;
+				std::vector<std::string> postfix_exp;
+
+				for (int k = 0; expression[k].size() ; k++)
+				{
+					if (expression[k] == (std::string)list_for_node[j]->children[0]->children[0]->types.identifier){
+						std::string valued_at;
+						valued_at = v_value;
+						infix_exp.push_back(valued_at);
+					}else
+						infix_exp.push_back(expression[k]);
+				}
+
+				translate_expression(infix_exp, postfix_exp);
+				v_value = calculation(postfix_exp);
 			}
 			if (has_intermediate_variable(temp_parent_node)) //there are intermediate variables involved in operations so remove the last branch from the node
 				remove_intermediate_variable(temp_parent_node, node_write, v_value, list_for_node[j]->children[0]->children[0]->types.identifier);
@@ -198,199 +206,123 @@ ast_node_t *get_copy_tree(ast_node_t *node, long long virtual_value, char *virtu
 
 /*---------------------------------------------------------------------------
  * (function: expression)
+ * in order traversal
  *-------------------------------------------------------------------------*/
-void record_expression(ast_node_t *node, char *array[])
+void record_expression(ast_node_t *node, std::vector<std::string> expressions, bool *found_statement)
 {
-	if (node == NULL)
-		return;
-	if (node->num_children == 0)
-	{
-		check_and_replace(node, array);
-		return;
-	}
-	record_expression(node->children[0], array);
-	check_and_replace(node, array);
-	record_expression(node->children[1], array);
+	if (node){
+		
+		if(node->num_children >= 1)
+			record_expression(node->children[0], expressions, found_statement);
+			
+		
+		if(!(*found_statement) && (node->type == BLOCKING_STATEMENT || node->type == BLOCKING_STATEMENT))
+			*found_statement = TRUE;
 
+		else if(*found_statement){	
+			switch(node->type)
+			{
+				case IDENTIFIERS:
+					expressions.push_back(node->types.identifier);
+					break;
+		
+				case NUMBERS:
+					expressions.push_back(node->types.number.number);
+					break;
+		
+				case BINARY_OPERATION:
+					switch(node->types.operation.op)
+					{
+						case ADD:
+							expressions.push_back("+");
+							break;
+						case MINUS:
+							expressions.push_back("-");
+							break;
+						case MULTIPLY:
+							expressions.push_back("*");
+							break;
+						case DIVIDE:
+							expressions.push_back("/");
+							break;
+		
+						default:
+							break;
+					}
+					break;
+		
+				default:
+					break;
+			}
+		}
+			
+		if(node->num_children >= 2)
+			record_expression(node->children[1], expressions, found_statement);
+	}
 }
 
 /*---------------------------------------------------------------------------
  * (function: calculate)
  *-------------------------------------------------------------------------*/
-int calculation(char *post_exp[])
+long long  calculation(std::vector<std::string> post_exp)
 {
-  int value;
-  int i;
-  int num = 0;
-  struct
-  {
-    int data[Max_size];
-    int top;
-  } pop;
-  pop.top = -1;
-  for(i = 0; i < Max_size - 1; ++i) {
-        pop.data[i] = 0;
-  }
-  pop.data[Max_size] = -1;
-
-  for (i = 0; post_exp[i] != NULL; i++)
-  {
-    if (*post_exp[i] == '+' || *post_exp[i] == '-' || *post_exp[i] == '*' || *post_exp[i] == '/')
-    {
-      switch(*post_exp[i])
-      {
-        case '+':
-          num = pop.data[pop.top-1] + pop.data[pop.top];
-          break;
-        case '-':
-          num = pop.data[pop.top-1] - pop.data[pop.top];
-          break;
-        case '*':
-          num = pop.data[pop.top-1] * pop.data[pop.top];
-          break;
-        case '/':
-          num = pop.data[pop.top-1] / pop.data[pop.top];
-          break;
-        default:
-          break;
-      }
-      pop.top--;
-      pop.data[pop.top] = num;
+	std::stack<long long> stacked;
+	for (int i = 0; i< post_exp.size(); i++)
+	{
+		long long second_exp(stacked.top());
+		stacked.pop();
+		
+		long long first_exp(stacked.top());
+		stacked.pop();
+		
+	    if (post_exp[i] == "+")
+			 stacked.push(first_exp + second_exp);
+			
+		else if (post_exp[i] == "-")
+			stacked.push(first_exp - second_exp);
+			
+		else if (post_exp[i] == "*")
+			stacked.push(first_exp * second_exp);
+			
+		else if (post_exp[i] == "/")
+			stacked.push(first_exp / second_exp);
+			
+		else
+			stacked.push(first_exp);
+			stacked.push(second_exp);
+			stacked.push(std::strtoll(post_exp[i].c_str(),NULL,10));
     }
-    else // number
-    {
-      pop.top++;
-      pop.data[pop.top] = atoi(post_exp[i]);
-    }
-  }
-  value = pop.data[pop.top];
-
-  return value;
+	return stacked.top();
 }
 
 /*---------------------------------------------------------------------------
  * (function: translate_expression)
  * translate infix expression into postfix expression
  *-------------------------------------------------------------------------*/
-void translate_expression(char *exp[], char *post_exp[])
+void translate_expression(std::vector<std::string> infix_exp, std::vector<std::string> postfix_exp)
 {
-  struct
-  {
-    char *mem[Max_size];
-    int top;
-  }pop;
-  int i, j;
-  pop.top = -1;
-  j = 0;
-
-  for (i = 0; exp[i] != NULL; i++)
-  {
-    switch(*exp[i])
-    {
-      case '+':
-      case '-':
-	if ((pop.top != -1) && (*pop.mem[pop.top] == '*' || *pop.mem[pop.top] == '/'))
-        {
-	  while (pop.top >= 0)
-          {
-            post_exp[j++] = pop.mem[pop.top--];
-          }
-   	  pop.top++;
-          pop.mem[pop.top] = exp[i];
-        }
-        else
-          pop.mem[++pop.top] = exp[i];
-        break;
-
-      case '*':
-      case '/':
-        pop.mem[++pop.top] = exp[i];
-        break;
-
-      default: // number
-        post_exp[j++] = exp[i];
-        break;
-
-    }
-  }
-  while (pop.top >= 0)
-  {
-    post_exp[j++] = pop.mem[pop.top--];
-  }
-}
-
-/*---------------------------------------------------------------------------
- * (function: check_and_replace)
- *-------------------------------------------------------------------------*/
-void check_and_replace(ast_node_t *node, char *p2[])
-{
-	//char *point = NULL;
-	switch(node->type)
+	std::stack<std::string> stacked;
+	for (int i = 0; i < infix_exp.size() ; i++)
 	{
-		case IDENTIFIERS:
-				p2[count++] = node->types.identifier;
-				break;
-
-		case BLOCKING_STATEMENT:
-			p2[count++] = vtr::strdup("=");
-			break;
-
-		case NON_BLOCKING_STATEMENT:
-			p2[count++] = vtr::strdup("<=");
-			break;
-
-		case NUMBERS:
-			p2[count++] = node->types.number.number;
-			break;
-
-		case BINARY_OPERATION:
-			switch(node->types.operation.op)
+		if(infix_exp[i] == "+" || infix_exp[i] == "-" ||  infix_exp[i] == "*" || infix_exp[i] == "/" ){
+			if (	(infix_exp[i] == "+" || infix_exp[i] == "-")	 && 	
+					!stacked.empty()	&& 
+					( stacked.top() == "*" || stacked.top() == "/" ) )
 			{
-				case ADD:
-					p2[count++] = vtr::strdup("+");
-					break;
-				case MINUS:
-					p2[count++] = vtr::strdup("-");
-					break;
-				case MULTIPLY:
-					p2[count++] = vtr::strdup("*");
-					break;
-				case DIVIDE:
-					p2[count++] = vtr::strdup("/");
-					break;
-
-				default:
-					break;
+				while (!stacked.empty()){
+			    	postfix_exp.push_back(stacked.top());
+			    	stacked.pop();
+			  	}
 			}
-			break;
-
-		default:
-			break;
+			stacked.push(infix_exp[i]);
+		}else{// number
+			postfix_exp.push_back(infix_exp[i]);
+		}
 	}
-
-}
-
-/*---------------------------------------------------------------------------
- * (function: modify_expression)
- *-------------------------------------------------------------------------*/
-void modify_expression(char *exp[], char *infix_exp[], long long value, char* compare_to)
-{
-	int i, j, k;
-	i = 0;
-	k = 0;
-
-	while((strcmp(exp[i], "=") != 0) && i < Max_size)
-		i++;
-
-	for (j = i + 1; exp[j] != NULL; j++)
-	{
-		if (strcmp(exp[j], compare_to) == 0)
-			sprintf(infix_exp[k++],"%lld",value);
-		else
-			infix_exp[k++] = exp[j];
-
-	}
-
+	while (!stacked.empty()){
+    	postfix_exp.push_back(stacked.top());
+    	stacked.pop();
+  	}
 }
 
 /*---------------------------------------------------------------------------
