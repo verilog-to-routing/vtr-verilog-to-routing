@@ -19,7 +19,7 @@ BUILD_TYPE = release
 
 #Allows users to pass parameters to cmake
 #  e.g. make CMAKE_PARAMS="-DVTR_ENABLE_SANITIZE=true"
-override CMAKE_PARAMS += -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -G 'Unix Makefiles' ${CMAKE_PARAMS}
 
 
 # -s : Suppresss makefile output (e.g. entering/leaving directories)
