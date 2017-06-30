@@ -83,8 +83,25 @@ class BaseNetlist {
 		/*
 		* Ports
 		*/
+		//Returns the width (number of bits) in the specified port
+		BitIndex                port_width(const PortId id) const;
+
 		//Returns the type of the specified port
 		PortType            port_type(const PortId id) const;
+
+		//Returns the set of valid pins associated with the port
+		pin_range               port_pins(const PortId id) const;
+
+		//Returns the pin (potentially invalid) associated with the specified port and port bit index
+		//  port_id : The ID of the associated port
+		//  port_bit: The bit index of the pin in the port
+		//Note: this function is a synonym for find_pin()
+		PinId               port_pin(const PortId port_id, const BitIndex port_bit) const;
+
+		//Returns the net (potentially invalid) associated with the specified port and port bit index
+		//  port_id : The ID of the associated port
+		//  port_bit: The bit index of the pin in the port
+		NetId               port_net(const PortId port_id, const BitIndex port_bit) const;
 
 		//Returns the model port of the specified port or nullptr if not
 		//  port_id: The ID of the port to look for
@@ -102,6 +119,9 @@ class BaseNetlist {
 
 		//Returns the port associated with the specified pin
 		PortId   pin_port(const PinId id) const;
+
+		//Returns the port bit index associated with the specified pin
+		BitIndex     pin_port_bit(const PinId id) const;
 
 		//Returns true if the pin is a constant (i.e. its value never changes)
 		bool     pin_is_constant(const PinId id) const;
@@ -140,13 +160,17 @@ class BaseNetlist {
 		//Returns a range consisting of all pins in the netlist
 		pin_range	pins() const;
 
-		
 		/*
 		* Lookups
 		*/
 		//Returns the AtomNetId of the specified net or AtomNetId::INVALID() if not found
 		//  name: The name of the net
 		NetId   find_net(const std::string& name) const;
+
+		//Returns the AtomPinId of the specified pin or AtomPinId::INVALID() if not found
+		//  port_id : The ID of the associated port
+		//  port_bit: The bit index of the pin in the port
+		PinId   find_pin(const PortId port_id, BitIndex port_bit) const;
 
 
 	protected: //Protected Base Types
@@ -189,6 +213,7 @@ class BaseNetlist {
 
 		//Validates that the specified ID is valid in the current netlist state
 		bool valid_port_id(PortId id) const;
+		bool valid_port_bit(PortId id, BitIndex port_bit) const;
 		bool valid_pin_id(PinId id) const;
 		bool valid_net_id(NetId id) const;
 		bool valid_string_id(StringId id) const;
@@ -202,6 +227,7 @@ class BaseNetlist {
 		//Port data
         vtr::vector_map<PortId,PortId>             port_ids_;      //Valid port ids
 		vtr::vector_map<PortId, const t_model_ports*>   port_models_;   //Architecture port models of each port
+		vtr::vector_map<PortId, std::vector<PinId>> port_pins_;     //Pins associated with each port
 
 		//Pin data
 		vtr::vector_map<PinId, PinId>		pin_ids_;           //Valid pin ids
