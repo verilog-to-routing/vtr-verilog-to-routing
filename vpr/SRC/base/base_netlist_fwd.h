@@ -33,4 +33,9 @@ typedef vtr::StrongId<port_id_tag> PortId;
 //A unique identifier for a pin in the atom netlist
 typedef vtr::StrongId<pin_id_tag> PinId;
 
+enum class PinType : char {
+	DRIVER, //The pin drives a net
+	SINK    //The pin is a net sink
+};
+
 #endif

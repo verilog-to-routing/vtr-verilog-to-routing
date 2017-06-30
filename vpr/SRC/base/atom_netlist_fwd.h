@@ -1,6 +1,7 @@
 #ifndef ATOM_NETLIST_FWD_H
 #define ATOM_NETLIST_FWD_H
 #include "vtr_strong_id.h"
+#include "base_netlist_fwd.h"
 /*
  * This header forward declares the AtomNetlist class, and defines common types by it
  */
@@ -20,21 +21,20 @@ class AtomLookup;
 
 //Type tags for Ids
 struct atom_block_id_tag;
-struct atom_net_id_tag;
 struct atom_port_id_tag;
-struct atom_pin_id_tag;
+
 
 //A unique identifier for a block/primitive in the atom netlist
 typedef vtr::StrongId<atom_block_id_tag> AtomBlockId;
 
 //A unique identifier for a net in the atom netlist
-typedef vtr::StrongId<atom_net_id_tag> AtomNetId;
+typedef vtr::StrongId<net_id_tag> AtomNetId;
 
 //A unique identifier for a port in the atom netlist
 typedef vtr::StrongId<atom_port_id_tag> AtomPortId;
 
 //A unique identifier for a pin in the atom netlist
-typedef vtr::StrongId<atom_pin_id_tag> AtomPinId;
+typedef vtr::StrongId<pin_id_tag> AtomPinId;
 
 //A signal index in a port
 typedef unsigned BitIndex;
