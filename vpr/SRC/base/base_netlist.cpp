@@ -32,6 +32,12 @@ const std::string& BaseNetlist::netlist_id() const {
 * Ports
 *
 */
+const std::string& BaseNetlist::port_name(const PortId id) const {
+	VTR_ASSERT(valid_port_id(id));
+
+	StringId str_id = port_names_[id];
+	return strings_[str_id];
+}
 
 BitIndex BaseNetlist::port_width(const PortId id) const {
 	return port_model(id)->size;
@@ -112,7 +118,7 @@ PinType BaseNetlist::pin_type(const PinId id) const {
 	case PortType::INPUT: /*fallthrough */;
 	case PortType::CLOCK: type = PinType::SINK; break;
 	case PortType::OUTPUT: type = PinType::DRIVER; break;
-	default: VTR_ASSERT_MSG(false, "Valid port type");
+	default: VTR_ASSERT_MSG(false, "Valid atom port type");
 	}
 	return type;
 }
@@ -127,6 +133,12 @@ BitIndex BaseNetlist::pin_port_bit(const PinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
 
 	return pin_port_bits_[id];
+}
+
+PortType BaseNetlist::pin_port_type(const PinId id) const {
+	PortId port = pin_port(id);
+
+	return port_type(port);
 }
 
 bool BaseNetlist::pin_is_constant(const PinId id) const {
@@ -361,6 +373,25 @@ void BaseNetlist::set_pin_is_constant(const PinId pin_id, const bool value) {
     pin_is_constant_[pin_id] = value;
 }
 
+void BaseNetlist::set_pin_net(const PinId pin, PinType type, const NetId net) {
+	VTR_ASSERT(valid_pin_id(pin));
+	VTR_ASSERT((type == PinType::DRIVER && pin_port_type(pin) == PortType::OUTPUT)
+		|| (type == PinType::SINK && (pin_port_type(pin) == PortType::INPUT || pin_port_type(pin) == PortType::CLOCK)));
+
+	NetId orig_net = pin_net(pin);
+	if (orig_net) {
+		//Clean up the pin reference on the original net
+		remove_net_pin(orig_net, pin);
+	}
+
+	//Mark the pin's net
+	pin_nets_[pin] = net;
+
+	//Add the pin to the net
+	associate_pin_with_net(pin, type, net);
+}
+
+
 void BaseNetlist::remove_pin(const PinId pin_id) {
 	VTR_ASSERT(valid_pin_id(pin_id));
 
@@ -505,6 +536,24 @@ BaseNetlist::StringId BaseNetlist::find_string(const std::string& str) const {
 	}
 }
 
+void BaseNetlist::associate_pin_with_net(const PinId pin_id, const PinType type, const NetId net_id) {
+	//Add the pin to the net
+	if (type == PinType::DRIVER) {
+		VTR_ASSERT_MSG(net_pins_[net_id].size() > 0, "Must be space for net's pin");
+		VTR_ASSERT_MSG(net_pins_[net_id][0] == PinId::INVALID(), "Must be no existing net driver");
+
+		net_pins_[net_id][0] = pin_id; //Set driver
+	}
+	else {
+		VTR_ASSERT(type == PinType::SINK);
+
+		net_pins_[net_id].emplace_back(pin_id); //Add sink
+	}
+}
+
+void BaseNetlist::associate_pin_with_port(const PinId pin_id, const PortId port_id) {
+	port_pins_[port_id].push_back(pin_id);
+}
 
 BaseNetlist::StringId BaseNetlist::create_string(const std::string& str) {
 	StringId str_id = find_string(str);
