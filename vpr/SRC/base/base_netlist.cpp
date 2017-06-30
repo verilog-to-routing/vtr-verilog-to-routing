@@ -27,6 +27,41 @@ const std::string& BaseNetlist::netlist_id() const {
 	return netlist_id_;
 }
 
+/*
+*
+* Ports
+*
+*/
+
+PortType BaseNetlist::port_type(const PortId id) const {
+	VTR_ASSERT(valid_port_id(id));
+
+	const t_model_ports* model_port = port_model(id);
+
+	PortType type = PortType::INPUT;
+	if (model_port->dir == IN_PORT) {
+		if (model_port->is_clock) {
+			type = PortType::CLOCK;
+		}
+		else {
+			type = PortType::INPUT;
+		}
+	}
+	else if (model_port->dir == OUT_PORT) {
+		type = PortType::OUTPUT;
+	}
+	else {
+		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Unrecognized model port type");
+	}
+	return type;
+}
+
+
+const t_model_ports* BaseNetlist::port_model(const PortId port_id) const {
+	VTR_ASSERT(valid_port_id(port_id));
+
+	return port_models_[port_id];
+}
 
 /*
 *
@@ -39,6 +74,28 @@ NetId BaseNetlist::pin_net (const PinId id) const {
 
 	return pin_nets_[id];
 }
+
+PinType BaseNetlist::pin_type(const PinId id) const {
+	VTR_ASSERT(valid_pin_id(id));
+
+	PortId port_id = pin_port(id);
+	PinType type;
+	switch (port_type(port_id)) {
+	case PortType::INPUT: /*fallthrough */;
+	case PortType::CLOCK: type = PinType::SINK; break;
+	case PortType::OUTPUT: type = PinType::DRIVER; break;
+	default: VTR_ASSERT_MSG(false, "Valid port type");
+	}
+	return type;
+}
+
+
+PortId BaseNetlist::pin_port(const PinId id) const {
+	VTR_ASSERT(valid_pin_id(id));
+
+	return pin_ports_[id];
+}
+
 
 bool BaseNetlist::pin_is_constant(const PinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
@@ -130,6 +187,53 @@ NetId BaseNetlist::find_net(const std::string& name) const {
 * Mutators
 *
 */
+/*PinId BaseNetlist::create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType type, bool is_const) {
+	//Check pre-conditions (valid ids)
+	VTR_ASSERT_MSG(valid_port_id(port_id), "Valid port id");
+	VTR_ASSERT_MSG(valid_port_bit(port_id, port_bit), "Valid port bit");
+	VTR_ASSERT_MSG(valid_net_id(net_id), "Valid net id");
+
+	//See if the pin already exists
+	PinId pin_id = find_pin(port_id, port_bit);
+	if (!pin_id) {
+		//Not found, create it
+
+		//Reserve an id
+		pin_id = PinId(pin_ids_.size());
+		pin_ids_.push_back(pin_id);
+
+		//Initialize the pin data
+		pin_ports_.push_back(port_id);
+		pin_port_bits_.push_back(port_bit);
+		pin_nets_.push_back(net_id);
+		pin_is_constant_.push_back(is_const);
+
+		//Add the pin to the net
+		associate_pin_with_net(pin_id, type, net_id);
+
+		//Add the pin to the port
+		associate_pin_with_port(pin_id, port_id);
+
+		//Add the pin to the block
+		associate_pin_with_block(pin_id, port_type(port_id), port_block(port_id));
+	}
+
+	//Check post-conditions: sizes
+	VTR_ASSERT(validate_pin_sizes());
+
+	//Check post-conditions: values
+	VTR_ASSERT(valid_pin_id(pin_id));
+	VTR_ASSERT(pin_port(pin_id) == port_id);
+	VTR_ASSERT(pin_port_bit(pin_id) == port_bit);
+	VTR_ASSERT(pin_net(pin_id) == net_id);
+	VTR_ASSERT(pin_type(pin_id) == type);
+	VTR_ASSERT(pin_is_constant(pin_id) == is_const);
+	VTR_ASSERT_SAFE(find_pin(port_id, port_bit) == pin_id);
+
+	return pin_id;
+}*/
+
+
 NetId BaseNetlist::create_net(const std::string name) {
 	//Creates an empty net (or returns an existing one)
 	VTR_ASSERT_MSG(!name.empty(), "Valid net name");
@@ -271,6 +375,12 @@ void BaseNetlist::remove_net(const NetId net_id) {
 * Sanity Checks
 *
 */
+bool BaseNetlist::valid_port_id(PortId id) const {
+	if (id == PortId::INVALID()) return false;
+	else if (!port_ids_.contains(id)) return false;
+	else if (port_ids_[id] != id) return false;
+	return true;
+}
 
 bool BaseNetlist::valid_pin_id(PinId id) const {
 	if (id == PinId::INVALID()) return false;

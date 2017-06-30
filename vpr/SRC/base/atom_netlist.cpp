@@ -418,9 +418,7 @@ AtomPinType AtomNetlist::pin_type (const AtomPinId id) const {
 }
 
 AtomPortId AtomNetlist::pin_port (const AtomPinId id) const { 
-    VTR_ASSERT(valid_pin_id(id));
-
-    return pin_ports_[id];
+	return BaseNetlist::pin_port(id);
 }
 
 BitIndex AtomNetlist::pin_port_bit (const AtomPinId id) const {
