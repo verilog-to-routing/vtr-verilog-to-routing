@@ -25,6 +25,19 @@ const std::string& BaseNetlist::netlist_id() const {
 	return netlist_id_;
 }
 
+
+/*
+*
+* Pins
+*
+*/
+
+NetId BaseNetlist::pin_net (const PinId id) const {
+	VTR_ASSERT(valid_pin_id(id));
+
+	return pin_nets_[id];
+}
+
 /*
 *
 * Nets
@@ -37,11 +50,21 @@ const std::string& BaseNetlist::net_name(const NetId id) const {
 	return strings_[str_id];
 }
 
+BaseNetlist::pin_range BaseNetlist::net_pins(const NetId id) const {
+	VTR_ASSERT(valid_net_id(id));
+
+	return vtr::make_range(net_pins_[id].begin(), net_pins_[id].end());
+}
+
 /*
 *
 * Aggregates
 *
 */
+BaseNetlist::pin_range BaseNetlist::pins() const {
+	return vtr::make_range(pin_ids_.begin(), pin_ids_.end());
+}
+
 BaseNetlist::net_range BaseNetlist::nets() const {
 	return vtr::make_range(net_ids_.begin(), net_ids_.end());
 }
@@ -103,10 +126,34 @@ NetId BaseNetlist::create_net(const std::string name) {
 	VTR_ASSERT(find_net(name) == net_id);
 
 	return net_id;
-
 }
 
-/*void BaseNetlist::remove_net(const NetId net_id) {
+NetId BaseNetlist::add_net(const std::string name, PinId driver, std::vector<PinId> sinks) {
+	//Creates a net with a full set of pins
+	VTR_ASSERT_MSG(!find_net(name), "Net should not exist");
+
+	//Create the empty net
+	NetId net_id = create_net(name);
+
+	//Set the driver and sinks of the net
+	auto& dest_pins = net_pins_[net_id];
+	dest_pins[0] = driver;
+	dest_pins.insert(dest_pins.end(),
+		std::make_move_iterator(sinks.begin()),
+		std::make_move_iterator(sinks.end()));
+
+	//Associate each pin with the net
+	pin_nets_[driver] = net_id;
+	for (auto sink : sinks) {
+		pin_nets_[sink] = net_id;
+	}
+
+	return net_id;
+}
+
+
+
+void BaseNetlist::remove_net(const NetId net_id) {
 	VTR_ASSERT(valid_net_id(net_id));
 
 	//Disassociate the pins from the net
@@ -124,19 +171,6 @@ NetId BaseNetlist::create_net(const std::string name) {
 
 	//Mark netlist dirty
 	dirty_ = true;
-}*/
-
-
-void BaseNetlist::rebuild_lookups() {
-	//We iterate through the reverse-lookups and update the values (i.e. ids)
-	//to the new id values
-
-	//Nets
-	net_name_to_net_id_.clear();
-	for (auto net_id : nets()) {
-		const auto& key = net_names_[net_id];
-		net_name_to_net_id_.insert(key, net_id);
-	}
 }
 
 /*
@@ -144,6 +178,14 @@ void BaseNetlist::rebuild_lookups() {
 * Sanity Checks
 *
 */
+
+bool BaseNetlist::valid_pin_id(PinId id) const {
+	if (id == PinId::INVALID()) return false;
+	else if (!pin_ids_.contains(id)) return false;
+	else if (pin_ids_[id] != id) return false;
+	return true;
+}
+
 bool BaseNetlist::valid_net_id(NetId id) const {
 	if (id == NetId::INVALID()) return false;
 	else if (!net_ids_.contains(id)) return false;

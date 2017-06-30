@@ -33,6 +33,12 @@ class BaseNetlist {
 		//  name    : The unique name of the net
 		NetId   create_net(const std::string name); //An empty or existing net
 
+		//Create a completely specified net from specified driver and sinks
+        //  name    : The name of the net (Note: must not already exist)
+        //  driver  : The net's driver pin
+        //  sinks   : The net's sink pins
+        NetId   add_net     (const std::string name, PinId driver, std::vector<PinId> sinks);
+
 		//Removes a net from the netlist. 
         //This will mark the net's pins as having no associated.
         //  net_id  : The net to be removed
@@ -53,14 +59,25 @@ class BaseNetlist {
 		//Item counts and container info (for debugging)
 		void print_stats() const;
 
-		
+		/*
+		* Pins
+		*/
+
+		//Returns the net associated with the specified pin
+		NetId    pin_net(const PinId id) const;
+
 		/*
 		* Nets
 		*/
 		//Returns the name of the specified net
 		const std::string&  net_name(const NetId id) const;
 
-		
+		//Returns a range consisting of all the pins in the net (driver and sinks)
+		//The first element in the range is the driver (and may be invalid)
+		//The remaining elements (potentially none) are the sinks
+		pin_range           net_pins(const NetId id) const;
+
+
 		/* 
 		* Aggregates
 		*/
@@ -105,25 +122,30 @@ class BaseNetlist {
         StringId create_string(const std::string& str);
 
 
-		//Re-builds fast look-ups
-		void rebuild_lookups();
-
 		/*
 		* Sanity Checks
 		*/
 		//Verify the internal data structure sizes match
-		bool verify_sizes() const; //All data structures
 		bool validate_net_sizes() const;
 		bool validate_string_sizes() const;
 
 		//Validates that the specified ID is valid in the current netlist state
+		bool valid_pin_id(PinId id) const;
 		bool valid_net_id(NetId id) const;
 		bool valid_string_id(StringId id) const;
+
 
 	protected: //Protected Data
 		std::string netlist_name_;	//Name of the top-level netlist
 		std::string netlist_id_;	//Unique identifier for the netlist
 		bool dirty_;				//Indicates the netlist has invalid entries from remove_*() functions
+
+		//Pin data
+		vtr::vector_map<PinId, PinId>		pin_ids_;           //Valid pin ids
+//		vtr::vector_map<PinId, PortId>		pin_ports_;         //Type of each pin
+//		vtr::vector_map<PinId, BitIndex>	pin_port_bits_;     //The ports bit position in the port
+		vtr::vector_map<PinId, NetId>		pin_nets_;          //Net associated with each pin
+//		vtr::vector_map<PinId, bool>		pin_is_constant_;   //Indicates if the pin always keeps a constant value
 
 		//Net data
         vtr::vector_map<NetId,NetId>              net_ids_;   //Valid net ids
@@ -134,8 +156,8 @@ class BaseNetlist {
         // We store each unique string once, and reference it by an StringId
         // This avoids duplicating the strings in the fast look-ups (i.e. the look-ups
         // only store the Ids)
-        vtr::vector_map<StringId,StringId>   string_ids_;    //Valid string ids
-        vtr::vector_map<StringId,std::string>    strings_;       //Strings
+        vtr::vector_map<StringId,StringId>		string_ids_;    //Valid string ids
+        vtr::vector_map<StringId,std::string>	strings_;       //Strings
 
 	protected: //Fast lookups
         vtr::vector_map<StringId,BlockId>       block_name_to_block_id_;

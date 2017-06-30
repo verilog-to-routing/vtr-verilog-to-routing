@@ -400,9 +400,7 @@ std::string AtomNetlist::pin_name (const AtomPinId id) const {
 }
 
 AtomNetId AtomNetlist::pin_net (const AtomPinId id) const { 
-    VTR_ASSERT(valid_pin_id(id));
-
-    return pin_nets_[id];
+    return BaseNetlist::pin_net(id);
 }
 
 AtomPinType AtomNetlist::pin_type (const AtomPinId id) const { 
@@ -457,16 +455,11 @@ bool AtomNetlist::pin_is_constant (const AtomPinId id) const {
  *
  */
 const std::string& AtomNetlist::net_name (const AtomNetId id) const { 
-    VTR_ASSERT(valid_net_id(id));
-
-    AtomStringId str_id = net_names_[id];
-    return strings_[str_id];
+	return BaseNetlist::net_name(id);
 }
 
 AtomNetlist::pin_range AtomNetlist::net_pins (const AtomNetId id) const {
-    VTR_ASSERT(valid_net_id(id));
-
-    return vtr::make_range(net_pins_[id].begin(), net_pins_[id].end());
+	return BaseNetlist::net_pins(id);
 }
 
 AtomPinId AtomNetlist::net_driver (const AtomNetId id) const {
@@ -517,11 +510,11 @@ AtomNetlist::block_range AtomNetlist::blocks () const {
 }
 
 AtomNetlist::pin_range AtomNetlist::pins () const {
-    return vtr::make_range(pin_ids_.begin(), pin_ids_.end()); 
+	return BaseNetlist::pins();
 }
 
 AtomNetlist::net_range AtomNetlist::nets () const {
-    return vtr::make_range(net_ids_.begin(), net_ids_.end()); 
+	return BaseNetlist::nets();
 }
 
 
@@ -597,12 +590,7 @@ AtomPinId AtomNetlist::find_pin (const AtomPortId port_id, BitIndex port_bit) co
 }
 
 AtomNetId AtomNetlist::find_net (const std::string& name) const {
-    auto str_id = find_string(name);
-    if(!str_id) {
-        return AtomNetId::INVALID();
-    } else {
-        return find_net(str_id);
-    }
+	return BaseNetlist::find_net(name);
 }
 
 /*
@@ -632,7 +620,7 @@ bool AtomNetlist::verify_sizes() const {
     valid &= validate_port_sizes();
     valid &= validate_pin_sizes();
     valid &= validate_net_sizes();
-    valid &= BaseNetlist::validate_string_sizes();
+    valid &= validate_string_sizes();
     return valid;
 }
 
@@ -883,67 +871,13 @@ AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, 
 }
 
 AtomNetId AtomNetlist::create_net (const std::string name) {
-    //Creates an empty net (or returns an existing one)
-    VTR_ASSERT_MSG(!name.empty(), "Valid net name");
-
-    //Check if the net has already been created
-    AtomStringId name_id = BaseNetlist::create_string(name);
-    AtomNetId net_id = find_net(name_id);
-    if(net_id == AtomNetId::INVALID()) {
-        //Not found, create it
-
-        //Reserve an id
-        net_id = AtomNetId(net_ids_.size());
-        net_ids_.push_back(net_id);
-
-        //Initialize the data
-        net_names_.push_back(name_id);
-
-        //Initialize the look-ups
-        net_name_to_net_id_.insert(name_id, net_id);
-
-        //Initialize with no driver
-        net_pins_.emplace_back();
-        net_pins_[net_id].emplace_back(AtomPinId::INVALID());
-
-        VTR_ASSERT(net_pins_[net_id].size() == 1);
-        VTR_ASSERT(net_pins_[net_id][0] == AtomPinId::INVALID());
-    }
-
-    //Check post-conditions: size
-    VTR_ASSERT(validate_net_sizes());
-
-    //Check post-conditions: values
-    VTR_ASSERT(valid_net_id(net_id));
-    VTR_ASSERT(net_name(net_id) == name);
-    VTR_ASSERT(find_net(name) == net_id);
-
-    return net_id;
-
+	return BaseNetlist::create_net(name);
 }
 
 AtomNetId AtomNetlist::add_net (const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks) {
-    //Creates a net with a full set of pins
-    VTR_ASSERT_MSG(!find_net(name), "Net should not exist");
-
-    //Create the empty net
-    AtomNetId net_id = create_net(name);
-
-    //Set the driver and sinks of the net
-    auto& dest_pins = net_pins_[net_id];
-    dest_pins[0] = driver;
-    dest_pins.insert(dest_pins.end(),
-            std::make_move_iterator(sinks.begin()),
-            std::make_move_iterator(sinks.end()));
-
-    //Associate each pin with the net
-    pin_nets_[driver] = net_id;
-    for(auto sink : sinks) {
-        pin_nets_[sink] = net_id;
-    }
-
-    return net_id;
+	return BaseNetlist::add_net(name, driver, sinks);
 }
+
 void AtomNetlist::set_pin_is_constant(const AtomPinId pin_id, const bool value) {
     VTR_ASSERT(valid_pin_id(pin_id));
 
@@ -985,28 +919,6 @@ void AtomNetlist::remove_block(const AtomBlockId blk_id) {
 
     //Mark netlist dirty
     dirty_ = true;
-
-}
-
-void AtomNetlist::remove_net(const AtomNetId net_id) {
-    VTR_ASSERT(valid_net_id(net_id));
-
-    //Dissassociate the pins from the net
-    for(auto pin_id : net_pins(net_id)) {
-        if(pin_id) {
-            pin_nets_[pin_id] = AtomNetId::INVALID();
-        }
-    }
-    //Invalidate look-up
-    AtomStringId name_id = net_names_[net_id];
-    net_name_to_net_id_.insert(name_id, AtomNetId::INVALID());
-
-    //Mark as invalid
-    net_ids_[net_id] = AtomNetId::INVALID();
-
-    //Mark netlist dirty
-    dirty_ = true;
-
 }
 
 
@@ -1041,7 +953,6 @@ void AtomNetlist::remove_pin(const AtomPinId pin_id) {
 
     //Mark netlist dirty
     dirty_ = true;
-
 }
 
 void AtomNetlist::remove_net_pin(const AtomNetId net_id, const AtomPinId pin_id) {
@@ -1398,7 +1309,7 @@ void AtomNetlist::shrink_to_fit() {
     //String data
     string_ids_.shrink_to_fit();
     strings_.shrink_to_fit();
-    VTR_ASSERT(BaseNetlist::validate_string_sizes());
+    VTR_ASSERT(validate_string_sizes());
 }
 
 /*
@@ -1427,21 +1338,15 @@ bool AtomNetlist::valid_port_bit(AtomPortId id, BitIndex port_bit) const {
 }
 
 bool AtomNetlist::valid_pin_id(AtomPinId id) const {
-    if(id == AtomPinId::INVALID()) return false;
-    else if(!pin_ids_.contains(id)) return false;
-    else if(pin_ids_[id] != id) return false;
-    return true;
+	return BaseNetlist::valid_pin_id(id);
 }
 
 bool AtomNetlist::valid_net_id(AtomNetId id) const {
-    if(id == AtomNetId::INVALID()) return false;
-    else if(!net_ids_.contains(id)) return false;
-    else if(net_ids_[id] != id) return false;
-    return true;
+	return BaseNetlist::valid_net_id(id);
 }
 
 bool AtomNetlist::valid_string_id(AtomStringId id) const {
-	return BaseNetlist::valid_string_id((BaseNetlist::StringId) id);
+	return BaseNetlist::valid_string_id((StringId) id);
 }
 
 bool AtomNetlist::validate_block_sizes() const {
@@ -1477,14 +1382,6 @@ bool AtomNetlist::validate_pin_sizes() const {
         || pin_nets_.size() != pin_ids_.size()
         || pin_is_constant_.size() != pin_ids_.size()) {
         VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent pin data sizes");
-    }
-    return true;
-}
-
-bool AtomNetlist::validate_net_sizes() const {
-    if(net_names_.size() != net_ids_.size()
-        || net_pins_.size() != net_ids_.size()) {
-        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent net data sizes");
     }
     return true;
 }
@@ -1697,7 +1594,7 @@ bool AtomNetlist::validate_string_refs() const {
  *
  */
 AtomNetlist::AtomStringId AtomNetlist::find_string (const std::string& str) const {
-	return static_cast<AtomStringId>(BaseNetlist::find_string(str));
+	return BaseNetlist::find_string(str);
 }
 
 AtomBlockId AtomNetlist::find_block(const AtomStringId name_id) const {
@@ -1715,24 +1612,6 @@ AtomBlockId AtomNetlist::find_block(const AtomStringId name_id) const {
         return blk_id;
     } else {
         return AtomBlockId::INVALID();
-    }
-}
-
-AtomNetId AtomNetlist::find_net(const AtomStringId name_id) const {
-    VTR_ASSERT(valid_string_id(name_id));
-    auto iter = net_name_to_net_id_.find(name_id);
-    if(iter != net_name_to_net_id_.end()) {
-        AtomNetId net_id = *iter;
-
-        if(net_id) {
-            //Check post-conditions
-            VTR_ASSERT(valid_net_id(net_id));
-            VTR_ASSERT(net_names_[net_id] == name_id);
-        }
-
-        return net_id;
-    } else {
-        return AtomNetId::INVALID();
     }
 }
 
