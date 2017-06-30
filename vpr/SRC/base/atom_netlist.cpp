@@ -356,9 +356,7 @@ AtomBlockId AtomNetlist::port_block (const AtomPortId id) const {
 }
 
 AtomNetlist::pin_range AtomNetlist::port_pins (const AtomPortId id) const {
-    VTR_ASSERT(valid_port_id(id));
-
-    return vtr::make_range(port_pins_[id].begin(), port_pins_[id].end());
+    return BaseNetlist::port_pins(id);
 }
 
 AtomPinId AtomNetlist::port_pin (const AtomPortId port_id, const BitIndex port_bit) const {
@@ -367,23 +365,12 @@ AtomPinId AtomNetlist::port_pin (const AtomPortId port_id, const BitIndex port_b
 }
 
 AtomNetId AtomNetlist::port_net (const AtomPortId port_id, const BitIndex port_bit) const {
-    //port_pin() will validate that port_bit and port_id are valid so don't 
-    //check redundently here
-
-    //Convenience look-up bypassing port and pin
-    AtomPinId pin_id = port_pin(port_id, port_bit);
-    if(pin_id) {
-        return pin_net(pin_id);
-    } else {
-        return AtomNetId::INVALID();
-    }
+	return BaseNetlist::port_net(port_id, port_bit);
 }
 
 
 const t_model_ports* AtomNetlist::port_model (const AtomPortId port_id) const {
-    VTR_ASSERT(valid_port_id(port_id));
-
-    return port_models_[port_id];
+	return BaseNetlist::port_model(port_id);
 }
 
 
@@ -422,9 +409,7 @@ AtomPortId AtomNetlist::pin_port (const AtomPinId id) const {
 }
 
 BitIndex AtomNetlist::pin_port_bit (const AtomPinId id) const {
-    VTR_ASSERT(valid_pin_id(id));
-
-    return pin_port_bits_[id];
+	return BaseNetlist::pin_port_bit(id);
 }
 
 AtomPortType AtomNetlist::pin_port_type (const AtomPinId id) const {
