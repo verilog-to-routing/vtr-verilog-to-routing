@@ -60,6 +60,13 @@ class BaseNetlist {
 		//  value   : The boolean value to set the pin_is_constant attribute
 		void set_pin_is_constant(const PinId pin_id, const bool value);
 
+		//Add the specified pin to the specified net as pin_type. Automatically removes
+		//any previous net connection for this pin.
+		//  pin      : The pin to add
+		//  pin_type : The type of the pin (i.e. driver or sink)
+		//  net      : The net to add the pin to
+		void set_pin_net(const PinId pin, PinType pin_type, const NetId net);
+
 		//Removes a net from the netlist. 
         //This will mark the net's pins as having no associated.
         //  net_id  : The net to be removed
@@ -83,6 +90,9 @@ class BaseNetlist {
 		/*
 		* Ports
 		*/
+		//Returns the name of the specified port
+		const std::string&      port_name(const PortId id) const;
+
 		//Returns the width (number of bits) in the specified port
 		BitIndex                port_width(const PortId id) const;
 
@@ -123,6 +133,9 @@ class BaseNetlist {
 		//Returns the port bit index associated with the specified pin
 		BitIndex     pin_port_bit(const PinId id) const;
 
+		//Returns the port type associated with the specified pin
+		PortType pin_port_type(const PinId id) const;
+
 		//Returns true if the pin is a constant (i.e. its value never changes)
 		bool     pin_is_constant(const PinId id) const;
 
@@ -157,6 +170,7 @@ class BaseNetlist {
 		*/
 		//Returns a range consisting of all nets in the netlist
 		net_range   nets() const;
+		
 		//Returns a range consisting of all pins in the netlist
 		pin_range	pins() const;
 
@@ -199,6 +213,12 @@ class BaseNetlist {
         //  str: The string whose ID is requested
         StringId create_string(const std::string& str);
 
+		//Updates net cross-references for the specified pin
+		void associate_pin_with_net(const PinId pin_id, const PinType type, const NetId net_id);
+
+		//Updates port cross-references for the specified pin
+		void associate_pin_with_port(const PinId pin_id, const PortId port_id);
+
 		//Removes a pin from the netlist.
 		//The pin is marked invalid, and removed from any assoicated nets
 		//  pin_id: The ID of the pin to be removed
@@ -226,6 +246,8 @@ class BaseNetlist {
 
 		//Port data
         vtr::vector_map<PortId,PortId>             port_ids_;      //Valid port ids
+		vtr::vector_map<PortId, StringId>           port_names_;    //Name of each port
+//		vtr::vector_map<PortId, BlockId>            port_blocks_;   //Block associated with each port
 		vtr::vector_map<PortId, const t_model_ports*>   port_models_;   //Architecture port models of each port
 		vtr::vector_map<PortId, std::vector<PinId>> port_pins_;     //Pins associated with each port
 

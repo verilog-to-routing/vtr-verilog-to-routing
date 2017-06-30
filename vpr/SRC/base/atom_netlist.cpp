@@ -319,34 +319,15 @@ AtomNetlist::port_range AtomNetlist::block_clock_ports (const AtomBlockId id) co
  *
  */
 const std::string& AtomNetlist::port_name (const AtomPortId id) const {
-    VTR_ASSERT(valid_port_id(id));
-
-    AtomStringId str_id = port_names_[id];
-    return strings_[str_id];
+	return BaseNetlist::port_name(id);
 }
 
 BitIndex AtomNetlist::port_width (const AtomPortId id) const {
-    return port_model(id)->size;
+	return BaseNetlist::port_width(id);
 }
 
 AtomPortType AtomNetlist::port_type (const AtomPortId id) const {
-    VTR_ASSERT(valid_port_id(id));
-
-    const t_model_ports* model_port = port_model(id);
-
-    AtomPortType type = AtomPortType::INPUT;
-    if(model_port->dir == IN_PORT) {
-        if(model_port->is_clock) {
-            type = AtomPortType::CLOCK;
-        } else {
-            type = AtomPortType::INPUT;
-        }
-    } else if(model_port->dir == OUT_PORT) {
-        type = AtomPortType::OUTPUT;
-    } else {
-        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Unrecognized model port type");
-    }
-    return type;
+	return (AtomPortType) BaseNetlist::port_type(id);
 }
 
 AtomBlockId AtomNetlist::port_block (const AtomPortId id) const {
@@ -360,14 +341,12 @@ AtomNetlist::pin_range AtomNetlist::port_pins (const AtomPortId id) const {
 }
 
 AtomPinId AtomNetlist::port_pin (const AtomPortId port_id, const BitIndex port_bit) const {
-    //Convenience look-up bypassing port
-    return find_pin(port_id, port_bit);
+	return BaseNetlist::port_pin(port_id, port_bit);
 }
 
 AtomNetId AtomNetlist::port_net (const AtomPortId port_id, const BitIndex port_bit) const {
 	return BaseNetlist::port_net(port_id, port_bit);
 }
-
 
 const t_model_ports* AtomNetlist::port_model (const AtomPortId port_id) const {
 	return BaseNetlist::port_model(port_id);
@@ -391,17 +370,7 @@ AtomNetId AtomNetlist::pin_net (const AtomPinId id) const {
 }
 
 AtomPinType AtomNetlist::pin_type (const AtomPinId id) const { 
-    VTR_ASSERT(valid_pin_id(id));
-
-    AtomPortId port_id = pin_port(id);
-    AtomPinType type;
-    switch(port_type(port_id)) {
-        case AtomPortType::INPUT: /*fallthrough */;
-        case AtomPortType::CLOCK: type = AtomPinType::SINK; break;
-        case AtomPortType::OUTPUT: type = AtomPinType::DRIVER; break;
-        default: VTR_ASSERT_MSG(false, "Valid atom port type");
-    }
-    return type;
+	return (AtomPinType) BaseNetlist::pin_type(id);
 }
 
 AtomPortId AtomNetlist::pin_port (const AtomPinId id) const { 
@@ -413,8 +382,7 @@ BitIndex AtomNetlist::pin_port_bit (const AtomPinId id) const {
 }
 
 AtomPortType AtomNetlist::pin_port_type (const AtomPinId id) const {
-    AtomPortId port = pin_port(id);
-    return port_type(port);
+	return (AtomPortType) BaseNetlist::pin_port_type(id);
 }
 
 AtomBlockId AtomNetlist::pin_block (const AtomPinId id) const { 
@@ -527,29 +495,7 @@ AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const std::string& 
 }
 
 AtomPinId AtomNetlist::find_pin (const AtomPortId port_id, BitIndex port_bit) const {
-    VTR_ASSERT(valid_port_id(port_id));
-    VTR_ASSERT(valid_port_bit(port_id, port_bit));
-
-    //Pins are stored in ascending order of bit index,
-    //so we can binary search for the specific bit
-    auto port_bit_cmp = [&](const AtomPinId pin_id, BitIndex bit_index) {
-        return pin_port_bit(pin_id) < bit_index; 
-    };
-
-    auto pin_range = port_pins(port_id);
-
-    //Finds the location where the pin with bit index port_bit should be located (if it exists)
-    auto iter = std::lower_bound(pin_range.begin(), pin_range.end(), port_bit, port_bit_cmp);
-
-    if(iter == pin_range.end() || pin_port_bit(*iter) != port_bit) {
-        //Either the end of the pins (i.e. not found), or
-        //the value does not match (indicating a gap in the indicies, so also not found)
-        return AtomPinId::INVALID();
-    } else {
-        //Found it
-        VTR_ASSERT(pin_port_bit(*iter) == port_bit);
-        return *iter;
-    }
+	return BaseNetlist::find_pin(port_id, port_bit);
 }
 
 AtomNetId AtomNetlist::find_net (const std::string& name) const {
@@ -1538,21 +1484,11 @@ AtomBlockId AtomNetlist::find_block(const AtomStringId name_id) const {
 }
 
 void AtomNetlist::associate_pin_with_net(const AtomPinId pin_id, const AtomPinType type, const AtomNetId net_id) {
-    //Add the pin to the net
-    if(type == AtomPinType::DRIVER) {
-        VTR_ASSERT_MSG(net_pins_[net_id].size() > 0, "Must be space for net's pin");
-        VTR_ASSERT_MSG(net_pins_[net_id][0] == AtomPinId::INVALID(), "Must be no existing net driver");
-        
-        net_pins_[net_id][0] = pin_id; //Set driver
-    } else {
-        VTR_ASSERT(type == AtomPinType::SINK);
-
-        net_pins_[net_id].emplace_back(pin_id); //Add sink
-    }
+	BaseNetlist::associate_pin_with_net(pin_id, (PinType) type, net_id);
 }
 
 void AtomNetlist::associate_pin_with_port(const AtomPinId pin_id, const AtomPortId port_id) {
-    port_pins_[port_id].push_back(pin_id);
+	BaseNetlist::associate_pin_with_port(pin_id, port_id);
 }
 
 void AtomNetlist::associate_pin_with_block(const AtomPinId pin_id, const AtomPortType type, const AtomBlockId blk_id) {
