@@ -832,18 +832,11 @@ class AtomNetlist : public BaseNetlist {
         vtr::vector_map<AtomBlockId,unsigned>                block_num_clock_ports_;    //Clock ports of each block
 
         //Port data
-        vtr::vector_map<AtomPortId,AtomPortId>             port_ids_;      //Valid port ids
+//        vtr::vector_map<AtomPortId,AtomPortId>             port_ids_;      //Valid port ids
         vtr::vector_map<AtomPortId,AtomStringId>           port_names_;    //Name of each port
         vtr::vector_map<AtomPortId,AtomBlockId>            port_blocks_;   //Block associated with each port
-        vtr::vector_map<AtomPortId,const t_model_ports*>   port_models_;   //Architecture port models of each port
+//        vtr::vector_map<AtomPortId,const t_model_ports*>   port_models_;   //Architecture port models of each port
         vtr::vector_map<AtomPortId,std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
-
-        //Pin data
-//        vtr::vector_map<AtomPinId,AtomPinId>  pin_ids_;           //Valid pin ids
-        vtr::vector_map<AtomPinId,AtomPortId> pin_ports_;         //Type of each pin
-        vtr::vector_map<AtomPinId,BitIndex>   pin_port_bits_;     //The ports bit position in the port
-//        vtr::vector_map<AtomPinId,AtomNetId>  pin_nets_;          //Net associated with each pin
-//        vtr::vector_map<AtomPinId,bool>       pin_is_constant_;   //Indicates if the pin always keeps a constant value
 
     private: //Fast lookups
         vtr::vector_map<AtomStringId,AtomBlockId>       block_name_to_block_id_;

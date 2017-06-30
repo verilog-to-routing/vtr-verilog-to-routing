@@ -14,6 +14,8 @@
 #include "vtr_range.h"
 #include "vtr_vector_map.h"
 
+#include "logic_types.h"
+
 #include "base_netlist_fwd.h"
 
 //Forward declaration for private methods
@@ -33,6 +35,14 @@ class BaseNetlist {
 
 
 	public: //Public Mutators
+		//Create or return an existing pin in the netlist
+        //  port_id : The port this pin is associated with
+        //  port_bit: The bit index of the pin in the port
+        //  net_id  : The net the pin drives/sinks
+        //  type    : The type of the pin (driver/sink)
+        //  is_const: Indicates whether the pin holds a constant value (e. g. vcc/gnd)
+        PinId   create_pin  (const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType type, bool is_const=false);
+
 		//Create an empty, or return an existing net in the netlist
 		//  name    : The unique name of the net
 		NetId   create_net(const std::string name); //An empty or existing net
@@ -71,11 +81,27 @@ class BaseNetlist {
 		void print_stats() const;
 
 		/*
+		* Ports
+		*/
+		//Returns the type of the specified port
+		PortType            port_type(const PortId id) const;
+
+		//Returns the model port of the specified port or nullptr if not
+		//  port_id: The ID of the port to look for
+		const t_model_ports*    port_model(const PortId port_id) const;
+
+		/*
 		* Pins
 		*/
 
 		//Returns the net associated with the specified pin
 		NetId    pin_net(const PinId id) const;
+
+		//Returns the pin type of the specified pin
+		PinType  pin_type(const PinId id) const;
+
+		//Returns the port associated with the specified pin
+		PortId   pin_port(const PinId id) const;
 
 		//Returns true if the pin is a constant (i.e. its value never changes)
 		bool     pin_is_constant(const PinId id) const;
@@ -162,6 +188,7 @@ class BaseNetlist {
 		bool validate_string_sizes() const;
 
 		//Validates that the specified ID is valid in the current netlist state
+		bool valid_port_id(PortId id) const;
 		bool valid_pin_id(PinId id) const;
 		bool valid_net_id(NetId id) const;
 		bool valid_string_id(StringId id) const;
@@ -172,10 +199,14 @@ class BaseNetlist {
 		std::string netlist_id_;	//Unique identifier for the netlist
 		bool dirty_;				//Indicates the netlist has invalid entries from remove_*() functions
 
+		//Port data
+        vtr::vector_map<PortId,PortId>             port_ids_;      //Valid port ids
+		vtr::vector_map<PortId, const t_model_ports*>   port_models_;   //Architecture port models of each port
+
 		//Pin data
 		vtr::vector_map<PinId, PinId>		pin_ids_;           //Valid pin ids
-//		vtr::vector_map<PinId, PortId>		pin_ports_;         //Type of each pin
-//		vtr::vector_map<PinId, BitIndex>	pin_port_bits_;     //The ports bit position in the port
+		vtr::vector_map<PinId, PortId>		pin_ports_;         //Type of each pin
+		vtr::vector_map<PinId, BitIndex>	pin_port_bits_;     //The ports bit position in the port
 		vtr::vector_map<PinId, NetId>		pin_nets_;          //Net associated with each pin
 		vtr::vector_map<PinId, bool>		pin_is_constant_;   //Indicates if the pin always keeps a constant value
 
