@@ -443,9 +443,7 @@ AtomBlockId AtomNetlist::pin_block (const AtomPinId id) const {
 }
 
 bool AtomNetlist::pin_is_constant (const AtomPinId id) const {
-    VTR_ASSERT(valid_pin_id(id));
-
-    return pin_is_constant_[id];
+	return BaseNetlist::pin_is_constant(id);
 }
 
 
@@ -463,13 +461,7 @@ AtomNetlist::pin_range AtomNetlist::net_pins (const AtomNetId id) const {
 }
 
 AtomPinId AtomNetlist::net_driver (const AtomNetId id) const {
-    VTR_ASSERT(valid_net_id(id));
-
-    if(net_pins_[id].size() > 0) {
-        return net_pins_[id][0];
-    } else {
-        return AtomPinId::INVALID();
-    }
+	return BaseNetlist::net_driver(id);
 }
 
 AtomBlockId AtomNetlist::net_driver_block (const AtomNetId id) const {
@@ -481,23 +473,11 @@ AtomBlockId AtomNetlist::net_driver_block (const AtomNetId id) const {
 }
 
 AtomNetlist::pin_range AtomNetlist::net_sinks (const AtomNetId id) const {
-    VTR_ASSERT(valid_net_id(id));
-
-    return vtr::make_range(++net_pins_[id].begin(), net_pins_[id].end());
+	return BaseNetlist::net_sinks(id);
 }
 
 bool AtomNetlist::net_is_constant (const AtomNetId id) const {
-    VTR_ASSERT(valid_net_id(id));
-
-    //Look-up the driver
-    auto driver_pin_id = net_driver(id);
-    if(driver_pin_id) {
-        //Valid driver, see it is constant
-        return pin_is_constant(driver_pin_id);
-    }
-
-    //No valid driver so can't be const
-    return false;
+	return BaseNetlist::net_is_constant(id);
 }
 
 /*
@@ -879,9 +859,7 @@ AtomNetId AtomNetlist::add_net (const std::string name, AtomPinId driver, std::v
 }
 
 void AtomNetlist::set_pin_is_constant(const AtomPinId pin_id, const bool value) {
-    VTR_ASSERT(valid_pin_id(pin_id));
-
-    pin_is_constant_[pin_id] = value;
+	return BaseNetlist::set_pin_is_constant(pin_id, value);
 }
 
 void AtomNetlist::set_pin_net (const AtomPinId pin, AtomPinType type, const AtomNetId net) {
@@ -940,50 +918,11 @@ void AtomNetlist::remove_port(const AtomPortId port_id) {
 }
 
 void AtomNetlist::remove_pin(const AtomPinId pin_id) {
-    VTR_ASSERT(valid_pin_id(pin_id));
-
-    //Find the associated net
-    AtomNetId net = pin_net(pin_id);
-
-    //Remove the pin from the associated net/port/block
-    remove_net_pin(net, pin_id);
-
-    //Mark as invalid
-    pin_ids_[pin_id] = AtomPinId::INVALID();
-
-    //Mark netlist dirty
-    dirty_ = true;
+	BaseNetlist::remove_pin(pin_id);
 }
 
 void AtomNetlist::remove_net_pin(const AtomNetId net_id, const AtomPinId pin_id) {
-    //Remove a net-pin connection
-    //
-    //Note that during sweeping either the net or pin could be invalid (i.e. already swept)
-    //so we check before trying to use them
-
-    if(valid_net_id(net_id)) {
-        //Warning: this is slow!
-        auto iter = std::find(net_pins_[net_id].begin(), net_pins_[net_id].end(), pin_id); //Linear search
-        VTR_ASSERT(iter != net_pins_[net_id].end());
-
-        if(net_driver(net_id) == pin_id) {
-            //Mark no driver
-            net_pins_[net_id][0] = AtomPinId::INVALID();
-        } else {
-            //Remove sink
-            net_pins_[net_id].erase(iter); //Linear remove
-        }
-
-        //Note: since we fully update the net we don't need to mark the netlist dirty_
-    }
-
-    //Dissassociate the pin with the net
-    if(valid_pin_id(pin_id)) {
-        pin_nets_[pin_id] = AtomNetId::INVALID();
-
-        //Mark netlist dirty, since we are leaving an invalid net id
-        dirty_ = true;
-    }
+	BaseNetlist::remove_net_pin(net_id, pin_id);
 }
 
 void AtomNetlist::remove_unused() {

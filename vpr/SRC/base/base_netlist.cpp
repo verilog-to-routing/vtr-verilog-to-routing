@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "base_netlist.h"
 #include "vtr_assert.h"
 
@@ -38,6 +40,12 @@ NetId BaseNetlist::pin_net (const PinId id) const {
 	return pin_nets_[id];
 }
 
+bool BaseNetlist::pin_is_constant(const PinId id) const {
+	VTR_ASSERT(valid_pin_id(id));
+
+	return pin_is_constant_[id];
+}
+
 /*
 *
 * Nets
@@ -55,6 +63,39 @@ BaseNetlist::pin_range BaseNetlist::net_pins(const NetId id) const {
 
 	return vtr::make_range(net_pins_[id].begin(), net_pins_[id].end());
 }
+
+PinId BaseNetlist::net_driver(const NetId id) const {
+	VTR_ASSERT(valid_net_id(id));
+
+	if (net_pins_[id].size() > 0) {
+		return net_pins_[id][0];
+	}
+	else {
+		return PinId::INVALID();
+	}
+}
+
+BaseNetlist::pin_range BaseNetlist::net_sinks(const NetId id) const {
+	VTR_ASSERT(valid_net_id(id));
+
+	return vtr::make_range(++net_pins_[id].begin(), net_pins_[id].end());
+}
+
+bool BaseNetlist::net_is_constant(const NetId id) const {
+	VTR_ASSERT(valid_net_id(id));
+
+	//Look-up the driver
+	auto driver_pin_id = net_driver(id);
+	if (driver_pin_id) {
+		//Valid driver, see it is constant
+		return pin_is_constant(driver_pin_id);
+	}
+
+	//No valid driver so can't be const
+	return false;
+}
+
+
 
 /*
 *
@@ -151,7 +192,59 @@ NetId BaseNetlist::add_net(const std::string name, PinId driver, std::vector<Pin
 	return net_id;
 }
 
+void BaseNetlist::set_pin_is_constant(const PinId pin_id, const bool value) {
+    VTR_ASSERT(valid_pin_id(pin_id));
 
+    pin_is_constant_[pin_id] = value;
+}
+
+void BaseNetlist::remove_pin(const PinId pin_id) {
+	VTR_ASSERT(valid_pin_id(pin_id));
+
+	//Find the associated net
+	NetId net = pin_net(pin_id);
+
+	//Remove the pin from the associated net/port/block
+	remove_net_pin(net, pin_id);
+
+	//Mark as invalid
+	pin_ids_[pin_id] = PinId::INVALID();
+
+	//Mark netlist dirty
+	dirty_ = true;
+}
+
+void BaseNetlist::remove_net_pin(const NetId net_id, const PinId pin_id) {
+	//Remove a net-pin connection
+	//
+	//Note that during sweeping either the net or pin could be invalid (i.e. already swept)
+	//so we check before trying to use them
+
+	if (valid_net_id(net_id)) {
+		//Warning: this is slow!
+		auto iter = std::find(net_pins_[net_id].begin(), net_pins_[net_id].end(), pin_id); //Linear search
+		VTR_ASSERT(iter != net_pins_[net_id].end());
+
+		if (net_driver(net_id) == pin_id) {
+			//Mark no driver
+			net_pins_[net_id][0] = PinId::INVALID();
+		}
+		else {
+			//Remove sink
+			net_pins_[net_id].erase(iter); //Linear remove
+		}
+
+		//Note: since we fully update the net we don't need to mark the netlist dirty_
+	}
+
+	//Dissassociate the pin with the net
+	if (valid_pin_id(pin_id)) {
+		pin_nets_[pin_id] = NetId::INVALID();
+
+		//Mark netlist dirty, since we are leaving an invalid net id
+		dirty_ = true;
+	}
+}
 
 void BaseNetlist::remove_net(const NetId net_id) {
 	VTR_ASSERT(valid_net_id(net_id));
