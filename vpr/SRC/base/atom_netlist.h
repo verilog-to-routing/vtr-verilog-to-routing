@@ -407,24 +407,22 @@ template<typename I>
 class IdMap;
 
 class AtomNetlist : public BaseNetlist {
+	public:
+		//Constructs a netlist
+		// name: the name of the netlist (e.g. top-level module)
+		// id:   a unique identifier for the netlist (e.g. a secure digest of the input file)
+		AtomNetlist(std::string name = "", std::string id = "");
+
     public: //Public types
         typedef vtr::vector_map<AtomBlockId,AtomBlockId>::const_iterator block_iterator;
         typedef vtr::vector_map<AtomPortId,AtomPortId>::const_iterator port_iterator;
         typedef vtr::vector_map<AtomPinId,AtomPinId>::const_iterator pin_iterator;
-        typedef vtr::vector_map<AtomNetId,AtomNetId>::const_iterator net_iterator;
 
         typedef std::vector<std::vector<vtr::LogicValue>> TruthTable;
 
         typedef vtr::Range<block_iterator> block_range;
         typedef vtr::Range<port_iterator> port_range;
         typedef vtr::Range<pin_iterator> pin_range;
-        typedef vtr::Range<net_iterator> net_range;
-
-    public:
-        //Constructs a netlist
-        // name: the name of the netlist (e.g. top-level module)
-        // id:   a unique identifier for the netlist (e.g. a secure digest of the input file)
-        AtomNetlist(std::string name="", std::string id="");
 
     public: //Public Accessors
         /*
@@ -678,11 +676,6 @@ class AtomNetlist : public BaseNetlist {
         //  blk_id  : The block to be removed
         void remove_block   (const AtomBlockId blk_id);
 
-        //Removes a net from the netlist. 
-        //This will mark the net's pins as having no associated.
-        //  net_id  : The net to be removed
-        void remove_net     (const AtomNetId net_id);
-
         //Removes a connection betwen a net and pin. The pin is removed from the net and the pin
         //will be marked as having no associated net
         //  net_id  : The net from which the pin is to be removed
@@ -713,10 +706,6 @@ class AtomNetlist : public BaseNetlist {
         //Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVALID() if not
         //  name_id : The block name to look for
         AtomBlockId find_block(const AtomStringId name_id) const;
-
-        //Returns the AtomNetId of the specifed port if it exists or AtomNetId::INVALID() if not
-        //  name_id: The string ID of the net name to look for
-        AtomNetId find_net(const AtomStringId name_id) const;
 
         /*
          * Mutators
@@ -800,7 +789,6 @@ class AtomNetlist : public BaseNetlist {
         bool validate_block_sizes() const;
         bool validate_port_sizes() const;
         bool validate_pin_sizes() const;
-        bool validate_net_sizes() const;
 
         //Verify that internal data structure cross-references are consistent
         bool verify_refs() const; //All cross-references
@@ -808,7 +796,7 @@ class AtomNetlist : public BaseNetlist {
         bool validate_block_pin_refs() const;
         bool validate_port_pin_refs() const;
         bool validate_net_pin_refs() const;
-        bool validate_string_refs() const;
+		bool validate_string_refs() const;
 
         //Verify that fast-lookups are consistent with internal data structures
         bool verify_lookups() const;
@@ -827,8 +815,6 @@ class AtomNetlist : public BaseNetlist {
     private: //Private data
 
         //Netlist data
-//        std::string                 netlist_name_;  //Name of the top-level netlist
-//        std::string                 netlist_id_;    //Unique identifier for the netlist
         bool                        dirty_;         //Indicates the netlist has invalid entries from remove_*() functions
 
         //Block data
@@ -855,21 +841,16 @@ class AtomNetlist : public BaseNetlist {
         vtr::vector_map<AtomPortId,std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
 
         //Pin data
-        vtr::vector_map<AtomPinId,AtomPinId>  pin_ids_;           //Valid pin ids
+//        vtr::vector_map<AtomPinId,AtomPinId>  pin_ids_;           //Valid pin ids
         vtr::vector_map<AtomPinId,AtomPortId> pin_ports_;         //Type of each pin
         vtr::vector_map<AtomPinId,BitIndex>   pin_port_bits_;     //The ports bit position in the port
-        vtr::vector_map<AtomPinId,AtomNetId>  pin_nets_;          //Net associated with each pin
+//        vtr::vector_map<AtomPinId,AtomNetId>  pin_nets_;          //Net associated with each pin
         vtr::vector_map<AtomPinId,bool>       pin_is_constant_;   //Indicates if the pin always keeps a constant value
-
-        //Net data
-        vtr::vector_map<AtomNetId,AtomNetId>              net_ids_;   //Valid net ids
-        vtr::vector_map<AtomNetId,AtomStringId>           net_names_; //Name of each net
-        vtr::vector_map<AtomNetId,std::vector<AtomPinId>> net_pins_;  //Pins associated with each net
 
     private: //Fast lookups
 
         vtr::vector_map<AtomStringId,AtomBlockId>       block_name_to_block_id_;
-        vtr::vector_map<AtomStringId,AtomNetId>         net_name_to_net_id_;
+//        vtr::vector_map<AtomStringId,AtomNetId>         net_name_to_net_id_;
         std::unordered_map<std::string,AtomStringId>    string_to_string_id_;
 };
 
