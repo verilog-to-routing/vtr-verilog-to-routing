@@ -16,6 +16,10 @@
 
 #include "base_netlist_fwd.h"
 
+//Forward declaration for private methods
+template<typename I>
+class IdMap;
+
 class BaseNetlist {
 	public: //Public Types
 		typedef vtr::vector_map<NetId, NetId>::const_iterator net_iterator;
@@ -38,6 +42,13 @@ class BaseNetlist {
         //  driver  : The net's driver pin
         //  sinks   : The net's sink pins
         NetId   add_net     (const std::string name, PinId driver, std::vector<PinId> sinks);
+
+		//Mark a pin as being a constant generator.
+		// There are some cases where a pin can not be identified as a is constant until after
+		// the full netlist has been built; so we expose a way to mark existing pins as constants.
+		//  pin_id  : The pin to be marked
+		//  value   : The boolean value to set the pin_is_constant attribute
+		void set_pin_is_constant(const PinId pin_id, const bool value);
 
 		//Removes a net from the netlist. 
         //This will mark the net's pins as having no associated.
@@ -66,6 +77,9 @@ class BaseNetlist {
 		//Returns the net associated with the specified pin
 		NetId    pin_net(const PinId id) const;
 
+		//Returns true if the pin is a constant (i.e. its value never changes)
+		bool     pin_is_constant(const PinId id) const;
+
 		/*
 		* Nets
 		*/
@@ -77,6 +91,20 @@ class BaseNetlist {
 		//The remaining elements (potentially none) are the sinks
 		pin_range           net_pins(const NetId id) const;
 
+		//Returns the (potentially invalid) net driver pin
+		PinId           net_driver(const NetId id) const;
+
+		//Returns a (potentially empty) range consisting of net's sink pins
+		pin_range           net_sinks(const NetId id) const;
+
+		//Returns true if the net is driven by a constant pin (i.e. its value never changes)
+		bool                net_is_constant(const NetId id) const;
+
+		//Removes a connection betwen a net and pin. The pin is removed from the net and the pin
+		//will be marked as having no associated net
+		//  net_id  : The net from which the pin is to be removed
+		//  pin_id  : The pin to be removed from the net
+		void remove_net_pin(const NetId net_id, const PinId pin_id);
 
 		/* 
 		* Aggregates
@@ -121,6 +149,10 @@ class BaseNetlist {
         //  str: The string whose ID is requested
         StringId create_string(const std::string& str);
 
+		//Removes a pin from the netlist.
+		//The pin is marked invalid, and removed from any assoicated nets
+		//  pin_id: The ID of the pin to be removed
+		void remove_pin(const PinId pin_id);
 
 		/*
 		* Sanity Checks
@@ -145,7 +177,7 @@ class BaseNetlist {
 //		vtr::vector_map<PinId, PortId>		pin_ports_;         //Type of each pin
 //		vtr::vector_map<PinId, BitIndex>	pin_port_bits_;     //The ports bit position in the port
 		vtr::vector_map<PinId, NetId>		pin_nets_;          //Net associated with each pin
-//		vtr::vector_map<PinId, bool>		pin_is_constant_;   //Indicates if the pin always keeps a constant value
+		vtr::vector_map<PinId, bool>		pin_is_constant_;   //Indicates if the pin always keeps a constant value
 
 		//Net data
         vtr::vector_map<NetId,NetId>              net_ids_;   //Valid net ids
