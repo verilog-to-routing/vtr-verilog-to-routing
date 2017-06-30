@@ -416,13 +416,11 @@ class AtomNetlist : public BaseNetlist {
     public: //Public types
         typedef vtr::vector_map<AtomBlockId,AtomBlockId>::const_iterator block_iterator;
         typedef vtr::vector_map<AtomPortId,AtomPortId>::const_iterator port_iterator;
-        typedef vtr::vector_map<AtomPinId,AtomPinId>::const_iterator pin_iterator;
 
         typedef std::vector<std::vector<vtr::LogicValue>> TruthTable;
 
         typedef vtr::Range<block_iterator> block_range;
         typedef vtr::Range<port_iterator> port_range;
-        typedef vtr::Range<pin_iterator> pin_range;
 
     public: //Public Accessors
         /*
@@ -845,13 +843,10 @@ class AtomNetlist : public BaseNetlist {
         vtr::vector_map<AtomPinId,AtomPortId> pin_ports_;         //Type of each pin
         vtr::vector_map<AtomPinId,BitIndex>   pin_port_bits_;     //The ports bit position in the port
 //        vtr::vector_map<AtomPinId,AtomNetId>  pin_nets_;          //Net associated with each pin
-        vtr::vector_map<AtomPinId,bool>       pin_is_constant_;   //Indicates if the pin always keeps a constant value
+//        vtr::vector_map<AtomPinId,bool>       pin_is_constant_;   //Indicates if the pin always keeps a constant value
 
     private: //Fast lookups
-
         vtr::vector_map<AtomStringId,AtomBlockId>       block_name_to_block_id_;
-//        vtr::vector_map<AtomStringId,AtomNetId>         net_name_to_net_id_;
-        std::unordered_map<std::string,AtomStringId>    string_to_string_id_;
 };
 
 #include "atom_lookup.h"
