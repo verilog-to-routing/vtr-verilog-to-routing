@@ -33,6 +33,10 @@ const std::string& BaseNetlist::netlist_id() const {
 *
 */
 
+BitIndex BaseNetlist::port_width(const PortId id) const {
+	return port_model(id)->size;
+}
+
 PortType BaseNetlist::port_type(const PortId id) const {
 	VTR_ASSERT(valid_port_id(id));
 
@@ -56,6 +60,30 @@ PortType BaseNetlist::port_type(const PortId id) const {
 	return type;
 }
 
+BaseNetlist::pin_range BaseNetlist::port_pins(const PortId id) const {
+	VTR_ASSERT(valid_port_id(id));
+
+	return vtr::make_range(port_pins_[id].begin(), port_pins_[id].end());
+}
+
+PinId BaseNetlist::port_pin(const PortId port_id, const BitIndex port_bit) const {
+	//Convenience look-up bypassing port
+	return find_pin(port_id, port_bit);
+}
+
+NetId BaseNetlist::port_net(const PortId port_id, const BitIndex port_bit) const {
+	//port_pin() will validate that port_bit and port_id are valid so don't 
+	//check redundently here
+
+	//Convenience look-up bypassing port and pin
+	PinId pin_id = port_pin(port_id, port_bit);
+	if (pin_id) {
+		return pin_net(pin_id);
+	}
+	else {
+		return NetId::INVALID();
+	}
+}
 
 const t_model_ports* BaseNetlist::port_model(const PortId port_id) const {
 	VTR_ASSERT(valid_port_id(port_id));
@@ -89,13 +117,17 @@ PinType BaseNetlist::pin_type(const PinId id) const {
 	return type;
 }
 
-
 PortId BaseNetlist::pin_port(const PinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
 
 	return pin_ports_[id];
 }
 
+BitIndex BaseNetlist::pin_port_bit(const PinId id) const {
+	VTR_ASSERT(valid_pin_id(id));
+
+	return pin_port_bits_[id];
+}
 
 bool BaseNetlist::pin_is_constant(const PinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
@@ -179,6 +211,33 @@ NetId BaseNetlist::find_net(const std::string& name) const {
 	}
 	else {
 		return find_net(str_id);
+	}
+}
+
+PinId BaseNetlist::find_pin(const PortId port_id, BitIndex port_bit) const {
+	VTR_ASSERT(valid_port_id(port_id));
+	VTR_ASSERT(valid_port_bit(port_id, port_bit));
+
+	//Pins are stored in ascending order of bit index,
+	//so we can binary search for the specific bit
+	auto port_bit_cmp = [&](const PinId pin_id, BitIndex bit_index) {
+		return pin_port_bit(pin_id) < bit_index;
+	};
+
+	auto pin_range = port_pins(port_id);
+
+	//Finds the location where the pin with bit index port_bit should be located (if it exists)
+	auto iter = std::lower_bound(pin_range.begin(), pin_range.end(), port_bit, port_bit_cmp);
+
+	if (iter == pin_range.end() || pin_port_bit(*iter) != port_bit) {
+		//Either the end of the pins (i.e. not found), or
+		//the value does not match (indicating a gap in the indicies, so also not found)
+		return PinId::INVALID();
+	}
+	else {
+		//Found it
+		VTR_ASSERT(pin_port_bit(*iter) == port_bit);
+		return *iter;
 	}
 }
 
@@ -379,6 +438,12 @@ bool BaseNetlist::valid_port_id(PortId id) const {
 	if (id == PortId::INVALID()) return false;
 	else if (!port_ids_.contains(id)) return false;
 	else if (port_ids_[id] != id) return false;
+	return true;
+}
+
+bool BaseNetlist::valid_port_bit(PortId id, BitIndex port_bit) const {
+	VTR_ASSERT(valid_port_id(id));
+	if (port_bit >= port_width(id)) return false;
 	return true;
 }
 

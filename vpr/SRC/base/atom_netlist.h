@@ -836,7 +836,7 @@ class AtomNetlist : public BaseNetlist {
         vtr::vector_map<AtomPortId,AtomStringId>           port_names_;    //Name of each port
         vtr::vector_map<AtomPortId,AtomBlockId>            port_blocks_;   //Block associated with each port
 //        vtr::vector_map<AtomPortId,const t_model_ports*>   port_models_;   //Architecture port models of each port
-        vtr::vector_map<AtomPortId,std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
+//        vtr::vector_map<AtomPortId,std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
 
     private: //Fast lookups
         vtr::vector_map<AtomStringId,AtomBlockId>       block_name_to_block_id_;
