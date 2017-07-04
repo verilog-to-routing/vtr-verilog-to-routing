@@ -201,23 +201,11 @@ const std::string& AtomNetlist::block_name (const AtomBlockId id) const {
 }
 
 AtomBlockType AtomNetlist::block_type (const AtomBlockId id) const {
-    const t_model* blk_model = block_model(id);
-
-    AtomBlockType type = AtomBlockType::BLOCK;
-    if(blk_model->name == std::string("input")) {
-        type = AtomBlockType::INPAD;
-    } else if(blk_model->name == std::string("output")) {
-        type = AtomBlockType::OUTPAD;
-    } else {
-        type = AtomBlockType::BLOCK;
-    }
-    return type;
+	return (AtomBlockType) BaseNetlist::block_type(id);
 }
 
 const t_model* AtomNetlist::block_model (const AtomBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
-
-    return block_models_[id];
+	return BaseNetlist::block_model(id);
 }
 
 const AtomNetlist::TruthTable& AtomNetlist::block_truth_table (const AtomBlockId id) const {
@@ -227,89 +215,39 @@ const AtomNetlist::TruthTable& AtomNetlist::block_truth_table (const AtomBlockId
 }
 
 bool  AtomNetlist::block_is_combinational (const AtomBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
-
-    return block_clock_pins(id).size() == 0;
+	return BaseNetlist::block_is_combinational(id);
 }
 
 AtomNetlist::pin_range AtomNetlist::block_pins (const AtomBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
-
-    return vtr::make_range(block_pins_[id].begin(), block_pins_[id].end()); 
+	return BaseNetlist::block_pins(id);
 }
 
 AtomNetlist::pin_range AtomNetlist::block_input_pins (const AtomBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
-
-    auto begin = block_pins_[id].begin();
-
-    auto end = block_pins_[id].begin() + block_num_input_pins_[id];
-
-    return vtr::make_range(begin, end); 
+	return BaseNetlist::block_input_pins(id);
 }
 
 AtomNetlist::pin_range AtomNetlist::block_output_pins (const AtomBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
-
-    auto begin = block_pins_[id].begin() + block_num_input_pins_[id];
-
-    auto end = begin + block_num_output_pins_[id];
-
-    return vtr::make_range(begin, end); 
+	return BaseNetlist::block_output_pins(id);
 }
 
 AtomNetlist::pin_range AtomNetlist::block_clock_pins (const AtomBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
-
-    auto begin = block_pins_[id].begin()
-                 + block_num_input_pins_[id]
-                 + block_num_output_pins_[id];
-
-    auto end = begin + block_num_clock_pins_[id];
-
-    VTR_ASSERT(end == block_pins_[id].end());
-
-    return vtr::make_range(begin, end); 
+	return BaseNetlist::block_clock_pins(id);
 }
 
 AtomNetlist::port_range AtomNetlist::block_ports (const AtomBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
-
-    return vtr::make_range(block_ports_[id].begin(), block_ports_[id].end()); 
+	return BaseNetlist::block_ports(id);
 }
 
 AtomNetlist::port_range AtomNetlist::block_input_ports (const AtomBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
-
-    auto begin = block_ports_[id].begin();
-
-    auto end = block_ports_[id].begin() + block_num_input_ports_[id];
-
-    return vtr::make_range(begin, end); 
+	return BaseNetlist::block_input_ports(id);
 }
 
 AtomNetlist::port_range AtomNetlist::block_output_ports (const AtomBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
-
-    auto begin = block_ports_[id].begin() + block_num_input_ports_[id];
-
-    auto end = begin + block_num_output_ports_[id];
-
-    return vtr::make_range(begin, end); 
+	return BaseNetlist::block_output_ports(id);
 }
 
 AtomNetlist::port_range AtomNetlist::block_clock_ports (const AtomBlockId id) const {
-    VTR_ASSERT(valid_block_id(id));
-
-    auto begin = block_ports_[id].begin()
-                 + block_num_input_ports_[id]
-                 + block_num_output_ports_[id];
-
-    auto end = begin + block_num_clock_ports_[id];
-
-    VTR_ASSERT(end == block_ports_[id].end());
-
-    return vtr::make_range(begin, end); 
+	return BaseNetlist::block_clock_ports(id);
 }
 
 /*
@@ -355,10 +293,7 @@ const t_model_ports* AtomNetlist::port_model (const AtomPortId port_id) const {
  *
  */
 std::string AtomNetlist::pin_name (const AtomPinId id) const {
-    AtomBlockId blk = pin_block(id);
-    AtomPortId port = pin_port(id);
-
-    return block_name(blk) + "." + port_name(port) + "[" + std::to_string(pin_port_bit(id)) + "]";
+	return BaseNetlist::pin_name(id);
 }
 
 AtomNetId AtomNetlist::pin_net (const AtomPinId id) const { 
@@ -425,7 +360,7 @@ bool AtomNetlist::net_is_constant (const AtomNetId id) const {
  *
  */
 AtomNetlist::block_range AtomNetlist::blocks () const {
-    return vtr::make_range(block_ids_.begin(), block_ids_.end()); 
+	return BaseNetlist::blocks();
 }
 
 AtomNetlist::pin_range AtomNetlist::pins () const {

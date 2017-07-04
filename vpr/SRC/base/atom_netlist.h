@@ -414,13 +414,7 @@ class AtomNetlist : public BaseNetlist {
 		AtomNetlist(std::string name = "", std::string id = "");
 
     public: //Public types
-        typedef vtr::vector_map<AtomBlockId,AtomBlockId>::const_iterator block_iterator;
-        typedef vtr::vector_map<AtomPortId,AtomPortId>::const_iterator port_iterator;
-
         typedef std::vector<std::vector<vtr::LogicValue>> TruthTable;
-
-        typedef vtr::Range<block_iterator> block_range;
-        typedef vtr::Range<port_iterator> port_range;
 
     public: //Public Accessors
         /*
@@ -817,13 +811,13 @@ class AtomNetlist : public BaseNetlist {
         //Block data
 //        vtr::vector_map<AtomBlockId,AtomBlockId>             block_ids_;                //Valid block ids
 //        vtr::vector_map<AtomBlockId,AtomStringId>            block_names_;              //Name of each block
-        vtr::vector_map<AtomBlockId,const t_model*>          block_models_;             //Architecture model of each block
+//        vtr::vector_map<AtomBlockId,const t_model*>          block_models_;             //Architecture model of each block
         vtr::vector_map<AtomBlockId,TruthTable>              block_truth_tables_;       //Truth tables of each block
 
-        vtr::vector_map<AtomBlockId,std::vector<AtomPinId>>  block_pins_;               //Pins of each block
-        vtr::vector_map<AtomBlockId,unsigned>                block_num_input_pins_;     //Number of input pins on each block
-        vtr::vector_map<AtomBlockId,unsigned>                block_num_output_pins_;    //Number of output pins on each block
-        vtr::vector_map<AtomBlockId,unsigned>                block_num_clock_pins_;     //Number of clock pins on each block
+//        vtr::vector_map<AtomBlockId,std::vector<AtomPinId>>  block_pins_;               //Pins of each block
+//        vtr::vector_map<AtomBlockId,unsigned>                block_num_input_pins_;     //Number of input pins on each block
+//        vtr::vector_map<AtomBlockId,unsigned>                block_num_output_pins_;    //Number of output pins on each block
+//        vtr::vector_map<AtomBlockId,unsigned>                block_num_clock_pins_;     //Number of clock pins on each block
 
 //        vtr::vector_map<AtomBlockId,std::vector<AtomPortId>> block_ports_;              //Ports of each block
 //        vtr::vector_map<AtomBlockId,unsigned>                block_num_input_ports_;    //Input ports of each block
