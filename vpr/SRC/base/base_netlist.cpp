@@ -585,6 +585,25 @@ void BaseNetlist::set_pin_net(const PinId pin, PinType type, const NetId net) {
 	associate_pin_with_net(pin, type, net);
 }
 
+void BaseNetlist::remove_block(const BlockId blk_id) {
+	VTR_ASSERT(valid_block_id(blk_id));
+
+	//Remove the ports
+	for (PortId block_port : block_ports(blk_id)) {
+		remove_port(block_port);
+	}
+
+	//Invalidate look-up
+	StringId name_id = block_names_[blk_id];
+	block_name_to_block_id_.insert(name_id, BlockId::INVALID());
+
+	//Mark as invalid
+	block_ids_[blk_id] = BlockId::INVALID();
+
+	//Mark netlist dirty
+	dirty_ = true;
+}
+
 void BaseNetlist::remove_port(const PortId port_id) {
 	VTR_ASSERT(valid_port_id(port_id));
 
@@ -613,6 +632,26 @@ void BaseNetlist::remove_pin(const PinId pin_id) {
 
 	//Mark as invalid
 	pin_ids_[pin_id] = PinId::INVALID();
+
+	//Mark netlist dirty
+	dirty_ = true;
+}
+
+void BaseNetlist::remove_net(const NetId net_id) {
+	VTR_ASSERT(valid_net_id(net_id));
+
+	//Disassociate the pins from the net
+	for (auto pin_id : net_pins(net_id)) {
+		if (pin_id) {
+			pin_nets_[pin_id] = NetId::INVALID();
+		}
+	}
+	//Invalidate look-up
+	StringId name_id = net_names_[net_id];
+	net_name_to_net_id_.insert(name_id, NetId::INVALID());
+
+	//Mark as invalid
+	net_ids_[net_id] = NetId::INVALID();
 
 	//Mark netlist dirty
 	dirty_ = true;
@@ -650,24 +689,47 @@ void BaseNetlist::remove_net_pin(const NetId net_id, const PinId pin_id) {
 	}
 }
 
-void BaseNetlist::remove_net(const NetId net_id) {
-	VTR_ASSERT(valid_net_id(net_id));
+void BaseNetlist::remove_unused() {
+	//Mark any nets/pins/ports/blocks which are not in use as invalid
+	//so they will be removed
 
-	//Disassociate the pins from the net
-	for (auto pin_id : net_pins(net_id)) {
-		if (pin_id) {
-			pin_nets_[pin_id] = NetId::INVALID();
+	bool found_unused;
+	do {
+		found_unused = false;
+		//Nets with no connected pins
+		for (auto net_id : nets()) {
+			if (net_id
+				&& !net_driver(net_id)
+				&& net_sinks(net_id).size() == 0) {
+				remove_net(net_id);
+				found_unused = true;
+			}
 		}
-	}
-	//Invalidate look-up
-	StringId name_id = net_names_[net_id];
-	net_name_to_net_id_.insert(name_id, NetId::INVALID());
 
-	//Mark as invalid
-	net_ids_[net_id] = NetId::INVALID();
+		//Pins with no connected nets
+		for (auto pin_id : pin_ids_) {
+			if (pin_id && !pin_net(pin_id)) {
+				remove_pin(pin_id);
+				found_unused = true;
+			}
+		}
 
-	//Mark netlist dirty
-	dirty_ = true;
+		//Empty ports
+		for (auto port_id : port_ids_) {
+			if (port_id && port_pins(port_id).size() == 0) {
+				remove_port(port_id);
+				found_unused = true;
+			}
+		}
+
+		//Blocks with no pins
+		for (auto blk_id : blocks()) {
+			if (blk_id && block_pins(blk_id).size() == 0) {
+				remove_block(blk_id);
+				found_unused = true;
+			}
+		}
+	} while (found_unused);
 }
 
 /*
@@ -713,6 +775,32 @@ bool BaseNetlist::valid_string_id(StringId id) const {
 	if (id == StringId::INVALID()) return false;
 	else if (!string_ids_.contains(id)) return false;
 	else if (string_ids_[id] != id) return false;
+	return true;
+}
+
+bool BaseNetlist::validate_block_sizes() const {
+	if (block_names_.size() != block_ids_.size()
+		|| block_models_.size() != block_ids_.size()
+		|| block_pins_.size() != block_ids_.size()
+		|| block_num_input_pins_.size() != block_ids_.size()
+		|| block_num_output_pins_.size() != block_ids_.size()
+		|| block_num_clock_pins_.size() != block_ids_.size()
+		|| block_ports_.size() != block_ids_.size()
+		|| block_num_input_ports_.size() != block_ids_.size()
+		|| block_num_output_ports_.size() != block_ids_.size()
+		|| block_num_clock_ports_.size() != block_ids_.size()) {
+		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent block data sizes");
+	}
+	return true;
+}
+
+bool BaseNetlist::validate_port_sizes() const {
+	if (port_names_.size() != port_ids_.size()
+		|| port_blocks_.size() != port_ids_.size()
+		|| port_models_.size() != port_ids_.size()
+		|| port_pins_.size() != port_ids_.size()) {
+		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent port data sizes");
+	}
 	return true;
 }
 
@@ -781,6 +869,45 @@ BlockId BaseNetlist::find_block(const StringId name_id) const {
 	}
 }
 
+void BaseNetlist::associate_pin_with_block(const PinId pin_id, const PortType type, const BlockId blk_id) {
+	auto port_id = pin_port(pin_id);
+	VTR_ASSERT(port_type(port_id) == type);
+
+	//Get an interator pointing to where we want to insert
+	pin_iterator iter;
+	if (type == PortType::INPUT) {
+		iter = block_input_pins(blk_id).end();
+		++block_num_input_pins_[blk_id];
+	}
+	else if (type == PortType::OUTPUT) {
+		iter = block_output_pins(blk_id).end();
+		++block_num_output_pins_[blk_id];
+	}
+	else {
+		VTR_ASSERT(type == PortType::CLOCK);
+		iter = block_clock_pins(blk_id).end();
+		++block_num_clock_pins_[blk_id];
+	}
+
+	//Insert the element just before iter
+	auto new_iter = block_pins_[blk_id].insert(iter, pin_id);
+
+	//Inserted value should be the last valid range element
+	if (type == PortType::INPUT) {
+		VTR_ASSERT(new_iter + 1 == block_input_pins(blk_id).end());
+		VTR_ASSERT(new_iter + 1 == block_output_pins(blk_id).begin());
+	}
+	else if (type == PortType::OUTPUT) {
+		VTR_ASSERT(new_iter + 1 == block_output_pins(blk_id).end());
+		VTR_ASSERT(new_iter + 1 == block_clock_pins(blk_id).begin());
+	}
+	else {
+		VTR_ASSERT(type == PortType::CLOCK);
+		VTR_ASSERT(new_iter + 1 == block_clock_pins(blk_id).end());
+		VTR_ASSERT(new_iter + 1 == block_pins(blk_id).end());
+	}
+}
+
 void BaseNetlist::associate_pin_with_net(const PinId pin_id, const PinType type, const NetId net_id) {
 	//Add the pin to the net
 	if (type == PinType::DRIVER) {
@@ -798,6 +925,45 @@ void BaseNetlist::associate_pin_with_net(const PinId pin_id, const PinType type,
 
 void BaseNetlist::associate_pin_with_port(const PinId pin_id, const PortId port_id) {
 	port_pins_[port_id].push_back(pin_id);
+}
+
+void BaseNetlist::associate_port_with_block(const PortId port_id, const BlockId blk_id) {
+	//Associate the port with the blocks inputs/outputs/clocks
+	PortType type = port_type(port_id);
+
+	//Get an interator pointing to where we want to insert
+	port_iterator iter;
+	if (type == PortType::INPUT) {
+		iter = block_input_ports(blk_id).end();
+		++block_num_input_ports_[blk_id];
+	}
+	else if (type == PortType::OUTPUT) {
+		iter = block_output_ports(blk_id).end();
+		++block_num_output_ports_[blk_id];
+	}
+	else {
+		VTR_ASSERT(type == PortType::CLOCK);
+		iter = block_clock_ports(blk_id).end();
+		++block_num_clock_ports_[blk_id];
+	}
+
+	//Insert the element just before iter
+	auto new_iter = block_ports_[blk_id].insert(iter, port_id);
+
+	//Inserted value should be the last valid range element
+	if (type == PortType::INPUT) {
+		VTR_ASSERT(new_iter + 1 == block_input_ports(blk_id).end());
+		VTR_ASSERT(new_iter + 1 == block_output_ports(blk_id).begin());
+	}
+	else if (type == PortType::OUTPUT) {
+		VTR_ASSERT(new_iter + 1 == block_output_ports(blk_id).end());
+		VTR_ASSERT(new_iter + 1 == block_clock_ports(blk_id).begin());
+	}
+	else {
+		VTR_ASSERT(type == PortType::CLOCK);
+		VTR_ASSERT(new_iter + 1 == block_clock_ports(blk_id).end());
+		VTR_ASSERT(new_iter + 1 == block_ports(blk_id).end());
+	}
 }
 
 BaseNetlist::StringId BaseNetlist::create_string(const std::string& str) {
