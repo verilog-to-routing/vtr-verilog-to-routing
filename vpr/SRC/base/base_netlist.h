@@ -117,6 +117,9 @@ class BaseNetlist {
 		//Returns the width (number of bits) in the specified port
 		BitIndex                port_width(const PortId id) const;
 
+		//Returns the block associated with the specified port
+		BlockId             port_block(const PortId id) const;
+
 		//Returns the type of the specified port
 		PortType            port_type(const PortId id) const;
 
@@ -156,6 +159,9 @@ class BaseNetlist {
 		//Returns the port type associated with the specified pin
 		PortType pin_port_type(const PinId id) const;
 
+		//Returns the block associated with the specified pin
+		BlockId  pin_block(const PinId id) const;
+
 		//Returns true if the pin is a constant (i.e. its value never changes)
 		bool     pin_is_constant(const PinId id) const;
 
@@ -172,6 +178,9 @@ class BaseNetlist {
 
 		//Returns the (potentially invalid) net driver pin
 		PinId           net_driver(const NetId id) const;
+
+		//Returns the (potentially invalid) net driver block
+		BlockId         net_driver_block(const NetId id) const;
 
 		//Returns a (potentially empty) range consisting of net's sink pins
 		pin_range           net_sinks(const NetId id) const;

@@ -98,6 +98,12 @@ BitIndex BaseNetlist::port_width(const PortId id) const {
 	return port_model(id)->size;
 }
 
+BlockId BaseNetlist::port_block(const PortId id) const {
+	VTR_ASSERT(valid_port_id(id));
+
+	return port_blocks_[id];
+}
+
 PortType BaseNetlist::port_type(const PortId id) const {
 	VTR_ASSERT(valid_port_id(id));
 
@@ -196,6 +202,14 @@ PortType BaseNetlist::pin_port_type(const PinId id) const {
 	return port_type(port);
 }
 
+BlockId BaseNetlist::pin_block(const PinId id) const {
+	//Convenience lookup bypassing the port
+	VTR_ASSERT(valid_pin_id(id));
+
+	PortId port_id = pin_port(id);
+	return port_block(port_id);
+}
+
 bool BaseNetlist::pin_is_constant(const PinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
 
@@ -229,6 +243,14 @@ PinId BaseNetlist::net_driver(const NetId id) const {
 	else {
 		return PinId::INVALID();
 	}
+}
+
+BlockId BaseNetlist::net_driver_block(const NetId id) const {
+	auto driver_pin_id = net_driver(id);
+	if (driver_pin_id) {
+		return pin_block(driver_pin_id);
+	}
+	return BlockId::INVALID();
 }
 
 BaseNetlist::pin_range BaseNetlist::net_sinks(const NetId id) const {
