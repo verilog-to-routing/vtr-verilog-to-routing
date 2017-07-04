@@ -154,3 +154,23 @@ You may need to configure coverity to 'know' about your compiler. For example:
     ```shell
     cov-configure --compiler `which gcc-7`
     ```
+    
+Debugging with clang static analyser
+------------------------------------
+First make sure you have clang installed.
+define clang as the default compiler:
+  `export CC=clang`
+  `export CXX=clang++`
+
+set to `debug` in makefile
+
+On unix-like systems run `scan-build make` from the root VTR directory.
+to output the html analysis to a specific folder, run `scan-build make -o /some/folder`
+
+Commit with changes on ODIN
+---------------------------
+make sure all test passes:
+microbechmark, full regression an vtr strong regression test.
+
+ODIN_II/verify_full.sh takes care of running all of them at once.
+verify they are all successfull.

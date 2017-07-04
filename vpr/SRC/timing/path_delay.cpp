@@ -442,7 +442,7 @@ void free_timing_graph(t_slack * slacks) {
 	}
 	free(timing_ctx.tnodes);
 	free(f_net_to_driver_tnode);
-	free_ivec_vector(timing_ctx.tnodes_at_level, 0, timing_ctx.num_tnode_levels - 1);
+	vtr::free_ivec_vector(timing_ctx.tnodes_at_level, 0, timing_ctx.num_tnode_levels - 1);
 
 	free(slacks->slack);
 	free(slacks->timing_criticality);
@@ -454,7 +454,7 @@ void free_timing_graph(t_slack * slacks) {
 	timing_ctx.tnodes = NULL;
 	timing_ctx.num_tnodes = 0;
 	f_net_to_driver_tnode = NULL;
-	timing_ctx.tnodes_at_level = NULL;
+	//timing_ctx.tnodes_at_level = NULL;
 	timing_ctx.num_tnode_levels = 0;
 	slacks = NULL;
 }
@@ -1767,10 +1767,10 @@ void print_timing_graph(const char *fname) {
 	fprintf(fp, "\n\ntiming_ctx.num_tnode_levels: %d\n", timing_ctx.num_tnode_levels);
 
 	for (ilevel = 0; ilevel < timing_ctx.num_tnode_levels; ilevel++) {
-		fprintf(fp, "\n\nLevel: %d  Num_nodes: %d\nNodes:", ilevel,
-				timing_ctx.tnodes_at_level[ilevel].nelem);
-		for (i = 0; i < timing_ctx.tnodes_at_level[ilevel].nelem; i++)
-			fprintf(fp, "\t%d", timing_ctx.tnodes_at_level[ilevel].list[i]);
+		fprintf(fp, "\n\nLevel: %d  Num_nodes: %zu\nNodes:", ilevel,
+				timing_ctx.tnodes_at_level[ilevel].size());
+		for (unsigned j = 0; j < timing_ctx.tnodes_at_level[ilevel].size(); j++)
+			fprintf(fp, "\t%d", timing_ctx.tnodes_at_level[ilevel][j]);
 	}
 
 	fprintf(fp, "\n");
@@ -1847,23 +1847,23 @@ static void process_constraints(void) {
 		}
 
 		/* Set arrival times for each top-level tnode on this clock domain. */
-        if(timing_ctx.tnodes_at_level) {
-            num_at_level = timing_ctx.tnodes_at_level[0].nelem;	
+        if(!timing_ctx.tnodes_at_level.empty()) {
+            num_at_level = timing_ctx.tnodes_at_level[0].size();	
         } else {
             num_at_level = 0;
         }
 		for (i = 0; i < num_at_level; i++) {
-			inode = timing_ctx.tnodes_at_level[0].list[i];
+			inode = timing_ctx.tnodes_at_level[0][i];
 			if (timing_ctx.tnodes[inode].clock_domain == source_clock_domain) {
 				timing_ctx.tnodes[inode].T_arr = 0.;
 			}
 		}
 
 		for (ilevel = 0; ilevel < timing_ctx.num_tnode_levels; ilevel++) {	/* Go down one level at a time. */
-			num_at_level = timing_ctx.tnodes_at_level[ilevel].nelem;			
+			num_at_level = timing_ctx.tnodes_at_level[ilevel].size();			
 						
 			for (i = 0; i < num_at_level; i++) {					
-				inode = timing_ctx.tnodes_at_level[ilevel].list[i];	/* Go through each of the tnodes at the level we're on. */
+				inode = timing_ctx.tnodes_at_level[ilevel][i];	/* Go through each of the tnodes at the level we're on. */
 				if (has_valid_T_arr(inode)) {	/* If this tnode has been used */
 					num_edges = timing_ctx.tnodes[inode].num_edges;
 					if (num_edges == 0) { /* sink */
@@ -2271,9 +2271,9 @@ static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping) {
 				}
 
 				/* Set arrival times for each top-level tnode on this source domain. */
-				int num_at_level = timing_ctx.tnodes_at_level[0].nelem;	
+				int num_at_level = timing_ctx.tnodes_at_level[0].size();	
 				for (int i = 0; i < num_at_level; i++) {
-					int inode = timing_ctx.tnodes_at_level[0].list[i];	
+					int inode = timing_ctx.tnodes_at_level[0][i];	
 					if (timing_ctx.tnodes[inode].clock_domain == source_clock_domain) {
 						if (timing_ctx.tnodes[inode].type == TN_FF_SOURCE) { 
 							timing_ctx.tnodes[inode].T_arr = timing_ctx.tnodes[inode].clock_delay;
@@ -2285,10 +2285,10 @@ static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping) {
 
 				/* Forward traversal, to compute arrival times. */
 				for (int ilevel = 0; ilevel < timing_ctx.num_tnode_levels; ilevel++) {	
-					num_at_level = timing_ctx.tnodes_at_level[ilevel].nelem;		
+					num_at_level = timing_ctx.tnodes_at_level[ilevel].size();		
 
 					for (int i = 0; i < num_at_level; i++) {				
-						int inode = timing_ctx.tnodes_at_level[ilevel].list[i];		
+						int inode = timing_ctx.tnodes_at_level[ilevel][i];		
 						if (timing_ctx.tnodes[inode].T_arr < NEGATIVE_EPSILON) {	
 							continue;																
 						}
@@ -2309,10 +2309,10 @@ static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping) {
 				1 away from a sink, because the path with the least slack has to use a connection between a sink 
 				and one node away from a sink. */
 				for (int ilevel = timing_ctx.num_tnode_levels - 1; ilevel >= 0; ilevel--) {
-					num_at_level = timing_ctx.tnodes_at_level[ilevel].nelem;
+					num_at_level = timing_ctx.tnodes_at_level[ilevel].size();
 	
 					for (int i = 0; i < num_at_level; i++) {
-						int inode = timing_ctx.tnodes_at_level[ilevel].list[i];
+						int inode = timing_ctx.tnodes_at_level[ilevel][i];
 						int num_edges = timing_ctx.tnodes[inode].num_edges;
 						if (num_edges == 0) { /* sink */
 							if (timing_ctx.tnodes[inode].type == TN_FF_CLOCK || timing_ctx.tnodes[inode].T_arr < HUGE_NEGATIVE_FLOAT + 1
@@ -2433,9 +2433,9 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 #endif
 
 	/* Set arrival times for each top-level tnode on this source domain. */
-	num_at_level = timing_ctx.tnodes_at_level[0].nelem;	
+	num_at_level = timing_ctx.tnodes_at_level[0].size();	
 	for (i = 0; i < num_at_level; i++) {
-		inode = timing_ctx.tnodes_at_level[0].list[i];	
+		inode = timing_ctx.tnodes_at_level[0][i];	
 
 		if (timing_ctx.tnodes[inode].clock_domain == source_clock_domain) {
 
@@ -2458,11 +2458,11 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 
 	total = 0;												/* We count up all tnodes to error-check at the end. */
 	for (ilevel = 0; ilevel < timing_ctx.num_tnode_levels; ilevel++) {	/* For each level of our levelized timing graph... */
-		num_at_level = timing_ctx.tnodes_at_level[ilevel].nelem;		/* ...there are num_at_level tnodes at that level. */
+		num_at_level = timing_ctx.tnodes_at_level[ilevel].size();		/* ...there are num_at_level tnodes at that level. */
 		total += num_at_level;
 		
 		for (i = 0; i < num_at_level; i++) {					
-			inode = timing_ctx.tnodes_at_level[ilevel].list[i];		/* Go through each of the tnodes at the level we're on. */
+			inode = timing_ctx.tnodes_at_level[ilevel][i];		/* Go through each of the tnodes at the level we're on. */
 			if (timing_ctx.tnodes[inode].T_arr < NEGATIVE_EPSILON) {	/* If the arrival time is less than 0 (i.e. HUGE_NEGATIVE_FLOAT)... */
 				continue;									/* End this iteration of the num_at_level for loop since 
 															this node is not part of the clock domain we're analyzing. 
@@ -2529,10 +2529,10 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 	num_dangling_nodes = 0;
 	/* Compute required times with a backward topological traversal from sinks to sources. */
 	for (ilevel = timing_ctx.num_tnode_levels - 1; ilevel >= 0; ilevel--) {
-		num_at_level = timing_ctx.tnodes_at_level[ilevel].nelem;
+		num_at_level = timing_ctx.tnodes_at_level[ilevel].size();
 	
 		for (i = 0; i < num_at_level; i++) {
-			inode = timing_ctx.tnodes_at_level[ilevel].list[i];
+			inode = timing_ctx.tnodes_at_level[ilevel][i];
 			num_edges = timing_ctx.tnodes[inode].num_edges;
 	
 			if (ilevel == 0) {
@@ -2830,18 +2830,18 @@ static void do_path_counting(float criticality_denom) {
 	}
 
 	/* Set foward weights for each top-level tnode. */
-	num_at_level = timing_ctx.tnodes_at_level[0].nelem;	
+	num_at_level = timing_ctx.tnodes_at_level[0].size();	
 	for (i = 0; i < num_at_level; i++) {
-		inode = timing_ctx.tnodes_at_level[0].list[i];	
+		inode = timing_ctx.tnodes_at_level[0][i];	
 		timing_ctx.tnodes[inode].forward_weight = 1.;
 	}
 
 	/* Do a forward topological traversal to populate forward weights. */
 	for (ilevel = 0; ilevel < timing_ctx.num_tnode_levels; ilevel++) {	
-		num_at_level = timing_ctx.tnodes_at_level[ilevel].nelem;			
+		num_at_level = timing_ctx.tnodes_at_level[ilevel].size();			
 		
 		for (i = 0; i < num_at_level; i++) {					
-			inode = timing_ctx.tnodes_at_level[ilevel].list[i];			
+			inode = timing_ctx.tnodes_at_level[ilevel][i];			
 			if (!(has_valid_T_arr(inode) && has_valid_T_req(inode))) {
 				continue;	
 			}
@@ -2864,10 +2864,10 @@ static void do_path_counting(float criticality_denom) {
 	/* Do a backward topological traversal to populate backward weights. 
 	Since the sinks are all on different levels, we have to check for them as we go. */
 	for (ilevel = timing_ctx.num_tnode_levels - 1; ilevel >= 0; ilevel--) {
-		num_at_level = timing_ctx.tnodes_at_level[ilevel].nelem;
+		num_at_level = timing_ctx.tnodes_at_level[ilevel].size();
 	
 		for (i = 0; i < num_at_level; i++) {
-			inode = timing_ctx.tnodes_at_level[ilevel].list[i];
+			inode = timing_ctx.tnodes_at_level[ilevel][i];
 			if (!(has_valid_T_arr(inode) && has_valid_T_req(inode))) {
 				continue;	
 			}
@@ -3124,9 +3124,9 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 	/* Start at the source (level-0) tnode with the least slack (T_req-T_arr). 
 	This will form the head of our linked list of tnodes on the critical path. */
 	min_slack = HUGE_POSITIVE_FLOAT;
-	num_at_level_zero = timing_ctx.tnodes_at_level[0].nelem;
+	num_at_level_zero = timing_ctx.tnodes_at_level[0].size();
 	for (i = 0; i < num_at_level_zero; i++) { 
-		inode = timing_ctx.tnodes_at_level[0].list[i];
+		inode = timing_ctx.tnodes_at_level[0][i];
 		if (has_valid_T_arr(inode) && has_valid_T_req(inode)) { /* Valid arrival and required times */
 			slack = timing_ctx.tnodes[inode].T_req - timing_ctx.tnodes[inode].T_arr;
 			if (slack < min_slack) {
@@ -3265,13 +3265,13 @@ Marks unconstrained I/Os with a dummy clock domain (-1). */
 
 	/* First, visit all TN_INPAD_SOURCE and TN_CLOCK_SOURCE tnodes 
      * We only need to check the first level of the timing graph, since all SOURCEs should appear there*/
-    if(timing_ctx.tnodes_at_level) {
-        num_at_level = timing_ctx.tnodes_at_level[0].nelem; /* There are num_at_level top-level tnodes. */
+    if(!timing_ctx.tnodes_at_level.empty()) {
+        num_at_level = timing_ctx.tnodes_at_level[0].size(); /* There are num_at_level top-level tnodes. */
     } else {
         num_at_level = 0;
     }
     for(i = 0; i < num_at_level; i++) {
-        inode = timing_ctx.tnodes_at_level[0].list[i];	/* Iterate through each tnode. inode is the index of the tnode in the array tnode. */
+        inode = timing_ctx.tnodes_at_level[0][i];	/* Iterate through each tnode. inode is the index of the tnode in the array tnode. */
 		if (timing_ctx.tnodes[inode].type == TN_INPAD_SOURCE || timing_ctx.tnodes[inode].type == TN_CLOCK_SOURCE) {	/* See if this node is the start of an I/O pad, or a clock source. */			
 			net_name = find_tnode_net_name(inode, is_prepacked, pin_id_to_pb_mapping);
 			if ((clock_index = find_clock(net_name)) != -1) { /* We have a clock inpad or clock source. */

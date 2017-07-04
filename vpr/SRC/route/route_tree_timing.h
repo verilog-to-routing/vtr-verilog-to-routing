@@ -26,6 +26,7 @@ void update_remaining_net_delays_from_route_tree(float* net_delay,
 void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
 void load_route_tree_rr_route_inf(t_rt_node* root);	
 
+t_rt_node* init_route_tree_to_source_no_net(int inode);
 
 /********** Incremental reroute ***********/
 // instead of ripping up a net that has some congestion, cut the branches

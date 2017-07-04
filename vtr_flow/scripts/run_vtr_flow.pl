@@ -677,6 +677,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			push( @vpr_args, "--fix_pins" );				  
 			push( @vpr_args, "$pad_file_path");
 		}        
+		push( @vpr_args, "--seed");			 		  
+		push( @vpr_args, "$seed");
         if ($verify_rr_graph || $rr_graph_error_check){
             push( @vpr_args, "--write_rr_graph" );				  
             push( @vpr_args, 'RR_graph_result.xml');
@@ -736,6 +738,9 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                             push( @vpr_args, "--fix_pins" );				  
                             push( @vpr_args, "$pad_file_path");
                         }        
+                        
+			push( @vpr_args, "--seed");			 		  
+			push( @vpr_args, "$seed");
                         if ($verify_rr_graph){
                             push( @vpr_args, "--read_rr_graph" );				  
                             push( @vpr_args, 'RR_graph_result.xml');

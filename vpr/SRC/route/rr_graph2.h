@@ -13,24 +13,24 @@ enum e_seg_details_type {
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
-vtr::t_ivec ***alloc_and_load_rr_node_indices(
+vector<int> ***alloc_and_load_rr_node_indices(
 		const int max_chan_width,
 		const int L_nx, const int L_ny, 
 		int *index, 
 		const t_chan_details& chan_details_x,
 		const t_chan_details& chan_details_y);
 
-void free_rr_node_indices(vtr::t_ivec ***L_rr_node_indices);
+void free_rr_node_indices(vector<int> ***L_rr_node_indices);
 
 int get_rr_node_index(
 		int x, int y, 
 		t_rr_type rr_type, int ptc,
-		vtr::t_ivec ***L_rr_node_indices);
+		vector<int> ***L_rr_node_indices);
 
 int find_average_rr_node_index(
 		int L_nx, int L_ny,
 		t_rr_type rr_type, int ptc,
-		vtr::t_ivec ***L_rr_node_indices);
+		vector<int> ***L_rr_node_indices);
 
 t_seg_details *alloc_and_load_seg_details(
 		int *max_chan_width,
@@ -117,7 +117,7 @@ int get_bidir_opin_connections(
 		const t_pin_to_track_lookup& opin_to_track_map,
 		const int Fc,
 		bool *L_rr_edge_done,
-		vtr::t_ivec ***L_rr_node_indices,
+		vector<int> ***L_rr_node_indices,
 		const t_seg_details *seg_details);
 
 int get_unidir_opin_connections(
@@ -132,12 +132,12 @@ int get_unidir_opin_connections(
 		bool *L_rr_edge_done,
 		const int max_len,
 		const int max_chan_width,
-		vtr::t_ivec ***L_rr_node_indices,
+		vector<int> ***L_rr_node_indices,
 		bool *Fc_clipped);
 
 int get_track_to_pins(
 		int seg, int chan, int track, int tracks_per_chan,
-		t_linked_edge **edge_list_ptr, vtr::t_ivec ***L_rr_node_indices,
+		t_linked_edge **edge_list_ptr, vector<int> ***L_rr_node_indices,
 		const t_track_to_pin_lookup& track_to_pin_lookup, t_seg_details *seg_details,
 		enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
 		enum e_directionality directionality);
@@ -158,9 +158,9 @@ int get_track_to_tracks(
 		const t_seg_details *to_seg_details,
 		const t_chan_details& to_chan_details,
 		const enum e_directionality directionality,
-		vtr::t_ivec ***L_rr_node_indices,
+		vector<int> ***L_rr_node_indices,
 		bool *L_rr_edge_done,
-		const vtr::NdMatrix<vtr::t_ivec,3>& switch_block_conn,
+		const vtr::NdMatrix<std::vector<int>,3>& switch_block_conn,
 		t_sb_connection_map *sb_conn_map);
 
 short ******alloc_sblock_pattern_lookup(
@@ -201,6 +201,6 @@ void dump_sblock_pattern(
 		const int L_nx, int const L_ny,
 		const char *fname);
 
-void print_rr_node_indices(int L_nx, int L_ny, vtr::t_ivec ***L_rr_node_indices);
-void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, vtr::t_ivec ***L_rr_node_indices);
+void print_rr_node_indices(int L_nx, int L_ny, vector<int> ***L_rr_node_indices);
+void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, vector<int> ***L_rr_node_indices);
 #endif

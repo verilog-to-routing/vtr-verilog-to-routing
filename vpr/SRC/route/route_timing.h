@@ -44,6 +44,9 @@ void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
 void free_timing_driven_route_structs(float *pin_criticality, int *sink_order,
 		t_rt_node ** rt_node_of_sink);
 
+t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
+        float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks);
+
 struct timing_driven_route_structs {
 	// data while timing driven route is active 
 	float* pin_criticality; /* [1..max_pins_per_net-1] */
@@ -53,3 +56,5 @@ struct timing_driven_route_structs {
 	timing_driven_route_structs();
 	~timing_driven_route_structs();
 };
+
+void update_rr_base_costs(int fanout);

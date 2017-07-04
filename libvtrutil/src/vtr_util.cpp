@@ -208,18 +208,14 @@ char* strncpy(char *dest, const char *src, size_t size) {
 }
 
 char* strdup(const char *str) {
-    size_t Len;
-    char *Dst;
-
+    
     if (str == NULL ) {
         return NULL ;
     }
 
-    Len = 1 + std::strlen(str);
-    Dst = (char *) vtr::malloc(Len * sizeof(char));
-    std::memcpy(Dst, str, Len);
-
-    return Dst;
+    size_t Len = std::strlen(str);
+    //use calloc to already make the last char '\0'
+    return (char *)std::memcpy(vtr::calloc(Len+1, sizeof(char)), str, Len);;
 }
 
 template<class T>
