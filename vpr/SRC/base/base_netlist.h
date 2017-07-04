@@ -38,6 +38,11 @@ class BaseNetlist {
 		BaseNetlist(std::string name="", std::string id="");
 
 	public: //Public Mutators
+		//Create or return an existing port in the netlist
+        //  blk_id      : The block the port is associated with
+        //  name        : The name of the port (must match the name of a port in the block's model)
+        PortId  create_port (const BlockId blk_id, const t_model_ports* model_port);
+
 		//Create or return an existing pin in the netlist
         //  port_id : The port this pin is associated with
         //  port_bit: The bit index of the pin in the port
@@ -337,6 +342,17 @@ class BaseNetlist {
 		bool validate_pin_sizes() const;
 		bool validate_net_sizes() const;
 		bool validate_string_sizes() const;
+
+		//Verify that internal data structure cross-references are consistent
+		bool verify_refs() const; //All cross-references
+		bool validate_block_port_refs() const;
+		bool validate_block_pin_refs() const;
+		bool validate_port_pin_refs() const;
+		bool validate_net_pin_refs() const;
+		bool validate_string_refs() const;
+
+		//Verify that fast-lookups are consistent with internal data structures
+		bool verify_lookups() const;
 
 		//Validates that the specified ID is valid in the current netlist state
 		bool valid_block_id(BlockId id) const;
