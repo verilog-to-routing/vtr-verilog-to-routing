@@ -26,13 +26,14 @@ class BaseNetlist {
 	public: //Public Types
 		typedef vtr::vector_map<NetId, NetId>::const_iterator net_iterator;
 		typedef vtr::vector_map<PinId, PinId>::const_iterator pin_iterator;
+		typedef vtr::vector_map<PortId, PortId>::const_iterator port_iterator;
 
 		typedef vtr::Range<net_iterator> net_range;
 		typedef vtr::Range<pin_iterator> pin_range;
+		typedef vtr::Range<port_iterator> port_range;
 
 	public: //Constructor
 		BaseNetlist(std::string name="", std::string id="");
-
 
 	public: //Public Mutators
 		//Create or return an existing pin in the netlist
@@ -88,6 +89,26 @@ class BaseNetlist {
 		void print_stats() const;
 
 		/*
+		* Blocks
+		*/
+		//Returns the name of the specified block
+		const std::string&  block_name(const BlockId id) const;
+
+		//Returns a range of all ports assoicated with the specified block
+		port_range          block_ports(const BlockId id) const;
+
+		//Returns a range consisting of the input ports associated with the specified block
+		port_range          block_input_ports(const BlockId id) const;
+
+		//Returns a range consisting of the output ports associated with the specified block
+		// Note this is typically only data ports, but some blocks (e.g. PLLs) can produce outputs
+		// which are clocks.
+		port_range          block_output_ports(const BlockId id) const;
+
+		//Returns a range consisting of the input clock ports associated with the specified block
+		port_range          block_clock_ports(const BlockId id) const;
+
+		/*
 		* Ports
 		*/
 		//Returns the name of the specified port
@@ -120,7 +141,6 @@ class BaseNetlist {
 		/*
 		* Pins
 		*/
-
 		//Returns the net associated with the specified pin
 		NetId    pin_net(const PinId id) const;
 
@@ -177,6 +197,22 @@ class BaseNetlist {
 		/*
 		* Lookups
 		*/
+		//Returns the AtomBlockId of the specified block or AtomBlockId::INVALID() if not found
+		//  name: The name of the block
+		BlockId find_block(const std::string& name) const;
+
+		//Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
+		//Note that this method is typically more efficient than searching by name
+		//  blk_id: The ID of the block who's ports will be checked
+		//  model_port: The port model to look for
+		PortId  find_port(const BlockId blk_id, const t_model_ports* model_port) const;
+
+		//Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
+		//Note that this method is typically less efficient than searching by a t_model_port
+		//  blk_id: The ID of the block who's ports will be checked
+		//  name  : The name of the port to look for
+		PortId  find_port(const BlockId blk_id, const std::string& name) const;
+
 		//Returns the AtomNetId of the specified net or AtomNetId::INVALID() if not found
 		//  name: The name of the net
 		NetId   find_net(const std::string& name) const;
@@ -201,6 +237,10 @@ class BaseNetlist {
 		//  str : The string to look for
 		StringId find_string(const std::string& str) const;
 		
+		//Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVALID() if not
+		//  name_id : The block name to look for
+		BlockId find_block(const StringId name_id) const;
+
 		//Returns the NetId of the specifed port if it exists or NetId::INVALID() if not
         //  name_id: The string ID of the net name to look for
         NetId find_net(const StringId name_id) const;
@@ -219,6 +259,11 @@ class BaseNetlist {
 		//Updates port cross-references for the specified pin
 		void associate_pin_with_port(const PinId pin_id, const PortId port_id);
 
+		//Removes a port from the netlist.
+		//The port's pins are also marked invalid and removed from any associated nets
+		//  port_id: The ID of the port to be removed
+		void remove_port(const PortId port_id);
+
 		//Removes a pin from the netlist.
 		//The pin is marked invalid, and removed from any assoicated nets
 		//  pin_id: The ID of the pin to be removed
@@ -228,10 +273,12 @@ class BaseNetlist {
 		* Sanity Checks
 		*/
 		//Verify the internal data structure sizes match
+		bool validate_pin_sizes() const;
 		bool validate_net_sizes() const;
 		bool validate_string_sizes() const;
 
 		//Validates that the specified ID is valid in the current netlist state
+		bool valid_block_id(BlockId id) const;
 		bool valid_port_id(PortId id) const;
 		bool valid_port_bit(PortId id, BitIndex port_bit) const;
 		bool valid_pin_id(PinId id) const;
@@ -244,12 +291,21 @@ class BaseNetlist {
 		std::string netlist_id_;	//Unique identifier for the netlist
 		bool dirty_;				//Indicates the netlist has invalid entries from remove_*() functions
 
+		//Block data
+		vtr::vector_map<BlockId, BlockId>             block_ids_;                //Valid block ids
+		vtr::vector_map<BlockId, StringId>            block_names_;              //Name of each block
+
+		vtr::vector_map<BlockId, std::vector<PortId>>		block_ports_;              //Ports of each block
+		vtr::vector_map<BlockId, unsigned>					block_num_input_ports_;    //Input ports of each block
+		vtr::vector_map<BlockId, unsigned>					block_num_output_ports_;   //Output ports of each block
+		vtr::vector_map<BlockId, unsigned>					block_num_clock_ports_;    //Clock ports of each block
+
 		//Port data
-        vtr::vector_map<PortId,PortId>             port_ids_;      //Valid port ids
-		vtr::vector_map<PortId, StringId>           port_names_;    //Name of each port
-//		vtr::vector_map<PortId, BlockId>            port_blocks_;   //Block associated with each port
+        vtr::vector_map<PortId,PortId>					port_ids_;      //Valid port ids
+		vtr::vector_map<PortId, StringId>				port_names_;    //Name of each port
+		vtr::vector_map<PortId, BlockId>				port_blocks_;   //Block associated with each port
 		vtr::vector_map<PortId, const t_model_ports*>   port_models_;   //Architecture port models of each port
-		vtr::vector_map<PortId, std::vector<PinId>> port_pins_;     //Pins associated with each port
+		vtr::vector_map<PortId, std::vector<PinId>>		port_pins_;     //Pins associated with each port
 
 		//Pin data
 		vtr::vector_map<PinId, PinId>		pin_ids_;           //Valid pin ids
@@ -271,9 +327,9 @@ class BaseNetlist {
         vtr::vector_map<StringId,std::string>	strings_;       //Strings
 
 	protected: //Fast lookups
-        vtr::vector_map<StringId,BlockId>       block_name_to_block_id_;
-        vtr::vector_map<StringId,NetId>         net_name_to_net_id_;
-		std::unordered_map<std::string, StringId>    string_to_string_id_;
+        vtr::vector_map<StringId,BlockId>				block_name_to_block_id_;
+        vtr::vector_map<StringId,NetId>					net_name_to_net_id_;
+		std::unordered_map<std::string, StringId>		string_to_string_id_;
 };
 
 
