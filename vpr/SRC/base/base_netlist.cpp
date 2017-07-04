@@ -41,7 +41,73 @@ const std::string& BaseNetlist::block_name(const BlockId id) const {
 	return strings_[str_id];
 }
 
+BlockType BaseNetlist::block_type(const BlockId id) const {
+	const t_model* blk_model = block_model(id);
 
+	BlockType type = BlockType::BLOCK;
+	if (blk_model->name == std::string("input")) {
+		type = BlockType::INPAD;
+	}
+	else if (blk_model->name == std::string("output")) {
+		type = BlockType::OUTPAD;
+	}
+	else {
+		type = BlockType::BLOCK;
+	}
+	return type;
+}
+
+const t_model* BaseNetlist::block_model(const BlockId id) const {
+	VTR_ASSERT(valid_block_id(id));
+
+	return block_models_[id];
+}
+
+bool  BaseNetlist::block_is_combinational(const BlockId id) const {
+	VTR_ASSERT(valid_block_id(id));
+
+	return block_clock_pins(id).size() == 0;
+}
+
+BaseNetlist::pin_range BaseNetlist::block_pins(const BlockId id) const {
+	VTR_ASSERT(valid_block_id(id));
+
+	return vtr::make_range(block_pins_[id].begin(), block_pins_[id].end());
+}
+
+BaseNetlist::pin_range BaseNetlist::block_input_pins(const BlockId id) const {
+	VTR_ASSERT(valid_block_id(id));
+
+	auto begin = block_pins_[id].begin();
+
+	auto end = block_pins_[id].begin() + block_num_input_pins_[id];
+
+	return vtr::make_range(begin, end);
+}
+
+BaseNetlist::pin_range BaseNetlist::block_output_pins(const BlockId id) const {
+	VTR_ASSERT(valid_block_id(id));
+
+	auto begin = block_pins_[id].begin() + block_num_input_pins_[id];
+
+	auto end = begin + block_num_output_pins_[id];
+
+	return vtr::make_range(begin, end);
+}
+
+BaseNetlist::pin_range BaseNetlist::block_clock_pins(const BlockId id) const {
+	VTR_ASSERT(valid_block_id(id));
+
+	auto begin = block_pins_[id].begin()
+		+ block_num_input_pins_[id]
+		+ block_num_output_pins_[id];
+
+	auto end = begin + block_num_clock_pins_[id];
+
+	VTR_ASSERT(end == block_pins_[id].end());
+
+	return vtr::make_range(begin, end);
+}
 
 BaseNetlist::port_range BaseNetlist::block_ports(const BlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
@@ -163,6 +229,12 @@ const t_model_ports* BaseNetlist::port_model(const PortId port_id) const {
 * Pins
 *
 */
+std::string BaseNetlist::pin_name(const PinId id) const {
+	BlockId blk = pin_block(id);
+	PortId port = pin_port(id);
+
+	return block_name(blk) + "." + port_name(port) + "[" + std::to_string(pin_port_bit(id)) + "]";
+}
 
 NetId BaseNetlist::pin_net (const PinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
@@ -280,6 +352,10 @@ bool BaseNetlist::net_is_constant(const NetId id) const {
 * Aggregates
 *
 */
+BaseNetlist::block_range BaseNetlist::blocks() const {
+	return vtr::make_range(block_ids_.begin(), block_ids_.end());
+}
+
 BaseNetlist::pin_range BaseNetlist::pins() const {
 	return vtr::make_range(pin_ids_.begin(), pin_ids_.end());
 }
@@ -376,7 +452,7 @@ PinId BaseNetlist::find_pin(const PortId port_id, BitIndex port_bit) const {
 * Mutators
 *
 */
-/*PinId BaseNetlist::create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType type, bool is_const) {
+PinId BaseNetlist::create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType type, bool is_const) {
 	//Check pre-conditions (valid ids)
 	VTR_ASSERT_MSG(valid_port_id(port_id), "Valid port id");
 	VTR_ASSERT_MSG(valid_port_bit(port_id, port_bit), "Valid port bit");
@@ -420,7 +496,7 @@ PinId BaseNetlist::find_pin(const PortId port_id, BitIndex port_bit) const {
 	VTR_ASSERT_SAFE(find_pin(port_id, port_bit) == pin_id);
 
 	return pin_id;
-}*/
+}
 
 
 NetId BaseNetlist::create_net(const std::string name) {

@@ -24,10 +24,12 @@ class IdMap;
 
 class BaseNetlist {
 	public: //Public Types
+		typedef vtr::vector_map<BlockId, BlockId>::const_iterator block_iterator;
 		typedef vtr::vector_map<NetId, NetId>::const_iterator net_iterator;
 		typedef vtr::vector_map<PinId, PinId>::const_iterator pin_iterator;
 		typedef vtr::vector_map<PortId, PortId>::const_iterator port_iterator;
-
+		
+		typedef vtr::Range<block_iterator> block_range;
 		typedef vtr::Range<net_iterator> net_range;
 		typedef vtr::Range<pin_iterator> pin_range;
 		typedef vtr::Range<port_iterator> port_range;
@@ -94,6 +96,30 @@ class BaseNetlist {
 		//Returns the name of the specified block
 		const std::string&  block_name(const BlockId id) const;
 
+		//Returns the type of the specified block
+		BlockType       block_type(const BlockId id) const;
+
+		//Returns the model associated with the block
+		const t_model*      block_model(const BlockId id) const;
+
+		//Returns true if the block is purely combinational (i.e. no input clocks
+		//and not a primary input
+		bool                block_is_combinational(const BlockId id) const;
+
+		//Returns a range of all pins assoicated with the specified block
+		pin_range           block_pins(const BlockId id) const;
+
+		//Returns a range of all input pins assoicated with the specified block
+		pin_range           block_input_pins(const BlockId id) const;
+
+		//Returns a range of all output pins assoicated with the specified block
+		// Note this is typically only data pins, but some blocks (e.g. PLLs) can produce outputs
+		// which are clocks.
+		pin_range           block_output_pins(const BlockId id) const;
+
+		//Returns a range of all clock pins assoicated with the specified block
+		pin_range           block_clock_pins(const BlockId id) const;
+		
 		//Returns a range of all ports assoicated with the specified block
 		port_range          block_ports(const BlockId id) const;
 
@@ -144,6 +170,9 @@ class BaseNetlist {
 		/*
 		* Pins
 		*/
+		//Returns the constructed name (derived from block and port) for the specified pin
+		std::string  pin_name(const PinId id) const;
+
 		//Returns the net associated with the specified pin
 		NetId    pin_net(const PinId id) const;
 
@@ -197,6 +226,9 @@ class BaseNetlist {
 		/* 
 		* Aggregates
 		*/
+		//Returns a range consisting of all blocks in the netlist
+		block_range blocks() const;
+
 		//Returns a range consisting of all nets in the netlist
 		net_range   nets() const;
 		
@@ -253,7 +285,6 @@ class BaseNetlist {
 		//Returns the NetId of the specifed port if it exists or NetId::INVALID() if not
         //  name_id: The string ID of the net name to look for
         NetId find_net(const StringId name_id) const;
-			 
 		
 		/*
          * Mutators
@@ -301,13 +332,19 @@ class BaseNetlist {
 		bool dirty_;				//Indicates the netlist has invalid entries from remove_*() functions
 
 		//Block data
-		vtr::vector_map<BlockId, BlockId>             block_ids_;                //Valid block ids
-		vtr::vector_map<BlockId, StringId>            block_names_;              //Name of each block
+		vtr::vector_map<BlockId, BlockId>					block_ids_;                //Valid block ids
+		vtr::vector_map<BlockId, StringId>					block_names_;              //Name of each block
+		vtr::vector_map<BlockId, const t_model*>			block_models_;             //Architecture model of each block
 
 		vtr::vector_map<BlockId, std::vector<PortId>>		block_ports_;              //Ports of each block
 		vtr::vector_map<BlockId, unsigned>					block_num_input_ports_;    //Input ports of each block
 		vtr::vector_map<BlockId, unsigned>					block_num_output_ports_;   //Output ports of each block
 		vtr::vector_map<BlockId, unsigned>					block_num_clock_ports_;    //Clock ports of each block
+
+		vtr::vector_map<BlockId, std::vector<PinId>>		block_pins_;               //Pins of each block
+		vtr::vector_map<BlockId, unsigned>					block_num_input_pins_;     //Number of input pins on each block
+		vtr::vector_map<BlockId, unsigned>					block_num_output_pins_;    //Number of output pins on each block
+		vtr::vector_map<BlockId, unsigned>					block_num_clock_pins_;     //Number of clock pins on each block
 
 		//Port data
         vtr::vector_map<PortId,PortId>					port_ids_;      //Valid port ids
