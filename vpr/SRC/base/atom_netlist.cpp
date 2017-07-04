@@ -330,9 +330,7 @@ AtomPortType AtomNetlist::port_type (const AtomPortId id) const {
 }
 
 AtomBlockId AtomNetlist::port_block (const AtomPortId id) const {
-    VTR_ASSERT(valid_port_id(id));
-
-    return port_blocks_[id];
+	return BaseNetlist::port_block(id);
 }
 
 AtomNetlist::pin_range AtomNetlist::port_pins (const AtomPortId id) const {
@@ -350,7 +348,6 @@ AtomNetId AtomNetlist::port_net (const AtomPortId port_id, const BitIndex port_b
 const t_model_ports* AtomNetlist::port_model (const AtomPortId port_id) const {
 	return BaseNetlist::port_model(port_id);
 }
-
 
 /*
  *
@@ -385,11 +382,7 @@ AtomPortType AtomNetlist::pin_port_type (const AtomPinId id) const {
 }
 
 AtomBlockId AtomNetlist::pin_block (const AtomPinId id) const { 
-    //Convenience lookup bypassing the port
-    VTR_ASSERT(valid_pin_id(id));
-
-    AtomPortId port_id = pin_port(id);
-    return port_block(port_id);
+	return BaseNetlist::pin_block(id);
 }
 
 bool AtomNetlist::pin_is_constant (const AtomPinId id) const {
@@ -415,11 +408,7 @@ AtomPinId AtomNetlist::net_driver (const AtomNetId id) const {
 }
 
 AtomBlockId AtomNetlist::net_driver_block (const AtomNetId id) const {
-    auto driver_pin_id = net_driver(id);
-    if(driver_pin_id) {
-        return pin_block(driver_pin_id);
-    }
-    return AtomBlockId::INVALID();
+	return BaseNetlist::net_driver_block(id);
 }
 
 AtomNetlist::pin_range AtomNetlist::net_sinks (const AtomNetId id) const {
