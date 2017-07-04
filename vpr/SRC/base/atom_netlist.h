@@ -431,7 +431,7 @@ class AtomNetlist : public BaseNetlist {
 
         //Returns true if the block is purely combinational (i.e. no input clocks
         //and not a primary input
-        bool                block_is_combinational    (const AtomBlockId id) const;
+//        bool                block_is_combinational    (const AtomBlockId id) const;
 
         //Returns the truth table associated with the block
         // Note that this is only non-empty for LUTs and Flip-Flops/latches.
@@ -753,58 +753,15 @@ class AtomNetlist : public BaseNetlist {
         bool verify_sizes() const; //All data structures
         bool validate_block_sizes() const;
 
-        //Verify that internal data structure cross-references are consistent
-        bool verify_refs() const; //All cross-references
-        bool validate_block_port_refs() const;
-        bool validate_block_pin_refs() const;
-        bool validate_port_pin_refs() const;
-        bool validate_net_pin_refs() const;
-		bool validate_string_refs() const;
-
-        //Verify that fast-lookups are consistent with internal data structures
-        bool verify_lookups() const;
-        
         //Verify that block invariants hold (i.e. logical consistency)
         bool verify_block_invariants() const;
 
-        //Validates that the specified ID is valid in the current netlist state
-        bool valid_block_id(AtomBlockId id) const;
-        bool valid_port_id(AtomPortId id) const;
-        bool valid_port_bit(AtomPortId id, BitIndex port_bit) const;
-        bool valid_pin_id(AtomPinId id) const;
-        bool valid_net_id(AtomNetId id) const;
-        bool valid_string_id(AtomStringId id) const;
-
     private: //Private data
-
         //Netlist data
         bool                        dirty_;         //Indicates the netlist has invalid entries from remove_*() functions
 
         //Block data
-//        vtr::vector_map<AtomBlockId,AtomBlockId>             block_ids_;                //Valid block ids
-//        vtr::vector_map<AtomBlockId,AtomStringId>            block_names_;              //Name of each block
-//        vtr::vector_map<AtomBlockId,const t_model*>          block_models_;             //Architecture model of each block
         vtr::vector_map<AtomBlockId,TruthTable>              block_truth_tables_;       //Truth tables of each block
-
-//        vtr::vector_map<AtomBlockId,std::vector<AtomPinId>>  block_pins_;               //Pins of each block
-//        vtr::vector_map<AtomBlockId,unsigned>                block_num_input_pins_;     //Number of input pins on each block
-//        vtr::vector_map<AtomBlockId,unsigned>                block_num_output_pins_;    //Number of output pins on each block
-//        vtr::vector_map<AtomBlockId,unsigned>                block_num_clock_pins_;     //Number of clock pins on each block
-
-//        vtr::vector_map<AtomBlockId,std::vector<AtomPortId>> block_ports_;              //Ports of each block
-//        vtr::vector_map<AtomBlockId,unsigned>                block_num_input_ports_;    //Input ports of each block
-//        vtr::vector_map<AtomBlockId,unsigned>                block_num_output_ports_;   //Output ports of each block
-//        vtr::vector_map<AtomBlockId,unsigned>                block_num_clock_ports_;    //Clock ports of each block
-
-        //Port data
-//        vtr::vector_map<AtomPortId,AtomPortId>             port_ids_;      //Valid port ids
-//        vtr::vector_map<AtomPortId,AtomStringId>           port_names_;    //Name of each port
-//        vtr::vector_map<AtomPortId,AtomBlockId>            port_blocks_;   //Block associated with each port
-//        vtr::vector_map<AtomPortId,const t_model_ports*>   port_models_;   //Architecture port models of each port
-//        vtr::vector_map<AtomPortId,std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
-
-    private: //Fast lookups
-//        vtr::vector_map<AtomStringId,AtomBlockId>       block_name_to_block_id_;
 };
 
 #include "atom_lookup.h"
