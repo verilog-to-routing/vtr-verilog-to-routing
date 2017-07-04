@@ -70,11 +70,24 @@ class BaseNetlist {
 		//  net      : The net to add the pin to
 		void set_pin_net(const PinId pin, PinType pin_type, const NetId net);
 
+		/*
+		* Note: all remove_*() will mark the associated items as invalid, but the items
+		* will not be removed until compress() is called.
+		*/
+
+		//Removes a block from the netlist. This will also remove the associated ports and pins.
+		//  blk_id  : The block to be removed
+		void remove_block(const BlockId blk_id);
+
 		//Removes a net from the netlist. 
         //This will mark the net's pins as having no associated.
         //  net_id  : The net to be removed
         void remove_net     (const NetId net_id);
 
+		//Marks netlist components which have become redundant due to other removals
+		//(e.g. ports with only invalid pins) as invalid so they will be destroyed during
+		//compress()
+		void remove_unused();
 
 	public: //Public Accessors
 		/*
@@ -299,6 +312,12 @@ class BaseNetlist {
 		//Updates port cross-references for the specified pin
 		void associate_pin_with_port(const PinId pin_id, const PortId port_id);
 
+		//Updates block cross-references for the specified pin
+		void associate_pin_with_block(const PinId pin_id, const PortType type, const BlockId blk_id);
+
+		//Updates block cross-references for the specified port
+		void associate_port_with_block(const PortId port_id, const BlockId blk_id);
+
 		//Removes a port from the netlist.
 		//The port's pins are also marked invalid and removed from any associated nets
 		//  port_id: The ID of the port to be removed
@@ -313,6 +332,8 @@ class BaseNetlist {
 		* Sanity Checks
 		*/
 		//Verify the internal data structure sizes match
+		bool validate_block_sizes() const;
+		bool validate_port_sizes() const;
 		bool validate_pin_sizes() const;
 		bool validate_net_sizes() const;
 		bool validate_string_sizes() const;

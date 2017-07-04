@@ -568,10 +568,6 @@ class AtomNetlist : public BaseNetlist {
         /*
          * Lookups
          */
-        //Returns the AtomBlockId of the specified block or AtomBlockId::INVALID() if not found
-        //  name: The name of the block
-        AtomBlockId find_block  (const std::string& name) const;
-
         //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
         //Note that this method is typically more efficient than searching by name
         //  blk_id: The ID of the block who's ports will be checked
@@ -689,31 +685,8 @@ class AtomNetlist : public BaseNetlist {
 
     private: //Private members
         /*
-         * Lookups
-         */
-        //Returns the AtomStringId of the specifed string if it exists or AtomStringId::INVALID() if not
-        //  str : The string to look for
-        AtomStringId find_string(const std::string& str) const;
-
-        //Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVALID() if not
-        //  name_id : The block name to look for
-        AtomBlockId find_block(const AtomStringId name_id) const;
-
-        /*
          * Mutators
          */
-        //Updates net cross-references for the specified pin
-        void associate_pin_with_net(const AtomPinId pin_id, const AtomPinType type, const AtomNetId net_id); 
-
-        //Updates port cross-references for the specified pin
-        void associate_pin_with_port(const AtomPinId pin_id, const AtomPortId port_id); 
-
-        //Updates block cross-references for the specified pin
-        void associate_pin_with_block(const AtomPinId pin_id, const AtomPortType type, const AtomBlockId blk_id); 
-
-        //Updates block cross-references for the specified port
-        void associate_port_with_block(const AtomPortId port_id, const AtomBlockId blk_id);
-
         //Removes a port from the netlist.
         //The port's pins are also marked invalid and removed from any associated nets
         //  port_id: The ID of the port to be removed
@@ -779,7 +752,6 @@ class AtomNetlist : public BaseNetlist {
         //Verify the internal data structure sizes match
         bool verify_sizes() const; //All data structures
         bool validate_block_sizes() const;
-        bool validate_port_sizes() const;
 
         //Verify that internal data structure cross-references are consistent
         bool verify_refs() const; //All cross-references

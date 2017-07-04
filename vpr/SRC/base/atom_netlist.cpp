@@ -377,10 +377,6 @@ AtomNetlist::net_range AtomNetlist::nets () const {
  * Lookups
  *
  */
-AtomBlockId AtomNetlist::find_block (const std::string& name) const {
-	return BaseNetlist::find_block(name);
-}
-
 AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const t_model_ports* model_port) const {
 	return BaseNetlist::find_port((BlockId) blk_id, model_port);
 }
@@ -547,7 +543,7 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* mod
 
     //Check if the block has already been created
     AtomStringId name_id = BaseNetlist::create_string(name);
-    AtomBlockId blk_id = find_block(name_id);
+    AtomBlockId blk_id = BaseNetlist::find_block(name_id);
 
     if(blk_id == AtomBlockId::INVALID()) {
         //Not found, create it
@@ -629,49 +625,7 @@ AtomPortId  AtomNetlist::create_port (const AtomBlockId blk_id, const t_model_po
 }
 
 AtomPinId AtomNetlist::create_pin (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const AtomPinType type, bool is_const) {
-    //Check pre-conditions (valid ids)
-    VTR_ASSERT_MSG(valid_port_id(port_id), "Valid port id");
-    VTR_ASSERT_MSG(valid_port_bit(port_id, port_bit), "Valid port bit");
-    VTR_ASSERT_MSG(valid_net_id(net_id), "Valid net id");
-
-    //See if the pin already exists
-    AtomPinId pin_id = find_pin(port_id, port_bit);
-    if(!pin_id) {
-        //Not found, create it
-
-        //Reserve an id
-        pin_id = AtomPinId(pin_ids_.size());
-        pin_ids_.push_back(pin_id);
-
-        //Initialize the pin data
-        pin_ports_.push_back(port_id);
-        pin_port_bits_.push_back(port_bit);
-        pin_nets_.push_back(net_id);
-        pin_is_constant_.push_back(is_const);
-
-        //Add the pin to the net
-        associate_pin_with_net(pin_id, type, net_id);
-
-        //Add the pin to the port
-        associate_pin_with_port(pin_id, port_id);
-
-        //Add the pin to the block
-        associate_pin_with_block(pin_id, port_type(port_id), port_block(port_id));
-    }
-
-    //Check post-conditions: sizes
-    VTR_ASSERT(validate_pin_sizes());
-
-    //Check post-conditions: values
-    VTR_ASSERT(valid_pin_id(pin_id));
-    VTR_ASSERT(pin_port(pin_id) == port_id);
-    VTR_ASSERT(pin_port_bit(pin_id) == port_bit);
-    VTR_ASSERT(pin_net(pin_id) == net_id);
-    VTR_ASSERT(pin_type(pin_id) == type);
-    VTR_ASSERT(pin_is_constant(pin_id) == is_const);
-    VTR_ASSERT_SAFE(find_pin(port_id, port_bit) == pin_id);
-
-    return pin_id;
+	return BaseNetlist::create_pin(port_id, port_bit, net_id, (PinType) type, is_const);
 }
 
 AtomNetId AtomNetlist::create_net (const std::string name) {
@@ -691,24 +645,8 @@ void AtomNetlist::set_pin_net (const AtomPinId pin, AtomPinType type, const Atom
 }
 
 void AtomNetlist::remove_block(const AtomBlockId blk_id) {
-    VTR_ASSERT(valid_block_id(blk_id));
-    
-    //Remove the ports
-    for(AtomPortId block_port : block_ports(blk_id)) {
-        remove_port(block_port);
-    }
-
-    //Invalidate look-up
-    AtomStringId name_id = block_names_[blk_id];
-    block_name_to_block_id_.insert(name_id, AtomBlockId::INVALID());
-
-    //Mark as invalid
-    block_ids_[blk_id] = AtomBlockId::INVALID();
-
-    //Mark netlist dirty
-    dirty_ = true;
+	BaseNetlist::remove_block(blk_id);
 }
-
 
 void AtomNetlist::remove_port(const AtomPortId port_id) {
 	BaseNetlist::remove_port(port_id);
@@ -723,46 +661,7 @@ void AtomNetlist::remove_net_pin(const AtomNetId net_id, const AtomPinId pin_id)
 }
 
 void AtomNetlist::remove_unused() {
-    //Mark any nets/pins/ports/blocks which are not in use as invalid
-    //so they will be removed
-
-    bool found_unused;
-    do {
-        found_unused = false;
-        //Nets with no connected pins
-        for(auto net_id : nets()) {
-            if(net_id 
-                && !net_driver(net_id) 
-                && net_sinks(net_id).size() == 0) {
-                remove_net(net_id);
-                found_unused = true;
-            }
-        }
-
-        //Pins with no connected nets
-        for(auto pin_id : pin_ids_) {
-            if(pin_id && !pin_net(pin_id)) {
-                remove_pin(pin_id);
-                found_unused = true;
-            }
-        }
-
-        //Empty ports
-        for(auto port_id : port_ids_) {
-            if(port_id && port_pins(port_id).size() == 0) {
-                remove_port(port_id);
-                found_unused = true;
-            }
-        }
-
-        //Blocks with no pins
-        for(auto blk_id : blocks()) {
-            if(blk_id && block_pins(blk_id).size() == 0) {
-                remove_block(blk_id);
-                found_unused = true;
-            }
-        }
-    } while(found_unused);
+	BaseNetlist::remove_unused();
 }
 
 void AtomNetlist::compress() {
@@ -1078,30 +977,10 @@ bool AtomNetlist::valid_string_id(AtomStringId id) const {
 }
 
 bool AtomNetlist::validate_block_sizes() const {
-    if(block_names_.size() != block_ids_.size()
-        || block_models_.size() != block_ids_.size()
-        || block_truth_tables_.size() != block_ids_.size()
-        || block_pins_.size() != block_ids_.size()
-        || block_num_input_pins_.size() != block_ids_.size()
-        || block_num_output_pins_.size() != block_ids_.size()
-        || block_num_clock_pins_.size() != block_ids_.size()
-        || block_ports_.size() != block_ids_.size()
-        || block_num_input_ports_.size() != block_ids_.size()
-        || block_num_output_ports_.size() != block_ids_.size()
-        || block_num_clock_ports_.size() != block_ids_.size()) {
+	if(block_truth_tables_.size() != block_ids_.size()) {
         VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent block data sizes");
     }
-    return true;
-}
-
-bool AtomNetlist::validate_port_sizes() const {
-    if(port_names_.size() != port_ids_.size()
-        || port_blocks_.size() != port_ids_.size()
-        || port_models_.size() != port_ids_.size()
-        || port_pins_.size() != port_ids_.size()) {
-        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent port data sizes");
-    }
-    return true;
+    return BaseNetlist::validate_block_sizes();
 }
 
 bool AtomNetlist::validate_block_port_refs() const {
@@ -1303,96 +1182,4 @@ bool AtomNetlist::validate_string_refs() const {
         }
     }
     return true;
-}
-
-
-/*
- *
- * Internal utilities
- *
- */
-AtomNetlist::AtomStringId AtomNetlist::find_string (const std::string& str) const {
-	return BaseNetlist::find_string(str);
-}
-
-AtomBlockId AtomNetlist::find_block(const AtomStringId name_id) const {
-	return BaseNetlist::find_block((StringId) name_id);
-}
-
-void AtomNetlist::associate_pin_with_net(const AtomPinId pin_id, const AtomPinType type, const AtomNetId net_id) {
-	BaseNetlist::associate_pin_with_net((PinId) pin_id, (PinType) type, (NetId) net_id);
-}
-
-void AtomNetlist::associate_pin_with_port(const AtomPinId pin_id, const AtomPortId port_id) {
-	BaseNetlist::associate_pin_with_port((PinId) pin_id, (PortId) port_id);
-}
-
-void AtomNetlist::associate_pin_with_block(const AtomPinId pin_id, const AtomPortType type, const AtomBlockId blk_id) {
-    auto port_id = pin_port(pin_id);
-    VTR_ASSERT(port_type(port_id) == type);
-
-    //Get an interator pointing to where we want to insert
-    pin_iterator iter;
-    if(type == AtomPortType::INPUT) {
-        iter = block_input_pins(blk_id).end();
-        ++block_num_input_pins_[blk_id];
-    } else if (type == AtomPortType::OUTPUT) {
-        iter = block_output_pins(blk_id).end();
-        ++block_num_output_pins_[blk_id];
-    } else {
-        VTR_ASSERT(type == AtomPortType::CLOCK);
-        iter = block_clock_pins(blk_id).end();
-        ++block_num_clock_pins_[blk_id];
-    }
-
-    //Insert the element just before iter
-    auto new_iter = block_pins_[blk_id].insert(iter, pin_id);
-
-    //Inserted value should be the last valid range element
-    if(type == AtomPortType::INPUT) {
-        VTR_ASSERT(new_iter + 1 == block_input_pins(blk_id).end());
-        VTR_ASSERT(new_iter + 1 == block_output_pins(blk_id).begin());
-    } else if (type == AtomPortType::OUTPUT) {
-        VTR_ASSERT(new_iter + 1 == block_output_pins(blk_id).end());
-        VTR_ASSERT(new_iter + 1 == block_clock_pins(blk_id).begin());
-    } else {
-        VTR_ASSERT(type == AtomPortType::CLOCK);
-        VTR_ASSERT(new_iter + 1 == block_clock_pins(blk_id).end());
-        VTR_ASSERT(new_iter + 1 == block_pins(blk_id).end());
-    }
-}
-
-void AtomNetlist::associate_port_with_block(const AtomPortId port_id, const AtomBlockId blk_id) {
-    //Associate the port with the blocks inputs/outputs/clocks
-    AtomPortType type = port_type(port_id);
-
-    //Get an interator pointing to where we want to insert
-    port_iterator iter;
-    if(type == AtomPortType::INPUT) {
-        iter = block_input_ports(blk_id).end();
-        ++block_num_input_ports_[blk_id];
-    } else if (type == AtomPortType::OUTPUT) {
-        iter = block_output_ports(blk_id).end();
-        ++block_num_output_ports_[blk_id];
-    } else {
-        VTR_ASSERT(type == AtomPortType::CLOCK);
-        iter = block_clock_ports(blk_id).end();
-        ++block_num_clock_ports_[blk_id];
-    }
-
-    //Insert the element just before iter
-    auto new_iter = block_ports_[blk_id].insert(iter, port_id);
-
-    //Inserted value should be the last valid range element
-    if(type == AtomPortType::INPUT) {
-        VTR_ASSERT(new_iter + 1 == block_input_ports(blk_id).end());
-        VTR_ASSERT(new_iter + 1 == block_output_ports(blk_id).begin());
-    } else if (type == AtomPortType::OUTPUT) {
-        VTR_ASSERT(new_iter + 1 == block_output_ports(blk_id).end());
-        VTR_ASSERT(new_iter + 1 == block_clock_ports(blk_id).begin());
-    } else {
-        VTR_ASSERT(type == AtomPortType::CLOCK);
-        VTR_ASSERT(new_iter + 1 == block_clock_ports(blk_id).end());
-        VTR_ASSERT(new_iter + 1 == block_ports(blk_id).end());
-    }
 }
