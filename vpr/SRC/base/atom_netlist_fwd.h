@@ -19,12 +19,8 @@ class AtomLookup;
  * vtr_strong_id.h for details.
  */
 
-//Type tags for Ids
-struct atom_block_id_tag;
-
-
 //A unique identifier for a block/primitive in the atom netlist
-typedef vtr::StrongId<atom_block_id_tag> AtomBlockId;
+typedef vtr::StrongId<block_id_tag> AtomBlockId;
 
 //A unique identifier for a net in the atom netlist
 typedef vtr::StrongId<net_id_tag> AtomNetId;

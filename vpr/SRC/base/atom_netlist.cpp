@@ -197,8 +197,7 @@ void AtomNetlist::print_stats() const {
  *
  */
 const std::string& AtomNetlist::block_name (const AtomBlockId id) const { 
-    AtomStringId str_id = block_names_[id];
-    return strings_[str_id];
+	return BaseNetlist::block_name(id);
 }
 
 AtomBlockType AtomNetlist::block_type (const AtomBlockId id) const {
@@ -455,43 +454,15 @@ AtomNetlist::net_range AtomNetlist::nets () const {
  *
  */
 AtomBlockId AtomNetlist::find_block (const std::string& name) const {
-    auto str_id = find_string(name);
-    if(!str_id) {
-        return AtomBlockId::INVALID();
-    } else {
-        return find_block(str_id);
-    }
+	return BaseNetlist::find_block(name);
 }
 
 AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const t_model_ports* model_port) const {
-    VTR_ASSERT(valid_block_id(blk_id));
-    VTR_ASSERT(model_port);
-
-    //We can tell from the model port the set of ports
-    //the port can be found in
-    port_range range = (model_port->dir == IN_PORT) ?
-                             (model_port->is_clock) ?  block_clock_ports(blk_id) : block_input_ports(blk_id)
-                            : (block_output_ports(blk_id));
-
-    for(auto port_id : range) {
-        if(port_name(port_id) == model_port->name) {
-            return port_id;
-        }
-    }
-
-    return AtomPortId::INVALID();
+	return BaseNetlist::find_port((BlockId) blk_id, model_port);
 }
 
 AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const std::string& name) const {
-    VTR_ASSERT(valid_block_id(blk_id));
-
-    //Since we only know the port name, we must search all the ports
-    for(auto port_id : block_ports(blk_id)) {
-        if(port_name(port_id) == name) {
-            return port_id;
-        }
-    }
-    return AtomPortId::INVALID();
+	return BaseNetlist::find_port((BlockId) blk_id, name);
 }
 
 AtomPinId AtomNetlist::find_pin (const AtomPortId port_id, BitIndex port_bit) const {
@@ -792,21 +763,7 @@ void AtomNetlist::set_pin_is_constant(const AtomPinId pin_id, const bool value) 
 }
 
 void AtomNetlist::set_pin_net (const AtomPinId pin, AtomPinType type, const AtomNetId net) {
-    VTR_ASSERT(valid_pin_id(pin));
-    VTR_ASSERT(   (type == AtomPinType::DRIVER && pin_port_type(pin) == AtomPortType::OUTPUT)
-               || (type == AtomPinType::SINK   && (pin_port_type(pin) == AtomPortType::INPUT || pin_port_type(pin) == AtomPortType::CLOCK)));
-
-    AtomNetId orig_net = pin_net(pin);
-    if(orig_net) {
-        //Clean up the pin reference on the original net
-        remove_net_pin(orig_net, pin);
-    }
-
-    //Mark the pin's net
-    pin_nets_[pin] = net;
-
-    //Add the pin to the net
-    associate_pin_with_net(pin, type, net);
+	BaseNetlist::set_pin_net(pin, (PinType) type, net);
 }
 
 void AtomNetlist::remove_block(const AtomBlockId blk_id) {
@@ -830,20 +787,7 @@ void AtomNetlist::remove_block(const AtomBlockId blk_id) {
 
 
 void AtomNetlist::remove_port(const AtomPortId port_id) {
-    VTR_ASSERT(valid_port_id(port_id));
-
-    //Remove the pins
-    for(auto pin : port_pins(port_id)) {
-        if(valid_pin_id(pin)) {
-            remove_pin(pin);
-        }
-    }
-
-    //Mark as invalid
-    port_ids_[port_id] = AtomPortId::INVALID();
-
-    //Mark netlist dirty
-    dirty_ = true;
+	BaseNetlist::remove_port(port_id);
 }
 
 void AtomNetlist::remove_pin(const AtomPinId pin_id) {
@@ -1186,23 +1130,15 @@ void AtomNetlist::shrink_to_fit() {
  *
  */
 bool AtomNetlist::valid_block_id(AtomBlockId id) const {
-    if(id == AtomBlockId::INVALID()) return false;
-    else if(!block_ids_.contains(id)) return false;
-    else if(block_ids_[id] != id) return false;
-    return true;
+	return BaseNetlist::valid_block_id((BlockId) id);
 }
 
 bool AtomNetlist::valid_port_id(AtomPortId id) const {
-    if(id == AtomPortId::INVALID()) return false;
-    else if(!port_ids_.contains(id)) return false;
-    else if(port_ids_[id] != id) return false;
-    return true;
+	return BaseNetlist::valid_port_id((PortId) id);
 }
 
 bool AtomNetlist::valid_port_bit(AtomPortId id, BitIndex port_bit) const {
-    VTR_ASSERT(valid_port_id(id));
-    if(port_bit >= port_width(id)) return false;
-    return true;
+	return BaseNetlist::valid_port_bit((PortId) id, port_bit);
 }
 
 bool AtomNetlist::valid_pin_id(AtomPinId id) const {
@@ -1240,16 +1176,6 @@ bool AtomNetlist::validate_port_sizes() const {
         || port_models_.size() != port_ids_.size()
         || port_pins_.size() != port_ids_.size()) {
         VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent port data sizes");
-    }
-    return true;
-}
-
-bool AtomNetlist::validate_pin_sizes() const {
-    if(pin_ports_.size() != pin_ids_.size()
-        || pin_port_bits_.size() != pin_ids_.size()
-        || pin_nets_.size() != pin_ids_.size()
-        || pin_is_constant_.size() != pin_ids_.size()) {
-        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent pin data sizes");
     }
     return true;
 }
@@ -1466,29 +1392,15 @@ AtomNetlist::AtomStringId AtomNetlist::find_string (const std::string& str) cons
 }
 
 AtomBlockId AtomNetlist::find_block(const AtomStringId name_id) const {
-    VTR_ASSERT(valid_string_id(name_id));
-    auto iter = block_name_to_block_id_.find(name_id);
-    if(iter != block_name_to_block_id_.end()) {
-        AtomBlockId blk_id = *iter;
-
-        //Check post-conditions
-        if(blk_id) {
-            VTR_ASSERT(valid_block_id(blk_id));
-            VTR_ASSERT(block_names_[blk_id] == name_id);
-        }
-
-        return blk_id;
-    } else {
-        return AtomBlockId::INVALID();
-    }
+	return BaseNetlist::find_block((StringId) name_id);
 }
 
 void AtomNetlist::associate_pin_with_net(const AtomPinId pin_id, const AtomPinType type, const AtomNetId net_id) {
-	BaseNetlist::associate_pin_with_net(pin_id, (PinType) type, net_id);
+	BaseNetlist::associate_pin_with_net((PinId) pin_id, (PinType) type, (NetId) net_id);
 }
 
 void AtomNetlist::associate_pin_with_port(const AtomPinId pin_id, const AtomPortId port_id) {
-	BaseNetlist::associate_pin_with_port(pin_id, port_id);
+	BaseNetlist::associate_pin_with_port((PinId) pin_id, (PortId) port_id);
 }
 
 void AtomNetlist::associate_pin_with_block(const AtomPinId pin_id, const AtomPortType type, const AtomBlockId blk_id) {

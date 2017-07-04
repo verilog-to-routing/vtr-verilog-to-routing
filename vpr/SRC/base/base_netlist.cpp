@@ -5,6 +5,9 @@
 
 #include "vpr_error.h"
 
+
+
+
 /*
 *
 * BaseNetlist class implementation
@@ -27,6 +30,58 @@ const std::string& BaseNetlist::netlist_id() const {
 	return netlist_id_;
 }
 
+
+/*
+*
+* Blocks
+*
+*/
+const std::string& BaseNetlist::block_name(const BlockId id) const {
+	StringId str_id = block_names_[id];
+	return strings_[str_id];
+}
+
+
+
+BaseNetlist::port_range BaseNetlist::block_ports(const BlockId id) const {
+	VTR_ASSERT(valid_block_id(id));
+
+	return vtr::make_range(block_ports_[id].begin(), block_ports_[id].end());
+}
+
+BaseNetlist::port_range BaseNetlist::block_input_ports(const BlockId id) const {
+	VTR_ASSERT(valid_block_id(id));
+
+	auto begin = block_ports_[id].begin();
+
+	auto end = block_ports_[id].begin() + block_num_input_ports_[id];
+
+	return vtr::make_range(begin, end);
+}
+
+BaseNetlist::port_range BaseNetlist::block_output_ports(const BlockId id) const {
+	VTR_ASSERT(valid_block_id(id));
+
+	auto begin = block_ports_[id].begin() + block_num_input_ports_[id];
+
+	auto end = begin + block_num_output_ports_[id];
+
+	return vtr::make_range(begin, end);
+}
+
+BaseNetlist::port_range BaseNetlist::block_clock_ports(const BlockId id) const {
+	VTR_ASSERT(valid_block_id(id));
+
+	auto begin = block_ports_[id].begin()
+		+ block_num_input_ports_[id]
+		+ block_num_output_ports_[id];
+
+	auto end = begin + block_num_clock_ports_[id];
+
+	VTR_ASSERT(end == block_ports_[id].end());
+
+	return vtr::make_range(begin, end);
+}
 /*
 *
 * Ports
@@ -216,6 +271,47 @@ BaseNetlist::net_range BaseNetlist::nets() const {
 * Lookups
 *
 */
+BlockId BaseNetlist::find_block(const std::string& name) const {
+	auto str_id = find_string(name);
+	if (!str_id) {
+		return BlockId::INVALID();
+	}
+	else {
+		return find_block(str_id);
+	}
+}
+
+PortId BaseNetlist::find_port(const BlockId blk_id, const t_model_ports* model_port) const {
+	VTR_ASSERT(valid_block_id(blk_id));
+	VTR_ASSERT(model_port);
+
+	//We can tell from the model port the set of ports
+	//the port can be found in
+	port_range range = (model_port->dir == IN_PORT) ?
+		(model_port->is_clock) ? block_clock_ports(blk_id) : block_input_ports(blk_id)
+		: (block_output_ports(blk_id));
+
+	for (auto port_id : range) {
+		if (port_name(port_id) == model_port->name) {
+			return port_id;
+		}
+	}
+
+	return PortId::INVALID();
+}
+
+PortId BaseNetlist::find_port(const BlockId blk_id, const std::string& name) const {
+	VTR_ASSERT(valid_block_id(blk_id));
+
+	//Since we only know the port name, we must search all the ports
+	for (auto port_id : block_ports(blk_id)) {
+		if (port_name(port_id) == name) {
+			return port_id;
+		}
+	}
+	return PortId::INVALID();
+}
+
 NetId BaseNetlist::find_net(const std::string& name) const {
 	auto str_id = find_string(name);
 	if (!str_id) {
@@ -391,6 +487,22 @@ void BaseNetlist::set_pin_net(const PinId pin, PinType type, const NetId net) {
 	associate_pin_with_net(pin, type, net);
 }
 
+void BaseNetlist::remove_port(const PortId port_id) {
+	VTR_ASSERT(valid_port_id(port_id));
+
+	//Remove the pins
+	for (auto pin : port_pins(port_id)) {
+		if (valid_pin_id(pin)) {
+			remove_pin(pin);
+		}
+	}
+
+	//Mark as invalid
+	port_ids_[port_id] = PortId::INVALID();
+
+	//Mark netlist dirty
+	dirty_ = true;
+}
 
 void BaseNetlist::remove_pin(const PinId pin_id) {
 	VTR_ASSERT(valid_pin_id(pin_id));
@@ -465,6 +577,13 @@ void BaseNetlist::remove_net(const NetId net_id) {
 * Sanity Checks
 *
 */
+bool BaseNetlist::valid_block_id(BlockId id) const {
+	if (id == BlockId::INVALID()) return false;
+	else if (!block_ids_.contains(id)) return false;
+	else if (block_ids_[id] != id) return false;
+	return true;
+}
+
 bool BaseNetlist::valid_port_id(PortId id) const {
 	if (id == PortId::INVALID()) return false;
 	else if (!port_ids_.contains(id)) return false;
@@ -499,6 +618,15 @@ bool BaseNetlist::valid_string_id(StringId id) const {
 	return true;
 }
 
+bool BaseNetlist::validate_pin_sizes() const {
+	if (pin_ports_.size() != pin_ids_.size()
+		|| pin_port_bits_.size() != pin_ids_.size()
+		|| pin_nets_.size() != pin_ids_.size()
+		|| pin_is_constant_.size() != pin_ids_.size()) {
+		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent pin data sizes");
+	}
+	return true;
+}
 
 bool BaseNetlist::validate_net_sizes() const {
 	if (net_names_.size() != net_ids_.size()
@@ -533,6 +661,25 @@ BaseNetlist::StringId BaseNetlist::find_string(const std::string& str) const {
 	}
 	else {
 		return StringId::INVALID();
+	}
+}
+
+BlockId BaseNetlist::find_block(const StringId name_id) const {
+	VTR_ASSERT(valid_string_id(name_id));
+	auto iter = block_name_to_block_id_.find(name_id);
+	if (iter != block_name_to_block_id_.end()) {
+		BlockId blk_id = *iter;
+
+		//Check post-conditions
+		if (blk_id) {
+			VTR_ASSERT(valid_block_id(blk_id));
+			VTR_ASSERT(block_names_[blk_id] == name_id);
+		}
+
+		return blk_id;
+	}
+	else {
+		return BlockId::INVALID();
 	}
 }
 
