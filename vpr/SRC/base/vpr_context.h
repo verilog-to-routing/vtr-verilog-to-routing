@@ -196,7 +196,6 @@ struct ClusteringContext : public Context {
     t_netlist clbs_nlist;
 };
 
-
 //State relating to placement
 //
 //This should contain only data structures that describe the current placement, 

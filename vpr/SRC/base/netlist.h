@@ -21,8 +21,7 @@ using namespace std;
  *				In the ClusteredNetlist, this is an index to g_vpr_ctx.clb_netlist.blocks[]
  * block_pin:   Pin index (on a block) to which each net terminal connects. 
  * net:         Net index to which this pin is associated
- * net_pin:     Pin index (in the net) of this pin (e.g. net_pin == 0 means this pin is a driver)
- *				
+ * net_pin:     Pin index (in the net) of this pin (e.g. net_pin == 0 means this pin is a driver)		
  */
 struct t_net_pin{
 	int block;
@@ -47,7 +46,6 @@ struct t_net_pin{
 struct t_vnet{
 	vector<t_net_pin> pins;
 	char* name;
-	t_net_power* net_power; // Daniel to-do: Take out?
 	// named bitfields (alternative to bitmasks)
 
     //TODO transfer net routing state to RoutingContext
@@ -59,7 +57,6 @@ struct t_vnet{
 	t_vnet(){
 		name = NULL;
 		is_routed = is_fixed = is_global = is_const_gen = 0;
-		net_power = NULL;
 	}
 
 	// Returns the number of sinks of the net, computed by looking 
@@ -69,14 +66,11 @@ struct t_vnet{
 	}
 };
 
-/* 
- * Note: Indices for t_netlist.net[] are also used as ID's/indices in 
+/* Note: Indices for t_netlist.net[] are also used as ID's/indices in 
  * 		  several other parallel(global) data structures, e.g.   
  * 		  route_ctx.net_rr_terminals[]. 
  */
-
 struct t_netlist{
-	//vector<t_blocks> blocks; To-do: Need to implement later
 	vector<t_vnet> net;
     std::string netlist_id;
 };

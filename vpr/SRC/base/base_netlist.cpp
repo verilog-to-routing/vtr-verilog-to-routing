@@ -6,6 +6,63 @@
 
 #include "vpr_error.h"
 
+
+/*
+*
+*
+* Utility templates
+*
+*
+*/
+
+//Count how many of the Id's referenced in 'range' have a valid
+//new mapping in 'id_map'
+template<typename R, typename Id>
+size_t count_valid_refs(R range, const vtr::vector_map<Id, Id>& id_map) {
+	size_t valid_count = 0;
+
+	for (Id old_id : range) {
+		if (id_map[old_id]) {
+			++valid_count;
+		}
+	}
+
+	return valid_count;
+}
+
+//Updates the Ids in 'values' based on id_map, even if the original or new mapping is not valid
+template<typename Container, typename ValId>
+Container update_all_refs(const Container& values, const vtr::vector_map<ValId, ValId>& id_map) {
+	Container updated;
+
+	for (ValId orig_val : values) {
+		//The original item was valid
+		ValId new_val = id_map[orig_val];
+		//The original item exists in the new mapping
+		updated.emplace_back(new_val);
+	}
+
+	return updated;
+}
+
+template<typename Container, typename ValId>
+Container update_valid_refs(const Container& values, const vtr::vector_map<ValId, ValId>& id_map) {
+	Container updated;
+
+	for (ValId orig_val : values) {
+		if (orig_val) {
+			//Original item valid
+
+			ValId new_val = id_map[orig_val];
+			if (new_val) {
+				//The original item exists in the new mapping
+				updated.emplace_back(new_val);
+			}
+		}
+	}
+	return updated;
+}
+
 /*
 *
 * BaseNetlist class implementation
@@ -834,6 +891,93 @@ void BaseNetlist::remove_unused() {
 		}
 	} while (found_unused);
 }
+
+void BaseNetlist::rebuild_block_refs(const vtr::vector_map<PinId, PinId>& pin_id_map,
+	const vtr::vector_map<PortId, PortId>& port_id_map) {
+	//Update the pin id references held by blocks
+	for (auto blk_id : blocks()) {
+		//Before update the references, we need to know how many are valid,
+		//so we can also update the numbers of input/output/clock pins
+
+		//Note that we take special care to not modify the pin counts until after
+		//they have all been counted (since the block_*_pins() functions depend on
+		//the counts).
+		size_t num_input_pins = count_valid_refs(block_input_pins(blk_id), pin_id_map);
+		size_t num_output_pins = count_valid_refs(block_output_pins(blk_id), pin_id_map);
+		size_t num_clock_pins = count_valid_refs(block_clock_pins(blk_id), pin_id_map);
+
+		std::vector<PinId>& pin_collection = block_pins_[blk_id];
+
+		pin_collection = update_valid_refs(pin_collection, pin_id_map);
+		block_num_input_pins_[blk_id] = num_input_pins;
+		block_num_output_pins_[blk_id] = num_output_pins;
+		block_num_clock_pins_[blk_id] = num_clock_pins;
+
+		VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All Ids should be valid");
+		VTR_ASSERT(pin_collection.size() == (size_t)block_num_input_pins_[blk_id]
+			+ block_num_output_pins_[blk_id]
+			+ block_num_clock_pins_[blk_id]);
+
+		//Similarily for ports
+		size_t num_input_ports = count_valid_refs(block_input_ports(blk_id), port_id_map);
+		size_t num_output_ports = count_valid_refs(block_output_ports(blk_id), port_id_map);
+		size_t num_clock_ports = count_valid_refs(block_clock_ports(blk_id), port_id_map);
+
+		std::vector<PortId>& ports = block_ports_[blk_id];
+
+		ports = update_valid_refs(ports, port_id_map);
+		block_num_input_ports_[blk_id] = num_input_ports;
+		block_num_output_ports_[blk_id] = num_output_ports;
+		block_num_clock_ports_[blk_id] = num_clock_ports;
+
+		VTR_ASSERT_SAFE_MSG(all_valid(ports), "All Ids should be valid");
+		VTR_ASSERT(ports.size() == (size_t)block_num_input_ports_[blk_id]
+			+ block_num_output_ports_[blk_id]
+			+ block_num_clock_ports_[blk_id]);
+	}
+
+	VTR_ASSERT(validate_block_sizes());
+}
+
+void BaseNetlist::rebuild_port_refs(const vtr::vector_map<BlockId, BlockId>& block_id_map,
+	const vtr::vector_map<PinId, PinId>& pin_id_map) {
+	//Update block and pin references held by ports
+	port_blocks_ = update_valid_refs(port_blocks_, block_id_map);
+	VTR_ASSERT_SAFE_MSG(all_valid(port_blocks_), "All Ids should be valid");
+
+	VTR_ASSERT(port_blocks_.size() == port_ids_.size());
+
+	for (auto& pin_collection : port_pins_) {
+		pin_collection = update_valid_refs(pin_collection, pin_id_map);
+		VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All Ids should be valid");
+	}
+	VTR_ASSERT(validate_port_sizes());
+}
+
+void BaseNetlist::rebuild_pin_refs(const vtr::vector_map<PortId, PortId>& port_id_map,
+	const vtr::vector_map<NetId, NetId>& net_id_map) {
+	//Update port and net references held by pins
+	pin_ports_ = update_all_refs(pin_ports_, port_id_map);
+	VTR_ASSERT_SAFE_MSG(all_valid(pin_ports_), "All Ids should be valid");
+
+	pin_nets_ = update_all_refs(pin_nets_, net_id_map);
+	VTR_ASSERT_SAFE_MSG(all_valid(pin_nets_), "All Ids should be valid");
+
+	VTR_ASSERT(validate_pin_sizes());
+}
+
+void BaseNetlist::rebuild_net_refs(const vtr::vector_map<PinId, PinId>& pin_id_map) {
+	//Update pin references held by nets
+	for (auto& pin_collection : net_pins_) {
+		pin_collection = update_valid_refs(pin_collection, pin_id_map);
+
+		VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All sinks should be valid");
+	}
+	VTR_ASSERT(validate_net_sizes());
+}
+
+
+
 
 /*
 *
