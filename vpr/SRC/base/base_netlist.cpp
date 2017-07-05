@@ -6,9 +6,6 @@
 
 #include "vpr_error.h"
 
-
-
-
 /*
 *
 * BaseNetlist class implementation
