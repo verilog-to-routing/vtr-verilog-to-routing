@@ -417,7 +417,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
             vtr::printf_info("Critical path: %g ns\n", 1e9 * critical_path.delay());
         }
 
-        vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
+        vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);        
     } else {
         vtr::printf_info("Routing failed.\n");
     }

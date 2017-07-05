@@ -56,7 +56,6 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 
 static float comp_width(t_chan * chan, float x, float separation);
 
-void post_place_sync(const int L_num_blocks);
 
 /************************* Subroutine Definitions ****************************/
 
@@ -141,7 +140,7 @@ bool place_and_route(t_placer_opts placer_opts,
 
 
 
-    /* If channel width not fixed, use binary search to find min W */
+        /* If channel width not fixed, use binary search to find min W */
     if (NO_FIXED_CHANNEL_WIDTH == width_fac) {
         //Binary search for the min channel width
         power_ctx.solution_inf.channel_width = binary_search_place_and_route(placer_opts,
