@@ -429,10 +429,6 @@ class AtomNetlist : public BaseNetlist {
         //Returns the model associated with the block
         const t_model*      block_model         (const AtomBlockId id) const;
 
-        //Returns true if the block is purely combinational (i.e. no input clocks
-        //and not a primary input
-//        bool                block_is_combinational    (const AtomBlockId id) const;
-
         //Returns the truth table associated with the block
         // Note that this is only non-empty for LUTs and Flip-Flops/latches.
         //
@@ -442,152 +438,20 @@ class AtomNetlist : public BaseNetlist {
         // For FF/Latches there is only a single entry representing the initial state
         const TruthTable&   block_truth_table   (const AtomBlockId id) const; 
 
-        //Returns a range of all pins assoicated with the specified block
-        pin_range           block_pins          (const AtomBlockId id) const;
-
-        //Returns a range of all input pins assoicated with the specified block
-        pin_range           block_input_pins    (const AtomBlockId id) const;
-
-        //Returns a range of all output pins assoicated with the specified block
-        // Note this is typically only data pins, but some blocks (e.g. PLLs) can produce outputs
-        // which are clocks.
-        pin_range           block_output_pins   (const AtomBlockId id) const;
-
-        //Returns a range of all clock pins assoicated with the specified block
-        pin_range           block_clock_pins    (const AtomBlockId id) const;
-
-        //Returns a range of all ports assoicated with the specified block
-        port_range          block_ports   (const AtomBlockId id) const;
-
-        //Returns a range consisting of the input ports associated with the specified block
-        port_range          block_input_ports   (const AtomBlockId id) const;
-
-        //Returns a range consisting of the output ports associated with the specified block
-        // Note this is typically only data ports, but some blocks (e.g. PLLs) can produce outputs
-        // which are clocks.
-        port_range          block_output_ports  (const AtomBlockId id) const;
-
-        //Returns a range consisting of the input clock ports associated with the specified block
-        port_range          block_clock_ports   (const AtomBlockId id) const;
-
         /*
          * Ports
          */
-        //Returns the name of the specified port
-        const std::string&      port_name   (const AtomPortId id) const;
-
-        //Returns the width (number of bits) in the specified port
-        BitIndex                port_width  (const AtomPortId id) const;
-
-        //Returns the block associated with the specified port
-        AtomBlockId             port_block  (const AtomPortId id) const; 
-
         //Returns the type of the specified port
         AtomPortType            port_type   (const AtomPortId id) const; 
-
-        //Returns the set of valid pins associated with the port
-        pin_range               port_pins   (const AtomPortId id) const;
-
-        //Returns the pin (potentially invalid) associated with the specified port and port bit index
-        //  port_id : The ID of the associated port
-        //  port_bit: The bit index of the pin in the port
-        //Note: this function is a synonym for find_pin()
-        AtomPinId               port_pin    (const AtomPortId port_id, const BitIndex port_bit) const;
-
-        //Returns the net (potentially invalid) associated with the specified port and port bit index
-        //  port_id : The ID of the associated port
-        //  port_bit: The bit index of the pin in the port
-        AtomNetId               port_net    (const AtomPortId port_id, const BitIndex port_bit) const;
-
-        //Returns the model port of the specified port or nullptr if not
-        //  port_id: The ID of the port to look for
-        const t_model_ports*    port_model  (const AtomPortId port_id) const;
 
         /*
          * Pins
          */
-        //Returns the constructed name (derived from block and port) for the specified pin
-        std::string  pin_name           (const AtomPinId id) const;
-
-        //Returns the net associated with the specified pin
-        AtomNetId    pin_net            (const AtomPinId id) const; 
-
         //Returns the pin type of the specified pin
         AtomPinType  pin_type           (const AtomPinId id) const; 
 
-        //Returns the port associated with the specified pin
-        AtomPortId   pin_port           (const AtomPinId id) const;
-
-        //Returns the port bit index associated with the specified pin
-        BitIndex     pin_port_bit       (const AtomPinId id) const;
-
         //Returns the port type associated with the specified pin
         AtomPortType pin_port_type      (const AtomPinId id) const;
-
-        //Returns the block associated with the specified pin
-        AtomBlockId  pin_block          (const AtomPinId id) const;
-
-        //Returns true if the pin is a constant (i.e. its value never changes)
-        bool         pin_is_constant    (const AtomPinId id) const;
-
-        /*
-         * Nets
-         */
-        //Returns the name of the specified net
-        const std::string&  net_name        (const AtomNetId id) const; 
-
-        //Returns a range consisting of all the pins in the net (driver and sinks)
-        //The first element in the range is the driver (and may be invalid)
-        //The remaining elements (potentially none) are the sinks
-        pin_range           net_pins        (const AtomNetId id) const;
-
-        //Returns the (potentially invalid) net driver pin
-        AtomPinId           net_driver      (const AtomNetId id) const;
-
-        //Returns the (potentially invalid) net driver block
-        AtomBlockId         net_driver_block(const AtomNetId id) const;
-
-        //Returns a (potentially empty) range consisting of net's sink pins
-        pin_range           net_sinks       (const AtomNetId id) const;
-
-        //Returns true if the net is driven by a constant pin (i.e. its value never changes)
-        bool                net_is_constant (const AtomNetId id) const;
-
-        /*
-         * Aggregates
-         */
-        //Returns a range consisting of all blocks in the netlist
-        block_range blocks  () const;
-
-        //Returns a range consisting of all pins in the netlist
-        pin_range   pins    () const;
-
-        //Returns a range consisting of all nets in the netlist
-        net_range   nets    () const;
-        
-        /*
-         * Lookups
-         */
-        //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
-        //Note that this method is typically more efficient than searching by name
-        //  blk_id: The ID of the block who's ports will be checked
-        //  model_port: The port model to look for
-        AtomPortId  find_port   (const AtomBlockId blk_id, const t_model_ports* model_port) const;
-
-        //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
-        //Note that this method is typically less efficient than searching by a t_model_port
-        //  blk_id: The ID of the block who's ports will be checked
-        //  name  : The name of the port to look for
-        AtomPortId  find_port   (const AtomBlockId blk_id, const std::string& name) const;
-
-        //Returns the AtomPinId of the specified pin or AtomPinId::INVALID() if not found
-        //  port_id : The ID of the associated port
-        //  port_bit: The bit index of the pin in the port
-        AtomPinId   find_pin    (const AtomPortId port_id, BitIndex port_bit) const;
-
-        //Returns the AtomNetId of the specified net or AtomNetId::INVALID() if not found
-        //  name: The name of the net
-        AtomNetId   find_net    (const std::string& name) const;
 
         /*
          * Utility
