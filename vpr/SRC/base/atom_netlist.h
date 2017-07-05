@@ -420,14 +420,9 @@ class AtomNetlist : public BaseNetlist {
         /*
          * Blocks
          */
-        //Returns the name of the specified block
-        const std::string&  block_name          (const AtomBlockId id) const;
-
         //Returns the type of the specified block
         AtomBlockType       block_type          (const AtomBlockId id) const;
 
-        //Returns the model associated with the block
-        const t_model*      block_model         (const AtomBlockId id) const;
 
         //Returns the truth table associated with the block
         // Note that this is only non-empty for LUTs and Flip-Flops/latches.
@@ -519,21 +514,6 @@ class AtomNetlist : public BaseNetlist {
         //  net      : The net to add the pin to
         void set_pin_net(const AtomPinId pin, AtomPinType pin_type, const AtomNetId net);
 
-        /*
-         * Note: all remove_*() will mark the associated items as invalid, but the items
-         * will not be removed until compress() is called.
-         */
-
-        //Removes a block from the netlist. This will also remove the associated ports and pins.
-        //  blk_id  : The block to be removed
-        void remove_block   (const AtomBlockId blk_id);
-
-        //Removes a connection betwen a net and pin. The pin is removed from the net and the pin
-        //will be marked as having no associated net
-        //  net_id  : The net from which the pin is to be removed
-        //  pin_id  : The pin to be removed from the net
-        void remove_net_pin (const AtomNetId net_id, const AtomPinId pin_id);
-
         //Compresses the netlist, removing any invalid and/or unreferenced
         //blocks/ports/pins/nets.
         //
@@ -548,24 +528,6 @@ class AtomNetlist : public BaseNetlist {
         typedef vtr::StrongId<BaseNetlist::string_id_tag> AtomStringId;
 
     private: //Private members
-        /*
-         * Mutators
-         */
-        //Removes a port from the netlist.
-        //The port's pins are also marked invalid and removed from any associated nets
-        //  port_id: The ID of the port to be removed
-        void remove_port(const AtomPortId port_id);
-
-        //Removes a pin from the netlist.
-        //The pin is marked invalid, and removed from any assoicated nets
-        //  pin_id: The ID of the pin to be removed
-        void remove_pin(const AtomPinId pin_id);
-
-        //Marks netlist components which have become redundant due to other removals
-        //(e.g. ports with only invalid pins) as invalid so they will be destroyed during
-        //compress()
-        void remove_unused();
-
         /*
          * Netlist compression/optimization
          */

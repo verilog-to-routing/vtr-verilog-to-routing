@@ -196,16 +196,8 @@ void AtomNetlist::print_stats() const {
  * Blocks
  *
  */
-const std::string& AtomNetlist::block_name (const AtomBlockId id) const { 
-	return BaseNetlist::block_name(id);
-}
-
 AtomBlockType AtomNetlist::block_type (const AtomBlockId id) const {
 	return (AtomBlockType) BaseNetlist::block_type(id);
-}
-
-const t_model* AtomNetlist::block_model (const AtomBlockId id) const {
-	return BaseNetlist::block_model(id);
 }
 
 const AtomNetlist::TruthTable& AtomNetlist::block_truth_table (const AtomBlockId id) const {
@@ -390,26 +382,6 @@ void AtomNetlist::set_pin_is_constant(const AtomPinId pin_id, const bool value) 
 
 void AtomNetlist::set_pin_net (const AtomPinId pin, AtomPinType type, const AtomNetId net) {
 	BaseNetlist::set_pin_net(pin, (PinType) type, net);
-}
-
-void AtomNetlist::remove_block(const AtomBlockId blk_id) {
-	BaseNetlist::remove_block(blk_id);
-}
-
-void AtomNetlist::remove_port(const AtomPortId port_id) {
-	BaseNetlist::remove_port(port_id);
-}
-
-void AtomNetlist::remove_pin(const AtomPinId pin_id) {
-	BaseNetlist::remove_pin(pin_id);
-}
-
-void AtomNetlist::remove_net_pin(const AtomNetId net_id, const AtomPinId pin_id) {
-	BaseNetlist::remove_net_pin(net_id, pin_id);
-}
-
-void AtomNetlist::remove_unused() {
-	BaseNetlist::remove_unused();
 }
 
 void AtomNetlist::compress() {

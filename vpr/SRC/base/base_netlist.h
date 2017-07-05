@@ -398,9 +398,9 @@ class BaseNetlist {
 		vtr::vector_map<PinId, bool>		pin_is_constant_;   //Indicates if the pin always keeps a constant value
 
 		//Net data
-        vtr::vector_map<NetId,NetId>              net_ids_;   //Valid net ids
-        vtr::vector_map<NetId,StringId>           net_names_; //Name of each net
-        vtr::vector_map<NetId,std::vector<PinId>> net_pins_;  //Pins associated with each net
+        vtr::vector_map<NetId,NetId>              net_ids_;		//Valid net ids
+        vtr::vector_map<NetId,StringId>           net_names_;	//Name of each net
+        vtr::vector_map<NetId,std::vector<PinId>> net_pins_;	//Pins associated with each net
 
         //String data
         // We store each unique string once, and reference it by an StringId
