@@ -148,7 +148,6 @@ ast_node_t *free_single_node(ast_node_t *node)
 {
 	if(node){
 		free_assignement_of_node_keep_tree(node);
-		vtr::free(node->additional_data);
 		vtr::free(node->children);
 		vtr::free(node);
 	}
@@ -955,16 +954,12 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 			
 			case UNARY_OPERATION:
 				if(initial){
-					node_copy->shared_node = TRUE;
 					newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
-					node_copy->shared_node = FALSE;
 				}
 				break;
 
 			case BINARY_OPERATION:
-				node_copy->shared_node = TRUE;
 				newNode = fold_binary(node_copy->children[0], node_copy->children[1], node_copy->types.operation.op);
-				node_copy->shared_node = FALSE;
 				break;
 			
 			default:
@@ -972,6 +967,7 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 		}
 		
 		if (node_is_constant(newNode)){
+			newNode->shared_node = node->shared_node;
 			node = newNode;
 		}
 
@@ -1368,10 +1364,9 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->file_number = file_number;
 	new_node->far_tag = 0;
 	new_node->high_number = 0;
-	new_node->shared_node = 0;
+	new_node->shared_node = FALSE;
 	new_node->hb_port = 0;
 	new_node->net_node = 0;
 	new_node->is_read_write = 0;
-	new_node->additional_data = 0;
 
 }

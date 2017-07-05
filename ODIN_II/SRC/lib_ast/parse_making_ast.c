@@ -38,7 +38,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
-extern int yylineno;
+extern size_t yylineno;
 
 STRING_CACHE *defines_for_file_sc;
 //for module
@@ -64,7 +64,7 @@ int size_function_instantiations;
 ast_node_t **function_instantiations_instance_by_module;
 int size_function_instantiations_by_module;
 
-int num_modules;
+size_t num_modules;
 ast_node_t **ast_modules;
 
 int num_functions;
@@ -117,7 +117,7 @@ void parse_to_ast()
 {
 	int i;
 	extern FILE *yyin;
-	extern int yylineno;
+	extern size_t yylineno;
 	
 	/* hooks into macro at the top of verilog_flex.l that shows the tokens as they're parsed.  Set to true if you want to see it go...*/
 	to_view_parse = configuration.print_parse_tokens;

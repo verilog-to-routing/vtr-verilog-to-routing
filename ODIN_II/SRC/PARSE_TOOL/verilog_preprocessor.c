@@ -267,7 +267,7 @@ FILE* open_source_file(char* filename)
 {
 	extern global_args_t global_args;
 	extern config_t configuration;
-	extern int current_parse_file;
+	extern size_t current_parse_file;
 	
 	FILE* src_file = fopen(filename, "r"); //Look for the file in the PWD
 	if (src_file != NULL)
@@ -318,7 +318,7 @@ FILE* veri_preproc(FILE *source)
 {
 	extern global_args_t global_args;
 	extern config_t configuration;
-	extern int current_parse_file;
+	extern size_t current_parse_file;
 	FILE *preproc_producer = NULL;
 	
 	/* Was going to use filename to prevent duplication but the global var isn't used in the case of a config value */

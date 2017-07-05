@@ -32,7 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define PARSE {printf("here\n");}
 
 #ifndef YYLINENO
-extern int yylineno;
+extern size_t yylineno;
 #define YYLINENO yylineno
 #else
 extern int yylineno;
@@ -46,7 +46,7 @@ int yylex(void);
  // RESPONCE in an error
 void yyerror(const char *str)
 {
-	fprintf(stderr,"error in parsing: %s - on line number %d\n",str, yylineno);
+	fprintf(stderr,"error in parsing: %s - on line number %zu\n",str, yylineno);
 	exit(-1);
 }
  

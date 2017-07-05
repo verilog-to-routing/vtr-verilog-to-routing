@@ -388,14 +388,14 @@ struct typ_t
 
 struct ast_node_t_t
 {
-	int unique_count;
+	size_t unique_count;
 	int far_tag;
 	int high_number;
 	ids type;
 	typ types;
 
 	ast_node_t **children;
-	int num_children;
+	size_t num_children;
 
 	int line_number;
 	int file_number;
@@ -405,7 +405,6 @@ struct ast_node_t_t
 	void *net_node;
 	short is_read_write;
 
-	void *additional_data; // this is a point where you can add additional data for your optimization or technique
 };
 #endif // AST_TYPES_H
 
