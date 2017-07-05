@@ -120,6 +120,7 @@ my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
 my $verify_rr_graph         = 0;
 my $rr_graph_error_check    = 0;
+my $check_route             = 0;
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -219,6 +220,9 @@ while ( $token = shift(@ARGV) ) {
     }
     elsif ( $token eq "-rr_graph_error_check" ) {
             $rr_graph_error_check = 1;
+    }
+    elsif ( $token eq "-check_route" ){
+            $check_route = 1;
     }
     # else forward the argument
 	else {
@@ -547,6 +551,11 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push( @vpr_power_args, "--tech_properties" );
 		push( @vpr_power_args, "$tech_file" );
 	}
+
+        if ( $check_route and $min_chan_width < 0){
+            $min_chan_width = 300;
+        }
+
 	if ( $min_chan_width < 0 ) {
 
 		my @vpr_args;
@@ -805,6 +814,59 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 
                         $q = &system_with_timeout(
                                 $vpr_path,                    "vpr_read_in.out",
+                                $timeout,                     $temp_dir,
+                                @vpr_args
+                        );
+                }
+                elsif ($check_route){
+                    # move the most recent necessary result files to temp directory for specific vpr stage
+                    
+                        #my $found_prev = &find_and_move_newest("$benchmark_name", "net");
+                        #&find_and_move_newest("$benchmark_name", "place");
+                        #&find_and_move_newest("$benchmark_name", "route");
+
+                        my @vpr_args;
+            		push( @vpr_args, $architecture_file_name );
+                    	push( @vpr_args, "$benchmark_name" );
+            		push( @vpr_args, "--blif_file"	);
+                	push( @vpr_args, "$prevpr_output_file_name");
+                        push( @vpr_args, "--timing_analysis" );   
+        		push( @vpr_args, "$timing_driven");
+        		push( @vpr_args, "--timing_driven_clustering" );
+        		push( @vpr_args, "$timing_driven");
+        		push( @vpr_args, "--route_chan_width" );   
+        		push( @vpr_args, "$min_chan_width" );
+        		push( @vpr_args, "--max_router_iterations" );
+        		push( @vpr_args, "$max_router_iterations");
+        		push( @vpr_args, "--cluster_seed_type" );       
+        		push( @vpr_args, "$vpr_cluster_seed_type");
+        		push( @vpr_args, @vpr_power_args);
+        		push( @vpr_args, "--gen_post_synthesis_netlist" );
+        		push( @vpr_args, "$gen_post_synthesis_netlist");
+        		push( @vpr_args, "--analysis");
+        		if (-e $sdc_file_path){
+                            push( @vpr_args, "--sdc_file" );				  
+                            push( @vpr_args, "$sdc_file_path");
+        		}
+        		if (-e $pad_file_path){
+                            push( @vpr_args, "--fix_pins" );				  
+                            push( @vpr_args, "$pad_file_path");
+                        }        
+                        
+			push( @vpr_args, "--seed");			 		  
+			push( @vpr_args, "$seed");
+                        if ($verify_rr_graph){
+                            push( @vpr_args, "--read_rr_graph" );				  
+                            push( @vpr_args, 'RR_graph_result.xml');
+
+                        }
+                        push( @vpr_args, "$switch_usage_analysis");
+                        push( @vpr_args, @forwarded_vpr_args);
+                        push( @vpr_args, $specific_vpr_stage);
+
+
+                        $q = &system_with_timeout(
+                                $vpr_path,                    "vpr_analysis.out",
                                 $timeout,                     $temp_dir,
                                 @vpr_args
                         );

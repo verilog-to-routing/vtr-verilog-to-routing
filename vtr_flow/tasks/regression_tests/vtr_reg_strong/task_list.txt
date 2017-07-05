@@ -20,3 +20,4 @@ regression_tests/vtr_reg_strong/strong_pack_and_place
 regression_tests/vtr_reg_strong/strong_fc_abs
 regression_tests/vtr_reg_strong/strong_verify_rr_graph
 regression_tests/vtr_reg_strong/strong_custom_pin_locs
+regression_tests/vtr_reg_strong/strong_analysis
