@@ -215,78 +215,12 @@ const AtomNetlist::TruthTable& AtomNetlist::block_truth_table (const AtomBlockId
 }
 
 /*
-bool  AtomNetlist::block_is_combinational (const AtomBlockId id) const {
-	return BaseNetlist::block_is_combinational(id);
-}
-*/
-
-AtomNetlist::pin_range AtomNetlist::block_pins (const AtomBlockId id) const {
-	return BaseNetlist::block_pins(id);
-}
-
-AtomNetlist::pin_range AtomNetlist::block_input_pins (const AtomBlockId id) const {
-	return BaseNetlist::block_input_pins(id);
-}
-
-AtomNetlist::pin_range AtomNetlist::block_output_pins (const AtomBlockId id) const {
-	return BaseNetlist::block_output_pins(id);
-}
-
-AtomNetlist::pin_range AtomNetlist::block_clock_pins (const AtomBlockId id) const {
-	return BaseNetlist::block_clock_pins(id);
-}
-
-AtomNetlist::port_range AtomNetlist::block_ports (const AtomBlockId id) const {
-	return BaseNetlist::block_ports(id);
-}
-
-AtomNetlist::port_range AtomNetlist::block_input_ports (const AtomBlockId id) const {
-	return BaseNetlist::block_input_ports(id);
-}
-
-AtomNetlist::port_range AtomNetlist::block_output_ports (const AtomBlockId id) const {
-	return BaseNetlist::block_output_ports(id);
-}
-
-AtomNetlist::port_range AtomNetlist::block_clock_ports (const AtomBlockId id) const {
-	return BaseNetlist::block_clock_ports(id);
-}
-
-/*
  *
  * Ports
  *
  */
-const std::string& AtomNetlist::port_name (const AtomPortId id) const {
-	return BaseNetlist::port_name(id);
-}
-
-BitIndex AtomNetlist::port_width (const AtomPortId id) const {
-	return BaseNetlist::port_width(id);
-}
-
-AtomPortType AtomNetlist::port_type (const AtomPortId id) const {
-	return (AtomPortType) BaseNetlist::port_type(id);
-}
-
-AtomBlockId AtomNetlist::port_block (const AtomPortId id) const {
-	return BaseNetlist::port_block(id);
-}
-
-AtomNetlist::pin_range AtomNetlist::port_pins (const AtomPortId id) const {
-    return BaseNetlist::port_pins(id);
-}
-
-AtomPinId AtomNetlist::port_pin (const AtomPortId port_id, const BitIndex port_bit) const {
-	return BaseNetlist::port_pin(port_id, port_bit);
-}
-
-AtomNetId AtomNetlist::port_net (const AtomPortId port_id, const BitIndex port_bit) const {
-	return BaseNetlist::port_net(port_id, port_bit);
-}
-
-const t_model_ports* AtomNetlist::port_model (const AtomPortId port_id) const {
-	return BaseNetlist::port_model(port_id);
+AtomPortType AtomNetlist::port_type(const AtomPortId id) const {
+	return (AtomPortType)BaseNetlist::port_type(id);
 }
 
 /*
@@ -294,105 +228,12 @@ const t_model_ports* AtomNetlist::port_model (const AtomPortId port_id) const {
  * Pins
  *
  */
-std::string AtomNetlist::pin_name (const AtomPinId id) const {
-	return BaseNetlist::pin_name(id);
+AtomPinType AtomNetlist::pin_type(const AtomPinId id) const {
+	return (AtomPinType)BaseNetlist::pin_type(id);
 }
 
-AtomNetId AtomNetlist::pin_net (const AtomPinId id) const { 
-    return BaseNetlist::pin_net(id);
-}
-
-AtomPinType AtomNetlist::pin_type (const AtomPinId id) const { 
-	return (AtomPinType) BaseNetlist::pin_type(id);
-}
-
-AtomPortId AtomNetlist::pin_port (const AtomPinId id) const { 
-	return BaseNetlist::pin_port(id);
-}
-
-BitIndex AtomNetlist::pin_port_bit (const AtomPinId id) const {
-	return BaseNetlist::pin_port_bit(id);
-}
-
-AtomPortType AtomNetlist::pin_port_type (const AtomPinId id) const {
-	return (AtomPortType) BaseNetlist::pin_port_type(id);
-}
-
-AtomBlockId AtomNetlist::pin_block (const AtomPinId id) const { 
-	return BaseNetlist::pin_block(id);
-}
-
-bool AtomNetlist::pin_is_constant (const AtomPinId id) const {
-	return BaseNetlist::pin_is_constant(id);
-}
-
-
-/*
- *
- * Nets
- *
- */
-const std::string& AtomNetlist::net_name (const AtomNetId id) const { 
-	return BaseNetlist::net_name(id);
-}
-
-AtomNetlist::pin_range AtomNetlist::net_pins (const AtomNetId id) const {
-	return BaseNetlist::net_pins(id);
-}
-
-AtomPinId AtomNetlist::net_driver (const AtomNetId id) const {
-	return BaseNetlist::net_driver(id);
-}
-
-AtomBlockId AtomNetlist::net_driver_block (const AtomNetId id) const {
-	return BaseNetlist::net_driver_block(id);
-}
-
-AtomNetlist::pin_range AtomNetlist::net_sinks (const AtomNetId id) const {
-	return BaseNetlist::net_sinks(id);
-}
-
-bool AtomNetlist::net_is_constant (const AtomNetId id) const {
-	return BaseNetlist::net_is_constant(id);
-}
-
-/*
- *
- * Aggregates
- *
- */
-AtomNetlist::block_range AtomNetlist::blocks () const {
-	return BaseNetlist::blocks();
-}
-
-AtomNetlist::pin_range AtomNetlist::pins () const {
-	return BaseNetlist::pins();
-}
-
-AtomNetlist::net_range AtomNetlist::nets () const {
-	return BaseNetlist::nets();
-}
-
-
-/*
- *
- * Lookups
- *
- */
-AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const t_model_ports* model_port) const {
-	return BaseNetlist::find_port((BlockId) blk_id, model_port);
-}
-
-AtomPortId AtomNetlist::find_port (const AtomBlockId blk_id, const std::string& name) const {
-	return BaseNetlist::find_port((BlockId) blk_id, name);
-}
-
-AtomPinId AtomNetlist::find_pin (const AtomPortId port_id, BitIndex port_bit) const {
-	return BaseNetlist::find_pin(port_id, port_bit);
-}
-
-AtomNetId AtomNetlist::find_net (const std::string& name) const {
-	return BaseNetlist::find_net(name);
+AtomPortType AtomNetlist::pin_port_type(const AtomPinId id) const {
+	return (AtomPortType)BaseNetlist::pin_port_type(id);
 }
 
 /*
@@ -586,7 +427,7 @@ void AtomNetlist::compress() {
     //Build the mappings from old to new id's, potentially
     //re-ordering for improved cache locality
     //
-    //The vecotrs passed as parameters are initialized as a mapping from old to new index
+    //The vectors passed as parameters are initialized as a mapping from old to new index
     // e.g. block_id_map[old_id] == new_id
     build_id_maps(block_id_map, port_id_map, pin_id_map, net_id_map);
 
