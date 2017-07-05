@@ -1,0 +1,5 @@
+vpr_status;Equal
+crit_path_routed_wirelength;Equal
+setup_TNS;Equal
+setup_WNS;Equal
+critical_path_delay;Equal
