@@ -24,15 +24,15 @@ class IdMap;
 
 class BaseNetlist {
 	public: //Public Types
-		typedef vtr::vector_map<BlockId, BlockId>::const_iterator block_iterator;
-		typedef vtr::vector_map<NetId, NetId>::const_iterator net_iterator;
-		typedef vtr::vector_map<PinId, PinId>::const_iterator pin_iterator;
-		typedef vtr::vector_map<PortId, PortId>::const_iterator port_iterator;
+		typedef vtr::vector_map<BlockId, BlockId>::const_iterator	block_iterator;
+		typedef vtr::vector_map<NetId, NetId>::const_iterator		net_iterator;
+		typedef vtr::vector_map<PinId, PinId>::const_iterator		pin_iterator;
+		typedef vtr::vector_map<PortId, PortId>::const_iterator		port_iterator;
 		
-		typedef vtr::Range<block_iterator> block_range;
-		typedef vtr::Range<net_iterator> net_range;
-		typedef vtr::Range<pin_iterator> pin_range;
-		typedef vtr::Range<port_iterator> port_range;
+		typedef vtr::Range<block_iterator>	block_range;
+		typedef vtr::Range<net_iterator>	net_range;
+		typedef vtr::Range<pin_iterator>	pin_range;
+		typedef vtr::Range<port_iterator>	port_range;
 
 	public: //Constructor
 		BaseNetlist(std::string name="", std::string id="");
@@ -41,7 +41,7 @@ class BaseNetlist {
 		//Create or return an existing port in the netlist
         //  blk_id      : The block the port is associated with
         //  name        : The name of the port (must match the name of a port in the block's model)
-        PortId  create_port (const BlockId blk_id, const t_model_ports* model_port);
+        PortId  create_port(const BlockId blk_id, const t_model_ports* model_port);
 
 		//Create or return an existing pin in the netlist
         //  port_id : The port this pin is associated with
@@ -49,7 +49,7 @@ class BaseNetlist {
         //  net_id  : The net the pin drives/sinks
         //  type    : The type of the pin (driver/sink)
         //  is_const: Indicates whether the pin holds a constant value (e. g. vcc/gnd)
-        PinId   create_pin  (const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType type, bool is_const=false);
+        PinId   create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType type, bool is_const=false);
 
 		//Create an empty, or return an existing net in the netlist
 		//  name    : The unique name of the net
@@ -59,7 +59,7 @@ class BaseNetlist {
         //  name    : The name of the net (Note: must not already exist)
         //  driver  : The net's driver pin
         //  sinks   : The net's sink pins
-        NetId   add_net     (const std::string name, PinId driver, std::vector<PinId> sinks);
+        NetId   add_net(const std::string name, PinId driver, std::vector<PinId> sinks);
 
 		//Mark a pin as being a constant generator.
 		// There are some cases where a pin can not be identified as a is constant until after
@@ -87,7 +87,7 @@ class BaseNetlist {
 		//Removes a net from the netlist. 
         //This will mark the net's pins as having no associated.
         //  net_id  : The net to be removed
-        void remove_net     (const NetId net_id);
+        void remove_net(const NetId net_id);
 
 		//Marks netlist components which have become redundant due to other removals
 		//(e.g. ports with only invalid pins) as invalid so they will be destroyed during
@@ -115,7 +115,7 @@ class BaseNetlist {
 		const std::string&  block_name(const BlockId id) const;
 
 		//Returns the type of the specified block
-		BlockType       block_type(const BlockId id) const;
+		BlockType			block_type(const BlockId id) const;
 
 		//Returns the model associated with the block
 		const t_model*      block_model(const BlockId id) const;
@@ -124,21 +124,21 @@ class BaseNetlist {
 		//and not a primary input
 		bool                block_is_combinational(const BlockId id) const;
 
-		//Returns a range of all pins assoicated with the specified block
+		//Returns a range of all pins associated with the specified block
 		pin_range           block_pins(const BlockId id) const;
 
-		//Returns a range of all input pins assoicated with the specified block
+		//Returns a range of all input pins associated with the specified block
 		pin_range           block_input_pins(const BlockId id) const;
 
-		//Returns a range of all output pins assoicated with the specified block
+		//Returns a range of all output pins associated with the specified block
 		// Note this is typically only data pins, but some blocks (e.g. PLLs) can produce outputs
 		// which are clocks.
 		pin_range           block_output_pins(const BlockId id) const;
 
-		//Returns a range of all clock pins assoicated with the specified block
+		//Returns a range of all clock pins associated with the specified block
 		pin_range           block_clock_pins(const BlockId id) const;
 		
-		//Returns a range of all ports assoicated with the specified block
+		//Returns a range of all ports associated with the specified block
 		port_range          block_ports(const BlockId id) const;
 
 		//Returns a range consisting of the input ports associated with the specified block
@@ -162,10 +162,10 @@ class BaseNetlist {
 		BitIndex                port_width(const PortId id) const;
 
 		//Returns the block associated with the specified port
-		BlockId             port_block(const PortId id) const;
+		BlockId					port_block(const PortId id) const;
 
 		//Returns the type of the specified port
-		PortType            port_type(const PortId id) const;
+		PortType				port_type(const PortId id) const;
 
 		//Returns the set of valid pins associated with the port
 		pin_range               port_pins(const PortId id) const;
@@ -174,12 +174,12 @@ class BaseNetlist {
 		//  port_id : The ID of the associated port
 		//  port_bit: The bit index of the pin in the port
 		//Note: this function is a synonym for find_pin()
-		PinId               port_pin(const PortId port_id, const BitIndex port_bit) const;
+		PinId					port_pin(const PortId port_id, const BitIndex port_bit) const;
 
 		//Returns the net (potentially invalid) associated with the specified port and port bit index
 		//  port_id : The ID of the associated port
 		//  port_bit: The bit index of the pin in the port
-		NetId               port_net(const PortId port_id, const BitIndex port_bit) const;
+		NetId					port_net(const PortId port_id, const BitIndex port_bit) const;
 
 		//Returns the model port of the specified port or nullptr if not
 		//  port_id: The ID of the port to look for
@@ -189,28 +189,28 @@ class BaseNetlist {
 		* Pins
 		*/
 		//Returns the constructed name (derived from block and port) for the specified pin
-		std::string  pin_name(const PinId id) const;
+		std::string pin_name(const PinId id) const;
 
 		//Returns the net associated with the specified pin
-		NetId    pin_net(const PinId id) const;
+		NetId		pin_net(const PinId id) const;
 
 		//Returns the pin type of the specified pin
-		PinType  pin_type(const PinId id) const;
+		PinType		pin_type(const PinId id) const;
 
 		//Returns the port associated with the specified pin
-		PortId   pin_port(const PinId id) const;
+		PortId		pin_port(const PinId id) const;
 
 		//Returns the port bit index associated with the specified pin
-		BitIndex     pin_port_bit(const PinId id) const;
+		BitIndex    pin_port_bit(const PinId id) const;
 
 		//Returns the port type associated with the specified pin
-		PortType pin_port_type(const PinId id) const;
+		PortType	pin_port_type(const PinId id) const;
 
 		//Returns the block associated with the specified pin
-		BlockId  pin_block(const PinId id) const;
+		BlockId		pin_block(const PinId id) const;
 
 		//Returns true if the pin is a constant (i.e. its value never changes)
-		bool     pin_is_constant(const PinId id) const;
+		bool		pin_is_constant(const PinId id) const;
 
 		/*
 		* Nets
@@ -224,10 +224,10 @@ class BaseNetlist {
 		pin_range           net_pins(const NetId id) const;
 
 		//Returns the (potentially invalid) net driver pin
-		PinId           net_driver(const NetId id) const;
+		PinId				net_driver(const NetId id) const;
 
 		//Returns the (potentially invalid) net driver block
-		BlockId         net_driver_block(const NetId id) const;
+		BlockId				net_driver_block(const NetId id) const;
 
 		//Returns a (potentially empty) range consisting of net's sink pins
 		pin_range           net_sinks(const NetId id) const;
@@ -239,7 +239,7 @@ class BaseNetlist {
 		//will be marked as having no associated net
 		//  net_id  : The net from which the pin is to be removed
 		//  pin_id  : The pin to be removed from the net
-		void remove_net_pin(const NetId net_id, const PinId pin_id);
+		void				remove_net_pin(const NetId net_id, const PinId pin_id);
 
 		/* 
 		* Aggregates
@@ -294,15 +294,15 @@ class BaseNetlist {
 		 */
 		//Returns the AtomStringId of the specifed string if it exists or AtomStringId::INVALID() if not
 		//  str : The string to look for
-		StringId find_string(const std::string& str) const;
+		StringId	find_string(const std::string& str) const;
 		
 		//Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVALID() if not
 		//  name_id : The block name to look for
-		BlockId find_block(const StringId name_id) const;
+		BlockId		find_block(const StringId name_id) const;
 
 		//Returns the NetId of the specifed port if it exists or NetId::INVALID() if not
         //  name_id: The string ID of the net name to look for
-        NetId find_net(const StringId name_id) const;
+        NetId		find_net(const StringId name_id) const;
 		
 		/*
          * Mutators
@@ -332,6 +332,21 @@ class BaseNetlist {
 		//The pin is marked invalid, and removed from any assoicated nets
 		//  pin_id: The ID of the pin to be removed
 		void remove_pin(const PinId pin_id);
+
+		//Re-builds cross-references held by blocks
+		void rebuild_block_refs(const vtr::vector_map<PinId, PinId>& pin_id_map,
+			const vtr::vector_map<PortId, PortId>& port_id_map);
+
+		//Re-builds cross-references held by ports
+		void rebuild_port_refs(const vtr::vector_map<BlockId, BlockId>& block_id_map,
+			const vtr::vector_map<PinId, PinId>& pin_id_map);
+
+		//Re-builds cross-references held by pins
+		void rebuild_pin_refs(const vtr::vector_map<PortId, PortId>& port_id_map,
+			const vtr::vector_map<NetId, NetId>& net_id_map);
+
+		//Re-builds cross-references held by nets
+		void rebuild_net_refs(const vtr::vector_map<PinId, PinId>& pin_id_map);
 
 		/*
 		* Sanity Checks

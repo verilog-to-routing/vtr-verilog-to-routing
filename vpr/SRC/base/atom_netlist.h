@@ -437,16 +437,16 @@ class AtomNetlist : public BaseNetlist {
          * Ports
          */
         //Returns the type of the specified port
-        AtomPortType            port_type   (const AtomPortId id) const; 
+        AtomPortType        port_type			(const AtomPortId id) const; 
 
         /*
          * Pins
          */
         //Returns the pin type of the specified pin
-        AtomPinType  pin_type           (const AtomPinId id) const; 
+        AtomPinType			pin_type			(const AtomPinId id) const; 
 
         //Returns the port type associated with the specified pin
-        AtomPortType pin_port_type      (const AtomPinId id) const;
+        AtomPortType		pin_port_type		(const AtomPinId id) const;
 
         /*
          * Utility
@@ -550,21 +550,6 @@ class AtomNetlist : public BaseNetlist {
 
         //Removes invalid and reorders nets
         void clean_nets(const vtr::vector_map<AtomNetId,AtomNetId>& net_id_map);
-
-        //Re-builds cross-references held by blocks
-        void rebuild_block_refs(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map, 
-                                const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map);
-
-        //Re-builds cross-references held by ports
-        void rebuild_port_refs(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map, 
-                               const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map);
-
-        //Re-builds cross-references held by pins
-        void rebuild_pin_refs(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map, 
-                              const vtr::vector_map<AtomNetId,AtomNetId>& net_id_map);
-
-        //Re-builds cross-references held by nets
-        void rebuild_net_refs(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map);
 
         //Re-builds fast look-ups
         void rebuild_lookups();

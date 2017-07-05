@@ -246,11 +246,11 @@ enum e_pack_pattern_molecule_type {
 	MOLECULE_SINGLE_ATOM, MOLECULE_FORCED_PACK
 };
 
-/**
- * Represents a grouping of atom blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing 
+/* Represents a grouping of atom blocks that match a pack_pattern, these groups are intended to be placed as a single unit during packing 
  * Store in linked list
  * 
- * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.  Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
+ * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.  
+ * Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
  * Assumes that the root of a chain is the primitive that starts the chain or is driven from outside the logic block
  */
 struct t_pack_molecule {
@@ -270,8 +270,7 @@ struct t_pack_molecule {
 	t_pack_molecule *next;
 };
 
-/**
- * Stats keeper for placement information during packing
+/* Stats keeper for placement information during packing
  * Contains linked lists to placement locations based on status of primitive
  */
 struct t_cluster_placement_stats {
@@ -307,7 +306,6 @@ struct t_cluster_placement_stats {
  See path_delay.h for further path-counting options. */
 
 /* Timing graph information */
-
 struct t_tedge {
 	/* Edge in the timing graph. */
 	int to_node; /* index of node at the sink end of this edge */
@@ -384,7 +382,6 @@ struct t_tnode {
 };
 
 /* Other structures storing timing information */
-
 struct t_clock {
 	/* Stores information on clocks given timing constraints.
 	 Used in SDC parsing and timing analysis. */
@@ -487,7 +484,7 @@ enum pfreq {
 	PLACE_NEVER, PLACE_ONCE, PLACE_ALWAYS
 };
 
-/* Are the pads free to be moved, locked in a random configuration, or *
+/* Are the pads free to be moved, locked in a random configuration, or 
  * locked in user-specified positions?                                 */
 enum e_pad_loc_type {
 	FREE, RANDOM, USER
@@ -504,8 +501,8 @@ struct t_net_power {
 	float density;
 };
 
-/* name:  ASCII net name for informative annotations in the output.          *
- * num_sinks:  Number of sinks on this net.                                  *
+/* name:  ASCII net name for informative annotations in the output.          
+ * num_sinks:  Number of sinks on this net.                                  
  * node_block: [0..num_sinks]. Contains the blocks to which the nodes of this 
  *         net connect.  The source block is node_block[0] and the sink blocks
  *         are the remaining nodes.
@@ -532,8 +529,7 @@ struct t_net {
 /* s_grid_tile is the minimum tile of the fpga                         
  * type:  Pointer to type descriptor, NULL for illegal, IO_TYPE for io 
  * width_offset: Number of grid tiles reserved based on width (right) of a block
- * height_offset: Number of grid tiles reserved based on height (top) of a block
- */
+ * height_offset: Number of grid tiles reserved based on height (top) of a block */
 struct t_grid_tile {
 	t_type_ptr type;
 	int width_offset;
@@ -542,7 +538,7 @@ struct t_grid_tile {
 
 /* Stores the bounding box of a net in terms of the minimum and  *
  * maximum coordinates of the blocks forming the net, clipped to *
- * the region (1..device_ctx.nx, 1..device_ctx.ny).                                    */
+ * the region (1..device_ctx.nx, 1..device_ctx.ny).              */
 struct t_bb {
 	int xmin;
 	int xmax;
@@ -566,8 +562,7 @@ struct t_place_region {
  * xold: the x_coord that the block is moved from               *
  * xnew: the x_coord that the block is moved to                 *
  * yold: the y_coord that the block is moved from               *
- * xnew: the x_coord that the block is moved to                 *
- */
+ * xnew: the x_coord that the block is moved to                 */
 struct t_pl_moved_block {
 	int block_num;
 	int xold;
@@ -586,8 +581,7 @@ struct t_pl_moved_block {
  *                   swapping two blocks.                       *
  * moved blocks: a list of moved blocks data structure with     *
  *               information on the move.                       *
- *               [0...num_moved_blocks-1]                       *
- */
+ *               [0...num_moved_blocks-1]                       */
 struct t_pl_blocks_to_be_moved {
 	int num_moved_blocks;
 	t_pl_moved_block * moved_blocks;
@@ -600,14 +594,12 @@ struct t_legal_pos {
 	int z;
 };
 
-/*
- Represents a clustered logic block of a user circuit that fits into one unit of space in an FPGA grid block
- name: identifier for this block
- type: the type of physical block this user circuit block can map into
- nets: nets that connect to other user circuit blocks
- pb: Physical block representing the clustering of this CLB
- pb_pin_route_stats: [0..num_pb_graph_pins-1] Representation of intra logic block routing within CLB
- */
+/* Represents a clustered logic block of a user circuit that fits into one unit of space in an FPGA grid block
+ * name: identifier for this block
+ * type: the type of physical block this user circuit block can map into
+ * nets: nets that connect to other user circuit blocks
+ * pb: Physical block representing the clustering of this CLB
+ * pb_pin_route_stats: [0..num_pb_graph_pins-1] Representation of intra logic block routing within CLB */
 struct t_block {
 	char *name;
 	t_type_ptr type;
@@ -618,14 +610,12 @@ struct t_block {
 	t_pb_route *pb_route; /* Internal-to-block routing [0..pb->pb_graph_node->total_pb_pins-1]*/
 };
 
-/*
- * Represents the placement location of a clustered block (i.e. t_block)
+/* Represents the placement location of a clustered block (i.e. t_block)
  * x: x-coordinate
  * y: y-coordinate
  * z: occupancy coordinate
  * is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing
- * nets_and_pins_synced_to_z_coordinate: true if the associated t_block's pins have been synced to the z location (i.e. after placement)
- */
+ * nets_and_pins_synced_to_z_coordinate: true if the associated t_block's pins have been synced to the z location (i.e. after placement) */
 struct t_block_loc {
     int x = OPEN;
     int y = OPEN;
@@ -635,9 +625,7 @@ struct t_block_loc {
     bool nets_and_pins_synced_to_z_coordinate = false;
 };
 
-/*
- * Stores the clustered blocks placed at a particular grid location
- */
+/* Stores the clustered blocks placed at a particular grid location */
 struct t_grid_blocks {
     //How many valid blocks are in use at this location
     int usage;
@@ -672,7 +660,6 @@ struct t_netlist_opts {
 
 /* Options for packing
  * TODO: document each packing parameter         */
-
 enum e_packer_algorithm {
 	PACK_GREEDY, PACK_BRUTE_FORCE
 };
@@ -701,7 +688,6 @@ struct t_packer_opts {
  * num_blocks^4/3 to find the number of moves per temperature.  The       *
  * remaining information is used only for USER_SCHED, and have the        *
  * obvious meanings.                                                      */
-
 struct t_annealing_sched {
 	enum sched_type type;
 	float inner_num;
@@ -734,7 +720,6 @@ struct t_annealing_sched {
  *               it is the value that the exponent starts at.                *
  * td_place_exp_last: value that the criticality exponent will be at the end *
  * doPlacement: true if placement is supposed to be done in the CAD flow, false otherwise */
-
 enum e_place_algorithm {
 	BOUNDING_BOX_PLACE, PATH_TIMING_DRIVEN_PLACE
 };
@@ -796,15 +781,13 @@ struct t_placer_opts {
  * max_criticality: The maximum criticality factor (from 0 to 1) any sink   *
  *                  will ever have (i.e. clip criticality to this number).  *
  * criticality_exp: Set criticality to (path_length(sink) / longest_path) ^ *
- *                  criticality_exp (then clip to max_criticality).         
+ *                  criticality_exp (then clip to max_criticality).         *
  * doRouting: true if routing is supposed to be done, false otherwise	    *
  * routing_failure_predictor: sets the configuration to be used by the	    *
- * routing failure predictor, how aggressive the threshold used to judge
- * and abort routings deemed unroutable 
- * write_rr_graph_name: stores the file name of the output rr graph
- * read_rr_graph_name:  stores the file name of the rr graph to be 
- *                      read by vpr*/
-
+ * routing failure predictor, how aggressive the threshold used to judge    *
+ * and abort routings deemed unroutable							            *
+ * write_rr_graph_name: stores the file name of the output rr graph         *
+ * read_rr_graph_name:  stores the file name of the rr graph to be read by vpr */
 enum e_route_type {
 	GLOBAL, DETAILED
 };
@@ -882,9 +865,9 @@ struct t_analysis_opts {
  * R_minW_pmos:  Resistance (in Ohms) of a minimum width pmos transistor.   *
  * dump_rr_structs_file: routing resource structures will be dumped in      *
  *                       build_rr_graph() to a file specified by this       *
- *                       variable                                           
- * wire_to_rr_ipin_switch: keeps track of the type of switch that connects
- *                         wires to ipins*/
+ *                       variable                                           *
+ * wire_to_rr_ipin_switch: keeps track of the type of switch that connects  *
+ *                         wires to ipins                                   */
 
 struct t_det_routing_arch {
 	enum e_directionality directionality; /* UDSD by AY */
@@ -930,8 +913,7 @@ enum e_direction : unsigned char {
  * direction: The direction of a routing track.                             *
  * index: index of the segment type used for this track.                    *
  * type_name_ptr: pointer to name of the segment type this track belongs    *
- *                to. points to the appropriate name in s_segment_inf       */               
-
+ *                to. points to the appropriate name in s_segment_inf       */
 struct t_seg_details {
 	int length;
 	int start;
@@ -975,7 +957,6 @@ struct t_linked_f_pointer {
  *          -- i.e., the gate that generates a signal.             *
  * SINK:    A dummy node that is a logical input within a block    *
  *          -- i.e. the gate that needs a signal.                  */
-
 typedef enum e_rr_type : unsigned char {
 	SOURCE = 0, SINK, IPIN, OPIN, CHANX, CHANY, INTRA_CLUSTER_EDGE, NUM_RR_TYPES
 } t_rr_type;

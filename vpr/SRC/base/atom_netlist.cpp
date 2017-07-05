@@ -17,7 +17,6 @@
  *
  *
  */
-
 //Returns true if all elements are contiguously ascending values (i.e. equal to their index)
 template<typename T>
 bool are_contiguous(vtr::vector_map<T,T>& values) {
@@ -109,54 +108,6 @@ vtr::vector_map<Id,Id> clean_and_reorder_ids(const vtr::vector_map<Id,Id>& id_ma
     return result;
 }
 
-//Count how many of the Id's referenced in 'range' have a valid
-//new mapping in 'id_map'
-template<typename R, typename Id>
-size_t count_valid_refs(R range, const vtr::vector_map<Id,Id>& id_map) {
-    size_t valid_count = 0;
-
-    for(Id old_id : range) {
-        if(id_map[old_id]) {
-            ++valid_count;
-        }
-    }
-
-    return valid_count;
-}
-
-//Updates the Ids in 'values' based on id_map, even if the original or new mapping is not valid
-template<typename Container, typename ValId>
-Container update_all_refs(const Container& values, const vtr::vector_map<ValId,ValId>& id_map) {
-    Container updated;
-
-    for(ValId orig_val : values) {
-        //The original item was valid
-        ValId new_val = id_map[orig_val]; 
-        //The original item exists in the new mapping
-        updated.emplace_back(new_val);
-    }
-
-    return updated;
-}
-
-template<typename Container, typename ValId>
-Container update_valid_refs(const Container& values, const vtr::vector_map<ValId,ValId>& id_map) {
-    Container updated;
-
-    for(ValId orig_val : values) {
-        if(orig_val) {
-            //Original item valid
-
-            ValId new_val = id_map[orig_val];
-            if(new_val) {
-                //The original item exists in the new mapping
-                updated.emplace_back(new_val);
-            }
-        }
-    }
-    return updated;
-}
-
 /*
  *
  *
@@ -164,7 +115,6 @@ Container update_valid_refs(const Container& values, const vtr::vector_map<ValId
  *
  *
  */
-
 AtomNetlist::AtomNetlist(std::string name, std::string id)
     : BaseNetlist(name, id)
     , dirty_(false) {}
@@ -174,7 +124,6 @@ AtomNetlist::AtomNetlist(std::string name, std::string id)
  * Netlist
  *
  */
-
 bool AtomNetlist::is_dirty() const {
     return dirty_;
 }
@@ -439,8 +388,6 @@ void AtomNetlist::build_id_maps(vtr::vector_map<AtomBlockId,AtomBlockId>& block_
 }
 
 void AtomNetlist::clean_blocks(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map) {
-    //Clean the blocks
-
     //Update all the block values
     block_ids_ = clean_and_reorder_ids(block_id_map);
     block_names_ = clean_and_reorder_values(block_names_, block_id_map);
@@ -464,8 +411,6 @@ void AtomNetlist::clean_blocks(const vtr::vector_map<AtomBlockId,AtomBlockId>& b
 }
 
 void AtomNetlist::clean_ports(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map) {
-    //Clean the ports
-
     //Update all the port values
     port_ids_ = clean_and_reorder_ids(port_id_map);
     port_names_ = clean_and_reorder_values(port_names_, port_id_map);
@@ -480,8 +425,6 @@ void AtomNetlist::clean_ports(const vtr::vector_map<AtomPortId,AtomPortId>& port
 }
 
 void AtomNetlist::clean_pins(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map) {
-    //Clean the pins
-
     //Update all the pin values
     pin_ids_ = clean_and_reorder_ids(pin_id_map);
     pin_ports_ = clean_and_reorder_values(pin_ports_, pin_id_map);
@@ -496,8 +439,6 @@ void AtomNetlist::clean_pins(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_
 }
 
 void AtomNetlist::clean_nets(const vtr::vector_map<AtomNetId,AtomNetId>& net_id_map) {
-    //Clean the nets
-
     //Update all the net values
     net_ids_ = clean_and_reorder_ids(net_id_map);
     net_names_ = clean_and_reorder_values(net_names_, net_id_map);
@@ -507,90 +448,6 @@ void AtomNetlist::clean_nets(const vtr::vector_map<AtomNetId,AtomNetId>& net_id_
 
     VTR_ASSERT_MSG(are_contiguous(net_ids_), "Ids should be contiguous");
     VTR_ASSERT_MSG(all_valid(net_ids_), "All Ids should be valid");
-}
-
-void AtomNetlist::rebuild_block_refs(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map, 
-                                     const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map) {
-    //Update the pin id references held by blocks
-    for(auto blk_id : blocks()) {
-        //Before update the references, we need to know how many are valid,
-        //so we can also update the numbers of input/output/clock pins
-
-        //Note that we take special care to not modify the pin counts until after
-        //they have all been counted (since the block_*_pins() functions depend on
-        //the counts).
-        size_t num_input_pins = count_valid_refs(block_input_pins(blk_id), pin_id_map);
-        size_t num_output_pins = count_valid_refs(block_output_pins(blk_id), pin_id_map);
-        size_t num_clock_pins = count_valid_refs(block_clock_pins(blk_id), pin_id_map);
-
-        std::vector<AtomPinId>& pin_collection = block_pins_[blk_id];
-
-        pin_collection = update_valid_refs(pin_collection, pin_id_map);
-        block_num_input_pins_[blk_id] = num_input_pins;
-        block_num_output_pins_[blk_id] = num_output_pins;
-        block_num_clock_pins_[blk_id] = num_clock_pins;
-
-        VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All Ids should be valid");
-        VTR_ASSERT(pin_collection.size() == (size_t) block_num_input_pins_[blk_id]
-                                                   + block_num_output_pins_[blk_id]
-                                                   + block_num_clock_pins_[blk_id]);
-
-        //Similarily for ports
-        size_t num_input_ports = count_valid_refs(block_input_ports(blk_id), port_id_map);
-        size_t num_output_ports = count_valid_refs(block_output_ports(blk_id), port_id_map);
-        size_t num_clock_ports = count_valid_refs(block_clock_ports(blk_id), port_id_map);
-
-        std::vector<AtomPortId>& ports = block_ports_[blk_id];
-
-        ports = update_valid_refs(ports, port_id_map);
-        block_num_input_ports_[blk_id] = num_input_ports;
-        block_num_output_ports_[blk_id] = num_output_ports;
-        block_num_clock_ports_[blk_id] = num_clock_ports;
-
-        VTR_ASSERT_SAFE_MSG(all_valid(ports), "All Ids should be valid");
-        VTR_ASSERT(ports.size() == (size_t) block_num_input_ports_[blk_id]
-                                           + block_num_output_ports_[blk_id]
-                                           + block_num_clock_ports_[blk_id]);
-    }
-
-    VTR_ASSERT(validate_block_sizes());
-}
-
-void AtomNetlist::rebuild_port_refs(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map, 
-                                    const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map) {
-    //Update block and pin references held by ports
-    port_blocks_ = update_valid_refs(port_blocks_, block_id_map); 
-    VTR_ASSERT_SAFE_MSG(all_valid(port_blocks_), "All Ids should be valid");
-
-    VTR_ASSERT(port_blocks_.size() == port_ids_.size());
-
-    for(auto& pin_collection : port_pins_) {
-        pin_collection = update_valid_refs(pin_collection, pin_id_map);
-        VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All Ids should be valid");
-    }
-    VTR_ASSERT(validate_port_sizes());
-}
-
-void AtomNetlist::rebuild_pin_refs(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map, 
-                                   const vtr::vector_map<AtomNetId,AtomNetId>& net_id_map) {
-    //Update port and net references held by pins
-    pin_ports_ = update_all_refs(pin_ports_, port_id_map);
-    VTR_ASSERT_SAFE_MSG(all_valid(pin_ports_), "All Ids should be valid");
-
-    pin_nets_ = update_all_refs(pin_nets_, net_id_map);
-    VTR_ASSERT_SAFE_MSG(all_valid(pin_nets_), "All Ids should be valid");
-
-    VTR_ASSERT(validate_pin_sizes());
-}
-
-void AtomNetlist::rebuild_net_refs(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map) {
-    //Update pin references held by nets
-    for(auto& pin_collection : net_pins_) {
-        pin_collection = update_valid_refs(pin_collection, pin_id_map);
-
-        VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All sinks should be valid");
-    }
-    VTR_ASSERT(validate_net_sizes());
 }
 
 void AtomNetlist::rebuild_lookups() {
