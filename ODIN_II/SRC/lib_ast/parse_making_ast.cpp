@@ -64,7 +64,7 @@ int size_function_instantiations;
 ast_node_t **function_instantiations_instance_by_module;
 int size_function_instantiations_by_module;
 
-int num_modules;
+size_t num_modules;
 ast_node_t **ast_modules;
 
 int num_functions;

@@ -35,6 +35,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "ctype.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include <string>
+#include <iostream>
+#include <vector>
+#include <stack>    
 
 #define read_node  1
 #define write_node 2
@@ -46,11 +50,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define N 64
 #define Max_size 64
 
-int num_for = 0;
-int count_id = 0;
-int count_assign = 0;
-int count;
-int count_write;
+size_t count_id = 0;
+size_t count_assign = 0;
+size_t count;
+size_t count_write;
 enode *head, *p;
 
 int simplify_ast()
@@ -76,37 +79,33 @@ int simplify_ast()
  *-------------------------------------------------------------------------*/
 void optimize_for_tree()
 {
-	ast_node_t *top;
-	int i, j;
-
-	ast_node_t *list_for_node[N] = {0};
-	ast_node_t *list_parent[N] = {0};
-
-	find_most_unique_count(); // find out the most unique_count prepared for new AST nodes
-
+	// find out the most unique_count prepared for new AST nodes
+	for (size_t i = 0; i < num_modules; i++)
+		if (count_id < ast_modules[i]->unique_count)
+			count_id = ast_modules[i]->unique_count;
+	
 	/* we will find the top module */
-	for (i = 0; i < num_modules; i++)
+	for (size_t i = 0; i < num_modules; i++)
 	{
-		top = ast_modules[i];
+		std::vector<ast_node_t *> list_for_node;
+		std::vector<ast_node_t *> list_parent;
 		/* search the tree looking for FOR node */
-		search_for_node(top, list_for_node, list_parent);
+		search_for_node(ast_modules[i], list_for_node, list_parent);
 
 		/* simplify every FOR node */
-		for (j = 0; j < num_for; j++)
+		for (size_t j = 0; j < list_for_node.size() ; j++)
 		{
 			
 			long long v_value = list_for_node[j]->children[0]->children[1]->types.number.value;
 			long long terminal = list_for_node[j]->children[1]->children[1]->types.number.value;
-			char *expression[Max_size];
-			char node_write[10][20];
-			memset(expression, 0, sizeof(char)*Max_size);
-			memset(node_write, 0, sizeof(char)*sizeof(node_write));
+			std::vector<std::string> expression;
+			std::vector<std::string> node_write;
 			
-			ast_node_t *temp_parent_node = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));; //used to connect copied branches from the for loop
+			ast_node_t *temp_parent_node = (ast_node_t*)vtr::malloc(sizeof(ast_node_t)); //used to connect copied branches from the for loop
 			count_write = 0;
 			count = 0;
-			
-			record_expression(list_for_node[j]->children[2], expression);
+			bool found = FALSE;
+			record_expression(list_for_node[j]->children[2], expression, &found);
 			mark_node_write(list_for_node[j]->children[3], node_write);
 			mark_node_read(list_for_node[j]->children[3], node_write);
 
@@ -115,23 +114,36 @@ void optimize_for_tree()
 				add_child_to_node(temp_parent_node, 
 									get_copy_tree((list_for_node[j])->children[3], 
 										v_value, 
-										list_for_node[j]->children[0]->children[0]->types.identifier
+										(std::string )list_for_node[j]->children[0]->children[0]->types.identifier
 										)
 									);
 									
-				char *infix_expression[Max_size];
-				char *postfix_expression[Max_size];
-				memset(infix_expression, 0, sizeof(char)*Max_size);
-				memset(postfix_expression, 0, sizeof(char)*Max_size);
-				
-				modify_expression(expression, infix_expression, v_value, list_for_node[j]->children[0]->children[0]->types.identifier);
-				translate_expression(infix_expression, postfix_expression);
-				v_value = calculation(postfix_expression);
+				std::vector<std::string> infix_exp;
+				std::vector<std::string> postfix_exp;
+
+				for (size_t k = 0; expression[k].size() ; k++)
+				{
+					if (expression[k] == (std::string)list_for_node[j]->children[0]->children[0]->types.identifier){
+						std::string valued_at;
+						valued_at = v_value;
+						infix_exp.push_back(valued_at);
+					}else{
+						infix_exp.push_back(expression[k]);
+					}
+				}
+
+				translate_expression(infix_exp, postfix_exp);
+				v_value = calculation(postfix_exp);
 			}
 			if (has_intermediate_variable(temp_parent_node)) //there are intermediate variables involved in operations so remove the last branch from the node
-				remove_intermediate_variable(temp_parent_node, node_write, v_value, list_for_node[j]->children[0]->children[0]->types.identifier);
+				remove_intermediate_variable(temp_parent_node, node_write, v_value, (std::string) list_for_node[j]->children[0]->children[0]->types.identifier);
 			
-			int idx = check_index(list_parent[j], list_for_node[j]); //the index of the FOR node belonging to its parent node may change after every for loop support iteration, so it needs to be checked again	
+			//the index of the FOR node belonging to its parent node may change after every for loop support iteration, so it needs to be checked again
+			int idx;
+			for (idx = list_parent[j]->num_children ; idx >= 0 ; idx--)
+				if (list_parent[j]->children[i] == list_for_node[j])
+					break;
+	
 			keep_all_branch(temp_parent_node, list_parent[j], idx);
 			reallocate_node(list_parent[j], idx);
 			vtr::free(temp_parent_node);
@@ -143,27 +155,17 @@ void optimize_for_tree()
  * (function: search_for_node)
  * search the tree looking for FOR node
  *-------------------------------------------------------------------------*/
-void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *list_parent[])
+void search_for_node(ast_node_t *root, std::vector<ast_node_t *> list_for_node, std::vector<ast_node_t *> list_parent)
 {
-	int i, j;
-	if ((root == NULL)||(root->num_children == 0))
-		return;
-
-	for(i = 0; i < root->num_children; i++)
+	for(size_t i = 0; root && i < root->num_children; i++)
 		search_for_node(root->children[i], list_for_node, list_parent);
 
-	for (j = 0; j < root->num_children; j++)
+	for (size_t j = 0; root && j < root->num_children; j++)
 	{
-		if (root->children[j] == NULL)
-			continue;
-		else
+		if (root->children[j] && root->children[j]->type == FOR)
 		{
-			if (root->children[j]->type == FOR)
-			{
-				list_for_node[num_for] = root->children[j];
-				list_parent[num_for] = root;
-				num_for++;
-			}
+			list_for_node.push_back(root->children[j]);
+			list_parent.push_back(root);
 		}
 	}
 
@@ -172,7 +174,7 @@ void search_for_node(ast_node_t *root, ast_node_t *list_for_node[], ast_node_t *
 /*---------------------------------------------------------------------------
  * (function: get_copy_tree)
  *-------------------------------------------------------------------------*/
-ast_node_t *get_copy_tree(ast_node_t *node, long long virtual_value, char *virtual_name)
+ast_node_t *get_copy_tree(ast_node_t *node, long long virtual_value, std::string virtual_name)
 {
 	if (!node)
 		return NULL;
@@ -186,11 +188,11 @@ ast_node_t *get_copy_tree(ast_node_t *node, long long virtual_value, char *virtu
 	
 	new_node->unique_count = ++count_id;
 	
-	if (node->type == IDENTIFIERS && strcmp(node->types.identifier, virtual_name) == 0)
+	if (node->type == IDENTIFIERS && (std::string) node->types.identifier == virtual_name)
 		change_to_number_node(new_node, virtual_value);
 	
 	new_node->children = (ast_node_t**)vtr::malloc(node->num_children*sizeof(ast_node_t*));
-	for(int i=0; i<node->num_children; i++){
+	for(size_t i=0; i<node->num_children; i++){
 		new_node->children[i] = get_copy_tree(node->children[i],virtual_value,virtual_name);
 	}
 	return new_node;
@@ -198,199 +200,124 @@ ast_node_t *get_copy_tree(ast_node_t *node, long long virtual_value, char *virtu
 
 /*---------------------------------------------------------------------------
  * (function: expression)
+ * in order traversal
  *-------------------------------------------------------------------------*/
-void record_expression(ast_node_t *node, char *array[])
+void record_expression(ast_node_t *node, std::vector<std::string> expressions, bool *found_statement)
 {
-	if (node == NULL)
-		return;
-	if (node->num_children == 0)
-	{
-		check_and_replace(node, array);
-		return;
+	if (node){
+		
+		if(node->num_children > 0)
+			record_expression(node->children[0], expressions, found_statement);
+			
+		
+		if(!(*found_statement) && (node->type == BLOCKING_STATEMENT || node->type == BLOCKING_STATEMENT)){
+			*found_statement = TRUE;
+			
+		}else if(*found_statement){	
+			switch(node->type)
+			{
+				case IDENTIFIERS:
+					expressions.push_back(node->types.identifier);
+					break;
+		
+				case NUMBERS:
+					expressions.push_back(node->types.number.number);
+					break;
+		
+				case BINARY_OPERATION:
+					switch(node->types.operation.op)
+					{
+						case ADD:
+							expressions.push_back("+");
+							break;
+						case MINUS:
+							expressions.push_back("-");
+							break;
+						case MULTIPLY:
+							expressions.push_back("*");
+							break;
+						case DIVIDE:
+							expressions.push_back("/");
+							break;
+		
+						default:
+							break;
+					}
+					break;
+		
+				default:
+					break;
+			}
+		}
+			
+		if(node->num_children > 1)
+			record_expression(node->children[1], expressions, found_statement);
 	}
-	record_expression(node->children[0], array);
-	check_and_replace(node, array);
-	record_expression(node->children[1], array);
-
 }
 
 /*---------------------------------------------------------------------------
  * (function: calculate)
  *-------------------------------------------------------------------------*/
-int calculation(char *post_exp[])
+long long  calculation(std::vector<std::string> post_exp)
 {
-  int value;
-  int i;
-  int num = 0;
-  struct
-  {
-    int data[Max_size];
-    int top;
-  } pop;
-  pop.top = -1;
-  for(i = 0; i < Max_size - 1; ++i) {
-        pop.data[i] = 0;
-  }
-  pop.data[Max_size] = -1;
-
-  for (i = 0; post_exp[i] != NULL; i++)
-  {
-    if (*post_exp[i] == '+' || *post_exp[i] == '-' || *post_exp[i] == '*' || *post_exp[i] == '/')
-    {
-      switch(*post_exp[i])
-      {
-        case '+':
-          num = pop.data[pop.top-1] + pop.data[pop.top];
-          break;
-        case '-':
-          num = pop.data[pop.top-1] - pop.data[pop.top];
-          break;
-        case '*':
-          num = pop.data[pop.top-1] * pop.data[pop.top];
-          break;
-        case '/':
-          num = pop.data[pop.top-1] / pop.data[pop.top];
-          break;
-        default:
-          break;
-      }
-      pop.top--;
-      pop.data[pop.top] = num;
+	std::stack<long long> stacked;
+	for (size_t i = 0; i< post_exp.size(); i++)
+	{
+		long long second_exp(stacked.top());
+		stacked.pop();
+		
+		long long first_exp(stacked.top());
+		stacked.pop();
+		
+	    if (post_exp[i] == "+"){
+			 stacked.push(first_exp + second_exp);
+			
+		}else if (post_exp[i] == "-"){
+			stacked.push(first_exp - second_exp);
+			
+		}else if (post_exp[i] == "*"){
+			stacked.push(first_exp * second_exp);
+			
+		}else if (post_exp[i] == "/"){
+			stacked.push(first_exp / second_exp);
+			
+		}else{
+			stacked.push(first_exp);
+			stacked.push(second_exp);
+			stacked.push(std::strtoll(post_exp[i].c_str(),NULL,10));
+		}
     }
-    else // number
-    {
-      pop.top++;
-      pop.data[pop.top] = atoi(post_exp[i]);
-    }
-  }
-  value = pop.data[pop.top];
-
-  return value;
+	return stacked.top();
 }
 
 /*---------------------------------------------------------------------------
  * (function: translate_expression)
  * translate infix expression into postfix expression
  *-------------------------------------------------------------------------*/
-void translate_expression(char *exp[], char *post_exp[])
+void translate_expression(std::vector<std::string> infix_exp, std::vector<std::string> postfix_exp)
 {
-  struct
-  {
-    char *mem[Max_size];
-    int top;
-  }pop;
-  int i, j;
-  pop.top = -1;
-  j = 0;
-
-  for (i = 0; exp[i] != NULL; i++)
-  {
-    switch(*exp[i])
-    {
-      case '+':
-      case '-':
-	if ((pop.top != -1) && (*pop.mem[pop.top] == '*' || *pop.mem[pop.top] == '/'))
-        {
-	  while (pop.top >= 0)
-          {
-            post_exp[j++] = pop.mem[pop.top--];
-          }
-   	  pop.top++;
-          pop.mem[pop.top] = exp[i];
-        }
-        else
-          pop.mem[++pop.top] = exp[i];
-        break;
-
-      case '*':
-      case '/':
-        pop.mem[++pop.top] = exp[i];
-        break;
-
-      default: // number
-        post_exp[j++] = exp[i];
-        break;
-
-    }
-  }
-  while (pop.top >= 0)
-  {
-    post_exp[j++] = pop.mem[pop.top--];
-  }
-}
-
-/*---------------------------------------------------------------------------
- * (function: check_and_replace)
- *-------------------------------------------------------------------------*/
-void check_and_replace(ast_node_t *node, char *p2[])
-{
-	//char *point = NULL;
-	switch(node->type)
+	std::stack<std::string> stacked;
+	for (size_t i = 0; i < infix_exp.size() ; i++)
 	{
-		case IDENTIFIERS:
-				p2[count++] = node->types.identifier;
-				break;
-
-		case BLOCKING_STATEMENT:
-			p2[count++] = vtr::strdup("=");
-			break;
-
-		case NON_BLOCKING_STATEMENT:
-			p2[count++] = vtr::strdup("<=");
-			break;
-
-		case NUMBERS:
-			p2[count++] = node->types.number.number;
-			break;
-
-		case BINARY_OPERATION:
-			switch(node->types.operation.op)
+		if(infix_exp[i] == "+" || infix_exp[i] == "-" ||  infix_exp[i] == "*" || infix_exp[i] == "/" ){
+			if (	(infix_exp[i] == "+" || infix_exp[i] == "-")	 && 	
+					!stacked.empty()	&& 
+					( stacked.top() == "*" || stacked.top() == "/" ) )
 			{
-				case ADD:
-					p2[count++] = vtr::strdup("+");
-					break;
-				case MINUS:
-					p2[count++] = vtr::strdup("-");
-					break;
-				case MULTIPLY:
-					p2[count++] = vtr::strdup("*");
-					break;
-				case DIVIDE:
-					p2[count++] = vtr::strdup("/");
-					break;
-
-				default:
-					break;
+				while (!stacked.empty()){
+			    	postfix_exp.push_back(stacked.top());
+			    	stacked.pop();
+			  	}
 			}
-			break;
-
-		default:
-			break;
+			stacked.push(infix_exp[i]);
+		}else{// number
+			postfix_exp.push_back(infix_exp[i]);
+		}
 	}
-
-}
-
-/*---------------------------------------------------------------------------
- * (function: modify_expression)
- *-------------------------------------------------------------------------*/
-void modify_expression(char *exp[], char *infix_exp[], long long value, char* compare_to)
-{
-	int i, j, k;
-	i = 0;
-	k = 0;
-
-	while((strcmp(exp[i], "=") != 0) && i < Max_size)
-		i++;
-
-	for (j = i + 1; exp[j] != NULL; j++)
-	{
-		if (strcmp(exp[j], compare_to) == 0)
-			sprintf(infix_exp[k++],"%lld",value);
-		else
-			infix_exp[k++] = exp[j];
-
-	}
-
+	while (!stacked.empty()){
+    	postfix_exp.push_back(stacked.top());
+    	stacked.pop();
+  	}
 }
 
 /*---------------------------------------------------------------------------
@@ -398,12 +325,11 @@ void modify_expression(char *exp[], char *infix_exp[], long long value, char* co
  *-------------------------------------------------------------------------*/
 void reallocate_node(ast_node_t *node, int idx)
 {
-	int i;
-
 	node->children[idx] = free_whole_tree(node->children[idx]);
 
-	for (i = idx; i < node->num_children; i++)
+	for (size_t i = idx; i < node->num_children; i++)
 		node->children[i] = node->children[i+1];
+		
 	node->num_children = node->num_children - 1;
 
 }
@@ -413,38 +339,24 @@ void reallocate_node(ast_node_t *node, int idx)
  *-------------------------------------------------------------------------*/
 void find_most_unique_count()
 {
-	int i;
-	ast_node_t *top_node;
-	for (i = 0; i < num_modules; i++)
-	{
-		top_node = ast_modules[i];
-		if (count_id < top_node->unique_count)
-			count_id = top_node->unique_count;
-	}
-
+	for (size_t i = 0; i < num_modules; i++)
+		if (count_id < ast_modules[i]->unique_count)
+			count_id = ast_modules[i]->unique_count;
 }
 
 /*---------------------------------------------------------------------------
  * (function: mark_node_write)
  * mark the node that is write
  *-------------------------------------------------------------------------*/
-void mark_node_write(ast_node_t *node, char list[10][20])
+void mark_node_write(ast_node_t *node, std::vector<std::string> list)
 {
-	int i;
-	if (node == NULL)
-		return;
+	if (node && ( node->type == BLOCKING_STATEMENT || node->type == NON_BLOCKING_STATEMENT ) && node->children[0]->type == IDENTIFIERS){
+		node->children[0]->is_read_write = 2;
+		list.push_back(node->children[0]->types.identifier);
+	}
 
-	if (node->type == BLOCKING_STATEMENT || node->type == NON_BLOCKING_STATEMENT)
-		if (node->children[0]->type == IDENTIFIERS)
-		{
-			node->children[0]->is_read_write = 2;
-			sprintf(list[count_write++], "%s", node->children[0]->types.identifier);
-
-		}
-
-    if (node->num_children != 0)
-    	for (i = 0; i < node->num_children; i++)
-    		mark_node_write(node->children[i], list);
+    for (size_t i = 0; node && i < node->num_children; i++)
+    	mark_node_write(node->children[i], list);
 
 }
 
@@ -452,22 +364,14 @@ void mark_node_write(ast_node_t *node, char list[10][20])
  * (function: mark_node_read)
  * mark the node that is read
  *-------------------------------------------------------------------------*/
-void mark_node_read(ast_node_t *node, char list[10][20])
+void mark_node_read(ast_node_t *node, std::vector<std::string> list)
 {
-	int i, j;
-	if (node == NULL)
-		return;
+	for (size_t i = 0; node && node->type == IDENTIFIERS && i < list.size() ; i++)
+		if ((std::string)node->types.identifier == list[i] && node->is_read_write != 2)
+			node->is_read_write = 1;
 
-	if (node->type == IDENTIFIERS)
-	{
-		for (i = 0; i < 10; i++)
-			if (strcmp(node->types.identifier, list[i]) == 0 && node->is_read_write != 2)
-				node->is_read_write = 1;
-	}
-
-	if (node->num_children != 0)
-		for (j = 0; j < node->num_children; j++)
-			mark_node_read(node->children[j], list);
+	for (size_t j = 0; node && j < node->num_children; j++)
+		mark_node_read(node->children[j], list);
 
 }
 
@@ -475,20 +379,17 @@ void mark_node_read(ast_node_t *node, char list[10][20])
  * (function: remove_intermediate_variable)
  * remove the intermediate variables, and prune the syntax tree of FOR loop
  *-------------------------------------------------------------------------*/
-void remove_intermediate_variable(ast_node_t *node, char list[10][20], long long virtual_value, char* virtual_name)
+void remove_intermediate_variable(ast_node_t *node, std::vector<std::string> list, long long virtual_value, std::string virtual_name)
 {
-	int i, j, n;
-	int k = 0;
+	size_t k = 0;
 
-	for (i =  0; i < node->num_children-1; i++)
+	for (size_t i =  0; i < node->num_children-1; i++)
 	{
-		for (j = 0; j < count_write; j++)
+		for (size_t j = 0; j < count_write; j++)
 		{
-			ast_node_t *write = NULL;
-			ast_node_t *read = NULL;
-			search_marked_node(node->children[i], 2, &list[j][0], &write); //search for "write" nodes
-			search_marked_node(node->children[i+1], 1, &list[j][0], &read); // search for "read" nodes
-			for (n = 0; n < read->num_children; n++){
+			ast_node_t *write = search_marked_node(node->children[i], 2, list[j]); //search for "write" nodes
+			ast_node_t *read = search_marked_node(node->children[i+1], 1, list[j]); // search for "read" nodes
+			for (size_t n = 0; n < read->num_children; n++){
 				if (read->children[n]->is_read_write == 1)
 				{
 					free_single_node(read->children[n]);
@@ -500,11 +401,11 @@ void remove_intermediate_variable(ast_node_t *node, char list[10][20], long long
 		node->children[i] = free_whole_tree(node->children[i]);
 	}
 
-	for (i = 0; i < node->num_children; i++)
+	for (size_t i = 0; i < node->num_children; i++)
 		if (node->children[i])
 			node->children[k++] = node->children[i];
 
-	for (i = k; i < node->num_children; i++)
+	for (size_t i = k; i < node->num_children; i++)
 		node->children[i] = NULL;
 
 	node->num_children = k;
@@ -515,28 +416,20 @@ void remove_intermediate_variable(ast_node_t *node, char list[10][20], long long
  * (function: search_marked_node)
  * search the marked nodes as requirement
  *-------------------------------------------------------------------------*/
-void search_marked_node(ast_node_t *node, int is, char *temp, ast_node_t **p2)
+ast_node_t *search_marked_node(ast_node_t *node, int is, std::string temp)
 {
-	int i;
-	if (node == NULL)
-		return;
-
-	if(node->num_children != 0)
+	for (size_t i = 0; node && i < node->num_children; i++)
 	{
-		for (i = 0; i < node->num_children; i++)
-		{
-			if (node->children[i]->type == IDENTIFIERS)
-			{
-				if( strcmp(node->children[0]->types.identifier, temp) == 0 && node->children[0]->is_read_write == is)
-					*p2 = node;
-			}
-
-			else
-				search_marked_node(node->children[i], is, temp, p2);
-
+		if(node->children[i]->type == IDENTIFIERS && (std::string)node->children[0]->types.identifier == temp && node->children[0]->is_read_write == is)
+			return node;
+		
+		ast_node_t *to_return = search_marked_node(node->children[i], is, temp);	
+		if(to_return){
+			return to_return;
 		}
 	}
-
+	return NULL;
+	
 }
 
 /*---------------------------------------------------------------------------
@@ -545,44 +438,35 @@ void search_marked_node(ast_node_t *node, int is, char *temp, ast_node_t **p2)
  *-------------------------------------------------------------------------*/
 void reduce_assignment_expression()
 {
-	int i, j, build, mark, *n;
-	n = &mark;
-	int line_num, file_num;
-	int triger = -1;
 	head = NULL;
 	p = NULL;
-	int *bd = &build;
-	enode *tail;
 	ast_node_t *T = NULL;
-	ast_node_t *list_assign[10240] = {0};
-	ast_node_t *top = NULL;
+	
 
-	find_most_unique_count(); // find out most unique_count prepared for new AST nodes
-	for (i = 0; i < num_modules; i++)
+	// find out most unique_count prepared for new AST nodes
+	for (size_t i = 0; i < num_modules; i++)
+		if (count_id < ast_modules[i]->unique_count)
+			count_id = ast_modules[i]->unique_count;
+			
+	for (size_t i = 0; i < num_modules; i++)
 	{
-		top = ast_modules[i];
 		count_assign = 0;
-		find_assign_node(top, list_assign);
-		for (j = 0; j < count_assign; j++)
+		std::vector<ast_node_t *> list_assign;
+		find_assign_node(ast_modules[i], list_assign);
+		for (size_t j = 0; j < count_assign; j++)
 		{
-			mark = 0;
-			check_tree_operation(list_assign[j]->children[1], n);
-			if ((list_assign[j]->children[1]->num_children != 0) && (mark == 1))
+			if (check_tree_operation(list_assign[j]->children[1]) && (list_assign[j]->children[1]->num_children > 0))
 			{
-				build = 0;
 				store_exp_list(list_assign[j]->children[1]);
-				triger = deal_with_bracket(list_assign[j]->children[1]);
-				if (triger == 1) // there are multiple brackets multiplying -- ()*(), stop expanding brackets which may not simplify AST but make it mroe complex
+				if (deal_with_bracket(list_assign[j]->children[1])) // there are multiple brackets multiplying -- ()*(), stop expanding brackets which may not simplify AST but make it mroe complex
 					return;
-				simplify_expression(bd);
-				if (build == 1)
+					
+				if (simplify_expression())
 				{
-					tail = find_tail(head);
+					enode *tail = find_tail(head);
 					free_whole_tree(list_assign[j]->children[1]);
-					line_num = list_assign[j]->line_number;
-					file_num = list_assign[j]->file_number;
 					T = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
-					construct_new_tree(tail, T, line_num, file_num);
+					construct_new_tree(tail, T, list_assign[j]->line_number, list_assign[j]->file_number);
 					list_assign[j]->children[1] = T;
 				}
 				free_exp_list();
@@ -595,32 +479,32 @@ void reduce_assignment_expression()
  * (function: search_assign_node)
  * find the top of the assignment expression
  *-------------------------------------------------------------------------*/
-void find_assign_node(ast_node_t *node, ast_node_t *list[])
+void find_assign_node(ast_node_t *node, std::vector<ast_node_t *> list)
 {
-	int i;
-	if ((node == NULL) || (node->num_children == 0))
-		return;
+	if (node && node->num_children>0 && (node->type == BLOCKING_STATEMENT || node->type == NON_BLOCKING_STATEMENT))
+		list.push_back(node);
 
-	if (node->type == BLOCKING_STATEMENT || node->type == NON_BLOCKING_STATEMENT)
-		list[count_assign++] = node;
-
-	for (i = 0; i < node->num_children; i++)
+	for (size_t i = 0; node && i < node->num_children; i++)
 		find_assign_node(node->children[i], list);
-
 }
 
 /*---------------------------------------------------------------------------
  * (function: simplify_expression)
  * simplify the expression stored in the linked_list
  *-------------------------------------------------------------------------*/
-void simplify_expression(int *build)
+bool simplify_expression()
 {
-	adjoin_constant(build);
+	bool build = adjoin_constant();
 	reduce_enode_list();
-	delete_continuous_multiply(build);
-	combine_constant(build);
+	
+	if(delete_continuous_multiply())
+		build = TRUE;
+		
+	if(combine_constant())
+		build = TRUE;
+		
 	reduce_enode_list();
-
+	return build;
 }
 
 /*---------------------------------------------------------------------------
@@ -718,27 +602,17 @@ void store_exp_list(ast_node_t *node)
  *-------------------------------------------------------------------------*/
 void record_tree_info(ast_node_t *node)
 {
-	if (node == NULL)
-		return;
-
-	else
-	{
-		if (node->num_children == 0)
-		{
-			create_enode(node);
-			return;
-		}
-
-		else
+	if (node){
+		if (node->num_children > 0)
 		{
 			record_tree_info(node->children[0]);
 			create_enode(node);
-			if (node->num_children == 2)
+			if (node->num_children > 1)
 				record_tree_info(node->children[1]);
+		}else{
+			create_enode(node);
 		}
-
 	}
-
 }
 
 /*---------------------------------------------------------------------------
@@ -749,7 +623,6 @@ void create_enode(ast_node_t *node)
 {
 	enode *s;
 	s = (enode*)vtr::malloc(sizeof(enode));
-	memset(s->type.variable, 0, 10) ;
 	s->flag = -1;
 	s->priority = -1;
 	s->id = node->unique_count;
@@ -762,7 +635,7 @@ void create_enode(ast_node_t *node)
 		break;
 
 		case IDENTIFIERS:
-			sprintf(s->type.variable, "%s", node->types.identifier);
+			s->type.variable = node->types.identifier;
 			s->flag = 3;
 			s->priority = 0;
 		break;
@@ -816,8 +689,9 @@ void create_enode(ast_node_t *node)
  * (function: adjoin_constant)
  * compute the constant numbers in the linked_list
  *-------------------------------------------------------------------------*/
-void adjoin_constant(int *build)
+bool adjoin_constant()
 {
+	bool build = FALSE;
 	enode *t, *replace;
 	int a, b, result = 0;
 	int mark;
@@ -836,7 +710,7 @@ void adjoin_constant(int *build)
 					else
 						result = a / b;
 					replace = replace_enode(result, t, 1);
-					*build = 1;
+					build = TRUE;
 					mark = 1;
 					break;
 
@@ -861,7 +735,7 @@ void adjoin_constant(int *build)
 						}
 
 						replace = replace_enode(result, t, 1);
-						*build = 1;
+						build = TRUE;
 						mark = 1;
 					}
 					break;
@@ -877,6 +751,7 @@ void adjoin_constant(int *build)
 				t = replace;
 
 	}
+	return build;
 }
 
 /*---------------------------------------------------------------------------
@@ -886,7 +761,6 @@ enode *replace_enode(int data, enode *t, int mark)
 {
 	enode *replace;
 	replace = (enode*)vtr::malloc(sizeof(enode));
-	memset(replace->type.variable, 0, 10);
 	replace->type.data = data;
 	replace->flag = 1;
 	replace->priority = 0;
@@ -927,12 +801,13 @@ enode *replace_enode(int data, enode *t, int mark)
 /*---------------------------------------------------------------------------
  * (function: combine_constant)
  *-------------------------------------------------------------------------*/
-void combine_constant(int *build)
+bool combine_constant()
 {
 	enode *temp, *m, *s1, *s2, *replace;
 	int a, b, result;
 	int mark;
-
+	bool build = FALSE;
+	
 	for (temp = head; temp != NULL; )
 	{
 		mark = 0;
@@ -983,7 +858,7 @@ void combine_constant(int *build)
 						}
 						else
 							temp = replace->pre;
-						*build = 1;
+						build = TRUE;
 
 						break;
 					}
@@ -998,6 +873,7 @@ void combine_constant(int *build)
 			else
 				break;
 	}
+	return build;
 
 }
 
@@ -1077,9 +953,10 @@ int check_exp_list(enode *tail)
 /*---------------------------------------------------------------------------
  * (function: delete_continuous_multiply)
  *-------------------------------------------------------------------------*/
-void delete_continuous_multiply(int *build)
+bool delete_continuous_multiply()
 {
 	enode *temp, *t, *m, *replace;
+	bool build = FALSE;
 	int a, b, result;
 	int mark;
 	for (temp = head; temp != NULL; )
@@ -1117,7 +994,7 @@ void delete_continuous_multiply(int *build)
 							t->next->pre = t->pre->pre;
 						}
 						mark = 2;
-						*build = 1;
+						build = TRUE;
 						vtr::free(t->pre);
 						vtr::free(t);
 						break;
@@ -1133,7 +1010,7 @@ void delete_continuous_multiply(int *build)
 				temp = replace;
 
 	}
-
+	return build;
 }
 
 /*---------------------------------------------------------------------------
@@ -1154,7 +1031,7 @@ void create_ast_node(enode *temp, ast_node_t *node, int line_num, int file_num)
 
 		case 3:
 			initial_node(node, IDENTIFIERS, line_num, file_num, ++count_id);
-			node->types.identifier = vtr::strdup(temp->type.variable);
+			node->types.identifier = vtr::strdup(temp->type.variable.c_str());
 		break;
 
 		default:
@@ -1210,57 +1087,42 @@ void free_exp_list()
 /*---------------------------------------------------------------------------
  * (function: deal_with_bracket)
  *-------------------------------------------------------------------------*/
-int deal_with_bracket(ast_node_t *node)
+bool deal_with_bracket(ast_node_t *node)
 {
-	int i, begin, end;
-	int flag = -1;
-	int list_bracket[Max_size] = {0};
-	int num_bracket = 0;
-	int *count_bracket = &num_bracket;
-	recursive_tree(node, list_bracket, count_bracket);
-	flag = check_mult_bracket(list_bracket, num_bracket); // if there are brackets multiplying continuously ()*()
-	if (flag == 1) // there are multiple brackets multiplying, stop expanding brackets which may not simplify AST but make it mroe complex
-		return flag;
-	else
+	std::vector<int> list_bracket;
+	
+	recursive_tree(node, list_bracket);
+	if (!check_mult_bracket(list_bracket)) //if there are brackets multiplying continuously ()*(), stop expanding brackets which may not simplify AST but make it mroe complex
 	{
-		for (i = num_bracket-2; i >= 0; i = i - 2)
-		{
-			begin = list_bracket[i];
-			end = list_bracket[i+1];
-			delete_bracket(begin, end);
-		}
-		return flag;
+		for (int i = list_bracket.size()-2; i >= 0; i = i - 2)
+			delete_bracket(list_bracket[i], list_bracket[i+1]);
+		return TRUE;
 	}
+
+	return FALSE;
 }
 
 /*---------------------------------------------------------------------------
  * (function: check_mult_bracket)
  * check if the brackets are continuously multiplying
  *-------------------------------------------------------------------------*/
-int check_mult_bracket(int list[], int num_bracket)
+bool check_mult_bracket(std::vector<int> list)
 {
-	int flag = -1;
-	int i, num_1, num_2;
-	enode *node;
-	for (i = 1; i < num_bracket - 2; i = i + 2)
+	for (size_t i = 1; i < list.size() - 2; i = i + 2)
 	{
-		num_1 = list[i];
-		num_2 = list[i+1];
-		node = head;
+		enode *node = head;
 		while (node != NULL && node->next != NULL && node->next->next != NULL)
 		{
-			if (node->id == num_1 && node->next->next->id == num_2)
-			{
-				if (node->next->flag == 2 && (node->next->type.operation == '*' || node->next->type.operation == '/'))
-					flag = 1;
-				break;
-			}
+			if (node->id == list[i] && node->next->next->id == list[i+1] && 
+				node->next->flag == 2 && 
+				(node->next->type.operation == '*' || node->next->type.operation == '/'))
+				
+				return TRUE;
+
 			node = node->next;
 		}
-		if (flag == 1)
-			break;
 	}
-	return flag;
+	return FALSE;
 
 }
 
@@ -1268,44 +1130,38 @@ int check_mult_bracket(int list[], int num_bracket)
  * (function: recursive_tree)
  * search the AST recursively to find brackets
  *-------------------------------------------------------------------------*/
-void recursive_tree(ast_node_t *node, int list_bracket[], int *count_bracket)
+void recursive_tree(ast_node_t *node, std::vector<int> list_bracket)
 {
-	int i;
-	if (node == NULL)
-		return;
-
-	if ((node->type == BINARY_OPERATION) && (node->types.operation.op == MULTIPLY))
+	if (node && (node->type == BINARY_OPERATION) && (node->types.operation.op == MULTIPLY))
 	{
-		for (i = 0; i < 2; i++)
+		for (size_t i = 0; i < node->num_children; i++)
 		{
 			if ((node->children[i]->type == BINARY_OPERATION) && (node->children[i]->types.operation.op == ADD || node->children[i]->types.operation.op == MINUS))
 			{
-				find_leaf_node(node->children[i], list_bracket, count_bracket, 0);
-				find_leaf_node(node->children[i], list_bracket, count_bracket, 1);
+				find_leaf_node(node->children[i], list_bracket, 0);
+				find_leaf_node(node->children[i], list_bracket, 1);
 			}
 		}
 
 	}
-	if (node->num_children != 0)
-		for (i = 0; i < node->num_children; i++)
-			recursive_tree(node->children[i], list_bracket, count_bracket);
+	
+	for (size_t i = 0; node && i < node->num_children; i++)
+		recursive_tree(node->children[i], list_bracket);
 
 }
 
 /*---------------------------------------------------------------------------
  * (function: find_lead_node)
  *-------------------------------------------------------------------------*/
-void find_leaf_node(ast_node_t *node, int list_bracket[], int *count_bracket, int ids2)
+void find_leaf_node(ast_node_t *node, std::vector<int> list_bracket, int ids2)
 {
-	if (node == NULL)
-		return;
-
-	if (node->num_children == 0)
-		list_bracket[(*count_bracket)++] = node->unique_count;
-
-	if (node->num_children != 0)
-		find_leaf_node(node->children[ids2], list_bracket, count_bracket, ids2);
-
+	if (node){
+		if (node->num_children > 0){
+			find_leaf_node(node->children[ids2], list_bracket, ids2);
+		}else{
+			list_bracket.push_back(node->unique_count);
+		}
+	}
 }
 
 /*---------------------------------------------------------------------------
@@ -1529,22 +1385,16 @@ void delete_bracket_body(enode *begin, enode *end)
 /*---------------------------------------------------------------------------
  * (function: check_tree_operation)
  *-------------------------------------------------------------------------*/
-void check_tree_operation(ast_node_t *node, int *mark)
+bool check_tree_operation(ast_node_t *node)
 {
-	int i;
-	if (node == NULL)
-		return;
+	if (node && (node->type == BINARY_OPERATION) && ((node->types.operation.op == ADD ) || (node->types.operation.op == MINUS) || (node->types.operation.op == MULTIPLY)))
+		return TRUE;
 
-	if ((node->type == BINARY_OPERATION) && ((node->types.operation.op == ADD ) || (node->types.operation.op == MINUS) || (node->types.operation.op == MULTIPLY)))
-	{
-		*mark = 1;
-		return;
-	}
-	else
-		if (node->num_children != 0)
-			for (i = 0; i < node->num_children; i++)
-				check_tree_operation(node->children[i], mark);
-
+	for (size_t i = 0; node &&  i < node->num_children; i++)
+		if(check_tree_operation(node->children[i]))
+			return TRUE;
+			
+	return FALSE;
 }
 
 /*---------------------------------------------------------------------------
@@ -1577,19 +1427,12 @@ void check_operation(enode *begin, enode *end)
  *-------------------------------------------------------------------------*/
 void reduce_parameter()
 {
-	ast_node_t *top;
-	ast_node_t *para[1024];
-	int num = 0;
-	int *count2 = &num;
-	int i;
-	for (i = 0; i < num_modules; i++)
+	for (int i = 0; i < num_modules; i++)
 	{
-		top = ast_modules[i];
-		*count2 = 0;
-		memset(para, 0, sizeof(para));
-		find_parameter(top, para, count2);
-		if (top->types.module.is_instantiated == 0 && num != 0)
-			remove_para_node(top, para, num);
+		std::vector<ast_node_t *>para;
+		find_parameter(ast_modules[i], para);
+		if (ast_modules[i]->types.module.is_instantiated == 0 && !para.empty())
+			remove_para_node(ast_modules[i], para);
 
 	}
 
@@ -1598,50 +1441,38 @@ void reduce_parameter()
 /*---------------------------------------------------------------------------
  * (function: find_parameter)
  *-------------------------------------------------------------------------*/
-void find_parameter(ast_node_t *top, ast_node_t *para[], int *count2)
+void find_parameter(ast_node_t *node, std::vector<ast_node_t *>para)
 {
-	int i;
-	ast_node_t *node;
-
-	if (top == NULL)
-		return;
-
-	for (i = 0; i < top->num_children; i++)
+	for (size_t i = 0; node && i < node->num_children; i++)
 	{
-		node = top->children[i];
-		if (node == NULL)
-			return;
-		else
-			if (node->type == VAR_DECLARE && node->types.variable.is_parameter == 1)
-				para[(*count2)++] = node;
+		if (node->children[i] && node->children[i]->type == VAR_DECLARE && node->children[i]->types.variable.is_parameter == 1)
+				para.push_back(node->children[i]);
 
-		find_parameter(node, para, count2);
+		find_parameter(node->children[i], para);
 	}
-
 }
 
 /*---------------------------------------------------------------------------
  * (function: remove_para_node)
  *-------------------------------------------------------------------------*/
-void remove_para_node(ast_node_t *top, ast_node_t *para[], int num)
+void remove_para_node(ast_node_t *top, std::vector<ast_node_t *> para)
 {
-	int i, j;
-	ast_node_t *list[1024] = { 0 };
-	char *name = NULL;
-	long value = 0;
+	std::vector<ast_node_t *> list;
 
 	count_assign = 0;
 	find_assign_node(top, list);
 	if (count_assign!= 0){
-		for (i = 0; i < num; i++)
+		for (size_t i = 0; i < para.size(); i++)
 		{
-			if (para[i] && para[i]->children[0]){
+			std::string name;
+			long long value = 0;
+			if (para[i] && para[i]->children[0])
 				name = para[i]->children[0]->types.identifier;
-			}
+
 			if (node_is_constant(para[i]->children[5]))
 				value = para[i]->children[5]->types.number.value;
 
-			for (j = 0; j < count_assign; j++){
+			for (size_t j = 0; j < count_assign; j++){
 				change_para_node(list[j], name, value);
 			}
 
@@ -1652,21 +1483,13 @@ void remove_para_node(ast_node_t *top, ast_node_t *para[], int num)
 /*---------------------------------------------------------------------------
  * (function: change_para_node)
  *-------------------------------------------------------------------------*/
-void change_para_node(ast_node_t *node, char *name, long long value)
+void change_para_node(ast_node_t *node, std::string name, long long value)
 {
-	int i;
+	if (node && node->type == IDENTIFIERS && name == (std::string) node->types.identifier)
+		change_to_number_node(node, value);
 
-	if (node){
-		if (node->type == IDENTIFIERS && strcmp(name, node->types.identifier) == 0)
-			change_to_number_node(node, value);
-
-		if (node->num_children != 0){
-			for (i = 0; i < node->num_children; i++){
-				change_para_node(node->children[i], name, value);
-			}
-		}
-	}
-
+	for (size_t i = 0; node && i < node->num_children; i++)
+		change_para_node(node->children[i], name, value);
 }
 
 /*---------------------------------------------------------------------------
@@ -1690,12 +1513,9 @@ void shift_operation()
  *-------------------------------------------------------------------------*/
 void search_certain_operation(ast_node_t *node)
 {
-	int i;
-	if (node){
-		for (i = 0; i < node->num_children; i++){
-			check_binary_operation(node->children[i]);
-			search_certain_operation(node->children[i]);
-		}
+	for (size_t i = 0; node && i < node->num_children; i++){
+		check_binary_operation(node->children[i]);
+		search_certain_operation(node->children[i]);
 	}
 }
 
@@ -1760,15 +1580,14 @@ void check_node_number(ast_node_t *parent, ast_node_t *child, int flag)
  * check if there are intermediate variables
  *-------------------------------------------------------------------------*/
 short has_intermediate_variable(ast_node_t *node){
-	if (node){
-		if (node->is_read_write == 1 || node->is_read_write == 2)
-			return TRUE;
+	if (node && (node->is_read_write == 1 || node->is_read_write == 2))
+		return TRUE;
 	
-		for (int i = 0; i < node->num_children; i++){
-			if(has_intermediate_variable(node->children[i]))
-				return TRUE;
-		}
+	for (size_t i = 0; node && i < node->num_children; i++){
+		if(has_intermediate_variable(node->children[i]))
+			return TRUE;
 	}
+	
 	return FALSE;
 }
 
@@ -1779,34 +1598,16 @@ short has_intermediate_variable(ast_node_t *node){
  *-------------------------------------------------------------------------*/
 void keep_all_branch(ast_node_t *temp_node, ast_node_t *for_parent, int mark)
 {
-	int i, j;
 	int index = mark;
-	for (i = 0; i < temp_node->num_children; i++)
+	for (size_t i = 0; i < temp_node->num_children; i++)
 	{
 		for_parent->children = (ast_node_t**)vtr::realloc(for_parent->children, sizeof(ast_node_t*)*(for_parent->num_children+1));
 		for_parent->num_children ++;
 		if (temp_node->children[i]){
-			for (j = for_parent->num_children - 1; j > index; j--)
+			for (size_t j = for_parent->num_children - 1; j > index; j--)
 				for_parent->children[j] = for_parent->children[j-1];
 				
 			for_parent->children[++index] = temp_node->children[i];
 		}
 	}
-}
-
-/*---------------------------------------------------------------------------
- * (function: check_index)
- * find out the index of the FOR node belonging to the parent node
- *-------------------------------------------------------------------------*/
-int check_index(ast_node_t *parent, ast_node_t *node)
-{
-	int index = -1;
-	int i;
-	for (i = 0; i < parent->num_children; i++)
-	{
-		if (parent->children[i] == node)
-			index = i;
-	}
-
-	return index;
 }

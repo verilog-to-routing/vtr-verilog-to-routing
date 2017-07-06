@@ -46,7 +46,7 @@ int yylex(void);
  // RESPONCE in an error
 void yyerror(const char *str)
 {
-	fprintf(stderr,"error in parsing: %s - on line number %d\n",str, yylineno);
+	fprintf(stderr,"error in parsing: %s - on line number %zu\n",str, yylineno);
 	exit(-1);
 }
  

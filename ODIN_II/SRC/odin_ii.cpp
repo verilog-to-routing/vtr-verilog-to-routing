@@ -54,7 +54,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "subtractions.h"
 #include "vtr_util.h"
 
-int current_parse_file;
+size_t current_parse_file;
 t_arch Arch;
 global_args_t global_args;
 t_type_descriptor* type_descriptors;
