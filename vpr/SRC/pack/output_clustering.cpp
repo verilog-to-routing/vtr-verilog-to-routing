@@ -688,5 +688,5 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 
     //Calculate the ID of the clustering
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-    cluster_ctx.clbs_nlist.netlist_id = vtr::secure_digest_file(out_fname);
+    cluster_ctx.clb_nlist.set_netlist_id(vtr::secure_digest_file(out_fname));
 }

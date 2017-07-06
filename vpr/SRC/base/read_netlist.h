@@ -14,7 +14,8 @@ void read_netlist(const char *net_file,
         bool verify_file_digests,
 		int *L_num_blocks, 
 		t_block *block_list[],
-		t_netlist* clb_nlist);
+		t_netlist* clb_nlist,
+		ClusteredNetlist* clustered_nlist);
 
 #endif
 

@@ -76,11 +76,11 @@ static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId at
  * net_file - Name of the netlist file to read
  * L_num_blocks - number of CLBs in netlist 
  * block_list - array of blocks in netlist [0..L_num_blocks - 1]
- * t_netlist - Net realted information
+ * t_netlist - Net related information
  */
 void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_digests,
 		int *L_num_blocks, t_block *block_list[],
-		t_netlist* clb_nlist) {
+		t_netlist* clb_nlist, ClusteredNetlist* clustered_nlist) {
 	clock_t begin = clock();
 	size_t bcount = 0;
 	t_block *blist;
@@ -95,7 +95,7 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
 	vtr::printf_info("Begin loading packed FPGA netlist file.\n");
 
     //Save an identifier for the netlist based on it's contents
-    clb_nlist->netlist_id = vtr::secure_digest_file(net_file);
+    clustered_nlist->set_netlist_id(vtr::secure_digest_file(net_file));
 
     pugi::xml_document doc;
     pugiutil::loc_data loc_data;

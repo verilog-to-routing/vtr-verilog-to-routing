@@ -514,7 +514,7 @@ sub ret_expected_runtime {
 	my $seconds                  = 0;
 
     if( not -r $golden_results_file_path) {
-        return "Unkown";
+        return "Unknown";
     }
 
 	open( GOLDEN, $golden_results_file_path );

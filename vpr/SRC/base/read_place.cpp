@@ -64,11 +64,11 @@ void read_place(const char* net_file,
             std::string place_netlist_id = tokens[3];
             std::string place_netlist_file = tokens[1];
 
-            if (place_netlist_id != cluster_ctx.clbs_nlist.netlist_id) {
+            if (place_netlist_id != cluster_ctx.clb_nlist.netlist_id().c_str()) {
                 auto msg = vtr::string_fmt("The packed netlist file that generated placement (File: '%s' ID: '%s')"
                                            " does not match current netlist (File: '%s' ID: '%s')", 
                                            place_netlist_file.c_str(), place_netlist_id.c_str(), 
-                                           net_file, cluster_ctx.clbs_nlist.netlist_id.c_str());
+                                           net_file, cluster_ctx.clb_nlist.netlist_id().c_str());
                 if (verify_file_digests) {
                     vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
                 } else {
