@@ -7,6 +7,7 @@
 #include "vtr_ndmatrix.h"
 #include "netlist.h"
 #include "atom_netlist.h"
+#include "clustered_netlist.h"
 #include "rr_node.h"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
@@ -188,6 +189,9 @@ struct ClusteringContext : public Context {
     /********************************************************************
      CLB Netlist
      ********************************************************************/
+	/* New netlist class derived from BaseNetlist */
+	ClusteredNetlist clb_nlist;
+
     /* blocks in the clustered netlist */
     int num_blocks;
     t_block *blocks; //[0..num_blocks-1]

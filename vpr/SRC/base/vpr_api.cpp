@@ -232,7 +232,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	if (!vpr_setup.FileNameOpts.NetFile.empty()) {
-		read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(), &Arch, vpr_setup.FileNameOpts.verify_file_digests, &cluster_ctx.num_blocks, &cluster_ctx.blocks, &cluster_ctx.clbs_nlist);
+		read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(), &Arch, vpr_setup.FileNameOpts.verify_file_digests, &cluster_ctx.num_blocks, &cluster_ctx.blocks, &cluster_ctx.clbs_nlist, &cluster_ctx.clb_nlist);
 
 		/* This is done so that all blocks have subblocks and can be treated the same */
 		check_netlist();

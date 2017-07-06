@@ -101,7 +101,7 @@ bool place_and_route(t_placer_opts placer_opts,
                 timing_inf,
 #endif
                 arch->Directs, arch->num_directs);
-        print_place(filename_opts.NetFile.c_str(), cluster_ctx.clbs_nlist.netlist_id.c_str(), filename_opts.PlaceFile.c_str());
+        print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(), filename_opts.PlaceFile.c_str());
         end = clock();
 
         vtr::printf_info("Placement took %g seconds.\n", (float) (end - begin) / CLOCKS_PER_SEC);
@@ -521,7 +521,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 
                 if (placer_opts.place_freq == PLACE_ALWAYS) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
-                    print_place(filename_opts.NetFile.c_str(), cluster_ctx.clbs_nlist.netlist_id.c_str(),
+                    print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
                             filename_opts.PlaceFile.c_str());
                 }
             }

@@ -72,7 +72,6 @@ struct t_vnet{
  */
 struct t_netlist{
 	vector<t_vnet> net;
-    std::string netlist_id;
 };
 
 void echo_global_nlist_net(const t_netlist* nlist);
