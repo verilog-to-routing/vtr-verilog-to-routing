@@ -905,7 +905,7 @@ void vpr_init_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
         }
 
         //load up routing from file
-        read_route(vpr_setup.FileNameOpts.PlaceFile.c_str(), vpr_setup.FileNameOpts.RouteFile.c_str(), vpr_setup, Arch);
+        read_route(vpr_setup.FileNameOpts.PlaceFile.c_str(), vpr_setup.FileNameOpts.RouteFile.c_str(), vpr_setup);
     }
 }
 

@@ -38,9 +38,11 @@ static void format_coordinates(int &x, int &y, string coord);
 static void format_pin_info(string &pb_name, string & port_name, int & pb_pin_num, string input);
 static string format_name(string name);
 
-void read_route(const char* placement_file, const char* route_file, t_vpr_setup& vpr_setup, const t_arch& Arch) {
+void read_route(const char* placement_file, const char* route_file, t_vpr_setup& vpr_setup) {
 
-    /* Reads in the routing file to fill in the trace_head data structure.  */
+    /* Reads in the routing file to fill in the trace_head and t_clb_opins_used data structure. 
+     * Perform a series of verification tests to ensure the netlist, placement, and routing
+     * files match */
     auto& device_ctx = g_vpr_ctx.mutable_device();
     /* Begin parsing the file */
     vtr::printf_info("Begin loading packed FPGA routing file.\n");
@@ -62,43 +64,12 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
                 "Placement files %s specified in the routing file does not match given %s", header[1].c_str(), placement_file);
     }
 
-
-    /* Set up the routing resource graph and routing data structures defined by this FPGA architecture. */
-    t_graph_type graph_type;
-    if (vpr_setup.RouterOpts.route_type == GLOBAL) {
-        graph_type = GRAPH_GLOBAL;
-    } else {
-        graph_type = (vpr_setup.RoutingArch.directionality == BI_DIRECTIONAL ?
-                GRAPH_BIDIR : GRAPH_UNIDIR);
-    }
-    free_rr_graph();
-    init_chan(vpr_setup.RouterOpts.fixed_channel_width, Arch.Chans);
-
-    int warning_count;
-    create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
-            &device_ctx.chan_width, vpr_setup.RoutingArch.switch_block_type,
-            vpr_setup.RoutingArch.Fs, vpr_setup.RoutingArch.switchblocks,
-            vpr_setup.RoutingArch.num_segment,
-            device_ctx.num_arch_switches, vpr_setup.Segments,
-            vpr_setup.RoutingArch.global_route_switch,
-            vpr_setup.RoutingArch.delayless_switch,
-            vpr_setup.RoutingArch.wire_to_arch_ipin_switch,
-            vpr_setup.RouterOpts.base_cost_type,
-            vpr_setup.RouterOpts.trim_empty_channels,
-            vpr_setup.RouterOpts.trim_obs_channels,
-            Arch.Directs, Arch.num_directs,
-            vpr_setup.RoutingArch.dump_rr_structs_file,
-            &vpr_setup.RoutingArch.wire_to_rr_ipin_switch,
-            &device_ctx.num_rr_switches,
-            &warning_count,
-            vpr_setup.RouterOpts.write_rr_graph_name.c_str(),
-            vpr_setup.RouterOpts.read_rr_graph_name.c_str(), false);
-
+    /*Allocate necessary routing structures*/
     alloc_and_load_rr_node_route_structs();
-
     t_clb_opins_used clb_opins_used_locally = alloc_route_structs();
     init_route_structs(vpr_setup.RouterOpts.bb_factor);
 
+    /*Check dimensions*/
     getline(fp, header_str);
     header.clear();
     header = vtr::split(header_str);
@@ -117,7 +88,7 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
     /*Correctly set up the clb opins*/
     recompute_occupancy_from_scratch(clb_opins_used_locally);
 
-    /* Note: This pres_fac is not neccessarily correct since it isn't the first iteration*/
+    /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
     pathfinder_update_cost(vpr_setup.RouterOpts.initial_pres_fac, vpr_setup.RouterOpts.acc_fac);
 
     reserve_locally_used_opins(vpr_setup.RouterOpts.initial_pres_fac,
@@ -132,7 +103,6 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
     }
 
     vtr::printf_info("Finished loading route file\n");
-
 }
 
 static void process_route(ifstream &fp) {
@@ -180,6 +150,7 @@ static void process_nets(ifstream &fp, int inet, string name, std::vector<std::s
 
         process_global_blocks(fp, inet);
     } else {
+        /* Not a global net */
         if (cluster_ctx.clbs_nlist.net[inet].is_global != false) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                     "Net %d is not a global net",
@@ -218,7 +189,7 @@ static void process_nodes(ifstream & fp, int inet) {
     string input;
     std::vector<std::string> tokens;
 
-
+    /*Walk through every line that begins with Node:*/
     while (getline(fp, input)) {
         tokens.clear();
         tokens = vtr::split(input);
@@ -367,6 +338,7 @@ static void process_global_blocks(ifstream &fp, int inet) {
     int pin_counter = 0;
 
     streampos oldpos = fp.tellg();
+    /*Walk through every block line*/
     while (getline(fp, block)) {
         tokens.clear();
         tokens = vtr::split(block);

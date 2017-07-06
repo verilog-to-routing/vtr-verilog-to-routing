@@ -16,7 +16,7 @@
 
 
 #include "timing_place.h"
-void read_route(const char* placement_file, const char* route_file, t_vpr_setup& vpr_setup, const t_arch& Arch);
+void read_route(const char* placement_file, const char* route_file, t_vpr_setup& vpr_setup);
 
 
 #endif /* READ_ROUTE_H */
