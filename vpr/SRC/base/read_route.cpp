@@ -42,10 +42,6 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
 
     /* Reads in the routing file to fill in the trace_head data structure.  */
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    vpr_init_pre_place_and_route(vpr_setup, Arch);
-
     /* Begin parsing the file */
     vtr::printf_info("Begin loading packed FPGA routing file.\n");
 
@@ -66,11 +62,6 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
                 "Placement files %s specified in the routing file does not match given %s", header[1].c_str(), placement_file);
     }
 
-    read_place(vpr_setup.FileNameOpts.NetFile.c_str(), vpr_setup.FileNameOpts.PlaceFile.c_str(), 
-            vpr_setup.FileNameOpts.verify_file_digests, device_ctx.nx, device_ctx.ny, cluster_ctx.num_blocks, cluster_ctx.blocks);
-    sync_grid_to_blocks();
-
-    post_place_sync(cluster_ctx.num_blocks);
 
     /* Set up the routing resource graph and routing data structures defined by this FPGA architecture. */
     t_graph_type graph_type;
@@ -111,7 +102,7 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
     getline(fp, header_str);
     header.clear();
     header = vtr::split(header_str);
-    if (header[0] == "Array" && header[1] == "size:" && 
+    if (header[0] == "Array" && header[1] == "size:" &&
             (atoi(header[2].c_str()) != device_ctx.nx || atoi(header[4].c_str()) != device_ctx.ny)) {
         vpr_throw(VPR_ERROR_ROUTE, route_file, __LINE__,
                 "Device dimensions %sx%s specified in the routing file does not match given %dx%d ",
@@ -129,7 +120,7 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
     /* Note: This pres_fac is not neccessarily correct since it isn't the first iteration*/
     pathfinder_update_cost(vpr_setup.RouterOpts.initial_pres_fac, vpr_setup.RouterOpts.acc_fac);
 
-    reserve_locally_used_opins(vpr_setup.RouterOpts.initial_pres_fac, 
+    reserve_locally_used_opins(vpr_setup.RouterOpts.initial_pres_fac,
             vpr_setup.RouterOpts.acc_fac, true, clb_opins_used_locally);
 
     /* Finished loading in the routing, now check it*/
@@ -169,7 +160,7 @@ static void process_nets(ifstream &fp, int inet, string name, std::vector<std::s
     /* Check if the net is global or not, and process appropriately */
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
-    if (input_tokens.size() > 3 && input_tokens[3] == "global" 
+    if (input_tokens.size() > 3 && input_tokens[3] == "global"
             && input_tokens[4] == "net" && input_tokens[5] == "connecting:") {
         /* Global net.  Never routed. */
         if (cluster_ctx.clbs_nlist.net[inet].is_global != true) {
@@ -327,7 +318,7 @@ static void process_nodes(ifstream & fp, int inet) {
 
                     format_pin_info(pb_name, port_name, pb_pin_num, tokens[6 + offset]);
 
-                    if (pb_name != pb_type->name || port_name != pb_pin->port->name || 
+                    if (pb_name != pb_type->name || port_name != pb_pin->port->name ||
                             pb_pin_num != pb_pin->pin_number) {
                         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                                 "%d node does not have correct pins", inode);

@@ -881,6 +881,34 @@ void vpr_show_setup(const t_vpr_setup& vpr_setup) {
     ShowSetup(vpr_setup);
 }
 
+void vpr_init_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    if (!vpr_setup.RouterOpts.doRouting) {
+
+        //Load up netlist and other device parameters
+        vpr_init_pre_place_and_route(vpr_setup, Arch);
+
+        read_place(vpr_setup.FileNameOpts.NetFile.c_str(), vpr_setup.FileNameOpts.PlaceFile.c_str(),
+                vpr_setup.FileNameOpts.verify_file_digests, device_ctx.nx, device_ctx.ny, cluster_ctx.num_blocks, cluster_ctx.blocks);
+        sync_grid_to_blocks();
+
+        post_place_sync(cluster_ctx.num_blocks);
+
+        int width_fac = vpr_setup.RouterOpts.fixed_channel_width;
+        if (width_fac != NO_FIXED_CHANNEL_WIDTH) {
+            //Only try if a fixed channel width is specified
+            try_graph(width_fac, vpr_setup.RouterOpts, &vpr_setup.RoutingArch,
+                    vpr_setup.Segments, Arch.Chans,
+                    Arch.Directs, Arch.num_directs);
+        }
+
+        //load up routing from file
+        read_route(vpr_setup.FileNameOpts.PlaceFile.c_str(), vpr_setup.FileNameOpts.RouteFile.c_str(), vpr_setup, Arch);
+    }
+}
+
 void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     if (!vpr_setup.AnalysisOpts.doAnalysis) return;
 
@@ -891,12 +919,9 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
 
     if (route_ctx.trace_head == nullptr) {
-        //load up routing from file
-        read_route(vpr_setup.FileNameOpts.PlaceFile.c_str(), vpr_setup.FileNameOpts.RouteFile.c_str(), vpr_setup, Arch);
-        if (route_ctx.trace_head == nullptr) {
-            VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
-        }
+        VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
+
 
     float** net_delay = nullptr;
     vtr::t_chunk net_delay_ch = {NULL, 0, NULL};

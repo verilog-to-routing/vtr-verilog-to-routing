@@ -46,82 +46,84 @@ constexpr int UNIMPLEMENTABLE_EXIT_CODE = 2; //Could not implement (e.g. unrouta
  * 4.  Clean up
  */
 int main(int argc, const char **argv) {
-	t_options Options = t_options();
-	t_arch Arch = t_arch();
-	t_vpr_setup vpr_setup = t_vpr_setup();
-	clock_t entire_flow_begin,entire_flow_end;
+    t_options Options = t_options();
+    t_arch Arch = t_arch();
+    t_vpr_setup vpr_setup = t_vpr_setup();
+    clock_t entire_flow_begin, entire_flow_end;
 
-	entire_flow_begin = clock();
+    entire_flow_begin = clock();
 
-	try {
-		/* Read options, architecture, and circuit netlist */
-		vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
+    try {
+        /* Read options, architecture, and circuit netlist */
+        vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
 
-        if(Options.show_version) {
+        if (Options.show_version) {
             return SUCCESS_EXIT_CODE;
         }
 
-		/* If the user requests packing, do packing */
-		if (vpr_setup.PackerOpts.doPacking) {
-			vpr_pack(vpr_setup, Arch);
-		}
+        /* If the user requests packing, do packing */
+        if (vpr_setup.PackerOpts.doPacking) {
+            vpr_pack(vpr_setup, Arch);
+        }
 
-		if (vpr_setup.PlacerOpts.doPlacement || vpr_setup.RouterOpts.doRouting) {
-			vpr_init_pre_place_and_route(vpr_setup, Arch);
-			bool place_route_succeeded = vpr_place_and_route(&vpr_setup, Arch);
+        if (vpr_setup.PlacerOpts.doPlacement || vpr_setup.RouterOpts.doRouting) {
+            vpr_init_pre_place_and_route(vpr_setup, Arch);
+            bool place_route_succeeded = vpr_place_and_route(&vpr_setup, Arch);
 
             /* Signal implementation failure */
-            if(!place_route_succeeded) {
+            if (!place_route_succeeded) {
                 return UNIMPLEMENTABLE_EXIT_CODE;
             }
-		}
+        }
 
+        if (vpr_setup.AnalysisOpts.doAnalysis) {
+            vpr_init_analysis(vpr_setup, Arch);
+            vpr_analysis(vpr_setup, Arch);
+        }
 
-        vpr_analysis(vpr_setup, Arch);
-	
-		entire_flow_end = clock();
+        entire_flow_end = clock();
 
         auto& timing_ctx = g_vpr_ctx.timing();
-        vtr::printf_info("Timing analysis took %g seconds (%g STA, %g slack) (%d full updates).\n", 
-                            timing_ctx.stats.timing_analysis_wallclock_time(), 
-                            timing_ctx.stats.sta_wallclock_time, 
-                            timing_ctx.stats.slack_wallclock_time, 
-                            timing_ctx.stats.num_full_updates);
+        vtr::printf_info("Timing analysis took %g seconds (%g STA, %g slack) (%d full updates).\n",
+                timing_ctx.stats.timing_analysis_wallclock_time(),
+                timing_ctx.stats.sta_wallclock_time,
+                timing_ctx.stats.slack_wallclock_time,
+                timing_ctx.stats.num_full_updates);
 #ifdef ENABLE_CLASSIC_VPR_STA
-        vtr::printf_info("Old VPR Timing analysis took %g seconds (%g STA, %g delay annotitaion) (%d full updates).\n", 
-                            timing_ctx.stats.old_timing_analysis_wallclock_time(),
-                            timing_ctx.stats.old_sta_wallclock_time,
-                            timing_ctx.stats.old_delay_annotation_wallclock_time,
-                            timing_ctx.stats.num_old_sta_full_updates);
-        vtr::printf_info("\tSTA       Speed-up: %.2fx\n", 
-                            timing_ctx.stats.old_sta_wallclock_time / timing_ctx.stats.sta_wallclock_time);
-        vtr::printf_info("\tSTA+Slack Speed-up: %.2fx\n", 
-                            timing_ctx.stats.old_timing_analysis_wallclock_time() / timing_ctx.stats.timing_analysis_wallclock_time());
+        vtr::printf_info("Old VPR Timing analysis took %g seconds (%g STA, %g delay annotitaion) (%d full updates).\n",
+                timing_ctx.stats.old_timing_analysis_wallclock_time(),
+                timing_ctx.stats.old_sta_wallclock_time,
+                timing_ctx.stats.old_delay_annotation_wallclock_time,
+                timing_ctx.stats.num_old_sta_full_updates);
+        vtr::printf_info("\tSTA       Speed-up: %.2fx\n",
+                timing_ctx.stats.old_sta_wallclock_time / timing_ctx.stats.sta_wallclock_time);
+        vtr::printf_info("\tSTA+Slack Speed-up: %.2fx\n",
+                timing_ctx.stats.old_timing_analysis_wallclock_time() / timing_ctx.stats.timing_analysis_wallclock_time());
 #endif
-		vtr::printf_info("The entire flow of VPR took %g seconds.\n", 
-				(float)(entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
-	
-		/* free data structures */
-		vpr_free_all(Arch, vpr_setup);
+        vtr::printf_info("The entire flow of VPR took %g seconds.\n",
+                (float) (entire_flow_end - entire_flow_begin) / CLOCKS_PER_SEC);
 
-	} catch(const tatum::Error& tatum_error){
+        /* free data structures */
+        vpr_free_all(Arch, vpr_setup);
+
+    } catch (const tatum::Error& tatum_error) {
         vtr::printf_error(__FILE__, __LINE__, "STA Engine: %s\n", tatum_error.what());
 
         return ERROR_EXIT_CODE;
 
-	} catch(const VprError& vpr_error){
-		vpr_print_error(vpr_error);
+    } catch (const VprError& vpr_error) {
+        vpr_print_error(vpr_error);
 
         return ERROR_EXIT_CODE;
 
-	} catch(const vtr::VtrError& vtr_error){
+    } catch (const vtr::VtrError& vtr_error) {
         vtr::printf_error(__FILE__, __LINE__, "%s:%d %s\n", vtr_error.filename_c_str(), vtr_error.line(), vtr_error.what());
 
         return ERROR_EXIT_CODE;
-	}
-	
-	/* Signal success to scripts */
-	return SUCCESS_EXIT_CODE;
+    }
+
+    /* Signal success to scripts */
+    return SUCCESS_EXIT_CODE;
 }
 
 
