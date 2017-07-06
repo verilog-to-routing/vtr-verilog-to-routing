@@ -62,7 +62,7 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
     /* Parse the file */
     vtr::printf_info("Begin loading packed FPGA routing file.\n");
 
-    std::string route_id = vtr::secure_digest_file(route_file);
+    string header_str;
 
     ifstream fp;
     fp.open(route_file);
@@ -72,22 +72,12 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
                 "Cannot open %s routing file", route_file);
     }
 
-    string temp, temp2, input_placement_file, input_id;
-    int nx, ny;
-
-    fp >> temp >> input_placement_file;
-    if (input_placement_file != placement_file) {
+    getline(fp, header_str);
+    std::vector<std::string> header = vtr::split(header_str);
+    if (header[0] == "Placement_File:" && header[1] != placement_file) {
         vpr_throw(VPR_ERROR_ROUTE, route_file, __LINE__,
-                "Placement files %s specified in the routing file does not match given %s", input_placement_file.c_str(), placement_file);
+                "Placement files %s specified in the routing file does not match given %s", header[1].c_str(), placement_file);
     }
-
-    fp >> temp >> input_id;
-
-    //    if (input_id != place_ctx.placement_id.c_str()) {
-    //        vpr_throw(VPR_ERROR_ROUTE, route_file, __LINE__,
-    //                "Placement id %s specified in the routing file does not match given %s", input_id.c_str(), place_ctx.placement_id.c_str());
-    //    }
-
 
     read_place(vpr_setup.FileNameOpts.NetFile.c_str(), vpr_setup.FileNameOpts.PlaceFile.c_str(), vpr_setup.FileNameOpts.verify_file_digests, device_ctx.nx, device_ctx.ny, cluster_ctx.num_blocks, cluster_ctx.blocks);
     sync_grid_to_blocks();
@@ -132,19 +122,21 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
     t_clb_opins_used clb_opins_used_locally = alloc_route_structs();
     init_route_structs(vpr_setup.RouterOpts.bb_factor);
 
-    fp >> temp >> temp2 >> nx >> temp >> ny;
-
-    if (nx != device_ctx.nx || ny != device_ctx.ny) {
+    getline(fp, header_str);
+    header.clear();
+    header = vtr::split(header_str);
+    if (header[0] == "Array" && header[1] == "size:" && (atoi(header[2].c_str()) != device_ctx.nx || atoi(header[4].c_str()) != device_ctx.ny)) {
         vpr_throw(VPR_ERROR_ROUTE, route_file, __LINE__,
-                "Device dimensions %d x %d specified in the routing file does not match given %d x %d ",
-                nx, ny, device_ctx.nx, device_ctx.ny);
+                "Device dimensions %sx%s specified in the routing file does not match given %dx%d ",
+                header[2].c_str(), header[4].c_str(), device_ctx.nx, device_ctx.ny);
     }
 
     string input;
     unsigned inet;
-
+    std::vector<std::string> tokens;
     while (getline(fp, input)) {
-        std::vector<std::string> tokens = vtr::split(input);
+        tokens.clear();
+        tokens = vtr::split(input);
         if (tokens.empty()) {
             continue; //Skip blank lines
         } else if (tokens[0][0] == '#') {
@@ -154,7 +146,7 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
             process_route(fp, inet, tokens[2], tokens);
         }
     }
-
+    tokens.clear();
     fp.close();
 
     /*Correctly set up the clb opins*/
@@ -190,14 +182,15 @@ static void process_route(ifstream &fp, int inet, string name, std::vector<std::
 
     string block;
     int inode, x, y, x2, y2, ptc, switch_id, offset;
-
+    bool last_node_sink = false;
     int node_count = 0;
     string input;
     streampos oldpos = fp.tellg();
+    std::vector<std::string> tokens;
 
     if (input_tokens.size() > 3 && input_tokens[3] == "global" && input_tokens[4] == "net" && input_tokens[5] == "connecting:") { /* Global net.  Never routed. */
         cluster_ctx.clbs_nlist.net[inet].is_global = true;
-        //erase an extra colon
+        //erase an extra colon for global nets
         name.erase(name.end() - 1);
         name = format_name(name);
 
@@ -213,7 +206,8 @@ static void process_route(ifstream &fp, int inet, string name, std::vector<std::
 
         oldpos = fp.tellg();
         while (getline(fp, block)) {
-            std::vector<std::string> tokens = vtr::split(block);
+            tokens.clear();
+            tokens = vtr::split(block);
 
             if (tokens.empty()) {
                 continue; //Skip blank lines
@@ -221,6 +215,7 @@ static void process_route(ifstream &fp, int inet, string name, std::vector<std::
                 continue; //Skip commented lines
             } else if (tokens[0] != "Block") {
                 fp.seekg(oldpos);
+                input_tokens.clear();
                 return;
             } else {
                 format_coordinates(x, y, tokens[4]);
@@ -264,7 +259,8 @@ static void process_route(ifstream &fp, int inet, string name, std::vector<std::
         }
         oldpos = fp.tellg();
         while (getline(fp, input)) {
-            std::vector<std::string> tokens = vtr::split(input);
+            tokens.clear();
+            tokens = vtr::split(input);
 
             if (tokens.empty()) {
                 continue; //Skip blank lines
@@ -272,12 +268,18 @@ static void process_route(ifstream &fp, int inet, string name, std::vector<std::
                 continue; //Skip commented lines
             } else if (tokens[0] == "Net") {
                 fp.seekg(oldpos);
+                if (!last_node_sink) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "Last node in routing has to be a sink type");
+                }
+                input_tokens.clear();
                 return;
             } else if (input == "\n\nUsed in local cluster only, reserved one CLB pin\n\n") {
                 if (cluster_ctx.clbs_nlist.net[inet].num_sinks() != false) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                             "Net %d should be used in local cluster only, reserved one CLB pin");
                 }
+                input_tokens.clear();
                 return;
             } else if (tokens[0] == "Node:") {
                 //An actual line, go through each node and add it to the route tree
@@ -294,6 +296,12 @@ static void process_route(ifstream &fp, int inet, string name, std::vector<std::
                 if (tokens[2] != node.type_string()) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                             "Node %d has a type that does not match the RR graph", inode);
+                }
+
+                if (tokens[2] == "SINK") {
+                    last_node_sink = true;
+                } else {
+                    last_node_sink = false;
                 }
 
                 format_coordinates(x, y, tokens[3]);
@@ -314,6 +322,18 @@ static void process_route(ifstream &fp, int inet, string name, std::vector<std::
                 }
 
 
+                if (tokens[2] == "SOURCE" || tokens[2] == "SINK" || tokens[2] == "OPIN" || tokens[2] == "IPIN") {
+                    if (tokens[4 + offset] == "Pad:" && device_ctx.grid[x][y].type != device_ctx.IO_TYPE) {
+                        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                                "Node %d is of the wrong type", inode);
+                    }
+                } else if (tokens[2] == "CHANX" || tokens[2] == "CHANY") {
+                    if (tokens[4 + offset] != "Track:") {
+                        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                                "A %s node have to have track info", tokens[2].c_str());
+                    }
+                }
+                
                 ptc = atoi(tokens[5 + offset].c_str());
                 if (node.ptc_num() != ptc) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
@@ -368,6 +388,13 @@ static void process_route(ifstream &fp, int inet, string name, std::vector<std::
             oldpos = fp.tellg();
         }
     }
+    if (!last_node_sink) {
+        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                "Last node in routing has to be a sink type");
+    }
+    tokens.clear();
+    input_tokens.clear();
+    return;
 }
 
 static void format_coordinates(int &x, int &y, string coord) {
