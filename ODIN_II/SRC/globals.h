@@ -9,7 +9,7 @@
 extern t_type_descriptor* type_descriptors;
 
 /* VERILOG SYNTHESIS GLOBALS */
-extern size_t yylineno;
+extern int yylineno;
 extern short to_view_parse;
 
 extern global_args_t global_args;
