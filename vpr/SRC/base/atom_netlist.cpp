@@ -267,8 +267,8 @@ AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* mod
     VTR_ASSERT_MSG(!name.empty(), "Non-Empty block name");
 
     //Check if the block has already been created
-    AtomStringId name_id = create_string(name);
-    AtomBlockId blk_id = find_block(name_id);
+    AtomStringId name_id = BaseNetlist::create_string(name);
+    AtomBlockId blk_id = BaseNetlist::find_block(name_id);
 
     if(blk_id == AtomBlockId::INVALID()) {
         //Not found, create it
