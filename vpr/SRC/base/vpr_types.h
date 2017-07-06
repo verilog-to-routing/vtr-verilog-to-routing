@@ -512,8 +512,7 @@ struct t_net_power {
  *          which each net terminal connects. 
  * is_routed: not routed (has been pre-routed)
  * is_fixed: not routed (has been pre-routed)
- * is_global: not routed
- * is_const_gen: constant generator (does not affect timing) */
+ * is_global: not routed */
 struct t_net {
 	char *name;
 	int num_sinks;
@@ -523,7 +522,6 @@ struct t_net {
 	unsigned int is_routed : 1;
 	unsigned int is_fixed : 1;
 	unsigned int is_global : 1;
-	unsigned int is_const_gen : 1;
 };
 
 /* s_grid_tile is the minimum tile of the fpga                         

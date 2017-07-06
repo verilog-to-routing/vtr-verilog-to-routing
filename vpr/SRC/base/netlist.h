@@ -40,7 +40,6 @@ struct t_net_pin{
  * is_routed:	 not routed (has been pre-routed)
  * is_fixed:	 not routed (has been pre-routed)
  * is_global:	 not routed
- * is_const_gen: constant generator (does not affect timing) 
  * t_net_pin:  [0..pins.size()-1]. Contains the nodes this net connects to.
  */
 struct t_vnet{
@@ -52,11 +51,10 @@ struct t_vnet{
 	unsigned int is_routed    : 1;
 	unsigned int is_fixed     : 1;
 	unsigned int is_global    : 1;
-	unsigned int is_const_gen : 1;
 
 	t_vnet(){
 		name = NULL;
-		is_routed = is_fixed = is_global = is_const_gen = 0;
+		is_routed = is_fixed = is_global = 0;
 	}
 
 	// Returns the number of sinks of the net, computed by looking 

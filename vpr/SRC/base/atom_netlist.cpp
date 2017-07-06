@@ -161,7 +161,7 @@ const AtomNetlist::TruthTable& AtomNetlist::block_truth_table (const AtomBlockId
  *
  */
 AtomPortType AtomNetlist::port_type(const AtomPortId id) const {
-	return (AtomPortType)BaseNetlist::port_type(id);
+	return (AtomPortType) BaseNetlist::port_type(id);
 }
 
 /*
@@ -170,11 +170,11 @@ AtomPortType AtomNetlist::port_type(const AtomPortId id) const {
  *
  */
 AtomPinType AtomNetlist::pin_type(const AtomPinId id) const {
-	return (AtomPinType)BaseNetlist::pin_type(id);
+	return (AtomPinType) BaseNetlist::pin_type(id);
 }
 
 AtomPortType AtomNetlist::pin_port_type(const AtomPinId id) const {
-	return (AtomPortType)BaseNetlist::pin_port_type(id);
+	return (AtomPortType) BaseNetlist::pin_port_type(id);
 }
 
 /*

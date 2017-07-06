@@ -34,11 +34,10 @@ void echo_global_nlist_net(const t_netlist* nlist) {
 
 	for(i = 0; i < nlist->net.size(); i++){
 		vtr::printf_info("Net name %s\n", nlist->net[i].name);
-		vtr::printf_info("Routed %d fixed %d global %d const_gen %d\n", 
+		vtr::printf_info("Routed %d fixed %d global\n", 
 			nlist->net[i].is_routed,
 			nlist->net[i].is_fixed ,
-			nlist->net[i].is_global, 
-			nlist->net[i].is_const_gen);
+			nlist->net[i].is_global);
 		for(j = 0; j < nlist->net[i].pins.size(); j++){
 			vtr::printf_info("Block index %d pin %d \n", 
 				nlist->net[i].pins[j].block, 
