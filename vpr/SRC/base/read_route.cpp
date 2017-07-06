@@ -46,7 +46,10 @@ using namespace std;
 #include "timing_info.h"
 #include "read_route.h"
 
-static void process_route(ifstream &fp, int inet, string name, stringstream &input_stream);
+static void process_route(ifstream &fp, int inet, string name, std::vector<std::string> input_tokens);
+static void format_coordinates(int &x, int &y, string coord);
+static void format_pin_info(string &pb_name, string & port_name, int & pb_pin_num, string input);
+static string format_name(string name);
 
 void read_route(const char* placement_file, const char* route_file, t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
@@ -137,16 +140,18 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
                 nx, ny, device_ctx.nx, device_ctx.ny);
     }
 
-    string input, identifier, name;
+    string input;
     unsigned inet;
 
     while (getline(fp, input)) {
-
-        stringstream input_stream(input);
-        getline(input_stream, identifier, ' ');
-        if (identifier == "Net") {
-            input_stream >> inet >> name;
-            process_route(fp, inet, name, input_stream);
+        std::vector<std::string> tokens = vtr::split(input);
+        if (tokens.empty()) {
+            continue; //Skip blank lines
+        } else if (tokens[0][0] == '#') {
+            continue; //Skip commented lines
+        } else if (tokens[0] == "Net") {
+            inet = atoi(tokens[1].c_str());
+            process_route(fp, inet, tokens[2], tokens);
         }
     }
 
@@ -163,7 +168,7 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
     pathfinder_update_cost(pres_fac, vpr_setup.RouterOpts.acc_fac);
 
     reserve_locally_used_opins(pres_fac, vpr_setup.RouterOpts.acc_fac, true, clb_opins_used_locally);
-    
+
     check_route(vpr_setup.RouterOpts.route_type, device_ctx.num_rr_switches, clb_opins_used_locally, vpr_setup.Segments);
     get_serial_num();
 
@@ -175,258 +180,213 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
 
 }
 
-static void process_route(ifstream &fp, int inet, string name, stringstream &input_stream) {
-
+static void process_route(ifstream &fp, int inet, string name, std::vector<std::string> input_tokens) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_trace *tptr;
+    t_trace *tptr = route_ctx.trace_head[inet];
 
-    string identifier, temp, newline, block;
-    int inode, x, y, x2, y2, ptc, switch_id;
-    string type, coordinates, next;
+    string block;
+    int inode, x, y, x2, y2, ptc, switch_id, offset;
 
-    getline(fp, temp);
-    //get rid of brackets
-    name.erase(name.begin());
-    if (name.back() == ':') { /* Global net.  Never routed. */
-        getline(input_stream, temp);
-        if (temp == " global net connecting:") {
-            cluster_ctx.clbs_nlist.net[inet].is_global = true;
-            name.erase(name.end() - 1);
-            name.erase(name.end() - 1);
+    int node_count = 0;
+    string input;
+    streampos oldpos = fp.tellg();
 
-            if (cluster_ctx.clbs_nlist.net[inet].name != name) {
-                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "Net name %s for net number %d specified in the routing file does not match given %s",
-                        name.c_str(), inet, cluster_ctx.clbs_nlist.net[inet].name);
-            }
-        }
-        int pin_counter = 0;
-        int iclass, bnum;
-        string x_str, y_str, temp2, bnum_str;
-
-        while (getline(fp, block)) {
-            stringstream global_nets(block);
-
-            getline(global_nets, identifier, ' ');
-
-            if (identifier != "Block") {
-                return;
-            }
-
-            global_nets >> name >> bnum_str >> temp >> x_str >> y_str;
-
-            global_nets >> ws;
-            getline(global_nets, temp, ' ');
-            global_nets >> ws;
-            getline(global_nets, temp2, ' ');
-            global_nets >> ws;
-            global_nets >> iclass;
-
-            y_str.erase(y_str.end() - 1);
-            y = atoi(y_str.c_str());
-
-            x_str.erase(x_str.begin());
-            x_str.erase(x_str.end() - 1);
-            x = atoi(x_str.c_str());
-
-            bnum_str.erase(bnum_str.begin());
-            bnum_str.erase(bnum_str.begin());
-            bnum_str.erase(bnum_str.end() - 1);
-            bnum = atoi(bnum_str.c_str());
-
-            if (cluster_ctx.blocks[bnum].name != name) {
-                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "Block %s for block number %d specified in the routing file does not match given %s",
-                        name.c_str(), bnum, cluster_ctx.blocks[bnum].name);
-            }
-
-            if (place_ctx.block_locs[bnum].x != x || place_ctx.block_locs[bnum].y != y) {
-                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "The placement coordinates (%d, %d) of %d block does not match given (%d, %d)",
-                        x, y, place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y);
-            }
-            //            int node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[pin_counter].block_pin;
-            //            cluster_ctx.blocks[bnum].type->pin_class[node_block_pin] = iclass;
-            pin_counter++;
-        }
-
-    } else {
-
-        cluster_ctx.clbs_nlist.net[inet].is_global = false;
+    if (input_tokens.size() > 3 && input_tokens[3] == "global" && input_tokens[4] == "net" && input_tokens[5] == "connecting:") { /* Global net.  Never routed. */
+        cluster_ctx.clbs_nlist.net[inet].is_global = true;
+        //erase an extra colon
         name.erase(name.end() - 1);
-
+        name = format_name(name);
 
         if (cluster_ctx.clbs_nlist.net[inet].name != name) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                     "Net name %s for net number %d specified in the routing file does not match given %s",
                     name.c_str(), inet, cluster_ctx.clbs_nlist.net[inet].name);
         }
-        //removes a space after net:
-        getline(fp, newline);
 
-        if (newline == "\n\nUsed in local cluster only, reserved one CLB pin\n\n") {
-            if (cluster_ctx.clbs_nlist.net[inet].num_sinks() != false) {
-                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "Net %d should be used in local cluster only, reserved one CLB pin");
-            }
-            return;
-        } else if (newline == "") {
-            return;
-        } else {
-            stringstream ss(newline);
-            ss >> temp >> inode >> type >> coordinates >> next;
-            if (temp != "Node:") {
+        int pin_counter = 0;
+        int bnum;
+        string bnum_str;
+
+        oldpos = fp.tellg();
+        while (getline(fp, block)) {
+            std::vector<std::string> tokens = vtr::split(block);
+
+            if (tokens.empty()) {
+                continue; //Skip blank lines
+            } else if (tokens[0][0] == '#') {
+                continue; //Skip commented lines
+            } else if (tokens[0] != "Block") {
+                fp.seekg(oldpos);
                 return;
-            }
-
-            coordinates.erase(coordinates.begin());
-            coordinates.erase(coordinates.end() - 1);
-
-            stringstream coord_stream1(coordinates);
-            coord_stream1 >> x;
-            coord_stream1.ignore(1, ' ');
-            coord_stream1 >> y;
-
-            auto& node = device_ctx.rr_nodes[inode];
-            if (next == "to") {
-                ss >> coordinates >> next >> ptc;
-                coordinates.erase(coordinates.begin());
-                coordinates.erase(coordinates.end() - 1);
-
-                stringstream coord_stream2(coordinates);
-                coord_stream2 >> x2;
-                coord_stream2.ignore(1, ' ');
-                coord_stream2 >> y2;
-                if (node.xlow() != x || node.xhigh() != x2 || node.yhigh() != y2 || node.ylow() != y) {
-                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                            "The coordinates of node %d does not match the rr graph", inode);
-                }
             } else {
-                if (node.xlow() != x || node.xhigh() != x || node.yhigh() != y || node.ylow() != y) {
+                format_coordinates(x, y, tokens[4]);
+
+                //remove ()
+                bnum_str = format_name(tokens[2]);
+                //remove #
+                bnum_str.erase(bnum_str.begin());
+                bnum = atoi(bnum_str.c_str());
+
+                if (cluster_ctx.blocks[bnum].name != tokens[1]) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                            "The coordinates of node %d does not match the rr graph", inode);
+                            "Block %s for block number %d specified in the routing file does not match given %s",
+                            name.c_str(), bnum, cluster_ctx.blocks[bnum].name);
                 }
-                ss >> ptc;
+
+                if (place_ctx.block_locs[bnum].x != x || place_ctx.block_locs[bnum].y != y) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "The placement coordinates (%d, %d) of %d block does not match given (%d, %d)",
+                            x, y, place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y);
+                }
+                int node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[pin_counter].block_pin;
+                if (cluster_ctx.blocks[bnum].type->pin_class[node_block_pin] != atoi(tokens[7].c_str())) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "The pin class %d of %d net does not match given ",
+                            atoi(tokens[7].c_str()), inet, cluster_ctx.blocks[bnum].type->pin_class[node_block_pin]);
+                }
+                pin_counter++;
             }
-            ss >> temp >> switch_id;
-            route_ctx.trace_head[inet] = alloc_trace_data();
-            route_ctx.trace_head[inet]->index = inode;
-            route_ctx.trace_head[inet]->iswitch = switch_id;
-            route_ctx.trace_head[inet]->next = NULL;
         }
+        oldpos = fp.tellg();
+    } else {
 
+        cluster_ctx.clbs_nlist.net[inet].is_global = false;
+        name = format_name(name);
 
-        tptr = route_ctx.trace_head[inet];
-        while (getline(fp, newline)) {
-            if (newline == "\n\nUsed in local cluster only, reserved one CLB pin\n\n") {
-                if (cluster_ctx.clbs_nlist.net[inet].num_sinks() != false)
-                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "Net %d should be used in local cluster only, reserved one CLB pin");
-            } else if (newline.empty()) {
-                route_ctx.trace_tail[inet] = tptr;
+        if (cluster_ctx.clbs_nlist.net[inet].name != name) {
+            vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                    "Net name %s for net number %d specified in the routing file does not match given %s",
+                    name.c_str(), inet, cluster_ctx.clbs_nlist.net[inet].name);
+        }
+        oldpos = fp.tellg();
+        while (getline(fp, input)) {
+            std::vector<std::string> tokens = vtr::split(input);
+
+            if (tokens.empty()) {
+                continue; //Skip blank lines
+            } else if (tokens[0][0] == '#') {
+                continue; //Skip commented lines
+            } else if (tokens[0] == "Net") {
+                fp.seekg(oldpos);
                 return;
-            } else {
-                stringstream ss(newline);
-                ss >> temp >> inode >> type >> coordinates >> next;
-
-                if (temp != "Node:") {
-                    route_ctx.trace_tail[inet] = tptr;
-                    return;
+            } else if (input == "\n\nUsed in local cluster only, reserved one CLB pin\n\n") {
+                if (cluster_ctx.clbs_nlist.net[inet].num_sinks() != false) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "Net %d should be used in local cluster only, reserved one CLB pin");
                 }
-
-                tptr->next = alloc_trace_data();
-                tptr = tptr -> next;
-                tptr->index = inode;
-                tptr->next = NULL;
-
-                coordinates.erase(coordinates.begin());
-                coordinates.erase(coordinates.end() - 1);
-
-                stringstream coord_stream1(coordinates);
-                coord_stream1 >> x;
-                coord_stream1.ignore(1, ' ');
-                coord_stream1 >> y;
-
+                return;
+            } else if (tokens[0] == "Node:") {
+                //An actual line, go through each node and add it to the route tree
+                inode = atoi(tokens[1].c_str());
                 auto& node = device_ctx.rr_nodes[inode];
 
-                if (next == "to") {
-                    ss >> coordinates >> next >> ptc;
-                    coordinates.erase(coordinates.begin());
-                    coordinates.erase(coordinates.end() - 1);
+                //First node needs to be source. It is isolated to correctly set heap head.
+                if (node_count == 0 && tokens[2] != "SOURCE") {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "First node in routing has to be a source type");
+                }
 
-                    stringstream coord_stream2(coordinates);
-                    coord_stream2 >> x2;
-                    coord_stream2.ignore(1, ' ');
-                    coord_stream2 >> y2;
+                //Check node types if match rr graph
+                if (tokens[2] != node.type_string()) {
+                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                            "Node %d has a type that does not match the RR graph", inode);
+                }
+
+                format_coordinates(x, y, tokens[3]);
+
+                if (tokens[4] == "to") {
+                    format_coordinates(x2, y2, tokens[5]);
                     if (node.xlow() != x || node.xhigh() != x2 || node.yhigh() != y2 || node.ylow() != y) {
                         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                                 "The coordinates of node %d does not match the rr graph", inode);
                     }
+                    offset = 2;
                 } else {
                     if (node.xlow() != x || node.xhigh() != x || node.yhigh() != y || node.ylow() != y) {
                         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                                 "The coordinates of node %d does not match the rr graph", inode);
                     }
-                    ss >> ptc;
+                    offset = 0;
                 }
 
 
+                ptc = atoi(tokens[5 + offset].c_str());
                 if (node.ptc_num() != ptc) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                            "The ptc of node %d does not match the rr graph", inode);
+                            "The ptc num of node %d does not match the rr graph", inode);
                 }
 
-                ss >> temp;
-                if (temp == "Switch:") {
-                    ss >> switch_id;
-                } else {
-
-                    if (device_ctx.grid[x][y].type != device_ctx.IO_TYPE && (type == "IPIN" || type == "OPIN")) {
+                if (tokens[6 + offset] != "Switch:") {
+                    //This is an opin or ipin, process its pin nums
+                    if (device_ctx.grid[x][y].type != device_ctx.IO_TYPE && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
                         int pin_num = device_ctx.rr_nodes[inode].ptc_num();
-                        int offset = device_ctx.grid[x][y].height_offset;
-                        int iblock = place_ctx.grid_blocks[x][y - offset].blocks[0];
+                        int height_offset = device_ctx.grid[x][y].height_offset;
+                        int iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[0];
                         VTR_ASSERT(iblock != OPEN);
                         t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                         t_pb_type *pb_type = pb_pin->parent_node->pb_type;
 
                         string pb_name, port_name;
                         int pb_pin_num;
-                        stringstream pb_info(temp);
-                        getline(pb_info, pb_name, '.');
-                        coord_stream1.ignore(1, ' ');
-                        getline(pb_info, port_name, '[');
-                        coord_stream1.ignore(1, ' ');
-                        pb_info >> pb_pin_num;
+
+                        format_pin_info(pb_name, port_name, pb_pin_num, tokens[6 + offset]);
 
                         if (pb_name != pb_type->name || port_name != pb_pin->port->name || pb_pin_num != pb_pin->pin_number) {
                             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                                     "%d node does not have correct pins", inode);
                         }
-                        ss >> temp >>switch_id;
                     } else {
                         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                                 "%d node does not have correct pins", inode);
                     }
+                    switch_id = atoi(tokens[8 + offset].c_str());
+                } else {
+                    switch_id = atoi(tokens[7 + offset].c_str());
                 }
-                tptr->iswitch = switch_id;
 
-                if (node.type_string() != type) {
-                    vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                            "%d node does not have the correct type, should be %s", inode, node.type_string());
+                if (node_count == 0) {
+                    route_ctx.trace_head[inet] = alloc_trace_data();
+                    route_ctx.trace_head[inet]->index = inode;
+                    route_ctx.trace_head[inet]->iswitch = switch_id;
+                    route_ctx.trace_head[inet]->next = NULL;
+                    tptr = route_ctx.trace_head[inet];
+                    node_count++;
+                } else {
+                    tptr->next = alloc_trace_data();
+                    tptr = tptr -> next;
+                    tptr->index = inode;
+                    tptr->iswitch = switch_id;
+                    tptr->next = NULL;
+                    node_count++;
                 }
-                //                if (next == "Pad:") {
-                //                    device_ctx.grid[x][y].type = device_ctx.IO_TYPE;
-                //                }else{
-                //                    device_ctx.grid[x][y].type = device_ctx.FILL_TYPE;
-                //                }
             }
+            //stores last line so can easily go back to read
+            oldpos = fp.tellg();
         }
     }
-    return;
 }
 
+static void format_coordinates(int &x, int &y, string coord) {
+    coord = format_name(coord);
+    stringstream coord_stream(coord);
+    coord_stream >> x;
+    coord_stream.ignore(1, ' ');
+    coord_stream >> y;
+}
 
+static void format_pin_info(string &pb_name, string & port_name, int & pb_pin_num, string input) {
+    stringstream pb_info(input);
+    getline(pb_info, pb_name, '.');
+    getline(pb_info, port_name, '[');
+    pb_info >> pb_pin_num;
+}
+
+static string format_name(string name) {
+    name.erase(name.begin());
+    name.erase(name.end() - 1);
+    return name;
+}
