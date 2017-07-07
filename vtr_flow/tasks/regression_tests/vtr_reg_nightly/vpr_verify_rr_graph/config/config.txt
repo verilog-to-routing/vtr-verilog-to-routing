@@ -22,8 +22,8 @@ arch_list_add=k6_N10_mem32K_40nm.xml
 arch_list_add=hard_fpu_arch_timing.xml
 
 # Parse info and how to parse
-parse_file=vpr_write_rr_graph.txt
-parse_file=vpr_read_rr_graph.txt
+parse_file=vpr_fixed_chan_width.txt
+parse_file=vpr_parse_second_file.txt
 
 # How to parse QoR info
 qor_parse_file=qor_rr_graph.txt

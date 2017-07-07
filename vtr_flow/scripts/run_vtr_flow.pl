@@ -693,10 +693,10 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		}        
 		push( @vpr_args, "--seed");			 		  
 		push( @vpr_args, "$seed");
-        if ($verify_rr_graph || $rr_graph_error_check){
-            push( @vpr_args, "--write_rr_graph" );				  
-            push( @vpr_args, 'RR_graph_result.xml');
-        }
+		if ($verify_rr_graph || $rr_graph_error_check){
+			push( @vpr_args, "--write_rr_graph" );				  
+			push( @vpr_args, 'RR_graph_result.xml');
+		}
 		push( @vpr_args, "$switch_usage_analysis");
 		push( @vpr_args, @forwarded_vpr_args);
 		push( @vpr_args, $specific_vpr_stage);
@@ -709,7 +709,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                 
 
 
-                #run vpr again with the generated rr graph
+                #run vpr again with additional parameters. This is for running a certain stage only or checking the rr graph
                 if ($verify_rr_graph or $check_route or $check_place or $rr_graph_error_check){
                     # move the most recent necessary result files to temp directory for specific vpr stage
                     if ($specific_vpr_stage eq "--place" or $specific_vpr_stage eq "--route") {
@@ -719,22 +719,27 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                         }
                     }
 
-                    if ($rr_graph_error_check){
-                    my $architecture_file_path_new_error = "$temp_dir$error_architecture_file_name";
-                    copy( $architecture_file_path, $architecture_file_path_new_error);
-                    $architecture_file_path = $architecture_file_path_new_error;
-                    }
-                    #only perform routing for error check. Special care was taken prevent netlist check warnings
+			
+                        #load the architecture file with errors if we're checking for it
+			if ($rr_graph_error_check){
+				my $architecture_file_path_new_error = "$temp_dir$error_architecture_file_name";
+				copy( $architecture_file_path, $architecture_file_path_new_error);
+				$architecture_file_path = $architecture_file_path_new_error;
+			}
+			
                         my @vpr_args;
-                        
                         if ($rr_graph_error_check){
 				push( @vpr_args, $error_architecture_file_name );
 			}else{
 				push( @vpr_args, $architecture_file_name );
 			}
+			
                     	push( @vpr_args, "$benchmark_name" );
-			push( @vpr_args, "--route" );
-			push( @vpr_args, "--verify_file_digests" );
+                    	
+			#only perform routing for error check. Special care was taken prevent netlist check warnings
+                    	if ($rr_graph_error_check){
+				push( @vpr_args, "--verify_file_digests" );
+			}
                         push( @vpr_args, "off" );
             		push( @vpr_args, "--blif_file"	);
                 	push( @vpr_args, "$prevpr_output_file_name");
@@ -765,7 +770,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                         }
                         if ($check_route){
 				push( @vpr_args, "--analysis");
-                        }elsif ($check_place){
+                        }elsif ($check_place or $rr_graph_error_check){
 				push( @vpr_args, "--route");
                         }
                         
@@ -773,6 +778,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                         push( @vpr_args, @forwarded_vpr_args);
                         push( @vpr_args, $specific_vpr_stage);
 
+			#run vpr again with a different name and additional parameters
 
                         $q = &system_with_timeout(
                                 $vpr_path,                    "vpr_second_run.out",
