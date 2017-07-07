@@ -739,8 +739,8 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			#only perform routing for error check. Special care was taken prevent netlist check warnings
                     	if ($rr_graph_error_check){
 				push( @vpr_args, "--verify_file_digests" );
+                        	push( @vpr_args, "off" );
 			}
-                        push( @vpr_args, "off" );
             		push( @vpr_args, "--blif_file"	);
                 	push( @vpr_args, "$prevpr_output_file_name");
                         push( @vpr_args, "--timing_analysis" );   
