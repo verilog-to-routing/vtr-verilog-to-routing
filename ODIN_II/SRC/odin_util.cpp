@@ -36,6 +36,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include <regex.h>
+#include <stdbool.h>
 
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
@@ -744,4 +746,73 @@ void warning_message(short /*error_type*/, int line_number, int file, const char
 
 	if (message[strlen(message)-1] != '\n') fprintf(stderr,"\n");
 }
+/*
+Search and replace a string keeping original string intact
+*/
+char *search_replace(char *src, const char *sKey, const char *rKey, int flag)
+{
+	std::string tmp;
+	char *line;
+	line = vtr::strdup(src);
+	tmp = line;
+	switch(flag)
+	{
+		case 1:
+			tmp = vtr::replace_first(tmp,sKey,rKey);
+			sprintf(line,"%s",tmp.c_str());
+			break;
+		case 2:
+			tmp = vtr::replace_all(tmp,sKey,rKey);
+			sprintf(line,"%s",tmp.c_str());
+			break;
+		default:
+			return line;
+	}
+	return line;
+}
+char *find_substring(char *src,const char *sKey,int flag)
+{
+	// flag == 1 first half, flag == 2 second half
+	
+	std::string tmp;
+	std::string key;
+	char *line;
+	line = vtr::strdup(src);
+	tmp = line;
+	key = sKey;
+	std::size_t found = tmp.find(key);
+	switch(flag)
+	{
+		case 1:
+   			tmp = tmp.substr(0,found-1);
+			break;
+		case 2:
+   			tmp = tmp.substr(found,tmp.length());
+			break;
 
+		default:
+			return line;
+	}
+	sprintf(line,"%s",tmp.c_str());
+
+	return line;
+}
+bool validate_string_regex(const char *str, const char *pattern)
+{
+    regex_t re;
+    int ret;
+	
+	if (regcomp(&re, pattern, REG_EXTENDED) != 0)
+	{
+        fprintf(stderr,"\nRETURNING FALSE\n");
+		return false;
+	}
+
+    ret = regexec(&re, str, (size_t) 0, NULL, 0);
+    regfree(&re);
+
+    if (ret == 0)
+		return true;
+    
+	return false;
+}
