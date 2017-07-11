@@ -243,7 +243,7 @@
  *      AtomNetId net1 = netlist.create_net("net1");
  *
  *      //Associate the net with blk1
- *      netlist.create_pin(blk1_out, 0, net_id, AtomPinType::DRIVER);
+ *      netlist.create_pin(blk1_out, 0, net1, AtomPinType::DRIVER);
  *
  *      //Create block 2 and hook it up to net1
  *      AtomBlockId blk2 = netlist.create_block("block_2", blk_model);

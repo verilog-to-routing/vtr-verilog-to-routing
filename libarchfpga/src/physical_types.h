@@ -406,7 +406,7 @@ typedef const t_type_descriptor* t_type_ptr;
 struct t_pb_type {
 	char* name;
 	int num_pb;
-	char *blif_model;
+	char* blif_model;
 	t_model *model;
 	enum e_pb_type_class class_type;
 
@@ -883,7 +883,7 @@ struct t_segment_inf {
  * Tdel_map: A map where the key is the number of inputs and the entry       *
  *           is the corresponding delay. If there is only one entry at key   *
  *           UNDEFINED, then delay is a constant (doesn't vary with fan-in). *
- *	     A map saves us the trouble of sorting, and has lower access     *
+ *	         A map saves us the trouble of sorting, and has lower access     *
  *           time for interpolation/extrapolation purposes                   *
  * mux_trans_size:  The area of each transistor in the segment's driving mux *
  *                  measured in minimum width transistor units               *

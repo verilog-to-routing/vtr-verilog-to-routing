@@ -574,7 +574,6 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
     //Create the new merged net
     netlist.add_net(new_net_name, new_driver, new_sinks);
 
-
 }
 
 void fix_clock_to_data_conversions(AtomNetlist& netlist, const t_model* library_models) {
