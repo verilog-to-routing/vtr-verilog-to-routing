@@ -44,15 +44,9 @@ enum class PortType : char {
 };
 
 enum class PinType : char {
-	DRIVER, //The pin drives a net
-	SINK    //The pin is a net sink
-};
-
-//The type of a block in the AtomNetlist
-enum class BlockType : char {
-	INPAD,          //A primary input
-	OUTPAD,         //A primary output
-	BLOCK           //A basic atom block (LUT, FF, blackbox etc.)
+	DRIVER,	//The pin drives a net
+	SINK,	//The pin is a net sink
+	OPEN	//The pin is an open connection (undecided)
 };
 
 #endif

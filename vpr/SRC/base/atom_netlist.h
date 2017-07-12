@@ -423,6 +423,8 @@ class AtomNetlist : public BaseNetlist {
         //Returns the type of the specified block
         AtomBlockType       block_type          (const AtomBlockId id) const;
 
+		//Returns the model associated with the block
+		const t_model*      block_model(const BlockId id) const;
 
         //Returns the truth table associated with the block
         // Note that this is only non-empty for LUTs and Flip-Flops/latches.
@@ -572,7 +574,8 @@ class AtomNetlist : public BaseNetlist {
         bool                        dirty_;         //Indicates the netlist has invalid entries from remove_*() functions
 
         //Block data
-        vtr::vector_map<AtomBlockId,TruthTable>              block_truth_tables_;       //Truth tables of each block
+		vtr::vector_map<AtomBlockId, const t_model*>		block_models_;             //Architecture model of each block
+		vtr::vector_map<AtomBlockId,TruthTable>             block_truth_tables_;       //Truth tables of each block
 };
 
 #include "atom_lookup.h"

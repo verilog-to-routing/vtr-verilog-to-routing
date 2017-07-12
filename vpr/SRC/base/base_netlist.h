@@ -34,10 +34,14 @@ class BaseNetlist {
 		typedef vtr::Range<pin_iterator>	pin_range;
 		typedef vtr::Range<port_iterator>	port_range;
 
-	public: //Constructor
+	public:
 		BaseNetlist(std::string name="", std::string id="");
 
 	public: //Public Mutators
+		//Create or return an existing block in the netlist
+        //  name        : The unique name of the block
+        BlockId create_block(const std::string name);
+
 		//Create or return an existing port in the netlist
         //  blk_id      : The block the port is associated with
         //  name        : The name of the port (must match the name of a port in the block's model)
@@ -113,12 +117,6 @@ class BaseNetlist {
 		*/
 		//Returns the name of the specified block
 		const std::string&  block_name(const BlockId id) const;
-
-		//Returns the type of the specified block
-		BlockType			block_type(const BlockId id) const;
-
-		//Returns the model associated with the block
-		const t_model*      block_model(const BlockId id) const;
 
 		//Returns true if the block is purely combinational (i.e. no input clocks
 		//and not a primary input
@@ -386,7 +384,6 @@ class BaseNetlist {
 		//Block data
 		vtr::vector_map<BlockId, BlockId>					block_ids_;                //Valid block ids
 		vtr::vector_map<BlockId, StringId>					block_names_;              //Name of each block
-		vtr::vector_map<BlockId, const t_model*>			block_models_;             //Architecture model of each block
 
 		vtr::vector_map<BlockId, std::vector<PortId>>		block_ports_;              //Ports of each block
 		vtr::vector_map<BlockId, unsigned>					block_num_input_ports_;    //Input ports of each block

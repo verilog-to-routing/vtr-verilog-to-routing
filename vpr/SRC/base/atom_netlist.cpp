@@ -146,7 +146,25 @@ void AtomNetlist::print_stats() const {
  *
  */
 AtomBlockType AtomNetlist::block_type (const AtomBlockId id) const {
-	return (AtomBlockType) BaseNetlist::block_type(id);
+	const t_model* blk_model = block_model(id);
+
+	AtomBlockType type = AtomBlockType::BLOCK;
+	if (blk_model->name == std::string("input")) {
+		type = AtomBlockType::INPAD;
+	}
+	else if (blk_model->name == std::string("output")) {
+		type = AtomBlockType::OUTPAD;
+	}
+	else {
+		type = AtomBlockType::BLOCK;
+	}
+	return type;
+}
+
+const t_model* AtomNetlist::block_model(const BlockId id) const {
+	VTR_ASSERT(valid_block_id(id));
+
+	return block_models_[id];
 }
 
 const AtomNetlist::TruthTable& AtomNetlist::block_truth_table (const AtomBlockId id) const {
@@ -263,48 +281,18 @@ bool AtomNetlist::verify_block_invariants() const {
  *
  */
 AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* model, const TruthTable truth_table) {
-    //Must have a non-empty name
-    VTR_ASSERT_MSG(!name.empty(), "Non-Empty block name");
+	AtomBlockId blk_id = BaseNetlist::create_block(name);
+	
+    //Initialize the data
+	block_models_.push_back(model);
+    block_truth_tables_.push_back(truth_table);
 
-    //Check if the block has already been created
-    AtomStringId name_id = BaseNetlist::create_string(name);
-    AtomBlockId blk_id = BaseNetlist::find_block(name_id);
+	//Check post-conditions: size
+	VTR_ASSERT(validate_block_sizes());
 
-    if(blk_id == AtomBlockId::INVALID()) {
-        //Not found, create it
-
-        //Reserve an id
-        blk_id = AtomBlockId(block_ids_.size());
-        block_ids_.push_back(blk_id);
-
-        //Initialize the data
-        block_names_.push_back(name_id);
-        block_models_.push_back(model);
-        block_truth_tables_.push_back(truth_table);
-
-        //Initialize the look-ups
-        block_name_to_block_id_.insert(name_id, blk_id);
-
-        block_pins_.emplace_back();
-        block_num_input_pins_.push_back(0);
-        block_num_output_pins_.push_back(0);
-        block_num_clock_pins_.push_back(0);
-
-        block_ports_.emplace_back();
-        block_num_input_ports_.push_back(0);
-        block_num_output_ports_.push_back(0);
-        block_num_clock_ports_.push_back(0);
-    }
-
-    //Check post-conditions: size
-    VTR_ASSERT(validate_block_sizes());
-
-    //Check post-conditions: values
-    VTR_ASSERT(valid_block_id(blk_id));
-    VTR_ASSERT(block_name(blk_id) == name);
-    VTR_ASSERT(block_model(blk_id) == model);
+	//Check post-conditions: values
+	VTR_ASSERT(block_model(blk_id) == model);
     VTR_ASSERT(block_truth_table(blk_id) == truth_table);
-    VTR_ASSERT_SAFE(find_block(name) == blk_id);
 
     return blk_id;
 }
@@ -530,7 +518,8 @@ void AtomNetlist::shrink_to_fit() {
  *
  */
 bool AtomNetlist::validate_block_sizes() const {
-	if(block_truth_tables_.size() != block_ids_.size()) {
+	if (block_truth_tables_.size() != block_ids_.size()
+		|| block_models_.size() != block_ids_.size()) {
         VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent block data sizes");
     }
     return BaseNetlist::validate_block_sizes();

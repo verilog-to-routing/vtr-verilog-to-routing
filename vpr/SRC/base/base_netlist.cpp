@@ -3,7 +3,6 @@
 
 #include "base_netlist.h"
 #include "vtr_assert.h"
-
 #include "vpr_error.h"
 
 
@@ -94,28 +93,6 @@ const std::string& BaseNetlist::netlist_id() const {
 const std::string& BaseNetlist::block_name(const BlockId id) const {
 	StringId str_id = block_names_[id];
 	return strings_[str_id];
-}
-
-BlockType BaseNetlist::block_type(const BlockId id) const {
-	const t_model* blk_model = block_model(id);
-
-	BlockType type = BlockType::BLOCK;
-	if (blk_model->name == std::string("input")) {
-		type = BlockType::INPAD;
-	}
-	else if (blk_model->name == std::string("output")) {
-		type = BlockType::OUTPAD;
-	}
-	else {
-		type = BlockType::BLOCK;
-	}
-	return type;
-}
-
-const t_model* BaseNetlist::block_model(const BlockId id) const {
-	VTR_ASSERT(valid_block_id(id));
-
-	return block_models_[id];
 }
 
 bool  BaseNetlist::block_is_combinational(const BlockId id) const {
@@ -572,6 +549,49 @@ bool BaseNetlist::verify_lookups() const {
 * Mutators
 *
 */
+BlockId BaseNetlist::create_block(const std::string name) {
+    //Must have a non-empty name
+    VTR_ASSERT_MSG(!name.empty(), "Non-Empty block name");
+
+    //Check if the block has already been created
+    StringId name_id = BaseNetlist::create_string(name);
+    BlockId blk_id = BaseNetlist::find_block(name_id);
+
+    if(blk_id == BlockId::INVALID()) {
+        //Not found, create it
+
+        //Reserve an id
+        blk_id = BlockId(block_ids_.size());
+        block_ids_.push_back(blk_id);
+
+        //Initialize the data
+        block_names_.push_back(name_id);
+
+        //Initialize the look-ups
+        block_name_to_block_id_.insert(name_id, blk_id);
+
+        block_pins_.emplace_back();
+        block_num_input_pins_.push_back(0);
+        block_num_output_pins_.push_back(0);
+        block_num_clock_pins_.push_back(0);
+
+        block_ports_.emplace_back();
+        block_num_input_ports_.push_back(0);
+        block_num_output_ports_.push_back(0);
+        block_num_clock_ports_.push_back(0);
+    }
+
+    //Check post-conditions: size
+    VTR_ASSERT(validate_block_sizes());
+
+    //Check post-conditions: values
+    VTR_ASSERT(valid_block_id(blk_id));
+    VTR_ASSERT(block_name(blk_id) == name);
+    VTR_ASSERT_SAFE(find_block(name) == blk_id);
+
+    return blk_id;
+}
+
 PortId  BaseNetlist::create_port(const BlockId blk_id, const t_model_ports* model_port) {
 	//Check pre-conditions
 	VTR_ASSERT_MSG(valid_block_id(blk_id), "Valid block id");
@@ -657,7 +677,6 @@ PinId BaseNetlist::create_pin(const PortId port_id, BitIndex port_bit, const Net
 
 	return pin_id;
 }
-
 
 NetId BaseNetlist::create_net(const std::string name) {
 	//Creates an empty net (or returns an existing one)
@@ -840,7 +859,7 @@ void BaseNetlist::remove_net_pin(const NetId net_id, const PinId pin_id) {
 		//Note: since we fully update the net we don't need to mark the netlist dirty_
 	}
 
-	//Dissassociate the pin with the net
+	//Disassociate the pin with the net
 	if (valid_pin_id(pin_id)) {
 		pin_nets_[pin_id] = NetId::INVALID();
 
@@ -1027,7 +1046,6 @@ bool BaseNetlist::valid_string_id(StringId id) const {
 
 bool BaseNetlist::validate_block_sizes() const {
 	if (block_names_.size() != block_ids_.size()
-		|| block_models_.size() != block_ids_.size()
 		|| block_pins_.size() != block_ids_.size()
 		|| block_num_input_pins_.size() != block_ids_.size()
 		|| block_num_output_pins_.size() != block_ids_.size()
