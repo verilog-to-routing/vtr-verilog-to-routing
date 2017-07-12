@@ -427,6 +427,7 @@ This file is generated through the last stage of the rr graph generation during 
 When reading in rr graph from an external file, the rr graph is used during the placement and routing section of VPR.
 The file is constructed using tags. The top level is the ``rr_graph`` tag. 
 This tag contains all the channel, switches, segments, block, grid, node, and edge information of the FPGA. 
+It is important to keep all the values as high precision as possible. Sensitive values include capacitance and Tdel. As default, these values are printed out with a precision of 30 digits.
 Each of these sections are separated into separate tags as described below.
 
 The channel information is contained within the ``channels`` subtag. This describes the minimum and maximum channel width within the architecture. Each ``channels`` tag has the following subtags:
@@ -455,7 +456,7 @@ The channel information is contained within the ``channels`` subtag. This descri
 
     The width of each channel. The minimum is one track per channel. io channels are io_rat * maximum in interior tracks wide. The channel distributions read from the architecture file are scaled by a constant factor.
     	
-A ``switches`` tag contains all the switches and its information within the FPGA. It should be noted that for values such as capacitance, Tdel, and sizing info have a decimal precision of 30. This ensures a more accurate calculation when reading in the routing resource graph. Each ``switches`` tag has the following subtags:
+A ``switches`` tag contains all the switches and its information within the FPGA. It should be noted that for values such as capacitance, Tdel, and sizing info all have high precision. This ensures a more accurate calculation when reading in the routing resource graph. Each ``switches`` tag has the following subtags:
 
 * ``switch``
 
@@ -498,7 +499,7 @@ A ``switches`` tag contains all the switches and its information within the FPGA
     The area of the buffer. If this is set to zero, the area is calculated from the resistance
 
 
-The ``segments`` tag contains all the segments and its information. Note again that the capacitance has a high decimal precision of 30. Each ``segments`` tag has the following subtags:
+The ``segments`` tag contains all the segments and its information. Note again that the capacitance has a high decimal precision. Each ``segments`` tag has the following subtags:
 
 * ``segment``
 
