@@ -588,10 +588,9 @@ static void print_stats(t_block *clb, int num_clusters) {
 void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_intra_lb_net> * > &intra_lb_routing, bool global_clocks,
 		const std::unordered_set<AtomNetId>& is_clock, const std::string& architecture_id, const char *out_fname, bool skip_clustering) {
 
-	/* 
-	 * This routine dumps out the output netlist in a format suitable for  *
-	 * input to vpr.  This routine also dumps out the internal structure of   *
-	 * the cluster, in essentially a graph based format.                           */
+	/* This routine dumps out the output netlist in a format suitable for  *
+	 * input to vpr. This routine also dumps out the internal structure of *
+	 * the cluster, in essentially a graph based format.                   */
 
 	FILE *fpout;
 	int column;
@@ -617,7 +616,7 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 			out_fname, architecture_id.c_str(), atom_ctx.nlist.netlist_id().c_str());
 	fprintf(fpout, "\t<inputs>\n\t\t");
 
-	column = 2 * TAB_LENGTH; /* Organize whitespace to ident data inside block */
+	column = 2 * TAB_LENGTH; /* Organize whitespace to indent data inside block */
     for(auto blk_id : atom_ctx.nlist.blocks()) {
 		if (atom_ctx.nlist.block_type(blk_id) == AtomBlockType::INPAD) {
 			print_string(atom_ctx.nlist.block_name(blk_id).c_str(), &column, 2, fpout);

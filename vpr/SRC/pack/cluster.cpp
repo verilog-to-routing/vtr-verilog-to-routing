@@ -138,11 +138,11 @@ int unclustered_list_head_size;
 static t_molecule_link *memory_pool; /*Declared here so I can free easily.*/
 
 /* Does the atom block that drives the output of this atom net also appear as a   *
- * receiver (input) pin of the atom net?If so, then by how much? 
+ * receiver (input) pin of the atom net? If so, then by how much? 
  *
  * This is used in the gain routines to avoid double counting the connections from   *
- * the current cluster to other blocks (hence yielding better           *
- * clusterings).  The only time an atom block should connect to the same atom net  *
+ * the current cluster to other blocks (hence yielding better clusterings). *
+ * The only time an atom block should connect to the same atom net *
  * twice is when one connection is an output and the other is an input, *
  * so this should take care of all multiple connections.                */
 static std::unordered_map<AtomNetId,int> net_output_feeds_driving_block_input;
