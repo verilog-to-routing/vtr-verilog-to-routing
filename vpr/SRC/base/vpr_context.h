@@ -39,7 +39,7 @@ struct AtomContext : public Context {
     /* Atom netlist */
     AtomNetlist nlist;
 
-    /* Mappings to/from the Atom Netlist */
+    /* Mappings to/from the Atom Netlist to physically described .blif models*/
     AtomLookup lookup;
 };
 
@@ -189,14 +189,15 @@ struct ClusteringContext : public Context {
     /********************************************************************
      CLB Netlist
      ********************************************************************/
-	/* New netlist class derived from BaseNetlist */
+	/* New netlist class derived from BaseNetlist
+	 * Will replace t_netlist & part of t_block */
 	ClusteredNetlist clb_nlist;
 
     /* blocks in the clustered netlist */
     int num_blocks;
     t_block *blocks; //[0..num_blocks-1]
 
-    /* External-to-complex blocks, post-packed netlist [NETS ONLY]*/
+    /* External-to-complex blocks, post-packed netlist [NETS ONLY] */
     t_netlist clbs_nlist;
 };
 
