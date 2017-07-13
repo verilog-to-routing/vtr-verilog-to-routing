@@ -36,7 +36,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
-#include <regex.h>
+#include <regex>
 #include <stdbool.h>
 
 /*--------------------------------------------------------------------------
@@ -797,22 +797,15 @@ char *find_substring(char *src,const char *sKey,int flag)
 
 	return line;
 }
-bool validate_string_regex(const char *str, const char *pattern)
+
+bool validate_string_regex(const char *str_in, const char *pattern_in)
 {
-    regex_t re;
-    int ret;
-	
-	if (regcomp(&re, pattern, REG_EXTENDED) != 0)
-	{
-        fprintf(stderr,"\nRETURNING FALSE\n");
-		return false;
-	}
-
-    ret = regexec(&re, str, (size_t) 0, NULL, 0);
-    regfree(&re);
-
-    if (ret == 0)
-		return true;
+    std::string str(str_in);
+    std::regex pattern(pattern_in);
     
+    if(std::regex_match (str.begin(), str.end(), pattern))
+    	return true;
+    	
+	fprintf(stderr,"\nRETURNING FALSE\n");
 	return false;
 }
