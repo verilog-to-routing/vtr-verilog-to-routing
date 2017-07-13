@@ -494,7 +494,7 @@ PhotonCalculator u_calc (
 );
 
 // Mux to read the absorbtion array
-always @(*)
+always @*
 begin
 	if(r_state == RESET_MEM_ST)
 	begin
@@ -523,7 +523,7 @@ end
 //  1.  Read constants
 //  2.  Wait for completion
 //  3.  Write data back
-always @(*) begin
+always @* begin
 		// Initialize data
 		//for(i = 0; i < 104; i = i + 1) begin
 		//	c_const[i] = r_const[i];
@@ -10268,7 +10268,7 @@ single_port_ram sram_replace0 (.clk (clock), .addr (c_shifted_x), .data (blank),
 
 // priority encoder
 //integer i;
-//always @(*)
+//always @*
 //begin
 //	c_indexFirstOne = 6'b0; 
 //	for(i = 0; i < `BIT_WIDTH; i = i + 1)
@@ -22738,7 +22738,7 @@ always @ (overflow1_36 or negOverflow1_36 or prod1_36 or overflow2_36 or negOver
 	endcase
 end
 
-//always @ (*) begin
+//always @* begin
 //	new_uxQuotient = {prod1_36[63:63], prod1_36[47:16]};
 //	new_uyQuotient = {prod2_36[63:63], prod2_36[47:16]};
 //end
@@ -24106,7 +24106,7 @@ module Sqrt_64b (clk, num_, res);
 	
 //	//2nd for-loop:
 //	integer i;
-//	always @ (*) begin
+//	always @* begin
 //		op_[0] = num;
 //		one_[0] = one;
 //		res_[0] = 64'b0;
@@ -24514,7 +24514,7 @@ module Sqrt_64b (clk, num_, res);
 		res__30_q <= res__30_d;
 	end
 	
-	always @ (*) begin
+	always @* begin
        //i = 30
        if (op__30_q >= res__30_q + one__30_q) begin
            op__31 = op__30_q - res__30_q - one__30_q;
@@ -24538,7 +24538,7 @@ module Sqrt_64b (clk, num_, res);
 
 
 	//If-statement about assigning res:
-	always @ (*) begin
+	always @* begin
 		if(one__0 == 0) begin
 			res = res__0[31:0];
          end else if (one__1 == 0) begin

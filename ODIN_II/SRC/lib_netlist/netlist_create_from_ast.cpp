@@ -3853,7 +3853,7 @@ signal_list_t *evaluate_sensitivity_list(ast_node_t *delay_control, char *instan
 
 	if (delay_control == NULL)
 	{
-		/* Assume always @(*) */
+		/* Assume always @* */
 		free_signal_list(return_sig_list);
 		return_sig_list = NULL;
 		type_of_circuit = COMBINATIONAL;

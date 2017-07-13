@@ -1606,7 +1606,7 @@ assign o_conflict = conflict;
    // Bit 15 = r15
    // Bit 0  = r0
    // In ldm and stm instructions r0 is loaded or stored first 
-always @(*)
+always @*
 
 	if	(instruction[0] == 1'b1)			 mtrans_reg1 = 4'h0;
 	else if (instruction[1:0] == 2'b10)			 mtrans_reg1 = 4'h1;
@@ -1667,7 +1667,7 @@ assign mtrans_reg2_mask = mtrans_reg1 == 4'h0 ?  16'b1 :
 
 
  
-always @(*)
+always @*
 /*    casez ( instruction[15:0] & ~mtrans_reg2_mask )
     16'b???????????????1 : mtrans_reg2 = 4'h0 ;
     16'b??????????????10 : mtrans_reg2 = 4'h1 ;
@@ -1828,7 +1828,7 @@ assign interrupt_mode = next_interrupt == 3'd2 ? FIRQ :
                         next_interrupt == 3'd1 ? SVC  :
                                                  USR  ;
  
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -1850,7 +1850,7 @@ always @(*)
 
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -1869,7 +1869,7 @@ always @(*)
 	end
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && interrupt &&  next_interrupt != 3'd6 && next_interrupt == 3'd2)
 			status_bits_firq_mask_nxt        = 1'd1;
@@ -1879,7 +1879,7 @@ always @(*)
 	end
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict &&(type == SWAP))		
 			decode_exclusive_nxt            = 1'd1;
@@ -1888,7 +1888,7 @@ always @(*)
 	end
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -1913,7 +1913,7 @@ always @(*)
 			decode_daccess_nxt             = 1'd0;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict && type == SWAP)
 			decode_iaccess_nxt              = 1'd0;
@@ -1932,7 +1932,7 @@ always @(*)
 	end
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -1955,7 +1955,7 @@ always @(*)
 	end
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -1986,7 +1986,7 @@ always @(*)
 			saved_current_instruction_wen   = 1'd0;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( control_state == MEM_WAIT1 && !conflict )
 			pre_fetch_instruction_wen   = 1'd1;
@@ -2002,7 +2002,7 @@ always @(*)
 			pre_fetch_instruction_wen   = 1'd0;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict && type == MTRANS)
 		//     restore_base_address_nxt        <= instruction[20] && 
@@ -2029,7 +2029,7 @@ always @(*)
 			restore_base_address_nxt        = restore_base_address;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2051,7 +2051,7 @@ always @(*)
 			barrel_shift_amount_sel_nxt = 2'd0; 
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2071,7 +2071,7 @@ always @(*)
 			barrel_shift_data_sel_nxt       = 2'd0;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )	
 		begin
@@ -2086,7 +2086,7 @@ always @(*)
 			barrel_shift_function_nxt       = 2'd0;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict && type == MULT)
 		begin	
@@ -2110,7 +2110,7 @@ always @(*)
 
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2158,7 +2158,7 @@ always @(*)
 	end 
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2200,7 +2200,7 @@ always @(*)
 	end
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2229,7 +2229,7 @@ always @(*)
 	end
 
 		
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2258,7 +2258,7 @@ always @(*)
 			load_pc_nxt                     = 1'd0;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2273,7 +2273,7 @@ always @(*)
 			byte_enable_sel_nxt = 2'd0;
 	end 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict && regop_set_flags && instruction[15:12] == 4'd15)
 			status_bits_sel_nxt       = 3'd1; 				
@@ -2286,7 +2286,7 @@ always @(*)
 	end
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2316,7 +2316,7 @@ always @(*)
 	end
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict && type == MTRANS && instruction[22:20] == 3'b100 )
 			o_user_mode_regs_store_nxt = 1'd1;
@@ -2329,7 +2329,7 @@ always @(*)
 	end
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict && type == REGOP )
 		begin
@@ -2344,7 +2344,7 @@ always @(*)
 			alu_swap_sel_nxt = 1'd0;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2377,7 +2377,7 @@ always @(*)
 	end
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2407,7 +2407,7 @@ always @(*)
 			alu_cin_sel_nxt  = 2'd0;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict && type == REGOP )
 		begin			
@@ -2431,7 +2431,7 @@ always @(*)
 	end
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2473,7 +2473,7 @@ always @(*)
 			alu_out_sel_nxt          = 4'd0;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2494,7 +2494,7 @@ always @(*)
 			write_data_wen_nxt = 1'd0;
 	end
 
-always @(*)
+always @*
 	begin		
 		if(instruction_valid && !interrupt && !conflict && (type == CORTRANS && !und_request) && ! instruction[20])
 			copro_write_data_wen_nxt = 1'd1;
@@ -2502,7 +2502,7 @@ always @(*)
 			copro_write_data_wen_nxt = 1'd0;
 	end
 
-always @(*)
+always @*
 	begin		
 		if(instruction_valid && !interrupt && !conflict && type == MTRANS)
 			base_address_wen_nxt            = 1'd1;			
@@ -2510,7 +2510,7 @@ always @(*)
 			base_address_wen_nxt            = 1'd0;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2570,7 +2570,7 @@ always @(*)
 			pc_wen_nxt              = 1'd1;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict )
 		begin
@@ -2719,7 +2719,7 @@ always @(*)
 			reg_bank_wen_nxt                = 15'd0;
 	end
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict && regop_set_flags)
 			status_bits_flags_wen_nxt = 1'd1;
@@ -2732,7 +2732,7 @@ always @(*)
 	end
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict)
 		begin
@@ -2772,7 +2772,7 @@ always @(*)
 	end	
 
 
-always @(*)
+always @*
 	begin
 		if ( instruction_valid && !interrupt && !conflict && regop_set_flags 
 			&& instruction[15:12] == 4'd15 && i_execute_status_bits[1:0] != USR)
@@ -2834,7 +2834,7 @@ assign instruction_valid = ((control_state == EXECUTE || control_state == PRE_FE
  
  
  
-always @(*)
+always @*
     begin
     // default is to hold the current state
 //    control_state_nxt <= control_state;
@@ -4125,7 +4125,7 @@ assign svc_exec  = i_mode_exec == SVC;
 assign irq_exec  = i_mode_exec == IRQ;
 assign firq_exec = i_mode_exec == FIRQ;
 
-always @(*)
+always @*
 case(i_wb_read_data_rd)
 	4'h0  : decode = 15'h0001  ;
 	4'h1  : decode = 15'h0002  ;
@@ -4319,7 +4319,7 @@ assign o_rm = i_rm_sel == 4'd0  ? r0_out  :
 // ========================================================
 // Rds Selector
 // ========================================================
-always @(*)
+always @*
     case ( i_rs_sel )
        4'd0  :  o_rs = r0_out  ;
        4'd1  :  o_rs = r1_out  ; 
@@ -4345,7 +4345,7 @@ always @(*)
 // Rd Selector
 // ========================================================
 
-always @(*)
+always @*
     case ( i_rs_sel )
        4'd0  :  o_rd = r0_out  ;
        4'd1  :  o_rd = r1_out  ; 
@@ -4455,7 +4455,7 @@ assign sum34_b        =  product[1:0] == 2'b01 ? multiplier     :
 
   //  assign count_nxt = count;
   
-always @(*)
+always @*
     begin
 
  
