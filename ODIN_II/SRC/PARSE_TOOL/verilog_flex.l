@@ -308,9 +308,8 @@ std::string base_log2_convert(std::string number, size_t radix, size_t bit_lengt
                 resulting_binary[j] = converted_digit[k];
             }
         }
+        return resulting_binary;
     }
-		
-	return resulting_binary;
 }
 
 std::string base_10_convert(std::string number, size_t bit_length){
