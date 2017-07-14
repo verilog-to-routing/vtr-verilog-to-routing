@@ -271,8 +271,8 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int /*file_nu
 			new_node->types.number.size = atoi(temp_string); 
 		}
 		else{
-			new_node->types.number.is_full = 1;
-			new_node->types.number.size = 1;
+			new_node->types.number.is_full = 0;
+			new_node->types.number.size = strlen((string_pointer));
 		}          
 	
 		/* move to the digits */
@@ -327,12 +327,8 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int /*file_nu
 			break;
 		case(BIN):
 		{
-			if(new_node->types.number.is_full == 0){
-				// This will have limited width.
-				new_node->types.number.value = strtoll(new_node->types.number.number,NULL,2);
-				// This will have full width.
-		
-			}
+			
+			new_node->types.number.value = strtoll(new_node->types.number.number,NULL,2);
 			new_node->types.number.binary_string = convert_binary_string_of_size_to_bit_string(1, new_node->types.number.number, new_node->types.number.binary_size);
 		}
 		break;

@@ -36,7 +36,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
-#include <regex.h>
+#include <regex>
 #include <stdbool.h>
 
 /*--------------------------------------------------------------------------
@@ -208,51 +208,51 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 {
     char *return_string = NULL;
     if(is_dont_care_number == 0){
-	if (!is_hex_string(orig_string))
-		error_message(PARSE_ERROR, -1, -1, "Invalid hex number: %s.\n", orig_string);
-
-	char *bit_string = (char *)vtr::calloc(1,sizeof(char));
-	char *string     = vtr::strdup(orig_string);
-	int   size       = strlen(string);
-
-	// Change to big endian. (We want to add higher order bits at the end.)
-	reverse_string(string, size);
-
-	int count = 0;
-	int i;
-	for (i = 0; i < size; i++)
-	{
-		char temp[] = {string[i],'\0'};
-
-		unsigned long value = strtoul(temp, NULL, 16);
-		int k;
-		for (k = 0; k < 4; k++)
+		if (!is_hex_string(orig_string))
+			error_message(PARSE_ERROR, -1, -1, "Invalid hex number: %s.\n", orig_string);
+	
+		char *bit_string = (char *)vtr::calloc(1,sizeof(char));
+		char *string     = vtr::strdup(orig_string);
+		int   size       = strlen(string);
+	
+		// Change to big endian. (We want to add higher order bits at the end.)
+		reverse_string(string, size);
+	
+		int count = 0;
+		int i;
+		for (i = 0; i < size; i++)
 		{
-			char bit = value % 2;
-			value /= 2;
+			char temp[] = {string[i],'\0'};
+	
+			unsigned long value = strtoul(temp, NULL, 16);
+			int k;
+			for (k = 0; k < 4; k++)
+			{
+				char bit = value % 2;
+				value /= 2;
+				bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
+				bit_string[count++] = '0' + bit;
+				bit_string[count]   = '\0';
+			}
+		}
+		vtr::free(string);
+	
+		// Pad with zeros to binary_size.
+		while (count < binary_size)
+		{
 			bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
-			bit_string[count++] = '0' + bit;
+			bit_string[count++] = '0';
 			bit_string[count]   = '\0';
 		}
-	}
-	vtr::free(string);
-
-	// Pad with zeros to binary_size.
-	while (count < binary_size)
-	{
-		bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
-		bit_string[count++] = '0';
-		bit_string[count]   = '\0';
-	}
-
-	// Truncate to binary_size
-	bit_string[binary_size] = '\0';
-	// Change to little endian
-	reverse_string(bit_string, binary_size);
-	// Copy out only the bits before the truncation.
-	return_string = vtr::strdup(bit_string);
-	vtr::free(bit_string);
 	
+		// Truncate to binary_size
+		bit_string[binary_size] = '\0';
+		// Change to little endian
+		reverse_string(bit_string, binary_size);
+		// Copy out only the bits before the truncation.
+		return_string = vtr::strdup(bit_string);
+		vtr::free(bit_string);
+		
     }
     else if(is_dont_care_number == 1){
        char *string = vtr::strdup(orig_string); 
@@ -291,16 +291,6 @@ char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *
 
         return_string = vtr::strdup(bit_string);
 	    vtr::free(bit_string);
-
-        
-
-       // printf("bit_string %s",bit_string);
-       // getchar();
-
-        //printf("return_string %s", return_string);
-        //getchar();
-        //return return_string;
-	    
     }
     
     return return_string;
@@ -797,22 +787,15 @@ char *find_substring(char *src,const char *sKey,int flag)
 
 	return line;
 }
-bool validate_string_regex(const char *str, const char *pattern)
+
+bool validate_string_regex(const char *str_in, const char *pattern_in)
 {
-    regex_t re;
-    int ret;
-	
-	if (regcomp(&re, pattern, REG_EXTENDED) != 0)
-	{
-        fprintf(stderr,"\nRETURNING FALSE\n");
-		return false;
-	}
-
-    ret = regexec(&re, str, (size_t) 0, NULL, 0);
-    regfree(&re);
-
-    if (ret == 0)
-		return true;
+    std::string str(str_in);
+    std::regex pattern(pattern_in);
     
+    if(std::regex_match (str.begin(), str.end(), pattern))
+    	return true;
+    	
+	fprintf(stderr,"\nRETURNING FALSE\n");
 	return false;
 }

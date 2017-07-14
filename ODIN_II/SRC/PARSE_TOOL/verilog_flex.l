@@ -30,10 +30,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "verilog_bison.h"
 #include "vtr_util.h"
 #include <string>
+#include <algorithm>
 
 /* the define below helps with watching the parser go token by token */
 #define MP {if (to_view_parse) {printf("%d %s\n", yylineno, yytext);}}
-char* standardize_number(const char* input);
+char* make_std(const char * in, int radix, size_t type_of_number);
 
 %}
 
@@ -186,27 +187,27 @@ char* standardize_number(const char* input);
 <INITIAL>`?[a-zA-Z_][a-zA-Z0-9_]*				{ MP; yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }
 
 	/*	signed numbers	*/
-<INITIAL>[0-9]+'[sS][bB][0-1_]*						{ MP; return vNOT_SUPPORT;}
-<INITIAL>[0-9]+'[sS][hH][a-fA-F0-9_]*				{ MP; return vNOT_SUPPORT;}
-<INITIAL>[0-9]+'[sS][oO][0-7_]*						{ MP; return vNOT_SUPPORT;}
-<INITIAL>[0-9]+'[sS][dD][0-9_]*						{ MP; return vNOT_SUPPORT;}
-<INITIAL>'[sS][bB][0-1_]*							{ MP; return vNOT_SUPPORT;}
-<INITIAL>'[sS][hH][a-fA-F0-9_]*						{ MP; return vNOT_SUPPORT;}
-<INITIAL>'[sS][oO][0-7_]*							{ MP; return vNOT_SUPPORT;}
-<INITIAL>'[sS][dD][0-9_]*							{ MP; return vNOT_SUPPORT;}
+<INITIAL>[0-9]+'[sS][bB][0-1_]*						{ MP; yylval.num_value = make_std(yytext,2,3); return vNOT_SUPPORT;}
+<INITIAL>[0-9]+'[sS][hH][a-fA-F0-9_]*				{ MP; yylval.num_value = make_std(yytext,16,3); return vNOT_SUPPORT;}
+<INITIAL>[0-9]+'[sS][oO][0-7_]*						{ MP; yylval.num_value = make_std(yytext,8,3); return vNOT_SUPPORT;}
+<INITIAL>[0-9]+'[sS][dD][0-9_]*						{ MP; yylval.num_value = make_std(yytext,10,3); return vNOT_SUPPORT;}
+<INITIAL>'[sS][bB][0-1_]*							{ MP; yylval.num_value = make_std(yytext,2,4); return vNOT_SUPPORT;}
+<INITIAL>'[sS][hH][a-fA-F0-9_]*						{ MP; yylval.num_value = make_std(yytext,16,4); return vNOT_SUPPORT;}
+<INITIAL>'[sS][oO][0-7_]*							{ MP; yylval.num_value = make_std(yytext,8,4); return vNOT_SUPPORT;}
+<INITIAL>'[sS][dD][0-9_]*							{ MP; yylval.num_value = make_std(yytext,10,4); return vNOT_SUPPORT;}
 
-<INITIAL>[0-9_]+									{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
 
 	/*	unsigned Numbers	*/
-<INITIAL>[0-9]+'[bB][0-1_]*						{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>[0-9]+'[hH][a-fA-F0-9_]*				{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>[0-9]+'[oO][0-7_]*						{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>[0-9]+'[dD][0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>'[bB][0-1_]*							{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>'[hH][a-fA-F0-9_]*						{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>'[oO][0-7_]*							{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
-<INITIAL>'[dD][0-9_]*							{ MP; yylval.num_value = standardize_number(yytext); return vNUMBER_ID; }
+<INITIAL>[0-9]+'[bB][0-1_]*						{ MP; yylval.num_value = make_std(yytext,2,0); return vNUMBER_ID; }
+<INITIAL>[0-9]+'[hH][a-fA-F0-9_]*				{ MP; yylval.num_value = make_std(yytext,16,0); return vNUMBER_ID; }
+<INITIAL>[0-9]+'[oO][0-7_]*						{ MP; yylval.num_value = make_std(yytext,8,0); return vNUMBER_ID; }
+<INITIAL>[0-9]+'[dD][0-9_]*						{ MP; yylval.num_value = make_std(yytext,10,0); return vNUMBER_ID; }
+<INITIAL>'[bB][0-1_]*							{ MP; yylval.num_value = make_std(yytext,2,1); return vNUMBER_ID; }
+<INITIAL>'[hH][a-fA-F0-9_]*						{ MP; yylval.num_value = make_std(yytext,16,1); return vNUMBER_ID; }
+<INITIAL>'[oO][0-7_]*							{ MP; yylval.num_value = make_std(yytext,8,1); return vNUMBER_ID; }
+<INITIAL>'[dD][0-9]*							{ MP; yylval.num_value = make_std(yytext,10,1); return vNUMBER_ID; }
 
+<INITIAL>[0-9]+									{ MP; yylval.num_value =vtr::strdup(yytext); return vNUMBER_ID; }
 
 <INITIAL>#[0-9]+								{ MP; yylval.num_value = vtr::strdup(yytext+1); return vDELAY_ID; }
 
@@ -228,24 +229,202 @@ char* standardize_number(const char* input);
 <*>.|\n		{ printf("Missing verilog.l rule: Default rule invoked in state %d: \"%s\"\n", YY_START, yytext);printf("Line %d: %s\n", yylineno, yytext); }
 
 %%    
-
-char* standardize_number(const char* input)
-{
-	std::string input_number(input);
-	auto loc = input_number.find("\'");
-	size_t check_at = 0;
-	if(loc != std::string::npos)
-		check_at = loc;
-	
-	while(check_at < input_number.length())
-	{
-		if(input_number[check_at] == '_')
-			input_number.erase(input_number.begin()+check_at);
-		else
-		{
-			input_number[check_at] = std::tolower(input_number[check_at]);
-			check_at++;
-		}
-	}
-	return vtr::strdup(input_number.c_str());
+std::string base_log2_helper(const char in_digit, size_t radix){
+    switch(radix){
+        case 2:
+            switch(tolower(in_digit)){
+                case '0': return "0";
+                case '1': return "1";
+                case 'x': return "x";
+                case 'z': return "z";
+                default : break;
+            }
+            break;
+        case 8:
+            switch(tolower(in_digit)){
+                case '0': return "000";
+                case '1': return "001";
+                case '2': return "010";
+                case '3': return "011";
+                case '4': return "100";
+                case '5': return "101";
+                case '6': return "110";
+                case '7': return "111";
+				case 'x': return "xxx";
+				case 'z': return "zzz";
+                default : break;
+            }
+            break;
+            
+        case 16:
+            switch(tolower(in_digit)){
+                case '0': return "0000";
+                case '1': return "0001";
+                case '2': return "0010";
+                case '3': return "0011";
+                case '4': return "0100";
+                case '5': return "0101";
+                case '6': return "0110";
+                case '7': return "0111";
+                case '8': return "1000";
+                case '9': return "1001";
+                case 'a': return "1010";
+                case 'b': return "1011";
+                case 'c': return "1100";
+                case 'd': return "1101";
+                case 'e': return "1110";
+                case 'f': return "1111";
+				case 'x': return "xxxx";
+				case 'z': return "zzzz";
+                default : break;
+            }
+            break;
+        default: break;  
+    }
+    printf("_________not a valid bit______:   %c", in_digit);
+    return nullptr;
 }
+
+std::string base_log2_convert(std::string number, size_t radix, size_t bit_length, int signed_numb){
+
+	if(bit_length == 0){
+		std::string resulting_binary("");
+		
+		for(size_t i = 0; i< number.length(); i++)
+			resulting_binary += base_log2_helper(number[i],radix);
+		
+		return "0" + resulting_binary;	
+	}else{
+		char sign = '0'; 
+		if(signed_numb)
+			sign = base_log2_helper(number[0],radix)[0];
+			
+		std::string resulting_binary(bit_length, sign);
+		
+        for(int i= number.length()-1, j= resulting_binary.length()-1; i>=0 && j>= 0; i--){
+            std::string converted_digit = base_log2_helper(number[i], radix);
+            for(int k=converted_digit.length()-1; k>=0 && j >= 0; k--, j--){
+                resulting_binary[j] = converted_digit[k];
+            }
+        }
+		
+		return resulting_binary;
+	}
+
+}
+
+std::string base_10_convert(std::string number, size_t bit_length){
+    if(bit_length ==0){
+        std::string bit_string;
+        
+        while(number.length() > 0){
+            
+            int i=number.length()-1;
+            //catch last remainder
+            bit_string.insert(bit_string.begin(),((number[i]-'0')%2)+'0');
+    
+            for(;i>=0;i--){
+                if(i>0)
+                    number[i] = (number[i]-'0')/2 + ((number[i-1]-'0')%2)*5 +'0';
+                else
+                    number[i] = (number[i]-'0')/2 + '0';
+            }
+            
+            //remove padded 0
+            while(number.length() > 0 && number[0] == '0')
+                number.erase(number.begin());
+        }
+        return "0" + bit_string;
+    }else{
+        std::string bit_string_sized(bit_length,'0');
+        
+        int loc = bit_string_sized.length()-1;
+        while(loc >=0 && number.length() > 0){
+            
+            int i=number.length()-1;
+            //catch last remainder
+            bit_string_sized[loc--] = (number[i]-'0')%2 +'0';
+    
+            for(;i>=0;i--){
+                //num = num/2+ msb%2
+                if(i>0)
+                    number[i] = (number[i]-'0')/2 + (number[i-1]-'0')%2*5 +'0';
+                else
+                    number[i] = (number[i]-'0')/2 + '0';
+            }
+            
+            //remove padded 0
+            while(number.length() > 0 && number[0] == '0')
+                number.erase(number.begin());
+        }
+        return bit_string_sized;
+    }
+}
+
+char* make_std(const char *in, int radix, size_t type_of_number){
+    std::string input(in);
+    
+    std::string number;
+    size_t bit_length;
+    std::string number_def;
+    int signed_numb = 0;
+
+    switch(type_of_number){
+        
+        case 0:{ // has a bit_length and radix
+            size_t loc = input.find("\'");
+            number = input.substr(loc+2);
+            bit_length = strtoull(input.substr(0,loc).c_str(), NULL, 10);
+            number_def = input.substr(0,loc) + "\'b";
+            break;}
+            
+        case 1: // has a radix only
+            number = input.substr(2);
+            bit_length = 0;
+            number_def = "\'b";
+            break;
+            
+        case 2: // is an integer ex: "10234" NOT WORKING YET, probably preferable to keep as a decimal anywho
+            number = input;
+            bit_length = 0;
+            number_def = "\'b";
+            break;
+            
+        case 3:{ // has a bit_length and radix and signed
+            size_t loc = input.find("'");
+            number = input.substr(loc+3);
+            bit_length = strtoull(input.substr(0,loc).c_str(), NULL, 10);
+            number_def = input.substr(0,loc) + "\'sb";
+            signed_numb =1;
+            break;}
+            
+        case 4: // has a radix only and signed
+            number = input.substr(3);
+            bit_length = 0;
+            number_def = "\'sb";
+            signed_numb =1;
+            break;
+            
+        default: return NULL;
+    }
+    
+    //remove all occurence of _ since they are just visual aids
+    number.erase(std::remove(number.begin(), number.end(), '_'), number.end());
+
+    std::string output;
+    switch(radix){
+        case 2:     
+        case 8:     
+        case 16:
+            output = number_def + base_log2_convert(number, radix, bit_length, signed_numb);
+            break;
+        case 10:
+            output = number_def + base_10_convert(number, bit_length);
+            break;
+        default:
+            return NULL;
+    }
+    return vtr::strdup(output.c_str());
+}
+
+

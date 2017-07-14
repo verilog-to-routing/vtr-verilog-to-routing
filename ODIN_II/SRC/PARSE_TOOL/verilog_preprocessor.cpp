@@ -6,7 +6,6 @@
 #include "types.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
-#include <regex.h>
 #include <stdbool.h>
 
 /* Globals */
