@@ -194,7 +194,6 @@ struct ClusteringContext : public Context {
 	ClusteredNetlist clb_nlist;
 
     /* blocks in the clustered netlist */
-    int num_blocks;
     t_block *blocks; //[0..num_blocks-1]
 
     /* External-to-complex blocks, post-packed netlist [NETS ONLY] */

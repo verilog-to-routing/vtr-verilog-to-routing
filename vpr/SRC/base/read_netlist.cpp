@@ -76,13 +76,11 @@ static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId at
 /**
  * Initializes the block_list with info from a netlist 
  * net_file - Name of the netlist file to read
- * L_num_blocks - number of CLBs in netlist 
- * block_list - array of blocks in netlist [0..L_num_blocks - 1]
+ * block_list - array of blocks in netlist [0..num_blocks - 1]
  * t_netlist - Net related information
  */
 void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_digests,
-		int *L_num_blocks, t_block *block_list[],
-		t_netlist* clb_nlist, ClusteredNetlist* clustered_nlist) {
+				  t_block *block_list[], t_netlist* clb_nlist, ClusteredNetlist* clustered_nlist) {
 	clock_t begin = clock();
 	size_t bcount = 0;
 	t_block *blist;
@@ -247,7 +245,6 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
 	}
 
 	/* Return blocks and nets */
-	*L_num_blocks = bcount;
 	*block_list = blist;
 
     /* load mapping between atom pins and pb_graph_pins */
