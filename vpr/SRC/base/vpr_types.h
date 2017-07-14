@@ -519,9 +519,9 @@ struct t_net {
 	int *node_block;
 	int *node_block_port;
 	int *node_block_pin;
-	unsigned int is_routed : 1;
-	unsigned int is_fixed : 1;
-	unsigned int is_global : 1;
+	bool is_routed;
+	bool is_fixed;
+	bool is_global;
 };
 
 /* s_grid_tile is the minimum tile of the fpga                         

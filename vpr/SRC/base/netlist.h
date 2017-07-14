@@ -48,13 +48,13 @@ struct t_vnet{
 	// named bitfields (alternative to bitmasks)
 
     //TODO transfer net routing state to RoutingContext
-	unsigned int is_routed    : 1;
-	unsigned int is_fixed     : 1;
-	unsigned int is_global    : 1;
+	bool is_routed;
+	bool is_fixed;
+	bool is_global;
 
 	t_vnet(){
 		name = NULL;
-		is_routed = is_fixed = is_global = 0;
+		is_routed = is_fixed = is_global = false;
 	}
 
 	// Returns the number of sinks of the net, computed by looking 
