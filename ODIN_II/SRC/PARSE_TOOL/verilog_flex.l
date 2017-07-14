@@ -31,6 +31,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_util.h"
 #include <string>
 #include <algorithm>
+#include "string.h"
 
 /* the define below helps with watching the parser go token by token */
 #define MP {if (to_view_parse) {printf("%d %s\n", yylineno, yytext);}}
@@ -307,10 +308,9 @@ std::string base_log2_convert(std::string number, size_t radix, size_t bit_lengt
                 resulting_binary[j] = converted_digit[k];
             }
         }
+    }
 		
-		return resulting_binary;
-	}
-
+	return resulting_binary;
 }
 
 std::string base_10_convert(std::string number, size_t bit_length){
@@ -428,3 +428,23 @@ char* make_std(const char *in, int radix, size_t type_of_number){
 }
 
 
+char* standardize_number(const char* input)
+{
+	std::string input_number(input);
+	auto loc = input_number.find("\'");
+	size_t check_at = 0;
+	if(loc != std::string::npos)
+		check_at = loc;
+	
+	while(check_at < input_number.length())
+	{
+		if(input_number[check_at] == '_')
+			input_number.erase(input_number.begin()+check_at);
+		else
+		{
+			input_number[check_at] = tolower(input_number[check_at]);
+			check_at++;
+		}
+	}
+
+}
