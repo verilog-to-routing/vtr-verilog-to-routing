@@ -33,8 +33,8 @@ inline float ClbDelayCalc::clb_input_to_clb_output_delay(const t_net_pin* clb_in
 inline float ClbDelayCalc::trace_max_delay(int clb, int src_pb_route_id, int sink_pb_route_id) const {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    VTR_ASSERT(src_pb_route_id < cluster_ctx.blocks[clb].pb->pb_graph_node->total_pb_pins);
-    VTR_ASSERT(sink_pb_route_id < cluster_ctx.blocks[clb].pb->pb_graph_node->total_pb_pins);
+    VTR_ASSERT(src_pb_route_id < cluster_ctx.clb_nlist.block_pb((BlockId) clb)->pb_graph_node->total_pb_pins);
+    VTR_ASSERT(sink_pb_route_id < cluster_ctx.clb_nlist.block_pb((BlockId) clb)->pb_graph_node->total_pb_pins);
 
 
     const t_pb_route* pb_routes = cluster_ctx.blocks[clb].pb_route;
