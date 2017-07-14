@@ -38,7 +38,7 @@ static const char* netlist_file_name = NULL;
 static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,		
         const pugiutil::loc_data& loc_data);
 
-static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
+static void processPb(pugi::xml_node Parent, const int index,
 		t_pb* pb, t_pb_route *pb_route, int *num_primitives,
         const pugiutil::loc_data& loc_data, ClusteredNetlist *clb_nlist);
 
@@ -65,7 +65,10 @@ static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin);
 
 static void mark_constant_generators(const int L_num_blocks,
 		const t_block block_list[]);
-
+/*
+static void mark_constant_generators(const int L_num_blocks,
+	const t_block block_list[], const ClusteredNetlist *clb_nlist);
+	*/
 static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route);
 
 static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node);
@@ -222,6 +225,8 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
         /* TODO: Add additional check to make sure net connections match */
 
         mark_constant_generators(bcount, blist);
+//		mark_constant_generators(bcount, blist, clustered_nlist);
+
         load_external_nets_and_cb(bcount, blist, circuit_clocks, clb_nlist, clustered_nlist);
     } catch(pugiutil::XmlError& e) {
         vpr_throw(VPR_ERROR_NET_F, e.filename_c_str(), e.line(),
@@ -266,6 +271,7 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 		const int index, int *num_primitives,
         const pugiutil::loc_data& loc_data,
 		ClusteredNetlist *clb_nlist) {
+	//TODO: Every cb[index].pb reference should have a parallel clb_nlist->block_pb(index) reference
 
 	bool found;
 	int num_tokens = 0;
@@ -307,13 +313,9 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 		}
 	}
 	if (!found) {
-		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
-				"Unknown cb type %s for cb %s #%d.\n", block_inst.value(), cb[index].name,
-				index); // TODO: Remove and replace with clb_nlist throw
-/* 		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
+ 		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
 				"Unknown cb type %s for cb %s #%d.\n", block_inst.value(), clb_nlist->block_name((BlockId) index),
 				index);
-*/
 	}
 
 	/* Parse all pbs and CB internal nets*/
@@ -321,9 +323,9 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 //TODO: atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), clb_nlist->block_pb(index));
 
 	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
-	cb[index].pb_route = alloc_pb_route(cb[index].pb->pb_graph_node);
-		
-	clb_nlist->block_pb((BlockId) index)->pb_graph_node = clb_nlist->block_type((BlockId) index)->pb_graph_head;
+	clb_nlist->block_pb((BlockId)index)->pb_graph_node = clb_nlist->block_type((BlockId)index)->pb_graph_head;
+
+	cb[index].pb_route = alloc_pb_route(clb_nlist->block_pb((BlockId)index)->pb_graph_node);
 
     auto clb_mode = pugiutil::get_attribute(clb_block, "mode", loc_data);
 
@@ -337,24 +339,21 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	}
 	if (!found) {
 		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
-				"Unknown mode %s for cb %s #%d.\n", clb_mode.value(), cb[index].name,
-				index);
-/*		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
 		"Unknown mode %s for cb %s #%d.\n", clb_mode.value(), clb_nlist->block_name((BlockId) index),
 		index);
-*/
 	}
 
-	processPb(clb_block, cb, index, cb[index].pb, cb[index].pb_route, num_primitives, loc_data, clb_nlist);
+	processPb(clb_block, index, cb[index].pb, cb[index].pb_route, num_primitives, loc_data, clb_nlist);
 
 	//Process nets and net_pins
 	cb[index].nets = (int *) vtr::malloc(cb[index].type->num_pins * sizeof(int));
 	cb[index].net_pins = (int *) vtr::malloc(cb[index].type->num_pins * sizeof(int));
+
 	for (i = 0; i < cb[index].type->num_pins; i++) {
 		cb[index].nets[i] = OPEN;
 		cb[index].net_pins[i] = OPEN;
 	}
-	load_interal_to_block_net_nums(cb[index].type, cb[index].pb_route);
+	load_interal_to_block_net_nums(clb_nlist->block_type((BlockId) index), cb[index].pb_route);
 	freeTokens(tokens, num_tokens);
 }
 
@@ -364,12 +363,14 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
  * pb - physical block to use
  * loc_data - xml location info for error reporting
  */
-static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
+static void processPb(pugi::xml_node Parent, const int index,
 	t_pb* pb, t_pb_route *pb_route, int *num_primitives,
     const pugiutil::loc_data& loc_data, ClusteredNetlist *clb_nlist) {
+	
 	int i, j, pb_index;
 	bool found;
 	const t_pb_type *pb_type;
+	
 	t_token *tokens;
 	int num_tokens;
 
@@ -403,7 +404,7 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
 	} else {
 		/* process children of child if exists */
 
-		pb->child_pbs = new t_pb*[pb_type->modes[pb->mode].num_pb_type_children];
+		pb->child_pbs = new t_pb *[pb_type->modes[pb->mode].num_pb_type_children];
 		for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
 			pb->child_pbs[i] = new t_pb[pb_type->modes[pb->mode].pb_type_children[i].num_pb];
 		}
@@ -472,7 +473,7 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
                 }
                 pb->child_pbs[i][pb_index].parent_pb = pb;
 
-                processPb(child, cb, index, &pb->child_pbs[i][pb_index], pb_route, num_primitives, loc_data, clb_nlist);
+                processPb(child, index, &pb->child_pbs[i][pb_index], pb_route, num_primitives, loc_data, clb_nlist);
             } else {
                 /* physical block has no used primitives but it may have used routing */
                 pb->child_pbs[i][pb_index].name = NULL;
@@ -497,7 +498,7 @@ static void processPb(pugi::xml_node Parent, t_block *cb, const int index,
                                 pb->child_pbs[i][pb_index].name, pb_index);
                     }
                     pb->child_pbs[i][pb_index].parent_pb = pb;
-                    processPb(child, cb, index, &pb->child_pbs[i][pb_index], pb_route, num_primitives, loc_data, clb_nlist);
+                    processPb(child, index, &pb->child_pbs[i][pb_index], pb_route, num_primitives, loc_data, clb_nlist);
                 }
             }
             freeTokens(tokens, num_tokens);
@@ -575,7 +576,6 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
     auto& atom_ctx = g_vpr_ctx.atom();
 
     for(auto Cur = pugiutil::get_first_child(Parent, "port", loc_data, pugiutil::OPTIONAL); Cur; Cur = Cur.next_sibling("port")) {
-
         auto port_name = pugiutil::get_attribute(Cur, "name", loc_data);
 
         //Determine the port index on the pb
@@ -1032,6 +1032,15 @@ static void mark_constant_generators(const int L_num_blocks,
 	for (i = 0; i < L_num_blocks; i++) {
 		mark_constant_generators_rec(block_list[i].pb,
 				block_list[i].pb_route);
+	}
+}
+
+// Overloaded call for ClusteredNetlist
+static void mark_constant_generators(const int L_num_blocks,
+	const t_block block_list[], const ClusteredNetlist *clb_nlist) {
+	int i;
+	for (i = 0; i < L_num_blocks; i++) {
+		mark_constant_generators_rec(clb_nlist->block_pb((BlockId) i), block_list[i].pb_route);
 	}
 }
 
