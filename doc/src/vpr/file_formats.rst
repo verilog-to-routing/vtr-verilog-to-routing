@@ -430,212 +430,170 @@ This tag contains all the channel, switches, segments, block, grid, node, and ed
 It is important to keep all the values as high precision as possible. Sensitive values include capacitance and Tdel. As default, these values are printed out with a precision of 30 digits.
 Each of these sections are separated into separate tags as described below.
 
+Top Level Tags
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The first tag in all rr graph files is the ``<rr_graph>`` tag.
+This tag contains all other tags in the rr graph file.
+Each tag has their subsequent subtags. For example, ``<segments>`` includes all the segments in the graph. Each ``<segment>`` tag outlines one type of segment.
+
+The rr_graph tag contains the following tags:
+
+* ``<channels>``
+	*``<channel>content</channel>
+* ``<switches>``
+	*``<switch>content</switch>
+* ``<segments>``
+	*``<segment>content</segment>
+* ``<block_types>``
+	*``<block_type>content</block_type>
+* ``<grid>``
+	*``<grid_loc>content</grid_loc>
+* ``<rr_nodes>``
+	*``<node>content</node>
+* ``<rr_edges>``
+	*``<edge>content</edge>
+	
+.. note:: The rr graph is based on the architecture, so more detailed description of each section of the parts in the rr graph can be found at :ref:`FPGA architecture description <fpga_architecture_description>`
+
+Detailed Tag Information
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Channel**
 The channel information is contained within the ``channels`` subtag. This describes the minimum and maximum channel width within the architecture. Each ``channels`` tag has the following subtags:
 
-* ``channel``
+.. vpr:tag:: <channel chan_width_max="int" x_min="int" y_min="int" x_max="int" y_max="int"/>
+    This is a required subtag that contains information about the general channel width information. This stores the channel width between x or y directed channels.
+	:req_param chan_width_max:
+		Stores the maximum channel width value of x or y channels
+	:req_param x_min y_min x_max y_max:
+		Stores the minimum and maximum value of x and y coordinate within the lists
 
-    This is a required subtag that contains information about the general channel width information. This stores the channel width between x or y directed channels. Each ``channel`` tag has the following attributes:
-
-  * ``chan_width_max``
-
-    Stores the maximum channel width value of x or y channels
-
-  * ``x_min`` ``y_min`` ``x_max`` ``y_max``
-
-    Stores the minimum and maximum value of x and y coordinate within the lists
-
-* ``x_list`` ``y_list``
-
-  This is a required subtag that lists the contents of an x_list and y_list array which stores the width of each channel. The x_list array size as large as the size of the y dimension of the FPGA itself while the y_list has the size of the x_dimension. This x_list tag is repeated for each index within the array. Each x_list or y_list component has the following attributes:
-    
-  * ``index``
-
-    Describes the index within the array.
-
-  * ``info``
-
-    The width of each channel. The minimum is one track per channel. io channels are io_rat * maximum in interior tracks wide. The channel distributions read from the architecture file are scaled by a constant factor.
+.. vpr:tag:: <x_list index="int" info="int"/>  <y_list index="int" info="int"/>
+	These are a required subtags that lists the contents of an x_list and y_list array which stores the width of each channel. The x_list array size as large as the size of the y dimension of the FPGA itself while the y_list has the size of the x_dimension. This x_list tag is repeated for each index within the array.
+	:req_param index:
+		Describes the index within the array.
+	:req_param info:
+		The width of each channel. The minimum is one track per channel. io channels are io_rat * maximum in interior tracks wide. The channel distributions read from the architecture file are scaled by a constant factor.
     	
-A ``switches`` tag contains all the switches and its information within the FPGA. It should be noted that for values such as capacitance, Tdel, and sizing info all have high precision. This ensures a more accurate calculation when reading in the routing resource graph. Each ``switches`` tag has the following subtags:
+**Switches**
+A ``switches`` tag contains all the switches and its information within the FPGA. It should be noted that for values such as capacitance, Tdel, and sizing info all have high precision. This ensures a more accurate calculation when reading in the routing resource graph. Each switch tag has a ``switch`` subtag, and it contains the following attributes and subtags:
 
-* ``switch``
+.. vpr:tag:: <switch id="int" name="unique_identifier" buffered="int">
+	:req_param id:
+		A unique identifier for that type of switch.
+	:req_param name:
+    		An optional general identifier for the switch.
+	:req_param buffered:
+		An integer value that describes whether the switch includes a buffer. 1 means a buffer is included.
 
-    This contains the general information about the switch. It contains the following attributes:
+.. vpr:tag:: <timing R="float" cin="float" Cout="float" Tdel="float/>
+  	This optional subtag contains information used for timing analysis. Without it, the program assums all subtags to contain a value of 0.
+	:opt_param R Cin nCout:
+		The resistance, input capacitance and output capacitance of the switch
+	:opt_param Tdel:
+		Switch's intrinsic delay. It can be outlined that the delay through an unloaded switch is Tdel + R * Cout
+		
+.. vpr:tag:: <sizing mux_trans_size="int" buf_size="float"/>
+	The sizing information contains all the information needed for area calculation. It contains the following subtags:
+	:req_param mux_trans_size:
+		The area of each transistor in the segment's driving mux. This is measured in minimum width transistor units
+	:req_param buf_size:
+		The area of the buffer. If this is set to zero, the area is calculated from the resistance
 
-  * ``id``
+**Segments**
+The ``segments`` tag contains all the segments and its information. Note again that the capacitance has a high decimal precision. Each segment is then enclosed in its own ``segment`` tag, and it has the following subtags:
 
-    A unique identifier for that type of switch.
+.. vpr:tag:: <segment id="int" name="unique_identifier">
+	:req_param id:
+		The index of this segment
+	:req_param name:
+		The name of this segment
 
-  * ``name``
+.. vpr:tag:: <timing R_per_meter="float" C_per_meter="float">
+	This optional tag defines the timing information of this segment
+	:opt_param R_per_meter C_per_meter:
+  		The resistance and capacitance of a routing track, per unit logic block length.
 
-    An optional general identifier for the switch.
-
-  * ``buffered``
-
-    An integer value that describes whether the switch includes a buffer.
-
-* ``timing``
-
-  This optional subtag contains information used for timing analysis. Without it, the program assums all subtags to contain a value of 0.
-
-  * ``R`` ``Cin`` ``Cout``
-
-    The resistance, input capacitance and output capacitance of the switch
-
-  * ``Tdel``
-
-    Switch's intrinsic delay. It can be outlined that the delay through an unloaded switch is Tdel + R * Cout
-
-* ``sizing``
-
-  The sizing information contains all the information needed for area calculation. It contains the following subtags:
-
-  * ``mux_trans_size``
-
-    The area of each transistor in the segment's driving mux. This is measured in minimum width transistor units
-
-  * ``buf_size``
-
-    The area of the buffer. If this is set to zero, the area is calculated from the resistance
-
-
-The ``segments`` tag contains all the segments and its information. Note again that the capacitance has a high decimal precision. Each ``segments`` tag has the following subtags:
-
-* ``segment``
-
-  This tag contains general information about the segment
-
-  * ``id``
-
-    The index of this segment
-
-  * ``name``
-
-    The name of this segment
-
-* ``timing``
-
-  This tag stores the timing information of each segment
-
-  * ``R_per_meter`` ``C_per_meter``
-
-  	The resistance and capacitance of a routing track, per unit logic block length.
-
+**Blocks**
 The ``block_types`` tag outlines the information of a placeable complex logic block. This includes generation, pin classes, and pins within each block. It contains the following subtags:
   
-* ``block_type``
-
+.. vpr:tag:: <block_type id="int" name="unique_identifier" width="int" height="int">
   This describes generation information about the block using the following attributes:
 
-  * ``id``
+	:req_param id:
+		The index of the type of the descriptor in the array. This is used for index referencing
+	:req_param name:
+		A unique identifier for this type of block. Note that an empty block type must be denoted "EMPTY" without the brackets ``<>`` to prevent breaking the xml format. Input and output blocks must be named "io". Other blocks can have any name.
+	:req_param width height:
+		The width and height of a large block in grid tiles.
 
-    The index of the type of the descriptor in the array. This is used for index referencing
-
-  * ``name``
-
-    A unique identifier for this type of block. Note that an empty block type must be denoted "EMPTY" without the brackets ``<>`` to prevent breaking the xml format. Input and output blocks must be named "io". Other blocks can have any name.
-  
-  * ``width`` ``height``
-
-    The width and height of a large block in grid tiles.
-
-  * ``pin_class``
-
-    This is a subtag of ``block_type`` that describes class and the pins within each class for configurable logic blocks that share common properties.
-  	
-    * ``type``
-
-        This describes whether the pin class is a driver or receiver. Valid inputs are "OPEN", "OUTPUT", and "INPUT"
-
-        * A list of integers that represent the pin number of the class. These are separated by spaces and lists the CLB pin numbers that belongs to this class.
-
+.. vpr:tag:: <pin_class type="unique_type">
+	This optional subtag of ``block_type`` that describes class and the pins within each class for configurable logic blocks that share common properties.
+	
+	:req_param type:
+        	This describes whether the pin class is a driver or receiver. Valid inputs are ``OPEN``, ``OUTPUT``, and ``INPUT``
+	:req_param list of integers:
+		A list of integers that represent the pin number of the class. These are separated by spaces and lists the CLB pin numbers that belongs to this class.
+**Grid**
 The ``grid`` tag contains information about the grid of the FPGA. Each grid tag has one subtag as outlined below:
  
-* ``grid_loc``
-
+.. vpr:tag:: <grid_loc x="int" y="int" block_type_id="int" width_offset="int" height_offset="int">
   The grid_loc subtag has attributes that describe its location and other general information.
 
-  * ``x`` ``y``
+	:req_param x y:
+    		The x and y  coordinate location of this grid tile.
+	:req_param block_type_id:
+		The index of the type of logic block that resides here.
+	:req_param width_offset height_offset
+		The number of grid tiles reserved based on the width and height of a block.
+**Nodes**
+The ``rr_nodes`` tag stores information about each node for the routing resource graph. These nodes describe each wire and each logic block pin as represented by nodes.
 
-    The x and y  coordinate location of this grid tile.
-
-  * ``block_type_id``
-
-    The index of the type of logic block that resides here.
-
-  * ``width_offset`` ``height_offset``
-
-    The number of grid tiles reserved based on the width and height of a block.
- 
-The ``rr_nodes`` tag stores information about each node for the routing resource graph. These nodes describe each wire and each logic block pin.
-
-* ``node``
-
+.. vpr:tag:: <node id="int" type="unique_type" direction="{INC | DEC | BI | NONE}" capacity="int">
    The ``node`` tag contains information such as the location, timing, and segment through its subtags. It also has its own attributes that indicate what kind of node this is
-    
-  * ``id``
+   
+	:req_param id"
+		The index of the particular routing resource node
+	:req_param type:
+		Indicates whether the node is a wire or a logic block. Valid inputs for class types are {``CHANX``|``CHANY``|``SOURCE``|``SINK``|``OPIN``|``IPIN``}. Where CHANX and CHANY describe a horizontal (CHANX) and vertical (CHANY) channel. Sources and sinks describes where nets begin and end. OPIN represents an output pin and IPIN representd an input pin
+	:req_param direction:
+    		If the node represents a track, this field represents its direction. In other cases this value could be or defaulted to be "NONE"
+	:req_param capacity:
+		The number of routes that can use this node
 
-    The index of the particular routing resource node
-
-  * ``type``
-
-    Indicates whether the node is a wire or a logic block. Valid inputs for class types are "CHANX", "CHANY", "SOURCE", "SINK","OPIN", and "IPIN". Where CHANX and CHANY describe a horizontal (CHANX) and vertical (CHANY) channel. Sources and sinks describes where nets begin and end. OPIN represents output pin and IPIN represent input pin
-    
-  * ``direction``
-
-    If the node represents a track, this field represents the direction of the track as "INC", "DEC", or "BI". In other cases this value could be or defaulted to be "NONE"
-  
-  * ``capacity``
-
-    The number of routes that can use this node
-
-It also has the following subtags:
-
-  * ``loc``
-
+.. vpr:tag:: <loc xlow="int" ylow="int" xhigh="int" yhigh="int" ptc="int">
     Contains location information for this node. For pins or segments of length one, xlow = xhigh and ylow = yhigh.
 
-    * ``xlow`` ``xhigh`` ``ylow`` ``yhigh``
+	:req_param xlow xhigh ylow yhigh:
+		Integer coordinates of the ends of this routing source
+	:req_param ptc:
+		This is the pin, track, or class number that depends on the rr_node type
 
-      Integer coordinates of the ends of this routing source
-
-    * ``ptc``
-
-      This is the pin, track, or class number that depends on the rr_node type
-
-  * ``timing``
-
+.. vpr:tag:: <timing R="float" C="float">
     This optional subtag contains information used for timing analysis
 
-    * ``R``
+	:req_param R:
+		The resistance that goes through this node. This is only the metal resistance, it does not include the resistance of the switch that leads to another routing resource node
+	:req_param C:
+		The total capacitance of this node. This includes the metal capacitance, input capacitance of all the switches hanging off the node, the output capacitance of all the switches to the node, and the connection box buffer capacitances that hangs off it.
 
-      The resistance that goes through this node. This is only the metal resistance, it does not include the resistance of the switch that leads to another routing resource node
-    	
-    * ``C``
+.. vpr:tag:: <segment segment_id="int">
+      This optional subtag describes the information of the segment that connects to the node. Its only attribute is the following:
 
-      The total capacitance of this node. This includes the metal capacitance, input capacitance of all the switches hanging off the node, the output capacitance of all the switches to the node, and the connection box buffer capacitances that hangs off it.
+	:req_param segment_id:
+      		This describes the index of the segment type. This value only applies to horizontal and vertical channel types. It can be left empty, or as -1 for other types of nodes.
 
-  * ``segment``
+**Edges**
+The final subtag is the ``rr_edges`` tag that encloses information about all the edges between nodes. Each ``rr_edges`` tag contains multiple subtags:
 
-      This describes the information of the segment that connects to the node. Its only attribute is the following:
+.. vpr:tag:: <edge src_node="int" sink_node="int" switch_id="int"/>
 
-    * ``segment_id``
-      
-      This describes the index of the segment type. This value only applies to horizontal and vertical channel types. It can be left empty, or as -1 for other types of nodes.
-
-The final subtag is the ``rr_edges`` tag that encloses information about all the edges between nodes. Each ``rr_edges`` tag contains multiple subtags named:
-
-* ``edges``
-
-    This subtag repeats for every edge that is present. Each tag contains the following attributes:
-
-  * ``src_node`` ``sink_node``
-
-    The index for the source and sink node that this edge connects to
-
-  * ``switch_id``
-
-    The type of switch that connects the two nodes.
+    This subtag repeats every edge that connects nodes together in the graph. Each tag contains the following attributes:
+	:req_param src_node sink_node:
+		The index for the source and sink node that this edge connects to
+	:req_param switch_id:
+		The type of switch that connects the two nodes.
 
 Routing Resource Graph Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
