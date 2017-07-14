@@ -90,6 +90,7 @@ int yylex(void);
 
 
 %type <node> source_text items define module list_of_module_items list_of_function_items module_item function_item
+%type <node> variable_define_list
 %type <node> parameter_declaration input_declaration output_declaration defparam_declaration function_declaration 
 %type <node> function_input_declaration
 %type <node> inout_declaration variable_list function_output_variable function_id_and_output_variable
@@ -127,9 +128,15 @@ define:
 
 
 module: 
-	vMODULE vSYMBOL_ID '(' variable_list ')' ';' list_of_module_items vENDMODULE			{$$ = newModule($2, $4, $7, yylineno);}
-	| vMODULE vSYMBOL_ID '(' variable_list ',' ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, $4, $8, yylineno);}
-	| vMODULE vSYMBOL_ID '(' ')' ';' list_of_module_items vENDMODULE						{$$ = newModule($2, NULL, $6, yylineno);}	
+	vMODULE vSYMBOL_ID '(' variable_define_list ')' ';' list_of_module_items vENDMODULE				{$$ = newModule($2, $4, $7, yylineno);}
+	| vMODULE vSYMBOL_ID '(' variable_define_list ',' ')' ';' list_of_module_items vENDMODULE		{$$ = newModule($2, $4, $8, yylineno);} //TODO this is supported?? not in standards
+	| vMODULE vSYMBOL_ID '(' ')' ';' list_of_module_items vENDMODULE								{$$ = newModule($2, NULL, $6, yylineno);}	
+	;
+	
+//TODO expand this to support INPUT OUTPUT INOUT
+variable_define_list: 
+	variable_define_list ',' vSYMBOL_ID													{$$ = newList_entry($1, newVarDeclare($3, NULL, NULL, NULL, NULL, NULL, yylineno));}
+	| vSYMBOL_ID																		{$$ = newList(VAR_DECLARE_LIST, newVarDeclare($1, NULL, NULL, NULL, NULL, NULL, yylineno));}
 	;
 
 list_of_module_items: 
