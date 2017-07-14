@@ -64,11 +64,8 @@ static void load_interal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb
 static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin);
 
 static void mark_constant_generators(const int L_num_blocks,
-		const t_block block_list[]);
-/*
-static void mark_constant_generators(const int L_num_blocks,
 	const t_block block_list[], const ClusteredNetlist *clb_nlist);
-	*/
+	
 static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route);
 
 static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node);
@@ -224,8 +221,7 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
         }
         /* TODO: Add additional check to make sure net connections match */
 
-        mark_constant_generators(bcount, blist);
-//		mark_constant_generators(bcount, blist, clustered_nlist);
+		mark_constant_generators(bcount, blist, clustered_nlist);
 
         load_external_nets_and_cb(bcount, blist, circuit_clocks, clb_nlist, clustered_nlist);
     } catch(pugiutil::XmlError& e) {
@@ -319,8 +315,7 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	}
 
 	/* Parse all pbs and CB internal nets*/
-    atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), cb[index].pb);
-//TODO: atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), clb_nlist->block_pb(index));
+	atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), clb_nlist->block_pb((BlockId) index));
 
 	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
 	clb_nlist->block_pb((BlockId)index)->pb_graph_node = clb_nlist->block_type((BlockId)index)->pb_graph_head;
@@ -343,7 +338,7 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 		index);
 	}
 
-	processPb(clb_block, index, cb[index].pb, cb[index].pb_route, num_primitives, loc_data, clb_nlist);
+	processPb(clb_block, index, clb_nlist->block_pb((BlockId) index), cb[index].pb_route, num_primitives, loc_data, clb_nlist);
 
 	//Process nets and net_pins
 	cb[index].nets = (int *) vtr::malloc(cb[index].type->num_pins * sizeof(int));
@@ -1023,16 +1018,6 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 	}
 	free(count);
 	free_hash_table(ext_nhash);
-}
-
-
-static void mark_constant_generators(const int L_num_blocks,
-		const t_block block_list[]) {
-	int i;
-	for (i = 0; i < L_num_blocks; i++) {
-		mark_constant_generators_rec(block_list[i].pb,
-				block_list[i].pb_route);
-	}
 }
 
 // Overloaded call for ClusteredNetlist

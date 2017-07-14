@@ -12,10 +12,10 @@ void NetlistWalker::walk() {
     for(int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
 
         //Visit the top-level block
-        visitor_.visit_clb(cluster_ctx.blocks[i].pb); 
+        visitor_.visit_clb(cluster_ctx.clb_nlist.block_pb((BlockId) i)); 
 
         //Visit all the block's primitives
-        walk_atoms(cluster_ctx.blocks[i].pb);
+        walk_atoms(cluster_ctx.clb_nlist.block_pb((BlockId) i));
     }
 
     visitor_.finish();

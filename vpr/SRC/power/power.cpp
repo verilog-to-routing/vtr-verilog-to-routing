@@ -632,7 +632,7 @@ static void power_usage_blocks(t_power_usage * power_usage) {
                 int iblk = place_ctx.grid_blocks[x][y].blocks[z];
 
 				if (iblk != EMPTY_BLOCK && iblk != INVALID_BLOCK) {
-					pb = cluster_ctx.blocks[iblk].pb;
+					pb = cluster_ctx.clb_nlist.block_pb((BlockId) iblk);
 				}
 
 				/* Calculate power of this CLB */

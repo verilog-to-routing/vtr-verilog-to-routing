@@ -1602,7 +1602,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
             const t_block* top_block = nullptr;
             for(int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-                if(cluster_ctx.blocks[i].pb == top_pb) {
+                if(cluster_ctx.clb_nlist.block_pb((BlockId) i) == top_pb) {
                     top_block = &cluster_ctx.blocks[i];
                     break;
                 }
@@ -1926,9 +1926,9 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
     std::string blif_filename = basename + "_post_synthesis.blif";
     std::string sdf_filename = basename + "_post_synthesis.sdf";
 
-    vtr::printf("Writting Implementation Netlist: %s\n", verilog_filename.c_str());
-    vtr::printf("Writting Implementation Netlist: %s\n", blif_filename.c_str());
-    vtr::printf("Writting Implementation SDF    : %s\n", sdf_filename.c_str());
+    vtr::printf("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
+    vtr::printf("Writing Implementation Netlist: %s\n", blif_filename.c_str());
+    vtr::printf("Writing Implementation SDF    : %s\n", sdf_filename.c_str());
 
     std::ofstream verilog_os(verilog_filename);
     std::ofstream blif_os(blif_filename);

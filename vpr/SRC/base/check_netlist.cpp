@@ -217,9 +217,9 @@ static int check_clb_internal_nets(unsigned int iblk) {
 	
 	int error = 0;
 	t_pb_route * pb_route = cluster_ctx.blocks[iblk].pb_route;
-	int num_pins_in_block = cluster_ctx.blocks[iblk].pb->pb_graph_node->total_pb_pins;
+	int num_pins_in_block = cluster_ctx.clb_nlist.block_pb((BlockId) iblk)->pb_graph_node->total_pb_pins;
 
-	t_pb_graph_pin** pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(cluster_ctx.blocks[iblk].type);
+	t_pb_graph_pin** pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(cluster_ctx.clb_nlist.block_type((BlockId) iblk));
 
 	for (int i = 0; i < num_pins_in_block; i++) {
 		if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != OPEN) {
@@ -228,19 +228,19 @@ static int check_clb_internal_nets(unsigned int iblk) {
 				) {
 				if (pb_route[i].driver_pb_pin_id != OPEN) {
 					vtr::printf_error(__FILE__, __LINE__,
-						"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, cluster_ctx.blocks[iblk].name, i);
+						"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, cluster_ctx.clb_nlist.block_name((BlockId) iblk), i);
 					error++;
 				}
 			} else {
 				if (!pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id == OPEN) {
 					vtr::printf_error(__FILE__, __LINE__,
-						"Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, cluster_ctx.blocks[iblk].name, i);
+						"Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId) iblk), i);
 					error++;
 				} else {
 					int prev_pin = pb_route[i].driver_pb_pin_id;
 					if (pb_route[prev_pin].atom_net_id != pb_route[i].atom_net_id) {
 						vtr::printf_error(__FILE__, __LINE__,
-							"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, cluster_ctx.blocks[iblk].name, i, prev_pin);
+							"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId) iblk), i, prev_pin);
 						error++;
 					}
 				}
@@ -287,7 +287,7 @@ static int get_num_conn(int bnum) {
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	type = cluster_ctx.blocks[bnum].type;
+	type = cluster_ctx.clb_nlist.block_type((BlockId) bnum);
 
 	num_conn = 0;
 

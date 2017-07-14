@@ -304,7 +304,7 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin, const I
     t_pb_route* pb_routes = cluster_ctx.blocks[clb].pb_route;
     VTR_ASSERT(pb_routes);
 
-    VTR_ASSERT_MSG(clb_pin < cluster_ctx.blocks[clb].type->num_pins, "Must be a valid top-level pin");
+    VTR_ASSERT_MSG(clb_pin < cluster_ctx.clb_nlist.block_type((BlockId) clb)->num_pins, "Must be a valid top-level pin");
 
     //Note that a CLB pin index does not (neccessarily) map directly to the pb_route index representing the first stage
     //of internal routing in the block, since a block may have capacity > 1 (e.g. IOs)
@@ -316,8 +316,8 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin, const I
     //further
     int pb_pin = find_clb_pb_pin(clb, clb_pin);
 
-    VTR_ASSERT(cluster_ctx.blocks[clb].pb);
-    VTR_ASSERT_MSG(pb_pin < cluster_ctx.blocks[clb].pb->pb_graph_node->num_pins(), "Pin must map to a top-level pb pin");
+    VTR_ASSERT(cluster_ctx.clb_nlist.block_pb((BlockId) clb));
+    VTR_ASSERT_MSG(pb_pin < cluster_ctx.clb_nlist.block_pb((BlockId) clb)->pb_graph_node->num_pins(), "Pin must map to a top-level pb pin");
 
     VTR_ASSERT_MSG(pb_routes[pb_pin].driver_pb_pin_id < 0, "CLB input pin should have no internal drivers");
 
@@ -369,11 +369,11 @@ static AtomPinId find_atom_pin_for_pb_route_id(int clb, int pb_route_id, const I
     VTR_ASSERT_MSG(cluster_ctx.blocks[clb].pb_route[pb_route_id].atom_net_id, "PB route should correspond to a valid atom net");
 
     //Find the graph pin associated with this pb_route
-    const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(cluster_ctx.blocks[clb].type->index, pb_route_id);
+    const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(cluster_ctx.clb_nlist.block_type((BlockId) clb)->index, pb_route_id);
     VTR_ASSERT(gpin);
 
     //Get the PB associated with this block
-    const t_pb* pb = cluster_ctx.blocks[clb].pb;
+    const t_pb* pb = cluster_ctx.clb_nlist.block_pb((BlockId) clb);
 
     //Find the graph node containing the pin
     const t_pb_graph_node* gnode = gpin->parent_node;
