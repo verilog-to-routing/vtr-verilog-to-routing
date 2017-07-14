@@ -30,6 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "verilog_bison.h"
 #include "vtr_util.h"
 #include <string>
+#include "string.h"
 
 /* the define below helps with watching the parser go token by token */
 #define MP {if (to_view_parse) {printf("%d %s\n", yylineno, yytext);}}
@@ -243,7 +244,7 @@ char* standardize_number(const char* input)
 			input_number.erase(input_number.begin()+check_at);
 		else
 		{
-			input_number[check_at] = std::tolower(input_number[check_at]);
+			input_number[check_at] = tolower(input_number[check_at]);
 			check_at++;
 		}
 	}
