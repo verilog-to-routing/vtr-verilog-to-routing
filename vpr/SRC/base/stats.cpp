@@ -84,12 +84,12 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	vtr::printf_info("\tTotal logic block area (Warning, need to add pitch of routing to blocks with height > 3): %g\n", area);
 
 	used_area = 0;
-	for (i = 0; i < cluster_ctx.num_blocks; i++) {
-		if (cluster_ctx.blocks[i].type != device_ctx.IO_TYPE) {
-			if (cluster_ctx.blocks[i].type->area == UNDEFINED) {
-				used_area += grid_logic_tile_area * cluster_ctx.blocks[i].type->width * cluster_ctx.blocks[i].type->height;
+	for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
+		if (cluster_ctx.clb_nlist.block_type((BlockId) i) != device_ctx.IO_TYPE) {
+			if (cluster_ctx.clb_nlist.block_type((BlockId)i)->area == UNDEFINED) {
+				used_area += grid_logic_tile_area * cluster_ctx.clb_nlist.block_type((BlockId)i)->width * cluster_ctx.clb_nlist.block_type((BlockId)i)->height;
 			} else {
-				used_area += cluster_ctx.blocks[i].type->area;
+				used_area += cluster_ctx.clb_nlist.block_type((BlockId)i)->area;
 			}
 		}
 	}
@@ -285,8 +285,8 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
 	/* Now go through each net and count the tracks and pins used everywhere */
 
 	for (inet = 0, l = cluster_ctx.clbs_nlist.net.size(); inet < l; inet++) {
-
-		if (cluster_ctx.clbs_nlist.net[inet].is_global && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) /* Skip global and empty nets. */
+		/* Skip global and empty nets. */
+		if (cluster_ctx.clbs_nlist.net[inet].is_global && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) 
 			continue;
 
 		tptr = route_ctx.trace_head[inet];
@@ -478,8 +478,8 @@ void print_lambda(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-	for (bnum = 0; bnum < cluster_ctx.num_blocks; bnum++) {
-		type = cluster_ctx.blocks[bnum].type;
+	for (bnum = 0; bnum < (int) cluster_ctx.clb_nlist.blocks().size(); bnum++) {
+		type = cluster_ctx.clb_nlist.block_type((BlockId) bnum);
 		VTR_ASSERT(type != NULL);
 		if (type != device_ctx.IO_TYPE) {
 			for (ipin = 0; ipin < type->num_pins; ipin++) {
@@ -494,12 +494,11 @@ void print_lambda(void) {
 		}
 	}
 
-	lambda = (float) num_inputs_used / (float) cluster_ctx.num_blocks;
+	lambda = (float) num_inputs_used / (float) cluster_ctx.clb_nlist.blocks().size();
 	vtr::printf_info("Average lambda (input pins used per clb) is: %g\n", lambda);
 }
 
 int count_netlist_clocks(void) {
-
 	/* Count how many clocks are in the netlist. */
 
     auto& atom_ctx = g_vpr_ctx.atom();

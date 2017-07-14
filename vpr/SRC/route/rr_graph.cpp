@@ -1175,7 +1175,7 @@ void free_rr_graph(void) {
     free_rr_node_indices(device_ctx.rr_node_indices);
 
     free(device_ctx.rr_indexed_data);
-    for (i = 0; i < cluster_ctx.num_blocks; i++) {
+    for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
         free(route_ctx.rr_blk_source[i]);
     }
     if (route_ctx.rr_blk_source != NULL) {
@@ -1231,7 +1231,7 @@ void load_net_rr_terminals(vector<int> *** L_rr_node_indices) {
             iblk = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
             i = place_ctx.block_locs[iblk].x;
             j = place_ctx.block_locs[iblk].y;
-            type = cluster_ctx.blocks[iblk].type;
+            type = cluster_ctx.clb_nlist.block_type((BlockId)iblk);
 
             /* In the routing graph, each (x, y) location has unique pins on it
              * so when there is capacity, blocks are packed and their pin numbers
@@ -1252,8 +1252,8 @@ void alloc_and_load_rr_clb_source(vector<int> *** L_rr_node_indices) {
     /* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
      * in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
      * they are used only to reserve pins for locally used OPINs in the router. *
-     * [0..cluster_ctx.num_blocks-1][0..num_class-1].  The values for blocks that are pads  *
-     * are NOT valid.                                                           */
+     * [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1].            *
+     * The values for blocks that are padsare NOT valid.                        */
 
     int iblk, i, j, iclass, inode;
     int class_low, class_high;
@@ -1264,10 +1264,10 @@ void alloc_and_load_rr_clb_source(vector<int> *** L_rr_node_indices) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    route_ctx.rr_blk_source = (int **) vtr::malloc(cluster_ctx.num_blocks * sizeof (int *));
+    route_ctx.rr_blk_source = (int **) vtr::malloc(cluster_ctx.clb_nlist.blocks().size() * sizeof (int *));
 
-    for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-        type = cluster_ctx.blocks[iblk].type;
+    for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
+        type = cluster_ctx.clb_nlist.block_type((BlockId) iblk);
         get_class_range_for_block(iblk, &class_low, &class_high);
         route_ctx.rr_blk_source[iblk] = (int *) vtr::malloc(type->num_class * sizeof (int));
         for (iclass = 0; iclass < type->num_class; iclass++) {

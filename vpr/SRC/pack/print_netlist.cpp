@@ -42,7 +42,7 @@ void print_netlist(char *foutput, char *net_file) {
 	}
 
 	/* Count I/O input and output pads */
-	for (i = 0; i < (unsigned int) cluster_ctx.num_blocks; i++) {
+	for (i = 0; i < (unsigned int) cluster_ctx.clb_nlist.blocks().size(); i++) {
 		if (cluster_ctx.blocks[i].type == device_ctx.IO_TYPE) {
 			for (j = 0; j < (unsigned int) device_ctx.IO_TYPE->num_pins; j++) {
 				if (cluster_ctx.blocks[i].nets[j] != OPEN) {
@@ -63,8 +63,8 @@ void print_netlist(char *foutput, char *net_file) {
 
 	fprintf(fp, "Input netlist file: %s\n", net_file);
 	fprintf(fp, "L_num_p_inputs: %d, L_num_p_outputs: %d, num_clbs: %d\n",
-			L_num_p_inputs, L_num_p_outputs, cluster_ctx.num_blocks);
-	fprintf(fp, "num_blocks: %d, num_nets: %d, num_globals: %d\n", cluster_ctx.num_blocks,
+			L_num_p_inputs, L_num_p_outputs, (int) cluster_ctx.clb_nlist.blocks().size());
+	fprintf(fp, "num_nets: %d, num_globals: %d\n",
 			(int) cluster_ctx.clbs_nlist.net.size(), num_global_nets);
 	fprintf(fp, "\nNet\tName\t\t#Pins\tDriver\t\tRecvs. (blocks, pin)\n");
 
@@ -80,11 +80,11 @@ void print_netlist(char *foutput, char *net_file) {
 
 	fprintf(fp, "\nBlock\tName\t\tType\tPin Connections\n\n");
 
-	for (i = 0; i < (unsigned int)cluster_ctx.num_blocks; i++) {
-		fprintf(fp, "\n%d\t%s\t", i, cluster_ctx.blocks[i].name);
-		if (strlen(cluster_ctx.blocks[i].name) < 8)
+	for (i = 0; i < (unsigned int) cluster_ctx.clb_nlist.blocks().size(); i++) {
+		fprintf(fp, "\n%d\t%s\t", i, cluster_ctx.clb_nlist.block_name((BlockId) i).c_str());
+		if (strlen(cluster_ctx.clb_nlist.block_name((BlockId) i).c_str()) < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
-		fprintf(fp, "%s", cluster_ctx.blocks[i].type->name);
+		fprintf(fp, "%s", cluster_ctx.clb_nlist.block_type((BlockId) i)->name);
 
 		max_pin = cluster_ctx.blocks[i].type->num_pins;
 
@@ -100,9 +100,7 @@ void print_netlist(char *foutput, char *net_file) {
 }
 
 static void print_pinnum(FILE * fp, int pinnum) {
-
 	/* This routine prints out either OPEN or the pin number, to file fp. */
-
 	if (pinnum == OPEN)
 		fprintf(fp, "\tOPEN");
 	else

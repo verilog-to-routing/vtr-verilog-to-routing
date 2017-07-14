@@ -83,7 +83,6 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 
 /* Display general VPR information */
 void vpr_print_title(void) {
-
 	vtr::printf_info("\n");
 	vtr::printf_info("VPR FPGA Placement and Routing.\n");
 	vtr::printf_info("Version: %s\n", vtr::VERSION);
@@ -94,7 +93,6 @@ void vpr_print_title(void) {
 	vtr::printf_info("vtr-users@googlegroups.com\n");
 	vtr::printf_info("This is free open source code under MIT license.\n");
 	vtr::printf_info("\n");
-
 }
 
 void vpr_print_args(int argc, const char** argv) {
@@ -240,7 +238,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 		if(vpr_setup.gen_netlist_as_blif) {
 			char *name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName.c_str()) + 16) * sizeof(char));
 			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName.c_str());
-			output_blif(&Arch, cluster_ctx.blocks, cluster_ctx.num_blocks, name);
+			output_blif(&Arch, cluster_ctx.blocks, (int) cluster_ctx.clb_nlist.blocks().size(), name);
 			free(name);
 		}
 	}
@@ -248,15 +246,15 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 	/* Output the current settings to console. */
 	printClusteredNetlistStats();
 
-    int current = std::max(vtr::nint((float)sqrt((float)cluster_ctx.num_blocks)), 1); /* current is the value of the smaller side of the FPGA */
+    int current = std::max(vtr::nint((float) sqrt((float) cluster_ctx.clb_nlist.blocks().size())), 1); /* current is the value of the smaller side of the FPGA */
     int low = 1;
     int high = -1;
 
     int *num_instances_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
     int *num_blocks_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
-    for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
-        num_blocks_type[cluster_ctx.blocks[i].type->index]++;
+    for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); ++i) {
+        num_blocks_type[cluster_ctx.clb_nlist.block_type((BlockId) i)->index]++;
     }
 
     if (Arch.clb_grid.IsAuto) {
@@ -788,7 +786,7 @@ void free_circuit() {
 	free_global_nlist_net(&cluster_ctx.clbs_nlist);
 
 	if (cluster_ctx.blocks != NULL) {
-		for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
+		for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); ++i) {
 			if (cluster_ctx.blocks[i].pb != NULL) {
 				free_pb(cluster_ctx.blocks[i].pb);
 				delete cluster_ctx.blocks[i].pb;

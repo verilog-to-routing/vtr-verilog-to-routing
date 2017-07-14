@@ -35,24 +35,21 @@ static int get_num_conn(int bnum);
 
 void check_netlist() {
 	unsigned int i;
-	int error, num_conn;
+	int error = 0;
+	int num_conn;
 	t_hash **net_hash_table, *h_net_ptr;
 
-	
-	/* This routine checks that the netlist makes sense         */
-
+	/* This routine checks that the netlist makes sense. */
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
 	net_hash_table = alloc_hash_table();
 
-	error = 0;
-
 	/* Check that nets fanout and have a driver. */
-	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
-		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clbs_nlist.net[i].name, i);
+	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
+		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name((NetId) i).c_str(), i);
 		if (h_net_ptr->count != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
-					"Net %s has multiple drivers.\n", cluster_ctx.clbs_nlist.net[i].name);
+					"Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name((NetId) i));
 			error++;
 		}
 		error += check_connections_to_global_clb_pins(i);
@@ -64,7 +61,7 @@ void check_netlist() {
 	free_hash_table(net_hash_table);
 
 	/* Check that each block makes sense. */
-	for (i = 0; i < (unsigned int)cluster_ctx.num_blocks; i++) {
+	for (i = 0; i < (unsigned int) cluster_ctx.clb_nlist.blocks().size(); i++) {
 		num_conn = get_num_conn(i);
 		error += check_clb_conn(i, num_conn);
 		error += check_clb_internal_nets(i);
@@ -82,9 +79,9 @@ void check_netlist() {
 	}
 
 	/* HACK: Jason Luu January 17, 2011 Do not route common constants gnd and vcc
-	 Todo: Need to make architecture driven.
+	 TODO: Need to make architecture driven.
 	 */
-	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
+	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
 		if (strcmp(cluster_ctx.clbs_nlist.net[i].name, "vcc") == 0) {
 			cluster_ctx.clbs_nlist.net[i].is_global = true;
 		} else if (strcmp(cluster_ctx.clbs_nlist.net[i].name, "gnd") == 0) {
@@ -256,8 +253,8 @@ static int check_clb_internal_nets(unsigned int iblk) {
 }
 
 static int check_for_duplicated_names(void) {
-	int iblk, error;
-	int clb_count;
+	unsigned int iblk;
+	int error, clb_count;
 	t_hash **clb_hash_table, *clb_h_ptr;
 	
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -266,12 +263,12 @@ static int check_for_duplicated_names(void) {
 	
 	error = clb_count = 0;
 
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++)
+	for (iblk = 0; iblk < cluster_ctx.clb_nlist.blocks().size(); iblk++)
 	{
-		clb_h_ptr = insert_in_hash_table(clb_hash_table, cluster_ctx.blocks[iblk].name, clb_count);
+		clb_h_ptr = insert_in_hash_table(clb_hash_table, cluster_ctx.clb_nlist.block_name((BlockId) iblk).c_str(), clb_count);
 		if (clb_h_ptr->count > 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
-					"Block %s has duplicated name.\n", cluster_ctx.blocks[iblk].name);
+					"Block %s has duplicated name.\n", cluster_ctx.clb_nlist.block_name((BlockId) iblk));
 			error++;
 		} else {
 			clb_count++;
@@ -284,9 +281,7 @@ static int check_for_duplicated_names(void) {
 }
 
 static int get_num_conn(int bnum) {
-
 	/* This routine returns the number of connections to a block. */
-
 	int i, num_conn;
 	t_type_ptr type;
 

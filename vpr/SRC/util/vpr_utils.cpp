@@ -156,26 +156,26 @@ void sync_grid_to_blocks() {
 
 	/* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
-
+	for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); ++i) {
         int blk_x = place_ctx.block_locs[i].x;
         int blk_y = place_ctx.block_locs[i].y;
         int blk_z = place_ctx.block_locs[i].z;
 
 		/* Check range of block coords */
 		if (blk_x < 0 || blk_y < 0
-				|| (blk_x + cluster_ctx.blocks[i].type->width - 1) > (device_ctx.nx + 1)
-				|| (blk_y + cluster_ctx.blocks[i].type->height - 1) > (device_ctx.ny + 1)
-				|| blk_z < 0 || blk_z > (cluster_ctx.blocks[i].type->capacity)) {
+				|| (blk_x + cluster_ctx.clb_nlist.block_type((BlockId) i)->width - 1) > (device_ctx.nx + 1)
+				|| (blk_y + cluster_ctx.clb_nlist.block_type((BlockId) i)->height - 1) > (device_ctx.ny + 1)
+				|| blk_z < 0 || blk_z > (cluster_ctx.clb_nlist.block_type((BlockId) i)->capacity)) {
 			VPR_THROW(VPR_ERROR_PLACE, "Block %d is at invalid location (%d, %d, %d).\n", 
 					i, blk_x, blk_y, blk_z);
 		}
 
 		/* Check types match */
-		if (cluster_ctx.blocks[i].type != device_ctx.grid[blk_x][blk_y].type) {
+		if (cluster_ctx.clb_nlist.block_type((BlockId) i) != device_ctx.grid[blk_x][blk_y].type) {
             VPR_THROW(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n", 
 					blk_x, blk_y,
-                    cluster_ctx.blocks[i].type->name, device_ctx.grid[blk_x][blk_y].type->name);
+					cluster_ctx.clb_nlist.block_type((BlockId) i)->name, 
+					device_ctx.grid[blk_x][blk_y].type->name);
 		}
 
 		/* Check already in use */
@@ -191,8 +191,8 @@ void sync_grid_to_blocks() {
 		}
 
 		/* Set the block */
-		for (int width = 0; width < cluster_ctx.blocks[i].type->width; ++width) {
-			for (int height = 0; height < cluster_ctx.blocks[i].type->height; ++height) {
+		for (int width = 0; width < cluster_ctx.clb_nlist.block_type((BlockId) i)->width; ++width) {
+			for (int height = 0; height < cluster_ctx.clb_nlist.block_type((BlockId) i)->height; ++height) {
 				place_ctx.grid_blocks[blk_x + width][blk_y + height].blocks[blk_z] = i;
 				place_ctx.grid_blocks[blk_x + width][blk_y + height].usage++;
 				VTR_ASSERT(device_ctx.grid[blk_x + width][blk_y + height].width_offset == width);
@@ -251,7 +251,7 @@ std::vector<AtomPinId> find_clb_pin_connected_atom_pins(int clb, int clb_pin, co
     std::vector<AtomPinId> atom_pins;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    if(is_opin(clb_pin, cluster_ctx.blocks[clb].type)) {
+    if(is_opin(clb_pin, cluster_ctx.clb_nlist.block_type((BlockId) clb))) {
         //output
         AtomPinId driver = find_clb_pin_driver_atom_pin(clb, clb_pin, pb_gpin_lookup);
         if(driver) {
@@ -1018,8 +1018,8 @@ void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_fr
 t_pb ***alloc_and_load_pin_id_to_pb_mapping() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	t_pb ***pin_id_to_pb_mapping = new t_pb**[cluster_ctx.num_blocks];
-	for (int i = 0; i < cluster_ctx.num_blocks; i++) {
+	t_pb ***pin_id_to_pb_mapping = new t_pb**[cluster_ctx.clb_nlist.blocks().size()];
+	for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
 		pin_id_to_pb_mapping[i] = new t_pb*[cluster_ctx.blocks[i].type->pb_graph_head->total_pb_pins];
 		for (int j = 0; j < cluster_ctx.blocks[i].type->pb_graph_head->total_pb_pins; j++) {
 			pin_id_to_pb_mapping[i][j] = NULL;
@@ -1070,7 +1070,7 @@ static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapp
 */
 void free_pin_id_to_pb_mapping(t_pb ***pin_id_to_pb_mapping) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (int i = 0; i < cluster_ctx.num_blocks; i++) {
+	for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
 		delete[] pin_id_to_pb_mapping[i];
 	}
 	delete[] pin_id_to_pb_mapping;
@@ -1263,7 +1263,7 @@ vtr::Matrix<int> alloc_and_load_net_pin_index() {
 		max_pins_per_clb = max(max_pins_per_clb, device_ctx.block_types[itype].num_pins);
 	
 	/* Allocate for maximum size. */
-    vtr::Matrix<int> temp_net_pin_index({size_t(cluster_ctx.num_blocks), size_t(max_pins_per_clb)}, OPEN);
+    vtr::Matrix<int> temp_net_pin_index({cluster_ctx.clb_nlist.blocks().size(), size_t(max_pins_per_clb)}, OPEN);
 
 	/* Load the values */
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
@@ -1976,7 +1976,7 @@ AtomBlockId find_tnode_atom_block(int inode) {
 
 void place_sync_all_external_block_connections() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    for(int iblk = 0; iblk < cluster_ctx.num_blocks; ++iblk) {
+    for(int iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); ++iblk) {
         place_sync_external_block_connections(iblk);
     }
 }
@@ -1986,7 +1986,7 @@ void place_sync_external_block_connections(int iblk) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     VTR_ASSERT_MSG(place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate == false, "Block net and pins must not be already synced");
 
-    t_type_ptr type = cluster_ctx.blocks[iblk].type;
+    t_type_ptr type = cluster_ctx.clb_nlist.block_type((BlockId) iblk);
     VTR_ASSERT(type->num_pins % type->capacity == 0);
     int max_num_block_pins = type->num_pins / type->capacity;
     /* Logical location and physical location is offset by z * max_num_block_pins */

@@ -799,9 +799,9 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 
 	/* allocate space for tnodes */
 	timing_ctx.num_tnodes = 0;
-	for (int i = 0; i < cluster_ctx.num_blocks; i++) {
+	for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
 		num_nodes_in_block = 0;
-		int itype = cluster_ctx.blocks[i].type->index;
+		int itype = cluster_ctx.clb_nlist.block_type((BlockId) i)->index;
 		for (j = 0; j < cluster_ctx.blocks[i].pb->pb_graph_node->total_pb_pins; j++) {
 			if (cluster_ctx.blocks[i].pb_route[j].atom_net_id) {
 				if (intra_lb_pb_pin_lookup[itype][j]->type == PB_PIN_INPAD
@@ -820,8 +820,8 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 	/* load tnodes with all info except edge info */
 	/* populate tnode lookups for edge info */
 	inode = 0;
-	for (int i = 0; i < cluster_ctx.num_blocks; i++) {
-		int itype = cluster_ctx.blocks[i].type->index;
+	for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
+		int itype = cluster_ctx.clb_nlist.block_type((BlockId) i)->index;
 		for (j = 0; j < cluster_ctx.blocks[i].pb->pb_graph_node->total_pb_pins; j++) {
 			if (cluster_ctx.blocks[i].pb_route[j].atom_net_id) {
 				VTR_ASSERT(timing_ctx.tnodes[inode].pb_graph_pin == NULL);
@@ -848,7 +848,7 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 		 */
 		count = 0;
 		iblock = timing_ctx.tnodes[i].block;
-		int itype = cluster_ctx.blocks[iblock].type->index;
+		int itype = cluster_ctx.clb_nlist.block_type((BlockId) iblock)->index;
 		switch (timing_ctx.tnodes[i].type) {
 		case TN_INPAD_OPIN:
 		case TN_INTERMEDIATE_NODE:
@@ -3911,9 +3911,9 @@ int **alloc_and_load_tnode_lookup_from_pin_id() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& timing_ctx = g_vpr_ctx.timing();
 
-	tnode_lookup = new int* [cluster_ctx.num_blocks];
+	tnode_lookup = new int* [cluster_ctx.clb_nlist.blocks().size()];
 
-	for (int i = 0; i < cluster_ctx.num_blocks; i++) {
+	for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
 		int num_pins = cluster_ctx.blocks[i].type->pb_graph_head->total_pb_pins;
 		tnode_lookup[i] = new int[num_pins];
 		for (int j = 0; j < num_pins; j++) {
@@ -3942,7 +3942,7 @@ int **alloc_and_load_tnode_lookup_from_pin_id() {
 void free_tnode_lookup_from_pin_id(int **tnode_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	for (int i = 0; i < cluster_ctx.num_blocks; i++) {
+	for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
 		delete[] tnode_lookup[i];
 	}
 	delete[] tnode_lookup;

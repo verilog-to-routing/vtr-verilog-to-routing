@@ -100,7 +100,7 @@ typedef struct {
  * net_color: color in which each net should be drawn. 
  *			  [0..cluster_ctx.clbs_nlist.net.size()-1]
  * block_color: color in which each blocks should be drawn.
- *			    [0..cluster_ctx.num_blocks-1]
+ *			    [0..cluster_ctx.clb_nlist.blocks().size()-1]
  * draw_rr_node: stores the state information of each routing resource.  
  *				 Used to control drawing each routing resource when 
  *				 ROUTING is on screen.

@@ -488,9 +488,9 @@ struct t_interconnect {
 	int parent_mode_index;
 
 	/* Power related members */
-	t_mode * parent_mode;
+	t_mode *parent_mode;
 
-	t_interconnect_power * interconnect_power;
+	t_interconnect_power *interconnect_power;
 };
 
 /** Describes I/O and clock ports
@@ -527,7 +527,7 @@ struct t_port {
 	int port_index_by_type;
 	char *chain_name;
 
-	t_port_power * port_power;
+	t_port_power *port_power;
 };
 
 struct t_pb_type_power {
@@ -558,10 +558,10 @@ struct t_interconnect_power {
 };
 
 struct t_interconnect_pins {
-	t_interconnect * interconnect;
+	t_interconnect *interconnect;
 
-	t_pb_graph_pin *** input_pins; // [0..num_input_ports-1][0..num_pins_per_port-1]
-	t_pb_graph_pin *** output_pins; // [0..num_output_ports-1][0..num_pins_per_port-1]
+	t_pb_graph_pin ***input_pins; // [0..num_input_ports-1][0..num_pins_per_port-1]
+	t_pb_graph_pin ***output_pins; // [0..num_output_ports-1][0..num_pins_per_port-1]
 };
 
 struct t_mode_power {
@@ -582,16 +582,16 @@ struct t_mode_power {
  *      clock_pin: clock as string affected by annotation
  */
 struct t_pin_to_pin_annotation {
-	char ** value; /* [0..num_value_prop_pairs - 1] */
-	int * prop; /* [0..num_value_prop_pairs - 1] */
+	char **value; /* [0..num_value_prop_pairs - 1] */
+	int *prop; /* [0..num_value_prop_pairs - 1] */
 	int num_value_prop_pairs;
 
 	enum e_pin_to_pin_annotation_type type;
 	enum e_pin_to_pin_annotation_format format;
 
-	char * input_pins;
-	char * output_pins;
-	char * clock;
+	char *input_pins;
+	char *output_pins;
+	char *clock;
 
 	int line_num; /* used to report what line number this annotation is found in architecture file */
 };
@@ -708,9 +708,9 @@ enum e_pb_graph_pin_type {
 struct t_pb_graph_pin {
 	t_port *port;
 	int pin_number;
-	t_pb_graph_edge** input_edges; /* [0..num_input_edges] */
+	t_pb_graph_edge **input_edges; /* [0..num_input_edges] */
 	int num_input_edges;
-	t_pb_graph_edge** output_edges; /* [0..num_output_edges] */
+	t_pb_graph_edge **output_edges; /* [0..num_output_edges] */
 	int num_output_edges;
 
 	t_pb_graph_node *parent_node;
@@ -764,7 +764,7 @@ struct t_pb_graph_edge {
 	float capacitance;
 
 	/* who drives this edge */
-	t_interconnect * interconnect;
+	t_interconnect *interconnect;
 	int driver_set;
 	int driver_pin;
 
@@ -787,7 +787,7 @@ struct t_pb_graph_pin_power {
 	float buffer_size;
 
 	/* Pin-Toggle Power Properties */
-	t_pb_graph_pin * scaled_by_pin;
+	t_pb_graph_pin *scaled_by_pin;
 };
 
 

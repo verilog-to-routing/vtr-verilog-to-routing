@@ -562,8 +562,8 @@ static void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_u
 	 * (CLB outputs used up by being directly wired to subblocks used only      *
 	 * locally).                                                                */
 
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		for (iclass = 0; iclass < cluster_ctx.blocks[iblk].type->num_class; iclass++) {
+	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
+		for (iclass = 0; iclass < cluster_ctx.clb_nlist.block_type((BlockId) iblk)->num_class; iclass++) {
 			num_local_opins = clb_opins_used_locally[iblk][iclass].size();
 			/* Will always be 0 for pads or SINK classes. */
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
@@ -586,8 +586,8 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		for (iclass = 0; iclass < cluster_ctx.blocks[iblk].type->num_class; iclass++) {
+	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
+		for (iclass = 0; iclass < cluster_ctx.clb_nlist.block_type((BlockId) iblk)->num_class; iclass++) {
 			num_local_opins = clb_opins_used_locally[iblk][iclass].size();
 			/* Always 0 for pads and for SINK classes */
 
@@ -602,7 +602,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%d (%s)\n"
 						"\tClass %d local OPIN is wrong rr_type -- rr_node #%d of type %d.\n",
-						iblk, cluster_ctx.blocks[iblk].name, iclass, inode, rr_type);
+						iblk, cluster_ctx.clb_nlist.block_name((BlockId) iblk), iclass, inode, rr_type);
 				}
 
 				ipin = device_ctx.rr_nodes[inode].ptc_num();
@@ -610,7 +610,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%d (%s):\n"
 						"\tExpected class %d local OPIN has class %d -- rr_node #: %d.\n",
-						iblk, cluster_ctx.blocks[iblk].name, iclass,	cluster_ctx.blocks[iblk].type->pin_class[ipin], inode);
+						iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), iclass,	cluster_ctx.blocks[iblk].type->pin_class[ipin], inode);
 				}
 			}
 		}

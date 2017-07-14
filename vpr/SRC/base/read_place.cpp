@@ -171,9 +171,9 @@ void read_user_pad_loc(const char *pad_loc_file) {
 				pad_loc_file);
 		
 	hash_table = alloc_hash_table();
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		if (cluster_ctx.blocks[iblk].type == device_ctx.IO_TYPE) {
-			insert_in_hash_table(hash_table, cluster_ctx.blocks[iblk].name, iblk);
+	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
+		if (cluster_ctx.clb_nlist.block_type((BlockId) iblk) == device_ctx.IO_TYPE) {
+			insert_in_hash_table(hash_table, cluster_ctx.clb_nlist.block_name((BlockId) iblk).c_str(), iblk);
 			place_ctx.block_locs[iblk].x = OPEN; /* Mark as not seen yet. */
 		}
 	}
@@ -274,10 +274,10 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		ptr = vtr::fgets(buf, vtr::bufsize, fp);
 	}
 
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		if (cluster_ctx.blocks[iblk].type == device_ctx.IO_TYPE && place_ctx.block_locs[iblk].x == OPEN) {
+	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
+		if (cluster_ctx.clb_nlist.block_type((BlockId) iblk) == device_ctx.IO_TYPE && place_ctx.block_locs[iblk].x == OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"IO block %s location was not specified in the pad file.\n", cluster_ctx.blocks[iblk].name);
+					"IO block %s location was not specified in the pad file.\n", cluster_ctx.clb_nlist.block_name((BlockId) iblk));
 		}
 	}
 
@@ -312,9 +312,9 @@ void print_place(const char* net_file,
 	fprintf(fp, "#block name\tx\ty\tsubblk\tblock number\n");
 	fprintf(fp, "#----------\t--\t--\t------\t------------\n");
 
-	for (i = 0; i < cluster_ctx.num_blocks; i++) {
-		fprintf(fp, "%s\t", cluster_ctx.blocks[i].name);
-		if (strlen(cluster_ctx.blocks[i].name) < 8)
+	for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
+		fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_name((BlockId) i).c_str());
+		if (strlen(cluster_ctx.clb_nlist.block_name((BlockId) i).c_str()) < 8)
 			fprintf(fp, "\t");
 
 		fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].z);

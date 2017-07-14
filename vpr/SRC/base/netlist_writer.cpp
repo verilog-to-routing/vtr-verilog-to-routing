@@ -1601,7 +1601,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb* top_pb = find_top_cb(curr); 
 
             const t_block* top_block = nullptr;
-            for(int i = 0; i < cluster_ctx.num_blocks; i++) {
+            for(int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
                 if(cluster_ctx.blocks[i].pb == top_pb) {
                     top_block = &cluster_ctx.blocks[i];
                     break;

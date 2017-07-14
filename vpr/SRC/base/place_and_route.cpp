@@ -74,7 +74,7 @@ bool place_and_route(t_placer_opts placer_opts,
     bool success = false;
     vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 
-    t_clb_opins_used clb_opins_used_locally; /* [0..cluster_ctx.num_blocks-1][0..num_class-1] */
+    t_clb_opins_used clb_opins_used_locally; /* [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1] */
     clock_t begin, end;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -90,7 +90,7 @@ bool place_and_route(t_placer_opts placer_opts,
 
     if (!placer_opts.doPlacement || placer_opts.place_freq == PLACE_NEVER) {
         /* Read the placement from a file */
-        read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.nx, device_ctx.ny, cluster_ctx.num_blocks, cluster_ctx.blocks);
+        read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.nx, device_ctx.ny, (int) cluster_ctx.clb_nlist.blocks().size(), cluster_ctx.blocks);
         sync_grid_to_blocks();
     } else {
         VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
@@ -108,7 +108,7 @@ bool place_and_route(t_placer_opts placer_opts,
 
     }
     begin = clock();
-    post_place_sync(cluster_ctx.num_blocks);
+    post_place_sync((int) cluster_ctx.clb_nlist.blocks().size());
 
     fflush(stdout);
 
@@ -274,7 +274,6 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 
     t_clb_opins_used clb_opins_used_locally, saved_clb_opins_used_locally;
 
-    /* [0..cluster_ctx.num_blocks-1][0..num_class-1] */
     int attempt_count;
     int udsd_multiplier;
     int warnings;

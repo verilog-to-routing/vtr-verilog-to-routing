@@ -759,10 +759,10 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-	clb_opins_used_locally.resize(cluster_ctx.num_blocks);
+	clb_opins_used_locally.resize((int) cluster_ctx.clb_nlist.blocks().size());
 
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		type = cluster_ctx.blocks[iblk].type;
+	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
+		type = cluster_ctx.clb_nlist.block_type((BlockId) iblk);
 		get_class_range_for_block(iblk, &class_low, &class_high);
 		clb_opins_used_locally[iblk].resize(type->num_class);
 
@@ -1361,7 +1361,7 @@ void print_route(const char* placement_file, const char* route_file) {
 				iclass = cluster_ctx.blocks[bnum].type->pin_class[node_block_pin];
 
 				fprintf(fp, "Block %s (#%d) at (%d, %d), Pin class %d.\n",
-						cluster_ctx.blocks[bnum].name, bnum, place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y,
+						cluster_ctx.clb_nlist.block_name((BlockId) bnum).c_str(), bnum, place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y,
 						iclass);
 			}
 		}
@@ -1404,8 +1404,8 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
     auto& device_ctx = g_vpr_ctx.device();
 
 	if (rip_up_local_opins) {
-		for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-			type = cluster_ctx.blocks[iblk].type;
+		for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
+			type = cluster_ctx.clb_nlist.block_type((BlockId) iblk);
 			for (iclass = 0; iclass < type->num_class; iclass++) {
 				num_local_opin = clb_opins_used_locally[iblk][iclass].size();
 				/* Always 0 for pads and for RECEIVER (IPIN) classes */
@@ -1417,8 +1417,8 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 		}
 	}
 
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-		type = cluster_ctx.blocks[iblk].type;
+	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
+		type = cluster_ctx.clb_nlist.block_type((BlockId) iblk);
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			num_local_opin = clb_opins_used_locally[iblk][iclass].size();
 			/* Always 0 for pads and for RECEIVER (IPIN) classes */

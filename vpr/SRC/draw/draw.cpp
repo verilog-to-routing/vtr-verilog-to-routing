@@ -492,7 +492,7 @@ void alloc_draw_structs(const t_arch* arch) {
 
 	draw_state->net_color = (t_color *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_color));
 
-	draw_state->block_color = (t_color *) vtr::malloc(cluster_ctx.num_blocks * sizeof(t_color));
+	draw_state->block_color = (t_color *) vtr::malloc(cluster_ctx.clb_nlist.blocks().size() * sizeof(t_color));
 
 	/* Space is allocated for draw_rr_node but not initialized because we do *
 	 * not yet know information about the routing resources.				  */
@@ -661,7 +661,7 @@ static void drawplace(void) {
 					}
 
                     auto& cluster_ctx = g_vpr_ctx.clustering();
-					drawtext_in(abs_clb_bbox, cluster_ctx.blocks[bnum].name);
+					drawtext_in(abs_clb_bbox, cluster_ctx.clb_nlist.block_name((BlockId) bnum));
 					if (j == 0 || j == device_ctx.ny + 1) {
 						settextrotation(saved_rotation);
 					}
@@ -2315,7 +2315,7 @@ static void deselect_all(void) {
 	int i;
 
 	/* Create some colour highlighting */
-	for (i = 0; i < cluster_ctx.num_blocks; i++) {
+	for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
 		draw_reset_blk_color(i);
 	}
 
@@ -2337,10 +2337,10 @@ static void draw_reset_blk_color(int i) {
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	if (cluster_ctx.blocks[i].type->index < 3) {
+	if (cluster_ctx.clb_nlist.block_type((BlockId) i)->index < 3) {
 			draw_state->block_color[i] = LIGHTGREY;
-	} else if (cluster_ctx.blocks[i].type->index < 3 + MAX_BLOCK_COLOURS) {
-			draw_state->block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS + cluster_ctx.blocks[i].type->index - 3);
+	} else if (cluster_ctx.clb_nlist.block_type((BlockId) i)->index < 3 + MAX_BLOCK_COLOURS) {
+			draw_state->block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS + cluster_ctx.clb_nlist.block_type((BlockId)i)->index - 3);
 	} else {
 			draw_state->block_color[i] = (enum color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1);
 	}

@@ -70,8 +70,8 @@ void printClusteredNetlistStats() {
 	num_blocks_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
 	vtr::printf_info("\n");
-	vtr::printf_info("Netlist num_nets: %d\n", (int) cluster_ctx.clbs_nlist.net.size());
-	vtr::printf_info("Netlist num_blocks: %d\n", cluster_ctx.num_blocks);
+	vtr::printf_info("Netlist num_nets: %d\n", (int) cluster_ctx.clb_nlist.nets().size());
+	vtr::printf_info("Netlist num_blocks: %d\n", (int) cluster_ctx.clb_nlist.blocks().size());
 
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		num_blocks_type[i] = 0;
@@ -80,9 +80,9 @@ void printClusteredNetlistStats() {
 	L_num_p_inputs = 0;
 	L_num_p_outputs = 0;
 
-	for (i = 0; i < cluster_ctx.num_blocks; i++) {
-		num_blocks_type[cluster_ctx.blocks[i].type->index]++;
-		if (cluster_ctx.blocks[i].type == device_ctx.IO_TYPE) {
+	for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
+		num_blocks_type[cluster_ctx.clb_nlist.block_type((BlockId) i)->index]++;
+		if (cluster_ctx.clb_nlist.block_type((BlockId) i) == device_ctx.IO_TYPE) {
 			for (j = 0; j < device_ctx.IO_TYPE->num_pins; j++) {
 				if (cluster_ctx.blocks[i].nets[j] != OPEN) {
 					if (device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[j]].type
