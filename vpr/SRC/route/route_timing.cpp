@@ -29,6 +29,7 @@
 
 #include "timing_info.h"
 #include "timing_util.h"
+#include "route_budgets.h"
 
 #include "router_lookahead_map.h"
 
@@ -207,6 +208,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
     }
 
     CBRR connections_inf{};
+    
+    route_budgets budgeting_inf;
+    
     VTR_ASSERT_SAFE(connections_inf.sanity_check_lookup());
 
     /*
@@ -372,12 +376,16 @@ bool try_timing_driven_route(t_router_opts router_opts,
 
         if (timing_info) {
             /*
-             * Determine if any connectsion need to be forcibly re-routed due to timing
+             * Determine if any connection need to be forcibly re-routed due to timing
              */
             if (itry == 1) {
                 // first iteration sets up the lower bound connection delays since only timing is optimized for
                 connections_inf.set_stable_critical_path_delay(critical_path.delay());
                 connections_inf.set_lower_bound_connection_delays(net_delay);
+                
+                budgeting_inf.load_route_budgets(net_delay);
+                
+                budgeting_inf.print_route_budget();
             } else {
                 bool stable_routing_configuration = true;
                 // only need to forcibly reroute if critical path grew significantly

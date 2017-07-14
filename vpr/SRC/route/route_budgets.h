@@ -25,6 +25,8 @@ public:
     float get_min_delay_target(int inet, int isink);
     float get_max_delay_target(int inet, int isink);
     float get_crit_short_path (int inet, int isink);
+    void load_route_budgets(float ** net_delay);
+    void print_route_budget();
 private:
 
     vector<vector<float>> delay_min_budget;
