@@ -9,12 +9,12 @@ char *make_full_ref_name(const char *previous, char *module_name, char *module_i
 
 char *twos_complement(char *str);
 int is_string_of_radix(const char *string, int radix);
-char *convert_string_of_radix_to_bit_string(const char *string, int radix, int binary_size);
-long long convert_string_of_radix_to_long_long(char *orig_string, int radix);
+char *convert_string_of_radix_to_bit_string(const char *string, int radix, int binary_size, int line_number);
+long long convert_string_of_radix_to_long_long(const char *orig_string, int radix , int line_number);
 char *convert_long_long_to_bit_string(long long orig_long, int num_bits);
 int is_dont_care_string(const char *string);
-std::string base_10_convert(std::string number, size_t bit_length);
-std::string base_log2_convert(std::string number, size_t radix, size_t bit_length, int signed_numb);
+std::string base_10_convert(std::string number, size_t bit_length, int line_number);
+std::string base_log2_convert(std::string number, size_t radix, size_t bit_length, int signed_numb, int line_number);
 
 long long int my_power(long long int x, long long int y);
 long long int pow2(int to_the_power);

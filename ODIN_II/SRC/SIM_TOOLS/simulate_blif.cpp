@@ -2253,8 +2253,8 @@ void assign_memory_from_mif_file(FILE *mif, char *filename, int width, long dept
 						if (!is_string_of_radix(data_string, data_radix))
 							error_message(SIMULATION_ERROR, line_number, -1, "%s: data string %s is not a base %d string.", filename, data_string, data_radix);
 
-						char *binary_data = convert_string_of_radix_to_bit_string(data_string, data_radix, width);
-						long long address = convert_string_of_radix_to_long_long(address_string, addr_radix);
+						char *binary_data = convert_string_of_radix_to_bit_string(data_string, data_radix, width, line_number);
+						long long address = convert_string_of_radix_to_long_long(address_string, addr_radix, line_number);
 
 						if (address >= pow(2,depth))
 							error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is out of range.", filename, address_string);

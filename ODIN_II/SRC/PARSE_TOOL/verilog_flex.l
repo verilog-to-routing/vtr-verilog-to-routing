@@ -209,7 +209,7 @@ char* make_std(const char * in, int radix, size_t type_of_number);
 <INITIAL>'[oO][0-7_]*							{ MP; yylval.num_value = make_std(yytext,8,1); return vNUMBER_ID; }
 <INITIAL>'[dD][0-9]*							{ MP; yylval.num_value = make_std(yytext,10,1); return vNUMBER_ID; }
 
-<INITIAL>[0-9]+									{ MP; yylval.num_value =vtr::strdup(yytext); return vNUMBER_ID; }
+<INITIAL>[0-9]+									{ MP; yylval.num_value = make_std(yytext,10,2); return vNUMBER_ID; }
 
 <INITIAL>#[0-9]+								{ MP; yylval.num_value = vtr::strdup(yytext+1); return vDELAY_ID; }
 
@@ -232,7 +232,8 @@ char* make_std(const char * in, int radix, size_t type_of_number);
 
 %%    
 
-char* make_std(const char *in, int radix, size_t type_of_number){
+char *make_std(const char *in, int radix, size_t type_of_number){
+    //number_t number_out = (number_t*)calloc(1,sizeof(number_t));
     std::string input(in);
     
     std::string number;
@@ -243,36 +244,36 @@ char* make_std(const char *in, int radix, size_t type_of_number){
     switch(type_of_number){
         
         case 0:{ // has a bit_length and radix
-            size_t loc = input.find("\'");
+            size_t loc = input.find("'");
             number = input.substr(loc+2);
             bit_length = strtoull(input.substr(0,loc).c_str(), NULL, 10);
-            number_def = input.substr(0,loc) + "\'b";
+            number_def = input.substr(0,loc) + "'b";
             break;}
             
         case 1: // has a radix only
             number = input.substr(2);
             bit_length = 0;
-            number_def = "\'b";
+            number_def = "'b";
             break;
             
-        case 2: // is an integer ex: "10234" NOT WORKING YET, probably preferable to keep as a decimal anywho
+        case 2: // is an integer ex: "10234"
             number = input;
             bit_length = 0;
-            number_def = "\'b";
+            number_def = "'b";
             break;
             
         case 3:{ // has a bit_length and radix and signed
             size_t loc = input.find("'");
             number = input.substr(loc+3);
             bit_length = strtoull(input.substr(0,loc).c_str(), NULL, 10);
-            number_def = input.substr(0,loc) + "\'sb";
+            number_def = input.substr(0,loc) + "'sb";
             signed_numb =1;
             break;}
             
         case 4: // has a radix only and signed
             number = input.substr(3);
             bit_length = 0;
-            number_def = "\'sb";
+            number_def = "'sb";
             signed_numb =1;
             break;
             
@@ -281,6 +282,6 @@ char* make_std(const char *in, int radix, size_t type_of_number){
     
     //remove all occurence of _ since they are just visual aids
     number.erase(std::remove(number.begin(), number.end(), '_'), number.end());
-    std::string output(number_def + convert_string_of_radix_to_bit_string(number.c_str(),radix,bit_length));
+    std::string output(number_def + convert_string_of_radix_to_bit_string(number.c_str(),radix,bit_length, -1));
     return vtr::strdup(output.c_str());
 }

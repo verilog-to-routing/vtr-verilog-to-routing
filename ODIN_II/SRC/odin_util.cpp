@@ -105,13 +105,14 @@ char *twos_complement(char *str)
  * an error will be issued if the number will be truncated.
  *
  */
-char *convert_string_of_radix_to_bit_string(const char *string_in, int radix, int binary_size)
+ 
+char *convert_string_of_radix_to_bit_string(const char *string_in, int radix, int binary_size, int line_number)
 {
 	if (!is_string_of_radix(string_in,radix))
-		error_message(PARSE_ERROR, -1, -1, "Invalid base %d number: %s.\n", radix, string_in);
+		error_message(PARSE_ERROR, line_number, -1, "Invalid base %d number: %s.\n", radix, string_in);
 	
 	if (is_dont_care_string(string_in))
-		error_message(PARSE_ERROR, -1, -1, "Invalid number, contains x or z wich is unsupported: %s.\n", radix, string_in);
+		error_message(PARSE_ERROR, line_number, -1, "Invalid number, contains x or z wich is unsupported: %s.\n", radix, string_in);
 		
 	std::string number(string_in);
 	std::string output;
@@ -119,9 +120,9 @@ char *convert_string_of_radix_to_bit_string(const char *string_in, int radix, in
         case 2:     
         case 8:     
         case 16:
-            return vtr::strdup(base_log2_convert(number, radix, binary_size, 0).c_str());
+            return vtr::strdup(base_log2_convert(number, radix, binary_size, 0, line_number).c_str());
         case 10:
-            return vtr::strdup(base_10_convert(number, binary_size).c_str());
+            return vtr::strdup(base_10_convert(number, binary_size, line_number).c_str());
         default:
             return NULL;
     }
@@ -148,22 +149,22 @@ char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
 	return return_val;
 }
 
-long long convert_string_of_radix_to_long_long(char *orig_string, int radix)
+long long convert_string_of_radix_to_long_long(const char *orig_string, int radix, int line_number)
 {
 	if (!is_string_of_radix(orig_string,radix))
-		error_message(PARSE_ERROR, -1, -1, "Invalid base %d number: %s.\n", radix, orig_string);
+		error_message(PARSE_ERROR, line_number, -1, "Invalid base %d number: %s.\n", radix, orig_string);
 	
 	if (is_dont_care_string(orig_string))
-		error_message(PARSE_ERROR, -1, -1, "Invalid number, contains x or z wich is unsupported: %s.\n", radix, orig_string);
+		error_message(PARSE_ERROR, line_number, -1, "Invalid number, contains x or z wich is unsupported: %s.\n", radix, orig_string);
 		
 	#ifdef LLONG_MAX
 	long long number = strtoll(orig_string, NULL, radix);
 	if (number == LLONG_MAX || number == LLONG_MIN)
-		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
+		error_message(PARSE_ERROR, line_number, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
 	#else
 	long number = strtol(orig_string, NULL, radix);
 	if (number == LONG_MAX || number == LONG_MIN)
-		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
+		error_message(PARSE_ERROR, line_number, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
 	#endif
 
 	return number;
@@ -625,7 +626,7 @@ std::string base_log2_helper(const char in_digit, size_t radix){
     return nullptr;
 }
 
-std::string base_log2_convert(std::string number, size_t radix, size_t bit_length, int signed_numb){
+std::string base_log2_convert(std::string number, size_t radix, size_t bit_length, int signed_numb, int line_number){
 
 	if(bit_length == 0){
 		std::string resulting_binary("");
@@ -652,14 +653,17 @@ std::string base_log2_convert(std::string number, size_t radix, size_t bit_lengt
                 resulting_binary[j--] = converted_digit[k--];
                 
             if((k>=0 || i>=0) && j<0)
-				warning_message(PARSE_ERROR, -1, -1, "number (%s) base (%d) will be truncated to (%d) bit like defined in verilog file\n", number.c_str(), radix, bit_length);
+				warning_message(PARSE_ERROR, line_number, -1, "number (%s) base (%d) will be truncated to (%d)\n", number.c_str(), radix, bit_length);
         }
         return resulting_binary;
     }
 }
 
-std::string base_10_convert(std::string number, size_t bit_length){
+std::string base_10_convert(std::string number, size_t bit_length, int line_number){
     if(bit_length ==0){
+    	if(number == "0")
+    		return number;
+    		
         std::string bit_string;
         
         while(number.length() > 0){
@@ -703,7 +707,7 @@ std::string base_10_convert(std::string number, size_t bit_length){
                 number.erase(number.begin());
         }
         if(number.length() > 0 && number[0] != '0')
-        	warning_message(PARSE_ERROR, -1, -1, "number (%s) base (%d) will be truncated to (%d) bit like defined in verilog file\n", number.c_str(), 10, bit_length);
+        	warning_message(PARSE_ERROR, line_number, -1, "number (%s) base (%d) will be truncated to (%d)\n", number.c_str(), 10, bit_length);
         	
         return bit_string_sized;
     }
