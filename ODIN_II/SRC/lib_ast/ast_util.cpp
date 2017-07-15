@@ -291,46 +291,31 @@ ast_node_t *create_tree_node_number(char* number, int line_number, int /*file_nu
 	else
 	{
 		/* size is for a constant that needs */
-		if (strcmp(new_node->types.number.number, "0") != 0)
-		{
-			new_node->types.number.binary_size = ceil((log(convert_dec_string_of_size_to_long_long(new_node->types.number.number, new_node->types.number.size)+1))/log(2));
-		}
-		else
-		{
-			new_node->types.number.binary_size = 1;
-		}
+		new_node->types.number.binary_size = ceil((log(convert_string_of_radix_to_long_long(new_node->types.number.number, 10)+2))/log(2));
 	}
 	/* add in the values for all the numbers */
 	switch (new_node->types.number.base)
 	{
 		case(DEC):
 			// This will have limited width.
-			new_node->types.number.value = convert_dec_string_of_size_to_long_long(new_node->types.number.number, new_node->types.number.size);
-			new_node->types.number.binary_string = convert_long_long_to_bit_string(new_node->types.number.value, new_node->types.number.binary_size);
+			new_node->types.number.value = convert_string_of_radix_to_long_long(new_node->types.number.number, 10);
+			new_node->types.number.binary_string = convert_string_of_radix_to_bit_string(new_node->types.number.number, 10, new_node->types.number.binary_size);
 			break;
 		case(HEX):
-			if(!is_dont_care_string(new_node->types.number.number)){
-				new_node->types.number.binary_size *= 4;
-				new_node->types.number.value = strtoll(new_node->types.number.number,NULL,16); // This will have limited width.
-				// This will have full width.
-				new_node->types.number.binary_string = convert_hex_string_of_size_to_bit_string(0, new_node->types.number.number, new_node->types.number.binary_size);
-			}
-			else{
-				new_node->types.number.binary_string = convert_hex_string_of_size_to_bit_string(1, new_node->types.number.number, new_node->types.number.binary_size);
-			}
+			new_node->types.number.binary_size *= 4;
+			new_node->types.number.value = convert_string_of_radix_to_long_long(new_node->types.number.number,16); // This will have limited width.
+			// This will have full width.
+			new_node->types.number.binary_string = convert_string_of_radix_to_bit_string(new_node->types.number.number, 16, new_node->types.number.binary_size);
 			break;
 		case(OCT):
 			new_node->types.number.binary_size *= 3;
-			new_node->types.number.value = strtoll(new_node->types.number.number,NULL,8); // This will have limited width.
+			new_node->types.number.value = convert_string_of_radix_to_long_long(new_node->types.number.number,8); // This will have limited width.
 			// This will have full width.
-			new_node->types.number.binary_string = convert_oct_string_of_size_to_bit_string(new_node->types.number.number, new_node->types.number.binary_size);
+			new_node->types.number.binary_string = convert_string_of_radix_to_bit_string(new_node->types.number.number, 8, new_node->types.number.binary_size);
 			break;
 		case(BIN):
-		{
-			
-			new_node->types.number.value = strtoll(new_node->types.number.number,NULL,2);
-			new_node->types.number.binary_string = convert_binary_string_of_size_to_bit_string(1, new_node->types.number.number, new_node->types.number.binary_size);
-		}
+			new_node->types.number.value = convert_string_of_radix_to_long_long(new_node->types.number.number,2);
+			new_node->types.number.binary_string = convert_string_of_radix_to_bit_string(new_node->types.number.number, 2, new_node->types.number.binary_size);
 		break;
         default:
             oassert(FALSE);
@@ -565,13 +550,7 @@ void change_to_number_node(ast_node_t *node, long long value)
 	node->types.number.base = DEC;
 	node->types.number.size = len;
 	node->types.number.number = number;
-
-	if (value == 0){
-		node->types.number.binary_size = 1;
-	}else{
-		node->types.number.binary_size = ceil((log(convert_dec_string_of_size_to_long_long(node->types.number.number, node->types.number.size)+1))/log(2));
-	}
-
+	node->types.number.binary_size = ceil((log(convert_string_of_radix_to_long_long(node->types.number.number,10)+2))/log(2));
 	node->types.number.value = value;
 	node->types.number.binary_string = convert_long_long_to_bit_string(value, node->types.number.binary_size);
 

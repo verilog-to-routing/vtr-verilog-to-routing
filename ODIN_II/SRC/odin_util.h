@@ -8,14 +8,13 @@ char *make_signal_name(char *signal_name, int bit);
 char *make_full_ref_name(const char *previous, char *module_name, char *module_instance_name, const char *signal_name, long bit);
 
 char *twos_complement(char *str);
-int is_string_of_radix(char *string, int radix);
-char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_size);
+int is_string_of_radix(const char *string, int radix);
+char *convert_string_of_radix_to_bit_string(const char *string, int radix, int binary_size);
 long long convert_string_of_radix_to_long_long(char *orig_string, int radix);
 char *convert_long_long_to_bit_string(long long orig_long, int num_bits);
-long long convert_dec_string_of_size_to_long_long(char *orig_string, int size);
-char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *orig_string, int size);
-char *convert_oct_string_of_size_to_bit_string(char *orig_string, int size);
-char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, char *orig_string, int binary_size);
+int is_dont_care_string(const char *string);
+std::string base_10_convert(std::string number, size_t bit_length);
+std::string base_log2_convert(std::string number, size_t radix, size_t bit_length, int signed_numb);
 
 long long int my_power(long long int x, long long int y);
 long long int pow2(int to_the_power);
@@ -30,11 +29,7 @@ char *append_string(const char *string, const char *appendage, ...);
 void string_to_upper(char *string);
 void string_to_lower(char *string);
 
-int is_binary_string(char *string);
-int is_octal_string(char *string);
-int is_decimal_string(char *string);
-int is_hex_string(char *string);
-int is_dont_care_string(char *string);
+
 
 char *get_pin_name  (char *name);
 char *get_port_name (char *name);
@@ -52,4 +47,7 @@ void error_message(short error_type, int line_number, int file, const char *mess
 void warning_message(short error_type, int line_number, int file, const char *message, ...);
 
 #endif
+
+
+
 

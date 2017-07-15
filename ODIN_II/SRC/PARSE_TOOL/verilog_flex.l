@@ -32,6 +32,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <string>
 #include <algorithm>
 #include "string.h"
+#include "odin_util.h"
 
 /* the define below helps with watching the parser go token by token */
 #define MP {if (to_view_parse) {printf("%d %s\n", yylineno, yytext);}}
@@ -230,135 +231,6 @@ char* make_std(const char * in, int radix, size_t type_of_number);
 <*>.|\n		{ printf("Missing verilog.l rule: Default rule invoked in state %d: \"%s\"\n", YY_START, yytext);printf("Line %d: %s\n", yylineno, yytext); }
 
 %%    
-std::string base_log2_helper(const char in_digit, size_t radix){
-    switch(radix){
-        case 2:
-            switch(tolower(in_digit)){
-                case '0': return "0";
-                case '1': return "1";
-                case 'x': return "x";
-                case 'z': return "z";
-                default : break;
-            }
-            break;
-        case 8:
-            switch(tolower(in_digit)){
-                case '0': return "000";
-                case '1': return "001";
-                case '2': return "010";
-                case '3': return "011";
-                case '4': return "100";
-                case '5': return "101";
-                case '6': return "110";
-                case '7': return "111";
-				case 'x': return "xxx";
-				case 'z': return "zzz";
-                default : break;
-            }
-            break;
-            
-        case 16:
-            switch(tolower(in_digit)){
-                case '0': return "0000";
-                case '1': return "0001";
-                case '2': return "0010";
-                case '3': return "0011";
-                case '4': return "0100";
-                case '5': return "0101";
-                case '6': return "0110";
-                case '7': return "0111";
-                case '8': return "1000";
-                case '9': return "1001";
-                case 'a': return "1010";
-                case 'b': return "1011";
-                case 'c': return "1100";
-                case 'd': return "1101";
-                case 'e': return "1110";
-                case 'f': return "1111";
-				case 'x': return "xxxx";
-				case 'z': return "zzzz";
-                default : break;
-            }
-            break;
-        default: break;  
-    }
-    printf("_________not a valid bit______:   %c", in_digit);
-    return nullptr;
-}
-
-std::string base_log2_convert(std::string number, size_t radix, size_t bit_length, int signed_numb){
-
-	if(bit_length == 0){
-		std::string resulting_binary("");
-		
-		for(size_t i = 0; i< number.length(); i++)
-			resulting_binary += base_log2_helper(number[i],radix);
-		
-		return "0" + resulting_binary;	
-	}else{
-		char sign = '0'; 
-		if(signed_numb)
-			sign = base_log2_helper(number[0],radix)[0];
-			
-		std::string resulting_binary(bit_length, sign);
-		
-        for(int i= number.length()-1, j= resulting_binary.length()-1; i>=0 && j>= 0; i--){
-            std::string converted_digit = base_log2_helper(number[i], radix);
-            for(int k=converted_digit.length()-1; k>=0 && j >= 0; k--, j--){
-                resulting_binary[j] = converted_digit[k];
-            }
-        }
-        return resulting_binary;
-    }
-}
-
-std::string base_10_convert(std::string number, size_t bit_length){
-    if(bit_length ==0){
-        std::string bit_string;
-        
-        while(number.length() > 0){
-            
-            int i=number.length()-1;
-            //catch last remainder
-            bit_string.insert(bit_string.begin(),((number[i]-'0')%2)+'0');
-    
-            for(;i>=0;i--){
-                if(i>0)
-                    number[i] = (number[i]-'0')/2 + ((number[i-1]-'0')%2)*5 +'0';
-                else
-                    number[i] = (number[i]-'0')/2 + '0';
-            }
-            
-            //remove padded 0
-            while(number.length() > 0 && number[0] == '0')
-                number.erase(number.begin());
-        }
-        return "0" + bit_string;
-    }else{
-        std::string bit_string_sized(bit_length,'0');
-        
-        int loc = bit_string_sized.length()-1;
-        while(loc >=0 && number.length() > 0){
-            
-            int i=number.length()-1;
-            //catch last remainder
-            bit_string_sized[loc--] = (number[i]-'0')%2 +'0';
-    
-            for(;i>=0;i--){
-                //num = num/2+ msb%2
-                if(i>0)
-                    number[i] = (number[i]-'0')/2 + (number[i-1]-'0')%2*5 +'0';
-                else
-                    number[i] = (number[i]-'0')/2 + '0';
-            }
-            
-            //remove padded 0
-            while(number.length() > 0 && number[0] == '0')
-                number.erase(number.begin());
-        }
-        return bit_string_sized;
-    }
-}
 
 char* make_std(const char *in, int radix, size_t type_of_number){
     std::string input(in);
@@ -409,41 +281,6 @@ char* make_std(const char *in, int radix, size_t type_of_number){
     
     //remove all occurence of _ since they are just visual aids
     number.erase(std::remove(number.begin(), number.end(), '_'), number.end());
-
-    std::string output;
-    switch(radix){
-        case 2:     
-        case 8:     
-        case 16:
-            output = number_def + base_log2_convert(number, radix, bit_length, signed_numb);
-            break;
-        case 10:
-            output = number_def + base_10_convert(number, bit_length);
-            break;
-        default:
-            return NULL;
-    }
+    std::string output(number_def + convert_string_of_radix_to_bit_string(number.c_str(),radix,bit_length));
     return vtr::strdup(output.c_str());
-}
-
-
-char* standardize_number(const char* input)
-{
-	std::string input_number(input);
-	auto loc = input_number.find("\'");
-	size_t check_at = 0;
-	if(loc != std::string::npos)
-		check_at = loc;
-	
-	while(check_at < input_number.length())
-	{
-		if(input_number[check_at] == '_')
-			input_number.erase(input_number.begin()+check_at);
-		else
-		{
-			input_number[check_at] = tolower(input_number[check_at]);
-			check_at++;
-		}
-	}
-
 }

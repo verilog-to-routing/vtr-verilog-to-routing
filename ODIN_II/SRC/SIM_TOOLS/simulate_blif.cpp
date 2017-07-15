@@ -2840,69 +2840,66 @@ void write_wave_to_file(lines_t *l, FILE* file, int cycle_offset, int wave_lengt
  * Writes all values in the given lines to a line in the given file
  * for the given cycle.
  */
+ // TODO isn't this printing in reverse order? all output vectors would be wrong if so.
 void write_vector_to_file(lines_t *l, FILE *file, int cycle)
 {
+	//create a buffer
 	std::stringstream buffer;
-	int i;
-	for (i = 0; i < l->count; i++)
+	for (int i = 0; i < l->count; i++)
 	{
+		//empty the buffer
 		buffer.str(std::string());
-		line_t *line = l->lines[i];
-		int num_pins = line->number_of_pins;
 
-		if (line_has_unknown_pin(line, cycle) || num_pins == 1)
+		if (line_has_unknown_pin(l->lines[i], cycle) || l->lines[i]->number_of_pins == 1)
 		{
-			if ((num_pins + 1) > BUFFER_MAX_SIZE)
-				error_message(SIMULATION_ERROR, 0, -1, "Buffer overflow anticipated while writing vector for line %s.", line->name);
-
-			int j;
-			for (j = num_pins - 1; j >= 0 ; j--)
+			for (int j = l->lines[i]->number_of_pins - 1; j >= 0 ; j--)
 			{
-				signed char value = get_line_pin_value(line, j, cycle);
+				signed char value = get_line_pin_value(l->lines[i], j, cycle);
 		
-				if (value > 1){
-					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %d read from line %s.", value, line->name);
-				}else if(value < 0){
-					buffer << "x";
-				}else{	
-					buffer << std::dec <<(int)value;
+				if (value > 1)
+					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %d read from line %s.", value, l->lines[i]->name);
+					
+				switch(value){
+					case 0:		buffer << "0";	break;
+					case 1:		buffer << "1";	break;
+					default :	buffer << "x";	break;
 				}
 			}
-			// If there are no known values, print a single capital X.
-			// (Only for testing. Breaks machine readability.)
-			//if (!known_values && num_pins > 1)
-			//	sprintf(buffer, "X");
+			
+			/*
+			//If there are no known values, print a single capital X.
+			//(Only for testing. Breaks machine readability.)
+			if (!known_values && num_pins > 1)	sprintf(buffer, "X");
+			*/
+	
 		}
 		else
 		{
-			// +1 for ceiling, +1 for null, +2 for "OX"
-			if ((num_pins/4 + 1 + 1 + 2) > BUFFER_MAX_SIZE)
-				error_message(SIMULATION_ERROR, 0, -1, "Buffer overflow anticipated while writing vector for line %s.", line->name);
 			buffer << "0X";
 
 			int hex_digit = 0;
-			int j;
-			for (j = num_pins - 1; j >= 0; j--)
+			
+			for (int j = l->lines[i]->number_of_pins - 1; j >= 0; j--)
 			{
-				signed char value = get_line_pin_value(line,j,cycle);
-
+				
+				signed char value = get_line_pin_value(l->lines[i],j,cycle);
+				
+				if (value < 0)
+					error_message(SIMULATION_ERROR, 0, -1, "uncaught unknown value x from line %s.", value, l->lines[i]->name);
+				
 				if (value > 1)
-					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %d read from line %s.", value, line->name);
+					error_message(SIMULATION_ERROR, 0, -1, "Invalid logic value of %d read from line %s.", value, l->lines[i]->name);
 
 				hex_digit += value << j % 4;
 
-				if (!(j % 4))
+				if ((j % 4) == 0 || j == 0)
 				{
-					buffer << std::hex << hex_digit;
+					buffer << std::uppercase << std::hex << hex_digit;
 					hex_digit = 0;
 				}
 			}
 		}
 		buffer << " ";
-		// Expand the value to fill to space under the header. (Gets ugly sometimes.)
-		//while (strlen(buffer) < strlen(l->lines[i]->name))
-		//	strcat(buffer," ");
-		
 		fprintf(file,"%s",buffer.str().c_str());
 	}
 	fprintf(file, "\n");
