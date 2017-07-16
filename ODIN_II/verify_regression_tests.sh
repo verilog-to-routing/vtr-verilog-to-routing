@@ -13,7 +13,7 @@ do
 
 	rm output_vectors
 	#rm temp.blif
-        ./odin_II -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors" || exit 1
+        ./odin_II -E -a "$ARCH" -V "$benchmark" -t "$input_vectors" -T "$output_vectors"|| exit 1
         [ -e "output_vectors" ] || exit 1
 
 	#rm output_vectors

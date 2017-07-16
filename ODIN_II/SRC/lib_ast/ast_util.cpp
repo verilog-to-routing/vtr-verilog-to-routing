@@ -207,140 +207,33 @@ ast_node_t *create_tree_node_long_long_number(long long number, int constant_bit
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: create_tree_node_number)
+ * (function: create_tree_node_number) // ODIN runs on binary only
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *create_tree_node_number(char* number, int line_number, int /*file_number*/)
+ast_node_t *create_tree_node_number(char* number_in, int line_number, int /*file_number*/)
 {
 	ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
-	char *string_pointer = number;
-	int index_string_pointer = 0;
-	char *temp_string;
-	short flag_constant_decimal = FALSE;
-
+	new_node->types.number.base = BIN;
+	std::string number(number_in);
+	std::string number_stripped;
 	/* find the ' character if it's a base */
-	for (string_pointer=number; *string_pointer; string_pointer++) 
-	{
-		if (*string_pointer == '\'') 
-		{
-			break;
-		}
-		index_string_pointer++;
-	}
-
-	if (index_string_pointer == (int)strlen(number))
-	{
-		flag_constant_decimal = TRUE;
-		/* this is base d */
-		new_node->types.number.base = DEC;
-		/* reset to the front */
-		string_pointer = number;
-
-		/* size is the rest of the string */
-		new_node->types.number.size = strlen((string_pointer));
-		/* assign the remainder of the number to a string */
-		new_node->types.number.number = vtr::strdup((string_pointer));
-	}	
-	else
-	{
-		/* there is a base in the form: number[bhod]'number */
-		switch(tolower(*(string_pointer+1)))
-		{
-			case 'd':
-				new_node->types.number.base = DEC;
-				break;
-			case 'h':
-				new_node->types.number.base = HEX;
-				break;
-			case 'o':
-				new_node->types.number.base = OCT;
-				break;
-			case 'b':
-				new_node->types.number.base = BIN;
-				break;
-			default:
-				oassert(FALSE);
-				break;
-		}
-
-		/* check if the size matches the design specified size */
-		if(index_string_pointer > 0){
-			temp_string = vtr::strdup(number); 
-			temp_string[index_string_pointer] = '\0';
-			/* size is the rest of the string */
-			new_node->types.number.is_full = 0;
-			new_node->types.number.size = atoi(temp_string); 
-		}
-		else{
-			new_node->types.number.is_full = 1;
-			new_node->types.number.size = 1;
-		}          
+	auto loc = number.find("'");
+	number_stripped = number.substr(loc+2);
+	//no bit_length
 	
-		/* move to the digits */
-		string_pointer += 2;
-
-		/* assign the remainder of the number to a string */
-		new_node->types.number.number = vtr::strdup((string_pointer));
+	if(loc == 0){
+		new_node->types.number.is_full = 0;
+		new_node->types.number.binary_size = number_stripped.length();
+	}
+	//has a bit_length specifier
+	else{
+		new_node->types.number.is_full = 0;
+		new_node->types.number.binary_size = convert_string_of_radix_to_long_long(number.substr(0,loc).c_str(),10,line_number); 
 	}
 
-	/* check for decimal numbers without the formal 2'd... format */
-	if (flag_constant_decimal == FALSE)
-	{
-		/* size describes how may bits */
-		new_node->types.number.binary_size = new_node->types.number.size;
-	}
-	else
-	{
-		/* size is for a constant that needs */
-		if (strcmp(new_node->types.number.number, "0") != 0)
-		{
-			new_node->types.number.binary_size = ceil((log(convert_dec_string_of_size_to_long_long(new_node->types.number.number, new_node->types.number.size)+1))/log(2));
-		}
-		else
-		{
-			new_node->types.number.binary_size = 1;
-		}
-	}
-	/* add in the values for all the numbers */
-	switch (new_node->types.number.base)
-	{
-		case(DEC):
-			// This will have limited width.
-			new_node->types.number.value = convert_dec_string_of_size_to_long_long(new_node->types.number.number, new_node->types.number.size);
-			new_node->types.number.binary_string = convert_long_long_to_bit_string(new_node->types.number.value, new_node->types.number.binary_size);
-			break;
-		case(HEX):
-			if(!is_dont_care_string(new_node->types.number.number)){
-				new_node->types.number.binary_size *= 4;
-				new_node->types.number.value = strtoll(new_node->types.number.number,NULL,16); // This will have limited width.
-				// This will have full width.
-				new_node->types.number.binary_string = convert_hex_string_of_size_to_bit_string(0, new_node->types.number.number, new_node->types.number.binary_size);
-			}
-			else{
-				new_node->types.number.binary_string = convert_hex_string_of_size_to_bit_string(1, new_node->types.number.number, new_node->types.number.binary_size);
-			}
-			break;
-		case(OCT):
-			new_node->types.number.binary_size *= 3;
-			new_node->types.number.value = strtoll(new_node->types.number.number,NULL,8); // This will have limited width.
-			// This will have full width.
-			new_node->types.number.binary_string = convert_oct_string_of_size_to_bit_string(new_node->types.number.number, new_node->types.number.binary_size);
-			break;
-		case(BIN):
-		{
-			if(new_node->types.number.is_full == 0){
-				// This will have limited width.
-				new_node->types.number.value = strtoll(new_node->types.number.number,NULL,2);
-				// This will have full width.
-		
-			}
-			new_node->types.number.binary_string = convert_binary_string_of_size_to_bit_string(1, new_node->types.number.number, new_node->types.number.binary_size);
-		}
-		break;
-        default:
-            oassert(FALSE);
-            break;
-    }
-
+	new_node->types.number.number = vtr::strdup(number_stripped.c_str());
+	new_node->types.number.size = number_stripped.length();
+	new_node->types.number.value = convert_string_of_radix_to_long_long(new_node->types.number.number, 2, line_number);
+	new_node->types.number.binary_string = vtr::strdup(number_stripped.c_str());
 	return new_node;
 
 }
@@ -569,13 +462,7 @@ void change_to_number_node(ast_node_t *node, long long value)
 	node->types.number.base = DEC;
 	node->types.number.size = len;
 	node->types.number.number = number;
-
-	if (value == 0){
-		node->types.number.binary_size = 1;
-	}else{
-		node->types.number.binary_size = ceil((log(convert_dec_string_of_size_to_long_long(node->types.number.number, node->types.number.size)+1))/log(2));
-	}
-
+	node->types.number.binary_size = ceil((log(convert_string_of_radix_to_long_long(node->types.number.number,10, -1)+2))/log(2));
 	node->types.number.value = value;
 	node->types.number.binary_string = convert_long_long_to_bit_string(value, node->types.number.binary_size);
 
