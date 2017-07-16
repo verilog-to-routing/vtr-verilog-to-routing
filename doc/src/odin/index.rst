@@ -51,7 +51,7 @@ Odin II is used for logic synthesis and elaboration, converting a subset of the 
            all similar pins and nodes.
              (Eg: FF_NODE will create a single port with all flipflops) 
              
-```            
+```verilog            
 SUPPORTED keywords:
 always      and             assign          begin			case				default			
 `define     defparam        else			end				endcase			    endfunction		
