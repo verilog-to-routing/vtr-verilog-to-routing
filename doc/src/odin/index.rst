@@ -56,9 +56,9 @@ Odin II is used for logic synthesis and elaboration, converting a subset of the 
     SUPPORTED keywords:
     always		and             assign          begin			case				default			
     `define		defparam        else			end				endcase			    endfunction		
-    endmodule		endspecify		for				if				initial			    inout			
+    endmodule	endspecify		for				if				initial			    inout			
     input		integer			module			function		nand				negedge			
-    nor		not				or			    output			parameter		    localparam		
+    nor			not				or			    output			parameter		    localparam		
     posedge		reg			    specify			while			wire				xnor				
     xor				
 
@@ -81,6 +81,6 @@ Odin II is used for logic synthesis and elaboration, converting a subset of the 
     !==				^~				~^				~&				~|				
 
     NOT SUPPORTED Operators:
-    &&&				+:				-:				>>>				(*				*)				
+    &&&				+:				-:				>>>				(*				*)			
 
 
