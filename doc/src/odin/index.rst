@@ -50,4 +50,36 @@ Odin II is used for logic synthesis and elaboration, converting a subset of the 
          - Matching is done via strstr so general strings will match 
            all similar pins and nodes.
              (Eg: FF_NODE will create a single port with all flipflops) 
+             
+             
+SUPPORTED keywords:
+always      and             assign          begin			case				default			
+`define     defparam        else			end				endcase			    endfunction		
+endmodule   endspecify		for				if				initial			    inout			
+input		integer			module			function		nand				negedge			
+nor			not				or			    output			parameter		    localparam		
+posedge		reg			    specify			while			wire				xnor				
+xor				
+
+NOT SUPPORTED keywords:
+automatic		buf				casex			casez			disable			edge				
+endtask		    macromodule		scalared		specparam	    bufif0			bufif1			
+cmos			deassign		endprimitive	endtable		event			force			
+forever			fork			highz0			highz1			join			large			
+medium			nmos			notif0			notif1			pmos			primitive		
+pull0			pull1			pulldown		pullup			rcmos			release			
+repeat			rnmos			rpmos			rtran			rtranif0		rtranif1			
+small			signed			strong0			strong1			supply0			supply1			
+table			task			time			tran			tranif0			tranif1			
+tri			    tri0			tri1			triand			trior			vectored			
+wait			wand			weak0			weak1			wor				
+
+SUPPORTED Operators:
+**				&&				||				<=				=>				>=				
+<<				<<<				>>				==				!=				===				
+!==				^~				~^				~&				~|				
+
+NOT SUPPORTED Operators:
+&&&				+:				-:				>>>				(*				*)				
+
 
