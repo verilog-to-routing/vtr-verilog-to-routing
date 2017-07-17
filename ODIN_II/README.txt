@@ -156,8 +156,8 @@ while			pullup
 wire			rcmos						
 xnor			release						
 xor			repeat						
-			rnmos						
-			rpmos						
+@()			rnmos						
+@*			rpmos						
 			rtran						
 			rtranif0						
 			rtranif1						
