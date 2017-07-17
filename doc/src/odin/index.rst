@@ -51,6 +51,8 @@ Odin II is used for logic synthesis and elaboration, converting a subset of the 
            all similar pins and nodes.
              (Eg: FF_NODE will create a single port with all flipflops) 
 
+| Suported key | not supported key | supproted operators | not supported op. |
+| --- | --- | --- | --- |
 | always | automatic | ** | &&& | 
 | and | buf | && | =+: | 
 | assign | casex | || | -: | 
