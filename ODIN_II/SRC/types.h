@@ -199,17 +199,6 @@ typedef enum
 	LONG_LONG,
 } bases;
 
-typedef struct number_t_t
-{
-	short base;
-	int size;
-	int binary_size;
-	char *binary_string;
-	char *number;
-	long long value;
-	short is_full; //'bx means all of the wire get 'x'(dont care)
-} number_t;
-
 typedef enum
 {
 	NO_OP,
@@ -346,7 +335,17 @@ typedef enum
 struct typ_t
 {
 	char *identifier;
-	number_t number;
+
+	struct
+	{
+		short base;
+		int size;
+		int binary_size;
+		char *binary_string;
+		char *number;
+		long long value;
+		short is_full; //'bx means all of the wire get 'x'(dont care)
+	} number;
 	struct
 	{
 		operation_list op;

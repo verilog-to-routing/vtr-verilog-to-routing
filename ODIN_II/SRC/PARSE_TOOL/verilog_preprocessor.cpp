@@ -7,7 +7,6 @@
 #include "vtr_util.h"
 #include "vtr_memory.h"
 #include "odin_util.h"
-
 #include <stdbool.h>
 
 /* Globals */

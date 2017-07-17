@@ -105,27 +105,29 @@ char *twos_complement(char *str)
  * an error will be issued if the number will be truncated.
  *
  */
- 
-char *convert_string_of_radix_to_bit_string(const char *string_in, int radix, int binary_size, int line_number)
+char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_size)
 {
-	if (!is_string_of_radix(string_in,radix))
-		error_message(PARSE_ERROR, line_number, -1, "Invalid base %d number: %s.\n", radix, string_in);
-	
-	if (is_dont_care_string(string_in))
-		error_message(PARSE_ERROR, line_number, -1, "Invalid number, contains x or z wich is unsupported: %s.\n", radix, string_in);
-		
-	std::string number(string_in);
-	std::string output;
-    switch(radix){
-        case 2:     
-        case 8:     
-        case 16:
-            return vtr::strdup(base_log2_convert(number, radix, binary_size, 0, line_number).c_str());
-        case 10:
-            return vtr::strdup(base_10_convert(number, binary_size, line_number).c_str());
-        default:
-            return NULL;
-    }
+	if (radix == 16)
+	{
+		return convert_hex_string_of_size_to_bit_string(0, string, binary_size);
+	}
+	else if (radix == 10)
+	{
+		long long number = convert_dec_string_of_size_to_long_long(string, binary_size);
+		return convert_long_long_to_bit_string(number, binary_size);
+	}
+	else if (radix == 8)
+	{
+		return convert_oct_string_of_size_to_bit_string(string, binary_size);
+	}
+	else if (radix == 2)
+	{
+		return convert_binary_string_of_size_to_bit_string(0, string, binary_size);
+	}
+	else
+	{
+		return NULL;
+	}
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -149,73 +151,313 @@ char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
 	return return_val;
 }
 
-long long convert_string_of_radix_to_long_long(const char *orig_string, int radix, int line_number)
+/*
+ * Turns the given little endian decimal string into a long long. Throws an error if the
+ * string contains non-digits or is larger or smaller than the allowable range of long long.
+ */
+long long convert_dec_string_of_size_to_long_long(char *orig_string, int /*size*/)
 {
-	if (!is_string_of_radix(orig_string,radix))
-		error_message(PARSE_ERROR, line_number, -1, "Invalid base %d number: %s.\n", radix, orig_string);
-	
-	if (is_dont_care_string(orig_string))
-		error_message(PARSE_ERROR, line_number, -1, "Invalid number, contains x or z wich is unsupported: %s.\n", radix, orig_string);
-		
+	if (!is_decimal_string(orig_string))
+		error_message(PARSE_ERROR, -1, -1, "Invalid decimal number: %s.\n", orig_string);
+
+	errno = 0;
+	long long number = strtoll(orig_string, NULL, 10);
+	if (errno == ERANGE)
+		error_message(PARSE_ERROR, -1, -1, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
+
+	return number;
+}
+
+long long convert_string_of_radix_to_long_long(char *orig_string, int radix)
+{
+	if (!is_string_of_radix(orig_string, radix))
+		error_message(PARSE_ERROR, -1, -1, "Invalid base %d number: %s.\n", radix, orig_string);
+
 	#ifdef LLONG_MAX
 	long long number = strtoll(orig_string, NULL, radix);
 	if (number == LLONG_MAX || number == LLONG_MIN)
-		error_message(PARSE_ERROR, line_number, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
+		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
 	#else
 	long number = strtol(orig_string, NULL, radix);
 	if (number == LONG_MAX || number == LONG_MIN)
-		error_message(PARSE_ERROR, line_number, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
+		error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
 	#endif
 
 	return number;
 }
 
-
-/*
- * Returns TRUE if the given string contains x or z
- */
-int is_dont_care_string(const char *string_in)
+int is_string_of_radix(char *string, int radix)
 {
-	std::string bit_s(string_in);
-	if(bit_s.find("x") != std::string::npos) return	TRUE ; 
-	if(bit_s.find("z") != std::string::npos) return	TRUE ; 
-	if(bit_s.find("X") != std::string::npos) return	TRUE ; 
-	if(bit_s.find("Z") != std::string::npos) return	TRUE ;	
-	return FALSE; 
+	if (radix == 16)
+		return is_hex_string(string);
+	else if (radix == 10)
+		return is_decimal_string(string);
+	else if (radix == 8)
+		return is_octal_string(string);
+	else if (radix == 2)
+		return is_binary_string(string);
+	else
+		return FALSE;
 }
 
-
-int is_string_of_radix(const char *string, int radix)
+/*
+ * Parses the given little endian hex string into a little endian bit string padded or truncated to
+ * binary_size bits. Throws an error if there are non-hex characters in the input string.
+ */
+char *convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char *orig_string, int binary_size)
 {
-	std::string temp(string);
-	size_t i;
-	switch(radix)
+    char *return_string = NULL;
+    if(is_dont_care_number == 0){
+	if (!is_hex_string(orig_string))
+		error_message(PARSE_ERROR, -1, -1, "Invalid hex number: %s.\n", orig_string);
+
+	char *bit_string = (char *)vtr::calloc(1,sizeof(char));
+	char *string     = vtr::strdup(orig_string);
+	int   size       = strlen(string);
+
+	// Change to big endian. (We want to add higher order bits at the end.)
+	reverse_string(string, size);
+
+	int count = 0;
+	int i;
+	for (i = 0; i < size; i++)
 	{
-		case 16:
-			for (i = 0; i < temp.length(); i++)
-				if (!((temp[i] >= '0' && temp[i] <= '9') || (tolower(temp[i]) >= 'a' && tolower(temp[i]) <= 'f')))
-					return FALSE;
-			return TRUE;
-			
-		case 10:
-			for (i = 0; i < temp.length(); i++)
-				if (!(temp[i] >= '0' && temp[i] <= '9'))
-					return FALSE;
-			return TRUE;
-			
-		case 8:
-			for (i = 0; i < temp.length(); i++)
-				if (!(temp[i] >= '0' && temp[i] <= '7'))
-					return FALSE;
-			return TRUE;
-		case 2:
-			for (i = 0; i < temp.length(); i++)
-				if (!(temp[i] >= '0' && temp[i] <= '1'))
-					return FALSE;
-			return TRUE;
-		default:
-			return FALSE;
+		char temp[] = {string[i],'\0'};
+
+		unsigned long value = strtoul(temp, NULL, 16);
+		int k;
+		for (k = 0; k < 4; k++)
+		{
+			char bit = value % 2;
+			value /= 2;
+			bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
+			bit_string[count++] = '0' + bit;
+			bit_string[count]   = '\0';
+		}
 	}
+	vtr::free(string);
+
+	// Pad with zeros to binary_size.
+	while (count < binary_size)
+	{
+		bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
+		bit_string[count++] = '0';
+		bit_string[count]   = '\0';
+	}
+
+	// Truncate to binary_size
+	bit_string[binary_size] = '\0';
+	// Change to little endian
+	reverse_string(bit_string, binary_size);
+	// Copy out only the bits before the truncation.
+	return_string = vtr::strdup(bit_string);
+	vtr::free(bit_string);
+	
+    }
+    else if(is_dont_care_number == 1){
+       char *string = vtr::strdup(orig_string); 
+       int   size       = strlen(string); 
+       char *bit_string = (char *)vtr::calloc(1,sizeof(char));
+       int count = 0;
+       int i;
+       for (i = 0; i < size; i++)
+	   {
+		    //char temp[] = {string[i],'\0'};
+
+		    //unsigned long value = strtoul(temp, NULL, 16);
+		    int k;
+		    for (k = 0; k < 4; k++)
+		    {
+			    //char bit = value % 2;
+			    //value /= 2;
+			    bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
+			    bit_string[count++] = string[i];
+			    bit_string[count]   = '\0';
+		    }
+	    }
+
+        vtr::free(string);
+
+        while (count < binary_size)
+	    {
+		    bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
+		    bit_string[count++] = '0';
+		    bit_string[count]   = '\0';
+	    }
+
+        bit_string[binary_size] = '\0';
+
+        reverse_string(bit_string, binary_size);
+
+        return_string = vtr::strdup(bit_string);
+	    vtr::free(bit_string);
+
+        
+
+       // printf("bit_string %s",bit_string);
+       // getchar();
+
+        //printf("return_string %s", return_string);
+        //getchar();
+        //return return_string;
+	    
+    }
+    
+    return return_string;
+}
+
+/*
+ * Parses the given little endian octal string into a little endian bit string padded or truncated to
+ * binary_size bits. Throws an error if the string contains non-octal digits.
+ */
+char *convert_oct_string_of_size_to_bit_string(char *orig_string, int binary_size)
+{
+	if (!is_octal_string(orig_string))
+		error_message(PARSE_ERROR, -1, -1, "Invalid octal number: %s.\n", orig_string);
+
+	char *bit_string = (char *)vtr::calloc(1,sizeof(char));
+	char *string     = vtr::strdup(orig_string);
+	int   size       = strlen(string);
+
+	// Change to big endian. (We want to add higher order bits at the end.)
+	reverse_string(string, size);
+
+	int count = 0;
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		char temp[] = {string[i],'\0'};
+
+		unsigned long value = strtoul(temp, NULL, 8);
+		int k;
+		for (k = 0; k < 3; k++)
+		{
+			char bit = value % 2;
+			value /= 2;
+			bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
+			bit_string[count++] = '0' + bit;
+			bit_string[count]   = '\0';
+		}
+	}
+	vtr::free(string);
+
+	// Pad with zeros to binary_size.
+	while (count < binary_size)
+	{
+		bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
+		bit_string[count++] = '0';
+		bit_string[count]   = '\0';
+	}
+
+	// Truncate to binary_size
+	bit_string[binary_size] = '\0';
+	// Change to little endian
+	reverse_string(bit_string, binary_size);
+	// Copy out only the bits before the truncation.
+	char *return_string = vtr::strdup(bit_string);
+	vtr::free(bit_string);
+	return return_string;
+}
+
+/*
+ * Parses the given little endian bit string into a bit string padded or truncated to
+ * binary_size bits.
+ */
+char *convert_binary_string_of_size_to_bit_string(short is_dont_care_number, char *orig_string, int binary_size)
+{
+	if (!is_binary_string(orig_string) && !is_dont_care_number)
+		error_message(PARSE_ERROR, -1, -1, "Invalid binary number: %s.\n", orig_string);
+
+	int   count      = strlen(orig_string);
+	char *bit_string = (char *)vtr::calloc(count + 1, sizeof(char));
+
+	// Copy the original string into the buffer.
+	strcat(bit_string, orig_string);
+
+	// Change to big endian.
+	reverse_string(bit_string, count);
+
+	// Pad with zeros to binary_size.
+	while (count < binary_size)
+	{
+		bit_string = (char *)vtr::realloc(bit_string, sizeof(char) * (count + 2));
+		bit_string[count++] = '0';
+		bit_string[count]   = '\0';
+	}
+
+	// Truncate to binary_size
+	bit_string[binary_size] = '\0';
+	// Change to little endian
+	reverse_string(bit_string, binary_size);
+	// Copy out only the bits before the truncation.
+	char *return_string = vtr::strdup(bit_string);
+	vtr::free(bit_string);
+	return return_string;
+}
+
+/*
+ * Returns TRUE if the given string contains only '0' to '9' and 'a' through 'f'
+ */
+int is_hex_string(char *string)
+{
+	unsigned int i;
+	for (i = 0; i < strlen(string); i++)
+		if (!((string[i] >= '0' && string[i] <= '9') || (tolower(string[i]) >= 'a' && tolower(string[i]) <= 'f')))
+			return FALSE;
+
+	return TRUE;
+}
+
+/*
+ * Returns TRUE if the given string contains only '0' to '9' and 'a' through 'f'
+ */
+int is_dont_care_string(char *string)
+{
+	unsigned int i;
+	for (i = 0; i < strlen(string); i++)
+        if(string[i] != 'x') return FALSE;
+		//if (!((string[i] >= '0' && string[i] <= '9') || (tolower(string[i]) >= 'a' && tolower(string[i]) <= 'f')))
+		//	return FALSE;
+
+	return TRUE;
+}
+/*
+ * Returns TRUE if the string contains only '0' to '9'
+ */
+int is_decimal_string(char *string)
+{
+	unsigned int i;
+	for (i = 0; i < strlen(string); i++)
+		if (!(string[i] >= '0' && string[i] <= '9'))
+			return FALSE;
+
+	return TRUE;
+}
+
+/*
+ * Returns TRUE if the string contains only '0' to '7'
+ */
+int is_octal_string(char *string)
+{
+	unsigned int i;
+	for (i = 0; i < strlen(string); i++)
+		if (!(string[i] >= '0' && string[i] <= '7'))
+			return FALSE;
+
+	return TRUE;
+}
+
+/*
+ * Returns TRUE if the string contains only '0's and '1's.
+ */
+int is_binary_string(char *string)
+{
+	unsigned int i;
+	for (i = 0; i < strlen(string); i++)
+		if (!(string[i] >= '0' && string[i] <= '1'))
+			return FALSE;
+
+	return TRUE;
 }
 
 /*
@@ -566,149 +808,4 @@ bool validate_string_regex(const char *str_in, const char *pattern_in)
     	
 	fprintf(stderr,"\nRETURNING FALSE\n");
 	return false;
-}
-
-
-
-std::string base_log2_helper(const char in_digit, size_t radix){
-    switch(radix){
-        case 2:
-            switch(tolower(in_digit)){
-                case '0': return "0";
-                case '1': return "1";
-                case 'x': return "x";
-                case 'z': return "z";
-                default : break;
-            }
-            break;
-        case 8:
-            switch(tolower(in_digit)){
-                case '0': return "000";
-                case '1': return "001";
-                case '2': return "010";
-                case '3': return "011";
-                case '4': return "100";
-                case '5': return "101";
-                case '6': return "110";
-                case '7': return "111";
-				case 'x': return "xxx";
-				case 'z': return "zzz";
-                default : break;
-            }
-            break;
-            
-        case 16:
-            switch(tolower(in_digit)){
-                case '0': return "0000";
-                case '1': return "0001";
-                case '2': return "0010";
-                case '3': return "0011";
-                case '4': return "0100";
-                case '5': return "0101";
-                case '6': return "0110";
-                case '7': return "0111";
-                case '8': return "1000";
-                case '9': return "1001";
-                case 'a': return "1010";
-                case 'b': return "1011";
-                case 'c': return "1100";
-                case 'd': return "1101";
-                case 'e': return "1110";
-                case 'f': return "1111";
-				case 'x': return "xxxx";
-				case 'z': return "zzzz";
-                default : break;
-            }
-            break;
-        default: break;  
-    }
-    printf("_________not a valid bit______:   %c", in_digit);
-    return nullptr;
-}
-
-std::string base_log2_convert(std::string number, size_t radix, size_t bit_length, int signed_numb, int line_number){
-
-	if(bit_length == 0){
-		std::string resulting_binary("");
-		
-		for(size_t i = 0; i< number.length(); i++)
-			resulting_binary += base_log2_helper(number[i],radix);
-		
-		return resulting_binary;	
-	}else{
-		char sign = '0'; 
-		if(signed_numb)
-			sign = base_log2_helper(number[0],radix)[0];
-			
-		std::string resulting_binary(bit_length, sign);
-		int i = number.length()-1;
-		int j = bit_length-1;
-		
-        while(i>=0 && j>= 0)
-        {
-            std::string converted_digit = base_log2_helper(number[i--], radix);
-            
-            int k =converted_digit.length()-1;
-            while(k>=0 && j >= 0)
-                resulting_binary[j--] = converted_digit[k--];
-                
-            if((k>=0 || i>=0) && j<0)
-				warning_message(PARSE_ERROR, line_number, -1, "number (%s) base (%d) will be truncated to (%d)\n", number.c_str(), radix, bit_length);
-        }
-        return resulting_binary;
-    }
-}
-
-std::string base_10_convert(std::string number, size_t bit_length, int line_number){
-    if(bit_length ==0){
-    	if(number == "0")
-    		return number;
-    		
-        std::string bit_string;
-        
-        while(number.length() > 0){
-            
-            int i=number.length()-1;
-            //catch last remainder
-            bit_string.insert(bit_string.begin(),((number[i]-'0')%2)+'0');
-    
-            for(;i>=0;i--){
-                if(i>0)
-                    number[i] = (number[i]-'0')/2 + ((number[i-1]-'0')%2)*5 +'0';
-                else
-                    number[i] = (number[i]-'0')/2 + '0';
-            }
-            
-            //remove padded 0
-            while(number.length() > 0 && number[0] == '0')
-                number.erase(number.begin());
-        }
-        return bit_string;
-    }else{
-        std::string bit_string_sized(bit_length,'0');
-        
-        int loc = bit_string_sized.length()-1;
-        while(loc >=0 && number.length() > 0){
-            
-            int i=number.length()-1;
-            //catch last remainder
-            bit_string_sized[loc--] = (number[i]-'0')%2 +'0';
-    
-            for(;i>=0;i--){
-                //num = num/2+ msb%2
-                if(i>0)
-                    number[i] = (number[i]-'0')/2 + (number[i-1]-'0')%2*5 +'0';
-                else
-                    number[i] = (number[i]-'0')/2 + '0';
-            }
-            
-            //remove padded 0
-            while(number.length() > 0 && number[0] == '0')
-                number.erase(number.begin());
-        }
-        if(number.length() > 0 && number[0] != '0')
-        	warning_message(PARSE_ERROR, line_number, -1, "number (%s) base (%d) will be truncated to (%d)\n", number.c_str(), 10, bit_length);
-        	
-        return bit_string_sized;
-    }
 }
