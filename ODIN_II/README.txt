@@ -116,6 +116,75 @@ internal Odin II data structures. However, a cycle parameter is included to
 provide researchers with the ability to delay results of operations performed by
 the simulation code.
 
+
+| Suported key | not supported key | supproted operators | not supported op. |
+| --- | --- | --- | --- |
+| always | automatic | ** | &&& | 
+| and | buf | && | =+: | 
+| assign | casex | || | -: | 
+| begin | casez | <= | >>> | 
+| case | disable | => | (* | 
+| default | edge | >= | *) | 
+| `define | endtask | << |  | 
+| defparam | macromodule | <<< |  | 
+| else | scalared | >> |  | 
+| end | specparam | == |  | 
+| endcase | bufif0 | != |  | 
+| endfunction | bufif1 | === |  | 
+| endmodule | cmos | !== |  | 
+| endspecify | deassign | ^~ |  | 
+| for | endprimitive | ~^ |  | 
+| if | endtable | ~& |  | 
+| initial | event | ~| |  | 
+| inout | force |  |  | 
+| input | forever |  |  | 
+| integer | fork |  |  | 
+| module | highz0 |  |  | 
+| function | highz1 |  |  | 
+| nand | join |  |  | 
+| negedge | large |  |  | 
+| nor | medium |  |  | 
+| not | nmos |  |  | 
+| or | notif0 |  |  | 
+| output | notif1 |  |  | 
+| parameter | pmos |  |  | 
+| localparam | primitive |  |  | 
+| posedge | pull0 |  |  | 
+| reg | pull1 |  |  | 
+| specify | pulldown |  |  | 
+| while | pullup |  |  | 
+| wire | rcmos |  |  | 
+| xnor | release |  |  | 
+| xor | repeat |  |  | 
+|  | rnmos |  |  | 
+|  | rpmos |  |  | 
+|  | rtran |  |  | 
+|  | rtranif0 |  |  | 
+|  | rtranif1 |  |  | 
+|  | small |  |  | 
+|  | signed |  |  | 
+|  | strong0 |  |  | 
+|  | strong1 |  |  | 
+|  | supply0 |  |  | 
+|  | supply1 |  |  | 
+|  | table |  |  | 
+|  | task |  |  | 
+|  | time |  |  | 
+|  | tran |  |  | 
+|  | tranif0 |  |  | 
+|  | tranif1 |  |  | 
+|  | tri |  |  | 
+|  | tri0 |  |  | 
+|  | tri1 |  |  | 
+|  | triand |  |  | 
+|  | trior |  |  | 
+|  | vectored |  |  | 
+|  | wait |  |  | 
+|  | wand |  |  | 
+|  | weak0 |  |  | 
+|  | weak1 |  |  | 
+|  | wor |  |  | 
+
 DOCUMENTING ODIN II
 -------------------
 
