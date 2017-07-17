@@ -117,36 +117,38 @@ provide researchers with the ability to delay results of operations performed by
 the simulation code.
 
 
-always			automatic			**			&&&
+SUPPORTED KEYWORD	|NOT SUPPORTED		|SUPPORTED OPERATOR	|NOT SUPPORTED
+---			|---			|---			|---
+always			automatic		**			&&&
 and			buf			&&			=+:
 assign			casex			||			-:
 begin			casez			<=			>>>
 case			disable			=>			(*
 default			edge			>=			*)
 `define			endtask			<<			
-defparam			macromodule			<<<			
-else			scalared			>>			
-end			specparam			==			
+defparam		macromodule		<<<			
+else			scalared		>>			
+end			specparam		==			
 endcase			bufif0			!=			
-endfunction			bufif1			===			
-endmodule			cmos			!==			
-endspecify			deassign			^~			
-for			endprimitive			~^			
-if			endtable			~&			
+endfunction		bufif1			===			
+endmodule		cmos			!==			
+endspecify		deassign		^~			
+for			endprimitive		~^			
+if			endtable		~&			
 initial			event			~|			
 inout			force						
 input			forever						
 integer			fork						
 module			highz0						
-function			highz1						
+function		highz1						
 nand			join						
 negedge			large						
 nor			medium						
 not			nmos						
 or			notif0						
 output			notif1						
-parameter			pmos						
-localparam			primitive						
+parameter		pmos						
+localparam		primitive						
 posedge			pull0						
 reg			pull1						
 specify			pulldown						
