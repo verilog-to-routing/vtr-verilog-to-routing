@@ -409,7 +409,7 @@ static AtomPinId find_atom_pin_for_pb_route_id(int clb, int pb_route_id, const I
 const t_net_pin* find_pb_route_clb_input_net_pin(int clb, int sink_pb_pin_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    VTR_ASSERT(sink_pb_pin_id < cluster_ctx.blocks[clb].pb->pb_graph_node->total_pb_pins);
+    VTR_ASSERT(sink_pb_pin_id < cluster_ctx.clb_nlist.block_pb((BlockId) clb)->pb_graph_node->total_pb_pins);
 
     VTR_ASSERT(clb >= 0);
     VTR_ASSERT(sink_pb_pin_id >= 0);
@@ -461,13 +461,13 @@ int find_clb_pb_pin(int clb, int clb_pin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    VTR_ASSERT_MSG(clb_pin < cluster_ctx.blocks[clb].type->num_pins, "Must be a valid top-level pin");
+    VTR_ASSERT_MSG(clb_pin < cluster_ctx.clb_nlist.block_type((BlockId) clb)->num_pins, "Must be a valid top-level pin");
 
     int pb_pin = -1;
     if(place_ctx.block_locs[clb].nets_and_pins_synced_to_z_coordinate) {
         //Pins have been offset by z-coordinate, need to remove offset
 
-        t_type_ptr type = cluster_ctx.blocks[clb].type;
+        t_type_ptr type = cluster_ctx.clb_nlist.block_type((BlockId) clb);
         VTR_ASSERT(type->num_pins % type->capacity == 0);
         int num_basic_block_pins = type->num_pins / type->capacity;
         /* Logical location and physical location is offset by z * max_num_block_pins */
@@ -490,7 +490,7 @@ int find_pb_pin_clb_pin(int clb, int pb_pin) {
     int clb_pin = -1;
     if(place_ctx.block_locs[clb].nets_and_pins_synced_to_z_coordinate) {
         //Pins have been offset by z-coordinate, need to remove offset
-        t_type_ptr type = cluster_ctx.blocks[clb].type;
+        t_type_ptr type = cluster_ctx.clb_nlist.block_type((BlockId) clb);
         VTR_ASSERT(type->num_pins % type->capacity == 0);
         int num_basic_block_pins = type->num_pins / type->capacity;
         /* Logical location and physical location is offset by z * max_num_block_pins */
@@ -514,7 +514,7 @@ bool is_clb_external_pin(int clb, int pb_pin_id) {
     //If the gpin's parent graph node is the same as the pb's graph node
     //this must be a top level pin
     const t_pb_graph_node* gnode = gpin->parent_node;
-    bool is_top_level_pin = (gnode == cluster_ctx.blocks[clb].pb->pb_graph_node);
+    bool is_top_level_pin = (gnode == cluster_ctx.clb_nlist.block_pb((BlockId) clb)->pb_graph_node);
 
     return is_top_level_pin;
 }
@@ -576,7 +576,7 @@ void get_class_range_for_block(const int iblk,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-	t_type_ptr type = cluster_ctx.blocks[iblk].type;
+	t_type_ptr type = cluster_ctx.clb_nlist.block_type((BlockId) iblk);
 	VTR_ASSERT(type->num_class % type->capacity == 0);
 	*class_low = place_ctx.block_locs[iblk].z * (type->num_class / type->capacity);
 	*class_high = (place_ctx.block_locs[iblk].z + 1) * (type->num_class / type->capacity) - 1;
@@ -1020,11 +1020,11 @@ t_pb ***alloc_and_load_pin_id_to_pb_mapping() {
 
 	t_pb ***pin_id_to_pb_mapping = new t_pb**[cluster_ctx.clb_nlist.blocks().size()];
 	for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-		pin_id_to_pb_mapping[i] = new t_pb*[cluster_ctx.blocks[i].type->pb_graph_head->total_pb_pins];
-		for (int j = 0; j < cluster_ctx.blocks[i].type->pb_graph_head->total_pb_pins; j++) {
+		pin_id_to_pb_mapping[i] = new t_pb*[cluster_ctx.clb_nlist.block_type((BlockId) i)->pb_graph_head->total_pb_pins];
+		for (int j = 0; j < cluster_ctx.clb_nlist.block_type((BlockId) i)->pb_graph_head->total_pb_pins; j++) {
 			pin_id_to_pb_mapping[i][j] = NULL;
 		}
-		load_pin_id_to_pb_mapping_rec(cluster_ctx.blocks[i].pb, pin_id_to_pb_mapping[i]);
+		load_pin_id_to_pb_mapping_rec(cluster_ctx.clb_nlist.block_pb((BlockId) i), pin_id_to_pb_mapping[i]);
 	}
 	return pin_id_to_pb_mapping;
 }
@@ -1266,7 +1266,7 @@ vtr::Matrix<int> alloc_and_load_net_pin_index() {
     vtr::Matrix<int> temp_net_pin_index({cluster_ctx.clb_nlist.blocks().size(), size_t(max_pins_per_clb)}, OPEN);
 
 	/* Load the values */
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		if (cluster_ctx.clbs_nlist.net[inet].is_global)
 			continue;
 		for (netpin = 0; netpin < cluster_ctx.clbs_nlist.net[inet].pins.size(); netpin++) {
