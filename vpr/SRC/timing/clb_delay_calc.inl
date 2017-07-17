@@ -74,7 +74,7 @@ inline float ClbDelayCalc::pb_route_max_delay(int clb_block, int pb_route_idx) c
 inline const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(int clb_block, int pb_route_idx) const {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int type_index = cluster_ctx.blocks[clb_block].type->index;
+    int type_index = cluster_ctx.clb_nlist.block_type((BlockId) clb_block)->index;
 
     int upstream_pb_route_idx = cluster_ctx.blocks[clb_block].pb_route[pb_route_idx].driver_pb_pin_id;
 

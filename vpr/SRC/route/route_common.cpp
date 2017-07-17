@@ -923,8 +923,8 @@ static void load_route_bb(int bb_factor) {
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         int idriver_blk = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
         int idriver_blk_pin = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
-		x = place_ctx.block_locs[idriver_blk].x + cluster_ctx.blocks[idriver_blk].type->pin_width[idriver_blk_pin];
-		y = place_ctx.block_locs[idriver_blk].y + cluster_ctx.blocks[idriver_blk].type->pin_height[idriver_blk_pin];
+		x = place_ctx.block_locs[idriver_blk].x + cluster_ctx.clb_nlist.block_type((BlockId) idriver_blk)->pin_width[idriver_blk_pin];
+		y = place_ctx.block_locs[idriver_blk].y + cluster_ctx.clb_nlist.block_type((BlockId) idriver_blk)->pin_height[idriver_blk_pin];
 
 		xmin = x;
 		ymin = y;
@@ -934,8 +934,8 @@ static void load_route_bb(int bb_factor) {
 		for (k = 1; k < cluster_ctx.clbs_nlist.net[inet].pins.size(); k++) {
             int isink_blk = cluster_ctx.clbs_nlist.net[inet].pins[k].block;
             int isink_blk_pin = cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin;
-			x = place_ctx.block_locs[isink_blk].x + cluster_ctx.blocks[isink_blk].type->pin_width[isink_blk_pin];
-			y = place_ctx.block_locs[isink_blk].y + cluster_ctx.blocks[isink_blk].type->pin_height[isink_blk_pin];
+			x = place_ctx.block_locs[isink_blk].x + cluster_ctx.clb_nlist.block_type((BlockId) isink_blk)->pin_width[isink_blk_pin];
+			y = place_ctx.block_locs[isink_blk].y + cluster_ctx.clb_nlist.block_type((BlockId) isink_blk)->pin_height[isink_blk_pin];
 
 			if (x < xmin) {
 				xmin = x;
@@ -1358,7 +1358,7 @@ void print_route(const char* placement_file, const char* route_file) {
 				bnum = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
 
 				node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
-				iclass = cluster_ctx.blocks[bnum].type->pin_class[node_block_pin];
+				iclass = cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_class[node_block_pin];
 
 				fprintf(fp, "Block %s (#%d) at (%d, %d), Pin class %d.\n",
 						cluster_ctx.clb_nlist.block_name((BlockId) bnum).c_str(), bnum, place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y,

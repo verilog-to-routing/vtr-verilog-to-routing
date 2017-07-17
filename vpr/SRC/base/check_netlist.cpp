@@ -115,8 +115,8 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 		node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
 
 		bool is_global_net = static_cast<bool>(cluster_ctx.clbs_nlist.net[inet].is_global);
-		if (cluster_ctx.blocks[iblk].type->is_global_pin[node_block_pin] != is_global_net 
-            && cluster_ctx.blocks[iblk].type != device_ctx.IO_TYPE) {
+		if (cluster_ctx.clb_nlist.block_type((BlockId) iblk)->is_global_pin[node_block_pin] != is_global_net 
+            && cluster_ctx.clb_nlist.block_type((BlockId) iblk) != device_ctx.IO_TYPE) {
 
 			/* Allow a CLB output pin to drive a global net (warning only). */
 
@@ -125,13 +125,13 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 						"in check_connections_to_global_clb_pins:\n");
 				vtr::printf_warning(__FILE__, __LINE__, 
 						"\tnet #%d (%s) is driven by CLB output pin (#%d) on block #%d (%s).\n", 
-						inet, cluster_ctx.clbs_nlist.net[inet].name, node_block_pin, iblk, cluster_ctx.blocks[iblk].name);
+						inet, cluster_ctx.clbs_nlist.net[inet].name, node_block_pin, iblk, cluster_ctx.clb_nlist.block_name((BlockId) iblk));
 			} else { /* Otherwise -> Error */
 				vtr::printf_error(__FILE__, __LINE__, 
 						"in check_connections_to_global_clb_pins:\n");
 				vtr::printf_error(__FILE__, __LINE__, 
 						"\tpin %d on net #%d (%s) connects to CLB input pin (#%d) on block #%d (%s).\n", 
-						ipin, inet, cluster_ctx.clbs_nlist.net[inet].name, node_block_pin, iblk, cluster_ctx.blocks[iblk].name);
+						ipin, inet, cluster_ctx.clbs_nlist.net[inet].name, node_block_pin, iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk));
 				error++;
 			}
 
@@ -157,7 +157,7 @@ static int check_clb_conn(int iblk, int num_conn) {
     auto& device_ctx = g_vpr_ctx.device();
 
 	error = 0;
-	type = cluster_ctx.blocks[iblk].type;
+	type = cluster_ctx.clb_nlist.block_type((BlockId) iblk);
 
 	if (type == device_ctx.IO_TYPE) {
 	    /*

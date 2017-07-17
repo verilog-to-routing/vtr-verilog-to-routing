@@ -201,7 +201,7 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 	num_macro = 0;
 	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
 
-		num_blk_pins = cluster_ctx.blocks[iblk].type->num_pins;
+		num_blk_pins = cluster_ctx.clb_nlist.block_type((BlockId) iblk)->num_pins;
 		for (to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
 			
 			to_inet = cluster_ctx.blocks[iblk].nets[to_iblk_pin];

@@ -1405,7 +1405,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 			bnum = blocks_affected.moved_blocks[iblk].block_num;
 
 			/* Go through all the pins in the moved block */
-			for (iblk_pin = 0; iblk_pin < cluster_ctx.blocks[bnum].type->num_pins; iblk_pin++)
+			for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId) bnum)->num_pins; iblk_pin++)
 			{
 				inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
 				if (inet == OPEN)
@@ -1420,10 +1420,10 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				} else {
 					update_bb(inet, &ts_bb_coord_new[inet],
 							&ts_bb_edge_new[inet], 
-							blocks_affected.moved_blocks[iblk].xold + cluster_ctx.blocks[bnum].type->pin_width[iblk_pin],
-							blocks_affected.moved_blocks[iblk].yold + cluster_ctx.blocks[bnum].type->pin_height[iblk_pin],
-							blocks_affected.moved_blocks[iblk].xnew + cluster_ctx.blocks[bnum].type->pin_width[iblk_pin],
-							blocks_affected.moved_blocks[iblk].ynew + cluster_ctx.blocks[bnum].type->pin_height[iblk_pin]);
+							blocks_affected.moved_blocks[iblk].xold + cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_width[iblk_pin],
+							blocks_affected.moved_blocks[iblk].yold + cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_height[iblk_pin],
+							blocks_affected.moved_blocks[iblk].xnew + cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_width[iblk_pin],
+							blocks_affected.moved_blocks[iblk].ynew + cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_height[iblk_pin]);
 				}
 			}
 		}
@@ -1567,7 +1567,7 @@ static int find_affected_nets(int *nets_to_update) {
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
 
 		/* Go through all the pins in the moved block */
-		for (iblk_pin = 0; iblk_pin < cluster_ctx.blocks[bnum].type->num_pins; iblk_pin++)
+		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId) bnum)->num_pins; iblk_pin++)
 		{
 			/* Updates the pins_to_nets array, set to -1 if   *
 			 * that pin is not connected to any net or it is a  *
@@ -1839,7 +1839,7 @@ static void update_td_cost(void) {
 	/* Go through all the blocks moved. */
 	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
-		for (iblk_pin = 0; iblk_pin < cluster_ctx.blocks[bnum].type->num_pins; iblk_pin++) {
+		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId) bnum)->num_pins; iblk_pin++) {
 
 			inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
 
@@ -1901,7 +1901,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 	{
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
 		/* Go through all the pins in the moved block */
-		for (iblk_pin = 0; iblk_pin < cluster_ctx.blocks[bnum].type->num_pins; iblk_pin++) {
+		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId) bnum)->num_pins; iblk_pin++) {
 			inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
 
 			if (inet == OPEN)
@@ -2222,8 +2222,8 @@ static void get_bb_from_scratch(int inet, t_bb *coords,
 	bnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
 	pnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
 
-	x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
-	y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
+	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_width[pnum];
+	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_height[pnum];
 
 	x = max(min(x, device_ctx.nx), 1);
 	y = max(min(y, device_ctx.ny), 1);
@@ -2240,8 +2240,8 @@ static void get_bb_from_scratch(int inet, t_bb *coords,
 	for (ipin = 1; ipin < n_pins; ipin++) {
 		bnum = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
 		pnum = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
-		x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
-		y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
+		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_width[pnum];
+		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_height[pnum];
 
 		/* Code below counts IO blocks as being within the 1..device_ctx.nx, 1..device_ctx.ny clb array. *
 		 * This is because channels do not go out of the 0..device_ctx.nx, 0..device_ctx.ny range, and   *
@@ -2383,8 +2383,8 @@ static void get_non_updateable_bb(int inet, t_bb *bb_coord_new) {
 
 	bnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
 	pnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
-	x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
-	y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
+	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_width[pnum];
+	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_height[pnum];
 	
 	xmin = x;
 	ymin = y;
@@ -2394,8 +2394,8 @@ static void get_non_updateable_bb(int inet, t_bb *bb_coord_new) {
 	for (k = 1; k < cluster_ctx.clbs_nlist.net[inet].pins.size(); k++) {
 		bnum = cluster_ctx.clbs_nlist.net[inet].pins[k].block;
 		pnum = cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin;
-		x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
-		y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
+		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_width[pnum];
+		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_height[pnum];
 
 		if (x < xmin) {
 			xmin = x;

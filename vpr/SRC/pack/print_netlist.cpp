@@ -43,7 +43,7 @@ void print_netlist(char *foutput, char *net_file) {
 
 	/* Count I/O input and output pads */
 	for (i = 0; i < (unsigned int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-		if (cluster_ctx.blocks[i].type == device_ctx.IO_TYPE) {
+		if (cluster_ctx.clb_nlist.block_type((BlockId) i) == device_ctx.IO_TYPE) {
 			for (j = 0; j < (unsigned int) device_ctx.IO_TYPE->num_pins; j++) {
 				if (cluster_ctx.blocks[i].nets[j] != OPEN) {
 					if (device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[j]].type
@@ -86,7 +86,7 @@ void print_netlist(char *foutput, char *net_file) {
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
 		fprintf(fp, "%s", cluster_ctx.clb_nlist.block_type((BlockId) i)->name);
 
-		max_pin = cluster_ctx.blocks[i].type->num_pins;
+		max_pin = cluster_ctx.clb_nlist.block_type((BlockId) i)->num_pins;
 
 		for (j = 0; j < (unsigned int) max_pin; j++)
 			print_pinnum(fp, cluster_ctx.blocks[i].nets[j]);

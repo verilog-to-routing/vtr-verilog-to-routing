@@ -155,7 +155,7 @@ struct t_draw_pb_type_info {
  *			 Set when init_draw_coords is called.
  * blk_info: a list of drawing information for each type of
  *           block, one for each type. Access it with
- *           cluster_ctx.blocks[block_id].type->index
+ *           cluster_ctx.clb_nlist.block_type(block_id)->index
  */
 struct t_draw_coords {
 	float *tile_x, *tile_y;

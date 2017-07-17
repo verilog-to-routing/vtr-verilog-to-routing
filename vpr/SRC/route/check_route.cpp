@@ -606,11 +606,11 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 				}
 
 				ipin = device_ctx.rr_nodes[inode].ptc_num();
-				if (cluster_ctx.blocks[iblk].type->pin_class[ipin] != iclass) {
+				if (cluster_ctx.clb_nlist.block_type((BlockId) iblk)->pin_class[ipin] != iclass) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%d (%s):\n"
 						"\tExpected class %d local OPIN has class %d -- rr_node #: %d.\n",
-						iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), iclass,	cluster_ctx.blocks[iblk].type->pin_class[ipin], inode);
+						iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), iclass,	cluster_ctx.clb_nlist.block_type((BlockId) iblk)->pin_class[ipin], inode);
 				}
 			}
 		}
