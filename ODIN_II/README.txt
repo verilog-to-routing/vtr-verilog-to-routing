@@ -118,7 +118,7 @@ the simulation code.
 
 
 SUPPORTED KEYWORD	|NOT SUPPORTED		|SUPPORTED OPERATOR	|NOT SUPPORTED
----			|---			|---			|---
+######################################################################################
 always			automatic		**			&&&
 and			buf			&&			=+:
 assign			casex			||			-:
