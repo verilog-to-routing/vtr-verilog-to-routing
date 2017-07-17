@@ -51,36 +51,70 @@ Odin II is used for logic synthesis and elaboration, converting a subset of the 
            all similar pins and nodes.
              (Eg: FF_NODE will create a single port with all flipflops) 
              
-.. code-block:: none
-
-    SUPPORTED keywords:
-    always		and             assign          begin			case				default			
-    `define		defparam        else			end				endcase			    endfunction		
-    endmodule	endspecify		for				if				initial			    inout			
-    input		integer			module			function		nand				negedge			
-    nor			not				or			    output			parameter		    localparam		
-    posedge		reg			    specify			while			wire				xnor				
-    xor				
-
-    NOT SUPPORTED keywords:
-    automatic		buf				casex			casez			disable			edge				
-    endtask		    macromodule		scalared		specparam	    bufif0			bufif1			
-    cmos			deassign		endprimitive	endtable		event			force			
-    forever			fork			highz0			highz1			join			large			
-    medium			nmos			notif0			notif1			pmos			primitive		
-    pull0			pull1			pulldown		pullup			rcmos			release			
-    repeat			rnmos			rpmos			rtran			rtranif0		rtranif1			
-    small			signed			strong0			strong1			supply0			supply1			
-    table			task			time			tran			tranif0			tranif1			
-    tri			    tri0			tri1			triand			trior			vectored			
-    wait			wand			weak0			weak1			wor				
-
-    SUPPORTED Operators:
-    **				&&				||				<=				=>				>=				
-    <<				<<<				>>				==				!=				===				
-    !==				^~				~^				~&				~|				
-
-    NOT SUPPORTED Operators:
-    &&&				+:				-:				>>>				(*				*)			
+always|automatic|**|&&&
+and|buf|&&|=+:
+assign|casex||||-:
+begin|casez|<=|>>>
+case|disable|=>|(*
+default|edge|>=|*)
+`define|endtask|<<|
+defparam|macromodule|<<<|
+else|scalared|>>|
+end|specparam|==|
+endcase|bufif0|!=|
+endfunction|bufif1|===|
+endmodule|cmos|!==|
+endspecify|deassign|^~|
+for|endprimitive|~^|
+if|endtable|~&|
+initial|event|~||
+inout|force||
+input|forever||
+integer|fork||
+module|highz0||
+function|highz1||
+nand|join||
+negedge|large||
+nor|medium||
+not|nmos||
+or|notif0||
+output|notif1||
+parameter|pmos||
+localparam|primitive||
+posedge|pull0||
+reg|pull1||
+specify|pulldown||
+while|pullup||
+wire|rcmos||
+xnor|release||
+xor|repeat||
+|rnmos||
+|rpmos||
+|rtran||
+|rtranif0||
+|rtranif1||
+|small||
+|signed||
+|strong0||
+|strong1||
+|supply0||
+|supply1||
+|table||
+|task||
+|time||
+|tran||
+|tranif0||
+|tranif1||
+|tri||
+|tri0||
+|tri1||
+|triand||
+|trior||
+|vectored||
+|wait||
+|wand||
+|weak0||
+|weak1||
+|wor||	
 
 
