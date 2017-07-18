@@ -562,7 +562,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			cur_cluster_placement_stats_ptr = &cluster_placement_stats[cluster_ctx.clb_nlist.block_type((BlockId) (num_clb - 1))->index];
 			num_unrelated_clustering_attempts = 0;
 			next_molecule = get_molecule_for_cluster(
-					clb[num_clb - 1].pb, 
+					cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)), 
                     atom_molecules,
                     allow_unrelated_clustering,
 					&num_unrelated_clustering_attempts,
@@ -575,7 +575,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						cur_cluster_placement_stats_ptr, 
                         atom_molecules,
                         next_molecule,
-						primitives_list, clb[num_clb - 1].pb, num_models,
+						primitives_list, cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)), num_models,
 						max_cluster_size, num_clb - 1, detailed_routing_stage, router_data);
 				prev_molecule = next_molecule;
 
@@ -608,7 +608,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					}
 
 					next_molecule = get_molecule_for_cluster(
-							clb[num_clb - 1].pb,
+							cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)),
                             atom_molecules,
                             allow_unrelated_clustering,
 							&num_unrelated_clustering_attempts,
@@ -640,7 +640,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					blocks_since_last_analysis++; /* historically, timing slacks were recomputed after X number of blocks were packed, but this doesn't significantly alter results so I (jluu) did not port the code */
 				}
 				next_molecule = get_molecule_for_cluster(
-						clb[num_clb - 1].pb,
+						cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)),
                         atom_molecules,
                         allow_unrelated_clustering,
 						&num_unrelated_clustering_attempts,
@@ -685,7 +685,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 							max_molecule_inputs);
 				
 				/* store info that will be used later in packing from pb_stats and free the rest */
-				t_pb_stats *pb_stats = clb[num_clb - 1].pb->pb_stats;
+				t_pb_stats *pb_stats = cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1))->pb_stats;
 				for(const AtomNetId mnet_id : pb_stats->marked_nets) {
 					int external_terminals = atom_ctx.nlist.net_pins(mnet_id).size() - pb_stats->num_pins_of_net_in_pb[mnet_id];
 					/* Check if external terminals of net is within the fanout limit and that there exists external terminals */
@@ -693,16 +693,16 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						clb_inter_blk_nets[num_clb - 1].nets_in_lb.push_back(mnet_id);
 					}
 				}
-				free_pb_stats_recursive(clb[num_clb - 1].pb);
+				free_pb_stats_recursive(cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)));
 			} else {
 				/* Free up data structures and requeue used molecules */
 				num_used_instances_type[cluster_ctx.clb_nlist.block_type((BlockId) (num_clb - 1))->index]--;
-                revalid_molecules(clb[num_clb - 1].pb, atom_molecules);
-				free_pb(clb[num_clb - 1].pb);
-				delete clb[num_clb - 1].pb;
+                revalid_molecules(cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)), atom_molecules);
+				free_pb(cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)));
+				delete cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1));
 				free(clb[num_clb - 1].name);
 				clb[num_clb - 1].name = NULL;
-				clb[num_clb - 1].pb = NULL;
+//				cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)) = NULL;
 				num_clb--;
 				seedindex = savedseedindex;
 			}
@@ -721,6 +721,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	output_clustering(clb, num_clb, intra_lb_routing, global_clocks, is_clock, arch->architecture_id, out_fname, false);
 	
 	cluster_ctx.blocks = NULL;
+
 	for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++){
 		free_intra_lb_nets(intra_lb_routing[irt]);
 	}
@@ -1966,7 +1967,7 @@ static void start_new_cluster(
 				if (success) {
 					/* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
 					//Once clustering succeeds, add it to the clb netlist
-					clb_nlist->create_block(root_atom_name.c_str(), new t_pb, &device_ctx.block_types[i]);
+					clb_nlist->create_block(root_atom_name.c_str(), pb, &device_ctx.block_types[i]);
 					break;
 				} else {
 					free_router_data(*router_data);

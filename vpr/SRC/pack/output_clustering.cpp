@@ -489,7 +489,7 @@ static void print_clusters(t_block *clb, int num_clusters, FILE *fpout) {
 
 	for (icluster = 0; icluster < num_clusters; icluster++) {
 		/* TODO: Must do check that total CLB pins match top-level pb pins, perhaps check this earlier? */
-		print_pb(fpout, cluster_ctx.clb_nlist.block_type((BlockId) icluster), clb[icluster].pb, icluster, clb[icluster].pb_route, 1);
+		print_pb(fpout, cluster_ctx.clb_nlist.block_type((BlockId) icluster), cluster_ctx.clb_nlist.block_pb((BlockId) icluster), icluster, clb[icluster].pb_route, 1);
 	}
 }
 
@@ -592,11 +592,12 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	int column;
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();
+	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
 	if(!intra_lb_routing.empty()) {
 		VTR_ASSERT((int)intra_lb_routing.size() == num_clusters);
 		for(int icluster = 0; icluster < num_clusters; icluster++) {
-			clb[icluster].pb_route = alloc_and_load_pb_route(intra_lb_routing[icluster], clb[icluster].pb->pb_graph_node);
+			clb[icluster].pb_route = alloc_and_load_pb_route(intra_lb_routing[icluster], cluster_ctx.clb_nlist.block_pb((BlockId) icluster)->pb_graph_node);
 		}
 	}
 
@@ -682,6 +683,5 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	delete[] pb_graph_pin_lookup_from_index_by_type;
 
     //Calculate the ID of the clustering
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     cluster_ctx.clb_nlist.set_netlist_id(vtr::secure_digest_file(out_fname));
 }
