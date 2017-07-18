@@ -43,40 +43,42 @@ void GraphvizDotWriter::write_dot_file(std::ostream& os) {
     write_dot_format(os, node_tags, node_slacks, timing_type);
 }
 
-void GraphvizDotWriter::write_dot_file(std::string filename, const TimingAnalyzer& analyzer) {
+void GraphvizDotWriter::write_dot_file(std::string filename, const SetupTimingAnalyzer& analyzer) {
+    std::ofstream os(filename);
+    write_dot_file(os, analyzer);
+}
+void GraphvizDotWriter::write_dot_file(std::string filename, const HoldTimingAnalyzer& analyzer) {
     std::ofstream os(filename);
     write_dot_file(os, analyzer);
 }
 
-void GraphvizDotWriter::write_dot_file(std::ostream& os, const TimingAnalyzer& analyzer) {
+void GraphvizDotWriter::write_dot_file(std::ostream& os, const SetupTimingAnalyzer& analyzer) {
     std::map<NodeId,std::vector<TimingTag>> node_tags;
     std::map<NodeId,std::vector<TimingTag>> node_slacks;
-    TimingType timing_type = TimingType::UNKOWN;
-
-    //This is ugly, but makes it transparent to the user who just passes thier analyzer
-    const SetupTimingAnalyzer* setup_analyzer = dynamic_cast<const SetupTimingAnalyzer*>(&analyzer);
-    const HoldTimingAnalyzer* hold_analyzer = dynamic_cast<const HoldTimingAnalyzer*>(&analyzer);
+    TimingType timing_type = TimingType::SETUP;
 
     for(NodeId node : nodes_to_dump_) {
-        if(setup_analyzer) {
-            auto tags = setup_analyzer->setup_tags(node);
-            std::copy(tags.begin(), tags.end(), std::back_inserter(node_tags[node]));
+        auto tags = analyzer.setup_tags(node);
+        std::copy(tags.begin(), tags.end(), std::back_inserter(node_tags[node]));
 
-            auto slacks = setup_analyzer->setup_slacks(node);
-            std::copy(slacks.begin(), slacks.end(), std::back_inserter(node_slacks[node]));
+        auto slacks = analyzer.setup_slacks(node);
+        std::copy(slacks.begin(), slacks.end(), std::back_inserter(node_slacks[node]));
+    }
 
-            timing_type = TimingType::SETUP;
-        } else {
-            TATUM_ASSERT(hold_analyzer);
+    write_dot_format(os, node_tags, node_slacks, timing_type);
+}
 
-            auto tags = hold_analyzer->hold_tags(node);
-            std::copy(tags.begin(), tags.end(), std::back_inserter(node_tags[node]));
+void GraphvizDotWriter::write_dot_file(std::ostream& os, const HoldTimingAnalyzer& analyzer) {
+    std::map<NodeId,std::vector<TimingTag>> node_tags;
+    std::map<NodeId,std::vector<TimingTag>> node_slacks;
+    TimingType timing_type = TimingType::HOLD;
 
-            auto slacks = hold_analyzer->hold_slacks(node);
-            std::copy(slacks.begin(), slacks.end(), std::back_inserter(node_slacks[node]));
+    for(NodeId node : nodes_to_dump_) {
+        auto tags = analyzer.hold_tags(node);
+        std::copy(tags.begin(), tags.end(), std::back_inserter(node_tags[node]));
 
-            timing_type = TimingType::HOLD;
-        }
+        auto slacks = analyzer.hold_slacks(node);
+        std::copy(slacks.begin(), slacks.end(), std::back_inserter(node_slacks[node]));
     }
 
     write_dot_format(os, node_tags, node_slacks, timing_type);
