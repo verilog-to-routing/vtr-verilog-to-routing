@@ -42,8 +42,11 @@ class GraphvizDotWriter {
         void write_dot_file(std::ostream& os);
 
         //Write the dot file with timing tags
-        void write_dot_file(std::string filename, const TimingAnalyzer& analyzer);
-        void write_dot_file(std::ostream& os, const TimingAnalyzer& analyzer);
+        void write_dot_file(std::string filename, const SetupTimingAnalyzer& analyzer);
+        void write_dot_file(std::ostream& os, const SetupTimingAnalyzer& analyzer);
+
+        void write_dot_file(std::string filename, const HoldTimingAnalyzer& analyzer);
+        void write_dot_file(std::ostream& os, const HoldTimingAnalyzer& analyzer);
     private:
         void write_dot_format(std::ostream& os, 
                               const std::map<NodeId,std::vector<TimingTag>>& node_tags,
