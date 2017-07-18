@@ -480,7 +480,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 	fprintf(fpout, "</block>\n");
 }
 
-static void print_clusters(t_block *clb, int num_clusters, FILE * fpout) {
+static void print_clusters(t_block *clb, int num_clusters, FILE *fpout) {
 
 	/* Prints out one cluster (clb).  Both the external pins and the *
 	 * internal connections are printed out.                         */
@@ -489,11 +489,7 @@ static void print_clusters(t_block *clb, int num_clusters, FILE * fpout) {
 
 	for (icluster = 0; icluster < num_clusters; icluster++) {
 		/* TODO: Must do check that total CLB pins match top-level pb pins, perhaps check this earlier? */
-		if(clb[icluster].pb_route != NULL) {
-			print_pb(fpout, cluster_ctx.clb_nlist.block_type((BlockId) icluster), clb[icluster].pb, icluster, clb[icluster].pb_route, 1);
-		} else {
-			print_pb(fpout, cluster_ctx.clb_nlist.block_type((BlockId) icluster), clb[icluster].pb, icluster, NULL, 1);
-		}
+		print_pb(fpout, cluster_ctx.clb_nlist.block_type((BlockId) icluster), clb[icluster].pb, icluster, clb[icluster].pb_route, 1);
 	}
 }
 

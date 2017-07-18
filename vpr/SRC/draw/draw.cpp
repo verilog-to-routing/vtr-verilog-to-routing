@@ -2186,7 +2186,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	// note: this will clear the selected sub-block if show_blk_internal is 0,
 	// or if it doesn't find anything
 	t_point point_in_clb = t_point(abs_x, abs_y) - clb_bbox.bottom_left();
-	highlight_sub_block(point_in_clb, *clb);
+	highlight_sub_block(point_in_clb, *clb, cluster_ctx.clb_nlist.block_pb((BlockId) clb_index));
 	
 	if (get_selected_sub_block_info().has_selection()) {
 		t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
@@ -2195,7 +2195,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	} else {
 		/* Highlight block and fan-in/fan-outs. */
 		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type((BlockId) clb_index), clb_index);
-		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, clb->name, place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
+		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, cluster_ctx.clb_nlist.block_name((BlockId) clb_index).c_str(), place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
 	}
 
 	update_message(msg);

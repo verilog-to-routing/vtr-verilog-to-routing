@@ -301,7 +301,6 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	found = false;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		if (strcmp(device_ctx.block_types[i].name, tokens[0].data) == 0) {
-//			cb[index].type = &device_ctx.block_types[i];
 			clb_nlist->create_block(block_name.value(), new t_pb, &device_ctx.block_types[i]);
 			pb_type = clb_nlist->block_type((BlockId) index)->pb_type;
 			found = true;
@@ -341,7 +340,8 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	processPb(clb_block, index, clb_nlist->block_pb((BlockId) index), cb[index].pb_route, num_primitives, loc_data, clb_nlist);
 
 	//Process nets and net_pins
-	num_pins = clb_nlist->block_type((BlockId) index)->num_pins;
+	num_pins = clb_nlist->block_type((BlockId) index)->num_pins;	
+	
 	cb[index].nets = (int *) vtr::malloc(num_pins * sizeof(int));
 	cb[index].net_pins = (int *) vtr::malloc(num_pins * sizeof(int));
 
@@ -865,9 +865,9 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 					== clustered_nlist->block_type((BlockId) i)->num_pins / clustered_nlist->block_type((BlockId) i)->capacity);
 
         //Load the external nets connected to input ports
-		for (j = 0; j < block_list[i].pb->pb_graph_node->num_input_ports; j++) {
-			for (k = 0; k < block_list[i].pb->pb_graph_node->num_input_pins[j]; k++) {
-				pb_graph_pin = &block_list[i].pb->pb_graph_node->input_pins[j][k];
+		for (j = 0; j < clustered_nlist->block_pb((BlockId) i)->pb_graph_node->num_input_ports; j++) {
+			for (k = 0; k < clustered_nlist->block_pb((BlockId) i)->pb_graph_node->num_input_pins[j]; k++) {
+				pb_graph_pin = &clustered_nlist->block_pb((BlockId) i)->pb_graph_node->input_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
                 AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
@@ -883,9 +883,9 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 		}
 
         //Load the external nets connected to output ports
-		for (j = 0; j < block_list[i].pb->pb_graph_node->num_output_ports; j++) {
-			for (k = 0; k < block_list[i].pb->pb_graph_node->num_output_pins[j]; k++) {
-				pb_graph_pin = &block_list[i].pb->pb_graph_node->output_pins[j][k];
+		for (j = 0; j < clustered_nlist->block_pb((BlockId) i)->pb_graph_node->num_output_ports; j++) {
+			for (k = 0; k < clustered_nlist->block_pb((BlockId) i)->pb_graph_node->num_output_pins[j]; k++) {
+				pb_graph_pin = &clustered_nlist->block_pb((BlockId) i)->pb_graph_node->output_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
                 AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 				if (net_id) {
@@ -900,9 +900,9 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 		}
 
         //Load the external nets connected to clock ports
-		for (j = 0; j < block_list[i].pb->pb_graph_node->num_clock_ports; j++) {
-			for (k = 0; k < block_list[i].pb->pb_graph_node->num_clock_pins[j]; k++) {
-				pb_graph_pin = &block_list[i].pb->pb_graph_node->clock_pins[j][k];
+		for (j = 0; j < clustered_nlist->block_pb((BlockId) i)->pb_graph_node->num_clock_ports; j++) {
+			for (k = 0; k < clustered_nlist->block_pb((BlockId) i)->pb_graph_node->num_clock_pins[j]; k++) {
+				pb_graph_pin = &clustered_nlist->block_pb((BlockId) i)->pb_graph_node->clock_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
                 AtomNetId net_id = block_list[i].pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
@@ -963,7 +963,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 					 * Pin is a receiver
 					 * TODO: ADD COMMENTS */
 /*					PortId port_id = clustered_nlist->create_port(	(BlockId) i,
-																	block_list[i].pb->pb_graph_node ...  ); //t_model_port
+																	pb->pb_graph_node ...  ); //t_model_port
 					PinId pin_id = clustered_nlist->create_pin(	port_id, 
 																j, //BitIndex of pin in port
 																(NetId) netnum,

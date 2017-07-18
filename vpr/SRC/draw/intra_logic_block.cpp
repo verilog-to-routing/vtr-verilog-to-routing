@@ -162,10 +162,10 @@ void draw_internal_draw_subblk() {
 				/* Get block ID */
 				int bnum = place_ctx.grid_blocks[i][j].blocks[k];
 				/* Safety check, that physical blocks exists in the CLB */
-				if (cluster_ctx.blocks[bnum].pb == NULL)
+				if (cluster_ctx.clb_nlist.block_pb((BlockId) bnum) == NULL)
 					continue;
 
-				draw_internal_pb(&cluster_ctx.blocks[bnum], cluster_ctx.blocks[bnum].pb, t_bound_box(0,0,0,0), cluster_ctx.clb_nlist.block_type((BlockId) bnum));
+				draw_internal_pb(&cluster_ctx.blocks[bnum], cluster_ctx.clb_nlist.block_pb((BlockId) bnum), t_bound_box(0,0,0,0), cluster_ctx.clb_nlist.block_type((BlockId) bnum));
 			}
 		}
 	}
@@ -616,13 +616,13 @@ static bool is_top_lvl_block_highlighted(const t_block& clb, const t_type_ptr ty
 	return true;
 }
 
-int highlight_sub_block(const t_point& point_in_clb, t_block& clb) {
+int highlight_sub_block(const t_point& point_in_clb, t_block& clb, t_pb *pb) {
 	t_draw_state* draw_state = get_draw_state_vars();
 
 	int max_depth = draw_state->show_blk_internal;
 
 	t_pb* new_selected_sub_block = 
-		highlight_sub_block_helper(clb, clb.pb, point_in_clb, max_depth);
+		highlight_sub_block_helper(clb, pb, point_in_clb, max_depth);
 	if (new_selected_sub_block == NULL) {
 		get_selected_sub_block_info().clear();
 		return 1;
