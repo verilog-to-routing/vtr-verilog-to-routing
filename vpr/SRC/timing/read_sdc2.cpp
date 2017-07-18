@@ -948,6 +948,7 @@ void apply_combinational_default_timing_constraints(const AtomNetlist& netlist,
     //Create a virtual clock, with 0 period
     tatum::DomainId domain = tc.create_clock_domain(clock_name);
     tc.set_setup_constraint(domain, domain, tatum::Time(0.));
+    tc.set_hold_constraint(domain, domain, tatum::Time(0.));
 
     //Constrain all I/Os with zero input/output delay
     constrain_all_ios(netlist, lookup, tc, domain, domain, tatum::Time(0.), tatum::Time(0.));
@@ -970,6 +971,7 @@ void apply_single_clock_default_timing_constraints(const AtomNetlist& netlist,
     //Create the netlist clock with period 0
     tatum::DomainId domain = tc.create_clock_domain(clock_name);
     tc.set_setup_constraint(domain, domain, tatum::Time(0.));
+    tc.set_hold_constraint(domain, domain, tatum::Time(0.));
 
     //Mark the clock domain source
     AtomPinId clock_driver_pin = netlist.net_driver(clock_net);
@@ -998,6 +1000,7 @@ void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
     //Create a virtual clock, with 0 period
     tatum::DomainId virtual_clock = tc.create_clock_domain(virtual_clock_name);
     tc.set_setup_constraint(virtual_clock, virtual_clock, tatum::Time(0.));
+    tc.set_hold_constraint(virtual_clock, virtual_clock, tatum::Time(0.));
 
     //Constrain all I/Os with zero input/output delay t the virtual clock
     constrain_all_ios(netlist, lookup, tc, virtual_clock, virtual_clock, tatum::Time(0.), tatum::Time(0.));
@@ -1019,6 +1022,10 @@ void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
         tc.set_setup_constraint(clock, clock, tatum::Time(0.)); //Intra-domain
         tc.set_setup_constraint(clock, virtual_clock, tatum::Time(0.)); //netlist to virtual
         tc.set_setup_constraint(virtual_clock, clock, tatum::Time(0.)); //virtual to netlist
+
+        tc.set_hold_constraint(clock, clock, tatum::Time(0.)); //Intra-domain
+        tc.set_hold_constraint(clock, virtual_clock, tatum::Time(0.)); //netlist to virtual
+        tc.set_hold_constraint(virtual_clock, clock, tatum::Time(0.)); //virtual to netlist
     }
 
     //Mark constant generator timing nodes

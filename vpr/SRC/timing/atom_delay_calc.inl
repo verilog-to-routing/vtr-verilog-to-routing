@@ -46,6 +46,16 @@ inline float AtomDelayCalc::atom_setup_time(const AtomPinId /*clock_pin*/, const
     return gpin->tsu;
 }
 
+inline float AtomDelayCalc::atom_hold_time(const AtomPinId /*clock_pin*/, const AtomPinId pin) const {
+    auto port_type = netlist_.port_type(netlist_.pin_port(pin));
+    VTR_ASSERT(port_type == AtomPortType::OUTPUT || port_type == AtomPortType::INPUT);
+
+    const t_pb_graph_pin* gpin = find_pb_graph_pin(pin);
+    VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
+
+    return gpin->thld;
+}
+
 inline float AtomDelayCalc::atom_clock_to_q_delay(const AtomPinId /*clock_pin*/, const AtomPinId pin) const {
     auto port_type = netlist_.port_type(netlist_.pin_port(pin));
     VTR_ASSERT(port_type == AtomPortType::OUTPUT || port_type == AtomPortType::INPUT);

@@ -12,7 +12,7 @@
 
 #include "VprTimingGraphNameResolver.h"
 
-void generate_timing_stats(const SetupTimingInfo& timing_info) {
+void generate_setup_timing_stats(const SetupTimingInfo& timing_info) {
 #ifdef ENABLE_CLASSIC_VPR_STA
     vtr::printf("\n");
     vtr::printf("New Timing Stats\n");
@@ -30,4 +30,16 @@ void generate_timing_stats(const SetupTimingInfo& timing_info) {
 
     timing_reporter.report_timing_setup("report_timing.setup.rpt", *timing_info.setup_analyzer());
     timing_reporter.report_unconstrained_endpoints_setup("report_unconstrained_timing_endpoints.rpt", *timing_info.setup_analyzer());
+}
+
+void generate_hold_timing_stats(const HoldTimingInfo& timing_info) {
+    auto& timing_ctx = g_vpr_ctx.timing();
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    print_hold_timing_summary(*timing_ctx.constraints, *timing_info.hold_analyzer());
+
+    VprTimingGraphNameResolver name_resolver(atom_ctx.nlist, atom_ctx.lookup);
+    tatum::TimingReporter timing_reporter(name_resolver, *timing_ctx.graph, *timing_ctx.constraints);
+
+    timing_reporter.report_timing_hold("report_timing.hold.rpt", *timing_info.hold_analyzer());
 }

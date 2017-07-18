@@ -55,11 +55,11 @@ inline tatum::Time PostClusterDelayCalculator::min_edge_delay(const tatum::Timin
     return max_edge_delay(tg, edge_id); 
 }
 
-inline tatum::Time PostClusterDelayCalculator::hold_time(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const { 
+inline tatum::Time PostClusterDelayCalculator::hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-    /*vtr::printf("=== Edge %zu (hold) ===\n", size_t(edge_id));*/
+    vtr::printf("=== Edge %zu (hold) ===\n", size_t(edge_id));
 #endif
-    return tatum::Time(NAN); 
+    return atom_hold_time(tg, edge_id); 
 }
 
 inline tatum::Time PostClusterDelayCalculator::atom_combinational_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
@@ -109,6 +109,31 @@ inline tatum::Time PostClusterDelayCalculator::atom_setup_time(const tatum::Timi
     vtr::printf("  Edge %zu Atom Tsu: %g\n", size_t(edge_id), tsu.value());
 #endif
     return tsu;
+}
+
+inline tatum::Time PostClusterDelayCalculator::atom_hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
+    tatum::Time thld= edge_delay_cache_[edge_id];
+
+    if(std::isnan(thld.value())) {
+        //Miss
+        tatum::NodeId clock_node = tg.edge_src_node(edge_id);
+        VTR_ASSERT(tg.node_type(clock_node) == tatum::NodeType::CPIN);
+
+        tatum::NodeId in_node = tg.edge_sink_node(edge_id);
+        VTR_ASSERT(tg.node_type(in_node) == tatum::NodeType::SINK);
+
+        AtomPinId input_pin = netlist_lookup_.tnode_atom_pin(in_node);
+        AtomPinId clock_pin = netlist_lookup_.tnode_atom_pin(clock_node);
+
+        thld= tatum::Time(atom_delay_calc_.atom_hold_time(clock_pin, input_pin));
+
+        //Insert
+        edge_delay_cache_[edge_id] = thld;
+    }
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
+    vtr::printf("  Edge %zu Atom Thld: %g\n", size_t(edge_id), thld.value());
+#endif
+    return thld;
 }
 
 inline tatum::Time PostClusterDelayCalculator::atom_clock_to_q_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {

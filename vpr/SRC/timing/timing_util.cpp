@@ -14,6 +14,9 @@ double sec_to_nanosec(double seconds) { return 1e9*seconds; }
 
 double sec_to_mhz(double seconds) { return (1. / seconds) / 1e6; }
 
+/*
+ * Setup-time related
+ */
 tatum::TimingPathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     tatum::TimingPathInfo crit_path_info;
 
@@ -259,9 +262,111 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
                     sec_to_mhz(fanout_weighted_geomean_intra_domain_cpd));
         }
     }
+}
+
+/*
+ * Hold-time related statistics
+ */
+float find_hold_total_negative_slack(const tatum::HoldTimingAnalyzer& hold_analyzer) {
+    auto& timing_ctx = g_vpr_ctx.timing();
+
+    float tns = 0.;
+    for(tatum::NodeId node : timing_ctx.graph->logical_outputs()) {
+        for(tatum::TimingTag tag : hold_analyzer.hold_slacks(node)) {
+            float slack = tag.time().value();
+            if(slack < 0.) {
+                tns += slack;
+            }
+        }
+    }
+    return tns;
+
+}
+
+float find_hold_worst_negative_slack(const tatum::HoldTimingAnalyzer& hold_analyzer) {
+    auto& timing_ctx = g_vpr_ctx.timing();
+
+    float wns = 0.;
+    for(tatum::NodeId node : timing_ctx.graph->logical_outputs()) {
+        for(tatum::TimingTag tag : hold_analyzer.hold_slacks(node)) {
+            float slack = tag.time().value();
+
+            if(slack < 0.) {
+                wns = std::min(wns, slack);
+            }
+        }
+    }
+    return wns;
+}
+
+std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTimingAnalyzer& hold_analyzer, size_t num_bins) {
+    auto& timing_ctx = g_vpr_ctx.timing();
+
+    std::vector<HistogramBucket> histogram;
+
+    //Find the min and max slacks
+    float min_slack = std::numeric_limits<float>::infinity();
+    float max_slack = -std::numeric_limits<float>::infinity();
+    for(tatum::NodeId node : timing_ctx.graph->logical_outputs()) {
+        for(tatum::TimingTag tag : hold_analyzer.hold_slacks(node)) {
+            float slack = tag.time().value();
+            
+            min_slack = std::min(min_slack, slack);
+            max_slack = std::max(max_slack, slack);
+        }
+    }
+
+    //Determine the bin size
+    float range = max_slack - min_slack;
+    float bin_size = range / num_bins;
+
+    //Create the buckets
+    float bucket_min = min_slack;
+    for(size_t ibucket = 0; ibucket < num_bins; ++ibucket) {
+        float bucket_max = bucket_min + bin_size;
+
+        histogram.emplace_back(bucket_min, bucket_max);
+
+        bucket_min = bucket_max;
+    }
+
+    //To avoid round-off errors we force the max value of the last bucket equal to the max slack
+    histogram[histogram.size()-1].max_value = max_slack;
+
+    //Count the slacks into the buckets
+    auto comp = [](const HistogramBucket& bucket, float slack) {
+        return bucket.max_value < slack;
+    };
+
+    for(tatum::NodeId node : timing_ctx.graph->logical_outputs()) {
+        for(tatum::TimingTag tag : hold_analyzer.hold_slacks(node)) {
+            float slack = tag.time().value();
+            
+            //Find the bucket who's max is less than the current slack
+            auto iter = std::lower_bound(histogram.begin(), histogram.end(), slack, comp);
+            VTR_ASSERT(iter != histogram.end());
+            
+            //Add to bucket
+            iter->count++;
+        }
+    }
+
+    return histogram;
+}
+
+void print_hold_timing_summary(const tatum::TimingConstraints& /*constraints*/, const tatum::HoldTimingAnalyzer& hold_analyzer) {
+    vtr::printf("Hold Worst Negative Slack (hWNS): %g ns\n", sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer)));
+    vtr::printf("Hold Total Negative Slack (hTNS): %g ns\n", sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer)));
+    vtr::printf("\n");
+
+    vtr::printf_info("Hold slack histogram:\n");
+    print_histogram(create_hold_slack_histogram(hold_analyzer));
     vtr::printf("\n");
 }
 
+/*
+ * General utilities
+ */
 std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     std::map<tatum::DomainId,size_t> fanouts;
     for(tatum::NodeId node : timing_graph.nodes()) {

@@ -285,6 +285,8 @@ static void load_critical_path_annotations(const int line_num,
 
                 if(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
                     in_port[i][j]->tsu = delay_matrix[k][0];
+                    //FIXME: use real hold annotation, this is just temporary while we get hold analysis working
+                    in_port[i][j]->thld = delay_matrix[k][0];
                 } else {
                     VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX);
                     in_port[i][j]->tco = delay_matrix[k][0];

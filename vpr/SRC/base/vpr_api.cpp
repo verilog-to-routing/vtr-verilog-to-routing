@@ -957,7 +957,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
-        auto timing_info = make_setup_timing_info(analysis_delay_calc);
+        auto timing_info = make_setup_hold_timing_info(analysis_delay_calc);
         timing_info->update();
 
         if (isEchoFileEnabled(E_ECHO_ANALYSIS_TIMING_GRAPH)) {
@@ -967,7 +967,8 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
         }
 
         //Timing stats
-        generate_timing_stats(*timing_info);
+        generate_setup_timing_stats(*timing_info);
+        generate_hold_timing_stats(*timing_info);
 
         //Write the post-syntesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
