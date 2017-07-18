@@ -3,11 +3,13 @@
 
 #include "tatum/TimingGraphFwd.hpp"
 #include "tatum/timing_analyzers.hpp"
-#include "tatum/delay_calc/FixedDelayCalculator.hpp"
+#include "tatum/delay_calc/DelayCalculator.hpp"
 #include "tatum/report/TimingPathFwd.hpp"
+#include "tatum/base/TimingType.hpp"
 #include <vector>
 #include <fstream>
 #include <map>
+#include <set>
 
 namespace tatum {
 
@@ -25,10 +27,9 @@ namespace tatum {
  * unless it is too large to be practical).
  */
 
-template<class DelayCalc>
 class GraphvizDotWriter {
     public:
-        GraphvizDotWriter(const TimingGraph& tg, const DelayCalc& delay_calc);
+        GraphvizDotWriter(const TimingGraph& tg, const DelayCalculator& delay_calc);
 
         //Specify a subset of nodes to dump
         template<class Container>
@@ -68,16 +69,11 @@ class GraphvizDotWriter {
 
         const TimingGraph& tg_;
         std::set<NodeId> nodes_to_dump_;
-        const DelayCalc delay_calc_;
+        const DelayCalculator& delay_calc_;
 };
 
-template<class DelayCalc>
-GraphvizDotWriter<DelayCalc> make_graphviz_dot_writer(const TimingGraph& tg, const DelayCalc& delay_calc) {
-    return GraphvizDotWriter<DelayCalc>(tg, delay_calc);
-}
+GraphvizDotWriter make_graphviz_dot_writer(const TimingGraph& tg, const DelayCalculator& delay_calc);
 
 } //namespace
-
-#include "graphviz_dot_writer.tpp" //implementation
 
 #endif

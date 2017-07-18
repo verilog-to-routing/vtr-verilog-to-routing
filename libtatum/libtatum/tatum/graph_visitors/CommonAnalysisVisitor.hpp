@@ -4,6 +4,8 @@
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
 #include "tatum/tags/TimingTags.hpp"
+#include "tatum/delay_calc/DelayCalculator.hpp"
+#include "tatum/graph_visitors/GraphVisitor.hpp"
 
 namespace tatum { namespace detail {
 
@@ -24,42 +26,35 @@ namespace tatum { namespace detail {
  * \see HoldAnalysisOps
  */
 template<class AnalysisOps>
-class CommonAnalysisVisitor {
+class CommonAnalysisVisitor : public GraphVisitor {
     public:
         CommonAnalysisVisitor(size_t num_tags, size_t num_slacks)
             : ops_(num_tags, num_slacks) { }
 
-        void do_reset_node(const NodeId node_id) { ops_.reset_node(node_id); }
-        void do_reset_edge(const EdgeId edge_id) { ops_.reset_edge(edge_id); }
+        void do_reset_node(const NodeId node_id) override { ops_.reset_node(node_id); }
+        void do_reset_edge(const EdgeId edge_id) override { ops_.reset_edge(edge_id); }
 
-        bool do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
+        bool do_arrival_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) override;
 
-        bool do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id);
+        bool do_required_pre_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const NodeId node_id) override;
 
-        template<class DelayCalc>
-        void do_arrival_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id);
+        void do_arrival_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const NodeId node_id) override;
 
-        template<class DelayCalc>
-        void do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id);
+        void do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const NodeId node_id) override;
 
-        template<class DelayCalc>
-        void do_slack_traverse_node(const TimingGraph& tg, const DelayCalc& dc, const NodeId node);
+        void do_slack_traverse_node(const TimingGraph& tg, const DelayCalculator& dc, const NodeId node) override;
 
     protected:
         AnalysisOps ops_;
 
     private:
-        template<class DelayCalc>
-        void do_arrival_traverse_edge(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id);
+        void do_arrival_traverse_edge(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const NodeId node_id, const EdgeId edge_id);
 
-        template<class DelayCalc>
-        void do_required_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id);
+        void do_required_traverse_edge(const TimingGraph& tg, const DelayCalculator& dc, const NodeId node_id, const EdgeId edge_id);
 
-        template<class DelayCalc>
-        void do_slack_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const EdgeId edge);
+        void do_slack_traverse_edge(const TimingGraph& tg, const DelayCalculator& dc, const EdgeId edge);
 
-        template<class DelayCalc>
-        void mark_sink_required_times(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node);
+        void mark_sink_required_times(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const NodeId node);
 
         bool should_propagate_clocks(const TimingGraph& tg, const TimingConstraints& tc, const EdgeId edge_id) const;
         bool should_propagate_clock_launch_tags(const TimingGraph& tg, const EdgeId edge_id) const;
@@ -196,8 +191,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_required_pre_traverse_node(const Tim
  */
 
 template<class AnalysisOps>
-template<class DelayCalc>
-void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, NodeId node_id) {
+void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_node(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, NodeId node_id) {
 
     //Pull from upstream sources to current node
     for(EdgeId edge_id : tg.node_in_edges(node_id)) {
@@ -213,8 +207,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_node(const TimingGr
 }
 
 template<class AnalysisOps>
-template<class DelayCalc>
-void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
+void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const NodeId node_id, const EdgeId edge_id) {
     //Pulling values from upstream source node
     NodeId src_node_id = tg.edge_src_node(edge_id);
 
@@ -320,8 +313,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_arrival_traverse_edge(const TimingGr
 
 
 template<class AnalysisOps>
-template<class DelayCalc>
-void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& /*tc*/, const DelayCalc& dc, const NodeId node_id) {
+void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingGraph& tg, const TimingConstraints& /*tc*/, const DelayCalculator& dc, const NodeId node_id) {
     //Don't propagate required times through the clock network
     if(tg.node_type(node_id) == NodeType::CPIN) return;
 
@@ -336,8 +328,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_node(const TimingG
 }
 
 template<class AnalysisOps>
-template<class DelayCalc>
-void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const NodeId node_id, const EdgeId edge_id) {
+void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingGraph& tg, const DelayCalculator& dc, const NodeId node_id, const EdgeId edge_id) {
 
     //Pulling values from downstream sink node
     NodeId sink_node_id = tg.edge_sink_node(edge_id);
@@ -356,8 +347,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_required_traverse_edge(const TimingG
 }
 
 template<class AnalysisOps>
-template<class DelayCalc>
-void CommonAnalysisVisitor<AnalysisOps>::do_slack_traverse_node(const TimingGraph& tg, const DelayCalc& dc, const NodeId node) {
+void CommonAnalysisVisitor<AnalysisOps>::do_slack_traverse_node(const TimingGraph& tg, const DelayCalculator& dc, const NodeId node) {
     //Calculate the slack for each edge
     for(const EdgeId edge : tg.node_in_edges(node)) {
         do_slack_traverse_edge(tg, dc, edge);
@@ -376,8 +366,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_slack_traverse_node(const TimingGrap
 }
 
 template<class AnalysisOps>
-template<class DelayCalc>
-void CommonAnalysisVisitor<AnalysisOps>::do_slack_traverse_edge(const TimingGraph& tg, const DelayCalc& dc, const EdgeId edge) {
+void CommonAnalysisVisitor<AnalysisOps>::do_slack_traverse_edge(const TimingGraph& tg, const DelayCalculator& dc, const EdgeId edge) {
     NodeId src_node = tg.edge_src_node(edge);
     NodeId sink_node = tg.edge_sink_node(edge);
 
@@ -406,8 +395,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_slack_traverse_edge(const TimingGrap
 }
 
 template<class AnalysisOps>
-template<class DelayCalc>
-void CommonAnalysisVisitor<AnalysisOps>::mark_sink_required_times(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalc& dc, const NodeId node_id) {
+void CommonAnalysisVisitor<AnalysisOps>::mark_sink_required_times(const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const NodeId node_id) {
     //Mark the required times of the current sink node
     TATUM_ASSERT(tg.node_type(node_id) == NodeType::SINK);
 

@@ -1,5 +1,6 @@
 #pragma once
-#include "CommonAnalysisOps.hpp"
+#include "tatum/graph_visitors/CommonAnalysisOps.hpp"
+#include "tatum/delay_calc/DelayCalculator.hpp"
 
 namespace tatum { namespace detail {
 
@@ -37,24 +38,21 @@ class HoldAnalysisOps : public CommonAnalysisOps {
             node_tags_[node].min(time, origin, ref_tag); 
         }
 
-        template<class DelayCalc>
-        Time data_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
+        Time data_edge_delay(const DelayCalculator& dc, const TimingGraph& tg, const EdgeId edge_id) { 
             Time delay = dc.min_edge_delay(tg, edge_id);
             TATUM_ASSERT_MSG(delay.value() >= 0., "Data edge delay expected to be positive");
 
             return delay; 
         }
 
-        template<class DelayCalc>
-        Time launch_clock_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
+        Time launch_clock_edge_delay(const DelayCalculator& dc, const TimingGraph& tg, const EdgeId edge_id) { 
             Time delay = dc.min_edge_delay(tg, edge_id);
             TATUM_ASSERT_MSG(delay.value() >= 0., "Launch clock edge delay expected to be positive");
 
             return delay;
         }
 
-        template<class DelayCalc>
-        Time capture_clock_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
+        Time capture_clock_edge_delay(const DelayCalculator& dc, const TimingGraph& tg, const EdgeId edge_id) { 
             NodeId src_node = tg.edge_src_node(edge_id);
             NodeId sink_node = tg.edge_sink_node(edge_id);
 

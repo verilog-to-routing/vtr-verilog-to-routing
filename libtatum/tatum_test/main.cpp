@@ -32,8 +32,8 @@
 #include "util.hpp"
 #include "profile.hpp"
 
-#define NUM_SERIAL_RUNS 1
-#define NUM_PARALLEL_RUNS (0*NUM_SERIAL_RUNS)
+#define NUM_SERIAL_RUNS 10
+#define NUM_PARALLEL_RUNS (3*NUM_SERIAL_RUNS)
 
 //Should we optimize the timing graph memory layout?
 //#define OPTIMIZE_GRAPH_LAYOUT
