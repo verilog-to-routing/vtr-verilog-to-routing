@@ -600,7 +600,6 @@ struct t_legal_pos {
  * pb_pin_route_stats: [0..num_pb_graph_pins-1] Representation of intra logic block routing within CLB */
 struct t_block {
 	char *name;
-	t_type_ptr type;
 	int *nets;
 	int *net_pins;
 

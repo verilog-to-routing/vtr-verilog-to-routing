@@ -357,8 +357,10 @@ void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb) {
 	int max_pb_graph_pin;
 	t_pb_graph_pin** pb_graph_pin_lookup;		
 	
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+
 	/* print routing of clusters */
-	pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(clb[iclb].type);
+	pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(cluster_ctx.clb_nlist.block_type((BlockId) iclb));
 	pb_graph_node = clb[iclb].pb->pb_graph_node;
 	max_pb_graph_pin = pb_graph_node->total_pb_pins;
 	pb_route = clb[iclb].pb_route;

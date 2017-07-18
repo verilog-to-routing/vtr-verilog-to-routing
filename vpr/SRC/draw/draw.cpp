@@ -702,11 +702,11 @@ static void drawnets(void) {
 
 		setcolor(draw_state->net_color[inet]);
 		b1 = cluster_ctx.clbs_nlist.net[inet].pins[0].block; /* The DRIVER */
-		t_point driver_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[b1]).get_center();
+		t_point driver_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[b1], cluster_ctx.clb_nlist.block_type((BlockId) b1)).get_center();
 
 		for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 			b2 = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
-			t_point sink_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[b2]).get_center();
+			t_point sink_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[b2], cluster_ctx.clb_nlist.block_type((BlockId) b2)).get_center();
 			drawline(driver_center, sink_center);
 
 			/* Uncomment to draw a chain instead of a star. */
@@ -2157,7 +2157,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 				clb_index = place_ctx.grid_blocks[i][j].blocks[k];
 				if (clb_index != EMPTY_BLOCK) {
 					clb = &cluster_ctx.blocks[clb_index];
-					clb_bbox = draw_coords->get_absolute_clb_bbox(*clb);
+					clb_bbox = draw_coords->get_absolute_clb_bbox(*clb, cluster_ctx.clb_nlist.block_type((BlockId) clb_index));
 					if (clb_bbox.intersects(abs_x, abs_y)) {
 						break;
 					} else {
@@ -2194,7 +2194,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			selected_subblock->name, selected_subblock->pb_graph_node->pb_type->name);
 	} else {
 		/* Highlight block and fan-in/fan-outs. */
-		draw_highlight_blocks_color(clb->type, clb_index);
+		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type((BlockId) clb_index), clb_index);
 		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, clb->name, place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
 	}
 

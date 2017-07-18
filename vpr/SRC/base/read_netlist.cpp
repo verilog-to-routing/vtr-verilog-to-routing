@@ -272,8 +272,8 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	bool found;
 	int num_tokens = 0;
 	t_token *tokens;
-	int i;
-	const t_pb_type * pb_type = NULL;
+	int i, num_pins;
+	const t_pb_type *pb_type = NULL;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
@@ -301,9 +301,9 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	found = false;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		if (strcmp(device_ctx.block_types[i].name, tokens[0].data) == 0) {
-			cb[index].type = &device_ctx.block_types[i];
-			pb_type = cb[index].type->pb_type;
+//			cb[index].type = &device_ctx.block_types[i];
 			clb_nlist->create_block(block_name.value(), new t_pb, &device_ctx.block_types[i]);
+			pb_type = clb_nlist->block_type((BlockId) index)->pb_type;
 			found = true;
 			break;
 		}
@@ -317,7 +317,7 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	/* Parse all pbs and CB internal nets*/
 	atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), clb_nlist->block_pb((BlockId) index));
 
-	cb[index].pb->pb_graph_node = cb[index].type->pb_graph_head;
+	cb[index].pb->pb_graph_node = clb_nlist->block_type((BlockId)index)->pb_graph_head;
 	clb_nlist->block_pb((BlockId)index)->pb_graph_node = clb_nlist->block_type((BlockId)index)->pb_graph_head;
 
 	cb[index].pb_route = alloc_pb_route(clb_nlist->block_pb((BlockId)index)->pb_graph_node);
@@ -341,10 +341,11 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	processPb(clb_block, index, clb_nlist->block_pb((BlockId) index), cb[index].pb_route, num_primitives, loc_data, clb_nlist);
 
 	//Process nets and net_pins
-	cb[index].nets = (int *) vtr::malloc(cb[index].type->num_pins * sizeof(int));
-	cb[index].net_pins = (int *) vtr::malloc(cb[index].type->num_pins * sizeof(int));
+	num_pins = clb_nlist->block_type((BlockId) index)->num_pins;
+	cb[index].nets = (int *) vtr::malloc(num_pins * sizeof(int));
+	cb[index].net_pins = (int *) vtr::malloc(num_pins * sizeof(int));
 
-	for (i = 0; i < cb[index].type->num_pins; i++) {
+	for (i = 0; i < num_pins; i++) {
 		cb[index].nets[i] = OPEN;
 		cb[index].net_pins[i] = OPEN;
 	}
@@ -858,10 +859,10 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 	/* Determine the external nets of complex block */
 	for (i = 0; i < L_num_blocks; i++) {
 		ipin = 0;
-		VTR_ASSERT( block_list[i].type->pb_type->num_input_pins
-						+ block_list[i].type->pb_type->num_output_pins
-						+ block_list[i].type->pb_type->num_clock_pins
-						== block_list[i].type->num_pins / block_list[i].type->capacity);
+		VTR_ASSERT( clustered_nlist->block_type((BlockId) i)->pb_type->num_input_pins
+					+ clustered_nlist->block_type((BlockId) i)->pb_type->num_output_pins
+					+ clustered_nlist->block_type((BlockId) i)->pb_type->num_clock_pins
+					== clustered_nlist->block_type((BlockId) i)->num_pins / clustered_nlist->block_type((BlockId) i)->capacity);
 
         //Load the external nets connected to input ports
 		for (j = 0; j < block_list[i].pb->pb_graph_node->num_input_ports; j++) {
@@ -915,7 +916,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 				ipin++;
 			}
 		}
-		for (j = ipin; j < block_list[i].type->num_pins; j++) {
+		for (j = ipin; j < clustered_nlist->block_type((BlockId) i)->num_pins; j++) {
 			block_list[i].nets[ipin] = OPEN;
 		}
 	}
@@ -932,10 +933,10 @@ static void load_external_nets_and_cb(const int L_num_blocks,
      * and blocks point back to net pins */
 	for (i = 0; i < L_num_blocks; i++) {
 		ipin = 0;
-		for (j = 0; j < block_list[i].type->num_pins; j++) {
+		for (j = 0; j < clustered_nlist->block_type((BlockId) i)->num_pins; j++) {
 			netnum = block_list[i].nets[j];
 			if (netnum != OPEN) {
-				if (RECEIVER == block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type) {
+				if (RECEIVER == clustered_nlist->block_type((BlockId) i)->class_inf[clustered_nlist->block_type((BlockId) i)->pin_class[j]].type) {
 					count[netnum]++;
 					if (count[netnum] > clb_nlist->net[netnum].num_sinks()) {
 						vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
@@ -952,7 +953,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
                     clb_nlist->net[netnum].pins[count[netnum]].net = netnum;
                     clb_nlist->net[netnum].pins[count[netnum]].net_pin = count[netnum];
 
-					clb_nlist->net[netnum].is_global = block_list[i].type->is_global_pin[j]; 
+					clb_nlist->net[netnum].is_global = clustered_nlist->block_type((BlockId) i)->is_global_pin[j]; 
                     /* Error check performed later to ensure no mixing of global and non-global signals */
 
                     //Mark the net pin numbers on the block
@@ -970,7 +971,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 																clb_nlist->net[netnum].is_const);
 */
 				} else {
-					VTR_ASSERT(DRIVER == block_list[i].type->class_inf[block_list[i].type->pin_class[j]].type);
+					VTR_ASSERT(DRIVER == clustered_nlist->block_type((BlockId) i)->class_inf[clustered_nlist->block_type((BlockId) i)->pin_class[j]].type);
 					VTR_ASSERT(clb_nlist->net[netnum].pins[0].block == OPEN);
 
                     //Mark the mapping from net to block
@@ -1004,7 +1005,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 	for (i = 0; i < ext_ncount; i++) {
 		for (j = 1; j <= clb_nlist->net[i].num_sinks(); j++) {
 			bool is_global_net = static_cast<bool>(clb_nlist->net[i].is_global);
-			if (block_list[clb_nlist->net[i].pins[j].block].type->is_global_pin[clb_nlist->net[i].pins[j].block_pin] != is_global_net) {
+			if (clustered_nlist->block_type((BlockId) clb_nlist->net[i].pins[j].block)->is_global_pin[clb_nlist->net[i].pins[j].block_pin] != is_global_net) {
 				vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 						"Netlist attempts to connect net %s to both global and non-global pins.\n",
 						clb_nlist->net[i].name);

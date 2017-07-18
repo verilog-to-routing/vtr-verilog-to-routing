@@ -27,6 +27,16 @@ class ClusteredNetlist : public BaseNetlist {
 		//Sets the netlist id based on a file digest's string
 		void set_netlist_id(std::string id);
 
+		//Sets the block's physical intra-block description
+		void set_block_pb(BlockId id, t_pb *pb);
+
+		//Sets the block's physical type
+		void set_block_type(BlockId id, t_type_ptr type);
+
+		//Removes a block from the netlist. This will also remove the associated ports and pins.
+		//  blk_id  : The block to be removed
+		void remove_block(const BlockId blk_id);
+
 	public: //Public Accessors
 		/*
 		* Blocks
@@ -53,12 +63,12 @@ class ClusteredNetlist : public BaseNetlist {
 	private: //Private Data
 		
 		//Blocks
-		vtr::vector_map<BlockId, t_pb*>			block_pbs_;             //Physical block representing the clustering of this CLB
-		vtr::vector_map<BlockId, t_type_ptr>	block_types_;			//The type of physical block this user circuit block can map into
+		vtr::vector_map<BlockId, t_pb*>			block_pbs_;         //Physical block representing the clustering of this CLB
+		vtr::vector_map<BlockId, t_type_ptr>	block_types_;		//The type of physical block this user circuit block can map into
 
 		//Nets
-		vtr::vector_map<NetId, bool>			net_global_;			//Boolean mapping indicating if the net is
-		vtr::vector_map<NetId, bool>			net_routed_;			//Global, routed, or fixed (mutually exclusive).
+		vtr::vector_map<NetId, bool>			net_global_;		//Boolean mapping indicating if the net is
+		vtr::vector_map<NetId, bool>			net_routed_;		//Global, routed, or fixed (mutually exclusive).
 		vtr::vector_map<NetId, bool>			net_fixed_;
 };
 

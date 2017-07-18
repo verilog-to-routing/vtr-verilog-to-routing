@@ -26,9 +26,9 @@ t_pb* ClusteredNetlist::block_pb(const BlockId id) const {
 }
 
 int ClusteredNetlist::block_mode(const BlockId id) const {
-	t_pb* pb = block_pb(id);
+	VTR_ASSERT(valid_block_id(id));
 
-	return pb->mode;
+	return block_pb(id)->mode;
 }
 
 t_type_ptr ClusteredNetlist::block_type(const BlockId id) const {
@@ -45,9 +45,9 @@ t_type_ptr ClusteredNetlist::block_type(const BlockId id) const {
 BlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type_ptr type) {
 	BlockId blk_id = BaseNetlist::create_block(name);
 
-	block_pbs_.push_back(pb);
+	block_pbs_.insert(blk_id, pb);
 	block_pbs_[blk_id]->name = vtr::strdup(name);
-	block_types_.push_back(type);
+	block_types_.insert(blk_id, type);
 
 	//Check post-conditions: size
 	VTR_ASSERT(validate_block_sizes());
@@ -60,7 +60,25 @@ BlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type_ptr ty
 }
 
 void ClusteredNetlist::set_netlist_id(std::string id) {
+	//TODO: Add asserts?
 	netlist_id_ = id;
+}
+
+void ClusteredNetlist::set_block_pb(BlockId id, t_pb *pb) {
+	VTR_ASSERT(valid_block_id(id));
+	block_pbs_[id] = pb;
+}
+
+void ClusteredNetlist::set_block_type(BlockId id, t_type_ptr type) {
+	VTR_ASSERT(valid_block_id(id));
+	block_types_[id] = type;
+}
+
+void ClusteredNetlist::remove_block(const BlockId id) {
+	VTR_ASSERT(valid_block_id(id)); 
+	block_types_[id] = NULL;
+	block_pbs_[id] = NULL;
+	BaseNetlist::remove_block(id);
 }
 
 /*
