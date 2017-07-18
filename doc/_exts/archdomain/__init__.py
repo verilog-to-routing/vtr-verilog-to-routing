@@ -1,1 +1,0 @@
-from archdomain import setup

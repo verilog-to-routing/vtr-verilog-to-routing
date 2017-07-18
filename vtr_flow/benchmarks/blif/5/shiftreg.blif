@@ -1,7 +1,0 @@
-.model top
-.inputs shiftreg_in clock
-.outputs shiftreg_out
-.latch    shiftreg_in n_n10 re clock 2
-.latch    n_n10 n_n11 re clock 2
-.latch    n_n11 shiftreg_out re clock 2
-.end

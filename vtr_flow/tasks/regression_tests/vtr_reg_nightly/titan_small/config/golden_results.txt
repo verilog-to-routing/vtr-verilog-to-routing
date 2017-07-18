@@ -1,3 +1,0 @@
-arch	circuit	vpr_revision	vpr_status	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-stratixiv_arch.timing.xml	neuron_stratixiv_arch_timing.blif	1043aaf-dirty	success	9.81049 	129.171	174.2	179.151	179.151	1301343	123883	90858	56112	-1	42	35	-1	-1		
-stratixiv_arch.timing.xml	stereo_vision_stratixiv_arch_timing.blif	1043aaf-dirty	success	11.0044 	90.8743	216.483	138.682	138.682	972074	126400	93171	63798	-1	353	707	-1	-1		

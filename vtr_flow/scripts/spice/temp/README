@@ -1,3 +1,0 @@
-This file exists so that the 'temp' directory will be recognized by git (git doesn't handle empty directories)
-
-The temp directory needs to be present for the spice scripts.
