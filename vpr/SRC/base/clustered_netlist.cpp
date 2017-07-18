@@ -25,12 +25,6 @@ t_pb* ClusteredNetlist::block_pb(const BlockId id) const {
 	return block_pbs_[id];
 }
 
-int ClusteredNetlist::block_mode(const BlockId id) const {
-	VTR_ASSERT(valid_block_id(id));
-
-	return block_pb(id)->mode;
-}
-
 t_type_ptr ClusteredNetlist::block_type(const BlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
 

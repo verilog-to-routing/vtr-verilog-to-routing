@@ -34,9 +34,6 @@ class ClusteredNetlist : public BaseNetlist {
 		//Returns the physical block
 		t_pb* block_pb(const BlockId id) const;
 
-		//Returns the mode of the pb
-		int block_mode(const BlockId id) const;
-
 		//Returns the type of CLB (Logic block, RAM, DSP, etc.)
 		t_type_ptr block_type(const BlockId id) const;
 
