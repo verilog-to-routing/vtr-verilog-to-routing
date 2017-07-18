@@ -385,7 +385,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
             ++num_commands_;
 
             if (cmd.type != sdcparse::ClockLatencyType::SOURCE) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency only support specifying -source latency"); 
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency only supports specifying -source latency"); 
             }
 
             if (cmd.early_late == sdcparse::EarlyLateType::EARLY) {
@@ -722,7 +722,13 @@ class SdcParseCallback2 : public sdcparse::Callback {
             auto key = std::make_pair(from, to);
             auto iter = hold_mcp_overrides_.find(key);
             if(iter != hold_mcp_overrides_.end()) {
-                hold_mcp_value = iter->second;
+                //Note that we add the override to the default hold_mcp of 1 to match
+                //the standard SDC behaviour (e.g. N - 1) of hold multicycles.
+                //
+                //For details see section 8.3 'Multicycle paths' in:
+                //  J. Bhasker, R. Chadha, "Static Timing Analysis for Nanometer 
+                //      Designs A Practical Approach", Springer, 2009
+                hold_mcp_value += iter->second;
             }
 
             //The hold capture cycle is the setup capture cycle minus the hold mcp value
