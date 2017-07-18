@@ -105,6 +105,8 @@ See the [CMake documentation](https://cmake.org) for more details about using cm
 
 ### Microsoft Windows ###
 
+*NOTE: VTR support on Microsoft Windows is considered experimental*
+
 #### Cygwin ####
 [Cygwin](https://www.cygwin.com/) provides a POSIX (i.e. unix-like) environment for Microsoft Windows.
 
@@ -132,7 +134,7 @@ $ make
 ```
 
 Note that by default the MS Windows target system will need to dynamically link to the `libgcc` and `libstdc++` DLLs.
-These are usually found under /usr/lib/gcc.
+These are usually found under /usr/lib/gcc on the Linux host machine.
 
 See the [toolchain file](cmake/toolchains/mingw-linux-cross-compile-to-windows.cmake) for more details.
 
