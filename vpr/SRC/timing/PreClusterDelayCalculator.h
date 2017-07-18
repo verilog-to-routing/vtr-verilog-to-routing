@@ -74,6 +74,7 @@ public:
     }
 
 private:
+    //TODO: use generic AtomDelayCalc class to avoid code duplication
 
     tatum::Time prim_tcq_delay(const tatum::TimingGraph& tg, tatum::NodeId src_node, tatum::NodeId sink_node) const {
         VTR_ASSERT_MSG(   tg.node_type(src_node) == tatum::NodeType::CPIN
@@ -87,7 +88,7 @@ private:
         VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
 
         //Clock-to-q delay marked on the SOURCE node (the sink node of this edge)
-        return tatum::Time(gpin->tco);
+        return tatum::Time(gpin->tco_max);
     }
 
     tatum::Time prim_comb_delay(const tatum::TimingGraph& tg, tatum::NodeId src_node, tatum::NodeId sink_node) const {

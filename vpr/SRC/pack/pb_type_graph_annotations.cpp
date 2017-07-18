@@ -26,7 +26,7 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node *p
 		const int mode, const char *annot_in_pins, const char *annot_out_pins,
 		const char *value);
 
-static void load_critical_path_annotations(const int line_num, 
+static void load_delay_annotations(const int line_num, 
 		t_pb_graph_node *pb_graph_node, const int mode,
 		const enum e_pin_to_pin_annotation_format input_format,
 		const enum e_pin_to_pin_delay_annotations delay_type,
@@ -49,7 +49,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 					if (annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_MAX
 			            || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
                         || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
-                        load_critical_path_annotations(annotations[i].line_num, pb_graph_node, OPEN,
+                        load_delay_annotations(annotations[i].line_num, pb_graph_node, OPEN,
                             annotations[i].format, (enum e_pin_to_pin_delay_annotations)annotations[i].prop[j],
                             annotations[i].input_pins,
                             annotations[i].output_pins,
@@ -79,7 +79,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 							if (annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_MAX
 								|| annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
 								|| annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
-									load_critical_path_annotations(annotations[k].line_num, pb_graph_node, i,
+									load_delay_annotations(annotations[k].line_num, pb_graph_node, i,
 										annotations[k].format,
 										(enum e_pin_to_pin_delay_annotations)annotations[k].prop[m],
 										annotations[k].input_pins,
@@ -109,6 +109,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 		}
 	}
 
+    //Recursively annotate child pb's
 	for (i = 0; i < pb_type->num_modes; i++) {
 		for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
 			for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
@@ -179,7 +180,7 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node *p
 	}
 }
 
-static void load_critical_path_annotations(const int line_num, 
+static void load_delay_annotations(const int line_num, 
 		t_pb_graph_node *pb_graph_node, const int mode,
 		const enum e_pin_to_pin_annotation_format input_format,
 		const enum e_pin_to_pin_delay_annotations delay_type,
@@ -221,18 +222,17 @@ static void load_critical_path_annotations(const int line_num,
 	} else {
 		children = pb_graph_node->child_pb_graph_nodes[mode];
 	}
-	if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
-		VTR_ASSERT(pb_graph_node->pb_type->blif_model != NULL);
-		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
-				children, annot_in_pins, &num_in_ptrs, &num_in_sets, false,
-				false);
-	} else if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
+	if (   delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
+        || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
+        || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
+        || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
 		VTR_ASSERT(pb_graph_node->pb_type->blif_model != NULL);
 		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_in_pins, &num_in_ptrs, &num_in_sets, false,
 				false);
 	} else {
-		VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX);
+		VTR_ASSERT(   delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX
+                   || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
 		in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
 				children, annot_in_pins, &num_in_ptrs, &num_in_sets, false,
 				false);
@@ -255,6 +255,7 @@ static void load_critical_path_annotations(const int line_num,
 		num_outputs = 1;
 	}
 
+    //Allocate and load the delay matrix
 	delay_matrix = (float**)vtr::malloc(sizeof(float*) * num_inputs);
 	for (i = 0; i < num_inputs; i++) {
 		delay_matrix[i] = (float*)vtr::malloc(sizeof(float) * num_outputs);
@@ -277,27 +278,34 @@ static void load_critical_path_annotations(const int line_num,
 		}
 	}
 
-	if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
+	if (   delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
+        || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
+        || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
+        //Annotate primitive sequential timing information
 		k = 0;
 		for (i = 0; i < num_in_sets; i++) {
 			for (j = 0; j < num_in_ptrs[i]; j++) {
 
-                if(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
+                if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) {
                     in_port[i][j]->tsu = delay_matrix[k][0];
-                    //FIXME: use real hold annotation, this is just temporary while we get hold analysis working
+                } else if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD) {
                     in_port[i][j]->thld = delay_matrix[k][0];
+                } else if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
+                    in_port[i][j]->tco_max = delay_matrix[k][0];
                 } else {
-                    VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX);
-                    in_port[i][j]->tco = delay_matrix[k][0];
+                    VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN);
+                    in_port[i][j]->tco_min = delay_matrix[k][0];
                 }
 				in_port[i][j]->associated_clock_pin = find_clock_pin(pb_graph_node, clock, line_num);
 				k++;
 			}
 		}
 	} else {
+        VTR_ASSERT(   delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX
+                   || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
 		if (pb_graph_node->pb_type->num_modes != 0) {
-			/* Not a primitive, find pb_graph_edge */
+			/* Not a primitive, annotate pb interconnect delay */
 
             //Fast look-up for out pin membership
             std::set<t_pb_graph_pin*> out_pins;
@@ -327,7 +335,7 @@ static void load_critical_path_annotations(const int line_num,
                 }
             }
 		} else {
-			/* Primitive, allocate appropriate nodes */
+			/* Primitive, annotate combinational delay */
 			k = 0;
 			for (i = 0; i < num_in_sets; i++) {
 				for (j = 0; j < num_in_ptrs[i]; j++) {
@@ -345,6 +353,8 @@ static void load_critical_path_annotations(const int line_num,
 					in_port[i][j]->num_pin_timing = prior_offset + count;
 					in_port[i][j]->pin_timing_del_max = (float*) vtr::realloc(in_port[i][j]->pin_timing_del_max,
 							sizeof(float) * in_port[i][j]->num_pin_timing);
+					in_port[i][j]->pin_timing_del_min = (float*) vtr::realloc(in_port[i][j]->pin_timing_del_min,
+							sizeof(float) * in_port[i][j]->num_pin_timing);
 					in_port[i][j]->pin_timing = (t_pb_graph_pin**)vtr::realloc(in_port[i][j]->pin_timing,
 							sizeof(t_pb_graph_pin*) * in_port[i][j]->num_pin_timing);
 					p = 0;
@@ -352,10 +362,9 @@ static void load_critical_path_annotations(const int line_num,
 					for (m = 0; m < num_out_sets; m++) {
 						for (n = 0; n < num_out_ptrs[m]; n++) {
 							if (delay_matrix[k][p] != OPEN) {
-								in_port[i][j]->pin_timing_del_max[prior_offset + count] =
-										delay_matrix[k][p];
-								in_port[i][j]->pin_timing[prior_offset + count] =
-										out_port[m][n];
+								in_port[i][j]->pin_timing_del_max[prior_offset + count] = delay_matrix[k][p];
+								in_port[i][j]->pin_timing_del_min[prior_offset + count] = delay_matrix[k][p]; //TODO: annotate correctly
+								in_port[i][j]->pin_timing[prior_offset + count] = out_port[m][n];
 								count++;
 							}
 							p++;

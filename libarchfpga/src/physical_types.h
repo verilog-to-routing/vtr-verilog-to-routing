@@ -95,12 +95,12 @@ enum e_pin_to_pin_annotation_format {
 	E_ANNOT_PIN_TO_PIN_MATRIX = 0, E_ANNOT_PIN_TO_PIN_CONSTANT
 };
 enum e_pin_to_pin_delay_annotations {
-	E_ANNOT_PIN_TO_PIN_DELAY_MIN = 0,
-	E_ANNOT_PIN_TO_PIN_DELAY_MAX,
-	E_ANNOT_PIN_TO_PIN_DELAY_TSETUP,
-	E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN,
-	E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX,
-	E_ANNOT_PIN_TO_PIN_DELAY_THOLD
+	E_ANNOT_PIN_TO_PIN_DELAY_MIN = 0,           //pb interconnect or primitive combinational max delay
+	E_ANNOT_PIN_TO_PIN_DELAY_MAX,               //pb interconnect or primitive combinational max delay
+    E_ANNOT_PIN_TO_PIN_DELAY_TSETUP,            //primitive setup time
+	E_ANNOT_PIN_TO_PIN_DELAY_THOLD,             //primitive hold time
+	E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN,    //primitive min clock-to-q delay
+	E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX,    //primitive max clock-to-q delay
 };
 enum e_pin_to_pin_capacitance_annotations {
 	E_ANNOT_PIN_TO_PIN_CAPACITANCE_C = 0
@@ -722,10 +722,12 @@ struct t_pb_graph_pin {
 	enum e_pb_graph_pin_type type; /* Is a sequential logic element (true), inpad/outpad (true), or neither (false) */
 	float tsu = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the setup time */
 	float thld = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the hold time */
-	float tco = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the clock to output time */
+	float tco_min = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the minimum clock to output time */
+	float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
     t_pb_graph_pin* associated_clock_pin; /* For sequentail elements, the associated clock */
 	t_pb_graph_pin** pin_timing; /* primitive ipin to opin timing */
-	float *pin_timing_del_max; /* primitive ipin to opin timing */
+	float *pin_timing_del_max; /* primitive ipin to opin max-delay timing */
+	float *pin_timing_del_min; /* primitive ipin to opin min-delay timing */
 	int num_pin_timing; /* primitive ipin to opin timing */
 
 	/* Applies to clusters only */
