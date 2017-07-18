@@ -4,6 +4,7 @@
 
 #include "tatum/Time.hpp"
 #include "tatum/TimingGraph.hpp"
+#include "tatum/delay_calc/DelayCalculator.hpp"
 
 #include "atom_netlist.h"
 #include "vpr_utils.h"
@@ -11,16 +12,16 @@
 #include "atom_delay_calc.h"
 #include "clb_delay_calc.h"
 
-class PostClusterDelayCalculator {
+class PostClusterDelayCalculator : public tatum::DelayCalculator {
 
 public:
     PostClusterDelayCalculator(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, float** net_delay);
 
-    tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
-    tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
+    tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
+    tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
 
-    tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
-    tatum::Time hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
+    tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
+    tatum::Time hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
 
 private:
 

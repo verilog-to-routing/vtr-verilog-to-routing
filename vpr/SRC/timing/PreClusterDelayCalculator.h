@@ -3,6 +3,7 @@
 #include "vtr_assert.h"
 
 #include "tatum/Time.hpp"
+#include "tatum/delay_calc/DelayCalculator.hpp"
 
 #include "vpr_error.h"
 #include "vpr_utils.h"
@@ -11,7 +12,7 @@
 #include "atom_lookup.h"
 #include "physical_types.h"
 
-class PreClusterDelayCalculator {
+class PreClusterDelayCalculator : public tatum::DelayCalculator {
 public:
     PreClusterDelayCalculator(const AtomNetlist& netlist,
                               const AtomLookup& netlist_lookup,
@@ -24,7 +25,7 @@ public:
         //nop
     }
 
-    tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+    tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override { 
         tatum::NodeId src_node = tg.edge_src_node(edge_id);
         tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
 
@@ -42,7 +43,7 @@ public:
         }
     }
 
-    tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+    tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override { 
         tatum::NodeId src_node = tg.edge_src_node(edge_id);
         tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
         auto edge_type = tg.edge_type(edge_id);
@@ -60,13 +61,13 @@ public:
         return tatum::Time(gpin->tsu);
     }
 
-    tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+    tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override { 
         //Currently return the same delay
         //TODO: use true min delay
         return max_edge_delay(tg, edge_id);
     }
 
-    tatum::Time hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
+    tatum::Time hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override {
         //Currently return the same as hold time
         //TODO: use true hold time
         return setup_time(tg, edge_id);
