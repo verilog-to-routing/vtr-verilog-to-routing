@@ -164,13 +164,13 @@ static int check_clb_conn(int iblk, int num_conn) {
 		//This triggers incorrectly if other blocks (e.g. I/O buffers) are included in the iopads
 		if (num_conn != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
-					"IO blk #%d (%s) has %d pins.\n", iblk, cluster_ctx.blocks[iblk].name, num_conn);
+					"IO blk #%d (%s) has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId) iblk), num_conn);
 			error++;
 		}
              */
 	} else if (num_conn < 2) {
 		vtr::printf_warning(__FILE__, __LINE__, 
-				"Logic block #%d (%s) has only %d pin.\n", iblk, cluster_ctx.blocks[iblk].name, num_conn);
+				"Logic block #%d (%s) has only %d pin.\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId) iblk), num_conn);
 
 		/* Allow the case where we have only one OUTPUT pin connected to continue. *
 		 * This is used sometimes as a constant generator for a primary output,    *
@@ -201,7 +201,7 @@ static int check_clb_conn(int iblk, int num_conn) {
 
 	if (num_conn > type->num_pins) {
 		vtr::printf_error(__FILE__, __LINE__, 
-				"logic block #%d with output %s has %d pins.\n", iblk, cluster_ctx.blocks[iblk].name, num_conn);
+				"logic block #%d with output %s has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId) iblk), num_conn);
 		error++;
 	}
 

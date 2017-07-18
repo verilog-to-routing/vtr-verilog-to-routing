@@ -64,23 +64,6 @@ void ClusteredNetlist::set_netlist_id(std::string id) {
 	netlist_id_ = id;
 }
 
-void ClusteredNetlist::set_block_pb(BlockId id, t_pb *pb) {
-	VTR_ASSERT(valid_block_id(id));
-	block_pbs_[id] = pb;
-}
-
-void ClusteredNetlist::set_block_type(BlockId id, t_type_ptr type) {
-	VTR_ASSERT(valid_block_id(id));
-	block_types_[id] = type;
-}
-
-void ClusteredNetlist::remove_block(const BlockId id) {
-	VTR_ASSERT(valid_block_id(id)); 
-	block_types_[id] = NULL;
-	block_pbs_[id] = NULL;
-	BaseNetlist::remove_block(id);
-}
-
 /*
 *
 * Sanity Checks

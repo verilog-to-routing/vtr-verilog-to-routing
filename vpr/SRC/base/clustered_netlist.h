@@ -27,16 +27,6 @@ class ClusteredNetlist : public BaseNetlist {
 		//Sets the netlist id based on a file digest's string
 		void set_netlist_id(std::string id);
 
-		//Sets the block's physical intra-block description
-		void set_block_pb(BlockId id, t_pb *pb);
-
-		//Sets the block's physical type
-		void set_block_type(BlockId id, t_type_ptr type);
-
-		//Removes a block from the netlist. This will also remove the associated ports and pins.
-		//  blk_id  : The block to be removed
-		void remove_block(const BlockId blk_id);
-
 	public: //Public Accessors
 		/*
 		* Blocks

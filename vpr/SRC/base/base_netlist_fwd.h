@@ -21,22 +21,22 @@ struct net_id_tag;
 struct port_id_tag;
 struct pin_id_tag;
 
-//A unique identifier for a block in the atom netlist
+//A unique identifier for a block in the base netlist
 typedef vtr::StrongId<block_id_tag> BlockId;
 
-//A unique identifier for a net in the atom netlist
+//A unique identifier for a net in the base netlist
 typedef vtr::StrongId<net_id_tag> NetId;
 
-//A unique identifier for a port in the atom netlist
+//A unique identifier for a port in the base netlist
 typedef vtr::StrongId<port_id_tag> PortId;
 
-//A unique identifier for a pin in the atom netlist
+//A unique identifier for a pin in the base netlist
 typedef vtr::StrongId<pin_id_tag> PinId;
 
 //A signal index in a port
 typedef unsigned BitIndex;
 
-//The type of a port in the AtomNetlist
+//The type of a port in the BaseNetlist
 enum class PortType : char {
 	INPUT,  //The port is a data-input
 	OUTPUT, //The port is an output (usually data, but potentially a clock)
