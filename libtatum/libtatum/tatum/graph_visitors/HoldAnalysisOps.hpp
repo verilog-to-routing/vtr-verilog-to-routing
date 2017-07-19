@@ -70,6 +70,13 @@ class HoldAnalysisOps : public CommonAnalysisOps {
                 return tcq; 
             }
         }
+
+        Time calculate_slack(const Time required_time, const Time arrival_time) {
+            //Hold requires the arrival to occur *after* the required time, so
+            //slack is the amount of arrival time left after the required time; meaning
+            //we we subtract the required time from the arrival time to get the hold slack
+            return arrival_time - required_time;
+        }
 };
 
 }} //namespace
