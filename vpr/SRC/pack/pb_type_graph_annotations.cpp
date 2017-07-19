@@ -456,6 +456,7 @@ static void load_delay_annotations(const int line_num,
                     }
 
                     //Apply the timing annotation (now that all pin_timing for it exist)
+                    p = 0;
 					for (m = 0; m < num_out_sets; m++) {
 						for (n = 0; n < num_out_ptrs[m]; n++) {
                             if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX) {
@@ -466,7 +467,7 @@ static void load_delay_annotations(const int line_num,
                                             "Multiple max delay values specified");
                                 }
 
-                                src_pin->pin_timing_del_max[src_pin->num_pin_timing_del_max_annotated] = delay_matrix[k][src_pin->num_pin_timing_del_max_annotated];
+                                src_pin->pin_timing_del_max[src_pin->num_pin_timing_del_max_annotated] = delay_matrix[k][p];
                                 src_pin->num_pin_timing_del_max_annotated++;
 
                             } else {
@@ -478,9 +479,10 @@ static void load_delay_annotations(const int line_num,
                                             "Multiple min delay values specified");
                                 }
 
-                                src_pin->pin_timing_del_min[src_pin->num_pin_timing_del_min_annotated] = delay_matrix[k][src_pin->num_pin_timing_del_min_annotated];
+                                src_pin->pin_timing_del_min[src_pin->num_pin_timing_del_min_annotated] = delay_matrix[k][p];
                                 src_pin->num_pin_timing_del_min_annotated++;
                             }
+                            p++;
                         }
                     }
                     k++;
