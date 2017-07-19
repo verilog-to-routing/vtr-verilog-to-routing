@@ -90,10 +90,11 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 	t_pb_type *pb_type;
 
     auto& atom_ctx = g_vpr_ctx.atom();
+	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	clb_index = atom_ctx.lookup.atom_clb(atom_blk);
 	VTR_ASSERT(clb_index != OPEN);
-	pb_route = clb[clb_index].pb_route;
+	pb_route = cluster_ctx.clb_nlist.block_pb((BlockId)clb_index)->pb_route;
 	VTR_ASSERT(pb_route != NULL);
 	pb_graph_node = atom_ctx.lookup.atom_pb_graph_node(atom_blk);
 	pb_type = pb_graph_node->pb_type;
@@ -363,8 +364,7 @@ void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb) {
 	pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(cluster_ctx.clb_nlist.block_type((BlockId) iclb));
 	pb_graph_node = cluster_ctx.clb_nlist.block_pb((BlockId) iclb)->pb_graph_node;
 	max_pb_graph_pin = pb_graph_node->total_pb_pins;
-	pb_route = clb[iclb].pb_route;
-
+	pb_route = cluster_ctx.clb_nlist.block_pb((BlockId) iclb)->pb_route;
 
 	for(int i = 0; i < max_pb_graph_pin; i++) {
 		if(pb_route[i].atom_net_id) {
@@ -472,7 +472,9 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 	FILE *fpout;
 	int column;
 	
-	if(clb[0].pb_route == NULL) {
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+
+	if(cluster_ctx.clb_nlist.block_pb((BlockId)0)->pb_route == NULL) {
 		return;
 	}
 

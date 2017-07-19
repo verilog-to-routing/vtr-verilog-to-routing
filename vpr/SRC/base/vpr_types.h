@@ -105,6 +105,7 @@ enum e_block_pack_status {
 class t_rr_node;
 struct t_pack_molecule;
 struct t_pb_stats;
+struct t_pb_route;
 
 /* A t_pb represents an instance of a clustered block, which may be:
  *    1) A top level clustered block which is placeable at a location in FPGA device 
@@ -127,6 +128,7 @@ struct t_pb {
 	t_pb *parent_pb = nullptr; /* pointer to parent node */
 
 	t_pb_stats *pb_stats = nullptr; /* statistics for current pb */
+	t_pb_route *pb_route = nullptr; /* Representation of intra-logic block routing */
 
 	int clock_net = 0; /* Records clock net driving a flip-flop, valid only for lowest-level, flip-flop PBs */
 

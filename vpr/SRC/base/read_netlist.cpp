@@ -36,7 +36,7 @@ using namespace std;
 static const char* netlist_file_name = NULL;
 
 static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,		
-        const pugiutil::loc_data& loc_data);
+        const pugiutil::loc_data& loc_data, ClusteredNetlist *clb_nlist);
 
 static void processPb(pugi::xml_node Parent, const int index,
 		t_pb* pb, t_pb_route *pb_route, int *num_primitives,
@@ -48,7 +48,7 @@ static void processComplexBlock(pugi::xml_node Parent, t_block *cb,
 		ClusteredNetlist *clustered_nlist);
 
 static void alloc_and_init_netlist_from_hash(const int ncount,
-		t_hash **nhash, t_netlist* nlist, ClusteredNetlist* clb_nlist);
+		t_hash **nhash, t_netlist* nlist, ClusteredNetlist *clb_nlist);
 
 static int add_net_to_hash(t_hash **nhash, const char *net_name,
 		int *ncount);
@@ -59,7 +59,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
         t_netlist* clb_nlist,
 		ClusteredNetlist* clustered_nlist);
 
-static void load_interal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb_route);
+static void load_internal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb_route);
 
 static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin);
 
@@ -314,7 +314,7 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 
 	clb_nlist->block_pb((BlockId)index)->pb_graph_node = clb_nlist->block_type((BlockId)index)->pb_graph_head;
 
-	cb[index].pb_route = alloc_pb_route(clb_nlist->block_pb((BlockId)index)->pb_graph_node);
+	clb_nlist->block_pb((BlockId)index)->pb_route = alloc_pb_route(clb_nlist->block_pb((BlockId)index)->pb_graph_node);
 
     auto clb_mode = pugiutil::get_attribute(clb_block, "mode", loc_data);
 
@@ -331,7 +331,7 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 		index);
 	}
 
-	processPb(clb_block, index, clb_nlist->block_pb((BlockId) index), cb[index].pb_route, num_primitives, loc_data, clb_nlist);
+	processPb(clb_block, index, clb_nlist->block_pb((BlockId)index), clb_nlist->block_pb((BlockId)index)->pb_route, num_primitives, loc_data, clb_nlist);
 
 	//Process nets and net_pins
 	num_pins = clb_nlist->block_type((BlockId) index)->num_pins;	
@@ -343,7 +343,10 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 		cb[index].nets[i] = OPEN;
 		cb[index].net_pins[i] = OPEN;
 	}
-	load_interal_to_block_net_nums(clb_nlist->block_type((BlockId) index), cb[index].pb_route);
+	load_internal_to_block_net_nums(clb_nlist->block_type((BlockId)index), clb_nlist->block_pb((BlockId)index)->pb_route);
+
+	cb[index].pb_route = clb_nlist->block_pb((BlockId)index)->pb_route;
+
 	freeTokens(tokens, num_tokens);
 }
 
@@ -367,13 +370,13 @@ static void processPb(pugi::xml_node Parent, const int index,
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
     auto inputs = pugiutil::get_single_child(Parent, "inputs", loc_data);
-	processPorts(inputs, pb, pb_route, loc_data);
+	processPorts(inputs, pb, pb_route, loc_data, clb_nlist);
 
     auto outputs = pugiutil::get_single_child(Parent, "outputs", loc_data);
-	processPorts(outputs, pb, pb_route, loc_data);
+	processPorts(outputs, pb, pb_route, loc_data, clb_nlist);
 
     auto clocks = pugiutil::get_single_child(Parent, "clocks", loc_data);
-	processPorts(clocks, pb, pb_route, loc_data);
+	processPorts(clocks, pb, pb_route, loc_data, clb_nlist);
 
 	pb_type = pb->pb_graph_node->pb_type;
 	if (pb_type->num_modes == 0) {
@@ -555,7 +558,7 @@ static int add_net_to_hash(t_hash **nhash, const char *net_name, int *ncount) {
 }
 
 static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
-        const pugiutil::loc_data& loc_data) {
+        const pugiutil::loc_data& loc_data, ClusteredNetlist *clb_nlist) {
 
 	int i, j, in_port, out_port, clock_port, num_tokens;
     std::vector<std::string> pins;
@@ -1086,7 +1089,7 @@ static t_pb_route *alloc_pb_route(t_pb_graph_node *pb_graph_node) {
 	return pb_route;
 }
 
-static void load_interal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb_route) {
+static void load_internal_to_block_net_nums(const t_type_ptr type, t_pb_route *pb_route) {
 	int num_pins = type->pb_graph_head->total_pb_pins;
 
 	for (int i = 0; i < num_pins; i++) {
