@@ -718,17 +718,20 @@ struct t_pb_graph_pin {
 
 	int scratch_pad; /* temporary data structure useful to store traversal info */
 
-	/* timing information */
-	enum e_pb_graph_pin_type type; /* Is a sequential logic element (true), inpad/outpad (true), or neither (false) */
+	enum e_pb_graph_pin_type type; /* The type of this pin (sequential, i/o etc.) */
+
+	/* sequential timing information */
 	float tsu = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the setup time */
 	float thld = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the hold time */
 	float tco_min = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the minimum clock to output time */
 	float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
     t_pb_graph_pin* associated_clock_pin; /* For sequentail elements, the associated clock */
-	t_pb_graph_pin** pin_timing; /* primitive ipin to opin timing */
-	float *pin_timing_del_max; /* primitive ipin to opin max-delay timing */
-	float *pin_timing_del_min; /* primitive ipin to opin min-delay timing */
-	int num_pin_timing; /* primitive ipin to opin timing */
+
+	/* combinational timing information */
+	int num_pin_timing; /* Number of ipin to opin timing edges*/
+	t_pb_graph_pin** pin_timing; /* timing edge sink pins  [0..num_pin_timing-1]*/
+	float *pin_timing_del_max; /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
+	float *pin_timing_del_min; /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
 
 	/* Applies to clusters only */
 	int pin_class;
