@@ -669,21 +669,25 @@ Timing
 
 Timing is specified through tags contained with in ``pb_type``, ``complete``, ``direct``, or ``mux`` tags as follows:
 
-.. arch:tag:: <delay_constant max="float" in_port="string" out_port="string"/>
+.. arch:tag:: <delay_constant max="float" min="float" in_port="string" out_port="string"/>
 
-    :req_param max: The maximum delay value.
+    :opt_param max: The maximum delay value.
+    :opt_param min: The minimum delay value.
     :req_param in_port: The input port name.
     :req_param out_port: The output port name.
 
-    Specifies a maximum delay equal from in_port to out_port.
+    Specifies a maximum and/or minimum delay from in_port to out_port.
 
     * If ``in_port`` and ``out_port`` are non-sequential (i.e combinational) inputs specifies the combinational path delay between them.
-    * If ``in_port`` and ``out_port`` are sequential (i.e. have ``T_setup`` and/or ``T_clock_to_Q`` tags) specifies the combinational delay between the primitive;s input and/or output registers.
+    * If ``in_port`` and ``out_port`` are sequential (i.e. have ``T_setup`` and/or ``T_clock_to_Q`` tags) specifies the combinational delay between the primitive's input and/or output registers.
 
+    .. note:: At least one of the ``max`` or ``min`` attributes must be specified
 
-.. arch:tag:: <delay_matrix type="max" in_port="string" out_port="string"> matrix </delay>
+    .. note:: If only one of ``max`` or ``min`` are specified the unspecified value is implicitly set to the same value
 
-    :req_param type: Specifies the delay type. Currently on ``max`` is supported.
+.. arch:tag:: <delay_matrix type="{max | min}" in_port="string" out_port="string"> matrix </delay>
+
+    :req_param type: Specifies the delay type.
     :req_param in_port: The input port name.
     :req_param out_port: The output port name.
     :req_param matrix: The delay matrix.
@@ -705,6 +709,8 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
             4.5e-10 6.7e-10 3.5e-10
             7.1e-10 2.9e-10 8.7e-10
         </delay>
+
+    .. note:: To specify both ``max`` and ``min`` delays two ``<delay_matrix>`` should be used.
     
 .. arch:tag:: <T_setup value="float" port="string" clock="string"/>
 
@@ -713,26 +719,48 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
     :req_param clock: The port name of the clock the setup constraint is specified relative to.
 
     Specifies a port's setup constraint.
+
     * If ``port`` is an input specifies the external setup time of the primitive's input register (i.e. for paths terminating at the input register).
     * If ``port`` is an output specifies the internal setup time of the primitive's output register (i.e. for paths terminating at the output register) .
 
-    .. note:: Applies only to ``<pb_type>`` tags
+    .. note:: Applies only to primitive ``<pb_type>`` tags
 
-.. arch:tag:: <T_clock_to_Q max="float" port="string" clock="string"/>
+.. arch:tag:: <T_hold value="float" port="string" clock="string"/>
 
-    :req_param max: The maximum clock-to-Q delay value. 
+    :req_param value: The hold time value.
+    :req_param port: The port name the setup constraint applies to.
+    :req_param clock: The port name of the clock the setup constraint is specified relative to.
+
+    Specifies a port's hold constraint.
+
+    * If ``port`` is an input specifies the external hold time of the primitive's input register (i.e. for paths terminating at the input register).
+    * If ``port`` is an output specifies the internal hol time of the primitive's output register (i.e. for paths terminating at the output register) .
+
+    .. note:: Applies only to primitive ``<pb_type>`` tags
+
+.. arch:tag:: <T_clock_to_Q max="float" min="float" port="string" clock="string"/>
+
+    :opt_param max: The maximum clock-to-Q delay value. 
+    :opt_param min: The minimum clock-to-Q delay value. 
     :req_param port: The port name the delay value applies to.
     :req_param clock: The port name of the clock the clock-to-Q delay is specified relative to.
 
     Specifies a port's clock-to-Q delay.
+
     * If ``port`` is an input specifies the internal clock-to-Q delay of the primitive's input register (i.e. for paths starting at the input register).
     * If ``port`` is an output specifies the external clock-to-Q delay of the primitive's output register (i.e. for paths starting at the output register) .
 
-    .. note:: Applies only to ``<pb_type>`` tags
+    .. note:: At least one of the ``max`` or ``min`` attributes must be specified
+
+    .. note:: If only one of ``max`` or ``min`` are specified the unspecified value is implicitly set to the same value
+
+    .. note:: Applies only to primitive ``<pb_type>`` tags
 
 
 Modeling Sequential Primitive Internal Timing Paths
 """""""""""""""""""""""""""""""""""""""""""""""""""
+.. seealso:: For examples of primitive timing modeling specifications see the :ref:`arch_model_timing_tutorial`
+
 By default, if only ``<T_setup>`` and ``<T_clock_to_Q>`` are specified on a primitive ``pb_type`` no internal timing paths are modeled.
 However, such paths can be modeled by using ``<delay_constant>`` and/or ``<delay_matrix>`` can be used in conjunction with ``<T_setup>`` and ``<T_clock_to_Q>``.  
 This is useful for modeling the speed-limiting path of an FPGA hard block like a RAM or DSP.
