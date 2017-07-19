@@ -50,8 +50,8 @@ class ClusteredNetlist : public BaseNetlist {
 	private: //Private Data
 		
 		//Blocks
-		vtr::vector_map<BlockId, t_pb*>			block_pbs_;         //Physical block representing the clustering of this CLB
-		vtr::vector_map<BlockId, t_type_ptr>	block_types_;		//The type of physical block this user circuit block can map into
+		vtr::vector_map<BlockId, t_pb*>			block_pbs_;         //Physical block representing the clustering & internal hierarchy of each CLB
+		vtr::vector_map<BlockId, t_type_ptr>	block_types_;		//The type of physical block this user circuit block is mapped to
 
 		//Nets
 		vtr::vector_map<NetId, bool>			net_global_;		//Boolean mapping indicating if the net is
