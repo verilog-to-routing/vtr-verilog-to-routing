@@ -421,7 +421,7 @@ An example listing for a global net is given below.
 .. _vpr_route_resource_file:
 
 Routing Resource Graph File Format (.xml)
-----------------------------
+-----------------------------------------
 The routing resource graph (rr graph) file is an XML file that describes the routing resources within the FPGA. 
 This file is generated through the last stage of the rr graph generation during routing with the final channel width. 
 When reading in rr graph from an external file, the rr graph is used during the placement and routing section of VPR.
@@ -648,7 +648,7 @@ The final subtag is the ``rr_edges`` tag that encloses information about all the
         The type of switch that connects the two nodes.
 
 Routing Resource Graph Format Example
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 An example of what a generated routing resource graph file would look like is shown below:
 
