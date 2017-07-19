@@ -72,6 +72,13 @@ class SetupAnalysisOps : public CommonAnalysisOps {
             }
         }
 
+        Time calculate_slack(const Time required_time, const Time arrival_time) {
+            //Setup requires the arrival to occur *before* the required time, so
+            //slack is the amount of required time left after the arrival time; meaning
+            //we we subtract the arrival time from the required time to get the setup slack
+            return required_time - arrival_time;
+        }
+
 };
 
 }} //namespace

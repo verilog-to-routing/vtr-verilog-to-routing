@@ -358,7 +358,7 @@ void CommonAnalysisVisitor<AnalysisOps>::do_slack_traverse_node(const TimingGrap
         for(const TimingTag& req_tag : ops_.get_tags(node, TagType::DATA_REQUIRED)) {
             if(!should_calculate_slack(arr_tag, req_tag)) continue;
 
-            Time slack_value = req_tag.time() - arr_tag.time();
+            Time slack_value = ops_.calculate_slack(req_tag.time(), arr_tag.time());
 
             ops_.merge_slack_tags(node, slack_value, req_tag);
         }
