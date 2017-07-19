@@ -96,9 +96,7 @@ void try_pack(t_packer_opts *packer_opts,
     do_clustering(arch, list_of_pack_molecules, num_models,
             packer_opts->global_clocks, is_clock, 
             atom_molecules,
-#ifdef ENABLE_CLASSIC_VPR_STA
             expected_lowest_cost_pb_gnode,
-#endif
             packer_opts->hill_climbing_flag, packer_opts->output_file.c_str(),
             packer_opts->timing_driven, packer_opts->cluster_seed_type,
             packer_opts->alpha, packer_opts->beta,

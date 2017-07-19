@@ -293,9 +293,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		int num_models, bool global_clocks, 
         const std::unordered_set<AtomNetId>& is_clock,
         std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
-#ifdef ENABLE_CLASSIC_VPR_STA
         const std::unordered_map<AtomBlockId,t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
-#endif
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven, 
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
         float inter_cluster_net_delay,
@@ -421,7 +419,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         /*
          * Initialize the timing analyzer
          */
-        clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, inter_cluster_net_delay);
+        clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
         timing_info = make_setup_timing_info(clustering_delay_calc);
 
         //Calculate the initial timing
