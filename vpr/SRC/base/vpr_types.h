@@ -603,7 +603,6 @@ struct t_block {
 	int *nets;
 	int *net_pins;
 
-	t_pb *pb; /* Internal-to-block hierarchy */
 	t_pb_route *pb_route; /* Internal-to-block routing [0..pb->pb_graph_node->total_pb_pins-1]*/
 };
 

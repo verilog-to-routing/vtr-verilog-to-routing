@@ -787,10 +787,6 @@ void free_circuit() {
 
 	if (cluster_ctx.blocks != NULL) {
 		for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); ++i) {
-			if (cluster_ctx.blocks[i].pb != NULL) {
-				free_pb(cluster_ctx.blocks[i].pb);
-				delete cluster_ctx.blocks[i].pb;
-			}
 			vtr::free(cluster_ctx.blocks[i].nets);
 			vtr::free(cluster_ctx.blocks[i].net_pins);
 			vtr::free(cluster_ctx.blocks[i].name);

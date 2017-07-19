@@ -1909,31 +1909,26 @@ static void start_new_cluster(
 	 It expands the FPGA if it cannot find a legal cluster for the atom block
 	 */
 	int i, j, count;
-	bool success;
+	bool success = false;
 
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-	VTR_ASSERT(new_cluster->name == NULL);
-	/* Check if this cluster is really empty */
-
 	/* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
-    const std::string& root_atom_name = atom_ctx.nlist.block_name(molecule->atom_block_ids[molecule->root]);
+	VTR_ASSERT(new_cluster->name == NULL); 
+	const std::string& root_atom_name = atom_ctx.nlist.block_name(molecule->atom_block_ids[molecule->root]);
 	new_cluster->name = (char*) vtr::malloc((root_atom_name.size() + 4) * sizeof(char));
 	sprintf(new_cluster->name, "cb.%s", root_atom_name.c_str());
 	new_cluster->nets = NULL;
-	new_cluster->pb = NULL;
 
 	t_pb* pb = NULL;
 	t_type_ptr type = NULL;
-
 
 	if ((device_ctx.nx > 1) && (device_ctx.ny > 1)) {
 		alloc_and_load_grid(num_instances_type);
 		freeGrid();
 	}
 
-	success = false;
 	while (!success) {
 		count = 0;
 		for (i = 0; i < device_ctx.num_block_types; i++) {
@@ -1948,8 +1943,6 @@ static void start_new_cluster(
 				alloc_and_load_pb_stats(pb);
 				pb->parent_pb = NULL;
 
-				new_cluster->pb = pb; //TODO: Remove after transition
-
 				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i], &device_ctx.block_types[i]);
 				for (j = 0; j < type->pb_graph_head->pb_type->num_modes && !success; j++) {
 					pb->mode = j;
@@ -1957,13 +1950,13 @@ static void start_new_cluster(
 					reset_cluster_placement_stats(&cluster_placement_stats[i]);
 					set_mode_cluster_placement_stats(pb->pb_graph_node, j);
 
-					success = (BLK_PASSED
-							== try_pack_molecule(&cluster_placement_stats[i],
-                                    atom_molecules,
-									molecule, primitives_list, pb,
-									num_models, max_cluster_size, clb_index,
-									detailed_routing_stage, *router_data));
+					success = (BLK_PASSED == try_pack_molecule(&cluster_placement_stats[i],
+													atom_molecules,
+													molecule, primitives_list, pb,
+													num_models, max_cluster_size, clb_index,
+													detailed_routing_stage, *router_data));
 				}
+
 				if (success) {
 					/* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
 					//Once clustering succeeds, add it to the clb netlist
