@@ -337,8 +337,22 @@ static void load_delay_annotations(const int line_num,
                     for (iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
                         t_pb_graph_edge* pb_edge = in_port[i][j]->output_edges[iedge];
                         if (out_pins.count(pb_edge->output_pins[0])) {
-                            VTR_ASSERT(pb_edge->delay_max == 0);
-                            pb_edge->delay_max = delay_matrix[k][p];
+
+                            if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX) {
+                                if (pb_edge->delay_max != 0) {
+                                    vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
+                                            "Multiple max delay values specified");
+                                }
+                                pb_edge->delay_max = delay_matrix[k][p];
+                            } else {
+                                VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
+                                if (pb_edge->delay_min != 0) {
+                                    vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
+                                            "Multiple min delay values specified");
+                                }
+                                pb_edge->delay_min = delay_matrix[k][p];
+
+                            }
                             ++p;
                         }
                     }
@@ -422,8 +436,6 @@ static void load_delay_annotations(const int line_num,
 				for (j = 0; j < num_in_ptrs[i]; j++) {
                     t_pb_graph_pin* src_pin = in_port[i][j];
 
-                    int prev_num_pin_timing = src_pin->num_pin_timing;
-
                     auto new_sink_range = new_edges.equal_range(src_pin);
                     size_t num_new_sinks = std::distance(new_sink_range.first, new_sink_range.second);
                     if (num_new_sinks > 0) {
@@ -444,20 +456,31 @@ static void load_delay_annotations(const int line_num,
                     }
 
                     //Apply the timing annotation (now that all pin_timing for it exist)
-                    p = prev_num_pin_timing;
 					for (m = 0; m < num_out_sets; m++) {
 						for (n = 0; n < num_out_ptrs[m]; n++) {
-                            VTR_ASSERT(p < src_pin->num_pin_timing);
                             if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX) {
-                                VTR_ASSERT_MSG(std::isnan(src_pin->pin_timing_del_max[p]), "Should not be overwriting previous delay annotations");
-                                src_pin->pin_timing_del_max[p] = delay_matrix[k][p];
+                                VTR_ASSERT(src_pin->num_pin_timing_del_max_annotated < src_pin->num_pin_timing);
+
+                                if (!std::isnan(src_pin->pin_timing_del_max[src_pin->num_pin_timing_del_max_annotated])) {
+                                    vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
+                                            "Multiple max delay values specified");
+                                }
+
+                                src_pin->pin_timing_del_max[src_pin->num_pin_timing_del_max_annotated] = delay_matrix[k][src_pin->num_pin_timing_del_max_annotated];
+                                src_pin->num_pin_timing_del_max_annotated++;
 
                             } else {
                                 VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
-                                VTR_ASSERT_MSG(std::isnan(src_pin->pin_timing_del_min[p]), "Should not be overwriting previous delay annotations");
-                                src_pin->pin_timing_del_min[p] = delay_matrix[k][p];
+                                VTR_ASSERT(src_pin->num_pin_timing_del_min_annotated < src_pin->num_pin_timing);
+
+                                if (!std::isnan(src_pin->pin_timing_del_min[src_pin->num_pin_timing_del_min_annotated])) {
+                                    vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
+                                            "Multiple min delay values specified");
+                                }
+
+                                src_pin->pin_timing_del_min[src_pin->num_pin_timing_del_min_annotated] = delay_matrix[k][src_pin->num_pin_timing_del_min_annotated];
+                                src_pin->num_pin_timing_del_min_annotated++;
                             }
-                            p++;
                         }
                     }
                     k++;

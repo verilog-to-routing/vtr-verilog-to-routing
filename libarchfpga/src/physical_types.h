@@ -732,6 +732,8 @@ struct t_pb_graph_pin {
 	t_pb_graph_pin** pin_timing = nullptr; /* timing edge sink pins  [0..num_pin_timing-1]*/
 	float *pin_timing_del_max = nullptr; /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
 	float *pin_timing_del_min = nullptr; /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
+    int num_pin_timing_del_max_annotated = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_max_annotated-1]
+    int num_pin_timing_del_min_annotated = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_min_annotated-1]
 
 	/* Applies to clusters only */
 	int pin_class = 0;
