@@ -706,45 +706,45 @@ enum e_pb_graph_pin_type {
  *      pin_count_in_cluster: Unique number for pin inside cluster
  */
 struct t_pb_graph_pin {
-	t_port *port;
-	int pin_number;
-	t_pb_graph_edge** input_edges; /* [0..num_input_edges] */
-	int num_input_edges;
-	t_pb_graph_edge** output_edges; /* [0..num_output_edges] */
-	int num_output_edges;
+	t_port *port = nullptr;
+	int pin_number = 0;
+	t_pb_graph_edge** input_edges = nullptr; /* [0..num_input_edges] */
+	int num_input_edges = 0;
+	t_pb_graph_edge** output_edges = nullptr; /* [0..num_output_edges] */
+	int num_output_edges = 0;
 
-	t_pb_graph_node *parent_node;
-	int pin_count_in_cluster;
+	t_pb_graph_node *parent_node = nullptr;
+	int pin_count_in_cluster = 0;
 
-	int scratch_pad; /* temporary data structure useful to store traversal info */
+	int scratch_pad = 0; /* temporary data structure useful to store traversal info */
 
-	enum e_pb_graph_pin_type type; /* The type of this pin (sequential, i/o etc.) */
+	enum e_pb_graph_pin_type type = PB_PIN_NORMAL; /* The type of this pin (sequential, i/o etc.) */
 
 	/* sequential timing information */
 	float tsu = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the setup time */
 	float thld = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the hold time */
 	float tco_min = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the minimum clock to output time */
 	float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
-    t_pb_graph_pin* associated_clock_pin; /* For sequentail elements, the associated clock */
+    t_pb_graph_pin* associated_clock_pin = nullptr; /* For sequentail elements, the associated clock */
 
 	/* combinational timing information */
 	int num_pin_timing = 0; /* Number of ipin to opin timing edges*/
-	t_pb_graph_pin** pin_timing; /* timing edge sink pins  [0..num_pin_timing-1]*/
-	float *pin_timing_del_max; /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
-	float *pin_timing_del_min; /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
+	t_pb_graph_pin** pin_timing = nullptr; /* timing edge sink pins  [0..num_pin_timing-1]*/
+	float *pin_timing_del_max = nullptr; /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
+	float *pin_timing_del_min = nullptr; /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
 
 	/* Applies to clusters only */
-	int pin_class;
+	int pin_class = 0;
 
 	/* Applies to pins of primitive only */
-	int *parent_pin_class; /* [0..depth-1] the grouping of pins that this particular pin belongs to */
+	int *parent_pin_class = nullptr; /* [0..depth-1] the grouping of pins that this particular pin belongs to */
 	/* Applies to output pins of primitives only */
-	t_pb_graph_pin ***list_of_connectable_input_pin_ptrs; /* [0..depth-1][0..num_connectable_primitive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
-	int *num_connectable_primitive_input_pins; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
+	t_pb_graph_pin ***list_of_connectable_input_pin_ptrs = nullptr; /* [0..depth-1][0..num_connectable_primitive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
+	int *num_connectable_primitive_input_pins = nullptr; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
 
-	bool is_forced_connection; /* This output pin connects to one and only one input pin */
+	bool is_forced_connection = false; /* This output pin connects to one and only one input pin */
 
-	t_pb_graph_pin_power * pin_power;
+	t_pb_graph_pin_power* pin_power = nullptr;
 };
 
 

@@ -532,10 +532,10 @@ static void inferr_unspecified_pb_graph_pin_delays(t_pb_graph_pin* pb_graph_pin)
     }
 
     if (std::isnan(pb_graph_pin->tco_min) && !std::isnan(pb_graph_pin->tco_max)) {
-        //min missing, inferr from max
+        //tco_min missing, inferr from tco_max
         pb_graph_pin->tco_min = pb_graph_pin->tco_max;
     } else if (!std::isnan(pb_graph_pin->tco_min) && std::isnan(pb_graph_pin->tco_min)) {
-        //max missing, inferr from min
+        //tco_max missing, inferr from tco_min
         pb_graph_pin->tco_max = pb_graph_pin->tco_min;
     }
 

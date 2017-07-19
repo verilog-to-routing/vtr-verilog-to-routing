@@ -256,19 +256,13 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 			VTR_ASSERT(pb_type->num_modes != 0 || pb_type->ports[i].is_clock);
 		}
 		if (pb_type->ports[i].type == IN_PORT && !pb_type->ports[i].is_clock) {
-			pb_graph_node->input_pins[i_input] = (t_pb_graph_pin*) vtr::calloc(
-					pb_type->ports[i].num_pins, sizeof(t_pb_graph_pin));
+			pb_graph_node->input_pins[i_input] = new t_pb_graph_pin[pb_type->ports[i].num_pins];
 			pb_graph_node->num_input_pins[i_input] = pb_type->ports[i].num_pins;
 			for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-				pb_graph_node->input_pins[i_input][j].input_edges = NULL;
-				pb_graph_node->input_pins[i_input][j].num_input_edges = 0;
-				pb_graph_node->input_pins[i_input][j].output_edges = NULL;
-				pb_graph_node->input_pins[i_input][j].num_output_edges = 0;
 				pb_graph_node->input_pins[i_input][j].pin_number = j;
 				pb_graph_node->input_pins[i_input][j].port = &pb_type->ports[i];
 				pb_graph_node->input_pins[i_input][j].parent_node = pb_graph_node;
 				pb_graph_node->input_pins[i_input][j].pin_count_in_cluster = pin_count_in_cluster;
-				pb_graph_node->input_pins[i_input][j].type = PB_PIN_NORMAL;
 				if (pb_graph_node->pb_type->blif_model != NULL ) {
 					if (strcmp(pb_graph_node->pb_type->blif_model, ".output") == 0) {
 						pb_graph_node->input_pins[i_input][j].type = PB_PIN_OUTPAD;
@@ -282,20 +276,13 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 			}
 			i_input++;
 		} else if (pb_type->ports[i].type == OUT_PORT) {
-			pb_graph_node->output_pins[i_output] = (t_pb_graph_pin*) vtr::calloc(
-					pb_type->ports[i].num_pins, sizeof(t_pb_graph_pin));
-			pb_graph_node->num_output_pins[i_output] =
-					pb_type->ports[i].num_pins;
+			pb_graph_node->output_pins[i_output] = new t_pb_graph_pin[pb_type->ports[i].num_pins];
+			pb_graph_node->num_output_pins[i_output] = pb_type->ports[i].num_pins;
 			for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-				pb_graph_node->output_pins[i_output][j].input_edges = NULL;
-				pb_graph_node->output_pins[i_output][j].num_input_edges = 0;
-				pb_graph_node->output_pins[i_output][j].output_edges = NULL;
-				pb_graph_node->output_pins[i_output][j].num_output_edges = 0;
 				pb_graph_node->output_pins[i_output][j].pin_number = j;
 				pb_graph_node->output_pins[i_output][j].port = &pb_type->ports[i];
 				pb_graph_node->output_pins[i_output][j].parent_node = pb_graph_node;
 				pb_graph_node->output_pins[i_output][j].pin_count_in_cluster = pin_count_in_cluster;
-				pb_graph_node->output_pins[i_output][j].type = PB_PIN_NORMAL;
 				if (pb_graph_node->pb_type->blif_model != NULL ) {
 					if (strcmp(pb_graph_node->pb_type->blif_model, ".input") == 0) {
 						pb_graph_node->output_pins[i_output][j].type = PB_PIN_INPAD;
@@ -310,21 +297,13 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 			i_output++;
 		} else {
 			VTR_ASSERT(pb_type->ports[i].is_clock && pb_type->ports[i].type == IN_PORT);
-			pb_graph_node->clock_pins[i_clockport] =
-					(t_pb_graph_pin*) vtr::calloc(pb_type->ports[i].num_pins,
-							sizeof(t_pb_graph_pin));
-			pb_graph_node->num_clock_pins[i_clockport] =
-					pb_type->ports[i].num_pins;
+			pb_graph_node->clock_pins[i_clockport] = new t_pb_graph_pin[pb_type->ports[i].num_pins];
+			pb_graph_node->num_clock_pins[i_clockport] = pb_type->ports[i].num_pins;
 			for (j = 0; j < pb_type->ports[i].num_pins; j++) {
-				pb_graph_node->clock_pins[i_clockport][j].input_edges = NULL;
-				pb_graph_node->clock_pins[i_clockport][j].num_input_edges = 0;
-				pb_graph_node->clock_pins[i_clockport][j].output_edges = NULL;
-				pb_graph_node->clock_pins[i_clockport][j].num_output_edges = 0;
 				pb_graph_node->clock_pins[i_clockport][j].pin_number = j;
 				pb_graph_node->clock_pins[i_clockport][j].port = &pb_type->ports[i];
 				pb_graph_node->clock_pins[i_clockport][j].parent_node = pb_graph_node;
 				pb_graph_node->clock_pins[i_clockport][j].pin_count_in_cluster = pin_count_in_cluster;
-				pb_graph_node->clock_pins[i_clockport][j].type = PB_PIN_NORMAL;
 				if (pb_graph_node->pb_type->blif_model != NULL ) {
 					pb_graph_node->clock_pins[i_clockport][j].type = PB_PIN_CLOCK;
 				}
@@ -402,7 +381,7 @@ static void free_pb_graph(t_pb_graph_node *pb_graph_node) {
 			if (pb_graph_node->input_pins[i][j].parent_pin_class)
 				vtr::free(pb_graph_node->input_pins[i][j].parent_pin_class);
 		}
-		vtr::free(pb_graph_node->input_pins[i]);
+		delete[] pb_graph_node->input_pins[i];
 	}
 	for (i = 0; i < pb_graph_node->num_output_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
@@ -434,7 +413,7 @@ static void free_pb_graph(t_pb_graph_node *pb_graph_node) {
 				vtr::free(
 						pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins);
 		}
-		vtr::free(pb_graph_node->output_pins[i]);
+		delete[] pb_graph_node->output_pins[i];
 	}
 	for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
 		for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
@@ -451,7 +430,7 @@ static void free_pb_graph(t_pb_graph_node *pb_graph_node) {
 			if (pb_graph_node->clock_pins[i][j].parent_pin_class)
 				vtr::free(pb_graph_node->clock_pins[i][j].parent_pin_class);
 		}
-		vtr::free(pb_graph_node->clock_pins[i]);
+		delete[] pb_graph_node->clock_pins[i];
 	}
 
 
