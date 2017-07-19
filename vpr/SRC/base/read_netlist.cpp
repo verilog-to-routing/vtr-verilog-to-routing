@@ -267,7 +267,6 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 		const int index, int *num_primitives,
         const pugiutil::loc_data& loc_data,
 		ClusteredNetlist *clb_nlist) {
-	//TODO: Every cb[index].pb reference should have a parallel clb_nlist->block_pb(index) reference
 
 	bool found;
 	int num_tokens = 0;
@@ -279,11 +278,8 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
 	/* parse cb attributes */
-	cb[index].pb = new t_pb;
-
     auto block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
 	cb[index].name = vtr::strdup(block_name.value());
-	cb[index].pb->name = vtr::strdup(block_name.value());
 
     auto block_inst = pugiutil::get_attribute(clb_block, "instance", loc_data);
 	tokens = GetTokensFromString(block_inst.value(), &num_tokens);
@@ -316,7 +312,6 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	/* Parse all pbs and CB internal nets*/
 	atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), clb_nlist->block_pb((BlockId) index));
 
-	cb[index].pb->pb_graph_node = clb_nlist->block_type((BlockId)index)->pb_graph_head;
 	clb_nlist->block_pb((BlockId)index)->pb_graph_node = clb_nlist->block_type((BlockId)index)->pb_graph_head;
 
 	cb[index].pb_route = alloc_pb_route(clb_nlist->block_pb((BlockId)index)->pb_graph_node);
@@ -326,7 +321,6 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	found = false;
 	for (i = 0; i < pb_type->num_modes; i++) {
 		if (strcmp(clb_mode.value(), pb_type->modes[i].name) == 0) {
-			cb[index].pb->mode = i;
 			clb_nlist->block_pb((BlockId) index)->mode = i;
 			found = true;
 		}

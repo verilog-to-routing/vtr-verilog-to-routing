@@ -271,7 +271,7 @@ static t_pack_molecule* get_molecule_for_cluster(
 		t_lb_net_stats *clb_inter_blk_nets,
 		const int cluster_index);
 
-static void check_clustering(int num_clb, t_block *clb);
+static void check_clustering(int num_clb);
 
 static void check_cluster_atom_blocks(t_pb *pb, std::unordered_set<AtomBlockId>& blocks_checked);
 
@@ -714,7 +714,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/****************************************************************
 	* Free Data Structures 
 	*****************************************************************/
-	check_clustering(num_clb, clb);
+	check_clustering(num_clb);
 
 	cluster_ctx.blocks = clb;
 
@@ -733,10 +733,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free_cluster_placement_stats(cluster_placement_stats);
 
 	for (i = 0; i < num_clb; i++) {
-		free_pb(clb[i].pb);
+//		free_pb(cluster_ctx.clb_nlist.block_pb((BlockId) i));
 		free(clb[i].name);
 		free(clb[i].nets);
-		delete clb[i].pb;
+//		delete cluster_ctx.clb_nlist.block_pb((BlockId) i);
 	}
 	free(clb);
 
@@ -2234,9 +2234,10 @@ static t_pack_molecule *get_molecule_for_cluster(
 
 
 /* TODO: Add more error checking! */
-static void check_clustering(int num_clb, t_block *clb) {
+static void check_clustering(int num_clb) {
     std::unordered_set<AtomBlockId> atoms_checked;
     auto& atom_ctx = g_vpr_ctx.atom();
+	auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if(num_clb == 0) {
         vtr::printf_warning(__FILE__, __LINE__, "Packing produced no clustered blocks");
@@ -2278,7 +2279,7 @@ static void check_clustering(int num_clb, t_block *clb) {
 					atom_ctx.nlist.block_name(blk_id).c_str());
         }
 
-		if (cur_pb != clb[iclb].pb) {
+		if (cur_pb != cluster_ctx.clb_nlist.block_pb((BlockId)iclb)) {
 			vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
 					"CLB %s does not match CLB contained by pb %s.\n",
 					cur_pb->name, atom_pb->name);
@@ -2287,7 +2288,7 @@ static void check_clustering(int num_clb, t_block *clb) {
 
 	/* Check that I do not have spurious links in children pbs */
 	for (int i = 0; i < num_clb; i++) {
-		check_cluster_atom_blocks(clb[i].pb, atoms_checked);
+		check_cluster_atom_blocks(cluster_ctx.clb_nlist.block_pb((BlockId) i), atoms_checked);
 	}
 
 	for (auto blk_id : atom_ctx.nlist.blocks()) {

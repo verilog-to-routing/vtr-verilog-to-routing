@@ -861,7 +861,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin) {
 	t_pb_graph_node *pb_graph_node;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	
-	pb_graph_node = cluster_ctx.blocks[iblock].pb->pb_graph_node;
+	pb_graph_node = cluster_ctx.clb_nlist.block_pb((BlockId)iblock)->pb_graph_node;
 	pb_type = pb_graph_node->pb_type;
 
 	/* If this is post-placed, then the ipin may have been shuffled up by the z * num_pins, 
