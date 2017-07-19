@@ -266,22 +266,16 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 				pb_graph_node->input_pins[i_input][j].num_output_edges = 0;
 				pb_graph_node->input_pins[i_input][j].pin_number = j;
 				pb_graph_node->input_pins[i_input][j].port = &pb_type->ports[i];
-				pb_graph_node->input_pins[i_input][j].parent_node =
-						pb_graph_node;
-				pb_graph_node->input_pins[i_input][j].pin_count_in_cluster =
-						pin_count_in_cluster;
+				pb_graph_node->input_pins[i_input][j].parent_node = pb_graph_node;
+				pb_graph_node->input_pins[i_input][j].pin_count_in_cluster = pin_count_in_cluster;
 				pb_graph_node->input_pins[i_input][j].type = PB_PIN_NORMAL;
 				if (pb_graph_node->pb_type->blif_model != NULL ) {
-					if (strcmp(pb_graph_node->pb_type->blif_model, ".output")
-							== 0) {
-						pb_graph_node->input_pins[i_input][j].type =
-								PB_PIN_OUTPAD;
+					if (strcmp(pb_graph_node->pb_type->blif_model, ".output") == 0) {
+						pb_graph_node->input_pins[i_input][j].type = PB_PIN_OUTPAD;
 					} else if (pb_graph_node->num_clock_ports != 0) {
-						pb_graph_node->input_pins[i_input][j].type =
-								PB_PIN_SEQUENTIAL;
+						pb_graph_node->input_pins[i_input][j].type = PB_PIN_SEQUENTIAL;
 					} else {
-						pb_graph_node->input_pins[i_input][j].type =
-								PB_PIN_TERMINAL;
+						pb_graph_node->input_pins[i_input][j].type = PB_PIN_TERMINAL;
 					}
 				}
 				pin_count_in_cluster++;
@@ -298,24 +292,17 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 				pb_graph_node->output_pins[i_output][j].output_edges = NULL;
 				pb_graph_node->output_pins[i_output][j].num_output_edges = 0;
 				pb_graph_node->output_pins[i_output][j].pin_number = j;
-				pb_graph_node->output_pins[i_output][j].port =
-						&pb_type->ports[i];
-				pb_graph_node->output_pins[i_output][j].parent_node =
-						pb_graph_node;
-				pb_graph_node->output_pins[i_output][j].pin_count_in_cluster =
-						pin_count_in_cluster;
+				pb_graph_node->output_pins[i_output][j].port = &pb_type->ports[i];
+				pb_graph_node->output_pins[i_output][j].parent_node = pb_graph_node;
+				pb_graph_node->output_pins[i_output][j].pin_count_in_cluster = pin_count_in_cluster;
 				pb_graph_node->output_pins[i_output][j].type = PB_PIN_NORMAL;
 				if (pb_graph_node->pb_type->blif_model != NULL ) {
-					if (strcmp(pb_graph_node->pb_type->blif_model, ".input")
-							== 0) {
-						pb_graph_node->output_pins[i_output][j].type =
-								PB_PIN_INPAD;
+					if (strcmp(pb_graph_node->pb_type->blif_model, ".input") == 0) {
+						pb_graph_node->output_pins[i_output][j].type = PB_PIN_INPAD;
 					} else if (pb_graph_node->num_clock_ports != 0) {
-						pb_graph_node->output_pins[i_output][j].type =
-								PB_PIN_SEQUENTIAL;
+						pb_graph_node->output_pins[i_output][j].type = PB_PIN_SEQUENTIAL;
 					} else {
-						pb_graph_node->output_pins[i_output][j].type =
-								PB_PIN_TERMINAL;
+						pb_graph_node->output_pins[i_output][j].type = PB_PIN_TERMINAL;
 					}
 				}
 				pin_count_in_cluster++;
@@ -334,16 +321,12 @@ static void alloc_and_load_pb_graph(t_pb_graph_node *pb_graph_node,
 				pb_graph_node->clock_pins[i_clockport][j].output_edges = NULL;
 				pb_graph_node->clock_pins[i_clockport][j].num_output_edges = 0;
 				pb_graph_node->clock_pins[i_clockport][j].pin_number = j;
-				pb_graph_node->clock_pins[i_clockport][j].port =
-						&pb_type->ports[i];
-				pb_graph_node->clock_pins[i_clockport][j].parent_node =
-						pb_graph_node;
-				pb_graph_node->clock_pins[i_clockport][j].pin_count_in_cluster =
-						pin_count_in_cluster;
+				pb_graph_node->clock_pins[i_clockport][j].port = &pb_type->ports[i];
+				pb_graph_node->clock_pins[i_clockport][j].parent_node = pb_graph_node;
+				pb_graph_node->clock_pins[i_clockport][j].pin_count_in_cluster = pin_count_in_cluster;
 				pb_graph_node->clock_pins[i_clockport][j].type = PB_PIN_NORMAL;
 				if (pb_graph_node->pb_type->blif_model != NULL ) {
-					pb_graph_node->clock_pins[i_clockport][j].type =
-							PB_PIN_CLOCK;
+					pb_graph_node->clock_pins[i_clockport][j].type = PB_PIN_CLOCK;
 				}
 				pin_count_in_cluster++;
 			}
