@@ -189,8 +189,6 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
 
         void update_hold() override { 
             hold_analyzer_->update_hold_timing();
-            tatum::GraphvizDotWriter dot_writer(*timing_graph_, *delay_calc_);
-            dot_writer.write_dot_file("tmp.dot", *hold_analyzer_);
             update_hold_slacks(); 
         }
 

@@ -728,7 +728,7 @@ struct t_pb_graph_pin {
     t_pb_graph_pin* associated_clock_pin; /* For sequentail elements, the associated clock */
 
 	/* combinational timing information */
-	int num_pin_timing; /* Number of ipin to opin timing edges*/
+	int num_pin_timing = 0; /* Number of ipin to opin timing edges*/
 	t_pb_graph_pin** pin_timing; /* timing edge sink pins  [0..num_pin_timing-1]*/
 	float *pin_timing_del_max; /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
 	float *pin_timing_del_min; /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/

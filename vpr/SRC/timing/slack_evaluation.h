@@ -73,8 +73,8 @@ class HoldSlackCrit {
 
         void update_pin_criticality(AtomPinId pin, 
                                     const tatum::HoldTimingAnalyzer& analyzer, 
-                                    const std::map<DomainPair,float>& max_req, 
-                                    const std::map<DomainPair,float>& worst_slack);
+                                    const float scale,
+                                    const float shift);
 
     private: //Data
         const AtomNetlist& netlist_;
