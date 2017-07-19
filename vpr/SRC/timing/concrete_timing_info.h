@@ -1,10 +1,13 @@
 #ifndef VPR_CONCRETE_TIMING_INFO_H
 #define VPR_CONCRETE_TIMING_INFO_H
 
+#include "vtr_log.h"
 #include "timing_util.h"
 #include "vpr_error.h"
 #include "slack_evaluation.h"
 #include "globals.h"
+ 
+#include "tatum/report/graphviz_dot_writer.hpp"
 
 void warn_unconstrained(std::shared_ptr<const tatum::TimingAnalyzer> analyzer);
 
@@ -83,7 +86,6 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
             if(warn_unconstrained_) {
                 warn_unconstrained(analyzer());
             }
-
         }
 
         void update_setup() override {
@@ -92,7 +94,7 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
             {
                 auto start_time = Clock::now();
 
-                setup_analyzer_->update_timing(); 
+                setup_analyzer_->update_setup_timing(); 
 
                 sta_wallclock_time = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
             }
@@ -147,17 +149,28 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
             : timing_graph_(timing_graph_v)
             , timing_constraints_(timing_constraints_v)
             , delay_calc_(delay_calc)
-            , hold_analyzer_(analyzer_v) {
+            , hold_analyzer_(analyzer_v)
+            , slack_crit_(g_vpr_ctx.atom().nlist, g_vpr_ctx.atom().lookup) {
             //pass
         }
 
     public:
         //Accessors
-        float hold_total_negative_slack() const override { VPR_THROW(VPR_ERROR_TIMING, "Unimplemented"); return NAN; }
-        float hold_worst_negative_slack() const override { VPR_THROW(VPR_ERROR_TIMING, "Unimpemented"); return NAN; }
+        float hold_total_negative_slack() const override { 
+            return find_hold_total_negative_slack(*hold_analyzer_);
+        }
 
-        float hold_pin_slack(AtomPinId pin) const override { return hold_pin_slacks_[pin]; }
-        float hold_pin_criticality(AtomPinId pin) const override { return hold_pin_criticalities_[pin]; }
+        float hold_worst_negative_slack() const override { 
+            return find_hold_worst_negative_slack(*hold_analyzer_);
+        }
+
+        float hold_pin_slack(AtomPinId pin) const override {
+            return slack_crit_.hold_pin_slack(pin);
+        }
+
+        float hold_pin_criticality(AtomPinId pin) const override {
+            return slack_crit_.hold_pin_criticality(pin);
+        }
 
         std::shared_ptr<const tatum::TimingAnalyzer> analyzer() const override { return hold_analyzer(); }
         std::shared_ptr<const tatum::HoldTimingAnalyzer> hold_analyzer() const override { return hold_analyzer_; }
@@ -175,12 +188,12 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
         }
 
         void update_hold() override { 
-            hold_analyzer_->update_timing(); 
+            hold_analyzer_->update_hold_timing();
             update_hold_slacks(); 
         }
 
         void update_hold_slacks() {
-            VPR_THROW(VPR_ERROR_TIMING, "Unimplemented");
+            slack_crit_.update_slacks_and_criticalities(*timing_graph_, *hold_analyzer_);
         }
 
         void set_warn_unconstrained(bool val) override { warn_unconstrained_ = val; }
@@ -192,8 +205,7 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
         std::shared_ptr<DelayCalc> delay_calc_;
         std::shared_ptr<tatum::HoldTimingAnalyzer> hold_analyzer_;
 
-        vtr::vector_map<AtomPinId,float> hold_pin_slacks_;
-        vtr::vector_map<AtomPinId,float> hold_pin_criticalities_;
+        HoldSlackCrit slack_crit_;
 
         bool warn_unconstrained_ = true;
 };
@@ -270,8 +282,8 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
         void set_warn_unconstrained(bool val) override { warn_unconstrained_ = val; }
     private:
         ConcreteSetupTimingInfo<DelayCalc> setup_timing_;
-        ConcreteSetupTimingInfo<DelayCalc> hold_timing_;
-        std::shared_ptr<tatum::SetupTimingAnalyzer> setup_hold_analyzer_;
+        ConcreteHoldTimingInfo<DelayCalc> hold_timing_;
+        std::shared_ptr<tatum::SetupHoldTimingAnalyzer> setup_hold_analyzer_;
 
         bool warn_unconstrained_ = true;
 };

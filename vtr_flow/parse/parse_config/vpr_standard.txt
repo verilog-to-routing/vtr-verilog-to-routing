@@ -39,6 +39,8 @@ crit_path_route_success_iteration;vpr.crit_path.out;Successfully routed after (\
 critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
 setup_TNS;vpr.crit_path.out;Setup Total Negative Slack \(sTNS\): (.*) ns
 setup_WNS;vpr.crit_path.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
+hold_TNS;vpr.crit_path.out;Hold Total Negative Slack \(hTNS\): (.*) ns
+hold_WNS;vpr.crit_path.out;Hold Worst Negative Slack \(hWNS\): (.*) ns
 
 #VPR Run-time Metrics
 pack_time;vpr.out;Packing took (.*) seconds

@@ -1,5 +1,6 @@
 #pragma once
-#include "CommonAnalysisOps.hpp"
+#include "tatum/graph_visitors/CommonAnalysisOps.hpp"
+#include "tatum/delay_calc/DelayCalculator.hpp"
 
 namespace tatum { namespace detail {
 
@@ -36,8 +37,7 @@ class SetupAnalysisOps : public CommonAnalysisOps {
             node_tags_[node].max(time, origin, ref_tag); 
         }
 
-        template<class DelayCalc>
-        Time data_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
+        Time data_edge_delay(const DelayCalculator& dc, const TimingGraph& tg, const EdgeId edge_id) { 
             Time delay = dc.max_edge_delay(tg, edge_id); 
 
             TATUM_ASSERT_MSG(delay.value() >= 0., "Data edge delay expected to be positive");
@@ -45,8 +45,7 @@ class SetupAnalysisOps : public CommonAnalysisOps {
             return delay;
         }
 
-        template<class DelayCalc>
-        Time launch_clock_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
+        Time launch_clock_edge_delay(const DelayCalculator& dc, const TimingGraph& tg, const EdgeId edge_id) { 
             Time delay = dc.max_edge_delay(tg, edge_id);
 
             TATUM_ASSERT_MSG(delay.value() >= 0., "Launch clock edge delay expected to be positive");
@@ -54,8 +53,7 @@ class SetupAnalysisOps : public CommonAnalysisOps {
             return delay;
         }
 
-        template<class DelayCalc>
-        Time capture_clock_edge_delay(const DelayCalc& dc, const TimingGraph& tg, const EdgeId edge_id) { 
+        Time capture_clock_edge_delay(const DelayCalculator& dc, const TimingGraph& tg, const EdgeId edge_id) { 
             NodeId src_node = tg.edge_src_node(edge_id);
             NodeId sink_node = tg.edge_sink_node(edge_id);
 
@@ -72,6 +70,13 @@ class SetupAnalysisOps : public CommonAnalysisOps {
 
                 return tcq; 
             }
+        }
+
+        Time calculate_slack(const Time required_time, const Time arrival_time) {
+            //Setup requires the arrival to occur *before* the required time, so
+            //slack is the amount of required time left after the arrival time; meaning
+            //we we subtract the arrival time from the required time to get the setup slack
+            return required_time - arrival_time;
         }
 
 };

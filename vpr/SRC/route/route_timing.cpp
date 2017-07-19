@@ -150,7 +150,7 @@ static OveruseInfo calculate_overuse_info();
 static void print_route_status_header();
 static void print_route_status(int itry, double elapsed_sec,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
-        std::shared_ptr<const SetupTimingInfo> timing_info,
+        std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration);
 static int round_up(float x);
 
@@ -158,7 +158,7 @@ static int round_up(float x);
 bool try_timing_driven_route(t_router_opts router_opts,
         float **net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        std::shared_ptr<SetupTimingInfo> timing_info,
+        std::shared_ptr<SetupHoldTimingInfo> timing_info,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
         const t_timing_inf &timing_inf,
@@ -1615,14 +1615,14 @@ static WirelengthInfo calculate_wirelength_info() {
 }
 
 static void print_route_status_header() {
-    vtr::printf_info("----- ---------- ------------------- ----------------- -------- ---------- ---------- ----------------\n");
-    vtr::printf_info("Iter. Time (sec)   Overused RR Nodes       Wirelength  CPD (ns)  sTNS (ns)  sWNS (ns) Est. Succ. Iter.\n");
-    vtr::printf_info("----- ---------- ------------------- ----------------- -------- ---------- ---------- ----------------\n");
+    vtr::printf_info("----- ---------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- ----------------\n");
+    vtr::printf_info("Iter. Time (sec)   Overused RR Nodes       Wirelength  CPD (ns)  sTNS (ns)  sWNS (ns)  hTNS (ns)  hWNS (ns) Est. Succ. Iter.\n");
+    vtr::printf_info("----- ---------- ------------------- ----------------- -------- ---------- ---------- ---------- ---------- ----------------\n");
 }
 
 static void print_route_status(int itry, double elapsed_sec,
         const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info,
-        std::shared_ptr<const SetupTimingInfo> timing_info,
+        std::shared_ptr<const SetupHoldTimingInfo> timing_info,
         float est_success_iteration) {
 
     //Iteration
@@ -1657,6 +1657,22 @@ static void print_route_status(int itry, double elapsed_sec,
     if (timing_info) {
         float sWNS = timing_info->setup_worst_negative_slack();
         vtr::printf(" % 10.3f", 1e9 * sWNS);
+    } else {
+        vtr::printf(" %10s", "N/A");
+    }
+
+    //hTNS
+    if (timing_info) {
+        float hTNS = timing_info->hold_total_negative_slack();
+        vtr::printf(" % 10.4g", 1e9 * hTNS);
+    } else {
+        vtr::printf(" %10s", "N/A");
+    }
+
+    //hWNS
+    if (timing_info) {
+        float hWNS = timing_info->hold_worst_negative_slack();
+        vtr::printf(" % 10.3f", 1e9 * hWNS);
     } else {
         vtr::printf(" %10s", "N/A");
     }
