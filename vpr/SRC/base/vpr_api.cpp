@@ -237,7 +237,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 		if(vpr_setup.gen_netlist_as_blif) {
 			char *name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName.c_str()) + 16) * sizeof(char));
 			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName.c_str());
-			output_blif(&Arch, cluster_ctx.blocks, (int) cluster_ctx.clb_nlist.blocks().size(), name);
+			output_blif(&Arch, (int) cluster_ctx.clb_nlist.blocks().size(), name);
 			free(name);
 		}
 	}

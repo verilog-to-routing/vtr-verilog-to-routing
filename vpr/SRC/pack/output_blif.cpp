@@ -29,8 +29,8 @@ using namespace std;
 #define TABLENGTH 1
 
 /****************** Subroutines local to this module ************************/
-void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb);
-void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb);
+void print_atom_block(FILE *fpout, AtomBlockId atom_blk);
+void print_routing_in_clusters(FILE *fpout, int iclb);
 void print_models(FILE *fpout, t_model *user_models);
 
 /**************** Subroutine definitions ************************************/
@@ -83,7 +83,7 @@ static void print_net_name(AtomNetId net_id, int *column, FILE * fpout) {
 }
 
 /* Print netlist atom in blif format */
-void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
+void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 	t_pb_route * pb_route;
 	int clb_index;
 	const t_pb_graph_node *pb_graph_node;
@@ -351,7 +351,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 	}
 }
 
-void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb) {
+void print_routing_in_clusters(FILE *fpout, int iclb) {
 	t_pb_route * pb_route;
 	t_pb_graph_node *pb_graph_node;
 	t_pb_graph_node *pb_graph_node_of_pin;
@@ -462,7 +462,7 @@ void print_models(FILE *fpout, t_model *user_models) {
 	}
 }
 
-void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char *out_fname) {
+void output_blif (const t_arch *arch, int num_clusters, const char *out_fname) {
 
 	/* 
 	 * This routine dumps out the output netlist in a format suitable for  *
@@ -510,11 +510,11 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 
 	/* print out all circuit elements */
 	for (auto blk_id : atom_ctx.nlist.blocks()) {
-		print_atom_block(fpout, blk_id, clb);
+		print_atom_block(fpout, blk_id);
 	}
 
 	for(int clb_index = 0; clb_index < num_clusters; clb_index++) {
-		print_routing_in_clusters(fpout, clb, clb_index);
+		print_routing_in_clusters(fpout, clb_index);
 	}
 	
 	fprintf(fpout, "\n.end\n");
