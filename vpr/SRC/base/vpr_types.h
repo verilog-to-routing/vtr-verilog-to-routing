@@ -604,8 +604,6 @@ struct t_block {
 	char *name;
 	int *nets;
 	int *net_pins;
-
-	t_pb_route *pb_route; /* Internal-to-block routing [0..pb->pb_graph_node->total_pb_pins-1]*/
 };
 
 /* Represents the placement location of a clustered block (i.e. t_block)
