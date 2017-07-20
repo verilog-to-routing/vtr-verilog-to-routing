@@ -88,7 +88,11 @@ private:
         VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
 
         //Clock-to-q delay marked on the SOURCE node (the sink node of this edge)
-        return tatum::Time(gpin->tco_max);
+        auto tco = tatum::Time(gpin->tco_max);
+
+        VTR_ASSERT_MSG(tco.valid(), "Found no primitive clock-to-q delay");
+
+        return tco;
     }
 
     tatum::Time prim_comb_delay(const tatum::TimingGraph& tg, tatum::NodeId src_node, tatum::NodeId sink_node) const {
