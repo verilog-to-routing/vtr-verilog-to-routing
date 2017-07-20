@@ -1427,7 +1427,7 @@ void check_operation(enode *begin, enode *end)
  *-------------------------------------------------------------------------*/
 void reduce_parameter()
 {
-	for (int i = 0; i < num_modules; i++)
+	for (size_t i = 0; i < num_modules; i++)
 	{
 		std::vector<ast_node_t *>para;
 		find_parameter(ast_modules[i], para);
@@ -1498,7 +1498,7 @@ void change_para_node(ast_node_t *node, std::string name, long long value)
  *-------------------------------------------------------------------------*/
 void shift_operation()
 {
-	int i;
+	size_t i;
 	if(ast_modules){
 		for (i = 0; i < num_modules; i++){
 			search_certain_operation(ast_modules[i]);
@@ -1598,7 +1598,7 @@ short has_intermediate_variable(ast_node_t *node){
  *-------------------------------------------------------------------------*/
 void keep_all_branch(ast_node_t *temp_node, ast_node_t *for_parent, int mark)
 {
-	int index = mark;
+	size_t index = mark;
 	for (size_t i = 0; i < temp_node->num_children; i++)
 	{
 		for_parent->children = (ast_node_t**)vtr::realloc(for_parent->children, sizeof(ast_node_t*)*(for_parent->num_children+1));
