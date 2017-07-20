@@ -224,7 +224,6 @@ void vpr_init(const int argc, const char **argv,
  * Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
  * Depends on num_clbs, pins_per_clb */
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
-
 	/* Read in netlist file for placement and routing */
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -512,7 +511,6 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 }
 
 bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch) {
-
 	/* Startup X graphics */
 	init_graphics_state(vpr_setup->ShowGraphics, vpr_setup->GraphPause,
 			vpr_setup->RouterOpts.route_type);
@@ -647,7 +645,6 @@ void free_arch(t_arch* Arch) {
 }
 
 static void free_complex_block_types(void) {
-
 	free_all_pb_graph_nodes();
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -699,7 +696,6 @@ static void free_complex_block_types(void) {
 }
 
 static void free_pb_type(t_pb_type *pb_type) {
-
 	vtr::free(pb_type->name);
 	if (pb_type->blif_model)
 		vtr::free(pb_type->blif_model);
@@ -779,7 +775,6 @@ static void free_pb_type(t_pb_type *pb_type) {
 }
 
 void free_circuit() {
-
 	//Free new net structures
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
@@ -790,7 +785,6 @@ void free_circuit() {
 			vtr::free(cluster_ctx.blocks[i].nets);
 			vtr::free(cluster_ctx.blocks[i].net_pins);
 			vtr::free(cluster_ctx.blocks[i].name);
-			delete [] cluster_ctx.blocks[i].pb_route;
 		}
 	}
 	vtr::free(cluster_ctx.blocks);
@@ -948,10 +942,8 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
 /* This function performs power estimation, and must be called
  * after packing, placement AND routing. Currently, this
- * will not work when running a partial flow (ex. only routing).
- */
+ * will not work when running a partial flow (ex. only routing). */
 void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info) {
-
 	/* Ensure we are only using 1 clock */
 	if(timing_info.critical_paths().size() != 1) {
         VPR_THROW(VPR_ERROR_POWER, "Power analysis only supported on single-clock circuits");
@@ -1012,7 +1004,6 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
 }
 
 void vpr_print_error(const VprError& vpr_error){
-
 	/* Determine the type of VPR error, To-do: can use some enum-to-string mechanism */
     char* error_type = NULL;
     try {

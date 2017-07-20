@@ -216,7 +216,7 @@ static int check_clb_internal_nets(unsigned int iblk) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	
 	int error = 0;
-	t_pb_route * pb_route = cluster_ctx.blocks[iblk].pb_route;
+	t_pb_route * pb_route = cluster_ctx.clb_nlist.block_pb((BlockId) iblk)->pb_route;
 	int num_pins_in_block = cluster_ctx.clb_nlist.block_pb((BlockId) iblk)->pb_graph_node->total_pb_pins;
 
 	t_pb_graph_pin** pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(cluster_ctx.clb_nlist.block_type((BlockId) iblk));

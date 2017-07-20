@@ -37,7 +37,7 @@ inline float ClbDelayCalc::trace_max_delay(int clb, int src_pb_route_id, int sin
     VTR_ASSERT(sink_pb_route_id < cluster_ctx.clb_nlist.block_pb((BlockId) clb)->pb_graph_node->total_pb_pins);
 
 
-    const t_pb_route* pb_routes = cluster_ctx.blocks[clb].pb_route;
+    const t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb((BlockId) clb)->pb_route;
 
     AtomNetId atom_net = pb_routes[src_pb_route_id].atom_net_id;
 
@@ -76,7 +76,7 @@ inline const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(int clb_block, in
 
     int type_index = cluster_ctx.clb_nlist.block_type((BlockId) clb_block)->index;
 
-    int upstream_pb_route_idx = cluster_ctx.blocks[clb_block].pb_route[pb_route_idx].driver_pb_pin_id;
+    int upstream_pb_route_idx = cluster_ctx.clb_nlist.block_pb((BlockId) clb_block)->pb_route[pb_route_idx].driver_pb_pin_id;
 
     if(upstream_pb_route_idx >= 0) {
 
