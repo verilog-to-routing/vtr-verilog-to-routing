@@ -3,6 +3,7 @@ regression_tests/vtr_reg_strong/strong_fracturable_luts
 regression_tests/vtr_reg_strong/strong_mcnc
 regression_tests/vtr_reg_strong/strong_no_timing
 regression_tests/vtr_reg_strong/strong_timing
+regression_tests/vtr_reg_strong/strong_titan
 regression_tests/vtr_reg_strong/strong_power
 regression_tests/vtr_reg_strong/strong_func_formal_flow
 regression_tests/vtr_reg_strong/strong_func_formal_vpr
