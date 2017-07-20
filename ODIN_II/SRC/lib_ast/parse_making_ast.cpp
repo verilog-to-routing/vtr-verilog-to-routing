@@ -221,7 +221,8 @@ BASIC PARSING FUNCTIONS
  *--------------------------------------------------------------------------*/
 void cleanup_hard_blocks()
 {
-	int i, j;
+	int i;
+	size_t j;
 	ast_node_t *block_node, *instance_node, *connect_list_node;
 
 	for (i = 0; i < size_block_instantiations; i++)
@@ -277,7 +278,7 @@ void init_parser()
  *-------------------------------------------------------------------------------------------*/
 void cleanup_parser()
 {
-	int i;
+	size_t i;
 	
 	/* frees all the defines for module string caches (used for parameters) */
 	if (num_modules > 0)
@@ -321,7 +322,7 @@ void clean_up_parser_for_file()
  *-------------------------------------------------------------------------------------------*/
 void next_parsed_verilog_file(ast_node_t *file_items_list)
 {
-	int i;
+	size_t i;
 	/* optimization entry point */
 	printf("Optimizing module by AST based optimizations\n");
 	cleanup_hard_blocks();
@@ -448,7 +449,7 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 }
 ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbol_list)
 {
-	int i;
+	size_t i;
 	long sc_spot;
 	long range_temp_max = 0;
 	long range_temp_min = 0;
@@ -1282,7 +1283,7 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
  *-----------------------------------------------------------------------*/
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number)
 {
-	int i;
+	size_t i;
 	/* create a node for this array reference */
 	ast_node_t* new_master_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
 	for(i = 0; i < module_named_instance->num_children; i++){
@@ -1407,7 +1408,7 @@ ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, a
 
 ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, int line_number)
 {
-    int i;
+    size_t i;
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(GATE_INSTANCE, line_number, current_parse_file);
 
@@ -1514,7 +1515,8 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number)
 {
-	int i, j, k;
+	int i;
+	size_t j, k;
 	long sc_spot;
 	ast_node_t *symbol_node = newSymbolNode(module_name, line_number);
 
@@ -1570,7 +1572,7 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_ports, ast_node_t *
 ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number) //function and module declaration work the same way (Lucas Cambuim)
 {
 
-	int i,j;
+	size_t i,j;
 	long sc_spot;
 	char *function_name;
 	char *label;
@@ -1708,7 +1710,8 @@ ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
 	ast_node_t *ref_node;
 	char *module_instance_name = (char*)vtr::calloc(1024,sizeof(char));
 	module_instance_name = NULL;
-	int i, j;
+	size_t i;
+	int j;
 	//long sc_spot;
 	if(val)
 	{
@@ -1826,7 +1829,7 @@ void graphVizOutputAst(char* path, ast_node_t *top)
  *-------------------------------------------------------------------------------------------*/
 void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *from, int from_num)
 {
-	int i;
+	size_t i;
 	int my_label = unique_label_count;
 
 	/* increase the unique count for other nodes since ours is recorded */
