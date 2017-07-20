@@ -148,6 +148,8 @@ bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiutil::l
 void warn_model_missing_timing(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model);
 bool check_model_clocks(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model);
 bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch);
+const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
+const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port);
 std::string inst_port_to_port_name(std::string inst_port);
 
 static bool attribute_to_bool(const pugi::xml_node node,
@@ -2999,6 +3001,9 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
     //Now that we have the model we can compare the timing annotations
      
+    //Check from the pb_type's delay annotations match the model
+    //  
+    //  This ensures that the pb_types' delay annotations are consistent with the model
     for(int i = 0; i < pb_type->num_annotations; ++i) {
         const t_pin_to_pin_annotation* annot = &pb_type->annotations[i];
 
@@ -3032,13 +3037,13 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                         std::string model_clock = model_port->clock;
                         if(model_clock.empty()) {
                             archfpga_throw(get_arch_file_name(), annot->line_num,
-                                "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', model specifies"
+                                "<pb_type> timing-annotation/<model> mismatch on port '%s' of model '%s', model specifies"
                                 " no clock but timing annotation specifies '%s'",
                                 annot_port.port_name().c_str(), model->name, annot_clock.port_name().c_str());
                         }
                         if(model_port->clock != annot_clock.port_name()) {
                             archfpga_throw(get_arch_file_name(), annot->line_num,
-                                "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', model specifies"
+                                "<pb_type> timing-annotation/<model> mismatch on port '%s' of model '%s', model specifies"
                                 " clock as '%s' but timing annotation specifies '%s'",
                                 annot_port.port_name().c_str(), model->name, model_clock.c_str(), annot_clock.port_name().c_str());
                         }
@@ -3069,7 +3074,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                         auto iter = std::find(b, e, annot_out.port_name());
                         if(iter == e) {
                             archfpga_throw(get_arch_file_name(), annot->line_num,
-                                "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', timing annotation"
+                                "<pb_type> timing-annotation/<model> mismatch on port '%s' of model '%s', timing annotation"
                                 " specifies combinational connection to port '%s' but the connection does not exist in the model",
                                 model_port->name, model->name, annot_out.port_name().c_str());
                         }
@@ -3082,7 +3087,127 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
     }
 
 
+    //Build a list of combinationally connected sinks
+    std::set<std::string> comb_connected_outputs;
+    for (t_model_ports* model_ports : {model->inputs, model->outputs}) {
+        for (t_model_ports* model_port = model_ports; model_port != nullptr; model_port = model_port->next) {
+
+            comb_connected_outputs.insert(model_port->combinational_sink_ports.begin(), model_port->combinational_sink_ports.end());
+        }
+    }
+
+    //Check from the model to pb_type's delay annotations
+    //
+    //  This ensures that the pb_type has annotations for all delays/values 
+    //  required by the model
+    for (t_model_ports* model_ports : {model->inputs, model->outputs}) {
+        for (t_model_ports* model_port = model_ports; model_port != nullptr; model_port = model_port->next) {
+
+            if (!model_port->clock.empty()) {
+                //Sequential port
+
+                if (model_port->dir == IN_PORT) {
+                    //Sequential inputs must have a T_setup or T_hold
+                    if (   find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) == nullptr
+                        && find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_THOLD) == nullptr) {
+                        archfpga_throw(get_arch_file_name(), -1,
+                            "<pb_type> '%s' timing-annotation/<model> mismatch on port '%s' of model '%s',"
+                            " port is a sequential input but has neither T_setup nor T_hold specified",
+                            pb_type->name, model_port->name, model->name);
+                    }
+
+                    if (!model_port->combinational_sink_ports.empty()) {
+                        //Sequential input with internal combinational connectsion it must also have T_clock_to_Q
+                        if (   find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) == nullptr
+                            && find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN) == nullptr) {
+                            archfpga_throw(get_arch_file_name(), -1,
+                                "<pb_type> '%s' timing-annotation/<model> mismatch on port '%s' of model '%s',"
+                                " port is a sequential input with internal combinational connects but has neither"
+                                " min nor max T_clock_to_Q specified",
+                                pb_type->name, model_port->name, model->name);
+                        }
+                    }
+
+                } else {
+                    VTR_ASSERT(model_port->dir == OUT_PORT);
+                    //Sequential outputs must have T_clock_to_Q
+                    if (   find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) == nullptr
+                        && find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN) == nullptr) {
+                        archfpga_throw(get_arch_file_name(), -1,
+                            "<pb_type> '%s' timing-annotation/<model> mismatch on port '%s' of model '%s',"
+                            " port is a sequential output but has neither min nor max T_clock_to_Q specified",
+                            pb_type->name, model_port->name, model->name);
+                    }
+
+                    if (comb_connected_outputs.count(model_port->name)) {
+                        //Sequential output with internal combinational connectison must have T_setup/T_hold
+                        if (   find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) == nullptr
+                            && find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_THOLD) == nullptr) {
+                            archfpga_throw(get_arch_file_name(), -1,
+                                "<pb_type> '%s' timing-annotation/<model> mismatch on port '%s' of model '%s',"
+                                " port is a sequential output with internal combinational connections but has"
+                                " neither T_setup nor T_hold specified",
+                                pb_type->name, model_port->name, model->name);
+                        }
+                    }
+                }
+            }
+
+            //Check that combinationally connected inputs/outputs have combinational delays between them
+            if (model_port->dir == IN_PORT) {
+                for (auto sink_port : model_port->combinational_sink_ports) {
+                    if (find_combinational_annotation(pb_type, model_port->name, sink_port) == nullptr) {
+                        archfpga_throw(get_arch_file_name(), -1,
+                            "<pb_type> '%s' timing-annotation/<model> mismatch on port '%s' of model '%s',"
+                            " input port '%s' has combinational connections to port '%s' specified in model,"
+                            " but no combinational delays found on pb_type",
+                            pb_type->name, model_port->name, model->name, model_port->name, sink_port.c_str());
+
+                    }
+                }
+            }
+        }
+    }
+
     return true; 
+}
+
+const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type) {
+    VTR_ASSERT(   annot_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
+               || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
+               || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
+               || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN);
+
+    for (int iannot = 0; iannot < pb_type->num_annotations; ++iannot) {
+        const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
+        InstPort annot_in(annot->input_pins);
+        if (annot_in.port_name() == port->name) {
+            return annot;
+        }
+    }
+
+    return nullptr;
+}
+
+const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port) {
+    for (int iannot = 0; iannot < pb_type->num_annotations; ++iannot) {
+        const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
+        for (auto annot_in_str : vtr::split(annot->input_pins)) {
+            InstPort in_pins(annot_in_str);
+            for (auto annot_out_str : vtr::split(annot->output_pins)) {
+                InstPort out_pins(annot_out_str);
+                if(in_pins.port_name() == in_port && out_pins.port_name() == out_port) {
+                    for (int iprop = 0; iprop < annot->num_value_prop_pairs; ++iprop) {
+                        if (   annot->prop[iprop] == E_ANNOT_PIN_TO_PIN_DELAY_MAX
+                            || annot->prop[iprop] == E_ANNOT_PIN_TO_PIN_DELAY_MIN) {
+                            return annot;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return nullptr;
 }
 
 std::string inst_port_to_port_name(std::string inst_port) {
