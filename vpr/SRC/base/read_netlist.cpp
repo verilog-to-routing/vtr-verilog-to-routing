@@ -345,8 +345,6 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	}
 	load_internal_to_block_net_nums(clb_nlist->block_type((BlockId)index), clb_nlist->block_pb((BlockId)index)->pb_route);
 
-	cb[index].pb_route = clb_nlist->block_pb((BlockId)index)->pb_route;	//TODO: Remove this last
-
 	freeTokens(tokens, num_tokens);
 }
 

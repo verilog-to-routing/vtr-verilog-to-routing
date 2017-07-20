@@ -270,7 +270,7 @@ AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin, const IntraLbPbPinL
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    t_pb_route* pb_routes = cluster_ctx.blocks[clb].pb_route;
+    t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb((BlockId) clb)->pb_route;
 
     int pb_pin_id = pb_routes[clb_pin].driver_pb_pin_id;
     if(pb_pin_id < 0) {
@@ -301,7 +301,7 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin, const I
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    t_pb_route* pb_routes = cluster_ctx.blocks[clb].pb_route;
+    t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb((BlockId)clb)->pb_route;
     VTR_ASSERT(pb_routes);
 
     VTR_ASSERT_MSG(clb_pin < cluster_ctx.clb_nlist.block_type((BlockId) clb)->num_pins, "Must be a valid top-level pin");
@@ -352,11 +352,11 @@ static std::vector<int> find_connected_internal_clb_sink_pins(int clb, int pb_pi
 static void find_connected_internal_clb_sink_pins_recurr(int clb, int pb_pin, std::vector<int>& connected_sink_pb_pins) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    if(cluster_ctx.blocks[clb].pb_route[pb_pin].sink_pb_pin_ids.empty()) {
+    if(cluster_ctx.clb_nlist.block_pb((BlockId)clb)->pb_route[pb_pin].sink_pb_pin_ids.empty()) {
         //No more sinks => primitive input
         connected_sink_pb_pins.push_back(pb_pin);
     }
-    for(int sink_pb_pin : cluster_ctx.blocks[clb].pb_route[pb_pin].sink_pb_pin_ids) {
+    for(int sink_pb_pin : cluster_ctx.clb_nlist.block_pb((BlockId)clb)->pb_route[pb_pin].sink_pb_pin_ids) {
         find_connected_internal_clb_sink_pins_recurr(clb, sink_pb_pin, connected_sink_pb_pins);
     }
 }
@@ -366,7 +366,7 @@ static AtomPinId find_atom_pin_for_pb_route_id(int clb, int pb_route_id, const I
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    VTR_ASSERT_MSG(cluster_ctx.blocks[clb].pb_route[pb_route_id].atom_net_id, "PB route should correspond to a valid atom net");
+    VTR_ASSERT_MSG(cluster_ctx.clb_nlist.block_pb((BlockId)clb)->pb_route[pb_route_id].atom_net_id, "PB route should correspond to a valid atom net");
 
     //Find the graph pin associated with this pb_route
     const t_pb_graph_pin* gpin = pb_gpin_lookup.pb_gpin(cluster_ctx.clb_nlist.block_type((BlockId) clb)->index, pb_route_id);
@@ -413,7 +413,7 @@ const t_net_pin* find_pb_route_clb_input_net_pin(int clb, int sink_pb_pin_id) {
 
     VTR_ASSERT(clb >= 0);
     VTR_ASSERT(sink_pb_pin_id >= 0);
-    const t_pb_route* pb_routes = cluster_ctx.blocks[clb].pb_route;
+    const t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb((BlockId)clb)->pb_route;
 
     VTR_ASSERT_MSG(pb_routes[sink_pb_pin_id].atom_net_id, "PB route should be associated with a net");
     
@@ -508,7 +508,7 @@ int find_pb_pin_clb_pin(int clb, int pb_pin) {
 bool is_clb_external_pin(int clb, int pb_pin_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    const t_pb_graph_pin* gpin = cluster_ctx.blocks[clb].pb_route[pb_pin_id].pb_graph_pin;
+    const t_pb_graph_pin* gpin = cluster_ctx.clb_nlist.block_pb((BlockId)clb)->pb_route[pb_pin_id].pb_graph_pin;
     VTR_ASSERT(gpin);
 
     //If the gpin's parent graph node is the same as the pb's graph node
@@ -790,7 +790,7 @@ AtomPinId find_atom_pin(int iblk, const t_pb_graph_pin* pb_gpin) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     int pb_route_id = pb_gpin->pin_count_in_cluster;
-    AtomNetId atom_net = cluster_ctx.blocks[iblk].pb_route[pb_route_id].atom_net_id;
+    AtomNetId atom_net = cluster_ctx.clb_nlist.block_pb((BlockId)iblk)->pb_route[pb_route_id].atom_net_id;
 
     VTR_ASSERT(atom_net);
 

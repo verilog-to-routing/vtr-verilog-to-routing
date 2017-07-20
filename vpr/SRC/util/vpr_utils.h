@@ -33,7 +33,7 @@ class IntraLbPbPinLookup {
 
 
         //Returns the pb graph pin associated with the specified type (index into block types array) and
-        // pb pin index (index into block[].pb_route)
+        // pb pin index (index into block_pb().pb_route)
         const t_pb_graph_pin* pb_gpin(int itype, int ipin) const;
 
         friend void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs);
