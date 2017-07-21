@@ -109,7 +109,6 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node *pb_graph_node) {
 								annotations[k].value[0]);
 					} else {
 						/* Todo:
-						 load_hold_time_constraints_annotations(pb_graph_node); 
 						 load_power_annotations(pb_graph_node);
 						 */
 					}
