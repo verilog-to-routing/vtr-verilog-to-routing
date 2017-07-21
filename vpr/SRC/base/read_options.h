@@ -36,10 +36,12 @@ struct t_options {
 	/* General options */
     argparse::ArgValue<bool> show_help;
     argparse::ArgValue<bool> show_version;
+    argparse::ArgValue<size_t> num_workers;
 	argparse::ArgValue<bool> timing_analysis;
     argparse::ArgValue<std::string> SlackDefinition;
 	argparse::ArgValue<bool> CreateEchoFile;
     argparse::ArgValue<bool> verify_file_digests;
+
 
     /* Atom netlist options */
 	argparse::ArgValue<bool> absorb_buffer_luts;
