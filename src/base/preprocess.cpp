@@ -102,7 +102,7 @@ void print_map(t_global_ports global_ports);
 //============================================================================================
 void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types, 
                         t_boolean fix_global_nets, t_boolean elaborate_ram_clocks, t_boolean single_clock_primitives,
-                        t_boolean split_carry_chain_logic){
+                        t_boolean split_carry_chain_logic, t_boolean remove_const_nets){
     /*
      * Put all netlist pre-processing function calls here
      */
@@ -117,9 +117,11 @@ void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_
     identify_mlab_acting_as_rom(module);
     cout << endl;
 
-    cout << "\t>> Preprocessing Netlist to remove constant nets" << endl;
-    remove_constant_nets(module);
-    cout << endl;
+    if (remove_const_nets) {
+        cout << "\t>> Preprocessing Netlist to remove constant nets" << endl;
+        remove_constant_nets(module);
+        cout << endl;
+    }
 
     if(split_carry_chain_logic) {
         cout << "\t>> Preprocessing Netlist to decompose carry chain logic" << endl;

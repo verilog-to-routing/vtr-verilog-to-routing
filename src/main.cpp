@@ -132,6 +132,7 @@ t_boolean split_carry_chain_logic; //user-set flag which controls whether to dec
                                    //(ADDER) components.  May be useful for people working on logic
                                    //re-synthesis who want to re-synthesize the logic feeding the
                                    //adder in a Stratix IV like architecture
+t_boolean remove_const_nets; //user-set flag which controls whether to sweep away constant nets
 t_boolean print_unused_subckt_pins; //user-set flag which controls whether subckts included unused pins (if true)
                                     //or if they are omitted (if false). Some BLIF readers require the unused pins
                                     //to be listed (and connected to nets with no drivers/sinks), which would require
@@ -316,7 +317,7 @@ int main(int argc, char* argv[])
     processStart = clock();
 
     preprocess_netlist(my_module, &arch, types, numTypes, fix_global_nets, elaborate_ram_clocks,
-                       single_clock_primitives, split_carry_chain_logic);
+                       single_clock_primitives, split_carry_chain_logic, remove_const_nets);
 	
     if (debug_mode){
 		//Print debug info to "<project_path>_module.echo"
@@ -454,6 +455,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
     elaborate_ram_clocks = T_TRUE;
     single_clock_primitives = T_FALSE;
     split_carry_chain_logic = T_FALSE;
+    remove_const_nets = T_FALSE;
     print_unused_subckt_pins = T_FALSE;
 
 	//Now read the command line to configure input variables.
@@ -567,6 +569,9 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
                 case OT_SPLIT_CARRY_CHAIN_LOGIC:
                     split_carry_chain_logic = T_TRUE;
                     break;
+                case OT_REMOVE_CONST_NETS:
+                    remove_const_nets = T_TRUE;
+                    break;
                 case OT_INCLUDE_UNUSED_SUBCKT_PINS:
                     print_unused_subckt_pins = T_TRUE;
                     break;
@@ -619,6 +624,7 @@ void setup_tokens (tokmap* tokens){
 	tokens->insert(tokpair("-fixglobals", OT_FIXGLOBALS));
 	tokens->insert(tokpair("-elaborate_ram_clocks", OT_ELABORATE_RAM_CLOCKS));
 	tokens->insert(tokpair("-split_carry_chain_logic", OT_SPLIT_CARRY_CHAIN_LOGIC));
+	tokens->insert(tokpair("-remove_const_nets", OT_REMOVE_CONST_NETS));
 	tokens->insert(tokpair("-include_unused_subckt_pins", OT_INCLUDE_UNUSED_SUBCKT_PINS));
 }
 

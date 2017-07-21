@@ -19,6 +19,7 @@ void print_usage (t_boolean terminate){
 	cout << "\t-luts [vqm* | blif]\n" ;
     cout << "\t-multiclock_primitives\n";
     cout << "\t-include_unused_subckt_pins\n";
+    cout << "\t-remove_const_nets\n";
     //Hide experimental options by default
     //cout << "\t-split_multiclock_blocks\n";
     //cout << "\t-split_carry_chain_logic\n";
@@ -440,7 +441,9 @@ void generate_opname_stratixiv_ram (t_node* vqm_node, t_model* arch_models, stri
             } else if (ram_info.mode == "bidir_dual_port") {
                 
                 if (ram_info.port_a_output_clock && ram_info.port_b_output_clock) {
-                    reg_outputs = true;
+                    reg_outputs = true; //Sequential output
+                } else if (!ram_info.port_a_output_clock && !ram_info.port_b_output_clock) {
+                    reg_outputs = false; //Comb output
                 } else {
                     cout << "Unable to resolve whether bi-dir dual port RAM " << vqm_node->name << " outputs are sequential or combinational:\n";
                     cout << "   port A output sequential: " << bool(ram_info.port_a_output_clock) << "\n";
