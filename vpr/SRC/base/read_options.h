@@ -32,6 +32,7 @@ struct t_options {
     /* Graphics Options */
     argparse::ArgValue<bool> show_graphics; //Enable argparse::ArgValue<int>eractive graphics?
 	argparse::ArgValue<int> GraphPause;
+
 	/* General options */
     argparse::ArgValue<bool> show_help;
     argparse::ArgValue<bool> show_version;
@@ -48,23 +49,12 @@ struct t_options {
 	argparse::ArgValue<bool> sweep_constant_primary_outputs;
 
 	/* Clustering options */
-	//argparse::ArgValue<bool> global_clocks;
-	//argparse::ArgValue<int> cluster_size;
-	//argparse::ArgValue<int> inputs_per_cluster;
-	//argparse::ArgValue<int> lut_size;
-	//argparse::ArgValue<bool> hill_climbing_flag;
-	//argparse::ArgValue<bool> timing_driven;
 	argparse::ArgValue<bool> connection_driven_clustering;
 	argparse::ArgValue<bool> allow_unrelated_clustering;
 	argparse::ArgValue<float> alpha_clustering;
 	argparse::ArgValue<float> beta_clustering;
     argparse::ArgValue<bool> timing_driven_clustering;
     argparse::ArgValue<e_cluster_seed> cluster_seed_type;
-	//argparse::ArgValue<int> recompute_timing_after;
-	//argparse::ArgValue<float> block_delay;
-	//argparse::ArgValue<float> argparse::ArgValue<int>er_cluster_net_delay;
-	//argparse::ArgValue<bool> skip_clustering;
-	//e_packer_algorithm packer_algorithm;
 
 	/* Placement options */
 	argparse::ArgValue<int> Seed;
@@ -77,7 +67,6 @@ struct t_options {
 	argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
     argparse::ArgValue<e_pad_loc_type> pad_loc_type;
 	argparse::ArgValue<int> PlaceChanWidth;
-	//argparse::ArgValue<float> place_cost_exp;
 
 	/* Timing-driven placement options only */
 	argparse::ArgValue<float> PlaceTimingTradeoff;
@@ -102,19 +91,12 @@ struct t_options {
 	argparse::ArgValue<e_router_algorithm> RouterAlgorithm;
 	argparse::ArgValue<int> min_incremental_reroute_fanout;
 
-	//argparse::ArgValue<bool> congestion_analysis;
-	//argparse::ArgValue<bool> fanout_analysis;
-    //argparse::ArgValue<bool> switch_usage_analysis;
-	//argparse::ArgValue<bool> TrimEmptyChan;
-	//argparse::ArgValue<bool> TrimObsChan;
-
 	/* Timing-driven router options only */
 	argparse::ArgValue<float> astar_fac;
 	argparse::ArgValue<float> max_criticality;
 	argparse::ArgValue<float> criticality_exp;
 	argparse::ArgValue<e_routing_failure_predictor> routing_failure_predictor;
 
-	//argparse::ArgValue<float> constant_net_delay;
     argparse::ArgValue<bool> full_stats;
 	argparse::ArgValue<bool> Generate_Post_Synthesis_Netlist;
 
