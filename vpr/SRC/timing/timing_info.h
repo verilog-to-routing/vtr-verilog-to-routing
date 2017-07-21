@@ -150,9 +150,7 @@ std::unique_ptr<SetupTimingInfo> make_setup_timing_info(std::shared_ptr<DelayCal
 
     std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
 
-     return std::unique_ptr<ConcreteSetupTimingInfo<DelayCalc>>(
-             new ConcreteSetupTimingInfo<DelayCalc>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer)
-            );
+     return std::make_unique<ConcreteSetupTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer);
 }
 
 template<class DelayCalc>
@@ -162,9 +160,7 @@ std::unique_ptr<HoldTimingInfo> make_hold_timing_info(std::shared_ptr<DelayCalc>
 
     std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
 
-     return std::unique_ptr<ConcreteHoldTimingInfo<DelayCalc>>(
-             new ConcreteHoldTimingInfo<DelayCalc>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer)
-            );
+     return std::make_unique<ConcreteHoldTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer);
 }
 
 template<class DelayCalc>
@@ -174,15 +170,11 @@ std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr
 
     std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
 
-     return std::unique_ptr<ConcreteSetupHoldTimingInfo<DelayCalc>>(
-             new ConcreteSetupHoldTimingInfo<DelayCalc>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer)
-            );
+     return std::make_unique<ConcreteSetupHoldTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer);
 }
 
 inline std::unique_ptr<SetupHoldTimingInfo> make_constant_timing_info(const float criticality) {
-     return std::unique_ptr<ConstantTimingInfo>(
-             new ConstantTimingInfo(criticality)
-            );
+     return std::make_unique<ConstantTimingInfo>(criticality);
 }
 
 #endif

@@ -881,7 +881,7 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_i
                                                    const AtomNetlist& netlist, 
                                                    const AtomLookup& lookup, 
                                                    tatum::TimingGraph& timing_graph) {
-    auto timing_constraints = std::unique_ptr<tatum::TimingConstraints>(new tatum::TimingConstraints());
+    auto timing_constraints = std::make_unique<tatum::TimingConstraints>();
 
     if (!timing_inf.timing_analysis_enabled) {
 		vtr::printf("\n");
