@@ -41,7 +41,7 @@ static float ** alloc_crit(vtr::t_chunk *chunk_list_ptr) {
 
 	local_crit = (float **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float *));
 
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 		tmp_ptr = (float *) vtr::chunk_malloc(
 				(cluster_ctx.clbs_nlist.net[inet].num_sinks()) * sizeof(float), chunk_list_ptr);
 		local_crit[inet] = tmp_ptr - 1; /* [1..num_sinks] */
@@ -88,7 +88,7 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 	  in that pin), f_timing_place_crit = criticality^(criticality exponent) */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (size_t inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
+	for (size_t inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 		if (cluster_ctx.clbs_nlist.net[inet].is_global)
 			continue;
 		for (size_t ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {

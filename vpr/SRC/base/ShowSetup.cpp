@@ -70,7 +70,7 @@ void printClusteredNetlistStats() {
 	num_blocks_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
 	vtr::printf_info("\n");
-	vtr::printf_info("Netlist num_nets: %d\n", (int) cluster_ctx.clb_nlist.nets().size());
+	vtr::printf_info("Netlist num_nets: %d\n", (int) cluster_ctx.clbs_nlist.net.size());
 	vtr::printf_info("Netlist num_blocks: %d\n", (int) cluster_ctx.clb_nlist.blocks().size());
 
 	for (i = 0; i < device_ctx.num_block_types; i++) {

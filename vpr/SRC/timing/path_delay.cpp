@@ -1776,7 +1776,7 @@ void print_timing_graph(const char *fname) {
 	fprintf(fp, "\n");
 	fprintf(fp, "\n\nNet #\tNet_to_driver_tnode\n");
 
-	for (i = 0; i < (int) cluster_ctx.clb_nlist.nets().size(); i++)
+	for (i = 0; i < (int) cluster_ctx.clbs_nlist.net.size(); i++)
 		fprintf(fp, "%4d\t%6d\n", i, f_net_to_driver_tnode[i]);
 
 	if (timing_ctx.sdc && timing_ctx.sdc->num_constrained_clocks == 1) {

@@ -45,7 +45,7 @@ void check_netlist() {
 	net_hash_table = alloc_hash_table();
 
 	/* Check that nets fanout and have a driver. */
-	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
+	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
 		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name((NetId) i).c_str(), i);
 		if (h_net_ptr->count != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
@@ -81,7 +81,7 @@ void check_netlist() {
 	/* HACK: Jason Luu January 17, 2011 Do not route common constants gnd and vcc
 	 TODO: Need to make architecture driven.
 	 */
-	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
+	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
 		if (strcmp(cluster_ctx.clbs_nlist.net[i].name, "vcc") == 0) {
 			cluster_ctx.clbs_nlist.net[i].is_global = true;
 		} else if (strcmp(cluster_ctx.clbs_nlist.net[i].name, "gnd") == 0) {
