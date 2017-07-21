@@ -33,6 +33,30 @@ t_type_ptr ClusteredNetlist::block_type(const BlockId id) const {
 
 /*
 *
+* Nets
+*
+*/
+bool ClusteredNetlist::net_is_global(const NetId id) const {
+	VTR_ASSERT(valid_net_id(id));
+
+	return net_global_[id];
+}
+
+bool ClusteredNetlist::net_is_routed(const NetId id) const {
+	VTR_ASSERT(valid_net_id(id));
+
+	return net_routed_[id];
+}
+
+bool ClusteredNetlist::net_is_fixed(const NetId id) const {
+	VTR_ASSERT(valid_net_id(id));
+
+	return net_fixed_[id];
+}
+
+
+/*
+*
 * Mutators
 *
 */
