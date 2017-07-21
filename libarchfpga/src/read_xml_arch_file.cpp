@@ -3228,7 +3228,11 @@ const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_ty
         const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
         InstPort annot_in(annot->input_pins);
         if (annot_in.port_name() == port->name) {
-            return annot;
+            for (int iprop = 0; iprop < annot->num_value_prop_pairs; ++iprop) {
+                if (annot->prop[iprop] == annot_type) {
+                    return annot;
+                }
+            }
         }
     }
 
