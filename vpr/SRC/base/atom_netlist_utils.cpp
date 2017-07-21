@@ -314,7 +314,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
     fprintf(f, ".end\n"); //Main model
     fprintf(f, "\n");
 
-    //The subkct models
+    //The subckt models
     for(const t_model* model : subckt_models) {
         fprintf(f, ".model %s\n", model->name);
 

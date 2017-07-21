@@ -496,7 +496,7 @@ struct t_interconnect {
 /** Describes I/O and clock ports
  *
  *  This forms part of the t_pb_type hierarchical description of a clustered logic block.
- *  It corresponds to <port/> tags in the FPGA archtiecture description
+ *  It corresponds to <port/> tags in the FPGA architecture description
  *
  *  Data members:
  *      name: name of the port
