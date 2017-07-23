@@ -51,7 +51,7 @@ std::unique_ptr<TimingGraph> TimingGraphBuilder::timing_graph() {
 }
 
 void TimingGraphBuilder::build() {
-    tg_ = std::unique_ptr<tatum::TimingGraph>(new tatum::TimingGraph());
+    tg_ = std::make_unique<tatum::TimingGraph>();
 
     for(AtomBlockId blk : netlist_.blocks()) {
 

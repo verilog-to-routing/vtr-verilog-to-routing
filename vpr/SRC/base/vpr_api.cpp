@@ -22,6 +22,7 @@ using namespace std;
 #include "vtr_log.h"
 #include "vtr_version.h"
 #include "vtr_time.h"
+#include "vtr_cilk.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -139,6 +140,25 @@ void vpr_init(const int argc, const char **argv,
     //how VPR was run, aiding in re-producibility
     vpr_print_args(argc, argv);
 
+    //Set the number of parallel workers
+#ifdef __cilk
+    //Using cilk set the number off workers for the run-time
+    if (options->num_workers.value() == 0) {
+        VPR_THROW(VPR_ERROR_OTHER, "Number of workers must be > 0");
+    }
+    std::string num_workers_str = std::to_string(options->num_workers.value());
+    vtr::printf_info("Using up to %zu parallel worker(s)\n", options->num_workers.value());
+    if (__cilkrts_set_param("nworkers", num_workers_str.c_str()) != 0) {
+        VPR_THROW(VPR_ERROR_OTHER, "Failed to set the number of workers for cilkrts");
+    }
+#else
+    //No parallel execution support
+    if (options->num_workers.value() != 1) {
+        vtr::printf_warning(__FILE__, __LINE__, 
+            "VPR was compiled without parallel execution support, ignoring the specified number of workers (%d)",
+            options->num_workers.value());
+    }
+#endif
 
     /* Timing option priorities */
     vpr_setup->TimingEnabled = options->timing_analysis;

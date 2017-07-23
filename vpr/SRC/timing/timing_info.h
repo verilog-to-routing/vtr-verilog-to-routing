@@ -148,11 +148,9 @@ std::unique_ptr<SetupTimingInfo> make_setup_timing_info(std::shared_ptr<DelayCal
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
 
-     return std::unique_ptr<ConcreteSetupTimingInfo<DelayCalc>>(
-             new ConcreteSetupTimingInfo<DelayCalc>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer)
-            );
+     return std::make_unique<ConcreteSetupTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer);
 }
 
 template<class DelayCalc>
@@ -160,11 +158,9 @@ std::unique_ptr<HoldTimingInfo> make_hold_timing_info(std::shared_ptr<DelayCalc>
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis,tatum::ParallelWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
 
-     return std::unique_ptr<ConcreteHoldTimingInfo<DelayCalc>>(
-             new ConcreteHoldTimingInfo<DelayCalc>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer)
-            );
+     return std::make_unique<ConcreteHoldTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer);
 }
 
 template<class DelayCalc>
@@ -172,17 +168,13 @@ std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis,tatum::ParallelWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
 
-     return std::unique_ptr<ConcreteSetupHoldTimingInfo<DelayCalc>>(
-             new ConcreteSetupHoldTimingInfo<DelayCalc>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer)
-            );
+     return std::make_unique<ConcreteSetupHoldTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer);
 }
 
 inline std::unique_ptr<SetupHoldTimingInfo> make_constant_timing_info(const float criticality) {
-     return std::unique_ptr<ConstantTimingInfo>(
-             new ConstantTimingInfo(criticality)
-            );
+     return std::make_unique<ConstantTimingInfo>(criticality);
 }
 
 #endif
