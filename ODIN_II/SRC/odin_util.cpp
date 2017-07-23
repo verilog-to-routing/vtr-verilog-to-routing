@@ -38,6 +38,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 #include <regex>
 #include <stdbool.h>
+#include <iostream>
 
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
@@ -800,12 +801,12 @@ char *find_substring(char *src,const char *sKey,int flag)
 
 bool validate_string_regex(const char *str_in, const char *pattern_in)
 {
-    std::string str(str_in);
+	std::string str(str_in);
     std::regex pattern(pattern_in);
-    
-    if(std::regex_match (str.begin(), str.end(), pattern))
-    	return true;
-    	
-	fprintf(stderr,"\nRETURNING FALSE\n");
+
+    auto words_begin = std::sregex_iterator(str.begin(), str.end(), pattern);
+	auto words_end = std::sregex_iterator();
+	if (std::distance(words_begin,words_end) > 0)
+		return true;
 	return false;
 }
