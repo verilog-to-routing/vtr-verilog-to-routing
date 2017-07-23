@@ -38,7 +38,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 #include <regex>
 #include <stdbool.h>
-#include <iostream>
 
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
