@@ -722,7 +722,7 @@ struct t_pb_graph_pin {
 	enum e_pb_graph_pin_type type; /* Is a sequential logic element (true), inpad/outpad (true), or neither (false) */
 	float tsu = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the setup time */
 	float tco = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the clock to output time */
-    t_pb_graph_pin* associated_clock_pin; /* For sequentail elements, the associated clock */
+    t_pb_graph_pin* associated_clock_pin; /* For sequential elements, the associated clock */
 	t_pb_graph_pin** pin_timing; /* primitive ipin to opin timing */
 	float *pin_timing_del_max; /* primitive ipin to opin timing */
 	int num_pin_timing; /* primitive ipin to opin timing */
