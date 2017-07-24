@@ -120,8 +120,8 @@ void t_rr_node::set_fan_in(short new_fan_in) {
 void t_rr_node::set_num_edges(short new_num_edges) {
     num_edges_ = new_num_edges;
 
-    edge_sink_nodes_.reset(new int[num_edges_]);
-    edge_switches_.reset(new short[num_edges_]);
+    edge_sink_nodes_ = std::make_unique<int[]>(num_edges_);
+    edge_switches_ = std::make_unique<short[]>(num_edges_);
 }
 
 void t_rr_node::set_direction(e_direction new_direction) {
