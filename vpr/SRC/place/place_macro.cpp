@@ -182,7 +182,10 @@ static void free_imacro_from_iblk(void);
 static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros);
 
 static void write_place_macros(std::string filename, const t_pl_macro* macros, int num_macros);
+
+static bool is_constant_clb_net(int clb_net);
 /******************** Subroutine definitions *********************************/
+
 
 static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_num_of_this_blk, 
 		int * pl_macro_idirect, int * pl_macro_num_members, int ** pl_macro_member_blk_num) {
@@ -211,17 +214,21 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 			to_idirect = f_idirect_from_blk_pin[cluster_ctx.blocks[iblk].type->index][to_iblk_pin];
 			to_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.blocks[iblk].type->index][to_iblk_pin];
 			
-			// Find to_pins (SINKs) with possible direct connection but are not 
-			// connected to any net (Possible head of macro)
-			if ( to_src_or_sink == SINK && to_idirect != OPEN && to_inet == OPEN ) {
+			// Identify potential macro head blocks (i.e. start of a macro)
+            //
+            // Find to_pins (SINKs) with possible direct connection but are either:
+            //  * not connected to any net (OPEN), or
+            //  * connected to a constant net (e.g. gnd).
+			if ( to_src_or_sink == SINK && to_idirect != OPEN && (to_inet == OPEN || is_constant_clb_net(to_inet))) {
 
 				for (from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
 					from_inet = cluster_ctx.blocks[iblk].nets[from_iblk_pin];
 					from_idirect = f_idirect_from_blk_pin[cluster_ctx.blocks[iblk].type->index][from_iblk_pin];
 					from_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.blocks[iblk].type->index][from_iblk_pin];
 
-					// Find from_pins with the same possible direct connection that are connected.
-					// Confirmed head of macro
+					// Confirm whether this is a head macro
+                    //
+                    // Find from_pins (SOURCEs) with the same possible direct connection which are connected.
 					if ( from_src_or_sink == SOURCE && to_idirect == from_idirect && from_inet != OPEN) {
 						
 						// Mark down that this is the first block in the macro
@@ -501,4 +508,11 @@ static void write_place_macros(std::string filename, const t_pl_macro* macros, i
     }
 
     fclose(f);
+}
+
+static bool is_constant_clb_net(int clb_net) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+    AtomNetId atom_net = atom_ctx.lookup.atom_net(clb_net);
+
+    return atom_ctx.nlist.net_is_constant(atom_net);
 }
