@@ -192,37 +192,10 @@ const std::string& BaseNetlist::port_name(const PortId id) const {
 	return strings_[str_id];
 }
 
-BitIndex BaseNetlist::port_width(const PortId id) const {
-	return port_model(id)->size;
-}
-
 BlockId BaseNetlist::port_block(const PortId id) const {
 	VTR_ASSERT(valid_port_id(id));
 
 	return port_blocks_[id];
-}
-
-PortType BaseNetlist::port_type(const PortId id) const {
-	VTR_ASSERT(valid_port_id(id));
-
-	const t_model_ports* model_port = port_model(id);
-
-	PortType type = PortType::INPUT;
-	if (model_port->dir == IN_PORT) {
-		if (model_port->is_clock) {
-			type = PortType::CLOCK;
-		}
-		else {
-			type = PortType::INPUT;
-		}
-	}
-	else if (model_port->dir == OUT_PORT) {
-		type = PortType::OUTPUT;
-	}
-	else {
-		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Unrecognized model port type");
-	}
-	return type;
 }
 
 BaseNetlist::pin_range BaseNetlist::port_pins(const PortId id) const {
@@ -250,10 +223,10 @@ NetId BaseNetlist::port_net(const PortId port_id, const BitIndex port_bit) const
 	}
 }
 
-const t_model_ports* BaseNetlist::port_model(const PortId port_id) const {
-	VTR_ASSERT(valid_port_id(port_id));
+BitIndex BaseNetlist::port_width(const PortId id) const {
+	VTR_ASSERT(valid_port_id(id));
 
-	return port_models_[port_id];
+	return port_widths_[id];
 }
 
 /*
@@ -274,20 +247,6 @@ NetId BaseNetlist::pin_net (const PinId id) const {
 	return pin_nets_[id];
 }
 
-PinType BaseNetlist::pin_type(const PinId id) const {
-	VTR_ASSERT(valid_pin_id(id));
-
-	PortId port_id = pin_port(id);
-	PinType type;
-	switch (port_type(port_id)) {
-	case PortType::INPUT: /*fallthrough */;
-	case PortType::CLOCK: type = PinType::SINK; break;
-	case PortType::OUTPUT: type = PinType::DRIVER; break;
-	default: VTR_ASSERT_MSG(false, "Valid atom port type");
-	}
-	return type;
-}
-
 PortId BaseNetlist::pin_port(const PinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
 
@@ -298,12 +257,6 @@ BitIndex BaseNetlist::pin_port_bit(const PinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
 
 	return pin_port_bits_[id];
-}
-
-PortType BaseNetlist::pin_port_type(const PinId id) const {
-	PortId port = pin_port(id);
-
-	return port_type(port);
 }
 
 BlockId BaseNetlist::pin_block(const PinId id) const {
@@ -411,25 +364,6 @@ BlockId BaseNetlist::find_block(const std::string& name) const {
 	}
 }
 
-PortId BaseNetlist::find_port(const BlockId blk_id, const t_model_ports* model_port) const {
-	VTR_ASSERT(valid_block_id(blk_id));
-	VTR_ASSERT(model_port);
-
-	//We can tell from the model port the set of ports
-	//the port can be found in
-	port_range range = (model_port->dir == IN_PORT) ?
-		(model_port->is_clock) ? block_clock_ports(blk_id) : block_input_ports(blk_id)
-		: (block_output_ports(blk_id));
-
-	for (auto port_id : range) {
-		if (port_name(port_id) == model_port->name) {
-			return port_id;
-		}
-	}
-
-	return PortId::INVALID();
-}
-
 PortId BaseNetlist::find_port(const BlockId blk_id, const std::string& name) const {
 	VTR_ASSERT(valid_block_id(blk_id));
 
@@ -489,8 +423,6 @@ PinId BaseNetlist::find_pin(const PortId port_id, BitIndex port_bit) const {
 bool BaseNetlist::verify_refs() const {
 	bool valid = true;
 	valid &= validate_block_port_refs();
-	valid &= validate_block_pin_refs();
-	valid &= validate_port_pin_refs();
 	valid &= validate_net_pin_refs();
 	valid &= validate_string_refs();
 	return valid;
@@ -592,16 +524,14 @@ BlockId BaseNetlist::create_block(const std::string name) {
     return blk_id;
 }
 
-PortId  BaseNetlist::create_port(const BlockId blk_id, const t_model_ports* model_port) {
+PortId BaseNetlist::create_port(const BlockId blk_id, const std::string name, BitIndex width) {
 	//Check pre-conditions
 	VTR_ASSERT_MSG(valid_block_id(blk_id), "Valid block id");
 
 	//See if the port already exists
-	StringId name_id = create_string(model_port->name);
-	PortId port_id = find_port(blk_id, model_port);
-	if (!port_id) {
-		//Not found, create it
-
+	StringId name_id = create_string(name);
+	PortId port_id = find_port(blk_id, name);
+	if (!port_id) { //Not found, create it
 		//Reserve an id
 		port_id = PortId(port_ids_.size());
 		port_ids_.push_back(port_id);
@@ -609,12 +539,10 @@ PortId  BaseNetlist::create_port(const BlockId blk_id, const t_model_ports* mode
 		//Initialize the per-port-instance data
 		port_blocks_.push_back(blk_id);
 		port_names_.push_back(name_id);
-		port_models_.push_back(model_port);
+		port_widths_.push_back(width);
 
 		//Allocate the pins, initialize to invalid Ids
 		port_pins_.emplace_back();
-
-		associate_port_with_block(port_id, blk_id);
 	}
 
 	//Check post-conditions: sizes
@@ -623,16 +551,12 @@ PortId  BaseNetlist::create_port(const BlockId blk_id, const t_model_ports* mode
 	//Check post-conditions: values
 	VTR_ASSERT(valid_port_id(port_id));
 	VTR_ASSERT(port_block(port_id) == blk_id);
-	VTR_ASSERT(port_name(port_id) == model_port->name);
-	VTR_ASSERT(port_width(port_id) == (unsigned)model_port->size);
-	VTR_ASSERT(port_model(port_id) == model_port);
-	VTR_ASSERT_SAFE(find_port(blk_id, model_port->name) == port_id);
-	VTR_ASSERT_SAFE(find_port(blk_id, model_port) == port_id);
+	VTR_ASSERT(port_width(port_id) == width);
 
 	return port_id;
 }
 
-PinId BaseNetlist::create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType type, bool is_const) {
+PinId BaseNetlist::create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, const PortType port_type, bool is_const) {
 	//Check pre-conditions (valid ids)
 	VTR_ASSERT_MSG(valid_port_id(port_id), "Valid port id");
 	VTR_ASSERT_MSG(valid_port_bit(port_id, port_bit), "Valid port bit");
@@ -654,13 +578,13 @@ PinId BaseNetlist::create_pin(const PortId port_id, BitIndex port_bit, const Net
 		pin_is_constant_.push_back(is_const);
 
 		//Add the pin to the net
-		associate_pin_with_net(pin_id, type, net_id);
+		associate_pin_with_net(pin_id, pin_type, net_id);
 
 		//Add the pin to the port
 		associate_pin_with_port(pin_id, port_id);
 
 		//Add the pin to the block
-		associate_pin_with_block(pin_id, port_type(port_id), port_block(port_id));
+		associate_pin_with_block(pin_id, port_type, port_block(port_id));
 	}
 
 	//Check post-conditions: sizes
@@ -671,7 +595,6 @@ PinId BaseNetlist::create_pin(const PortId port_id, BitIndex port_bit, const Net
 	VTR_ASSERT(pin_port(pin_id) == port_id);
 	VTR_ASSERT(pin_port_bit(pin_id) == port_bit);
 	VTR_ASSERT(pin_net(pin_id) == net_id);
-	VTR_ASSERT(pin_type(pin_id) == type);
 	VTR_ASSERT(pin_is_constant(pin_id) == is_const);
 	VTR_ASSERT_SAFE(find_pin(port_id, port_bit) == pin_id);
 
@@ -748,8 +671,6 @@ void BaseNetlist::set_pin_is_constant(const PinId pin_id, const bool value) {
 
 void BaseNetlist::set_pin_net(const PinId pin, PinType type, const NetId net) {
 	VTR_ASSERT(valid_pin_id(pin));
-	VTR_ASSERT((type == PinType::DRIVER && pin_port_type(pin) == PortType::OUTPUT)
-		|| (type == PinType::SINK && (pin_port_type(pin) == PortType::INPUT || pin_port_type(pin) == PortType::CLOCK)));
 
 	NetId orig_net = pin_net(pin);
 	if (orig_net) {
@@ -1062,7 +983,6 @@ bool BaseNetlist::validate_block_sizes() const {
 bool BaseNetlist::validate_port_sizes() const {
 	if (port_names_.size() != port_ids_.size()
 		|| port_blocks_.size() != port_ids_.size()
-		|| port_models_.size() != port_ids_.size()
 		|| port_pins_.size() != port_ids_.size()) {
 		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent port data sizes");
 	}
@@ -1132,99 +1052,6 @@ bool BaseNetlist::validate_block_port_refs() const {
 
 	if (std::accumulate(seen_port_ids.begin(), seen_port_ids.end(), 0u) != port_ids_.size()) {
 		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Found orphaned port (not referenced by a block)");
-	}
-
-	return true;
-}
-
-bool BaseNetlist::validate_block_pin_refs() const {
-	//Verify that block pin refs are consistent 
-	//(e.g. inputs are inputs, outputs are outputs etc.)
-	for (auto blk_id : blocks()) {
-
-		//Check that only input pins are found when iterating through inputs
-		for (auto pin_id : block_input_pins(blk_id)) {
-			auto port_id = pin_port(pin_id);
-
-
-			auto type = port_type(port_id);
-			if (type != PortType::INPUT) {
-				VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Non-input pin in block input pins");
-			}
-		}
-
-		//Check that only output pins are found when iterating through outputs
-		for (auto pin_id : block_output_pins(blk_id)) {
-			auto port_id = pin_port(pin_id);
-
-			auto type = port_type(port_id);
-			if (type != PortType::OUTPUT) {
-				VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Non-output pin in block output pins");
-			}
-		}
-
-		//Check that only clock pins are found when iterating through clocks
-		for (auto pin_id : block_clock_pins(blk_id)) {
-			auto port_id = pin_port(pin_id);
-
-			auto type = port_type(port_id);
-			if (type != PortType::CLOCK) {
-				VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Non-clock pin in block clock pins");
-			}
-		}
-	}
-	return true;
-}
-
-bool BaseNetlist::validate_port_pin_refs() const {
-	//Check that port <-> pin references are consistent
-
-	//Track how many times we've seen each pin from the ports
-	vtr::vector_map<PinId, unsigned> seen_pin_ids(pin_ids_.size());
-
-	for (auto port_id : port_ids_) {
-		bool first_bit = true;
-		BitIndex prev_bit_index = 0;
-		for (auto pin_id : port_pins(port_id)) {
-			if (pin_port(pin_id) != port_id) {
-				VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Port-pin cross-reference does not match");
-			}
-			if (pin_port_bit(pin_id) >= port_width(port_id)) {
-				VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Out-of-range port bit index");
-			}
-			++seen_pin_ids[pin_id];
-
-			BitIndex port_bit_index = pin_port_bit(pin_id);
-
-			//Verify that the port bit index is legal
-			if (!valid_port_bit(port_id, port_bit_index)) {
-				VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Invalid pin bit index in port");
-			}
-
-			//Verify that the pins are listed in increasing order of port bit index,
-			//we rely on this property to perform fast binary searches for pins with specific bit
-			//indicies
-			if (first_bit) {
-				prev_bit_index = port_bit_index;
-				first_bit = false;
-			}
-			else if (prev_bit_index >= port_bit_index) {
-				VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Port pin indicies are not in ascending order");
-			}
-		}
-	}
-
-	//Check that we have neither orphaned pins (i.e. that aren't referenced by a port) 
-	//nor shared pins (i.e. referenced by multiple ports)
-	if (!std::all_of(seen_pin_ids.begin(), seen_pin_ids.end(),
-		[](unsigned val) {
-		return val == 1;
-	})) {
-		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Pins referenced by zero or multiple ports");
-	}
-
-	if (std::accumulate(seen_pin_ids.begin(), seen_pin_ids.end(), 0u) != pin_ids_.size()) {
-		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Found orphaned pins (not referenced by a port)");
 	}
 
 	return true;
@@ -1336,8 +1163,6 @@ BlockId BaseNetlist::find_block(const StringId name_id) const {
 }
 
 void BaseNetlist::associate_pin_with_block(const PinId pin_id, const PortType type, const BlockId blk_id) {
-	auto port_id = pin_port(pin_id);
-	VTR_ASSERT(port_type(port_id) == type);
 
 	//Get an interator pointing to where we want to insert
 	pin_iterator iter;
@@ -1393,9 +1218,8 @@ void BaseNetlist::associate_pin_with_port(const PinId pin_id, const PortId port_
 	port_pins_[port_id].push_back(pin_id);
 }
 
-void BaseNetlist::associate_port_with_block(const PortId port_id, const BlockId blk_id) {
+void BaseNetlist::associate_port_with_block(const PortId port_id, const PortType type, const BlockId blk_id) {
 	//Associate the port with the blocks inputs/outputs/clocks
-	PortType type = port_type(port_id);
 
 	//Get an interator pointing to where we want to insert
 	port_iterator iter;

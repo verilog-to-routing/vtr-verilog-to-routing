@@ -424,7 +424,7 @@ class AtomNetlist : public BaseNetlist {
         AtomBlockType       block_type          (const AtomBlockId id) const;
 
 		//Returns the model associated with the block
-		const t_model*      block_model(const BlockId id) const;
+		const t_model*      block_model(const AtomBlockId id) const;
 
         //Returns the truth table associated with the block
         // Note that this is only non-empty for LUTs and Flip-Flops/latches.
@@ -433,22 +433,35 @@ class AtomNetlist : public BaseNetlist {
         // logic function.
         //
         // For FF/Latches there is only a single entry representing the initial state
-        const TruthTable&   block_truth_table   (const AtomBlockId id) const; 
+        const TruthTable&   block_truth_table(const AtomBlockId id) const; 
 
         /*
          * Ports
          */
         //Returns the type of the specified port
-        AtomPortType        port_type			(const AtomPortId id) const; 
+        AtomPortType			port_type(const AtomPortId id) const; 
+
+		//Returns the model port of the specified port or nullptr if not
+		//  id: The ID of the port to look for
+		const t_model_ports*    port_model(const AtomPortId id) const;
 
         /*
          * Pins
          */
         //Returns the pin type of the specified pin
-        AtomPinType			pin_type			(const AtomPinId id) const; 
+        AtomPinType			pin_type(const AtomPinId id) const; 
 
         //Returns the port type associated with the specified pin
-        AtomPortType		pin_port_type		(const AtomPinId id) const;
+        AtomPortType		pin_port_type(const AtomPinId id) const;
+
+		/*
+		* Lookups
+		*/
+		//Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
+		//Note that this method is typically more efficient than searching by name
+		//  blk_id: The ID of the block who's ports will be checked
+		//  model_port: The port model to look for
+		AtomPortId  find_port(const AtomBlockId blk_id, const t_model_ports* model_port) const;
 
         /*
          * Utility
@@ -485,12 +498,13 @@ class AtomNetlist : public BaseNetlist {
         AtomPortId  create_port (const AtomBlockId blk_id, const t_model_ports* model_port);
 
         //Create or return an existing pin in the netlist
-        //  port_id : The port this pin is associated with
-        //  port_bit: The bit index of the pin in the port
-        //  net_id  : The net the pin drives/sinks
-        //  type    : The type of the pin (driver/sink)
-        //  is_const: Indicates whether the pin holds a constant value (e. g. vcc/gnd)
-        AtomPinId   create_pin  (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const AtomPinType type, bool is_const=false);
+        //  port_id    : The port this pin is associated with
+        //  port_bit   : The bit index of the pin in the port
+        //  net_id     : The net the pin drives/sinks
+        //  pin_type   : The type of the pin (driver/sink)
+		//  port_type  : The type of the port (input/output/clock)
+        //  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
+        AtomPinId   create_pin  (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const AtomPinType pin_type, const AtomPortType port_type, bool is_const=false);
 
         //Create an empty, or return an existing net in the netlist
         //  name    : The unique name of the net
@@ -565,6 +579,14 @@ class AtomNetlist : public BaseNetlist {
         //Verify the internal data structure sizes match
         bool verify_sizes() const; //All data structures
         bool validate_block_sizes() const;
+		bool validate_port_sizes() const;
+
+		//Verify that internal data structure cross-references are consistent
+		bool verify_refs() const; //All cross-references
+		bool validate_block_pin_refs() const;
+		bool validate_port_pin_refs() const;
+
+		bool valid_port_bit(AtomPortId id, BitIndex port_bit) const;
 
         //Verify that block invariants hold (i.e. logical consistency)
         bool verify_block_invariants() const;
@@ -576,6 +598,9 @@ class AtomNetlist : public BaseNetlist {
         //Block data
 		vtr::vector_map<AtomBlockId, const t_model*>		block_models_;             //Architecture model of each block
 		vtr::vector_map<AtomBlockId,TruthTable>             block_truth_tables_;       //Truth tables of each block
+
+		//Port data
+		vtr::vector_map<AtomPortId, const t_model_ports*>   port_models_;   //Architecture port models of each port
 };
 
 #include "atom_lookup.h"

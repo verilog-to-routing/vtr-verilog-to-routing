@@ -45,15 +45,17 @@ class BaseNetlist {
 		//Create or return an existing port in the netlist
         //  blk_id      : The block the port is associated with
         //  name        : The name of the port (must match the name of a port in the block's model)
-        PortId  create_port(const BlockId blk_id, const t_model_ports* model_port);
+		//  width		: The width (number of bits) of the port
+        PortId  create_port(const BlockId blk_id, const std::string name, unsigned int width);
 
 		//Create or return an existing pin in the netlist
-        //  port_id : The port this pin is associated with
-        //  port_bit: The bit index of the pin in the port
-        //  net_id  : The net the pin drives/sinks
-        //  type    : The type of the pin (driver/sink)
-        //  is_const: Indicates whether the pin holds a constant value (e. g. vcc/gnd)
-        PinId   create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType type, bool is_const=false);
+        //  port_id    : The port this pin is associated with
+        //  port_bit   : The bit index of the pin in the port
+        //  net_id     : The net the pin drives/sinks
+        //  pin_type   : The type of the pin (driver/sink)
+		//  port_type  : The type of the port (input/output/clock)
+        //  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
+        PinId   create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, const PortType port_type, bool is_const=false);
 
 		//Create an empty, or return an existing net in the netlist
 		//  name    : The unique name of the net
@@ -156,14 +158,8 @@ class BaseNetlist {
 		//Returns the name of the specified port
 		const std::string&      port_name(const PortId id) const;
 
-		//Returns the width (number of bits) in the specified port
-		BitIndex                port_width(const PortId id) const;
-
 		//Returns the block associated with the specified port
 		BlockId					port_block(const PortId id) const;
-
-		//Returns the type of the specified port
-		PortType				port_type(const PortId id) const;
 
 		//Returns the set of valid pins associated with the port
 		pin_range               port_pins(const PortId id) const;
@@ -179,9 +175,8 @@ class BaseNetlist {
 		//  port_bit: The bit index of the pin in the port
 		NetId					port_net(const PortId port_id, const BitIndex port_bit) const;
 
-		//Returns the model port of the specified port or nullptr if not
-		//  port_id: The ID of the port to look for
-		const t_model_ports*    port_model(const PortId port_id) const;
+		//Returns the width (number of bits) in the specified port
+		BitIndex                port_width(const PortId id) const;
 
 		/*
 		* Pins
@@ -200,9 +195,6 @@ class BaseNetlist {
 
 		//Returns the port bit index associated with the specified pin
 		BitIndex    pin_port_bit(const PinId id) const;
-
-		//Returns the port type associated with the specified pin
-		PortType	pin_port_type(const PinId id) const;
 
 		//Returns the block associated with the specified pin
 		BlockId		pin_block(const PinId id) const;
@@ -254,27 +246,22 @@ class BaseNetlist {
 		/*
 		* Lookups
 		*/
-		//Returns the AtomBlockId of the specified block or AtomBlockId::INVALID() if not found
+		//Returns the BlockId of the specified block or BlockId::INVALID() if not found
 		//  name: The name of the block
 		BlockId find_block(const std::string& name) const;
 
-		//Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
-		//Note that this method is typically more efficient than searching by name
-		//  blk_id: The ID of the block who's ports will be checked
-		//  model_port: The port model to look for
-		PortId  find_port(const BlockId blk_id, const t_model_ports* model_port) const;
-
-		//Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
+		//Returns the PortId of the specifed port if it exists or PortId::INVALID() if not
 		//Note that this method is typically less efficient than searching by a t_model_port
+		//With the overloaded AtomNetlist method
 		//  blk_id: The ID of the block who's ports will be checked
 		//  name  : The name of the port to look for
 		PortId  find_port(const BlockId blk_id, const std::string& name) const;
 
-		//Returns the AtomNetId of the specified net or AtomNetId::INVALID() if not found
+		//Returns the NetId of the specified net or NetId::INVALID() if not found
 		//  name: The name of the net
 		NetId   find_net(const std::string& name) const;
 
-		//Returns the AtomPinId of the specified pin or AtomPinId::INVALID() if not found
+		//Returns the PinId of the specified pin or PinId::INVALID() if not found
 		//  port_id : The ID of the associated port
 		//  port_bit: The bit index of the pin in the port
 		PinId   find_pin(const PortId port_id, BitIndex port_bit) const;
@@ -283,18 +270,18 @@ class BaseNetlist {
 	protected: //Protected Base Types
 		struct string_id_tag;
 
-		//A unique identifier for a string in the atom netlist
+		//A unique identifier for a string in the netlist
 		typedef vtr::StrongId<string_id_tag> StringId;
 
 	protected: //Protected Base Members
 		/*
 		 * Lookups
 		 */
-		//Returns the AtomStringId of the specifed string if it exists or AtomStringId::INVALID() if not
+		//Returns the StringId of the specifed string if it exists or StringId::INVALID() if not
 		//  str : The string to look for
 		StringId	find_string(const std::string& str) const;
 		
-		//Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVALID() if not
+		//Returns the BlockId of the specifed block if it exists or BlockId::INVALID() if not
 		//  name_id : The block name to look for
 		BlockId		find_block(const StringId name_id) const;
 
@@ -319,7 +306,7 @@ class BaseNetlist {
 		void associate_pin_with_block(const PinId pin_id, const PortType type, const BlockId blk_id);
 
 		//Updates block cross-references for the specified port
-		void associate_port_with_block(const PortId port_id, const BlockId blk_id);
+		void associate_port_with_block(const PortId port_id, const PortType type, const BlockId blk_id);
 
 		//Removes a port from the netlist.
 		//The port's pins are also marked invalid and removed from any associated nets
@@ -359,8 +346,6 @@ class BaseNetlist {
 		//Verify that internal data structure cross-references are consistent
 		bool verify_refs() const; //All cross-references
 		bool validate_block_port_refs() const;
-		bool validate_block_pin_refs() const;
-		bool validate_port_pin_refs() const;
 		bool validate_net_pin_refs() const;
 		bool validate_string_refs() const;
 
@@ -396,16 +381,16 @@ class BaseNetlist {
 		vtr::vector_map<BlockId, unsigned>					block_num_clock_pins_;     //Number of clock pins on each block
 
 		//Port data
-        vtr::vector_map<PortId,PortId>					port_ids_;      //Valid port ids
+        vtr::vector_map<PortId, PortId>					port_ids_;      //Valid port ids
 		vtr::vector_map<PortId, StringId>				port_names_;    //Name of each port
 		vtr::vector_map<PortId, BlockId>				port_blocks_;   //Block associated with each port
-		vtr::vector_map<PortId, const t_model_ports*>   port_models_;   //Architecture port models of each port
 		vtr::vector_map<PortId, std::vector<PinId>>		port_pins_;     //Pins associated with each port
+		vtr::vector_map<PortId, BitIndex>				port_widths_;	//Width (in bits) of each port
 
 		//Pin data
 		vtr::vector_map<PinId, PinId>		pin_ids_;           //Valid pin ids
 		vtr::vector_map<PinId, PortId>		pin_ports_;         //Type of each pin
-		vtr::vector_map<PinId, BitIndex>	pin_port_bits_;     //The ports bit position in the port
+		vtr::vector_map<PinId, BitIndex>	pin_port_bits_;     //The pins bit position in the port
 		vtr::vector_map<PinId, NetId>		pin_nets_;          //Net associated with each pin
 		vtr::vector_map<PinId, bool>		pin_is_constant_;   //Indicates if the pin always keeps a constant value
 
