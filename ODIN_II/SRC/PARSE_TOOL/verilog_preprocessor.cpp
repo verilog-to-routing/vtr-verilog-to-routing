@@ -706,7 +706,7 @@ FILE *format_verilog_file(FILE *source)
 	int j;
 	static const char *pattern = "\\binput\\b|\\boutput\\b|\\breg\\b|\\bwire\\b";
 	i = 0;
-	line = (char *) malloc (MaxLine);
+	line = (char *) calloc (MaxLine, sizeof(char));
 	while( (ch = getc(source) ) != ';')
 	{
 		line[i++] = ch;
