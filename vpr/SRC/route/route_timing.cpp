@@ -717,7 +717,13 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
     t_heap * cheapest{get_heap_head()};
 
     if (cheapest == NULL) {
-        vtr::printf_info("Cannot route this net from node %d to node %d -- no possible path", source_node, sink_node);
+        auto& device_ctx = g_vpr_ctx.device();
+        const t_rr_node* source_rr_node = &device_ctx.rr_nodes[source_node];
+        const t_rr_node* sink_rr_node = &device_ctx.rr_nodes[sink_node];
+
+        vtr::printf_info("Cannot route connection from rr_node %d (type %s, ptc: %d) to rr_node %d (type %s, ptc: %d) -- no possible path", 
+                source_node, source_rr_node->type_string(), source_rr_node->ptc_num(),
+                sink_node, sink_rr_node->type_string(), sink_rr_node->ptc_num());
 
         reset_path_costs();
         free_route_tree(rt_root);
@@ -765,7 +771,14 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         cheapest = get_heap_head();
 
         if (cheapest == NULL) { /* Impossible routing.  No path for net. */
-            vtr::printf_info("Cannot route this net from node %d to node %d -- no possible path", source_node, sink_node);
+            auto& device_ctx = g_vpr_ctx.device();
+            const t_rr_node* source_rr_node = &device_ctx.rr_nodes[source_node];
+            const t_rr_node* sink_rr_node = &device_ctx.rr_nodes[sink_node];
+
+            vtr::printf_info("Cannot route connection from rr_node %d (type %s, ptc: %d) to rr_node %d (type %s, ptc: %d) -- no possible path", 
+                source_node, source_rr_node->type_string(), source_rr_node->ptc_num(),
+                sink_node, sink_rr_node->type_string(), sink_rr_node->ptc_num());
+
             reset_path_costs();
             free_route_tree(rt_root);
             return NULL;
