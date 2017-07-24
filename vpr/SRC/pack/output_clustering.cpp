@@ -479,7 +479,7 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 	fprintf(fpout, "</block>\n");
 }
 
-static void print_clusters(t_block *clb, int num_clusters, FILE *fpout) {
+static void print_clusters(int num_clusters, FILE *fpout) {
 
 	/* Prints out one cluster (clb).  Both the external pins and the *
 	 * internal connections are printed out.                         */
@@ -662,7 +662,7 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	}
 
 	if (skip_clustering == false)
-		print_clusters(clb, num_clusters, fpout);
+		print_clusters(num_clusters, fpout);
 
 	fprintf(fpout, "</block>\n\n");
 
