@@ -887,6 +887,7 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 #ifdef VERBOSE
 		vtr::printf_info("Outer loop recompute criticalities\n");
 #endif
+        num_connections = std::max(num_connections, 1); //Avoid division by zero
         VTR_ASSERT(num_connections > 0);
 
 		*place_delay_value = (*delay_cost) / num_connections;
