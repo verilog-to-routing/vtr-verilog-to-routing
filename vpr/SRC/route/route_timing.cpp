@@ -675,6 +675,14 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
             astar_fac, bend_cost, rt_root, bounding_box, cluster_ctx.clbs_nlist.net[inet].num_sinks());
 
     if (cheapest == NULL) {
+        const t_net_pin* src_net_pin = &cluster_ctx.clbs_nlist.net[inet].pins[0];
+        const t_net_pin* sink_net_pin = &cluster_ctx.clbs_nlist.net[inet].pins[target_pin];
+        const t_block* src_blk = &cluster_ctx.blocks[src_net_pin->block];
+        const t_block* sink_blk = &cluster_ctx.blocks[sink_net_pin->block];
+        vtr::printf("Failed to route connection from '%s' to '%s' for net '%s'\n",
+                    src_blk->name,
+                    sink_blk->name,
+                    cluster_ctx.clbs_nlist.net[inet].name);
         return false;
     }
     
@@ -721,7 +729,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         const t_rr_node* source_rr_node = &device_ctx.rr_nodes[source_node];
         const t_rr_node* sink_rr_node = &device_ctx.rr_nodes[sink_node];
 
-        vtr::printf_info("Cannot route connection from rr_node %d (type %s, ptc: %d) to rr_node %d (type %s, ptc: %d) -- no possible path", 
+        vtr::printf_info("Cannot route from rr_node %d (type %s, ptc: %d) to rr_node %d (type %s, ptc: %d) -- no possible path\n", 
                 source_node, source_rr_node->type_string(), source_rr_node->ptc_num(),
                 sink_node, sink_rr_node->type_string(), sink_rr_node->ptc_num());
 
@@ -775,7 +783,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
             const t_rr_node* source_rr_node = &device_ctx.rr_nodes[source_node];
             const t_rr_node* sink_rr_node = &device_ctx.rr_nodes[sink_node];
 
-            vtr::printf_info("Cannot route connection from rr_node %d (type %s, ptc: %d) to rr_node %d (type %s, ptc: %d) -- no possible path", 
+            vtr::printf_info("Cannot route from rr_node %d (type %s, ptc: %d) to rr_node %d (type %s, ptc: %d) -- no possible path\n", 
                 source_node, source_rr_node->type_string(), source_rr_node->ptc_num(),
                 sink_node, sink_rr_node->type_string(), sink_rr_node->ptc_num());
 
