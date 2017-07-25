@@ -700,9 +700,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
                 revalid_molecules(cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)), atom_molecules);
 				free_pb(cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)));
 				delete cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1));
-				free(clb[num_clb - 1].name);
-				clb[num_clb - 1].name = NULL;
-//				cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)) = NULL;
 				num_clb--;
 				seedindex = savedseedindex;
 			}
@@ -734,7 +731,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	for (i = 0; i < num_clb; i++) {
 //		free_pb(cluster_ctx.clb_nlist.block_pb((BlockId) i));
-		free(clb[i].name);
 		free(clb[i].nets);
 //		delete cluster_ctx.clb_nlist.block_pb((BlockId) i);
 	}
@@ -1915,10 +1911,7 @@ static void start_new_cluster(
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
 	/* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
-	VTR_ASSERT(new_cluster->name == NULL); 
 	const std::string& root_atom_name = atom_ctx.nlist.block_name(molecule->atom_block_ids[molecule->root]);
-	new_cluster->name = (char*) vtr::malloc((root_atom_name.size() + 4) * sizeof(char));
-	sprintf(new_cluster->name, "cb.%s", root_atom_name.c_str());
 	new_cluster->nets = NULL;
 
 	t_pb* pb = NULL;

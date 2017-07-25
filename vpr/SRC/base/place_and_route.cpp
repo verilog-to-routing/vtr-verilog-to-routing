@@ -90,7 +90,7 @@ bool place_and_route(t_placer_opts placer_opts,
 
     if (!placer_opts.doPlacement || placer_opts.place_freq == PLACE_NEVER) {
         /* Read the placement from a file */
-        read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.nx, device_ctx.ny, (int) cluster_ctx.clb_nlist.blocks().size(), cluster_ctx.blocks);
+        read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.nx, device_ctx.ny, cluster_ctx.clb_nlist.blocks().size());
         sync_grid_to_blocks();
     } else {
         VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));

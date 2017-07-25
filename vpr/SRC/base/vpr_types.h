@@ -595,11 +595,9 @@ struct t_legal_pos {
 };
 
 /* Represents a clustered logic block of a user circuit that fits into one unit of space in an FPGA grid block
- * name: identifier for this block
  * type: the type of physical block this user circuit block can map into
  * nets: nets that connect to other user circuit blocks */
 struct t_block {
-	char *name;
 	int *nets;
 	int *net_pins;
 };

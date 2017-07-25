@@ -261,7 +261,7 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 	pb_graph_pin = timing_ctx.tnodes[inode].pb_graph_pin;
 
 	fprintf(fp, "Node: %d  %s Block #%d (%s)\n", inode, tnode_type_names[type],
-		iblk, cluster_ctx.blocks[iblk].name);
+		iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk).c_str());
 
 	if (pb_graph_pin == NULL) {
 		VTR_ASSERT(

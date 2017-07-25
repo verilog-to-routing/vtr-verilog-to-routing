@@ -15,13 +15,11 @@
 #include "read_place.h"
 #include "read_xml_arch_file.h"
 
-t_block* find_block(t_block* blocks, int num_blocks, std::string name);
-
 void read_place(const char* net_file, 
                 const char* place_file,
                 bool verify_file_digests,
                 const int L_nx, const int L_ny,
-		        const int L_num_blocks, t_block block_list[]) {
+		        const size_t L_num_blocks) {
     std::ifstream fstream(place_file); 
     if (!fstream) {
         vpr_throw(VPR_ERROR_PLACE_F, __FILE__, __LINE__, 
@@ -118,26 +116,19 @@ void read_place(const char* net_file,
             int block_y = vtr::atoi(tokens[2]);
             int block_z = vtr::atoi(tokens[3]);
 
-            t_block* blk = find_block(block_list, L_num_blocks, block_name);
+			size_t blk_id = static_cast<size_t>(cluster_ctx.clb_nlist.find_block(block_name));
 
-            if (!blk) {
-                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, 
-                          "Block '%s' in placement file does not exist in netlist.",
-                          block_name.c_str());
-            }
+			VTR_ASSERT(blk_id < L_num_blocks);
 
-            if (place_ctx.block_locs.size() != static_cast<size_t>(L_num_blocks)) {
+            if (place_ctx.block_locs.size() != L_num_blocks) {
                 //Resize if needed
                 place_ctx.block_locs.resize(L_num_blocks);
-            }
-
-            int iblk = blk - block_list;
-            VTR_ASSERT(iblk >= 0 && iblk < L_num_blocks);
+            }			
 
             //Set the location
-            place_ctx.block_locs[iblk].x = block_x;
-            place_ctx.block_locs[iblk].y = block_y;
-            place_ctx.block_locs[iblk].z = block_z;
+            place_ctx.block_locs[blk_id].x = block_x;
+            place_ctx.block_locs[blk_id].y = block_y;
+            place_ctx.block_locs[blk_id].z = block_z;
 
         } else {
             //Unrecognized
@@ -324,15 +315,4 @@ void print_place(const char* net_file,
 
     //Calculate the ID of the placement
     place_ctx.placement_id = vtr::secure_digest_file(place_file);
-}
-
-t_block* find_block(t_block* blocks, int nblocks, std::string name) {
-    t_block* blk = NULL;
-    for (int i = 0; i < nblocks; ++i) {
-        if (blocks[i].name == name) {
-            blk = (blocks + i);
-            break;
-        }
-    }
-    return blk;
 }
