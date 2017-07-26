@@ -131,7 +131,7 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: convert_int_to_bit_string)
+ * (function: convert_long_long_to_bit_string)
  * Outputs a string msb to lsb.  For example, 3 becomes "011"
  *-------------------------------------------------------------------------------------------*/
 char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
