@@ -188,6 +188,8 @@ static void write_place_macros(std::string filename, const t_pl_macro* macros, i
 
 static bool is_constant_clb_net(int clb_net);
 
+static bool net_is_driven_by_direct(int clb_net);
+
 static void validate_macros(t_pl_macro* macros, int num_macro);
 /******************** Subroutine definitions *********************************/
 
@@ -221,10 +223,16 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 			
 			// Identify potential macro head blocks (i.e. start of a macro)
             //
-            // Find to_pins (SINKs) with possible direct connection but are either:
-            //  * not connected to any net (OPEN), or
-            //  * connected to a constant net (e.g. gnd).
-			if ( to_src_or_sink == SINK && to_idirect != OPEN && (to_inet == OPEN || is_constant_clb_net(to_inet))) {
+            // The input SINK (to_pin) of a potential HEAD macro will have either:
+            //  * no connection to any net (OPEN), or
+            //  * a connection to a constant net (e.g. gnd/vcc) which is not driven by a direct
+            //
+            // Note that the restriction that constant nets are not driven from another direct ensures that
+            // blocks in the middle of a chain with internal constant signals are not detected has potential
+            // head blocks.
+			if (   to_src_or_sink == SINK 
+                && to_idirect != OPEN 
+                && (to_inet == OPEN || (is_constant_clb_net(to_inet) && !net_is_driven_by_direct(to_inet)))) {
 
 				for (from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
 					from_inet = cluster_ctx.blocks[iblk].nets[from_iblk_pin];
@@ -233,8 +241,9 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 
 					// Confirm whether this is a head macro
                     //
-                    // Find from_pins (SOURCEs) with the same possible direct connection which are connected.
-					if ( from_src_or_sink == SOURCE && to_idirect == from_idirect && from_inet != OPEN) {
+                    // The output SOURCE (from_pin) of a true head macro will:
+                    //  * drive another block with the same direct connection
+					if (from_src_or_sink == SOURCE && to_idirect == from_idirect && from_inet != OPEN) {
 						
 						// Mark down that this is the first block in the macro
 						pl_macro_member_blk_num_of_this_blk[0] = iblk;
@@ -522,6 +531,16 @@ static bool is_constant_clb_net(int clb_net) {
     AtomNetId atom_net = atom_ctx.lookup.atom_net(clb_net);
 
     return atom_ctx.nlist.net_is_constant(atom_net);
+}
+
+static bool net_is_driven_by_direct(int clb_net) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    
+    const t_net_pin* driver = &cluster_ctx.clbs_nlist.net[clb_net].pins[0];
+
+    auto direct = f_idirect_from_blk_pin[cluster_ctx.blocks[driver->block].type->index][driver->block_pin];
+
+    return direct != OPEN;
 }
 
 static void validate_macros(t_pl_macro* macros, int num_macros) {
