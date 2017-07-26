@@ -9,13 +9,12 @@ void NetlistWalker::walk() {
 
     visitor_.visit_top(atom_ctx.nlist.netlist_name().c_str());
 
-    for(int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-
+    for(auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         //Visit the top-level block
-        visitor_.visit_clb(cluster_ctx.clb_nlist.block_pb((BlockId) i)); 
+		visitor_.visit_clb(cluster_ctx.clb_nlist.block_pb(blk_id));
 
         //Visit all the block's primitives
-        walk_atoms(cluster_ctx.clb_nlist.block_pb((BlockId) i));
+        walk_atoms(cluster_ctx.clb_nlist.block_pb(blk_id));
     }
 
     visitor_.finish();

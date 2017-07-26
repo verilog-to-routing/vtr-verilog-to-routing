@@ -252,8 +252,8 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     int *num_instances_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
     int *num_blocks_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
-    for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); ++i) {
-        num_blocks_type[cluster_ctx.clb_nlist.block_type((BlockId) i)->index]++;
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        num_blocks_type[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
     }
 
     if (Arch.clb_grid.IsAuto) {

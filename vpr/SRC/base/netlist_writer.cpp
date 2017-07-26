@@ -1600,9 +1600,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
             const t_pb* top_pb = find_top_cb(curr); 
 
             const t_pb_route* top_pb_route = nullptr;
-            for(int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-                if(cluster_ctx.clb_nlist.block_pb((BlockId) i) == top_pb) {
-                    top_pb_route = cluster_ctx.clb_nlist.block_pb((BlockId) i)->pb_route;
+            for(auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+                if(cluster_ctx.clb_nlist.block_pb(blk_id) == top_pb) {
+                    top_pb_route = cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route;
                     break;
                 }
             }
