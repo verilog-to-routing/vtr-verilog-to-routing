@@ -31,8 +31,15 @@ class ClusteredNetlist : public BaseNetlist {
 		//  type		: The type of the port (INPUT, OUTPUT, or CLOCK)
 		PortId create_port(const BlockId blk_id, const std::string name, BitIndex width, PortType port_type);
 
+		//Create an empty, or return an existing net in the netlist
+		//  name    : The unique name of the net
+		NetId   create_net(const std::string name); //An empty or existing net
+
 		//Sets the netlist id based on a file digest's string
 		void set_netlist_id(std::string id);
+		
+		//Sets the flag in net_global_ = true
+		void set_global(NetId net_id);
 
 	public: //Public Accessors
 		/*
@@ -47,12 +54,15 @@ class ClusteredNetlist : public BaseNetlist {
 		/*
 		* Nets
 		*/
+		NetId block_net(const BlockId blk_id, const int pin_index) const;
+
 		bool net_is_global(const NetId id) const;
 		bool net_is_routed(const NetId id) const;
 		bool net_is_fixed(const NetId id) const;
 
 	private: //Private Members
 		bool validate_block_sizes() const;
+		bool validate_net_sizes() const;
 
 	private: //Private Data
 		

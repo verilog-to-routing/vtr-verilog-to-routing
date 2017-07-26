@@ -37,6 +37,16 @@ t_type_ptr ClusteredNetlist::block_type(const BlockId id) const {
 * Nets
 *
 */
+NetId ClusteredNetlist::block_net(const BlockId blk_id, const int pin_index) const {
+	VTR_ASSERT(valid_block_id(blk_id));
+	
+	std::vector<PinId> pin_ids = block_pins_[blk_id];
+	if (!valid_pin_id(pin_ids[pin_index]))
+		return NetId::INVALID();
+	else
+		return pin_net(pin_ids[pin_index]);
+}
+
 bool ClusteredNetlist::net_is_global(const NetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 
@@ -92,7 +102,28 @@ PortId ClusteredNetlist::create_port(const BlockId blk_id, const std::string nam
 	return port_id;
 }
 
+NetId ClusteredNetlist::create_net(const std::string name) {
+	//Check if the net has already been created
+	StringId name_id = create_string(name);
+	NetId net_id = find_net(name_id);
 
+	if (net_id == NetId::INVALID()) {
+		net_id = BaseNetlist::create_net(name);
+		net_global_.push_back(false);
+		net_fixed_.push_back(false);
+		net_routed_.push_back(false);
+	}
+
+	VTR_ASSERT(validate_net_sizes());
+
+	return net_id;
+}
+
+void ClusteredNetlist::set_global(NetId net_id) {
+	VTR_ASSERT(valid_net_id(net_id));
+
+	net_global_[net_id] = true;
+}
 
 void ClusteredNetlist::set_netlist_id(std::string id) {
 	//TODO: Add asserts?
@@ -110,4 +141,13 @@ bool ClusteredNetlist::validate_block_sizes() const {
 		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent block data sizes");
 	}
 	return BaseNetlist::validate_block_sizes();
+}
+
+bool ClusteredNetlist::validate_net_sizes() const {
+	if (net_global_.size() != net_ids_.size()
+		|| net_fixed_.size() != net_ids_.size()
+		|| net_routed_.size() != net_ids_.size()) {
+		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent net data sizes");
+	}
+	return BaseNetlist::validate_net_sizes();
 }
