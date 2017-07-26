@@ -131,7 +131,7 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: convert_int_to_bit_string)
+ * (function: convert_long_long_to_bit_string)
  * Outputs a string msb to lsb.  For example, 3 becomes "011"
  *-------------------------------------------------------------------------------------------*/
 char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
@@ -532,12 +532,11 @@ long long int my_power(long long int x, long long int y)
  *-------------------------------------------------------------------------------------------*/
 char *make_string_based_on_id(nnode_t *node)
 {
-	char *return_string = (char*)malloc(sizeof(char)*(20+2)); // any unique id greater than 20 characters means trouble
-
-	sprintf(return_string, "n%ld", node->unique_id);
-
-	return return_string;
-}
+	// any unique id greater than 20 characters means trouble
+	std::string return_string = std::string ("n") + std::to_string(node->unique_id);
+ 
+	return vtr::strdup(return_string.c_str());
+ }
 
 /*---------------------------------------------------------------------------------------------
  *  (function: make_simple_name )
