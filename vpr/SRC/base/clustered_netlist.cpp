@@ -31,6 +31,7 @@ t_type_ptr ClusteredNetlist::block_type(const BlockId id) const {
 	return block_types_[id];
 }
 
+
 /*
 *
 * Nets
@@ -76,6 +77,22 @@ BlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type_ptr ty
 
 	return blk_id;
 }
+
+PortId ClusteredNetlist::create_port(const BlockId blk_id, const std::string name, BitIndex width, PortType port_type) {
+	PortId port_id = find_port(blk_id, name);
+	if (!port_id) {
+		port_id = BaseNetlist::create_port(blk_id, name, width);
+		associate_port_with_block(port_id, port_type, blk_id);
+	}
+
+	//Check post-conditions: values
+	VTR_ASSERT(port_name(port_id) == name);
+	VTR_ASSERT_SAFE(find_port(blk_id, name) == port_id);
+
+	return port_id;
+}
+
+
 
 void ClusteredNetlist::set_netlist_id(std::string id) {
 	//TODO: Add asserts?

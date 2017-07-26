@@ -24,6 +24,13 @@ class ClusteredNetlist : public BaseNetlist {
 		//  t_type_ptr	: The type of the CLB
 		BlockId create_block(const char *name, t_pb* pb, t_type_ptr type);
 
+		//Create or return an existing port in the netlist
+		//  blk_id      : The block the port is associated with
+		//  name        : The name of the port (must match the name of a port in the block's model)
+		//  width		: The width (number of bits) of the port
+		//  type		: The type of the port (INPUT, OUTPUT, or CLOCK)
+		PortId create_port(const BlockId blk_id, const std::string name, BitIndex width, PortType port_type);
+
 		//Sets the netlist id based on a file digest's string
 		void set_netlist_id(std::string id);
 
