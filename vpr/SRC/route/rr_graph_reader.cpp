@@ -582,18 +582,18 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
 
     auto& indices = device_ctx.rr_node_indices;
 
-    indices = (vector<int> ***) vtr::calloc(NUM_RR_TYPES, sizeof (vector<int> **));
+    indices.resize(NUM_RR_TYPES);
 
     for (int itype = 0; itype < NUM_RR_TYPES; ++itype) {
         if (itype != OPIN && itype != SOURCE) {
-            indices[itype] = (vector<int> **) vtr::calloc((L_nx + 2), sizeof (vector<int> *));
+            indices[itype].resize(L_nx + 2);
             if (itype == CHANX) {
                 for (int ilength = 0; ilength <= (L_ny + 1); ++ilength) {
-                    indices[itype][ilength] = (vector<int> *) vtr::calloc((L_nx + 2), sizeof (vector<int>));
+                    indices[itype][ilength].resize(L_nx + 2);
                 }
             } else {
                 for (int ilength = 0; ilength <= (L_nx + 1); ++ilength) {
-                    indices[itype][ilength] = (vector<int> *) vtr::calloc((L_ny + 2), sizeof (vector<int>));
+                    indices[itype][ilength].resize(L_ny + 2);
                 }
             }
         }

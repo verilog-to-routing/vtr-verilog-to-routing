@@ -109,8 +109,8 @@ class ParallelLevelizedCilkWalker : public TimingGraphWalker {
         size_t num_unconstrained_startpoints_impl() const override { return num_unconstrained_startpoints_; }
         size_t num_unconstrained_endpoints_impl() const override { return num_unconstrained_endpoints_; }
     private:
-        size_t num_unconstrained_startpoints_;
-        size_t num_unconstrained_endpoints_;
+        size_t num_unconstrained_startpoints_ = 0;
+        size_t num_unconstrained_endpoints_ = 0;
 };
 
 } //namepsace

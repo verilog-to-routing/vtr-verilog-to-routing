@@ -138,6 +138,7 @@ using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
+#include "vtr_util.h"
 
 #include "vpr_types.h"
 #include "physical_types.h"
@@ -146,6 +147,7 @@ using namespace std;
 #include "read_xml_arch_file.h"
 #include "place_macro.h"
 #include "vpr_utils.h"
+#include "echo_files.h"
 
 
 /******************** File-scope variables delcarations **********************/
@@ -179,7 +181,11 @@ static void free_imacro_from_iblk(void);
 
 static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros);
 
+static void write_place_macros(std::string filename, const t_pl_macro* macros, int num_macros);
+
+static bool is_constant_clb_net(int clb_net);
 /******************** Subroutine definitions *********************************/
+
 
 static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_num_of_this_blk, 
 		int * pl_macro_idirect, int * pl_macro_num_members, int ** pl_macro_member_blk_num) {
@@ -208,17 +214,21 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 			to_idirect = f_idirect_from_blk_pin[cluster_ctx.blocks[iblk].type->index][to_iblk_pin];
 			to_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.blocks[iblk].type->index][to_iblk_pin];
 			
-			// Find to_pins (SINKs) with possible direct connection but are not 
-			// connected to any net (Possible head of macro)
-			if ( to_src_or_sink == SINK && to_idirect != OPEN && to_inet == OPEN ) {
+			// Identify potential macro head blocks (i.e. start of a macro)
+            //
+            // Find to_pins (SINKs) with possible direct connection but are either:
+            //  * not connected to any net (OPEN), or
+            //  * connected to a constant net (e.g. gnd).
+			if ( to_src_or_sink == SINK && to_idirect != OPEN && (to_inet == OPEN || is_constant_clb_net(to_inet))) {
 
 				for (from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
 					from_inet = cluster_ctx.blocks[iblk].nets[from_iblk_pin];
 					from_idirect = f_idirect_from_blk_pin[cluster_ctx.blocks[iblk].type->index][from_iblk_pin];
 					from_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.blocks[iblk].type->index][from_iblk_pin];
 
-					// Find from_pins with the same possible direct connection that are connected.
-					// Confirmed head of macro
+					// Confirm whether this is a head macro
+                    //
+                    // Find from_pins (SOURCEs) with the same possible direct connection which are connected.
 					if ( from_src_or_sink == SOURCE && to_idirect == from_idirect && from_inet != OPEN) {
 						
 						// Mark down that this is the first block in the macro
@@ -357,6 +367,10 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	/* Returns the pointer to the macro by reference. */
 	*macros = macro;
 
+    if(isEchoFileEnabled(E_ECHO_PLACE_MACROS)) {
+        write_place_macros(getEchoFileName(E_ECHO_PLACE_MACROS), *macros, num_macro);
+    }
+
 	return (num_macro);
 }
 
@@ -446,4 +460,59 @@ void free_placement_macros_structs(void) {
 	// This frees up the imacro from iblk mapping array.
 	free_imacro_from_iblk();
 	
+}
+
+static void write_place_macros(std::string filename, const t_pl_macro* macros, int num_macros) {
+
+    FILE* f = vtr::fopen(filename.c_str(), "w");
+
+    fprintf(f, "#Identified Placement macros\n");
+    fprintf(f, "Num_Macros: %d\n", num_macros);
+    for (int imacro = 0; imacro < num_macros; ++imacro) {
+        const t_pl_macro* macro = &macros[imacro];
+        fprintf(f, "Macro_Id: %d, Num_Blocks: %d\n", imacro, macro->num_blocks);
+        fprintf(f, "------------------------------------------------------\n");
+        for (int imember = 0; imember < macro->num_blocks; ++imember) {
+            const t_pl_macro_member* macro_memb = &macro->members[imember];
+            fprintf(f, "Block_Id: %d, x_offset: %d, y_offset: %d, z_offset: %d\n",
+                    macro_memb->blk_index,
+                    macro_memb->x_offset,
+                    macro_memb->y_offset,
+                    macro_memb->z_offset);
+        }
+        fprintf(f, "\n");
+    }
+
+    fprintf(f, "\n");
+
+    fprintf(f, "#Macro-related direct connections\n");
+    fprintf(f, "type      type_pin  is_direct direct_type\n");
+    fprintf(f, "------------------------------------------\n");
+    auto& device_ctx = g_vpr_ctx.device();
+    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+        t_type_descriptor* type = &device_ctx.block_types[itype];
+
+        for (int ipin = 0; ipin < type->num_pins; ++ipin) {
+            if (f_idirect_from_blk_pin[itype][ipin] != OPEN) {
+                if (f_direct_type_from_blk_pin[itype][ipin] == SOURCE) {
+                    fprintf(f, "%-9s %-9d true      SOURCE    \n", type->name, ipin);
+                } else {
+                    VTR_ASSERT(f_direct_type_from_blk_pin[itype][ipin] == SINK);
+                    fprintf(f, "%-9s %-9d true      SINK      \n", type->name, ipin);
+                }
+            } else {
+                VTR_ASSERT(f_direct_type_from_blk_pin[itype][ipin] == OPEN);
+            }
+        }
+
+    }
+
+    fclose(f);
+}
+
+static bool is_constant_clb_net(int clb_net) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+    AtomNetId atom_net = atom_ctx.lookup.atom_net(clb_net);
+
+    return atom_ctx.nlist.net_is_constant(atom_net);
 }

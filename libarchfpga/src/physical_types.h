@@ -922,6 +922,8 @@ struct t_arch_switch_inf {
 	}
 };
 
+typedef std::vector<std::vector<std::vector<std::vector<int>>>> t_rr_node_indices;
+
 /* Lists all the important information about an rr switch type.              *
  * The s_rr_switch_inf describes a switch derived from a switch described    *
  * by s_arch_switch_inf. This indirection allows us to vary properties of a  *
