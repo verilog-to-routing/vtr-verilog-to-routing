@@ -532,12 +532,11 @@ long long int my_power(long long int x, long long int y)
  *-------------------------------------------------------------------------------------------*/
 char *make_string_based_on_id(nnode_t *node)
 {
-	char *return_string = (char*)malloc(sizeof(char)*(20+2)); // any unique id greater than 20 characters means trouble
-
-	sprintf(return_string, "n%ld", node->unique_id);
-
-	return return_string;
-}
+	// any unique id greater than 20 characters means trouble
+	std::string return_string = std::string ("n") + std::to_string(node->unique_id);
+ 
+	return vtr::strdup(return_string.c_str());
+ }
 
 /*---------------------------------------------------------------------------------------------
  *  (function: make_simple_name )
