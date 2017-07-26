@@ -457,11 +457,6 @@ void try_place(t_placer_opts placer_opts,
 		}
 		outer_crit_iter_count = 1;
 
-		/* Timing cost appears to be 0 for small circuits without any critical paths, this will cause costs to be
-		indefinite values later, so set timing_cost to a small number to prevent it						*/
-		if (timing_cost == 0)
-			timing_cost = 1e-9;
-
 		inverse_prev_timing_cost = 1 / timing_cost;
 		inverse_prev_bb_cost = 1 / bb_cost;
 		cost = 1; /*our new cost function uses normalized values of           */
@@ -497,6 +492,9 @@ void try_place(t_placer_opts placer_opts,
         print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
     }
     vtr::printf_info("\n");
+
+    //Sanity check that initial placement is legal
+    check_place(bb_cost, timing_cost, placer_opts.place_algorithm, delay_cost);
 
 	move_lim = (int) (annealing_sched.inner_num * pow(cluster_ctx.num_blocks, 1.3333));
 
@@ -764,8 +762,11 @@ void try_place(t_placer_opts placer_opts,
 	}
 #endif
 
-	check_place(bb_cost, timing_cost,
-			placer_opts.place_algorithm, delay_cost);
+	check_place(bb_cost, timing_cost, placer_opts.place_algorithm, delay_cost);
+
+    //Some stats
+    vtr::printf_info("\n");
+    vtr::printf_info("Swaps called: %d\n", num_ts_called);
 
 	if (placer_opts.enable_timing_computations
 			&& placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
@@ -2031,8 +2032,7 @@ static float comp_bb_cost(enum cost_methods method) {
 			net_cost[inet] = get_net_cost(inet, &bb_coords[inet]);
 			cost += net_cost[inet];
 			if (method == CHECK)
-				expected_wirelength += get_net_wirelength_estimate(inet,
-						&bb_coords[inet]);
+				expected_wirelength += get_net_wirelength_estimate(inet, &bb_coords[inet]);
 		}
 	}
 
@@ -3150,7 +3150,7 @@ static void check_place(float bb_cost, float timing_cost,
 	int imacro, imember, head_iblk, member_iblk, member_x, member_y, member_z;
 
 	bb_cost_check = comp_bb_cost(CHECK);
-	vtr::printf_info("bb_cost recomputed from scratch: %g\n", bb_cost_check);
+	//vtr::printf_info("bb_cost recomputed from scratch: %g\n", bb_cost_check);
 	if (fabs(bb_cost_check - bb_cost) > bb_cost * ERROR_TOL) {
 		vtr::printf_error(__FILE__, __LINE__,
 				"bb_cost_check: %g and bb_cost: %g differ in check_place.\n", 
@@ -3160,14 +3160,14 @@ static void check_place(float bb_cost, float timing_cost,
 
 	if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 		comp_td_costs(&timing_cost_check, &delay_cost_check);
-		vtr::printf_info("timing_cost recomputed from scratch: %g\n", timing_cost_check);
+		//vtr::printf_info("timing_cost recomputed from scratch: %g\n", timing_cost_check);
 		if (fabs(timing_cost_check - timing_cost) > timing_cost * ERROR_TOL) {
 			vtr::printf_error(__FILE__, __LINE__,
 					"timing_cost_check: %g and timing_cost: %g differ in check_place.\n", 
 					timing_cost_check, timing_cost);
 			error++;
 		}
-		vtr::printf_info("delay_cost recomputed from scratch: %g\n", delay_cost_check);
+		//vtr::printf_info("delay_cost recomputed from scratch: %g\n", delay_cost_check);
 		if (fabs(delay_cost_check - delay_cost) > delay_cost * ERROR_TOL) {
 			vtr::printf_error(__FILE__, __LINE__,
 					"delay_cost_check: %g and delay_cost: %g differ in check_place.\n", 
@@ -3269,8 +3269,6 @@ static void check_place(float bb_cost, float timing_cost,
 	if (error == 0) {
 		vtr::printf_info("\n");
 		vtr::printf_info("Completed placement consistency check successfully.\n");
-		vtr::printf_info("\n");
-		vtr::printf_info("Swaps called: %d\n", num_ts_called);
 
 #ifdef PRINT_REL_POS_DISTR
 		print_relative_pos_distr(void);
