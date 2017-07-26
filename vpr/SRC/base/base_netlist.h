@@ -46,7 +46,7 @@ class BaseNetlist {
         //  blk_id      : The block the port is associated with
         //  name        : The name of the port (must match the name of a port in the block's model)
 		//  width		: The width (number of bits) of the port
-        PortId  create_port(const BlockId blk_id, const std::string name, unsigned int width);
+        PortId  create_port(const BlockId blk_id, const std::string name, BitIndex width);
 
 		//Create or return an existing pin in the netlist
         //  port_id    : The port this pin is associated with
