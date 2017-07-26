@@ -134,6 +134,8 @@
 #include <cstdio>
 #include <ctime>
 #include <cmath>
+#include <sstream>
+#include <map>
 using namespace std;
 
 #include "vtr_assert.h"
@@ -141,6 +143,7 @@ using namespace std;
 #include "vtr_util.h"
 
 #include "vpr_types.h"
+#include "vpr_error.h"
 #include "physical_types.h"
 #include "globals.h"
 #include "place.h"
@@ -184,6 +187,8 @@ static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros)
 static void write_place_macros(std::string filename, const t_pl_macro* macros, int num_macros);
 
 static bool is_constant_clb_net(int clb_net);
+
+static void validate_macros(t_pl_macro* macros, int num_macro);
 /******************** Subroutine definitions *********************************/
 
 
@@ -371,6 +376,8 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
         write_place_macros(getEchoFileName(E_ECHO_PLACE_MACROS), *macros, num_macro);
     }
 
+    validate_macros(*macros, num_macro);
+
 	return (num_macro);
 }
 
@@ -515,4 +522,37 @@ static bool is_constant_clb_net(int clb_net) {
     AtomNetId atom_net = atom_ctx.lookup.atom_net(clb_net);
 
     return atom_ctx.nlist.net_is_constant(atom_net);
+}
+
+static void validate_macros(t_pl_macro* macros, int num_macros) {
+    //Perform sanity checks on macros
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    //Verify that blocks only appear in a single macro
+    std::multimap<int,int> block_to_macro;
+    for (int imacro = 0; imacro < num_macros; ++imacro) {
+        for (int imember = 0; imember < macros[imacro].num_blocks; ++imember) {
+            int iblk = macros[imacro].members[imember].blk_index;
+
+            block_to_macro.emplace(iblk, imacro);
+        }
+    }
+
+    for (int iblk = 0; iblk < cluster_ctx.num_blocks; ++iblk) {
+        auto range = block_to_macro.equal_range(iblk);
+
+        int blk_macro_cnt = std::distance(range.first, range.second);
+        if (blk_macro_cnt > 1) {
+            std::stringstream msg;
+            msg << "Block #" << iblk << " '" << cluster_ctx.blocks[iblk].name << "'"
+                << " appears in " << blk_macro_cnt << " placement macros (should appear in at most one). Related Macros:\n";
+
+            for (auto iter = range.first; iter != range.second; ++iter) {
+                int imacro = iter->second;
+                msg << "  Macro #: " << imacro << "\n";
+            }
+
+            VPR_THROW(VPR_ERROR_PLACE, msg.str().c_str());
+        }
+    }
 }
