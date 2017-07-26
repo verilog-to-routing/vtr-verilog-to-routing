@@ -414,23 +414,6 @@ void AtomNetlist::set_pin_net (const AtomPinId pin, AtomPinType type, const Atom
 * Internal utilities
 *
 */
-
-/*
-void AtomNetlist::associate_port_with_block(const AtomPortId port_id, const AtomBlockId blk_id) {
-	//Associate the port with the blocks inputs/outputs/clocks
-	AtomPortType type = port_type(port_id);
-
-	BaseNetlist::associate_port_with_block(port_id, (PortType)type, blk_id);
-}
-
-void AtomNetlist::associate_pin_with_block(const AtomPinId pin_id, const AtomPortType type, const AtomBlockId blk_id) {
-	auto port_id = pin_port(pin_id);
-	VTR_ASSERT(port_type(port_id) == type);
-
-	BaseNetlist::associate_pin_with_block(pin_id, (PortType)type, blk_id);
-}
-*/
-
 void AtomNetlist::compress() {
     //Compress the various netlist components to remove invalid entries
     // Note: this invalidates all Ids
