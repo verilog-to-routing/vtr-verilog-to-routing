@@ -1273,7 +1273,7 @@ void print_route(const char* placement_file, const char* route_file) {
 	fprintf(fp, "Array size: %d x %d logic blocks.\n", device_ctx.nx, device_ctx.ny);
 	fprintf(fp, "\nRouting:");
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false) {
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
 			if (cluster_ctx.clbs_nlist.net[inet].num_sinks() == false) {
 				fprintf(fp, "\n\nNet %d (%s)\n\n", inet, cluster_ctx.clbs_nlist.net[inet].name);
 				fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");

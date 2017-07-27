@@ -163,7 +163,7 @@ void length_and_bends_stats(void) {
 	num_clb_opins_reserved = 0;
 
 	for (inet = 0, l = cluster_ctx.clbs_nlist.net.size(); inet < l; inet++) {
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
 			get_num_bends_and_length(inet, &bends, &length, &segments);
 
 			total_bends += bends;
@@ -174,7 +174,7 @@ void length_and_bends_stats(void) {
 
 			total_segments += segments;
 			max_segments = max(segments, max_segments);
-		} else if (cluster_ctx.clbs_nlist.net[inet].is_global) {
+		} else if (cluster_ctx.clb_nlist.net_global((NetId)inet)) {
 			num_global_nets++;
 		} else {
 			num_clb_opins_reserved++;
@@ -286,7 +286,7 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
 
 	for (inet = 0, l = cluster_ctx.clbs_nlist.net.size(); inet < l; inet++) {
 		/* Skip global and empty nets. */
-		if (cluster_ctx.clbs_nlist.net[inet].is_global && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) 
+		if (cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) 
 			continue;
 
 		tptr = route_ctx.trace_head[inet];
@@ -394,7 +394,7 @@ void print_wirelen_prob_dist(void) {
 	norm_fac = 0.;
 
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) {
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) {
 			get_num_bends_and_length(inet, &bends, &length, &segments);
 
 			/*  Assign probability to two integer lengths proportionately -- i.e.  *
@@ -487,7 +487,7 @@ void print_lambda(void) {
 				if (type->class_inf[iclass].type == RECEIVER) {
 					inet = cluster_ctx.blocks[bnum].nets[ipin];
 					if (inet != OPEN) /* Pin is connected? */
-						if (cluster_ctx.clbs_nlist.net[inet].is_global == false) /* Not a global clock */
+						if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) /* Not a global clock */
 							num_inputs_used++;
 				}
 			}

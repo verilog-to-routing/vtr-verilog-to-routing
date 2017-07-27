@@ -144,6 +144,7 @@ void load_net_delay_from_routing(float **net_delay, const vector<t_vnet> & nets,
 	 * before this routine is called, and the net_delay array must have been     *
 	 * allocated.                                                                */
     auto& device_ctx = g_vpr_ctx.device();
+	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	t_rc_node *rc_node_free_list, *rc_root;
 	t_linked_rc_edge *rc_edge_free_list;
@@ -157,7 +158,7 @@ void load_net_delay_from_routing(float **net_delay, const vector<t_vnet> & nets,
 	rc_edge_free_list = NULL;
 
 	for (inet = 0; inet < n_nets; inet++) {
-		if (nets[inet].is_global) {
+		if (cluster_ctx.clb_nlist.net_global((NetId)inet)) {
 			load_one_constant_net_delay(net_delay, inet, nets, 0.);
 		} else {
 			rc_root = alloc_and_load_rc_tree(inet, &rc_node_free_list,
@@ -184,9 +185,10 @@ void load_constant_net_delay(float **net_delay, float delay_value,
 	 * analysis before routing is done with a constant net delay model).         */
 
 	unsigned int inet;
+	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (inet = 0; inet < n_nets; inet++) {
-		if (nets[inet].is_global) {
+		if (cluster_ctx.clb_nlist.net_global((NetId)inet)) {
 			load_one_constant_net_delay(net_delay, inet, nets, 0.);
 		} else {
 			load_one_constant_net_delay(net_delay, inet, nets, delay_value);

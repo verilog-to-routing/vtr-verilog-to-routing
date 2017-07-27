@@ -50,11 +50,10 @@ struct t_vnet{
     //TODO transfer net routing state to RoutingContext
 	bool is_routed;
 	bool is_fixed;
-	bool is_global;
 
 	t_vnet(){
 		name = NULL;
-		is_routed = is_fixed = is_global = false;
+		is_routed = is_fixed = false;
 	}
 
 	// Returns the number of sinks of the net, computed by looking 

@@ -35,8 +35,8 @@ void print_netlist(char *foutput, char *net_file) {
     auto& device_ctx = g_vpr_ctx.device();
 
 	/* Count number of global nets */
-	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
-		if (cluster_ctx.clbs_nlist.net[i].is_global) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (cluster_ctx.clb_nlist.net_global(net_id)) {
 			num_global_nets++;
 		}
 	}
@@ -69,8 +69,8 @@ void print_netlist(char *foutput, char *net_file) {
 	fprintf(fp, "\nNet\tName\t\t#Pins\tDriver\t\tRecvs. (blocks, pin)\n");
 
 	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
-		fprintf(fp, "\n%d\t%s\t", i, cluster_ctx.clbs_nlist.net[i].name);
-		if (strlen(cluster_ctx.clbs_nlist.net[i].name) < 8)
+		fprintf(fp, "\n%d\t%s\t", i, cluster_ctx.clb_nlist.net_name((NetId)i).c_str());
+		if (cluster_ctx.clb_nlist.net_name((NetId)i).length() < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
 		fprintf(fp, "%d", (int) cluster_ctx.clbs_nlist.net[i].pins.size());
 		for (j = 0; j < cluster_ctx.clbs_nlist.net[i].pins.size(); j++)
@@ -82,7 +82,7 @@ void print_netlist(char *foutput, char *net_file) {
 
 	for (i = 0; i < (unsigned int) cluster_ctx.clb_nlist.blocks().size(); i++) {
 		fprintf(fp, "\n%d\t%s\t", i, cluster_ctx.clb_nlist.block_name((BlockId) i).c_str());
-		if (strlen(cluster_ctx.clb_nlist.block_name((BlockId) i).c_str()) < 8)
+		if (cluster_ctx.clb_nlist.block_name((BlockId) i).length() < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
 		fprintf(fp, "%s", cluster_ctx.clb_nlist.block_type((BlockId) i)->name);
 

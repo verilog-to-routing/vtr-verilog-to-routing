@@ -79,15 +79,14 @@ void check_netlist() {
 	}
 
 	/* HACK: Jason Luu January 17, 2011 Do not route common constants gnd and vcc
-	 TODO: Need to make architecture driven.
-	 */
-	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
-		if (strcmp(cluster_ctx.clbs_nlist.net[i].name, "vcc") == 0) {
-			cluster_ctx.clbs_nlist.net[i].is_global = true;
-			cluster_ctx.clb_nlist.set_global((NetId)i);
-		} else if (strcmp(cluster_ctx.clbs_nlist.net[i].name, "gnd") == 0) {
-			cluster_ctx.clbs_nlist.net[i].is_global = true;
-			cluster_ctx.clb_nlist.set_global((NetId)i);
+	TODO: Need to make architecture driven.
+	*/
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (0 == cluster_ctx.clb_nlist.net_name(net_id).compare("vcc")) {
+			cluster_ctx.clb_nlist.set_global(net_id);
+		}
+		else if (0 == cluster_ctx.clb_nlist.net_name(net_id).compare("gnd")) {
+			cluster_ctx.clb_nlist.set_global(net_id);
 		}
 	}
 }
@@ -116,13 +115,13 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 
 		node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
 
-		bool is_global_net = static_cast<bool>(cluster_ctx.clbs_nlist.net[inet].is_global);
+		bool is_global_net = cluster_ctx.clb_nlist.net_global((NetId)inet);
 		if (cluster_ctx.clb_nlist.block_type((BlockId)iblk)->is_global_pin[node_block_pin] != is_global_net 
             && cluster_ctx.clb_nlist.block_type((BlockId)iblk) != device_ctx.IO_TYPE) {
 
 			/* Allow a CLB output pin to drive a global net (warning only). */
 
-			if (ipin == 0 && cluster_ctx.clbs_nlist.net[inet].is_global) {
+			if (ipin == 0 && is_global_net) {
 				vtr::printf_warning(__FILE__, __LINE__, 
 						"in check_connections_to_global_clb_pins:\n");
 				vtr::printf_warning(__FILE__, __LINE__, 
@@ -137,7 +136,7 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 				error++;
 			}
 
-			if (cluster_ctx.clbs_nlist.net[inet].is_global)
+			if (is_global_net)
 				vtr::printf_info("Net is global, but CLB pin is not.\n");
 			else
 				vtr::printf_info("CLB pin is global, but net is not.\n");

@@ -45,7 +45,7 @@ print_relative_pos_distr(void)
 
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++)
 	{
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false)
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet))
 		{
 
 			src_x = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[0].cluster_ctx.blocks].x;

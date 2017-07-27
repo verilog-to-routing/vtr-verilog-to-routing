@@ -1008,9 +1008,8 @@ static int count_connections() {
 	count = 0;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-
-		if (cluster_ctx.clbs_nlist.net[inet].is_global)
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
+		if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 			continue;
 
 		count += cluster_ctx.clbs_nlist.net[inet].num_sinks();
@@ -1410,7 +1409,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
 				if (inet == OPEN)
 					continue;
-				if (cluster_ctx.clbs_nlist.net[inet].is_global)
+				if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 					continue;
 			
 				if (cluster_ctx.clbs_nlist.net[inet].num_sinks() < SMALL_NET) {
@@ -1575,7 +1574,7 @@ static int find_affected_nets(int *nets_to_update) {
 			inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
 			if (inet == OPEN)
 				continue;
-			if (cluster_ctx.clbs_nlist.net[inet].is_global)
+			if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 				continue;
 			
 			if (temp_net_cost[inet] < 0.) { 
@@ -1748,7 +1747,7 @@ static float recompute_bb_cost(void) {
 	cost = 0;
 
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) { /* for each net ... */
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false) { /* Do only if not global. */
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Do only if not global. */
 
 			/* Bounding boxes don't have to be recomputed; they're correct. */
 			cost += net_cost[inet];
@@ -1768,7 +1767,7 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 
 	float delay_source_to_sink = 0.;
 
-    if(cluster_ctx.clbs_nlist.net[inet].is_global == false) {
+    if(!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
         //Only estimate delay for signals routed through the inter-block
         //routing network. Global signals are assumed to have zero delay.
         int source_block, sink_block;
@@ -1846,7 +1845,7 @@ static void update_td_cost(void) {
 			if (inet == OPEN)
 				continue;
 
-			if (cluster_ctx.clbs_nlist.net[inet].is_global)
+			if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 				continue;
 
 			net_pin = net_pin_index[bnum][iblk_pin];
@@ -1907,7 +1906,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 			if (inet == OPEN)
 				continue;
 
-			if (cluster_ctx.clbs_nlist.net[inet].is_global)
+			if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 				continue;
 
 			net_pin = net_pin_index[bnum][iblk_pin];
@@ -1968,7 +1967,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	loc_connection_delay_sum = 0.;
 
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) { /* For each net ... */
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false) { /* Do only if not global. */
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Do only if not global. */
 
 			for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 
@@ -2014,7 +2013,7 @@ static float comp_bb_cost(enum cost_methods method) {
 
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) { /* for each net ... */
 
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false) { /* Do only if not global. */
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Do only if not global. */
 
 			/* Small nets don't use incremental updating on their bounding boxes, *
 			 * so they can use a fast bounding box calculator.                    */

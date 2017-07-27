@@ -56,9 +56,9 @@ class ClusteredNetlist : public BaseNetlist {
 		*/
 		NetId block_net(const BlockId blk_id, const int pin_index) const;
 
-		bool net_is_global(const NetId id) const;
-		bool net_is_routed(const NetId id) const;
-		bool net_is_fixed(const NetId id) const;
+		bool net_global(const NetId id) const;
+		bool net_routed(const NetId id) const;
+		bool net_fixed(const NetId id) const;
 
 	private: //Private Members
 		bool validate_block_sizes() const;

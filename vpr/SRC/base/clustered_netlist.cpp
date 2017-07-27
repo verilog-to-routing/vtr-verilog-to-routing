@@ -47,19 +47,19 @@ NetId ClusteredNetlist::block_net(const BlockId blk_id, const int pin_index) con
 		return pin_net(pin_ids[pin_index]);
 }
 
-bool ClusteredNetlist::net_is_global(const NetId id) const {
+bool ClusteredNetlist::net_global(const NetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 
 	return net_global_[id];
 }
 
-bool ClusteredNetlist::net_is_routed(const NetId id) const {
+bool ClusteredNetlist::net_routed(const NetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 
 	return net_routed_[id];
 }
 
-bool ClusteredNetlist::net_is_fixed(const NetId id) const {
+bool ClusteredNetlist::net_fixed(const NetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 
 	return net_fixed_[id];

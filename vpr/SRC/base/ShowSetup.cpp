@@ -70,8 +70,8 @@ void printClusteredNetlistStats() {
 	num_blocks_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
 	vtr::printf_info("\n");
-	vtr::printf_info("Netlist num_nets: %d\n", (int) cluster_ctx.clbs_nlist.net.size());
-	vtr::printf_info("Netlist num_blocks: %d\n", (int) cluster_ctx.clb_nlist.blocks().size());
+	vtr::printf_info("Netlist num_nets: %d\n", (int)cluster_ctx.clb_nlist.nets().size());
+	vtr::printf_info("Netlist num_blocks: %d\n", (int)cluster_ctx.clb_nlist.blocks().size());
 
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		num_blocks_type[i] = 0;
@@ -80,17 +80,33 @@ void printClusteredNetlistStats() {
 	L_num_p_inputs = 0;
 	L_num_p_outputs = 0;
 
-	for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
+	/*for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		num_blocks_type[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
+		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE) {
+			for (j = 0; j < device_ctx.IO_TYPE->num_pins; j++) {
+				if (cluster_ctx.clb_nlist.block_net(blk_id, j) != NetId::INVALID()) {
+					if (device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[j]].type == DRIVER) {
+						L_num_p_inputs++;
+					}
+					else {
+						VTR_ASSERT(device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[j]].type == RECEIVER);
+						L_num_p_outputs++;
+					}
+				}
+			}
+		}
+	}*/
+
+
+	for (i = 0; i < (int)cluster_ctx.clb_nlist.blocks().size(); i++) {
 		num_blocks_type[cluster_ctx.clb_nlist.block_type((BlockId) i)->index]++;
 		if (cluster_ctx.clb_nlist.block_type((BlockId) i) == device_ctx.IO_TYPE) {
 			for (j = 0; j < device_ctx.IO_TYPE->num_pins; j++) {
 				if (cluster_ctx.blocks[i].nets[j] != OPEN) {
-					if (device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[j]].type
-							== DRIVER) {
+					if (device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[j]].type == DRIVER) {
 						L_num_p_inputs++;
 					} else {
-						VTR_ASSERT(
-								device_ctx.IO_TYPE-> class_inf[device_ctx.IO_TYPE-> pin_class[j]]. type == RECEIVER);
+						VTR_ASSERT(device_ctx.IO_TYPE-> class_inf[device_ctx.IO_TYPE-> pin_class[j]]. type == RECEIVER);
 						L_num_p_outputs++;
 					}
 				}

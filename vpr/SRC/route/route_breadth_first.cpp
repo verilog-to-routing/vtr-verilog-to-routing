@@ -102,7 +102,7 @@ bool try_breadth_first_route_net(int inet, float pres_fac,
 
 		is_routed = true;
 
-	} else if (cluster_ctx.clbs_nlist.net[inet].is_global) { /* Skip global nets. */
+	} else if (cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Skip global nets. */
 
 		is_routed = true;
 

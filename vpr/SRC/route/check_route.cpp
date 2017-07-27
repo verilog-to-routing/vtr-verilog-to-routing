@@ -77,7 +77,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 
-		if (cluster_ctx.clbs_nlist.net[inet].is_global || cluster_ctx.clbs_nlist.net[inet].num_sinks() == 0) /* Skip global nets. */
+		if (cluster_ctx.clb_nlist.net_global((NetId)inet) || cluster_ctx.clbs_nlist.net[inet].num_sinks() == 0) /* Skip global nets. */
 			continue;
 
 		for (ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++)
@@ -537,7 +537,7 @@ static void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_u
 
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 
-		if (cluster_ctx.clbs_nlist.net[inet].is_global) /* Skip global nets. */
+		if (cluster_ctx.clb_nlist.net_global((NetId)inet)) /* Skip global nets. */
 			continue;
 
 		tptr = route_ctx.trace_head[inet];

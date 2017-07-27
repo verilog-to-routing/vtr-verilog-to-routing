@@ -89,7 +89,7 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (size_t inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-		if (cluster_ctx.clbs_nlist.net[inet].is_global)
+		if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 			continue;
 		for (size_t ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 
