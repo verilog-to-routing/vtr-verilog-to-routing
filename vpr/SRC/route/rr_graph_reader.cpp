@@ -184,7 +184,7 @@ void load_rr_file(const t_graph_type graph_type,
 
     } catch (XmlError& e) {
 
-        archfpga_throw(read_rr_graph_name, e.line(), "%s", e.what());
+        vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());
     }
 
 }
