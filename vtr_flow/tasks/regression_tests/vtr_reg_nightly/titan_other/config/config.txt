@@ -32,7 +32,7 @@ circuit_list_add=SURF_desc_stratixiv_arch_timing.blif
 circuit_list_add=ucsb_152_tap_fir_stratixiv_arch_timing.blif
 circuit_list_add=uoft_raytracer_stratixiv_arch_timing.blif
 circuit_list_add=wb_conmax_stratixiv_arch_timing.blif
-circuit_list_add=sudoku_check_stratixiv_arch_timing.blif
+#circuit_list_add=sudoku_check_stratixiv_arch_timing.blif #Unroutable due to high WL usage (>80% when delcared unroutable)
 
 
 # Add architectures to list to sweep
