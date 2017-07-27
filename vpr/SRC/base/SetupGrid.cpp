@@ -271,40 +271,130 @@ void alloc_and_load_grid(std::vector<t_grid_loc_def> grid_loc_defs, int *num_ins
 
 static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<t_grid_blocks>& grid_blocks, vtr::Matrix<int>& grid_priorities) {
 
-    if (priority < grid_priorities[x_root][y_root]) {
+    struct TypeLocation {
+        TypeLocation(size_t x_val, size_t y_val, const t_type_descriptor* type_val, int priority_val)
+            : x(x_val), y(y_val), type(type_val), priority(priority_val) {}
+        size_t x;
+        size_t y;
+        const t_type_descriptor* type;
+        int priority;
+
+        bool operator<(const TypeLocation& rhs) const {
+            return x < rhs.x || y < rhs.y || type < rhs.type;
+        }
+   };
+
+    //Collect locations effected by this block
+    std::set<TypeLocation> target_locations;
+    for(size_t x = x_root; x < x_root + type->width; ++x) {
+        for (size_t y = y_root; y < y_root + type->height; ++y) {
+            target_locations.insert(TypeLocation(x, y, grid[x][y].type, grid_priorities[x][y]));
+        }
+    }
+
+    //Record the highest priority of all effected locations
+    auto iter = target_locations.begin();
+    TypeLocation max_priority_type_loc = *iter;
+    for(; iter != target_locations.end(); ++iter) {
+        if (iter->priority > max_priority_type_loc.priority) {
+            max_priority_type_loc = *iter;
+        }
+    }
+    
+    //TODO: rip up any dimension > 1 blocks that get covered
+
+    if (priority < max_priority_type_loc.priority) {
         //Lower priority, do not override
         return;
     }
 
-    if (priority == grid_priorities[x_root][y_root]) {
+    if (priority == max_priority_type_loc.priority) {
         //Ambiguous case where current grid block and new specification have equal priority
         //
         //We arbitrarily decide to take the 'last applied' wins approach, and warn the user 
         //about the potential ambiguity
         vtr::printf_warning(__FILE__, __LINE__,
-                "Ambiguous block type specification at grid location (%d,%d)."
-                " Existing block type '%s' has the same priority (%d) as type '%s'."
-                " The last specification will apply.",
-                x_root, y_root,
-                grid[x_root][y_root].type->name, priority, type->name);
-
+                "Ambiguous block type specification at grid location (%zu,%zu)."
+                " Existing block type '%s' at (%zu,%zu) has the same priority (%d) as new overlapping type '%s'."
+                " The last specification will apply.\n",
+                x_root, y_root, 
+                max_priority_type_loc.type->name, max_priority_type_loc.x, max_priority_type_loc.y,
+                priority, type->name);
     }
 
+
+
     //vtr::printf("Creating block %s at (%d,%d)\n", type->name, x_root, y_root);
+
+
+    std::set<TypeLocation> root_blocks_to_rip_up;
+
+    //Mark all the grid tiles 'covered' by this block with the appropriate type
+    //and width/height offsets
+    auto& device_ctx = g_vpr_ctx.device();
     for (size_t x = x_root; x < x_root + type->width; ++x) {
         VTR_ASSERT(x < grid.end_index(0));
 
         size_t x_offset = x - x_root;
         for (size_t y = y_root; y < y_root + type->height; ++y) {
+
             VTR_ASSERT(x < grid.end_index(1));
             size_t y_offset = y - y_root;
 
+            auto& grid_tile = grid[x][y];
+            VTR_ASSERT(grid_priorities[x][y] <= priority);
+
+
+            if (   grid_tile.type != nullptr 
+                && grid_tile.type != device_ctx.EMPTY_TYPE) {
+                //We are overriding a non-empty block, we need to be careful
+                //to ensure we remove any blocks which will be invalidated when we 
+                //overwrite part of their locations
+
+                size_t orig_root_x = x - grid[x][y].width_offset;
+                size_t orig_root_y = y - grid[x][y].height_offset;
+
+                root_blocks_to_rip_up.insert(TypeLocation(orig_root_x, orig_root_y, grid[x][y].type, grid_priorities[x][y]));
+            }
 
             grid[x][y].type = type;
             grid[x][y].width_offset = x_offset;
             grid[x][y].height_offset = y_offset;
 
             grid_blocks[x][y].blocks.resize(type->capacity, EMPTY_BLOCK);
+
+            grid_priorities[x][y] = priority;
+        }
+    }
+
+    //Rip-up any invalidated blocks
+    for (auto invalidated_root : root_blocks_to_rip_up) {
+
+        VTR_ASSERT(grid[invalidated_root.x][invalidated_root.y].width_offset == 0);
+        VTR_ASSERT(grid[invalidated_root.x][invalidated_root.y].height_offset == 0);
+
+        //Mark all the grid locations used by this root block as empty
+        for (size_t x = invalidated_root.x; x < invalidated_root.x + invalidated_root.type->width; ++x) {
+            int x_offset = x - invalidated_root.x;
+            for (size_t y = invalidated_root.y; y < invalidated_root.y + invalidated_root.type->height; ++y) {
+                int y_offset = y - invalidated_root.y;
+
+                if (   grid[x][y].type == invalidated_root.type 
+                    && grid[x][y].width_offset == x_offset
+                    && grid[x][y].height_offset == y_offset) {
+                    //This is a left-over invalidated block, mark as empty
+                    VTR_ASSERT(device_ctx.EMPTY_TYPE->width == 1);
+                    VTR_ASSERT(device_ctx.EMPTY_TYPE->height == 1);
+
+                    grid[x][y].type = device_ctx.EMPTY_TYPE;
+                    grid[x][y].width_offset = 0;
+                    grid[x][y].height_offset = 0;
+
+                    grid_blocks[x][y].blocks.resize(type->capacity, EMPTY_BLOCK);
+
+                    grid_priorities[x][y] = std::numeric_limits<int>::lowest();
+                }
+            }
         }
     }
 }
@@ -381,7 +471,7 @@ static void CheckGrid(void) {
 		for (j = 0; j <= (device_ctx.ny + 1); ++j) {
             auto type = device_ctx.grid[i][j].type;
 			if (NULL == type) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "device_ctx.grid[%d][%d] has no type.\n", i, j);
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has no type.\n", i, j);
 			}
 
 			if (place_ctx.grid_blocks[i][j].usage != 0) {
@@ -390,36 +480,39 @@ static void CheckGrid(void) {
 
 			if ((device_ctx.grid[i][j].width_offset < 0)
 					|| (device_ctx.grid[i][j].width_offset >= type->width)) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "device_ctx.grid[%d][%d] has invalid width offset (%d).\n", i, j, device_ctx.grid[i][j].width_offset);
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has invalid width offset (%d).\n", i, j, device_ctx.grid[i][j].width_offset);
 			}
 			if ((device_ctx.grid[i][j].height_offset < 0)
 					|| (device_ctx.grid[i][j].height_offset >= type->height)) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "device_ctx.grid[%d][%d] has invalid height offset (%d).\n", i, j, device_ctx.grid[i][j].height_offset);
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has invalid height offset (%d).\n", i, j, device_ctx.grid[i][j].height_offset);
 			}
 
             //Verify that type and width/height offsets are correct (e.g. for dimension > 1 blocks)
-            for (int x = i; x < i + type->width; ++x) {
-                int x_offset = x - i;
-                for (int y = j; y < j + type->height; ++y) {
-                    int y_offset = y - j;
+            if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                //From the root block check that all other blocks are correct
+                for (int x = i; x < i + type->width; ++x) {
+                    int x_offset = x - i;
+                    for (int y = j; y < j + type->height; ++y) {
+                        int y_offset = y - j;
 
-                    auto& tile = device_ctx.grid[x][y];
-                    if (tile.type != type) {
-                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-                                "device_ctx.grid[%d][%d] should have type '%s' (based on root location) but has type '%s'\n", 
-                                i, j, type->name, tile.type->name);
-                    }
+                        auto& tile = device_ctx.grid[x][y];
+                        if (tile.type != type) {
+                            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                                    "Grid Location (%d,%d) should have type '%s' (based on root location) but has type '%s'\n", 
+                                    i, j, type->name, tile.type->name);
+                        }
 
-                    if (tile.width_offset != x_offset) {
-                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-                                "device_ctx.grid[%d][%d] of type '%s' should have width offset '%d' (based on root location) but has '%d'\n", 
-                                i, j, type->name, x_offset, tile.width_offset);
-                    }
+                        if (tile.width_offset != x_offset) {
+                            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                                    "Grid Location (%d,%d) of type '%s' should have width offset '%d' (based on root location) but has '%d'\n", 
+                                    i, j, type->name, x_offset, tile.width_offset);
+                        }
 
-                    if (tile.height_offset != y_offset) {
-                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-                                "device_ctx.grid[%d][%d]  of type '%s' should have height offset '%d' (based on root location) but has '%d'\n", 
-                                i, j, type->name, y_offset, tile.height_offset);
+                        if (tile.height_offset != y_offset) {
+                            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                                    "Grid Location (%d,%d)  of type '%s' should have height offset '%d' (based on root location) but has '%d'\n", 
+                                    i, j, type->name, y_offset, tile.height_offset);
+                        }
                     }
                 }
             }
