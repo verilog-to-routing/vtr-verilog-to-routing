@@ -10,6 +10,7 @@ using namespace std;
 
 #include "vpr_types.h"
 #include "vpr_error.h"
+#include "vpr_utils.h"
 
 #include "globals.h"
 #include "read_xml_arch_file.h"
@@ -62,7 +63,7 @@ void SetupVPR(t_options *Options,
               t_segment_inf ** Segments, t_timing_inf * Timing,
               bool * ShowGraphics, int *GraphPause,
               t_power_opts * PowerOpts) {
-	int i, j;
+	int i;
     using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -113,15 +114,27 @@ void SetupVPR(t_options *Options,
 			device_ctx.EMPTY_TYPE = &device_ctx.block_types[i];
 		} else if (strcmp(device_ctx.block_types[i].name, "io") == 0) {
 			device_ctx.IO_TYPE = &device_ctx.block_types[i];
-		} else {
-			for (j = 0; j < device_ctx.block_types[i].num_grid_loc_def; j++) {
-				if (device_ctx.block_types[i].grid_loc_def[j].grid_loc_type == FILL) {
-					VTR_ASSERT(device_ctx.FILL_TYPE == NULL);
-					device_ctx.FILL_TYPE = &device_ctx.block_types[i];
-				}
-			}
 		}
-	}
+    }
+
+    for(const auto& grid_loc_def : Arch->grid_loc_defs) {
+        //Detect the 'fill' type
+        if (   grid_loc_def.x.start_expr == "0"
+            && grid_loc_def.x.end_expr == "W - 1"
+            && grid_loc_def.x.incr_expr.empty()
+            && grid_loc_def.x.repeat_expr.empty()
+            && grid_loc_def.y.start_expr == "0"
+            && grid_loc_def.y.end_expr == "H - 1"
+            && grid_loc_def.y.incr_expr.empty()
+            && grid_loc_def.y.repeat_expr.empty()) {
+
+            VTR_ASSERT_MSG(device_ctx.FILL_TYPE == NULL, "Fill type must be unambiguous");
+            t_type_descriptor* fill_type = find_block_type_by_name(grid_loc_def.block_type, device_ctx.block_types, device_ctx.num_block_types);
+            VTR_ASSERT_MSG(fill_type, "Fill block type must exist");
+            device_ctx.FILL_TYPE = fill_type;
+        }
+    }
+
 	VTR_ASSERT(device_ctx.EMPTY_TYPE != NULL && device_ctx.FILL_TYPE != NULL && device_ctx.IO_TYPE != NULL);
 
 	*Segments = Arch->Segments;

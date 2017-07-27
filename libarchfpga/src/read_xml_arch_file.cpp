@@ -90,7 +90,7 @@ static t_type_descriptor *cb_type_descriptors;
 /*   Populate data */
 static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
-static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
+static void SetupGridLocations(t_arch& arch, pugi::xml_node Locations, t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
 /*    Process XML hiearchy */
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		t_mode * mode, const t_arch& arch, const pugiutil::loc_data& loc_data);
@@ -117,7 +117,7 @@ static void ProcessDevice(pugi::xml_node Node, t_arch *arch,
 		const bool timing_enabled, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		const t_arch& arch, const pugiutil::loc_data& loc_data);
+		t_arch& arch, const pugiutil::loc_data& loc_data);
 static void ProcessSwitches(pugi::xml_node Node,
 		t_arch_switch_inf **Switches, int *NumSwitches,
 		const bool timing_enabled, const pugiutil::loc_data& loc_data);
@@ -580,87 +580,134 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 }
 
 /* Sets up the grid_loc_def for the type. */
-static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Type, const pugiutil::loc_data& loc_data) {
-	int i;
+static void SetupGridLocations(t_arch& arch, pugi::xml_node Locations, t_type_descriptor* Type, const pugiutil::loc_data& loc_data) {
+    std::string type_name(Type->name);
 
-	pugi::xml_node Cur;
-	const char *Prop;
+    for (auto child : Locations.children()) {
 
-	Type->num_grid_loc_def = count_children(Locations, "loc", loc_data);
-	Type->grid_loc_def = (t_grid_loc_def *) vtr::calloc(
-			Type->num_grid_loc_def, sizeof(t_grid_loc_def));
+        if (child.name() != std::string("loc")) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(child),
+                    "Expected <loc> specification\n");
+        }
 
-	/* Load the pin locations */
-	Cur = Locations.first_child();
-	i = 0;
-	while (Cur) {
-		check_node(Cur, "loc", loc_data);
+        auto type = get_attribute(child, "type", loc_data).value();
+        int priority = get_attribute(child, "priority", loc_data, ReqOpt::OPTIONAL).as_int(0);
 
-		/* loc index */
-		Prop = get_attribute(Cur, "type", loc_data).value();
-		if (Prop) {
-			if (strcmp(Prop, "perimeter") == 0) {
-				if (Type->num_grid_loc_def != 1) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-							"Another loc specified for perimeter.\n");
-				}
-				Type->grid_loc_def[i].grid_loc_type = BOUNDARY;
-				VTR_ASSERT(IO_TYPE == Type);
-				/* IO goes to boundary */
-			} else if (strcmp(Prop, "fill") == 0) {
-				if (Type->num_grid_loc_def != 1 || FILL_TYPE != NULL) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-							"Another loc specified for fill.\n");
-				}
-				Type->grid_loc_def[i].grid_loc_type = FILL;
-				FILL_TYPE = Type;
-			} else if (strcmp(Prop, "col") == 0) {
-				Type->grid_loc_def[i].grid_loc_type = COL_REPEAT;
-			} else if (strcmp(Prop, "rel") == 0) {
-				Type->grid_loc_def[i].grid_loc_type = COL_REL;
-			} else {
-				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-						"Unknown grid location type '%s' for type '%s'.\n",
-						Prop, Type->name);
-			}
-		}
-		Prop = get_attribute(Cur, "start", loc_data, OPTIONAL).as_string(NULL);
-		if (Type->grid_loc_def[i].grid_loc_type == COL_REPEAT) {
-			if (Prop == NULL) {
-				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-						"grid location property 'start' must be specified for grid location type 'col'.\n");
-			}
-			Type->grid_loc_def[i].start_col = vtr::atoi(Prop);
-		} else if (Prop != NULL) {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-					"grid location property 'start' valid for grid location type 'col' only.\n");
-		}
-		Prop = get_attribute(Cur, "repeat", loc_data, OPTIONAL).as_string(NULL);
-		if (Type->grid_loc_def[i].grid_loc_type == COL_REPEAT) {
-			if (Prop != NULL) {
-				Type->grid_loc_def[i].repeat = vtr::atoi(Prop);
-			}
-		} else if (Prop != NULL) {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-					"Grid location property 'repeat' valid for grid location type 'col' only.\n");
-		}
-		Prop = get_attribute(Cur, "pos", loc_data, OPTIONAL).as_string(NULL);
-		if (Type->grid_loc_def[i].grid_loc_type == COL_REL) {
-			if (Prop == NULL) {
-				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-						"Grid location property 'pos' must be specified for grid location type 'rel'.\n");
-			}
-			Type->grid_loc_def[i].col_rel = (float) atof(Prop);
-		} else if (Prop != NULL) {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-					"Grid location property 'pos' valid for grid location type 'rel' only.\n");
-		}
+        if (type == std::string("perimeter")) {
+            //The edges
+            t_grid_loc_def left_edge(type_name, priority);
+            left_edge.x.start_expr = "0";
+            left_edge.x.end_expr = "0";
+            left_edge.y.start_expr = "1";
+            left_edge.y.end_expr = "H - 2";
 
-		Type->grid_loc_def[i].priority = get_attribute(Cur, "priority", loc_data, OPTIONAL). as_int(1);
+            t_grid_loc_def right_edge(type_name, priority);
+            right_edge.x.start_expr = "W - 1";
+            right_edge.x.end_expr = "W - 1";
+            right_edge.y.start_expr = "1";
+            right_edge.y.end_expr = "H - 2";
 
-		Cur = Cur.next_sibling(Cur.name());
-		i++;
-	}
+            t_grid_loc_def bottom_edge(type_name, priority);
+            bottom_edge.x.start_expr = "1";
+            bottom_edge.x.end_expr = "W - 2";
+            bottom_edge.y.start_expr = "0";
+            bottom_edge.y.end_expr = "0";
+
+            t_grid_loc_def top_edge(type_name, priority);
+            top_edge.x.start_expr = "1";
+            top_edge.x.end_expr = "W - 2";
+            top_edge.y.start_expr = "H - 1";
+            top_edge.y.end_expr = "H - 1";
+
+            arch.grid_loc_defs.push_back(left_edge);
+            arch.grid_loc_defs.push_back(right_edge);
+            arch.grid_loc_defs.push_back(top_edge);
+            arch.grid_loc_defs.push_back(bottom_edge);
+
+            //The corners
+            t_grid_loc_def bottom_left("<EMPTY>", priority+1);
+            bottom_left.x.start_expr = "0";
+            bottom_left.x.end_expr = "0";
+            bottom_left.y.start_expr = "0";
+            bottom_left.y.end_expr = "0";
+
+            t_grid_loc_def top_left("<EMPTY>", priority+1);
+            top_left.x.start_expr = "0";
+            top_left.x.end_expr = "0";
+            top_left.y.start_expr = "H-1";
+            top_left.y.end_expr = "H-1";
+
+            t_grid_loc_def bottom_right("<EMPTY>", priority+1);
+            bottom_right.x.start_expr = "W-1";
+            bottom_right.x.end_expr = "W-1";
+            bottom_right.y.start_expr = "0";
+            bottom_right.y.end_expr = "0";
+
+            t_grid_loc_def top_right("<EMPTY>", priority+1);
+            top_right.x.start_expr = "W-1";
+            top_right.x.end_expr = "W-1";
+            top_right.y.start_expr = "H-1";
+            top_right.y.end_expr = "H-1";
+
+            arch.grid_loc_defs.push_back(bottom_left);
+            arch.grid_loc_defs.push_back(top_left);
+            arch.grid_loc_defs.push_back(bottom_right);
+            arch.grid_loc_defs.push_back(top_right);
+        } else if (type == std::string("fill")) {
+            t_grid_loc_def fill(type_name, priority);
+            fill.x.start_expr = "0";
+            fill.x.end_expr = "W - 1";
+            fill.y.start_expr = "0";
+            fill.y.end_expr = "H - 1";
+
+            arch.grid_loc_defs.push_back(fill);
+
+            FILL_TYPE = Type;
+
+        } else if (type == std::string("col")) {
+            t_grid_loc_def col(type_name, priority);
+
+            auto start_attr = get_attribute(child, "start", loc_data);
+
+            col.x.start_expr = start_attr.value();
+            col.x.end_expr = start_attr.value();
+
+            auto repeat_attr = get_attribute(child, "repeat", loc_data);
+            if (repeat_attr) {
+                col.x.repeat_expr = repeat_attr.value();
+            }
+
+            col.y.start_expr = "1";
+            col.y.end_expr = "H - 1";
+
+            arch.grid_loc_defs.push_back(col);
+
+            //Classic VPR style was to leave the column empty (instead of fill type) if block dimension caused one not to fit
+            t_grid_loc_def background = col;
+            background.block_type = "<EMPTY>";
+            background.priority = priority - 1; //So real col will override where possible
+
+            arch.grid_loc_defs.push_back(background);
+        } else if (type == std::string("rel")) {
+            t_grid_loc_def col_rel(type_name, priority);
+
+            float rel_pos = get_attribute(child, "pos", loc_data).as_float();
+
+            std::stringstream ss;
+            ss << "W / " << int(1./rel_pos);
+
+            col_rel.x.start_expr = ss.str();
+            col_rel.x.end_expr = ss.str();
+            col_rel.y.start_expr = "0";
+            col_rel.y.end_expr = "H - 1";
+
+            arch.grid_loc_defs.push_back(col_rel);
+
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(child),
+                    "Unrecognized location type specification '%s'\n", type);
+        }
+    }
 }
 
 static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
@@ -2150,7 +2197,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
  * child type objects. */
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		const t_arch& arch, const pugiutil::loc_data& loc_data) {
+		t_arch& arch, const pugiutil::loc_data& loc_data) {
 	pugi::xml_node CurType, Prev;
 	pugi::xml_node Cur;
 	t_type_descriptor * Type;
@@ -2216,7 +2263,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		SetupPinLocationsAndPinClasses(Cur, Type, loc_data);
 
 		Cur = get_single_child(CurType, "gridlocations", loc_data);
-		SetupGridLocations(Cur, Type, loc_data);
+		SetupGridLocations(arch, Cur, Type, loc_data);
 
 		/* Load Fc */
 		Cur = get_single_child(CurType, "fc", loc_data);

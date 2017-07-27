@@ -251,6 +251,7 @@ static void start_new_cluster(
 		const t_pack_molecule *molecule, const float aspect,
 		int *num_used_instances_type, int *num_instances_type,
 		const int num_models, const int max_cluster_size,
+        const t_arch* arch,
 		vector<t_lb_type_rr_node> *lb_type_rr_graphs, t_lb_router_data **router_data, const int detailed_routing_stage);
 
 static t_pack_molecule* get_highest_gain_molecule(
@@ -539,6 +540,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 			start_new_cluster(cluster_placement_stats, primitives_list,
 					&clb[num_clb], atom_molecules, num_clb, istart, aspect, num_used_instances_type,
 					num_instances_type, num_models, max_cluster_size,
+                    arch, 
 					lb_type_rr_graphs, &router_data, detailed_routing_stage);
 			vtr::printf_info("Complex block %d: %s, type: %s ", 
 					num_clb, clb[num_clb].name, clb[num_clb].type->name);
@@ -1903,6 +1905,7 @@ static void start_new_cluster(
 		const t_pack_molecule *molecule, const float aspect,
 		int *num_used_instances_type, int *num_instances_type,
 		const int num_models, const int max_cluster_size,
+        const t_arch* arch,
 		vector<t_lb_type_rr_node> *lb_type_rr_graphs, t_lb_router_data **router_data, const int detailed_routing_stage) {
 	/* Given a starting seed block, start_new_cluster determines the next cluster type to use 
 	 It expands the FPGA if it cannot find a legal cluster for the atom block
@@ -1926,7 +1929,7 @@ static void start_new_cluster(
 	new_cluster->pb = NULL;
 
 	if ((device_ctx.nx > 1) && (device_ctx.ny > 1)) {
-		alloc_and_load_grid(num_instances_type);
+		alloc_and_load_grid(arch->grid_loc_defs, num_instances_type);
 		freeGrid();
 	}
 
@@ -1999,7 +2002,7 @@ static void start_new_cluster(
 						"Circuit cannot pack into architecture, architecture size (device_ctx.nx = %d, device_ctx.ny = %d) exceeds packer range.\n",
 						device_ctx.nx, device_ctx.ny);
 			}
-			alloc_and_load_grid(num_instances_type);
+			alloc_and_load_grid(arch->grid_loc_defs, num_instances_type);
 			freeGrid();
 		}
 	}

@@ -582,6 +582,16 @@ void get_class_range_for_block(const int iblk,
 	*class_high = (place_ctx.block_locs[iblk].z + 1) * (type->num_class / type->capacity) - 1;
 }
 
+t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* types, int num_types) {
+
+    for (int itype = 0; itype < num_types; ++itype) {
+        if (types[itype].name == name) {
+            return &types[itype];
+        }
+    }
+    return nullptr; //Not found
+}
+
 int get_max_primitives_in_pb_type(t_pb_type *pb_type) {
 
 	int i, j;

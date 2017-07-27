@@ -535,9 +535,9 @@ struct t_net {
  * height_offset: Number of grid tiles reserved based on height (top) of a block
  */
 struct t_grid_tile {
-	t_type_ptr type;
-	int width_offset;
-	int height_offset;
+	t_type_ptr type = nullptr;
+	int width_offset = 0;
+	int height_offset = 0;
 };
 
 /* Stores the bounding box of a net in terms of the minimum and  *

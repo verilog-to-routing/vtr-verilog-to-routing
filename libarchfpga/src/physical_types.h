@@ -134,24 +134,102 @@ enum e_sb_location{
 /*************************************************************************************************/
 /* FPGA grid layout data types                                                                   */
 /*************************************************************************************************/
-/* Definition of how to place physical logic block in the grid 
- grid_loc_type - where the type goes and which numbers are valid
- start_col - the absolute value of the starting column from the left to fill, 
- used with COL_REPEAT
- repeat - the number of columns to skip before placing the same type, 
- used with COL_REPEAT.  0 means do not repeat
- rel_col - the fractional column to place type
- priority - in the event of conflict, which type gets picked?
+/* Grid location specification
+ *  Each member is a formula evaluated in terms of 'W' (device width),
+ *  and 'H' (device height). Formulas can be evaluated using parse_formula() 
+ *  from expr_eval.h.
  */
-enum e_grid_loc_type {
-	BOUNDARY = 0, FILL, COL_REPEAT, COL_REL
+struct t_grid_loc_spec {
+    std::string start_expr;  //Starting position (inclusive)
+    std::string end_expr;    //Ending position (inclusive)
+
+    std::string incr_expr;   //Distance between block instantiations 
+                             // with the region (note always absolute).
+                             // Zero implies that the appropriate block 
+                             // dimension should be used.
+
+    std::string repeat_expr; //Distance between repeated
+                             // region instances
 };
+
+/* Definition of how to place physical logic block in the grid.
+ *  This defines a region of the grid to be set to a specific type
+ *  (provided it's priority is high enough to override other blocks).
+ *
+ *  The diagram below illustrates the layout specification.
+ *
+ *                      +----+                +----+           +----+
+ *                      |    |                |    |           |    |
+ *                      |    |                |    |    ...    |    |
+ *                      |    |                |    |           |    |
+ *                      +----+                +----+           +----+
+ *                      
+ *                        .                     .                 .
+ *                        .                     .                 .
+ *                        .                     .                 .
+ *                                       
+ *                      +----+                +----+           +----+
+ *                      |    |                |    |           |    |
+ *                      |    |                |    |    ...    |    |
+ *                      |    |                |    |           |    |
+ *                      +----+                +----+           +----+
+ *                   ^  
+ *                   |
+ *           repeaty |  
+ *                   |
+ *                   v        (endx,endy)
+ *                      +----+                +----+           +----+
+ *                      |    |                |    |           |    |
+ *                      |    |                |    |    ...    |    |
+ *                      |    |                |    |           |    |
+ *                      +----+                +----+           +----+
+ *       (startx,starty)
+ *                            <--------------> 
+ *                                 repeatx
+ *
+ *  startx/endx and endx/endy define a rectangular region instancess dimensions.
+ *  The region instance is then repeated every repeatx/repeaty (if specified).
+ *
+ *  Within a particular region instance a block of block_type is laid down every
+ *  incrx/incry units (if not specified defaults to block width/height):
+ *
+ *
+ *    * = an instance of block_type within the region
+ *
+ *                    +------------------------------+
+ *                    |*         *         *        *|
+ *                    |                              |
+ *                    |                              |
+ *                    |                              |
+ *                    |                              |
+ *                    |                              |
+ *                    |*         *         *        *|
+ *                ^   |                              |
+ *                |   |                              |
+ *          incry |   |                              |
+ *                |   |                              |
+ *                v   |                              |
+ *                    |*         *         *        *|
+ *                    +------------------------------+
+ *
+ *                      <------->
+ *                        incrx
+ *
+ *  In the above diagram incrx = 10, and incry = 6
+ */
 struct t_grid_loc_def {
-	enum e_grid_loc_type grid_loc_type;
-	int start_col;
-	int repeat;
-	float col_rel;
-	int priority;
+    t_grid_loc_def(std::string block_type_val, int priority_val)
+        : block_type(block_type_val)
+        , priority(priority_val) {}
+
+    std::string block_type; //The block type name
+
+	int priority = 0;       //Priority of the specification.
+                            // In case of conflicting specifications 
+                            // the largest priority wins.
+
+    t_grid_loc_spec x;      //Horizontal location specification
+    t_grid_loc_spec y;      //Veritcal location specification
 };
 
 /* Data type definitions */
@@ -340,9 +418,6 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	t_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_head;
 
-	/* Grid location info */
-	t_grid_loc_def *grid_loc_def; /* [0..num_def-1] */
-	int num_grid_loc_def;
 	float area;
 
 	/* This info can be determined from class_inf and pin_class but stored for faster access */
@@ -1116,6 +1191,7 @@ struct t_arch {
 	float T_ipin_cblock;
 	float ipin_mux_trans_size;
 
+    std::vector<t_grid_loc_def> grid_loc_defs;
 };
 
 #endif

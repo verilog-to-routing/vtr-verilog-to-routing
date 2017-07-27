@@ -298,7 +298,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
                 device_ctx.ny = vtr::nint(current / Arch.clb_grid.Aspect);
             }
             vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", device_ctx.nx, device_ctx.ny);
-            alloc_and_load_grid(num_instances_type);
+            alloc_and_load_grid(Arch.grid_loc_defs, num_instances_type);
             freeGrid();
 
             /* Test if netlist fits in grid */
@@ -340,12 +340,12 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
             device_ctx.nx = current;
             device_ctx.ny = vtr::nint(current / Arch.clb_grid.Aspect);
         }
-        alloc_and_load_grid(num_instances_type);
+        alloc_and_load_grid(Arch.grid_loc_defs, num_instances_type);
         vtr::printf_info("FPGA auto-sized to x = %d y = %d\n", device_ctx.nx, device_ctx.ny);
     } else {
         device_ctx.nx = Arch.clb_grid.W;
         device_ctx.ny = Arch.clb_grid.H;
-        alloc_and_load_grid(num_instances_type);
+        alloc_and_load_grid(Arch.grid_loc_defs, num_instances_type);
     }
 
     vtr::printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", device_ctx.nx, device_ctx.ny);
@@ -715,7 +715,6 @@ static void free_complex_block_types(void) {
         vtr::free(device_ctx.block_types[i].class_inf);
         vtr::free(device_ctx.block_types[i].is_global_pin);
         vtr::free(device_ctx.block_types[i].pin_class);
-        vtr::free(device_ctx.block_types[i].grid_loc_def);
 
         free_pb_type(device_ctx.block_types[i].pb_type);
         vtr::free(device_ctx.block_types[i].pb_type);

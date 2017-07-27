@@ -69,6 +69,9 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::st
 
 AtomPinId find_atom_pin(int iblk, const t_pb_graph_pin* pb_gpin);
 
+//Returns the block type matching name, or nullptr (if not found)
+t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* types, int num_types);
+
 int get_max_primitives_in_pb_type(t_pb_type *pb_type);
 int get_max_depth_of_pb_type(t_pb_type *pb_type);
 int get_max_nets_in_pb_type(const t_pb_type *pb_type);
