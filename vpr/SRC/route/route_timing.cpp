@@ -236,10 +236,10 @@ bool try_timing_driven_route(t_router_opts router_opts,
         clock_t begin = clock();
 
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
-        for (unsigned int inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); ++inet) {
-            cluster_ctx.clbs_nlist.net[inet].is_routed = false;
-            cluster_ctx.clbs_nlist.net[inet].is_fixed = false;
-        }
+		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+			cluster_ctx.clb_nlist.set_routed(net_id, false);
+			cluster_ctx.clb_nlist.set_fixed(net_id, false);
+		}
 
         std::shared_ptr<SetupTimingInfo> route_timing_info;
         if (timing_info) {
@@ -439,7 +439,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 
     connections_inf.prepare_routing_for_net(inet);
 
-    if (cluster_ctx.clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
+    if (cluster_ctx.clb_nlist.net_fixed((NetId)inet)) { /* Skip pre-routed nets. */
         is_routed = true;
     } else if (cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Skip global nets. */
         is_routed = true;
@@ -463,7 +463,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 
         /* Impossible to route? (disconnected rr_graph) */
         if (is_routed) {
-            cluster_ctx.clbs_nlist.net[inet].is_routed = true;
+			cluster_ctx.clb_nlist.set_routed((NetId)inet, true);
         } else {
             vtr::printf_info("Routing failed.\n");
         }

@@ -46,14 +46,13 @@ bool try_breadth_first_route(t_router_opts router_opts,
 	for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
 
 		/* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
-		for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-			cluster_ctx.clbs_nlist.net[inet].is_routed = false;
-			cluster_ctx.clbs_nlist.net[inet].is_fixed = false;
+		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+			cluster_ctx.clb_nlist.set_routed(net_id, false);
+			cluster_ctx.clb_nlist.set_fixed(net_id, false);
 		}
 
 		for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-			is_routable = try_breadth_first_route_net(inet, pres_fac, 
-					router_opts);
+			is_routable = try_breadth_first_route_net(inet, pres_fac, router_opts);
 			if (!is_routable) {
 				return (false);
 			}
@@ -98,22 +97,19 @@ bool try_breadth_first_route_net(int inet, float pres_fac,
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	if (cluster_ctx.clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
-
+	if (cluster_ctx.clb_nlist.net_fixed((NetId)inet)) { /* Skip pre-routed nets. */
 		is_routed = true;
 
 	} else if (cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Skip global nets. */
-
 		is_routed = true;
 
 	} else {
-
 		pathfinder_update_path_cost(route_ctx.trace_head[inet], -1, pres_fac);
 		is_routed = breadth_first_route_net(inet, router_opts.bend_cost);
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
-			cluster_ctx.clbs_nlist.net[inet].is_routed = true;
+			cluster_ctx.clb_nlist.set_routed((NetId)inet, true);
 		} else {
 			vtr::printf_info("Routing failed.\n");
 		}

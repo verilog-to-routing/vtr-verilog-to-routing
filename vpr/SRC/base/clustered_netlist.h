@@ -79,7 +79,7 @@ class ClusteredNetlist : public BaseNetlist {
 		//Nets
 		vtr::vector_map<NetId, bool>			net_global_;		//Boolean mapping indicating if the net is
 		vtr::vector_map<NetId, bool>			net_routed_;		//Global, routed, or fixed (mutually exclusive).
-		vtr::vector_map<NetId, bool>			net_fixed_;
+		vtr::vector_map<NetId, bool>			net_fixed_;			//TODO: transfer net routing state to RoutingContext
 };
 
 #endif
