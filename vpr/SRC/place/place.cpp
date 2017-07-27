@@ -92,12 +92,12 @@ large enough to be on the order of timing costs for normal constraints. */
 /********************** Variables local to place.c ***************************/
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
-static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..cluster_ctx.clbs_nlist.net.size()-1] */
+static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..cluster_ctx.clb_nlist.nets().size()-1] */
 
 static t_legal_pos **legal_pos = NULL; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1] */
 static int *num_legal_pos = NULL; /* [0..num_legal_pos-1] */
 
-/* [0...cluster_ctx.clbs_nlist.net.size()-1]                                               *
+/* [0...cluster_ctx.clb_nlist.nets().size()-1]                                               *
  * A flag array to indicate whether the specific bounding box has been updated   *
  * in this particular swap or not. If it has been updated before, the code       *
  * must use the updated data, instead of the out-of-date data passed into the    *
@@ -108,28 +108,27 @@ static int *num_legal_pos = NULL; /* [0..num_legal_pos-1] */
  * applicable for nets larger than SMALL_NETS and it indicates that the          *
  * particular bounding box cannot be updated incrementally before, hence the     *
  * bounding box is got from scratch, so the bounding box would definitely be     *
- * right, DO NOT update again.                                                   *
- * [0...cluster_ctx.clbs_nlist.net.size()-1]                                               */
+ * right, DO NOT update again.                                                   */
 static char * bb_updated_before = NULL;
 
-/* [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1]. What is the value of the timing   */
+/* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]. What is the value of the timing   */
 /* driven portion of the cost function. These arrays will be set to  */
 /* (criticality * delay) for each point to point connection. */
 static float **point_to_point_timing_cost = NULL;
 static float **temp_point_to_point_timing_cost = NULL;
 
-/* [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1]. What is the value of the delay */
+/* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]. What is the value of the delay */
 /* for each connection in the circuit */
 static float **point_to_point_delay_cost = NULL;
 static float **temp_point_to_point_delay_cost = NULL;
 
-/* [0..cluster_ctx.num_blocks-1][0..pins_per_clb-1]. Indicates which pin on the net */
+/* [0..cluster_ctx.clb_nlist.blocks().size()-1][0..pins_per_clb-1]. Indicates which pin on the net */
 /* this block corresponds to, this is only required during timing-driven */
 /* placement. It is used to allow us to update individual connections on */
 /* each net */
 static vtr::Matrix<int> net_pin_index;
 
-/* [0..cluster_ctx.clbs_nlist.net.size()-1].  Store the bounding box coordinates and the number of    *
+/* [0..cluster_ctx.clb_nlist.nets().size()-1].  Store the bounding box coordinates and the number of    *
  * blocks on each of a net's bounding box (to allow efficient updates),      *
  * respectively.                                                             */
 
@@ -148,11 +147,11 @@ static t_pl_blocks_to_be_moved blocks_affected;
  * of the net bounding box in each dimension, divided by the average    *
  * number of tracks in that direction; for other cost functions they    *
  * will never be used.                                                  *
- *                [0...device_ctx.ny]                [0...device_ctx.nx]                      */
+ *           [0...device_ctx.ny][0...device_ctx.nx]                     */
 static float **chanx_place_cost_fac, **chany_place_cost_fac;
 
 /* The following arrays are used by the try_swap function for speed.   */
-/* [0...cluster_ctx.clbs_nlist.net.size()-1] */
+/* [0...cluster_ctx.clb_nlist.nets().size()-1] */
 static t_bb *ts_bb_coord_new = NULL;
 static t_bb *ts_bb_edge_new = NULL;
 static int *ts_nets_to_update = NULL;
@@ -376,7 +375,7 @@ void try_place(t_placer_opts placer_opts,
     //We are careful to resize the block_locs after building the delta-delay 
     // lookups (since they change the block locations)
     place_ctx.block_locs.clear();
-    place_ctx.block_locs.resize(cluster_ctx.num_blocks);
+    place_ctx.block_locs.resize((int) cluster_ctx.clb_nlist.blocks().size());
 
 	width_fac = placer_opts.place_chan_width;
 
@@ -496,7 +495,7 @@ void try_place(t_placer_opts placer_opts,
     //Sanity check that initial placement is legal
     check_place(bb_cost, timing_cost, placer_opts.place_algorithm, delay_cost);
 
-	move_lim = (int) (annealing_sched.inner_num * pow(cluster_ctx.num_blocks, 1.3333));
+	move_lim = (int) (annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
 	if (placer_opts.inner_loop_recompute_divider != 0) {
 		inner_recompute_limit = (int) 
@@ -772,7 +771,7 @@ void try_place(t_placer_opts placer_opts,
 			&& placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
 		/*need this done since the timing data has not been kept up to date*
 		 *in bounding_box mode */
-		for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++)
+		for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++)
 			for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++)
 				set_timing_place_crit(inet, ipin, 0); /*dummy crit values */
 		comp_td_costs(&timing_cost, &delay_cost); /*computes point_to_point_delay_cost */
@@ -1010,9 +1009,8 @@ static int count_connections() {
 	count = 0;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-
-		if (cluster_ctx.clbs_nlist.net[inet].is_global)
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
+		if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 			continue;
 
 		count += cluster_ctx.clbs_nlist.net[inet].num_sinks();
@@ -1093,7 +1091,7 @@ static int exit_crit(float t, float cost,
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* Automatic annealing schedule */
-    float t_exit = 0.005 * cost / cluster_ctx.clbs_nlist.net.size();
+    float t_exit = 0.005 * cost / cluster_ctx.clb_nlist.nets().size();
 
     if (t < t_exit) {
 		return (1);
@@ -1122,7 +1120,7 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	move_lim = min(max_moves, cluster_ctx.num_blocks);
+	move_lim = min(max_moves, (int) cluster_ctx.clb_nlist.blocks().size());
 
 	num_accepted = 0;
 	av = 0.;
@@ -1178,7 +1176,6 @@ static int setup_blocks_affected(int b_from, int x_to, int y_to, int z_to) {
 	int x_from, y_from, z_from, b_to;
 	int abort_swap = false;
 
-    //auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
 	x_from = place_ctx.block_locs[b_from].x;
@@ -1339,7 +1336,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 
 	num_ts_called ++;
 
-    if(cluster_ctx.num_blocks == 0) {
+    if((int) cluster_ctx.clb_nlist.blocks().size() == 0) {
         //Empty netlist, no valid swap possible
         return ABORTED;
     }
@@ -1353,7 +1350,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	delay_delta_c = 0.0;
 	
 	/* Pick a random block to be swapped with another random block    */
-	b_from = vtr::irand(cluster_ctx.num_blocks - 1);
+	b_from = vtr::irand((int) cluster_ctx.clb_nlist.blocks().size() - 1);
 
 	/* If the pins are fixed we never move them from their initial    *
 	 * random locations.  The code below could be made more efficient *
@@ -1362,14 +1359,14 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	 * broken if I ever change the parser so that the pins aren't     *
 	 * necessarily at the start of the block list.                    */
 	while (place_ctx.block_locs[b_from].is_fixed == true) {
-		b_from = vtr::irand(cluster_ctx.num_blocks - 1);
+		b_from = vtr::irand((int) cluster_ctx.clb_nlist.blocks().size() - 1);
 	}
 
 	x_from = place_ctx.block_locs[b_from].x;
 	y_from = place_ctx.block_locs[b_from].y;
 	z_from = place_ctx.block_locs[b_from].z;
 
-	if (!find_to(cluster_ctx.blocks[b_from].type, rlim, x_from, y_from, &x_to, &y_to, &z_to))
+	if (!find_to(cluster_ctx.clb_nlist.block_type((BlockId) b_from), rlim, x_from, y_from, &x_to, &y_to, &z_to))
 		return REJECTED;
 
 #if 0
@@ -1408,12 +1405,12 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 			bnum = blocks_affected.moved_blocks[iblk].block_num;
 
 			/* Go through all the pins in the moved block */
-			for (iblk_pin = 0; iblk_pin < cluster_ctx.blocks[bnum].type->num_pins; iblk_pin++)
+			for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId) bnum)->num_pins; iblk_pin++)
 			{
 				inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
 				if (inet == OPEN)
 					continue;
-				if (cluster_ctx.clbs_nlist.net[inet].is_global)
+				if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 					continue;
 			
 				if (cluster_ctx.clbs_nlist.net[inet].num_sinks() < SMALL_NET) {
@@ -1423,10 +1420,10 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				} else {
 					update_bb(inet, &ts_bb_coord_new[inet],
 							&ts_bb_edge_new[inet], 
-							blocks_affected.moved_blocks[iblk].xold + cluster_ctx.blocks[bnum].type->pin_width[iblk_pin],
-							blocks_affected.moved_blocks[iblk].yold + cluster_ctx.blocks[bnum].type->pin_height[iblk_pin],
-							blocks_affected.moved_blocks[iblk].xnew + cluster_ctx.blocks[bnum].type->pin_width[iblk_pin],
-							blocks_affected.moved_blocks[iblk].ynew + cluster_ctx.blocks[bnum].type->pin_height[iblk_pin]);
+							blocks_affected.moved_blocks[iblk].xold + cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_width[iblk_pin],
+							blocks_affected.moved_blocks[iblk].yold + cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_height[iblk_pin],
+							blocks_affected.moved_blocks[iblk].xnew + cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_width[iblk_pin],
+							blocks_affected.moved_blocks[iblk].ynew + cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_height[iblk_pin]);
 				}
 			}
 		}
@@ -1570,7 +1567,7 @@ static int find_affected_nets(int *nets_to_update) {
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
 
 		/* Go through all the pins in the moved block */
-		for (iblk_pin = 0; iblk_pin < cluster_ctx.blocks[bnum].type->num_pins; iblk_pin++)
+		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId) bnum)->num_pins; iblk_pin++)
 		{
 			/* Updates the pins_to_nets array, set to -1 if   *
 			 * that pin is not connected to any net or it is a  *
@@ -1578,7 +1575,7 @@ static int find_affected_nets(int *nets_to_update) {
 			inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
 			if (inet == OPEN)
 				continue;
-			if (cluster_ctx.clbs_nlist.net[inet].is_global)
+			if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 				continue;
 			
 			if (temp_net_cost[inet] < 0.) { 
@@ -1744,15 +1741,12 @@ static float recompute_bb_cost(void) {
 	 * cost.                                                             */
 
 	unsigned int inet;
-	float cost;
+	float cost = 0;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	cost = 0;
-
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) { /* for each net ... */
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false) { /* Do only if not global. */
-
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) { /* for each net ... */
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Do only if not global. */
 			/* Bounding boxes don't have to be recomputed; they're correct. */
 			cost += net_cost[inet];
 		}
@@ -1771,7 +1765,7 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 
 	float delay_source_to_sink = 0.;
 
-    if(cluster_ctx.clbs_nlist.net[inet].is_global == false) {
+    if(!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
         //Only estimate delay for signals routed through the inter-block
         //routing network. Global signals are assumed to have zero delay.
         int source_block, sink_block;
@@ -1780,10 +1774,10 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 
 
         source_block = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
-        source_type = cluster_ctx.blocks[source_block].type;
+        source_type = cluster_ctx.clb_nlist.block_type((BlockId) source_block);
 
         sink_block = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
-        sink_type = cluster_ctx.blocks[sink_block].type;
+        sink_type = cluster_ctx.clb_nlist.block_type((BlockId) sink_block);
 
         VTR_ASSERT(source_type != NULL);
         VTR_ASSERT(sink_type != NULL);
@@ -1822,7 +1816,7 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 static void comp_td_point_to_point_delays() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    for(size_t inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); ++inet) {
+    for(size_t inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
         for(size_t ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
             point_to_point_delay_cost[inet][ipin] = comp_td_point_to_point_delay(inet, ipin);
         }
@@ -1842,14 +1836,14 @@ static void update_td_cost(void) {
 	/* Go through all the blocks moved. */
 	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
-		for (iblk_pin = 0; iblk_pin < cluster_ctx.blocks[bnum].type->num_pins; iblk_pin++) {
+		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId) bnum)->num_pins; iblk_pin++) {
 
 			inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
 
 			if (inet == OPEN)
 				continue;
 
-			if (cluster_ctx.clbs_nlist.net[inet].is_global)
+			if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 				continue;
 
 			net_pin = net_pin_index[bnum][iblk_pin];
@@ -1904,13 +1898,13 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 	{
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
 		/* Go through all the pins in the moved block */
-		for (iblk_pin = 0; iblk_pin < cluster_ctx.blocks[bnum].type->num_pins; iblk_pin++) {
+		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId) bnum)->num_pins; iblk_pin++) {
 			inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
 
 			if (inet == OPEN)
 				continue;
 
-			if (cluster_ctx.clbs_nlist.net[inet].is_global)
+			if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 				continue;
 
 			net_pin = net_pin_index[bnum][iblk_pin];
@@ -1970,8 +1964,8 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	loc_timing_cost = 0.;
 	loc_connection_delay_sum = 0.;
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) { /* For each net ... */
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false) { /* Do only if not global. */
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) { /* For each net ... */
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Do only if not global. */
 
 			for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 
@@ -2015,9 +2009,9 @@ static float comp_bb_cost(enum cost_methods method) {
 	cost = 0;
 	expected_wirelength = 0.0;
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) { /* for each net ... */
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) { /* for each net ... */
 
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false) { /* Do only if not global. */
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Do only if not global. */
 
 			/* Small nets don't use incremental updating on their bounding boxes, *
 			 * so they can use a fast bounding box calculator.                    */
@@ -2059,7 +2053,7 @@ static void free_placement_structs(
 
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
-		for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+		for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 			/*add one to the address since it is indexed from 1 not 0 */
 
 			point_to_point_delay_cost[inet]++;
@@ -2130,14 +2124,14 @@ static void alloc_and_load_placement_structs(
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 		/* Allocate structures associated with timing driven placement */
-		/* [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1]  */
-		point_to_point_delay_cost = (float **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float *));
-		temp_point_to_point_delay_cost = (float **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float *));
+		/* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]  */
+		point_to_point_delay_cost = (float **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
+		temp_point_to_point_delay_cost = (float **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
 
-		point_to_point_timing_cost = (float **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float *));
-		temp_point_to_point_timing_cost = (float **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float *));
+		point_to_point_timing_cost = (float **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
+		temp_point_to_point_timing_cost = (float **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
 
-		for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+		for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 
 			/* In the following, subract one so index starts at *
 			 * 1 instead of 0 */
@@ -2153,7 +2147,7 @@ static void alloc_and_load_placement_structs(
 			temp_point_to_point_timing_cost[inet] = (float *) vtr::malloc(cluster_ctx.clbs_nlist.net[inet].num_sinks() * sizeof(float));
 			temp_point_to_point_timing_cost[inet]--;
 		}
-		for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+		for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 			for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 				point_to_point_delay_cost[inet][ipin] = 0;
 				temp_point_to_point_delay_cost[inet][ipin] = 0;
@@ -2161,21 +2155,21 @@ static void alloc_and_load_placement_structs(
 		}
 	}
 
-	net_cost = (float *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float));
-	temp_net_cost = (float *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float));
-	bb_updated_before = (char*)vtr::calloc(cluster_ctx.clbs_nlist.net.size(), sizeof(char));
+	net_cost = (float *) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float));
+	temp_net_cost = (float *) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float));
+	bb_updated_before = (char*)vtr::calloc(cluster_ctx.clb_nlist.nets().size(), sizeof(char));
 	
 	/* Used to store costs for moves not yet made and to indicate when a net's   *
 	 * cost has been recomputed. temp_net_cost[inet] < 0 means net's cost hasn't *
 	 * been recomputed.                                                          */
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++){
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++){
 		bb_updated_before[inet] = NOT_UPDATED_YET;
 		temp_net_cost[inet] = -1.;
 	}
 	
-	bb_coords = (t_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_bb));
-	bb_num_on_edges = (t_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_bb));
+	bb_coords = (t_bb *) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(t_bb));
+	bb_num_on_edges = (t_bb *) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(t_bb));
 	
 	alloc_and_load_for_fast_cost_update(place_cost_exp);
 		
@@ -2188,17 +2182,17 @@ static void alloc_and_load_placement_structs(
 
 static void alloc_and_load_try_swap_structs() {
 	/* Allocate the local bb_coordinate storage, etc. only once. */
-	/* Allocate with size cluster_ctx.clbs_nlist.net.size() for any number of nets affected. */
+	/* Allocate with size cluster_ctx.clb_nlist.nets().size() for any number of nets affected. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	ts_bb_coord_new = (t_bb *) vtr::calloc(
-			cluster_ctx.clbs_nlist.net.size(), sizeof(t_bb));
+			cluster_ctx.clb_nlist.nets().size(), sizeof(t_bb));
 	ts_bb_edge_new = (t_bb *) vtr::calloc(
-			cluster_ctx.clbs_nlist.net.size(), sizeof(t_bb));
-	ts_nets_to_update = (int *) vtr::calloc(cluster_ctx.clbs_nlist.net.size(), sizeof(int));
+			cluster_ctx.clb_nlist.nets().size(), sizeof(t_bb));
+	ts_nets_to_update = (int *) vtr::calloc(cluster_ctx.clb_nlist.nets().size(), sizeof(int));
 		
-	/* Allocate with size cluster_ctx.num_blocks for any number of moved blocks. */
-	blocks_affected.moved_blocks = (t_pl_moved_block*) vtr::calloc(cluster_ctx.num_blocks, sizeof(t_pl_moved_block));
+	/* Allocate with size cluster_ctx.clb_nlist.blocks().size() for any number of moved blocks. */
+	blocks_affected.moved_blocks = (t_pl_moved_block*) vtr::calloc((int) cluster_ctx.clb_nlist.blocks().size(), sizeof(t_pl_moved_block));
 	blocks_affected.num_moved_blocks = 0;
 	
 }
@@ -2224,8 +2218,8 @@ static void get_bb_from_scratch(int inet, t_bb *coords,
 	bnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
 	pnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
 
-	x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
-	y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
+	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_width[pnum];
+	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_height[pnum];
 
 	x = max(min(x, device_ctx.nx), 1);
 	y = max(min(y, device_ctx.ny), 1);
@@ -2242,8 +2236,8 @@ static void get_bb_from_scratch(int inet, t_bb *coords,
 	for (ipin = 1; ipin < n_pins; ipin++) {
 		bnum = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
 		pnum = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
-		x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
-		y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
+		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_width[pnum];
+		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_height[pnum];
 
 		/* Code below counts IO blocks as being within the 1..device_ctx.nx, 1..device_ctx.ny clb array. *
 		 * This is because channels do not go out of the 0..device_ctx.nx, 0..device_ctx.ny range, and   *
@@ -2385,8 +2379,8 @@ static void get_non_updateable_bb(int inet, t_bb *bb_coord_new) {
 
 	bnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
 	pnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
-	x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
-	y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
+	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_width[pnum];
+	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_height[pnum];
 	
 	xmin = x;
 	ymin = y;
@@ -2396,8 +2390,8 @@ static void get_non_updateable_bb(int inet, t_bb *bb_coord_new) {
 	for (k = 1; k < cluster_ctx.clbs_nlist.net[inet].pins.size(); k++) {
 		bnum = cluster_ctx.clbs_nlist.net[inet].pins[k].block;
 		pnum = cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin;
-		x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
-		y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
+		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_width[pnum];
+		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_height[pnum];
 
 		if (x < xmin) {
 			xmin = x;
@@ -2816,13 +2810,13 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 		
 		// Assume that all the blocks in the macro are of the same type
 		iblk = pl_macros[imacro].members[0].blk_index;
-		itype = cluster_ctx.blocks[iblk].type->index;
+		itype = cluster_ctx.clb_nlist.block_type((BlockId) iblk)->index;
 		if (free_locations[itype] < pl_macros[imacro].num_blocks) {
 			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 					"Initial placement failed.\n"
 					"Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n"
 					"VPR cannot auto-size for your circuit, please resize the FPGA manually.\n", 
-					pl_macros[imacro].num_blocks, cluster_ctx.blocks[iblk].name, iblk, device_ctx.block_types[itype].name, itype);
+					pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name((BlockId) iblk), iblk, device_ctx.block_types[itype].name, itype);
 		}
 
 		// Try to place the macro first, if can be placed - place them, otherwise try again
@@ -2859,7 +2853,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 						"Initial placement failed.\n"
 						"Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n"
 						"Please manually size the FPGA because VPR can't do this yet.\n", 
-						pl_macros[imacro].num_blocks, cluster_ctx.blocks[iblk].name, iblk, device_ctx.block_types[itype].name, itype);
+						pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name((BlockId) iblk), iblk, device_ctx.block_types[itype].name, itype);
 			}
 
 		} else {
@@ -2881,15 +2875,14 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
-
+	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
 		if (place_ctx.block_locs[iblk].x != EMPTY_BLOCK) {
 			// block placed.
 			continue;
 		}
 
 		/* Don't do IOs if the user specifies IOs; we'll read those locations later. */
-		if (!(cluster_ctx.blocks[iblk].type == device_ctx.IO_TYPE && pad_loc_type == USER)) {
+		if (!(cluster_ctx.clb_nlist.block_type((BlockId) iblk) == device_ctx.IO_TYPE && pad_loc_type == USER)) {
 
 		    /* Randomly select a free location of the appropriate type
 			 * for iblk.  We have a linearized list of all the free locations
@@ -2897,12 +2890,12 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			 * Choose one randomly and put iblk there.  Then we don't want to pick that
 			 * location again, so remove it from the free_locations array.
 			 */
-			itype = cluster_ctx.blocks[iblk].type->index;
+			itype = cluster_ctx.clb_nlist.block_type((BlockId) iblk)->index;
 			if (free_locations[itype] <= 0) {
 				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, 
 						"Initial placement failed.\n"
 						"Could not place block %s (#%d); no free locations of type %s (#%d).\n", 
-						cluster_ctx.blocks[iblk].name, iblk, device_ctx.block_types[itype].name, itype);
+						cluster_ctx.clb_nlist.block_name((BlockId) iblk), iblk, device_ctx.block_types[itype].name, itype);
 			}
 
 			initial_placement_location(free_locations, iblk, &ipos, &x, &y, &z);
@@ -2918,7 +2911,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			place_ctx.block_locs[iblk].z = z;
 
             //Mark IOs as fixed if specifying a (fixed) random placement
-            if(cluster_ctx.blocks[iblk].type == device_ctx.IO_TYPE && pad_loc_type == RANDOM) {
+            if(cluster_ctx.clb_nlist.block_type((BlockId) iblk) == device_ctx.IO_TYPE && pad_loc_type == RANDOM) {
                 place_ctx.block_locs[iblk].is_fixed = true;
  			}
 
@@ -2939,7 +2932,7 @@ static void initial_placement_location(int * free_locations, int iblk,
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	int itype = cluster_ctx.blocks[iblk].type->index;
+	int itype = cluster_ctx.clb_nlist.block_type((BlockId) iblk)->index;
 
 	*pipos = vtr::irand(free_locations[itype] - 1);
 	*px_to = legal_pos[itype][*pipos].x;
@@ -2986,7 +2979,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	}
 
 	/* Similarly, mark all blocks as not being placed yet. */
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++) {
+	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
 		place_ctx.block_locs[iblk].x = OPEN;
 		place_ctx.block_locs[iblk].y = OPEN;
 		place_ctx.block_locs[iblk].z = OPEN;
@@ -3180,8 +3173,8 @@ static void check_place(float bb_cost, float timing_cost,
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-	bdone = (int *) vtr::malloc(cluster_ctx.num_blocks * sizeof(int));
-	for (i = 0; i < cluster_ctx.num_blocks; i++)
+	bdone = (int *) vtr::malloc((int) cluster_ctx.clb_nlist.blocks().size() * sizeof(int));
+	for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++)
 		bdone[i] = 0;
 
 	/* Step through device grid and placement. Check it against blocks */
@@ -3199,7 +3192,7 @@ static void check_place(float bb_cost, float timing_cost,
 				if (EMPTY_BLOCK == bnum || INVALID_BLOCK == bnum)
 					continue;
 
-				if (cluster_ctx.blocks[bnum].type != device_ctx.grid[i][j].type) {
+				if (cluster_ctx.clb_nlist.block_type((BlockId) bnum) != device_ctx.grid[i][j].type) {
 					vtr::printf_error(__FILE__, __LINE__,
 							"Block %d type does not match grid location (%d,%d) type.\n",
 							bnum, i, j);
@@ -3223,7 +3216,7 @@ static void check_place(float bb_cost, float timing_cost,
 		}
 
 	/* Check that every block exists in the device_ctx.grid and cluster_ctx.blocks arrays somewhere. */
-	for (i = 0; i < cluster_ctx.num_blocks; i++)
+	for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++)
 		if (bdone[i] != 1) {
 			vtr::printf_error(__FILE__, __LINE__,
 					"Block %d listed %d times in data structures.\n",
@@ -3295,8 +3288,8 @@ static void print_clb_placement(const char *fname) {
 	fprintf(fp, "Complex block placements:\n\n");
 
 	fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
-	for(i = 0; i < cluster_ctx.num_blocks; i++) {
-		fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.blocks[i].name, place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].z);
+	for(i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
+		fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name((BlockId) i), place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].z);
 	}
 	
 	fclose(fp);	

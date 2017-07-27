@@ -43,17 +43,12 @@ print_relative_pos_distr(void)
 		(double *)vtr::calloc((len / 2 + 1), sizeof(double));
 	}
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++)
-	{
-		if (cluster_ctx.clbs_nlist.net[inet].is_global == false)
-		{
-
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet))	{
 			src_x = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[0].cluster_ctx.blocks].x;
 			src_y = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[0].cluster_ctx.blocks].y;
 
-			for (sink_pin = 1; sink_pin < cluster_ctx.clbs_nlist.net[inet].pins.size();
-					sink_pin++)
-			{
+			for (sink_pin = 1; sink_pin < cluster_ctx.clbs_nlist.net[inet].pins.size();	sink_pin++)	{
 				dst_x = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[sink_pin].cluster_ctx.blocks].x;
 				dst_y = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[sink_pin].cluster_ctx.blocks].y;
 
@@ -64,14 +59,11 @@ print_relative_pos_distr(void)
 
 				min_del = (del_x < del_y) ? del_x : del_y;
 
-				if (!(min_del <= (len / 2)))
-				{
+				if (!(min_del <= (len / 2))) {
 					vtr::printf_error(VPR_ERROR_PLACE, __FILE__, __LINE__,
 							"Error calculating relative location min_del = %d, len = %d\n",
 							min_del, len);
-				}
-				else
-				{
+				} else {
 					relapos[len][min_del]++;
 				}
 			}

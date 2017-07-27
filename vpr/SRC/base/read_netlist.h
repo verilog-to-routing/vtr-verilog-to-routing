@@ -11,10 +11,10 @@
 
 void read_netlist(const char *net_file, 
 		const t_arch *arch,
-        bool verify_file_digests,
-		int *L_num_blocks, 
+        bool verify_file_digests, 
 		t_block *block_list[],
-		t_netlist* clb_nlist);
+		t_netlist* clb_nlist,
+		ClusteredNetlist* clustered_nlist);
 
 #endif
 

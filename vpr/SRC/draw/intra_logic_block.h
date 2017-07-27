@@ -108,7 +108,7 @@ void draw_internal_draw_subblk();
  * so that the other subblock drawing functions will obey it.
  * If the user missed all sub-parts, will return 1, else 0.
  */
-int highlight_sub_block(const t_point& point_in_clb, t_block& clb);
+int highlight_sub_block(const t_point& point_in_clb, t_block& clb, t_pb *pb);
 
 /*
  * returns the struct with information about the sub-block selection

@@ -7,8 +7,7 @@ void read_place(
         bool verify_file_hashes,
 		const int L_nx,
 		const int L_ny,
-		const int L_num_blocks,
-		t_block block_list[]);
+		const size_t L_num_blocks);
 
 void print_place(const char* net_file, 
                  const char* net_id, 

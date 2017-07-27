@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "vtr_util.h"
 #include "vtr_memory.h"
 #include "string_cache.h"
@@ -157,6 +158,7 @@ sc_do_alloc(long a,
 	    fprintf(stderr,
 		    "Failed to allocated %ld chunks of %ld bytes (%ld bytes total)\n",
 		    a, b, a * b);
+	    sleep(1);
 	    r = vtr::calloc(a, b);
 	}
     return r;

@@ -8,7 +8,7 @@
 #include "path_delay.h"
 #include "globals.h"
 
-void print_tnode_info(FILE* fp, int inode, char* identifier);
+void print_tnode_info(FILE* fp, int inode, const char* identifier);
 
 void print_endpoint_timing(char* filename) {
     FILE* fp = vtr::fopen(filename, "w");
@@ -31,7 +31,7 @@ void print_endpoint_timing(char* filename) {
 
     for(size_t i = 0; i < outpad_sink_tnodes.size(); ++i) {
         int inode = outpad_sink_tnodes[i];
-        char* identifier = cluster_ctx.blocks[timing_ctx.tnodes[inode].block].name + 4; //Trim out:
+        const char* identifier = cluster_ctx.clb_nlist.block_name((BlockId) timing_ctx.tnodes[inode].block).c_str() + 4; //Trim out:
         print_tnode_info(fp, inode, identifier);
 
         if(i != outpad_sink_tnodes.size() - 1) {
@@ -49,7 +49,7 @@ void print_endpoint_timing(char* filename) {
     fclose(fp);
 }
 
-void print_tnode_info(FILE* fp, int inode, char* identifier) {
+void print_tnode_info(FILE* fp, int inode, const char* identifier) {
     auto& timing_ctx = g_vpr_ctx.timing();
     fprintf(fp, "    {\n");
     fprintf(fp, "      \"node_identifier\": \"%s\",\n", identifier);

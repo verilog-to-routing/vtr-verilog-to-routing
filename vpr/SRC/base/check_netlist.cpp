@@ -35,24 +35,21 @@ static int get_num_conn(int bnum);
 
 void check_netlist() {
 	unsigned int i;
-	int error, num_conn;
+	int error = 0;
+	int num_conn;
 	t_hash **net_hash_table, *h_net_ptr;
 
-	
-	/* This routine checks that the netlist makes sense         */
-
+	/* This routine checks that the netlist makes sense. */
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
 	net_hash_table = alloc_hash_table();
 
-	error = 0;
-
 	/* Check that nets fanout and have a driver. */
-	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
-		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clbs_nlist.net[i].name, i);
+	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
+		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name((NetId) i).c_str(), i);
 		if (h_net_ptr->count != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
-					"Net %s has multiple drivers.\n", cluster_ctx.clbs_nlist.net[i].name);
+					"Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name((NetId) i));
 			error++;
 		}
 		error += check_connections_to_global_clb_pins(i);
@@ -64,7 +61,7 @@ void check_netlist() {
 	free_hash_table(net_hash_table);
 
 	/* Check that each block makes sense. */
-	for (i = 0; i < (unsigned int)cluster_ctx.num_blocks; i++) {
+	for (i = 0; i < (unsigned int) cluster_ctx.clb_nlist.blocks().size(); i++) {
 		num_conn = get_num_conn(i);
 		error += check_clb_conn(i, num_conn);
 		error += check_clb_internal_nets(i);
@@ -94,14 +91,14 @@ void check_netlist() {
      *       tied directly to gnd/vcc.
 	 */
     auto& atom_ctx = g_vpr_ctx.atom();
-	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
+	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
         AtomNetId atom_net = atom_ctx.lookup.atom_net(i);
         VTR_ASSERT(atom_net);
 
         if (atom_ctx.nlist.net_is_constant(atom_net)) {
             //Mark net as global, so that it is not routed
             vtr::printf_warning(__FILE__, __LINE__, "Treating constant net '%s' as global, so it will not be routed\n", atom_ctx.nlist.net_name(atom_net).c_str());
-            cluster_ctx.clbs_nlist.net[i].is_global = true;
+            cluster_ctx.clb_nlist.set_global((NetId)i, true);
         }
 	}
 }
@@ -130,28 +127,28 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 
 		node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
 
-		bool is_global_net = static_cast<bool>(cluster_ctx.clbs_nlist.net[inet].is_global);
-		if (cluster_ctx.blocks[iblk].type->is_global_pin[node_block_pin] != is_global_net 
-            && cluster_ctx.blocks[iblk].type != device_ctx.IO_TYPE) {
+		bool is_global_net = cluster_ctx.clb_nlist.net_global((NetId)inet);
+		if (cluster_ctx.clb_nlist.block_type((BlockId)iblk)->is_global_pin[node_block_pin] != is_global_net 
+            && cluster_ctx.clb_nlist.block_type((BlockId)iblk) != device_ctx.IO_TYPE) {
 
 			/* Allow a CLB output pin to drive a global net (warning only). */
 
-			if (ipin == 0 && cluster_ctx.clbs_nlist.net[inet].is_global) {
+			if (ipin == 0 && is_global_net) {
 				vtr::printf_warning(__FILE__, __LINE__, 
 						"in check_connections_to_global_clb_pins:\n");
 				vtr::printf_warning(__FILE__, __LINE__, 
 						"\tnet #%d (%s) is driven by CLB output pin (#%d) on block #%d (%s).\n", 
-						inet, cluster_ctx.clbs_nlist.net[inet].name, node_block_pin, iblk, cluster_ctx.blocks[iblk].name);
+						inet, cluster_ctx.clbs_nlist.net[inet].name, node_block_pin, iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk));
 			} else { /* Otherwise -> Error */
 				vtr::printf_error(__FILE__, __LINE__, 
 						"in check_connections_to_global_clb_pins:\n");
 				vtr::printf_error(__FILE__, __LINE__, 
 						"\tpin %d on net #%d (%s) connects to CLB input pin (#%d) on block #%d (%s).\n", 
-						ipin, inet, cluster_ctx.clbs_nlist.net[inet].name, node_block_pin, iblk, cluster_ctx.blocks[iblk].name);
+						ipin, inet, cluster_ctx.clbs_nlist.net[inet].name, node_block_pin, iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk));
 				error++;
 			}
 
-			if (cluster_ctx.clbs_nlist.net[inet].is_global)
+			if (is_global_net)
 				vtr::printf_info("Net is global, but CLB pin is not.\n");
 			else
 				vtr::printf_info("CLB pin is global, but net is not.\n");
@@ -173,20 +170,20 @@ static int check_clb_conn(int iblk, int num_conn) {
     auto& device_ctx = g_vpr_ctx.device();
 
 	error = 0;
-	type = cluster_ctx.blocks[iblk].type;
+	type = cluster_ctx.clb_nlist.block_type((BlockId)iblk);
 
 	if (type == device_ctx.IO_TYPE) {
 	    /*
 		//This triggers incorrectly if other blocks (e.g. I/O buffers) are included in the iopads
 		if (num_conn != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
-					"IO blk #%d (%s) has %d pins.\n", iblk, cluster_ctx.blocks[iblk].name, num_conn);
+					"IO blk #%d (%s) has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId) iblk), num_conn);
 			error++;
 		}
              */
 	} else if (num_conn < 2) {
 		vtr::printf_warning(__FILE__, __LINE__, 
-				"Logic block #%d (%s) has only %d pin.\n", iblk, cluster_ctx.blocks[iblk].name, num_conn);
+				"Logic block #%d (%s) has only %d pin.\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), num_conn);
 
 		/* Allow the case where we have only one OUTPUT pin connected to continue. *
 		 * This is used sometimes as a constant generator for a primary output,    *
@@ -217,7 +214,7 @@ static int check_clb_conn(int iblk, int num_conn) {
 
 	if (num_conn > type->num_pins) {
 		vtr::printf_error(__FILE__, __LINE__, 
-				"logic block #%d with output %s has %d pins.\n", iblk, cluster_ctx.blocks[iblk].name, num_conn);
+				"logic block #%d with output %s has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), num_conn);
 		error++;
 	}
 
@@ -232,10 +229,10 @@ static int check_clb_internal_nets(unsigned int iblk) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	
 	int error = 0;
-	t_pb_route * pb_route = cluster_ctx.blocks[iblk].pb_route;
-	int num_pins_in_block = cluster_ctx.blocks[iblk].pb->pb_graph_node->total_pb_pins;
+	t_pb_route * pb_route = cluster_ctx.clb_nlist.block_pb((BlockId)iblk)->pb_route;
+	int num_pins_in_block = cluster_ctx.clb_nlist.block_pb((BlockId)iblk)->pb_graph_node->total_pb_pins;
 
-	t_pb_graph_pin** pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(cluster_ctx.blocks[iblk].type);
+	t_pb_graph_pin** pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(cluster_ctx.clb_nlist.block_type((BlockId)iblk));
 
 	for (int i = 0; i < num_pins_in_block; i++) {
 		if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != OPEN) {
@@ -244,19 +241,19 @@ static int check_clb_internal_nets(unsigned int iblk) {
 				) {
 				if (pb_route[i].driver_pb_pin_id != OPEN) {
 					vtr::printf_error(__FILE__, __LINE__,
-						"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, cluster_ctx.blocks[iblk].name, i);
+						"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), i);
 					error++;
 				}
 			} else {
 				if (!pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id == OPEN) {
 					vtr::printf_error(__FILE__, __LINE__,
-						"Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, cluster_ctx.blocks[iblk].name, i);
+						"Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), i);
 					error++;
 				} else {
 					int prev_pin = pb_route[i].driver_pb_pin_id;
 					if (pb_route[prev_pin].atom_net_id != pb_route[i].atom_net_id) {
 						vtr::printf_error(__FILE__, __LINE__,
-							"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, cluster_ctx.blocks[iblk].name, i, prev_pin);
+							"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), i, prev_pin);
 						error++;
 					}
 				}
@@ -269,8 +266,7 @@ static int check_clb_internal_nets(unsigned int iblk) {
 }
 
 static int check_for_duplicated_names(void) {
-	int iblk, error;
-	int clb_count;
+	int error, clb_count;
 	t_hash **clb_hash_table, *clb_h_ptr;
 	
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -279,12 +275,11 @@ static int check_for_duplicated_names(void) {
 	
 	error = clb_count = 0;
 
-	for (iblk = 0; iblk < cluster_ctx.num_blocks; iblk++)
-	{
-		clb_h_ptr = insert_in_hash_table(clb_hash_table, cluster_ctx.blocks[iblk].name, clb_count);
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		clb_h_ptr = insert_in_hash_table(clb_hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), clb_count);
 		if (clb_h_ptr->count > 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
-					"Block %s has duplicated name.\n", cluster_ctx.blocks[iblk].name);
+					"Block %s has duplicated name.\n", cluster_ctx.clb_nlist.block_name(blk_id));
 			error++;
 		} else {
 			clb_count++;
@@ -297,15 +292,13 @@ static int check_for_duplicated_names(void) {
 }
 
 static int get_num_conn(int bnum) {
-
 	/* This routine returns the number of connections to a block. */
-
 	int i, num_conn;
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	type = cluster_ctx.blocks[bnum].type;
+	type = cluster_ctx.clb_nlist.block_type((BlockId) bnum);
 
 	num_conn = 0;
 

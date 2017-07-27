@@ -317,7 +317,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
     fprintf(f, ".end\n"); //Main model
     fprintf(f, "\n");
 
-    //The subkct models
+    //The subckt models
     for(const t_model* model : subckt_models) {
         fprintf(f, ".model %s\n", model->name);
 
@@ -579,7 +579,6 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk) {
     //Create the new merged net
     netlist.add_net(new_net_name, new_driver, new_sinks);
 
-
 }
 
 void fix_clock_to_data_conversions(AtomNetlist& netlist, const t_model* library_models) {
@@ -624,14 +623,11 @@ std::map<AtomNetId,std::vector<AtomPinId>> find_clock_used_as_data_pins(const At
 
     auto netlist_clocks = find_netlist_clocks(netlist);
 
-
     for(AtomNetId clock_net : netlist_clocks) {
         for(AtomPinId clock_sink : netlist.net_sinks(clock_net)) {
 
             auto port_type = netlist.pin_port_type(clock_sink);
-
             if(port_type != AtomPortType::CLOCK) {
-
                 clock_data_pins[clock_net].push_back(clock_sink); 
             }
         }
@@ -656,7 +652,7 @@ AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist,
 
     //Connect the clock
     AtomPortId clock_port = netlist.create_port(blk, model_clock_port);
-    netlist.create_pin(clock_port, clock_port_bit, clock_net, AtomPinType::SINK);
+    netlist.create_pin(clock_port, clock_port_bit, clock_net, AtomPinType::SINK, AtomPortType::CLOCK);
 
     //Make the data port
     AtomPortId data_port = netlist.create_port(blk, model_data_port);
@@ -667,7 +663,7 @@ AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist,
     VTR_ASSERT(clock_data_net);
 
     //Create the driver pin
-    netlist.create_pin(data_port, data_port_bit, clock_data_net, AtomPinType::DRIVER);
+    netlist.create_pin(data_port, data_port_bit, clock_data_net, AtomPinType::DRIVER, AtomPortType::OUTPUT);
 
     //Update all the data pins to connect to clock_data_net instead of the original clock net
     for(AtomPinId sink_pin : data_pins) {

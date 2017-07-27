@@ -490,9 +490,9 @@ void alloc_draw_structs(const t_arch* arch) {
 	/* For sub-block drawings inside clbs */
 	draw_internal_alloc_blk();
 
-	draw_state->net_color = (t_color *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_color));
+	draw_state->net_color = (t_color *) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(t_color));
 
-	draw_state->block_color = (t_color *) vtr::malloc(cluster_ctx.num_blocks * sizeof(t_color));
+	draw_state->block_color = (t_color *) vtr::malloc(cluster_ctx.clb_nlist.blocks().size() * sizeof(t_color));
 
 	/* Space is allocated for draw_rr_node but not initialized because we do *
 	 * not yet know information about the routing resources.				  */
@@ -661,7 +661,7 @@ static void drawplace(void) {
 					}
 
                     auto& cluster_ctx = g_vpr_ctx.clustering();
-					drawtext_in(abs_clb_bbox, cluster_ctx.blocks[bnum].name);
+					drawtext_in(abs_clb_bbox, cluster_ctx.clb_nlist.block_name((BlockId) bnum));
 					if (j == 0 || j == device_ctx.ny + 1) {
 						settextrotation(saved_rotation);
 					}
@@ -696,17 +696,17 @@ static void drawnets(void) {
 	/* Draw the net as a star from the source to each sink. Draw from centers of *
 	 * blocks (or sub blocks in the case of IOs).                                */
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-		if (cluster_ctx.clbs_nlist.net[inet].is_global)
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
+		if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 			continue; /* Don't draw global nets. */
 
 		setcolor(draw_state->net_color[inet]);
 		b1 = cluster_ctx.clbs_nlist.net[inet].pins[0].block; /* The DRIVER */
-		t_point driver_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[b1]).get_center();
+		t_point driver_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[b1], cluster_ctx.clb_nlist.block_type((BlockId) b1)).get_center();
 
 		for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 			b2 = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
-			t_point sink_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[b2]).get_center();
+			t_point sink_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[b2], cluster_ctx.clb_nlist.block_type((BlockId) b2)).get_center();
 			drawline(driver_center, sink_center);
 
 			/* Uncomment to draw a chain instead of a star. */
@@ -1652,8 +1652,8 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 
 	/* Now draw each net, one by one.      */
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-		if (cluster_ctx.clbs_nlist.net[inet].is_global) /* Don't draw global nets. */
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
+		if (cluster_ctx.clb_nlist.net_global((NetId)inet)) /* Don't draw global nets. */
 			continue;
 
 		if (route_ctx.trace_head[inet] == NULL) /* No routing.  Skip.  (Allows me to draw */
@@ -1898,7 +1898,7 @@ static void highlight_nets(char *message, int hit_node) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
 	
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		for (tptr = route_ctx.trace_head[inet]; tptr != NULL; tptr = tptr->next) {
 			if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
 				draw_state->net_color[inet] = draw_state->draw_rr_node[tptr->index].color;
@@ -2157,7 +2157,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 				clb_index = place_ctx.grid_blocks[i][j].blocks[k];
 				if (clb_index != EMPTY_BLOCK) {
 					clb = &cluster_ctx.blocks[clb_index];
-					clb_bbox = draw_coords->get_absolute_clb_bbox(*clb);
+					clb_bbox = draw_coords->get_absolute_clb_bbox(*clb, cluster_ctx.clb_nlist.block_type((BlockId) clb_index));
 					if (clb_bbox.intersects(abs_x, abs_y)) {
 						break;
 					} else {
@@ -2186,7 +2186,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	// note: this will clear the selected sub-block if show_blk_internal is 0,
 	// or if it doesn't find anything
 	t_point point_in_clb = t_point(abs_x, abs_y) - clb_bbox.bottom_left();
-	highlight_sub_block(point_in_clb, *clb);
+	highlight_sub_block(point_in_clb, *clb, cluster_ctx.clb_nlist.block_pb((BlockId) clb_index));
 	
 	if (get_selected_sub_block_info().has_selection()) {
 		t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
@@ -2194,8 +2194,8 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			selected_subblock->name, selected_subblock->pb_graph_node->pb_type->name);
 	} else {
 		/* Highlight block and fan-in/fan-outs. */
-		draw_highlight_blocks_color(clb->type, clb_index);
-		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, clb->name, place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
+		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type((BlockId) clb_index), clb_index);
+		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, cluster_ctx.clb_nlist.block_name((BlockId) clb_index).c_str(), place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
 	}
 
 	update_message(msg);
@@ -2315,11 +2315,11 @@ static void deselect_all(void) {
 	int i;
 
 	/* Create some colour highlighting */
-	for (i = 0; i < cluster_ctx.num_blocks; i++) {
+	for (i = 0; i < (int)cluster_ctx.clb_nlist.blocks().size(); i++) {
 		draw_reset_blk_color(i);
 	}
 
-	for (i = 0; i < (int) cluster_ctx.clbs_nlist.net.size(); i++)
+	for (i = 0; i < (int)cluster_ctx.clb_nlist.nets().size(); i++)
 		draw_state->net_color[i] = BLACK;
 
 	for (i = 0; i < device_ctx.num_rr_nodes; i++) {
@@ -2337,10 +2337,10 @@ static void draw_reset_blk_color(int i) {
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	if (cluster_ctx.blocks[i].type->index < 3) {
+	if (cluster_ctx.clb_nlist.block_type((BlockId)i)->index < 3) {
 			draw_state->block_color[i] = LIGHTGREY;
-	} else if (cluster_ctx.blocks[i].type->index < 3 + MAX_BLOCK_COLOURS) {
-			draw_state->block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS + cluster_ctx.blocks[i].type->index - 3);
+	} else if (cluster_ctx.clb_nlist.block_type((BlockId)i)->index < 3 + MAX_BLOCK_COLOURS) {
+			draw_state->block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS + cluster_ctx.clb_nlist.block_type((BlockId)i)->index - 3);
 	} else {
 			draw_state->block_color[i] = (enum color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1);
 	}

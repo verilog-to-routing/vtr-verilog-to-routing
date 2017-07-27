@@ -33,11 +33,11 @@ inline float ClbDelayCalc::clb_input_to_clb_output_delay(const t_net_pin* clb_in
 inline float ClbDelayCalc::trace_max_delay(int clb, int src_pb_route_id, int sink_pb_route_id) const {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    VTR_ASSERT(src_pb_route_id < cluster_ctx.blocks[clb].pb->pb_graph_node->total_pb_pins);
-    VTR_ASSERT(sink_pb_route_id < cluster_ctx.blocks[clb].pb->pb_graph_node->total_pb_pins);
+    VTR_ASSERT(src_pb_route_id < cluster_ctx.clb_nlist.block_pb((BlockId) clb)->pb_graph_node->total_pb_pins);
+    VTR_ASSERT(sink_pb_route_id < cluster_ctx.clb_nlist.block_pb((BlockId) clb)->pb_graph_node->total_pb_pins);
 
 
-    const t_pb_route* pb_routes = cluster_ctx.blocks[clb].pb_route;
+    const t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb((BlockId) clb)->pb_route;
 
     AtomNetId atom_net = pb_routes[src_pb_route_id].atom_net_id;
 
@@ -74,9 +74,9 @@ inline float ClbDelayCalc::pb_route_max_delay(int clb_block, int pb_route_idx) c
 inline const t_pb_graph_edge* ClbDelayCalc::find_pb_graph_edge(int clb_block, int pb_route_idx) const {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int type_index = cluster_ctx.blocks[clb_block].type->index;
+    int type_index = cluster_ctx.clb_nlist.block_type((BlockId) clb_block)->index;
 
-    int upstream_pb_route_idx = cluster_ctx.blocks[clb_block].pb_route[pb_route_idx].driver_pb_pin_id;
+    int upstream_pb_route_idx = cluster_ctx.clb_nlist.block_pb((BlockId) clb_block)->pb_route[pb_route_idx].driver_pb_pin_id;
 
     if(upstream_pb_route_idx >= 0) {
 

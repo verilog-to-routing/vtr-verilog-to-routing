@@ -136,7 +136,7 @@ void parse_to_ast()
 		yyin = fopen(global_args.verilog_file, "r");
 		if (yyin == NULL)
 		{
-			error_message(-1, -1, -1, "cannot open file: %s", global_args.verilog_file.value());
+			error_message(-1, -1, -1, "cannot open file: %s", global_args.verilog_file);
 		}
 	
 		/*Testing preprocessor - Paddy O'Brien*/

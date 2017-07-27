@@ -7,6 +7,7 @@
 #include "vtr_ndmatrix.h"
 #include "netlist.h"
 #include "atom_netlist.h"
+#include "clustered_netlist.h"
 #include "rr_node.h"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
@@ -38,7 +39,7 @@ struct AtomContext : public Context {
     /* Atom netlist */
     AtomNetlist nlist;
 
-    /* Mappings to/from the Atom Netlist */
+    /* Mappings to/from the Atom Netlist to physically described .blif models*/
     AtomLookup lookup;
 };
 
@@ -188,14 +189,16 @@ struct ClusteringContext : public Context {
     /********************************************************************
      CLB Netlist
      ********************************************************************/
+	/* New netlist class derived from BaseNetlist
+	 * Will replace t_netlist & part of t_block */
+	ClusteredNetlist clb_nlist;
+
     /* blocks in the clustered netlist */
-    int num_blocks;
     t_block *blocks; //[0..num_blocks-1]
 
-    /* External-to-complex blocks, post-packed netlist [NETS ONLY]*/
+    /* External-to-complex blocks, post-packed netlist [NETS ONLY] */
     t_netlist clbs_nlist;
 };
-
 
 //State relating to placement
 //
@@ -230,7 +233,7 @@ struct RoutingContext : public Context {
     t_rr_node_route_inf *rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
     //Limits area in which each net must be routed.
-    t_bb* route_bb = NULL; /* [0..cluster_ctx.clbs_nlist.net.size()-1]*/
+    t_bb* route_bb = NULL; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
 
     //SHA256 digest of the .route file (used for unique identification and consistency checking)
     std::string routing_id;

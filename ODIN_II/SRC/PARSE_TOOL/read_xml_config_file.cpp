@@ -132,7 +132,7 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiutil::loc_d
 	child = get_single_child(a_node, "output_path_and_name", loc_data, OPTIONAL);
 	if (child != NULL)
 	{
-		global_args.output_file.set(vtr::strdup(child.child_value()), argparse::Provenance::SPECIFIED);
+		global_args.output_file = vtr::strdup(child.child_value());
 	}
 
 	child = get_single_child(a_node, "target", loc_data, OPTIONAL);
@@ -147,7 +147,7 @@ void read_outputs(pugi::xml_node a_node, config_t *config, const pugiutil::loc_d
 				printf("Error: Arch file specified in config file AND command line\n");
 				exit(-1);
 			}
-            global_args.arch_file.set(vtr::strdup(child.child_value()), argparse::Provenance::SPECIFIED);
+			global_args.arch_file = vtr::strdup(child.child_value());
 		}
 	}
 	return;

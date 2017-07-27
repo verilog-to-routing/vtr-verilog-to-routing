@@ -29,8 +29,8 @@ using namespace std;
 #define TABLENGTH 1
 
 /****************** Subroutines local to this module ************************/
-void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb);
-void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb);
+void print_atom_block(FILE *fpout, AtomBlockId atom_blk);
+void print_routing_in_clusters(FILE *fpout, int iclb);
 void print_models(FILE *fpout, t_model *user_models);
 
 /**************** Subroutine definitions ************************************/
@@ -83,17 +83,18 @@ static void print_net_name(AtomNetId net_id, int *column, FILE * fpout) {
 }
 
 /* Print netlist atom in blif format */
-void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
+void print_atom_block(FILE *fpout, AtomBlockId atom_blk) {
 	t_pb_route * pb_route;
 	int clb_index;
 	const t_pb_graph_node *pb_graph_node;
 	t_pb_type *pb_type;
 
     auto& atom_ctx = g_vpr_ctx.atom();
+	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	clb_index = atom_ctx.lookup.atom_clb(atom_blk);
 	VTR_ASSERT(clb_index != OPEN);
-	pb_route = clb[clb_index].pb_route;
+	pb_route = cluster_ctx.clb_nlist.block_pb((BlockId)clb_index)->pb_route;
 	VTR_ASSERT(pb_route != NULL);
 	pb_graph_node = atom_ctx.lookup.atom_pb_graph_node(atom_blk);
 	pb_type = pb_graph_node->pb_type;
@@ -133,7 +134,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 				*/
 				VTR_ASSERT(pb_type->ports[i].is_clock == false);
 
-                AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, pb_type->ports[i].name);
+                AtomPortId port_id = atom_ctx.nlist.BaseNetlist::find_port(atom_blk, pb_type->ports[i].name);
                 if(port_id) {
                     for (int j = 0; j < pb_type->ports[i].num_pins; j++) {
                         AtomPinId pin_id = atom_ctx.nlist.port_pin(port_id, j);
@@ -170,7 +171,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
 
-                auto port_id = atom_ctx.nlist.find_port(atom_blk, pb_type->ports[i].name);
+                auto port_id = atom_ctx.nlist.BaseNetlist::find_port(atom_blk, pb_type->ports[i].name);
                 auto pin_id = atom_ctx.nlist.port_pin(port_id, 0);
                 VTR_ASSERT(pin_id);
                 VTR_ASSERT(atom_ctx.nlist.pin_net(pin_id) == pb_route[node_index].atom_net_id);
@@ -206,7 +207,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
 
-                auto port_id = atom_ctx.nlist.find_port(atom_blk, pb_type->ports[i].name);
+                auto port_id = atom_ctx.nlist.BaseNetlist::find_port(atom_blk, pb_type->ports[i].name);
                 auto pin_id = atom_ctx.nlist.port_pin(port_id, 0);
                 VTR_ASSERT(pin_id);
                 VTR_ASSERT(atom_ctx.nlist.pin_net(pin_id) == pb_route[node_index].atom_net_id);
@@ -259,7 +260,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 			if (pb_type->ports[i].type == OUT_PORT) {
 				int node_index = pb_graph_node->output_pins[0][0].pin_count_in_cluster;
 				VTR_ASSERT(pb_type->ports[i].num_pins == 1);
-                AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, pb_type->ports[i].name);
+                AtomPortId port_id = atom_ctx.nlist.BaseNetlist::find_port(atom_blk, pb_type->ports[i].name);
                 auto net_id = atom_ctx.nlist.port_net(port_id, 0);
 				VTR_ASSERT(net_id == pb_route[node_index].atom_net_id);
 				fprintf(fpout, "\n.names %s clb_%d_rr_node_%d\n", atom_ctx.nlist.net_name(net_id).c_str(), clb_index, node_index);
@@ -274,7 +275,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 		t_model_ports *port = cur->inputs;
 		
 		while (port != NULL) {
-            AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, port->name);
+            AtomPortId port_id = atom_ctx.nlist.BaseNetlist::find_port(atom_blk, port->name);
 			for (int i = 0; i < port->size; i++) {
                 fprintf(fpout, "%s[%d]=", port->name, i);
 
@@ -308,7 +309,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 		/* Print output ports */
 		port = cur->outputs;
 		while (port != NULL) {
-            AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, port->name);
+            AtomPortId port_id = atom_ctx.nlist.BaseNetlist::find_port(atom_blk, port->name);
 			for (int i = 0; i < port->size; i++) {
                 AtomNetId net_id = atom_ctx.nlist.port_net(port_id, i);
 
@@ -336,7 +337,7 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
         /* Print output buffers */
         port = cur->outputs;
         while (port != NULL) {
-            AtomPortId port_id = atom_ctx.nlist.find_port(atom_blk, port->name);
+            AtomPortId port_id = atom_ctx.nlist.BaseNetlist::find_port(atom_blk, port->name);
             for (int ipin = 0; ipin < port->size; ipin++) {
                 AtomNetId net_id = atom_ctx.nlist.port_net(port_id, ipin);
                 if (net_id) {
@@ -350,19 +351,20 @@ void print_atom_block(FILE *fpout, AtomBlockId atom_blk, t_block *clb) {
 	}
 }
 
-void print_routing_in_clusters(FILE *fpout, t_block *clb, int iclb) {
+void print_routing_in_clusters(FILE *fpout, int iclb) {
 	t_pb_route * pb_route;
 	t_pb_graph_node *pb_graph_node;
 	t_pb_graph_node *pb_graph_node_of_pin;
 	int max_pb_graph_pin;
 	t_pb_graph_pin** pb_graph_pin_lookup;		
 	
-	/* print routing of clusters */
-	pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(clb[iclb].type);
-	pb_graph_node = clb[iclb].pb->pb_graph_node;
-	max_pb_graph_pin = pb_graph_node->total_pb_pins;
-	pb_route = clb[iclb].pb_route;
+	auto& cluster_ctx = g_vpr_ctx.clustering();
 
+	/* print routing of clusters */
+	pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(cluster_ctx.clb_nlist.block_type((BlockId) iclb));
+	pb_graph_node = cluster_ctx.clb_nlist.block_pb((BlockId) iclb)->pb_graph_node;
+	max_pb_graph_pin = pb_graph_node->total_pb_pins;
+	pb_route = cluster_ctx.clb_nlist.block_pb((BlockId) iclb)->pb_route;
 
 	for(int i = 0; i < max_pb_graph_pin; i++) {
 		if(pb_route[i].atom_net_id) {
@@ -460,7 +462,7 @@ void print_models(FILE *fpout, t_model *user_models) {
 	}
 }
 
-void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char *out_fname) {
+void output_blif (const t_arch *arch, int num_clusters, const char *out_fname) {
 
 	/* 
 	 * This routine dumps out the output netlist in a format suitable for  *
@@ -470,7 +472,9 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 	FILE *fpout;
 	int column;
 	
-	if(clb[0].pb_route == NULL) {
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+
+	if(cluster_ctx.clb_nlist.block_pb((BlockId)0)->pb_route == NULL) {
 		return;
 	}
 
@@ -506,11 +510,11 @@ void output_blif (const t_arch *arch, t_block *clb, int num_clusters, const char
 
 	/* print out all circuit elements */
 	for (auto blk_id : atom_ctx.nlist.blocks()) {
-		print_atom_block(fpout, blk_id, clb);
+		print_atom_block(fpout, blk_id);
 	}
 
 	for(int clb_index = 0; clb_index < num_clusters; clb_index++) {
-		print_routing_in_clusters(fpout, clb, clb_index);
+		print_routing_in_clusters(fpout, clb_index);
 	}
 	
 	fprintf(fpout, "\n.end\n");

@@ -632,7 +632,7 @@ static void power_usage_blocks(t_power_usage * power_usage) {
                 int iblk = place_ctx.grid_blocks[x][y].blocks[z];
 
 				if (iblk != EMPTY_BLOCK && iblk != INVALID_BLOCK) {
-					pb = cluster_ctx.blocks[iblk].pb;
+					pb = cluster_ctx.clb_nlist.block_pb((BlockId) iblk);
 				}
 
 				/* Calculate power of this CLB */
@@ -810,7 +810,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 	}
 
 	/* Populate net indices into rr graph */
-	for (size_t net_idx = 0; net_idx < cluster_ctx.clbs_nlist.net.size(); net_idx++) {
+	for (size_t net_idx = 0; net_idx < cluster_ctx.clb_nlist.nets().size(); net_idx++) {
 		t_trace * trace;
 
 		for (trace = route_ctx.trace_head[net_idx]; trace != NULL; trace = trace->next) {
@@ -820,7 +820,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 	}
 
 	/* Populate net indices into rr graph */
-	for (size_t net_idx = 0; net_idx < cluster_ctx.clbs_nlist.net.size(); net_idx++) {
+	for (size_t net_idx = 0; net_idx < cluster_ctx.clb_nlist.nets().size(); net_idx++) {
 		t_trace * trace;
 
 		for (trace = route_ctx.trace_head[net_idx]; trace != NULL; trace = trace->next) {
@@ -1174,9 +1174,9 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 
 	/* Copy probability/density values to new netlist */
 	if (!power_ctx.clb_net_power) {
-		power_ctx.clb_net_power = (t_net_power*) vtr::calloc(cluster_ctx.clbs_nlist.net.size(), sizeof(t_net_power));
+		power_ctx.clb_net_power = (t_net_power*) vtr::calloc(cluster_ctx.clb_nlist.nets().size(), sizeof(t_net_power));
 	}
-	for (size_t net_idx = 0; net_idx < cluster_ctx.clbs_nlist.net.size(); net_idx++) {
+	for (size_t net_idx = 0; net_idx < cluster_ctx.clb_nlist.nets().size(); net_idx++) {
 		power_ctx.clb_net_power[net_idx].probability = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_idx)].probability;
 		power_ctx.clb_net_power[net_idx].density = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_idx)].density;
 	}

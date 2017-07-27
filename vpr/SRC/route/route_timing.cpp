@@ -176,8 +176,8 @@ bool try_timing_driven_route(t_router_opts router_opts,
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     //sort so net with most sinks is first.
-    auto sorted_nets = vector<int>(cluster_ctx.clbs_nlist.net.size());
-    for (size_t i = 0; i < cluster_ctx.clbs_nlist.net.size(); ++i) {
+    auto sorted_nets = vector<int>(cluster_ctx.clb_nlist.nets().size());
+    for (size_t i = 0; i < cluster_ctx.clb_nlist.nets().size(); ++i) {
         sorted_nets[i] = i;
     }
     std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than());
@@ -198,8 +198,8 @@ bool try_timing_driven_route(t_router_opts router_opts,
     /* Set delay of global signals to zero. Non-global net delays are set by
        update_net_delays_from_route_tree() inside timing_driven_route_net(), 
        which is only called for non-global nets. */
-    for (unsigned int inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); ++inet) {
-        if (cluster_ctx.clbs_nlist.net[inet].is_global) {
+    for (unsigned int inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
+        if (cluster_ctx.clb_nlist.net_global((NetId)inet)) {
             for (unsigned int ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
                 net_delay[inet][ipin] = 0.;
             }
@@ -236,10 +236,10 @@ bool try_timing_driven_route(t_router_opts router_opts,
         clock_t begin = clock();
 
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
-        for (unsigned int inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); ++inet) {
-            cluster_ctx.clbs_nlist.net[inet].is_routed = false;
-            cluster_ctx.clbs_nlist.net[inet].is_fixed = false;
-        }
+		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+			cluster_ctx.clb_nlist.set_routed(net_id, false);
+			cluster_ctx.clb_nlist.set_fixed(net_id, false);
+		}
 
         std::shared_ptr<SetupTimingInfo> route_timing_info;
         if (timing_info) {
@@ -258,7 +258,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         /*
          * Route each net
          */
-        for (unsigned int i = 0; i < cluster_ctx.clbs_nlist.net.size(); ++i) {
+        for (unsigned int i = 0; i < cluster_ctx.clb_nlist.nets().size(); ++i) {
             bool is_routable = try_timing_driven_route_net(
                     sorted_nets[i],
                     itry,
@@ -395,7 +395,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
             /* If timing analysis is not enabled, make sure that the criticalities and the
                net_delays stay as 0 so that wirelength can be optimized. */
 
-            for (unsigned int inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); ++inet) {
+            for (unsigned int inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
                 for (unsigned int ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
 #ifdef ENABLE_CLASSIC_VPR_STA
                     slacks->timing_criticality[inet][ipin] = 0.;
@@ -439,9 +439,9 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 
     connections_inf.prepare_routing_for_net(inet);
 
-    if (cluster_ctx.clbs_nlist.net[inet].is_fixed) { /* Skip pre-routed nets. */
+    if (cluster_ctx.clb_nlist.net_fixed((NetId)inet)) { /* Skip pre-routed nets. */
         is_routed = true;
-    } else if (cluster_ctx.clbs_nlist.net[inet].is_global) { /* Skip global nets. */
+    } else if (cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Skip global nets. */
         is_routed = true;
     } else if (should_route_net(inet, connections_inf) == false) {
         is_routed = true;
@@ -463,7 +463,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 
         /* Impossible to route? (disconnected rr_graph) */
         if (is_routed) {
-            cluster_ctx.clbs_nlist.net[inet].is_routed = true;
+			cluster_ctx.clb_nlist.set_routed((NetId)inet, true);
         } else {
             vtr::printf_info("Routing failed.\n");
         }
@@ -539,8 +539,8 @@ int get_max_pins_per_net(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     max_pins_per_net = 0;
-    for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        if (cluster_ctx.clbs_nlist.net[inet].is_global == false) {
+    for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
+        if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
             max_pins_per_net = max(max_pins_per_net,
                     (int) cluster_ctx.clbs_nlist.net[inet].pins.size());
         }
@@ -634,7 +634,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
     // may have to update timing delay of the previously legally reached sinks since downstream capacitance could be changed
     update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
 
-    if (!cluster_ctx.clbs_nlist.net[inet].is_global) {
+    if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
             if (net_delay[ipin] == 0) { // should be SOURCE->OPIN->IPIN->SINK
                 VTR_ASSERT(device_ctx.rr_nodes[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type() == OPIN);
@@ -677,12 +677,10 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
     if (cheapest == NULL) {
         const t_net_pin* src_net_pin = &cluster_ctx.clbs_nlist.net[inet].pins[0];
         const t_net_pin* sink_net_pin = &cluster_ctx.clbs_nlist.net[inet].pins[target_pin];
-        const t_block* src_blk = &cluster_ctx.blocks[src_net_pin->block];
-        const t_block* sink_blk = &cluster_ctx.blocks[sink_net_pin->block];
         vtr::printf("Failed to route connection from '%s' to '%s' for net '%s'\n",
-                    src_blk->name,
-                    sink_blk->name,
-                    cluster_ctx.clbs_nlist.net[inet].name);
+                    cluster_ctx.clb_nlist.block_name((BlockId)src_net_pin->block),
+					cluster_ctx.clb_nlist.block_name((BlockId)sink_net_pin->block),
+                    cluster_ctx.clb_nlist.net_name((NetId)inet));
         return false;
     }
     
@@ -1295,10 +1293,10 @@ static void timing_driven_check_net_delays(float **net_delay) {
     /*t_linked_vptr *ch_list_head_net_delay_check;*/
 
     net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch, cluster_ctx.clbs_nlist.net,
-            cluster_ctx.clbs_nlist.net.size());
-    load_net_delay_from_routing(net_delay_check, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+            cluster_ctx.clb_nlist.nets().size());
+    load_net_delay_from_routing(net_delay_check, cluster_ctx.clbs_nlist.net, cluster_ctx.clb_nlist.nets().size());
 
-    for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+    for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
         for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             if (net_delay_check[inet][ipin] == 0.) { /* Should be only GLOBAL nets */
                 if (fabs(net_delay[inet][ipin]) > ERROR_TOL) {
@@ -1400,7 +1398,7 @@ Connection_based_routing_resources::Connection_based_routing_resources() :
     remaining_targets.reserve(max_sink_pins_per_net);
     reached_rt_sinks.reserve(max_sink_pins_per_net);
 
-    size_t routing_num_nets = cluster_ctx.clbs_nlist.net.size();
+    size_t routing_num_nets = cluster_ctx.clb_nlist.nets().size();
     rr_sink_node_to_pin.resize(routing_num_nets);
     lower_bound_connection_delay.resize(routing_num_nets);
     forcible_reroute_connection_flag.resize(routing_num_nets);
@@ -1469,7 +1467,7 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    for (unsigned int inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); ++inet) {
+    for (unsigned int inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
         const auto& net_node_to_pin = rr_sink_node_to_pin[inet];
 
         for (auto mapping : net_node_to_pin) {
@@ -1492,7 +1490,7 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(const
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    size_t routing_num_nets = cluster_ctx.clbs_nlist.net.size();
+    size_t routing_num_nets = cluster_ctx.clb_nlist.nets().size();
 
     for (unsigned int inet = 0; inet < routing_num_nets; ++inet) {
 
@@ -1522,7 +1520,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 
     bool any_connection_rerouted = false; // true if any connection has been marked for rerouting
 
-    size_t routing_num_nets = cluster_ctx.clbs_nlist.net.size();
+    size_t routing_num_nets = cluster_ctx.clb_nlist.nets().size();
 
     for (unsigned int inet = 0; inet < routing_num_nets; ++inet) {
 
@@ -1621,8 +1619,8 @@ static WirelengthInfo calculate_wirelength_info() {
         }
     }
 
-    for (unsigned int inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); ++inet) {
-        if (cluster_ctx.clbs_nlist.net[inet].is_global == false
+    for (unsigned int inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
+        if (!cluster_ctx.clb_nlist.net_global((NetId)inet)
                 && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
             int bends, wirelength, segments;
             get_num_bends_and_length(inet, &bends, &wirelength, &segments);

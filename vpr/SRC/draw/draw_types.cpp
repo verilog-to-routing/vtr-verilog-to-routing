@@ -147,8 +147,8 @@ t_bound_box t_draw_coords::get_absolute_pb_bbox(const int clb_index, const t_pb_
 	return get_absolute_pb_bbox(cluster_ctx.blocks[clb_index], pb_gnode);
 }
 
-t_bound_box t_draw_coords::get_absolute_clb_bbox(const t_block& clb) {
-	return get_pb_bbox(clb, *clb.type->pb_graph_head);
+t_bound_box t_draw_coords::get_absolute_clb_bbox(const t_block& clb, const t_type_ptr type) {
+	return get_pb_bbox(clb, *type->pb_graph_head);
 }
 
 t_bound_box t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index) {

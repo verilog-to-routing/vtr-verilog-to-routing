@@ -243,7 +243,7 @@
  *      AtomNetId net1 = netlist.create_net("net1");
  *
  *      //Associate the net with blk1
- *      netlist.create_pin(blk1_out, 0, net_id, AtomPinType::DRIVER);
+ *      netlist.create_pin(blk1_out, 0, net1, AtomPinType::DRIVER);
  *
  *      //Create block 2 and hook it up to net1
  *      AtomBlockId blk2 = netlist.create_block("block_2", blk_model);
@@ -400,56 +400,31 @@
 
 #include "atom_netlist_fwd.h"
 
+#include "base_netlist.h"
+
 //Forward declaration for private methods
 template<typename I>
 class IdMap;
 
-class AtomNetlist {
+class AtomNetlist : public BaseNetlist {
+	public:
+		//Constructs a netlist
+		// name: the name of the netlist (e.g. top-level module)
+		// id:   a unique identifier for the netlist (e.g. a secure digest of the input file)
+		AtomNetlist(std::string name = "", std::string id = "");
+
     public: //Public types
-        typedef vtr::vector_map<AtomBlockId,AtomBlockId>::const_iterator block_iterator;
-        typedef vtr::vector_map<AtomPortId,AtomPortId>::const_iterator port_iterator;
-        typedef vtr::vector_map<AtomPinId,AtomPinId>::const_iterator pin_iterator;
-        typedef vtr::vector_map<AtomNetId,AtomNetId>::const_iterator net_iterator;
-
         typedef std::vector<std::vector<vtr::LogicValue>> TruthTable;
-
-        typedef vtr::Range<block_iterator> block_range;
-        typedef vtr::Range<port_iterator> port_range;
-        typedef vtr::Range<pin_iterator> pin_range;
-        typedef vtr::Range<net_iterator> net_range;
-    public:
-
-        //Constructs a netlist
-        // name: the name of the netlist (e.g. top-level module)
-        // id:   a unique identifier for the netlist (e.g. a secure digest of the input file)
-        AtomNetlist(std::string name="", std::string id="");
 
     public: //Public Accessors
         /*
-         * Netlist
-         */
-        //Retrieve the name of the netlist
-        const std::string&  netlist_name() const;
-
-        //Retrieve the unique identifier for this netlist
-        //This is typically a secure digest of the input file.
-        const std::string&  netlist_id() const;
-
-        /*
          * Blocks
          */
-        //Returns the name of the specified block
-        const std::string&  block_name          (const AtomBlockId id) const;
-
         //Returns the type of the specified block
         AtomBlockType       block_type          (const AtomBlockId id) const;
 
-        //Returns the model associated with the block
-        const t_model*      block_model         (const AtomBlockId id) const;
-
-        //Returns true if the block is purely combinational (i.e. no input clocks
-        //and not a primary input
-        bool                block_is_combinational    (const AtomBlockId id) const;
+		//Returns the model associated with the block
+		const t_model*      block_model(const AtomBlockId id) const;
 
         //Returns the truth table associated with the block
         // Note that this is only non-empty for LUTs and Flip-Flops/latches.
@@ -458,158 +433,35 @@ class AtomNetlist {
         // logic function.
         //
         // For FF/Latches there is only a single entry representing the initial state
-        const TruthTable&   block_truth_table   (const AtomBlockId id) const; 
-
-        //Returns a range of all pins assoicated with the specified block
-        pin_range           block_pins          (const AtomBlockId id) const;
-
-        //Returns a range of all input pins assoicated with the specified block
-        pin_range           block_input_pins    (const AtomBlockId id) const;
-
-        //Returns a range of all output pins assoicated with the specified block
-        // Note this is typically only data pins, but some blocks (e.g. PLLs) can produce outputs
-        // which are clocks.
-        pin_range           block_output_pins   (const AtomBlockId id) const;
-
-        //Returns a range of all clock pins assoicated with the specified block
-        pin_range           block_clock_pins    (const AtomBlockId id) const;
-
-        //Returns a range of all ports assoicated with the specified block
-        port_range          block_ports   (const AtomBlockId id) const;
-
-        //Returns a range consisting of the input ports associated with the specified block
-        port_range          block_input_ports   (const AtomBlockId id) const;
-
-        //Returns a range consisting of the output ports associated with the specified block
-        // Note this is typically only data ports, but some blocks (e.g. PLLs) can produce outputs
-        // which are clocks.
-        port_range          block_output_ports  (const AtomBlockId id) const;
-
-        //Returns a range consisting of the input clock ports associated with the specified block
-        port_range          block_clock_ports   (const AtomBlockId id) const;
+        const TruthTable&   block_truth_table(const AtomBlockId id) const; 
 
         /*
          * Ports
          */
-        //Returns the name of the specified port
-        const std::string&      port_name   (const AtomPortId id) const;
-
-        //Returns the width (number of bits) in the specified port
-        BitIndex                port_width  (const AtomPortId id) const;
-
-        //Returns the block associated with the specified port
-        AtomBlockId             port_block  (const AtomPortId id) const; 
-
         //Returns the type of the specified port
-        AtomPortType            port_type   (const AtomPortId id) const; 
+        AtomPortType			port_type(const AtomPortId id) const; 
 
-        //Returns the set of valid pins associated with the port
-        pin_range               port_pins   (const AtomPortId id) const;
-
-        //Returns the pin (potentially invalid) associated with the specified port and port bit index
-        //  port_id : The ID of the associated port
-        //  port_bit: The bit index of the pin in the port
-        //Note: this function is a synonym for find_pin()
-        AtomPinId               port_pin    (const AtomPortId port_id, const BitIndex port_bit) const;
-
-        //Returns the net (potentially invalid) associated with the specified port and port bit index
-        //  port_id : The ID of the associated port
-        //  port_bit: The bit index of the pin in the port
-        AtomNetId               port_net    (const AtomPortId port_id, const BitIndex port_bit) const;
-
-        //Returns the model port of the specified port or nullptr if not
-        //  port_id: The ID of the port to look for
-        const t_model_ports*    port_model  (const AtomPortId port_id) const;
+		//Returns the model port of the specified port or nullptr if not
+		//  id: The ID of the port to look for
+		const t_model_ports*    port_model(const AtomPortId id) const;
 
         /*
          * Pins
          */
-        //Returns the constructed name (derived from block and port) for the specified pin
-        std::string  pin_name           (const AtomPinId id) const;
-
-        //Returns the net associated with the specified pin
-        AtomNetId    pin_net            (const AtomPinId id) const; 
-
         //Returns the pin type of the specified pin
-        AtomPinType  pin_type           (const AtomPinId id) const; 
-
-        //Returns the port associated with the specified pin
-        AtomPortId   pin_port           (const AtomPinId id) const;
-
-        //Returns the port bit index associated with the specified pin
-        BitIndex     pin_port_bit       (const AtomPinId id) const;
+        AtomPinType			pin_type(const AtomPinId id) const; 
 
         //Returns the port type associated with the specified pin
-        AtomPortType pin_port_type      (const AtomPinId id) const;
+        AtomPortType		pin_port_type(const AtomPinId id) const;
 
-        //Returns the block associated with the specified pin
-        AtomBlockId  pin_block          (const AtomPinId id) const;
-
-        //Returns true if the pin is a constant (i.e. its value never changes)
-        bool         pin_is_constant    (const AtomPinId id) const;
-
-        /*
-         * Nets
-         */
-        //Returns the name of the specified net
-        const std::string&  net_name        (const AtomNetId id) const; 
-
-        //Returns a range consisting of all the pins in the net (driver and sinks)
-        //The first element in the range is the driver (and may be invalid)
-        //The remaining elements (potentially none) are the sinks
-        pin_range           net_pins        (const AtomNetId id) const;
-
-        //Returns the (potentially invalid) net driver pin
-        AtomPinId           net_driver      (const AtomNetId id) const;
-
-        //Returns the (potentially invalid) net driver block
-        AtomBlockId         net_driver_block(const AtomNetId id) const;
-
-        //Returns a (potentially empty) range consisting of net's sink pins
-        pin_range           net_sinks       (const AtomNetId id) const;
-
-        //Returns true if the net is driven by a constant pin (i.e. its value never changes)
-        bool                net_is_constant (const AtomNetId id) const;
-
-        /*
-         * Aggregates
-         */
-        //Returns a range consisting of all blocks in the netlist
-        block_range blocks  () const;
-
-        //Returns a range consisting of all pins in the netlist
-        pin_range   pins    () const;
-
-        //Returns a range consisting of all nets in the netlist
-        net_range   nets    () const;
-        
-        /*
-         * Lookups
-         */
-        //Returns the AtomBlockId of the specified block or AtomBlockId::INVALID() if not found
-        //  name: The name of the block
-        AtomBlockId find_block  (const std::string& name) const;
-
-        //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
-        //Note that this method is typically more efficient than searching by name
-        //  blk_id: The ID of the block who's ports will be checked
-        //  model_port: The port model to look for
-        AtomPortId  find_port   (const AtomBlockId blk_id, const t_model_ports* model_port) const;
-
-        //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
-        //Note that this method is typically less efficient than searching by a t_model_port
-        //  blk_id: The ID of the block who's ports will be checked
-        //  name  : The name of the port to look for
-        AtomPortId  find_port   (const AtomBlockId blk_id, const std::string& name) const;
-
-        //Returns the AtomPinId of the specified pin or AtomPinId::INVALID() if not found
-        //  port_id : The ID of the associated port
-        //  port_bit: The bit index of the pin in the port
-        AtomPinId   find_pin    (const AtomPortId port_id, BitIndex port_bit) const;
-
-        //Returns the AtomNetId of the specified net or AtomNetId::INVALID() if not found
-        //  name: The name of the net
-        AtomNetId   find_net    (const std::string& name) const;
+		/*
+		* Lookups
+		*/
+		//Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
+		//Note that this method is typically more efficient than searching by name
+		//  blk_id: The ID of the block who's ports will be checked
+		//  model_port: The port model to look for
+		AtomPortId  find_port(const AtomBlockId blk_id, const t_model_ports* model_port) const;
 
         /*
          * Utility
@@ -646,12 +498,13 @@ class AtomNetlist {
         AtomPortId  create_port (const AtomBlockId blk_id, const t_model_ports* model_port);
 
         //Create or return an existing pin in the netlist
-        //  port_id : The port this pin is associated with
-        //  port_bit: The bit index of the pin in the port
-        //  net_id  : The net the pin drives/sinks
-        //  type    : The type of the pin (driver/sink)
-        //  is_const: Indicates whether the pin holds a constant value (e. g. vcc/gnd)
-        AtomPinId   create_pin  (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const AtomPinType type, bool is_const=false);
+        //  port_id    : The port this pin is associated with
+        //  port_bit   : The bit index of the pin in the port
+        //  net_id     : The net the pin drives/sinks
+        //  pin_type   : The type of the pin (driver/sink)
+		//  port_type  : The type of the port (input/output/clock)
+        //  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
+        AtomPinId   create_pin  (const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const AtomPinType pin_type, const AtomPortType port_type, bool is_const=false);
 
         //Create an empty, or return an existing net in the netlist
         //  name    : The unique name of the net
@@ -677,26 +530,6 @@ class AtomNetlist {
         //  net      : The net to add the pin to
         void set_pin_net(const AtomPinId pin, AtomPinType pin_type, const AtomNetId net);
 
-        /*
-         * Note: all remove_*() will mark the associated items as invalid, but the items
-         * will not be removed until compress() is called.
-         */
-
-        //Removes a block from the netlist. This will also remove the associated ports and pins.
-        //  blk_id  : The block to be removed
-        void remove_block   (const AtomBlockId blk_id);
-
-        //Removes a net from the netlist. 
-        //This will mark the net's pins as having no associated.
-        //  net_id  : The net to be removed
-        void remove_net     (const AtomNetId net_id);
-
-        //Removes a connection betwen a net and pin. The pin is removed from the net and the pin
-        //will be marked as having no associated net
-        //  net_id  : The net from which the pin is to be removed
-        //  pin_id  : The pin to be removed from the net
-        void remove_net_pin (const AtomNetId net_id, const AtomPinId pin_id);
-
         //Compresses the netlist, removing any invalid and/or unreferenced
         //blocks/ports/pins/nets.
         //
@@ -707,61 +540,10 @@ class AtomNetlist {
         void compress();
 
     private: //Private types
-        struct atom_string_id_tag;
-
         //A unique identifier for a string in the atom netlist
-        typedef vtr::StrongId<atom_string_id_tag> AtomStringId;
+        typedef vtr::StrongId<BaseNetlist::string_id_tag> AtomStringId;
 
     private: //Private members
-        /*
-         * Lookups
-         */
-        //Returns the AtomStringId of the specifed string if it exists or AtomStringId::INVALID() if not
-        //  str : The string to look for
-        AtomStringId find_string(const std::string& str) const;
-
-        //Returns the AtomBlockId of the specifed block if it exists or AtomBlockId::INVALID() if not
-        //  name_id : The block name to look for
-        AtomBlockId find_block(const AtomStringId name_id) const;
-
-        //Returns the AtomNetId of the specifed port if it exists or AtomNetId::INVALID() if not
-        //  name_id: The string ID of the net name to look for
-        AtomNetId find_net(const AtomStringId name_id) const;
-
-        /*
-         * Mutators
-         */
-        //Create or return the ID of the specified string
-        //  str: The string whose ID is requested
-        AtomStringId create_string(const std::string& str);
-
-        //Updates net cross-references for the specified pin
-        void associate_pin_with_net(const AtomPinId pin_id, const AtomPinType type, const AtomNetId net_id); 
-
-        //Updates port cross-references for the specified pin
-        void associate_pin_with_port(const AtomPinId pin_id, const AtomPortId port_id); 
-
-        //Updates block cross-references for the specified pin
-        void associate_pin_with_block(const AtomPinId pin_id, const AtomPortType type, const AtomBlockId blk_id); 
-
-        //Updates block cross-references for the specified port
-        void associate_port_with_block(const AtomPortId port_id, const AtomBlockId blk_id);
-
-        //Removes a port from the netlist.
-        //The port's pins are also marked invalid and removed from any associated nets
-        //  port_id: The ID of the port to be removed
-        void remove_port(const AtomPortId port_id);
-
-        //Removes a pin from the netlist.
-        //The pin is marked invalid, and removed from any assoicated nets
-        //  pin_id: The ID of the pin to be removed
-        void remove_pin(const AtomPinId pin_id);
-
-        //Marks netlist components which have become redundant due to other removals
-        //(e.g. ports with only invalid pins) as invalid so they will be destroyed during
-        //compress()
-        void remove_unused();
-
         /*
          * Netlist compression/optimization
          */
@@ -785,21 +567,6 @@ class AtomNetlist {
         //Removes invalid and reorders nets
         void clean_nets(const vtr::vector_map<AtomNetId,AtomNetId>& net_id_map);
 
-        //Re-builds cross-references held by blocks
-        void rebuild_block_refs(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map, 
-                                const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map);
-
-        //Re-builds cross-references held by ports
-        void rebuild_port_refs(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map, 
-                               const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map);
-
-        //Re-builds cross-references held by pins
-        void rebuild_pin_refs(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map, 
-                              const vtr::vector_map<AtomNetId,AtomNetId>& net_id_map);
-
-        //Re-builds cross-references held by nets
-        void rebuild_net_refs(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map);
-
         //Re-builds fast look-ups
         void rebuild_lookups();
 
@@ -812,87 +579,28 @@ class AtomNetlist {
         //Verify the internal data structure sizes match
         bool verify_sizes() const; //All data structures
         bool validate_block_sizes() const;
-        bool validate_port_sizes() const;
-        bool validate_pin_sizes() const;
-        bool validate_net_sizes() const;
-        bool validate_string_sizes() const;
+		bool validate_port_sizes() const;
 
-        //Verify that internal data structure cross-references are consistent
-        bool verify_refs() const; //All cross-references
-        bool validate_block_port_refs() const;
-        bool validate_block_pin_refs() const;
-        bool validate_port_pin_refs() const;
-        bool validate_net_pin_refs() const;
-        bool validate_string_refs() const;
+		//Verify that internal data structure cross-references are consistent
+		bool verify_refs() const; //All cross-references
+		bool validate_block_pin_refs() const;
+		bool validate_port_pin_refs() const;
 
-        //Verify that fast-lookups are consistent with internal data structures
-        bool verify_lookups() const;
-        
+		bool valid_port_bit(AtomPortId id, BitIndex port_bit) const;
+
         //Verify that block invariants hold (i.e. logical consistency)
         bool verify_block_invariants() const;
 
-        //Validates that the specified ID is valid in the current netlist state
-        bool valid_block_id(AtomBlockId id) const;
-        bool valid_port_id(AtomPortId id) const;
-        bool valid_port_bit(AtomPortId id, BitIndex port_bit) const;
-        bool valid_pin_id(AtomPinId id) const;
-        bool valid_net_id(AtomNetId id) const;
-        bool valid_string_id(AtomStringId id) const;
-
     private: //Private data
-
         //Netlist data
-        std::string                 netlist_name_;  //Name of the top-level netlist
-        std::string                 netlist_id_;    //Unique identifier for the netlist
         bool                        dirty_;         //Indicates the netlist has invalid entries from remove_*() functions
 
         //Block data
-        vtr::vector_map<AtomBlockId,AtomBlockId>             block_ids_;                //Valid block ids
-        vtr::vector_map<AtomBlockId,AtomStringId>            block_names_;              //Name of each block
-        vtr::vector_map<AtomBlockId,const t_model*>          block_models_;             //Architecture model of each block
-        vtr::vector_map<AtomBlockId,TruthTable>              block_truth_tables_;       //Truth tables of each block
+		vtr::vector_map<AtomBlockId, const t_model*>		block_models_;             //Architecture model of each block
+		vtr::vector_map<AtomBlockId,TruthTable>             block_truth_tables_;       //Truth tables of each block
 
-        vtr::vector_map<AtomBlockId,std::vector<AtomPinId>>  block_pins_;               //Pins of each block
-        vtr::vector_map<AtomBlockId,unsigned>                block_num_input_pins_;     //Number of input pins on each block
-        vtr::vector_map<AtomBlockId,unsigned>                block_num_output_pins_;    //Number of output pins on each block
-        vtr::vector_map<AtomBlockId,unsigned>                block_num_clock_pins_;     //Number of clock pins on each block
-
-        vtr::vector_map<AtomBlockId,std::vector<AtomPortId>> block_ports_;              //Ports of each block
-        vtr::vector_map<AtomBlockId,unsigned>                block_num_input_ports_;    //Input ports of each block
-        vtr::vector_map<AtomBlockId,unsigned>                block_num_output_ports_;   //Output ports of each block
-        vtr::vector_map<AtomBlockId,unsigned>                block_num_clock_ports_;    //Clock ports of each block
-
-        //Port data
-        vtr::vector_map<AtomPortId,AtomPortId>             port_ids_;      //Valid port ids
-        vtr::vector_map<AtomPortId,AtomStringId>           port_names_;    //Name of each port
-        vtr::vector_map<AtomPortId,AtomBlockId>            port_blocks_;   //Block associated with each port
-        vtr::vector_map<AtomPortId,const t_model_ports*>   port_models_;   //Architecture port models of each port
-        vtr::vector_map<AtomPortId,std::vector<AtomPinId>> port_pins_;     //Pins associated with each port
-
-        //Pin data
-        vtr::vector_map<AtomPinId,AtomPinId>  pin_ids_;           //Valid pin ids
-        vtr::vector_map<AtomPinId,AtomPortId> pin_ports_;         //Type of each pin
-        vtr::vector_map<AtomPinId,BitIndex>   pin_port_bits_;     //The ports bit position in the port
-        vtr::vector_map<AtomPinId,AtomNetId>  pin_nets_;          //Net associated with each pin
-        vtr::vector_map<AtomPinId,bool>       pin_is_constant_;   //Indicates if the pin always keeps a constant value
-
-        //Net data
-        vtr::vector_map<AtomNetId,AtomNetId>              net_ids_;   //Valid net ids
-        vtr::vector_map<AtomNetId,AtomStringId>           net_names_; //Name of each net
-        vtr::vector_map<AtomNetId,std::vector<AtomPinId>> net_pins_;  //Pins associated with each net
-
-        //String data
-        // We store each unique string once, and reference it by an StringId
-        // This avoids duplicating the strings in the fast look-ups (i.e. the look-ups
-        // only store the Ids)
-        vtr::vector_map<AtomStringId,AtomStringId>   string_ids_;    //Valid string ids
-        vtr::vector_map<AtomStringId,std::string>    strings_;       //Strings
-
-    private: //Fast lookups
-
-        vtr::vector_map<AtomStringId,AtomBlockId>       block_name_to_block_id_;
-        vtr::vector_map<AtomStringId,AtomNetId>         net_name_to_net_id_;
-        std::unordered_map<std::string,AtomStringId>    string_to_string_id_;
+		//Port data
+		vtr::vector_map<AtomPortId, const t_model_ports*>   port_models_;   //Architecture port models of each port
 };
 
 #include "atom_lookup.h"

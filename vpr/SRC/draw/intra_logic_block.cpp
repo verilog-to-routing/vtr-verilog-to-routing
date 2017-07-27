@@ -44,8 +44,8 @@ static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *p
 									  float parent_width, float parent_height, 
 									  float *blk_width, float *blk_height);
 static int draw_internal_find_max_lvl(t_pb_type pb_type);
-static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_box& parent_bbox);
-static bool is_top_lvl_block_highlighted(const t_block& clb);
+static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_box& parent_bbox, const t_type_ptr type);
+static bool is_top_lvl_block_highlighted(const t_block& clb, const t_type_ptr type);
 
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin);
 t_pb* highlight_sub_block_helper(const t_block& clb, t_pb* pb, const t_point& local_pt, int max_depth);
@@ -162,10 +162,10 @@ void draw_internal_draw_subblk() {
 				/* Get block ID */
 				int bnum = place_ctx.grid_blocks[i][j].blocks[k];
 				/* Safety check, that physical blocks exists in the CLB */
-				if (cluster_ctx.blocks[bnum].pb == NULL)
+				if (cluster_ctx.clb_nlist.block_pb((BlockId) bnum) == NULL)
 					continue;
 
-				draw_internal_pb(&cluster_ctx.blocks[bnum], cluster_ctx.blocks[bnum].pb, t_bound_box(0,0,0,0));
+				draw_internal_pb(&cluster_ctx.blocks[bnum], cluster_ctx.clb_nlist.block_pb((BlockId) bnum), t_bound_box(0,0,0,0), cluster_ctx.clb_nlist.block_type((BlockId) bnum));
 			}
 		}
 	}
@@ -319,7 +319,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
  * which a netlist block can map to, and draws each sub-block inside its parent block. With
  * each click on the "Blk Internal" button, a new level is shown. 
  */
-static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_box& parent_bbox) {
+static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_box& parent_bbox, const t_type_ptr type) {
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
@@ -335,7 +335,7 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 	/// first draw box ///
 
 	if (pb_type->depth == 0) {
-		if (!is_top_lvl_block_highlighted(*clb)) {
+		if (!is_top_lvl_block_highlighted(*clb, type)) {
 			// if this is a top level pb, and only if it isn't selected (ie. a funny colour),
 			// overwrite it. (but stil draw the text)
 			setcolor(WHITE);
@@ -351,7 +351,7 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 			setlinestyle(SOLID);
 
 			// type_index indicates what type of block.
-			const int type_index = clb->type->index;
+			const int type_index = type->index;
 
 			// determine default background color
 			if (sel_sub_info.is_selected(pb->pb_graph_node, clb)) {
@@ -458,7 +458,7 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 			}
 
 			// now recurse
-			draw_internal_pb(clb, child_pb, abs_bbox);
+			draw_internal_pb(clb, child_pb, abs_bbox, type);
 
 		}
 	}
@@ -592,7 +592,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
 /* This function checks whether a top-level clb has been highlighted. It does 
  * so by checking whether the color in this block is default color.
  */
-static bool is_top_lvl_block_highlighted(const t_block& clb) {
+static bool is_top_lvl_block_highlighted(const t_block& clb, const t_type_ptr type) {
 	t_draw_state *draw_state;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -601,12 +601,12 @@ static bool is_top_lvl_block_highlighted(const t_block& clb) {
 	/* Call accessor function to retrieve global variables. */
 	draw_state = get_draw_state_vars();
 
-	if (clb.type->index < 3) {
+	if (type->index < 3) {
 		if (draw_state->block_color[blk_id] == LIGHTGREY)
 			return false;
-	} else if (clb.type->index < 3 + MAX_BLOCK_COLOURS) {
+	} else if (type->index < 3 + MAX_BLOCK_COLOURS) {
 		if (draw_state->block_color[blk_id] == (color_types) (BISQUE + MAX_BLOCK_COLOURS 
-												+ clb.type->index - 3))
+												+ type->index - 3))
 			return false;
 	} else {
 		if (draw_state->block_color[blk_id] == (color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1))
@@ -616,13 +616,13 @@ static bool is_top_lvl_block_highlighted(const t_block& clb) {
 	return true;
 }
 
-int highlight_sub_block(const t_point& point_in_clb, t_block& clb) {
+int highlight_sub_block(const t_point& point_in_clb, t_block& clb, t_pb *pb) {
 	t_draw_state* draw_state = get_draw_state_vars();
 
 	int max_depth = draw_state->show_blk_internal;
 
 	t_pb* new_selected_sub_block = 
-		highlight_sub_block_helper(clb, clb.pb, point_in_clb, max_depth);
+		highlight_sub_block_helper(clb, pb, point_in_clb, max_depth);
 	if (new_selected_sub_block == NULL) {
 		get_selected_sub_block_info().clear();
 		return 1;

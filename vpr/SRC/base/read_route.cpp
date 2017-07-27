@@ -133,36 +133,34 @@ static void process_nets(ifstream &fp, int inet, string name, std::vector<std::s
     if (input_tokens.size() > 3 && input_tokens[3] == "global"
             && input_tokens[4] == "net" && input_tokens[5] == "connecting:") {
         /* Global net.  Never routed. */
-        if (cluster_ctx.clbs_nlist.net[inet].is_global != true) {
+        if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "Net %d should be a global net",
-                    inet);
+                    "Net %d should be a global net", inet);
         }
         //erase an extra colon for global nets
         name.erase(name.end() - 1);
         name = format_name(name);
 
-        if (cluster_ctx.clbs_nlist.net[inet].name != name) {
+        if (0 != cluster_ctx.clb_nlist.net_name((NetId)inet).compare(name)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                     "Net name %s for net number %d specified in the routing file does not match given %s",
-                    name.c_str(), inet, cluster_ctx.clbs_nlist.net[inet].name);
+                    name.c_str(), inet, cluster_ctx.clb_nlist.net_name((NetId)inet));
         }
 
         process_global_blocks(fp, inet);
     } else {
         /* Not a global net */
-        if (cluster_ctx.clbs_nlist.net[inet].is_global != false) {
+        if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "Net %d is not a global net",
-                    inet);
+                    "Net %d is not a global net", inet);
         }
 
         name = format_name(name);
 
-        if (cluster_ctx.clbs_nlist.net[inet].name != name) {
+        if (0 != cluster_ctx.clb_nlist.net_name((NetId)inet).compare(name)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                     "Net name %s for net number %d specified in the routing file does not match given %s",
-                    name.c_str(), inet, cluster_ctx.clbs_nlist.net[inet].name);
+                    name.c_str(), inet, cluster_ctx.clb_nlist.net_name((NetId)inet));
         }
 
         process_nodes(fp, inet);
@@ -361,10 +359,10 @@ static void process_global_blocks(ifstream &fp, int inet) {
             bnum = atoi(bnum_str.c_str());
 
             /*Check for name, coordinate, and pins*/
-            if (cluster_ctx.blocks[bnum].name != tokens[1]) {
+            if (0 != cluster_ctx.clb_nlist.block_name((BlockId)bnum).compare(tokens[1])) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "Block %s for block number %d specified in the routing file does not match given %s",
-                        tokens[1].c_str(), bnum, cluster_ctx.blocks[bnum].name);
+                        tokens[1].c_str(), bnum, cluster_ctx.clb_nlist.block_name((BlockId)bnum));
             }
             if (place_ctx.block_locs[bnum].x != x || place_ctx.block_locs[bnum].y != y) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
@@ -372,10 +370,10 @@ static void process_global_blocks(ifstream &fp, int inet) {
                         x, y, place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y);
             }
             int node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[pin_counter].block_pin;
-            if (cluster_ctx.blocks[bnum].type->pin_class[node_block_pin] != atoi(tokens[7].c_str())) {
+            if (cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_class[node_block_pin] != atoi(tokens[7].c_str())) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "The pin class %d of %d net does not match given ",
-                        atoi(tokens[7].c_str()), inet, cluster_ctx.blocks[bnum].type->pin_class[node_block_pin]);
+                        atoi(tokens[7].c_str()), inet, cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_class[node_block_pin]);
             }
             pin_counter++;
         }
