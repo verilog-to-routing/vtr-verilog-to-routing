@@ -1360,7 +1360,7 @@ void print_route(const char* placement_file, const char* route_file) {
 				node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
 				iclass = cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_class[node_block_pin];
 
-				fprintf(fp, "Block %s (#%d) at (%d, %d), Pin class %d.\n",
+				fprintf(fp, "Block %s (#%d) at (%d,%d), Pin class %d.\n",
 						cluster_ctx.clb_nlist.block_name((BlockId) bnum).c_str(), bnum, place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y,
 						iclass);
 			}
