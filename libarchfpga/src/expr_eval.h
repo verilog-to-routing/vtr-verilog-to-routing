@@ -1,6 +1,7 @@
 #ifndef EXPR_EVAL_H
 #define EXPR_EVAL_H
 #include <map>
+#include <string>
 #include "arch_error.h"
 
 /**** Structs ****/
@@ -24,10 +25,10 @@ class t_formula_data {
 };
 
 /* returns integer result according to specified formula and data */
-int parse_formula( const char *formula, const t_formula_data &mydata);
+int parse_formula(std::string formula, const t_formula_data &mydata);
 
 /* returns integer result according to specified piece-wise formula and data */
-int parse_piecewise_formula( const char *formula, const t_formula_data &mydata);
+int parse_piecewise_formula(const char *formula, const t_formula_data &mydata);
 
 /* checks if the specified formula is piece-wise defined */
 bool is_piecewise_formula( const char *formula);
