@@ -1,5 +1,10 @@
 tested on ubuntu 16.04 armhf
-EXPERIMENTAL some things are broken
+EXPERIMENTAL some things are broken:
+###############################################################################
+[Fail] hard_fpu_arch_timing.xml/mm3.v critical_path_delay: result = -1 golden = 2.985
+[Fail] k6_N8_I80_fleI10_fleO2_ff2_nmodes_2.xml/ch_intrinsics.v min_chan_width: result = -1 golden = 42
+[Fail] k6_frac_N10_frac_chain_depop50_mem32K_40nm.xml/ch_intrinsics.v min_chan_width: result = -1 golden = 62
+[Fail] k6_frac_N10_mem32K_40nm.xml/ch_intrinsics.v min_chan_width: result = -1 golden = 50
 
 to install:
 ###############################################################################
