@@ -150,7 +150,7 @@ static void process_nets(ifstream &fp, int inet, string name, std::vector<std::s
         process_global_blocks(fp, inet);
     } else {
         /* Not a global net */
-        if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
+        if (cluster_ctx.clb_nlist.net_global((NetId)inet)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                     "Net %d is not a global net", inet);
         }
