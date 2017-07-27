@@ -591,7 +591,13 @@ static void SetupGridLocations(t_arch& arch, pugi::xml_node Locations, t_type_de
         }
 
         auto type = get_attribute(child, "type", loc_data).value();
-        int priority = get_attribute(child, "priority", loc_data, ReqOpt::OPTIONAL).as_int(0);
+
+        //XXX: To get the ability to 'tweak' priorities up or down, without clashing with any user priorities,
+        //     we scale the user priorities by a factor. This ensures we will not accidentally cause priority 
+        //     conflicts if the user specified priorities directly adjacent to each other (provided all tweaks 
+        //     are less than +/- PRIORITY_SCALE_FACTOR/2).
+        constexpr float PRIORITY_SCALE_FACTOR = 10;
+        int priority = PRIORITY_SCALE_FACTOR * get_attribute(child, "priority", loc_data, ReqOpt::OPTIONAL).as_int(0);
 
         if (type == std::string("perimeter")) {
             //The edges
@@ -685,7 +691,7 @@ static void SetupGridLocations(t_arch& arch, pugi::xml_node Locations, t_type_de
             //Classic VPR style was to leave the column empty (instead of fill type) if block dimension caused one not to fit
             t_grid_loc_def background = col;
             background.block_type = "<EMPTY>";
-            background.priority = priority - 1; //So real col will override where possible
+            background.priority = priority - 1; //-1 so real col type will override where possible
 
             arch.grid_loc_defs.push_back(background);
         } else if (type == std::string("rel")) {
