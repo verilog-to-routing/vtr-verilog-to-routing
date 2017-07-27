@@ -200,7 +200,6 @@ void alloc_and_load_grid(std::vector<t_grid_loc_def> grid_loc_defs, int *num_ins
 
         //The minimum repeat is the region dimension
         size_t region_width = endx - startx + 1; //+1 since start/end are both inclusive
-        VTR_ASSERT(region_width > 0);
         if (repeatx < region_width) {
             VPR_THROW(VPR_ERROR_ARCH, 
                     "Grid location specification x repeat for block type '%s' must be at least the region width (%d) to avoid overlapping instances (was %d)",
@@ -208,7 +207,6 @@ void alloc_and_load_grid(std::vector<t_grid_loc_def> grid_loc_defs, int *num_ins
         }
 
         size_t region_height = endy - starty + 1; //+1 since start/end are both inclusive
-        VTR_ASSERT(region_height > 0);
         if (repeaty < region_height) {
             VPR_THROW(VPR_ERROR_ARCH, 
                     "Grid location specification y repeat for block type '%s' must be at least the region height (%d) to avoid overlapping instances (was %d)",
@@ -381,7 +379,8 @@ static void CheckGrid(void) {
 	/* Check grid is valid */
 	for (i = 0; i <= (device_ctx.nx + 1); ++i) {
 		for (j = 0; j <= (device_ctx.ny + 1); ++j) {
-			if (NULL == device_ctx.grid[i][j].type) {
+            auto type = device_ctx.grid[i][j].type;
+			if (NULL == type) {
 				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "device_ctx.grid[%d][%d] has no type.\n", i, j);
 			}
 
@@ -390,15 +389,44 @@ static void CheckGrid(void) {
 			}
 
 			if ((device_ctx.grid[i][j].width_offset < 0)
-					|| (device_ctx.grid[i][j].width_offset >= device_ctx.grid[i][j].type->width)) {
+					|| (device_ctx.grid[i][j].width_offset >= type->width)) {
 				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "device_ctx.grid[%d][%d] has invalid width offset (%d).\n", i, j, device_ctx.grid[i][j].width_offset);
 			}
 			if ((device_ctx.grid[i][j].height_offset < 0)
-					|| (device_ctx.grid[i][j].height_offset >= device_ctx.grid[i][j].type->height)) {
+					|| (device_ctx.grid[i][j].height_offset >= type->height)) {
 				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "device_ctx.grid[%d][%d] has invalid height offset (%d).\n", i, j, device_ctx.grid[i][j].height_offset);
 			}
 
-			if (place_ctx.grid_blocks[i][j].blocks.empty() && (device_ctx.grid[i][j].type->capacity > 0)) {
+            //Verify that type and width/height offsets are correct (e.g. for dimension > 1 blocks)
+            for (int x = i; x < i + type->width; ++x) {
+                int x_offset = x - i;
+                for (int y = j; y < j + type->height; ++y) {
+                    int y_offset = y - j;
+
+                    auto& tile = device_ctx.grid[x][y];
+                    if (tile.type != type) {
+                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                                "device_ctx.grid[%d][%d] should have type '%s' (based on root location) but has type '%s'\n", 
+                                i, j, type->name, tile.type->name);
+                    }
+
+                    if (tile.width_offset != x_offset) {
+                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                                "device_ctx.grid[%d][%d] of type '%s' should have width offset '%d' (based on root location) but has '%d'\n", 
+                                i, j, type->name, x_offset, tile.width_offset);
+                    }
+
+                    if (tile.height_offset != y_offset) {
+                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                                "device_ctx.grid[%d][%d]  of type '%s' should have height offset '%d' (based on root location) but has '%d'\n", 
+                                i, j, type->name, y_offset, tile.height_offset);
+                    }
+                }
+            }
+
+
+
+			if (place_ctx.grid_blocks[i][j].blocks.empty() && (type->capacity > 0)) {
 				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "place_ctx.grid[%d][%d] has no block list allocated.\n", i, j);
 			}
 		}
