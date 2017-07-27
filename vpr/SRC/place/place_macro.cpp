@@ -539,7 +539,7 @@ static bool net_is_driven_by_direct(int clb_net) {
     
     const t_net_pin* driver = &cluster_ctx.clbs_nlist.net[clb_net].pins[0];
 
-    auto direct = f_idirect_from_blk_pin[cluster_ctx.blocks[driver->block].type->index][driver->block_pin];
+    auto direct = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)driver->block)->index][driver->block_pin];
 
     return direct != OPEN;
 }
@@ -558,13 +558,13 @@ static void validate_macros(t_pl_macro* macros, int num_macros) {
         }
     }
 
-    for (int iblk = 0; iblk < cluster_ctx.num_blocks; ++iblk) {
+    for (unsigned int iblk = 0; iblk < cluster_ctx.clb_nlist.blocks().size(); ++iblk) {
         auto range = block_to_macro.equal_range(iblk);
 
         int blk_macro_cnt = std::distance(range.first, range.second);
         if (blk_macro_cnt > 1) {
             std::stringstream msg;
-            msg << "Block #" << iblk << " '" << cluster_ctx.blocks[iblk].name << "'"
+            msg << "Block #" << iblk << " '" << cluster_ctx.clb_nlist.block_name((BlockId)iblk) << "'"
                 << " appears in " << blk_macro_cnt << " placement macros (should appear in at most one). Related Macros:\n";
 
             for (auto iter = range.first; iter != range.second; ++iter) {

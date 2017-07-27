@@ -677,12 +677,10 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
     if (cheapest == NULL) {
         const t_net_pin* src_net_pin = &cluster_ctx.clbs_nlist.net[inet].pins[0];
         const t_net_pin* sink_net_pin = &cluster_ctx.clbs_nlist.net[inet].pins[target_pin];
-        const t_block* src_blk = &cluster_ctx.blocks[src_net_pin->block];
-        const t_block* sink_blk = &cluster_ctx.blocks[sink_net_pin->block];
         vtr::printf("Failed to route connection from '%s' to '%s' for net '%s'\n",
-                    src_blk->name,
-                    sink_blk->name,
-                    cluster_ctx.clbs_nlist.net[inet].name);
+                    cluster_ctx.clb_nlist.block_name((BlockId)src_net_pin->block),
+					cluster_ctx.clb_nlist.block_name((BlockId)sink_net_pin->block),
+                    cluster_ctx.clb_nlist.net_name((NetId)inet));
         return false;
     }
     

@@ -1175,7 +1175,6 @@ void free_rr_graph(void) {
     device_ctx.rr_node_indices.resize(0);
     free(device_ctx.rr_indexed_data);
 
-    free(device_ctx.rr_indexed_data);
     for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
         free(route_ctx.rr_blk_source[i]);
     }

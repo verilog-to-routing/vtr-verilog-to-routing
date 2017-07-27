@@ -495,7 +495,7 @@ void try_place(t_placer_opts placer_opts,
     //Sanity check that initial placement is legal
     check_place(bb_cost, timing_cost, placer_opts.place_algorithm, delay_cost);
 
-	move_lim = (int) (annealing_sched.inner_num * pow(cluster_ctx.num_blocks, 1.3333));
+	move_lim = (int) (annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
 	if (placer_opts.inner_loop_recompute_divider != 0) {
 		inner_recompute_limit = (int) 
