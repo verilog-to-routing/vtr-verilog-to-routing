@@ -91,20 +91,26 @@ static int apply_rpn_op( const Formula_Object &arg1, const Formula_Object &arg2,
 /* checks if specified character represents an ASCII number */
 static bool is_char_number( const char ch );
 
+// returns true if ch is an operator
+static bool is_operator(const char ch);
+
+// returns the length of any variable name starting at the beginning of str
+static int var_length (const char* str);
+
 /* increments str_ind until it reaches specified char is formula. returns true if character was found, false otherwise */
 static bool goto_next_char( int *str_ind, const string &pw_formula, char ch);
 
 
 /**** Function Implementations ****/
 /* returns integer result according to specified non-piece-wise formula and data */
-int parse_formula( const char *formula, const t_formula_data& mydata ){
+int parse_formula(std::string formula, const t_formula_data& mydata ){
 	int result = -1;
 
 	/* output in reverse-polish notation */
 	vector<Formula_Object> rpn_output;	
 
 	/* now we have to run the shunting-yard algorithm to convert formula to reverse polish notation */
-	formula_to_rpn( formula, mydata, rpn_output );
+	formula_to_rpn( formula.c_str(), mydata, rpn_output );
 	
 	/* then we run an RPN parser to get the final result */
 	result = parse_rpn_vector(rpn_output);
@@ -309,7 +315,16 @@ static void get_formula_object( const char *ch, int &ichar, const t_formula_data
 	/* the character can either be part of a number, or it can be an object like W, t, (, +, etc
 	   here we have to account for both possibilities */
 
-	if ( is_char_number(*ch) ){
+    int var_len = var_length(ch);
+
+    if (var_len != 0) {
+        //We have a variable
+        std::string var_name(ch, var_len);
+        ichar += (var_len - 1); //-1 since ichar is incremented at end of loop in formula_to_rpn()
+
+        fobj->type = E_FML_NUMBER;
+        fobj->data.num = mydata.get_var_value(var_name);
+    } else if ( is_char_number(*ch) ){
 		/* we have a number -- use atoi to convert */
 		stringstream ss;
 		while ( is_char_number(*ch) ){
@@ -322,14 +337,6 @@ static void get_formula_object( const char *ch, int &ichar, const t_formula_data
 		fobj->data.num = vtr::atoi(ss.str().c_str());
 	} else {
 		switch ((*ch)){
-			case 'W':
-				fobj->type = E_FML_NUMBER;
-				fobj->data.num = mydata.get_var_value("W");
-				break;
-			case 't':
-				fobj->type = E_FML_NUMBER;
-				fobj->data.num = mydata.get_var_value("t");
-				break;
 			case '+':
 				fobj->type = E_FML_OPERATOR;
 				fobj->data.op = E_OP_ADD;
@@ -603,6 +610,44 @@ static bool is_char_number ( const char ch ){
 	}
 
 	return result;
+}
+
+static bool is_operator(const char ch) {
+    switch(ch) {
+        case '+': //fallthrough
+        case '-': //fallthrough
+        case '/': //fallthrough
+        case '*': //fallthrough
+        case ')': //fallthrough
+        case '(':
+            return true;
+        default:
+            return false;
+    }
+}
+
+//returns the length of the substring consisting of valid vairable characters from
+//the start of the string
+static int var_length (const char* str) {
+    int ichar = 0;
+
+    if (!str) return 0;
+
+    while(str[ichar] != '\0') {
+
+        //No whitespace
+        if (str[ichar] == ' ') break; 
+
+        //Not an operator
+        if (is_operator(str[ichar])) break;
+        
+        //First char must not be a number
+        if (ichar == 0 && is_char_number(str[ichar])) break;
+
+        ++ichar; //Next character
+    }
+
+    return ichar;
 }
 
 
