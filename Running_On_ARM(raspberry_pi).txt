@@ -1,0 +1,29 @@
+tested on ubuntu 16.04 armhf
+EXPERIMENTAL some things are broken
+
+to install:
+###############################################################################
+# ------------------------------------------------------------------------------
+# Install base
+RUN apt-get install -y clang time supervisor build-essential g++ zip clang curl libssl-dev git libxml2-dev libx11-dev libxft-dev fontconfig libcairo2-dev gcc automake git cmake flex bison ctags gdb perl valgrind 
+
+# ------------------------------------------------------------------------------
+# Install missing Perl modules
+RUN echo y | cpan
+RUN cpan -fi List::MoreUtils
+
+
+to install Cloud 9 dev environment:
+###############################################################################
+# ------------------------------------------------------------------------------
+# Install Node.js
+RUN curl -L https://raw.githubusercontent.com/c9/install/master/install.sh | bash
+RUN apt-get install -y nodejs
+
+# ------------------------------------------------------------------------------
+# Install Cloud9
+RUN git clone https://github.com/c9/core.git /cloud9
+RUN /cloud9/scripts/install-sdk.sh
+
+# Tweak standlone.js conf
+RUN sed -i -e 's_127.0.0.1_0.0.0.0_g' /cloud9/configs/standalone.js
