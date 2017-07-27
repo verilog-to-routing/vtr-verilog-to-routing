@@ -1202,9 +1202,9 @@ void alloc_net_rr_terminals(void) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    route_ctx.net_rr_terminals = (int **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof (int *));
+    route_ctx.net_rr_terminals = (int **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof (int *));
 
-    for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+    for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
         route_ctx.net_rr_terminals[inet] = (int *) vtr::chunk_malloc(
                 cluster_ctx.clbs_nlist.net[inet].pins.size() * sizeof (int),
                 &rr_mem_ch);
@@ -1215,7 +1215,7 @@ void load_net_rr_terminals(vector<int> *** L_rr_node_indices) {
 
     /* Allocates and loads the route_ctx.net_rr_terminals data structure.  For each net   *
      * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
-     * of the net.  [0..cluster_ctx.clbs_nlist.net.size()-1][0..num_pins-1].  Entry [inet][pnum] stores  *
+     * of the net.  [0..cluster_ctx.clb_nlist.nets().size()-1][0..num_pins-1].  Entry [inet][pnum] stores  *
      * the rr index corresponding to the SOURCE (opin) or SINK (ipin) of pnum.  */
 
     int inode, iblk, i, j, node_block_pin, iclass;
@@ -1226,7 +1226,7 @@ void load_net_rr_terminals(vector<int> *** L_rr_node_indices) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+    for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
         for (ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             iblk = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
             i = place_ctx.block_locs[iblk].x;

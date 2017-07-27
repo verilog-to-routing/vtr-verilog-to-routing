@@ -237,8 +237,8 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
 	}
 
     //Save the mapping between clb and atom nets
-	for (size_t i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
-        AtomNetId net_id = atom_ctx.nlist.find_net(cluster_ctx.clb_nlist.net_name((NetId) i));
+	for (size_t i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
+        AtomNetId net_id = atom_ctx.nlist.find_net(cluster_ctx.clb_nlist.net_name((NetId)i));
         VTR_ASSERT(net_id);
         atom_ctx.lookup.set_atom_clb_net(net_id, i);
 	}

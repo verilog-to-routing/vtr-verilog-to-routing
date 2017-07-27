@@ -126,7 +126,7 @@ void save_routing(t_trace **best_routing,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 
 		/* Free any previously saved routing.  It is no longer best. */
 		tptr = best_routing[inet];
@@ -166,7 +166,7 @@ void restore_routing(t_trace **best_routing,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 
 		/* Free any current routing. */
 		free_traceback(inet);
@@ -196,7 +196,7 @@ void get_serial_num(void) {
 
 	serial_num = 0;
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 
 		/* Global nets will have null trace_heads (never routed) so they *
 		 * are not included in the serial number calculation.            */
@@ -485,7 +485,7 @@ void init_route_structs(int bb_factor) {
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	for (unsigned int i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++)
+	for (unsigned int i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++)
 		free_traceback(i);
 
 	load_route_bb(bb_factor);
@@ -717,15 +717,15 @@ void alloc_route_static_structs(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-	route_ctx.trace_head = (t_trace **) vtr::calloc(cluster_ctx.clbs_nlist.net.size(), sizeof(t_trace *));
-	route_ctx.trace_tail = (t_trace **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_trace *));
+	route_ctx.trace_head = (t_trace **) vtr::calloc(cluster_ctx.clb_nlist.nets().size(), sizeof(t_trace *));
+	route_ctx.trace_tail = (t_trace **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(t_trace *));
 
 	heap_size = device_ctx.nx * device_ctx.ny;
 	heap = (t_heap **) vtr::malloc(heap_size * sizeof(t_heap *));
 	heap--; /* heap stores from [1..heap_size] */
 	heap_tail = 1;
 
-	route_ctx.route_bb = (t_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_bb));
+	route_ctx.route_bb = (t_bb *) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(t_bb));
 }
 
 t_trace ** alloc_saved_routing() {
@@ -738,7 +738,7 @@ t_trace ** alloc_saved_routing() {
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	best_routing = (t_trace **) vtr::calloc(cluster_ctx.clbs_nlist.net.size(),
+	best_routing = (t_trace **) vtr::calloc(cluster_ctx.clb_nlist.nets().size(),
 			sizeof(t_trace *));
 
 	return (best_routing);
@@ -796,7 +796,7 @@ void free_trace_structs(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++)
+	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++)
 		free_traceback(i);
 
 	if(route_ctx.trace_head) {
@@ -920,7 +920,7 @@ static void load_route_bb(int bb_factor) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
         int idriver_blk = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
         int idriver_blk_pin = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
 		x = place_ctx.block_locs[idriver_blk].x + cluster_ctx.clb_nlist.block_type((BlockId) idriver_blk)->pin_width[idriver_blk_pin];
@@ -1272,7 +1272,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 	fprintf(fp, "Array size: %d x %d logic blocks.\n", device_ctx.nx, device_ctx.ny);
 	fprintf(fp, "\nRouting:");
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
 			if (cluster_ctx.clbs_nlist.net[inet].num_sinks() == false) {
 				fprintf(fp, "\n\nNet %d (%s)\n\n", inet, cluster_ctx.clbs_nlist.net[inet].name);

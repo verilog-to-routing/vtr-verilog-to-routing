@@ -45,7 +45,7 @@ void check_netlist() {
 	net_hash_table = alloc_hash_table();
 
 	/* Check that nets fanout and have a driver. */
-	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
+	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
 		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name((NetId) i).c_str(), i);
 		if (h_net_ptr->count != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
@@ -91,7 +91,7 @@ void check_netlist() {
      *       tied directly to gnd/vcc.
 	 */
     auto& atom_ctx = g_vpr_ctx.atom();
-	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
+	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
         AtomNetId atom_net = atom_ctx.lookup.atom_net(i);
         VTR_ASSERT(atom_net);
 

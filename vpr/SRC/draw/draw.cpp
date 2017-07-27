@@ -490,7 +490,7 @@ void alloc_draw_structs(const t_arch* arch) {
 	/* For sub-block drawings inside clbs */
 	draw_internal_alloc_blk();
 
-	draw_state->net_color = (t_color *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_color));
+	draw_state->net_color = (t_color *) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(t_color));
 
 	draw_state->block_color = (t_color *) vtr::malloc(cluster_ctx.clb_nlist.blocks().size() * sizeof(t_color));
 
@@ -696,7 +696,7 @@ static void drawnets(void) {
 	/* Draw the net as a star from the source to each sink. Draw from centers of *
 	 * blocks (or sub blocks in the case of IOs).                                */
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 			continue; /* Don't draw global nets. */
 
@@ -1652,7 +1652,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 
 	/* Now draw each net, one by one.      */
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		if (cluster_ctx.clb_nlist.net_global((NetId)inet)) /* Don't draw global nets. */
 			continue;
 
@@ -1898,7 +1898,7 @@ static void highlight_nets(char *message, int hit_node) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
 	
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		for (tptr = route_ctx.trace_head[inet]; tptr != NULL; tptr = tptr->next) {
 			if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
 				draw_state->net_color[inet] = draw_state->draw_rr_node[tptr->index].color;
@@ -2315,11 +2315,11 @@ static void deselect_all(void) {
 	int i;
 
 	/* Create some colour highlighting */
-	for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
+	for (i = 0; i < (int)cluster_ctx.clb_nlist.blocks().size(); i++) {
 		draw_reset_blk_color(i);
 	}
 
-	for (i = 0; i < (int) cluster_ctx.clbs_nlist.net.size(); i++)
+	for (i = 0; i < (int)cluster_ctx.clb_nlist.nets().size(); i++)
 		draw_state->net_color[i] = BLACK;
 
 	for (i = 0; i < device_ctx.num_rr_nodes; i++) {
@@ -2337,9 +2337,9 @@ static void draw_reset_blk_color(int i) {
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	if (cluster_ctx.clb_nlist.block_type((BlockId) i)->index < 3) {
+	if (cluster_ctx.clb_nlist.block_type((BlockId)i)->index < 3) {
 			draw_state->block_color[i] = LIGHTGREY;
-	} else if (cluster_ctx.clb_nlist.block_type((BlockId) i)->index < 3 + MAX_BLOCK_COLOURS) {
+	} else if (cluster_ctx.clb_nlist.block_type((BlockId)i)->index < 3 + MAX_BLOCK_COLOURS) {
 			draw_state->block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS + cluster_ctx.clb_nlist.block_type((BlockId)i)->index - 3);
 	} else {
 			draw_state->block_color[i] = (enum color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1);

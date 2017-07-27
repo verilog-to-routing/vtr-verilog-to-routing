@@ -63,16 +63,16 @@ void print_netlist(char *foutput, char *net_file) {
 
 	fprintf(fp, "Input netlist file: %s\n", net_file);
 	fprintf(fp, "L_num_p_inputs: %d, L_num_p_outputs: %d, num_clbs: %d\n",
-			L_num_p_inputs, L_num_p_outputs, (int) cluster_ctx.clb_nlist.blocks().size());
+			L_num_p_inputs, L_num_p_outputs, (int)cluster_ctx.clb_nlist.blocks().size());
 	fprintf(fp, "num_nets: %d, num_globals: %d\n",
-			(int) cluster_ctx.clbs_nlist.net.size(), num_global_nets);
+			(int)cluster_ctx.clb_nlist.nets().size(), num_global_nets);
 	fprintf(fp, "\nNet\tName\t\t#Pins\tDriver\t\tRecvs. (blocks, pin)\n");
 
-	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
+	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
 		fprintf(fp, "\n%d\t%s\t", i, cluster_ctx.clb_nlist.net_name((NetId)i).c_str());
 		if (cluster_ctx.clb_nlist.net_name((NetId)i).length() < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
-		fprintf(fp, "%d", (int) cluster_ctx.clbs_nlist.net[i].pins.size());
+		fprintf(fp, "%d", (int)cluster_ctx.clbs_nlist.net[i].pins.size());
 		for (j = 0; j < cluster_ctx.clbs_nlist.net[i].pins.size(); j++)
 			fprintf(fp, "\t(%4d,%4d)", cluster_ctx.clbs_nlist.net[i].pins[j].block,
 				cluster_ctx.clbs_nlist.net[i].pins[j].block_pin);

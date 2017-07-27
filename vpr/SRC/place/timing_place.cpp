@@ -31,17 +31,17 @@ static void free_crit(vtr::t_chunk *chunk_list_ptr);
 static float ** alloc_crit(vtr::t_chunk *chunk_list_ptr) {
 
 	/* Allocates space for the f_timing_place_crit data structure *
-	 * [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1].  I chunk the data to save space on large    *
+	 * [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1].  I chunk the data to save space on large    *
 	 * problems.                                                                   */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	float **local_crit; /* [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1] */
+	float **local_crit; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
 	float *tmp_ptr;
 	unsigned int inet;
 
-	local_crit = (float **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float *));
+	local_crit = (float **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		tmp_ptr = (float *) vtr::chunk_malloc(
 				(cluster_ctx.clbs_nlist.net[inet].num_sinks()) * sizeof(float), chunk_list_ptr);
 		local_crit[inet] = tmp_ptr - 1; /* [1..num_sinks] */
@@ -88,7 +88,7 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 	  in that pin), f_timing_place_crit = criticality^(criticality exponent) */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (size_t inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (size_t inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 			continue;
 		for (size_t ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {

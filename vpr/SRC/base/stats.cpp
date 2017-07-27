@@ -103,7 +103,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	}
 
     if (timing_analysis_enabled) {
-        load_net_delay_from_routing(net_delay, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+        load_net_delay_from_routing(net_delay, cluster_ctx.clbs_nlist.net, cluster_ctx.clb_nlist.nets().size());
 
         auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
 
@@ -162,7 +162,7 @@ void length_and_bends_stats(void) {
 	num_global_nets = 0;
 	num_clb_opins_reserved = 0;
 
-	for (inet = 0, l = cluster_ctx.clbs_nlist.net.size(); inet < l; inet++) {
+	for (inet = 0, l = cluster_ctx.clb_nlist.nets().size(); inet < l; inet++) {
 		if (!cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
 			get_num_bends_and_length(inet, &bends, &length, &segments);
 
@@ -181,19 +181,19 @@ void length_and_bends_stats(void) {
 		}
 	}
 
-	av_bends = (float) total_bends / (float) ((int) cluster_ctx.clbs_nlist.net.size() - num_global_nets);
+	av_bends = (float) total_bends / (float) ((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
 	vtr::printf_info("\n");
 	vtr::printf_info("Average number of bends per net: %#g  Maximum # of bends: %d\n", av_bends, max_bends);
 	vtr::printf_info("\n");
 
-	av_length = (float) total_length / (float) ((int) cluster_ctx.clbs_nlist.net.size() - num_global_nets);
-	vtr::printf_info("Number of routed nets (nonglobal): %d\n", (int) cluster_ctx.clbs_nlist.net.size() - num_global_nets);
+	av_length = (float) total_length / (float) ((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
+	vtr::printf_info("Number of routed nets (nonglobal): %d\n", (int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
 	vtr::printf_info("Wire length results (in units of 1 clb segments)...\n");
 	vtr::printf_info("\tTotal wirelength: %d, average net length: %#g\n", total_length, av_length);
 	vtr::printf_info("\tMaximum net length: %d\n", max_length);
 	vtr::printf_info("\n");
 
-	av_segments = (float) total_segments / (float) ((int) cluster_ctx.clbs_nlist.net.size() - num_global_nets);
+	av_segments = (float) total_segments / (float) ((int)cluster_ctx.clb_nlist.nets().size() - num_global_nets);
 	vtr::printf_info("Wire length results in terms of physical segments...\n");
 	vtr::printf_info("\tTotal wiring segments used: %d, average wire segments per net: %#g\n", total_segments, av_segments);
 	vtr::printf_info("\tMaximum segments used by a net: %d\n", max_segments);
@@ -283,8 +283,7 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
 			chany_occ[i][j] = 0;
 
 	/* Now go through each net and count the tracks and pins used everywhere */
-
-	for (inet = 0, l = cluster_ctx.clbs_nlist.net.size(); inet < l; inet++) {
+	for (inet = 0, l = cluster_ctx.clb_nlist.nets().size(); inet < l; inet++) {
 		/* Skip global and empty nets. */
 		if (cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) 
 			continue;
@@ -393,7 +392,7 @@ void print_wirelen_prob_dist(void) {
 	prob_dist = (float *) vtr::calloc(prob_dist_size, sizeof(float));
 	norm_fac = 0.;
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		if (!cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) {
 			get_num_bends_and_length(inet, &bends, &length, &segments);
 

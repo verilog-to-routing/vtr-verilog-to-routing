@@ -68,14 +68,14 @@ void check_route(enum e_route_type route_type, int num_switches,
 	connected_to_route = (bool *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(bool));
 
 	max_pins = 0;
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++)
-		max_pins = max(max_pins, (int) cluster_ctx.clbs_nlist.net[inet].pins.size());
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++)
+		max_pins = max(max_pins, (int)cluster_ctx.clbs_nlist.net[inet].pins.size());
 
 	pin_done = (bool *) vtr::malloc(max_pins * sizeof(bool));
 
 	/* Now check that all nets are indeed connected. */
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 
 		if (cluster_ctx.clb_nlist.net_global((NetId)inet) || cluster_ctx.clbs_nlist.net[inet].num_sinks() == 0) /* Skip global nets. */
 			continue;
@@ -535,7 +535,7 @@ static void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_u
 
 	/* Now go through each net and count the tracks and pins used everywhere */
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 
 		if (cluster_ctx.clb_nlist.net_global((NetId)inet)) /* Skip global nets. */
 			continue;

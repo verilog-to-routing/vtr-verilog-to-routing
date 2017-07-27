@@ -51,7 +51,7 @@ bool try_breadth_first_route(t_router_opts router_opts,
 			cluster_ctx.clb_nlist.set_fixed(net_id, false);
 		}
 
-		for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+		for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 			is_routable = try_breadth_first_route_net(inet, pres_fac, router_opts);
 			if (!is_routable) {
 				return (false);

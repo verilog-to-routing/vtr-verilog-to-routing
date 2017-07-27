@@ -92,12 +92,12 @@ large enough to be on the order of timing costs for normal constraints. */
 /********************** Variables local to place.c ***************************/
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
-static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..cluster_ctx.clbs_nlist.net.size()-1] */
+static float *net_cost = NULL, *temp_net_cost = NULL; /* [0..cluster_ctx.clb_nlist.nets().size()-1] */
 
 static t_legal_pos **legal_pos = NULL; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1] */
 static int *num_legal_pos = NULL; /* [0..num_legal_pos-1] */
 
-/* [0...cluster_ctx.clbs_nlist.net.size()-1]                                               *
+/* [0...cluster_ctx.clb_nlist.nets().size()-1]                                               *
  * A flag array to indicate whether the specific bounding box has been updated   *
  * in this particular swap or not. If it has been updated before, the code       *
  * must use the updated data, instead of the out-of-date data passed into the    *
@@ -108,17 +108,16 @@ static int *num_legal_pos = NULL; /* [0..num_legal_pos-1] */
  * applicable for nets larger than SMALL_NETS and it indicates that the          *
  * particular bounding box cannot be updated incrementally before, hence the     *
  * bounding box is got from scratch, so the bounding box would definitely be     *
- * right, DO NOT update again.                                                   *
- * [0...cluster_ctx.clbs_nlist.net.size()-1]                                               */
+ * right, DO NOT update again.                                                   */
 static char * bb_updated_before = NULL;
 
-/* [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1]. What is the value of the timing   */
+/* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]. What is the value of the timing   */
 /* driven portion of the cost function. These arrays will be set to  */
 /* (criticality * delay) for each point to point connection. */
 static float **point_to_point_timing_cost = NULL;
 static float **temp_point_to_point_timing_cost = NULL;
 
-/* [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1]. What is the value of the delay */
+/* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]. What is the value of the delay */
 /* for each connection in the circuit */
 static float **point_to_point_delay_cost = NULL;
 static float **temp_point_to_point_delay_cost = NULL;
@@ -129,7 +128,7 @@ static float **temp_point_to_point_delay_cost = NULL;
 /* each net */
 static vtr::Matrix<int> net_pin_index;
 
-/* [0..cluster_ctx.clbs_nlist.net.size()-1].  Store the bounding box coordinates and the number of    *
+/* [0..cluster_ctx.clb_nlist.nets().size()-1].  Store the bounding box coordinates and the number of    *
  * blocks on each of a net's bounding box (to allow efficient updates),      *
  * respectively.                                                             */
 
@@ -148,11 +147,11 @@ static t_pl_blocks_to_be_moved blocks_affected;
  * of the net bounding box in each dimension, divided by the average    *
  * number of tracks in that direction; for other cost functions they    *
  * will never be used.                                                  *
- *                [0...device_ctx.ny]                [0...device_ctx.nx]                      */
+ *           [0...device_ctx.ny][0...device_ctx.nx]                     */
 static float **chanx_place_cost_fac, **chany_place_cost_fac;
 
 /* The following arrays are used by the try_swap function for speed.   */
-/* [0...cluster_ctx.clbs_nlist.net.size()-1] */
+/* [0...cluster_ctx.clb_nlist.nets().size()-1] */
 static t_bb *ts_bb_coord_new = NULL;
 static t_bb *ts_bb_edge_new = NULL;
 static int *ts_nets_to_update = NULL;
@@ -771,7 +770,7 @@ void try_place(t_placer_opts placer_opts,
 			&& placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
 		/*need this done since the timing data has not been kept up to date*
 		 *in bounding_box mode */
-		for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++)
+		for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++)
 			for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++)
 				set_timing_place_crit(inet, ipin, 0); /*dummy crit values */
 		comp_td_costs(&timing_cost, &delay_cost); /*computes point_to_point_delay_cost */
@@ -1090,7 +1089,7 @@ static int exit_crit(float t, float cost,
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* Automatic annealing schedule */
-    float t_exit = 0.005 * cost / cluster_ctx.clbs_nlist.net.size();
+    float t_exit = 0.005 * cost / cluster_ctx.clb_nlist.nets().size();
 
     if (t < t_exit) {
 		return (1);
@@ -1740,15 +1739,12 @@ static float recompute_bb_cost(void) {
 	 * cost.                                                             */
 
 	unsigned int inet;
-	float cost;
+	float cost = 0;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	cost = 0;
-
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) { /* for each net ... */
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) { /* for each net ... */
 		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Do only if not global. */
-
 			/* Bounding boxes don't have to be recomputed; they're correct. */
 			cost += net_cost[inet];
 		}
@@ -1818,7 +1814,7 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 static void comp_td_point_to_point_delays() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    for(size_t inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); ++inet) {
+    for(size_t inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
         for(size_t ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
             point_to_point_delay_cost[inet][ipin] = comp_td_point_to_point_delay(inet, ipin);
         }
@@ -1966,7 +1962,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	loc_timing_cost = 0.;
 	loc_connection_delay_sum = 0.;
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) { /* For each net ... */
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) { /* For each net ... */
 		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Do only if not global. */
 
 			for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
@@ -2011,7 +2007,7 @@ static float comp_bb_cost(enum cost_methods method) {
 	cost = 0;
 	expected_wirelength = 0.0;
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) { /* for each net ... */
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) { /* for each net ... */
 
 		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Do only if not global. */
 
@@ -2056,7 +2052,7 @@ static void free_placement_structs(
 
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
-		for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+		for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 			/*add one to the address since it is indexed from 1 not 0 */
 
 			point_to_point_delay_cost[inet]++;
@@ -2127,14 +2123,14 @@ static void alloc_and_load_placement_structs(
 	if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
 			|| placer_opts.enable_timing_computations) {
 		/* Allocate structures associated with timing driven placement */
-		/* [0..cluster_ctx.clbs_nlist.net.size()-1][1..num_pins-1]  */
-		point_to_point_delay_cost = (float **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float *));
-		temp_point_to_point_delay_cost = (float **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float *));
+		/* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]  */
+		point_to_point_delay_cost = (float **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
+		temp_point_to_point_delay_cost = (float **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
 
-		point_to_point_timing_cost = (float **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float *));
-		temp_point_to_point_timing_cost = (float **) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float *));
+		point_to_point_timing_cost = (float **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
+		temp_point_to_point_timing_cost = (float **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
 
-		for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+		for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 
 			/* In the following, subract one so index starts at *
 			 * 1 instead of 0 */
@@ -2150,7 +2146,7 @@ static void alloc_and_load_placement_structs(
 			temp_point_to_point_timing_cost[inet] = (float *) vtr::malloc(cluster_ctx.clbs_nlist.net[inet].num_sinks() * sizeof(float));
 			temp_point_to_point_timing_cost[inet]--;
 		}
-		for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+		for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 			for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 				point_to_point_delay_cost[inet][ipin] = 0;
 				temp_point_to_point_delay_cost[inet][ipin] = 0;
@@ -2158,21 +2154,21 @@ static void alloc_and_load_placement_structs(
 		}
 	}
 
-	net_cost = (float *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float));
-	temp_net_cost = (float *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(float));
-	bb_updated_before = (char*)vtr::calloc(cluster_ctx.clbs_nlist.net.size(), sizeof(char));
+	net_cost = (float *) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float));
+	temp_net_cost = (float *) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float));
+	bb_updated_before = (char*)vtr::calloc(cluster_ctx.clb_nlist.nets().size(), sizeof(char));
 	
 	/* Used to store costs for moves not yet made and to indicate when a net's   *
 	 * cost has been recomputed. temp_net_cost[inet] < 0 means net's cost hasn't *
 	 * been recomputed.                                                          */
 
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++){
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++){
 		bb_updated_before[inet] = NOT_UPDATED_YET;
 		temp_net_cost[inet] = -1.;
 	}
 	
-	bb_coords = (t_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_bb));
-	bb_num_on_edges = (t_bb *) vtr::malloc(cluster_ctx.clbs_nlist.net.size() * sizeof(t_bb));
+	bb_coords = (t_bb *) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(t_bb));
+	bb_num_on_edges = (t_bb *) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(t_bb));
 	
 	alloc_and_load_for_fast_cost_update(place_cost_exp);
 		
@@ -2185,14 +2181,14 @@ static void alloc_and_load_placement_structs(
 
 static void alloc_and_load_try_swap_structs() {
 	/* Allocate the local bb_coordinate storage, etc. only once. */
-	/* Allocate with size cluster_ctx.clbs_nlist.net.size() for any number of nets affected. */
+	/* Allocate with size cluster_ctx.clb_nlist.nets().size() for any number of nets affected. */
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	ts_bb_coord_new = (t_bb *) vtr::calloc(
-			cluster_ctx.clbs_nlist.net.size(), sizeof(t_bb));
+			cluster_ctx.clb_nlist.nets().size(), sizeof(t_bb));
 	ts_bb_edge_new = (t_bb *) vtr::calloc(
-			cluster_ctx.clbs_nlist.net.size(), sizeof(t_bb));
-	ts_nets_to_update = (int *) vtr::calloc(cluster_ctx.clbs_nlist.net.size(), sizeof(int));
+			cluster_ctx.clb_nlist.nets().size(), sizeof(t_bb));
+	ts_nets_to_update = (int *) vtr::calloc(cluster_ctx.clb_nlist.nets().size(), sizeof(int));
 		
 	/* Allocate with size cluster_ctx.clb_nlist.blocks().size() for any number of moved blocks. */
 	blocks_affected.moved_blocks = (t_pl_moved_block*) vtr::calloc((int) cluster_ctx.clb_nlist.blocks().size(), sizeof(t_pl_moved_block));

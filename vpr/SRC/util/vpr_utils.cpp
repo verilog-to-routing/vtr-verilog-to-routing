@@ -1266,7 +1266,7 @@ vtr::Matrix<int> alloc_and_load_net_pin_index() {
     vtr::Matrix<int> temp_net_pin_index({cluster_ctx.clb_nlist.blocks().size(), size_t(max_pins_per_clb)}, OPEN);
 
 	/* Load the values */
-	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 			continue;
 		for (netpin = 0; netpin < cluster_ctx.clbs_nlist.net[inet].pins.size(); netpin++) {

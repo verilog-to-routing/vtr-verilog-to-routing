@@ -1776,7 +1776,7 @@ void print_timing_graph(const char *fname) {
 	fprintf(fp, "\n");
 	fprintf(fp, "\n\nNet #\tNet_to_driver_tnode\n");
 
-	for (i = 0; i < (int) cluster_ctx.clbs_nlist.net.size(); i++)
+	for (i = 0; i < (int) cluster_ctx.clb_nlist.nets().size(); i++)
 		fprintf(fp, "%4d\t%6d\n", i, f_net_to_driver_tnode[i]);
 
 	if (timing_ctx.sdc && timing_ctx.sdc->num_constrained_clocks == 1) {
@@ -3952,11 +3952,11 @@ std::vector<size_t> init_timing_net_pins() {
     std::vector<size_t> timing_net_pin_counts;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    for(size_t inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+    for(size_t inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
         timing_net_pin_counts.push_back(cluster_ctx.clbs_nlist.net[inet].pins.size());
     }
 
-    VTR_ASSERT(timing_net_pin_counts.size() == cluster_ctx.clbs_nlist.net.size());
+    VTR_ASSERT(timing_net_pin_counts.size() == cluster_ctx.clb_nlist.nets().size());
 
     return timing_net_pin_counts;
 }

@@ -233,7 +233,7 @@ struct RoutingContext : public Context {
     t_rr_node_route_inf *rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
     //Limits area in which each net must be routed.
-    t_bb* route_bb = NULL; /* [0..cluster_ctx.clbs_nlist.net.size()-1]*/
+    t_bb* route_bb = NULL; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
 
     //SHA256 digest of the .route file (used for unique identification and consistency checking)
     std::string routing_id;

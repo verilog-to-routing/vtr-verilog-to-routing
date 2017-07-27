@@ -881,8 +881,8 @@ void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 #endif
 	if (vpr_setup.TimingEnabled) {
         //Load the net delays
-        net_delay = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
-        load_net_delay_from_routing(net_delay, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+        net_delay = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clb_nlist.nets().size());
+        load_net_delay_from_routing(net_delay, cluster_ctx.clbs_nlist.net, cluster_ctx.clb_nlist.nets().size());
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         slacks = alloc_and_load_timing_graph(vpr_setup.Timing);
