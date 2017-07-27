@@ -131,7 +131,8 @@ int parse_piecewise_formula( const char *formula, const t_formula_data &mydata )
 	int result = -1;
 	int str_ind = 0;
 	int str_size = 0;
-	int t = mydata.wire;
+
+	int t = mydata.get_var_value("t");
 	int tmp_ind_start = -1;
 	int tmp_ind_count = -1;
 	string substr;
@@ -323,11 +324,11 @@ static void get_formula_object( const char *ch, int &ichar, const t_formula_data
 		switch ((*ch)){
 			case 'W':
 				fobj->type = E_FML_NUMBER;
-				fobj->data.num = mydata.dest_W;
+				fobj->data.num = mydata.get_var_value("W");
 				break;
 			case 't':
 				fobj->type = E_FML_NUMBER;
-				fobj->data.num = mydata.wire;
+				fobj->data.num = mydata.get_var_value("t");
 				break;
 			case '+':
 				fobj->type = E_FML_OPERATOR;
