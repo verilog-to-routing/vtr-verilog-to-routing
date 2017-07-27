@@ -13,7 +13,6 @@
 
  Key data structures:
 
- t_net - Connectivity data structure for the user netlist
  t_block - An already clustered logic block, the placer finds physical locations for these blocks.  Intra-logic block interconnect stored in pb_route.
  t_rr_node - The basic building block of the interconnect in the FPGA architecture
 
@@ -492,7 +491,7 @@ enum e_pad_loc_type {
 	FREE, RANDOM, USER
 };
 
-/* Power data for t_net structure */
+/* Power data for t_netlist structure */
 struct t_net_power {
 	/* Signal probability - long term probability that signal is logic-high*/
 	float probability;
@@ -501,29 +500,6 @@ struct t_net_power {
 	 * For example, a clock would have density = 2
 	 */
 	float density;
-};
-
-/* name:  ASCII net name for informative annotations in the output.          
- * num_sinks:  Number of sinks on this net.                                  
- * node_block: [0..num_sinks]. Contains the blocks to which the nodes of this 
- *         net connect.  The source block is node_block[0] and the sink blocks
- *         are the remaining nodes.
- * node_block_port: [0..num_sinks]. Contains port index (on a block) to 
- *          which each net terminal connects. 
- * node_block_pin: [0..num_sinks]. Contains the index of the pin (on a block) to 
- *          which each net terminal connects. 
- * is_routed: not routed (has been pre-routed)
- * is_fixed: not routed (has been pre-routed)
- * is_global: not routed */
-struct t_net {
-	char *name;
-	int num_sinks;
-	int *node_block;
-	int *node_block_port;
-	int *node_block_pin;
-	bool is_routed;
-	bool is_fixed;
-	bool is_global;
 };
 
 /* s_grid_tile is the minimum tile of the fpga                         
