@@ -1281,7 +1281,7 @@ static void alloc_and_load_tnodes_from_prepacked_netlist(float inter_cluster_net
                                     timing_ctx.tnodes[inode + 1].num_edges = 1;
                                     timing_ctx.tnodes[inode + 1].out_edges = (t_tedge *) vtr::chunk_malloc( 1 * sizeof(t_tedge), &tedge_ch);
                                     timing_ctx.tnodes[inode + 1].out_edges->to_node = inode;
-                                    timing_ctx.tnodes[inode + 1].out_edges->Tdel = from_pb_graph_pin->tco; //Set the clk-to-Q delay
+                                    timing_ctx.tnodes[inode + 1].out_edges->Tdel = from_pb_graph_pin->tco_max; //Set the clk-to-Q delay
 
                                     inode += 2;
                                 }
@@ -1657,7 +1657,7 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
                     timing_ctx.tnodes[i + 1].num_edges = 1;
                     timing_ctx.tnodes[i + 1].out_edges = (t_tedge *) vtr::chunk_malloc(
                             1 * sizeof(t_tedge), &tedge_ch);
-                    timing_ctx.tnodes[i + 1].out_edges->Tdel = pb_graph_pin->tco;
+                    timing_ctx.tnodes[i + 1].out_edges->Tdel = pb_graph_pin->tco_max;
                     timing_ctx.tnodes[i + 1].out_edges->to_node = i;
                     timing_ctx.tnodes[i + 1].pb_graph_pin = pb_graph_pin;
                     timing_ctx.tnodes[i + 1].type = TN_FF_SOURCE;

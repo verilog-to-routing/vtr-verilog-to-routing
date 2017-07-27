@@ -40,5 +40,6 @@ qor_parse_file=qor_fixed_chan_width.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
+# Change the seed to avoid chaotic behaviour during placement for certain architectures
 script_params=-starting_stage vpr -vpr_route_chan_width 300 -track_memory_usage -vpr_max_router_iterations 400 -seed 100
 

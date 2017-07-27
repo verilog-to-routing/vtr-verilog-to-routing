@@ -40,11 +40,12 @@
 
 /* Main VPR Operations */
 void vpr_init(const int argc, const char **argv, t_options *options,
-		t_vpr_setup *vpr_setup, t_arch *arch);
+        t_vpr_setup *vpr_setup, t_arch *arch);
 void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch);
+void vpr_init_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch);
 bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch);
-void vpr_analysis(const t_vpr_setup& vpr_setup, const t_arch& arch);
+void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch);
 void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup);
 void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup);
 
@@ -60,29 +61,29 @@ void vpr_print_args(int argc, const char** argv);
 void vpr_read_options(const int argc, const char **argv, t_options * options);
 /* Read in arch and circuit */
 void vpr_setup_vpr(t_options *Options, const bool TimingEnabled,
-		const bool readArchFile, t_file_name_opts *FileNameOpts,
-		t_arch * Arch,
-		t_model ** user_models, t_model ** library_models,
-		t_netlist_opts* NetlistOpts,
-		t_packer_opts *PackerOpts,
-		t_placer_opts *PlacerOpts,
-		t_annealing_sched *AnnealSched,
-		t_router_opts *RouterOpts,
-		t_analysis_opts* AnalysisOpts,
-		t_det_routing_arch *RoutingArch,
-		vector <t_lb_type_rr_node> **PackerRRGraph,
-		t_segment_inf ** Segments, t_timing_inf * Timing,
-		bool * ShowGraphics, int *GraphPause,
-		t_power_opts * PowerOpts);
+        const bool readArchFile, t_file_name_opts *FileNameOpts,
+        t_arch * Arch,
+        t_model ** user_models, t_model ** library_models,
+        t_netlist_opts* NetlistOpts,
+        t_packer_opts *PackerOpts,
+        t_placer_opts *PlacerOpts,
+        t_annealing_sched *AnnealSched,
+        t_router_opts *RouterOpts,
+        t_analysis_opts* AnalysisOpts,
+        t_det_routing_arch *RoutingArch,
+        vector <t_lb_type_rr_node> **PackerRRGraph,
+        t_segment_inf ** Segments, t_timing_inf * Timing,
+        bool * ShowGraphics, int *GraphPause,
+        t_power_opts * PowerOpts);
 /* Check inputs are reasonable */
 void vpr_check_arch(const t_arch& Arch);
 /* Verify settings don't conflict or otherwise not make sense */
 void vpr_check_setup(
         const t_packer_opts PackerOpts,
         const t_placer_opts PlacerOpts,
-		const t_router_opts RouterOpts,
-		const t_det_routing_arch RoutingArch, const t_segment_inf * Segments,
-		const t_timing_inf Timing, const t_chan_width_dist Chans);
+        const t_router_opts RouterOpts,
+        const t_det_routing_arch RoutingArch, const t_segment_inf * Segments,
+        const t_timing_inf Timing, const t_chan_width_dist Chans);
 /* Show current setup */
 void vpr_show_setup(const t_vpr_setup& vpr_setup);
 void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, const SetupTimingInfo& timing_info);
@@ -90,7 +91,7 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup, const t_arch& Arch, cons
 /* Output file names management */
 void vpr_alloc_and_load_output_file_names(const char* default_name);
 void vpr_set_output_file_name(enum e_output_files ename, const char *name,
-		const char* default_name);
+        const char* default_name);
 char *vpr_get_output_file_name(enum e_output_files ename);
 
 /* Prints user file or internal errors for VPR */

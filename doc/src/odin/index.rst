@@ -50,4 +50,3 @@ Odin II is used for logic synthesis and elaboration, converting a subset of the 
          - Matching is done via strstr so general strings will match 
            all similar pins and nodes.
              (Eg: FF_NODE will create a single port with all flipflops) 
-

@@ -242,7 +242,7 @@ static void dump_rr_node_indices( fstream &file ){
 	   in which case chan=y and seg=x, whereas for all other nodes chan=x and seg=y. i'm not sure how non-square FPGAs are handled in that case... */
 	
 	for (int itype = 0; itype < NUM_RR_TYPES; itype++){
-		if (device_ctx.rr_node_indices[itype] == NULL){
+		if (device_ctx.rr_node_indices.empty() || device_ctx.rr_node_indices[itype].empty()) {
 			/* skip if not allocated */
 			continue;
 		}
@@ -259,7 +259,7 @@ static void dump_rr_node_indices( fstream &file ){
 					y = ix;
 				}
 
-				if (device_ctx.rr_node_indices[rr_type][ix] == NULL){
+				if (device_ctx.rr_node_indices[rr_type][ix].empty()){
 					/* skip if not allocated */
 					continue;
 				}

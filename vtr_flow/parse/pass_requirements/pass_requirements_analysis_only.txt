@@ -1,0 +1,5 @@
+vpr_status;Equal
+critical_path_delay;Equal
+setup_TNS;Equal
+setup_WNS;Equal
+error;Equal

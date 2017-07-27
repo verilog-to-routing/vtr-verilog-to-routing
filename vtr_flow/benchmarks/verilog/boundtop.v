@@ -776,7 +776,7 @@ module boundcontroller (raygroupout, raygroupwe, raygroupid, enablenear, raygrou
 
 
 
-	always @(*)
+	always @*
 	begin
 		case (state)
 		0 :

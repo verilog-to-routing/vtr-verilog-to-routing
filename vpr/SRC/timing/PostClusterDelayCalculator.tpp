@@ -15,31 +15,27 @@ inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist&
     , netlist_lookup_(netlist_lookup)
     , net_delay_(net_delay)
     , atom_delay_calc_(netlist, netlist_lookup)
-    , edge_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
+    , edge_min_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
+    , edge_max_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , driver_clb_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , sink_clb_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , net_pin_cache_(g_vpr_ctx.timing().graph->edges().size(), std::pair<const t_net_pin*,const t_net_pin*>(nullptr,nullptr))
     {}
 
-inline tatum::Time PostClusterDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge) const { 
+inline tatum::Time PostClusterDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
     vtr::printf("=== Edge %zu (max) ===\n", size_t(edge));
 #endif
-    tatum::EdgeType edge_type = tg.edge_type(edge);
-    if (edge_type == tatum::EdgeType::PRIMITIVE_COMBINATIONAL) {
-        return atom_combinational_delay(tg, edge);
-
-    } else if (edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
-        return atom_clock_to_q_delay(tg, edge);
-
-    } else if (edge_type == tatum::EdgeType::INTERCONNECT) {
-        return atom_net_delay(tg, edge);
-    }
-
-    VPR_THROW(VPR_ERROR_TIMING, "Invalid edge type");
-
-    return tatum::Time(NAN); //Suppress compiler warning
+    return calc_edge_delay(tg, edge_id, DelayType::MAX); 
 }
+
+inline tatum::Time PostClusterDelayCalculator::min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
+    vtr::printf("=== Edge %zu (min) ===\n", size_t(edge_id));
+#endif
+    return calc_edge_delay(tg, edge_id, DelayType::MIN); 
+}
+
 
 inline tatum::Time PostClusterDelayCalculator::setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
@@ -48,23 +44,33 @@ inline tatum::Time PostClusterDelayCalculator::setup_time(const tatum::TimingGra
     return atom_setup_time(tg, edge_id);
 }
 
-inline tatum::Time PostClusterDelayCalculator::min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+inline tatum::Time PostClusterDelayCalculator::hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-    vtr::printf("=== Edge %zu (min) ===\n", size_t(edge_id));
+    vtr::printf("=== Edge %zu (hold) ===\n", size_t(edge_id));
 #endif
-    return max_edge_delay(tg, edge_id); 
+    return atom_hold_time(tg, edge_id); 
 }
 
-inline tatum::Time PostClusterDelayCalculator::hold_time(const tatum::TimingGraph& /*tg*/, tatum::EdgeId /*edge_id*/) const { 
-#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
-    /*vtr::printf("=== Edge %zu (hold) ===\n", size_t(edge_id));*/
-#endif
-    return tatum::Time(NAN); 
+inline tatum::Time PostClusterDelayCalculator::calc_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge, DelayType delay_type) const {
+    tatum::EdgeType edge_type = tg.edge_type(edge);
+    if (edge_type == tatum::EdgeType::PRIMITIVE_COMBINATIONAL) {
+        return atom_combinational_delay(tg, edge, delay_type);
+
+    } else if (edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH) {
+        return atom_clock_to_q_delay(tg, edge, delay_type);
+
+    } else if (edge_type == tatum::EdgeType::INTERCONNECT) {
+        return atom_net_delay(tg, edge, delay_type);
+    }
+
+    VPR_THROW(VPR_ERROR_TIMING, "Invalid edge type");
+
+    return tatum::Time(NAN); //Suppress compiler warning
 }
 
-inline tatum::Time PostClusterDelayCalculator::atom_combinational_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
+inline tatum::Time PostClusterDelayCalculator::atom_combinational_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const {
 
-    tatum::Time delay = edge_delay_cache_[edge_id];
+    tatum::Time delay = get_cached_delay(edge_id, delay_type);
 
     if(std::isnan(delay.value())) {
         //Miss
@@ -74,10 +80,10 @@ inline tatum::Time PostClusterDelayCalculator::atom_combinational_delay(const ta
         AtomPinId src_pin = netlist_lookup_.tnode_atom_pin(src_node);
         AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
 
-        delay = tatum::Time(atom_delay_calc_.atom_combinational_delay(src_pin, sink_pin));
+        delay = tatum::Time(atom_delay_calc_.atom_combinational_delay(src_pin, sink_pin, delay_type));
 
         //Insert
-        edge_delay_cache_[edge_id] = delay;
+        set_cached_delay(edge_id, delay_type, delay);
     }
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
     vtr::printf("  Edge %zu Atom Comb Delay: %g\n", size_t(edge_id), delay.value());
@@ -87,7 +93,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_combinational_delay(const ta
 }
 
 inline tatum::Time PostClusterDelayCalculator::atom_setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
-    tatum::Time tsu = edge_delay_cache_[edge_id];
+    tatum::Time tsu = get_cached_setup_time(edge_id);
 
     if(std::isnan(tsu.value())) {
         //Miss
@@ -103,7 +109,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_setup_time(const tatum::Timi
         tsu = tatum::Time(atom_delay_calc_.atom_setup_time(clock_pin, input_pin));
 
         //Insert
-        edge_delay_cache_[edge_id] = tsu;
+        set_cached_setup_time(edge_id,tsu);
     }
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
     vtr::printf("  Edge %zu Atom Tsu: %g\n", size_t(edge_id), tsu.value());
@@ -111,8 +117,33 @@ inline tatum::Time PostClusterDelayCalculator::atom_setup_time(const tatum::Timi
     return tsu;
 }
 
-inline tatum::Time PostClusterDelayCalculator::atom_clock_to_q_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
-    tatum::Time tco = edge_delay_cache_[edge_id];
+inline tatum::Time PostClusterDelayCalculator::atom_hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
+    tatum::Time thld = get_cached_hold_time(edge_id);
+
+    if(std::isnan(thld.value())) {
+        //Miss
+        tatum::NodeId clock_node = tg.edge_src_node(edge_id);
+        VTR_ASSERT(tg.node_type(clock_node) == tatum::NodeType::CPIN);
+
+        tatum::NodeId in_node = tg.edge_sink_node(edge_id);
+        VTR_ASSERT(tg.node_type(in_node) == tatum::NodeType::SINK);
+
+        AtomPinId input_pin = netlist_lookup_.tnode_atom_pin(in_node);
+        AtomPinId clock_pin = netlist_lookup_.tnode_atom_pin(clock_node);
+
+        thld= tatum::Time(atom_delay_calc_.atom_hold_time(clock_pin, input_pin));
+
+        //Insert
+        set_cached_hold_time(edge_id, thld);
+    }
+#ifdef POST_CLUSTER_DELAY_CALC_DEBUG
+    vtr::printf("  Edge %zu Atom Thld: %g\n", size_t(edge_id), thld.value());
+#endif
+    return thld;
+}
+
+inline tatum::Time PostClusterDelayCalculator::atom_clock_to_q_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const {
+    tatum::Time tco = get_cached_delay(edge_id, delay_type);
 
     if(std::isnan(tco.value())) {
         //Miss
@@ -125,10 +156,10 @@ inline tatum::Time PostClusterDelayCalculator::atom_clock_to_q_delay(const tatum
         AtomPinId output_pin = netlist_lookup_.tnode_atom_pin(out_node);
         AtomPinId clock_pin = netlist_lookup_.tnode_atom_pin(clock_node);
 
-        tco = tatum::Time(atom_delay_calc_.atom_clock_to_q_delay(clock_pin, output_pin));
+        tco = tatum::Time(atom_delay_calc_.atom_clock_to_q_delay(clock_pin, output_pin, delay_type));
 
         //Insert
-        edge_delay_cache_[edge_id] = tco;
+        set_cached_delay(edge_id, delay_type, tco);
     }
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
     vtr::printf("  Edge %zu Atom Tco: %g\n", size_t(edge_id), tco.value());
@@ -136,7 +167,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_clock_to_q_delay(const tatum
     return tco;
 }
 
-inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
+inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const {
     //A net in the atom netlist consists of several different delay components:
     //
     //      delay = launch_cluster_delay + inter_cluster_delay + capture_cluster_delay
@@ -149,7 +180,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
     //Note that if the connection is completely absorbed within the cluster then inter_cluster_delay
     //and capture_cluster_delay will both be zero.
 
-    tatum::Time edge_delay = edge_delay_cache_[edge_id];
+    tatum::Time edge_delay = get_cached_delay(edge_id, delay_type);
     if (std::isnan(edge_delay.value())) {
         //Miss
 
@@ -237,7 +268,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 
                 //Save the delay, since it won't change during placement or routing
                 // Note that we cache the full edge delay for edges completely contained within CLBs
-                edge_delay_cache_[edge_id] = edge_delay;
+                set_cached_delay(edge_id, delay_type, edge_delay);
             }
         } else {
             //Calculate the edge delay using cached clb delays and the latest net delay
@@ -288,3 +319,40 @@ inline float PostClusterDelayCalculator::inter_cluster_delay(const t_net_pin* dr
     return net_delay_[net][sink_clb_pin->net_pin];
 }
 
+inline tatum::Time PostClusterDelayCalculator::get_cached_delay(tatum::EdgeId edge, DelayType delay_type) const {
+    if (delay_type == DelayType::MAX) {
+        return edge_max_delay_cache_[edge];
+    } else {
+        VTR_ASSERT(delay_type == DelayType::MIN);
+        return edge_min_delay_cache_[edge];
+    }
+}
+
+inline void PostClusterDelayCalculator::set_cached_delay(tatum::EdgeId edge, DelayType delay_type, tatum::Time delay) const {
+    if (delay_type == DelayType::MAX) {
+        edge_max_delay_cache_[edge] = delay;
+    } else {
+        VTR_ASSERT(delay_type == DelayType::MIN);
+        edge_min_delay_cache_[edge] = delay;
+    }
+}
+
+inline tatum::Time PostClusterDelayCalculator::get_cached_setup_time(tatum::EdgeId edge) const {
+    //We store the cached setup times in the max delay cache, since there will be no regular edge
+    //delays on setup edges
+    return edge_max_delay_cache_[edge];
+}
+
+inline void PostClusterDelayCalculator::set_cached_setup_time(tatum::EdgeId edge, tatum::Time setup) const {
+    edge_max_delay_cache_[edge] = setup;
+}
+
+inline tatum::Time PostClusterDelayCalculator::get_cached_hold_time(tatum::EdgeId edge) const {
+    //We store the cached hold times in the min delay cache, since there will be no regular edge
+    //delays on hold edges
+    return edge_min_delay_cache_[edge];
+}
+
+inline void PostClusterDelayCalculator::set_cached_hold_time(tatum::EdgeId edge, tatum::Time hold) const {
+    edge_min_delay_cache_[edge] = hold;
+}

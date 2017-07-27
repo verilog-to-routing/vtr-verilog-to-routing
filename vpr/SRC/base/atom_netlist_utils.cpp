@@ -12,6 +12,9 @@
 #include "vpr_error.h"
 #include "vpr_utils.h"
 
+//If defined produces verbose output while sweeping the netlist
+//#define SWEEP_VERBOSE
+
 std::map<AtomNetId,std::vector<AtomPinId>> find_clock_used_as_data_pins(const AtomNetlist& netlist);
 
 AtomBlockId fix_clock_to_data_pins(AtomNetlist& netlist, 
@@ -381,7 +384,9 @@ std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist) {
     std::vector<AtomBlockId> buffer_luts;
     for(auto blk : netlist.blocks()) {
         if(is_buffer_lut(netlist, blk)) {
-            /*vtr::printf_warning(__FILE__, __LINE__, "%s is a lut buffer and will be absorbed\n", netlist.block_name(blk).c_str());*/
+#ifdef SWEEP_VERBOSE
+            vtr::printf_warning(__FILE__, __LINE__, "%s is a lut buffer and will be absorbed\n", netlist.block_name(blk).c_str());
+#endif
             buffer_luts.push_back(blk);
         }
     }
@@ -828,7 +833,9 @@ size_t sweep_blocks(AtomNetlist& netlist) {
 
     //Remove them
     for(auto blk_id : blocks_to_remove) {
-        /*vtr::printf_warning(__FILE__, __LINE__, "Sweeping block '%s'\n", netlist.block_name(blk_id).c_str());*/
+#ifdef SWEEP_VERBOSE
+        vtr::printf_warning(__FILE__, __LINE__, "Sweeping block '%s'\n", netlist.block_name(blk_id).c_str());
+#endif
         netlist.remove_block(blk_id);
     }
 
@@ -848,7 +855,9 @@ size_t sweep_inputs(AtomNetlist& netlist) {
 
     //Remove them
     for(auto blk_id : inputs_to_remove) {
-        /*vtr::printf_warning(__FILE__, __LINE__, "Sweeping primary input '%s'\n", netlist.block_name(blk_id).c_str());*/
+#ifdef SWEEP_VERBOSE
+        vtr::printf_warning(__FILE__, __LINE__, "Sweeping primary input '%s'\n", netlist.block_name(blk_id).c_str());
+#endif
         netlist.remove_block(blk_id);
     }
 
@@ -862,7 +871,9 @@ size_t sweep_outputs(AtomNetlist& netlist) {
         if(!blk_id) continue;
 
         if(is_removable_output(netlist, blk_id)) {
-            /*vtr::printf_warning(__FILE__, __LINE__, "Sweeping primary output '%s'\n", netlist.block_name(blk_id).c_str());*/
+#ifdef SWEEP_VERBOSE
+            vtr::printf_warning(__FILE__, __LINE__, "Sweeping primary output '%s'\n", netlist.block_name(blk_id).c_str());
+#endif
             outputs_to_remove.insert(blk_id);
         }
     }
@@ -884,12 +895,16 @@ size_t sweep_nets(AtomNetlist& netlist) {
 
         if(!netlist.net_driver(net_id)) {
             //No driver
-            /*vtr::printf_warning(__FILE__, __LINE__, "Net '%s' has no driver and will be removed\n", netlist.net_name(net_id).c_str());*/
+#ifdef SWEEP_VERBOSE
+            vtr::printf_warning(__FILE__, __LINE__, "Net '%s' has no driver and will be removed\n", netlist.net_name(net_id).c_str());
+#endif
             nets_to_remove.insert(net_id);
         }
         if(netlist.net_sinks(net_id).size() == 0) {
             //No sinks
-            /*vtr::printf_warning(__FILE__, __LINE__, "Net '%s' has no sinks and will be removed\n", netlist.net_name(net_id).c_str());*/
+#ifdef SWEEP_VERBOSE
+            vtr::printf_warning(__FILE__, __LINE__, "Net '%s' has no sinks and will be removed\n", netlist.net_name(net_id).c_str());
+#endif
             nets_to_remove.insert(net_id);
         }
     }

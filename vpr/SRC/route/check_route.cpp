@@ -23,7 +23,6 @@ static void check_switch(t_trace *tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
 static void reset_flags(int inet, bool * connected_to_route);
-static void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_locally);
 static void check_locally_used_clb_opins(const t_clb_opins_used&  clb_opins_used_locally,
 		enum e_route_type route_type, const t_segment_inf* segment_inf);
 
@@ -248,7 +247,7 @@ static void check_source(int inode, int inet) {
 
 	node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
 	iclass = type->pin_class[node_block_pin];
-
+            
 	if (ptc_num != iclass) {		
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_source: net SOURCE is of wrong class (%d).\n", ptc_num);
@@ -512,7 +511,7 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
 	return (1);
 }
 
-static void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_locally) {
+void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_locally) {
 
 	/*
      * This routine updates the occ field in the route_ctx.rr_node_state structure 

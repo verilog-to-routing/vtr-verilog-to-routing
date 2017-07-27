@@ -392,8 +392,14 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
 
     //Summary and slack
     path_helper.print_divider(os);
-    path_helper.print_path_line_no_incr(os, "data required time", req_time);
-    path_helper.print_path_line_no_incr(os, "data arrival time", -arr_time);
+    if (path_info.type() == TimingType::SETUP) {
+        path_helper.print_path_line_no_incr(os, "data required time", req_time);
+        path_helper.print_path_line_no_incr(os, "data arrival time", -arr_time);
+    } else {
+        TATUM_ASSERT(path_info.type() == TimingType::HOLD);
+        path_helper.print_path_line_no_incr(os, "data required time", -req_time);
+        path_helper.print_path_line_no_incr(os, "data arrival time", arr_time);
+    }
     path_helper.print_divider(os);
     Time slack = timing_path.slack_tag().time();
     if(slack.value() < 0. || std::signbit(slack.value())) {
@@ -405,7 +411,13 @@ void TimingReporter::report_path(std::ostream& os, const TimingPath& timing_path
     os.flush();
 
     //Sanity check slack
-    Time path_slack = req_path - arr_path;
+    Time path_slack;
+    if (path_info.type() == TimingType::SETUP) {
+        path_slack = req_path - arr_path;
+    } else {
+        TATUM_ASSERT(path_info.type() == TimingType::HOLD);
+        path_slack = arr_path - req_path;
+    }
     if(!nearly_equal(slack, path_slack)) {
         os.flush();
         std::stringstream ss;

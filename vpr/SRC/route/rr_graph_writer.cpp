@@ -1,4 +1,9 @@
-/* This file defines the writing rr graph function in XML format */
+/* This file defines the writing rr graph function in XML format.
+ * The rr graph is separated into channels, nodes, switches,
+ * grids, edges, block types, and segments. Each tag has several
+ * children tags such as timing, location, or some general 
+ * details. Each tag has attributes to describe them */
+
 #include <fstream>
 #include <iostream>
 #include <string.h>
@@ -11,6 +16,12 @@
 
 using namespace std;
 
+/*All values are printed with this precision value. The higher the
+value, the more accurate the read in rr graph is.
+Through experimentation, 30 is high precision enough for
+an accurate rr graph read in*/
+
+#define FLOAT_PRECISION 30
 /*********************** Subroutines local to this module *******************/
 void write_rr_channel(fstream &fp);
 void write_rr_node(fstream &fp);
@@ -21,6 +32,7 @@ void write_rr_block_types(fstream &fp);
 void write_rr_segments(fstream &fp, const t_segment_inf *segment_inf, const int num_seg_types);
 
 /************************ Subroutine definitions ****************************/
+
 /* This function is used to write the rr_graph into xml format into a a file with name: file_name */
 void write_rr_graph(const char *file_name, const t_segment_inf *segment_inf, const int num_seg_types) {
     fstream fp;
@@ -51,7 +63,9 @@ void write_rr_graph(const char *file_name, const t_segment_inf *segment_inf, con
     cout << "Finished generating RR graph file named " << file_name << endl << endl;
 }
 
-/* Channel info in device_ctx.chan_width is written in xml format*/
+/* Channel info in device_ctx.chan_width is written in xml format. 
+ * A general summary of the min and max values of the channels are first printed. Every
+ * x and y channel list is printed out in its own attribute*/
 void write_rr_channel(fstream &fp) {
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -88,9 +102,9 @@ void write_rr_node(fstream &fp) {
         fp << "\t\t\t<loc xlow=\"" << node.xlow() << "\" ylow=\"" << node.ylow() <<
                 "\" xhigh=\"" << node.xhigh() << "\" yhigh=\"" << node.yhigh() <<
                 "\" ptc=\"" << node.ptc_num() << "\"/>" << endl;
-        fp << "\t\t\t<timing R=\"" << setprecision(30)<< node.R() 
-                << "\" C=\"" << setprecision(30)<<node.C() << "\"/>" << endl;
-        
+        fp << "\t\t\t<timing R=\"" << setprecision(FLOAT_PRECISION)<< node.R() 
+                << "\" C=\"" << setprecision(FLOAT_PRECISION)<<node.C() << "\"/>" << endl;
+
         if (device_ctx.rr_indexed_data[node.cost_index()].seg_index != -1) {
             fp << "\t\t\t<segment segment_id=\"" << device_ctx.rr_indexed_data[node.cost_index()].seg_index << "\"/>" << endl;
         }
@@ -109,8 +123,8 @@ void write_rr_segments(fstream &fp, const t_segment_inf *segment_inf, const int 
     for (int iseg = 0; iseg < num_seg_types; iseg++) {
         fp << "\t\t<segment id=\"" << iseg <<
                 "\" name=\"" << segment_inf[iseg].name << "\">" << endl;
-        fp << "\t\t\t<timing R_per_meter=\"" << setprecision(30) <<segment_inf[iseg].Rmetal <<
-                "\" C_per_meter=\"" <<setprecision(30) << segment_inf[iseg].Cmetal << "\"/>" << endl;
+        fp << "\t\t\t<timing R_per_meter=\"" << setprecision(FLOAT_PRECISION) <<segment_inf[iseg].Rmetal <<
+                "\" C_per_meter=\"" <<setprecision(FLOAT_PRECISION) << segment_inf[iseg].Cmetal << "\"/>" << endl;
         fp << "\t\t</segment>" << endl;
     }
     fp << "\t</segments>" << endl << endl;
@@ -130,12 +144,12 @@ void write_rr_switches(fstream &fp) {
             fp << "\" name=\"" << rr_switch.name;
         }
         fp << "\" buffered=\"" << (int) rr_switch.buffered << "\">" << endl;
-        fp << "\t\t\t<timing R=\"" << setprecision(30) <<rr_switch.R << 
-                "\" Cin=\"" << setprecision(30) <<rr_switch.Cin <<
-                "\" Cout=\"" << setprecision(30) <<rr_switch.Cout <<
-                "\" Tdel=\"" << setprecision(30) <<rr_switch.Tdel << "\"/>" << endl;
-        fp << "\t\t\t<sizing mux_trans_size=\"" << setprecision(30) <<rr_switch.mux_trans_size <<
-                "\" buf_size=\"" << setprecision(30) <<rr_switch.buf_size << "\"/>" << endl;
+        fp << "\t\t\t<timing R=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.R << 
+                "\" Cin=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.Cin <<
+                "\" Cout=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.Cout <<
+                "\" Tdel=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.Tdel << "\"/>" << endl;
+        fp << "\t\t\t<sizing mux_trans_size=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.mux_trans_size <<
+                "\" buf_size=\"" << setprecision(FLOAT_PRECISION) <<rr_switch.buf_size << "\"/>" << endl;
         fp << "\t\t</switch>" << endl;
     }
     fp << "\t</switches>" << endl << endl;
@@ -182,6 +196,7 @@ void write_rr_block_types(fstream &fp) {
                     break;
             }
 
+            //the pin list is printed out as the child values
             fp << "\t\t\t<pin_class type=\"" << pin_type << "\">";
             for (int iPin = 0; iPin < class_inf.num_pins; iPin++) {
                 fp << class_inf.pinlist[iPin] << " ";

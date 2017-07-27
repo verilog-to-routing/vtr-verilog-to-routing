@@ -8,6 +8,8 @@
 #include "types.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include "odin_util.h"
+#include <stdbool.h>
 
 /* Globals */
 struct veri_Includes veri_includes;
@@ -16,7 +18,8 @@ struct veri_Defines veri_defines;
 /* Function declarations */
 FILE* open_source_file(char* filename);
 FILE *remove_comments(FILE *source);
-
+FILE *format_verilog_file(FILE *source);
+FILE *format_verilog_variable(FILE * src, FILE *dest);
 /*
  * Initialize the preprocessor by allocating sufficient memory and setting sane values
  */
@@ -269,7 +272,7 @@ FILE* open_source_file(char* filename)
 {
 	extern global_args_t global_args;
 	extern config_t configuration;
-	extern int current_parse_file;
+	extern size_t current_parse_file;
 	
 	FILE* src_file = fopen(filename, "r"); //Look for the file in the PWD
 	if (src_file != NULL)
@@ -320,7 +323,7 @@ FILE* veri_preproc(FILE *source)
 {
 	extern global_args_t global_args;
 	extern config_t configuration;
-	extern int current_parse_file;
+	extern size_t current_parse_file;
 	FILE *preproc_producer = NULL;
 	
 	/* Was going to use filename to prevent duplication but the global var isn't used in the case of a config value */
@@ -406,7 +409,9 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 {
 	// Strip the comments from the source file producing a temporary source file.
 	FILE *source = remove_comments(original_source);
-
+	
+	source = format_verilog_file(source);
+	
 	int line_number = 1;
 	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));;
 	char line[MaxLine];
@@ -691,6 +696,131 @@ void push(veri_flag_stack *stack, int flag)
 		
 		stack->top = new_node;
 	}
+}
+FILE *format_verilog_file(FILE *source)
+{
+	FILE *destination = tmpfile();
+	char searchString [4][7]= {"input","output","reg","wire"};
+	char *line;
+	char ch;
+	unsigned i;
+	char temp[10];
+	int j;
+	static const char *pattern = "\\binput\\b|\\boutput\\b|\\breg\\b|\\bwire\\b";
+	i = 0;
+	line = (char *) calloc (MaxLine, sizeof(char));
+	while( (ch = getc(source) ) != ';')
+	{
+		line[i++] = ch;
+		if (ch == '`')
+		{
+			while( (ch = getc(source)) != '\n')
+			{
+				line[i++] = ch;
+			}
+			line[i] = '\n';
+			fputs(line,destination);
+			i = 0;
+		}
+		
+	}
+	line[i++] = ch;
+	line[i] = '\0';
+	line = find_substring(line,"module",2);
+	line = search_replace(line,"\n","",2);
+
+	if (! validate_string_regex(line, pattern))
+	{
+	 	rewind(source);
+		return source;
+	}
+	for (i = 0; i < 4; i++)
+	{
+		line = search_replace(line,searchString[i],"",2);
+	}
+	i = 0;
+	while (i < strlen(line))
+	{
+		if(line[i] == '[')
+		{
+			j = 0;
+			while(line[i] != ']')
+			{
+				temp[j++] = line[i];
+				i++;
+			}
+			temp[j++] = line[i];
+			temp[j] = '\0';
+			line = search_replace(line,temp,"",2);
+			i = 0;
+		}
+		else
+			i++;
+	}
+	fputs(line, destination);
+	rewind(source);
+	destination = format_verilog_variable(source,destination);
+	rewind(destination);
+	free(line);
+	return destination;
+}
+
+FILE *format_verilog_variable(FILE * src, FILE *dest)
+{
+	char ch;
+	int i;
+	char line[MaxLine];
+	char *tempLine;
+	char *pos;
+	while( (ch = getc(src) ) != ';')
+	{
+		if(ch == '(')
+		{
+			i = 0;
+			while( (ch = getc(src) ) != ')')
+			{
+				if (ch == ',')
+				{
+					line[i++] = ';';
+					line[i] = '\0';
+					pos = strstr(line,"reg");
+					if (pos != NULL)
+					{
+						tempLine = search_replace(line,"reg","",2);
+						fputs(tempLine,dest);
+						tempLine = search_replace(line,"output","",2);
+						fputs(tempLine,dest);
+					}
+					else
+					{
+						fputs(line, dest);
+					}
+					i = 0;
+				}
+				else
+					line[i++] = ch;
+			}
+			line[i-1] = ';';
+			line[i] = '\0';
+			pos = strstr(line,"reg");
+			if (pos != NULL)
+			{
+				tempLine = search_replace(line,"reg","",2);
+				fputs(tempLine,dest);
+				tempLine = search_replace(line,"output","",2);
+				fputs(tempLine,dest);
+			}
+			else
+			{
+				fputs(line, dest);
+			}
+		}
+	}
+	while( (ch = getc(src) ) != EOF)
+	{
+		fputc(ch, dest);
+	}
+	return dest;
 }
 
 /* ------------------------------------------------------------------------- */

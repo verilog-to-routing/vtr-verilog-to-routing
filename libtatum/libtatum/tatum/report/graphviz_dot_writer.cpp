@@ -1,3 +1,4 @@
+#include "graphviz_dot_writer.hpp"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/base/sta_util.hpp"
 #include <iostream>
@@ -9,8 +10,11 @@ namespace tatum {
 
 constexpr size_t MAX_DOT_GRAPH_NODES = 1000;
 
-template<class DelayCalc>
-GraphvizDotWriter<DelayCalc>::GraphvizDotWriter(const TimingGraph& tg, const DelayCalc& delay_calc)
+GraphvizDotWriter make_graphviz_dot_writer(const TimingGraph& tg, const DelayCalculator& delay_calc) {
+    return GraphvizDotWriter(tg, delay_calc);
+}
+
+GraphvizDotWriter::GraphvizDotWriter(const TimingGraph& tg, const DelayCalculator& delay_calc)
     : tg_(tg)
     , delay_calc_(delay_calc) {
 
@@ -19,14 +23,12 @@ GraphvizDotWriter<DelayCalc>::GraphvizDotWriter(const TimingGraph& tg, const Del
     nodes_to_dump_ = std::set<NodeId>(nodes.begin(), nodes.end());
 }
 
-template<class DelayCalc>
-void GraphvizDotWriter<DelayCalc>::write_dot_file(std::string filename) {
+void GraphvizDotWriter::write_dot_file(std::string filename) {
     std::ofstream os(filename);
     write_dot_file(os);
 }
 
-template<class DelayCalc>
-void GraphvizDotWriter<DelayCalc>::write_dot_file(std::ostream& os) {
+void GraphvizDotWriter::write_dot_file(std::ostream& os) {
     std::map<NodeId,std::vector<TimingTag>> node_tags;
     for(NodeId node : nodes_to_dump_) {
         node_tags[node] = std::vector<TimingTag>(); //No tags
@@ -36,54 +38,54 @@ void GraphvizDotWriter<DelayCalc>::write_dot_file(std::ostream& os) {
     for(NodeId node : nodes_to_dump_) {
         node_slacks[node] = std::vector<TimingTag>(); //No slacks
     }
+    TimingType timing_type = TimingType::UNKOWN;
 
-    write_dot_format(os, node_tags, node_slacks);
+    write_dot_format(os, node_tags, node_slacks, timing_type);
 }
 
-template<class DelayCalc>
-void GraphvizDotWriter<DelayCalc>::write_dot_file(std::string filename, const TimingAnalyzer& analyzer) {
+void GraphvizDotWriter::write_dot_file(std::string filename, const SetupTimingAnalyzer& analyzer) {
+    std::ofstream os(filename);
+    write_dot_file(os, analyzer);
+}
+void GraphvizDotWriter::write_dot_file(std::string filename, const HoldTimingAnalyzer& analyzer) {
     std::ofstream os(filename);
     write_dot_file(os, analyzer);
 }
 
-template<class DelayCalc>
-void GraphvizDotWriter<DelayCalc>::write_dot_file(std::ostream& os, const TimingAnalyzer& analyzer) {
+void GraphvizDotWriter::write_dot_file(std::ostream& os, const SetupTimingAnalyzer& analyzer) {
     std::map<NodeId,std::vector<TimingTag>> node_tags;
     std::map<NodeId,std::vector<TimingTag>> node_slacks;
-    TimingType timing_type = TimingType::UNKOWN;
-
-    //This is ugly, but makes it transparent to the user who just passes thier analyzer
-    const SetupTimingAnalyzer* setup_analyzer = dynamic_cast<const SetupTimingAnalyzer*>(&analyzer);
-    const HoldTimingAnalyzer* hold_analyzer = dynamic_cast<const HoldTimingAnalyzer*>(&analyzer);
+    TimingType timing_type = TimingType::SETUP;
 
     for(NodeId node : nodes_to_dump_) {
-        if(setup_analyzer) {
-            auto tags = setup_analyzer->setup_tags(node);
-            std::copy(tags.begin(), tags.end(), std::back_inserter(node_tags[node]));
+        auto tags = analyzer.setup_tags(node);
+        std::copy(tags.begin(), tags.end(), std::back_inserter(node_tags[node]));
 
-            auto slacks = setup_analyzer->setup_slacks(node);
-            std::copy(slacks.begin(), slacks.end(), std::back_inserter(node_slacks[node]));
+        auto slacks = analyzer.setup_slacks(node);
+        std::copy(slacks.begin(), slacks.end(), std::back_inserter(node_slacks[node]));
+    }
 
-            timing_type = TimingType::SETUP;
-        } else {
-            TATUM_ASSERT(hold_analyzer);
+    write_dot_format(os, node_tags, node_slacks, timing_type);
+}
 
-            auto tags = hold_analyzer->hold_tags(node);
-            std::copy(tags.begin(), tags.end(), std::back_inserter(node_tags[node]));
+void GraphvizDotWriter::write_dot_file(std::ostream& os, const HoldTimingAnalyzer& analyzer) {
+    std::map<NodeId,std::vector<TimingTag>> node_tags;
+    std::map<NodeId,std::vector<TimingTag>> node_slacks;
+    TimingType timing_type = TimingType::HOLD;
 
-            auto slacks = hold_analyzer->hold_slacks(node);
-            std::copy(slacks.begin(), slacks.end(), std::back_inserter(node_slacks[node]));
+    for(NodeId node : nodes_to_dump_) {
+        auto tags = analyzer.hold_tags(node);
+        std::copy(tags.begin(), tags.end(), std::back_inserter(node_tags[node]));
 
-            timing_type = TimingType::HOLD;
-        }
+        auto slacks = analyzer.hold_slacks(node);
+        std::copy(slacks.begin(), slacks.end(), std::back_inserter(node_slacks[node]));
     }
 
     write_dot_format(os, node_tags, node_slacks, timing_type);
 }
 
 
-template<class DelayCalc>
-void GraphvizDotWriter<DelayCalc>::write_dot_format(std::ostream& os, 
+void GraphvizDotWriter::write_dot_format(std::ostream& os, 
                                          const std::map<NodeId,std::vector<TimingTag>>& node_tags,
                                          const std::map<NodeId,std::vector<TimingTag>>& node_slacks,
                                          TimingType timing_type) {
@@ -113,8 +115,7 @@ void GraphvizDotWriter<DelayCalc>::write_dot_format(std::ostream& os,
     os << "}" << std::endl;
 }
 
-template<class DelayCalc>
-void GraphvizDotWriter<DelayCalc>::write_dot_node(std::ostream& os, 
+void GraphvizDotWriter::write_dot_node(std::ostream& os, 
                                        const NodeId node, 
                                        const std::vector<TimingTag>& tags, 
                                        const std::vector<TimingTag>& slacks) {
@@ -147,8 +148,7 @@ void GraphvizDotWriter<DelayCalc>::write_dot_node(std::ostream& os,
     os << std::endl;
 }
 
-template<class DelayCalc>
-void GraphvizDotWriter<DelayCalc>::write_dot_level(std::ostream& os, const LevelId level) {
+void GraphvizDotWriter::write_dot_level(std::ostream& os, const LevelId level) {
     os << "\t{rank = same; ";
     for(const NodeId node : tg_.level_nodes(level)) {
         if(nodes_to_dump_.count(node)) {
@@ -158,8 +158,7 @@ void GraphvizDotWriter<DelayCalc>::write_dot_level(std::ostream& os, const Level
     os << "}" << std::endl;
 }
 
-template<class DelayCalc>
-void GraphvizDotWriter<DelayCalc>::write_dot_edge(std::ostream& os, const EdgeId edge, const TimingType timing_type) {
+void GraphvizDotWriter::write_dot_edge(std::ostream& os, const EdgeId edge, const TimingType timing_type) {
     NodeId src_node = tg_.edge_src_node(edge);
     NodeId sink_node = tg_.edge_sink_node(edge);
 
@@ -204,8 +203,7 @@ void GraphvizDotWriter<DelayCalc>::write_dot_edge(std::ostream& os, const EdgeId
     }
 }
 
-template<class DelayCalc>
-void GraphvizDotWriter<DelayCalc>::tag_domain_from_to(std::ostream& os, const TimingTag& tag) {
+void GraphvizDotWriter::tag_domain_from_to(std::ostream& os, const TimingTag& tag) {
     if(!tag.launch_clock_domain()) {
         os << "*";
     } else {
@@ -219,8 +217,7 @@ void GraphvizDotWriter<DelayCalc>::tag_domain_from_to(std::ostream& os, const Ti
     }
 }
 
-template<class DelayCalc>
-std::string GraphvizDotWriter<DelayCalc>::node_name(const NodeId node) {
+std::string GraphvizDotWriter::node_name(const NodeId node) {
     return "node" + std::to_string(size_t(node));
 }
 

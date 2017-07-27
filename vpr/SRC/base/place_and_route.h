@@ -24,3 +24,5 @@ bool place_and_route(
 		t_timing_inf timing_inf);
 
 void init_chan(int cfactor, t_chan_width_dist chan_width_dist);
+
+void post_place_sync(const int L_num_blocks);

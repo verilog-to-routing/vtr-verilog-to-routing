@@ -78,7 +78,7 @@ void check_netlist() {
 				"Found %d fatal Errors in the input netlist.\n", error);
 	}
 
-	/*
+	/* 
      * Enhanced HACK: July 2017 
      *     Do not route constant nets (e.g. gnd/vcc). Identifying these nets as constants 
      *     is more robust than the previous approach (exact name match to gnd/vcc).

@@ -47,7 +47,7 @@ void update_tree_tag(ast_node_t *node, int cases, int tagged);
 	 *-------------------------------------------------------------------------*/
 	void update_tree_tag(ast_node_t *node, int high_level_block_type_to_search, int tag)
 	{
-		int i;
+		size_t i;
 		int tagged = tag;
 		if (node){ 
 			
@@ -69,7 +69,7 @@ void update_tree_tag(ast_node_t *node, int cases, int tagged);
 	 *-------------------------------------------------------------------------*/
 	void add_tag_data()
 	{
-		int i;
+		size_t i;
 		high_level_id = -1;
 		
 		short type = 0;
@@ -148,7 +148,6 @@ ast_node_t *free_single_node(ast_node_t *node)
 {
 	if(node){
 		free_assignement_of_node_keep_tree(node);
-		vtr::free(node->additional_data);
 		vtr::free(node->children);
 		vtr::free(node);
 	}
@@ -161,7 +160,7 @@ ast_node_t *free_single_node(ast_node_t *node)
  *-------------------------------------------------------------------------*/
 ast_node_t *free_whole_tree(ast_node_t *node)
 {
-	int i;
+	size_t i;
 
 	if (node){
 		for (i = 0; i < node->num_children; i++)
@@ -387,7 +386,7 @@ void add_child_to_node(ast_node_t* node, ast_node_t *child)
  *-------------------------------------------------------------------------------------------*/
 void add_child_at_the_beginning_of_the_node(ast_node_t* node, ast_node_t *child) 
 {
-    int i;
+    size_t i;
     ast_node_t *ref, *ref1;
 	/* Handle case where we have an empty statement. */
 	if (child == NULL)
@@ -446,7 +445,8 @@ int get_range(ast_node_t* first_node)
  *-------------------------------------------------------------------------------------------*/
 void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_name_prefix)
 {
-	int i, j; 
+	size_t i;
+	int j; 
 	ast_node_t *rnode[3];
 
 	concat_top->types.concat.num_bit_strings = 0;
@@ -929,7 +929,7 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 		memcpy(node_copy, node, sizeof(ast_node_t));
 		node_copy->children = (ast_node_t **)vtr::calloc(node_copy->num_children,sizeof(ast_node_t*));
 
-		int i;
+		size_t i;
 		for (i = 0; i < node->num_children; i++){
 			node_copy->children[i] = resolve_node(local_param_table_sc, initial, module_name, node->children[i]);
 		}
@@ -955,16 +955,12 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 			
 			case UNARY_OPERATION:
 				if(initial){
-					node_copy->shared_node = TRUE;
 					newNode = fold_unary(node_copy->children[0],node_copy->types.operation.op);
-					node_copy->shared_node = FALSE;
 				}
 				break;
 
 			case BINARY_OPERATION:
-				node_copy->shared_node = TRUE;
 				newNode = fold_binary(node_copy->children[0], node_copy->children[1], node_copy->types.operation.op);
-				node_copy->shared_node = FALSE;
 				break;
 			
 			default:
@@ -972,6 +968,7 @@ ast_node_t *resolve_node(STRING_CACHE *local_param_table_sc, short initial, char
 		}
 		
 		if (node_is_constant(newNode)){
+			newNode->shared_node = node->shared_node;
 			node = newNode;
 		}
 
@@ -995,7 +992,7 @@ char *make_module_param_name(ast_node_t *module_param_list, char *module_name)
 	
 	if (module_param_list)
 	{
-		int i;
+		size_t i;
 		oassert(module_param_list->num_children > 0);
 		strcat(module_param_name, "___");
 		for (i = 0; i < module_param_list->num_children; i++)
@@ -1042,7 +1039,7 @@ void move_ast_node(ast_node_t *src, ast_node_t *dest, ast_node_t *node)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *ast_node_deep_copy(ast_node_t *node){
 	ast_node_t *node_copy;
-	int i;
+	size_t i;
 
 	if(node == NULL){
 		return NULL;
@@ -1368,10 +1365,9 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->file_number = file_number;
 	new_node->far_tag = 0;
 	new_node->high_number = 0;
-	new_node->shared_node = 0;
+	new_node->shared_node = FALSE;
 	new_node->hb_port = 0;
 	new_node->net_node = 0;
 	new_node->is_read_write = 0;
-	new_node->additional_data = 0;
 
 }

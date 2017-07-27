@@ -52,19 +52,13 @@ add_definitions("-DVTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}")
 include(CheckCXXCompilerFlag)
 
 #
-# We require c++11 support
+# We require c++14 support
 #
 CHECK_CXX_COMPILER_FLAG("-std=c++14" CXX_COMPILER_SUPPORTS_CXX14_FLAG)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" CXX_COMPILER_SUPPORTS_CXX11_FLAG)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" CXX_COMPILER_SUPPORTS_CXX0X_FLAG)
-#if(COMPILER_SUPPORTS_CXX14_FLAG) #Don't default to C++14 yet
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-if(CXX_COMPILER_SUPPORTS_CXX11_FLAG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(CXX_COMPILER_SUPPORTS_CXX0X_FLAG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+if(CXX_COMPILER_SUPPORTS_CXX14_FLAG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 else()
-    message(WARNING "Could not determine C++11 support for compiler ${CMAKE_CXX_COMPILER}. C++11 support is required.")
+    message(FATAL_ERROR "Could not determine C++14 support for compiler ${CMAKE_CXX_COMPILER}. C++14 support is required.")
 endif()
 
 #

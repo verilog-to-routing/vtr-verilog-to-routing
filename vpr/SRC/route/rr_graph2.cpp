@@ -28,11 +28,11 @@ static void load_chan_rr_indices(
         const int max_chan_width, const int chan_len,
         const int num_chans, const t_rr_type type,
         const t_chan_details& chan_details,
-        int *index, vector<int> *** indices);
+        int *index, t_rr_node_indices& indices);
 
 static int get_bidir_track_to_chan_seg(
         const std::vector<int> conn_tracks,
-        vector<int> *** L_rr_node_indices, const int to_chan, const int to_seg,
+        const t_rr_node_indices& L_rr_node_indices, const int to_chan, const int to_seg,
         const int to_sb, const t_rr_type to_type, const t_seg_details * seg_details,
         const bool from_is_sblock, const int from_switch,
         bool * L_rr_edge_done,
@@ -44,7 +44,7 @@ static int get_unidir_track_to_chan_seg(
         const t_rr_type to_type, const int max_chan_width, const int L_nx,
         const int L_ny, const enum e_side from_side, const enum e_side to_side,
         const int Fs_per_side,
-        short ******sblock_pattern, vector<int> *** L_rr_node_indices,
+        short ******sblock_pattern, const t_rr_node_indices& L_rr_node_indices,
         const t_seg_details * seg_details, bool * L_rr_edge_done,
         bool * Fs_clipped, t_linked_edge **edge_list);
 
@@ -52,7 +52,7 @@ static int get_track_to_chan_seg(
         const int from_track, const int to_chan, const int to_seg,
         const t_rr_type to_chan_type,
         const e_side from_side, const e_side to_side,
-        vector<int> ***L_rr_node_indices,
+        const t_rr_node_indices&L_rr_node_indices,
         t_sb_connection_map *sb_conn_map,
         bool * L_rr_edge_done,
         t_linked_edge **edge_list);
@@ -701,7 +701,7 @@ int get_bidir_opin_connections(
         t_linked_edge **edge_list,
         const t_pin_to_track_lookup& opin_to_track_map,
         const int Fc, bool * L_rr_edge_done,
-        vector<int> *** L_rr_node_indices, const t_seg_details * seg_details) {
+        const t_rr_node_indices& L_rr_node_indices, const t_seg_details * seg_details) {
 
     int iside, num_conn, tr_i, tr_j, chan, seg;
     int to_track, to_switch, to_node, iconn;
@@ -777,7 +777,7 @@ int get_unidir_opin_connections(
         t_linked_edge ** edge_list_ptr,
         vtr::NdMatrix<int, 3>& Fc_ofs,
         bool * L_rr_edge_done, const int max_len,
-        const int max_chan_width, vector<int> *** L_rr_node_indices,
+        const int max_chan_width, const t_rr_node_indices& L_rr_node_indices,
         bool * Fc_clipped) {
 
     /* Gets a linked list of Fc nodes of specified seg_type_index to connect 
@@ -1068,23 +1068,23 @@ void dump_sblock_pattern(
     fclose(fp);
 }
 
-void print_rr_node_indices(int L_nx, int L_ny, vector<int> *** L_rr_node_indices) {
+void print_rr_node_indices(int L_nx, int L_ny, const t_rr_node_indices& L_rr_node_indices) {
 
-    if (L_rr_node_indices[SOURCE])
+    if (!L_rr_node_indices[SOURCE].empty())
         print_rr_node_indices(SOURCE, L_nx + 1, L_ny + 1, L_rr_node_indices);
-    if (L_rr_node_indices[SINK])
+    if (!L_rr_node_indices[SINK].empty())
         print_rr_node_indices(SINK, L_nx + 1, L_ny + 1, L_rr_node_indices);
-    if (L_rr_node_indices[IPIN])
+    if (!L_rr_node_indices[IPIN].empty())
         print_rr_node_indices(IPIN, L_nx + 1, L_ny + 1, L_rr_node_indices);
-    if (L_rr_node_indices[OPIN])
+    if (!L_rr_node_indices[OPIN].empty())
         print_rr_node_indices(OPIN, L_nx + 1, L_ny + 1, L_rr_node_indices);
-    if (L_rr_node_indices[CHANX])
+    if (!L_rr_node_indices[CHANX].empty())
         print_rr_node_indices(CHANX, L_nx, L_ny, L_rr_node_indices);
-    if (L_rr_node_indices[CHANY])
+    if (!L_rr_node_indices[CHANY].empty())
         print_rr_node_indices(CHANY, L_nx, L_ny, L_rr_node_indices);
 }
 
-void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, vector<int> *** L_rr_node_indices) {
+void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, const t_rr_node_indices& L_rr_node_indices) {
 
     const char* psz_rr_type = "?";
     switch (rr_type) {
@@ -1119,12 +1119,12 @@ static void load_chan_rr_indices(
         const int max_chan_width, const int chan_len,
         const int num_chans, const t_rr_type type,
         const t_chan_details& chan_details,
-        int *index, vector<int> *** indices) {
+        int *index, t_rr_node_indices& indices) {
 
-    indices[type] = (vector<int> **) vtr::calloc(num_chans, sizeof (vector<int> *));
+    indices[type].resize(num_chans);
     for (int chan = 0; chan < num_chans - 1; ++chan) {
 
-        indices[type][chan] = (vector<int> *) vtr::calloc(chan_len, sizeof (vector<int>));
+        indices[type][chan].resize(chan_len);
 
         for (int seg = 1; seg < chan_len - 1; ++seg) {
 
@@ -1169,7 +1169,7 @@ static void load_chan_rr_indices(
     }
 }
 
-vector<int> ***alloc_and_load_rr_node_indices(
+t_rr_node_indices alloc_and_load_rr_node_indices(
         const int max_chan_width, const int L_nx, const int L_ny, int *index,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y) {
 
@@ -1178,20 +1178,20 @@ vector<int> ***alloc_and_load_rr_node_indices(
      * of the *first* rr_node at a given (i,j) location.                       */
 
     int i, j, k;
-    vector<int> ***indices;
+    t_rr_node_indices indices;
     vector<int> tmp;
     t_type_ptr type;
 
     auto& device_ctx = g_vpr_ctx.device();
 
     /* Alloc the lookup table */
-    indices = (vector<int> ***) vtr::calloc(NUM_RR_TYPES, sizeof (vector<int> **));
+    indices.resize(NUM_RR_TYPES);
 
-    indices[IPIN] = (vector<int> **) vtr::calloc((L_nx + 2), sizeof (vector<int> *));
-    indices[SINK] = (vector<int> **) vtr::calloc((L_nx + 2), sizeof (vector<int> *));
+    indices[IPIN].resize(L_nx + 2);
+    indices[SINK].resize(L_nx + 2);
     for (i = 0; i <= (L_nx + 1); ++i) {
-        indices[IPIN][i] = (vector<int> *) vtr::calloc((L_ny + 2), sizeof (vector<int>));
-        indices[SINK][i] = (vector<int> *) vtr::calloc((L_ny + 2), sizeof (vector<int>));
+        indices[IPIN][i].resize(L_ny + 2);
+        indices[SINK][i].resize(L_ny + 2);
     }
 
     /* Count indices for block nodes */
@@ -1242,70 +1242,9 @@ vector<int> ***alloc_and_load_rr_node_indices(
     return indices;
 }
 
-void free_rr_node_indices(vector<int> *** L_rr_node_indices) {
-    int i, j;
-
-    auto& device_ctx = g_vpr_ctx.device();
-
-    /* This function must unallocate the structure allocated in 
-     * alloc_and_load_rr_node_indices. */
-    for (i = 0; i <= (device_ctx.nx + 1); ++i) {
-        for (j = 0; j <= (device_ctx.ny + 1); ++j) {
-            if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0) {
-                /* Vertical large blocks reference is same as offset 0 */
-                L_rr_node_indices[SINK][i][j].clear();
-                L_rr_node_indices[IPIN][i][j].clear();
-                continue;
-            }
-            if (!L_rr_node_indices[SINK][i][j].empty()) {
-                L_rr_node_indices[SINK][i][j].clear();
-            }
-            if (!L_rr_node_indices[IPIN][i][j].empty()) {
-                L_rr_node_indices[IPIN][i][j].clear();
-            }
-        }
-        vtr::free(L_rr_node_indices[SINK][i]);
-        vtr::free(L_rr_node_indices[IPIN][i]);
-    }
-    vtr::free(L_rr_node_indices[SINK]);
-    vtr::free(L_rr_node_indices[IPIN]);
-
-    /* free CHANY rr node indices */
-    for (i = 0; i <= (device_ctx.nx + 1); ++i) {
-        if (L_rr_node_indices[CHANY][i] == NULL) {
-            continue;
-        }
-        for (j = 0; j <= (device_ctx.ny + 1); ++j) {
-            if (L_rr_node_indices[CHANY][i][j].empty()) {
-                continue;
-            }
-            L_rr_node_indices[CHANY][i][j].clear();
-        }
-        vtr::free(L_rr_node_indices[CHANY][i]);
-    }
-    vtr::free(L_rr_node_indices[CHANY]);
-
-    /* free CHANX rr node indices */
-    for (i = 0; i < (device_ctx.ny + 1); ++i) {
-        if (L_rr_node_indices[CHANX][i] == NULL) {
-            continue;
-        }
-        for (j = 0; j < (device_ctx.nx + 1); ++j) {
-            if (L_rr_node_indices[CHANX][i][j].empty()) {
-                continue;
-            }
-            L_rr_node_indices[CHANX][i][j].clear();
-        }
-        vtr::free(L_rr_node_indices[CHANX][i]);
-    }
-    vtr::free(L_rr_node_indices[CHANX]);
-
-    vtr::free(L_rr_node_indices);
-}
-
 int get_rr_node_index(
         int x, int y, t_rr_type rr_type, int ptc,
-        vector<int> *** L_rr_node_indices) {
+        const t_rr_node_indices& L_rr_node_indices) {
     /* Returns the index of the specified routing resource node.  (x,y) are     *
      * the location within the FPGA, rr_type specifies the type of resource,    *
      * and ptc gives the number of this resource.  ptc is the class number,   *
@@ -1389,7 +1328,7 @@ int get_rr_node_index(
 
 int find_average_rr_node_index(
         int L_nx, int L_ny, t_rr_type rr_type, int ptc,
-        vector<int> *** L_rr_node_indices) {
+        const t_rr_node_indices& L_rr_node_indices) {
 
     /* Find and return the index to a rr_node that is located at the "center" *
      * of the current grid array, if possible.  In the event the "center" of  *
@@ -1434,7 +1373,7 @@ int find_average_rr_node_index(
 
 int get_track_to_pins(
         int seg, int chan, int track, int tracks_per_chan,
-        t_linked_edge ** edge_list_ptr, vector<int> *** L_rr_node_indices,
+        t_linked_edge ** edge_list_ptr, const t_rr_node_indices& L_rr_node_indices,
         const t_track_to_pin_lookup& track_to_pin_lookup,
         t_seg_details * seg_details,
         enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
@@ -1527,7 +1466,7 @@ int get_track_to_tracks(
         const t_seg_details * to_seg_details,
         const t_chan_details& to_chan_details,
         const enum e_directionality directionality,
-        vector<int> *** L_rr_node_indices, bool * L_rr_edge_done,
+        const t_rr_node_indices& L_rr_node_indices, bool * L_rr_edge_done,
         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
         t_sb_connection_map *sb_conn_map) {
 
@@ -1725,7 +1664,7 @@ int get_track_to_tracks(
 
 static int get_bidir_track_to_chan_seg(
         const std::vector<int> conn_tracks,
-        vector<int> *** L_rr_node_indices, const int to_chan, const int to_seg,
+        const t_rr_node_indices& L_rr_node_indices, const int to_chan, const int to_seg,
         const int to_sb, const t_rr_type to_type, const t_seg_details * seg_details,
         const bool from_is_sblock, const int from_switch,
         bool * L_rr_edge_done,
@@ -1793,7 +1732,7 @@ static int get_track_to_chan_seg(
         const int from_wire, const int to_chan, const int to_seg,
         const t_rr_type to_chan_type,
         const e_side from_side, const e_side to_side,
-        vector<int> ***L_rr_node_indices,
+        const t_rr_node_indices&L_rr_node_indices,
         t_sb_connection_map *sb_conn_map,
         bool * L_rr_edge_done,
         t_linked_edge **edge_list) {
@@ -1856,7 +1795,7 @@ static int get_unidir_track_to_chan_seg(
         const t_rr_type to_type, const int max_chan_width, const int L_nx,
         const int L_ny, const enum e_side from_side, const enum e_side to_side,
         const int Fs_per_side,
-        short ******sblock_pattern, vector<int> *** L_rr_node_indices,
+        short ******sblock_pattern, const t_rr_node_indices& L_rr_node_indices,
         const t_seg_details * seg_details, bool * L_rr_edge_done,
         bool * Fs_clipped, t_linked_edge **edge_list) {
 

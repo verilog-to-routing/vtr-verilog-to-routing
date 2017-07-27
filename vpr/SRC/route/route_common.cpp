@@ -273,7 +273,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
         t_slack * slacks,
         const t_timing_inf& timing_inf,
 #endif
-        std::shared_ptr<SetupTimingInfo> timing_info,
+        std::shared_ptr<SetupHoldTimingInfo> timing_info,
 		t_chan_width_dist chan_width_dist, t_clb_opins_used& clb_opins_used_locally,
 		t_direct_inf *directs, int num_directs,
         ScreenUpdatePriority first_iteration_priority) {
@@ -466,7 +466,7 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 
 		if (occ > capacity) {
 			route_ctx.rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
-			route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
+                        route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
 		}
 
 		/* If occ == capacity, we don't need to increase acc_cost, but a change    *
@@ -531,7 +531,7 @@ update_traceback(t_heap *hptr, int inet) {
 
 	// hptr points to the end of a connection
 	inode = hptr->index;
-
+       
 	rr_type = device_ctx.rr_nodes[inode].type();
 	if (rr_type != SINK) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
@@ -1341,7 +1341,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 					/* Uncomment line below if you're debugging and want to see the switch types *
 					 * used in the routing.                                                      */
-					/*          fprintf (fp, "Switch: %d", tptr->iswitch);    */
+					fprintf (fp, "Switch: %d", tptr->iswitch);    
 
 					fprintf(fp, "\n");
 
@@ -1430,7 +1430,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 					to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iconn);
 					cost = get_rr_cong_cost(to_node);
 					node_to_heap(to_node, cost, OPEN, OPEN, 0., 0.);
-				}
+                                }
 
 				for (ipin = 0; ipin < num_local_opin; ipin++) {
 					heap_head_ptr = get_heap_head();

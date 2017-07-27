@@ -44,7 +44,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define READ_BLIF_BUFFER 1048576 // 1MB
 
-int file_line_number;
+size_t file_line_number;
 
 const char *BLIF_ONE_STRING    = "ONE_VCC_CNS";
 const char *BLIF_ZERO_STRING   = "ZERO_GND_ZERO";

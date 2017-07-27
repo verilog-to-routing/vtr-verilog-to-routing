@@ -16,6 +16,12 @@ import sys
 import os
 import shlex
 
+import sphinx_rtd_theme
+
+html_theme = "sphinx_rtd_theme"
+
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
 #See if sphinxcontrib.bibtex has been installed
 have_sphinxcontrib_bibtex = True
 try:

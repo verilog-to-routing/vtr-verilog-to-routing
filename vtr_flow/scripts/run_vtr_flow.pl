@@ -120,6 +120,8 @@ my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
 my $verify_rr_graph         = 0;
 my $rr_graph_error_check    = 0;
+my $check_route             = 0;
+my $check_place             = 0;
 
 while ( $token = shift(@ARGV) ) {
 	if ( $token eq "-sdc_file" ) {
@@ -219,6 +221,12 @@ while ( $token = shift(@ARGV) ) {
     }
     elsif ( $token eq "-rr_graph_error_check" ) {
             $rr_graph_error_check = 1;
+    }
+    elsif ( $token eq "-check_route" ){
+            $check_route = 1;
+    }
+    elsif ( $token eq "-check_place" ){
+            $check_place = 1;
     }
     # else forward the argument
 	else {
@@ -547,6 +555,12 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		push( @vpr_power_args, "--tech_properties" );
 		push( @vpr_power_args, "$tech_file" );
 	}
+
+        #set a min chan width if it is not set to ensure equal results
+        if ( ($check_route or $check_place) and $min_chan_width < 0){
+            $min_chan_width = 300;
+        }
+
 	if ( $min_chan_width < 0 ) {
 
 		my @vpr_args;
@@ -679,32 +693,24 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		}        
 		push( @vpr_args, "--seed");			 		  
 		push( @vpr_args, "$seed");
-        if ($verify_rr_graph || $rr_graph_error_check){
-            push( @vpr_args, "--write_rr_graph" );				  
-            push( @vpr_args, 'RR_graph_result.xml');
-        }
+		if ($verify_rr_graph || $rr_graph_error_check){
+			push( @vpr_args, "--write_rr_graph" );				  
+			push( @vpr_args, 'RR_graph_result.xml');
+		}
 		push( @vpr_args, "$switch_usage_analysis");
 		push( @vpr_args, @forwarded_vpr_args);
 		push( @vpr_args, $specific_vpr_stage);
 
-                if ($verify_rr_graph || $rr_graph_error_check){
-                    $q = &system_with_timeout(
-			$vpr_path,                    "vpr_write_rr_graph.out",
-			$timeout,                     $temp_dir,
-			@vpr_args
-                    );
-                }
-                else{
                     $q = &system_with_timeout(
 			$vpr_path,                    "vpr.out",
 			$timeout,                     $temp_dir,
 			@vpr_args
                     );
-                }   
+                
 
 
-                #run vpr again with the generated rr graph
-                if ($verify_rr_graph){
+                #run vpr again with additional parameters. This is for running a certain stage only or checking the rr graph
+                if ($verify_rr_graph or $check_route or $check_place or $rr_graph_error_check){
                     # move the most recent necessary result files to temp directory for specific vpr stage
                     if ($specific_vpr_stage eq "--place" or $specific_vpr_stage eq "--route") {
                         my $found_prev = &find_and_move_newest("$benchmark_name", "net");
@@ -712,65 +718,29 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                          &find_and_move_newest("$benchmark_name", "place");
                         }
                     }
+
+			
+                        #load the architecture file with errors if we're checking for it
+			if ($rr_graph_error_check){
+				my $architecture_file_path_new_error = "$temp_dir$error_architecture_file_name";
+				copy( $architecture_file_path, $architecture_file_path_new_error);
+				$architecture_file_path = $architecture_file_path_new_error;
+			}
+			
                         my @vpr_args;
-            		push( @vpr_args, $architecture_file_name );
+                        if ($rr_graph_error_check){
+				push( @vpr_args, $error_architecture_file_name );
+			}else{
+				push( @vpr_args, $architecture_file_name );
+			}
+			
                     	push( @vpr_args, "$benchmark_name" );
-            		push( @vpr_args, "--blif_file"	);
-                	push( @vpr_args, "$prevpr_output_file_name");
-                        push( @vpr_args, "--timing_analysis" );   
-        		push( @vpr_args, "$timing_driven");
-        		push( @vpr_args, "--timing_driven_clustering" );
-        		push( @vpr_args, "$timing_driven");
-        		push( @vpr_args, "--route_chan_width" );   
-        		push( @vpr_args, "$min_chan_width" );
-        		push( @vpr_args, "--max_router_iterations" );
-        		push( @vpr_args, "$max_router_iterations");
-        		push( @vpr_args, "--cluster_seed_type" );       
-        		push( @vpr_args, "$vpr_cluster_seed_type");
-        		push( @vpr_args, @vpr_power_args);
-        		push( @vpr_args, "--gen_post_synthesis_netlist" );
-        		push( @vpr_args, "$gen_post_synthesis_netlist");
-        		if (-e $sdc_file_path){
-                            push( @vpr_args, "--sdc_file" );				  
-                            push( @vpr_args, "$sdc_file_path");
-        		}
-        		if (-e $pad_file_path){
-                            push( @vpr_args, "--fix_pins" );				  
-                            push( @vpr_args, "$pad_file_path");
-                        }        
-                        
-			push( @vpr_args, "--seed");			 		  
-			push( @vpr_args, "$seed");
-                        if ($verify_rr_graph){
-                            push( @vpr_args, "--read_rr_graph" );				  
-                            push( @vpr_args, 'RR_graph_result.xml');
-
-                        }
-                        push( @vpr_args, "$switch_usage_analysis");
-                        push( @vpr_args, @forwarded_vpr_args);
-                        push( @vpr_args, $specific_vpr_stage);
-
-
-                        $q = &system_with_timeout(
-                                $vpr_path,                    "vpr_read_in.out",
-                                $timeout,                     $temp_dir,
-                                @vpr_args
-                        );
-                } elsif ($rr_graph_error_check){
-                    #This loads an error filled architecture file to VPR during rr graph read in
-                    #This ensure that the result is still the same with the loaded RR graph.
-                    #RR graph overthrows architecture definition.
-                    my $architecture_file_path_new_error = "$temp_dir$error_architecture_file_name";
-                    copy( $architecture_file_path, $architecture_file_path_new_error);
-                    $architecture_file_path = $architecture_file_path_new_error;
-
-                    #only perform routing for error check. Special care was taken prevent netlist check warnings
-                        my @vpr_args;
-            		push( @vpr_args, $error_architecture_file_name );
-                    	push( @vpr_args, "$benchmark_name" );
-			push( @vpr_args, "--route" );
-			push( @vpr_args, "--verify_file_digests" );
-                        push( @vpr_args, "off" );
+                    	
+			#only perform routing for error check. Special care was taken prevent netlist check warnings
+                    	if ($rr_graph_error_check){
+				push( @vpr_args, "--verify_file_digests" );
+                        	push( @vpr_args, "off" );
+			}
             		push( @vpr_args, "--blif_file"	);
                 	push( @vpr_args, "$prevpr_output_file_name");
                         push( @vpr_args, "--timing_analysis" );   
@@ -798,13 +768,20 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                             push( @vpr_args, "--read_rr_graph" );				  
                             push( @vpr_args, 'RR_graph_result.xml');
                         }
+                        if ($check_route){
+				push( @vpr_args, "--analysis");
+                        }elsif ($check_place or $rr_graph_error_check){
+				push( @vpr_args, "--route");
+                        }
+                        
                         push( @vpr_args, "$switch_usage_analysis");
                         push( @vpr_args, @forwarded_vpr_args);
                         push( @vpr_args, $specific_vpr_stage);
 
+			#run vpr again with a different name and additional parameters
 
                         $q = &system_with_timeout(
-                                $vpr_path,                    "vpr_read_in.out",
+                                $vpr_path,                    "vpr_second_run.out",
                                 $timeout,                     $temp_dir,
                                 @vpr_args
                         );

@@ -100,6 +100,12 @@ VPR runs all three stages of pack, place, and route if none of :option:`-pack`, 
 
     **Default:** off
 
+.. option:: -analysis
+
+    Run timing analysis stage only
+
+    **Default:** off
+
 .. option:: -timing_analysis { on | off }
 
     Turn VPR timing analysis off.  

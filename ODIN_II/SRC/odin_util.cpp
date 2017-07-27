@@ -36,6 +36,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_util.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include <regex>
+#include <stdbool.h>
 
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
@@ -129,7 +131,7 @@ char *convert_string_of_radix_to_bit_string(char *string, int radix, int binary_
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: convert_int_to_bit_string)
+ * (function: convert_long_long_to_bit_string)
  * Outputs a string msb to lsb.  For example, 3 becomes "011"
  *-------------------------------------------------------------------------------------------*/
 char *convert_long_long_to_bit_string(long long orig_long, int num_bits)
@@ -530,12 +532,11 @@ long long int my_power(long long int x, long long int y)
  *-------------------------------------------------------------------------------------------*/
 char *make_string_based_on_id(nnode_t *node)
 {
-	char *return_string = (char*)malloc(sizeof(char)*(20+2)); // any unique id greater than 20 characters means trouble
-
-	sprintf(return_string, "n%ld", node->unique_id);
-
-	return return_string;
-}
+	// any unique id greater than 20 characters means trouble
+	std::string return_string = std::string ("n") + std::to_string(node->unique_id);
+ 
+	return vtr::strdup(return_string.c_str());
+ }
 
 /*---------------------------------------------------------------------------------------------
  *  (function: make_simple_name )
@@ -744,4 +745,66 @@ void warning_message(short /*error_type*/, int line_number, int file, const char
 
 	if (message[strlen(message)-1] != '\n') fprintf(stderr,"\n");
 }
+/*
+Search and replace a string keeping original string intact
+*/
+char *search_replace(char *src, const char *sKey, const char *rKey, int flag)
+{
+	std::string tmp;
+	char *line;
+	line = vtr::strdup(src);
+	tmp = line;
+	switch(flag)
+	{
+		case 1:
+			tmp = vtr::replace_first(tmp,sKey,rKey);
+			sprintf(line,"%s",tmp.c_str());
+			break;
+		case 2:
+			tmp = vtr::replace_all(tmp,sKey,rKey);
+			sprintf(line,"%s",tmp.c_str());
+			break;
+		default:
+			return line;
+	}
+	return line;
+}
+char *find_substring(char *src,const char *sKey,int flag)
+{
+	// flag == 1 first half, flag == 2 second half
+	
+	std::string tmp;
+	std::string key;
+	char *line;
+	line = vtr::strdup(src);
+	tmp = line;
+	key = sKey;
+	std::size_t found = tmp.find(key);
+	switch(flag)
+	{
+		case 1:
+   			tmp = tmp.substr(0,found-1);
+			break;
+		case 2:
+   			tmp = tmp.substr(found,tmp.length());
+			break;
 
+		default:
+			return line;
+	}
+	sprintf(line,"%s",tmp.c_str());
+
+	return line;
+}
+
+bool validate_string_regex(const char *str_in, const char *pattern_in)
+{
+	std::string str(str_in);
+    std::regex pattern(pattern_in);
+
+    auto words_begin = std::sregex_iterator(str.begin(), str.end(), pattern);
+	auto words_end = std::sregex_iterator();
+	if (std::distance(words_begin,words_end) > 0)
+		return true;
+	return false;
+}
