@@ -119,16 +119,29 @@ NetId ClusteredNetlist::create_net(const std::string name) {
 	return net_id;
 }
 
+void ClusteredNetlist::set_netlist_id(std::string id) {
+	//TODO: Add asserts?
+	netlist_id_ = id;
+}
+
 void ClusteredNetlist::set_global(NetId net_id) {
 	VTR_ASSERT(valid_net_id(net_id));
 
 	net_global_[net_id] = true;
 }
 
-void ClusteredNetlist::set_netlist_id(std::string id) {
-	//TODO: Add asserts?
-	netlist_id_ = id;
+void ClusteredNetlist::set_routed(NetId net_id) {
+	VTR_ASSERT(valid_net_id(net_id));
+
+	net_routed_[net_id] = true;
 }
+
+void ClusteredNetlist::set_fixed(NetId net_id) {
+	VTR_ASSERT(valid_net_id(net_id));
+
+	net_fixed_[net_id] = true;
+}
+
 
 /*
 *

@@ -41,6 +41,12 @@ class ClusteredNetlist : public BaseNetlist {
 		//Sets the flag in net_global_ = true
 		void set_global(NetId net_id);
 
+		//Sets the flag in net_routed_ = true
+		void set_routed(NetId net_id);
+
+		//Sets the flag in net_fixed_ = true
+		void set_fixed(NetId net_id);
+
 	public: //Public Accessors
 		/*
 		* Blocks
