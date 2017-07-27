@@ -78,16 +78,28 @@ void check_netlist() {
 				"Found %d fatal Errors in the input netlist.\n", error);
 	}
 
-	/* HACK: Jason Luu January 17, 2011 Do not route common constants gnd and vcc
-	TODO: Need to make architecture driven.
-	*/
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (0 == cluster_ctx.clb_nlist.net_name(net_id).compare("vcc")) {
-			cluster_ctx.clb_nlist.set_global(net_id, true);
-		}
-		else if (0 == cluster_ctx.clb_nlist.net_name(net_id).compare("gnd")) {
-			cluster_ctx.clb_nlist.set_global(net_id, true);
-		}
+	/*
+     * Enhanced HACK: July 2017 
+     *     Do not route constant nets (e.g. gnd/vcc). Identifying these nets as constants 
+     *     is more robust than the previous approach (exact name match to gnd/vcc).
+     *     Note that by not routing constant nets we are implicitly assuming that all pins 
+     *     in the FPGA can be tied to gnd/vcc, and hence we do not need to route them.
+	 * 
+     * TODO: We should ultimately make this architecture driven (e.g. specify which
+     *       pins which can be tied to gnd/vcc), and then route from those pins to
+     *       deliver any constants to those primitive input pins which can not be directly 
+     *       tied directly to gnd/vcc.
+	 */
+    auto& atom_ctx = g_vpr_ctx.atom();
+	for (i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
+        AtomNetId atom_net = atom_ctx.lookup.atom_net(i);
+        VTR_ASSERT(atom_net);
+
+        if (atom_ctx.nlist.net_is_constant(atom_net)) {
+            //Mark net as global, so that it is not routed
+            vtr::printf_warning(__FILE__, __LINE__, "Treating constant net '%s' as global, so it will not be routed\n", atom_ctx.nlist.net_name(atom_net).c_str());
+            cluster_ctx.clb_nlist.set_global((NetId)i, true);
+        }
 	}
 }
 
