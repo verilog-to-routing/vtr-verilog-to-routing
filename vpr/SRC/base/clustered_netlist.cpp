@@ -124,22 +124,22 @@ void ClusteredNetlist::set_netlist_id(std::string id) {
 	netlist_id_ = id;
 }
 
-void ClusteredNetlist::set_global(NetId net_id) {
+void ClusteredNetlist::set_global(NetId net_id, bool state) {
 	VTR_ASSERT(valid_net_id(net_id));
 
-	net_global_[net_id] = true;
+	net_global_[net_id] = state;
 }
 
-void ClusteredNetlist::set_routed(NetId net_id) {
+void ClusteredNetlist::set_routed(NetId net_id, bool state) {
 	VTR_ASSERT(valid_net_id(net_id));
 
-	net_routed_[net_id] = true;
+	net_routed_[net_id] = state;
 }
 
-void ClusteredNetlist::set_fixed(NetId net_id) {
+void ClusteredNetlist::set_fixed(NetId net_id, bool state) {
 	VTR_ASSERT(valid_net_id(net_id));
 
-	net_fixed_[net_id] = true;
+	net_fixed_[net_id] = state;
 }
 
 

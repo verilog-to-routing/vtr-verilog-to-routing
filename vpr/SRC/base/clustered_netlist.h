@@ -38,14 +38,14 @@ class ClusteredNetlist : public BaseNetlist {
 		//Sets the netlist id based on a file digest's string
 		void set_netlist_id(std::string id);
 		
-		//Sets the flag in net_global_ = true
-		void set_global(NetId net_id);
+		//Sets the flag in net_global_ = state
+		void set_global(NetId net_id, bool state);
 
-		//Sets the flag in net_routed_ = true
-		void set_routed(NetId net_id);
+		//Sets the flag in net_routed_ = state
+		void set_routed(NetId net_id, bool state);
 
-		//Sets the flag in net_fixed_ = true
-		void set_fixed(NetId net_id);
+		//Sets the flag in net_fixed_ = state
+		void set_fixed(NetId net_id, bool state);
 
 	public: //Public Accessors
 		/*

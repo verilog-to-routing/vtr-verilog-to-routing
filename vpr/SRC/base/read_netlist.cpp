@@ -980,7 +980,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
                     old_nlist->net[netnum].pins[count[netnum]].net_pin = count[netnum];
 
 					if (clb_nlist->block_type((BlockId)i)->is_global_pin[j])
-						clb_nlist->set_global((NetId)netnum);
+						clb_nlist->set_global((NetId)netnum, true);
                     /* Error check performed later to ensure no mixing of global and non-global signals */
 
                     //Mark the net pin numbers on the block

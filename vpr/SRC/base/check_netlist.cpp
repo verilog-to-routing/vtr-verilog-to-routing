@@ -83,10 +83,10 @@ void check_netlist() {
 	*/
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		if (0 == cluster_ctx.clb_nlist.net_name(net_id).compare("vcc")) {
-			cluster_ctx.clb_nlist.set_global(net_id);
+			cluster_ctx.clb_nlist.set_global(net_id, true);
 		}
 		else if (0 == cluster_ctx.clb_nlist.net_name(net_id).compare("gnd")) {
-			cluster_ctx.clb_nlist.set_global(net_id);
+			cluster_ctx.clb_nlist.set_global(net_id, true);
 		}
 	}
 }
