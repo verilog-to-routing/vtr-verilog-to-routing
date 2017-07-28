@@ -859,7 +859,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
     int ext_ncount = 0;
 	t_pb_graph_pin *pb_graph_pin;
 	int *count;
-	int netnum, num_tokens;
+	int net_id, num_tokens;
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -873,7 +873,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 		VTR_ASSERT( clb_nlist->block_type((BlockId)i)->pb_type->num_input_pins
 					+ clb_nlist->block_type((BlockId)i)->pb_type->num_output_pins
 					+ clb_nlist->block_type((BlockId)i)->pb_type->num_clock_pins
-					== clb_nlist->block_type((BlockId)i)->num_pins / clb_nlist->block_type((BlockId) i)->capacity);
+					== clb_nlist->block_type((BlockId)i)->num_pins / clb_nlist->block_type((BlockId)i)->capacity);
 
 		int num_input_ports = clb_nlist->block_pb((BlockId)i)->pb_graph_node->num_input_ports;
 		int num_output_ports = clb_nlist->block_pb((BlockId)i)->pb_graph_node->num_output_ports;
@@ -886,15 +886,14 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 				pb_graph_pin = &clb_nlist->block_pb((BlockId)i)->pb_graph_node->input_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
-                AtomNetId net_id = clb_nlist->block_pb((BlockId)i)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
-				if (net_id) {
+                AtomNetId atom_net_id = clb_nlist->block_pb((BlockId)i)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+				if (atom_net_id) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
-                                                atom_ctx.nlist.net_name(net_id).c_str(),
+                                                atom_ctx.nlist.net_name(atom_net_id).c_str(),
                                                 &ext_ncount);
 
-					NetId clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(net_id));
+					NetId clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
 					clb_nlist->create_pin(input_port_id, (BitIndex)k, clb_net_id, PinType::SINK, PortType::INPUT);
-
 				} else {
 					block_list[i].nets[ipin] = OPEN;
 				}
@@ -908,13 +907,13 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 			for (k = 0; k < clb_nlist->block_pb((BlockId)i)->pb_graph_node->num_output_pins[j]; k++) {
 				pb_graph_pin = &clb_nlist->block_pb((BlockId)i)->pb_graph_node->output_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
-                AtomNetId net_id = clb_nlist->block_pb((BlockId)i)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
-				if (net_id) {
+                AtomNetId atom_net_id = clb_nlist->block_pb((BlockId)i)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+				if (atom_net_id) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
-                                                atom_ctx.nlist.net_name(net_id).c_str(),
+                                                atom_ctx.nlist.net_name(atom_net_id).c_str(),
                                                 &ext_ncount);
 
-					NetId clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(net_id));
+					NetId clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
 					clb_nlist->create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, PortType::OUTPUT);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -930,13 +929,13 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 				pb_graph_pin = &clb_nlist->block_pb((BlockId)i)->pb_graph_node->clock_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
 
-                AtomNetId net_id = clb_nlist->block_pb((BlockId)i)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
-				if (net_id) {
+                AtomNetId atom_net_id = clb_nlist->block_pb((BlockId)i)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
+				if (atom_net_id) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
-                                                atom_ctx.nlist.net_name(net_id).c_str(),
+                                                atom_ctx.nlist.net_name(atom_net_id).c_str(),
                                                 &ext_ncount);
 
-					NetId clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(net_id));
+					NetId clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
 					clb_nlist->create_pin(clock_port_id, (BitIndex)k, clb_net_id, PinType::SINK, PortType::CLOCK);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -958,46 +957,52 @@ static void load_external_nets_and_cb(const int L_num_blocks,
      * and blocks point back to net pins */
 	for (i = 0; i < L_num_blocks; i++) {
 		ipin = 0;
+
 		for (j = 0; j < clb_nlist->block_type((BlockId)i)->num_pins; j++) {
-			netnum = block_list[i].nets[j];
-			if (netnum != OPEN) {
+			//Iterate through each pin of the block, and see if there is a net allocated/used for it
+			net_id = block_list[i].nets[j];
+			
+			if (net_id != OPEN) {
+				//Verify old and new CLB netlists have the same # of pins per net
+				VTR_ASSERT(old_nlist->net[net_id].num_sinks() == (int)clb_nlist->net_sinks((NetId)net_id).size());
+				VTR_ASSERT(old_nlist->net[net_id].pins.size() == clb_nlist->net_pins((NetId)net_id).size());	//TODO: Remove when t_block/t_netlist are removed
+
 				if (RECEIVER == clb_nlist->block_type((BlockId)i)->class_inf[clb_nlist->block_type((BlockId)i)->pin_class[j]].type) {
-					count[netnum]++;
-					if (count[netnum] > old_nlist->net[netnum].num_sinks()) {
+					count[net_id]++;
+
+					if (count[net_id] > old_nlist->net[net_id].num_sinks()) {
 						vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 								"net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n",
-								clb_nlist->net_name((NetId)netnum), netnum, count[netnum],
-								old_nlist->net[netnum].num_sinks());
+								clb_nlist->net_name((NetId)net_id), net_id, count[net_id],
+								old_nlist->net[net_id].num_sinks());
 					}
 
                     //Mark the mapping from net to block
-					old_nlist->net[netnum].pins[count[netnum]].block = i;
-					old_nlist->net[netnum].pins[count[netnum]].block_pin = j;
+					old_nlist->net[net_id].pins[count[net_id]].block = i;
+					old_nlist->net[net_id].pins[count[net_id]].block_pin = j;
 
                     //Pin to net mapping
-                    old_nlist->net[netnum].pins[count[netnum]].net = netnum;
-                    old_nlist->net[netnum].pins[count[netnum]].net_pin = count[netnum];
+                    old_nlist->net[net_id].pins[count[net_id]].net = net_id;
+                    old_nlist->net[net_id].pins[count[net_id]].net_pin = count[net_id];
 
 					if (clb_nlist->block_type((BlockId)i)->is_global_pin[j])
-						clb_nlist->set_global((NetId)netnum, true);
+						clb_nlist->set_global((NetId)net_id, true);
                     /* Error check performed later to ensure no mixing of global and non-global signals */
 
                     //Mark the net pin numbers on the block
-                    block_list[i].net_pins[j] = count[netnum]; //A sink
-
-					
+                    block_list[i].net_pins[j] = count[net_id]; //A sink
 
 				} else {
 					VTR_ASSERT(DRIVER == clb_nlist->block_type((BlockId)i)->class_inf[clb_nlist->block_type((BlockId)i)->pin_class[j]].type);
-					VTR_ASSERT(old_nlist->net[netnum].pins[0].block == OPEN);
+					VTR_ASSERT(old_nlist->net[net_id].pins[0].block == OPEN);
 
                     //Mark the mapping from net to block
-					old_nlist->net[netnum].pins[0].block = i;
-					old_nlist->net[netnum].pins[0].block_pin = j;
+					old_nlist->net[net_id].pins[0].block = i;
+					old_nlist->net[net_id].pins[0].block_pin = j;
 
                     //Pin to net mapping
-                    old_nlist->net[netnum].pins[0].net = netnum;
-                    old_nlist->net[netnum].pins[0].net_pin = 0;
+                    old_nlist->net[net_id].pins[0].net = net_id;
+                    old_nlist->net[net_id].pins[0].net_pin = 0;
 
                     //Mark the net pin numbers on the block
                     block_list[i].net_pins[j] = 0; //The driver

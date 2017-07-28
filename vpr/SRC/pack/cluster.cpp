@@ -543,7 +543,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					num_instances_type, num_models, max_cluster_size,
 					lb_type_rr_graphs, &router_data, detailed_routing_stage, &cluster_ctx.clb_nlist);
 			vtr::printf_info("Complex block %d: %s, type: %s ", 
-					num_clb, cluster_ctx.clb_nlist.block_name((BlockId) num_clb), cluster_ctx.clb_nlist.block_type((BlockId) num_clb)->name);
+					num_clb, cluster_ctx.clb_nlist.block_name((BlockId)num_clb), cluster_ctx.clb_nlist.block_type((BlockId)num_clb)->name);
             vtr::printf("."); //Progress dot for seed-block
 			fflush(stdout);
 			update_cluster_stats(istart, num_clb, 
@@ -559,10 +559,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				/*it doesn't make sense to do a timing analysis here since there*
 				 *is only one atom block clustered it would not change anything      */
 			}
-			cur_cluster_placement_stats_ptr = &cluster_placement_stats[cluster_ctx.clb_nlist.block_type((BlockId) (num_clb - 1))->index];
+			cur_cluster_placement_stats_ptr = &cluster_placement_stats[cluster_ctx.clb_nlist.block_type((BlockId)(num_clb - 1))->index];
 			num_unrelated_clustering_attempts = 0;
 			next_molecule = get_molecule_for_cluster(
-					cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)), 
+					cluster_ctx.clb_nlist.block_pb((BlockId)(num_clb - 1)), 
                     atom_molecules,
                     allow_unrelated_clustering,
 					&num_unrelated_clustering_attempts,
@@ -575,7 +575,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						cur_cluster_placement_stats_ptr, 
                         atom_molecules,
                         next_molecule,
-						primitives_list, cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)), num_models,
+						primitives_list, cluster_ctx.clb_nlist.block_pb((BlockId)(num_clb - 1)), num_models,
 						max_cluster_size, num_clb - 1, detailed_routing_stage, router_data);
 				prev_molecule = next_molecule;
 
@@ -608,7 +608,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					}
 
 					next_molecule = get_molecule_for_cluster(
-							cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)),
+							cluster_ctx.clb_nlist.block_pb((BlockId)(num_clb - 1)),
                             atom_molecules,
                             allow_unrelated_clustering,
 							&num_unrelated_clustering_attempts,
@@ -640,7 +640,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					blocks_since_last_analysis++; /* historically, timing slacks were recomputed after X number of blocks were packed, but this doesn't significantly alter results so I (jluu) did not port the code */
 				}
 				next_molecule = get_molecule_for_cluster(
-						cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)),
+						cluster_ctx.clb_nlist.block_pb((BlockId)(num_clb - 1)),
                         atom_molecules,
                         allow_unrelated_clustering,
 						&num_unrelated_clustering_attempts,
@@ -685,7 +685,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 							max_molecule_inputs);
 				
 				/* store info that will be used later in packing from pb_stats and free the rest */
-				t_pb_stats *pb_stats = cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1))->pb_stats;
+				t_pb_stats *pb_stats = cluster_ctx.clb_nlist.block_pb((BlockId)(num_clb - 1))->pb_stats;
 				for(const AtomNetId mnet_id : pb_stats->marked_nets) {
 					int external_terminals = atom_ctx.nlist.net_pins(mnet_id).size() - pb_stats->num_pins_of_net_in_pb[mnet_id];
 					/* Check if external terminals of net is within the fanout limit and that there exists external terminals */
@@ -693,13 +693,14 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 						clb_inter_blk_nets[num_clb - 1].nets_in_lb.push_back(mnet_id);
 					}
 				}
-				free_pb_stats_recursive(cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)));
+				free_pb_stats_recursive(cluster_ctx.clb_nlist.block_pb((BlockId)(num_clb - 1)));
 			} else {
 				/* Free up data structures and requeue used molecules */
-				num_used_instances_type[cluster_ctx.clb_nlist.block_type((BlockId) (num_clb - 1))->index]--;
-                revalid_molecules(cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)), atom_molecules);
-				free_pb(cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1)));
-				delete cluster_ctx.clb_nlist.block_pb((BlockId) (num_clb - 1));
+				num_used_instances_type[cluster_ctx.clb_nlist.block_type((BlockId)(num_clb - 1))->index]--;
+                revalid_molecules(cluster_ctx.clb_nlist.block_pb((BlockId)(num_clb - 1)), atom_molecules);
+				free_pb(cluster_ctx.clb_nlist.block_pb((BlockId)(num_clb - 1)));
+				delete cluster_ctx.clb_nlist.block_pb((BlockId)(num_clb - 1));
+				cluster_ctx.clb_nlist.remove_block((BlockId)(num_clb - 1));
 				num_clb--;
 				seedindex = savedseedindex;
 			}
@@ -730,11 +731,13 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free_cluster_placement_stats(cluster_placement_stats);
 
 	for (i = 0; i < num_clb; i++) {
-//		free_pb(cluster_ctx.clb_nlist.block_pb((BlockId) i));
+		free_pb(cluster_ctx.clb_nlist.block_pb((BlockId)i));
 		free(clb[i].nets);
-//		delete cluster_ctx.clb_nlist.block_pb((BlockId) i);
+		delete cluster_ctx.clb_nlist.block_pb((BlockId)i);
 	}
 	free(clb);
+
+	//TODO: Remove and destroy cluster_ctx here
 
 	free(num_used_instances_type);
 	free(num_instances_type);
@@ -1999,7 +2002,7 @@ static void start_new_cluster(
 			freeGrid();
 		}
 	}
-	num_used_instances_type[clb_nlist->block_type((BlockId) clb_index)->index]++;
+	num_used_instances_type[clb_nlist->block_type((BlockId)clb_index)->index]++;
 }
 
 /*
@@ -2274,7 +2277,7 @@ static void check_clustering(int num_clb) {
 
 	/* Check that I do not have spurious links in children pbs */
 	for (int i = 0; i < num_clb; i++) {
-		check_cluster_atom_blocks(cluster_ctx.clb_nlist.block_pb((BlockId) i), atoms_checked);
+		check_cluster_atom_blocks(cluster_ctx.clb_nlist.block_pb((BlockId)i), atoms_checked);
 	}
 
 	for (auto blk_id : atom_ctx.nlist.blocks()) {

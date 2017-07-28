@@ -68,7 +68,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 	max_pins = 0;
 	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++)
-		max_pins = max(max_pins, (int)cluster_ctx.clbs_nlist.net[inet].pins.size());
+		max_pins = max(max_pins, (int)cluster_ctx.clb_nlist.net_pins((NetId)inet).size());
 
 	pin_done = (bool *) vtr::malloc(max_pins * sizeof(bool));
 
@@ -79,7 +79,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 		if (cluster_ctx.clb_nlist.net_global((NetId)inet) || cluster_ctx.clbs_nlist.net[inet].num_sinks() == 0) /* Skip global nets. */
 			continue;
 
-		for (ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++)
+		for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++)
 			pin_done[ipin] = false;
 
 		/* Check the SOURCE of the net. */
@@ -146,7 +146,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 				"in check_route: net %d does not end with a SINK.\n", inet);
 		}
 
-		for (ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+		for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
 			if (pin_done[ipin] == false) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 				
 					"in check_route: net %d does not connect to pin %d.\n", inet, ipin);
@@ -185,7 +185,7 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 
 	for (iblk = 0; iblk < type->capacity; iblk++) {
 		bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx.blocks */
-		for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) { /* All net SINKs */
+		for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) { /* All net SINKs */
 			if (cluster_ctx.clbs_nlist.net[inet].pins[ipin].block == bnum) {
 				node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
 				iclass = type->pin_class[node_block_pin];

@@ -639,7 +639,7 @@ void mark_ends(int inet) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+	for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
 		inode = route_ctx.net_rr_terminals[inet][ipin];
 		route_ctx.rr_node_route_inf[inode].target_flag++;
 	}
@@ -931,7 +931,7 @@ static void load_route_bb(int bb_factor) {
 		xmax = x;
 		ymax = y;
 
-		for (k = 1; k < cluster_ctx.clbs_nlist.net[inet].pins.size(); k++) {
+		for (k = 1; k < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); k++) {
             int isink_blk = cluster_ctx.clbs_nlist.net[inet].pins[k].block;
             int isink_blk_pin = cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin;
 			x = place_ctx.block_locs[isink_blk].x + cluster_ctx.clb_nlist.block_type((BlockId) isink_blk)->pin_width[isink_blk_pin];
@@ -1353,7 +1353,7 @@ void print_route(const char* placement_file, const char* route_file) {
 			fprintf(fp, "\n\nNet %d (%s): global net connecting:\n\n", inet,
 					cluster_ctx.clb_nlist.net_name((NetId)inet).c_str());
 
-			for (ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+			for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
 				bnum = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
 
 				node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;

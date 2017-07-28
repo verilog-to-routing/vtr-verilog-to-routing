@@ -296,7 +296,7 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 		inet = atom_ctx.lookup.clb_net(atom_net_id);
         VTR_ASSERT(inet != OPEN);
 		fprintf(fp, "External-to-Block Net: #%d (%s).  Pins on net: %d.\n",
-			inet, cluster_ctx.clb_nlist.net_name((NetId)inet).c_str(), (int) cluster_ctx.clbs_nlist.net[inet].pins.size());
+			inet, cluster_ctx.clb_nlist.net_name((NetId)inet).c_str(), (int) cluster_ctx.clb_nlist.net_pins((NetId)inet).size());
 	} else if (pb_graph_pin != NULL) {
 		fprintf(fp, "Internal Net: %s.  Pins on net: %zu.\n",
 			atom_ctx.nlist.net_name(atom_net_id).c_str(), atom_ctx.nlist.net_pins(atom_net_id).size());

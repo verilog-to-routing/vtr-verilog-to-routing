@@ -114,7 +114,7 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-	num_pins = (cluster_ctx.clbs_nlist.net[inet].pins.size());
+	num_pins = cluster_ctx.clb_nlist.net_pins((NetId)inet).size();
 	error = 0;
 
 	/* For now global signals can be driven by an I/O pad or any CLB output       *
@@ -177,7 +177,7 @@ static int check_clb_conn(int iblk, int num_conn) {
 		//This triggers incorrectly if other blocks (e.g. I/O buffers) are included in the iopads
 		if (num_conn != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
-					"IO blk #%d (%s) has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId) iblk), num_conn);
+					"IO blk #%d (%s) has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), num_conn);
 			error++;
 		}
              */
@@ -298,7 +298,7 @@ static int get_num_conn(int bnum) {
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	type = cluster_ctx.clb_nlist.block_type((BlockId) bnum);
+	type = cluster_ctx.clb_nlist.block_type((BlockId)bnum);
 
 	num_conn = 0;
 

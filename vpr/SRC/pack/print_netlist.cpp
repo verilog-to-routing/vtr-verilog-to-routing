@@ -42,9 +42,9 @@ void print_netlist(char *foutput, char *net_file) {
 	}
 
 	/* Count I/O input and output pads */
-	for (i = 0; i < (unsigned int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-		if (cluster_ctx.clb_nlist.block_type((BlockId) i) == device_ctx.IO_TYPE) {
-			for (j = 0; j < (unsigned int) device_ctx.IO_TYPE->num_pins; j++) {
+	for (i = 0; i < cluster_ctx.clb_nlist.blocks().size(); i++) {
+		if (cluster_ctx.clb_nlist.block_type((BlockId)i) == device_ctx.IO_TYPE) {
+			for (j = 0; j < (unsigned int)device_ctx.IO_TYPE->num_pins; j++) {
 				if (cluster_ctx.blocks[i].nets[j] != OPEN) {
 					if (device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[j]].type
 							== DRIVER) {
@@ -72,23 +72,23 @@ void print_netlist(char *foutput, char *net_file) {
 		fprintf(fp, "\n%d\t%s\t", i, cluster_ctx.clb_nlist.net_name((NetId)i).c_str());
 		if (cluster_ctx.clb_nlist.net_name((NetId)i).length() < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
-		fprintf(fp, "%d", (int)cluster_ctx.clbs_nlist.net[i].pins.size());
-		for (j = 0; j < cluster_ctx.clbs_nlist.net[i].pins.size(); j++)
+		fprintf(fp, "%d", (int)cluster_ctx.clb_nlist.net_pins((NetId)i).size());
+		for (j = 0; j < cluster_ctx.clb_nlist.net_pins((NetId)i).size(); j++)
 			fprintf(fp, "\t(%4d,%4d)", cluster_ctx.clbs_nlist.net[i].pins[j].block,
 				cluster_ctx.clbs_nlist.net[i].pins[j].block_pin);
 	}
 
 	fprintf(fp, "\nBlock\tName\t\tType\tPin Connections\n\n");
 
-	for (i = 0; i < (unsigned int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-		fprintf(fp, "\n%d\t%s\t", i, cluster_ctx.clb_nlist.block_name((BlockId) i).c_str());
-		if (cluster_ctx.clb_nlist.block_name((BlockId) i).length() < 8)
+	for (i = 0; i < (unsigned int)cluster_ctx.clb_nlist.blocks().size(); i++) {
+		fprintf(fp, "\n%d\t%s\t", i, cluster_ctx.clb_nlist.block_name((BlockId)i).c_str());
+		if (cluster_ctx.clb_nlist.block_name((BlockId)i).length() < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
-		fprintf(fp, "%s", cluster_ctx.clb_nlist.block_type((BlockId) i)->name);
+		fprintf(fp, "%s", cluster_ctx.clb_nlist.block_type((BlockId)i)->name);
 
-		max_pin = cluster_ctx.clb_nlist.block_type((BlockId) i)->num_pins;
+		max_pin = cluster_ctx.clb_nlist.block_type((BlockId)i)->num_pins;
 
-		for (j = 0; j < (unsigned int) max_pin; j++)
+		for (j = 0; j < (unsigned int)max_pin; j++)
 			print_pinnum(fp, cluster_ctx.blocks[i].nets[j]);
 	}
 

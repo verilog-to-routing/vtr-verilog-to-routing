@@ -1205,7 +1205,7 @@ void alloc_net_rr_terminals(void) {
 
     for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
         route_ctx.net_rr_terminals[inet] = (int *) vtr::chunk_malloc(
-                cluster_ctx.clbs_nlist.net[inet].pins.size() * sizeof (int),
+                cluster_ctx.clb_nlist.net_pins((NetId)inet).size() * sizeof (int),
                 &rr_mem_ch);
     }
 }
@@ -1226,7 +1226,7 @@ void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-        for (ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+        for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
             iblk = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
             i = place_ctx.block_locs[iblk].x;
             j = place_ctx.block_locs[iblk].y;
@@ -1266,7 +1266,7 @@ void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
     route_ctx.rr_blk_source = (int **) vtr::malloc(cluster_ctx.clb_nlist.blocks().size() * sizeof (int *));
 
     for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
-        type = cluster_ctx.clb_nlist.block_type((BlockId) iblk);
+        type = cluster_ctx.clb_nlist.block_type((BlockId)iblk);
         get_class_range_for_block(iblk, &class_low, &class_high);
         route_ctx.rr_blk_source[iblk] = (int *) vtr::malloc(type->num_class * sizeof (int));
         for (iclass = 0; iclass < type->num_class; iclass++) {

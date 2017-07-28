@@ -48,7 +48,7 @@ print_relative_pos_distr(void)
 			src_x = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[0].cluster_ctx.blocks].x;
 			src_y = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[0].cluster_ctx.blocks].y;
 
-			for (sink_pin = 1; sink_pin < cluster_ctx.clbs_nlist.net[inet].pins.size();	sink_pin++)	{
+			for (sink_pin = 1; sink_pin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size();	sink_pin++)	{
 				dst_x = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[sink_pin].cluster_ctx.blocks].x;
 				dst_y = cluster_ctx.blocks[cluster_ctx.clbs_nlist.net[inet].pins[sink_pin].cluster_ctx.blocks].y;
 

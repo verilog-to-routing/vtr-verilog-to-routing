@@ -557,7 +557,7 @@ void update_net_delays_from_route_tree(float *net_delay,
 	 * the route_tree to the net_delay array.                                    */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (unsigned int isink = 1; isink < cluster_ctx.clbs_nlist.net[inet].pins.size(); isink++) {
+	for (unsigned int isink = 1; isink < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); isink++) {
 		net_delay[isink] = rt_node_of_sink[isink]->Tdel;
 	}
 }
