@@ -2194,41 +2194,51 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             grid_def.loc_defs.push_back(fill);
 
         } else if (loc_type == std::string("col")) {
-            expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx"}, loc_data);
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty"}, loc_data);
 
             t_grid_loc_def col(type_name, priority);
 
-            auto start_attr = get_attribute(loc_spec_tag, "startx", loc_data);
+            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data);
 
-            col.x.start_expr = start_attr.value();
-            col.x.end_expr = start_attr.value();
+            col.x.start_expr = startx_attr.value();
+            col.x.end_expr = startx_attr.value();
 
             auto repeat_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
             if (repeat_attr) {
                 col.x.repeat_expr = repeat_attr.value();
             }
 
-            col.y.start_expr = "0";
+            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
+            if (starty_attr) {
+                col.y.start_expr = starty_attr.value();
+            } else {
+                col.y.start_expr = "0";
+            }
             col.y.end_expr = "H - 1";
 
             grid_def.loc_defs.push_back(col);
 
         } else if (loc_type == std::string("row")) {
-            expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty"}, loc_data);
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty", "startx"}, loc_data);
 
             t_grid_loc_def row(type_name, priority);
 
-            auto start_attr = get_attribute(loc_spec_tag, "starty", loc_data);
+            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data);
 
-            row.y.start_expr = start_attr.value();
-            row.y.end_expr = start_attr.value();
+            row.y.start_expr = starty_attr.value();
+            row.y.end_expr = starty_attr.value();
 
             auto repeat_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
             if (repeat_attr) {
                 row.y.repeat_expr = repeat_attr.value();
             }
 
-            row.x.start_expr = "0";
+            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
+            if (startx_attr) {
+                row.x.start_expr = startx_attr.value();
+            } else {
+                row.x.start_expr = "0";
+            }
             row.x.end_expr = "W - 1";
 
             grid_def.loc_defs.push_back(row);
