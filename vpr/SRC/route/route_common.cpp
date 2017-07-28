@@ -1274,11 +1274,10 @@ void print_route(const char* placement_file, const char* route_file) {
 	fprintf(fp, "\nRouting:");
 	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
+			fprintf(fp, "\n\nNet %d (%s)\n\n", inet, cluster_ctx.clb_nlist.net_name((NetId)inet).c_str());
 			if (cluster_ctx.clbs_nlist.net[inet].num_sinks() == false) {
-				fprintf(fp, "\n\nNet %d (%s)\n\n", inet, cluster_ctx.clbs_nlist.net[inet].name);
 				fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
 			} else {
-				fprintf(fp, "\n\nNet %d (%s)\n\n", inet, cluster_ctx.clbs_nlist.net[inet].name);
 				tptr = route_ctx.trace_head[inet];
 
 				while (tptr != NULL) {
@@ -1352,7 +1351,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
 		else { /* Global net.  Never routed. */
 			fprintf(fp, "\n\nNet %d (%s): global net connecting:\n\n", inet,
-					cluster_ctx.clbs_nlist.net[inet].name);
+					cluster_ctx.clb_nlist.net_name((NetId)inet).c_str());
 
 			for (ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 				bnum = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;

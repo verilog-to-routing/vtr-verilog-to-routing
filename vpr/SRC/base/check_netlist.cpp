@@ -138,13 +138,13 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 						"in check_connections_to_global_clb_pins:\n");
 				vtr::printf_warning(__FILE__, __LINE__, 
 						"\tnet #%d (%s) is driven by CLB output pin (#%d) on block #%d (%s).\n", 
-						inet, cluster_ctx.clbs_nlist.net[inet].name, node_block_pin, iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk));
+						inet, cluster_ctx.clb_nlist.net_name((NetId)inet), node_block_pin, iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk));
 			} else { /* Otherwise -> Error */
 				vtr::printf_error(__FILE__, __LINE__, 
 						"in check_connections_to_global_clb_pins:\n");
 				vtr::printf_error(__FILE__, __LINE__, 
 						"\tpin %d on net #%d (%s) connects to CLB input pin (#%d) on block #%d (%s).\n", 
-						ipin, inet, cluster_ctx.clbs_nlist.net[inet].name, node_block_pin, iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk));
+						ipin, inet, cluster_ctx.clb_nlist.net_name((NetId)inet), node_block_pin, iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk));
 				error++;
 			}
 

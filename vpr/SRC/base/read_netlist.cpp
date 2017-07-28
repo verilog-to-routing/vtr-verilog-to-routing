@@ -208,6 +208,7 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
             i++;
         }
         VTR_ASSERT(i == bcount);
+		VTR_ASSERT(clustered_nlist->blocks().size() == i);
         VTR_ASSERT(num_primitives >= 0);
         VTR_ASSERT(static_cast<size_t>(num_primitives) == atom_ctx.nlist.blocks().size());
 
@@ -967,7 +968,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 					if (count[netnum] > old_nlist->net[netnum].num_sinks()) {
 						vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 								"net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n",
-								old_nlist->net[netnum].name, netnum, count[netnum],
+								clb_nlist->net_name((NetId)netnum), netnum, count[netnum],
 								old_nlist->net[netnum].num_sinks());
 					}
 
@@ -986,6 +987,8 @@ static void load_external_nets_and_cb(const int L_num_blocks,
                     //Mark the net pin numbers on the block
                     block_list[i].net_pins[j] = count[netnum]; //A sink
 
+					
+
 				} else {
 					VTR_ASSERT(DRIVER == clb_nlist->block_type((BlockId)i)->class_inf[clb_nlist->block_type((BlockId)i)->pin_class[j]].type);
 					VTR_ASSERT(old_nlist->net[netnum].pins[0].block == OPEN);
@@ -1001,8 +1004,6 @@ static void load_external_nets_and_cb(const int L_num_blocks,
                     //Mark the net pin numbers on the block
                     block_list[i].net_pins[j] = 0; //The driver
 				}
-
-				VTR_ASSERT(0 == strcmp(old_nlist->net[netnum].name, clb_nlist->net_name((NetId)netnum).c_str()));
 			}
 		}
 	}

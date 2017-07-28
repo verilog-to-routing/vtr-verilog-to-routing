@@ -211,7 +211,7 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
 				 "in check_sink: node %d does not connect to any terminal of net %s #%d.\n"
 				 "This error is usually caused by incorrectly specified logical equivalence in your architecture file.\n"
-				 "You should try to respecify what pins are equivalent or turn logical equivalence off.\n", inode, cluster_ctx.clbs_nlist.net[inet].name, inet);
+				 "You should try to respecify what pins are equivalent or turn logical equivalence off.\n", inode, cluster_ctx.clb_nlist.net_name((NetId)inet), inet);
 	}
 }
 

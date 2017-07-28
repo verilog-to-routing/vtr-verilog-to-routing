@@ -1904,7 +1904,7 @@ static void highlight_nets(char *message, int hit_node) {
 				draw_state->net_color[inet] = draw_state->draw_rr_node[tptr->index].color;
 				if (tptr->index == hit_node) {
 					sprintf(message, "%s  ||  Net: %d (%s)", message, inet,
-							cluster_ctx.clbs_nlist.net[inet].name);
+							cluster_ctx.clb_nlist.net_name((NetId)inet).c_str());
 				}
 			}
 			else if (draw_state->draw_rr_node[tptr->index].color == WHITE) {

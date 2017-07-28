@@ -157,7 +157,7 @@ static bool breadth_first_route_net(int inet, float bend_cost) {
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
 			vtr::printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-					inet, cluster_ctx.clbs_nlist.net[inet].name, i);
+					inet, cluster_ctx.clb_nlist.net_name((NetId)inet), i);
 			reset_path_costs(); /* Clean up before leaving. */
 			return (false);
 		}
@@ -185,7 +185,7 @@ static bool breadth_first_route_net(int inet, float bend_cost) {
 
 			if (current == NULL) { /* Impossible routing. No path for net. */
 				vtr::printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-						inet, cluster_ctx.clbs_nlist.net[inet].name, i);
+						inet, cluster_ctx.clb_nlist.net_name((NetId)inet), i);
 				reset_path_costs();
 				return (false);
 			}
