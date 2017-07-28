@@ -25,11 +25,9 @@ static int check_connections_to_global_clb_pins(unsigned int inet);
 
 static int check_for_duplicated_names(void);
 
-static int check_clb_conn(int iblk, int num_conn);
+static int check_clb_conn(BlockId iblk, int num_conn);
 
-static int check_clb_internal_nets(unsigned int iblk);
-
-static int get_num_conn(int bnum);
+static int check_clb_internal_nets(BlockId iblk);
 
 /*********************** Subroutine definitions *****************************/
 
@@ -61,10 +59,10 @@ void check_netlist() {
 	free_hash_table(net_hash_table);
 
 	/* Check that each block makes sense. */
-	for (i = 0; i < (unsigned int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-		num_conn = get_num_conn(i);
-		error += check_clb_conn(i, num_conn);
-		error += check_clb_internal_nets(i);
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		num_conn = (int)cluster_ctx.clb_nlist.block_pins(blk_id).size();
+		error += check_clb_conn(blk_id, num_conn);
+		error += check_clb_internal_nets(blk_id);
 		if (error >= ERROR_THRESHOLD) {
 			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 					"Too many errors in netlist, exiting.\n");
@@ -121,7 +119,6 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 	 * although a CLB output generates a warning.  I could make a global CLB      *
 	 * output pin type to allow people to make architectures that didn't have     *
 	 * this warning.                                                              */
-
 	for (ipin = 0; ipin < num_pins; ipin++) {
 		iblk = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
 
@@ -159,18 +156,16 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 	return (error);
 }
 
-static int check_clb_conn(int iblk, int num_conn) {
-
-	/* Checks that the connections into and out of the clb make sense.  */
-
-	int iclass, ipin, error;
+/* Checks that the connections into and out of the clb make sense.  */
+static int check_clb_conn(BlockId iblk, int num_conn) {
+	int iclass, error;
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
 	error = 0;
-	type = cluster_ctx.clb_nlist.block_type((BlockId)iblk);
+	type = cluster_ctx.clb_nlist.block_type(iblk);
 
 	if (type == device_ctx.IO_TYPE) {
 	    /*
@@ -180,10 +175,11 @@ static int check_clb_conn(int iblk, int num_conn) {
 					"IO blk #%d (%s) has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), num_conn);
 			error++;
 		}
-             */
-	} else if (num_conn < 2) {
-		vtr::printf_warning(__FILE__, __LINE__, 
-				"Logic block #%d (%s) has only %d pin.\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), num_conn);
+        */
+	}
+	else if (num_conn < 2) {
+		vtr::printf_warning(__FILE__, __LINE__,
+			"Logic block #%d (%s) has only %d pin.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk), num_conn);
 
 		/* Allow the case where we have only one OUTPUT pin connected to continue. *
 		 * This is used sometimes as a constant generator for a primary output,    *
@@ -191,7 +187,25 @@ static int check_clb_conn(int iblk, int num_conn) {
 		 * abort.                                                                  */
 
 		if (num_conn == 1) {
-			for (ipin = 0; ipin < type->num_pins; ipin++) {
+			for (auto pin_id : cluster_ctx.clb_nlist.block_pins(iblk)) {
+				auto pin_port_bit = cluster_ctx.clb_nlist.pin_port_bit(pin_id);
+				iclass = type->pin_class[pin_port_bit];
+
+				if (type->class_inf[iclass].type != DRIVER) {
+					vtr::printf_info("Pin is an input -- this whole block is hanging logic that should be swept in logic synthesis.\n");
+					vtr::printf_info("\tNon-fatal, but check this.\n");
+				}
+				else {
+					vtr::printf_info("Pin is an output -- may be a constant generator.\n");
+					vtr::printf_info("\tNon-fatal, but check this.\n");
+				}
+
+				break;
+			}
+		}
+	}
+
+/*			for (int ipin = 0; ipin < type->num_pins; ipin++) {
 				if (cluster_ctx.blocks[iblk].nets[ipin] != OPEN) {
 					iclass = type->pin_class[ipin];
 
@@ -207,14 +221,14 @@ static int check_clb_conn(int iblk, int num_conn) {
 				}
 			}
 		}
-	}
+	}*/
 
 	/* This case should already have been flagged as an error -- this is *
 	 * just a redundant double check.                                    */
 
 	if (num_conn > type->num_pins) {
 		vtr::printf_error(__FILE__, __LINE__, 
-				"logic block #%d with output %s has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), num_conn);
+				"logic block #%d with output %s has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk), num_conn);
 		error++;
 	}
 
@@ -222,17 +236,15 @@ static int check_clb_conn(int iblk, int num_conn) {
 }
 
 
-/* Check that internal-to-logic-block connectivity is continuous and logically consistent
-*/
-static int check_clb_internal_nets(unsigned int iblk) {
-	
+/* Check that internal-to-logic-block connectivity is continuous and logically consistent */
+static int check_clb_internal_nets(BlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	
 	int error = 0;
-	t_pb_route * pb_route = cluster_ctx.clb_nlist.block_pb((BlockId)iblk)->pb_route;
-	int num_pins_in_block = cluster_ctx.clb_nlist.block_pb((BlockId)iblk)->pb_graph_node->total_pb_pins;
+	t_pb_route * pb_route = cluster_ctx.clb_nlist.block_pb(iblk)->pb_route;
+	int num_pins_in_block = cluster_ctx.clb_nlist.block_pb(iblk)->pb_graph_node->total_pb_pins;
 
-	t_pb_graph_pin** pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(cluster_ctx.clb_nlist.block_type((BlockId)iblk));
+	t_pb_graph_pin** pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(cluster_ctx.clb_nlist.block_type(iblk));
 
 	for (int i = 0; i < num_pins_in_block; i++) {
 		if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != OPEN) {
@@ -241,19 +253,19 @@ static int check_clb_internal_nets(unsigned int iblk) {
 				) {
 				if (pb_route[i].driver_pb_pin_id != OPEN) {
 					vtr::printf_error(__FILE__, __LINE__,
-						"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), i);
+						"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, cluster_ctx.clb_nlist.block_name(iblk), i);
 					error++;
 				}
 			} else {
 				if (!pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id == OPEN) {
 					vtr::printf_error(__FILE__, __LINE__,
-						"Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), i);
+						"Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, cluster_ctx.clb_nlist.block_name(iblk), i);
 					error++;
 				} else {
 					int prev_pin = pb_route[i].driver_pb_pin_id;
 					if (pb_route[prev_pin].atom_net_id != pb_route[i].atom_net_id) {
 						vtr::printf_error(__FILE__, __LINE__,
-							"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), i, prev_pin);
+							"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, cluster_ctx.clb_nlist.block_name(iblk), i, prev_pin);
 						error++;
 					}
 				}
@@ -290,23 +302,3 @@ static int check_for_duplicated_names(void) {
 
 	return error;
 }
-
-static int get_num_conn(int bnum) {
-	/* This routine returns the number of connections to a block. */
-	int i, num_conn;
-	t_type_ptr type;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-	type = cluster_ctx.clb_nlist.block_type((BlockId)bnum);
-
-	num_conn = 0;
-
-	for (i = 0; i < type->num_pins; i++) {
-		if (cluster_ctx.blocks[bnum].nets[i] != OPEN)
-			num_conn++;
-	}
-
-	return (num_conn);
-}
-
