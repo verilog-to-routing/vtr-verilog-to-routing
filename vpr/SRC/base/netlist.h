@@ -44,12 +44,6 @@ struct t_net_pin{
  */
 struct t_vnet{
 	vector<t_net_pin> pins;
-	char* name;
-	// named bitfields (alternative to bitmasks)
-
-	t_vnet(){
-		name = NULL;
-	}
 
 	// Returns the number of sinks of the net, computed by looking 
 	// at the the nodes vector's size. 

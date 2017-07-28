@@ -29,7 +29,6 @@ void echo_global_nlist_net(const t_netlist* nlist) {
 	vtr::printf_info("********Dumping clb netlist info contained in vectors*******\n");
 
 	for(i = 0; i < nlist->net.size(); i++) {
-		vtr::printf_info("Net name %s\n", nlist->net[i].name);
 		for(j = 0; j < nlist->net[i].pins.size(); j++) {
 			vtr::printf_info("Block index %d pin %d \n", 
 				nlist->net[i].pins[j].block, 
@@ -47,8 +46,6 @@ void free_global_nlist_net(t_netlist* nlist) {
 
 	if(!nlist->net.empty()) {
 		for(unsigned int i = 0; i < nlist->net.size(); i++) {
-			free(nlist->net[i].name);
-			nlist->net[i].name = NULL;
 			nlist->net[i].pins.clear();
 		}
 		nlist->net.clear();

@@ -530,8 +530,6 @@ static void alloc_and_init_netlist_from_hash(int net_count, t_hash **nhash, t_ne
 	std::vector<std::string> net_names(net_count);
 
     while (curr_net != nullptr) {
-		VTR_ASSERT(nlist->net[curr_net->index].name == NULL);
-		nlist->net[curr_net->index].name = vtr::strdup(curr_net->name);
         nlist->net[curr_net->index].pins.resize(curr_net->count); //Allocate space for pins
 
 		// Sort the names by index into a vector first
