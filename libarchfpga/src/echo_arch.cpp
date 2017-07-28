@@ -112,11 +112,13 @@ static void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 	fprintf(Echo, "Printing architecture... \n\n");
 	//Layout
 	fprintf(Echo, "*************************************************\n");
-	if (arch->clb_grid.IsAuto) {
-		fprintf(Echo, "Layout: auto %f\n", arch->clb_grid.Aspect);
-	} else {
-		fprintf(Echo, "Layout: width %d height %d\n", arch->clb_grid.W,
-				arch->clb_grid.H);
+    for (auto grid_layout : arch->grid_layouts) {
+        if (grid_layout.grid_type == GridDefType::AUTO) {
+            fprintf(Echo, "Layout: '%s' Type: auto Aspect_Ratio: %f\n", grid_layout.name.c_str(), grid_layout.aspect_ratio);
+        } else {
+            VTR_ASSERT(grid_layout.grid_type == GridDefType::AUTO);
+            fprintf(Echo, "Layout: '%s' Type: fixed Width: %d Height %d\n", grid_layout.name.c_str(), grid_layout.width, grid_layout.height);
+        }
 	}
 	fprintf(Echo, "*************************************************\n\n");
 	//Device

@@ -117,7 +117,9 @@ void SetupVPR(t_options *Options,
 		}
     }
 
-    for(const auto& grid_loc_def : Arch->grid_loc_defs) {
+    //TODO: handle >1 layout
+    VTR_ASSERT(Arch->grid_layouts.size() == 1);
+    for(const auto& grid_loc_def : Arch->grid_layouts[0].loc_defs) {
         //Detect the 'fill' type
         if (   grid_loc_def.x.start_expr == "0"
             && grid_loc_def.x.end_expr == "W - 1"
@@ -386,10 +388,14 @@ void SetupPackerOpts(const t_options& Options,
 		const t_arch& Arch,
 		t_packer_opts *PackerOpts) {
 
-	if (Arch.clb_grid.IsAuto) {
-		PackerOpts->aspect = Arch.clb_grid.Aspect;
+    VTR_ASSERT(Arch.grid_layouts.size() == 1); //TODO: multiple layout support
+    auto& grid_layout = Arch.grid_layouts[0];
+
+	if (grid_layout.grid_type == GridDefType::AUTO) {
+		PackerOpts->aspect = grid_layout.aspect_ratio;
 	} else {
-		PackerOpts->aspect = (float) Arch.clb_grid.H / (float) Arch.clb_grid.W;
+        VTR_ASSERT(grid_layout.grid_type == GridDefType::AUTO);
+		PackerOpts->aspect = (float) grid_layout.width / (float) grid_layout.height;
 	}
 	PackerOpts->output_file = Options.NetFile;
 

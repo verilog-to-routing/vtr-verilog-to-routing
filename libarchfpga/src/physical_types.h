@@ -232,13 +232,23 @@ struct t_grid_loc_def {
     t_grid_loc_spec y;      //Veritcal location specification
 };
 
-/* Data type definitions */
-/*   Grid info */
-struct t_clb_grid {
-	bool IsAuto;
-	float Aspect;
-	int W;
-	int H;
+enum GridDefType {
+    AUTO,
+    FIXED
+};
+
+struct t_grid_def {
+    GridDefType grid_type = GridDefType::AUTO;  //The type of this grid specification
+
+    std::string name = "";                      //The name of this device
+
+    int width = -1;                             //Fixed device width (only valid for grid_type == FIXED)
+    int height = -1;                            //Fixed device height (only valid for grid_type == FIXED)
+
+    float aspect_ratio = 1.;                    //Aspect ratio for auto-sized devices (only valid for 
+                                                //grid_type == AUTO)
+
+    std::vector<t_grid_loc_def> loc_defs;       //The list of grid location definitions for this grid specification
 };
 
 /************************* POWER ***********************************/
@@ -1172,7 +1182,6 @@ struct t_arch {
 	float R_minW_pmos;
 	int Fs;
 	float grid_logic_tile_area;
-	t_clb_grid clb_grid;
 	t_segment_inf * Segments;
 	int num_segments;
 	t_arch_switch_inf *Switches;
@@ -1191,7 +1200,7 @@ struct t_arch {
 	float T_ipin_cblock;
 	float ipin_mux_trans_size;
 
-    std::vector<t_grid_loc_def> grid_loc_defs;
+    std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 };
 
 #endif

@@ -33,7 +33,10 @@ static void alloc_and_load_num_instances_type(
 		int* L_num_instances_type, int L_num_types);
 
 /* Create and fill FPGA architecture grid.         */
-void alloc_and_load_grid(std::vector<t_grid_loc_def> grid_loc_defs, int *num_instances_type) {
+void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instances_type) {
+    //TODO: handle properly
+    VTR_ASSERT(grid_layouts.size() == 1);
+    auto grid_loc_defs = grid_layouts[0].loc_defs;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();

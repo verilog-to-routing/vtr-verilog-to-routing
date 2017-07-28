@@ -395,8 +395,15 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	}
 
 	/* TODO: make better estimate for device_ctx.nx and device_ctx.ny, was initializing device_ctx.nx = device_ctx.ny = 1 */
-	device_ctx.nx = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.W);
-	device_ctx.ny = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.H);
+    VTR_ASSERT(arch->grid_layouts.size() == 1);
+    if (arch->grid_layouts[0].grid_type == GridDefType::AUTO) {
+        device_ctx.nx = 1;
+        device_ctx.ny = 1;
+    } else {
+        VTR_ASSERT(arch->grid_layouts[0].grid_type == GridDefType::FIXED);
+        device_ctx.nx = arch->grid_layouts[0].width;
+        device_ctx.ny = arch->grid_layouts[0].height;
+    }
 
 	check_clocks(is_clock);
 #if 0
@@ -1929,7 +1936,7 @@ static void start_new_cluster(
 	new_cluster->pb = NULL;
 
 	if ((device_ctx.nx > 1) && (device_ctx.ny > 1)) {
-		alloc_and_load_grid(arch->grid_loc_defs, num_instances_type);
+		alloc_and_load_grid(arch->grid_layouts, num_instances_type);
 		freeGrid();
 	}
 
@@ -2002,7 +2009,7 @@ static void start_new_cluster(
 						"Circuit cannot pack into architecture, architecture size (device_ctx.nx = %d, device_ctx.ny = %d) exceeds packer range.\n",
 						device_ctx.nx, device_ctx.ny);
 			}
-			alloc_and_load_grid(arch->grid_loc_defs, num_instances_type);
+			alloc_and_load_grid(arch->grid_layouts, num_instances_type);
 			freeGrid();
 		}
 	}

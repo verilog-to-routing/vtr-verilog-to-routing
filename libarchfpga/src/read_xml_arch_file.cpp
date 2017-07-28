@@ -63,6 +63,8 @@
 using namespace std;
 using namespace pugiutil;
 
+//#define LEGACY_GRID_LOCATIONS
+
 struct t_fc_override {
     std::string port_name;
     std::string seg_name;
@@ -80,8 +82,10 @@ static t_type_ptr IO_TYPE = NULL;
 /* This identifies the t_type_ptr of an Empty block */
 static t_type_ptr EMPTY_TYPE = NULL;
 
+#ifndef LEGACY_GRID_LOCATIONS
 /* This identifies the t_type_ptr of the default logic block */
 static t_type_ptr FILL_TYPE = NULL;
+#endif
 
 /* Describes the different types of CLBs available */
 static t_type_descriptor *cb_type_descriptors;
@@ -90,7 +94,10 @@ static t_type_descriptor *cb_type_descriptors;
 /*   Populate data */
 static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
+
+#ifdef LEGACY_GRID_LOCATIONS
 static void SetupGridLocations(t_arch& arch, pugi::xml_node Locations, t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
+#endif
 /*    Process XML hiearchy */
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		t_mode * mode, const t_arch& arch, const pugiutil::loc_data& loc_data);
@@ -113,6 +120,9 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
 static void ProcessModels(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data);
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data);
+#ifndef LEGACY_GRID_LOCATIONS
+static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
+#endif
 static void ProcessDevice(pugi::xml_node Node, t_arch *arch,
 		const bool timing_enabled, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlocks(pugi::xml_node Node,
@@ -170,7 +180,6 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 		t_arch *arch, t_type_descriptor ** Types,
 		int *NumTypes) {
 
-	const char *Prop;
 	pugi::xml_node Next;
 	ReqOpt POWER_REQD, SWITCHBLOCKLIST_REQD;
 
@@ -196,7 +205,8 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
         auto architecture = get_single_child(doc, "architecture", loc_data);
 
         /* TODO: do version processing properly with string delimiting on the . */
-        Prop = get_attribute(architecture, "version", loc_data, OPTIONAL).as_string(NULL);
+#if 0
+        char* Prop = get_attribute(architecture, "version", loc_data, OPTIONAL).as_string(NULL);
         if (Prop != NULL) {
             if (atof(Prop) > atof(VPR_VERSION)) {
                 vtr::printf_warning(__FILE__, __LINE__,
@@ -204,6 +214,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
                         atof(Prop));
             }
         }
+#endif
 
         /* Process models */
         Next = get_single_child(architecture, "models", loc_data);
@@ -579,6 +590,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	VTR_ASSERT(pin_count == Type->num_pins);
 }
 
+#ifdef LEGACY_GRID_LOCATIONS
 /* Sets up the grid_loc_def for the type. */
 static void SetupGridLocations(t_arch& arch, pugi::xml_node Locations, t_type_descriptor* Type, const pugiutil::loc_data& loc_data) {
     std::string type_name(Type->name);
@@ -715,6 +727,7 @@ static void SetupGridLocations(t_arch& arch, pugi::xml_node Locations, t_type_de
         }
     }
 }
+#endif
 
 static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type, const pugiutil::loc_data& loc_data) {
@@ -2044,6 +2057,225 @@ static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::se
     }
 }
 
+#ifndef LEGACY_GRID_LOCATIONS
+static void ProcessLayout(pugi::xml_node layout_tag, t_arch *arch, const pugiutil::loc_data& loc_data) {
+    VTR_ASSERT(layout_tag.name() == std::string("layout"));
+
+    //Expect no attributes on <layout>
+    for (auto attrib : layout_tag.attributes()) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_tag),
+                    "Unexpected attribute '%s' on tag '<%s>'",
+                    attrib.name(), layout_tag.name());
+    }
+
+    //Currently only support a single layout specification
+    expect_child_node_count(layout_tag, 1, loc_data);
+
+    for (auto layout_type_tag : layout_tag.children()) {
+
+        t_grid_def grid_def = ProcessGridLayout(layout_type_tag, loc_data);
+
+        arch->grid_layouts.push_back(grid_def);
+    }
+}
+
+static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data) {
+    t_grid_def grid_def;
+
+    //Determine the grid specification type
+    if (layout_type_tag.name() == std::string("auto_layout")) {
+
+        expect_only_attributes(layout_type_tag, {"aspect_ratio"}, loc_data);
+
+        grid_def.aspect_ratio = get_attribute(layout_type_tag, "aspect_ratio", loc_data).as_float();
+        grid_def.name = "auto";
+
+    } else if (layout_type_tag.name() == std::string("fixed_layout")) {
+        expect_only_attributes(layout_type_tag, {"width", "height", "name"}, loc_data);
+
+        grid_def.width = get_attribute(layout_type_tag, "width", loc_data).as_int();
+        grid_def.height = get_attribute(layout_type_tag, "height", loc_data).as_int();
+        std::string name = get_attribute(layout_type_tag, "name", loc_data).value();
+
+        if (name == "auto") {
+            //We name <auto_layout> as 'auto', so don't allow a user to specify it
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
+                    "The name '%s' is reserved for auto-sized layouts; please choose another name");
+        }
+        grid_def.name = name;
+
+    } else {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
+                    "Unexpected tag '<%s>'. Expected '<auto_layout>' or '<fixed_layout>'.",
+                    layout_type_tag.name());
+    }
+
+    //Process all the block location specifications
+    for (auto loc_spec_tag : layout_type_tag.children()) {
+        auto loc_type = loc_spec_tag.name();
+        auto type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
+        int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
+
+        if (loc_type == std::string("perimeter")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
+
+            //The edges
+            t_grid_loc_def left_edge(type_name, priority); //Including corners
+            left_edge.x.start_expr = "0";
+            left_edge.x.end_expr = "0";
+            left_edge.y.start_expr = "0";
+            left_edge.y.end_expr = "H - 1";
+
+            t_grid_loc_def right_edge(type_name, priority); //Including corners
+            right_edge.x.start_expr = "W - 1";
+            right_edge.x.end_expr = "W - 1";
+            right_edge.y.start_expr = "0";
+            right_edge.y.end_expr = "H - 1";
+
+            t_grid_loc_def bottom_edge(type_name, priority); //Exclucing corners
+            bottom_edge.x.start_expr = "1";
+            bottom_edge.x.end_expr = "W - 2";
+            bottom_edge.y.start_expr = "0";
+            bottom_edge.y.end_expr = "0";
+
+            t_grid_loc_def top_edge(type_name, priority); //Excluding corners
+            top_edge.x.start_expr = "1";
+            top_edge.x.end_expr = "W - 2";
+            top_edge.y.start_expr = "H - 1";
+            top_edge.y.end_expr = "H - 1";
+
+            grid_def.loc_defs.push_back(left_edge);
+            grid_def.loc_defs.push_back(right_edge);
+            grid_def.loc_defs.push_back(top_edge);
+            grid_def.loc_defs.push_back(bottom_edge);
+
+        } else if (loc_type == std::string("corners")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
+
+            //The corners
+            t_grid_loc_def bottom_left(type_name, priority);
+            bottom_left.x.start_expr = "0";
+            bottom_left.x.end_expr = "0";
+            bottom_left.y.start_expr = "0";
+            bottom_left.y.end_expr = "0";
+
+            t_grid_loc_def top_left(type_name, priority);
+            top_left.x.start_expr = "0";
+            top_left.x.end_expr = "0";
+            top_left.y.start_expr = "H-1";
+            top_left.y.end_expr = "H-1";
+
+            t_grid_loc_def bottom_right(type_name, priority);
+            bottom_right.x.start_expr = "W-1";
+            bottom_right.x.end_expr = "W-1";
+            bottom_right.y.start_expr = "0";
+            bottom_right.y.end_expr = "0";
+
+            t_grid_loc_def top_right(type_name, priority);
+            top_right.x.start_expr = "W-1";
+            top_right.x.end_expr = "W-1";
+            top_right.y.start_expr = "H-1";
+            top_right.y.end_expr = "H-1";
+
+            grid_def.loc_defs.push_back(bottom_left);
+            grid_def.loc_defs.push_back(top_left);
+            grid_def.loc_defs.push_back(bottom_right);
+            grid_def.loc_defs.push_back(top_right);
+
+        } else if (loc_type == std::string("fill")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
+
+            t_grid_loc_def fill(type_name, priority);
+            fill.x.start_expr = "0";
+            fill.x.end_expr = "W - 1";
+            fill.y.start_expr = "0";
+            fill.y.end_expr = "H - 1";
+
+            grid_def.loc_defs.push_back(fill);
+
+        } else if (loc_type == std::string("col")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx"}, loc_data);
+
+            t_grid_loc_def col(type_name, priority);
+
+            auto start_attr = get_attribute(loc_spec_tag, "startx", loc_data);
+
+            col.x.start_expr = start_attr.value();
+            col.x.end_expr = start_attr.value();
+
+            auto repeat_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
+            if (repeat_attr) {
+                col.x.repeat_expr = repeat_attr.value();
+            }
+
+            col.y.start_expr = "0";
+            col.y.end_expr = "H - 1";
+
+            grid_def.loc_defs.push_back(col);
+
+        } else if (loc_type == std::string("row")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty"}, loc_data);
+
+            t_grid_loc_def row(type_name, priority);
+
+            auto start_attr = get_attribute(loc_spec_tag, "starty", loc_data);
+
+            row.y.start_expr = start_attr.value();
+            row.y.end_expr = start_attr.value();
+
+            auto repeat_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
+            if (repeat_attr) {
+                row.y.repeat_expr = repeat_attr.value();
+            }
+
+            row.x.start_expr = "0";
+            row.x.end_expr = "W - 1";
+
+            grid_def.loc_defs.push_back(row);
+        } else if (loc_type == std::string("region")) {
+            expect_only_attributes(loc_spec_tag, 
+                                   {"type", "priority", 
+                                    "startx", "endx", "repeatx", "incrx",
+                                    "starty", "endy", "repeaty", "incry"},
+                                   loc_data);
+            t_grid_loc_def region(type_name, priority);
+
+            region.x.start_expr = get_attribute(loc_spec_tag, "startx", loc_data).value();
+            region.x.end_expr = get_attribute(loc_spec_tag, "endx", loc_data).value();
+
+            region.y.start_expr = get_attribute(loc_spec_tag, "starty", loc_data).value();
+            region.y.end_expr = get_attribute(loc_spec_tag, "endy", loc_data).value();
+
+            auto repeatx_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
+            if (repeatx_attr) {
+                region.x.repeat_expr = repeatx_attr.value();
+            }
+
+            auto repeaty_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
+            if (repeaty_attr) {
+                region.y.repeat_expr = repeaty_attr.value();
+            }
+
+            auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
+            if (incrx_attr) {
+                region.x.incr_expr = incrx_attr.value();
+            }
+
+            auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
+            if (incry_attr) {
+                region.y.incr_expr = incry_attr.value();
+            }
+
+            grid_def.loc_defs.push_back(region);
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
+                    "Unrecognized grid location specification type '%s'\n", loc_type);
+        }
+
+    }
+    return grid_def;
+}
+#else
 /* Takes in node pointing to <layout> and loads all the
  * child type objects. */
 static void ProcessLayout(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data) {
@@ -2077,6 +2309,7 @@ static void ProcessLayout(pugi::xml_node Node, t_arch *arch, const pugiutil::loc
 		}
 	}
 }
+#endif
 
 /* Takes in node pointing to <device> and loads all the
  * child type objects. */
@@ -2268,8 +2501,21 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		Cur = get_single_child(CurType, "pinlocations", loc_data);
 		SetupPinLocationsAndPinClasses(Cur, Type, loc_data);
 
+#ifdef LEGACY_GRID_LOCATIONS
 		Cur = get_single_child(CurType, "gridlocations", loc_data);
 		SetupGridLocations(arch, Cur, Type, loc_data);
+#else
+        //Warn that gridlocations is no longer supported
+         //TODO: eventually remove
+        try {
+            expect_child_node_count(CurType, "gridlocations", 0, loc_data);
+        } catch (XmlError& e) {
+            std::string msg = e.what();
+            msg += ". <gridlocations> has been replaced by the <auto_layout> and <device_layout> tags in the <layout> section.";
+            msg += " Please upgrade your architecture file.";
+            throw XmlError(msg, e.filename(), e.line());
+        }
+#endif
 
 		/* Load Fc */
 		Cur = get_single_child(CurType, "fc", loc_data);
@@ -2285,10 +2531,12 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		CurType = CurType.next_sibling (CurType.name());
 
 	}
+#ifdef LEGACY_GRID_LOCATIONS
 	if (FILL_TYPE == NULL) {
 		archfpga_throw(arch_file_name, 0,
 				"grid location type 'fill' must be specified.\n");
 	}
+#endif
 	pb_type_descriptors.clear();
 }
 
