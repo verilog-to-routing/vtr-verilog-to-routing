@@ -53,7 +53,10 @@ def main():
     root_tags = root.findall(".")
     assert len(root_tags) == 1
     arch = root_tags[0]
-    assert arch.tag == "architecture"
+
+    if arch.tag != "architecture":
+        print "Not an architecture file, exiting..."
+        sys.exit(1)
 
     modified = False
     if "add_model_timing" in args.features:
