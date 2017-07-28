@@ -69,7 +69,6 @@ using namespace std;
 #include "tatum/echo_writer.hpp"
 
 #include "read_route.h"
-#include "read_netlist.h"
 #include "read_blif.h"
 #include "read_place.h"
 
@@ -896,7 +895,6 @@ void vpr_init_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (!vpr_setup.RouterOpts.doRouting) {
-
         //Load up netlist and other device parameters
         vpr_init_pre_place_and_route(vpr_setup, Arch);
 
