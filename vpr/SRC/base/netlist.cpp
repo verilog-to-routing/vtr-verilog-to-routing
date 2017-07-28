@@ -19,26 +19,6 @@
 
 using namespace std;
 
-void echo_global_nlist_net(const t_netlist* nlist) {
-	unsigned int i, j;
-
-	if(nlist == NULL)
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-			"Global netlist variable has not been allocated!");
-
-	vtr::printf_info("********Dumping clb netlist info contained in vectors*******\n");
-
-	for(i = 0; i < nlist->net.size(); i++) {
-		for(j = 0; j < nlist->net[i].pins.size(); j++) {
-			vtr::printf_info("Block index %d pin %d \n", 
-				nlist->net[i].pins[j].block, 
-				nlist->net[i].pins[j].block_pin);
-		}
-		vtr::printf_info("\n");
-	}
-	vtr::printf_info("********Finished dumping clb netlist info contained in vectors*******\n");
-}
-
 void free_global_nlist_net(t_netlist* nlist) {
 	if(nlist == NULL)
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
