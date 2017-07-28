@@ -23,7 +23,6 @@ using namespace std;
 #include "path_delay.h"
 #include "timing_place_lookup.h"
 #include "timing_place.h"
-#include "place_stats.h"
 #include "read_xml_arch_file.h"
 #include "echo_files.h"
 #include "vpr_utils.h"
@@ -3270,9 +3269,6 @@ static void check_place(float bb_cost, float timing_cost,
 		vtr::printf_info("\n");
 		vtr::printf_info("Completed placement consistency check successfully.\n");
 
-#ifdef PRINT_REL_POS_DISTR
-		print_relative_pos_distr(void);
-#endif
 	} else {
 		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 				"\nCompleted placement consistency check, %d errors found.\n"
