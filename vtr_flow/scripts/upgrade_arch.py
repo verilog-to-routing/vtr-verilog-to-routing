@@ -298,7 +298,10 @@ def upgrade_device_layout(arch):
 
             if loc_type == "col":
                 start = loc.attrib['start']
-                repeat = loc.attrib['repeat']
+
+                repeat = None
+                if 'repeat' in loc.attrib:
+                    repeat = loc.attrib['repeat']
 
                 comment_str = "Column of '{}' with 'EMPTY' blocks wherever a '{}' does not fit.".format(type_name, type_name)
 
@@ -315,7 +318,8 @@ def upgrade_device_layout(arch):
                 col_spec.attrib['startx'] = start
                 if have_perimeter:
                     col_spec.attrib['starty'] = "1"
-                col_spec.attrib['repeatx'] = repeat
+                if repeat:
+                    col_spec.attrib['repeatx'] = repeat
                 col_spec.attrib['priority'] = str(priority)
                 col_spec.tail = "\n" + 2*INDENT
 
@@ -326,7 +330,8 @@ def upgrade_device_layout(arch):
                 col_empty_spec = ET.SubElement(device_auto, 'col')
                 col_empty_spec.attrib['type'] = "EMPTY"
                 col_empty_spec.attrib['startx'] = start
-                col_empty_spec.attrib['repeatx'] = repeat
+                if repeat:
+                    col_empty_spec.attrib['repeatx'] = repeat
                 if have_perimeter:
                     col_empty_spec.attrib['starty'] = "1"
                 col_empty_spec.attrib['priority'] = str(priority - 1) #-1 so it won't override the 'real' col
