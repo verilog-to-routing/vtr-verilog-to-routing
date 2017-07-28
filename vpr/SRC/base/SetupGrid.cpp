@@ -330,7 +330,7 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
         size_t x_offset = x - x_root;
         for (size_t y = y_root; y < y_root + type->height; ++y) {
 
-            VTR_ASSERT(x < grid.end_index(1));
+            VTR_ASSERT(y < grid.end_index(1));
             size_t y_offset = y - y_root;
 
             auto& grid_tile = grid[x][y];
