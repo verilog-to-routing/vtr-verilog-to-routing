@@ -104,6 +104,25 @@ namespace pugiutil {
         return count;
     }
 
+    //Throws a well formatted error if the actual count of child nodes name 'child_name' does not equal the 'expected_count'
+    //
+    //  node - The parent xml node
+    //  loc_data - XML file location data
+    //  expected_count - The expected number of child nodes
+    void expect_child_node_count(const pugi::xml_node node,
+                            std::string child_name,
+                            size_t expected_count,
+                            const loc_data& loc_data) {
+        size_t actual_count = count_children(node, child_name, loc_data, OPTIONAL);
+
+        if (actual_count != expected_count) {
+            throw XmlError("Found " + std::to_string(actual_count)
+                            + " '" + child_name + "' child node(s) of "
+                            + "'" + std::string(node.name()) + "'"
+                            + " (expected " + std::to_string(expected_count) + ")",
+                           loc_data.filename(), loc_data.line(node));
+        }
+    }
     //Throws a well formatted error if the actual child count does not equal the 'expected_count'
     //
     //  node - The parent xml node
@@ -115,16 +134,10 @@ namespace pugiutil {
         size_t actual_count = count_children(node, loc_data, OPTIONAL);
 
         if (actual_count != expected_count) {
-            //throw XmlError("Expected " + std::to_string(expected_count) 
-                            //+ " child node(s) of node "
-                            //+ "'" + std::string(node.name()) + "'"
-                            //+ "(found " + std::to_string(actual_count) + ")",
-                           //loc_data.filename(), loc_data.line(node));
-            
             throw XmlError("Found " + std::to_string(actual_count)
                             + " child node(s) of "
                             + "'" + std::string(node.name()) + "'"
-                            + "(expected " + std::to_string(expected_count) + ")",
+                            + " (expected " + std::to_string(expected_count) + ")",
                            loc_data.filename(), loc_data.line(node));
         }
     }

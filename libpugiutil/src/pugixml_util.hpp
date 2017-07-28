@@ -112,6 +112,16 @@ namespace pugiutil {
                           const loc_data& loc_data,
                           const ReqOpt req_opt);
     
+    //Throws a well formatted error if the actual count of child nodes name 'child_name' does not equal the 'expected_count'
+    //
+    //  node - The parent xml node
+    //  loc_data - XML file location data
+    //  expected_count - The expected number of child nodes
+    void expect_child_node_count(const pugi::xml_node node,
+                            std::string child_name,
+                            size_t expected_count,
+                            const loc_data& loc_data);
+
     //Throws a well formatted error if the actual child count does not equal the 'expected_count'
     //
     //  node - The parent xml node
