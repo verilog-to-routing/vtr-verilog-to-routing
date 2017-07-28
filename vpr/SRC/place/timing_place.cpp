@@ -43,7 +43,7 @@ static float ** alloc_crit(vtr::t_chunk *chunk_list_ptr) {
 
 	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		tmp_ptr = (float *) vtr::chunk_malloc(
-				(cluster_ctx.clbs_nlist.net[inet].num_sinks()) * sizeof(float), chunk_list_ptr);
+				(cluster_ctx.clb_nlist.net_sinks((NetId)inet).size()) * sizeof(float), chunk_list_ptr);
 		local_crit[inet] = tmp_ptr - 1; /* [1..num_sinks] */
 	}
 

@@ -76,7 +76,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 
-		if (cluster_ctx.clb_nlist.net_global((NetId)inet) || cluster_ctx.clbs_nlist.net[inet].num_sinks() == 0) /* Skip global nets. */
+		if (cluster_ctx.clb_nlist.net_global((NetId)inet) || cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() == 0) /* Skip global nets. */
 			continue;
 
 		for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++)

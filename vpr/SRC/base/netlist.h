@@ -36,20 +36,10 @@ struct t_net_pin{
 };
 
 /* Contains basic information about the net properties and its pin connections
- * name:		 ASCII net name for informative annotations in the output.          
- * is_routed:	 not routed (has been pre-routed)
- * is_fixed:	 not routed (has been pre-routed)
- * is_global:	 not routed
  * t_net_pin:  [0..pins.size()-1]. Contains the nodes this net connects to.
  */
 struct t_vnet{
 	vector<t_net_pin> pins;
-
-	// Returns the number of sinks of the net, computed by looking 
-	// at the the nodes vector's size. 
-	int num_sinks() const {
-		return (int) (pins.size() ? pins.size() - 1 : 0);
-	}
 };
 
 /* Note: Indices for t_netlist.net[] are also used as ID's/indices in 

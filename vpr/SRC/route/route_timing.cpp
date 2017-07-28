@@ -140,7 +140,7 @@ struct more_sinks_than {
 
     inline bool operator()(const int& net_index1, const int& net_index2) {
         auto& cluster_ctx = g_vpr_ctx.clustering();
-        return cluster_ctx.clbs_nlist.net[net_index1].num_sinks() > cluster_ctx.clbs_nlist.net[net_index2].num_sinks();
+        return cluster_ctx.clb_nlist.net_sinks((NetId)net_index1).size() > cluster_ctx.clb_nlist.net_sinks((NetId)net_index2).size();
     }
 };
 
@@ -459,7 +459,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
                 pb_gpin_lookup,
                 timing_info);
 
-        profiling::net_fanout_end(cluster_ctx.clbs_nlist.net[inet].num_sinks());
+        profiling::net_fanout_end(cluster_ctx.clb_nlist.net_sinks((NetId)inet).size());
 
         /* Impossible to route? (disconnected rr_graph) */
         if (is_routed) {
@@ -572,7 +572,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    unsigned int num_sinks = cluster_ctx.clbs_nlist.net[inet].num_sinks();
+    unsigned int num_sinks = cluster_ctx.clb_nlist.net_sinks((NetId)inet).size();
 
     t_rt_node* rt_root = setup_routing_resources(itry, inet, num_sinks, pres_fac, min_incremental_reroute_fanout, connections_inf, rt_node_of_sink);
     // after this point the route tree is correct
@@ -672,7 +672,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
     }
 
     t_heap * cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
-            astar_fac, bend_cost, rt_root, bounding_box, cluster_ctx.clbs_nlist.net[inet].num_sinks());
+            astar_fac, bend_cost, rt_root, bounding_box, cluster_ctx.clb_nlist.net_sinks((NetId)inet).size());
 
     if (cheapest == NULL) {
         const t_net_pin* src_net_pin = &cluster_ctx.clbs_nlist.net[inet].pins[0];
@@ -1292,9 +1292,8 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
     /*t_linked_vptr *ch_list_head_net_delay_check;*/
 
-    net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch, cluster_ctx.clbs_nlist.net,
-            cluster_ctx.clb_nlist.nets().size());
-    load_net_delay_from_routing(net_delay_check, cluster_ctx.clbs_nlist.net, cluster_ctx.clb_nlist.nets().size());
+    net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch, cluster_ctx.clb_nlist.nets().size());
+    load_net_delay_from_routing(net_delay_check, cluster_ctx.clb_nlist.nets().size());
 
     for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
         for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
@@ -1621,7 +1620,7 @@ static WirelengthInfo calculate_wirelength_info() {
 
     for (unsigned int inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
         if (!cluster_ctx.clb_nlist.net_global((NetId)inet)
-                && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
+                && cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() != 0) { /* Globals don't count. */
             int bends, wirelength, segments;
             get_num_bends_and_length(inet, &bends, &wirelength, &segments);
 

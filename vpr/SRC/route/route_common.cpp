@@ -773,7 +773,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
 			}
 		
 			if ((cluster_ctx.blocks[iblk].nets[clb_pin] != OPEN
-					&& cluster_ctx.clbs_nlist.net[cluster_ctx.blocks[iblk].nets[clb_pin]].num_sinks() == 0) || cluster_ctx.blocks[iblk].nets[clb_pin] == OPEN) {
+					&& cluster_ctx.clb_nlist.net_sinks((NetId)cluster_ctx.blocks[iblk].nets[clb_pin]).size() == 0) || cluster_ctx.blocks[iblk].nets[clb_pin] == OPEN) {
                                 iclass = type->pin_class[clb_pin];
 				if(type->class_inf[iclass].type == DRIVER) {
 					/* Check to make sure class is in same range as that assigned to block */
@@ -1275,7 +1275,7 @@ void print_route(const char* placement_file, const char* route_file) {
 	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
 		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
 			fprintf(fp, "\n\nNet %d (%s)\n\n", inet, cluster_ctx.clb_nlist.net_name((NetId)inet).c_str());
-			if (cluster_ctx.clbs_nlist.net[inet].num_sinks() == false) {
+			if (cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() == false) {
 				fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
 			} else {
 				tptr = route_ctx.trace_head[inet];

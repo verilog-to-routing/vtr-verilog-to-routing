@@ -103,7 +103,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	}
 
     if (timing_analysis_enabled) {
-        load_net_delay_from_routing(net_delay, cluster_ctx.clbs_nlist.net, cluster_ctx.clb_nlist.nets().size());
+        load_net_delay_from_routing(net_delay, cluster_ctx.clb_nlist.nets().size());
 
         auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
 
@@ -163,7 +163,7 @@ void length_and_bends_stats(void) {
 	num_clb_opins_reserved = 0;
 
 	for (inet = 0, l = cluster_ctx.clb_nlist.nets().size(); inet < l; inet++) {
-		if (!cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) { /* Globals don't count. */
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() != 0) { /* Globals don't count. */
 			get_num_bends_and_length(inet, &bends, &length, &segments);
 
 			total_bends += bends;
@@ -285,7 +285,7 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
 	/* Now go through each net and count the tracks and pins used everywhere */
 	for (inet = 0, l = cluster_ctx.clb_nlist.nets().size(); inet < l; inet++) {
 		/* Skip global and empty nets. */
-		if (cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) 
+		if (cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() != 0) 
 			continue;
 
 		tptr = route_ctx.trace_head[inet];
@@ -393,14 +393,14 @@ void print_wirelen_prob_dist(void) {
 	norm_fac = 0.;
 
 	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-		if (!cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clbs_nlist.net[inet].num_sinks() != 0) {
+		if (!cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() != 0) {
 			get_num_bends_and_length(inet, &bends, &length, &segments);
 
 			/*  Assign probability to two integer lengths proportionately -- i.e.  *
 			 *  if two_point_length = 1.9, add 0.9 of the pins to prob_dist[2] and *
 			 *  only 0.1 to prob_dist[1].                                          */
 
-            int num_sinks = cluster_ctx.clbs_nlist.net[inet].num_sinks();
+            int num_sinks = cluster_ctx.clb_nlist.net_sinks((NetId)inet).size();
             VTR_ASSERT(num_sinks > 0);
 
 			two_point_length = (float) length / (float) (num_sinks);

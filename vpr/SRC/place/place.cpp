@@ -1013,7 +1013,7 @@ static int count_connections() {
 		if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 			continue;
 
-		count += cluster_ctx.clbs_nlist.net[inet].num_sinks();
+		count += cluster_ctx.clb_nlist.net_sinks((NetId)inet).size();
 	}
 	return (count);
 }
@@ -1413,7 +1413,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 					continue;
 			
-				if (cluster_ctx.clbs_nlist.net[inet].num_sinks() < SMALL_NET) {
+				if (cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() < SMALL_NET) {
 					if(bb_updated_before[inet] == NOT_UPDATED_YET)
 						/* Brute force bounding box recomputation, once only for speed. */
 						get_non_updateable_bb(inet, &ts_bb_coord_new[inet]);
@@ -1471,7 +1471,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				inet = ts_nets_to_update[inet_affected];
 
 				bb_coords[inet] = ts_bb_coord_new[inet];
-				if (cluster_ctx.clbs_nlist.net[inet].num_sinks() >= SMALL_NET)
+				if (cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() >= SMALL_NET)
 					bb_num_on_edges[inet] = ts_bb_edge_new[inet];
 			
 				net_cost[inet] = temp_net_cost[inet];
@@ -2016,7 +2016,7 @@ static float comp_bb_cost(enum cost_methods method) {
 			/* Small nets don't use incremental updating on their bounding boxes, *
 			 * so they can use a fast bounding box calculator.                    */
 
-			if (cluster_ctx.clbs_nlist.net[inet].num_sinks() >= SMALL_NET && method == NORMAL) {
+			if (cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() >= SMALL_NET && method == NORMAL) {
 				get_bb_from_scratch(inet, &bb_coords[inet],
 						&bb_num_on_edges[inet]);
 			} else {
@@ -2135,16 +2135,16 @@ static void alloc_and_load_placement_structs(
 
 			/* In the following, subract one so index starts at *
 			 * 1 instead of 0 */
-			point_to_point_delay_cost[inet] = (float *) vtr::malloc(cluster_ctx.clbs_nlist.net[inet].num_sinks() * sizeof(float));
+			point_to_point_delay_cost[inet] = (float *) vtr::malloc(cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() * sizeof(float));
 			point_to_point_delay_cost[inet]--;
 
-			temp_point_to_point_delay_cost[inet] = (float *) vtr::malloc(cluster_ctx.clbs_nlist.net[inet].num_sinks() * sizeof(float));
+			temp_point_to_point_delay_cost[inet] = (float *) vtr::malloc(cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() * sizeof(float));
 			temp_point_to_point_delay_cost[inet]--;
 
-			point_to_point_timing_cost[inet] = (float *) vtr::malloc(cluster_ctx.clbs_nlist.net[inet].num_sinks() * sizeof(float));
+			point_to_point_timing_cost[inet] = (float *) vtr::malloc(cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() * sizeof(float));
 			point_to_point_timing_cost[inet]--;
 
-			temp_point_to_point_timing_cost[inet] = (float *) vtr::malloc(cluster_ctx.clbs_nlist.net[inet].num_sinks() * sizeof(float));
+			temp_point_to_point_timing_cost[inet] = (float *) vtr::malloc(cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() * sizeof(float));
 			temp_point_to_point_timing_cost[inet]--;
 		}
 		for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {

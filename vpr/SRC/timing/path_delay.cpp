@@ -952,9 +952,9 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 			inet = atom_ctx.lookup.clb_net(intra_lb_route[i_pin_id].atom_net_id);
 			VTR_ASSERT(inet != OPEN);
 			f_net_to_driver_tnode[inet] = i;
-			timing_ctx.tnodes[i].num_edges = cluster_ctx.clbs_nlist.net[inet].num_sinks();
+			timing_ctx.tnodes[i].num_edges = cluster_ctx.clb_nlist.net_sinks((NetId)inet).size();
 			timing_ctx.tnodes[i].out_edges = (t_tedge *) vtr::chunk_malloc(
-					cluster_ctx.clbs_nlist.net[inet].num_sinks()* sizeof(t_tedge),
+					timing_ctx.tnodes[i].num_edges * sizeof(t_tedge),
 					&tedge_ch);
 			for (j = 1; j < (int)cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); j++) {
 				dblock = cluster_ctx.clbs_nlist.net[inet].pins[j].block;

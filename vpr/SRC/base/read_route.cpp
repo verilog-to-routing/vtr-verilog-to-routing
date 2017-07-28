@@ -206,7 +206,7 @@ static void process_nodes(ifstream & fp, int inet) {
             }
             return;
         } else if (input == "\n\nUsed in local cluster only, reserved one CLB pin\n\n") {
-            if (cluster_ctx.clbs_nlist.net[inet].num_sinks() != false) {
+            if (cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() != 0) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "Net %d should be used in local cluster only, reserved one CLB pin");
             }

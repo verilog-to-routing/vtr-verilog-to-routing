@@ -964,17 +964,16 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 			
 			if (net_id != OPEN) {
 				//Verify old and new CLB netlists have the same # of pins per net
-				VTR_ASSERT(old_nlist->net[net_id].num_sinks() == (int)clb_nlist->net_sinks((NetId)net_id).size());
 				VTR_ASSERT(old_nlist->net[net_id].pins.size() == clb_nlist->net_pins((NetId)net_id).size());	//TODO: Remove when t_block/t_netlist are removed
 
 				if (RECEIVER == clb_nlist->block_type((BlockId)i)->class_inf[clb_nlist->block_type((BlockId)i)->pin_class[j]].type) {
 					count[net_id]++;
 
-					if (count[net_id] > old_nlist->net[net_id].num_sinks()) {
+					if (count[net_id] > (int)clb_nlist->net_sinks((NetId)net_id).size()) {
 						vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 								"net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n",
 								clb_nlist->net_name((NetId)net_id), net_id, count[net_id],
-								old_nlist->net[net_id].num_sinks());
+								clb_nlist->net_sinks((NetId)net_id).size());
 					}
 
                     //Mark the mapping from net to block
@@ -1014,7 +1013,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 	/* Error check global and non global signals */
     VTR_ASSERT(ext_ncount == static_cast<int>(clb_nlist->nets().size()));
 	for (i = 0; i < ext_ncount; i++) {
-		for (j = 1; j <= old_nlist->net[i].num_sinks(); j++) {
+		for (j = 1; j <= (int)clb_nlist->net_sinks((NetId)i).size(); j++) {
 			bool is_global_net = clb_nlist->net_global((NetId)i);
 			if (clb_nlist->block_type((BlockId)old_nlist->net[i].pins[j].block)->is_global_pin[old_nlist->net[i].pins[j].block_pin] != is_global_net) {
 				vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,

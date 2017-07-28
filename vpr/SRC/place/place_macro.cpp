@@ -265,7 +265,7 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 							curr_inet = next_inet;
 							
 							// Assume that carry chains only has 1 sink - direct connection
-							VTR_ASSERT(cluster_ctx.clbs_nlist.net[curr_inet].num_sinks() == 1);
+							VTR_ASSERT(cluster_ctx.clb_nlist.net_sinks((NetId)curr_inet).size() == 1);
 							next_iblk = cluster_ctx.clbs_nlist.net[curr_inet].pins[1].block;
 							
 							// Assume that the from_iblk_pin index is the same for the next block
