@@ -268,6 +268,12 @@ def upgrade_device_layout(arch):
             for loc in locs:
                 print "\t", loc.tag, loc.attrib
 
+    have_perimeter = False
+
+    for type_name, locs in type_to_grid_specs.iteritems():
+        for loc in locs:
+            if loc.attrib['type'] == "perimeter":
+                have_perimeter = True
     
     for type_name, locs in type_to_grid_specs.iteritems():
         for loc in locs:
@@ -283,13 +289,20 @@ def upgrade_device_layout(arch):
                 start = loc.attrib['start']
                 repeat = loc.attrib['repeat']
 
-                comment = ET.Comment("Column of '{}' with '<EMPTY>' blocks wherever a '{}' does not fit".format(type_name, type_name))
+                comment_str = "Column of '{}' with '<EMPTY>' blocks wherever a '{}' does not fit.".format(type_name, type_name)
+
+                if have_perimeter:
+                    comment_str += " Vertical offset by 1 for perimeter."
+
+                comment = ET.Comment(comment_str)
                 device_auto.append(comment)
 
                 col_spec = ET.SubElement(device_auto, 'col')
 
                 col_spec.attrib['type'] = type_name
                 col_spec.attrib['startx'] = start
+                if have_perimeter:
+                    col_spec.attrib['starty'] = "1"
                 col_spec.attrib['repeatx'] = repeat
                 col_spec.attrib['priority'] = str(priority)
 
@@ -300,6 +313,8 @@ def upgrade_device_layout(arch):
                 col_empty_spec = ET.SubElement(device_auto, 'col')
                 col_empty_spec.attrib['type'] = "<EMPTY>"
                 col_empty_spec.attrib['startx'] = start
+                if have_perimeter:
+                    col_empty_spec.attrib['starty'] = "1"
                 col_empty_spec.attrib['repeatx'] = repeat
                 col_empty_spec.attrib['priority'] = str(priority - 1) #-1 so it won't override the 'real' col
 
@@ -315,12 +330,19 @@ def upgrade_device_layout(arch):
                 if float(int_div_factor) != div_factor:
                     print "Warning: Relative position factor conversion is not exact. Original pos factor: {}. New startx expression: {}".format(pos, startx)
 
-                comment = ET.Comment("Column of '{}' with '<EMPTY>' blocks wherever a '{}' does not fit".format(type_name, type_name))
+                comment_str = "Column of '{}' with '<EMPTY>' blocks wherever a '{}' does not fit.".format(type_name, type_name)
+
+                if have_perimeter:
+                    comment_str += " Vertical offset by 1 for perimeter."
+
+                comment = ET.Comment(comment_str)
                 device_auto.append(comment)
 
                 col_spec = ET.SubElement(device_auto, 'col')
                 col_spec.attrib['type'] = type_name
                 col_spec.attrib['startx'] = startx
+                if have_perimeter:
+                    col_spec.attrib['starty'] = "1"
                 col_spec.attrib['priority'] = str(priority)
 
                 #Classic VPR fills blank spaces (e.g. where a height > 1 block won't fit) with "<EMPTY>" 
@@ -329,6 +351,8 @@ def upgrade_device_layout(arch):
                 col_empty_spec = ET.SubElement(device_auto, 'col')
                 col_empty_spec.attrib['type'] = "<EMPTY>"
                 col_empty_spec.attrib['startx'] = startx
+                if have_perimeter:
+                    col_empty_spec.attrib['starty'] = "1"
                 col_empty_spec.attrib['priority'] = str(priority - 1) #-1 so it won't override the 'real' col
 
             elif loc_type == "fill":
