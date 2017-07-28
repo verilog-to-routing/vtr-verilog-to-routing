@@ -249,8 +249,8 @@ void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instance
 
 
 #if 0
-    for (int x = 0; x <= device_ctx.nx + 1; ++x) {
-        for (int y = 0; y <= device_ctx.ny + 1; ++y) {
+    for (int x = 0; x < device_ctx.grid.width(); ++x) {
+        for (int y = 0; y < device_ctx.grid.height(); ++y) {
             auto type = device_ctx.grid[x][y].type;
             if (type->width != 1 || type->height != 1) {
                 vtr::printf_info("[%d][%d] %s (offset %d,%d)\n", x, y, device_ctx.grid[x][y].type->name, device_ctx.grid[x][y].width_offset, device_ctx.grid[x][y].height_offset);

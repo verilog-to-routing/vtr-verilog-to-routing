@@ -1662,8 +1662,8 @@ static bool find_to(t_type_ptr type, float rlim,
 			}
 		}
 
-		VTR_ASSERT(*px_to >= 0 && *px_to <= device_ctx.nx + 1);
-		VTR_ASSERT(*py_to >= 0 && *py_to <= device_ctx.ny + 1);
+		VTR_ASSERT(*px_to >= 0 && *px_to < device_ctx.grid.width());
+		VTR_ASSERT(*py_to >= 0 && *py_to < device_ctx.grid.height());
 	} while (is_legal == false);
 
 	if (*px_to < 0 || *px_to > device_ctx.nx + 1 || *py_to < 0 || *py_to > device_ctx.ny + 1) {
@@ -2653,8 +2653,8 @@ static void alloc_legal_placements() {
 	
 	/* Initialize all occupancy to zero. */
 
-	for (i = 0; i <= device_ctx.nx + 1; i++) {
-		for (j = 0; j <= device_ctx.ny + 1; j++) {
+	for (i = 0; i < device_ctx.grid.width(); i++) {
+		for (j = 0; j < device_ctx.grid.height(); j++) {
 			place_ctx.grid_blocks[i][j].usage = 0;
 			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
 				if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
@@ -2681,8 +2681,8 @@ static void load_legal_placements() {
 
 	index = (int *) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
-	for (i = 0; i <= device_ctx.nx + 1; i++) {
-		for (j = 0; j <= device_ctx.ny + 1; j++) {
+	for (i = 0; i < device_ctx.grid.width(); i++) {
+		for (j = 0; j < device_ctx.grid.height(); j++) {
 			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
 				if (place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK) {
 					continue;
@@ -2973,8 +2973,8 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	/* We'll use the grid to record where everything goes. Initialize to the grid has no 
 	 * blocks placed anywhere.
 	 */
-	for (i = 0; i <= device_ctx.nx + 1; i++) {
-		for (j = 0; j <= device_ctx.ny + 1; j++) {
+	for (i = 0; i < device_ctx.grid.width(); i++) {
+		for (j = 0; j < device_ctx.grid.height(); j++) {
 			place_ctx.grid_blocks[i][j].usage = 0;
 			itype = device_ctx.grid[i][j].type->index;
 			for (k = 0; k < device_ctx.block_types[itype].capacity; k++) {

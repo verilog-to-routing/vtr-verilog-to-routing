@@ -150,8 +150,8 @@ static void reset_placement(void) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    for (i = 0; i <= device_ctx.nx + 1; i++) {
-        for (j = 0; j <= device_ctx.ny + 1; j++) {
+    for (i = 0; i < device_ctx.grid.width(); i++) {
+        for (j = 0; j < device_ctx.grid.height(); j++) {
             for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
                 if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
                     place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK;
