@@ -283,12 +283,25 @@ def upgrade_device_layout(arch):
                 start = loc.attrib['start']
                 repeat = loc.attrib['repeat']
 
+                comment = ET.Comment("Column of '{}' with '<EMPTY>' blocks wherever a '{}' does not fit".format(type_name, type_name))
+                device_auto.append(comment)
+
                 col_spec = ET.SubElement(device_auto, 'col')
 
                 col_spec.attrib['type'] = type_name
                 col_spec.attrib['startx'] = start
                 col_spec.attrib['repeatx'] = repeat
                 col_spec.attrib['priority'] = str(priority)
+
+                #Classic VPR fills blank spaces (e.g. where a height > 1 block won't fit) with "<EMPTY>" 
+                #instead of with the underlying type. To replicate that we create a col spec with the same 
+                #location information, but of type '<EMPTY>' and with slightly lower priority than the real type.
+
+                col_empty_spec = ET.SubElement(device_auto, 'col')
+                col_empty_spec.attrib['type'] = "<EMPTY>"
+                col_empty_spec.attrib['startx'] = start
+                col_empty_spec.attrib['repeatx'] = repeat
+                col_empty_spec.attrib['priority'] = str(priority - 1) #-1 so it won't override the 'real' col
 
             elif loc_type == "rel":
                 pos = loc.attrib['pos']
@@ -302,13 +315,26 @@ def upgrade_device_layout(arch):
                 if float(int_div_factor) != div_factor:
                     print "Warning: Relative position factor conversion is not exact. Original pos factor: {}. New startx expression: {}".format(pos, startx)
 
+                comment = ET.Comment("Column of '{}' with '<EMPTY>' blocks wherever a '{}' does not fit".format(type_name, type_name))
+                device_auto.append(comment)
+
                 col_spec = ET.SubElement(device_auto, 'col')
                 col_spec.attrib['type'] = type_name
                 col_spec.attrib['startx'] = startx
                 col_spec.attrib['priority'] = str(priority)
 
+                #Classic VPR fills blank spaces (e.g. where a height > 1 block won't fit) with "<EMPTY>" 
+                #instead of with the underlying type. To replicate that we create a col spec with the same 
+                #location information, but of type '<EMPTY>' and with slightly lower priority than the real type.
+                col_empty_spec = ET.SubElement(device_auto, 'col')
+                col_empty_spec.attrib['type'] = "<EMPTY>"
+                col_empty_spec.attrib['startx'] = startx
+                col_empty_spec.attrib['priority'] = str(priority - 1) #-1 so it won't override the 'real' col
 
             elif loc_type == "fill":
+
+                comment = ET.Comment("Fill with '{}'".format(type_name))
+                device_auto.append(comment)
 
                 fill_spec = ET.SubElement(device_auto, 'fill')
                 fill_spec.attrib['type'] = type_name
@@ -319,6 +345,8 @@ def upgrade_device_layout(arch):
                 # As a result we specify a full perimeter (including corners), and then apply an EMPTY type override
                 # at the corners
 
+                comment = ET.Comment("Perimeter of '{}' blocks with '<EMPTY>' blocks at corners".format(type_name))
+                device_auto.append(comment)
                 perim_spec = ET.SubElement(device_auto, 'perimeter')
                 perim_spec.attrib['type'] = type_name
                 perim_spec.attrib['priority'] = str(priority)
