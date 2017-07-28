@@ -173,25 +173,6 @@ void load_net_delay_from_routing(float **net_delay, unsigned int n_nets) {
 	free(rr_node_to_rc_node);
 }
 
-void load_constant_net_delay(float **net_delay, float delay_value, unsigned int n_nets) {
-
-	/* Loads the net_delay array with delay_value for every source - sink        *
-	 * connection that is not on a global resource, and with 0. for every source *
-	 * - sink connection on a global net.  (This can be used to allow timing     *
-	 * analysis before routing is done with a constant net delay model).         */
-
-	unsigned int inet;
-	auto& cluster_ctx = g_vpr_ctx.clustering();
-
-	for (inet = 0; inet < n_nets; inet++) {
-		if (cluster_ctx.clb_nlist.net_global((NetId)inet)) {
-			load_one_constant_net_delay(net_delay, inet, 0.);
-		} else {
-			load_one_constant_net_delay(net_delay, inet, delay_value);
-		}
-	}
-}
-
 static t_rc_node *
 alloc_and_load_rc_tree(int inet, t_rc_node ** rc_node_free_list_ptr,
 		t_linked_rc_edge ** rc_edge_free_list_ptr,

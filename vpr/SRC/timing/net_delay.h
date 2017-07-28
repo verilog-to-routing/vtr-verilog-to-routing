@@ -10,5 +10,4 @@ void free_net_delay(float **net_delay,
 
 void load_net_delay_from_routing(float **net_delay, unsigned int n_nets);
 
-void load_constant_net_delay(float **net_delay, float delay_value, unsigned int n_nets);
 #endif
