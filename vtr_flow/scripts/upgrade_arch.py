@@ -274,6 +274,14 @@ def upgrade_device_layout(arch):
         for loc in locs:
             if loc.attrib['type'] == "perimeter":
                 have_perimeter = True
+
+    INDENT = "    "
+
+    if changed:
+        layout.text = "\n" + INDENT
+        device_auto.text = "\n" + 2*INDENT
+        device_auto.tail = "\n"
+
     
     for type_name, locs in type_to_grid_specs.iteritems():
         for loc in locs:
@@ -289,13 +297,14 @@ def upgrade_device_layout(arch):
                 start = loc.attrib['start']
                 repeat = loc.attrib['repeat']
 
-                comment_str = "Column of '{}' with '<EMPTY>' blocks wherever a '{}' does not fit.".format(type_name, type_name)
+                comment_str = "Column of '{}' with 'EMPTY' blocks wherever a '{}' does not fit.".format(type_name, type_name)
 
                 if have_perimeter:
                     comment_str += " Vertical offset by 1 for perimeter."
 
                 comment = ET.Comment(comment_str)
                 device_auto.append(comment)
+                comment.tail = "\n" + 2*INDENT
 
                 col_spec = ET.SubElement(device_auto, 'col')
 
@@ -305,18 +314,20 @@ def upgrade_device_layout(arch):
                     col_spec.attrib['starty'] = "1"
                 col_spec.attrib['repeatx'] = repeat
                 col_spec.attrib['priority'] = str(priority)
+                col_spec.tail = "\n" + 2*INDENT
 
-                #Classic VPR fills blank spaces (e.g. where a height > 1 block won't fit) with "<EMPTY>" 
+                #Classic VPR fills blank spaces (e.g. where a height > 1 block won't fit) with "EMPTY" 
                 #instead of with the underlying type. To replicate that we create a col spec with the same 
-                #location information, but of type '<EMPTY>' and with slightly lower priority than the real type.
+                #location information, but of type 'EMPTY' and with slightly lower priority than the real type.
 
                 col_empty_spec = ET.SubElement(device_auto, 'col')
-                col_empty_spec.attrib['type'] = "<EMPTY>"
+                col_empty_spec.attrib['type'] = "EMPTY"
                 col_empty_spec.attrib['startx'] = start
+                col_empty_spec.attrib['repeatx'] = repeat
                 if have_perimeter:
                     col_empty_spec.attrib['starty'] = "1"
-                col_empty_spec.attrib['repeatx'] = repeat
                 col_empty_spec.attrib['priority'] = str(priority - 1) #-1 so it won't override the 'real' col
+                col_empty_spec.tail = "\n" + 2*INDENT
 
             elif loc_type == "rel":
                 pos = loc.attrib['pos']
@@ -330,13 +341,14 @@ def upgrade_device_layout(arch):
                 if float(int_div_factor) != div_factor:
                     print "Warning: Relative position factor conversion is not exact. Original pos factor: {}. New startx expression: {}".format(pos, startx)
 
-                comment_str = "Column of '{}' with '<EMPTY>' blocks wherever a '{}' does not fit.".format(type_name, type_name)
+                comment_str = "Column of '{}' with 'EMPTY' blocks wherever a '{}' does not fit.".format(type_name, type_name)
 
                 if have_perimeter:
                     comment_str += " Vertical offset by 1 for perimeter."
 
                 comment = ET.Comment(comment_str)
                 device_auto.append(comment)
+                comment.tail = "\n" + 2*INDENT
 
                 col_spec = ET.SubElement(device_auto, 'col')
                 col_spec.attrib['type'] = type_name
@@ -344,40 +356,48 @@ def upgrade_device_layout(arch):
                 if have_perimeter:
                     col_spec.attrib['starty'] = "1"
                 col_spec.attrib['priority'] = str(priority)
+                col_spec.tail = "\n" + 2*INDENT
 
-                #Classic VPR fills blank spaces (e.g. where a height > 1 block won't fit) with "<EMPTY>" 
+                #Classic VPR fills blank spaces (e.g. where a height > 1 block won't fit) with "EMPTY" 
                 #instead of with the underlying type. To replicate that we create a col spec with the same 
-                #location information, but of type '<EMPTY>' and with slightly lower priority than the real type.
+                #location information, but of type 'EMPTY' and with slightly lower priority than the real type.
                 col_empty_spec = ET.SubElement(device_auto, 'col')
-                col_empty_spec.attrib['type'] = "<EMPTY>"
+                col_empty_spec.attrib['type'] = "EMPTY"
                 col_empty_spec.attrib['startx'] = startx
                 if have_perimeter:
                     col_empty_spec.attrib['starty'] = "1"
                 col_empty_spec.attrib['priority'] = str(priority - 1) #-1 so it won't override the 'real' col
+                col_empty_spec.tail = "\n" + 2*INDENT
 
             elif loc_type == "fill":
 
                 comment = ET.Comment("Fill with '{}'".format(type_name))
                 device_auto.append(comment)
+                comment.tail = "\n" + 2*INDENT
 
                 fill_spec = ET.SubElement(device_auto, 'fill')
                 fill_spec.attrib['type'] = type_name
                 fill_spec.attrib['priority'] = str(priority)
+                fill_spec.tail = "\n" + 2*INDENT
 
             elif loc_type == "perimeter":
                 #The classic VPR perimeter specification did not include the corners (while the new version does)
                 # As a result we specify a full perimeter (including corners), and then apply an EMPTY type override
                 # at the corners
 
-                comment = ET.Comment("Perimeter of '{}' blocks with '<EMPTY>' blocks at corners".format(type_name))
+                comment = ET.Comment("Perimeter of '{}' blocks with 'EMPTY' blocks at corners".format(type_name))
                 device_auto.append(comment)
+                comment.tail = "\n" + 2*INDENT
+
                 perim_spec = ET.SubElement(device_auto, 'perimeter')
                 perim_spec.attrib['type'] = type_name
                 perim_spec.attrib['priority'] = str(priority)
+                perim_spec.tail = "\n" + 2*INDENT
 
                 corners_spec = ET.SubElement(device_auto, 'corners')
-                corners_spec.attrib['type'] = "<EMPTY>"
+                corners_spec.attrib['type'] = "EMPTY"
                 corners_spec.attrib['priority'] = str(priority + 1) #+1 to ensure overrides
+                corners_spec.tail = "\n" + 2*INDENT
 
             else:
                 assert False, "Unrecognzied <loc> type tag {}".format(loc_type)
