@@ -82,7 +82,7 @@ static t_type_ptr IO_TYPE = NULL;
 /* This identifies the t_type_ptr of an Empty block */
 static t_type_ptr EMPTY_TYPE = NULL;
 
-#ifndef LEGACY_GRID_LOCATIONS
+#ifdef LEGACY_GRID_LOCATIONS
 /* This identifies the t_type_ptr of the default logic block */
 static t_type_ptr FILL_TYPE = NULL;
 #endif
@@ -643,25 +643,25 @@ static void SetupGridLocations(t_arch& arch, pugi::xml_node Locations, t_type_de
             arch.grid_loc_defs.push_back(bottom_edge);
 
             //The corners
-            t_grid_loc_def bottom_left("<EMPTY>", priority+1);
+            t_grid_loc_def bottom_left("EMPTY", priority+1);
             bottom_left.x.start_expr = "0";
             bottom_left.x.end_expr = "0";
             bottom_left.y.start_expr = "0";
             bottom_left.y.end_expr = "0";
 
-            t_grid_loc_def top_left("<EMPTY>", priority+1);
+            t_grid_loc_def top_left("EMPTY", priority+1);
             top_left.x.start_expr = "0";
             top_left.x.end_expr = "0";
             top_left.y.start_expr = "H-1";
             top_left.y.end_expr = "H-1";
 
-            t_grid_loc_def bottom_right("<EMPTY>", priority+1);
+            t_grid_loc_def bottom_right("EMPTY", priority+1);
             bottom_right.x.start_expr = "W-1";
             bottom_right.x.end_expr = "W-1";
             bottom_right.y.start_expr = "0";
             bottom_right.y.end_expr = "0";
 
-            t_grid_loc_def top_right("<EMPTY>", priority+1);
+            t_grid_loc_def top_right("EMPTY", priority+1);
             top_right.x.start_expr = "W-1";
             top_right.x.end_expr = "W-1";
             top_right.y.start_expr = "H-1";

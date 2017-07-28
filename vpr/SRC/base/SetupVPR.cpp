@@ -110,7 +110,7 @@ void SetupVPR(t_options *Options,
 	device_ctx.FILL_TYPE = NULL;
 	device_ctx.IO_TYPE = NULL;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
-		if (strcmp(device_ctx.block_types[i].name, "<EMPTY>") == 0) {
+		if (strcmp(device_ctx.block_types[i].name, EMPTY_BLOCK_NAME) == 0) {
 			device_ctx.EMPTY_TYPE = &device_ctx.block_types[i];
 		} else if (strcmp(device_ctx.block_types[i].name, "io") == 0) {
 			device_ctx.IO_TYPE = &device_ctx.block_types[i];

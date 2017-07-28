@@ -406,7 +406,7 @@ static void build_rr_graph(
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
 
-        for (int i = 1; i < L_num_types; ++i) { /* Skip "<EMPTY>" */
+        for (int i = 1; i < L_num_types; ++i) { /* Skip "EMPTY" */
             for (int j = 0; j < device_ctx.block_types[i].num_pins; ++j) {
                 for (int k = 0; k < num_seg_types; k++) {
 #ifdef VERBOSE
@@ -904,7 +904,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
 
     VTR_ASSERT((max_chan_width % fac) == 0);
 
-    for (int itype = 1; itype < L_num_types; ++itype) { //Skip <EMPTY>
+    for (int itype = 1; itype < L_num_types; ++itype) { //Skip EMPTY
         for (const t_fc_specification fc_spec : types[itype].fc_specs) {
 
             if (fc_type != fc_spec.fc_type) continue;

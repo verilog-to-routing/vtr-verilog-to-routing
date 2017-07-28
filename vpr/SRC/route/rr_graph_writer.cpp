@@ -168,11 +168,7 @@ void write_rr_block_types(fstream &fp) {
 
         /*since the < symbol is not allowed in xml format, converted to only print "EMPTY"*/
         if (btype.name) {
-            if (strcmp(btype.name, "<EMPTY>") == 0) {
-                fp << "\" name=\"EMPTY";
-            } else {
-                fp << "\" name=\"" << btype.name;
-            }
+            fp << "\" name=\"" << btype.name;
         }
 
         fp << "\" width=\"" << btype.width << "\" height=\"" << btype.height << "\">" << endl;

@@ -67,7 +67,7 @@ void SetupEmptyType(t_type_descriptor* cb_type_descriptors,
                     t_type_ptr EMPTY_TYPE) {
 	t_type_descriptor * type;
 	type = &cb_type_descriptors[EMPTY_TYPE->index];
-	type->name = vtr::strdup("<EMPTY>");
+	type->name = vtr::strdup("EMPTY");
 	type->num_pins = 0;
 	type->width = 1;
 	type->height = 1;

@@ -78,6 +78,8 @@ enum class ScreenUpdatePriority {
 #define EMPTY_BLOCK -1
 #define INVALID_BLOCK -2
 
+constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
+
 /*******************************************************************************
  * Packing specific data types and constants
  * Packing takes the circuit described in the technology mapped user netlist
