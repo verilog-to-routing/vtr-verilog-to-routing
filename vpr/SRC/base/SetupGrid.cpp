@@ -96,6 +96,8 @@ void alloc_and_load_grid(std::vector<t_grid_loc_def> grid_loc_defs, int *num_ins
                     grid_loc_def.block_type.c_str());
         }
 
+        //vtr::printf("Applying grid_loc_def for '%s' priority %d\n", type->name, grid_loc_def.priority);
+
         //Load the x specification
         auto& xspec = grid_loc_def.x;
 
@@ -112,7 +114,7 @@ void alloc_and_load_grid(std::vector<t_grid_loc_def> grid_loc_defs, int *num_ins
         }
 
         size_t repeatx = W; //Default to no repeats
-        if (!xspec.incr_expr.empty()) {
+        if (!xspec.repeat_expr.empty()) {
             //Use expression if specified
             repeatx = parse_formula(xspec.repeat_expr, vars);
         }
@@ -133,17 +135,13 @@ void alloc_and_load_grid(std::vector<t_grid_loc_def> grid_loc_defs, int *num_ins
         }
 
         size_t repeaty = H; //Default to no repeats
-        if (!yspec.incr_expr.empty()) {
+        if (!yspec.repeat_expr.empty()) {
             //Use expression if specified
             repeaty = parse_formula(yspec.repeat_expr, vars);
         }
 
-
         VTR_ASSERT(repeatx > 0);
         VTR_ASSERT(repeaty > 0);
-
-
-        //vtr::printf("Applying grid_loc_def for '%s' priority %d\n", type->name, grid_loc_def.priority);
 
         //Warn if start and end fall outside the device dimensions
         if (startx > W - 1) {
@@ -214,10 +212,11 @@ void alloc_and_load_grid(std::vector<t_grid_loc_def> grid_loc_defs, int *num_ins
         }
 
         size_t x_end = 0;
-        size_t y_end = 0;
         for (size_t kx = 0; x_end < W; ++kx) {
             size_t x_start = startx + kx * repeatx;
             x_end = endx + kx * repeatx;
+
+            size_t y_end = 0;
             for (size_t ky = 0; y_end < H; ++ky) {
                 size_t y_start = starty + ky * repeaty;
                 y_end = endy + ky * repeaty;
