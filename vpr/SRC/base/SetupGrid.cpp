@@ -299,8 +299,6 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
             max_priority_type_loc = *iter;
         }
     }
-    
-    //TODO: rip up any dimension > 1 blocks that get covered
 
     if (priority < max_priority_type_loc.priority) {
         //Lower priority, do not override
@@ -323,13 +321,9 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
 
 
 
-    //vtr::printf("Creating block %s at (%d,%d)\n", type->name, x_root, y_root);
-
-
-    std::set<TypeLocation> root_blocks_to_rip_up;
-
     //Mark all the grid tiles 'covered' by this block with the appropriate type
     //and width/height offsets
+    std::set<TypeLocation> root_blocks_to_rip_up;
     auto& device_ctx = g_vpr_ctx.device();
     for (size_t x = x_root; x < x_root + type->width; ++x) {
         VTR_ASSERT(x < grid.end_index(0));
@@ -382,6 +376,9 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
                     && grid[x][y].width_offset == x_offset
                     && grid[x][y].height_offset == y_offset) {
                     //This is a left-over invalidated block, mark as empty
+                    // Note: that we explicitly check the type and offsets, since the original block
+                    //       may have been completely overwritten, and we don't want to change anything
+                    //       in that case
                     VTR_ASSERT(device_ctx.EMPTY_TYPE->width == 1);
                     VTR_ASSERT(device_ctx.EMPTY_TYPE->height == 1);
 
