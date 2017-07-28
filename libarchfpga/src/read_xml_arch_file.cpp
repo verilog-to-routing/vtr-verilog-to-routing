@@ -678,7 +678,7 @@ static void SetupGridLocations(t_arch& arch, pugi::xml_node Locations, t_type_de
             col.x.start_expr = start_attr.value();
             col.x.end_expr = start_attr.value();
 
-            auto repeat_attr = get_attribute(child, "repeat", loc_data);
+            auto repeat_attr = get_attribute(child, "repeat", loc_data, ReqOpt::OPTIONAL);
             if (repeat_attr) {
                 col.x.repeat_expr = repeat_attr.value();
             }
