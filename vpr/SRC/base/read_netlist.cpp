@@ -957,11 +957,10 @@ static void load_external_nets_and_cb(const int L_num_blocks,
      * and blocks point back to net pins */
 	for (i = 0; i < L_num_blocks; i++) {
 		ipin = 0;
-
 		for (j = 0; j < clb_nlist->block_type((BlockId)i)->num_pins; j++) {
 			//Iterate through each pin of the block, and see if there is a net allocated/used for it
 			net_id = block_list[i].nets[j];
-			
+
 			if (net_id != OPEN) {
 				//Verify old and new CLB netlists have the same # of pins per net
 				VTR_ASSERT(old_nlist->net[net_id].pins.size() == clb_nlist->net_pins((NetId)net_id).size());	//TODO: Remove when t_block/t_netlist are removed
@@ -979,6 +978,8 @@ static void load_external_nets_and_cb(const int L_num_blocks,
                     //Mark the mapping from net to block
 					old_nlist->net[net_id].pins[count[net_id]].block = i;
 					old_nlist->net[net_id].pins[count[net_id]].block_pin = j;
+
+					VTR_ASSERT((BlockId)i == clb_nlist->pin_block(*(clb_nlist->net_pins((NetId)net_id).begin() + count[net_id]))); //TODO: Remove after t_block/t_netlist
 
                     //Pin to net mapping
                     old_nlist->net[net_id].pins[count[net_id]].net = net_id;
