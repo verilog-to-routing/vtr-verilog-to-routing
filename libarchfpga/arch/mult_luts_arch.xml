@@ -565,7 +565,8 @@
                     <input name="a" num_pins="9"/>
                     <input name="b" num_pins="9"/>
                     <output name="out" num_pins="18"/>
-                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="{a b}" out_port="out"/>
+                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="a" out_port="out"/>
+                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="b" out_port="out"/>
                   </pb_type>
 
                   <interconnect>
@@ -609,7 +610,8 @@
                     <input name="a" num_pins="18"/>
                     <input name="b" num_pins="18"/>
                     <output name="out" num_pins="36"/>
-                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="{a b}" out_port="out"/>
+                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="a" out_port="out"/>
+                    <delay_constant max="2.03e-13" min="1.89e-13" in_port="b" out_port="out"/>
                   </pb_type>
 
                   <interconnect>
@@ -669,7 +671,8 @@
                 <input name="a" num_pins="36"/>
                 <input name="b" num_pins="36"/>
                 <output name="out" num_pins="72"/>
-                <delay_constant max="2.03e-13" min="1.89e-13" in_port="{a b}" out_port="out"/>
+                <delay_constant max="2.03e-13" min="1.89e-13" in_port="a" out_port="out"/>
+                <delay_constant max="2.03e-13" min="1.89e-13" in_port="b" out_port="out"/>
               </pb_type>
 
               <interconnect>
