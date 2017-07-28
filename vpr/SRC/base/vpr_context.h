@@ -12,6 +12,8 @@
 #include "tatum/TimingConstraints.hpp"
 #include "power.h"
 #include "power_components.h"
+#include "device_grid.h"
+
 
 //A Context is collection of state relating to a particular part of VPR
 //
@@ -101,7 +103,7 @@ struct DeviceContext : public Context {
      *********************************************************************/
     /* x and y dimensions of the FPGA itself, the core of the FPGA is from [1..nx][1..ny], the I/Os form a perimeter surrounding the core */
     int nx, ny;
-    vtr::Matrix<t_grid_tile> grid; /* FPGA complex blocks grid [0..nx+1][0..ny+1] */
+    DeviceGrid grid; /* FPGA complex block grid [0 .. grid.width()-1][0 .. grid.height()-1] */
 
     /* Special pointers to identify special blocks on an FPGA: I/Os, unused, and default */
     t_type_ptr IO_TYPE;

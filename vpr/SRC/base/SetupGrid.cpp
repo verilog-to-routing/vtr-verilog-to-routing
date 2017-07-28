@@ -2,7 +2,7 @@
  Author: Jason Luu
  Date: October 8, 2008
 
- Initializes and allocates the physical logic block device_ctx.grid for VPR.
+ Initializes and allocates the physical logic block grid for VPR.
 
  */
 
@@ -54,7 +54,7 @@ void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instance
     size_t W = device_ctx.nx + 2;
     size_t H = device_ctx.ny + 2;
 
-	device_ctx.grid = vtr::Matrix<t_grid_tile>({W, H});
+	auto grid = vtr::Matrix<t_grid_tile>({W, H});
 
     //Ensure ther is space in the reverse grid to block look-up
     place_ctx.grid_blocks.resize({W, H});
@@ -69,7 +69,7 @@ void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instance
     for (size_t x = 0; x < W; ++x) {
         for (size_t y = 0; y < H; ++y) {
             set_grid_block_type(std::numeric_limits<int>::lowest() + 1, //+1 so it overrides without warning
-                    device_ctx.EMPTY_TYPE, x, y, device_ctx.grid, place_ctx.grid_blocks, grid_priorities);
+                    device_ctx.EMPTY_TYPE, x, y, grid, place_ctx.grid_blocks, grid_priorities);
         }
     }
 
@@ -229,18 +229,24 @@ void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instance
 
                 for(size_t x = x_start; x + (type->width - 1) <= x_max; x += incrx) {
                     for(size_t y = y_start; y + (type->height - 1) <= y_max; y += incry) {
-                        set_grid_block_type(grid_loc_def.priority, type, x, y, device_ctx.grid, place_ctx.grid_blocks, grid_priorities);
+                        set_grid_block_type(grid_loc_def.priority, type, x, y, grid, place_ctx.grid_blocks, grid_priorities);
                     }
                 }
             }
         }
     }
 
+    device_ctx.grid = DeviceGrid(grid);
+
+    VTR_ASSERT(device_ctx.grid.nx() == device_ctx.nx);
+    VTR_ASSERT(device_ctx.grid.ny() == device_ctx.ny);
+
 	// And, refresh (ie. reset and update) the "num_instances_type" array
 	// (while also forcing any remaining INVALID_BLOCK blocks to device_ctx.EMPTY_TYPE)
-	alloc_and_load_num_instances_type(device_ctx.grid, device_ctx.nx, device_ctx.ny, num_instances_type, device_ctx.num_block_types);
+	alloc_and_load_num_instances_type(grid, device_ctx.nx, device_ctx.ny, num_instances_type, device_ctx.num_block_types);
 
 	CheckGrid();
+
 
 #if 0
     for (int x = 0; x <= device_ctx.nx + 1; ++x) {
