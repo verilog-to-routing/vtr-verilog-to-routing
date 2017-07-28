@@ -48,16 +48,14 @@ void alloc_and_load_grid(std::vector<t_grid_loc_def> grid_loc_defs, int *num_ins
 
     //Size and allocate the device
 	VTR_ASSERT(device_ctx.nx >= 1 && device_ctx.ny >= 1);
-    size_t nx = device_ctx.nx;
-    size_t ny = device_ctx.ny;
+    size_t W = device_ctx.nx + 2;
+    size_t H = device_ctx.ny + 2;
 
-	device_ctx.grid = vtr::Matrix<t_grid_tile>({nx + 2, ny + 2});
+	device_ctx.grid = vtr::Matrix<t_grid_tile>({W, H});
 
     //Ensure ther is space in the reverse grid to block look-up
-    place_ctx.grid_blocks.resize({device_ctx.nx + 2u, device_ctx.ny + 2u});
+    place_ctx.grid_blocks.resize({W, H});
 
-    size_t W = nx + 2;
-    size_t H = ny + 2;
 
     //Track the current priority for each grid location
     // Note that we initialize it to the lowest (i.e. most negative) possible value, so
@@ -67,7 +65,8 @@ void alloc_and_load_grid(std::vector<t_grid_loc_def> grid_loc_defs, int *num_ins
     //Initialize the device to all empty blocks
     for (size_t x = 0; x < W; ++x) {
         for (size_t y = 0; y < H; ++y) {
-            set_grid_block_type(std::numeric_limits<int>::lowest() + 1, device_ctx.EMPTY_TYPE, x, y, device_ctx.grid, place_ctx.grid_blocks, grid_priorities);
+            set_grid_block_type(std::numeric_limits<int>::lowest() + 1, //+1 so it overrides without warning
+                    device_ctx.EMPTY_TYPE, x, y, device_ctx.grid, place_ctx.grid_blocks, grid_priorities);
         }
     }
 
