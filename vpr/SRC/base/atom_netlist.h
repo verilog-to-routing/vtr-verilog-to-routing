@@ -469,16 +469,6 @@ class AtomNetlist : public BaseNetlist {
         //Sanity check for internal consistency (throws an exception on failure)
         bool verify() const;
 
-        //Returns true if the netlist has invalid entries due to modifications (e.g. from remove_*() calls)
-        bool is_dirty() const;
-
-        //Returns true if the netlist has *no* invalid entries due to modifications (e.g. from remove_*() calls)
-        //Note that this is a convenience method which is the logical inverse of is_dirty()
-        bool is_compressed() const;
-
-        //Item counts and container info (for debugging)
-        void print_stats() const;
-
     public: //Public Mutators
         /*
          * Note: all create_*() functions will silently return the appropriate ID if it has already been created
@@ -592,9 +582,6 @@ class AtomNetlist : public BaseNetlist {
         bool verify_block_invariants() const;
 
     private: //Private data
-        //Netlist data
-        bool                        dirty_;         //Indicates the netlist has invalid entries from remove_*() functions
-
         //Block data
 		vtr::vector_map<AtomBlockId, const t_model*>		block_models_;             //Architecture model of each block
 		vtr::vector_map<AtomBlockId,TruthTable>             block_truth_tables_;       //Truth tables of each block

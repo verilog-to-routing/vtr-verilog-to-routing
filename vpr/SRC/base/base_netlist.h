@@ -12,11 +12,13 @@
 #include <vector>
 #include <unordered_map>
 #include "vtr_range.h"
+#include "vtr_logic.h"
 #include "vtr_vector_map.h"
 
 #include "logic_types.h"
 
 #include "base_netlist_fwd.h"
+#include "base_netlist_utils.h"
 
 //Forward declaration for private methods
 template<typename I>
@@ -110,6 +112,19 @@ class BaseNetlist {
 		//Retrieve the unique identifier for this netlist
 		//This is typically a secure digest of the input file.
 		const std::string&  netlist_id() const;
+
+		/*
+		* Utility
+		*/
+		//Sanity check for internal consistency (throws an exception on failure)
+		bool verify() const;
+
+		//Returns true if the netlist has invalid entries due to modifications (e.g. from remove_*() calls)
+		bool is_dirty() const;
+
+		//Returns true if the netlist has *no* invalid entries due to modifications (e.g. from remove_*() calls)
+		//Note that this is a convenience method which is the logical inverse of is_dirty()
+		bool is_compressed() const;
 
 		//Item counts and container info (for debugging)
 		void print_stats() const;
@@ -359,7 +374,6 @@ class BaseNetlist {
 		bool valid_pin_id(PinId id) const;
 		bool valid_net_id(NetId id) const;
 		bool valid_string_id(StringId id) const;
-
 
 	protected: //Protected Data
 		std::string netlist_name_;	//Name of the top-level netlist

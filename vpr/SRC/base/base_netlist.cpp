@@ -2,65 +2,10 @@
 #include <numeric>
 
 #include "base_netlist.h"
+
 #include "vtr_assert.h"
+#include "vtr_log.h"
 #include "vpr_error.h"
-
-
-/*
-*
-*
-* Utility templates
-*
-*
-*/
-
-//Count how many of the Id's referenced in 'range' have a valid
-//new mapping in 'id_map'
-template<typename R, typename Id>
-size_t count_valid_refs(R range, const vtr::vector_map<Id, Id>& id_map) {
-	size_t valid_count = 0;
-
-	for (Id old_id : range) {
-		if (id_map[old_id]) {
-			++valid_count;
-		}
-	}
-
-	return valid_count;
-}
-
-//Updates the Ids in 'values' based on id_map, even if the original or new mapping is not valid
-template<typename Container, typename ValId>
-Container update_all_refs(const Container& values, const vtr::vector_map<ValId, ValId>& id_map) {
-	Container updated;
-
-	for (ValId orig_val : values) {
-		//The original item was valid
-		ValId new_val = id_map[orig_val];
-		//The original item exists in the new mapping
-		updated.emplace_back(new_val);
-	}
-
-	return updated;
-}
-
-template<typename Container, typename ValId>
-Container update_valid_refs(const Container& values, const vtr::vector_map<ValId, ValId>& id_map) {
-	Container updated;
-
-	for (ValId orig_val : values) {
-		if (orig_val) {
-			//Original item valid
-
-			ValId new_val = id_map[orig_val];
-			if (new_val) {
-				//The original item exists in the new mapping
-				updated.emplace_back(new_val);
-			}
-		}
-	}
-	return updated;
-}
 
 /*
 *
@@ -69,7 +14,8 @@ Container update_valid_refs(const Container& values, const vtr::vector_map<ValId
 */
 BaseNetlist::BaseNetlist(std::string name, std::string id)
 	: netlist_name_(name)
-	, netlist_id_(id) {}
+	, netlist_id_(id) 
+	, dirty_(false) {}
 
 /*
 *
@@ -84,6 +30,21 @@ const std::string& BaseNetlist::netlist_id() const {
 	return netlist_id_;
 }
 
+bool BaseNetlist::is_dirty() const {
+	return dirty_;
+}
+
+bool BaseNetlist::is_compressed() const {
+	return !is_dirty();
+}
+
+void BaseNetlist::print_stats() const {
+	vtr::printf_info("Blocks  %zu capacity/size: %.2f\n", block_ids_.size(), float(block_ids_.capacity()) / block_ids_.size());
+	vtr::printf_info("Ports   %zu capacity/size: %.2f\n", port_ids_.size(), float(port_ids_.capacity()) / port_ids_.size());
+	vtr::printf_info("Pins    %zu capacity/size: %.2f\n", pin_ids_.size(), float(pin_ids_.capacity()) / pin_ids_.size());
+	vtr::printf_info("Nets    %zu capacity/size: %.2f\n", net_ids_.size(), float(net_ids_.capacity()) / net_ids_.size());
+	vtr::printf_info("Strings %zu capacity/size: %.2f\n", string_ids_.size(), float(string_ids_.capacity()) / string_ids_.size());
+}
 
 /*
 *
@@ -418,6 +379,20 @@ PinId BaseNetlist::find_pin(const PortId port_id, BitIndex port_bit) const {
 * Validation
 *
 */
+/*bool BaseNetlist::verify() const {
+	bool valid = true;
+
+	//Verify data structure consistency
+	valid &= verify_sizes();
+	valid &= verify_refs();
+	valid &= verify_lookups();
+
+	//Verify logical consistency
+	valid &= verify_block_invariants();
+
+	return valid;
+}*/
+
 //Checks that all cross-references are consistent.
 //Should take linear time.
 bool BaseNetlist::verify_refs() const {
