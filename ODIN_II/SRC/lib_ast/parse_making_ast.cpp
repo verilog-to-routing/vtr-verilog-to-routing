@@ -855,6 +855,19 @@ ast_node_t *newArrayRef(char *id, ast_node_t *expression, int line_number)
 
 	return new_node;
 }
+/*---------------------------------------------------------------------------------------------
+ * (function: newArrayRef) for 2D Array
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newArrayRef2D(char *id, ast_node_t *expression1, ast_node_t *expression2, int line_number)
+{
+	/* allocate or check if there's a node for this */
+	ast_node_t *symbol_node = newSymbolNode(id, line_number);
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(ARRAY_REF, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 3, symbol_node, expression1,expression2);
+	return new_node;
+}
 
 /*---------------------------------------------------------------------------------------------
  * (function: newRangeRef)
@@ -869,6 +882,23 @@ ast_node_t *newRangeRef(char *id, ast_node_t *expression1, ast_node_t *expressio
 	allocate_children_to_node(new_node, 3, symbol_node, expression1, expression2);
 	/* swap the direction so in form [MSB:LSB] */
 	get_range(new_node);
+
+	return new_node;
+}
+/*---------------------------------------------------------------------------------------------
+ * (function: newRangeRef) for 2D Array
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newRangeRef2D(char *id, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, int line_number)
+{
+	/* allocate or check if there's a node for this */
+	ast_node_t *symbol_node = newSymbolNode(id, line_number);
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(RANGE_REF, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 5, symbol_node, expression1, expression2, expression3, expression4);
+	/* swap the direction so in form [MSB:LSB] */
+	//get_range2D(new_node);
+	get_range2D(new_node);
 
 	return new_node;
 }
@@ -1479,6 +1509,20 @@ ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *exp
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, 6, symbol_node, expression1, expression2, expression3, expression4, value);
 
+	return new_node;
+}
+/*---------------------------------------------------------------------------------------------
+ * (function: newVarDeclare) for 2D Array
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newVarDeclare2D(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *expression5, ast_node_t *expression6,ast_node_t *value, int line_number)
+{
+	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
+
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
+
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, 8, symbol_node, expression1, expression2, expression3, expression4, expression5, expression6, value);
 	return new_node;
 }
 
