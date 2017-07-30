@@ -21,7 +21,7 @@ using namespace std;
 
 /**************** Subroutines local to this module **************************/
 
-static int check_connections_to_global_clb_pins(unsigned int inet);
+static int check_connections_to_global_clb_pins(NetId net_id);
 
 static int check_for_duplicated_names(void);
 
@@ -43,14 +43,14 @@ void check_netlist() {
 	net_hash_table = alloc_hash_table();
 
 	/* Check that nets fanout and have a driver. */
-	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
-		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name((NetId) i).c_str(), i);
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name(net_id).c_str(), (size_t) net_id);
 		if (h_net_ptr->count != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
-					"Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name((NetId) i));
+					"Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name(net_id));
 			error++;
 		}
-		error += check_connections_to_global_clb_pins(i);
+		error += check_connections_to_global_clb_pins(net_id);
 		if (error >= ERROR_THRESHOLD) {
 			vtr::printf_error(__FILE__, __LINE__, 
 					"Too many errors in netlist, exiting.\n");
@@ -101,47 +101,41 @@ void check_netlist() {
 	}
 }
 
-static int check_connections_to_global_clb_pins(unsigned int inet) {
-
-	/* Checks that a global net (inet) connects only to global CLB input pins  *
-	 * and that non-global nets never connects to a global CLB pin.  Either    *
-	 * global or non-global nets are allowed to connect to pads.               */
-
-	unsigned int ipin, num_pins, iblk, node_block_pin, error;
-
+/* Checks that a global net (net_id) connects only to global CLB input pins  *
+* and that non-global nets never connects to a global CLB pin.  Either       *
+* global or non-global nets are allowed to connect to pads.                  */
+static int check_connections_to_global_clb_pins(NetId net_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
-
-	num_pins = cluster_ctx.clb_nlist.net_pins((NetId)inet).size();
-	error = 0;
+	
+	unsigned int error = 0;
+	bool is_global_net = cluster_ctx.clb_nlist.net_global(net_id);
 
 	/* For now global signals can be driven by an I/O pad or any CLB output       *
 	 * although a CLB output generates a warning.  I could make a global CLB      *
 	 * output pin type to allow people to make architectures that didn't have     *
 	 * this warning.                                                              */
-	for (ipin = 0; ipin < num_pins; ipin++) {
-		iblk = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
+	for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+		BlockId blk_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+		int pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
 
-		node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
+		if (cluster_ctx.clb_nlist.block_type(blk_id)->is_global_pin[pin_index] != is_global_net
+			&& cluster_ctx.clb_nlist.block_type(blk_id) != device_ctx.IO_TYPE) {
 
-		bool is_global_net = cluster_ctx.clb_nlist.net_global((NetId)inet);
-		if (cluster_ctx.clb_nlist.block_type((BlockId)iblk)->is_global_pin[node_block_pin] != is_global_net 
-            && cluster_ctx.clb_nlist.block_type((BlockId)iblk) != device_ctx.IO_TYPE) {
-
-			/* Allow a CLB output pin to drive a global net (warning only). */
-
-			if (ipin == 0 && is_global_net) {
-				vtr::printf_warning(__FILE__, __LINE__, 
-						"in check_connections_to_global_clb_pins:\n");
-				vtr::printf_warning(__FILE__, __LINE__, 
-						"\tnet #%d (%s) is driven by CLB output pin (#%d) on block #%d (%s).\n", 
-						inet, cluster_ctx.clb_nlist.net_name((NetId)inet), node_block_pin, iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk));
-			} else { /* Otherwise -> Error */
-				vtr::printf_error(__FILE__, __LINE__, 
-						"in check_connections_to_global_clb_pins:\n");
-				vtr::printf_error(__FILE__, __LINE__, 
-						"\tpin %d on net #%d (%s) connects to CLB input pin (#%d) on block #%d (%s).\n", 
-						ipin, inet, cluster_ctx.clb_nlist.net_name((NetId)inet), node_block_pin, iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk));
+			//Allow a CLB output pin to drive a global net (warning only).
+			if (pin_id == cluster_ctx.clb_nlist.net_driver(net_id) && is_global_net) {
+				vtr::printf_warning(__FILE__, __LINE__,
+					"in check_connections_to_global_clb_pins:\n");
+				vtr::printf_warning(__FILE__, __LINE__,
+					"\tnet #%d (%s) is driven by CLB output pin (#%d) on block #%d (%s).\n",
+					net_id, cluster_ctx.clb_nlist.net_name(net_id), pin_index, blk_id, cluster_ctx.clb_nlist.block_name(blk_id));
+			}
+			else { //Otherwise -> Error
+				vtr::printf_error(__FILE__, __LINE__,
+					"in check_connections_to_global_clb_pins:\n");
+				vtr::printf_error(__FILE__, __LINE__,
+					"\tpin %d on net #%d (%s) connects to CLB input pin (#%d) on block #%d (%s).\n",
+					pin_id, net_id, cluster_ctx.clb_nlist.net_name(net_id), pin_index, blk_id, cluster_ctx.clb_nlist.block_name(blk_id));
 				error++;
 			}
 
@@ -151,9 +145,9 @@ static int check_connections_to_global_clb_pins(unsigned int inet) {
 				vtr::printf_info("CLB pin is global, but net is not.\n");
 			vtr::printf_info("\n");
 		}
-	} /* End for all pins */
+	}
 
-	return (error);
+	return error;
 }
 
 /* Checks that the connections into and out of the clb make sense.  */
@@ -204,24 +198,6 @@ static int check_clb_conn(BlockId iblk, int num_conn) {
 			}
 		}
 	}
-
-/*			for (int ipin = 0; ipin < type->num_pins; ipin++) {
-				if (cluster_ctx.blocks[iblk].nets[ipin] != OPEN) {
-					iclass = type->pin_class[ipin];
-
-					if (type->class_inf[iclass].type != DRIVER) {
-						vtr::printf_info("Pin is an input -- this whole block is hanging logic that should be swept in logic synthesis.\n");
-						vtr::printf_info("\tNon-fatal, but check this.\n");
-					} else {
-						vtr::printf_info("Pin is an output -- may be a constant generator.\n");
-						vtr::printf_info("\tNon-fatal, but check this.\n");
-					}
-
-					break;
-				}
-			}
-		}
-	}*/
 
 	/* This case should already have been flagged as an error -- this is *
 	 * just a redundant double check.                                    */
