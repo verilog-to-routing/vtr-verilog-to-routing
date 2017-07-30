@@ -893,7 +893,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
                                                 &ext_ncount);
 
 					NetId clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
-					clb_nlist->create_pin(input_port_id, (BitIndex)k, clb_net_id, PinType::SINK, PortType::INPUT);
+					clb_nlist->create_pin(input_port_id, (BitIndex)k, clb_net_id, PinType::SINK, PortType::INPUT, ipin);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
 				}
@@ -914,7 +914,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
                                                 &ext_ncount);
 
 					NetId clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
-					clb_nlist->create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, PortType::OUTPUT);
+					clb_nlist->create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, PortType::OUTPUT, ipin);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
 				}
@@ -936,7 +936,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
                                                 &ext_ncount);
 
 					NetId clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
-					clb_nlist->create_pin(clock_port_id, (BitIndex)k, clb_net_id, PinType::SINK, PortType::CLOCK);
+					clb_nlist->create_pin(clock_port_id, (BitIndex)k, clb_net_id, PinType::SINK, PortType::CLOCK, ipin);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
 				}
@@ -979,7 +979,10 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 					old_nlist->net[net_id].pins[count[net_id]].block = i;
 					old_nlist->net[net_id].pins[count[net_id]].block_pin = j;
 
+					//Asserts the BlockId is the same when NetId & pin BitIndex is provided
 					VTR_ASSERT((BlockId)i == clb_nlist->pin_block(*(clb_nlist->net_pins((NetId)net_id).begin() + count[net_id]))); //TODO: Remove after t_block/t_netlist
+					//Asserts the block's pin index is the same
+					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins((NetId)net_id).begin() + count[net_id]))); //TODO: Remove after t_block/t_netlist
 
                     //Pin to net mapping
                     old_nlist->net[net_id].pins[count[net_id]].net = net_id;

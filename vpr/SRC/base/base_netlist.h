@@ -202,9 +202,6 @@ class BaseNetlist {
 		//Returns the net associated with the specified pin
 		NetId		pin_net(const PinId id) const;
 
-		//Returns the pin type of the specified pin
-		PinType		pin_type(const PinId id) const;
-
 		//Returns the port associated with the specified pin
 		PortId		pin_port(const PinId id) const;
 

@@ -31,6 +31,16 @@ class ClusteredNetlist : public BaseNetlist {
 		//  type		: The type of the port (INPUT, OUTPUT, or CLOCK)
 		PortId create_port(const BlockId blk_id, const std::string name, BitIndex width, PortType port_type);
 
+		//Create or return an existing pin in the netlist
+		//  port_id    : The port this pin is associated with
+		//  port_bit   : The bit index of the pin in the port
+		//  net_id     : The net the pin drives/sinks
+		//  pin_type   : The type of the pin (driver/sink)
+		//  port_type  : The type of the port (input/output/clock)
+		//  pin_index  : The index of the pin relative to its block
+		//  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
+		PinId   create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, const PortType port_type, int pin_index, bool is_const=false);
+
 		//Create an empty, or return an existing net in the netlist
 		//  name    : The unique name of the net
 		NetId   create_net(const std::string name); //An empty or existing net
@@ -58,6 +68,11 @@ class ClusteredNetlist : public BaseNetlist {
 		t_type_ptr block_type(const BlockId id) const;
 
 		/*
+		* Pins
+		*/
+		int pin_index(const PinId id) const;
+
+		/*
 		* Nets
 		*/
 		NetId block_net(const BlockId blk_id, const int pin_index) const;
@@ -68,6 +83,7 @@ class ClusteredNetlist : public BaseNetlist {
 
 	private: //Private Members
 		bool validate_block_sizes() const;
+		bool validate_pin_sizes() const;
 		bool validate_net_sizes() const;
 
 	private: //Private Data
@@ -76,6 +92,9 @@ class ClusteredNetlist : public BaseNetlist {
 		vtr::vector_map<BlockId, t_pb*>			block_pbs_;         //Physical block representing the clustering & internal hierarchy of each CLB
 		vtr::vector_map<BlockId, t_type_ptr>	block_types_;		//The type of physical block this user circuit block is mapped to
 
+		//Pins
+		vtr::vector_map<PinId, int>				pin_index_;			//The index of the pins relative to its block
+			
 		//Nets
 		vtr::vector_map<NetId, bool>			net_global_;		//Boolean mapping indicating if the net is
 		vtr::vector_map<NetId, bool>			net_routed_;		//Global, routed, or fixed (mutually exclusive).
