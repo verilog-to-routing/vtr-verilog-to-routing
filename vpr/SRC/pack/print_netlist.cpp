@@ -42,18 +42,16 @@ void print_netlist(char *foutput, char *net_file) {
 	}
 
 	/* Count I/O input and output pads */
-	for (i = 0; i < cluster_ctx.clb_nlist.blocks().size(); i++) {
-		if (cluster_ctx.clb_nlist.block_type((BlockId)i) == device_ctx.IO_TYPE) {
-			for (j = 0; j < (unsigned int)device_ctx.IO_TYPE->num_pins; j++) {
-				if (cluster_ctx.blocks[i].nets[j] != OPEN) {
-					if (device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[j]].type
-							== DRIVER) {
-						L_num_p_inputs++;
-					} else {
-						VTR_ASSERT(
-								device_ctx.IO_TYPE-> class_inf[device_ctx.IO_TYPE-> pin_class[j]]. type == RECEIVER);
-						L_num_p_outputs++;
-					}
+	for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
+		if (cluster_ctx.clb_nlist.block_type(block_id) == device_ctx.IO_TYPE) {
+			for (auto pin_id : cluster_ctx.clb_nlist.block_pins(block_id)) {
+				int pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
+				if (device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[pin_index]].type == DRIVER) {
+					L_num_p_inputs++;
+				}
+				else {
+					VTR_ASSERT(device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[pin_index]].type == RECEIVER);
+					L_num_p_outputs++;
 				}
 			}
 		}
@@ -62,21 +60,22 @@ void print_netlist(char *foutput, char *net_file) {
 	fp = vtr::fopen(foutput, "w");
 
 	fprintf(fp, "Input netlist file: %s\n", net_file);
-	fprintf(fp, "L_num_p_inputs: %d, L_num_p_outputs: %d, num_clbs: %d\n",
-			L_num_p_inputs, L_num_p_outputs, (int)cluster_ctx.clb_nlist.blocks().size());
-	fprintf(fp, "num_nets: %d, num_globals: %d\n",
-			(int)cluster_ctx.clb_nlist.nets().size(), num_global_nets);
+	fprintf(fp, "L_num_p_inputs: %d, L_num_p_outputs: %d, num_clbs: %lu\n",
+			L_num_p_inputs, L_num_p_outputs, cluster_ctx.clb_nlist.blocks().size());
+	fprintf(fp, "num_nets: %lu, num_globals: %d\n",
+			cluster_ctx.clb_nlist.nets().size(), num_global_nets);
 	fprintf(fp, "\nNet\tName\t\t#Pins\tDriver\t\tRecvs. (blocks, pin)\n");
 
-	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
-		fprintf(fp, "\n%d\t%s\t", i, cluster_ctx.clb_nlist.net_name((NetId)i).c_str());
-		if (cluster_ctx.clb_nlist.net_name((NetId)i).length() < 8)
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		fprintf(fp, "\n%lu\t%s\t", (size_t)net_id, cluster_ctx.clb_nlist.net_name(net_id).c_str());
+		if (cluster_ctx.clb_nlist.net_name(net_id).length() < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
-		fprintf(fp, "%d", (int)cluster_ctx.clb_nlist.net_pins((NetId)i).size());
-		for (j = 0; j < cluster_ctx.clb_nlist.net_pins((NetId)i).size(); j++)
-			fprintf(fp, "\t(%4d,%4d)", cluster_ctx.clbs_nlist.net[i].pins[j].block,
-				cluster_ctx.clbs_nlist.net[i].pins[j].block_pin);
+		fprintf(fp, "%lu", cluster_ctx.clb_nlist.net_pins(net_id).size());
+		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id))
+			fprintf(fp, "\t(%4lu, %4d)", (size_t)cluster_ctx.clb_nlist.pin_block(pin_id),
+				cluster_ctx.clb_nlist.pin_index(pin_id));
 	}
+
 
 	fprintf(fp, "\nBlock\tName\t\tType\tPin Connections\n\n");
 
