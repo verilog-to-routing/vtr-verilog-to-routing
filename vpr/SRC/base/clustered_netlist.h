@@ -41,6 +41,11 @@ class ClusteredNetlist : public BaseNetlist {
 		//  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
 		PinId   create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, const PortType port_type, int pin_index, bool is_const=false);
 
+		//Sets the pin's index in a block
+		//  pin_id   : The pin to be set
+		//  index    : The new index to set the pin to
+		void	set_pin_index(const PinId pin_id, const int index);
+
 		//Create an empty, or return an existing net in the netlist
 		//  name    : The unique name of the net
 		NetId   create_net(const std::string name); //An empty or existing net
@@ -67,15 +72,25 @@ class ClusteredNetlist : public BaseNetlist {
 		//Returns the type of CLB (Logic block, RAM, DSP, etc.)
 		t_type_ptr block_type(const BlockId id) const;
 
+		//Returns the net of the block attached to the specific pin index
+		NetId block_net(const BlockId blk_id, const int pin_index) const;
+
 		/*
 		* Pins
 		*/
+		//Returns the index of the block which the pin belongs to
 		int pin_index(const PinId id) const;
+
+		//Returns the index of the block which the pin belongs to
+		//  net_id     : The net to iterate through
+		//  count      : The index of the pin in the net
+		int pin_index(NetId net_id, int count) const;
 
 		/*
 		* Nets
 		*/
-		NetId block_net(const BlockId blk_id, const int pin_index) const;
+		//Returns the block of the net & pin which it's attached to
+		BlockId net_pin_block(const NetId net_id, const int pin_index) const;
 
 		bool net_global(const NetId id) const;
 		bool net_routed(const NetId id) const;

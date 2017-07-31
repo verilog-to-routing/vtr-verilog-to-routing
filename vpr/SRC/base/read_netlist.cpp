@@ -983,7 +983,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 					VTR_ASSERT((BlockId)i == clb_nlist->pin_block(*(clb_nlist->net_pins((NetId)net_id).begin() + count[net_id]))); //TODO: Remove after t_block/t_netlist
 					//Asserts the block's pin index is the same
 					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins((NetId)net_id).begin() + count[net_id]))); //TODO: Remove after t_block/t_netlist
-
+					VTR_ASSERT(j == clb_nlist->pin_index((NetId)net_id, count[net_id]));
                     //Pin to net mapping
                     old_nlist->net[net_id].pins[count[net_id]].net = net_id;
                     old_nlist->net[net_id].pins[count[net_id]].net_pin = count[net_id];

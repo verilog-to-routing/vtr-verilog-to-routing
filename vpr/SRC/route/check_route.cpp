@@ -163,12 +163,12 @@ void check_route(enum e_route_type route_type, int num_switches,
 	vtr::printf_info("\n");
 }
 
+
+/* Checks that this SINK node is one of the terminals of inet, and marks   *
+* the appropriate pin as being reached.                                   */
 static void check_sink(int inode, int inet, bool * pin_done) {
-
-	/* Checks that this SINK node is one of the terminals of inet, and marks   *
-	 * the appropriate pin as being reached.                                   */
-
-	int i, j, ifound, ptc_num, bnum, iclass, node_block_pin, iblk;
+	
+	int i, j, ifound, ptc_num, bnum, iclass, iblk, pin_index;
 	unsigned int ipin;
 	t_type_ptr type;
     auto& device_ctx = g_vpr_ctx.device();
@@ -185,20 +185,21 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 
 	for (iblk = 0; iblk < type->capacity; iblk++) {
 		bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx.blocks */
-		for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) { /* All net SINKs */
-			if (cluster_ctx.clbs_nlist.net[inet].pins[ipin].block == bnum) {
-				node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
-				iclass = type->pin_class[node_block_pin];
+		ipin = 1;
+		for (auto pin_id : cluster_ctx.clb_nlist.net_sinks((NetId)inet)) {
+			if (cluster_ctx.clb_nlist.pin_block(pin_id) == (BlockId)bnum) {
+				pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
+				iclass = type->pin_class[pin_index];
 				if (iclass == ptc_num) {
 					/* Could connect to same pin class on the same clb more than once.  Only   *
 					 * update pin_done for a pin that hasn't been reached yet.                 */
-
 					if (pin_done[ipin] == false) {
 						ifound++;
 						pin_done[ipin] = true;
 					}
 				}
 			}
+			ipin++;
 		}
 	}
 
