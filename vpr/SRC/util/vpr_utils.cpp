@@ -839,29 +839,14 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLo
     return get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
 }
 
-t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_pin(const t_net_pin& pin) {
-	return get_pb_graph_node_pin_from_block_pin(pin.block, pin.block_pin);
-}
-
-t_pb_graph_pin* get_pb_graph_node_pin_from_g_clbs_nlist_net(int inet, int ipin) {
-
-	int iblock, target_pin;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-	iblock = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
-	target_pin =  cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
-	
-	return get_pb_graph_node_pin_from_block_pin(iblock, target_pin);
-}
-
-t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(int iblock, int ipin) {
+t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(BlockId iblock, int ipin) {
 
 	int i, count;
 	const t_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_node;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	
-	pb_graph_node = cluster_ctx.clb_nlist.block_pb((BlockId)iblock)->pb_graph_node;
+	pb_graph_node = cluster_ctx.clb_nlist.block_pb(iblock)->pb_graph_node;
 	pb_type = pb_graph_node->pb_type;
 
 	/* If this is post-placed, then the ipin may have been shuffled up by the z * num_pins, 

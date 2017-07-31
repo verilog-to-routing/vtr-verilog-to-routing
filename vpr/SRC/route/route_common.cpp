@@ -1333,7 +1333,7 @@ void print_route(const char* placement_file, const char* route_file) {
 						int offset = device_ctx.grid[ilow][jlow].height_offset;
 						int iblock = place_ctx.grid_blocks[ilow][jlow - offset].blocks[0];
 						VTR_ASSERT(iblock != OPEN);
-						t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
+						t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin((BlockId)iblock, pin_num);
 						t_pb_type *pb_type = pb_pin->parent_node->pb_type;
 						fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);
 					}
