@@ -107,7 +107,7 @@ bool place_and_route(t_placer_opts placer_opts,
 
     }
     begin = clock();
-    post_place_sync((int) cluster_ctx.clb_nlist.blocks().size());
+    post_place_sync();
 
     fflush(stdout);
 
@@ -730,8 +730,10 @@ static float comp_width(t_chan * chan, float x, float separation) {
  *
  * This function should only be called once 
  */
-void post_place_sync(const int L_num_blocks) {
+void post_place_sync() {
     /* Go through each block */
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+	int L_num_blocks = (int)cluster_ctx.clb_nlist.blocks().size();
     for (int iblk = 0; iblk < L_num_blocks; ++iblk) {
         place_sync_external_block_connections(iblk);
     }

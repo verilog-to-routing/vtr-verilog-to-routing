@@ -279,7 +279,7 @@ static void process_nodes(ifstream & fp, int inet) {
                     int height_offset = device_ctx.grid[x][y].height_offset;
                     int iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[0];
                     VTR_ASSERT(iblock != OPEN);
-                    t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
+                    t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin((BlockId)iblock, pin_num);
                     t_pb_type *pb_type = pb_pin->parent_node->pb_type;
 
                     string pb_name, port_name;

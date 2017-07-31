@@ -1235,8 +1235,8 @@ void free_pb_stats(t_pb *pb) {
 * find what pin on the net a block pin corresponds to. Returns the pointer   *
 * to the 2D net_pin_index array.                                             */
 vtr::Matrix<int> alloc_and_load_net_pin_index() {
-	unsigned int netpin, inet;
-	int blk, itype, max_pins_per_clb = 0;
+	unsigned int netpin;
+	int itype, max_pins_per_clb = 0;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1960,13 +1960,6 @@ AtomBlockId find_tnode_atom_block(int inode) {
     return blk_id;
 }
 
-void place_sync_all_external_block_connections() {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    for(int iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); ++iblk) {
-        place_sync_external_block_connections(iblk);
-    }
-}
-
 void place_sync_external_block_connections(int iblk) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -1992,6 +1985,7 @@ void place_sync_external_block_connections(int iblk) {
 
             //Update the net to block references
 			size_t k = 0;
+            
             for (k = 0; k < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); k++) {
                 if (cluster_ctx.clbs_nlist.net[inet].pins[k].block == iblk && cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin == j) {
                     cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin = j + place_ctx.block_locs[iblk].z * max_num_block_pins;
@@ -2004,5 +1998,4 @@ void place_sync_external_block_connections(int iblk) {
 
     //Mark the block as synced
     place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate = true;
-
 }
