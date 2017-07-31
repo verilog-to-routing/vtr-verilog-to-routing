@@ -1231,12 +1231,10 @@ void free_pb_stats(t_pb *pb) {
     }
 }
 
+/* Allocates and loads net_pin_index array, this array allows us to quickly   *
+* find what pin on the net a block pin corresponds to. Returns the pointer   *
+* to the 2D net_pin_index array.                                             */
 vtr::Matrix<int> alloc_and_load_net_pin_index() {
-
-	/* Allocates and loads net_pin_index array, this array allows us to quickly   *
-	 * find what pin on the net a block pin corresponds to. Returns the pointer   *
-	 * to the 2D net_pin_index array.                                             */
-
 	unsigned int netpin, inet;
 	int blk, itype, max_pins_per_clb = 0;
 
@@ -1251,15 +1249,18 @@ vtr::Matrix<int> alloc_and_load_net_pin_index() {
     vtr::Matrix<int> temp_net_pin_index({cluster_ctx.clb_nlist.blocks().size(), size_t(max_pins_per_clb)}, OPEN);
 
 	/* Load the values */
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-		if (cluster_ctx.clb_nlist.net_global((NetId)inet))
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (cluster_ctx.clb_nlist.net_global(net_id))
 			continue;
-		for (netpin = 0; netpin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); netpin++) {
-			blk = cluster_ctx.clbs_nlist.net[inet].pins[netpin].block;
-			temp_net_pin_index[blk][cluster_ctx.clbs_nlist.net[inet].pins[netpin].block_pin] = netpin;
+		netpin = 0;
+		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+			int pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
+			BlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+			temp_net_pin_index[(size_t)block_id][pin_index] = netpin;
+			netpin++;
 		}
 	}
-
+	
 	/* Returns the pointers to the 2D array. */
 	return temp_net_pin_index;
 }
@@ -1990,7 +1991,7 @@ void place_sync_external_block_connections(int iblk) {
             cluster_ctx.blocks[iblk].net_pins[j] = OPEN;
 
             //Update the net to block references
-            size_t k = 0;
+			size_t k = 0;
             for (k = 0; k < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); k++) {
                 if (cluster_ctx.clbs_nlist.net[inet].pins[k].block == iblk && cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin == j) {
                     cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin = j + place_ctx.block_locs[iblk].z * max_num_block_pins;
