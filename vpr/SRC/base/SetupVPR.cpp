@@ -25,7 +25,6 @@ using namespace std;
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void SetupPackerOpts(const t_options& Options,
-		const t_arch& Arch,
 		t_packer_opts *PackerOpts);
 static void SetupPlacerOpts(const t_options& Options,
 		t_placer_opts *PlacerOpts);
@@ -145,7 +144,7 @@ void SetupVPR(t_options *Options,
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
 	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
-	SetupPackerOpts(*Options, *Arch, PackerOpts);
+	SetupPackerOpts(*Options, PackerOpts);
 	RoutingArch->dump_rr_structs_file = nullptr;
 
     //Setup the default flow
@@ -385,18 +384,8 @@ static void SetupAnnealSched(const t_options& Options,
  * Error checking, such as checking for conflicting params is assumed to be done beforehand 
  */
 void SetupPackerOpts(const t_options& Options,
-		const t_arch& Arch,
 		t_packer_opts *PackerOpts) {
 
-    VTR_ASSERT(Arch.grid_layouts.size() == 1); //TODO: multiple layout support
-    auto& grid_layout = Arch.grid_layouts[0];
-
-	if (grid_layout.grid_type == GridDefType::AUTO) {
-		PackerOpts->aspect = grid_layout.aspect_ratio;
-	} else {
-        VTR_ASSERT(grid_layout.grid_type == GridDefType::AUTO);
-		PackerOpts->aspect = (float) grid_layout.width / (float) grid_layout.height;
-	}
 	PackerOpts->output_file = Options.NetFile;
 
 	PackerOpts->blif_file_name = Options.BlifFile;

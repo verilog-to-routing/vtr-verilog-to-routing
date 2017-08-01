@@ -273,6 +273,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     /* Output the current settings to console. */
     printClusteredNetlistStats();
 
+#if 0
     int current = std::max(vtr::nint((float) sqrt((float) cluster_ctx.num_blocks)), 1); /* current is the value of the smaller side of the FPGA */
     int low = 1;
     int high = -1;
@@ -319,9 +320,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
                 if (high == -1) {
                     current = current * 2;
                     if (current > MAX_SHORT) {
-                        vtr::printf_error(__FILE__, __LINE__,
-                                "FPGA required is too large for current architecture settings.\n");
-                        exit(1);
+                        VPR_THROW(VPR_ERROR_ARCH, "FPGA required is too large for current architecture settings.");
                     }
                 } else {
                     if (low == current)
@@ -344,44 +343,37 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
             device_ctx.ny = vtr::nint(current / grid_layout.aspect_ratio);
         }
         alloc_and_load_grid(Arch.grid_layouts, num_instances_type);
-        vtr::printf_info("FPGA auto-sized to x = %d y = %d\n", device_ctx.nx, device_ctx.ny);
     } else {
         device_ctx.nx = grid_layout.width;
         device_ctx.ny = grid_layout.height;
         alloc_and_load_grid(Arch.grid_layouts, num_instances_type);
     }
-
-    vtr::printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", device_ctx.nx, device_ctx.ny);
-
-    /* Test if netlist fits in grid */
-    for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        if (num_blocks_type[i] > num_instances_type[i]) {
-
-            vtr::printf_error(__FILE__, __LINE__,
-                    "Not enough physical locations for type %s, "
-                    "number of blocks is %d but number of locations is %d.\n",
-                    device_ctx.block_types[i].name, num_blocks_type[i],
-                    num_instances_type[i]);
-            exit(1);
-        }
+#else
+    std::map<t_type_ptr,size_t> num_type_instances;
+    for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
+        num_type_instances[cluster_ctx.blocks[i].type]++;
     }
+    device_ctx.grid = create_smallest_device_grid(Arch.grid_layouts, num_type_instances); 
+    device_ctx.nx = device_ctx.grid.nx(); //TODO: remove
+    device_ctx.ny = device_ctx.grid.ny(); //TODO: remove
+#endif
+
+    vtr::printf_info("FPGA sized to %d x %d (%s)\n", device_ctx.nx, device_ctx.ny, device_ctx.grid.name().c_str());
 
     vtr::printf_info("\n");
     vtr::printf_info("Resource usage...\n");
     for (int i = 0; i < device_ctx.num_block_types; ++i) {
+        auto type = &device_ctx.block_types[i];
         vtr::printf_info("\tNetlist      %d\tblocks of type: %s\n",
-                num_blocks_type[i], device_ctx.block_types[i].name);
+                num_type_instances[type], type->name);
         vtr::printf_info("\tArchitecture %d\tblocks of type: %s\n",
-                num_instances_type[i], device_ctx.block_types[i].name);
+                device_ctx.grid.num_instances(type), type->name);
     }
     vtr::printf_info("\n");
     device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = 0;
     device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
     device_ctx.chan_width.x_list = (int *) vtr::malloc((device_ctx.ny + 1) * sizeof (int));
     device_ctx.chan_width.y_list = (int *) vtr::malloc((device_ctx.nx + 1) * sizeof (int));
-
-    vtr::free(num_blocks_type);
-    vtr::free(num_instances_type);
 }
 
 void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -569,7 +561,6 @@ bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch) {
 void free_arch(t_arch* Arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    freeGrid();
     vtr::free(device_ctx.chan_width.x_list);
     vtr::free(device_ctx.chan_width.y_list);
 

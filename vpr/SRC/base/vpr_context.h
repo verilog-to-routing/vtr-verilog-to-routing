@@ -208,7 +208,6 @@ struct PlacementContext : public Context {
     std::vector<t_block_loc> block_locs; //[0..cluster_ctx.num_blocks-1]
 
     //Clustered block associated with each grid location (i.e. inverse of block_locs)
-    //std::vector<std::vector<t_grid_blocks>> grid_blocks; //[0..device_ctx.nx+1][0..device_ctx.ny+1]
     vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.nx+1][0..device_ctx.ny+1]
 
     //SHA256 digest of the .place file (used for unique identification and consistency checking)

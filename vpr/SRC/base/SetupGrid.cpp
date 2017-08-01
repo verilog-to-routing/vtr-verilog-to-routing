@@ -25,54 +25,121 @@ using namespace std;
 #include "SetupGrid.h"
 #include "expr_eval.h"
 
-static void CheckGrid(void);
+static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts);
+static DeviceGrid create_device_grid(const t_grid_def& grid_def, size_t width, size_t height);
 
-static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<t_grid_blocks>& grid_blocks, vtr::Matrix<int>& grid_priorities);
+static void CheckGrid(const DeviceGrid& grid);
 
-static void alloc_and_load_num_instances_type(
-		vtr::Matrix<t_grid_tile>& L_grid, int L_nx, int L_ny,
-		int* L_num_instances_type, int L_num_types);
+static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities);
 
 static bool is_integer(std::string val);
 
-/* Create and fill FPGA architecture grid.         */
-void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instances_type) {
-    //TODO: handle properly
-    VTR_ASSERT(grid_layouts.size() == 1);
-    auto grid_loc_defs = grid_layouts[0].loc_defs;
+//Create a device grid which satisfies the minimum block counts
+//  If a set of fixed grid layouts are specified, the smallest satisfying grid is picked
+//  If an auto grid layouts are specified, the smallest dynamicly sized grid is picked
+DeviceGrid create_smallest_device_grid(std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts) {
+    VTR_ASSERT(grid_layouts.size() > 0);
 
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    if (grid_layouts[0].grid_type == GridDefType::AUTO) {
+        //Automatic grid layout, find the smallest height/width
+        VTR_ASSERT_MSG(grid_layouts.size() == 1, "Only one grid definitions is valid if using an auto grid layout");
 
-	/* To remove this limitation, change ylow etc. in t_rr_node to        *
-	 * * be ints instead.  Used shorts to save memory.                      */
-	if ((device_ctx.nx > 32766) || (device_ctx.ny > 32766)) {
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-			"Device width and height must be less than 32767, since the router uses shorts (16-bit) to store coordinates.\n"
-			"device_ctx.nx: %d, device_ctx.ny: %d\n", device_ctx.nx, device_ctx.ny);
-	}
+        const auto& grid_def = grid_layouts[0];
+        VTR_ASSERT(grid_def.aspect_ratio >= 0.);
 
-    //Size and allocate the device
-	VTR_ASSERT(device_ctx.nx >= 1 && device_ctx.ny >= 1);
-    size_t W = device_ctx.nx + 2;
-    size_t H = device_ctx.ny + 2;
+        int width = 3;
+        int height = 3;
+        while (true) {
 
-	auto grid = vtr::Matrix<t_grid_tile>({W, H});
+            //Increase the size
+            if (grid_def.aspect_ratio >= 1.) {
+                height++;
+                width = vtr::nint(height / grid_def.aspect_ratio);
+            } else {
+                width++;
+                height = vtr::nint(width / grid_def.aspect_ratio);
+            }
 
-    //Ensure ther is space in the reverse grid to block look-up
-    place_ctx.grid_blocks.resize({W, H});
+            //Build the device
+            auto grid = create_device_grid(grid_def, width, height);
 
+            //Check if it satisfies the block counts
+            if (grid_satisfies_instance_counts(grid, minimum_instance_counts)) {
+                return grid;
+            }
+        }
+
+    } else {
+        VTR_ASSERT(grid_layouts[0].grid_type == GridDefType::FIXED);
+        //Fixed grid layouts, find the smallest of the fixed layouts
+
+        //Sort the grid layouts from smallest to largest
+        auto area_cmp = [](const t_grid_def& lhs, const t_grid_def& rhs) {
+            int lhs_area = lhs.width * lhs.height;
+            int rhs_area = rhs.width * rhs.height;
+
+            return lhs_area < rhs_area;
+        };
+        std::stable_sort(grid_layouts.begin(), grid_layouts.end(), area_cmp);
+
+        //Try all the fixed devices in order from smallest to largest
+        for (const auto& grid_def : grid_layouts) {
+
+            //Build the grid
+            auto grid = create_device_grid(grid_def, grid_def.width, grid_def.height);        
+
+            if (grid_satisfies_instance_counts(grid, minimum_instance_counts)) {
+                return grid;
+            }
+        }
+    }
+
+    VPR_THROW(VPR_ERROR_OTHER, "Faild to find device which satisifies resource requirements");
+    return DeviceGrid(); //Unreachable
+}
+
+static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts) {
+    for (auto kv : instance_counts) {
+        t_type_ptr type;
+        size_t min_count;
+        std::tie(type, min_count) = kv;
+
+        size_t inst_cnt = grid.num_instances(type);
+
+        if (inst_cnt < min_count) {
+            return false;
+        }
+    }
+    return true;
+}
+
+//Build the specified device grid 
+static DeviceGrid create_device_grid(const t_grid_def& grid_def, size_t width, size_t height) {
+    if (grid_def.grid_type == GridDefType::FIXED) {
+
+        if (grid_def.width != int(width) || grid_def.height != int(height)) {
+            VPR_THROW(VPR_ERROR_OTHER, 
+                    "Requested grid size (%dx%d) does not match fixed device size (%dx%d)",
+                    width, height, grid_def.width, grid_def.height);
+        }
+    }
+
+    auto& device_ctx = g_vpr_ctx.device();
 
     //Track the current priority for each grid location
     // Note that we initialize it to the lowest (i.e. most negative) possible value, so
     // any user-specified priority will override the default empty grid
-    auto grid_priorities = vtr::Matrix<int>({W, H}, std::numeric_limits<int>::lowest());
+    auto grid_priorities = vtr::Matrix<int>({width, height}, std::numeric_limits<int>::lowest());
+
+    auto grid = vtr::Matrix<t_grid_tile>({width, height});
 
     //Initialize the device to all empty blocks
-    for (size_t x = 0; x < W; ++x) {
-        for (size_t y = 0; y < H; ++y) {
+    auto empty_type = find_block_type_by_name(EMPTY_BLOCK_NAME, device_ctx.block_types, device_ctx.num_block_types);
+    VTR_ASSERT(empty_type != nullptr);
+    for (size_t x = 0; x < width; ++x) {
+        for (size_t y = 0; y < height; ++y) {
             set_grid_block_type(std::numeric_limits<int>::lowest() + 1, //+1 so it overrides without warning
-                    device_ctx.EMPTY_TYPE, x, y, grid, place_ctx.grid_blocks, grid_priorities);
+                    empty_type, x, y, grid, grid_priorities);
         }
     }
 
@@ -82,6 +149,7 @@ void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instance
     auto priority_order = [](const t_grid_loc_def& lhs, const t_grid_loc_def& rhs) {
         return lhs.priority < rhs.priority;
     };
+    auto grid_loc_defs = grid_def.loc_defs;
     std::stable_sort(grid_loc_defs.begin(), grid_loc_defs.end(), priority_order);
 
     //Process the gird location specifications from lowest to highest priority,
@@ -98,8 +166,8 @@ void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instance
         }
 
         t_formula_data vars;
-        vars.set_var_value("W", W);
-        vars.set_var_value("H", H);
+        vars.set_var_value("W", width);
+        vars.set_var_value("H", height);
         vars.set_var_value("w", type->width);
         vars.set_var_value("h", type->height);
 
@@ -136,28 +204,28 @@ void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instance
         // stages of packing when the device may be very small and some larger columns may not yet exist.
         // Note that this suppress only warnings for explicit integers and will still warn about possibly 
         // incorrect formula
-        if (startx > W - 1 && !is_integer(xspec.start_expr)) {
+        if (startx > width - 1 && !is_integer(xspec.start_expr)) {
             vtr::printf_warning(__FILE__, __LINE__,
                     "Block type '%s' grid location specification startx (%s = %d) falls outside device horizontal range [%d,%d]\n",
-                    type->name, xspec.start_expr.c_str(), startx, 0, W - 1);
+                    type->name, xspec.start_expr.c_str(), startx, 0, width - 1);
         }
 
-        if (endx > W - 1 && !is_integer(xspec.end_expr)) {
+        if (endx > width - 1 && !is_integer(xspec.end_expr)) {
             vtr::printf_warning(__FILE__, __LINE__,
                     "Block type '%s' grid location specification endx (%s = %d) falls outside device horizontal range [%d,%d]\n",
-                    type->name, xspec.end_expr.c_str(), endx, 0, W - 1);
+                    type->name, xspec.end_expr.c_str(), endx, 0, width - 1);
         }
 
-        if (starty > H - 1 && !is_integer(yspec.start_expr)) {
+        if (starty > height - 1 && !is_integer(yspec.start_expr)) {
             vtr::printf_warning(__FILE__, __LINE__,
                     "Block type '%s' grid location specification starty (%s = %d) falls outside device vertical range [%d,%d]\n",
-                    type->name, yspec.start_expr.c_str(), starty, 0, H - 1);
+                    type->name, yspec.start_expr.c_str(), starty, 0, height - 1);
         }
 
-        if (endy > H - 1 && !is_integer(yspec.end_expr)) {
+        if (endy > height - 1 && !is_integer(yspec.end_expr)) {
             vtr::printf_warning(__FILE__, __LINE__,
                     "Block type '%s' grid location specification endy (%s = %d) falls outside device vertical range [%d,%d]\n",
-                    type->name, yspec.end_expr.c_str(), endy, 0, H - 1);
+                    type->name, yspec.end_expr.c_str(), endy, 0, height - 1);
         }
 
         //The end must fall after (or equal) to the start
@@ -204,69 +272,36 @@ void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instance
         }
 
         size_t x_end = 0;
-        for (size_t kx = 0; x_end < W; ++kx) {
+        for (size_t kx = 0; x_end < width; ++kx) {
             size_t x_start = startx + kx * repeatx;
             x_end = endx + kx * repeatx;
 
             size_t y_end = 0;
-            for (size_t ky = 0; y_end < H; ++ky) {
+            for (size_t ky = 0; y_end < height; ++ky) {
                 size_t y_start = starty + ky * repeaty;
                 y_end = endy + ky * repeaty;
 
 
-                size_t x_max = std::min(x_end, W-1);
-                size_t y_max = std::min(y_end, H-1);
+                size_t x_max = std::min(x_end, width-1);
+                size_t y_max = std::min(y_end, height-1);
 
                 for(size_t x = x_start; x + (type->width - 1) <= x_max; x += incrx) {
                     for(size_t y = y_start; y + (type->height - 1) <= y_max; y += incry) {
-                        set_grid_block_type(grid_loc_def.priority, type, x, y, grid, place_ctx.grid_blocks, grid_priorities);
+                        set_grid_block_type(grid_loc_def.priority, type, x, y, grid, grid_priorities);
                     }
                 }
             }
         }
     }
 
-    device_ctx.grid = DeviceGrid(grid);
+    auto device_grid = DeviceGrid(grid_def.name, grid);
 
-    VTR_ASSERT(device_ctx.grid.nx() == device_ctx.nx);
-    VTR_ASSERT(device_ctx.grid.ny() == device_ctx.ny);
+	CheckGrid(device_grid);
 
-	// And, refresh (ie. reset and update) the "num_instances_type" array
-	// (while also forcing any remaining INVALID_BLOCK blocks to device_ctx.EMPTY_TYPE)
-	alloc_and_load_num_instances_type(grid, device_ctx.nx, device_ctx.ny, num_instances_type, device_ctx.num_block_types);
-
-	CheckGrid();
-
-
-#if 0
-    for (int x = 0; x < device_ctx.grid.width(); ++x) {
-        for (int y = 0; y < device_ctx.grid.height(); ++y) {
-            auto type = device_ctx.grid[x][y].type;
-            if (type->width != 1 || type->height != 1) {
-                vtr::printf_info("[%d][%d] %s (offset %d,%d)\n", x, y, device_ctx.grid[x][y].type->name, device_ctx.grid[x][y].width_offset, device_ctx.grid[x][y].height_offset);
-            } else {
-                vtr::printf_info("[%d][%d] %s\n", x, y, device_ctx.grid[x][y].type->name, device_ctx.grid[x][y].width_offset, device_ctx.grid[x][y].height_offset);
-            }
-		}
-	}
-#endif
-
-#ifdef SHOW_ARCH
-	/* debug code */
-	FILE* dump = vtr::fopen("grid_type_dump.txt", "w", 0);
-	for (int j = (device_ctx.ny + 1); j >= 0; --j)
-	{
-		for (int i = 0; i <= (device_ctx.nx + 1); ++i)
-		{
-			fprintf(dump, "%c", device_ctx.grid[i][j].type->name[1]);
-		}
-		fprintf(dump, "\n");
-	}
-	fclose(dump);
-#endif
+    return device_grid;
 }
 
-static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<t_grid_blocks>& grid_blocks, vtr::Matrix<int>& grid_priorities) {
+static void set_grid_block_type(int priority, const t_type_descriptor* type, size_t x_root, size_t y_root, vtr::Matrix<t_grid_tile>& grid, vtr::Matrix<int>& grid_priorities) {
 
     struct TypeLocation {
         TypeLocation(size_t x_val, size_t y_val, const t_type_descriptor* type_val, int priority_val)
@@ -352,8 +387,6 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
             grid[x][y].width_offset = x_offset;
             grid[x][y].height_offset = y_offset;
 
-            grid_blocks[x][y].blocks.resize(type->capacity, EMPTY_BLOCK);
-
             grid_priorities[x][y] = priority;
         }
     }
@@ -384,8 +417,6 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
                     grid[x][y].width_offset = 0;
                     grid[x][y].height_offset = 0;
 
-                    grid_blocks[x][y].blocks.resize(type->capacity, EMPTY_BLOCK);
-
                     grid_priorities[x][y] = std::numeric_limits<int>::lowest();
                 }
             }
@@ -393,103 +424,38 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
     }
 }
 
-//===========================================================================//
-static void alloc_and_load_num_instances_type(
-		vtr::Matrix<t_grid_tile>& L_grid, int L_nx, int L_ny,
-		int* L_num_instances_type, int L_num_types) {
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-	for (int i = 0; i < L_num_types; ++i) {
-		L_num_instances_type[i] = 0;
-	}
-
-	for (int x = 0; x <= (L_nx + 1); ++x) {
-		for (int y = 0; y <= (L_ny + 1); ++y) {
-
-			if (!L_grid[x][y].type)
-				continue;
-
-			bool isValid = false;
-			for (int z = 0; z < L_grid[x][y].type->capacity; ++z) {
-
-				if (place_ctx.grid_blocks[x][y].blocks[z] == INVALID_BLOCK) {
-					place_ctx.grid_blocks[x][y].blocks[z] = EMPTY_BLOCK;
-				} else {
-					isValid = true;
-				}
-			}
-			if (!isValid) {
-				L_grid[x][y].type = device_ctx.EMPTY_TYPE;
-				L_grid[x][y].width_offset = 0;
-				L_grid[x][y].height_offset = 0;
-			}
-
-			if (L_grid[x][y].width_offset > 0 || L_grid[x][y].height_offset > 0) {
-				continue;
-			}
-
-			if (L_grid[x][y].type == device_ctx.EMPTY_TYPE) {
-				++L_num_instances_type[device_ctx.EMPTY_TYPE->index];
-				continue;
-			}
-
-			for (int z = 0; z < L_grid[x][y].type->capacity; ++z) {
-
-				if (L_grid[x][y].type == device_ctx.IO_TYPE) {
-					++L_num_instances_type[device_ctx.IO_TYPE->index];
-				} else {
-					++L_num_instances_type[L_grid[x][y].type->index];
-				}
-			}
-		}
-	}
-}
-
-void freeGrid(void) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-
-	device_ctx.grid.clear();
-}
-
-static void CheckGrid(void) {
+static void CheckGrid(const DeviceGrid& grid) {
 
 	int i, j;
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
 
 	/* Check grid is valid */
 	for (i = 0; i <= (device_ctx.nx + 1); ++i) {
 		for (j = 0; j <= (device_ctx.ny + 1); ++j) {
-            auto type = device_ctx.grid[i][j].type;
+            auto type = grid[i][j].type;
 			if (NULL == type) {
 				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has no type.\n", i, j);
 			}
 
-			if (place_ctx.grid_blocks[i][j].usage != 0) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "place_ctx.grid[%d][%d] has non-zero usage (%d) before netlist load.\n", i, j, place_ctx.grid_blocks[i][j].usage);
+			if ((grid[i][j].width_offset < 0)
+					|| (grid[i][j].width_offset >= type->width)) {
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has invalid width offset (%d).\n", i, j, grid[i][j].width_offset);
 			}
-
-			if ((device_ctx.grid[i][j].width_offset < 0)
-					|| (device_ctx.grid[i][j].width_offset >= type->width)) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has invalid width offset (%d).\n", i, j, device_ctx.grid[i][j].width_offset);
-			}
-			if ((device_ctx.grid[i][j].height_offset < 0)
-					|| (device_ctx.grid[i][j].height_offset >= type->height)) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has invalid height offset (%d).\n", i, j, device_ctx.grid[i][j].height_offset);
+			if ((grid[i][j].height_offset < 0)
+					|| (grid[i][j].height_offset >= type->height)) {
+				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has invalid height offset (%d).\n", i, j, grid[i][j].height_offset);
 			}
 
             //Verify that type and width/height offsets are correct (e.g. for dimension > 1 blocks)
-            if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+            if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
                 //From the root block check that all other blocks are correct
                 for (int x = i; x < i + type->width; ++x) {
                     int x_offset = x - i;
                     for (int y = j; y < j + type->height; ++y) {
                         int y_offset = y - j;
 
-                        auto& tile = device_ctx.grid[x][y];
+                        auto& tile = grid[x][y];
                         if (tile.type != type) {
                             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
                                     "Grid Location (%d,%d) should have type '%s' (based on root location) but has type '%s'\n", 
@@ -510,12 +476,6 @@ static void CheckGrid(void) {
                     }
                 }
             }
-
-
-
-			if (place_ctx.grid_blocks[i][j].blocks.empty() && (type->capacity > 0)) {
-				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "place_ctx.grid[%d][%d] has no block list allocated.\n", i, j);
-			}
 		}
 	}
 }

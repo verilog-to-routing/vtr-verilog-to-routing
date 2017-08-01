@@ -694,7 +694,6 @@ struct t_packer_opts {
 	bool connection_driven;
 	bool doPacking;
 	enum e_packer_algorithm packer_algorithm;
-	float aspect;
 };
 
 /* Annealing schedule information for the placer.  The schedule type      *

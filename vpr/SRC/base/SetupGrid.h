@@ -11,8 +11,7 @@
 #include <vector>
 #include "physical_types.h"
 
-void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instances_type); /* [0..device_ctx.num_block_types-1] */
-void freeGrid(void);
+DeviceGrid create_smallest_device_grid(std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts);
 
 #endif
 
