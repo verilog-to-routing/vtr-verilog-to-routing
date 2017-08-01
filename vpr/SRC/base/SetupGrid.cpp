@@ -521,7 +521,7 @@ static void CheckGrid(void) {
 }
 
 static bool is_integer(std::string val) {
-    auto regex = std::regex("\\s*\\d+\\s*", std::regex::grep); 
+    auto regex = std::regex("\\s*\\d+\\s*"); 
     
     return std::regex_match(val, regex);
 }
