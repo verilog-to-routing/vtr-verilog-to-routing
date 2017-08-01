@@ -19,7 +19,7 @@ device_width;Range;0.9;1.10
 device_height;Range;0.9;1.10
 setup_TNS;Range;0.80;1.40
 setup_WNS;Range;0.80;1.40
-hold_TNS;Range;0.80;1.40
+hold_TNS;Range;0.50;2.00
 hold_WNS;Range;0.80;1.40
 placed_CPD_est;Range;0.80;1.40
 placed_setup_TNS_est;Range;0.80;1.40
