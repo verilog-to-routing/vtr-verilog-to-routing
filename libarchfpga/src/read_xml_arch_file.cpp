@@ -2193,6 +2193,17 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
 
             grid_def.loc_defs.push_back(fill);
 
+        } else if (loc_type == std::string("single")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "x", "y"}, loc_data);
+
+            t_grid_loc_def single(type_name, priority);
+            single.x.start_expr = get_attribute(loc_spec_tag, "x", loc_data).value();
+            single.y.start_expr = get_attribute(loc_spec_tag, "y", loc_data).value();
+            single.x.end_expr = single.x.start_expr + "+ w - 1";
+            single.y.end_expr = single.y.start_expr + "+ h - 1";
+
+            grid_def.loc_defs.push_back(single);
+
         } else if (loc_type == std::string("col")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty"}, loc_data);
 
