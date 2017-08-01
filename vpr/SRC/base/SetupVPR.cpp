@@ -123,12 +123,12 @@ void SetupVPR(t_options *Options,
         //Detect the 'fill' type
         if (   grid_loc_def.x.start_expr == "0"
             && grid_loc_def.x.end_expr == "W - 1"
-            && grid_loc_def.x.incr_expr.empty()
-            && grid_loc_def.x.repeat_expr.empty()
+            && grid_loc_def.x.repeat_expr == "W"
+            && grid_loc_def.x.incr_expr == "w"
             && grid_loc_def.y.start_expr == "0"
             && grid_loc_def.y.end_expr == "H - 1"
-            && grid_loc_def.y.incr_expr.empty()
-            && grid_loc_def.y.repeat_expr.empty()) {
+            && grid_loc_def.y.repeat_expr == "H"
+            && grid_loc_def.y.incr_expr == "h") {
 
             VTR_ASSERT_MSG(device_ctx.FILL_TYPE == NULL, "Fill type must be unambiguous");
             t_type_descriptor* fill_type = find_block_type_by_name(grid_loc_def.block_type, device_ctx.block_types, device_ctx.num_block_types);

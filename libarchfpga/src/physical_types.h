@@ -140,20 +140,18 @@ enum e_sb_location{
  *  from expr_eval.h.
  */
 struct t_grid_loc_spec {
-    t_grid_loc_spec(std::string start, std::string end, std::string incr, std::string repeat)
+    t_grid_loc_spec(std::string start, std::string end, std::string repeat, std::string incr)
         : start_expr(start), end_expr(end)
-        , incr_expr(incr), repeat_expr(repeat) {}
+        , repeat_expr(repeat), incr_expr(incr) {}
 
     std::string start_expr;  //Starting position (inclusive)
     std::string end_expr;    //Ending position (inclusive)
 
-    std::string incr_expr;   //Distance between block instantiations 
-                             // with the region (note always absolute).
-                             // Zero implies that the appropriate block 
-                             // dimension should be used.
-
     std::string repeat_expr; //Distance between repeated
                              // region instances
+
+    std::string incr_expr;   //Distance between block instantiations 
+                             // with the region
 };
 
 /* Definition of how to place physical logic block in the grid.
