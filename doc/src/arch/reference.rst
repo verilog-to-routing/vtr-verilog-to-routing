@@ -116,14 +116,14 @@ Global FPGA Information
 
 FPGA Grid Layout
 ----------------
-The tags within the ``<layout>`` tag are:
+The valid tags within the ``<layout>`` tag are:
 
 .. arch:tag:: <auto_layout aspect_ratio="float">
 
     :req_param aspect_ratio:
         The device grid's target aspect ratio (width / height)
 
-    Auto layout defines a scalable device grid layout which can be automatically scaled to a desired size (width x height).
+    Defines a scalable device grid layout which can be automatically scaled to a desired size (width x height).
 
 .. arch:tag:: <fixed_layout name="string" width="int" height="int">
 
@@ -136,7 +136,7 @@ The tags within the ``<layout>`` tag are:
     :req_param height:
         The device grid height
 
-    Fixed layout defines a device grid layout with fixed dimensions.
+    Defines a device grid layout with fixed dimensions.
 
 Any ``<auto_layout>`` or ``<fixed_layout>`` tag may contain a set of grid location tags. 
 
@@ -149,7 +149,7 @@ Larger priority location specifications override those with lower prioriry.
 
 Empty Grid Locations
 ~~~~~~~~~~~~~~~~~~~~
-Empty grid locations can be specified using the special block type to be ``EMPTY``.
+Empty grid locations can be specified using the special block type ``EMPTY``.
 
 .. note:: All grid locations default to ``EMPTY`` unless otherwise specified.
 
@@ -169,7 +169,7 @@ Expressions may contain numeric constants (e.g. ``7``) and the following special
 .. warning:: All expressions are evaluated as integers, so operations such as division may have their result truncated.
 
 As an example consider the expression ``W/2 - w/2``.
-For a a device width of 10 and a block type of width 3, this would be evaluted as :math:`\lfloor \frac{W}{2} \rfloor - \lfloor \frac{w}{2} \rfloor  = \lfloor \frac{10}{2} \rfloor - \lfloor \frac{3}{2} \rfloor = 5 - 1 = 4`.
+For a device width of 10 and a block type of width 3, this would be evaluted as :math:`\lfloor \frac{W}{2} \rfloor - \lfloor \frac{w}{2} \rfloor  = \lfloor \frac{10}{2} \rfloor - \lfloor \frac{3}{2} \rfloor = 5 - 1 = 4`.
 
 Grid Location Tags
 ~~~~~~~~~~~~~~~~~~
