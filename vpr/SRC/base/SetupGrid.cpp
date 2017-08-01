@@ -81,10 +81,6 @@ void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instance
     };
     std::stable_sort(grid_loc_defs.begin(), grid_loc_defs.end(), priority_order);
 
-    t_formula_data vars;
-    vars.set_var_value("W", W);
-    vars.set_var_value("H", H);
-
     //Process the gird location specifications from lowest to highest priority,
     //this ensure higher priority specifications override lower priority specifications
     for (const auto& grid_loc_def : grid_loc_defs) {
@@ -97,6 +93,12 @@ void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instance
                     "Failed to find block type '%s' for grid location specification",
                     grid_loc_def.block_type.c_str());
         }
+
+        t_formula_data vars;
+        vars.set_var_value("W", W);
+        vars.set_var_value("H", H);
+        vars.set_var_value("w", type->width);
+        vars.set_var_value("h", type->height);
 
         //vtr::printf("Applying grid_loc_def for '%s' priority %d\n", type->name, grid_loc_def.priority);
 
