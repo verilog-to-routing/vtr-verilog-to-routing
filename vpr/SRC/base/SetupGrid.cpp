@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
+#include <regex>
 using namespace std;
 
 #include "vtr_assert.h"
