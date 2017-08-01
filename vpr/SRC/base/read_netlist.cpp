@@ -854,12 +854,11 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 		const t_block block_list[],
 		const std::vector<std::string>& circuit_clocks,
         t_netlist* old_nlist, ClusteredNetlist* clb_nlist) {
-	int i, j, k, ipin;
+	int i, j, k, ipin, net_id, num_tokens;
+	int ext_ncount = 0;
+	int *count; 
 	t_hash **ext_nhash;
-    int ext_ncount = 0;
 	t_pb_graph_pin *pb_graph_pin;
-	int *count;
-	int net_id, num_tokens;
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -975,18 +974,14 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 								clb_nlist->net_sinks((NetId)net_id).size());
 					}
 
-                    //Mark the mapping from net to block
-					old_nlist->net[net_id].pins[count[net_id]].block = i;
-					old_nlist->net[net_id].pins[count[net_id]].block_pin = j;
-
 					//Asserts the BlockId is the same when NetId & pin BitIndex is provided
 					VTR_ASSERT((BlockId)i == clb_nlist->pin_block(*(clb_nlist->net_pins((NetId)net_id).begin() + count[net_id]))); //TODO: Remove after t_block/t_netlist
 					//Asserts the block's pin index is the same
 					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins((NetId)net_id).begin() + count[net_id]))); //TODO: Remove after t_block/t_netlist
 					VTR_ASSERT(j == clb_nlist->pin_index((NetId)net_id, count[net_id]));
-                    //Pin to net mapping
-                    old_nlist->net[net_id].pins[count[net_id]].net = net_id;
-                    old_nlist->net[net_id].pins[count[net_id]].net_pin = count[net_id];
+					//Pin to net mapping
+					old_nlist->net[net_id].pins[count[net_id]].net = net_id;
+					old_nlist->net[net_id].pins[count[net_id]].net_pin = count[net_id];
 
 					if (clb_nlist->block_type((BlockId)i)->is_global_pin[j])
 						clb_nlist->set_global((NetId)net_id, true);
@@ -997,15 +992,10 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 
 				} else {
 					VTR_ASSERT(DRIVER == clb_nlist->block_type((BlockId)i)->class_inf[clb_nlist->block_type((BlockId)i)->pin_class[j]].type);
-					VTR_ASSERT(old_nlist->net[net_id].pins[0].block == OPEN);
-
-                    //Mark the mapping from net to block
-					old_nlist->net[net_id].pins[0].block = i;
-					old_nlist->net[net_id].pins[0].block_pin = j;
-
-                    //Pin to net mapping
-                    old_nlist->net[net_id].pins[0].net = net_id;
-                    old_nlist->net[net_id].pins[0].net_pin = 0;
+					
+					//Pin to net mapping
+					old_nlist->net[net_id].pins[0].net = net_id;
+					old_nlist->net[net_id].pins[0].net_pin = 0;
 
                     //Mark the net pin numbers on the block
                     block_list[i].net_pins[j] = 0; //The driver
@@ -1016,21 +1006,22 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 
 	/* Error check global and non global signals */
     VTR_ASSERT(ext_ncount == static_cast<int>(clb_nlist->nets().size()));
-	for (i = 0; i < ext_ncount; i++) {
-		for (j = 1; j <= (int)clb_nlist->net_sinks((NetId)i).size(); j++) {
-			bool is_global_net = clb_nlist->net_global((NetId)i);
-			if (clb_nlist->block_type((BlockId)old_nlist->net[i].pins[j].block)->is_global_pin[old_nlist->net[i].pins[j].block_pin] != is_global_net) {
+	for (auto clb_net_id : clb_nlist->nets()) {
+		for (auto pin_id : clb_nlist->net_sinks(clb_net_id)) {
+			bool is_global_net = clb_nlist->net_global(clb_net_id);
+			if (clb_nlist->block_type(clb_nlist->pin_block(pin_id))->is_global_pin[clb_nlist->pin_index(pin_id)] != is_global_net) {
 				vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
-						"Netlist attempts to connect net %s to both global and non-global pins.\n",
-						clb_nlist->net_name((NetId)i));
+					"Netlist attempts to connect net %s to both global and non-global pins.\n",
+					clb_nlist->net_name(clb_net_id));
 			}
 		}
 		for (j = 0; j < num_tokens; j++) {
-			if (0 == clb_nlist->net_name((NetId)i).compare(circuit_clocks[j].c_str())) {
-				VTR_ASSERT(clb_nlist->net_global((NetId)i));
+			if (0 == clb_nlist->net_name(clb_net_id).compare(circuit_clocks[j].c_str())) {
+				VTR_ASSERT(clb_nlist->net_global(clb_net_id));
 			}
 		}
 	}
+
 	free(count);
 	free_hash_table(ext_nhash);
 }

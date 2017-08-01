@@ -323,15 +323,15 @@ static void process_nodes(ifstream & fp, int inet) {
     }
 }
 
+/*This function goes through all the blocks in a global net and verify it with the
+* clustered netlist and the placement */
 static void process_global_blocks(ifstream &fp, int inet) {
-    /*This function goes through all the blocks in a global net and verify it with the
-     *clustered netlist and the placement*/
-
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
     string block, bnum_str;
-    int x, y, bnum;
+    int x, y;
+	BlockId bnum;
     std::vector<std::string> tokens;
     int pin_counter = 0;
 
@@ -356,24 +356,25 @@ static void process_global_blocks(ifstream &fp, int inet) {
             bnum_str = format_name(tokens[2]);
             /*remove #*/
             bnum_str.erase(bnum_str.begin());
-            bnum = atoi(bnum_str.c_str());
+            bnum = (BlockId)atoi(bnum_str.c_str());
 
             /*Check for name, coordinate, and pins*/
-            if (0 != cluster_ctx.clb_nlist.block_name((BlockId)bnum).compare(tokens[1])) {
+            if (0 != cluster_ctx.clb_nlist.block_name(bnum).compare(tokens[1])) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "Block %s for block number %d specified in the routing file does not match given %s",
-                        tokens[1].c_str(), bnum, cluster_ctx.clb_nlist.block_name((BlockId)bnum));
+                        "Block %s for block number %lu specified in the routing file does not match given %s",
+                        tokens[1].c_str(), (size_t)bnum, cluster_ctx.clb_nlist.block_name(bnum));
             }
-            if (place_ctx.block_locs[bnum].x != x || place_ctx.block_locs[bnum].y != y) {
+            if (place_ctx.block_locs[(size_t)bnum].x != x || place_ctx.block_locs[(size_t)bnum].y != y) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "The placement coordinates (%d, %d) of %d block does not match given (%d, %d)",
-                        x, y, place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y);
+                        x, y, place_ctx.block_locs[(size_t)bnum].x, place_ctx.block_locs[(size_t)bnum].y);
             }
-            int node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[pin_counter].block_pin;
-            if (cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_class[node_block_pin] != atoi(tokens[7].c_str())) {
+
+			int pin_index = cluster_ctx.clb_nlist.pin_index((NetId)inet, pin_counter);
+            if (cluster_ctx.clb_nlist.block_type(bnum)->pin_class[pin_index] != atoi(tokens[7].c_str())) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "The pin class %d of %d net does not match given ",
-                        atoi(tokens[7].c_str()), inet, cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_class[node_block_pin]);
+                        atoi(tokens[7].c_str()), inet, cluster_ctx.clb_nlist.block_type(bnum)->pin_class[pin_index]);
             }
             pin_counter++;
         }

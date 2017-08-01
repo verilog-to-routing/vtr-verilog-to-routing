@@ -2952,14 +2952,14 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
 
         int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
 
-        const t_net_pin* sink_clb_net_pin = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
+        const t_net_pin* sink_clb_net_pin = find_pb_route_clb_input_net_pin((BlockId)clb_sink_block, &sink_pb_route_id);
         if(sink_clb_net_pin != nullptr) {
             //Connection leaves the CLB
 
             int net = sink_clb_net_pin->net;
             const t_net_pin* driver_clb_net_pin = &cluster_ctx.clbs_nlist.net[net].pins[0];
             VTR_ASSERT(driver_clb_net_pin != nullptr);
-            VTR_ASSERT(driver_clb_net_pin->block == clb_src_block);
+			VTR_ASSERT(cluster_ctx.clb_nlist.net_driver_block((NetId)net) == (BlockId)clb_src_block);
 
             //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
             auto routed_rr_nodes = trace_routed_connection_rr_nodes(driver_clb_net_pin, sink_clb_net_pin);

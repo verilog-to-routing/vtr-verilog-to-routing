@@ -675,11 +675,11 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
             astar_fac, bend_cost, rt_root, bounding_box, cluster_ctx.clb_nlist.net_sinks((NetId)inet).size());
 
     if (cheapest == NULL) {
-        const t_net_pin* src_net_pin = &cluster_ctx.clbs_nlist.net[inet].pins[0];
-        const t_net_pin* sink_net_pin = &cluster_ctx.clbs_nlist.net[inet].pins[target_pin];
+		BlockId src_block = cluster_ctx.clb_nlist.net_driver_block((NetId)inet);
+		BlockId sink_block = cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins((NetId)inet).begin() + target_pin));
         vtr::printf("Failed to route connection from '%s' to '%s' for net '%s'\n",
-                    cluster_ctx.clb_nlist.block_name((BlockId)src_net_pin->block),
-					cluster_ctx.clb_nlist.block_name((BlockId)sink_net_pin->block),
+                    cluster_ctx.clb_nlist.block_name(src_block),
+					cluster_ctx.clb_nlist.block_name(sink_block),
                     cluster_ctx.clb_nlist.net_name((NetId)inet));
         return false;
     }

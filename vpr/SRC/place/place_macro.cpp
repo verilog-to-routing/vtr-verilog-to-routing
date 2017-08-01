@@ -537,9 +537,10 @@ static bool is_constant_clb_net(int clb_net) {
 static bool net_is_driven_by_direct(int clb_net) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     
-    const t_net_pin* driver = &cluster_ctx.clbs_nlist.net[clb_net].pins[0];
+	BlockId block_id = cluster_ctx.clb_nlist.net_driver_block((NetId)clb_net);
+	int pin_index = cluster_ctx.clb_nlist.pin_index((NetId)clb_net, 0);
 
-    auto direct = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)driver->block)->index][driver->block_pin];
+    auto direct = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(block_id)->index][pin_index];
 
     return direct != OPEN;
 }

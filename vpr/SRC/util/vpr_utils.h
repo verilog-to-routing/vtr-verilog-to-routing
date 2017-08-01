@@ -8,7 +8,7 @@ const t_model_ports* find_model_port(const t_model* model, const std::string& na
 
 void print_tabs(FILE * fpout, int num_tab);
 
-bool is_clb_external_pin(int clb, int pb_pin_id);
+bool is_clb_external_pin(BlockId clb, int pb_pin_id);
 
 bool is_opin(int ipin, t_type_ptr type);
 
@@ -45,21 +45,21 @@ class IntraLbPbPinLookup {
 };
 
 //Find the atom pins (driver or sinks) connected to the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_connected_atom_pins(int clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(BlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 //Find the atom pin driving to the specified top-level CLB pin
-AtomPinId find_clb_pin_driver_atom_pin(int clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+AtomPinId find_clb_pin_driver_atom_pin(BlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 //Find the atom pins driven by the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_sink_atom_pins(int clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(BlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
-const t_net_pin* find_pb_route_clb_input_net_pin(int clb, int sink_pb_route_id);
+const t_net_pin* find_pb_route_clb_input_net_pin(BlockId clb, int *sink_pb_route_id);
 
 //Return the pb pin index corresponding to the pin clb_pin on block clb
-int find_clb_pb_pin(int clb, int clb_pin);
+int find_clb_pb_pin(BlockId clb, int clb_pin);
 
 //Return the clb_pin corresponding to the pb_pin on the specified block
-int find_pb_pin_clb_pin(int clb, int pb_pin);
+int find_pb_pin_clb_pin(BlockId clb, int pb_pin);
 
 //Returns the port matching name within pb_gnode
 const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name);

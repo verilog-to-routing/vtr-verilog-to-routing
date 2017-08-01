@@ -393,10 +393,11 @@ std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& t
 float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, const IntraLbPbPinLookup& pb_gpin_lookup, int inet, int ipin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    const t_net_pin& net_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin];
+	BlockId block_id = cluster_ctx.clb_nlist.net_pin_block((NetId)inet, ipin);
+	int pin_index = cluster_ctx.clb_nlist.pin_index((NetId)inet, ipin);
 
     //There may be multiple atom netlist pins connected to this CLB pin
-    std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(net_pin.block, net_pin.block_pin, pb_gpin_lookup);
+    std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(block_id, pin_index, pb_gpin_lookup);
 
     //Take the maximum of the atom pin criticality as the CLB pin criticality
     float clb_pin_crit = 0.;
