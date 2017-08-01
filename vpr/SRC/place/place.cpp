@@ -1772,12 +1772,11 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
         int delta_x, delta_y;
         t_type_ptr source_type, sink_type;
 
+		source_block = (size_t)cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins((NetId)inet).begin()));
+        source_type = cluster_ctx.clb_nlist.block_type((BlockId)source_block);
 
-        source_block = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
-        source_type = cluster_ctx.clb_nlist.block_type((BlockId) source_block);
-
-        sink_block = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
-        sink_type = cluster_ctx.clb_nlist.block_type((BlockId) sink_block);
+		sink_block = (size_t)cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins((NetId)inet).begin() + ipin));
+        sink_type = cluster_ctx.clb_nlist.block_type((BlockId)sink_block);
 
         VTR_ASSERT(source_type != NULL);
         VTR_ASSERT(sink_type != NULL);
@@ -1836,7 +1835,7 @@ static void update_td_cost(void) {
 	/* Go through all the blocks moved. */
 	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
-		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId) bnum)->num_pins; iblk_pin++) {
+		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId)bnum)->num_pins; iblk_pin++) {
 
 			inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
 
@@ -1898,7 +1897,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 	{
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
 		/* Go through all the pins in the moved block */
-		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId) bnum)->num_pins; iblk_pin++) {
+		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId)bnum)->num_pins; iblk_pin++) {
 			inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
 
 			if (inet == OPEN)

@@ -920,22 +920,22 @@ static void load_route_bb(int bb_factor) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-        int idriver_blk = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
-        int idriver_blk_pin = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
-		x = place_ctx.block_locs[idriver_blk].x + cluster_ctx.clb_nlist.block_type((BlockId) idriver_blk)->pin_width[idriver_blk_pin];
-		y = place_ctx.block_locs[idriver_blk].y + cluster_ctx.clb_nlist.block_type((BlockId) idriver_blk)->pin_height[idriver_blk_pin];
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		BlockId driver_blk = cluster_ctx.clb_nlist.net_driver_block(net_id);
+		int driver_blk_pin = cluster_ctx.clb_nlist.pin_index(net_id, 0);
+		x = place_ctx.block_locs[(size_t)driver_blk].x + cluster_ctx.clb_nlist.block_type(driver_blk)->pin_width[driver_blk_pin];
+		y = place_ctx.block_locs[(size_t)driver_blk].y + cluster_ctx.clb_nlist.block_type(driver_blk)->pin_height[driver_blk_pin];
 
 		xmin = x;
 		ymin = y;
 		xmax = x;
 		ymax = y;
 
-		for (k = 1; k < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); k++) {
-            int isink_blk = cluster_ctx.clbs_nlist.net[inet].pins[k].block;
-            int isink_blk_pin = cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin;
-			x = place_ctx.block_locs[isink_blk].x + cluster_ctx.clb_nlist.block_type((BlockId) isink_blk)->pin_width[isink_blk_pin];
-			y = place_ctx.block_locs[isink_blk].y + cluster_ctx.clb_nlist.block_type((BlockId) isink_blk)->pin_height[isink_blk_pin];
+		for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+			BlockId sink_blk = cluster_ctx.clb_nlist.pin_block(sink_pin_id);
+			int sink_blk_pin = cluster_ctx.clb_nlist.pin_index(sink_pin_id);
+			x = place_ctx.block_locs[(size_t)sink_blk].x + cluster_ctx.clb_nlist.block_type(sink_blk)->pin_width[sink_blk_pin];
+			y = place_ctx.block_locs[(size_t)sink_blk].y + cluster_ctx.clb_nlist.block_type(sink_blk)->pin_height[sink_blk_pin];
 
 			if (x < xmin) {
 				xmin = x;
@@ -951,17 +951,15 @@ static void load_route_bb(int bb_factor) {
 		}
 
 		/* Want the channels on all 4 sides to be usuable, even if bb_factor = 0. */
-
 		xmin -= 1;
 		ymin -= 1;
 
 		/* Expand the net bounding box by bb_factor, then clip to the physical *
-		 * chip area.                                                          */
-
-		route_ctx.route_bb[inet].xmin = max(xmin - bb_factor, 0);
-		route_ctx.route_bb[inet].xmax = min(xmax + bb_factor, device_ctx.nx + 1);
-		route_ctx.route_bb[inet].ymin = max(ymin - bb_factor, 0);
-		route_ctx.route_bb[inet].ymax = min(ymax + bb_factor, device_ctx.ny + 1);
+		* chip area.                                                          */
+		route_ctx.route_bb[(size_t)net_id].xmin = max(xmin - bb_factor, 0);
+		route_ctx.route_bb[(size_t)net_id].xmax = min(xmax + bb_factor, device_ctx.nx + 1);
+		route_ctx.route_bb[(size_t)net_id].ymin = max(ymin - bb_factor, 0);
+		route_ctx.route_bb[(size_t)net_id].ymax = min(ymax + bb_factor, device_ctx.ny + 1);
 	}
 }
 

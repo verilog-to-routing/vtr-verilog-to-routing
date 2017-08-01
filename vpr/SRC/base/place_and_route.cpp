@@ -733,8 +733,7 @@ static float comp_width(t_chan * chan, float x, float separation) {
 void post_place_sync() {
     /* Go through each block */
 	auto& cluster_ctx = g_vpr_ctx.clustering();
-	int L_num_blocks = (int)cluster_ctx.clb_nlist.blocks().size();
-    for (int iblk = 0; iblk < L_num_blocks; ++iblk) {
-        place_sync_external_block_connections(iblk);
+	for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
+        place_sync_external_block_connections(block_id);
     }
 }

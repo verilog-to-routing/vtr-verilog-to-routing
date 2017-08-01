@@ -17,8 +17,8 @@ using namespace std;
 
 /******************** Subroutines local to this module **********************/
 static void check_node_and_range(int inode, enum e_route_type route_type, const t_segment_inf* segment_inf);
-static void check_source(int inode, int inet);
-static void check_sink(int inode, int inet, bool * pin_done);
+static void check_source(int inode, NetId inet);
+static void check_sink(int inode, NetId inet, bool * pin_done);
 static void check_switch(t_trace *tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
@@ -38,7 +38,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 	 * scratch).                                                             */
 
 	int max_pins, inode, prev_node;
-	unsigned int inet, ipin;
+	unsigned int ipin;
 	bool valid, connects;
 	bool * connected_to_route; /* [0 .. device_ctx.num_rr_nodes-1] */
 	t_trace *tptr;
@@ -67,27 +67,24 @@ void check_route(enum e_route_type route_type, int num_switches,
 	connected_to_route = (bool *) vtr::calloc(device_ctx.num_rr_nodes, sizeof(bool));
 
 	max_pins = 0;
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++)
-		max_pins = max(max_pins, (int)cluster_ctx.clb_nlist.net_pins((NetId)inet).size());
+	for (auto net_id : cluster_ctx.clb_nlist.nets())
+		max_pins = max(max_pins, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
 
 	pin_done = (bool *) vtr::malloc(max_pins * sizeof(bool));
 
 	/* Now check that all nets are indeed connected. */
-
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-
-		if (cluster_ctx.clb_nlist.net_global((NetId)inet) || cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() == 0) /* Skip global nets. */
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (cluster_ctx.clb_nlist.net_global(net_id) || cluster_ctx.clb_nlist.net_sinks(net_id).size() == 0) /* Skip global nets. */
 			continue;
 
-		for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++)
+		for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
 			pin_done[ipin] = false;
 
 		/* Check the SOURCE of the net. */
-
-		tptr = route_ctx.trace_head[inet];
+		tptr = route_ctx.trace_head[(size_t)net_id];
 		if (tptr == NULL) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
-				"in check_route: net %d has no routing.\n", inet);
+				"in check_route: net %d has no routing.\n", (size_t)net_id);
 		}
 
 		inode = tptr->index;
@@ -95,14 +92,13 @@ void check_route(enum e_route_type route_type, int num_switches,
 		check_switch(tptr, num_switches);
 		connected_to_route[inode] = true; /* Mark as in path. */
 
-		check_source(inode, inet);
+		check_source(inode, net_id);
 		pin_done[0] = true;
 
 		prev_node = inode;
 		tptr = tptr->next;
 
 		/* Check the rest of the net */
-
 		while (tptr != NULL) {
 			inode = tptr->index;
 			check_node_and_range(inode, route_type, segment_inf);
@@ -111,7 +107,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 			if (device_ctx.rr_nodes[prev_node].type() == SINK) {
 				if (connected_to_route[inode] == false) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
-						"in check_route: node %d does not link into existing routing for net %d.\n", inode, inet);
+						"in check_route: node %d does not link into existing routing for net %d.\n", inode, (size_t)net_id);
 				}
 			}
 
@@ -119,22 +115,20 @@ void check_route(enum e_route_type route_type, int num_switches,
 				connects = check_adjacent(prev_node, inode);
 				if (!connects) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
-						"in check_route: found non-adjacent segments in traceback while checking net %d.\n", inet);
+						"in check_route: found non-adjacent segments in traceback while checking net %d.\n", (size_t)net_id);
 				}
 
 				if (connected_to_route[inode] && device_ctx.rr_nodes[inode].type() != SINK) {
-
-					/* Note:  Can get multiple connections to the same logically-equivalent     *
-					 * SINK in some logic blocks.                                               */
-
+					/* Note:  Can get multiple connections to the same logically-equivalent *
+					 * SINK in some logic blocks.                                           */
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
-						"in check_route: net %d routing is not a tree.\n", inet);
+						"in check_route: net %d routing is not a tree.\n", (size_t)net_id);
 				}
 
 				connected_to_route[inode] = true; /* Mark as in path. */
 
 				if (device_ctx.rr_nodes[inode].type() == SINK)
-					check_sink(inode, inet, pin_done);
+					check_sink(inode, net_id, pin_done);
 
 			} /* End of prev_node type != SINK */
 			prev_node = inode;
@@ -143,17 +137,17 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 		if (device_ctx.rr_nodes[prev_node].type() != SINK) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
-				"in check_route: net %d does not end with a SINK.\n", inet);
+				"in check_route: net %d does not end with a SINK.\n", (size_t)net_id);
 		}
 
-		for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
+		for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
 			if (pin_done[ipin] == false) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 				
-					"in check_route: net %d does not connect to pin %d.\n", inet, ipin);
+					"in check_route: net %d does not connect to pin %d.\n", (size_t)net_id, ipin);
 			}
 		}
 
-		reset_flags(inet, connected_to_route);
+		reset_flags((size_t)net_id, connected_to_route);
 
 	} /* End for each net */
 
@@ -166,7 +160,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 /* Checks that this SINK node is one of the terminals of inet, and marks   *
 * the appropriate pin as being reached.                                   */
-static void check_sink(int inode, int inet, bool * pin_done) {
+static void check_sink(int inode, NetId inet, bool * pin_done) {
 	
 	int i, j, ifound, ptc_num, bnum, iclass, iblk, pin_index;
 	unsigned int ipin;
@@ -186,7 +180,7 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 	for (iblk = 0; iblk < type->capacity; iblk++) {
 		bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx.blocks */
 		ipin = 1;
-		for (auto pin_id : cluster_ctx.clb_nlist.net_sinks((NetId)inet)) {
+		for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(inet)) {
 			if (cluster_ctx.clb_nlist.pin_block(pin_id) == (BlockId)bnum) {
 				pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
 				iclass = type->pin_class[pin_index];
@@ -205,21 +199,19 @@ static void check_sink(int inode, int inet, bool * pin_done) {
 
 	if (ifound > 1 && type == device_ctx.IO_TYPE) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
-			"in check_sink: found %d terminals of net %d of pad %d at location (%d, %d).\n", ifound, inet, ptc_num, i, j);
+			"in check_sink: found %d terminals of net %d of pad %d at location (%d, %d).\n", ifound, (size_t)inet, ptc_num, i, j);
 	}
 
 	if (ifound < 1) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
 				 "in check_sink: node %d does not connect to any terminal of net %s #%d.\n"
 				 "This error is usually caused by incorrectly specified logical equivalence in your architecture file.\n"
-				 "You should try to respecify what pins are equivalent or turn logical equivalence off.\n", inode, cluster_ctx.clb_nlist.net_name((NetId)inet), inet);
+				 "You should try to respecify what pins are equivalent or turn logical equivalence off.\n", inode, cluster_ctx.clb_nlist.net_name(inet), (size_t)inet);
 	}
 }
 
-static void check_source(int inode, int inet) {
-
-	/* Checks that the node passed in is a valid source for this net.        */
-
+/* Checks that the node passed in is a valid source for this net. */
+static void check_source(int inode, NetId inet) {
 	t_rr_type rr_type;
 	t_type_ptr type;
 	int i, j, ptc_num, bnum, node_block_pin, iclass;
@@ -230,7 +222,7 @@ static void check_source(int inode, int inet) {
 	rr_type = device_ctx.rr_nodes[inode].type();
 	if (rr_type != SOURCE) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
-			"in check_source: net %d begins with a node of type %d.\n", inet, rr_type);
+			"in check_source: net %d begins with a node of type %d.\n", (size_t)inet, rr_type);
 	}
 
 	i = device_ctx.rr_nodes[inode].xlow();
@@ -238,7 +230,7 @@ static void check_source(int inode, int inet) {
 	/* for sinks and sources, ptc_num is class */
 	ptc_num = device_ctx.rr_nodes[inode].ptc_num(); 
 	/* First node_block for net is the source */
-	bnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block; 
+	bnum = (size_t)cluster_ctx.clb_nlist.net_driver_block(inet);
 	type = device_ctx.grid[i][j].type;
 
 	if (place_ctx.block_locs[bnum].x != i || place_ctx.block_locs[bnum].y != j) {		
@@ -246,7 +238,8 @@ static void check_source(int inode, int inet) {
 				"in check_source: net SOURCE is in wrong location (%d,%d).\n", i, j);
 	}
 
-	node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
+	//Get the driver pin's index in the block
+	node_block_pin = cluster_ctx.clb_nlist.pin_index(inet, 0);
 	iclass = type->pin_class[node_block_pin];
             
 	if (ptc_num != iclass) {		

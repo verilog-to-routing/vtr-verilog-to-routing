@@ -214,12 +214,12 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 	num_macro = 0;
 	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
 
-		num_blk_pins = cluster_ctx.clb_nlist.block_type((BlockId) iblk)->num_pins;
+		num_blk_pins = cluster_ctx.clb_nlist.block_type((BlockId)iblk)->num_pins;
 		for (to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
 			
 			to_inet = cluster_ctx.blocks[iblk].nets[to_iblk_pin];
-			to_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId) iblk)->index][to_iblk_pin];
-			to_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId) iblk)->index][to_iblk_pin];
+			to_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)iblk)->index][to_iblk_pin];
+			to_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)iblk)->index][to_iblk_pin];
 			
 			// Identify potential macro head blocks (i.e. start of a macro)
             //
@@ -236,8 +236,8 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 
 				for (from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
 					from_inet = cluster_ctx.blocks[iblk].nets[from_iblk_pin];
-					from_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId) iblk)->index][from_iblk_pin];
-					from_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId) iblk)->index][from_iblk_pin];
+					from_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)iblk)->index][from_iblk_pin];
+					from_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)iblk)->index][from_iblk_pin];
 
 					// Confirm whether this is a head macro
                     //
@@ -269,8 +269,8 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 							next_iblk = cluster_ctx.clbs_nlist.net[curr_inet].pins[1].block;
 							
 							// Assume that the from_iblk_pin index is the same for the next block
-							VTR_ASSERT(f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId) next_iblk)->index][from_iblk_pin] == from_idirect
-									&& f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId) next_iblk)->index][from_iblk_pin] == SOURCE);
+							VTR_ASSERT(f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)next_iblk)->index][from_iblk_pin] == from_idirect
+									&& f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)next_iblk)->index][from_iblk_pin] == SOURCE);
 							next_inet = cluster_ctx.blocks[next_iblk].nets[from_iblk_pin];
 
 							// Mark down this block as a member of the macro

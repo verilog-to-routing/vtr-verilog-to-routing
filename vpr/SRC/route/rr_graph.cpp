@@ -1210,40 +1210,39 @@ void alloc_net_rr_terminals(void) {
     }
 }
 
+/* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
+* index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    * 
+* Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of pin.         */
 void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
+	int i, j, pin_index, iclass, inode, pin_count;
+	t_type_ptr type;
 
-    /* Allocates and loads the route_ctx.net_rr_terminals data structure.  For each net   *
-     * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
-     * of the net.  [0..cluster_ctx.clb_nlist.nets().size()-1][0..num_pins-1].  Entry [inet][pnum] stores  *
-     * the rr index corresponding to the SOURCE (opin) or SINK (ipin) of pnum.  */
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+	auto& place_ctx = g_vpr_ctx.placement();
+	auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    int inode, iblk, i, j, node_block_pin, iclass;
-    unsigned int ipin, inet;
-    t_type_ptr type;
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		pin_count = 0;
+		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+			auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+			i = place_ctx.block_locs[(size_t)block_id].x;
+			j = place_ctx.block_locs[(size_t)block_id].y;
+			type = cluster_ctx.clb_nlist.block_type(block_id);
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
+			/* In the routing graph, each (x, y) location has unique pins on it
+			* so when there is capacity, blocks are packed and their pin numbers
+			* are offset to get their actual rr_node */
+			pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
 
-    for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-        for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
-            iblk = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
-            i = place_ctx.block_locs[iblk].x;
-            j = place_ctx.block_locs[iblk].y;
-            type = cluster_ctx.clb_nlist.block_type((BlockId)iblk);
+			iclass = type->pin_class[pin_index];
 
-            /* In the routing graph, each (x, y) location has unique pins on it
-             * so when there is capacity, blocks are packed and their pin numbers
-             * are offset to get their actual rr_node */
-            node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
-
-            iclass = type->pin_class[node_block_pin];
-
-            inode = get_rr_node_index(i, j, (ipin == 0 ? SOURCE : SINK), /* First pin is driver */
-                    iclass, L_rr_node_indices);
-            route_ctx.net_rr_terminals[inet][ipin] = inode;
-        }
-    }
+			inode = get_rr_node_index(i, j, 
+				(pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
+				iclass, L_rr_node_indices);
+			route_ctx.net_rr_terminals[(size_t)net_id][pin_count] = inode;
+			pin_count++;
+		}
+	}
 }
 
 void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {

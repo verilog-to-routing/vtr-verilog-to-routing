@@ -1960,35 +1960,33 @@ AtomBlockId find_tnode_atom_block(int inode) {
     return blk_id;
 }
 
-void place_sync_external_block_connections(int iblk) {
+void place_sync_external_block_connections(BlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    VTR_ASSERT_MSG(place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate == false, "Block net and pins must not be already synced");
+    VTR_ASSERT_MSG(place_ctx.block_locs[(size_t)iblk].nets_and_pins_synced_to_z_coordinate == false, "Block net and pins must not be already synced");
 
-    t_type_ptr type = cluster_ctx.clb_nlist.block_type((BlockId)iblk);
+    t_type_ptr type = cluster_ctx.clb_nlist.block_type(iblk);
     VTR_ASSERT(type->num_pins % type->capacity == 0);
     int max_num_block_pins = type->num_pins / type->capacity;
     /* Logical location and physical location is offset by z * max_num_block_pins */
 
     /* Sync external blocks and nets */
     for (int j = 0; j < max_num_block_pins; j++) {
-        int inet = cluster_ctx.blocks[iblk].nets[j];
-        if (inet != OPEN && place_ctx.block_locs[iblk].z > 0) {
-            VTR_ASSERT(cluster_ctx.blocks[iblk].nets[j + place_ctx.block_locs[iblk].z * max_num_block_pins] == OPEN); //TODO: Convert these into checks that the ID's are not equal to j + place_ctx[...] + ...
-            VTR_ASSERT(cluster_ctx.blocks[iblk].net_pins[j + place_ctx.block_locs[iblk].z * max_num_block_pins] == OPEN);
+        int inet = cluster_ctx.blocks[(size_t)iblk].nets[j];
+        if (inet != OPEN && place_ctx.block_locs[(size_t)iblk].z > 0) {
+            VTR_ASSERT(cluster_ctx.blocks[(size_t)iblk].nets[j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins] == OPEN); //TODO: Convert these into checks that the ID's are not equal to j + place_ctx[...] + ...
+            VTR_ASSERT(cluster_ctx.blocks[(size_t)iblk].net_pins[j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins] == OPEN);
 
             //Update the block to net references
-            cluster_ctx.blocks[iblk].nets[j + place_ctx.block_locs[iblk].z * max_num_block_pins] = cluster_ctx.blocks[iblk].nets[j];
-            cluster_ctx.blocks[iblk].net_pins[j + place_ctx.block_locs[iblk].z * max_num_block_pins] = cluster_ctx.blocks[iblk].net_pins[j];
-            cluster_ctx.blocks[iblk].nets[j] = OPEN;
-            cluster_ctx.blocks[iblk].net_pins[j] = OPEN;
+            cluster_ctx.blocks[(size_t)iblk].nets[j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins] = cluster_ctx.blocks[(size_t)iblk].nets[j];
+            cluster_ctx.blocks[(size_t)iblk].net_pins[j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins] = cluster_ctx.blocks[(size_t)iblk].net_pins[j];
 
             //Update the net to block references
 			size_t k = 0;
 			for (auto pin_id : cluster_ctx.clb_nlist.net_pins((NetId)inet)) {
-				if (cluster_ctx.clb_nlist.pin_block(pin_id) == (BlockId)iblk && cluster_ctx.clb_nlist.pin_index(pin_id) == j) {
-					cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin = j + place_ctx.block_locs[iblk].z * max_num_block_pins;
-					cluster_ctx.clb_nlist.set_pin_index(pin_id, j + place_ctx.block_locs[iblk].z * max_num_block_pins);
+				if (cluster_ctx.clb_nlist.pin_block(pin_id) == iblk && cluster_ctx.clb_nlist.pin_index(pin_id) == j) {
+					cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin = j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins;
+					cluster_ctx.clb_nlist.set_pin_index(pin_id, j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins);
 					break;
 				}
 				k++;
@@ -1999,5 +1997,5 @@ void place_sync_external_block_connections(int iblk) {
     }
 
     //Mark the block as synced
-    place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate = true;
+    place_ctx.block_locs[(size_t)iblk].nets_and_pins_synced_to_z_coordinate = true;
 }
