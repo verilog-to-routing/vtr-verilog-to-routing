@@ -134,7 +134,7 @@ static void highlight_nets(char *message, int hit_node);
 static int draw_check_rr_node_hit (float click_x, float click_y);
 static void highlight_rr_nodes(float x, float y);
 static void draw_highlight_blocks_color(t_type_ptr type, int bnum);
-static void draw_reset_blk_color(int i);
+static void draw_reset_blk_color(BlockId blk_id);
 
 static inline bool LOD_screen_area_test_square(float width, float screen_area_threshold);
 static inline bool default_triangle_LOD_screen_area_test();
@@ -686,8 +686,7 @@ static void drawnets(void) {
 	 * yet been routed, so we just draw a chain showing a possible path *
 	 * for each net.  This gives some idea of future congestion.        */
 
-	unsigned ipin, inet;
-	int b1, b2;
+	BlockId b1, b2;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	setlinestyle(SOLID);
@@ -696,17 +695,17 @@ static void drawnets(void) {
 	/* Draw the net as a star from the source to each sink. Draw from centers of *
 	 * blocks (or sub blocks in the case of IOs).                                */
 
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-		if (cluster_ctx.clb_nlist.net_global((NetId)inet))
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (cluster_ctx.clb_nlist.net_global(net_id))
 			continue; /* Don't draw global nets. */
 
-		setcolor(draw_state->net_color[inet]);
-		b1 = cluster_ctx.clbs_nlist.net[inet].pins[0].block; /* The DRIVER */
-		t_point driver_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[b1], cluster_ctx.clb_nlist.block_type((BlockId)b1)).get_center();
+		setcolor(draw_state->net_color[(size_t)net_id]);
+		b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
+		t_point driver_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[(size_t)b1], cluster_ctx.clb_nlist.block_type(b1)).get_center();
 
-		for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
-			b2 = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
-			t_point sink_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[b2], cluster_ctx.clb_nlist.block_type((BlockId)b2)).get_center();
+		for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+			b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
+			t_point sink_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[(size_t)b2], cluster_ctx.clb_nlist.block_type(b2)).get_center();
 			drawline(driver_center, sink_center);
 
 			/* Uncomment to draw a chain instead of a star. */
@@ -2245,8 +2244,8 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
 
 
 static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
-	int k, netnum, fanblk, iclass;
-	unsigned ipin;
+	int k, netnum, iclass;
+	BlockId fanblk;
 
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2263,17 +2262,17 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 			if (draw_state->block_color[bnum] == SELECTED_COLOR) {
 				/* If block already highlighted, de-highlight the fanout. (the deselect case)*/
 				draw_state->net_color[netnum] = BLACK;
-				for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)netnum).size(); ipin++) {
-					fanblk = cluster_ctx.clbs_nlist.net[netnum].pins[ipin].block;
+				for (auto pin_id : cluster_ctx.clb_nlist.net_sinks((NetId)netnum)) {
+					fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
 					draw_reset_blk_color(fanblk);
 				}
 			}
 			else {
 				/* Highlight the fanout */
 				draw_state->net_color[netnum] = DRIVES_IT_COLOR;
-				for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)netnum).size(); ipin++) {
-					fanblk = cluster_ctx.clbs_nlist.net[netnum].pins[ipin].block;
-					draw_state->block_color[fanblk] = DRIVES_IT_COLOR;
+				for (auto pin_id : cluster_ctx.clb_nlist.net_sinks((NetId)netnum)) {
+					fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
+					draw_state->block_color[(size_t)fanblk] = DRIVES_IT_COLOR;
 				}
 			}
 		} 
@@ -2281,21 +2280,21 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 			if (draw_state->block_color[bnum] == SELECTED_COLOR) {
 				/* If block already highlighted, de-highlight the fanin. (the deselect case)*/
 				draw_state->net_color[netnum] = BLACK;
-				fanblk = cluster_ctx.clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
+				fanblk = cluster_ctx.clb_nlist.net_driver_block((NetId)netnum); /* DRIVER to net */
 				draw_reset_blk_color(fanblk);
 			}
 			else {
 				/* Highlight the fanin */
 				draw_state->net_color[netnum] = DRIVEN_BY_IT_COLOR;
-				fanblk = cluster_ctx.clbs_nlist.net[netnum].pins[0].block; /* DRIVER to net */
-				draw_state->block_color[fanblk] = DRIVEN_BY_IT_COLOR;
+				fanblk = cluster_ctx.clb_nlist.net_driver_block((NetId)netnum); /* DRIVER to net */
+				draw_state->block_color[(size_t)fanblk] = DRIVEN_BY_IT_COLOR;
 			}
 		}
 	}
 
 	if (draw_state->block_color[bnum] == SELECTED_COLOR) { 
 		/* If block already highlighted, de-highlight the selected block. */
-		draw_reset_blk_color(bnum);
+		draw_reset_blk_color((BlockId)bnum);
 	}
 	else { 
 		/* Highlight the selected block. */
@@ -2315,8 +2314,8 @@ static void deselect_all(void) {
 	int i;
 
 	/* Create some colour highlighting */
-	for (i = 0; i < (int)cluster_ctx.clb_nlist.blocks().size(); i++) {
-		draw_reset_blk_color(i);
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		draw_reset_blk_color(blk_id);
 	}
 
 	for (i = 0; i < (int)cluster_ctx.clb_nlist.nets().size(); i++)
@@ -2332,17 +2331,17 @@ static void deselect_all(void) {
 }
 
 
-static void draw_reset_blk_color(int i) {
+static void draw_reset_blk_color(BlockId blk_id) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	if (cluster_ctx.clb_nlist.block_type((BlockId)i)->index < 3) {
-			draw_state->block_color[i] = LIGHTGREY;
-	} else if (cluster_ctx.clb_nlist.block_type((BlockId)i)->index < 3 + MAX_BLOCK_COLOURS) {
-			draw_state->block_color[i] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS + cluster_ctx.clb_nlist.block_type((BlockId)i)->index - 3);
+	if (cluster_ctx.clb_nlist.block_type(blk_id)->index < 3) {
+			draw_state->block_color[(size_t)blk_id] = LIGHTGREY;
+	} else if (cluster_ctx.clb_nlist.block_type(blk_id)->index < 3 + MAX_BLOCK_COLOURS) {
+			draw_state->block_color[(size_t)blk_id] = (enum color_types) (BISQUE + MAX_BLOCK_COLOURS + cluster_ctx.clb_nlist.block_type(blk_id)->index - 3);
 	} else {
-			draw_state->block_color[i] = (enum color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1);
+			draw_state->block_color[(size_t)blk_id] = (enum color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1);
 	}
 }
 
