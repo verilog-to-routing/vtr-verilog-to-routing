@@ -2103,7 +2103,10 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
 
         expect_only_attributes(layout_type_tag, {"aspect_ratio"}, loc_data);
 
-        grid_def.aspect_ratio = get_attribute(layout_type_tag, "aspect_ratio", loc_data).as_float();
+        auto aspect_ratio_attr = get_attribute(layout_type_tag, "aspect_ratio", loc_data);
+        if (aspect_ratio_attr) {
+            grid_def.aspect_ratio = aspect_ratio_attr.as_float();
+        }
         grid_def.name = "auto";
 
     } else if (layout_type_tag.name() == std::string("fixed_layout")) {

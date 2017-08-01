@@ -120,10 +120,12 @@ The valid tags within the ``<layout>`` tag are:
 
 .. arch:tag:: <auto_layout aspect_ratio="float">
 
-    :req_param aspect_ratio:
-        The device grid's target aspect ratio (width / height)
+    :opt_param aspect_ratio:
+        The device grid's target aspect ratio (:math:`width / height`)
 
-    Defines a scalable device grid layout which can be automatically scaled to a desired size (width x height).
+        **Default**: ``1.0``
+
+    Defines a scalable device grid layout which can be automatically scaled to a desired size.
 
 .. arch:tag:: <fixed_layout name="string" width="int" height="int">
 
