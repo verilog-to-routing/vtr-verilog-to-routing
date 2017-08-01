@@ -212,8 +212,8 @@ void write_rr_grid(fstream &fp) {
 
     fp << "\t<grid>" << endl;
 
-    for (int x = 0; x < device_ctx.grid.width(); x++) {
-        for (int y = 0; y < device_ctx.grid.height(); y++) {
+    for (size_t x = 0; x < device_ctx.grid.width(); x++) {
+        for (size_t y = 0; y < device_ctx.grid.height(); y++) {
             t_grid_tile grid_tile = device_ctx.grid[x][y];
 
             fp << "\t\t<grid_loc x=\"" << x << "\" y=\"" << y <<

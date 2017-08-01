@@ -348,7 +348,6 @@ void try_place(t_placer_opts placer_opts,
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
@@ -1657,8 +1656,8 @@ static bool find_to(t_type_ptr type, float rlim,
 			}
 		}
 
-		VTR_ASSERT(*px_to >= 0 && *px_to < device_ctx.grid.width());
-		VTR_ASSERT(*py_to >= 0 && *py_to < device_ctx.grid.height());
+		VTR_ASSERT(*px_to >= 0 && *px_to < int(device_ctx.grid.width()));
+		VTR_ASSERT(*py_to >= 0 && *py_to < int(device_ctx.grid.height()));
 	} while (is_legal == false);
 
 	if (*px_to < 0 || *px_to > device_ctx.nx + 1 || *py_to < 0 || *py_to > device_ctx.ny + 1) {
@@ -2640,8 +2639,6 @@ static void update_bb(int inet, t_bb *bb_coord_new,
 }
 
 static void alloc_legal_placements() {
-	int i, j, k;
-
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -2650,11 +2647,11 @@ static void alloc_legal_placements() {
 	
 	/* Initialize all occupancy to zero. */
 
-	for (i = 0; i < device_ctx.grid.width(); i++) {
-		for (j = 0; j < device_ctx.grid.height(); j++) {
+	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
 			place_ctx.grid_blocks[i][j].usage = 0;
 
-			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
+			for (int k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
 
 				if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
 					place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK;
@@ -2666,28 +2663,25 @@ static void alloc_legal_placements() {
 		}
 	}
 
-	for (i = 0; i < device_ctx.num_block_types; i++) {
+	for (int i = 0; i < device_ctx.num_block_types; i++) {
 		legal_pos[i] = (t_legal_pos *) vtr::malloc(num_legal_pos[i] * sizeof(t_legal_pos));
 	}
 }
 
 static void load_legal_placements() {
-	int i, j, k, itype;
-	int *index;
-
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
-	index = (int *) vtr::calloc(device_ctx.num_block_types, sizeof(int));
+	int* index = (int *) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
-	for (i = 0; i < device_ctx.grid.width(); i++) {
-		for (j = 0; j < device_ctx.grid.height(); j++) {
-			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
+	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
+			for (int k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
 				if (place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK) {
 					continue;
 				}
 				if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-					itype = device_ctx.grid[i][j].type->index;
+					int itype = device_ctx.grid[i][j].type->index;
 					legal_pos[itype][index[itype]].x = i;
 					legal_pos[itype][index[itype]].y = j;
 					legal_pos[itype][index[itype]].z = k;
@@ -2954,7 +2948,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	 * array that gives every legal value of (x,y,z) that can accomodate a block.
 	 * The number of such locations is given by num_legal_pos[itype].
 	 */
-	int i, j, k, iblk, itype, x, y, z, ipos;
+	int iblk, itype, x, y, z, ipos;
 	int *free_locations; /* [0..device_ctx.num_block_types-1]. 
 						  * Stores how many locations there are for this type that *might* still be free.
 						  * That is, this stores the number of entries in legal_pos[itype] that are worth considering
@@ -2972,11 +2966,11 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	/* We'll use the grid to record where everything goes. Initialize to the grid has no 
 	 * blocks placed anywhere.
 	 */
-	for (i = 0; i < device_ctx.grid.width(); i++) {
-		for (j = 0; j < device_ctx.grid.height(); j++) {
+	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
 			place_ctx.grid_blocks[i][j].usage = 0;
 			itype = device_ctx.grid[i][j].type->index;
-			for (k = 0; k < device_ctx.block_types[itype].capacity; k++) {
+			for (int k = 0; k < device_ctx.block_types[itype].capacity; k++) {
 				if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
 					place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK;
 				}

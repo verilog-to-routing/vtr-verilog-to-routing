@@ -2142,12 +2142,12 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	t_bound_box clb_bbox(0,0,0,0);
 
 	// iterate over grid x
-	for (int i = 0; i < device_ctx.grid.width(); ++i) {
+	for (size_t i = 0; i < device_ctx.grid.width(); ++i) {
 		if (draw_coords->tile_x[i] > abs_x) {
 			break; // we've gone to far in the x direction
 		}
 		// iterate over grid y
-		for(int j = 0; j < device_ctx.grid.height(); ++j) {
+		for(size_t j = 0; j < device_ctx.grid.height(); ++j) {
 			if (draw_coords->tile_y[j] > abs_y) {
 				break; // we've gone to far in the y direction
 			}
