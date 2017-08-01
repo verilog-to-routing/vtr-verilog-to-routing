@@ -24,13 +24,10 @@ using namespace std;
  * net_pin:     Pin index (in the net) of this pin (e.g. net_pin == 0 means this pin is a driver)		
  */
 struct t_net_pin{
-	int block;
-	int block_pin;
     int net;
     int net_pin;
 
 	t_net_pin(){
-		block = block_pin = UNDEFINED;
         net = net_pin = UNDEFINED;
 	}
 };
