@@ -2062,14 +2062,30 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch *arch, const pugiuti
     VTR_ASSERT(layout_tag.name() == std::string("layout"));
 
     //Expect no attributes on <layout>
-    for (auto attrib : layout_tag.attributes()) {
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_tag),
-                    "Unexpected attribute '%s' on tag '<%s>'",
-                    attrib.name(), layout_tag.name());
+    expect_only_attributes(layout_tag, {}, loc_data);
+
+    //Count the number of <auto_layout> or <fixed_layout> tags
+    size_t auto_layout_cnt = 0;
+    size_t fixed_layout_cnt = 0;
+    for (auto layout_type_tag : layout_tag.children()) {
+        if (layout_type_tag.name() == std::string("auto_layout")) {
+            ++auto_layout_cnt;
+        } else if (layout_type_tag.name() == std::string("fixed_layout")) {
+            ++fixed_layout_cnt;
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
+                    "Unexpected tag type '<%s>', expected '<auto_layout>' or '<fixed_layout>'", layout_type_tag.name());
+        }
     }
 
-    //Currently only support a single layout specification
-    expect_child_node_count(layout_tag, 1, loc_data);
+    if (   (auto_layout_cnt == 0 && fixed_layout_cnt == 0)
+        || (auto_layout_cnt != 0 && fixed_layout_cnt != 0)) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_tag),
+                "Expected either a single <auto_layout> or one-or-more <fixed_layout> tags");
+    }
+    VTR_ASSERT(auto_layout_cnt == 0 || auto_layout_cnt == 1);
+    VTR_ASSERT(fixed_layout_cnt == 0 || fixed_layout_cnt > 1);
+    VTR_ASSERT(auto_layout_cnt == 0 || fixed_layout_cnt == 0);
 
     for (auto layout_type_tag : layout_tag.children()) {
 
