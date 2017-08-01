@@ -343,6 +343,9 @@ class NdMatrix : public NdMatrixBase<T,N> {
             //non-zero minimum index in this dimension
             size_t effective_index = index - this->dim_ranges_[0].begin_index();
 
+            VTR_ASSERT_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
+            VTR_ASSERT_MSG(this->dim_size(1) > 0, "Can not index into size zero dimension");
+
             //Calculate the stride for the current dimension
             size_t dim_stride = this->size() / this->dim_size(0);
 
