@@ -2222,10 +2222,7 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
             if (starty_attr) {
                 col.y.start_expr = starty_attr.value();
-            } else {
-                col.y.start_expr = "0";
             }
-            col.y.end_expr = "H - 1";
 
             grid_def.loc_defs.push_back(col);
 
@@ -2247,10 +2244,7 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
             if (startx_attr) {
                 row.x.start_expr = startx_attr.value();
-            } else {
-                row.x.start_expr = "0";
             }
-            row.x.end_expr = "W - 1";
 
             grid_def.loc_defs.push_back(row);
         } else if (loc_type == std::string("region")) {
