@@ -28,6 +28,7 @@ using namespace std;
 #include "vpr_utils.h"
 #include "place_macro.h"
 #include "histogram.h"
+#include "place_util.h"
 
 #include "PlacementDelayCalculator.h"
 #include "timing_util.h"
@@ -371,11 +372,6 @@ void try_place(t_placer_opts placer_opts,
         slacks = alloc_and_load_timing_graph(timing_inf);
 #endif
 	}
-
-    //We are careful to resize the block_locs after building the delta-delay 
-    // lookups (since they change the block locations)
-    place_ctx.block_locs.clear();
-    place_ctx.block_locs.resize(cluster_ctx.num_blocks);
 
 	width_fac = placer_opts.place_chan_width;
 
@@ -2118,6 +2114,8 @@ static void alloc_and_load_placement_structs(
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
+    init_placement_context();
+
 	alloc_legal_placements();
 	load_legal_placements();
 
@@ -2655,7 +2653,9 @@ static void alloc_legal_placements() {
 	for (i = 0; i < device_ctx.grid.width(); i++) {
 		for (j = 0; j < device_ctx.grid.height(); j++) {
 			place_ctx.grid_blocks[i][j].usage = 0;
+
 			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
+
 				if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
 					place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK;
 					if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {

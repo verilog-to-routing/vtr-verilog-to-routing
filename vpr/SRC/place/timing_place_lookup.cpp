@@ -25,6 +25,7 @@ using namespace std;
 #include "echo_files.h"
 #include "atom_netlist.h"
 #include "rr_graph2.h"
+#include "place_util.h"
 // all functions in profiling:: namespace, which are only activated if PROFILE is defined
 #include "route_profiling.h" 
 
@@ -58,8 +59,9 @@ static void alloc_routing_structs(t_router_opts router_opts,
 
 static void free_routing_structs();
 
-static float assign_blocks_and_route_net(int source_node, int sink_node, int source_x_loc, int source_y_loc,
-        int sink_x_loc, int sink_y_loc, t_router_opts router_opts);
+static float route_connection_delay(int source_x_loc, int source_y_loc,
+        int sink_x_loc, int sink_y_loc,
+        t_router_opts router_opts);
 
 static void alloc_delta_arrays(void);
 
@@ -145,21 +147,7 @@ static int get_longest_segment_length(
 
 /**************************************/
 static void reset_placement(void) {
-    int i, j, k;
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    for (i = 0; i < device_ctx.grid.width(); i++) {
-        for (j = 0; j < device_ctx.grid.height(); j++) {
-            for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
-                if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
-                    place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK;
-                }
-            }
-            place_ctx.grid_blocks[i][j].usage = 0;
-        }
-    }
+    init_placement_context();
 }
 
 /**************************************/
@@ -244,37 +232,33 @@ static void free_routing_structs() {
 }
 
 /**************************************/
-static float assign_blocks_and_route_net(int source_node, int sink_node, int source_x_loc, int source_y_loc,
-        int sink_x_loc, int sink_y_loc, t_router_opts router_opts) {
-
-    /*places blocks at the specified locations, and routes a net between them */
-    /*returns the delay of this net */
-
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    /* Only one block per tile */
-    int source_z_loc = 0;
-    int sink_z_loc = 0;
+static float route_connection_delay(int source_x, int source_y,
+        int sink_x, int sink_y, t_router_opts router_opts) {
+    //Routes between the source and sink locations and calculates the delay
 
     float net_delay_value = IMPOSSIBLE; /*set to known value for debug purposes */
 
-    bool successfully_routed = calculate_delay(source_node, sink_node,
+    auto& device_ctx = g_vpr_ctx.device();
+
+
+    //Get the rr nodes to route between
+    int driver_ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
+    int source_rr_node = get_rr_node_index(source_x, source_y, SOURCE, driver_ptc, device_ctx.rr_node_indices);
+    int sink_ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
+    int sink_rr_node = get_rr_node_index(sink_x, sink_y, SINK, sink_ptc, device_ctx.rr_node_indices);
+
+    bool successfully_routed = calculate_delay(source_rr_node, sink_rr_node,
             router_opts.astar_fac, router_opts.bend_cost,
             &net_delay_value);
 
     if (!successfully_routed) {
         vtr::printf_warning(__FILE__, __LINE__,
                 "Unable to route between blocks at (%d,%d) and (%d,%d) to characterize delay (setting to inf)\n",
-                source_x_loc, source_y_loc, sink_x_loc, sink_y_loc);
+                source_x, source_y, sink_x, sink_y);
 
         //We set the delay to +inf, since this architecture will likely be unroutable
         net_delay_value = std::numeric_limits<float>::infinity();
     }
-
-    place_ctx.grid_blocks[source_x_loc][source_y_loc].usage = 0;
-    place_ctx.grid_blocks[source_x_loc][source_y_loc].blocks[source_z_loc] = EMPTY_BLOCK;
-    place_ctx.grid_blocks[sink_x_loc][sink_y_loc].usage = 0;
-    place_ctx.grid_blocks[sink_x_loc][sink_y_loc].blocks[sink_z_loc] = EMPTY_BLOCK;
 
     return (net_delay_value);
 }
@@ -309,7 +293,6 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
 
     int delta_x, delta_y;
     int sink_x, sink_y;
-    int start_node, end_node, ptc;
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -331,14 +314,7 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
                 continue;
             }
 
-            ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-            start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-            ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-            end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
-
-            matrix[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                    source_x, source_y, sink_x, sink_y,
-                    router_opts);
+            matrix[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
 
         }
     }
@@ -359,7 +335,6 @@ static void compute_delta_clb_to_clb(t_router_opts router_opts, int longest_leng
     int start_x, start_y, end_x, end_y;
     int delta_x, delta_y;
     auto& device_ctx = g_vpr_ctx.device();
-    int start_node, end_node, ptc;
 
     if (longest_length < 0.5 * (device_ctx.nx)) {
         start_x = longest_length;
@@ -396,14 +371,7 @@ static void compute_delta_clb_to_clb(t_router_opts router_opts, int longest_leng
                 continue;
             }
 
-            ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-            start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-            ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-            end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
-
-            f_delta_clb_to_clb[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                    source_x, source_y, sink_x, sink_y,
-                    router_opts);
+            f_delta_clb_to_clb[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
         }
 
     }
@@ -424,14 +392,7 @@ static void compute_delta_clb_to_clb(t_router_opts router_opts, int longest_leng
                 continue;
             }
 
-            ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-            start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-            ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-            end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
-
-            f_delta_clb_to_clb[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                    source_x, source_y, sink_x, sink_y,
-                    router_opts);
+            f_delta_clb_to_clb[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
 
         }
     }
@@ -449,14 +410,7 @@ static void compute_delta_clb_to_clb(t_router_opts router_opts, int longest_leng
                 continue;
             }
 
-            ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-            start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-            ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-            end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
-
-            f_delta_clb_to_clb[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                    source_x, source_y, sink_x, sink_y,
-                    router_opts);
+            f_delta_clb_to_clb[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
 
         }
     }
@@ -476,14 +430,8 @@ static void compute_delta_clb_to_clb(t_router_opts router_opts, int longest_leng
             clb_to_clb_empty.push_back(empty_cell);
             continue;
         }
-        ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-        start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-        ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-        end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
 
-        f_delta_clb_to_clb[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                source_x, source_y, sink_x, sink_y,
-                router_opts);
+        f_delta_clb_to_clb[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
 
     }
 
@@ -503,14 +451,7 @@ static void compute_delta_clb_to_clb(t_router_opts router_opts, int longest_leng
             continue;
         }
 
-        ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-        start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-        ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-        end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
-
-        f_delta_clb_to_clb[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                source_x, source_y, sink_x, sink_y,
-                router_opts);
+        f_delta_clb_to_clb[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
 
     }
 }
@@ -557,7 +498,6 @@ static void compute_delta_io_to_clb(t_router_opts router_opts) {
 static void compute_delta_clb_to_io(t_router_opts router_opts) {
     int source_x, source_y, sink_x, sink_y;
     int delta_x, delta_y;
-    int start_node, end_node, ptc;
     auto& device_ctx = g_vpr_ctx.device();
 
     f_delta_clb_to_io[0][0] = IMPOSSIBLE;
@@ -577,13 +517,7 @@ static void compute_delta_clb_to_io(t_router_opts router_opts) {
                 clb_to_io_empty.push_back(empty_cell);
                 continue;
             }
-            ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-            end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
-            ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-            start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-            f_delta_clb_to_io[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                    source_x, source_y, sink_x, sink_y,
-                    router_opts);
+            f_delta_clb_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
         }
     }
 
@@ -601,14 +535,7 @@ static void compute_delta_clb_to_io(t_router_opts router_opts) {
             continue;
         }
 
-        ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-        start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-        ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-        end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
-
-        f_delta_clb_to_io[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                source_x, source_y, sink_x, sink_y,
-                router_opts);
+        f_delta_clb_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
 
     }
 
@@ -628,15 +555,7 @@ static void compute_delta_clb_to_io(t_router_opts router_opts) {
             continue;
         }
 
-        ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-        start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-        ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-        end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
-
-
-        f_delta_clb_to_io[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                source_x, source_y, sink_x, sink_y,
-                router_opts);
+        f_delta_clb_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
 
     }
 }
@@ -645,7 +564,6 @@ static void compute_delta_clb_to_io(t_router_opts router_opts) {
 static void compute_delta_io_to_io(t_router_opts router_opts) {
     int source_x, source_y, sink_x, sink_y;
     int delta_x, delta_y;
-    int start_node, end_node, ptc;
     auto& device_ctx = g_vpr_ctx.device();
 
     f_delta_io_to_io[0][0] = 0; /*delay to itself is 0 (this can happen) */
@@ -670,15 +588,8 @@ static void compute_delta_io_to_io(t_router_opts router_opts) {
             io_to_io_empty.push_back(empty_cell);
             continue;
         }
-        ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-        start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-        ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-        end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
 
-
-        f_delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                source_x, source_y, sink_x, sink_y,
-                router_opts);
+        f_delta_io_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
 
     }
 
@@ -697,14 +608,8 @@ static void compute_delta_io_to_io(t_router_opts router_opts) {
             io_to_io_empty.push_back(empty_cell);
             continue;
         }
-        ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-        start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-        ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-        end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
         
-        f_delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                source_x, source_y, sink_x, sink_y,
-                router_opts);
+        f_delta_io_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
     }
 
     source_x = 1;
@@ -722,15 +627,8 @@ static void compute_delta_io_to_io(t_router_opts router_opts) {
             io_to_io_empty.push_back(empty_cell);
             continue;
         }
-
-        ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-        start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-        ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-        end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
         
-        f_delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                source_x, source_y, sink_x, sink_y,
-                router_opts);
+        f_delta_io_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
     }
 
     source_x = 1;
@@ -749,14 +647,7 @@ static void compute_delta_io_to_io(t_router_opts router_opts) {
             continue;
         }
 
-        ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-        start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-        ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-        end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
-
-        f_delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                source_x, source_y, sink_x, sink_y,
-                router_opts);
+        f_delta_io_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
     }
 
     source_x = 0;
@@ -774,14 +665,7 @@ static void compute_delta_io_to_io(t_router_opts router_opts) {
                 continue;
             }
 
-            ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-            start_node = get_rr_node_index(source_x, source_y, SOURCE, ptc, device_ctx.rr_node_indices);
-            ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-            end_node = get_rr_node_index(sink_x, sink_y, SINK, ptc, device_ctx.rr_node_indices);
-
-            f_delta_io_to_io[delta_x][delta_y] = assign_blocks_and_route_net(start_node, end_node,
-                    source_x, source_y, sink_x, sink_y,
-                    router_opts);
+            f_delta_io_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
         }
     }
 }
