@@ -47,16 +47,16 @@ DeviceGrid create_smallest_device_grid(std::vector<t_grid_def> grid_layouts, std
         const auto& grid_def = grid_layouts[0];
         VTR_ASSERT(grid_def.aspect_ratio >= 0.);
 
-        int width = 3;
-        int height = 3;
-        while (true) {
-
-            //Increase the size
+        //Initial size is 3x3, the smallest possible while avoiding 
+        //start before end location issues with <perimeter> location 
+        //specifications
+        size_t width = 3;
+        size_t height = 3;
+        do {
+            //Scale opposite dimension to match aspect ratio
             if (grid_def.aspect_ratio >= 1.) {
-                height++;
                 width = vtr::nint(height * grid_def.aspect_ratio);
             } else {
-                width++;
                 height = vtr::nint(width / grid_def.aspect_ratio);
             }
 
@@ -67,7 +67,15 @@ DeviceGrid create_smallest_device_grid(std::vector<t_grid_def> grid_layouts, std
             if (grid_satisfies_instance_counts(grid, minimum_instance_counts)) {
                 return grid;
             }
-        }
+
+            //Increase the grid size
+            if (grid_def.aspect_ratio >= 1.) {
+                height++;
+            } else {
+                width++;
+            }
+
+        } while (true);
 
     } else {
         VTR_ASSERT(grid_layouts[0].grid_type == GridDefType::FIXED);
