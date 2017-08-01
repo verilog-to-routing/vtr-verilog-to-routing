@@ -253,7 +253,7 @@ static double get_std_dev(int n, double sum_x_squared, double av_x);
 
 static float recompute_bb_cost(void);
 
-static float comp_td_point_to_point_delay(int inet, int ipin);
+static float comp_td_point_to_point_delay(NetId net_id, int ipin);
 
 static void comp_td_point_to_point_delays();
 
@@ -272,7 +272,7 @@ static void find_to_location(t_type_ptr type, float rlim,
 		int x_from, int y_from, 
 		int *px_to, int *py_to, int *pz_to);
 
-static void get_non_updateable_bb(int inet, t_bb *bb_coord_new);
+static void get_non_updateable_bb(NetId net_id, t_bb *bb_coord_new);
 
 static void update_bb(int inet, t_bb *bb_coord_new,
 		t_bb *bb_edge_new, int xold, int yold, int xnew, int ynew);
@@ -281,7 +281,7 @@ static int find_affected_nets(int *nets_to_update);
 
 static float get_net_cost(int inet, t_bb *bb_ptr);
 
-static void get_bb_from_scratch(int inet, t_bb *coords,
+static void get_bb_from_scratch(NetId net_id, t_bb *coords,
 		t_bb *num_on_edges);
 
 static double get_net_wirelength_estimate(int inet, t_bb *bbptr);
@@ -329,7 +329,7 @@ void try_place(t_placer_opts placer_opts,
 
 	int tot_iter, move_lim, moves_since_cost_recompute, width_fac, num_connections,
 		outer_crit_iter_count, inner_recompute_limit;
-	unsigned int ipin, inet;
+	unsigned int ipin;
 	float t, success_rat, rlim, cost, timing_cost, bb_cost, new_bb_cost, new_timing_cost,
 		delay_cost, new_delay_cost, place_delay_value, inverse_prev_bb_cost, inverse_prev_timing_cost,
 		oldt, crit_exponent,
@@ -771,9 +771,10 @@ void try_place(t_placer_opts placer_opts,
 			&& placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
 		/*need this done since the timing data has not been kept up to date*
 		 *in bounding_box mode */
-		for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++)
-			for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++)
-				set_timing_place_crit(inet, ipin, 0); /*dummy crit values */
+		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+			for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
+				set_timing_place_crit(net_id, ipin, 0); /*dummy crit values */
+		}
 		comp_td_costs(&timing_cost, &delay_cost); /*computes point_to_point_delay_cost */
 	}
 
@@ -909,9 +910,9 @@ static void outer_loop_recompute_criticalities(t_placer_opts placer_opts,
 
 	/*at each temperature change we update these values to be used     */
 	/*for normalizing the tradeoff between timing and wirelength (bb)  */
-	*inverse_prev_bb_cost = 1 / bb_cost;
-	/*Prevent inverse timing cost from going to infinity */
-	*inverse_prev_timing_cost = min(1 / (*timing_cost), (float)MAX_INV_TIMING_COST);
+*inverse_prev_bb_cost = 1 / bb_cost;
+/*Prevent inverse timing cost from going to infinity */
+*inverse_prev_timing_cost = min(1 / (*timing_cost), (float)MAX_INV_TIMING_COST);
 }
 
 /* Function which contains the inner loop of the simulated annealing */
@@ -921,11 +922,11 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 	t_placer_statistics *stats, float * cost, float * bb_cost, float * timing_cost,
 	float * delay_cost,
 #ifdef ENABLE_CLASSIC_VPR_STA
-    t_slack* slacks,
-    t_timing_inf timing_inf,
+	t_slack* slacks,
+	t_timing_inf timing_inf,
 #endif
-    const IntraLbPbPinLookup& pb_gpin_lookup,
-    SetupTimingInfo& timing_info) {
+	const IntraLbPbPinLookup& pb_gpin_lookup,
+	SetupTimingInfo& timing_info) {
 
 	int inner_crit_iter_count, inner_iter;
 	int swap_result;
@@ -942,8 +943,8 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 	/* Inner loop begins */
 	for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
 		swap_result = try_swap(t, cost, bb_cost, timing_cost, rlim,
-				placer_opts.place_algorithm, placer_opts.timing_tradeoff,
-				inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost);
+			placer_opts.place_algorithm, placer_opts.timing_tradeoff,
+			inverse_prev_bb_cost, inverse_prev_timing_cost, delay_cost);
 
 		if (swap_result == ACCEPTED) {
 			/* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -954,20 +955,22 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 			stats->av_delay_cost += *delay_cost;
 			stats->sum_of_squares += (*cost) * (*cost);
 			num_swap_accepted++;
-		} else if (swap_result == ABORTED) {
+		}
+		else if (swap_result == ABORTED) {
 			num_swap_aborted++;
-		} else { // swap_result == REJECTED
+		}
+		else { // swap_result == REJECTED
 			num_swap_rejected++;
 		}
 
 
 		if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 
-			/* Do we want to re-timing analyze the circuit to get updated slack and criticality values? 
+			/* Do we want to re-timing analyze the circuit to get updated slack and criticality values?
 			 * We do this only once in a while, since it is expensive.
 			 */
 			if (inner_crit_iter_count >= inner_recompute_limit
-					&& inner_iter != move_lim - 1) { /*on last iteration don't recompute */
+				&& inner_iter != move_lim - 1) { /*on last iteration don't recompute */
 
 				inner_crit_iter_count = 0;
 #ifdef VERBOSE
@@ -976,13 +979,13 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 				/* Using the delays in net_delay, do a timing analysis to update slacks and
 				 * criticalities; then update the timing cost since it will change.
 				 */
-                //Inner loop timing update
-                timing_info.update();
+				 //Inner loop timing update
+				timing_info.update();
 				load_criticalities(timing_info, crit_exponent, pb_gpin_lookup);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
-                load_timing_graph_net_delays(point_to_point_delay_cost);
-                do_timing_analysis(slacks, timing_inf, false, true);
+				load_timing_graph_net_delays(point_to_point_delay_cost);
+				do_timing_analysis(slacks, timing_inf, false, true);
 #endif
 
 				comp_td_costs(timing_cost, delay_cost);
@@ -991,7 +994,7 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 		}
 #ifdef VERBOSE
 		vtr::printf("t = %g  cost = %g   bb_cost = %g timing_cost = %g move = %d dmax = %g\n",
-				t, *cost, *bb_cost, *timing_cost, inner_iter, *delay_cost);
+			t, *cost, *bb_cost, *timing_cost, inner_iter, *delay_cost);
 		if (fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL)
 			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 				"fabs((*bb_cost) - comp_bb_cost(CHECK)) > (*bb_cost) * ERROR_TOL");
@@ -1000,21 +1003,19 @@ static void placement_inner_loop(float t, float rlim, t_placer_opts placer_opts,
 	/* Inner loop ends */
 }
 
+/*only count non-global connections */
 static int count_connections() {
-	/*only count non-global connections */
+	
+	int count = 0;
 
-	int count;
-	unsigned int inet;
-
-	count = 0;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-		if (cluster_ctx.clb_nlist.net_global((NetId)inet))
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (cluster_ctx.clb_nlist.net_global(net_id))
 			continue;
 
-		count += cluster_ctx.clb_nlist.net_sinks((NetId)inet).size();
+		count += cluster_ctx.clb_nlist.net_sinks(net_id).size();
 	}
+
 	return (count);
 }
 
@@ -1328,7 +1329,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	int b_from, x_from, y_from, z_from, x_to, y_to, z_to;
 	int num_nets_affected;
 	float delta_c, bb_delta_c, timing_delta_c, delay_delta_c;
-	int inet, iblk, bnum, iblk_pin, inet_affected;
+	int inet, iblk, iblk_pin, inet_affected;
 	int abort_swap = false;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1400,14 +1401,12 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 		/* Go through all the pins in all the blocks moved and update the bounding boxes.  *
 		 * Do not update the net cost here since it should only be updated once per net,   *
 		 * not once per pin                                                                */
-		for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++)
-		{
-			bnum = blocks_affected.moved_blocks[iblk].block_num;
+		for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
+			BlockId bnum = (BlockId)blocks_affected.moved_blocks[iblk].block_num;
 
 			/* Go through all the pins in the moved block */
-			for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId) bnum)->num_pins; iblk_pin++)
-			{
-				inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
+			for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type(bnum)->num_pins; iblk_pin++) {
+				inet = cluster_ctx.blocks[(size_t)bnum].nets[iblk_pin];
 				if (inet == OPEN)
 					continue;
 				if (cluster_ctx.clb_nlist.net_global((NetId)inet))
@@ -1416,14 +1415,14 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 				if (cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() < SMALL_NET) {
 					if(bb_updated_before[inet] == NOT_UPDATED_YET)
 						/* Brute force bounding box recomputation, once only for speed. */
-						get_non_updateable_bb(inet, &ts_bb_coord_new[inet]);
+						get_non_updateable_bb((NetId)inet, &ts_bb_coord_new[inet]);
 				} else {
 					update_bb(inet, &ts_bb_coord_new[inet],
 							&ts_bb_edge_new[inet], 
-							blocks_affected.moved_blocks[iblk].xold + cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_width[iblk_pin],
-							blocks_affected.moved_blocks[iblk].yold + cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_height[iblk_pin],
-							blocks_affected.moved_blocks[iblk].xnew + cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_width[iblk_pin],
-							blocks_affected.moved_blocks[iblk].ynew + cluster_ctx.clb_nlist.block_type((BlockId)bnum)->pin_height[iblk_pin]);
+							blocks_affected.moved_blocks[iblk].xold + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[iblk_pin],
+							blocks_affected.moved_blocks[iblk].yold + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[iblk_pin],
+							blocks_affected.moved_blocks[iblk].xnew + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[iblk_pin],
+							blocks_affected.moved_blocks[iblk].ynew + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[iblk_pin]);
 				}
 			}
 		}
@@ -1551,11 +1550,9 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	}
 }
 
+/* Puts a list of all the nets that are changed by the swap into          *
+* nets_to_update.  Returns the number of affected nets.                  */
 static int find_affected_nets(int *nets_to_update) {
-
-	/* Puts a list of all the nets that are changed by the swap into          *
-	 * nets_to_update.  Returns the number of affected nets.                  */
-
 	int iblk, iblk_pin, inet, bnum, num_affected_nets;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1567,7 +1564,7 @@ static int find_affected_nets(int *nets_to_update) {
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
 
 		/* Go through all the pins in the moved block */
-		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId) bnum)->num_pins; iblk_pin++)
+		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId)bnum)->num_pins; iblk_pin++)
 		{
 			/* Updates the pins_to_nets array, set to -1 if   *
 			 * that pin is not connected to any net or it is a  *
@@ -1714,11 +1711,11 @@ static enum swap_result assess_swap(float delta_c, float t) {
 
 	if (delta_c <= 0) {
 
-        /* Reduce variation in final solution due to round off */
-		fnum = vtr::frand();
+/* Reduce variation in final solution due to round off */
+fnum = vtr::frand();
 
-		accept = ACCEPTED;
-		return (accept);
+accept = ACCEPTED;
+return (accept);
 	}
 
 	if (t == 0.)
@@ -1728,7 +1725,8 @@ static enum swap_result assess_swap(float delta_c, float t) {
 	prob_fac = exp(-delta_c / t);
 	if (prob_fac > fnum) {
 		accept = ACCEPTED;
-	} else {
+	}
+	else {
 		accept = REJECTED;
 	}
 	return (accept);
@@ -1743,7 +1741,7 @@ static float recompute_bb_cost(void) {
 	unsigned int inet;
 	float cost = 0;
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) { /* for each net ... */
 		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Do only if not global. */
@@ -1755,57 +1753,56 @@ static float recompute_bb_cost(void) {
 	return (cost);
 }
 
-static float comp_td_point_to_point_delay(int inet, int ipin) {
-
-	/*returns the delay of one point to point connection */
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& device_ctx = g_vpr_ctx.device();
+/*returns the delay of one point to point connection */
+static float comp_td_point_to_point_delay(NetId net_id, int ipin) {
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+	auto& place_ctx = g_vpr_ctx.placement();
+	auto& device_ctx = g_vpr_ctx.device();
 
 	float delay_source_to_sink = 0.;
 
-    if(!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
-        //Only estimate delay for signals routed through the inter-block
-        //routing network. Global signals are assumed to have zero delay.
-        int source_block, sink_block;
-        int delta_x, delta_y;
-        t_type_ptr source_type, sink_type;
+	if (!cluster_ctx.clb_nlist.net_global(net_id)) {
+		//Only estimate delay for signals routed through the inter-block
+		//routing network. Global signals are assumed to have zero delay.
+		int source_block, sink_block;
+		int delta_x, delta_y;
+		t_type_ptr source_type, sink_type;
 
-		source_block = (size_t)cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins((NetId)inet).begin()));
-        source_type = cluster_ctx.clb_nlist.block_type((BlockId)source_block);
+		source_block = (size_t)cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins(net_id).begin()));
+		source_type = cluster_ctx.clb_nlist.block_type((BlockId)source_block);
 
-		sink_block = (size_t)cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins((NetId)inet).begin() + ipin));
-        sink_type = cluster_ctx.clb_nlist.block_type((BlockId)sink_block);
+		sink_block = (size_t)cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins(net_id).begin() + ipin));
+		sink_type = cluster_ctx.clb_nlist.block_type((BlockId)sink_block);
 
-        VTR_ASSERT(source_type != NULL);
-        VTR_ASSERT(sink_type != NULL);
+		VTR_ASSERT(source_type != NULL);
+		VTR_ASSERT(sink_type != NULL);
 
-        delta_x = abs(place_ctx.block_locs[sink_block].x - place_ctx.block_locs[source_block].x);
-        delta_y = abs(place_ctx.block_locs[sink_block].y - place_ctx.block_locs[source_block].y);
+		delta_x = abs(place_ctx.block_locs[sink_block].x - place_ctx.block_locs[source_block].x);
+		delta_y = abs(place_ctx.block_locs[sink_block].y - place_ctx.block_locs[source_block].y);
 
-        /* TODO low priority: Could be merged into one look-up table */
-        /* Note: This heuristic is terrible on Quality of Results.  
-         * A much better heuristic is to create a more comprehensive lookup table
-         */
-        if (source_type == device_ctx.IO_TYPE) {
-            if (sink_type == device_ctx.IO_TYPE)
-                delay_source_to_sink = get_delta_io_to_io(delta_x, delta_y);
-            else
-                delay_source_to_sink = get_delta_io_to_clb(delta_x, delta_y);
-        } else {
-            if (sink_type == device_ctx.IO_TYPE)
-                delay_source_to_sink = get_delta_clb_to_io(delta_x, delta_y);
-            else
-                delay_source_to_sink = get_delta_clb_to_clb(delta_x, delta_y);
-        }
-        if (delay_source_to_sink < 0) {
-            vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
-                    "in comp_td_point_to_point_delay: Bad delay_source_to_sink value delta(%d, %d) delay of %g\n"
-                    "in comp_td_point_to_point_delay: Delay is less than 0\n",
-                    delta_x, delta_y, delay_source_to_sink);
-        }
-    }
+		/* TODO low priority: Could be merged into one look-up table */
+		/* Note: This heuristic is terrible on Quality of Results.
+		 * A much better heuristic is to create a more comprehensive lookup table
+		 */
+		if (source_type == device_ctx.IO_TYPE) {
+			if (sink_type == device_ctx.IO_TYPE)
+				delay_source_to_sink = get_delta_io_to_io(delta_x, delta_y);
+			else
+				delay_source_to_sink = get_delta_io_to_clb(delta_x, delta_y);
+		}
+		else {
+			if (sink_type == device_ctx.IO_TYPE)
+				delay_source_to_sink = get_delta_clb_to_io(delta_x, delta_y);
+			else
+				delay_source_to_sink = get_delta_clb_to_clb(delta_x, delta_y);
+		}
+		if (delay_source_to_sink < 0) {
+			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
+				"in comp_td_point_to_point_delay: Bad delay_source_to_sink value delta(%d, %d) delay of %g\n"
+				"in comp_td_point_to_point_delay: Delay is less than 0\n",
+				delta_x, delta_y, delay_source_to_sink);
+		}
+	}
 
 
 	return (delay_source_to_sink);
@@ -1813,62 +1810,55 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 
 //Recompute all point to point delays, updating point_to_point_delay_cost
 static void comp_td_point_to_point_delays() {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+	auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    for(size_t inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
-        for(size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ++ipin) {
-            point_to_point_delay_cost[inet][ipin] = comp_td_point_to_point_delay(inet, ipin);
-        }
-    }
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
+			point_to_point_delay_cost[(size_t)net_id][ipin] = comp_td_point_to_point_delay(net_id, ipin);
+		}
+	}
 }
 
+/* Update the point_to_point_timing_cost values from the temporary *
+* values for all connections that have changed.                   */
 static void update_td_cost(void) {
-	/* Update the point_to_point_timing_cost values from the temporary *
-	 * values for all connections that have changed.                   */
-
-	int iblk_pin, net_pin, inet;
 	unsigned int ipin;
-	int iblk, iblk2, bnum, driven_by_moved_block;
+	int iblk, iblk2, bnum, driven_by_moved_block, net_pin;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	
 	/* Go through all the blocks moved. */
 	for (iblk = 0; iblk < blocks_affected.num_moved_blocks; iblk++) {
 		bnum = blocks_affected.moved_blocks[iblk].block_num;
-		for (iblk_pin = 0; iblk_pin < cluster_ctx.clb_nlist.block_type((BlockId)bnum)->num_pins; iblk_pin++) {
+		for (auto pin_id : cluster_ctx.clb_nlist.block_pins((BlockId)bnum)) {
+			NetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
 
-			inet = cluster_ctx.blocks[bnum].nets[iblk_pin];
-
-			if (inet == OPEN)
+			if (cluster_ctx.clb_nlist.net_global(net_id))
 				continue;
 
-			if (cluster_ctx.clb_nlist.net_global((NetId)inet))
-				continue;
-
-			net_pin = net_pin_index[bnum][iblk_pin];
+			net_pin = net_pin_index[bnum][cluster_ctx.clb_nlist.pin_index(pin_id)];
 
 			if (net_pin != 0) {
-
 				driven_by_moved_block = false;
-				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++) {
-                    if (cluster_ctx.clbs_nlist.net[inet].pins[0].block == blocks_affected.moved_blocks[iblk2].block_num)
+				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++)
+					if (cluster_ctx.clb_nlist.net_driver_block(net_id) == (BlockId)blocks_affected.moved_blocks[iblk2].block_num)
 						driven_by_moved_block = true;
-				}
-				
+
 				/* The following "if" prevents the value from being updated twice. */
 				if (driven_by_moved_block == false) {
-					point_to_point_delay_cost[inet][net_pin] = temp_point_to_point_delay_cost[inet][net_pin];
-					temp_point_to_point_delay_cost[inet][net_pin] = -1;
-					point_to_point_timing_cost[inet][net_pin] = temp_point_to_point_timing_cost[inet][net_pin];
-					temp_point_to_point_timing_cost[inet][net_pin] = -1;
+					point_to_point_delay_cost[(size_t)net_id][net_pin] = temp_point_to_point_delay_cost[(size_t)net_id][net_pin];
+					temp_point_to_point_delay_cost[(size_t)net_id][net_pin] = -1;
+					point_to_point_timing_cost[(size_t)net_id][net_pin] = temp_point_to_point_timing_cost[(size_t)net_id][net_pin];
+					temp_point_to_point_timing_cost[(size_t)net_id][net_pin] = -1;
 				}
-			} else { /* This net is being driven by a moved block, recompute */
-				/* All point to point connections on this net. */
-				for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
-					point_to_point_delay_cost[inet][ipin] = temp_point_to_point_delay_cost[inet][ipin];
-					temp_point_to_point_delay_cost[inet][ipin] = -1;
-					point_to_point_timing_cost[inet][ipin] = temp_point_to_point_timing_cost[inet][ipin];
-					temp_point_to_point_timing_cost[inet][ipin] = -1;
+			}
+			else { /* This net is being driven by a moved block, recompute */
+				   /* All point to point connections on this net. */
+				for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)(size_t)net_id).size(); ipin++) {
+					point_to_point_delay_cost[(size_t)net_id][ipin] = temp_point_to_point_delay_cost[(size_t)net_id][ipin];
+					temp_point_to_point_delay_cost[(size_t)net_id][ipin] = -1;
+					point_to_point_timing_cost[(size_t)net_id][ipin] = temp_point_to_point_timing_cost[(size_t)net_id][ipin];
+					temp_point_to_point_timing_cost[(size_t)net_id][ipin] = -1;
 				} /* Finished updating the pin */
 			}
 		} /* Finished going through all the pins in the moved block */
@@ -1916,27 +1906,24 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 				 * delta_timing_cost value.                                            */
 				driven_by_moved_block = false;
 				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++)
-				{	
-                    if (cluster_ctx.clbs_nlist.net[inet].pins[0].block == blocks_affected.moved_blocks[iblk2].block_num) {
+                    if (cluster_ctx.clb_nlist.net_driver_block((NetId)inet) == (BlockId)blocks_affected.moved_blocks[iblk2].block_num)
 						driven_by_moved_block = true;
-                    }
-				}
 				
 				if (driven_by_moved_block == false) {
-					temp_delay = comp_td_point_to_point_delay(inet, net_pin);
+					temp_delay = comp_td_point_to_point_delay((NetId)inet, net_pin);
 					temp_point_to_point_delay_cost[inet][net_pin] = temp_delay;
 
-					temp_point_to_point_timing_cost[inet][net_pin] = get_timing_place_crit(inet, net_pin) * temp_delay;
+					temp_point_to_point_timing_cost[inet][net_pin] = get_timing_place_crit((NetId)inet, net_pin) * temp_delay;
 					delta_timing_cost += temp_point_to_point_timing_cost[inet][net_pin] - point_to_point_timing_cost[inet][net_pin];
 					delta_delay_cost += temp_point_to_point_delay_cost[inet][net_pin] - point_to_point_delay_cost[inet][net_pin];
 				}
 			} else { /* This net is being driven by a moved block, recompute */
 				/* All point to point connections on this net. */
 				for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
-					temp_delay = comp_td_point_to_point_delay(inet, ipin);
+					temp_delay = comp_td_point_to_point_delay((NetId)inet, ipin);
 					temp_point_to_point_delay_cost[inet][ipin] = temp_delay;
 
-					temp_point_to_point_timing_cost[inet][ipin] = get_timing_place_crit(inet, ipin) * temp_delay;
+					temp_point_to_point_timing_cost[inet][ipin] = get_timing_place_crit((NetId)inet, ipin) * temp_delay;
 					delta_timing_cost += temp_point_to_point_timing_cost[inet][ipin] - point_to_point_timing_cost[inet][ipin];
 					delta_delay_cost += temp_point_to_point_delay_cost[inet][ipin] - point_to_point_delay_cost[inet][ipin];
 
@@ -1954,7 +1941,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	 * on all point to point connections, we define the timing cost of       *
 	 * each connection as criticality*delay.                                 */
 
-	unsigned inet, ipin;
+	unsigned ipin;
 	float loc_timing_cost, loc_connection_delay_sum, temp_delay_cost,
 			temp_timing_cost;
 
@@ -1963,20 +1950,18 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	loc_timing_cost = 0.;
 	loc_connection_delay_sum = 0.;
 
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) { /* For each net ... */
-		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Do only if not global. */
-
-			for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
-
-				temp_delay_cost = comp_td_point_to_point_delay(inet, ipin);
-				temp_timing_cost = temp_delay_cost * get_timing_place_crit(inet, ipin);
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) { /* For each net ... */
+		if (!cluster_ctx.clb_nlist.net_global(net_id)) { /* Do only if not global. */
+			for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+				temp_delay_cost = comp_td_point_to_point_delay(net_id, ipin);
+				temp_timing_cost = temp_delay_cost * get_timing_place_crit(net_id, ipin);
 
 				loc_connection_delay_sum += temp_delay_cost;
-				point_to_point_delay_cost[inet][ipin] = temp_delay_cost;
-				temp_point_to_point_delay_cost[inet][ipin] = -1; /* Undefined */
+				point_to_point_delay_cost[(size_t)net_id][ipin] = temp_delay_cost;
+				temp_point_to_point_delay_cost[(size_t)net_id][ipin] = -1; /* Undefined */
 
-				point_to_point_timing_cost[inet][ipin] = temp_timing_cost;
-				temp_point_to_point_timing_cost[inet][ipin] = -1; /* Undefined */
+				point_to_point_timing_cost[(size_t)net_id][ipin] = temp_timing_cost;
+				temp_point_to_point_timing_cost[(size_t)net_id][ipin] = -1; /* Undefined */
 				loc_timing_cost += temp_timing_cost;
 			}
 		}
@@ -1988,44 +1973,36 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 	*connection_delay_sum = loc_connection_delay_sum;
 }
 
+
+/* Finds the cost from scratch.  Done only when the placement   *
+* has been radically changed (i.e. after initial placement).   *
+* Otherwise find the cost change incrementally.  If method     *
+* check is NORMAL, we find bounding boxes that are updateable  *
+* for the larger nets.  If method is CHECK, all bounding boxes *
+* are found via the non_updateable_bb routine, to provide a    *
+* cost which can be used to check the correctness of the       *
+* other routine.                                               */
 static float comp_bb_cost(enum cost_methods method) {
-
-	/* Finds the cost from scratch.  Done only when the placement   *
-	 * has been radically changed (i.e. after initial placement).   *
-	 * Otherwise find the cost change incrementally.  If method     *
-	 * check is NORMAL, we find bounding boxes that are updateable  *
-	 * for the larger nets.  If method is CHECK, all bounding boxes *
-	 * are found via the non_updateable_bb routine, to provide a    *
-	 * cost which can be used to check the correctness of the       *
-	 * other routine.                                               */
-
-	unsigned int inet;
-	float cost;
-	double expected_wirelength;
-
+	float cost = 0;
+	double expected_wirelength = 0.0;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	cost = 0;
-	expected_wirelength = 0.0;
-
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) { /* for each net ... */
-
-		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Do only if not global. */
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) { /* for each net ... */
+		if (!cluster_ctx.clb_nlist.net_global(net_id)) { /* Do only if not global. */
 
 			/* Small nets don't use incremental updating on their bounding boxes, *
 			 * so they can use a fast bounding box calculator.                    */
-
-			if (cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() >= SMALL_NET && method == NORMAL) {
-				get_bb_from_scratch(inet, &bb_coords[inet],
-						&bb_num_on_edges[inet]);
+			if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == NORMAL) {
+				get_bb_from_scratch(net_id, &bb_coords[(size_t)net_id],
+						&bb_num_on_edges[(size_t)net_id]);
 			} else {
-				get_non_updateable_bb(inet, &bb_coords[inet]);
+				get_non_updateable_bb(net_id, &bb_coords[(size_t)net_id]);
 			}
 
-			net_cost[inet] = get_net_cost(inet, &bb_coords[inet]);
-			cost += net_cost[inet];
+			net_cost[(size_t)net_id] = get_net_cost((size_t)net_id, &bb_coords[(size_t)net_id]);
+			cost += net_cost[(size_t)net_id];
 			if (method == CHECK)
-				expected_wirelength += get_net_wirelength_estimate(inet, &bb_coords[inet]);
+				expected_wirelength += get_net_wirelength_estimate((size_t)net_id, &bb_coords[(size_t)net_id]);
 		}
 	}
 
@@ -2033,7 +2010,7 @@ static float comp_bb_cost(enum cost_methods method) {
 		vtr::printf_info("\n");
 		vtr::printf_info("BB estimate of min-dist (placement) wire length: %.0f\n", expected_wirelength);
 	}
-	return (cost);
+	return cost;
 }
 
 static void free_placement_structs(
@@ -2196,29 +2173,23 @@ static void alloc_and_load_try_swap_structs() {
 	
 }
 
-static void get_bb_from_scratch(int inet, t_bb *coords,
+/* This routine finds the bounding box of each net from scratch (i.e.   *
+* from only the block location information).  It updates both the       *
+* coordinate and number of pins on each edge information.  It           *
+* should only be called when the bounding box information is not valid. */
+static void get_bb_from_scratch(NetId net_id, t_bb *coords,
 		t_bb *num_on_edges) {
-
-	/* This routine finds the bounding box of each net from scratch (i.e.    *
-	 * from only the block location information).  It updates both the       *
-	 * coordinate and number of pins on each edge information.  It         *
-	 * should only be called when the bounding box information is not valid. */
-
-	int bnum, pnum, x, y, xmin, xmax, ymin, ymax;
+	int pnum, x, y, xmin, xmax, ymin, ymax;
 	int xmin_edge, xmax_edge, ymin_edge, ymax_edge;
-	unsigned int ipin, n_pins;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
-
-	n_pins = cluster_ctx.clb_nlist.net_pins((NetId)inet).size();
 	
-	bnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
-	pnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
-
-	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_width[pnum];
-	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_height[pnum];
+	BlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
+	pnum = cluster_ctx.clb_nlist.pin_index(net_id, 0);
+	x = place_ctx.block_locs[(size_t)bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
+	y = place_ctx.block_locs[(size_t)bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[pnum];
 
 	x = max(min(x, device_ctx.nx), 1);
 	y = max(min(y, device_ctx.ny), 1);
@@ -2232,18 +2203,18 @@ static void get_bb_from_scratch(int inet, t_bb *coords,
 	xmax_edge = 1;
 	ymax_edge = 1;
 
-	for (ipin = 1; ipin < n_pins; ipin++) {
-		bnum = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
-		pnum = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
-		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_width[pnum];
-		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_height[pnum];
+	for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+		bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
+		pnum = cluster_ctx.clb_nlist.pin_index(pin_id);
+		x = place_ctx.block_locs[(size_t)bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
+		y = place_ctx.block_locs[(size_t)bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[pnum];
 
 		/* Code below counts IO blocks as being within the 1..device_ctx.nx, 1..device_ctx.ny clb array. *
-		 * This is because channels do not go out of the 0..device_ctx.nx, 0..device_ctx.ny range, and   *
-		 * I always take all channels impinging on the bounding box to be within   *
-		 * that bounding box.  Hence, this "movement" of IO blocks does not affect *
-		 * the which channels are included within the bounding box, and it         *
-		 * simplifies the code a lot.                                              */
+		* This is because channels do not go out of the 0..device_ctx.nx, 0..device_ctx.ny range, and   *
+		* I always take all channels impinging on the bounding box to be within   *
+		* that bounding box.  Hence, this "movement" of IO blocks does not affect *
+		* the which channels are included within the bounding box, and it         *
+		* simplifies the code a lot.                                              */
 
 		x = max(min(x, device_ctx.nx), 1);
 		y = max(min(y, device_ctx.ny), 1);
@@ -2253,10 +2224,12 @@ static void get_bb_from_scratch(int inet, t_bb *coords,
 		}
 		if (x == xmax) { /* Recall that xmin could equal xmax -- don't use else */
 			xmax_edge++;
-		} else if (x < xmin) {
+		}
+		else if (x < xmin) {
 			xmin = x;
 			xmin_edge = 1;
-		} else if (x > xmax) {
+		}
+		else if (x > xmax) {
 			xmax = x;
 			xmax_edge = 1;
 		}
@@ -2266,10 +2239,12 @@ static void get_bb_from_scratch(int inet, t_bb *coords,
 		}
 		if (y == ymax) {
 			ymax_edge++;
-		} else if (y < ymin) {
+		}
+		else if (y < ymin) {
 			ymin = y;
 			ymin_edge = 1;
-		} else if (y > ymax) {
+		}
+		else if (y > ymax) {
 			ymax = y;
 			ymax_edge = 1;
 		}
@@ -2358,39 +2333,36 @@ static float get_net_cost(int inet, t_bb *bbptr) {
 	return (ncost);
 }
 
-static void get_non_updateable_bb(int inet, t_bb *bb_coord_new) {
-
-	/* Finds the bounding box of a net and stores its coordinates in the  *
-	 * bb_coord_new data structure.  This routine should only be called   *
-	 * for small nets, since it does not determine enough information for *
-	 * the bounding box to be updated incrementally later.                *
-	 * Currently assumes channels on both sides of the CLBs forming the   *
-	 * edges of the bounding box can be used.  Essentially, I am assuming *
-	 * the pins always lie on the outside of the bounding box.            */
-
+/* Finds the bounding box of a net and stores its coordinates in the  *
+* bb_coord_new data structure.  This routine should only be called   *
+* for small nets, since it does not determine enough information for *
+* the bounding box to be updated incrementally later.                *
+* Currently assumes channels on both sides of the CLBs forming the   *
+* edges of the bounding box can be used.  Essentially, I am assuming *
+* the pins always lie on the outside of the bounding box.            */
+static void get_non_updateable_bb(NetId net_id, t_bb *bb_coord_new) {
 	int xmax, ymax, xmin, ymin, x, y;
-	int bnum, pnum;
-	unsigned int k;
+	int pnum;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-	bnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block;
-	pnum = cluster_ctx.clbs_nlist.net[inet].pins[0].block_pin;
-	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_width[pnum];
-	y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_height[pnum];
+	BlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
+	pnum = cluster_ctx.clb_nlist.pin_index(net_id, 0);
+	x = place_ctx.block_locs[(size_t)bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
+	y = place_ctx.block_locs[(size_t)bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[pnum];
 	
 	xmin = x;
 	ymin = y;
 	xmax = x;
 	ymax = y;
 
-	for (k = 1; k < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); k++) {
-		bnum = cluster_ctx.clbs_nlist.net[inet].pins[k].block;
-		pnum = cluster_ctx.clbs_nlist.net[inet].pins[k].block_pin;
-		x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_width[pnum];
-		y = place_ctx.block_locs[bnum].y + cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_height[pnum];
+	for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+		bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
+		pnum = cluster_ctx.clb_nlist.pin_index(pin_id);
+		x = place_ctx.block_locs[(size_t)bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
+		y = place_ctx.block_locs[(size_t)bnum].y + cluster_ctx.clb_nlist.block_type(bnum)->pin_height[pnum];
 
 		if (x < xmin) {
 			xmin = x;
@@ -2468,7 +2440,7 @@ static void update_bb(int inet, t_bb *bb_coord_new,
 
 		if (xold == curr_bb_coord->xmax) { /* Old position at xmax. */
 			if (curr_bb_edge->xmax == 1) {
-				get_bb_from_scratch(inet, bb_coord_new, bb_edge_new);
+				get_bb_from_scratch((NetId)inet, bb_coord_new, bb_edge_new);
 				bb_updated_before[inet] = GOT_FROM_SCRATCH;
 				return;
 			} else {
@@ -2507,7 +2479,7 @@ static void update_bb(int inet, t_bb *bb_coord_new,
 
 		if (xold == curr_bb_coord->xmin) { /* Old position at xmin. */
 			if (curr_bb_edge->xmin == 1) {
-				get_bb_from_scratch(inet, bb_coord_new, bb_edge_new);
+				get_bb_from_scratch((NetId)inet, bb_coord_new, bb_edge_new);
 				bb_updated_before[inet] = GOT_FROM_SCRATCH;
 				return;
 			} else {
@@ -2554,7 +2526,7 @@ static void update_bb(int inet, t_bb *bb_coord_new,
 
 		if (yold == curr_bb_coord->ymax) { /* Old position at ymax. */
 			if (curr_bb_edge->ymax == 1) {
-				get_bb_from_scratch(inet, bb_coord_new, bb_edge_new);
+				get_bb_from_scratch((NetId)inet, bb_coord_new, bb_edge_new);
 				bb_updated_before[inet] = GOT_FROM_SCRATCH;
 				return;
 			} else {
@@ -2592,7 +2564,7 @@ static void update_bb(int inet, t_bb *bb_coord_new,
 
 		if (yold == curr_bb_coord->ymin) { /* Old position at ymin. */
 			if (curr_bb_edge->ymin == 1) {
-				get_bb_from_scratch(inet, bb_coord_new, bb_edge_new);
+				get_bb_from_scratch((NetId)inet, bb_coord_new, bb_edge_new);
 				bb_updated_before[inet] = GOT_FROM_SCRATCH;
 				return;
 			} else {

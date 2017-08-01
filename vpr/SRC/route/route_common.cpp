@@ -912,7 +912,6 @@ static void load_route_bb(int bb_factor) {
 	 * clipped to lie within (0,0) and (device_ctx.nx+1,device_ctx.ny+1) rather than (1,1) and   *
 	 * (device_ctx.nx,device_ctx.ny).                                                            */
 
-	unsigned int k, inet;
 	int xmax, ymax, xmin, ymin, x, y;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1248,13 +1247,9 @@ alloc_linked_f_pointer(void) {
 	return (temp_ptr);
 }
 
+/* Prints out the routing to file route_file.  */
 void print_route(const char* placement_file, const char* route_file) {
-
-	/* Prints out the routing to file route_file.  */
-
-	unsigned int inet;
-	int inode, bnum, ilow, jlow, node_block_pin, iclass;
-	unsigned int ipin;
+	int inode, ilow, jlow, iclass;
 	t_rr_type rr_type;
 	t_trace *tptr;
 	FILE *fp;
@@ -1270,13 +1265,13 @@ void print_route(const char* placement_file, const char* route_file) {
 
 	fprintf(fp, "Array size: %d x %d logic blocks.\n", device_ctx.nx, device_ctx.ny);
 	fprintf(fp, "\nRouting:");
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-		if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
-			fprintf(fp, "\n\nNet %d (%s)\n\n", inet, cluster_ctx.clb_nlist.net_name((NetId)inet).c_str());
-			if (cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() == false) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (!cluster_ctx.clb_nlist.net_global(net_id)) {
+			fprintf(fp, "\n\nNet %lu (%s)\n\n", (size_t)net_id, cluster_ctx.clb_nlist.net_name(net_id).c_str());
+			if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == false) {
 				fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
 			} else {
-				tptr = route_ctx.trace_head[inet];
+				tptr = route_ctx.trace_head[(size_t)net_id];
 
 				while (tptr != NULL) {
 					inode = tptr->index;
@@ -1348,18 +1343,19 @@ void print_route(const char* placement_file, const char* route_file) {
 		}
 
 		else { /* Global net.  Never routed. */
-			fprintf(fp, "\n\nNet %d (%s): global net connecting:\n\n", inet,
-					cluster_ctx.clb_nlist.net_name((NetId)inet).c_str());
+			fprintf(fp, "\n\nNet %lu (%s): global net connecting:\n\n", (size_t)net_id,
+					cluster_ctx.clb_nlist.net_name(net_id).c_str());
 
-			for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
-				bnum = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block;
+			for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+				BlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+				int pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
+				iclass = cluster_ctx.clb_nlist.block_type(block_id)->pin_class[pin_index];
 
-				node_block_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin].block_pin;
-				iclass = cluster_ctx.clb_nlist.block_type((BlockId) bnum)->pin_class[node_block_pin];
-
-				fprintf(fp, "Block %s (#%d) at (%d,%d), Pin class %d.\n",
-						cluster_ctx.clb_nlist.block_name((BlockId) bnum).c_str(), bnum, place_ctx.block_locs[bnum].x, place_ctx.block_locs[bnum].y,
-						iclass);
+				fprintf(fp, "Block %s (#%lu) at (%d,%d), Pin class %d.\n",
+					cluster_ctx.clb_nlist.block_name(block_id).c_str(), (size_t)block_id, 
+					place_ctx.block_locs[(size_t)block_id].x, 
+					place_ctx.block_locs[(size_t)block_id].y,
+					iclass);
 			}
 		}
 	}
@@ -1377,7 +1373,6 @@ void print_route(const char* placement_file, const char* route_file) {
 
     //Save the digest of the route file
     route_ctx.routing_id = vtr::secure_digest_file(route_file);
-
 }
 
 /* TODO: jluu: I now always enforce logically equivalent outputs to use at most one output pin, should rethink how to do this */
@@ -1385,9 +1380,8 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 		t_clb_opins_used& clb_opins_used_locally) {
 
 	/* In the past, this function implicitly allowed LUT duplication when there are free LUTs. 
-	 This was especially important for logical equivalence; however, now that we have a very general
-	 logic cluster, it does not make sense to allow LUT duplication implicitly. we'll need to look into how we want to handle this case
-
+	 This was especially important for logical equivalence; however, now that we have a very general logic cluster,
+	 it does not make sense to allow LUT duplication implicitly. We'll need to look into how we want to handle this case
 	 */
 
 	int iblk, num_local_opin, inode, from_node, iconn, num_edges, to_node;

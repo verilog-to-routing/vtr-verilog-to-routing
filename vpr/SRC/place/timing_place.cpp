@@ -92,7 +92,6 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 		if (cluster_ctx.clb_nlist.net_global((NetId)inet))
 			continue;
 		for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
-
             float clb_pin_crit = calculate_clb_net_pin_criticality(timing_info, pb_gpin_lookup, inet, ipin);
 
             /* The placer likes a great deal of contrast between criticalities. 
@@ -104,12 +103,12 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 }
 
 
-float get_timing_place_crit(int inet, int ipin) {
-    return f_timing_place_crit[inet][ipin];
+float get_timing_place_crit(NetId net_id, int ipin) {
+    return f_timing_place_crit[(size_t)net_id][ipin];
 }
 
-void set_timing_place_crit(int inet, int ipin, float val) {
-    f_timing_place_crit[inet][ipin] = val;
+void set_timing_place_crit(NetId net_id, int ipin, float val) {
+    f_timing_place_crit[(size_t)net_id][ipin] = val;
 }
 
 /**************************************/
