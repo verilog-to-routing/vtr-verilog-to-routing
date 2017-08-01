@@ -26,7 +26,7 @@ void DeviceGrid::count_instances() {
 
     //Count the number of blocks in the grid
     for(size_t x = 0; x < width(); ++x) {
-        for(size_t y = 0; y < width(); ++y) {
+        for(size_t y = 0; y < height(); ++y) {
             auto type = grid_[x][y].type;
 
             if (grid_[x][y].width_offset == 0 && grid_[x][y].height_offset == 0) {

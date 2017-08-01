@@ -19,6 +19,7 @@ class DeviceGrid {
         int nx() const { return width() - 2; }
         int ny() const { return height() - 2; }
 
+        //Note: supports 2-d indexing [0..width()-1][0..height()-1]
         auto operator[](size_t index) const { return grid_[index]; }
         auto operator[](size_t index) { return grid_[index]; }
 
