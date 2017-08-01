@@ -63,8 +63,6 @@
 using namespace std;
 using namespace pugiutil;
 
-//#define LEGACY_GRID_LOCATIONS
-
 struct t_fc_override {
     std::string port_name;
     std::string seg_name;
@@ -82,11 +80,6 @@ static t_type_ptr IO_TYPE = NULL;
 /* This identifies the t_type_ptr of an Empty block */
 static t_type_ptr EMPTY_TYPE = NULL;
 
-#ifdef LEGACY_GRID_LOCATIONS
-/* This identifies the t_type_ptr of the default logic block */
-static t_type_ptr FILL_TYPE = NULL;
-#endif
-
 /* Describes the different types of CLBs available */
 static t_type_descriptor *cb_type_descriptors;
 
@@ -95,9 +88,6 @@ static t_type_descriptor *cb_type_descriptors;
 static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
 
-#ifdef LEGACY_GRID_LOCATIONS
-static void SetupGridLocations(t_arch& arch, pugi::xml_node Locations, t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
-#endif
 /*    Process XML hiearchy */
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		t_mode * mode, const t_arch& arch, const pugiutil::loc_data& loc_data);
@@ -120,9 +110,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
 static void ProcessModels(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data);
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data);
-#ifndef LEGACY_GRID_LOCATIONS
 static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
-#endif
 static void ProcessDevice(pugi::xml_node Node, t_arch *arch,
 		const bool timing_enabled, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlocks(pugi::xml_node Node,
@@ -589,145 +577,6 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	VTR_ASSERT(num_class == Type->num_class);
 	VTR_ASSERT(pin_count == Type->num_pins);
 }
-
-#ifdef LEGACY_GRID_LOCATIONS
-/* Sets up the grid_loc_def for the type. */
-static void SetupGridLocations(t_arch& arch, pugi::xml_node Locations, t_type_descriptor* Type, const pugiutil::loc_data& loc_data) {
-    std::string type_name(Type->name);
-
-    for (auto child : Locations.children()) {
-
-        if (child.name() != std::string("loc")) {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(child),
-                    "Expected <loc> specification\n");
-        }
-
-        auto type = get_attribute(child, "type", loc_data).value();
-
-        //XXX: To get the ability to 'tweak' priorities up or down, without clashing with any user priorities,
-        //     we scale the user priorities by a factor. This ensures we will not accidentally cause priority 
-        //     conflicts if the user specified priorities directly adjacent to each other (provided all tweaks 
-        //     are less than +/- PRIORITY_SCALE_FACTOR/2).
-        constexpr float PRIORITY_SCALE_FACTOR = 10;
-        int priority = PRIORITY_SCALE_FACTOR * get_attribute(child, "priority", loc_data, ReqOpt::OPTIONAL).as_int(0);
-
-        if (type == std::string("perimeter")) {
-            //The edges
-            t_grid_loc_def left_edge(type_name, priority);
-            left_edge.x.start_expr = "0";
-            left_edge.x.end_expr = "0";
-            left_edge.y.start_expr = "1";
-            left_edge.y.end_expr = "H - 2";
-
-            t_grid_loc_def right_edge(type_name, priority);
-            right_edge.x.start_expr = "W - 1";
-            right_edge.x.end_expr = "W - 1";
-            right_edge.y.start_expr = "1";
-            right_edge.y.end_expr = "H - 2";
-
-            t_grid_loc_def bottom_edge(type_name, priority);
-            bottom_edge.x.start_expr = "1";
-            bottom_edge.x.end_expr = "W - 2";
-            bottom_edge.y.start_expr = "0";
-            bottom_edge.y.end_expr = "0";
-
-            t_grid_loc_def top_edge(type_name, priority);
-            top_edge.x.start_expr = "1";
-            top_edge.x.end_expr = "W - 2";
-            top_edge.y.start_expr = "H - 1";
-            top_edge.y.end_expr = "H - 1";
-
-            arch.grid_loc_defs.push_back(left_edge);
-            arch.grid_loc_defs.push_back(right_edge);
-            arch.grid_loc_defs.push_back(top_edge);
-            arch.grid_loc_defs.push_back(bottom_edge);
-
-            //The corners
-            t_grid_loc_def bottom_left("EMPTY", priority+1);
-            bottom_left.x.start_expr = "0";
-            bottom_left.x.end_expr = "0";
-            bottom_left.y.start_expr = "0";
-            bottom_left.y.end_expr = "0";
-
-            t_grid_loc_def top_left("EMPTY", priority+1);
-            top_left.x.start_expr = "0";
-            top_left.x.end_expr = "0";
-            top_left.y.start_expr = "H-1";
-            top_left.y.end_expr = "H-1";
-
-            t_grid_loc_def bottom_right("EMPTY", priority+1);
-            bottom_right.x.start_expr = "W-1";
-            bottom_right.x.end_expr = "W-1";
-            bottom_right.y.start_expr = "0";
-            bottom_right.y.end_expr = "0";
-
-            t_grid_loc_def top_right("EMPTY", priority+1);
-            top_right.x.start_expr = "W-1";
-            top_right.x.end_expr = "W-1";
-            top_right.y.start_expr = "H-1";
-            top_right.y.end_expr = "H-1";
-
-            arch.grid_loc_defs.push_back(bottom_left);
-            arch.grid_loc_defs.push_back(top_left);
-            arch.grid_loc_defs.push_back(bottom_right);
-            arch.grid_loc_defs.push_back(top_right);
-        } else if (type == std::string("fill")) {
-            t_grid_loc_def fill(type_name, priority);
-            fill.x.start_expr = "0";
-            fill.x.end_expr = "W - 1";
-            fill.y.start_expr = "0";
-            fill.y.end_expr = "H - 1";
-
-            arch.grid_loc_defs.push_back(fill);
-
-            FILL_TYPE = Type;
-
-        } else if (type == std::string("col")) {
-            t_grid_loc_def col(type_name, priority);
-
-            auto start_attr = get_attribute(child, "start", loc_data);
-
-            col.x.start_expr = start_attr.value();
-            col.x.end_expr = start_attr.value();
-
-            auto repeat_attr = get_attribute(child, "repeat", loc_data, ReqOpt::OPTIONAL);
-            if (repeat_attr) {
-                col.x.repeat_expr = repeat_attr.value();
-            }
-
-            col.y.start_expr = "1";
-            col.y.end_expr = "H - 1";
-
-            arch.grid_loc_defs.push_back(col);
-
-            //Classic VPR style was to leave the column empty (instead of fill type) if block dimension caused one not to fit
-            t_grid_loc_def background = col;
-            background.block_type = "<EMPTY>";
-            background.priority = priority - 1; //-1 so real col type will override where possible
-
-            arch.grid_loc_defs.push_back(background);
-        } else if (type == std::string("rel")) {
-            t_grid_loc_def col_rel(type_name, priority);
-
-            float rel_pos = get_attribute(child, "pos", loc_data).as_float();
-
-            std::stringstream ss;
-            ss << "W / " << int(1./rel_pos);
-
-            col_rel.x.start_expr = ss.str();
-            col_rel.x.end_expr = ss.str();
-            col_rel.y.start_expr = "0";
-            col_rel.y.end_expr = "H - 1";
-
-            arch.grid_loc_defs.push_back(col_rel);
-
-        } else {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(child),
-                    "Unrecognized location type specification '%s'\n", type);
-        }
-    }
-}
-#endif
 
 static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 		t_pin_to_pin_annotation *annotation, t_pb_type * parent_pb_type, const pugiutil::loc_data& loc_data) {
@@ -2057,7 +1906,6 @@ static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::se
     }
 }
 
-#ifndef LEGACY_GRID_LOCATIONS
 static void ProcessLayout(pugi::xml_node layout_tag, t_arch *arch, const pugiutil::loc_data& loc_data) {
     VTR_ASSERT(layout_tag.name() == std::string("layout"));
 
@@ -2319,45 +2167,12 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
                     "Unrecognized grid location specification type '%s'\n", loc_type);
         }
-
     }
+
+    //Warn if any type has no grid location specifed
+
     return grid_def;
 }
-#else
-/* Takes in node pointing to <layout> and loads all the
- * child type objects. */
-static void ProcessLayout(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data) {
-	const char *Prop;
-
-	arch->clb_grid.IsAuto = true;
-	ReqOpt CLB_GRID_ISAUTO;
-
-	/* Load width and height if applicable */
-	Prop = get_attribute(Node, "width", loc_data, OPTIONAL).as_string(NULL);
-	if (Prop != NULL) {
-		arch->clb_grid.IsAuto = false;
-		arch->clb_grid.W = vtr::atoi(Prop);
-
-		arch->clb_grid.H = get_attribute(Node, "height", loc_data).as_int(UNDEFINED);
-	}
-
-	/* Load aspect ratio if applicable */
-	CLB_GRID_ISAUTO = BoolToReqOpt(arch->clb_grid.IsAuto);
-	Prop = get_attribute(Node, "auto", loc_data, CLB_GRID_ISAUTO).as_string(NULL);
-	if (Prop != NULL) {
-		if (arch->clb_grid.IsAuto == false) {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-					"Auto-sizing, width and height cannot be specified\n");
-		}
-		arch->clb_grid.Aspect = (float) atof(Prop);
-		if (arch->clb_grid.Aspect <= 0) {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-					"Grid aspect ratio is less than or equal to zero %g\n",
-					arch->clb_grid.Aspect);
-		}
-	}
-}
-#endif
 
 /* Takes in node pointing to <device> and loads all the
  * child type objects. */
@@ -2549,10 +2364,6 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		Cur = get_single_child(CurType, "pinlocations", loc_data);
 		SetupPinLocationsAndPinClasses(Cur, Type, loc_data);
 
-#ifdef LEGACY_GRID_LOCATIONS
-		Cur = get_single_child(CurType, "gridlocations", loc_data);
-		SetupGridLocations(arch, Cur, Type, loc_data);
-#else
         //Warn that gridlocations is no longer supported
          //TODO: eventually remove
         try {
@@ -2563,7 +2374,6 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
             msg += " Please upgrade your architecture file.";
             throw XmlError(msg, e.filename(), e.line());
         }
-#endif
 
 		/* Load Fc */
 		Cur = get_single_child(CurType, "fc", loc_data);
@@ -2579,12 +2389,6 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		CurType = CurType.next_sibling (CurType.name());
 
 	}
-#ifdef LEGACY_GRID_LOCATIONS
-	if (FILL_TYPE == NULL) {
-		archfpga_throw(arch_file_name, 0,
-				"grid location type 'fill' must be specified.\n");
-	}
-#endif
 	pb_type_descriptors.clear();
 }
 
