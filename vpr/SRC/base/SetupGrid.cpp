@@ -54,7 +54,7 @@ DeviceGrid create_smallest_device_grid(std::vector<t_grid_def> grid_layouts, std
             //Increase the size
             if (grid_def.aspect_ratio >= 1.) {
                 height++;
-                width = vtr::nint(height / grid_def.aspect_ratio);
+                width = vtr::nint(height * grid_def.aspect_ratio);
             } else {
                 width++;
                 height = vtr::nint(width / grid_def.aspect_ratio);
