@@ -32,6 +32,8 @@ static void alloc_and_load_num_instances_type(
 		vtr::Matrix<t_grid_tile>& L_grid, int L_nx, int L_ny,
 		int* L_num_instances_type, int L_num_types);
 
+static bool is_integer(std::string val);
+
 /* Create and fill FPGA architecture grid.         */
 void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instances_type) {
     //TODO: handle properly
@@ -148,25 +150,29 @@ void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instance
         VTR_ASSERT(repeaty > 0);
 
         //Warn if start and end fall outside the device dimensions
-        if (startx > W - 1) {
+        // Unless it is explicitly specified as an integer, this avoids spurious warnings during the early 
+        // stages of packing when the device may be very small and some larger columns may not yet exist.
+        // Note that this suppress only warnings for explicit integers and will still warn about possibly 
+        // incorrect formula
+        if (startx > W - 1 && !is_integer(xspec.start_expr)) {
             vtr::printf_warning(__FILE__, __LINE__,
                     "Block type '%s' grid location specification startx (%d) falls outside device horizontal range [%d,%d]\n",
                     type->name, startx, 0, W - 1);
         }
 
-        if (endx > W - 1) {
+        if (endx > W - 1 && !is_integer(xspec.end_expr)) {
             vtr::printf_warning(__FILE__, __LINE__,
                     "Block type '%s' grid location specification endx (%d) falls outside device horizontal range [%d,%d]\n",
                     type->name, endx, 0, W - 1);
         }
 
-        if (starty > H - 1) {
+        if (starty > H - 1 && !is_integer(yspec.start_expr)) {
             vtr::printf_warning(__FILE__, __LINE__,
                     "Block type '%s' grid location specification starty (%d) falls outside device vertical range [%d,%d]\n",
                     type->name, starty, 0, H - 1);
         }
 
-        if (endy > H - 1) {
+        if (endy > H - 1 && !is_integer(yspec.end_expr)) {
             vtr::printf_warning(__FILE__, __LINE__,
                     "Block type '%s' grid location specification endy (%d) falls outside device vertical range [%d,%d]\n",
                     type->name, endy, 0, H - 1);
@@ -530,4 +536,10 @@ static void CheckGrid(void) {
 			}
 		}
 	}
+}
+
+static bool is_integer(std::string val) {
+    auto regex = std::regex("\\s*\\d+\\s*", std::regex::grep); 
+    
+    return std::regex_match(val, regex);
 }
