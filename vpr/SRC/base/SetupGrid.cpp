@@ -109,45 +109,26 @@ void alloc_and_load_grid(std::vector<t_grid_def> grid_layouts, int *num_instance
 
         VTR_ASSERT_MSG(!xspec.start_expr.empty(), "x start position must be specified");
         VTR_ASSERT_MSG(!xspec.end_expr.empty(), "x end position must be specified");
+        VTR_ASSERT_MSG(!xspec.incr_expr.empty(), "x increment must be specified");
+        VTR_ASSERT_MSG(!xspec.repeat_expr.empty(), "x repeat must be specified");
 
         size_t startx = parse_formula(xspec.start_expr, vars);
         size_t endx = parse_formula(xspec.end_expr, vars);
-
-        size_t incrx = type->width; //Default to block width
-        if (!xspec.incr_expr.empty()) {
-            //Use expression if specified
-            incrx = parse_formula(xspec.incr_expr, vars);
-        }
-
-        size_t repeatx = W; //Default to no repeats
-        if (!xspec.repeat_expr.empty()) {
-            //Use expression if specified
-            repeatx = parse_formula(xspec.repeat_expr, vars);
-        }
+        size_t incrx = parse_formula(xspec.incr_expr, vars);
+        size_t repeatx = parse_formula(xspec.repeat_expr, vars);
 
         //Load the y specification
         auto& yspec = grid_loc_def.y;
 
         VTR_ASSERT_MSG(!yspec.start_expr.empty(), "y start position must be specified");
         VTR_ASSERT_MSG(!yspec.end_expr.empty(), "y end position must be specified");
+        VTR_ASSERT_MSG(!yspec.incr_expr.empty(), "y increment must be specified");
+        VTR_ASSERT_MSG(!yspec.repeat_expr.empty(), "y repeat must be specified");
 
         size_t starty = parse_formula(yspec.start_expr, vars);
         size_t endy = parse_formula(yspec.end_expr, vars);
-
-        size_t incry = type->height; //Default to block width
-        if (!yspec.incr_expr.empty()) {
-            //Use expression if specified
-            incry = parse_formula(yspec.incr_expr, vars);
-        }
-
-        size_t repeaty = H; //Default to no repeats
-        if (!yspec.repeat_expr.empty()) {
-            //Use expression if specified
-            repeaty = parse_formula(yspec.repeat_expr, vars);
-        }
-
-        VTR_ASSERT(repeatx > 0);
-        VTR_ASSERT(repeaty > 0);
+        size_t incry = parse_formula(yspec.incr_expr, vars);
+        size_t repeaty = parse_formula(yspec.repeat_expr, vars);
 
         //Warn if start and end fall outside the device dimensions
         // Unless it is explicitly specified as an integer, this avoids spurious warnings during the early 
