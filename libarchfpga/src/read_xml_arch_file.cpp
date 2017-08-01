@@ -2255,11 +2255,25 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
                                    loc_data);
             t_grid_loc_def region(type_name, priority);
 
-            region.x.start_expr = get_attribute(loc_spec_tag, "startx", loc_data).value();
-            region.x.end_expr = get_attribute(loc_spec_tag, "endx", loc_data).value();
+            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
+            if (startx_attr) {
+                region.x.start_expr = startx_attr.value();
+            }
 
-            region.y.start_expr = get_attribute(loc_spec_tag, "starty", loc_data).value();
-            region.y.end_expr = get_attribute(loc_spec_tag, "endy", loc_data).value();
+            auto endx_attr = get_attribute(loc_spec_tag, "endx", loc_data, ReqOpt::OPTIONAL);
+            if (endx_attr) {
+                region.x.end_expr = endx_attr.value();
+            }
+
+            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
+            if (starty_attr) {
+                region.y.start_expr = starty_attr.value();
+            }
+
+            auto endy_attr = get_attribute(loc_spec_tag, "endy", loc_data, ReqOpt::OPTIONAL);
+            if (endy_attr) {
+                region.y.end_expr = endy_attr.value();
+            }
 
             auto repeatx_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
             if (repeatx_attr) {
