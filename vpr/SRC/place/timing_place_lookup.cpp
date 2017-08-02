@@ -388,15 +388,17 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
     size_t y = 0;
     size_t x = 0;
     t_type_ptr src_type = nullptr;
-    for (y = 0; y < grid.height(); ++y) {
-        auto type = grid[x][y].type; 
+    for (x = 0; x < grid.width() && src_type == nullptr; ++x) {
+        for (y = 0; y < grid.height(); ++y) {
+            auto type = grid[x][y].type; 
 
-        if (type != device_ctx.EMPTY_TYPE) {
-            src_type = type;
-            break;
+            if (type != device_ctx.EMPTY_TYPE) {
+                src_type = type;
+                break;
+            }
         }
     }
-    VTR_ASSERT_MSG(src_type != nullptr, "Left edge must have a non-empty type");
+    VTR_ASSERT(src_type != nullptr);
 
     //vtr::printf("Computing from lower left edge:\n");
     generic_compute_matrix(f_delta_delay,
@@ -406,18 +408,18 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
             router_opts);
 
     //Pick the lowest x location on the bottom
-    x = 0;
-    y = 0;
     src_type = nullptr;
-    for (x = 0; x < grid.width(); ++x) {
-        auto type = grid[x][y].type; 
+    for (y = 0; y < grid.width() && src_type == nullptr; ++y) {
+        for (x = 0; x < grid.width(); ++x) {
+            auto type = grid[x][y].type; 
 
-        if (type != device_ctx.EMPTY_TYPE) {
-            src_type = type;
-            break;
+            if (type != device_ctx.EMPTY_TYPE) {
+                src_type = type;
+                break;
+            }
         }
     }
-    VTR_ASSERT_MSG(src_type != nullptr, "Bottom edge must have a non-empty type");
+    VTR_ASSERT(src_type != nullptr);
     //vtr::printf("Computing from left bottom edge:\n");
     generic_compute_matrix(f_delta_delay,
             x, y,
