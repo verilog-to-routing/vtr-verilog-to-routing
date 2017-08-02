@@ -97,12 +97,13 @@ VPR runs all three stages of pack, place, and route if none of :option:`-pack`, 
 .. option:: -route
 
     Run routing stage
+    This also implies --analysis.
 
     **Default:** off
 
 .. option:: -analysis
 
-    Run timing analysis stage only
+    Run final analysis stage (e.g. timing, power).
 
     **Default:** off
 
