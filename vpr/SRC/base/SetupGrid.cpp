@@ -313,12 +313,12 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
         }
 
         size_t x_end = 0;
-        for (size_t kx = 0; x_end < width; ++kx) {
+        for (size_t kx = 0; x_end < width; ++kx) { //Repeat in x direction
             size_t x_start = startx + kx * repeatx;
             x_end = endx + kx * repeatx;
 
             size_t y_end = 0;
-            for (size_t ky = 0; y_end < height; ++ky) {
+            for (size_t ky = 0; y_end < height; ++ky) { //Repeat i y direction
                 size_t y_start = starty + ky * repeaty;
                 y_end = endy + ky * repeaty;
 
@@ -326,6 +326,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
                 size_t x_max = std::min(x_end, width-1);
                 size_t y_max = std::min(y_end, height-1);
 
+                //Fill in the region
                 for(size_t x = x_start; x + (type->width - 1) <= x_max; x += incrx) {
                     for(size_t y = y_start; y + (type->height - 1) <= y_max; y += incry) {
                         set_grid_block_type(grid_loc_def.priority, type, x, y, grid, grid_priorities);
