@@ -53,7 +53,7 @@ AtomPinId find_clb_pin_driver_atom_pin(BlockId clb, int clb_pin, const IntraLbPb
 //Find the atom pins driven by the specified top-level CLB pin
 std::vector<AtomPinId> find_clb_pin_sink_atom_pins(BlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
-const t_net_pin* find_pb_route_clb_input_net_pin(BlockId clb, int *sink_pb_route_id);
+std::tuple<NetId,int,int> find_pb_route_clb_input_net_pin(BlockId clb, int sink_pb_route_id);
 
 //Return the pb pin index corresponding to the pin clb_pin on block clb
 int find_clb_pb_pin(BlockId clb, int clb_pin);

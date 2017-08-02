@@ -406,25 +406,25 @@ static AtomPinId find_atom_pin_for_pb_route_id(BlockId clb, int pb_route_id, con
 }
 
 //Return the net pin which drive the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
-const t_net_pin* find_pb_route_clb_input_net_pin(BlockId clb, int *sink_pb_pin_id) {
+std::tuple<NetId, int, int> find_pb_route_clb_input_net_pin(BlockId clb, int sink_pb_pin_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    VTR_ASSERT(*sink_pb_pin_id < cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node->total_pb_pins);
+    VTR_ASSERT(sink_pb_pin_id < cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node->total_pb_pins);
     VTR_ASSERT(clb != BlockId::INVALID());
-    VTR_ASSERT(*sink_pb_pin_id >= 0);
+    VTR_ASSERT(sink_pb_pin_id >= 0);
 
     const t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
 
-    VTR_ASSERT_MSG(pb_routes[*sink_pb_pin_id].atom_net_id, "PB route should be associated with a net");
+    VTR_ASSERT_MSG(pb_routes[sink_pb_pin_id].atom_net_id, "PB route should be associated with a net");
     
     //Walk back from the sink to the CLB input pin
-    int curr_pb_pin_id = *sink_pb_pin_id;
+    int curr_pb_pin_id = sink_pb_pin_id;
     int next_pb_pin_id = pb_routes[curr_pb_pin_id].driver_pb_pin_id;
     while(next_pb_pin_id >= 0) {
         //Advance back towards the input
         curr_pb_pin_id = next_pb_pin_id;
 
-        VTR_ASSERT_MSG(pb_routes[next_pb_pin_id].atom_net_id == pb_routes[*sink_pb_pin_id].atom_net_id,
+        VTR_ASSERT_MSG(pb_routes[next_pb_pin_id].atom_net_id == pb_routes[sink_pb_pin_id].atom_net_id,
                        "Connected pb_routes should connect the same net");
 
         next_pb_pin_id = pb_routes[curr_pb_pin_id].driver_pb_pin_id;
@@ -433,7 +433,7 @@ const t_net_pin* find_pb_route_clb_input_net_pin(BlockId clb, int *sink_pb_pin_i
     bool is_output_pin = (pb_routes[curr_pb_pin_id].pb_graph_pin->port->type == OUT_PORT);
 
     if(!is_clb_external_pin(clb, curr_pb_pin_id) || is_output_pin) {
-        return nullptr;
+        return std::make_tuple(NetId::INVALID(), -1, -1);
     }
 
     //To account for capacity > 1 blocks we need to convert the pb_pin to the clb pin
@@ -447,11 +447,7 @@ const t_net_pin* find_pb_route_clb_input_net_pin(BlockId clb, int *sink_pb_pin_i
     VTR_ASSERT(clb_net_idx >= 0);
     VTR_ASSERT(clb_net_pin_idx >= 0);
 
-    const t_net_pin* clb_net_pin = &cluster_ctx.clbs_nlist.net[clb_net_idx].pins[clb_net_pin_idx];
-
-	*sink_pb_pin_id = cluster_ctx.clb_nlist.pin_index((NetId)clb_net_idx, clb_net_pin_idx);
-
-    return clb_net_pin;
+	return std::tuple<NetId,int,int>((NetId)clb_net_idx, clb_pin, clb_net_pin_idx);
 }
 
 //Return the pb pin index corresponding to the pin clb_pin on block clb

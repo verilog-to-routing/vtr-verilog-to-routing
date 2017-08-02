@@ -147,8 +147,7 @@ static inline t_bound_box draw_mux(t_point origin, e_side orientation, float hei
 static void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay);
 static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color);
 static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color);
-
-static std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin);
+static std::vector<int> trace_routed_connection_rr_nodes(const NetId net_id, const int driver_pin, const int sink_pin);
 static bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
 static short find_switch(int prev_inode, int inode);
 
@@ -2915,10 +2914,6 @@ static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end
 
 //Collect all the drawing locations associated with the timing edge between start and end
 static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color) {
-
-    std::vector<t_point> points;
-
-
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& timing_ctx = g_vpr_ctx.timing();
@@ -2926,10 +2921,13 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
     AtomPinId atom_src_pin = atom_ctx.lookup.tnode_atom_pin(src_tnode);
     AtomPinId atom_sink_pin = atom_ctx.lookup.tnode_atom_pin(sink_tnode);
 
+	std::vector<t_point> points;
     points.push_back(atom_pin_draw_coord(atom_src_pin));
 
     tatum::EdgeId tedge = timing_ctx.graph->find_edge(src_tnode, sink_tnode);
     tatum::EdgeType edge_type = timing_ctx.graph->edge_type(tedge);
+
+	NetId net_id = NetId::INVALID();
 
     //We currently only trace interconnect edges in detail, and treat all others
     //as flylines
@@ -2952,24 +2950,22 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
 
         int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
 
-        const t_net_pin* sink_clb_net_pin = find_pb_route_clb_input_net_pin((BlockId)clb_sink_block, &sink_pb_route_id);
-        if(sink_clb_net_pin != nullptr) {
+		int sink_block_pin_index = -1;
+		int sink_net_pin_index = -1;
+
+        std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin((BlockId)clb_sink_block, sink_pb_route_id);
+        if(net_id != NetId::INVALID() && sink_block_pin_index != -1 && sink_net_pin_index != -1) {
             //Connection leaves the CLB
-
-            int net = sink_clb_net_pin->net;
-            const t_net_pin* driver_clb_net_pin = &cluster_ctx.clbs_nlist.net[net].pins[0];
-            VTR_ASSERT(driver_clb_net_pin != nullptr);
-			VTR_ASSERT(cluster_ctx.clb_nlist.net_driver_block((NetId)net) == (BlockId)clb_src_block);
-
             //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
-            auto routed_rr_nodes = trace_routed_connection_rr_nodes(driver_clb_net_pin, sink_clb_net_pin);
+			VTR_ASSERT(cluster_ctx.clb_nlist.net_driver_block(net_id) == (BlockId)clb_src_block);
+
+			auto routed_rr_nodes = trace_routed_connection_rr_nodes(net_id, 0, sink_net_pin_index);
 
             //Mark all the nodes highlighted
             t_draw_state* draw_state = get_draw_state_vars();
             for (int inode : routed_rr_nodes) {
 				draw_state->draw_rr_node[inode].color = color;
             }
-
 
             draw_partial_route(routed_rr_nodes);
         } else {
@@ -2982,20 +2978,17 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
 }
 
 //Returns the set of rr nodes which connect driver to sink
-static std::vector<int> trace_routed_connection_rr_nodes(const t_net_pin* driver_clb_net_pin, const t_net_pin* sink_clb_net_pin) {
-    VTR_ASSERT(driver_clb_net_pin->net == sink_clb_net_pin->net);
-    VTR_ASSERT(driver_clb_net_pin->net_pin == 0);
-
+static std::vector<int> trace_routed_connection_rr_nodes(const NetId net_id, const int driver_pin, const int sink_pin) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     bool allocated_route_tree_structs = alloc_route_tree_timing_structs(true); //Needed for traceback_to_route_tree
 
     //Conver the traceback into an easily search-able
-    t_rt_node* rt_root = traceback_to_route_tree(driver_clb_net_pin->net);
+    t_rt_node* rt_root = traceback_to_route_tree((size_t)net_id);
 
-    VTR_ASSERT(rt_root->inode == route_ctx.net_rr_terminals[driver_clb_net_pin->net][driver_clb_net_pin->net_pin]);
+    VTR_ASSERT(rt_root->inode == route_ctx.net_rr_terminals[(size_t)net_id][driver_pin]);
 
-    int sink_rr_node = route_ctx.net_rr_terminals[sink_clb_net_pin->net][sink_clb_net_pin->net_pin];
+    int sink_rr_node = route_ctx.net_rr_terminals[(size_t)net_id][sink_pin];
 
     std::vector<int> rr_nodes_on_path;
 
