@@ -9,6 +9,7 @@ using namespace std;
 #include "vtr_ndmatrix.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
+#include "vtr_math.h"
 #include "vtr_memory.h"
 
 #include "vpr_types.h"
@@ -37,16 +38,10 @@ using namespace std;
 /*the delta arrays are used to contain the best case routing delay */
 /*between different locations on the FPGA. */
 
-static vtr::Matrix<float> f_delta_io_to_clb;
-static vtr::Matrix<float> f_delta_clb_to_clb;
-static vtr::Matrix<float> f_delta_clb_to_io;
-static vtr::Matrix<float> f_delta_io_to_io;
+static vtr::Matrix<float> f_delta_delay;
 
 //These store the coordinates of the empty blocks in the delta matrix
-static vector <pair<int, int>> io_to_clb_empty;
-static vector <pair<int, int>> clb_to_clb_empty;
-static vector <pair<int, int>> io_to_io_empty;
-static vector <pair<int, int>> clb_to_io_empty;
+static vector <pair<int, int>> empty_blocks;
 
 /*** Function Prototypes *****/
 static void setup_chan_width(t_router_opts router_opts,
@@ -67,16 +62,12 @@ static void alloc_delta_arrays(void);
 
 static void free_delta_arrays(void);
 
-static void generic_compute_matrix(vtr::Matrix<float>& matrix, int source_x, int source_y, int start_x,
-        int end_x, int start_y, int end_y, t_router_opts router_opts);
+static void generic_compute_matrix(vtr::Matrix<float>& matrix, 
+        int source_x, int source_y, 
+        int start_x, int start_y, 
+        int end_x, int end_y, t_router_opts router_opts);
 
-static void compute_delta_clb_to_clb(t_router_opts router_opts, int longest_length);
-
-static void compute_delta_io_to_clb(t_router_opts router_opts);
-
-static void compute_delta_clb_to_io(t_router_opts router_opts);
-
-static void compute_delta_io_to_io(t_router_opts router_opts);
+static void compute_delta_delays(t_router_opts router_opts, size_t longest_length);
 
 static void compute_delta_arrays(t_router_opts router_opts, int longest_length);
 
@@ -99,8 +90,53 @@ static bool calculate_delay(int source_node, int sink_node,
 
 static t_rt_node* setup_routing_resources_no_net(int source_node);
 
+/******* Globally Accessible Functions **********/
 
-/**************************************/
+void compute_delay_lookup_tables(t_router_opts router_opts,
+        t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
+        t_chan_width_dist chan_width_dist, const t_direct_inf *directs,
+        const int num_directs) {
+
+    vtr::printf_info("\nStarting placement delay look-up...\n");
+    clock_t begin = clock();
+
+    int longest_length;
+
+    reset_placement();
+
+    setup_chan_width(router_opts, chan_width_dist);
+
+    alloc_routing_structs(router_opts, det_routing_arch, segment_inf,
+            directs, num_directs);
+
+    longest_length = get_longest_segment_length((*det_routing_arch), segment_inf);
+
+    /*now setup and compute the actual arrays */
+    alloc_delta_arrays();
+
+    compute_delta_arrays(router_opts, longest_length);
+
+    /*free all data structures that are no longer needed */
+    free_routing_structs();
+
+    clock_t end = clock();
+
+    float time = (float) (end - begin) / CLOCKS_PER_SEC;
+    vtr::printf_info("Placement delay look-up took %g seconds\n", time);
+}
+
+void free_place_lookup_structs(void) {
+
+    free_delta_arrays();
+
+}
+
+float get_delta_delay(int delta_x, int delta_y) {
+    return f_delta_delay[delta_x][delta_y];
+}
+
+/******* File Accessible Functions **********/
+
 static int get_best_class(enum e_pin_type pintype, t_type_ptr type) {
 
     /*This function tries to identify the best pin class to hook up
@@ -131,7 +167,6 @@ static int get_best_class(enum e_pin_type pintype, t_type_ptr type) {
     return (best_class);
 }
 
-/**************************************/
 static int get_longest_segment_length(
         t_det_routing_arch det_routing_arch, t_segment_inf * segment_inf) {
 
@@ -145,12 +180,10 @@ static int get_longest_segment_length(
     return (length);
 }
 
-/**************************************/
 static void reset_placement(void) {
     init_placement_context();
 }
 
-/**************************************/
 static void setup_chan_width(t_router_opts router_opts,
         t_chan_width_dist chan_width_dist) {
     /*we give plenty of tracks, this increases routability for the */
@@ -174,7 +207,6 @@ static void setup_chan_width(t_router_opts router_opts,
     init_chan(width_fac, chan_width_dist);
 }
 
-/**************************************/
 static void alloc_routing_structs(t_router_opts router_opts,
         t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
         const t_direct_inf *directs,
@@ -197,7 +229,7 @@ static void alloc_routing_structs(t_router_opts router_opts,
                 GRAPH_BIDIR : GRAPH_UNIDIR);
     }
 
-    create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
+    create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.grid.nx(), device_ctx.grid.ny(), device_ctx.grid,
             &device_ctx.chan_width, det_routing_arch->switch_block_type,
             det_routing_arch->Fs, det_routing_arch->switchblocks,
             det_routing_arch->num_segment,
@@ -220,7 +252,6 @@ static void alloc_routing_structs(t_router_opts router_opts,
     alloc_route_tree_timing_structs();
 }
 
-/**************************************/
 static void free_routing_structs() {
     free_rr_graph();
 
@@ -231,7 +262,6 @@ static void free_routing_structs() {
     free_route_tree_timing_structs();
 }
 
-/**************************************/
 static float route_connection_delay(int source_x, int source_y,
         int sink_x, int sink_y, t_router_opts router_opts) {
     //Routes between the source and sink locations and calculates the delay
@@ -263,33 +293,24 @@ static float route_connection_delay(int source_x, int source_y,
     return (net_delay_value);
 }
 
-/**************************************/
 static void alloc_delta_arrays(void) {
 
     auto& device_ctx = g_vpr_ctx.device();
 
     /*initialize all of the array locations to -1 */
-    size_t nx = device_ctx.nx;
-    size_t ny = device_ctx.ny;
-    f_delta_clb_to_clb.resize({nx, ny}, IMPOSSIBLE);
-    f_delta_io_to_clb.resize({nx + 1, ny + 1}, IMPOSSIBLE);
-    f_delta_clb_to_io.resize({nx + 1, ny + 1}, IMPOSSIBLE);
-    f_delta_io_to_io.resize({nx + 2, ny + 2}, IMPOSSIBLE);
+    f_delta_delay.resize({device_ctx.grid.width(), device_ctx.grid.height()}, IMPOSSIBLE);
 }
 
-/**************************************/
 static void free_delta_arrays(void) {
     //Reclaim memory
-    f_delta_clb_to_clb.clear();
-    f_delta_io_to_clb.clear();
-    f_delta_clb_to_io.clear();
-    f_delta_io_to_io.clear();
+    f_delta_delay.clear();
 }
 
-/**************************************/
 static void generic_compute_matrix(vtr::Matrix<float>& matrix,
-        int source_x, int source_y, int start_x,
-        int end_x, int start_y, int end_y, t_router_opts router_opts) {
+        int source_x, int source_y, 
+        int start_x, int start_y, 
+        int end_x, int end_y, 
+        t_router_opts router_opts) {
 
     int delta_x, delta_y;
     int sink_x, sink_y;
@@ -301,378 +322,121 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
             delta_x = abs(sink_x - source_x);
             delta_y = abs(sink_y - source_y);
 
-            if (delta_x == 0 && delta_y == 0)
-                continue; /*do not compute distance from a block to itself     */
-            /*if a value is desired, pre-assign it somewhere else */
-
-            if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                    device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
+            if (   device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE
+                || device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
                 matrix[delta_x][delta_y] = EMPTY_DELTA;
                 pair<int, int> empty_cell(delta_x, delta_y);
-                io_to_clb_empty.push_back(empty_cell);
-
+                empty_blocks.push_back(empty_cell);
+                //vtr::printf("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
+                                //"EMPTY",
+                                //delta_x, delta_y,
+                                //source_x, source_y,
+                                //sink_x, sink_y);
                 continue;
             }
+
 
             matrix[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-
+            //vtr::printf("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n", 
+                    //matrix[delta_x][delta_y],
+                    //delta_x, delta_y,
+                    //source_x, source_y,
+                    //sink_x, sink_y);
         }
     }
 }
 
-/**************************************/
-static void compute_delta_clb_to_clb(t_router_opts router_opts, int longest_length) {
+static void compute_delta_delays(t_router_opts router_opts, size_t longest_length) {
 
-    /*this routine must compute delay values in a slightly different way than the */
-    /*other compute routines. We cannot use a location close to the edge as the  */
-    /*source location for the majority of the delay computations  because this   */
-    /*would give gradually increasing delay values. To avoid this from happening */
-    /*a clb that is at least longest_length away from an edge should be chosen   */
-    /*as a source , if longest_length is more than 0.5 of the total size then    */
-    /*choose a CLB at the center as the source CLB */
+    //To avoid edge effects we place the source at least 'longest_length' away
+    //from the device edge 
+    //and route from there for all possible delta values < dimension2
 
-    int source_x, source_y, sink_x, sink_y;
-    int start_x, start_y, end_x, end_y;
-    int delta_x, delta_y;
     auto& device_ctx = g_vpr_ctx.device();
+    auto& grid = device_ctx.grid;
 
-    if (longest_length < 0.5 * (device_ctx.nx)) {
-        start_x = longest_length;
-    } else {
-        start_x = (int) (0.5 * device_ctx.nx);
-    }
-    end_x = device_ctx.nx;
-    source_x = start_x;
+    size_t mid_x = vtr::nint(grid.width() / 2);
+    size_t mid_y = vtr::nint(grid.width() / 2);
 
-    if (longest_length < 0.5 * (device_ctx.ny)) {
-        start_y = longest_length;
-    } else {
-        start_y = (int) (0.5 * device_ctx.ny);
-    }
-    end_y = device_ctx.ny;
-    source_y = start_y;
+    size_t low_x = std::min(longest_length, mid_x);
+    size_t low_y = std::min(longest_length, mid_y);
 
-    /*don't put the sink all the way to the corner, until it is necessary */
-    for (sink_x = start_x; sink_x <= end_x - 1; sink_x++) {
-        for (sink_y = start_y; sink_y <= end_y - 1; sink_y++) {
-            delta_x = abs(sink_x - source_x);
-            delta_y = abs(sink_y - source_y);
+    //   +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //   +                 |                                       +
+    //   +                 |                                       +
+    //   +                 |                                       +
+    //   +                 |                                       +
+    //   +                 |                                       +
+    //   +                 |                                       +
+    //   +        A        |                   B                   +
+    //   +                 |                                       +
+    //   +                 |                                       +
+    //   +                 |                                       +
+    //   +                 |                                       +
+    //   +                 |                                       +
+    //   +                 |                                       +
+    //   +-----------------*---------------------------------------+
+    //   +                 |                                       +
+    //   +        C        |                   D                   +
+    //   +                 |                                       +
+    //   +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //
+    //   * = (low_x, low_y)
+    //   + = device edge
 
-            if (delta_x == 0 && delta_y == 0) {
-                f_delta_clb_to_clb[delta_x][delta_y] = 0.0;
-                continue;
-            }
+    //Pick the lowest y location on the left
+    size_t y = 0;
+    size_t x = 0;
+    t_type_ptr src_type = nullptr;
+    for (y = 0; y < grid.height(); ++y) {
+        auto type = grid[x][y].type; 
 
-            if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                    device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-                f_delta_clb_to_clb[delta_x][delta_y] = EMPTY_DELTA;
-                pair<int, int> empty_cell(delta_x, delta_y);
-                clb_to_clb_empty.push_back(empty_cell);
-                continue;
-            }
-
-            f_delta_clb_to_clb[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-        }
-
-    }
-
-    sink_x = end_x - 1;
-    sink_y = end_y - 1;
-
-    for (source_x = start_x - 1; source_x >= 1; source_x--) {
-        for (source_y = start_y; source_y <= end_y - 1; source_y++) {
-            delta_x = abs(sink_x - source_x);
-            delta_y = abs(sink_y - source_y);
-
-            if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                    device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-                f_delta_clb_to_clb[delta_x][delta_y] = EMPTY_DELTA;
-                pair<int, int> empty_cell(delta_x, delta_y);
-                clb_to_clb_empty.push_back(empty_cell);
-                continue;
-            }
-
-            f_delta_clb_to_clb[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-
+        if (type != device_ctx.EMPTY_TYPE) {
+            src_type = type;
+            break;
         }
     }
+    VTR_ASSERT_MSG(src_type != nullptr, "Left edge must have a non-empty type");
 
-    for (source_x = 1; source_x <= end_x - 1; source_x++) {
-        for (source_y = 1; source_y < start_y; source_y++) {
-            delta_x = abs(sink_x - source_x);
-            delta_y = abs(sink_y - source_y);
+    //vtr::printf("Computing from lower left edge:\n");
+    generic_compute_matrix(f_delta_delay,
+            x, y,
+            x, y,
+            grid.width() - 1, grid.height() - 1,
+            router_opts);
 
-            if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                    device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-                f_delta_clb_to_clb[delta_x][delta_y] = EMPTY_DELTA;
-                pair<int, int> empty_cell(delta_x, delta_y);
-                clb_to_clb_empty.push_back(empty_cell);
-                continue;
-            }
+    //Pick the lowest x location on the bottom
+    x = 0;
+    y = 0;
+    src_type = nullptr;
+    for (x = 0; x < grid.width(); ++x) {
+        auto type = grid[x][y].type; 
 
-            f_delta_clb_to_clb[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-
+        if (type != device_ctx.EMPTY_TYPE) {
+            src_type = type;
+            break;
         }
     }
+    VTR_ASSERT_MSG(src_type != nullptr, "Bottom edge must have a non-empty type");
+    //vtr::printf("Computing from left bottom edge:\n");
+    generic_compute_matrix(f_delta_delay,
+            x, y,
+            x, y,
+            grid.width() - 1, grid.height() - 1,
+            router_opts);
 
-    /*now move sink into the top right corner */
-    sink_x = end_x;
-    sink_y = end_y;
-    source_x = 1;
-    for (source_y = 1; source_y <= end_y; source_y++) {
-        delta_x = abs(sink_x - source_x);
-        delta_y = abs(sink_y - source_y);
 
-        if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-            f_delta_clb_to_clb[delta_x][delta_y] = EMPTY_DELTA;
-            pair<int, int> empty_cell(delta_x, delta_y);
-            clb_to_clb_empty.push_back(empty_cell);
-            continue;
-        }
-
-        f_delta_clb_to_clb[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-
-    }
-
-    sink_x = end_x;
-    sink_y = end_y;
-    source_y = 1;
-    for (source_x = 1; source_x <= end_x; source_x++) {
-        delta_x = abs(sink_x - source_x);
-        delta_y = abs(sink_y - source_y);
-
-        if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-            f_delta_clb_to_clb[delta_x][delta_y] = EMPTY_DELTA;
-            pair<int, int> empty_cell(delta_x, delta_y);
-            clb_to_clb_empty.push_back(empty_cell);
-
-            continue;
-        }
-
-        f_delta_clb_to_clb[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-
-    }
+    //Since the other delta delay values may have suffered from edge effects, we recalculate
+    //withing region D
+    //vtr::printf("Computing from mid:\n");
+    generic_compute_matrix(f_delta_delay,
+            low_x, low_y,
+            low_x, low_y,
+            grid.width() - 1, grid.height() - 1,
+            router_opts);
 }
 
-/**************************************/
-static void compute_delta_io_to_clb(t_router_opts router_opts) {
-
-    int source_x, source_y;
-    int start_x, start_y, end_x, end_y;
-    auto& device_ctx = g_vpr_ctx.device();
-
-    f_delta_io_to_clb[0][0] = IMPOSSIBLE;
-    f_delta_io_to_clb[device_ctx.nx][device_ctx.ny] = IMPOSSIBLE;
-
-    source_x = 0;
-    source_y = 1;
-
-    start_x = 1;
-    end_x = device_ctx.nx;
-    start_y = 1;
-    end_y = device_ctx.ny;
-    generic_compute_matrix(f_delta_io_to_clb, source_x,
-            source_y, start_x, end_x, start_y, end_y, router_opts);
-
-    source_x = 1;
-    source_y = 0;
-
-    start_x = 1;
-    end_x = 1;
-    start_y = 1;
-    end_y = device_ctx.ny;
-    generic_compute_matrix(f_delta_io_to_clb, source_x,
-            source_y, start_x, end_x, start_y, end_y, router_opts);
-
-    start_x = 1;
-    end_x = device_ctx.nx;
-    start_y = device_ctx.ny;
-    end_y = device_ctx.ny;
-    generic_compute_matrix(f_delta_io_to_clb, source_x,
-            source_y, start_x, end_x, start_y, end_y, router_opts);
-}
-
-/**************************************/
-static void compute_delta_clb_to_io(t_router_opts router_opts) {
-    int source_x, source_y, sink_x, sink_y;
-    int delta_x, delta_y;
-    auto& device_ctx = g_vpr_ctx.device();
-
-    f_delta_clb_to_io[0][0] = IMPOSSIBLE;
-    f_delta_clb_to_io[device_ctx.nx][device_ctx.ny] = IMPOSSIBLE;
-
-    sink_x = 0;
-    sink_y = 1;
-    for (source_x = 1; source_x <= device_ctx.nx; source_x++) {
-        for (source_y = 1; source_y <= device_ctx.ny; source_y++) {
-            delta_x = abs(source_x - sink_x);
-            delta_y = abs(source_y - sink_y);
-
-            if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                    device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-                f_delta_clb_to_io[delta_x][delta_y] = EMPTY_DELTA;
-                pair<int, int> empty_cell(delta_x, delta_y);
-                clb_to_io_empty.push_back(empty_cell);
-                continue;
-            }
-            f_delta_clb_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-        }
-    }
-
-    sink_x = 1;
-    sink_y = 0;
-    source_x = 1;
-    delta_x = abs(source_x - sink_x);
-    for (source_y = 1; source_y <= device_ctx.ny; source_y++) {
-        delta_y = abs(source_y - sink_y);
-        if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-            f_delta_clb_to_io[delta_x][delta_y] = EMPTY_DELTA;
-            pair<int, int> empty_cell(delta_x, delta_y);
-            clb_to_io_empty.push_back(empty_cell);
-            continue;
-        }
-
-        f_delta_clb_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-
-    }
-
-    sink_x = 1;
-    sink_y = 0;
-    source_y = device_ctx.ny;
-    delta_y = abs(source_y - sink_y);
-    for (source_x = 2; source_x <= device_ctx.nx; source_x++) {
-        delta_x = abs(source_x - sink_x);
-
-        if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-            f_delta_clb_to_io[delta_x][delta_y] = EMPTY_DELTA;
-            pair<int, int> empty_cell(delta_x, delta_y);
-            clb_to_io_empty.push_back(empty_cell);
-
-            continue;
-        }
-
-        f_delta_clb_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-
-    }
-}
-
-/**************************************/
-static void compute_delta_io_to_io(t_router_opts router_opts) {
-    int source_x, source_y, sink_x, sink_y;
-    int delta_x, delta_y;
-    auto& device_ctx = g_vpr_ctx.device();
-
-    f_delta_io_to_io[0][0] = 0; /*delay to itself is 0 (this can happen) */
-    f_delta_io_to_io[device_ctx.nx + 1][device_ctx.ny + 1] = IMPOSSIBLE;
-    f_delta_io_to_io[0][device_ctx.ny] = IMPOSSIBLE;
-    f_delta_io_to_io[device_ctx.nx][0] = IMPOSSIBLE;
-    f_delta_io_to_io[device_ctx.nx][device_ctx.ny + 1] = IMPOSSIBLE;
-    f_delta_io_to_io[device_ctx.nx + 1][device_ctx.ny] = IMPOSSIBLE;
-
-    source_x = 0;
-    source_y = 1;
-    sink_x = 0;
-    delta_x = abs(sink_x - source_x);
-
-    for (sink_y = 2; sink_y <= device_ctx.ny; sink_y++) {
-        delta_y = abs(sink_y - source_y);
-
-        if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-            f_delta_io_to_io[delta_x][delta_y] = EMPTY_DELTA;
-            pair<int, int> empty_cell(delta_x, delta_y);
-            io_to_io_empty.push_back(empty_cell);
-            continue;
-        }
-
-        f_delta_io_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-
-    }
-
-    source_x = 0;
-    source_y = 1;
-    sink_x = device_ctx.nx + 1;
-    delta_x = abs(sink_x - source_x);
-
-    for (sink_y = 1; sink_y <= device_ctx.ny; sink_y++) {
-        delta_y = abs(sink_y - source_y);
-
-        if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-            f_delta_io_to_io[delta_x][delta_y] = EMPTY_DELTA;
-            pair<int, int> empty_cell(delta_x, delta_y);
-            io_to_io_empty.push_back(empty_cell);
-            continue;
-        }
-        
-        f_delta_io_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-    }
-
-    source_x = 1;
-    source_y = 0;
-    sink_y = 0;
-    delta_y = abs(sink_y - source_y);
-
-    for (sink_x = 2; sink_x <= device_ctx.nx; sink_x++) {
-        delta_x = abs(sink_x - source_x);
-
-        if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-            f_delta_io_to_io[delta_x][delta_y] = EMPTY_DELTA;
-            pair<int, int> empty_cell(delta_x, delta_y);
-            io_to_io_empty.push_back(empty_cell);
-            continue;
-        }
-        
-        f_delta_io_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-    }
-
-    source_x = 1;
-    source_y = 0;
-    sink_y = device_ctx.ny + 1;
-    delta_y = abs(sink_y - source_y);
-
-    for (sink_x = 1; sink_x <= device_ctx.nx; sink_x++) {
-        delta_x = abs(sink_x - source_x);
-
-        if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-            f_delta_io_to_io[delta_x][delta_y] = EMPTY_DELTA;
-            pair<int, int> empty_cell(delta_x, delta_y);
-            io_to_io_empty.push_back(empty_cell);
-            continue;
-        }
-
-        f_delta_io_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-    }
-
-    source_x = 0;
-    sink_y = device_ctx.ny + 1;
-    for (source_y = 1; source_y <= device_ctx.ny; source_y++) {
-        for (sink_x = 1; sink_x <= device_ctx.nx; sink_x++) {
-            delta_y = abs(source_y - sink_y);
-            delta_x = abs(source_x - sink_x);
-
-            if (device_ctx.grid[source_x][source_y].type == device_ctx.EMPTY_TYPE ||
-                    device_ctx.grid[sink_x][sink_y].type == device_ctx.EMPTY_TYPE) {
-                f_delta_io_to_io[delta_x][delta_y] = EMPTY_DELTA;
-                pair<int, int> empty_cell(delta_x, delta_y);
-                io_to_io_empty.push_back(empty_cell);
-                continue;
-            }
-
-            f_delta_io_to_io[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-        }
-    }
-}
-
-/**************************************/
-static void
-print_matrix(std::string filename, const vtr::Matrix<float>& matrix) {
+static void print_matrix(std::string filename, const vtr::Matrix<float>& matrix) {
     FILE* f = vtr::fopen(filename.c_str(), "w");
 
     fprintf(f, "         ");
@@ -693,7 +457,6 @@ print_matrix(std::string filename, const vtr::Matrix<float>& matrix) {
     vtr::fclose(f);
 }
 
-/**************************************/
 
 /* Take the average of the valid neighboring values in the matrix.
  * use interpolation to get the right answer for empty blocks*/
@@ -752,42 +515,18 @@ static float find_neightboring_average(vtr::Matrix<float> &matrix, int x, int y)
 
 static void fix_empty_coordinates(void) {
     unsigned i;
-    for (i = 0; i < io_to_clb_empty.size(); i++) {
-        f_delta_io_to_clb[io_to_clb_empty[i].first][io_to_clb_empty[i].second] = find_neightboring_average(f_delta_io_to_clb, io_to_clb_empty[i].first, io_to_clb_empty[i].second);
-    }
-    for (i = 0; i < io_to_io_empty.size(); i++) {
-        f_delta_io_to_io[io_to_io_empty[i].first][io_to_io_empty[i].second] = find_neightboring_average(f_delta_io_to_io, io_to_io_empty[i].first, io_to_io_empty[i].second);
-    }
-    for (i = 0; i < clb_to_clb_empty.size(); i++) {
-        f_delta_clb_to_clb[clb_to_clb_empty[i].first][clb_to_clb_empty[i].second] = find_neightboring_average(f_delta_clb_to_clb, clb_to_clb_empty[i].first, clb_to_clb_empty[i].second);
-    }
-    for (i = 0; i < clb_to_io_empty.size(); i++) {
-        f_delta_clb_to_io[clb_to_io_empty[i].first][clb_to_io_empty[i].second] = find_neightboring_average(f_delta_clb_to_io, clb_to_io_empty[i].first, clb_to_io_empty[i].second);
+    for (i = 0; i < empty_blocks.size(); i++) {
+        f_delta_delay[empty_blocks[i].first][empty_blocks[i].second] = find_neightboring_average(f_delta_delay, empty_blocks[i].first, empty_blocks[i].second);
     }
     
-    if (!io_to_clb_empty.empty()) {
-        io_to_clb_empty.clear();
-    }
-    if (!clb_to_clb_empty.empty()) {
-        clb_to_clb_empty.clear();
-    }
-    if (!clb_to_io_empty.empty()) {
-        clb_to_io_empty.clear();
-    }
-    if (!io_to_io_empty.empty()) {
-        io_to_io_empty.clear();
+    if (!empty_blocks.empty()) {
+        empty_blocks.clear();
     }
 }
 
 static void compute_delta_arrays(t_router_opts router_opts, int longest_length) {
-    vtr::printf_info("Computing delta_io_to_io lookup matrix, may take a few seconds, please wait...\n");
-    compute_delta_io_to_io(router_opts);
-    vtr::printf_info("Computing delta_io_to_clb lookup matrix, may take a few seconds, please wait...\n");
-    compute_delta_io_to_clb(router_opts);
-    vtr::printf_info("Computing delta_clb_to_io lookup matrix, may take a few seconds, please wait...\n");
-    compute_delta_clb_to_io(router_opts);
-    vtr::printf_info("Computing delta_clb_to_clb lookup matrix, may take a few seconds, please wait...\n");
-    compute_delta_clb_to_clb(router_opts, longest_length);
+    vtr::printf_info("Computing delta delay lookup matrix, may take a few seconds, please wait...\n");
+    compute_delta_delays(router_opts, longest_length);
 
     fix_empty_coordinates();
 
@@ -798,70 +537,9 @@ static void compute_delta_arrays(t_router_opts router_opts, int longest_length) 
 
 static void print_delta_delays_echo(const char* filename) {
 
-    print_matrix(vtr::string_fmt(filename, "delta_clb_to_clb"), f_delta_clb_to_clb);
-    print_matrix(vtr::string_fmt(filename, "delta_io_to_clb"), f_delta_io_to_clb);
-    print_matrix(vtr::string_fmt(filename, "delta_clb_to_io"), f_delta_clb_to_io);
-    print_matrix(vtr::string_fmt(filename, "delta_io_to_io"), f_delta_io_to_io);
+    print_matrix(vtr::string_fmt(filename, "delta_delay"), f_delta_delay);
 }
 
-/******* Globally Accessible Functions **********/
-
-/**************************************/
-void compute_delay_lookup_tables(t_router_opts router_opts,
-        t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-        t_chan_width_dist chan_width_dist, const t_direct_inf *directs,
-        const int num_directs) {
-
-    vtr::printf_info("\nStarting placement delay look-up...\n");
-    clock_t begin = clock();
-
-    int longest_length;
-
-    reset_placement();
-
-    setup_chan_width(router_opts, chan_width_dist);
-
-    alloc_routing_structs(router_opts, det_routing_arch, segment_inf,
-            directs, num_directs);
-
-    longest_length = get_longest_segment_length((*det_routing_arch), segment_inf);
-
-    /*now setup and compute the actual arrays */
-    alloc_delta_arrays();
-
-    compute_delta_arrays(router_opts, longest_length);
-
-    /*free all data structures that are no longer needed */
-    free_routing_structs();
-
-    clock_t end = clock();
-
-    float time = (float) (end - begin) / CLOCKS_PER_SEC;
-    vtr::printf_info("Placement delay look-up took %g seconds\n", time);
-}
-
-/**************************************/
-void free_place_lookup_structs(void) {
-
-    free_delta_arrays();
-
-}
-
-float get_delta_io_to_clb(int delta_x, int delta_y) {
-    return f_delta_io_to_clb[delta_x][delta_y];
-}
-
-float get_delta_clb_to_clb(int delta_x, int delta_y) {
-    return f_delta_clb_to_clb[delta_x][delta_y];
-}
-
-float get_delta_clb_to_io(int delta_x, int delta_y) {
-    return f_delta_clb_to_io[delta_x][delta_y];
-}
-
-float get_delta_io_to_io(int delta_x, int delta_y) {
-    return f_delta_io_to_io[delta_x][delta_y];
-}
 
 static t_rt_node* setup_routing_resources_no_net(int source_node) {
 
@@ -910,9 +588,9 @@ static bool calculate_delay(int source_node, int sink_node,
     //maximum bounding box for placement
     t_bb bounding_box;
     bounding_box.xmin = 0;
-    bounding_box.xmax = device_ctx.nx + 1;
+    bounding_box.xmax = device_ctx.grid.width() + 1;
     bounding_box.ymin = 0;
-    bounding_box.ymax = device_ctx.ny + 1;
+    bounding_box.ymax = device_ctx.grid.height() + 1;
 
     float target_criticality = 1;
     // explore in order of decreasing criticality (no longer need sink_order array)

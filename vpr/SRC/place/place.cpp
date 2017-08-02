@@ -1761,7 +1761,6 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
-    auto& device_ctx = g_vpr_ctx.device();
 
 	float delay_source_to_sink = 0.;
 
@@ -1789,17 +1788,7 @@ static float comp_td_point_to_point_delay(int inet, int ipin) {
         /* Note: This heuristic is terrible on Quality of Results.  
          * A much better heuristic is to create a more comprehensive lookup table
          */
-        if (source_type == device_ctx.IO_TYPE) {
-            if (sink_type == device_ctx.IO_TYPE)
-                delay_source_to_sink = get_delta_io_to_io(delta_x, delta_y);
-            else
-                delay_source_to_sink = get_delta_io_to_clb(delta_x, delta_y);
-        } else {
-            if (sink_type == device_ctx.IO_TYPE)
-                delay_source_to_sink = get_delta_clb_to_io(delta_x, delta_y);
-            else
-                delay_source_to_sink = get_delta_clb_to_clb(delta_x, delta_y);
-        }
+        delay_source_to_sink = get_delta_delay(delta_x, delta_y);
         if (delay_source_to_sink < 0) {
             vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
                     "in comp_td_point_to_point_delay: Bad delay_source_to_sink value delta(%d, %d) delay of %g\n"
