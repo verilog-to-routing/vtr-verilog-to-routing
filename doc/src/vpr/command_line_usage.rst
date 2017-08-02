@@ -37,27 +37,27 @@ Filename Options
 VPR by default appends .blif, .net, .place, and .route to the circuit name provided by the user, and looks for an SDC file in the working directory with the same name as the circuit.
 Use the options below to override this default naming behaviour.
 
-.. option:: -blif_file <file>
+.. option:: --blif_file <file>
 
     Path to technology mapped user circuit in blif format
 
-.. option:: -net_file <file>
+.. option:: --net_file <file>
 
     Path to packed user circuit in net format
 
-.. option:: -place_file <file>
+.. option:: --place_file <file>
 
     Path to final placement file
 
-.. option:: -route_file <file>
+.. option:: --route_file <file>
 
     Path to final routing file
 
-.. option:: -sdc_file <file>
+.. option:: --sdc_file <file>
 
     Path to SDC timing constraints file
 
-.. option:: -outfile_prefix <string>
+.. option:: --outfile_prefix <string>
 
     Prefix for output files
 
@@ -67,14 +67,14 @@ General Options
 ----------------
 VPR runs all three stages of pack, place, and route if none of :option:`-pack`, :option:`-place`, or :option:`-route` are specified.
 
-.. option:: -disp {on | off}
+.. option:: --disp {on | off}
 
     Controls whether :ref:`VPR's interactive graphics <vpr_graphics>` are enabled.
     Graphics are very useful for inspecting and debugging the FPGA architecture and/or circuit implementation.
 
     **Default:** ``off``
 
-.. option:: -auto <int>
+.. option:: --auto <int>
 
     Can be 0, 1, or 2. 
     This sets how often you must click Proceed to continue execution after viewing the graphics. 
@@ -82,32 +82,32 @@ VPR runs all three stages of pack, place, and route if none of :option:`-pack`, 
 
     **Default:** ``1``
 
-.. option:: -pack
+.. option:: --pack
 
     Run packing stage
 
     **Default:** off
 
-.. option:: -place
+.. option:: --place
 
     Run placement stage
 
     **Default:** off
 
-.. option:: -route
+.. option:: --route
 
     Run routing stage
     This also implies --analysis.
 
     **Default:** off
 
-.. option:: -analysis
+.. option:: --analysis
 
     Run final analysis stage (e.g. timing, power).
 
     **Default:** off
 
-.. option:: -timing_analysis { on | off }
+.. option:: --timing_analysis { on | off }
 
     Turn VPR timing analysis off.  
     If it is off, you don’t have to specify the various timing analysis parameters in the architecture file.  
@@ -123,7 +123,7 @@ VPR runs all three stages of pack, place, and route if none of :option:`-pack`, 
 
     **Default:** ``auto``
 
-.. option:: -slack_definition { R | I | S | G | C | N }
+.. option:: --slack_definition { R | I | S | G | C | N }
 
     The slack definition used in the classic timing analyzer.  
     This option is for experimentation only; the default is fine for ordinary usage.  
@@ -131,20 +131,20 @@ VPR runs all three stages of pack, place, and route if none of :option:`-pack`, 
 
     **Default:** ``R``
 
-.. option:: -full_stats
+.. option:: --full_stats
 
     Print out some extra statistics about the circuit and its routing useful for wireability analysis.  
 
     **Default:** off
     
-.. option:: -echo_file { on | off }
+.. option:: --echo_file { on | off }
 
     Generates echo files of key internal data structures.
     These files are generally used for debugging vpr, and typically end in ``.echo``
 
     **Default:** ``off``
 
-.. option:: -gen_postsynthesis_netlist { on | off }
+.. option:: --gen_postsynthesis_netlist { on | off }
 
     Generates the Verilog and SDF files for the post-synthesized circuit. 
     The Verilog file can be used to perform functional simulation and the SDF file enables timing simulation of the post-synthesized circuit.
@@ -159,7 +159,7 @@ VPR runs all three stages of pack, place, and route if none of :option:`-pack`, 
 
     **Default:** ``off``
 
-.. option:: -verify_file_digests { on | off }
+.. option:: --verify_file_digests { on | off }
 
     Checks that any intermediate files loaded (e.g. previous packing/placement/routing) are consistent with the current netlist/architecture.
 
@@ -174,7 +174,7 @@ Netlist Options
 ---------------
 By default VPR will remove buffer LUTs, and iteratively sweep the netlist to remove unused primary inputs/outputs, nets and blocks, until nothing else can be removed. 
 
-.. option:: -absorb_buffer_luts {on | off}
+.. option:: --absorb_buffer_luts {on | off}
 
     Controls whether LUTs programmed as wires (i.e. implementing logical identity) should be absorbed into the downstream logic.
 
@@ -186,7 +186,7 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     **Default**: ``on``
 
-.. option:: -sweep_dangling_primary_ios {on | off}
+.. option:: --sweep_dangling_primary_ios {on | off}
 
     Controls whether the circuits dangling primary inputs and outputs (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
 
@@ -197,19 +197,19 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     **Default**: ``on``
 
-.. option:: -sweep_dangling_nets {on | off}
+.. option:: --sweep_dangling_nets {on | off}
 
     Controls whether dangling nets (i.e. those who do not drive, or are not driven by anything) are swept and removed from the netlist.
 
     **Default**: ``on``
 
-.. option:: -sweep_dangling_blocks {on | off}
+.. option:: --sweep_dangling_blocks {on | off}
 
     Controls whether dangling blocks (i.e. those who do not drive anything) are swept and removed from the netlist.
 
     **Default**: ``on``
 
-.. option:: -sweep_constant_primary_outputs {on | off}
+.. option:: --sweep_constant_primary_outputs {on | off}
 
     Controls whether primary outputs driven by constant values are swept and removed from the netlist.
 
@@ -226,19 +226,19 @@ AAPack takes as input a technology-mapped blif netlist consisting of LUTs, flip-
 The logic blocks available on the FPGA are specified through the FPGA architecture file.
 For people not working on CAD, you can probably leave all the options to their default values.
 
-.. option:: -connection_driven_clustering {on | off}
+.. option:: --connection_driven_clustering {on | off}
 
     Controls whether or not AAPack prioritizes the absorption of nets with fewer connections into a complex logic block over nets with more connections.
 
     **Default**: ``on``
 
-.. option:: -allow_unrelated_clustering {on | off}
+.. option:: --allow_unrelated_clustering {on | off}
 
     Controls whether or not primitives with no attraction to the current cluster can be packed into it.
 
     **Default**:  ``on``
 
-.. option:: -alpha_clustering <float>
+.. option:: --alpha_clustering <float>
 
     A parameter that weights the optimization of timing vs area.
 
@@ -246,7 +246,7 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default**: ``0.75``
 
-.. option:: -beta_clustering <float>
+.. option:: --beta_clustering <float>
 
     A tradeoff parameter that controls the optimization of smaller net absorption vs. the optimization of signal sharing.
 
@@ -255,13 +255,13 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default**:  ``0.9``
 
-.. option:: -timing_driven_clustering {on|off}
+.. option:: --timing_driven_clustering {on|off}
 
     Controls whether or not to do timing driven clustering
 
     **Default**: ``on``
 
-.. option:: -cluster_seed_type {blend | timing | max_inputs}
+.. option:: --cluster_seed_type {blend | timing | max_inputs}
 
     Controls how the packer chooses the first primitive to place in a new cluster.
 
@@ -286,20 +286,20 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
 .. seealso:: :ref:`timing_driven_placer_options`
 
-.. option:: -seed <int>
+.. option:: --seed <int>
 
     Sets the initial random seed used by the placer. 
 
     **Default:** ``1``
 
-.. option:: -enable_timing_computations {on | off} 
+.. option:: --enable_timing_computations {on | off} 
 
     Controls whether or not the placement algorithm prints estimates of the circuit speed of the placement it generates.
     This setting affects statistics output only, not optimization behaviour. 
 
     **Default:** ``on`` if timing-driven placement is specified, ``off`` otherwise.
 
-.. option:: -inner_num <float>
+.. option:: --inner_num <float>
 
     The number of moves attempted at each temperature is inner_num *  num_blocks^(4/3) in the circuit.
     The number of blocks in a circuit is the number of pads plus the number of clbs.
@@ -310,25 +310,25 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``10.0``
 
-.. option:: -init_t <float>
+.. option:: --init_t <float>
 
     The starting temperature of the anneal for the manual annealing schedule. 
 
     **Default:** ``100.0``
 
-.. option:: -exit_t <float>
+.. option:: --exit_t <float>
 
     The manual anneal will terminate when the temperature drops below the exit temperature.
 
     **Default:** ``0.01``
 
-.. option:: -alpha_t <float>
+.. option:: --alpha_t <float>
 
     The temperature is updated by multiplying the old temperature by alpha_t when the manual annealing schedule is enabled. 
 
     **Default:** ``0.8``
 
-.. option:: -fix_pins {random | <file.pads>}
+.. option:: --fix_pins {random | <file.pads>}
 
     Do not allow the placer to move the I/O locations about during the anneal.
     Instead, lock each I/O pad to some location at the start of the anneal. 
@@ -338,7 +338,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** off (i.e. placer chooses pad locations).
 
-.. option:: -place_algorithm {bounding_box | path_timing_driven}
+.. option:: --place_algorithm {bounding_box | path_timing_driven}
 
     Controls the algorithm used by the placer.
 
@@ -349,7 +349,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:**  ``path_timing_driven``
 
-.. option:: -place_chan_width <int>
+.. option:: --place_chan_width <int>
 
     Tells VPR how many tracks a channel of relative width 1 is expected to need to complete routing of this circuit.
     VPR will then place the circuit only once, and repeatedly try routing the circuit as usual. 
@@ -362,7 +362,7 @@ Timing-Driven Placer Options
 ----------------------------
 The following options are only valid when the placement engine is in timing-driven mode (timing-driven placement is used by default).
 
-.. option:: -timing_tradeoff <float>
+.. option:: --timing_tradeoff <float>
 
     Controls the trade-off between bounding box minimization and delay minimization in the placer.
 
@@ -370,19 +370,19 @@ The following options are only valid when the placement engine is in timing-driv
 
     **Default:**  ``0.5``
 
-.. option:: -recompute_crit_iter <int>
+.. option:: --recompute_crit_iter <int>
 
     Controls how many temperature updates occur before the placer performs a timing analysis to update its estimate of the criticality of each connection.
 
     **Default:**  ``1``
 
-.. option:: -inner_loop_recompute_divider <int>
+.. option:: --inner_loop_recompute_divider <int>
 
     Controls how many times the placer performs a timing analysis to update its criticality estimates while at a single temperature. 
 
     **Default:** ``0``
 
-.. option:: -td_place_exp_first <float>
+.. option:: --td_place_exp_first <float>
 
     Controls how critical a connection is considered as a function of its slack, at the start of the anneal.
 
@@ -392,7 +392,7 @@ The following options are only valid when the placement engine is in timing-driv
 
     **Default:** ``1.0``
 
-.. option:: -td_place_exp_last <float>
+.. option:: --td_place_exp_last <float>
 
     Controls how critical a connection is considered as a function of its slack, at the end of the anneal.
 
@@ -410,7 +410,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. seealso:: :ref:`timing_driven_router_options`
 
-.. option:: -max_router_iterations <int>
+.. option:: --max_router_iterations <int>
 
     The number of iterations of a Pathfinder-based router that will be executed before a circuit is declared unrouteable (if it hasn’t routed successfully yet) at a given channel width. 
 
@@ -420,7 +420,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``50``
 
-.. option:: -initial_pres_fac <float>
+.. option:: --initial_pres_fac <float>
 
     Sets the starting value of the present overuse penalty factor. 
 
@@ -429,7 +429,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``0.5``
 
-.. option:: -first_iter_pres_fac <float>
+.. option:: --first_iter_pres_fac <float>
 
     Similar to :option:`-initial_pres_fac`.
     This sets the present overuse penalty factor for the very first routing iteration.
@@ -440,26 +440,26 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``0.0``
 
-.. option:: -pres_fac_mult <float>
+.. option:: --pres_fac_mult <float>
 
     Sets the growth factor by which the present overuse penalty factor is multiplied after each router iteration. 
 
     **Default:** ``1.3``
 
-.. option:: -acc_fac <float>
+.. option:: --acc_fac <float>
 
     Specifies the accumulated overuse factor (historical congestion cost factor).
 
     **Default:** ``1``
 
-.. option:: -bb_factor <int>
+.. option:: --bb_factor <int>
 
     Sets the distance (in channels) outside of the bounding box of its pins a route can go.
     Larger numbers slow the router somewhat, but allow for a more exhaustive search of possible routes.
 
     **Default:** ``3``
 
-.. option:: -base_cost_type {demand_only | delay_normalized} 
+.. option:: --base_cost_type {demand_only | delay_normalized} 
 
     Sets the basic cost of using a routing node (resource).
 
@@ -469,7 +469,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``delay_normalized`` for the timing-driven router and ``demand_only`` for the breadth-first router
 
-.. option:: -bend_cost <float>
+.. option:: --bend_cost <float>
 
     The cost of a bend.
     Larger numbers will lead to routes with fewer bends, at the cost of some increase in track count.
@@ -477,19 +477,19 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``1`` if global routing is being performed, ``0`` if combined global/detailed routing is being performed.
 
-.. option:: -route_type {global | detailed}
+.. option:: --route_type {global | detailed}
 
     Specifies whether global routing or combined global and detailed routing should be performed.
 
     **Default:**  ``detailed`` (i.e. combined global and detailed routing)
 
-.. option:: -route_chan_width <int>
+.. option:: --route_chan_width <int>
 
     Tells VPR to route the circuit with a fixed channel width.
 
     .. note:: No binary search on channel capacity will be performed to find the minimum number of tracks required for routing. VPR simply reports whether or not the circuit will route at this channel width.
 
-.. option:: -min_route_chan_width_hint <int>
+.. option:: --min_route_chan_width_hint <int>
 
     Hint to the router what the minimum routable channel width is.
 
@@ -502,7 +502,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     .. seealso:: :option:`-verify_binary_search`
 
-.. option:: -verify_binary_search {on | off}
+.. option:: --verify_binary_search {on | off}
 
     Force the router to check that the channel width determined by binary search is the minimum.
 
@@ -510,7 +510,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     This option attempts to verify the minimum by routing at successively lower channel widths until two consecutive routing failures are observed.
 
-.. option:: -router_algorithm {breadth_first | timing_driven} 
+.. option:: --router_algorithm {breadth_first | timing_driven} 
 
     Selects which router algorithm to use.
     
@@ -522,7 +522,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``timing_driven``
 
-.. option:: -min_incremental_reroute_fanout <int>
+.. option:: --min_incremental_reroute_fanout <int>
 
     Incrementally re-route nets with fanout above the specified threshold.
 
@@ -532,13 +532,13 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     **Default:** ``64``
 
-.. option:: -write_rr_graph <file>
+.. option:: --write_rr_graph <file>
 
     Writes out the routing resource graph generated at the last stage of VPR into XML format
 
     <file> describes the filename for the generated routing resource graph. The output can be read into VPR using :option:`-read_rr_graph`
 
-.. option:: -read_rr_graph <file>
+.. option:: --read_rr_graph <file>
 
     Reads in the routing resource graph named <file> in the VTR root directory and loads it into the placement and routing stage of VPR.
     
@@ -554,7 +554,7 @@ Timing-Driven Router Options
 ----------------------------
 The following options are only valid when the router is in timing-driven mode (the default).
 
-.. option:: -astar_fac <float>
+.. option:: --astar_fac <float>
 
     Sets how aggressive the directed search used by the timing-driven router is.
 
@@ -562,7 +562,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``1.2``
 
-.. option:: -max_criticality <float>
+.. option:: --max_criticality <float>
 
     Sets the maximum fraction of routing cost that can come from delay (vs. coming from routability) for any net.
 
@@ -570,7 +570,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``0.99``
 
-.. option:: -criticality_exp <float>
+.. option:: --criticality_exp <float>
 
     Controls the delay - routability tradeoff for nets as a function of their slack.
 
@@ -579,7 +579,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``1.0``
 
-.. option:: -routing_failure_predictor {safe | aggressive | off}
+.. option:: --routing_failure_predictor {safe | aggressive | off}
 
     Controls how aggressive the router is at predicting when it will not be able to route successfully, and giving up early.
     Using this option can significantly reduce the runtime of a binary search for the minimum channel width.
