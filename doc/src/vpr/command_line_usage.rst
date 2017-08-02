@@ -113,6 +113,15 @@ VPR runs all three stages of pack, place, and route if none of :option:`-pack`, 
 
     **Default:**  ``on``
 
+.. option:: --device <string>
+    
+    Specifies which device layout/floorplan to use from the architecture file.
+
+    ``auto`` uses the smallest device satisfying the circuit's resource requirements.
+    Other values are assumed to be the names of device layouts defined in the :ref:`arch_grid_layout` section of the architecture file.
+
+    **Default:** ``auto``
+
 .. option:: -slack_definition { R | I | S | G | C | N }
 
     The slack definition used in the classic timing analyzer.  
