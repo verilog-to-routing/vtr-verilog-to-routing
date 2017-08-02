@@ -184,7 +184,15 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
         }
     }
 
-    VPR_THROW(VPR_ERROR_OTHER, "Faild to find device which satisifies resource requirements");
+    std::string resource_reqs;
+    for (auto iter = minimum_instance_counts.begin(); iter != minimum_instance_counts.end(); ++iter) {
+        if (iter != minimum_instance_counts.begin()) {
+            resource_reqs += ", ";
+        }
+
+        resource_reqs += std::string(iter->first->name) + ": " + std::to_string(iter->second);
+    }
+    VPR_THROW(VPR_ERROR_OTHER, "Failed to find device which satisifies resource requirements (required %s)", resource_reqs.c_str());
     return DeviceGrid(); //Unreachable
 }
 
