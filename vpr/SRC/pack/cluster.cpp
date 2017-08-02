@@ -252,6 +252,7 @@ static void start_new_cluster(
 		std::map<t_type_ptr, size_t>& num_used_type_instances,
 		const int num_models, const int max_cluster_size,
         const t_arch* arch,
+        std::string device_layout_name,
 		vector<t_lb_type_rr_node> *lb_type_rr_graphs, t_lb_router_data **router_data, const int detailed_routing_stage);
 
 static t_pack_molecule* get_highest_gain_molecule(
@@ -300,7 +301,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
         float inter_cluster_net_delay,
 		bool allow_unrelated_clustering,
 		bool connection_driven,
-		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs
+		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs,
+        std::string device_layout_name
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_timing_inf timing_inf
 #endif
@@ -545,6 +547,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					&clb[num_clb], atom_molecules, num_clb, istart, num_used_type_instances,
 					num_models, max_cluster_size,
                     arch, 
+                    device_layout_name,
 					lb_type_rr_graphs, &router_data, detailed_routing_stage);
 			vtr::printf_info("Complex block %d: %s, type: %s ", 
 					num_clb, clb[num_clb].name, clb[num_clb].type->name);
@@ -1908,6 +1911,7 @@ static void start_new_cluster(
 		std::map<t_type_ptr, size_t>& num_used_type_instances,
 		const int num_models, const int max_cluster_size,
         const t_arch* arch,
+        std::string device_layout_name,
 		vector<t_lb_type_rr_node> *lb_type_rr_graphs, t_lb_router_data **router_data, const int detailed_routing_stage) {
 	/* Given a starting seed block, start_new_cluster determines the next cluster type to use 
 	 It expands the FPGA if it cannot find a legal cluster for the atom block
@@ -1992,7 +1996,7 @@ static void start_new_cluster(
 
     /* Expand FPGA size if needed */
     if (num_used_type_instances[new_cluster->type] > device_ctx.grid.num_instances(new_cluster->type)) {
-        device_ctx.grid = create_smallest_device_grid(arch->grid_layouts, num_used_type_instances);
+        device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances);
         vtr::printf_info("Not enough resources expand FPGA size to (%d x %d)\n",
                 device_ctx.grid.width(), device_ctx.grid.height());
     }

@@ -104,7 +104,8 @@ void try_pack(t_packer_opts *packer_opts,
             packer_opts->allow_unrelated_clustering,
             packer_opts->connection_driven,
             packer_opts->packer_algorithm,
-            lb_type_rr_graphs
+            lb_type_rr_graphs,
+            packer_opts->device_layout
 #ifdef ENABLE_CLASSIC_VPR_STA
             , timing_inf
 #endif

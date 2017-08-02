@@ -162,6 +162,7 @@ void vpr_init(const int argc, const char **argv,
 
     /* Timing option priorities */
     vpr_setup->TimingEnabled = options->timing_analysis;
+    vpr_setup->device_layout = options->device_layout;
 
     vtr::printf_info("\n");
     vtr::printf_info("Architecture file: %s\n", options->ArchFile.value().c_str());
@@ -273,90 +274,14 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     /* Output the current settings to console. */
     printClusteredNetlistStats();
 
-#if 0
-    int current = std::max(vtr::nint((float) sqrt((float) cluster_ctx.num_blocks)), 1); /* current is the value of the smaller side of the FPGA */
-    int low = 1;
-    int high = -1;
-
-    int *num_instances_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof (int));
-    int *num_blocks_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof (int));
-
-    for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
-        num_blocks_type[cluster_ctx.blocks[i].type->index]++;
-    }
-
-    VTR_ASSERT(Arch.grid_layouts.size() == 1);
-    auto grid_layout = Arch.grid_layouts[0]; //TODO: multi-layout support
-
-    if (grid_layout.grid_type == GridDefType::AUTO) {
-
-        /* Auto-size FPGA, perform a binary search */
-        while (high == -1 || low < high) {
-
-            /* Generate grid */
-            if (grid_layout.aspect_ratio >= 1.0) {
-                device_ctx.ny = current;
-                device_ctx.nx = vtr::nint(current * grid_layout.aspect_ratio);
-            } else {
-                device_ctx.nx = current;
-                device_ctx.ny = vtr::nint(current / grid_layout.aspect_ratio);
-            }
-            vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", device_ctx.nx, device_ctx.ny);
-            alloc_and_load_grid(Arch.grid_layouts, num_instances_type);
-            freeGrid();
-
-            /* Test if netlist fits in grid */
-            bool fit = true;
-            for (int i = 0; i < device_ctx.num_block_types; ++i) {
-                if (num_blocks_type[i] > num_instances_type[i]) {
-                    fit = false;
-                    break;
-                }
-            }
-
-            /* get next value */
-            if (!fit) {
-                /* increase size of max */
-                if (high == -1) {
-                    current = current * 2;
-                    if (current > MAX_SHORT) {
-                        VPR_THROW(VPR_ERROR_ARCH, "FPGA required is too large for current architecture settings.");
-                    }
-                } else {
-                    if (low == current)
-                        current++;
-                    low = current;
-                    current = low + ((high - low) / 2);
-                }
-            } else {
-                high = current;
-                current = low + ((high - low) / 2);
-            }
-        }
-
-        /* Generate grid */
-        if (grid_layout.aspect_ratio >= 1.0) {
-            device_ctx.ny = current;
-            device_ctx.nx = vtr::nint(current * grid_layout.aspect_ratio);
-        } else {
-            device_ctx.nx = current;
-            device_ctx.ny = vtr::nint(current / grid_layout.aspect_ratio);
-        }
-        alloc_and_load_grid(Arch.grid_layouts, num_instances_type);
-    } else {
-        device_ctx.nx = grid_layout.width;
-        device_ctx.ny = grid_layout.height;
-        alloc_and_load_grid(Arch.grid_layouts, num_instances_type);
-    }
-#else
+    //Load the device grid
     std::map<t_type_ptr,size_t> num_type_instances;
     for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
         num_type_instances[cluster_ctx.blocks[i].type]++;
     }
-    device_ctx.grid = create_smallest_device_grid(Arch.grid_layouts, num_type_instances); 
+    device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances);
     device_ctx.nx = device_ctx.grid.nx(); //TODO: remove
     device_ctx.ny = device_ctx.grid.ny(); //TODO: remove
-#endif
 
     vtr::printf_info("FPGA sized to %d x %d (%s)\n", device_ctx.nx, device_ctx.ny, device_ctx.grid.name().c_str());
 

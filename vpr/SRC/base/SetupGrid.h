@@ -11,7 +11,8 @@
 #include <vector>
 #include "physical_types.h"
 
-DeviceGrid create_smallest_device_grid(std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts);
+DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts);
+
 
 #endif
 

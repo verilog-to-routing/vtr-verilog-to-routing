@@ -407,6 +407,8 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
 	PackerOpts->auto_compute_inter_cluster_net_delay = true;
 	PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */
+
+    PackerOpts->device_layout = Options.device_layout;
 }
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {

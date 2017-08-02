@@ -38,9 +38,10 @@ struct t_options {
     argparse::ArgValue<bool> show_version;
     argparse::ArgValue<size_t> num_workers;
 	argparse::ArgValue<bool> timing_analysis;
-    argparse::ArgValue<std::string> SlackDefinition;
+    argparse::ArgValue<std::string> SlackDefinition; //TODO: eventually remove
 	argparse::ArgValue<bool> CreateEchoFile;
     argparse::ArgValue<bool> verify_file_digests;
+    argparse::ArgValue<std::string> device_layout;
 
 
     /* Atom netlist options */

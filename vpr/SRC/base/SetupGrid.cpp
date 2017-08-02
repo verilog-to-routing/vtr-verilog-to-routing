@@ -25,8 +25,9 @@ using namespace std;
 #include "SetupGrid.h"
 #include "expr_eval.h"
 
+static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts);
 static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_type_ptr,size_t> instance_counts);
-static DeviceGrid create_device_grid(const t_grid_def& grid_def, size_t width, size_t height);
+static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height);
 
 static void CheckGrid(const DeviceGrid& grid);
 
@@ -34,10 +35,39 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
 
 static bool is_integer(std::string val);
 
+DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts) {
+    if (layout_name == "auto") {
+        //Auto-size the device
+        return auto_size_device_grid(grid_layouts, minimum_instance_counts);
+    } else {
+        //Use the specified device
+
+        //Find the matching grid definition
+        auto cmp = [&](const t_grid_def& grid_def) {
+            return grid_def.name == layout_name;
+        };
+
+        auto iter = std::find_if(grid_layouts.begin(), grid_layouts.end(), cmp);
+        if (iter == grid_layouts.end()) {
+            //Not found
+            std::string valid_names;
+            for (size_t i = 0; i < grid_layouts.size(); ++i) {
+                if (i != 0) {
+                    valid_names += ", ";
+                }
+                valid_names += "'" + grid_layouts[i].name + "'";
+            }
+            VPR_THROW(VPR_ERROR_ARCH, "Failed to find grid layout named '%s' (valid grid layouts: %s)\n", layout_name.c_str(), valid_names.c_str());
+        }
+
+        return build_device_grid(*iter, iter->width, iter->height);
+    }
+}
+
 //Create a device grid which satisfies the minimum block counts
 //  If a set of fixed grid layouts are specified, the smallest satisfying grid is picked
 //  If an auto grid layouts are specified, the smallest dynamicly sized grid is picked
-DeviceGrid create_smallest_device_grid(std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts) {
+static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, std::map<t_type_ptr,size_t> minimum_instance_counts) {
     VTR_ASSERT(grid_layouts.size() > 0);
 
     if (grid_layouts[0].grid_type == GridDefType::AUTO) {
@@ -61,7 +91,7 @@ DeviceGrid create_smallest_device_grid(std::vector<t_grid_def> grid_layouts, std
             }
 
             //Build the device
-            auto grid = create_device_grid(grid_def, width, height);
+            auto grid = build_device_grid(grid_def, width, height);
 
             //Check if it satisfies the block counts
             if (grid_satisfies_instance_counts(grid, minimum_instance_counts)) {
@@ -94,7 +124,7 @@ DeviceGrid create_smallest_device_grid(std::vector<t_grid_def> grid_layouts, std
         for (const auto& grid_def : grid_layouts) {
 
             //Build the grid
-            auto grid = create_device_grid(grid_def, grid_def.width, grid_def.height);        
+            auto grid = build_device_grid(grid_def, grid_def.width, grid_def.height);        
 
             if (grid_satisfies_instance_counts(grid, minimum_instance_counts)) {
                 return grid;
@@ -122,7 +152,7 @@ static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_ty
 }
 
 //Build the specified device grid 
-static DeviceGrid create_device_grid(const t_grid_def& grid_def, size_t width, size_t height) {
+static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height) {
     if (grid_def.grid_type == GridDefType::FIXED) {
 
         if (grid_def.width != int(width) || grid_def.height != int(height)) {
