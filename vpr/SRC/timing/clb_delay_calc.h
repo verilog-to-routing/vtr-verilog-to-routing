@@ -1,8 +1,6 @@
 #ifndef VPR_CLB_DELAY_CALC_H
 #define VPR_CLB_DELAY_CALC_H
 
-#include "netlist.h"
-
 //Delay Calculator for routing internal to a clustered logic block
 class ClbDelayCalc {
     public:

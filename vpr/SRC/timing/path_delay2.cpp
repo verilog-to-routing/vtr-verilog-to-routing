@@ -3,7 +3,6 @@
 #include <vector>
 #include <algorithm>
 
-
 #include "vtr_assert.h"
 #include "vtr_list.h"
 #include "vtr_log.h"
@@ -487,7 +486,7 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tn
 
             //We are connected to to_node, so our lowest link should be either ourselves, or
             //to_node's lowest link
-            tnode_lowlinks[inode] = min(tnode_lowlinks[inode], tnode_lowlinks[to_node_index]);
+            tnode_lowlinks[inode] = std::min(tnode_lowlinks[inode], tnode_lowlinks[to_node_index]);
         } else if (tnode_instack[to_node_index]) {
             //to_node was in the stack, and so is part of the current SCC 
             VTR_ASSERT(tnode_lowlinks[inode] >= 0);
@@ -495,7 +494,7 @@ void strongconnect(int& index, int* tnode_indexes, int* tnode_lowlinks, bool* tn
 
             //to_node was on the stack, since we connect to it our lowest link is either ourselves
             //or the index of to_node (since it may have been traversed earlier)
-            tnode_lowlinks[inode] = min(tnode_lowlinks[inode], tnode_indexes[to_node_index]);
+            tnode_lowlinks[inode] = std::min(tnode_lowlinks[inode], tnode_indexes[to_node_index]);
         }
     }
 

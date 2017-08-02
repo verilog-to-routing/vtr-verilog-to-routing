@@ -92,6 +92,10 @@ class ClusteredNetlist : public BaseNetlist {
 		//Returns the block of the net & pin which it's attached to
 		BlockId net_pin_block(const NetId net_id, const int pin_index) const;
 
+		//Returns the pin's index in the net
+		int net_pin_index(NetId net_id, PinId pin_id) const;
+
+		//Returns whether the net is global or fixed
 		bool net_global(const NetId id) const;
 		bool net_routed(const NetId id) const;
 		bool net_fixed(const NetId id) const;

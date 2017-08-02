@@ -41,9 +41,9 @@ public:
 	std::vector<int>& get_remaining_targets() {return remaining_targets;}
 	std::vector<t_rt_node*>& get_reached_rt_sinks() {return reached_rt_sinks;}
 
-	void convert_sink_nodes_to_net_pins(vector<int>& rr_sink_nodes) const;
+	void convert_sink_nodes_to_net_pins(std::vector<int>& rr_sink_nodes) const;
 
-	void put_sink_rt_nodes_in_net_pins_lookup(const vector<t_rt_node*>& sink_rt_nodes,
+	void put_sink_rt_nodes_in_net_pins_lookup(const std::vector<t_rt_node*>& sink_rt_nodes,
 	 t_rt_node** rt_node_of_sink) const;
 
 	bool sanity_check_lookup() const;

@@ -1465,9 +1465,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                         //Record the timing arcs
                         for(auto& data_tuple : tnode_delay_matrix[inode]) {
-                            auto src_name = get<0>(data_tuple);
-                            auto src_ipin = get<1>(data_tuple);
-                            auto delay = get<2>(data_tuple);
+                            auto src_name = std::get<0>(data_tuple);
+                            auto src_ipin = std::get<1>(data_tuple);
+                            auto delay = std::get<2>(data_tuple);
                             timing_arcs.emplace_back(src_name, src_ipin, port->name, ipin, delay);
                         }
                     }
@@ -1579,9 +1579,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                         //Record the timing arcs
                         for(auto& data_tuple : tnode_delay_matrix[inode]) {
-                            auto src_name = get<0>(data_tuple);
-                            auto src_ipin = get<1>(data_tuple);
-                            auto delay = get<2>(data_tuple);
+                            auto src_name = std::get<0>(data_tuple);
+                            auto src_ipin = std::get<1>(data_tuple);
+                            auto delay = std::get<2>(data_tuple);
                             timing_arcs.emplace_back(src_name, src_ipin, port->name, ipin, delay);
                         }
                     }

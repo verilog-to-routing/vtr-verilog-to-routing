@@ -84,6 +84,24 @@ BlockId ClusteredNetlist::net_pin_block(const NetId net_id, int pin_index) const
 	return BlockId::INVALID();
 }
 
+int ClusteredNetlist::net_pin_index(NetId net_id, PinId pin_id) const {
+	VTR_ASSERT(valid_net_id(net_id));
+	VTR_ASSERT(valid_pin_id(pin_id));
+
+	int count = 0;
+	
+	for (PinId pin : net_pins(net_id)) {
+		if (pin == pin_id)
+			break;
+		count++;
+	}
+
+	//Ensure that a pin is found
+	VTR_ASSERT(count < (int)net_pins(net_id).size());
+
+	return count;
+}
+
 bool ClusteredNetlist::net_global(const NetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 

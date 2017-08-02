@@ -340,7 +340,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 
 	init_route_structs(router_opts.bb_factor);
 
-    if (cluster_ctx.clbs_nlist.net.empty()) {
+    if (cluster_ctx.clb_nlist.nets().empty()) {
         vtr::printf_warning(__FILE__, __LINE__, "No nets to route\n");
     }
 

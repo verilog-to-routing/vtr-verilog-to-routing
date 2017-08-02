@@ -2,10 +2,11 @@
 #define VPR_CONTEXT_H
 #include <unordered_map>
 #include <memory>
+#include <vector>
 
+#include "vpr_types.h"
 #include "vtr_matrix.h"
 #include "vtr_ndmatrix.h"
-#include "netlist.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "rr_node.h"
@@ -145,7 +146,7 @@ struct DeviceContext : public Context {
      * map key: num of all possible fanin of that type of switch on chip
      * map value: remapped switch index (index in rr_switch_inf)
      */
-    map<int, int> *switch_fanin_remap; 
+    std::map<int, int> *switch_fanin_remap; 
 
     /*******************************************************************
      Clock Network
@@ -195,9 +196,6 @@ struct ClusteringContext : public Context {
 
     /* blocks in the clustered netlist */
     t_block *blocks; //[0..num_blocks-1]
-
-    /* External-to-complex blocks, post-packed netlist [NETS ONLY] */
-    t_netlist clbs_nlist;
 };
 
 //State relating to placement

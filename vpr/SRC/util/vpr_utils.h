@@ -1,7 +1,8 @@
 #ifndef VPR_UTILS_H
 #define VPR_UTILS_H
 
-#include "netlist.h"
+#include <vector>
+#include "vpr_types.h"
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required=true);
 const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required=true);

@@ -39,12 +39,12 @@ using namespace std;
 * Internal functions declarations
 ******************************************************************************************/
 static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type, 
-													 vector<t_lb_type_rr_node> &lb_type_rr_node_graph);
+													 std::vector<t_lb_type_rr_node> &lb_type_rr_node_graph);
 static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_node *pb_graph_node,
-														vector<t_lb_type_rr_node> &lb_type_rr_node_graph,
+														std::vector<t_lb_type_rr_node> &lb_type_rr_node_graph,
 														const int ext_rr_index);
 static float get_cost_of_pb_edge(t_pb_graph_edge *edge);
-static void print_lb_type_rr_graph(FILE *fp, const vector<t_lb_type_rr_node> &lb_type_rr_graph);
+static void print_lb_type_rr_graph(FILE *fp, const std::vector<t_lb_type_rr_node> &lb_type_rr_graph);
 
 /*****************************************************************************************
 * Constructor/Destructor functions 
@@ -52,11 +52,11 @@ static void print_lb_type_rr_graph(FILE *fp, const vector<t_lb_type_rr_node> &lb
 
 /* Populate each logic block type (type_descriptor) with a directed graph that respresents the interconnect within it.
 */
-vector<t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph() {
-	vector<t_lb_type_rr_node> *lb_type_rr_graphs;
+std::vector<t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph() {
+	std::vector<t_lb_type_rr_node> *lb_type_rr_graphs;
     auto& device_ctx = g_vpr_ctx.device();
 
-	lb_type_rr_graphs = new vector<t_lb_type_rr_node> [device_ctx.num_block_types];
+	lb_type_rr_graphs = new std::vector<t_lb_type_rr_node> [device_ctx.num_block_types];
 
 	for(int i = 0; i < device_ctx.num_block_types; i++) {
 		if(&device_ctx.block_types[i] != device_ctx.EMPTY_TYPE) {
@@ -71,7 +71,7 @@ vector<t_lb_type_rr_node> *alloc_and_load_all_lb_type_rr_graph() {
 }
 
 /* Free routing resource graph for all logic block types */
-void free_all_lb_type_rr_graph(vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
+void free_all_lb_type_rr_graph(std::vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
     auto& device_ctx = g_vpr_ctx.device();
 
 	for(int itype = 0; itype < device_ctx.num_block_types; itype++) {
@@ -143,7 +143,7 @@ int get_num_modes_of_lb_type_rr_node(const t_lb_type_rr_node &lb_type_rr_node) {
 ******************************************************************************************/
 
 /* Output all logic block type pb graphs */
-void echo_lb_type_rr_graphs(char *filename, vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
+void echo_lb_type_rr_graphs(char *filename, std::vector<t_lb_type_rr_node> *lb_type_rr_graphs) {
 	FILE *fp;
 	fp = vtr::fopen(filename, "w");
 
@@ -172,7 +172,7 @@ void echo_lb_type_rr_graphs(char *filename, vector<t_lb_type_rr_node> *lb_type_r
    of the pb_type
 */
 static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type, 
-													 vector<t_lb_type_rr_node> &lb_type_rr_node_graph) {
+													 std::vector<t_lb_type_rr_node> &lb_type_rr_node_graph) {
 	t_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_head;
 	int ext_source_index, ext_sink_index, ext_rr_index;
@@ -292,7 +292,7 @@ static void alloc_and_load_lb_type_rr_graph_for_type(const t_type_ptr lb_type,
    repeats this on all children of the pb_graph_node
 */
 static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_node *pb_graph_node,
-													vector<t_lb_type_rr_node> &lb_type_rr_node_graph,
+													std::vector<t_lb_type_rr_node> &lb_type_rr_node_graph,
 													const int ext_rr_index) {
 	t_pb_type *pb_type;
 	int pin_index;
@@ -621,7 +621,7 @@ static float get_cost_of_pb_edge(t_pb_graph_edge* /*edge*/) {
 }
 
 /* Print logic block type routing resource graph */
-static void print_lb_type_rr_graph(FILE *fp, const vector<t_lb_type_rr_node> &lb_type_rr_graph) {
+static void print_lb_type_rr_graph(FILE *fp, const std::vector<t_lb_type_rr_node> &lb_type_rr_graph) {
 	for(unsigned int inode = 0; inode < lb_type_rr_graph.size(); inode++) {
 		fprintf(fp, "Node %d\n", inode);
 		if(lb_type_rr_graph[inode].pb_graph_pin != NULL) {
