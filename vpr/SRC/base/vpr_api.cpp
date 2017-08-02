@@ -31,7 +31,6 @@ using namespace std;
 #include "graphics.h"
 #include "read_netlist.h"
 #include "check_netlist.h"
-#include "print_netlist.h"
 #include "read_blif.h"
 #include "draw.h"
 #include "place_and_route.h"
