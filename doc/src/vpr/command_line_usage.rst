@@ -1,6 +1,9 @@
-Basic Command-line Usage
-========================
+Command-line Options
+====================
 .. program:: vpr
+
+Basic Usage
+-----------
 
 At a minimum VPR requires two command-line arguments::
 
@@ -9,14 +12,14 @@ At a minimum VPR requires two command-line arguments::
 where:
 
   * ``architecture`` is an :ref:`FPGA architecture description file <fpga_architecture_description>`
-  * ``circuit`` is the technology mapped netlist (.blif) to be implemented
+  * ``circuit`` is the technology mapped netlist in :ref:`BLIF format <vpr_blif_file>` to be implemented
 
 VPR will then pack, place, and route the circuit onto the specified architecture.
 
 By default VPR will perform a binary search routing to find the minimum channel width required to route the circuit.
 
 Detailed Command-line Options
-=============================
+-----------------------------
 VPR has a lot of options.
 The options most people will be interested in are:
 
@@ -33,7 +36,7 @@ Values in curly braces separated by vertical bars, e.g. ``{on | off}``, indicate
 .. _filename_options:
 
 Filename Options
-----------------
+^^^^^^^^^^^^^^^^
 VPR by default appends .blif, .net, .place, and .route to the circuit name provided by the user, and looks for an SDC file in the working directory with the same name as the circuit.
 Use the options below to override this default naming behaviour.
 
@@ -66,7 +69,7 @@ Use the options below to override this default naming behaviour.
 .. _general_options:
 
 General Options
-----------------
+^^^^^^^^^^^^^^^
 VPR runs all three stages of pack, place, and route if none of :option:`-pack`, :option:`-place`, or :option:`-route` are specified.
 
 .. option:: --disp {on | off}
@@ -173,7 +176,7 @@ VPR runs all three stages of pack, place, and route if none of :option:`-pack`, 
 .. _netlist_options:
 
 Netlist Options
----------------
+^^^^^^^^^^^^^^^
 By default VPR will remove buffer LUTs, and iteratively sweep the netlist to remove unused primary inputs/outputs, nets and blocks, until nothing else can be removed. 
 
 .. option:: --absorb_buffer_luts {on | off}
@@ -222,7 +225,7 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 .. _packing_options:
 
 Packing Options
----------------
+^^^^^^^^^^^^^^^
 AAPack is the packing algorithm built into VPR.
 AAPack takes as input a technology-mapped blif netlist consisting of LUTs, flip-flops, memories, mulitpliers, etc and outputs a .net formatted netlist composed of more complex logic blocks.
 The logic blocks available on the FPGA are specified through the FPGA architecture file.
@@ -279,7 +282,7 @@ For people not working on CAD, you can probably leave all the options to their d
 .. _placer_options:
 
 Placer Options
---------------
+^^^^^^^^^^^^^^
 The placement engine in VPR places logic blocks using simulated annealing.
 By default, the automatic annealing schedule is used :cite:`betz_arch_cad,betz_vpr`.
 This schedule gathers statistics as the placement progresses, and uses them to determine how to update the temperature, when to exit, etc.
@@ -361,7 +364,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 .. _timing_driven_placer_options:
 
 Timing-Driven Placer Options
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The following options are only valid when the placement engine is in timing-driven mode (timing-driven placement is used by default).
 
 .. option:: --timing_tradeoff <float>
@@ -405,7 +408,7 @@ The following options are only valid when the placement engine is in timing-driv
 .. _router_options:
 
 Router Options
---------------
+^^^^^^^^^^^^^^
 VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform routing.
 
 .. note:: By default the router performs a binary search to find the minimum routable channel width.  To route at a fixed channel width use :option:`-route_chan_width`.
@@ -553,7 +556,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 .. _timing_driven_router_options:
 
 Timing-Driven Router Options
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The following options are only valid when the router is in timing-driven mode (the default).
 
 .. option:: --astar_fac <float>
@@ -597,7 +600,7 @@ The following options are only valid when the router is in timing-driven mode (t
 .. _power_estimation_options:
 
 Power Estimation Options
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 The following options are used to enable power estimation in VPR.
 
 .. seealso:: :ref:`power_estimation` for more details.
