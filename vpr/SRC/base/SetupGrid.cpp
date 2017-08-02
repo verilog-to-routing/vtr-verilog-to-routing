@@ -64,6 +64,58 @@ DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> g
     }
 }
 
+DeviceGrid create_device_grid(std::string layout_name, std::vector<t_grid_def> grid_layouts, size_t width, size_t height) {
+    if (layout_name == "auto") {
+        VTR_ASSERT(grid_layouts.size() > 0);
+        //Auto-size
+        if (grid_layouts[0].grid_type == GridDefType::AUTO) {
+            //Auto layout
+            return build_device_grid(grid_layouts[0], width, height);
+        } else {
+            //Find the fixed layout with close to the target size
+
+
+            auto sort_cmp = [](const t_grid_def& lhs, const t_grid_def& rhs) {
+                return lhs.width < rhs.width || lhs.height < rhs.width;
+            };
+            std::stable_sort(grid_layouts.begin(), grid_layouts.end(), sort_cmp);
+
+            auto find_cmp = [&](const t_grid_def& grid_def) {
+                return grid_def.width >= int(width) && grid_def.height >= int(height);
+            };
+            auto iter = std::find_if(grid_layouts.begin(), grid_layouts.end(), find_cmp);
+
+
+            if (iter == grid_layouts.end()) {
+                //No device larger than specified width/height, so choose next smallest
+                --iter;
+            }
+
+            return build_device_grid(*iter, iter->width, iter->height);
+        }
+    } else {
+        //Use the specified device
+        auto cmp = [&](const t_grid_def& grid_def) {
+            return grid_def.name == layout_name;
+        };
+
+        auto iter = std::find_if(grid_layouts.begin(), grid_layouts.end(), cmp);
+        if (iter == grid_layouts.end()) {
+            //Not found
+            std::string valid_names;
+            for (size_t i = 0; i < grid_layouts.size(); ++i) {
+                if (i != 0) {
+                    valid_names += ", ";
+                }
+                valid_names += "'" + grid_layouts[i].name + "'";
+            }
+            VPR_THROW(VPR_ERROR_ARCH, "Failed to find grid layout named '%s' (valid grid layouts: %s)\n", layout_name.c_str(), valid_names.c_str());
+        }
+
+        return build_device_grid(*iter, iter->width, iter->height);
+    }
+}
+
 //Create a device grid which satisfies the minimum block counts
 //  If a set of fixed grid layouts are specified, the smallest satisfying grid is picked
 //  If an auto grid layouts are specified, the smallest dynamicly sized grid is picked

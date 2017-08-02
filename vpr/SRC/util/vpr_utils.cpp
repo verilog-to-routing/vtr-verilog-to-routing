@@ -18,6 +18,7 @@ using namespace std;
 #include "place_macro.h"
 #include "string.h"
 #include "pack_types.h"
+#include "device_grid.h"
 #include <algorithm>
 
 /* This module contains subroutines that are used in several unrelated parts *
@@ -590,6 +591,25 @@ t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* 
         }
     }
     return nullptr; //Not found
+}
+
+t_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    t_type_ptr max_type = nullptr;
+    size_t max_count = 0;
+    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+        t_type_ptr type = &device_ctx.block_types[itype];
+
+        size_t inst_cnt = grid.num_instances(type);
+        if (max_count < inst_cnt) {
+            max_count = inst_cnt;
+            max_type = type;
+        }
+    }
+
+    VTR_ASSERT(max_type);
+    return max_type;
 }
 
 int get_max_primitives_in_pb_type(t_pb_type *pb_type) {

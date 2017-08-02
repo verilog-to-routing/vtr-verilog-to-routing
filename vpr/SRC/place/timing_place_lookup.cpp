@@ -159,11 +159,11 @@ static void setup_chan_width(t_router_opts router_opts,
     int width_fac;
 
     if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH) {
-        //We use the number of pins on the FILL_TYPE, since
-        //while building the placement timing model we use a
-        //uniformly filled FPGA architecture.
         auto& device_ctx = g_vpr_ctx.device();
-        width_fac = 4 * device_ctx.FILL_TYPE->num_pins;
+
+        auto type = find_most_common_block_type(device_ctx.grid);
+
+        width_fac = 4 * type->num_pins;
         /*this is 2x the value that binary search starts */
         /*this should be enough to allow most pins to   */
         /*connect to tracks in the architecture */

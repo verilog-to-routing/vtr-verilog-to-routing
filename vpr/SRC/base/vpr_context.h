@@ -108,7 +108,6 @@ struct DeviceContext : public Context {
     /* Special pointers to identify special blocks on an FPGA: I/Os, unused, and default */
     t_type_ptr IO_TYPE;
     t_type_ptr EMPTY_TYPE;
-    t_type_ptr FILL_TYPE;
 
     /* block_types are blocks that can be moved by the placer
      such as: I/Os, CLBs, memories, multipliers, etc

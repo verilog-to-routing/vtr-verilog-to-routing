@@ -82,7 +82,7 @@ static void free_complex_block_types(void);
 static void free_arch(t_arch* Arch);
 static void free_circuit(void);
 
-static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const int wire_segment_length,
+static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const t_arch& arch, const int wire_segment_length,
         int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin);
 
 /* Local subroutines end */
@@ -322,7 +322,7 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
            The fan-in of the switch depends on the architecture (unidirectional/bidirectional), as
            well as Fc_in/out and Fs */
         int opin_switch_fanin, wire_switch_fanin, ipin_switch_fanin;
-        get_intercluster_switch_fanin_estimates(vpr_setup, wire_segment_length, &opin_switch_fanin,
+        get_intercluster_switch_fanin_estimates(vpr_setup, arch, wire_segment_length, &opin_switch_fanin,
                 &wire_switch_fanin, &ipin_switch_fanin);
 
 
@@ -377,25 +377,27 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
         3) wire to ipin switch
    We can estimate the fan-in of these switches based on the Fc_in/Fc_out of
    a logic block, and the switch block Fs value */
-static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const int wire_segment_length,
+static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const t_arch& arch, const int wire_segment_length,
         int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin) {
     e_directionality directionality;
     int Fs;
     float Fc_in, Fc_out;
     int W = 100; //W is unknown pre-packing, so *if* we need W here, we will assume a value of 100
 
-    auto& device_ctx = g_vpr_ctx.device();
-
     directionality = vpr_setup.RoutingArch.directionality;
     Fs = vpr_setup.RoutingArch.Fs;
     Fc_in = 0, Fc_out = 0;
 
-    /* get Fc_in/out for device_ctx.FILL_TYPE block (i.e. logic blocks) */
-    VTR_ASSERT(device_ctx.FILL_TYPE->fc_specs.size() > 0);
+    //Build a dummy 10x10 device to determine the 'best' block type to use
+    auto grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts, 10, 10);
+
+    auto type = find_most_common_block_type(grid);
+    /* get Fc_in/out for most common block (e.g. logic blocks) */
+    VTR_ASSERT(type->fc_specs.size() > 0);
 
     //Estimate the maximum Fc_in/Fc_out
 
-    for (const t_fc_specification& fc_spec : device_ctx.FILL_TYPE->fc_specs) {
+    for (const t_fc_specification& fc_spec : type->fc_specs) {
         float Fc = fc_spec.fc_value;
 
         if (fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE) {
@@ -405,8 +407,8 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
         VTR_ASSERT_MSG(Fc >= 0 && Fc <= 1., "Fc should be fractional");
 
         for (int ipin : fc_spec.pins) {
-            int iclass = device_ctx.FILL_TYPE->pin_class[ipin];
-            e_pin_type pin_type = device_ctx.FILL_TYPE->class_inf[iclass].type;
+            int iclass = type->pin_class[ipin];
+            e_pin_type pin_type = type->class_inf[iclass].type;
 
             if (pin_type == DRIVER) {
                 Fc_out = std::max(Fc, Fc_out);
@@ -443,7 +445,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 
 
     /* Fan-in to opin/ipin/wire switches depends on whether the architecture is unidirectional/bidirectional */
-    (*opin_switch_fanin) = 2 * device_ctx.FILL_TYPE->num_drivers / 4 * Fc_out;
+    (*opin_switch_fanin) = 2 * type->num_drivers / 4 * Fc_out;
     (*wire_switch_fanin) = Fs;
     (*ipin_switch_fanin) = Fc_in;
     if (directionality == UNI_DIRECTIONAL) {

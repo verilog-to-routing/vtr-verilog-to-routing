@@ -106,7 +106,6 @@ void SetupVPR(t_options *Options,
 
 	/* TODO: this is inelegant, I should be populating this information in XmlReadArch */
 	device_ctx.EMPTY_TYPE = NULL;
-	device_ctx.FILL_TYPE = NULL;
 	device_ctx.IO_TYPE = NULL;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		if (strcmp(device_ctx.block_types[i].name, EMPTY_BLOCK_NAME) == 0) {
@@ -116,27 +115,7 @@ void SetupVPR(t_options *Options,
 		}
     }
 
-    //TODO: handle >1 layout
-    VTR_ASSERT(Arch->grid_layouts.size() == 1);
-    for(const auto& grid_loc_def : Arch->grid_layouts[0].loc_defs) {
-        //Detect the 'fill' type
-        if (   grid_loc_def.x.start_expr == "0"
-            && grid_loc_def.x.end_expr == "W - 1"
-            && grid_loc_def.x.repeat_expr == "W"
-            && grid_loc_def.x.incr_expr == "w"
-            && grid_loc_def.y.start_expr == "0"
-            && grid_loc_def.y.end_expr == "H - 1"
-            && grid_loc_def.y.repeat_expr == "H"
-            && grid_loc_def.y.incr_expr == "h") {
-
-            VTR_ASSERT_MSG(device_ctx.FILL_TYPE == NULL, "Fill type must be unambiguous");
-            t_type_descriptor* fill_type = find_block_type_by_name(grid_loc_def.block_type, device_ctx.block_types, device_ctx.num_block_types);
-            VTR_ASSERT_MSG(fill_type, "Fill block type must exist");
-            device_ctx.FILL_TYPE = fill_type;
-        }
-    }
-
-	VTR_ASSERT(device_ctx.EMPTY_TYPE != NULL && device_ctx.FILL_TYPE != NULL && device_ctx.IO_TYPE != NULL);
+	VTR_ASSERT(device_ctx.EMPTY_TYPE != NULL && device_ctx.IO_TYPE != NULL);
 
 	*Segments = Arch->Segments;
 	RoutingArch->num_segment = Arch->num_segments;
