@@ -4,12 +4,12 @@ Basic Command-line Usage
 
 At a minimum VPR requires two command-line arguments::
 
-    vpr architecture.xml circuit.blif
+    vpr architecture circuit
 
 where:
 
-  * ``architecture.xml`` is an :ref:`FPGA architecture description <fpga_architecture_description>`
-  * ``circuit.blif`` is the technology mapped netlist to be implemented
+  * ``architecture`` is an :ref:`FPGA architecture description file <fpga_architecture_description>`
+  * ``circuit`` is the technology mapped netlist (.blif) to be implemented
 
 VPR will then pack, place, and route the circuit onto the specified architecture.
 
@@ -39,7 +39,9 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --blif_file <file>
 
-    Path to technology mapped user circuit in blif format
+    Path to technology mapped user circuit in blif format.
+
+    .. note:: If specified the ``circuit`` positional argument is treated as the circuit name.
 
 .. option:: --net_file <file>
 
