@@ -196,6 +196,8 @@ Grid Location Tags
 
     .. figure:: fill_fpga_grid.*
 
+        <fill> CLB example
+
 .. arch:tag:: <perimeter type="string" priority="int"/>
 
     :req_param type:
@@ -218,6 +220,8 @@ Grid Location Tags
 
     .. figure:: perimeter_fpga_grid.*
 
+        <perimeter> io example
+
 .. arch:tag:: <corners type="string" priority="int"/>
 
     :req_param type:
@@ -237,6 +241,8 @@ Grid Location Tags
         <corners type="PLL" priority="20"/>
 
     .. figure:: corners_fpga_grid.*
+
+        <corners> PLL example
 
 .. arch:tag:: <single type="string" priority="int" x="expr" y="expr"/>
 
@@ -264,6 +270,8 @@ Grid Location Tags
         <single type="PCIE" x="1" y="1" priority="20"/>
 
     .. figure:: single_fpga_grid.*
+
+        <single> PCIE example
 
 .. arch:tag:: <col type="string" priority="int" startx="expr" repeatx="expr" starty="expr"/>
 
@@ -301,6 +309,8 @@ Grid Location Tags
 
     .. figure:: col_fpga_grid.*
 
+        <col> RAM example
+
     Example:
 
     .. code-block:: xml
@@ -314,6 +324,8 @@ Grid Location Tags
         <col type="RAM" startx="2" repeatx="3" starty="1" priority="3"/>
 
     .. figure:: col_perim_fpga_grid.*
+
+        <col> RAM and <perimeter> io example
 
 .. arch:tag:: <row type="string" priority="int" starty="expr" repeaty="expr" startx="expr"/>
 
@@ -350,6 +362,8 @@ Grid Location Tags
         <row type="DSP" starty="1" repeaty="7" priority="3"/>
 
     .. figure:: row_fpga_grid.*
+
+        <row> DSP example
 
 .. arch:tag:: <region type="string" priority="int" startx="expr" endx="expr repeatx="expr" incrx="expr" starty="expr" endy="expr" repeaty="expr" incry="expr"/>
 
@@ -413,6 +427,8 @@ Grid Location Tags
 
     .. figure:: region_single_fpga_grid.*
 
+        <region> RAM example
+
     Example:
 
     .. code-block:: xml
@@ -422,6 +438,8 @@ Grid Location Tags
         <region type="RAM" startx="1" endx="5" starty="1" endy="4" incrx="2" priority="4"/>
 
     .. figure:: region_incr_fpga_grid.*
+
+        <region> RAM increment example
 
     Example:
 
@@ -433,15 +451,19 @@ Grid Location Tags
 
     .. figure:: region_repeat_fpga_grid.*
 
+        <region> RAM repeat example
+
     Example:
 
     .. code-block:: xml
 
         <!-- Create a 3x3 mesh of NoC routers (width 2, height 2) whose relative positions
              will scale with the device dimensions -->
-        <region type="NoC_router" startx="W/4 - w/2" starty="W/4 - w/2" incrx="W/4" incry="W/4" priority="3"/>
+        <region type="NoC" startx="W/4 - w/2" starty="W/4 - w/2" incrx="W/4" incry="W/4" priority="3"/>
 
     .. figure:: region_incr_mesh_fpga_grid.*
+
+        <region> NoC mesh example
 
 .. _arch_device_info:
 
