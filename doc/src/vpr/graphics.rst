@@ -28,7 +28,7 @@ and list the missing libraries::
 
 Enabling Graphics at Run-time
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-When running VPR provide :option:`vpr -disp` ``on`` to enable graphics.
+When running VPR provide :option:`vpr --disp` ``on`` to enable graphics.
 
 A graphical window will now pop up when you run VPR.
 

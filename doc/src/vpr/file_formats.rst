@@ -99,7 +99,7 @@ Unconnected primitive pins can be specified through several methods.
 
 #. Dummy nets with no sinks (output pins only)
 
-    By default VPR sweeps away nets with no sinks (see :option:`vpr -sweep_dangling_nets`). As a result output pins can be left 'disconnected' by connecting them to dummy nets.
+    By default VPR sweeps away nets with no sinks (see :option:`vpr --sweep_dangling_nets`). As a result output pins can be left 'disconnected' by connecting them to dummy nets.
 
     For example:
 
@@ -163,7 +163,7 @@ Timing Constraints (.sdc)
 Timing constraints are specified using SDC syntax.
 For a description of VPR's SDC support see :ref:`sdc_commands`.
 
-.. note:: Use :option:`vpr -sdc_file` to specify the SDC file used by VPR.
+.. note:: Use :option:`vpr --sdc_file` to specify the SDC file used by VPR.
 
 Timing Constraints File Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

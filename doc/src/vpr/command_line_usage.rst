@@ -23,8 +23,8 @@ Detailed Command-line Options
 VPR has a lot of options.
 The options most people will be interested in are:
 
-* :option:`-route_chan_width` (route at a fixed channel width), and 
-* :option:`-disp` (turn on/off graphics).
+* :option:`--route_chan_width` (route at a fixed channel width), and 
+* :option:`--disp` (turn on/off graphics).
 
 In general for the other options the defaults are fine, and only people looking at how different CAD algorithms perform will try many of them.
 To understand what the more esoteric placer and router options actually do, see :cite:`betz_arch_cad` or download :cite:`betz_directional_bias_routing_arch,betz_biased_global_routing_tech_report,betz_vpr,marquardt_timing_driven_placement` from the author’s `web page <http://www.eecg.toronto.edu/~vaughn>`_.
@@ -70,7 +70,7 @@ Use the options below to override this default naming behaviour.
 
 General Options
 ^^^^^^^^^^^^^^^
-VPR runs all three stages of pack, place, and route if none of :option:`-pack`, :option:`-place`, or :option:`-route` are specified.
+VPR runs all three stages of pack, place, and route if none of :option:`--pack`, :option:`--place`, or :option:`--route` are specified.
 
 .. option:: --disp {on | off}
 
@@ -198,7 +198,7 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
     Disabling sweeping of primary inputs/outputs can improve the matching between the input and post-synthesis netlists.
     This is often useful when performing formal verification.
 
-    .. seealso:: :option:`-sweep_constant_primary_outputs`
+    .. seealso:: :option:`--sweep_constant_primary_outputs`
 
     **Default**: ``on``
 
@@ -218,7 +218,7 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 
     Controls whether primary outputs driven by constant values are swept and removed from the netlist.
 
-    .. seealso:: :option:`-sweep_dangling_primary_ios`
+    .. seealso:: :option:`--sweep_dangling_primary_ios`
 
     **Default**: ``off``
 
@@ -393,7 +393,7 @@ The following options are only valid when the placement engine is in timing-driv
 
     If this value is 0, all connections are considered equally critical.
     If this value is large, connections with small slacks are considered much more critical than connections with small slacks.
-    As the anneal progresses, the exponent used in the criticality computation gradually changes from its starting value of td_place_exp_first to its final value of :option:`-td_place_exp_last`. 
+    As the anneal progresses, the exponent used in the criticality computation gradually changes from its starting value of td_place_exp_first to its final value of :option:`--td_place_exp_last`. 
 
     **Default:** ``1.0``
 
@@ -401,7 +401,7 @@ The following options are only valid when the placement engine is in timing-driv
 
     Controls how critical a connection is considered as a function of its slack, at the end of the anneal.
 
-    .. seealso:: :option:`-td_place_exp_first`
+    .. seealso:: :option:`--td_place_exp_first`
 
     **Default:** ``8.0``
 
@@ -411,7 +411,7 @@ Router Options
 ^^^^^^^^^^^^^^
 VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform routing.
 
-.. note:: By default the router performs a binary search to find the minimum routable channel width.  To route at a fixed channel width use :option:`-route_chan_width`.
+.. note:: By default the router performs a binary search to find the minimum routable channel width.  To route at a fixed channel width use :option:`--route_chan_width`.
 
 .. seealso:: :ref:`timing_driven_router_options`
 
@@ -436,12 +436,11 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. option:: --first_iter_pres_fac <float>
 
-    Similar to :option:`-initial_pres_fac`.
+    Similar to :option:`--initial_pres_fac`.
     This sets the present overuse penalty factor for the very first routing iteration.
-    :option:`-initial_pres_fac` sets it for the second iteration. 
+    :option:`--initial_pres_fac` sets it for the second iteration. 
 
     .. note:: A value of ``0.0`` causes congestion to be ignored on the first routing iteration. 
-              This produces a lower bound on the achievable delay.
 
     **Default:** ``0.0``
 
@@ -505,7 +504,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     This option may ocassionally produce a different minimum channel width due to the different initialization.
 
-    .. seealso:: :option:`-verify_binary_search`
+    .. seealso:: :option:`--verify_binary_search`
 
 .. option:: --verify_binary_search {on | off}
 
@@ -541,7 +540,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     Writes out the routing resource graph generated at the last stage of VPR into XML format
 
-    <file> describes the filename for the generated routing resource graph. The output can be read into VPR using :option:`-read_rr_graph`
+    <file> describes the filename for the generated routing resource graph. The output can be read into VPR using :option:`--read_rr_graph`
 
 .. option:: --read_rr_graph <file>
 
@@ -549,7 +548,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     
     The routing resource graph overthrows all the architecture definitions regarding switches, nodes, and edges. Other information such as grid information, block types, and segment information are matched with the architecture file to ensure accuracy.
 
-    This file should be in XML format and can be easily obtained through :option:`-write_rr_graph`
+    This file should be in XML format and can be easily obtained through :option:`--write_rr_graph`
 
     .. seealso:: :ref:`Routing Resource XML File <vpr_route_resource_file>`.
 
@@ -595,7 +594,10 @@ The following options are only valid when the router is in timing-driven mode (t
 
     ``off`` disables this feature, which can be useful if you suspect the predictor is declaring routing failure too quickly on your architecture.
 
+    .. seealso:: :option:`--verify_binary_search`
+
     **Default:** ``safe``
+
 
 .. _power_estimation_options:
 
