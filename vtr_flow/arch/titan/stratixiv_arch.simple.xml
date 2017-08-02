@@ -1,4 +1,3 @@
-<?xml version="1.0"?>
 <architecture>
   <models>
     <model name="stratixiv_lcell_comb">
@@ -2214,7 +2213,27 @@
       </output_ports>
     </model>
   </models>
-  <layout auto="1.35"/>
+  <layout>
+    <auto_layout aspect_ratio="1.35">
+        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+        <perimeter type="io" priority="1000"/>
+        <corners type="EMPTY" priority="1001"/>
+        <!--Column of 'PLL' with 'EMPTY' blocks wherever a 'PLL' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="PLL" startx="1" starty="1" priority="900"/>
+        <col type="EMPTY" startx="1" starty="1" priority="899"/>
+        <!--Fill with 'LAB'-->
+        <fill type="LAB" priority="10"/>
+        <!--Column of 'DSP' with 'EMPTY' blocks wherever a 'DSP' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="DSP" startx="14" starty="1" repeatx="95" priority="150"/>
+        <col type="EMPTY" startx="14" repeatx="95" starty="1" priority="149"/>
+        <!--Column of 'M9K' with 'EMPTY' blocks wherever a 'M9K' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="M9K" startx="5" starty="1" repeatx="26" priority="50"/>
+        <col type="EMPTY" startx="5" repeatx="26" starty="1" priority="49"/>
+        <!--Column of 'M144K' with 'EMPTY' blocks wherever a 'M144K' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="M144K" startx="33" starty="1" repeatx="43" priority="100"/>
+        <col type="EMPTY" startx="33" repeatx="43" starty="1" priority="99"/>
+        </auto_layout>
+</layout>
   <device>
     <sizing R_minW_nmos="4220.930176" R_minW_pmos="11207.599609" ipin_mux_trans_size="1.299940"/>
     <timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.582000e-11"/>
@@ -2706,10 +2725,7 @@
         <loc side="right"> io.inpad io.core_in io.core_out io.outpad io.clock</loc>
         <loc side="bottom">io.inpad io.core_in io.core_out io.outpad io.clock</loc>
       </pinlocations>
-      <gridlocations>
-        <loc priority="100" type="perimeter"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
     <pb_type height="1" name="PLL">
       <input name="in_signal" num_pins="14"/>
       <input name="in_clock" num_pins="2"/>
@@ -2867,10 +2883,7 @@
       </mode>
       <fc default_in_type="frac" default_in_val="1.000" default_out_type="frac" default_out_val="1.000"/>
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc priority="90" start="1" type="col"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
     <pb_type name="LAB">
       <input name="data_in" num_pins="70" equivalent="true"/>
       <input name="control_in" num_pins="7" equivalent="true"/>
@@ -2997,29 +3010,26 @@
       </mode>
       <fc default_in_type="frac" default_in_val="0.055" default_out_type="frac" default_out_val="0.100"/>
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc priority="1" type="fill"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
 
     <pb_type name="DSP" height="4">
-      <input  name="data_in"         num_pins="288"/>
-      <input  name="chain_in"        num_pins="44" />
-      <input  name="control_in"      num_pins="21" />
-      <input  name="scan_a_in"       num_pins="18" />
-      <input  name ="clk"            num_pins="4"  />
-      <output name="data_out_top"    num_pins="72" />
-      <output name="data_out_bot"    num_pins="72" />
-      <output name="chain_out"       num_pins="44" />
-      <output name="scan_a_out"      num_pins="18" />
-      <output name="signal_out"      num_pins="6"  />
+      <input name="data_in" num_pins="288"/>
+      <input name="chain_in" num_pins="44"/>
+      <input name="control_in" num_pins="21"/>
+      <input name="scan_a_in" num_pins="18"/>
+      <input name="clk" num_pins="4"/>
+      <output name="data_out_top" num_pins="72"/>
+      <output name="data_out_bot" num_pins="72"/>
+      <output name="chain_out" num_pins="44"/>
+      <output name="scan_a_out" num_pins="18"/>
+      <output name="signal_out" num_pins="6"/>
       <mode name="full_DSP">
         <pb_type name="half_DSP" num_pb="2">
           <input name="data_in" num_pins="144"/>
           <input name="chain_in" num_pins="44"/>
           <input name="scan_a_in" num_pins="18"/>
           <input name="control_in" num_pins="21"/>
-          <input name ="clk" num_pins="4"/>
+          <input name="clk" num_pins="4"/>
           <output name="data_out" num_pins="72"/>
           <output name="chain_out" num_pins="44"/>
           <output name="scan_a_out" num_pins="18"/>
@@ -3048,7 +3058,7 @@
               <input name="data_in" num_pins="144"/>
               <input name="chain_in" num_pins="44"/>
               <input name="control_in" num_pins="21"/>
-              <input name ="clk" num_pins="4"/>
+              <input name="clk" num_pins="4"/>
               <output name="data_out" num_pins="72"/>
               <output name="signal_out" num_pins="3"/>
               <output name="loopback_out" num_pins="18"/>
@@ -3673,36 +3683,36 @@
               <!-- INPUT SIGNALS -->
               <!-- mac_mult Data A Inputs (includes Scan A) -->
               <!--<complete name="data_mult0_a" input="half_DSP.data_in[143:126] half_DSP.scan_a_in"   output="mac_mult[0].dataa"/>-->
-              <mux name="data_mult0_a_bit0"  input="half_DSP.data_in[126] half_DSP.scan_a_in[0]"    output="mac_mult[0].dataa[0]"/>
-              <mux name="data_mult0_a_bit1"  input="half_DSP.data_in[127] half_DSP.scan_a_in[1]"    output="mac_mult[0].dataa[1]"/>
-              <mux name="data_mult0_a_bit2"  input="half_DSP.data_in[128] half_DSP.scan_a_in[2]"    output="mac_mult[0].dataa[2]"/>
-              <mux name="data_mult0_a_bit3"  input="half_DSP.data_in[129] half_DSP.scan_a_in[3]"    output="mac_mult[0].dataa[3]"/>
-              <mux name="data_mult0_a_bit4"  input="half_DSP.data_in[130] half_DSP.scan_a_in[4]"    output="mac_mult[0].dataa[4]"/>
-              <mux name="data_mult0_a_bit5"  input="half_DSP.data_in[131] half_DSP.scan_a_in[5]"    output="mac_mult[0].dataa[5]"/>
-              <mux name="data_mult0_a_bit6"  input="half_DSP.data_in[132] half_DSP.scan_a_in[6]"    output="mac_mult[0].dataa[6]"/>
-              <mux name="data_mult0_a_bit7"  input="half_DSP.data_in[133] half_DSP.scan_a_in[7]"    output="mac_mult[0].dataa[7]"/>
-              <mux name="data_mult0_a_bit8"  input="half_DSP.data_in[134] half_DSP.scan_a_in[8]"    output="mac_mult[0].dataa[8]"/>
-              <mux name="data_mult0_a_bit9"  input="half_DSP.data_in[135] half_DSP.scan_a_in[9]"    output="mac_mult[0].dataa[9]"/>
-              <mux name="data_mult0_a_bit10" input="half_DSP.data_in[136] half_DSP.scan_a_in[10]"   output="mac_mult[0].dataa[10]"/>
-              <mux name="data_mult0_a_bit11" input="half_DSP.data_in[137] half_DSP.scan_a_in[11]"   output="mac_mult[0].dataa[11]"/>
-              <mux name="data_mult0_a_bit12" input="half_DSP.data_in[138] half_DSP.scan_a_in[12]"   output="mac_mult[0].dataa[12]"/>
-              <mux name="data_mult0_a_bit13" input="half_DSP.data_in[139] half_DSP.scan_a_in[13]"   output="mac_mult[0].dataa[13]"/>
-              <mux name="data_mult0_a_bit14" input="half_DSP.data_in[140] half_DSP.scan_a_in[14]"   output="mac_mult[0].dataa[14]"/>
-              <mux name="data_mult0_a_bit15" input="half_DSP.data_in[141] half_DSP.scan_a_in[15]"   output="mac_mult[0].dataa[15]"/>
-              <mux name="data_mult0_a_bit16" input="half_DSP.data_in[142] half_DSP.scan_a_in[16]"   output="mac_mult[0].dataa[16]"/>
-              <mux name="data_mult0_a_bit17" input="half_DSP.data_in[143] half_DSP.scan_a_in[17]"   output="mac_mult[0].dataa[17]"/>
+              <mux name="data_mult0_a_bit0" input="half_DSP.data_in[126] half_DSP.scan_a_in[0]" output="mac_mult[0].dataa[0]"/>
+              <mux name="data_mult0_a_bit1" input="half_DSP.data_in[127] half_DSP.scan_a_in[1]" output="mac_mult[0].dataa[1]"/>
+              <mux name="data_mult0_a_bit2" input="half_DSP.data_in[128] half_DSP.scan_a_in[2]" output="mac_mult[0].dataa[2]"/>
+              <mux name="data_mult0_a_bit3" input="half_DSP.data_in[129] half_DSP.scan_a_in[3]" output="mac_mult[0].dataa[3]"/>
+              <mux name="data_mult0_a_bit4" input="half_DSP.data_in[130] half_DSP.scan_a_in[4]" output="mac_mult[0].dataa[4]"/>
+              <mux name="data_mult0_a_bit5" input="half_DSP.data_in[131] half_DSP.scan_a_in[5]" output="mac_mult[0].dataa[5]"/>
+              <mux name="data_mult0_a_bit6" input="half_DSP.data_in[132] half_DSP.scan_a_in[6]" output="mac_mult[0].dataa[6]"/>
+              <mux name="data_mult0_a_bit7" input="half_DSP.data_in[133] half_DSP.scan_a_in[7]" output="mac_mult[0].dataa[7]"/>
+              <mux name="data_mult0_a_bit8" input="half_DSP.data_in[134] half_DSP.scan_a_in[8]" output="mac_mult[0].dataa[8]"/>
+              <mux name="data_mult0_a_bit9" input="half_DSP.data_in[135] half_DSP.scan_a_in[9]" output="mac_mult[0].dataa[9]"/>
+              <mux name="data_mult0_a_bit10" input="half_DSP.data_in[136] half_DSP.scan_a_in[10]" output="mac_mult[0].dataa[10]"/>
+              <mux name="data_mult0_a_bit11" input="half_DSP.data_in[137] half_DSP.scan_a_in[11]" output="mac_mult[0].dataa[11]"/>
+              <mux name="data_mult0_a_bit12" input="half_DSP.data_in[138] half_DSP.scan_a_in[12]" output="mac_mult[0].dataa[12]"/>
+              <mux name="data_mult0_a_bit13" input="half_DSP.data_in[139] half_DSP.scan_a_in[13]" output="mac_mult[0].dataa[13]"/>
+              <mux name="data_mult0_a_bit14" input="half_DSP.data_in[140] half_DSP.scan_a_in[14]" output="mac_mult[0].dataa[14]"/>
+              <mux name="data_mult0_a_bit15" input="half_DSP.data_in[141] half_DSP.scan_a_in[15]" output="mac_mult[0].dataa[15]"/>
+              <mux name="data_mult0_a_bit16" input="half_DSP.data_in[142] half_DSP.scan_a_in[16]" output="mac_mult[0].dataa[16]"/>
+              <mux name="data_mult0_a_bit17" input="half_DSP.data_in[143] half_DSP.scan_a_in[17]" output="mac_mult[0].dataa[17]"/>
 
               <!--<complete name="data_mult1_a" input="half_DSP.data_in[107:90]  mac_mult[0].scanouta" output="mac_mult[1].dataa"/>-->
-              <mux name="data_mult1_a_bit0"  input="half_DSP.data_in[90]  mac_mult[0].scanouta[0]"   output="mac_mult[1].dataa[0]"/>
-              <mux name="data_mult1_a_bit1"  input="half_DSP.data_in[91]  mac_mult[0].scanouta[1]"   output="mac_mult[1].dataa[1]"/>
-              <mux name="data_mult1_a_bit2"  input="half_DSP.data_in[92]  mac_mult[0].scanouta[2]"   output="mac_mult[1].dataa[2]"/>
-              <mux name="data_mult1_a_bit3"  input="half_DSP.data_in[93]  mac_mult[0].scanouta[3]"   output="mac_mult[1].dataa[3]"/>
-              <mux name="data_mult1_a_bit4"  input="half_DSP.data_in[94]  mac_mult[0].scanouta[4]"   output="mac_mult[1].dataa[4]"/>
-              <mux name="data_mult1_a_bit5"  input="half_DSP.data_in[95]  mac_mult[0].scanouta[5]"   output="mac_mult[1].dataa[5]"/>
-              <mux name="data_mult1_a_bit6"  input="half_DSP.data_in[96]  mac_mult[0].scanouta[6]"   output="mac_mult[1].dataa[6]"/>
-              <mux name="data_mult1_a_bit7"  input="half_DSP.data_in[97]  mac_mult[0].scanouta[7]"   output="mac_mult[1].dataa[7]"/>
-              <mux name="data_mult1_a_bit8"  input="half_DSP.data_in[98]  mac_mult[0].scanouta[8]"   output="mac_mult[1].dataa[8]"/>
-              <mux name="data_mult1_a_bit9"  input="half_DSP.data_in[99]  mac_mult[0].scanouta[9]"   output="mac_mult[1].dataa[9]"/>
+              <mux name="data_mult1_a_bit0" input="half_DSP.data_in[90]  mac_mult[0].scanouta[0]" output="mac_mult[1].dataa[0]"/>
+              <mux name="data_mult1_a_bit1" input="half_DSP.data_in[91]  mac_mult[0].scanouta[1]" output="mac_mult[1].dataa[1]"/>
+              <mux name="data_mult1_a_bit2" input="half_DSP.data_in[92]  mac_mult[0].scanouta[2]" output="mac_mult[1].dataa[2]"/>
+              <mux name="data_mult1_a_bit3" input="half_DSP.data_in[93]  mac_mult[0].scanouta[3]" output="mac_mult[1].dataa[3]"/>
+              <mux name="data_mult1_a_bit4" input="half_DSP.data_in[94]  mac_mult[0].scanouta[4]" output="mac_mult[1].dataa[4]"/>
+              <mux name="data_mult1_a_bit5" input="half_DSP.data_in[95]  mac_mult[0].scanouta[5]" output="mac_mult[1].dataa[5]"/>
+              <mux name="data_mult1_a_bit6" input="half_DSP.data_in[96]  mac_mult[0].scanouta[6]" output="mac_mult[1].dataa[6]"/>
+              <mux name="data_mult1_a_bit7" input="half_DSP.data_in[97]  mac_mult[0].scanouta[7]" output="mac_mult[1].dataa[7]"/>
+              <mux name="data_mult1_a_bit8" input="half_DSP.data_in[98]  mac_mult[0].scanouta[8]" output="mac_mult[1].dataa[8]"/>
+              <mux name="data_mult1_a_bit9" input="half_DSP.data_in[99]  mac_mult[0].scanouta[9]" output="mac_mult[1].dataa[9]"/>
               <mux name="data_mult1_a_bit10" input="half_DSP.data_in[100]  mac_mult[0].scanouta[10]" output="mac_mult[1].dataa[10]"/>
               <mux name="data_mult1_a_bit11" input="half_DSP.data_in[101]  mac_mult[0].scanouta[11]" output="mac_mult[1].dataa[11]"/>
               <mux name="data_mult1_a_bit12" input="half_DSP.data_in[102]  mac_mult[0].scanouta[12]" output="mac_mult[1].dataa[12]"/>
@@ -3713,16 +3723,16 @@
               <mux name="data_mult1_a_bit17" input="half_DSP.data_in[107]  mac_mult[0].scanouta[17]" output="mac_mult[1].dataa[17]"/>
 
               <!--<complete name="data_mult2_a" input="half_DSP.data_in[71:54]   mac_mult[1].scanouta" output="mac_mult[2].dataa"/>-->
-              <mux name="data_mult2_a_bit0"  input="half_DSP.data_in[54]   mac_mult[1].scanouta[0]"  output="mac_mult[2].dataa[0]"/>
-              <mux name="data_mult2_a_bit1"  input="half_DSP.data_in[55]   mac_mult[1].scanouta[1]"  output="mac_mult[2].dataa[1]"/>
-              <mux name="data_mult2_a_bit2"  input="half_DSP.data_in[56]   mac_mult[1].scanouta[2]"  output="mac_mult[2].dataa[2]"/>
-              <mux name="data_mult2_a_bit3"  input="half_DSP.data_in[57]   mac_mult[1].scanouta[3]"  output="mac_mult[2].dataa[3]"/>
-              <mux name="data_mult2_a_bit4"  input="half_DSP.data_in[58]   mac_mult[1].scanouta[4]"  output="mac_mult[2].dataa[4]"/>
-              <mux name="data_mult2_a_bit5"  input="half_DSP.data_in[59]   mac_mult[1].scanouta[5]"  output="mac_mult[2].dataa[5]"/>
-              <mux name="data_mult2_a_bit6"  input="half_DSP.data_in[60]   mac_mult[1].scanouta[6]"  output="mac_mult[2].dataa[6]"/>
-              <mux name="data_mult2_a_bit7"  input="half_DSP.data_in[61]   mac_mult[1].scanouta[7]"  output="mac_mult[2].dataa[7]"/>
-              <mux name="data_mult2_a_bit8"  input="half_DSP.data_in[62]   mac_mult[1].scanouta[8]"  output="mac_mult[2].dataa[8]"/>
-              <mux name="data_mult2_a_bit9"  input="half_DSP.data_in[63]   mac_mult[1].scanouta[9]"  output="mac_mult[2].dataa[9]"/>
+              <mux name="data_mult2_a_bit0" input="half_DSP.data_in[54]   mac_mult[1].scanouta[0]" output="mac_mult[2].dataa[0]"/>
+              <mux name="data_mult2_a_bit1" input="half_DSP.data_in[55]   mac_mult[1].scanouta[1]" output="mac_mult[2].dataa[1]"/>
+              <mux name="data_mult2_a_bit2" input="half_DSP.data_in[56]   mac_mult[1].scanouta[2]" output="mac_mult[2].dataa[2]"/>
+              <mux name="data_mult2_a_bit3" input="half_DSP.data_in[57]   mac_mult[1].scanouta[3]" output="mac_mult[2].dataa[3]"/>
+              <mux name="data_mult2_a_bit4" input="half_DSP.data_in[58]   mac_mult[1].scanouta[4]" output="mac_mult[2].dataa[4]"/>
+              <mux name="data_mult2_a_bit5" input="half_DSP.data_in[59]   mac_mult[1].scanouta[5]" output="mac_mult[2].dataa[5]"/>
+              <mux name="data_mult2_a_bit6" input="half_DSP.data_in[60]   mac_mult[1].scanouta[6]" output="mac_mult[2].dataa[6]"/>
+              <mux name="data_mult2_a_bit7" input="half_DSP.data_in[61]   mac_mult[1].scanouta[7]" output="mac_mult[2].dataa[7]"/>
+              <mux name="data_mult2_a_bit8" input="half_DSP.data_in[62]   mac_mult[1].scanouta[8]" output="mac_mult[2].dataa[8]"/>
+              <mux name="data_mult2_a_bit9" input="half_DSP.data_in[63]   mac_mult[1].scanouta[9]" output="mac_mult[2].dataa[9]"/>
               <mux name="data_mult2_a_bit10" input="half_DSP.data_in[64]   mac_mult[1].scanouta[10]" output="mac_mult[2].dataa[10]"/>
               <mux name="data_mult2_a_bit11" input="half_DSP.data_in[65]   mac_mult[1].scanouta[11]" output="mac_mult[2].dataa[11]"/>
               <mux name="data_mult2_a_bit12" input="half_DSP.data_in[66]   mac_mult[1].scanouta[12]" output="mac_mult[2].dataa[12]"/>
@@ -3733,16 +3743,16 @@
               <mux name="data_mult2_a_bit17" input="half_DSP.data_in[71]   mac_mult[1].scanouta[17]" output="mac_mult[2].dataa[17]"/>
 
               <!--<complete name="data_mult3_a" input="half_DSP.data_in[35:18]   mac_mult[2].scanouta" output="mac_mult[3].dataa"/>-->
-              <mux name="data_mult3_a_bit0"  input="half_DSP.data_in[18]   mac_mult[2].scanouta[0]"  output="mac_mult[3].dataa[0]"/>
-              <mux name="data_mult3_a_bit1"  input="half_DSP.data_in[19]   mac_mult[2].scanouta[1]"  output="mac_mult[3].dataa[1]"/>
-              <mux name="data_mult3_a_bit2"  input="half_DSP.data_in[20]   mac_mult[2].scanouta[2]"  output="mac_mult[3].dataa[2]"/>
-              <mux name="data_mult3_a_bit3"  input="half_DSP.data_in[21]   mac_mult[2].scanouta[3]"  output="mac_mult[3].dataa[3]"/>
-              <mux name="data_mult3_a_bit4"  input="half_DSP.data_in[22]   mac_mult[2].scanouta[4]"  output="mac_mult[3].dataa[4]"/>
-              <mux name="data_mult3_a_bit5"  input="half_DSP.data_in[23]   mac_mult[2].scanouta[5]"  output="mac_mult[3].dataa[5]"/>
-              <mux name="data_mult3_a_bit6"  input="half_DSP.data_in[24]   mac_mult[2].scanouta[6]"  output="mac_mult[3].dataa[6]"/>
-              <mux name="data_mult3_a_bit7"  input="half_DSP.data_in[25]   mac_mult[2].scanouta[7]"  output="mac_mult[3].dataa[7]"/>
-              <mux name="data_mult3_a_bit8"  input="half_DSP.data_in[26]   mac_mult[2].scanouta[8]"  output="mac_mult[3].dataa[8]"/>
-              <mux name="data_mult3_a_bit9"  input="half_DSP.data_in[27]   mac_mult[2].scanouta[9]"  output="mac_mult[3].dataa[9]"/>
+              <mux name="data_mult3_a_bit0" input="half_DSP.data_in[18]   mac_mult[2].scanouta[0]" output="mac_mult[3].dataa[0]"/>
+              <mux name="data_mult3_a_bit1" input="half_DSP.data_in[19]   mac_mult[2].scanouta[1]" output="mac_mult[3].dataa[1]"/>
+              <mux name="data_mult3_a_bit2" input="half_DSP.data_in[20]   mac_mult[2].scanouta[2]" output="mac_mult[3].dataa[2]"/>
+              <mux name="data_mult3_a_bit3" input="half_DSP.data_in[21]   mac_mult[2].scanouta[3]" output="mac_mult[3].dataa[3]"/>
+              <mux name="data_mult3_a_bit4" input="half_DSP.data_in[22]   mac_mult[2].scanouta[4]" output="mac_mult[3].dataa[4]"/>
+              <mux name="data_mult3_a_bit5" input="half_DSP.data_in[23]   mac_mult[2].scanouta[5]" output="mac_mult[3].dataa[5]"/>
+              <mux name="data_mult3_a_bit6" input="half_DSP.data_in[24]   mac_mult[2].scanouta[6]" output="mac_mult[3].dataa[6]"/>
+              <mux name="data_mult3_a_bit7" input="half_DSP.data_in[25]   mac_mult[2].scanouta[7]" output="mac_mult[3].dataa[7]"/>
+              <mux name="data_mult3_a_bit8" input="half_DSP.data_in[26]   mac_mult[2].scanouta[8]" output="mac_mult[3].dataa[8]"/>
+              <mux name="data_mult3_a_bit9" input="half_DSP.data_in[27]   mac_mult[2].scanouta[9]" output="mac_mult[3].dataa[9]"/>
               <mux name="data_mult3_a_bit10" input="half_DSP.data_in[28]   mac_mult[2].scanouta[10]" output="mac_mult[3].dataa[10]"/>
               <mux name="data_mult3_a_bit11" input="half_DSP.data_in[29]   mac_mult[2].scanouta[11]" output="mac_mult[3].dataa[11]"/>
               <mux name="data_mult3_a_bit12" input="half_DSP.data_in[30]   mac_mult[2].scanouta[12]" output="mac_mult[3].dataa[12]"/>
@@ -3756,16 +3766,16 @@
               <!-- mac_mult Data B Inputs -->
               <!-- NOTE: in the real startixiv the loopback only connects to mac_mult[0], however we must connect it to all the mac_mults to ensure the packer will succeed -->
               <!--<complete name="data_mult0_b" input="half_DSP.data_in[125:108] mac_output.loopback_out" output="mac_mult[0].datab"/>-->
-              <mux name="data_mult0_b_bit0"  input="half_DSP.data_in[108] mac_output.loopback_out[0]"  output="mac_mult[0].datab[0]"/>
-              <mux name="data_mult0_b_bit1"  input="half_DSP.data_in[109] mac_output.loopback_out[1]"  output="mac_mult[0].datab[1]"/>
-              <mux name="data_mult0_b_bit2"  input="half_DSP.data_in[110] mac_output.loopback_out[2]"  output="mac_mult[0].datab[2]"/>
-              <mux name="data_mult0_b_bit3"  input="half_DSP.data_in[111] mac_output.loopback_out[3]"  output="mac_mult[0].datab[3]"/>
-              <mux name="data_mult0_b_bit4"  input="half_DSP.data_in[112] mac_output.loopback_out[4]"  output="mac_mult[0].datab[4]"/>
-              <mux name="data_mult0_b_bit5"  input="half_DSP.data_in[113] mac_output.loopback_out[5]"  output="mac_mult[0].datab[5]"/>
-              <mux name="data_mult0_b_bit6"  input="half_DSP.data_in[114] mac_output.loopback_out[6]"  output="mac_mult[0].datab[6]"/>
-              <mux name="data_mult0_b_bit7"  input="half_DSP.data_in[115] mac_output.loopback_out[7]"  output="mac_mult[0].datab[7]"/>
-              <mux name="data_mult0_b_bit8"  input="half_DSP.data_in[116] mac_output.loopback_out[8]"  output="mac_mult[0].datab[8]"/>
-              <mux name="data_mult0_b_bit9"  input="half_DSP.data_in[117] mac_output.loopback_out[9]"  output="mac_mult[0].datab[9]"/>
+              <mux name="data_mult0_b_bit0" input="half_DSP.data_in[108] mac_output.loopback_out[0]" output="mac_mult[0].datab[0]"/>
+              <mux name="data_mult0_b_bit1" input="half_DSP.data_in[109] mac_output.loopback_out[1]" output="mac_mult[0].datab[1]"/>
+              <mux name="data_mult0_b_bit2" input="half_DSP.data_in[110] mac_output.loopback_out[2]" output="mac_mult[0].datab[2]"/>
+              <mux name="data_mult0_b_bit3" input="half_DSP.data_in[111] mac_output.loopback_out[3]" output="mac_mult[0].datab[3]"/>
+              <mux name="data_mult0_b_bit4" input="half_DSP.data_in[112] mac_output.loopback_out[4]" output="mac_mult[0].datab[4]"/>
+              <mux name="data_mult0_b_bit5" input="half_DSP.data_in[113] mac_output.loopback_out[5]" output="mac_mult[0].datab[5]"/>
+              <mux name="data_mult0_b_bit6" input="half_DSP.data_in[114] mac_output.loopback_out[6]" output="mac_mult[0].datab[6]"/>
+              <mux name="data_mult0_b_bit7" input="half_DSP.data_in[115] mac_output.loopback_out[7]" output="mac_mult[0].datab[7]"/>
+              <mux name="data_mult0_b_bit8" input="half_DSP.data_in[116] mac_output.loopback_out[8]" output="mac_mult[0].datab[8]"/>
+              <mux name="data_mult0_b_bit9" input="half_DSP.data_in[117] mac_output.loopback_out[9]" output="mac_mult[0].datab[9]"/>
               <mux name="data_mult0_b_bit10" input="half_DSP.data_in[118] mac_output.loopback_out[10]" output="mac_mult[0].datab[10]"/>
               <mux name="data_mult0_b_bit11" input="half_DSP.data_in[119] mac_output.loopback_out[11]" output="mac_mult[0].datab[11]"/>
               <mux name="data_mult0_b_bit12" input="half_DSP.data_in[120] mac_output.loopback_out[12]" output="mac_mult[0].datab[12]"/>
@@ -3777,64 +3787,64 @@
 
 
               <!--<direct name="data_mult1_b" input="half_DSP.data_in[89:72]"                           output="mac_mult[1].datab"/>-->
-              <mux name="data_mult1_b_bit0" input="half_DSP.data_in[72] mac_output.loopback_out[0]"    output="mac_mult[1].datab[0]"/>
-              <mux name="data_mult1_b_bit1" input="half_DSP.data_in[73] mac_output.loopback_out[1]"    output="mac_mult[1].datab[1]"/>
-              <mux name="data_mult1_b_bit2" input="half_DSP.data_in[74] mac_output.loopback_out[2]"    output="mac_mult[1].datab[2]"/>
-              <mux name="data_mult1_b_bit3" input="half_DSP.data_in[75] mac_output.loopback_out[3]"    output="mac_mult[1].datab[3]"/>
-              <mux name="data_mult1_b_bit4" input="half_DSP.data_in[76] mac_output.loopback_out[4]"    output="mac_mult[1].datab[4]"/>
-              <mux name="data_mult1_b_bit5" input="half_DSP.data_in[77] mac_output.loopback_out[5]"    output="mac_mult[1].datab[5]"/>
-              <mux name="data_mult1_b_bit6" input="half_DSP.data_in[78] mac_output.loopback_out[6]"    output="mac_mult[1].datab[6]"/>
-              <mux name="data_mult1_b_bit7" input="half_DSP.data_in[79] mac_output.loopback_out[7]"    output="mac_mult[1].datab[7]"/>
-              <mux name="data_mult1_b_bit8" input="half_DSP.data_in[80] mac_output.loopback_out[8]"    output="mac_mult[1].datab[8]"/>
-              <mux name="data_mult1_b_bit9" input="half_DSP.data_in[81] mac_output.loopback_out[9]"    output="mac_mult[1].datab[9]"/>
-              <mux name="data_mult1_b_bit10" input="half_DSP.data_in[82] mac_output.loopback_out[10]"    output="mac_mult[1].datab[10]"/>
-              <mux name="data_mult1_b_bit11" input="half_DSP.data_in[83] mac_output.loopback_out[11]"    output="mac_mult[1].datab[11]"/>
-              <mux name="data_mult1_b_bit12" input="half_DSP.data_in[84] mac_output.loopback_out[12]"    output="mac_mult[1].datab[12]"/>
-              <mux name="data_mult1_b_bit13" input="half_DSP.data_in[85] mac_output.loopback_out[13]"    output="mac_mult[1].datab[13]"/>
-              <mux name="data_mult1_b_bit14" input="half_DSP.data_in[86] mac_output.loopback_out[14]"    output="mac_mult[1].datab[14]"/>
-              <mux name="data_mult1_b_bit15" input="half_DSP.data_in[87] mac_output.loopback_out[15]"    output="mac_mult[1].datab[15]"/>
-              <mux name="data_mult1_b_bit16" input="half_DSP.data_in[88] mac_output.loopback_out[16]"    output="mac_mult[1].datab[16]"/>
-              <mux name="data_mult1_b_bit17" input="half_DSP.data_in[89] mac_output.loopback_out[17]"    output="mac_mult[1].datab[17]"/>
+              <mux name="data_mult1_b_bit0" input="half_DSP.data_in[72] mac_output.loopback_out[0]" output="mac_mult[1].datab[0]"/>
+              <mux name="data_mult1_b_bit1" input="half_DSP.data_in[73] mac_output.loopback_out[1]" output="mac_mult[1].datab[1]"/>
+              <mux name="data_mult1_b_bit2" input="half_DSP.data_in[74] mac_output.loopback_out[2]" output="mac_mult[1].datab[2]"/>
+              <mux name="data_mult1_b_bit3" input="half_DSP.data_in[75] mac_output.loopback_out[3]" output="mac_mult[1].datab[3]"/>
+              <mux name="data_mult1_b_bit4" input="half_DSP.data_in[76] mac_output.loopback_out[4]" output="mac_mult[1].datab[4]"/>
+              <mux name="data_mult1_b_bit5" input="half_DSP.data_in[77] mac_output.loopback_out[5]" output="mac_mult[1].datab[5]"/>
+              <mux name="data_mult1_b_bit6" input="half_DSP.data_in[78] mac_output.loopback_out[6]" output="mac_mult[1].datab[6]"/>
+              <mux name="data_mult1_b_bit7" input="half_DSP.data_in[79] mac_output.loopback_out[7]" output="mac_mult[1].datab[7]"/>
+              <mux name="data_mult1_b_bit8" input="half_DSP.data_in[80] mac_output.loopback_out[8]" output="mac_mult[1].datab[8]"/>
+              <mux name="data_mult1_b_bit9" input="half_DSP.data_in[81] mac_output.loopback_out[9]" output="mac_mult[1].datab[9]"/>
+              <mux name="data_mult1_b_bit10" input="half_DSP.data_in[82] mac_output.loopback_out[10]" output="mac_mult[1].datab[10]"/>
+              <mux name="data_mult1_b_bit11" input="half_DSP.data_in[83] mac_output.loopback_out[11]" output="mac_mult[1].datab[11]"/>
+              <mux name="data_mult1_b_bit12" input="half_DSP.data_in[84] mac_output.loopback_out[12]" output="mac_mult[1].datab[12]"/>
+              <mux name="data_mult1_b_bit13" input="half_DSP.data_in[85] mac_output.loopback_out[13]" output="mac_mult[1].datab[13]"/>
+              <mux name="data_mult1_b_bit14" input="half_DSP.data_in[86] mac_output.loopback_out[14]" output="mac_mult[1].datab[14]"/>
+              <mux name="data_mult1_b_bit15" input="half_DSP.data_in[87] mac_output.loopback_out[15]" output="mac_mult[1].datab[15]"/>
+              <mux name="data_mult1_b_bit16" input="half_DSP.data_in[88] mac_output.loopback_out[16]" output="mac_mult[1].datab[16]"/>
+              <mux name="data_mult1_b_bit17" input="half_DSP.data_in[89] mac_output.loopback_out[17]" output="mac_mult[1].datab[17]"/>
 
               <!--<direct name="data_mult2_b" input="half_DSP.data_in[53:36]"                           output="mac_mult[2].datab"/>-->
-              <mux name="data_mult2_b_bit0" input="half_DSP.data_in[36] mac_output.loopback_out[0]"     output="mac_mult[2].datab[0]"/>
-              <mux name="data_mult2_b_bit1" input="half_DSP.data_in[37] mac_output.loopback_out[1]"     output="mac_mult[2].datab[1]"/>
-              <mux name="data_mult2_b_bit2" input="half_DSP.data_in[38] mac_output.loopback_out[2]"     output="mac_mult[2].datab[2]"/>
-              <mux name="data_mult2_b_bit3" input="half_DSP.data_in[39] mac_output.loopback_out[3]"     output="mac_mult[2].datab[3]"/>
-              <mux name="data_mult2_b_bit4" input="half_DSP.data_in[40] mac_output.loopback_out[4]"     output="mac_mult[2].datab[4]"/>
-              <mux name="data_mult2_b_bit5" input="half_DSP.data_in[41] mac_output.loopback_out[5]"     output="mac_mult[2].datab[5]"/>
-              <mux name="data_mult2_b_bit6" input="half_DSP.data_in[42] mac_output.loopback_out[6]"     output="mac_mult[2].datab[6]"/>
-              <mux name="data_mult2_b_bit7" input="half_DSP.data_in[43] mac_output.loopback_out[7]"     output="mac_mult[2].datab[7]"/>
-              <mux name="data_mult2_b_bit8" input="half_DSP.data_in[44] mac_output.loopback_out[8]"     output="mac_mult[2].datab[8]"/>
-              <mux name="data_mult2_b_bit9" input="half_DSP.data_in[45] mac_output.loopback_out[9]"     output="mac_mult[2].datab[9]"/>
-              <mux name="data_mult2_b_bit10" input="half_DSP.data_in[46] mac_output.loopback_out[10]"     output="mac_mult[2].datab[10]"/>
-              <mux name="data_mult2_b_bit11" input="half_DSP.data_in[47] mac_output.loopback_out[11]"     output="mac_mult[2].datab[11]"/>
-              <mux name="data_mult2_b_bit12" input="half_DSP.data_in[48] mac_output.loopback_out[12]"     output="mac_mult[2].datab[12]"/>
-              <mux name="data_mult2_b_bit13" input="half_DSP.data_in[49] mac_output.loopback_out[13]"     output="mac_mult[2].datab[13]"/>
-              <mux name="data_mult2_b_bit14" input="half_DSP.data_in[50] mac_output.loopback_out[14]"     output="mac_mult[2].datab[14]"/>
-              <mux name="data_mult2_b_bit15" input="half_DSP.data_in[51] mac_output.loopback_out[15]"     output="mac_mult[2].datab[15]"/>
-              <mux name="data_mult2_b_bit16" input="half_DSP.data_in[52] mac_output.loopback_out[16]"     output="mac_mult[2].datab[16]"/>
-              <mux name="data_mult2_b_bit17" input="half_DSP.data_in[53] mac_output.loopback_out[17]"     output="mac_mult[2].datab[17]"/>
+              <mux name="data_mult2_b_bit0" input="half_DSP.data_in[36] mac_output.loopback_out[0]" output="mac_mult[2].datab[0]"/>
+              <mux name="data_mult2_b_bit1" input="half_DSP.data_in[37] mac_output.loopback_out[1]" output="mac_mult[2].datab[1]"/>
+              <mux name="data_mult2_b_bit2" input="half_DSP.data_in[38] mac_output.loopback_out[2]" output="mac_mult[2].datab[2]"/>
+              <mux name="data_mult2_b_bit3" input="half_DSP.data_in[39] mac_output.loopback_out[3]" output="mac_mult[2].datab[3]"/>
+              <mux name="data_mult2_b_bit4" input="half_DSP.data_in[40] mac_output.loopback_out[4]" output="mac_mult[2].datab[4]"/>
+              <mux name="data_mult2_b_bit5" input="half_DSP.data_in[41] mac_output.loopback_out[5]" output="mac_mult[2].datab[5]"/>
+              <mux name="data_mult2_b_bit6" input="half_DSP.data_in[42] mac_output.loopback_out[6]" output="mac_mult[2].datab[6]"/>
+              <mux name="data_mult2_b_bit7" input="half_DSP.data_in[43] mac_output.loopback_out[7]" output="mac_mult[2].datab[7]"/>
+              <mux name="data_mult2_b_bit8" input="half_DSP.data_in[44] mac_output.loopback_out[8]" output="mac_mult[2].datab[8]"/>
+              <mux name="data_mult2_b_bit9" input="half_DSP.data_in[45] mac_output.loopback_out[9]" output="mac_mult[2].datab[9]"/>
+              <mux name="data_mult2_b_bit10" input="half_DSP.data_in[46] mac_output.loopback_out[10]" output="mac_mult[2].datab[10]"/>
+              <mux name="data_mult2_b_bit11" input="half_DSP.data_in[47] mac_output.loopback_out[11]" output="mac_mult[2].datab[11]"/>
+              <mux name="data_mult2_b_bit12" input="half_DSP.data_in[48] mac_output.loopback_out[12]" output="mac_mult[2].datab[12]"/>
+              <mux name="data_mult2_b_bit13" input="half_DSP.data_in[49] mac_output.loopback_out[13]" output="mac_mult[2].datab[13]"/>
+              <mux name="data_mult2_b_bit14" input="half_DSP.data_in[50] mac_output.loopback_out[14]" output="mac_mult[2].datab[14]"/>
+              <mux name="data_mult2_b_bit15" input="half_DSP.data_in[51] mac_output.loopback_out[15]" output="mac_mult[2].datab[15]"/>
+              <mux name="data_mult2_b_bit16" input="half_DSP.data_in[52] mac_output.loopback_out[16]" output="mac_mult[2].datab[16]"/>
+              <mux name="data_mult2_b_bit17" input="half_DSP.data_in[53] mac_output.loopback_out[17]" output="mac_mult[2].datab[17]"/>
 
               <!--<direct name="data_mult3_b" input="half_DSP.data_in[17:0]"                            output="mac_mult[3].datab"/>-->
-              <mux name="data_mult3_b_bit0" input="half_DSP.data_in[0] mac_output.loopback_out[0]"      output="mac_mult[3].datab[0]"/>
-              <mux name="data_mult3_b_bit1" input="half_DSP.data_in[1] mac_output.loopback_out[1]"      output="mac_mult[3].datab[1]"/>
-              <mux name="data_mult3_b_bit2" input="half_DSP.data_in[2] mac_output.loopback_out[2]"      output="mac_mult[3].datab[2]"/>
-              <mux name="data_mult3_b_bit3" input="half_DSP.data_in[3] mac_output.loopback_out[3]"      output="mac_mult[3].datab[3]"/>
-              <mux name="data_mult3_b_bit4" input="half_DSP.data_in[4] mac_output.loopback_out[4]"      output="mac_mult[3].datab[4]"/>
-              <mux name="data_mult3_b_bit5" input="half_DSP.data_in[5] mac_output.loopback_out[5]"      output="mac_mult[3].datab[5]"/>
-              <mux name="data_mult3_b_bit6" input="half_DSP.data_in[6] mac_output.loopback_out[6]"      output="mac_mult[3].datab[6]"/>
-              <mux name="data_mult3_b_bit7" input="half_DSP.data_in[7] mac_output.loopback_out[7]"      output="mac_mult[3].datab[7]"/>
-              <mux name="data_mult3_b_bit8" input="half_DSP.data_in[8] mac_output.loopback_out[8]"      output="mac_mult[3].datab[8]"/>
-              <mux name="data_mult3_b_bit9" input="half_DSP.data_in[9] mac_output.loopback_out[9]"      output="mac_mult[3].datab[9]"/>
-              <mux name="data_mult3_b_bit10" input="half_DSP.data_in[10] mac_output.loopback_out[10]"      output="mac_mult[3].datab[10]"/>
-              <mux name="data_mult3_b_bit11" input="half_DSP.data_in[11] mac_output.loopback_out[11]"      output="mac_mult[3].datab[11]"/>
-              <mux name="data_mult3_b_bit12" input="half_DSP.data_in[12] mac_output.loopback_out[12]"      output="mac_mult[3].datab[12]"/>
-              <mux name="data_mult3_b_bit13" input="half_DSP.data_in[13] mac_output.loopback_out[13]"      output="mac_mult[3].datab[13]"/>
-              <mux name="data_mult3_b_bit14" input="half_DSP.data_in[14] mac_output.loopback_out[14]"      output="mac_mult[3].datab[14]"/>
-              <mux name="data_mult3_b_bit15" input="half_DSP.data_in[15] mac_output.loopback_out[15]"      output="mac_mult[3].datab[15]"/>
-              <mux name="data_mult3_b_bit16" input="half_DSP.data_in[16] mac_output.loopback_out[16]"      output="mac_mult[3].datab[16]"/>
-              <mux name="data_mult3_b_bit17" input="half_DSP.data_in[17] mac_output.loopback_out[17]"      output="mac_mult[3].datab[17]"/>
+              <mux name="data_mult3_b_bit0" input="half_DSP.data_in[0] mac_output.loopback_out[0]" output="mac_mult[3].datab[0]"/>
+              <mux name="data_mult3_b_bit1" input="half_DSP.data_in[1] mac_output.loopback_out[1]" output="mac_mult[3].datab[1]"/>
+              <mux name="data_mult3_b_bit2" input="half_DSP.data_in[2] mac_output.loopback_out[2]" output="mac_mult[3].datab[2]"/>
+              <mux name="data_mult3_b_bit3" input="half_DSP.data_in[3] mac_output.loopback_out[3]" output="mac_mult[3].datab[3]"/>
+              <mux name="data_mult3_b_bit4" input="half_DSP.data_in[4] mac_output.loopback_out[4]" output="mac_mult[3].datab[4]"/>
+              <mux name="data_mult3_b_bit5" input="half_DSP.data_in[5] mac_output.loopback_out[5]" output="mac_mult[3].datab[5]"/>
+              <mux name="data_mult3_b_bit6" input="half_DSP.data_in[6] mac_output.loopback_out[6]" output="mac_mult[3].datab[6]"/>
+              <mux name="data_mult3_b_bit7" input="half_DSP.data_in[7] mac_output.loopback_out[7]" output="mac_mult[3].datab[7]"/>
+              <mux name="data_mult3_b_bit8" input="half_DSP.data_in[8] mac_output.loopback_out[8]" output="mac_mult[3].datab[8]"/>
+              <mux name="data_mult3_b_bit9" input="half_DSP.data_in[9] mac_output.loopback_out[9]" output="mac_mult[3].datab[9]"/>
+              <mux name="data_mult3_b_bit10" input="half_DSP.data_in[10] mac_output.loopback_out[10]" output="mac_mult[3].datab[10]"/>
+              <mux name="data_mult3_b_bit11" input="half_DSP.data_in[11] mac_output.loopback_out[11]" output="mac_mult[3].datab[11]"/>
+              <mux name="data_mult3_b_bit12" input="half_DSP.data_in[12] mac_output.loopback_out[12]" output="mac_mult[3].datab[12]"/>
+              <mux name="data_mult3_b_bit13" input="half_DSP.data_in[13] mac_output.loopback_out[13]" output="mac_mult[3].datab[13]"/>
+              <mux name="data_mult3_b_bit14" input="half_DSP.data_in[14] mac_output.loopback_out[14]" output="mac_mult[3].datab[14]"/>
+              <mux name="data_mult3_b_bit15" input="half_DSP.data_in[15] mac_output.loopback_out[15]" output="mac_mult[3].datab[15]"/>
+              <mux name="data_mult3_b_bit16" input="half_DSP.data_in[16] mac_output.loopback_out[16]" output="mac_mult[3].datab[16]"/>
+              <mux name="data_mult3_b_bit17" input="half_DSP.data_in[17] mac_output.loopback_out[17]" output="mac_mult[3].datab[17]"/>
 
               <!-- Scan out -->
               <direct name="half_DSP_scan_a_out" input="mac_mult[3].scanouta" output="half_DSP.scan_a_out"/>
@@ -3863,28 +3873,28 @@
 
               <!-- mac_mult control in -->
               <!--<complete name="mac_control_in_0" input="half_DSP.control_in[0]"     output="mac_mult[3:0].signa"/>-->
-              <direct name="mac_control_in_0_mult0" input="half_DSP.control_in[0]"     output="mac_mult[0].signa"/>
-              <direct name="mac_control_in_0_mult1" input="half_DSP.control_in[0]"     output="mac_mult[1].signa"/>
-              <direct name="mac_control_in_0_mult2" input="half_DSP.control_in[0]"     output="mac_mult[2].signa"/>
-              <direct name="mac_control_in_0_mult3" input="half_DSP.control_in[0]"     output="mac_mult[3].signa"/>
+              <direct name="mac_control_in_0_mult0" input="half_DSP.control_in[0]" output="mac_mult[0].signa"/>
+              <direct name="mac_control_in_0_mult1" input="half_DSP.control_in[0]" output="mac_mult[1].signa"/>
+              <direct name="mac_control_in_0_mult2" input="half_DSP.control_in[0]" output="mac_mult[2].signa"/>
+              <direct name="mac_control_in_0_mult3" input="half_DSP.control_in[0]" output="mac_mult[3].signa"/>
 
               <!--<complete name="mac_control_in_1" input="half_DSP.control_in[1]"     output="mac_mult[3:0].signb"/>-->
-              <direct name="mac_control_in_1_mult0" input="half_DSP.control_in[1]"     output="mac_mult[0].signb"/>
-              <direct name="mac_control_in_1_mult1" input="half_DSP.control_in[1]"     output="mac_mult[1].signb"/>
-              <direct name="mac_control_in_1_mult2" input="half_DSP.control_in[1]"     output="mac_mult[2].signb"/>
-              <direct name="mac_control_in_1_mult3" input="half_DSP.control_in[1]"     output="mac_mult[3].signb"/>
+              <direct name="mac_control_in_1_mult0" input="half_DSP.control_in[1]" output="mac_mult[0].signb"/>
+              <direct name="mac_control_in_1_mult1" input="half_DSP.control_in[1]" output="mac_mult[1].signb"/>
+              <direct name="mac_control_in_1_mult2" input="half_DSP.control_in[1]" output="mac_mult[2].signb"/>
+              <direct name="mac_control_in_1_mult3" input="half_DSP.control_in[1]" output="mac_mult[3].signb"/>
 
               <!--<complete name="mac_control_in_4" input="half_DSP.control_in[11]"    output="mac_mult[3:0].devclrn"/>-->
-              <direct name="mac_control_in_4_mult0" input="half_DSP.control_in[11]"    output="mac_mult[0].devclrn"/>
-              <direct name="mac_control_in_4_mult1" input="half_DSP.control_in[11]"    output="mac_mult[1].devclrn"/>
-              <direct name="mac_control_in_4_mult2" input="half_DSP.control_in[11]"    output="mac_mult[2].devclrn"/>
-              <direct name="mac_control_in_4_mult3" input="half_DSP.control_in[11]"    output="mac_mult[3].devclrn"/>
+              <direct name="mac_control_in_4_mult0" input="half_DSP.control_in[11]" output="mac_mult[0].devclrn"/>
+              <direct name="mac_control_in_4_mult1" input="half_DSP.control_in[11]" output="mac_mult[1].devclrn"/>
+              <direct name="mac_control_in_4_mult2" input="half_DSP.control_in[11]" output="mac_mult[2].devclrn"/>
+              <direct name="mac_control_in_4_mult3" input="half_DSP.control_in[11]" output="mac_mult[3].devclrn"/>
 
               <!--<complete name="mac_control_in_5" input="half_DSP.control_in[12]"    output="mac_mult[3:0].devpor"/>-->
-              <direct name="mac_control_in_5_mult0" input="half_DSP.control_in[12]"    output="mac_mult[0].devpor"/>
-              <direct name="mac_control_in_5_mult1" input="half_DSP.control_in[12]"    output="mac_mult[1].devpor"/>
-              <direct name="mac_control_in_5_mult2" input="half_DSP.control_in[12]"    output="mac_mult[2].devpor"/>
-              <direct name="mac_control_in_5_mult3" input="half_DSP.control_in[12]"    output="mac_mult[3].devpor"/>
+              <direct name="mac_control_in_5_mult0" input="half_DSP.control_in[12]" output="mac_mult[0].devpor"/>
+              <direct name="mac_control_in_5_mult1" input="half_DSP.control_in[12]" output="mac_mult[1].devpor"/>
+              <direct name="mac_control_in_5_mult2" input="half_DSP.control_in[12]" output="mac_mult[2].devpor"/>
+              <direct name="mac_control_in_5_mult3" input="half_DSP.control_in[12]" output="mac_mult[3].devpor"/>
 
               <!--<complete name="mac_control_in_2" input="half_DSP.control_in[16:13]" output="mac_mult[3:0].aclr"/>-->
               <direct name="mac_control_in_2_mult0" input="half_DSP.control_in[16:13]" output="mac_mult[0].aclr"/>
@@ -3970,10 +3980,7 @@
       </mode> <!-- DSP_normal -->
       <fc default_in_type="frac" default_in_val="0.055" default_out_type="frac" default_out_val="0.100"/>
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc type="col" start="14" repeat="95" priority="15"/>
-      </gridlocations>
-    </pb_type> <!-- DSP -->
+      </pb_type> <!-- DSP -->
 
     <pb_type height="1" name="M9K">
       <input name="clk_in" num_pins="2"/>
@@ -6560,10 +6567,7 @@
       </mode>
       <fc default_in_type="frac" default_in_val="0.055" default_out_type="frac" default_out_val="0.100"/>
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc priority="5" repeat="26" start="5" type="col"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
     <pb_type height="8" name="M144K">
       <input name="clk_in" num_pins="2"/>
       <input name="data_addr_control_in" num_pins="416"/>
@@ -9491,9 +9495,6 @@
       </mode>
       <fc default_in_type="frac" default_in_val="0.055" default_out_type="frac" default_out_val="0.100"/>
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc priority="10" repeat="43" start="33" type="col"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
   </complexblocklist>
 </architecture>

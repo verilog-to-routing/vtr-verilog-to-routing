@@ -18,9 +18,7 @@ Architecture based off Stratix IV
            conclusion - just take the 600 MHz as is, and Quartus II logiclock hasn't fixed the bug that I've seen it do to registers when I worked at Altera (ie. eject without warning)
 
   NOTE: Area numbers for hard blocks unknown!
--->
-  
-  <architecture>
+--><architecture>
   
   <!-- ODIN II specific config -->
   <models>
@@ -28,7 +26,15 @@ Architecture based off Stratix IV
   <!-- ODIN II specific config ends -->
  
   <!-- Physical descriptions begin (area optimized for N10-K6-L4) -->
-  <layout auto="1.0"/>
+  <layout>
+    <auto_layout aspect_ratio="1.0">
+        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+        <perimeter type="io" priority="100"/>
+        <corners type="EMPTY" priority="101"/>
+        <!--Fill with 'clb'-->
+        <fill type="clb" priority="10"/>
+        </auto_layout>
+</layout>
 
 		<device>
 			<sizing R_minW_nmos="5726.870117" R_minW_pmos="15491.700195" ipin_mux_trans_size="1.000000"/>
@@ -96,11 +102,7 @@ Architecture based off Stratix IV
           <loc side="bottom">io.outpad io.inpad io.clock</loc>
         </pinlocations>
 
-        <gridlocations>
-          <loc type="perimeter" priority="10"/>
-        </gridlocations>
-
-      </pb_type>
+        </pb_type>
 
 
       <pb_type name="clb">
@@ -156,8 +158,8 @@ Architecture based off Stratix IV
         </pb_type>
         <interconnect>
           <complete name="crossbar" input="clb.I ble[3:0].out" output="ble[3:0].in">
-            <delay_constant max="9.955000e-11" in_port="clb.I" out_port="ble[3:0].in" />
-            <delay_constant max="1.042000e-10" in_port="ble[3:0].out" out_port="ble[3:0].in" />
+            <delay_constant max="9.955000e-11" in_port="clb.I" out_port="ble[3:0].in"/>
+            <delay_constant max="1.042000e-10" in_port="ble[3:0].out" out_port="ble[3:0].in"/>
           </complete>
           <complete name="clks" input="clb.clk" output="ble[3:0].clk">
           </complete>
@@ -169,10 +171,7 @@ Architecture based off Stratix IV
         <fc default_in_type="frac" default_in_val="0.5" default_out_type="frac" default_out_val="0.25"/>
 
         <pinlocations pattern="spread"/>
-        <gridlocations>
-          <loc type="fill" priority="1"/>
-        </gridlocations>
-      </pb_type>
+        </pb_type>
 
     </complexblocklist>
   </architecture>

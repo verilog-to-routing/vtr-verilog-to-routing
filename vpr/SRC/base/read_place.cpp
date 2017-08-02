@@ -178,8 +178,8 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		}
 	}
 
-	for (i = 0; i <= device_ctx.nx + 1; i++) {
-		for (j = 0; j <= device_ctx.ny + 1; j++) {
+	for (i = 0; i < device_ctx.grid.width(); i++) {
+		for (j = 0; j < device_ctx.grid.height(); j++) {
 			if (device_ctx.grid[i][j].type == device_ctx.IO_TYPE) {
 				for (k = 0; k < device_ctx.IO_TYPE->capacity; k++) {
 					if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {

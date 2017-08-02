@@ -23,7 +23,6 @@ using namespace std;
 #include "path_delay.h"
 #include "timing_place_lookup.h"
 #include "timing_place.h"
-#include "place_stats.h"
 #include "read_xml_arch_file.h"
 #include "echo_files.h"
 #include "vpr_utils.h"
@@ -1662,8 +1661,8 @@ static bool find_to(t_type_ptr type, float rlim,
 			}
 		}
 
-		VTR_ASSERT(*px_to >= 0 && *px_to <= device_ctx.nx + 1);
-		VTR_ASSERT(*py_to >= 0 && *py_to <= device_ctx.ny + 1);
+		VTR_ASSERT(*px_to >= 0 && *px_to < device_ctx.grid.width());
+		VTR_ASSERT(*py_to >= 0 && *py_to < device_ctx.grid.height());
 	} while (is_legal == false);
 
 	if (*px_to < 0 || *px_to > device_ctx.nx + 1 || *py_to < 0 || *py_to > device_ctx.ny + 1) {
@@ -2653,8 +2652,8 @@ static void alloc_legal_placements() {
 	
 	/* Initialize all occupancy to zero. */
 
-	for (i = 0; i <= device_ctx.nx + 1; i++) {
-		for (j = 0; j <= device_ctx.ny + 1; j++) {
+	for (i = 0; i < device_ctx.grid.width(); i++) {
+		for (j = 0; j < device_ctx.grid.height(); j++) {
 			place_ctx.grid_blocks[i][j].usage = 0;
 			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
 				if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
@@ -2681,8 +2680,8 @@ static void load_legal_placements() {
 
 	index = (int *) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
-	for (i = 0; i <= device_ctx.nx + 1; i++) {
-		for (j = 0; j <= device_ctx.ny + 1; j++) {
+	for (i = 0; i < device_ctx.grid.width(); i++) {
+		for (j = 0; j < device_ctx.grid.height(); j++) {
 			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
 				if (place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK) {
 					continue;
@@ -2973,8 +2972,8 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	/* We'll use the grid to record where everything goes. Initialize to the grid has no 
 	 * blocks placed anywhere.
 	 */
-	for (i = 0; i <= device_ctx.nx + 1; i++) {
-		for (j = 0; j <= device_ctx.ny + 1; j++) {
+	for (i = 0; i < device_ctx.grid.width(); i++) {
+		for (j = 0; j < device_ctx.grid.height(); j++) {
 			place_ctx.grid_blocks[i][j].usage = 0;
 			itype = device_ctx.grid[i][j].type->index;
 			for (k = 0; k < device_ctx.block_types[itype].capacity; k++) {
@@ -3270,9 +3269,6 @@ static void check_place(float bb_cost, float timing_cost,
 		vtr::printf_info("\n");
 		vtr::printf_info("Completed placement consistency check successfully.\n");
 
-#ifdef PRINT_REL_POS_DISTR
-		print_relative_pos_distr(void);
-#endif
 	} else {
 		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 				"\nCompleted placement consistency check, %d errors found.\n"

@@ -88,19 +88,11 @@ For the ``adder`` the input ports ``a``, ``b`` and ``cin`` are each combintional
 Global FPGA Information
 -----------------------
 
-.. arch:tag:: <layout {auto="float" | width="int" height="int"}/>
+.. arch:tag:: <layout/>
 
-    :opt_param auto: Aspect ratio fo auto-sized FPGA
-    :opt_param width: FPGA width in grid-units
-    :opt_param height: FPGA height in grid-units
+    Content inside this tag specifies device grid layout.
 
-    This tag specifies the size and shape of the FPGA in grid units.
-
-    The keyword ``auto`` indicates that the size should be chosen to be the minimal dimensions that fits the given circuit.
-    The size is determined from the number of grid tiles used by the circuit as well as the number of IO pins that it uses.
-    The aspect ratio of the FPGA is given after the auto keyword and is the ratio width/height. 
-
-    Alternately, the size can be explicitly given as the size in the x direction (``width``) followed by the size in the y direction (``height``).
+    .. seealso:: :ref:`arch_grid_layout`
 
 .. arch:tag:: <device>content</device>
 
@@ -120,6 +112,334 @@ Global FPGA Information
 
     Content inside this tag contains a group of <pb_type> tags that specify the types of functional blocks and their properties.
     
+.. _arch_grid_layout:
+
+FPGA Grid Layout
+----------------
+The valid tags within the ``<layout>`` tag are:
+
+.. arch:tag:: <auto_layout aspect_ratio="float">
+
+    :req_param aspect_ratio:
+        The device grid's target aspect ratio (width / height)
+
+    Defines a scalable device grid layout which can be automatically scaled to a desired size (width x height).
+
+.. arch:tag:: <fixed_layout name="string" width="int" height="int">
+
+    :req_param name:
+        The unique name identifying this device grid layout.
+
+    :req_param width:
+        The device grid width
+
+    :req_param height:
+        The device grid height
+
+    Defines a device grid layout with fixed dimensions.
+
+Any ``<auto_layout>`` or ``<fixed_layout>`` tag may contain a set of grid location tags. 
+
+Grid Location Priorities
+~~~~~~~~~~~~~~~~~~~~~~~~
+The grid location specifications are processed in ascending order of *priority*.
+Larger priority location specifications override those with lower prioriry.
+
+.. note:: If a grid block is partially overlapped by another block with higher priority the entier lower priority block is removed form the grid.
+
+Empty Grid Locations
+~~~~~~~~~~~~~~~~~~~~
+Empty grid locations can be specified using the special block type ``EMPTY``.
+
+.. note:: All grid locations default to ``EMPTY`` unless otherwise specified.
+
+Grid Location Expressions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+Some grid location tags have attributes (e.g. ``startx``) which take an *expression* as thier argument.
+An *expression* is an integer constant, or simple mathematical formula evaluated when constructing the device grid.
+
+Supported operators include: ``+``, ``-``, ``*``, ``/``, along with ``(`` and ``)`` to override the default evaluation order.
+Expressions may contain numeric constants (e.g. ``7``) and the following special variables:
+
+* ``W``: The width of the device
+* ``H``: The height of the device
+* ``w``: The width of the current block type
+* ``h``: The height of the current block type
+
+.. warning:: All expressions are evaluated as integers, so operations such as division may have their result truncated.
+
+As an example consider the expression ``W/2 - w/2``.
+For a device width of 10 and a block type of width 3, this would be evaluted as :math:`\lfloor \frac{W}{2} \rfloor - \lfloor \frac{w}{2} \rfloor  = \lfloor \frac{10}{2} \rfloor - \lfloor \frac{3}{2} \rfloor = 5 - 1 = 4`.
+
+Grid Location Tags
+~~~~~~~~~~~~~~~~~~
+
+.. arch:tag:: <fill type="string" priority="int"/>
+
+    :req_param type:
+        The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
+
+    :req_param priority:
+        The priority of this layout specification. 
+        Tags with higher priority override those with lower priority.
+
+    Fills the device grid with the specified block type.
+
+    Example:
+    
+    .. code-block:: xml
+
+        <!-- Fill the device with CLB blocks -->
+        <fill type="CLB" priority="1"/>
+
+    .. figure:: fill_fpga_grid.*
+
+.. arch:tag:: <perimeter type="string" priority="int"/>
+
+    :req_param type:
+        The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
+
+    :req_param priority:
+        The priority of this layout specification. 
+        Tags with higher priority override those with lower priority.
+
+    Sets the perimeter of the device (i.e. edges) to the specified block type.
+
+    .. note:: The perimeter includes the corners
+
+    Example:
+
+    .. code-block:: xml
+
+        <!-- Create io blocks around the device perimeter -->
+        <perimeter type="io" priority="10"/>
+
+    .. figure:: perimeter_fpga_grid.*
+
+.. arch:tag:: <corners type="string" priority="int"/>
+
+    :req_param type:
+        The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
+
+    :req_param priority:
+        The priority of this layout specification. 
+        Tags with higher priority override those with lower priority.
+
+    Sets the corners of the device to the specified block type.
+
+    Example:
+
+    .. code-block:: xml
+
+        <!-- Create PLL blocks at all corners -->
+        <corners type="PLL" priority="20"/>
+
+    .. figure:: corners_fpga_grid.*
+
+.. arch:tag:: <single type="string" priority="int" x="expr" y="expr"/>
+
+    :req_param type:
+        The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
+
+    :req_param priority:
+        The priority of this layout specification. 
+        Tags with higher priority override those with lower priority.
+
+    :req_param x:
+        The horizontal position of the block type instance.
+
+    :req_param y:
+        The vertical position of the block type instance.
+
+    Specifies a single instace of the block type at a single grid location.
+
+    Example:
+
+    .. code-block:: xml
+
+        <!-- Create a single instance of a PCIE block (width 3, height 5) 
+             at location (1,1)-->
+        <single type="PCIE" x="1" y="1" priority="20"/>
+
+    .. figure:: single_fpga_grid.*
+
+.. arch:tag:: <col type="string" priority="int" startx="expr" repeatx="expr" starty="expr"/>
+
+    :req_param type:
+        The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
+
+    :req_param priority:
+        The priority of this layout specification. 
+        Tags with higher priority override those with lower priority.
+
+    :req_param startx:
+        An expression specifying the horizontal starting position of the column.
+
+    :opt_param repeatx:
+        An expression specifying the horizontal repeat factor of the column.
+
+    :opt_param starty:
+        An expression specifying the vertical starting offset of the column.
+
+        **Default:** ``0``
+
+    Creates a column of the specified block type at ``startx``.
+
+    If ``repeatx`` is specified the column will be repeated wherever :math:`x = startx + k \cdot repeatx`, is satisified for any positive integer :math:`k`.
+
+    A non-zero ``starty`` is typically used if a ``<perimeter>`` tag is specified to adjust the starting position of blocks with height > 1.
+
+    Example:
+
+    .. code-block:: xml
+
+        <!-- Create a column of RAMs starting at column 2, and 
+             repeating every 3 columns -->
+        <col type="RAM" startx="2" repeatx="3" priority="3"/>
+
+    .. figure:: col_fpga_grid.*
+
+    Example:
+
+    .. code-block:: xml
+
+        <!-- Create IO's around the device perimeter -->
+        <perimeter type="io" priority=10"/>
+
+        <!-- Create a column of RAMs starting at column 2, and 
+             repeating every 3 columns. Note that a vertical offset 
+             of 1 is needed to avoid overlapping the IOs-->
+        <col type="RAM" startx="2" repeatx="3" starty="1" priority="3"/>
+
+    .. figure:: col_perim_fpga_grid.*
+
+.. arch:tag:: <row type="string" priority="int" starty="expr" repeaty="expr" startx="expr"/>
+
+    :req_param type:
+        The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
+
+    :req_param priority:
+        The priority of this layout specification. 
+        Tags with higher priority override those with lower priority.
+
+    :req_param starty:
+        An expression specifying the vertical starting position of the row.
+
+    :opt_param repeaty:
+        An expression specifying the vertical repeat factor of the row.
+
+    :opt_param startx:
+        An expression specifying the horizontal starting offset of the row.
+
+        **Default:** ``0``
+
+    Creates a row of the specified block type at ``starty``.
+
+    If ``repeaty`` is specified the column will be repeated wherever :math:`y = starty + k \cdot repeaty`, is satisified for any positive integer :math:`k`.
+
+    A non-zero ``startx`` is typically used if a ``<perimeter>`` tag is specified to adjust the starting position of blocks with width > 1.
+
+    Example:
+
+    .. code-block:: xml
+
+        <!-- Create a row of DSPs (width 1, height 3) at 
+             row 1 and repeating every 7th row -->
+        <row type="DSP" starty="1" repeaty="7" priority="3"/>
+
+    .. figure:: row_fpga_grid.*
+
+.. arch:tag:: <region type="string" priority="int" startx="expr" endx="expr repeatx="expr" incrx="expr" starty="expr" endy="expr" repeaty="expr" incry="expr"/>
+
+    :req_param type:
+        The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
+
+    :req_param priority:
+        The priority of this layout specification. 
+        Tags with higher priority override those with lower priority.
+
+    :opt_param startx:
+        An expression specifying the horizontal starting position of the region (inclusive).
+
+        **Default:** ``0``
+
+    :opt_param endx:
+        An expression specifying the horizontal ending position of the region (inclusive).
+
+        **Default:** ``W - 1``
+
+    :opt_param repeatx:
+        An expression specifying the horizontal repeat factor of the column.
+
+    :opt_param incrx:
+        An expression specifying the horizontal increment between block instantiations within the region.
+
+        **Default:** ``w``
+
+    :opt_param starty:
+        An expression specifying the vertical starting position of the region (inclusive).
+
+        **Default:** ``0``
+
+    :opt_param endy:
+        An expression specifying the vertical ending position of the region (inclusive).
+
+        **Default:** ``H - 1``
+
+    :opt_param repeaty:
+        An expression specifying the vertical repeat factor of the column.
+
+    :opt_param incry:
+        An expression specifying the horizontal increment between block instantiations within the region.
+
+        **Default:** ``h``
+
+
+    Fills the rectangular region defined by (``startx``, ``starty``) and (``endx``, ``endy``) with the specified block type.
+
+    If ``repeatx`` is specified the region will be repeated wherever :math:`x = startx + k_1*repeatx`, is satisified for any positive integer :math:`k_1`.
+
+    If ``repeaty`` is specified the region will be repeated wherever :math:`y = starty + k_2*repeaty`, is satisified for any positive integer :math:`k_2`.
+
+
+    Example:
+
+    .. code-block:: xml
+
+        <!-- Fill RAMs withing the rectangular region bounded by (1,1) and (5,4) -->
+        <region type="RAM" startx="1" endx="5" starty="1" endy="4" priority="4"/>
+
+    .. figure:: region_single_fpga_grid.*
+
+    Example:
+
+    .. code-block:: xml
+
+        <!-- Create RAMs every 2nd column withing the rectangular region bounded 
+             by (1,1) and (5,4) -->
+        <region type="RAM" startx="1" endx="5" starty="1" endy="4" incrx="2" priority="4"/>
+
+    .. figure:: region_incr_fpga_grid.*
+
+    Example:
+
+    .. code-block:: xml
+
+        <!-- Fill RAMs within a rectangular 2x4 region and repeat every 3 horizontal 
+             and 5 vertical units -->
+        <region type="RAM" startx="1" endx="2" starty="1" endy="4" repeatx="3" repeaty="5" priority="4"/>
+
+    .. figure:: region_repeat_fpga_grid.*
+
+    Example:
+
+    .. code-block:: xml
+
+        <!-- Create a 3x3 mesh of NoC routers (width 2, height 2) whose relative positions
+             will scale with the device dimensions -->
+        <region type="NoC_router" startx="W/4 - w/2" starty="W/4 - w/2" incrx="W/4" incry="W/4" priority="3"/>
+
+    .. figure:: region_incr_mesh_fpga_grid.*
 
 .. _arch_device_info:
 
@@ -467,30 +787,6 @@ They describe how a complex block interfaces with the inter-block world.
         Physical equivalence for a pin is specified by listing a pin more than once for different locations.
         For example, a LUT whose output can exit from the top and bottom of a block will have its output pin specified twice: once for the top and once for the bottom.
 
-.. arch:tag:: <gridlocations>
-
-    Specifies the columns on the FPGA that will consist of this complex logic block.  
-    The columns are specified by a group of <loc> tags and there are three ways to use this tag:
-
-    .. arch:tag:: <loc type="col" start="int" repeat="int" priority="int"/>
-
-        This specifies an absolute column assignment.
-        The first column to contain this complex logic block is specified in start.
-        Every column that satisfies :math:`x = start_x + k*repeat`, where :math:`k` is any integer, will be composed of this complex logic block.
-
-    .. arch:tag:: <loc type="rel" pos="float"  priority="int"/> 
-
-        This specifies a single column to be composed of this complex logic block where ``pos`` specifies a fraction of device the width.
-
-    .. arch:tag:: <loc type="fill"  priority="int"/>
-
-        This is a special specification such that all unspecified columns get assigned this complex logic block.
-
-    For all three <loc> tags, the ``priority`` attribute is used to resolve collisions when two different functional blocks would otherwise use the same column.  
-    The larger integer specified for priority gets the location.
-
-
-
 Interconnect
 ~~~~~~~~~~~~
 
@@ -758,7 +1054,7 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
 
 
 Modeling Sequential Primitive Internal Timing Paths
-"""""""""""""""""""""""""""""""""""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. seealso:: For examples of primitive timing modeling specifications see the :ref:`arch_model_timing_tutorial`
 
 By default, if only ``<T_setup>`` and ``<T_clock_to_Q>`` are specified on a primitive ``pb_type`` no internal timing paths are modeled.

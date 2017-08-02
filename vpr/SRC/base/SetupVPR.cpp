@@ -10,6 +10,7 @@ using namespace std;
 
 #include "vpr_types.h"
 #include "vpr_error.h"
+#include "vpr_utils.h"
 
 #include "globals.h"
 #include "read_xml_arch_file.h"
@@ -62,7 +63,7 @@ void SetupVPR(t_options *Options,
               t_segment_inf ** Segments, t_timing_inf * Timing,
               bool * ShowGraphics, int *GraphPause,
               t_power_opts * PowerOpts) {
-	int i, j;
+	int i;
     using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -109,19 +110,33 @@ void SetupVPR(t_options *Options,
 	device_ctx.FILL_TYPE = NULL;
 	device_ctx.IO_TYPE = NULL;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
-		if (strcmp(device_ctx.block_types[i].name, "<EMPTY>") == 0) {
+		if (strcmp(device_ctx.block_types[i].name, EMPTY_BLOCK_NAME) == 0) {
 			device_ctx.EMPTY_TYPE = &device_ctx.block_types[i];
 		} else if (strcmp(device_ctx.block_types[i].name, "io") == 0) {
 			device_ctx.IO_TYPE = &device_ctx.block_types[i];
-		} else {
-			for (j = 0; j < device_ctx.block_types[i].num_grid_loc_def; j++) {
-				if (device_ctx.block_types[i].grid_loc_def[j].grid_loc_type == FILL) {
-					VTR_ASSERT(device_ctx.FILL_TYPE == NULL);
-					device_ctx.FILL_TYPE = &device_ctx.block_types[i];
-				}
-			}
 		}
-	}
+    }
+
+    //TODO: handle >1 layout
+    VTR_ASSERT(Arch->grid_layouts.size() == 1);
+    for(const auto& grid_loc_def : Arch->grid_layouts[0].loc_defs) {
+        //Detect the 'fill' type
+        if (   grid_loc_def.x.start_expr == "0"
+            && grid_loc_def.x.end_expr == "W - 1"
+            && grid_loc_def.x.repeat_expr == "W"
+            && grid_loc_def.x.incr_expr == "w"
+            && grid_loc_def.y.start_expr == "0"
+            && grid_loc_def.y.end_expr == "H - 1"
+            && grid_loc_def.y.repeat_expr == "H"
+            && grid_loc_def.y.incr_expr == "h") {
+
+            VTR_ASSERT_MSG(device_ctx.FILL_TYPE == NULL, "Fill type must be unambiguous");
+            t_type_descriptor* fill_type = find_block_type_by_name(grid_loc_def.block_type, device_ctx.block_types, device_ctx.num_block_types);
+            VTR_ASSERT_MSG(fill_type, "Fill block type must exist");
+            device_ctx.FILL_TYPE = fill_type;
+        }
+    }
+
 	VTR_ASSERT(device_ctx.EMPTY_TYPE != NULL && device_ctx.FILL_TYPE != NULL && device_ctx.IO_TYPE != NULL);
 
 	*Segments = Arch->Segments;
@@ -373,10 +388,14 @@ void SetupPackerOpts(const t_options& Options,
 		const t_arch& Arch,
 		t_packer_opts *PackerOpts) {
 
-	if (Arch.clb_grid.IsAuto) {
-		PackerOpts->aspect = Arch.clb_grid.Aspect;
+    VTR_ASSERT(Arch.grid_layouts.size() == 1); //TODO: multiple layout support
+    auto& grid_layout = Arch.grid_layouts[0];
+
+	if (grid_layout.grid_type == GridDefType::AUTO) {
+		PackerOpts->aspect = grid_layout.aspect_ratio;
 	} else {
-		PackerOpts->aspect = (float) Arch.clb_grid.H / (float) Arch.clb_grid.W;
+        VTR_ASSERT(grid_layout.grid_type == GridDefType::AUTO);
+		PackerOpts->aspect = (float) grid_layout.width / (float) grid_layout.height;
 	}
 	PackerOpts->output_file = Options.NetFile;
 

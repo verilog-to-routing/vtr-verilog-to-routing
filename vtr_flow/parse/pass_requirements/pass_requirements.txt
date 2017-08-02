@@ -2,6 +2,7 @@ vpr_status;Equal
 min_chan_width;Range;0.80;1.30
 critical_path_delay;Range;0.80;1.40
 routed_wirelength;Range;0.60;1.50
+crit_path_routed_wirelength;Range;0.60;1.50
 pack_time;RangeAbs;0.10;10.0;2
 place_time;RangeAbs;0.10;10.0;2
 min_chan_width_route_time;RangeAbs;0.10;10.0;2
@@ -14,4 +15,13 @@ num_io;Range;0.95;1.05
 num_outputs;Range;0.95;1.05
 num_memories;Range;0.9;1.10
 num_mult;Range;0.9;1.10
+device_width;Range;0.9;1.10
+device_height;Range;0.9;1.10
+setup_TNS;Range;0.80;1.40
+setup_WNS;Range;0.80;1.40
+hold_TNS;Range;0.50;2.00
+hold_WNS;Range;0.80;1.40
+placed_CPD_est;Range;0.80;1.40
+placed_setup_TNS_est;Range;0.80;1.40
+placed_setup_WNS_est;Range;0.80;1.40
 error;Equal

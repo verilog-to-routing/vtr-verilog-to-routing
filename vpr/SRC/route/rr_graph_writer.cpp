@@ -168,11 +168,7 @@ void write_rr_block_types(fstream &fp) {
 
         /*since the < symbol is not allowed in xml format, converted to only print "EMPTY"*/
         if (btype.name) {
-            if (strcmp(btype.name, "<EMPTY>") == 0) {
-                fp << "\" name=\"EMPTY";
-            } else {
-                fp << "\" name=\"" << btype.name;
-            }
+            fp << "\" name=\"" << btype.name;
         }
 
         fp << "\" width=\"" << btype.width << "\" height=\"" << btype.height << "\">" << endl;
@@ -216,8 +212,8 @@ void write_rr_grid(fstream &fp) {
 
     fp << "\t<grid>" << endl;
 
-    for (int x = 0; x <= device_ctx.nx + 1; x++) {
-        for (int y = 0; y <= device_ctx.ny + 1; y++) {
+    for (int x = 0; x < device_ctx.grid.width(); x++) {
+        for (int y = 0; y < device_ctx.grid.height(); y++) {
             t_grid_tile grid_tile = device_ctx.grid[x][y];
 
             fp << "\t\t<grid_loc x=\"" << x << "\" y=\"" << y <<

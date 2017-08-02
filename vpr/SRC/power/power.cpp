@@ -616,8 +616,8 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 	power_reset_tile_usage();
 
 	/* Loop through all grid locations */
-	for (x = 0; x < device_ctx.nx + 2; x++) {
-		for (y = 0; y < device_ctx.ny + 2; y++) {
+	for (x = 0; x < device_ctx.grid.width(); x++) {
+		for (y = 0; y < device_ctx.grid.height(); y++) {
 
 			if ((device_ctx.grid[x][y].width_offset != 0)
 					|| (device_ctx.grid[x][y].height_offset != 0)

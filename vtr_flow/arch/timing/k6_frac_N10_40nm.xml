@@ -12,9 +12,7 @@
   Based on flagship k6_frac_N10_mem32K_40nm.xml architecture.
 
   Authors: Jason Luu, Jeff Goeders, Vaughn Betz
--->
-
-<architecture>
+--><architecture>
 
   <!-- 
        ODIN II specific config begins 
@@ -30,7 +28,15 @@
   <!-- ODIN II specific config ends -->
 
   <!-- Physical descriptions begin -->
-  <layout auto="1.0"/>
+  <layout>
+    <auto_layout aspect_ratio="1.0">
+        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+        <perimeter type="io" priority="100"/>
+        <corners type="EMPTY" priority="101"/>
+        <!--Fill with 'clb'-->
+        <fill type="clb" priority="10"/>
+        </auto_layout>
+</layout>
 
   <device>
     <!-- VB & JL: Using Ian Kuon's transistor sizing and drive strength data for routing, at 40 nm. Ian used BPTM 
@@ -142,10 +148,6 @@
       </pinlocations>
 
       <!-- Place I/Os on the sides of the FPGA -->
-      <gridlocations>
-        <loc type="perimeter" priority="10"/>
-      </gridlocations>
-
       <power method="ignore"/>			
     </pb_type>
     <!-- Define I/O pads ends -->
@@ -225,8 +227,8 @@
                 <direct name="direct3" input="ble5.clk" output="ff[0:0].clk"/>                    
                 <mux name="mux1" input="ff[0:0].Q lut5.out[0:0]" output="ble5.out[0:0]">
                   <!-- LUT to output is faster than FF to output on a Stratix IV -->
-                  <delay_constant max="25e-12" in_port="lut5.out[0:0]" out_port="ble5.out[0:0]" />
-                  <delay_constant max="45e-12" in_port="ff[0:0].Q" out_port="ble5.out[0:0]" />
+                  <delay_constant max="25e-12" in_port="lut5.out[0:0]" out_port="ble5.out[0:0]"/>
+                  <delay_constant max="45e-12" in_port="ff[0:0].Q" out_port="ble5.out[0:0]"/>
                 </mux>
               </interconnect>
             </pb_type>
@@ -294,8 +296,8 @@
               <direct name="direct3" input="ble6.clk" output="ff.clk"/>                    
               <mux name="mux1" input="ff.Q lut6.out" output="ble6.out">
                 <!-- LUT to output is faster than FF to output on a Stratix IV -->
-                <delay_constant max="25e-12" in_port="lut6.out" out_port="ble6.out" />
-                <delay_constant max="45e-12" in_port="ff.Q" out_port="ble6.out" />
+                <delay_constant max="25e-12" in_port="lut6.out" out_port="ble6.out"/>
+                <delay_constant max="45e-12" in_port="ff.Q" out_port="ble6.out"/>
               </mux>
             </interconnect>
           </pb_type>
@@ -318,8 +320,8 @@
 		     25 ps to do so, we subtract 25 ps from the 100 ps delay of a feedback
 		     to get the part that should be marked on the crossbar.	 -->
         <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in">
-          <delay_constant max="95e-12" in_port="clb.I" out_port="fle[9:0].in" />
-          <delay_constant max="75e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
+          <delay_constant max="95e-12" in_port="clb.I" out_port="fle[9:0].in"/>
+          <delay_constant max="75e-12" in_port="fle[9:0].out" out_port="fle[9:0].in"/>
         </complete>
         <complete name="clks" input="clb.clk" output="fle[9:0].clk">
         </complete>
@@ -339,10 +341,7 @@
       <pinlocations pattern="spread"/>
 
       <!-- Place this general purpose logic block in any unspecified column -->
-      <gridlocations>
-        <loc type="fill" priority="1"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
     <!-- Define general purpose logic block (CLB) ends -->
   </complexblocklist>
   <power>
