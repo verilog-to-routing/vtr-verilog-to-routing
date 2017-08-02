@@ -336,16 +336,14 @@ class NdMatrix : public NdMatrixBase<T,N> {
         //Returns a proxy-object to allow chained array-style indexing  (N >= 2 case)
         //template<typename = typename std::enable_if<N >= 2>::type, typename T1=T>
         const NdMatrixProxy<T,N-1> operator[](size_t index) const {
+            VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
+            VTR_ASSERT_SAFE_MSG(this->dim_size(1) > 0, "Can not index into size zero dimension");
             VTR_ASSERT_SAFE_MSG(index >= this->dim_ranges_[0].begin_index(), "Index out of range (below dimension minimum)");
             VTR_ASSERT_SAFE_MSG(index < this->dim_ranges_[0].end_index(), "Index out of range (above dimension maximum)");
 
             //The elements are stored in zero-indexed form, so adjust for any 
             //non-zero minimum index in this dimension
             size_t effective_index = index - this->dim_ranges_[0].begin_index();
-
-            VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
-            VTR_ASSERT_SAFE_MSG(this->dim_size(1) > 0, "Can not index into size zero dimension");
-            VTR_ASSERT_SAFE_MSG(index < this->dim_size(0), "Can not access beyond dimension size (would be out-of-range)");
 
             //Calculate the stride for the current dimension
             size_t dim_stride = this->size() / this->dim_size(0);
@@ -354,7 +352,7 @@ class NdMatrix : public NdMatrixBase<T,N> {
             size_t next_dim_stride = dim_stride / this->dim_size(1);
 
             //Peel off the first dimension
-            return NdMatrixProxy<T,N-1>(this->dim_ranges_.data(),                        //Pass the dimension information
+            return NdMatrixProxy<T,N-1>(this->dim_ranges_.data(),                      //Pass the dimension information
                                       1,                                               //Pass the next dimension
                                       next_dim_stride,                                 //Pass the stride for the next dimension
                                       this->data_.get() + dim_stride*effective_index); //Advance to index in this dimension
@@ -378,6 +376,7 @@ class NdMatrix<T,1> : public NdMatrixBase<T,1> {
     public:
         //Access an element (immutable)
         const T& operator[](size_t index) const {
+            VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
             VTR_ASSERT_SAFE_MSG(index >= this->dim_ranges_[0].begin_index(), "Index out of range (below dimension minimum)");
             VTR_ASSERT_SAFE_MSG(index < this->dim_ranges_[0].end_index(), "Index out of range (above dimension maximum)");
 
