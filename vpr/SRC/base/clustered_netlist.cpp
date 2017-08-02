@@ -30,14 +30,10 @@ t_type_ptr ClusteredNetlist::block_type(const BlockId id) const {
 	return block_types_[id];
 }
 
-NetId ClusteredNetlist::block_net(const BlockId blk_id, const int pin_index) const {
+NetId ClusteredNetlist::block_net(const BlockId blk_id, const int net_index) const {
 	VTR_ASSERT(valid_block_id(blk_id));
 
-	std::vector<PinId> pin_ids = block_pins_[blk_id];
-	if (!valid_pin_id(pin_ids[pin_index]))
-		return NetId::INVALID();
-	else
-		return pin_net(pin_ids[pin_index]);
+	return block_nets_[blk_id][net_index];
 }
 
 /*
@@ -133,6 +129,13 @@ BlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type_ptr ty
 	block_pbs_[blk_id]->name = vtr::strdup(name);
 	block_types_.insert(blk_id, type);
 
+	block_nets_.insert(blk_id, std::vector<NetId>());
+
+	//Allocate and initialize every potential net of the block
+	for (int i = 0; i < type->num_pins; i++) {
+		block_nets_[blk_id].push_back(NetId::INVALID());
+	}
+
 	//Check post-conditions: size
 	VTR_ASSERT(validate_block_sizes());
 
@@ -141,6 +144,13 @@ BlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type_ptr ty
 	VTR_ASSERT(block_type(blk_id) == type);
 
 	return blk_id;
+}
+
+void ClusteredNetlist::set_block_net(const BlockId blk_id, const int pin_index, const NetId net_id) {
+	VTR_ASSERT(valid_block_id(blk_id));
+	VTR_ASSERT(valid_net_id(net_id));
+
+	block_nets_[blk_id][pin_index] = net_id;
 }
 
 PortId ClusteredNetlist::create_port(const BlockId blk_id, const std::string name, BitIndex width, PortType port_type) {
@@ -161,6 +171,11 @@ PinId ClusteredNetlist::create_pin(const PortId port_id, BitIndex port_bit, cons
 	PinId pin_id = BaseNetlist::create_pin(port_id, port_bit, net_id, pin_type_, port_type_, is_const);
 
 	pin_index_.push_back(pin_index);
+
+	BlockId block_id = port_block(port_id);
+	
+	VTR_ASSERT(pin_index < block_type(block_id)->num_pins);
+	block_nets_[block_id][pin_index] = net_id;
 
 	VTR_ASSERT(validate_pin_sizes());
 
@@ -222,7 +237,8 @@ void ClusteredNetlist::set_fixed(NetId net_id, bool state) {
 */
 bool ClusteredNetlist::validate_block_sizes() const {
 	if (block_pbs_.size() != block_ids_.size()
-		|| block_types_.size() != block_ids_.size()) {
+		|| block_types_.size() != block_ids_.size()
+		|| block_nets_.size() != block_ids_.size()) {
 		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent block data sizes");
 	}
 	return BaseNetlist::validate_block_sizes();

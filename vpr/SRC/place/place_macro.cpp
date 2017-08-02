@@ -204,22 +204,22 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 	 * Head - blocks with to_pin OPEN and from_pin connected                 *
 	 * Tail - blocks with to_pin connected and from_pin OPEN                 */
 
-	int iblk, from_iblk_pin, to_iblk_pin, from_inet, to_inet, from_idirect, to_idirect, 
+	int from_iblk_pin, to_iblk_pin, from_idirect, to_idirect, 
 			from_src_or_sink, to_src_or_sink;
-	int next_iblk, next_inet, curr_inet;
+	NetId to_net_id, from_net_id, next_net_id, curr_net_id;
+	BlockId next_blk_id;
 	int num_blk_pins, num_macro; 
 	int imember;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	num_macro = 0;
-	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
-
-		num_blk_pins = cluster_ctx.clb_nlist.block_type((BlockId)iblk)->num_pins;
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		num_blk_pins = cluster_ctx.clb_nlist.block_type(blk_id)->num_pins;
 		for (to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
 			
-			to_inet = cluster_ctx.blocks[iblk].nets[to_iblk_pin];
-			to_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)iblk)->index][to_iblk_pin];
-			to_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)iblk)->index][to_iblk_pin];
+			to_net_id = cluster_ctx.clb_nlist.block_net(blk_id, to_iblk_pin);
+			to_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(blk_id)->index][to_iblk_pin];
+			to_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type(blk_id)->index][to_iblk_pin];
 			
 			// Identify potential macro head blocks (i.e. start of a macro)
             //
@@ -232,21 +232,21 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
             // head blocks.
 			if (   to_src_or_sink == SINK 
                 && to_idirect != OPEN 
-                && (to_inet == OPEN || (is_constant_clb_net(to_inet) && !net_is_driven_by_direct(to_inet)))) {
+                && (to_net_id == NetId::INVALID() || (is_constant_clb_net((size_t)to_net_id) && !net_is_driven_by_direct((size_t)to_net_id)))) {
 
 				for (from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
-					from_inet = cluster_ctx.blocks[iblk].nets[from_iblk_pin];
-					from_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)iblk)->index][from_iblk_pin];
-					from_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)iblk)->index][from_iblk_pin];
+					from_net_id = cluster_ctx.clb_nlist.block_net(blk_id, from_iblk_pin);
+					from_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(blk_id)->index][from_iblk_pin];
+					from_src_or_sink = f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type(blk_id)->index][from_iblk_pin];
 
 					// Confirm whether this is a head macro
                     //
                     // The output SOURCE (from_pin) of a true head macro will:
                     //  * drive another block with the same direct connection
-					if (from_src_or_sink == SOURCE && to_idirect == from_idirect && from_inet != OPEN) {
+					if (from_src_or_sink == SOURCE && to_idirect == from_idirect && from_net_id != NetId::INVALID()) {
 						
 						// Mark down that this is the first block in the macro
-						pl_macro_member_blk_num_of_this_blk[0] = iblk;
+						pl_macro_member_blk_num_of_this_blk[0] = (size_t)blk_id;
 						pl_macro_idirect[num_macro] = to_idirect;
 						
 						// Increment the num_member count.
@@ -256,26 +256,25 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 						// there are at least 2 members - 1 head and 1 tail.
 						
 						// Initialize the variables
-						next_inet = from_inet;
-						next_iblk = iblk;
+						next_net_id = from_net_id;
+						next_blk_id = blk_id;
 
 						// Start finding the other members
-						while (next_inet != OPEN) {
-
-							curr_inet = next_inet;
+						while (next_net_id != NetId::INVALID()) {
+							curr_net_id = next_net_id;
 							
 							// Assume that carry chains only has 1 sink - direct connection
-							VTR_ASSERT(cluster_ctx.clb_nlist.net_sinks((NetId)curr_inet).size() == 1);
-							next_iblk = (size_t)cluster_ctx.clb_nlist.net_pin_block((NetId)curr_inet, 1);			
+							VTR_ASSERT(cluster_ctx.clb_nlist.net_sinks(curr_net_id).size() == 1);
+							next_blk_id = cluster_ctx.clb_nlist.net_pin_block(curr_net_id, 1);			
 							
 							// Assume that the from_iblk_pin index is the same for the next block
-							VTR_ASSERT(f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)next_iblk)->index][from_iblk_pin] == from_idirect
-									&& f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type((BlockId)next_iblk)->index][from_iblk_pin] == SOURCE);
-							next_inet = cluster_ctx.blocks[next_iblk].nets[from_iblk_pin];
+							VTR_ASSERT(f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(next_blk_id)->index][from_iblk_pin] == from_idirect
+									&& f_direct_type_from_blk_pin[cluster_ctx.clb_nlist.block_type(next_blk_id)->index][from_iblk_pin] == SOURCE);
+							next_net_id = cluster_ctx.clb_nlist.block_net(next_blk_id, from_iblk_pin);
 
 							// Mark down this block as a member of the macro
 							imember = pl_macro_num_members[num_macro];
-							pl_macro_member_blk_num_of_this_blk[imember] = next_iblk;
+							pl_macro_member_blk_num_of_this_blk[imember] = (size_t)next_blk_id;
 
 							// Increment the num_member count.
 							pl_macro_num_members[num_macro]++;

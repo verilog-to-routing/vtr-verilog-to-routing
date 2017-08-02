@@ -761,24 +761,26 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
 
 	clb_opins_used_locally.resize((int) cluster_ctx.clb_nlist.blocks().size());
 
-	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
-		type = cluster_ctx.clb_nlist.block_type((BlockId) iblk);
-		get_class_range_for_block(iblk, &class_low, &class_high);
-		clb_opins_used_locally[iblk].resize(type->num_class);
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		type = cluster_ctx.clb_nlist.block_type(blk_id);
+		get_class_range_for_block((size_t)blk_id, &class_low, &class_high);
+		clb_opins_used_locally[(size_t)blk_id].resize(type->num_class);
 
 		for (clb_pin = 0; clb_pin < type->num_pins; clb_pin++) {
 			// another hack to avoid I/Os, whole function needs a rethink
-			if(type == device_ctx.IO_TYPE) {
+			if(type == device_ctx.IO_TYPE)
 				continue;
-			}
-		
-			if ((cluster_ctx.blocks[iblk].nets[clb_pin] != OPEN
-					&& cluster_ctx.clb_nlist.net_sinks((NetId)cluster_ctx.blocks[iblk].nets[clb_pin]).size() == 0) || cluster_ctx.blocks[iblk].nets[clb_pin] == OPEN) {
-                                iclass = type->pin_class[clb_pin];
+			
+			if ((cluster_ctx.clb_nlist.block_net(blk_id, clb_pin) != NetId::INVALID()
+					&& cluster_ctx.clb_nlist.net_sinks(cluster_ctx.clb_nlist.block_net(blk_id, clb_pin)).size() == 0)
+					|| cluster_ctx.clb_nlist.block_net(blk_id, clb_pin) == NetId::INVALID()) {
+                
+				iclass = type->pin_class[clb_pin];
+				
 				if(type->class_inf[iclass].type == DRIVER) {
 					/* Check to make sure class is in same range as that assigned to block */
 					VTR_ASSERT(iclass >= class_low && iclass <= class_high);
-					clb_opins_used_locally[iblk][iclass].emplace_back();
+					clb_opins_used_locally[(size_t)blk_id][iclass].emplace_back();
 				}
 			}
 		}

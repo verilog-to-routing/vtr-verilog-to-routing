@@ -2243,16 +2243,16 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
 
 
 static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
-	int k, netnum, iclass;
+	int k, iclass;
 	BlockId fanblk;
 
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (k = 0; k < type->num_pins; k++) { /* Each pin on a CLB */
-		netnum = cluster_ctx.blocks[bnum].nets[k];
+		NetId net_id = cluster_ctx.clb_nlist.block_net((BlockId)bnum, k);
 
-		if (netnum == OPEN)
+		if (net_id == NetId::INVALID())
 			continue;
 
 		iclass = type->pin_class[k];
@@ -2260,16 +2260,16 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 		if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
 			if (draw_state->block_color[bnum] == SELECTED_COLOR) {
 				/* If block already highlighted, de-highlight the fanout. (the deselect case)*/
-				draw_state->net_color[netnum] = BLACK;
-				for (auto pin_id : cluster_ctx.clb_nlist.net_sinks((NetId)netnum)) {
+				draw_state->net_color[(size_t)net_id] = BLACK;
+				for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 					fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
 					draw_reset_blk_color(fanblk);
 				}
 			}
 			else {
 				/* Highlight the fanout */
-				draw_state->net_color[netnum] = DRIVES_IT_COLOR;
-				for (auto pin_id : cluster_ctx.clb_nlist.net_sinks((NetId)netnum)) {
+				draw_state->net_color[(size_t)net_id] = DRIVES_IT_COLOR;
+				for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 					fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
 					draw_state->block_color[(size_t)fanblk] = DRIVES_IT_COLOR;
 				}
@@ -2278,14 +2278,14 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 		else { /* This net is fanin to the block. */
 			if (draw_state->block_color[bnum] == SELECTED_COLOR) {
 				/* If block already highlighted, de-highlight the fanin. (the deselect case)*/
-				draw_state->net_color[netnum] = BLACK;
-				fanblk = cluster_ctx.clb_nlist.net_driver_block((NetId)netnum); /* DRIVER to net */
+				draw_state->net_color[(size_t)net_id] = BLACK;
+				fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
 				draw_reset_blk_color(fanblk);
 			}
 			else {
 				/* Highlight the fanin */
-				draw_state->net_color[netnum] = DRIVEN_BY_IT_COLOR;
-				fanblk = cluster_ctx.clb_nlist.net_driver_block((NetId)netnum); /* DRIVER to net */
+				draw_state->net_color[(size_t)net_id] = DRIVEN_BY_IT_COLOR;
+				fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
 				draw_state->block_color[(size_t)fanblk] = DRIVEN_BY_IT_COLOR;
 			}
 		}

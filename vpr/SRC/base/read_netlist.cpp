@@ -813,11 +813,12 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 		const t_block block_list[],
 		const std::vector<std::string>& circuit_clocks,
         ClusteredNetlist* clb_nlist) {
-	int i, j, k, ipin, net_id, num_tokens;
+	int i, j, k, ipin, num_tokens;
 	int ext_ncount = 0;
 	int *count; 
 	t_hash **ext_nhash;
 	t_pb_graph_pin *pb_graph_pin;
+	NetId clb_net_id;
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -849,8 +850,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
                                                 atom_ctx.nlist.net_name(atom_net_id).c_str(),
                                                 &ext_ncount);
-
-					NetId clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
+					clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
 					clb_nlist->create_pin(input_port_id, (BitIndex)k, clb_net_id, PinType::SINK, PortType::INPUT, ipin);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -865,13 +865,13 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 			for (k = 0; k < clb_nlist->block_pb((BlockId)i)->pb_graph_node->num_output_pins[j]; k++) {
 				pb_graph_pin = &clb_nlist->block_pb((BlockId)i)->pb_graph_node->output_pins[j][k];
 				VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
+
                 AtomNetId atom_net_id = clb_nlist->block_pb((BlockId)i)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 				if (atom_net_id) {
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
                                                 atom_ctx.nlist.net_name(atom_net_id).c_str(),
                                                 &ext_ncount);
-
-					NetId clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
+					clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
 					clb_nlist->create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, PortType::OUTPUT, ipin);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -892,8 +892,7 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
                                                 atom_ctx.nlist.net_name(atom_net_id).c_str(),
                                                 &ext_ncount);
-
-					NetId clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
+					clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
 					clb_nlist->create_pin(clock_port_id, (BitIndex)k, clb_net_id, PinType::SINK, PortType::CLOCK, ipin);
 				} else {
 					block_list[i].nets[ipin] = OPEN;
@@ -910,42 +909,43 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 
 	/* complete load of external nets so that each net points back to the blocks,
      * and blocks point back to net pins */
-	for (i = 0; i < L_num_blocks; i++) {
+	for (auto blk_id : clb_nlist->blocks()) {
 		ipin = 0;
-		for (j = 0; j < clb_nlist->block_type((BlockId)i)->num_pins; j++) {
+		for (j = 0; j < clb_nlist->block_type(blk_id)->num_pins; j++) {
 			//Iterate through each pin of the block, and see if there is a net allocated/used for it
-			net_id = block_list[i].nets[j];
+			clb_net_id = clb_nlist->block_net(blk_id, j);
 
-			if (net_id != OPEN) {
+			if (clb_net_id != NetId::INVALID()) {
 				//Verify old and new CLB netlists have the same # of pins per net
-				if (RECEIVER == clb_nlist->block_type((BlockId)i)->class_inf[clb_nlist->block_type((BlockId)i)->pin_class[j]].type) {
-					count[net_id]++;
+				if (RECEIVER == clb_nlist->block_type(blk_id)->class_inf[clb_nlist->block_type(blk_id)->pin_class[j]].type) {
+					count[(size_t)clb_net_id]++;
 
-					if (count[net_id] > (int)clb_nlist->net_sinks((NetId)net_id).size()) {
+					if (count[(size_t)clb_net_id] > (int)clb_nlist->net_sinks(clb_net_id).size()) {
 						vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 								"net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n",
-								clb_nlist->net_name((NetId)net_id), net_id, count[net_id],
-								clb_nlist->net_sinks((NetId)net_id).size());
+								clb_nlist->net_name(clb_net_id), (size_t)clb_net_id, count[(size_t)clb_net_id],
+								clb_nlist->net_sinks(clb_net_id).size());
 					}
 
 					//Asserts the BlockId is the same when NetId & pin BitIndex is provided
-					VTR_ASSERT((BlockId)i == clb_nlist->pin_block(*(clb_nlist->net_pins((NetId)net_id).begin() + count[net_id]))); //TODO: Remove after t_block/t_netlist
+					VTR_ASSERT(blk_id == clb_nlist->pin_block(*(clb_nlist->net_pins(clb_net_id).begin() + count[(size_t)clb_net_id]))); //TODO: Remove after t_block/t_netlist
 					//Asserts the block's pin index is the same
-					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins((NetId)net_id).begin() + count[net_id]))); //TODO: Remove after t_block/t_netlist
-					VTR_ASSERT(j == clb_nlist->pin_index((NetId)net_id, count[net_id]));
+					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins(clb_net_id).begin() + count[(size_t)clb_net_id]))); //TODO: Remove after t_block/t_netlist
+					VTR_ASSERT(j == clb_nlist->pin_index(clb_net_id, count[(size_t)clb_net_id]));
 
-					if (clb_nlist->block_type((BlockId)i)->is_global_pin[j])
-						clb_nlist->set_global((NetId)net_id, true);
+					if (clb_nlist->block_type(blk_id)->is_global_pin[j])
+						clb_nlist->set_global(clb_net_id, true);
                     /* Error check performed later to ensure no mixing of global and non-global signals */
 
                     //Mark the net pin numbers on the block
-                    block_list[i].net_pins[j] = count[net_id]; //A sink
+                    block_list[(size_t)blk_id].net_pins[j] = count[(size_t)clb_net_id]; //A sink
 
 				} else {
-					VTR_ASSERT(DRIVER == clb_nlist->block_type((BlockId)i)->class_inf[clb_nlist->block_type((BlockId)i)->pin_class[j]].type);
-
+					VTR_ASSERT(DRIVER == clb_nlist->block_type(blk_id)->class_inf[clb_nlist->block_type(blk_id)->pin_class[j]].type);
+					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins(clb_net_id).begin()))); //TODO: Remove after t_block/t_netlist
+					VTR_ASSERT(j == clb_nlist->pin_index(clb_net_id, 0));
                     //Mark the net pin numbers on the block
-                    block_list[i].net_pins[j] = 0; //The driver
+                    block_list[(size_t)blk_id].net_pins[j] = 0; //The driver
 				}
 			}
 		}
@@ -953,18 +953,18 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 
 	/* Error check global and non global signals */
     VTR_ASSERT(ext_ncount == static_cast<int>(clb_nlist->nets().size()));
-	for (auto clb_net_id : clb_nlist->nets()) {
-		for (auto pin_id : clb_nlist->net_sinks(clb_net_id)) {
-			bool is_global_net = clb_nlist->net_global(clb_net_id);
+	for (auto net_id : clb_nlist->nets()) {
+		for (auto pin_id : clb_nlist->net_sinks(net_id)) {
+			bool is_global_net = clb_nlist->net_global(net_id);
 			if (clb_nlist->block_type(clb_nlist->pin_block(pin_id))->is_global_pin[clb_nlist->pin_index(pin_id)] != is_global_net) {
 				vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 					"Netlist attempts to connect net %s to both global and non-global pins.\n",
-					clb_nlist->net_name(clb_net_id));
+					clb_nlist->net_name(net_id));
 			}
 		}
 		for (j = 0; j < num_tokens; j++) {
-			if (0 == clb_nlist->net_name(clb_net_id).compare(circuit_clocks[j].c_str())) {
-				VTR_ASSERT(clb_nlist->net_global(clb_net_id));
+			if (0 == clb_nlist->net_name(net_id).compare(circuit_clocks[j].c_str())) {
+				VTR_ASSERT(clb_nlist->net_global(net_id));
 			}
 		}
 	}

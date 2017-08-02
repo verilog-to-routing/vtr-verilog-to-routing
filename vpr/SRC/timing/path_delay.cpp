@@ -3445,10 +3445,9 @@ static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pi
             //Now that we have a complex block pin, we can look-up its connected net in the CLB netlist
             pb_graph_pin = timing_ctx.tnodes[inode_search].pb_graph_pin;
             int ipin = pb_graph_pin->pin_count_in_cluster; //Pin into the CLB
-            int inet = cluster_ctx.blocks[timing_ctx.tnodes[inode_search].block].nets[ipin]; //Net index into the clb netlist
-            VTR_ASSERT(inet != OPEN);
-
-            return cluster_ctx.clb_nlist.net_name((NetId) inet).c_str();
+            
+			NetId net_id = cluster_ctx.clb_nlist.block_net((BlockId)timing_ctx.tnodes[inode_search].block, ipin); //Net index into the clb netlist
+            return cluster_ctx.clb_nlist.net_name(net_id).c_str();
         }
 	}
 }

@@ -468,25 +468,24 @@ void print_lambda(void) {
 	 * count inputs which are hooked to global nets (i.e. the clock     *
 	 * when it is marked global).                                       */
 
-	int bnum, ipin;
+	int ipin, iclass;
 	int num_inputs_used = 0;
-	int iclass, inet;
 	float lambda;
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-	for (bnum = 0; bnum < (int) cluster_ctx.clb_nlist.blocks().size(); bnum++) {
-		type = cluster_ctx.clb_nlist.block_type((BlockId) bnum);
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		type = cluster_ctx.clb_nlist.block_type(blk_id);
 		VTR_ASSERT(type != NULL);
 		if (type != device_ctx.IO_TYPE) {
 			for (ipin = 0; ipin < type->num_pins; ipin++) {
 				iclass = type->pin_class[ipin];
 				if (type->class_inf[iclass].type == RECEIVER) {
-					inet = cluster_ctx.blocks[bnum].nets[ipin];
-					if (inet != OPEN) /* Pin is connected? */
-						if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) /* Not a global clock */
+					NetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
+					if (net_id != NetId::INVALID()) /* Pin is connected? */
+						if (!cluster_ctx.clb_nlist.net_global(net_id)) /* Not a global clock */
 							num_inputs_used++;
 				}
 			}

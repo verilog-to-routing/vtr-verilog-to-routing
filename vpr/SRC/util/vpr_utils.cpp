@@ -441,13 +441,13 @@ std::tuple<NetId, int, int> find_pb_route_clb_input_net_pin(BlockId clb, int sin
     VTR_ASSERT(clb_pin >= 0);
 
     //clb_pin should be a top-level CLB input
-    int clb_net_idx = cluster_ctx.blocks[(size_t)clb].nets[clb_pin];
+	NetId clb_net_idx = cluster_ctx.clb_nlist.block_net(clb, clb_pin);
     int clb_net_pin_idx = cluster_ctx.blocks[(size_t)clb].net_pins[clb_pin];
 
-    VTR_ASSERT(clb_net_idx >= 0);
+    VTR_ASSERT(clb_net_idx != NetId::INVALID());
     VTR_ASSERT(clb_net_pin_idx >= 0);
 
-	return std::tuple<NetId,int,int>((NetId)clb_net_idx, clb_pin, clb_net_pin_idx);
+	return std::tuple<NetId,int,int>(clb_net_idx, clb_pin, clb_net_pin_idx);
 }
 
 //Return the pb pin index corresponding to the pin clb_pin on block clb
@@ -1966,18 +1966,19 @@ void place_sync_external_block_connections(BlockId iblk) {
 
     /* Sync external blocks and nets */
     for (int j = 0; j < max_num_block_pins; j++) {
-        int inet = cluster_ctx.blocks[(size_t)iblk].nets[j];
-        if (inet != OPEN && place_ctx.block_locs[(size_t)iblk].z > 0) {
-            VTR_ASSERT(cluster_ctx.blocks[(size_t)iblk].nets[j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins] == OPEN); //TODO: Convert these into checks that the ID's are not equal to j + place_ctx[...] + ...
-            VTR_ASSERT(cluster_ctx.blocks[(size_t)iblk].net_pins[j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins] == OPEN);
+		NetId net_id = cluster_ctx.clb_nlist.block_net(iblk, j);
+        if (net_id != NetId::INVALID() && place_ctx.block_locs[(size_t)iblk].z > 0) {
+            VTR_ASSERT(cluster_ctx.blocks[(size_t)iblk].net_pins[j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins] == OPEN); //TODO: Convert these into checks that the ID's are not equal to j + place_ctx[...] + ...
 
             //Update the block to net references
             cluster_ctx.blocks[(size_t)iblk].nets[j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins] = cluster_ctx.blocks[(size_t)iblk].nets[j];
             cluster_ctx.blocks[(size_t)iblk].net_pins[j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins] = cluster_ctx.blocks[(size_t)iblk].net_pins[j];
 
+			cluster_ctx.clb_nlist.set_block_net(iblk, j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins, net_id);
+
             //Update the net to block references
 			size_t k = 0;
-			for (auto pin_id : cluster_ctx.clb_nlist.net_pins((NetId)inet)) {
+			for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
 				if (cluster_ctx.clb_nlist.pin_block(pin_id) == iblk && cluster_ctx.clb_nlist.pin_index(pin_id) == j) {
 					cluster_ctx.clb_nlist.set_pin_index(pin_id, j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins);
 					break;
@@ -1985,7 +1986,7 @@ void place_sync_external_block_connections(BlockId iblk) {
 				k++;
 			}
 
-            VTR_ASSERT(k < cluster_ctx.clb_nlist.net_pins((NetId)inet).size());
+            VTR_ASSERT(k < cluster_ctx.clb_nlist.net_pins(net_id).size());
         }
     }
 

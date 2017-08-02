@@ -21,9 +21,8 @@ void print_netlist(char *foutput, char *net_file) {
 	/* Prints out the netlist related data structures into the file    *
 	 * fname.                                                          */
 
-	unsigned int i, j;
-	int max_pin;
-	int num_global_nets;
+	unsigned int j;
+	int max_pin, num_global_nets;
 	int L_num_p_inputs, L_num_p_outputs;
 	FILE *fp;
 
@@ -79,16 +78,16 @@ void print_netlist(char *foutput, char *net_file) {
 
 	fprintf(fp, "\nBlock\tName\t\tType\tPin Connections\n\n");
 
-	for (i = 0; i < (unsigned int)cluster_ctx.clb_nlist.blocks().size(); i++) {
-		fprintf(fp, "\n%d\t%s\t", i, cluster_ctx.clb_nlist.block_name((BlockId)i).c_str());
-		if (cluster_ctx.clb_nlist.block_name((BlockId)i).length() < 8)
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		fprintf(fp, "\n%lu\t%s\t", (size_t)blk_id, cluster_ctx.clb_nlist.block_name(blk_id).c_str());
+		if (cluster_ctx.clb_nlist.block_name(blk_id).length() < 8)
 			fprintf(fp, "\t"); /* Name field is 16 chars wide */
-		fprintf(fp, "%s", cluster_ctx.clb_nlist.block_type((BlockId)i)->name);
+		fprintf(fp, "%s", cluster_ctx.clb_nlist.block_type(blk_id)->name);
 
-		max_pin = cluster_ctx.clb_nlist.block_type((BlockId)i)->num_pins;
+		max_pin = cluster_ctx.clb_nlist.block_type(blk_id)->num_pins;
 
 		for (j = 0; j < (unsigned int)max_pin; j++)
-			print_pinnum(fp, cluster_ctx.blocks[i].nets[j]);
+			print_pinnum(fp, (size_t)cluster_ctx.clb_nlist.block_net(blk_id,j));
 	}
 
 	fprintf(fp, "\n");
