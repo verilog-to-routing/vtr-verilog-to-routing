@@ -395,17 +395,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		hill_climbing_inputs_avail = NULL; /* if used, die hard */
 	}
 
-	/* TODO: make better estimate for device_ctx.nx and device_ctx.ny, was initializing device_ctx.nx = device_ctx.ny = 1 */
-    VTR_ASSERT(arch->grid_layouts.size() == 1);
-    if (arch->grid_layouts[0].grid_type == GridDefType::AUTO) {
-        device_ctx.nx = 1;
-        device_ctx.ny = 1;
-    } else {
-        VTR_ASSERT(arch->grid_layouts[0].grid_type == GridDefType::FIXED);
-        device_ctx.nx = arch->grid_layouts[0].width;
-        device_ctx.ny = arch->grid_layouts[0].height;
-    }
-
 	check_clocks(is_clock);
 #if 0
 	check_for_duplicate_inputs ();
