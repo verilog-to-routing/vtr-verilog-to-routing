@@ -162,6 +162,7 @@ static DeviceGrid create_device_grid(const t_grid_def& grid_def, size_t width, s
 
     //Process the gird location specifications from lowest to highest priority,
     //this ensure higher priority specifications override lower priority specifications
+    std::set<t_type_descriptor*> seen_types;
     for (const auto& grid_loc_def : grid_loc_defs) {
         //Fill in the block types according to the specification
 
@@ -172,6 +173,8 @@ static DeviceGrid create_device_grid(const t_grid_def& grid_def, size_t width, s
                     "Failed to find block type '%s' for grid location specification",
                     grid_loc_def.block_type.c_str());
         }
+
+        seen_types.insert(type);
 
         t_formula_data vars;
         vars.set_var_value("W", width);
@@ -299,6 +302,19 @@ static DeviceGrid create_device_grid(const t_grid_def& grid_def, size_t width, s
                     }
                 }
             }
+        }
+    }
+
+    //Warn if any types were not specified in the grid layout
+    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
+        t_type_descriptor* type = &device_ctx.block_types[itype];
+
+        if (type == empty_type) continue; //Don't worry if empty hasn't been specified
+
+        if (!seen_types.count(type)) {
+            vtr::printf_warning(__FILE__, __LINE__,
+                    "Block type '%s' was not specified in device grid layout\n",
+                    type->name);
         }
     }
 
