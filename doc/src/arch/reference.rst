@@ -140,7 +140,10 @@ The valid tags within the ``<layout>`` tag are:
 
     Defines a device grid layout with fixed dimensions.
 
-Any ``<auto_layout>`` or ``<fixed_layout>`` tag may contain a set of grid location tags. 
+Only one ``<auto_layout>``, or one-or-more ``<fixed_layout>`` tags can be specified at a time.
+``<auto_layout>`` and ``<fixed_layout>`` can not be specified together.
+
+Each ``<auto_layout>`` or ``<fixed_layout>`` tag should contain a set of grid location tags.
 
 Grid Location Priorities
 ~~~~~~~~~~~~~~~~~~~~~~~~
