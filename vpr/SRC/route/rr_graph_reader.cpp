@@ -151,7 +151,7 @@ void load_rr_file(const t_graph_type graph_type,
 
         process_rr_node_indices(L_nx, L_ny);
 
-        init_fan_in(L_nx, L_ny, device_ctx.rr_nodes, device_ctx.rr_node_indices, device_ctx.grid, device_ctx.num_rr_nodes);
+        init_fan_in(device_ctx.grid, device_ctx.rr_nodes, device_ctx.rr_node_indices, device_ctx.num_rr_nodes);
         
         //sets the cost index and seg id information
         next_component = get_single_child(rr_graph, "rr_nodes", loc_data);

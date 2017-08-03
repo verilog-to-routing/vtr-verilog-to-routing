@@ -1085,7 +1085,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         }
     }
 
-    init_fan_in(grid.nx(), grid.ny(), L_rr_node, L_rr_node_indices, grid, num_nodes);
+    init_fan_in(grid, L_rr_node, L_rr_node_indices, num_nodes);
 
     free(opin_mux_size);
 }
@@ -1391,19 +1391,18 @@ static void build_rr_sinks_sources(const int i, const int j,
     }
 }
 
-void init_fan_in(const int L_nx, const int L_ny,
+void init_fan_in(const DeviceGrid& grid,
         t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
-        const DeviceGrid& L_grid, const int num_rr_nodes) {
-    int i;
+        const int num_rr_nodes) {
     /* Loads IPIN, SINK, SOURCE, and OPIN. 
      * Loads IPconst to SINK edges, and SOURCE to OPconst edges */
-    for (i = 0; i < num_rr_nodes; i++) {
+    for (int i = 0; i < num_rr_nodes; i++) {
         L_rr_node[i].set_fan_in(0);
     }
 
-    for (i = 0; i <= (L_nx + 1); ++i) {
-        for (int j = 0; j <= (L_ny + 1); ++j) {
-            t_type_ptr type = L_grid[i][j].type;
+    for (size_t i = 0; i < grid.width(); ++i) {
+        for (size_t j = 0; j < grid.height(); ++j) {
+            t_type_ptr type = grid[i][j].type;
             int num_class = type->num_class;
             t_class *class_inf = type->class_inf;
             int num_pins = type->num_pins;
@@ -1435,7 +1434,7 @@ void init_fan_in(const int L_nx, const int L_ny,
         }
     }
 
-    for (i = 0; i < num_rr_nodes; i++) {
+    for (int i = 0; i < num_rr_nodes; i++) {
         for (int iedge = 0; iedge < L_rr_node[i].num_edges(); iedge++) {
             L_rr_node[L_rr_node[i].edge_sink_node(iedge)].set_fan_in(L_rr_node[L_rr_node[i].edge_sink_node(iedge)].fan_in() + 1);
         }
