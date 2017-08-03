@@ -42,7 +42,7 @@ t_seg_details *alloc_and_load_seg_details(
 		int *num_seg_details = 0);
 
 void alloc_and_load_chan_details( 
-		const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		const bool trim_empty_channels,
 		const bool trim_obs_channels,
@@ -51,26 +51,26 @@ void alloc_and_load_chan_details(
 		t_chan_details& chan_details_x,
 		t_chan_details& chan_details_y);
 t_chan_details init_chan_details( 
-		const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		const int num_seg_details,
 		const t_seg_details *seg_details,
 		const enum e_seg_details_type seg_details_type);
 void obstruct_chan_details( 
-		const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		const bool trim_empty_channels,
 		const bool trim_obs_channels,
 		t_chan_details& chan_details_x,
 		t_chan_details& chan_details_y);
 void adjust_chan_details(
-		const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		t_chan_details& chan_details_x,
 		t_chan_details& chan_details_y);
 void adjust_seg_details(
 		const int x, const int y,
-		const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		t_chan_details& chan_details,
 		const enum e_seg_details_type seg_details_type);

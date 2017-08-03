@@ -329,7 +329,7 @@ t_seg_details *alloc_and_load_seg_details(
    (ie. channel segments) for each horizontal and vertical channel. */
 
 void alloc_and_load_chan_details(
-        const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
         const t_chan_width* nodes_per_chan,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
@@ -338,32 +338,32 @@ void alloc_and_load_chan_details(
         t_chan_details& chan_details_x,
         t_chan_details& chan_details_y) {
 
-    chan_details_x = init_chan_details(L_nx, L_ny, nodes_per_chan,
+    chan_details_x = init_chan_details(grid, nodes_per_chan,
             num_seg_details, seg_details, SEG_DETAILS_X);
-    chan_details_y = init_chan_details(L_nx, L_ny, nodes_per_chan,
+    chan_details_y = init_chan_details(grid, nodes_per_chan,
             num_seg_details, seg_details, SEG_DETAILS_Y);
 
     /* Obstruct channel segment details based on grid block widths/heights */
-    obstruct_chan_details(L_nx, L_ny, nodes_per_chan,
+    obstruct_chan_details(grid, nodes_per_chan,
             trim_empty_channels, trim_obs_channels,
             chan_details_x, chan_details_y);
 
     /* Adjust segment start/end based on obstructed channels, if any */
-    adjust_chan_details(L_nx, L_ny, nodes_per_chan,
+    adjust_chan_details(grid, nodes_per_chan,
             chan_details_x, chan_details_y);
 }
 
 t_chan_details init_chan_details(
-        const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
         const t_chan_width* nodes_per_chan,
         const int num_seg_details,
         const t_seg_details* seg_details,
         const enum e_seg_details_type seg_details_type) {
 
-    t_chan_details chan_details = vtr::Matrix<t_seg_details*>({size_t(L_nx + 1), size_t(L_ny + 1)});
+    t_chan_details chan_details = vtr::Matrix<t_seg_details*>({size_t(grid.nx() + 1), size_t(grid.ny() + 1)});
 
-    for (int x = 0; x <= L_nx; ++x) {
-        for (int y = 0; y <= L_ny; ++y) {
+    for (int x = 0; x <= grid.nx(); ++x) {
+        for (int y = 0; y <= grid.ny(); ++y) {
 
             t_seg_details* p_seg_details = 0;
             p_seg_details = (t_seg_details*) vtr::calloc(nodes_per_chan->max, sizeof (t_seg_details));
@@ -382,11 +382,11 @@ t_chan_details init_chan_details(
 
                 if (seg_details_type == SEG_DETAILS_X) {
                     p_seg_details[i].seg_start = get_seg_start(p_seg_details, i, y, x);
-                    p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, y, L_nx);
+                    p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, y, grid.nx());
                 }
                 if (seg_details_type == SEG_DETAILS_Y) {
                     p_seg_details[i].seg_start = get_seg_start(p_seg_details, i, x, y);
-                    p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, x, L_ny);
+                    p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, x, grid.ny());
                 }
 
                 int length = seg_details[i].length;
@@ -429,7 +429,7 @@ t_chan_details init_chan_details(
 }
 
 void obstruct_chan_details(
-        const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
         const t_chan_width* nodes_per_chan,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
@@ -439,31 +439,31 @@ void obstruct_chan_details(
     auto& device_ctx = g_vpr_ctx.device();
 
     /* Iterate grid to find and obstruct based on multi-width/height blocks */
-    for (int x = 0; x <= L_nx; ++x) {
-        for (int y = 0; y <= L_ny; ++y) {
+    for (int x = 0; x <= grid.nx(); ++x) {
+        for (int y = 0; y <= grid.ny(); ++y) {
 
             if (!trim_obs_channels)
                 continue;
 
-            if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)
+            if (grid[x][y].type == device_ctx.EMPTY_TYPE)
                 continue;
-            if (device_ctx.grid[x][y].width_offset > 0 || device_ctx.grid[x][y].height_offset > 0)
+            if (grid[x][y].width_offset > 0 || grid[x][y].height_offset > 0)
                 continue;
-            if (device_ctx.grid[x][y].type->width == 1 && device_ctx.grid[x][y].type->height == 1)
+            if (grid[x][y].type->width == 1 && grid[x][y].type->height == 1)
                 continue;
 
-            if (device_ctx.grid[x][y].type->height > 1) {
-                for (int dx = 0; dx <= device_ctx.grid[x][y].type->width - 1; ++dx) {
-                    for (int dy = 0; dy < device_ctx.grid[x][y].type->height - 1; ++dy) {
+            if (grid[x][y].type->height > 1) {
+                for (int dx = 0; dx <= grid[x][y].type->width - 1; ++dx) {
+                    for (int dy = 0; dy < grid[x][y].type->height - 1; ++dy) {
                         for (int track = 0; track < nodes_per_chan->max; ++track) {
                             chan_details_x[x + dx][y + dy][track].length = 0;
                         }
                     }
                 }
             }
-            if (device_ctx.grid[x][y].type->width > 1) {
-                for (int dy = 0; dy <= device_ctx.grid[x][y].type->height - 1; ++dy) {
-                    for (int dx = 0; dx < device_ctx.grid[x][y].type->width - 1; ++dx) {
+            if (grid[x][y].type->width > 1) {
+                for (int dy = 0; dy <= grid[x][y].type->height - 1; ++dy) {
+                    for (int dx = 0; dx < grid[x][y].type->width - 1; ++dx) {
                         for (int track = 0; track < nodes_per_chan->max; ++track) {
                             chan_details_y[x + dx][y + dy][track].length = 0;
                         }
@@ -474,32 +474,32 @@ void obstruct_chan_details(
     }
 
     /* Iterate grid again to find and obstruct based on neighboring EMPTY and/or IO types */
-    for (int x = 0; x <= L_nx; ++x) {
-        for (int y = 0; y <= L_ny; ++y) {
+    for (int x = 0; x <= grid.nx(); ++x) {
+        for (int y = 0; y <= grid.ny(); ++y) {
 
             if (!trim_empty_channels)
                 continue;
 
-            if (device_ctx.grid[x][y].type == device_ctx.IO_TYPE) {
+            if (grid[x][y].type == device_ctx.IO_TYPE) {
                 if ((x == 0) || (y == 0))
                     continue;
             }
-            if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE) {
-                if ((x == L_nx) && (device_ctx.grid[x + 1][y].type == device_ctx.IO_TYPE))
+            if (grid[x][y].type == device_ctx.EMPTY_TYPE) {
+                if ((x == grid.nx()) && (grid[x + 1][y].type == device_ctx.IO_TYPE))
                     continue;
-                if ((y == L_ny) && (device_ctx.grid[x][y + 1].type == device_ctx.IO_TYPE))
+                if ((y == grid.ny()) && (grid[x][y + 1].type == device_ctx.IO_TYPE))
                     continue;
             }
 
-            if ((device_ctx.grid[x][y].type == device_ctx.IO_TYPE) || (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)) {
-                if ((device_ctx.grid[x][y + 1].type == device_ctx.IO_TYPE) || (device_ctx.grid[x][y + 1].type == device_ctx.EMPTY_TYPE)) {
+            if ((grid[x][y].type == device_ctx.IO_TYPE) || (grid[x][y].type == device_ctx.EMPTY_TYPE)) {
+                if ((grid[x][y + 1].type == device_ctx.IO_TYPE) || (grid[x][y + 1].type == device_ctx.EMPTY_TYPE)) {
                     for (int track = 0; track < nodes_per_chan->max; ++track) {
                         chan_details_x[x][y][track].length = 0;
                     }
                 }
             }
-            if ((device_ctx.grid[x][y].type == device_ctx.IO_TYPE) || (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)) {
-                if ((device_ctx.grid[x + 1][y].type == device_ctx.IO_TYPE) || (device_ctx.grid[x + 1][y].type == device_ctx.EMPTY_TYPE)) {
+            if ((grid[x][y].type == device_ctx.IO_TYPE) || (grid[x][y].type == device_ctx.EMPTY_TYPE)) {
+                if ((grid[x + 1][y].type == device_ctx.IO_TYPE) || (grid[x + 1][y].type == device_ctx.EMPTY_TYPE)) {
                     for (int track = 0; track < nodes_per_chan->max; ++track) {
                         chan_details_y[x][y][track].length = 0;
                     }
@@ -510,31 +510,31 @@ void obstruct_chan_details(
 }
 
 void adjust_chan_details(
-        const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
         const t_chan_width* nodes_per_chan,
         t_chan_details& chan_details_x,
         t_chan_details& chan_details_y) {
 
-    for (int y = 0; y <= L_ny; ++y) {
-        for (int x = 0; x <= L_nx; ++x) {
+    for (int y = 0; y <= grid.ny(); ++y) {
+        for (int x = 0; x <= grid.nx(); ++x) {
 
             /* Ignore any non-obstructed channel seg_detail structures */
             if (chan_details_x[x][y][0].length > 0)
                 continue;
 
-            adjust_seg_details(x, y, L_nx, L_ny, nodes_per_chan,
+            adjust_seg_details(x, y, grid, nodes_per_chan,
                     chan_details_x, SEG_DETAILS_X);
         }
     }
 
-    for (int x = 0; x <= L_nx; ++x) {
-        for (int y = 0; y <= L_ny; ++y) {
+    for (int x = 0; x <= grid.nx(); ++x) {
+        for (int y = 0; y <= grid.ny(); ++y) {
 
             /* Ignore any non-obstructed channel seg_detail structures */
             if (chan_details_y[x][y][0].length > 0)
                 continue;
 
-            adjust_seg_details(x, y, L_nx, L_ny, nodes_per_chan,
+            adjust_seg_details(x, y, grid, nodes_per_chan,
                     chan_details_y, SEG_DETAILS_Y);
         }
     }
@@ -542,7 +542,7 @@ void adjust_chan_details(
 
 void adjust_seg_details(
         const int x, const int y,
-        const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
         const t_chan_width* nodes_per_chan,
         t_chan_details& chan_details,
         const enum e_seg_details_type seg_details_type) {
@@ -569,14 +569,14 @@ void adjust_seg_details(
 
         int lx = (seg_details_type == SEG_DETAILS_X ? x + 1 : x);
         int ly = (seg_details_type == SEG_DETAILS_X ? y : y + 1);
-        if (lx > L_nx || ly > L_ny || chan_details[lx][ly][track].length == 0)
+        if (lx > grid.nx() || ly > grid.ny() || chan_details[lx][ly][track].length == 0)
             continue;
 
         while (chan_details[lx][ly][track].seg_start <= seg_index) {
             chan_details[lx][ly][track].seg_start = seg_index + 1;
             lx = (seg_details_type == SEG_DETAILS_X ? lx + 1 : lx);
             ly = (seg_details_type == SEG_DETAILS_X ? ly : ly + 1);
-            if (lx > L_nx || ly > L_ny || chan_details[lx][ly][track].length == 0)
+            if (lx > grid.nx() || ly > grid.ny() || chan_details[lx][ly][track].length == 0)
                 break;
         }
     }

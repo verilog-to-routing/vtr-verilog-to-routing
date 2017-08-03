@@ -366,7 +366,7 @@ static void build_rr_graph(
     t_chan_details chan_details_x;
     t_chan_details chan_details_y;
 
-    alloc_and_load_chan_details(L_nx, L_ny, nodes_per_chan,
+    alloc_and_load_chan_details(device_ctx.grid, nodes_per_chan,
             trim_empty_channels, trim_obs_channels,
             num_seg_details, seg_details,
             chan_details_x, chan_details_y);
