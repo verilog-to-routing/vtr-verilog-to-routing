@@ -461,7 +461,7 @@ static void build_rr_graph(
     } else if (BI_DIRECTIONAL == directionality) {
         if (sb_type == CUSTOM) {
             sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
-                    L_nx, L_ny,
+                    device_ctx.grid,
                     switchblocks, nodes_per_chan, directionality);
         } else {
             switch_block_conn = alloc_and_load_switch_block_conn(max_chan_width, sb_type, Fs);
@@ -471,7 +471,7 @@ static void build_rr_graph(
 
         if (sb_type == CUSTOM) {
             sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
-                    L_nx, L_ny,
+                    device_ctx.grid,
                     switchblocks, nodes_per_chan, directionality);
         } else {
             /* it looks like we get unbalanced muxing from this switch block code with Fs > 3 */
