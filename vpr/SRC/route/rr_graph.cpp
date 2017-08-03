@@ -447,8 +447,8 @@ static void build_rr_graph(
     /* These are data structures used by the the unidir opin mapping. They are used 
        to spread connections evenly for each segment type among the available
        wire start points */
-    vtr::NdMatrix<int, 3> Fc_xofs({size_t(L_ny + 1), size_t(L_nx + 1), size_t(num_seg_types)}, 0); //[0..L_ny][0..L_nx][0..num_seg_types-1]
-    vtr::NdMatrix<int, 3> Fc_yofs({size_t(L_nx + 1), size_t(L_ny + 1), size_t(num_seg_types)}, 0); //[0..L_nx][0..L_ny][0..num_seg_types-1]
+    vtr::NdMatrix<int, 3> Fc_xofs({size_t(device_ctx.grid.ny() + 1), size_t(device_ctx.grid.nx() + 1), size_t(num_seg_types)}, 0); //[0..ny][0..nx][0..num_seg_types-1]
+    vtr::NdMatrix<int, 3> Fc_yofs({size_t(device_ctx.grid.nx() + 1), size_t(device_ctx.grid.ny() + 1), size_t(num_seg_types)}, 0); //[0..nx][0..ny][0..num_seg_types-1]
 
     /* START SB LOOKUP */
     /* Alloc and load the switch block lookup */
