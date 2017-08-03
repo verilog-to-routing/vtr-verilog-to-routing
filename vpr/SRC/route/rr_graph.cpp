@@ -427,7 +427,7 @@ static void build_rr_graph(
     /* Alloc node lookups, count nodes, alloc rr nodes */
     device_ctx.num_rr_nodes = 0;
 
-    device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, L_nx, L_ny,
+    device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, device_ctx.grid,
             &device_ctx.num_rr_nodes, chan_details_x, chan_details_y);
     device_ctx.rr_nodes = new t_rr_node[device_ctx.num_rr_nodes];
     bool *L_rr_edge_done = (bool *) vtr::malloc(sizeof (bool) * device_ctx.num_rr_nodes);

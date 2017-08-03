@@ -4,6 +4,7 @@
 #include "build_switchblocks.h"
 #include "rr_graph_util.h"
 #include "rr_types.h"
+#include "device_grid.h"
 
 /******************* Types shared by rr_graph2 functions *********************/
 
@@ -15,7 +16,7 @@ enum e_seg_details_type {
 
 t_rr_node_indices alloc_and_load_rr_node_indices(
 		const int max_chan_width,
-		const int L_nx, const int L_ny, 
+        const DeviceGrid& grid,
 		int *index, 
 		const t_chan_details& chan_details_x,
 		const t_chan_details& chan_details_y);

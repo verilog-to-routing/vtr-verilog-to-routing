@@ -1170,47 +1170,44 @@ static void load_chan_rr_indices(
 }
 
 t_rr_node_indices alloc_and_load_rr_node_indices(
-        const int max_chan_width, const int L_nx, const int L_ny, int *index,
+        const int max_chan_width, const DeviceGrid& grid, int *index,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y) {
 
     /* Allocates and loads all the structures needed for fast lookups of the   *
      * index of an rr_node.  rr_node_indices is a matrix containing the index  *
      * of the *first* rr_node at a given (i,j) location.                       */
 
-    int i, j, k;
     t_rr_node_indices indices;
     vector<int> tmp;
     t_type_ptr type;
 
-    auto& device_ctx = g_vpr_ctx.device();
-
     /* Alloc the lookup table */
     indices.resize(NUM_RR_TYPES);
 
-    indices[IPIN].resize(L_nx + 2);
-    indices[SINK].resize(L_nx + 2);
-    for (i = 0; i <= (L_nx + 1); ++i) {
-        indices[IPIN][i].resize(L_ny + 2);
-        indices[SINK][i].resize(L_ny + 2);
+    indices[IPIN].resize(grid.width());
+    indices[SINK].resize(grid.width());
+    for (size_t i = 0; i < grid.width(); ++i) {
+        indices[IPIN][i].resize(grid.height());
+        indices[SINK][i].resize(grid.height());
     }
 
     /* Count indices for block nodes */
-    for (i = 0; i <= (L_nx + 1); i++) {
-        for (j = 0; j <= (L_ny + 1); j++) {
-            if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-                type = device_ctx.grid[i][j].type;
+    for (size_t i = 0; i < grid.width(); i++) {
+        for (size_t j = 0; j < grid.height(); j++) {
+            if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
+                type = grid[i][j].type;
 
                 /* Load the pin class lookups. The ptc nums for SINK and SOURCE
                  * are disjoint so they can share the list. */
 
-                for (k = 0; k < type->num_class; ++k) {
+                for (int k = 0; k < type->num_class; ++k) {
                     indices[SINK][i][j].push_back(*index);
                     ++(*index);
                 }
 
                 /* Load the pin lookups. The ptc nums for IPIN and OPIN
                  * are disjoint so they can share the list. */
-                for (k = 0; k < type->num_pins; ++k) {
+                for (int k = 0; k < type->num_pins; ++k) {
                     indices[IPIN][i][j].push_back(*index);
                     ++(*index);
                 }
@@ -1219,12 +1216,12 @@ t_rr_node_indices alloc_and_load_rr_node_indices(
     }
 
     /* Point offset blocks of a large block to base block */
-    for (i = 0; i <= (L_nx + 1); i++) {
-        for (j = 0; j <= (L_ny + 1); j++) {
-            if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0) {
+    for (size_t i = 0; i < grid.width(); i++) {
+        for (size_t j = 0; j < grid.height(); j++) {
+            if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0) {
                 /* NOTE: this only supports horizontal and/or vertical large blocks */
-                indices[SINK][i][j] = indices[SINK][i - device_ctx.grid[i][j].width_offset][j - device_ctx.grid[i][j].height_offset];
-                indices[IPIN][i][j] = indices[IPIN][i - device_ctx.grid[i][j].width_offset][j - device_ctx.grid[i][j].height_offset];
+                indices[SINK][i][j] = indices[SINK][i - grid[i][j].width_offset][j - grid[i][j].height_offset];
+                indices[IPIN][i][j] = indices[IPIN][i - grid[i][j].width_offset][j - grid[i][j].height_offset];
             }
         }
     }
@@ -1235,9 +1232,9 @@ t_rr_node_indices alloc_and_load_rr_node_indices(
     indices[OPIN] = indices[IPIN];
 
     /* Load the data for x and y channels */
-    load_chan_rr_indices(max_chan_width, L_nx + 2, L_ny + 2,
+    load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
             CHANX, chan_details_x, index, indices);
-    load_chan_rr_indices(max_chan_width, L_ny + 2, L_nx + 2,
+    load_chan_rr_indices(max_chan_width, grid.height(), grid.width(),
             CHANY, chan_details_y, index, indices);
     return indices;
 }
