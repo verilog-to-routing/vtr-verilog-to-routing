@@ -245,7 +245,6 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
 		t_pb_graph_node **primitives_list,
-		t_block *new_cluster, 
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int clb_index,
 		const t_pack_molecule *molecule, const float aspect,
@@ -271,7 +270,7 @@ static t_pack_molecule* get_molecule_for_cluster(
 		t_lb_net_stats *clb_inter_blk_nets,
 		const int cluster_index);
 
-static void check_clustering(int num_clb);
+static void check_clustering();
 
 static void check_cluster_atom_blocks(t_pb *pb, std::unordered_set<AtomBlockId>& blocks_checked);
 
@@ -539,7 +538,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 			/* start a new cluster and reset all stats */
 			start_new_cluster(cluster_placement_stats, primitives_list,
-					&clb[num_clb], atom_molecules, num_clb, istart, aspect, num_used_instances_type,
+					atom_molecules, num_clb, istart, aspect, num_used_instances_type,
 					num_instances_type, num_models, max_cluster_size,
 					lb_type_rr_graphs, &router_data, detailed_routing_stage, &cluster_ctx.clb_nlist);
 			vtr::printf_info("Complex block %d: %s, type: %s ", 
@@ -712,11 +711,12 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	/****************************************************************
 	* Free Data Structures 
 	*****************************************************************/
-	check_clustering(num_clb);
+	VTR_ASSERT(num_clb == (int)cluster_ctx.clb_nlist.blocks().size());
+	check_clustering();
 
 	cluster_ctx.blocks = clb;
 
-	output_clustering(clb, num_clb, intra_lb_routing, global_clocks, is_clock, arch->architecture_id, out_fname, false);
+	output_clustering(intra_lb_routing, global_clocks, is_clock, arch->architecture_id, out_fname, false);
 	
 	cluster_ctx.blocks = NULL;
 
@@ -730,10 +730,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	}
 	free_cluster_placement_stats(cluster_placement_stats);
 
-	for (i = 0; i < num_clb; i++) {
-		free_pb(cluster_ctx.clb_nlist.block_pb((BlockId)i));
-		free(clb[i].nets);
-		delete cluster_ctx.clb_nlist.block_pb((BlockId)i);
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		free_pb(cluster_ctx.clb_nlist.block_pb(blk_id));
+//		free(clb[i].nets);
+		delete cluster_ctx.clb_nlist.block_pb(blk_id);
 	}
 	free(clb);
 
@@ -1896,7 +1896,6 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
 		t_pb_graph_node **primitives_list,
-		t_block *new_cluster, 
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int clb_index,
 		const t_pack_molecule *molecule, const float aspect,
@@ -1915,7 +1914,6 @@ static void start_new_cluster(
 
 	/* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
 	const std::string& root_atom_name = atom_ctx.nlist.block_name(molecule->atom_block_ids[molecule->root]);
-	new_cluster->nets = NULL;
 
 	t_pb* pb = NULL;
 	t_type_ptr type = NULL;
@@ -2223,12 +2221,12 @@ static t_pack_molecule *get_molecule_for_cluster(
 
 
 /* TODO: Add more error checking! */
-static void check_clustering(int num_clb) {
+static void check_clustering() {
     std::unordered_set<AtomBlockId> atoms_checked;
     auto& atom_ctx = g_vpr_ctx.atom();
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    if(num_clb == 0) {
+    if(cluster_ctx.clb_nlist.blocks().size() == 0) {
         vtr::printf_warning(__FILE__, __LINE__, "Packing produced no clustered blocks");
     }
 
@@ -2276,8 +2274,8 @@ static void check_clustering(int num_clb) {
 	}
 
 	/* Check that I do not have spurious links in children pbs */
-	for (int i = 0; i < num_clb; i++) {
-		check_cluster_atom_blocks(cluster_ctx.clb_nlist.block_pb((BlockId)i), atoms_checked);
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		check_cluster_atom_blocks(cluster_ctx.clb_nlist.block_pb(blk_id), atoms_checked);
 	}
 
 	for (auto blk_id : atom_ctx.nlist.blocks()) {

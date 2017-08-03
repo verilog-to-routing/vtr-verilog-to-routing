@@ -804,8 +804,7 @@ void free_circuit() {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
 	if (cluster_ctx.blocks != NULL) {
-		for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); ++i) {
-			vtr::free(cluster_ctx.blocks[i].nets);
+		for (int i = 0; i < (int)cluster_ctx.clb_nlist.blocks().size(); ++i) {
 			vtr::free(cluster_ctx.blocks[i].net_pins);
 		}
 	}

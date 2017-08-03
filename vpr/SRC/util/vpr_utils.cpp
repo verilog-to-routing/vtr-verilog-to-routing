@@ -1971,7 +1971,6 @@ void place_sync_external_block_connections(BlockId iblk) {
             VTR_ASSERT(cluster_ctx.blocks[(size_t)iblk].net_pins[j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins] == OPEN); //TODO: Convert these into checks that the ID's are not equal to j + place_ctx[...] + ...
 
             //Update the block to net references
-            cluster_ctx.blocks[(size_t)iblk].nets[j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins] = cluster_ctx.blocks[(size_t)iblk].nets[j];
             cluster_ctx.blocks[(size_t)iblk].net_pins[j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins] = cluster_ctx.blocks[(size_t)iblk].net_pins[j];
 
 			cluster_ctx.clb_nlist.set_block_net(iblk, j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins, net_id);

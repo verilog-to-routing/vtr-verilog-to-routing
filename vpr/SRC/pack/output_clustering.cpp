@@ -479,25 +479,21 @@ static void print_pb(FILE *fpout, t_type_ptr type, t_pb * pb, int pb_index, t_pb
 	fprintf(fpout, "</block>\n");
 }
 
-static void print_clusters(int num_clusters, FILE *fpout) {
-
-	/* Prints out one cluster (clb).  Both the external pins and the *
-	 * internal connections are printed out.                         */
+/* Prints out one cluster (clb).  Both the external pins and the *
+* internal connections are printed out.                         */
+static void print_clusters(FILE *fpout) {
 	auto& cluster_ctx = g_vpr_ctx.clustering();
-	int icluster;
 
-	for (icluster = 0; icluster < num_clusters; icluster++) {
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		/* TODO: Must do check that total CLB pins match top-level pb pins, perhaps check this earlier? */
-		print_pb(fpout, cluster_ctx.clb_nlist.block_type((BlockId)icluster), cluster_ctx.clb_nlist.block_pb((BlockId)icluster), icluster, cluster_ctx.clb_nlist.block_pb((BlockId)icluster)->pb_route, 1);
+		print_pb(fpout, cluster_ctx.clb_nlist.block_type(blk_id), cluster_ctx.clb_nlist.block_pb(blk_id), (size_t)blk_id, cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route, 1);
 	}
 }
 
-static void print_stats(t_block *clb, int num_clusters) {
-
-	/* Prints out one cluster (clb).  Both the external pins and the *
-	 * internal connections are printed out.                         */
-
-	int ipin, icluster, itype;/*, iblk;*/
+/* Prints out one cluster (clb).  Both the external pins and the *
+* internal connections are printed out.                         */
+static void print_stats() {
+	int ipin, itype;
 	int total_nets_absorbed;
     std::unordered_map<AtomNetId,bool> nets_absorbed;
 
@@ -519,39 +515,39 @@ static void print_stats(t_block *clb, int num_clusters) {
 
 	/* Counters used only for statistics purposes. */
 
-	for (icluster = 0; icluster < num_clusters; icluster++) {
-		for (ipin = 0; ipin < cluster_ctx.clb_nlist.block_type((BlockId)icluster)->num_pins; ipin++) {
-			if (cluster_ctx.clb_nlist.block_pb((BlockId)icluster)->pb_route == NULL) {
-				if (clb[icluster].nets[ipin] != OPEN) {
-                    int clb_net_idx = clb[icluster].nets[ipin];
-                    auto net_id = atom_ctx.lookup.atom_net(clb_net_idx);
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		for (ipin = 0; ipin < cluster_ctx.clb_nlist.block_type(blk_id)->num_pins; ipin++) {
+			if (cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route == NULL) {
+				NetId clb_net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
+				if (clb_net_id != NetId::INVALID()) {
+                    auto net_id = atom_ctx.lookup.atom_net((size_t)clb_net_id);
                     VTR_ASSERT(net_id);
 					nets_absorbed[net_id] = false;
-					if (cluster_ctx.clb_nlist.block_type((BlockId)icluster)->class_inf[cluster_ctx.clb_nlist.block_type((BlockId)icluster)->pin_class[ipin]].type == RECEIVER) {
-						num_clb_inputs_used[cluster_ctx.clb_nlist.block_type((BlockId)icluster)->index]++;
+					if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type == RECEIVER) {
+						num_clb_inputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
 					}
-					else if (cluster_ctx.clb_nlist.block_type((BlockId)icluster)->class_inf[cluster_ctx.clb_nlist.block_type((BlockId)icluster)->pin_class[ipin]].type == DRIVER) {
-						num_clb_outputs_used[cluster_ctx.clb_nlist.block_type((BlockId)icluster)->index]++;
+					else if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type == DRIVER) {
+						num_clb_outputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
 					}
 				}
 			}
 			else {
-				int pb_graph_pin_id = get_pb_graph_node_pin_from_block_pin((BlockId)icluster, ipin)->pin_count_in_cluster;
-				auto atom_net_id = cluster_ctx.clb_nlist.block_pb((BlockId)icluster)->pb_route[pb_graph_pin_id].atom_net_id;
+				int pb_graph_pin_id = get_pb_graph_node_pin_from_block_pin(blk_id, ipin)->pin_count_in_cluster;
+				auto atom_net_id = cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route[pb_graph_pin_id].atom_net_id;
 				if (atom_net_id) {
 					nets_absorbed[atom_net_id] = false;
-					if (cluster_ctx.clb_nlist.block_type((BlockId)icluster)->class_inf[cluster_ctx.clb_nlist.block_type((BlockId)icluster)->pin_class[ipin]].type
+					if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type
 						== RECEIVER) {
-						num_clb_inputs_used[cluster_ctx.clb_nlist.block_type((BlockId)icluster)->index]++;
+						num_clb_inputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
 					}
-					else if (cluster_ctx.clb_nlist.block_type((BlockId)icluster)->class_inf[cluster_ctx.clb_nlist.block_type((BlockId)icluster)->pin_class[ipin]].type
+					else if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type
 						== DRIVER) {
-						num_clb_outputs_used[cluster_ctx.clb_nlist.block_type((BlockId)icluster)->index]++;
+						num_clb_outputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
 					}
 				}
 			}
 		}
-		num_clb_types[cluster_ctx.clb_nlist.block_type((BlockId)icluster)->index]++;
+		num_clb_types[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
 	}
 
 	for (itype = 0; itype < device_ctx.num_block_types; itype++) {
@@ -580,12 +576,11 @@ static void print_stats(t_block *clb, int num_clusters) {
 	/* TODO: print more stats */
 }
 
-void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_intra_lb_net> * > &intra_lb_routing, bool global_clocks,
+/* This routine dumps out the output netlist in a format suitable for  *
+* input to vpr. This routine also dumps out the internal structure of *
+* the cluster, in essentially a graph based format.                   */
+void output_clustering(const vector < vector <t_intra_lb_net> * > &intra_lb_routing, bool global_clocks,
 		const std::unordered_set<AtomNetId>& is_clock, const std::string& architecture_id, const char *out_fname, bool skip_clustering) {
-
-	/* This routine dumps out the output netlist in a format suitable for  *
-	 * input to vpr. This routine also dumps out the internal structure of *
-	 * the cluster, in essentially a graph based format.                   */
 
 	FILE *fpout;
 	int column;
@@ -594,9 +589,9 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
 	if(!intra_lb_routing.empty()) {
-		VTR_ASSERT((int)intra_lb_routing.size() == num_clusters);
-		for(int icluster = 0; icluster < num_clusters; icluster++) {
-			cluster_ctx.clb_nlist.block_pb((BlockId)icluster)->pb_route = alloc_and_load_pb_route(intra_lb_routing[icluster], cluster_ctx.clb_nlist.block_pb((BlockId)icluster)->pb_graph_node);
+		VTR_ASSERT(intra_lb_routing.size() == cluster_ctx.clb_nlist.blocks().size());
+		for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+			cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route = alloc_and_load_pb_route(intra_lb_routing[(size_t)blk_id], cluster_ctx.clb_nlist.block_pb(blk_id)->pb_graph_node);
 		}
 	}
 
@@ -662,17 +657,17 @@ void output_clustering(t_block *clb, int num_clusters, const vector < vector <t_
 	}
 
 	if (skip_clustering == false)
-		print_clusters(num_clusters, fpout);
+		print_clusters(fpout);
 
 	fprintf(fpout, "</block>\n\n");
 
 	fclose(fpout);
 
-	print_stats(clb, num_clusters);
+	print_stats();
 	if(!intra_lb_routing.empty()) {
-		for(int icluster = 0; icluster < num_clusters; icluster++) {
-			free_pb_route(cluster_ctx.clb_nlist.block_pb((BlockId)icluster)->pb_route);
-			cluster_ctx.clb_nlist.block_pb((BlockId)icluster)->pb_route = NULL;
+		for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+			free_pb_route(cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route);
+			cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route = NULL;
 		}
 	}
 

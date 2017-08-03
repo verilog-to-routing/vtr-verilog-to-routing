@@ -325,11 +325,9 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	//Process nets and net_pins
 	num_pins = clb_nlist->block_type((BlockId)index)->num_pins;	
 	
-	cb[index].nets = (int *) vtr::malloc(num_pins * sizeof(int));
 	cb[index].net_pins = (int *) vtr::malloc(num_pins * sizeof(int));
 
 	for (i = 0; i < num_pins; i++) {
-		cb[index].nets[i] = OPEN;
 		cb[index].net_pins[i] = OPEN;
 	}
 	load_internal_to_block_net_nums(clb_nlist->block_type((BlockId)index), clb_nlist->block_pb((BlockId)index)->pb_route);
@@ -847,13 +845,9 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 
                 AtomNetId atom_net_id = clb_nlist->block_pb((BlockId)i)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 				if (atom_net_id) {
-					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
-                                                atom_ctx.nlist.net_name(atom_net_id).c_str(),
-                                                &ext_ncount);
+					add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
 					clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
 					clb_nlist->create_pin(input_port_id, (BitIndex)k, clb_net_id, PinType::SINK, PortType::INPUT, ipin);
-				} else {
-					block_list[i].nets[ipin] = OPEN;
 				}
 				ipin++;
 			}
@@ -868,13 +862,9 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 
                 AtomNetId atom_net_id = clb_nlist->block_pb((BlockId)i)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 				if (atom_net_id) {
-					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
-                                                atom_ctx.nlist.net_name(atom_net_id).c_str(),
-                                                &ext_ncount);
+					add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
 					clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
 					clb_nlist->create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, PortType::OUTPUT, ipin);
-				} else {
-					block_list[i].nets[ipin] = OPEN;
 				}
 				ipin++;
 			}
@@ -889,13 +879,9 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 
                 AtomNetId atom_net_id = clb_nlist->block_pb((BlockId)i)->pb_route[pb_graph_pin->pin_count_in_cluster].atom_net_id;
 				if (atom_net_id) {
-					block_list[i].nets[ipin] = add_net_to_hash(ext_nhash,
-                                                atom_ctx.nlist.net_name(atom_net_id).c_str(),
-                                                &ext_ncount);
+					add_net_to_hash(ext_nhash, atom_ctx.nlist.net_name(atom_net_id).c_str(), &ext_ncount);
 					clb_net_id = clb_nlist->create_net(atom_ctx.nlist.net_name(atom_net_id));
 					clb_nlist->create_pin(clock_port_id, (BitIndex)k, clb_net_id, PinType::SINK, PortType::CLOCK, ipin);
-				} else {
-					block_list[i].nets[ipin] = OPEN;
 				}
 				ipin++;
 			}
