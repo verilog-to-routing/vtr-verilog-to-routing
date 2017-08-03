@@ -62,7 +62,7 @@ void check_rr_graph(const t_graph_type graph_type,
         rr_type = device_ctx.rr_nodes[inode].type();
         num_edges = device_ctx.rr_nodes[inode].num_edges();
 
-        check_node(inode, route_type, segment_inf);
+        check_rr_node(inode, route_type, device_ctx, segment_inf);
 
         /* Check all the connectivity (edges, etc.) information.                    */
 
@@ -204,7 +204,7 @@ static bool rr_node_is_global_clb_ipin(int inode) {
     return type->is_global_pin[ipin];
 }
 
-void check_node(int inode, enum e_route_type route_type, const t_segment_inf* segment_inf) {
+void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext& device_ctx, const t_segment_inf* segment_inf) {
 
     /* This routine checks that the rr_node is inside the grid and has a valid  
      * pin number, etc.  
@@ -216,7 +216,6 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
     int nodes_per_chan, tracks_per_node, num_edges, cost_index;
     float C, R;
 
-    auto& device_ctx = g_vpr_ctx.device();
 
     rr_type = device_ctx.rr_nodes[inode].type();
     xlow = device_ctx.rr_nodes[inode].xlow();
@@ -228,24 +227,25 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
     cost_index = device_ctx.rr_nodes[inode].cost_index();
     type = NULL;
 
+    const auto& grid = device_ctx.grid;
     if (xlow > xhigh || ylow > yhigh) {
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                "in check_node: rr endpoints are (%d,%d) and (%d,%d).\n", xlow, ylow, xhigh, yhigh);
+                "in check_rr_node: rr endpoints are (%d,%d) and (%d,%d).\n", xlow, ylow, xhigh, yhigh);
     }
 
-    if (xlow < 0 || xhigh > device_ctx.nx + 1 || ylow < 0 || yhigh > device_ctx.ny + 1) {
+    if (xlow < 0 || xhigh > grid.nx() + 1 || ylow < 0 || yhigh > grid.ny() + 1) {
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                "in check_node: rr endpoints (%d,%d) and (%d,%d) are out of range.\n", xlow, ylow, xhigh, yhigh);
+                "in check_rr_node: rr endpoints (%d,%d) and (%d,%d) are out of range.\n", xlow, ylow, xhigh, yhigh);
     }
 
     if (ptc_num < 0) {
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                "in check_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
+                "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
     }
 
     if (cost_index < 0 || cost_index >= device_ctx.num_rr_indexed_data) {
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                "in check_node: node %d cost index (%d) is out of range.\n", inode, cost_index);
+                "in check_rr_node: node %d cost index (%d) is out of range.\n", inode, cost_index);
     }
 
     /* Check that the segment is within the array and such. */
@@ -261,39 +261,39 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 
             if (type == NULL) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
+                        "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
             }
             if (xlow != (xhigh - type->width + 1) || ylow != (yhigh - type->height + 1)) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
+                        "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
             }
             break;
 
         case CHANX:
-            if (xlow < 1 || xhigh > device_ctx.nx || yhigh > device_ctx.ny || yhigh != ylow) {
+            if (xlow < 1 || xhigh > grid.nx() || yhigh > grid.ny() || yhigh != ylow) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
+                        "in check_rr_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
             if (route_type == GLOBAL && xlow != xhigh) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: node %d spans multiple channel segments (not allowed for global routing).\n", inode);
+                        "in check_rr_node: node %d spans multiple channel segments (not allowed for global routing).\n", inode);
             }
             break;
 
         case CHANY:
-            if (xhigh > device_ctx.nx || ylow < 1 || yhigh > device_ctx.ny || xlow != xhigh) {
+            if (xhigh > grid.nx() || ylow < 1 || yhigh > grid.ny() || xlow != xhigh) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "Error in check_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
+                        "Error in check_rr_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
             if (route_type == GLOBAL && ylow != yhigh) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: node %d spans multiple channel segments (not allowed for global routing).\n", inode);
+                        "in check_rr_node: node %d spans multiple channel segments (not allowed for global routing).\n", inode);
             }
             break;
 
         default:
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "in check_node: Unexpected segment type: %d\n", rr_type);
+                    "in check_rr_node: Unexpected segment type: %d\n", rr_type);
     }
 
     /* Check that it's capacities and such make sense. */
@@ -305,11 +305,11 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
             if (ptc_num >= type->num_class
                     || type->class_inf[ptc_num].type != DRIVER) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
+                        "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
             if (type->class_inf[ptc_num].num_pins != capacity) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: inode %d (type %d) had a capacity of %d.\n", inode, rr_type, capacity);
+                        "in check_rr_node: inode %d (type %d) had a capacity of %d.\n", inode, rr_type, capacity);
             }
 
             break;
@@ -319,11 +319,11 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
             if (ptc_num >= type->num_class
                     || type->class_inf[ptc_num].type != RECEIVER) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
+                        "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
             if (type->class_inf[ptc_num].num_pins != capacity) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
+                        "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
             }
             break;
 
@@ -332,12 +332,12 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
             if (ptc_num >= type->num_pins
                     || type->class_inf[type->pin_class[ptc_num]].type != DRIVER) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
+                        "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
 
             if (capacity != 1) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
+                        "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
             }
             break;
 
@@ -345,11 +345,11 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
             if (ptc_num >= type->num_pins
                     || type->class_inf[type->pin_class[ptc_num]].type != RECEIVER) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
+                        "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
             if (capacity != 1) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
+                        "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
             }
             break;
 
@@ -364,12 +364,12 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 
             if (ptc_num >= nodes_per_chan) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
+                        "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
 
             if (capacity != tracks_per_node) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
+                        "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
             }
             break;
 
@@ -385,13 +385,13 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
 
             if (capacity != tracks_per_node) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                        "in check_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
+                        "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
             }
             break;
 
         default:
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "in check_node: Unexpected segment type: %d\n", rr_type);
+                    "in check_rr_node: Unexpected segment type: %d\n", rr_type);
 
     }
 
@@ -406,13 +406,13 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
             if (device_ctx.rr_nodes[inode].type() == CHANX || device_ctx.rr_nodes[inode].type() == CHANY) {
                 int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
                 const char* seg_name = segment_inf[seg_index].name;
-                vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) has no out-going edges.\n",
+                vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) has no out-going edges.\n",
                         inode, device_ctx.rr_nodes[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh);
             } else if (device_ctx.rr_nodes[inode].type() == IPIN || device_ctx.rr_nodes[inode].type() == OPIN) {
-                vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) block_type=%s ptc=%d has no out-going edges.\n",
+                vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s at (%d,%d) block_type=%s ptc=%d has no out-going edges.\n",
                         inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.grid[xlow][ylow].type->name, device_ctx.rr_nodes[inode].ptc_num());
             } else {
-                vtr::printf_warning(__FILE__, __LINE__, "in check_node: rr_node %d %s at (%d,%d) ptc=%d has no out-going edges.\n",
+                vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s at (%d,%d) ptc=%d has no out-going edges.\n",
                         inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.rr_nodes[inode].ptc_num());
             }
         }
@@ -420,7 +420,7 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
     else if (rr_type == SINK) { /* SINK -- remove this check if feedthroughs allowed */
         if (num_edges != 0) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "in check_node: node %d is a sink, but has %d edges.\n", inode, num_edges);
+                    "in check_rr_node: node %d is a sink, but has %d edges.\n", inode, num_edges);
         }
     }
 
@@ -431,13 +431,13 @@ void check_node(int inode, enum e_route_type route_type, const t_segment_inf* se
     if (rr_type == CHANX || rr_type == CHANY) {
         if (C < 0. || R < 0.) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "in check_node: node %d of type %d has R = %g and C = %g.\n", inode, rr_type, R, C);
+                    "in check_rr_node: node %d of type %d has R = %g and C = %g.\n", inode, rr_type, R, C);
         }
     }
     else {
         if (C != 0. || R != 0.) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "in check_node: node %d of type %d has R = %g and C = %g.\n", inode, rr_type, R, C);
+                    "in check_rr_node: node %d of type %d has R = %g and C = %g.\n", inode, rr_type, R, C);
         }
     }
 

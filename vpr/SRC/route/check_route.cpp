@@ -627,5 +627,5 @@ static void check_node_and_range(int inode, enum e_route_type route_type, const 
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.num_rr_nodes - 1);
 	}
-	check_node(inode, route_type, segment_inf);
+	check_rr_node(inode, route_type, device_ctx, segment_inf);
 }
