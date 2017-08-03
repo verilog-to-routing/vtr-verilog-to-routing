@@ -121,7 +121,7 @@ static void alloc_and_load_rr_graph(
         const t_track_to_pin_lookup& track_to_pin_lookup,
         const t_pin_to_track_lookup& opin_to_track_map, const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
         t_sb_connection_map *sb_conn_map,
-        const DeviceGrid& L_grid, const int L_nx, const int L_ny, const int Fs,
+        const DeviceGrid& grid, const int Fs,
         short ******sblock_pattern, const std::vector<vtr::Matrix<int>>&Fc_out,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
         const t_rr_node_indices& L_rr_node_indices,
@@ -522,7 +522,7 @@ static void build_rr_graph(
     alloc_and_load_rr_graph(device_ctx.num_rr_nodes, device_ctx.rr_nodes, num_seg_types,
             seg_details, chan_details_x, chan_details_y,
             L_rr_edge_done, track_to_pin_lookup, opin_to_track_map,
-            switch_block_conn, sb_conn_map, L_grid, L_nx, L_ny, Fs, unidir_sb_pattern,
+            switch_block_conn, sb_conn_map, L_grid, Fs, unidir_sb_pattern,
             Fc_out, Fc_xofs, Fc_yofs, device_ctx.rr_node_indices, max_chan_width,
             delayless_switch, directionality, wire_to_arch_ipin_switch, &Fc_clipped,
             directs, num_directs, clb_to_clb_directs);
@@ -1011,7 +1011,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         const t_track_to_pin_lookup& track_to_pin_lookup,
         const t_pin_to_track_lookup& opin_to_track_map, const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
         t_sb_connection_map *sb_conn_map,
-        const DeviceGrid& L_grid, const int L_nx, const int L_ny, const int Fs,
+        const DeviceGrid& grid, const int Fs,
         short ******sblock_pattern, const std::vector<vtr::Matrix<int>>&Fc_out,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
         const t_rr_node_indices& L_rr_node_indices,
@@ -1025,25 +1025,25 @@ static void alloc_and_load_rr_graph(const int num_nodes,
     *Fc_clipped = false;
 
     /* Connection SINKS and SOURCES to their pins. */
-    for (int i = 0; i <= (L_nx + 1); ++i) {
-        for (int j = 0; j <= (L_ny + 1); ++j) {
+    for (size_t i = 0; i < grid.width(); ++i) {
+        for (size_t j = 0; j < grid.height(); ++j) {
             build_rr_sinks_sources(i, j, L_rr_node, L_rr_node_indices,
-                    delayless_switch, L_grid);
+                    delayless_switch, grid);
         }
     }
 
     /* Build opins */
-    for (int i = 0; i <= (L_nx + 1); ++i) {
-        for (int j = 0; j <= (L_ny + 1); ++j) {
+    for (size_t i = 0; i < grid.width(); ++i) {
+        for (size_t j = 0; j < grid.height(); ++j) {
             if (BI_DIRECTIONAL == directionality) {
                 build_bidir_rr_opins(i, j, L_rr_node, L_rr_node_indices,
                         opin_to_track_map, Fc_out, L_rr_edge_done, seg_details,
-                        L_grid,
+                        grid,
                         directs, num_directs, clb_to_clb_directs, num_seg_types);
             } else {
                 VTR_ASSERT(UNI_DIRECTIONAL == directionality);
                 bool clipped;
-                build_unidir_rr_opins(i, j, L_grid, Fc_out, max_chan_width,
+                build_unidir_rr_opins(i, j, grid, Fc_out, max_chan_width,
                         chan_details_x, chan_details_y, Fc_xofs, Fc_yofs,
                         L_rr_edge_done, &clipped, L_rr_node_indices,
                         directs, num_directs, clb_to_clb_directs, num_seg_types);
@@ -1064,8 +1064,8 @@ static void alloc_and_load_rr_graph(const int num_nodes,
     /* Build channels */
     auto& device_ctx = g_vpr_ctx.device();
     VTR_ASSERT(Fs % 3 == 0);
-    for (int i = 0; i <= L_nx; ++i) {
-        for (int j = 0; j <= L_ny; ++j) {
+    for (size_t i = 0; i < grid.width() - 1; ++i) {
+        for (size_t j = 0; j < grid.height() - 1; ++j) {
             if (i > 0) {
                 build_rr_chan(i, j, CHANX, track_to_pin_lookup, sb_conn_map, switch_block_conn,
                         CHANX_COST_INDEX_START,
@@ -1085,7 +1085,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         }
     }
 
-    init_fan_in(L_nx, L_ny, L_rr_node, L_rr_node_indices, L_grid, num_nodes);
+    init_fan_in(grid.nx(), grid.ny(), L_rr_node, L_rr_node_indices, grid, num_nodes);
 
     free(opin_mux_size);
 }
