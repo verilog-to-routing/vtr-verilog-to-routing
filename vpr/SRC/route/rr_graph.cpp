@@ -241,7 +241,6 @@ void create_rr_graph(
         const t_graph_type graph_type, 
         const int L_num_types,
         const t_type_ptr types, 
-        const int L_nx, const int L_ny,
         const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
         const enum e_switch_block_type sb_type, const int Fs,
@@ -263,7 +262,7 @@ void create_rr_graph(
         bool for_placement) {
 
     if (!read_rr_graph_name.empty()) {
-        load_rr_file(graph_type, L_nx, L_ny,
+        load_rr_file(graph_type, grid,
                 nodes_per_chan, num_seg_types, segment_inf, base_cost_type,
                 wire_to_rr_ipin_switch, num_rr_switches,
                 read_rr_graph_name.c_str(), for_placement);

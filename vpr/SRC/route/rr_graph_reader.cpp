@@ -40,10 +40,10 @@ void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int *wire_to_rr_ipin_switch, const int num_rr_switches);
 void process_channels(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
-void process_rr_node_indices(const int L_nx, const int L_ny);
+void process_rr_node_indices(const DeviceGrid& grid);
 void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void set_cost_index(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
-        const int L_nx, const int L_ny, const bool is_global_graph, const int num_seg_types);
+        const DeviceGrid& grid, const bool is_global_graph, const int num_seg_types);
 
 /************************ Subroutine definitions ****************************/
 
@@ -51,8 +51,7 @@ void set_cost_index(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
  * as specified by read_rr_graph_name. Set up correct routing data
  * structures as well*/
 void load_rr_file(const t_graph_type graph_type,
-        const int L_nx,
-        const int L_ny,
+        const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
         const int num_seg_types,
         const t_segment_inf * segment_inf,
@@ -149,13 +148,13 @@ void load_rr_file(const t_graph_type graph_type,
         next_component = get_single_child(rr_graph, "rr_edges", loc_data);
         process_edges(next_component, loc_data, wire_to_rr_ipin_switch, *num_rr_switches);
 
-        process_rr_node_indices(L_nx, L_ny);
+        process_rr_node_indices(grid);
 
         init_fan_in(device_ctx.grid, device_ctx.rr_nodes, device_ctx.rr_node_indices, device_ctx.num_rr_nodes);
         
         //sets the cost index and seg id information
         next_component = get_single_child(rr_graph, "rr_nodes", loc_data);
-        set_cost_index(next_component, loc_data, L_nx, L_ny, is_global_graph, num_seg_types);
+        set_cost_index(next_component, loc_data, grid, is_global_graph, num_seg_types);
 
         alloc_and_load_rr_indexed_data(segment_inf, num_seg_types, device_ctx.rr_node_indices,
                 max_chan_width, *wire_to_rr_ipin_switch, base_cost_type);
@@ -570,7 +569,7 @@ void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data,
 
 /*Allocates and load the rr_node look up table. SINK and SOURCE, IPIN and OPIN
  *share the same look up table. CHANX and CHANY have individual look ups */
-void process_rr_node_indices(const int L_nx, const int L_ny) {
+void process_rr_node_indices(const DeviceGrid& grid) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     /* Alloc the lookup table */
@@ -581,14 +580,14 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
 
     for (int itype = 0; itype < NUM_RR_TYPES; ++itype) {
         if (itype != OPIN && itype != SOURCE) {
-            indices[itype].resize(L_nx + 2);
+            indices[itype].resize(grid.nx() + 2);
             if (itype == CHANX) {
-                for (int ilength = 0; ilength <= (L_ny + 1); ++ilength) {
-                    indices[itype][ilength].resize(L_nx + 2);
+                for (int ilength = 0; ilength <= (grid.ny() + 1); ++ilength) {
+                    indices[itype][ilength].resize(grid.nx() + 2);
                 }
             } else {
-                for (int ilength = 0; ilength <= (L_nx + 1); ++ilength) {
-                    indices[itype][ilength].resize(L_ny + 2);
+                for (int ilength = 0; ilength <= (grid.nx() + 1); ++ilength) {
+                    indices[itype][ilength].resize(grid.ny() + 2);
                 }
             }
         }
@@ -657,12 +656,12 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
  * are set to their unique cost index identifier. CHANX and CHANY cost indicies are set after the 
  * seg_id is read in from the rr graph*/
 void set_cost_index(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
-        const int L_nx, const int L_ny, const bool is_global_graph, const int num_seg_types) {
+        const DeviceGrid& grid, const bool is_global_graph, const int num_seg_types) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     //set the cost index in order to load the segment information
-    for (int i = 0; i <= (L_nx + 1); ++i) {
-        for (int j = 0; j <= (L_ny + 1); ++j) {
+    for (size_t i = 0; i < grid.width(); ++i) {
+        for (size_t j = 0; j < grid.height(); ++j) {
             int inode = 0;
             t_type_ptr type = device_ctx.grid[i][j].type;
             int num_class = type->num_class;
