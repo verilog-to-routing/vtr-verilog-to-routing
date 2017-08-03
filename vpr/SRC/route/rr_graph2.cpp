@@ -1986,7 +1986,7 @@ static int vpr_to_phy_track(
 }
 
 short ******alloc_sblock_pattern_lookup(
-        const int L_nx, const int L_ny, const int max_chan_width) {
+        const DeviceGrid& grid, const int max_chan_width) {
 
     /* loading up the sblock connection pattern matrix. It's a huge matrix because
      * for nonquantized W, it's impossible to make simple permutations to figure out
@@ -1999,13 +1999,13 @@ short ******alloc_sblock_pattern_lookup(
     /* Alloc each list of pointers in one go. items is a running product that increases
      * with each new dimension of the matrix. */
 
-    VTR_ASSERT(L_nx > 0);
-    VTR_ASSERT(L_ny > 0);
+    VTR_ASSERT(grid.nx() > 0);
+    VTR_ASSERT(grid.ny() > 0);
 
     size_t items = 1;
-    items *= (L_nx + 1);
+    items *= (grid.nx() + 1);
     short ******i_list = (short ******) vtr::malloc(sizeof (short *****) * items);
-    items *= (L_ny + 1);
+    items *= (grid.ny() + 1);
     short *****j_list = (short *****) vtr::malloc(sizeof (short ****) * items);
     items *= (4);
     short ****from_side_list = (short ****) vtr::malloc(sizeof (short ***) * items);
@@ -2018,12 +2018,12 @@ short ******alloc_sblock_pattern_lookup(
 
     /* Build the pointer lists to form the multidimensional array */
     short ******sblock_pattern = i_list;
-    i_list += (L_nx + 1); /* Skip forward device_ctx.nx+1 items */
-    for (int i = 0; i < (L_nx + 1); ++i) {
+    i_list += (grid.nx() + 1); /* Skip forward device_ctx.nx+1 items */
+    for (int i = 0; i < (grid.nx() + 1); ++i) {
 
         sblock_pattern[i] = j_list;
-        j_list += (L_ny + 1); /* Skip forward device_ctx.ny+1 items */
-        for (int j = 0; j < (L_ny + 1); ++j) {
+        j_list += (grid.ny() + 1); /* Skip forward device_ctx.ny+1 items */
+        for (int j = 0; j < (grid.ny() + 1); ++j) {
 
             sblock_pattern[i][j] = from_side_list;
             from_side_list += (4); /* Skip forward 4 items */

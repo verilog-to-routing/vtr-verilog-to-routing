@@ -217,8 +217,8 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
 
 static void build_rr_graph(
         const t_graph_type graph_type, const int L_num_types,
-        const t_type_ptr types, const int L_nx, const int L_ny,
-        const DeviceGrid& L_grid,
+        const t_type_ptr types,
+        const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
         const enum e_switch_block_type sb_type, const int Fs,
         const vector<t_switchblock_inf> switchblocks,
@@ -242,7 +242,7 @@ void create_rr_graph(
         const int L_num_types,
         const t_type_ptr types, 
         const int L_nx, const int L_ny,
-        const DeviceGrid& L_grid,
+        const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
         const enum e_switch_block_type sb_type, const int Fs,
         const vector<t_switchblock_inf> switchblocks,
@@ -268,7 +268,7 @@ void create_rr_graph(
                 wire_to_rr_ipin_switch, num_rr_switches,
                 read_rr_graph_name.c_str(), for_placement);
     } else {
-        build_rr_graph(graph_type, L_num_types, types, L_nx, L_ny, L_grid, nodes_per_chan, sb_type, Fs, switchblocks,
+        build_rr_graph(graph_type, L_num_types, types, grid, nodes_per_chan, sb_type, Fs, switchblocks,
                 num_seg_types, num_arch_switches, segment_inf, global_route_switch, delayless_switch, wire_to_arch_ipin_switch,
                 base_cost_type, trim_empty_channels, trim_obs_channels, directs, num_directs,
                 dump_rr_structs_file, wire_to_rr_ipin_switch, num_rr_switches, Warnings, for_placement);
@@ -284,8 +284,7 @@ static void build_rr_graph(
         const t_graph_type graph_type, 
         const int L_num_types,
         const t_type_ptr types, 
-        const int L_nx, const int L_ny,
-        const DeviceGrid& L_grid,
+        const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
         const enum e_switch_block_type sb_type, 
         const int Fs,
@@ -344,7 +343,7 @@ static void build_rr_graph(
         /* Setup segments including distrubuting tracks and staggering.
          * If use_full_seg_groups is specified, max_chan_width may be 
          * changed. Warning should be singled to caller if this happens. */
-        size_t max_dim = std::max(device_ctx.grid.nx(), device_ctx.grid.ny());
+        size_t max_dim = std::max(grid.nx(), grid.ny());
 
         seg_details = alloc_and_load_seg_details(&max_chan_width,
                 max_dim, num_seg_types, segment_inf,
@@ -366,13 +365,13 @@ static void build_rr_graph(
     t_chan_details chan_details_x;
     t_chan_details chan_details_y;
 
-    alloc_and_load_chan_details(device_ctx.grid, nodes_per_chan,
+    alloc_and_load_chan_details(grid, nodes_per_chan,
             trim_empty_channels, trim_obs_channels,
             num_seg_details, seg_details,
             chan_details_x, chan_details_y);
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CHAN_DETAILS)) {
-        dump_chan_details(chan_details_x, chan_details_y, max_chan_width, device_ctx.grid,
+        dump_chan_details(chan_details_x, chan_details_y, max_chan_width, grid,
                 getEchoFileName(E_ECHO_CHAN_DETAILS));
     }
     /* END CHAN_DETAILS */
@@ -438,7 +437,7 @@ static void build_rr_graph(
     /* Alloc node lookups, count nodes, alloc rr nodes */
     device_ctx.num_rr_nodes = 0;
 
-    device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, device_ctx.grid,
+    device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, grid,
             &device_ctx.num_rr_nodes, chan_details_x, chan_details_y);
     device_ctx.rr_nodes = new t_rr_node[device_ctx.num_rr_nodes];
     bool *L_rr_edge_done = (bool *) vtr::malloc(sizeof (bool) * device_ctx.num_rr_nodes);
@@ -447,8 +446,8 @@ static void build_rr_graph(
     /* These are data structures used by the the unidir opin mapping. They are used 
        to spread connections evenly for each segment type among the available
        wire start points */
-    vtr::NdMatrix<int, 3> Fc_xofs({size_t(device_ctx.grid.ny() + 1), size_t(device_ctx.grid.nx() + 1), size_t(num_seg_types)}, 0); //[0..ny][0..nx][0..num_seg_types-1]
-    vtr::NdMatrix<int, 3> Fc_yofs({size_t(device_ctx.grid.nx() + 1), size_t(device_ctx.grid.ny() + 1), size_t(num_seg_types)}, 0); //[0..nx][0..ny][0..num_seg_types-1]
+    vtr::NdMatrix<int, 3> Fc_xofs({size_t(grid.ny() + 1), size_t(grid.nx() + 1), size_t(num_seg_types)}, 0); //[0..ny][0..nx][0..num_seg_types-1]
+    vtr::NdMatrix<int, 3> Fc_yofs({size_t(grid.nx() + 1), size_t(grid.ny() + 1), size_t(num_seg_types)}, 0); //[0..nx][0..ny][0..num_seg_types-1]
 
     /* START SB LOOKUP */
     /* Alloc and load the switch block lookup */
@@ -461,7 +460,7 @@ static void build_rr_graph(
     } else if (BI_DIRECTIONAL == directionality) {
         if (sb_type == CUSTOM) {
             sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
-                    device_ctx.grid,
+                    grid,
                     switchblocks, nodes_per_chan, directionality);
         } else {
             switch_block_conn = alloc_and_load_switch_block_conn(max_chan_width, sb_type, Fs);
@@ -471,15 +470,15 @@ static void build_rr_graph(
 
         if (sb_type == CUSTOM) {
             sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
-                    device_ctx.grid,
+                    grid,
                     switchblocks, nodes_per_chan, directionality);
         } else {
             /* it looks like we get unbalanced muxing from this switch block code with Fs > 3 */
             VTR_ASSERT(Fs == 3);
 
-            unidir_sb_pattern = alloc_sblock_pattern_lookup(L_nx, L_ny, max_chan_width);
-            for (int i = 0; i <= L_nx; i++) {
-                for (int j = 0; j <= L_ny; j++) {
+            unidir_sb_pattern = alloc_sblock_pattern_lookup(grid, max_chan_width);
+            for (int i = 0; i <= grid.nx(); i++) {
+                for (int j = 0; j <= grid.ny(); j++) {
                     load_sblock_pattern_lookup(i, j, nodes_per_chan,
                             chan_details_x, chan_details_y,
                             Fs, sb_type, unidir_sb_pattern);
@@ -488,7 +487,7 @@ static void build_rr_graph(
             }
 
             if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_SBLOCK_PATTERN)) {
-                dump_sblock_pattern(unidir_sb_pattern, max_chan_width, device_ctx.grid,
+                dump_sblock_pattern(unidir_sb_pattern, max_chan_width, grid,
                         getEchoFileName(E_ECHO_SBLOCK_PATTERN));
             }
         }
@@ -533,7 +532,7 @@ static void build_rr_graph(
     alloc_and_load_rr_graph(device_ctx.num_rr_nodes, device_ctx.rr_nodes, num_seg_types,
             seg_details, chan_details_x, chan_details_y,
             L_rr_edge_done, track_to_pin_lookup, opin_to_track_map,
-            switch_block_conn, sb_conn_map, L_grid, Fs, unidir_sb_pattern,
+            switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
             Fc_out, Fc_xofs, Fc_yofs, device_ctx.rr_node_indices, max_chan_width,
             delayless_switch, directionality, wire_to_arch_ipin_switch, &Fc_clipped,
             directs, num_directs, clb_to_clb_directs);
@@ -563,7 +562,7 @@ static void build_rr_graph(
     }
 
 
-    check_rr_graph(graph_type, device_ctx.grid, *num_rr_switches, types, segment_inf);
+    check_rr_graph(graph_type, grid, *num_rr_switches, types, segment_inf);
 
     /* dump out rr structs if requested */
     if (dump_rr_structs_file) {
@@ -584,7 +583,7 @@ static void build_rr_graph(
         seg_details = NULL;
     }
     if (!chan_details_x.empty() || !chan_details_y.empty()) {
-        free_chan_details(chan_details_x, chan_details_y, max_chan_width, device_ctx.grid);
+        free_chan_details(chan_details_x, chan_details_y, max_chan_width, grid);
     }
     if (sb_conn_map) {
         free_switchblock_permutations(sb_conn_map);

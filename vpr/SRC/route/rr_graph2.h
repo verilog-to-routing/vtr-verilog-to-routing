@@ -163,7 +163,7 @@ int get_track_to_tracks(
 		t_sb_connection_map *sb_conn_map);
 
 short ******alloc_sblock_pattern_lookup(
-		const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
 		const int max_chan_width);
 void free_sblock_pattern_lookup(
 		short ******sblock_pattern);
