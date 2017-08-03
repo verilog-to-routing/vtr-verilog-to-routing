@@ -3,7 +3,7 @@
 #include "physical_types.h"
 
 void check_rr_graph(const t_graph_type graph_type,
-        const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
         const int num_rr_switches, const t_type_ptr types,
         const t_segment_inf* segment_inf);
 

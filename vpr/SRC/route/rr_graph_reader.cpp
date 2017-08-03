@@ -169,7 +169,7 @@ void load_rr_file(const t_graph_type graph_type,
             alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
         }
 
-        check_rr_graph(graph_type, L_nx, L_ny, *num_rr_switches, device_ctx.block_types, segment_inf);
+        check_rr_graph(graph_type, device_ctx.grid, *num_rr_switches, device_ctx.block_types, segment_inf);
 
 #ifdef USE_MAP_LOOKAHEAD
         compute_router_lookahead(num_seg_types);

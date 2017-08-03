@@ -238,8 +238,10 @@ static void build_rr_graph(
 /******************* Subroutine definitions *******************************/
 
 void create_rr_graph(
-        const t_graph_type graph_type, const int L_num_types,
-        const t_type_ptr types, const int L_nx, const int L_ny,
+        const t_graph_type graph_type, 
+        const int L_num_types,
+        const t_type_ptr types, 
+        const int L_nx, const int L_ny,
         const DeviceGrid& L_grid,
         t_chan_width *nodes_per_chan,
         const enum e_switch_block_type sb_type, const int Fs,
@@ -279,24 +281,31 @@ void create_rr_graph(
 }
 
 static void build_rr_graph(
-        const t_graph_type graph_type, const int L_num_types,
-        const t_type_ptr types, const int L_nx, const int L_ny,
+        const t_graph_type graph_type, 
+        const int L_num_types,
+        const t_type_ptr types, 
+        const int L_nx, const int L_ny,
         const DeviceGrid& L_grid,
         t_chan_width *nodes_per_chan,
-        const enum e_switch_block_type sb_type, const int Fs,
+        const enum e_switch_block_type sb_type, 
+        const int Fs,
         const vector<t_switchblock_inf> switchblocks,
-        const int num_seg_types, const int num_arch_switches,
+        const int num_seg_types, 
+        const int num_arch_switches,
         const t_segment_inf * segment_inf,
-        const int global_route_switch, const int delayless_switch,
+        const int global_route_switch, 
+        const int delayless_switch,
         const int wire_to_arch_ipin_switch,
         const enum e_base_cost_type base_cost_type,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
-        const t_direct_inf *directs, const int num_directs,
+        const t_direct_inf *directs, 
+        const int num_directs,
         const char* dump_rr_structs_file,
         int *wire_to_rr_ipin_switch,
         int *num_rr_switches,
-        int *Warnings, bool for_placement) {
+        int *Warnings, 
+        bool for_placement) {
 
     vtr::printf_info("Starting build routing resource graph...\n");
     clock_t begin = clock();
@@ -552,7 +561,7 @@ static void build_rr_graph(
     }
 
 
-    check_rr_graph(graph_type, L_nx, L_ny, *num_rr_switches, types, segment_inf);
+    check_rr_graph(graph_type, device_ctx.grid, *num_rr_switches, types, segment_inf);
 
     /* dump out rr structs if requested */
     if (dump_rr_structs_file) {

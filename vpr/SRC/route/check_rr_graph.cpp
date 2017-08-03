@@ -23,7 +23,7 @@ static void check_pass_transistors(int from_node);
 /************************ Subroutine definitions ****************************/
 
 void check_rr_graph(const t_graph_type graph_type,
-        const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
         const int num_rr_switches, const t_type_ptr types,
         const t_segment_inf* segment_inf) {
 
@@ -154,8 +154,8 @@ void check_rr_graph(const t_graph_type graph_type,
 
                 is_fringe = ((device_ctx.rr_nodes[inode].xlow() == 1)
                         || (device_ctx.rr_nodes[inode].ylow() == 1)
-                        || (device_ctx.rr_nodes[inode].xhigh() == L_nx)
-                        || (device_ctx.rr_nodes[inode].yhigh() == L_ny));
+                        || (device_ctx.rr_nodes[inode].xhigh() == grid.nx())
+                        || (device_ctx.rr_nodes[inode].yhigh() == grid.ny()));
                 is_wire = (device_ctx.rr_nodes[inode].type() == CHANX
                         || device_ctx.rr_nodes[inode].type() == CHANY);
 
