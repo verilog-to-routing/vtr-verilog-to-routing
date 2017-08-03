@@ -26,9 +26,15 @@ class ClusteredNetlist : public BaseNetlist {
 
 		//Sets the block's pin to point to net
 		//  blk_id		: The block the pin is associated with
-		//  pin_index   : The index pin of the block to be changed
+		//  pin_index   : The pin of the block to be changed
 		//  net_id		: The changed net
 		void set_block_net(const BlockId blk_id, const int pin_index, const NetId net_id);
+
+		//Sets the block's net count
+		//  blk_id		: The block the net is associated with
+		//	pin_index	: The pin of the block to be changed
+		//  net_count	: The net's counter
+		void set_block_net_count(const BlockId blk_id, const int pin_index, const int count);
 
 		//Create or return an existing port in the netlist
 		//  blk_id      : The block the port is associated with
@@ -79,7 +85,10 @@ class ClusteredNetlist : public BaseNetlist {
 		t_type_ptr block_type(const BlockId id) const;
 
 		//Returns the net of the block attached to the specific pin index
-		NetId block_net(const BlockId blk_id, const int net_index) const;
+		NetId block_net(const BlockId blk_id, const int pin_index) const;
+
+		//Returns the count on the net of the block attached
+		int block_net_count(const BlockId blk_id, const int pin_index) const;
 
 		/*
 		* Pins
@@ -99,6 +108,8 @@ class ClusteredNetlist : public BaseNetlist {
 		BlockId net_pin_block(const NetId net_id, int pin_index) const;
 
 		//Returns the pin's index in the net
+		//  net_id		: The net of which the pin belongs to
+		//  pin_id		: The matching pin the net connects to
 		int net_pin_index(NetId net_id, PinId pin_id) const;
 
 		//Returns whether the net is global or fixed
@@ -116,7 +127,8 @@ class ClusteredNetlist : public BaseNetlist {
 		//Blocks
 		vtr::vector_map<BlockId, t_pb*>							block_pbs_;         //Physical block representing the clustering & internal hierarchy of each CLB
 		vtr::vector_map<BlockId, t_type_ptr>					block_types_;		//The type of physical block this user circuit block is mapped to
-		vtr::vector_map<BlockId, std::vector<NetId>>			block_nets_;	//Stores which pins are used/unused on the block with the net using it
+		vtr::vector_map<BlockId, std::vector<NetId>>			block_nets_;		//Stores which pins are used/unused on the block with the net using it
+		vtr::vector_map<BlockId, std::vector<int>>				block_net_count_;	//The count of the nets related to the block
 
 		//Pins
 		vtr::vector_map<PinId, int>								pin_index_;			//The index of the pins relative to its block

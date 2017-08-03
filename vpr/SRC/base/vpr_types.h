@@ -573,7 +573,6 @@ struct t_legal_pos {
 /* Represents a clustered logic block of a user circuit that fits into one unit of space in an FPGA grid block
  * net_pins: pins connected to the CLB nets */
 struct t_block {
-	int *net_pins;
 };
 
 /* Represents the placement location of a clustered block (i.e. t_block)

@@ -41,7 +41,7 @@ static void processPb(pugi::xml_node Parent, const int index,
 		t_pb* pb, t_pb_route *pb_route, int *num_primitives,
         const pugiutil::loc_data& loc_data, ClusteredNetlist *clb_nlist);
 
-static void processComplexBlock(pugi::xml_node Parent, t_block *cb,
+static void processComplexBlock(pugi::xml_node Parent,
 		const int index, int *num_primitives,
         const pugiutil::loc_data& loc_data,
 		ClusteredNetlist *clb_nlist);
@@ -50,7 +50,6 @@ static int add_net_to_hash(t_hash **nhash, const char *net_name,
 		int *ncount);
 
 static void load_external_nets_and_cb(const int L_num_blocks,
-		const t_block block_list[],
 		const std::vector<std::string>& circuit_clocks,
 		ClusteredNetlist* clb_nlist);
 
@@ -58,8 +57,7 @@ static void load_internal_to_block_net_nums(const t_type_ptr type, t_pb_route *p
 
 static void load_atom_index_for_pb_pin(t_pb_route *pb_route, int ipin);
 
-static void mark_constant_generators(const int L_num_blocks,
-	const ClusteredNetlist *clb_nlist);
+static void mark_constant_generators(const int L_num_blocks, const ClusteredNetlist *clb_nlist);
 	
 static void mark_constant_generators_rec(const t_pb *pb, const t_pb_route *pb_route);
 
@@ -69,17 +67,13 @@ static void load_atom_pin_mapping();
 static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
 
 /**
- * Initializes the block_list with info from a netlist 
+ * Initializes the clb_nlist with info from a netlist 
  * net_file - Name of the netlist file to read
- * block_list - array of blocks in netlist [0..num_blocks - 1]
- * t_netlist - Net related information
  */
-void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_digests,
-				  t_block *block_list[], ClusteredNetlist* clb_nlist) {
+void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_digests, ClusteredNetlist* clb_nlist) {
 	clock_t begin = clock();
 	size_t bcount = 0;
-	t_block *blist;
-    std::vector<std::string> circuit_inputs, circuit_outputs, circuit_clocks;
+	std::vector<std::string> circuit_inputs, circuit_outputs, circuit_clocks;
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -194,12 +188,10 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
             vtr::printf_warning(__FILE__, __LINE__, "Packed netlist contains no clustered blocks\n");
         }
 
-        blist = (t_block *) vtr::calloc(bcount, sizeof(t_block));
-
         /* Process netlist */
         size_t i = 0;
         for(auto curr_block = top.child("block"); curr_block; curr_block = curr_block.next_sibling("block")) {
-            processComplexBlock(curr_block, blist, i, &num_primitives, loc_data, clb_nlist);
+            processComplexBlock(curr_block, i, &num_primitives, loc_data, clb_nlist);
             i++;
         }
         VTR_ASSERT(i == bcount);
@@ -218,7 +210,7 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
         /* TODO: Add additional check to make sure net connections match */
 		mark_constant_generators(bcount, clb_nlist);
 
-        load_external_nets_and_cb(bcount, blist, circuit_clocks, clb_nlist);
+        load_external_nets_and_cb(bcount, circuit_clocks, clb_nlist);
     } catch(pugiutil::XmlError& e) {
         vpr_throw(VPR_ERROR_NET_F, e.filename_c_str(), e.line(),
                   "Error loading post-pack netlist (%s)", e.what());
@@ -239,9 +231,6 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
         atom_ctx.lookup.set_atom_clb_net(net_id, i);
 	}
 
-	/* Return blocks and nets */
-	*block_list = blist;
-
     /* load mapping between atom pins and pb_graph_pins */
     load_atom_pin_mapping();
 
@@ -257,15 +246,14 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
  * index - index of the CLB to allocate and load information into
  * loc_data - xml location info for error reporting
  */
-static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
+static void processComplexBlock(pugi::xml_node clb_block,
 		const int index, int *num_primitives,
         const pugiutil::loc_data& loc_data,
 		ClusteredNetlist *clb_nlist) {
 
 	bool found;
-	int num_tokens = 0;
+	int i, num_tokens = 0;
 	t_token *tokens;
-	int i, num_pins;
 	const t_pb_type *pb_type = NULL;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -321,15 +309,6 @@ static void processComplexBlock(pugi::xml_node clb_block, t_block *cb,
 	}
 
 	processPb(clb_block, index, clb_nlist->block_pb((BlockId)index), clb_nlist->block_pb((BlockId)index)->pb_route, num_primitives, loc_data, clb_nlist);
-
-	//Process nets and net_pins
-	num_pins = clb_nlist->block_type((BlockId)index)->num_pins;	
-	
-	cb[index].net_pins = (int *) vtr::malloc(num_pins * sizeof(int));
-
-	for (i = 0; i < num_pins; i++) {
-		cb[index].net_pins[i] = OPEN;
-	}
 	load_internal_to_block_net_nums(clb_nlist->block_type((BlockId)index), clb_nlist->block_pb((BlockId)index)->pb_route);
 
 	freeTokens(tokens, num_tokens);
@@ -345,7 +324,7 @@ static void processPb(pugi::xml_node Parent, const int index,
 	t_pb* pb, t_pb_route *pb_route, int *num_primitives,
     const pugiutil::loc_data& loc_data, ClusteredNetlist *clb_nlist) {
 	
-	int i, j, pb_index, num_in_ports, num_out_ports, num_clock_ports;
+	int i, j, pb_index;
 	bool found;
 	const t_pb_type *pb_type;
 	
@@ -355,13 +334,13 @@ static void processPb(pugi::xml_node Parent, const int index,
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
     auto inputs = pugiutil::get_single_child(Parent, "inputs", loc_data);
-	num_in_ports = processPorts(inputs, pb, pb_route, loc_data);
+	int num_in_ports = processPorts(inputs, pb, pb_route, loc_data);
 	
     auto outputs = pugiutil::get_single_child(Parent, "outputs", loc_data);
-	num_out_ports = processPorts(outputs, pb, pb_route, loc_data);
+	int num_out_ports = processPorts(outputs, pb, pb_route, loc_data);
 
     auto clocks = pugiutil::get_single_child(Parent, "clocks", loc_data);
-	num_clock_ports = processPorts(clocks, pb, pb_route, loc_data);
+	int num_clock_ports = processPorts(clocks, pb, pb_route, loc_data);
 
 	pb_type = pb->pb_graph_node->pb_type;
 
@@ -808,7 +787,6 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
  * This function updates the nets list and the connections between that list and the complex block
  */
 static void load_external_nets_and_cb(const int L_num_blocks,
-		const t_block block_list[],
 		const std::vector<std::string>& circuit_clocks,
         ClusteredNetlist* clb_nlist) {
 	int i, j, k, ipin, num_tokens;
@@ -924,14 +902,14 @@ static void load_external_nets_and_cb(const int L_num_blocks,
                     /* Error check performed later to ensure no mixing of global and non-global signals */
 
                     //Mark the net pin numbers on the block
-                    block_list[(size_t)blk_id].net_pins[j] = count[(size_t)clb_net_id]; //A sink
+					clb_nlist->set_block_net_count(blk_id, j, count[(size_t)clb_net_id]); //A sink
 
 				} else {
 					VTR_ASSERT(DRIVER == clb_nlist->block_type(blk_id)->class_inf[clb_nlist->block_type(blk_id)->pin_class[j]].type);
 					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins(clb_net_id).begin()))); //TODO: Remove after t_block/t_netlist
 					VTR_ASSERT(j == clb_nlist->pin_index(clb_net_id, 0));
                     //Mark the net pin numbers on the block
-                    block_list[(size_t)blk_id].net_pins[j] = 0; //The driver
+					clb_nlist->set_block_net_count(blk_id, j, 0); //Driver
 				}
 			}
 		}

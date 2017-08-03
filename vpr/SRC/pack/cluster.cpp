@@ -334,7 +334,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	t_cluster_placement_stats *cluster_placement_stats, *cur_cluster_placement_stats_ptr;
 	t_pb_graph_node **primitives_list;
-	t_block *clb; /* [0..num_clusters-1] */
 	t_lb_router_data *router_data = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
 	t_lb_net_stats *clb_inter_blk_nets = NULL; /* [0..num_clusters-1] */
@@ -349,7 +348,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
     std::shared_ptr<SetupTimingInfo> timing_info;
 
 	/* TODO: This is memory inefficient, fix if causes problems */
-	clb = (t_block*)vtr::calloc(atom_ctx.nlist.blocks().size(), sizeof(t_block));
 	num_clb = 0;
 	clb_inter_blk_nets = new t_lb_net_stats[atom_ctx.nlist.blocks().size()];
 
@@ -714,11 +712,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	VTR_ASSERT(num_clb == (int)cluster_ctx.clb_nlist.blocks().size());
 	check_clustering();
 
-	cluster_ctx.blocks = clb;
-
 	output_clustering(intra_lb_routing, global_clocks, is_clock, arch->architecture_id, out_fname, false);
 	
-	cluster_ctx.blocks = NULL;
 
 	for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++){
 		free_intra_lb_nets(intra_lb_routing[irt]);
@@ -730,14 +725,11 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	}
 	free_cluster_placement_stats(cluster_placement_stats);
 
+	//TODO: Remove and destroy cluster_ctx here
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		free_pb(cluster_ctx.clb_nlist.block_pb(blk_id));
-//		free(clb[i].nets);
 		delete cluster_ctx.clb_nlist.block_pb(blk_id);
 	}
-	free(clb);
-
-	//TODO: Remove and destroy cluster_ctx here
 
 	free(num_used_instances_type);
 	free(num_instances_type);

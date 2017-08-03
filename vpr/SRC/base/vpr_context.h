@@ -190,8 +190,7 @@ struct ClusteringContext : public Context {
     /********************************************************************
      CLB Netlist
      ********************************************************************/
-	/* New netlist class derived from BaseNetlist
-	 * Will replace t_netlist & part of t_block */
+	/* New netlist class derived from BaseNetlist */
 	ClusteredNetlist clb_nlist;
 
     /* blocks in the clustered netlist */
