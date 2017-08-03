@@ -82,7 +82,7 @@ void free_chan_details(
 		t_chan_details& chan_details_x,
 		t_chan_details& chan_details_y,
 		const int max_chan_width,
-		const int L_nx, const int L_ny);
+        const DeviceGrid& grid);
 
 int get_seg_start(
 		const t_seg_details *seg_details,

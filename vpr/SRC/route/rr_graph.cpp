@@ -584,7 +584,7 @@ static void build_rr_graph(
         seg_details = NULL;
     }
     if (!chan_details_x.empty() || !chan_details_y.empty()) {
-        free_chan_details(chan_details_x, chan_details_y, max_chan_width, L_nx, L_ny);
+        free_chan_details(chan_details_x, chan_details_y, max_chan_width, device_ctx.grid);
     }
     if (sb_conn_map) {
         free_switchblock_permutations(sb_conn_map);

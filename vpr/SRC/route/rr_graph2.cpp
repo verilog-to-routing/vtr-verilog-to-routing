@@ -598,18 +598,18 @@ void free_chan_details(
         t_chan_details& chan_details_x,
         t_chan_details& chan_details_y,
         const int max_chan_width,
-        const int L_nx, const int L_ny) {
+        const DeviceGrid& grid) {
 
     /* Frees all the memory allocated to an array of chan_details structures. */
-    for (int x = 0; x <= L_nx; ++x) {
-        for (int y = 0; y <= L_ny; ++y) {
+    for (int x = 0; x <= grid.nx(); ++x) {
+        for (int y = 0; y <= grid.ny(); ++y) {
 
             t_seg_details* p_seg_details = chan_details_x[x][y];
             free_seg_details(p_seg_details, max_chan_width);
         }
     }
-    for (int x = 0; x <= L_nx; ++x) {
-        for (int y = 0; y <= L_ny; ++y) {
+    for (int x = 0; x <= grid.nx(); ++x) {
+        for (int y = 0; y <= grid.ny(); ++y) {
 
             t_seg_details* p_seg_details = chan_details_y[x][y];
             free_seg_details(p_seg_details, max_chan_width);
