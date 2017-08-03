@@ -486,7 +486,7 @@ static void build_rr_graph(
             }
 
             if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_SBLOCK_PATTERN)) {
-                dump_sblock_pattern(unidir_sb_pattern, max_chan_width, L_nx, L_ny,
+                dump_sblock_pattern(unidir_sb_pattern, max_chan_width, device_ctx.grid,
                         getEchoFileName(E_ECHO_SBLOCK_PATTERN));
             }
         }

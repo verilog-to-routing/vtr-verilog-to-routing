@@ -995,13 +995,13 @@ void dump_chan_details(
 void dump_sblock_pattern(
         short ******sblock_pattern,
         int max_chan_width,
-        const int L_nx, int const L_ny,
+        const DeviceGrid& grid,
         const char *fname) {
 
     FILE *fp = vtr::fopen(fname, "w");
     if (fp) {
-        for (int y = 0; y <= L_ny; ++y) {
-            for (int x = 0; x <= L_nx; ++x) {
+        for (int y = 0; y <= grid.ny(); ++y) {
+            for (int x = 0; x <= grid.nx(); ++x) {
 
                 fprintf(fp, "==========================\n");
                 fprintf(fp, "sblock_pattern: [%d][%d]\n", x, y);

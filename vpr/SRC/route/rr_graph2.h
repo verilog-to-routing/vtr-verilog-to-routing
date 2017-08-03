@@ -197,7 +197,7 @@ void dump_chan_details(
 void dump_sblock_pattern(
 		short ******sblock_pattern,
 		int max_chan_width,
-		const int L_nx, int const L_ny,
+		const DeviceGrid& grid,
 		const char *fname);
 
 void print_rr_node_indices(int L_nx, int L_ny, const t_rr_node_indices& L_rr_node_indices);
