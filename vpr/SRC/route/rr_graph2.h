@@ -192,7 +192,7 @@ void dump_chan_details(
 		const t_chan_details& chan_details_x,
 		const t_chan_details& chan_details_y,
 		int max_chan_width,
-		const int L_nx, int const L_ny,
+        const DeviceGrid& grid,
 		const char *fname);
 void dump_sblock_pattern(
 		short ******sblock_pattern,

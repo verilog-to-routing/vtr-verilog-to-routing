@@ -344,8 +344,10 @@ static void build_rr_graph(
         /* Setup segments including distrubuting tracks and staggering.
          * If use_full_seg_groups is specified, max_chan_width may be 
          * changed. Warning should be singled to caller if this happens. */
+        size_t max_dim = std::max(device_ctx.grid.nx(), device_ctx.grid.ny());
+
         seg_details = alloc_and_load_seg_details(&max_chan_width,
-                max(L_nx, L_ny), num_seg_types, segment_inf,
+                max_dim, num_seg_types, segment_inf,
                 use_full_seg_groups, is_global_graph, directionality,
                 &num_seg_details);
         if ((is_global_graph ? 1 : nodes_per_chan->max) != max_chan_width) {
@@ -370,7 +372,7 @@ static void build_rr_graph(
             chan_details_x, chan_details_y);
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CHAN_DETAILS)) {
-        dump_chan_details(chan_details_x, chan_details_y, max_chan_width, device_ctx.nx, device_ctx.ny,
+        dump_chan_details(chan_details_x, chan_details_y, max_chan_width, device_ctx.grid,
                 getEchoFileName(E_ECHO_CHAN_DETAILS));
     }
     /* END CHAN_DETAILS */

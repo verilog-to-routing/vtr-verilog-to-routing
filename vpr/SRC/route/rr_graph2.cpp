@@ -959,13 +959,13 @@ void dump_chan_details(
         const t_chan_details& chan_details_x,
         const t_chan_details& chan_details_y,
         int max_chan_width,
-        const int L_nx, int const L_ny,
+        const DeviceGrid& grid,
         const char *fname) {
 
     FILE *fp = vtr::fopen(fname, "w");
     if (fp) {
-        for (int y = 0; y <= L_ny; ++y) {
-            for (int x = 0; x <= L_nx; ++x) {
+        for (int y = 0; y <= grid.ny(); ++y) {
+            for (int x = 0; x <= grid.nx(); ++x) {
 
                 fprintf(fp, "========================\n");
                 fprintf(fp, "chan_details_x: [%d][%d]\n", x, y);
@@ -975,8 +975,8 @@ void dump_chan_details(
                 dump_seg_details(seg_details, max_chan_width, fp);
             }
         }
-        for (int x = 0; x <= L_nx; ++x) {
-            for (int y = 0; y <= L_ny; ++y) {
+        for (int x = 0; x <= grid.nx(); ++x) {
+            for (int y = 0; y <= grid.ny(); ++y) {
 
                 fprintf(fp, "========================\n");
                 fprintf(fp, "chan_details_y: [%d][%d]\n", x, y);
