@@ -612,6 +612,36 @@ t_type_ptr find_most_common_block_type(const DeviceGrid& grid) {
     return max_type;
 }
 
+//Returns true if the specified block type contains the specified blif model name
+bool block_type_contains_blif_model(t_type_ptr type, std::string blif_model_name) {
+    return pb_type_contains_blif_model(type->pb_type, blif_model_name);
+}
+
+//Returns true of a pb_type (or it's children) contain the specified blif model name
+bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name) {
+    if (pb_type->blif_model != nullptr) {
+        //Leaf pb_type
+        VTR_ASSERT(pb_type->num_modes == 0);
+        if (blif_model_name == pb_type->blif_model) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        for (int imode = 0; imode < pb_type->num_modes; ++imode) {
+            const t_mode* mode = &pb_type->modes[imode];
+
+            for (int ichild = 0; ichild < mode->num_pb_type_children; ++ichild) {
+                const t_pb_type* pb_type_child = &mode->pb_type_children[ichild];
+                if (pb_type_contains_blif_model(pb_type_child, blif_model_name)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 int get_max_primitives_in_pb_type(t_pb_type *pb_type) {
 
 	int i, j;

@@ -108,14 +108,28 @@ void SetupVPR(t_options *Options,
 	device_ctx.EMPTY_TYPE = NULL;
 	device_ctx.IO_TYPE = NULL;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
+        t_type_ptr type = &device_ctx.block_types[i];
 		if (strcmp(device_ctx.block_types[i].name, EMPTY_BLOCK_NAME) == 0) {
-			device_ctx.EMPTY_TYPE = &device_ctx.block_types[i];
-		} else if (strcmp(device_ctx.block_types[i].name, "io") == 0) {
-			device_ctx.IO_TYPE = &device_ctx.block_types[i];
+			device_ctx.EMPTY_TYPE = type;
+		} else if (block_type_contains_blif_model(type, ".input") && block_type_contains_blif_model(type, ".output")) {
+            if (device_ctx.IO_TYPE != nullptr) {
+                //Already set
+                VPR_THROW(VPR_ERROR_ARCH, 
+                        "Architecture contains multiple top-level block types containing both"
+                        " '.input' and '.output' BLIF models (expected one block type)");
+            }
+			device_ctx.IO_TYPE = type;
 		}
     }
 
-	VTR_ASSERT(device_ctx.EMPTY_TYPE != NULL && device_ctx.IO_TYPE != NULL);
+	VTR_ASSERT(device_ctx.EMPTY_TYPE != NULL);
+
+    if (device_ctx.IO_TYPE == nullptr) {
+        //Already set
+        VPR_THROW(VPR_ERROR_ARCH, 
+                "Architecture contains no top-level block type containing both"
+                " '.input' and '.output' BLIF models (expected one block type)");
+    }
 
 	*Segments = Arch->Segments;
 	RoutingArch->num_segment = Arch->num_segments;
