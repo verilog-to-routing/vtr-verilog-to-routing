@@ -71,6 +71,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
 
 static void compute_delta_arrays(t_router_opts router_opts, int longest_length);
 
+static bool verify_delta_delays();
 static int get_best_class(enum e_pin_type pintype, t_type_ptr type);
 
 static int get_longest_segment_length(
@@ -327,21 +328,25 @@ static void generic_compute_matrix(vtr::Matrix<float>& matrix,
                 matrix[delta_x][delta_y] = EMPTY_DELTA;
                 pair<int, int> empty_cell(delta_x, delta_y);
                 empty_blocks.push_back(empty_cell);
-                //vtr::printf("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
-                                //"EMPTY",
-                                //delta_x, delta_y,
-                                //source_x, source_y,
-                                //sink_x, sink_y);
+#ifdef VERBOSE
+                vtr::printf("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
+                                "EMPTY",
+                                delta_x, delta_y,
+                                source_x, source_y,
+                                sink_x, sink_y);
+#endif
                 continue;
             }
 
 
             matrix[delta_x][delta_y] = route_connection_delay(source_x, source_y, sink_x, sink_y, router_opts);
-            //vtr::printf("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n", 
-                    //matrix[delta_x][delta_y],
-                    //delta_x, delta_y,
-                    //source_x, source_y,
-                    //sink_x, sink_y);
+#ifdef VERBOSE
+            vtr::printf("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n", 
+                    matrix[delta_x][delta_y],
+                    delta_x, delta_y,
+                    source_x, source_y,
+                    sink_x, sink_y);
+#endif
         }
     }
 }
@@ -388,7 +393,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
     size_t y = 0;
     size_t x = 0;
     t_type_ptr src_type = nullptr;
-    for (x = 0; x < grid.width() && src_type == nullptr; ++x) {
+    for (x = 0; x < grid.width(); ++x) {
         for (y = 0; y < grid.height(); ++y) {
             auto type = grid[x][y].type; 
 
@@ -397,10 +402,15 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
                 break;
             }
         }
+        if (src_type) {
+            break;
+        }
     }
     VTR_ASSERT(src_type != nullptr);
 
-    //vtr::printf("Computing from lower left edge:\n");
+#ifdef VERBOSE
+    vtr::printf("Computing from lower left edge (%d,%d):\n", x, y);
+#endif
     generic_compute_matrix(f_delta_delay,
             x, y,
             x, y,
@@ -409,7 +419,7 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
 
     //Pick the lowest x location on the bottom
     src_type = nullptr;
-    for (y = 0; y < grid.width() && src_type == nullptr; ++y) {
+    for (y = 0; y < grid.height(); ++y) {
         for (x = 0; x < grid.width(); ++x) {
             auto type = grid[x][y].type; 
 
@@ -418,9 +428,14 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
                 break;
             }
         }
+        if (src_type) {
+            break;
+        }
     }
     VTR_ASSERT(src_type != nullptr);
-    //vtr::printf("Computing from left bottom edge:\n");
+#ifdef VERBOSE
+    vtr::printf("Computing from left bottom edge (%d,%d):\n",x, y);
+#endif
     generic_compute_matrix(f_delta_delay,
             x, y,
             x, y,
@@ -430,7 +445,9 @@ static void compute_delta_delays(t_router_opts router_opts, size_t longest_lengt
 
     //Since the other delta delay values may have suffered from edge effects, we recalculate
     //withing region D
-    //vtr::printf("Computing from mid:\n");
+#ifdef VERBOSE
+    vtr::printf("Computing from mid:\n");
+#endif
     generic_compute_matrix(f_delta_delay,
             low_x, low_y,
             low_x, low_y,
@@ -532,9 +549,36 @@ static void compute_delta_arrays(t_router_opts router_opts, int longest_length) 
 
     fix_empty_coordinates();
 
+
     if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
         print_delta_delays_echo(getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
     }
+
+    verify_delta_delays();
+}
+
+static bool verify_delta_delays() {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& grid = device_ctx.grid;
+
+    for(size_t x = 0; x < grid.width(); ++x) {
+        for(size_t y = 0; y < grid.height(); ++y) {
+            auto type = grid[x][y].type;
+
+            if (type != device_ctx.EMPTY_TYPE) {
+                
+                float delta_delay = get_delta_delay(x, y);
+
+                if (delta_delay < 0.) {
+                    VPR_THROW(VPR_ERROR_PLACE, 
+                            "Found negative delay %g for delta (%d,%d), but this is a valid delta between non-EMPTY blocks",
+                            delta_delay, x, y);
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 static void print_delta_delays_echo(const char* filename) {
