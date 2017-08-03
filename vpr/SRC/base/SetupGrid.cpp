@@ -241,14 +241,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
         }
     }
 
-    //Sort the grid specifications by priority
-    // Note that we us a stable sort to respect the architecture file order in the ambiguous case
-    // of specifications with equal priorities
-    auto priority_order = [](const t_grid_loc_def& lhs, const t_grid_loc_def& rhs) {
-        return lhs.priority < rhs.priority;
-    };
     auto grid_loc_defs = grid_def.loc_defs;
-    std::stable_sort(grid_loc_defs.begin(), grid_loc_defs.end(), priority_order);
 
     //Process the gird location specifications from lowest to highest priority,
     //this ensure higher priority specifications override lower priority specifications
@@ -509,9 +502,6 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
     //Rip-up any invalidated blocks
     for (auto invalidated_root : root_blocks_to_rip_up) {
 
-        VTR_ASSERT(grid[invalidated_root.x][invalidated_root.y].width_offset == 0);
-        VTR_ASSERT(grid[invalidated_root.x][invalidated_root.y].height_offset == 0);
-
         //Mark all the grid locations used by this root block as empty
         for (size_t x = invalidated_root.x; x < invalidated_root.x + invalidated_root.type->width; ++x) {
             int x_offset = x - invalidated_root.x;
@@ -527,6 +517,11 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
                     //       in that case
                     VTR_ASSERT(device_ctx.EMPTY_TYPE->width == 1);
                     VTR_ASSERT(device_ctx.EMPTY_TYPE->height == 1);
+
+                    vtr::printf("Ripping up block '%s' at (%d,%d) offset (%d,%d). Overlapped by '%s' at (%d,%d)\n", 
+                            invalidated_root.type->name, invalidated_root.x, invalidated_root.y,
+                            x_offset, y_offset,
+                            type->name, x_root, y_root);
 
                     grid[x][y].type = device_ctx.EMPTY_TYPE;
                     grid[x][y].width_offset = 0;

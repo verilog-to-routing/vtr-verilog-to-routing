@@ -147,7 +147,7 @@ Each ``<auto_layout>`` or ``<fixed_layout>`` tag should contain a set of grid lo
 
 Grid Location Priorities
 ~~~~~~~~~~~~~~~~~~~~~~~~
-The grid location specifications are processed in ascending order of *priority*.
+Each grid location specification has an associated numeric *priority*.
 Larger priority location specifications override those with lower prioriry.
 
 .. note:: If a grid block is partially overlapped by another block with higher priority the entier lower priority block is removed form the grid.
