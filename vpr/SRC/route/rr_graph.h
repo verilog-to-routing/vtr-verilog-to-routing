@@ -7,6 +7,8 @@
    and so are not currently used in commercial architectures. */
 #define INCLUDE_TRACK_BUFFERS false
 
+#include "device_grid.h"
+
 enum e_graph_type {
     GRAPH_GLOBAL, /* One node per channel with wire capacity > 1 and full connectivity */
     GRAPH_BIDIR, /* Detailed bidirectional graph */
@@ -27,7 +29,7 @@ enum {
 void create_rr_graph(
         const t_graph_type graph_type, const int L_num_types,
         const t_type_ptr types, const int L_nx, const int L_ny,
-        const vtr::Matrix<t_grid_tile>& L_grid,
+        const DeviceGrid& L_grid,
         t_chan_width *nodes_per_chan,
         const enum e_switch_block_type sb_type, const int Fs,
         const vector<t_switchblock_inf> switchblocks,
@@ -50,17 +52,17 @@ void free_rr_graph(void);
 
 void dump_rr_graph(const char *file_name);
 void print_rr_indexed_data(FILE * fp, int index); /* For debugging only */
-void load_net_rr_terminals(vector<int>*** L_rr_node_indices);
+void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
 
 void print_rr_node(FILE *fp, t_rr_node *L_rr_node, int inode);
 
 void init_fan_in(const int i, const int j,
-        t_rr_node * L_rr_node, vector<int> *** L_rr_node_indices,
-        const vtr::Matrix<t_grid_tile>& L_grid, const int num_rr_nodes);
+        t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
+        const DeviceGrid& L_grid, const int num_rr_nodes);
 
 void alloc_net_rr_terminals(void);
 
-void alloc_and_load_rr_clb_source(vector<int> *** L_rr_node_indices);
+void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices);
 
 #endif
 

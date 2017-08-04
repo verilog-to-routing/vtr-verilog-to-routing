@@ -15,13 +15,17 @@ double sec_to_nanosec(double seconds);
 
 double sec_to_mhz(double seconds);
 
+/*
+ * Setup-time related statistics
+ */
+
 //Returns the path delay of the longest critical timing path (i.e. across all domains)
 tatum::TimingPathInfo find_longest_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
 
 //Returns the path delay of the least-slack critical timing path (i.e. across all domains)
 tatum::TimingPathInfo find_least_slack_critical_path_delay(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
 
-//Returns the total negative slack (setup) at all timing end-points and clock domain pairs
+//Returns the total negative slack (setup) of all timing end-points and clock domain pairs
 float find_setup_total_negative_slack(const tatum::SetupTimingAnalyzer& setup_analyzer);
 
 //Returns the worst negative slack (setup) across all timing end-points and clock domain pairs
@@ -30,11 +34,29 @@ float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
 //Returns the slack at a particular node for the specified clock domains (if found), otherwise NAN
 float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, tatum::NodeId node, tatum::DomainId launch_domain, tatum::DomainId capture_domain);
 
-//Returns a slack histogram
+//Returns a setup slack histogram
 std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins = 10);
 
 //Print a useful summary of timing information
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
+
+/*
+ * Hold-time related statistics
+ */
+//Returns the total negative slack (hold) of all timing end-points and clock domain pairs
+float find_hold_total_negative_slack(const tatum::HoldTimingAnalyzer& hold_analyzer);
+
+//Returns the worst negative slack (hold) across all timing end-points and clock domain pairs
+float find_hold_worst_negative_slack(const tatum::HoldTimingAnalyzer& hold_analyzer);
+
+//Returns a setup slack histogram
+std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTimingAnalyzer& hold_analyzer, size_t num_bins = 10);
+
+//Print a useful summary of timing information
+void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer);
+/*
+ * General utilities
+ */
 
 //Returns the a map of domain's and thier clock fanout (i.e. logical outputs at which the clock captures)
 std::map<tatum::DomainId,size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer);

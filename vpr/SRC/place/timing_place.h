@@ -18,5 +18,4 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
 
 float get_timing_place_crit(int inet, int ipin);
 void set_timing_place_crit(int inet, int ipin, float val);
-
 #endif

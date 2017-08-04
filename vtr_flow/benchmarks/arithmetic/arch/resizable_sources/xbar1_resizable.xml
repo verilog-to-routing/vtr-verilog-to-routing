@@ -75,10 +75,7 @@
 
 
   Authors: Jason Luu, Jeff Goeders, Vaughn Betz
--->
-  
-  
-  <architecture>
+--><architecture>
   
   <!-- 
        ODIN II specific config begins 
@@ -92,8 +89,8 @@
   <models>
     <model name="multiply">
       <input_ports>
-      <port name="a"/>
-      <port name="b"/>
+      <port name="a" combinational_sink_ports="out"/>
+      <port name="b" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
       <port name="out"/>
@@ -102,29 +99,29 @@
     
     <model name="single_port_ram">
       <input_ports>
-      <port name="we"/>     <!-- control -->
-      <port name="addr"/>  <!-- address lines -->
-      <port name="data"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+      <port name="we" clock="clk"/>     <!-- control -->
+      <port name="addr" clock="clk"/>  <!-- address lines -->
+      <port name="data" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
       <port name="clk" is_clock="1"/>  <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
-      <port name="out"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      <port name="out" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
 
     <model name="dual_port_ram">
       <input_ports>
-      <port name="we1"/>     <!-- write enable -->
-      <port name="we2"/>     <!-- write enable -->
-      <port name="addr1"/>  <!-- address lines -->
-      <port name="addr2"/>  <!-- address lines -->
-      <port name="data1"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
-      <port name="data2"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+      <port name="we1" clock="clk"/>     <!-- write enable -->
+      <port name="we2" clock="clk"/>     <!-- write enable -->
+      <port name="addr1" clock="clk"/>  <!-- address lines -->
+      <port name="addr2" clock="clk"/>  <!-- address lines -->
+      <port name="data1" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
+      <port name="data2" clock="clk"/>  <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
       <port name="clk" is_clock="1"/>  <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
-      <port name="out1"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
-      <port name="out2"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      <port name="out1" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
+      <port name="out2" clock="clk"/>   <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
 
@@ -132,7 +129,21 @@
   <!-- ODIN II specific config ends -->
  
   <!-- Physical descriptions begin -->
-  <layout width="%%WIDTH%%" height="%%HEIGHT%%"/>
+  <layout>
+    <device_layout name="unnamed_device" width="%%WIDTH%%" height="%%HEIGHT%%">
+        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+        <perimeter type="io" priority="100"/>
+        <corners type="EMPTY" priority="101"/>
+        <!--Fill with 'clb'-->
+        <fill type="clb" priority="10"/>
+        <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
+        <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
+        <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
+        <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+        </device_layout>
+</layout>
 
   		<device>
 			  <!-- VB & JL: Using Ian Kuon's transistor sizing and drive strength data for routing, at 40 nm. Ian used BPTM 
@@ -244,9 +255,6 @@
         </pinlocations>
 
         <!-- Place I/Os on the sides of the FPGA -->
-        <gridlocations>
-          <loc type="perimeter" priority="10"/>
-        </gridlocations>
         <power method="ignore"/>
       </pb_type>
       <!-- Define I/O pads ends -->
@@ -335,8 +343,8 @@
                       </direct>
                       <direct name="direct3" input="flut5.clk" output="ff.clk"/>                    
                       <mux name="mux1" input="ff.Q lut5.out" output="flut5.out">
-                        <delay_constant max="25e-12" in_port="lut5.out" out_port="flut5.out" />
-                        <delay_constant max="45e-12" in_port="ff.Q" out_port="flut5.out" />
+                        <delay_constant max="25e-12" in_port="lut5.out" out_port="flut5.out"/>
+                        <delay_constant max="45e-12" in_port="ff.Q" out_port="flut5.out"/>
                       </mux>
                     </interconnect>
                   </pb_type>
@@ -418,8 +426,8 @@
                 </direct>
                 <direct name="direct3" input="ble6.clk" output="ff.clk"/>                    
                 <mux name="mux1" input="ff.Q lut6.out" output="ble6.out">
-                  <delay_constant max="25e-12" in_port="lut6.out" out_port="ble6.out" />
-                  <delay_constant max="45e-12" in_port="ff.Q" out_port="ble6.out" />
+                  <delay_constant max="25e-12" in_port="lut6.out" out_port="ble6.out"/>
+                  <delay_constant max="45e-12" in_port="ff.Q" out_port="ble6.out"/>
                 </mux>
               </interconnect>
             </pb_type>
@@ -443,8 +451,8 @@
 
           <!-- 50% sparsely populated local routing -->
           <complete name="lutA" input="clb.I fle[9:0].out" output="fle[9:0].in">
-            <delay_constant max="95e-12" in_port="clb.I" out_port="fle[9:0].in" />
-            <delay_constant max="75e-12" in_port="fle[9:0].out" out_port="fle[9:0].in" />
+            <delay_constant max="95e-12" in_port="clb.I" out_port="fle[9:0].in"/>
+            <delay_constant max="75e-12" in_port="fle[9:0].out" out_port="fle[9:0].in"/>
           </complete>
 
           <complete name="clks" input="clb.clk" output="fle[9:0].clk">
@@ -474,15 +482,10 @@
 
 
         <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10">
-          <pin name="cin" fc_type="frac" fc_val="0"/>
-          <pin name="cout" fc_type="frac" fc_val="0"/>
-        </fc>
+          <fc_override port_name="cin" fc_type="frac" fc_val="0"/><fc_override port_name="cout" fc_type="frac" fc_val="0"/></fc>
 
         <pinlocations pattern="spread"/>
-        <gridlocations>
-          <loc type="fill" priority="1"/>
-        </gridlocations>
-      </pb_type>
+        </pb_type>
        <!-- Define general purpose logic block (CLB) ends -->
 
     <!-- Define fracturable multiplier begin -->
@@ -567,7 +570,7 @@
               <input name="B_cfg" num_pins="18"/>
               <output name="OUT_cfg" num_pins="36"/>
 
-              <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1" >
+              <pb_type name="mult_18x18" blif_model=".subckt multiply" num_pb="1">
                 <input name="a" num_pins="18"/>
                 <input name="b" num_pins="18"/>
                 <output name="out" num_pins="36"/>
@@ -668,9 +671,6 @@
       <pinlocations pattern="spread"/>
 
       <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->
-      <gridlocations>
-        <loc type="col" start="6" repeat="8" priority="2"/>
-      </gridlocations>		  
       <power method="sum-of-children"/>
     </pb_type>
     <!-- Define fracturable multiplier end -->
@@ -1271,10 +1271,6 @@
       <pinlocations pattern="spread"/>
 
       <!-- Place this memory block every 8 columns from (and including) the second column -->
-      <gridlocations>
-        <loc type="col" start="2" repeat="8" priority="2"/>
-      </gridlocations>
-
       <power method="sum-of-children"/>
     </pb_type>
     <!-- Define fracturable memory end -->

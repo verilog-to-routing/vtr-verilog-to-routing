@@ -95,12 +95,12 @@ enum e_pin_to_pin_annotation_format {
 	E_ANNOT_PIN_TO_PIN_MATRIX = 0, E_ANNOT_PIN_TO_PIN_CONSTANT
 };
 enum e_pin_to_pin_delay_annotations {
-	E_ANNOT_PIN_TO_PIN_DELAY_MIN = 0,
-	E_ANNOT_PIN_TO_PIN_DELAY_MAX,
-	E_ANNOT_PIN_TO_PIN_DELAY_TSETUP,
-	E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN,
-	E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX,
-	E_ANNOT_PIN_TO_PIN_DELAY_THOLD
+	E_ANNOT_PIN_TO_PIN_DELAY_MIN = 0,           //pb interconnect or primitive combinational max delay
+	E_ANNOT_PIN_TO_PIN_DELAY_MAX,               //pb interconnect or primitive combinational max delay
+    E_ANNOT_PIN_TO_PIN_DELAY_TSETUP,            //primitive setup time
+	E_ANNOT_PIN_TO_PIN_DELAY_THOLD,             //primitive hold time
+	E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN,    //primitive min clock-to-q delay
+	E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX,    //primitive max clock-to-q delay
 };
 enum e_pin_to_pin_capacitance_annotations {
 	E_ANNOT_PIN_TO_PIN_CAPACITANCE_C = 0
@@ -134,33 +134,126 @@ enum e_sb_location{
 /*************************************************************************************************/
 /* FPGA grid layout data types                                                                   */
 /*************************************************************************************************/
-/* Definition of how to place physical logic block in the grid 
- grid_loc_type - where the type goes and which numbers are valid
- start_col - the absolute value of the starting column from the left to fill, 
- used with COL_REPEAT
- repeat - the number of columns to skip before placing the same type, 
- used with COL_REPEAT.  0 means do not repeat
- rel_col - the fractional column to place type
- priority - in the event of conflict, which type gets picked?
+/* Grid location specification
+ *  Each member is a formula evaluated in terms of 'W' (device width),
+ *  and 'H' (device height). Formulas can be evaluated using parse_formula() 
+ *  from expr_eval.h.
  */
-enum e_grid_loc_type {
-	BOUNDARY = 0, FILL, COL_REPEAT, COL_REL
-};
-struct t_grid_loc_def {
-	enum e_grid_loc_type grid_loc_type;
-	int start_col;
-	int repeat;
-	float col_rel;
-	int priority;
+struct t_grid_loc_spec {
+    t_grid_loc_spec(std::string start, std::string end, std::string repeat, std::string incr)
+        : start_expr(start), end_expr(end)
+        , repeat_expr(repeat), incr_expr(incr) {}
+
+    std::string start_expr;  //Starting position (inclusive)
+    std::string end_expr;    //Ending position (inclusive)
+
+    std::string repeat_expr; //Distance between repeated
+                             // region instances
+
+    std::string incr_expr;   //Distance between block instantiations 
+                             // with the region
 };
 
-/* Data type definitions */
-/*   Grid info */
-struct t_clb_grid {
-	bool IsAuto;
-	float Aspect;
-	int W;
-	int H;
+/* Definition of how to place physical logic block in the grid.
+ *  This defines a region of the grid to be set to a specific type
+ *  (provided it's priority is high enough to override other blocks).
+ *
+ *  The diagram below illustrates the layout specification.
+ *
+ *                      +----+                +----+           +----+
+ *                      |    |                |    |           |    |
+ *                      |    |                |    |    ...    |    |
+ *                      |    |                |    |           |    |
+ *                      +----+                +----+           +----+
+ *                      
+ *                        .                     .                 .
+ *                        .                     .                 .
+ *                        .                     .                 .
+ *                                       
+ *                      +----+                +----+           +----+
+ *                      |    |                |    |           |    |
+ *                      |    |                |    |    ...    |    |
+ *                      |    |                |    |           |    |
+ *                      +----+                +----+           +----+
+ *                   ^  
+ *                   |
+ *           repeaty |  
+ *                   |
+ *                   v        (endx,endy)
+ *                      +----+                +----+           +----+
+ *                      |    |                |    |           |    |
+ *                      |    |                |    |    ...    |    |
+ *                      |    |                |    |           |    |
+ *                      +----+                +----+           +----+
+ *       (startx,starty)
+ *                            <--------------> 
+ *                                 repeatx
+ *
+ *  startx/endx and endx/endy define a rectangular region instancess dimensions.
+ *  The region instance is then repeated every repeatx/repeaty (if specified).
+ *
+ *  Within a particular region instance a block of block_type is laid down every
+ *  incrx/incry units (if not specified defaults to block width/height):
+ *
+ *
+ *    * = an instance of block_type within the region
+ *
+ *                    +------------------------------+
+ *                    |*         *         *        *|
+ *                    |                              |
+ *                    |                              |
+ *                    |                              |
+ *                    |                              |
+ *                    |                              |
+ *                    |*         *         *        *|
+ *                ^   |                              |
+ *                |   |                              |
+ *          incry |   |                              |
+ *                |   |                              |
+ *                v   |                              |
+ *                    |*         *         *        *|
+ *                    +------------------------------+
+ *
+ *                      <------->
+ *                        incrx
+ *
+ *  In the above diagram incrx = 10, and incry = 6
+ */
+struct t_grid_loc_def {
+    t_grid_loc_def(std::string block_type_val, int priority_val)
+        : block_type(block_type_val)
+        , priority(priority_val)
+        , x("0", "W-1", "W", "w")  //Fill in x direction, no repeat, incr by block width
+        , y("0", "H-1", "H", "h")  //Fill in y direction, no repeat, incr by block height
+    {}
+
+    std::string block_type; //The block type name
+
+	int priority = 0;       //Priority of the specification.
+                            // In case of conflicting specifications 
+                            // the largest priority wins.
+
+    t_grid_loc_spec x;      //Horizontal location specification
+    t_grid_loc_spec y;      //Veritcal location specification
+};
+
+enum GridDefType {
+    AUTO,
+    FIXED
+};
+
+struct t_grid_def {
+    GridDefType grid_type = GridDefType::AUTO;  //The type of this grid specification
+
+    std::string name = "";                      //The name of this device
+
+    int width = -1;                             //Fixed device width (only valid for grid_type == FIXED)
+    int height = -1;                            //Fixed device height (only valid for grid_type == FIXED)
+
+    float aspect_ratio = 1.;                    //Aspect ratio for auto-sized devices (only valid for 
+                                                //grid_type == AUTO)
+
+    std::vector<t_grid_loc_def> loc_defs;       //The list of grid location definitions for this grid specification
 };
 
 /************************* POWER ***********************************/
@@ -340,9 +433,6 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	t_pb_type *pb_type;
 	t_pb_graph_node *pb_graph_head;
 
-	/* Grid location info */
-	t_grid_loc_def *grid_loc_def; /* [0..num_def-1] */
-	int num_grid_loc_def;
 	float area;
 
 	/* This info can be determined from class_inf and pin_class but stored for faster access */
@@ -706,39 +796,47 @@ enum e_pb_graph_pin_type {
  *      pin_count_in_cluster: Unique number for pin inside cluster
  */
 struct t_pb_graph_pin {
-	t_port *port;
-	int pin_number;
-	t_pb_graph_edge** input_edges; /* [0..num_input_edges] */
-	int num_input_edges;
-	t_pb_graph_edge** output_edges; /* [0..num_output_edges] */
-	int num_output_edges;
+	t_port *port = nullptr;
+	int pin_number = 0;
+	t_pb_graph_edge** input_edges = nullptr; /* [0..num_input_edges] */
+	int num_input_edges = 0;
+	t_pb_graph_edge** output_edges = nullptr; /* [0..num_output_edges] */
+	int num_output_edges = 0;
 
-	t_pb_graph_node *parent_node;
-	int pin_count_in_cluster;
+	t_pb_graph_node *parent_node = nullptr;
+	int pin_count_in_cluster = 0;
 
-	int scratch_pad; /* temporary data structure useful to store traversal info */
+	int scratch_pad = 0; /* temporary data structure useful to store traversal info */
 
-	/* timing information */
-	enum e_pb_graph_pin_type type; /* Is a sequential logic element (true), inpad/outpad (true), or neither (false) */
+	enum e_pb_graph_pin_type type = PB_PIN_NORMAL; /* The type of this pin (sequential, i/o etc.) */
+
+	/* sequential timing information */
 	float tsu = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the setup time */
-	float tco = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the clock to output time */
-    t_pb_graph_pin* associated_clock_pin; /* For sequentail elements, the associated clock */
-	t_pb_graph_pin** pin_timing; /* primitive ipin to opin timing */
-	float *pin_timing_del_max; /* primitive ipin to opin timing */
-	int num_pin_timing; /* primitive ipin to opin timing */
+	float thld = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the hold time */
+	float tco_min = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the minimum clock to output time */
+	float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
+    t_pb_graph_pin* associated_clock_pin = nullptr; /* For sequentail elements, the associated clock */
+
+	/* combinational timing information */
+	int num_pin_timing = 0; /* Number of ipin to opin timing edges*/
+	t_pb_graph_pin** pin_timing = nullptr; /* timing edge sink pins  [0..num_pin_timing-1]*/
+	float *pin_timing_del_max = nullptr; /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
+	float *pin_timing_del_min = nullptr; /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
+    int num_pin_timing_del_max_annotated = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_max_annotated-1]
+    int num_pin_timing_del_min_annotated = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_min_annotated-1]
 
 	/* Applies to clusters only */
-	int pin_class;
+	int pin_class = 0;
 
 	/* Applies to pins of primitive only */
-	int *parent_pin_class; /* [0..depth-1] the grouping of pins that this particular pin belongs to */
+	int *parent_pin_class = nullptr; /* [0..depth-1] the grouping of pins that this particular pin belongs to */
 	/* Applies to output pins of primitives only */
-	t_pb_graph_pin ***list_of_connectable_input_pin_ptrs; /* [0..depth-1][0..num_connectable_primitive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
-	int *num_connectable_primitive_input_pins; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
+	t_pb_graph_pin ***list_of_connectable_input_pin_ptrs = nullptr; /* [0..depth-1][0..num_connectable_primitive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
+	int *num_connectable_primitive_input_pins = nullptr; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
 
-	bool is_forced_connection; /* This output pin connects to one and only one input pin */
+	bool is_forced_connection = false; /* This output pin connects to one and only one input pin */
 
-	t_pb_graph_pin_power * pin_power;
+	t_pb_graph_pin_power* pin_power = nullptr;
 };
 
 
@@ -914,6 +1012,8 @@ struct t_arch_switch_inf {
 	}
 };
 
+typedef std::vector<std::vector<std::vector<std::vector<int>>>> t_rr_node_indices;
+
 /* Lists all the important information about an rr switch type.              *
  * The s_rr_switch_inf describes a switch derived from a switch described    *
  * by s_arch_switch_inf. This indirection allows us to vary properties of a  *
@@ -1087,7 +1187,6 @@ struct t_arch {
 	float R_minW_pmos;
 	int Fs;
 	float grid_logic_tile_area;
-	t_clb_grid clb_grid;
 	t_segment_inf * Segments;
 	int num_segments;
 	t_arch_switch_inf *Switches;
@@ -1106,6 +1205,7 @@ struct t_arch {
 	float T_ipin_cblock;
 	float ipin_mux_trans_size;
 
+    std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 };
 
 #endif

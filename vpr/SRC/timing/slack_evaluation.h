@@ -46,5 +46,42 @@ class SetupSlackCrit {
 
 //TODO: implement a HoldSlackCrit class for hold analysis
 
+class HoldSlackCrit {
+    public: //Constructors
+        HoldSlackCrit(const AtomNetlist& netlist, const AtomLookup& netlist_lookup);
+
+    public: //Accessors
+
+        //Returns the worst (least) slack of connections through the specified pin
+        float hold_pin_slack(AtomPinId pin) const;
+
+        //Returns the worst (maximum) criticality of connections through the specified pin.
+        //  Criticality (in [0., 1.]) represents how timing-critical something is, 
+        //  0. is non-critical and 1. is most-critical.
+        float hold_pin_criticality(AtomPinId pin) const;
+
+    public: //Mutators
+        void update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph, const tatum::HoldTimingAnalyzer& analyzer);
+
+    private: //Implementation
+
+        void update_slacks(const tatum::HoldTimingAnalyzer& analyzer);
+
+        void update_pin_slack(const AtomPinId pin, const tatum::HoldTimingAnalyzer& analyzer);
+
+        void update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::HoldTimingAnalyzer& analyzer);
+
+        void update_pin_criticality(AtomPinId pin, 
+                                    const tatum::HoldTimingAnalyzer& analyzer, 
+                                    const float scale,
+                                    const float shift);
+
+    private: //Data
+        const AtomNetlist& netlist_;
+        const AtomLookup& netlist_lookup_;
+        
+        vtr::vector_map<AtomPinId, float> pin_slacks_;
+        vtr::vector_map<AtomPinId, float> pin_criticalities_;
+};
 
 #endif

@@ -1140,7 +1140,7 @@ int match_ports(nnode_t *node, nnode_t *next_node, operation_list oper)
  *-----------------------------------------------------------------------*/
 void traverse_operation_node(ast_node_t *node, char *component[], operation_list op, int *mark)
 {
-	int i;
+	size_t i;
 
 	if (node == NULL)
 		return;

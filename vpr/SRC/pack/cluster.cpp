@@ -248,9 +248,11 @@ static void start_new_cluster(
 		t_block *new_cluster, 
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int clb_index,
-		const t_pack_molecule *molecule, const float aspect,
-		int *num_used_instances_type, int *num_instances_type,
+		const t_pack_molecule *molecule,
+		std::map<t_type_ptr, size_t>& num_used_type_instances,
 		const int num_models, const int max_cluster_size,
+        const t_arch* arch,
+        std::string device_layout_name,
 		vector<t_lb_type_rr_node> *lb_type_rr_graphs, t_lb_router_data **router_data, const int detailed_routing_stage);
 
 static t_pack_molecule* get_highest_gain_molecule(
@@ -297,9 +299,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven, 
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
         float inter_cluster_net_delay,
-		float aspect, bool allow_unrelated_clustering,
+		bool allow_unrelated_clustering,
 		bool connection_driven,
-		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs
+		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs,
+        std::string device_layout_name
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_timing_inf timing_inf
 #endif
@@ -326,8 +329,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		seedindex, savedseedindex /* index of next most timing critical block */,
 		detailed_routing_stage, *hill_climbing_inputs_avail;
 
-	int *num_used_instances_type, *num_instances_type; 
-	/* [0..device_ctx.num_block_types] Holds array for total number of each cluster_type available */
+    std::map<t_type_ptr,size_t> num_used_type_instances;
 
 	bool early_exit, is_cluster_legal;
 	enum e_block_pack_status block_pack_status;
@@ -393,10 +395,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		hill_climbing_inputs_avail = NULL; /* if used, die hard */
 	}
 
-	/* TODO: make better estimate for device_ctx.nx and device_ctx.ny, was initializing device_ctx.nx = device_ctx.ny = 1 */
-	device_ctx.nx = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.W);
-	device_ctx.ny = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.H);
-
 	check_clocks(is_clock);
 #if 0
 	check_for_duplicate_inputs ();
@@ -408,8 +406,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	blocks_since_last_analysis = 0;
 	early_exit = false;
 	num_blocks_hill_added = 0;
-	num_used_instances_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
-	num_instances_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
 	VTR_ASSERT(max_cluster_size < MAX_SHORT);
 	/* Limit maximum number of elements for each cluster */
@@ -537,8 +533,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 			/* start a new cluster and reset all stats */
 			start_new_cluster(cluster_placement_stats, primitives_list,
-					&clb[num_clb], atom_molecules, num_clb, istart, aspect, num_used_instances_type,
-					num_instances_type, num_models, max_cluster_size,
+					&clb[num_clb], atom_molecules, num_clb, istart, num_used_type_instances,
+					num_models, max_cluster_size,
+                    arch, 
+                    device_layout_name,
 					lb_type_rr_graphs, &router_data, detailed_routing_stage);
 			vtr::printf_info("Complex block %d: %s, type: %s ", 
 					num_clb, clb[num_clb].name, clb[num_clb].type->name);
@@ -695,7 +693,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				free_pb_stats_recursive(clb[num_clb - 1].pb);
 			} else {
 				/* Free up data structures and requeue used molecules */
-				num_used_instances_type[clb[num_clb - 1].type->index]--;
+				num_used_type_instances[clb[num_clb - 1].type]--;
                 revalid_molecules(clb[num_clb - 1].pb, atom_molecules);
 				free_pb(clb[num_clb - 1].pb);
 				delete clb[num_clb - 1].pb;
@@ -739,8 +737,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	}
 	free(clb);
 
-	free(num_used_instances_type);
-	free(num_instances_type);
 	free(unclustered_list_head);
 	free(memory_pool);
 
@@ -1900,9 +1896,11 @@ static void start_new_cluster(
 		t_block *new_cluster, 
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
         const int clb_index,
-		const t_pack_molecule *molecule, const float aspect,
-		int *num_used_instances_type, int *num_instances_type,
+		const t_pack_molecule *molecule,
+		std::map<t_type_ptr, size_t>& num_used_type_instances,
 		const int num_models, const int max_cluster_size,
+        const t_arch* arch,
+        std::string device_layout_name,
 		vector<t_lb_type_rr_node> *lb_type_rr_graphs, t_lb_router_data **router_data, const int detailed_routing_stage) {
 	/* Given a starting seed block, start_new_cluster determines the next cluster type to use 
 	 It expands the FPGA if it cannot find a legal cluster for the atom block
@@ -1918,55 +1916,52 @@ static void start_new_cluster(
 	/* Check if this cluster is really empty */
 
 	/* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
-    const std::string& root_atom_name = atom_ctx.nlist.block_name(molecule->atom_block_ids[molecule->root]);
+    AtomBlockId root_id = molecule->atom_block_ids[molecule->root];
+    const std::string& root_atom_name = atom_ctx.nlist.block_name(root_id);
 	new_cluster->name = (char*) vtr::malloc((root_atom_name.size() + 4) * sizeof(char));
 	sprintf(new_cluster->name, "cb.%s", root_atom_name.c_str());
 	new_cluster->nets = NULL;
 	new_cluster->type = NULL;
 	new_cluster->pb = NULL;
 
-	if ((device_ctx.nx > 1) && (device_ctx.ny > 1)) {
-		alloc_and_load_grid(num_instances_type);
-		freeGrid();
-	}
-
 	success = false;
 	while (!success) {
 		count = 0;
 		for (i = 0; i < device_ctx.num_block_types; i++) {
-			if (num_used_instances_type[i] < num_instances_type[i]) {
-				new_cluster->type = &device_ctx.block_types[i];
-				if (new_cluster->type == device_ctx.EMPTY_TYPE) {
-					continue;
-				}
-				new_cluster->pb = new t_pb;
-				new_cluster->pb->pb_graph_node = new_cluster->type->pb_graph_head;
-				alloc_and_load_pb_stats(new_cluster->pb);
-				new_cluster->pb->parent_pb = NULL;
+            auto type = &device_ctx.block_types[i];
 
-				*router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i], &device_ctx.block_types[i]);
-				for (j = 0; j < new_cluster->type->pb_graph_head->pb_type->num_modes && !success; j++) {
-					new_cluster->pb->mode = j;
-					reset_cluster_placement_stats(&cluster_placement_stats[i]);
-					set_mode_cluster_placement_stats(new_cluster->pb->pb_graph_node, j);
-					success = (BLK_PASSED
-							== try_pack_molecule(&cluster_placement_stats[i],
-                                    atom_molecules,
-									molecule, primitives_list, new_cluster->pb,
-									num_models, max_cluster_size, clb_index,
-									detailed_routing_stage, *router_data));
-				}
-				if (success) {
-					/* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
-					break;
-				} else {
-					free_router_data(*router_data);
-					free_pb(new_cluster->pb);
-					delete new_cluster->pb;
-					*router_data = NULL;
-				}
-				count++;
-			}
+            if (type == device_ctx.EMPTY_TYPE) {
+                continue;
+            }
+
+            /* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
+            new_cluster->type = type;
+            new_cluster->pb = new t_pb;
+            new_cluster->pb->pb_graph_node = new_cluster->type->pb_graph_head;
+            alloc_and_load_pb_stats(new_cluster->pb);
+            new_cluster->pb->parent_pb = NULL;
+
+            *router_data = alloc_and_load_router_data(&lb_type_rr_graphs[i], &device_ctx.block_types[i]);
+            for (j = 0; j < new_cluster->type->pb_graph_head->pb_type->num_modes && !success; j++) {
+                new_cluster->pb->mode = j;
+                reset_cluster_placement_stats(&cluster_placement_stats[i]);
+                set_mode_cluster_placement_stats(new_cluster->pb->pb_graph_node, j);
+                success = (BLK_PASSED
+                        == try_pack_molecule(&cluster_placement_stats[i],
+                                atom_molecules,
+                                molecule, primitives_list, new_cluster->pb,
+                                num_models, max_cluster_size, clb_index,
+                                detailed_routing_stage, *router_data));
+            }
+            if (success) {
+                break;
+            } else {
+                free_router_data(*router_data);
+                free_pb(new_cluster->pb);
+                delete new_cluster->pb;
+                *router_data = NULL;
+            }
+            count++;
 		}
 		if (count == device_ctx.num_block_types - 1) {
 			if (molecule->type == MOLECULE_FORCED_PACK) {
@@ -1983,27 +1978,17 @@ static void start_new_cluster(
 			}
 		}
 
-		/* Expand FPGA size and recalculate number of available cluster types*/
-		if (!success) {
-			if (aspect >= 1.0) {
-				device_ctx.ny++;
-				device_ctx.nx = vtr::nint(device_ctx.ny * aspect);
-			} else {
-				device_ctx.nx++;
-				device_ctx.ny = vtr::nint(device_ctx.nx / aspect);
-			}
-			vtr::printf_info("Not enough resources expand FPGA size to x = %d y = %d.\n",
-					device_ctx.nx, device_ctx.ny);
-			if ((device_ctx.nx > MAX_SHORT) || (device_ctx.ny > MAX_SHORT)) {
-				vpr_throw(VPR_ERROR_PACK, __FILE__, __LINE__,
-						"Circuit cannot pack into architecture, architecture size (device_ctx.nx = %d, device_ctx.ny = %d) exceeds packer range.\n",
-						device_ctx.nx, device_ctx.ny);
-			}
-			alloc_and_load_grid(num_instances_type);
-			freeGrid();
-		}
 	}
-	num_used_instances_type[new_cluster->type->index]++;
+
+    //Successfully create cluster
+	num_used_type_instances[new_cluster->type]++;
+
+    /* Expand FPGA size if needed */
+    if (num_used_type_instances[new_cluster->type] > device_ctx.grid.num_instances(new_cluster->type)) {
+        device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances);
+        vtr::printf_info("Not enough resources expand FPGA size to (%d x %d)\n",
+                device_ctx.grid.width(), device_ctx.grid.height());
+    }
 }
 
 /*

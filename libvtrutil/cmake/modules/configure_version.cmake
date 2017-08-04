@@ -24,6 +24,7 @@ endif()
 
 #Other build meta-data
 string(TIMESTAMP VTR_BUILD_TIMESTAMP)
+set(VTR_BUILD_TIMESTAMP "${VTR_BUILD_TIMESTAMP} (${VTR_BUILD_TYPE} build)")
 
 message(STATUS "VTR Version: ${VTR_VERSION}")
 

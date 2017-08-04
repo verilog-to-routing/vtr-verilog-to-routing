@@ -3,6 +3,7 @@
 #include "vtr_assert.h"
 
 #include "tatum/Time.hpp"
+#include "tatum/delay_calc/DelayCalculator.hpp"
 
 #include "vpr_error.h"
 #include "vpr_utils.h"
@@ -11,7 +12,7 @@
 #include "atom_lookup.h"
 #include "physical_types.h"
 
-class PreClusterDelayCalculator {
+class PreClusterDelayCalculator : public tatum::DelayCalculator {
 public:
     PreClusterDelayCalculator(const AtomNetlist& netlist,
                               const AtomLookup& netlist_lookup,
@@ -24,7 +25,7 @@ public:
         //nop
     }
 
-    tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+    tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override { 
         tatum::NodeId src_node = tg.edge_src_node(edge_id);
         tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
 
@@ -42,7 +43,7 @@ public:
         }
     }
 
-    tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+    tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override { 
         tatum::NodeId src_node = tg.edge_src_node(edge_id);
         tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
         auto edge_type = tg.edge_type(edge_id);
@@ -60,19 +61,20 @@ public:
         return tatum::Time(gpin->tsu);
     }
 
-    tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
+    tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override { 
         //Currently return the same delay
         //TODO: use true min delay
         return max_edge_delay(tg, edge_id);
     }
 
-    tatum::Time hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const {
+    tatum::Time hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override {
         //Currently return the same as hold time
         //TODO: use true hold time
         return setup_time(tg, edge_id);
     }
 
 private:
+    //TODO: use generic AtomDelayCalc class to avoid code duplication
 
     tatum::Time prim_tcq_delay(const tatum::TimingGraph& tg, tatum::NodeId src_node, tatum::NodeId sink_node) const {
         VTR_ASSERT_MSG(   tg.node_type(src_node) == tatum::NodeType::CPIN
@@ -86,7 +88,11 @@ private:
         VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
 
         //Clock-to-q delay marked on the SOURCE node (the sink node of this edge)
-        return tatum::Time(gpin->tco);
+        auto tco = tatum::Time(gpin->tco_max);
+
+        VTR_ASSERT_MSG(tco.valid(), "Found no primitive clock-to-q delay");
+
+        return tco;
     }
 
     tatum::Time prim_comb_delay(const tatum::TimingGraph& tg, tatum::NodeId src_node, tatum::NodeId sink_node) const {

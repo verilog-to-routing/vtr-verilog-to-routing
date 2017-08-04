@@ -184,7 +184,7 @@ void load_rr_file(const t_graph_type graph_type,
 
     } catch (XmlError& e) {
 
-        archfpga_throw(read_rr_graph_name, e.line(), "%s", e.what());
+        vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());
     }
 
 }
@@ -472,13 +472,8 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
         auto block_info = device_ctx.block_types[get_attribute(Block, "id", loc_data).as_int(0)];
 
-        const char* name;
-        //"<EMPTY>" was converted to "EMPTY" since it voilated the xml format, convert it back
-        if (strcmp(get_attribute(Block, "name", loc_data).as_string(NULL), "EMPTY") == 0) {
-            name = "<EMPTY>";
-        } else {
-            name = get_attribute(Block, "name", loc_data).as_string(NULL);
-        }
+        const char* name = get_attribute(Block, "name", loc_data).as_string(NULL);
+
         if (strcmp(block_info.name, name) != 0) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Architecture file does not match RR graph's block name");
@@ -582,18 +577,18 @@ void process_rr_node_indices(const int L_nx, const int L_ny) {
 
     auto& indices = device_ctx.rr_node_indices;
 
-    indices = (vector<int> ***) vtr::calloc(NUM_RR_TYPES, sizeof (vector<int> **));
+    indices.resize(NUM_RR_TYPES);
 
     for (int itype = 0; itype < NUM_RR_TYPES; ++itype) {
         if (itype != OPIN && itype != SOURCE) {
-            indices[itype] = (vector<int> **) vtr::calloc((L_nx + 2), sizeof (vector<int> *));
+            indices[itype].resize(L_nx + 2);
             if (itype == CHANX) {
                 for (int ilength = 0; ilength <= (L_ny + 1); ++ilength) {
-                    indices[itype][ilength] = (vector<int> *) vtr::calloc((L_nx + 2), sizeof (vector<int>));
+                    indices[itype][ilength].resize(L_nx + 2);
                 }
             } else {
                 for (int ilength = 0; ilength <= (L_nx + 1); ++ilength) {
-                    indices[itype][ilength] = (vector<int> *) vtr::calloc((L_ny + 2), sizeof (vector<int>));
+                    indices[itype][ilength].resize(L_ny + 2);
                 }
             }
         }

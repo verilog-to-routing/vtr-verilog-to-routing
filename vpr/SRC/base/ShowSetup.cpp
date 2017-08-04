@@ -387,7 +387,6 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
 
 	vtr::printf_info("PackerOpts.allow_unrelated_clustering: %s", (PackerOpts.allow_unrelated_clustering ? "true\n" : "false\n"));
 	vtr::printf_info("PackerOpts.alpha_clustering: %f\n", PackerOpts.alpha);
-	vtr::printf_info("PackerOpts.aspect: %f\n", PackerOpts.aspect);
 	vtr::printf_info("PackerOpts.beta_clustering: %f\n", PackerOpts.beta);
 	vtr::printf_info("PackerOpts.cluster_seed_type: ");
 	switch (PackerOpts.cluster_seed_type) {

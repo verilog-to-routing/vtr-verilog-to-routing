@@ -45,7 +45,6 @@
 /*#define PRINT_PLACE_CRIT_PATH*//*prints out placement estimated critical path */
 /*#define PRINT_NET_DELAYS*//*prints out delays for all connections */
 /*#define PRINT_TIMING_GRAPH*//*prints out the timing graph */
-/*#define PRINT_REL_POS_DISTR *//*prints out the relative distribution graph for placements */
 /*#define DUMP_BLIF_ECHO*//*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
 
 #define TOKENS " \t\n"		/* Input file parsing. */
@@ -77,6 +76,8 @@ enum class ScreenUpdatePriority {
 
 #define EMPTY_BLOCK -1
 #define INVALID_BLOCK -2
+
+constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 
 /*******************************************************************************
  * Packing specific data types and constants
@@ -535,9 +536,9 @@ struct t_net {
  * height_offset: Number of grid tiles reserved based on height (top) of a block
  */
 struct t_grid_tile {
-	t_type_ptr type;
-	int width_offset;
-	int height_offset;
+	t_type_ptr type = nullptr;
+	int width_offset = 0;
+	int height_offset = 0;
 };
 
 /* Stores the bounding box of a net in terms of the minimum and  *
@@ -693,7 +694,7 @@ struct t_packer_opts {
 	bool connection_driven;
 	bool doPacking;
 	enum e_packer_algorithm packer_algorithm;
-	float aspect;
+    std::string device_layout;
 };
 
 /* Annealing schedule information for the placer.  The schedule type      *
@@ -1089,6 +1090,7 @@ struct t_vpr_setup {
 	bool gen_netlist_as_blif; /* option to print out post-pack/pre-place netlist as blif */
 	int GraphPause; /* user interactiveness graphics option */
 	t_power_opts PowerOpts;
+    std::string device_layout;
 };
 
 #endif

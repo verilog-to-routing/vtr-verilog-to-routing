@@ -385,7 +385,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
             ++num_commands_;
 
             if (cmd.type != sdcparse::ClockLatencyType::SOURCE) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency only support specifying -source latency"); 
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency only supports specifying -source latency"); 
             }
 
             if (cmd.early_late == sdcparse::EarlyLateType::EARLY) {
@@ -722,7 +722,13 @@ class SdcParseCallback2 : public sdcparse::Callback {
             auto key = std::make_pair(from, to);
             auto iter = hold_mcp_overrides_.find(key);
             if(iter != hold_mcp_overrides_.end()) {
-                hold_mcp_value = iter->second;
+                //Note that we add the override to the default hold_mcp of 1 to match
+                //the standard SDC behaviour (e.g. N - 1) of hold multicycles.
+                //
+                //For details see section 8.3 'Multicycle paths' in:
+                //  J. Bhasker, R. Chadha, "Static Timing Analysis for Nanometer 
+                //      Designs A Practical Approach", Springer, 2009
+                hold_mcp_value += iter->second;
             }
 
             //The hold capture cycle is the setup capture cycle minus the hold mcp value
@@ -875,7 +881,7 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc2(const t_timing_inf& timing_i
                                                    const AtomNetlist& netlist, 
                                                    const AtomLookup& lookup, 
                                                    tatum::TimingGraph& timing_graph) {
-    auto timing_constraints = std::unique_ptr<tatum::TimingConstraints>(new tatum::TimingConstraints());
+    auto timing_constraints = std::make_unique<tatum::TimingConstraints>();
 
     if (!timing_inf.timing_analysis_enabled) {
 		vtr::printf("\n");
@@ -948,6 +954,7 @@ void apply_combinational_default_timing_constraints(const AtomNetlist& netlist,
     //Create a virtual clock, with 0 period
     tatum::DomainId domain = tc.create_clock_domain(clock_name);
     tc.set_setup_constraint(domain, domain, tatum::Time(0.));
+    tc.set_hold_constraint(domain, domain, tatum::Time(0.));
 
     //Constrain all I/Os with zero input/output delay
     constrain_all_ios(netlist, lookup, tc, domain, domain, tatum::Time(0.), tatum::Time(0.));
@@ -970,6 +977,7 @@ void apply_single_clock_default_timing_constraints(const AtomNetlist& netlist,
     //Create the netlist clock with period 0
     tatum::DomainId domain = tc.create_clock_domain(clock_name);
     tc.set_setup_constraint(domain, domain, tatum::Time(0.));
+    tc.set_hold_constraint(domain, domain, tatum::Time(0.));
 
     //Mark the clock domain source
     AtomPinId clock_driver_pin = netlist.net_driver(clock_net);
@@ -998,6 +1006,7 @@ void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
     //Create a virtual clock, with 0 period
     tatum::DomainId virtual_clock = tc.create_clock_domain(virtual_clock_name);
     tc.set_setup_constraint(virtual_clock, virtual_clock, tatum::Time(0.));
+    tc.set_hold_constraint(virtual_clock, virtual_clock, tatum::Time(0.));
 
     //Constrain all I/Os with zero input/output delay t the virtual clock
     constrain_all_ios(netlist, lookup, tc, virtual_clock, virtual_clock, tatum::Time(0.), tatum::Time(0.));
@@ -1019,6 +1028,10 @@ void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
         tc.set_setup_constraint(clock, clock, tatum::Time(0.)); //Intra-domain
         tc.set_setup_constraint(clock, virtual_clock, tatum::Time(0.)); //netlist to virtual
         tc.set_setup_constraint(virtual_clock, clock, tatum::Time(0.)); //virtual to netlist
+
+        tc.set_hold_constraint(clock, clock, tatum::Time(0.)); //Intra-domain
+        tc.set_hold_constraint(clock, virtual_clock, tatum::Time(0.)); //netlist to virtual
+        tc.set_hold_constraint(virtual_clock, clock, tatum::Time(0.)); //virtual to netlist
     }
 
     //Mark constant generator timing nodes
