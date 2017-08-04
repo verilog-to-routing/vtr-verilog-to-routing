@@ -77,6 +77,6 @@ ast_node_t *newDefparam(ids id, ast_node_t *val, int line_number);
 void next_parsed_verilog_file(ast_node_t *file_items_list);
 
 /* VISUALIZATION */
-void graphVizOutputAst(char* path, ast_node_t *top);
+void graphVizOutputAst(std::string path, ast_node_t *top);
 void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *from, int from_num);
 long calculate_operation(ast_node_t *node);

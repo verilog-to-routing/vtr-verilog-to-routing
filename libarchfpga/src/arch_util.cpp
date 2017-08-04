@@ -67,7 +67,7 @@ void SetupEmptyType(t_type_descriptor* cb_type_descriptors,
                     t_type_ptr EMPTY_TYPE) {
 	t_type_descriptor * type;
 	type = &cb_type_descriptors[EMPTY_TYPE->index];
-	type->name = vtr::strdup("<EMPTY>");
+	type->name = vtr::strdup("EMPTY");
 	type->num_pins = 0;
 	type->width = 1;
 	type->height = 1;
@@ -81,10 +81,6 @@ void SetupEmptyType(t_type_descriptor* cb_type_descriptors,
 	type->is_global_pin = NULL;
 	type->pb_type = NULL;
 	type->area = UNDEFINED;
-
-	/* Used as lost area filler, no definition */
-	type->grid_loc_def = NULL;
-	type->num_grid_loc_def = 0;
 }
 
 void alloc_and_load_default_child_for_pb_type( t_pb_type *pb_type,

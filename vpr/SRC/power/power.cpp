@@ -606,7 +606,6 @@ static void power_reset_tile_usage(void) {
  * Calcultes the power usage of all tiles in the FPGA
  */
 static void power_usage_blocks(t_power_usage * power_usage) {
-	int x, y, z;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -616,8 +615,8 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 	power_reset_tile_usage();
 
 	/* Loop through all grid locations */
-	for (x = 0; x < device_ctx.nx + 2; x++) {
-		for (y = 0; y < device_ctx.ny + 2; y++) {
+	for (size_t x = 0; x < device_ctx.grid.width(); x++) {
+		for (size_t y = 0; y < device_ctx.grid.height(); y++) {
 
 			if ((device_ctx.grid[x][y].width_offset != 0)
 					|| (device_ctx.grid[x][y].height_offset != 0)
@@ -625,7 +624,7 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 				continue;
 			}
 
-			for (z = 0; z < device_ctx.grid[x][y].type->capacity; z++) {
+			for (int z = 0; z < device_ctx.grid[x][y].type->capacity; z++) {
 				t_pb * pb = NULL;
 				t_power_usage pb_power;
 

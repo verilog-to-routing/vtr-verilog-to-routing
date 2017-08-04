@@ -51,9 +51,15 @@ vtr_flow/benchmarks/titan_blif/*.blif
 vtr_flow/benchmarks/titan_other_blif/*.blif
 
 #
+# Cloud9 Directory
+#
+.c9/
+
+#
 # Log Files
 #
 *.log
+*.log.sh
 
 #
 # VPR Result files

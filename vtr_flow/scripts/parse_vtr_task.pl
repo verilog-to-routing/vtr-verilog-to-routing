@@ -169,6 +169,8 @@ sub parse_single_task {
                                     #second time parse file
                                     $second_parse_file = expand_user_path($value);
                                     $counter = 0;
+                                    #don't need to check golden, only compare between two files
+                                    $check_golden = 0;
                         }
                         else{
                             $parse_file = expand_user_path($value);
@@ -299,16 +301,15 @@ sub parse_single_task {
 	}
 
         if ($second_parse_file){
-        #returns 1 if failed
-            if ($check_golden) {
-                return check_rr_graph ( $task_name, $task_path, $run_path);
-            }
+            #don't check with golden results, just check the two files
+            return check_two_files ( $task_name, $task_path, $run_path, "$run_path/parse_results.txt", "$run_path/parse_results_2.txt", 0);
+            
         }
 
 	if ($check_golden) {
         #Returns 1 if failed
             if ($second_parse_file eq ""){
-                return check_golden( $task_name, $task_path, $run_path );
+                return check_two_files( $task_name, $task_path, $run_path, "$run_path/parse_results.txt", "$task_path/config/golden_results.txt", $check_golden);
             }
 	}
 
@@ -438,9 +439,9 @@ sub calc_geomean {
 	while ( $#summary_params  >= $index ) {
 		my $geomean = 1; my $num = 0;
 		foreach my $line (@summary_data) {
-			my @test_line = split( /\t/, $line );
-			if ( trim( @test_line[$index] ) > 0 ) {
-				$geomean *= trim( @test_line[$index] );
+			my @first_file_line = split( /\t/, $line );
+			if ( trim( @first_file_line[$index] ) > 0 ) {
+				$geomean *= trim( @first_file_line[$index] );
 				$num++;
 			}
 		}
@@ -535,23 +536,23 @@ sub last_exp_id {
     die("Unknown experiment id");
 } 
 
-#TODO: We should refactor check_rr_graph and check_golden into a single common 
-#function, since they duplicate a lot of common code. For example, by passing in the
-#parse results and config files explicitly (removing the task_path/run_path dependency)
-sub check_golden {
+sub check_two_files {
 	my $task_name = shift;
 	my $task_path = shift;
 	my $run_path  = shift;
+        my $first_test_file_dir = shift;
+        my $second_test_file_dir = shift;
+        my $is_golden = shift;
 
-    #Did this golden check pass?
+    #Did this check pass?
 	my $failed = 0;
 
-	print "$task_name...";
+    print "$task_name...";
     print "\n" if $verbose;
 
-	# Code to check the results against the golden results
-	(my $golden_file = "$task_path/config/golden_results.txt") =~ s/\s+$//;
-	(my $test_file   = "$run_path/parse_results.txt") =~ s/s+$//;
+	# Code to check the results of the two files
+	(my $test_file_1 = "$first_test_file_dir") =~ s/\s+$//;
+	(my $test_file_2 = "$second_test_file_dir") =~ s/s+$//;
 
 	my $pass_req_file;
 	open( CONFIG_FILE, "$task_path/config/config.txt" );
@@ -590,251 +591,8 @@ sub check_golden {
 
 	my $line;
 
-	my @golden_data;
-	my @test_data;
-	my @pass_req_data;
-
-	my @params;
-	my %type;
-	my %min_threshold;
-	my %max_threshold;
-	my %abs_diff_threshold;
-
-	##############################################################
-	# Read files
-	##############################################################
-	if ( !-r $golden_file ) {
-		print "[ERROR] Failed to open $golden_file: $!";
-        $failed = 1;
-		return $failed;
-	}
-	open( GOLDEN_DATA, "<$golden_file" );
-	@golden_data = <GOLDEN_DATA>;
-	close(GOLDEN_DATA);
-
-	if ( !-r $pass_req_file ) {
-		print "[ERROR] Failed to open $pass_req_file: $!";
-        $failed = 1;
-		return $failed;
-	}
-	open( PASS_DATA, "<$pass_req_file" );
-	@pass_req_data = <PASS_DATA>;
-	close(PASS_DATA);
-
-	if ( !-r $test_file ) {
-		print "[ERROR] Failed to open $test_file: $!";
-        $failed = 1;
-		return $failed;
-	}
-	open( TEST_DATA, "<$test_file" );
-	@test_data = <TEST_DATA>;
-	close(TEST_DATA);
-
-	##############################################################
-	# Process and check all parameters for consistency
-	##############################################################
-	my $golden_params = shift @golden_data;
-	my $test_params   = shift @test_data;
-
-	my @golden_params = split( /\t/, $golden_params );    # get parameters of golden results
-	my @test_params = split( /\t/, $test_params );      # get parameters of test results
-
-    my @golden_params = map(trim($_), @golden_params);
-    my @test_params = map(trim($_), @test_params);
-
-	# Check to ensure all parameters to compare are consistent
-	foreach $line (@pass_req_data) {
-
-		# Ignore comments
-		if ( $line =~ /^\s*#.*$/ or $line =~ /^\s*$/ ) { next; }
-
-		my @data = split( /;/, $line );
-		my $name = trim( $data[0] );
-		$type{$name} = trim( $data[1] );
-		if ( trim( $data[1] ) eq "Range" ) {
-			$min_threshold{$name} = trim( $data[2] );
-			$max_threshold{$name} = trim( $data[3] );
-		} elsif (trim( $data[1] ) eq "RangeAbs") {
-			$min_threshold{$name} = trim( $data[2] );
-			$max_threshold{$name} = trim( $data[3] );
-			$abs_diff_threshold{$name} = trim( $data[4] ); #Third element is absolute threshold
-        } elsif (trim( $data[1] ) eq "Equal") {
-            #Pass
-        } else {
-			print "[ERROR] $name has no comparison check specified (e.g. Range, RangeAbs, Equal).\n";
-            $failed = 1;
-			return $failed;
-        }
-
-		#Ensure item is in golden results
-		if ( !grep { $_ eq $name } @golden_params ) {
-			print "[ERROR] $name is not in the golden file.\n";
-            $failed = 1;
-			return $failed;
-		}
-
-		# Ensure item is in new results
-		if ( !grep { $_ eq $name } @test_params ) {
-			print "[ERROR] $name is not in the results file.\n";
-            $failed = 1;
-		}
-
-		push( @params, $name );
-	}
-
-	##############################################################
-	# Compare test data with golden data
-	##############################################################
-	if ( ( scalar @test_data ) != ( scalar @golden_data ) ) {
-		print
-		  "[ERROR] Different number of entries in golden and result files.\n";
-          $failed = 1;
-	}
-
-	# Iterate through each line of the test results data and compare with the golden data
-	foreach $line (@test_data) {
-		my @test_line   = split( /\t/, $line );
-		my @golden_line = split( /\t/, shift @golden_data );
-
-        my $golden_arch = trim(@golden_line[0]);
-        my $golden_circuit = trim(@golden_line[1]);
-        my $test_arch = trim(@test_line[0]);
-        my $test_circuit = trim(@test_line[1]);
-
-		if (   ( $test_circuit ne $test_circuit )
-			or ( $test_arch ne $test_arch ) ) {
-
-			print "[ERROR] Circuit/Architecture mismatch between golden ($golden_arch/$golden_circuit) and result ($test_arch/$test_circuit).\n";
-            $failed = 1;
-			return $failed;
-		}
-		my $circuitarch = "$test_arch/$test_circuit";
-
-		# Check each parameter where the type determines what to check for
-		foreach my $value (@params) {
-			my $test_index = List::Util::first { $test_params[$_] eq $value } 0 .. $#test_params;
-			my $golden_index = List::Util::first { $golden_params[$_] eq $value } 0 .. $#golden_params;
-			my $test_value   = trim(@test_line[$test_index]);
-			my $golden_value = trim(@golden_line[$golden_index]);
-
-
-			if ( $type{$value} eq "Range" or $type{$value} eq "RangeAbs") {
-
-				# Check because of division by 0
-				if ( $golden_value == 0 ) {
-					if ( $test_value != 0 ) {
-						print
-						  "[Fail] $circuitarch $value: result = $test_value golden = $golden_value\n";
-						$failed = 1;
-						return $failed;
-					}
-				}
-				else {
-					my $ratio = $test_value / $golden_value;
-                    my $abs_diff = abs($test_value - $golden_value);
-                    
-                    if($verbose) {
-                        print "\tParam: $value\n";
-                        print "\t\tTest: $test_value\n";
-                        print "\t\tGolden Value: $golden_value\n";
-                        print "\t\tRatio: $ratio\n";
-                    }
-
-					if (   $ratio < $min_threshold{$value}
-						or $ratio > $max_threshold{$value} ) {
-                        #Beyond relative threshold
-
-                        if (not exists $abs_diff_threshold{$value}
-                            or $abs_diff > $abs_diff_threshold{$value}) {
-                            #Either no absolute threshold specified, or beyond it
-
-                            print
-                              "[Fail] $circuitarch $value: result = $test_value golden = $golden_value\n";
-                            $failed = 1;
-                            return $failed;
-                        }
-					}
-				}
-			} elsif ($type{$value} eq "Equal") {
-				if ( $test_value ne $golden_value ) {
-					$failed = 1;
-					print
-					  "[Fail] $circuitarch $value: result = $test_value read in result = $golden_value\n";
-				}
-			} else {
-				# If the check type is unknown
-                $failed = 1;
-                print
-                  "[Fail] $circuitarch $value: unrecognized check type '$type{$value}' (e.g. Range, RangeAbs, Equal)\n";
-
-			}
-		}
-	}
-
-	if (!$failed) {
-		print "[Pass]\n";
-	}
-    return $failed;
-}
-
-
-#TODO: We should refactor check_rr_graph and check_golden into a single common 
-#function, since they duplicate a lot of common code. For example, by passing in the
-#parse results and config files explicitly (removing the task_path/run_path dependency)
-sub check_rr_graph {
-	my $task_name = shift;
-	my $task_path = shift;
-	my $run_path  = shift;
-
-    #Did this golden check pass?
-	my $failed = 0;
-
-	print "$task_name...";
-    print "\n" if $verbose;
-
-	# Code to check the results against the golden results
-	(my $test_file_1 = "$run_path/parse_results.txt") =~ s/\s+$//;
-	(my $test_file_2 = "$run_path/parse_results_2.txt") =~ s/s+$//;
-
-	my $pass_req_file;
-	open( CONFIG_FILE, "$task_path/config/config.txt" );
-	my $lines = do { local $/; <CONFIG_FILE>; };
-	close(CONFIG_FILE);
-
-	# Search config file
-	if ( $lines =~ /^\s*pass_requirements_file\s*=\s*(\S+)\s*$/m ) { }
-	else {
-		print
-		  "[ERROR] No 'pass_requirements_file' in task configuration file ($task_path/config/config.txt)\n";
-        $failed = 1;
-		return $failed;
-	}
-
-	my $pass_req_filename = $1;
-
-	# Search for pass requirement file
-	$pass_req_filename = expand_user_path($pass_req_filename);
-	if ( -e "$task_path/config/$pass_req_filename" ) {
-		$pass_req_file = "$task_path/config/$pass_req_filename";
-	}
-	elsif ( -e "$vtr_flow_path/parse/pass_requirements/$pass_req_filename" ) {
-		$pass_req_file =
-		  "$vtr_flow_path/parse/pass_requirements/$pass_req_filename";
-	}
-	elsif ( -e $pass_req_filename ) {
-		$pass_req_file = $pass_req_filename;
-	}
-	else {
-		print
-		  "[ERROR] Cannot find pass_requirements_file.  Checked for $task_path/config/$pass_req_filename or $vtr_flow_path/parse/$pass_req_filename or $pass_req_filename\n";
-        $failed = 0;
-		return $failed;
-	}
-
-	my $line;
-
-	my @golden_data;
-	my @test_data;
+	my @first_test_data;
+        my @second_test_data;
 	my @pass_req_data;
 
 	my @params;
@@ -852,7 +610,7 @@ sub check_rr_graph {
 		return $failed;
 	}
 	open( GOLDEN_DATA, "<$test_file_2" );
-	@golden_data = <GOLDEN_DATA>;
+	@second_test_data = <GOLDEN_DATA>;
 	close(GOLDEN_DATA);
 
 	if ( !-r $pass_req_file ) {
@@ -870,20 +628,20 @@ sub check_rr_graph {
 		return $failed;
 	}
 	open( TEST_DATA, "<$test_file_1" );
-	@test_data = <TEST_DATA>;
+	@first_test_data = <TEST_DATA>;
 	close(TEST_DATA);
 
 	##############################################################
 	# Process and check all parameters for consistency
 	##############################################################
-	my $golden_params = shift @golden_data;
-	my $test_params   = shift @test_data;
+	my $second_test_params = shift @second_test_data;
+	my $first_test_params   = shift @first_test_data;
 
-	my @golden_params = split( /\t/, $golden_params );    # get parameters of golden results
-	my @test_params = split( /\t/, $test_params );      # get parameters of test results
+	my @second_test_params = split( /\t/, $second_test_params );    # get parameters of the second file results
+	my @first_test_params = split( /\t/, $first_test_params );      # get parameters of the first file results
 
-    my @golden_params = map(trim($_), @golden_params);
-    my @test_params = map(trim($_), @test_params);
+    my @second_test_params = map(trim($_), @second_test_params);
+    my @first_test_params = map(trim($_), @first_test_params);
 
 	# Check to ensure all parameters to compare are consistent
 	foreach $line (@pass_req_data) {
@@ -909,77 +667,93 @@ sub check_rr_graph {
 			return $failed;
         }
 
-		#Ensure item is in golden results
-		if ( !grep { $_ eq $name } @golden_params ) {
-			print "[ERROR] $name is not in the results from reading in rr graph file.\n";
-            $failed = 1;
+		#Ensure item is in the first file
+		if ( !grep { $_ eq $name } @second_test_params ) {
+                    if ($is_golden){
+			print "[ERROR] $name is not in the golden results file.\n";
+                    }else{
+                        print "[ERROR] $name is not in the second parse file.\n";
+                    }
+                    $failed = 1;
 			return $failed;
 		}
 
 		# Ensure item is in new results
-		if ( !grep { $_ eq $name } @test_params ) {
-			print "[ERROR] $name is not in the results from writing out the rr graph file.\n";
-            $failed = 1;
+		if ( !grep { $_ eq $name } @first_test_params ) {
+		    if ($is_golden){
+			print "[ERROR] $name is not in the generated results file.\n";
+                    }else{
+                        print "[ERROR] $name is not in the first parse file.\n";
+                    }
+                    $failed = 1;
 		}
 
 		push( @params, $name );
 	}
 
 	##############################################################
-	# Compare test data with golden data
+	# Compare first file data data with second file data
 	##############################################################
-	if ( ( scalar @test_data ) != ( scalar @golden_data ) ) {
+	if ( ( scalar @first_test_data ) != ( scalar @second_test_data ) ) {
 		print
-		  "[ERROR] Different number of entries in results and results from reading rr graph.\n";
+		  "[ERROR] Different number of entries in the two files.\n";
           $failed = 1;
 	}
 
 	# Iterate through each line of the test results data and compare with the golden data
-	foreach $line (@test_data) {
-		my @test_line   = split( /\t/, $line );
-		my @golden_line = split( /\t/, shift @golden_data );
+	foreach $line (@first_test_data) {
+		my @first_file_line   = split( /\t/, $line );
+		my @second_file_line = split( /\t/, shift @second_test_data );
 
-        my $golden_arch = trim(@golden_line[0]);
-        my $golden_circuit = trim(@golden_line[1]);
-        my $test_arch = trim(@test_line[0]);
-        my $test_circuit = trim(@test_line[1]);
+        my $second_file_arch = trim(@second_file_line[0]);
+        my $second_file_circuit = trim(@second_file_line[1]);
+        my $first_file_arch = trim(@first_file_line[0]);
+        my $first_file_circuit = trim(@first_file_line[1]);
 
-		if (   ( $test_circuit ne $test_circuit )
-			or ( $test_arch ne $test_arch ) ) {
-
-			print "[ERROR] Circuit/Architecture mismatch between read in results ($golden_arch/$golden_circuit) and result ($test_arch/$test_circuit).\n";
-            $failed = 1;
+		if (   ( $first_file_circuit ne $first_file_circuit )
+			or ( $first_file_arch ne $first_file_arch ) ) {
+                    if ($is_golden){
+			print "[ERROR] Circuit/Architecture mismatch between golden results ($second_file_arch/$second_file_circuit) and result ($first_file_arch/$first_file_circuit).\n";
+                    } else{
+                        print "[ERROR] Circuit/Architecture mismatch between first result file ($first_file_arch/$first_file_circuit) and second result fule ($second_file_arch/$second_file_circuit).\n";
+                    }
+                        $failed = 1;
 			return $failed;
 		}
-		my $circuitarch = "$test_arch/$test_circuit";
+		my $circuitarch = "$first_file_arch/$first_file_circuit";
 
 		# Check each parameter where the type determines what to check for
 		foreach my $value (@params) {
-			my $test_index = List::Util::first { $test_params[$_] eq $value } 0 .. $#test_params;
-			my $golden_index = List::Util::first { $golden_params[$_] eq $value } 0 .. $#golden_params;
-			my $test_value   = trim(@test_line[$test_index]);
-			my $golden_value = trim(@golden_line[$golden_index]);
+			my $first_file_index = List::Util::first { $first_test_params[$_] eq $value } 0 .. $#first_test_params;
+			my $second_file_index = List::Util::first { $second_test_params[$_] eq $value } 0 .. $#second_test_params;
+			my $first_file_value   = trim(@first_file_line[$first_file_index]);
+			my $second_file_value = trim(@second_file_line[$second_file_index]);
 
 
 			if ( $type{$value} eq "Range" or $type{$value} eq "RangeAbs" ) {
 
 				# Check because of division by 0
-				if ( $golden_value == 0 ) {
-					if ( $test_value != 0 ) {
-						print
-						  "[Fail] $circuitarch $value: result = $test_value read_in result = $golden_value\n";
+				if ( $second_file_value == 0 ) {
+					if ( $first_file_value != 0 ) {
+						if ($is_golden){
+                                                    print
+                                                        "[Fail] \n $circuitarch $value: golden = $second_file_value generated result = $first_file_value\n";
+                                                }else{
+                                                    print
+                                                        "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
+                            }
 						$failed = 1;
 						return $failed;
 					}
 				}
 				else {
-					my $ratio = $test_value / $golden_value;
-                    my $abs_diff = abs($test_value - $golden_value);
+					my $ratio = $first_file_value / $second_file_value;
+                    my $abs_diff = abs($first_file_value - $second_file_value);
                     
                     if($verbose) {
                         print "\tParam: $value\n";
-                        print "\t\tTest: $test_value\n";
-                        print "\t\tGolden Value: $golden_value\n";
+                        print "\t\tTest: $first_file_value\n";
+                        print "\t\tGolden Value: $second_file_value\n";
                         print "\t\tRatio: $ratio\n";
                     }
 
@@ -990,25 +764,34 @@ sub check_rr_graph {
                         if (not exists $abs_diff_threshold{$value}
                             or $abs_diff > $abs_diff_threshold{$value}) {
                             #Either no absolute threshold specified, or beyond it
-
-                            print
-                              "[Fail] $circuitarch $value: result = $test_value read in result = $golden_value\n";
+                            if ($is_golden){
+                                print
+                                    "[Fail] \n $circuitarch $value: golden = $second_file_value generated result = $first_file_value\n";
+                            }else{
+                                print
+                                    "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
+                            }
                             $failed = 1;
                             return $failed;
                         }
 					}
 				}
 			} elsif ($type{$value} eq "Equal") {
-				if ( $test_value ne $golden_value ) {
+				if ( $first_file_value ne $second_file_value ) {
 					$failed = 1;
-					print
-					  "[Fail] $circuitarch $value: result = $test_value read in result = $golden_value\n";
+                                    if ($is_golden){
+                                        print
+                                        "[Fail] \n $circuitarch $value: golden = $second_file_value generated result = $first_file_value\n";
+                                    }else{
+                                        print
+                                            "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
+                                    }
 				}
 			} else {
 				# If the check type is unknown
                 $failed = 1;
                 print
-                  "[Fail] $circuitarch $value: unrecognized check type '$type{$value}' (e.g. Range, RangeAbs, Equal)\n";
+                  "[Fail] \n $circuitarch $value: unrecognized check type '$type{$value}' (e.g. Range, RangeAbs, Equal)\n";
 
 			}
 		}

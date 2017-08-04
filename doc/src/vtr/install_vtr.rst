@@ -15,8 +15,6 @@ The complete VTR flow has been tested on 64-bit Linux systems.
 The flow should work in other platforms (32-bit Linux, Windows with cygwin) but this is untested.
 Please :ref:`let us know <contact>` your experience with building VTR so that we can improve the experience for others.
 
-.. seealso:: For additional information on building VPR on other platforms see :ref:`compiling_vpr`
-
 The tools included official VTR releases have been tested for compatibility.
 If you download a different version of those tools, then those versions may not be mutually compatible with the VTR release.
 

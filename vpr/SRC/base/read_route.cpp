@@ -25,6 +25,7 @@ using namespace std;
 #include "vpr_utils.h"
 #include "vpr_error.h"
 #include "place_and_route.h"
+#include "timing_place.h"
 #include "route_export.h"
 #include "echo_files.h"
 #include "route_common.h"
@@ -34,7 +35,7 @@ static void process_route(ifstream &fp);
 static void process_nodes(ifstream &fp, int inet);
 static void process_nets(ifstream &fp, int inet, string name, std::vector<std::string> input_tokens);
 static void process_global_blocks(ifstream &fp, int inet);
-static void format_coordinates(int &x, int &y, string coord);
+static void format_coordinates(int &x, int &y, string coord, int net);
 static void format_pin_info(string &pb_name, string & port_name, int & pb_pin_num, string input);
 static string format_name(string name);
 
@@ -237,10 +238,10 @@ static void process_nodes(ifstream & fp, int inet) {
                 last_node_sink = false;
             }
 
-            format_coordinates(x, y, tokens[3]);
+            format_coordinates(x, y, tokens[3], inet);
 
             if (tokens[4] == "to") {
-                format_coordinates(x2, y2, tokens[5]);
+                format_coordinates(x2, y2, tokens[5], inet);
                 if (node.xlow() != x || node.xhigh() != x2 || node.yhigh() != y2 || node.ylow() != y) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                             "The coordinates of node %d does not match the rr graph", inode);
@@ -352,7 +353,7 @@ static void process_global_blocks(ifstream &fp, int inet) {
             fp.seekg(oldpos);
             return;
         } else {
-            format_coordinates(x, y, tokens[4]);
+            format_coordinates(x, y, tokens[4], inet);
 
             /*remove ()*/
             bnum_str = format_name(tokens[2]);
@@ -383,13 +384,21 @@ static void process_global_blocks(ifstream &fp, int inet) {
     }
 }
 
-static void format_coordinates(int &x, int &y, string coord) {
+static void format_coordinates(int &x, int &y, string coord, int net) {
     /*Parse coordinates in the form of (x,y) into correct x and y values*/
     coord = format_name(coord);
     stringstream coord_stream(coord);
-    coord_stream >> x;
+    if (!(coord_stream >> x)) {
+
+        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                "Net %d has coordinates that is not in the form (x,y)", net);
+    }
     coord_stream.ignore(1, ' ');
-    coord_stream >> y;
+    if (!(coord_stream >> y)) {
+
+        vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                "Net %d has coordinates that is not in the form (x,y)", net);
+    }
 }
 
 static void format_pin_info(string &pb_name, string & port_name, int & pb_pin_num, string input) {

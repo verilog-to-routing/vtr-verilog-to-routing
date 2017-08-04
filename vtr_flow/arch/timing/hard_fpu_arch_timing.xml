@@ -6,8 +6,8 @@
         <model name="fpu_mul">
             <input_ports>
                 <port name="clk" is_clock="1"/>
-                <port name="opa" clock="clk" combinational_sink_ports="out control"/>
-                <port name="opb" clock="clk" combinational_sink_ports="out control"/>
+                <port name="opa" clock="clk" combinational_sink_ports="control out"/>
+                <port name="opb" clock="clk" combinational_sink_ports="control out"/>
             </input_ports>
             <output_ports> 
                 <port name="out" clock="clk"/>
@@ -18,8 +18,8 @@
         <model name="fpu_add">
             <input_ports>
                 <port name="clk" is_clock="1"/>
-                <port name="opa" clock="clk" combinational_sink_ports="out control"/>
-                <port name="opb" clock="clk" combinational_sink_ports="out control"/>
+                <port name="opa" clock="clk" combinational_sink_ports="control out"/>
+                <port name="opb" clock="clk" combinational_sink_ports="control out"/>
             </input_ports>
             <output_ports> 
                 <port name="out" clock="clk"/>
@@ -33,7 +33,18 @@
     <!-- ODIN II specific config ends -->
 
     <!-- Physical descriptions begin (area optimized for N8-K6-L4 -->
-    <layout auto="1.0"/>
+    <layout>
+    <auto_layout aspect_ratio="1.0">
+        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+        <perimeter type="io" priority="100"/>
+        <corners type="EMPTY" priority="101"/>
+        <!--Fill with 'clb'-->
+        <fill type="clb" priority="10"/>
+        <!--Column of 'block_FPU' with 'EMPTY' blocks wherever a 'block_FPU' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="block_FPU" startx="4" starty="1" repeatx="8" priority="30"/>
+        <col type="EMPTY" startx="4" repeatx="8" starty="1" priority="29"/>
+        </auto_layout>
+</layout>
     <device>
         <sizing R_minW_nmos="2800.310059" R_minW_pmos="7077.009766" ipin_mux_trans_size="1.221260"/>
         <timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.607000e-11"/>
@@ -99,11 +110,7 @@
             <loc side="bottom">io.outpad io.inpad io.clock</loc>
         </pinlocations>
 
-        <gridlocations>
-            <loc type="perimeter" priority="10"/>
-        </gridlocations>
-
-    </pb_type>
+        </pb_type>
     <!-- Describe general-purpose complex block -->
     <pb_type name="clb">        
         <input name="I" num_pins="10" equivalent="true"/>
@@ -159,10 +166,7 @@
         </interconnect>
         <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.25"/>
         <pinlocations pattern="spread"/>
-        <gridlocations>
-            <loc type="fill" priority="1"/>
-        </gridlocations>
-    </pb_type>
+        </pb_type>
 
 
 
@@ -1018,10 +1022,7 @@
         <fc default_in_type="frac" default_in_val="0.25" default_out_type="frac" default_out_val="0.15"/>
         <pinlocations pattern="spread"/>
 
-        <gridlocations>
-            <loc type="col" start="4" repeat="8" priority="3"/>
-        </gridlocations>
-    </pb_type>
+        </pb_type>
 
 
 </complexblocklist>

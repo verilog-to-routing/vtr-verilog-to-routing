@@ -7,8 +7,6 @@
 
 pugiutil::ReqOpt BoolToReqOpt(bool b);
 
-void archfpga_throw(const char* filename, int line, const char* fmt, ...);
-
 void bad_tag(const pugi::xml_node node,
              const pugiutil::loc_data& loc_data,
              const pugi::xml_node parent_node=pugi::xml_node(),

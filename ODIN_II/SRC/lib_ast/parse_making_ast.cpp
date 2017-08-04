@@ -77,14 +77,14 @@ short to_view_parse;
 /*
  * File-scope function delcarations
  */
-void graphVizOutputPreproc(FILE *yyin, char* path, char *file);
+void graphVizOutputPreproc(FILE *yyin, std::string path, char *file);
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number);
 
 /*
  * Function implementations
  */
-void graphVizOutputPreproc(FILE *yyin, char* path, char *file)
+void graphVizOutputPreproc(FILE *yyin, std::string path, char *file)
 {
 	char line[MaxLine];
 	FILE *fp;
@@ -100,7 +100,7 @@ void graphVizOutputPreproc(FILE *yyin, char* path, char *file)
 	tmp = strrchr(file, '/');
 	if (tmp) file = tmp;
 
-	sprintf(line, "%s/%s_preproc.v", path, file);
+	sprintf(line, "%s/%s_preproc.v", path.c_str(), file);
 	fp = fopen(line, "w");
 	oassert(fp);
 	while (fgets(line, MaxLine, yyin))
@@ -146,7 +146,7 @@ void parse_to_ast()
 
 		/* write out the pre-processed file */
 		if (configuration.output_preproc_source)
-			graphVizOutputPreproc(yyin, configuration.debug_output_path, configuration.list_of_file_names[0]) ;
+			graphVizOutputPreproc(yyin, configuration.debug_output_path.c_str(), configuration.list_of_file_names[0]) ;
 			
 		/* set the file name */	
 		current_parse_file = 0;
@@ -1846,14 +1846,14 @@ int unique_label_count;
 /*---------------------------------------------------------------------------
  * (function: graphVizOutputAst)
  *-------------------------------------------------------------------------*/
-void graphVizOutputAst(char* path, ast_node_t *top)
+void graphVizOutputAst(std::string path, ast_node_t *top)
 {
 	char path_and_file[4096];
 	FILE *fp;
 	static int file_num = 0;
 
 	/* open the file */
-	sprintf(path_and_file, "%s/%s_ast.dot", path, top->children[0]->types.identifier);
+	sprintf(path_and_file, "%s/%s_ast.dot", path.c_str(), top->children[0]->types.identifier);
 	fp = fopen(path_and_file, "w");
 	file_num++;
 

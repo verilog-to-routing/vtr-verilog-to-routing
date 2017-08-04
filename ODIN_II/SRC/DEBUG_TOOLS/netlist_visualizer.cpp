@@ -37,19 +37,19 @@ void depth_first_traversal_graph_display(FILE *out, short marker_value, netlist_
 void forward_traversal_net_graph_display(FILE *out, short marker_value, nnode_t *node);
 void backward_traversal_net_graph_display(FILE *out, short marker_value, nnode_t *node);
 
-void graphVizOutputNetlist(char* path, const char* name, short marker_value, netlist_t *netlist);
-void graphVizOutputCombinationalNet(char* path, const char* name, short marker_value, nnode_t *current_node);
+void graphVizOutputNetlist(std::string path, const char* name, short marker_value, netlist_t *netlist);
+void graphVizOutputCombinationalNet(std::string path, const char* name, short marker_value, nnode_t *current_node);
 
 /*---------------------------------------------------------------------------------------------
  * (function: graphVizOutputNetlist)
  *-------------------------------------------------------------------------------------------*/
-void graphVizOutputNetlist(char* path, const char* name, short marker_value, netlist_t *netlist)
+void graphVizOutputNetlist(std::string path, const char* name, short marker_value, netlist_t *netlist)
 {
 	char path_and_file[4096];
 	FILE *fp;
 
 	/* open the file */
-	sprintf(path_and_file, "%s/%s.dot", path, name);
+	sprintf(path_and_file, "%s/%s.dot", path.c_str(), name);
 	fp = fopen(path_and_file, "w");
 
         /* open graph */
@@ -181,13 +181,13 @@ void depth_first_traverse_visualize(nnode_t *node, FILE *fp, int traverse_mark_n
 /*---------------------------------------------------------------------------------------------
  * (function: graphVizOutputCobinationalNet)
  *-------------------------------------------------------------------------------------------*/
-void graphVizOutputCombinationalNet(char* path, const char* name, short marker_value, nnode_t *current_node)
+void graphVizOutputCombinationalNet(std::string path, const char* name, short marker_value, nnode_t *current_node)
 {
 	char path_and_file[4096];
 	FILE *fp;
 
 	/* open the file */
-	sprintf(path_and_file, "%s/%s.dot", path, name);
+	sprintf(path_and_file, "%s/%s.dot", path.c_str(), name);
 	fp = fopen(path_and_file, "w");
 
         /* open graph */

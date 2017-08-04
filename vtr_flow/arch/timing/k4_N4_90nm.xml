@@ -2,9 +2,7 @@
  Architecture file translated from ifar repository N04K04L01.FC15FO25.AREA1DELAY1.CMOS90NM.BPTM
 
  Simple architecture file consisting of clusters of 4 BLEs, each BLE contains a 4-LUT+FF pair.  Delay models from 90nm PTM.
--->
-
-<architecture>
+--><architecture>
 
   <!-- 
        ODIN II specific config begins 
@@ -20,7 +18,15 @@
   <!-- ODIN II specific config ends -->
 
   <!-- Physical descriptions begin -->
-  <layout auto="1.000000"/>
+  <layout>
+    <auto_layout aspect_ratio="1.000000">
+        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+        <perimeter type="io" priority="100"/>
+        <corners type="EMPTY" priority="101"/>
+        <!--Fill with 'clb'-->
+        <fill type="clb" priority="10"/>
+        </auto_layout>
+</layout>
   <device>
     <sizing R_minW_nmos="4220.930176" R_minW_pmos="11207.599609" ipin_mux_trans_size="0.983352"/>
     <timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.045000e-11"/>
@@ -94,10 +100,6 @@
       </pinlocations>
 
       <!-- Place I/Os on the sides of the FPGA -->
-      <gridlocations>
-        <loc type="perimeter" priority="10"/>
-      </gridlocations>
-
       <power method="ignore"/>			
     </pb_type>
     <!-- Define I/O pads ends -->
@@ -165,8 +167,8 @@
       <interconnect>
         <!-- We use a full crossbar to get logical equivalence at inputs of CLB  -->
         <complete name="crossbar" input="clb.I fle[3:0].out" output="fle[3:0].in">
-          <delay_constant max="5.735000e-11" in_port="clb.I" out_port="fle[3:0].in" />
-          <delay_constant max="5.428000e-11" in_port="fle[3:0].out" out_port="fle[3:0].in" />
+          <delay_constant max="5.735000e-11" in_port="clb.I" out_port="fle[3:0].in"/>
+          <delay_constant max="5.428000e-11" in_port="fle[3:0].out" out_port="fle[3:0].in"/>
         </complete>
         <complete name="clks" input="clb.clk" output="fle[3:0].clk">
         </complete>
@@ -179,10 +181,7 @@
       <pinlocations pattern="spread"/>
 
       <!-- Place this general purpose logic block in any unspecified column -->
-      <gridlocations>
-        <loc type="fill" priority="1"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
     <!-- Define general purpose logic block (CLB) ends -->
 
   </complexblocklist>

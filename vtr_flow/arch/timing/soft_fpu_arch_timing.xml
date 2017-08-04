@@ -1,6 +1,4 @@
-<!-- Use Virtex II-like architecture  N04K04L04.FC15FO25.AREA1DELAY1.CMOS130NM.BPTM     Width = 72 -->
-  
-  <architecture>
+<!-- Use Virtex II-like architecture  N04K04L04.FC15FO25.AREA1DELAY1.CMOS130NM.BPTM     Width = 72 --><architecture>
 
 
   
@@ -13,7 +11,15 @@
   <!-- ODIN II specific config ends -->
  
   <!-- Physical descriptions begin (area optimized for N8-K6-L4 -->
-  <layout auto="1.0"/>
+  <layout>
+    <auto_layout aspect_ratio="1.0">
+        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+        <perimeter type="io" priority="100"/>
+        <corners type="EMPTY" priority="101"/>
+        <!--Fill with 'clb'-->
+        <fill type="clb" priority="10"/>
+        </auto_layout>
+</layout>
 		<device>
 			<sizing R_minW_nmos="2800.310059" R_minW_pmos="7077.009766" ipin_mux_trans_size="1.221260"/>
 			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.607000e-11"/>
@@ -79,11 +85,7 @@
           <loc side="bottom">io.outpad io.inpad io.clock</loc>
         </pinlocations>
 
-        <gridlocations>
-          <loc type="perimeter" priority="10"/>
-        </gridlocations>
-
-      </pb_type>
+        </pb_type>
       <!-- Describe general-purpose complex block -->
       <pb_type name="clb">        
           <input name="I" num_pins="10" equivalent="true"/>
@@ -131,17 +133,14 @@
 
           <interconnect>
             <complete name="complete1" input="clb.I ble[3:0].out" output="ble[3:0].in">
-              <delay_constant max="7.586000e-11" in_port="clb.I" out_port="ble[3:0].in" />
-              <delay_constant max="7.260000e-11" in_port="ble[3:0].out" out_port="ble[3:0].in" />
+              <delay_constant max="7.586000e-11" in_port="clb.I" out_port="ble[3:0].in"/>
+              <delay_constant max="7.260000e-11" in_port="ble[3:0].out" out_port="ble[3:0].in"/>
             </complete>
             <complete name="complete2" input="clb.clk" output="ble[3:0].clk"/>
             <direct name="direct1" input="ble[3:0].out" output="clb.O"/>
           </interconnect>
         <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.25"/>
         <pinlocations pattern="spread"/>
-        <gridlocations>
-          <loc type="fill" priority="1"/>
-        </gridlocations>
-      </pb_type>
+        </pb_type>
     </complexblocklist>
   </architecture>
