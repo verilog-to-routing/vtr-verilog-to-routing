@@ -29,6 +29,7 @@ public:
     float get_crit_short_path(int source, int sink);
     void load_route_budgets(float ** net_delay);
     void print_route_budget();
+    bool if_set();
 
 private:
 
@@ -41,6 +42,8 @@ private:
     vector<vector<float>> delay_target;
     vector<vector<float>> delay_lower_bound;
     vector<vector<float>> delay_upper_bound;
+
+    bool set;
 };
 
 #endif /* ROUTE_BUDGETS_H */

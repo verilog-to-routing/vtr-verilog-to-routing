@@ -6,7 +6,7 @@
 
 #include "vpr_utils.h"
 #include "timing_info_fwd.h"
-
+#include "route_budgets.h"
 #include "route_common.h"
 
 int get_max_pins_per_net(void);
@@ -28,7 +28,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 		float* pin_criticality, 
 		t_rt_node** rt_node_of_sink, float** net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        std::shared_ptr<SetupTimingInfo> timing_info);
+        std::shared_ptr<SetupTimingInfo> timing_info, route_budgets budgeting_inf);
 
 bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
@@ -36,7 +36,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 		float *pin_criticality, int min_incremental_reroute_fanout, t_rt_node ** rt_node_of_sink, 
 		float *net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        std::shared_ptr<const SetupTimingInfo> timing_info);
+        std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets budgeting_inf);
 
 
 void alloc_timing_driven_route_structs(float **pin_criticality_ptr,
@@ -45,7 +45,7 @@ void free_timing_driven_route_structs(float *pin_criticality, int *sink_order,
 		t_rt_node ** rt_node_of_sink);
 
 t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
-        float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks);
+        float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks, route_budgets budgeting_inf);
 
 struct timing_driven_route_structs {
 	// data while timing driven route is active 

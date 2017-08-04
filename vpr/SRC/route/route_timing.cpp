@@ -112,7 +112,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
         CBRR& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
 
 static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int target_pin, float target_criticality,
-        float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink);
+        float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink, route_budgets budgeting_inf);
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         float target_criticality, float astar_fac);
@@ -120,7 +120,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
         int num_sinks, int target_node,
-        float astar_fac, int highfanout_rlim);
+        float astar_fac, int highfanout_rlim, route_budgets budgeting_inf);
 
 static float get_timing_driven_expected_cost(int inode, int target_node,
         float criticality_fac, float R_upstream);
@@ -208,9 +208,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
     }
 
     CBRR connections_inf{};
-    
+
     route_budgets budgeting_inf;
-    
+
     VTR_ASSERT_SAFE(connections_inf.sanity_check_lookup());
 
     /*
@@ -273,7 +273,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
                     route_structs.rt_node_of_sink,
                     net_delay,
                     pb_gpin_lookup,
-                    route_timing_info);
+                    route_timing_info, budgeting_inf);
 
             if (!is_routable) {
                 return (false); //Impossible to route
@@ -382,10 +382,12 @@ bool try_timing_driven_route(t_router_opts router_opts,
                 // first iteration sets up the lower bound connection delays since only timing is optimized for
                 connections_inf.set_stable_critical_path_delay(critical_path.delay());
                 connections_inf.set_lower_bound_connection_delays(net_delay);
-                
+
                 budgeting_inf.load_route_budgets(net_delay);
-                
+
                 budgeting_inf.print_route_budget();
+
+
             } else {
                 bool stable_routing_configuration = true;
                 // only need to forcibly reroute if critical path grew significantly
@@ -425,7 +427,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
             vtr::printf_info("Critical path: %g ns\n", 1e9 * critical_path.delay());
         }
 
-        vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);        
+        vtr::printf_info("Successfully routed after %d routing iterations.\n", itry);
     } else {
         vtr::printf_info("Routing failed.\n");
     }
@@ -439,7 +441,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
         float* pin_criticality,
         t_rt_node** rt_node_of_sink, float** net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        std::shared_ptr<SetupTimingInfo> timing_info) {
+        std::shared_ptr<SetupTimingInfo> timing_info, route_budgets budgeting_inf) {
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
@@ -465,7 +467,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
                 rt_node_of_sink,
                 net_delay[inet],
                 pb_gpin_lookup,
-                timing_info);
+                timing_info, budgeting_inf);
 
         profiling::net_fanout_end(cluster_ctx.clbs_nlist.net[inet].num_sinks());
 
@@ -558,10 +560,15 @@ int get_max_pins_per_net(void) {
 }
 
 struct Criticality_comp {
-	const float* criticality;
+    const float* criticality;
 
-	Criticality_comp(const float* calculated_criticalities) : criticality{calculated_criticalities} {}
-	bool operator()(int a, int b) const {return criticality[a] > criticality[b];}
+    Criticality_comp(const float* calculated_criticalities) : criticality{calculated_criticalities}
+    {
+    }
+
+    bool operator()(int a, int b) const {
+        return criticality[a] > criticality[b];
+    }
 };
 
 bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
@@ -570,7 +577,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
         float *pin_criticality, int min_incremental_reroute_fanout,
         t_rt_node ** rt_node_of_sink, float *net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        std::shared_ptr<const SetupTimingInfo> timing_info) {
+        std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets budgeting_inf) {
 
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
@@ -629,7 +636,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(itry, inet, itarget, target_pin, target_criticality,
-                pres_fac, astar_fac, bend_cost, rt_root, rt_node_of_sink))
+                pres_fac, astar_fac, bend_cost, rt_root, rt_node_of_sink, budgeting_inf))
             return false;
 
         // need to gurantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
@@ -658,14 +665,14 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 }
 
 static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int target_pin, float target_criticality,
-        float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink) {
+        float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink, route_budgets budgeting_inf) {
 
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    
+
     profiling::sink_criticality_start();
 
     int source_node = route_ctx.net_rr_terminals[inet][0];
@@ -680,7 +687,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
     }
 
     t_heap * cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
-            astar_fac, bend_cost, rt_root, bounding_box, cluster_ctx.clbs_nlist.net[inet].num_sinks());
+            astar_fac, bend_cost, rt_root, bounding_box, cluster_ctx.clbs_nlist.net[inet].num_sinks(), budgeting_inf);
 
     if (cheapest == NULL) {
         const t_net_pin* src_net_pin = &cluster_ctx.clbs_nlist.net[inet].pins[0];
@@ -688,12 +695,12 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
         const t_block* src_blk = &cluster_ctx.blocks[src_net_pin->block];
         const t_block* sink_blk = &cluster_ctx.blocks[sink_net_pin->block];
         vtr::printf("Failed to route connection from '%s' to '%s' for net '%s'\n",
-                    src_blk->name,
-                    sink_blk->name,
-                    cluster_ctx.clbs_nlist.net[inet].name);
+                src_blk->name,
+                sink_blk->name,
+                cluster_ctx.clbs_nlist.net[inet].name);
         return false;
     }
-    
+
     profiling::sink_criticality_end(target_criticality);
 
     /* NB:  In the code below I keep two records of the partial routing:  the   *
@@ -717,10 +724,12 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 }
 
 t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
-        float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks) {
+        float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks, route_budgets budgeting_inf) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     int highfanout_rlim = mark_node_expansion_by_bin(source_node, sink_node, rt_root, bounding_box, num_sinks);
+
+    float short_path_crit = budgeting_inf.get_crit_short_path(source_node, sink_node);
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
@@ -737,7 +746,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
         const t_rr_node* source_rr_node = &device_ctx.rr_nodes[source_node];
         const t_rr_node* sink_rr_node = &device_ctx.rr_nodes[sink_node];
 
-        vtr::printf_info("Cannot route from rr_node %d (type %s, ptc: %d) to rr_node %d (type %s, ptc: %d) -- no possible path\n", 
+        vtr::printf_info("Cannot route from rr_node %d (type %s, ptc: %d) to rr_node %d (type %s, ptc: %d) -- no possible path\n",
                 source_node, source_rr_node->type_string(), source_rr_node->ptc_num(),
                 sink_node, sink_rr_node->type_string(), sink_rr_node->ptc_num());
 
@@ -780,7 +789,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
             timing_driven_expand_neighbours(cheapest, bounding_box, bend_cost,
                     target_criticality, num_sinks, sink_node, astar_fac,
-                    highfanout_rlim);
+                    highfanout_rlim, budgeting_inf);
         }
 
         free_heap_data(cheapest);
@@ -791,9 +800,9 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
             const t_rr_node* source_rr_node = &device_ctx.rr_nodes[source_node];
             const t_rr_node* sink_rr_node = &device_ctx.rr_nodes[sink_node];
 
-            vtr::printf_info("Cannot route from rr_node %d (type %s, ptc: %d) to rr_node %d (type %s, ptc: %d) -- no possible path\n", 
-                source_node, source_rr_node->type_string(), source_rr_node->ptc_num(),
-                sink_node, sink_rr_node->type_string(), sink_rr_node->ptc_num());
+            vtr::printf_info("Cannot route from rr_node %d (type %s, ptc: %d) to rr_node %d (type %s, ptc: %d) -- no possible path\n",
+                    source_node, source_rr_node->type_string(), source_rr_node->ptc_num(),
+                    sink_node, sink_rr_node->type_string(), sink_rr_node->ptc_num());
 
             reset_path_costs();
             free_route_tree(rt_root);
@@ -940,7 +949,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
         int num_sinks, int target_node,
-        float astar_fac, int highfanout_rlim) {
+        float astar_fac, int highfanout_rlim, route_budgets budgeting_inf) {
 
     /* Puts all the rr_nodes adjacent to current on the heap.  rr_nodes outside *
      * the expanded bounding box specified in bounding_box are not added to the     *
@@ -1382,22 +1391,23 @@ static bool early_exit_heuristic(const WirelengthInfo& wirelength_info) {
 }
 
 // incremental rerouting resources class definitions
-Connection_based_routing_resources::Connection_based_routing_resources() : 
-	current_inet (NO_PREVIOUS), 	// not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
-	last_stable_critical_path_delay {0.0f},
-	critical_path_growth_tolerance {1.001f},
-	connection_criticality_tolerance {0.9f},
-	connection_delay_optimality_tolerance {1.1f}	{	
+Connection_based_routing_resources::Connection_based_routing_resources() :
+current_inet(NO_PREVIOUS), // not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
+last_stable_critical_path_delay{0.0f},
+critical_path_growth_tolerance{1.001f},
+connection_criticality_tolerance{0.9f},
+connection_delay_optimality_tolerance{1.1f}
+{
 
-	/* Initialize the persistent data structures for incremental rerouting
-	 * this includes rr_sink_node_to_pin, which provides pin lookup given a
-	 * sink node for a specific net.
-	 *
-	 * remaining_targets will reserve enough space to ensure it won't need
-	 * to grow while storing the sinks that still need routing after pruning
-	 *
-	 * reached_rt_sinks will also reserve enough space, but instead of
-	 * indices, it will store the pointers to route tree nodes */
+    /* Initialize the persistent data structures for incremental rerouting
+     * this includes rr_sink_node_to_pin, which provides pin lookup given a
+     * sink node for a specific net.
+     *
+     * remaining_targets will reserve enough space to ensure it won't need
+     * to grow while storing the sinks that still need routing after pruning
+     *
+     * reached_rt_sinks will also reserve enough space, but instead of
+     * indices, it will store the pointers to route tree nodes */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();

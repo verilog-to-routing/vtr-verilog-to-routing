@@ -641,8 +641,10 @@ static bool calculate_delay(int source_node, int sink_node,
     float target_criticality = 1;
     // explore in order of decreasing criticality (no longer need sink_order array)
 
+    route_budgets budgeting_inf;
+    
     t_heap* cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
-            astar_fac, bend_cost, rt_root, bounding_box, 1);
+            astar_fac, bend_cost, rt_root, bounding_box, 1, budgeting_inf);
 
     if (cheapest == NULL) {
         return false;
