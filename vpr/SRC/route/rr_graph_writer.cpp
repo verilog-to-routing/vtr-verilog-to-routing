@@ -1,4 +1,5 @@
-/* This file defines the writing rr graph function in XML format.
+/* 
+ * This file defines the writing rr graph function in XML format.
  * The rr graph is separated into channels, nodes, switches,
  * grids, edges, block types, and segments. Each tag has several
  * children tags such as timing, location, or some general 

@@ -25,6 +25,7 @@ using namespace std;
 #include "vpr_utils.h"
 #include "vpr_error.h"
 #include "place_and_route.h"
+#include "timing_place.h"
 #include "route_export.h"
 #include "echo_files.h"
 #include "route_common.h"
