@@ -210,10 +210,10 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             AtomBlockId atom_src_block = netlist_.pin_block(atom_src_pin);
             AtomBlockId atom_sink_block = netlist_.pin_block(atom_sink_pin);
 
-            int clb_src_block = netlist_lookup_.atom_clb(atom_src_block);
-            VTR_ASSERT(clb_src_block >= 0);
-            int clb_sink_block = netlist_lookup_.atom_clb(atom_sink_block);
-            VTR_ASSERT(clb_sink_block >= 0);
+			ClusterBlockId clb_src_block = netlist_lookup_.atom_clb(atom_src_block);
+            VTR_ASSERT(clb_src_block != ClusterBlockId::INVALID());
+			ClusterBlockId clb_sink_block = netlist_lookup_.atom_clb(atom_sink_block);
+            VTR_ASSERT(clb_sink_block != ClusterBlockId::INVALID());
 
             const t_pb_graph_pin* src_gpin = netlist_lookup_.atom_pin_pb_graph_pin(atom_src_pin);
             VTR_ASSERT(src_gpin);
@@ -224,8 +224,8 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
 
             AtomNetId atom_net = netlist_.pin_net(atom_sink_pin);
-            VTR_ASSERT(cluster_ctx.clb_nlist.block_pb((ClusterBlockId)clb_src_block)->pb_route[src_pb_route_id].atom_net_id == atom_net);
-            VTR_ASSERT(cluster_ctx.clb_nlist.block_pb((ClusterBlockId)clb_sink_block)->pb_route[sink_pb_route_id].atom_net_id == atom_net);
+            VTR_ASSERT(cluster_ctx.clb_nlist.block_pb(clb_src_block)->pb_route[src_pb_route_id].atom_net_id == atom_net);
+            VTR_ASSERT(cluster_ctx.clb_nlist.block_pb(clb_sink_block)->pb_route[sink_pb_route_id].atom_net_id == atom_net);
 
             //NOTE: even if both the source and sink atoms are contained in the same top-level
             //      CLB, the connection between them may not have been absorbed, and may go 
@@ -235,12 +235,12 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             //Either the atom source pin (in the same cluster), or a cluster input pin
 
 			//TODO: HACK! Use pointer to pass into find_pb_route_clb_input_net_pin, avoids returning std::pair
-			std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin((ClusterBlockId)clb_sink_block, sink_pb_route_id);
+			std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
 
             if(net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1 && sink_net_pin_index != -1) {
                 //Connection leaves the CLB
 				ClusterBlockId driver_block_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
-				VTR_ASSERT(driver_block_id == (ClusterBlockId)clb_src_block);
+				VTR_ASSERT(driver_block_id == clb_src_block);
 
 				src_block_pin_index = cluster_ctx.clb_nlist.pin_index(net_id, 0);
 
@@ -271,7 +271,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                 //Connection entirely within the CLB
                 VTR_ASSERT(clb_src_block == clb_sink_block);
 
-                edge_delay = tatum::Time(clb_delay_calc_.internal_src_to_internal_sink_delay((ClusterBlockId)clb_src_block, src_pb_route_id, sink_pb_route_id));
+                edge_delay = tatum::Time(clb_delay_calc_.internal_src_to_internal_sink_delay(clb_src_block, src_pb_route_id, sink_pb_route_id));
 
                 //Save the delay, since it won't change during placement or routing
                 // Note that we cache the full edge delay for edges completely contained within CLBs

@@ -68,9 +68,9 @@ float t_draw_coords::get_tile_height() {
 	return tile_width;
 }
 
-t_bound_box t_draw_coords::get_pb_bbox(int clb_index, const t_pb_graph_node& pb_gnode) {
+t_bound_box t_draw_coords::get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode) {
     auto& place_ctx = g_vpr_ctx.placement();
-	return get_pb_bbox(place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y ,place_ctx.block_locs[clb_index].z, pb_gnode);
+	return get_pb_bbox(place_ctx.block_locs[(size_t)clb_index].x, place_ctx.block_locs[(size_t)clb_index].y ,place_ctx.block_locs[(size_t)clb_index].z, pb_gnode);
 }
 
 t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode) {
@@ -122,7 +122,7 @@ t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_ind
 	return result;
 }
 
-t_bound_box t_draw_coords::get_absolute_pb_bbox(const int clb_index, const t_pb_graph_node* pb_gnode) {
+t_bound_box t_draw_coords::get_absolute_pb_bbox(const ClusterBlockId clb_index, const t_pb_graph_node* pb_gnode) {
 	t_bound_box result = this->get_pb_bbox(clb_index, *pb_gnode);
 
 	// go up the graph, adding the parent bboxes to the result,
@@ -136,7 +136,7 @@ t_bound_box t_draw_coords::get_absolute_pb_bbox(const int clb_index, const t_pb_
 	return result;
 }
 
-t_bound_box t_draw_coords::get_absolute_clb_bbox(const int clb_index, const t_type_ptr type) {
+t_bound_box t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_type_ptr type) {
 	return get_pb_bbox(clb_index, *type->pb_graph_head);
 }
 

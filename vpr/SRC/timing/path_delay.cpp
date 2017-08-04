@@ -1597,7 +1597,7 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const int iblock,
 			timing_ctx.tnodes[i].type = TN_INTERMEDIATE_NODE;
 		}
 	} else {
-        AtomPinId atom_pin = find_atom_pin(iblock, pb_graph_pin);
+        AtomPinId atom_pin = find_atom_pin((ClusterBlockId)iblock, pb_graph_pin);
 
 		if (timing_ctx.tnodes[i].pb_graph_pin->type == PB_PIN_INPAD) {
 			VTR_ASSERT(timing_ctx.tnodes[i].pb_graph_pin->port->type == OUT_PORT);

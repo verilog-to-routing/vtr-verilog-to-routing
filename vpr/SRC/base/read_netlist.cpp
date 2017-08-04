@@ -370,7 +370,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index,
         //Update atom netlist mapping
         VTR_ASSERT(blk_id);
         atom_ctx.lookup.set_atom_pb(blk_id, pb);
-        atom_ctx.lookup.set_atom_clb(blk_id, (size_t)index);
+        atom_ctx.lookup.set_atom_clb(blk_id, index);
 
 		(*num_primitives)++;
 	} else {
@@ -1091,10 +1091,10 @@ static void set_atom_pin_mapping(const AtomBlockId atom_blk, const AtomPortId at
 
     VTR_ASSERT(atom_ctx.nlist.port_block(atom_port) == atom_blk);
 
-    int clb_index = atom_ctx.lookup.atom_clb(atom_blk);
-    VTR_ASSERT(clb_index >= 0);
+    ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk);
+    VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
 
-    const t_pb_route* pb_route = &cluster_ctx.clb_nlist.block_pb((ClusterBlockId)clb_index)->pb_route[gpin->pin_count_in_cluster];
+    const t_pb_route* pb_route = &cluster_ctx.clb_nlist.block_pb(clb_index)->pb_route[gpin->pin_count_in_cluster];
 
     if(!pb_route->atom_net_id) {
         return;

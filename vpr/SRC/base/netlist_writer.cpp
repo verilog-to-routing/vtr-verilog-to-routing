@@ -790,7 +790,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             //Initialize the pin to tnode look-up
             for(AtomPinId pin : atom_ctx.nlist.pins()) {
                 AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
-                int clb_idx = atom_ctx.lookup.atom_clb(blk);
+                ClusterBlockId clb_idx = atom_ctx.lookup.atom_clb(blk);
 
                 const t_pb_graph_pin* gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(pin);
                 VTR_ASSERT(gpin);
@@ -1628,7 +1628,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             auto& atom_ctx = g_vpr_ctx.atom();
 
             AtomBlockId blk_id = atom_ctx.lookup.pb_atom(atom);
-            int clb_index = atom_ctx.lookup.atom_clb(blk_id);
+            ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(blk_id);
 
             auto key = std::make_pair(clb_index, cluster_pin_idx);
             auto iter = pin_id_to_tnode_lookup_.find(key);
@@ -1911,7 +1911,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::ostream& sdf_os_;
 
         //Look-up from pins to tnodes
-        std::map<std::pair<int,int>,tatum::NodeId> pin_id_to_tnode_lookup_;
+        std::map<std::pair<ClusterBlockId,int>,tatum::NodeId> pin_id_to_tnode_lookup_;
 
         std::shared_ptr<const AnalysisDelayCalculator> delay_calc_;
 };

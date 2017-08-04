@@ -9,6 +9,7 @@
 #include "vtr_range.h"
 
 #include "atom_netlist_fwd.h"
+#include "clustered_netlist_fwd.h"
 #include "vpr_types.h"
 #include "tatum/TimingGraphFwd.hpp"
 /*
@@ -51,12 +52,12 @@ class AtomLookup {
          * Blocks
          */
         //Returns the clb index associated with blk_id
-        int atom_clb(const AtomBlockId blk_id) const;
+        ClusterBlockId atom_clb(const AtomBlockId blk_id) const;
 
         //Sets the bidirectional mapping between an atom and clb
         // If either blk_id or clb_index are not valid any existing mapping
         // is removed
-        void set_atom_clb(const AtomBlockId blk_id, const int clb_index);
+        void set_atom_clb(const AtomBlockId blk_id, const ClusterBlockId clb);
 
         /*
          * Nets
@@ -108,17 +109,13 @@ class AtomLookup {
         template<class K, class V>
         using linear_map_classic_tnode = vtr::linear_map<K,V,vtr::MinusOneSentinel<K>>;
 
-        //A vtr::vector_map using NO_CLUSTER as the sentinel value
-        template<class K, class V>
-        using vector_map_clb = vtr::vector_map<K,V,vtr::CustomSentinel<V,NO_CLUSTER>>;
-
     private:
 
         vtr::bimap<AtomBlockId,const t_pb*, vtr::linear_map, std::unordered_map> atom_to_pb_;
 
         vtr::vector_map<AtomPinId,const t_pb_graph_pin*> atom_pin_to_pb_graph_pin_;
 
-        vector_map_clb<AtomBlockId,int> atom_to_clb_;
+        vtr::vector_map<AtomBlockId,ClusterBlockId> atom_to_clb_;
 
         vtr::bimap<AtomNetId,int, vtr::linear_map, linear_map_clb_net> atom_net_to_clb_net_;
 

@@ -699,11 +699,11 @@ static void drawnets(void) {
 
 		setcolor(draw_state->net_color[(size_t)net_id]);
 		b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
-		t_point driver_center = draw_coords->get_absolute_clb_bbox((size_t)b1, cluster_ctx.clb_nlist.block_type(b1)).get_center();
+		t_point driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).get_center();
 
 		for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 			b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
-			t_point sink_center = draw_coords->get_absolute_clb_bbox((size_t)b2, cluster_ctx.clb_nlist.block_type(b2)).get_center();
+			t_point sink_center = draw_coords->get_absolute_clb_bbox(b2, cluster_ctx.clb_nlist.block_type(b2)).get_center();
 			drawline(driver_center, sink_center);
 
 			/* Uncomment to draw a chain instead of a star. */
@@ -2151,7 +2151,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			for (int k = 0; k < grid_tile->type->capacity; ++k) {
 				clb_index = place_ctx.grid_blocks[i][j].blocks[k];
 				if (clb_index != EMPTY_BLOCK) {
-					clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index, cluster_ctx.clb_nlist.block_type((ClusterBlockId)clb_index));
+					clb_bbox = draw_coords->get_absolute_clb_bbox((ClusterBlockId)clb_index, cluster_ctx.clb_nlist.block_type((ClusterBlockId)clb_index));
 					if (clb_bbox.intersects(abs_x, abs_y)) {
 						break;
 					} else {
@@ -2180,7 +2180,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	// note: this will clear the selected sub-block if show_blk_internal is 0,
 	// or if it doesn't find anything
 	t_point point_in_clb = t_point(abs_x, abs_y) - clb_bbox.bottom_left();
-	highlight_sub_block(point_in_clb, clb_index, cluster_ctx.clb_nlist.block_pb((ClusterBlockId)clb_index));
+	highlight_sub_block(point_in_clb, (ClusterBlockId)clb_index, cluster_ctx.clb_nlist.block_pb((ClusterBlockId)clb_index));
 	
 	if (get_selected_sub_block_info().has_selection()) {
 		t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
@@ -2778,7 +2778,7 @@ t_point atom_pin_draw_coord(AtomPinId pin) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
-    int clb_index = atom_ctx.lookup.atom_clb(blk);
+    ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(blk);
     const t_pb_graph_node* pg_gnode = atom_ctx.lookup.atom_pb_graph_node(blk);
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -2936,10 +2936,10 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
         AtomBlockId atom_src_block = atom_ctx.nlist.pin_block(atom_src_pin);
         AtomBlockId atom_sink_block = atom_ctx.nlist.pin_block(atom_sink_pin);
 
-        int clb_src_block = atom_ctx.lookup.atom_clb(atom_src_block);
-        VTR_ASSERT(clb_src_block >= 0);
-        int clb_sink_block = atom_ctx.lookup.atom_clb(atom_sink_block);
-        VTR_ASSERT(clb_sink_block >= 0);
+        ClusterBlockId clb_src_block = atom_ctx.lookup.atom_clb(atom_src_block);
+        VTR_ASSERT(clb_src_block != ClusterBlockId::INVALID());
+		ClusterBlockId clb_sink_block = atom_ctx.lookup.atom_clb(atom_sink_block);
+        VTR_ASSERT(clb_sink_block != ClusterBlockId::INVALID());
 
         const t_pb_graph_pin* sink_gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(atom_sink_pin);
         VTR_ASSERT(sink_gpin);
@@ -2949,11 +2949,11 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
 		int sink_block_pin_index = -1;
 		int sink_net_pin_index = -1;
 
-        std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin((ClusterBlockId)clb_sink_block, sink_pb_route_id);
+        std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin(clb_sink_block, sink_pb_route_id);
         if(net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1 && sink_net_pin_index != -1) {
             //Connection leaves the CLB
             //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
-			VTR_ASSERT(cluster_ctx.clb_nlist.net_driver_block(net_id) == (ClusterBlockId)clb_src_block);
+			VTR_ASSERT(cluster_ctx.clb_nlist.net_driver_block(net_id) == clb_src_block);
 
 			auto routed_rr_nodes = trace_routed_connection_rr_nodes(net_id, 0, sink_net_pin_index);
 

@@ -62,20 +62,20 @@ void AtomLookup::set_atom_pin_pb_graph_pin(AtomPinId atom_pin, const t_pb_graph_
 /*
  * Blocks
  */
-int AtomLookup::atom_clb(const AtomBlockId blk_id) const {
+ClusterBlockId AtomLookup::atom_clb(const AtomBlockId blk_id) const {
     VTR_ASSERT(blk_id);
     auto iter = atom_to_clb_.find(blk_id);
     if(iter == atom_to_clb_.end()) {
-        return NO_CLUSTER;
+        return ClusterBlockId::INVALID();
     }
 
     return *iter;
 }
 
-void AtomLookup::set_atom_clb(const AtomBlockId blk_id, const int clb_index) {
+void AtomLookup::set_atom_clb(const AtomBlockId blk_id, const ClusterBlockId clb) {
     VTR_ASSERT(blk_id);
 
-    atom_to_clb_.update(blk_id, clb_index);
+    atom_to_clb_.update(blk_id, clb);
 }
 
 /*

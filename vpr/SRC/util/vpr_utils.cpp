@@ -776,12 +776,12 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *m
 }
 
 //Retrieves the atom pin associated with a specific CLB and pb_graph_pin
-AtomPinId find_atom_pin(int iblk, const t_pb_graph_pin* pb_gpin) {
+AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     int pb_route_id = pb_gpin->pin_count_in_cluster;
-    AtomNetId atom_net = cluster_ctx.clb_nlist.block_pb((ClusterBlockId)iblk)->pb_route[pb_route_id].atom_net_id;
+    AtomNetId atom_net = cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route[pb_route_id].atom_net_id;
 
     VTR_ASSERT(atom_net);
 
@@ -790,13 +790,11 @@ AtomPinId find_atom_pin(int iblk, const t_pb_graph_pin* pb_gpin) {
     //Look through all the pins on this net, looking for the matching pin
     for(AtomPinId pin : atom_ctx.nlist.net_pins(atom_net)) {
         AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
-        if(atom_ctx.lookup.atom_clb(blk) == iblk) {
+        if(atom_ctx.lookup.atom_clb(blk) == blk_id) {
             //Part of the same CLB
-
-            if(atom_ctx.lookup.atom_pin_pb_graph_pin(pin) == pb_gpin) {
+            if(atom_ctx.lookup.atom_pin_pb_graph_pin(pin) == pb_gpin)
                 //The same pin
                 atom_pin = pin;
-            }
         }
     }
 
@@ -1141,9 +1139,8 @@ void free_pb(t_pb *pb) {
         auto& atom_ctx = g_vpr_ctx.mutable_atom();
         auto blk_id = atom_ctx.lookup.pb_atom(pb);
 		if (blk_id) {
-
             //Update atom netlist mapping
-            atom_ctx.lookup.set_atom_clb(blk_id, NO_CLUSTER);
+            atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
             atom_ctx.lookup.set_atom_pb(blk_id, NULL);
 		}
         atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), pb);
@@ -1172,7 +1169,7 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
             /* If any molecules were marked invalid because of this logic block getting packed, mark them valid */
 
             //Update atom netlist mapping
-            atom_ctx.lookup.set_atom_clb(blk_id, NO_CLUSTER);
+            atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
             atom_ctx.lookup.set_atom_pb(blk_id, NULL);
 
             auto rng = atom_molecules.equal_range(blk_id);
@@ -1182,7 +1179,7 @@ void revalid_molecules(const t_pb* pb, const std::multimap<AtomBlockId,t_pack_mo
                     int i;
                     for (i = 0; i < get_array_size_of_molecule(cur_molecule); i++) {
                         if (cur_molecule->atom_block_ids[i]) {
-                            if (atom_ctx.lookup.atom_clb(cur_molecule->atom_block_ids[i]) != OPEN) {
+                            if (atom_ctx.lookup.atom_clb(cur_molecule->atom_block_ids[i]) != ClusterBlockId::INVALID()) {
                                 break;
                             }
                         }
