@@ -408,8 +408,7 @@ void veri_preproc_bootstraped(FILE *original_source, FILE *preproc_producer, ver
 	// Strip the comments from the source file producing a temporary source file.
 	FILE *source = remove_comments(original_source);
 	
-	//TODO this is not working
-	//source = format_verilog_file(source);
+	source = format_verilog_file(source);
 	
 	int line_number = 1;
 	veri_flag_stack *skip = (veri_flag_stack *)vtr::calloc(1, sizeof(veri_flag_stack));;
@@ -707,7 +706,7 @@ FILE *format_verilog_file(FILE *source)
 	int j;
 	static const char *pattern = "\\binput\\b|\\boutput\\b|\\breg\\b|\\bwire\\b";
 	i = 0;
-	line = (char *) malloc (MaxLine);
+	line = (char *) calloc (MaxLine, sizeof(char));
 	while( (ch = getc(source) ) != ';')
 	{
 		line[i++] = ch;

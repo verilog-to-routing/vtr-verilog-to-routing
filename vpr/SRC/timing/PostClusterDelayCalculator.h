@@ -4,6 +4,7 @@
 
 #include "tatum/Time.hpp"
 #include "tatum/TimingGraph.hpp"
+#include "tatum/delay_calc/DelayCalculator.hpp"
 
 #include "atom_netlist.h"
 #include "vpr_utils.h"
@@ -11,26 +12,38 @@
 #include "atom_delay_calc.h"
 #include "clb_delay_calc.h"
 
-class PostClusterDelayCalculator {
+class PostClusterDelayCalculator : public tatum::DelayCalculator {
 
 public:
     PostClusterDelayCalculator(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, float** net_delay);
 
-    tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
-    tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
+    tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
+    tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
 
-    tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
-    tatum::Time hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
+    tatum::Time min_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
+    tatum::Time hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
 
 private:
+    //Returns the generic edge delay
+    tatum::Time calc_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const;
 
-    tatum::Time atom_combinational_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
+    tatum::Time atom_combinational_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const;
+    tatum::Time atom_clock_to_q_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const;
+    tatum::Time atom_net_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id, DelayType delay_type) const;
+
     tatum::Time atom_setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
-    tatum::Time atom_clock_to_q_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
-    tatum::Time atom_net_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
+    tatum::Time atom_hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
 
     float inter_cluster_delay(const t_net_pin* driver_clb_pin, const t_net_pin* sink_clb_pin) const;
 
+    tatum::Time get_cached_delay(tatum::EdgeId edge, DelayType delay_type) const;
+    void set_cached_delay(tatum::EdgeId edge, DelayType delay_type, tatum::Time delay) const;
+
+    tatum::Time get_cached_setup_time(tatum::EdgeId edge) const;
+    void set_cached_setup_time(tatum::EdgeId edge, tatum::Time setup) const;
+
+    tatum::Time get_cached_hold_time(tatum::EdgeId edge) const;
+    void set_cached_hold_time(tatum::EdgeId edge, tatum::Time hold) const;
 private:
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
@@ -39,7 +52,8 @@ private:
     ClbDelayCalc clb_delay_calc_;
     AtomDelayCalc atom_delay_calc_;
 
-    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> edge_delay_cache_;
+    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> edge_min_delay_cache_;
+    mutable vtr::vector_map<tatum::EdgeId,tatum::Time> edge_max_delay_cache_;
     mutable vtr::vector_map<tatum::EdgeId,tatum::Time> driver_clb_delay_cache_;
     mutable vtr::vector_map<tatum::EdgeId,tatum::Time> sink_clb_delay_cache_;
     mutable vtr::vector_map<tatum::EdgeId,std::pair<const t_net_pin*,const t_net_pin*>> net_pin_cache_;

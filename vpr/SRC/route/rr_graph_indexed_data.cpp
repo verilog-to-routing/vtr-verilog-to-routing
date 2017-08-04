@@ -17,14 +17,14 @@ using namespace std;
 /******************* Subroutines local to this module ************************/
 
 static void load_rr_indexed_data_base_costs(int nodes_per_chan,
-        vector<int> *** L_rr_node_indices, enum e_base_cost_type base_cost_type);
+        const t_rr_node_indices& L_rr_node_indices, enum e_base_cost_type base_cost_type);
 
 static float get_delay_normalization_fac(int nodes_per_chan,
-        vector<int> *** L_rr_node_indices);
+        const t_rr_node_indices& L_rr_node_indices);
 
 static void load_rr_indexed_data_T_values(int index_start,
         int num_indices_to_load, t_rr_type rr_type, int nodes_per_chan,
-        vector<int> *** L_rr_node_indices);
+        const t_rr_node_indices& L_rr_node_indices);
 
 /******************** Subroutine definitions *********************************/
 
@@ -42,7 +42,7 @@ static void load_rr_indexed_data_T_values(int index_start,
  * x-channel its own cost_index, and each segment type in a y-channel its    *
  * own cost_index.                                                           */
 void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
-        const int num_segment, vector<int> *** L_rr_node_indices,
+        const int num_segment, const t_rr_node_indices& L_rr_node_indices,
         const int nodes_per_chan, int wire_to_ipin_switch,
         enum e_base_cost_type base_cost_type) {
 
@@ -129,7 +129,7 @@ void load_rr_index_segments(const int num_segment) {
 }
 
 static void load_rr_indexed_data_base_costs(int nodes_per_chan,
-        vector<int> *** L_rr_node_indices, enum e_base_cost_type base_cost_type) {
+        const t_rr_node_indices& L_rr_node_indices, enum e_base_cost_type base_cost_type) {
 
     /* Loads the base_cost member of device_ctx.rr_indexed_data according to the specified *
      * base_cost_type.                                                          */
@@ -179,7 +179,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 }
 
 static float get_delay_normalization_fac(int nodes_per_chan,
-        vector<int> *** L_rr_node_indices) {
+        const t_rr_node_indices& L_rr_node_indices) {
 
     /* Returns the average delay to go 1 CLB distance along a wire.  */
 
@@ -223,7 +223,7 @@ static float get_delay_normalization_fac(int nodes_per_chan,
 
 static void load_rr_indexed_data_T_values(int index_start,
         int num_indices_to_load, t_rr_type rr_type, int nodes_per_chan,
-        vector<int> *** L_rr_node_indices) {
+        const t_rr_node_indices& L_rr_node_indices) {
 
     /* Loads the average propagation times through segments of each index type  *
      * for either all CHANX segment types or all CHANY segment types.  It does  *

@@ -88,27 +88,27 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(
 
 static void build_bidir_rr_opins(
         const int i, const int j,
-        t_rr_node * L_rr_node, vector<int> *** L_rr_node_indices,
+        t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
         const t_pin_to_track_lookup& opin_to_track_map, const std::vector<vtr::Matrix<int>>&Fc_out,
         bool * L_rr_edge_done, const t_seg_details * seg_details,
-        const vtr::Matrix<t_grid_tile>& L_grid,
+        const DeviceGrid& L_grid,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types);
 
 static void build_unidir_rr_opins(
         const int i, const int j,
-        const vtr::Matrix<t_grid_tile>& L_grid, const std::vector<vtr::Matrix<int>>&Fc_out,
+        const DeviceGrid& L_grid, const std::vector<vtr::Matrix<int>>&Fc_out,
         const int max_chan_width,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
         bool * L_rr_edge_done,
-        bool * Fc_clipped, vector<int> *** L_rr_node_indices,
+        bool * Fc_clipped, const t_rr_node_indices& L_rr_node_indices,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types);
 
 static int get_opin_direct_connecions(
         int x, int y, int opin,
-        t_linked_edge ** edge_list_ptr, vector<int> ***L_rr_node_indices,
+        t_linked_edge ** edge_list_ptr, const t_rr_node_indices& L_rr_node_indices,
         const t_direct_inf *directs, const int num_directs,
         const t_clb_to_clb_directs *clb_to_clb_directs);
 
@@ -121,10 +121,10 @@ static void alloc_and_load_rr_graph(
         const t_track_to_pin_lookup& track_to_pin_lookup,
         const t_pin_to_track_lookup& opin_to_track_map, const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
         t_sb_connection_map *sb_conn_map,
-        const vtr::Matrix<t_grid_tile>& L_grid, const int L_nx, const int L_ny, const int Fs,
+        const DeviceGrid& L_grid, const int L_nx, const int L_ny, const int Fs,
         short ******sblock_pattern, const std::vector<vtr::Matrix<int>>&Fc_out,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
-        vector<int> ***L_rr_node_indices,
+        const t_rr_node_indices& L_rr_node_indices,
         const int max_chan_width,
         const int delayless_switch, const enum e_directionality directionality,
         const int wire_to_ipin_switch, bool * Fc_clipped,
@@ -164,8 +164,8 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(
 
 static void build_rr_sinks_sources(
         const int i, const int j,
-        t_rr_node * L_rr_node, vector<int> *** L_rr_node_indices,
-        const int delayless_switch, const vtr::Matrix<t_grid_tile>& L_grid);
+        t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
+        const int delayless_switch, const DeviceGrid& L_grid);
 
 static void build_rr_chan(
         const int i, const int j, const t_rr_type chan_type,
@@ -175,7 +175,7 @@ static void build_rr_chan(
         const int max_chan_width, const int tracks_per_chan,
         short ******sblock_pattern, const int Fs_per_side,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
-        vector<int> *** L_rr_node_indices,
+        const t_rr_node_indices& L_rr_node_indices,
         bool * L_rr_edge_done, t_rr_node * L_rr_node,
         const int wire_to_ipin_switch, const enum e_directionality directionality);
 
@@ -218,7 +218,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
 static void build_rr_graph(
         const t_graph_type graph_type, const int L_num_types,
         const t_type_ptr types, const int L_nx, const int L_ny,
-        const vtr::Matrix<t_grid_tile>& L_grid,
+        const DeviceGrid& L_grid,
         t_chan_width *nodes_per_chan,
         const enum e_switch_block_type sb_type, const int Fs,
         const vector<t_switchblock_inf> switchblocks,
@@ -240,7 +240,7 @@ static void build_rr_graph(
 void create_rr_graph(
         const t_graph_type graph_type, const int L_num_types,
         const t_type_ptr types, const int L_nx, const int L_ny,
-        const vtr::Matrix<t_grid_tile>& L_grid,
+        const DeviceGrid& L_grid,
         t_chan_width *nodes_per_chan,
         const enum e_switch_block_type sb_type, const int Fs,
         const vector<t_switchblock_inf> switchblocks,
@@ -281,7 +281,7 @@ void create_rr_graph(
 static void build_rr_graph(
         const t_graph_type graph_type, const int L_num_types,
         const t_type_ptr types, const int L_nx, const int L_ny,
-        const vtr::Matrix<t_grid_tile>& L_grid,
+        const DeviceGrid& L_grid,
         t_chan_width *nodes_per_chan,
         const enum e_switch_block_type sb_type, const int Fs,
         const vector<t_switchblock_inf> switchblocks,
@@ -406,7 +406,7 @@ static void build_rr_graph(
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
 
-        for (int i = 1; i < L_num_types; ++i) { /* Skip "<EMPTY>" */
+        for (int i = 1; i < L_num_types; ++i) { /* Skip "EMPTY" */
             for (int j = 0; j < device_ctx.block_types[i].num_pins; ++j) {
                 for (int k = 0; k < num_seg_types; k++) {
 #ifdef VERBOSE
@@ -904,7 +904,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const int L_num_ty
 
     VTR_ASSERT((max_chan_width % fac) == 0);
 
-    for (int itype = 1; itype < L_num_types; ++itype) { //Skip <EMPTY>
+    for (int itype = 1; itype < L_num_types; ++itype) { //Skip EMPTY
         for (const t_fc_specification fc_spec : types[itype].fc_specs) {
 
             if (fc_type != fc_spec.fc_type) continue;
@@ -1011,10 +1011,10 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         const t_track_to_pin_lookup& track_to_pin_lookup,
         const t_pin_to_track_lookup& opin_to_track_map, const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
         t_sb_connection_map *sb_conn_map,
-        const vtr::Matrix<t_grid_tile>& L_grid, const int L_nx, const int L_ny, const int Fs,
+        const DeviceGrid& L_grid, const int L_nx, const int L_ny, const int Fs,
         short ******sblock_pattern, const std::vector<vtr::Matrix<int>>&Fc_out,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
-        vector<int> *** L_rr_node_indices,
+        const t_rr_node_indices& L_rr_node_indices,
         const int max_chan_width,
         const int delayless_switch, const enum e_directionality directionality,
         const int wire_to_ipin_switch, bool * Fc_clipped,
@@ -1091,10 +1091,10 @@ static void alloc_and_load_rr_graph(const int num_nodes,
 }
 
 static void build_bidir_rr_opins(const int i, const int j,
-        t_rr_node * L_rr_node, vector<int> *** L_rr_node_indices,
+        t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
         const t_pin_to_track_lookup& opin_to_track_map, const std::vector<vtr::Matrix<int>>&Fc_out,
         bool * L_rr_edge_done, const t_seg_details * seg_details,
-        const vtr::Matrix<t_grid_tile>& L_grid,
+        const DeviceGrid& L_grid,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types) {
 
@@ -1171,10 +1171,10 @@ void free_rr_graph(void) {
         free(route_ctx.net_rr_terminals);
     }
 
-    VTR_ASSERT(device_ctx.rr_node_indices);
-    free_rr_node_indices(device_ctx.rr_node_indices);
-
+    VTR_ASSERT(!device_ctx.rr_node_indices.empty());
+    device_ctx.rr_node_indices.resize(0);
     free(device_ctx.rr_indexed_data);
+
     for (i = 0; i < cluster_ctx.num_blocks; i++) {
         free(route_ctx.rr_blk_source[i]);
     }
@@ -1183,7 +1183,6 @@ void free_rr_graph(void) {
         route_ctx.rr_blk_source = NULL;
     }
     route_ctx.net_rr_terminals = NULL;
-    device_ctx.rr_node_indices = NULL;
     device_ctx.rr_indexed_data = NULL;
     device_ctx.num_rr_nodes = 0;
 
@@ -1211,7 +1210,7 @@ void alloc_net_rr_terminals(void) {
     }
 }
 
-void load_net_rr_terminals(vector<int> *** L_rr_node_indices) {
+void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
 
     /* Allocates and loads the route_ctx.net_rr_terminals data structure.  For each net   *
      * it stores the rr_node index of the SOURCE of the net and all the SINKs   *
@@ -1247,7 +1246,7 @@ void load_net_rr_terminals(vector<int> *** L_rr_node_indices) {
     }
 }
 
-void alloc_and_load_rr_clb_source(vector<int> *** L_rr_node_indices) {
+void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
 
     /* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
      * in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
@@ -1291,8 +1290,8 @@ void alloc_and_load_rr_clb_source(vector<int> *** L_rr_node_indices) {
 }
 
 static void build_rr_sinks_sources(const int i, const int j,
-        t_rr_node * L_rr_node, vector<int> *** L_rr_node_indices,
-        const int delayless_switch, const vtr::Matrix<t_grid_tile>& L_grid) {
+        t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
+        const int delayless_switch, const DeviceGrid& L_grid) {
 
     /* Loads IPIN, SINK, SOURCE, and OPIN. 
      * Loads IPconst to SINK edges, and SOURCE to OPconst edges */
@@ -1393,8 +1392,8 @@ static void build_rr_sinks_sources(const int i, const int j,
 }
 
 void init_fan_in(const int L_nx, const int L_ny,
-        t_rr_node * L_rr_node, vector<int> *** L_rr_node_indices,
-        const vtr::Matrix<t_grid_tile>& L_grid, const int num_rr_nodes) {
+        t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
+        const DeviceGrid& L_grid, const int num_rr_nodes) {
     int i;
     /* Loads IPIN, SINK, SOURCE, and OPIN. 
      * Loads IPconst to SINK edges, and SOURCE to OPconst edges */
@@ -1453,7 +1452,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         const int max_chan_width, const int tracks_per_chan,
         short ******sblock_pattern, const int Fs_per_side,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
-        vector<int> *** L_rr_node_indices,
+        const t_rr_node_indices& L_rr_node_indices,
         bool * L_rr_edge_done, t_rr_node * L_rr_node,
         const int wire_to_ipin_switch, const enum e_directionality directionality) {
 
@@ -2280,11 +2279,11 @@ void print_rr_indexed_data(FILE * fp, int index) {
 }
 
 static void build_unidir_rr_opins(const int i, const int j,
-        const vtr::Matrix<t_grid_tile>& L_grid, const std::vector<vtr::Matrix<int>>&Fc_out, const int max_chan_width,
+        const DeviceGrid& L_grid, const std::vector<vtr::Matrix<int>>&Fc_out, const int max_chan_width,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
         bool * L_rr_edge_done,
-        bool * Fc_clipped, vector<int> *** L_rr_node_indices,
+        bool * Fc_clipped, const t_rr_node_indices& L_rr_node_indices,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types) {
 
@@ -2510,7 +2509,7 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
 
 /* Add all direct clb-pin-to-clb-pin edges to given opin */
 static int get_opin_direct_connecions(int x, int y, int opin,
-        t_linked_edge ** edge_list_ptr, vector<int> *** L_rr_node_indices,
+        t_linked_edge ** edge_list_ptr, const t_rr_node_indices& L_rr_node_indices,
         const t_direct_inf *directs, const int num_directs,
         const t_clb_to_clb_directs *clb_to_clb_directs) {
 

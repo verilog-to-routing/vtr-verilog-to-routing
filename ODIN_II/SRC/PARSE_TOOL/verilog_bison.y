@@ -35,7 +35,7 @@ extern int yylineno;
 	#define YYLINENO yylineno
 #endif
 
-void yyerror(const char *str){	fprintf(stderr,"error in parsing: %s - on line number %zu\n",str, yylineno);	exit(-1);}
+void yyerror(const char *str){	fprintf(stderr,"error in parsing: %s - on line number %d\n",str, yylineno);	exit(-1);}
 int yywrap(){	return 1;}
 int yyparse();
 int yylex(void);

@@ -4,14 +4,7 @@
 #include <vector>
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
-
-/**** Structs ****/
-/* contains data passed in to the switchblock parser */
-struct t_formula_data{
-	int dest_W;	/* number of potential wire segments we can connect to in the destination channel */
-	int wire;	/* incoming wire index */
-};
-
+#include "expr_eval.h"
 
 /**** Function Declarations ****/
 /* Loads permutation funcs specified under Node into t_switchblock_inf */
@@ -25,7 +18,5 @@ void check_switchblock(const t_switchblock_inf *sb, const t_arch* arch);
 
 /* returns integer result according to the specified formula and data */
 int get_sb_formula_raw_result( const char* formula, const t_formula_data &mydata );
-
-
 
 #endif /* PARSE_SWITCHBLOCKS_H */

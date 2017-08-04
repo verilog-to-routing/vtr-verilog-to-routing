@@ -50,7 +50,21 @@
     	</output_ports>
     </model>
   </models>
-  <layout auto="1.0"/>
+  <layout>
+    <auto_layout aspect_ratio="1.0">
+        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+        <perimeter type="io" priority="100"/>
+        <corners type="EMPTY" priority="101"/>
+        <!--Fill with 'clb'-->
+        <fill type="clb" priority="10"/>
+        <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
+        <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
+        <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
+        <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+        </auto_layout>
+</layout>
   <device>
     <sizing R_minW_nmos="8926" R_minW_pmos="16067" ipin_mux_trans_size="1.22226"/>
     <timing C_ipin_cblock="1.47e-15" T_ipin_cblock="7.247e-11"/>
@@ -124,10 +138,6 @@
       </pinlocations>
     
       <!-- Place I/Os on the sides of the FPGA -->
-      <gridlocations>
-        <loc type="perimeter" priority="10"/>
-      </gridlocations>
-    
       <power method="ignore"/>			
     </pb_type>
     <pb_type name="clb" area="53894">
@@ -1207,10 +1217,7 @@
       </pb_type>
       <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.1"/>
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc type="fill" priority="1"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
     <pb_type name="mult_36" height="4" area="396000">
       <input name="a" num_pins="36"/>
       <input name="b" num_pins="36"/>
@@ -1371,9 +1378,6 @@
       <pinlocations pattern="spread"/>
     
       <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->
-      <gridlocations>
-        <loc type="col" start="6" repeat="8" priority="2"/>
-      </gridlocations>		  
       <power method="sum-of-children"/>
     </pb_type>
     <pb_type name="memory" height="6" area="548000">
@@ -1953,10 +1957,6 @@
       <pinlocations pattern="spread"/>
     
       <!-- Place this memory block every 8 columns from (and including) the second column -->
-      <gridlocations>
-        <loc type="col" start="2" repeat="8" priority="2"/>
-      </gridlocations>
-    
       <power method="sum-of-children"/>
     </pb_type>
   </complexblocklist>

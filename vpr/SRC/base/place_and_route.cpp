@@ -52,7 +52,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
         const t_timing_inf& timing_inf,
 #endif
-        std::shared_ptr<SetupTimingInfo> timing_info);
+        std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
 static float comp_width(t_chan * chan, float x, float separation);
 
@@ -128,14 +128,14 @@ bool place_and_route(t_placer_opts placer_opts,
     //Initialize the delay calculator
     float **net_delay = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
 
-    std::shared_ptr<SetupTimingInfo> timing_info = nullptr;
+    std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
     std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
     if (timing_inf.timing_analysis_enabled) {
         auto& atom_ctx = g_vpr_ctx.atom();
 
         routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
 
-        timing_info = make_setup_timing_info(routing_delay_calc);
+        timing_info = make_setup_hold_timing_info(routing_delay_calc);
     }
 
 
@@ -253,7 +253,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
         const t_timing_inf& timing_inf,
 #endif
-        std::shared_ptr<SetupTimingInfo> timing_info) {
+        std::shared_ptr<SetupHoldTimingInfo> timing_info) {
 
     /* This routine performs a binary search to find the minimum number of      *
      * tracks per channel required to successfully route a circuit, and returns *

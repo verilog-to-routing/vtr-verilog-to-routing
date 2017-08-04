@@ -882,8 +882,8 @@ static void compute_wireconn_connections(int nx, int ny, e_directionality direct
         for (int iperm = 0; iperm < (int)permutations_ref.size(); iperm++){
             /* Convert the symbolic permutation formula to a number */
             t_formula_data formula_data;
-            formula_data.dest_W = dest_W;
-            formula_data.wire = src_wire_ind;
+            formula_data.set_var_value("W", dest_W);
+            formula_data.set_var_value("t", src_wire_ind);
             int raw_dest_wire_ind = get_sb_formula_raw_result(permutations_ref[iperm].c_str(), formula_data);
             int dest_wire_ind = adjust_formula_result(raw_dest_wire_ind, src_W, dest_W, iconn);
 

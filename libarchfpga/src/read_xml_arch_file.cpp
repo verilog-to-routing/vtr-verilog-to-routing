@@ -80,9 +80,6 @@ static t_type_ptr IO_TYPE = NULL;
 /* This identifies the t_type_ptr of an Empty block */
 static t_type_ptr EMPTY_TYPE = NULL;
 
-/* This identifies the t_type_ptr of the default logic block */
-static t_type_ptr FILL_TYPE = NULL;
-
 /* Describes the different types of CLBs available */
 static t_type_descriptor *cb_type_descriptors;
 
@@ -90,7 +87,7 @@ static t_type_descriptor *cb_type_descriptors;
 /*   Populate data */
 static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
-static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
+
 /*    Process XML hiearchy */
 static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type * pb_type,
 		t_mode * mode, const t_arch& arch, const pugiutil::loc_data& loc_data);
@@ -113,11 +110,12 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
 static void ProcessModels(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data);
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data);
+static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch *arch,
 		const bool timing_enabled, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		const t_arch& arch, const pugiutil::loc_data& loc_data);
+		t_arch& arch, const pugiutil::loc_data& loc_data);
 static void ProcessSwitches(pugi::xml_node Node,
 		t_arch_switch_inf **Switches, int *NumSwitches,
 		const bool timing_enabled, const pugiutil::loc_data& loc_data);
@@ -148,11 +146,14 @@ bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiutil::l
 void warn_model_missing_timing(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model);
 bool check_model_clocks(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model);
 bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch);
+const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
+const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port);
 std::string inst_port_to_port_name(std::string inst_port);
 
 static bool attribute_to_bool(const pugi::xml_node node,
                 const pugi::xml_attribute attr,
                 const pugiutil::loc_data& loc_data);
+bool is_library_model(const t_model* model);
 
 /*
  *
@@ -167,7 +168,6 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
 		t_arch *arch, t_type_descriptor ** Types,
 		int *NumTypes) {
 
-	const char *Prop;
 	pugi::xml_node Next;
 	ReqOpt POWER_REQD, SWITCHBLOCKLIST_REQD;
 
@@ -193,7 +193,8 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
         auto architecture = get_single_child(doc, "architecture", loc_data);
 
         /* TODO: do version processing properly with string delimiting on the . */
-        Prop = get_attribute(architecture, "version", loc_data, OPTIONAL).as_string(NULL);
+#if 0
+        char* Prop = get_attribute(architecture, "version", loc_data, OPTIONAL).as_string(NULL);
         if (Prop != NULL) {
             if (atof(Prop) > atof(VPR_VERSION)) {
                 vtr::printf_warning(__FILE__, __LINE__,
@@ -201,6 +202,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
                         atof(Prop));
             }
         }
+#endif
 
         /* Process models */
         Next = get_single_child(architecture, "models", loc_data);
@@ -574,90 +576,6 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	}
 	VTR_ASSERT(num_class == Type->num_class);
 	VTR_ASSERT(pin_count == Type->num_pins);
-}
-
-/* Sets up the grid_loc_def for the type. */
-static void SetupGridLocations(pugi::xml_node Locations, t_type_descriptor * Type, const pugiutil::loc_data& loc_data) {
-	int i;
-
-	pugi::xml_node Cur;
-	const char *Prop;
-
-	Type->num_grid_loc_def = count_children(Locations, "loc", loc_data);
-	Type->grid_loc_def = (t_grid_loc_def *) vtr::calloc(
-			Type->num_grid_loc_def, sizeof(t_grid_loc_def));
-
-	/* Load the pin locations */
-	Cur = Locations.first_child();
-	i = 0;
-	while (Cur) {
-		check_node(Cur, "loc", loc_data);
-
-		/* loc index */
-		Prop = get_attribute(Cur, "type", loc_data).value();
-		if (Prop) {
-			if (strcmp(Prop, "perimeter") == 0) {
-				if (Type->num_grid_loc_def != 1) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-							"Another loc specified for perimeter.\n");
-				}
-				Type->grid_loc_def[i].grid_loc_type = BOUNDARY;
-				VTR_ASSERT(IO_TYPE == Type);
-				/* IO goes to boundary */
-			} else if (strcmp(Prop, "fill") == 0) {
-				if (Type->num_grid_loc_def != 1 || FILL_TYPE != NULL) {
-					archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-							"Another loc specified for fill.\n");
-				}
-				Type->grid_loc_def[i].grid_loc_type = FILL;
-				FILL_TYPE = Type;
-			} else if (strcmp(Prop, "col") == 0) {
-				Type->grid_loc_def[i].grid_loc_type = COL_REPEAT;
-			} else if (strcmp(Prop, "rel") == 0) {
-				Type->grid_loc_def[i].grid_loc_type = COL_REL;
-			} else {
-				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-						"Unknown grid location type '%s' for type '%s'.\n",
-						Prop, Type->name);
-			}
-		}
-		Prop = get_attribute(Cur, "start", loc_data, OPTIONAL).as_string(NULL);
-		if (Type->grid_loc_def[i].grid_loc_type == COL_REPEAT) {
-			if (Prop == NULL) {
-				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-						"grid location property 'start' must be specified for grid location type 'col'.\n");
-			}
-			Type->grid_loc_def[i].start_col = vtr::atoi(Prop);
-		} else if (Prop != NULL) {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-					"grid location property 'start' valid for grid location type 'col' only.\n");
-		}
-		Prop = get_attribute(Cur, "repeat", loc_data, OPTIONAL).as_string(NULL);
-		if (Type->grid_loc_def[i].grid_loc_type == COL_REPEAT) {
-			if (Prop != NULL) {
-				Type->grid_loc_def[i].repeat = vtr::atoi(Prop);
-			}
-		} else if (Prop != NULL) {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-					"Grid location property 'repeat' valid for grid location type 'col' only.\n");
-		}
-		Prop = get_attribute(Cur, "pos", loc_data, OPTIONAL).as_string(NULL);
-		if (Type->grid_loc_def[i].grid_loc_type == COL_REL) {
-			if (Prop == NULL) {
-				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-						"Grid location property 'pos' must be specified for grid location type 'rel'.\n");
-			}
-			Type->grid_loc_def[i].col_rel = (float) atof(Prop);
-		} else if (Prop != NULL) {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-					"Grid location property 'pos' valid for grid location type 'rel' only.\n");
-		}
-
-		Type->grid_loc_def[i].priority = get_attribute(Cur, "priority", loc_data, OPTIONAL). as_int(1);
-
-		Cur = Cur.next_sibling(Cur.name());
-		i++;
-	}
 }
 
 static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
@@ -1988,38 +1906,274 @@ static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::se
     }
 }
 
-/* Takes in node pointing to <layout> and loads all the
- * child type objects. */
-static void ProcessLayout(pugi::xml_node Node, t_arch *arch, const pugiutil::loc_data& loc_data) {
-	const char *Prop;
+static void ProcessLayout(pugi::xml_node layout_tag, t_arch *arch, const pugiutil::loc_data& loc_data) {
+    VTR_ASSERT(layout_tag.name() == std::string("layout"));
 
-	arch->clb_grid.IsAuto = true;
-	ReqOpt CLB_GRID_ISAUTO;
+    //Expect no attributes on <layout>
+    expect_only_attributes(layout_tag, {}, loc_data);
 
-	/* Load width and height if applicable */
-	Prop = get_attribute(Node, "width", loc_data, OPTIONAL).as_string(NULL);
-	if (Prop != NULL) {
-		arch->clb_grid.IsAuto = false;
-		arch->clb_grid.W = vtr::atoi(Prop);
+    //Count the number of <auto_layout> or <fixed_layout> tags
+    size_t auto_layout_cnt = 0;
+    size_t fixed_layout_cnt = 0;
+    for (auto layout_type_tag : layout_tag.children()) {
+        if (layout_type_tag.name() == std::string("auto_layout")) {
+            ++auto_layout_cnt;
+        } else if (layout_type_tag.name() == std::string("fixed_layout")) {
+            ++fixed_layout_cnt;
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
+                    "Unexpected tag type '<%s>', expected '<auto_layout>' or '<fixed_layout>'", layout_type_tag.name());
+        }
+    }
 
-		arch->clb_grid.H = get_attribute(Node, "height", loc_data).as_int(UNDEFINED);
-	}
+    if (   (auto_layout_cnt == 0 && fixed_layout_cnt == 0)
+        || (auto_layout_cnt != 0 && fixed_layout_cnt != 0)) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_tag),
+                "Expected either a single <auto_layout> or one-or-more <fixed_layout> tags");
+    }
+    VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
+    VTR_ASSERT_MSG(auto_layout_cnt == 0 || fixed_layout_cnt == 0, "At most one of fixed or auto layout can be specified");
 
-	/* Load aspect ratio if applicable */
-	CLB_GRID_ISAUTO = BoolToReqOpt(arch->clb_grid.IsAuto);
-	Prop = get_attribute(Node, "auto", loc_data, CLB_GRID_ISAUTO).as_string(NULL);
-	if (Prop != NULL) {
-		if (arch->clb_grid.IsAuto == false) {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-					"Auto-sizing, width and height cannot be specified\n");
-		}
-		arch->clb_grid.Aspect = (float) atof(Prop);
-		if (arch->clb_grid.Aspect <= 0) {
-			archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-					"Grid aspect ratio is less than or equal to zero %g\n",
-					arch->clb_grid.Aspect);
-		}
-	}
+    for (auto layout_type_tag : layout_tag.children()) {
+
+        t_grid_def grid_def = ProcessGridLayout(layout_type_tag, loc_data);
+
+        arch->grid_layouts.push_back(grid_def);
+    }
+}
+
+static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data) {
+    t_grid_def grid_def;
+
+    //Determine the grid specification type
+    if (layout_type_tag.name() == std::string("auto_layout")) {
+
+        expect_only_attributes(layout_type_tag, {"aspect_ratio"}, loc_data);
+
+        grid_def.grid_type = GridDefType::AUTO;
+
+        auto aspect_ratio_attr = get_attribute(layout_type_tag, "aspect_ratio", loc_data);
+        if (aspect_ratio_attr) {
+            grid_def.aspect_ratio = aspect_ratio_attr.as_float();
+        }
+        grid_def.name = "auto";
+
+    } else if (layout_type_tag.name() == std::string("fixed_layout")) {
+        expect_only_attributes(layout_type_tag, {"width", "height", "name"}, loc_data);
+
+        grid_def.grid_type = GridDefType::FIXED;
+        grid_def.width = get_attribute(layout_type_tag, "width", loc_data).as_int();
+        grid_def.height = get_attribute(layout_type_tag, "height", loc_data).as_int();
+        std::string name = get_attribute(layout_type_tag, "name", loc_data).value();
+
+        if (name == "auto") {
+            //We name <auto_layout> as 'auto', so don't allow a user to specify it
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
+                    "The name '%s' is reserved for auto-sized layouts; please choose another name");
+        }
+        grid_def.name = name;
+
+    } else {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
+                    "Unexpected tag '<%s>'. Expected '<auto_layout>' or '<fixed_layout>'.",
+                    layout_type_tag.name());
+    }
+
+    //Process all the block location specifications
+    for (auto loc_spec_tag : layout_type_tag.children()) {
+        auto loc_type = loc_spec_tag.name();
+        auto type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
+        int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
+
+        if (loc_type == std::string("perimeter")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
+
+            //The edges
+            t_grid_loc_def left_edge(type_name, priority); //Including corners
+            left_edge.x.start_expr = "0";
+            left_edge.x.end_expr = "0";
+            left_edge.y.start_expr = "0";
+            left_edge.y.end_expr = "H - 1";
+
+            t_grid_loc_def right_edge(type_name, priority); //Including corners
+            right_edge.x.start_expr = "W - 1";
+            right_edge.x.end_expr = "W - 1";
+            right_edge.y.start_expr = "0";
+            right_edge.y.end_expr = "H - 1";
+
+            t_grid_loc_def bottom_edge(type_name, priority); //Exclucing corners
+            bottom_edge.x.start_expr = "1";
+            bottom_edge.x.end_expr = "W - 2";
+            bottom_edge.y.start_expr = "0";
+            bottom_edge.y.end_expr = "0";
+
+            t_grid_loc_def top_edge(type_name, priority); //Excluding corners
+            top_edge.x.start_expr = "1";
+            top_edge.x.end_expr = "W - 2";
+            top_edge.y.start_expr = "H - 1";
+            top_edge.y.end_expr = "H - 1";
+
+            grid_def.loc_defs.push_back(left_edge);
+            grid_def.loc_defs.push_back(right_edge);
+            grid_def.loc_defs.push_back(top_edge);
+            grid_def.loc_defs.push_back(bottom_edge);
+
+        } else if (loc_type == std::string("corners")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
+
+            //The corners
+            t_grid_loc_def bottom_left(type_name, priority);
+            bottom_left.x.start_expr = "0";
+            bottom_left.x.end_expr = "0";
+            bottom_left.y.start_expr = "0";
+            bottom_left.y.end_expr = "0";
+
+            t_grid_loc_def top_left(type_name, priority);
+            top_left.x.start_expr = "0";
+            top_left.x.end_expr = "0";
+            top_left.y.start_expr = "H-1";
+            top_left.y.end_expr = "H-1";
+
+            t_grid_loc_def bottom_right(type_name, priority);
+            bottom_right.x.start_expr = "W-1";
+            bottom_right.x.end_expr = "W-1";
+            bottom_right.y.start_expr = "0";
+            bottom_right.y.end_expr = "0";
+
+            t_grid_loc_def top_right(type_name, priority);
+            top_right.x.start_expr = "W-1";
+            top_right.x.end_expr = "W-1";
+            top_right.y.start_expr = "H-1";
+            top_right.y.end_expr = "H-1";
+
+            grid_def.loc_defs.push_back(bottom_left);
+            grid_def.loc_defs.push_back(top_left);
+            grid_def.loc_defs.push_back(bottom_right);
+            grid_def.loc_defs.push_back(top_right);
+
+        } else if (loc_type == std::string("fill")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
+
+            t_grid_loc_def fill(type_name, priority);
+            fill.x.start_expr = "0";
+            fill.x.end_expr = "W - 1";
+            fill.y.start_expr = "0";
+            fill.y.end_expr = "H - 1";
+
+            grid_def.loc_defs.push_back(fill);
+
+        } else if (loc_type == std::string("single")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "x", "y"}, loc_data);
+
+            t_grid_loc_def single(type_name, priority);
+            single.x.start_expr = get_attribute(loc_spec_tag, "x", loc_data).value();
+            single.y.start_expr = get_attribute(loc_spec_tag, "y", loc_data).value();
+            single.x.end_expr = single.x.start_expr + "+ w - 1";
+            single.y.end_expr = single.y.start_expr + "+ h - 1";
+
+            grid_def.loc_defs.push_back(single);
+
+        } else if (loc_type == std::string("col")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty"}, loc_data);
+
+            t_grid_loc_def col(type_name, priority);
+
+            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data);
+
+            col.x.start_expr = startx_attr.value();
+            col.x.end_expr = startx_attr.value();
+
+            auto repeat_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
+            if (repeat_attr) {
+                col.x.repeat_expr = repeat_attr.value();
+            }
+
+            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
+            if (starty_attr) {
+                col.y.start_expr = starty_attr.value();
+            }
+
+            grid_def.loc_defs.push_back(col);
+
+        } else if (loc_type == std::string("row")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty", "startx"}, loc_data);
+
+            t_grid_loc_def row(type_name, priority);
+
+            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data);
+
+            row.y.start_expr = starty_attr.value();
+            row.y.end_expr = starty_attr.value();
+
+            auto repeat_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
+            if (repeat_attr) {
+                row.y.repeat_expr = repeat_attr.value();
+            }
+
+            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
+            if (startx_attr) {
+                row.x.start_expr = startx_attr.value();
+            }
+
+            grid_def.loc_defs.push_back(row);
+        } else if (loc_type == std::string("region")) {
+            expect_only_attributes(loc_spec_tag, 
+                                   {"type", "priority", 
+                                    "startx", "endx", "repeatx", "incrx",
+                                    "starty", "endy", "repeaty", "incry"},
+                                   loc_data);
+            t_grid_loc_def region(type_name, priority);
+
+            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
+            if (startx_attr) {
+                region.x.start_expr = startx_attr.value();
+            }
+
+            auto endx_attr = get_attribute(loc_spec_tag, "endx", loc_data, ReqOpt::OPTIONAL);
+            if (endx_attr) {
+                region.x.end_expr = endx_attr.value();
+            }
+
+            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
+            if (starty_attr) {
+                region.y.start_expr = starty_attr.value();
+            }
+
+            auto endy_attr = get_attribute(loc_spec_tag, "endy", loc_data, ReqOpt::OPTIONAL);
+            if (endy_attr) {
+                region.y.end_expr = endy_attr.value();
+            }
+
+            auto repeatx_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
+            if (repeatx_attr) {
+                region.x.repeat_expr = repeatx_attr.value();
+            }
+
+            auto repeaty_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
+            if (repeaty_attr) {
+                region.y.repeat_expr = repeaty_attr.value();
+            }
+
+            auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
+            if (incrx_attr) {
+                region.x.incr_expr = incrx_attr.value();
+            }
+
+            auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
+            if (incry_attr) {
+                region.y.incr_expr = incry_attr.value();
+            }
+
+            grid_def.loc_defs.push_back(region);
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
+                    "Unrecognized grid location specification type '%s'\n", loc_type);
+        }
+    }
+
+    //Warn if any type has no grid location specifed
+
+    return grid_def;
 }
 
 /* Takes in node pointing to <device> and loads all the
@@ -2147,7 +2301,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan * chan, const p
  * child type objects. */
 static void ProcessComplexBlocks(pugi::xml_node Node,
 		t_type_descriptor ** Types, int *NumTypes,
-		const t_arch& arch, const pugiutil::loc_data& loc_data) {
+		t_arch& arch, const pugiutil::loc_data& loc_data) {
 	pugi::xml_node CurType, Prev;
 	pugi::xml_node Cur;
 	t_type_descriptor * Type;
@@ -2212,8 +2366,16 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		Cur = get_single_child(CurType, "pinlocations", loc_data);
 		SetupPinLocationsAndPinClasses(Cur, Type, loc_data);
 
-		Cur = get_single_child(CurType, "gridlocations", loc_data);
-		SetupGridLocations(Cur, Type, loc_data);
+        //Warn that gridlocations is no longer supported
+         //TODO: eventually remove
+        try {
+            expect_child_node_count(CurType, "gridlocations", 0, loc_data);
+        } catch (XmlError& e) {
+            std::string msg = e.what();
+            msg += ". <gridlocations> has been replaced by the <auto_layout> and <device_layout> tags in the <layout> section.";
+            msg += " Please upgrade your architecture file.";
+            throw XmlError(msg, e.filename(), e.line());
+        }
 
 		/* Load Fc */
 		Cur = get_single_child(CurType, "fc", loc_data);
@@ -2228,10 +2390,6 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		/* Free this node and get its next sibling node */
 		CurType = CurType.next_sibling (CurType.name());
 
-	}
-	if (FILL_TYPE == NULL) {
-		archfpga_throw(arch_file_name, 0,
-				"grid location type 'fill' must be specified.\n");
 	}
 	pb_type_descriptors.clear();
 }
@@ -2999,6 +3157,9 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
     //Now that we have the model we can compare the timing annotations
      
+    //Check from the pb_type's delay annotations match the model
+    //  
+    //  This ensures that the pb_types' delay annotations are consistent with the model
     for(int i = 0; i < pb_type->num_annotations; ++i) {
         const t_pin_to_pin_annotation* annot = &pb_type->annotations[i];
 
@@ -3032,13 +3193,13 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                         std::string model_clock = model_port->clock;
                         if(model_clock.empty()) {
                             archfpga_throw(get_arch_file_name(), annot->line_num,
-                                "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', model specifies"
+                                "<pb_type> timing-annotation/<model> mismatch on port '%s' of model '%s', model specifies"
                                 " no clock but timing annotation specifies '%s'",
                                 annot_port.port_name().c_str(), model->name, annot_clock.port_name().c_str());
                         }
                         if(model_port->clock != annot_clock.port_name()) {
                             archfpga_throw(get_arch_file_name(), annot->line_num,
-                                "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', model specifies"
+                                "<pb_type> timing-annotation/<model> mismatch on port '%s' of model '%s', model specifies"
                                 " clock as '%s' but timing annotation specifies '%s'",
                                 annot_port.port_name().c_str(), model->name, model_clock.c_str(), annot_clock.port_name().c_str());
                         }
@@ -3069,7 +3230,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                         auto iter = std::find(b, e, annot_out.port_name());
                         if(iter == e) {
                             archfpga_throw(get_arch_file_name(), annot->line_num,
-                                "<pb_type> timing annotation/<model> mismatch on port '%s' of model '%s', timing annotation"
+                                "<pb_type> timing-annotation/<model> mismatch on port '%s' of model '%s', timing annotation"
                                 " specifies combinational connection to port '%s' but the connection does not exist in the model",
                                 model_port->name, model->name, annot_out.port_name().c_str());
                         }
@@ -3082,7 +3243,176 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
     }
 
 
+    //Build a list of combinationally connected sinks
+    std::set<std::string> comb_connected_outputs;
+    for (t_model_ports* model_ports : {model->inputs, model->outputs}) {
+        for (t_model_ports* model_port = model_ports; model_port != nullptr; model_port = model_port->next) {
+
+            comb_connected_outputs.insert(model_port->combinational_sink_ports.begin(), model_port->combinational_sink_ports.end());
+        }
+    }
+
+    //Check from the model to pb_type's delay annotations
+    //
+    //  This ensures that the pb_type has annotations for all delays/values 
+    //  required by the model
+    for (t_model_ports* model_ports : {model->inputs, model->outputs}) {
+        for (t_model_ports* model_port = model_ports; model_port != nullptr; model_port = model_port->next) {
+
+            //If the model port has no timing specification don't check anything (e.g. architectures with no timing info)
+            if (   model_port->clock.empty() 
+                && model_port->combinational_sink_ports.empty() 
+                && !comb_connected_outputs.count(model_port->name)) {
+                continue;
+            }
+
+            if (!model_port->clock.empty()) {
+                //Sequential port
+
+                if (model_port->dir == IN_PORT) {
+                    //Sequential inputs must have a T_setup or T_hold
+                    if (   find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) == nullptr
+                        && find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_THOLD) == nullptr) {
+
+                        std::stringstream msg;
+                        msg << "<pb_type> '" << pb_type->name << "' timing-annotation/<model> mismatch on";
+                        msg << " port '" << model_port->name << "' of model '" << model->name << "',";
+                        msg << " port is a sequential input but has neither T_setup nor T_hold specified";
+
+                        if (is_library_model(model)) {
+                            //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
+                            vtr::printf_warning(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
+                        } else {
+                            archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
+                        }
+                    }
+
+                    if (!model_port->combinational_sink_ports.empty()) {
+                        //Sequential input with internal combinational connectsion it must also have T_clock_to_Q
+                        if (   find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) == nullptr
+                            && find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN) == nullptr) {
+
+                            std::stringstream msg;
+                            msg << "<pb_type> '" << pb_type->name << "' timing-annotation/<model> mismatch on";
+                            msg << " port '" << model_port->name << "' of model '" << model->name << "',";
+                            msg << " port is a sequential input with internal combinational connects but has neither";
+                            msg << " min nor max T_clock_to_Q specified";
+
+                            if (is_library_model(model)) {
+                                //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
+                                vtr::printf_warning(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
+                            } else {
+                                archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
+                            }
+                        }
+                    }
+
+                } else {
+                    VTR_ASSERT(model_port->dir == OUT_PORT);
+                    //Sequential outputs must have T_clock_to_Q
+                    if (   find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) == nullptr
+                        && find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN) == nullptr) {
+
+                        std::stringstream msg;
+                        msg << "<pb_type> '" << pb_type->name << "' timing-annotation/<model> mismatch on";
+                        msg << " port '" << model_port->name << "' of model '" << model->name << "',";
+                        msg << " port is a sequential output but has neither min nor max T_clock_to_Q specified";
+
+                        if (is_library_model(model)) {
+                            //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
+                            vtr::printf_warning(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
+                        } else {
+                            archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
+                        }
+                    }
+
+                    if (comb_connected_outputs.count(model_port->name)) {
+                        //Sequential output with internal combinational connectison must have T_setup/T_hold
+                        if (   find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_TSETUP) == nullptr
+                            && find_sequential_annotation(pb_type, model_port, E_ANNOT_PIN_TO_PIN_DELAY_THOLD) == nullptr) {
+
+                            std::stringstream msg;
+                            msg << "<pb_type> '" << pb_type->name << "' timing-annotation/<model> mismatch on";
+                            msg << " port '" << model_port->name << "' of model '" << model->name << "',";
+                            msg << " port is a sequential output with internal combinational connections but has";
+                            msg << " neither T_setup nor T_hold specified";
+
+                            if (is_library_model(model)) {
+                                //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
+                                vtr::printf_warning(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
+                            } else {
+                                archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
+                            }
+                        }
+                    }
+                }
+            }
+
+            //Check that combinationally connected inputs/outputs have combinational delays between them
+            if (model_port->dir == IN_PORT) {
+                for (auto sink_port : model_port->combinational_sink_ports) {
+                    if (find_combinational_annotation(pb_type, model_port->name, sink_port) == nullptr) {
+                        std::stringstream msg;
+                        msg << "<pb_type> '" << pb_type->name << "' timing-annotation/<model> mismatch on";
+                        msg << " port '" << model_port->name << "' of model '" << model->name << "',";
+                        msg << " input port '" << model_port->name << "' has combinational connections to ";
+                        msg << " port '" << sink_port.c_str() << " specified in model, but no combinational delays found on pb_type";
+
+                        if (is_library_model(model)) {
+                            //Only warn if timing info is missing from a library model (e.g. .names/.latch on a non-timing architecture)
+                            vtr::printf_warning(get_arch_file_name(), -1, "%s\n", msg.str().c_str());
+                        } else {
+                            archfpga_throw(get_arch_file_name(), -1, msg.str().c_str());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     return true; 
+}
+
+const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type) {
+    VTR_ASSERT(   annot_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
+               || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
+               || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
+               || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN);
+
+    for (int iannot = 0; iannot < pb_type->num_annotations; ++iannot) {
+        const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
+        InstPort annot_in(annot->input_pins);
+        if (annot_in.port_name() == port->name) {
+            for (int iprop = 0; iprop < annot->num_value_prop_pairs; ++iprop) {
+                if (annot->prop[iprop] == annot_type) {
+                    return annot;
+                }
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port) {
+    for (int iannot = 0; iannot < pb_type->num_annotations; ++iannot) {
+        const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
+        for (auto annot_in_str : vtr::split(annot->input_pins)) {
+            InstPort in_pins(annot_in_str);
+            for (auto annot_out_str : vtr::split(annot->output_pins)) {
+                InstPort out_pins(annot_out_str);
+                if(in_pins.port_name() == in_port && out_pins.port_name() == out_port) {
+                    for (int iprop = 0; iprop < annot->num_value_prop_pairs; ++iprop) {
+                        if (   annot->prop[iprop] == E_ANNOT_PIN_TO_PIN_DELAY_MAX
+                            || annot->prop[iprop] == E_ANNOT_PIN_TO_PIN_DELAY_MIN) {
+                            return annot;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return nullptr;
 }
 
 std::string inst_port_to_port_name(std::string inst_port) {
@@ -3104,5 +3434,12 @@ static bool attribute_to_bool(const pugi::xml_node node,
         bad_attribute_value(attr, node, loc_data, {"0", "1"});
     }
 
+    return false;
+}
+
+bool is_library_model(const t_model* model) {
+    if (model->name == std::string("names") || model->name == std::string("latch")) {
+        return true;
+    }
     return false;
 }

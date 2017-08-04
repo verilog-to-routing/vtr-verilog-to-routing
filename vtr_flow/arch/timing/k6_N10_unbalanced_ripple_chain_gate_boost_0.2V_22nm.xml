@@ -70,7 +70,21 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
   <!-- ODIN II specific config ends -->
  
   <!-- Physical descriptions begin -->
-  <layout auto="1.0"/>
+  <layout>
+    <auto_layout aspect_ratio="1.0">
+        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+        <perimeter type="io" priority="100"/>
+        <corners type="EMPTY" priority="101"/>
+        <!--Fill with 'clb'-->
+        <fill type="clb" priority="10"/>
+        <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
+        <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
+        <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
+        <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+        </auto_layout>
+</layout>
 
 		<device>
 			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="2.000000"/>
@@ -141,11 +155,7 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
           <loc side="bottom">io.outpad io.inpad io.clock</loc>
         </pinlocations>
 
-        <gridlocations>
-          <loc type="perimeter" priority="10"/>
-        </gridlocations>
-
-      </pb_type>
+        </pb_type>
 
       <!-- Logic cluster definition -->
       <pb_type name="clb">
@@ -353,10 +363,7 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
           <loc side="top">clb.cin</loc> 
           <loc side="bottom">clb.cout clb.O[0] clb.O[1] clb.O[2] clb.O[3] clb.O[4] clb.O[5] clb.O[6] clb.O[7] clb.O[8] clb.O[9] clb.I1 clb.I3 clb.I2 clb.I4 clb.clk</loc> 
         </pinlocations>
-        <gridlocations>
-          <loc type="fill" priority="1"/>
-        </gridlocations>
-      </pb_type>
+        </pb_type>
 
     <!-- Define fracturable multiplier begin -->
     <!-- This multiplier can operate as a 36x36 multiplier that can fracture to two 18x18 multipliers each of which can further fracture to two 9x9 multipliers 
@@ -541,9 +548,6 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
       <pinlocations pattern="spread"/>
 
       <!-- Place this multiplier block every 8 columns from (and including) the sixth column -->
-      <gridlocations>
-        <loc type="col" start="6" repeat="8" priority="2"/>
-      </gridlocations>		  
       <power method="sum-of-children"/>
     </pb_type>
     <!-- Define fracturable multiplier end -->
@@ -1144,10 +1148,6 @@ carry chain from Safeen's CMOS ripple carry adder not gate boosted
       <pinlocations pattern="spread"/>
 
       <!-- Place this memory block every 8 columns from (and including) the second column -->
-      <gridlocations>
-        <loc type="col" start="2" repeat="8" priority="2"/>
-      </gridlocations>
-
       <power method="sum-of-children"/>
     </pb_type>
     <!-- Define fracturable memory end -->

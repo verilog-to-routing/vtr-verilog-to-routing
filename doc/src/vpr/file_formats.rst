@@ -99,7 +99,7 @@ Unconnected primitive pins can be specified through several methods.
 
 #. Dummy nets with no sinks (output pins only)
 
-    By default VPR sweeps away nets with no sinks (see :option:`vpr -sweep_dangling_nets`). As a result output pins can be left 'disconnected' by connecting them to dummy nets.
+    By default VPR sweeps away nets with no sinks (see :option:`vpr --sweep_dangling_nets`). As a result output pins can be left 'disconnected' by connecting them to dummy nets.
 
     For example:
 
@@ -163,7 +163,7 @@ Timing Constraints (.sdc)
 Timing constraints are specified using SDC syntax.
 For a description of VPR's SDC support see :ref:`sdc_commands`.
 
-.. note:: Use :option:`vpr -sdc_file` to specify the SDC file used by VPR.
+.. note:: Use :option:`vpr --sdc_file` to specify the SDC file used by VPR.
 
 Timing Constraints File Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -238,7 +238,7 @@ In the original netlist the two LUT inputs were connected to pins at indicies 0 
 However during clustering the inputs were rotated, and those nets now connect to the pins at indicies 2 and 4 (line 4).
 The ``<port_rotation_map>`` tag specified the port name it applies to (``name`` attribute), and its contents lists the pin indicies each pin in the port list is associated with in the original netlist (i.e. the pins ``lut5.in[2]->direct:lut5`` and ``lut5.in[4]->direct:lut5`` respectively correspond to indicies 1 and 0 in the original netlist).
 
-.. note:: Use :option:`vpr -net_file` to override the default net file name.
+.. note:: Use :option:`vpr --net_file` to override the default net file name.
 
 Packing File Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -325,7 +325,7 @@ The number of CLBs in the x and y directions are denoted by ``nx`` and ``ny``, r
 CLBs all go in the area with x between ``1`` and ``nx`` and y between ``1`` and ``ny``, inclusive.
 All pads either have x equal to ``0`` or ``nx + 1`` or y equal to ``0`` or ``ny + 1``.
 
-.. note:: Use :option:`vpr -place_file` to override the default place file name.
+.. note:: Use :option:`vpr --place_file` to override the default place file name.
 
 Placement File Format Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -375,7 +375,7 @@ The routing segment listed immediately after the ``SINK`` is the part of the exi
 
 .. note:: It is important to realize that the first pin after a ``SINK`` is the connection into the already specified routing tree; when computing routing statistics be sure that you do not count the same segment several times by ignoring this fact.
 
-.. note:: Use :option:`vpr -route_file` to override the default place file name.
+.. note:: Use :option:`vpr --route_file` to override the default route file name.
 
 Routing File Format Examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -421,7 +421,7 @@ An example listing for a global net is given below.
 .. _vpr_route_resource_file:
 
 Routing Resource Graph File Format (.xml)
-----------------------------
+-----------------------------------------
 The routing resource graph (rr graph) file is an XML file that describes the routing resources within the FPGA. 
 This file is generated through the last stage of the rr graph generation during routing with the final channel width. 
 When reading in rr graph from an external file, the rr graph is used during the placement and routing section of VPR.
@@ -429,6 +429,9 @@ The file is constructed using tags. The top level is the ``rr_graph`` tag.
 This tag contains all the channel, switches, segments, block, grid, node, and edge information of the FPGA. 
 It is important to keep all the values as high precision as possible. Sensitive values include capacitance and Tdel. As default, these values are printed out with a precision of 30 digits.
 Each of these sections are separated into separate tags as described below.
+
+.. note:: Use :option:`vpr --read_rr_graph` to specify an RR graph file to be load.
+.. note:: Use :option:`vpr --write_rr_graph` to specify where the RR graph should be written.
 
 Top Level Tags
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -648,7 +651,7 @@ The final subtag is the ``rr_edges`` tag that encloses information about all the
         The type of switch that connects the two nodes.
 
 Routing Resource Graph Format Example
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 An example of what a generated routing resource graph file would look like is shown below:
 

@@ -7,7 +7,7 @@ inline AtomDelayCalc::AtomDelayCalc(const AtomNetlist& netlist, const AtomLookup
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup) {}
 
-inline float AtomDelayCalc::atom_combinational_delay(const AtomPinId src_pin, const AtomPinId sink_pin) const {
+inline float AtomDelayCalc::atom_combinational_delay(const AtomPinId src_pin, const AtomPinId sink_pin, const DelayType delay_type) const {
     VTR_ASSERT_MSG(netlist_.pin_block(src_pin) == netlist_.pin_block(sink_pin), "Combinational primitive delay must be between pins on the same block");
 
     VTR_ASSERT_MSG(   netlist_.port_type(netlist_.pin_port(src_pin)) == AtomPortType::INPUT 
@@ -26,7 +26,12 @@ inline float AtomDelayCalc::atom_combinational_delay(const AtomPinId src_pin, co
         const t_pb_graph_pin* timing_sink_gpin = src_gpin->pin_timing[i]; 
 
         if(timing_sink_gpin == sink_gpin) {
-            delay = src_gpin->pin_timing_del_max[i];
+            if (delay_type == DelayType::MAX) {
+                delay = src_gpin->pin_timing_del_max[i];
+            } else {
+                VTR_ASSERT(delay_type == DelayType::MIN);
+                delay = src_gpin->pin_timing_del_min[i];
+            }
             break;
         }
     }
@@ -46,14 +51,29 @@ inline float AtomDelayCalc::atom_setup_time(const AtomPinId /*clock_pin*/, const
     return gpin->tsu;
 }
 
-inline float AtomDelayCalc::atom_clock_to_q_delay(const AtomPinId /*clock_pin*/, const AtomPinId pin) const {
+inline float AtomDelayCalc::atom_hold_time(const AtomPinId /*clock_pin*/, const AtomPinId pin) const {
     auto port_type = netlist_.port_type(netlist_.pin_port(pin));
     VTR_ASSERT(port_type == AtomPortType::OUTPUT || port_type == AtomPortType::INPUT);
 
     const t_pb_graph_pin* gpin = find_pb_graph_pin(pin);
     VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
 
-    return gpin->tco;
+    return gpin->thld;
+}
+
+inline float AtomDelayCalc::atom_clock_to_q_delay(const AtomPinId /*clock_pin*/, const AtomPinId pin, const DelayType delay_type) const {
+    auto port_type = netlist_.port_type(netlist_.pin_port(pin));
+    VTR_ASSERT(port_type == AtomPortType::OUTPUT || port_type == AtomPortType::INPUT);
+
+    const t_pb_graph_pin* gpin = find_pb_graph_pin(pin);
+    VTR_ASSERT(gpin->type == PB_PIN_SEQUENTIAL);
+
+    if (delay_type == DelayType::MAX) {
+        return gpin->tco_max;
+    } else {
+        VTR_ASSERT(delay_type == DelayType::MIN);
+        return gpin->tco_min;
+    }
 }
 
 inline const t_pb_graph_pin* AtomDelayCalc::find_pb_graph_pin(const AtomPinId atom_pin) const {
