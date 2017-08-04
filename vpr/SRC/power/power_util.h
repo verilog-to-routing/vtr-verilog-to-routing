@@ -26,12 +26,13 @@
 #include "power.h"
 #include "power_components.h"
 #include "atom_netlist.h"
+#include "clustered_netlist.h"
 
 /************************* FUNCTION DECLARATIONS ********************/
 
 /* Pins */
-float pin_dens(t_pb * pb, t_pb_graph_pin * pin, int iblk);
-float pin_prob(t_pb * pb, t_pb_graph_pin * pin, int iblk);
+float pin_dens(t_pb * pb, t_pb_graph_pin * pin, ClusterBlockId iblk);
+float pin_prob(t_pb * pb, t_pb_graph_pin * pin, ClusterBlockId iblk);
 int power_calc_pin_fanout(t_pb_graph_pin * pin, int mode_idx);
 void pb_foreach_pin(t_pb_graph_node * pb_node,
 		void (*fn)(t_pb_graph_pin *, void *), void * context);

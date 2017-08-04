@@ -961,7 +961,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::rebuild_net_refs(const vtr::vec
 */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 bool BaseNetlist<BlockId, PortId, PinId, NetId>::valid_block_id(BlockId id) const {
-	if (id == (BlockId) -1) return false; //BlockId::INVALID()) return false;
+	if (id == BlockId::INVALID()) return false;
 	else if (!block_ids_.contains(id)) return false;
 	else if (block_ids_[id] != id) return false;
 	return true;

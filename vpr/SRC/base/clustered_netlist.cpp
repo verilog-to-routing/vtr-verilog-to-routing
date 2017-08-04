@@ -11,32 +11,32 @@
 *
 */
 ClusteredNetlist::ClusteredNetlist(std::string name, std::string id)
-	: BaseNetlist<BlockId, PortId, PinId, NetId>(name, id) {}
+	: BaseNetlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId>(name, id) {}
 
 /*
 *
 * Blocks
 *
 */
-t_pb* ClusteredNetlist::block_pb(const BlockId id) const {
+t_pb* ClusteredNetlist::block_pb(const ClusterBlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
 
 	return block_pbs_[id];
 }
 
-t_type_ptr ClusteredNetlist::block_type(const BlockId id) const {
+t_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
 
 	return block_types_[id];
 }
 
-NetId ClusteredNetlist::block_net(const BlockId blk_id, const int pin_index) const {
+ClusterNetId ClusteredNetlist::block_net(const ClusterBlockId blk_id, const int pin_index) const {
 	VTR_ASSERT(valid_block_id(blk_id));
 
 	return block_nets_[blk_id][pin_index];
 }
 
-int ClusteredNetlist::block_net_count(const BlockId blk_id, const int pin_index) const {
+int ClusteredNetlist::block_net_count(const ClusterBlockId blk_id, const int pin_index) const {
 	VTR_ASSERT(valid_block_id(blk_id));
 
 	return block_net_count_[blk_id][pin_index];
@@ -47,13 +47,13 @@ int ClusteredNetlist::block_net_count(const BlockId blk_id, const int pin_index)
 * Pins
 *
 */
-int ClusteredNetlist::pin_index(const PinId id) const {
+int ClusteredNetlist::pin_index(const ClusterPinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
 
 	return pin_index_[id];
 }
 
-int ClusteredNetlist::pin_index(NetId net_id, int count) const {
+int ClusteredNetlist::pin_index(ClusterNetId net_id, int count) const {
 
 	for (auto pin_id : net_pins(net_id)) {
 		if (count == 0) {
@@ -72,7 +72,7 @@ int ClusteredNetlist::pin_index(NetId net_id, int count) const {
 * Nets
 *
 */
-BlockId ClusteredNetlist::net_pin_block(const NetId net_id, int pin_index) const {
+ClusterBlockId ClusteredNetlist::net_pin_block(const ClusterNetId net_id, int pin_index) const {
 	VTR_ASSERT(valid_net_id(net_id));
 
 	for (auto pin_id : net_pins(net_id)) {
@@ -83,16 +83,16 @@ BlockId ClusteredNetlist::net_pin_block(const NetId net_id, int pin_index) const
 	}
 	
 	VTR_ASSERT(pin_index);
-	return BlockId::INVALID();
+	return ClusterBlockId::INVALID();
 }
 
-int ClusteredNetlist::net_pin_index(NetId net_id, PinId pin_id) const {
+int ClusteredNetlist::net_pin_index(ClusterNetId net_id, ClusterPinId pin_id) const {
 	VTR_ASSERT(valid_net_id(net_id));
 	VTR_ASSERT(valid_pin_id(pin_id));
 
 	int count = 0;
 	
-	for (PinId pin : net_pins(net_id)) {
+	for (ClusterPinId pin : net_pins(net_id)) {
 		if (pin == pin_id)
 			break;
 		count++;
@@ -104,19 +104,19 @@ int ClusteredNetlist::net_pin_index(NetId net_id, PinId pin_id) const {
 	return count;
 }
 
-bool ClusteredNetlist::net_global(const NetId id) const {
+bool ClusteredNetlist::net_global(const ClusterNetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 
 	return net_global_[id];
 }
 
-bool ClusteredNetlist::net_routed(const NetId id) const {
+bool ClusteredNetlist::net_routed(const ClusterNetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 
 	return net_routed_[id];
 }
 
-bool ClusteredNetlist::net_fixed(const NetId id) const {
+bool ClusteredNetlist::net_fixed(const ClusterNetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 
 	return net_fixed_[id];
@@ -128,19 +128,19 @@ bool ClusteredNetlist::net_fixed(const NetId id) const {
 * Mutators
 *
 */
-BlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type_ptr type) {
-	BlockId blk_id = BaseNetlist::create_block(name);
+ClusterBlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type_ptr type) {
+	ClusterBlockId blk_id = BaseNetlist::create_block(name);
 
 	block_pbs_.insert(blk_id, pb);
 	block_pbs_[blk_id]->name = vtr::strdup(name);
 	block_types_.insert(blk_id, type);
 
 	//Allocate and initialize every potential net of the block
-	block_nets_.insert(blk_id, std::vector<NetId>());
+	block_nets_.insert(blk_id, std::vector<ClusterNetId>());
 	block_net_count_.insert(blk_id, std::vector<int>());
 
 	for (int i = 0; i < type->num_pins; i++) {
-		block_nets_[blk_id].push_back(NetId::INVALID());
+		block_nets_[blk_id].push_back(ClusterNetId::INVALID());
 		block_net_count_[blk_id].push_back(-1);
 	}
 
@@ -154,21 +154,21 @@ BlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type_ptr ty
 	return blk_id;
 }
 
-void ClusteredNetlist::set_block_net(const BlockId blk_id, const int pin_index, const NetId net_id) {
+void ClusteredNetlist::set_block_net(const ClusterBlockId blk_id, const int pin_index, const ClusterNetId net_id) {
 	VTR_ASSERT(valid_block_id(blk_id));
 	VTR_ASSERT(valid_net_id(net_id));
 
 	block_nets_[blk_id][pin_index] = net_id;
 }
 
-void ClusteredNetlist::set_block_net_count(const BlockId blk_id, const int pin_index, const int count) {
+void ClusteredNetlist::set_block_net_count(const ClusterBlockId blk_id, const int pin_index, const int count) {
 	VTR_ASSERT(valid_block_id(blk_id));
 
 	block_net_count_[blk_id][pin_index] = count;
 }
 
-PortId ClusteredNetlist::create_port(const BlockId blk_id, const std::string name, BitIndex width, PortType port_type) {
-	PortId port_id = find_port(blk_id, name);
+ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType port_type) {
+	ClusterPortId port_id = find_port(blk_id, name);
 	if (!port_id) {
 		port_id = BaseNetlist::create_port(blk_id, name, width);
 		associate_port_with_block(port_id, port_type, blk_id);
@@ -181,12 +181,12 @@ PortId ClusteredNetlist::create_port(const BlockId blk_id, const std::string nam
 	return port_id;
 }
 
-PinId ClusteredNetlist::create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type_, const PortType port_type_, int pin_index, bool is_const) {
-	PinId pin_id = BaseNetlist::create_pin(port_id, port_bit, net_id, pin_type_, port_type_, is_const);
+ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type_, const PortType port_type_, int pin_index, bool is_const) {
+	ClusterPinId pin_id = BaseNetlist::create_pin(port_id, port_bit, net_id, pin_type_, port_type_, is_const);
 
 	pin_index_.push_back(pin_index);
 
-	BlockId block_id = port_block(port_id);
+	ClusterBlockId block_id = port_block(port_id);
 	
 	VTR_ASSERT(pin_index < block_type(block_id)->num_pins);
 	block_nets_[block_id][pin_index] = net_id;
@@ -196,19 +196,19 @@ PinId ClusteredNetlist::create_pin(const PortId port_id, BitIndex port_bit, cons
 	return pin_id;
 }
 
-void ClusteredNetlist::set_pin_index(const PinId pin_id, const int index) {
+void ClusteredNetlist::set_pin_index(const ClusterPinId pin_id, const int index) {
 	VTR_ASSERT(valid_pin_id(pin_id));
 
 	pin_index_[pin_id] = index;
 }
 
 
-NetId ClusteredNetlist::create_net(const std::string name) {
+ClusterNetId ClusteredNetlist::create_net(const std::string name) {
 	//Check if the net has already been created
 	StringId name_id = create_string(name);
-	NetId net_id = find_net(name_id);
+	ClusterNetId net_id = find_net(name_id);
 
-	if (net_id == NetId::INVALID()) {
+	if (net_id == ClusterNetId::INVALID()) {
 		net_id = BaseNetlist::create_net(name);
 		net_global_.push_back(false);
 		net_fixed_.push_back(false);
@@ -225,19 +225,19 @@ void ClusteredNetlist::set_netlist_id(std::string id) {
 	netlist_id_ = id;
 }
 
-void ClusteredNetlist::set_global(NetId net_id, bool state) {
+void ClusteredNetlist::set_global(ClusterNetId net_id, bool state) {
 	VTR_ASSERT(valid_net_id(net_id));
 
 	net_global_[net_id] = state;
 }
 
-void ClusteredNetlist::set_routed(NetId net_id, bool state) {
+void ClusteredNetlist::set_routed(ClusterNetId net_id, bool state) {
 	VTR_ASSERT(valid_net_id(net_id));
 
 	net_routed_[net_id] = state;
 }
 
-void ClusteredNetlist::set_fixed(NetId net_id, bool state) {
+void ClusteredNetlist::set_fixed(ClusterNetId net_id, bool state) {
 	VTR_ASSERT(valid_net_id(net_id));
 
 	net_fixed_[net_id] = state;

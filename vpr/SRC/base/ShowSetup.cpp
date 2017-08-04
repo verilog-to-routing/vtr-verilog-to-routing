@@ -84,7 +84,7 @@ void printClusteredNetlistStats() {
 		num_blocks_type[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
 		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE) {
 			for (j = 0; j < device_ctx.IO_TYPE->num_pins; j++) {
-				if (cluster_ctx.clb_nlist.block_net(blk_id, j) != NetId::INVALID()) {
+				if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
 					if (device_ctx.IO_TYPE->class_inf[device_ctx.IO_TYPE->pin_class[j]].type == DRIVER) {
 						L_num_p_inputs++;
 					} else {

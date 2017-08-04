@@ -72,13 +72,13 @@ static void power_usage_routing(t_power_usage * power_usage,
 /* Tiles */
 static void power_usage_blocks(t_power_usage * power_usage);
 static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
-		t_pb_graph_node * pb_node, int iblk);
+		t_pb_graph_node * pb_node, ClusterBlockId iblk);
 static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
-	t_pb_graph_node * pb_graph_node, int iblk);
+	t_pb_graph_node * pb_graph_node, ClusterBlockId iblk);
 static void power_reset_tile_usage(void);
 static void power_reset_pb_type(t_pb_type * pb_type);
 static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
-		t_pb * pb, t_pb_graph_node * pb_node, int iblk);
+		t_pb * pb, t_pb_graph_node * pb_node, ClusterBlockId iblk);
 
 /* Clock */
 static void power_usage_clock(t_power_usage * power_usage,
@@ -107,9 +107,9 @@ static const char * power_estimation_method_name(
 		e_power_estimation_method power_method);
 
 void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
-	t_pb_graph_pin * pin, int iblk);
+	t_pb_graph_pin * pin, ClusterBlockId iblk);
 void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
-	t_pb * pb, t_pb_graph_pin * pin, int iblk);
+	t_pb * pb, t_pb_graph_pin * pin, ClusterBlockId iblk);
 void power_alloc_and_init_pb_pin(t_pb_graph_pin * pin);
 void power_init_pb_pins_rec(t_pb_graph_node * pb_node);
 void power_pb_pins_init();
@@ -126,7 +126,7 @@ void power_routing_init(const t_det_routing_arch * routing_arch);
  *  - calc_static: Calculate static power? Otherwise ignore
  */
 static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
-		t_pb_graph_node * pb_graph_node, int iblk) {
+		t_pb_graph_node * pb_graph_node, ClusterBlockId iblk) {
 	t_power_usage sub_power_usage;
 
 	power_zero_usage(power_usage);
@@ -212,7 +212,7 @@ static void power_usage_primitive(t_power_usage * power_usage, t_pb * pb,
 }
 
 void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
-	t_pb_graph_pin * pin, int iblk) {
+	t_pb_graph_pin * pin, ClusterBlockId iblk) {
 	float scale_factor;
     auto& power_ctx = g_vpr_ctx.power();
 
@@ -234,7 +234,7 @@ void power_usage_local_pin_toggle(t_power_usage * power_usage, t_pb * pb,
 }
 
 void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
-	t_pb * pb, t_pb_graph_pin * pin, int iblk) {
+	t_pb * pb, t_pb_graph_pin * pin, ClusterBlockId iblk) {
 	t_power_usage sub_power_usage;
 	float buffer_size = 0.;
 	double C_wire;
@@ -258,7 +258,7 @@ void power_usage_local_pin_buffer_and_wire(t_power_usage * power_usage,
 }
 
 static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
-		t_pb * pb, t_pb_graph_node * pb_node, int iblk) {
+		t_pb * pb, t_pb_graph_node * pb_node, ClusterBlockId iblk) {
 	int port_idx;
 	int pin_idx;
 	t_power_usage pin_power;
@@ -303,7 +303,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage * power_usage,
  * - If no children, must be a primitive.  Call primitive hander.
  */
 static void power_usage_pb(t_power_usage * power_usage, t_pb * pb,
-		t_pb_graph_node * pb_node, int iblk) {
+		t_pb_graph_node * pb_node, ClusterBlockId iblk) {
 
 	t_power_usage power_usage_bufs_wires;
 	t_power_usage power_usage_local_muxes;
@@ -632,11 +632,11 @@ static void power_usage_blocks(t_power_usage * power_usage) {
                 int iblk = place_ctx.grid_blocks[x][y].blocks[z];
 
 				if (iblk != EMPTY_BLOCK && iblk != INVALID_BLOCK) {
-					pb = cluster_ctx.clb_nlist.block_pb((BlockId) iblk);
+					pb = cluster_ctx.clb_nlist.block_pb((ClusterBlockId)iblk);
 				}
 
 				/* Calculate power of this CLB */
-				power_usage_pb(&pb_power, pb, device_ctx.grid[x][y].type->pb_graph_head, iblk);
+				power_usage_pb(&pb_power, pb, device_ctx.grid[x][y].type->pb_graph_head, (ClusterBlockId)iblk);
 				power_add_usage(power_usage, &pb_power);
 			}
 		}

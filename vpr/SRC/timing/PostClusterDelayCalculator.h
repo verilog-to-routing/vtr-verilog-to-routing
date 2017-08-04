@@ -7,6 +7,7 @@
 #include "tatum/delay_calc/DelayCalculator.hpp"
 
 #include "atom_netlist.h"
+#include "clustered_netlist.h"
 #include "vpr_utils.h"
 
 #include "atom_delay_calc.h"
@@ -34,7 +35,7 @@ private:
     tatum::Time atom_setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
     tatum::Time atom_hold_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const;
 
-	float inter_cluster_delay(NetId net_id, const int driver_net_pin_index, const int sink_net_pin_index) const;
+	float inter_cluster_delay(ClusterNetId net_id, const int driver_net_pin_index, const int sink_net_pin_index) const;
 
     tatum::Time get_cached_delay(tatum::EdgeId edge, DelayType delay_type) const;
     void set_cached_delay(tatum::EdgeId edge, DelayType delay_type, tatum::Time delay) const;
@@ -56,7 +57,7 @@ private:
     mutable vtr::vector_map<tatum::EdgeId,tatum::Time> edge_max_delay_cache_;
     mutable vtr::vector_map<tatum::EdgeId,tatum::Time> driver_clb_delay_cache_;
     mutable vtr::vector_map<tatum::EdgeId,tatum::Time> sink_clb_delay_cache_;
-	mutable vtr::vector_map<tatum::EdgeId,std::pair<PinId,PinId>> pin_cache_;
+	mutable vtr::vector_map<tatum::EdgeId,std::pair<ClusterPinId,ClusterPinId>> pin_cache_;
 };
 
 #include "PostClusterDelayCalculator.tpp"

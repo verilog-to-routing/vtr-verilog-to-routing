@@ -84,12 +84,12 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	vtr::printf_info("\tTotal logic block area (Warning, need to add pitch of routing to blocks with height > 3): %g\n", area);
 
 	used_area = 0;
-	for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-		if (cluster_ctx.clb_nlist.block_type((BlockId) i) != device_ctx.IO_TYPE) {
-			if (cluster_ctx.clb_nlist.block_type((BlockId)i)->area == UNDEFINED) {
-				used_area += grid_logic_tile_area * cluster_ctx.clb_nlist.block_type((BlockId)i)->width * cluster_ctx.clb_nlist.block_type((BlockId)i)->height;
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		if (cluster_ctx.clb_nlist.block_type(blk_id) != device_ctx.IO_TYPE) {
+			if (cluster_ctx.clb_nlist.block_type(blk_id)->area == UNDEFINED) {
+				used_area += grid_logic_tile_area * cluster_ctx.clb_nlist.block_type(blk_id)->width * cluster_ctx.clb_nlist.block_type(blk_id)->height;
 			} else {
-				used_area += cluster_ctx.clb_nlist.block_type((BlockId)i)->area;
+				used_area += cluster_ctx.clb_nlist.block_type(blk_id)->area;
 			}
 		}
 	}
@@ -103,7 +103,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	}
 
     if (timing_analysis_enabled) {
-        load_net_delay_from_routing(net_delay, cluster_ctx.clb_nlist.nets().size());
+        load_net_delay_from_routing(net_delay);
 
         auto routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
 
@@ -139,12 +139,9 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 		print_wirelen_prob_dist();
 }
 
+/* Figures out maximum, minimum and average number of bends and net length   *
+* in the routing.                                                           */
 void length_and_bends_stats(void) {
-
-	/* Figures out maximum, minimum and average number of bends and net length   *
-	 * in the routing.                                                           */
-
-	unsigned int inet, l;
 	int bends, total_bends, max_bends;
 	int length, total_length, max_length;
 	int segments, total_segments, max_segments;
@@ -162,9 +159,9 @@ void length_and_bends_stats(void) {
 	num_global_nets = 0;
 	num_clb_opins_reserved = 0;
 
-	for (inet = 0, l = cluster_ctx.clb_nlist.nets().size(); inet < l; inet++) {
-		if (!cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() != 0) { /* Globals don't count. */
-			get_num_bends_and_length(inet, &bends, &length, &segments);
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (!cluster_ctx.clb_nlist.net_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
+			get_num_bends_and_length((size_t)net_id, &bends, &length, &segments);
 
 			total_bends += bends;
 			max_bends = max(bends, max_bends);
@@ -174,7 +171,7 @@ void length_and_bends_stats(void) {
 
 			total_segments += segments;
 			max_segments = max(segments, max_segments);
-		} else if (cluster_ctx.clb_nlist.net_global((NetId)inet)) {
+		} else if (cluster_ctx.clb_nlist.net_global(net_id)) {
 			num_global_nets++;
 		} else {
 			num_clb_opins_reserved++;
@@ -258,13 +255,10 @@ static void get_channel_occupancy_stats(void) {
 	vtr::printf_info("\n");
 }
 
+/* Loads the two arrays passed in with the total occupancy at each of the  *
+* channel segments in the FPGA.                                           */
 static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<int>& chany_occ) {
-
-	/* Loads the two arrays passed in with the total occupancy at each of the  *
-	 * channel segments in the FPGA.                                           */
-
 	int i, j, inode;
-	unsigned int inet, l;
 	t_trace *tptr;
 	t_rr_type rr_type;
 
@@ -283,12 +277,12 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
 			chany_occ[i][j] = 0;
 
 	/* Now go through each net and count the tracks and pins used everywhere */
-	for (inet = 0, l = cluster_ctx.clb_nlist.nets().size(); inet < l; inet++) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		/* Skip global and empty nets. */
-		if (cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() != 0) 
+		if (cluster_ctx.clb_nlist.net_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0)
 			continue;
 
-		tptr = route_ctx.trace_head[inet];
+		tptr = route_ctx.trace_head[(size_t)net_id];
 		while (tptr != NULL) {
 			inode = tptr->index;
 			rr_type = device_ctx.rr_nodes[inode].type();
@@ -383,7 +377,6 @@ void print_wirelen_prob_dist(void) {
 
 	float *prob_dist;
 	float norm_fac, two_point_length;
-	unsigned int inet; 
 	int bends, length, segments, index;
 	float av_length;
 	int prob_dist_size, i, incr;
@@ -392,15 +385,15 @@ void print_wirelen_prob_dist(void) {
 	prob_dist = (float *) vtr::calloc(prob_dist_size, sizeof(float));
 	norm_fac = 0.;
 
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-		if (!cluster_ctx.clb_nlist.net_global((NetId)inet) && cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() != 0) {
-			get_num_bends_and_length(inet, &bends, &length, &segments);
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (!cluster_ctx.clb_nlist.net_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) {
+			get_num_bends_and_length((size_t)net_id, &bends, &length, &segments);
 
 			/*  Assign probability to two integer lengths proportionately -- i.e.  *
 			 *  if two_point_length = 1.9, add 0.9 of the pins to prob_dist[2] and *
 			 *  only 0.1 to prob_dist[1].                                          */
 
-            int num_sinks = cluster_ctx.clb_nlist.net_sinks((NetId)inet).size();
+            int num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
             VTR_ASSERT(num_sinks > 0);
 
 			two_point_length = (float) length / (float) (num_sinks);
@@ -483,8 +476,8 @@ void print_lambda(void) {
 			for (ipin = 0; ipin < type->num_pins; ipin++) {
 				iclass = type->pin_class[ipin];
 				if (type->class_inf[iclass].type == RECEIVER) {
-					NetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
-					if (net_id != NetId::INVALID()) /* Pin is connected? */
+					ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
+					if (net_id != ClusterNetId::INVALID()) /* Pin is connected? */
 						if (!cluster_ctx.clb_nlist.net_global(net_id)) /* Not a global clock */
 							num_inputs_used++;
 				}

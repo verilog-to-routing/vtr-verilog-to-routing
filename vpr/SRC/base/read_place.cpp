@@ -146,7 +146,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	/* Reads in the locations of the IO pads from a file. */
 
 	t_hash **hash_table, *h_ptr;
-	int iblk, i, j, xtmp, ytmp, bnum, k;
+	int i, j, xtmp, ytmp, bnum, k;
 	FILE *fp;
 	char buf[vtr::bufsize], bname[vtr::bufsize], *ptr;
 
@@ -162,10 +162,10 @@ void read_user_pad_loc(const char *pad_loc_file) {
 				pad_loc_file);
 		
 	hash_table = alloc_hash_table();
-	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
-		if (cluster_ctx.clb_nlist.block_type((BlockId) iblk) == device_ctx.IO_TYPE) {
-			insert_in_hash_table(hash_table, cluster_ctx.clb_nlist.block_name((BlockId) iblk).c_str(), iblk);
-			place_ctx.block_locs[iblk].x = OPEN; /* Mark as not seen yet. */
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE) {
+			insert_in_hash_table(hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), (size_t)blk_id);
+			place_ctx.block_locs[(size_t)blk_id].x = OPEN; /* Mark as not seen yet. */
 		}
 	}
 
@@ -265,10 +265,10 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		ptr = vtr::fgets(buf, vtr::bufsize, fp);
 	}
 
-	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
-		if (cluster_ctx.clb_nlist.block_type((BlockId) iblk) == device_ctx.IO_TYPE && place_ctx.block_locs[iblk].x == OPEN) {
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE && place_ctx.block_locs[(size_t)blk_id].x == OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"IO block %s location was not specified in the pad file.\n", cluster_ctx.clb_nlist.block_name((BlockId) iblk));
+					"IO block %s location was not specified in the pad file.\n", cluster_ctx.clb_nlist.block_name(blk_id));
 		}
 	}
 
@@ -278,17 +278,14 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	vtr::printf_info("\n");
 }
 
+/* Prints out the placement of the circuit. The architecture and    *
+* netlist files used to generate this placement are recorded in the *
+* file to avoid loading a placement with the wrong support files    *
+* later.                                                            */
 void print_place(const char* net_file, 
                  const char* net_id, 
                  const char* place_file) {
-
-	/* Prints out the placement of the circuit. The architecture and     *
-	 * netlist files used to generate this placement are recorded in the *
-	 * file to avoid loading a placement with the wrong support files    *
-	 * later.                                                            */
-
 	FILE *fp;
-	int i;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -303,13 +300,13 @@ void print_place(const char* net_file,
 	fprintf(fp, "#block name\tx\ty\tsubblk\tblock number\n");
 	fprintf(fp, "#----------\t--\t--\t------\t------------\n");
 
-	for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-		fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_name((BlockId) i).c_str());
-		if (strlen(cluster_ctx.clb_nlist.block_name((BlockId) i).c_str()) < 8)
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
+		if (strlen(cluster_ctx.clb_nlist.block_name(blk_id).c_str()) < 8)
 			fprintf(fp, "\t");
 
-		fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].z);
-		fprintf(fp, "\t#%d\n", i);
+		fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[(size_t)blk_id].x, place_ctx.block_locs[(size_t)blk_id].y, place_ctx.block_locs[(size_t)blk_id].z);
+		fprintf(fp, "\t#%lu\n", (size_t)blk_id);
 	}
 	fclose(fp);
 

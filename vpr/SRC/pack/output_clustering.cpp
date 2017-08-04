@@ -518,8 +518,8 @@ static void print_stats() {
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		for (ipin = 0; ipin < cluster_ctx.clb_nlist.block_type(blk_id)->num_pins; ipin++) {
 			if (cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route == NULL) {
-				NetId clb_net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
-				if (clb_net_id != NetId::INVALID()) {
+				ClusterNetId clb_net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
+				if (clb_net_id != ClusterNetId::INVALID()) {
                     auto net_id = atom_ctx.lookup.atom_net((size_t)clb_net_id);
                     VTR_ASSERT(net_id);
 					nets_absorbed[net_id] = false;

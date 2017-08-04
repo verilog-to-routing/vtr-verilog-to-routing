@@ -17,8 +17,8 @@ using namespace std;
 
 /******************** Subroutines local to this module **********************/
 static void check_node_and_range(int inode, enum e_route_type route_type, const t_segment_inf* segment_inf);
-static void check_source(int inode, NetId inet);
-static void check_sink(int inode, NetId inet, bool * pin_done);
+static void check_source(int inode, ClusterNetId inet);
+static void check_sink(int inode, ClusterNetId inet, bool * pin_done);
 static void check_switch(t_trace *tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
@@ -160,7 +160,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 /* Checks that this SINK node is one of the terminals of inet, and marks   *
 * the appropriate pin as being reached.                                   */
-static void check_sink(int inode, NetId inet, bool * pin_done) {
+static void check_sink(int inode, ClusterNetId inet, bool * pin_done) {
 	
 	int i, j, ifound, ptc_num, bnum, iclass, iblk, pin_index;
 	unsigned int ipin;
@@ -181,7 +181,7 @@ static void check_sink(int inode, NetId inet, bool * pin_done) {
 		bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx.blocks */
 		ipin = 1;
 		for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(inet)) {
-			if (cluster_ctx.clb_nlist.pin_block(pin_id) == (BlockId)bnum) {
+			if (cluster_ctx.clb_nlist.pin_block(pin_id) == (ClusterBlockId)bnum) {
 				pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
 				iclass = type->pin_class[pin_index];
 				if (iclass == ptc_num) {
@@ -211,7 +211,7 @@ static void check_sink(int inode, NetId inet, bool * pin_done) {
 }
 
 /* Checks that the node passed in is a valid source for this net. */
-static void check_source(int inode, NetId inet) {
+static void check_source(int inode, ClusterNetId inet) {
 	t_rr_type rr_type;
 	t_type_ptr type;
 	int i, j, ptc_num, bnum, node_block_pin, iclass;
@@ -513,8 +513,7 @@ void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_loc
      * brute force recompute from scratch that is useful for sanity checking.
      */
 
-	int inode, iblk, iclass, ipin, num_local_opins;
-	unsigned inet;
+	int inode, iclass, ipin, num_local_opins;
 	t_trace *tptr;
 
     auto& route_ctx = g_vpr_ctx.routing();
@@ -528,12 +527,11 @@ void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_loc
 
 	/* Now go through each net and count the tracks and pins used everywhere */
 
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-
-		if (cluster_ctx.clb_nlist.net_global((NetId)inet)) /* Skip global nets. */
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (cluster_ctx.clb_nlist.net_global(net_id)) /* Skip global nets. */
 			continue;
 
-		tptr = route_ctx.trace_head[inet];
+		tptr = route_ctx.trace_head[(size_t)net_id];
 		if (tptr == NULL)
 			continue;
 
@@ -554,13 +552,12 @@ void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_loc
 	/* Now update the occupancy of each of the "locally used" OPINs on each CLB *
 	 * (CLB outputs used up by being directly wired to subblocks used only      *
 	 * locally).                                                                */
-
-	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
-		for (iclass = 0; iclass < cluster_ctx.clb_nlist.block_type((BlockId) iblk)->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[iblk][iclass].size();
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		for (iclass = 0; iclass < cluster_ctx.clb_nlist.block_type(blk_id)->num_class; iclass++) {
+			num_local_opins = clb_opins_used_locally[(size_t)blk_id][iclass].size();
 			/* Will always be 0 for pads or SINK classes. */
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
-				inode = clb_opins_used_locally[iblk][iclass][ipin];
+				inode = clb_opins_used_locally[(size_t)blk_id][iclass][ipin];
 				route_ctx.rr_node_state[inode].set_occ(route_ctx.rr_node_state[inode].occ() + 1);
 			}
 		}
@@ -573,19 +570,19 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 	/* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
 	 * legal routing if subblocks connect to OPINs directly.                    */
 
-	int iclass, iblk, num_local_opins, inode, ipin;
+	int iclass, num_local_opins, inode, ipin;
 	t_rr_type rr_type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
-		for (iclass = 0; iclass < cluster_ctx.clb_nlist.block_type((BlockId) iblk)->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[iblk][iclass].size();
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		for (iclass = 0; iclass < cluster_ctx.clb_nlist.block_type(blk_id)->num_class; iclass++) {
+			num_local_opins = clb_opins_used_locally[(size_t)blk_id][iclass].size();
 			/* Always 0 for pads and for SINK classes */
 
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
-				inode = clb_opins_used_locally[iblk][iclass][ipin];
+				inode = clb_opins_used_locally[(size_t)blk_id][iclass][ipin];
 				check_node_and_range(inode, route_type, segment_inf); /* Node makes sense? */
 
 				/* Now check that node is an OPIN of the right type. */
@@ -593,17 +590,17 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 				rr_type = device_ctx.rr_nodes[inode].type();
 				if (rr_type != OPIN) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
-						"in check_locally_used_opins: block #%d (%s)\n"
+						"in check_locally_used_opins: block #%lu (%s)\n"
 						"\tClass %d local OPIN is wrong rr_type -- rr_node #%d of type %d.\n",
-						iblk, cluster_ctx.clb_nlist.block_name((BlockId) iblk), iclass, inode, rr_type);
+						(size_t)blk_id, cluster_ctx.clb_nlist.block_name(blk_id), iclass, inode, rr_type);
 				}
 
 				ipin = device_ctx.rr_nodes[inode].ptc_num();
-				if (cluster_ctx.clb_nlist.block_type((BlockId) iblk)->pin_class[ipin] != iclass) {
+				if (cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin] != iclass) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
-						"in check_locally_used_opins: block #%d (%s):\n"
+						"in check_locally_used_opins: block #%lu (%s):\n"
 						"\tExpected class %d local OPIN has class %d -- rr_node #: %d.\n",
-						iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), iclass,	cluster_ctx.clb_nlist.block_type((BlockId) iblk)->pin_class[ipin], inode);
+						(size_t)blk_id, cluster_ctx.clb_nlist.block_name(blk_id), iclass,	cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin], inode);
 				}
 			}
 		}

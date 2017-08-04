@@ -263,7 +263,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 		if(vpr_setup.gen_netlist_as_blif) {
 			char *name = (char*)vtr::malloc((strlen(vpr_setup.FileNameOpts.CircuitName.c_str()) + 16) * sizeof(char));
 			sprintf(name, "%s.preplace.blif", vpr_setup.FileNameOpts.CircuitName.c_str());
-			output_blif(&Arch, (int) cluster_ctx.clb_nlist.blocks().size(), name);
+			output_blif(&Arch, name);
 			free(name);
 		}
 	}
@@ -912,10 +912,8 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     if (!vpr_setup.AnalysisOpts.doAnalysis) return;
 
     auto& route_ctx = g_vpr_ctx.routing();
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& atom_ctx = g_vpr_ctx.atom();
-
 
     if (route_ctx.trace_head == nullptr) {
         VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
@@ -929,14 +927,13 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
 #endif
     if (vpr_setup.TimingEnabled) {
         //Load the net delays
-        net_delay = alloc_net_delay(&net_delay_ch, cluster_ctx.clb_nlist.nets().size());
-        load_net_delay_from_routing(net_delay, cluster_ctx.clb_nlist.nets().size());
+        net_delay = alloc_net_delay(&net_delay_ch);
+        load_net_delay_from_routing(net_delay);
 
 #ifdef ENABLE_CLASSIC_VPR_STA
         slacks = alloc_and_load_timing_graph(vpr_setup.Timing);
 #endif
     }
-
 
     routing_stats(vpr_setup.RouterOpts.full_stats, vpr_setup.RouterOpts.route_type,
             device_ctx.num_rr_switches, vpr_setup.Segments,

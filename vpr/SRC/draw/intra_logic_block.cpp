@@ -162,10 +162,10 @@ void draw_internal_draw_subblk() {
 				/* Get block ID */
 				int bnum = place_ctx.grid_blocks[i][j].blocks[k];
 				/* Safety check, that physical blocks exists in the CLB */
-				if (cluster_ctx.clb_nlist.block_pb((BlockId)bnum) == NULL)
+				if (cluster_ctx.clb_nlist.block_pb((ClusterBlockId)bnum) == NULL)
 					continue;
 
-				draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb((BlockId)bnum), t_bound_box(0,0,0,0), cluster_ctx.clb_nlist.block_type((BlockId)bnum));
+				draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb((ClusterBlockId)bnum), t_bound_box(0,0,0,0), cluster_ctx.clb_nlist.block_type((ClusterBlockId)bnum));
 			}
 		}
 	}

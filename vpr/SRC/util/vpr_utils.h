@@ -3,19 +3,21 @@
 
 #include <vector>
 #include "vpr_types.h"
+#include "atom_netlist.h"
+#include "clustered_netlist.h"
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required=true);
 const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required=true);
 
 void print_tabs(FILE * fpout, int num_tab);
 
-bool is_clb_external_pin(BlockId clb, int pb_pin_id);
+bool is_clb_external_pin(ClusterBlockId blk_id, int pb_pin_id);
 
 bool is_opin(int ipin, t_type_ptr type);
 
 int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node);
 
-void get_class_range_for_block(const int iblk, int *class_low,
+void get_class_range_for_block(const ClusterBlockId blk_id, int *class_low,
 		int *class_high);
 
 void sync_grid_to_blocks();
@@ -46,21 +48,21 @@ class IntraLbPbPinLookup {
 };
 
 //Find the atom pins (driver or sinks) connected to the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_connected_atom_pins(BlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 //Find the atom pin driving to the specified top-level CLB pin
-AtomPinId find_clb_pin_driver_atom_pin(BlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 //Find the atom pins driven by the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_sink_atom_pins(BlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
-std::tuple<NetId,int,int> find_pb_route_clb_input_net_pin(BlockId clb, int sink_pb_route_id);
+std::tuple<ClusterNetId,int,int> find_pb_route_clb_input_net_pin(ClusterBlockId clb, int sink_pb_route_id);
 
 //Return the pb pin index corresponding to the pin clb_pin on block clb
-int find_clb_pb_pin(BlockId clb, int clb_pin);
+int find_clb_pb_pin(ClusterBlockId clb, int clb_pin);
 
 //Return the clb_pin corresponding to the pb_pin on the specified block
-int find_pb_pin_clb_pin(BlockId clb, int pb_pin);
+int find_pb_pin_clb_pin(ClusterBlockId clb, int pb_pin);
 
 //Returns the port matching name within pb_gnode
 const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name);
@@ -76,7 +78,7 @@ int get_max_nets_in_pb_type(const t_pb_type *pb_type);
 bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type *cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports *model_port, const int model_pin, const t_pb_graph_node *pb_graph_node);
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
-t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(BlockId iblock, int ipin);
+t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
 t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_type_ptr type);
 void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 t_pb ***alloc_and_load_pin_id_to_pb_mapping();
@@ -113,5 +115,5 @@ void print_usage_by_wire_length();
 AtomBlockId find_tnode_atom_block(int inode);
 AtomBlockId find_memory_sibling(const t_pb* pb);
 
-void place_sync_external_block_connections(BlockId iblk);
+void place_sync_external_block_connections(ClusterBlockId iblk);
 #endif

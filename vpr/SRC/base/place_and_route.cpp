@@ -126,7 +126,7 @@ bool place_and_route(t_placer_opts placer_opts,
 
     //Routing
     //Initialize the delay calculator
-    float **net_delay = alloc_net_delay(&net_delay_ch, cluster_ctx.clb_nlist.nets().size());
+    float **net_delay = alloc_net_delay(&net_delay_ch);
 
     std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
     std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;

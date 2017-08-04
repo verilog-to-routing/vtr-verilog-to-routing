@@ -136,7 +136,7 @@ AtomPortId AtomNetlist::find_port(const AtomBlockId blk_id, const t_model_ports*
 		}
 	}
 
-	return PortId::INVALID();
+	return AtomPortId::INVALID();
 }
 
 /*
@@ -550,7 +550,7 @@ bool AtomNetlist::validate_port_pin_refs() const {
 	//Check that port <-> pin references are consistent
 
 	//Track how many times we've seen each pin from the ports
-	vtr::vector_map<PinId, unsigned> seen_pin_ids(pin_ids_.size());
+	vtr::vector_map<AtomPinId, unsigned> seen_pin_ids(pin_ids_.size());
 
 	for (auto port_id : port_ids_) {
 		bool first_bit = true;

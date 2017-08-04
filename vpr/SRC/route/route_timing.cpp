@@ -107,10 +107,10 @@ private:
 
 /******************** Subroutines local to route_timing.c ********************/
 
-static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout,
+static t_rt_node* setup_routing_resources(int itry, ClusterNetId inet, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout,
         CBRR& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
 
-static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int target_pin, float target_criticality,
+static bool timing_driven_route_sink(int itry, ClusterNetId inet, unsigned itarget, int target_pin, float target_criticality,
         float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink);
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
@@ -133,14 +133,13 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
         t_rt_node * rt_node, t_bb bounding_box, int num_sinks);
 
 
-static bool should_route_net(int inet, const CBRR& connections_inf);
+static bool should_route_net(ClusterNetId inet, const CBRR& connections_inf);
 static bool early_exit_heuristic(const WirelengthInfo& wirelength_info);
 
 struct more_sinks_than {
-
-    inline bool operator()(const int& net_index1, const int& net_index2) {
+    inline bool operator()(const ClusterNetId net_index1, const ClusterNetId net_index2) {
         auto& cluster_ctx = g_vpr_ctx.clustering();
-        return cluster_ctx.clb_nlist.net_sinks((NetId)net_index1).size() > cluster_ctx.clb_nlist.net_sinks((NetId)net_index2).size();
+        return cluster_ctx.clb_nlist.net_sinks(net_index1).size() > cluster_ctx.clb_nlist.net_sinks(net_index2).size();
     }
 };
 
@@ -176,9 +175,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     //sort so net with most sinks is first.
-    auto sorted_nets = vector<int>(cluster_ctx.clb_nlist.nets().size());
-    for (size_t i = 0; i < cluster_ctx.clb_nlist.nets().size(); ++i) {
-        sorted_nets[i] = i;
+    auto sorted_nets = vtr::vector_map<ClusterNetId,ClusterNetId>();
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        sorted_nets.push_back(net_id);
     }
     std::sort(sorted_nets.begin(), sorted_nets.end(), more_sinks_than());
 
@@ -199,8 +198,8 @@ bool try_timing_driven_route(t_router_opts router_opts,
        update_net_delays_from_route_tree() inside timing_driven_route_net(), 
        which is only called for non-global nets. */
     for (unsigned int inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
-        if (cluster_ctx.clb_nlist.net_global((NetId)inet)) {
-            for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ++ipin) {
+        if (cluster_ctx.clb_nlist.net_global((ClusterNetId)inet)) {
+            for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((ClusterNetId)inet).size(); ++ipin) {
                 net_delay[inet][ipin] = 0.;
             }
         }
@@ -258,9 +257,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
         /*
          * Route each net
          */
-        for (unsigned int i = 0; i < cluster_ctx.clb_nlist.nets().size(); ++i) {
+        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
             bool is_routable = try_timing_driven_route_net(
-                    sorted_nets[i],
+                    sorted_nets[net_id],
                     itry,
                     pres_fac,
                     router_opts,
@@ -395,12 +394,12 @@ bool try_timing_driven_route(t_router_opts router_opts,
             /* If timing analysis is not enabled, make sure that the criticalities and the
                net_delays stay as 0 so that wirelength can be optimized. */
 
-            for (unsigned int inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
-                for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ++ipin) {
+            for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+                for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
 #ifdef ENABLE_CLASSIC_VPR_STA
-                    slacks->timing_criticality[inet][ipin] = 0.;
+                    slacks->timing_criticality[(size_t)net_id][ipin] = 0.;
 #endif
-                    net_delay[inet][ipin] = 0.;
+                    net_delay[(size_t)net_id][ipin] = 0.;
                 }
             }
         }
@@ -425,7 +424,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
     return routing_is_successful;
 }
 
-bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
+bool try_timing_driven_route_net(ClusterNetId inet, int itry, float pres_fac,
         t_router_opts router_opts,
         CBRR& connections_inf,
         float* pin_criticality,
@@ -439,9 +438,9 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
 
     connections_inf.prepare_routing_for_net(inet);
 
-    if (cluster_ctx.clb_nlist.net_fixed((NetId)inet)) { /* Skip pre-routed nets. */
+    if (cluster_ctx.clb_nlist.net_fixed(inet)) { /* Skip pre-routed nets. */
         is_routed = true;
-    } else if (cluster_ctx.clb_nlist.net_global((NetId)inet)) { /* Skip global nets. */
+    } else if (cluster_ctx.clb_nlist.net_global(inet)) { /* Skip global nets. */
         is_routed = true;
     } else if (should_route_net(inet, connections_inf) == false) {
         is_routed = true;
@@ -455,15 +454,15 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
                 connections_inf,
                 pin_criticality, router_opts.min_incremental_reroute_fanout,
                 rt_node_of_sink,
-                net_delay[inet],
+                net_delay[(size_t)inet],
                 pb_gpin_lookup,
                 timing_info);
 
-        profiling::net_fanout_end(cluster_ctx.clb_nlist.net_sinks((NetId)inet).size());
+        profiling::net_fanout_end(cluster_ctx.clb_nlist.net_sinks(inet).size());
 
         /* Impossible to route? (disconnected rr_graph) */
         if (is_routed) {
-			cluster_ctx.clb_nlist.set_routed((NetId)inet, true);
+			cluster_ctx.clb_nlist.set_routed(inet, true);
         } else {
             vtr::printf_info("Routing failed.\n");
         }
@@ -529,21 +528,15 @@ timing_driven_route_structs::~timing_driven_route_structs() {
             );
 }
 
+/* Returns the largest number of pins on any non-global net. */
 int get_max_pins_per_net(void) {
-
-    /* Returns the largest number of pins on any non-global net.    */
-
-    unsigned int inet;
-    int max_pins_per_net;
+	int max_pins_per_net = 0;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    max_pins_per_net = 0;
-    for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-        if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
-            max_pins_per_net = max(max_pins_per_net,
-                    (int) cluster_ctx.clb_nlist.net_pins((NetId)inet).size());
-        }
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_global(net_id))
+            max_pins_per_net = max(max_pins_per_net, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
     }
 
     return (max_pins_per_net);
@@ -556,7 +549,7 @@ struct Criticality_comp {
 	bool operator()(int a, int b) const {return criticality[a] > criticality[b];}
 };
 
-bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criticality,
+bool timing_driven_route_net(ClusterNetId inet, int itry, float pres_fac, float max_criticality,
         float criticality_exp, float astar_fac, float bend_cost,
         CBRR& connections_inf,
         float *pin_criticality, int min_incremental_reroute_fanout,
@@ -572,7 +565,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    unsigned int num_sinks = cluster_ctx.clb_nlist.net_sinks((NetId)inet).size();
+    unsigned int num_sinks = cluster_ctx.clb_nlist.net_sinks(inet).size();
 
     t_rt_node* rt_root = setup_routing_resources(itry, inet, num_sinks, pres_fac, min_incremental_reroute_fanout, connections_inf, rt_node_of_sink);
     // after this point the route tree is correct
@@ -634,8 +627,8 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
     // may have to update timing delay of the previously legally reached sinks since downstream capacitance could be changed
     update_net_delays_from_route_tree(net_delay, rt_node_of_sink, inet);
 
-    if (!cluster_ctx.clb_nlist.net_global((NetId)inet)) {
-        for (unsigned ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ++ipin) {
+    if (!cluster_ctx.clb_nlist.net_global(inet)) {
+        for (unsigned ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(inet).size(); ++ipin) {
             if (net_delay[ipin] == 0) { // should be SOURCE->OPIN->IPIN->SINK
                 VTR_ASSERT(device_ctx.rr_nodes[rt_node_of_sink[ipin]->parent_node->parent_node->inode].type() == OPIN);
             }
@@ -649,7 +642,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
     return (true);
 }
 
-static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int target_pin, float target_criticality,
+static bool timing_driven_route_sink(int itry, ClusterNetId inet, unsigned itarget, int target_pin, float target_criticality,
         float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink) {
 
     /* Build a path from the existing route tree rooted at rt_root to the target_node
@@ -660,10 +653,10 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
     
     profiling::sink_criticality_start();
 
-    int source_node = route_ctx.net_rr_terminals[inet][0];
-    int sink_node = route_ctx.net_rr_terminals[inet][target_pin];
+    int source_node = route_ctx.net_rr_terminals[(size_t)inet][0];
+    int sink_node = route_ctx.net_rr_terminals[(size_t)inet][target_pin];
 
-    t_bb bounding_box = route_ctx.route_bb[inet];
+    t_bb bounding_box = route_ctx.route_bb[(size_t)inet];
 
     if (itarget > 0 && itry > 5) {
         /* Enough iterations given to determine opin, to speed up legal solution, do not let net use two opins */
@@ -672,15 +665,15 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
     }
 
     t_heap * cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
-            astar_fac, bend_cost, rt_root, bounding_box, cluster_ctx.clb_nlist.net_sinks((NetId)inet).size());
+            astar_fac, bend_cost, rt_root, bounding_box, cluster_ctx.clb_nlist.net_sinks(inet).size());
 
     if (cheapest == NULL) {
-		BlockId src_block = cluster_ctx.clb_nlist.net_driver_block((NetId)inet);
-		BlockId sink_block = cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins((NetId)inet).begin() + target_pin));
+		ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(inet);
+		ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins(inet).begin() + target_pin));
         vtr::printf("Failed to route connection from '%s' to '%s' for net '%s'\n",
                     cluster_ctx.clb_nlist.block_name(src_block),
 					cluster_ctx.clb_nlist.block_name(sink_block),
-                    cluster_ctx.clb_nlist.net_name((NetId)inet));
+                    cluster_ctx.clb_nlist.net_name(inet));
         return false;
     }
     
@@ -795,7 +788,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
     return cheapest;
 }
 
-static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout,
+static t_rt_node* setup_routing_resources(int itry, ClusterNetId inet, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout,
         CBRR& connections_inf, t_rt_node** rt_node_of_sink) {
 
     /* Build and return a partial route tree from the legal connections from last iteration.
@@ -818,7 +811,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
         profiling::net_rerouted();
 
         // rip up the whole net
-        pathfinder_update_path_cost(route_ctx.trace_head[inet], -1, pres_fac);
+        pathfinder_update_path_cost(route_ctx.trace_head[(size_t)inet], -1, pres_fac);
         free_traceback(inet);
 
         rt_root = init_route_tree_to_source(inet);
@@ -849,7 +842,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
         bool destroyed = prune_route_tree(rt_root, pres_fac, connections_inf);
 
         // entire traceback is still freed since the pruned tree will need to have its pres_cost updated
-        pathfinder_update_path_cost(route_ctx.trace_head[inet], -1, pres_fac);
+        pathfinder_update_path_cost(route_ctx.trace_head[(size_t)inet], -1, pres_fac);
         free_traceback(inet);
 
         // if entirely pruned, have just the source (not removed from pathfinder costs)
@@ -862,7 +855,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
             // sync traceback into a state that matches the route tree
             traceback_from_route_tree(inet, rt_root, num_sinks - remaining_targets.size());
             // put the updated costs of the route tree nodes back into pathfinder
-            pathfinder_update_path_cost(route_ctx.trace_head[inet], 1, pres_fac);
+            pathfinder_update_path_cost(route_ctx.trace_head[(size_t)inet], 1, pres_fac);
         }
 
         // give lookup on the reached sinks
@@ -1292,11 +1285,11 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
     /*t_linked_vptr *ch_list_head_net_delay_check;*/
 
-    net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch, cluster_ctx.clb_nlist.nets().size());
-    load_net_delay_from_routing(net_delay_check, cluster_ctx.clb_nlist.nets().size());
+    net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch);
+    load_net_delay_from_routing(net_delay_check);
 
     for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-        for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
+        for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((ClusterNetId)inet).size(); ipin++) {
             if (net_delay_check[inet][ipin] == 0.) { /* Should be only GLOBAL nets */
                 if (fabs(net_delay[inet][ipin]) > ERROR_TOL) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
@@ -1320,11 +1313,11 @@ static void timing_driven_check_net_delays(float **net_delay) {
 }
 
 /* Detect if net should be routed or not */
-static bool should_route_net(int inet, const CBRR& connections_inf) {
+static bool should_route_net(ClusterNetId inet, const CBRR& connections_inf) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_trace * tptr = route_ctx.trace_head[inet];
+    t_trace * tptr = route_ctx.trace_head[(size_t)inet];
 
     if (tptr == NULL) {
         /* No routing yet. */
@@ -1372,7 +1365,7 @@ static bool early_exit_heuristic(const WirelengthInfo& wirelength_info) {
 
 // incremental rerouting resources class definitions
 Connection_based_routing_resources::Connection_based_routing_resources() : 
-	current_inet (NO_PREVIOUS), 	// not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
+	current_inet (ClusterNetId::INVALID()), 	// not routing to a specific net yet (note that NO_PREVIOUS is not unsigned, so will be largest unsigned)
 	last_stable_critical_path_delay {0.0f},
 	critical_path_growth_tolerance {1.001f},
 	connection_criticality_tolerance {0.9f},
@@ -1408,7 +1401,7 @@ Connection_based_routing_resources::Connection_based_routing_resources() :
         auto& net_lower_bound_connection_delay = lower_bound_connection_delay[inet];
         auto& net_forcible_reroute_connection_flag = forcible_reroute_connection_flag[inet];
 
-        unsigned int num_pins = cluster_ctx.clb_nlist.net_pins((NetId)inet).size();
+        unsigned int num_pins = cluster_ctx.clb_nlist.net_pins((ClusterNetId)inet).size();
         net_node_to_pin.reserve(num_pins - 1); // not looking up on the SOURCE pin
         net_lower_bound_connection_delay.reserve(num_pins - 1); // will be filled in after the 1st iteration's
         net_forcible_reroute_connection_flag.reserve(num_pins - 1); // all false to begin with
@@ -1428,9 +1421,9 @@ void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(vector<i
     /* Turn a vector of device_ctx.rr_nodes indices, assumed to be of sinks for a net *
      * into the pin indices of the same net. */
 
-    VTR_ASSERT(current_inet != (unsigned) NO_PREVIOUS); // not uninitialized
+    VTR_ASSERT(current_inet != ClusterNetId::INVALID()); // not uninitialized
 
-    const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
+    const auto& node_to_pin_mapping = rr_sink_node_to_pin[(size_t)current_inet];
 
     for (size_t s = 0; s < rr_sink_nodes.size(); ++s) {
 
@@ -1448,10 +1441,10 @@ void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(co
     /* Load rt_node_of_sink (which maps a PIN index to a route tree node)
      * with a vector of route tree sink nodes. */
 
-    VTR_ASSERT(current_inet != (unsigned) NO_PREVIOUS);
+    VTR_ASSERT(current_inet != ClusterNetId::INVALID());
 
     // a net specific mapping from node index to pin index
-    const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
+    const auto& node_to_pin_mapping = rr_sink_node_to_pin[(size_t)current_inet];
 
     for (t_rt_node* rt_node : sink_rt_nodes) {
         auto mapping = node_to_pin_mapping.find(rt_node->inode);
@@ -1466,16 +1459,16 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    for (unsigned int inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
-        const auto& net_node_to_pin = rr_sink_node_to_pin[inet];
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        const auto& net_node_to_pin = rr_sink_node_to_pin[(size_t)net_id];
 
         for (auto mapping : net_node_to_pin) {
             auto sanity = net_node_to_pin.find(mapping.first);
             if (sanity == net_node_to_pin.end()) {
-                vtr::printf_info("%d cannot find itself (net %d)\n", mapping.first, inet);
+                vtr::printf_info("%d cannot find itself (net %lu)\n", mapping.first, (size_t)net_id);
                 return false;
             }
-            VTR_ASSERT(route_ctx.net_rr_terminals[inet][mapping.second] == mapping.first);
+            VTR_ASSERT(route_ctx.net_rr_terminals[(size_t)net_id][mapping.second] == mapping.first);
         }
     }
     return true;
@@ -1495,7 +1488,7 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(const
 
         auto& net_lower_bound_connection_delay = lower_bound_connection_delay[inet];
 
-        unsigned int num_pins = cluster_ctx.clb_nlist.net_pins((NetId)inet).size();
+        unsigned int num_pins = cluster_ctx.clb_nlist.net_pins((ClusterNetId)inet).size();
 
         for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
             net_lower_bound_connection_delay.push_back(net_delay[inet][ipin]);
@@ -1503,56 +1496,48 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(const
     }
 }
 
+/* Run through all non-congested connections of all nets and see if any need to be forcibly rerouted.
+       The connection must satisfy all following criteria:
+                    1. the connection is critical enough
+                    2. the connection is suboptimal, in comparison to lower_bound_connection_delay  */
 bool Connection_based_routing_resources::forcibly_reroute_connections(float max_criticality,
         std::shared_ptr<const SetupTimingInfo> timing_info,
         const IntraLbPbPinLookup& pb_gpin_lookup,
         const float* const * net_delay) {
-
-    /* Run through all non-congested connections of all nets and see if any need to be forcibly rerouted.
-       The connection must satisfy all following criteria:
-                    1. the connection is critical enough
-                    2. the connection is suboptimal, in comparison to lower_bound_connection_delay  
-     */
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
     bool any_connection_rerouted = false; // true if any connection has been marked for rerouting
 
-    size_t routing_num_nets = cluster_ctx.clb_nlist.nets().size();
-
-    for (unsigned int inet = 0; inet < routing_num_nets; ++inet) {
-
-        unsigned int num_pins = cluster_ctx.clb_nlist.net_pins((NetId)inet).size();
-
-        for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
             // rr sink node index corresponding to this connection terminal
-            auto rr_sink_node = route_ctx.net_rr_terminals[inet][ipin];
+            auto rr_sink_node = route_ctx.net_rr_terminals[(size_t)net_id][ipin];
 
             // should always be left unset or cleared by rerouting before the end of the iteration
-            VTR_ASSERT(forcible_reroute_connection_flag[inet][rr_sink_node] == false);
+            VTR_ASSERT(forcible_reroute_connection_flag[(size_t)net_id][rr_sink_node] == false);
 
 
             // skip if connection is internal to a block such that SOURCE->OPIN->IPIN->SINK directly, which would have 0 time delay
-            if (lower_bound_connection_delay[inet][ipin - 1] == 0)
+            if (lower_bound_connection_delay[(size_t)net_id][ipin - 1] == 0)
                 continue;
 
             // update if more optimal connection found
-            if (net_delay[inet][ipin] < lower_bound_connection_delay[inet][ipin - 1]) {
-                lower_bound_connection_delay[inet][ipin - 1] = net_delay[inet][ipin];
+            if (net_delay[(size_t)net_id][ipin] < lower_bound_connection_delay[(size_t)net_id][ipin - 1]) {
+                lower_bound_connection_delay[(size_t)net_id][ipin - 1] = net_delay[(size_t)net_id][ipin];
                 continue;
             }
 
             // skip if connection criticality is too low (not a problem connection)
-            float pin_criticality = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, inet, ipin);
+            float pin_criticality = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, net_id, ipin);
             if (pin_criticality < (max_criticality * connection_criticality_tolerance))
                 continue;
 
             // skip if connection's delay is close to optimal
-            if (net_delay[inet][ipin] < (lower_bound_connection_delay[inet][ipin - 1] * connection_delay_optimality_tolerance))
+            if (net_delay[(size_t)net_id][ipin] < (lower_bound_connection_delay[(size_t)net_id][ipin - 1] * connection_delay_optimality_tolerance))
                 continue;
 
-            forcible_reroute_connection_flag[inet][rr_sink_node] = true;
+            forcible_reroute_connection_flag[(size_t)net_id][rr_sink_node] = true;
             // note that we don't set forcible_reroute_connection_flag to false when the converse is true
             // resetting back to false will be done during tree pruning, after the sink has been legally reached
             any_connection_rerouted = true;
@@ -1566,15 +1551,15 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 }
 
 void Connection_based_routing_resources::clear_force_reroute_for_connection(int rr_sink_node) {
-    forcible_reroute_connection_flag[current_inet][rr_sink_node] = false;
+    forcible_reroute_connection_flag[(size_t)current_inet][rr_sink_node] = false;
     profiling::perform_forced_reroute();
 }
 
 void Connection_based_routing_resources::clear_force_reroute_for_net() {
 
-    VTR_ASSERT(current_inet != (unsigned) NO_PREVIOUS);
+    VTR_ASSERT(current_inet != ClusterNetId::INVALID());
 
-    auto& net_flags = forcible_reroute_connection_flag[current_inet];
+    auto& net_flags = forcible_reroute_connection_flag[(size_t)current_inet];
     for (auto& force_reroute_flag : net_flags) {
         if (force_reroute_flag.second) {
             force_reroute_flag.second = false;
@@ -1619,8 +1604,8 @@ static WirelengthInfo calculate_wirelength_info() {
     }
 
     for (unsigned int inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
-        if (!cluster_ctx.clb_nlist.net_global((NetId)inet)
-                && cluster_ctx.clb_nlist.net_sinks((NetId)inet).size() != 0) { /* Globals don't count. */
+        if (!cluster_ctx.clb_nlist.net_global((ClusterNetId)inet)
+                && cluster_ctx.clb_nlist.net_sinks((ClusterNetId)inet).size() != 0) { /* Globals don't count. */
             int bends, wirelength, segments;
             get_num_bends_and_length(inet, &bends, &wirelength, &segments);
 

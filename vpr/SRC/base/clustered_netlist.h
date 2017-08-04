@@ -11,7 +11,7 @@
 #include "vpr_types.h"
 #include "vtr_util.h"
 
-class ClusteredNetlist : public BaseNetlist<BlockId, PortId, PinId, NetId> {
+class ClusteredNetlist : public BaseNetlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId> {
 	public:
 		//Constructs a netlist
 		// name: the name of the netlist (e.g. top-level module)
@@ -23,26 +23,26 @@ class ClusteredNetlist : public BaseNetlist<BlockId, PortId, PinId, NetId> {
 		//  name        : The unique name of the block
 		//  pb			: The physical representation of the block
 		//  t_type_ptr	: The type of the CLB
-		BlockId create_block(const char *name, t_pb* pb, t_type_ptr type);
+		ClusterBlockId create_block(const char *name, t_pb* pb, t_type_ptr type);
 
 		//Sets the block's pin to point to net
 		//  blk_id		: The block the pin is associated with
 		//  pin_index   : The pin of the block to be changed
 		//  net_id		: The changed net
-		void set_block_net(const BlockId blk_id, const int pin_index, const NetId net_id);
+		void set_block_net(const ClusterBlockId blk_id, const int pin_index, const ClusterNetId net_id);
 
 		//Sets the block's net count
 		//  blk_id		: The block the net is associated with
 		//	pin_index	: The pin of the block to be changed
 		//  net_count	: The net's counter
-		void set_block_net_count(const BlockId blk_id, const int pin_index, const int count);
+		void set_block_net_count(const ClusterBlockId blk_id, const int pin_index, const int count);
 
 		//Create or return an existing port in the netlist
 		//  blk_id      : The block the port is associated with
 		//  name        : The name of the port (must match the name of a port in the block's model)
 		//  width		: The width (number of bits) of the port
 		//  type		: The type of the port (INPUT, OUTPUT, or CLOCK)
-		PortId create_port(const BlockId blk_id, const std::string name, BitIndex width, PortType port_type);
+		ClusterPortId create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType port_type);
 
 		//Create or return an existing pin in the netlist
 		//  port_id    : The port this pin is associated with
@@ -52,71 +52,71 @@ class ClusteredNetlist : public BaseNetlist<BlockId, PortId, PinId, NetId> {
 		//  port_type  : The type of the port (input/output/clock)
 		//  pin_index  : The index of the pin relative to its block, excluding OPEN pins)
 		//  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
-		PinId   create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, const PortType port_type, int pin_index, bool is_const=false);
+		ClusterPinId   create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type, const PortType port_type, int pin_index, bool is_const=false);
 
 		//Sets the pin's index in a block
 		//  pin_id   : The pin to be set
 		//  index    : The new index to set the pin to
-		void	set_pin_index(const PinId pin_id, const int index);
+		void	set_pin_index(const ClusterPinId pin_id, const int index);
 
 		//Create an empty, or return an existing net in the netlist
 		//  name     : The unique name of the net
-		NetId	create_net(const std::string name);
+		ClusterNetId	create_net(const std::string name);
 
 		//Sets the netlist id based on a file digest's string
 		void set_netlist_id(std::string id);
 		
 		//Sets the flag in net_global_ = state
-		void set_global(NetId net_id, bool state);
+		void set_global(ClusterNetId net_id, bool state);
 
 		//Sets the flag in net_routed_ = state
-		void set_routed(NetId net_id, bool state);
+		void set_routed(ClusterNetId net_id, bool state);
 
 		//Sets the flag in net_fixed_ = state
-		void set_fixed(NetId net_id, bool state);
+		void set_fixed(ClusterNetId net_id, bool state);
 
 	public: //Public Accessors
 		/*
 		* Blocks
 		*/
 		//Returns the physical block
-		t_pb* block_pb(const BlockId id) const;
+		t_pb* block_pb(const ClusterBlockId id) const;
 
 		//Returns the type of CLB (Logic block, RAM, DSP, etc.)
-		t_type_ptr block_type(const BlockId id) const;
+		t_type_ptr block_type(const ClusterBlockId id) const;
 
 		//Returns the net of the block attached to the specific pin index
-		NetId block_net(const BlockId blk_id, const int pin_index) const;
+		ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
 
 		//Returns the count on the net of the block attached
-		int block_net_count(const BlockId blk_id, const int pin_index) const;
+		int block_net_count(const ClusterBlockId blk_id, const int pin_index) const;
 
 		/*
 		* Pins
 		*/
 		//Returns the index of the block which the pin belongs to
-		int pin_index(const PinId id) const;
+		int pin_index(const ClusterPinId id) const;
 
 		//Returns the index of the block which the pin belongs to
 		//  net_id     : The net to iterate through
 		//  count      : The index of the pin in the net
-		int pin_index(NetId net_id, int count) const;
+		int pin_index(ClusterNetId net_id, int count) const;
 
 		/*
 		* Nets
 		*/
 		//Returns the block of the net & pin which it's attached to
-		BlockId net_pin_block(const NetId net_id, int pin_index) const;
+		ClusterBlockId net_pin_block(const ClusterNetId net_id, int pin_index) const;
 
 		//Returns the pin's index in the net
 		//  net_id		: The net of which the pin belongs to
 		//  pin_id		: The matching pin the net connects to
-		int net_pin_index(NetId net_id, PinId pin_id) const;
+		int net_pin_index(ClusterNetId net_id, ClusterPinId pin_id) const;
 
 		//Returns whether the net is global or fixed
-		bool net_global(const NetId id) const;
-		bool net_routed(const NetId id) const;
-		bool net_fixed(const NetId id) const;
+		bool net_global(const ClusterNetId id) const;
+		bool net_routed(const ClusterNetId id) const;
+		bool net_fixed(const ClusterNetId id) const;
 
 	private: //Private Members
 		bool validate_block_sizes() const;
@@ -126,18 +126,18 @@ class ClusteredNetlist : public BaseNetlist<BlockId, PortId, PinId, NetId> {
 	private: //Private Data
 		
 		//Blocks
-		vtr::vector_map<BlockId, t_pb*>							block_pbs_;         //Physical block representing the clustering & internal hierarchy of each CLB
-		vtr::vector_map<BlockId, t_type_ptr>					block_types_;		//The type of physical block this user circuit block is mapped to
-		vtr::vector_map<BlockId, std::vector<NetId>>			block_nets_;		//Stores which pins are used/unused on the block with the net using it
-		vtr::vector_map<BlockId, std::vector<int>>				block_net_count_;	//The count of the nets related to the block
+		vtr::vector_map<ClusterBlockId, t_pb*>							block_pbs_;         //Physical block representing the clustering & internal hierarchy of each CLB
+		vtr::vector_map<ClusterBlockId, t_type_ptr>					block_types_;		//The type of physical block this user circuit block is mapped to
+		vtr::vector_map<ClusterBlockId, std::vector<ClusterNetId>>			block_nets_;		//Stores which pins are used/unused on the block with the net using it
+		vtr::vector_map<ClusterBlockId, std::vector<int>>				block_net_count_;	//The count of the nets related to the block
 
 		//Pins
-		vtr::vector_map<PinId, int>								pin_index_;			//The index of the pins relative to its block
+		vtr::vector_map<ClusterPinId, int>								pin_index_;			//The index of the pins relative to its block
 			
 		//Nets	
-		vtr::vector_map<NetId, bool>							net_global_;		//Boolean mapping indicating if the net is
-		vtr::vector_map<NetId, bool>							net_routed_;		//Global, routed, or fixed (mutually exclusive).
-		vtr::vector_map<NetId, bool>							net_fixed_;			//TODO: transfer net routing state to RoutingContext
+		vtr::vector_map<ClusterNetId, bool>							net_global_;		//Boolean mapping indicating if the net is
+		vtr::vector_map<ClusterNetId, bool>							net_routed_;		//Global, routed, or fixed (mutually exclusive).
+		vtr::vector_map<ClusterNetId, bool>							net_fixed_;			//TODO: transfer net routing state to RoutingContext
 };
 
 #endif

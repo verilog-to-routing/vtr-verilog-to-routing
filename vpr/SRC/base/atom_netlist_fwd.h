@@ -19,17 +19,23 @@ class AtomLookup;
  * vtr_strong_id.h for details.
  */
 
+ //Type tags for Ids
+struct atom_block_id_tag;
+struct atom_net_id_tag;
+struct atom_port_id_tag;
+struct atom_pin_id_tag;
+
 //A unique identifier for a block/primitive in the atom netlist
-typedef vtr::StrongId<block_id_tag> AtomBlockId;
+typedef vtr::StrongId<atom_block_id_tag> AtomBlockId;
 
 //A unique identifier for a net in the atom netlist
-typedef vtr::StrongId<net_id_tag> AtomNetId;
+typedef vtr::StrongId<atom_net_id_tag> AtomNetId;
 
 //A unique identifier for a port in the atom netlist
-typedef vtr::StrongId<port_id_tag> AtomPortId;
+typedef vtr::StrongId<atom_port_id_tag> AtomPortId;
 
 //A unique identifier for a pin in the atom netlist
-typedef vtr::StrongId<pin_id_tag> AtomPinId;
+typedef vtr::StrongId<atom_pin_id_tag> AtomPinId;
 
 //A signal index in a port
 typedef unsigned BitIndex;

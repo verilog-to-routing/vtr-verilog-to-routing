@@ -65,7 +65,7 @@ private:
 	std::vector<std::vector<float>> lower_bound_connection_delay;
 
 	// the current net that's being routed
-	unsigned current_inet;
+	ClusterNetId current_inet;
 
 	// the most recent stable critical path delay 
 	// compared against the current iteration's critical path delay
@@ -85,7 +85,7 @@ public:
 	void set_lower_bound_connection_delays(const float* const * net_delay);
 
 	// initialize routing resources at the start of routing to a new net
-	void prepare_routing_for_net(unsigned inet) {
+	void prepare_routing_for_net(ClusterNetId inet) {
 		current_inet = inet;
 		// fresh net with fresh targets
 		remaining_targets.clear();
@@ -94,7 +94,7 @@ public:
 
 
 	// get a handle on the resources
-	unsigned get_current_inet() const {return current_inet;}
+	ClusterNetId get_current_inet() const {return current_inet;}
 	float get_stable_critical_path_delay() const {return last_stable_critical_path_delay;}
 
 	bool critical_path_delay_grew_significantly(float new_critical_path_delay) const {
@@ -106,7 +106,7 @@ public:
 
 	// get whether the connection to rr_sink_node of current_inet should be forcibly rerouted (can either assign or just read)
 	bool should_force_reroute_connection(int rr_sink_node) const {
-		auto force_flag = forcible_reroute_connection_flag[current_inet].find(rr_sink_node);
+		auto force_flag = forcible_reroute_connection_flag[(size_t)current_inet].find(rr_sink_node);
 		return force_flag->second;
 	}
 	void clear_force_reroute_for_connection(int rr_sink_node); 

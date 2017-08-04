@@ -12,7 +12,6 @@ using namespace std;
 #include "physical_types.h"
 #include "path_delay.h"
 #include "globals.h"
-#include "atom_netlist.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
 #include "place_macro.h"
@@ -82,9 +81,9 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin ** pb_graph_p
 
 static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapping);
 
-static std::vector<int> find_connected_internal_clb_sink_pins(BlockId clb, int pb_pin);
-static void find_connected_internal_clb_sink_pins_recurr(BlockId clb, int pb_pin, std::vector<int>& connected_sink_pb_pins);
-static AtomPinId find_atom_pin_for_pb_route_id(BlockId clb, int pb_route_id, const IntraLbPbPinLookup& pb_gpin_lookup);
+static std::vector<int> find_connected_internal_clb_sink_pins(ClusterBlockId clb, int pb_pin);
+static void find_connected_internal_clb_sink_pins_recurr(ClusterBlockId clb, int pb_pin, std::vector<int>& connected_sink_pb_pins);
+static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_id, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 /******************** Subroutine definitions *********************************/
 
@@ -163,18 +162,18 @@ void sync_grid_to_blocks() {
 
 		/* Check range of block coords */
 		if (blk_x < 0 || blk_y < 0
-				|| (blk_x + cluster_ctx.clb_nlist.block_type((BlockId)i)->width - 1) > (device_ctx.nx + 1)
-				|| (blk_y + cluster_ctx.clb_nlist.block_type((BlockId)i)->height - 1) > (device_ctx.ny + 1)
-				|| blk_z < 0 || blk_z > (cluster_ctx.clb_nlist.block_type((BlockId)i)->capacity)) {
+				|| (blk_x + cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->width - 1) > (device_ctx.nx + 1)
+				|| (blk_y + cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->height - 1) > (device_ctx.ny + 1)
+				|| blk_z < 0 || blk_z > (cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->capacity)) {
 			VPR_THROW(VPR_ERROR_PLACE, "Block %d is at invalid location (%d, %d, %d).\n", 
 					i, blk_x, blk_y, blk_z);
 		}
 
 		/* Check types match */
-		if (cluster_ctx.clb_nlist.block_type((BlockId)i) != device_ctx.grid[blk_x][blk_y].type) {
+		if (cluster_ctx.clb_nlist.block_type((ClusterBlockId)i) != device_ctx.grid[blk_x][blk_y].type) {
             VPR_THROW(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n", 
 					blk_x, blk_y,
-					cluster_ctx.clb_nlist.block_type((BlockId)i)->name, 
+					cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->name, 
 					device_ctx.grid[blk_x][blk_y].type->name);
 		}
 
@@ -191,8 +190,8 @@ void sync_grid_to_blocks() {
 		}
 
 		/* Set the block */
-		for (int width = 0; width < cluster_ctx.clb_nlist.block_type((BlockId)i)->width; ++width) {
-			for (int height = 0; height < cluster_ctx.clb_nlist.block_type((BlockId)i)->height; ++height) {
+		for (int width = 0; width < cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->width; ++width) {
+			for (int height = 0; height < cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->height; ++height) {
 				place_ctx.grid_blocks[blk_x + width][blk_y + height].blocks[blk_z] = i;
 				place_ctx.grid_blocks[blk_x + width][blk_y + height].usage++;
 				VTR_ASSERT(device_ctx.grid[blk_x + width][blk_y + height].width_offset == width);
@@ -247,7 +246,7 @@ void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs) {
 
 //Returns the set of pins which are connected to the top level clb pin
 //  The pin(s) may be input(s) or and output (returning the connected sinks or drivers respectively)
-std::vector<AtomPinId> find_clb_pin_connected_atom_pins(BlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     std::vector<AtomPinId> atom_pins;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -266,7 +265,7 @@ std::vector<AtomPinId> find_clb_pin_connected_atom_pins(BlockId clb, int clb_pin
 }
 
 //Returns the atom pin which drives the top level clb output pin
-AtomPinId find_clb_pin_driver_atom_pin(BlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
+AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -297,7 +296,7 @@ AtomPinId find_clb_pin_driver_atom_pin(BlockId clb, int clb_pin, const IntraLbPb
 }
 
 //Returns the set of atom sink pins associated with the top level clb input pin
-std::vector<AtomPinId> find_clb_pin_sink_atom_pins(BlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int clb_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -341,7 +340,7 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(BlockId clb, int clb_pin, con
 }
 
 //Find sinks internal to the given clb which are connected to the specified pb_pin
-static std::vector<int> find_connected_internal_clb_sink_pins(BlockId clb, int pb_pin) {
+static std::vector<int> find_connected_internal_clb_sink_pins(ClusterBlockId clb, int pb_pin) {
     std::vector<int> connected_sink_pb_pins;
     find_connected_internal_clb_sink_pins_recurr(clb, pb_pin, connected_sink_pb_pins);
 
@@ -349,7 +348,7 @@ static std::vector<int> find_connected_internal_clb_sink_pins(BlockId clb, int p
 }
 
 //Recursive helper for find_connected_internal_clb_sink_pins()
-static void find_connected_internal_clb_sink_pins_recurr(BlockId clb, int pb_pin, std::vector<int>& connected_sink_pb_pins) {
+static void find_connected_internal_clb_sink_pins_recurr(ClusterBlockId clb, int pb_pin, std::vector<int>& connected_sink_pb_pins) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if(cluster_ctx.clb_nlist.block_pb(clb)->pb_route[pb_pin].sink_pb_pin_ids.empty()) {
@@ -362,7 +361,7 @@ static void find_connected_internal_clb_sink_pins_recurr(BlockId clb, int pb_pin
 }
 
 //Maps from a CLB's pb_route ID to it's matching AtomPinId (if the pb_route is a primitive pin)
-static AtomPinId find_atom_pin_for_pb_route_id(BlockId clb, int pb_route_id, const IntraLbPbPinLookup& pb_gpin_lookup) {
+static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_id, const IntraLbPbPinLookup& pb_gpin_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -406,11 +405,11 @@ static AtomPinId find_atom_pin_for_pb_route_id(BlockId clb, int pb_route_id, con
 }
 
 //Return the net pin which drive the CLB input connected to sink_pb_pin_id, or nullptr if none (i.e. driven internally)
-std::tuple<NetId, int, int> find_pb_route_clb_input_net_pin(BlockId clb, int sink_pb_pin_id) {
+std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockId clb, int sink_pb_pin_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     VTR_ASSERT(sink_pb_pin_id < cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node->total_pb_pins);
-    VTR_ASSERT(clb != BlockId::INVALID());
+    VTR_ASSERT(clb != ClusterBlockId::INVALID());
     VTR_ASSERT(sink_pb_pin_id >= 0);
 
     const t_pb_route* pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
@@ -433,7 +432,7 @@ std::tuple<NetId, int, int> find_pb_route_clb_input_net_pin(BlockId clb, int sin
     bool is_output_pin = (pb_routes[curr_pb_pin_id].pb_graph_pin->port->type == OUT_PORT);
 
     if(!is_clb_external_pin(clb, curr_pb_pin_id) || is_output_pin) {
-        return std::make_tuple(NetId::INVALID(), -1, -1);
+        return std::make_tuple(ClusterNetId::INVALID(), -1, -1);
     }
 
     //To account for capacity > 1 blocks we need to convert the pb_pin to the clb pin
@@ -441,16 +440,16 @@ std::tuple<NetId, int, int> find_pb_route_clb_input_net_pin(BlockId clb, int sin
     VTR_ASSERT(clb_pin >= 0);
 
     //clb_pin should be a top-level CLB input
-	NetId clb_net_idx = cluster_ctx.clb_nlist.block_net(clb, clb_pin);
+	ClusterNetId clb_net_idx = cluster_ctx.clb_nlist.block_net(clb, clb_pin);
     int clb_net_pin_idx = cluster_ctx.clb_nlist.block_net_count(clb, clb_pin);
-    VTR_ASSERT(clb_net_idx != NetId::INVALID());
+    VTR_ASSERT(clb_net_idx != ClusterNetId::INVALID());
     VTR_ASSERT(clb_net_pin_idx >= 0);
 
-	return std::tuple<NetId,int,int>(clb_net_idx, clb_pin, clb_net_pin_idx);
+	return std::tuple<ClusterNetId,int,int>(clb_net_idx, clb_pin, clb_net_pin_idx);
 }
 
 //Return the pb pin index corresponding to the pin clb_pin on block clb
-int find_clb_pb_pin(BlockId clb, int clb_pin) {
+int find_clb_pb_pin(ClusterBlockId clb, int clb_pin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -476,7 +475,7 @@ int find_clb_pb_pin(BlockId clb, int clb_pin) {
     return pb_pin;
 }
 
-int find_pb_pin_clb_pin(BlockId clb, int pb_pin) {
+int find_pb_pin_clb_pin(ClusterBlockId clb, int pb_pin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -498,16 +497,16 @@ int find_pb_pin_clb_pin(BlockId clb, int pb_pin) {
     return clb_pin;
 }
 
-bool is_clb_external_pin(BlockId clb, int pb_pin_id) {
+bool is_clb_external_pin(ClusterBlockId blk_id, int pb_pin_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    const t_pb_graph_pin* gpin = cluster_ctx.clb_nlist.block_pb(clb)->pb_route[pb_pin_id].pb_graph_pin;
+    const t_pb_graph_pin* gpin = cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route[pb_pin_id].pb_graph_pin;
     VTR_ASSERT(gpin);
 
     //If the gpin's parent graph node is the same as the pb's graph node
     //this must be a top level pin
     const t_pb_graph_node* gnode = gpin->parent_node;
-    bool is_top_level_pin = (gnode == cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node);
+	bool is_top_level_pin = (gnode == cluster_ctx.clb_nlist.block_pb(blk_id)->pb_graph_node);
 
     return is_top_level_pin;
 }
@@ -560,8 +559,7 @@ int get_unique_pb_graph_node_id(const t_pb_graph_node *pb_graph_node) {
 	}
 }
 
-
-void get_class_range_for_block(const int iblk, 
+void get_class_range_for_block(const ClusterBlockId blk_id, 
 		int *class_low,
 		int *class_high) {
 
@@ -569,10 +567,10 @@ void get_class_range_for_block(const int iblk,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-	t_type_ptr type = cluster_ctx.clb_nlist.block_type((BlockId)iblk);
+	t_type_ptr type = cluster_ctx.clb_nlist.block_type(blk_id);
 	VTR_ASSERT(type->num_class % type->capacity == 0);
-	*class_low = place_ctx.block_locs[iblk].z * (type->num_class / type->capacity);
-	*class_high = (place_ctx.block_locs[iblk].z + 1) * (type->num_class / type->capacity) - 1;
+	*class_low = place_ctx.block_locs[(size_t)blk_id].z * (type->num_class / type->capacity);
+	*class_high = (place_ctx.block_locs[(size_t)blk_id].z + 1) * (type->num_class / type->capacity) - 1;
 }
 
 int get_max_primitives_in_pb_type(t_pb_type *pb_type) {
@@ -783,7 +781,7 @@ AtomPinId find_atom_pin(int iblk, const t_pb_graph_pin* pb_gpin) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     int pb_route_id = pb_gpin->pin_count_in_cluster;
-    AtomNetId atom_net = cluster_ctx.clb_nlist.block_pb((BlockId)iblk)->pb_route[pb_route_id].atom_net_id;
+    AtomNetId atom_net = cluster_ctx.clb_nlist.block_pb((ClusterBlockId)iblk)->pb_route[pb_route_id].atom_net_id;
 
     VTR_ASSERT(atom_net);
 
@@ -832,7 +830,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLo
     return get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
 }
 
-t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(BlockId iblock, int ipin) {
+t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin) {
 
 	int i, count;
 	const t_pb_type *pb_type;
@@ -998,11 +996,11 @@ t_pb ***alloc_and_load_pin_id_to_pb_mapping() {
 
 	t_pb ***pin_id_to_pb_mapping = new t_pb**[cluster_ctx.clb_nlist.blocks().size()];
 	for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-		pin_id_to_pb_mapping[i] = new t_pb*[cluster_ctx.clb_nlist.block_type((BlockId)i)->pb_graph_head->total_pb_pins];
-		for (int j = 0; j < cluster_ctx.clb_nlist.block_type((BlockId)i)->pb_graph_head->total_pb_pins; j++) {
+		pin_id_to_pb_mapping[i] = new t_pb*[cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->pb_graph_head->total_pb_pins];
+		for (int j = 0; j < cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->pb_graph_head->total_pb_pins; j++) {
 			pin_id_to_pb_mapping[i][j] = NULL;
 		}
-		load_pin_id_to_pb_mapping_rec(cluster_ctx.clb_nlist.block_pb((BlockId)i), pin_id_to_pb_mapping[i]);
+		load_pin_id_to_pb_mapping_rec(cluster_ctx.clb_nlist.block_pb((ClusterBlockId)i), pin_id_to_pb_mapping[i]);
 	}
 	return pin_id_to_pb_mapping;
 }
@@ -1248,7 +1246,7 @@ vtr::Matrix<int> alloc_and_load_net_pin_index() {
 		netpin = 0;
 		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
 			int pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
-			BlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+			ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
 			temp_net_pin_index[(size_t)block_id][pin_index] = netpin;
 			netpin++;
 		}
@@ -1953,7 +1951,7 @@ AtomBlockId find_tnode_atom_block(int inode) {
     return blk_id;
 }
 
-void place_sync_external_block_connections(BlockId iblk) {
+void place_sync_external_block_connections(ClusterBlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     VTR_ASSERT_MSG(place_ctx.block_locs[(size_t)iblk].nets_and_pins_synced_to_z_coordinate == false, "Block net and pins must not be already synced");
@@ -1965,9 +1963,9 @@ void place_sync_external_block_connections(BlockId iblk) {
 
     /* Sync external blocks and nets */
     for (int j = 0; j < max_num_block_pins; j++) {
-		NetId net_id = cluster_ctx.clb_nlist.block_net(iblk, j);
-        if (net_id != NetId::INVALID() && place_ctx.block_locs[(size_t)iblk].z > 0) {
-			VTR_ASSERT(cluster_ctx.clb_nlist.block_net(iblk, j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins) == NetId::INVALID());
+		ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(iblk, j);
+        if (net_id != ClusterNetId::INVALID() && place_ctx.block_locs[(size_t)iblk].z > 0) {
+			VTR_ASSERT(cluster_ctx.clb_nlist.block_net(iblk, j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins) == ClusterNetId::INVALID());
             VTR_ASSERT(cluster_ctx.clb_nlist.block_net_count(iblk, j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins) == OPEN); 
 
             //Update the block to net references

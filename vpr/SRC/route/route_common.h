@@ -1,6 +1,7 @@
 /************ Defines and types shared by all route files ********************/
 #pragma once
 #include <vector>
+#include "clustered_netlist.h"
 
 /* Used by the heap as its fundamental data structure.                      * 
  * index:   Index (ID) of this routing resource node.                       * 
@@ -42,13 +43,13 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 
 void pathfinder_update_cost(float pres_fac, float acc_fac);
 
-t_trace *update_traceback(t_heap *hptr, int inet);
+t_trace *update_traceback(t_heap *hptr, ClusterNetId inet);
 
 void reset_path_costs(void);
 
 float get_rr_cong_cost(int inode);
 
-void mark_ends(int inet);
+void mark_ends(ClusterNetId inet);
 void mark_remaining_ends(const std::vector<int>& remaining_sinks);
 
 void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
@@ -56,7 +57,7 @@ void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
 
 bool is_empty_heap(void);
 
-void free_traceback(int inet);
+void free_traceback(ClusterNetId inet);
 
 void add_to_mod_list(float *fptr);
 
@@ -99,7 +100,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
 void free_chunk_memory_trace(void);
 
-void print_traceback(int inet);
+void print_traceback(ClusterNetId inet);
 
 t_trace* alloc_trace_data(void);
 void free_trace_data(t_trace* trace);

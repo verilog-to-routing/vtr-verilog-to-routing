@@ -150,30 +150,26 @@ void save_routing(t_trace **best_routing,
     saved_clb_opins_used_locally = clb_opins_used_locally;
 }
 
-void restore_routing(t_trace **best_routing,
-		t_clb_opins_used&  clb_opins_used_locally,
-		const t_clb_opins_used&  saved_clb_opins_used_locally) {
-
-	/* Deallocates any current routing in route_ctx.trace_head, and replaces it with    *
+/* Deallocates any current routing in route_ctx.trace_head, and replaces it with    *
 	 * the routing in best_routing.  Best_routing is set to NULL to show that *
 	 * it no longer points to a valid routing.  NOTE:  route_ctx.trace_tail is not      *
 	 * restored -- it is set to all NULLs since it is only used in            *
 	 * update_traceback.  If you need route_ctx.trace_tail restored, modify this        *
 	 * routine.  Also restores the locally used opin data.                    */
-
-	unsigned int inet;
-
+void restore_routing(t_trace **best_routing,
+		t_clb_opins_used&  clb_opins_used_locally,
+		const t_clb_opins_used&  saved_clb_opins_used_locally) {
+	
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		/* Free any current routing. */
-		free_traceback(inet);
+		free_traceback(net_id);
 
 		/* Set the current routing to the saved one. */
-		route_ctx.trace_head[inet] = best_routing[inet];
-		best_routing[inet] = NULL; /* No stored routing. */
+		route_ctx.trace_head[(size_t)net_id] = best_routing[(size_t)net_id];
+		best_routing[(size_t)net_id] = NULL; /* No stored routing. */
 	}
 
 	/* Restore which OPINs are locally used.                           */
@@ -478,15 +474,13 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 	}
 }
 
-void init_route_structs(int bb_factor) {
-
-	/* Call this before you route any nets.  It frees any old traceback and   *
+/* Call this before you route any nets.  It frees any old traceback and   *
 	 * sets the list of rr_nodes touched to empty.                            */
-
+void init_route_structs(int bb_factor) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	for (unsigned int i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++)
-		free_traceback(i);
+	for (auto net_id : cluster_ctx.clb_nlist.nets())
+		free_traceback(net_id);
 
 	load_route_bb(bb_factor);
 
@@ -505,7 +499,7 @@ void init_route_structs(int bb_factor) {
 }
 
 t_trace *
-update_traceback(t_heap *hptr, int inet) {
+update_traceback(t_heap *hptr, ClusterNetId inet) {
 
 	/* This routine adds the most recently finished wire segment to the         *
 	 * traceback linked list.  The first connection starts with the net SOURCE  *
@@ -536,7 +530,7 @@ update_traceback(t_heap *hptr, int inet) {
 	if (rr_type != SINK) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 
 			"in update_traceback. Expected type = SINK (%d).\n"
-			"\tGot type = %d while tracing back net %d.\n", SINK, rr_type, inet);
+			"\tGot type = %d while tracing back net %lu.\n", SINK, rr_type, (size_t)inet);
 	}
 
 	tptr = alloc_trace_data(); /* SINK on the end of the connection */
@@ -562,29 +556,25 @@ update_traceback(t_heap *hptr, int inet) {
 		inode = route_ctx.rr_node_route_inf[inode].prev_node;
 	}
 
-	if (route_ctx.trace_tail[inet] != NULL) {
-		route_ctx.trace_tail[inet]->next = tptr; /* Traceback ends with tptr */
+	if (route_ctx.trace_tail[(size_t)inet] != NULL) {
+		route_ctx.trace_tail[(size_t)inet]->next = tptr; /* Traceback ends with tptr */
 		ret_ptr = tptr->next; /* First new segment.       */
 	} else { /* This was the first "chunk" of the net's routing */
-		route_ctx.trace_head[inet] = tptr;
+		route_ctx.trace_head[(size_t)inet] = tptr;
 		ret_ptr = tptr; /* Whole traceback is new. */
 	}
 
-	route_ctx.trace_tail[inet] = temptail;
+	route_ctx.trace_tail[(size_t)inet] = temptail;
 	return (ret_ptr);
 }
 
+/* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for  *
+* all channel segments touched by previous routing phases.    */
 void reset_path_costs(void) {
-
-	/* The routine sets the path_cost to HUGE_POSITIVE_FLOAT for all channel segments   *
-	 * touched by previous routing phases.                                     */
-
 	t_linked_f_pointer *mod_ptr;
-
 	int num_mod_ptrs;
 
 	/* The traversal method below is slightly painful to make it faster. */
-
 	if (rr_modified_head != NULL) {
 		mod_ptr = rr_modified_head;
 
@@ -608,10 +598,8 @@ void reset_path_costs(void) {
 	}
 }
 
+/* Returns the *congestion* cost of using this rr_node. */
 float get_rr_cong_cost(int inode) {
-
-	/* Returns the *congestion* cost of using this rr_node. */
-
 	short cost_index;
 	float cost;
 
@@ -625,22 +613,20 @@ float get_rr_cong_cost(int inode) {
 	return (cost);
 }
 
-void mark_ends(int inet) {
-
-	/* Mark all the SINKs of this net as targets by setting their target flags  *
-	 * to the number of times the net must connect to each SINK.  Note that     *
-	 * this number can occasionally be greater than 1 -- think of connecting   *
-	 * the same net to two inputs of an and-gate (and-gate inputs are logically *
-	 * equivalent, so both will connect to the same SINK).                      */
-
+/* Mark all the SINKs of this net as targets by setting their target flags  *
+* to the number of times the net must connect to each SINK.  Note that     *
+* this number can occasionally be greater than 1 -- think of connecting   *
+* the same net to two inputs of an and-gate (and-gate inputs are logically *
+* equivalent, so both will connect to the same SINK).                      */
+void mark_ends(ClusterNetId net_id) {
 	unsigned int ipin;
 	int inode;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((NetId)inet).size(); ipin++) {
-		inode = route_ctx.net_rr_terminals[inet][ipin];
+	for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+		inode = route_ctx.net_rr_terminals[(size_t)net_id][ipin];
 		route_ctx.rr_node_route_inf[inode].target_flag++;
 	}
 }
@@ -677,7 +663,7 @@ void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge,
 	add_to_heap(hptr);
 }
 
-void free_traceback(int inet) {
+void free_traceback(ClusterNetId net_id) {
 
 	/* Puts the entire traceback (old routing) for this net on the free list *
 	 * and sets the route_ctx.trace_head pointers etc. for the net to NULL.            */
@@ -690,7 +676,7 @@ void free_traceback(int inet) {
 		return;
 	}
 
-	tptr = route_ctx.trace_head[inet];
+	tptr = route_ctx.trace_head[(size_t)net_id];
 
 	while (tptr != NULL) {
 		tempptr = tptr->next;
@@ -698,8 +684,8 @@ void free_traceback(int inet) {
 		tptr = tempptr;
 	}
 
-	route_ctx.trace_head[inet] = NULL;
-	route_ctx.trace_tail[inet] = NULL;
+	route_ctx.trace_head[(size_t)net_id] = NULL;
+	route_ctx.trace_tail[(size_t)net_id] = NULL;
 }
 
 t_clb_opins_used alloc_route_structs(void) {
@@ -759,11 +745,11 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-	clb_opins_used_locally.resize((int) cluster_ctx.clb_nlist.blocks().size());
+	clb_opins_used_locally.resize((int)cluster_ctx.clb_nlist.blocks().size());
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		type = cluster_ctx.clb_nlist.block_type(blk_id);
-		get_class_range_for_block((size_t)blk_id, &class_low, &class_high);
+		get_class_range_for_block(blk_id, &class_low, &class_high);
 		clb_opins_used_locally[(size_t)blk_id].resize(type->num_class);
 
 		for (clb_pin = 0; clb_pin < type->num_pins; clb_pin++) {
@@ -771,9 +757,9 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
 			if(type == device_ctx.IO_TYPE)
 				continue;
 			
-			if ((cluster_ctx.clb_nlist.block_net(blk_id, clb_pin) != NetId::INVALID()
+			if ((cluster_ctx.clb_nlist.block_net(blk_id, clb_pin) != ClusterNetId::INVALID()
 					&& cluster_ctx.clb_nlist.net_sinks(cluster_ctx.clb_nlist.block_net(blk_id, clb_pin)).size() == 0)
-					|| cluster_ctx.clb_nlist.block_net(blk_id, clb_pin) == NetId::INVALID()) {
+					|| cluster_ctx.clb_nlist.block_net(blk_id, clb_pin) == ClusterNetId::INVALID()) {
                 
 				iclass = type->pin_class[clb_pin];
 				
@@ -789,17 +775,15 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
 	return (clb_opins_used_locally);
 }
 
-void free_trace_structs(void) {
-	/*the trace lists are only freed after use by the timing-driven placer */
+/*the trace lists are only freed after use by the timing-driven placer */
 	/*Do not  free them after use by the router, since stats, and draw  */
 	/*routines use the trace values */
-	unsigned int i;
-
+void free_trace_structs(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++)
-		free_traceback(i);
+	for (auto net_id : cluster_ctx.clb_nlist.nets())
+		free_traceback(net_id);
 
 	if(route_ctx.trace_head) {
 		free(route_ctx.trace_head);
@@ -922,7 +906,7 @@ static void load_route_bb(int bb_factor) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		BlockId driver_blk = cluster_ctx.clb_nlist.net_driver_block(net_id);
+		ClusterBlockId driver_blk = cluster_ctx.clb_nlist.net_driver_block(net_id);
 		int driver_blk_pin = cluster_ctx.clb_nlist.pin_index(net_id, 0);
 		x = place_ctx.block_locs[(size_t)driver_blk].x + cluster_ctx.clb_nlist.block_type(driver_blk)->pin_width[driver_blk_pin];
 		y = place_ctx.block_locs[(size_t)driver_blk].y + cluster_ctx.clb_nlist.block_type(driver_blk)->pin_height[driver_blk_pin];
@@ -933,7 +917,7 @@ static void load_route_bb(int bb_factor) {
 		ymax = y;
 
 		for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-			BlockId sink_blk = cluster_ctx.clb_nlist.pin_block(sink_pin_id);
+			ClusterBlockId sink_blk = cluster_ctx.clb_nlist.pin_block(sink_pin_id);
 			int sink_blk_pin = cluster_ctx.clb_nlist.pin_index(sink_pin_id);
 			x = place_ctx.block_locs[(size_t)sink_blk].x + cluster_ctx.clb_nlist.block_type(sink_blk)->pin_width[sink_blk_pin];
 			y = place_ctx.block_locs[(size_t)sink_blk].y + cluster_ctx.clb_nlist.block_type(sink_blk)->pin_height[sink_blk_pin];
@@ -1328,7 +1312,7 @@ void print_route(const char* placement_file, const char* route_file) {
 						int offset = device_ctx.grid[ilow][jlow].height_offset;
 						int iblock = place_ctx.grid_blocks[ilow][jlow - offset].blocks[0];
 						VTR_ASSERT(iblock != OPEN);
-						t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin((BlockId)iblock, pin_num);
+						t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin((ClusterBlockId)iblock, pin_num);
 						t_pb_type *pb_type = pb_pin->parent_node->pb_type;
 						fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);
 					}
@@ -1349,7 +1333,7 @@ void print_route(const char* placement_file, const char* route_file) {
 					cluster_ctx.clb_nlist.net_name(net_id).c_str());
 
 			for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-				BlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+				ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
 				int pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
 				iclass = cluster_ctx.clb_nlist.block_type(block_id)->pin_class[pin_index];
 
@@ -1398,7 +1382,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
 	if (rip_up_local_opins) {
 		for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
-			type = cluster_ctx.clb_nlist.block_type((BlockId) iblk);
+			type = cluster_ctx.clb_nlist.block_type((ClusterBlockId) iblk);
 			for (iclass = 0; iclass < type->num_class; iclass++) {
 				num_local_opin = clb_opins_used_locally[iblk][iclass].size();
 				/* Always 0 for pads and for RECEIVER (IPIN) classes */
@@ -1411,7 +1395,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 	}
 
 	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
-		type = cluster_ctx.clb_nlist.block_type((BlockId) iblk);
+		type = cluster_ctx.clb_nlist.block_type((ClusterBlockId) iblk);
 		for (iclass = 0; iclass < type->num_class; iclass++) {
 			num_local_opin = clb_opins_used_locally[iblk][iclass].size();
 			/* Always 0 for pads and for RECEIVER (IPIN) classes */
@@ -1473,13 +1457,13 @@ void free_chunk_memory_trace(void) {
 
 // connection based overhaul (more specificity than nets)
 // utility and debugging functions -----------------------
-void print_traceback(int inet) {
+void print_traceback(ClusterNetId inet) {
 	// linearly print linked list
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-	vtr::printf_info("traceback %d: ", inet);
-	t_trace* head = route_ctx.trace_head[inet];
+	vtr::printf_info("traceback %lu: ", (size_t)inet);
+	t_trace* head = route_ctx.trace_head[(size_t)inet];
 	while (head) {
 		int inode {head->index};
 		if (device_ctx.rr_nodes[inode].type() == SINK) 

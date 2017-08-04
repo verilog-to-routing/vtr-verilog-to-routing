@@ -21,18 +21,17 @@ using namespace std;
 
 /**************** Subroutines local to this module **************************/
 
-static int check_connections_to_global_clb_pins(NetId net_id);
+static int check_connections_to_global_clb_pins(ClusterNetId net_id);
 
 static int check_for_duplicated_names(void);
 
-static int check_clb_conn(BlockId iblk, int num_conn);
+static int check_clb_conn(ClusterBlockId iblk, int num_conn);
 
-static int check_clb_internal_nets(BlockId iblk);
+static int check_clb_internal_nets(ClusterBlockId iblk);
 
 /*********************** Subroutine definitions *****************************/
 
 void check_netlist() {
-	unsigned int i;
 	int error = 0;
 	int num_conn;
 	t_hash **net_hash_table, *h_net_ptr;
@@ -44,7 +43,7 @@ void check_netlist() {
 
 	/* Check that nets fanout and have a driver. */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name(net_id).c_str(), (size_t) net_id);
+		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name(net_id).c_str(), (size_t)net_id);
 		if (h_net_ptr->count != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
 					"Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name(net_id));
@@ -89,14 +88,14 @@ void check_netlist() {
      *       tied directly to gnd/vcc.
 	 */
     auto& atom_ctx = g_vpr_ctx.atom();
-	for (i = 0; i < cluster_ctx.clb_nlist.nets().size(); i++) {
-        AtomNetId atom_net = atom_ctx.lookup.atom_net(i);
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        AtomNetId atom_net = atom_ctx.lookup.atom_net((size_t)net_id);
         VTR_ASSERT(atom_net);
 
         if (atom_ctx.nlist.net_is_constant(atom_net)) {
             //Mark net as global, so that it is not routed
             vtr::printf_warning(__FILE__, __LINE__, "Treating constant net '%s' as global, so it will not be routed\n", atom_ctx.nlist.net_name(atom_net).c_str());
-            cluster_ctx.clb_nlist.set_global((NetId)i, true);
+            cluster_ctx.clb_nlist.set_global(net_id, true);
         }
 	}
 }
@@ -104,7 +103,7 @@ void check_netlist() {
 /* Checks that a global net (net_id) connects only to global CLB input pins  *
 * and that non-global nets never connects to a global CLB pin.  Either       *
 * global or non-global nets are allowed to connect to pads.                  */
-static int check_connections_to_global_clb_pins(NetId net_id) {
+static int check_connections_to_global_clb_pins(ClusterNetId net_id) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 	
@@ -116,7 +115,7 @@ static int check_connections_to_global_clb_pins(NetId net_id) {
 	 * output pin type to allow people to make architectures that didn't have     *
 	 * this warning.                                                              */
 	for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-		BlockId blk_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+		ClusterBlockId blk_id = cluster_ctx.clb_nlist.pin_block(pin_id);
 		int pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
 
 		if (cluster_ctx.clb_nlist.block_type(blk_id)->is_global_pin[pin_index] != is_global_net
@@ -151,7 +150,7 @@ static int check_connections_to_global_clb_pins(NetId net_id) {
 }
 
 /* Checks that the connections into and out of the clb make sense.  */
-static int check_clb_conn(BlockId iblk, int num_conn) {
+static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
 	int iclass, error;
 	t_type_ptr type;
 
@@ -166,7 +165,7 @@ static int check_clb_conn(BlockId iblk, int num_conn) {
 		//This triggers incorrectly if other blocks (e.g. I/O buffers) are included in the iopads
 		if (num_conn != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
-					"IO blk #%d (%s) has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name((BlockId)iblk), num_conn);
+					"IO blk #%d (%s) has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk), num_conn);
 			error++;
 		}
         */
@@ -213,7 +212,7 @@ static int check_clb_conn(BlockId iblk, int num_conn) {
 
 
 /* Check that internal-to-logic-block connectivity is continuous and logically consistent */
-static int check_clb_internal_nets(BlockId iblk) {
+static int check_clb_internal_nets(ClusterBlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	
 	int error = 0;

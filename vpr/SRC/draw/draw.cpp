@@ -134,7 +134,7 @@ static void highlight_nets(char *message, int hit_node);
 static int draw_check_rr_node_hit (float click_x, float click_y);
 static void highlight_rr_nodes(float x, float y);
 static void draw_highlight_blocks_color(t_type_ptr type, int bnum);
-static void draw_reset_blk_color(BlockId blk_id);
+static void draw_reset_blk_color(ClusterBlockId blk_id);
 
 static inline bool LOD_screen_area_test_square(float width, float screen_area_threshold);
 static inline bool default_triangle_LOD_screen_area_test();
@@ -147,7 +147,7 @@ static inline t_bound_box draw_mux(t_point origin, e_side orientation, float hei
 static void draw_flyline_timing_edge(t_point start, t_point end, float incr_delay);
 static void draw_routed_timing_edge(tatum::NodeId start_tnode, tatum::NodeId end_tnode, float incr_delay, t_color color);
 static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::NodeId sink_tnode, t_color color);
-static std::vector<int> trace_routed_connection_rr_nodes(const NetId net_id, const int driver_pin, const int sink_pin);
+static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_id, const int driver_pin, const int sink_pin);
 static bool trace_routed_connection_rr_nodes_recurr(const t_rt_node* rt_node, int sink_rr_node, std::vector<int>& rr_nodes_on_path);
 static short find_switch(int prev_inode, int inode);
 
@@ -590,10 +590,9 @@ void init_draw_coords(float width_val) {
 	);
 }
 
+/* Draws the blocks placed on the proper clbs.  Occupied blocks are darker colours *
+* while empty ones are lighter colours and have a dashed border.      */
 static void drawplace(void) {
-
-	/* Draws the blocks placed on the proper clbs.  Occupied blocks are darker colours *
-	 * while empty ones are lighter colours and have a dashed border.      */
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -660,7 +659,7 @@ static void drawplace(void) {
 					}
 
                     auto& cluster_ctx = g_vpr_ctx.clustering();
-					drawtext_in(abs_clb_bbox, cluster_ctx.clb_nlist.block_name((BlockId)bnum));
+					drawtext_in(abs_clb_bbox, cluster_ctx.clb_nlist.block_name((ClusterBlockId)bnum));
 					if (j == 0 || j == device_ctx.ny + 1) {
 						settextrotation(saved_rotation);
 					}
@@ -685,7 +684,7 @@ static void drawnets(void) {
 	 * yet been routed, so we just draw a chain showing a possible path *
 	 * for each net.  This gives some idea of future congestion.        */
 
-	BlockId b1, b2;
+	ClusterBlockId b1, b2;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	setlinestyle(SOLID);
@@ -1651,7 +1650,7 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 	/* Now draw each net, one by one.      */
 
 	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-		if (cluster_ctx.clb_nlist.net_global((NetId)inet)) /* Don't draw global nets. */
+		if (cluster_ctx.clb_nlist.net_global((ClusterNetId)inet)) /* Don't draw global nets. */
 			continue;
 
 		if (route_ctx.trace_head[inet] == NULL) /* No routing.  Skip.  (Allows me to draw */
@@ -1902,7 +1901,7 @@ static void highlight_nets(char *message, int hit_node) {
 				draw_state->net_color[inet] = draw_state->draw_rr_node[tptr->index].color;
 				if (tptr->index == hit_node) {
 					sprintf(message, "%s  ||  Net: %d (%s)", message, inet,
-							cluster_ctx.clb_nlist.net_name((NetId)inet).c_str());
+							cluster_ctx.clb_nlist.net_name((ClusterNetId)inet).c_str());
 				}
 			}
 			else if (draw_state->draw_rr_node[tptr->index].color == WHITE) {
@@ -2152,7 +2151,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			for (int k = 0; k < grid_tile->type->capacity; ++k) {
 				clb_index = place_ctx.grid_blocks[i][j].blocks[k];
 				if (clb_index != EMPTY_BLOCK) {
-					clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index, cluster_ctx.clb_nlist.block_type((BlockId)clb_index));
+					clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index, cluster_ctx.clb_nlist.block_type((ClusterBlockId)clb_index));
 					if (clb_bbox.intersects(abs_x, abs_y)) {
 						break;
 					} else {
@@ -2181,7 +2180,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	// note: this will clear the selected sub-block if show_blk_internal is 0,
 	// or if it doesn't find anything
 	t_point point_in_clb = t_point(abs_x, abs_y) - clb_bbox.bottom_left();
-	highlight_sub_block(point_in_clb, clb_index, cluster_ctx.clb_nlist.block_pb((BlockId)clb_index));
+	highlight_sub_block(point_in_clb, clb_index, cluster_ctx.clb_nlist.block_pb((ClusterBlockId)clb_index));
 	
 	if (get_selected_sub_block_info().has_selection()) {
 		t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
@@ -2189,8 +2188,8 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			selected_subblock->name, selected_subblock->pb_graph_node->pb_type->name);
 	} else {
 		/* Highlight block and fan-in/fan-outs. */
-		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type((BlockId)clb_index), clb_index);
-		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, cluster_ctx.clb_nlist.block_name((BlockId)clb_index).c_str(), place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
+		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type((ClusterBlockId)clb_index), clb_index);
+		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, cluster_ctx.clb_nlist.block_name((ClusterBlockId)clb_index).c_str(), place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
 	}
 
 	update_message(msg);
@@ -2241,15 +2240,15 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
 
 static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 	int k, iclass;
-	BlockId fanblk;
+	ClusterBlockId fanblk;
 
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (k = 0; k < type->num_pins; k++) { /* Each pin on a CLB */
-		NetId net_id = cluster_ctx.clb_nlist.block_net((BlockId)bnum, k);
+		ClusterNetId net_id = cluster_ctx.clb_nlist.block_net((ClusterBlockId)bnum, k);
 
-		if (net_id == NetId::INVALID())
+		if (net_id == ClusterNetId::INVALID())
 			continue;
 
 		iclass = type->pin_class[k];
@@ -2290,7 +2289,7 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 
 	if (draw_state->block_color[bnum] == SELECTED_COLOR) { 
 		/* If block already highlighted, de-highlight the selected block. */
-		draw_reset_blk_color((BlockId)bnum);
+		draw_reset_blk_color((ClusterBlockId)bnum);
 	}
 	else { 
 		/* Highlight the selected block. */
@@ -2327,7 +2326,7 @@ static void deselect_all(void) {
 }
 
 
-static void draw_reset_blk_color(BlockId blk_id) {
+static void draw_reset_blk_color(ClusterBlockId blk_id) {
 
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2924,7 +2923,7 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
     tatum::EdgeId tedge = timing_ctx.graph->find_edge(src_tnode, sink_tnode);
     tatum::EdgeType edge_type = timing_ctx.graph->edge_type(tedge);
 
-	NetId net_id = NetId::INVALID();
+	ClusterNetId net_id = ClusterNetId::INVALID();
 
     //We currently only trace interconnect edges in detail, and treat all others
     //as flylines
@@ -2950,11 +2949,11 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
 		int sink_block_pin_index = -1;
 		int sink_net_pin_index = -1;
 
-        std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin((BlockId)clb_sink_block, sink_pb_route_id);
-        if(net_id != NetId::INVALID() && sink_block_pin_index != -1 && sink_net_pin_index != -1) {
+        std::tie(net_id, sink_block_pin_index, sink_net_pin_index) = find_pb_route_clb_input_net_pin((ClusterBlockId)clb_sink_block, sink_pb_route_id);
+        if(net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1 && sink_net_pin_index != -1) {
             //Connection leaves the CLB
             //Now that we have the CLB source and sink pins, we need to grab all the points on the routing connecting the pins
-			VTR_ASSERT(cluster_ctx.clb_nlist.net_driver_block(net_id) == (BlockId)clb_src_block);
+			VTR_ASSERT(cluster_ctx.clb_nlist.net_driver_block(net_id) == (ClusterBlockId)clb_src_block);
 
 			auto routed_rr_nodes = trace_routed_connection_rr_nodes(net_id, 0, sink_net_pin_index);
 
@@ -2975,13 +2974,13 @@ static void draw_routed_timing_edge_connection(tatum::NodeId src_tnode, tatum::N
 }
 
 //Returns the set of rr nodes which connect driver to sink
-static std::vector<int> trace_routed_connection_rr_nodes(const NetId net_id, const int driver_pin, const int sink_pin) {
+static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_id, const int driver_pin, const int sink_pin) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     bool allocated_route_tree_structs = alloc_route_tree_timing_structs(true); //Needed for traceback_to_route_tree
 
     //Conver the traceback into an easily search-able
-    t_rt_node* rt_root = traceback_to_route_tree((size_t)net_id);
+    t_rt_node* rt_root = traceback_to_route_tree(net_id);
 
     VTR_ASSERT(rt_root->inode == route_ctx.net_rr_terminals[(size_t)net_id][driver_pin]);
 

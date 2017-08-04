@@ -1197,15 +1197,14 @@ void free_rr_graph(void) {
 }
 
 void alloc_net_rr_terminals(void) {
-    unsigned int inet;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     route_ctx.net_rr_terminals = (int **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof (int *));
 
-    for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-        route_ctx.net_rr_terminals[inet] = (int *) vtr::chunk_malloc(
-                cluster_ctx.clb_nlist.net_pins((NetId)inet).size() * sizeof (int),
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        route_ctx.net_rr_terminals[(size_t)net_id] = (int *) vtr::chunk_malloc(
+                cluster_ctx.clb_nlist.net_pins(net_id).size() * sizeof (int),
                 &rr_mem_ch);
     }
 }
@@ -1245,15 +1244,13 @@ void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
 	}
 }
 
+/* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
+* in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
+* they are used only to reserve pins for locally used OPINs in the router. *
+* [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1].            *
+* The values for blocks that are padsare NOT valid.                        */
 void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
-
-    /* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
-     * in the FPGA.  Currently only the SOURCE rr_node values are used, and     *
-     * they are used only to reserve pins for locally used OPINs in the router. *
-     * [0..cluster_ctx.clb_nlist.blocks().size()-1][0..num_class-1].            *
-     * The values for blocks that are padsare NOT valid.                        */
-
-    int iblk, i, j, iclass, inode;
+	int i, j, iclass, inode;
     int class_low, class_high;
     t_rr_type rr_type;
     t_type_ptr type;
@@ -1264,14 +1261,14 @@ void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
 
     route_ctx.rr_blk_source = (int **) vtr::malloc(cluster_ctx.clb_nlist.blocks().size() * sizeof (int *));
 
-    for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
-        type = cluster_ctx.clb_nlist.block_type((BlockId)iblk);
-        get_class_range_for_block(iblk, &class_low, &class_high);
-        route_ctx.rr_blk_source[iblk] = (int *) vtr::malloc(type->num_class * sizeof (int));
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        type = cluster_ctx.clb_nlist.block_type(blk_id);
+        get_class_range_for_block(blk_id, &class_low, &class_high);
+        route_ctx.rr_blk_source[(size_t)blk_id] = (int *) vtr::malloc(type->num_class * sizeof (int));
         for (iclass = 0; iclass < type->num_class; iclass++) {
             if (iclass >= class_low && iclass <= class_high) {
-                i = place_ctx.block_locs[iblk].x;
-                j = place_ctx.block_locs[iblk].y;
+                i = place_ctx.block_locs[(size_t)blk_id].x;
+                j = place_ctx.block_locs[(size_t)blk_id].y;
 
                 if (type->class_inf[iclass].type == DRIVER)
                     rr_type = SOURCE;
@@ -1280,9 +1277,9 @@ void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
 
                 inode = get_rr_node_index(i, j, rr_type, iclass,
                         L_rr_node_indices);
-                route_ctx.rr_blk_source[iblk][iclass] = inode;
+                route_ctx.rr_blk_source[(size_t)blk_id][iclass] = inode;
             } else {
-                route_ctx.rr_blk_source[iblk][iclass] = OPEN;
+                route_ctx.rr_blk_source[(size_t)blk_id][iclass] = OPEN;
             }
         }
     }
