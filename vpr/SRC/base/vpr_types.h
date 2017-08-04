@@ -694,7 +694,7 @@ struct t_packer_opts {
 	bool connection_driven;
 	bool doPacking;
 	enum e_packer_algorithm packer_algorithm;
-	float aspect;
+    std::string device_layout;
 };
 
 /* Annealing schedule information for the placer.  The schedule type      *
@@ -1090,6 +1090,7 @@ struct t_vpr_setup {
 	bool gen_netlist_as_blif; /* option to print out post-pack/pre-place netlist as blif */
 	int GraphPause; /* user interactiveness graphics option */
 	t_power_opts PowerOpts;
+    std::string device_layout;
 };
 
 #endif

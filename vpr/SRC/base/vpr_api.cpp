@@ -31,7 +31,6 @@ using namespace std;
 #include "graphics.h"
 #include "read_netlist.h"
 #include "check_netlist.h"
-#include "print_netlist.h"
 #include "read_blif.h"
 #include "draw.h"
 #include "place_and_route.h"
@@ -82,7 +81,7 @@ static void free_complex_block_types(void);
 static void free_arch(t_arch* Arch);
 static void free_circuit(void);
 
-static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const int wire_segment_length,
+static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const t_arch& arch, const int wire_segment_length,
         int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin);
 
 /* Local subroutines end */
@@ -162,6 +161,7 @@ void vpr_init(const int argc, const char **argv,
 
     /* Timing option priorities */
     vpr_setup->TimingEnabled = options->timing_analysis;
+    vpr_setup->device_layout = options->device_layout;
 
     vtr::printf_info("\n");
     vtr::printf_info("Architecture file: %s\n", options->ArchFile.value().c_str());
@@ -273,115 +273,31 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     /* Output the current settings to console. */
     printClusteredNetlistStats();
 
-    int current = std::max(vtr::nint((float) sqrt((float) cluster_ctx.num_blocks)), 1); /* current is the value of the smaller side of the FPGA */
-    int low = 1;
-    int high = -1;
-
-    int *num_instances_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof (int));
-    int *num_blocks_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof (int));
-
+    //Load the device grid
+    std::map<t_type_ptr,size_t> num_type_instances;
     for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
-        num_blocks_type[cluster_ctx.blocks[i].type->index]++;
+        num_type_instances[cluster_ctx.blocks[i].type]++;
     }
+    device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances);
+    device_ctx.nx = device_ctx.grid.nx(); //TODO: remove
+    device_ctx.ny = device_ctx.grid.ny(); //TODO: remove
 
-    VTR_ASSERT(Arch.grid_layouts.size() == 1);
-    auto grid_layout = Arch.grid_layouts[0]; //TODO: multi-layout support
-
-    if (grid_layout.grid_type == GridDefType::AUTO) {
-
-        /* Auto-size FPGA, perform a binary search */
-        while (high == -1 || low < high) {
-
-            /* Generate grid */
-            if (grid_layout.aspect_ratio >= 1.0) {
-                device_ctx.ny = current;
-                device_ctx.nx = vtr::nint(current * grid_layout.aspect_ratio);
-            } else {
-                device_ctx.nx = current;
-                device_ctx.ny = vtr::nint(current / grid_layout.aspect_ratio);
-            }
-            vtr::printf_info("Auto-sizing FPGA at x = %d y = %d\n", device_ctx.nx, device_ctx.ny);
-            alloc_and_load_grid(Arch.grid_layouts, num_instances_type);
-            freeGrid();
-
-            /* Test if netlist fits in grid */
-            bool fit = true;
-            for (int i = 0; i < device_ctx.num_block_types; ++i) {
-                if (num_blocks_type[i] > num_instances_type[i]) {
-                    fit = false;
-                    break;
-                }
-            }
-
-            /* get next value */
-            if (!fit) {
-                /* increase size of max */
-                if (high == -1) {
-                    current = current * 2;
-                    if (current > MAX_SHORT) {
-                        vtr::printf_error(__FILE__, __LINE__,
-                                "FPGA required is too large for current architecture settings.\n");
-                        exit(1);
-                    }
-                } else {
-                    if (low == current)
-                        current++;
-                    low = current;
-                    current = low + ((high - low) / 2);
-                }
-            } else {
-                high = current;
-                current = low + ((high - low) / 2);
-            }
-        }
-
-        /* Generate grid */
-        if (grid_layout.aspect_ratio >= 1.0) {
-            device_ctx.ny = current;
-            device_ctx.nx = vtr::nint(current * grid_layout.aspect_ratio);
-        } else {
-            device_ctx.nx = current;
-            device_ctx.ny = vtr::nint(current / grid_layout.aspect_ratio);
-        }
-        alloc_and_load_grid(Arch.grid_layouts, num_instances_type);
-        vtr::printf_info("FPGA auto-sized to x = %d y = %d\n", device_ctx.nx, device_ctx.ny);
-    } else {
-        device_ctx.nx = grid_layout.width;
-        device_ctx.ny = grid_layout.height;
-        alloc_and_load_grid(Arch.grid_layouts, num_instances_type);
-    }
-
-    vtr::printf_info("The circuit will be mapped into a %d x %d array of clbs.\n", device_ctx.nx, device_ctx.ny);
-
-    /* Test if netlist fits in grid */
-    for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        if (num_blocks_type[i] > num_instances_type[i]) {
-
-            vtr::printf_error(__FILE__, __LINE__,
-                    "Not enough physical locations for type %s, "
-                    "number of blocks is %d but number of locations is %d.\n",
-                    device_ctx.block_types[i].name, num_blocks_type[i],
-                    num_instances_type[i]);
-            exit(1);
-        }
-    }
+    vtr::printf_info("FPGA sized to %d x %d (%s)\n", device_ctx.nx, device_ctx.ny, device_ctx.grid.name().c_str());
 
     vtr::printf_info("\n");
     vtr::printf_info("Resource usage...\n");
     for (int i = 0; i < device_ctx.num_block_types; ++i) {
+        auto type = &device_ctx.block_types[i];
         vtr::printf_info("\tNetlist      %d\tblocks of type: %s\n",
-                num_blocks_type[i], device_ctx.block_types[i].name);
+                num_type_instances[type], type->name);
         vtr::printf_info("\tArchitecture %d\tblocks of type: %s\n",
-                num_instances_type[i], device_ctx.block_types[i].name);
+                device_ctx.grid.num_instances(type), type->name);
     }
     vtr::printf_info("\n");
     device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = 0;
     device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
     device_ctx.chan_width.x_list = (int *) vtr::malloc((device_ctx.ny + 1) * sizeof (int));
     device_ctx.chan_width.y_list = (int *) vtr::malloc((device_ctx.nx + 1) * sizeof (int));
-
-    vtr::free(num_blocks_type);
-    vtr::free(num_instances_type);
 }
 
 void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -405,7 +321,7 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
            The fan-in of the switch depends on the architecture (unidirectional/bidirectional), as
            well as Fc_in/out and Fs */
         int opin_switch_fanin, wire_switch_fanin, ipin_switch_fanin;
-        get_intercluster_switch_fanin_estimates(vpr_setup, wire_segment_length, &opin_switch_fanin,
+        get_intercluster_switch_fanin_estimates(vpr_setup, arch, wire_segment_length, &opin_switch_fanin,
                 &wire_switch_fanin, &ipin_switch_fanin);
 
 
@@ -460,25 +376,27 @@ void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
         3) wire to ipin switch
    We can estimate the fan-in of these switches based on the Fc_in/Fc_out of
    a logic block, and the switch block Fs value */
-static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const int wire_segment_length,
+static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup, const t_arch& arch, const int wire_segment_length,
         int *opin_switch_fanin, int *wire_switch_fanin, int *ipin_switch_fanin) {
     e_directionality directionality;
     int Fs;
     float Fc_in, Fc_out;
     int W = 100; //W is unknown pre-packing, so *if* we need W here, we will assume a value of 100
 
-    auto& device_ctx = g_vpr_ctx.device();
-
     directionality = vpr_setup.RoutingArch.directionality;
     Fs = vpr_setup.RoutingArch.Fs;
     Fc_in = 0, Fc_out = 0;
 
-    /* get Fc_in/out for device_ctx.FILL_TYPE block (i.e. logic blocks) */
-    VTR_ASSERT(device_ctx.FILL_TYPE->fc_specs.size() > 0);
+    //Build a dummy 10x10 device to determine the 'best' block type to use
+    auto grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts, 10, 10);
+
+    auto type = find_most_common_block_type(grid);
+    /* get Fc_in/out for most common block (e.g. logic blocks) */
+    VTR_ASSERT(type->fc_specs.size() > 0);
 
     //Estimate the maximum Fc_in/Fc_out
 
-    for (const t_fc_specification& fc_spec : device_ctx.FILL_TYPE->fc_specs) {
+    for (const t_fc_specification& fc_spec : type->fc_specs) {
         float Fc = fc_spec.fc_value;
 
         if (fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE) {
@@ -488,8 +406,8 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
         VTR_ASSERT_MSG(Fc >= 0 && Fc <= 1., "Fc should be fractional");
 
         for (int ipin : fc_spec.pins) {
-            int iclass = device_ctx.FILL_TYPE->pin_class[ipin];
-            e_pin_type pin_type = device_ctx.FILL_TYPE->class_inf[iclass].type;
+            int iclass = type->pin_class[ipin];
+            e_pin_type pin_type = type->class_inf[iclass].type;
 
             if (pin_type == DRIVER) {
                 Fc_out = std::max(Fc, Fc_out);
@@ -526,7 +444,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
 
 
     /* Fan-in to opin/ipin/wire switches depends on whether the architecture is unidirectional/bidirectional */
-    (*opin_switch_fanin) = 2 * device_ctx.FILL_TYPE->num_drivers / 4 * Fc_out;
+    (*opin_switch_fanin) = 2 * type->num_drivers / 4 * Fc_out;
     (*wire_switch_fanin) = Fs;
     (*ipin_switch_fanin) = Fc_in;
     if (directionality == UNI_DIRECTIONAL) {
@@ -569,7 +487,6 @@ bool vpr_place_and_route(t_vpr_setup *vpr_setup, const t_arch& arch) {
 void free_arch(t_arch* Arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    freeGrid();
     vtr::free(device_ctx.chan_width.x_list);
     vtr::free(device_ctx.chan_width.y_list);
 

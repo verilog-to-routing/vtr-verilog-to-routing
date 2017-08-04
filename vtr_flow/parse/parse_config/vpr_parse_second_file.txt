@@ -10,8 +10,8 @@ num_pre_packed_blocks;vpr_second_run.out;\s*Blocks\s*:\s*(\d+)
 #VPR Packing Metrics
 num_post_packed_nets;vpr_second_run.out;Netlist num_nets:\s*(\d+)
 num_post_packed_blocks;vpr_second_run.out;Netlist num_blocks:\s*(\d+)
-device_width;vpr_second_run.out;FPGA auto-sized to x = (\d+) y = \d+
-device_height;vpr_second_run.out;FPGA auto-sized to x = \d+ y = (\d+)
+device_width;vpr.out;FPGA sized to (\d+) x \d+
+device_height;vpr.out;FPGA sized to \d+ x (\d+)
 
 #VTR benchmark packing metrics
 num_clb;vpr_second_run.out;Netlist clb blocks:\s*(\d+)

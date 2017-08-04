@@ -25,7 +25,6 @@ using namespace std;
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void SetupPackerOpts(const t_options& Options,
-		const t_arch& Arch,
 		t_packer_opts *PackerOpts);
 static void SetupPlacerOpts(const t_options& Options,
 		t_placer_opts *PlacerOpts);
@@ -107,37 +106,30 @@ void SetupVPR(t_options *Options,
 
 	/* TODO: this is inelegant, I should be populating this information in XmlReadArch */
 	device_ctx.EMPTY_TYPE = NULL;
-	device_ctx.FILL_TYPE = NULL;
 	device_ctx.IO_TYPE = NULL;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
+        t_type_ptr type = &device_ctx.block_types[i];
 		if (strcmp(device_ctx.block_types[i].name, EMPTY_BLOCK_NAME) == 0) {
-			device_ctx.EMPTY_TYPE = &device_ctx.block_types[i];
-		} else if (strcmp(device_ctx.block_types[i].name, "io") == 0) {
-			device_ctx.IO_TYPE = &device_ctx.block_types[i];
+			device_ctx.EMPTY_TYPE = type;
+		} else if (block_type_contains_blif_model(type, ".input") && block_type_contains_blif_model(type, ".output")) {
+            if (device_ctx.IO_TYPE != nullptr) {
+                //Already set
+                VPR_THROW(VPR_ERROR_ARCH, 
+                        "Architecture contains multiple top-level block types containing both"
+                        " '.input' and '.output' BLIF models (expected one block type)");
+            }
+			device_ctx.IO_TYPE = type;
 		}
     }
 
-    //TODO: handle >1 layout
-    VTR_ASSERT(Arch->grid_layouts.size() == 1);
-    for(const auto& grid_loc_def : Arch->grid_layouts[0].loc_defs) {
-        //Detect the 'fill' type
-        if (   grid_loc_def.x.start_expr == "0"
-            && grid_loc_def.x.end_expr == "W - 1"
-            && grid_loc_def.x.repeat_expr == "W"
-            && grid_loc_def.x.incr_expr == "w"
-            && grid_loc_def.y.start_expr == "0"
-            && grid_loc_def.y.end_expr == "H - 1"
-            && grid_loc_def.y.repeat_expr == "H"
-            && grid_loc_def.y.incr_expr == "h") {
+	VTR_ASSERT(device_ctx.EMPTY_TYPE != NULL);
 
-            VTR_ASSERT_MSG(device_ctx.FILL_TYPE == NULL, "Fill type must be unambiguous");
-            t_type_descriptor* fill_type = find_block_type_by_name(grid_loc_def.block_type, device_ctx.block_types, device_ctx.num_block_types);
-            VTR_ASSERT_MSG(fill_type, "Fill block type must exist");
-            device_ctx.FILL_TYPE = fill_type;
-        }
+    if (device_ctx.IO_TYPE == nullptr) {
+        //Already set
+        VPR_THROW(VPR_ERROR_ARCH, 
+                "Architecture contains no top-level block type containing both"
+                " '.input' and '.output' BLIF models (expected one block type)");
     }
-
-	VTR_ASSERT(device_ctx.EMPTY_TYPE != NULL && device_ctx.FILL_TYPE != NULL && device_ctx.IO_TYPE != NULL);
 
 	*Segments = Arch->Segments;
 	RoutingArch->num_segment = Arch->num_segments;
@@ -145,7 +137,7 @@ void SetupVPR(t_options *Options,
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
 	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
-	SetupPackerOpts(*Options, *Arch, PackerOpts);
+	SetupPackerOpts(*Options, PackerOpts);
 	RoutingArch->dump_rr_structs_file = nullptr;
 
     //Setup the default flow
@@ -385,18 +377,8 @@ static void SetupAnnealSched(const t_options& Options,
  * Error checking, such as checking for conflicting params is assumed to be done beforehand 
  */
 void SetupPackerOpts(const t_options& Options,
-		const t_arch& Arch,
 		t_packer_opts *PackerOpts) {
 
-    VTR_ASSERT(Arch.grid_layouts.size() == 1); //TODO: multiple layout support
-    auto& grid_layout = Arch.grid_layouts[0];
-
-	if (grid_layout.grid_type == GridDefType::AUTO) {
-		PackerOpts->aspect = grid_layout.aspect_ratio;
-	} else {
-        VTR_ASSERT(grid_layout.grid_type == GridDefType::AUTO);
-		PackerOpts->aspect = (float) grid_layout.width / (float) grid_layout.height;
-	}
 	PackerOpts->output_file = Options.NetFile;
 
 	PackerOpts->blif_file_name = Options.BlifFile;
@@ -418,6 +400,8 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
 	PackerOpts->auto_compute_inter_cluster_net_delay = true;
 	PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */
+
+    PackerOpts->device_layout = Options.device_layout;
 }
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {

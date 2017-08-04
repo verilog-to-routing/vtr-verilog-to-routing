@@ -155,7 +155,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	/* Reads in the locations of the IO pads from a file. */
 
 	t_hash **hash_table, *h_ptr;
-	int iblk, i, j, xtmp, ytmp, bnum, k;
+	int iblk, xtmp, ytmp;
 	FILE *fp;
 	char buf[vtr::bufsize], bname[vtr::bufsize], *ptr;
 
@@ -178,10 +178,10 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		}
 	}
 
-	for (i = 0; i < device_ctx.grid.width(); i++) {
-		for (j = 0; j < device_ctx.grid.height(); j++) {
+	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
 			if (device_ctx.grid[i][j].type == device_ctx.IO_TYPE) {
-				for (k = 0; k < device_ctx.IO_TYPE->capacity; k++) {
+				for (int k = 0; k < device_ctx.IO_TYPE->capacity; k++) {
 					if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
 						place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK; /* Flag for err. check */
 					}
@@ -225,6 +225,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Incomplete.\n");
 		}
+        int k;
 		sscanf(ptr, "%d", &k);
 
 		ptr = vtr::strtok(NULL, TOKENS, fp, buf);
@@ -240,9 +241,9 @@ void read_user_pad_loc(const char *pad_loc_file) {
 			ptr = vtr::fgets(buf, vtr::bufsize, fp);
 			continue;
 		}
-		bnum = h_ptr->index;
-		i = xtmp;
-		j = ytmp;
+		int bnum = h_ptr->index;
+		int i = xtmp;
+		int j = ytmp;
 
 		if (place_ctx.block_locs[bnum].x != OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 

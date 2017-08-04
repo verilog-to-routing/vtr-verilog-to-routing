@@ -116,7 +116,7 @@ static void PrintArchInfo(FILE * Echo, const t_arch *arch) {
         if (grid_layout.grid_type == GridDefType::AUTO) {
             fprintf(Echo, "Layout: '%s' Type: auto Aspect_Ratio: %f\n", grid_layout.name.c_str(), grid_layout.aspect_ratio);
         } else {
-            VTR_ASSERT(grid_layout.grid_type == GridDefType::AUTO);
+            VTR_ASSERT(grid_layout.grid_type == GridDefType::FIXED);
             fprintf(Echo, "Layout: '%s' Type: fixed Width: %d Height %d\n", grid_layout.name.c_str(), grid_layout.width, grid_layout.height);
         }
 	}

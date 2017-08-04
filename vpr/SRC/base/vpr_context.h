@@ -108,7 +108,6 @@ struct DeviceContext : public Context {
     /* Special pointers to identify special blocks on an FPGA: I/Os, unused, and default */
     t_type_ptr IO_TYPE;
     t_type_ptr EMPTY_TYPE;
-    t_type_ptr FILL_TYPE;
 
     /* block_types are blocks that can be moved by the placer
      such as: I/Os, CLBs, memories, multipliers, etc
@@ -208,7 +207,6 @@ struct PlacementContext : public Context {
     std::vector<t_block_loc> block_locs; //[0..cluster_ctx.num_blocks-1]
 
     //Clustered block associated with each grid location (i.e. inverse of block_locs)
-    //std::vector<std::vector<t_grid_blocks>> grid_blocks; //[0..device_ctx.nx+1][0..device_ctx.ny+1]
     vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.nx+1][0..device_ctx.ny+1]
 
     //SHA256 digest of the .place file (used for unique identification and consistency checking)

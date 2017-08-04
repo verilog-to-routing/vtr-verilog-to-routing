@@ -52,7 +52,7 @@ distclean: $(GENERATED_MAKEFILE)
 
 #Call cmake to generate the main Makefile
 $(GENERATED_MAKEFILE):
-ifndef CMAKE
+ifeq ($(CMAKE),)
 	$(error Required 'cmake' executable not found. On debian/ubuntu try 'sudo apt-get install cmake' to install)
 endif
 	@ mkdir -p $(BUILD_DIR)
@@ -60,7 +60,7 @@ endif
 	cd $(BUILD_DIR) && $(CMAKE) $(CMAKE_PARAMS) .. 
 
 #Forward any targets that are not named 'distclean' to the generated Makefile
-ifeq ($(findstring distclean,$(MAKECMDGOALS)),)
+ifneq ($(MAKECMDGOALS),distclean)
 $(MAKECMDGOALS): $(GENERATED_MAKEFILE)
 	@+$(MAKE) -C $(BUILD_DIR) $(MAKECMDGOALS)
 endif

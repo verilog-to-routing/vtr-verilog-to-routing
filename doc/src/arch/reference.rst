@@ -120,10 +120,12 @@ The valid tags within the ``<layout>`` tag are:
 
 .. arch:tag:: <auto_layout aspect_ratio="float">
 
-    :req_param aspect_ratio:
-        The device grid's target aspect ratio (width / height)
+    :opt_param aspect_ratio:
+        The device grid's target aspect ratio (:math:`width / height`)
 
-    Defines a scalable device grid layout which can be automatically scaled to a desired size (width x height).
+        **Default**: ``1.0``
+
+    Defines a scalable device grid layout which can be automatically scaled to a desired size.
 
 .. arch:tag:: <fixed_layout name="string" width="int" height="int">
 
@@ -138,11 +140,14 @@ The valid tags within the ``<layout>`` tag are:
 
     Defines a device grid layout with fixed dimensions.
 
-Any ``<auto_layout>`` or ``<fixed_layout>`` tag may contain a set of grid location tags. 
+Only one ``<auto_layout>``, or one-or-more ``<fixed_layout>`` tags can be specified at a time.
+``<auto_layout>`` and ``<fixed_layout>`` can not be specified together.
+
+Each ``<auto_layout>`` or ``<fixed_layout>`` tag should contain a set of grid location tags.
 
 Grid Location Priorities
 ~~~~~~~~~~~~~~~~~~~~~~~~
-The grid location specifications are processed in ascending order of *priority*.
+Each grid location specification has an associated numeric *priority*.
 Larger priority location specifications override those with lower prioriry.
 
 .. note:: If a grid block is partially overlapped by another block with higher priority the entier lower priority block is removed form the grid.
@@ -194,6 +199,8 @@ Grid Location Tags
 
     .. figure:: fill_fpga_grid.*
 
+        <fill> CLB example
+
 .. arch:tag:: <perimeter type="string" priority="int"/>
 
     :req_param type:
@@ -216,6 +223,8 @@ Grid Location Tags
 
     .. figure:: perimeter_fpga_grid.*
 
+        <perimeter> io example
+
 .. arch:tag:: <corners type="string" priority="int"/>
 
     :req_param type:
@@ -235,6 +244,8 @@ Grid Location Tags
         <corners type="PLL" priority="20"/>
 
     .. figure:: corners_fpga_grid.*
+
+        <corners> PLL example
 
 .. arch:tag:: <single type="string" priority="int" x="expr" y="expr"/>
 
@@ -262,6 +273,8 @@ Grid Location Tags
         <single type="PCIE" x="1" y="1" priority="20"/>
 
     .. figure:: single_fpga_grid.*
+
+        <single> PCIE example
 
 .. arch:tag:: <col type="string" priority="int" startx="expr" repeatx="expr" starty="expr"/>
 
@@ -299,6 +312,8 @@ Grid Location Tags
 
     .. figure:: col_fpga_grid.*
 
+        <col> RAM example
+
     Example:
 
     .. code-block:: xml
@@ -312,6 +327,8 @@ Grid Location Tags
         <col type="RAM" startx="2" repeatx="3" starty="1" priority="3"/>
 
     .. figure:: col_perim_fpga_grid.*
+
+        <col> RAM and <perimeter> io example
 
 .. arch:tag:: <row type="string" priority="int" starty="expr" repeaty="expr" startx="expr"/>
 
@@ -348,6 +365,8 @@ Grid Location Tags
         <row type="DSP" starty="1" repeaty="7" priority="3"/>
 
     .. figure:: row_fpga_grid.*
+
+        <row> DSP example
 
 .. arch:tag:: <region type="string" priority="int" startx="expr" endx="expr repeatx="expr" incrx="expr" starty="expr" endy="expr" repeaty="expr" incry="expr"/>
 
@@ -411,6 +430,8 @@ Grid Location Tags
 
     .. figure:: region_single_fpga_grid.*
 
+        <region> RAM example
+
     Example:
 
     .. code-block:: xml
@@ -420,6 +441,8 @@ Grid Location Tags
         <region type="RAM" startx="1" endx="5" starty="1" endy="4" incrx="2" priority="4"/>
 
     .. figure:: region_incr_fpga_grid.*
+
+        <region> RAM increment example
 
     Example:
 
@@ -431,15 +454,19 @@ Grid Location Tags
 
     .. figure:: region_repeat_fpga_grid.*
 
+        <region> RAM repeat example
+
     Example:
 
     .. code-block:: xml
 
         <!-- Create a 3x3 mesh of NoC routers (width 2, height 2) whose relative positions
              will scale with the device dimensions -->
-        <region type="NoC_router" startx="W/4 - w/2" starty="W/4 - w/2" incrx="W/4" incry="W/4" priority="3"/>
+        <region type="NoC" startx="W/4 - w/2" starty="W/4 - w/2" incrx="W/4" incry="W/4" priority="3"/>
 
     .. figure:: region_incr_mesh_fpga_grid.*
+
+        <region> NoC mesh example
 
 .. _arch_device_info:
 
