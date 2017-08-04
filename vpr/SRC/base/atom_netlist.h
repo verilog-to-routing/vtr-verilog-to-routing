@@ -400,13 +400,13 @@
 
 #include "atom_netlist_fwd.h"
 
-#include "base_netlist.h"
+#include "netlist.h"
 
 //Forward declaration for private methods
 template<typename I>
 class IdMap;
 
-class AtomNetlist : public BaseNetlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
+class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
 	public:
 		//Constructs a netlist
 		// name: the name of the netlist (e.g. top-level module)
@@ -531,7 +531,7 @@ class AtomNetlist : public BaseNetlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetI
 
     private: //Private types
         //A unique identifier for a string in the atom netlist
-        typedef vtr::StrongId<BaseNetlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId>::string_id_tag> AtomStringId;
+        typedef vtr::StrongId<Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId>::string_id_tag> AtomStringId;
 
     private: //Private members
         /*

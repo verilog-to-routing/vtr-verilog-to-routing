@@ -1,12 +1,12 @@
 /* 
  * Summary
  * =======
- * This file defines the BaseNetlist class, which stores the connectivity information 
+ * This file defines the Netlist class, which stores the connectivity information 
  * of the components in a netlist. It is the base class for AtomNetlist and ClusteredNetlist.
  *
 */
-#ifndef BASE_NETLIST_H
-#define BASE_NETLIST_H
+#ifndef NETLIST_H
+#define NETLIST_H
 
 #include <string>
 #include <vector>
@@ -17,15 +17,15 @@
 
 #include "logic_types.h"
 
-#include "base_netlist_fwd.h"
-#include "base_netlist_utils.h"
+#include "netlist_fwd.h"
+#include "netlist_utils.h"
 
 //Forward declaration for private methods
 template<typename I>
 class IdMap;
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId> 
-class BaseNetlist {
+class Netlist {
 	public: //Public Types
 		typedef typename vtr::vector_map<BlockId, BlockId>::const_iterator		block_iterator;
 		typedef typename vtr::vector_map<NetId, NetId>::const_iterator			net_iterator;
@@ -38,7 +38,7 @@ class BaseNetlist {
 		typedef typename vtr::Range<port_iterator>	port_range;
 
 	public:
-		BaseNetlist(std::string name="", std::string id="");
+		Netlist(std::string name="", std::string id="");
 
 	public: //Public Mutators
 		//Create or return an existing block in the netlist
@@ -425,5 +425,5 @@ class BaseNetlist {
 };
 
 
-#include "base_netlist.tpp"
+#include "netlist.tpp"
 #endif

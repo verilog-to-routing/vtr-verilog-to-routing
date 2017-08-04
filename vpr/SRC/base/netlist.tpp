@@ -7,12 +7,12 @@
 
 /*
 *
-* BaseNetlist class implementation
+* Netlist class implementation
 *
 */
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-BaseNetlist<BlockId, PortId, PinId, NetId>::BaseNetlist(std::string name, std::string id)
+Netlist<BlockId, PortId, PinId, NetId>::Netlist(std::string name, std::string id)
 	: netlist_name_(name)
 	, netlist_id_(id) 
 	, dirty_(false) {}
@@ -23,27 +23,27 @@ BaseNetlist<BlockId, PortId, PinId, NetId>::BaseNetlist(std::string name, std::s
 *
 */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-const std::string& BaseNetlist<BlockId, PortId, PinId, NetId>::netlist_name() const {
+const std::string& Netlist<BlockId, PortId, PinId, NetId>::netlist_name() const {
 	return netlist_name_;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-const std::string& BaseNetlist<BlockId, PortId, PinId, NetId>::netlist_id() const {
+const std::string& Netlist<BlockId, PortId, PinId, NetId>::netlist_id() const {
 	return netlist_id_;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::is_dirty() const {
+bool Netlist<BlockId, PortId, PinId, NetId>::is_dirty() const {
 	return dirty_;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::is_compressed() const {
+bool Netlist<BlockId, PortId, PinId, NetId>::is_compressed() const {
 	return !is_dirty();
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::print_stats() const {
+void Netlist<BlockId, PortId, PinId, NetId>::print_stats() const {
 	vtr::printf_info("Blocks  %zu capacity/size: %.2f\n", block_ids_.size(), float(block_ids_.capacity()) / block_ids_.size());
 	vtr::printf_info("Ports   %zu capacity/size: %.2f\n", port_ids_.size(), float(port_ids_.capacity()) / port_ids_.size());
 	vtr::printf_info("Pins    %zu capacity/size: %.2f\n", pin_ids_.size(), float(pin_ids_.capacity()) / pin_ids_.size());
@@ -57,27 +57,27 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::print_stats() const {
 *
 */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-const std::string& BaseNetlist<BlockId, PortId, PinId, NetId>::block_name(const BlockId id) const {
+const std::string& Netlist<BlockId, PortId, PinId, NetId>::block_name(const BlockId id) const {
 	StringId str_id = block_names_[id];
 	return strings_[str_id];
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::block_is_combinational(const BlockId id) const {
+bool Netlist<BlockId, PortId, PinId, NetId>::block_is_combinational(const BlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
 
 	return block_clock_pins(id).size() == 0;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::pin_range BaseNetlist<BlockId, PortId, PinId, NetId>::block_pins(const BlockId id) const {
+typename Netlist<BlockId, PortId, PinId, NetId>::pin_range Netlist<BlockId, PortId, PinId, NetId>::block_pins(const BlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
 
 	return vtr::make_range(block_pins_[id].begin(), block_pins_[id].end());
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::pin_range BaseNetlist<BlockId, PortId, PinId, NetId>::block_input_pins(const BlockId id) const {
+typename Netlist<BlockId, PortId, PinId, NetId>::pin_range Netlist<BlockId, PortId, PinId, NetId>::block_input_pins(const BlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
 
 	auto begin = block_pins_[id].begin();
@@ -88,7 +88,7 @@ typename BaseNetlist<BlockId, PortId, PinId, NetId>::pin_range BaseNetlist<Block
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::pin_range BaseNetlist<BlockId, PortId, PinId, NetId>::block_output_pins(const BlockId id) const {
+typename Netlist<BlockId, PortId, PinId, NetId>::pin_range Netlist<BlockId, PortId, PinId, NetId>::block_output_pins(const BlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
 
 	auto begin = block_pins_[id].begin() + block_num_input_pins_[id];
@@ -99,7 +99,7 @@ typename BaseNetlist<BlockId, PortId, PinId, NetId>::pin_range BaseNetlist<Block
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::pin_range BaseNetlist<BlockId, PortId, PinId, NetId>::block_clock_pins(const BlockId id) const {
+typename Netlist<BlockId, PortId, PinId, NetId>::pin_range Netlist<BlockId, PortId, PinId, NetId>::block_clock_pins(const BlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
 
 	auto begin = block_pins_[id].begin()
@@ -114,14 +114,14 @@ typename BaseNetlist<BlockId, PortId, PinId, NetId>::pin_range BaseNetlist<Block
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::port_range BaseNetlist<BlockId, PortId, PinId, NetId>::block_ports(const BlockId id) const {
+typename Netlist<BlockId, PortId, PinId, NetId>::port_range Netlist<BlockId, PortId, PinId, NetId>::block_ports(const BlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
 
 	return vtr::make_range(block_ports_[id].begin(), block_ports_[id].end());
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::port_range BaseNetlist<BlockId, PortId, PinId, NetId>::block_input_ports(const BlockId id) const {
+typename Netlist<BlockId, PortId, PinId, NetId>::port_range Netlist<BlockId, PortId, PinId, NetId>::block_input_ports(const BlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
 
 	auto begin = block_ports_[id].begin();
@@ -132,7 +132,7 @@ typename BaseNetlist<BlockId, PortId, PinId, NetId>::port_range BaseNetlist<Bloc
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::port_range BaseNetlist<BlockId, PortId, PinId, NetId>::block_output_ports(const BlockId id) const {
+typename Netlist<BlockId, PortId, PinId, NetId>::port_range Netlist<BlockId, PortId, PinId, NetId>::block_output_ports(const BlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
 
 	auto begin = block_ports_[id].begin() + block_num_input_ports_[id];
@@ -143,7 +143,7 @@ typename BaseNetlist<BlockId, PortId, PinId, NetId>::port_range BaseNetlist<Bloc
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::port_range BaseNetlist<BlockId, PortId, PinId, NetId>::block_clock_ports(const BlockId id) const {
+typename Netlist<BlockId, PortId, PinId, NetId>::port_range Netlist<BlockId, PortId, PinId, NetId>::block_clock_ports(const BlockId id) const {
 	VTR_ASSERT(valid_block_id(id));
 
 	auto begin = block_ports_[id].begin()
@@ -163,7 +163,7 @@ typename BaseNetlist<BlockId, PortId, PinId, NetId>::port_range BaseNetlist<Bloc
 *
 */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-const std::string& BaseNetlist<BlockId, PortId, PinId, NetId>::port_name(const PortId id) const {
+const std::string& Netlist<BlockId, PortId, PinId, NetId>::port_name(const PortId id) const {
 	VTR_ASSERT(valid_port_id(id));
 
 	StringId str_id = port_names_[id];
@@ -171,27 +171,27 @@ const std::string& BaseNetlist<BlockId, PortId, PinId, NetId>::port_name(const P
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-BlockId BaseNetlist<BlockId, PortId, PinId, NetId>::port_block(const PortId id) const {
+BlockId Netlist<BlockId, PortId, PinId, NetId>::port_block(const PortId id) const {
 	VTR_ASSERT(valid_port_id(id));
 
 	return port_blocks_[id];
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::pin_range BaseNetlist<BlockId, PortId, PinId, NetId>::port_pins(const PortId id) const {
+typename Netlist<BlockId, PortId, PinId, NetId>::pin_range Netlist<BlockId, PortId, PinId, NetId>::port_pins(const PortId id) const {
 	VTR_ASSERT(valid_port_id(id));
 
 	return vtr::make_range(port_pins_[id].begin(), port_pins_[id].end());
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-PinId BaseNetlist<BlockId, PortId, PinId, NetId>::port_pin(const PortId port_id, const BitIndex port_bit) const {
+PinId Netlist<BlockId, PortId, PinId, NetId>::port_pin(const PortId port_id, const BitIndex port_bit) const {
 	//Convenience look-up bypassing port
 	return find_pin(port_id, port_bit);
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-NetId BaseNetlist<BlockId, PortId, PinId, NetId>::port_net(const PortId port_id, const BitIndex port_bit) const {
+NetId Netlist<BlockId, PortId, PinId, NetId>::port_net(const PortId port_id, const BitIndex port_bit) const {
 	//port_pin() will validate that port_bit and port_id are valid so don't 
 	//check redundently here
 
@@ -206,7 +206,7 @@ NetId BaseNetlist<BlockId, PortId, PinId, NetId>::port_net(const PortId port_id,
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-BitIndex BaseNetlist<BlockId, PortId, PinId, NetId>::port_width(const PortId id) const {
+BitIndex Netlist<BlockId, PortId, PinId, NetId>::port_width(const PortId id) const {
 	VTR_ASSERT(valid_port_id(id));
 
 	return port_widths_[id];
@@ -218,7 +218,7 @@ BitIndex BaseNetlist<BlockId, PortId, PinId, NetId>::port_width(const PortId id)
 *
 */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-std::string BaseNetlist<BlockId, PortId, PinId, NetId>::pin_name(const PinId id) const {
+std::string Netlist<BlockId, PortId, PinId, NetId>::pin_name(const PinId id) const {
 	BlockId blk = pin_block(id);
 	PortId port = pin_port(id);
 
@@ -226,28 +226,28 @@ std::string BaseNetlist<BlockId, PortId, PinId, NetId>::pin_name(const PinId id)
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-NetId BaseNetlist<BlockId, PortId, PinId, NetId>::pin_net (const PinId id) const {
+NetId Netlist<BlockId, PortId, PinId, NetId>::pin_net (const PinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
 
 	return pin_nets_[id];
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-PortId BaseNetlist<BlockId, PortId, PinId, NetId>::pin_port(const PinId id) const {
+PortId Netlist<BlockId, PortId, PinId, NetId>::pin_port(const PinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
 
 	return pin_ports_[id];
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-BitIndex BaseNetlist<BlockId, PortId, PinId, NetId>::pin_port_bit(const PinId id) const {
+BitIndex Netlist<BlockId, PortId, PinId, NetId>::pin_port_bit(const PinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
 
 	return pin_port_bits_[id];
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-BlockId BaseNetlist<BlockId, PortId, PinId, NetId>::pin_block(const PinId id) const {
+BlockId Netlist<BlockId, PortId, PinId, NetId>::pin_block(const PinId id) const {
 	//Convenience lookup bypassing the port
 	VTR_ASSERT(valid_pin_id(id));
 
@@ -256,7 +256,7 @@ BlockId BaseNetlist<BlockId, PortId, PinId, NetId>::pin_block(const PinId id) co
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::pin_is_constant(const PinId id) const {
+bool Netlist<BlockId, PortId, PinId, NetId>::pin_is_constant(const PinId id) const {
 	VTR_ASSERT(valid_pin_id(id));
 
 	return pin_is_constant_[id];
@@ -268,7 +268,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::pin_is_constant(const PinId id)
 *
 */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-const std::string& BaseNetlist<BlockId, PortId, PinId, NetId>::net_name(const NetId id) const {
+const std::string& Netlist<BlockId, PortId, PinId, NetId>::net_name(const NetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 
 	StringId str_id = net_names_[id];
@@ -276,14 +276,14 @@ const std::string& BaseNetlist<BlockId, PortId, PinId, NetId>::net_name(const Ne
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::pin_range BaseNetlist<BlockId, PortId, PinId, NetId>::net_pins(const NetId id) const {
+typename Netlist<BlockId, PortId, PinId, NetId>::pin_range Netlist<BlockId, PortId, PinId, NetId>::net_pins(const NetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 
 	return vtr::make_range(net_pins_[id].begin(), net_pins_[id].end());
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-PinId BaseNetlist<BlockId, PortId, PinId, NetId>::net_driver(const NetId id) const {
+PinId Netlist<BlockId, PortId, PinId, NetId>::net_driver(const NetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 
 	if (net_pins_[id].size() > 0) {
@@ -295,7 +295,7 @@ PinId BaseNetlist<BlockId, PortId, PinId, NetId>::net_driver(const NetId id) con
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-BlockId BaseNetlist<BlockId, PortId, PinId, NetId>::net_driver_block(const NetId id) const {
+BlockId Netlist<BlockId, PortId, PinId, NetId>::net_driver_block(const NetId id) const {
 	auto driver_pin_id = net_driver(id);
 	if (driver_pin_id) {
 		return pin_block(driver_pin_id);
@@ -304,14 +304,14 @@ BlockId BaseNetlist<BlockId, PortId, PinId, NetId>::net_driver_block(const NetId
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::pin_range BaseNetlist<BlockId, PortId, PinId, NetId>::net_sinks(const NetId id) const {
+typename Netlist<BlockId, PortId, PinId, NetId>::pin_range Netlist<BlockId, PortId, PinId, NetId>::net_sinks(const NetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 
 	return vtr::make_range(++net_pins_[id].begin(), net_pins_[id].end());
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::net_is_constant(const NetId id) const {
+bool Netlist<BlockId, PortId, PinId, NetId>::net_is_constant(const NetId id) const {
 	VTR_ASSERT(valid_net_id(id));
 
 	//Look-up the driver
@@ -333,17 +333,17 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::net_is_constant(const NetId id)
 *
 */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::block_range BaseNetlist<BlockId, PortId, PinId, NetId>::blocks() const {
+typename Netlist<BlockId, PortId, PinId, NetId>::block_range Netlist<BlockId, PortId, PinId, NetId>::blocks() const {
 	return vtr::make_range(block_ids_.begin(), block_ids_.end());
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::pin_range BaseNetlist<BlockId, PortId, PinId, NetId>::pins() const {
+typename Netlist<BlockId, PortId, PinId, NetId>::pin_range Netlist<BlockId, PortId, PinId, NetId>::pins() const {
 	return vtr::make_range(pin_ids_.begin(), pin_ids_.end());
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::net_range BaseNetlist<BlockId, PortId, PinId, NetId>::nets() const {
+typename Netlist<BlockId, PortId, PinId, NetId>::net_range Netlist<BlockId, PortId, PinId, NetId>::nets() const {
 	return vtr::make_range(net_ids_.begin(), net_ids_.end());
 }
 
@@ -353,7 +353,7 @@ typename BaseNetlist<BlockId, PortId, PinId, NetId>::net_range BaseNetlist<Block
 *
 */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-BlockId BaseNetlist<BlockId, PortId, PinId, NetId>::find_block(const std::string& name) const {
+BlockId Netlist<BlockId, PortId, PinId, NetId>::find_block(const std::string& name) const {
 	auto str_id = find_string(name);
 	if (!str_id) {
 		return BlockId::INVALID();
@@ -364,7 +364,7 @@ BlockId BaseNetlist<BlockId, PortId, PinId, NetId>::find_block(const std::string
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-PortId BaseNetlist<BlockId, PortId, PinId, NetId>::find_port(const BlockId blk_id, const std::string& name) const {
+PortId Netlist<BlockId, PortId, PinId, NetId>::find_port(const BlockId blk_id, const std::string& name) const {
 	VTR_ASSERT(valid_block_id(blk_id));
 
 	//Since we only know the port name, we must search all the ports
@@ -377,7 +377,7 @@ PortId BaseNetlist<BlockId, PortId, PinId, NetId>::find_port(const BlockId blk_i
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-NetId BaseNetlist<BlockId, PortId, PinId, NetId>::find_net(const std::string& name) const {
+NetId Netlist<BlockId, PortId, PinId, NetId>::find_net(const std::string& name) const {
 	auto str_id = find_string(name);
 	if (!str_id) {
 		return NetId::INVALID();
@@ -388,7 +388,7 @@ NetId BaseNetlist<BlockId, PortId, PinId, NetId>::find_net(const std::string& na
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-PinId BaseNetlist<BlockId, PortId, PinId, NetId>::find_pin(const PortId port_id, BitIndex port_bit) const {
+PinId Netlist<BlockId, PortId, PinId, NetId>::find_pin(const PortId port_id, BitIndex port_bit) const {
 	VTR_ASSERT(valid_port_id(port_id));
 	VTR_ASSERT(valid_port_bit(port_id, port_bit));
 
@@ -420,7 +420,7 @@ PinId BaseNetlist<BlockId, PortId, PinId, NetId>::find_pin(const PortId port_id,
 * Validation
 *
 */
-/*bool BaseNetlist::verify() const {
+/*bool Netlist::verify() const {
 	bool valid = true;
 
 	//Verify data structure consistency
@@ -437,7 +437,7 @@ PinId BaseNetlist<BlockId, PortId, PinId, NetId>::find_pin(const PortId port_id,
 //Checks that all cross-references are consistent.
 //Should take linear time.
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::verify_refs() const {
+bool Netlist<BlockId, PortId, PinId, NetId>::verify_refs() const {
 	bool valid = true;
 	valid &= validate_block_port_refs();
 	valid &= validate_net_pin_refs();
@@ -446,7 +446,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::verify_refs() const {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::verify_lookups() const {
+bool Netlist<BlockId, PortId, PinId, NetId>::verify_lookups() const {
 	//Verify that fast look-ups are consistent
 
 	//Blocks
@@ -500,7 +500,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::verify_lookups() const {
 *
 */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-BlockId BaseNetlist<BlockId, PortId, PinId, NetId>::create_block(const std::string name) {
+BlockId Netlist<BlockId, PortId, PinId, NetId>::create_block(const std::string name) {
     //Must have a non-empty name
     VTR_ASSERT_MSG(!name.empty(), "Non-Empty block name");
 
@@ -544,7 +544,7 @@ BlockId BaseNetlist<BlockId, PortId, PinId, NetId>::create_block(const std::stri
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-PortId BaseNetlist<BlockId, PortId, PinId, NetId>::create_port(const BlockId blk_id, const std::string name, BitIndex width) {
+PortId Netlist<BlockId, PortId, PinId, NetId>::create_port(const BlockId blk_id, const std::string name, BitIndex width) {
 	//Check pre-conditions
 	VTR_ASSERT_MSG(valid_block_id(blk_id), "Valid block id");
 
@@ -577,7 +577,7 @@ PortId BaseNetlist<BlockId, PortId, PinId, NetId>::create_port(const BlockId blk
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-PinId BaseNetlist<BlockId, PortId, PinId, NetId>::create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, const PortType port_type, bool is_const) {
+PinId Netlist<BlockId, PortId, PinId, NetId>::create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, const PortType port_type, bool is_const) {
 	//Check pre-conditions (valid ids)
 	VTR_ASSERT_MSG(valid_port_id(port_id), "Valid port id");
 	VTR_ASSERT_MSG(valid_port_bit(port_id, port_bit), "Valid port bit");
@@ -623,7 +623,7 @@ PinId BaseNetlist<BlockId, PortId, PinId, NetId>::create_pin(const PortId port_i
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-NetId BaseNetlist<BlockId, PortId, PinId, NetId>::create_net(const std::string name) {
+NetId Netlist<BlockId, PortId, PinId, NetId>::create_net(const std::string name) {
 	//Creates an empty net (or returns an existing one)
 	VTR_ASSERT_MSG(!name.empty(), "Valid net name");
 
@@ -663,7 +663,7 @@ NetId BaseNetlist<BlockId, PortId, PinId, NetId>::create_net(const std::string n
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-NetId BaseNetlist<BlockId, PortId, PinId, NetId>::add_net(const std::string name, PinId driver, std::vector<PinId> sinks) {
+NetId Netlist<BlockId, PortId, PinId, NetId>::add_net(const std::string name, PinId driver, std::vector<PinId> sinks) {
 	//Creates a net with a full set of pins
 	VTR_ASSERT_MSG(!find_net(name), "Net should not exist");
 
@@ -687,14 +687,14 @@ NetId BaseNetlist<BlockId, PortId, PinId, NetId>::add_net(const std::string name
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::set_pin_is_constant(const PinId pin_id, const bool value) {
+void Netlist<BlockId, PortId, PinId, NetId>::set_pin_is_constant(const PinId pin_id, const bool value) {
     VTR_ASSERT(valid_pin_id(pin_id));
 
     pin_is_constant_[pin_id] = value;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::set_pin_net(const PinId pin, PinType type, const NetId net) {
+void Netlist<BlockId, PortId, PinId, NetId>::set_pin_net(const PinId pin, PinType type, const NetId net) {
 	VTR_ASSERT(valid_pin_id(pin));
 
 	NetId orig_net = pin_net(pin);
@@ -711,7 +711,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::set_pin_net(const PinId pin, Pi
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::remove_block(const BlockId blk_id) {
+void Netlist<BlockId, PortId, PinId, NetId>::remove_block(const BlockId blk_id) {
 	VTR_ASSERT(valid_block_id(blk_id));
 
 	//Remove the ports
@@ -731,7 +731,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::remove_block(const BlockId blk_
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::remove_port(const PortId port_id) {
+void Netlist<BlockId, PortId, PinId, NetId>::remove_port(const PortId port_id) {
 	VTR_ASSERT(valid_port_id(port_id));
 
 	//Remove the pins
@@ -749,7 +749,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::remove_port(const PortId port_i
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::remove_pin(const PinId pin_id) {
+void Netlist<BlockId, PortId, PinId, NetId>::remove_pin(const PinId pin_id) {
 	VTR_ASSERT(valid_pin_id(pin_id));
 
 	//Find the associated net
@@ -766,7 +766,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::remove_pin(const PinId pin_id) 
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::remove_net(const NetId net_id) {
+void Netlist<BlockId, PortId, PinId, NetId>::remove_net(const NetId net_id) {
 	VTR_ASSERT(valid_net_id(net_id));
 
 	//Disassociate the pins from the net
@@ -787,7 +787,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::remove_net(const NetId net_id) 
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::remove_net_pin(const NetId net_id, const PinId pin_id) {
+void Netlist<BlockId, PortId, PinId, NetId>::remove_net_pin(const NetId net_id, const PinId pin_id) {
 	//Remove a net-pin connection
 	//
 	//Note that during sweeping either the net or pin could be invalid (i.e. already swept)
@@ -820,7 +820,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::remove_net_pin(const NetId net_
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::remove_unused() {
+void Netlist<BlockId, PortId, PinId, NetId>::remove_unused() {
 	//Mark any nets/pins/ports/blocks which are not in use as invalid
 	//so they will be removed
 
@@ -864,7 +864,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::remove_unused() {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::vector_map<PinId, PinId>& pin_id_map,
+void Netlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::vector_map<PinId, PinId>& pin_id_map,
 	const vtr::vector_map<PortId, PortId>& port_id_map) {
 	//Update the pin id references held by blocks
 	for (auto blk_id : blocks()) {
@@ -912,7 +912,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::v
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::rebuild_port_refs(const vtr::vector_map<BlockId, BlockId>& block_id_map,
+void Netlist<BlockId, PortId, PinId, NetId>::rebuild_port_refs(const vtr::vector_map<BlockId, BlockId>& block_id_map,
 	const vtr::vector_map<PinId, PinId>& pin_id_map) {
 	//Update block and pin references held by ports
 	port_blocks_ = update_valid_refs(port_blocks_, block_id_map);
@@ -928,7 +928,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::rebuild_port_refs(const vtr::ve
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::rebuild_pin_refs(const vtr::vector_map<PortId, PortId>& port_id_map,
+void Netlist<BlockId, PortId, PinId, NetId>::rebuild_pin_refs(const vtr::vector_map<PortId, PortId>& port_id_map,
 	const vtr::vector_map<NetId, NetId>& net_id_map) {
 	//Update port and net references held by pins
 	pin_ports_ = update_all_refs(pin_ports_, port_id_map);
@@ -941,7 +941,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::rebuild_pin_refs(const vtr::vec
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::rebuild_net_refs(const vtr::vector_map<PinId, PinId>& pin_id_map) {
+void Netlist<BlockId, PortId, PinId, NetId>::rebuild_net_refs(const vtr::vector_map<PinId, PinId>& pin_id_map) {
 	//Update pin references held by nets
 	for (auto& pin_collection : net_pins_) {
 		pin_collection = update_valid_refs(pin_collection, pin_id_map);
@@ -960,7 +960,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::rebuild_net_refs(const vtr::vec
 *
 */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::valid_block_id(BlockId id) const {
+bool Netlist<BlockId, PortId, PinId, NetId>::valid_block_id(BlockId id) const {
 	if (id == BlockId::INVALID()) return false;
 	else if (!block_ids_.contains(id)) return false;
 	else if (block_ids_[id] != id) return false;
@@ -968,7 +968,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::valid_block_id(BlockId id) cons
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::valid_port_id(PortId id) const {
+bool Netlist<BlockId, PortId, PinId, NetId>::valid_port_id(PortId id) const {
 	if (id == PortId::INVALID()) return false;
 	else if (!port_ids_.contains(id)) return false;
 	else if (port_ids_[id] != id) return false;
@@ -976,14 +976,14 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::valid_port_id(PortId id) const 
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::valid_port_bit(PortId id, BitIndex port_bit) const {
+bool Netlist<BlockId, PortId, PinId, NetId>::valid_port_bit(PortId id, BitIndex port_bit) const {
 	VTR_ASSERT(valid_port_id(id));
 	if (port_bit >= port_width(id)) return false;
 	return true;
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::valid_pin_id(PinId id) const {
+bool Netlist<BlockId, PortId, PinId, NetId>::valid_pin_id(PinId id) const {
 	if (id == PinId::INVALID()) return false;
 	else if (!pin_ids_.contains(id)) return false;
 	else if (pin_ids_[id] != id) return false;
@@ -991,7 +991,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::valid_pin_id(PinId id) const {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::valid_net_id(NetId id) const {
+bool Netlist<BlockId, PortId, PinId, NetId>::valid_net_id(NetId id) const {
 	if (id == NetId::INVALID()) return false;
 	else if (!net_ids_.contains(id)) return false;
 	else if (net_ids_[id] != id) return false;
@@ -999,7 +999,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::valid_net_id(NetId id) const {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::valid_string_id(BaseNetlist<BlockId, PortId, PinId, NetId>::StringId id) const {
+bool Netlist<BlockId, PortId, PinId, NetId>::valid_string_id(Netlist<BlockId, PortId, PinId, NetId>::StringId id) const {
 	if (id == StringId::INVALID()) return false;
 	else if (!string_ids_.contains(id)) return false;
 	else if (string_ids_[id] != id) return false;
@@ -1007,7 +1007,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::valid_string_id(BaseNetlist<Blo
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_block_sizes() const {
+bool Netlist<BlockId, PortId, PinId, NetId>::validate_block_sizes() const {
 	if (block_names_.size() != block_ids_.size()
 		|| block_pins_.size() != block_ids_.size()
 		|| block_num_input_pins_.size() != block_ids_.size()
@@ -1023,7 +1023,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_block_sizes() const {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_port_sizes() const {
+bool Netlist<BlockId, PortId, PinId, NetId>::validate_port_sizes() const {
 	if (port_names_.size() != port_ids_.size()
 		|| port_blocks_.size() != port_ids_.size()
 		|| port_pins_.size() != port_ids_.size()) {
@@ -1033,7 +1033,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_port_sizes() const {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_pin_sizes() const {
+bool Netlist<BlockId, PortId, PinId, NetId>::validate_pin_sizes() const {
 	if (pin_ports_.size() != pin_ids_.size()
 		|| pin_port_bits_.size() != pin_ids_.size()
 		|| pin_nets_.size() != pin_ids_.size()
@@ -1044,7 +1044,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_pin_sizes() const {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_net_sizes() const {
+bool Netlist<BlockId, PortId, PinId, NetId>::validate_net_sizes() const {
 	if (net_names_.size() != net_ids_.size()
 		|| net_pins_.size() != net_ids_.size()) {
 		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent net data sizes");
@@ -1053,7 +1053,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_net_sizes() const {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_string_sizes() const {
+bool Netlist<BlockId, PortId, PinId, NetId>::validate_string_sizes() const {
 	if (strings_.size() != string_ids_.size()) {
 		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent string data sizes");
 	}
@@ -1061,7 +1061,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_string_sizes() const {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_block_port_refs() const {
+bool Netlist<BlockId, PortId, PinId, NetId>::validate_block_port_refs() const {
 	//Verify that all block <-> port references are consistent
 
 	//Track how many times we've seen each port from the blocks 
@@ -1105,7 +1105,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_block_port_refs() cons
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_net_pin_refs() const {
+bool Netlist<BlockId, PortId, PinId, NetId>::validate_net_pin_refs() const {
 	//Check that net <-> pin references are consistent
 
 	//Track how many times we've seen each pin from the ports
@@ -1153,7 +1153,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_net_pin_refs() const {
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_string_refs() const {
+bool Netlist<BlockId, PortId, PinId, NetId>::validate_string_refs() const {
 	for (const auto& str_id : block_names_) {
 		if (!valid_string_id(str_id)) {
 			VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Invalid block name string reference");
@@ -1178,7 +1178,7 @@ bool BaseNetlist<BlockId, PortId, PinId, NetId>::validate_string_refs() const {
 *
 */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::StringId BaseNetlist<BlockId, PortId, PinId, NetId>::find_string(const std::string& str) const {
+typename Netlist<BlockId, PortId, PinId, NetId>::StringId Netlist<BlockId, PortId, PinId, NetId>::find_string(const std::string& str) const {
 	auto iter = string_to_string_id_.find(str);
 	if (iter != string_to_string_id_.end()) {
 		StringId str_id = iter->second;
@@ -1194,7 +1194,7 @@ typename BaseNetlist<BlockId, PortId, PinId, NetId>::StringId BaseNetlist<BlockI
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-BlockId BaseNetlist<BlockId, PortId, PinId, NetId>::find_block(const BaseNetlist<BlockId, PortId, PinId, NetId>::StringId name_id) const {
+BlockId Netlist<BlockId, PortId, PinId, NetId>::find_block(const Netlist<BlockId, PortId, PinId, NetId>::StringId name_id) const {
 	VTR_ASSERT(valid_string_id(name_id));
 	auto iter = block_name_to_block_id_.find(name_id);
 	if (iter != block_name_to_block_id_.end()) {
@@ -1214,7 +1214,7 @@ BlockId BaseNetlist<BlockId, PortId, PinId, NetId>::find_block(const BaseNetlist
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::associate_pin_with_block(const PinId pin_id, const PortType type, const BlockId blk_id) {
+void Netlist<BlockId, PortId, PinId, NetId>::associate_pin_with_block(const PinId pin_id, const PortType type, const BlockId blk_id) {
 
 	//Get an interator pointing to where we want to insert
 	pin_iterator iter;
@@ -1252,7 +1252,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::associate_pin_with_block(const 
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::associate_pin_with_net(const PinId pin_id, const PinType type, const NetId net_id) {
+void Netlist<BlockId, PortId, PinId, NetId>::associate_pin_with_net(const PinId pin_id, const PinType type, const NetId net_id) {
 	//Add the pin to the net
 	if (type == PinType::DRIVER) {
 		VTR_ASSERT_MSG(net_pins_[net_id].size() > 0, "Must be space for net's pin");
@@ -1268,12 +1268,12 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::associate_pin_with_net(const Pi
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::associate_pin_with_port(const PinId pin_id, const PortId port_id) {
+void Netlist<BlockId, PortId, PinId, NetId>::associate_pin_with_port(const PinId pin_id, const PortId port_id) {
 	port_pins_[port_id].push_back(pin_id);
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-void BaseNetlist<BlockId, PortId, PinId, NetId>::associate_port_with_block(const PortId port_id, const PortType type, const BlockId blk_id) {
+void Netlist<BlockId, PortId, PinId, NetId>::associate_port_with_block(const PortId port_id, const PortType type, const BlockId blk_id) {
 	//Associate the port with the blocks inputs/outputs/clocks
 
 	//Get an interator pointing to where we want to insert
@@ -1312,7 +1312,7 @@ void BaseNetlist<BlockId, PortId, PinId, NetId>::associate_port_with_block(const
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-typename BaseNetlist<BlockId, PortId, PinId, NetId>::StringId BaseNetlist<BlockId, PortId, PinId, NetId>::create_string(const std::string& str) {
+typename Netlist<BlockId, PortId, PinId, NetId>::StringId Netlist<BlockId, PortId, PinId, NetId>::create_string(const std::string& str) {
 	StringId str_id = find_string(str);
 	if (!str_id) {
 		//Not found, create
@@ -1341,7 +1341,7 @@ typename BaseNetlist<BlockId, PortId, PinId, NetId>::StringId BaseNetlist<BlockI
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-NetId BaseNetlist<BlockId, PortId, PinId, NetId>::find_net(const BaseNetlist<BlockId, PortId, PinId, NetId>::StringId name_id) const {
+NetId Netlist<BlockId, PortId, PinId, NetId>::find_net(const Netlist<BlockId, PortId, PinId, NetId>::StringId name_id) const {
 	VTR_ASSERT(valid_string_id(name_id));
 	auto iter = net_name_to_net_id_.find(name_id);
 	if (iter != net_name_to_net_id_.end()) {

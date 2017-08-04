@@ -190,7 +190,7 @@ struct ClusteringContext : public Context {
     /********************************************************************
      CLB Netlist
      ********************************************************************/
-	/* New netlist class derived from BaseNetlist */
+	/* New netlist class derived from Netlist */
 	ClusteredNetlist clb_nlist;
 };
 

@@ -1,7 +1,7 @@
 #ifndef CLUSTERED_NETLIST_FWD_H
 #define CLUSTERED_NETLIST_FWD_H
 #include "vtr_strong_id.h"
-#include "base_netlist_fwd.h"
+#include "netlist_fwd.h"
 
 
 //Type tags for Ids

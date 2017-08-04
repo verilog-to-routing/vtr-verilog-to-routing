@@ -1,7 +1,7 @@
 #ifndef ATOM_NETLIST_FWD_H
 #define ATOM_NETLIST_FWD_H
 #include "vtr_strong_id.h"
-#include "base_netlist_fwd.h"
+#include "netlist_fwd.h"
 /*
  * This header forward declares the AtomNetlist class, and defines common types by it
  */

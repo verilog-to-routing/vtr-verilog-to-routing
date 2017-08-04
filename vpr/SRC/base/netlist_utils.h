@@ -1,5 +1,5 @@
-#ifndef BASE_NETLIST_UTILS_H
-#define BASE_NETLIST_UTILS_H
+#ifndef NETLIST_UTILS_H
+#define NETLIST_UTILS_H
 
 #include "vtr_vector_map.h"
 

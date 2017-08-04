@@ -11,7 +11,7 @@
 *
 */
 ClusteredNetlist::ClusteredNetlist(std::string name, std::string id)
-	: BaseNetlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId>(name, id) {}
+	: Netlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId>(name, id) {}
 
 /*
 *
@@ -129,7 +129,7 @@ bool ClusteredNetlist::net_fixed(const ClusterNetId id) const {
 *
 */
 ClusterBlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type_ptr type) {
-	ClusterBlockId blk_id = BaseNetlist::create_block(name);
+	ClusterBlockId blk_id = Netlist::create_block(name);
 
 	block_pbs_.insert(blk_id, pb);
 	block_pbs_[blk_id]->name = vtr::strdup(name);
@@ -170,7 +170,7 @@ void ClusteredNetlist::set_block_net_count(const ClusterBlockId blk_id, const in
 ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType port_type) {
 	ClusterPortId port_id = find_port(blk_id, name);
 	if (!port_id) {
-		port_id = BaseNetlist::create_port(blk_id, name, width);
+		port_id = Netlist::create_port(blk_id, name, width);
 		associate_port_with_block(port_id, port_type, blk_id);
 	}
 
@@ -182,7 +182,7 @@ ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const s
 }
 
 ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type_, const PortType port_type_, int pin_index, bool is_const) {
-	ClusterPinId pin_id = BaseNetlist::create_pin(port_id, port_bit, net_id, pin_type_, port_type_, is_const);
+	ClusterPinId pin_id = Netlist::create_pin(port_id, port_bit, net_id, pin_type_, port_type_, is_const);
 
 	pin_index_.push_back(pin_index);
 
@@ -209,7 +209,7 @@ ClusterNetId ClusteredNetlist::create_net(const std::string name) {
 	ClusterNetId net_id = find_net(name_id);
 
 	if (net_id == ClusterNetId::INVALID()) {
-		net_id = BaseNetlist::create_net(name);
+		net_id = Netlist::create_net(name);
 		net_global_.push_back(false);
 		net_fixed_.push_back(false);
 		net_routed_.push_back(false);
@@ -256,14 +256,14 @@ bool ClusteredNetlist::validate_block_sizes() const {
 		|| block_net_count_.size() != block_ids_.size()) {
 		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent block data sizes");
 	}
-	return BaseNetlist::validate_block_sizes();
+	return Netlist::validate_block_sizes();
 }
 
 bool ClusteredNetlist::validate_pin_sizes() const {
 	if (pin_index_.size() != pin_ids_.size()) {
 		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent pin data sizes");
 	}
-	return BaseNetlist::validate_pin_sizes();
+	return Netlist::validate_pin_sizes();
 }
 
 bool ClusteredNetlist::validate_net_sizes() const {
@@ -272,5 +272,5 @@ bool ClusteredNetlist::validate_net_sizes() const {
 		|| net_routed_.size() != net_ids_.size()) {
 		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent net data sizes");
 	}
-	return BaseNetlist::validate_net_sizes();
+	return Netlist::validate_net_sizes();
 }

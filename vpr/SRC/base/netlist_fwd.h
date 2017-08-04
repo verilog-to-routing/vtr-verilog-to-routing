@@ -1,14 +1,14 @@
-#ifndef BASE_NETLIST_FWD_H
-#define BASE_NETLIST_FWD_H
+#ifndef NETLIST_FWD_H
+#define NETLIST_FWD_H
 #include "vtr_strong_id.h"
 /*
-* This header forward declares the BaseNetlist class, and defines common types by it
+* This header forward declares the Netlist class, and defines common types by it
 */
 
 /*
 * Ids
 *
-* The BaseNetlist uses unique IDs to identify any component of the netlist.
+* The Netlist uses unique IDs to identify any component of the netlist.
 * To avoid type-conversion errors (e.g. passing a PinId where a NetId
 * was expected), we use vtr::StrongId's to disallow such conversions. See
 * vtr_strong_id.h for details.
@@ -35,7 +35,7 @@ typedef vtr::StrongId<pin_id_tag> PinId;
 //A signal index in a port
 typedef unsigned BitIndex;
 
-//The type of a port in the BaseNetlist
+//The type of a port in the Netlist
 enum class PortType : char {
 	INPUT,  //The port is a data-input
 	OUTPUT, //The port is an output (usually data, but potentially a clock)

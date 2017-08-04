@@ -6,12 +6,12 @@
 * This file defines the ClusteredNetlist class in the ClusteredContext used during 
 * pre-placement stages of the VTR flow (packing & clustering).
 */
-#include "base_netlist.h"
+#include "netlist.h"
 #include "clustered_netlist_fwd.h"
 #include "vpr_types.h"
 #include "vtr_util.h"
 
-class ClusteredNetlist : public BaseNetlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId> {
+class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId> {
 	public:
 		//Constructs a netlist
 		// name: the name of the netlist (e.g. top-level module)
