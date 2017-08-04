@@ -6,10 +6,27 @@
 #include "vtr_memory.h"
 #include "vtr_error.h"
 #include "vtr_util.h"
-#include "malloc.h"
+
+#ifndef __GLIBC__
+	#include <stdlib.h>
+#else
+	#include <malloc.h>
+#endif
+
 
 namespace vtr {
 	
+	
+#ifndef __GLIBC__
+int malloc_trim(size_t /*pad*/) {
+    return 0;
+}
+#else
+int malloc_trim(size_t pad) {
+    return ::malloc_trim(pad);
+}
+#endif
+
 void* free(void *some){
 	if(some){
 		std::free(some);
@@ -156,15 +173,5 @@ void free_chunk_memory(t_chunk *chunk_info) {
 	chunk_info->mem_avail = 0;
 	chunk_info->next_mem_loc_ptr = NULL;
 }
-
-#ifndef __GLIBC__
-int malloc_trim(size_t /*pad*/) {
-    return 0;
-}
-#else
-int malloc_trim(size_t pad) {
-    return ::malloc_trim(pad);
-}
-#endif
 
 } //namespace
