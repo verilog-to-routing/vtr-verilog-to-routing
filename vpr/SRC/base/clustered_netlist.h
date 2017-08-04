@@ -7,10 +7,11 @@
 * pre-placement stages of the VTR flow (packing & clustering).
 */
 #include "base_netlist.h"
+#include "clustered_netlist_fwd.h"
 #include "vpr_types.h"
 #include "vtr_util.h"
 
-class ClusteredNetlist : public BaseNetlist {
+class ClusteredNetlist : public BaseNetlist<BlockId, PortId, PinId, NetId> {
 	public:
 		//Constructs a netlist
 		// name: the name of the netlist (e.g. top-level module)

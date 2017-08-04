@@ -173,21 +173,19 @@ struct t_draw_coords {
 	 * clb, from this data structure
 	 */
 	t_bound_box get_pb_bbox(int clb_index, const t_pb_graph_node& pb_gnode);
-	t_bound_box get_pb_bbox(const t_block& clb, const t_pb_graph_node& pb_gnode);
 	t_bound_box get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode);
 
 	/**
 	 * Return a bounding box for the given pb in the given
 	 * clb with absolute coordinates, that can be directtly drawn.
 	 */
-	t_bound_box get_absolute_pb_bbox(const t_block& clb, const t_pb_graph_node* pb_gnode);
 	t_bound_box get_absolute_pb_bbox(const int clb_index, const t_pb_graph_node* pb_gnode);
 
 	/**
 	 * Return a bounding box for the clb at device_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
 	 * even if it is empty.
 	 */
-	t_bound_box get_absolute_clb_bbox(const t_block& clb, const t_type_ptr type);
+	t_bound_box get_absolute_clb_bbox(const int clb_index, const t_type_ptr type);
 	t_bound_box get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index);
 
 private:

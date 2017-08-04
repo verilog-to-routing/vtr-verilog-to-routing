@@ -192,9 +192,6 @@ struct ClusteringContext : public Context {
      ********************************************************************/
 	/* New netlist class derived from BaseNetlist */
 	ClusteredNetlist clb_nlist;
-
-    /* blocks in the clustered netlist */
-    t_block *blocks; //[0..num_blocks-1]
 };
 
 //State relating to placement

@@ -406,7 +406,7 @@
 template<typename I>
 class IdMap;
 
-class AtomNetlist : public BaseNetlist {
+class AtomNetlist : public BaseNetlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
 	public:
 		//Constructs a netlist
 		// name: the name of the netlist (e.g. top-level module)
@@ -531,7 +531,7 @@ class AtomNetlist : public BaseNetlist {
 
     private: //Private types
         //A unique identifier for a string in the atom netlist
-        typedef vtr::StrongId<BaseNetlist::string_id_tag> AtomStringId;
+        typedef vtr::StrongId<BaseNetlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId>::string_id_tag> AtomStringId;
 
     private: //Private members
         /*

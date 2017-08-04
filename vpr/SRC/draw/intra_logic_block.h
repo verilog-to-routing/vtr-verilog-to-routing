@@ -26,16 +26,16 @@ struct t_selected_sub_block_info {
 
 	struct gnode_clb_pair {
 		const t_pb_graph_node* pb_gnode;
-		const t_block* clb;
-		gnode_clb_pair(const t_pb_graph_node* pb_gnode, const t_block* clb);
+		const int clb_index;
+		gnode_clb_pair(const t_pb_graph_node* pb_gnode, const int clb_index);
 		gnode_clb_pair();
-		bool operator==(const gnode_clb_pair&) const;
+		bool operator==(const gnode_clb_pair &) const;
 	};
 
 	struct sel_subblk_hasher {
 		inline std::size_t operator()(const gnode_clb_pair& v) const {
 			std::hash<const void*> ptr_hasher;
-			return ptr_hasher((const void*)v.pb_gnode) ^ ptr_hasher((const void*)v.clb);
+			return ptr_hasher((const void*)v.pb_gnode) ^ ptr_hasher((const void*)&v.clb_index);
 		}
 
 		inline std::size_t operator()(const std::pair<clb_pin_tuple, clb_pin_tuple>& v) const {
@@ -51,7 +51,7 @@ struct t_selected_sub_block_info {
 	};
 private:
 	t_pb* selected_pb;
-	t_block* containing_block;
+	int containing_block_index;
 	t_pb_graph_node* selected_pb_gnode;
 	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > sinks;
 	std::unordered_set< gnode_clb_pair, sel_subblk_hasher > sources;
@@ -61,9 +61,9 @@ public:
 
 	t_selected_sub_block_info();
 
-	void set(t_pb* new_selected_sub_block, t_block* containing_block);
+	void set(t_pb* new_selected_sub_block, const int containing_block_index);
 	t_pb_graph_node* get_selected_pb_gnode() const;
-	t_block* get_containing_block() const;
+	int get_containing_block() const;
 
 	/*
 	 * gets the t_pb that is currently selected. Please don't use this if
@@ -75,10 +75,10 @@ public:
 	bool has_selection() const;
 	void clear();
 	// pb related selection test functions
-	bool is_selected(const t_pb_graph_node* test, const t_block* test_block) const;
-	bool is_sink_of_selected(const t_pb_graph_node* test, const t_block* test_block) const;
-	bool is_source_of_selected(const t_pb_graph_node* test, const t_block* test_block) const;
-	bool is_in_selected_subtree(const t_pb_graph_node* test, const t_block* test_block) const;
+	bool is_selected(const t_pb_graph_node* test, const int clb_index) const;
+	bool is_sink_of_selected(const t_pb_graph_node* test, const int clb_index) const;
+	bool is_source_of_selected(const t_pb_graph_node* test, const int clb_index) const;
+	bool is_in_selected_subtree(const t_pb_graph_node* test, const int clb_index) const;
 };
 
 /* Enable/disable clb internals drawing. Internals drawing is enabled with a click of the
@@ -108,7 +108,7 @@ void draw_internal_draw_subblk();
  * so that the other subblock drawing functions will obey it.
  * If the user missed all sub-parts, will return 1, else 0.
  */
-int highlight_sub_block(const t_point& point_in_clb, t_block& clb, t_pb *pb);
+int highlight_sub_block(const t_point& point_in_clb, const int clb_index, t_pb *pb);
 
 /*
  * returns the struct with information about the sub-block selection

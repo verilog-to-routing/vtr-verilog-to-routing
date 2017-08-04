@@ -700,11 +700,11 @@ static void drawnets(void) {
 
 		setcolor(draw_state->net_color[(size_t)net_id]);
 		b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
-		t_point driver_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[(size_t)b1], cluster_ctx.clb_nlist.block_type(b1)).get_center();
+		t_point driver_center = draw_coords->get_absolute_clb_bbox((size_t)b1, cluster_ctx.clb_nlist.block_type(b1)).get_center();
 
 		for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 			b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
-			t_point sink_center = draw_coords->get_absolute_clb_bbox(cluster_ctx.blocks[(size_t)b2], cluster_ctx.clb_nlist.block_type(b2)).get_center();
+			t_point sink_center = draw_coords->get_absolute_clb_bbox((size_t)b2, cluster_ctx.clb_nlist.block_type(b2)).get_center();
 			drawline(driver_center, sink_center);
 
 			/* Uncomment to draw a chain instead of a star. */
@@ -2135,8 +2135,6 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 		deselect_all();
 
 	/// determine block ///
-
-	t_block* clb = NULL;
 	t_bound_box clb_bbox(0,0,0,0);
 
 	// iterate over grid x
@@ -2154,25 +2152,24 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			for (int k = 0; k < grid_tile->type->capacity; ++k) {
 				clb_index = place_ctx.grid_blocks[i][j].blocks[k];
 				if (clb_index != EMPTY_BLOCK) {
-					clb = &cluster_ctx.blocks[clb_index];
-					clb_bbox = draw_coords->get_absolute_clb_bbox(*clb, cluster_ctx.clb_nlist.block_type((BlockId)clb_index));
+					clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index, cluster_ctx.clb_nlist.block_type((BlockId)clb_index));
 					if (clb_bbox.intersects(abs_x, abs_y)) {
 						break;
 					} else {
-						clb = NULL;
+						clb_index = EMPTY_BLOCK;
 					}
 				}
 			}
-			if (clb != NULL) {
+			if (clb_index != EMPTY_BLOCK) {
 				break; // we've found something
 			}
 		}
-		if (clb != NULL) {
+		if (clb_index != EMPTY_BLOCK) {
 			break; // we've found something
 		}
 	}
 
-	if (clb == NULL) {
+	if (clb_index == EMPTY_BLOCK) {
 		highlight_rr_nodes(abs_x, abs_y);
 		/* update_message(draw_state->default_message);
 		 drawscreen(); */
@@ -2184,7 +2181,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	// note: this will clear the selected sub-block if show_blk_internal is 0,
 	// or if it doesn't find anything
 	t_point point_in_clb = t_point(abs_x, abs_y) - clb_bbox.bottom_left();
-	highlight_sub_block(point_in_clb, *clb, cluster_ctx.clb_nlist.block_pb((BlockId)clb_index));
+	highlight_sub_block(point_in_clb, clb_index, cluster_ctx.clb_nlist.block_pb((BlockId)clb_index));
 	
 	if (get_selected_sub_block_info().has_selection()) {
 		t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();

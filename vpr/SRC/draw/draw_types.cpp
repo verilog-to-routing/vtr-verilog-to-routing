@@ -73,12 +73,6 @@ t_bound_box t_draw_coords::get_pb_bbox(int clb_index, const t_pb_graph_node& pb_
 	return get_pb_bbox(place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y ,place_ctx.block_locs[clb_index].z, pb_gnode);
 }
 
-t_bound_box t_draw_coords::get_pb_bbox(const t_block& clb, const t_pb_graph_node& pb_gnode) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    int clb_index = &clb - cluster_ctx.blocks;
-	return get_pb_bbox(clb_index, pb_gnode);
-}
-
 t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode) {
     auto& device_ctx = g_vpr_ctx.device();
 	const int clb_type_id = device_ctx.grid[grid_x][grid_y].type->index;
@@ -128,13 +122,13 @@ t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_ind
 	return result;
 }
 
-t_bound_box t_draw_coords::get_absolute_pb_bbox(const t_block& clb, const t_pb_graph_node* pb_gnode) {
-	t_bound_box result = this->get_pb_bbox(clb,*pb_gnode);
-	
+t_bound_box t_draw_coords::get_absolute_pb_bbox(const int clb_index, const t_pb_graph_node* pb_gnode) {
+	t_bound_box result = this->get_pb_bbox(clb_index, *pb_gnode);
+
 	// go up the graph, adding the parent bboxes to the result,
 	// ie. make it relative to one level higher each time.
 	while (pb_gnode->parent_pb_graph_node != NULL) {
-		t_bound_box parents_bbox = this->get_pb_bbox(clb, *pb_gnode->parent_pb_graph_node);
+		t_bound_box parents_bbox = this->get_pb_bbox(clb_index, *pb_gnode->parent_pb_graph_node);
 		result += parents_bbox.bottom_left();
 		pb_gnode = pb_gnode->parent_pb_graph_node;
 	}
@@ -142,13 +136,8 @@ t_bound_box t_draw_coords::get_absolute_pb_bbox(const t_block& clb, const t_pb_g
 	return result;
 }
 
-t_bound_box t_draw_coords::get_absolute_pb_bbox(const int clb_index, const t_pb_graph_node* pb_gnode) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-	return get_absolute_pb_bbox(cluster_ctx.blocks[clb_index], pb_gnode);
-}
-
-t_bound_box t_draw_coords::get_absolute_clb_bbox(const t_block& clb, const t_type_ptr type) {
-	return get_pb_bbox(clb, *type->pb_graph_head);
+t_bound_box t_draw_coords::get_absolute_clb_bbox(const int clb_index, const t_type_ptr type) {
+	return get_pb_bbox(clb_index, *type->pb_graph_head);
 }
 
 t_bound_box t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index) {

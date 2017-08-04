@@ -11,7 +11,7 @@
 *
 */
 ClusteredNetlist::ClusteredNetlist(std::string name, std::string id)
-	: BaseNetlist(name, id) {}
+	: BaseNetlist<BlockId, PortId, PinId, NetId>(name, id) {}
 
 /*
 *

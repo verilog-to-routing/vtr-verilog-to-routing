@@ -44,11 +44,11 @@ static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *p
 									  float parent_width, float parent_height, 
 									  float *blk_width, float *blk_height);
 static int draw_internal_find_max_lvl(t_pb_type pb_type);
-static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_box& parent_bbox, const t_type_ptr type);
-static bool is_top_lvl_block_highlighted(const t_block& clb, const t_type_ptr type);
+static void draw_internal_pb(const int clb_index, t_pb* pb, const t_bound_box& parent_bbox, const t_type_ptr type);
+static bool is_top_lvl_block_highlighted(const int blk_id, const t_type_ptr type);
 
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin);
-t_pb* highlight_sub_block_helper(const t_block& clb, t_pb* pb, const t_point& local_pt, int max_depth);
+t_pb* highlight_sub_block_helper(const int clb_index, t_pb* pb, const t_point& local_pt, int max_depth);
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -162,10 +162,10 @@ void draw_internal_draw_subblk() {
 				/* Get block ID */
 				int bnum = place_ctx.grid_blocks[i][j].blocks[k];
 				/* Safety check, that physical blocks exists in the CLB */
-				if (cluster_ctx.clb_nlist.block_pb((BlockId) bnum) == NULL)
+				if (cluster_ctx.clb_nlist.block_pb((BlockId)bnum) == NULL)
 					continue;
 
-				draw_internal_pb(&cluster_ctx.blocks[bnum], cluster_ctx.clb_nlist.block_pb((BlockId) bnum), t_bound_box(0,0,0,0), cluster_ctx.clb_nlist.block_type((BlockId) bnum));
+				draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb((BlockId)bnum), t_bound_box(0,0,0,0), cluster_ctx.clb_nlist.block_type((BlockId)bnum));
 			}
 		}
 	}
@@ -319,13 +319,13 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
  * which a netlist block can map to, and draws each sub-block inside its parent block. With
  * each click on the "Blk Internal" button, a new level is shown. 
  */
-static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_box& parent_bbox, const t_type_ptr type) {
+static void draw_internal_pb(const int clb_index, t_pb* pb, const t_bound_box& parent_bbox, const t_type_ptr type) {
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 	t_draw_state* draw_state = get_draw_state_vars();
 	t_selected_sub_block_info& sel_sub_info = get_selected_sub_block_info();
 
 	t_pb_type* pb_type = pb->pb_graph_node->pb_type;
-	t_bound_box abs_bbox = draw_coords->get_pb_bbox(*clb, *pb->pb_graph_node) + parent_bbox.bottom_left();
+	t_bound_box abs_bbox = draw_coords->get_pb_bbox(clb_index, *pb->pb_graph_node) + parent_bbox.bottom_left();
 
 	// if we've gone too far, don't draw anything
 	if (pb_type->depth > draw_state->show_blk_internal) {
@@ -335,7 +335,7 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 	/// first draw box ///
 
 	if (pb_type->depth == 0) {
-		if (!is_top_lvl_block_highlighted(*clb, type)) {
+		if (!is_top_lvl_block_highlighted(clb_index, type)) {
 			// if this is a top level pb, and only if it isn't selected (ie. a funny colour),
 			// overwrite it. (but stil draw the text)
 			setcolor(WHITE);
@@ -354,11 +354,11 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 			const int type_index = type->index;
 
 			// determine default background color
-			if (sel_sub_info.is_selected(pb->pb_graph_node, clb)) {
+			if (sel_sub_info.is_selected(pb->pb_graph_node, clb_index)) {
 				setcolor(SELECTED_COLOR);
-			} else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb)) {
+			} else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb_index)) {
 				setcolor(DRIVES_IT_COLOR);
-			} else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb)) {
+			} else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
 				setcolor(DRIVEN_BY_IT_COLOR);
 			} else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != NULL) {
 				setcolor(WHITE); // draw anthing else that will have a child as white
@@ -458,7 +458,7 @@ static void draw_internal_pb(const t_block* const clb, t_pb* pb, const t_bound_b
 			}
 
 			// now recurse
-			draw_internal_pb(clb, child_pb, abs_bbox, type);
+			draw_internal_pb(clb_index, child_pb, abs_bbox, type);
 
 		}
 	}
@@ -469,7 +469,6 @@ void draw_logical_connections() {
 	t_draw_state* draw_state = get_draw_state_vars();
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	// iterate over all the atom nets
     for(auto net_id : atom_ctx.nlist.nets()) {
@@ -477,7 +476,7 @@ void draw_logical_connections() {
         AtomPinId driver_pin_id = atom_ctx.nlist.net_driver(net_id);
         AtomBlockId src_blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
 		const t_pb_graph_node* src_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(src_blk_id);
-		t_block* src_clb = &cluster_ctx.blocks[atom_ctx.lookup.atom_clb(src_blk_id)];
+		int src_clb = atom_ctx.lookup.atom_clb(src_blk_id);
 		bool src_is_selected = sel_subblk_info.is_in_selected_subtree(src_pb_gnode, src_clb);
 		bool src_is_src_of_selected = sel_subblk_info.is_source_of_selected(src_pb_gnode, src_clb);
 
@@ -486,7 +485,7 @@ void draw_logical_connections() {
 
             AtomBlockId sink_blk_id = atom_ctx.nlist.pin_block(sink_pin_id);
             const t_pb_graph_node* sink_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(sink_blk_id);
-			t_block* sink_clb = &cluster_ctx.blocks[atom_ctx.lookup.atom_clb(sink_blk_id)];
+			int sink_clb = atom_ctx.lookup.atom_clb(sink_blk_id);
 
 			if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
 				setcolor(DRIVES_IT_COLOR);
@@ -592,11 +591,8 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
 /* This function checks whether a top-level clb has been highlighted. It does 
  * so by checking whether the color in this block is default color.
  */
-static bool is_top_lvl_block_highlighted(const t_block& clb, const t_type_ptr type) {
+static bool is_top_lvl_block_highlighted(const int blk_id, const t_type_ptr type) {
 	t_draw_state *draw_state;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-	ptrdiff_t blk_id = &clb - cluster_ctx.blocks;
 
 	/* Call accessor function to retrieve global variables. */
 	draw_state = get_draw_state_vars();
@@ -616,18 +612,18 @@ static bool is_top_lvl_block_highlighted(const t_block& clb, const t_type_ptr ty
 	return true;
 }
 
-int highlight_sub_block(const t_point& point_in_clb, t_block& clb, t_pb *pb) {
+int highlight_sub_block(const t_point& point_in_clb, int clb_index, t_pb *pb) {
 	t_draw_state* draw_state = get_draw_state_vars();
 
 	int max_depth = draw_state->show_blk_internal;
 
 	t_pb* new_selected_sub_block = 
-		highlight_sub_block_helper(clb, pb, point_in_clb, max_depth);
+		highlight_sub_block_helper(clb_index, pb, point_in_clb, max_depth);
 	if (new_selected_sub_block == NULL) {
 		get_selected_sub_block_info().clear();
 		return 1;
 	} else {
-		get_selected_sub_block_info().set(new_selected_sub_block, &clb);
+		get_selected_sub_block_info().set(new_selected_sub_block, clb_index);
 		return 0;
 	}
 }
@@ -638,7 +634,7 @@ int highlight_sub_block(const t_point& point_in_clb, t_block& clb, t_pb *pb) {
  * be in clb.
  */
 t_pb* highlight_sub_block_helper(
-	const t_block& clb, t_pb* pb, const t_point& local_pt, int max_depth) {
+	const int clb_index, t_pb* pb, const t_point& local_pt, int max_depth) {
 	
 	t_draw_coords *draw_coords = get_draw_coords_vars();
 	t_pb_type* pb_type = pb->pb_graph_node->pb_type;
@@ -668,7 +664,7 @@ t_pb* highlight_sub_block_helper(
 			t_pb_graph_node* pb_child_node = child_pb->pb_graph_node;
 
 			// get the bbox for this child
-			const t_bound_box& bbox = draw_coords->get_pb_bbox(clb, *pb_child_node);
+			const t_bound_box& bbox = draw_coords->get_pb_bbox(clb_index, *pb_child_node);
 
 			// If child block is being used, check if it intersects
 			if (child_pb->name != NULL && bbox.intersects(local_pt)) {
@@ -677,7 +673,7 @@ t_pb* highlight_sub_block_helper(
 				// something more specific.
 				t_pb* subtree_result =
 					highlight_sub_block_helper(
-						clb, child_pb, local_pt - bbox.bottom_left(), max_depth);
+						clb_index, child_pb, local_pt - bbox.bottom_left(), max_depth);
 				if (subtree_result != NULL) {
 					// we found something more specific.
 					return subtree_result;
@@ -707,40 +703,39 @@ t_selected_sub_block_info::t_selected_sub_block_info() {
 }
 
 template<typename HashType>
-void add_all_children(const t_pb* pb, const t_block* clb,
+void add_all_children(const t_pb* pb, const int clb_index,
 	std::unordered_set< t_selected_sub_block_info::gnode_clb_pair, HashType>& set) {
 
 	if (pb == NULL) {
 		return;
 	}
 
-	set.insert(t_selected_sub_block_info::gnode_clb_pair(pb->pb_graph_node, clb));
+	set.insert(t_selected_sub_block_info::gnode_clb_pair(pb->pb_graph_node, clb_index));
 
 	int num_child_types = pb->get_num_child_types();
 	for (int i = 0; i < num_child_types; ++i) {
 		int num_children_of_type = pb->get_num_children_of_type(i);
 		for (int j = 0; j < num_children_of_type; ++j) {
-			add_all_children(&pb->child_pbs[i][j], clb, set);
+			add_all_children(&pb->child_pbs[i][j], clb_index, set);
 		}
 	}
 }
 
-void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_containing_block) {
+void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, const int new_containing_block_index) {
 	selected_pb = new_selected_sub_block;
     selected_pb_gnode = (selected_pb == NULL) ? NULL : selected_pb->pb_graph_node;
-	containing_block = new_containing_block;
+	containing_block_index = new_containing_block_index;
 	sinks.clear();
 	sources.clear();
 	in_selected_subtree.clear();
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	if (has_selection()) {
-		add_all_children(selected_pb, containing_block, in_selected_subtree);
+		add_all_children(selected_pb, containing_block_index, in_selected_subtree);
 
 		for (auto blk_id : atom_ctx.nlist.blocks()) {
-            const t_block* clb = &cluster_ctx.blocks[atom_ctx.lookup.atom_clb(blk_id)];
+            const int clb = atom_ctx.lookup.atom_clb(blk_id);
             const t_pb_graph_node* pb_graph_node = atom_ctx.lookup.atom_pb_graph_node(blk_id);
 			// find the atom block that corrisponds to this pb.
 			if ( is_in_selected_subtree(pb_graph_node, clb) ) {
@@ -752,7 +747,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 
                     AtomBlockId src_blk = atom_ctx.nlist.pin_block(driver_pin_id);
 
-                    const t_block* src_clb = &cluster_ctx.blocks[atom_ctx.lookup.atom_clb(src_blk)];
+                    const int src_clb = atom_ctx.lookup.atom_clb(src_blk);
                     const t_pb_graph_node* src_pb_graph_node = atom_ctx.lookup.atom_pb_graph_node(src_blk);
 
                     sources.insert(gnode_clb_pair(src_pb_graph_node, src_clb));
@@ -764,7 +759,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
                     for(auto sink_pin_id : atom_ctx.nlist.net_sinks(net_id)) {
                         AtomBlockId sink_blk = atom_ctx.nlist.pin_block(sink_pin_id);
 
-                        const t_block* sink_clb = &cluster_ctx.blocks[atom_ctx.lookup.atom_clb(sink_blk)];
+                        const int sink_clb = atom_ctx.lookup.atom_clb(sink_blk);
                         const t_pb_graph_node* sink_pb_graph_node = atom_ctx.lookup.atom_pb_graph_node(sink_blk);
 
                         sinks.insert(gnode_clb_pair(sink_pb_graph_node, sink_clb));
@@ -776,33 +771,33 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, t_block* new_c
 }
 
 void t_selected_sub_block_info::clear() {
-	set(NULL, NULL);
+	set(NULL, -1);
 }
 
 t_pb* t_selected_sub_block_info::get_selected_pb() const { return selected_pb; }
 
 t_pb_graph_node* t_selected_sub_block_info::get_selected_pb_gnode() const { return selected_pb_gnode; }
 
-t_block* t_selected_sub_block_info::get_containing_block() const { return containing_block; }
+int t_selected_sub_block_info::get_containing_block() const { return containing_block_index; }
 
 bool t_selected_sub_block_info::has_selection() const {
-	return get_selected_pb_gnode() != NULL && get_containing_block() != NULL; 
+	return get_selected_pb_gnode() != NULL && get_containing_block() != -1; 
 }
 
-bool t_selected_sub_block_info::is_selected(const t_pb_graph_node* test, const t_block* test_block) const {
-	return get_selected_pb_gnode() == test && get_containing_block() == test_block;
+bool t_selected_sub_block_info::is_selected(const t_pb_graph_node* test, const int clb_index) const {
+	return get_selected_pb_gnode() == test && get_containing_block() == clb_index;
 }
 
-bool t_selected_sub_block_info::is_sink_of_selected(const t_pb_graph_node* test, const t_block* test_block) const {
-	return sinks.find(gnode_clb_pair(test,test_block)) != sinks.end();
+bool t_selected_sub_block_info::is_sink_of_selected(const t_pb_graph_node* test, const int clb_index) const {
+	return sinks.find(gnode_clb_pair(test,clb_index)) != sinks.end();
 }
 
-bool t_selected_sub_block_info::is_source_of_selected(const t_pb_graph_node* test, const t_block* test_block) const {
-	return sources.find(gnode_clb_pair(test,test_block)) != sources.end();
+bool t_selected_sub_block_info::is_source_of_selected(const t_pb_graph_node* test, const int clb_index) const {
+	return sources.find(gnode_clb_pair(test,clb_index)) != sources.end();
 }
 
-bool t_selected_sub_block_info::is_in_selected_subtree(const t_pb_graph_node* test, const t_block* test_block) const {
-	return in_selected_subtree.find(gnode_clb_pair(test,test_block)) != in_selected_subtree.end();
+bool t_selected_sub_block_info::is_in_selected_subtree(const t_pb_graph_node* test, const int clb_index) const {
+	return in_selected_subtree.find(gnode_clb_pair(test,clb_index)) != in_selected_subtree.end();
 }
 
 /*
@@ -832,15 +827,15 @@ bool t_selected_sub_block_info::clb_pin_tuple::operator==(const clb_pin_tuple& r
 
 t_selected_sub_block_info::gnode_clb_pair::gnode_clb_pair() :
 	pb_gnode(NULL),
-	clb(NULL) {
+	clb_index(-1) {
 }
 
-t_selected_sub_block_info::gnode_clb_pair::gnode_clb_pair(const t_pb_graph_node* pb_gnode_, const t_block* clb_) :
+t_selected_sub_block_info::gnode_clb_pair::gnode_clb_pair(const t_pb_graph_node* pb_gnode_, const int clb_index_) :
 	pb_gnode(pb_gnode_),
-	clb(clb_) {
+	clb_index(clb_index_) {
 }
 
 bool t_selected_sub_block_info::gnode_clb_pair::operator==(const gnode_clb_pair& rhs) const {
-	return   clb == rhs.clb
+	return   clb_index == rhs.clb_index
 	&&  pb_gnode == rhs.pb_gnode;
 }

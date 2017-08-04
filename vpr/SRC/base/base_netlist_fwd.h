@@ -4,7 +4,6 @@
 /*
 * This header forward declares the BaseNetlist class, and defines common types by it
 */
-class BaseNetlist;
 
 /*
 * Ids

@@ -12,12 +12,9 @@
  An understanding of libarchfpga/physical_types.h is crucial to understanding this file.  physical_types.h contains information about the architecture described in the architecture description language
 
  Key data structures:
-
- t_block - An already clustered logic block, the placer finds physical locations for these blocks.  Intra-logic block interconnect stored in pb_route.
  t_rr_node - The basic building block of the interconnect in the FPGA architecture
 
  Cluster-specific main data structure:
-
  t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA achitecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
  The t_pb hierarchy follows what is described by t_pb_graph_node
 
@@ -570,17 +567,12 @@ struct t_legal_pos {
 	int z;
 };
 
-/* Represents a clustered logic block of a user circuit that fits into one unit of space in an FPGA grid block
- * net_pins: pins connected to the CLB nets */
-struct t_block {
-};
-
-/* Represents the placement location of a clustered block (i.e. t_block)
+/* Represents the placement location of a clustered block
  * x: x-coordinate
  * y: y-coordinate
  * z: occupancy coordinate
  * is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing
- * nets_and_pins_synced_to_z_coordinate: true if the associated t_block's pins have been synced to the z location (i.e. after placement) */
+ * nets_and_pins_synced_to_z_coordinate: true if the associated clb's pins have been synced to the z location (i.e. after placement) */
 struct t_block_loc {
     int x = OPEN;
     int y = OPEN;

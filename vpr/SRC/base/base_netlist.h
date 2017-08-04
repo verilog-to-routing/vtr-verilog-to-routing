@@ -24,17 +24,18 @@
 template<typename I>
 class IdMap;
 
+template<typename BlockId, typename PortId, typename PinId, typename NetId> 
 class BaseNetlist {
 	public: //Public Types
-		typedef vtr::vector_map<BlockId, BlockId>::const_iterator	block_iterator;
-		typedef vtr::vector_map<NetId, NetId>::const_iterator		net_iterator;
-		typedef vtr::vector_map<PinId, PinId>::const_iterator		pin_iterator;
-		typedef vtr::vector_map<PortId, PortId>::const_iterator		port_iterator;
+		typedef typename vtr::vector_map<BlockId, BlockId>::const_iterator		block_iterator;
+		typedef typename vtr::vector_map<NetId, NetId>::const_iterator			net_iterator;
+		typedef typename vtr::vector_map<PinId, PinId>::const_iterator			pin_iterator;
+		typedef typename vtr::vector_map<PortId, PortId>::const_iterator		port_iterator;
 		
-		typedef vtr::Range<block_iterator>	block_range;
-		typedef vtr::Range<net_iterator>	net_range;
-		typedef vtr::Range<pin_iterator>	pin_range;
-		typedef vtr::Range<port_iterator>	port_range;
+		typedef typename vtr::Range<block_iterator>	block_range;
+		typedef typename vtr::Range<net_iterator>	net_range;
+		typedef typename vtr::Range<pin_iterator>	pin_range;
+		typedef typename vtr::Range<port_iterator>	port_range;
 
 	public:
 		BaseNetlist(std::string name="", std::string id="");
@@ -424,4 +425,5 @@ class BaseNetlist {
 };
 
 
+#include "base_netlist.tpp"
 #endif

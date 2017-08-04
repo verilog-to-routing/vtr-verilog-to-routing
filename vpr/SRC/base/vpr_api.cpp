@@ -802,9 +802,8 @@ static void free_pb_type(t_pb_type *pb_type) {
 void free_circuit() {
 	//Free new net structures
 	//TODO: Call cleanup function for cluster_ctx.clb_nlist
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-	vtr::free(cluster_ctx.blocks);
-	cluster_ctx.blocks = NULL;
+	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+	cluster_ctx.clb_nlist = ClusteredNetlist();
 }
 
 void vpr_free_vpr_data_structures(t_arch& Arch,

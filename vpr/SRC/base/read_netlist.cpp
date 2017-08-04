@@ -37,12 +37,12 @@ static const char* netlist_file_name = NULL;
 static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,		
         const pugiutil::loc_data& loc_data);
 
-static void processPb(pugi::xml_node Parent, const int index,
+static void processPb(pugi::xml_node Parent, const BlockId index,
 		t_pb* pb, t_pb_route *pb_route, int *num_primitives,
         const pugiutil::loc_data& loc_data, ClusteredNetlist *clb_nlist);
 
 static void processComplexBlock(pugi::xml_node Parent,
-		const int index, int *num_primitives,
+		const BlockId index, int *num_primitives,
         const pugiutil::loc_data& loc_data,
 		ClusteredNetlist *clb_nlist);
 
@@ -189,12 +189,12 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
         }
 
         /* Process netlist */
-        size_t i = 0;
+        unsigned i = 0;
         for(auto curr_block = top.child("block"); curr_block; curr_block = curr_block.next_sibling("block")) {
-            processComplexBlock(curr_block, i, &num_primitives, loc_data, clb_nlist);
+            processComplexBlock(curr_block, (BlockId)i, &num_primitives, loc_data, clb_nlist);
             i++;
         }
-        VTR_ASSERT(i == bcount);
+        VTR_ASSERT(bcount == i);
 		VTR_ASSERT(clb_nlist->blocks().size() == i);
         VTR_ASSERT(num_primitives >= 0);
         VTR_ASSERT(static_cast<size_t>(num_primitives) == atom_ctx.nlist.blocks().size());
@@ -247,7 +247,7 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
  * loc_data - xml location info for error reporting
  */
 static void processComplexBlock(pugi::xml_node clb_block,
-		const int index, int *num_primitives,
+		const BlockId index, int *num_primitives,
         const pugiutil::loc_data& loc_data,
 		ClusteredNetlist *clb_nlist) {
 
@@ -272,44 +272,44 @@ static void processComplexBlock(pugi::xml_node clb_block,
 				"Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
 				block_inst.value(), clb_block.name());
 	}
-	VTR_ASSERT(vtr::atoi(tokens[2].data) == index);
+	VTR_ASSERT(vtr::atoi(tokens[2].data) == (int)(size_t)index);
 
 	found = false;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
 		if (strcmp(device_ctx.block_types[i].name, tokens[0].data) == 0) {
 			clb_nlist->create_block(block_name.value(), new t_pb, &device_ctx.block_types[i]);
-			pb_type = clb_nlist->block_type((BlockId)index)->pb_type;
+			pb_type = clb_nlist->block_type(index)->pb_type;
 			found = true;
 			break;
 		}
 	}
 	if (!found) {
  		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
-				"Unknown cb type %s for cb %s #%d.\n", block_inst.value(), clb_nlist->block_name((BlockId)index), index);
+				"Unknown cb type %s for cb %s #%lu.\n", block_inst.value(), clb_nlist->block_name(index), (size_t)index);
 	}
 
 	//Parse all pbs and CB internal nets
-	atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), clb_nlist->block_pb((BlockId)index));
+	atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), clb_nlist->block_pb(index));
 
-	clb_nlist->block_pb((BlockId)index)->pb_graph_node = clb_nlist->block_type((BlockId)index)->pb_graph_head;
-	clb_nlist->block_pb((BlockId)index)->pb_route = alloc_pb_route(clb_nlist->block_pb((BlockId)index)->pb_graph_node);
+	clb_nlist->block_pb(index)->pb_graph_node = clb_nlist->block_type(index)->pb_graph_head;
+	clb_nlist->block_pb(index)->pb_route = alloc_pb_route(clb_nlist->block_pb(index)->pb_graph_node);
 
     auto clb_mode = pugiutil::get_attribute(clb_block, "mode", loc_data);
 
 	found = false;
 	for (i = 0; i < pb_type->num_modes; i++) {
 		if (strcmp(clb_mode.value(), pb_type->modes[i].name) == 0) {
-			clb_nlist->block_pb((BlockId)index)->mode = i;
+			clb_nlist->block_pb(index)->mode = i;
 			found = true;
 		}
 	}
 	if (!found) {
 		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
-		"Unknown mode %s for cb %s #%d.\n", clb_mode.value(), clb_nlist->block_name((BlockId)index), index);
+		"Unknown mode %s for cb %s #%d.\n", clb_mode.value(), clb_nlist->block_name(index), index);
 	}
 
-	processPb(clb_block, index, clb_nlist->block_pb((BlockId)index), clb_nlist->block_pb((BlockId)index)->pb_route, num_primitives, loc_data, clb_nlist);
-	load_internal_to_block_net_nums(clb_nlist->block_type((BlockId)index), clb_nlist->block_pb((BlockId)index)->pb_route);
+	processPb(clb_block, index, clb_nlist->block_pb(index), clb_nlist->block_pb(index)->pb_route, num_primitives, loc_data, clb_nlist);
+	load_internal_to_block_net_nums(clb_nlist->block_type(index), clb_nlist->block_pb(index)->pb_route);
 
 	freeTokens(tokens, num_tokens);
 }
@@ -320,7 +320,7 @@ static void processComplexBlock(pugi::xml_node clb_block,
  * pb - physical block to use
  * loc_data - xml location info for error reporting
  */
-static void processPb(pugi::xml_node Parent, const int index,
+static void processPb(pugi::xml_node Parent, const BlockId index,
 	t_pb* pb, t_pb_route *pb_route, int *num_primitives,
     const pugiutil::loc_data& loc_data, ClusteredNetlist *clb_nlist) {
 	
@@ -349,16 +349,16 @@ static void processPb(pugi::xml_node Parent, const int index,
 		VTR_ASSERT(num_in_ports <= num_out_ports);
 
 		for (i = 0; i < num_in_ports; i++) {
-			clb_nlist->create_port((BlockId)index, pb_type->ports[i].name, pb_type->ports[i].num_pins, PortType::INPUT);
+			clb_nlist->create_port(index, pb_type->ports[i].name, pb_type->ports[i].num_pins, PortType::INPUT);
 		}
 		for (i = num_in_ports; i < num_out_ports; i++) {
-			clb_nlist->create_port((BlockId)index, pb_type->ports[i].name, pb_type->ports[i].num_pins, PortType::OUTPUT);
+			clb_nlist->create_port(index, pb_type->ports[i].name, pb_type->ports[i].num_pins, PortType::OUTPUT);
 		}
 		for (i = num_out_ports; i < num_clock_ports; i++) {
-			clb_nlist->create_port((BlockId)index, pb_type->ports[i].name, pb_type->ports[i].num_pins, PortType::CLOCK);
+			clb_nlist->create_port(index, pb_type->ports[i].name, pb_type->ports[i].num_pins, PortType::CLOCK);
 		}
 
-		VTR_ASSERT(clb_nlist->block_ports((BlockId)index).size() == (unsigned)pb_type->num_ports);
+		VTR_ASSERT(clb_nlist->block_ports(index).size() == (unsigned)pb_type->num_ports);
 	}
 
 	if (pb_type->num_modes == 0) {
@@ -373,7 +373,7 @@ static void processPb(pugi::xml_node Parent, const int index,
         //Update atom netlist mapping
         VTR_ASSERT(blk_id);
         atom_ctx.lookup.set_atom_pb(blk_id, pb);
-        atom_ctx.lookup.set_atom_clb(blk_id, index);
+        atom_ctx.lookup.set_atom_clb(blk_id, (size_t)index);
 
 		(*num_primitives)++;
 	} else {
@@ -892,9 +892,9 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 					}
 
 					//Asserts the BlockId is the same when NetId & pin BitIndex is provided
-					VTR_ASSERT(blk_id == clb_nlist->pin_block(*(clb_nlist->net_pins(clb_net_id).begin() + count[(size_t)clb_net_id]))); //TODO: Remove after t_block/t_netlist
+					VTR_ASSERT(blk_id == clb_nlist->pin_block(*(clb_nlist->net_pins(clb_net_id).begin() + count[(size_t)clb_net_id])));
 					//Asserts the block's pin index is the same
-					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins(clb_net_id).begin() + count[(size_t)clb_net_id]))); //TODO: Remove after t_block/t_netlist
+					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins(clb_net_id).begin() + count[(size_t)clb_net_id])));
 					VTR_ASSERT(j == clb_nlist->pin_index(clb_net_id, count[(size_t)clb_net_id]));
 
 					if (clb_nlist->block_type(blk_id)->is_global_pin[j])
@@ -906,8 +906,9 @@ static void load_external_nets_and_cb(const int L_num_blocks,
 
 				} else {
 					VTR_ASSERT(DRIVER == clb_nlist->block_type(blk_id)->class_inf[clb_nlist->block_type(blk_id)->pin_class[j]].type);
-					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins(clb_net_id).begin()))); //TODO: Remove after t_block/t_netlist
+					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins(clb_net_id).begin())));
 					VTR_ASSERT(j == clb_nlist->pin_index(clb_net_id, 0));
+
                     //Mark the net pin numbers on the block
 					clb_nlist->set_block_net_count(blk_id, j, 0); //Driver
 				}

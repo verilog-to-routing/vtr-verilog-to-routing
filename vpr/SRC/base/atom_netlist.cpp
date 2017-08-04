@@ -18,7 +18,7 @@
  *
  */
 AtomNetlist::AtomNetlist(std::string name, std::string id)
-    : BaseNetlist(name, id) {}
+    : BaseNetlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId>(name, id) {}
 
 /*
  *
