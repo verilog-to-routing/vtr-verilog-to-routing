@@ -157,7 +157,7 @@ void free_chunk_memory(t_chunk *chunk_info) {
 	chunk_info->next_mem_loc_ptr = NULL;
 }
 
-#ifdef _WIN32
+#ifndef __GLIBC__
 int malloc_trim(size_t /*pad*/) {
     return 0;
 }
