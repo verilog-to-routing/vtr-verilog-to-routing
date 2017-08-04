@@ -11,6 +11,8 @@
 #include <iostream>
 #include <vector>
 
+#include "RoutingDelayCalculator.h"
+
 using namespace std;
 
 class route_budgets {
@@ -21,13 +23,18 @@ public:
 
     virtual ~route_budgets();
 
-    float get_delay_target(int inet, int isink);
-    float get_min_delay_target(int inet, int isink);
-    float get_max_delay_target(int inet, int isink);
-    float get_crit_short_path (int inet, int isink);
+    float get_delay_target(int source, int sink);
+    float get_min_delay_target(int source, int sink);
+    float get_max_delay_target(int source, int sink);
+    float get_crit_short_path(int source, int sink);
     void load_route_budgets(float ** net_delay);
     void print_route_budget();
+
 private:
+
+    std::shared_ptr<RoutingDelayCalculator> get_routing_calc(float ** net_delay);
+
+    tatum::EdgeId get_edge_from_nets(int inet, int ipin);
 
     vector<vector<float>> delay_min_budget;
     vector<vector<float>> delay_max_budget;
