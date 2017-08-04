@@ -654,11 +654,8 @@ char *append_string(const char *string, const char *appendage, ...)
 	vsnprintf(buffer, vtr::bufsize * sizeof(char), appendage, ap);
 	va_end(ap);
 
-
-	char *new_string = (char *)malloc(strlen(string) + strlen(buffer) + 1);
-	strcpy(new_string, string);
-	strcat(new_string, buffer);
-	return new_string;
+	std::string new_string = std::string(string) + std::string(buffer);
+	return vtr::strdup(new_string.c_str());
 }
 
 /*
