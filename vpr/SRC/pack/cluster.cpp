@@ -726,8 +726,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	//TODO: Remove and destroy cluster_ctx here
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		free_pb(cluster_ctx.clb_nlist.block_pb(blk_id));
-		delete cluster_ctx.clb_nlist.block_pb(blk_id);
 	}
+
+	cluster_ctx.clb_nlist = ClusteredNetlist();
 
 	free(num_used_instances_type);
 	free(num_instances_type);

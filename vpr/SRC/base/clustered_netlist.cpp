@@ -281,7 +281,8 @@ void ClusteredNetlist::compress() {
 	//Re-build the lookups
 	rebuild_lookups();
 
-	clean_ports(port_id_map);
+	clean_nets(net_id_map);
+	clean_pins(pin_id_map);
 	clean_blocks(block_id_map);
 
 	//Resize containers to exact size
