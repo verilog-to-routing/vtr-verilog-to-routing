@@ -112,7 +112,8 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
         CBRR& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
 
 static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int target_pin, float target_criticality,
-        float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink, route_budgets budgeting_inf);
+        float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink, route_budgets &budgeting_inf,
+        float max_delay, float min_delay, float target_delay, float short_path_crit);
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         float target_criticality, float astar_fac);
@@ -120,7 +121,8 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
         int num_sinks, int target_node,
-        float astar_fac, int highfanout_rlim, route_budgets budgeting_inf);
+        float astar_fac, int highfanout_rlim, route_budgets &budgeting_inf, float max_delay, float min_delay,
+        float target_delay, float short_path_crit);
 
 static float get_timing_driven_expected_cost(int inode, int target_node,
         float criticality_fac, float R_upstream);
@@ -441,7 +443,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
         float* pin_criticality,
         t_rt_node** rt_node_of_sink, float** net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        std::shared_ptr<SetupTimingInfo> timing_info, route_budgets budgeting_inf) {
+        std::shared_ptr<SetupTimingInfo> timing_info, route_budgets &budgeting_inf) {
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
@@ -577,7 +579,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
         float *pin_criticality, int min_incremental_reroute_fanout,
         t_rt_node ** rt_node_of_sink, float *net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets budgeting_inf) {
+        std::shared_ptr<const SetupTimingInfo> timing_info, route_budgets &budgeting_inf) {
 
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
@@ -634,9 +636,24 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
         int target_pin = remaining_targets[itarget];
         float target_criticality = pin_criticality[target_pin];
 
+        float max_delay, min_delay, target_delay, short_path_crit;
+
+        if (budgeting_inf.if_set()) {
+            max_delay = budgeting_inf.get_max_delay_budget(inet, target_pin);
+            target_delay = budgeting_inf.get_delay_target(inet, target_pin);
+            min_delay = budgeting_inf.get_min_delay_budget(inet, target_pin);
+            short_path_crit = budgeting_inf.get_crit_short_path(inet, target_pin);
+        } else {
+            max_delay = 0;
+            target_delay = 0;
+            min_delay = 0;
+            short_path_crit = 0;
+        }
+
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(itry, inet, itarget, target_pin, target_criticality,
-                pres_fac, astar_fac, bend_cost, rt_root, rt_node_of_sink, budgeting_inf))
+                pres_fac, astar_fac, bend_cost, rt_root, rt_node_of_sink, budgeting_inf,
+                max_delay, min_delay, target_delay, short_path_crit))
             return false;
 
         // need to gurantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
@@ -665,7 +682,8 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
 }
 
 static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int target_pin, float target_criticality,
-        float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink, route_budgets budgeting_inf) {
+        float pres_fac, float astar_fac, float bend_cost, t_rt_node* rt_root, t_rt_node** rt_node_of_sink, route_budgets &budgeting_inf,
+        float max_delay, float min_delay, float target_delay, float short_path_crit) {
 
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
@@ -686,8 +704,10 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
         rt_root->re_expand = false;
     }
 
+
     t_heap * cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
-            astar_fac, bend_cost, rt_root, bounding_box, cluster_ctx.clbs_nlist.net[inet].num_sinks(), budgeting_inf);
+            astar_fac, bend_cost, rt_root, bounding_box, cluster_ctx.clbs_nlist.net[inet].num_sinks(), budgeting_inf,
+            max_delay, min_delay, target_delay, short_path_crit);
 
     if (cheapest == NULL) {
         const t_net_pin* src_net_pin = &cluster_ctx.clbs_nlist.net[inet].pins[0];
@@ -724,12 +744,12 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
 }
 
 t_heap * timing_driven_route_connection(int source_node, int sink_node, float target_criticality,
-        float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks, route_budgets budgeting_inf) {
+        float astar_fac, float bend_cost, t_rt_node* rt_root, t_bb bounding_box, int num_sinks, route_budgets &budgeting_inf,
+        float max_delay, float min_delay, float target_delay, float short_path_crit) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     int highfanout_rlim = mark_node_expansion_by_bin(source_node, sink_node, rt_root, bounding_box, num_sinks);
 
-    float short_path_crit = budgeting_inf.get_crit_short_path(source_node, sink_node);
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
@@ -789,7 +809,8 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
             timing_driven_expand_neighbours(cheapest, bounding_box, bend_cost,
                     target_criticality, num_sinks, sink_node, astar_fac,
-                    highfanout_rlim, budgeting_inf);
+                    highfanout_rlim, budgeting_inf, max_delay, min_delay,
+                    target_delay, short_path_crit);
         }
 
         free_heap_data(cheapest);
@@ -949,7 +970,8 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
 static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
         int num_sinks, int target_node,
-        float astar_fac, int highfanout_rlim, route_budgets budgeting_inf) {
+        float astar_fac, int highfanout_rlim, route_budgets& budgeting_inf, float max_delay, float min_delay,
+        float target_delay, float short_path_crit) {
 
     /* Puts all the rr_nodes adjacent to current on the heap.  rr_nodes outside *
      * the expanded bounding box specified in bounding_box are not added to the     *
@@ -1016,6 +1038,14 @@ static void timing_driven_expand_neighbours(t_heap *current,
         Tdel += device_ctx.rr_switch_inf[iswitch].Tdel;
         new_R_upstream += device_ctx.rr_nodes[to_node].R();
         new_back_pcost += criticality_fac * Tdel;
+
+        float zero = 0.0;
+        //after budgets are loaded, calculate delay cost as described by RCV paper
+        if (budgeting_inf.if_set()) {
+            new_back_pcost += (short_path_crit + criticality_fac) * max(zero, target_delay - Tdel);
+            new_back_pcost += pow(max(zero, Tdel - max_delay), 2) / 100e-12;
+            new_back_pcost += pow(max(zero, min_delay - Tdel), 2) / 100e-12;
+        }
 
         if (bend_cost != 0.) {
             t_rr_type from_type = device_ctx.rr_nodes[inode].type();

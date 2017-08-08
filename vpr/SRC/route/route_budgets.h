@@ -24,8 +24,8 @@ public:
     virtual ~route_budgets();
 
     float get_delay_target(int source, int sink);
-    float get_min_delay_target(int source, int sink);
-    float get_max_delay_target(int source, int sink);
+    float get_min_delay_budget(int source, int sink);
+    float get_max_delay_budget(int source, int sink);
     float get_crit_short_path(int source, int sink);
     void load_route_budgets(float ** net_delay);
     void print_route_budget();

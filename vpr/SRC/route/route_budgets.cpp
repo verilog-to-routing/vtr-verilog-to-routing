@@ -55,6 +55,21 @@ route_budgets::route_budgets() {
 }
 
 route_budgets::~route_budgets() {
+    
+    for (unsigned i = 0; i < delay_min_budget.size(); i++){
+        
+    delay_min_budget[i].clear();
+    delay_max_budget[i].clear();
+    delay_target[i].clear();
+    delay_lower_bound[i].clear();
+    //delay_upper_bound[i].clear();
+    }
+    delay_min_budget.clear();
+    delay_max_budget.clear();
+    delay_target.clear();
+    delay_lower_bound.clear();
+    delay_upper_bound.clear();
+    
 }
 
 //std::shared_ptr<RoutingDelayCalculator> route_budgets::get_routing_calc(float ** net_delay) {
@@ -191,32 +206,66 @@ route_budgets::~route_budgets() {
 //    }
 //}
 
+//void route_budgets::load_route_budgets(float ** net_delay) {
+//    auto& device_ctx = g_vpr_ctx.device();
+//
+//    //set lower bound to 0 and upper bound to net_delay
+//    delay_min_budget.resize(device_ctx.num_rr_nodes);
+//    delay_target.resize(device_ctx.num_rr_nodes);
+//    delay_max_budget.resize(device_ctx.num_rr_nodes);
+//    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+//        delay_min_budget[inode].resize(device_ctx.rr_nodes[inode].num_edges(), 0);
+//        delay_target[inode].resize(device_ctx.rr_nodes[inode].num_edges(), 0);
+//        delay_max_budget[inode].resize(device_ctx.rr_nodes[inode].num_edges(), 0);
+//    }
+//
+//    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+//        for (int isink = 0; isink < device_ctx.rr_nodes[inode].num_edges(); isink++) {
+//            delay_min_budget[inode][isink] = 0;
+//            delay_max_budget[inode][isink] = 0.1e-12;
+//        }
+//    }
+//
+//    //Use RCV algorithm for delay target
+//    //Tend towards minimum to consider short path timing delay more
+//
+//    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+//        for (int isink = 0; isink < device_ctx.rr_nodes[inode].num_edges(); isink++) {
+//            delay_target[inode][isink] = min(0.5 * (delay_min_budget[inode][isink] + delay_max_budget[inode][isink]), delay_min_budget[inode][isink] + 0.1e-9);
+//        }
+//    }
+//    set = true;
+//}
+
 void route_budgets::load_route_budgets(float ** net_delay) {
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //set lower bound to 0 and upper bound to net_delay
-    delay_min_budget.resize(device_ctx.num_rr_nodes);
-    delay_target.resize(device_ctx.num_rr_nodes);
-    delay_max_budget.resize(device_ctx.num_rr_nodes);
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-        delay_min_budget[inode].resize(device_ctx.rr_nodes[inode].num_edges(), 0);
-        delay_target[inode].resize(device_ctx.rr_nodes[inode].num_edges(), 0);
-        delay_max_budget[inode].resize(device_ctx.rr_nodes[inode].num_edges(), 0);
+    delay_min_budget.resize(cluster_ctx.clbs_nlist.net.size());
+    delay_target.resize(cluster_ctx.clbs_nlist.net.size());
+    delay_max_budget.resize(cluster_ctx.clbs_nlist.net.size());
+    delay_lower_bound.resize(cluster_ctx.clbs_nlist.net.size());
+    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        delay_min_budget[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
+        delay_target[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
+        delay_max_budget[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
+        delay_lower_bound[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
     }
 
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-        for (int isink = 0; isink < device_ctx.rr_nodes[inode].num_edges(); isink++) {
-            delay_min_budget[inode][isink] = 0;
-            delay_max_budget[inode][isink] = 100e-12;
+    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+            delay_min_budget[inet][ipin] = 0;
+            delay_max_budget[inet][ipin] = 0.1e-12;
+            delay_lower_bound[inet][ipin] = 0.1e-16;
         }
     }
 
     //Use RCV algorithm for delay target
     //Tend towards minimum to consider short path timing delay more
 
-    for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-        for (int isink = 0; isink < device_ctx.rr_nodes[inode].num_edges(); isink++) {
-            delay_target[inode][isink] = min(0.5 * (delay_min_budget[inode][isink] + delay_max_budget[inode][isink]), delay_min_budget[inode][isink] + 0.1e-9);
+    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+            delay_target[inet][ipin] = min(0.5 * (delay_min_budget[inet][ipin] + delay_max_budget[inet][ipin]), delay_min_budget[inet][ipin] + 0.1e-9);
         }
     }
     set = true;
@@ -226,11 +275,11 @@ float route_budgets::get_delay_target(int source, int sink) {
     return delay_target[source][sink];
 }
 
-float route_budgets::get_min_delay_target(int source, int sink) {
+float route_budgets::get_min_delay_budget(int source, int sink) {
     return delay_min_budget[source][sink];
 }
 
-float route_budgets::get_max_delay_target(int source, int sink) {
+float route_budgets::get_max_delay_budget(int source, int sink) {
     return delay_max_budget[source][sink];
 }
 
@@ -290,10 +339,10 @@ void route_budgets::print_route_budget() {
             fp << delay_upper_bound[inode][isink] << " ";
         }
     }
-  
+
     fp.close();
 }
 
-bool route_budgets::if_set(){
+bool route_budgets::if_set() {
     return set;
 }
