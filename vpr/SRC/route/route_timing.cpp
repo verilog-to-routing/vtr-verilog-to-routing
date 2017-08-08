@@ -116,7 +116,9 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
         float max_delay, float min_delay, float target_delay, float short_path_crit);
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
-        float target_criticality, float astar_fac);
+        float target_criticality, float astar_fac, route_budgets& budgeting_inf, 
+        float max_delay, float min_delay,
+        float target_delay, float short_path_crit);
 
 static void timing_driven_expand_neighbours(t_heap *current,
         t_bb bounding_box, float bend_cost, float criticality_fac,
@@ -704,7 +706,6 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
         rt_root->re_expand = false;
     }
 
-
     t_heap * cheapest = timing_driven_route_connection(source_node, sink_node, target_criticality,
             astar_fac, bend_cost, rt_root, bounding_box, cluster_ctx.clbs_nlist.net[inet].num_sinks(), budgeting_inf,
             max_delay, min_delay, target_delay, short_path_crit);
@@ -750,10 +751,10 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
     int highfanout_rlim = mark_node_expansion_by_bin(source_node, sink_node, rt_root, bounding_box, num_sinks);
 
-
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
-    add_route_tree_to_heap(rt_root, sink_node, target_criticality, astar_fac);
+    add_route_tree_to_heap(rt_root, sink_node, target_criticality, astar_fac, budgeting_inf, 
+        max_delay, min_delay, target_delay, short_path_crit);
     heap_::build_heap(); // via sifting down everything
 
     VTR_ASSERT_SAFE(heap_::is_valid());
@@ -931,7 +932,9 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 }
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
-        float target_criticality, float astar_fac) {
+        float target_criticality, float astar_fac, route_budgets& budgeting_inf, 
+        float max_delay, float min_delay,
+        float target_delay, float short_path_crit) {
 
     /* Puts the entire partial routing below and including rt_node onto the heap *
      * (except for those parts marked as not to be expanded) by calling itself   *
@@ -947,6 +950,15 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
     if (rt_node->re_expand) {
         inode = rt_node->inode;
         backward_path_cost = target_criticality * rt_node->Tdel;
+
+        float zero = 0.0;
+        //after budgets are loaded, calculate delay cost as described by RCV paper
+        if (budgeting_inf.if_set()) {
+            backward_path_cost += (short_path_crit + target_criticality) * max(zero, target_delay - rt_node->Tdel);
+            backward_path_cost += pow(max(zero, rt_node->Tdel - max_delay), 2) / 100e-12;
+            backward_path_cost += pow(max(zero, min_delay - rt_node->Tdel), 2) / 100e-12;
+        }
+
         R_upstream = rt_node->R_upstream;
         tot_cost = backward_path_cost
                 + astar_fac
@@ -962,7 +974,8 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
     while (linked_rt_edge != NULL) {
         child_node = linked_rt_edge->child;
         add_route_tree_to_heap(child_node, target_node, target_criticality,
-                astar_fac);
+                astar_fac, budgeting_inf, max_delay, min_delay,
+                target_delay, short_path_crit);
         linked_rt_edge = linked_rt_edge->next;
     }
 }
