@@ -243,6 +243,98 @@ void ClusteredNetlist::set_fixed(ClusterNetId net_id, bool state) {
 	net_fixed_[net_id] = state;
 }
 
+void ClusteredNetlist::remove_block(const ClusterBlockId blk_id) {
+	Netlist::remove_block(blk_id);
+
+	//Remove & invalidate pointers
+	free_pb(block_pbs_[blk_id]);
+	block_pbs_.insert(blk_id, NULL);
+	block_types_.insert(blk_id, NULL);
+	block_nets_.insert(blk_id, std::vector<ClusterNetId>());
+	block_net_count_.insert(blk_id, std::vector<int>());
+
+	//Mark netlist dirty
+	dirty_ = true;
+}
+
+void ClusteredNetlist::compress() {
+	//Compress the various netlist components to remove invalid entries
+	// Note: this invalidates all Ids
+	vtr::vector_map<ClusterBlockId, ClusterBlockId> block_id_map(block_ids_.size());
+	vtr::vector_map<ClusterPortId, ClusterPortId> port_id_map(port_ids_.size());
+	vtr::vector_map<ClusterPinId, ClusterPinId> pin_id_map(pin_ids_.size());
+	vtr::vector_map<ClusterNetId, ClusterNetId> net_id_map(net_ids_.size());
+
+	build_id_maps(block_id_map, port_id_map, pin_id_map, net_id_map);
+
+	Netlist::clean_nets(net_id_map);
+	Netlist::clean_pins(pin_id_map);
+	Netlist::clean_ports(port_id_map);
+	Netlist::clean_blocks(block_id_map);
+
+	//Now we re-build all the cross references
+	rebuild_block_refs(pin_id_map, port_id_map);
+	rebuild_port_refs(block_id_map, pin_id_map);
+	rebuild_pin_refs(port_id_map, net_id_map);
+	rebuild_net_refs(pin_id_map);
+
+	//Re-build the lookups
+	rebuild_lookups();
+
+	clean_ports(port_id_map);
+	clean_blocks(block_id_map);
+
+	//Resize containers to exact size
+	shrink_to_fit();
+}
+
+void ClusteredNetlist::clean_blocks(const vtr::vector_map<ClusterBlockId, ClusterBlockId>& block_id_map) {
+	//Update all the block values
+	block_pbs_ = clean_and_reorder_values(block_pbs_, block_id_map);
+	block_types_ = clean_and_reorder_values(block_types_, block_id_map);
+	block_nets_ = clean_and_reorder_values(block_nets_, block_id_map);
+	block_net_count_ = clean_and_reorder_values(block_net_count_, block_id_map);
+
+	VTR_ASSERT(validate_block_sizes());
+}
+
+void ClusteredNetlist::clean_pins(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map) {
+	//Update all the pin values
+	pin_index_ = clean_and_reorder_values(pin_index_, pin_id_map);
+
+	VTR_ASSERT(validate_pin_sizes());
+}
+
+void ClusteredNetlist::clean_nets(const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map) {
+	//Update all the net values
+	net_global_ = clean_and_reorder_values(net_global_, net_id_map);
+	net_routed_ = clean_and_reorder_values(net_routed_, net_id_map);
+	net_fixed_ = clean_and_reorder_values(net_fixed_, net_id_map);
+
+	VTR_ASSERT(validate_net_sizes());
+}
+
+void ClusteredNetlist::shrink_to_fit() {
+	Netlist::shrink_to_fit();
+	
+	//Block data
+	block_pbs_.shrink_to_fit();
+	block_types_.shrink_to_fit();
+	block_nets_.shrink_to_fit();
+	block_net_count_.shrink_to_fit();
+	VTR_ASSERT(validate_block_sizes());
+
+	//Pin data
+	pin_index_.shrink_to_fit();
+	VTR_ASSERT(validate_pin_sizes());
+
+	//Net data
+	net_global_.shrink_to_fit();
+	net_routed_.shrink_to_fit();
+	net_fixed_.shrink_to_fit();
+	VTR_ASSERT(validate_net_sizes());
+}
+
 
 /*
 *
@@ -254,14 +346,14 @@ bool ClusteredNetlist::validate_block_sizes() const {
 		|| block_types_.size() != block_ids_.size()
 		|| block_nets_.size() != block_ids_.size()
 		|| block_net_count_.size() != block_ids_.size()) {
-		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent block data sizes");
+		VPR_THROW(VPR_ERROR_CLB_NETLIST, "Inconsistent block data sizes");
 	}
 	return Netlist::validate_block_sizes();
 }
 
 bool ClusteredNetlist::validate_pin_sizes() const {
 	if (pin_index_.size() != pin_ids_.size()) {
-		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent pin data sizes");
+		VPR_THROW(VPR_ERROR_CLB_NETLIST, "Inconsistent pin data sizes");
 	}
 	return Netlist::validate_pin_sizes();
 }
@@ -270,7 +362,7 @@ bool ClusteredNetlist::validate_net_sizes() const {
 	if (net_global_.size() != net_ids_.size()
 		|| net_fixed_.size() != net_ids_.size()
 		|| net_routed_.size() != net_ids_.size()) {
-		VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Inconsistent net data sizes");
+		VPR_THROW(VPR_ERROR_CLB_NETLIST, "Inconsistent net data sizes");
 	}
 	return Netlist::validate_net_sizes();
 }

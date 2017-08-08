@@ -246,7 +246,7 @@ static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
 		t_pb_graph_node **primitives_list,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
-        const ClusterBlockId clb_index,
+        ClusterBlockId clb_index,
 		const t_pack_molecule *molecule, const float aspect,
 		int *num_used_instances_type, int *num_instances_type,
 		const int num_models, const int max_cluster_size,
@@ -695,9 +695,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 				/* Free up data structures and requeue used molecules */
 				num_used_instances_type[cluster_ctx.clb_nlist.block_type(clb_index)->index]--;
                 revalid_molecules(cluster_ctx.clb_nlist.block_pb(clb_index), atom_molecules);
-				free_pb(cluster_ctx.clb_nlist.block_pb(clb_index));
-				delete cluster_ctx.clb_nlist.block_pb(clb_index);
 				cluster_ctx.clb_nlist.remove_block(clb_index);
+				cluster_ctx.clb_nlist.compress();
 				num_clb--;
 				seedindex = savedseedindex;
 			}
@@ -713,7 +712,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	check_clustering();
 
 	output_clustering(intra_lb_routing, global_clocks, is_clock, arch->architecture_id, out_fname, false);
-	
 
 	for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++){
 		free_intra_lb_nets(intra_lb_routing[irt]);
@@ -1889,7 +1887,7 @@ static void start_new_cluster(
 		t_cluster_placement_stats *cluster_placement_stats,
 		t_pb_graph_node **primitives_list,
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
-        const ClusterBlockId clb_index,
+        ClusterBlockId clb_index,
 		const t_pack_molecule *molecule, const float aspect,
 		int *num_used_instances_type, int *num_instances_type,
 		const int num_models, const int max_cluster_size,
@@ -1946,7 +1944,7 @@ static void start_new_cluster(
 				if (success) {
 					/* TODO: For now, just grab any working cluster, in the future, heuristic needed to grab best complex block based on supply and demand */
 					//Once clustering succeeds, add it to the clb netlist
-					clb_nlist->create_block(root_atom_name.c_str(), pb, &device_ctx.block_types[i]);
+					clb_index = clb_nlist->create_block(root_atom_name.c_str(), pb, &device_ctx.block_types[i]);
 					break;
 				} else {
 					free_router_data(*router_data);

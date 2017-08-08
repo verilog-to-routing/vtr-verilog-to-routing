@@ -9,6 +9,7 @@
 #include "netlist.h"
 #include "clustered_netlist_fwd.h"
 #include "vpr_types.h"
+#include "vpr_utils.h"
 #include "vtr_util.h"
 
 class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId> {
@@ -75,6 +76,20 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		//Sets the flag in net_fixed_ = state
 		void set_fixed(ClusterNetId net_id, bool state);
 
+		//Removes a block from the netlist. This will also remove the associated ports and pins.
+		//  blk_id  : The block to be removed
+		void remove_block(const ClusterBlockId blk_id);
+
+		//Compresses the netlist, removing any invalid and/or unreferenced
+		//blocks/ports/pins/nets.
+		//
+		//This should be called after completing a series of netlist modifications 
+		//(e.g. removing blocks/ports/pins/nets).
+		//
+		//NOTE: this invalidates all existing IDs!
+		void compress();
+
+
 	public: //Public Accessors
 		/*
 		* Blocks
@@ -119,6 +134,25 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		bool net_fixed(const ClusterNetId id) const;
 
 	private: //Private Members
+		/*
+         * Netlist compression/optimization
+         */
+        //Removes invalid and reorders blocks
+        void clean_blocks(const vtr::vector_map<ClusterBlockId,ClusterBlockId>& block_id_map);
+
+		//Removes invalid and reorders pins
+		void clean_pins(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map);
+
+		//Removes invalid and reorders nets
+		void clean_nets(const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map);
+
+        //Shrinks internal data structures to required size to reduce memory consumption
+        void shrink_to_fit();
+
+		/*
+		* Sanity Checks
+		*/
+		//Verify the internal data structure sizes match
 		bool validate_block_sizes() const;
 		bool validate_pin_sizes() const;
 		bool validate_net_sizes() const;
@@ -127,8 +161,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		
 		//Blocks
 		vtr::vector_map<ClusterBlockId, t_pb*>							block_pbs_;         //Physical block representing the clustering & internal hierarchy of each CLB
-		vtr::vector_map<ClusterBlockId, t_type_ptr>					block_types_;		//The type of physical block this user circuit block is mapped to
-		vtr::vector_map<ClusterBlockId, std::vector<ClusterNetId>>			block_nets_;		//Stores which pins are used/unused on the block with the net using it
+		vtr::vector_map<ClusterBlockId, t_type_ptr>						block_types_;		//The type of physical block this user circuit block is mapped to
+		vtr::vector_map<ClusterBlockId, std::vector<ClusterNetId>>		block_nets_;		//Stores which pins are used/unused on the block with the net using it
 		vtr::vector_map<ClusterBlockId, std::vector<int>>				block_net_count_;	//The count of the nets related to the block
 
 		//Pins

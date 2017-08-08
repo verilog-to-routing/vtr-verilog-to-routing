@@ -289,6 +289,7 @@ void AtomNetlist::set_pin_net (const AtomPinId pin, AtomPinType type, const Atom
 	
 	Netlist::set_pin_net(pin, (PinType)type, net);
 }
+
 /*
 *
 * Internal utilities
@@ -297,194 +298,45 @@ void AtomNetlist::set_pin_net (const AtomPinId pin, AtomPinType type, const Atom
 void AtomNetlist::compress() {
     //Compress the various netlist components to remove invalid entries
     // Note: this invalidates all Ids
+	vtr::vector_map<AtomBlockId, AtomBlockId> block_id_map(block_ids_.size());
+	vtr::vector_map<AtomPortId, AtomPortId> port_id_map(port_ids_.size());
+	vtr::vector_map<AtomPinId, AtomPinId> pin_id_map(pin_ids_.size());
+	vtr::vector_map<AtomNetId, AtomNetId> net_id_map(net_ids_.size());
 
-    //Walk the netlist to invalidate any unused items
-    remove_unused();
+	Netlist::compress(block_id_map, port_id_map, pin_id_map, net_id_map);
 
-    vtr::vector_map<AtomBlockId,AtomBlockId> block_id_map(block_ids_.size());
-    vtr::vector_map<AtomPortId,AtomPortId> port_id_map(port_ids_.size());
-    vtr::vector_map<AtomPinId,AtomPinId> pin_id_map(pin_ids_.size());
-    vtr::vector_map<AtomNetId,AtomNetId> net_id_map(net_ids_.size());
-
-    //Build the mappings from old to new id's, potentially
-    //re-ordering for improved cache locality
-    //
-    //The vectors passed as parameters are initialized as a mapping from old to new index
-    // e.g. block_id_map[old_id] == new_id
-    build_id_maps(block_id_map, port_id_map, pin_id_map, net_id_map);
-
-    //The clean_*() functions return a vector which maps from old to new index
-    // e.g. block_id_map[old_id] == new_id
-    clean_nets(net_id_map);
-    clean_pins(pin_id_map);
-    clean_ports(port_id_map);
-    clean_blocks(block_id_map);
-    //TODO: clean strings
-    //TODO: iterative cleaning?
-
-    //Now we re-build all the cross references
-    rebuild_block_refs(pin_id_map, port_id_map);
-    rebuild_port_refs(block_id_map, pin_id_map);
-    rebuild_pin_refs(port_id_map, net_id_map);
-    rebuild_net_refs(pin_id_map);
-
-    //Re-build the lookups
-    rebuild_lookups();
+	clean_ports(port_id_map);
+	clean_blocks(block_id_map);
 
     //Resize containers to exact size
     shrink_to_fit();
-
-    //Netlist is now clean
-    dirty_ = false;
-}
-
-void AtomNetlist::build_id_maps(vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map, 
-                                vtr::vector_map<AtomPortId,AtomPortId>& port_id_map, 
-                                vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map, 
-                                vtr::vector_map<AtomNetId,AtomNetId>& net_id_map) {
-    block_id_map = compress_ids(block_ids_);
-    port_id_map = compress_ids(port_ids_);
-    pin_id_map = compress_ids(pin_ids_);
-    net_id_map = compress_ids(net_ids_);
 }
 
 void AtomNetlist::clean_blocks(const vtr::vector_map<AtomBlockId,AtomBlockId>& block_id_map) {
     //Update all the block values
-    block_ids_ = clean_and_reorder_ids(block_id_map);
-    block_names_ = clean_and_reorder_values(block_names_, block_id_map);
     block_models_ = clean_and_reorder_values(block_models_, block_id_map);
     block_truth_tables_ = clean_and_reorder_values(block_truth_tables_, block_id_map);
 
-    block_pins_ = clean_and_reorder_values(block_pins_, block_id_map);
-    block_num_input_pins_ = clean_and_reorder_values(block_num_input_pins_, block_id_map);
-    block_num_output_pins_ = clean_and_reorder_values(block_num_output_pins_, block_id_map);
-    block_num_clock_pins_ = clean_and_reorder_values(block_num_clock_pins_, block_id_map);
-
-    block_ports_ = clean_and_reorder_values(block_ports_, block_id_map);
-    block_num_input_ports_ = clean_and_reorder_values(block_num_input_ports_, block_id_map);
-    block_num_output_ports_ = clean_and_reorder_values(block_num_output_ports_, block_id_map);
-    block_num_clock_ports_ = clean_and_reorder_values(block_num_clock_ports_, block_id_map);
-
     VTR_ASSERT(validate_block_sizes());
-
-    VTR_ASSERT_MSG(are_contiguous(block_ids_), "Ids should be contiguous");
-    VTR_ASSERT_MSG(all_valid(block_ids_), "All Ids should be valid");
 }
 
 void AtomNetlist::clean_ports(const vtr::vector_map<AtomPortId,AtomPortId>& port_id_map) {
     //Update all the port values
-    port_ids_ = clean_and_reorder_ids(port_id_map);
-    port_names_ = clean_and_reorder_values(port_names_, port_id_map);
-    port_blocks_ = clean_and_reorder_values(port_blocks_, port_id_map);
     port_models_ = clean_and_reorder_values(port_models_, port_id_map);
-	port_widths_ = clean_and_reorder_values(port_widths_, port_id_map);
-    port_pins_ = clean_and_reorder_values(port_pins_, port_id_map);
 
     VTR_ASSERT(validate_port_sizes());
-
-    VTR_ASSERT_MSG(are_contiguous(port_ids_), "Ids should be contiguous");
-    VTR_ASSERT_MSG(all_valid(port_ids_), "All Ids should be valid");
-}
-
-void AtomNetlist::clean_pins(const vtr::vector_map<AtomPinId,AtomPinId>& pin_id_map) {
-    //Update all the pin values
-    pin_ids_ = clean_and_reorder_ids(pin_id_map);
-    pin_ports_ = clean_and_reorder_values(pin_ports_, pin_id_map);
-    pin_port_bits_ = clean_and_reorder_values(pin_port_bits_, pin_id_map);
-    pin_nets_ = clean_and_reorder_values(pin_nets_, pin_id_map);
-    pin_is_constant_ = clean_and_reorder_values(pin_is_constant_, pin_id_map);
-
-    VTR_ASSERT(validate_pin_sizes());
-
-    VTR_ASSERT_MSG(are_contiguous(pin_ids_), "Ids should be contiguous");
-    VTR_ASSERT_MSG(all_valid(pin_ids_), "All Ids should be valid");
-}
-
-void AtomNetlist::clean_nets(const vtr::vector_map<AtomNetId,AtomNetId>& net_id_map) {
-    //Update all the net values
-    net_ids_ = clean_and_reorder_ids(net_id_map);
-    net_names_ = clean_and_reorder_values(net_names_, net_id_map);
-    net_pins_ = clean_and_reorder_values(net_pins_, net_id_map);
-
-    VTR_ASSERT(validate_net_sizes());
-
-    VTR_ASSERT_MSG(are_contiguous(net_ids_), "Ids should be contiguous");
-    VTR_ASSERT_MSG(all_valid(net_ids_), "All Ids should be valid");
-}
-
-void AtomNetlist::rebuild_lookups() {
-    //We iterate through the reverse-lookups and update the values (i.e. ids)
-    //to the new id values
-
-    //Blocks
-    block_name_to_block_id_.clear();
-    for(auto blk_id : blocks()) {
-        const auto& key = block_names_[blk_id];
-        block_name_to_block_id_.insert(key, blk_id);
-    }
-
-    //Nets
-    net_name_to_net_id_.clear();
-    for(auto net_id : nets()) {
-        const auto& key = net_names_[net_id];
-        net_name_to_net_id_.insert(key, net_id);
-    }
 }
 
 void AtomNetlist::shrink_to_fit() {
+	Netlist::shrink_to_fit();
+
     //Block data
-    block_ids_.shrink_to_fit();
-    block_names_.shrink_to_fit();
     block_models_.shrink_to_fit();
-    block_truth_tables_.shrink_to_fit();
-
-    block_pins_.shrink_to_fit();
-    for(std::vector<AtomPinId>& pin_collection : block_pins_) {
-        pin_collection.shrink_to_fit();
-    }
-    block_num_input_pins_.shrink_to_fit();
-    block_num_output_pins_.shrink_to_fit();
-    block_num_clock_pins_.shrink_to_fit();
-
-    block_ports_.shrink_to_fit();
-    for(auto& ports : block_ports_) {
-        ports.shrink_to_fit();
-    }
-    block_num_input_ports_.shrink_to_fit();
-    block_num_output_ports_.shrink_to_fit();
-    block_num_clock_ports_.shrink_to_fit();
-
     VTR_ASSERT(validate_block_sizes());
 
     //Port data
-    port_ids_.shrink_to_fit();
-    port_blocks_.shrink_to_fit();
     port_models_.shrink_to_fit();
-	port_widths_.shrink_to_fit();
-    port_pins_.shrink_to_fit();
-    for(auto& pin_collection : port_pins_) {
-        pin_collection.shrink_to_fit();
-    }
     VTR_ASSERT(validate_port_sizes());
-
-    //Pin data
-    pin_ids_.shrink_to_fit();
-    pin_ports_.shrink_to_fit();
-    pin_port_bits_.shrink_to_fit();
-    pin_nets_.shrink_to_fit();
-    pin_is_constant_.shrink_to_fit();
-    VTR_ASSERT(validate_pin_sizes());
-
-    //Net data
-    net_ids_.shrink_to_fit();
-    net_names_.shrink_to_fit();
-    net_pins_.shrink_to_fit();
-    VTR_ASSERT(validate_net_sizes());
-
-    //String data
-    string_ids_.shrink_to_fit();
-    strings_.shrink_to_fit();
-    VTR_ASSERT(validate_string_sizes());
 }
 
 /*
