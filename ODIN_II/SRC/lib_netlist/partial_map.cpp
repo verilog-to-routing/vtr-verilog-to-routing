@@ -66,7 +66,7 @@ void instantiate_soft_logic_ram(nnode_t *node, short mark, netlist_t *netlist);
 void partial_map_top(netlist_t *netlist)
 {
 	/* depending on the output target choose how to do partial mapping */
-	if (strcmp(configuration.output_type, "blif") == 0)
+	if (strcmp(configuration.output_type.c_str(), "blif") == 0)
 	{
 		/* do the partial map without any larger structures identified */
 		depth_first_traversal_to_partial_map(PARTIAL_MAP_TRAVERSE_VALUE, netlist);	
