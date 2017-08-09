@@ -155,25 +155,25 @@ void sync_grid_to_blocks() {
 
 	/* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); ++i) {
-        int blk_x = place_ctx.block_locs[i].x;
-        int blk_y = place_ctx.block_locs[i].y;
-        int blk_z = place_ctx.block_locs[i].z;
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        int blk_x = place_ctx.block_locs[(size_t)blk_id].x;
+        int blk_y = place_ctx.block_locs[(size_t)blk_id].y;
+        int blk_z = place_ctx.block_locs[(size_t)blk_id].z;
 
 		/* Check range of block coords */
 		if (blk_x < 0 || blk_y < 0
-				|| (blk_x + cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->width - 1) > (device_ctx.nx + 1)
-				|| (blk_y + cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->height - 1) > (device_ctx.ny + 1)
-				|| blk_z < 0 || blk_z > (cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->capacity)) {
-			VPR_THROW(VPR_ERROR_PLACE, "Block %d is at invalid location (%d, %d, %d).\n", 
-					i, blk_x, blk_y, blk_z);
+				|| (blk_x + cluster_ctx.clb_nlist.block_type(blk_id)->width - 1) > (device_ctx.nx + 1)
+				|| (blk_y + cluster_ctx.clb_nlist.block_type(blk_id)->height - 1) > (device_ctx.ny + 1)
+				|| blk_z < 0 || blk_z > (cluster_ctx.clb_nlist.block_type(blk_id)->capacity)) {
+			VPR_THROW(VPR_ERROR_PLACE, "Block %lu is at invalid location (%d, %d, %d).\n", 
+				(size_t)blk_id, blk_x, blk_y, blk_z);
 		}
 
 		/* Check types match */
-		if (cluster_ctx.clb_nlist.block_type((ClusterBlockId)i) != device_ctx.grid[blk_x][blk_y].type) {
+		if (cluster_ctx.clb_nlist.block_type(blk_id) != device_ctx.grid[blk_x][blk_y].type) {
             VPR_THROW(VPR_ERROR_PLACE, "A block is in a grid location (%d x %d) with a conflicting types '%s' and '%s' .\n", 
 					blk_x, blk_y,
-					cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->name, 
+					cluster_ctx.clb_nlist.block_type(blk_id)->name, 
 					device_ctx.grid[blk_x][blk_y].type->name);
 		}
 
@@ -185,14 +185,14 @@ void sync_grid_to_blocks() {
 		}
 
 		if (device_ctx.grid[blk_x][blk_y].width_offset != 0 || device_ctx.grid[blk_x][blk_y].height_offset != 0) {
-            VPR_THROW(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %d at (%d, %d, %d).",
-					i, blk_x, blk_y, blk_z);
+            VPR_THROW(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %lu at (%d, %d, %d).",
+				(size_t)blk_id, blk_x, blk_y, blk_z);
 		}
 
 		/* Set the block */
-		for (int width = 0; width < cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->width; ++width) {
-			for (int height = 0; height < cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->height; ++height) {
-				place_ctx.grid_blocks[blk_x + width][blk_y + height].blocks[blk_z] = i;
+		for (int width = 0; width < cluster_ctx.clb_nlist.block_type(blk_id)->width; ++width) {
+			for (int height = 0; height < cluster_ctx.clb_nlist.block_type(blk_id)->height; ++height) {
+				place_ctx.grid_blocks[blk_x + width][blk_y + height].blocks[blk_z] = (size_t)blk_id;
 				place_ctx.grid_blocks[blk_x + width][blk_y + height].usage++;
 				VTR_ASSERT(device_ctx.grid[blk_x + width][blk_y + height].width_offset == width);
 				VTR_ASSERT(device_ctx.grid[blk_x + width][blk_y + height].height_offset == height);
@@ -993,12 +993,12 @@ t_pb ***alloc_and_load_pin_id_to_pb_mapping() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	t_pb ***pin_id_to_pb_mapping = new t_pb**[cluster_ctx.clb_nlist.blocks().size()];
-	for (int i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-		pin_id_to_pb_mapping[i] = new t_pb*[cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->pb_graph_head->total_pb_pins];
-		for (int j = 0; j < cluster_ctx.clb_nlist.block_type((ClusterBlockId)i)->pb_graph_head->total_pb_pins; j++) {
-			pin_id_to_pb_mapping[i][j] = NULL;
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		pin_id_to_pb_mapping[(size_t)blk_id] = new t_pb*[cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins];
+		for (int j = 0; j < cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins; j++) {
+			pin_id_to_pb_mapping[(size_t)blk_id][j] = NULL;
 		}
-		load_pin_id_to_pb_mapping_rec(cluster_ctx.clb_nlist.block_pb((ClusterBlockId)i), pin_id_to_pb_mapping[i]);
+		load_pin_id_to_pb_mapping_rec(cluster_ctx.clb_nlist.block_pb(blk_id), pin_id_to_pb_mapping[(size_t)blk_id]);
 	}
 	return pin_id_to_pb_mapping;
 }
