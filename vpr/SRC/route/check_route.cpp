@@ -204,9 +204,9 @@ static void check_sink(int inode, ClusterNetId inet, bool * pin_done) {
 
 	if (ifound < 1) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
-				 "in check_sink: node %d does not connect to any terminal of net %s #%d.\n"
+				 "in check_sink: node %d does not connect to any terminal of net %s #%lu.\n"
 				 "This error is usually caused by incorrectly specified logical equivalence in your architecture file.\n"
-				 "You should try to respecify what pins are equivalent or turn logical equivalence off.\n", inode, cluster_ctx.clb_nlist.net_name(inet), (size_t)inet);
+				 "You should try to respecify what pins are equivalent or turn logical equivalence off.\n", inode, cluster_ctx.clb_nlist.net_name(inet).c_str(), (size_t)inet);
 	}
 }
 
@@ -592,7 +592,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%lu (%s)\n"
 						"\tClass %d local OPIN is wrong rr_type -- rr_node #%d of type %d.\n",
-						(size_t)blk_id, cluster_ctx.clb_nlist.block_name(blk_id), iclass, inode, rr_type);
+						(size_t)blk_id, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), iclass, inode, rr_type);
 				}
 
 				ipin = device_ctx.rr_nodes[inode].ptc_num();
@@ -600,7 +600,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%lu (%s):\n"
 						"\tExpected class %d local OPIN has class %d -- rr_node #: %d.\n",
-						(size_t)blk_id, cluster_ctx.clb_nlist.block_name(blk_id), iclass,	cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin], inode);
+						(size_t)blk_id, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), iclass,	cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin], inode);
 				}
 			}
 		}

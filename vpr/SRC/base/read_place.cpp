@@ -268,7 +268,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE && place_ctx.block_locs[(size_t)blk_id].x == OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"IO block %s location was not specified in the pad file.\n", cluster_ctx.clb_nlist.block_name(blk_id));
+					"IO block %s location was not specified in the pad file.\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
 		}
 	}
 

@@ -282,7 +282,7 @@ static void processComplexBlock(pugi::xml_node clb_block,
 	}
 	if (!found) {
  		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
-				"Unknown cb type %s for cb %s #%lu.\n", block_inst.value(), clb_nlist->block_name(index), (size_t)index);
+				"Unknown cb type %s for cb %s #%lu.\n", block_inst.value(), clb_nlist->block_name(index).c_str(), (size_t)index);
 	}
 
 	//Parse all pbs and CB internal nets
@@ -302,7 +302,7 @@ static void processComplexBlock(pugi::xml_node clb_block,
 	}
 	if (!found) {
 		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
-		"Unknown mode %s for cb %s #%d.\n", clb_mode.value(), clb_nlist->block_name(index), index);
+		"Unknown mode %s for cb %s #%d.\n", clb_mode.value(), clb_nlist->block_name(index).c_str(), index);
 	}
 
 	processPb(clb_block, index, clb_nlist->block_pb(index), clb_nlist->block_pb(index)->pb_route, num_primitives, loc_data, clb_nlist);
@@ -882,7 +882,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 					if (count[(size_t)clb_net_id] > (int)clb_nlist->net_sinks(clb_net_id).size()) {
 						vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 								"net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n",
-								clb_nlist->net_name(clb_net_id), (size_t)clb_net_id, count[(size_t)clb_net_id],
+								clb_nlist->net_name(clb_net_id).c_str(), (size_t)clb_net_id, count[(size_t)clb_net_id],
 								clb_nlist->net_sinks(clb_net_id).size());
 					}
 
@@ -919,7 +919,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 			if (clb_nlist->block_type(clb_nlist->pin_block(pin_id))->is_global_pin[clb_nlist->pin_index(pin_id)] != is_global_net) {
 				vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 					"Netlist attempts to connect net %s to both global and non-global pins.\n",
-					clb_nlist->net_name(net_id));
+					clb_nlist->net_name(net_id).c_str());
 			}
 		}
 		for (j = 0; j < num_tokens; j++) {

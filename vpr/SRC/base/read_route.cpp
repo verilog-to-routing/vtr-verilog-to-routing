@@ -144,7 +144,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
         if (0 != cluster_ctx.clb_nlist.net_name(inet).compare(name)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                     "Net name %s for net number %lu specified in the routing file does not match given %s",
-                    name.c_str(), (size_t)inet, cluster_ctx.clb_nlist.net_name(inet));
+                    name.c_str(), (size_t)inet, cluster_ctx.clb_nlist.net_name(inet).c_str());
         }
 
         process_global_blocks(fp, inet);
@@ -160,7 +160,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
         if (0 != cluster_ctx.clb_nlist.net_name(inet).compare(name)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                     "Net name %s for net number %lu specified in the routing file does not match given %s",
-                    name.c_str(), (size_t)inet, cluster_ctx.clb_nlist.net_name(inet));
+                    name.c_str(), (size_t)inet, cluster_ctx.clb_nlist.net_name(inet).c_str());
         }
 
         process_nodes(fp, inet);
@@ -362,7 +362,7 @@ static void process_global_blocks(ifstream &fp, ClusterNetId inet) {
             if (0 != cluster_ctx.clb_nlist.block_name(bnum).compare(tokens[1])) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "Block %s for block number %lu specified in the routing file does not match given %s",
-                        tokens[1].c_str(), (size_t)bnum, cluster_ctx.clb_nlist.block_name(bnum));
+                        tokens[1].c_str(), (size_t)bnum, cluster_ctx.clb_nlist.block_name(bnum).c_str());
             }
             if (place_ctx.block_locs[(size_t)bnum].x != x || place_ctx.block_locs[(size_t)bnum].y != y) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,

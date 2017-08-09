@@ -1331,7 +1331,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	ClusterNetId net_id;
 	int num_nets_affected;
 	float delta_c, bb_delta_c, timing_delta_c, delay_delta_c;
-	int inet, iblk, iblk_pin, inet_affected;
+	int iblk, iblk_pin, inet_affected;
 	int abort_swap = false;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2768,7 +2768,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 					"Initial placement failed.\n"
 					"Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n"
 					"VPR cannot auto-size for your circuit, please resize the FPGA manually.\n", 
-					pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name((ClusterBlockId)iblk), iblk, device_ctx.block_types[itype].name, itype);
+					pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name((ClusterBlockId)iblk).c_str(), iblk, device_ctx.block_types[itype].name, itype);
 		}
 
 		// Try to place the macro first, if can be placed - place them, otherwise try again
@@ -2805,7 +2805,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 						"Initial placement failed.\n"
 						"Could not place macro length %d with head block %s (#%d); not enough free locations of type %s (#%d).\n"
 						"Please manually size the FPGA because VPR can't do this yet.\n", 
-						pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name((ClusterBlockId) iblk), iblk, device_ctx.block_types[itype].name, itype);
+						pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name((ClusterBlockId)iblk).c_str(), iblk, device_ctx.block_types[itype].name, itype);
 			}
 
 		} else {
@@ -2842,8 +2842,8 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			if (free_locations[itype] <= 0) {
 				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, 
 						"Initial placement failed.\n"
-						"Could not place block %s (#%d); no free locations of type %s (#%d).\n", 
-						cluster_ctx.clb_nlist.block_name(blk_id), (size_t)blk_id, device_ctx.block_types[itype].name, itype);
+						"Could not place block %s (#%lu); no free locations of type %s (#%d).\n", 
+						cluster_ctx.clb_nlist.block_name(blk_id).c_str(), (size_t)blk_id, device_ctx.block_types[itype].name, itype);
 			}
 
 			initial_placement_location(free_locations, blk_id, &ipos, &x, &y, &z);

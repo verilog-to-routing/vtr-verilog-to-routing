@@ -46,7 +46,7 @@ void check_netlist() {
 		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name(net_id).c_str(), (size_t)net_id);
 		if (h_net_ptr->count != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
-					"Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name(net_id));
+					"Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name(net_id).c_str());
 			error++;
 		}
 		error += check_connections_to_global_clb_pins(net_id);
@@ -127,14 +127,14 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id) {
 					"in check_connections_to_global_clb_pins:\n");
 				vtr::printf_warning(__FILE__, __LINE__,
 					"\tnet #%d (%s) is driven by CLB output pin (#%d) on block #%d (%s).\n",
-					net_id, cluster_ctx.clb_nlist.net_name(net_id), pin_index, blk_id, cluster_ctx.clb_nlist.block_name(blk_id));
+					net_id, cluster_ctx.clb_nlist.net_name(net_id).c_str(), pin_index, blk_id, cluster_ctx.clb_nlist.block_name(blk_id).c_str());
 			}
 			else { //Otherwise -> Error
 				vtr::printf_error(__FILE__, __LINE__,
 					"in check_connections_to_global_clb_pins:\n");
 				vtr::printf_error(__FILE__, __LINE__,
 					"\tpin %d on net #%d (%s) connects to CLB input pin (#%d) on block #%d (%s).\n",
-					pin_id, net_id, cluster_ctx.clb_nlist.net_name(net_id), pin_index, blk_id, cluster_ctx.clb_nlist.block_name(blk_id));
+					pin_id, net_id, cluster_ctx.clb_nlist.net_name(net_id).c_str(), pin_index, blk_id, cluster_ctx.clb_nlist.block_name(blk_id).c_str());
 				error++;
 			}
 
@@ -165,14 +165,14 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
 		//This triggers incorrectly if other blocks (e.g. I/O buffers) are included in the iopads
 		if (num_conn != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
-					"IO blk #%d (%s) has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk), num_conn);
+					"IO blk #%d (%s) has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
 			error++;
 		}
         */
 	}
 	else if (num_conn < 2) {
 		vtr::printf_warning(__FILE__, __LINE__,
-			"Logic block #%d (%s) has only %d pin.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk), num_conn);
+			"Logic block #%d (%s) has only %d pin.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
 
 		/* Allow the case where we have only one OUTPUT pin connected to continue. *
 		 * This is used sometimes as a constant generator for a primary output,    *
@@ -203,7 +203,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
 
 	if (num_conn > type->num_pins) {
 		vtr::printf_error(__FILE__, __LINE__, 
-				"logic block #%d with output %s has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk), num_conn);
+				"logic block #%d with output %s has %d pins.\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
 		error++;
 	}
 
@@ -228,19 +228,19 @@ static int check_clb_internal_nets(ClusterBlockId iblk) {
 				) {
 				if (pb_route[i].driver_pb_pin_id != OPEN) {
 					vtr::printf_error(__FILE__, __LINE__,
-						"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, cluster_ctx.clb_nlist.block_name(iblk), i);
+						"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven when it shouldn't be driven \n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), i);
 					error++;
 				}
 			} else {
 				if (!pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id == OPEN) {
 					vtr::printf_error(__FILE__, __LINE__,
-						"Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, cluster_ctx.clb_nlist.block_name(iblk), i);
+						"Internal connectivity error in logic block #%d with output %s.  Internal node %d dangling\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), i);
 					error++;
 				} else {
 					int prev_pin = pb_route[i].driver_pb_pin_id;
 					if (pb_route[prev_pin].atom_net_id != pb_route[i].atom_net_id) {
 						vtr::printf_error(__FILE__, __LINE__,
-							"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, cluster_ctx.clb_nlist.block_name(iblk), i, prev_pin);
+							"Internal connectivity error in logic block #%d with output %s.  Internal node %d driven by different net than internal node %d\n", iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), i, prev_pin);
 						error++;
 					}
 				}
@@ -266,7 +266,7 @@ static int check_for_duplicated_names(void) {
 		clb_h_ptr = insert_in_hash_table(clb_hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), clb_count);
 		if (clb_h_ptr->count > 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
-					"Block %s has duplicated name.\n", cluster_ctx.clb_nlist.block_name(blk_id));
+					"Block %s has duplicated name.\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
 			error++;
 		} else {
 			clb_count++;

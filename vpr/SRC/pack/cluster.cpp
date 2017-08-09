@@ -540,7 +540,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					num_instances_type, num_models, max_cluster_size,
 					lb_type_rr_graphs, &router_data, detailed_routing_stage, &cluster_ctx.clb_nlist);
 			vtr::printf_info("Complex block %d: %s, type: %s ", 
-					num_clb, cluster_ctx.clb_nlist.block_name(clb_index), cluster_ctx.clb_nlist.block_type(clb_index)->name);
+					num_clb, cluster_ctx.clb_nlist.block_name(clb_index).c_str(), cluster_ctx.clb_nlist.block_type(clb_index)->name);
             vtr::printf("."); //Progress dot for seed-block
 			fflush(stdout);
 			update_cluster_stats(istart, clb_index,

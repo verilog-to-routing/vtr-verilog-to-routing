@@ -671,9 +671,9 @@ static bool timing_driven_route_sink(int itry, ClusterNetId inet, unsigned itarg
 		ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(inet);
 		ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins(inet).begin() + target_pin));
         vtr::printf("Failed to route connection from '%s' to '%s' for net '%s'\n",
-                    cluster_ctx.clb_nlist.block_name(src_block),
-					cluster_ctx.clb_nlist.block_name(sink_block),
-                    cluster_ctx.clb_nlist.net_name(inet));
+                    cluster_ctx.clb_nlist.block_name(src_block).c_str(),
+					cluster_ctx.clb_nlist.block_name(sink_block).c_str(),
+                    cluster_ctx.clb_nlist.net_name(inet).c_str());
         return false;
     }
     
