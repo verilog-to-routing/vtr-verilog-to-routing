@@ -100,11 +100,12 @@ void try_pack(t_packer_opts *packer_opts,
             packer_opts->hill_climbing_flag, packer_opts->output_file.c_str(),
             packer_opts->timing_driven, packer_opts->cluster_seed_type,
             packer_opts->alpha, packer_opts->beta,
-            packer_opts->inter_cluster_net_delay, packer_opts->aspect,
+            packer_opts->inter_cluster_net_delay,
             packer_opts->allow_unrelated_clustering,
             packer_opts->connection_driven,
             packer_opts->packer_algorithm,
-            lb_type_rr_graphs
+            lb_type_rr_graphs,
+            packer_opts->device_layout
 #ifdef ENABLE_CLASSIC_VPR_STA
             , timing_inf
 #endif

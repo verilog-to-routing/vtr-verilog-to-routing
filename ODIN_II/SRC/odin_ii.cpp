@@ -120,7 +120,7 @@ int main(int argc, char **argv)
 	
 		/* parse to abstract syntax tree */
 		printf("Parser starting - we'll create an abstract syntax tree.  "
-				"Note this tree can be viewed using GraphViz (see documentation)\n");
+				"Note this tree can be viewed using Grap Viz (see documentation)\n");
 		parse_to_ast();
 		/* Note that the entry point for ast optimzations is done per module with the
 		 * function void next_parsed_verilog_file(ast_node_t *file_items_list) */
@@ -441,12 +441,12 @@ void set_default_config()
 	/* Set up the global configuration. */
 	configuration.list_of_file_names = NULL;
 	configuration.num_list_of_file_names = 0;
-	configuration.output_type = vtr::strdup("blif");
+	configuration.output_type = std::string("blif");
 	configuration.output_ast_graphs = 0;
 	configuration.output_netlist_graphs = 0;
 	configuration.print_parse_tokens = 0;
 	configuration.output_preproc_source = 0;
-	configuration.debug_output_path = vtr::strdup(".");
+	configuration.debug_output_path = std::string(".");
 	configuration.arch_file = NULL;
 
 	configuration.fixed_hard_multiplier = 0;

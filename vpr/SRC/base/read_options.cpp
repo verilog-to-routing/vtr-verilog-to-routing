@@ -267,6 +267,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .help("Show version information then exit")
             .action(argparse::Action::VERSION);
 
+    gen_grp.add_argument<std::string>(args.device_layout, "--device")
+            .help("Controls which device layout/floorplan is used from the architecture file."
+                  " 'auto' uses the smallest device which satisfies the circuit's resource requirements.")
+            .metavar("DEVICE_NAME")
+            .default_value("auto");
+
     gen_grp.add_argument<size_t>(args.num_workers, "--num_workers", "-j")
             .help("Controls how many workers VPR may use. Values > 1 imply VPR may execute in parallel.")
             .default_value("1");

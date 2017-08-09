@@ -10,6 +10,7 @@ using namespace std;
 
 #include "vpr_types.h"
 #include "vpr_error.h"
+#include "vpr_utils.h"
 
 #include "globals.h"
 #include "read_xml_arch_file.h"
@@ -24,7 +25,6 @@ using namespace std;
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void SetupPackerOpts(const t_options& Options,
-		const t_arch& Arch,
 		t_packer_opts *PackerOpts);
 static void SetupPlacerOpts(const t_options& Options,
 		t_placer_opts *PlacerOpts);
@@ -62,7 +62,7 @@ void SetupVPR(t_options *Options,
               t_segment_inf ** Segments, t_timing_inf * Timing,
               bool * ShowGraphics, int *GraphPause,
               t_power_opts * PowerOpts) {
-	int i, j;
+	int i;
     using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -106,23 +106,30 @@ void SetupVPR(t_options *Options,
 
 	/* TODO: this is inelegant, I should be populating this information in XmlReadArch */
 	device_ctx.EMPTY_TYPE = NULL;
-	device_ctx.FILL_TYPE = NULL;
 	device_ctx.IO_TYPE = NULL;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
-		if (strcmp(device_ctx.block_types[i].name, "<EMPTY>") == 0) {
-			device_ctx.EMPTY_TYPE = &device_ctx.block_types[i];
-		} else if (strcmp(device_ctx.block_types[i].name, "io") == 0) {
-			device_ctx.IO_TYPE = &device_ctx.block_types[i];
-		} else {
-			for (j = 0; j < device_ctx.block_types[i].num_grid_loc_def; j++) {
-				if (device_ctx.block_types[i].grid_loc_def[j].grid_loc_type == FILL) {
-					VTR_ASSERT(device_ctx.FILL_TYPE == NULL);
-					device_ctx.FILL_TYPE = &device_ctx.block_types[i];
-				}
-			}
+        t_type_ptr type = &device_ctx.block_types[i];
+		if (strcmp(device_ctx.block_types[i].name, EMPTY_BLOCK_NAME) == 0) {
+			device_ctx.EMPTY_TYPE = type;
+		} else if (block_type_contains_blif_model(type, ".input") && block_type_contains_blif_model(type, ".output")) {
+            if (device_ctx.IO_TYPE != nullptr) {
+                //Already set
+                VPR_THROW(VPR_ERROR_ARCH, 
+                        "Architecture contains multiple top-level block types containing both"
+                        " '.input' and '.output' BLIF models (expected one block type)");
+            }
+			device_ctx.IO_TYPE = type;
 		}
-	}
-	VTR_ASSERT(device_ctx.EMPTY_TYPE != NULL && device_ctx.FILL_TYPE != NULL && device_ctx.IO_TYPE != NULL);
+    }
+
+	VTR_ASSERT(device_ctx.EMPTY_TYPE != NULL);
+
+    if (device_ctx.IO_TYPE == nullptr) {
+        //Already set
+        VPR_THROW(VPR_ERROR_ARCH, 
+                "Architecture contains no top-level block type containing both"
+                " '.input' and '.output' BLIF models (expected one block type)");
+    }
 
 	*Segments = Arch->Segments;
 	RoutingArch->num_segment = Arch->num_segments;
@@ -130,7 +137,7 @@ void SetupVPR(t_options *Options,
 	SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
 	SetupRoutingArch(*Arch, RoutingArch);
 	SetupTiming(*Options, *Arch, TimingEnabled, Timing);
-	SetupPackerOpts(*Options, *Arch, PackerOpts);
+	SetupPackerOpts(*Options, PackerOpts);
 	RoutingArch->dump_rr_structs_file = nullptr;
 
     //Setup the default flow
@@ -370,14 +377,8 @@ static void SetupAnnealSched(const t_options& Options,
  * Error checking, such as checking for conflicting params is assumed to be done beforehand 
  */
 void SetupPackerOpts(const t_options& Options,
-		const t_arch& Arch,
 		t_packer_opts *PackerOpts) {
 
-	if (Arch.clb_grid.IsAuto) {
-		PackerOpts->aspect = Arch.clb_grid.Aspect;
-	} else {
-		PackerOpts->aspect = (float) Arch.clb_grid.H / (float) Arch.clb_grid.W;
-	}
 	PackerOpts->output_file = Options.NetFile;
 
 	PackerOpts->blif_file_name = Options.BlifFile;
@@ -399,6 +400,8 @@ void SetupPackerOpts(const t_options& Options,
 	PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
 	PackerOpts->auto_compute_inter_cluster_net_delay = true;
 	PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */
+
+    PackerOpts->device_layout = Options.device_layout;
 }
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {

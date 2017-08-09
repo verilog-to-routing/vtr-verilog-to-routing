@@ -653,24 +653,14 @@ static void drawplace(void) {
 
 				/* Draw text if the space has parts of the netlist */
 				if (bnum != EMPTY_BLOCK && bnum != INVALID_BLOCK) {
-					float saved_rotation = gettextrotation();
-					if (j == 0 || j == device_ctx.ny + 1) {
-						settextrotation(90);
-					}
-
                     auto& cluster_ctx = g_vpr_ctx.clustering();
-					drawtext_in(abs_clb_bbox, cluster_ctx.clb_nlist.block_name((ClusterBlockId)bnum));
-					if (j == 0 || j == device_ctx.ny + 1) {
-						settextrotation(saved_rotation);
-					}
+					drawtext_in(abs_clb_bbox, cluster_ctx.blocks[bnum].name);
 				}
 
 				/* Draw text for block type so that user knows what block */
 				if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-					if (i > 0 && i <= device_ctx.nx && j > 0 && j <= device_ctx.ny) {
-						drawtext(abs_clb_bbox.get_center() - t_point(0, abs_clb_bbox.get_width()/4),
-								device_ctx.grid[i][j].type->name, abs_clb_bbox);
-					}
+                    drawtext(abs_clb_bbox.get_center() - t_point(0, abs_clb_bbox.get_height()/4),
+                            device_ctx.grid[i][j].type->name, abs_clb_bbox);
 				}
 			}
 		}
@@ -2138,12 +2128,12 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	t_bound_box clb_bbox(0,0,0,0);
 
 	// iterate over grid x
-	for (int i = 0; i <= device_ctx.nx + 1; ++i) {
+	for (size_t i = 0; i < device_ctx.grid.width(); ++i) {
 		if (draw_coords->tile_x[i] > abs_x) {
 			break; // we've gone to far in the x direction
 		}
 		// iterate over grid y
-		for(int j = 0; j <= device_ctx.ny + 1; ++j) {
+		for(size_t j = 0; j < device_ctx.grid.height(); ++j) {
 			if (draw_coords->tile_y[j] > abs_y) {
 				break; // we've gone to far in the y direction
 			}

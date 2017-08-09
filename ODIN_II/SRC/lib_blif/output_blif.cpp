@@ -163,7 +163,7 @@ void output_blif(char *file_name, netlist_t *netlist)
 	fprintf(out, "\n");
 
 	/* traverse the internals of the flat net-list */
-	if (strcmp(configuration.output_type, "blif") == 0)
+	if (strcmp(configuration.output_type.c_str(), "blif") == 0)
 	{
 		depth_first_traversal_to_output(OUTPUT_TRAVERSE_VALUE, out, netlist);
 	}

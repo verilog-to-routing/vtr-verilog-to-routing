@@ -1,13 +1,10 @@
-<?xml version="1.0"?>
-<!-- VPR Architecture Specification File -->
-<!-- Quick XML Primer:
+<!-- VPR Architecture Specification File --><!-- Quick XML Primer:
     * Data is hierarchical and composed of tags (similar to HTML)
     * All tags must be of the form <foo>content</foo> OR <foo /> with the latter form indicating no content. Don't forget the slash at the end.
     * Inside a start tag you may specify attributes in the form key="value". Refer to manual for the valid attributes for each element.
     * Comments may be included anywhere in the document except inside a tag where it's attribute list is defined.
     * Comments may contain any characters except two dashes. 
--->
-<!-- Architecture based off Stratix IV
+--><!-- Architecture based off Stratix IV
     Use closest ifar architecture: K06 N10 45nm fc 0.15 area-delay optimized, scale to 40 nm using linear scaling
     n10k06l04.fc15.area1delay1.cmos45nm.bptm.cmos45nm.xml
     * because documentation sparser for soft logic (delays not in QUIP), harder to track down, not worth our time considering the level of accuracy is approximate
@@ -24,14 +21,13 @@
           created 4 18x18 mulitpliers, logiclocked them to a single DSP block, compile
           result - 2 18x18 multipliers got packed together, the other 2 got ejected out of the logiclock region without error
           conclusion - just take the 600 MHz as is, and Quartus II logiclock hasn't fixed the bug that I've seen it do to registers when I worked at Altera (ie. eject without warning)
-      -->
-<architecture>
+      --><architecture>
   <!-- ODIN II specific config -->
   <models>
     <model name="multiply">
       <input_ports>
-        <port name="a"/>
-        <port name="b"/>
+        <port name="a" combinational_sink_ports="out"/>
+        <port name="b" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
         <port name="out"/>
@@ -39,48 +35,62 @@
     </model>
     <model name="single_port_ram">
       <input_ports>
-        <port name="we"/>
+        <port name="we" clock="clk"/>
         <!-- control -->
-        <port name="addr"/>
+        <port name="addr" clock="clk"/>
         <!-- address lines -->
-        <port name="data"/>
+        <port name="data" clock="clk"/>
         <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
         <port name="clk" is_clock="1"/>
         <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
-        <port name="out"/>
+        <port name="out" clock="clk"/>
         <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
     <model name="dual_port_ram">
       <input_ports>
-        <port name="we1"/>
+        <port name="we1" clock="clk"/>
         <!-- write enable -->
-        <port name="we2"/>
+        <port name="we2" clock="clk"/>
         <!-- write enable -->
-        <port name="addr1"/>
+        <port name="addr1" clock="clk"/>
         <!-- address lines -->
-        <port name="addr2"/>
+        <port name="addr2" clock="clk"/>
         <!-- address lines -->
-        <port name="data1"/>
+        <port name="data1" clock="clk"/>
         <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
-        <port name="data2"/>
+        <port name="data2" clock="clk"/>
         <!-- data lines can be broken down into smaller bit widths minimum size 1 -->
         <port name="clk" is_clock="1"/>
         <!-- memories are often clocked -->
       </input_ports>
       <output_ports>
-        <port name="out1"/>
+        <port name="out1" clock="clk"/>
         <!-- output can be broken down into smaller bit widths minimum size 1 -->
-        <port name="out2"/>
+        <port name="out2" clock="clk"/>
         <!-- output can be broken down into smaller bit widths minimum size 1 -->
       </output_ports>
     </model>
   </models>
   <!-- ODIN II specific config ends -->
   <!-- Physical descriptions begin (area optimized for N8-K6-L4 -->
-  <layout auto="1.0"/>
+  <layout>
+    <auto_layout aspect_ratio="1.0">
+        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+        <perimeter type="io" priority="100"/>
+        <corners type="EMPTY" priority="101"/>
+        <!--Fill with 'clb'-->
+        <fill type="clb" priority="10"/>
+        <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="mult_36" startx="4" starty="1" repeatx="8" priority="20"/>
+        <col type="EMPTY" startx="4" repeatx="8" starty="1" priority="19"/>
+        <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
+        <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+        </auto_layout>
+</layout>
   <device>
     <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000" ipin_mux_trans_size="1.222260"/>
     <timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="7.247000e-11"/>
@@ -141,10 +151,7 @@
         <loc side="right">io.outpad io.inpad io.clock</loc>
         <loc side="bottom">io.outpad io.inpad io.clock</loc>
       </pinlocations>
-      <gridlocations>
-        <loc type="perimeter" priority="10"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
 
     <pb_type name="clb">
       <input name="I" num_pins="33" equivalent="true"/> <!-- NOTE: Logically Equivalent -->
@@ -203,10 +210,7 @@
       </interconnect>
       <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc type="fill" priority="1"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
 
     <!-- This is the 36*36 uniform mult -->
     <pb_type name="mult_36" height="4">
@@ -300,10 +304,7 @@
       <fc_in type="frac">0.15</fc_in>
       <fc_out type="frac">0.10</fc_out>
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc type="col" start="4" repeat="8" priority="2"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
 
     <!-- Memory based off Stratix IV 144K memory.  Setup time set to match flip-flop setup time at 45 nm. Clock to q based off 144K max MHz  -->
     <pb_type name="memory" height="6">
@@ -492,9 +493,6 @@
       </mode>
       <fc default_in_type="frac" default_in_val="0.15" default_out_type="frac" default_out_val="0.10"/>
       <pinlocations pattern="spread"/>
-      <gridlocations>
-        <loc type="col" start="2" repeat="8" priority="2"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
   </complexblocklist>
 </architecture>

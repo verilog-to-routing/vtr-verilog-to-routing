@@ -130,19 +130,6 @@ InstPort::name_index InstPort::parse_name_index(std::string str) {
 
 }
 
-void archfpga_throw(const char* filename, int line, const char* fmt, ...) {
-    va_list va_args;
-
-    va_start(va_args, fmt);
-
-    auto msg = vtr::vstring_fmt(fmt, va_args);
-
-    va_end(va_args);
-
-    throw ArchFpgaError(msg, filename, line);
-}
-
-
 
 void bad_tag(const pugi::xml_node node,
                 const pugiutil::loc_data& loc_data,

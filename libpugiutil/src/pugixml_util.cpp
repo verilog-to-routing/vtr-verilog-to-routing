@@ -1,4 +1,5 @@
 #include "pugixml_util.hpp"
+#include <algorithm>
 
 namespace pugiutil {
 
@@ -104,6 +105,25 @@ namespace pugiutil {
         return count;
     }
 
+    //Throws a well formatted error if the actual count of child nodes name 'child_name' does not equal the 'expected_count'
+    //
+    //  node - The parent xml node
+    //  loc_data - XML file location data
+    //  expected_count - The expected number of child nodes
+    void expect_child_node_count(const pugi::xml_node node,
+                            std::string child_name,
+                            size_t expected_count,
+                            const loc_data& loc_data) {
+        size_t actual_count = count_children(node, child_name, loc_data, OPTIONAL);
+
+        if (actual_count != expected_count) {
+            throw XmlError("Found " + std::to_string(actual_count)
+                            + " '" + child_name + "' child node(s) of "
+                            + "'" + std::string(node.name()) + "'"
+                            + " (expected " + std::to_string(expected_count) + ")",
+                           loc_data.filename(), loc_data.line(node));
+        }
+    }
     //Throws a well formatted error if the actual child count does not equal the 'expected_count'
     //
     //  node - The parent xml node
@@ -115,19 +135,52 @@ namespace pugiutil {
         size_t actual_count = count_children(node, loc_data, OPTIONAL);
 
         if (actual_count != expected_count) {
-            //throw XmlError("Expected " + std::to_string(expected_count) 
-                            //+ " child node(s) of node "
-                            //+ "'" + std::string(node.name()) + "'"
-                            //+ "(found " + std::to_string(actual_count) + ")",
-                           //loc_data.filename(), loc_data.line(node));
-            
             throw XmlError("Found " + std::to_string(actual_count)
                             + " child node(s) of "
                             + "'" + std::string(node.name()) + "'"
-                            + "(expected " + std::to_string(expected_count) + ")",
+                            + " (expected " + std::to_string(expected_count) + ")",
                            loc_data.filename(), loc_data.line(node));
         }
     }
+
+    //Throws a well formatted error if any attribute other than those named in 'attribute_names' are found on 'node'.
+    //Note this does not check whether the attribues in 'attribute_names' actually exist; for that use get_attribute().
+    //
+    //  node - The parent xml node
+    //  attribute_names - expected attribute names
+    //  loc_data - XML file location data
+    void expect_only_attributes(const pugi::xml_node node,
+                            std::vector<std::string> attribute_names,
+                            const loc_data& loc_data) {
+
+        for (auto attrib : node.attributes()) {
+            std::string attrib_name = attrib.name();
+            auto iter = std::find(attribute_names.begin(),
+                                  attribute_names.end(),
+                                  attrib_name);
+            if (iter == attribute_names.end()) {
+                std::string msg =  "Unexpected attribute '" + attrib_name + "'"
+                                 + " found on node '" + node.name() + "'.";
+
+                if (attribute_names.size() > 0) {
+                    msg += " Expected (possibly) one of: ";
+                    for (size_t i = 0; i < attribute_names.size(); i++) {
+                        if (i != 0) {
+                            msg += ", ";
+                        }
+                        if (i > 0 && i == attribute_names.size() - 1) {
+                            msg += "or ";
+                        }
+                        msg += "'" + attribute_names[i] + "'";
+                    }
+                    msg += ".";
+                }
+
+                throw XmlError(msg, loc_data.filename(), loc_data.line(node));
+            }
+        }
+    }
+                        
 
     //Counts the number of attributes on the specified node
     //

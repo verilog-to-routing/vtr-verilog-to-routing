@@ -33,6 +33,7 @@ using namespace std;
 #include "power.h"
 #include "globals.h"
 #include "power_util.h"
+#include "vpr_utils.h"
 /************************ FILE SCOPE *********************************/
 static double f_MTA_area;
 
@@ -71,14 +72,15 @@ static double power_MTAs_L(float L_size);
  */
 static double power_count_transistors_connectionbox(void) {
 	double transistor_cnt = 0.;
-	int CLB_inputs;
+	int inputs;
 	float buffer_size;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& power_ctx = g_vpr_ctx.power();
 
-	VTR_ASSERT(device_ctx.FILL_TYPE->pb_graph_head->num_input_ports == 1);
-	CLB_inputs = device_ctx.FILL_TYPE->pb_graph_head->num_input_pins[0];
+    auto type = find_most_common_block_type(device_ctx.grid);
+	VTR_ASSERT(type->pb_graph_head->num_input_ports == 1);
+	inputs = type->pb_graph_head->num_input_pins[0];
 
 	/* Buffers from Tracks */
 	buffer_size = power_ctx.commonly_used->max_seg_to_IPIN_fanout
@@ -90,7 +92,7 @@ static double power_count_transistors_connectionbox(void) {
 			* power_count_transistors_buffer(buffer_size);
 
 	/* Muxes to IPINs */
-	transistor_cnt += CLB_inputs
+	transistor_cnt += inputs
 			* power_count_transistors_mux(
 					power_get_mux_arch(power_ctx.commonly_used->max_IPIN_fanin,
 							power_ctx.arch->mux_transistor_size));
@@ -276,7 +278,8 @@ static double power_transistors_per_tile(const t_arch * arch) {
 
 	double transistor_cnt = 0.;
 
-	transistor_cnt += power_transistors_for_pb_node(device_ctx.FILL_TYPE->pb_graph_head);
+    auto type = find_most_common_block_type(device_ctx.grid);
+	transistor_cnt += power_transistors_for_pb_node(type->pb_graph_head);
 
 	transistor_cnt += 2 * power_count_transistors_switchbox(arch);
 
@@ -551,12 +554,14 @@ static void power_size_pb_rec(t_pb_graph_node * pb_node) {
 
     auto& device_ctx = g_vpr_ctx.device();
 
+    auto type = find_most_common_block_type(device_ctx.grid);
+
 	if (!power_method_is_transistor_level(
 			pb_node->pb_type->pb_type_power->estimation_method)
-			&& pb_node != device_ctx.FILL_TYPE->pb_graph_head) {
+			&& pb_node != type->pb_graph_head) {
 		/* Area information is only needed for:
 		 *  1. Transistor-level estimation methods
-		 *  2. the FILL_TYPE for tile size calculations
+		 *  2. the most common block type for tile size calculations
 		 */
 		return;
 	}

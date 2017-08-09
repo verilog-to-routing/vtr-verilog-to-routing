@@ -28,7 +28,7 @@ and list the missing libraries::
 
 Enabling Graphics at Run-time
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-When running VPR provide :option:`vpr -disp` ``on`` to enable graphics.
+When running VPR provide :option:`vpr --disp` ``on`` to enable graphics.
 
 A graphical window will now pop up when you run VPR.
 
@@ -75,10 +75,14 @@ Multiple routing resources can be highlighted by pressing ctrl + mouse click.
 
 Visualizing Routing Congestion
 ------------------------------
-When a routing is shown on-screen, clicking on the **Congestion** button will show any overused routing resources (wires or pins) in red, if any overused resources exist.
-Clicking on the same button the second time will show overused routing resources in red and all other used routing resources in blue.
+When a routing is shown on-screen, clicking on the **Congestion** button will show a heat map of any overused routing resources (wires or pins). 
+Lighter colours (e.g. yellow) correspond to highly overused resources, while darker colours (e.g. blue) correspond to lower overuse.
+The overuse range shown at the bottom of the window.
 
 Visualizing the Critical Path
 -----------------------------
-Finally, when a routing is on screen you can click on the **Crit. Path** button to see each of the nets on the critical path in turn.
-The current net on the critical path is highlighted in cyan; its source block is shown in yellow and the critical sink is shown in green.
+During placement and routing you can click on the **Crit. Path** button to visualize the critical path. 
+Each stage between primitive pins is shown in a different colour.
+Cliking the **Crit. Path** button again will toggle through the various visualizations:
+* During placement the critical path is shown only as flylines.
+* During routing the critical path can be shown as both flylines and routed net connections.

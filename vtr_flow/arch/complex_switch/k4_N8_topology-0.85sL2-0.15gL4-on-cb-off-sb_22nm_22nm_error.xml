@@ -12,8 +12,7 @@
       * Custom switch blocks descriptions, modified connection block descriptions and routing mux delay tables are used describe this topology.
       * Custom switch block descriptions have been elongated somewhat to expose more of the format features.
       * See VTR documentation for more info on the enhanced inter-LB interconnect specifications.
- -->
-<architecture>
+ --><architecture>
   
   <!-- ODIN II specific config -->
   <models>
@@ -59,7 +58,21 @@
   <!-- ODIN II specific config ends -->
  
   <!-- Physical descriptions begin -->
-  <layout auto="1.0"/>
+  <layout>
+    <auto_layout aspect_ratio="1.0">
+        <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+        <perimeter type="io" priority="100"/>
+        <corners type="EMPTY" priority="101"/>
+        <!--Fill with 'clb'-->
+        <fill type="clb" priority="10"/>
+        <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="mult_36" startx="2" starty="1" repeatx="22" priority="20"/>
+        <col type="EMPTY" startx="2" repeatx="22" starty="1" priority="19"/>
+        <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+        <col type="memory" startx="13" starty="1" repeatx="22" priority="20"/>
+        <col type="EMPTY" startx="13" repeatx="22" starty="1" priority="19"/>
+        </auto_layout>
+</layout>
 		<device>
 			<sizing R_minW_nmos="13090.000000" R_minW_pmos="19086.831111" ipin_mux_trans_size="1.2"/>
 			<timing C_ipin_cblock="2e-15" T_ipin_cblock="7.562e-11"/>	
@@ -191,11 +204,7 @@
           <loc side="bottom">io.outpad io.inpad io.clock</loc>
         </pinlocations>
 
-        <gridlocations>
-          <loc type="perimeter" priority="10"/>
-        </gridlocations>
-
-      </pb_type>
+        </pb_type>
 
     <!-- Logic cluster definition -->
     <!-- k4 N8 I32 with no input crossbar (but LUT inputs are equivalent
@@ -286,10 +295,7 @@
       <pinlocations pattern="spread"/>
 
       <!-- Place this general purpose logic block in any unspecified column -->
-      <gridlocations>
-        <loc type="fill" priority="1"/>
-      </gridlocations>
-    </pb_type>
+      </pb_type>
     <!-- Define general purpose logic block (CLB) ends -->
 
 
@@ -481,9 +487,6 @@
       <pinlocations pattern="spread"/>
 
       <!-- Place this multiplier block every 22 columns from (and including) the eights column -->
-      <gridlocations>
-        <loc type="col" start="2" repeat="22" priority="2"/>
-      </gridlocations>		  
       <power method="sum-of-children"/>
     </pb_type>
     <!-- Define fracturable multiplier end -->
@@ -996,10 +999,6 @@
       <pinlocations pattern="spread"/>
 
       <!-- Place this memory block every 22 columns from (and including) the nineteenth column -->
-      <gridlocations>
-        <loc type="col" start="13" repeat="22" priority="2"/>
-      </gridlocations>
-
       <power method="sum-of-children"/>
     </pb_type>
     <!-- Define fracturable memory end -->

@@ -184,7 +184,7 @@ void load_rr_file(const t_graph_type graph_type,
 
     } catch (XmlError& e) {
 
-        archfpga_throw(read_rr_graph_name, e.line(), "%s", e.what());
+        vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());
     }
 
 }
@@ -472,13 +472,8 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
 
         auto block_info = device_ctx.block_types[get_attribute(Block, "id", loc_data).as_int(0)];
 
-        const char* name;
-        //"<EMPTY>" was converted to "EMPTY" since it voilated the xml format, convert it back
-        if (strcmp(get_attribute(Block, "name", loc_data).as_string(NULL), "EMPTY") == 0) {
-            name = "<EMPTY>";
-        } else {
-            name = get_attribute(Block, "name", loc_data).as_string(NULL);
-        }
+        const char* name = get_attribute(Block, "name", loc_data).as_string(NULL);
+
         if (strcmp(block_info.name, name) != 0) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Architecture file does not match RR graph's block name");

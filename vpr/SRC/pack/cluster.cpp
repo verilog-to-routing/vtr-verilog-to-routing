@@ -297,9 +297,10 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven, 
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
         float inter_cluster_net_delay,
-		float aspect, bool allow_unrelated_clustering,
+		bool allow_unrelated_clustering,
 		bool connection_driven,
-		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs
+		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs,
+        std::string device_layout_name
 #ifdef ENABLE_CLASSIC_VPR_STA
         , t_timing_inf timing_inf
 #endif
@@ -326,8 +327,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		seedindex, savedseedindex /* index of next most timing critical block */,
 		detailed_routing_stage, *hill_climbing_inputs_avail;
 
-	int *num_used_instances_type, *num_instances_type; 
-	/* [0..device_ctx.num_block_types] Holds array for total number of each cluster_type available */
+    std::map<t_type_ptr,size_t> num_used_type_instances;
 
 	bool early_exit, is_cluster_legal;
 	enum e_block_pack_status block_pack_status;
@@ -392,10 +392,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		hill_climbing_inputs_avail = NULL; /* if used, die hard */
 	}
 
-	/* TODO: make better estimate for device_ctx.nx and device_ctx.ny, was initializing device_ctx.nx = device_ctx.ny = 1 */
-	device_ctx.nx = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.W);
-	device_ctx.ny = (arch->clb_grid.IsAuto ? 1 : arch->clb_grid.H);
-
 	check_clocks(is_clock);
 #if 0
 	check_for_duplicate_inputs ();
@@ -407,8 +403,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	blocks_since_last_analysis = 0;
 	early_exit = false;
 	num_blocks_hill_added = 0;
-	num_used_instances_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
-	num_instances_type = (int*) vtr::calloc(device_ctx.num_block_types, sizeof(int));
 
 	VTR_ASSERT(max_cluster_size < MAX_SHORT);
 	/* Limit maximum number of elements for each cluster */

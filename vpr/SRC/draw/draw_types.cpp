@@ -80,42 +80,13 @@ t_bound_box t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_ind
 
 	t_bound_box result = blk_type_info.get_pb_bbox(pb_gnode);
 
-	// if pb is in the leftmost, rightmost, top, or bottom rows,
-	// flip the bbox accordingly
-
-	// flip vertically
-	if (grid_y == 0 || grid_x == 0) {
-		if (pb_gnode.parent_pb_graph_node != NULL) {
-			float parent_height = blk_type_info.get_pb_bbox_ref(*pb_gnode.parent_pb_graph_node).get_height();
-			float new_then_old_bottom = parent_height - result.top();
-
-			std::swap(new_then_old_bottom, result.bottom());
-			// new_then_old_bottom now contains the old bottom
-
-			result.top() = parent_height - new_then_old_bottom;
-		} // else {
-			// it's a rectangle, so unless it's inside of someting else,
-			// flipping it up-down does nothing...
-		// }
-	}
-
-	// reflect it over the line x=y
-	if (grid_x == device_ctx.nx + 1 || grid_x == 0) {
-		std::swap(result.right(), result.top());
-		std::swap(result.left(), result.bottom());
-	}
-
 	// if getting clb bbox, apply location info.
 	if (pb_gnode.parent_pb_graph_node == NULL) {
 		float sub_blk_offset = this->tile_width * (sub_block_index/(float)device_ctx.grid[grid_x][grid_y].type->capacity);
 
 		result += t_point(this->tile_x[grid_x], this->tile_y[grid_y]);
 		if (sub_block_index != 0) {
-			if (grid_x == 0 || grid_x == device_ctx.nx + 1) {
-				result += t_point(0, sub_blk_offset);
-			} else if (grid_y == 0 || grid_y == device_ctx.ny + 1) {
-				result += t_point(sub_blk_offset, 0);
-			}
+            result += t_point(sub_blk_offset, 0);
 		}
 	}
 

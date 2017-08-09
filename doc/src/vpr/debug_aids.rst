@@ -5,7 +5,7 @@ Debugging Aids
 
 .. note:: This section is only relevant to developers modifying VPR
 
-To access detailed echo files from VPR’s operation, use the command-line option :vpr:option:`-echo_file` ``on``.
+To access detailed echo files from VPR’s operation, use the command-line option :vpr:option:`--echo_file` ``on``.
 After parsing the netlist and architecture files, VPR dumps out an image of its internal data structures into echo files (typically ending in ``.echo``).
 These files can be examined to be sure that VPR is parsing the input files as you expect.
 The ``critical_path.echo`` file lists details about the critical path of a circuit, and is very useful for determining why your circuit is so fast or so slow.  

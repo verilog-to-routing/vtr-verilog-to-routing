@@ -97,9 +97,9 @@ struct config_t_t
 	char **list_of_file_names;
 	int num_list_of_file_names;
 
-	char *output_type; // string name of the type of output file
+	std::string output_type; // string name of the type of output file
 
-	char *debug_output_path; // path for where to output the debug outputs
+	std::string debug_output_path; // path for where to output the debug outputs
 	short output_ast_graphs; // switch that outputs ast graphs per node for use with GRaphViz tools
 	short output_netlist_graphs; // switch that outputs netlist graphs per node for use with GraphViz tools
 	short print_parse_tokens; // switch that controls whether or not each token is printed during parsing

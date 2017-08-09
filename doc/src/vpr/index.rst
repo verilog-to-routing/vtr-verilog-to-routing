@@ -23,8 +23,6 @@ The purpose of VPR is to make the packing, placement, and routing stages of the 
 .. toctree::
    :maxdepth: 2
 
-   compiling
-
    command_line_usage
 
    graphics

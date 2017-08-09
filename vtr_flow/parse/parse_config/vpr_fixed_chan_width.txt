@@ -10,8 +10,8 @@ num_pre_packed_blocks;vpr.out;\s*Blocks\s*:\s*(\d+)
 #VPR Packing Metrics
 num_post_packed_nets;vpr.out;Netlist num_nets:\s*(\d+)
 num_post_packed_blocks;vpr.out;Netlist num_blocks:\s*(\d+)
-device_width;vpr.out;FPGA auto-sized to x = (\d+) y = \d+
-device_height;vpr.out;FPGA auto-sized to x = \d+ y = (\d+)
+device_width;vpr.out;FPGA sized to (\d+) x \d+
+device_height;vpr.out;FPGA sized to \d+ x (\d+)
 
 #VTR benchmark packing metrics
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
@@ -34,6 +34,8 @@ crit_path_route_success_iteration;vpr.out;Successfully routed after (\d+) routin
 critical_path_delay;vpr.out;Final critical path: (.*) ns
 setup_TNS;vpr.out;Setup Total Negative Slack \(sTNS\): (.*) ns
 setup_WNS;vpr.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
+hold_TNS;vpr.crit_path.out;Hold Total Negative Slack \(hTNS\): (.*) ns
+hold_WNS;vpr.crit_path.out;Hold Worst Negative Slack \(hWNS\): (.*) ns
 
 #VPR Run-time Metrics
 pack_time;vpr.out;Packing took (.*) seconds
