@@ -35,6 +35,9 @@
 
 #include "tatum/TimingGraphFwd.hpp"
 
+#include "vtr_assert.h"
+#include "vtr_log.h"
+
 #include "tatum/report/TimingPathFwd.hpp"
 #include "tatum/base/TimingType.hpp"
 #include "timing_info.h"
@@ -55,21 +58,21 @@ route_budgets::route_budgets() {
 }
 
 route_budgets::~route_budgets() {
-    
-    for (unsigned i = 0; i < delay_min_budget.size(); i++){
-        
-    delay_min_budget[i].clear();
-    delay_max_budget[i].clear();
-    delay_target[i].clear();
-    delay_lower_bound[i].clear();
-    //delay_upper_bound[i].clear();
+
+    for (unsigned i = 0; i < delay_min_budget.size(); i++) {
+
+        delay_min_budget[i].clear();
+        delay_max_budget[i].clear();
+        delay_target[i].clear();
+        delay_lower_bound[i].clear();
+        //delay_upper_bound[i].clear();
     }
     delay_min_budget.clear();
     delay_max_budget.clear();
     delay_target.clear();
     delay_lower_bound.clear();
     delay_upper_bound.clear();
-    
+
 }
 
 //std::shared_ptr<RoutingDelayCalculator> route_budgets::get_routing_calc(float ** net_delay) {
@@ -254,9 +257,15 @@ void route_budgets::load_route_budgets(float ** net_delay) {
 
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-            delay_min_budget[inet][ipin] = 0;
-            delay_max_budget[inet][ipin] = 0.1e-12;
-            delay_lower_bound[inet][ipin] = 0.1e-16;
+            delay_min_budget[inet][ipin] = 100e-12;
+            delay_max_budget[inet][ipin] = 900e-9;
+            delay_lower_bound[inet][ipin] = 100e-12;
+            //delay_upper_bound[inet][ipin] = 100e-9;
+
+//            VTR_ASSERT(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
+//                    && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
+//                    && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
+//                    && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin]);
         }
     }
 
