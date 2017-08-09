@@ -116,7 +116,7 @@ static bool timing_driven_route_sink(int itry, int inet, unsigned itarget, int t
         float max_delay, float min_delay, float target_delay, float short_path_crit);
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
-        float target_criticality, float astar_fac, route_budgets& budgeting_inf, 
+        float target_criticality, float astar_fac, route_budgets& budgeting_inf,
         float max_delay, float min_delay,
         float target_delay, float short_path_crit);
 
@@ -753,8 +753,8 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
-    add_route_tree_to_heap(rt_root, sink_node, target_criticality, astar_fac, budgeting_inf, 
-        max_delay, min_delay, target_delay, short_path_crit);
+    add_route_tree_to_heap(rt_root, sink_node, target_criticality, astar_fac, budgeting_inf,
+            max_delay, min_delay, target_delay, short_path_crit);
     heap_::build_heap(); // via sifting down everything
 
     VTR_ASSERT_SAFE(heap_::is_valid());
@@ -932,7 +932,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 }
 
 static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
-        float target_criticality, float astar_fac, route_budgets& budgeting_inf, 
+        float target_criticality, float astar_fac, route_budgets& budgeting_inf,
         float max_delay, float min_delay,
         float target_delay, float short_path_crit) {
 
@@ -951,19 +951,20 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
         inode = rt_node->inode;
         backward_path_cost = target_criticality * rt_node->Tdel;
 
-        float zero = 0.0;
-        //after budgets are loaded, calculate delay cost as described by RCV paper
-        if (budgeting_inf.if_set()) {
-            backward_path_cost += (short_path_crit + target_criticality) * max(zero, target_delay - rt_node->Tdel);
-            backward_path_cost += pow(max(zero, rt_node->Tdel - max_delay), 2) / 100e-12;
-            backward_path_cost += pow(max(zero, min_delay - rt_node->Tdel), 2) / 100e-12;
-        }
-
         R_upstream = rt_node->R_upstream;
         tot_cost = backward_path_cost
                 + astar_fac
                 * get_timing_driven_expected_cost(inode, target_node,
                 target_criticality, R_upstream);
+
+        float zero = 0.0;
+        //after budgets are loaded, calculate delay cost as described by RCV paper
+        if (budgeting_inf.if_set()) {
+            tot_cost += (short_path_crit + target_criticality) * max(zero, target_delay - tot_cost);
+            tot_cost += pow(max(zero, tot_cost - max_delay), 2) / 100e-12;
+            tot_cost += pow(max(zero, min_delay - tot_cost), 2) / 100e-12;
+        }
+
         heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
                 backward_path_cost, R_upstream);
 
@@ -1052,14 +1053,6 @@ static void timing_driven_expand_neighbours(t_heap *current,
         new_R_upstream += device_ctx.rr_nodes[to_node].R();
         new_back_pcost += criticality_fac * Tdel;
 
-        float zero = 0.0;
-        //after budgets are loaded, calculate delay cost as described by RCV paper
-        if (budgeting_inf.if_set()) {
-            new_back_pcost += (short_path_crit + criticality_fac) * max(zero, target_delay - Tdel);
-            new_back_pcost += pow(max(zero, Tdel - max_delay), 2) / 100e-12;
-            new_back_pcost += pow(max(zero, min_delay - Tdel), 2) / 100e-12;
-        }
-
         if (bend_cost != 0.) {
             t_rr_type from_type = device_ctx.rr_nodes[inode].type();
             to_type = device_ctx.rr_nodes[to_node].type();
@@ -1072,6 +1065,14 @@ static void timing_driven_expand_neighbours(t_heap *current,
                 criticality_fac, new_R_upstream);
         float new_tot_cost = new_back_pcost + astar_fac * expected_cost;
 
+        float zero = 0.0;
+        //after budgets are loaded, calculate delay cost as described by RCV paper
+        if (budgeting_inf.if_set()) {
+            new_tot_cost += (short_path_crit + criticality_fac) * max(zero, target_delay - new_tot_cost);
+            new_tot_cost += pow(max(zero, new_tot_cost - max_delay), 2) / 100e-12;
+            new_tot_cost += pow(max(zero, min_delay - new_tot_cost), 2) / 100e-12;
+        }
+
         node_to_heap(to_node, new_tot_cost, inode, iconn, new_back_pcost,
                 new_R_upstream);
 
@@ -1080,7 +1081,7 @@ static void timing_driven_expand_neighbours(t_heap *current,
 
 static float get_timing_driven_expected_cost(int inode, int target_node, float criticality_fac, float R_upstream) {
 
-    /* Determines the expected cost (due to both delay and resouce cost) to reach *
+    /* Determines the expected cost (due to both delay and resource cost) to reach *
      * the target node from inode.  It doesn't include the cost of inode --       *
      * that's already in the "known" path_cost.                                   */
 

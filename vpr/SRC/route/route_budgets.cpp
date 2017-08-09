@@ -257,7 +257,7 @@ void route_budgets::load_route_budgets(float ** net_delay) {
 
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-            delay_min_budget[inet][ipin] = 100e-12;
+            delay_min_budget[inet][ipin] = 900e-12;
             delay_max_budget[inet][ipin] = 900e-9;
             delay_lower_bound[inet][ipin] = 100e-12;
             //delay_upper_bound[inet][ipin] = 100e-9;
