@@ -3,14 +3,78 @@
 /*
 * Summary
 * ========
-* This file defines the ClusteredNetlist class in the ClusteredContext used during 
-* pre-placement stages of the VTR flow (packing & clustering).
+* This file defines the ClusteredNetlist class in the ClusteredContext created during 
+* pre-placement stages of the VTR flow (packing & clustering), and used downstream.
+*
+* Overview
+* ========
+* The ClusteredNetlist is derived from the Netlist class, and contains some 
+* separate information on Blocks, Pins, and Nets. It does not make use of Ports.
+*
+* Block
+* -----
+* The pieces of unique block information are:
+*		block_pbs_:			Physical block describing the clustering and internal hierarchy
+*							structure of each CLB
+*		block_types_:		The type of physical block the block is mapped to, e.g. logic
+*							block, RAM, DSP (Can be user-defined types)
+*		block_nets_:		Based on the block's pins (indexed from [0...num_pins - 1]),
+*							lists which pins are used/unused with the net using it
+*		block_net_count_:	Counter for the used pins/nets blocks, indicating the "index"
+*							Differs from block_nets_
+*	
+* Differences between block_nets_ & block_net_count_
+* --------------------------------------------------
+*			+-----------+
+*		0-->|			|-->3
+*		1-->|   Block	|-->4
+*		2-->|			|-->5
+*			+-----------+
+*
+* block_nets_ tracks all pins, and has the ClusterNetId to which a pin is connected to.
+* If the pin is unused/open, ClusterNetId::INVALID() is stored.
+*
+* block_net_count_ tracks which nets connected to the block are drivers/receivers of that net.
+* Driver/receiver nets are determined by the pin_class of the block's pin.
+* A net connected to a driver pin in the block has a 0 is stored. A net connected to a receiver
+* has a counter (from [1...num_sinks - 1]).
+*
+* Pin
+* ---
+* The only piece of unique pin information is:
+*		pin_index_
+*
+* Example of pin_index_
+* ---------------------
+* Given a ClusterPinId, pin_index_ will return the index of the pin within it's block. 
+* 
+*			+-----------+
+*		0-->|X		   X|-->3
+*		1-->|O  Block  O|-->4
+*		2-->|O		   O|-->5 (e.g. ClusterPinId = 92)
+*			+-----------+
+* 
+* The index skips over unused pins, e.g. CLB has 6 pins (3 in, 3 out, numbered [0...5]), where
+* the first two ins, and last two outs are used. Indices [0,1] represent the ins, and [4,5] 
+* represent the outs. Indices [2,3] are unused. Therefore, pin_index_[92] = 5.
+*
+* Nets
+* ----
+* The pieces of unique net information stored are:
+*		net_global_:	Boolean mapping whether the net is global
+*		net_fixed_:		Boolean mapping whether the net is fixed (i.e. constant)
+*
+*  
+*
 */
-#include "netlist.h"
-#include "clustered_netlist_fwd.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
+
 #include "vtr_util.h"
+
+#include "netlist.h"
+#include "clustered_netlist_fwd.h"
+
 
 class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId> {
 	public:
@@ -80,13 +144,13 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		//  blk_id  : The block to be removed
 		void remove_block(const ClusterBlockId blk_id);
 
+		//TODO: May want to add remove_net/remove_pin, although this isn't currently used
+
 		//Compresses the netlist, removing any invalid and/or unreferenced
 		//blocks/ports/pins/nets.
 		//
-		//This should be called after completing a series of netlist modifications 
-		//(e.g. removing blocks/ports/pins/nets).
-		//
 		//NOTE: this invalidates all existing IDs!
+		//		This also does NOT call the Netlist implementation of compress
 		void compress();
 
 
@@ -112,7 +176,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		//Returns the index of the block which the pin belongs to
 		int pin_index(const ClusterPinId id) const;
 
-		//Returns the index of the block which the pin belongs to
+		//Finds the count'th net_pins (e.g. the 6th pin of the net) and
+		//returns the index of the block which that pin belongs to
 		//  net_id     : The net to iterate through
 		//  count      : The index of the pin in the net
 		int pin_index(ClusterNetId net_id, int count) const;

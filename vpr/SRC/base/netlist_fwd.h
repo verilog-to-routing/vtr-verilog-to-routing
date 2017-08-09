@@ -1,9 +1,7 @@
 #ifndef NETLIST_FWD_H
 #define NETLIST_FWD_H
+
 #include "vtr_strong_id.h"
-/*
-* This header forward declares the Netlist class, and defines common types by it
-*/
 
 /*
 * Ids

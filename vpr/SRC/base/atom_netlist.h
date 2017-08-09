@@ -5,6 +5,17 @@
 * ========
 * This file defines the AtomNetlist class used to store and manipulate the primitive (or atom) netlist.
 *
+* Overview
+* ========
+* The AtomNetlist is derived from the Netlist class, and contains information on the primitives.
+*
+* Models
+* ------
+* There are two main models, the primitive itself (t_model) and the ports of that primitive (t_model_ports).
+* The models are created from the architecture file.
+*
+* The AtomNetlist also contains a TruthTable for each block, which indicates what the LUTs map to.
+*
 */
 #include <vector>
 #include <unordered_map>
@@ -15,13 +26,9 @@
 
 #include "logic_types.h" //For t_model
 
+#include "netlist.h"
 #include "atom_netlist_fwd.h"
 
-#include "netlist.h"
-
-//Forward declaration for private methods
-template<typename I>
-class IdMap;
 
 class AtomNetlist : public Netlist<AtomBlockId,AtomPortId,AtomPinId,AtomNetId> {
 	public:

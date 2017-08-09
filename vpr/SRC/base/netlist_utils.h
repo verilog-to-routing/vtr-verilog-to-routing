@@ -9,16 +9,6 @@
 *
 */
 
-
-/*
-*
-*
-* Utility templates
-*
-*
-*/
-
-
 //Returns true if all elements are contiguously ascending values (i.e. equal to their index)
 template<typename T>
 bool are_contiguous(vtr::vector_map<T, T>& values) {

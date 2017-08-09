@@ -3,6 +3,9 @@
 #include "vtr_strong_id.h"
 #include "netlist_fwd.h"
 
+/*
+* StrongId's for the ClusteredNetlist class
+*/
 
 //Type tags for Ids
 struct cluster_block_id_tag;

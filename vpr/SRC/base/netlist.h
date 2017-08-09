@@ -1,4 +1,7 @@
-/* 
+#ifndef NETLIST_H
+#define NETLIST_H
+
+/*
  * Summary
  * =======
  * This file defines the Netlist class, which stores the connectivity information 
@@ -388,10 +391,6 @@
  * The netlist state should be immutable (i.e. read-only) for most of the CAD flow.
  *
  */
-
-#ifndef NETLIST_H
-#define NETLIST_H
-
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -403,6 +402,7 @@
 
 #include "netlist_fwd.h"
 #include "netlist_utils.h"
+
 
 //Forward declaration for private methods
 template<typename I>
