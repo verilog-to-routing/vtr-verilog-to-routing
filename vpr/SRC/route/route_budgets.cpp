@@ -60,12 +60,11 @@ route_budgets::route_budgets() {
 route_budgets::~route_budgets() {
 
     for (unsigned i = 0; i < delay_min_budget.size(); i++) {
-
         delay_min_budget[i].clear();
         delay_max_budget[i].clear();
         delay_target[i].clear();
         delay_lower_bound[i].clear();
-        //delay_upper_bound[i].clear();
+        delay_upper_bound[i].clear();
     }
     delay_min_budget.clear();
     delay_max_budget.clear();
@@ -248,24 +247,26 @@ void route_budgets::load_route_budgets(float ** net_delay) {
     delay_target.resize(cluster_ctx.clbs_nlist.net.size());
     delay_max_budget.resize(cluster_ctx.clbs_nlist.net.size());
     delay_lower_bound.resize(cluster_ctx.clbs_nlist.net.size());
+    delay_upper_bound.resize(cluster_ctx.clbs_nlist.net.size());
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         delay_min_budget[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
         delay_target[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
         delay_max_budget[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
         delay_lower_bound[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
+        delay_upper_bound[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
     }
 
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             delay_min_budget[inet][ipin] = 900e-12;
-            delay_max_budget[inet][ipin] = 900e-9;
+            delay_max_budget[inet][ipin] = 10e-9;
             delay_lower_bound[inet][ipin] = 100e-12;
-            //delay_upper_bound[inet][ipin] = 100e-9;
+            delay_upper_bound[inet][ipin] = 100e-9;
 
-//            VTR_ASSERT(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
-//                    && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
-//                    && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
-//                    && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin]);
+            VTR_ASSERT(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
+                    && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
+                    && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
+                    && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin]);
         }
     }
 
