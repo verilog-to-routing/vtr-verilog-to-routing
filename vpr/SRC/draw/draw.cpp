@@ -133,7 +133,7 @@ static void draw_highlight_fan_in_fan_out(int hit_node);
 static void highlight_nets(char *message, int hit_node);
 static int draw_check_rr_node_hit (float click_x, float click_y);
 static void highlight_rr_nodes(float x, float y);
-static void draw_highlight_blocks_color(t_type_ptr type, int bnum);
+static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id);
 static void draw_reset_blk_color(ClusterBlockId blk_id);
 
 static inline bool LOD_screen_area_test_square(float width, float screen_area_threshold);
@@ -2125,6 +2125,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 
 	char msg[vtr::bufsize];
 	int clb_index = -2;
+	ClusterBlockId blk_id;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -2151,7 +2152,8 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			for (int k = 0; k < grid_tile->type->capacity; ++k) {
 				clb_index = place_ctx.grid_blocks[i][j].blocks[k];
 				if (clb_index != EMPTY_BLOCK) {
-					clb_bbox = draw_coords->get_absolute_clb_bbox((ClusterBlockId)clb_index, cluster_ctx.clb_nlist.block_type((ClusterBlockId)clb_index));
+					blk_id = (ClusterBlockId)clb_index;
+					clb_bbox = draw_coords->get_absolute_clb_bbox(blk_id, cluster_ctx.clb_nlist.block_type(blk_id));
 					if (clb_bbox.intersects(abs_x, abs_y)) {
 						break;
 					} else {
@@ -2177,10 +2179,12 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 
 	VTR_ASSERT(clb_index != EMPTY_BLOCK);
 
+	blk_id = (ClusterBlockId)clb_index;
+
 	// note: this will clear the selected sub-block if show_blk_internal is 0,
 	// or if it doesn't find anything
 	t_point point_in_clb = t_point(abs_x, abs_y) - clb_bbox.bottom_left();
-	highlight_sub_block(point_in_clb, (ClusterBlockId)clb_index, cluster_ctx.clb_nlist.block_pb((ClusterBlockId)clb_index));
+	highlight_sub_block(point_in_clb, blk_id, cluster_ctx.clb_nlist.block_pb(blk_id));
 	
 	if (get_selected_sub_block_info().has_selection()) {
 		t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
@@ -2188,8 +2192,8 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			selected_subblock->name, selected_subblock->pb_graph_node->pb_type->name);
 	} else {
 		/* Highlight block and fan-in/fan-outs. */
-		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type((ClusterBlockId)clb_index), clb_index);
-		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, cluster_ctx.clb_nlist.block_name((ClusterBlockId)clb_index).c_str(), place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
+		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(blk_id), blk_id);
+		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
 	}
 
 	update_message(msg);
@@ -2238,7 +2242,7 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
 }
 
 
-static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
+static void draw_highlight_blocks_color(t_type_ptr type, ClusterBlockId blk_id) {
 	int k, iclass;
 	ClusterBlockId fanblk;
 
@@ -2246,7 +2250,7 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (k = 0; k < type->num_pins; k++) { /* Each pin on a CLB */
-		ClusterNetId net_id = cluster_ctx.clb_nlist.block_net((ClusterBlockId)bnum, k);
+		ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);
 
 		if (net_id == ClusterNetId::INVALID())
 			continue;
@@ -2254,7 +2258,7 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 		iclass = type->pin_class[k];
 
 		if (type->class_inf[iclass].type == DRIVER) { /* Fanout */
-			if (draw_state->block_color[bnum] == SELECTED_COLOR) {
+			if (draw_state->block_color[(size_t)blk_id] == SELECTED_COLOR) {
 				/* If block already highlighted, de-highlight the fanout. (the deselect case)*/
 				draw_state->net_color[(size_t)net_id] = BLACK;
 				for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
@@ -2272,7 +2276,7 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 			}
 		} 
 		else { /* This net is fanin to the block. */
-			if (draw_state->block_color[bnum] == SELECTED_COLOR) {
+			if (draw_state->block_color[(size_t)blk_id] == SELECTED_COLOR) {
 				/* If block already highlighted, de-highlight the fanin. (the deselect case)*/
 				draw_state->net_color[(size_t)net_id] = BLACK;
 				fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
@@ -2287,13 +2291,13 @@ static void draw_highlight_blocks_color(t_type_ptr type, int bnum) {
 		}
 	}
 
-	if (draw_state->block_color[bnum] == SELECTED_COLOR) { 
+	if (draw_state->block_color[(size_t)blk_id] == SELECTED_COLOR) {
 		/* If block already highlighted, de-highlight the selected block. */
-		draw_reset_blk_color((ClusterBlockId)bnum);
+		draw_reset_blk_color(blk_id);
 	}
 	else { 
 		/* Highlight the selected block. */
-		draw_state->block_color[bnum] = SELECTED_COLOR; 
+		draw_state->block_color[(size_t)blk_id] = SELECTED_COLOR;
 	}
 }
 
