@@ -713,20 +713,18 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	output_clustering(intra_lb_routing, global_clocks, is_clock, arch->architecture_id, out_fname, false);
 
-	for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++){
+	for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++)
 		free_intra_lb_nets(intra_lb_routing[irt]);
-	}
+
 	intra_lb_routing.clear();
 
-	if (hill_climbing_flag) {
+	if (hill_climbing_flag)
 		free(hill_climbing_inputs_avail);
-	}
+
 	free_cluster_placement_stats(cluster_placement_stats);
 
-	//TODO: Remove and destroy cluster_ctx here
-	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
 		free_pb(cluster_ctx.clb_nlist.block_pb(blk_id));
-	}
 
 	cluster_ctx.clb_nlist = ClusteredNetlist();
 
@@ -1794,7 +1792,7 @@ static void update_cluster_stats( const t_pack_molecule *molecule,
 
 	/* TODO: what a scary comment from Vaughn, we'll have to watch out for this causing problems */
 
-	/* Output can be open so the check is necessary.  I don't change  *
+	/* Output can be open so the check is necessary.  I don't change    *
 	 * the gain for clock outputs when clocks are globally distributed  *
 	 * because I assume there is no real need to pack similarly clocked *
 	 * FFs together then.  Note that by updating the gain when the      *
