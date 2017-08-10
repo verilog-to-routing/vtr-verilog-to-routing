@@ -146,7 +146,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	/* Reads in the locations of the IO pads from a file. */
 
 	t_hash **hash_table, *h_ptr;
-	int iblk, xtmp, ytmp;
+	int xtmp, ytmp;
 	FILE *fp;
 	char buf[vtr::bufsize], bname[vtr::bufsize], *ptr;
 

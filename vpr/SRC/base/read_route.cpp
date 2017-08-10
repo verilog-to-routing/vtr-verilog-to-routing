@@ -35,7 +35,7 @@ static void process_route(ifstream &fp);
 static void process_nodes(ifstream &fp, ClusterNetId inet);
 static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vector<std::string> input_tokens);
 static void process_global_blocks(ifstream &fp, ClusterNetId inet);
-static void format_coordinates(int &x, int &y, string coord);
+static void format_coordinates(int &x, int &y, string coord, ClusterNetId net);
 static void format_pin_info(string &pb_name, string & port_name, int & pb_pin_num, string input);
 static string format_name(string name);
 
@@ -383,20 +383,20 @@ static void process_global_blocks(ifstream &fp, ClusterNetId inet) {
     }
 }
 
-static void format_coordinates(int &x, int &y, string coord, int net) {
+static void format_coordinates(int &x, int &y, string coord, ClusterNetId net) {
     /*Parse coordinates in the form of (x,y) into correct x and y values*/
     coord = format_name(coord);
     stringstream coord_stream(coord);
     if (!(coord_stream >> x)) {
 
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                "Net %d has coordinates that is not in the form (x,y)", net);
+                "Net %lu has coordinates that is not in the form (x,y)", (size_t)net);
     }
     coord_stream.ignore(1, ' ');
     if (!(coord_stream >> y)) {
 
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                "Net %d has coordinates that is not in the form (x,y)", net);
+                "Net %lu has coordinates that is not in the form (x,y)", (size_t)net);
     }
 }
 

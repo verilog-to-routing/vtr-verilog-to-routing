@@ -273,8 +273,8 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
 
     //Load the device grid
     std::map<t_type_ptr,size_t> num_type_instances;
-    for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
-        num_type_instances[cluster_ctx.blocks[i].type]++;
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        num_type_instances[cluster_ctx.clb_nlist.block_type(blk_id)]++;
     }
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances);
     device_ctx.nx = device_ctx.grid.nx(); //TODO: remove

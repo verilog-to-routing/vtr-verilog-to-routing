@@ -1750,7 +1750,6 @@ static float recompute_bb_cost(void) {
 static float comp_td_point_to_point_delay(ClusterNetId net_id, int ipin) {
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 	auto& place_ctx = g_vpr_ctx.placement();
-	auto& device_ctx = g_vpr_ctx.device();
 
 	float delay_source_to_sink = 0.;
 

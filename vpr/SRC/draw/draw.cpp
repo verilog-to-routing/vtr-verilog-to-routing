@@ -654,7 +654,7 @@ static void drawplace(void) {
 				/* Draw text if the space has parts of the netlist */
 				if (bnum != EMPTY_BLOCK && bnum != INVALID_BLOCK) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
-					drawtext_in(abs_clb_bbox, cluster_ctx.blocks[bnum].name);
+					drawtext_in(abs_clb_bbox, cluster_ctx.clb_nlist.block_name((ClusterBlockId)bnum));
 				}
 
 				/* Draw text for block type so that user knows what block */
