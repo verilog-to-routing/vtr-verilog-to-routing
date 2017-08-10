@@ -9,18 +9,24 @@
 
 class LinearModel {
 public:
-    LinearModel(float slope=std::numeric_limits<float>::quiet_NaN(), float y_intercept=std::numeric_limits<float>::quiet_NaN())
-        : slope_(slope)
-        , y_intercept_(y_intercept) {}
+
+    LinearModel(float slope = std::numeric_limits<float>::quiet_NaN(), float y_intercept = std::numeric_limits<float>::quiet_NaN())
+    : slope_(slope)
+    , y_intercept_(y_intercept) {
+    }
 
     float find_x_for_y_value(float y_value) {
         //y = m*x + b
         //x = (y - b) / m
-        
+
         return (y_value - y_intercept_) / slope_;
     }
+
+    float slope() {
+        return slope_;
+    }
 private:
-    
+
     float slope_;
     float y_intercept_;
 };
@@ -35,7 +41,7 @@ LinearModel fit_model(std::vector<size_t> iterations, std::vector<size_t> overus
 template<typename T>
 float variance(std::vector<T> values, float avg) {
     float var = 0;
-    for(float val : values) {
+    for (float val : values) {
         var += (val - avg) * (val - avg);
     }
 
@@ -46,11 +52,20 @@ float covariance(std::vector<size_t> x_values, std::vector<float> y_values, floa
     VTR_ASSERT(x_values.size() == y_values.size());
 
     float cov = 0;
-    for(size_t i = 0; i < x_values.size(); ++i) {
-        cov += (x_values[i] - x_avg) * (y_values[i] - y_avg); 
+    for (size_t i = 0; i < x_values.size(); ++i) {
+        cov += (x_values[i] - x_avg) * (y_values[i] - y_avg);
     }
 
     return cov;
+}
+
+float RoutingSuccessPredictor::slope() {
+
+    if (iterations_.size() > min_history_) {
+        auto model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor_);
+        return model.slope();
+    }
+    return NULL;
 }
 
 LinearModel simple_linear_regression(std::vector<size_t> x_values, std::vector<float> y_values) {
@@ -67,8 +82,8 @@ LinearModel simple_linear_regression(std::vector<size_t> x_values, std::vector<f
 }
 
 RoutingSuccessPredictor::RoutingSuccessPredictor(size_t min_history, float history_factor)
-    : min_history_(min_history)
-    , history_factor_(history_factor) {
+: min_history_(min_history)
+, history_factor_(history_factor) {
     //nop
 }
 
@@ -79,7 +94,7 @@ float RoutingSuccessPredictor::estimate_success_iteration() {
         auto model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor_);
         success_iteration = model.find_x_for_y_value(0.);
 
-        if(success_iteration < 0.) {
+        if (success_iteration < 0.) {
             success_iteration = std::numeric_limits<float>::infinity();
         }
     }
@@ -137,7 +152,7 @@ LinearModel fit_model(std::vector<size_t> iterations, std::vector<size_t> overus
     //                  iterations
     //
     //As a result we fit to the logarithm of the overuse, allowing us to capture the
-    //exponentail congestion behaviour with a simple linear model
+    //exponential congestion behaviour with a simple linear model
 
     //We use the last history_factor of all iterations to perform our fit
     //This helps avoid the problem of under estimating convergence at the
@@ -151,7 +166,7 @@ LinearModel fit_model(std::vector<size_t> iterations, std::vector<size_t> overus
     //Calculate the log overuse for the history we are interested in
     std::vector<float> hist_log_overuse;
     std::vector<size_t> hist_iters;
-    for(size_t i = start; i < end; ++i) {
+    for (size_t i = start; i < end; ++i) {
         hist_log_overuse.push_back(std::log(overuse[i]));
         hist_iters.push_back(iterations[i]);
     }

@@ -33,6 +33,8 @@
 
 #include "router_lookahead_map.h"
 
+#define CONGESTED_SLOPE_VAL -0.04
+
 class WirelengthInfo {
 public:
 
@@ -138,7 +140,7 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
         t_rt_node * rt_node, t_bb bounding_box, int num_sinks);
 
 
-static bool should_route_net(int inet, const CBRR& connections_inf);
+static bool should_route_net(int inet, const CBRR& connections_inf, bool if_force_reroute);
 static bool early_exit_heuristic(const WirelengthInfo& wirelength_info);
 
 struct more_sinks_than {
@@ -361,6 +363,24 @@ bool try_timing_driven_route(t_router_opts router_opts,
             }
         }
 
+        // Check if rate of convergence is high enough, if not lower the budgets of certain nets
+        if (budgeting_inf.if_set()) {
+            for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+                if (should_route_net(inet, connections_inf, false)) {
+                    budgeting_inf.update_congestion_times(inet);
+                } else {
+                    budgeting_inf.not_congested_this_iteration(inet);
+                }
+            }
+            
+            //Problematic if the overuse nodes are positive or declining at a slow rate
+            //Must be more than 9 iterations to have a valid slope
+            if (routing_success_predictor.slope() > CONGESTED_SLOPE_VAL && itry >= 9) {
+                budgeting_inf.lower_budgets();
+            }
+        }
+
+
         /*
          * Prepare for the next iteration
          */
@@ -457,7 +477,7 @@ bool try_timing_driven_route_net(int inet, int itry, float pres_fac,
         is_routed = true;
     } else if (cluster_ctx.clbs_nlist.net[inet].is_global) { /* Skip global nets. */
         is_routed = true;
-    } else if (should_route_net(inet, connections_inf) == false) {
+    } else if (should_route_net(inet, connections_inf, true) == false) {
         is_routed = true;
     } else {
         // track time spent vs fanout
@@ -658,7 +678,7 @@ bool timing_driven_route_net(int inet, int itry, float pres_fac, float max_criti
                 max_delay, min_delay, target_delay, short_path_crit))
             return false;
 
-        // need to gurantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
+        // need to guarentee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
         // do this by resetting all the path_costs that have been touched while routing to the current sink
         reset_path_costs();
     } // finished all sinks
@@ -883,7 +903,7 @@ static t_rt_node* setup_routing_resources(int itry, int inet, unsigned num_sinks
 
         // check for edge correctness
         VTR_ASSERT_SAFE(is_valid_skeleton_tree(rt_root));
-        VTR_ASSERT_SAFE(should_route_net(inet, connections_inf));
+        VTR_ASSERT_SAFE(should_route_net(inet, connections_inf, true));
 
         // prune the branches of the tree that don't legally lead to sinks
         // destroyed represents whether the entire tree is illegal
@@ -1111,7 +1131,8 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
                 + num_segs_ortho_dir * device_ctx.rr_indexed_data[ortho_cost_index].T_linear
                 + num_segs_same_dir * num_segs_same_dir * device_ctx.rr_indexed_data[cost_index].T_quadratic
                 + num_segs_ortho_dir * num_segs_ortho_dir * device_ctx.rr_indexed_data[ortho_cost_index].T_quadratic
-                + R_upstream * (num_segs_same_dir * device_ctx.rr_indexed_data[cost_index].C_load + num_segs_ortho_dir * device_ctx.rr_indexed_data[ortho_cost_index].C_load);
+                + R_upstream * (num_segs_same_dir * device_ctx.rr_indexed_data[cost_index].C_load + num_segs_ortho_dir * 
+                device_ctx.rr_indexed_data[ortho_cost_index].C_load);
 
         Tdel += device_ctx.rr_indexed_data[IPIN_COST_INDEX].T_linear;
 
@@ -1384,7 +1405,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
 }
 
 /* Detect if net should be routed or not */
-static bool should_route_net(int inet, const CBRR& connections_inf) {
+static bool should_route_net(int inet, const CBRR& connections_inf, bool if_force_reroute) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -1406,8 +1427,10 @@ static bool should_route_net(int inet, const CBRR& connections_inf) {
 
         if (device_ctx.rr_nodes[inode].type() == SINK) {
             // even if net is fully routed, not complete if parts of it should get ripped up (EXPERIMENTAL)
-            if (connections_inf.should_force_reroute_connection(inode)) {
-                return true;
+            if (if_force_reroute) {
+                if (connections_inf.should_force_reroute_connection(inode)) {
+                    return true;
+                }
             }
             tptr = tptr->next; /* Skip next segment. */
             if (tptr == NULL)

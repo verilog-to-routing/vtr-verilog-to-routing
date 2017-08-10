@@ -30,6 +30,9 @@ public:
     void load_route_budgets(float ** net_delay);
     void print_route_budget();
     bool if_set();
+    void update_congestion_times(int inet);
+    void lower_budgets();
+    void not_congested_this_iteration(int inet);
 
 private:
 
@@ -37,11 +40,14 @@ private:
 
     tatum::EdgeId get_edge_from_nets(int inet, int ipin);
 
-    vector<vector<float>> delay_min_budget;
-    vector<vector<float>> delay_max_budget;
-    vector<vector<float>> delay_target;
-    vector<vector<float>> delay_lower_bound;
-    vector<vector<float>> delay_upper_bound;
+    vector<vector<float>> delay_min_budget;//[0..num_nets][0..clb_net[inet].pins]
+    vector<vector<float>> delay_max_budget;//[0..num_nets][0..clb_net[inet].pins]
+    vector<vector<float>> delay_target;//[0..num_nets][0..clb_net[inet].pins]
+    vector<vector<float>> delay_lower_bound;//[0..num_nets][0..clb_net[inet].pins]
+    vector<vector<float>> delay_upper_bound;//[0..num_nets][0..clb_net[inet].pins]
+    
+    vector <int> num_times_congested; //[0..num_nets]
+    
 
     bool set;
 };

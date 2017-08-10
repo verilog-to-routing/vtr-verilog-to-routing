@@ -37,7 +37,7 @@
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
-
+#include "route_timing.h"
 #include "tatum/report/TimingPathFwd.hpp"
 #include "tatum/base/TimingType.hpp"
 #include "timing_info.h"
@@ -52,14 +52,20 @@ using tatum::NodeType;
 using tatum::EdgeId;
 
 #define SHORT_PATH_EXP 0.5
+#define MIN_DELAY_DECREMENT 1e-9
 
 route_budgets::route_budgets() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    num_times_congested.resize(cluster_ctx.clbs_nlist.net.size(), 0);
+
     set = false;
 }
 
 route_budgets::~route_budgets() {
 
     for (unsigned i = 0; i < delay_min_budget.size(); i++) {
+
         delay_min_budget[i].clear();
         delay_max_budget[i].clear();
         delay_target[i].clear();
@@ -73,6 +79,159 @@ route_budgets::~route_budgets() {
     delay_upper_bound.clear();
 
 }
+
+void route_budgets::load_route_budgets(float ** net_delay) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    //set lower bound to 0 and upper bound to net_delay
+    delay_min_budget.resize(cluster_ctx.clbs_nlist.net.size());
+    delay_target.resize(cluster_ctx.clbs_nlist.net.size());
+    delay_max_budget.resize(cluster_ctx.clbs_nlist.net.size());
+    delay_lower_bound.resize(cluster_ctx.clbs_nlist.net.size());
+    delay_upper_bound.resize(cluster_ctx.clbs_nlist.net.size());
+    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        delay_min_budget[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
+        delay_target[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
+        delay_max_budget[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
+        delay_lower_bound[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
+        delay_upper_bound[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
+    }
+
+    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+            //large
+            //            delay_min_budget[inet][ipin] = 100e-10;
+            //            delay_max_budget[inet][ipin] = 900e-10;
+            //            delay_lower_bound[inet][ipin] = 100e-12;
+
+            //small
+            delay_min_budget[inet][ipin] = 0;
+            delay_max_budget[inet][ipin] = 1e-12;
+            delay_lower_bound[inet][ipin] = 1e-16;
+
+            delay_upper_bound[inet][ipin] = 100e-9;
+            //
+            //            VTR_ASSERT(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
+            //                    && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
+            //                    && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
+            //                    && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin]);
+        }
+    }
+
+    //Use RCV algorithm for delay target
+    //Tend towards minimum to consider short path timing delay more
+
+    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+
+            delay_target[inet][ipin] = min(0.5 * (delay_min_budget[inet][ipin] + delay_max_budget[inet][ipin]), delay_min_budget[inet][ipin] + 0.1e-9);
+        }
+    }
+    set = true;
+}
+
+void route_budgets::update_congestion_times(int inet) {
+    num_times_congested[inet]++;
+}
+
+void route_budgets::not_congested_this_iteration(int inet) {
+    num_times_congested[inet] = 0;
+}
+
+void route_budgets::lower_budgets() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        if (num_times_congested[inet] >= 3) {
+            for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+                if (delay_min_budget[inet][ipin] - delay_lower_bound[inet][ipin] >= 1e-9) {
+                    delay_min_budget[inet][ipin] = delay_min_budget[inet][ipin] - MIN_DELAY_DECREMENT;
+                }
+            }
+        }
+    }
+}
+
+float route_budgets::get_delay_target(int source, int sink) {
+
+    return delay_target[source][sink];
+}
+
+float route_budgets::get_min_delay_budget(int source, int sink) {
+
+    return delay_min_budget[source][sink];
+}
+
+float route_budgets::get_max_delay_budget(int source, int sink) {
+
+    return delay_max_budget[source][sink];
+}
+
+float route_budgets::get_crit_short_path(int source, int sink) {
+
+    return pow(((delay_target[source][sink] - delay_lower_bound[source][sink]) / delay_target[source][sink]), SHORT_PATH_EXP);
+}
+
+void route_budgets::print_route_budget() {
+
+    fstream fp;
+    fp.open("route_budget.txt", fstream::out | fstream::trunc);
+
+    /* Prints out general info for easy error checking*/
+    if (!fp.is_open() || !fp.good()) {
+        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                "couldn't open \"Route_budget.txt\" for generating route budget file\n");
+    }
+
+    fp << "Minimum Delay Budgets:" << endl;
+    for (unsigned inode = 0; inode < delay_min_budget.size(); inode++) {
+        fp << endl << "Source Node: " << inode << "            ";
+        for (unsigned isink = 0; isink < delay_min_budget[inode].size(); isink++) {
+            fp << delay_min_budget[inode][isink] << " ";
+        }
+    }
+
+    fp << endl << endl << "Maximum Delay Budgets:" << endl;
+    for (unsigned inode = 0; inode < delay_max_budget.size(); inode++) {
+        fp << endl << "Source Node: " << inode << "            ";
+        for (unsigned isink = 0; isink < delay_max_budget[inode].size(); isink++) {
+            fp << delay_max_budget[inode][isink] << " ";
+        }
+    }
+
+    fp << endl << endl << "Target Delay Budgets:" << endl;
+
+    for (unsigned inode = 0; inode < delay_target.size(); inode++) {
+        fp << endl << "Source Node: " << inode << "            ";
+        for (unsigned isink = 0; isink < delay_target[inode].size(); isink++) {
+            fp << delay_target[inode][isink] << " ";
+        }
+    }
+
+    fp << endl << endl << "Delay lower_bound:" << endl;
+    for (unsigned inode = 0; inode < delay_lower_bound.size(); inode++) {
+        fp << endl << "Source Node: " << inode << "            ";
+        for (unsigned isink = 0; isink < delay_lower_bound[inode].size(); isink++) {
+            fp << delay_lower_bound[inode][isink] << " ";
+        }
+    }
+
+    fp << endl << endl << "Target Delay Budgets:" << endl;
+    for (unsigned inode = 0; inode < delay_upper_bound.size(); inode++) {
+        fp << endl << "Source Node: " << inode << "            ";
+        for (unsigned isink = 0; isink < delay_upper_bound[inode].size(); isink++) {
+
+            fp << delay_upper_bound[inode][isink] << " ";
+        }
+    }
+
+    fp.close();
+}
+
+bool route_budgets::if_set() {
+    return set;
+}
+
 
 //std::shared_ptr<RoutingDelayCalculator> route_budgets::get_routing_calc(float ** net_delay) {
 //    auto& timing_ctx = g_vpr_ctx.timing();
@@ -238,121 +397,3 @@ route_budgets::~route_budgets() {
 //    }
 //    set = true;
 //}
-
-void route_budgets::load_route_budgets(float ** net_delay) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    //set lower bound to 0 and upper bound to net_delay
-    delay_min_budget.resize(cluster_ctx.clbs_nlist.net.size());
-    delay_target.resize(cluster_ctx.clbs_nlist.net.size());
-    delay_max_budget.resize(cluster_ctx.clbs_nlist.net.size());
-    delay_lower_bound.resize(cluster_ctx.clbs_nlist.net.size());
-    delay_upper_bound.resize(cluster_ctx.clbs_nlist.net.size());
-    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        delay_min_budget[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
-        delay_target[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
-        delay_max_budget[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
-        delay_lower_bound[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
-        delay_upper_bound[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
-    }
-
-    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-            delay_min_budget[inet][ipin] = 900e-12;
-            delay_max_budget[inet][ipin] = 10e-9;
-            delay_lower_bound[inet][ipin] = 100e-12;
-            delay_upper_bound[inet][ipin] = 100e-9;
-
-            VTR_ASSERT(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
-                    && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
-                    && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
-                    && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin]);
-        }
-    }
-
-    //Use RCV algorithm for delay target
-    //Tend towards minimum to consider short path timing delay more
-
-    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-            delay_target[inet][ipin] = min(0.5 * (delay_min_budget[inet][ipin] + delay_max_budget[inet][ipin]), delay_min_budget[inet][ipin] + 0.1e-9);
-        }
-    }
-    set = true;
-}
-
-float route_budgets::get_delay_target(int source, int sink) {
-    return delay_target[source][sink];
-}
-
-float route_budgets::get_min_delay_budget(int source, int sink) {
-    return delay_min_budget[source][sink];
-}
-
-float route_budgets::get_max_delay_budget(int source, int sink) {
-    return delay_max_budget[source][sink];
-}
-
-float route_budgets::get_crit_short_path(int source, int sink) {
-
-    return pow(((delay_target[source][sink] - delay_lower_bound[source][sink]) / delay_target[source][sink]), SHORT_PATH_EXP);
-}
-
-void route_budgets::print_route_budget() {
-
-    fstream fp;
-    fp.open("route_budget.txt", fstream::out | fstream::trunc);
-
-    /* Prints out general info for easy error checking*/
-    if (!fp.is_open() || !fp.good()) {
-        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                "couldn't open \"Route_budget.txt\" for generating route budget file\n");
-    }
-
-    fp << "Minimum Delay Budgets:" << endl;
-    for (unsigned inode = 0; inode < delay_min_budget.size(); inode++) {
-        fp << endl << "Source Node: " << inode << "            ";
-        for (unsigned isink = 0; isink < delay_min_budget[inode].size(); isink++) {
-            fp << delay_min_budget[inode][isink] << " ";
-        }
-    }
-
-    fp << endl << endl << "Maximum Delay Budgets:" << endl;
-    for (unsigned inode = 0; inode < delay_max_budget.size(); inode++) {
-        fp << endl << "Source Node: " << inode << "            ";
-        for (unsigned isink = 0; isink < delay_max_budget[inode].size(); isink++) {
-            fp << delay_max_budget[inode][isink] << " ";
-        }
-    }
-
-    fp << endl << endl << "Target Delay Budgets:" << endl;
-
-    for (unsigned inode = 0; inode < delay_target.size(); inode++) {
-        fp << endl << "Source Node: " << inode << "            ";
-        for (unsigned isink = 0; isink < delay_target[inode].size(); isink++) {
-            fp << delay_target[inode][isink] << " ";
-        }
-    }
-
-    fp << endl << endl << "Delay lower_bound:" << endl;
-    for (unsigned inode = 0; inode < delay_lower_bound.size(); inode++) {
-        fp << endl << "Source Node: " << inode << "            ";
-        for (unsigned isink = 0; isink < delay_lower_bound[inode].size(); isink++) {
-            fp << delay_lower_bound[inode][isink] << " ";
-        }
-    }
-
-    fp << endl << endl << "Target Delay Budgets:" << endl;
-    for (unsigned inode = 0; inode < delay_upper_bound.size(); inode++) {
-        fp << endl << "Source Node: " << inode << "            ";
-        for (unsigned isink = 0; isink < delay_upper_bound[inode].size(); isink++) {
-            fp << delay_upper_bound[inode][isink] << " ";
-        }
-    }
-
-    fp.close();
-}
-
-bool route_budgets::if_set() {
-    return set;
-}
