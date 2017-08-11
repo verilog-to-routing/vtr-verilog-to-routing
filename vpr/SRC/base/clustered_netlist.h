@@ -34,10 +34,31 @@
 * block_nets_ tracks all pins, and has the ClusterNetId to which a pin is connected to.
 * If the pin is unused/open, ClusterNetId::INVALID() is stored.
 *
-* block_net_count_ tracks which nets connected to the block are drivers/receivers of that net.
+* block_net_count_ tracks whether the nets connected to the block are drivers/receivers of that net.
 * Driver/receiver nets are determined by the pin_class of the block's pin.
 * A net connected to a driver pin in the block has a 0 is stored. A net connected to a receiver
 * has a counter (from [1...num_sinks - 1]).
+*
+* The net is connected to multiple blocks. Each block_net_count_ has a unique number in that net.
+*
+* E.g.
+*			+-----------+					+-----------+
+*		0-->|			|-->3  Net A	0-->|			|-->3
+*		1-->|  Block 1	|---4---------->1-->|  Block 2	|-->4
+*		2-->|			|-->5			2-->|			|-->5
+*			+-----------+				|	+-----------+
+*										|
+*										|	+-----------+
+*										|	|			|-->1
+*										0-->|  Block 3	|
+*											|			|-->2
+*											+-----------+
+*
+* In the example, Net A is driven by Block 1, and received by Blocks 2 & 3.
+* For Block 1, block_net_count_ of pin 4 would then return 0, as it is the driver.
+* For Block 2, block_net_count_ of pin 1 returns 1 (or 2), non-zero as it is a receiver.
+* For Block 3, block_net_count_ of pin 0 returns 2 (or 1), non-zero as it is also a receiver.
+*
 *
 * Pin
 * ---
