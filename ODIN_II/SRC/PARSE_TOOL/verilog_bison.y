@@ -244,6 +244,7 @@ variable:
 	vSYMBOL_ID																			{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, NULL, yylineno);}
 	| '[' expression ':' expression ']' vSYMBOL_ID										{$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, yylineno);}
 	| '[' expression ':' expression ']' vSYMBOL_ID '[' expression ':' expression ']'	{$$ = newVarDeclare($6, $2, $4, $8, $10, NULL, yylineno);}
+	| '[' expression ':' expression ']' vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newVarDeclare2D($6, $2, $4, $8, $10,$13,$15, NULL, yylineno);}
 //  | '[' expression ':' expression ']' vSYMBOL_ID '=' primary							{$$ = newVarDeclare($6, $2, $4, NULL, NULL, $8, yylineno);}
 	| '[' expression ':' expression ']' vSYMBOL_ID '=' expression						{$$ = newVarDeclare($6, $2, $4, NULL, NULL, $8, yylineno);}
 	| vSYMBOL_ID '=' primary		 													{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, $3, yylineno);} 
@@ -482,7 +483,9 @@ primary:
 	vNUMBER_ID												{$$ = newNumberNode($1, yylineno);}
 	| vSYMBOL_ID											{$$ = newSymbolNode($1, yylineno);}
 	| vSYMBOL_ID '[' expression ']'							{$$ = newArrayRef($1, $3, yylineno);}
+	| vSYMBOL_ID '[' expression ']' '[' expression ']'		{$$ = newArrayRef2D($1, $3, $6, yylineno);}
 	| vSYMBOL_ID '[' expression ':' expression ']'			{$$ = newRangeRef($1, $3, $5, yylineno);}
+	| vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newRangeRef2D($1, $3, $5, $8, $10, yylineno);}
 	| '{' probable_expression_list '}' 						{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
 	;
 	
