@@ -418,6 +418,8 @@ int get_range(ast_node_t* first_node)
 {
 	long temp_value;
 	
+	/* look at the first item to see if it has a range */
+
 	if (first_node->children[1] != NULL && first_node->children[1]->type == NUMBERS && first_node->children[2] != NULL && first_node->children[2]->type == NUMBERS)
 	{
 		/* IF the first element in the list has a second element...that is the range */
