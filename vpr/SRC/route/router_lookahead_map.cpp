@@ -187,11 +187,11 @@ public:
 
 /* provides delay/congestion estimates to travel specified distances 
    in the x/y direction */
-typedef vector< vector< vector< vector<Cost_Entry> > > > t_cost_map;        //[0..1][[0..num_seg_types-1]0..device_ctx.nx][0..device_ctx.ny]	-- [0..1] entry is to 
+typedef vector< vector< vector< vector<Cost_Entry> > > > t_cost_map;        //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]	-- [0..1] entry is to 
                                                                             //distinguish between CHANX/CHANY start nodes respectively
 /* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type. 
    the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
-typedef vector< vector<Expansion_Cost_Entry> > t_routing_cost_map;		//[0..device_ctx.nx][0..device_ctx.ny]
+typedef vector< vector<Expansion_Cost_Entry> > t_routing_cost_map;		//[0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
 
 
 /******** File-Scope Variables ********/
@@ -273,12 +273,13 @@ void compute_router_lookahead(int num_segments){
 		for (e_rr_type chan_type : {CHANX, CHANY}){
 			/* allocate the cost map for this iseg/chan_type */
 			t_routing_cost_map routing_cost_map;
-			routing_cost_map.assign( device_ctx.nx+2, vector<Expansion_Cost_Entry>(device_ctx.ny+2, Expansion_Cost_Entry()) );
+			routing_cost_map.assign( device_ctx.grid.width(), vector<Expansion_Cost_Entry>(device_ctx.grid.height(), Expansion_Cost_Entry()) );
 
 			for (int ref_inc=0; ref_inc<3; ref_inc++){
 				for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2){
 					/* get the rr node index from which to start routing */
-					int start_node_ind = get_start_node_ind(REF_X+ref_inc, REF_Y+ref_inc, device_ctx.nx, device_ctx.ny, 
+					int start_node_ind = get_start_node_ind(REF_X+ref_inc, REF_Y+ref_inc, 
+                                                            device_ctx.grid.width()-2, device_ctx.grid.height()-2,  //non-corner upper right
 					                                        chan_type, iseg, track_offset);
 
 					if (start_node_ind == UNDEFINED){
@@ -303,8 +304,8 @@ void compute_router_lookahead(int num_segments){
 	//printing out delay maps
 	//for (int iseg = 0; iseg < num_segments; iseg++){
 	//	for (int chan_index : {0,1}){
-	//		for (int iy = 0; iy < device_ctx.ny+1; iy++){
-	//			for (int ix = 0; ix < device_ctx.nx+1; ix++){
+	//		for (int iy = 0; iy < device_ctx.grid.height(); iy++){
+	//			for (int ix = 0; ix < device_ctx.grid.width(); ix++){
 	//				printf("%.3e\t", f_cost_map[chan_index][iseg][ix][iy].delay);
 	//			}
 	//			printf("\n");
@@ -373,8 +374,8 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 static void alloc_cost_map(int num_segments){
     auto& device_ctx = g_vpr_ctx.device();
 
-	vector<Cost_Entry> ny_entries( device_ctx.ny+2, Cost_Entry() );
-	vector< vector<Cost_Entry> > nx_entries( device_ctx.nx+2, ny_entries );
+	vector<Cost_Entry> ny_entries( device_ctx.grid.height(), Cost_Entry() );
+	vector< vector<Cost_Entry> > nx_entries( device_ctx.grid.width(), ny_entries );
 	vector< vector< vector<Cost_Entry> > > segment_entries( num_segments, nx_entries );
 	f_cost_map.assign( 2, segment_entries );
 }
