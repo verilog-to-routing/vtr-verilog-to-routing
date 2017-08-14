@@ -1309,9 +1309,8 @@ void print_route(const char* placement_file, const char* route_file) {
 					if (device_ctx.grid[ilow][jlow].type != device_ctx.IO_TYPE && (rr_type == IPIN || rr_type == OPIN)) {
 						int pin_num = device_ctx.rr_nodes[inode].ptc_num();
 						int offset = device_ctx.grid[ilow][jlow].height_offset;
-						int iblock = place_ctx.grid_blocks[ilow][jlow - offset].blocks[0];
-						VTR_ASSERT(iblock != OPEN);
-						t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin((ClusterBlockId)iblock, pin_num);
+						ClusterBlockId iblock = place_ctx.grid_blocks[ilow][jlow - offset].blocks[0];
+						t_pb_graph_pin *pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
 						t_pb_type *pb_type = pb_pin->parent_node->pb_type;
 						fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);
 					}
@@ -1369,7 +1368,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 	 it does not make sense to allow LUT duplication implicitly. We'll need to look into how we want to handle this case
 	 */
 
-	int iblk, num_local_opin, inode, from_node, iconn, num_edges, to_node;
+	int num_local_opin, inode, from_node, iconn, num_edges, to_node;
 	int iclass, ipin;
 	float cost;
 	t_heap *heap_head_ptr;
@@ -1380,27 +1379,27 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
     auto& device_ctx = g_vpr_ctx.device();
 
 	if (rip_up_local_opins) {
-		for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
-			type = cluster_ctx.clb_nlist.block_type((ClusterBlockId) iblk);
+		for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+			type = cluster_ctx.clb_nlist.block_type(blk_id);
 			for (iclass = 0; iclass < type->num_class; iclass++) {
-				num_local_opin = clb_opins_used_locally[iblk][iclass].size();
+				num_local_opin = clb_opins_used_locally[(size_t)blk_id][iclass].size();
 				/* Always 0 for pads and for RECEIVER (IPIN) classes */
 				for (ipin = 0; ipin < num_local_opin; ipin++) {
-					inode = clb_opins_used_locally[iblk][iclass][ipin];
+					inode = clb_opins_used_locally[(size_t)blk_id][iclass][ipin];
 					adjust_one_rr_occ_and_apcost(inode, -1, pres_fac, acc_fac);
 				}
 			}
 		}
 	}
 
-	for (iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk++) {
-		type = cluster_ctx.clb_nlist.block_type((ClusterBlockId) iblk);
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		type = cluster_ctx.clb_nlist.block_type(blk_id);
 		for (iclass = 0; iclass < type->num_class; iclass++) {
-			num_local_opin = clb_opins_used_locally[iblk][iclass].size();
+			num_local_opin = clb_opins_used_locally[(size_t)blk_id][iclass].size();
 			/* Always 0 for pads and for RECEIVER (IPIN) classes */
 
 			if (num_local_opin != 0) { /* Have to reserve (use) some OPINs */
-				from_node = route_ctx.rr_blk_source[iblk][iclass];
+				from_node = route_ctx.rr_blk_source[(size_t)blk_id][iclass];
 				num_edges = device_ctx.rr_nodes[from_node].num_edges();
 				for (iconn = 0; iconn < num_edges; iconn++) {
 					to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iconn);
@@ -1412,7 +1411,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 					heap_head_ptr = get_heap_head();
 					inode = heap_head_ptr->index;
 					adjust_one_rr_occ_and_apcost(inode, 1, pres_fac, acc_fac);
-					clb_opins_used_locally[iblk][iclass][ipin] = inode;
+					clb_opins_used_locally[(size_t)blk_id][iclass][ipin] = inode;
 					free_heap_data(heap_head_ptr);
 				}
 

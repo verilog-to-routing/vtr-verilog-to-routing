@@ -149,7 +149,7 @@ void sync_grid_to_blocks() {
             grid_block.blocks.resize(device_ctx.grid[x][y].type->capacity);
 
             for (int z = 0; z < device_ctx.grid[x][y].type->capacity; ++z) {
-                grid_block.blocks[z] = EMPTY_BLOCK;
+                grid_block.blocks[z] = EMPTY_BLOCK_ID;
             }
         }
     }
@@ -179,8 +179,8 @@ void sync_grid_to_blocks() {
 		}
 
 		/* Check already in use */
-		if ((EMPTY_BLOCK != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])
-				&& (INVALID_BLOCK != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])) {
+		if ((EMPTY_BLOCK_ID != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])
+				&& (INVALID_BLOCK_ID != place_ctx.grid_blocks[blk_x][blk_y].blocks[blk_z])) {
             VPR_THROW(VPR_ERROR_PLACE, "Location (%d, %d, %d) is used more than once.\n", 
 					blk_x, blk_y, blk_z);
 		}
@@ -193,7 +193,7 @@ void sync_grid_to_blocks() {
 		/* Set the block */
 		for (int width = 0; width < cluster_ctx.clb_nlist.block_type(blk_id)->width; ++width) {
 			for (int height = 0; height < cluster_ctx.clb_nlist.block_type(blk_id)->height; ++height) {
-				place_ctx.grid_blocks[blk_x + width][blk_y + height].blocks[blk_z] = (size_t)blk_id;
+				place_ctx.grid_blocks[blk_x + width][blk_y + height].blocks[blk_z] = blk_id;
 				place_ctx.grid_blocks[blk_x + width][blk_y + height].usage++;
 				VTR_ASSERT(device_ctx.grid[blk_x + width][blk_y + height].width_offset == width);
 				VTR_ASSERT(device_ctx.grid[blk_x + width][blk_y + height].height_offset == height);

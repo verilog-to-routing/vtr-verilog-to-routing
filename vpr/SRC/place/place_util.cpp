@@ -23,7 +23,7 @@ static vtr::Matrix<t_grid_blocks> init_grid_blocks() {
 
             int capacity = type->capacity;
 
-            grid_blocks[x][y].blocks.resize(capacity, EMPTY_BLOCK);
+            grid_blocks[x][y].blocks.resize(capacity, EMPTY_BLOCK_ID);
         }
     }
 

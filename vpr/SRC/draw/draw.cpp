@@ -598,7 +598,8 @@ static void drawplace(void) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
-	int i, j, k, bnum;
+	int i, j, k;
+	ClusterBlockId bnum;
 	int num_sub_tiles;
 	int height;
 
@@ -631,8 +632,8 @@ static void drawplace(void) {
 				/* Fill background for the clb. Do not fill if "show_blk_internal" 
 				 * is toggled. 
 				 */
-				if (bnum != EMPTY_BLOCK && bnum != INVALID_BLOCK) {
-					setcolor(draw_state->block_color[bnum]);
+				if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
+					setcolor(draw_state->block_color[(size_t)bnum]);
 					fillrect(abs_clb_bbox);
 				} else {
 					/* colour empty blocks a particular colour depending on type  */
@@ -648,13 +649,13 @@ static void drawplace(void) {
 
 				setcolor(BLACK);
 
-				setlinestyle((EMPTY_BLOCK == bnum) ? DASHED : SOLID);
+				setlinestyle((EMPTY_BLOCK_ID == bnum) ? DASHED : SOLID);
 				drawrect(abs_clb_bbox);
 
 				/* Draw text if the space has parts of the netlist */
-				if (bnum != EMPTY_BLOCK && bnum != INVALID_BLOCK) {
+				if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
-					drawtext_in(abs_clb_bbox, cluster_ctx.clb_nlist.block_name((ClusterBlockId)bnum));
+					drawtext_in(abs_clb_bbox, cluster_ctx.clb_nlist.block_name(bnum));
 				}
 
 				/* Draw text for block type so that user knows what block */
@@ -2114,8 +2115,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
 	char msg[vtr::bufsize];
-	int clb_index = -2;
-	ClusterBlockId blk_id;
+	ClusterBlockId clb_index = INVALID_BLOCK_ID;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -2141,40 +2141,37 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			const t_grid_tile* grid_tile = &device_ctx.grid[i][j];
 			for (int k = 0; k < grid_tile->type->capacity; ++k) {
 				clb_index = place_ctx.grid_blocks[i][j].blocks[k];
-				if (clb_index != EMPTY_BLOCK) {
-					blk_id = (ClusterBlockId)clb_index;
-					clb_bbox = draw_coords->get_absolute_clb_bbox(blk_id, cluster_ctx.clb_nlist.block_type(blk_id));
+				if (clb_index != EMPTY_BLOCK_ID) {
+					clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index, cluster_ctx.clb_nlist.block_type(clb_index));
 					if (clb_bbox.intersects(abs_x, abs_y)) {
 						break;
 					} else {
-						clb_index = EMPTY_BLOCK;
+						clb_index = EMPTY_BLOCK_ID;
 					}
 				}
 			}
-			if (clb_index != EMPTY_BLOCK) {
+			if (clb_index != EMPTY_BLOCK_ID) {
 				break; // we've found something
 			}
 		}
-		if (clb_index != EMPTY_BLOCK) {
+		if (clb_index != EMPTY_BLOCK_ID) {
 			break; // we've found something
 		}
 	}
 
-	if (clb_index == EMPTY_BLOCK) {
+	if (clb_index == EMPTY_BLOCK_ID) {
 		highlight_rr_nodes(abs_x, abs_y);
 		/* update_message(draw_state->default_message);
 		 drawscreen(); */
 		return;
 	} 
 
-	VTR_ASSERT(clb_index != EMPTY_BLOCK);
-
-	blk_id = (ClusterBlockId)clb_index;
+	VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
 
 	// note: this will clear the selected sub-block if show_blk_internal is 0,
 	// or if it doesn't find anything
 	t_point point_in_clb = t_point(abs_x, abs_y) - clb_bbox.bottom_left();
-	highlight_sub_block(point_in_clb, blk_id, cluster_ctx.clb_nlist.block_pb(blk_id));
+	highlight_sub_block(point_in_clb, clb_index, cluster_ctx.clb_nlist.block_pb(clb_index));
 	
 	if (get_selected_sub_block_info().has_selection()) {
 		t_pb* selected_subblock = get_selected_sub_block_info().get_selected_pb();
@@ -2182,8 +2179,8 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 			selected_subblock->name, selected_subblock->pb_graph_node->pb_type->name);
 	} else {
 		/* Highlight block and fan-in/fan-outs. */
-		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(blk_id), blk_id);
-		sprintf(msg, "Block #%d (%s) at (%d, %d) selected.", clb_index, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
+		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
+		sprintf(msg, "Block #%lu (%s) at (%d, %d) selected.", (size_t)clb_index, cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[(size_t)clb_index].x, place_ctx.block_locs[(size_t)clb_index].y);
 	}
 
 	update_message(msg);

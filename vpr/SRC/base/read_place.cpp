@@ -173,8 +173,8 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
 			if (device_ctx.grid[i][j].type == device_ctx.IO_TYPE) {
 				for (int k = 0; k < device_ctx.IO_TYPE->capacity; k++) {
-					if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK) {
-						place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK; /* Flag for err. check */
+					if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK_ID) {
+						place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK_ID; /* Flag for err. check */
 					}
 				}
 			}
@@ -232,24 +232,24 @@ void read_user_pad_loc(const char *pad_loc_file) {
 			ptr = vtr::fgets(buf, vtr::bufsize, fp);
 			continue;
 		}
-		int bnum = h_ptr->index;
+		ClusterBlockId bnum(h_ptr->index);
 		int i = xtmp;
 		int j = ytmp;
 
-		if (place_ctx.block_locs[bnum].x != OPEN) {
+		if (place_ctx.block_locs[(size_t)bnum].x != OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Block %s is listed twice in pad file.\n", bname);
 		}
 
 		if (i < 0 || i > device_ctx.nx + 1 || j < 0 || j > device_ctx.ny + 1) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"Block #%d (%s) location, (%d,%d) is out of range.\n", bnum, bname, i, j);
+					"Block #%lu (%s) location, (%d,%d) is out of range.\n", (size_t)bnum, bname, i, j);
 		}
 
-        place_ctx.block_locs[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
-        place_ctx.block_locs[bnum].y = j; /* We need to set .x only as a done flag.         */
-        place_ctx.block_locs[bnum].z = k;
-        place_ctx.block_locs[bnum].is_fixed = true;
+        place_ctx.block_locs[(size_t)bnum].x = i; /* Will be reloaded by initial_placement anyway. */
+        place_ctx.block_locs[(size_t)bnum].y = j; /* We need to set .x only as a done flag.         */
+        place_ctx.block_locs[(size_t)bnum].z = k;
+        place_ctx.block_locs[(size_t)bnum].is_fixed = true;
 
 		if (device_ctx.grid[i][j].type != device_ctx.IO_TYPE) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 

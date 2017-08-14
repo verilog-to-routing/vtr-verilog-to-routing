@@ -162,7 +162,8 @@ void check_route(enum e_route_type route_type, int num_switches,
 * the appropriate pin as being reached.                                   */
 static void check_sink(int inode, ClusterNetId inet, bool * pin_done) {
 	
-	int i, j, ifound, ptc_num, bnum, iclass, iblk, pin_index;
+	int i, j, ifound, ptc_num, iclass, iblk, pin_index;
+	ClusterBlockId bnum;
 	unsigned int ipin;
 	t_type_ptr type;
     auto& device_ctx = g_vpr_ctx.device();
@@ -181,7 +182,7 @@ static void check_sink(int inode, ClusterNetId inet, bool * pin_done) {
 		bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx.blocks */
 		ipin = 1;
 		for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(inet)) {
-			if (cluster_ctx.clb_nlist.pin_block(pin_id) == (ClusterBlockId)bnum) {
+			if (cluster_ctx.clb_nlist.pin_block(pin_id) == bnum) {
 				pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
 				iclass = type->pin_class[pin_index];
 				if (iclass == ptc_num) {

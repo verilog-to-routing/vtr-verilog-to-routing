@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
+#include "clustered_netlist_fwd.h"
 
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
@@ -70,8 +71,9 @@ enum class ScreenUpdatePriority {
 
 #define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
 
-#define EMPTY_BLOCK -1
-#define INVALID_BLOCK -2
+/* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
+#define EMPTY_BLOCK_ID ClusterBlockId(-1)
+#define INVALID_BLOCK_ID ClusterBlockId(-2)
 
 constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 
@@ -538,7 +540,7 @@ struct t_place_region {
  * yold: the y_coord that the block is moved from               *
  * xnew: the x_coord that the block is moved to                 */
 struct t_pl_moved_block {
-	int block_num;
+	ClusterBlockId block_num;
 	int xold;
 	int xnew;
 	int yold;
@@ -589,7 +591,7 @@ struct t_grid_blocks {
     int usage;
 
     //The clustered blocks associated with this grid location
-    std::vector<int> blocks; 
+    std::vector<ClusterBlockId> blocks; 
 };
 
 /* Names of various files */

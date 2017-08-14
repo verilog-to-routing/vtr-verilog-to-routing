@@ -628,14 +628,13 @@ static void power_usage_blocks(t_power_usage * power_usage) {
 				t_pb * pb = NULL;
 				t_power_usage pb_power;
 
-                int iblk = place_ctx.grid_blocks[x][y].blocks[z];
+                ClusterBlockId iblk = place_ctx.grid_blocks[x][y].blocks[z];
 
-				if (iblk != EMPTY_BLOCK && iblk != INVALID_BLOCK) {
-					pb = cluster_ctx.clb_nlist.block_pb((ClusterBlockId)iblk);
-				}
+				if (iblk != EMPTY_BLOCK_ID && iblk != INVALID_BLOCK_ID)
+					pb = cluster_ctx.clb_nlist.block_pb(iblk);
 
 				/* Calculate power of this CLB */
-				power_usage_pb(&pb_power, pb, device_ctx.grid[x][y].type->pb_graph_head, (ClusterBlockId)iblk);
+				power_usage_pb(&pb_power, pb, device_ctx.grid[x][y].type->pb_graph_head, iblk);
 				power_add_usage(power_usage, &pb_power);
 			}
 		}

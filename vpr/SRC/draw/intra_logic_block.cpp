@@ -156,11 +156,11 @@ void draw_internal_draw_subblk() {
 			int num_sub_tiles = device_ctx.grid[i][j].type->capacity;
 			for (int k = 0; k < num_sub_tiles; ++k) {
 				/* Don't draw if block is empty. */
-				if (place_ctx.grid_blocks[i][j].blocks[k] == EMPTY_BLOCK || place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK)
+				if (place_ctx.grid_blocks[i][j].blocks[k] == EMPTY_BLOCK_ID || place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK_ID)
 					continue;
 
 				/* Get block ID */
-				ClusterBlockId bnum = (ClusterBlockId)place_ctx.grid_blocks[i][j].blocks[k];
+				ClusterBlockId bnum = place_ctx.grid_blocks[i][j].blocks[k];
 				/* Safety check, that physical blocks exists in the CLB */
 				if (cluster_ctx.clb_nlist.block_pb(bnum) == NULL)
 					continue;
