@@ -364,21 +364,21 @@ bool try_timing_driven_route(t_router_opts router_opts,
         }
 
         // Check if rate of convergence is high enough, if not lower the budgets of certain nets
-//        if (budgeting_inf.if_set()) {
-//            for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-//                if (should_route_net(inet, connections_inf, false)) {
-//                    budgeting_inf.update_congestion_times(inet);
-//                } else {
-//                    budgeting_inf.not_congested_this_iteration(inet);
-//                }
-//            }
-//            
-//            //Problematic if the overuse nodes are positive or declining at a slow rate
-//            //Must be more than 9 iterations to have a valid slope
-//            if (routing_success_predictor.slope() > CONGESTED_SLOPE_VAL && itry >= 9) {
-//                budgeting_inf.lower_budgets();
-//            }
-//        }
+        //        if (budgeting_inf.if_set()) {
+        //            for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        //                if (should_route_net(inet, connections_inf, false)) {
+        //                    budgeting_inf.update_congestion_times(inet);
+        //                } else {
+        //                    budgeting_inf.not_congested_this_iteration(inet);
+        //                }
+        //            }
+        //            
+        //            //Problematic if the overuse nodes are positive or declining at a slow rate
+        //            //Must be more than 9 iterations to have a valid slope
+        //            if (routing_success_predictor.slope() > CONGESTED_SLOPE_VAL && itry >= 9) {
+        //                budgeting_inf.lower_budgets();
+        //            }
+        //        }
 
 
         /*
@@ -407,8 +407,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
                 connections_inf.set_stable_critical_path_delay(critical_path.delay());
                 connections_inf.set_lower_bound_connection_delays(net_delay);
 
-                budgeting_inf.load_route_budgets(net_delay, timing_info, pb_gpin_lookup);
-
+                budgeting_inf.load_route_budgets(net_delay, timing_info, pb_gpin_lookup, router_opts);
                 budgeting_inf.print_route_budget();
 
 
@@ -1131,7 +1130,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node, float c
                 + num_segs_ortho_dir * device_ctx.rr_indexed_data[ortho_cost_index].T_linear
                 + num_segs_same_dir * num_segs_same_dir * device_ctx.rr_indexed_data[cost_index].T_quadratic
                 + num_segs_ortho_dir * num_segs_ortho_dir * device_ctx.rr_indexed_data[ortho_cost_index].T_quadratic
-                + R_upstream * (num_segs_same_dir * device_ctx.rr_indexed_data[cost_index].C_load + num_segs_ortho_dir * 
+                + R_upstream * (num_segs_same_dir * device_ctx.rr_indexed_data[cost_index].C_load + num_segs_ortho_dir *
                 device_ctx.rr_indexed_data[ortho_cost_index].C_load);
 
         Tdel += device_ctx.rr_indexed_data[IPIN_COST_INDEX].T_linear;

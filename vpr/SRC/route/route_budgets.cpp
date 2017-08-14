@@ -82,7 +82,7 @@ route_budgets::~route_budgets() {
 
 void route_budgets::load_route_budgets(float ** net_delay,
         std::shared_ptr<const SetupTimingInfo> timing_info,
-        const IntraLbPbPinLookup& pb_gpin_lookup) {
+        const IntraLbPbPinLookup& pb_gpin_lookup, t_router_opts router_opts) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //set lower bound to 0 and upper bound to net_delay
@@ -101,19 +101,37 @@ void route_budgets::load_route_budgets(float ** net_delay,
 
     float pin_criticality;
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-            //pin_criticality = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, inet, ipin);
+        for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+            pin_criticality = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, inet, ipin);
+
+            /* Pin criticality is between 0 and 1. 
+             * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default, 
+             * so shift down by 0.01) and cut off at 0.  This means that all pins with small 
+             * criticalities (<0.01) get criticality 0 and are ignored entirely, and everything 
+             * else becomes a bit less critical. This effect becomes more pronounced if 
+             * max_criticality is set lower. */
+            // VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
+            pin_criticality = max(pin_criticality - (1.0 - router_opts.max_criticality), 0.0);
+
+            /* Take pin criticality to some power (1 by default). */
+            pin_criticality = pow(pin_criticality, router_opts.criticality_exp);
+
+            /* Cut off pin criticality at max_criticality. */
+            pin_criticality = min(pin_criticality, router_opts.max_criticality);
+
 
             delay_min_budget[inet][ipin] = 0;
-            delay_max_budget[inet][ipin] = net_delay[inet][ipin];
             delay_lower_bound[inet][ipin] = 0;
-
             delay_upper_bound[inet][ipin] = 100e-9;
+            delay_max_budget[inet][ipin] = min(net_delay[inet][ipin] / pin_criticality, delay_upper_bound[inet][ipin]);
 
-            //                        VTR_ASSERT(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
-            //                                && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
-            //                                && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
-            //                                && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin]);
+            if (!isnan(delay_max_budget[inet][ipin])) {
+                VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
+                        && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
+                        && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
+                        && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin],
+                        "Delay budgets do not fit in delay bounds");
+            }
         }
     }
 
@@ -121,7 +139,7 @@ void route_budgets::load_route_budgets(float ** net_delay,
     //Tend towards minimum to consider short path timing delay more
 
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+        for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 
             delay_target[inet][ipin] = min(0.5 * (delay_min_budget[inet][ipin] + delay_max_budget[inet][ipin]), delay_min_budget[inet][ipin] + 0.1e-9);
         }
@@ -142,7 +160,7 @@ void route_budgets::lower_budgets() {
 
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         if (num_times_congested[inet] >= 3) {
-            for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+            for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
                 if (delay_min_budget[inet][ipin] - delay_lower_bound[inet][ipin] >= 1e-9) {
                     delay_min_budget[inet][ipin] = delay_min_budget[inet][ipin] - MIN_DELAY_DECREMENT;
                 }
@@ -151,24 +169,24 @@ void route_budgets::lower_budgets() {
     }
 }
 
-float route_budgets::get_delay_target(int source, int sink) {
+float route_budgets::get_delay_target(int inet, int ipin) {
 
-    return delay_target[source][sink];
+    return delay_target[inet][ipin];
 }
 
-float route_budgets::get_min_delay_budget(int source, int sink) {
+float route_budgets::get_min_delay_budget(int inet, int ipin) {
 
-    return delay_min_budget[source][sink];
+    return delay_min_budget[inet][ipin];
 }
 
-float route_budgets::get_max_delay_budget(int source, int sink) {
+float route_budgets::get_max_delay_budget(int inet, int ipin) {
 
-    return delay_max_budget[source][sink];
+    return delay_max_budget[inet][ipin];
 }
 
-float route_budgets::get_crit_short_path(int source, int sink) {
+float route_budgets::get_crit_short_path(int inet, int ipin) {
 
-    return pow(((delay_target[source][sink] - delay_lower_bound[source][sink]) / delay_target[source][sink]), SHORT_PATH_EXP);
+    return pow(((delay_target[inet][ipin] - delay_lower_bound[inet][ipin]) / delay_target[inet][ipin]), SHORT_PATH_EXP);
 }
 
 void route_budgets::print_route_budget() {
