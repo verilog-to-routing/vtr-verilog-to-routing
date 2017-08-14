@@ -20,7 +20,7 @@ t_block* find_block(t_block* blocks, int num_blocks, std::string name);
 void read_place(const char* net_file, 
                 const char* place_file,
                 bool verify_file_digests,
-                const int L_nx, const int L_ny,
+                const DeviceGrid& grid,
 		        const int L_num_blocks, t_block block_list[]) {
     std::ifstream fstream(place_file); 
     if (!fstream) {
@@ -91,12 +91,12 @@ void read_place(const char* net_file,
                           "Duplicate device grid dimensions specification");
             }
 
-            int place_file_nx = vtr::atoi(tokens[2]);
-            int place_file_ny = vtr::atoi(tokens[4]);
-            if (L_nx != place_file_nx || L_ny != place_file_ny) {
+            size_t place_file_width = vtr::atou(tokens[2]);
+            size_t place_file_height = vtr::atou(tokens[4]);
+            if (grid.width() != place_file_width || grid.height() != place_file_height) {
                 vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, 
                         "Current FPGA size (%d x %d) is different from size when placement generated (%d x %d)", 
-                        L_nx, L_ny, place_file_nx, place_file_ny);
+                        grid.width(), grid.height(), place_file_width, place_file_height);
             }
 
             seen_grid_dimensions = true;
@@ -309,7 +309,7 @@ void print_place(const char* net_file,
 	fprintf(fp, "Netlist_File: %s Netlist_ID: %s\n", 
             net_file,
             net_id);
-	fprintf(fp, "Array size: %d x %d logic blocks\n\n", device_ctx.nx, device_ctx.ny);
+	fprintf(fp, "Array size: %zu x %zu logic blocks\n\n", device_ctx.grid.width(), device_ctx.grid.height());
 	fprintf(fp, "#block name\tx\ty\tsubblk\tblock number\n");
 	fprintf(fp, "#----------\t--\t--\t------\t------------\n");
 
