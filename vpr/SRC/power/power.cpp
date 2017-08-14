@@ -1694,7 +1694,7 @@ static void power_print_summary(FILE * fp, const t_vpr_setup& vpr_setup) {
 	fprintf(fp, "Voltage: %.2f\n", power_ctx.tech->Vdd);
 	fprintf(fp, "Temperature: %g\n", power_ctx.tech->temperature);
 	fprintf(fp, "Critical Path: %g\n", power_ctx.solution_inf.T_crit);
-	fprintf(fp, "Size of FPGA: %d x %d\n", device_ctx.grid.width(), device_ctx.grid.height());
+	fprintf(fp, "Size of FPGA: %zu x %zu\n", device_ctx.grid.width(), device_ctx.grid.height());
 	fprintf(fp, "Channel Width: %d\n", power_ctx.solution_inf.channel_width);
 	fprintf(fp, "\n");
 }
