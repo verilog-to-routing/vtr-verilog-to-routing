@@ -27,7 +27,7 @@ int get_rr_node_index(
 		const t_rr_node_indices& L_rr_node_indices);
 
 int find_average_rr_node_index(
-		int L_nx, int L_ny,
+		int device_width, int device_height,
 		t_rr_type rr_type, int ptc,
 		const t_rr_node_indices&L_rr_node_indices);
 

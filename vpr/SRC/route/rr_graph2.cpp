@@ -1324,7 +1324,7 @@ int get_rr_node_index(
 }
 
 int find_average_rr_node_index(
-        int L_nx, int L_ny, t_rr_type rr_type, int ptc,
+        int device_width, int device_height, t_rr_type rr_type, int ptc,
         const t_rr_node_indices& L_rr_node_indices) {
 
     /* Find and return the index to a rr_node that is located at the "center" *
@@ -1333,23 +1333,23 @@ int find_average_rr_node_index(
      * Worst case, this function will simply return the 1st non-EMPTY and     *
      * non-IO node.                                                           */
 
-    int inode = get_rr_node_index((L_nx + 1) / 2, (L_ny + 1) / 2,
+    int inode = get_rr_node_index((device_width) / 2, (device_height) / 2,
             rr_type, ptc, L_rr_node_indices);
 
     if (inode == -1) {
-        inode = get_rr_node_index((L_nx + 1) / 4, (L_ny + 1) / 4,
+        inode = get_rr_node_index((device_width) / 4, (device_height) / 4,
                 rr_type, ptc, L_rr_node_indices);
     }
     if (inode == -1) {
-        inode = get_rr_node_index((L_nx + 1) / 4 * 3, (L_ny + 1) / 4 * 3,
+        inode = get_rr_node_index((device_width) / 4 * 3, (device_height) / 4 * 3,
                 rr_type, ptc, L_rr_node_indices);
     }
     if (inode == -1) {
 
         auto& device_ctx = g_vpr_ctx.device();
 
-        for (int x = 0; x <= L_nx; ++x) {
-            for (int y = 0; y <= L_ny; ++y) {
+        for (int x = 0; x < device_width; ++x) {
+            for (int y = 0; y < device_height; ++y) {
 
                 if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)
                     continue;
