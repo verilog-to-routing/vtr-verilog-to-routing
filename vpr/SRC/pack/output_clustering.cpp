@@ -520,7 +520,7 @@ static void print_stats() {
 			if (cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route == NULL) {
 				ClusterNetId clb_net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
 				if (clb_net_id != ClusterNetId::INVALID()) {
-                    auto net_id = atom_ctx.lookup.atom_net((size_t)clb_net_id);
+                    auto net_id = atom_ctx.lookup.atom_net(clb_net_id);
                     VTR_ASSERT(net_id);
 					nets_absorbed[net_id] = false;
 					if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type == RECEIVER) {

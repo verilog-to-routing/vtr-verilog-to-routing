@@ -218,14 +218,14 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
 
 	/* load mapping between external nets and all nets */
     for(auto net_id : atom_ctx.nlist.nets()) {
-        atom_ctx.lookup.set_atom_clb_net(net_id, OPEN);
+        atom_ctx.lookup.set_atom_clb_net(net_id, ClusterNetId::INVALID());
 	}
 
     //Save the mapping between clb and atom nets
 	for (auto clb_net_id : cluster_ctx.clb_nlist.nets()) {
         AtomNetId net_id = atom_ctx.nlist.find_net(cluster_ctx.clb_nlist.net_name(clb_net_id));
         VTR_ASSERT(net_id);
-        atom_ctx.lookup.set_atom_clb_net(net_id, (size_t)clb_net_id);
+        atom_ctx.lookup.set_atom_clb_net(net_id, clb_net_id);
 	}
 
     /* load mapping between atom pins and pb_graph_pins */

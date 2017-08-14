@@ -1174,9 +1174,9 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
 	if (!power_ctx.clb_net_power) {
 		power_ctx.clb_net_power = (t_net_power*) vtr::calloc(cluster_ctx.clb_nlist.nets().size(), sizeof(t_net_power));
 	}
-	for (size_t net_idx = 0; net_idx < cluster_ctx.clb_nlist.nets().size(); net_idx++) {
-		power_ctx.clb_net_power[net_idx].probability = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_idx)].probability;
-		power_ctx.clb_net_power[net_idx].density = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_idx)].density;
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		power_ctx.clb_net_power[(size_t)net_id].probability = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].probability;
+		power_ctx.clb_net_power[(size_t)net_id].density = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].density;
 	}
 
 	/* Initialize RR Graph Structures */

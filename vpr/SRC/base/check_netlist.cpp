@@ -89,7 +89,7 @@ void check_netlist() {
 	 */
     auto& atom_ctx = g_vpr_ctx.atom();
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        AtomNetId atom_net = atom_ctx.lookup.atom_net((size_t)net_id);
+        AtomNetId atom_net = atom_ctx.lookup.atom_net(net_id);
         VTR_ASSERT(atom_net);
 
         if (atom_ctx.nlist.net_is_constant(atom_net)) {

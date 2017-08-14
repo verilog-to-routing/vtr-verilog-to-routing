@@ -63,15 +63,15 @@ class AtomLookup {
          * Nets
          */
         //Returns the atom net id associated with the clb_net_index
-        AtomNetId atom_net(const int clb_net_index) const;
+        AtomNetId atom_net(const ClusterNetId clb_net_index) const;
 
         //Returns the clb net index associated with net_id
-        int clb_net(const AtomNetId net_id) const;
+		ClusterNetId clb_net(const AtomNetId net_id) const;
 
         //Sets the bidirectional mapping between an atom net and a clb net
         // If either net_id or clb_net_index are not valid any existing mapping
         // is removed
-        void set_atom_clb_net(const AtomNetId net_id, const int clb_net_index);
+        void set_atom_clb_net(const AtomNetId net_id, const ClusterNetId clb_net_index);
 
         /*
          * Classic Timing Nodes
@@ -102,8 +102,8 @@ class AtomLookup {
         void set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node, BlockTnode block_tnode_type=BlockTnode::EXTERNAL);
     private: //Types
         //A vtr::linear_map using OPEN as the sentinel key
-        template<class K, class V>
-        using linear_map_clb_net = vtr::linear_map<K,V,vtr::CustomSentinel<K,OPEN>>;
+//       template<class K, class V>
+//       using linear_map_clb_net = vtr::linear_map<K,V,vtr::CustomSentinel<K,OPEN>>;
 
         //A vtr::linear_map using -1 as the sentinel key
         template<class K, class V>
@@ -117,7 +117,7 @@ class AtomLookup {
 
         vtr::vector_map<AtomBlockId,ClusterBlockId> atom_to_clb_;
 
-        vtr::bimap<AtomNetId,int, vtr::linear_map, linear_map_clb_net> atom_net_to_clb_net_;
+        vtr::bimap<AtomNetId,ClusterNetId, vtr::linear_map, vtr::linear_map> atom_net_to_clb_net_;
 
         vtr::bimap<AtomPinId,int,vtr::linear_map,linear_map_classic_tnode> atom_pin_to_classic_tnode_;
 

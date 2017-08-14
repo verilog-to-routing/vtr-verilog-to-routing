@@ -51,9 +51,9 @@ static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros)
 
 static void write_place_macros(std::string filename, const t_pl_macro* macros, int num_macros);
 
-static bool is_constant_clb_net(int clb_net);
+static bool is_constant_clb_net(ClusterNetId clb_net);
 
-static bool net_is_driven_by_direct(int clb_net);
+static bool net_is_driven_by_direct(ClusterNetId clb_net);
 
 static void validate_macros(t_pl_macro* macros, int num_macro);
 /******************** Subroutine definitions *********************************/
@@ -97,8 +97,8 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
             // head blocks.
 			if (to_src_or_sink == SINK && to_idirect != OPEN 
                 && (to_net_id == ClusterNetId::INVALID() 
-					|| (is_constant_clb_net((size_t)to_net_id) 
-						&& !net_is_driven_by_direct((size_t)to_net_id)))) {
+					|| (is_constant_clb_net(to_net_id) 
+						&& !net_is_driven_by_direct(to_net_id)))) {
 
 				for (from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
 					from_net_id = cluster_ctx.clb_nlist.block_net(blk_id, from_iblk_pin);
@@ -368,18 +368,18 @@ static void write_place_macros(std::string filename, const t_pl_macro* macros, i
     fclose(f);
 }
 
-static bool is_constant_clb_net(int clb_net) {
+static bool is_constant_clb_net(ClusterNetId clb_net) {
     auto& atom_ctx = g_vpr_ctx.atom();
     AtomNetId atom_net = atom_ctx.lookup.atom_net(clb_net);
 
     return atom_ctx.nlist.net_is_constant(atom_net);
 }
 
-static bool net_is_driven_by_direct(int clb_net) {
+static bool net_is_driven_by_direct(ClusterNetId clb_net) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     
-	ClusterBlockId block_id = cluster_ctx.clb_nlist.net_driver_block((ClusterNetId)clb_net);
-	int pin_index = cluster_ctx.clb_nlist.pin_index((ClusterNetId)clb_net, 0);
+	ClusterBlockId block_id = cluster_ctx.clb_nlist.net_driver_block(clb_net);
+	int pin_index = cluster_ctx.clb_nlist.pin_index(clb_net, 0);
 
     auto direct = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(block_id)->index][pin_index];
 
