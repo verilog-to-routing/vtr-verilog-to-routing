@@ -80,7 +80,9 @@ route_budgets::~route_budgets() {
 
 }
 
-void route_budgets::load_route_budgets(float ** net_delay) {
+void route_budgets::load_route_budgets(float ** net_delay,
+        std::shared_ptr<const SetupTimingInfo> timing_info,
+        const IntraLbPbPinLookup& pb_gpin_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //set lower bound to 0 and upper bound to net_delay
@@ -97,24 +99,21 @@ void route_budgets::load_route_budgets(float ** net_delay) {
         delay_upper_bound[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
     }
 
+    float pin_criticality;
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-            //large
-            //            delay_min_budget[inet][ipin] = 100e-10;
-            //            delay_max_budget[inet][ipin] = 900e-10;
-            //            delay_lower_bound[inet][ipin] = 100e-12;
+            //pin_criticality = calculate_clb_net_pin_criticality(*timing_info, pb_gpin_lookup, inet, ipin);
 
-            //small
             delay_min_budget[inet][ipin] = 0;
-            delay_max_budget[inet][ipin] = 1e-12;
-            delay_lower_bound[inet][ipin] = 1e-16;
+            delay_max_budget[inet][ipin] = net_delay[inet][ipin];
+            delay_lower_bound[inet][ipin] = 0;
 
             delay_upper_bound[inet][ipin] = 100e-9;
-            //
-            //            VTR_ASSERT(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
-            //                    && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
-            //                    && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
-            //                    && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin]);
+
+            //                        VTR_ASSERT(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
+            //                                && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
+            //                                && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
+            //                                && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin]);
         }
     }
 

@@ -27,7 +27,9 @@ public:
     float get_min_delay_budget(int source, int sink);
     float get_max_delay_budget(int source, int sink);
     float get_crit_short_path(int source, int sink);
-    void load_route_budgets(float ** net_delay);
+    void load_route_budgets(float ** net_delay, 
+        std::shared_ptr<const SetupTimingInfo> timing_info, 
+        const IntraLbPbPinLookup& pb_gpin_lookup);
     void print_route_budget();
     bool if_set();
     void update_congestion_times(int inet);
