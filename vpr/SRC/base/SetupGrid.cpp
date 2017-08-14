@@ -342,14 +342,16 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
         VTR_ASSERT(type->width > 0);
         if (incrx < size_t(type->width)) {
             VPR_THROW(VPR_ERROR_ARCH, 
-                    "Grid location specification x increment for block type '%s' must be at least block width (%d) to avoid overlapping instances (was %s = %d)",
+                    "Grid location specification x increment for block type '%s' must be at least"
+                    " block width (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, type->width, xspec.incr_expr.c_str(), incrx);
         }
 
         VTR_ASSERT(type->height > 0);
         if (incry < size_t(type->height)) {
             VPR_THROW(VPR_ERROR_ARCH, 
-                    "Grid location specification y increment for block type '%s' must be at least block height (%d) to avoid overlapping instances (was %s = %d)",
+                    "Grid location specification y increment for block type '%s' must be at least"
+                    " block height (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, type->height, yspec.incr_expr.c_str(), incry);
         }
 
@@ -357,14 +359,16 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
         size_t region_width = endx - startx + 1; //+1 since start/end are both inclusive
         if (repeatx < region_width) {
             VPR_THROW(VPR_ERROR_ARCH, 
-                    "Grid location specification x repeat for block type '%s' must be at least the region width (%d) to avoid overlapping instances (was %s = %d)",
+                    "Grid location specification x repeat for block type '%s' must be at least "
+                    " the region width (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, region_width, xspec.repeat_expr.c_str(), repeatx);
         }
 
         size_t region_height = endy - starty + 1; //+1 since start/end are both inclusive
         if (repeaty < region_height) {
             VPR_THROW(VPR_ERROR_ARCH, 
-                    "Grid location specification y repeat for block type '%s' must be at least the region height (%d) to avoid overlapping instances (was %s = %d)",
+                    "Grid location specification y repeat for block type '%s' must be at least "
+                    " the region height (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, region_height, xspec.repeat_expr.c_str(), repeaty);
         }
 
