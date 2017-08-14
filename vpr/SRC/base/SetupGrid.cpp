@@ -165,6 +165,9 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
 
         //Sort the grid layouts from smallest to largest
         auto area_cmp = [](const t_grid_def& lhs, const t_grid_def& rhs) {
+            VTR_ASSERT(lhs.grid_type == GridDefType::FIXED);
+            VTR_ASSERT(rhs.grid_type == GridDefType::FIXED);
+
             int lhs_area = lhs.width * lhs.height;
             int rhs_area = rhs.width * rhs.height;
 
