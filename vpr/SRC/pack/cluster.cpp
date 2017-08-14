@@ -722,7 +722,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	free_cluster_placement_stats(cluster_placement_stats);
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
-		free_pb(cluster_ctx.clb_nlist.block_pb(blk_id));
+		cluster_ctx.clb_nlist.remove_block(blk_id);
 
 	cluster_ctx.clb_nlist = ClusteredNetlist();
 

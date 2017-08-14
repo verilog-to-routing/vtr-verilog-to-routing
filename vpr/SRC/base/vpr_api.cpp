@@ -720,8 +720,10 @@ static void free_pb_type(t_pb_type *pb_type) {
 
 void free_circuit() {
 	//Free new net structures
-	//TODO: Call cleanup function for cluster_ctx.clb_nlist
 	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
+		cluster_ctx.clb_nlist.remove_block(blk_id);
+
 	cluster_ctx.clb_nlist = ClusteredNetlist();
 }
 

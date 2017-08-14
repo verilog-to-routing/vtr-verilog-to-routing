@@ -129,19 +129,22 @@ bool ClusteredNetlist::net_fixed(const ClusterNetId id) const {
 *
 */
 ClusterBlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type_ptr type) {
-	ClusterBlockId blk_id = Netlist::create_block(name);
+	ClusterBlockId blk_id = find_block(name);
+	if (blk_id == ClusterBlockId::INVALID()) {
+		blk_id = Netlist::create_block(name);
 
-	block_pbs_.insert(blk_id, pb);
-	block_pbs_[blk_id]->name = vtr::strdup(name);
-	block_types_.insert(blk_id, type);
+		block_pbs_.insert(blk_id, pb);
+		block_pbs_[blk_id]->name = vtr::strdup(name);
+		block_types_.insert(blk_id, type);
 
-	//Allocate and initialize every potential net of the block
-	block_nets_.insert(blk_id, std::vector<ClusterNetId>());
-	block_net_count_.insert(blk_id, std::vector<int>());
+		//Allocate and initialize every potential net of the block
+		block_nets_.insert(blk_id, std::vector<ClusterNetId>());
+		block_net_count_.insert(blk_id, std::vector<int>());
 
-	for (int i = 0; i < type->num_pins; i++) {
-		block_nets_[blk_id].push_back(ClusterNetId::INVALID());
-		block_net_count_[blk_id].push_back(-1);
+		for (int i = 0; i < type->num_pins; i++) {
+			block_nets_[blk_id].push_back(ClusterNetId::INVALID());
+			block_net_count_[blk_id].push_back(-1);
+		}
 	}
 
 	//Check post-conditions: size
@@ -248,6 +251,7 @@ void ClusteredNetlist::remove_block(const ClusterBlockId blk_id) {
 
 	//Remove & invalidate pointers
 	free_pb(block_pbs_[blk_id]);
+	delete block_pbs_[blk_id];
 	block_pbs_.insert(blk_id, NULL);
 	block_types_.insert(blk_id, NULL);
 	block_nets_.insert(blk_id, std::vector<ClusterNetId>());
