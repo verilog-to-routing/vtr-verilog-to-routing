@@ -78,7 +78,7 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
             (vtr::atou(header[2].c_str()) != device_ctx.grid.width() || vtr::atou(header[4].c_str()) != device_ctx.grid.height())) {
         vpr_throw(VPR_ERROR_ROUTE, route_file, __LINE__,
                 "Device dimensions %sx%s specified in the routing file does not match given %dx%d ",
-                header[2].c_str(), header[4].c_str(), device_ctx.nx, device_ctx.ny);
+                header[2].c_str(), header[4].c_str(), device_ctx.grid.width(), device_ctx.grid.height());
     }
 
     /* Read in every net */
