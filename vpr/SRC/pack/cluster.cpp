@@ -1425,6 +1425,7 @@ static enum e_block_pack_status try_place_atom_block_rec(
 		if (!primitive_feasible(blk_id, pb)) {
 			/* failed location feasibility check, revert pack */
 			block_pack_status = BLK_FAILED_FEASIBLE;
+			free(pb->name);
 		}
 
 		if (block_pack_status == BLK_PASSED && is_root_of_chain == true) {

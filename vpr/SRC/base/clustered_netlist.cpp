@@ -250,6 +250,7 @@ void ClusteredNetlist::remove_block(const ClusterBlockId blk_id) {
 	Netlist::remove_block(blk_id);
 
 	//Remove & invalidate pointers
+	delete []block_pbs_[blk_id]->pb_route;
 	free_pb(block_pbs_[blk_id]);
 	delete block_pbs_[blk_id];
 	block_pbs_.insert(blk_id, NULL);
