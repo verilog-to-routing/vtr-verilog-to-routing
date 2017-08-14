@@ -250,6 +250,10 @@ float atof(const std::string& value) {
     return atoT<float>(value, "float");
 }
 
+unsigned atou(const std::string& value) {
+    return atoT<unsigned>(value, "unsigned int");
+}
+
 char* strtok(char *ptr, const char *tokens, FILE * fp, char *buf) {
 
     /* Get next token, and wrap to next line if \ at end of line.    *

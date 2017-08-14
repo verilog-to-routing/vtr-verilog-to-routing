@@ -1270,7 +1270,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
     fprintf(fp, "Placement_File: %s Placement_ID: %s\n", placement_file, place_ctx.placement_id.c_str());
 
-	fprintf(fp, "Array size: %d x %d logic blocks.\n", device_ctx.nx, device_ctx.ny);
+	fprintf(fp, "Array size: %zu x %zu logic blocks.\n", device_ctx.grid.width(), device_ctx.grid.height());
 	fprintf(fp, "\nRouting:");
 	for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
 		if (cluster_ctx.clbs_nlist.net[inet].is_global == false) {
