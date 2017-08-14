@@ -1471,8 +1471,8 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 
     int seg_coord = x_coord;
     int chan_coord = y_coord;
-    int seg_dimension = device_ctx.nx;
-    int chan_dimension = device_ctx.ny;
+    int seg_dimension = device_ctx.grid.width() - 2; //-2 for no perim channels
+    int chan_dimension = device_ctx.grid.height() - 2; //-2 for no perim channels
     const t_chan_details& from_chan_details = (chan_type == CHANX) ? chan_details_x : chan_details_y;
     const t_chan_details& opposite_chan_details = (chan_type == CHANX) ? chan_details_y : chan_details_x;
     ;
@@ -1480,8 +1480,8 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
     if (chan_type == CHANY) {
         seg_coord = y_coord;
         chan_coord = x_coord;
-        seg_dimension = device_ctx.ny;
-        chan_dimension = device_ctx.nx;
+        seg_dimension = device_ctx.grid.height() - 2; //-2 for no perim channels
+        chan_dimension = device_ctx.grid.width() - 2; //-2 for no perim channels
         opposite_chan_type = CHANX;
     }
 
@@ -2334,7 +2334,7 @@ static void build_unidir_rr_opins(const int i, const int j,
 
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
-                    for (e_side side :{TOP, RIGHT, BOTTOM, LEFT}) {
+                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
 
                         /* Can't do anything if pin isn't at this location */
                         if (0 == type->pinloc[width][height][side][pin_index]) {
@@ -2348,7 +2348,7 @@ static void build_unidir_rr_opins(const int i, const int j,
                         t_rr_type chan_type = (vert ? CHANX : CHANY);
                         int chan = (vert ? (j + height) : (i + width));
                         int seg = (vert ? (i + width) : (j + height));
-                        int max_len = (vert ? device_ctx.nx : device_ctx.ny);
+                        int max_len = (vert ? device_ctx.grid.width() : device_ctx.grid.height());
                         vtr::NdMatrix<int, 3>& Fc_ofs = (vert ? Fc_xofs : Fc_yofs);
                         if (false == pos_dir) {
                             --chan;
@@ -2361,10 +2361,10 @@ static void build_unidir_rr_opins(const int i, const int j,
                         if (seg < 1) {
                             continue;
                         }
-                        if (seg > (vert ? device_ctx.nx : device_ctx.ny)) {
+                        if (seg > int(vert ? device_ctx.grid.width() : device_ctx.grid.height()) - 2) { //-2 since no channels around perim
                             continue;
                         }
-                        if (chan > (vert ? device_ctx.ny : device_ctx.nx)) {
+                        if (chan > int(vert ? device_ctx.grid.height() : device_ctx.grid.width()) - 2) { //-2 since no channels around perim
                             continue;
                         }
 
@@ -2540,9 +2540,9 @@ static int get_opin_direct_connecions(int x, int y, int opin,
         if (clb_to_clb_directs[i].from_clb_type == curr_type) { //We are at a valid starting point
 
             //Offset must be in range
-            if (x + directs[i].x_offset < device_ctx.nx + 1 &&
+            if (x + directs[i].x_offset < int(device_ctx.grid.width() - 1) &&
                     x + directs[i].x_offset > 0 &&
-                    y + directs[i].y_offset < device_ctx.ny + 1 &&
+                    y + directs[i].y_offset < int(device_ctx.grid.height() - 1) &&
                     y + directs[i].y_offset > 0) {
 
                 //Only add connections if the target clb type matches the type in the direct specification
