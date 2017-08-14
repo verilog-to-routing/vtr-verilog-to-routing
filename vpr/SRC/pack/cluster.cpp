@@ -531,7 +531,8 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		is_cluster_legal = false;
 		savedseedindex = seedindex;
 		for (detailed_routing_stage = (int)E_DETAILED_ROUTE_AT_END_ONLY; !is_cluster_legal && detailed_routing_stage != (int)E_DETAILED_ROUTE_END; detailed_routing_stage++) {
-			ClusterBlockId clb_index = (ClusterBlockId)num_clb;
+			ClusterBlockId clb_index(num_clb);
+			
 			/* start a new cluster and reset all stats */
 			start_new_cluster(cluster_placement_stats, primitives_list,
 					atom_molecules, clb_index, istart, num_used_type_instances,

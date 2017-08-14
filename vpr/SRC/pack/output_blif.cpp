@@ -462,19 +462,17 @@ void print_models(FILE *fpout, t_model *user_models) {
 	}
 }
 
+/* This routine dumps out the output netlist in a format suitable for   *
+* input to vpr.  This routine also dumps out the internal structure of  *
+* the cluster, in essentially a graph based format.                     */
 void output_blif(const t_arch *arch, const char *out_fname) {
-
-	/* 
-	 * This routine dumps out the output netlist in a format suitable for  *
-	 * input to vpr.  This routine also dumps out the internal structure of   *
-	 * the cluster, in essentially a graph based format.                           */
-
 	FILE *fpout;
 	int column;
 	
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	if(cluster_ctx.clb_nlist.block_pb((ClusterBlockId)0)->pb_route == NULL) {
+	// Check that there's at least one block that exists
+	if(cluster_ctx.clb_nlist.block_pb(ClusterBlockId(0))->pb_route == NULL) {
 		return;
 	}
 

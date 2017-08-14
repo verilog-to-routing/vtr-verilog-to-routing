@@ -109,7 +109,6 @@ void read_route(const char* placement_file, const char* route_file, t_vpr_setup&
 static void process_route(ifstream &fp) {
     /*Walks through every net and add the routing appropriately*/
     string input;
-    unsigned inet;
     std::vector<std::string> tokens;
     while (getline(fp, input)) {
         tokens.clear();
@@ -119,8 +118,8 @@ static void process_route(ifstream &fp) {
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
         } else if (tokens[0] == "Net") {
-            inet = atoi(tokens[1].c_str());
-            process_nets(fp, (ClusterNetId)inet, tokens[2], tokens);
+            ClusterNetId inet(atoi(tokens[1].c_str()));
+            process_nets(fp, inet, tokens[2], tokens);
         }
     }
 
@@ -331,7 +330,6 @@ static void process_global_blocks(ifstream &fp, ClusterNetId inet) {
 
     string block, bnum_str;
     int x, y;
-	ClusterBlockId bnum;
     std::vector<std::string> tokens;
     int pin_counter = 0;
 
@@ -356,7 +354,7 @@ static void process_global_blocks(ifstream &fp, ClusterNetId inet) {
             bnum_str = format_name(tokens[2]);
             /*remove #*/
             bnum_str.erase(bnum_str.begin());
-            bnum = (ClusterBlockId)atoi(bnum_str.c_str());
+			ClusterBlockId bnum(atoi(bnum_str.c_str()));
 
             /*Check for name, coordinate, and pins*/
             if (0 != cluster_ctx.clb_nlist.block_name(bnum).compare(tokens[1])) {

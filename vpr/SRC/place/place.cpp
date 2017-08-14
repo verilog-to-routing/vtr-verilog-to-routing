@@ -154,7 +154,7 @@ static float **chanx_place_cost_fac, **chany_place_cost_fac;
 /* The following arrays are used by the try_swap function for speed.   */
 /* [0...cluster_ctx.clb_nlist.nets().size()-1] */
 static vtr::vector_map<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
-static int *ts_nets_to_update = NULL;
+static std::vector<ClusterNetId> ts_nets_to_update;
 
 /* The pl_macros array stores all the carry chains placement macros.   *
  * [0...num_pl_macros-1]                                                  */
@@ -277,7 +277,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb *bb_coord_new);
 static void update_bb(ClusterNetId net_id, t_bb *bb_coord_new,
 		t_bb *bb_edge_new, int xold, int yold, int xnew, int ynew);
 		
-static int find_affected_nets(int *nets_to_update);
+static int find_affected_nets(void);
 
 static float get_net_cost(ClusterNetId net_id, t_bb *bb_ptr);
 
@@ -1204,7 +1204,7 @@ static int setup_blocks_affected(ClusterBlockId b_from, int x_to, int y_to, int 
 	} else if (b_to != INVALID_BLOCK_ID) {
 
 		// Does not allow a swap with a macro yet
-		get_imacro_from_iblk(&imacro, (size_t)b_to, pl_macros, num_pl_macros);
+		get_imacro_from_iblk(&imacro, b_to, pl_macros, num_pl_macros);
 		if (imacro != -1) {
 			abort_swap = true;
 			return (abort_swap);
@@ -1268,7 +1268,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 	y_from = place_ctx.block_locs[b_from].y;
 	z_from = place_ctx.block_locs[b_from].z;
 
-	get_imacro_from_iblk(&imacro, (size_t)b_from, pl_macros, num_pl_macros);
+	get_imacro_from_iblk(&imacro, b_from, pl_macros, num_pl_macros);
 	if ( imacro != -1) {
 		// b_from is part of a macro, I need to swap the whole macro
 		
@@ -1281,7 +1281,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 
 			// Gets the new from and to info for every block in the macro
 			// cannot use the old from and to info
-			curr_b_from = (ClusterBlockId)pl_macros[imacro].members[imember].blk_index;
+			curr_b_from = pl_macros[imacro].members[imember].blk_index;
 			
 			curr_x_from = place_ctx.block_locs[curr_b_from].x;
 			curr_y_from = place_ctx.block_locs[curr_b_from].y;
@@ -1394,7 +1394,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	if (abort_swap == false) {
 
 		// Find all the nets affected by this swap
-		num_nets_affected = find_affected_nets(ts_nets_to_update);
+		num_nets_affected = find_affected_nets();
 
 		/* Go through all the pins in all the blocks moved and update the bounding boxes.  *
 		 * Do not update the net cost here since it should only be updated once per net,   *
@@ -1428,7 +1428,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 		/* Now update the cost function. The cost is only updated once for every net  *
 		 * May have to do major optimizations here later.                             */
 		for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
-			net_id = (ClusterNetId)ts_nets_to_update[inet_affected];
+			net_id = ts_nets_to_update[inet_affected];
 
 			temp_net_cost[net_id] = get_net_cost(net_id, &ts_bb_coord_new[net_id]);
 			bb_delta_c += temp_net_cost[net_id] - net_cost[net_id];
@@ -1465,7 +1465,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 
 			/* update net cost functions and reset flags. */
 			for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
-				net_id = (ClusterNetId)ts_nets_to_update[inet_affected];
+				net_id = ts_nets_to_update[inet_affected];
 
 				bb_coords[net_id] = ts_bb_coord_new[net_id];
 				if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET)
@@ -1492,7 +1492,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 
 				b_from = blocks_affected.moved_blocks[iblk].block_num;
 
-				place_ctx.grid_blocks[x_to][y_to].blocks[z_to] = (ClusterBlockId)b_from;
+				place_ctx.grid_blocks[x_to][y_to].blocks[z_to] = b_from;
 
 				if (blocks_affected.moved_blocks[iblk].swapped_to_was_empty) {
 					place_ctx.grid_blocks[x_to][y_to].usage++;
@@ -1508,7 +1508,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 
 			/* Reset the net cost function flags first. */
 			for (inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
-				net_id = (ClusterNetId)ts_nets_to_update[inet_affected];
+				net_id = ts_nets_to_update[inet_affected];
 				temp_net_cost[net_id] = -1;
 				bb_updated_before[net_id] = NOT_UPDATED_YET;
 			}
@@ -1549,7 +1549,7 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 
 /* Puts a list of all the nets that are changed by the swap into          *
 * nets_to_update.  Returns the number of affected nets.                  */
-static int find_affected_nets(int *nets_to_update) {
+static int find_affected_nets() {
 	int iblk, iblk_pin, num_affected_nets;
 	ClusterBlockId bnum;
 	ClusterNetId net_id;
@@ -1573,7 +1573,7 @@ static int find_affected_nets(int *nets_to_update) {
 			
 			if (temp_net_cost[net_id] < 0.) { 
 				/* Net not marked yet. */
-				nets_to_update[num_affected_nets] = (size_t)net_id;
+				ts_nets_to_update[num_affected_nets] = net_id;
 				num_affected_nets++;
 
 				/* Flag to say we've marked this net. */
@@ -2130,9 +2130,10 @@ static void alloc_and_load_try_swap_structs() {
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		ts_bb_coord_new.insert(net_id, t_bb());
 		ts_bb_edge_new.insert(net_id, t_bb());
+		ts_nets_to_update.push_back(ClusterNetId::INVALID());
 	}
-	
-	ts_nets_to_update = (int *) vtr::calloc(cluster_ctx.clb_nlist.nets().size(), sizeof(int));
+
+//	ts_nets_to_update = (int *) vtr::calloc(cluster_ctx.clb_nlist.nets().size(), sizeof(int));
 		
 	/* Allocate with size cluster_ctx.clb_nlist.blocks().size() for any number of moved blocks. */
 	blocks_affected.moved_blocks = (t_pl_moved_block*) vtr::calloc((int) cluster_ctx.clb_nlist.blocks().size(), sizeof(t_pl_moved_block));
@@ -2708,12 +2709,12 @@ static int try_place_macro(int itype, int ipos, int imacro){
 			member_y = y + pl_macros[imacro].members[imember].y_offset;
 			member_z = z + pl_macros[imacro].members[imember].z_offset;
 					
-            ClusterBlockId iblk = (ClusterBlockId)pl_macros[imacro].members[imember].blk_index;
+            ClusterBlockId iblk = pl_macros[imacro].members[imember].blk_index;
 			place_ctx.block_locs[iblk].x = member_x;
 			place_ctx.block_locs[iblk].y = member_y;
 			place_ctx.block_locs[iblk].z = member_z;
 
-			place_ctx.grid_blocks[member_x][member_y].blocks[member_z] = (ClusterBlockId)pl_macros[imacro].members[imember].blk_index;
+			place_ctx.grid_blocks[member_x][member_y].blocks[member_z] = pl_macros[imacro].members[imember].blk_index;
 			place_ctx.grid_blocks[member_x][member_y].usage++;
 
 			// Could not ensure that the randomiser would not pick this location again
@@ -2745,7 +2746,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 		macro_placed = false;
 		
 		// Assume that all the blocks in the macro are of the same type
-		blk_id = (ClusterBlockId)pl_macros[imacro].members[0].blk_index;
+		blk_id = pl_macros[imacro].members[0].blk_index;
 		itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
 		if (free_locations[itype] < pl_macros[imacro].num_blocks) {
 			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
@@ -3160,11 +3161,11 @@ static void check_place(float bb_cost, float timing_cost,
 	/* Check the pl_macro placement are legal - blocks are in the proper relative position. */
 	for (imacro = 0; imacro < num_pl_macros; imacro++) {
 		
-		head_iblk = (ClusterBlockId)pl_macros[imacro].members[0].blk_index;
+		head_iblk = pl_macros[imacro].members[0].blk_index;
 		
 		for (imember = 0; imember < pl_macros[imacro].num_blocks; imember++) {
 			
-			member_iblk = (ClusterBlockId)pl_macros[imacro].members[imember].blk_index;
+			member_iblk = pl_macros[imacro].members[imember].blk_index;
 
 			// Compute the suppossed member's x,y,z location
 			member_x = place_ctx.block_locs[head_iblk].x + pl_macros[imacro].members[imember].x_offset;
@@ -3207,9 +3208,7 @@ static void check_place(float bb_cost, float timing_cost,
 static void print_clb_placement(const char *fname) {
 
 	/* Prints out the clb placements to a file.  */
-
 	FILE *fp;
-	int i;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 	
@@ -3217,8 +3216,8 @@ static void print_clb_placement(const char *fname) {
 	fprintf(fp, "Complex block placements:\n\n");
 
 	fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
-	for(i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-		fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name((ClusterBlockId) i), place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].z);
+	for(auto i : cluster_ctx.clb_nlist.blocks()) {
+		fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name(i), place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].z);
 	}
 	
 	fclose(fp);	
@@ -3226,11 +3225,9 @@ static void print_clb_placement(const char *fname) {
 #endif
 
 static void free_try_swap_arrays(void) {
-	if(ts_nets_to_update != NULL) {
-		free(ts_nets_to_update);
+	if(blocks_affected.moved_blocks != NULL) {
 		free(blocks_affected.moved_blocks);
-		
-		ts_nets_to_update = NULL;
+
 		blocks_affected.moved_blocks = NULL;
 		blocks_affected.num_moved_blocks = 0;
 	}

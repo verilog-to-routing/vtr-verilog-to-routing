@@ -39,15 +39,13 @@ static int ** f_direct_type_from_blk_pin = NULL;
 /* f_imacro_from_blk_pin maps a blk_num to the corresponding macro index.           *
  * If the block is not part of a macro, the value OPEN (-1) is stored.              *
  * [0...cluster_ctx.clb_nlist.blocks().size()-1]                                    */
-static int * f_imacro_from_iblk = NULL;
+static vtr::vector_map<ClusterBlockId, int> f_imacro_from_iblk;
 
 
 /******************** Subroutine declarations ********************************/
 
 static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_num_of_this_blk, 
 		int * pl_macro_idirect, int * pl_macro_num_members, int ** pl_macro_member_blk_num);
-
-static void free_imacro_from_iblk(void);
 
 static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros);
 
@@ -150,8 +148,7 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 						} // Found all the members of this macro at this point
 
 						// Allocate the second dimension of the blk_num array since I now know the size
-						pl_macro_member_blk_num[num_macro] = 
-								(int *) vtr::calloc (pl_macro_num_members[num_macro] , sizeof(int));
+						pl_macro_member_blk_num[num_macro] = (int *) vtr::calloc (pl_macro_num_members[num_macro] , sizeof(int));
 						// Copy the data from the temporary array to the newly allocated array.
 						for (imember = 0; imember < pl_macro_num_members[num_macro]; imember ++)
 							pl_macro_member_blk_num[num_macro][imember] = pl_macro_member_blk_num_of_this_blk[imember];
@@ -233,7 +230,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 			macro[imacro].members[imember].x_offset = imember * directs[pl_macro_idirect[imacro]].x_offset;
 			macro[imacro].members[imember].y_offset = imember * directs[pl_macro_idirect[imacro]].y_offset;
 			macro[imacro].members[imember].z_offset = directs[pl_macro_idirect[imacro]].z_offset;
-			macro[imacro].members[imember].blk_index = pl_macro_member_blk_num[imacro][imember];
+			macro[imacro].members[imember].blk_index = (ClusterBlockId)pl_macro_member_blk_num[imacro][imember];
 		}
 	}
 
@@ -258,7 +255,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	return (num_macro);
 }
 
-void get_imacro_from_iblk(int * imacro, int iblk, t_pl_macro * macros, int num_macros) {
+void get_imacro_from_iblk(int *imacro, ClusterBlockId iblk, t_pl_macro * macros, int num_macros) {
 
 	/* This mapping is needed for fast lookup's whether the block with index *
 	 * iblk belongs to a placement macro or not.                             *
@@ -267,7 +264,7 @@ void get_imacro_from_iblk(int * imacro, int iblk, t_pl_macro * macros, int num_m
 	 * [0...cluster_ctx.clb_nlist.blocks().size()-1]                                                    */
 
 	/* If the array is not allocated and loaded, allocate it.                */ 
-	if (f_imacro_from_iblk == NULL) {
+	if (f_imacro_from_iblk.size() == 0) {
 		alloc_and_load_imacro_from_iblk(macros, num_macros);
 	}
 
@@ -276,41 +273,22 @@ void get_imacro_from_iblk(int * imacro, int iblk, t_pl_macro * macros, int num_m
 
 }
 
-static void free_imacro_from_iblk(void) {
-
-	/* Frees the f_imacro_from_iblk array.                    *
-	 *                                                        *
-	 * This function is called when the arrays are freed in   *
-	 * free_placement_structs()                               */
-
-	if (f_imacro_from_iblk != NULL) {
-		free(f_imacro_from_iblk);
-		f_imacro_from_iblk = NULL;
-	}
-
-}
-
+/* Allocates and loads imacro_from_iblk array. */
 static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros) {
-
-	/* Allocates and loads imacro_from_iblk array.                           *
-	 *                                                                       *
-	 * The array is freed in free_placement_structs()                        */
-
-	int * temp_imacro_from_iblk = NULL;
-	int imacro, imember, iblk;
+	int imacro, imember;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* Allocate and initialize the values to OPEN (-1). */
-	temp_imacro_from_iblk = (int *)vtr::malloc(cluster_ctx.clb_nlist.blocks().size() * sizeof(int));
-	for(iblk = 0; iblk < (int) cluster_ctx.clb_nlist.blocks().size(); iblk ++) {
-		temp_imacro_from_iblk[iblk] = OPEN;
+	vtr::vector_map<ClusterBlockId, int> temp_imacro_from_iblk;
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		temp_imacro_from_iblk.insert(blk_id, OPEN);
 	}
 	
 	/* Load the values */
 	for (imacro = 0; imacro < num_macros; imacro++) {
 		for (imember = 0; imember < macros[imacro].num_blocks; imember++) {
-			iblk = macros[imacro].members[imember].blk_index;
-			temp_imacro_from_iblk[iblk] = imacro;
+			ClusterBlockId blk_id = macros[imacro].members[imember].blk_index;
+			temp_imacro_from_iblk.insert(blk_id, imacro);
 		}
 	}
 	
@@ -340,10 +318,6 @@ void free_placement_macros_structs(void) {
 		free(f_direct_type_from_blk_pin);
 		f_direct_type_from_blk_pin = NULL;
 	}
-
-	// This frees up the imacro from iblk mapping array.
-	free_imacro_from_iblk();
-	
 }
 
 static void write_place_macros(std::string filename, const t_pl_macro* macros, int num_macros) {
@@ -358,8 +332,8 @@ static void write_place_macros(std::string filename, const t_pl_macro* macros, i
         fprintf(f, "------------------------------------------------------\n");
         for (int imember = 0; imember < macro->num_blocks; ++imember) {
             const t_pl_macro_member* macro_memb = &macro->members[imember];
-            fprintf(f, "Block_Id: %d, x_offset: %d, y_offset: %d, z_offset: %d\n",
-                    macro_memb->blk_index,
+            fprintf(f, "Block_Id: %lu, x_offset: %d, y_offset: %d, z_offset: %d\n",
+                    (size_t)macro_memb->blk_index,
                     macro_memb->x_offset,
                     macro_memb->y_offset,
                     macro_memb->z_offset);
@@ -420,19 +394,19 @@ static void validate_macros(t_pl_macro* macros, int num_macros) {
     std::multimap<int,int> block_to_macro;
     for (int imacro = 0; imacro < num_macros; ++imacro) {
         for (int imember = 0; imember < macros[imacro].num_blocks; ++imember) {
-            int iblk = macros[imacro].members[imember].blk_index;
+            ClusterBlockId iblk = macros[imacro].members[imember].blk_index;
 
-            block_to_macro.emplace(iblk, imacro);
+            block_to_macro.emplace((size_t)iblk, imacro);
         }
     }
 
-    for (unsigned int iblk = 0; iblk < cluster_ctx.clb_nlist.blocks().size(); ++iblk) {
-        auto range = block_to_macro.equal_range(iblk);
+    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+        auto range = block_to_macro.equal_range((size_t)blk_id);
 
         int blk_macro_cnt = std::distance(range.first, range.second);
         if (blk_macro_cnt > 1) {
             std::stringstream msg;
-            msg << "Block #" << iblk << " '" << cluster_ctx.clb_nlist.block_name((ClusterBlockId)iblk) << "'"
+            msg << "Block #" << (size_t)blk_id << " '" << cluster_ctx.clb_nlist.block_name(blk_id) << "'"
                 << " appears in " << blk_macro_cnt << " placement macros (should appear in at most one). Related Macros:\n";
 
             for (auto iter = range.first; iter != range.second; ++iter) {

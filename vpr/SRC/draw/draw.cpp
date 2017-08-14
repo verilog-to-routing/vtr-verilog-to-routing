@@ -1617,18 +1617,14 @@ void draw_get_rr_pin_coords(t_rr_node* node, int iside,
 	*ycen = yc;
 }
 
-
+/* Draws the nets in the positions fixed by the router.  If draw_net_type is *
+* ALL_NETS, draw all the nets.  If it is HIGHLIGHTED, draw only the nets    *
+* that are not coloured black (useful for drawing over the rr_graph).       */
 static void drawroute(enum e_draw_net_type draw_net_type) {
-
-	/* Draws the nets in the positions fixed by the router.  If draw_net_type is *
-	 * ALL_NETS, draw all the nets.  If it is HIGHLIGHTED, draw only the nets    *
-	 * that are not coloured black (useful for drawing over the rr_graph).       */
-
 	t_draw_state* draw_state = get_draw_state_vars();
 
 	/* Next free track in each channel segment if routing is GLOBAL */
 
-	unsigned int inet;
 	int inode;
 	t_trace *tptr;
 	t_rr_type rr_type;
@@ -1640,17 +1636,17 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 
 	/* Now draw each net, one by one.      */
 
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-		if (cluster_ctx.clb_nlist.net_global((ClusterNetId)inet)) /* Don't draw global nets. */
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (cluster_ctx.clb_nlist.net_global(net_id)) /* Don't draw global nets. */
 			continue;
 
-		if (route_ctx.trace_head[inet] == NULL) /* No routing.  Skip.  (Allows me to draw */
+		if (route_ctx.trace_head[(size_t)net_id] == NULL) /* No routing.  Skip.  (Allows me to draw */
 			continue; /* partially complete routes).            */
 
-		if (draw_net_type == HIGHLIGHTED && draw_state->net_color[inet] == BLACK)
+		if (draw_net_type == HIGHLIGHTED && draw_state->net_color[(size_t)net_id] == BLACK)
 			continue;
 
-		tptr = route_ctx.trace_head[inet]; /* SOURCE to start */
+		tptr = route_ctx.trace_head[(size_t)net_id]; /* SOURCE to start */
 		inode = tptr->index;
 		rr_type = device_ctx.rr_nodes[inode].type();
 
@@ -1661,10 +1657,10 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 			inode = tptr->index;
 			rr_type = device_ctx.rr_nodes[inode].type();
 
-			if (draw_if_net_highlighted(inet)) {
+			if (draw_if_net_highlighted((size_t)net_id)) {
 				/* If a net has been highlighted, highlight the whole net in *
 				 * the same color.											 */
-				draw_state->draw_rr_node[inode].color = draw_state->net_color[inet];
+				draw_state->draw_rr_node[inode].color = draw_state->net_color[(size_t)net_id];
 				draw_state->draw_rr_node[inode].node_highlighted = true;
 			}
 			else {
@@ -1879,25 +1875,24 @@ static bool draw_if_net_highlighted (int inet) {
  * If so, and toggle nets is selected, highlight the whole net in that colour.
  */
 static void highlight_nets(char *message, int hit_node) {
-	unsigned int inet;
 	t_trace *tptr;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
 	t_draw_state* draw_state = get_draw_state_vars();
 	
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-		for (tptr = route_ctx.trace_head[inet]; tptr != NULL; tptr = tptr->next) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		for (tptr = route_ctx.trace_head[(size_t)net_id]; tptr != NULL; tptr = tptr->next) {
 			if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
-				draw_state->net_color[inet] = draw_state->draw_rr_node[tptr->index].color;
+				draw_state->net_color[(size_t)net_id] = draw_state->draw_rr_node[tptr->index].color;
 				if (tptr->index == hit_node) {
-					sprintf(message, "%s  ||  Net: %d (%s)", message, inet,
-							cluster_ctx.clb_nlist.net_name((ClusterNetId)inet).c_str());
+					sprintf(message, "%s  ||  Net: %lu (%s)", message, (size_t)net_id,
+							cluster_ctx.clb_nlist.net_name(net_id).c_str());
 				}
 			}
 			else if (draw_state->draw_rr_node[tptr->index].color == WHITE) {
 				// If node is de-selected.
-				draw_state->net_color[inet] = BLACK;
+				draw_state->net_color[(size_t)net_id] = BLACK;
 				break;
 			}
 		}

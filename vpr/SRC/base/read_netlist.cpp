@@ -188,7 +188,7 @@ void read_netlist(const char *net_file, const t_arch* arch, bool verify_file_dig
         /* Process netlist */
         unsigned i = 0;
         for(auto curr_block = top.child("block"); curr_block; curr_block = curr_block.next_sibling("block")) {
-            processComplexBlock(curr_block, (ClusterBlockId)i, &num_primitives, loc_data, clb_nlist);
+            processComplexBlock(curr_block, ClusterBlockId(i), &num_primitives, loc_data, clb_nlist);
             i++;
         }
         VTR_ASSERT(bcount == i);
