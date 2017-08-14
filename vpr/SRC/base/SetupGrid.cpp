@@ -136,11 +136,11 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
         size_t height = 3;
         do {
             //Scale opposite dimension to match aspect ratio
-            if (grid_def.aspect_ratio >= 1.) {
-                width = vtr::nint(height * grid_def.aspect_ratio);
-            } else {
-                height = vtr::nint(width / grid_def.aspect_ratio);
-            }
+            height = vtr::nint(width / grid_def.aspect_ratio);
+
+#ifdef VERBOSE
+            vtr::printf("Grid size: %zu x %zu (AR: %.2f) \n", width, height, float(width) / height);
+#endif
 
             //Build the device
             auto grid = build_device_grid(grid_def, width, height);
@@ -151,11 +151,7 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
             }
 
             //Increase the grid size
-            if (grid_def.aspect_ratio >= 1.) {
-                height++;
-            } else {
-                width++;
-            }
+            width++;
 
         } while (true);
 
@@ -187,6 +183,7 @@ static DeviceGrid auto_size_device_grid(std::vector<t_grid_def> grid_layouts, st
         }
     }
 
+    //No suitable device found
     std::string resource_reqs;
     for (auto iter = minimum_instance_counts.begin(); iter != minimum_instance_counts.end(); ++iter) {
         if (iter != minimum_instance_counts.begin()) {
