@@ -191,7 +191,7 @@ ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex 
 
 	ClusterBlockId block_id = port_block(port_id);
 	
-	VTR_ASSERT(pin_index < block_type(block_id)->num_pins);
+	VTR_ASSERT(_pin_index < block_type(block_id)->num_pins);
 	block_nets_[block_id][_pin_index] = net_id;
 
 	VTR_ASSERT(validate_pin_sizes());
