@@ -152,10 +152,11 @@ void check_rr_graph(const t_graph_type graph_type,
                     }
                 }
 
+                //TODO: reconsider fring handling with non-perimeter io devices
                 is_fringe = ((device_ctx.rr_nodes[inode].xlow() == 1)
                         || (device_ctx.rr_nodes[inode].ylow() == 1)
-                        || (device_ctx.rr_nodes[inode].xhigh() == grid.nx())
-                        || (device_ctx.rr_nodes[inode].yhigh() == grid.ny()));
+                        || (device_ctx.rr_nodes[inode].xhigh() == int(grid.width()) - 2)
+                        || (device_ctx.rr_nodes[inode].yhigh() == int(grid.height()) - 2));
                 is_wire = (device_ctx.rr_nodes[inode].type() == CHANX
                         || device_ctx.rr_nodes[inode].type() == CHANY);
 
@@ -233,7 +234,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
                 "in check_rr_node: rr endpoints are (%d,%d) and (%d,%d).\n", xlow, ylow, xhigh, yhigh);
     }
 
-    if (xlow < 0 || xhigh > grid.nx() + 1 || ylow < 0 || yhigh > grid.ny() + 1) {
+    if (xlow < 0 || xhigh > int(grid.width()) - 1 || ylow < 0 || yhigh > int(grid.height()) - 1) {
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                 "in check_rr_node: rr endpoints (%d,%d) and (%d,%d) are out of range.\n", xlow, ylow, xhigh, yhigh);
     }
@@ -270,7 +271,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             break;
 
         case CHANX:
-            if (xlow < 1 || xhigh > grid.nx() || yhigh > grid.ny() || yhigh != ylow) {
+            if (xlow < 1 || xhigh > int(grid.width()) - 2 || yhigh > int(grid.height()) - 2 || yhigh != ylow) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "in check_rr_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
@@ -281,7 +282,7 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             break;
 
         case CHANY:
-            if (xhigh > grid.nx() || ylow < 1 || yhigh > grid.ny() || xlow != xhigh) {
+            if (xhigh > int(grid.width()) - 2 || ylow < 1 || yhigh > int(grid.height()) - 2 || xlow != xhigh) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "Error in check_rr_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
