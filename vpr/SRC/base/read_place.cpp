@@ -250,7 +250,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 					"Block %s is listed twice in pad file.\n", bname);
 		}
 
-		if (i < 0 || i > device_ctx.nx + 1 || j < 0 || j > device_ctx.ny + 1) {
+		if (i < 0 || i > int(device_ctx.grid.width() - 1) || j < 0 || j > int(device_ctx.grid.height() - 1)) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
 					"Block #%d (%s) location, (%d,%d) is out of range.\n", bnum, bname, i, j);
 		}
