@@ -344,7 +344,7 @@ static void build_rr_graph(
         /* Setup segments including distrubuting tracks and staggering.
          * If use_full_seg_groups is specified, max_chan_width may be 
          * changed. Warning should be singled to caller if this happens. */
-        size_t max_dim = std::max(grid.nx(), grid.ny());
+        size_t max_dim = std::max(grid.width(), grid.height()) - 2; //-2 for no perim channels
 
         seg_details = alloc_and_load_seg_details(&max_chan_width,
                 max_dim, num_seg_types, segment_inf,
@@ -447,8 +447,18 @@ static void build_rr_graph(
     /* These are data structures used by the the unidir opin mapping. They are used 
        to spread connections evenly for each segment type among the available
        wire start points */
-    vtr::NdMatrix<int, 3> Fc_xofs({size_t(grid.ny() + 1), size_t(grid.nx() + 1), size_t(num_seg_types)}, 0); //[0..ny][0..nx][0..num_seg_types-1]
-    vtr::NdMatrix<int, 3> Fc_yofs({size_t(grid.nx() + 1), size_t(grid.ny() + 1), size_t(num_seg_types)}, 0); //[0..nx][0..ny][0..num_seg_types-1]
+    vtr::NdMatrix<int, 3> Fc_xofs({
+                                    grid.height() - 1, 
+                                    grid.width() - 1, 
+                                    size_t(num_seg_types)
+                                  }, 
+                                  0); //[0..grid.height()-2][0..grid.width()-2][0..num_seg_types-1]
+    vtr::NdMatrix<int, 3> Fc_yofs({
+                                    grid.width() - 1,
+                                    grid.height() - 1,
+                                    size_t(num_seg_types)
+                                  },
+                                  0); //[0..grid.width()-2][0..grid.height()-2][0..num_seg_types-1]
 
     /* START SB LOOKUP */
     /* Alloc and load the switch block lookup */
@@ -478,8 +488,8 @@ static void build_rr_graph(
             VTR_ASSERT(Fs == 3);
 
             unidir_sb_pattern = alloc_sblock_pattern_lookup(grid, max_chan_width);
-            for (int i = 0; i <= grid.nx(); i++) {
-                for (int j = 0; j <= grid.ny(); j++) {
+            for (size_t i = 0; i < grid.width() - 1; i++) {
+                for (size_t j = 0; j < grid.height() - 1; j++) {
                     load_sblock_pattern_lookup(i, j, grid, nodes_per_chan,
                             chan_details_x, chan_details_y,
                             Fs, sb_type, unidir_sb_pattern);
