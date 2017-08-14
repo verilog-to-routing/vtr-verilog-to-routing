@@ -326,10 +326,9 @@ t_sb_connection_map * alloc_and_load_switchblock_permutations(
 		if (directionality != sb.directionality){
 			vpr_throw(VPR_ERROR_ARCH, __FILE__, __LINE__, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
 		}
-		/* Iterate over the x,y coordinates spanning the FPGA. Currently, the FPGA size is set as
-		   (0..nx+1) by (0..ny+1), so we iterate over 0..nx and 0..ny. */
-		for (int x_coord = 0; x_coord <= grid.nx()+1; x_coord++){
-			for (int y_coord = 0; y_coord <= grid.ny()+1; y_coord++){
+		/* Iterate over the x,y coordinates spanning the FPGA. */
+		for (size_t x_coord = 0; x_coord < grid.width(); x_coord++){
+			for (size_t y_coord = 0; y_coord <= grid.height(); y_coord++){
 				if (sb_not_here(grid, x_coord, y_coord, sb.location)){
 					continue;
 				}
@@ -445,9 +444,9 @@ static void stampout_switchblocks_from_row( int sb_row_size,
 		t_sb_connection_map *sb_conns ){
 
 	/* over all x coordinates that may need stamping out */
-	for (int x = 1; x < grid.nx(); x++){
+	for (int x = 1; x < grid.width() - 2; x++){ //-2 for no perim channels
 		/* over all y coordinates that may need stamping out */
-		for (int y = 1; y < grid.ny(); y++){
+		for (int y = 1; y < grid.height() - 2; y++){ //-2 for no perim channels
 			/* perimeter has been precomputed */
 			if ( is_perimeter(grid, x, y) ){
 				continue;
@@ -502,7 +501,7 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 		x = 0;
 		t_switchblock_inf *sb = &(switchblocks->at(isb));
 		for (int i = 0; i < 2; i++){				//TODO: can use i+=nx to make more explicit what the ranges of the loop are
-			for (y = 0; y <= grid.ny()+1; y++){
+			for (y = 0; y < grid.height(); y++){
 				if (sb_not_here(grid, x, y, sb->location)){
 					continue;
 				}
@@ -518,7 +517,7 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
                     }
                 }
 			}
-			x = grid.nx();
+			x = grid.width() - 2; //-2 for no perim channels
 		}
 	}
 
@@ -527,7 +526,7 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 		y = 0;
 		t_switchblock_inf *sb = &(switchblocks->at(isb));
 		for (int i = 0; i < 2; i++){
-			for (x = 0; x <= grid.nx()+1; x++){
+			for (x = 0; x < grid.width(); x++){
 				if (sb_not_here(grid, x, y, sb->location)){
 					continue;
 				}
@@ -543,7 +542,7 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
                     }
                 }
 			}
-			y = grid.ny();
+			y = grid.height() - 2; //-2 for no perim channels
 		}
 	}
 }
@@ -609,9 +608,9 @@ static bool sb_not_here(const DeviceGrid& grid, int x, int y, e_sb_location loca
 static bool is_corner(const DeviceGrid& grid, int x, int y){
 	bool is_corner = false;
 	if ((x == 0 && y == 0) ||
-	    (x == 0 && y == grid.ny()) ||
-	    (x == grid.nx() && y == 0) ||
-	    (x == grid.nx() && y == grid.ny())){
+	    (x == 0 && y == int(grid.height()) - 2) || //-2 for no perim channels
+	    (x == int(grid.width()) - 2 && y == 0) || //-2 for no perim channels
+	    (x == int(grid.width()) - 2 && y == int(grid.height()) - 2)){ //-2 for no perim channels
 		is_corner = true;
 	}
 	return is_corner;
@@ -621,8 +620,8 @@ static bool is_corner(const DeviceGrid& grid, int x, int y){
 /* checks if the specified coordinates correspond to one of the perimeter switchblocks */
 static bool is_perimeter(const DeviceGrid& grid, int x, int y){
 	bool is_perimeter = false;
-	if (x == 0 || x == grid.nx() ||
-	    y == 0 || y == grid.ny()){
+	if (x == 0 || x == int(grid.width()) - 2 ||
+	    y == 0 || y == int(grid.height()) - 2){
 		is_perimeter = true;
 	}
 	return is_perimeter;
@@ -975,15 +974,15 @@ static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coor
 	bool result = true;
 
 	if (CHANX == chan_type){
-		if (x_coord <=0 || x_coord >= grid.nx()+1 ||	/* there is no x-channel at x=0 */
-		    y_coord < 0 || y_coord >= grid.ny()+1){
+		if (x_coord <=0 || x_coord >= int(grid.width())-1 ||	/* there is no x-channel at x=0 */
+		    y_coord < 0 || y_coord >= int(grid.height())-1){
 			result = true;
 		} else {
 			result = false;
 		}
 	} else if (CHANY == chan_type){
-		if (x_coord < 0 || x_coord >= grid.nx()+1 ||
-		    y_coord <= 0 || y_coord >= grid.ny()+1){	/* there is no y-channel at y=0 */
+		if (x_coord < 0 || x_coord >= int(grid.width())-1 ||
+		    y_coord <= 0 || y_coord >= int(grid.height())-1){	/* there is no y-channel at y=0 */
 			result = true;
 		} else {
 			result = false;
@@ -1043,9 +1042,9 @@ int get_wire_segment_length(const DeviceGrid& grid, e_rr_type chan_type, const t
 	int wire_length;
 	
 	int min_seg = 1;
-	int max_seg = grid.nx();
+	int max_seg = grid.width() - 2; //-2 for no perim channels
 	if (chan_type == CHANY){
-		max_seg = grid.ny();
+		max_seg = grid.height() - 2; //-2 for no perim channels
 	}
 	
 	int seg_start = wire_details.seg_start;
@@ -1081,9 +1080,9 @@ static int get_switchpoint_of_wire(const DeviceGrid& grid, e_rr_type chan_type,
 
 	/* get the minimum and maximum segment coordinate which a wire in this channel type can take */
 	int min_seg = 1;
-	int max_seg = grid.nx();
+	int max_seg = grid.width() - 2; //-2 for no perim channels
 	if (chan_type == CHANY){
-		max_seg = grid.ny();
+		max_seg = grid.height() - 2; //-2 for no perim channels
 	}
 
 	/* check whether the current seg_coord/sb_side coordinate specifies a perimeter switch block side at which all wire segments terminate/start.
