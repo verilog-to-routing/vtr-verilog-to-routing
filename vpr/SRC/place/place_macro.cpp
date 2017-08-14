@@ -44,8 +44,8 @@ static vtr::vector_map<ClusterBlockId, int> f_imacro_from_iblk;
 
 /******************** Subroutine declarations ********************************/
 
-static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_num_of_this_blk, 
-		int * pl_macro_idirect, int * pl_macro_num_members, int ** pl_macro_member_blk_num);
+static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk,
+		std::vector<int> pl_macro_idirect, std::vector<int> pl_macro_num_members, std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num);
 
 static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros);
 
@@ -59,8 +59,8 @@ static void validate_macros(t_pl_macro* macros, int num_macro);
 /******************** Subroutine definitions *********************************/
 
 
-static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_num_of_this_blk, 
-		int * pl_macro_idirect, int * pl_macro_num_members, int ** pl_macro_member_blk_num) {
+static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk,
+		std::vector<int> pl_macro_idirect, std::vector<int> pl_macro_num_members, std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num) {
 
 	/* Compute required size:                                                *
 	 * Go through all the pins with possible direct connections in           *
@@ -112,7 +112,7 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 					if (from_src_or_sink == SOURCE && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID()) {
 						
 						// Mark down that this is the first block in the macro
-						pl_macro_member_blk_num_of_this_blk[0] = (size_t)blk_id;
+						pl_macro_member_blk_num_of_this_blk[0] = blk_id;
 						pl_macro_idirect[num_macro] = to_idirect;
 						
 						// Increment the num_member count.
@@ -140,7 +140,7 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 
 							// Mark down this block as a member of the macro
 							imember = pl_macro_num_members[num_macro];
-							pl_macro_member_blk_num_of_this_blk[imember] = (size_t)next_blk_id;
+							pl_macro_member_blk_num_of_this_blk[imember] = next_blk_id;
 
 							// Increment the num_member count.
 							pl_macro_num_members[num_macro]++;
@@ -148,10 +148,10 @@ static void find_all_the_macro (int * num_of_macro, int * pl_macro_member_blk_nu
 						} // Found all the members of this macro at this point
 
 						// Allocate the second dimension of the blk_num array since I now know the size
-						pl_macro_member_blk_num[num_macro] = (int *) vtr::calloc (pl_macro_num_members[num_macro] , sizeof(int));
+						pl_macro_member_blk_num[num_macro].resize(pl_macro_num_members[num_macro]);
 						// Copy the data from the temporary array to the newly allocated array.
-						for (imember = 0; imember < pl_macro_num_members[num_macro]; imember ++)
-							pl_macro_member_blk_num[num_macro][imember] = pl_macro_member_blk_num_of_this_blk[imember];
+						for (imember = 0; imember < pl_macro_num_members[num_macro]; imember++)
+							pl_macro_member_blk_num[num_macro].push_back(pl_macro_member_blk_num_of_this_blk[imember]);
 
 						// Increment the macro count
 						num_macro ++;
@@ -190,9 +190,13 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 
 	/* Declaration of local variables */
 	int imacro, imember, num_macro;
-	int *pl_macro_idirect, *pl_macro_num_members, **pl_macro_member_blk_num, 
-			*pl_macro_member_blk_num_of_this_blk;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+
+	/* Allocate maximum memory for temporary variables. */
+	std::vector<int> pl_macro_idirect(cluster_ctx.clb_nlist.blocks().size());
+	std::vector<int> pl_macro_num_members(cluster_ctx.clb_nlist.blocks().size());
+	std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num(cluster_ctx.clb_nlist.blocks().size());
+	std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk(cluster_ctx.clb_nlist.blocks().size());
 	
 	t_pl_macro * macro = NULL;
 	
@@ -200,11 +204,6 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	alloc_and_load_idirect_from_blk_pin(directs, num_directs, 
 			&f_idirect_from_blk_pin, &f_direct_type_from_blk_pin);
 
-	/* Allocate maximum memory for temporary variables. */
-	pl_macro_num_members = (int *) vtr::calloc (cluster_ctx.clb_nlist.blocks().size(), sizeof(int));
-	pl_macro_idirect = (int *) vtr::calloc (cluster_ctx.clb_nlist.blocks().size(), sizeof(int));
-	pl_macro_member_blk_num = (int **) vtr::calloc (cluster_ctx.clb_nlist.blocks().size(), sizeof(int*));
-	pl_macro_member_blk_num_of_this_blk = (int *) vtr::calloc (cluster_ctx.clb_nlist.blocks().size(), sizeof(int));
 
 	/* Compute required size:                                                *
 	 * Go through all the pins with possible direct connections in           *
@@ -230,18 +229,9 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 			macro[imacro].members[imember].x_offset = imember * directs[pl_macro_idirect[imacro]].x_offset;
 			macro[imacro].members[imember].y_offset = imember * directs[pl_macro_idirect[imacro]].y_offset;
 			macro[imacro].members[imember].z_offset = directs[pl_macro_idirect[imacro]].z_offset;
-			macro[imacro].members[imember].blk_index = (ClusterBlockId)pl_macro_member_blk_num[imacro][imember];
+			macro[imacro].members[imember].blk_index = pl_macro_member_blk_num[imacro][imember];
 		}
 	}
-
-	/* Frees up the temporary data structures. */
-	free(pl_macro_num_members);
-	free(pl_macro_idirect);
-	for(imacro=0; imacro < num_macro; imacro++) {
-		free(pl_macro_member_blk_num[imacro]);
-	}
-	free(pl_macro_member_blk_num);
-	free(pl_macro_member_blk_num_of_this_blk);
 	
 	/* Returns the pointer to the macro by reference. */
 	*macros = macro;
