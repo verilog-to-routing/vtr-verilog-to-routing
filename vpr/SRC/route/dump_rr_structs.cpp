@@ -210,10 +210,10 @@ static void dump_grid( fstream &file ){
 
 	/* specify that we're in the grid section and how many grid elements there are */
 	file << endl;
-	file << ".grid(" << (device_ctx.nx+2) << ", " << (device_ctx.ny+2) << ")" << endl;
+	file << ".grid(" << device_ctx.grid.width() << ", " << device_ctx.grid.height() << ")" << endl;
 
-	for (int ix = 0; ix <= device_ctx.nx+1; ix++){
-		for (int iy = 0; iy <= device_ctx.ny+1; iy++){
+	for (size_t ix = 0; ix < device_ctx.grid.width(); ix++){
+		for (size_t iy = 0; iy < device_ctx.grid.height(); iy++){
 			t_grid_tile grid_tile = device_ctx.grid[ix][iy];
 	
 			file << " grid_x" << ix << "_y" << iy << ": ";
@@ -235,8 +235,9 @@ static void dump_rr_node_indices( fstream &file ){
     auto& device_ctx = g_vpr_ctx.device();
 
 	file << endl;
-	/* rr_node_indices are [0..NUM_RR_TYPES-1][0..device_ctx.nx+2][0..device_ctx.ny+2]. each entry then contains a vtr::t_ivec with nelem entries */
-	file << ".rr_node_indices(" << NUM_RR_TYPES-1 << ", " << device_ctx.nx+2 << ", " << device_ctx.ny+2 << ")" << endl;
+	/* rr_node_indices are [0..NUM_RR_TYPES-1][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1].
+     * each entry then contains a vtr::t_ivec with nelem entries */
+	file << ".rr_node_indices(" << NUM_RR_TYPES-1 << ", " << device_ctx.grid.width() << ", " << device_ctx.grid.height() << ")" << endl;
 
 	/* note that the rr_node_indices structure uses the chan/seg convention. in terms of coordinates, this affects CHANX nodes
 	   in which case chan=y and seg=x, whereas for all other nodes chan=x and seg=y. i'm not sure how non-square FPGAs are handled in that case... */
@@ -246,8 +247,8 @@ static void dump_rr_node_indices( fstream &file ){
 			/* skip if not allocated */
 			continue;
 		}
-		for (int ix = 0; ix < device_ctx.nx+2; ix++){
-			for (int iy = 0; iy < device_ctx.ny+2; iy++){
+		for (size_t ix = 0; ix < device_ctx.grid.width(); ix++){
+			for (size_t iy = 0; iy < device_ctx.grid.height(); iy++){
 				t_rr_type rr_type = (t_rr_type)itype;
 
 				/* because indexing into this structure uses the chan/seg convention, we need to swap the x and y values
