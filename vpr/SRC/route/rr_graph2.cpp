@@ -360,10 +360,10 @@ t_chan_details init_chan_details(
         const t_seg_details* seg_details,
         const enum e_seg_details_type seg_details_type) {
 
-    t_chan_details chan_details = vtr::Matrix<t_seg_details*>({size_t(grid.nx() + 1), size_t(grid.ny() + 1)});
+    t_chan_details chan_details = vtr::Matrix<t_seg_details*>({grid.width(), grid.height()});
 
-    for (int x = 0; x <= grid.nx(); ++x) {
-        for (int y = 0; y <= grid.ny(); ++y) {
+    for (size_t x = 0; x < grid.width(); ++x) {
+        for (size_t y = 0; y < grid.height(); ++y) {
 
             t_seg_details* p_seg_details = 0;
             p_seg_details = (t_seg_details*) vtr::calloc(nodes_per_chan->max, sizeof (t_seg_details));
@@ -382,11 +382,11 @@ t_chan_details init_chan_details(
 
                 if (seg_details_type == SEG_DETAILS_X) {
                     p_seg_details[i].seg_start = get_seg_start(p_seg_details, i, y, x);
-                    p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, y, grid.nx());
+                    p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, y, grid.width() - 2); //-2 for no perim channels
                 }
                 if (seg_details_type == SEG_DETAILS_Y) {
                     p_seg_details[i].seg_start = get_seg_start(p_seg_details, i, x, y);
-                    p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, x, grid.ny());
+                    p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, x, grid.height() - 2); //-2 for no perim channels
                 }
 
                 int length = seg_details[i].length;
