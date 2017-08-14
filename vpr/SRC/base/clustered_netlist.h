@@ -115,13 +115,13 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		//  blk_id		: The block the pin is associated with
 		//  pin_index   : The pin of the block to be changed
 		//  net_id		: The changed net
-		void set_block_net(const ClusterBlockId blk_id, const int pin_index, const ClusterNetId net_id);
+		void set_block_net(const ClusterBlockId blk_id, const int _pin_index, const ClusterNetId net_id);
 
 		//Sets the block's net count
 		//  blk_id		: The block the net is associated with
 		//	pin_index	: The pin of the block to be changed
 		//  net_count	: The net's counter
-		void set_block_net_count(const ClusterBlockId blk_id, const int pin_index, const int count);
+		void set_block_net_count(const ClusterBlockId blk_id, const int _pin_index, const int count);
 
 		//Create or return an existing port in the netlist
 		//  blk_id      : The block the port is associated with
@@ -186,10 +186,10 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		t_type_ptr block_type(const ClusterBlockId id) const;
 
 		//Returns the net of the block attached to the specific pin index
-		ClusterNetId block_net(const ClusterBlockId blk_id, const int pin_index) const;
+		ClusterNetId block_net(const ClusterBlockId blk_id, const int _pin_index) const;
 
 		//Returns the count on the net of the block attached
-		int block_net_count(const ClusterBlockId blk_id, const int pin_index) const;
+		int block_net_count(const ClusterBlockId blk_id, const int _pin_index) const;
 
 		/*
 		* Pins

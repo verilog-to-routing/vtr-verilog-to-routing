@@ -30,16 +30,16 @@ t_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) const {
 	return block_types_[id];
 }
 
-ClusterNetId ClusteredNetlist::block_net(const ClusterBlockId blk_id, const int pin_index) const {
+ClusterNetId ClusteredNetlist::block_net(const ClusterBlockId blk_id, const int _pin_index) const {
 	VTR_ASSERT(valid_block_id(blk_id));
 
-	return block_nets_[blk_id][pin_index];
+	return block_nets_[blk_id][_pin_index];
 }
 
-int ClusteredNetlist::block_net_count(const ClusterBlockId blk_id, const int pin_index) const {
+int ClusteredNetlist::block_net_count(const ClusterBlockId blk_id, const int _pin_index) const {
 	VTR_ASSERT(valid_block_id(blk_id));
 
-	return block_net_count_[blk_id][pin_index];
+	return block_net_count_[blk_id][_pin_index];
 }
 
 /*
@@ -157,17 +157,17 @@ ClusterBlockId ClusteredNetlist::create_block(const char *name, t_pb* pb, t_type
 	return blk_id;
 }
 
-void ClusteredNetlist::set_block_net(const ClusterBlockId blk_id, const int pin_index, const ClusterNetId net_id) {
+void ClusteredNetlist::set_block_net(const ClusterBlockId blk_id, const int _pin_index, const ClusterNetId net_id) {
 	VTR_ASSERT(valid_block_id(blk_id));
 	VTR_ASSERT(valid_net_id(net_id));
 
-	block_nets_[blk_id][pin_index] = net_id;
+	block_nets_[blk_id][_pin_index] = net_id;
 }
 
-void ClusteredNetlist::set_block_net_count(const ClusterBlockId blk_id, const int pin_index, const int count) {
+void ClusteredNetlist::set_block_net_count(const ClusterBlockId blk_id, const int _pin_index, const int count) {
 	VTR_ASSERT(valid_block_id(blk_id));
 
-	block_net_count_[blk_id][pin_index] = count;
+	block_net_count_[blk_id][_pin_index] = count;
 }
 
 ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType port_type) {
