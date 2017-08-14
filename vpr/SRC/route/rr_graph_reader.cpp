@@ -579,14 +579,14 @@ void process_rr_node_indices(const DeviceGrid& grid) {
 
     for (int itype = 0; itype < NUM_RR_TYPES; ++itype) {
         if (itype != OPIN && itype != SOURCE) {
-            indices[itype].resize(grid.nx() + 2);
+            indices[itype].resize(grid.width());
             if (itype == CHANX) {
-                for (int ilength = 0; ilength <= (grid.ny() + 1); ++ilength) {
-                    indices[itype][ilength].resize(grid.nx() + 2);
+                for (size_t ilength = 0; ilength < grid.height(); ++ilength) {
+                    indices[itype][ilength].resize(grid.width());
                 }
             } else {
-                for (int ilength = 0; ilength <= (grid.nx() + 1); ++ilength) {
-                    indices[itype][ilength].resize(grid.ny() + 2);
+                for (size_t ilength = 0; ilength < grid.width(); ++ilength) {
+                    indices[itype][ilength].resize(grid.height());
                 }
             }
         }
