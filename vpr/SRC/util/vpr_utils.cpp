@@ -135,7 +135,7 @@ void print_tabs(FILE * fpout, int num_tab) {
 	}
 }
 
-/* Points the device_ctx.grid structure back to the blocks list */
+/* Points the place_ctx.grid_blocks structure back to the blocks list */
 void sync_grid_to_blocks() {
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -166,8 +166,8 @@ void sync_grid_to_blocks() {
 
 		/* Check range of block coords */
 		if (blk_x < 0 || blk_y < 0
-				|| (blk_x + cluster_ctx.blocks[i].type->width - 1) > (device_ctx.nx + 1)
-				|| (blk_y + cluster_ctx.blocks[i].type->height - 1) > (device_ctx.ny + 1)
+				|| (blk_x + cluster_ctx.blocks[i].type->width - 1) > int(device_ctx.grid.width() - 1)
+				|| (blk_y + cluster_ctx.blocks[i].type->height - 1) > int(device_ctx.grid.height() - 1)
 				|| blk_z < 0 || blk_z > (cluster_ctx.blocks[i].type->capacity)) {
 			VPR_THROW(VPR_ERROR_PLACE, "Block %d is at invalid location (%d, %d, %d).\n", 
 					i, blk_x, blk_y, blk_z);
