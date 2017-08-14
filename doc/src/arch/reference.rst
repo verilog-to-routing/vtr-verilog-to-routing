@@ -150,7 +150,7 @@ Grid Location Priorities
 Each grid location specification has an associated numeric *priority*.
 Larger priority location specifications override those with lower prioriry.
 
-.. note:: If a grid block is partially overlapped by another block with higher priority the entier lower priority block is removed form the grid.
+.. note:: If a grid block is partially overlapped by another block with higher priority the entier lower priority block is removed from the grid.
 
 Empty Grid Locations
 ~~~~~~~~~~~~~~~~~~~~
@@ -161,7 +161,7 @@ Empty grid locations can be specified using the special block type ``EMPTY``.
 Grid Location Expressions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 Some grid location tags have attributes (e.g. ``startx``) which take an *expression* as thier argument.
-An *expression* is an integer constant, or simple mathematical formula evaluated when constructing the device grid.
+An *expression* can be an integer constant, or simple mathematical formula evaluated when constructing the device grid.
 
 Supported operators include: ``+``, ``-``, ``*``, ``/``, along with ``(`` and ``)`` to override the default evaluation order.
 Expressions may contain numeric constants (e.g. ``7``) and the following special variables:
@@ -415,6 +415,8 @@ Grid Location Tags
 
 
     Fills the rectangular region defined by (``startx``, ``starty``) and (``endx``, ``endy``) with the specified block type.
+
+    .. note:: ``endx`` and ``endy`` are included in the region
 
     If ``repeatx`` is specified the region will be repeated wherever :math:`x = startx + k_1*repeatx`, is satisified for any positive integer :math:`k_1`.
 
