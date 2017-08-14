@@ -148,8 +148,9 @@ static t_pl_blocks_to_be_moved blocks_affected;
  * of the net bounding box in each dimension, divided by the average    *
  * number of tracks in that direction; for other cost functions they    *
  * will never be used.                                                  *
- *                [0...device_ctx.ny]                [0...device_ctx.nx]                      */
-static float **chanx_place_cost_fac, **chany_place_cost_fac;
+ */                
+static float** chanx_place_cost_fac; //[0...device_ctx.grid.width()-2]
+static float** chany_place_cost_fac; //[0...device_ctx.grid.height()-2]
 
 /* The following arrays are used by the try_swap function for speed.   */
 /* [0...cluster_ctx.clbs_nlist.net.size()-1] */
@@ -243,7 +244,7 @@ static float starting_t(float *cost_ptr, float *bb_cost_ptr,
 static void update_t(float *t, float rlim, float success_rat,
 		t_annealing_sched annealing_sched);
 
-static void update_rlim(float *rlim, float success_rat);
+static void update_rlim(float *rlim, float success_rat, const DeviceGrid& grid);
 
 static int exit_crit(float t, float cost,
 		t_annealing_sched annealing_sched);
@@ -469,6 +470,8 @@ void try_place(t_placer_opts placer_opts,
 		inverse_prev_bb_cost = 0;
 	}
 
+    //Sanity check that initial placement is legal
+    check_place(bb_cost, timing_cost, placer_opts.place_algorithm, delay_cost);
 
     //Initial pacement statistics
     vtr::printf_info("Initial placement cost: %g bb_cost: %g td_cost: %g delay_cost: %g\n",
@@ -486,42 +489,6 @@ void try_place(t_placer_opts placer_opts,
         print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
     }
     vtr::printf_info("\n");
-
-    //Sanity check that initial placement is legal
-    check_place(bb_cost, timing_cost, placer_opts.place_algorithm, delay_cost);
-
-	move_lim = (int) (annealing_sched.inner_num * pow(cluster_ctx.num_blocks, 1.3333));
-
-	if (placer_opts.inner_loop_recompute_divider != 0) {
-		inner_recompute_limit = (int) 
-			(0.5 + (float) move_lim	/ (float) placer_opts.inner_loop_recompute_divider);
-    } else {
-		/*don't do an inner recompute */
-		inner_recompute_limit = move_lim + 1;
-    }
-
-	/* Sometimes I want to run the router with a random placement.  Avoid *
-	 * using 0 moves to stop division by 0 and 0 length vector problems,  *
-	 * by setting move_lim to 1 (which is still too small to do any       *
-	 * significant optimization).                                         */
-
-	if (move_lim <= 0)
-		move_lim = 1;
-
-	rlim = (float) max(device_ctx.nx + 1, device_ctx.ny + 1);
-
-	first_rlim = rlim; /*used in timing-driven placement for exponent computation */
-	final_rlim = 1;
-	inverse_delta_rlim = 1 / (first_rlim - final_rlim);
-
-	t = starting_t(&cost, &bb_cost, &timing_cost,
-			annealing_sched, move_lim, rlim,
-			placer_opts.place_algorithm, placer_opts.timing_tradeoff,
-			inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
-
-	tot_iter = 0;
-	moves_since_cost_recompute = 0;
-
 
     //Table header
 	vtr::printf_info("%7s "
@@ -557,7 +524,42 @@ void try_place(t_placer_opts placer_opts,
 
 	sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g  Delay Cost: %g \t Channel Factor: %d", 
 		cost, bb_cost, timing_cost, delay_cost, width_fac);
+
+    //Draw the initial placement
 	update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
+
+	move_lim = (int) (annealing_sched.inner_num * pow(cluster_ctx.num_blocks, 1.3333));
+
+	/* Sometimes I want to run the router with a random placement.  Avoid *
+	 * using 0 moves to stop division by 0 and 0 length vector problems,  *
+	 * by setting move_lim to 1 (which is still too small to do any       *
+	 * significant optimization).                                         */
+	if (move_lim <= 0)
+		move_lim = 1;
+
+	if (placer_opts.inner_loop_recompute_divider != 0) {
+		inner_recompute_limit = (int) 
+			(0.5 + (float) move_lim	/ (float) placer_opts.inner_loop_recompute_divider);
+    } else {
+		/*don't do an inner recompute */
+		inner_recompute_limit = move_lim + 1;
+    }
+
+	rlim = (float) max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
+
+	first_rlim = rlim; /*used in timing-driven placement for exponent computation */
+	final_rlim = 1;
+	inverse_delta_rlim = 1 / (first_rlim - final_rlim);
+
+	t = starting_t(&cost, &bb_cost, &timing_cost,
+			annealing_sched, move_lim, rlim,
+			placer_opts.place_algorithm, placer_opts.timing_tradeoff,
+			inverse_prev_bb_cost, inverse_prev_timing_cost, &delay_cost);
+
+	tot_iter = 0;
+	moves_since_cost_recompute = 0;
+
+
 
 
 	/* Outer loop of the simmulated annealing begins */
@@ -673,7 +675,7 @@ void try_place(t_placer_opts placer_opts,
 		sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
 				cost, bb_cost, timing_cost, t);
 		update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info);
-		update_rlim(&rlim, success_rat);
+		update_rlim(&rlim, success_rat, device_ctx.grid);
 
 		if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
 			crit_exponent = (1 - (rlim - final_rlim) * inverse_delta_rlim)
@@ -1036,16 +1038,15 @@ static double get_std_dev(int n, double sum_x_squared, double av_x) {
 	return (std_dev);
 }
 
-static void update_rlim(float *rlim, float success_rat) {
+static void update_rlim(float *rlim, float success_rat, const DeviceGrid& grid) {
 
 	/* Update the range limited to keep acceptance prob. near 0.44.  Use *
 	 * a floating point rlim to allow gradual transitions at low temps.  */
 
 	float upper_lim;
-    auto& device_ctx = g_vpr_ctx.device();
 
 	*rlim = (*rlim) * (1. - 0.44 + success_rat);
-	upper_lim = max(device_ctx.nx + 1, device_ctx.ny + 1);
+	upper_lim = max(grid.width() - 1, grid.height() - 1);
 	*rlim = min(*rlim, upper_lim);
 	*rlim = max(*rlim, (float)1.);
 }
@@ -1373,14 +1374,19 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	y_from = place_ctx.block_locs[b_from].y;
 	z_from = place_ctx.block_locs[b_from].z;
 
+    auto cluster_from_type = cluster_ctx.blocks[b_from].type;
+    auto grid_from_type = g_vpr_ctx.device().grid[x_from][y_from].type;
+    VTR_ASSERT(cluster_from_type == grid_from_type);
+
 	if (!find_to(cluster_ctx.blocks[b_from].type, rlim, x_from, y_from, &x_to, &y_to, &z_to))
 		return REJECTED;
 
 #if 0
-	int b_to = device_ctx.grid[x_to][y_to].blocks[z_to];
+    auto& grid = g_vpr_ctx.device().grid;
+	int b_to = place_ctx.grid_blocks[x_to][y_to].blocks[z_to];
 	vtr::printf_info( "swap [%d][%d][%d] %s \"%s\" <=> [%d][%d][%d] %s \"%s\"\n",
-		x_from, y_from, z_from, device_ctx.grid[x_from][y_from].type->name, b_from != -1 ? place_ctx.block_locs[b_from].name : "",
-		x_to, y_to, z_to, device_ctx.grid[x_to][y_to].type->name, b_to != -1 ? place_ctx.block_locs[b_to].name : "");
+		x_from, y_from, z_from, grid[x_from][y_from].type->name, (b_from != -1 ? cluster_ctx.blocks[b_from].name : ""),
+		x_to, y_to, z_to, grid[x_to][y_to].type->name, (b_to != -1 ? cluster_ctx.blocks[b_to].name : ""));
 #endif
 
 	/* Make the switch in order to make computing the new bounding *
@@ -1537,7 +1543,10 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 		/* Resets the num_moved_blocks, but do not free blocks_moved array. Defensive Coding */
 		blocks_affected.num_moved_blocks = 0;
 
-		//check_place(*bb_cost, *timing_cost, place_algorithm, *delay_cost);
+#if 0
+        //Check that each accepted swap yields a valid placement
+        check_place(*bb_cost, *timing_cost, place_algorithm, *delay_cost);
+#endif
 
 		return (keep_switch);
 	} else {
@@ -1603,32 +1612,36 @@ static bool find_to(t_type_ptr type, float rlim,
 		int *px_to, int *py_to, int *pz_to) {
 
 	/* Returns the point to which I want to swap, properly range limited. 
-	 * rlim must always be between 1 and device_ctx.nx (inclusive) for this routine  
-	 * to work.  Assumes that a column only contains blocks of the same type.
+	 * rlim must always be between 1 and device_ctx.grid.width() - 2 (inclusive) for this routine  
+	 * to work. Note -2 for no perim channels
 	 */
 
-	int rlx, rly, min_x, max_x, min_y, max_y;
+	int min_x, max_x, min_y, max_y;
 	int num_tries;
 	int active_area;
 	bool is_legal;
 	int itype;
 
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& grid = g_vpr_ctx.device().grid;
     auto& place_ctx = g_vpr_ctx.placement();
 
-	VTR_ASSERT(type == device_ctx.grid[x_from][y_from].type);
+    auto grid_type = grid[x_from][y_from].type;
+	VTR_ASSERT(type == grid_type);
 
-	rlx = (int)min((float)device_ctx.nx + 1, rlim); 
-	rly = (int)min((float)device_ctx.ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */
+	int rlx = min<float>(grid.width() - 1, rlim); 
+	int rly = min<float>(grid.height() - 1, rlim); /* Added rly for aspect_ratio != 1 case. */
 	active_area = 4 * rlx * rly;
 
-	min_x = max(0, x_from - rlx);
-	max_x = min(device_ctx.nx + 1, x_from + rlx);
-	min_y = max(0, y_from - rly);
-	max_y = min(device_ctx.ny + 1, y_from + rly);
+	min_x = max<float>(0, x_from - rlx);
+	max_x = min<float>(grid.width() - 1, x_from + rlx);
+	min_y = max<float>(0, y_from - rly);
+	max_y = min<float>(grid.height() - 1, y_from + rly);
 
-	if (rlx < 1 || rlx > device_ctx.nx + 1) {
-		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in find_to: rlx = %d\n", rlx);
+	if (rlx < 1 || rlx > int(grid.width() - 1)) {
+		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in find_to: rlx = %d out of range\n", rlx);
+	}
+	if (rly < 1 || rly > int(grid.height() - 1)) {
+		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in find_to: rly = %d out of range\n", rly);
 	}
 
 	num_tries = 0;
@@ -1652,13 +1665,13 @@ static bool find_to(t_type_ptr type, float rlim,
 			is_legal = false;
 		} else if(*px_to > max_x || *px_to < min_x || *py_to > max_y || *py_to < min_y) {
 			is_legal = false;
-		} else if(device_ctx.grid[*px_to][*py_to].type != device_ctx.grid[x_from][y_from].type) {
+		} else if(grid[*px_to][*py_to].type != grid[x_from][y_from].type) {
 			is_legal = false;
 		} else {
 			/* Find z_to and test to validate that the "to" block is *not* fixed */
 			*pz_to = 0;
-			if (device_ctx.grid[*px_to][*py_to].type->capacity > 1) {
-				*pz_to = vtr::irand(device_ctx.grid[*px_to][*py_to].type->capacity - 1);
+			if (grid[*px_to][*py_to].type->capacity > 1) {
+				*pz_to = vtr::irand(grid[*px_to][*py_to].type->capacity - 1);
 			}
 			int b_to = place_ctx.grid_blocks[*px_to][*py_to].blocks[*pz_to];
 			if ((b_to != EMPTY_BLOCK) && (place_ctx.block_locs[b_to].is_fixed == true)) {
@@ -1666,15 +1679,15 @@ static bool find_to(t_type_ptr type, float rlim,
 			}
 		}
 
-		VTR_ASSERT(*px_to >= 0 && *px_to < int(device_ctx.grid.width()));
-		VTR_ASSERT(*py_to >= 0 && *py_to < int(device_ctx.grid.height()));
+		VTR_ASSERT(*px_to >= 0 && *px_to < int(grid.width()));
+		VTR_ASSERT(*py_to >= 0 && *py_to < int(grid.height()));
 	} while (is_legal == false);
 
-	if (*px_to < 0 || *px_to > device_ctx.nx + 1 || *py_to < 0 || *py_to > device_ctx.ny + 1) {
+	if (*px_to < 0 || *px_to > int(grid.width() - 1) || *py_to < 0 || *py_to > int(grid.height() - 1)) {
 		vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,"in routine find_to: (x_to,y_to) = (%d,%d)\n", *px_to, *py_to);
 	}
 
-	VTR_ASSERT(type == device_ctx.grid[*px_to][*py_to].type);
+	VTR_ASSERT(type == grid[*px_to][*py_to].type);
 	return true;
 }
 
@@ -1683,21 +1696,22 @@ static void find_to_location(t_type_ptr type, float rlim,
 		int *px_to, int *py_to, int *pz_to) {
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& grid = device_ctx.grid;
 
 	int itype = type->index;
 
 
-	int rlx = (int)min((float)device_ctx.nx + 1, rlim); 
-	int rly = (int)min((float)device_ctx.ny + 1, rlim); /* Added rly for aspect_ratio != 1 case. */
+	int rlx = min<float>(grid.width() - 1, rlim); 
+	int rly = min<float>(grid.height() - 1, rlim); /* Added rly for aspect_ratio != 1 case. */
 	int active_area = 4 * rlx * rly;
 
-	int min_x = max(0, x_from - rlx);
-	int max_x = min(device_ctx.nx + 1, x_from + rlx);
-	int min_y = max(0, y_from - rly);
-	int max_y = min(device_ctx.ny + 1, y_from + rly);
+	int min_x = max<float>(0, x_from - rlx);
+	int max_x = min<float>(grid.width() - 1, x_from + rlx);
+	int min_y = max<float>(0, y_from - rly);
+	int max_y = min<float>(grid.height() - 1, y_from + rly);
 
 	*pz_to = 0;
-	if (device_ctx.nx / 4 < rlx || device_ctx.ny / 4 < rly || num_legal_pos[itype] < active_area) {
+	if (int(grid.width() / 4) < rlx || int(grid.height() / 4) < rly || num_legal_pos[itype] < active_area) {
 		int ipos = vtr::irand(num_legal_pos[itype] - 1);
 		*px_to = legal_pos[itype][ipos].x;
 		*py_to = legal_pos[itype][ipos].y;
@@ -1707,8 +1721,8 @@ static void find_to_location(t_type_ptr type, float rlim,
 		int y_rel = vtr::irand(max(0, max_y - min_y));
 		*px_to = min_x + x_rel;
 		*py_to = min_y + y_rel;
-		*px_to = (*px_to) - device_ctx.grid[*px_to][*py_to].width_offset; /* align it */
-		*py_to = (*py_to) - device_ctx.grid[*px_to][*py_to].height_offset; /* align it */
+		*px_to = (*px_to) - grid[*px_to][*py_to].width_offset; /* align it */
+		*py_to = (*py_to) - grid[*px_to][*py_to].height_offset; /* align it */
 	}
 }
 
@@ -2213,6 +2227,7 @@ static void get_bb_from_scratch(int inet, t_bb *coords,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& grid = device_ctx.grid;
 
 	n_pins = cluster_ctx.clbs_nlist.net[inet].pins.size();
 	
@@ -2222,8 +2237,8 @@ static void get_bb_from_scratch(int inet, t_bb *coords,
 	x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
 	y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
 
-	x = max(min(x, device_ctx.nx), 1);
-	y = max(min(y, device_ctx.ny), 1);
+	x = max(min<int>(x, grid.width() - 2), 1);
+	y = max(min<int>(y, grid.width() - 2), 1);
 
 	xmin = x;
 	ymin = y;
@@ -2240,15 +2255,16 @@ static void get_bb_from_scratch(int inet, t_bb *coords,
 		x = place_ctx.block_locs[bnum].x + cluster_ctx.blocks[bnum].type->pin_width[pnum];
 		y = place_ctx.block_locs[bnum].y + cluster_ctx.blocks[bnum].type->pin_height[pnum];
 
-		/* Code below counts IO blocks as being within the 1..device_ctx.nx, 1..device_ctx.ny clb array. *
-		 * This is because channels do not go out of the 0..device_ctx.nx, 0..device_ctx.ny range, and   *
+		/* Code below counts IO blocks as being within the 1..grid.width()-2, 1..grid.height()-2 clb array. *
+		 * This is because channels do not go out of the 0..grid.width()-2, 0..grid.height()-2 range, and   *
 		 * I always take all channels impinging on the bounding box to be within   *
 		 * that bounding box.  Hence, this "movement" of IO blocks does not affect *
 		 * the which channels are included within the bounding box, and it         *
 		 * simplifies the code a lot.                                              */
+        //TODO: when we channels are added around the perimeter, the above assumptions will no longer hold
 
-		x = max(min(x, device_ctx.nx), 1);
-		y = max(min(y, device_ctx.ny), 1);
+		x = max(min<int>(x, grid.width() - 2), 1); //-2 for no perim channels
+		y = max(min<int>(y, grid.height() - 2), 1); //-2 for no perim channels
 
 		if (x == xmin) {
 			xmin_edge++;
@@ -2408,16 +2424,17 @@ static void get_non_updateable_bb(int inet, t_bb *bb_coord_new) {
 	}
 
 	/* Now I've found the coordinates of the bounding box.  There are no *
-	 * channels beyond device_ctx.nx and device_ctx.ny, so I want to clip to that.  As well,   *
+	 * channels beyond device_ctx.grid.width()-2 and device_ctx.grid.height() - 2, so I want to clip to that.  As well,   *
 	 * since I'll always include the channel immediately below and the   *
 	 * channel immediately to the left of the bounding box, I want to    *
 	 * clip to 1 in both directions as well (since minimum channel index *
-	 * is 0).  See route.c for a channel diagram.                        */
+	 * is 0).  See route_common.cpp for a channel diagram.               */
+    //TODO: when we channels are added around the perimeter, the above assumptions will no longer hold
 
-	bb_coord_new->xmin = max(min(xmin, device_ctx.nx), 1);
-	bb_coord_new->ymin = max(min(ymin, device_ctx.ny), 1);
-	bb_coord_new->xmax = max(min(xmax, device_ctx.nx), 1);
-	bb_coord_new->ymax = max(min(ymax, device_ctx.ny), 1);
+	bb_coord_new->xmin = max(min<int>(xmin, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
+	bb_coord_new->ymin = max(min<int>(ymin, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
+	bb_coord_new->xmax = max(min<int>(xmax, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
+	bb_coord_new->ymax = max(min<int>(ymax, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
 }
 
 static void update_bb(int inet, t_bb *bb_coord_new,
@@ -2440,10 +2457,10 @@ static void update_bb(int inet, t_bb *bb_coord_new,
 
     auto& device_ctx = g_vpr_ctx.device();
 		
-	xnew = max(min(xnew, device_ctx.nx), 1);
-	ynew = max(min(ynew, device_ctx.ny), 1);
-	xold = max(min(xold, device_ctx.nx), 1);
-	yold = max(min(yold, device_ctx.ny), 1);
+	xnew = max(min<int>(xnew, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
+	ynew = max(min<int>(ynew, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
+	xold = max(min<int>(xold, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
+	yold = max(min<int>(yold, device_ctx.grid.width() - 2), 1); //-2 for no perim channels
 
 	/* Check if the net had been updated before. */
 	if (bb_updated_before[inet] == GOT_FROM_SCRATCH)
@@ -2707,7 +2724,7 @@ static void free_legal_placements() {
 static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z) {
 
 	int imember;
-	int member_x, member_y, member_z;
+	size_t member_x, member_y, member_z;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -2725,7 +2742,7 @@ static int check_macro_can_be_placed(int imacro, int itype, int x, int y, int z)
 		// Then check whether the location could still accomodate more blocks
 		// Also check whether the member position is valid, that is the member's location
 		// still within the chip's dimemsion and the member_z is allowed at that location on the grid
-		if (member_x <= device_ctx.nx+1 && member_y <= device_ctx.ny+1
+		if (member_x < device_ctx.grid.width() && member_y < device_ctx.grid.height()
 				&& device_ctx.grid[member_x][member_y].type->index == itype
 				&& place_ctx.grid_blocks[member_x][member_y].blocks[member_z] == EMPTY_BLOCK) {
 			// Can still accomodate blocks here, check the next position
@@ -3025,16 +3042,17 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 }
 
 static void free_fast_cost_update(void) {
-	int i;
     auto& device_ctx = g_vpr_ctx.device();
 
-	for (i = 0; i <= device_ctx.ny; i++)
+	for (size_t i = 0; i < device_ctx.grid.height(); i++) {
 		free(chanx_place_cost_fac[i]);
+    }
 	free(chanx_place_cost_fac);
 	chanx_place_cost_fac = NULL;
 
-	for (i = 0; i <= device_ctx.nx; i++)
+	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
 		free(chany_place_cost_fac[i]);
+    }
 	free(chany_place_cost_fac);
 	chany_place_cost_fac = NULL;
 }
@@ -3053,19 +3071,18 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 	 * specifies to what power the width of the channel should be taken --   *
 	 * larger numbers make narrower channels more expensive.                 */
 
-	int low, high, i;
     auto& device_ctx = g_vpr_ctx.device();
 
 	/* Access arrays below as chan?_place_cost_fac[subhigh][sublow].  Since   *
 	 * subhigh must be greater than or equal to sublow, we only need to       *
 	 * allocate storage for the lower half of a matrix.                       */
 
-	chanx_place_cost_fac = (float **) vtr::malloc((device_ctx.ny + 1) * sizeof(float *));
-	for (i = 0; i <= device_ctx.ny; i++)
+	chanx_place_cost_fac = (float **) vtr::malloc((device_ctx.grid.height()) * sizeof(float *));
+	for (size_t i = 0; i < device_ctx.grid.height(); i++)
 		chanx_place_cost_fac[i] = (float *) vtr::malloc((i + 1) * sizeof(float));
 
-	chany_place_cost_fac = (float **) vtr::malloc((device_ctx.nx + 1) * sizeof(float *));
-	for (i = 0; i <= device_ctx.nx; i++)
+	chany_place_cost_fac = (float **) vtr::malloc((device_ctx.grid.width() + 1) * sizeof(float *));
+	for (size_t i = 0; i < device_ctx.grid.width(); i++)
 		chany_place_cost_fac[i] = (float *) vtr::malloc((i + 1) * sizeof(float));
 
 	/* First compute the number of tracks between channel high and channel *
@@ -3073,9 +3090,9 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 
 	chanx_place_cost_fac[0][0] = device_ctx.chan_width.x_list[0];
 
-	for (high = 1; high <= device_ctx.ny; high++) {
+	for (size_t high = 1; high < device_ctx.grid.height(); high++) {
 		chanx_place_cost_fac[high][high] = device_ctx.chan_width.x_list[high];
-		for (low = 0; low < high; low++) {
+		for (size_t low = 0; low < high; low++) {
 			chanx_place_cost_fac[high][low] =
 					chanx_place_cost_fac[high - 1][low] + device_ctx.chan_width.x_list[high];
 		}
@@ -3089,8 +3106,8 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 	 * longer a simple "average number of tracks"; it is some power of     *
 	 * that, allowing greater penalization of narrow channels.             */
 
-	for (high = 0; high <= device_ctx.ny; high++)
-		for (low = 0; low <= high; low++) {
+	for (size_t high = 0; high < device_ctx.grid.height(); high++)
+		for (size_t low = 0; low <= high; low++) {
 			chanx_place_cost_fac[high][low] = (high - low + 1.)
 					/ chanx_place_cost_fac[high][low];
 			chanx_place_cost_fac[high][low] = pow(
@@ -3103,9 +3120,9 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 
 	chany_place_cost_fac[0][0] = device_ctx.chan_width.y_list[0];
 
-	for (high = 1; high <= device_ctx.nx; high++) {
+	for (size_t high = 1; high < device_ctx.grid.width(); high++) {
 		chany_place_cost_fac[high][high] = device_ctx.chan_width.y_list[high];
-		for (low = 0; low < high; low++) {
+		for (size_t low = 0; low < high; low++) {
 			chany_place_cost_fac[high][low] =
 					chany_place_cost_fac[high - 1][low] + device_ctx.chan_width.y_list[high];
 		}
@@ -3114,8 +3131,8 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 	/* Now compute the inverse of the average number of tracks per channel * 
 	 * between high and low.  Take to specified power.                     */
 
-	for (high = 0; high <= device_ctx.nx; high++)
-		for (low = 0; low <= high; low++) {
+	for (size_t high = 0; high < device_ctx.grid.width(); high++)
+		for (size_t low = 0; low <= high; low++) {
 			chany_place_cost_fac[high][low] = (high - low + 1.)
 					/ chany_place_cost_fac[high][low];
 			chany_place_cost_fac[high][low] = pow(
@@ -3135,7 +3152,7 @@ static void check_place(float bb_cost, float timing_cost,
 	 * within roundoff of what we think the cost is.                   */
 
 	static int *bdone;
-	int i, j, k, error = 0, bnum;
+	int error = 0, bnum;
 	float bb_cost_check;
 	int usage_check;
 	float timing_cost_check, delay_cost_check;
@@ -3173,33 +3190,33 @@ static void check_place(float bb_cost, float timing_cost,
     auto& device_ctx = g_vpr_ctx.device();
 
 	bdone = (int *) vtr::malloc(cluster_ctx.num_blocks * sizeof(int));
-	for (i = 0; i < cluster_ctx.num_blocks; i++)
+	for (int i = 0; i < cluster_ctx.num_blocks; i++)
 		bdone[i] = 0;
 
 	/* Step through device grid and placement. Check it against blocks */
-	for (i = 0; i <= (device_ctx.nx + 1); i++)
-		for (j = 0; j <= (device_ctx.ny + 1); j++) {
+	for (size_t i = 0; i < device_ctx.grid.width(); i++)
+		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
 			if (place_ctx.grid_blocks[i][j].usage > device_ctx.grid[i][j].type->capacity) {
 				vtr::printf_error(__FILE__, __LINE__,
-						"Block at grid location (%d,%d) overused. Usage is %d.\n", 
+						"Block at grid location (%zu,%zu) overused. Usage is %d.\n", 
 						i, j, place_ctx.grid_blocks[i][j].usage);
 				error++;
 			}
 			usage_check = 0;
-			for (k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
+			for (int k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
 				bnum = place_ctx.grid_blocks[i][j].blocks[k];
 				if (EMPTY_BLOCK == bnum || INVALID_BLOCK == bnum)
 					continue;
 
 				if (cluster_ctx.blocks[bnum].type != device_ctx.grid[i][j].type) {
 					vtr::printf_error(__FILE__, __LINE__,
-							"Block %d type does not match grid location (%d,%d) type.\n",
+							"Block %d type does not match grid location (%zu,%zu) type.\n",
 							bnum, i, j);
 					error++;
 				}
-				if ((place_ctx.block_locs[bnum].x != i) || (place_ctx.block_locs[bnum].y != j)) {
+				if ((place_ctx.block_locs[bnum].x != int(i)) || (place_ctx.block_locs[bnum].y != int(j))) {
 					vtr::printf_error(__FILE__, __LINE__,
-							"Block %d location conflicts with grid(%d,%d) data.\n", 
+							"Block %d location conflicts with grid(%zu,%zu) data.\n", 
 							bnum, i, j);
 					error++;
 				}
@@ -3208,14 +3225,14 @@ static void check_place(float bb_cost, float timing_cost,
 			}
 			if (usage_check != place_ctx.grid_blocks[i][j].usage) {
 				vtr::printf_error(__FILE__, __LINE__,
-						"Location (%d,%d) usage is %d, but has actual usage %d.\n",
+						"Location (%zu,%zu) usage is %d, but has actual usage %d.\n",
 						i, j, place_ctx.grid_blocks[i][j].usage, usage_check);
 				error++;
 			}
 		}
 
 	/* Check that every block exists in the device_ctx.grid and cluster_ctx.blocks arrays somewhere. */
-	for (i = 0; i < cluster_ctx.num_blocks; i++)
+	for (int i = 0; i < cluster_ctx.num_blocks; i++)
 		if (bdone[i] != 1) {
 			vtr::printf_error(__FILE__, __LINE__,
 					"Block %d listed %d times in data structures.\n",
