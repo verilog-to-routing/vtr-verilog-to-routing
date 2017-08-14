@@ -161,7 +161,7 @@ void length_and_bends_stats(void) {
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		if (!cluster_ctx.clb_nlist.net_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
-			get_num_bends_and_length((size_t)net_id, &bends, &length, &segments);
+			get_num_bends_and_length(net_id, &bends, &length, &segments);
 
 			total_bends += bends;
 			max_bends = max(bends, max_bends);
@@ -310,7 +310,7 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
 	}
 }
 
-void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
+void get_num_bends_and_length(ClusterNetId inet, int *bends_ptr, int *len_ptr,
 		int *segments_ptr) {
 
 	/* Counts and returns the number of bends, wirelength, and number of routing *
@@ -327,10 +327,10 @@ void get_num_bends_and_length(int inet, int *bends_ptr, int *len_ptr,
 	length = 0;
 	segments = 0;
 
-	prevptr = route_ctx.trace_head[inet]; /* Should always be SOURCE. */
+	prevptr = route_ctx.trace_head[(size_t)inet]; /* Should always be SOURCE. */
 	if (prevptr == NULL) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-				"in get_num_bends_and_length: net #%d has no traceback.\n", inet);
+				"in get_num_bends_and_length: net #%lu has no traceback.\n", (size_t)inet);
 	}
 	inode = prevptr->index;
 	prev_type = device_ctx.rr_nodes[inode].type();
@@ -387,7 +387,7 @@ void print_wirelen_prob_dist(void) {
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		if (!cluster_ctx.clb_nlist.net_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) {
-			get_num_bends_and_length((size_t)net_id, &bends, &length, &segments);
+			get_num_bends_and_length(net_id, &bends, &length, &segments);
 
 			/*  Assign probability to two integer lengths proportionately -- i.e.  *
 			 *  if two_point_length = 1.9, add 0.9 of the pins to prob_dist[2] and *

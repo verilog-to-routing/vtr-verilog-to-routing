@@ -197,10 +197,10 @@ bool try_timing_driven_route(t_router_opts router_opts,
     /* Set delay of global signals to zero. Non-global net delays are set by
        update_net_delays_from_route_tree() inside timing_driven_route_net(), 
        which is only called for non-global nets. */
-    for (unsigned int inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
-        if (cluster_ctx.clb_nlist.net_global((ClusterNetId)inet)) {
-            for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((ClusterNetId)inet).size(); ++ipin) {
-                net_delay[inet][ipin] = 0.;
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        if (cluster_ctx.clb_nlist.net_global(net_id)) {
+            for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
+                net_delay[(size_t)net_id][ipin] = 0.;
             }
         }
     }
@@ -1278,7 +1278,7 @@ static void timing_driven_check_net_delays(float **net_delay) {
      * routing match those computed from scratch by the net_delay.c module.      */
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    unsigned int inet, ipin;
+    unsigned int ipin;
     float **net_delay_check;
 
     vtr::t_chunk list_head_net_delay_check_ch = {NULL, 0, NULL};
@@ -1288,21 +1288,21 @@ static void timing_driven_check_net_delays(float **net_delay) {
     net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch);
     load_net_delay_from_routing(net_delay_check);
 
-    for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
-        for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins((ClusterNetId)inet).size(); ipin++) {
-            if (net_delay_check[inet][ipin] == 0.) { /* Should be only GLOBAL nets */
-                if (fabs(net_delay[inet][ipin]) > ERROR_TOL) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+            if (net_delay_check[(size_t)net_id][ipin] == 0.) { /* Should be only GLOBAL nets */
+                if (fabs(net_delay[(size_t)net_id][ipin]) > ERROR_TOL) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                            "in timing_driven_check_net_delays: net %d pin %d.\n"
+                            "in timing_driven_check_net_delays: net %lu pin %d.\n"
                             "\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
-                            inet, ipin, net_delay[inet][ipin], net_delay_check[inet][ipin]);
+							(size_t)net_id, ipin, net_delay[(size_t)net_id][ipin], net_delay_check[(size_t)net_id][ipin]);
                 }
             } else {
-                if (fabs(1.0 - net_delay[inet][ipin] / net_delay_check[inet][ipin]) > ERROR_TOL) {
+                if (fabs(1.0 - net_delay[(size_t)net_id][ipin] / net_delay_check[(size_t)net_id][ipin]) > ERROR_TOL) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                            "in timing_driven_check_net_delays: net %d pin %d.\n"
+                            "in timing_driven_check_net_delays: net %d pin %lu.\n"
                             "\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
-                            inet, ipin, net_delay[inet][ipin], net_delay_check[inet][ipin]);
+							(size_t)net_id, ipin, net_delay[(size_t)net_id][ipin], net_delay_check[(size_t)net_id][ipin]);
                 }
             }
         }
@@ -1395,20 +1395,20 @@ Connection_based_routing_resources::Connection_based_routing_resources() :
     lower_bound_connection_delay.resize(routing_num_nets);
     forcible_reroute_connection_flag.resize(routing_num_nets);
 
-    for (unsigned int inet = 0; inet < routing_num_nets; ++inet) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         // unordered_map<int,int> net_node_to_pin;
-        auto& net_node_to_pin = rr_sink_node_to_pin[inet];
-        auto& net_lower_bound_connection_delay = lower_bound_connection_delay[inet];
-        auto& net_forcible_reroute_connection_flag = forcible_reroute_connection_flag[inet];
+        auto& net_node_to_pin = rr_sink_node_to_pin[(size_t)net_id];
+        auto& net_lower_bound_connection_delay = lower_bound_connection_delay[(size_t)net_id];
+        auto& net_forcible_reroute_connection_flag = forcible_reroute_connection_flag[(size_t)net_id];
 
-        unsigned int num_pins = cluster_ctx.clb_nlist.net_pins((ClusterNetId)inet).size();
+        unsigned int num_pins = cluster_ctx.clb_nlist.net_pins(net_id).size();
         net_node_to_pin.reserve(num_pins - 1); // not looking up on the SOURCE pin
         net_lower_bound_connection_delay.reserve(num_pins - 1); // will be filled in after the 1st iteration's
         net_forcible_reroute_connection_flag.reserve(num_pins - 1); // all false to begin with
 
         for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
             // rr sink node index corresponding to this connection terminal
-            auto rr_sink_node = route_ctx.net_rr_terminals[inet][ipin];
+            auto rr_sink_node = route_ctx.net_rr_terminals[(size_t)net_id][ipin];
 
             net_node_to_pin.insert({rr_sink_node, ipin});
             net_forcible_reroute_connection_flag.insert({rr_sink_node, false});
@@ -1482,16 +1482,11 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(const
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    size_t routing_num_nets = cluster_ctx.clb_nlist.nets().size();
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        auto& net_lower_bound_connection_delay = lower_bound_connection_delay[(size_t)net_id];
 
-    for (unsigned int inet = 0; inet < routing_num_nets; ++inet) {
-
-        auto& net_lower_bound_connection_delay = lower_bound_connection_delay[inet];
-
-        unsigned int num_pins = cluster_ctx.clb_nlist.net_pins((ClusterNetId)inet).size();
-
-        for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
-            net_lower_bound_connection_delay.push_back(net_delay[inet][ipin]);
+        for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
+            net_lower_bound_connection_delay.push_back(net_delay[(size_t)net_id][ipin]);
         }
     }
 }
@@ -1603,11 +1598,11 @@ static WirelengthInfo calculate_wirelength_info() {
         }
     }
 
-    for (unsigned int inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); ++inet) {
-        if (!cluster_ctx.clb_nlist.net_global((ClusterNetId)inet)
-                && cluster_ctx.clb_nlist.net_sinks((ClusterNetId)inet).size() != 0) { /* Globals don't count. */
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_global(net_id)
+                && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) { /* Globals don't count. */
             int bends, wirelength, segments;
-            get_num_bends_and_length(inet, &bends, &wirelength, &segments);
+            get_num_bends_and_length(net_id, &bends, &wirelength, &segments);
 
             used_wirelength += wirelength;
         }

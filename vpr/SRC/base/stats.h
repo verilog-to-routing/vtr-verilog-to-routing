@@ -20,7 +20,7 @@ void print_wirelen_prob_dist(void);
 
 void print_lambda(void);
 
-void get_num_bends_and_length(int inet, int *bends, int *length, int *segments);
+void get_num_bends_and_length(ClusterNetId inet, int *bends, int *length, int *segments);
 
 int count_netlist_clocks(void);
 
