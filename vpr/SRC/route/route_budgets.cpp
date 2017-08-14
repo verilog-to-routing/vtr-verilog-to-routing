@@ -170,22 +170,26 @@ void route_budgets::lower_budgets() {
 }
 
 float route_budgets::get_delay_target(int inet, int ipin) {
-
+    //cannot get delay from a source
+    VTR_ASSERT(ipin);
     return delay_target[inet][ipin];
 }
 
 float route_budgets::get_min_delay_budget(int inet, int ipin) {
-
+    //cannot get delay from a source
+    VTR_ASSERT(ipin);
     return delay_min_budget[inet][ipin];
 }
 
 float route_budgets::get_max_delay_budget(int inet, int ipin) {
-
+    //cannot get delay from a source
+    VTR_ASSERT(ipin);
     return delay_max_budget[inet][ipin];
 }
 
 float route_budgets::get_crit_short_path(int inet, int ipin) {
-
+    //cannot get delay from a source
+    VTR_ASSERT(ipin);
     return pow(((delay_target[inet][ipin] - delay_lower_bound[inet][ipin]) / delay_target[inet][ipin]), SHORT_PATH_EXP);
 }
 
