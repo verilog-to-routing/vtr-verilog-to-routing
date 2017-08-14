@@ -439,8 +439,8 @@ void obstruct_chan_details(
     auto& device_ctx = g_vpr_ctx.device();
 
     /* Iterate grid to find and obstruct based on multi-width/height blocks */
-    for (int x = 0; x <= grid.nx(); ++x) {
-        for (int y = 0; y <= grid.ny(); ++y) {
+    for (size_t x = 0; x < grid.width() - 1; ++x) {
+        for (size_t y = 0; y < grid.height() - 1; ++y) {
 
             if (!trim_obs_channels)
                 continue;
@@ -474,8 +474,8 @@ void obstruct_chan_details(
     }
 
     /* Iterate grid again to find and obstruct based on neighboring EMPTY and/or IO types */
-    for (int x = 0; x <= grid.nx(); ++x) {
-        for (int y = 0; y <= grid.ny(); ++y) {
+    for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
+        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
 
             if (!trim_empty_channels)
                 continue;
@@ -485,9 +485,9 @@ void obstruct_chan_details(
                     continue;
             }
             if (grid[x][y].type == device_ctx.EMPTY_TYPE) {
-                if ((x == grid.nx()) && (grid[x + 1][y].type == device_ctx.IO_TYPE))
+                if ((x == grid.width() - 2) && (grid[x + 1][y].type == device_ctx.IO_TYPE)) //-2 for no perim channels
                     continue;
-                if ((y == grid.ny()) && (grid[x][y + 1].type == device_ctx.IO_TYPE))
+                if ((y == grid.height() - 2) && (grid[x][y + 1].type == device_ctx.IO_TYPE)) //-2 for no perim channels
                     continue;
             }
 
@@ -515,8 +515,8 @@ void adjust_chan_details(
         t_chan_details& chan_details_x,
         t_chan_details& chan_details_y) {
 
-    for (int y = 0; y <= grid.ny(); ++y) {
-        for (int x = 0; x <= grid.nx(); ++x) {
+    for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
+        for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
 
             /* Ignore any non-obstructed channel seg_detail structures */
             if (chan_details_x[x][y][0].length > 0)
@@ -527,8 +527,8 @@ void adjust_chan_details(
         }
     }
 
-    for (int x = 0; x <= grid.nx(); ++x) {
-        for (int y = 0; y <= grid.ny(); ++y) {
+    for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
+        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
 
             /* Ignore any non-obstructed channel seg_detail structures */
             if (chan_details_y[x][y][0].length > 0)
@@ -567,16 +567,16 @@ void adjust_seg_details(
 
     for (int track = 0; track < nodes_per_chan->max; ++track) {
 
-        int lx = (seg_details_type == SEG_DETAILS_X ? x + 1 : x);
-        int ly = (seg_details_type == SEG_DETAILS_X ? y : y + 1);
-        if (lx > grid.nx() || ly > grid.ny() || chan_details[lx][ly][track].length == 0)
+        size_t lx = (seg_details_type == SEG_DETAILS_X ? x + 1 : x);
+        size_t ly = (seg_details_type == SEG_DETAILS_X ? y : y + 1);
+        if (lx > grid.width() - 2 || ly > grid.height() - 2 || chan_details[lx][ly][track].length == 0) //-2 for no perim channels
             continue;
 
         while (chan_details[lx][ly][track].seg_start <= seg_index) {
             chan_details[lx][ly][track].seg_start = seg_index + 1;
             lx = (seg_details_type == SEG_DETAILS_X ? lx + 1 : lx);
             ly = (seg_details_type == SEG_DETAILS_X ? ly : ly + 1);
-            if (lx > grid.nx() || ly > grid.ny() || chan_details[lx][ly][track].length == 0)
+            if (lx > grid.width() - 2 || ly > grid.height() - 2 || chan_details[lx][ly][track].length == 0) //-2 for no perim channels
                 break;
         }
     }
@@ -601,15 +601,15 @@ void free_chan_details(
         const DeviceGrid& grid) {
 
     /* Frees all the memory allocated to an array of chan_details structures. */
-    for (int x = 0; x <= grid.nx(); ++x) {
-        for (int y = 0; y <= grid.ny(); ++y) {
+    for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
+        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
 
             t_seg_details* p_seg_details = chan_details_x[x][y];
             free_seg_details(p_seg_details, max_chan_width);
         }
     }
-    for (int x = 0; x <= grid.nx(); ++x) {
-        for (int y = 0; y <= grid.ny(); ++y) {
+    for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
+        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
 
             t_seg_details* p_seg_details = chan_details_y[x][y];
             free_seg_details(p_seg_details, max_chan_width);
@@ -964,22 +964,22 @@ void dump_chan_details(
 
     FILE *fp = vtr::fopen(fname, "w");
     if (fp) {
-        for (int y = 0; y <= grid.ny(); ++y) {
-            for (int x = 0; x <= grid.nx(); ++x) {
+        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
+            for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
 
                 fprintf(fp, "========================\n");
-                fprintf(fp, "chan_details_x: [%d][%d]\n", x, y);
+                fprintf(fp, "chan_details_x: [%zu][%zu]\n", x, y);
                 fprintf(fp, "========================\n");
 
                 const t_seg_details* seg_details = chan_details_x[x][y];
                 dump_seg_details(seg_details, max_chan_width, fp);
             }
         }
-        for (int x = 0; x <= grid.nx(); ++x) {
-            for (int y = 0; y <= grid.ny(); ++y) {
+        for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
+            for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
 
                 fprintf(fp, "========================\n");
-                fprintf(fp, "chan_details_y: [%d][%d]\n", x, y);
+                fprintf(fp, "chan_details_y: [%zu][%zu]\n", x, y);
                 fprintf(fp, "========================\n");
 
                 const t_seg_details* seg_details = chan_details_y[x][y];
@@ -1000,11 +1000,11 @@ void dump_sblock_pattern(
 
     FILE *fp = vtr::fopen(fname, "w");
     if (fp) {
-        for (int y = 0; y <= grid.ny(); ++y) {
-            for (int x = 0; x <= grid.nx(); ++x) {
+        for (size_t y = 0; y <= grid.height() - 2; ++y) {
+            for (size_t x = 0; x <= grid.width() - 2; ++x) {
 
                 fprintf(fp, "==========================\n");
-                fprintf(fp, "sblock_pattern: [%d][%d]\n", x, y);
+                fprintf(fp, "sblock_pattern: [%zu][%zu]\n", x, y);
                 fprintf(fp, "==========================\n");
 
                 for (int from_side = 0; from_side < 4; ++from_side) {
@@ -1066,53 +1066,6 @@ void dump_sblock_pattern(
         }
     }
     fclose(fp);
-}
-
-void print_rr_node_indices(int L_nx, int L_ny, const t_rr_node_indices& L_rr_node_indices) {
-
-    if (!L_rr_node_indices[SOURCE].empty())
-        print_rr_node_indices(SOURCE, L_nx + 1, L_ny + 1, L_rr_node_indices);
-    if (!L_rr_node_indices[SINK].empty())
-        print_rr_node_indices(SINK, L_nx + 1, L_ny + 1, L_rr_node_indices);
-    if (!L_rr_node_indices[IPIN].empty())
-        print_rr_node_indices(IPIN, L_nx + 1, L_ny + 1, L_rr_node_indices);
-    if (!L_rr_node_indices[OPIN].empty())
-        print_rr_node_indices(OPIN, L_nx + 1, L_ny + 1, L_rr_node_indices);
-    if (!L_rr_node_indices[CHANX].empty())
-        print_rr_node_indices(CHANX, L_nx, L_ny, L_rr_node_indices);
-    if (!L_rr_node_indices[CHANY].empty())
-        print_rr_node_indices(CHANY, L_nx, L_ny, L_rr_node_indices);
-}
-
-void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, const t_rr_node_indices& L_rr_node_indices) {
-
-    const char* psz_rr_type = "?";
-    switch (rr_type) {
-        case SOURCE: psz_rr_type = "SOURCE";
-            break;
-        case SINK: psz_rr_type = "SINK";
-            break;
-        case IPIN: psz_rr_type = "IPIN";
-            break;
-        case OPIN: psz_rr_type = "OPIN";
-            break;
-        case CHANX: psz_rr_type = "CHANX";
-            break;
-        case CHANY: psz_rr_type = "CHANY";
-            break;
-        default: break;
-    }
-
-    for (int i = 0; i <= L_nx; ++i) {
-        for (int j = 0; j <= L_ny; ++j) {
-            vector<int> rr_node_index = L_rr_node_indices[rr_type][i][j];
-
-            vtr::printf_info("rr_node_indices[%s][%d][%d] =", psz_rr_type, i, j);
-            for (unsigned k = 0; k < rr_node_index.size(); ++k)
-                vtr::printf_info(" %d", rr_node_index[k]);
-            vtr::printf_info("\n");
-        }
-    }
 }
 
 static void load_chan_rr_indices(
@@ -1997,13 +1950,13 @@ short ******alloc_sblock_pattern_lookup(
     /* Alloc each list of pointers in one go. items is a running product that increases
      * with each new dimension of the matrix. */
 
-    VTR_ASSERT(grid.nx() > 0);
-    VTR_ASSERT(grid.ny() > 0);
+    VTR_ASSERT(grid.width() > 0);
+    VTR_ASSERT(grid.height() > 0);
 
     size_t items = 1;
-    items *= (grid.nx() + 1);
+    items *= (grid.width() - 1);
     short ******i_list = (short ******) vtr::malloc(sizeof (short *****) * items);
-    items *= (grid.ny() + 1);
+    items *= (grid.height() - 1);
     short *****j_list = (short *****) vtr::malloc(sizeof (short ****) * items);
     items *= (4);
     short ****from_side_list = (short ****) vtr::malloc(sizeof (short ***) * items);

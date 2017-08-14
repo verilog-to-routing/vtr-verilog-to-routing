@@ -202,6 +202,4 @@ void dump_sblock_pattern(
 		const DeviceGrid& grid,
 		const char *fname);
 
-void print_rr_node_indices(int L_nx, int L_ny, const t_rr_node_indices& L_rr_node_indices);
-void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, const t_rr_node_indices& L_rr_node_indices);
 #endif
