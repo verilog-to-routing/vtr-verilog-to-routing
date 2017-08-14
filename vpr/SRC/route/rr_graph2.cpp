@@ -41,8 +41,8 @@ static int get_bidir_track_to_chan_seg(
 
 static int get_unidir_track_to_chan_seg(
         const int from_track, const int to_chan, const int to_seg, const int to_sb,
-        const t_rr_type to_type, const int max_chan_width, const int L_nx,
-        const int L_ny, const enum e_side from_side, const enum e_side to_side,
+        const t_rr_type to_type, const int max_chan_width,
+        const DeviceGrid& grid, const enum e_side from_side, const enum e_side to_side,
         const int Fs_per_side,
         short ******sblock_pattern, const t_rr_node_indices& L_rr_node_indices,
         const t_seg_details * seg_details, bool * L_rr_edge_done,
@@ -730,10 +730,10 @@ int get_bidir_opin_connections(
         seg = ((to_type == CHANX) ? tr_i : tr_j);
 
         /* Don't connect where no tracks on fringes */
-        if ((tr_i < 0) || (tr_i > device_ctx.nx)) {
+        if ((tr_i < 0) || (tr_i > int(device_ctx.grid.width() - 2))) { //-2 for no perimeter channels
             continue;
         }
-        if ((tr_j < 0) || (tr_j > device_ctx.ny)) {
+        if ((tr_j < 0) || (tr_j > int(device_ctx.grid.height() - 2))) { //-2 for no perimeter channels
             continue;
         }
         if ((CHANX == to_type) && (tr_i < 1)) {
@@ -1268,8 +1268,8 @@ int get_rr_node_index(
     auto& device_ctx = g_vpr_ctx.device();
 
     VTR_ASSERT(ptc >= 0);
-    VTR_ASSERT(x >= 0 && x <= (device_ctx.nx + 1));
-    VTR_ASSERT(y >= 0 && y <= (device_ctx.ny + 1));
+    VTR_ASSERT(x >= 0 && x < int(device_ctx.grid.width()));
+    VTR_ASSERT(y >= 0 && y < int(device_ctx.grid.height()));
 
     type = device_ctx.grid[x][y].type;
 
@@ -1456,7 +1456,7 @@ int get_track_to_pins(
 int get_track_to_tracks(
         const int from_chan, const int from_seg, const int from_track,
         const t_rr_type from_type, const int to_seg, const t_rr_type to_type,
-        const int chan_len, const int max_chan_width,
+        const int chan_len, const int max_chan_width, const DeviceGrid& grid,
         const int Fs_per_side, short ******sblock_pattern,
         t_linked_edge **edge_list,
         const t_seg_details * from_seg_details,
@@ -1475,8 +1475,6 @@ int get_track_to_tracks(
     bool from_is_sblock, is_behind, Fs_clipped;
     enum e_side from_side_a, from_side_b, to_side;
     bool custom_switch_block;
-
-    auto& device_ctx = g_vpr_ctx.device();
 
     /* check whether a custom switch block will be used */
     custom_switch_block = false;
@@ -1609,7 +1607,7 @@ int get_track_to_tracks(
                             && (DEC_DIRECTION == from_seg_details[from_track].direction)) {
                         num_conn += get_unidir_track_to_chan_seg(
                                 from_track, to_chan,
-                                to_seg, to_sb, to_type, max_chan_width, device_ctx.nx, device_ctx.ny,
+                                to_seg, to_sb, to_type, max_chan_width, grid,
                                 from_side_a, to_side, Fs_per_side,
                                 sblock_pattern, L_rr_node_indices, to_seg_details,
                                 L_rr_edge_done, &Fs_clipped, edge_list);
@@ -1646,7 +1644,7 @@ int get_track_to_tracks(
                             && (INC_DIRECTION == from_seg_details[from_track].direction)) {
                         num_conn += get_unidir_track_to_chan_seg(
                                 from_track, to_chan,
-                                to_seg, to_sb, to_type, max_chan_width, device_ctx.nx, device_ctx.ny,
+                                to_seg, to_sb, to_type, max_chan_width, grid,
                                 from_side_b, to_side, Fs_per_side,
                                 sblock_pattern, L_rr_node_indices, to_seg_details,
                                 L_rr_edge_done, &Fs_clipped, edge_list);
@@ -1789,8 +1787,8 @@ static int get_track_to_chan_seg(
 
 static int get_unidir_track_to_chan_seg(
         const int from_track, const int to_chan, const int to_seg, const int to_sb,
-        const t_rr_type to_type, const int max_chan_width, const int L_nx,
-        const int L_ny, const enum e_side from_side, const enum e_side to_side,
+        const t_rr_type to_type, const int max_chan_width, const DeviceGrid& grid,
+        const enum e_side from_side, const enum e_side to_side,
         const int Fs_per_side,
         short ******sblock_pattern, const t_rr_node_indices& L_rr_node_indices,
         const t_seg_details * seg_details, bool * L_rr_edge_done,
@@ -1804,7 +1802,7 @@ static int get_unidir_track_to_chan_seg(
     int to_y = (CHANX == to_type ? to_chan : to_seg);
     int sb_x = (CHANX == to_type ? to_sb : to_chan);
     int sb_y = (CHANX == to_type ? to_chan : to_sb);
-    int max_len = (CHANX == to_type ? L_nx : L_ny);
+    int max_len = (CHANX == to_type ? grid.width() : grid.height()) - 2; //-2 for no perimeter channels
 
     enum e_direction to_dir = DEC_DIRECTION;
     if (to_sb < to_seg) {
@@ -2018,27 +2016,27 @@ short ******alloc_sblock_pattern_lookup(
 
     /* Build the pointer lists to form the multidimensional array */
     short ******sblock_pattern = i_list;
-    i_list += (grid.nx() + 1); /* Skip forward device_ctx.nx+1 items */
-    for (int i = 0; i < (grid.nx() + 1); ++i) {
+    i_list += (grid.width() - 1); /* Skip forward */
+    for (size_t i = 0; i < (grid.width() - 1); ++i) {
 
         sblock_pattern[i] = j_list;
-        j_list += (grid.ny() + 1); /* Skip forward device_ctx.ny+1 items */
-        for (int j = 0; j < (grid.ny() + 1); ++j) {
+        j_list += (grid.height() - 1); /* Skip forward */
+        for (size_t j = 0; j < (grid.height() - 1); ++j) {
 
             sblock_pattern[i][j] = from_side_list;
-            from_side_list += (4); /* Skip forward 4 items */
-            for (int from_side = 0; from_side < 4; ++from_side) {
+            from_side_list += (4); /* Skip forward */
+            for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 
                 sblock_pattern[i][j][from_side] = to_side_list;
-                to_side_list += (4); /* Skip forward 4 items */
-                for (int to_side = 0; to_side < 4; ++to_side) {
+                to_side_list += (4); /* Skip forward */
+                for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 
                     sblock_pattern[i][j][from_side][to_side] = from_track_list;
                     from_track_list += (max_chan_width); /* Skip forward max_chan_width items */
                     for (int from_track = 0; from_track < max_chan_width; from_track++) {
 
                         sblock_pattern[i][j][from_side][to_side][from_track] = from_track_types;
-                        from_track_types += (4); /* Skip forward 4 items */
+                        from_track_types += (4); /* Skip forward */
 
                         /* Set initial value to be unset */
                         sblock_pattern[i][j][from_side][to_side][from_track][0] = UN_SET; // to_mux
@@ -2076,7 +2074,9 @@ void free_sblock_pattern_lookup(
 }
 
 void load_sblock_pattern_lookup(
-        const int i, const int j, const t_chan_width *nodes_per_chan,
+        const int i, const int j,
+        const DeviceGrid& grid,
+        const t_chan_width *nodes_per_chan,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const int /*Fs*/, const enum e_switch_block_type switch_block_type,
         short ******sblock_pattern) {
@@ -2085,13 +2085,11 @@ void load_sblock_pattern_lookup(
      * because the sblock varies from location to location. The i, j means the owning
      * location of the sblock under investigation. */
 
-    auto& device_ctx = g_vpr_ctx.device();
-
-    /* SB's have coords from (0, 0) to (device_ctx.nx, device_ctx.ny) */
+    /* SB's have coords from (0, 0) to (grid.width()-2, grid.height()-2) */
     VTR_ASSERT(i >= 0);
-    VTR_ASSERT(i <= device_ctx.nx);
+    VTR_ASSERT(i <= int(grid.width()) - 2);
     VTR_ASSERT(j >= 0);
-    VTR_ASSERT(j <= device_ctx.ny);
+    VTR_ASSERT(j <= int(grid.height()) - 2);
 
     /* May 12 - 15, 2007
      *
@@ -2125,7 +2123,7 @@ void load_sblock_pattern_lookup(
      * more than 1.
      */
 
-    /* SB's range from (0, 0) to (device_ctx.nx, device_ctx.ny) */
+    /* SB's range from (0, 0) to (grid.width() - 2, grid.height() - 2) */
     /* First find all four sides' incoming wires */
     int *wire_mux_on_track[4];
     int *incoming_wire_label[4];
@@ -2134,7 +2132,7 @@ void load_sblock_pattern_lookup(
     int num_wire_muxes[4];
 
     /* "Label" the wires around the switch block by connectivity. */
-    for (int side = 0; side < 4; ++side) {
+    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
         /* Assume the channel segment doesn't exist. */
         wire_mux_on_track[side] = NULL;
         incoming_wire_label[side] = NULL;
@@ -2147,12 +2145,12 @@ void load_sblock_pattern_lookup(
         bool skip = true;
         switch (side) {
             case TOP:
-                if (j < device_ctx.ny) {
+                if (j < int(grid.height()) - 2) {
                     skip = false;
                 }
                 break;
             case RIGHT:
-                if (i < device_ctx.nx) {
+                if (i < int(grid.width()) - 2) {
                     skip = false;
                 }
                 break;
@@ -2177,7 +2175,7 @@ void load_sblock_pattern_lookup(
         /* Figure out the channel and segment for a certain direction */
         bool vert = ((side == TOP) || (side == BOTTOM));
         bool pos_dir = ((side == TOP) || (side == RIGHT));
-        int chan_len = (vert ? device_ctx.ny : device_ctx.nx);
+        int chan_len = (vert ? grid.height() : grid.width()) - 2; //-2 for no perim channels
         int chan = (vert ? i : j);
         int sb_seg = (vert ? j : i);
         int seg = (pos_dir ? (sb_seg + 1) : sb_seg);
@@ -2201,7 +2199,7 @@ void load_sblock_pattern_lookup(
                 false, &num_wire_muxes[side], &dummy);
     }
 
-    for (int to_side = 0; to_side < 4; to_side++) {
+    for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
         /* Can't do anything if no muxes on this side. */
         if (num_wire_muxes[to_side] == 0)
             continue;
@@ -2307,7 +2305,7 @@ void load_sblock_pattern_lookup(
         }
     }
 
-    for (int side = 0; side < 4; ++side) {
+    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
         if (incoming_wire_label[side]) {
             vtr::free(incoming_wire_label[side]);
         }

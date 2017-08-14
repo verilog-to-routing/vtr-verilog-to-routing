@@ -150,6 +150,7 @@ int get_track_to_tracks(
 		const t_rr_type to_type,
 		const int chan_len,
 		const int max_chan_width,
+        const DeviceGrid& grid,
 		const int Fs_per_side,
 		short ******sblock_pattern,
 		t_linked_edge **edge_list,
@@ -168,7 +169,8 @@ short ******alloc_sblock_pattern_lookup(
 void free_sblock_pattern_lookup(
 		short ******sblock_pattern);
 void load_sblock_pattern_lookup(
-		const int i, const int j,
+        const int i, const int j,
+        const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		const t_chan_details& chan_details_x,
 		const t_chan_details& chan_details_y,

@@ -172,7 +172,9 @@ static void build_rr_chan(
         const t_track_to_pin_lookup& track_to_pin_lookup,
         t_sb_connection_map *sb_conn_map,
         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn, const int cost_index_offset,
-        const int max_chan_width, const int tracks_per_chan,
+        const int max_chan_width, 
+        const DeviceGrid& grid,
+        const int tracks_per_chan,
         short ******sblock_pattern, const int Fs_per_side,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const t_rr_node_indices& L_rr_node_indices,
@@ -478,7 +480,7 @@ static void build_rr_graph(
             unidir_sb_pattern = alloc_sblock_pattern_lookup(grid, max_chan_width);
             for (int i = 0; i <= grid.nx(); i++) {
                 for (int j = 0; j <= grid.ny(); j++) {
-                    load_sblock_pattern_lookup(i, j, nodes_per_chan,
+                    load_sblock_pattern_lookup(i, j, grid, nodes_per_chan,
                             chan_details_x, chan_details_y,
                             Fs, sb_type, unidir_sb_pattern);
 
@@ -1078,7 +1080,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
             if (i > 0) {
                 build_rr_chan(i, j, CHANX, track_to_pin_lookup, sb_conn_map, switch_block_conn,
                         CHANX_COST_INDEX_START,
-                        max_chan_width, device_ctx.chan_width.x_list[j],
+                        max_chan_width, grid, device_ctx.chan_width.x_list[j],
                         sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
                         L_rr_node_indices, L_rr_edge_done, L_rr_node,
                         wire_to_ipin_switch, directionality);
@@ -1086,7 +1088,7 @@ static void alloc_and_load_rr_graph(const int num_nodes,
             if (j > 0) {
                 build_rr_chan(i, j, CHANY, track_to_pin_lookup, sb_conn_map, switch_block_conn,
                         CHANX_COST_INDEX_START + num_seg_types,
-                        max_chan_width, device_ctx.chan_width.y_list[i],
+                        max_chan_width, grid, device_ctx.chan_width.y_list[i],
                         sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
                         L_rr_node_indices, L_rr_edge_done, L_rr_node,
                         wire_to_ipin_switch, directionality);
@@ -1457,7 +1459,9 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         const t_track_to_pin_lookup& track_to_pin_lookup,
         t_sb_connection_map *sb_conn_map,
         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn, const int cost_index_offset,
-        const int max_chan_width, const int tracks_per_chan,
+        const int max_chan_width, 
+        const DeviceGrid& grid,
+        const int tracks_per_chan,
         short ******sblock_pattern, const int Fs_per_side,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const t_rr_node_indices& L_rr_node_indices,
@@ -1531,7 +1535,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
             }
             if (to_seg_details->length > 0) {
                 num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, chan_coord,
-                        opposite_chan_type, seg_dimension, max_chan_width,
+                        opposite_chan_type, seg_dimension, max_chan_width, grid,
                         Fs_per_side, sblock_pattern, &edge_list,
                         from_seg_details, to_seg_details, opposite_chan_details,
                         directionality, L_rr_node_indices, L_rr_edge_done,
@@ -1548,7 +1552,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
             }
             if (to_seg_details->length > 0) {
                 num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, chan_coord + 1,
-                        opposite_chan_type, seg_dimension, max_chan_width,
+                        opposite_chan_type, seg_dimension, max_chan_width, grid,
                         Fs_per_side, sblock_pattern, &edge_list,
                         from_seg_details, to_seg_details, opposite_chan_details,
                         directionality, L_rr_node_indices, L_rr_edge_done,
@@ -1578,7 +1582,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
                 }
                 if (to_seg_details->length > 0) {
                     num_edges += get_track_to_tracks(chan_coord, start, track, chan_type, target_seg,
-                            chan_type, seg_dimension, max_chan_width,
+                            chan_type, seg_dimension, max_chan_width, grid,
                             Fs_per_side, sblock_pattern, &edge_list,
                             from_seg_details, to_seg_details, from_chan_details,
                             directionality, L_rr_node_indices, L_rr_edge_done,
