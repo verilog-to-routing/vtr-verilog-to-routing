@@ -600,6 +600,7 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
      * file are scaled by cfactor.                                         */
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& grid = device_ctx.grid;
 
     float chan_width_io = chan_width_dist.chan_width_io;
     t_chan chan_x_dist = chan_width_dist.chan_x_dist;
@@ -611,32 +612,32 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
     if (nio == 0)
         nio = 1; /* No zero width channels */
 
-    device_ctx.chan_width.x_list[0] = device_ctx.chan_width.x_list[device_ctx.ny] = nio;
-    device_ctx.chan_width.y_list[0] = device_ctx.chan_width.y_list[device_ctx.nx] = nio;
+    device_ctx.chan_width.x_list[0] = device_ctx.chan_width.x_list[grid.height() - 2] = nio;
+    device_ctx.chan_width.y_list[0] = device_ctx.chan_width.y_list[grid.width() - 2] = nio;
 
-    if (device_ctx.ny > 1) {
-        float separation = 1.0 / (device_ctx.ny - 2.0); /* Norm. distance between two channels. */
-        float y = 0.0; /* This avoids div by zero if device_ctx.ny = 2.0 */
+    if (grid.height() > 1) {
+        float separation = 1.0 / (grid.height() - 4.0); /* Norm. distance between two channels. */
+        float y = 0.0; /* This avoids div by zero if grid.height() = 2.0 */
         device_ctx.chan_width.x_list[1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
 
         /* No zero width channels */
         device_ctx.chan_width.x_list[1] = max(device_ctx.chan_width.x_list[1], 1);
 
-        for (int i = 1; i < device_ctx.ny - 1; ++i) {
-            y = (float) i / ((float) (device_ctx.ny - 2.0));
+        for (size_t i = 1; i < grid.height() - 3; ++i) { //-2 for no perim channels
+            y = (float) i / ((float) (grid.height() - 4.0)); //-2 for no perim channels
             device_ctx.chan_width.x_list[i + 1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
             device_ctx.chan_width.x_list[i + 1] = max(device_ctx.chan_width.x_list[i + 1], 1);
         }
     }
 
-    if (device_ctx.nx > 1) {
-        float separation = 1.0 / (device_ctx.nx - 2.0); /* Norm. distance between two channels. */
-        float x = 0.0; /* Avoids div by zero if device_ctx.nx = 2.0 */
+    if (grid.width() > 1) {
+        float separation = 1.0 / (grid.width() - 4.0); /* Norm. distance between two channels. */ //-2 for no perim channels
+        float x = 0.0; /* Avoids div by zero if grid.width() = 2.0 */
         device_ctx.chan_width.y_list[1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
         device_ctx.chan_width.y_list[1] = max(device_ctx.chan_width.y_list[1], 1);
 
-        for (int i = 1; i < device_ctx.nx - 1; ++i) {
-            x = (float) i / ((float) (device_ctx.nx - 2.0));
+        for (size_t i = 1; i < grid.width() - 3; ++i) { //-2 for no perim channels
+            x = (float) i / ((float) (grid.width() - 4.0)); //-2 for no perim channels
             device_ctx.chan_width.y_list[i + 1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
             device_ctx.chan_width.y_list[i + 1] = max(device_ctx.chan_width.y_list[i + 1], 1);
         }
@@ -645,12 +646,12 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
     device_ctx.chan_width.max = 0;
     device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = INT_MIN;
     device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = INT_MAX;
-    for (int i = 0; i <= device_ctx.ny; ++i) {
+    for (size_t i = 0; i <= grid.height() - 2; ++i) { //-2 for no perim channels
         device_ctx.chan_width.max = max(device_ctx.chan_width.max, device_ctx.chan_width.x_list[i]);
         device_ctx.chan_width.x_max = max(device_ctx.chan_width.x_max, device_ctx.chan_width.x_list[i]);
         device_ctx.chan_width.x_min = min(device_ctx.chan_width.x_min, device_ctx.chan_width.x_list[i]);
     }
-    for (int i = 0; i <= device_ctx.nx; ++i) {
+    for (size_t i = 0; i <= grid.height() - 2; ++i) { //-2 for no perim channels
         device_ctx.chan_width.max = max(device_ctx.chan_width.max, device_ctx.chan_width.y_list[i]);
         device_ctx.chan_width.y_max = max(device_ctx.chan_width.y_max, device_ctx.chan_width.y_list[i]);
         device_ctx.chan_width.y_min = min(device_ctx.chan_width.y_min, device_ctx.chan_width.y_list[i]);
@@ -659,12 +660,14 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 #ifdef VERBOSE
     vtr::printf_info("\n");
     vtr::printf_info("device_ctx.chan_width.x_list:\n");
-    for (int i = 0; i <= device_ctx.ny; ++i)
+    for (size_t i = 0; i <= grid.height() - 2; ++i) { //-2 for no perim channels
         vtr::printf_info("%d  ", device_ctx.chan_width.x_list[i]);
+    }
     vtr::printf_info("\n");
     vtr::printf_info("device_ctx.chan_width.y_list:\n");
-    for (int i = 0; i <= device_ctx.nx; ++i)
+    for (size_t i = 0; i <= grid.width() - 2; ++i) { //-2 for no perim channels
         vtr::printf_info("%d  ", device_ctx.chan_width.y_list[i]);
+    }
     vtr::printf_info("\n");
 #endif
 }
