@@ -138,7 +138,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		//  port_type  : The type of the port (input/output/clock)
 		//  pin_index  : The index of the pin relative to its block, excluding OPEN pins)
 		//  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
-		ClusterPinId   create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type, const PortType port_type, int pin_index, bool is_const=false);
+		ClusterPinId   create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type, const PortType port_type, int _pin_index, bool is_const=false);
 
 		//Sets the pin's index in a block
 		//  pin_id   : The pin to be set
@@ -207,7 +207,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 		* Nets
 		*/
 		//Returns the block of the net & pin which it's attached to
-		ClusterBlockId net_pin_block(const ClusterNetId net_id, int pin_index) const;
+		ClusterBlockId net_pin_block(const ClusterNetId net_id, int _pin_index) const;
 
 		//Returns the pin's index in the net
 		//  net_id		: The net of which the pin belongs to

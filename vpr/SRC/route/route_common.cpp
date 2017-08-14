@@ -738,8 +738,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally(void) {
 	 * specifies that this is necessary).                                       */
 
 	t_clb_opins_used clb_opins_used_locally;
-	int iblk, clb_pin, iclass;
-	int class_low, class_high;
+	int clb_pin, iclass, class_low, class_high;
 	t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
