@@ -36,7 +36,7 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data)
 void verify_segments(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const t_segment_inf *segment_inf);
 void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
 void process_blocks(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
-void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
+void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const DeviceGrid& grid);
 void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int *wire_to_rr_ipin_switch, const int num_rr_switches);
 void process_channels(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
@@ -107,7 +107,7 @@ void load_rr_file(const t_graph_type graph_type,
 
         //Compare with the architecture file to ensure consistency
         next_component = get_single_child(rr_graph, "grid", loc_data);
-        verify_grid(next_component, loc_data);
+        verify_grid(next_component, loc_data, grid);
 
         next_component = get_single_child(rr_graph, "block_types", loc_data);
         verify_blocks(next_component, loc_data);
@@ -150,7 +150,7 @@ void load_rr_file(const t_graph_type graph_type,
 
         process_rr_node_indices(grid);
 
-        init_fan_in(device_ctx.grid, device_ctx.rr_nodes, device_ctx.rr_node_indices, device_ctx.num_rr_nodes);
+        init_fan_in(grid, device_ctx.rr_nodes, device_ctx.rr_node_indices, device_ctx.num_rr_nodes);
         
         //sets the cost index and seg id information
         next_component = get_single_child(rr_graph, "rr_nodes", loc_data);
@@ -168,7 +168,7 @@ void load_rr_file(const t_graph_type graph_type,
             alloc_and_load_rr_clb_source(device_ctx.rr_node_indices);
         }
 
-        check_rr_graph(graph_type, device_ctx.grid, *num_rr_switches, device_ctx.block_types, segment_inf);
+        check_rr_graph(graph_type, grid, *num_rr_switches, device_ctx.block_types, segment_inf);
 
 #ifdef USE_MAP_LOOKAHEAD
         compute_router_lookahead(num_seg_types);
@@ -428,34 +428,33 @@ void process_channels(pugi::xml_node parent, const pugiutil::loc_data & loc_data
 
 }
 
-/* Grid was initialized from the architecture file. This function checks 
+/* grid was initialized from the architecture file. This function checks 
  * if it corresponds to the RR graph. Errors out if it doesn't correspond*/
-void verify_grid(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    pugi::xml_node Grid;
-    int numGrid = count_children(parent, "grid_loc", loc_data);
+void verify_grid(pugi::xml_node parent, const pugiutil::loc_data & loc_data, const DeviceGrid& grid) {
+    pugi::xml_node grid_node;
+    int num_grid_node = count_children(parent, "grid_loc", loc_data);
 
-    Grid = get_first_child(parent, "grid_loc", loc_data);
-    for (int i = 0; i < numGrid; i++) {
-        int x = get_attribute(Grid, "x", loc_data).as_float();
-        int y = get_attribute(Grid, "y", loc_data).as_float();
+    grid_node = get_first_child(parent, "grid_loc", loc_data);
+    for (int i = 0; i < num_grid_node; i++) {
+        int x = get_attribute(grid_node, "x", loc_data).as_float();
+        int y = get_attribute(grid_node, "y", loc_data).as_float();
 
-        t_grid_tile grid_tile = device_ctx.grid[x][y];
+        const t_grid_tile& grid_tile = grid[x][y];
 
-        if (grid_tile.type->index != get_attribute(Grid, "block_type_id", loc_data).as_float(0)) {
+        if (grid_tile.type->index != get_attribute(grid_node, "block_type_id", loc_data).as_float(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Architecture file does not match RR graph's block_type_id");
         }
-        if (grid_tile.width_offset != get_attribute(Grid, "width_offset", loc_data).as_float(0)) {
+        if (grid_tile.width_offset != get_attribute(grid_node, "width_offset", loc_data).as_float(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Architecture file does not match RR graph's width_offset");
         }
 
-        if (grid_tile.height_offset != get_attribute(Grid, "height_offset", loc_data).as_float(0)) {
+        if (grid_tile.height_offset != get_attribute(grid_node, "height_offset", loc_data).as_float(0)) {
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                     "Architecture file does not match RR graph's height_offset");
         }
-        Grid = Grid.next_sibling(Grid.name());
+        grid_node = grid_node.next_sibling(grid_node.name());
     }
 }
 
@@ -663,7 +662,7 @@ void set_cost_index(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
             int inode = 0;
-            t_type_ptr type = device_ctx.grid[i][j].type;
+            t_type_ptr type = grid[i][j].type;
             int num_class = type->num_class;
             t_class *class_inf = type->class_inf;
             int num_pins = type->num_pins;
