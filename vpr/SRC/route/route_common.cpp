@@ -907,8 +907,8 @@ static void load_route_bb(int bb_factor) {
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		ClusterBlockId driver_blk = cluster_ctx.clb_nlist.net_driver_block(net_id);
 		int driver_blk_pin = cluster_ctx.clb_nlist.pin_index(net_id, 0);
-		x = place_ctx.block_locs[(size_t)driver_blk].x + cluster_ctx.clb_nlist.block_type(driver_blk)->pin_width[driver_blk_pin];
-		y = place_ctx.block_locs[(size_t)driver_blk].y + cluster_ctx.clb_nlist.block_type(driver_blk)->pin_height[driver_blk_pin];
+		x = place_ctx.block_locs[driver_blk].x + cluster_ctx.clb_nlist.block_type(driver_blk)->pin_width[driver_blk_pin];
+		y = place_ctx.block_locs[driver_blk].y + cluster_ctx.clb_nlist.block_type(driver_blk)->pin_height[driver_blk_pin];
 
 		xmin = x;
 		ymin = y;
@@ -918,8 +918,8 @@ static void load_route_bb(int bb_factor) {
 		for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 			ClusterBlockId sink_blk = cluster_ctx.clb_nlist.pin_block(sink_pin_id);
 			int sink_blk_pin = cluster_ctx.clb_nlist.pin_index(sink_pin_id);
-			x = place_ctx.block_locs[(size_t)sink_blk].x + cluster_ctx.clb_nlist.block_type(sink_blk)->pin_width[sink_blk_pin];
-			y = place_ctx.block_locs[(size_t)sink_blk].y + cluster_ctx.clb_nlist.block_type(sink_blk)->pin_height[sink_blk_pin];
+			x = place_ctx.block_locs[sink_blk].x + cluster_ctx.clb_nlist.block_type(sink_blk)->pin_width[sink_blk_pin];
+			y = place_ctx.block_locs[sink_blk].y + cluster_ctx.clb_nlist.block_type(sink_blk)->pin_height[sink_blk_pin];
 
 			if (x < xmin) {
 				xmin = x;
@@ -1337,8 +1337,8 @@ void print_route(const char* placement_file, const char* route_file) {
 
 				fprintf(fp, "Block %s (#%lu) at (%d,%d), Pin class %d.\n",
 					cluster_ctx.clb_nlist.block_name(block_id).c_str(), (size_t)block_id, 
-					place_ctx.block_locs[(size_t)block_id].x, 
-					place_ctx.block_locs[(size_t)block_id].y,
+					place_ctx.block_locs[block_id].x, 
+					place_ctx.block_locs[block_id].y,
 					iclass);
 			}
 		}

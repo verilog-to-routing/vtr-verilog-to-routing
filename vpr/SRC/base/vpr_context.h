@@ -201,8 +201,7 @@ struct ClusteringContext : public Context {
 //or related placer algorithm state.
 struct PlacementContext : public Context {
     //Clustered block placement locations
-	//TODO: change to vector_map<ClusterBlockId, t_block_loc>
-    std::vector<t_block_loc> block_locs; //[0..cluster_ctx.num_blocks-1]
+    vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
 
     //Clustered block associated with each grid location (i.e. inverse of block_locs)
     vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.nx+1][0..device_ctx.ny+1]

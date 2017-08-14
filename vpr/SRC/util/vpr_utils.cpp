@@ -157,9 +157,9 @@ void sync_grid_to_blocks() {
 	/* Go through each block */
     auto& cluster_ctx = g_vpr_ctx.clustering();
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        int blk_x = place_ctx.block_locs[(size_t)blk_id].x;
-        int blk_y = place_ctx.block_locs[(size_t)blk_id].y;
-        int blk_z = place_ctx.block_locs[(size_t)blk_id].z;
+        int blk_x = place_ctx.block_locs[blk_id].x;
+        int blk_y = place_ctx.block_locs[blk_id].y;
+        int blk_z = place_ctx.block_locs[blk_id].z;
 
 		/* Check range of block coords */
 		if (blk_x < 0 || blk_y < 0
@@ -457,7 +457,7 @@ int find_clb_pb_pin(ClusterBlockId clb, int clb_pin) {
     VTR_ASSERT_MSG(clb_pin < cluster_ctx.clb_nlist.block_type(clb)->num_pins, "Must be a valid top-level pin");
 
     int pb_pin = -1;
-    if(place_ctx.block_locs[(size_t)clb].nets_and_pins_synced_to_z_coordinate) {
+    if(place_ctx.block_locs[clb].nets_and_pins_synced_to_z_coordinate) {
         //Pins have been offset by z-coordinate, need to remove offset
 
         t_type_ptr type = cluster_ctx.clb_nlist.block_type(clb);
@@ -465,7 +465,7 @@ int find_clb_pb_pin(ClusterBlockId clb, int clb_pin) {
         int num_basic_block_pins = type->num_pins / type->capacity;
         /* Logical location and physical location is offset by z * max_num_block_pins */
 
-        pb_pin = clb_pin - place_ctx.block_locs[(size_t)clb].z * num_basic_block_pins;
+        pb_pin = clb_pin - place_ctx.block_locs[clb].z * num_basic_block_pins;
     } else {
         //No offset
         pb_pin = clb_pin;
@@ -481,14 +481,14 @@ int find_pb_pin_clb_pin(ClusterBlockId clb, int pb_pin) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     int clb_pin = -1;
-    if(place_ctx.block_locs[(size_t)clb].nets_and_pins_synced_to_z_coordinate) {
+    if(place_ctx.block_locs[clb].nets_and_pins_synced_to_z_coordinate) {
         //Pins have been offset by z-coordinate, need to remove offset
         t_type_ptr type = cluster_ctx.clb_nlist.block_type(clb);
         VTR_ASSERT(type->num_pins % type->capacity == 0);
         int num_basic_block_pins = type->num_pins / type->capacity;
         /* Logical location and physical location is offset by z * max_num_block_pins */
 
-        clb_pin = pb_pin + place_ctx.block_locs[(size_t)clb].z * num_basic_block_pins;
+        clb_pin = pb_pin + place_ctx.block_locs[clb].z * num_basic_block_pins;
     } else {
         //No offset
         clb_pin = pb_pin;
@@ -570,8 +570,8 @@ void get_class_range_for_block(const ClusterBlockId blk_id,
 
 	t_type_ptr type = cluster_ctx.clb_nlist.block_type(blk_id);
 	VTR_ASSERT(type->num_class % type->capacity == 0);
-	*class_low = place_ctx.block_locs[(size_t)blk_id].z * (type->num_class / type->capacity);
-	*class_high = (place_ctx.block_locs[(size_t)blk_id].z + 1) * (type->num_class / type->capacity) - 1;
+	*class_low = place_ctx.block_locs[blk_id].z * (type->num_class / type->capacity);
+	*class_high = (place_ctx.block_locs[blk_id].z + 1) * (type->num_class / type->capacity) - 1;
 }
 
 t_type_descriptor* find_block_type_by_name(std::string name, t_type_descriptor* types, int num_types) {
@@ -2011,7 +2011,7 @@ AtomBlockId find_tnode_atom_block(int inode) {
 void place_sync_external_block_connections(ClusterBlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    VTR_ASSERT_MSG(place_ctx.block_locs[(size_t)iblk].nets_and_pins_synced_to_z_coordinate == false, "Block net and pins must not be already synced");
+    VTR_ASSERT_MSG(place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate == false, "Block net and pins must not be already synced");
 
     t_type_ptr type = cluster_ctx.clb_nlist.block_type(iblk);
     VTR_ASSERT(type->num_pins % type->capacity == 0);
@@ -2021,19 +2021,19 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
     /* Sync external blocks and nets */
     for (int j = 0; j < max_num_block_pins; j++) {
 		ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(iblk, j);
-        if (net_id != ClusterNetId::INVALID() && place_ctx.block_locs[(size_t)iblk].z > 0) {
-			VTR_ASSERT(cluster_ctx.clb_nlist.block_net(iblk, j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins) == ClusterNetId::INVALID());
-            VTR_ASSERT(cluster_ctx.clb_nlist.block_net_count(iblk, j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins) == OPEN); 
+        if (net_id != ClusterNetId::INVALID() && place_ctx.block_locs[iblk].z > 0) {
+			VTR_ASSERT(cluster_ctx.clb_nlist.block_net(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins) == ClusterNetId::INVALID());
+            VTR_ASSERT(cluster_ctx.clb_nlist.block_net_count(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins) == OPEN); 
 
             //Update the block to net references
-			cluster_ctx.clb_nlist.set_block_net_count(iblk, j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins, cluster_ctx.clb_nlist.block_net_count(iblk, j));
-			cluster_ctx.clb_nlist.set_block_net(iblk, j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins, net_id);
+			cluster_ctx.clb_nlist.set_block_net_count(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins, cluster_ctx.clb_nlist.block_net_count(iblk, j));
+			cluster_ctx.clb_nlist.set_block_net(iblk, j + place_ctx.block_locs[iblk].z * max_num_block_pins, net_id);
 
             //Update the net to block references
 			size_t k = 0;
 			for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
 				if (cluster_ctx.clb_nlist.pin_block(pin_id) == iblk && cluster_ctx.clb_nlist.pin_index(pin_id) == j) {
-					cluster_ctx.clb_nlist.set_pin_index(pin_id, j + place_ctx.block_locs[(size_t)iblk].z * max_num_block_pins);
+					cluster_ctx.clb_nlist.set_pin_index(pin_id, j + place_ctx.block_locs[iblk].z * max_num_block_pins);
 					break;
 				}
 				k++;
@@ -2044,5 +2044,5 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
     }
 
     //Mark the block as synced
-    place_ctx.block_locs[(size_t)iblk].nets_and_pins_synced_to_z_coordinate = true;
+    place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate = true;
 }

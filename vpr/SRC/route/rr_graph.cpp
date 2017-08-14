@@ -1224,8 +1224,8 @@ void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
 		pin_count = 0;
 		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
 			auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-			i = place_ctx.block_locs[(size_t)block_id].x;
-			j = place_ctx.block_locs[(size_t)block_id].y;
+			i = place_ctx.block_locs[block_id].x;
+			j = place_ctx.block_locs[block_id].y;
 			type = cluster_ctx.clb_nlist.block_type(block_id);
 
 			/* In the routing graph, each (x, y) location has unique pins on it
@@ -1267,8 +1267,8 @@ void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
         route_ctx.rr_blk_source[(size_t)blk_id] = (int *) vtr::malloc(type->num_class * sizeof (int));
         for (iclass = 0; iclass < type->num_class; iclass++) {
             if (iclass >= class_low && iclass <= class_high) {
-                i = place_ctx.block_locs[(size_t)blk_id].x;
-                j = place_ctx.block_locs[(size_t)blk_id].y;
+                i = place_ctx.block_locs[blk_id].x;
+                j = place_ctx.block_locs[blk_id].y;
 
                 if (type->class_inf[iclass].type == DRIVER)
                     rr_type = SOURCE;

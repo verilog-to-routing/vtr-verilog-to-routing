@@ -215,7 +215,8 @@ static void check_sink(int inode, ClusterNetId inet, bool * pin_done) {
 static void check_source(int inode, ClusterNetId inet) {
 	t_rr_type rr_type;
 	t_type_ptr type;
-	int i, j, ptc_num, bnum, node_block_pin, iclass;
+	ClusterBlockId blk_id;
+	int i, j, ptc_num, node_block_pin, iclass;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -231,10 +232,10 @@ static void check_source(int inode, ClusterNetId inet) {
 	/* for sinks and sources, ptc_num is class */
 	ptc_num = device_ctx.rr_nodes[inode].ptc_num(); 
 	/* First node_block for net is the source */
-	bnum = (size_t)cluster_ctx.clb_nlist.net_driver_block(inet);
+	blk_id = cluster_ctx.clb_nlist.net_driver_block(inet);
 	type = device_ctx.grid[i][j].type;
 
-	if (place_ctx.block_locs[bnum].x != i || place_ctx.block_locs[bnum].y != j) {		
+	if (place_ctx.block_locs[blk_id].x != i || place_ctx.block_locs[blk_id].y != j) {		
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_source: net SOURCE is in wrong location (%d,%d).\n", i, j);
 	}

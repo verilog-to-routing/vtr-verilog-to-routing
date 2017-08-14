@@ -116,9 +116,7 @@ void read_place(const char* net_file,
             int block_y = vtr::atoi(tokens[2]);
             int block_z = vtr::atoi(tokens[3]);
 
-			size_t blk_id = static_cast<size_t>(cluster_ctx.clb_nlist.find_block(block_name));
-
-			VTR_ASSERT(blk_id < L_num_blocks);
+			ClusterBlockId blk_id = cluster_ctx.clb_nlist.find_block(block_name);
 
             if (place_ctx.block_locs.size() != L_num_blocks) {
                 //Resize if needed
@@ -165,7 +163,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE) {
 			insert_in_hash_table(hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), (size_t)blk_id);
-			place_ctx.block_locs[(size_t)blk_id].x = OPEN; /* Mark as not seen yet. */
+			place_ctx.block_locs[blk_id].x = OPEN; /* Mark as not seen yet. */
 		}
 	}
 
@@ -236,7 +234,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 		int i = xtmp;
 		int j = ytmp;
 
-		if (place_ctx.block_locs[(size_t)bnum].x != OPEN) {
+		if (place_ctx.block_locs[bnum].x != OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(), 
 					"Block %s is listed twice in pad file.\n", bname);
 		}
@@ -246,10 +244,10 @@ void read_user_pad_loc(const char *pad_loc_file) {
 					"Block #%lu (%s) location, (%d,%d) is out of range.\n", (size_t)bnum, bname, i, j);
 		}
 
-        place_ctx.block_locs[(size_t)bnum].x = i; /* Will be reloaded by initial_placement anyway. */
-        place_ctx.block_locs[(size_t)bnum].y = j; /* We need to set .x only as a done flag.         */
-        place_ctx.block_locs[(size_t)bnum].z = k;
-        place_ctx.block_locs[(size_t)bnum].is_fixed = true;
+        place_ctx.block_locs[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
+        place_ctx.block_locs[bnum].y = j; /* We need to set .x only as a done flag.         */
+        place_ctx.block_locs[bnum].z = k;
+        place_ctx.block_locs[bnum].is_fixed = true;
 
 		if (device_ctx.grid[i][j].type != device_ctx.IO_TYPE) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
@@ -267,7 +265,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	}
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE && place_ctx.block_locs[(size_t)blk_id].x == OPEN) {
+		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE && place_ctx.block_locs[blk_id].x == OPEN) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
 					"IO block %s location was not specified in the pad file.\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
 		}
@@ -306,7 +304,7 @@ void print_place(const char* net_file,
 		if (strlen(cluster_ctx.clb_nlist.block_name(blk_id).c_str()) < 8)
 			fprintf(fp, "\t");
 
-		fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[(size_t)blk_id].x, place_ctx.block_locs[(size_t)blk_id].y, place_ctx.block_locs[(size_t)blk_id].z);
+		fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[blk_id].x, place_ctx.block_locs[blk_id].y, place_ctx.block_locs[blk_id].z);
 		fprintf(fp, "\t#%lu\n", (size_t)blk_id);
 	}
 	fclose(fp);

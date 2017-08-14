@@ -2180,7 +2180,7 @@ static void highlight_blocks(float abs_x, float abs_y, t_event_buttonPressed but
 	} else {
 		/* Highlight block and fan-in/fan-outs. */
 		draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
-		sprintf(msg, "Block #%lu (%s) at (%d, %d) selected.", (size_t)clb_index, cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[(size_t)clb_index].x, place_ctx.block_locs[(size_t)clb_index].y);
+		sprintf(msg, "Block #%lu (%s) at (%d, %d) selected.", (size_t)clb_index, cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[clb_index].x, place_ctx.block_locs[clb_index].y);
 	}
 
 	update_message(msg);
