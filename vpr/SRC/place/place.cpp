@@ -1263,6 +1263,7 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 	
 	x_from = place_ctx.block_locs[b_from].x;
 	y_from = place_ctx.block_locs[b_from].y;
@@ -1291,8 +1292,17 @@ static int find_affected_blocks(int b_from, int x_to, int y_to, int z_to) {
 			curr_y_to = curr_y_from + y_swap_offset;
 			curr_z_to = curr_z_from + z_swap_offset;
 			
-			// Make sure that the swap_to location is still on the chip
-			if (curr_x_to < 1 || curr_x_to > device_ctx.nx || curr_y_to < 1 || curr_y_to > device_ctx.ny || curr_z_to < 0) {
+			//Make sure that the swap_to location is valid
+            //It must be:
+            // * chip, and 
+            // * match the correct block type
+            //
+            //Note that we need to explicitly check that the types match, since the device floorplan is not
+            //(neccessarily) translationally invariant for an arbitrary macro
+			if (   curr_x_to < 1 || curr_x_to >= int(device_ctx.grid.width())
+                || curr_y_to < 1 || curr_y_to >= int(device_ctx.grid.height()) 
+                || curr_z_to < 0
+                || device_ctx.grid[curr_x_to][curr_y_to].type != cluster_ctx.blocks[curr_b_from].type) {
 				abort_swap = true;
 			} else {
 				abort_swap = setup_blocks_affected(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
