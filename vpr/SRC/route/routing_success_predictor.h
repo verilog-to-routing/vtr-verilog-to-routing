@@ -21,7 +21,7 @@ public:
 
     void add_iteration_overuse(size_t iteration, size_t overused_rr_node_count);
 
-    float slope();
+    float get_slope();
 private:
     size_t min_history_;
     float history_factor_;

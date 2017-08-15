@@ -375,7 +375,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         //            
         //            //Problematic if the overuse nodes are positive or declining at a slow rate
         //            //Must be more than 9 iterations to have a valid slope
-        //            if (routing_success_predictor.slope() > CONGESTED_SLOPE_VAL && itry >= 9) {
+        //            if (routing_success_predictor.get_slope() > CONGESTED_SLOPE_VAL && itry >= 9) {
         //                budgeting_inf.lower_budgets();
         //            }
         //        }

@@ -22,7 +22,7 @@ public:
         return (y_value - y_intercept_) / slope_;
     }
 
-    float slope() {
+    float get_slope() {
         return slope_;
     }
 private:
@@ -59,13 +59,13 @@ float covariance(std::vector<size_t> x_values, std::vector<float> y_values, floa
     return cov;
 }
 
-float RoutingSuccessPredictor::slope() {
+float RoutingSuccessPredictor::get_slope() {
 
     if (iterations_.size() > min_history_) {
         auto model = fit_model(iterations_, iteration_overused_rr_node_counts_, history_factor_);
-        return model.slope();
+        return model.get_slope();
     }
-    return NULL;
+    return -1;
 }
 
 LinearModel simple_linear_regression(std::vector<size_t> x_values, std::vector<float> y_values) {
