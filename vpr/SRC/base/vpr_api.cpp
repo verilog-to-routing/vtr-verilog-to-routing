@@ -279,8 +279,7 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     }
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances);
 
-    //TODO: Print width()/height() instead of old nx()/ny() values
-    vtr::printf_info("FPGA sized to %d x %d (%s)\n", device_ctx.grid.nx(), device_ctx.grid.ny(), device_ctx.grid.name().c_str());
+    vtr::printf_info("FPGA sized to %zu x %zu (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), device_ctx.grid.name().c_str());
 
     vtr::printf_info("\n");
     vtr::printf_info("Resource usage...\n");
