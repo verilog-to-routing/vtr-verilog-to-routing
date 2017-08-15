@@ -109,7 +109,6 @@ void route_budgets::load_route_budgets(float ** net_delay,
              * criticalities (<0.01) get criticality 0 and are ignored entirely, and everything 
              * else becomes a bit less critical. This effect becomes more pronounced if 
              * max_criticality is set lower. */
-            // VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
             pin_criticality = max(pin_criticality - (1.0 - router_opts.max_criticality), 0.0);
 
             /* Take pin criticality to some power (1 by default). */
@@ -118,25 +117,22 @@ void route_budgets::load_route_budgets(float ** net_delay,
             /* Cut off pin criticality at max_criticality. */
             pin_criticality = min(pin_criticality, router_opts.max_criticality);
 
-
             delay_min_budget[inet][ipin] = 0;
             delay_lower_bound[inet][ipin] = 0;
             delay_upper_bound[inet][ipin] = 100e-9;
 
             if (pin_criticality == 0) {
+                //prevent invalid division
                 delay_max_budget[inet][ipin] = delay_upper_bound[inet][ipin];
             } else {
-                //delay_max_budget[inet][ipin] = min(net_delay[inet][ipin] / pin_criticality, delay_upper_bound[inet][ipin]);
-                delay_max_budget[inet][ipin] = net_delay[inet][ipin] / pin_criticality;
+                delay_max_budget[inet][ipin] = min(net_delay[inet][ipin] / pin_criticality, delay_upper_bound[inet][ipin]);
             }
-            
-//            if (!isnan(delay_max_budget[inet][ipin])) {
-//                VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
-//                        && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
-//                        && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
-//                        && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin],
-//                        "Delay budgets do not fit in delay bounds");
-//            }
+
+            VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
+                    && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
+                    && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
+                    && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin],
+                    "Delay budgets do not fit in delay bounds");
         }
     }
 
@@ -195,62 +191,61 @@ float route_budgets::get_max_delay_budget(int inet, int ipin) {
 float route_budgets::get_crit_short_path(int inet, int ipin) {
     //cannot get delay from a source
     VTR_ASSERT(ipin);
-    if (delay_target[inet][ipin] == 0){
+    if (delay_target[inet][ipin] == 0) {
         return 0;
     }
     return pow(((delay_target[inet][ipin] - delay_lower_bound[inet][ipin]) / delay_target[inet][ipin]), SHORT_PATH_EXP);
 }
 
 void route_budgets::print_route_budget() {
-
+    unsigned inet, ipin;
     fstream fp;
     fp.open("route_budget.txt", fstream::out | fstream::trunc);
 
     /* Prints out general info for easy error checking*/
     if (!fp.is_open() || !fp.good()) {
         vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                "couldn't open \"Route_budget.txt\" for generating route budget file\n");
+                "could not open \"route_budget.txt\" for generating route budget file\n");
     }
 
     fp << "Minimum Delay Budgets:" << endl;
-    for (unsigned inode = 0; inode < delay_min_budget.size(); inode++) {
-        fp << endl << "Source Node: " << inode << "            ";
-        for (unsigned isink = 0; isink < delay_min_budget[inode].size(); isink++) {
-            fp << delay_min_budget[inode][isink] << " ";
+    for (inet = 0; inet < delay_min_budget.size(); inet++) {
+        fp << endl << "Net: " << inet << "            ";
+        for (ipin = 0; ipin < delay_min_budget[inet].size(); ipin++) {
+            fp << delay_min_budget[inet][ipin] << " ";
         }
     }
 
     fp << endl << endl << "Maximum Delay Budgets:" << endl;
-    for (unsigned inode = 0; inode < delay_max_budget.size(); inode++) {
-        fp << endl << "Source Node: " << inode << "            ";
-        for (unsigned isink = 0; isink < delay_max_budget[inode].size(); isink++) {
-            fp << delay_max_budget[inode][isink] << " ";
+    for (inet = 0; inet < delay_max_budget.size(); inet++) {
+        fp << endl << "Net: " << inet << "            ";
+        for (ipin = 0; ipin < delay_max_budget[inet].size(); ipin++) {
+            fp << delay_max_budget[inet][ipin] << " ";
         }
     }
 
     fp << endl << endl << "Target Delay Budgets:" << endl;
 
-    for (unsigned inode = 0; inode < delay_target.size(); inode++) {
-        fp << endl << "Source Node: " << inode << "            ";
-        for (unsigned isink = 0; isink < delay_target[inode].size(); isink++) {
-            fp << delay_target[inode][isink] << " ";
+    for (inet = 0; inet < delay_target.size(); inet++) {
+        fp << endl << "Net: " << inet << "            ";
+        for (ipin = 0; ipin < delay_target[inet].size(); ipin++) {
+            fp << delay_target[inet][ipin] << " ";
         }
     }
 
     fp << endl << endl << "Delay lower_bound:" << endl;
-    for (unsigned inode = 0; inode < delay_lower_bound.size(); inode++) {
-        fp << endl << "Source Node: " << inode << "            ";
-        for (unsigned isink = 0; isink < delay_lower_bound[inode].size(); isink++) {
-            fp << delay_lower_bound[inode][isink] << " ";
+    for (inet = 0; inet < delay_lower_bound.size(); inet++) {
+        fp << endl << "Net: " << inet << "            ";
+        for (ipin = 0; ipin < delay_lower_bound[inet].size(); ipin++) {
+            fp << delay_lower_bound[inet][ipin] << " ";
         }
     }
 
     fp << endl << endl << "Target Delay Budgets:" << endl;
-    for (unsigned inode = 0; inode < delay_upper_bound.size(); inode++) {
-        fp << endl << "Source Node: " << inode << "            ";
-        for (unsigned isink = 0; isink < delay_upper_bound[inode].size(); isink++) {
-
-            fp << delay_upper_bound[inode][isink] << " ";
+    for (inet = 0; inet < delay_upper_bound.size(); inet++) {
+        fp << endl << "Net: " << inet << "            ";
+        for (ipin = 0; ipin < delay_upper_bound[inet].size(); ipin++) {
+            fp << delay_upper_bound[inet][ipin] << " ";
         }
     }
 
