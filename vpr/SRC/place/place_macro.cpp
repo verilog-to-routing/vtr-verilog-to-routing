@@ -321,7 +321,7 @@ static void write_place_macros(std::string filename, const t_pl_macro *macros, i
         for (int imember = 0; imember < macro->num_blocks; ++imember) {
             const t_pl_macro_member* macro_memb = &macro->members[imember];
             fprintf(f, "Block_Id: %lu, x_offset: %d, y_offset: %d, z_offset: %d\n",
-                    (size_t)macro_memb->blk_index,
+                    size_t(macro_memb->blk_index),
                     macro_memb->x_offset,
                     macro_memb->y_offset,
                     macro_memb->z_offset);
@@ -394,7 +394,7 @@ static void validate_macros(t_pl_macro* macros, int num_macros) {
         int blk_macro_cnt = std::distance(range.first, range.second);
         if (blk_macro_cnt > 1) {
             std::stringstream msg;
-            msg << "Block #" << (size_t)blk_id << " '" << cluster_ctx.clb_nlist.block_name(blk_id) << "'"
+            msg << "Block #" << size_t(blk_id) << " '" << cluster_ctx.clb_nlist.block_name(blk_id) << "'"
                 << " appears in " << blk_macro_cnt << " placement macros (should appear in at most one). Related Macros:\n";
 
             for (auto iter = range.first; iter != range.second; ++iter) {

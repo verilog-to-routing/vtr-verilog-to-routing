@@ -119,6 +119,7 @@ void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 
 /**************************************/
 void free_lookups_and_criticalities() {
+	//TODO: May need to free f_timing_place_crit ?
 	free_crit(&f_timing_place_crit_ch);
 
 	free_place_lookup_structs();
