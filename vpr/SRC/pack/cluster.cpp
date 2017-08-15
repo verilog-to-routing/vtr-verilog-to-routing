@@ -123,12 +123,6 @@ struct t_molecule_link {
 	t_molecule_link *next;
 };
 
-/* Store stats on nets used by packed block, useful for determining transitively connected blocks 
-(eg. [A1, A2, ..]->[B1, B2, ..]->C implies cluster [A1, A2, ...] and C have a weak link) */
-struct t_lb_net_stats {
-    std::vector<AtomNetId> nets_in_lb;
-};
-
 /* Keeps a linked list of the unclustered blocks to speed up looking for *
  * unclustered blocks with a certain number of *external* inputs.        *
  * [0..lut_size].  Unclustered_list_head[i] points to the head of the    *
@@ -262,7 +256,7 @@ static t_pack_molecule* get_highest_gain_molecule(
         const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 		const enum e_gain_type gain_mode,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
-		t_lb_net_stats *clb_inter_blk_nets,
+		vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
 		const ClusterBlockId cluster_index);
 
 static t_pack_molecule* get_molecule_for_cluster(
@@ -271,7 +265,7 @@ static t_pack_molecule* get_molecule_for_cluster(
 		const bool allow_unrelated_clustering,
 		int *num_unrelated_clustering_attempts,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
-		t_lb_net_stats *clb_inter_blk_nets,
+		vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
 		ClusterBlockId cluster_index);
 
 static void check_clustering();
@@ -289,7 +283,7 @@ static void print_block_criticalities(const char * fname);
 static void load_transitive_fanout_candidates(ClusterBlockId cluster_index,
                                               const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 											  t_pb_stats *pb_stats,
-											  t_lb_net_stats *clb_inter_blk_nets);
+											  vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets);
 
 /*****************************************/
 /*globally accessible function*/
@@ -340,20 +334,22 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	t_pb_graph_node **primitives_list;
 	t_lb_router_data *router_data = NULL;
 	t_pack_molecule *istart, *next_molecule, *prev_molecule, *cur_molecule;
-	t_lb_net_stats *clb_inter_blk_nets = NULL; /* [0..num_clusters-1] */
 
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
 	auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
-	vector < vector <t_intra_lb_net> * > intra_lb_routing;
+	vtr::vector_map<ClusterBlockId, std::vector<t_intra_lb_net>*> intra_lb_routing;
 
     std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
     std::shared_ptr<SetupTimingInfo> timing_info;
 
-	/* TODO: This is memory inefficient, fix if causes problems */
 	num_clb = 0;
-	clb_inter_blk_nets = new t_lb_net_stats[atom_ctx.nlist.blocks().size()];
+
+	/* TODO: This is memory inefficient, fix if causes problems */
+	/* Store stats on nets used by packed block, useful for determining transitively connected blocks
+	(eg. [A1, A2, ..]->[B1, B2, ..]->C implies cluster [A1, A2, ...] and C have a weak link) */
+	vtr::vector_map<ClusterBlockId, std::vector<AtomNetId>> clb_inter_blk_nets(atom_ctx.nlist.blocks().size());
 
 	istart = NULL;
 
@@ -686,7 +682,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 					int external_terminals = atom_ctx.nlist.net_pins(mnet_id).size() - pb_stats->num_pins_of_net_in_pb[mnet_id];
 					/* Check if external terminals of net is within the fanout limit and that there exists external terminals */
 					if(external_terminals < AAPACK_MAX_TRANSITIVE_FANOUT_EXPLORE && external_terminals > 0) {
-						clb_inter_blk_nets[num_clb - 1].nets_in_lb.push_back(mnet_id);
+						clb_inter_blk_nets[clb_index].push_back(mnet_id);
 					}
 				}
 				free_pb_stats_recursive(cluster_ctx.clb_nlist.block_pb(clb_index));
@@ -712,8 +708,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 	output_clustering(intra_lb_routing, global_clocks, is_clock, arch->architecture_id, out_fname, false);
 
-	for(int irt = 0; irt < (int) intra_lb_routing.size(); irt++)
-		free_intra_lb_nets(intra_lb_routing[irt]);
+	VTR_ASSERT(cluster_ctx.clb_nlist.blocks().size() == intra_lb_routing.size());
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
+		free_intra_lb_nets(intra_lb_routing[blk_id]);
 
 	intra_lb_routing.clear();
 
@@ -738,10 +735,6 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 	}
 
 	free (primitives_list);
-	if(clb_inter_blk_nets != NULL) {
-	   delete[] clb_inter_blk_nets;
-	   clb_inter_blk_nets = NULL;
-	}
 }
 
 /*****************************************/
@@ -2004,10 +1997,10 @@ Molecule selection priority:
 */
 static t_pack_molecule *get_highest_gain_molecule(
 		t_pb *cur_pb,
-        const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
+        const std::multimap<AtomBlockId,t_pack_molecule*> &atom_molecules,
 		const enum e_gain_type gain_mode,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
-		t_lb_net_stats *clb_inter_blk_nets,
+		vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
 		const ClusterBlockId cluster_index) {
 
 	/* This routine populates a list of feasible blocks outside the cluster then returns the best one for the list    *
@@ -2175,7 +2168,7 @@ static t_pack_molecule *get_molecule_for_cluster(
 		const bool allow_unrelated_clustering,
 		int *num_unrelated_clustering_attempts,
 		t_cluster_placement_stats *cluster_placement_stats_ptr,
-		t_lb_net_stats *clb_inter_blk_nets,
+		vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets,
 		ClusterBlockId cluster_index) {
 
 	/* Finds the block with the the greatest gain that satisifies the      *
@@ -2757,7 +2750,7 @@ static void commit_lookahead_pins_used(t_pb *cur_pb) {
 static void load_transitive_fanout_candidates(ClusterBlockId clb_index,
                                               const std::multimap<AtomBlockId,t_pack_molecule*>& atom_molecules,
 											  t_pb_stats *pb_stats,
-											  t_lb_net_stats *clb_inter_blk_nets) {
+											  vtr::vector_map<ClusterBlockId,std::vector<AtomNetId>> &clb_inter_blk_nets) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     for(const auto net_id : pb_stats->marked_nets) {
@@ -2767,7 +2760,7 @@ static void load_transitive_fanout_candidates(ClusterBlockId clb_index,
 				ClusterBlockId tclb = atom_ctx.lookup.atom_clb(atom_blk_id); //The transitive CLB
 				if(tclb != clb_index && tclb != ClusterBlockId::INVALID()) {
 					/* Explore transitive connections from already packed cluster */
-					for(AtomNetId tnet : clb_inter_blk_nets[(size_t)tclb].nets_in_lb) {
+					for(AtomNetId tnet : clb_inter_blk_nets[tclb]) {
                         for(AtomPinId tpin : atom_ctx.nlist.net_pins(tnet)) {
                             auto blk_id = atom_ctx.nlist.pin_block(tpin);
 							if(atom_ctx.lookup.atom_clb(blk_id) == ClusterBlockId::INVALID()) {

@@ -486,7 +486,7 @@ static void print_clusters(FILE *fpout) {
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		/* TODO: Must do check that total CLB pins match top-level pb pins, perhaps check this earlier? */
-		print_pb(fpout, cluster_ctx.clb_nlist.block_type(blk_id), cluster_ctx.clb_nlist.block_pb(blk_id), (size_t)blk_id, cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route, 1);
+		print_pb(fpout, cluster_ctx.clb_nlist.block_type(blk_id), cluster_ctx.clb_nlist.block_pb(blk_id), size_t(blk_id), cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route, 1);
 	}
 }
 
@@ -579,7 +579,7 @@ static void print_stats() {
 /* This routine dumps out the output netlist in a format suitable for  *
 * input to vpr. This routine also dumps out the internal structure of *
 * the cluster, in essentially a graph based format.                   */
-void output_clustering(const vector < vector <t_intra_lb_net> * > &intra_lb_routing, bool global_clocks,
+void output_clustering(const vtr::vector_map<ClusterBlockId, std::vector<t_intra_lb_net>*> &intra_lb_routing, bool global_clocks,
 		const std::unordered_set<AtomNetId>& is_clock, const std::string& architecture_id, const char *out_fname, bool skip_clustering) {
 
 	FILE *fpout;
@@ -591,7 +591,7 @@ void output_clustering(const vector < vector <t_intra_lb_net> * > &intra_lb_rout
 	if(!intra_lb_routing.empty()) {
 		VTR_ASSERT(intra_lb_routing.size() == cluster_ctx.clb_nlist.blocks().size());
 		for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-			cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route = alloc_and_load_pb_route(intra_lb_routing[(size_t)blk_id], cluster_ctx.clb_nlist.block_pb(blk_id)->pb_graph_node);
+			cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route = alloc_and_load_pb_route(intra_lb_routing[blk_id], cluster_ctx.clb_nlist.block_pb(blk_id)->pb_graph_node);
 		}
 	}
 
