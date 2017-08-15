@@ -194,7 +194,7 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 		t_wire_type_sizes *wire_type_sizes, e_directionality directionality,
 		t_sb_connection_map *sb_conns);
 
-/* computes a horizontal line of switchblocks of size sb_row_size (or of nx-2, whichever is smaller), starting 
+/* computes a horizontal line of switchblocks of size sb_row_size (or of grid.width()-4, whichever is smaller), starting 
    at coordinate (1,1) */
 static void compute_switchblock_row(int sb_row_size, t_chan_details *chan_details_x, t_chan_details *chan_details_y,
 		vector<t_switchblock_inf> *switchblocks, const DeviceGrid& grid, int nodes_per_chan, 
@@ -405,7 +405,7 @@ static int get_max_lcm( vector<t_switchblock_inf> *switchblocks, t_wire_type_siz
 	return max_lcm;
 }
 
-/* computes a horizontal row of switchblocks of size sb_row_size (or of nx-2, whichever is smaller), starting 
+/* computes a horizontal row of switchblocks of size sb_row_size (or of grid.width()-4, whichever is smaller), starting 
    at coordinate (1,1) */
 static void compute_switchblock_row(int sb_row_size, t_chan_details *chan_details_x, t_chan_details *chan_details_y,
 		vector<t_switchblock_inf> *switchblocks, const DeviceGrid& grid, int nodes_per_chan, 
@@ -500,7 +500,7 @@ static void compute_perimeter_switchblocks(t_chan_details *chan_details_x, t_cha
 		/* along left and right edge */
 		x = 0;
 		t_switchblock_inf *sb = &(switchblocks->at(isb));
-		for (int i = 0; i < 2; i++){				//TODO: can use i+=nx to make more explicit what the ranges of the loop are
+		for (int i = 0; i < 2; i++){				//TODO: can use i+=grid.width()-2 to make more explicit what the ranges of the loop are
 			for (y = 0; y < grid.height(); y++){
 				if (sb_not_here(grid, x, y, sb->location)){
 					continue;
