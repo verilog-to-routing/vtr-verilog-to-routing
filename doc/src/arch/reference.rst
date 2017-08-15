@@ -470,6 +470,42 @@ Grid Location Tags
 
         <region> NoC mesh example
 
+Grid Layout Example
+~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: xml
+
+    <layout>
+        <!-- Specifies an auto-scaling square FPGA floorplan --> 
+        <auto_layout aspect_ratio="1.0">
+            <!-- Create I/Os around the device perimeter -->
+            <perimeter type="io" priority=10"/>
+
+            <!-- Nothing in the corners -->
+            <corners type="EMPTY" priority="100"/>
+
+            <!-- Create a column of RAMs starting at column 2, and 
+                 repeating every 3 columns. Note that a vertical offset (starty)
+                 of 1 is needed to avoid overlapping the IOs-->
+            <col type="RAM" startx="2" repeatx="3" starty="1" priority="3"/>
+
+            <!-- Create a single PCIE block along the bottom, overriding 
+                 I/O and RAM slots -->
+            <single type="PCIE" x="3" y="0" priority="20"/>
+
+            <!-- Create an additional row of I/Os just above the PCIE,
+                 which will not override RAMs -->
+            <row type="io" starty="5" priority="2"/>
+
+            <!-- Fill remaining with CLBs -->
+            <fill type="CLB" priority="1"/>
+        </auto_layout>
+    </layout>
+
+.. figure:: fpga_grid_example.*
+
+    Example FPGA grid 
+
 .. _arch_device_info:
 
 FPGA Device Information
