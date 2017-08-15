@@ -907,12 +907,9 @@ struct t_chan {
 	float dc;
 };
 
-/* chan_width_io:  The relative width of the I/O channel between the pads    *
- *                 and logic array.                                          *
- * chan_x_dist: Describes the x-directed channel width distribution.         *
+/* chan_x_dist: Describes the x-directed channel width distribution.         *
  * chan_y_dist: Describes the y-directed channel width distribution.         */
 struct t_chan_width_dist {
-	float chan_width_io;
 	t_chan chan_x_dist;
 	t_chan chan_y_dist;
 };

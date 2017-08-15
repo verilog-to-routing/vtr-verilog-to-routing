@@ -572,12 +572,6 @@ This is specified in the content within the ``<chan_width_distr>`` tag.
 
 .. note:: If detailed routing is to be performed, all the channels in the FPGA must have the same width.
 
-.. arch:tag:: <io width= "float"/>
-
-    :req_param width: The relative channel width.
-
-    Specifies the width of the channels between the pads and core relative to the widest core channel.
-
 .. arch:tag:: <x distr="{gaussian|uniform|pulse|delta}" peak="float" width=" float" xpeak=" float" dc=" float"/>
 
     :req_param distr: The channel width distribution function

@@ -136,7 +136,6 @@ static void PrintArchInfo(FILE * Echo, const t_arch *arch) {
 			arch->grid_logic_tile_area);
 
 	fprintf(Echo, "\tChannel Width Distribution:\n");
-	fprintf(Echo, "\t\tio: width %e\n", arch->Chans.chan_width_io);
 
 	switch (arch->Chans.chan_x_dist.type) {
 	case (UNIFORM):

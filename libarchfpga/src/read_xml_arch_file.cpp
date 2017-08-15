@@ -2254,9 +2254,6 @@ static void ProcessChanWidthDistr(pugi::xml_node Node,
 		t_arch *arch, const pugiutil::loc_data& loc_data) {
 	pugi::xml_node Cur;
 
-	Cur = get_single_child(Node, "io", loc_data);
-	arch->Chans.chan_width_io = get_attribute(Cur, "width", loc_data).as_float(UNDEFINED);
-
 	Cur = get_single_child(Node, "x", loc_data);
 	ProcessChanWidthDistrDir(Cur, &arch->Chans.chan_x_dist, loc_data);
 
