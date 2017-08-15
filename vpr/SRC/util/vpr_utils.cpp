@@ -1279,40 +1279,6 @@ void free_pb_stats(t_pb *pb) {
     }
 }
 
-/* Allocates and loads net_pin_index array, this array allows us to quickly   *
-* find what pin on the net a block pin corresponds to. Returns the pointer   *
-* to the 2D net_pin_index array.                                             */
-vtr::Matrix<int> alloc_and_load_net_pin_index() {
-	unsigned int netpin;
-	int itype, max_pins_per_clb = 0;
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-	/* Compute required size. */
-	for (itype = 0; itype < device_ctx.num_block_types; itype++)
-		max_pins_per_clb = max(max_pins_per_clb, device_ctx.block_types[itype].num_pins);
-	
-	/* Allocate for maximum size. */
-    vtr::Matrix<int> temp_net_pin_index({cluster_ctx.clb_nlist.blocks().size(), size_t(max_pins_per_clb)}, OPEN);
-
-	/* Load the values */
-	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		if (cluster_ctx.clb_nlist.net_global(net_id))
-			continue;
-		netpin = 0;
-		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-			int pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
-			ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-			temp_net_pin_index[(size_t)block_id][pin_index] = netpin;
-			netpin++;
-		}
-	}
-	
-	/* Returns the pointers to the 2D array. */
-	return temp_net_pin_index;
-}
-
 /***************************************************************************************
   Y.G.THIEN
   29 AUG 2012

@@ -17,34 +17,30 @@ using namespace std;
 
 #include "timing_info.h"
 
-static float **f_timing_place_crit;
+static vtr::vector_map<ClusterNetId, float *> f_timing_place_crit; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
 
 static vtr::t_chunk f_timing_place_crit_ch = {NULL, 0, NULL};
 
 /******** prototypes ******************/
-static float **alloc_crit(vtr::t_chunk *chunk_list_ptr);
+static void alloc_crit(vtr::t_chunk *chunk_list_ptr);
 
 static void free_crit(vtr::t_chunk *chunk_list_ptr);
 
 /**************************************/
 
 /* Allocates space for the f_timing_place_crit data structure *
-* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1].  *
 * I chunk the data to save space on large problems.           */
-static float ** alloc_crit(vtr::t_chunk *chunk_list_ptr) {
+static void alloc_crit(vtr::t_chunk *chunk_list_ptr) {
 	auto& cluster_ctx = g_vpr_ctx.clustering();
-	float **local_crit; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
 	float *tmp_ptr;
 
-	local_crit = (float **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
+	f_timing_place_crit.resize(cluster_ctx.clb_nlist.nets().size());
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		tmp_ptr = (float *) vtr::chunk_malloc(
 				(cluster_ctx.clb_nlist.net_sinks(net_id).size()) * sizeof(float), chunk_list_ptr);
-		local_crit[(size_t)net_id] = tmp_ptr - 1; /* [1..num_sinks] */
+		f_timing_place_crit[net_id] = tmp_ptr - 1; /* [1..num_sinks] */
 	}
-
-	return (local_crit);
 }
 
 /**************************************/
@@ -94,18 +90,18 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
             /* The placer likes a great deal of contrast between criticalities. 
             Since path criticality varies much more than timing, we "sharpen" timing 
             criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
-            f_timing_place_crit[(size_t)net_id][ipin] = pow(clb_pin_crit, crit_exponent);
+            f_timing_place_crit[net_id][ipin] = pow(clb_pin_crit, crit_exponent);
 		}
 	}
 }
 
 
 float get_timing_place_crit(ClusterNetId net_id, int ipin) {
-    return f_timing_place_crit[(size_t)net_id][ipin];
+    return f_timing_place_crit[net_id][ipin];
 }
 
 void set_timing_place_crit(ClusterNetId net_id, int ipin, float val) {
-    f_timing_place_crit[(size_t)net_id][ipin] = val;
+    f_timing_place_crit[net_id][ipin] = val;
 }
 
 /**************************************/
@@ -118,13 +114,11 @@ void alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
 	compute_delay_lookup_tables(router_opts, det_routing_arch, segment_inf,
 			chan_width_dist, directs, num_directs);
 	
-	f_timing_place_crit = alloc_crit(&f_timing_place_crit_ch);
+	alloc_crit(&f_timing_place_crit_ch);
 }
 
 /**************************************/
 void free_lookups_and_criticalities() {
-
-	free(f_timing_place_crit);
 	free_crit(&f_timing_place_crit_ch);
 
 	free_place_lookup_structs();

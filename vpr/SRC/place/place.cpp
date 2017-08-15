@@ -127,7 +127,7 @@ static float **temp_point_to_point_delay_cost = NULL;
 /* this block corresponds to, this is only required during timing-driven */
 /* placement. It is used to allow us to update individual connections on */
 /* each net */
-static vtr::Matrix<int> net_pin_index;
+static vtr::vector_map<ClusterBlockId,std::vector<int>> net_pin_index;
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1].  Store the bounding box coordinates and the number of    *
  * blocks on each of a net's bounding box (to allow efficient updates),      *
@@ -189,6 +189,8 @@ static const float cross_count[50] = { /* [0..49] */1.0, 1.0, 1.0, 1.0828, 1.153
 static void alloc_and_load_placement_structs(
 		float place_cost_exp, t_placer_opts placer_opts,
 		t_direct_inf *directs, int num_directs);
+
+static void alloc_and_load_net_pin_index();
 
 static void alloc_and_load_try_swap_structs();
 
@@ -1817,7 +1819,7 @@ static void update_td_cost(void) {
 			if (cluster_ctx.clb_nlist.net_global(net_id))
 				continue;
 
-			net_pin = net_pin_index[(size_t)bnum][cluster_ctx.clb_nlist.pin_index(pin_id)];
+			net_pin = net_pin_index[bnum][cluster_ctx.clb_nlist.pin_index(pin_id)];
 
 			if (net_pin != 0) {
 				driven_by_moved_block = false;
@@ -1874,7 +1876,7 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 			if (cluster_ctx.clb_nlist.net_global(net_id))
 				continue;
 
-			net_pin = net_pin_index[(size_t)bnum][iblk_pin];
+			net_pin = net_pin_index[bnum][iblk_pin];
 
 			if (net_pin != 0) { 
 				/* If this net is being driven by a block that has moved, we do not    *
@@ -2113,11 +2115,45 @@ static void alloc_and_load_placement_structs(
 
 	alloc_and_load_for_fast_cost_update(place_cost_exp);
 		
-	net_pin_index = alloc_and_load_net_pin_index();
+	alloc_and_load_net_pin_index();
 
 	alloc_and_load_try_swap_structs();
 
 	num_pl_macros = alloc_and_load_placement_macros(directs, num_directs, &pl_macros);
+}
+
+/* Allocates and loads net_pin_index array, this array allows us to quickly   *
+* find what pin on the net a block pin corresponds to. Returns the pointer   *
+* to the 2D net_pin_index array.                                             */
+static void alloc_and_load_net_pin_index() {
+	unsigned int netpin;
+	int itype, max_pins_per_clb = 0;
+
+	auto& device_ctx = g_vpr_ctx.device();
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+
+	/* Compute required size. */
+	for (itype = 0; itype < device_ctx.num_block_types; itype++)
+		max_pins_per_clb = max(max_pins_per_clb, device_ctx.block_types[itype].num_pins);
+
+	/* Allocate for maximum size. */
+	net_pin_index.resize(cluster_ctx.clb_nlist.blocks().size());
+	
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
+		net_pin_index[blk_id].resize(max_pins_per_clb);
+
+	/* Load the values */
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (cluster_ctx.clb_nlist.net_global(net_id))
+			continue;
+		netpin = 0;
+		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+			int pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
+			ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+			net_pin_index[block_id][pin_index] = netpin;
+			netpin++;
+		}
+	}
 }
 
 static void alloc_and_load_try_swap_structs() {
@@ -2751,7 +2787,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 					"Initial placement failed.\n"
 					"Could not place macro length %d with head block %s (#%lu); not enough free locations of type %s (#%d).\n"
 					"VPR cannot auto-size for your circuit, please resize the FPGA manually.\n", 
-					pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), (size_t)blk_id, device_ctx.block_types[itype].name, itype);
+					pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
 		}
 
 		// Try to place the macro first, if can be placed - place them, otherwise try again
@@ -2788,7 +2824,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 						"Initial placement failed.\n"
 						"Could not place macro length %d with head block %s (#%lu); not enough free locations of type %s (#%d).\n"
 						"Please manually size the FPGA because VPR can't do this yet.\n", 
-						pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), (size_t)blk_id, device_ctx.block_types[itype].name, itype);
+						pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
 			}
 
 		} else {
@@ -2815,18 +2851,18 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 		/* Don't do IOs if the user specifies IOs; we'll read those locations later. */
 		if (!(cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE && pad_loc_type == USER)) {
 
-		    /* Randomly select a free location of the appropriate type
-			 * for (size_t)blk_id.  We have a linearized list of all the free locations
-			 * that can accomodate a block of that type in free_locations[itype].
-			 * Choose one randomly and put (size_t)blk_id there.  Then we don't want to pick that
-			 * location again, so remove it from the free_locations array.
+		    /* Randomly select a free location of the appropriate type for blk_id.
+			 * We have a linearized list of all the free locations that can 
+			 * accomodate a block of that type in free_locations[itype].
+			 * Choose one randomly and put blk_id there. Then we don't want to pick
+			 * that location again, so remove it from the free_locations array.
 			 */
 			itype = cluster_ctx.clb_nlist.block_type(blk_id)->index;
 			if (free_locations[itype] <= 0) {
 				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, 
 						"Initial placement failed.\n"
 						"Could not place block %s (#%lu); no free locations of type %s (#%d).\n", 
-						cluster_ctx.clb_nlist.block_name(blk_id).c_str(), (size_t)blk_id, device_ctx.block_types[itype].name, itype);
+						cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
 			}
 
 			initial_placement_location(free_locations, blk_id, &ipos, &x, &y, &z);
@@ -3065,7 +3101,7 @@ static void check_place(float bb_cost, float timing_cost,
 	 * the final placement cost from scratch and makes sure it is      *
 	 * within roundoff of what we think the cost is.                   */
 
-	static int *bdone;
+	static vtr::vector_map<ClusterBlockId, int> bdone;
 	int i, j, k, error = 0;
 	ClusterBlockId bnum, head_iblk, member_iblk;
 	float bb_cost_check;
@@ -3104,9 +3140,9 @@ static void check_place(float bb_cost, float timing_cost,
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-	bdone = (int *) vtr::malloc((int) cluster_ctx.clb_nlist.blocks().size() * sizeof(int));
-	for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++)
-		bdone[i] = 0;
+	bdone.resize(cluster_ctx.clb_nlist.blocks().size());
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
+		bdone[blk_id] = 0;
 
 	/* Step through device grid and placement. Check it against blocks */
 	for (i = 0; i <= (device_ctx.nx + 1); i++)
@@ -3126,17 +3162,17 @@ static void check_place(float bb_cost, float timing_cost,
 				if (cluster_ctx.clb_nlist.block_type(bnum) != device_ctx.grid[i][j].type) {
 					vtr::printf_error(__FILE__, __LINE__,
 							"Block %lu type does not match grid location (%d,%d) type.\n",
-							(size_t)bnum, i, j);
+							size_t(bnum), i, j);
 					error++;
 				}
 				if ((place_ctx.block_locs[bnum].x != i) || (place_ctx.block_locs[bnum].y != j)) {
 					vtr::printf_error(__FILE__, __LINE__,
 							"Block %lu location conflicts with grid(%d,%d) data.\n", 
-						(size_t)bnum, i, j);
+							size_t(bnum), i, j);
 					error++;
 				}
 				++usage_check;
-				bdone[(size_t)bnum]++;
+				bdone[bnum]++;
 			}
 			if (usage_check != place_ctx.grid_blocks[i][j].usage) {
 				vtr::printf_error(__FILE__, __LINE__,
@@ -3147,14 +3183,14 @@ static void check_place(float bb_cost, float timing_cost,
 		}
 
 	/* Check that every block exists in the device_ctx.grid and cluster_ctx.blocks arrays somewhere. */
-	for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++)
-		if (bdone[i] != 1) {
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
+		if (bdone[blk_id] != 1) {
 			vtr::printf_error(__FILE__, __LINE__,
-					"Block %d listed %d times in data structures.\n",
-					i, bdone[i]);
+					"Block %lu listed %d times in data structures.\n",
+					size_t(blk_id), bdone[blk_id]);
 			error++;
 		}
-	free(bdone);
+	bdone.clear();
 	
 	/* Check the pl_macro placement are legal - blocks are in the proper relative position. */
 	for (imacro = 0; imacro < num_pl_macros; imacro++) {
@@ -3176,7 +3212,7 @@ static void check_place(float bb_cost, float timing_cost,
 					|| place_ctx.block_locs[member_iblk].z != member_z) {
 				vtr::printf_error(__FILE__, __LINE__,
 						"Block %lu in pl_macro #%d is not placed in the proper orientation.\n", 
-						(size_t)member_iblk, imacro);
+						size_t(member_iblk), imacro);
 				error++;
 			}
 
@@ -3184,7 +3220,7 @@ static void check_place(float bb_cost, float timing_cost,
 			if (place_ctx.grid_blocks[member_x][member_y].blocks[member_z] != member_iblk) {
 				vtr::printf_error(__FILE__, __LINE__,
 						"Block %lu in pl_macro #%d is not placed in the proper orientation.\n", 
-						(size_t)member_iblk, imacro);
+						size_t(member_iblk), imacro);
 				error++;
 			}
 		} // Finish going through all the members
