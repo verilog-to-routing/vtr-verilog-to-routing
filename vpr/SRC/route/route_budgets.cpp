@@ -65,7 +65,6 @@ route_budgets::route_budgets() {
 route_budgets::~route_budgets() {
 
     for (unsigned i = 0; i < delay_min_budget.size(); i++) {
-
         delay_min_budget[i].clear();
         delay_max_budget[i].clear();
         delay_target[i].clear();
@@ -123,15 +122,21 @@ void route_budgets::load_route_budgets(float ** net_delay,
             delay_min_budget[inet][ipin] = 0;
             delay_lower_bound[inet][ipin] = 0;
             delay_upper_bound[inet][ipin] = 100e-9;
-            delay_max_budget[inet][ipin] = min(net_delay[inet][ipin] / pin_criticality, delay_upper_bound[inet][ipin]);
 
-            if (!isnan(delay_max_budget[inet][ipin])) {
-                VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
-                        && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
-                        && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
-                        && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin],
-                        "Delay budgets do not fit in delay bounds");
+            if (pin_criticality == 0) {
+                delay_max_budget[inet][ipin] = delay_upper_bound[inet][ipin];
+            } else {
+                //delay_max_budget[inet][ipin] = min(net_delay[inet][ipin] / pin_criticality, delay_upper_bound[inet][ipin]);
+                delay_max_budget[inet][ipin] = net_delay[inet][ipin] / pin_criticality;
             }
+            
+//            if (!isnan(delay_max_budget[inet][ipin])) {
+//                VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
+//                        && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
+//                        && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
+//                        && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin],
+//                        "Delay budgets do not fit in delay bounds");
+//            }
         }
     }
 
@@ -190,6 +195,9 @@ float route_budgets::get_max_delay_budget(int inet, int ipin) {
 float route_budgets::get_crit_short_path(int inet, int ipin) {
     //cannot get delay from a source
     VTR_ASSERT(ipin);
+    if (delay_target[inet][ipin] == 0){
+        return 0;
+    }
     return pow(((delay_target[inet][ipin] - delay_lower_bound[inet][ipin]) / delay_target[inet][ipin]), SHORT_PATH_EXP);
 }
 

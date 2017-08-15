@@ -27,30 +27,35 @@ public:
     float get_min_delay_budget(int inet, int ipin);
     float get_max_delay_budget(int inet, int ipin);
     float get_crit_short_path(int inet, int ipin);
-    void load_route_budgets(float ** net_delay, 
-        std::shared_ptr<const SetupTimingInfo> timing_info, 
-        const IntraLbPbPinLookup& pb_gpin_lookup, 
-        t_router_opts router_opts);
+    void load_route_budgets(float ** net_delay,
+            std::shared_ptr<const SetupTimingInfo> timing_info,
+            const IntraLbPbPinLookup& pb_gpin_lookup,
+            t_router_opts router_opts);
     void print_route_budget();
     bool if_set();
     void update_congestion_times(int inet);
     void lower_budgets();
     void not_congested_this_iteration(int inet);
 
+    void short_path_sta(vector<vector<float>> &temp_budgets);
+    void long_path_sta(vector<vector<float>> &temp_budgets);
+    //void keep_budget_in_bounds(max_or_min _type, vector<vector<float>> &temp_budgets);
+    void allocate_slack();
+    
 private:
 
     std::shared_ptr<RoutingDelayCalculator> get_routing_calc(float ** net_delay);
 
     tatum::EdgeId get_edge_from_nets(int inet, int ipin);
 
-    vector<vector<float>> delay_min_budget;//[0..num_nets][0..clb_net[inet].pins]
-    vector<vector<float>> delay_max_budget;//[0..num_nets][0..clb_net[inet].pins]
-    vector<vector<float>> delay_target;//[0..num_nets][0..clb_net[inet].pins]
-    vector<vector<float>> delay_lower_bound;//[0..num_nets][0..clb_net[inet].pins]
-    vector<vector<float>> delay_upper_bound;//[0..num_nets][0..clb_net[inet].pins]
-    
+    vector<vector<float>> delay_min_budget; //[0..num_nets][0..clb_net[inet].pins]
+    vector<vector<float>> delay_max_budget; //[0..num_nets][0..clb_net[inet].pins]
+    vector<vector<float>> delay_target; //[0..num_nets][0..clb_net[inet].pins]
+    vector<vector<float>> delay_lower_bound; //[0..num_nets][0..clb_net[inet].pins]
+    vector<vector<float>> delay_upper_bound; //[0..num_nets][0..clb_net[inet].pins]
+
     vector <int> num_times_congested; //[0..num_nets]
-    
+
 
     bool set;
 };

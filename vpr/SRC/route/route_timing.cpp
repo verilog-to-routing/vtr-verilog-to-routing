@@ -831,7 +831,7 @@ t_heap * timing_driven_route_connection(int source_node, int sink_node, float ta
                     target_criticality, num_sinks, sink_node, astar_fac,
                     highfanout_rlim, budgeting_inf, max_delay, min_delay,
                     target_delay, short_path_crit);
-        }
+            }
 
         free_heap_data(cheapest);
         cheapest = get_heap_head();
@@ -983,7 +983,7 @@ static void add_route_tree_to_heap(t_rt_node * rt_node, int target_node,
             tot_cost += pow(max(zero, tot_cost - max_delay), 2) / 100e-12;
             tot_cost += pow(max(zero, min_delay - tot_cost), 2) / 100e-12;
         }
-
+        
         heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
                 backward_path_cost, R_upstream);
 
