@@ -43,7 +43,7 @@ void check_netlist() {
 
 	/* Check that nets fanout and have a driver. */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name(net_id).c_str(), (size_t)net_id);
+		h_net_ptr = insert_in_hash_table(net_hash_table, cluster_ctx.clb_nlist.net_name(net_id).c_str(),size_t(net_id));
 		if (h_net_ptr->count != 1) {
 			vtr::printf_error(__FILE__, __LINE__, 
 					"Net %s has multiple drivers.\n", cluster_ctx.clb_nlist.net_name(net_id).c_str());

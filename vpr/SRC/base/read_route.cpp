@@ -135,7 +135,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
         /* Global net.  Never routed. */
         if (!cluster_ctx.clb_nlist.net_global(inet)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "Net %lu should be a global net", (size_t)inet);
+                    "Net %lu should be a global net", size_t(inet));
         }
         //erase an extra colon for global nets
         name.erase(name.end() - 1);
@@ -144,7 +144,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
         if (0 != cluster_ctx.clb_nlist.net_name(inet).compare(name)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                     "Net name %s for net number %lu specified in the routing file does not match given %s",
-                    name.c_str(), (size_t)inet, cluster_ctx.clb_nlist.net_name(inet).c_str());
+                    name.c_str(), size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str());
         }
 
         process_global_blocks(fp, inet);
@@ -152,7 +152,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
         /* Not a global net */
         if (cluster_ctx.clb_nlist.net_global(inet)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                    "Net %lu is not a global net", (size_t)inet);
+                    "Net %lu is not a global net", size_t(inet));
         }
 
         name = format_name(name);
@@ -160,7 +160,7 @@ static void process_nets(ifstream &fp, ClusterNetId inet, string name, std::vect
         if (0 != cluster_ctx.clb_nlist.net_name(inet).compare(name)) {
             vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                     "Net name %s for net number %lu specified in the routing file does not match given %s",
-                    name.c_str(), (size_t)inet, cluster_ctx.clb_nlist.net_name(inet).c_str());
+                    name.c_str(), size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str());
         }
 
         process_nodes(fp, inet);
@@ -360,7 +360,7 @@ static void process_global_blocks(ifstream &fp, ClusterNetId inet) {
             if (0 != cluster_ctx.clb_nlist.block_name(bnum).compare(tokens[1])) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "Block %s for block number %lu specified in the routing file does not match given %s",
-                        tokens[1].c_str(), (size_t)bnum, cluster_ctx.clb_nlist.block_name(bnum).c_str());
+                        tokens[1].c_str(), size_t(bnum), cluster_ctx.clb_nlist.block_name(bnum).c_str());
             }
             if (place_ctx.block_locs[bnum].x != x || place_ctx.block_locs[bnum].y != y) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
@@ -372,7 +372,7 @@ static void process_global_blocks(ifstream &fp, ClusterNetId inet) {
             if (cluster_ctx.clb_nlist.block_type(bnum)->pin_class[pin_index] != atoi(tokens[7].c_str())) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "The pin class %d of %lu net does not match given ",
-                        atoi(tokens[7].c_str()), (size_t)inet, cluster_ctx.clb_nlist.block_type(bnum)->pin_class[pin_index]);
+                        atoi(tokens[7].c_str()), size_t(inet), cluster_ctx.clb_nlist.block_type(bnum)->pin_class[pin_index]);
             }
             pin_counter++;
         }
@@ -387,13 +387,13 @@ static void format_coordinates(int &x, int &y, string coord, ClusterNetId net) {
     if (!(coord_stream >> x)) {
 
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                "Net %lu has coordinates that is not in the form (x,y)", (size_t)net);
+                "Net %lu has coordinates that is not in the form (x,y)", size_t(net));
     }
     coord_stream.ignore(1, ' ');
     if (!(coord_stream >> y)) {
 
         vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
-                "Net %lu has coordinates that is not in the form (x,y)", (size_t)net);
+                "Net %lu has coordinates that is not in the form (x,y)", size_t(net));
     }
 }
 

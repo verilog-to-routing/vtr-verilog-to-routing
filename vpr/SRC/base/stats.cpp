@@ -330,7 +330,7 @@ void get_num_bends_and_length(ClusterNetId inet, int *bends_ptr, int *len_ptr,
 	prevptr = route_ctx.trace_head[inet]; /* Should always be SOURCE. */
 	if (prevptr == NULL) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-				"in get_num_bends_and_length: net #%lu has no traceback.\n", (size_t)inet);
+				"in get_num_bends_and_length: net #%lu has no traceback.\n", size_t(inet));
 	}
 	inode = prevptr->index;
 	prev_type = device_ctx.rr_nodes[inode].type();

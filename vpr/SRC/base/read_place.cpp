@@ -162,7 +162,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 	hash_table = alloc_hash_table();
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		if (cluster_ctx.clb_nlist.block_type(blk_id) == device_ctx.IO_TYPE) {
-			insert_in_hash_table(hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), (size_t)blk_id);
+			insert_in_hash_table(hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
 			place_ctx.block_locs[blk_id].x = OPEN; /* Mark as not seen yet. */
 		}
 	}
@@ -241,7 +241,7 @@ void read_user_pad_loc(const char *pad_loc_file) {
 
 		if (i < 0 || i > device_ctx.nx + 1 || j < 0 || j > device_ctx.ny + 1) {
 			vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, 0, 
-					"Block #%lu (%s) location, (%d,%d) is out of range.\n", (size_t)bnum, bname, i, j);
+					"Block #%lu (%s) location, (%d,%d) is out of range.\n", size_t(bnum), bname, i, j);
 		}
 
         place_ctx.block_locs[bnum].x = i; /* Will be reloaded by initial_placement anyway. */
@@ -305,7 +305,7 @@ void print_place(const char* net_file,
 			fprintf(fp, "\t");
 
 		fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[blk_id].x, place_ctx.block_locs[blk_id].y, place_ctx.block_locs[blk_id].z);
-		fprintf(fp, "\t#%lu\n", (size_t)blk_id);
+		fprintf(fp, "\t#%lu\n", size_t(blk_id));
 	}
 	fclose(fp);
 

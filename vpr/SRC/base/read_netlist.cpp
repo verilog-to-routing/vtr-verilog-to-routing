@@ -269,7 +269,7 @@ static void processComplexBlock(pugi::xml_node clb_block,
 				"Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
 				block_inst.value(), clb_block.name());
 	}
-	VTR_ASSERT(vtr::atoi(tokens[2].data) == (int)(size_t)index);
+	VTR_ASSERT(ClusterBlockId(vtr::atoi(tokens[2].data)) == index);
 
 	found = false;
 	for (i = 0; i < device_ctx.num_block_types; i++) {
@@ -282,7 +282,7 @@ static void processComplexBlock(pugi::xml_node clb_block,
 	}
 	if (!found) {
  		vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
-				"Unknown cb type %s for cb %s #%lu.\n", block_inst.value(), clb_nlist->block_name(index).c_str(), (size_t)index);
+				"Unknown cb type %s for cb %s #%lu.\n", block_inst.value(), clb_nlist->block_name(index).c_str(), size_t(index));
 	}
 
 	//Parse all pbs and CB internal nets
@@ -786,7 +786,6 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_route *pb_route,
 static void load_external_nets_and_cb(const std::vector<std::string>& circuit_clocks, ClusteredNetlist* clb_nlist) {
 	int j, k, ipin, num_tokens;
 	int ext_ncount = 0;
-	int *count; 
 	t_hash **ext_nhash;
 	t_pb_graph_pin *pb_graph_pin;
 	ClusterNetId clb_net_id;
@@ -864,7 +863,7 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 	/* Load global nets */
 	num_tokens = circuit_clocks.size();
 
-	count = (int *) vtr::calloc(ext_ncount, sizeof(int));
+	vtr::vector_map<ClusterNetId,int> count(ext_ncount);
 
 	/* complete load of external nets so that each net points back to the blocks,
      * and blocks point back to net pins */
@@ -877,27 +876,27 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 			if (clb_net_id != ClusterNetId::INVALID()) {
 				//Verify old and new CLB netlists have the same # of pins per net
 				if (RECEIVER == clb_nlist->block_type(blk_id)->class_inf[clb_nlist->block_type(blk_id)->pin_class[j]].type) {
-					count[(size_t)clb_net_id]++;
+					count[clb_net_id]++;
 
-					if (count[(size_t)clb_net_id] > (int)clb_nlist->net_sinks(clb_net_id).size()) {
+					if (count[clb_net_id] > (int)clb_nlist->net_sinks(clb_net_id).size()) {
 						vpr_throw(VPR_ERROR_NET_F, __FILE__, __LINE__,
 								"net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n",
-								clb_nlist->net_name(clb_net_id).c_str(), (size_t)clb_net_id, count[(size_t)clb_net_id],
+								clb_nlist->net_name(clb_net_id).c_str(), size_t(clb_net_id), count[clb_net_id],
 								clb_nlist->net_sinks(clb_net_id).size());
 					}
 
 					//Asserts the ClusterBlockId is the same when ClusterNetId & pin BitIndex is provided
-					VTR_ASSERT(blk_id == clb_nlist->pin_block(*(clb_nlist->net_pins(clb_net_id).begin() + count[(size_t)clb_net_id])));
+					VTR_ASSERT(blk_id == clb_nlist->pin_block(*(clb_nlist->net_pins(clb_net_id).begin() + count[clb_net_id])));
 					//Asserts the block's pin index is the same
-					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins(clb_net_id).begin() + count[(size_t)clb_net_id])));
-					VTR_ASSERT(j == clb_nlist->pin_index(clb_net_id, count[(size_t)clb_net_id]));
+					VTR_ASSERT(j == clb_nlist->pin_index(*(clb_nlist->net_pins(clb_net_id).begin() + count[clb_net_id])));
+					VTR_ASSERT(j == clb_nlist->pin_index(clb_net_id, count[clb_net_id]));
 
 					if (clb_nlist->block_type(blk_id)->is_global_pin[j])
 						clb_nlist->set_global(clb_net_id, true);
                     /* Error check performed later to ensure no mixing of global and non-global signals */
 
                     //Mark the net pin numbers on the block
-					clb_nlist->set_block_net_count(blk_id, j, count[(size_t)clb_net_id]); //A sink
+					clb_nlist->set_block_net_count(blk_id, j, count[clb_net_id]); //A sink
 
 				} else {
 					VTR_ASSERT(DRIVER == clb_nlist->block_type(blk_id)->class_inf[clb_nlist->block_type(blk_id)->pin_class[j]].type);
@@ -929,7 +928,6 @@ static void load_external_nets_and_cb(const std::vector<std::string>& circuit_cl
 		}
 	}
 
-	free(count);
 	free_hash_table(ext_nhash);
 }
 

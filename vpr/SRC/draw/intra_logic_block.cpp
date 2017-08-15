@@ -598,14 +598,14 @@ static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_ty
 	draw_state = get_draw_state_vars();
 
 	if (type->index < 3) {
-		if (draw_state->block_color[(size_t)blk_id] == LIGHTGREY)
+		if (draw_state->block_color[blk_id] == LIGHTGREY)
 			return false;
 	} else if (type->index < 3 + MAX_BLOCK_COLOURS) {
-		if (draw_state->block_color[(size_t)blk_id] == (color_types) (BISQUE + MAX_BLOCK_COLOURS 
+		if (draw_state->block_color[blk_id] == (color_types) (BISQUE + MAX_BLOCK_COLOURS
 												+ type->index - 3))
 			return false;
 	} else {
-		if (draw_state->block_color[(size_t)blk_id] == (color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1))
+		if (draw_state->block_color[blk_id] == (color_types) (BISQUE + 2 * MAX_BLOCK_COLOURS - 1))
 			return false;
 	}
 

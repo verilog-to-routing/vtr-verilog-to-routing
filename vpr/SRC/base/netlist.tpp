@@ -1030,9 +1030,9 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::vecto
 		block_num_clock_pins_[blk_id] = num_clock_pins;
 
 		VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All Ids should be valid");
-		VTR_ASSERT(pin_collection.size() == (size_t)block_num_input_pins_[blk_id]
+		VTR_ASSERT(pin_collection.size() == size_t(block_num_input_pins_[blk_id]
 			+ block_num_output_pins_[blk_id]
-			+ block_num_clock_pins_[blk_id]);
+			+ block_num_clock_pins_[blk_id]));
 
 		//Similarily for ports
 		size_t num_input_ports = count_valid_refs(block_input_ports(blk_id), port_id_map);
@@ -1047,9 +1047,9 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::vecto
 		block_num_clock_ports_[blk_id] = num_clock_ports;
 
 		VTR_ASSERT_SAFE_MSG(all_valid(ports), "All Ids should be valid");
-		VTR_ASSERT(ports.size() == (size_t)block_num_input_ports_[blk_id]
+		VTR_ASSERT(ports.size() == size_t(block_num_input_ports_[blk_id]
 			+ block_num_output_ports_[blk_id]
-			+ block_num_clock_ports_[blk_id]);
+			+ block_num_clock_ports_[blk_id]));
 	}
 
 	VTR_ASSERT(validate_block_sizes());
