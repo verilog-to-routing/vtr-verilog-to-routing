@@ -811,7 +811,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId inet, unsigned 
         profiling::net_rerouted();
 
         // rip up the whole net
-        pathfinder_update_path_cost(route_ctx.trace_head[(size_t)inet], -1, pres_fac);
+        pathfinder_update_path_cost(route_ctx.trace_head[inet], -1, pres_fac);
         free_traceback(inet);
 
         rt_root = init_route_tree_to_source(inet);
@@ -842,7 +842,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId inet, unsigned 
         bool destroyed = prune_route_tree(rt_root, pres_fac, connections_inf);
 
         // entire traceback is still freed since the pruned tree will need to have its pres_cost updated
-        pathfinder_update_path_cost(route_ctx.trace_head[(size_t)inet], -1, pres_fac);
+        pathfinder_update_path_cost(route_ctx.trace_head[inet], -1, pres_fac);
         free_traceback(inet);
 
         // if entirely pruned, have just the source (not removed from pathfinder costs)
@@ -855,7 +855,7 @@ static t_rt_node* setup_routing_resources(int itry, ClusterNetId inet, unsigned 
             // sync traceback into a state that matches the route tree
             traceback_from_route_tree(inet, rt_root, num_sinks - remaining_targets.size());
             // put the updated costs of the route tree nodes back into pathfinder
-            pathfinder_update_path_cost(route_ctx.trace_head[(size_t)inet], 1, pres_fac);
+            pathfinder_update_path_cost(route_ctx.trace_head[inet], 1, pres_fac);
         }
 
         // give lookup on the reached sinks
@@ -1317,7 +1317,7 @@ static bool should_route_net(ClusterNetId inet, const CBRR& connections_inf) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-    t_trace * tptr = route_ctx.trace_head[(size_t)inet];
+    t_trace * tptr = route_ctx.trace_head[inet];
 
     if (tptr == NULL) {
         /* No routing yet. */

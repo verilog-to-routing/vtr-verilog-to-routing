@@ -1640,13 +1640,13 @@ static void drawroute(enum e_draw_net_type draw_net_type) {
 		if (cluster_ctx.clb_nlist.net_global(net_id)) /* Don't draw global nets. */
 			continue;
 
-		if (route_ctx.trace_head[(size_t)net_id] == NULL) /* No routing.  Skip.  (Allows me to draw */
+		if (route_ctx.trace_head[net_id] == NULL) /* No routing.  Skip.  (Allows me to draw */
 			continue; /* partially complete routes).            */
 
 		if (draw_net_type == HIGHLIGHTED && draw_state->net_color[(size_t)net_id] == BLACK)
 			continue;
 
-		tptr = route_ctx.trace_head[(size_t)net_id]; /* SOURCE to start */
+		tptr = route_ctx.trace_head[net_id]; /* SOURCE to start */
 		inode = tptr->index;
 		rr_type = device_ctx.rr_nodes[inode].type();
 
@@ -1882,7 +1882,7 @@ static void highlight_nets(char *message, int hit_node) {
 	t_draw_state* draw_state = get_draw_state_vars();
 	
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		for (tptr = route_ctx.trace_head[(size_t)net_id]; tptr != NULL; tptr = tptr->next) {
+		for (tptr = route_ctx.trace_head[net_id]; tptr != NULL; tptr = tptr->next) {
 			if (draw_state->draw_rr_node[tptr->index].color == MAGENTA) {
 				draw_state->net_color[(size_t)net_id] = draw_state->draw_rr_node[tptr->index].color;
 				if (tptr->index == hit_node) {

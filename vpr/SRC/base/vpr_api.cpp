@@ -836,7 +836,9 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    if (route_ctx.trace_head == nullptr) {
+	//Check the first index to see if a pointer exists
+	//TODO: Implement a better error check
+    if (route_ctx.trace_head.size() == 0) {
         VPR_THROW(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
 

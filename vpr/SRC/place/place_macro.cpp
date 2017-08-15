@@ -44,8 +44,8 @@ static vtr::vector_map<ClusterBlockId, int> f_imacro_from_iblk;
 
 /******************** Subroutine declarations ********************************/
 
-static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk,
-		std::vector<int> pl_macro_idirect, std::vector<int> pl_macro_num_members, std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num);
+static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> &pl_macro_member_blk_num_of_this_blk,
+		std::vector<int> &pl_macro_idirect, std::vector<int> &pl_macro_num_members, std::vector<std::vector<ClusterBlockId>> &pl_macro_member_blk_num);
 
 static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros);
 
@@ -59,8 +59,8 @@ static void validate_macros(t_pl_macro* macros, int num_macro);
 /******************** Subroutine definitions *********************************/
 
 
-static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk,
-		std::vector<int> pl_macro_idirect, std::vector<int> pl_macro_num_members, std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num) {
+static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> &pl_macro_member_blk_num_of_this_blk,
+		std::vector<int> &pl_macro_idirect, std::vector<int> &pl_macro_num_members, std::vector<std::vector<ClusterBlockId>> &pl_macro_member_blk_num) {
 
 	/* Compute required size:                                                *
 	 * Go through all the pins with possible direct connections in           *
@@ -151,7 +151,7 @@ static void find_all_the_macro (int * num_of_macro, std::vector<ClusterBlockId> 
 						pl_macro_member_blk_num[num_macro].resize(pl_macro_num_members[num_macro]);
 						// Copy the data from the temporary array to the newly allocated array.
 						for (imember = 0; imember < pl_macro_num_members[num_macro]; imember++)
-							pl_macro_member_blk_num[num_macro].push_back(pl_macro_member_blk_num_of_this_blk[imember]);
+							pl_macro_member_blk_num[num_macro][imember] = pl_macro_member_blk_num_of_this_blk[imember];
 
 						// Increment the macro count
 						num_macro ++;
@@ -245,7 +245,7 @@ int alloc_and_load_placement_macros(t_direct_inf* directs, int num_directs, t_pl
 	return (num_macro);
 }
 
-void get_imacro_from_iblk(int *imacro, ClusterBlockId iblk, t_pl_macro * macros, int num_macros) {
+void get_imacro_from_iblk(int *imacro, ClusterBlockId iblk, t_pl_macro *macros, int num_macros) {
 
 	/* This mapping is needed for fast lookup's whether the block with index *
 	 * iblk belongs to a placement macro or not.                             *
@@ -264,26 +264,24 @@ void get_imacro_from_iblk(int *imacro, ClusterBlockId iblk, t_pl_macro * macros,
 }
 
 /* Allocates and loads imacro_from_iblk array. */
-static void alloc_and_load_imacro_from_iblk(t_pl_macro * macros, int num_macros) {
+static void alloc_and_load_imacro_from_iblk(t_pl_macro *macros, int num_macros) {
 	int imacro, imember;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
+	f_imacro_from_iblk.resize(cluster_ctx.clb_nlist.blocks().size());
+
 	/* Allocate and initialize the values to OPEN (-1). */
-	vtr::vector_map<ClusterBlockId, int> temp_imacro_from_iblk;
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-		temp_imacro_from_iblk.insert(blk_id, OPEN);
+		f_imacro_from_iblk.insert(blk_id, OPEN);
 	}
 	
 	/* Load the values */
 	for (imacro = 0; imacro < num_macros; imacro++) {
 		for (imember = 0; imember < macros[imacro].num_blocks; imember++) {
 			ClusterBlockId blk_id = macros[imacro].members[imember].blk_index;
-			temp_imacro_from_iblk.insert(blk_id, imacro);
+			f_imacro_from_iblk.insert(blk_id, imacro);
 		}
 	}
-	
-	/* Sets the file_scope variables to point at the arrays. */
-	f_imacro_from_iblk = temp_imacro_from_iblk;
 }
 
 void free_placement_macros_structs(void) {
@@ -310,7 +308,7 @@ void free_placement_macros_structs(void) {
 	}
 }
 
-static void write_place_macros(std::string filename, const t_pl_macro* macros, int num_macros) {
+static void write_place_macros(std::string filename, const t_pl_macro *macros, int num_macros) {
 
     FILE* f = vtr::fopen(filename.c_str(), "w");
 
@@ -381,17 +379,17 @@ static void validate_macros(t_pl_macro* macros, int num_macros) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //Verify that blocks only appear in a single macro
-    std::multimap<int,int> block_to_macro;
+    std::multimap<ClusterBlockId,int> block_to_macro;
     for (int imacro = 0; imacro < num_macros; ++imacro) {
         for (int imember = 0; imember < macros[imacro].num_blocks; ++imember) {
             ClusterBlockId iblk = macros[imacro].members[imember].blk_index;
 
-            block_to_macro.emplace((size_t)iblk, imacro);
+            block_to_macro.emplace(iblk, imacro);
         }
     }
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto range = block_to_macro.equal_range((size_t)blk_id);
+        auto range = block_to_macro.equal_range(blk_id);
 
         int blk_macro_cnt = std::distance(range.first, range.second);
         if (blk_macro_cnt > 1) {

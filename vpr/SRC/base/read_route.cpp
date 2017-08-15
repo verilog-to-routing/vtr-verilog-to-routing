@@ -177,7 +177,7 @@ static void process_nodes(ifstream & fp, ClusterNetId inet) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_trace *tptr = route_ctx.trace_head[(size_t)inet];
+    t_trace *tptr = route_ctx.trace_head[inet];
 
     /*remember the position of the last line in order to go back*/
     streampos oldpos = fp.tellg();
@@ -302,11 +302,11 @@ static void process_nodes(ifstream & fp, ClusterNetId inet) {
 
             /* Allocate and load correct values to trace_head*/
             if (node_count == 0) {
-                route_ctx.trace_head[(size_t)inet] = alloc_trace_data();
-                route_ctx.trace_head[(size_t)inet]->index = inode;
-                route_ctx.trace_head[(size_t)inet]->iswitch = switch_id;
-                route_ctx.trace_head[(size_t)inet]->next = NULL;
-                tptr = route_ctx.trace_head[(size_t)inet];
+                route_ctx.trace_head[inet] = alloc_trace_data();
+                route_ctx.trace_head[inet]->index = inode;
+                route_ctx.trace_head[inet]->iswitch = switch_id;
+                route_ctx.trace_head[inet]->next = NULL;
+                tptr = route_ctx.trace_head[inet];
                 node_count++;
             } else {
                 tptr->next = alloc_trace_data();

@@ -576,7 +576,7 @@ t_rt_node* traceback_to_route_tree(ClusterNetId inet) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
 
-	t_trace* head {route_ctx.trace_head[(size_t)inet]};
+	t_trace* head {route_ctx.trace_head[inet]};
 	// always called after the 1st iteration, so should exist
 	VTR_ASSERT(head != nullptr);
 
@@ -720,7 +720,7 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 	 * properly sets route_ctx.trace_head and route_ctx.trace_tail for this net
 	 * returns the trace head for inet 					 					 */
 
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	t_trace* head {alloc_trace_data()};
 	head->index = root->inode;
@@ -732,8 +732,8 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 	// tag end of traceback
 	tail->next = nullptr;
 
-	route_ctx.trace_tail[(size_t)inet] = tail;
-	route_ctx.trace_head[(size_t)inet] = head;
+	route_ctx.trace_tail[inet] = tail;
+	route_ctx.trace_head[inet] = head;
 
 	return head;
 }

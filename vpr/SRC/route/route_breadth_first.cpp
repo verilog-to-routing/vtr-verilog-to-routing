@@ -103,7 +103,7 @@ bool try_breadth_first_route_net(ClusterNetId inet, float pres_fac,
 		is_routed = true;
 
 	} else {
-		pathfinder_update_path_cost(route_ctx.trace_head[(size_t)inet], -1, pres_fac);
+		pathfinder_update_path_cost(route_ctx.trace_head[inet], -1, pres_fac);
 		is_routed = breadth_first_route_net(inet, router_opts.bend_cost);
 
 		/* Impossible to route? (disconnected rr_graph) */
@@ -113,7 +113,7 @@ bool try_breadth_first_route_net(ClusterNetId inet, float pres_fac,
 			vtr::printf_info("Routing failed.\n");
 		}
 
-		pathfinder_update_path_cost(route_ctx.trace_head[(size_t)inet], 1, pres_fac);
+		pathfinder_update_path_cost(route_ctx.trace_head[inet], 1, pres_fac);
 	}
 	return (is_routed);
 }

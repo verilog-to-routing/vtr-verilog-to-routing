@@ -108,7 +108,7 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub,
 
 /************************** Subroutine definitions ***************************/
 
-void save_routing(t_trace **best_routing,
+void save_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 		const t_clb_opins_used& clb_opins_used_locally,
 		t_clb_opins_used& saved_clb_opins_used_locally) {
 
@@ -120,16 +120,15 @@ void save_routing(t_trace **best_routing,
 	 * routing elements.  Also saves any data about locally used clb_opins, *
 	 * since this is also part of the routing.                              */
 
-	unsigned int inet;
 	t_trace *tptr, *tempptr;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 
 		/* Free any previously saved routing.  It is no longer best. */
-		tptr = best_routing[inet];
+		tptr = best_routing[net_id];
 		while (tptr != NULL) {
 			tempptr = tptr->next;
 			free_trace_data(tptr);
@@ -137,13 +136,13 @@ void save_routing(t_trace **best_routing,
 		}
 
 		/* Save a pointer to the current routing in best_routing. */
-		best_routing[inet] = route_ctx.trace_head[inet];
+		best_routing[net_id] = route_ctx.trace_head[net_id];
 
 		/* Set the current (working) routing to NULL so the current trace       *
 		 * elements won't be reused by the memory allocator.                    */
 
-		route_ctx.trace_head[inet] = NULL;
-		route_ctx.trace_tail[inet] = NULL;
+		route_ctx.trace_head[net_id] = NULL;
+		route_ctx.trace_tail[net_id] = NULL;
 	}
 
 	/* Save which OPINs are locally used.                           */
@@ -156,33 +155,30 @@ void save_routing(t_trace **best_routing,
 	 * restored -- it is set to all NULLs since it is only used in            *
 	 * update_traceback.  If you need route_ctx.trace_tail restored, modify this        *
 	 * routine.  Also restores the locally used opin data.                    */
-void restore_routing(t_trace **best_routing,
+void restore_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing,
 		t_clb_opins_used&  clb_opins_used_locally,
 		const t_clb_opins_used&  saved_clb_opins_used_locally) {
 	
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		/* Free any current routing. */
 		free_traceback(net_id);
 
 		/* Set the current routing to the saved one. */
-		route_ctx.trace_head[(size_t)net_id] = best_routing[(size_t)net_id];
-		best_routing[(size_t)net_id] = NULL; /* No stored routing. */
+		route_ctx.trace_head[net_id] = best_routing[net_id];
+		best_routing[net_id] = NULL; /* No stored routing. */
 	}
 
 	/* Restore which OPINs are locally used.                           */
     clb_opins_used_locally = saved_clb_opins_used_locally;
 }
 
+/* This routine finds a "magic cookie" for the routing and prints it.    *
+* Use this number as a routing serial number to ensure that programming *
+* changes do not break the router.                                      */
 void get_serial_num(void) {
-
-	/* This routine finds a "magic cookie" for the routing and prints it.    *
-	 * Use this number as a routing serial number to ensure that programming *
-	 * changes do not break the router.                                      */
-
-	unsigned int inet;
 	int serial_num, inode;
 	t_trace *tptr;
 
@@ -192,20 +188,20 @@ void get_serial_num(void) {
 
 	serial_num = 0;
 
-	for (inet = 0; inet < cluster_ctx.clb_nlist.nets().size(); inet++) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 
 		/* Global nets will have null trace_heads (never routed) so they *
 		 * are not included in the serial number calculation.            */
 
-		tptr = route_ctx.trace_head[inet];
+		tptr = route_ctx.trace_head[net_id];
 		while (tptr != NULL) {
 			inode = tptr->index;
-			serial_num += (inet + 1)
+			serial_num += ((size_t)net_id + 1)
 					* (device_ctx.rr_nodes[inode].xlow() * (device_ctx.nx + 1) - device_ctx.rr_nodes[inode].yhigh());
 
-			serial_num -= device_ctx.rr_nodes[inode].ptc_num() * (inet + 1) * 10;
+			serial_num -= device_ctx.rr_nodes[inode].ptc_num() * ((size_t)net_id + 1) * 10;
 
-			serial_num -= device_ctx.rr_nodes[inode].type() * (inet + 1) * 100;
+			serial_num -= device_ctx.rr_nodes[inode].type() * ((size_t)net_id + 1) * 100;
 			serial_num %= 2000000000; /* Prevent overflow */
 			tptr = tptr->next;
 		}
@@ -521,7 +517,7 @@ update_traceback(t_heap *hptr, ClusterNetId inet) {
 	t_rr_type rr_type;
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	// hptr points to the end of a connection
 	inode = hptr->index;
@@ -556,15 +552,15 @@ update_traceback(t_heap *hptr, ClusterNetId inet) {
 		inode = route_ctx.rr_node_route_inf[inode].prev_node;
 	}
 
-	if (route_ctx.trace_tail[(size_t)inet] != NULL) {
-		route_ctx.trace_tail[(size_t)inet]->next = tptr; /* Traceback ends with tptr */
+	if (route_ctx.trace_tail[inet] != NULL) {
+		route_ctx.trace_tail[inet]->next = tptr; /* Traceback ends with tptr */
 		ret_ptr = tptr->next; /* First new segment.       */
 	} else { /* This was the first "chunk" of the net's routing */
-		route_ctx.trace_head[(size_t)inet] = tptr;
+		route_ctx.trace_head[inet] = tptr;
 		ret_ptr = tptr; /* Whole traceback is new. */
 	}
 
-	route_ctx.trace_tail[(size_t)inet] = temptail;
+	route_ctx.trace_tail[inet] = temptail;
 	return (ret_ptr);
 }
 
@@ -672,11 +668,11 @@ void free_traceback(ClusterNetId net_id) {
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	if(route_ctx.trace_head == NULL) {
+	if(route_ctx.trace_head[net_id] == NULL) {
 		return;
 	}
 
-	tptr = route_ctx.trace_head[(size_t)net_id];
+	tptr = route_ctx.trace_head[net_id];
 
 	while (tptr != NULL) {
 		tempptr = tptr->next;
@@ -684,8 +680,8 @@ void free_traceback(ClusterNetId net_id) {
 		tptr = tempptr;
 	}
 
-	route_ctx.trace_head[(size_t)net_id] = NULL;
-	route_ctx.trace_tail[(size_t)net_id] = NULL;
+	route_ctx.trace_head[net_id] = NULL;
+	route_ctx.trace_tail[net_id] = NULL;
 }
 
 t_clb_opins_used alloc_route_structs(void) {
@@ -703,8 +699,8 @@ void alloc_route_static_structs(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
-	route_ctx.trace_head = (t_trace **) vtr::calloc(cluster_ctx.clb_nlist.nets().size(), sizeof(t_trace *));
-	route_ctx.trace_tail = (t_trace **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(t_trace *));
+	route_ctx.trace_head.resize(cluster_ctx.clb_nlist.nets().size());
+	route_ctx.trace_tail.resize(cluster_ctx.clb_nlist.nets().size());
 
 	heap_size = device_ctx.nx * device_ctx.ny;
 	heap = (t_heap **) vtr::malloc(heap_size * sizeof(t_heap *));
@@ -714,18 +710,12 @@ void alloc_route_static_structs(void) {
 	route_ctx.route_bb = (t_bb *) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(t_bb));
 }
 
-t_trace ** alloc_saved_routing() {
-
-	/* Allocates data structures into which the key routing data can be saved,   *
-	 * allowing the routing to be recovered later (e.g. after a another routing  *
-	 * is attempted).                                                            */
-
-	t_trace **best_routing;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-	best_routing = (t_trace **) vtr::calloc(cluster_ctx.clb_nlist.nets().size(),
-			sizeof(t_trace *));
+/* Allocates data structures into which the key routing data can be saved,   *
+* allowing the routing to be recovered later (e.g. after a another routing  *
+* is attempted).                                                            */
+vtr::vector_map<ClusterNetId, t_trace *> alloc_saved_routing() {
+	auto& cluster_ctx = g_vpr_ctx.clustering();
+	vtr::vector_map<ClusterNetId, t_trace *> best_routing(cluster_ctx.clb_nlist.nets().size());
 
 	return (best_routing);
 }
@@ -781,15 +771,16 @@ void free_trace_structs(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-	for (auto net_id : cluster_ctx.clb_nlist.nets())
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		free_traceback(net_id);
 
-	if(route_ctx.trace_head) {
-		free(route_ctx.trace_head);
-		free(route_ctx.trace_tail);
+		if (route_ctx.trace_head[net_id]) {
+			free(route_ctx.trace_head[net_id]);
+			free(route_ctx.trace_tail[net_id]);
+		}
+		route_ctx.trace_head[net_id] = NULL;
+		route_ctx.trace_tail[net_id] = NULL;
 	}
-	route_ctx.trace_head = NULL;
-	route_ctx.trace_tail = NULL;
 }
 
 void free_route_structs() {
@@ -816,10 +807,15 @@ void free_route_structs() {
 	linked_f_pointer_free_head = NULL;
 }
 
-void free_saved_routing(t_trace **best_routing) {
-
-	/* Frees the data structures needed to save a routing.                     */
-	free(best_routing);
+/* Frees the data structures needed to save a routing.                     */
+void free_saved_routing(vtr::vector_map<ClusterNetId, t_trace *> &best_routing) {
+	auto &cluster_ctx = g_vpr_ctx.clustering();
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+		if (best_routing[net_id] != NULL) {
+			free(best_routing[net_id]);
+			best_routing[net_id] = NULL;
+		}
+	}
 }
 
 void alloc_and_load_rr_node_route_structs(void) {
@@ -1256,7 +1252,7 @@ void print_route(const char* placement_file, const char* route_file) {
 			if (cluster_ctx.clb_nlist.net_sinks(net_id).size() == false) {
 				fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
 			} else {
-				tptr = route_ctx.trace_head[(size_t)net_id];
+				tptr = route_ctx.trace_head[net_id];
 
 				while (tptr != NULL) {
 					inode = tptr->index;
@@ -1461,7 +1457,7 @@ void print_traceback(ClusterNetId inet) {
     auto& device_ctx = g_vpr_ctx.device();
 
 	vtr::printf_info("traceback %lu: ", (size_t)inet);
-	t_trace* head = route_ctx.trace_head[(size_t)inet];
+	t_trace* head = route_ctx.trace_head[inet];
 	while (head) {
 		int inode {head->index};
 		if (device_ctx.rr_nodes[inode].type() == SINK) 

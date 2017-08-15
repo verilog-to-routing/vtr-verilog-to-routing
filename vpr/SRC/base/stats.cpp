@@ -282,7 +282,7 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
 		if (cluster_ctx.clb_nlist.net_global(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0)
 			continue;
 
-		tptr = route_ctx.trace_head[(size_t)net_id];
+		tptr = route_ctx.trace_head[net_id];
 		while (tptr != NULL) {
 			inode = tptr->index;
 			rr_type = device_ctx.rr_nodes[inode].type();
@@ -327,7 +327,7 @@ void get_num_bends_and_length(ClusterNetId inet, int *bends_ptr, int *len_ptr,
 	length = 0;
 	segments = 0;
 
-	prevptr = route_ctx.trace_head[(size_t)inet]; /* Should always be SOURCE. */
+	prevptr = route_ctx.trace_head[inet]; /* Should always be SOURCE. */
 	if (prevptr == NULL) {
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
 				"in get_num_bends_and_length: net #%lu has no traceback.\n", (size_t)inet);

@@ -808,20 +808,20 @@ static void power_usage_routing(t_power_usage * power_usage,
 	}
 
 	/* Populate net indices into rr graph */
-	for (size_t net_idx = 0; net_idx < cluster_ctx.clb_nlist.nets().size(); net_idx++) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		t_trace * trace;
 
-		for (trace = route_ctx.trace_head[net_idx]; trace != NULL; trace = trace->next) {
+		for (trace = route_ctx.trace_head[net_id]; trace != NULL; trace = trace->next) {
 			rr_node_power[trace->index].visited = false;
-			rr_node_power[trace->index].net_num = net_idx;
+			rr_node_power[trace->index].net_num = (size_t)net_id;
 		}
 	}
 
 	/* Populate net indices into rr graph */
-	for (size_t net_idx = 0; net_idx < cluster_ctx.clb_nlist.nets().size(); net_idx++) {
+	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		t_trace * trace;
 
-		for (trace = route_ctx.trace_head[net_idx]; trace != NULL; trace = trace->next) {
+		for (trace = route_ctx.trace_head[net_id]; trace != NULL; trace = trace->next) {
 			t_rr_node * node = &device_ctx.rr_nodes[trace->index];
 			t_rr_node_power * node_power = &rr_node_power[trace->index];
 

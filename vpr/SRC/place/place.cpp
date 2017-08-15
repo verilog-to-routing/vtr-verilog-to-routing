@@ -157,7 +157,7 @@ static vtr::vector_map<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
 static std::vector<ClusterNetId> ts_nets_to_update;
 
 /* The pl_macros array stores all the carry chains placement macros.   *
- * [0...num_pl_macros-1]                                                  */
+ * [0...num_pl_macros-1]                                               */
 static t_pl_macro * pl_macros = NULL;
 static int num_pl_macros;
 
@@ -380,8 +380,6 @@ void try_place(t_placer_opts placer_opts,
 
 	initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file.c_str());
 	init_draw_coords((float) width_fac);
-
-
 
 
 	/* Gets initial cost and loads bounding boxes. */

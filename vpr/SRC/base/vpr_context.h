@@ -216,7 +216,7 @@ struct PlacementContext : public Context {
 //or related router algorithmic state.
 struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
-    t_trace **trace_head, **trace_tail;
+    vtr::vector_map<ClusterNetId, t_trace *> trace_head, trace_tail;
 
     t_rr_node_state* rr_node_state; /* [0..num_rr_nodes-1] */
 

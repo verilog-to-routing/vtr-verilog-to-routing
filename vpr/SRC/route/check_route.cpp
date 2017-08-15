@@ -22,7 +22,7 @@ static void check_sink(int inode, ClusterNetId inet, bool * pin_done);
 static void check_switch(t_trace *tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
-static void reset_flags(int inet, bool * connected_to_route);
+static void reset_flags(ClusterNetId inet, bool * connected_to_route);
 static void check_locally_used_clb_opins(const t_clb_opins_used&  clb_opins_used_locally,
 		enum e_route_type route_type, const t_segment_inf* segment_inf);
 
@@ -81,7 +81,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 			pin_done[ipin] = false;
 
 		/* Check the SOURCE of the net. */
-		tptr = route_ctx.trace_head[(size_t)net_id];
+		tptr = route_ctx.trace_head[net_id];
 		if (tptr == NULL) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
 				"in check_route: net %d has no routing.\n", (size_t)net_id);
@@ -147,7 +147,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 			}
 		}
 
-		reset_flags((size_t)net_id, connected_to_route);
+		reset_flags(net_id, connected_to_route);
 
 	} /* End for each net */
 
@@ -283,7 +283,7 @@ static void check_switch(t_trace *tptr, int num_switch) {
 	}
 }
 
-static void reset_flags(int inet, bool * connected_to_route) {
+static void reset_flags(ClusterNetId inet, bool * connected_to_route) {
 
 	/* This routine resets the flags of all the channel segments contained *
 	 * in the traceback of net inet to 0.  This allows us to check the     * 
@@ -533,7 +533,7 @@ void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_loc
 		if (cluster_ctx.clb_nlist.net_global(net_id)) /* Skip global nets. */
 			continue;
 
-		tptr = route_ctx.trace_head[(size_t)net_id];
+		tptr = route_ctx.trace_head[net_id];
 		if (tptr == NULL)
 			continue;
 
