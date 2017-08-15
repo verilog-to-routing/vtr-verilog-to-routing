@@ -340,7 +340,7 @@ static void breadth_first_add_source_to_heap(ClusterNetId inet) {
 
     auto& route_ctx = g_vpr_ctx.routing();
 
-	inode = route_ctx.net_rr_terminals[(size_t)inet][0]; /* SOURCE */
+	inode = route_ctx.net_rr_terminals[inet][0]; /* SOURCE */
 	cost = get_rr_cong_cost(inode);
 
 	node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);

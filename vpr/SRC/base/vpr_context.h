@@ -220,9 +220,9 @@ struct RoutingContext : public Context {
 
     t_rr_node_state* rr_node_state; /* [0..num_rr_nodes-1] */
 
-    int **net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
+	vtr::vector_map<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 
-    int **rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
+    vtr::vector_map<ClusterBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
     t_rr_node_route_inf *rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 

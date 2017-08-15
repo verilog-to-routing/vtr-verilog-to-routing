@@ -1148,8 +1148,6 @@ static void build_bidir_rr_opins(const int i, const int j,
 }
 
 void free_rr_graph(void) {
-    int i;
-
     /* Frees all the routing graph data structures, if they have been       *
      * allocated.  I use rr_mem_chunk_list_head as a flag to indicate       *
      * whether or not the graph has been allocated -- if it is not NULL,    *
@@ -1165,24 +1163,11 @@ void free_rr_graph(void) {
      * allocated, as ALL the chunk allocated data is already free!           */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    if (route_ctx.net_rr_terminals != NULL) {
-        free(route_ctx.net_rr_terminals);
-    }
 
     VTR_ASSERT(!device_ctx.rr_node_indices.empty());
     device_ctx.rr_node_indices.resize(0);
     free(device_ctx.rr_indexed_data);
 
-    for (i = 0; i < (int) cluster_ctx.clb_nlist.blocks().size(); i++) {
-        free(route_ctx.rr_blk_source[i]);
-    }
-    if (route_ctx.rr_blk_source != NULL) {
-        free(route_ctx.rr_blk_source);
-        route_ctx.rr_blk_source = NULL;
-    }
-    route_ctx.net_rr_terminals = NULL;
     device_ctx.rr_indexed_data = NULL;
     device_ctx.num_rr_nodes = 0;
 
@@ -1200,12 +1185,10 @@ void alloc_net_rr_terminals(void) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    route_ctx.net_rr_terminals = (int **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof (int *));
+    route_ctx.net_rr_terminals.resize(cluster_ctx.clb_nlist.nets().size());
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        route_ctx.net_rr_terminals[(size_t)net_id] = (int *) vtr::chunk_malloc(
-                cluster_ctx.clb_nlist.net_pins(net_id).size() * sizeof (int),
-                &rr_mem_ch);
+        route_ctx.net_rr_terminals[net_id].resize(cluster_ctx.clb_nlist.net_pins(net_id).size());
     }
 }
 
@@ -1238,7 +1221,7 @@ void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
 			inode = get_rr_node_index(i, j, 
 				(pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
 				iclass, L_rr_node_indices);
-			route_ctx.net_rr_terminals[(size_t)net_id][pin_count] = inode;
+			route_ctx.net_rr_terminals[net_id][pin_count] = inode;
 			pin_count++;
 		}
 	}
@@ -1259,12 +1242,12 @@ void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    route_ctx.rr_blk_source = (int **) vtr::malloc(cluster_ctx.clb_nlist.blocks().size() * sizeof (int *));
+    route_ctx.rr_blk_source.resize(cluster_ctx.clb_nlist.blocks().size());
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         type = cluster_ctx.clb_nlist.block_type(blk_id);
         get_class_range_for_block(blk_id, &class_low, &class_high);
-        route_ctx.rr_blk_source[(size_t)blk_id] = (int *) vtr::malloc(type->num_class * sizeof (int));
+		route_ctx.rr_blk_source[blk_id].resize(type->num_class);
         for (iclass = 0; iclass < type->num_class; iclass++) {
             if (iclass >= class_low && iclass <= class_high) {
                 i = place_ctx.block_locs[blk_id].x;
@@ -1277,9 +1260,9 @@ void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
 
                 inode = get_rr_node_index(i, j, rr_type, iclass,
                         L_rr_node_indices);
-                route_ctx.rr_blk_source[(size_t)blk_id][iclass] = inode;
+                route_ctx.rr_blk_source[blk_id][iclass] = inode;
             } else {
-                route_ctx.rr_blk_source[(size_t)blk_id][iclass] = OPEN;
+                route_ctx.rr_blk_source[blk_id][iclass] = OPEN;
             }
         }
     }

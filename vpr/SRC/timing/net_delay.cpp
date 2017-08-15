@@ -427,7 +427,7 @@ static void load_one_net_delay(float **net_delay, ClusterNetId net_id, t_linked_
     auto& route_ctx = g_vpr_ctx.routing();
 
 	for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-		inode = route_ctx.net_rr_terminals[(size_t)net_id][ipin];
+		inode = route_ctx.net_rr_terminals[net_id][ipin];
 		linked_rc_ptr = rr_node_to_rc_node[inode].next;
 		rc_node = rr_node_to_rc_node[inode].rc_node;
 		Tmax = rc_node->Tdel;

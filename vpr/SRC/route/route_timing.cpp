@@ -653,8 +653,8 @@ static bool timing_driven_route_sink(int itry, ClusterNetId inet, unsigned itarg
     
     profiling::sink_criticality_start();
 
-    int source_node = route_ctx.net_rr_terminals[(size_t)inet][0];
-    int sink_node = route_ctx.net_rr_terminals[(size_t)inet][target_pin];
+    int source_node = route_ctx.net_rr_terminals[inet][0];
+    int sink_node = route_ctx.net_rr_terminals[inet][target_pin];
 
     t_bb bounding_box = route_ctx.route_bb[(size_t)inet];
 
@@ -1408,7 +1408,7 @@ Connection_based_routing_resources::Connection_based_routing_resources() :
 
         for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
             // rr sink node index corresponding to this connection terminal
-            auto rr_sink_node = route_ctx.net_rr_terminals[(size_t)net_id][ipin];
+            auto rr_sink_node = route_ctx.net_rr_terminals[net_id][ipin];
 
             net_node_to_pin.insert({rr_sink_node, ipin});
             net_forcible_reroute_connection_flag.insert({rr_sink_node, false});
@@ -1468,7 +1468,7 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
                 vtr::printf_info("%d cannot find itself (net %lu)\n", mapping.first, (size_t)net_id);
                 return false;
             }
-            VTR_ASSERT(route_ctx.net_rr_terminals[(size_t)net_id][mapping.second] == mapping.first);
+            VTR_ASSERT(route_ctx.net_rr_terminals[net_id][mapping.second] == mapping.first);
         }
     }
     return true;
@@ -1507,7 +1507,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
             // rr sink node index corresponding to this connection terminal
-            auto rr_sink_node = route_ctx.net_rr_terminals[(size_t)net_id][ipin];
+            auto rr_sink_node = route_ctx.net_rr_terminals[net_id][ipin];
 
             // should always be left unset or cleared by rerouting before the end of the iteration
             VTR_ASSERT(forcible_reroute_connection_flag[(size_t)net_id][rr_sink_node] == false);

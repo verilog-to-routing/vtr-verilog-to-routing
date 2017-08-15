@@ -2963,9 +2963,9 @@ static std::vector<int> trace_routed_connection_rr_nodes(const ClusterNetId net_
     //Conver the traceback into an easily search-able
     t_rt_node* rt_root = traceback_to_route_tree(net_id);
 
-    VTR_ASSERT(rt_root->inode == route_ctx.net_rr_terminals[size_t(net_id)][driver_pin]);
+    VTR_ASSERT(rt_root->inode == route_ctx.net_rr_terminals[net_id][driver_pin]);
 
-    int sink_rr_node = route_ctx.net_rr_terminals[size_t(net_id)][sink_pin];
+    int sink_rr_node = route_ctx.net_rr_terminals[net_id][sink_pin];
 
     std::vector<int> rr_nodes_on_path;
 

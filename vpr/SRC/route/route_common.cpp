@@ -622,7 +622,7 @@ void mark_ends(ClusterNetId net_id) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-		inode = route_ctx.net_rr_terminals[(size_t)net_id][ipin];
+		inode = route_ctx.net_rr_terminals[net_id][ipin];
 		route_ctx.rr_node_route_inf[inode].target_flag++;
 	}
 }
@@ -1395,7 +1395,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 			/* Always 0 for pads and for RECEIVER (IPIN) classes */
 
 			if (num_local_opin != 0) { /* Have to reserve (use) some OPINs */
-				from_node = route_ctx.rr_blk_source[(size_t)blk_id][iclass];
+				from_node = route_ctx.rr_blk_source[blk_id][iclass];
 				num_edges = device_ctx.rr_nodes[from_node].num_edges();
 				for (iconn = 0; iconn < num_edges; iconn++) {
 					to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iconn);

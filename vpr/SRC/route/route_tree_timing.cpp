@@ -192,7 +192,7 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
 	rt_root->parent_switch = OPEN;
 	rt_root->re_expand = true;
 
-	inode = route_ctx.net_rr_terminals[(size_t)inet][0]; /* Net source */
+	inode = route_ctx.net_rr_terminals[inet][0]; /* Net source */
 
 	rt_root->inode = inode;
 	rt_root->C_downstream = device_ctx.rr_nodes[inode].C();
