@@ -2239,7 +2239,6 @@
     <timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.582000e-11"/>
     <area grid_logic_tile_area="0.0"/>
     <chan_width_distr>
-      <io width="1.000000"/>
       <x distr="uniform" peak="1.000000"/>
       <y distr="uniform" peak="1.000000"/>
     </chan_width_distr>
