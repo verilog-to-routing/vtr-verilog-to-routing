@@ -26,7 +26,8 @@ class ModelTiming:
 supported_upgrades = [
     "add_model_timing",
     "upgrade_fc_overrides",
-    "upgrade_device_layout"
+    "upgrade_device_layout",
+    "remove_io_chan_distr"
 ]
 
 def parse_args():
@@ -71,6 +72,11 @@ def main():
 
     if "upgrade_device_layout" in args.features:
         result = upgrade_device_layout(arch)
+        if result:
+            modified = True
+
+    if "remove_io_chan_distr" in args.features:
+        result = remove_io_chan_distr(arch)
         if result:
             modified = True
 
@@ -233,6 +239,9 @@ def upgrade_device_layout(arch):
         type_to_grid_specs[type_name] = []
 
         gridlocations = top_pb_type.find("gridlocations")
+        if gridlocations == None:
+            continue
+
         for child in gridlocations:
             assert child.tag == "loc"
             type_to_grid_specs[type_name].append(child)
@@ -240,6 +249,10 @@ def upgrade_device_layout(arch):
         #Remove the legacy gridlocations from the <pb_type>
         top_pb_type.remove(gridlocations)
         changed = True
+
+    if not changed:
+        #No legacy specs to upgrade
+        return changed
 
     device_auto = None
     if 'auto' in layout.attrib:
@@ -412,6 +425,22 @@ def upgrade_device_layout(arch):
 
     return changed
         
+def remove_io_chan_distr(arch):
+    device = arch.find("./device")
+    chan_width_distr = device.find("./chan_width_distr")
+
+    io = chan_width_distr.find("./io")
+    if io != None:
+        width = float(io.attrib['width'])
+
+        if width != 1.:
+            print "Found non-unity io width {}. This is no longer supported by VPR and must be manually correct. Exiting...".format(width)
+            sys.exit(1)
+        else:
+            assert width == 1.
+            chan_width_distr.remove(io)
+            return True #Modified
+
 def get_port_names(string):
     ports = []
 
