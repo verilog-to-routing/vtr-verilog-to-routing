@@ -258,7 +258,7 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 
 	inode = critical_path_node->data;
 	type = timing_ctx.tnodes[inode].type;
-	iblk = (ClusterBlockId)timing_ctx.tnodes[inode].block;
+	iblk = timing_ctx.tnodes[inode].block;
 	pb_graph_pin = timing_ctx.tnodes[inode].pb_graph_pin;
 
 	fprintf(fp, "Node: %d  %s Block #%lu (%s)\n", inode, tnode_type_names[type],

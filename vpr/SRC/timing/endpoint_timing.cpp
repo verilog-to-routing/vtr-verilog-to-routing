@@ -16,7 +16,7 @@ void print_endpoint_timing(char* filename) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    int** tnode_lookup_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
+	vtr::vector_map<ClusterBlockId, std::vector<int>> tnode_lookup_from_pin_id = alloc_and_load_tnode_lookup_from_pin_id();
     
     fprintf(fp, "{\n");
     fprintf(fp, "  \"endpoint_timing\": [\n");
@@ -31,7 +31,7 @@ void print_endpoint_timing(char* filename) {
 
     for(size_t i = 0; i < outpad_sink_tnodes.size(); ++i) {
         int inode = outpad_sink_tnodes[i];
-        const char* identifier = cluster_ctx.clb_nlist.block_name((ClusterBlockId)timing_ctx.tnodes[inode].block).c_str() + 4; //Trim out:
+        const char* identifier = cluster_ctx.clb_nlist.block_name(timing_ctx.tnodes[inode].block).c_str() + 4; //Trim out:
         print_tnode_info(fp, inode, identifier);
 
         if(i != outpad_sink_tnodes.size() - 1) {

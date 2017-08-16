@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include "vpr_types.h"
 #include "vtr_util.h"
+#include "vtr_vector_map.h"
 
 #define DO_NOT_ANALYSE -1
 
@@ -72,8 +73,8 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf);
 
 void get_tnode_block_and_output_net(int inode, int *iblk_ptr, int *inet_ptr);
 
-int **alloc_and_load_tnode_lookup_from_pin_id();
+vtr::vector_map<ClusterBlockId, std::vector<int>> alloc_and_load_tnode_lookup_from_pin_id();
 
-void free_tnode_lookup_from_pin_id(int **tnode_lookup);
+void free_tnode_lookup_from_pin_id(vtr::vector_map<ClusterBlockId, std::vector<int>> &tnode_lookup);
 
 #endif
