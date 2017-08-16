@@ -39,7 +39,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 
 vtr::t_linked_int *allocate_and_load_critical_path(const t_timing_inf &timing_inf);
 
-void load_timing_graph_net_delays(float **net_delay);
+void load_timing_graph_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay);
 
 void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool is_prepacked, bool is_final_analysis);
 
@@ -53,7 +53,7 @@ void print_slack(float ** slack, bool slack_is_normalized, const char *fname);
 
 void print_criticality(t_slack * slacks, const char *fname);
 
-void print_net_delay(float **net_delay, const char *fname);
+void print_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay, const char *fname);
 
 void print_classic_cpds();
 

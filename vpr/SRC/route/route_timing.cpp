@@ -127,7 +127,7 @@ static float get_timing_driven_expected_cost(int inode, int target_node,
 static int get_expected_segs_to_target(int inode, int target_node,
         int *num_segs_ortho_dir_ptr);
 
-static void timing_driven_check_net_delays(float **net_delay);
+static void timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay);
 
 static int mark_node_expansion_by_bin(int source_node, int target_node,
         t_rt_node * rt_node, t_bb bounding_box, int num_sinks);
@@ -155,7 +155,7 @@ static int round_up(float x);
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(t_router_opts router_opts,
-        float **net_delay,
+        vtr::vector_map<ClusterNetId, float *> &net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
         std::shared_ptr<SetupHoldTimingInfo> timing_info,
 #ifdef ENABLE_CLASSIC_VPR_STA
@@ -200,7 +200,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_global(net_id)) {
             for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
-                net_delay[size_t(net_id)][ipin] = 0.;
+                net_delay[net_id][ipin] = 0.;
             }
         }
     }
@@ -399,7 +399,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
                     slacks->timing_criticality[(size_t)net_id][ipin] = 0.;
 #endif
-                    net_delay[(size_t)net_id][ipin] = 0.;
+                    net_delay[net_id][ipin] = 0.;
                 }
             }
         }
@@ -428,7 +428,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
         t_router_opts router_opts,
         CBRR& connections_inf,
         float* pin_criticality,
-        t_rt_node** rt_node_of_sink, float** net_delay,
+        t_rt_node** rt_node_of_sink, vtr::vector_map<ClusterNetId, float *> &net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup,
         std::shared_ptr<SetupTimingInfo> timing_info) {
 
@@ -454,7 +454,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
                 connections_inf,
                 pin_criticality, router_opts.min_incremental_reroute_fanout,
                 rt_node_of_sink,
-                net_delay[(size_t)net_id],
+                net_delay[net_id],
                 pb_gpin_lookup,
                 timing_info);
 
@@ -1272,14 +1272,14 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
 }
 #define ERROR_TOL 0.0001
 
-static void timing_driven_check_net_delays(float **net_delay) {
+static void timing_driven_check_net_delays(vtr::vector_map<ClusterNetId, float *> &net_delay) {
 
     /* Checks that the net delays computed incrementally during timing driven    *
      * routing match those computed from scratch by the net_delay.c module.      */
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     unsigned int ipin;
-    float **net_delay_check;
+	vtr::vector_map<ClusterNetId, float *> net_delay_check;
 
     vtr::t_chunk list_head_net_delay_check_ch = {NULL, 0, NULL};
 
@@ -1290,19 +1290,19 @@ static void timing_driven_check_net_delays(float **net_delay) {
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-            if (net_delay_check[(size_t)net_id][ipin] == 0.) { /* Should be only GLOBAL nets */
-                if (fabs(net_delay[(size_t)net_id][ipin]) > ERROR_TOL) {
+            if (net_delay_check[net_id][ipin] == 0.) { /* Should be only GLOBAL nets */
+                if (fabs(net_delay[net_id][ipin]) > ERROR_TOL) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                             "in timing_driven_check_net_delays: net %lu pin %d.\n"
                             "\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
-							size_t(net_id), ipin, net_delay[(size_t)net_id][ipin], net_delay_check[(size_t)net_id][ipin]);
+							size_t(net_id), ipin, net_delay[net_id][ipin], net_delay_check[net_id][ipin]);
                 }
             } else {
-                if (fabs(1.0 - net_delay[(size_t)net_id][ipin] / net_delay_check[(size_t)net_id][ipin]) > ERROR_TOL) {
+                if (fabs(1.0 - net_delay[net_id][ipin] / net_delay_check[net_id][ipin]) > ERROR_TOL) {
                     vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                             "in timing_driven_check_net_delays: net %d pin %lu.\n"
                             "\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
-							size_t(net_id), ipin, net_delay[(size_t)net_id][ipin], net_delay_check[(size_t)net_id][ipin]);
+							size_t(net_id), ipin, net_delay[net_id][ipin], net_delay_check[net_id][ipin]);
                 }
             }
         }
@@ -1474,7 +1474,7 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
     return true;
 }
 
-void Connection_based_routing_resources::set_lower_bound_connection_delays(const float* const * net_delay) {
+void Connection_based_routing_resources::set_lower_bound_connection_delays(vtr::vector_map<ClusterNetId, float *> &net_delay) {
 
     /* Set the lower bound connection delays after first iteration, which only optimizes for timing delay.
        This will be used later to judge the optimality of a connection, with suboptimal ones being candidates
@@ -1486,7 +1486,7 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(const
         auto& net_lower_bound_connection_delay = lower_bound_connection_delay[net_id];
 
         for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
-            net_lower_bound_connection_delay.push_back(net_delay[(size_t)net_id][ipin]);
+            net_lower_bound_connection_delay.push_back(net_delay[net_id][ipin]);
         }
     }
 }
@@ -1498,7 +1498,7 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(const
 bool Connection_based_routing_resources::forcibly_reroute_connections(float max_criticality,
         std::shared_ptr<const SetupTimingInfo> timing_info,
         const IntraLbPbPinLookup& pb_gpin_lookup,
-        const float* const * net_delay) {
+        vtr::vector_map<ClusterNetId, float *> &net_delay) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -1518,8 +1518,8 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
                 continue;
 
             // update if more optimal connection found
-            if (net_delay[(size_t)net_id][ipin] < lower_bound_connection_delay[net_id][ipin - 1]) {
-                lower_bound_connection_delay[net_id][ipin - 1] = net_delay[(size_t)net_id][ipin];
+            if (net_delay[net_id][ipin] < lower_bound_connection_delay[net_id][ipin - 1]) {
+                lower_bound_connection_delay[net_id][ipin - 1] = net_delay[net_id][ipin];
                 continue;
             }
 
@@ -1529,7 +1529,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
                 continue;
 
             // skip if connection's delay is close to optimal
-            if (net_delay[(size_t)net_id][ipin] < (lower_bound_connection_delay[net_id][ipin - 1] * connection_delay_optimality_tolerance))
+            if (net_delay[net_id][ipin] < (lower_bound_connection_delay[net_id][ipin - 1] * connection_delay_optimality_tolerance))
                 continue;
 
             forcible_reroute_connection_flag[net_id][rr_sink_node] = true;

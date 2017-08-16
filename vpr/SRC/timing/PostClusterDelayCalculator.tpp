@@ -10,17 +10,18 @@
 
 inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist& netlist, 
                                                           const AtomLookup& netlist_lookup, 
-                                                          float** net_delay)
+                                                          vtr::vector_map<ClusterNetId, float *> &net_delay)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
-    , net_delay_(net_delay)
+    , net_delay_()
     , atom_delay_calc_(netlist, netlist_lookup)
     , edge_min_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , edge_max_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , driver_clb_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , sink_clb_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
-	, pin_cache_(g_vpr_ctx.timing().graph->edges().size(), std::pair<ClusterPinId, ClusterPinId>(ClusterPinId::INVALID(), ClusterPinId::INVALID()))
-    {}
+	, pin_cache_(g_vpr_ctx.timing().graph->edges().size(), std::pair<ClusterPinId, ClusterPinId>(ClusterPinId::INVALID(), ClusterPinId::INVALID())) {
+	net_delay_ = net_delay;
+}
 
 inline tatum::Time PostClusterDelayCalculator::max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const { 
 #ifdef POST_CLUSTER_DELAY_CALC_DEBUG
@@ -322,7 +323,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
 inline float PostClusterDelayCalculator::inter_cluster_delay(const ClusterNetId net_id, const int src_net_pin_index, const int sink_net_pin_index) const {
 	VTR_ASSERT(src_net_pin_index == 0);
 
-	return net_delay_[(size_t)net_id][sink_net_pin_index];
+	return net_delay_[net_id][sink_net_pin_index];
 }
 
 inline tatum::Time PostClusterDelayCalculator::get_cached_delay(tatum::EdgeId edge, DelayType delay_type) const {

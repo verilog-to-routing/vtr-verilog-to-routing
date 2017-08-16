@@ -843,7 +843,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
     }
 
 
-    float** net_delay = nullptr;
+	vtr::vector_map<ClusterNetId, float *> net_delay;
     vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
 #ifdef ENABLE_CLASSIC_VPR_STA
     t_slack* slacks = nullptr;

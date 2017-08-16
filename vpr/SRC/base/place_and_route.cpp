@@ -48,7 +48,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
         t_annealing_sched annealing_sched,
         t_router_opts router_opts,
         t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-        float** net_delay,
+        vtr::vector_map<ClusterNetId, float *> &net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         const t_timing_inf& timing_inf,
 #endif
@@ -126,7 +126,7 @@ bool place_and_route(t_placer_opts placer_opts,
 
     //Routing
     //Initialize the delay calculator
-    float **net_delay = alloc_net_delay(&net_delay_ch);
+	vtr::vector_map<ClusterNetId, float *> net_delay = alloc_net_delay(&net_delay_ch);
 
     std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
     std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
@@ -219,7 +219,7 @@ bool place_and_route(t_placer_opts placer_opts,
         free_timing_graph(slacks);
 #endif
 
-        VTR_ASSERT(net_delay);
+        VTR_ASSERT(net_delay.size());
 
         fflush(stdout);
     }
@@ -249,7 +249,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
         t_annealing_sched annealing_sched,
         t_router_opts router_opts,
         t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-        float** net_delay,
+        vtr::vector_map<ClusterNetId, float *> &net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         const t_timing_inf& timing_inf,
 #endif
@@ -298,7 +298,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 #ifdef ENABLE_CLASSIC_VPR_STA
     slacks = alloc_and_load_timing_graph(timing_inf);
 #endif
-    VTR_ASSERT(net_delay);
+    VTR_ASSERT(net_delay.size());
 
     if (det_routing_arch->directionality == BI_DIRECTIONAL)
         udsd_multiplier = 1;

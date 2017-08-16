@@ -79,9 +79,9 @@ static float load_rc_tree_C(t_rc_node * rc_node);
 
 static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival);
 
-static void load_one_net_delay(float **net_delay, ClusterNetId net_id, t_linked_rc_ptr * rr_node_to_rc_node);
+static void load_one_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay, ClusterNetId net_id, t_linked_rc_ptr * rr_node_to_rc_node);
 
-static void load_one_constant_net_delay(float **net_delay, ClusterNetId net_id, float delay_value);
+static void load_one_constant_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay, ClusterNetId net_id, float delay_value);
 
 static void free_rc_tree(t_rc_node * rc_root,
 		t_rc_node ** rc_node_free_list_ptr,
@@ -99,37 +99,37 @@ static void free_rc_edge_free_list(t_linked_rc_edge * rc_edge_free_list);
 /* Allocates space for the net_delay data structure   *
 * [0..nets.size()-1][1..num_pins-1]. I chunk the data *
 * to save space on large problems.                    */
-float **alloc_net_delay(vtr::t_chunk *chunk_list_ptr){
+vtr::vector_map<ClusterNetId, float *> alloc_net_delay(vtr::t_chunk *chunk_list_ptr){
 	auto& cluster_ctx = g_vpr_ctx.clustering();
-	float **net_delay; /* [0..nets.size()-1][1..num_pins-1] */
+	vtr::vector_map<ClusterNetId, float *> net_delay; /* [0..nets.size()-1][1..num_pins-1] */
 	float *tmp_ptr;
 
-	net_delay = (float **) vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
+	net_delay.resize(cluster_ctx.clb_nlist.nets().size());
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		tmp_ptr = (float *) vtr::chunk_malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float), chunk_list_ptr);
 
-		net_delay[(size_t)net_id] = tmp_ptr - 1; /* [1..num_pins-1] */
+		net_delay[net_id] = tmp_ptr - 1; /* [1..num_pins-1] */
 
         //Ensure the net delays are initialized with non-garbage values
 		for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
-            net_delay[(size_t)net_id][ipin] = std::numeric_limits<float>::quiet_NaN();
+            net_delay[net_id][ipin] = std::numeric_limits<float>::quiet_NaN();
         }
 	}
 
 	return (net_delay);
 }
 
-void free_net_delay(float **net_delay,
+void free_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay,
 		vtr::t_chunk *chunk_list_ptr){
 
 	/* Frees the net_delay structure.  Assumes it was chunk allocated.          */
 
-	free(net_delay);
+	net_delay.clear();
     vtr::free_chunk_memory(chunk_list_ptr);
 }
 
-void load_net_delay_from_routing(float **net_delay) {
+void load_net_delay_from_routing(vtr::vector_map<ClusterNetId, float *> &net_delay) {
 
 	/* This routine loads net_delay[0..nets.size()-1][1..num_pins-1].  Each entry   *
 	 * is the Elmore delay from the net source to the appropriate sink.  Both    *
@@ -417,7 +417,7 @@ static void load_rc_tree_T(t_rc_node * rc_node, float T_arrival) {
 
 /* Loads the net delay array for net inet.  The rc tree for that net must  *
 * have already been completely built and loaded.                           */
-static void load_one_net_delay(float **net_delay, ClusterNetId net_id, t_linked_rc_ptr * rr_node_to_rc_node) {
+static void load_one_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay, ClusterNetId net_id, t_linked_rc_ptr * rr_node_to_rc_node) {
 	unsigned int ipin, inode;
 	float Tmax;
 	t_rc_node *rc_node;
@@ -461,18 +461,18 @@ static void load_one_net_delay(float **net_delay, ClusterNetId net_id, t_linked_
 			rr_node_to_rc_node[inode].next = NULL;
 		}
 		/* End of if multiply-used SINK */
-		net_delay[(size_t)net_id][ipin] = Tmax;
+		net_delay[net_id][ipin] = Tmax;
 	}
 }
 
-static void load_one_constant_net_delay(float **net_delay, ClusterNetId net_id, float delay_value) {
+static void load_one_constant_net_delay(vtr::vector_map<ClusterNetId, float *> &net_delay, ClusterNetId net_id, float delay_value) {
 
 	/* Sets each entry of the net_delay array for net inet to delay_value.     */
 	unsigned int ipin;
 	auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
-		net_delay[(size_t)net_id][ipin] = delay_value;
+		net_delay[net_id][ipin] = delay_value;
 }
 
 static void free_rc_tree(t_rc_node * rc_root,

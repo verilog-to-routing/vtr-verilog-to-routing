@@ -12,7 +12,7 @@ void try_graph(int width_fac, t_router_opts router_opts,
 
 bool try_route(int width_fac, t_router_opts router_opts,
 		t_det_routing_arch *det_routing_arch, t_segment_inf * segment_inf,
-		float **net_delay,
+		vtr::vector_map<ClusterNetId, float *> &net_delay,
 #ifdef ENABLE_CLASSIC_VPR_STA
         t_slack * slacks,
         const t_timing_inf& timing_inf,
