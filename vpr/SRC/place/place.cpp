@@ -121,12 +121,12 @@ static vtr::vector_map<ClusterNetId, float *> temp_point_to_point_timing_cost;
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]. What is the value of the delay */
 /* for each connection in the circuit */
-//TODO: The following 2D float arrays should be changed to vtr::vector_map<ClusterNetId, float *>.
+//TODO: point_to_point_delay_cost should be changed to vtr::vector_map<ClusterNetId, float *>.
 //		An attempt was made to do so, but there was significant difficulty in correctly templating 
 //		the underlying sentinels/copy constructors and so forth.
 //		When this is done, many instances of size_t(ClusterNetId) casting can be removed.
 static float **point_to_point_delay_cost = NULL;
-static float **temp_point_to_point_delay_cost = NULL;
+static vtr::vector_map<ClusterNetId, float *> temp_point_to_point_delay_cost;
 
 /* [0..cluster_ctx.clb_nlist.blocks().size()-1][0..pins_per_clb-1]. Indicates which pin on the net */
 /* this block corresponds to, this is only required during timing-driven */
@@ -1829,13 +1829,13 @@ static void update_td_cost(void) {
 			if (net_pin != 0) {
 				driven_by_moved_block = false;
 				for (iblk2 = 0; iblk2 < blocks_affected.num_moved_blocks; iblk2++)
-					if (cluster_ctx.clb_nlist.net_driver_block(net_id) == (ClusterBlockId)blocks_affected.moved_blocks[iblk2].block_num)
+					if (cluster_ctx.clb_nlist.net_driver_block(net_id) == blocks_affected.moved_blocks[iblk2].block_num)
 						driven_by_moved_block = true;
 
 				/* The following "if" prevents the value from being updated twice. */
 				if (driven_by_moved_block == false) {
-					point_to_point_delay_cost[(size_t)net_id][net_pin] = temp_point_to_point_delay_cost[(size_t)net_id][net_pin];
-					temp_point_to_point_delay_cost[(size_t)net_id][net_pin] = -1;
+					point_to_point_delay_cost[(size_t)net_id][net_pin] = temp_point_to_point_delay_cost[net_id][net_pin];
+					temp_point_to_point_delay_cost[net_id][net_pin] = -1;
 					point_to_point_timing_cost[net_id][net_pin] = temp_point_to_point_timing_cost[net_id][net_pin];
 					temp_point_to_point_timing_cost[net_id][net_pin] = -1;
 				}
@@ -1843,8 +1843,8 @@ static void update_td_cost(void) {
 			else { /* This net is being driven by a moved block, recompute */
 				   /* All point to point connections on this net. */
 				for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-					point_to_point_delay_cost[(size_t)net_id][ipin] = temp_point_to_point_delay_cost[(size_t)net_id][ipin];
-					temp_point_to_point_delay_cost[(size_t)net_id][ipin] = -1;
+					point_to_point_delay_cost[(size_t)net_id][ipin] = temp_point_to_point_delay_cost[net_id][ipin];
+					temp_point_to_point_delay_cost[net_id][ipin] = -1;
 					point_to_point_timing_cost[net_id][ipin] = temp_point_to_point_timing_cost[net_id][ipin];
 					temp_point_to_point_timing_cost[net_id][ipin] = -1;
 				} /* Finished updating the pin */
@@ -1896,21 +1896,21 @@ static void comp_delta_td_cost(float *delta_timing, float *delta_delay) {
 				
 				if (driven_by_moved_block == false) {
 					temp_delay = comp_td_point_to_point_delay(net_id, net_pin);
-					temp_point_to_point_delay_cost[(size_t)net_id][net_pin] = temp_delay;
+					temp_point_to_point_delay_cost[net_id][net_pin] = temp_delay;
 
 					temp_point_to_point_timing_cost[net_id][net_pin] = get_timing_place_crit(net_id, net_pin) * temp_delay;
 					delta_timing_cost += temp_point_to_point_timing_cost[net_id][net_pin] - point_to_point_timing_cost[net_id][net_pin];
-					delta_delay_cost += temp_point_to_point_delay_cost[(size_t)net_id][net_pin] - point_to_point_delay_cost[(size_t)net_id][net_pin];
+					delta_delay_cost += temp_point_to_point_delay_cost[net_id][net_pin] - point_to_point_delay_cost[(size_t)net_id][net_pin];
 				}
 			} else { /* This net is being driven by a moved block, recompute */
 				/* All point to point connections on this net. */
 				for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
 					temp_delay = comp_td_point_to_point_delay(net_id, ipin);
-					temp_point_to_point_delay_cost[(size_t)net_id][ipin] = temp_delay;
+					temp_point_to_point_delay_cost[net_id][ipin] = temp_delay;
 
 					temp_point_to_point_timing_cost[net_id][ipin] = get_timing_place_crit(net_id, ipin) * temp_delay;
 					delta_timing_cost += temp_point_to_point_timing_cost[net_id][ipin] - point_to_point_timing_cost[net_id][ipin];
-					delta_delay_cost += temp_point_to_point_delay_cost[(size_t)net_id][ipin] - point_to_point_delay_cost[(size_t)net_id][ipin];
+					delta_delay_cost += temp_point_to_point_delay_cost[net_id][ipin] - point_to_point_delay_cost[(size_t)net_id][ipin];
 
 				} /* Finished updating the pin */
 			}
@@ -1943,7 +1943,7 @@ static void comp_td_costs(float *timing_cost, float *connection_delay_sum) {
 
 				loc_connection_delay_sum += temp_delay_cost;
 				point_to_point_delay_cost[(size_t)net_id][ipin] = temp_delay_cost;
-				temp_point_to_point_delay_cost[(size_t)net_id][ipin] = -1; /* Undefined */
+				temp_point_to_point_delay_cost[net_id][ipin] = -1; /* Undefined */
 
 				point_to_point_timing_cost[net_id][ipin] = temp_timing_cost;
 				temp_point_to_point_timing_cost[net_id][ipin] = -1; /* Undefined */
@@ -2017,12 +2017,10 @@ static void free_placement_structs(t_placer_opts placer_opts) {
 			point_to_point_delay_cost[inet]++;
 			free(point_to_point_delay_cost[inet]);
 
-			temp_point_to_point_delay_cost[inet]++;
-			free(temp_point_to_point_delay_cost[inet]);
+			
 		}
 
 		free(point_to_point_delay_cost);
-		free(temp_point_to_point_delay_cost);
 
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 			/*add one to the address since it is indexed from 1 not 0 */
@@ -2031,7 +2029,14 @@ static void free_placement_structs(t_placer_opts placer_opts) {
 
 			temp_point_to_point_timing_cost[net_id]++;
 			free(temp_point_to_point_timing_cost[net_id]);
+
+			temp_point_to_point_delay_cost[net_id]++;
+			free(temp_point_to_point_delay_cost[net_id]);
 		}
+
+		point_to_point_timing_cost.clear();
+		temp_point_to_point_timing_cost.clear();
+		temp_point_to_point_delay_cost.clear();
 
 		net_pin_index.clear();
 	}
@@ -2078,7 +2083,7 @@ static void alloc_and_load_placement_structs(
 		/* Allocate structures associated with timing driven placement */
 		/* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]  */
 		point_to_point_delay_cost = (float **)vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
-		temp_point_to_point_delay_cost = (float **)vtr::malloc(cluster_ctx.clb_nlist.nets().size() * sizeof(float *));
+		temp_point_to_point_delay_cost.resize(cluster_ctx.clb_nlist.nets().size());
 
 		point_to_point_timing_cost.resize(cluster_ctx.clb_nlist.nets().size());
 		temp_point_to_point_timing_cost.resize(cluster_ctx.clb_nlist.nets().size());
@@ -2089,8 +2094,8 @@ static void alloc_and_load_placement_structs(
 			point_to_point_delay_cost[(size_t)net_id] = (float *)vtr::malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float));
 			point_to_point_delay_cost[(size_t)net_id]--;
 
-			temp_point_to_point_delay_cost[(size_t)net_id] = (float *)vtr::malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float));
-			temp_point_to_point_delay_cost[(size_t)net_id]--;
+			temp_point_to_point_delay_cost[net_id] = (float *)vtr::malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float));
+			temp_point_to_point_delay_cost[net_id]--;
 
 			point_to_point_timing_cost[net_id] = (float *)vtr::malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float));
 			point_to_point_timing_cost[net_id]--;
@@ -2101,7 +2106,7 @@ static void alloc_and_load_placement_structs(
 		for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 			for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
 				point_to_point_delay_cost[(size_t)net_id][ipin] = 0;
-				temp_point_to_point_delay_cost[(size_t)net_id][ipin] = 0;
+				temp_point_to_point_delay_cost[net_id][ipin] = 0;
 			}
 		}
 	}
