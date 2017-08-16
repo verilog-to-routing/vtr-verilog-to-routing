@@ -66,7 +66,7 @@ If a virtual clock is assigned using a create_clock command, it must be referenc
 
 set_clock_groups
 ----------------
-Specifies the relation ship between groups of clocks.
+Specifies the relationship between groups of clocks.
 May be used with netlist or virtual clocks in any combination.
 
 
@@ -150,7 +150,7 @@ Overrides the default setup (max) or hold (min) timing constraint calculated usi
     set_max_delay 17 -from [get_clocks {input_clk}] -to [get_clocks {output_clk}]
 
     #Specify a minimum delay of 2 from input_clk to output_clk
-    set_max_delay 2 -from [get_clocks {input_clk}] -to [get_clocks {output_clk}]
+    set_min_delay 2 -from [get_clocks {input_clk}] -to [get_clocks {output_clk}]
 
 .. note:: Max/Min delays are supported between entire clock domains, but *not* between individual netlist elements.
 
@@ -252,9 +252,13 @@ This allows a single SDC command to constrain I/Os in all single-clock circuits.
     #ports in1, in2 and in3
     set_input_delay -clock input_clk -max 0.5 [get_ports {in1 in2 in3}]
 
-    #Set a maximum output delay of 1.0 (relative to output_clk) on
-    #all ports matching matching the regex 'out*'
-    set_output_delay -clock output_clk -max 1 [get_ports {out*}]
+    #Set a minimum output delay of 1.0 (relative to output_clk) on
+    #all ports matching starting with 'out*'
+    set_output_delay -clock output_clk -min 1 [get_ports {out*}]
+
+    #Set both the maximum and minimum output delay to 0.3 for all I/Os
+    #in the design
+    set_output_delay -clock clk2 0.3 [get_ports {*}]
 
 .. sdc:command:: set_input_delay/set_output_delay
 
@@ -264,11 +268,21 @@ This allows a single SDC command to constrain I/Os in all single-clock circuits.
 
         **Required:** Yes
 
-    .. sdc:option:: -max <max_delay>
+    .. sdc:option:: -max
 
-        Specifies the maximum delay value.
+        Specifies that the delay value should be treated as the maximum delay.
 
-        .. note:: VPR currently only supports specifying the maximum delay.
+        **Required:** No
+
+    .. sdc:option:: -min
+
+        Specifies that the delay value should be treated as the minimum delay.
+
+        **Required:** No
+
+    .. sdc:option:: <delay>
+
+        Specifies the delay value to be applied
 
         **Required:** Yes
 
@@ -277,6 +291,10 @@ This allows a single SDC command to constrain I/Os in all single-clock circuits.
         Specifies the port names or port name regex.
 
         **Required:** Yes
+
+    .. note:: 
+        
+        If neither ``-min`` nor ``-max`` are specified the delay value is applied to both.
 
 set_clock_uncertainty
 ---------------------
@@ -309,12 +327,28 @@ This is typically used to model uncertainty in the clock arrival times due to cl
         Specifies the sink clock domain(s).
 
         **Required:** No
+
+    .. sdc:option:: -setup
+
+        Specifies the clock uncertainty for setup analysis.
+
+        **Required:** No
+
+    .. sdc:option:: -hold
+
+        Specifies the clock uncertainty for hold analysis.
+
+        **Required:** No
     
     .. sdc:option:: <uncertainty>
 
         The clock uncertainty value between the from and to clocks.
 
         **Required:** Yes
+
+    .. note:: 
+        
+        If neither ``-setup`` nor ``-hold`` are specified the delay value is applied to both.
 
 set_clock_latency
 -----------------
@@ -336,17 +370,33 @@ Source clock latency corresponds to the delay from the true clock source (e.g. o
 
         **Required:** Yes
 
+    .. sdc:option:: -early
+
+        Specifies that the latency applies to early paths.
+
+        **Required:** No
+
+    .. sdc:option:: -late
+
+        Specifies that the latency applies to late paths.
+
+        **Required:** No
+
+    .. sdc:option:: <latency>
+
+        The clock's latency.
+
+        **Required:** Yes
+
     .. sdc:option:: [get_clocks <clock list or regexes>]
         
         Specifies the clock domain(s).
 
         **Required:** Yes
     
-    .. sdc:option:: <latency>
-
-        The clock's latency.
-
-        **Required:** Yes
+    .. note:: 
+        
+        If neither ``-early`` nor ``-late`` are specified the latency value is applied to both.
 
 set_disable_timing
 ------------------
