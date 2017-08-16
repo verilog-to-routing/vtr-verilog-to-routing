@@ -118,15 +118,19 @@ void route_budgets::load_route_budgets(float ** net_delay,
             delay_min_budget[inet][ipin] = 0;
             delay_lower_bound[inet][ipin] = 0;
             delay_upper_bound[inet][ipin] = 100e-9;
-            delay_max_budget[inet][ipin] = min(net_delay[inet][ipin] / pin_criticality, delay_upper_bound[inet][ipin]);
-
-            if (!isnan(delay_max_budget[inet][ipin])) {
-                VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
-                        && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
-                        && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
-                        && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin],
-                        "Delay budgets do not fit in delay bounds");
+            
+            if (pin_criticality == 0) {
+                delay_max_budget[inet][ipin] = delay_upper_bound[inet][ipin];
+            } else {
+                delay_max_budget[inet][ipin] = min(net_delay[inet][ipin] / pin_criticality, delay_upper_bound[inet][ipin]);
             }
+
+            VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
+                    && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
+                    && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
+                    && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin],
+                    "Delay budgets do not fit in delay bounds");
+
         }
     }
 
@@ -221,7 +225,6 @@ void route_budgets::update_congestion_times(int inet) {
 void route_budgets::not_congested_this_iteration(int inet) {
     num_times_congested[inet] = 0;
 }
-
 
 void route_budgets::lower_budgets() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
