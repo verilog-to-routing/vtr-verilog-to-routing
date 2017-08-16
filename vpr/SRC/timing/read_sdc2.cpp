@@ -193,7 +193,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
 
                     if(netlist_.pin_type(pin) == AtomPinType::DRIVER) {
-                        tc_.set_input_constraint(tnode, domain, tatum::Time(max_delay));
+                        tc_.set_input_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(max_delay));
                     } else {
                         VTR_ASSERT(netlist_.pin_type(pin) == AtomPinType::SINK);
 
@@ -208,7 +208,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
                     VTR_ASSERT(cmd.type == sdcparse::IoDelayType::OUTPUT);
 
                     if(netlist_.pin_type(pin) == AtomPinType::SINK) {
-                        tc_.set_output_constraint(tnode, domain, tatum::Time(max_delay));
+                        tc_.set_output_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(max_delay));
 
                     } else {
                         VTR_ASSERT(netlist_.pin_type(pin) == AtomPinType::DRIVER);
@@ -402,7 +402,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
             float latency = sdc_units_to_seconds(cmd.value);
 
             for (auto clock : clocks) {
-                tc_.set_source_latency(clock, tatum::Time(latency)); 
+                tc_.set_source_latency(clock, tatum::ArrivalType::LATE, tatum::Time(latency)); 
             }
         }
 
@@ -1077,10 +1077,12 @@ void constrain_all_ios(const AtomNetlist& netlist,
 
                 //Constrain it
                 if (type == AtomBlockType::INPAD) {
-                    tc.set_input_constraint(tnode, input_domain, input_delay);
+                    tc.set_input_constraint(tnode, input_domain, tatum::DelayType::MAX, input_delay);
+                    tc.set_input_constraint(tnode, input_domain, tatum::DelayType::MIN, input_delay);
                 } else {
                     VTR_ASSERT(type == AtomBlockType::OUTPAD);
-                    tc.set_output_constraint(tnode, output_domain, output_delay);
+                    tc.set_output_constraint(tnode, output_domain, tatum::DelayType::MAX, output_delay);
+                    tc.set_output_constraint(tnode, output_domain, tatum::DelayType::MIN, output_delay);
                 }
             } else {
                 VTR_ASSERT_MSG(netlist.block_pins(blk).size() == 0, "Unconnected I/O");
