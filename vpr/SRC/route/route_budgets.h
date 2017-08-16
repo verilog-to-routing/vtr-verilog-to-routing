@@ -41,15 +41,15 @@ public:
     void lower_budgets();
     void not_congested_this_iteration(int inet);
 
-    void short_path_sta(vector<vector<float>> &temp_budgets);
-    void long_path_sta(vector<vector<float>> &temp_budgets);
-    void keep_budget_in_bounds(max_or_min _type, vector<vector<float>> &temp_budgets);
+    void short_path_sta(float ** &temp_budgets);
+    void long_path_sta(float ** &temp_budgets);
+    void keep_budget_in_bounds(max_or_min _type, float ** &temp_budgets);
     void allocate_slack();
     
-    void allocate_positive_short_path_slack(vector<vector<float>> &temp_budgets);
-    void allocate_negative_short_path_slack(vector<vector<float>> &temp_budgets);
-    void allocate_positive_long_path_slack(vector<vector<float>> &temp_budgets);
-    void allocate_negative_long_path_slack(vector<vector<float>> &temp_budgets);
+    void allocate_positive_short_path_slack(float ** &temp_budgets);
+    void allocate_negative_short_path_slack(float ** &temp_budgets);
+    void allocate_positive_long_path_slack(float ** &temp_budgets);
+    void allocate_negative_long_path_slack(float ** &temp_budgets);
 
 private:
 
@@ -57,11 +57,11 @@ private:
 
     tatum::EdgeId get_edge_from_nets(int inet, int ipin);
 
-    vector<vector<float>> delay_min_budget; //[0..num_nets][0..clb_net[inet].pins]
-    vector<vector<float>> delay_max_budget; //[0..num_nets][0..clb_net[inet].pins]
-    vector<vector<float>> delay_target; //[0..num_nets][0..clb_net[inet].pins]
-    vector<vector<float>> delay_lower_bound; //[0..num_nets][0..clb_net[inet].pins]
-    vector<vector<float>> delay_upper_bound; //[0..num_nets][0..clb_net[inet].pins]
+    float ** delay_min_budget; //[0..num_nets][0..clb_net[inet].pins]
+    float ** delay_max_budget; //[0..num_nets][0..clb_net[inet].pins]
+    float ** delay_target; //[0..num_nets][0..clb_net[inet].pins]
+    float ** delay_lower_bound; //[0..num_nets][0..clb_net[inet].pins]
+    float ** delay_upper_bound; //[0..num_nets][0..clb_net[inet].pins]
 
     vector <int> num_times_congested; //[0..num_nets]
 

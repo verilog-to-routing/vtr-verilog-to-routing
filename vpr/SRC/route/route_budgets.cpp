@@ -59,19 +59,19 @@ route_budgets::route_budgets() {
 }
 
 route_budgets::~route_budgets() {
-
-    for (unsigned i = 0; i < delay_min_budget.size(); i++) {
-        delay_min_budget[i].clear();
-        delay_max_budget[i].clear();
-        delay_target[i].clear();
-        delay_lower_bound[i].clear();
-        delay_upper_bound[i].clear();
-    }
-    delay_min_budget.clear();
-    delay_max_budget.clear();
-    delay_target.clear();
-    delay_lower_bound.clear();
-    delay_upper_bound.clear();
+    //
+    //    for (unsigned i = 0; i < delay_min_budget.size(); i++) {
+    //        delay_min_budget[i].clear();
+    //        delay_max_budget[i].clear();
+    //        delay_target[i].clear();
+    //        delay_lower_bound[i].clear();
+    //        delay_upper_bound[i].clear();
+    //    }
+    //    delay_min_budget.clear();
+    //    delay_max_budget.clear();
+    //    delay_target.clear();
+    //    delay_lower_bound.clear();
+    //    delay_upper_bound.clear();
 
 }
 
@@ -80,19 +80,15 @@ void route_budgets::load_route_budgets(float ** net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup, t_router_opts router_opts) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    //set lower bound to 0 and upper bound to net_delay
-    delay_min_budget.resize(cluster_ctx.clbs_nlist.net.size());
-    delay_target.resize(cluster_ctx.clbs_nlist.net.size());
-    delay_max_budget.resize(cluster_ctx.clbs_nlist.net.size());
-    delay_lower_bound.resize(cluster_ctx.clbs_nlist.net.size());
-    delay_upper_bound.resize(cluster_ctx.clbs_nlist.net.size());
-    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        delay_min_budget[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
-        delay_target[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
-        delay_max_budget[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
-        delay_lower_bound[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
-        delay_upper_bound[inet].resize(cluster_ctx.clbs_nlist.net[inet].pins.size(), 0);
-    }
+    vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
+
+
+    delay_min_budget = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_target = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_max_budget = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_lower_bound = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_upper_bound = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+
 
     float pin_criticality;
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
@@ -118,7 +114,7 @@ void route_budgets::load_route_budgets(float ** net_delay,
             delay_min_budget[inet][ipin] = 0;
             delay_lower_bound[inet][ipin] = 0;
             delay_upper_bound[inet][ipin] = 100e-9;
-            
+
             if (pin_criticality == 0) {
                 //prevent invalid division
                 delay_max_budget[inet][ipin] = delay_upper_bound[inet][ipin];
@@ -148,7 +144,11 @@ void route_budgets::load_route_budgets(float ** net_delay,
 }
 
 void route_budgets::allocate_slack() {
-    vector<vector<float>> temp_budgets;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
+    float **temp_budgets = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+
     unsigned iteration = 0;
     float max_budget_change = 6e-12;
 
@@ -191,9 +191,9 @@ void route_budgets::allocate_slack() {
     while (iteration < 3 || max_budget_change > 800e-12) {
         short_path_sta(temp_budgets);
         allocate_positive_short_path_slack(temp_budgets);
-        for (unsigned i = 0; i < temp_budgets.size(); i++) {
-            for (unsigned j = 0; i < temp_budgets[i].size(); j++) {
-                temp_budgets[i][j] = max(temp_budgets[i][j], bottom_range);
+        for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+            for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+                temp_budgets[inet][ipin] = max(temp_budgets[inet][ipin], bottom_range);
 
             }
         }
@@ -202,42 +202,48 @@ void route_budgets::allocate_slack() {
     delay_min_budget = temp_budgets;
 }
 
-void route_budgets::keep_budget_in_bounds(max_or_min _type, vector<vector<float>> &temp_budgets) {
-    for (unsigned i = 0; i < temp_budgets.size(); i++) {
-        for (unsigned j = 0; i < temp_budgets[i].size(); j++) {
+void route_budgets::keep_budget_in_bounds(max_or_min _type, float ** &temp_budgets) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             if (_type == MAX) {
-                temp_budgets[i][j] = max(temp_budgets[i][j], delay_lower_bound[i][j]);
+                temp_budgets[inet][ipin] = max(temp_budgets[inet][ipin], delay_lower_bound[inet][ipin]);
             }
             if (_type == MIN) {
-                temp_budgets[i][j] = min(temp_budgets[i][j], delay_upper_bound[i][j]);
+                temp_budgets[inet][ipin] = min(temp_budgets[inet][ipin], delay_upper_bound[inet][ipin]);
             }
         }
     }
 
 }
 
-void route_budgets::allocate_positive_short_path_slack(vector<vector<float>> &temp_budgets){
-    
-}
-
-void route_budgets::allocate_negative_short_path_slack(vector<vector<float>> &temp_budgets){
-    
-}
-
-void route_budgets::allocate_positive_long_path_slack(vector<vector<float>> &temp_budgets){
-    
-}
-
-void route_budgets::allocate_negative_long_path_slack(vector<vector<float>> &temp_budgets){
-    
-}
-
-
-void route_budgets::short_path_sta(vector<vector<float>> &temp_budgets) {
+void route_budgets::allocate_positive_short_path_slack(float ** &temp_budgets) {
 
 }
 
-void route_budgets::long_path_sta(vector<vector<float>> &temp_budgets) {
+void route_budgets::allocate_negative_short_path_slack(float ** &temp_budgets) {
+
+}
+
+void route_budgets::allocate_positive_long_path_slack(float ** &temp_budgets) {
+
+}
+
+void route_budgets::allocate_negative_long_path_slack(float ** &temp_budgets) {
+
+}
+
+void route_budgets::short_path_sta(float ** &temp_budgets) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+    std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
+    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
+
+    routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, temp_budgets);
+
+    timing_info = make_setup_hold_timing_info(routing_delay_calc);
+}
+
+void route_budgets::long_path_sta(float ** &temp_budgets) {
 
 }
 
@@ -291,6 +297,7 @@ float route_budgets::get_crit_short_path(int inet, int ipin) {
 }
 
 void route_budgets::print_route_budget() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
     unsigned inet, ipin;
     fstream fp;
     fp.open("route_budget.txt", fstream::out | fstream::trunc);
@@ -302,42 +309,42 @@ void route_budgets::print_route_budget() {
     }
 
     fp << "Minimum Delay Budgets:" << endl;
-    for (inet = 0; inet < delay_min_budget.size(); inet++) {
+    for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         fp << endl << "Net: " << inet << "            ";
-        for (ipin = 0; ipin < delay_min_budget[inet].size(); ipin++) {
+        for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             fp << delay_min_budget[inet][ipin] << " ";
         }
     }
 
     fp << endl << endl << "Maximum Delay Budgets:" << endl;
-    for (inet = 0; inet < delay_max_budget.size(); inet++) {
+    for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         fp << endl << "Net: " << inet << "            ";
-        for (ipin = 0; ipin < delay_max_budget[inet].size(); ipin++) {
+        for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             fp << delay_max_budget[inet][ipin] << " ";
         }
     }
 
     fp << endl << endl << "Target Delay Budgets:" << endl;
 
-    for (inet = 0; inet < delay_target.size(); inet++) {
+    for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         fp << endl << "Net: " << inet << "            ";
-        for (ipin = 0; ipin < delay_target[inet].size(); ipin++) {
+        for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             fp << delay_target[inet][ipin] << " ";
         }
     }
 
     fp << endl << endl << "Delay lower_bound:" << endl;
-    for (inet = 0; inet < delay_lower_bound.size(); inet++) {
+    for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         fp << endl << "Net: " << inet << "            ";
-        for (ipin = 0; ipin < delay_lower_bound[inet].size(); ipin++) {
+        for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             fp << delay_lower_bound[inet][ipin] << " ";
         }
     }
 
     fp << endl << endl << "Target Delay Budgets:" << endl;
-    for (inet = 0; inet < delay_upper_bound.size(); inet++) {
+    for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         fp << endl << "Net: " << inet << "            ";
-        for (ipin = 0; ipin < delay_upper_bound[inet].size(); ipin++) {
+        for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             fp << delay_upper_bound[inet][ipin] << " ";
         }
     }
