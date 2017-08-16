@@ -39,7 +39,7 @@ def parse_args():
              )
 
     parser.add_argument("--titan_version",
-                        default="1.2.5",
+                        default="1.2.6",
                         help="Titan release version to download")
     parser.add_argument("--vtr_flow_dir",
                         required=True,
