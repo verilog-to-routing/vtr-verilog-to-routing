@@ -1049,16 +1049,16 @@ void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_fr
 /**
 * Create lookup table that returns a pointer to the pb given [index to block][pin_id].
 */
-t_pb ***alloc_and_load_pin_id_to_pb_mapping() {
+vtr::vector_map<ClusterBlockId, t_pb **> alloc_and_load_pin_id_to_pb_mapping() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-	t_pb ***pin_id_to_pb_mapping = new t_pb**[cluster_ctx.clb_nlist.blocks().size()];
+	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping(cluster_ctx.clb_nlist.blocks().size());
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-		pin_id_to_pb_mapping[(size_t)blk_id] = new t_pb*[cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins];
+		pin_id_to_pb_mapping[blk_id] = new t_pb*[cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins];
 		for (int j = 0; j < cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins; j++) {
-			pin_id_to_pb_mapping[(size_t)blk_id][j] = NULL;
+			pin_id_to_pb_mapping[blk_id][j] = NULL;
 		}
-		load_pin_id_to_pb_mapping_rec(cluster_ctx.clb_nlist.block_pb(blk_id), pin_id_to_pb_mapping[(size_t)blk_id]);
+		load_pin_id_to_pb_mapping_rec(cluster_ctx.clb_nlist.block_pb(blk_id), pin_id_to_pb_mapping[blk_id]);
 	}
 	return pin_id_to_pb_mapping;
 }
@@ -1102,12 +1102,12 @@ static void load_pin_id_to_pb_mapping_rec(t_pb *cur_pb, t_pb **pin_id_to_pb_mapp
 /*
 * free pin_index_to_pb_mapping lookup table
 */
-void free_pin_id_to_pb_mapping(t_pb ***pin_id_to_pb_mapping) {
+void free_pin_id_to_pb_mapping(vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-	for (int i = 0; i < (int)cluster_ctx.clb_nlist.blocks().size(); i++) {
-		delete[] pin_id_to_pb_mapping[i];
+	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+		delete[] pin_id_to_pb_mapping[blk_id];
 	}
-	delete[] pin_id_to_pb_mapping;
+	pin_id_to_pb_mapping.clear();
 }
 
 

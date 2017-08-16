@@ -235,7 +235,7 @@ void check_timing_graph() {
 	}
 }
 
-float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node, t_pb*** pin_id_to_pb_mapping) {
+float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
 
 	/* Prints one tnode on the critical path out to fp. Returns the delay to the next node. */
 
@@ -271,7 +271,7 @@ float print_critical_path_node(FILE * fp, vtr::t_linked_int * critical_path_node
 
 	if (pb_graph_pin != NULL) {
 		fprintf(fp, "Pin: %s.%s[%d] pb (%s)", pb_graph_pin->parent_node->pb_type->name,
-			pb_graph_pin->port->name, pb_graph_pin->pin_number, pin_id_to_pb_mapping[(size_t)iblk][pb_graph_pin->pin_count_in_cluster]->name);
+			pb_graph_pin->port->name, pb_graph_pin->pin_number, pin_id_to_pb_mapping[iblk][pb_graph_pin->pin_count_in_cluster]->name);
 	}
 	if (type != TN_INPAD_SOURCE && type != TN_OUTPAD_SINK) {
 		fprintf(fp, "\n");

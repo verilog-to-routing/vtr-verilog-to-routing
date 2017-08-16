@@ -187,13 +187,13 @@ static void alloc_timing_stats(void);
 
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
 	bool is_prepacked, bool is_final_analysis, long * max_critical_input_paths_ptr, 
-    long * max_critical_output_paths_ptr, t_pb ***pin_id_to_pb_mapping, const t_timing_inf &timing_inf);
+    long * max_critical_output_paths_ptr, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping, const t_timing_inf &timing_inf);
 
 #ifdef PATH_COUNTING
 static void do_path_counting(float criticality_denom);
 #endif
 
-static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping);
+static float find_least_slack(bool is_prepacked, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
 
 static void load_tnode(t_pb_graph_pin *pb_graph_pin, const ClusterBlockId iblock,
 		int *inode);
@@ -205,9 +205,9 @@ static void update_normalized_costs(float T_arr_max_this_domain, long max_critic
 
 //static void print_primitive_as_blif(FILE *fpout, int iblk, int **lookup_tnode_from_pin_id);
 
-static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id, t_pb*** pin_id_to_pb_mapping);
+static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
 
-static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_to_pb_mapping);
+static const char * find_tnode_net_name(int inode, bool is_prepacked, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping);
 
 static t_tnode * find_ff_clock_tnode(int inode, bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id);
 
@@ -259,7 +259,7 @@ t_slack * alloc_and_load_timing_graph(t_timing_inf timing_inf) {
 	t_slack * slacks = NULL;
 	bool do_process_constraints = false;
 	vtr::vector_map<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
-	t_pb*** pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
+	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 	
 	if (tedge_ch.chunk_ptr_head != NULL) {
 		vpr_throw(VPR_ERROR_TIMING, __FILE__, __LINE__, 
@@ -319,7 +319,7 @@ t_slack * alloc_and_load_pre_packing_timing_graph(float inter_cluster_net_delay,
 	t_slack * slacks = NULL;
 	bool do_process_constraints = false;
 	vtr::vector_map<ClusterBlockId, std::vector<int>> lookup_tnode_from_pin_id;
-	t_pb***pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
+	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 	
 	if (tedge_ch.chunk_ptr_head != NULL) {
 		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
@@ -1596,7 +1596,7 @@ static void load_tnode(t_pb_graph_pin *pb_graph_pin, const ClusterBlockId iblock
 			timing_ctx.tnodes[i].type = TN_INTERMEDIATE_NODE;
 		}
 	} else {
-        AtomPinId atom_pin = find_atom_pin((ClusterBlockId)iblock, pb_graph_pin);
+        AtomPinId atom_pin = find_atom_pin(iblock, pb_graph_pin);
 
 		if (timing_ctx.tnodes[i].pb_graph_pin->type == PB_PIN_INPAD) {
 			VTR_ASSERT(timing_ctx.tnodes[i].pb_graph_pin->port->type == OUT_PORT);
@@ -2125,7 +2125,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
 	}
 #endif
 
-    t_pb*** pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
+	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
     
     if (timing_inf.slack_definition == std::string("I")) {
         /* Find the smallest slack in the design, if negative. */
@@ -2250,7 +2250,7 @@ void do_timing_analysis(t_slack * slacks, const t_timing_inf &timing_inf, bool i
     timing_ctx.stats.num_old_sta_full_updates  += 1;
 }
 
-static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping) {
+static float find_least_slack(bool is_prepacked, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
 	/* Perform a simplified version of do_timing_analysis_for_constraint 
 	to compute only the smallest slack in the design. 
     USED ONLY WHEN slack_definition == 'I'! */
@@ -2380,7 +2380,7 @@ static float find_least_slack(bool is_prepacked, t_pb ***pin_id_to_pb_mapping) {
 
 static float do_timing_analysis_for_constraint(int source_clock_domain, int sink_clock_domain, 
 	bool is_prepacked, bool is_final_analysis, long * max_critical_input_paths_ptr, 
-	long * max_critical_output_paths_ptr, t_pb ***pin_id_to_pb_mapping, const t_timing_inf &timing_inf) {
+	long * max_critical_output_paths_ptr, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping, const t_timing_inf &timing_inf) {
     
 	/* Performs a single forward and backward traversal for the domain pair 
 	source_clock_domain and sink_clock_domain. Returns the denominator that
@@ -2408,7 +2408,7 @@ static float do_timing_analysis_for_constraint(int source_clock_domain, int sink
 
     /* If not passed in, alloc and load pin_id_to_pb_mapping (and make sure to free later). */
     bool must_free_mapping = false;
-    if (!pin_id_to_pb_mapping) {
+    if (pin_id_to_pb_mapping.size() == 0) {
         pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
         must_free_mapping = true;
     }
@@ -3024,7 +3024,7 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
-	t_pb*** pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
+	vtr::vector_map<ClusterBlockId, t_pb **> pin_id_to_pb_mapping = alloc_and_load_pin_id_to_pb_mapping();
 
 	critical_path_head = allocate_and_load_critical_path(timing_inf);
 	critical_path_node = critical_path_head;
@@ -3083,6 +3083,7 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 	int source_clock_domain = UNDEFINED, sink_clock_domain = UNDEFINED;
 	float min_slack = HUGE_POSITIVE_FLOAT, slack;
 	t_tedge *tedge;
+	vtr::vector_map<ClusterBlockId, t_pb **> empty_pin_id_to_pb_mapping; //Empty vector_map for do_timing_analysis_for_constraint
 
     auto& timing_ctx = g_vpr_ctx.timing();
 
@@ -3114,7 +3115,7 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 		Set is_prepacked to false since we don't care about the clusterer's normalized values. 
 		Set is_final_analysis to false to get actual, rather than relaxed, slacks.
 		Set max critical input/output paths to NULL since they aren't used unless is_prepacked is true. */
-		do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, false, false, NULL, NULL, NULL, timing_inf);
+		do_timing_analysis_for_constraint(source_clock_domain, sink_clock_domain, false, false, NULL, NULL, empty_pin_id_to_pb_mapping, timing_inf);
 	}
 
 	/* Start at the source (level-0) tnode with the least slack (T_req-T_arr). 
@@ -3203,7 +3204,7 @@ static void update_normalized_costs(float criticality_denom, long max_critical_i
 #endif
 
 
-static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id, t_pb*** pin_id_to_pb_mapping) {
+static void load_clock_domain_and_clock_and_io_delay(bool is_prepacked, vtr::vector_map<ClusterBlockId, std::vector<int>> &lookup_tnode_from_pin_id, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
 /* Loads clock domain and clock delay onto TN_FF_SOURCE and TN_FF_SINK tnodes.
 The clock domain of each clock is its index in timing_ctx.sdc->constrained_clocks.
 We do this by matching each clock input pad (TN_INPAD_SOURCE), or internal clock 
@@ -3348,7 +3349,7 @@ static void propagate_clock_domain_and_skew(int inode) {
 	}
 }
 
-static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pin_id_to_pb_mapping) {
+static const char * find_tnode_net_name(int inode, bool is_prepacked, vtr::vector_map<ClusterBlockId, t_pb **> &pin_id_to_pb_mapping) {
 	/* Finds the name of the net which a tnode (inode) is on (different for pre-/post-packed netlists). */
 	
 	t_pb_graph_pin * pb_graph_pin;
@@ -3395,7 +3396,7 @@ static const char * find_tnode_net_name(int inode, bool is_prepacked, t_pb*** pi
            timing_ctx.tnodes[inode].type == TN_OUTPAD_SINK || timing_ctx.tnodes[inode].type == TN_OUTPAD_IPIN) {
             //For input/input pads the net name is the same as the block name
             pb_graph_pin = timing_ctx.tnodes[inode].pb_graph_pin;
-			return pin_id_to_pb_mapping[(size_t)iblock][pb_graph_pin->pin_count_in_cluster]->name;
+			return pin_id_to_pb_mapping[iblock][pb_graph_pin->pin_count_in_cluster]->name;
         } else {
             //We need to find the TN_CB_OPIN/TN_CB_IPIN that this node drives, so that we can look up
             //the net name in the global clb netlist
