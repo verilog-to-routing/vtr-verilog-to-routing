@@ -897,8 +897,8 @@ static void alloc_and_load_tnodes(const t_timing_inf &timing_inf) {
 					timing_ctx.tnodes[i].out_edges[count].to_node = lookup_tnode_from_pin_id[iblock][dnode];
 					VTR_ASSERT(timing_ctx.tnodes[i].out_edges[count].to_node != OPEN);
 
-                    AtomNetId net_id = intra_lb_route[i_pin_id].atom_net_id;
-					if (atom_ctx.nlist.net_is_constant(net_id) && timing_ctx.tnodes[i].type == TN_PRIMITIVE_OPIN) {
+                    AtomNetId atom_net_id = intra_lb_route[i_pin_id].atom_net_id;
+					if (atom_ctx.nlist.net_is_constant(atom_net_id) && timing_ctx.tnodes[i].type == TN_PRIMITIVE_OPIN) {
 						timing_ctx.tnodes[i].out_edges[count].Tdel = HUGE_NEGATIVE_FLOAT;
 						timing_ctx.tnodes[i].type = TN_CONSTANT_GEN_SOURCE;
                         const_gen_tnodes.insert(i);
