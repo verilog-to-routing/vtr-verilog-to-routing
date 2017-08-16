@@ -113,10 +113,8 @@ foreach (@task_files) {
 my $num_golden_failures = 0;
 foreach my $task (@tasks) {
 	chomp($task);
-	my $failed = parse_single_task($task);
-    if($failed) {
-        $num_golden_failures += 1; 
-    }
+	my $failures = parse_single_task($task);
+    $num_golden_failures += $failures; 
 }
 
 if ($calc_geomean) {
@@ -564,7 +562,7 @@ sub check_two_files {
 	else {
 		print
 		  "[ERROR] No 'pass_requirements_file' in task configuration file ($task_path/config/config.txt)\n";
-        $failed = 1;
+        $failed += 1;
 		return $failed;
 	}
 
@@ -606,7 +604,7 @@ sub check_two_files {
 	##############################################################
 	if ( !-r $test_file_2 ) {
 		print "[ERROR] Failed to open $test_file_2: $!";
-        $failed = 1;
+        $failed += 1;
 		return $failed;
 	}
 	open( GOLDEN_DATA, "<$test_file_2" );
@@ -615,7 +613,7 @@ sub check_two_files {
 
 	if ( !-r $pass_req_file ) {
 		print "[ERROR] Failed to open $pass_req_file: $!";
-        $failed = 1;
+        $failed += 1;
 		return $failed;
 	}
 	open( PASS_DATA, "<$pass_req_file" );
@@ -624,7 +622,7 @@ sub check_two_files {
 
 	if ( !-r $test_file_1 ) {
 		print "[ERROR] Failed to open $test_file_1: $!";
-        $failed = 1;
+        $failed += 1;
 		return $failed;
 	}
 	open( TEST_DATA, "<$test_file_1" );
@@ -663,29 +661,28 @@ sub check_two_files {
             #Pass
         } else {
 			print "[ERROR] $name has no comparison check specified (e.g. Range, RangeAbs, Equal).\n";
-            $failed = 1;
+            $failed += 1;
 			return $failed;
         }
 
 		#Ensure item is in the first file
 		if ( !grep { $_ eq $name } @second_test_params ) {
                     if ($is_golden){
-			print "[ERROR] $name is not in the golden results file.\n";
+                        print "[ERROR] $name is not in the golden results file.\n";
                     }else{
                         print "[ERROR] $name is not in the second parse file.\n";
                     }
-                    $failed = 1;
-			return $failed;
+                    $failed += 1;
 		}
 
 		# Ensure item is in new results
 		if ( !grep { $_ eq $name } @first_test_params ) {
 		    if ($is_golden){
-			print "[ERROR] $name is not in the generated results file.\n";
+                        print "[ERROR] $name is not in the generated results file.\n";
                     }else{
                         print "[ERROR] $name is not in the first parse file.\n";
                     }
-                    $failed = 1;
+                    $failed += 1;
 		}
 
 		push( @params, $name );
@@ -697,7 +694,7 @@ sub check_two_files {
 	if ( ( scalar @first_test_data ) != ( scalar @second_test_data ) ) {
 		print
 		  "[ERROR] Different number of entries in the two files.\n";
-          $failed = 1;
+          $failed += 1;
 	}
 
 	# Iterate through each line of the test results data and compare with the golden data
@@ -712,12 +709,12 @@ sub check_two_files {
 
 		if (   ( $first_file_circuit ne $first_file_circuit )
 			or ( $first_file_arch ne $first_file_arch ) ) {
-                    if ($is_golden){
-			print "[ERROR] Circuit/Architecture mismatch between golden results ($second_file_arch/$second_file_circuit) and result ($first_file_arch/$first_file_circuit).\n";
-                    } else{
-                        print "[ERROR] Circuit/Architecture mismatch between first result file ($first_file_arch/$first_file_circuit) and second result fule ($second_file_arch/$second_file_circuit).\n";
-                    }
-                        $failed = 1;
+            if ($is_golden){
+                print "[ERROR] Circuit/Architecture mismatch between golden results ($second_file_arch/$second_file_circuit) and result ($first_file_arch/$first_file_circuit).\n";
+            } else{
+                print "[ERROR] Circuit/Architecture mismatch between first result file ($first_file_arch/$first_file_circuit) and second result fule ($second_file_arch/$second_file_circuit).\n";
+            }
+            $failed += 1;
 			return $failed;
 		}
 		my $circuitarch = "$first_file_arch/$first_file_circuit";
@@ -736,17 +733,13 @@ sub check_two_files {
 				if ( $second_file_value == 0 ) {
 					if ( $first_file_value != 0 ) {
 						if ($is_golden){
-                                                    print
-                                                        "[Fail] \n $circuitarch $value: golden = $second_file_value generated result = $first_file_value\n";
-                                                }else{
-                                                    print
-                                                        "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
-                            }
-						$failed = 1;
-						return $failed;
+                            print "[Fail] \n $circuitarch $value: golden = $second_file_value generated result = $first_file_value\n";
+                        }else{
+                            print "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
+                        }
+						$failed += 1;
 					}
-				}
-				else {
+				} else {
 					my $ratio = $first_file_value / $second_file_value;
                     my $abs_diff = abs($first_file_value - $second_file_value);
                     
@@ -771,33 +764,29 @@ sub check_two_files {
                                 print
                                     "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
                             }
-                            $failed = 1;
-                            return $failed;
+                            $failed += 1;
                         }
 					}
 				}
 			} elsif ($type{$value} eq "Equal") {
 				if ( $first_file_value ne $second_file_value ) {
-					$failed = 1;
-                                    if ($is_golden){
-                                        print
-                                        "[Fail] \n $circuitarch $value: golden = $second_file_value generated result = $first_file_value\n";
-                                    }else{
-                                        print
-                                            "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
-                                    }
+                    if ($is_golden) {
+                        print "[Fail] \n $circuitarch $value: golden = $second_file_value generated result = $first_file_value\n";
+                    } else {
+                        print "[Fail] \n $circuitarch $value: first result = $first_file_value second result = $second_file_value\n";
+                    }
+					$failed += 1;
 				}
 			} else {
 				# If the check type is unknown
-                $failed = 1;
-                print
-                  "[Fail] \n $circuitarch $value: unrecognized check type '$type{$value}' (e.g. Range, RangeAbs, Equal)\n";
+                $failed += 1;
+                print "[Fail] \n $circuitarch $value: unrecognized check type '$type{$value}' (e.g. Range, RangeAbs, Equal)\n";
 
 			}
 		}
 	}
 
-	if (!$failed) {
+	if ($failed == 0) {
 		print "[Pass]\n";
 	}
     return $failed;
