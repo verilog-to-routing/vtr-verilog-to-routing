@@ -146,30 +146,36 @@ void route_budgets::load_route_budgets(float ** net_delay,
 void route_budgets::allocate_slack() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
+    std::shared_ptr<HoldTimingInfo> hold_timing_info = nullptr;
+    std::shared_ptr<SetupTimingInfo> setup_timing_info = nullptr;
+
     vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
     float **temp_budgets = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
 
     unsigned iteration = 0;
     float max_budget_change = 6e-12;
 
-    while (iteration < 7 || max_budget_change > 5e-12) {
-        short_path_sta(temp_budgets);
+    while (iteration < 7 && max_budget_change > 5e-12) {
+        hold_timing_info = short_path_sta(temp_budgets);
         allocate_negative_short_path_slack(temp_budgets);
         keep_budget_in_bounds(MIN, temp_budgets);
 
-        long_path_sta(temp_budgets);
+        setup_timing_info = long_path_sta(temp_budgets);
         allocate_negative_long_path_slack(temp_budgets);
         keep_budget_in_bounds(MAX, temp_budgets);
-
+        iteration++;
     }
 
     iteration = 0;
     max_budget_change = 900e-12;
 
-    while (iteration < 7 || iteration > 3 || max_budget_change > 800e-12) {
-        long_path_sta(temp_budgets);
+    while (iteration < 3 && max_budget_change > 800e-12) {
+        setup_timing_info = long_path_sta(temp_budgets);
         allocate_positive_long_path_slack(temp_budgets);
         keep_budget_in_bounds(MIN, temp_budgets);
+        iteration++;
+        if (iteration > 7)
+            break;
     }
 
     delay_max_budget = temp_budgets;
@@ -177,10 +183,13 @@ void route_budgets::allocate_slack() {
     iteration = 0;
     max_budget_change = 900e-12;
 
-    while (iteration < 7 || iteration > 3 || max_budget_change > 800e-12) {
-        short_path_sta(temp_budgets);
+    while (iteration < 3 && max_budget_change > 800e-12) {
+        hold_timing_info = short_path_sta(temp_budgets);
         allocate_positive_short_path_slack(temp_budgets);
         keep_budget_in_bounds(MAX, temp_budgets);
+        iteration++;
+        if (iteration > 7)
+            break;
     }
 
 
@@ -188,8 +197,8 @@ void route_budgets::allocate_slack() {
     max_budget_change = 900e-12;
 
     float bottom_range = -1e-9;
-    while (iteration < 3 || max_budget_change > 800e-12) {
-        short_path_sta(temp_budgets);
+    while (iteration < 3 && max_budget_change > 800e-12) {
+        hold_timing_info = short_path_sta(temp_budgets);
         allocate_positive_short_path_slack(temp_budgets);
         for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
             for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
@@ -197,6 +206,7 @@ void route_budgets::allocate_slack() {
 
             }
         }
+        iteration++;
     }
 
     delay_min_budget = temp_budgets;
@@ -233,18 +243,26 @@ void route_budgets::allocate_negative_long_path_slack(float ** &temp_budgets) {
 
 }
 
-void route_budgets::short_path_sta(float ** &temp_budgets) {
+std::shared_ptr<HoldTimingInfo> route_budgets::short_path_sta(float ** &temp_budgets) {
     auto& atom_ctx = g_vpr_ctx.atom();
-    std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
-    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
 
-    routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, temp_budgets);
+    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc =
+            std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, temp_budgets);
 
-    timing_info = make_setup_hold_timing_info(routing_delay_calc);
+    std::shared_ptr<HoldTimingInfo> timing_info = make_hold_timing_info(routing_delay_calc);
+
+    return timing_info;
 }
 
-void route_budgets::long_path_sta(float ** &temp_budgets) {
+std::shared_ptr<SetupTimingInfo> route_budgets::long_path_sta(float ** &temp_budgets) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+    
+    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc =
+            std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, temp_budgets);
 
+    std::shared_ptr<SetupTimingInfo> timing_info = make_setup_timing_info(routing_delay_calc);
+
+    return timing_info;
 }
 
 void route_budgets::update_congestion_times(int inet) {

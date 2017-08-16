@@ -41,11 +41,11 @@ public:
     void lower_budgets();
     void not_congested_this_iteration(int inet);
 
-    void short_path_sta(float ** &temp_budgets);
-    void long_path_sta(float ** &temp_budgets);
+    std::shared_ptr<HoldTimingInfo> short_path_sta(float ** &temp_budgets);
+    std::shared_ptr<SetupTimingInfo> long_path_sta(float ** &temp_budgets);
     void keep_budget_in_bounds(max_or_min _type, float ** &temp_budgets);
     void allocate_slack();
-    
+
     void allocate_positive_short_path_slack(float ** &temp_budgets);
     void allocate_negative_short_path_slack(float ** &temp_budgets);
     void allocate_positive_long_path_slack(float ** &temp_budgets);
