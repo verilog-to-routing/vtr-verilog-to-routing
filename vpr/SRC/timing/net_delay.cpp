@@ -190,7 +190,7 @@ alloc_and_load_rc_tree(ClusterNetId net_id, t_rc_node ** rc_node_free_list_ptr,
 
 	if (tptr == NULL) {
 		vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-				"in alloc_and_load_rc_tree: Traceback for net %lu does not exist.\n", (size_t)net_id);
+				"in alloc_and_load_rc_tree: Traceback for net %lu does not exist.\n", size_t(net_id));
 	}
 
 	inode = tptr->index;
@@ -221,7 +221,7 @@ alloc_and_load_rc_tree(ClusterNetId net_id, t_rc_node ** rc_node_free_list_ptr,
 			if (device_ctx.rr_nodes[prev_node].type() != SINK) {
 				vtr::printf_info("prev node %d, type is actually %d\n", prev_node, device_ctx.rr_nodes[prev_node].type());
 				vpr_throw(VPR_ERROR_TIMING,__FILE__, __LINE__, 
-						"in alloc_and_load_rc_tree: Routing of net %lu is not a tree.\n", (size_t)net_id);
+						"in alloc_and_load_rc_tree: Routing of net %lu is not a tree.\n", size_t(net_id));
 			}
 
 			prev_rc = rr_node_to_rc_node[inode].rc_node;

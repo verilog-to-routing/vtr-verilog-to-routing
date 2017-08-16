@@ -1397,8 +1397,8 @@ Connection_based_routing_resources::Connection_based_routing_resources() :
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         // unordered_map<int,int> net_node_to_pin;
-        auto& net_node_to_pin = rr_sink_node_to_pin[(size_t)net_id];
-        auto& net_lower_bound_connection_delay = lower_bound_connection_delay[(size_t)net_id];
+        auto& net_node_to_pin = rr_sink_node_to_pin[net_id];
+        auto& net_lower_bound_connection_delay = lower_bound_connection_delay[net_id];
         auto& net_forcible_reroute_connection_flag = forcible_reroute_connection_flag[net_id];
 
         unsigned int num_pins = cluster_ctx.clb_nlist.net_pins(net_id).size();
@@ -1423,7 +1423,7 @@ void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(vector<i
 
     VTR_ASSERT(current_inet != ClusterNetId::INVALID()); // not uninitialized
 
-    const auto& node_to_pin_mapping = rr_sink_node_to_pin[(size_t)current_inet];
+    const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
 
     for (size_t s = 0; s < rr_sink_nodes.size(); ++s) {
 
@@ -1444,7 +1444,7 @@ void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(co
     VTR_ASSERT(current_inet != ClusterNetId::INVALID());
 
     // a net specific mapping from node index to pin index
-    const auto& node_to_pin_mapping = rr_sink_node_to_pin[(size_t)current_inet];
+    const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
 
     for (t_rt_node* rt_node : sink_rt_nodes) {
         auto mapping = node_to_pin_mapping.find(rt_node->inode);
@@ -1460,7 +1460,7 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
     auto& route_ctx = g_vpr_ctx.routing();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        const auto& net_node_to_pin = rr_sink_node_to_pin[(size_t)net_id];
+        const auto& net_node_to_pin = rr_sink_node_to_pin[net_id];
 
         for (auto mapping : net_node_to_pin) {
             auto sanity = net_node_to_pin.find(mapping.first);
@@ -1483,7 +1483,7 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(const
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        auto& net_lower_bound_connection_delay = lower_bound_connection_delay[(size_t)net_id];
+        auto& net_lower_bound_connection_delay = lower_bound_connection_delay[net_id];
 
         for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
             net_lower_bound_connection_delay.push_back(net_delay[(size_t)net_id][ipin]);
@@ -1514,12 +1514,12 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 
 
             // skip if connection is internal to a block such that SOURCE->OPIN->IPIN->SINK directly, which would have 0 time delay
-            if (lower_bound_connection_delay[(size_t)net_id][ipin - 1] == 0)
+            if (lower_bound_connection_delay[net_id][ipin - 1] == 0)
                 continue;
 
             // update if more optimal connection found
-            if (net_delay[(size_t)net_id][ipin] < lower_bound_connection_delay[(size_t)net_id][ipin - 1]) {
-                lower_bound_connection_delay[(size_t)net_id][ipin - 1] = net_delay[(size_t)net_id][ipin];
+            if (net_delay[(size_t)net_id][ipin] < lower_bound_connection_delay[net_id][ipin - 1]) {
+                lower_bound_connection_delay[net_id][ipin - 1] = net_delay[(size_t)net_id][ipin];
                 continue;
             }
 
@@ -1529,7 +1529,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
                 continue;
 
             // skip if connection's delay is close to optimal
-            if (net_delay[(size_t)net_id][ipin] < (lower_bound_connection_delay[(size_t)net_id][ipin - 1] * connection_delay_optimality_tolerance))
+            if (net_delay[(size_t)net_id][ipin] < (lower_bound_connection_delay[net_id][ipin - 1] * connection_delay_optimality_tolerance))
                 continue;
 
             forcible_reroute_connection_flag[net_id][rr_sink_node] = true;
