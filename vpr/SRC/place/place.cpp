@@ -2914,7 +2914,7 @@ static void initial_placement(enum e_pad_loc_type pad_loc_type,
 	 * array that gives every legal value of (x,y,z) that can accomodate a block.
 	 * The number of such locations is given by num_legal_pos[itype].
 	 */
-	int iblk, itype, x, y, z, ipos;
+	int itype, x, y, z, ipos;
 	int *free_locations; /* [0..device_ctx.num_block_types-1]. 
 						  * Stores how many locations there are for this type that *might* still be free.
 						  * That is, this stores the number of entries in legal_pos[itype] that are worth considering
