@@ -15,7 +15,7 @@
 
 using namespace std;
 
-enum max_or_min{
+enum max_or_min {
     MAX, MIN
 };
 
@@ -46,6 +46,11 @@ public:
     void keep_budget_in_bounds(max_or_min _type, vector<vector<float>> &temp_budgets);
     void allocate_slack();
     
+    void allocate_positive_short_path_slack(vector<vector<float>> &temp_budgets);
+    void allocate_negative_short_path_slack(vector<vector<float>> &temp_budgets);
+    void allocate_positive_long_path_slack(vector<vector<float>> &temp_budgets);
+    void allocate_negative_long_path_slack(vector<vector<float>> &temp_budgets);
+
 private:
 
     std::shared_ptr<RoutingDelayCalculator> get_routing_calc(float ** net_delay);

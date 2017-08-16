@@ -120,6 +120,7 @@ void route_budgets::load_route_budgets(float ** net_delay,
             delay_upper_bound[inet][ipin] = 100e-9;
             
             if (pin_criticality == 0) {
+                //prevent invalid division
                 delay_max_budget[inet][ipin] = delay_upper_bound[inet][ipin];
             } else {
                 delay_max_budget[inet][ipin] = min(net_delay[inet][ipin] / pin_criticality, delay_upper_bound[inet][ipin]);
@@ -153,9 +154,11 @@ void route_budgets::allocate_slack() {
 
     while (iteration < 7 || max_budget_change > 5e-12) {
         short_path_sta(temp_budgets);
+        allocate_negative_short_path_slack(temp_budgets);
         keep_budget_in_bounds(MIN, temp_budgets);
 
         long_path_sta(temp_budgets);
+        allocate_negative_long_path_slack(temp_budgets);
         keep_budget_in_bounds(MAX, temp_budgets);
 
     }
@@ -165,6 +168,7 @@ void route_budgets::allocate_slack() {
 
     while (iteration < 7 || iteration > 3 || max_budget_change > 800e-12) {
         long_path_sta(temp_budgets);
+        allocate_positive_long_path_slack(temp_budgets);
         keep_budget_in_bounds(MIN, temp_budgets);
     }
 
@@ -175,6 +179,7 @@ void route_budgets::allocate_slack() {
 
     while (iteration < 7 || iteration > 3 || max_budget_change > 800e-12) {
         short_path_sta(temp_budgets);
+        allocate_positive_short_path_slack(temp_budgets);
         keep_budget_in_bounds(MAX, temp_budgets);
     }
 
@@ -185,6 +190,7 @@ void route_budgets::allocate_slack() {
     float bottom_range = -1e-9;
     while (iteration < 3 || max_budget_change > 800e-12) {
         short_path_sta(temp_budgets);
+        allocate_positive_short_path_slack(temp_budgets);
         for (unsigned i = 0; i < temp_budgets.size(); i++) {
             for (unsigned j = 0; i < temp_budgets[i].size(); j++) {
                 temp_budgets[i][j] = max(temp_budgets[i][j], bottom_range);
@@ -209,6 +215,23 @@ void route_budgets::keep_budget_in_bounds(max_or_min _type, vector<vector<float>
     }
 
 }
+
+void route_budgets::allocate_positive_short_path_slack(vector<vector<float>> &temp_budgets){
+    
+}
+
+void route_budgets::allocate_negative_short_path_slack(vector<vector<float>> &temp_budgets){
+    
+}
+
+void route_budgets::allocate_positive_long_path_slack(vector<vector<float>> &temp_budgets){
+    
+}
+
+void route_budgets::allocate_negative_long_path_slack(vector<vector<float>> &temp_budgets){
+    
+}
+
 
 void route_budgets::short_path_sta(vector<vector<float>> &temp_budgets) {
 
