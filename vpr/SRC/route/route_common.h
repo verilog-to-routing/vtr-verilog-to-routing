@@ -33,7 +33,7 @@ struct t_heap {
 	int prev_edge;
 };
 
-typedef std::vector<std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
+typedef vtr::vector_map<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 /******* Subroutines in route_common used only by other router modules ******/
 
@@ -43,13 +43,13 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
 
 void pathfinder_update_cost(float pres_fac, float acc_fac);
 
-t_trace *update_traceback(t_heap *hptr, ClusterNetId inet);
+t_trace *update_traceback(t_heap *hptr, ClusterNetId net_id);
 
 void reset_path_costs(void);
 
 float get_rr_cong_cost(int inode);
 
-void mark_ends(ClusterNetId inet);
+void mark_ends(ClusterNetId net_id);
 void mark_remaining_ends(const std::vector<int>& remaining_sinks);
 
 void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
@@ -57,7 +57,7 @@ void node_to_heap(int inode, float cost, int prev_node, int prev_edge,
 
 bool is_empty_heap(void);
 
-void free_traceback(ClusterNetId inet);
+void free_traceback(ClusterNetId net_id);
 
 void add_to_mod_list(float *fptr);
 
@@ -100,7 +100,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
 void free_chunk_memory_trace(void);
 
-void print_traceback(ClusterNetId inet);
+void print_traceback(ClusterNetId net_id);
 
 t_trace* alloc_trace_data(void);
 void free_trace_data(t_trace* trace);

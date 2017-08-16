@@ -22,7 +22,7 @@ bool try_timing_driven_route(t_router_opts router_opts,
         t_clb_opins_used& clb_opins_used_locally,
         ScreenUpdatePriority first_iteration_priority
         );
-bool try_timing_driven_route_net(ClusterNetId inet, int itry, float pres_fac,
+bool try_timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac,
 		t_router_opts router_opts,
 		CBRR& connections_inf,
 		float* pin_criticality, 
@@ -30,7 +30,7 @@ bool try_timing_driven_route_net(ClusterNetId inet, int itry, float pres_fac,
         const IntraLbPbPinLookup& pb_gpin_lookup,
         std::shared_ptr<SetupTimingInfo> timing_info);
 
-bool timing_driven_route_net(ClusterNetId inet, int itry, float pres_fac, float max_criticality,
+bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, float max_criticality,
 		float criticality_exp, float astar_fac, float bend_cost,
 		CBRR& connections_inf,
 		float *pin_criticality, int min_incremental_reroute_fanout, t_rt_node ** rt_node_of_sink, 

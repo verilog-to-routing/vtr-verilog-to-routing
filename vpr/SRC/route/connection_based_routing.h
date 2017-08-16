@@ -58,7 +58,7 @@ private:
 		2. the connection is critical enough
 		3. the connection is suboptimal, in comparison to lower_bound_connection_delay
 	*/
-	std::vector<std::unordered_map<int,bool>> forcible_reroute_connection_flag;
+	vtr::vector_map<ClusterNetId, std::unordered_map<int,bool>> forcible_reroute_connection_flag;
 
 	// the optimal delay for a connection [inet][ipin] ([0...num_net][1...num_pin])
 	// determined after the first routing iteration when only optimizing for timing delay
@@ -106,7 +106,7 @@ public:
 
 	// get whether the connection to rr_sink_node of current_inet should be forcibly rerouted (can either assign or just read)
 	bool should_force_reroute_connection(int rr_sink_node) const {
-		auto force_flag = forcible_reroute_connection_flag[(size_t)current_inet].find(rr_sink_node);
+		auto force_flag = forcible_reroute_connection_flag[current_inet].find(rr_sink_node);
 		return force_flag->second;
 	}
 	void clear_force_reroute_for_connection(int rr_sink_node); 

@@ -121,6 +121,10 @@ static vtr::vector_map<ClusterNetId, float *> temp_point_to_point_timing_cost;
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]. What is the value of the delay */
 /* for each connection in the circuit */
+//TODO: The following 2D float arrays should be changed to vtr::vector_map<ClusterNetId, float *>.
+//		An attempt was made to do so, but there was significant difficulty in correctly templating 
+//		the underlying sentinels/copy constructors and so forth.
+//		When this is done, many instances of size_t(ClusterNetId) casting can be removed.
 static float **point_to_point_delay_cost = NULL;
 static float **temp_point_to_point_delay_cost = NULL;
 

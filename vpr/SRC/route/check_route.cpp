@@ -17,8 +17,8 @@ using namespace std;
 
 /******************** Subroutines local to this module **********************/
 static void check_node_and_range(int inode, enum e_route_type route_type, const t_segment_inf* segment_inf);
-static void check_source(int inode, ClusterNetId inet);
-static void check_sink(int inode, ClusterNetId inet, bool * pin_done);
+static void check_source(int inode, ClusterNetId net_id);
+static void check_sink(int inode, ClusterNetId net_id, bool * pin_done);
 static void check_switch(t_trace *tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
@@ -84,7 +84,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 		tptr = route_ctx.trace_head[net_id];
 		if (tptr == NULL) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
-				"in check_route: net %d has no routing.\n", (size_t)net_id);
+				"in check_route: net %d has no routing.\n", size_t(net_id));
 		}
 
 		inode = tptr->index;
@@ -107,7 +107,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 			if (device_ctx.rr_nodes[prev_node].type() == SINK) {
 				if (connected_to_route[inode] == false) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
-						"in check_route: node %d does not link into existing routing for net %d.\n", inode, (size_t)net_id);
+						"in check_route: node %d does not link into existing routing for net %d.\n", inode, size_t(net_id));
 				}
 			}
 
@@ -115,14 +115,14 @@ void check_route(enum e_route_type route_type, int num_switches,
 				connects = check_adjacent(prev_node, inode);
 				if (!connects) {
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
-						"in check_route: found non-adjacent segments in traceback while checking net %d.\n", (size_t)net_id);
+						"in check_route: found non-adjacent segments in traceback while checking net %d.\n", size_t(net_id));
 				}
 
 				if (connected_to_route[inode] && device_ctx.rr_nodes[inode].type() != SINK) {
 					/* Note:  Can get multiple connections to the same logically-equivalent *
 					 * SINK in some logic blocks.                                           */
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
-						"in check_route: net %d routing is not a tree.\n", (size_t)net_id);
+						"in check_route: net %d routing is not a tree.\n", size_t(net_id));
 				}
 
 				connected_to_route[inode] = true; /* Mark as in path. */
@@ -137,13 +137,13 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 		if (device_ctx.rr_nodes[prev_node].type() != SINK) {
 			vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 			
-				"in check_route: net %d does not end with a SINK.\n", (size_t)net_id);
+				"in check_route: net %d does not end with a SINK.\n", size_t(net_id));
 		}
 
 		for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
 			if (pin_done[ipin] == false) {
 				vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 				
-					"in check_route: net %d does not connect to pin %d.\n", (size_t)net_id, ipin);
+					"in check_route: net %d does not connect to pin %d.\n", size_t(net_id), ipin);
 			}
 		}
 
@@ -160,7 +160,7 @@ void check_route(enum e_route_type route_type, int num_switches,
 
 /* Checks that this SINK node is one of the terminals of inet, and marks   *
 * the appropriate pin as being reached.                                   */
-static void check_sink(int inode, ClusterNetId inet, bool * pin_done) {
+static void check_sink(int inode, ClusterNetId net_id, bool * pin_done) {
 	
 	int i, j, ifound, ptc_num, iclass, iblk, pin_index;
 	ClusterBlockId bnum;
@@ -181,7 +181,7 @@ static void check_sink(int inode, ClusterNetId inet, bool * pin_done) {
 	for (iblk = 0; iblk < type->capacity; iblk++) {
 		bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx.blocks */
 		ipin = 1;
-		for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(inet)) {
+		for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
 			if (cluster_ctx.clb_nlist.pin_block(pin_id) == bnum) {
 				pin_index = cluster_ctx.clb_nlist.pin_index(pin_id);
 				iclass = type->pin_class[pin_index];
@@ -200,19 +200,19 @@ static void check_sink(int inode, ClusterNetId inet, bool * pin_done) {
 
 	if (ifound > 1 && type == device_ctx.IO_TYPE) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
-			"in check_sink: found %d terminals of net %d of pad %d at location (%d, %d).\n", ifound, (size_t)inet, ptc_num, i, j);
+			"in check_sink: found %d terminals of net %d of pad %d at location (%d, %d).\n", ifound, size_t(net_id), ptc_num, i, j);
 	}
 
 	if (ifound < 1) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
 				 "in check_sink: node %d does not connect to any terminal of net %s #%lu.\n"
 				 "This error is usually caused by incorrectly specified logical equivalence in your architecture file.\n"
-				 "You should try to respecify what pins are equivalent or turn logical equivalence off.\n", inode, cluster_ctx.clb_nlist.net_name(inet).c_str(), (size_t)inet);
+				 "You should try to respecify what pins are equivalent or turn logical equivalence off.\n", inode, cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id));
 	}
 }
 
 /* Checks that the node passed in is a valid source for this net. */
-static void check_source(int inode, ClusterNetId inet) {
+static void check_source(int inode, ClusterNetId net_id) {
 	t_rr_type rr_type;
 	t_type_ptr type;
 	ClusterBlockId blk_id;
@@ -224,7 +224,7 @@ static void check_source(int inode, ClusterNetId inet) {
 	rr_type = device_ctx.rr_nodes[inode].type();
 	if (rr_type != SOURCE) {
 		vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 		
-			"in check_source: net %d begins with a node of type %d.\n", (size_t)inet, rr_type);
+			"in check_source: net %d begins with a node of type %d.\n", size_t(net_id), rr_type);
 	}
 
 	i = device_ctx.rr_nodes[inode].xlow();
@@ -232,7 +232,7 @@ static void check_source(int inode, ClusterNetId inet) {
 	/* for sinks and sources, ptc_num is class */
 	ptc_num = device_ctx.rr_nodes[inode].ptc_num(); 
 	/* First node_block for net is the source */
-	blk_id = cluster_ctx.clb_nlist.net_driver_block(inet);
+	blk_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
 	type = device_ctx.grid[i][j].type;
 
 	if (place_ctx.block_locs[blk_id].x != i || place_ctx.block_locs[blk_id].y != j) {		
@@ -241,7 +241,7 @@ static void check_source(int inode, ClusterNetId inet) {
 	}
 
 	//Get the driver pin's index in the block
-	node_block_pin = cluster_ctx.clb_nlist.pin_index(inet, 0);
+	node_block_pin = cluster_ctx.clb_nlist.pin_index(net_id, 0);
 	iclass = type->pin_class[node_block_pin];
             
 	if (ptc_num != iclass) {		
@@ -556,10 +556,10 @@ void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_loc
 	 * locally).                                                                */
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		for (iclass = 0; iclass < cluster_ctx.clb_nlist.block_type(blk_id)->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[(size_t)blk_id][iclass].size();
+			num_local_opins = clb_opins_used_locally[blk_id][iclass].size();
 			/* Will always be 0 for pads or SINK classes. */
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
-				inode = clb_opins_used_locally[(size_t)blk_id][iclass][ipin];
+				inode = clb_opins_used_locally[blk_id][iclass][ipin];
 				route_ctx.rr_node_state[inode].set_occ(route_ctx.rr_node_state[inode].occ() + 1);
 			}
 		}
@@ -580,11 +580,11 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
 		for (iclass = 0; iclass < cluster_ctx.clb_nlist.block_type(blk_id)->num_class; iclass++) {
-			num_local_opins = clb_opins_used_locally[(size_t)blk_id][iclass].size();
+			num_local_opins = clb_opins_used_locally[blk_id][iclass].size();
 			/* Always 0 for pads and for SINK classes */
 
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
-				inode = clb_opins_used_locally[(size_t)blk_id][iclass][ipin];
+				inode = clb_opins_used_locally[blk_id][iclass][ipin];
 				check_node_and_range(inode, route_type, segment_inf); /* Node makes sense? */
 
 				/* Now check that node is an OPIN of the right type. */
@@ -594,7 +594,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%lu (%s)\n"
 						"\tClass %d local OPIN is wrong rr_type -- rr_node #%d of type %d.\n",
-						(size_t)blk_id, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), iclass, inode, rr_type);
+						size_t(blk_id), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), iclass, inode, rr_type);
 				}
 
 				ipin = device_ctx.rr_nodes[inode].ptc_num();
@@ -602,7 +602,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 					vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__, 					
 						"in check_locally_used_opins: block #%lu (%s):\n"
 						"\tExpected class %d local OPIN has class %d -- rr_node #: %d.\n",
-						(size_t)blk_id, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), iclass,	cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin], inode);
+						size_t(blk_id), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), iclass, cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin], inode);
 				}
 			}
 		}

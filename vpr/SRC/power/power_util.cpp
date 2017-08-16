@@ -259,7 +259,7 @@ char * alloc_SRAM_values_from_truth_table(int LUT_size,
     auto expanded_truth_table = expand_truth_table(truth_table, LUT_size);
     std::vector<vtr::LogicValue> lut_mask = truth_table_to_lut_mask(expanded_truth_table, LUT_size);
 
-    VTR_ASSERT(lut_mask.size() == (size_t) num_SRAM_bits);
+    VTR_ASSERT(lut_mask.size() == (size_t)num_SRAM_bits);
 
     //Convert to string
     for(size_t i = 0; i < lut_mask.size(); ++i) {
@@ -281,8 +281,8 @@ void mux_arch_fix_levels(t_mux_arch * mux_arch) {
 	}
 }
 
-float clb_net_density(int net_idx) {
-	if (net_idx == OPEN) {
+float clb_net_density(ClusterNetId net_idx) {
+	if (net_idx == ClusterNetId::INVALID()) {
 		return 0.;
 	} else {
         auto& power_ctx = g_vpr_ctx.power();
@@ -290,8 +290,8 @@ float clb_net_density(int net_idx) {
 	}
 }
 
-float clb_net_prob(int net_idx) {
-	if (net_idx == OPEN) {
+float clb_net_prob(ClusterNetId net_idx) {
+	if (net_idx == ClusterNetId::INVALID()) {
 		return 0.;
 	} else {
         auto& power_ctx = g_vpr_ctx.power();

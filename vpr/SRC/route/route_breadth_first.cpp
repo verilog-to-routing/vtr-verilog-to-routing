@@ -11,15 +11,15 @@ using namespace std;
 
 /********************* Subroutines local to this module *********************/
 
-static bool breadth_first_route_net(ClusterNetId inet, float bend_cost);
+static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost);
 
 static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 		int remaining_connections_to_sink);
 
 static void breadth_first_expand_neighbours(int inode, float pcost, 
-	ClusterNetId inet, float bend_cost);
+	ClusterNetId net_id, float bend_cost);
 
-static void breadth_first_add_source_to_heap(ClusterNetId inet);
+static void breadth_first_add_source_to_heap(ClusterNetId net_id);
 
 /************************ Subroutine definitions ****************************/
 
@@ -88,7 +88,7 @@ bool try_breadth_first_route(t_router_opts router_opts,
 	return (false);
 }
 
-bool try_breadth_first_route_net(ClusterNetId inet, float pres_fac, 
+bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac, 
 		t_router_opts router_opts) {
 
 	bool is_routed = false;
@@ -96,35 +96,35 @@ bool try_breadth_first_route_net(ClusterNetId inet, float pres_fac,
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	if (cluster_ctx.clb_nlist.net_fixed(inet)) { /* Skip pre-routed nets. */
+	if (cluster_ctx.clb_nlist.net_fixed(net_id)) { /* Skip pre-routed nets. */
 		is_routed = true;
 
-	} else if (cluster_ctx.clb_nlist.net_global(inet)) { /* Skip global nets. */
+	} else if (cluster_ctx.clb_nlist.net_global(net_id)) { /* Skip global nets. */
 		is_routed = true;
 
 	} else {
-		pathfinder_update_path_cost(route_ctx.trace_head[inet], -1, pres_fac);
-		is_routed = breadth_first_route_net(inet, router_opts.bend_cost);
+		pathfinder_update_path_cost(route_ctx.trace_head[net_id], -1, pres_fac);
+		is_routed = breadth_first_route_net(net_id, router_opts.bend_cost);
 
 		/* Impossible to route? (disconnected rr_graph) */
 		if (is_routed) {
-			cluster_ctx.clb_nlist.set_routed(inet, true);
+			cluster_ctx.clb_nlist.set_routed(net_id, true);
 		} else {
 			vtr::printf_info("Routing failed.\n");
 		}
 
-		pathfinder_update_path_cost(route_ctx.trace_head[inet], 1, pres_fac);
+		pathfinder_update_path_cost(route_ctx.trace_head[net_id], 1, pres_fac);
 	}
 	return (is_routed);
 }
 
-static bool breadth_first_route_net(ClusterNetId inet, float bend_cost) {
+static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 
 	/* Uses a maze routing (Dijkstra's) algorithm to route a net.  The net       *
 	 * begins at the net output, and expands outward until it hits a target      *
 	 * pin.  The algorithm is then restarted with the entire first wire segment  *
 	 * included as part of the source this time.  For an n-pin net, the maze     *
-	 * router is invoked n-1 times to complete all the connections.  Inet is     *
+	 * router is invoked n-1 times to complete all the connections.  net_id is     *
 	 * the index of the net to be routed.  Bends are penalized by bend_cost      *
 	 * (which is typically zero for detailed routing and nonzero only for global *
 	 * routing), since global routes with lots of bends are tougher to detailed  *
@@ -142,21 +142,21 @@ static bool breadth_first_route_net(ClusterNetId inet, float bend_cost) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	free_traceback(inet);
-	breadth_first_add_source_to_heap(inet);
-	mark_ends(inet);
+	free_traceback(net_id);
+	breadth_first_add_source_to_heap(net_id);
+	mark_ends(net_id);
 
 
 	tptr = NULL;
 	remaining_connections_to_sink = 0;
 
-	for (i = 1; i < cluster_ctx.clb_nlist.net_pins(inet).size(); i++) { /* Need n-1 wires to connect n pins */
+	for (i = 1; i < cluster_ctx.clb_nlist.net_pins(net_id).size(); i++) { /* Need n-1 wires to connect n pins */
 		breadth_first_expand_trace_segment(tptr, remaining_connections_to_sink);
 		current = get_heap_head();
 
 		if (current == NULL) { /* Infeasible routing.  No possible path for net. */
 			vtr::printf_info("Cannot route net #%lu (%s) to sink #%d -- no possible path.\n",
-					(size_t)inet, cluster_ctx.clb_nlist.net_name(inet).c_str(), i);
+					size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(), i);
 			reset_path_costs(); /* Clean up before leaving. */
 			return (false);
 		}
@@ -175,7 +175,7 @@ static bool breadth_first_route_net(ClusterNetId inet, float bend_cost) {
 				if (pcost > 0.99 * HUGE_POSITIVE_FLOAT) /* First time touched. */
 					add_to_mod_list(&route_ctx.rr_node_route_inf[inode].path_cost);
 
-				breadth_first_expand_neighbours(inode, new_pcost, inet,
+				breadth_first_expand_neighbours(inode, new_pcost, net_id,
 						bend_cost);
 			}
 
@@ -184,7 +184,7 @@ static bool breadth_first_route_net(ClusterNetId inet, float bend_cost) {
 
 			if (current == NULL) { /* Impossible routing. No path for net. */
 				vtr::printf_info("Cannot route net #%d (%s) to sink #%d -- no possible path.\n",
-						(size_t)inet, cluster_ctx.clb_nlist.net_name(inet).c_str(), i);
+						size_t(net_id), cluster_ctx.clb_nlist.net_name(net_id).c_str(), i);
 				reset_path_costs();
 				return (false);
 			}
@@ -194,7 +194,7 @@ static bool breadth_first_route_net(ClusterNetId inet, float bend_cost) {
 
 		route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
 		remaining_connections_to_sink = route_ctx.rr_node_route_inf[inode].target_flag;
-		tptr = update_traceback(current, inet);
+		tptr = update_traceback(current, net_id);
 		free_heap_data(current);
 	}
 
@@ -293,7 +293,7 @@ static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 }
 
 static void breadth_first_expand_neighbours(int inode, float pcost, 
-	ClusterNetId inet, float bend_cost) {
+	ClusterNetId net_id, float bend_cost) {
 
 	/* Puts all the rr_nodes adjacent to inode on the heap.  rr_nodes outside   *
 	 * the expanded bounding box specified in route_bb are not added to the     *
@@ -310,10 +310,10 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 	for (iconn = 0; iconn < num_edges; iconn++) {
 		to_node = device_ctx.rr_nodes[inode].edge_sink_node(iconn);
 
-		if (device_ctx.rr_nodes[to_node].xhigh() < route_ctx.route_bb[(size_t)inet].xmin
-				|| device_ctx.rr_nodes[to_node].xlow() > route_ctx.route_bb[(size_t)inet].xmax
-				|| device_ctx.rr_nodes[to_node].yhigh() < route_ctx.route_bb[(size_t)inet].ymin
-				|| device_ctx.rr_nodes[to_node].ylow() > route_ctx.route_bb[(size_t)inet].ymax)
+		if (device_ctx.rr_nodes[to_node].xhigh() < route_ctx.route_bb[net_id].xmin
+				|| device_ctx.rr_nodes[to_node].xlow() > route_ctx.route_bb[net_id].xmax
+				|| device_ctx.rr_nodes[to_node].yhigh() < route_ctx.route_bb[net_id].ymin
+				|| device_ctx.rr_nodes[to_node].ylow() > route_ctx.route_bb[net_id].ymax)
 			continue; /* Node is outside (expanded) bounding box. */
 
 
@@ -331,7 +331,7 @@ static void breadth_first_expand_neighbours(int inode, float pcost,
 	}
 }
 
-static void breadth_first_add_source_to_heap(ClusterNetId inet) {
+static void breadth_first_add_source_to_heap(ClusterNetId net_id) {
 
 	/* Adds the SOURCE of this net to the heap.  Used to start a net's routing. */
 
@@ -340,7 +340,7 @@ static void breadth_first_add_source_to_heap(ClusterNetId inet) {
 
     auto& route_ctx = g_vpr_ctx.routing();
 
-	inode = route_ctx.net_rr_terminals[inet][0]; /* SOURCE */
+	inode = route_ctx.net_rr_terminals[net_id][0]; /* SOURCE */
 	cost = get_rr_cong_cost(inode);
 
 	node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);

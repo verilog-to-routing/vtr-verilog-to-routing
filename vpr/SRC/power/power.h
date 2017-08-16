@@ -267,7 +267,7 @@ struct t_power_commonly_used {
 struct t_rr_node_power {
 	float * in_dens; /* Switching density of inputs */
 	float * in_prob; /* Static probability of inputs */
-    int net_num; /* Net number using the associated rr_node */
+	ClusterNetId net_num; /* Net number using the associated rr_node */
 	short num_inputs; /* Number of inputs */
 	short selected_input; /* Input index that is selected */
 	short driver_switch_type; /* Switch type that drives this resource */

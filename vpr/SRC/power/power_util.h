@@ -67,9 +67,9 @@ bool power_method_is_recursive(
 const char * transistor_type_name(e_tx_type type);
 char * alloc_SRAM_values_from_truth_table(int LUT_size,
 		const AtomNetlist::TruthTable& truth_table);
-float clb_net_density(int net_idx);
+float clb_net_density(ClusterNetId net_idx);
 const char * interconnect_type_name(enum e_interconnect type);
-float clb_net_prob(int net_idx);
+float clb_net_prob(ClusterNetId net_idx);
 
 void output_log(t_log * log_ptr, FILE * fp);
 

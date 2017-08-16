@@ -802,7 +802,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 
 	/* Reset rr graph net indices */
 	for (rr_node_idx = 0; rr_node_idx < device_ctx.num_rr_nodes; rr_node_idx++) {
-		rr_node_power[rr_node_idx].net_num = OPEN;
+		rr_node_power[rr_node_idx].net_num = ClusterNetId::INVALID();
 		rr_node_power[rr_node_idx].num_inputs = 0;
 		rr_node_power[rr_node_idx].selected_input = 0;
 	}
@@ -813,7 +813,7 @@ static void power_usage_routing(t_power_usage * power_usage,
 
 		for (trace = route_ctx.trace_head[net_id]; trace != NULL; trace = trace->next) {
 			rr_node_power[trace->index].visited = false;
-			rr_node_power[trace->index].net_num = (size_t)net_id;
+			rr_node_power[trace->index].net_num = net_id;
 		}
 	}
 
@@ -1171,12 +1171,12 @@ void power_routing_init(const t_det_routing_arch * routing_arch) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
 	/* Copy probability/density values to new netlist */
-	if (!power_ctx.clb_net_power) {
-		power_ctx.clb_net_power = (t_net_power*) vtr::calloc(cluster_ctx.clb_nlist.nets().size(), sizeof(t_net_power));
+	if (power_ctx.clb_net_power.size() == 0) {
+		power_ctx.clb_net_power.resize(cluster_ctx.clb_nlist.nets().size());
 	}
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		power_ctx.clb_net_power[(size_t)net_id].probability = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].probability;
-		power_ctx.clb_net_power[(size_t)net_id].density = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].density;
+		power_ctx.clb_net_power[net_id].probability = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].probability;
+		power_ctx.clb_net_power[net_id].density = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].density;
 	}
 
 	/* Initialize RR Graph Structures */
