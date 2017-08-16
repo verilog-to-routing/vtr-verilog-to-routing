@@ -1,9 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /* 
  * File:   route_budgets.cpp
  * Author: Jia Min Wang
@@ -46,10 +40,12 @@
 #include "net_delay.h"
 #include "route_budgets.h"
 
-using tatum::TimingGraph;
-using tatum::NodeId;
-using tatum::NodeType;
-using tatum::EdgeId;
+//using tatum::TimingGraph;
+//using tatum::NodeId;
+//using tatum::NodeType;
+//using tatum::EdgeId;
+
+
 
 #define SHORT_PATH_EXP 0.5
 #define MIN_DELAY_DECREMENT 1e-9
@@ -109,6 +105,7 @@ void route_budgets::load_route_budgets(float ** net_delay,
              * criticalities (<0.01) get criticality 0 and are ignored entirely, and everything 
              * else becomes a bit less critical. This effect becomes more pronounced if 
              * max_criticality is set lower. */
+            // VTR_ASSERT(pin_criticality[ipin] > -0.01 && pin_criticality[ipin] < 1.01);
             pin_criticality = max(pin_criticality - (1.0 - router_opts.max_criticality), 0.0);
 
             /* Take pin criticality to some power (1 by default). */
@@ -117,22 +114,19 @@ void route_budgets::load_route_budgets(float ** net_delay,
             /* Cut off pin criticality at max_criticality. */
             pin_criticality = min(pin_criticality, router_opts.max_criticality);
 
+
             delay_min_budget[inet][ipin] = 0;
             delay_lower_bound[inet][ipin] = 0;
             delay_upper_bound[inet][ipin] = 100e-9;
+            delay_max_budget[inet][ipin] = min(net_delay[inet][ipin] / pin_criticality, delay_upper_bound[inet][ipin]);
 
-            if (pin_criticality == 0) {
-                //prevent invalid division
-                delay_max_budget[inet][ipin] = delay_upper_bound[inet][ipin];
-            } else {
-                delay_max_budget[inet][ipin] = min(net_delay[inet][ipin] / pin_criticality, delay_upper_bound[inet][ipin]);
+            if (!isnan(delay_max_budget[inet][ipin])) {
+                VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
+                        && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
+                        && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
+                        && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin],
+                        "Delay budgets do not fit in delay bounds");
             }
-
-            VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
-                    && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
-                    && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
-                    && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin],
-                    "Delay budgets do not fit in delay bounds");
         }
     }
 
@@ -148,6 +142,78 @@ void route_budgets::load_route_budgets(float ** net_delay,
     set = true;
 }
 
+void route_budgets::allocate_slack() {
+    vector<vector<float>> temp_budgets;
+    unsigned iteration = 0;
+    float max_budget_change = 6e-12;
+
+    while (iteration < 7 || max_budget_change > 5e-12) {
+        short_path_sta(temp_budgets);
+        keep_budget_in_bounds(MIN, temp_budgets);
+
+        long_path_sta(temp_budgets);
+        keep_budget_in_bounds(MAX, temp_budgets);
+
+    }
+
+    iteration = 0;
+    max_budget_change = 900e-12;
+
+    while (iteration < 7 || iteration > 3 || max_budget_change > 800e-12) {
+        long_path_sta(temp_budgets);
+        keep_budget_in_bounds(MIN, temp_budgets);
+    }
+
+    delay_max_budget = temp_budgets;
+
+    iteration = 0;
+    max_budget_change = 900e-12;
+
+    while (iteration < 7 || iteration > 3 || max_budget_change > 800e-12) {
+        short_path_sta(temp_budgets);
+        keep_budget_in_bounds(MAX, temp_budgets);
+    }
+
+
+    iteration = 0;
+    max_budget_change = 900e-12;
+
+    float bottom_range = -1e-9;
+    while (iteration < 3 || max_budget_change > 800e-12) {
+        short_path_sta(temp_budgets);
+        for (unsigned i = 0; i < temp_budgets.size(); i++) {
+            for (unsigned j = 0; i < temp_budgets[i].size(); j++) {
+                temp_budgets[i][j] = max(temp_budgets[i][j], bottom_range);
+
+            }
+        }
+    }
+
+    delay_min_budget = temp_budgets;
+}
+
+void route_budgets::keep_budget_in_bounds(max_or_min _type, vector<vector<float>> &temp_budgets) {
+    for (unsigned i = 0; i < temp_budgets.size(); i++) {
+        for (unsigned j = 0; i < temp_budgets[i].size(); j++) {
+            if (_type == MAX) {
+                temp_budgets[i][j] = max(temp_budgets[i][j], delay_lower_bound[i][j]);
+            }
+            if (_type == MIN) {
+                temp_budgets[i][j] = min(temp_budgets[i][j], delay_upper_bound[i][j]);
+            }
+        }
+    }
+
+}
+
+void route_budgets::short_path_sta(vector<vector<float>> &temp_budgets) {
+
+}
+
+void route_budgets::long_path_sta(vector<vector<float>> &temp_budgets) {
+
+}
+
 void route_budgets::update_congestion_times(int inet) {
     num_times_congested[inet]++;
 }
@@ -155,6 +221,7 @@ void route_budgets::update_congestion_times(int inet) {
 void route_budgets::not_congested_this_iteration(int inet) {
     num_times_congested[inet] = 0;
 }
+
 
 void route_budgets::lower_budgets() {
     auto& cluster_ctx = g_vpr_ctx.clustering();

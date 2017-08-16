@@ -15,6 +15,10 @@
 
 using namespace std;
 
+enum max_or_min{
+    MAX, MIN
+};
+
 class route_budgets {
 public:
     route_budgets();
@@ -39,7 +43,7 @@ public:
 
     void short_path_sta(vector<vector<float>> &temp_budgets);
     void long_path_sta(vector<vector<float>> &temp_budgets);
-    //void keep_budget_in_bounds(max_or_min _type, vector<vector<float>> &temp_budgets);
+    void keep_budget_in_bounds(max_or_min _type, vector<vector<float>> &temp_budgets);
     void allocate_slack();
     
 private:
