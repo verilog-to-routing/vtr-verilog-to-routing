@@ -131,6 +131,16 @@ namespace pugiutil {
                             size_t expected_count,
                             const loc_data& loc_data);
 
+    //Throws a well formatted error if any of node's children are not part of child_names.
+    //Note this does not check whether the nodes in 'attribute_names' actually exist.
+    //
+    //  node - The parent xml node
+    //  child_names - expected attribute names
+    //  loc_data - XML file location data
+    void expect_only_children(const pugi::xml_node node,
+                            std::vector<std::string> child_names,
+                            const loc_data& loc_data);
+
     //Throws a well formatted error if any attribute other than those named in 'attribute_names' are found on 'node'.
     //Note this does not check whether the attribues in 'attribute_names' actually exist.
     //
