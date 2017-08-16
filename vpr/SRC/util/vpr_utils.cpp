@@ -167,7 +167,7 @@ void sync_grid_to_blocks() {
 				|| (blk_y + cluster_ctx.clb_nlist.block_type(blk_id)->height - 1) > (device_ctx.ny + 1)
 				|| blk_z < 0 || blk_z > (cluster_ctx.clb_nlist.block_type(blk_id)->capacity)) {
 			VPR_THROW(VPR_ERROR_PLACE, "Block %lu is at invalid location (%d, %d, %d).\n", 
-				(size_t)blk_id, blk_x, blk_y, blk_z);
+				size_t(blk_id), blk_x, blk_y, blk_z);
 		}
 
 		/* Check types match */
@@ -187,7 +187,7 @@ void sync_grid_to_blocks() {
 
 		if (device_ctx.grid[blk_x][blk_y].width_offset != 0 || device_ctx.grid[blk_x][blk_y].height_offset != 0) {
             VPR_THROW(VPR_ERROR_PLACE, "Large block not aligned in placment for cluster_ctx.blocks %lu at (%d, %d, %d).",
-				(size_t)blk_id, blk_x, blk_y, blk_z);
+				size_t(blk_id), blk_x, blk_y, blk_z);
 		}
 
 		/* Set the block */

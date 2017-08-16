@@ -71,8 +71,6 @@ float get_critical_path_delay(void);
 
 void print_critical_path(const char *fname, const t_timing_inf &timing_inf);
 
-void get_tnode_block_and_output_net(int inode, int *iblk_ptr, int *inet_ptr);
-
 vtr::vector_map<ClusterBlockId, std::vector<int>> alloc_and_load_tnode_lookup_from_pin_id();
 
 void free_tnode_lookup_from_pin_id(vtr::vector_map<ClusterBlockId, std::vector<int>> &tnode_lookup);

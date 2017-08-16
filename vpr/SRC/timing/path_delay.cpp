@@ -3018,8 +3018,7 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 
 	vtr::t_linked_int *critical_path_head, *critical_path_node;
 	FILE *fp;
-	int nets_on_crit_path;
-	int tnodes_on_crit_path, inode, iblk, inet;
+	int nets_on_crit_path, tnodes_on_crit_path, inode;
 	e_tnode_type type;
 	float total_net_delay, total_logic_delay, Tdel;
 
@@ -3044,8 +3043,6 @@ void print_critical_path(const char *fname, const t_timing_inf &timing_inf) {
 		tnodes_on_crit_path++;
 
 		if (type == TN_CB_OPIN) {
-			get_tnode_block_and_output_net(inode, &iblk, &inet);
-
             nets_on_crit_path++;
 
 			total_net_delay += Tdel;
@@ -3169,38 +3166,6 @@ vtr::t_linked_int * allocate_and_load_critical_path(const t_timing_inf &timing_i
 
 	prev_crit_node->next = NULL;
 	return (critical_path_head);
-}
-
-void get_tnode_block_and_output_net(int inode, int *iblk_ptr, int *inet_ptr) {
-
-	/* Returns the index of the block that this tnode is part of.  If the tnode *
-	 * is a TN_CB_OPIN or TN_INPAD_OPIN (i.e. if it drives a net), the net index is  *
-	 * returned via inet_ptr.  Otherwise inet_ptr points at OPEN.               */
-
-	int ipin;
-	ClusterBlockId iblk;
-	ClusterNetId inet;
-	e_tnode_type tnode_type;
-
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& timing_ctx = g_vpr_ctx.timing();
-
-	iblk = timing_ctx.tnodes[inode].block;
-	tnode_type = timing_ctx.tnodes[inode].type;
-
-	if (tnode_type == TN_CB_OPIN) {
-		ipin = timing_ctx.tnodes[inode].pb_graph_pin->pin_count_in_cluster;
-		AtomNetId atom_net_id = cluster_ctx.clb_nlist.block_pb(iblk)->pb_route[ipin].atom_net_id;
-		VTR_ASSERT(atom_net_id);
-		inet = atom_ctx.lookup.clb_net(atom_net_id);
-	} else {
-		inet = ClusterNetId::INVALID();
-	}
-
-	*iblk_ptr = (size_t)iblk;
-	*inet_ptr = (size_t)inet;
 }
 
 #ifndef PATH_COUNTING
