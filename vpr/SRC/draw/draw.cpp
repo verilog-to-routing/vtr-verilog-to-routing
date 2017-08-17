@@ -484,8 +484,8 @@ void alloc_draw_structs(const t_arch* arch) {
 	/* Allocate the structures needed to draw the placement and routing.  Set *
 	 * up the default colors for blocks and nets.                             */
 
-	draw_coords->tile_x = (float *) vtr::malloc((device_ctx.nx + 2) * sizeof(float));
-	draw_coords->tile_y = (float *) vtr::malloc((device_ctx.ny + 2) * sizeof(float));
+	draw_coords->tile_x = (float *) vtr::malloc(device_ctx.grid.width() * sizeof(float));
+	draw_coords->tile_y = (float *) vtr::malloc(device_ctx.grid.height() * sizeof(float));
 
 	/* For sub-block drawings inside clbs */
 	draw_internal_alloc_blk();
@@ -541,9 +541,6 @@ void init_draw_coords(float width_val) {
 	t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-	int i;
-	int j;
-
 	if (!draw_state->show_graphics)
 		return; /* Graphics disabled */
 
@@ -552,7 +549,7 @@ void init_draw_coords(float width_val) {
 	if (device_ctx.num_rr_nodes != 0) {
 		draw_state->draw_rr_node = (t_draw_rr_node *) vtr::realloc(draw_state->draw_rr_node,
 										(device_ctx.num_rr_nodes) * sizeof(t_draw_rr_node));
-		for (i = 0; i < device_ctx.num_rr_nodes; i++) {
+		for (int i = 0; i < device_ctx.num_rr_nodes; i++) {
 			draw_state->draw_rr_node[i].color = DEFAULT_RR_NODE_COLOR;
 			draw_state->draw_rr_node[i].node_highlighted = false;
 		}
@@ -560,34 +557,34 @@ void init_draw_coords(float width_val) {
 
 	draw_coords->tile_width = width_val;
 	draw_coords->pin_size = 0.3;
-	for (i = 0; i < device_ctx.num_block_types; ++i) {
+	for (int i = 0; i < device_ctx.num_block_types; ++i) {
 		if (device_ctx.block_types[i].num_pins > 0) {
 			draw_coords->pin_size = min(draw_coords->pin_size,
 					(draw_coords->get_tile_width() / (4.0F * device_ctx.block_types[i].num_pins)));
 		}
 	}
 
-	j = 0;
-	for (i = 0; i < (device_ctx.nx + 1); i++) {
+	size_t j = 0;
+	for (size_t i = 0; i < (device_ctx.grid.width() - 1); i++) {
 		draw_coords->tile_x[i] = (i * draw_coords->get_tile_width()) + j;
 		j += device_ctx.chan_width.y_list[i] + 1; /* N wires need N+1 units of space */
 	}
-	draw_coords->tile_x[device_ctx.nx + 1] = ((device_ctx.nx + 1) * draw_coords->get_tile_width()) + j;
+	draw_coords->tile_x[device_ctx.grid.width() - 1] = ((device_ctx.grid.width() - 1) * draw_coords->get_tile_width()) + j;
 
 	j = 0;
-	for (i = 0; i < (device_ctx.ny + 1); ++i) {
+	for (size_t i = 0; i < (device_ctx.grid.height() - 1); ++i) {
 		draw_coords->tile_y[i] = (i * draw_coords->get_tile_width()) + j;
 		j += device_ctx.chan_width.x_list[i] + 1;
 	}
-	draw_coords->tile_y[device_ctx.ny + 1] = ((device_ctx.ny + 1) * draw_coords->get_tile_width()) + j;
+	draw_coords->tile_y[device_ctx.grid.height() - 1] = ((device_ctx.grid.height() - 1) * draw_coords->get_tile_width()) + j;
 
 	/* Load coordinates of sub-blocks inside the clbs */
 	draw_internal_init_blk();
 
 	set_visible_world(
 		0.0, 0.0,
-		draw_coords->tile_y[device_ctx.ny + 1] + draw_coords->get_tile_width(), 
-		draw_coords->tile_x[device_ctx.nx + 1] + draw_coords->get_tile_width()
+		draw_coords->tile_y[device_ctx.grid.height() - 1] + draw_coords->get_tile_width(), 
+		draw_coords->tile_x[device_ctx.grid.width() - 1] + draw_coords->get_tile_width()
 	);
 }
 
@@ -600,14 +597,14 @@ static void drawplace(void) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
-	int i, j, k, bnum;
+	int k, bnum;
 	int num_sub_tiles;
 	int height;
 
 	setlinewidth(0);
 
-	for (i = 0; i <= (device_ctx.nx + 1); i++) {
-		for (j = 0; j <= (device_ctx.ny + 1); j++) {
+	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
 			/* Only the first block of a group should control drawing */
 			if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0) 
 				continue;
@@ -1700,26 +1697,26 @@ void draw_partial_route(const std::vector<int>& rr_nodes_to_draw) {
 	t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-	static vtr::Matrix<int> chanx_track; /* [1..device_ctx.nx][0..device_ctx.ny] */
-	static vtr::Matrix<int> chany_track; /* [0..device_ctx.nx][1..device_ctx.ny] */
+	static vtr::Matrix<int> chanx_track; /* [1..device_ctx.grid.width() - 2][0..device_ctx.grid.height() - 2] */
+	static vtr::Matrix<int> chany_track; /* [0..device_ctx.grid.width() - 2][1..device_ctx.grid.height() - 2] */
 	if (draw_state->draw_route_type == GLOBAL) {
 		/* Allocate some temporary storage if it's not already available. */
-        size_t nx = device_ctx.nx;
-        size_t ny = device_ctx.ny;
+        size_t width = device_ctx.grid.width();
+        size_t height = device_ctx.grid.height();
 		if (chanx_track.empty()) {
-			chanx_track = vtr::Matrix<int>({{{1, nx+1}, {0, ny+1}}});
+			chanx_track = vtr::Matrix<int>({{{1, width-1}, {0, height-1}}});
 		}
 
 		if (chany_track.empty()) {
-			chany_track = vtr::Matrix<int>({{{0, nx+1}, {1, ny+1}}});
+			chany_track = vtr::Matrix<int>({{{0, width-1}, {1, height-1}}});
 		}
 
-		for (int i = 1; i <= device_ctx.nx; i++)
-			for (int j = 0; j <= device_ctx.ny; j++)
+		for (size_t i = 1; i < width - 1; i++)
+			for (size_t j = 0; j < height - 1; j++)
 				chanx_track[i][j] = (-1);
 
-		for (int i = 0; i <= device_ctx.nx; i++)
-			for (int j = 1; j <= device_ctx.ny; j++)
+		for (size_t i = 0; i < width - 1; i++)
+			for (size_t j = 1; j < height - 1; j++)
 				chany_track[i][j] = (-1);
 	}
 

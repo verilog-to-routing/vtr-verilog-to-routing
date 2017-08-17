@@ -56,6 +56,7 @@ namespace vtr {
     char* fgets(char *buf, int max_size, FILE * fp);
 
     int atoi(const std::string& value);
+    unsigned atou(const std::string& value);
     float atof(const std::string& value);
     double atod(const std::string& value);
 

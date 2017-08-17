@@ -124,6 +124,7 @@ namespace pugiutil {
                            loc_data.filename(), loc_data.line(node));
         }
     }
+
     //Throws a well formatted error if the actual child count does not equal the 'expected_count'
     //
     //  node - The parent xml node
@@ -140,6 +141,44 @@ namespace pugiutil {
                             + "'" + std::string(node.name()) + "'"
                             + " (expected " + std::to_string(expected_count) + ")",
                            loc_data.filename(), loc_data.line(node));
+        }
+    }
+
+    //Throws a well formatted error if any of node's children are not part of child_names.
+    //Note this does not check whether the nodes in 'attribute_names' actually exist.
+    //
+    //  node - The parent xml node
+    //  child_names - expected attribute names
+    //  loc_data - XML file location data
+    void expect_only_children(const pugi::xml_node node,
+                            std::vector<std::string> child_names,
+                            const loc_data& loc_data) {
+
+        for (auto child : node.children()) {
+            std::string child_name = child.name();
+            auto iter = std::find(child_names.begin(),
+                                  child_names.end(),
+                                  child_name);
+            if (iter == child_names.end()) {
+                std::string msg =  "Unexpected child '" + child_name + "'"
+                                 + " of node '" + node.name() + "'.";
+
+                if (child_names.size() > 0) {
+                    msg += " Expected (possibly) one of: ";
+                    for (size_t i = 0; i < child_names.size(); i++) {
+                        if (i != 0) {
+                            msg += ", ";
+                        }
+                        if (i > 0 && i == child_names.size() - 1) {
+                            msg += "or ";
+                        }
+                        msg += "'" + child_names[i] + "'";
+                    }
+                    msg += ".";
+                }
+
+                throw XmlError(msg, loc_data.filename(), loc_data.line(child));
+            }
         }
     }
 

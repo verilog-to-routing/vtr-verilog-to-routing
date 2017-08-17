@@ -33,14 +33,14 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 	int icblock, isblock, iseg_low, iseg_high;
 	float Cin, Cout;
 	t_rr_type from_rr_type, to_rr_type;
-	bool * cblock_counted; /* [0..max(device_ctx.nx,device_ctx.ny)] -- 0th element unused. */
-	float *buffer_Cin; /* [0..max(device_ctx.nx,device_ctx.ny)] */
+	bool * cblock_counted; /* [0..maxlen-1] -- 0th element unused. */
+	float *buffer_Cin; /* [0..maxlen-1] */
 	bool buffered;
 	float *Couts_to_add; /* UDSD */
 
     auto& device_ctx = g_vpr_ctx.device();
 
-	maxlen = max(device_ctx.nx, device_ctx.ny) + 1;
+	maxlen = max(device_ctx.grid.width(), device_ctx.grid.height());
 	cblock_counted = (bool *) vtr::calloc(maxlen, sizeof(bool));
 	buffer_Cin = (float *) vtr::calloc(maxlen, sizeof(float));
 

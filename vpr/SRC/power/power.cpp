@@ -741,13 +741,14 @@ static void power_usage_clock_single(t_power_usage * power_usage,
 	length = 0;
 
 	/* 1. IO to chip center */
-	length += (device_ctx.ny + 2) / 2;
+	length += device_ctx.grid.height() / 2;
 
 	/* 2. H-Tree to 4 quadrants */
-	length += device_ctx.ny / 2 + 2 * device_ctx.nx;
+	length += device_ctx.grid.height() / 2; //Vertical component of H
+    length += 2 * device_ctx.grid.width(); //Horizontal horizontal component of H (two rows)
 
 	/* 3. Ribs - to */
-	length += device_ctx.nx / 2 * device_ctx.ny;
+	length += device_ctx.grid.width() / 2 * device_ctx.grid.height(); //Each rib spand 1/2 of width, two rows of ribs
 
 	buffer_power.dynamic = length * clock_buffer_power.dynamic;
 	buffer_power.leakage = length * clock_buffer_power.leakage;
@@ -1693,7 +1694,7 @@ static void power_print_summary(FILE * fp, const t_vpr_setup& vpr_setup) {
 	fprintf(fp, "Voltage: %.2f\n", power_ctx.tech->Vdd);
 	fprintf(fp, "Temperature: %g\n", power_ctx.tech->temperature);
 	fprintf(fp, "Critical Path: %g\n", power_ctx.solution_inf.T_crit);
-	fprintf(fp, "Size of FPGA: %d x %d\n", device_ctx.nx, device_ctx.ny);
+	fprintf(fp, "Size of FPGA: %zu x %zu\n", device_ctx.grid.width(), device_ctx.grid.height());
 	fprintf(fp, "Channel Width: %d\n", power_ctx.solution_inf.channel_width);
 	fprintf(fp, "\n");
 }

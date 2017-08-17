@@ -541,9 +541,10 @@ struct t_grid_tile {
 	int height_offset = 0;
 };
 
-/* Stores the bounding box of a net in terms of the minimum and  *
- * maximum coordinates of the blocks forming the net, clipped to *
- * the region (1..device_ctx.nx, 1..device_ctx.ny).                                    */
+/* Stores the bounding box of a net in terms of the minimum and   *
+ * maximum coordinates of the blocks forming the net, clipped to  *
+ * the region:                                                    *
+ *  (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1) */
 struct t_bb {
 	int xmin;
 	int xmax;

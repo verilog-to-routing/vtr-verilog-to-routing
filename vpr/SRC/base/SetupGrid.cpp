@@ -540,13 +540,9 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
 
 static void CheckGrid(const DeviceGrid& grid) {
 
-	int i, j;
-
-    auto& device_ctx = g_vpr_ctx.device();
-
 	/* Check grid is valid */
-	for (i = 0; i <= (device_ctx.nx + 1); ++i) {
-		for (j = 0; j <= (device_ctx.ny + 1); ++j) {
+	for (size_t i = 0; i < grid.width(); ++i) {
+		for (size_t j = 0; j < grid.height(); ++j) {
             auto type = grid[i][j].type;
 			if (NULL == type) {
 				vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, "Grid Location (%d,%d) has no type.\n", i, j);
@@ -564,9 +560,9 @@ static void CheckGrid(const DeviceGrid& grid) {
             //Verify that type and width/height offsets are correct (e.g. for dimension > 1 blocks)
             if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
                 //From the root block check that all other blocks are correct
-                for (int x = i; x < i + type->width; ++x) {
+                for (size_t x = i; x < i + type->width; ++x) {
                     int x_offset = x - i;
-                    for (int y = j; y < j + type->height; ++y) {
+                    for (size_t y = j; y < j + type->height; ++y) {
                         int y_offset = y - j;
 
                         auto& tile = grid[x][y];

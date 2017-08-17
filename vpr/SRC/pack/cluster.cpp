@@ -1986,7 +1986,7 @@ static void start_new_cluster(
     /* Expand FPGA size if needed */
     if (num_used_type_instances[new_cluster->type] > device_ctx.grid.num_instances(new_cluster->type)) {
         device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances);
-        vtr::printf_info("Not enough resources expand FPGA size to (%d x %d)\n",
+        vtr::printf_info("Not enough resources expand FPGA size to (%zu x %zu)\n",
                 device_ctx.grid.width(), device_ctx.grid.height());
     }
 }

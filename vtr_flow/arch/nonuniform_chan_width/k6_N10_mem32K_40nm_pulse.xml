@@ -111,7 +111,6 @@
 	  -->
 		<area grid_logic_tile_area="0"/>
     <chan_width_distr>
-      <io width="2.000000"/>
       <x distr="pulse" peak="1.000000" width="0.500000" xpeak="0.500000" dc="0.500000"/>
       <y distr="pulse" peak="1.000000" width="0.500000" xpeak="0.500000" dc="0.500000"/>
     </chan_width_distr>

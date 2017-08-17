@@ -1272,6 +1272,7 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
 
     int target_xlow, target_ylow, target_xhigh, target_yhigh;
     int rlim = 1;
+    int max_grid_dim = max(device_ctx.grid.width(), device_ctx.grid.height());
     int inode;
     float area;
     bool success;
@@ -1289,7 +1290,7 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
     }
     if (rt_node == NULL || rt_node->u.child_list == NULL) {
         /* If unknown traceback, set radius of bin to be size of chip */
-        rlim = max(device_ctx.nx + 2, device_ctx.ny + 2);
+        rlim = max_grid_dim;
         return rlim;
     }
 
@@ -1324,7 +1325,7 @@ static int mark_node_expansion_by_bin(int source_node, int target_node,
         }
 
         if (success == false) {
-            if (rlim > max(device_ctx.nx + 2, device_ctx.ny + 2)) {
+            if (rlim > max_grid_dim) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "VPR internal error, the source node %d has paths that are not found in traceback.\n", source_node);
             }

@@ -61,7 +61,7 @@ int seg_index_of_sblock(int from_node, int to_node) {
 	 * switch box on the left side of a CHANX segment at (i,j) has seg_index =   *
 	 * i-1, while the switch box on the right side of that segment has seg_index *
 	 * = i.  CHANY stuff works similarly.  Hence the range of values returned is *
-	 * 0 to device_ctx.nx (if from_node is a CHANX) or 0 to device_ctx.ny (if from_node is a CHANY).   */
+	 * 0 to device_ctx.grid.width()-1 (if from_node is a CHANX) or 0 to device_ctx.grid.height()-1 (if from_node is a CHANY).   */
 
 	t_rr_type from_rr_type, to_rr_type;
 

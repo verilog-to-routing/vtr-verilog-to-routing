@@ -89,7 +89,7 @@ bool place_and_route(t_placer_opts placer_opts,
 
     if (!placer_opts.doPlacement || placer_opts.place_freq == PLACE_NEVER) {
         /* Read the placement from a file */
-        read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.nx, device_ctx.ny, cluster_ctx.num_blocks, cluster_ctx.blocks);
+        read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(), filename_opts.verify_file_digests, device_ctx.grid, cluster_ctx.num_blocks, cluster_ctx.blocks);
         sync_grid_to_blocks();
     } else {
         VTR_ASSERT((PLACE_ONCE == placer_opts.place_freq) || (PLACE_ALWAYS == placer_opts.place_freq));
@@ -541,7 +541,7 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 
     free_rr_graph();
 
-    create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
+    create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.grid,
             &device_ctx.chan_width, det_routing_arch->switch_block_type,
             det_routing_arch->Fs, det_routing_arch->switchblocks,
             det_routing_arch->num_segment,
@@ -595,62 +595,50 @@ static int binary_search_place_and_route(t_placer_opts placer_opts,
 void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 
     /* Assigns widths to channels (in tracks).  Minimum one track          * 
-     * per channel.  io channels are io_rat * maximum in interior          * 
-     * tracks wide.  The channel distributions read from the architecture  *
+     * per channel. The channel distributions read from the architecture  *
      * file are scaled by cfactor.                                         */
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& grid = device_ctx.grid;
 
-    float chan_width_io = chan_width_dist.chan_width_io;
     t_chan chan_x_dist = chan_width_dist.chan_x_dist;
     t_chan chan_y_dist = chan_width_dist.chan_y_dist;
 
-    /* io channel widths */
+    if (grid.height() > 1) {
+        int num_channels = grid.height() - 1;
+        VTR_ASSERT(num_channels > 0);
+        float separation = 1.0 / num_channels; /* Norm. distance between two channels. */
 
-    int nio = (int) floor(cfactor * chan_width_io + 0.5);
-    if (nio == 0)
-        nio = 1; /* No zero width channels */
+        for (size_t i = 0; i < grid.height(); ++i) {
+            float y = float(i) / num_channels;
+            device_ctx.chan_width.x_list[i] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
 
-    device_ctx.chan_width.x_list[0] = device_ctx.chan_width.x_list[device_ctx.ny] = nio;
-    device_ctx.chan_width.y_list[0] = device_ctx.chan_width.y_list[device_ctx.nx] = nio;
-
-    if (device_ctx.ny > 1) {
-        float separation = 1.0 / (device_ctx.ny - 2.0); /* Norm. distance between two channels. */
-        float y = 0.0; /* This avoids div by zero if device_ctx.ny = 2.0 */
-        device_ctx.chan_width.x_list[1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
-
-        /* No zero width channels */
-        device_ctx.chan_width.x_list[1] = max(device_ctx.chan_width.x_list[1], 1);
-
-        for (int i = 1; i < device_ctx.ny - 1; ++i) {
-            y = (float) i / ((float) (device_ctx.ny - 2.0));
-            device_ctx.chan_width.x_list[i + 1] = (int) floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
-            device_ctx.chan_width.x_list[i + 1] = max(device_ctx.chan_width.x_list[i + 1], 1);
+            device_ctx.chan_width.x_list[i] = max(device_ctx.chan_width.x_list[i], 1); //Minimum channel width 1
         }
     }
 
-    if (device_ctx.nx > 1) {
-        float separation = 1.0 / (device_ctx.nx - 2.0); /* Norm. distance between two channels. */
-        float x = 0.0; /* Avoids div by zero if device_ctx.nx = 2.0 */
-        device_ctx.chan_width.y_list[1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-        device_ctx.chan_width.y_list[1] = max(device_ctx.chan_width.y_list[1], 1);
+    if (grid.width() > 1) {
+        int num_channels = grid.width() - 1;
+        VTR_ASSERT(num_channels > 0);
+        float separation = 1.0 / num_channels; /* Norm. distance between two channels. */
 
-        for (int i = 1; i < device_ctx.nx - 1; ++i) {
-            x = (float) i / ((float) (device_ctx.nx - 2.0));
-            device_ctx.chan_width.y_list[i + 1] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-            device_ctx.chan_width.y_list[i + 1] = max(device_ctx.chan_width.y_list[i + 1], 1);
+        for (size_t i = 0; i < grid.width(); ++i) { //-2 for no perim channels
+            float x = float(i) / num_channels;
+
+            device_ctx.chan_width.y_list[i] = (int) floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
+            device_ctx.chan_width.y_list[i] = max(device_ctx.chan_width.y_list[i], 1); //Minimum channel width 1
         }
     }
 
     device_ctx.chan_width.max = 0;
     device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = INT_MIN;
     device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = INT_MAX;
-    for (int i = 0; i <= device_ctx.ny; ++i) {
+    for (size_t i = 0; i < grid.height(); ++i) {
         device_ctx.chan_width.max = max(device_ctx.chan_width.max, device_ctx.chan_width.x_list[i]);
         device_ctx.chan_width.x_max = max(device_ctx.chan_width.x_max, device_ctx.chan_width.x_list[i]);
         device_ctx.chan_width.x_min = min(device_ctx.chan_width.x_min, device_ctx.chan_width.x_list[i]);
     }
-    for (int i = 0; i <= device_ctx.nx; ++i) {
+    for (size_t i = 0; i < grid.width(); ++i) {
         device_ctx.chan_width.max = max(device_ctx.chan_width.max, device_ctx.chan_width.y_list[i]);
         device_ctx.chan_width.y_max = max(device_ctx.chan_width.y_max, device_ctx.chan_width.y_list[i]);
         device_ctx.chan_width.y_min = min(device_ctx.chan_width.y_min, device_ctx.chan_width.y_list[i]);
@@ -659,12 +647,14 @@ void init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
 #ifdef VERBOSE
     vtr::printf_info("\n");
     vtr::printf_info("device_ctx.chan_width.x_list:\n");
-    for (int i = 0; i <= device_ctx.ny; ++i)
+    for (size_t i = 0; i < grid.height(); ++i) {
         vtr::printf_info("%d  ", device_ctx.chan_width.x_list[i]);
+    }
     vtr::printf_info("\n");
     vtr::printf_info("device_ctx.chan_width.y_list:\n");
-    for (int i = 0; i <= device_ctx.nx; ++i)
+    for (size_t i = 0; i < grid.width(); ++i) {
         vtr::printf_info("%d  ", device_ctx.chan_width.y_list[i]);
+    }
     vtr::printf_info("\n");
 #endif
 }

@@ -39,7 +39,7 @@ def parse_args():
              )
 
     parser.add_argument("--titan_version",
-                        default="1.2.5",
+                        default="1.2.6",
                         help="Titan release version to download")
     parser.add_argument("--vtr_flow_dir",
                         required=True,
@@ -67,9 +67,16 @@ def main():
 
         external_md5 = load_md5_from_url(md5_url)
 
-        if not args.force and os.path.isfile(tar_gz_filename) and md5_matches(tar_gz_filename, external_md5):
+        file_matches = False
+        if os.path.isfile(tar_gz_filename):
+            file_matches = md5_matches(tar_gz_filename, external_md5)
+
+        if not args.force and file_matches and False:
             print "Found existing {} (skipping download and extraction)".format(tar_gz_filename)
         else:
+            if os.path.isfile(tar_gz_filename) and not file_matches:
+                print "Local file MD5 does not match remote MD5"
+
             print "Downloading {}".format(tar_gz_url)
             download_url(tar_gz_filename, tar_gz_url)
 
