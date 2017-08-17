@@ -226,7 +226,7 @@ Verilog HDL file Keyword Support:
 ************ 
 
 ====================  ==================  ========================  =====================
-Supported Operators   Supported Keyword   NOT Supported Operators   NOT Supported Keyword
+Supported Keyword     NOT Sup. Keyword    Supported Operators       NOT Sup. Operators
 --------------------  ------------------  ------------------------  ---------------------
 | always              | automatic         | **                      | &&&
 | and                 | buf               | &&                      | =+:
