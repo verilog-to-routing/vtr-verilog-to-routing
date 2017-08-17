@@ -232,7 +232,7 @@ Supported Operators   Supported Keyword   NOT Supported Operators   NOT Supporte
 --------------------  ------------------  ------------------------  ---------------------
 | always              | automatic         | **                      | &&&
 | and                 | buf               | &&                      | =+:
-| assign              | casex             |||                       | -:
+| assign              | casex             | ||                      | -:
 | begin               | casez             | <=                      | >>>
 | case                | disable           | =>                      | (*
 | default             | edge              | >=                      | *)
@@ -246,7 +246,7 @@ Supported Operators   Supported Keyword   NOT Supported Operators   NOT Supporte
 | endspecify          | deassign          | ^~                      | 
 | for                 | endprimitive      | ~^                      | 
 | if                  | endtable          | ~&                      | 
-| initial             | event             | ~|                       | 
+| initial             | event             | ~|                      | 
 | inout               | force             |                         | 
 | input               | forever           |                         | 
 | integer             | fork              |                         | 
