@@ -38,6 +38,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
+short haveOutputLatchBlackbox = FALSE;
+
 void depth_first_traversal_to_output(short marker_value, FILE *fp, netlist_t *netlist);
 void depth_traverse_output_blif(nnode_t *node, int traverse_mark_number, FILE *fp);
 void output_node(nnode_t *node, short traverse_number, FILE *fp);
@@ -46,6 +48,7 @@ void define_set_input_logical_function(nnode_t *node, const char *bit_output, FI
 void define_ff(nnode_t *node, FILE *out);
 void define_decoded_mux(nnode_t *node, FILE *out);
 void output_blif_pin_connect(nnode_t *node, FILE *out);
+void add_the_blackbox_for_latches(FILE *out);
 void output_blif(char *file_name, netlist_t *netlist);
 
 /*---------------------------------------------------------------------------
@@ -218,6 +221,13 @@ void output_blif(char *file_name, netlist_t *netlist)
 	/* Print out any hard block modules */
 	add_the_blackbox_for_mults(out);
 	add_the_blackbox_for_adds(out);
+
+	//Check if blackbox latches are enabled && one has been included in the BLIF file
+	if(global_args.black_box_latches && (TRUE == haveOutputLatchBlackbox))
+	{
+		add_the_blackbox_for_latches(out);
+	}
+
 	output_hard_blocks(out);
 	fclose(out);
 }
@@ -680,19 +690,69 @@ void define_ff(nnode_t *node, FILE *out)
 
 	/* input, output, clock */
 	if (global_args.high_level_block != NULL)
-		fprintf(out, ".latch %s^^%i-%i %s^^%i-%i re %s^^%i-%i %d", node->input_pins[0]->net->driver_pin->node->name, node->input_pins[0]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[0]->net->driver_pin->node->related_ast_node->high_number, node->name, node->related_ast_node->far_tag, node->related_ast_node->high_number, node->input_pins[1]->net->driver_pin->node->name, node->input_pins[1]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[1]->net->driver_pin->node->related_ast_node->high_number, initial_value);
+	{
+		if(global_args.black_box_latches)
+		{
+			haveOutputLatchBlackbox = TRUE;
+
+			fprintf(out, ".subckt bb_latch i0=%s^^%i-%i o0=%s^^%i-%i re %s^^%i-%i %d",
+							node->input_pins[0]->net->driver_pin->node->name,
+							node->input_pins[0]->net->driver_pin->node->related_ast_node->far_tag,
+							node->input_pins[0]->net->driver_pin->node->related_ast_node->high_number,
+							node->name, node->related_ast_node->far_tag,
+							node->related_ast_node->high_number,
+							node->input_pins[1]->net->driver_pin->node->name,
+							node->input_pins[1]->net->driver_pin->node->related_ast_node->far_tag,
+							node->input_pins[1]->net->driver_pin->node->related_ast_node->high_number,
+							initial_value);
+		}
+		else
+		{
+			fprintf(out, ".latch %s^^%i-%i %s^^%i-%i re %s^^%i-%i %d",
+							node->input_pins[0]->net->driver_pin->node->name,
+							node->input_pins[0]->net->driver_pin->node->related_ast_node->far_tag,
+							node->input_pins[0]->net->driver_pin->node->related_ast_node->high_number,
+							node->name, node->related_ast_node->far_tag,
+							node->related_ast_node->high_number,
+							node->input_pins[1]->net->driver_pin->node->name,
+							node->input_pins[1]->net->driver_pin->node->related_ast_node->far_tag,
+							node->input_pins[1]->net->driver_pin->node->related_ast_node->high_number,
+							initial_value);
+		}
+	}
 	else
 	{
 		if (node->input_pins[0]->net->driver_pin->name == NULL)
-			fprintf(out, ".latch %s %s re ", node->input_pins[0]->net->driver_pin->node->name, node->name);
+		{
+			if(global_args.black_box_latches)
+			{
+				haveOutputLatchBlackbox = TRUE;
+
+				fprintf(out, ".subckt bb_latch i0=%s o0=%s re ", node->input_pins[0]->net->driver_pin->node->name, node->name);
+			}
+			else
+			{
+				fprintf(out, ".latch %s %s re ", node->input_pins[0]->net->driver_pin->node->name, node->name);
+			}
+		}
 		else
-			fprintf(out, ".latch %s %s re ", node->input_pins[0]->net->driver_pin->name, node->name);
+		{
+			if(global_args.black_box_latches)
+			{
+				haveOutputLatchBlackbox = TRUE;
+
+				fprintf(out, ".subckt bb_latch i0=%s o0=%s re ", node->input_pins[0]->net->driver_pin->name, node->name);
+			}
+			else
+			{
+				fprintf(out, ".latch %s %s re ", node->input_pins[0]->net->driver_pin->name, node->name);
+			}
+		}
 
 		if (node->input_pins[1]->net->driver_pin->name == NULL)
 			fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->node->name, initial_value);
 		else
 			fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->name, initial_value);
-
 	}
 	fprintf(out, "\n");
 }
@@ -795,6 +855,31 @@ void define_decoded_mux(nnode_t *node, FILE *out)
 	}
 
 	fprintf(out, "\n");
+}
+
+/*--------------------------------------------------------------------------
+ * (function: add_the_blackbox_for_latches)
+ *------------------------------------------------------------------------*/
+void add_the_blackbox_for_latches(FILE *out)
+{
+	fprintf(out, ".model bb_latch\n");
+
+	/* add the inputs */
+	fprintf(out, ".inputs");
+	fprintf(out, " i0");
+	fprintf(out, "\n");
+
+	/* add the outputs */
+	fprintf(out, ".outputs");
+	fprintf(out, " o0");
+	fprintf(out, "\n");
+
+	fprintf(out, ".blackbox\n");
+	fprintf(out, ".end\n");
+	fprintf(out, "\n");
+
+
+	return;
 }
 
 /*--------------------------------------------------------------------------
