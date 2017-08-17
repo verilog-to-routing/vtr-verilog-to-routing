@@ -88,6 +88,11 @@ def main():
                 root.write(f, pretty_print=args.pretty)
 
 def add_model_timing(arch):
+    """
+    Records the timing edges specified via timing annotationson primitive PB types,
+    and adds the appropriate timing edges to the primitive descriptions in the models
+    section.
+    """
     models = arch.findall("./models/model")
 
     #Find all primitive pb types
@@ -110,19 +115,20 @@ def add_model_timing(arch):
             primitive_timing_specs[blif_model] = ModelTiming()
 
         #Find combinational edges
-        for delay_const in prim_pb.findall("./delay_constant"):
-            iports = get_port_names(delay_const.attrib['in_port'])
-            oports = get_port_names(delay_const.attrib['out_port'])
+        for xpath_pattern in ["./delay_constant", "./delay_matrix"]:
+            for delay_const in prim_pb.findall(xpath_pattern):
+                iports = get_port_names(delay_const.attrib['in_port'])
+                oports = get_port_names(delay_const.attrib['out_port'])
 
-            for iport in iports:
-                if iport not in primitive_timing_specs[blif_model].comb_edges:
-                    primitive_timing_specs[blif_model].comb_edges[iport] = set()
+                for iport in iports:
+                    if iport not in primitive_timing_specs[blif_model].comb_edges:
+                        primitive_timing_specs[blif_model].comb_edges[iport] = set()
 
-                for oport in oports:
-                    primitive_timing_specs[blif_model].comb_edges[iport].add(oport)
+                    for oport in oports:
+                        primitive_timing_specs[blif_model].comb_edges[iport].add(oport)
 
         #Find sequential ports
-        for xpath_pattern in ["./T_setup", "./T_clock_to_Q"]:
+        for xpath_pattern in ["./T_setup", "./T_clock_to_Q", "./T_hold"]:
             for seq_tag in prim_pb.findall(xpath_pattern):
                 ports = get_port_names(seq_tag.attrib['port'])
                 for port in ports:
