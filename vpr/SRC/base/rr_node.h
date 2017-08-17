@@ -64,7 +64,7 @@ class t_rr_node {
         short ptc_num() const;
         short cost_index() const;
         e_direction direction() const;
-	const char *direction_string() const;
+        const char *direction_string() const;
 
         float R() const { return R_; }
         float C() const { return C_; }
@@ -91,25 +91,25 @@ class t_rr_node {
     private: //Data
         short xlow_ = -1;
         short ylow_ = -1;
-        short length_ = -1;
+        short xhigh_ = -1;
+        short yhigh_ = -1;
 
         short ptc_num_ = -1;
         short cost_index_ = -1;
         short fan_in_ = 0;
-
         short capacity_ = -1;
-
-        enum e_direction direction_ = NONE;
-        t_rr_type type_ = NUM_RR_TYPES;
-
-        //Note: we use manually managed memory to save space vs std::vector;
-        //      using two std::vector's nearly doubles the size of the class
-        short num_edges_ = 0;
-        std::unique_ptr<int[]> edge_sink_nodes_ = nullptr;
-        std::unique_ptr<short[]> edge_switches_ = nullptr;
 
         float R_ = 0.;
         float C_ = 0.;
+
+        //Note: we use plain arrays and a single size counter to save space vs std::vector
+        //      (using two std::vector's nearly doubles the size of the class)
+        std::unique_ptr<int[]> edge_sink_nodes_ = nullptr;
+        std::unique_ptr<short[]> edge_switches_ = nullptr;
+        short num_edges_ = 0;
+
+        e_direction direction_ = NONE;
+        t_rr_type type_ = NUM_RR_TYPES;
 };
 
 

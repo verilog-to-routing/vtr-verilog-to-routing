@@ -20,19 +20,11 @@ short t_rr_node::ylow() const {
 	Note: assuming that type -> width is 1, see assertion in rr_graph.c
 */
 short t_rr_node::xhigh() const {
-	if (type() == CHANX) {
-		return xlow() + length();
-	} else {
-		return xlow();
-	}
+    return xhigh_;
 }
 
 short t_rr_node::yhigh() const {
-	if (type() != CHANX && type() != INTRA_CLUSTER_EDGE) {
-		return ylow() + length();
-	} else {
-		return ylow();
-	}
+    return yhigh_;
 }
 
 short t_rr_node::ptc_num() const {
@@ -56,22 +48,22 @@ e_direction t_rr_node::direction() const {
 }
 
 const char* t_rr_node::direction_string() const{
-	if (direction_ ==0){
+	if (direction_ == INC_DIRECTION){
 		return "INC";
-	}else if (direction_ == 1){
+	}else if (direction_ == DEC_DIRECTION){
 		return "DEC";
-	}else if (direction_==2){
+	}else if (direction_== BI_DIRECTION){
 		return "BI";
-	}else if (direction_==3){
+	}else if (direction_== NONE){
 		return "NONE";
 	}
 	
 	return "NONE";
 }
 
-
+//Returns the max 'length' over the x or y direction
 short t_rr_node::length() const {
-	return length_;
+	return std::max(yhigh_ - ylow_, xhigh_ - xlow_);
 }
 
 void t_rr_node::set_type(t_rr_type new_type) { 
@@ -84,20 +76,18 @@ void t_rr_node::set_type(t_rr_type new_type) {
 void t_rr_node::set_coordinates(short x1, short y1, short x2, short y2) {
 	if (x1 < x2) {
 		xlow_ = x1;
+        xhigh_ = x2;
 	} else {
 		xlow_ = x2;
+        xhigh_ = x1;
 	}
 
 	if (y1 < y2) {
 		ylow_ = y1;
+        yhigh_ = y2;
 	} else {
 		ylow_ = y2;
-	}
-	
-	if (y1 == y2) {
-		length_ = abs(x2 - x1);
-	} else {
-		length_ = abs(y2 - y1);
+        yhigh_ = y1;
 	}
 }
 
