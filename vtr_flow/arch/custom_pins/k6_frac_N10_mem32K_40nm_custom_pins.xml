@@ -633,40 +633,40 @@
       <!--<pinlocations pattern="spread"/>-->
 
       <pinlocations pattern="custom">
-        <loc side="right" offset="0">
+        <loc side="right" yoffset="0">
             mult_36.a[0:8] mult_36.b[0:8] mult_36.out[0:17]
         </loc>
-        <loc side="right" offset="1">
+        <loc side="right" yoffset="1">
             mult_36.a[9:17] mult_36.b[9:17] mult_36.out[18:35]
         </loc>
-        <loc side="right" offset="2">
+        <loc side="right" yoffset="2">
             mult_36.a[18:26] mult_36.b[18:26] mult_36.out[36:54]
         </loc>
-        <loc side="right" offset="3">
+        <loc side="right" yoffset="3">
             mult_36.a[27:35] mult_36.b[27:35] mult_36.out[54:71]
         </loc>
-        <loc side="top" offset="0">
+        <loc side="top" yoffset="0">
             mult_36.a[0:8] mult_36.b[0:8] mult_36.out[0:17]
         </loc>
-        <loc side="top" offset="1">
+        <loc side="top" yoffset="1">
             mult_36.a[9:17] mult_36.b[9:17] mult_36.out[18:35]
         </loc>
-        <loc side="top" offset="2">
+        <loc side="top" yoffset="2">
             mult_36.a[18:26] mult_36.b[18:26] mult_36.out[36:54]
         </loc>
-        <loc side="top" offset="3">
+        <loc side="top" yoffset="3">
             mult_36.a[27:35] mult_36.b[27:35] mult_36.out[54:71]
         </loc>
-        <loc side="left" offset="0">
+        <loc side="left" yoffset="0">
             mult_36.a[0:8] mult_36.b[0:8] mult_36.out[0:17]
         </loc>
-        <loc side="left" offset="1">
+        <loc side="left" yoffset="1">
             mult_36.a[9:17] mult_36.b[9:17] mult_36.out[18:35]
         </loc>
-        <loc side="left" offset="2">
+        <loc side="left" yoffset="2">
             mult_36.a[18:26] mult_36.b[18:26] mult_36.out[36:54]
         </loc>
-        <loc side="left" offset="3">
+        <loc side="left" yoffset="3">
             mult_36.a[27:35] mult_36.b[27:35] mult_36.out[54:71]
         </loc>
       </pinlocations>
