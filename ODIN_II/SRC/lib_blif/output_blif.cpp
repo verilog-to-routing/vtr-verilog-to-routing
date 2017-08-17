@@ -690,19 +690,69 @@ void define_ff(nnode_t *node, FILE *out)
 
 	/* input, output, clock */
 	if (global_args.high_level_block != NULL)
-		fprintf(out, ".latch %s^^%i-%i %s^^%i-%i re %s^^%i-%i %d", node->input_pins[0]->net->driver_pin->node->name, node->input_pins[0]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[0]->net->driver_pin->node->related_ast_node->high_number, node->name, node->related_ast_node->far_tag, node->related_ast_node->high_number, node->input_pins[1]->net->driver_pin->node->name, node->input_pins[1]->net->driver_pin->node->related_ast_node->far_tag, node->input_pins[1]->net->driver_pin->node->related_ast_node->high_number, initial_value);
+	{
+		if(global_args.black_box_latches)
+		{
+			haveOutputLatchBlackbox = TRUE;
+
+			fprintf(out, ".subckt bb_latch i0=%s^^%i-%i o0=%s^^%i-%i re %s^^%i-%i %d",
+							node->input_pins[0]->net->driver_pin->node->name,
+							node->input_pins[0]->net->driver_pin->node->related_ast_node->far_tag,
+							node->input_pins[0]->net->driver_pin->node->related_ast_node->high_number,
+							node->name, node->related_ast_node->far_tag,
+							node->related_ast_node->high_number,
+							node->input_pins[1]->net->driver_pin->node->name,
+							node->input_pins[1]->net->driver_pin->node->related_ast_node->far_tag,
+							node->input_pins[1]->net->driver_pin->node->related_ast_node->high_number,
+							initial_value);
+		}
+		else
+		{
+			fprintf(out, ".latch %s^^%i-%i %s^^%i-%i re %s^^%i-%i %d",
+							node->input_pins[0]->net->driver_pin->node->name,
+							node->input_pins[0]->net->driver_pin->node->related_ast_node->far_tag,
+							node->input_pins[0]->net->driver_pin->node->related_ast_node->high_number,
+							node->name, node->related_ast_node->far_tag,
+							node->related_ast_node->high_number,
+							node->input_pins[1]->net->driver_pin->node->name,
+							node->input_pins[1]->net->driver_pin->node->related_ast_node->far_tag,
+							node->input_pins[1]->net->driver_pin->node->related_ast_node->high_number,
+							initial_value);
+		}
+	}
 	else
 	{
 		if (node->input_pins[0]->net->driver_pin->name == NULL)
-			fprintf(out, ".latch %s %s re ", node->input_pins[0]->net->driver_pin->node->name, node->name);
+		{
+			if(global_args.black_box_latches)
+			{
+				haveOutputLatchBlackbox = TRUE;
+
+				fprintf(out, ".subckt bb_latch i0=%s o0=%s re ", node->input_pins[0]->net->driver_pin->node->name, node->name);
+			}
+			else
+			{
+				fprintf(out, ".latch %s %s re ", node->input_pins[0]->net->driver_pin->node->name, node->name);
+			}
+		}
 		else
-			fprintf(out, ".latch %s %s re ", node->input_pins[0]->net->driver_pin->name, node->name);
+		{
+			if(global_args.black_box_latches)
+			{
+				haveOutputLatchBlackbox = TRUE;
+
+				fprintf(out, ".subckt bb_latch i0=%s o0=%s re ", node->input_pins[0]->net->driver_pin->name, node->name);
+			}
+			else
+			{
+				fprintf(out, ".latch %s %s re ", node->input_pins[0]->net->driver_pin->name, node->name);
+			}
+		}
 
 		if (node->input_pins[1]->net->driver_pin->name == NULL)
 			fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->node->name, initial_value);
 		else
 			fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->name, initial_value);
-
 	}
 	fprintf(out, "\n");
 }
