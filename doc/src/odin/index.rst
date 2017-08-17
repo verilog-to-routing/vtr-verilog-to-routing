@@ -112,26 +112,18 @@ Example for ``-p``:
  * - ``-p input~``
    - monitors all pins of input as separate ports. (split)
    
-Notes for ``-p``:
-####  
+.. note::
 
-Matching is done via strstr so general strings will match all similar pins and nodes. (Eg: FF_NODE will create a single port with all flipflops) 
+	Matching for ``-p'' is done via strstr so general strings will match all similar pins and nodes. (Eg: FF_NODE will create a single port with all flipflops) 
 
-Simulation Notes
-************
+.. note::
 
-always produces files:
+	Simulation always produces files:
+
+	    - input_vectors 
+	    - output_vectors
+	    - test.do (ModelSim)
     
-    - input_vectors 
-    - output_vectors
-    - test.do (ModelSim)
-    
-
-   
-	
-
-
-
 ===========                
 Verilog Supported Idioms:
 ===========
@@ -196,3 +188,35 @@ Keyword	:
 - xor	
 - @()	
 - @*	
+
+*************
+INSTALL
+*************
+
+===========
+Prerequisites
+===========
+
+1. ctags
+2. bison
+3. flex
+4. gcc 5.x
+5. cmake 2.8.12 (minimum version)
+6. time 
+7. cairo
+
+===========
+INSTALL
+===========
+
+To build ODIN, run "make odin_II" from the vtr root directory.
+
+.. note::
+	ODIN uses CMake as it's build system. CMake provides a protable cross-platform build systems with many useful features.
+	For unix-like systems we provide a wrapper Makefile which supports the traditional make and make clean commands,
+	but calls CMake behind the scenes.
+
+.. warning::
+	After you build Odin, please run the included verify_microbenchmarks.sh script. This will automatically compile, simulate, 
+	and verify all of the included microbenchmark circuits to ensure that Odin is working correctly on your system. 
+
