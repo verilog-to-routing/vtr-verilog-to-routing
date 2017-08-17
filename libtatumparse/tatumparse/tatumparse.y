@@ -122,13 +122,16 @@ using namespace tatumparse;
 %token CLOCK "CLOCK"
 %token CLOCK_SOURCE "CLOCK_SOURCE"
 %token CONSTANT_GENERATOR "CONSTANT_GENERATOR"
-%token INPUT_CONSTRAINT "INPUT_CONSTRAINT"
-%token OUTPUT_CONSTRAINT "OUTPUT_CONSTRAINT"
+%token MAX_INPUT_CONSTRAINT "MAX_INPUT_CONSTRAINT"
+%token MIN_INPUT_CONSTRAINT "MIN_INPUT_CONSTRAINT"
+%token MAX_OUTPUT_CONSTRAINT "MAX_OUTPUT_CONSTRAINT"
+%token MIN_OUTPUT_CONSTRAINT "MIN_OUTPUT_CONSTRAINT"
 %token SETUP_CONSTRAINT "SETUP_CONSTRAINT"
 %token HOLD_CONSTRAINT "HOLD_CONSTRAINT"
 %token SETUP_UNCERTAINTY "SETUP_UNCERTAINTY"
 %token HOLD_UNCERTAINTY "HOLD_UNCERTAINTY"
-%token SOURCE_LATENCY "SOURCE_LATENCY"
+%token EARLY_SOURCE_LATENCY "EARLY_SOURCE_LATENCY"
+%token LATE_SOURCE_LATENCY "LATE_SOURCE_LATENCY"
 %token DOMAIN "domain:"
 %token NAME "name:"
 %token CONSTRAINT "constraint:"
@@ -217,13 +220,16 @@ Constraints: TIMING_CONSTRAINTS EOL { callback.start_constraints(); }
            | Constraints TYPE CLOCK DomainId Name EOL { callback.add_clock_domain($4, $5); }
            | Constraints TYPE CLOCK_SOURCE NodeId DomainId EOL { callback.add_clock_source($4, $5); }
            | Constraints TYPE CONSTANT_GENERATOR NodeId EOL { callback.add_constant_generator($4); }
-           | Constraints TYPE INPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_input_constraint($4, $5, $6); }
-           | Constraints TYPE OUTPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_output_constraint($4, $5, $6); }
+           | Constraints TYPE MAX_INPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_max_input_constraint($4, $5, $6); }
+           | Constraints TYPE MIN_INPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_min_input_constraint($4, $5, $6); }
+           | Constraints TYPE MAX_OUTPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_max_output_constraint($4, $5, $6); }
+           | Constraints TYPE MIN_OUTPUT_CONSTRAINT NodeId DomainId Constraint EOL { callback.add_min_output_constraint($4, $5, $6); }
            | Constraints TYPE SETUP_CONSTRAINT LaunchDomainId CaptureDomainId Constraint EOL { callback.add_setup_constraint($4, $5, $6); }
            | Constraints TYPE HOLD_CONSTRAINT LaunchDomainId CaptureDomainId Constraint EOL { callback.add_hold_constraint($4, $5, $6); }
            | Constraints TYPE SETUP_UNCERTAINTY LaunchDomainId CaptureDomainId Uncertainty EOL { callback.add_setup_uncertainty($4, $5, $6); }
            | Constraints TYPE HOLD_UNCERTAINTY LaunchDomainId CaptureDomainId Uncertainty EOL { callback.add_hold_uncertainty($4, $5, $6); }
-           | Constraints TYPE SOURCE_LATENCY DomainId Latency EOL { callback.add_source_latency($4, $5); }
+           | Constraints TYPE EARLY_SOURCE_LATENCY DomainId Latency EOL { callback.add_early_source_latency($4, $5); }
+           | Constraints TYPE LATE_SOURCE_LATENCY DomainId Latency EOL { callback.add_late_source_latency($4, $5); }
 
 DelayModel: DELAY_MODEL EOL { callback.start_delay_model(); }
         | DelayModel EdgeId MinDelay MaxDelay EOL { callback.add_edge_delay($2, $3, $4); }
