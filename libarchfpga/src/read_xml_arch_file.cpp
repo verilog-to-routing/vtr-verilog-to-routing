@@ -365,9 +365,6 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	}
 
 	/* Load the pin locations */
-    //TODO: for width > 1 blocks, will need to support x_offset, y_offset on loc to allow
-    //specify pins accessible from fly-over wire (not along perimeter)
-    VTR_ASSERT_MSG(Type->width == 1, "Architectural blocks with width > 1 not yet supported");
 	if (Type->pin_location_distribution == E_CUSTOM_PIN_DISTR) {
 		Cur = Locations.first_child();
         std::set<std::tuple<e_side,int,int>> seen_sides;
