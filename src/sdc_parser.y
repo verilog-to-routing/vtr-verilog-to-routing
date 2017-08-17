@@ -124,6 +124,7 @@ using namespace sdcparse;
 %token ARG_HOLD "-hold"
 %token ARG_CLOCK "-clock"
 %token ARG_MAX "-max"
+%token ARG_MIN "-min"
 %token ARG_EARLY "-early"
 %token ARG_LATE "-late"
 %token ARG_CELL_DELAY "-cell_delay"
@@ -198,13 +199,17 @@ cmd_create_clock: CMD_CREATE_CLOCK                          { $$ = CreateClock()
 
 cmd_set_input_delay: CMD_SET_INPUT_DELAY        { $$ = SetIoDelay(IoDelayType::INPUT); }
     | cmd_set_input_delay ARG_CLOCK string      { $$ = $1; sdc_set_io_delay_set_clock(callback, lexer, $$, $3); }
-    | cmd_set_input_delay ARG_MAX number        { $$ = $1; sdc_set_io_delay_set_max_value(callback, lexer, $$, $3); }
+    | cmd_set_input_delay ARG_MAX               { $$ = $1; sdc_set_io_delay_set_max(callback, lexer, $$); }
+    | cmd_set_input_delay ARG_MIN               { $$ = $1; sdc_set_io_delay_set_min(callback, lexer, $$); }
+    | cmd_set_input_delay number                { $$ = $1; sdc_set_io_delay_set_value(callback, lexer, $$, $2); }
     | cmd_set_input_delay LSPAR cmd_get_ports RSPAR { $$ = $1; sdc_set_io_delay_set_ports(callback, lexer, $$, $3); }
     ;
 
 cmd_set_output_delay: CMD_SET_OUTPUT_DELAY       { $$ = SetIoDelay(IoDelayType::OUTPUT); }
     | cmd_set_output_delay ARG_CLOCK string      { $$ = $1; sdc_set_io_delay_set_clock(callback, lexer, $$, $3); }
-    | cmd_set_output_delay ARG_MAX number        { $$ = $1; sdc_set_io_delay_set_max_value(callback, lexer, $$, $3); }
+    | cmd_set_output_delay ARG_MAX               { $$ = $1; sdc_set_io_delay_set_max(callback, lexer, $$); }
+    | cmd_set_output_delay ARG_MIN               { $$ = $1; sdc_set_io_delay_set_min(callback, lexer, $$); }
+    | cmd_set_output_delay number                { $$ = $1; sdc_set_io_delay_set_value(callback, lexer, $$, $2); }
     | cmd_set_output_delay LSPAR cmd_get_ports RSPAR { $$ = $1; sdc_set_io_delay_set_ports(callback, lexer, $$, $3); }
     ;
 
@@ -266,47 +271,49 @@ cmd_set_min_delay: CMD_SET_MIN_DELAY                        { $$ = SetMinMaxDela
                                                             }
     ;
 
-cmd_set_multicycle_path: CMD_SET_MULTICYCLE_PATH                { $$ = SetMulticyclePath(); }
-    | cmd_set_multicycle_path int_number                        { $$ = $1; sdc_set_multicycle_path_set_mcp_value(callback, lexer, $$, $2); }
-    | cmd_set_multicycle_path ARG_SETUP                         { $$ = $1; sdc_set_multicycle_path_set_type(callback, lexer, $$, SetupHoldType::SETUP); }
-    | cmd_set_multicycle_path ARG_HOLD                          { $$ = $1; sdc_set_multicycle_path_set_type(callback, lexer, $$, SetupHoldType::HOLD); }
+cmd_set_multicycle_path: CMD_SET_MULTICYCLE_PATH                  { $$ = SetMulticyclePath(); }
+    | cmd_set_multicycle_path int_number                          { $$ = $1; sdc_set_multicycle_path_set_mcp_value(callback, lexer, $$, $2); }
+    | cmd_set_multicycle_path ARG_SETUP                           { $$ = $1; sdc_set_multicycle_path_set_type(callback, lexer, $$, SetupHoldType::SETUP); }
+    | cmd_set_multicycle_path ARG_HOLD                            { $$ = $1; sdc_set_multicycle_path_set_type(callback, lexer, $$, SetupHoldType::HOLD); }
     | cmd_set_multicycle_path ARG_FROM LSPAR cmd_get_clocks RSPAR { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, $4, FromToType::FROM); }
     | cmd_set_multicycle_path ARG_TO   LSPAR cmd_get_clocks RSPAR { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, $4, FromToType::TO); }
     | cmd_set_multicycle_path ARG_FROM LCPAR stringGroup RCPAR    { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, $4, FromToType::FROM); }
     | cmd_set_multicycle_path ARG_TO   LCPAR stringGroup RCPAR    { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, $4, FromToType::TO); }
-    | cmd_set_multicycle_path ARG_FROM     string               { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, 
-                                                                        make_sdc_string_group(sdcparse::StringGroupType::STRING, $3), 
-                                                                        FromToType::FROM);
-                                                                }
-    | cmd_set_multicycle_path ARG_TO       string               { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, 
-                                                                        make_sdc_string_group(sdcparse::StringGroupType::STRING, $3),
-                                                                        FromToType::TO);
-                                                                }
+    | cmd_set_multicycle_path ARG_FROM     string                 { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, 
+                                                                          make_sdc_string_group(sdcparse::StringGroupType::STRING, $3), 
+                                                                          FromToType::FROM);
+                                                                  }
+    | cmd_set_multicycle_path ARG_TO       string                 { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, 
+                                                                          make_sdc_string_group(sdcparse::StringGroupType::STRING, $3),
+                                                                          FromToType::TO);
+                                                                  }
     ;
 
-cmd_set_clock_uncertainty: CMD_SET_CLOCK_UNCERTAINTY            { $$ = SetClockUncertainty(); }
-    | cmd_set_clock_uncertainty ARG_SETUP                         { $$ = $1; sdc_set_clock_uncertainty_set_type(callback, lexer, $$, SetupHoldType::SETUP); }
-    | cmd_set_clock_uncertainty ARG_HOLD                          { $$ = $1; sdc_set_clock_uncertainty_set_type(callback, lexer, $$, SetupHoldType::HOLD); }
-    | cmd_set_clock_uncertainty float_number                        { $$ = $1; sdc_set_clock_uncertainty_set_value(callback, lexer, $$, $2); }
-    | cmd_set_clock_uncertainty ARG_FROM LSPAR cmd_get_clocks RSPAR   { $$ = $1; sdc_set_clock_uncertainty_add_to_from_group(callback, lexer, $$, $4, FromToType::FROM); }
-    | cmd_set_clock_uncertainty ARG_TO   LSPAR cmd_get_clocks RSPAR   { $$ = $1; sdc_set_clock_uncertainty_add_to_from_group(callback, lexer, $$, $4, FromToType::TO); }
-    | cmd_set_clock_uncertainty ARG_FROM LCPAR stringGroup RCPAR      { $$ = $1; sdc_set_clock_uncertainty_add_to_from_group(callback, lexer, $$, $4, FromToType::FROM); }
-    | cmd_set_clock_uncertainty ARG_TO   LCPAR stringGroup RCPAR      { $$ = $1; sdc_set_clock_uncertainty_add_to_from_group(callback, lexer, $$, $4, FromToType::TO); }
-    | cmd_set_clock_uncertainty ARG_FROM     string               { $$ = $1; sdc_set_clock_uncertainty_add_to_from_group(callback, lexer, $$, 
-                                                                        make_sdc_string_group(sdcparse::StringGroupType::STRING, $3), 
-                                                                        FromToType::FROM);
-                                                                }
-    | cmd_set_clock_uncertainty ARG_TO       string               { $$ = $1; sdc_set_clock_uncertainty_add_to_from_group(callback, lexer, $$, 
-                                                                        make_sdc_string_group(sdcparse::StringGroupType::STRING, $3),
-                                                                        FromToType::TO);
-                                                                }
+cmd_set_clock_uncertainty: CMD_SET_CLOCK_UNCERTAINTY                { $$ = SetClockUncertainty(); }
+    | cmd_set_clock_uncertainty ARG_SETUP                           { $$ = $1; sdc_set_clock_uncertainty_set_setup(callback, lexer, $$); }
+    | cmd_set_clock_uncertainty ARG_HOLD                            { $$ = $1; sdc_set_clock_uncertainty_set_hold(callback, lexer, $$); }
+    | cmd_set_clock_uncertainty number                              { $$ = $1; sdc_set_clock_uncertainty_set_value(callback, lexer, $$, $2); }
+    | cmd_set_clock_uncertainty ARG_FROM LSPAR cmd_get_clocks RSPAR { $$ = $1; sdc_set_clock_uncertainty_add_to_from_group(callback, lexer, $$, $4, FromToType::FROM); }
+    | cmd_set_clock_uncertainty ARG_TO   LSPAR cmd_get_clocks RSPAR { $$ = $1; sdc_set_clock_uncertainty_add_to_from_group(callback, lexer, $$, $4, FromToType::TO); }
+    | cmd_set_clock_uncertainty ARG_FROM LCPAR stringGroup RCPAR    { $$ = $1; sdc_set_clock_uncertainty_add_to_from_group(callback, lexer, $$, $4, FromToType::FROM); }
+    | cmd_set_clock_uncertainty ARG_TO   LCPAR stringGroup RCPAR    { $$ = $1; sdc_set_clock_uncertainty_add_to_from_group(callback, lexer, $$, $4, FromToType::TO); }
+    | cmd_set_clock_uncertainty ARG_FROM     string                 { $$ = $1;
+                                                                      sdc_set_clock_uncertainty_add_to_from_group(callback, lexer, $$, 
+                                                                          make_sdc_string_group(sdcparse::StringGroupType::STRING, $3),
+                                                                          FromToType::FROM);
+                                                                    }
+    | cmd_set_clock_uncertainty ARG_TO       string                 { $$ = $1;
+                                                                      sdc_set_clock_uncertainty_add_to_from_group(callback, lexer, $$, 
+                                                                          make_sdc_string_group(sdcparse::StringGroupType::STRING, $3),
+                                                                          FromToType::TO);
+                                                                    }
     ;
 
 cmd_set_clock_latency: CMD_SET_CLOCK_LATENCY                    { $$ = SetClockLatency(); }
     | cmd_set_clock_latency ARG_SOURCE                          { $$ = $1; sdc_set_clock_latency_set_type(callback, lexer, $$, ClockLatencyType::SOURCE); }
-    | cmd_set_clock_latency ARG_EARLY                           { $$ = $1; sdc_set_clock_latency_early_late(callback, lexer, $$, EarlyLateType::EARLY); }
-    | cmd_set_clock_latency ARG_LATE                            { $$ = $1; sdc_set_clock_latency_early_late(callback, lexer, $$, EarlyLateType::LATE); }
-    | cmd_set_clock_latency float_number                        { $$ = $1; sdc_set_clock_latency_set_value(callback, lexer, $$, $2); }
+    | cmd_set_clock_latency ARG_EARLY                           { $$ = $1; sdc_set_clock_latency_early(callback, lexer, $$); }
+    | cmd_set_clock_latency ARG_LATE                            { $$ = $1; sdc_set_clock_latency_late(callback, lexer, $$); }
+    | cmd_set_clock_latency number                              { $$ = $1; sdc_set_clock_latency_set_value(callback, lexer, $$, $2); }
     | cmd_set_clock_latency LSPAR cmd_get_clocks RSPAR          { $$ = $1; sdc_set_clock_latency_set_clocks(callback, lexer, $$, $3); }
     ;
 
@@ -329,8 +336,8 @@ cmd_set_disable_timing: CMD_SET_DISABLE_TIMING                       { $$ = SetD
     ;
 
 cmd_set_timing_derate: CMD_SET_TIMING_DERATE    { $$ = SetTimingDerate(); }
-    | cmd_set_timing_derate ARG_EARLY           { $$ = $1; sdc_set_timing_derate_type(callback, lexer, $$, EarlyLateType::EARLY); }
-    | cmd_set_timing_derate ARG_LATE            { $$ = $1; sdc_set_timing_derate_type(callback, lexer, $$, EarlyLateType::LATE); }
+    | cmd_set_timing_derate ARG_EARLY           { $$ = $1; sdc_set_timing_derate_early(callback, lexer, $$); }
+    | cmd_set_timing_derate ARG_LATE            { $$ = $1; sdc_set_timing_derate_late(callback, lexer, $$); }
     | cmd_set_timing_derate ARG_CELL_DELAY      { $$ = $1; sdc_set_timing_derate_target_type(callback, lexer, $$, TimingDerateTargetType::NET); }
     | cmd_set_timing_derate ARG_NET_DELAY       { $$ = $1; sdc_set_timing_derate_target_type(callback, lexer, $$, TimingDerateTargetType::CELL); }
     | cmd_set_timing_derate number              { $$ = $1; sdc_set_timing_derate_value(callback, lexer, $$, $2); }

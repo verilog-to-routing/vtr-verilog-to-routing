@@ -109,12 +109,28 @@ void sdc_set_io_delay_set_clock(Callback& callback, const Lexer& lexer, SetIoDel
     sdc_set_io_delay.clock_name = clock_name;
 }
 
-void sdc_set_io_delay_set_max_value(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay, double max_value) {
-    if(!std::isnan(sdc_set_io_delay.max_delay)) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Max delay value can only specified once.\n"); 
+void sdc_set_io_delay_set_value(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay, double value) {
+    if(!std::isnan(sdc_set_io_delay.delay)) {
+        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Delay value can only specified once.\n"); 
     }
 
-    sdc_set_io_delay.max_delay = max_value;
+    sdc_set_io_delay.delay = value;
+}
+
+void sdc_set_io_delay_set_max(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay) {
+    if (sdc_set_io_delay.is_max) {
+        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "-max can only be specified once.\n"); 
+    }
+
+    sdc_set_io_delay.is_max = true;
+}
+
+void sdc_set_io_delay_set_min(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay) {
+    if (sdc_set_io_delay.is_min) {
+        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "-min can only be specified once.\n"); 
+    }
+
+    sdc_set_io_delay.is_min = true;
 }
 
 void sdc_set_io_delay_set_ports(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay, StringGroup ports) {
@@ -135,8 +151,8 @@ void add_sdc_set_io_delay(Callback& callback, const Lexer& lexer, SetIoDelay& sd
         sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify clock name.\n"); 
     }
 
-    if(std::isnan(sdc_set_io_delay.max_delay)) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify max delay value.\n"); 
+    if(std::isnan(sdc_set_io_delay.delay)) {
+        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify delay value.\n"); 
     }
 
     if(sdc_set_io_delay.target_ports.strings.empty()) {
@@ -343,11 +359,18 @@ void add_sdc_set_multicycle_path(Callback& callback, const Lexer& lexer, SetMult
 /*
  * Functions for set_clock_uncertainty
  */
-void sdc_set_clock_uncertainty_set_type(Callback& callback, const Lexer& lexer, SetClockUncertainty& sdc_set_clock_uncertainty, SetupHoldType type) {
-    if(sdc_set_clock_uncertainty.type != SetupHoldType::NONE) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify the type (e.g. '-setup' or '-hold') only once.\n"); 
+void sdc_set_clock_uncertainty_set_setup(Callback& callback, const Lexer& lexer, SetClockUncertainty& sdc_set_clock_uncertainty) {
+    if(sdc_set_clock_uncertainty.is_setup) {
+        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "'-setup' should only be specified once.\n"); 
     }
-    sdc_set_clock_uncertainty.type = type;
+    sdc_set_clock_uncertainty.is_setup = true;
+}
+
+void sdc_set_clock_uncertainty_set_hold(Callback& callback, const Lexer& lexer, SetClockUncertainty& sdc_set_clock_uncertainty) {
+    if(sdc_set_clock_uncertainty.is_hold) {
+        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "'-hold' should only be specified once.\n"); 
+    }
+    sdc_set_clock_uncertainty.is_hold = true;
 }
 
 void sdc_set_clock_uncertainty_set_value(Callback& callback, const Lexer& lexer, SetClockUncertainty& sdc_set_clock_uncertainty, float value) {
@@ -412,13 +435,22 @@ void sdc_set_clock_latency_set_type(Callback& callback, const Lexer& lexer, SetC
     sdc_set_clock_latency.type = type;
 }
 
-void sdc_set_clock_latency_early_late(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency, EarlyLateType early_late) {
+void sdc_set_clock_latency_early(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency) {
     //Error checking
-    if(sdc_set_clock_latency.early_late != EarlyLateType::NONE) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "The '-early' and/or '-late' options can only be specified once.\n"); 
+    if(sdc_set_clock_latency.is_early) {
+        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "The '-early' option can only be specified once.\n"); 
     }
 
-    sdc_set_clock_latency.early_late = early_late;
+    sdc_set_clock_latency.is_early = true;
+}
+
+void sdc_set_clock_latency_late(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency) {
+    //Error checking
+    if(sdc_set_clock_latency.is_late) {
+        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "The '-late' option can only be specified once.\n"); 
+    }
+
+    sdc_set_clock_latency.is_late = true;
 }
 
 void sdc_set_clock_latency_set_value(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency, float value) {
@@ -508,12 +540,20 @@ void add_sdc_set_disable_timing(Callback& callback, const Lexer& /*lexer*/, SetD
 /*
  * Functions for set_timing_derate
  */
-void sdc_set_timing_derate_type(Callback& callback, const Lexer& lexer, SetTimingDerate& sdc_set_timing_derate, EarlyLateType type) {
-    if(sdc_set_timing_derate.type != EarlyLateType::NONE) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Only a single '-early' or '-late' option is supported.\n"); 
+void sdc_set_timing_derate_early(Callback& callback, const Lexer& lexer, SetTimingDerate& sdc_set_timing_derate) {
+    if(sdc_set_timing_derate.is_early) {
+        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "-early should only be specified once.\n"); 
     }
 
-    sdc_set_timing_derate.type = type; 
+    sdc_set_timing_derate.is_early = true; 
+}
+
+void sdc_set_timing_derate_late(Callback& callback, const Lexer& lexer, SetTimingDerate& sdc_set_timing_derate) {
+    if(sdc_set_timing_derate.is_late) {
+        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "-late should only be specified once.\n"); 
+    }
+
+    sdc_set_timing_derate.is_late = true; 
 }
 
 void sdc_set_timing_derate_target_type(Callback& callback, const Lexer& lexer, SetTimingDerate& sdc_set_timing_derate, TimingDerateTargetType target_type) {
@@ -560,10 +600,6 @@ void add_sdc_set_timing_derate(Callback& callback, const Lexer& lexer, SetTiming
     /*
      * Error checks
      */
-    if(sdc_set_timing_derate.type == EarlyLateType::NONE) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify timing derate as '-early' or '-late'\n"); 
-    }
-
     if(std::isnan(sdc_set_timing_derate.value)) {
         sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify timing derate value\n"); 
     }
