@@ -2111,7 +2111,7 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data);
 
             col.x.start_expr = startx_attr.value();
-            col.x.end_expr = startx_attr.value();
+            col.x.end_expr = startx_attr.value() + std::string(" + w - 1"); //end is inclusive so need to include block width
 
             auto repeat_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
             if (repeat_attr) {
@@ -2133,7 +2133,7 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data);
 
             row.y.start_expr = starty_attr.value();
-            row.y.end_expr = starty_attr.value();
+            row.y.end_expr = starty_attr.value() + std::string(" + h - 1"); //end is inclusive so need to include block height
 
             auto repeat_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
             if (repeat_attr) {
