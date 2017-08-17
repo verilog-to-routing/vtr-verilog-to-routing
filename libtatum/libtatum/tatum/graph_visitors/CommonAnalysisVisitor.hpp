@@ -109,8 +109,8 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
             //Note: we assume that edge counting has set the effective period constraint assuming a
             //launch edge at time zero + source latency.  This means we don't need to do anything 
             //special for clocks with rising edges after time zero.
-            Time domain_source_latency = tc.source_latency(domain_id);
-            TimingTag launch_tag = TimingTag(Time(domain_source_latency), 
+            Time launch_source_latency = ops_.launch_source_latency(tc, domain_id);
+            TimingTag launch_tag = TimingTag(launch_source_latency, 
                                              domain_id,
                                              DomainId::INVALID(), //Any capture
                                              NodeId::INVALID(), //Origin
@@ -132,7 +132,9 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
                     //when the caputre tag is converted into a data-arrival tag
                     Time clock_constraint = ops_.clock_constraint(tc, launch_domain_id, domain_id);
 
-                    TimingTag capture_tag = TimingTag(Time(domain_source_latency) + Time(clock_constraint), 
+                    Time capture_source_latency = ops_.capture_source_latency(tc, domain_id);
+
+                    TimingTag capture_tag = TimingTag(Time(capture_source_latency) + Time(clock_constraint), 
                                                       launch_domain_id,
                                                       domain_id,
                                                       NodeId::INVALID(), //Origin
@@ -148,7 +150,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
 
             TATUM_ASSERT_MSG(ops_.get_tags(node_id, TagType::DATA_ARRIVAL).size() == 0, "Primary input already has data tags");
 
-            auto input_constraints = tc.input_constraints(node_id);
+            auto input_constraints = ops_.input_constraints(tc, node_id);
             if(!input_constraints.empty()) { //Some inputs may be unconstrained, so do not create tags for them
 
                 DomainId domain_id = tc.node_clock_domain(node_id);
@@ -157,7 +159,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
                 //An input constraint means there is 'input_constraint' delay from when an external 
                 //signal is launched by its clock (external to the chip) until it arrives at the
                 //primary input
-                Time input_constraint = tc.input_constraint(node_id, domain_id);
+                Time input_constraint = ops_.input_constraint(tc, node_id, domain_id);
                 TATUM_ASSERT(input_constraint.valid());
 
                 //Initialize a data tag based on input delay constraint
@@ -473,13 +475,12 @@ void CommonAnalysisVisitor<AnalysisOps>::mark_sink_required_times(const TimingGr
             //
             //Hence we use a negative output constraint value to subtract the output constraint 
             //from the target clock constraint
-            Time output_constraint = -tc.output_constraint(node_id, 
-                                                           io_capture_domain);
+            Time output_constraint = -ops_.output_constraint(tc, node_id, io_capture_domain);
             TATUM_ASSERT(output_constraint.valid());
 
             //Since there is no propagated clock tag to primary outputs, we need to account for
             //the capture source clock latency
-            Time capture_clock_source_latency = tc.source_latency(io_capture_domain);
+            Time capture_clock_source_latency = ops_.capture_source_latency(tc, io_capture_domain);
 
             for(const TimingTag& node_data_arr_tag : node_data_arr_tags) {
                 DomainId data_launch_domain = node_data_arr_tag.launch_clock_domain();

@@ -67,11 +67,17 @@ class PrintCallback : public tp::Callback {
     void add_constant_generator(int node_id) override {
         fprintf(stdout, " type: CONSTANT_GENERATOR node: %d\n", node_id);
     }
-    void add_input_constraint(int node_id, int domain_id, float constraint) override {
-        fprintf(stdout, " type: INPUT_CONSTRAINT node: %d domain: %d constraint: %g\n", node_id, domain_id, constraint);
+    void add_max_input_constraint(int node_id, int domain_id, float constraint) override {
+        fprintf(stdout, " type: MAX_INPUT_CONSTRAINT node: %d domain: %d constraint: %g\n", node_id, domain_id, constraint);
     }
-    void add_output_constraint(int node_id, int domain_id,  float constraint) override {
-        fprintf(stdout, " type: OUTPUT_CONSTRAINT node: %d domain: %d constraint: %g\n", node_id, domain_id, constraint);
+    void add_min_input_constraint(int node_id, int domain_id, float constraint) override {
+        fprintf(stdout, " type: MIN_INPUT_CONSTRAINT node: %d domain: %d constraint: %g\n", node_id, domain_id, constraint);
+    }
+    void add_max_output_constraint(int node_id, int domain_id,  float constraint) override {
+        fprintf(stdout, " type: MAX_OUTPUT_CONSTRAINT node: %d domain: %d constraint: %g\n", node_id, domain_id, constraint);
+    }
+    void add_min_output_constraint(int node_id, int domain_id,  float constraint) override {
+        fprintf(stdout, " type: MIN_OUTPUT_CONSTRAINT node: %d domain: %d constraint: %g\n", node_id, domain_id, constraint);
     }
     void add_setup_constraint(int src_domain_id, int sink_domain_id, float constraint) override {
         fprintf(stdout, " type: SETUP_CONSTRAINT src_domain: %d sink_domain: %d constraint: %g\n", src_domain_id, sink_domain_id, constraint);
@@ -85,8 +91,11 @@ class PrintCallback : public tp::Callback {
     void add_hold_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) override {
         fprintf(stdout, " type: HOLD_UNCERTAINTY src_domain: %d sink_domain: %d uncertainty: %g\n", src_domain_id, sink_domain_id, uncertainty);
     }
-    void add_source_latency(int domain_id, float latency) override {
-        fprintf(stdout, " type: SOURCE_LATENCY domain: %d latency: %g\n", domain_id, latency);
+    void add_early_source_latency(int domain_id, float latency) override {
+        fprintf(stdout, " type: EARLY_SOURCE_LATENCY domain: %d latency: %g\n", domain_id, latency);
+    }
+    void add_late_source_latency(int domain_id, float latency) override {
+        fprintf(stdout, " type: LATE_SOURCE_LATENCY domain: %d latency: %g\n", domain_id, latency);
     }
     void finish_constraints() override { fprintf(stdout, "# end timing_constraints\n"); }
 
@@ -168,13 +177,16 @@ class NopCallback : public tp::Callback {
         void add_clock_domain(int /*domain_id*/, std::string /*name*/) override {}
         void add_clock_source(int /*node_id*/, int /*domain_id*/) override {}
         void add_constant_generator(int /*node_id*/) override {}
-        void add_input_constraint(int /*node_id*/, int /*domain_id*/, float /*constraint*/) override {}
-        void add_output_constraint(int /*node_id*/, int /*domain_id*/, float /*constraint*/) override {}
+        void add_max_input_constraint(int /*node_id*/, int /*domain_id*/, float /*constraint*/) override {}
+        void add_min_input_constraint(int /*node_id*/, int /*domain_id*/, float /*constraint*/) override {}
+        void add_max_output_constraint(int /*node_id*/, int /*domain_id*/, float /*constraint*/) override {}
+        void add_min_output_constraint(int /*node_id*/, int /*domain_id*/, float /*constraint*/) override {}
         void add_setup_constraint(int /*src_domain_id*/, int /*sink_domain_id*/, float /*constraint*/) override {}
         void add_hold_constraint(int /*src_domain_id*/, int /*sink_domain_id*/, float /*constraint*/) override {}
         void add_setup_uncertainty(int /*src_domain_id*/, int /*sink_domain_id*/, float /*uncertainty*/) override {}
         void add_hold_uncertainty(int /*src_domain_id*/, int /*sink_domain_id*/, float /*uncertainty*/) override {}
-        void add_source_latency(int /*domain_id*/, float /*latency*/) override {}
+        void add_early_source_latency(int /*domain_id*/, float /*latency*/) override {}
+        void add_late_source_latency(int /*domain_id*/, float /*latency*/) override {}
         void finish_constraints() override {}
 
         void start_delay_model() override {}
