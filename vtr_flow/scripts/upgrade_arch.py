@@ -160,6 +160,10 @@ def add_model_timing(arch):
     return changed
 
 def upgrade_fc_overrides(arch):
+    """
+    Convets the legacy block <fc> pin and segment override specifications,
+    to the new unified format.
+    """
     fc_tags = arch.findall(".//fc")
 
     changed = False
@@ -229,6 +233,10 @@ def upgrade_fc_overrides(arch):
     return changed
 
 def upgrade_device_layout(arch):
+    """
+    Upgrades the legacy <gridlocation> specifications (on each pb_type) to the new format
+    placed under the <layout> tag.
+    """
     changed = False
 
     #Get the layout tag
@@ -432,6 +440,9 @@ def upgrade_device_layout(arch):
     return changed
         
 def remove_io_chan_distr(arch):
+    """
+    Removes the legacy '<io>' channel width distribution tags
+    """
     device = arch.find("./device")
     chan_width_distr = device.find("./chan_width_distr")
 
