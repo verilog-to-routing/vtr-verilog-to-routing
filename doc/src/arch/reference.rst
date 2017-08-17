@@ -830,21 +830,26 @@ They describe how a complex block interfaces with the inter-block world.
         
     Describes the locations where the input, output, and clock pins are distributed in a complex logic block.
 
-    .. arch:tag:: <loc side="{left|right|bottom|top}" offset="int">name_of_complex_logic_block.port_name[int:int] ... </loc>
+    .. arch:tag:: <loc side="{left|right|bottom|top}" xoffset="int" yoffset="int">name_of_complex_logic_block.port_name[int:int] ... </loc>
 
         .. note:: ``...`` represents repeat as needed. Do not put ``...`` in the architecture file.
 
-        :req_param side: Specifies which of the four directions the pins in the contents are located on
-        :opt_param offset: 
-            Specifies the grid distance from the bottom grid tile that the pin is specified for.
-            Pins on the bottom grid tile have an offset value of ``0``.  
-            The offset value must be less than the height of the functional block.
+        :req_param side: Specifies which of the four sides of a grid location the pins in the contents are located.
+
+        :opt_param xoffset: 
+            Specifies the horizontal offset (in grid units) from block origin (bottom left corner).
+            The offset value must be less than the width of the block.
 
             **Default:** ``0``
 
+        :opt_param yoffset: 
+            Specifies the vertical offset (in grid units) from block origin (bottom left corner).
+            The offset value must be less than the height of the block.
 
-        Physical equivalence for a pin is specified by listing a pin more than once for different locations.
-        For example, a LUT whose output can exit from the top and bottom of a block will have its output pin specified twice: once for the top and once for the bottom.
+            **Default:** ``0``
+
+    Physical equivalence for a pin is specified by listing a pin more than once for different locations.
+    For example, a LUT whose output can exit from the top and bottom of a block will have its output pin specified twice: once for the top and once for the bottom.
 
 Interconnect
 ~~~~~~~~~~~~

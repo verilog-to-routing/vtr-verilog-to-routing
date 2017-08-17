@@ -311,7 +311,7 @@ void XmlReadArch(const char *ArchFile, const bool timing_enabled,
  */
 
 /* Sets up the pinloc map and pin classes for the type. 
- * Pins and pin classses must already be setup by SetupPinClasses */
+ * Pins and pin classes must already be setup by SetupPinClasses */
 static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		t_type_descriptor * Type, const pugiutil::loc_data& loc_data) {
 	int i, j, k, Count;
@@ -322,6 +322,9 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	pugi::xml_node Cur;
 
 	capacity = Type->capacity;
+
+    expect_only_children(Locations, {"loc"}, loc_data);
+    expect_only_attributes(Locations, {"pattern"}, loc_data);
 
 	Prop = get_attribute(Locations, "pattern", loc_data).value();
 	if (strcmp(Prop, "spread") == 0) {
@@ -342,8 +345,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		for (int height = 0; height < Type->height; ++height) {
 			Type->pinloc[width][height] = (int **) vtr::malloc(4 * sizeof(int *));
 			for (int side = 0; side < 4; ++side) {
-				Type->pinloc[width][height][side] = (int *) vtr::malloc(
-						Type->num_pins * sizeof(int));
+				Type->pinloc[width][height][side] = (int *) vtr::malloc(Type->num_pins * sizeof(int));
 				for (int pin = 0; pin < Type->num_pins; ++pin) {
 					Type->pinloc[width][height][side][pin] = 0;
 				}
@@ -351,20 +353,14 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		}
 	}
 
-	Type->pin_loc_assignments = (char *****) vtr::malloc(
-			Type->width * sizeof(char ****));
-	Type->num_pin_loc_assignments = (int ***) vtr::malloc(
-			Type->width * sizeof(int **));
+	Type->pin_loc_assignments = (char *****) vtr::malloc(Type->width * sizeof(char ****));
+	Type->num_pin_loc_assignments = (int ***) vtr::malloc(Type->width * sizeof(int **));
 	for (int width = 0; width < Type->width; ++width) {
-		Type->pin_loc_assignments[width] = (char ****) vtr::calloc(Type->height,
-				sizeof(char ***));
-		Type->num_pin_loc_assignments[width] = (int **) vtr::calloc(Type->height,
-				sizeof(int *));
+		Type->pin_loc_assignments[width] = (char ****) vtr::calloc(Type->height, sizeof(char ***));
+		Type->num_pin_loc_assignments[width] = (int **) vtr::calloc(Type->height, sizeof(int *));
 		for (int height = 0; height < Type->height; ++height) {
-			Type->pin_loc_assignments[width][height] = (char ***) vtr::calloc(4,
-					sizeof(char **));
-			Type->num_pin_loc_assignments[width][height] = (int *) vtr::calloc(4,
-					sizeof(int));
+			Type->pin_loc_assignments[width][height] = (char ***) vtr::calloc(4, sizeof(char **));
+			Type->num_pin_loc_assignments[width][height] = (int *) vtr::calloc(4, sizeof(int));
 		}
 	}
 
@@ -378,26 +374,23 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 		while (Cur) {
 			check_node(Cur, "loc", loc_data);
 
+            expect_only_attributes(Cur, {"side", "xoffset", "yoffset"}, loc_data);
+
 			/* Get offset (ie. height) */
-			int offset = get_attribute(Cur, "offset", loc_data, OPTIONAL).as_int(0);
+			int x_offset = get_attribute(Cur, "xoffset", loc_data, OPTIONAL).as_int(0);
+			int y_offset = get_attribute(Cur, "yoffset", loc_data, OPTIONAL).as_int(0);
 
 			/* Get side */
 			e_side side = TOP;
-            int x_offset = 0; //Width > 1 not yet supported
-            int y_offset = -1;
 			Prop = get_attribute(Cur, "side", loc_data).value();
 			if (0 == strcmp(Prop, "left")) {
 				side = LEFT;
-                y_offset = offset;
 			} else if (0 == strcmp(Prop, "top")) {
 				side = TOP;
-                y_offset = offset;
 			} else if (0 == strcmp(Prop, "right")) {
 				side = RIGHT;
-                y_offset = offset;
 			} else if (0 == strcmp(Prop, "bottom")) {
 				side = BOTTOM;
-                y_offset = offset;
 			} else {
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
 						"'%s' is not a valid side.\n", Prop);
@@ -418,10 +411,13 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
             auto side_offset = std::make_tuple(side, x_offset, y_offset);
             if (seen_sides.count(side_offset)) {
 				archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-						"Duplicate pin location side/offset specification. Only a single <loc> per side and offset is permitted.\n");
+						"Duplicate pin location side/offset specification."
+                        " Only a single <loc> per side, xoffset and offset is permitted.\n");
             } else {
+                //Haven't specified this side offset before
                 seen_sides.insert(side_offset);
             }
+
 
 			/* Go through lists of pins */
 			const std::vector<std::string> Tokens = vtr::split(Cur.child_value());

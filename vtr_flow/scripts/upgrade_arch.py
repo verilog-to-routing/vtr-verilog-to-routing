@@ -27,7 +27,8 @@ supported_upgrades = [
     "add_model_timing",
     "upgrade_fc_overrides",
     "upgrade_device_layout",
-    "remove_io_chan_distr"
+    "remove_io_chan_distr",
+    "upgrade_pinlocations",
 ]
 
 def parse_args():
@@ -77,6 +78,11 @@ def main():
 
     if "remove_io_chan_distr" in args.features:
         result = remove_io_chan_distr(arch)
+        if result:
+            modified = True
+
+    if "upgrade_pinlocations" in args.features:
+        result = upgrade_pinlocations(arch)
         if result:
             modified = True
 
@@ -457,6 +463,55 @@ def remove_io_chan_distr(arch):
             assert width == 1.
             chan_width_distr.remove(io)
             return True #Modified
+
+def upgrade_pinlocations(arch):
+    """
+    Upgrades custom pin locations from the 'offset' to 'yoffset' attribute.
+    Since previously only width==1 blocks were supported, we only need to consider
+    the yoffset case
+    """
+    modified = False
+    pinlocations_list = arch.findall(".//pinlocations")
+
+    for pinlocations in pinlocations_list:
+        pb_type = pinlocations.find("..")
+
+        assert pb_type.tag == "pb_type"
+
+        width = 1
+        height = 1
+        if 'width' in pb_type.attrib:
+            width = int(pb_type.attrib['width'])
+        if 'height' in pb_type.attrib:
+            height = int(pb_type.attrib['height'])
+
+        assert width == 1, "All legacy architecture files should have width 1 blocks"
+
+        if pinlocations.attrib['pattern'] == "custom":
+
+            for loc in pinlocations:
+                if loc.tag is ET.Comment:
+                    continue
+
+                assert loc.tag == "loc"
+
+                if 'offset' in loc.attrib:
+                    offset = int(loc.attrib['offset'])
+
+                    assert offset < height
+
+                    #Remove the old attribute
+                    del loc.attrib['offset']
+
+                    #Add the new attribute
+                    loc.attrib['yoffset'] = str(offset)
+
+                    modified = True
+
+        else:
+            assert pinlocations.attrib['pattern'] == "spread"
+
+    return modified
 
 def get_port_names(string):
     ports = []
