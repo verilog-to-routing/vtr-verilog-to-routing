@@ -389,7 +389,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
             x_end = endx + kx * repeatx;
 
             size_t y_end = 0;
-            for (size_t ky = 0; y_end < height; ++ky) { //Repeat i y direction
+            for (size_t ky = 0; y_end < height; ++ky) { //Repeat in y direction
                 size_t y_start = starty + ky * repeaty;
                 y_end = endy + ky * repeaty;
 
@@ -440,7 +440,7 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
         bool operator<(const TypeLocation& rhs) const {
             return x < rhs.x || y < rhs.y || type < rhs.type;
         }
-   };
+    };
 
     //Collect locations effected by this block
     std::set<TypeLocation> target_locations;
@@ -461,6 +461,11 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
 
     if (priority < max_priority_type_loc.priority) {
         //Lower priority, do not override
+#ifdef VERBOSE
+        vtr::printf("Not creating block '%s' at (%zu,%zu) since overlaps block '%s' at (%zu,%zu) with higher priority (%d > %d)\n",
+                type->name, x_root, y_root, max_priority_type_loc.type->name, max_priority_type_loc.x, max_priority_type_loc.y,
+                max_priority_type_loc.priority, priority);
+#endif
         return;
     }
 
