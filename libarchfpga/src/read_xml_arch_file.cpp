@@ -414,6 +414,46 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 						"Duplicate pin location side/offset specification."
                         " Only a single <loc> per side, xoffset and offset is permitted.\n");
             } else {
+                //Check for multiple specification of equivalent sides
+                //eg: (BOTTOM, 0, 1) and (TOP, 0, 0) are equivalent
+
+                //Create the equivalent side for look-up
+                std::tuple<e_side,int,int> equiv_side_offset;
+                if (side == LEFT) {
+                    equiv_side_offset = std::make_tuple(RIGHT, x_offset - 1, y_offset); 
+                } else if (side == RIGHT) {
+                    equiv_side_offset = std::make_tuple(LEFT, x_offset + 1, y_offset); 
+                } else if (side == TOP) {
+                    equiv_side_offset = std::make_tuple(BOTTOM, x_offset, y_offset + 1); 
+                } else {
+                    VTR_ASSERT(side == BOTTOM);
+                    equiv_side_offset = std::make_tuple(TOP, x_offset, y_offset - 1); 
+                }
+
+                if (seen_sides.count(equiv_side_offset)) {
+                    //Equivalent side already specified!
+                    e_side equiv_side;
+                    int equiv_x_offset;
+                    int equiv_y_offset;
+                    std::tie(equiv_side, equiv_x_offset, equiv_y_offset) = equiv_side_offset;
+
+                    std::string equiv_side_str;
+                    if (equiv_side == LEFT) {
+                        equiv_side_str = "left";
+                    } else if (equiv_side == RIGHT) {
+                        equiv_side_str = "right";
+                    } else if (equiv_side == TOP) {
+                        equiv_side_str = "top";
+                    } else {
+                        VTR_ASSERT(equiv_side == BOTTOM);
+                        equiv_side_str = "bottom";
+                    }
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                            "Duplicate pin location side/offset specification."
+                            " The equivalent location (side=%s xoffset=%d yoffset=%d) has already been specified.",
+                            equiv_side_str.c_str(), equiv_x_offset, equiv_y_offset);
+                }
+
                 //Haven't specified this side offset before
                 seen_sides.insert(side_offset);
             }
