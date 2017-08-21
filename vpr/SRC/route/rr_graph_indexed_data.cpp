@@ -76,9 +76,9 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
         device_ctx.rr_indexed_data[index].ortho_cost_index = index + num_segment;
 
         if (segment_inf[iseg].longline)
-            length = device_ctx.nx;
+            length = device_ctx.grid.width();
         else
-            length = min(segment_inf[iseg].length, device_ctx.nx);
+            length = std::min<int>(segment_inf[iseg].length, device_ctx.grid.width());
 
         device_ctx.rr_indexed_data[index].inv_length = 1. / length;
         device_ctx.rr_indexed_data[index].seg_index = iseg;
@@ -93,9 +93,9 @@ void alloc_and_load_rr_indexed_data(const t_segment_inf * segment_inf,
         device_ctx.rr_indexed_data[index].ortho_cost_index = index - num_segment;
 
         if (segment_inf[iseg].longline)
-            length = device_ctx.ny;
+            length = device_ctx.grid.height();
         else
-            length = min(segment_inf[iseg].length, device_ctx.ny);
+            length = std::min<int>(segment_inf[iseg].length, device_ctx.grid.height());
 
         device_ctx.rr_indexed_data[index].inv_length = 1. / length;
         device_ctx.rr_indexed_data[index].seg_index = iseg;
@@ -193,7 +193,7 @@ static float get_delay_normalization_fac(int nodes_per_chan,
     Tdel_sum = 0.;
 
     for (itrack = 0; itrack < nodes_per_chan; itrack++) {
-        inode = find_average_rr_node_index(device_ctx.nx, device_ctx.ny, CHANX, itrack,
+        inode = find_average_rr_node_index(device_ctx.grid.width(), device_ctx.grid.height(), CHANX, itrack,
                 L_rr_node_indices);
         if (inode == -1)
             continue;
@@ -206,7 +206,7 @@ static float get_delay_normalization_fac(int nodes_per_chan,
     }
 
     for (itrack = 0; itrack < nodes_per_chan; itrack++) {
-        inode = find_average_rr_node_index(device_ctx.nx, device_ctx.ny, CHANY, itrack,
+        inode = find_average_rr_node_index(device_ctx.grid.width(), device_ctx.grid.height(), CHANY, itrack,
                 L_rr_node_indices);
         if (inode == -1)
             continue;
@@ -263,7 +263,7 @@ static void load_rr_indexed_data_T_values(int index_start,
      * channel segment, near the middle of the fpga.                            */
 
     for (itrack = 0; itrack < nodes_per_chan; itrack++) {
-        inode = find_average_rr_node_index(device_ctx.nx, device_ctx.ny, rr_type, itrack,
+        inode = find_average_rr_node_index(device_ctx.grid.width(), device_ctx.grid.height(), rr_type, itrack,
                 L_rr_node_indices);
         if (inode == -1)
             continue;

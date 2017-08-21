@@ -234,7 +234,7 @@ void try_graph(int width_fac, t_router_opts router_opts,
 
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
-	create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
+	create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.grid,
 			&device_ctx.chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
@@ -250,8 +250,8 @@ void try_graph(int width_fac, t_router_opts router_opts,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
 			&warning_count,
-                        router_opts.write_rr_graph_name.c_str(),
-                        router_opts.read_rr_graph_name.c_str(), false);
+            router_opts.write_rr_graph_name.c_str(),
+            router_opts.read_rr_graph_name.c_str(), false);
 
 	clock_t end = clock();
 
@@ -299,7 +299,7 @@ bool try_route(int width_fac, t_router_opts router_opts,
 	/* Set up the routing resource graph defined by this FPGA architecture. */
 	int warning_count;
         
-	create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.nx, device_ctx.ny, device_ctx.grid,
+	create_rr_graph(graph_type, device_ctx.num_block_types, device_ctx.block_types, device_ctx.grid,
 			&device_ctx.chan_width, det_routing_arch->switch_block_type,
 			det_routing_arch->Fs, det_routing_arch->switchblocks,
 			det_routing_arch->num_segment,
@@ -315,8 +315,8 @@ bool try_route(int width_fac, t_router_opts router_opts,
 			&det_routing_arch->wire_to_rr_ipin_switch,
 			&device_ctx.num_rr_switches,
 			&warning_count, 
-                        router_opts.write_rr_graph_name.c_str(),
-                        router_opts.read_rr_graph_name.c_str(), false);
+            router_opts.write_rr_graph_name.c_str(),
+            router_opts.read_rr_graph_name.c_str(), false);
 
 	clock_t end = clock();
 
@@ -702,7 +702,7 @@ void alloc_route_static_structs(void) {
 	route_ctx.trace_head.resize(cluster_ctx.clb_nlist.nets().size());
 	route_ctx.trace_tail.resize(cluster_ctx.clb_nlist.nets().size());
 
-	heap_size = device_ctx.nx * device_ctx.ny;
+	heap_size = (device_ctx.grid.width() -1 ) * (device_ctx.grid.height() - 1);
 	heap = (t_heap **) vtr::malloc(heap_size * sizeof(t_heap *));
 	heap--; /* heap stores from [1..heap_size] */
 	heap_tail = 1;
@@ -886,11 +886,12 @@ static void load_route_bb(int bb_factor) {
 	 * limited to channels contained with the net bounding box expanded    *
 	 * by bb_factor channels on each side.  For example, if bb_factor is   *
 	 * 0, the maze router must route each net within its bounding box.     *
-	 * If bb_factor = device_ctx.nx, the maze router will search every channel in     *
+	 * If bb_factor = max(device_ctx.grid.width()-1, device_cts.grid.height() - 1),
+     * the maze router will search every channel in     *
 	 * the FPGA if necessary.  The bounding boxes returned by this routine *
 	 * are different from the ones used by the placer in that they are     * 
-	 * clipped to lie within (0,0) and (device_ctx.nx+1,device_ctx.ny+1) rather than (1,1) and   *
-	 * (device_ctx.nx,device_ctx.ny).                                                            */
+	 * clipped to lie within (0,0) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1) rather than (1,1) and   *
+	 * (device_ctx.grid.width()-1,device_ctx.grid.height()-1).                                                            */
 
 	int xmax, ymax, xmin, ymin, x, y;
 
@@ -934,11 +935,12 @@ static void load_route_bb(int bb_factor) {
 		ymin -= 1;
 
 		/* Expand the net bounding box by bb_factor, then clip to the physical *
-		* chip area.                                                          */
-		route_ctx.route_bb[net_id].xmin = max(xmin - bb_factor, 0);
-		route_ctx.route_bb[net_id].xmax = min(xmax + bb_factor, device_ctx.nx + 1);
-		route_ctx.route_bb[net_id].ymin = max(ymin - bb_factor, 0);
-		route_ctx.route_bb[net_id].ymax = min(ymax + bb_factor, device_ctx.ny + 1);
+		 * chip area.                                                          */
+
+		route_ctx.route_bb[inet].xmin = max<int>(xmin - bb_factor, 0);
+		route_ctx.route_bb[inet].xmax = min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
+		route_ctx.route_bb[inet].ymin = max<int>(ymin - bb_factor, 0);
+		route_ctx.route_bb[inet].ymax = min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
 	}
 }
 
@@ -1243,7 +1245,7 @@ void print_route(const char* placement_file, const char* route_file) {
 
     fprintf(fp, "Placement_File: %s Placement_ID: %s\n", placement_file, place_ctx.placement_id.c_str());
 
-	fprintf(fp, "Array size: %d x %d logic blocks.\n", device_ctx.nx, device_ctx.ny);
+	fprintf(fp, "Array size: %zu x %zu logic blocks.\n", device_ctx.grid.width(), device_ctx.grid.height());
 	fprintf(fp, "\nRouting:");
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
 		if (!cluster_ctx.clb_nlist.net_global(net_id)) {

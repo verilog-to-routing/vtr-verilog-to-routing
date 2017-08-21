@@ -736,7 +736,7 @@ static void set_conditional_defaults(t_options& args) {
      */
     if (args.timing_driven_clustering && !args.timing_analysis) {
         if (args.timing_driven_clustering.provenance() == Provenance::SPECIFIED) {
-            vtr::printf_warning(__FILE__, __LINE__, "Command-line argument '%s' has no effect since timing analysis is disabled",
+            vtr::printf_warning(__FILE__, __LINE__, "Command-line argument '%s' has no effect since timing analysis is disabled\n",
                                 args.timing_driven_clustering.argument_name().c_str()); 
         }
         args.timing_driven_clustering.set(args.timing_analysis, Provenance::INFERRED);

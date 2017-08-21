@@ -108,7 +108,7 @@ void draw_internal_init_blk() {
 		// note, that all clbs of the same type are the same size,
 		// and that consequently we have *one* model for each type.
 		clb_bbox.bottom_left() = t_point(0,0);
-		if (type_desc.width > (device_ctx.nx + 2) || type_desc.height > (device_ctx.ny + 2)) {
+		if (size_t(type_desc.width) > device_ctx.grid.width() || size_t(type_desc.height) > device_ctx.grid.height()) {
 			// in this case, the clb certainly wont't fit, but this prevents
 			// an out-of-bounds access, and provides some sort of (probably right)
 			// value
@@ -143,8 +143,8 @@ void draw_internal_draw_subblk() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-	for (int i = 0; i <= (device_ctx.nx + 1); i++) {
-		for (int j = 0; j <= (device_ctx.ny + 1); j++) {
+	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
 			/* Only the first block of a group should control drawing */
 			if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0) 
 				continue;
@@ -272,7 +272,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node *pb_graph_node
 	const float FRACTION_CHILD_MARGIN_Y = 0.04;
 
 	int capacity = device_ctx.block_types[type_descrip_index].capacity;
-	if (capacity > 1 && device_ctx.nx > 0 && device_ctx.ny > 0 && place_ctx.grid_blocks[1][0].usage != 0
+	if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && place_ctx.grid_blocks[1][0].usage != 0
 		&& type_descrip_index == device_ctx.grid[1][0].type->index) {
 
 		// that should test for io blocks, and setting capacity_divisor > 1

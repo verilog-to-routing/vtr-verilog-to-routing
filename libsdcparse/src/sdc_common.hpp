@@ -24,7 +24,9 @@ void add_sdc_create_clock(Callback& callback, const Lexer& lexer, CreateClock& s
 
 //set_input_delay & set_output_delay
 void sdc_set_io_delay_set_clock(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay, const std::string& clock_name);
-void sdc_set_io_delay_set_max_value(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay, double max_value);
+void sdc_set_io_delay_set_value(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay, double value);
+void sdc_set_io_delay_set_max(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay);
+void sdc_set_io_delay_set_min(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay);
 void sdc_set_io_delay_set_ports(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay, StringGroup ports);
 void add_sdc_set_io_delay(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay);
 
@@ -50,14 +52,16 @@ void sdc_set_multicycle_path_add_to_from_group(Callback& callback, const Lexer& 
 void add_sdc_set_multicycle_path(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path);
 
 //set_clock_uncertainty
-void sdc_set_clock_uncertainty_set_type(Callback& callback, const Lexer& lexer, SetClockUncertainty& sdc_set_clock_uncertainty, SetupHoldType type);
+void sdc_set_clock_uncertainty_set_setup(Callback& callback, const Lexer& lexer, SetClockUncertainty& sdc_set_clock_uncertainty);
+void sdc_set_clock_uncertainty_set_hold(Callback& callback, const Lexer& lexer, SetClockUncertainty& sdc_set_clock_uncertainty);
 void sdc_set_clock_uncertainty_set_value(Callback& callback, const Lexer& lexer, SetClockUncertainty& sdc_set_clock_uncertainty, float value);
 void sdc_set_clock_uncertainty_add_to_from_group(Callback& callback, const Lexer& lexer, SetClockUncertainty& sdc_set_clock_uncertainty, StringGroup group, FromToType to_from_dir);
 void add_sdc_set_clock_uncertainty(Callback& callback, const Lexer& lexer, SetClockUncertainty& sdc_set_clock_uncertainty);
 
 //set_clock_latency
 void sdc_set_clock_latency_set_type(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency, ClockLatencyType type);
-void sdc_set_clock_latency_early_late(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency, EarlyLateType early_late);
+void sdc_set_clock_latency_early(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency);
+void sdc_set_clock_latency_late(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency);
 void sdc_set_clock_latency_set_value(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency, float value);
 void sdc_set_clock_latency_set_clocks(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency, StringGroup clock_targets);
 void add_sdc_set_clock_latency(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency);
@@ -67,7 +71,8 @@ void sdc_set_disable_timing_add_to_from_group(Callback& callback, const Lexer& l
 void add_sdc_set_disable_timing(Callback& callback, const Lexer& lexer, SetDisableTiming& sdc_set_disable_timing);
 
 //set_timing_derate
-void sdc_set_timing_derate_type(Callback& callback, const Lexer& lexer, SetTimingDerate& sdc_set_timing_derate, EarlyLateType type);
+void sdc_set_timing_derate_early(Callback& callback, const Lexer& lexer, SetTimingDerate& sdc_set_timing_derate);
+void sdc_set_timing_derate_late(Callback& callback, const Lexer& lexer, SetTimingDerate& sdc_set_timing_derate);
 void sdc_set_timing_derate_target_type(Callback& callback, const Lexer& lexer, SetTimingDerate& sdc_set_timing_derate, TimingDerateTargetType target_type);
 void sdc_set_timing_derate_value(Callback& callback, const Lexer& lexer, SetTimingDerate& sdc_set_timing_derate, float value);
 void sdc_set_timing_derate_targets(Callback& callback, const Lexer& lexer, SetTimingDerate& sdc_set_timing_derate, StringGroup targets);

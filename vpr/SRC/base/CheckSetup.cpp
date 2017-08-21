@@ -70,8 +70,7 @@ void CheckSetup(
 	if (DETAILED == RouterOpts.route_type) {
 		if ((Chans.chan_x_dist.type != UNIFORM)
 				|| (Chans.chan_y_dist.type != UNIFORM)
-				|| (Chans.chan_x_dist.peak != Chans.chan_y_dist.peak)
-				|| (Chans.chan_x_dist.peak != Chans.chan_width_io)) {
+				|| (Chans.chan_x_dist.peak != Chans.chan_y_dist.peak)) {
 			vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
 					"Detailed routing currently only supported on FPGAs with all channels of equal width.\n");
 		}

@@ -19,7 +19,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
-*/ 
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 
 	/* Set up the global arguments to their default. */
 	set_default_config();
-	
+
 	/* get the command line options */
 	get_options(argc, argv);
 
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
             printf("Failed to load architecture file: %s\n", vtr_error.what());
         }
 	}
-	
+
 	/* do High level Synthesis */
 	if (!global_args.blif_file)
 	{
@@ -115,81 +115,81 @@ int main(int argc, char **argv)
 		find_hard_adders();
 		//find_hard_adders_for_sub();
 		register_hard_blocks();
-	
+
 		global_param_table_sc = sc_new_string_cache();
-	
+
 		/* parse to abstract syntax tree */
 		printf("Parser starting - we'll create an abstract syntax tree.  "
 				"Note this tree can be viewed using Grap Viz (see documentation)\n");
 		parse_to_ast();
 		/* Note that the entry point for ast optimzations is done per module with the
 		 * function void next_parsed_verilog_file(ast_node_t *file_items_list) */
-	
+
 		/* after the ast is made potentially do tagging for downstream links to verilog */
 		if (global_args.high_level_block)
 			add_tag_data();
-	
+
 		/* Now that we have a parse tree (abstract syntax tree [ast]) of
 		 * the Verilog we want to make into a netlist. */
 		printf("Converting AST into a Netlist. "
 				"Note this netlist can be viewed using GraphViz (see documentation)\n");
 		create_netlist();
-	
+
 		// Can't levelize yet since the large muxes can look like combinational loops when they're not
 		check_netlist(verilog_netlist);
 
 		//START ################# NETLIST OPTIMIZATION ############################
-	
+
 			/* point for all netlist optimizations. */
 			printf("Performing Optimizations of the Netlist\n");
 			/* Perform a splitting of the multipliers for hard block mults */
 		    reduce_operations(verilog_netlist, MULTIPLY);
 			iterate_multipliers(verilog_netlist);
 			clean_multipliers();
-		
+
 			/* Perform a splitting of any hard block memories */
 			iterate_memories(verilog_netlist);
 			free_memory_lists();
-		
+
 			/* Perform a splitting of the adders for hard block add */
 			reduce_operations(verilog_netlist, ADD);
 			iterate_adders(verilog_netlist);
 			clean_adders();
-		
+
 			/* Perform a splitting of the adders for hard block sub */
 			reduce_operations(verilog_netlist, MINUS);
 			iterate_adders_for_sub(verilog_netlist);
 			clean_adders_for_sub();
-		
+
 		//END ################# NETLIST OPTIMIZATION ############################
-	
+
 		if (configuration.output_netlist_graphs )
 			graphVizOutputNetlist(configuration.debug_output_path, "optimized", 1, verilog_netlist); /* Path is where we are */
-	
+
 		//*******
-	
+
 		/* point where we convert netlist to FPGA or other hardware target compatible format */
 		printf("Performing Partial Map to target device\n");
 		partial_map_top(verilog_netlist);
-	
+
 		/* Find any unused logic in the netlist and remove it */
 		remove_unused_logic(verilog_netlist);
-	
+
 		/* point for outputs.  This includes soft and hard mapping all structures to the
 		 * target format.  Some of these could be considred optimizations */
 		printf("Outputting the netlist to the specified output format\n");
 		output_blif(global_args.output_file, verilog_netlist);
-	
+
 		elaboration_time = wall_time() - elaboration_time;
-	
+
 		printf("Successful High-level synthesis by Odin in ");
 		print_time(elaboration_time);
 		printf("\n");
 		printf("--------------------------------------------------------------------\n");
-	
+
 		// FIXME: free contents?
 		sc_free_string_cache(global_param_table_sc);
-		
+
 	}
 	else
 	{
@@ -206,14 +206,14 @@ int main(int argc, char **argv)
 		simulate_netlist(verilog_netlist);
 		printf("--------------------------------------------------------------------\n");
 	}
-	
+
 	report_mult_distribution();
 	report_add_distribution();
 	report_sub_distribution();
 	deregister_hard_blocks();
 
 	return 0;
-} 
+}
 
 /*
  * Prints usage information for Odin II. This should be kept up to date with the latest
@@ -345,8 +345,13 @@ void get_options(int argc, char** argv) {
             .default_value("false")
             .action(argparse::Action::STORE_TRUE);
 
+    other_grp.add_argument(global_args.black_box_latches, "-black_box_latches")
+            .help("Output all Latches as Black Boxes")
+            .default_value("false")
+            .action(argparse::Action::STORE_TRUE);
+
     auto& rand_sim_grp = parser.add_argument_group("random simulation options");
-    
+
     rand_sim_grp.add_argument(global_args.sim_num_test_vectors, "-g")
             .help("Number of random test vectors to generate")
             .metavar("NUM_VECTORS");

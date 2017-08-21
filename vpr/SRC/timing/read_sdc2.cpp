@@ -182,7 +182,15 @@ class SdcParseCallback2 : public sdcparse::Callback {
                           (cmd.type == sdcparse::IoDelayType::INPUT) ? "set_input_delay" : "set_output_delay");
             }
 
-            float max_delay = sdc_units_to_seconds(cmd.max_delay);
+            bool is_max = cmd.is_max;
+            bool is_min = cmd.is_min;
+            if (!is_max && !is_min) {
+                //Unspecified implies both
+                is_max = true;
+                is_min = true;
+            }
+
+            float delay = sdc_units_to_seconds(cmd.delay);
 
             for(AtomPinId pin : io_pins) {
                 tatum::NodeId tnode = lookup_.atom_pin_tnode(pin);
@@ -193,7 +201,12 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
 
                     if(netlist_.pin_type(pin) == AtomPinType::DRIVER) {
-                        tc_.set_input_constraint(tnode, domain, tatum::Time(max_delay));
+                        if (is_max) {
+                            tc_.set_input_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay));
+                        }
+                        if (is_min) {
+                            tc_.set_input_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay));
+                        }
                     } else {
                         VTR_ASSERT(netlist_.pin_type(pin) == AtomPinType::SINK);
 
@@ -208,7 +221,12 @@ class SdcParseCallback2 : public sdcparse::Callback {
                     VTR_ASSERT(cmd.type == sdcparse::IoDelayType::OUTPUT);
 
                     if(netlist_.pin_type(pin) == AtomPinType::SINK) {
-                        tc_.set_output_constraint(tnode, domain, tatum::Time(max_delay));
+                        if (is_max) {
+                            tc_.set_output_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay));
+                        }
+                        if (is_min) {
+                            tc_.set_output_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay));
+                        }
 
                     } else {
                         VTR_ASSERT(netlist_.pin_type(pin) == AtomPinType::DRIVER);
@@ -366,15 +384,22 @@ class SdcParseCallback2 : public sdcparse::Callback {
 
             float uncertainty = sdc_units_to_seconds(cmd.value);
 
+            bool is_setup = cmd.is_setup;
+            bool is_hold = cmd.is_hold;
+            if (!is_hold && !is_setup) {
+                //Unspecified is implicitly both setup and hold
+                is_setup = true;
+                is_hold = true;
+            }
+
             for (auto from_clock : from_clocks) {
                 for (auto to_clock : to_clocks) {
 
-                    if (cmd.type == sdcparse::SetupHoldType::SETUP || cmd.type == sdcparse::SetupHoldType::NONE) {
+                    if (is_setup) {
                         tc_.set_setup_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty));
-
-                    } else {
-                        VTR_ASSERT(cmd.type == sdcparse::SetupHoldType::HOLD);
-
+                    }
+                    
+                    if (is_hold) {
                         tc_.set_hold_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty));
                     }
                 }
@@ -388,21 +413,28 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency only supports specifying -source latency"); 
             }
 
-            if (cmd.early_late == sdcparse::EarlyLateType::EARLY) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency currently does not support -early latency"); 
-            }
-
-            VTR_ASSERT(cmd.early_late == sdcparse::EarlyLateType::LATE || cmd.early_late == sdcparse::EarlyLateType::NONE);
-
             auto clocks = get_clocks(cmd.target_clocks);
             if (clocks.empty()) {
                 clocks = get_all_clocks();
             }
 
+            bool is_early = cmd.is_early;
+            bool is_late = cmd.is_late;
+            if (!is_early && !is_late) {
+                //Unspecified is implicitly both early and late
+                is_early = true;
+                is_late = true;
+            }
+
             float latency = sdc_units_to_seconds(cmd.value);
 
             for (auto clock : clocks) {
-                tc_.set_source_latency(clock, tatum::Time(latency)); 
+                if (is_early) {
+                    tc_.set_source_latency(clock, tatum::ArrivalType::EARLY, tatum::Time(latency)); 
+                }
+                if (is_late) {
+                    tc_.set_source_latency(clock, tatum::ArrivalType::LATE, tatum::Time(latency)); 
+                }
             }
         }
 
@@ -1077,10 +1109,12 @@ void constrain_all_ios(const AtomNetlist& netlist,
 
                 //Constrain it
                 if (type == AtomBlockType::INPAD) {
-                    tc.set_input_constraint(tnode, input_domain, input_delay);
+                    tc.set_input_constraint(tnode, input_domain, tatum::DelayType::MAX, input_delay);
+                    tc.set_input_constraint(tnode, input_domain, tatum::DelayType::MIN, input_delay);
                 } else {
                     VTR_ASSERT(type == AtomBlockType::OUTPAD);
-                    tc.set_output_constraint(tnode, output_domain, output_delay);
+                    tc.set_output_constraint(tnode, output_domain, tatum::DelayType::MAX, output_delay);
+                    tc.set_output_constraint(tnode, output_domain, tatum::DelayType::MIN, output_delay);
                 }
             } else {
                 VTR_ASSERT_MSG(netlist.block_pins(blk).size() == 0, "Unconnected I/O");

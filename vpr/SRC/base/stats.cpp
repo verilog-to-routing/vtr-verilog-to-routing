@@ -57,7 +57,6 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	 * and an rr_graph must exist when you call this routine.                   */
 
 	float area, used_area;
-	int i, j;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -69,13 +68,17 @@ void routing_stats(bool full_stats, enum e_route_type route_type,
 	vtr::printf_info("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
 	area = 0;
-	for (i = 1; i <= device_ctx.nx; i++) {
-		for (j = 1; j <= device_ctx.ny; j++) {
-			if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-				if (device_ctx.grid[i][j].type->area == UNDEFINED) {
-					area += grid_logic_tile_area * device_ctx.grid[i][j].type->width * device_ctx.grid[i][j].type->height;
+	for (size_t i = 0; i < device_ctx.grid.width(); i++) {
+		for (size_t j = 0; j < device_ctx.grid.height(); j++) {
+            auto type = device_ctx.grid[i][j].type;
+			if (   device_ctx.grid[i][j].width_offset == 0 
+                && device_ctx.grid[i][j].height_offset == 0
+                && type != device_ctx.IO_TYPE
+                && type != device_ctx.EMPTY_TYPE) {
+				if (type->area == UNDEFINED) {
+					area += grid_logic_tile_area * type->width * type->height;
 				} else {
-					area += device_ctx.grid[i][j].type->area;
+					area += type->area;
 				}
 			}
 		}
@@ -203,14 +206,14 @@ static void get_channel_occupancy_stats(void) {
     auto& device_ctx = g_vpr_ctx.device();
 
 	auto chanx_occ = vtr::Matrix<int>({{
-                                        {1, size_t(device_ctx.nx+1)}, //[1..device_ctx.nx]
-                                        {0, size_t(device_ctx.ny+1)}  //[0..device_ctx.ny]
+                                        device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
+                                        device_ctx.grid.height() - 1 //[0 .. device_ctx.grid.height() - 2] (# x channels)
                                       }}, 
                                       0);
 
 	auto chany_occ = vtr::Matrix<int>({{
-                                        {0, size_t(device_ctx.nx+1)}, //[0..device_ctx.nx]
-                                        {1, size_t(device_ctx.ny+1)}  //[1..device_ctx.ny]
+                                        device_ctx.grid.width() - 1, //[0 .. device_ctx.grid.width() - 2] (# y channels)
+                                        device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
                                       }},
                                       0);
 	load_channel_occupancies(chanx_occ, chany_occ);
@@ -220,16 +223,16 @@ static void get_channel_occupancy_stats(void) {
 	vtr::printf_info("                      ---- ------- ------- --------\n");
 
 	int total_x = 0;
-	for (int j = 0; j <= device_ctx.ny; ++j) {
+	for (size_t j = 0; j < device_ctx.grid.height() - 1; ++j) {
 		total_x += device_ctx.chan_width.x_list[j];
 		float ave_occ = 0.0;
 		int max_occ = -1;
 
-		for (int i = 1; i <= device_ctx.nx; ++i) {
+		for (size_t i = 1; i < device_ctx.grid.width(); ++i) {
 			max_occ = max(chanx_occ[i][j], max_occ);
 			ave_occ += chanx_occ[i][j];
 		}
-		ave_occ /= device_ctx.nx;
+		ave_occ /= device_ctx.grid.width();
 		vtr::printf_info("                      %4d %7d %7.3f %8d\n", j, max_occ, ave_occ, device_ctx.chan_width.x_list[j]);
 	}
 
@@ -237,16 +240,16 @@ static void get_channel_occupancy_stats(void) {
 	vtr::printf_info("                      ---- ------- ------- --------\n");
 
 	int total_y = 0;
-	for (int i = 0; i <= device_ctx.nx; ++i) {
+	for (size_t i = 0; i < device_ctx.grid.width() - 1; ++i) {
 		total_y += device_ctx.chan_width.y_list[i];
 		float ave_occ = 0.0;
 		int max_occ = -1;
 
-		for (int j = 1; j <= device_ctx.ny; ++j) {
+		for (size_t j = 1; j < device_ctx.grid.height(); ++j) {
 			max_occ = max(chany_occ[i][j], max_occ);
 			ave_occ += chany_occ[i][j];
 		}
-		ave_occ /= device_ctx.ny;
+		ave_occ /= device_ctx.grid.height();
 		vtr::printf_info("                      %4d %7d %7.3f %8d\n", i, max_occ, ave_occ, device_ctx.chan_width.y_list[i]);
 	}
 
@@ -267,14 +270,8 @@ static void load_channel_occupancies(vtr::Matrix<int>& chanx_occ, vtr::Matrix<in
     auto& route_ctx = g_vpr_ctx.routing();
 
 	/* First set the occupancy of everything to zero. */
-
-	for (i = 1; i <= device_ctx.nx; i++)
-		for (j = 0; j <= device_ctx.ny; j++)
-			chanx_occ[i][j] = 0;
-
-	for (i = 0; i <= device_ctx.nx; i++)
-		for (j = 1; j <= device_ctx.ny; j++)
-			chany_occ[i][j] = 0;
+    chanx_occ.fill(0);
+    chany_occ.fill(0);
 
 	/* Now go through each net and count the tracks and pins used everywhere */
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -381,7 +378,7 @@ void print_wirelen_prob_dist(void) {
 	float av_length;
 	int prob_dist_size, i, incr;
 
-	prob_dist_size = device_ctx.nx + device_ctx.ny + 10;
+	prob_dist_size = device_ctx.grid.width() + device_ctx.grid.height() + 10;
 	prob_dist = (float *) vtr::calloc(prob_dist_size, sizeof(float));
 	norm_fac = 0.;
 

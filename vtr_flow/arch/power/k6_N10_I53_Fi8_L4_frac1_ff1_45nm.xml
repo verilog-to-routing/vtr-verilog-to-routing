@@ -70,7 +70,6 @@
     <timing C_ipin_cblock="1.47e-15" T_ipin_cblock="7.247e-11"/>
     <area grid_logic_tile_area="0"/>
     <chan_width_distr>
-      <io width="1.0"/>
       <x distr="uniform" peak="1.0"/>
       <y distr="uniform" peak="1.0"/>
     </chan_width_distr>

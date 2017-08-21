@@ -246,7 +246,6 @@ void vpr_init(const int argc, const char **argv,
 }
 
 /*
- * Sets globals: device_ctx.nx, device_ctx.ny
  * Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
  * Depends on num_clbs, pins_per_clb */
 void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
@@ -277,10 +276,8 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
         num_type_instances[cluster_ctx.clb_nlist.block_type(blk_id)]++;
     }
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances);
-    device_ctx.nx = device_ctx.grid.nx(); //TODO: remove
-    device_ctx.ny = device_ctx.grid.ny(); //TODO: remove
 
-    vtr::printf_info("FPGA sized to %d x %d (%s)\n", device_ctx.nx, device_ctx.ny, device_ctx.grid.name().c_str());
+    vtr::printf_info("FPGA sized to %zu x %zu (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), device_ctx.grid.name().c_str());
 
     vtr::printf_info("\n");
     vtr::printf_info("Resource usage...\n");
@@ -294,8 +291,8 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     vtr::printf_info("\n");
     device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = 0;
     device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
-    device_ctx.chan_width.x_list = (int *) vtr::malloc((device_ctx.ny + 1) * sizeof (int));
-    device_ctx.chan_width.y_list = (int *) vtr::malloc((device_ctx.nx + 1) * sizeof (int));
+    device_ctx.chan_width.x_list = (int *) vtr::malloc(device_ctx.grid.height() * sizeof (int));
+    device_ctx.chan_width.y_list = (int *) vtr::malloc(device_ctx.grid.width() * sizeof (int));
 }
 
 void vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {

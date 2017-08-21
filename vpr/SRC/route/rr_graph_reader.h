@@ -2,10 +2,10 @@
 
 #ifndef RR_GRAPH_READER_H
 #define RR_GRAPH_READER_H
+#include "device_grid.h"
 
 void load_rr_file(const t_graph_type graph_type,
-        const int L_nx,
-        const int L_ny,
+        const DeviceGrid& grid,
         t_chan_width *nodes_per_chan,
         const int num_seg_types,
         const t_segment_inf * segment_inf,

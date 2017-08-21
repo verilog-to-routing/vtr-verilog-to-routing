@@ -41,8 +41,8 @@ static int get_bidir_track_to_chan_seg(
 
 static int get_unidir_track_to_chan_seg(
         const int from_track, const int to_chan, const int to_seg, const int to_sb,
-        const t_rr_type to_type, const int max_chan_width, const int L_nx,
-        const int L_ny, const enum e_side from_side, const enum e_side to_side,
+        const t_rr_type to_type, const int max_chan_width,
+        const DeviceGrid& grid, const enum e_side from_side, const enum e_side to_side,
         const int Fs_per_side,
         short ******sblock_pattern, const t_rr_node_indices& L_rr_node_indices,
         const t_seg_details * seg_details, bool * L_rr_edge_done,
@@ -329,7 +329,7 @@ t_seg_details *alloc_and_load_seg_details(
    (ie. channel segments) for each horizontal and vertical channel. */
 
 void alloc_and_load_chan_details(
-        const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
         const t_chan_width* nodes_per_chan,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
@@ -338,32 +338,32 @@ void alloc_and_load_chan_details(
         t_chan_details& chan_details_x,
         t_chan_details& chan_details_y) {
 
-    chan_details_x = init_chan_details(L_nx, L_ny, nodes_per_chan,
+    chan_details_x = init_chan_details(grid, nodes_per_chan,
             num_seg_details, seg_details, SEG_DETAILS_X);
-    chan_details_y = init_chan_details(L_nx, L_ny, nodes_per_chan,
+    chan_details_y = init_chan_details(grid, nodes_per_chan,
             num_seg_details, seg_details, SEG_DETAILS_Y);
 
     /* Obstruct channel segment details based on grid block widths/heights */
-    obstruct_chan_details(L_nx, L_ny, nodes_per_chan,
+    obstruct_chan_details(grid, nodes_per_chan,
             trim_empty_channels, trim_obs_channels,
             chan_details_x, chan_details_y);
 
     /* Adjust segment start/end based on obstructed channels, if any */
-    adjust_chan_details(L_nx, L_ny, nodes_per_chan,
+    adjust_chan_details(grid, nodes_per_chan,
             chan_details_x, chan_details_y);
 }
 
 t_chan_details init_chan_details(
-        const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
         const t_chan_width* nodes_per_chan,
         const int num_seg_details,
         const t_seg_details* seg_details,
         const enum e_seg_details_type seg_details_type) {
 
-    t_chan_details chan_details = vtr::Matrix<t_seg_details*>({size_t(L_nx + 1), size_t(L_ny + 1)});
+    t_chan_details chan_details = vtr::Matrix<t_seg_details*>({grid.width(), grid.height()});
 
-    for (int x = 0; x <= L_nx; ++x) {
-        for (int y = 0; y <= L_ny; ++y) {
+    for (size_t x = 0; x < grid.width(); ++x) {
+        for (size_t y = 0; y < grid.height(); ++y) {
 
             t_seg_details* p_seg_details = 0;
             p_seg_details = (t_seg_details*) vtr::calloc(nodes_per_chan->max, sizeof (t_seg_details));
@@ -382,11 +382,11 @@ t_chan_details init_chan_details(
 
                 if (seg_details_type == SEG_DETAILS_X) {
                     p_seg_details[i].seg_start = get_seg_start(p_seg_details, i, y, x);
-                    p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, y, L_nx);
+                    p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, y, grid.width() - 2); //-2 for no perim channels
                 }
                 if (seg_details_type == SEG_DETAILS_Y) {
                     p_seg_details[i].seg_start = get_seg_start(p_seg_details, i, x, y);
-                    p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, x, L_ny);
+                    p_seg_details[i].seg_end = get_seg_end(p_seg_details, i, p_seg_details[i].seg_start, x, grid.height() - 2); //-2 for no perim channels
                 }
 
                 int length = seg_details[i].length;
@@ -429,7 +429,7 @@ t_chan_details init_chan_details(
 }
 
 void obstruct_chan_details(
-        const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
         const t_chan_width* nodes_per_chan,
         const bool trim_empty_channels,
         const bool trim_obs_channels,
@@ -439,31 +439,31 @@ void obstruct_chan_details(
     auto& device_ctx = g_vpr_ctx.device();
 
     /* Iterate grid to find and obstruct based on multi-width/height blocks */
-    for (int x = 0; x <= L_nx; ++x) {
-        for (int y = 0; y <= L_ny; ++y) {
+    for (size_t x = 0; x < grid.width() - 1; ++x) {
+        for (size_t y = 0; y < grid.height() - 1; ++y) {
 
             if (!trim_obs_channels)
                 continue;
 
-            if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)
+            if (grid[x][y].type == device_ctx.EMPTY_TYPE)
                 continue;
-            if (device_ctx.grid[x][y].width_offset > 0 || device_ctx.grid[x][y].height_offset > 0)
+            if (grid[x][y].width_offset > 0 || grid[x][y].height_offset > 0)
                 continue;
-            if (device_ctx.grid[x][y].type->width == 1 && device_ctx.grid[x][y].type->height == 1)
+            if (grid[x][y].type->width == 1 && grid[x][y].type->height == 1)
                 continue;
 
-            if (device_ctx.grid[x][y].type->height > 1) {
-                for (int dx = 0; dx <= device_ctx.grid[x][y].type->width - 1; ++dx) {
-                    for (int dy = 0; dy < device_ctx.grid[x][y].type->height - 1; ++dy) {
+            if (grid[x][y].type->height > 1) {
+                for (int dx = 0; dx <= grid[x][y].type->width - 1; ++dx) {
+                    for (int dy = 0; dy < grid[x][y].type->height - 1; ++dy) {
                         for (int track = 0; track < nodes_per_chan->max; ++track) {
                             chan_details_x[x + dx][y + dy][track].length = 0;
                         }
                     }
                 }
             }
-            if (device_ctx.grid[x][y].type->width > 1) {
-                for (int dy = 0; dy <= device_ctx.grid[x][y].type->height - 1; ++dy) {
-                    for (int dx = 0; dx < device_ctx.grid[x][y].type->width - 1; ++dx) {
+            if (grid[x][y].type->width > 1) {
+                for (int dy = 0; dy <= grid[x][y].type->height - 1; ++dy) {
+                    for (int dx = 0; dx < grid[x][y].type->width - 1; ++dx) {
                         for (int track = 0; track < nodes_per_chan->max; ++track) {
                             chan_details_y[x + dx][y + dy][track].length = 0;
                         }
@@ -474,32 +474,32 @@ void obstruct_chan_details(
     }
 
     /* Iterate grid again to find and obstruct based on neighboring EMPTY and/or IO types */
-    for (int x = 0; x <= L_nx; ++x) {
-        for (int y = 0; y <= L_ny; ++y) {
+    for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
+        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
 
             if (!trim_empty_channels)
                 continue;
 
-            if (device_ctx.grid[x][y].type == device_ctx.IO_TYPE) {
+            if (grid[x][y].type == device_ctx.IO_TYPE) {
                 if ((x == 0) || (y == 0))
                     continue;
             }
-            if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE) {
-                if ((x == L_nx) && (device_ctx.grid[x + 1][y].type == device_ctx.IO_TYPE))
+            if (grid[x][y].type == device_ctx.EMPTY_TYPE) {
+                if ((x == grid.width() - 2) && (grid[x + 1][y].type == device_ctx.IO_TYPE)) //-2 for no perim channels
                     continue;
-                if ((y == L_ny) && (device_ctx.grid[x][y + 1].type == device_ctx.IO_TYPE))
+                if ((y == grid.height() - 2) && (grid[x][y + 1].type == device_ctx.IO_TYPE)) //-2 for no perim channels
                     continue;
             }
 
-            if ((device_ctx.grid[x][y].type == device_ctx.IO_TYPE) || (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)) {
-                if ((device_ctx.grid[x][y + 1].type == device_ctx.IO_TYPE) || (device_ctx.grid[x][y + 1].type == device_ctx.EMPTY_TYPE)) {
+            if ((grid[x][y].type == device_ctx.IO_TYPE) || (grid[x][y].type == device_ctx.EMPTY_TYPE)) {
+                if ((grid[x][y + 1].type == device_ctx.IO_TYPE) || (grid[x][y + 1].type == device_ctx.EMPTY_TYPE)) {
                     for (int track = 0; track < nodes_per_chan->max; ++track) {
                         chan_details_x[x][y][track].length = 0;
                     }
                 }
             }
-            if ((device_ctx.grid[x][y].type == device_ctx.IO_TYPE) || (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)) {
-                if ((device_ctx.grid[x + 1][y].type == device_ctx.IO_TYPE) || (device_ctx.grid[x + 1][y].type == device_ctx.EMPTY_TYPE)) {
+            if ((grid[x][y].type == device_ctx.IO_TYPE) || (grid[x][y].type == device_ctx.EMPTY_TYPE)) {
+                if ((grid[x + 1][y].type == device_ctx.IO_TYPE) || (grid[x + 1][y].type == device_ctx.EMPTY_TYPE)) {
                     for (int track = 0; track < nodes_per_chan->max; ++track) {
                         chan_details_y[x][y][track].length = 0;
                     }
@@ -510,31 +510,31 @@ void obstruct_chan_details(
 }
 
 void adjust_chan_details(
-        const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
         const t_chan_width* nodes_per_chan,
         t_chan_details& chan_details_x,
         t_chan_details& chan_details_y) {
 
-    for (int y = 0; y <= L_ny; ++y) {
-        for (int x = 0; x <= L_nx; ++x) {
+    for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
+        for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
 
             /* Ignore any non-obstructed channel seg_detail structures */
             if (chan_details_x[x][y][0].length > 0)
                 continue;
 
-            adjust_seg_details(x, y, L_nx, L_ny, nodes_per_chan,
+            adjust_seg_details(x, y, grid, nodes_per_chan,
                     chan_details_x, SEG_DETAILS_X);
         }
     }
 
-    for (int x = 0; x <= L_nx; ++x) {
-        for (int y = 0; y <= L_ny; ++y) {
+    for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
+        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
 
             /* Ignore any non-obstructed channel seg_detail structures */
             if (chan_details_y[x][y][0].length > 0)
                 continue;
 
-            adjust_seg_details(x, y, L_nx, L_ny, nodes_per_chan,
+            adjust_seg_details(x, y, grid, nodes_per_chan,
                     chan_details_y, SEG_DETAILS_Y);
         }
     }
@@ -542,7 +542,7 @@ void adjust_chan_details(
 
 void adjust_seg_details(
         const int x, const int y,
-        const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
         const t_chan_width* nodes_per_chan,
         t_chan_details& chan_details,
         const enum e_seg_details_type seg_details_type) {
@@ -567,16 +567,16 @@ void adjust_seg_details(
 
     for (int track = 0; track < nodes_per_chan->max; ++track) {
 
-        int lx = (seg_details_type == SEG_DETAILS_X ? x + 1 : x);
-        int ly = (seg_details_type == SEG_DETAILS_X ? y : y + 1);
-        if (lx > L_nx || ly > L_ny || chan_details[lx][ly][track].length == 0)
+        size_t lx = (seg_details_type == SEG_DETAILS_X ? x + 1 : x);
+        size_t ly = (seg_details_type == SEG_DETAILS_X ? y : y + 1);
+        if (lx > grid.width() - 2 || ly > grid.height() - 2 || chan_details[lx][ly][track].length == 0) //-2 for no perim channels
             continue;
 
         while (chan_details[lx][ly][track].seg_start <= seg_index) {
             chan_details[lx][ly][track].seg_start = seg_index + 1;
             lx = (seg_details_type == SEG_DETAILS_X ? lx + 1 : lx);
             ly = (seg_details_type == SEG_DETAILS_X ? ly : ly + 1);
-            if (lx > L_nx || ly > L_ny || chan_details[lx][ly][track].length == 0)
+            if (lx > grid.width() - 2 || ly > grid.height() - 2 || chan_details[lx][ly][track].length == 0) //-2 for no perim channels
                 break;
         }
     }
@@ -598,18 +598,18 @@ void free_chan_details(
         t_chan_details& chan_details_x,
         t_chan_details& chan_details_y,
         const int max_chan_width,
-        const int L_nx, const int L_ny) {
+        const DeviceGrid& grid) {
 
     /* Frees all the memory allocated to an array of chan_details structures. */
-    for (int x = 0; x <= L_nx; ++x) {
-        for (int y = 0; y <= L_ny; ++y) {
+    for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
+        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
 
             t_seg_details* p_seg_details = chan_details_x[x][y];
             free_seg_details(p_seg_details, max_chan_width);
         }
     }
-    for (int x = 0; x <= L_nx; ++x) {
-        for (int y = 0; y <= L_ny; ++y) {
+    for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
+        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
 
             t_seg_details* p_seg_details = chan_details_y[x][y];
             free_seg_details(p_seg_details, max_chan_width);
@@ -730,10 +730,10 @@ int get_bidir_opin_connections(
         seg = ((to_type == CHANX) ? tr_i : tr_j);
 
         /* Don't connect where no tracks on fringes */
-        if ((tr_i < 0) || (tr_i > device_ctx.nx)) {
+        if ((tr_i < 0) || (tr_i > int(device_ctx.grid.width() - 2))) { //-2 for no perimeter channels
             continue;
         }
-        if ((tr_j < 0) || (tr_j > device_ctx.ny)) {
+        if ((tr_j < 0) || (tr_j > int(device_ctx.grid.height() - 2))) { //-2 for no perimeter channels
             continue;
         }
         if ((CHANX == to_type) && (tr_i < 1)) {
@@ -959,27 +959,27 @@ void dump_chan_details(
         const t_chan_details& chan_details_x,
         const t_chan_details& chan_details_y,
         int max_chan_width,
-        const int L_nx, int const L_ny,
+        const DeviceGrid& grid,
         const char *fname) {
 
     FILE *fp = vtr::fopen(fname, "w");
     if (fp) {
-        for (int y = 0; y <= L_ny; ++y) {
-            for (int x = 0; x <= L_nx; ++x) {
+        for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
+            for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
 
                 fprintf(fp, "========================\n");
-                fprintf(fp, "chan_details_x: [%d][%d]\n", x, y);
+                fprintf(fp, "chan_details_x: [%zu][%zu]\n", x, y);
                 fprintf(fp, "========================\n");
 
                 const t_seg_details* seg_details = chan_details_x[x][y];
                 dump_seg_details(seg_details, max_chan_width, fp);
             }
         }
-        for (int x = 0; x <= L_nx; ++x) {
-            for (int y = 0; y <= L_ny; ++y) {
+        for (size_t x = 0; x <= grid.width() - 2; ++x) { //-2 for no perim channels
+            for (size_t y = 0; y <= grid.height() - 2; ++y) { //-2 for no perim channels
 
                 fprintf(fp, "========================\n");
-                fprintf(fp, "chan_details_y: [%d][%d]\n", x, y);
+                fprintf(fp, "chan_details_y: [%zu][%zu]\n", x, y);
                 fprintf(fp, "========================\n");
 
                 const t_seg_details* seg_details = chan_details_y[x][y];
@@ -995,16 +995,16 @@ void dump_chan_details(
 void dump_sblock_pattern(
         short ******sblock_pattern,
         int max_chan_width,
-        const int L_nx, int const L_ny,
+        const DeviceGrid& grid,
         const char *fname) {
 
     FILE *fp = vtr::fopen(fname, "w");
     if (fp) {
-        for (int y = 0; y <= L_ny; ++y) {
-            for (int x = 0; x <= L_nx; ++x) {
+        for (size_t y = 0; y <= grid.height() - 2; ++y) {
+            for (size_t x = 0; x <= grid.width() - 2; ++x) {
 
                 fprintf(fp, "==========================\n");
-                fprintf(fp, "sblock_pattern: [%d][%d]\n", x, y);
+                fprintf(fp, "sblock_pattern: [%zu][%zu]\n", x, y);
                 fprintf(fp, "==========================\n");
 
                 for (int from_side = 0; from_side < 4; ++from_side) {
@@ -1068,53 +1068,6 @@ void dump_sblock_pattern(
     fclose(fp);
 }
 
-void print_rr_node_indices(int L_nx, int L_ny, const t_rr_node_indices& L_rr_node_indices) {
-
-    if (!L_rr_node_indices[SOURCE].empty())
-        print_rr_node_indices(SOURCE, L_nx + 1, L_ny + 1, L_rr_node_indices);
-    if (!L_rr_node_indices[SINK].empty())
-        print_rr_node_indices(SINK, L_nx + 1, L_ny + 1, L_rr_node_indices);
-    if (!L_rr_node_indices[IPIN].empty())
-        print_rr_node_indices(IPIN, L_nx + 1, L_ny + 1, L_rr_node_indices);
-    if (!L_rr_node_indices[OPIN].empty())
-        print_rr_node_indices(OPIN, L_nx + 1, L_ny + 1, L_rr_node_indices);
-    if (!L_rr_node_indices[CHANX].empty())
-        print_rr_node_indices(CHANX, L_nx, L_ny, L_rr_node_indices);
-    if (!L_rr_node_indices[CHANY].empty())
-        print_rr_node_indices(CHANY, L_nx, L_ny, L_rr_node_indices);
-}
-
-void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, const t_rr_node_indices& L_rr_node_indices) {
-
-    const char* psz_rr_type = "?";
-    switch (rr_type) {
-        case SOURCE: psz_rr_type = "SOURCE";
-            break;
-        case SINK: psz_rr_type = "SINK";
-            break;
-        case IPIN: psz_rr_type = "IPIN";
-            break;
-        case OPIN: psz_rr_type = "OPIN";
-            break;
-        case CHANX: psz_rr_type = "CHANX";
-            break;
-        case CHANY: psz_rr_type = "CHANY";
-            break;
-        default: break;
-    }
-
-    for (int i = 0; i <= L_nx; ++i) {
-        for (int j = 0; j <= L_ny; ++j) {
-            vector<int> rr_node_index = L_rr_node_indices[rr_type][i][j];
-
-            vtr::printf_info("rr_node_indices[%s][%d][%d] =", psz_rr_type, i, j);
-            for (unsigned k = 0; k < rr_node_index.size(); ++k)
-                vtr::printf_info(" %d", rr_node_index[k]);
-            vtr::printf_info("\n");
-        }
-    }
-}
-
 static void load_chan_rr_indices(
         const int max_chan_width, const int chan_len,
         const int num_chans, const t_rr_type type,
@@ -1170,47 +1123,44 @@ static void load_chan_rr_indices(
 }
 
 t_rr_node_indices alloc_and_load_rr_node_indices(
-        const int max_chan_width, const int L_nx, const int L_ny, int *index,
+        const int max_chan_width, const DeviceGrid& grid, int *index,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y) {
 
     /* Allocates and loads all the structures needed for fast lookups of the   *
      * index of an rr_node.  rr_node_indices is a matrix containing the index  *
      * of the *first* rr_node at a given (i,j) location.                       */
 
-    int i, j, k;
     t_rr_node_indices indices;
     vector<int> tmp;
     t_type_ptr type;
 
-    auto& device_ctx = g_vpr_ctx.device();
-
     /* Alloc the lookup table */
     indices.resize(NUM_RR_TYPES);
 
-    indices[IPIN].resize(L_nx + 2);
-    indices[SINK].resize(L_nx + 2);
-    for (i = 0; i <= (L_nx + 1); ++i) {
-        indices[IPIN][i].resize(L_ny + 2);
-        indices[SINK][i].resize(L_ny + 2);
+    indices[IPIN].resize(grid.width());
+    indices[SINK].resize(grid.width());
+    for (size_t i = 0; i < grid.width(); ++i) {
+        indices[IPIN][i].resize(grid.height());
+        indices[SINK][i].resize(grid.height());
     }
 
     /* Count indices for block nodes */
-    for (i = 0; i <= (L_nx + 1); i++) {
-        for (j = 0; j <= (L_ny + 1); j++) {
-            if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-                type = device_ctx.grid[i][j].type;
+    for (size_t i = 0; i < grid.width(); i++) {
+        for (size_t j = 0; j < grid.height(); j++) {
+            if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
+                type = grid[i][j].type;
 
                 /* Load the pin class lookups. The ptc nums for SINK and SOURCE
                  * are disjoint so they can share the list. */
 
-                for (k = 0; k < type->num_class; ++k) {
+                for (int k = 0; k < type->num_class; ++k) {
                     indices[SINK][i][j].push_back(*index);
                     ++(*index);
                 }
 
                 /* Load the pin lookups. The ptc nums for IPIN and OPIN
                  * are disjoint so they can share the list. */
-                for (k = 0; k < type->num_pins; ++k) {
+                for (int k = 0; k < type->num_pins; ++k) {
                     indices[IPIN][i][j].push_back(*index);
                     ++(*index);
                 }
@@ -1219,12 +1169,12 @@ t_rr_node_indices alloc_and_load_rr_node_indices(
     }
 
     /* Point offset blocks of a large block to base block */
-    for (i = 0; i <= (L_nx + 1); i++) {
-        for (j = 0; j <= (L_ny + 1); j++) {
-            if (device_ctx.grid[i][j].width_offset > 0 || device_ctx.grid[i][j].height_offset > 0) {
+    for (size_t i = 0; i < grid.width(); i++) {
+        for (size_t j = 0; j < grid.height(); j++) {
+            if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0) {
                 /* NOTE: this only supports horizontal and/or vertical large blocks */
-                indices[SINK][i][j] = indices[SINK][i - device_ctx.grid[i][j].width_offset][j - device_ctx.grid[i][j].height_offset];
-                indices[IPIN][i][j] = indices[IPIN][i - device_ctx.grid[i][j].width_offset][j - device_ctx.grid[i][j].height_offset];
+                indices[SINK][i][j] = indices[SINK][i - grid[i][j].width_offset][j - grid[i][j].height_offset];
+                indices[IPIN][i][j] = indices[IPIN][i - grid[i][j].width_offset][j - grid[i][j].height_offset];
             }
         }
     }
@@ -1235,9 +1185,9 @@ t_rr_node_indices alloc_and_load_rr_node_indices(
     indices[OPIN] = indices[IPIN];
 
     /* Load the data for x and y channels */
-    load_chan_rr_indices(max_chan_width, L_nx + 2, L_ny + 2,
+    load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
             CHANX, chan_details_x, index, indices);
-    load_chan_rr_indices(max_chan_width, L_ny + 2, L_nx + 2,
+    load_chan_rr_indices(max_chan_width, grid.height(), grid.width(),
             CHANY, chan_details_y, index, indices);
     return indices;
 }
@@ -1271,8 +1221,8 @@ int get_rr_node_index(
     auto& device_ctx = g_vpr_ctx.device();
 
     VTR_ASSERT(ptc >= 0);
-    VTR_ASSERT(x >= 0 && x <= (device_ctx.nx + 1));
-    VTR_ASSERT(y >= 0 && y <= (device_ctx.ny + 1));
+    VTR_ASSERT(x >= 0 && x < int(device_ctx.grid.width()));
+    VTR_ASSERT(y >= 0 && y < int(device_ctx.grid.height()));
 
     type = device_ctx.grid[x][y].type;
 
@@ -1327,7 +1277,7 @@ int get_rr_node_index(
 }
 
 int find_average_rr_node_index(
-        int L_nx, int L_ny, t_rr_type rr_type, int ptc,
+        int device_width, int device_height, t_rr_type rr_type, int ptc,
         const t_rr_node_indices& L_rr_node_indices) {
 
     /* Find and return the index to a rr_node that is located at the "center" *
@@ -1336,23 +1286,23 @@ int find_average_rr_node_index(
      * Worst case, this function will simply return the 1st non-EMPTY and     *
      * non-IO node.                                                           */
 
-    int inode = get_rr_node_index((L_nx + 1) / 2, (L_ny + 1) / 2,
+    int inode = get_rr_node_index((device_width) / 2, (device_height) / 2,
             rr_type, ptc, L_rr_node_indices);
 
     if (inode == -1) {
-        inode = get_rr_node_index((L_nx + 1) / 4, (L_ny + 1) / 4,
+        inode = get_rr_node_index((device_width) / 4, (device_height) / 4,
                 rr_type, ptc, L_rr_node_indices);
     }
     if (inode == -1) {
-        inode = get_rr_node_index((L_nx + 1) / 4 * 3, (L_ny + 1) / 4 * 3,
+        inode = get_rr_node_index((device_width) / 4 * 3, (device_height) / 4 * 3,
                 rr_type, ptc, L_rr_node_indices);
     }
     if (inode == -1) {
 
         auto& device_ctx = g_vpr_ctx.device();
 
-        for (int x = 0; x <= L_nx; ++x) {
-            for (int y = 0; y <= L_ny; ++y) {
+        for (int x = 0; x < device_width; ++x) {
+            for (int y = 0; y < device_height; ++y) {
 
                 if (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)
                     continue;
@@ -1459,7 +1409,7 @@ int get_track_to_pins(
 int get_track_to_tracks(
         const int from_chan, const int from_seg, const int from_track,
         const t_rr_type from_type, const int to_seg, const t_rr_type to_type,
-        const int chan_len, const int max_chan_width,
+        const int chan_len, const int max_chan_width, const DeviceGrid& grid,
         const int Fs_per_side, short ******sblock_pattern,
         t_linked_edge **edge_list,
         const t_seg_details * from_seg_details,
@@ -1478,8 +1428,6 @@ int get_track_to_tracks(
     bool from_is_sblock, is_behind, Fs_clipped;
     enum e_side from_side_a, from_side_b, to_side;
     bool custom_switch_block;
-
-    auto& device_ctx = g_vpr_ctx.device();
 
     /* check whether a custom switch block will be used */
     custom_switch_block = false;
@@ -1612,7 +1560,7 @@ int get_track_to_tracks(
                             && (DEC_DIRECTION == from_seg_details[from_track].direction)) {
                         num_conn += get_unidir_track_to_chan_seg(
                                 from_track, to_chan,
-                                to_seg, to_sb, to_type, max_chan_width, device_ctx.nx, device_ctx.ny,
+                                to_seg, to_sb, to_type, max_chan_width, grid,
                                 from_side_a, to_side, Fs_per_side,
                                 sblock_pattern, L_rr_node_indices, to_seg_details,
                                 L_rr_edge_done, &Fs_clipped, edge_list);
@@ -1649,7 +1597,7 @@ int get_track_to_tracks(
                             && (INC_DIRECTION == from_seg_details[from_track].direction)) {
                         num_conn += get_unidir_track_to_chan_seg(
                                 from_track, to_chan,
-                                to_seg, to_sb, to_type, max_chan_width, device_ctx.nx, device_ctx.ny,
+                                to_seg, to_sb, to_type, max_chan_width, grid,
                                 from_side_b, to_side, Fs_per_side,
                                 sblock_pattern, L_rr_node_indices, to_seg_details,
                                 L_rr_edge_done, &Fs_clipped, edge_list);
@@ -1792,8 +1740,8 @@ static int get_track_to_chan_seg(
 
 static int get_unidir_track_to_chan_seg(
         const int from_track, const int to_chan, const int to_seg, const int to_sb,
-        const t_rr_type to_type, const int max_chan_width, const int L_nx,
-        const int L_ny, const enum e_side from_side, const enum e_side to_side,
+        const t_rr_type to_type, const int max_chan_width, const DeviceGrid& grid,
+        const enum e_side from_side, const enum e_side to_side,
         const int Fs_per_side,
         short ******sblock_pattern, const t_rr_node_indices& L_rr_node_indices,
         const t_seg_details * seg_details, bool * L_rr_edge_done,
@@ -1807,7 +1755,7 @@ static int get_unidir_track_to_chan_seg(
     int to_y = (CHANX == to_type ? to_chan : to_seg);
     int sb_x = (CHANX == to_type ? to_sb : to_chan);
     int sb_y = (CHANX == to_type ? to_chan : to_sb);
-    int max_len = (CHANX == to_type ? L_nx : L_ny);
+    int max_len = (CHANX == to_type ? grid.width() : grid.height()) - 2; //-2 for no perimeter channels
 
     enum e_direction to_dir = DEC_DIRECTION;
     if (to_sb < to_seg) {
@@ -1989,7 +1937,7 @@ static int vpr_to_phy_track(
 }
 
 short ******alloc_sblock_pattern_lookup(
-        const int L_nx, const int L_ny, const int max_chan_width) {
+        const DeviceGrid& grid, const int max_chan_width) {
 
     /* loading up the sblock connection pattern matrix. It's a huge matrix because
      * for nonquantized W, it's impossible to make simple permutations to figure out
@@ -2002,13 +1950,13 @@ short ******alloc_sblock_pattern_lookup(
     /* Alloc each list of pointers in one go. items is a running product that increases
      * with each new dimension of the matrix. */
 
-    VTR_ASSERT(L_nx > 0);
-    VTR_ASSERT(L_ny > 0);
+    VTR_ASSERT(grid.width() > 0);
+    VTR_ASSERT(grid.height() > 0);
 
     size_t items = 1;
-    items *= (L_nx + 1);
+    items *= (grid.width() - 1);
     short ******i_list = (short ******) vtr::malloc(sizeof (short *****) * items);
-    items *= (L_ny + 1);
+    items *= (grid.height() - 1);
     short *****j_list = (short *****) vtr::malloc(sizeof (short ****) * items);
     items *= (4);
     short ****from_side_list = (short ****) vtr::malloc(sizeof (short ***) * items);
@@ -2021,27 +1969,27 @@ short ******alloc_sblock_pattern_lookup(
 
     /* Build the pointer lists to form the multidimensional array */
     short ******sblock_pattern = i_list;
-    i_list += (L_nx + 1); /* Skip forward device_ctx.nx+1 items */
-    for (int i = 0; i < (L_nx + 1); ++i) {
+    i_list += (grid.width() - 1); /* Skip forward */
+    for (size_t i = 0; i < (grid.width() - 1); ++i) {
 
         sblock_pattern[i] = j_list;
-        j_list += (L_ny + 1); /* Skip forward device_ctx.ny+1 items */
-        for (int j = 0; j < (L_ny + 1); ++j) {
+        j_list += (grid.height() - 1); /* Skip forward */
+        for (size_t j = 0; j < (grid.height() - 1); ++j) {
 
             sblock_pattern[i][j] = from_side_list;
-            from_side_list += (4); /* Skip forward 4 items */
-            for (int from_side = 0; from_side < 4; ++from_side) {
+            from_side_list += (4); /* Skip forward */
+            for (e_side from_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 
                 sblock_pattern[i][j][from_side] = to_side_list;
-                to_side_list += (4); /* Skip forward 4 items */
-                for (int to_side = 0; to_side < 4; ++to_side) {
+                to_side_list += (4); /* Skip forward */
+                for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
 
                     sblock_pattern[i][j][from_side][to_side] = from_track_list;
                     from_track_list += (max_chan_width); /* Skip forward max_chan_width items */
                     for (int from_track = 0; from_track < max_chan_width; from_track++) {
 
                         sblock_pattern[i][j][from_side][to_side][from_track] = from_track_types;
-                        from_track_types += (4); /* Skip forward 4 items */
+                        from_track_types += (4); /* Skip forward */
 
                         /* Set initial value to be unset */
                         sblock_pattern[i][j][from_side][to_side][from_track][0] = UN_SET; // to_mux
@@ -2079,7 +2027,9 @@ void free_sblock_pattern_lookup(
 }
 
 void load_sblock_pattern_lookup(
-        const int i, const int j, const t_chan_width *nodes_per_chan,
+        const int i, const int j,
+        const DeviceGrid& grid,
+        const t_chan_width *nodes_per_chan,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         const int /*Fs*/, const enum e_switch_block_type switch_block_type,
         short ******sblock_pattern) {
@@ -2088,13 +2038,11 @@ void load_sblock_pattern_lookup(
      * because the sblock varies from location to location. The i, j means the owning
      * location of the sblock under investigation. */
 
-    auto& device_ctx = g_vpr_ctx.device();
-
-    /* SB's have coords from (0, 0) to (device_ctx.nx, device_ctx.ny) */
+    /* SB's have coords from (0, 0) to (grid.width()-2, grid.height()-2) */
     VTR_ASSERT(i >= 0);
-    VTR_ASSERT(i <= device_ctx.nx);
+    VTR_ASSERT(i <= int(grid.width()) - 2);
     VTR_ASSERT(j >= 0);
-    VTR_ASSERT(j <= device_ctx.ny);
+    VTR_ASSERT(j <= int(grid.height()) - 2);
 
     /* May 12 - 15, 2007
      *
@@ -2128,7 +2076,7 @@ void load_sblock_pattern_lookup(
      * more than 1.
      */
 
-    /* SB's range from (0, 0) to (device_ctx.nx, device_ctx.ny) */
+    /* SB's range from (0, 0) to (grid.width() - 2, grid.height() - 2) */
     /* First find all four sides' incoming wires */
     int *wire_mux_on_track[4];
     int *incoming_wire_label[4];
@@ -2137,7 +2085,7 @@ void load_sblock_pattern_lookup(
     int num_wire_muxes[4];
 
     /* "Label" the wires around the switch block by connectivity. */
-    for (int side = 0; side < 4; ++side) {
+    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
         /* Assume the channel segment doesn't exist. */
         wire_mux_on_track[side] = NULL;
         incoming_wire_label[side] = NULL;
@@ -2150,12 +2098,12 @@ void load_sblock_pattern_lookup(
         bool skip = true;
         switch (side) {
             case TOP:
-                if (j < device_ctx.ny) {
+                if (j < int(grid.height()) - 2) {
                     skip = false;
                 }
                 break;
             case RIGHT:
-                if (i < device_ctx.nx) {
+                if (i < int(grid.width()) - 2) {
                     skip = false;
                 }
                 break;
@@ -2180,7 +2128,7 @@ void load_sblock_pattern_lookup(
         /* Figure out the channel and segment for a certain direction */
         bool vert = ((side == TOP) || (side == BOTTOM));
         bool pos_dir = ((side == TOP) || (side == RIGHT));
-        int chan_len = (vert ? device_ctx.ny : device_ctx.nx);
+        int chan_len = (vert ? grid.height() : grid.width()) - 2; //-2 for no perim channels
         int chan = (vert ? i : j);
         int sb_seg = (vert ? j : i);
         int seg = (pos_dir ? (sb_seg + 1) : sb_seg);
@@ -2204,7 +2152,7 @@ void load_sblock_pattern_lookup(
                 false, &num_wire_muxes[side], &dummy);
     }
 
-    for (int to_side = 0; to_side < 4; to_side++) {
+    for (e_side to_side : {TOP, RIGHT, BOTTOM, LEFT}) {
         /* Can't do anything if no muxes on this side. */
         if (num_wire_muxes[to_side] == 0)
             continue;
@@ -2310,7 +2258,7 @@ void load_sblock_pattern_lookup(
         }
     }
 
-    for (int side = 0; side < 4; ++side) {
+    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
         if (incoming_wire_label[side]) {
             vtr::free(incoming_wire_label[side]);
         }

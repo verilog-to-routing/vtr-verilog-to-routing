@@ -27,7 +27,7 @@ enum {
 
 void create_rr_graph(
         const t_graph_type graph_type, const int L_num_types,
-        const t_type_ptr types, const int L_nx, const int L_ny,
+        const t_type_ptr types,
         const DeviceGrid& L_grid,
         t_chan_width *nodes_per_chan,
         const enum e_switch_block_type sb_type, const int Fs,
@@ -55,9 +55,9 @@ void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
 
 void print_rr_node(FILE *fp, t_rr_node *L_rr_node, int inode);
 
-void init_fan_in(const int i, const int j,
+void init_fan_in(const DeviceGrid& L_grid,
         t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
-        const DeviceGrid& L_grid, const int num_rr_nodes);
+        const int num_rr_nodes);
 
 void alloc_net_rr_terminals(void);
 

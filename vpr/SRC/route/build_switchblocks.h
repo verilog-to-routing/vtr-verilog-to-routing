@@ -5,6 +5,7 @@
 #include <vector>
 #include "physical_types.h"
 #include "vpr_types.h"
+#include "device_grid.h"
 
 
 /************ Classes, structs, typedefs ************/
@@ -84,7 +85,7 @@ typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, 
 
 /* allocate and build switch block permutation map */
 t_sb_connection_map * alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, 
-                int nx, int ny, 
+                const DeviceGrid& grid,
 				std::vector<t_switchblock_inf> switchblocks, 
 				t_chan_width *nodes_per_chan, enum e_directionality directionality);
 

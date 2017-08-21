@@ -95,6 +95,7 @@ STR ({ID}|\*{ID}?)
 "-waveform"                     { return sdcparse::Parser::make_ARG_WAVEFORM(); }
 "-clock"                        { return sdcparse::Parser::make_ARG_CLOCK(); }
 "-max"                          { return sdcparse::Parser::make_ARG_MAX(); }
+"-min"                          { return sdcparse::Parser::make_ARG_MIN(); }
 "-exclusive"                    { return sdcparse::Parser::make_ARG_EXCLUSIVE(); }
 "-group"                        { return sdcparse::Parser::make_ARG_GROUP(); }
 "-from"                         { return sdcparse::Parser::make_ARG_FROM(); }

@@ -4,6 +4,7 @@
 #include "build_switchblocks.h"
 #include "rr_graph_util.h"
 #include "rr_types.h"
+#include "device_grid.h"
 
 /******************* Types shared by rr_graph2 functions *********************/
 
@@ -15,7 +16,7 @@ enum e_seg_details_type {
 
 t_rr_node_indices alloc_and_load_rr_node_indices(
 		const int max_chan_width,
-		const int L_nx, const int L_ny, 
+        const DeviceGrid& grid,
 		int *index, 
 		const t_chan_details& chan_details_x,
 		const t_chan_details& chan_details_y);
@@ -26,7 +27,7 @@ int get_rr_node_index(
 		const t_rr_node_indices& L_rr_node_indices);
 
 int find_average_rr_node_index(
-		int L_nx, int L_ny,
+		int device_width, int device_height,
 		t_rr_type rr_type, int ptc,
 		const t_rr_node_indices&L_rr_node_indices);
 
@@ -41,7 +42,7 @@ t_seg_details *alloc_and_load_seg_details(
 		int *num_seg_details = 0);
 
 void alloc_and_load_chan_details( 
-		const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		const bool trim_empty_channels,
 		const bool trim_obs_channels,
@@ -50,26 +51,26 @@ void alloc_and_load_chan_details(
 		t_chan_details& chan_details_x,
 		t_chan_details& chan_details_y);
 t_chan_details init_chan_details( 
-		const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		const int num_seg_details,
 		const t_seg_details *seg_details,
 		const enum e_seg_details_type seg_details_type);
 void obstruct_chan_details( 
-		const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		const bool trim_empty_channels,
 		const bool trim_obs_channels,
 		t_chan_details& chan_details_x,
 		t_chan_details& chan_details_y);
 void adjust_chan_details(
-		const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		t_chan_details& chan_details_x,
 		t_chan_details& chan_details_y);
 void adjust_seg_details(
 		const int x, const int y,
-		const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		t_chan_details& chan_details,
 		const enum e_seg_details_type seg_details_type);
@@ -81,7 +82,7 @@ void free_chan_details(
 		t_chan_details& chan_details_x,
 		t_chan_details& chan_details_y,
 		const int max_chan_width,
-		const int L_nx, const int L_ny);
+        const DeviceGrid& grid);
 
 int get_seg_start(
 		const t_seg_details *seg_details,
@@ -149,6 +150,7 @@ int get_track_to_tracks(
 		const t_rr_type to_type,
 		const int chan_len,
 		const int max_chan_width,
+        const DeviceGrid& grid,
 		const int Fs_per_side,
 		short ******sblock_pattern,
 		t_linked_edge **edge_list,
@@ -162,12 +164,13 @@ int get_track_to_tracks(
 		t_sb_connection_map *sb_conn_map);
 
 short ******alloc_sblock_pattern_lookup(
-		const int L_nx, const int L_ny,
+        const DeviceGrid& grid,
 		const int max_chan_width);
 void free_sblock_pattern_lookup(
 		short ******sblock_pattern);
 void load_sblock_pattern_lookup(
-		const int i, const int j,
+        const int i, const int j,
+        const DeviceGrid& grid,
 		const t_chan_width *nodes_per_chan,
 		const t_chan_details& chan_details_x,
 		const t_chan_details& chan_details_y,
@@ -191,14 +194,12 @@ void dump_chan_details(
 		const t_chan_details& chan_details_x,
 		const t_chan_details& chan_details_y,
 		int max_chan_width,
-		const int L_nx, int const L_ny,
+        const DeviceGrid& grid,
 		const char *fname);
 void dump_sblock_pattern(
 		short ******sblock_pattern,
 		int max_chan_width,
-		const int L_nx, int const L_ny,
+		const DeviceGrid& grid,
 		const char *fname);
 
-void print_rr_node_indices(int L_nx, int L_ny, const t_rr_node_indices& L_rr_node_indices);
-void print_rr_node_indices(t_rr_type rr_type, int L_nx, int L_ny, const t_rr_node_indices& L_rr_node_indices);
 #endif

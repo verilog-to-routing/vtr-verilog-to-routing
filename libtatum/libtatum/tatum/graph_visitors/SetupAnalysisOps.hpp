@@ -27,6 +27,32 @@ class SetupAnalysisOps : public CommonAnalysisOps {
             return -tc.setup_clock_uncertainty(src_id, sink_id); 
         }
 
+        Time launch_source_latency(const TimingConstraints& tc, const DomainId domain) {
+            //For pessimistic setup analysis launch occurs late
+            return tc.source_latency(domain, ArrivalType::LATE);
+        }
+
+        Time capture_source_latency(const TimingConstraints& tc, const DomainId domain) {
+            //For pessimistic setup analysis capture occurs early
+            return tc.source_latency(domain, ArrivalType::EARLY);
+        }
+
+        Time input_constraint(const TimingConstraints& tc, const NodeId node, const DomainId domain) {
+            return tc.input_constraint(node, domain, DelayType::MAX);
+        }
+
+        auto input_constraints(const TimingConstraints& tc, const NodeId node) {
+            return tc.input_constraints(node, DelayType::MAX);
+        }
+
+        Time output_constraint(const TimingConstraints& tc, const NodeId node, const DomainId domain) {
+            return tc.output_constraint(node, domain, DelayType::MAX);
+        }
+
+        auto output_constraints(const TimingConstraints& tc, const NodeId node) {
+            return tc.output_constraints(node, DelayType::MAX);
+        }
+
         TimingTag const_gen_tag() { return TimingTag::CONST_GEN_TAG_SETUP(); }
 
         void merge_req_tags(const NodeId node, const Time time, const NodeId origin, const TimingTag& ref_tag, bool arrival_must_be_valid=false) { 
