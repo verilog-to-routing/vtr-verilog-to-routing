@@ -36,21 +36,22 @@ public:
             const IntraLbPbPinLookup& pb_gpin_lookup,
             t_router_opts router_opts);
     void print_route_budget();
+    void print_temporary_budgets_to_file(float ** temp_budgets);
     bool if_set();
     void update_congestion_times(int inet);
     void lower_budgets();
     void not_congested_this_iteration(int inet);
-
-    std::shared_ptr<HoldTimingInfo> short_path_sta(float ** &temp_budgets);
-    std::shared_ptr<SetupTimingInfo> long_path_sta(float ** &temp_budgets);
+    std::shared_ptr<SetupTimingInfo> perform_long_path_sta(float ** &temp_budgets);
+    std::shared_ptr<HoldTimingInfo> perform_short_path_sta(float ** &temp_budgets);
     void keep_budget_in_bounds(max_or_min _type, float ** &temp_budgets);
-    void allocate_slack();
-
-    void allocate_positive_short_path_slack(float ** &temp_budgets);
-    void allocate_negative_short_path_slack(float ** &temp_budgets);
-    void allocate_positive_long_path_slack(float ** &temp_budgets);
-    void allocate_negative_long_path_slack(float ** &temp_budgets);
-
+    void allocate_slack(float **net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
+    void allocate_positive_short_path_slack(std::shared_ptr<HoldTimingInfo> timing_info, float ** temp_budgets);
+    void allocate_negative_short_path_slack(std::shared_ptr<HoldTimingInfo> timing_info, float ** temp_budgets);
+    void allocate_positive_long_path_slack(std::shared_ptr<SetupTimingInfo> timing_info, float ** temp_budgets,
+            float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
+    void allocate_negative_long_path_slack(std::shared_ptr<SetupTimingInfo> timing_info, float ** temp_budgets);
+    float calculate_clb_pin_slack(int inet, int ipin, std::shared_ptr<SetupTimingInfo> timing_info,
+            const IntraLbPbPinLookup& pb_gpin_lookup);
 private:
 
     std::shared_ptr<RoutingDelayCalculator> get_routing_calc(float ** net_delay);
