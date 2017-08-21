@@ -197,7 +197,7 @@ void get_serial_num(void) {
 		while (tptr != NULL) {
 			inode = tptr->index;
 			serial_num += (size_t(net_id) + 1)
-					* (device_ctx.rr_nodes[inode].xlow() * (device_ctx.nx + 1) - device_ctx.rr_nodes[inode].yhigh());
+					* (device_ctx.rr_nodes[inode].xlow() * (device_ctx.grid.width()) - device_ctx.rr_nodes[inode].yhigh());
 
 			serial_num -= device_ctx.rr_nodes[inode].ptc_num() * (size_t(net_id) + 1) * 10;
 

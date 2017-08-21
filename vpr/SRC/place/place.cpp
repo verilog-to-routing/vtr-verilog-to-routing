@@ -1377,11 +1377,11 @@ static enum swap_result try_swap(float t, float *cost, float *bb_cost, float *ti
 	y_from = place_ctx.block_locs[b_from].y;
 	z_from = place_ctx.block_locs[b_from].z;
 
-    auto cluster_from_type = cluster_ctx.blocks[b_from].type;
+    auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid[x_from][y_from].type;
     VTR_ASSERT(cluster_from_type == grid_from_type);
 
-	if (!find_to(cluster_ctx.blocks[b_from].type, rlim, x_from, y_from, &x_to, &y_to, &z_to))
+	if (!find_to(cluster_ctx.clb_nlist.block_type(b_from), rlim, x_from, y_from, &x_to, &y_to, &z_to))
 		return REJECTED;
 
 #if 0
@@ -2811,7 +2811,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 		if (free_locations[itype] < pl_macros[imacro].num_blocks) {
 			vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 					"Initial placement failed.\n"
-					"Could not place macro length %d with head block %s (#%lu); not enough free locations of type %s (#%d).\n"
+					"Could not place macro length %d with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
 					"VPR cannot auto-size for your circuit, please resize the FPGA manually.\n", 
 					pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
 		}
@@ -2848,7 +2848,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int * free_loc
 				// Error out
 				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__,
 						"Initial placement failed.\n"
-						"Could not place macro length %d with head block %s (#%lu); not enough free locations of type %s (#%d).\n"
+						"Could not place macro length %d with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
 						"Please manually size the FPGA because VPR can't do this yet.\n", 
 						pl_macros[imacro].num_blocks, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
 			}
@@ -2887,7 +2887,7 @@ static void initial_placement_blocks(int * free_locations, enum e_pad_loc_type p
 			if (free_locations[itype] <= 0) {
 				vpr_throw(VPR_ERROR_PLACE, __FILE__, __LINE__, 
 						"Initial placement failed.\n"
-						"Could not place block %s (#%lu); no free locations of type %s (#%d).\n", 
+						"Could not place block %s (#%zu); no free locations of type %s (#%d).\n", 
 						cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.block_types[itype].name, itype);
 			}
 
@@ -3187,14 +3187,14 @@ static void check_place(float bb_cost, float timing_cost,
 
 				if (cluster_ctx.clb_nlist.block_type(bnum) != device_ctx.grid[i][j].type) {
 					vtr::printf_error(__FILE__, __LINE__,
-							"Block %d type does not match grid location (%zu,%zu) type.\n",
-							bnum, i, j);
+							"Block %zu type does not match grid location (%zu,%zu) type.\n",
+							size_t(bnum), i, j);
 					error++;
 				}
 				if ((place_ctx.block_locs[bnum].x != int(i)) || (place_ctx.block_locs[bnum].y != int(j))) {
 					vtr::printf_error(__FILE__, __LINE__,
-							"Block %d location conflicts with grid(%zu,%zu) data.\n", 
-							bnum, i, j);
+							"Block %zu location conflicts with grid(%zu,%zu) data.\n", 
+							size_t(bnum), i, j);
 					error++;
 				}
 				++usage_check;
@@ -3212,7 +3212,7 @@ static void check_place(float bb_cost, float timing_cost,
 	for (auto blk_id : cluster_ctx.clb_nlist.blocks())
 		if (bdone[blk_id] != 1) {
 			vtr::printf_error(__FILE__, __LINE__,
-					"Block %lu listed %d times in data structures.\n",
+					"Block %zu listed %d times in data structures.\n",
 					size_t(blk_id), bdone[blk_id]);
 			error++;
 		}
@@ -3237,7 +3237,7 @@ static void check_place(float bb_cost, float timing_cost,
 					|| place_ctx.block_locs[member_iblk].y != member_y 
 					|| place_ctx.block_locs[member_iblk].z != member_z) {
 				vtr::printf_error(__FILE__, __LINE__,
-						"Block %lu in pl_macro #%d is not placed in the proper orientation.\n", 
+						"Block %zu in pl_macro #%d is not placed in the proper orientation.\n", 
 						size_t(member_iblk), imacro);
 				error++;
 			}
@@ -3245,7 +3245,7 @@ static void check_place(float bb_cost, float timing_cost,
 			// Then check the place_ctx.grid data structure
 			if (place_ctx.grid_blocks[member_x][member_y].blocks[member_z] != member_iblk) {
 				vtr::printf_error(__FILE__, __LINE__,
-						"Block %lu in pl_macro #%d is not placed in the proper orientation.\n", 
+						"Block %zu in pl_macro #%d is not placed in the proper orientation.\n", 
 						size_t(member_iblk), imacro);
 				error++;
 			}

@@ -808,7 +808,7 @@ void vpr_init_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch) {
         vpr_init_pre_place_and_route(vpr_setup, Arch);
 
         read_place(vpr_setup.FileNameOpts.NetFile.c_str(), vpr_setup.FileNameOpts.PlaceFile.c_str(),
-                vpr_setup.FileNameOpts.verify_file_digests, device_ctx.nx, device_ctx.ny, cluster_ctx.clb_nlist.blocks().size());
+                vpr_setup.FileNameOpts.verify_file_digests, device_ctx.grid, cluster_ctx.clb_nlist.blocks().size());
         sync_grid_to_blocks();
 
         post_place_sync();

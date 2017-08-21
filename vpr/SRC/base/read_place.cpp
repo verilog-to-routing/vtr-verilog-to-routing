@@ -18,7 +18,7 @@
 void read_place(const char* net_file, 
                 const char* place_file,
                 bool verify_file_digests,
-                const int L_nx, const int L_ny,
+                const DeviceGrid& grid,
 		        const size_t L_num_blocks) {
     std::ifstream fstream(place_file); 
     if (!fstream) {

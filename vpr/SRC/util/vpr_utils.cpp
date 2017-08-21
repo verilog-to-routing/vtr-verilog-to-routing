@@ -164,11 +164,11 @@ void sync_grid_to_blocks() {
 
 		/* Check range of block coords */
 		if (blk_x < 0 || blk_y < 0
-				|| (blk_x + cluster_ctx.blocks[i].type->width - 1) > int(device_ctx.grid.width() - 1)
-				|| (blk_y + cluster_ctx.blocks[i].type->height - 1) > int(device_ctx.grid.height() - 1)
-				|| blk_z < 0 || blk_z > (cluster_ctx.blocks[i].type->capacity)) {
-			VPR_THROW(VPR_ERROR_PLACE, "Block %d is at invalid location (%d, %d, %d).\n", 
-					i, blk_x, blk_y, blk_z);
+			|| (blk_x + cluster_ctx.clb_nlist.block_type(blk_id)->width - 1) > int(device_ctx.grid.width() - 1)
+				|| (blk_y + cluster_ctx.clb_nlist.block_type(blk_id)->height - 1) > int(device_ctx.grid.height() - 1)
+				|| blk_z < 0 || blk_z > (cluster_ctx.clb_nlist.block_type(blk_id)->capacity)) {
+			VPR_THROW(VPR_ERROR_PLACE, "Block %zu is at invalid location (%d, %d, %d).\n", 
+					size_t(blk_id), blk_x, blk_y, blk_z);
 		}
 
 		/* Check types match */

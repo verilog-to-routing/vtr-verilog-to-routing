@@ -590,7 +590,7 @@ static void drawplace(void) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
-	int k, bnum;
+	ClusterBlockId bnum;
 	int num_sub_tiles;
 	int height;
 
@@ -610,7 +610,7 @@ static void drawplace(void) {
 			}
 			height = device_ctx.grid[i][j].type->height;
 
-			for (k = 0; k < num_sub_tiles; ++k) {
+			for (int k = 0; k < num_sub_tiles; ++k) {
 				/* Graphics will look unusual for multiple height and capacity */
 				VTR_ASSERT(height == 1 || num_sub_tiles == 1);
 
