@@ -27,7 +27,7 @@
 #include "tatum/base/sta_util.hpp"
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingGraphFwd.hpp"
-
+#include "slack_evaluation.h"
 #include "tatum/TimingGraphFwd.hpp"
 
 #include "vtr_assert.h"
@@ -84,17 +84,16 @@ void route_budgets::load_route_budgets(float ** net_delay,
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
-    //
-    //
     delay_min_budget = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
     delay_target = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
-    //delay_max_budget = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_max_budget = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
     delay_lower_bound = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
     delay_upper_bound = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+        for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
             delay_min_budget[inet][ipin] = 0;
             delay_lower_bound[inet][ipin] = 0;
+            delay_max_budget[inet][ipin] = 0;
             delay_upper_bound[inet][ipin] = 100e-9;
         }
     }
@@ -148,7 +147,7 @@ void route_budgets::load_route_budgets(float ** net_delay,
     allocate_slack(net_delay, pb_gpin_lookup);
 
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+        for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             delay_target[inet][ipin] = min(0.5 * (delay_min_budget[inet][ipin] + delay_max_budget[inet][ipin]), delay_min_budget[inet][ipin] + 0.1e-9);
         }
     }
@@ -161,28 +160,28 @@ void route_budgets::allocate_slack(float ** net_delay, const IntraLbPbPinLookup&
     std::shared_ptr<SetupTimingInfo> long_path_timing_info = NULL;
     std::shared_ptr<HoldTimingInfo> short_path_timing_info = NULL;
 
-    vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
-    float **temp_budgets = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    //vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
+    //float **temp_budgets = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
 
 
-    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-            temp_budgets[inet][ipin] = 0;
-        }
-    }
+    //    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+    //        for (unsigned ipin = 0; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+    //            temp_budgets[inet][ipin] = 0;
+    //        }
+    //    }
 
     unsigned iteration = 0;
     float max_budget_change = 6e-12;
 
     while (iteration < 7 && max_budget_change > 5e-12) {
         //cout << "finished 1" << endl;
-        short_path_timing_info = perform_short_path_sta(temp_budgets);
-        allocate_negative_short_path_slack(short_path_timing_info, temp_budgets);
-        keep_budget_in_bounds(MIN, temp_budgets);
+        short_path_timing_info = perform_short_path_sta(delay_max_budget);
+        allocate_negative_short_path_slack(short_path_timing_info, delay_max_budget);
+        keep_budget_in_bounds(MIN, delay_max_budget);
 
-        long_path_timing_info = perform_long_path_sta(temp_budgets);
-        allocate_negative_long_path_slack(long_path_timing_info, temp_budgets);
-        keep_budget_in_bounds(MAX, temp_budgets);
+        long_path_timing_info = perform_long_path_sta(delay_max_budget);
+        allocate_negative_long_path_slack(long_path_timing_info, delay_max_budget);
+        keep_budget_in_bounds(MAX, delay_max_budget);
         iteration++;
     }
 
@@ -191,25 +190,25 @@ void route_budgets::allocate_slack(float ** net_delay, const IntraLbPbPinLookup&
 
     while (iteration < 3 && max_budget_change > 800e-12) {
         //cout << "finished 2" << endl;
-        long_path_timing_info = perform_long_path_sta(temp_budgets);
-        allocate_positive_long_path_slack(long_path_timing_info, temp_budgets, net_delay, pb_gpin_lookup);
-        print_temporary_budgets_to_file(temp_budgets);
-        keep_budget_in_bounds(MIN, temp_budgets);
+        long_path_timing_info = perform_long_path_sta(delay_max_budget);
+        allocate_positive_long_path_slack(long_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
+        print_temporary_budgets_to_file(delay_max_budget);
+        keep_budget_in_bounds(MIN, delay_max_budget);
         iteration++;
         if (iteration > 7)
             break;
     }
 
-    delay_max_budget = temp_budgets;
+    //delay_max_budget = temp_budgets;
 
     iteration = 0;
     max_budget_change = 900e-12;
 
     while (iteration < 3 && max_budget_change > 800e-12) {
         //cout << "finished 3" << endl;
-        short_path_timing_info = perform_short_path_sta(temp_budgets);
-        allocate_positive_short_path_slack(short_path_timing_info, temp_budgets);
-        keep_budget_in_bounds(MAX, temp_budgets);
+        short_path_timing_info = perform_short_path_sta(delay_min_budget);
+        allocate_positive_short_path_slack(short_path_timing_info, delay_min_budget);
+        keep_budget_in_bounds(MAX, delay_min_budget);
         iteration++;
         if (iteration > 7)
             break;
@@ -222,11 +221,11 @@ void route_budgets::allocate_slack(float ** net_delay, const IntraLbPbPinLookup&
     float bottom_range = -1e-9;
     while (iteration < 3 && max_budget_change > 800e-12) {
         //cout << "finished 4" << endl;
-        short_path_timing_info = perform_short_path_sta(temp_budgets);
-        allocate_positive_short_path_slack(short_path_timing_info, temp_budgets);
+        short_path_timing_info = perform_short_path_sta(delay_min_budget);
+        allocate_positive_short_path_slack(short_path_timing_info, delay_min_budget);
         for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
             for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-                temp_budgets[inet][ipin] = max(temp_budgets[inet][ipin], bottom_range);
+                delay_min_budget[inet][ipin] = max(delay_min_budget[inet][ipin], bottom_range);
 
             }
         }
@@ -270,31 +269,73 @@ void route_budgets::allocate_positive_long_path_slack(std::shared_ptr<SetupTimin
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
-    //print_levelization(tg);
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& timing_ctx = g_vpr_ctx.timing();
 
-    //std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer = timing_info->setup_hold_analyzer();
+    std::shared_ptr<const tatum::SetupTimingAnalyzer> timing_analyzer = timing_info->setup_analyzer();
     int iteration = 0;
     float average_slack_difference = 0;
     float new_path_slack = 0;
     float path_slack = 0;
+    float delay = 0;
+    int num_tags = 0;
 
     do {
         for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+            //AtomNetId atom_net = atom_ctx.lookup.atom_net(inet);
+            //AtomPinId driver_pin = atom_ctx.nlist.net_driver(atom_net);
             for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+
+                //get delay value
+                const t_net_pin& net_pin = cluster_ctx.clbs_nlist.net[inet].pins[ipin];
+                std::vector<AtomPinId> atom_pins = find_clb_pin_connected_atom_pins(net_pin.block, net_pin.block_pin, pb_gpin_lookup);
+                num_tags = 0;
+                for (const AtomPinId atom_pin : atom_pins) {
+                    tatum::NodeId sink_timing_node = atom_ctx.lookup.atom_pin_tnode(atom_pin);
+
+                    auto tags = timing_analyzer->setup_tags(sink_timing_node, tatum::TagType::DATA_ARRIVAL);
+
+                    auto min_tag_iter = find_minimum_tag(tags);
+
+                    if (min_tag_iter->time().value() == std::numeric_limits<float>::infinity() ||
+                            min_tag_iter->time().value() == -1 * std::numeric_limits<float>::infinity()) {
+                        continue;
+                    } else if (min_tag_iter != tags.end()) {
+                        delay += min_tag_iter->time().value();
+                        num_tags++;
+                    } else {
+                        //No tags (e.g. driven by constant generator)
+                        continue;
+                    }
+                }
+
+                if (num_tags != 0) {
+                    delay = delay / num_tags;
+                } else {
+                    temp_budgets[inet][ipin] = delay_upper_bound[inet][ipin];
+                    continue;
+                }
+
+
+                //calculate slack
                 new_path_slack = calculate_clb_pin_slack(inet, ipin, timing_info, pb_gpin_lookup);
+
                 if (iteration == 0) {
                     average_slack_difference = 1e-12;
                 } else {
                     average_slack_difference = new_path_slack - path_slack;
                 }
 
-                path_slack = new_path_slack * -1;
+                path_slack = new_path_slack;
                 int inode = route_ctx.net_rr_terminals[inet][ipin];
 
+                //cout << device_ctx.rr_nodes[inode].C() << " " << device_ctx.rr_nodes[inode].C() << endl;
+
+                //cout << delay << " " << path_slack << " " << net_delay[inet][ipin] << endl;
                 if (net_delay[inet][ipin] == 0) {
                     temp_budgets[inet][ipin] = delay_upper_bound[inet][ipin];
                 } else {
-                    temp_budgets[inet][ipin] += path_slack / net_delay[inet][ipin];
+                    temp_budgets[inet][ipin] += abs(delay * path_slack / net_delay[inet][ipin]);
                 }
             }
         }
@@ -323,6 +364,7 @@ float route_budgets::calculate_clb_pin_slack(int inet, int ipin, std::shared_ptr
         //cout << clb_min_slack << " ";
     }
     atom_pins.clear();
+
     return clb_min_slack;
 }
 
@@ -474,6 +516,7 @@ void route_budgets::print_temporary_budgets_to_file(float ** temp_budgets) {
     for (inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         fp << endl << "Net: " << inet << "            ";
         for (ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+
             fp << temp_budgets[inet][ipin] << " ";
         }
     }

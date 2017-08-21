@@ -52,6 +52,9 @@ public:
     void allocate_negative_long_path_slack(std::shared_ptr<SetupTimingInfo> timing_info, float ** temp_budgets);
     float calculate_clb_pin_slack(int inet, int ipin, std::shared_ptr<SetupTimingInfo> timing_info,
             const IntraLbPbPinLookup& pb_gpin_lookup);
+
+    void perform_long_path_sta(float ** temp_budgets, std::shared_ptr<RoutingDelayCalculator> routing_delay_calc,
+            std::shared_ptr<SetupTimingInfo> timing_info);
 private:
 
     std::shared_ptr<RoutingDelayCalculator> get_routing_calc(float ** net_delay);
