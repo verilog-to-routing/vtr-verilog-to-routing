@@ -937,10 +937,10 @@ static void load_route_bb(int bb_factor) {
 		/* Expand the net bounding box by bb_factor, then clip to the physical *
 		 * chip area.                                                          */
 
-		route_ctx.route_bb[inet].xmin = max<int>(xmin - bb_factor, 0);
-		route_ctx.route_bb[inet].xmax = min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
-		route_ctx.route_bb[inet].ymin = max<int>(ymin - bb_factor, 0);
-		route_ctx.route_bb[inet].ymax = min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
+		route_ctx.route_bb[net_id].xmin = max<int>(xmin - bb_factor, 0);
+		route_ctx.route_bb[net_id].xmax = min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
+		route_ctx.route_bb[net_id].ymin = max<int>(ymin - bb_factor, 0);
+		route_ctx.route_bb[net_id].ymax = min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
 	}
 }
 

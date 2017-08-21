@@ -528,7 +528,7 @@ void try_place(t_placer_opts placer_opts,
     //Draw the initial placement
 	update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
 
-	move_lim = (int) (annealing_sched.inner_num * pow(cluster_ctx.num_blocks, 1.3333));
+	move_lim = (int) (annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
 	/* Sometimes I want to run the router with a random placement.  Avoid *
 	 * using 0 moves to stop division by 0 and 0 length vector problems,  *
@@ -1304,7 +1304,7 @@ static int find_affected_blocks(ClusterBlockId b_from, int x_to, int y_to, int z
 			if (   curr_x_to < 1 || curr_x_to >= int(device_ctx.grid.width())
                 || curr_y_to < 1 || curr_y_to >= int(device_ctx.grid.height()) 
                 || curr_z_to < 0
-                || device_ctx.grid[curr_x_to][curr_y_to].type != cluster_ctx.blocks[curr_b_from].type) {
+                || device_ctx.grid[curr_x_to][curr_y_to].type != cluster_ctx.clb_nlist.block_type(curr_b_from)) {
 				abort_swap = true;
 			} else {
 				abort_swap = setup_blocks_affected(curr_b_from, curr_x_to, curr_y_to, curr_z_to);
@@ -2211,7 +2211,8 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb *coords,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
-	
+	auto& grid = device_ctx.grid;
+
 	ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
 	pnum = cluster_ctx.clb_nlist.pin_index(net_id, 0);
 	x = place_ctx.block_locs[bnum].x + cluster_ctx.clb_nlist.block_type(bnum)->pin_width[pnum];
@@ -3128,7 +3129,7 @@ static void check_place(float bb_cost, float timing_cost,
 	 * within roundoff of what we think the cost is.                   */
 
 	static vtr::vector_map<ClusterBlockId, int> bdone;
-	int i, j, k, error = 0;
+	int error = 0;
 	ClusterBlockId bnum, head_iblk, member_iblk;
 	float bb_cost_check;
 	int usage_check;
