@@ -155,6 +155,8 @@ struct global_args_t_t
     argparse::ArgValue<bool> all_warnings;
     argparse::ArgValue<bool> show_help;
 
+    argparse::ArgValue<bool> black_box_latches; //Weather or not to treat and output latches as black boxes
+
 	/////////////////////
 	// For simulation.
 	/////////////////////

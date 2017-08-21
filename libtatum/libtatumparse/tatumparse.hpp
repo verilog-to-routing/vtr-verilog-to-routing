@@ -85,13 +85,16 @@ class Callback {
         virtual void add_clock_domain(int domain_id, std::string name) = 0;
         virtual void add_clock_source(int node_id, int domain_id) = 0;
         virtual void add_constant_generator(int node_id) = 0;
-        virtual void add_input_constraint(int node_id, int domain_id, float constraint) = 0;
-        virtual void add_output_constraint(int node_id, int domain_id, float constraint) = 0;
+        virtual void add_max_input_constraint(int node_id, int domain_id, float constraint) = 0;
+        virtual void add_min_input_constraint(int node_id, int domain_id, float constraint) = 0;
+        virtual void add_max_output_constraint(int node_id, int domain_id, float constraint) = 0;
+        virtual void add_min_output_constraint(int node_id, int domain_id, float constraint) = 0;
         virtual void add_setup_constraint(int src_domain_id, int sink_domain_id, float constraint) = 0;
         virtual void add_hold_constraint(int src_domain_id, int sink_domain_id, float constraint) = 0;
         virtual void add_setup_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) = 0;
         virtual void add_hold_uncertainty(int src_domain_id, int sink_domain_id, float uncertainty) = 0;
-        virtual void add_source_latency(int domain_id, float latency) = 0;
+        virtual void add_early_source_latency(int domain_id, float latency) = 0;
+        virtual void add_late_source_latency(int domain_id, float latency) = 0;
         virtual void finish_constraints() = 0;
 
         virtual void start_delay_model() = 0;

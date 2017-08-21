@@ -616,7 +616,7 @@ static bool apply_set_io_delay(const sdcparse::SetIoDelay& sdc_set_io_delay, int
                     timing_ctx.sdc->constrained_inputs = (t_io *) vtr::realloc (timing_ctx.sdc->constrained_inputs, timing_ctx.sdc->num_constrained_inputs * sizeof(t_io));
                     timing_ctx.sdc->constrained_inputs[timing_ctx.sdc->num_constrained_inputs - 1].name = vtr::strdup(netlist_ios[iio]);
                     timing_ctx.sdc->constrained_inputs[timing_ctx.sdc->num_constrained_inputs - 1].clock_name = vtr::strdup(clock_name);
-                    timing_ctx.sdc->constrained_inputs[timing_ctx.sdc->num_constrained_inputs - 1].delay = sdc_set_io_delay.max_delay;
+                    timing_ctx.sdc->constrained_inputs[timing_ctx.sdc->num_constrained_inputs - 1].delay = sdc_set_io_delay.delay;
                     timing_ctx.sdc->constrained_inputs[timing_ctx.sdc->num_constrained_inputs - 1].file_line_number = lineno;
                 } else {
                     VTR_ASSERT(sdc_set_io_delay.type == sdcparse::IoDelayType::OUTPUT);
@@ -628,7 +628,7 @@ static bool apply_set_io_delay(const sdcparse::SetIoDelay& sdc_set_io_delay, int
 					timing_ctx.sdc->constrained_outputs = (t_io *) vtr::realloc (timing_ctx.sdc->constrained_outputs, timing_ctx.sdc->num_constrained_outputs * sizeof(t_io));
 					timing_ctx.sdc->constrained_outputs[timing_ctx.sdc->num_constrained_outputs - 1].name = vtr::strdup(netlist_ios[iio]);
 					timing_ctx.sdc->constrained_outputs[timing_ctx.sdc->num_constrained_outputs - 1].clock_name = vtr::strdup(clock_name);
-					timing_ctx.sdc->constrained_outputs[timing_ctx.sdc->num_constrained_outputs - 1].delay = sdc_set_io_delay.max_delay;
+					timing_ctx.sdc->constrained_outputs[timing_ctx.sdc->num_constrained_outputs - 1].delay = sdc_set_io_delay.delay;
 					timing_ctx.sdc->constrained_outputs[timing_ctx.sdc->num_constrained_outputs - 1].file_line_number = lineno;
                 }
             }

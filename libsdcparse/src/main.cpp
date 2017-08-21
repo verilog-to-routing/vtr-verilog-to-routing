@@ -41,16 +41,22 @@ public:
         } else {
             printf("set_output_delay");
         }
-        printf(" -clock %s -max %f ", 
-               cmd.clock_name.c_str(),
-               cmd.max_delay);
+        printf(" -clock %s", cmd.clock_name.c_str());
+
+        if (cmd.is_max) {
+            printf(" -max");
+        }
+        if (cmd.is_min) {
+            printf(" -min");
+        }
+        printf(" %f ", cmd.delay);
         print_string_group(cmd.target_ports);
         printf("\n");
 
     }
     void set_clock_groups(const SetClockGroups& cmd) override {
         printf("#%s:%d\n", filename_.c_str(), lineno_);
-        printf("set_clock_groups ");
+        printf("set_clock_groups");
         if(cmd.type == ClockGroupsType::EXCLUSIVE) {
             printf(" -exclusive");
         }
@@ -93,9 +99,10 @@ public:
     void set_clock_uncertainty(const SetClockUncertainty& cmd) override {
         printf("#%s:%d\n", filename_.c_str(), lineno_);
         printf("set_clock_uncertainty ");
-        if(cmd.type == SetupHoldType::SETUP) {
+        if(cmd.is_setup) {
             printf("-setup ");
-        } else if(cmd.type == SetupHoldType::HOLD) {
+        } 
+        if(cmd.is_hold) {
             printf("-hold ");
         }
         print_from_to_group(cmd.from, cmd.to);
@@ -108,9 +115,10 @@ public:
         if(cmd.type == ClockLatencyType::SOURCE) {
             printf("-source ");
         }
-        if(cmd.early_late == EarlyLateType::EARLY) {
+        if(cmd.is_early) {
             printf("-early ");
-        } else if(cmd.early_late == EarlyLateType::LATE) {
+        }
+        if(cmd.is_late) {
             printf("-late ");
         }
         printf("%f ", cmd.value);
@@ -127,9 +135,10 @@ public:
     void set_timing_derate(const SetTimingDerate& cmd) override {
         printf("#%s:%d\n", filename_.c_str(), lineno_);
         printf("set_timing_derate ");
-        if(cmd.type == EarlyLateType::EARLY) {
+        if(cmd.is_early) {
             printf("-early ");
-        } else if(cmd.type == EarlyLateType::LATE) {
+        }
+        if(cmd.is_late) {
             printf("-late ");
         }
 

@@ -39,21 +39,25 @@ DomainId TimingConstraints::node_clock_domain(const NodeId id) const {
     if(source_domain) return source_domain;
 
     //Does it have an input constarint?
-    for(auto kv : input_constraints()) {
-        auto node_id = kv.first;
-        auto domain_id = kv.second.domain;
+    for(DelayType delay_type : {DelayType::MAX, DelayType::MIN}) {
+        for(auto kv : input_constraints(delay_type)) {
+            auto node_id = kv.first;
+            auto domain_id = kv.second.domain;
 
-        //TODO: Assumes a single clock per node
-        if(node_id == id) return domain_id;
+            //TODO: Assumes a single clock per node
+            if(node_id == id) return domain_id;
+        }
     }
 
     //Does it have an output constraint?
-    for(auto kv : output_constraints()) {
-        auto node_id = kv.first;
-        auto domain_id = kv.second.domain;
+    for(DelayType delay_type : {DelayType::MAX, DelayType::MIN}) {
+        for(auto kv : output_constraints(delay_type)) {
+            auto node_id = kv.first;
+            auto domain_id = kv.second.domain;
 
-        //TODO: Assumes a single clock per node
-        if(node_id == id) return domain_id;
+            //TODO: Assumes a single clock per node
+            if(node_id == id) return domain_id;
+        }
     }
 
     //None found
@@ -137,34 +141,59 @@ Time TimingConstraints::hold_clock_uncertainty(const DomainId src_domain, const 
     return iter->second;
 }
 
-Time TimingConstraints::input_constraint(const NodeId node_id, const DomainId domain_id) const {
+Time TimingConstraints::input_constraint(const NodeId node_id, const DomainId domain_id, const DelayType delay_type) const {
 
-    auto iter = find_io_constraint(node_id, domain_id, input_constraints_);
-    if(iter != input_constraints_.end()) {
-        return iter->second.constraint;
+    if (delay_type == DelayType::MAX) {
+        auto iter = find_io_constraint(node_id, domain_id, max_input_constraints_);
+        if(iter != max_input_constraints_.end()) {
+            return iter->second.constraint;
+        }
+    } else {
+        TATUM_ASSERT(delay_type == DelayType::MIN);
+        auto iter = find_io_constraint(node_id, domain_id, min_input_constraints_);
+        if(iter != min_input_constraints_.end()) {
+            return iter->second.constraint;
+        }
     }
 
     return std::numeric_limits<Time>::quiet_NaN();
 }
 
-Time TimingConstraints::source_latency(const DomainId domain) const {
+Time TimingConstraints::output_constraint(const NodeId node_id, const DomainId domain_id, const DelayType delay_type) const {
 
-    auto iter = source_latencies_.find(domain);
-    if(iter == source_latencies_.end()) {
-        return Time(0.); //Defaults to zero if unspecified
-    }
-
-    return iter->second;
-}
-
-Time TimingConstraints::output_constraint(const NodeId node_id, const DomainId domain_id) const {
-
-    auto iter = find_io_constraint(node_id, domain_id, output_constraints_);
-    if(iter != output_constraints_.end()) {
-        return iter->second.constraint;
+    if (delay_type == DelayType::MAX) {
+        auto iter = find_io_constraint(node_id, domain_id, max_output_constraints_);
+        if(iter != max_output_constraints_.end()) {
+            return iter->second.constraint;
+        }
+    } else {
+        TATUM_ASSERT(delay_type == DelayType::MIN);
+        auto iter = find_io_constraint(node_id, domain_id, min_output_constraints_);
+        if(iter != min_output_constraints_.end()) {
+            return iter->second.constraint;
+        }
     }
 
     return std::numeric_limits<Time>::quiet_NaN();
+}
+
+Time TimingConstraints::source_latency(const DomainId domain, const ArrivalType arrival_type) const {
+
+    if (arrival_type == ArrivalType::EARLY) {
+        auto iter = source_latencies_early_.find(domain);
+        if(iter == source_latencies_early_.end()) {
+            return Time(0.); //Defaults to zero if unspecified
+        }
+        return iter->second;
+    } else {
+        TATUM_ASSERT(arrival_type == ArrivalType::LATE);
+
+        auto iter = source_latencies_late_.find(domain);
+        if(iter == source_latencies_late_.end()) {
+            return Time(0.); //Defaults to zero if unspecified
+        }
+        return iter->second;
+    }
 }
 
 TimingConstraints::constant_generator_range TimingConstraints::constant_generators() const {
@@ -187,26 +216,53 @@ TimingConstraints::clock_uncertainty_range TimingConstraints::hold_clock_uncerta
     return tatum::util::make_range(hold_clock_uncertainties_.begin(), hold_clock_uncertainties_.end());
 }
 
-TimingConstraints::io_constraint_range TimingConstraints::input_constraints() const {
-    return tatum::util::make_range(input_constraints_.begin(), input_constraints_.end());
+TimingConstraints::io_constraint_range TimingConstraints::input_constraints(const DelayType delay_type) const {
+    if (delay_type == DelayType::MAX) {
+        return tatum::util::make_range(max_input_constraints_.begin(), max_input_constraints_.end());
+    } else {
+        TATUM_ASSERT(delay_type == DelayType::MIN);
+        return tatum::util::make_range(min_input_constraints_.begin(), min_input_constraints_.end());
+    }
 }
 
-TimingConstraints::io_constraint_range TimingConstraints::output_constraints() const {
-    return tatum::util::make_range(output_constraints_.begin(), output_constraints_.end());
+TimingConstraints::io_constraint_range TimingConstraints::output_constraints(const DelayType delay_type) const {
+    if (delay_type == DelayType::MAX) {
+        return tatum::util::make_range(max_output_constraints_.begin(), max_output_constraints_.end());
+    } else {
+        TATUM_ASSERT(delay_type == DelayType::MIN);
+        return tatum::util::make_range(min_output_constraints_.begin(), min_output_constraints_.end());
+    }
 }
 
-TimingConstraints::io_constraint_range TimingConstraints::input_constraints(const NodeId id) const {
-    auto range = input_constraints_.equal_range(id);
-    return tatum::util::make_range(range.first, range.second);
+TimingConstraints::io_constraint_range TimingConstraints::input_constraints(const NodeId id, const DelayType delay_type) const {
+    if (delay_type == DelayType::MAX) {
+        auto range = max_input_constraints_.equal_range(id);
+        return tatum::util::make_range(range.first, range.second);
+    } else {
+        TATUM_ASSERT(delay_type == DelayType::MIN);
+        auto range = min_input_constraints_.equal_range(id);
+        return tatum::util::make_range(range.first, range.second);
+    }
 }
 
-TimingConstraints::io_constraint_range TimingConstraints::output_constraints(const NodeId id) const {
-    auto range = output_constraints_.equal_range(id);
-    return tatum::util::make_range(range.first, range.second);
+TimingConstraints::io_constraint_range TimingConstraints::output_constraints(const NodeId id, const DelayType delay_type) const {
+    if (delay_type == DelayType::MAX) {
+        auto range = max_output_constraints_.equal_range(id);
+        return tatum::util::make_range(range.first, range.second);
+    } else {
+        TATUM_ASSERT(delay_type == DelayType::MIN);
+        auto range = min_output_constraints_.equal_range(id);
+        return tatum::util::make_range(range.first, range.second);
+    }
 }
 
-TimingConstraints::source_latency_range TimingConstraints::source_latencies() const {
-    return tatum::util::make_range(source_latencies_.begin(), source_latencies_.end());
+TimingConstraints::source_latency_range TimingConstraints::source_latencies(ArrivalType arrival_type) const {
+    if (arrival_type == ArrivalType::EARLY) {
+        return tatum::util::make_range(source_latencies_early_.begin(), source_latencies_early_.end());
+    } else {
+        TATUM_ASSERT(arrival_type == ArrivalType::LATE);
+        return tatum::util::make_range(source_latencies_late_.begin(), source_latencies_late_.end());
+    }
 }
 
 DomainId TimingConstraints::create_clock_domain(const std::string name) { 
@@ -246,30 +302,59 @@ void TimingConstraints::set_hold_clock_uncertainty(const DomainId src_domain, co
     hold_clock_uncertainties_[key] = uncertainty;
 }
 
-void TimingConstraints::set_input_constraint(const NodeId node_id, const DomainId domain_id, const Time constraint) {
-    auto iter = find_io_constraint(node_id, domain_id, input_constraints_);
-    if(iter != input_constraints_.end()) {
-        //Found, update
-        iter->second.constraint = constraint;
+void TimingConstraints::set_input_constraint(const NodeId node_id, const DomainId domain_id, const DelayType delay_type, const Time constraint) {
+    if (delay_type == DelayType::MAX) {
+        auto iter = find_io_constraint(node_id, domain_id, max_input_constraints_);
+        if(iter != max_input_constraints_.end()) {
+            //Found, update
+            iter->second.constraint = constraint;
+        } else {
+            //Not found create it
+            max_input_constraints_.insert(std::make_pair(node_id, IoConstraint(domain_id, constraint)));
+        }
     } else {
-        //Not found create it
-        input_constraints_.insert(std::make_pair(node_id, IoConstraint(domain_id, constraint)));
+        TATUM_ASSERT(delay_type == DelayType::MIN);
+        auto iter = find_io_constraint(node_id, domain_id, min_input_constraints_);
+        if(iter != min_input_constraints_.end()) {
+            //Found, update
+            iter->second.constraint = constraint;
+        } else {
+            //Not found create it
+            min_input_constraints_.insert(std::make_pair(node_id, IoConstraint(domain_id, constraint)));
+        }
     }
 }
 
-void TimingConstraints::set_output_constraint(const NodeId node_id, const DomainId domain_id, const Time constraint) {
-    auto iter = find_io_constraint(node_id, domain_id, output_constraints_);
-    if(iter != output_constraints_.end()) {
-        //Found, update
-        iter->second.constraint = constraint;
+void TimingConstraints::set_output_constraint(const NodeId node_id, const DomainId domain_id, const DelayType delay_type, const Time constraint) {
+    if (delay_type == DelayType::MAX) {
+        auto iter = find_io_constraint(node_id, domain_id, max_output_constraints_);
+        if(iter != max_output_constraints_.end()) {
+            //Found, update
+            iter->second.constraint = constraint;
+        } else {
+            //Not found create it
+            max_output_constraints_.insert(std::make_pair(node_id, IoConstraint(domain_id, constraint)));
+        }
     } else {
-        //Not found create it
-        output_constraints_.insert(std::make_pair(node_id, IoConstraint(domain_id, constraint)));
+        TATUM_ASSERT(delay_type == DelayType::MIN);
+        auto iter = find_io_constraint(node_id, domain_id, min_output_constraints_);
+        if(iter != min_output_constraints_.end()) {
+            //Found, update
+            iter->second.constraint = constraint;
+        } else {
+            //Not found create it
+            min_output_constraints_.insert(std::make_pair(node_id, IoConstraint(domain_id, constraint)));
+        }
     }
 }
 
-void TimingConstraints::set_source_latency(const DomainId domain, const Time latency) {
-    source_latencies_[domain] = latency;
+void TimingConstraints::set_source_latency(const DomainId domain, const ArrivalType arrival_type, const Time latency) {
+    if (arrival_type == ArrivalType::EARLY) {
+        source_latencies_early_[domain] = latency;
+    } else {
+        TATUM_ASSERT(arrival_type == ArrivalType::LATE);
+        source_latencies_late_[domain] = latency;
+    }
 }
 
 void TimingConstraints::set_clock_domain_source(const NodeId node_id, const DomainId domain_id) {
@@ -305,23 +390,41 @@ void TimingConstraints::remap_nodes(const tatum::util::linear_map<NodeId,NodeId>
     }
     constant_generators_ = std::move(remapped_constant_generators);
 
-    //Input Constraints
-    std::multimap<NodeId,IoConstraint> remapped_input_constraints;
-    for(auto kv : input_constraints_) {
+    //Max Input Constraints
+    std::multimap<NodeId,IoConstraint> remapped_max_input_constraints;
+    for(auto kv : max_input_constraints_) {
         NodeId new_node_id = node_map[kv.first];
 
-        remapped_input_constraints.insert(std::make_pair(new_node_id, kv.second));
+        remapped_max_input_constraints.insert(std::make_pair(new_node_id, kv.second));
     }
-    input_constraints_ = std::move(remapped_input_constraints);
+    max_input_constraints_ = std::move(remapped_max_input_constraints);
 
-    //Output Constraints
-    std::multimap<NodeId,IoConstraint> remapped_output_constraints;
-    for(auto kv : output_constraints_) {
+    //Min Input Constraints
+    std::multimap<NodeId,IoConstraint> remapped_min_input_constraints;
+    for(auto kv : min_input_constraints_) {
         NodeId new_node_id = node_map[kv.first];
 
-        remapped_output_constraints.insert(std::make_pair(new_node_id, kv.second));
+        remapped_min_input_constraints.insert(std::make_pair(new_node_id, kv.second));
     }
-    output_constraints_ = std::move(remapped_output_constraints);
+    min_input_constraints_ = std::move(remapped_min_input_constraints);
+
+    //Max Output Constraints
+    std::multimap<NodeId,IoConstraint> remapped_max_output_constraints;
+    for(auto kv : max_output_constraints_) {
+        NodeId new_node_id = node_map[kv.first];
+
+        remapped_max_output_constraints.insert(std::make_pair(new_node_id, kv.second));
+    }
+    max_output_constraints_ = std::move(remapped_max_output_constraints);
+
+    //Min Output Constraints
+    std::multimap<NodeId,IoConstraint> remapped_min_output_constraints;
+    for(auto kv : min_output_constraints_) {
+        NodeId new_node_id = node_map[kv.first];
+
+        remapped_min_output_constraints.insert(std::make_pair(new_node_id, kv.second));
+    }
+    min_output_constraints_ = std::move(remapped_min_output_constraints);
 }
 
 void TimingConstraints::print_constraints() const {
@@ -343,8 +446,8 @@ void TimingConstraints::print_constraints() const {
         cout << " Constraint: " << constraint;
         cout << endl;
     }
-    cout << "Input Constraints" << endl;
-    for(auto kv : input_constraints()) {
+    cout << "Max Input Constraints" << endl;
+    for(auto kv : input_constraints(DelayType::MAX)) {
         auto node_id = kv.first;
         auto io_constraint = kv.second;
         cout << "Node: " << node_id;
@@ -352,8 +455,26 @@ void TimingConstraints::print_constraints() const {
         cout << " Constraint: " << io_constraint.constraint;
         cout << endl;
     }
-    cout << "Output Constraints" << endl;
-    for(auto kv : output_constraints()) {
+    cout << "Min Input Constraints" << endl;
+    for(auto kv : input_constraints(DelayType::MIN)) {
+        auto node_id = kv.first;
+        auto io_constraint = kv.second;
+        cout << "Node: " << node_id;
+        cout << " Domain: " << io_constraint.domain;
+        cout << " Constraint: " << io_constraint.constraint;
+        cout << endl;
+    }
+    cout << "Max Output Constraints" << endl;
+    for(auto kv : output_constraints(DelayType::MAX)) {
+        auto node_id = kv.first;
+        auto io_constraint = kv.second;
+        cout << "Node: " << node_id;
+        cout << " Domain: " << io_constraint.domain;
+        cout << " Constraint: " << io_constraint.constraint;
+        cout << endl;
+    }
+    cout << "Min Output Constraints" << endl;
+    for(auto kv : output_constraints(DelayType::MIN)) {
         auto node_id = kv.first;
         auto io_constraint = kv.second;
         cout << "Node: " << node_id;
@@ -379,8 +500,16 @@ void TimingConstraints::print_constraints() const {
         cout << " Uncertainty: " << uncertainty;
         cout << endl;
     }
-    cout << "Source Latency" << endl;
-    for(auto kv : source_latencies()) {
+    cout << "Early Source Latency" << endl;
+    for(auto kv : source_latencies(ArrivalType::EARLY)) {
+        auto domain = kv.first;
+        Time latency = kv.second;
+        cout << "Domain: " << domain;
+        cout << " Latency: " << latency;
+        cout << endl;
+    }
+    cout << "Late Source Latency" << endl;
+    for(auto kv : source_latencies(ArrivalType::LATE)) {
         auto domain = kv.first;
         Time latency = kv.second;
         cout << "Domain: " << domain;
