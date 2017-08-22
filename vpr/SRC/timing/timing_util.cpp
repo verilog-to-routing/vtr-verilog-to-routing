@@ -168,11 +168,11 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
 
     vtr::printf_info("Setup slack histogram:\n");
     print_histogram(create_setup_slack_histogram(setup_analyzer));
-    vtr::printf("\n");
 
 
     if (crit_paths.size() > 1) {
         //Multi-clock
+        vtr::printf("\n");
 
         //Periods per constraint
 		vtr::printf_info("Intra-domain critical path delays (CPDs):\n");
@@ -220,9 +220,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
                             sec_to_nanosec(path.slack()));
             }
         }
-        vtr::printf("\n");
     }
-    vtr::printf("\n");
 
     //Calculate the intra-domain (i.e. same launch and capture domain) non-virtual geomean, and fanout-weighted periods
     if(crit_paths.size() > 1) {
@@ -262,6 +260,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
                     sec_to_mhz(fanout_weighted_geomean_intra_domain_cpd));
         }
     }
+    vtr::printf("\n");
 }
 
 /*
