@@ -6,5 +6,5 @@ set_clock_groups -exclusive -group [get_clocks {input_clk}] -group [get_clocks {
 set_false_path -from [get_clocks{clk}] -to [get_clocks{output_clk}]
 set_max_delay 17 -from [get_clocks{input_clk}] -to [get_clocks{output_clk}]
 set_multicycle_path -setup -from [get_clocks{clk}] -to [get_clocks{clk2}] 3
-set_input_delay -clock input_clk -max 0.5 [get_ports{in1 in2 in3}]
-set_output_delay -clock output_clk -max 1 [get_ports{out*}]
+set_input_delay -clock input_clk 0.5 [get_ports{in1 in2 in3}]
+set_output_delay -clock output_clk 1 [get_ports{out*}]
