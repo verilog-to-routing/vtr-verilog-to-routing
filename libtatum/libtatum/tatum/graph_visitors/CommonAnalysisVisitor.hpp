@@ -156,6 +156,9 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
                 DomainId domain_id = tc.node_clock_domain(node_id);
                 TATUM_ASSERT(domain_id);
 
+                //The external clock may have latency
+                Time launch_source_latency = ops_.launch_source_latency(tc, domain_id);
+
                 //An input constraint means there is 'input_constraint' delay from when an external 
                 //signal is launched by its clock (external to the chip) until it arrives at the
                 //primary input
@@ -163,7 +166,7 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
                 TATUM_ASSERT(input_constraint.valid());
 
                 //Initialize a data tag based on input delay constraint
-                TimingTag input_tag = TimingTag(Time(input_constraint), 
+                TimingTag input_tag = TimingTag(launch_source_latency + input_constraint, 
                                                 domain_id, 
                                                 DomainId::INVALID(), 
                                                 NodeId::INVALID(), //Origin
