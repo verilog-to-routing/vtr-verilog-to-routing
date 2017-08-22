@@ -298,6 +298,22 @@ float find_hold_worst_negative_slack(const tatum::HoldTimingAnalyzer& hold_analy
     return wns;
 }
 
+float find_hold_worst_slack(const tatum::HoldTimingAnalyzer& hold_analyzer, const tatum::DomainId launch, const tatum::DomainId capture) {
+    auto& timing_ctx = g_vpr_ctx.timing();
+
+    float worst_slack = std::numeric_limits<float>::infinity();
+    for(tatum::NodeId node : timing_ctx.graph->logical_outputs()) {
+        for(tatum::TimingTag tag : hold_analyzer.hold_slacks(node)) {
+            if (tag.launch_clock_domain() == launch && tag.capture_clock_domain() == capture) {
+                float slack = tag.time().value();
+                
+                worst_slack = std::min(worst_slack, slack);
+            }
+        }
+    }
+    return worst_slack;
+}
+
 std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTimingAnalyzer& hold_analyzer, size_t num_bins) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
@@ -353,13 +369,49 @@ std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTiming
     return histogram;
 }
 
-void print_hold_timing_summary(const tatum::TimingConstraints& /*constraints*/, const tatum::HoldTimingAnalyzer& hold_analyzer) {
+void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer) {
     vtr::printf("Hold Worst Negative Slack (hWNS): %g ns\n", sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer)));
     vtr::printf("Hold Total Negative Slack (hTNS): %g ns\n", sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer)));
     vtr::printf("\n");
 
     vtr::printf_info("Hold slack histogram:\n");
     print_histogram(create_hold_slack_histogram(hold_analyzer));
+
+    if (constraints.clock_domains().size() > 1) {
+        //Multi-clock
+        vtr::printf("\n");
+
+        //Slack per constraint
+		vtr::printf_info("Intra-domain worst hold slacks per constraint:\n");
+        for(const auto& domain : constraints.clock_domains()) {
+            float worst_slack = find_hold_worst_slack(hold_analyzer, domain, domain);
+
+            if (worst_slack == std::numeric_limits<float>::infinity()) continue; //No path
+
+
+            vtr::printf("  %s to %s worst hold slack: %g ns\n",
+                        constraints.clock_domain_name(domain).c_str(),
+                        constraints.clock_domain_name(domain).c_str(),
+                        sec_to_nanosec(worst_slack));
+        }
+        vtr::printf("\n");
+
+		vtr::printf_info("Inter-domain worst hold slacks per constraint:\n");
+        for(const auto& launch_domain : constraints.clock_domains()) {
+            for(const auto& capture_domain : constraints.clock_domains()) {
+                if (launch_domain != capture_domain) {
+                    float worst_slack = find_hold_worst_slack(hold_analyzer, launch_domain, capture_domain);
+
+                    if (worst_slack == std::numeric_limits<float>::infinity()) continue; //No path
+
+                    vtr::printf("  %s to %s worst hold slack: %g ns\n",
+                                constraints.clock_domain_name(launch_domain).c_str(),
+                                constraints.clock_domain_name(capture_domain).c_str(),
+                                sec_to_nanosec(worst_slack));
+                }
+            }
+        }
+    }
     vtr::printf("\n");
 }
 
