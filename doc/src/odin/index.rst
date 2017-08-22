@@ -231,13 +231,13 @@ Verilog HDL file Keyword Support:
 ====================  ==================  ========================  =====================
 Supported Keyword     NOT Sup. Keyword    Supported Operators       NOT Sup. Operators
 --------------------  ------------------  ------------------------  ---------------------
-| always              | automatic         | \*\*                      | &&&
+| always              | automatic         | \*\*                    | &&&
 | and                 | buf               | &&                      | =+:
 | assign              | casex             | ||                      | -:
 | begin               | casez             | <=                      | >>>
 | case                | disable           | =>                      | (*
 | default             | edge              | >=                      | \*)
-| \`define             | endtask           | <<                      | 
+| \`define            | endtask           | <<                      | 
 | defparam            | macromodule       | <<<                     | 
 | else                | scalared          | >>                      | 
 | end                 | specparam         | ==                      | 
