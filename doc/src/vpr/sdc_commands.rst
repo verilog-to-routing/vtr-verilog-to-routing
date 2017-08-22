@@ -69,7 +69,6 @@ set_clock_groups
 Specifies the relationship between groups of clocks.
 May be used with netlist or virtual clocks in any combination.
 
-
 Since VPR supports only the :sdc:option:`-exclusive` option, a :sdc:command:`set_clock_groups` constraint is equivalent to a :sdc:command:`set_false_path` constraint (see below) between each clock in one group and each clock in another.
 
 For example, the following sets of commands are equivalent:
@@ -109,7 +108,7 @@ and
 
 set_false_path
 --------------
-Cuts timing paths unidirectionally from each clock after :sdc:option:`-from` to each clock after :sdc:option:`–to`.
+Cuts timing paths unidirectionally from each clock in :sdc:option:`-from` to each clock in :sdc:option:`–to`.
 Otherwise equivalent to :sdc:command:`set_clock_groups`. 
 
 *Example Usage:*
@@ -130,13 +129,17 @@ Otherwise equivalent to :sdc:command:`set_clock_groups`.
         
         Specifies the source clock domain(s).
 
-        **Required:** Yes
+        **Required:** No
+
+        **Default:** All clocks
     
     .. sdc:option:: -to [get_clocks <clock list or regexes>]
 
         Specifies the sink clock domain(s).
 
-        **Required:** Yes
+        **Required:** No
+
+        **Default:** All clocks
 
 set_max_delay/set_min_delay
 ---------------------------
@@ -166,34 +169,40 @@ Overrides the default setup (max) or hold (min) timing constraint calculated usi
         
         Specifies the source clock domain(s).
 
-        **Required:** Yes
+        **Required:** No
+
+        **Default:** All clocks
     
     .. sdc:option:: -to [get_clocks <clock list or regexes>]
 
         Specifies the sink clock domain(s).
 
-        **Required:** Yes
+        **Required:** No
+
+        **Default:** All clocks
 
 set_multicycle_path
 -------------------
-Sets how many cycles elapse between the launch and capture edges for setup and hold checks.
+Sets how many clock cycles elapse between the launch and capture edges for setup and hold checks.
 
-The default the setup mutlicycle value is 1 (i.e. the capture setup check is performed one cycle after the launch edge).
+The default the setup mutlicycle value is 1 (i.e. the capture setup check is performed against the edge one cycle after the launch edge).
 
-The default hold multicycle is one less than the setup multicycle path (i.e. the capture hold check occurs in the same cycle as the launch edge for the default setup multicycle). 
-
-If neither :sdc:option:`-setup` or :sdc:option:`-hold` are specified the multicycle is treated as a setup multicycle.
+The default hold multicycle is one less than the setup multicycle path (e.g. the capture hold check occurs in the same cycle as the launch edge for the default setup multicycle). 
 
 *Example Usage:*
 
 .. code-block:: tcl
 
-    #Create a 3 cycle setup mcp from clk to clk2
+    #Create a 4 cycle setup check, and 3 cycle hold check from clkA to clkB
+    set_multicycle_path -from [get_clocks {clkA}] -to [get_clocks {clkB}] 4
+
+    #Create a 3 cycle setup check from clk to clk2
+    # Note that this moves the default hold check to be 2 cycles
     set_multicycle_path -setup -from [get_clocks {clk}] -to [get_clocks {clk2}] 3
 
-    #Create a 0 cycle hold mcp from clk to clk2
-    # Note that this moves the default hold check back to it's original position before the
-    # seutp mcp was applied
+    #Create a 0 cycle hold check from clk to clk2
+    # Note that this moves the default hold check back to it's original 
+    # position before the previous setup setup_multicycle_path was applied
     set_multicycle_path -hold -from [get_clocks {clk}] -to [get_clocks {clk2}] 2
 
 .. note:: Multicycles are supported between entire clock domains, but *not* between individual registers.
@@ -216,19 +225,26 @@ If neither :sdc:option:`-setup` or :sdc:option:`-hold` are specified the multicy
         
         Specifies the source clock domain(s).
 
-        **Required:** Yes
+        **Required:** No
+
+        **Default:** All clocks
     
     .. sdc:option:: -to [get_clocks <clock list or regexes>]
 
         Specifies the sink clock domain(s).
 
-        **Required:** Yes
+        **Required:** No
+
+        **Default:** All clocks
     
-    .. sdc:option:: <num_multicycles>
+    .. sdc:option:: <path_multiplier>
 
         The number of cycles that apply to the specified path(s).
 
         **Required:** Yes
+
+.. note:: If neither :sdc:option:`-setup` nor :sdc:option:`-hold` the setup multicycle is set to ``path_multiplier`` and the hold multicycle offset to ``0``.
+
 
 set_input_delay/set_output_delay
 --------------------------------
@@ -321,12 +337,16 @@ This is typically used to model uncertainty in the clock arrival times due to cl
         Specifies the source clock domain(s).
 
         **Required:** No
+
+        **Default:** All clocks
     
     .. sdc:option:: -to [get_clocks <clock list or regexes>]
 
         Specifies the sink clock domain(s).
 
         **Required:** No
+
+        **Default:** All clocks
 
     .. sdc:option:: -setup
 
@@ -348,7 +368,7 @@ This is typically used to model uncertainty in the clock arrival times due to cl
 
     .. note:: 
         
-        If neither ``-setup`` nor ``-hold`` are specified the delay value is applied to both.
+        If neither ``-setup`` nor ``-hold`` are specified the uncertainty value is applied to both.
 
 set_clock_latency
 -----------------
@@ -392,7 +412,9 @@ Source clock latency corresponds to the delay from the true clock source (e.g. o
         
         Specifies the clock domain(s).
 
-        **Required:** Yes
+        **Required:** No
+
+        **Default:** All clocks
     
     .. note:: 
         
@@ -509,7 +531,7 @@ Changing the phase between clocks, and accounting for delay through I/Os with se
 
 E
 ~~
-Sample using most supported SDC commands.  Inputs and outputs are constrained on separate virtual clocks.
+Sample using many supported SDC commands.  Inputs and outputs are constrained on separate virtual clocks.
 
 .. code-block:: tcl
 
