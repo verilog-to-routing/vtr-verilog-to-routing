@@ -1,1 +1,0 @@
-The output of ram modules are not currently considered drivers, and Odin II is optimizing away any top level outputs that are fed by .out of the ram modules.

@@ -1,8 +1,0 @@
-.model always_false
-.inputs i0 i1 i2 i3 i4 i5
-.outputs o
-
-.names i0 i1 i2 i3 i4 i5 o
------- 0
-
-.end

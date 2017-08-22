@@ -1,2 +1,0 @@
-arch	circuit	vpr_revision	vpr_status	min_chan_width	critical_path_delay	pack_time	place_time	min_chan_width_route_time	crit_path_route_time	routed_wirelength	max_odin_mem	max_abc_mem	max_vpr_mem	num_pre_packed_nets	num_pre_packed_blocks	num_post_packed_nets	num_clb	num_io	num_outputs	num_memories	num_mult	error	
-k4_n4_v7_bidir.xml	ch_intrinsics.v	c23ead2	success	22	18.2674	0.258063	0.82	2.1	0.21	10506	-1	-1	-1	1584	1714	734	251	99	130	-1	-1		
