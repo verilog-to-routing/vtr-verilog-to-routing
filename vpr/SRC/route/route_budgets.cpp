@@ -170,44 +170,41 @@ void route_budgets::allocate_slack(float ** net_delay, const IntraLbPbPinLookup&
     //        }
     //    }
 
-    unsigned iteration = 0;
-    float max_budget_change = 6e-12;
+    unsigned iteration;
+    float max_budget_change;
 
-    while (iteration < 7 && max_budget_change > 5e-12) {
-        //cout << "finished 1" << endl;
-        short_path_timing_info = perform_short_path_sta(delay_max_budget);
-        allocate_negative_short_path_slack(short_path_timing_info, delay_max_budget);
-        keep_budget_in_bounds(MIN, delay_max_budget);
-
-        long_path_timing_info = perform_long_path_sta(delay_max_budget);
-        allocate_negative_long_path_slack(long_path_timing_info, delay_max_budget);
-        keep_budget_in_bounds(MAX, delay_max_budget);
-        iteration++;
-    }
+//    iteration = 0;
+//    max_budget_change = 6e-12;
+//    while (iteration < 7 && max_budget_change > 5e-12) {
+//        //cout << "finished 1" << endl;
+//        short_path_timing_info = perform_short_path_sta(delay_max_budget);
+//        allocate_negative_short_path_slack(short_path_timing_info, delay_max_budget);
+//        keep_budget_in_bounds(MIN, delay_max_budget);
+//
+//        long_path_timing_info = perform_long_path_sta(delay_max_budget);
+//        allocate_negative_long_path_slack(long_path_timing_info, delay_max_budget);
+//        keep_budget_in_bounds(MAX, delay_max_budget);
+//        iteration++;
+//    }
 
     iteration = 0;
     max_budget_change = 900e-12;
 
     while (iteration < 3 && max_budget_change > 800e-12) {
-        //cout << "finished 2" << endl;
         long_path_timing_info = perform_long_path_sta(delay_max_budget);
-        allocate_positive_long_path_slack(long_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
-        print_temporary_budgets_to_file(delay_max_budget);
+        allocate_long_path_slack(long_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
         keep_budget_in_bounds(MIN, delay_max_budget);
         iteration++;
         if (iteration > 7)
             break;
     }
 
-    //delay_max_budget = temp_budgets;
-
     iteration = 0;
     max_budget_change = 900e-12;
 
     while (iteration < 3 && max_budget_change > 800e-12) {
-        //cout << "finished 3" << endl;
         short_path_timing_info = perform_short_path_sta(delay_min_budget);
-        allocate_positive_short_path_slack(short_path_timing_info, delay_min_budget);
+        allocate_short_path_slack(short_path_timing_info, delay_min_budget);
         keep_budget_in_bounds(MAX, delay_min_budget);
         iteration++;
         if (iteration > 7)
@@ -220,9 +217,8 @@ void route_budgets::allocate_slack(float ** net_delay, const IntraLbPbPinLookup&
 
     float bottom_range = -1e-9;
     while (iteration < 3 && max_budget_change > 800e-12) {
-        //cout << "finished 4" << endl;
         short_path_timing_info = perform_short_path_sta(delay_min_budget);
-        allocate_positive_short_path_slack(short_path_timing_info, delay_min_budget);
+        allocate_short_path_slack(short_path_timing_info, delay_min_budget);
         for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
             for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
                 delay_min_budget[inet][ipin] = max(delay_min_budget[inet][ipin], bottom_range);
@@ -232,7 +228,6 @@ void route_budgets::allocate_slack(float ** net_delay, const IntraLbPbPinLookup&
         iteration++;
     }
 
-    //delay_min_budget = temp_budgets;
 }
 
 void route_budgets::keep_budget_in_bounds(max_or_min _type, float ** &temp_budgets) {
@@ -250,19 +245,11 @@ void route_budgets::keep_budget_in_bounds(max_or_min _type, float ** &temp_budge
 
 }
 
-void route_budgets::allocate_positive_short_path_slack(std::shared_ptr<HoldTimingInfo> timing_info, float ** temp_budgets) {
+void route_budgets::allocate_short_path_slack(std::shared_ptr<HoldTimingInfo> timing_info, float ** temp_budgets) {
 
 }
 
-void route_budgets::allocate_negative_short_path_slack(std::shared_ptr<HoldTimingInfo> timing_info, float ** temp_budgets) {
-
-}
-
-void route_budgets::allocate_negative_long_path_slack(std::shared_ptr<SetupTimingInfo> timing_info, float ** temp_budgets) {
-
-}
-
-void route_budgets::allocate_positive_long_path_slack(std::shared_ptr<SetupTimingInfo> timing_info, float ** temp_budgets,
+void route_budgets::allocate_long_path_slack(std::shared_ptr<SetupTimingInfo> timing_info, float ** temp_budgets,
         float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup) {
 
 
