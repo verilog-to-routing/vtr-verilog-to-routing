@@ -412,9 +412,7 @@ Source clock latency corresponds to the delay from the true clock source (e.g. o
         
         Specifies the clock domain(s).
 
-        **Required:** No
-
-        **Default:** All clocks
+        **Required:** Yes
     
     .. note:: 
         
