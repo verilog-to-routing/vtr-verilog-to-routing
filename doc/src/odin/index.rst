@@ -1,4 +1,5 @@
 .. _odin_II:
+
 #############
 Odin II
 #############
@@ -11,9 +12,9 @@ Odin II is used for logic synthesis and elaboration, converting a subset of the 
 INSTALL
 *************
 
-===========
+=============
 Prerequisites
-===========
+=============
 
 1. ctags
 2. bison
@@ -46,9 +47,9 @@ USAGE
 
 ./odin_II [args]
 
-===========
+===============
 Required [args]
-===========
+===============
 
 .. list-table::
 
@@ -62,9 +63,9 @@ Required [args]
    - <BLIF File>
    -
 
-===========   
+===============   
 Optional [args]
-===========
+===============
 
 .. list-table::
 
@@ -101,7 +102,7 @@ Simulation
 	    - test.do (ModelSim)    
 
 Activate Simulation with [args]
-************  
+******************************* 
 
 .. list-table::
 
@@ -128,7 +129,7 @@ Activate Simulation with [args]
    - initial register value to X(unknown) (DEFAULT)
     
 Simulation Optional [args]
-************
+**************************
 
 .. list-table::
 
@@ -150,7 +151,7 @@ NOTES
 ===========
 
 Example for ``-p``:
-************  
+*******************  
 
 .. list-table::
 
@@ -163,11 +164,11 @@ Example for ``-p``:
 
 .. note::
 
-	Matching for ``-p'' is done via strstr so general strings will match all similar pins and nodes. (Eg: FF_NODE will create a single port with all flipflops) 
+	Matching for ``-p`` is done via strstr so general strings will match all similar pins and nodes. (Eg: FF_NODE will create a single port with all flipflops) 
   
    
 Examples .xml configuration file for ``-c``
-************  
+*******************************************  
 
 .. code-block:: xml
 
@@ -209,7 +210,7 @@ Examples .xml configuration file for ``-c``
   Use of static memory within the simulation code necessitates compiling a distinct shared object file for each instance of the block you wish to simulate. The method signature the simulator expects contains only int and int[] parameters, leaving the code provided to simulate the hard blokc agnostic of the internal Odin II data structures. However, a cycle parameter is included to provide researchers with the ability to delay results of operations performed by the simulation code.
   
 Examples vector file for ``-t`` or ``-T``   
-************  
+*****************************************  
 
 .. code-block:: none
 
@@ -225,18 +226,18 @@ Examples vector file for ``-t`` or ``-T``
          
          
 Verilog HDL file Keyword Support:
-************ 
+********************************* 
 
 ====================  ==================  ========================  =====================
 Supported Keyword     NOT Sup. Keyword    Supported Operators       NOT Sup. Operators
 --------------------  ------------------  ------------------------  ---------------------
-| always              | automatic         | **                      | &&&
+| always              | automatic         | \*\*                      | &&&
 | and                 | buf               | &&                      | =+:
 | assign              | casex             | ||                      | -:
 | begin               | casez             | <=                      | >>>
 | case                | disable           | =>                      | (*
-| default             | edge              | >=                      | *)
-| `define             | endtask           | <<                      | 
+| default             | edge              | >=                      | \*)
+| \`define             | endtask           | <<                      | 
 | defparam            | macromodule       | <<<                     | 
 | else                | scalared          | >>                      | 
 | end                 | specparam         | ==                      | 
@@ -299,16 +300,16 @@ Supported Keyword     NOT Sup. Keyword    Supported Operators       NOT Sup. Ope
 
 
 
-*************
+*******************
 DOCUMENTING ODIN II
-*************
+*******************
 
 Any new command line options added to Odin II should be fully documented by
 the print_usage() function within odin_ii.c before checking in the changes.  
 
-*************
+***************
 TESTING ODIN II
-*************
+***************
 
 The verify_microbenchmarks.sh and verify_regression_tests.sh scripts 
 compile and simulate the microbenchmarks and a larger set of benchmark 
@@ -333,9 +334,9 @@ microbenchmarks should be developed which test those features for
 regression.  Use existing circuits as a template for the addition of 
 new circuits.
 
-*************
+******************************
 USING MODELSIM TO TEST ODIN II
-*************
+******************************
 
 ModelSim may be installed as part of the Quartus II Web Edition IDE. Load
 the Verilog circuit into a new project in ModelSim. Compile the circuit, 
