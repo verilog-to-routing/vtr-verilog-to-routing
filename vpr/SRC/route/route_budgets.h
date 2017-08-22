@@ -45,10 +45,13 @@ public:
     std::shared_ptr<HoldTimingInfo> perform_short_path_sta(float ** &temp_budgets);
     void keep_budget_in_bounds(max_or_min _type, float ** &temp_budgets);
     void allocate_slack(float **net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
-    void allocate_short_path_slack(std::shared_ptr<HoldTimingInfo> timing_info, float ** temp_budgets);
+    void allocate_short_path_slack(std::shared_ptr<HoldTimingInfo> timing_info, float ** temp_budgets,
+            float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
     void allocate_long_path_slack(std::shared_ptr<SetupTimingInfo> timing_info, float ** temp_budgets,
             float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
     float calculate_clb_pin_slack(int inet, int ipin, std::shared_ptr<SetupTimingInfo> timing_info,
+            const IntraLbPbPinLookup& pb_gpin_lookup);
+    float calculate_clb_pin_slack(int inet, int ipin, std::shared_ptr<HoldTimingInfo> timing_info,
             const IntraLbPbPinLookup& pb_gpin_lookup);
 
     void perform_long_path_sta(float ** temp_budgets, std::shared_ptr<RoutingDelayCalculator> routing_delay_calc,
