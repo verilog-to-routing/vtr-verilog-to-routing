@@ -25,13 +25,13 @@ set_clock_uncertainty 0.050 -from [get_clocks{clk}]
 #
 
 #Set a default clock latency of 500ps for all clocks
-#set_clock_latency -source 0.500 [get_clocks {*}]
+set_clock_latency -source 0.500 [get_clocks {*}]
 
 #Set a different latency for the input clock
-#set_clock_latency -source 0.750 [get_clocks {input_clk}]
+set_clock_latency -source 0.750 [get_clocks {input_clk}]
 
 #Set a different latency for the output clock
-#set_clock_latency -source 0.850 [get_clocks {output_clk}]
+set_clock_latency -source 0.850 [get_clocks {output_clk}]
 
 #
 # False paths
