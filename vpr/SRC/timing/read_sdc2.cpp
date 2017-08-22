@@ -352,16 +352,31 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 to_clocks = get_all_clocks();
             }
 
+            int setup_mcp = cmd.mcp_value;
+            int hold_mcp = cmd.mcp_value;
+
+            bool is_setup = cmd.is_setup;
+            bool is_hold = cmd.is_hold || is_setup; //Specifying a setup mcp also modifies hold
+            if (!is_hold && !is_setup) {
+                //Unspecified implicitly sets the setup mcp to the target value,
+                //and the hold mcp to zero
+                is_setup = true;
+                is_hold = true;
+
+                VTR_ASSERT(setup_mcp == cmd.mcp_value);
+                hold_mcp = 0; //Default hold check is 0
+            }
+
             for(auto from_clock : from_clocks) {
                 for(auto to_clock : to_clocks) {
                     auto domain_pair = std::make_pair(from_clock, to_clock);
 
-                    if(cmd.type == sdcparse::SetupHoldType::SETUP || cmd.type == sdcparse::SetupHoldType::NONE) {
-                        setup_mcp_overrides_[domain_pair] = cmd.mcp_value;
+                    if(is_setup) {
+                        setup_mcp_overrides_[domain_pair] = setup_mcp;
+                    }
 
-                    } else {
-                        VTR_ASSERT(cmd.type == sdcparse::SetupHoldType::HOLD);
-                        hold_mcp_overrides_[domain_pair] = cmd.mcp_value;
+                    if (is_hold) {
+                        hold_mcp_overrides_[domain_pair] = hold_mcp;
                     }
                 }
             }
@@ -730,17 +745,17 @@ class SdcParseCallback2 : public sdcparse::Callback {
         //Returns the cycle number (after launch) where the setup check occurs
         int setup_capture_cycle(tatum::DomainId from, tatum::DomainId to) const {
             //Default: capture one cycle after launch
-            int setup_mcp_value = 1;
+            int setup_path_mult = 1;
 
             //Any overrides
             auto key = std::make_pair(from, to);
             auto iter = setup_mcp_overrides_.find(key);
             if(iter != setup_mcp_overrides_.end()) {
-                setup_mcp_value = iter->second;
+                setup_path_mult = iter->second;
             }
 
             //The setup capture cycle is the setup mcp value
-            return setup_mcp_value;
+            return setup_path_mult;
         }
 
         //Returns the cycle number (after launch) where the hold check occurs
@@ -748,7 +763,7 @@ class SdcParseCallback2 : public sdcparse::Callback {
             //Default: hold captures the cycle before setup is captured
             //For the default setup mcp this implies capturing the same
             //cycle as launch
-            int hold_mcp_value = 1;
+            int hold_offset = 1;
 
             //Any overrides?
             auto key = std::make_pair(from, to);
@@ -760,11 +775,11 @@ class SdcParseCallback2 : public sdcparse::Callback {
                 //For details see section 8.3 'Multicycle paths' in:
                 //  J. Bhasker, R. Chadha, "Static Timing Analysis for Nanometer 
                 //      Designs A Practical Approach", Springer, 2009
-                hold_mcp_value += iter->second;
+                hold_offset += iter->second;
             }
 
             //The hold capture cycle is the setup capture cycle minus the hold mcp value
-            return setup_capture_cycle(from, to) - hold_mcp_value;
+            return setup_capture_cycle(from, to) - hold_offset;
         }
 
         std::set<AtomPinId> get_ports(const sdcparse::StringGroup& port_group) {
