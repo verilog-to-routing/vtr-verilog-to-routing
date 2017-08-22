@@ -476,48 +476,49 @@ void CommonAnalysisVisitor<AnalysisOps>::mark_sink_required_times(const TimingGr
             //Hence we use a negative output constraint value to subtract the output constraint 
             //from the target clock constraint
             Time output_constraint = -ops_.output_constraint(tc, node_id, io_capture_domain);
-            TATUM_ASSERT(output_constraint.valid());
+            if (output_constraint.valid()) {
 
-            //Since there is no propagated clock tag to primary outputs, we need to account for
-            //the capture source clock latency
-            Time capture_clock_source_latency = ops_.capture_source_latency(tc, io_capture_domain);
+                //Since there is no propagated clock tag to primary outputs, we need to account for
+                //the capture source clock latency
+                Time capture_clock_source_latency = ops_.capture_source_latency(tc, io_capture_domain);
 
-            for(const TimingTag& node_data_arr_tag : node_data_arr_tags) {
-                DomainId data_launch_domain = node_data_arr_tag.launch_clock_domain();
+                for(const TimingTag& node_data_arr_tag : node_data_arr_tags) {
+                    DomainId data_launch_domain = node_data_arr_tag.launch_clock_domain();
 
-                if(is_const_gen_tag(node_data_arr_tag)) {
-                    //A constant generator tag. Required time is not terribly well defined,
-                    //so just use the inter-domain values since we nevery look at these
-                    //tags except to check that any downstream nodes have been constrained
+                    if(is_const_gen_tag(node_data_arr_tag)) {
+                        //A constant generator tag. Required time is not terribly well defined,
+                        //so just use the inter-domain values since we nevery look at these
+                        //tags except to check that any downstream nodes have been constrained
 
-                    data_launch_domain = io_capture_domain;
-                }
+                        data_launch_domain = io_capture_domain;
+                    }
 
-                //Should we be analyzing paths between these two domains?
-                if(tc.should_analyze(data_launch_domain, io_capture_domain)) {
+                    //Should we be analyzing paths between these two domains?
+                    if(tc.should_analyze(data_launch_domain, io_capture_domain)) {
 
-                    //We only set a required time if the source domain actually reaches this sink
-                    //domain.  This is indicated by the presence of an arrival tag (which should have
-                    //a valid arrival time).
-                    TATUM_ASSERT(node_data_arr_tag.time().valid());
+                        //We only set a required time if the source domain actually reaches this sink
+                        //domain.  This is indicated by the presence of an arrival tag (which should have
+                        //a valid arrival time).
+                        TATUM_ASSERT(node_data_arr_tag.time().valid());
 
-                    Time constraint = ops_.clock_constraint(tc, data_launch_domain, io_capture_domain);
+                        Time constraint = ops_.clock_constraint(tc, data_launch_domain, io_capture_domain);
 
-                    Time clock_uncertainty = ops_.clock_uncertainty(tc, data_launch_domain, io_capture_domain);
+                        Time clock_uncertainty = ops_.clock_uncertainty(tc, data_launch_domain, io_capture_domain);
 
-                    //Calulate the required time
-                    Time req_time =   Time(constraint)                   //Period constraint
-                                    + Time(capture_clock_source_latency) //Latency from true clock source to def'n point
-                                    + Time(output_constraint)            //Output delay
-                                    + Time(clock_uncertainty);           //Clock period uncertainty
+                        //Calulate the required time
+                        Time req_time =   Time(constraint)                   //Period constraint
+                                        + Time(capture_clock_source_latency) //Latency from true clock source to def'n point
+                                        + Time(output_constraint)            //Output delay
+                                        + Time(clock_uncertainty);           //Clock period uncertainty
 
-                    TimingTag node_data_req_tag(req_time, 
-                                                data_launch_domain, 
-                                                io_capture_domain, 
-                                                NodeId::INVALID(), //Origin
-                                                TagType::DATA_REQUIRED);
+                        TimingTag node_data_req_tag(req_time, 
+                                                    data_launch_domain, 
+                                                    io_capture_domain, 
+                                                    NodeId::INVALID(), //Origin
+                                                    TagType::DATA_REQUIRED);
 
-                    ops_.add_tag(node_id, node_data_req_tag);
+                        ops_.add_tag(node_id, node_data_req_tag);
+                    }
                 }
             }
         }
