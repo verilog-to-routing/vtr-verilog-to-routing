@@ -1394,11 +1394,14 @@ static void build_rr_sinks_sources(const int i, const int j,
 
                         /* Common to both DRIVERs and RECEIVERs */
                         L_rr_node[inode].set_capacity(1);
-                        L_rr_node[inode].set_coordinates(i + width_offset, j + height_offset, i + width_offset, j + height_offset);
-                        L_rr_node[inode].set_side(side);
                         L_rr_node[inode].set_C(0);
                         L_rr_node[inode].set_R(0);
                         L_rr_node[inode].set_ptc_num(ipin);
+
+                        //Note that we store the grid tile location and side where the pin is located,
+                        //which greatly simplifies the drawing code
+                        L_rr_node[inode].set_coordinates(i + width_offset, j + height_offset, i + width_offset, j + height_offset);
+                        L_rr_node[inode].set_side(side);
 
                         VTR_ASSERT(type->pinloc[width_offset][height_offset][L_rr_node[inode].side()][L_rr_node[inode].pin_num()]);
                     }
