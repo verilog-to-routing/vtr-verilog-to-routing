@@ -96,6 +96,7 @@ const char* t_rr_node::side_string() const {
     else if (side() == LEFT)    return "LEFT";
     else if (side() == RIGHT)   return "RIGHT";
     VPR_THROW(VPR_ERROR_ROUTE, "Unrecognized side");
+    return "invalid";
 }
 
 
