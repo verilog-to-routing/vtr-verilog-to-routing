@@ -858,7 +858,7 @@ struct t_det_routing_arch {
 };
 
 enum e_direction : unsigned char {
-	INC_DIRECTION = 0, DEC_DIRECTION = 1, BI_DIRECTION = 2, NONE = 3
+	INC_DIRECTION = 0, DEC_DIRECTION = 1, BI_DIRECTION = 2, NO_DIRECTION = 3
 };
 
 /* Lists detailed information about segmentation.  [0 .. W-1].              *
@@ -916,6 +916,8 @@ struct t_linked_f_pointer {
 	t_linked_f_pointer *next;
 	float *fptr;
 };
+
+typedef std::vector<std::vector<std::vector<std::vector<int>>>> t_rr_node_indices; //[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..max_ptc-1]
 
 /* Uncomment lines below to save some memory, at the cost of debugging ease. */
 /*enum e_rr_type {SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}; */

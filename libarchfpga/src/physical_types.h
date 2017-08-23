@@ -72,8 +72,14 @@ enum e_interconnect {
 
 /* Orientations. */
 enum e_side : unsigned char {
-	TOP = 0, RIGHT = 1, BOTTOM = 2, LEFT = 3
+	TOP = 0, 
+    RIGHT = 1, 
+    BOTTOM = 2, 
+    LEFT = 3, 
+    NUM_SIDES
 };
+constexpr std::array<e_side,NUM_SIDES> SIDES = {TOP, RIGHT, BOTTOM, LEFT}; //Set of all side orientations
+constexpr std::array<const char*,NUM_SIDES> SIDE_STRING = {"TOP", "RIGHT", "BOTTOM", "LEFT"}; //String versions of side orientations
 
 /* pin location distributions */
 enum e_pin_location_distr {
@@ -1022,8 +1028,6 @@ struct t_arch_switch_inf {
 		power_buffer_size = 0;
 	}
 };
-
-typedef std::vector<std::vector<std::vector<std::vector<int>>>> t_rr_node_indices; //[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..max_ptc-1]
 
 /* Lists all the important information about an rr switch type.              *
  * The s_rr_switch_inf describes a switch derived from a switch described    *

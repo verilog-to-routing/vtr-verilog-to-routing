@@ -71,16 +71,15 @@ e_direction t_rr_node::direction() const {
 
 const char* t_rr_node::direction_string() const{
 	if (direction() == INC_DIRECTION){
-		return "INC";
-	}else if (direction() == DEC_DIRECTION){
-		return "DEC";
-	}else if (direction() == BI_DIRECTION){
-		return "BI";
-	}else if (direction() == NONE){
-		return "NONE";
-	}
-	
-	return "NONE";
+		return "INC_DIR";
+	} else if (direction() == DEC_DIRECTION){
+		return "DEC_DIR";
+	} else if (direction() == BI_DIRECTION){
+		return "BI_DIR";
+    }
+
+	VTR_ASSERT(direction() == NO_DIRECTION);
+    return "NO_DIR";
 }
 
 e_side t_rr_node::side() const {
@@ -91,12 +90,7 @@ e_side t_rr_node::side() const {
 }
 
 const char* t_rr_node::side_string() const {
-    if      (side() == TOP)     return "TOP";
-    else if (side() == BOTTOM)  return "BOTTOM";
-    else if (side() == LEFT)    return "LEFT";
-    else if (side() == RIGHT)   return "RIGHT";
-    VPR_THROW(VPR_ERROR_ROUTE, "Unrecognized side");
-    return "invalid";
+    return SIDE_STRING[side()];
 }
 
 

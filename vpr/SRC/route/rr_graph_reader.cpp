@@ -297,14 +297,15 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         }
 
         const char* correct_direction = get_attribute(rr_node, "direction", loc_data).as_string(0);
-        if (strcmp(correct_direction, "INC") == 0) {
+        if (strcmp(correct_direction, "INC_DIR") == 0) {
             node.set_direction(INC_DIRECTION);
-        } else if (strcmp(correct_direction, "DEC") == 0) {
+        } else if (strcmp(correct_direction, "DEC_DIR") == 0) {
             node.set_direction(DEC_DIRECTION);
-        } else if (strcmp(correct_direction, "BI") == 0) {
+        } else if (strcmp(correct_direction, "BI_DIR") == 0) {
             node.set_direction(BI_DIRECTION);
         } else {
-            node.set_direction(NONE);
+            VTR_ASSERT((strcmp(correct_direction, "NO_DIR") == 0));
+            node.set_direction(NO_DIRECTION);
         }
 
         node.set_capacity(get_attribute(rr_node, "capacity", loc_data).as_float());
