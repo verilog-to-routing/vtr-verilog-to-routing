@@ -1843,7 +1843,7 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         //also record the total number of pins per side
         for (int width = 0; width < Type->width; ++width) {
             for (int height = 0; height < Type->height; ++height) {
-                for (int side = 0; side < 4; ++side) {
+                for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
                     if (Type->pinloc[width][height][side][pin] == 1) {
                         dir_list[width][height][side][num_dir[width][height][side]] = pin;
                         num_dir[width][height][side]++;
@@ -1857,8 +1857,9 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     int num_phys_pins = 0;
     for (int width = 0; width < Type->width; ++width) {
         for (int height = 0; height < Type->height; ++height) {
-            for (int side = 0; side < 4; ++side)
+            for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
                 num_phys_pins += num_dir[width][height][side]; /* Num. physical pins per type */
+            }
         }
     }
     std::vector<int> pin_num_ordering(num_phys_pins);
