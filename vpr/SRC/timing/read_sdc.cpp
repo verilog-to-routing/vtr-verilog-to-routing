@@ -553,7 +553,7 @@ static bool apply_set_multicycle_path(const sdcparse::SetMulticyclePath& sdc_set
     int num_from = 0, num_to = 0;
     char **from_list = NULL, **to_list = NULL;
 
-    VTR_ASSERT(sdc_set_multicycle_path.type == sdcparse::SetupHoldType::SETUP); //Currently only form supported
+    VTR_ASSERT(sdc_set_multicycle_path.is_setup && !sdc_set_multicycle_path.is_hold); //Currently only form supported
 
     build_from_to_lists(&from_list, &num_from, &domain_level_from,
                         &to_list, &num_to, &domain_level_to,

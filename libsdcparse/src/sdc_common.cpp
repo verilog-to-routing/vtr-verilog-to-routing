@@ -299,11 +299,18 @@ void add_sdc_set_min_max_delay(Callback& callback, const Lexer& lexer, SetMinMax
 /*
  * Functions for set_multicycle_path
  */
-void sdc_set_multicycle_path_set_type(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path, SetupHoldType type) {
-    if(sdc_set_multicycle_path.type != SetupHoldType::NONE) {
-        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Must specify the type (e.g. '-setup' or '-hold') only once.\n"); 
+void sdc_set_multicycle_path_set_setup(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path) {
+    if(sdc_set_multicycle_path.is_setup) {
+        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "'-setup' should only be specified once.\n"); 
     }
-    sdc_set_multicycle_path.type = type;
+    sdc_set_multicycle_path.is_setup = true;
+}
+
+void sdc_set_multicycle_path_set_hold(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path) {
+    if(sdc_set_multicycle_path.is_hold) {
+        sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "'-hold' should only be specified once.\n"); 
+    }
+    sdc_set_multicycle_path.is_hold = true;
 }
 
 void sdc_set_multicycle_path_set_mcp_value(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path, int mcp_value) {

@@ -273,8 +273,8 @@ cmd_set_min_delay: CMD_SET_MIN_DELAY                        { $$ = SetMinMaxDela
 
 cmd_set_multicycle_path: CMD_SET_MULTICYCLE_PATH                  { $$ = SetMulticyclePath(); }
     | cmd_set_multicycle_path int_number                          { $$ = $1; sdc_set_multicycle_path_set_mcp_value(callback, lexer, $$, $2); }
-    | cmd_set_multicycle_path ARG_SETUP                           { $$ = $1; sdc_set_multicycle_path_set_type(callback, lexer, $$, SetupHoldType::SETUP); }
-    | cmd_set_multicycle_path ARG_HOLD                            { $$ = $1; sdc_set_multicycle_path_set_type(callback, lexer, $$, SetupHoldType::HOLD); }
+    | cmd_set_multicycle_path ARG_SETUP                           { $$ = $1; sdc_set_multicycle_path_set_setup(callback, lexer, $$); }
+    | cmd_set_multicycle_path ARG_HOLD                            { $$ = $1; sdc_set_multicycle_path_set_hold(callback, lexer, $$); }
     | cmd_set_multicycle_path ARG_FROM LSPAR cmd_get_clocks RSPAR { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, $4, FromToType::FROM); }
     | cmd_set_multicycle_path ARG_TO   LSPAR cmd_get_clocks RSPAR { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, $4, FromToType::TO); }
     | cmd_set_multicycle_path ARG_FROM LCPAR stringGroup RCPAR    { $$ = $1; sdc_set_multicycle_path_add_to_from_group(callback, lexer, $$, $4, FromToType::FROM); }
