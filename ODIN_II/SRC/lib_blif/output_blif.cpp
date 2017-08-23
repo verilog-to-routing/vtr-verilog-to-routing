@@ -695,7 +695,7 @@ void define_ff(nnode_t *node, FILE *out)
 		{
 			haveOutputLatchBlackbox = TRUE;
 
-			fprintf(out, ".subckt bb_latch i0=%s^^%i-%i o0=%s^^%i-%i re %s^^%i-%i %d",
+			fprintf(out, ".subckt bb_latch i[0]=%s^^%i-%i o[0]=%s^^%i-%i bbl_type_re bbl_control_%s^^%i-%i bbl_init_val_%d",
 							node->input_pins[0]->net->driver_pin->node->name,
 							node->input_pins[0]->net->driver_pin->node->related_ast_node->far_tag,
 							node->input_pins[0]->net->driver_pin->node->related_ast_node->high_number,
@@ -728,7 +728,7 @@ void define_ff(nnode_t *node, FILE *out)
 			{
 				haveOutputLatchBlackbox = TRUE;
 
-				fprintf(out, ".subckt bb_latch i0=%s o0=%s re ", node->input_pins[0]->net->driver_pin->node->name, node->name);
+				fprintf(out, ".subckt bb_latch i[0]=%s o[0]=%s bbl_type_re ", node->input_pins[0]->net->driver_pin->node->name, node->name);
 			}
 			else
 			{
@@ -741,7 +741,7 @@ void define_ff(nnode_t *node, FILE *out)
 			{
 				haveOutputLatchBlackbox = TRUE;
 
-				fprintf(out, ".subckt bb_latch i0=%s o0=%s re ", node->input_pins[0]->net->driver_pin->name, node->name);
+				fprintf(out, ".subckt bb_latch i[0]=%s o[0]=%s bbl_type_re ", node->input_pins[0]->net->driver_pin->name, node->name);
 			}
 			else
 			{
@@ -750,9 +750,31 @@ void define_ff(nnode_t *node, FILE *out)
 		}
 
 		if (node->input_pins[1]->net->driver_pin->name == NULL)
-			fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->node->name, initial_value);
+		{
+			if(global_args.black_box_latches)
+			{
+				haveOutputLatchBlackbox = TRUE;
+
+				fprintf(out, "bbl_control_%s bbl_init_val_%d\n", node->input_pins[1]->net->driver_pin->node->name, initial_value);
+			}
+			else
+			{
+				fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->node->name, initial_value);
+			}
+		}
 		else
-			fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->name, initial_value);
+		{
+			if(global_args.black_box_latches)
+			{
+				haveOutputLatchBlackbox = TRUE;
+
+				fprintf(out, "bbl_control_%s bbl_init_val_%d\n", node->input_pins[1]->net->driver_pin->name, initial_value);
+			}
+			else
+			{
+				fprintf(out, "%s %d\n", node->input_pins[1]->net->driver_pin->name, initial_value);
+			}
+		}
 	}
 	fprintf(out, "\n");
 }
@@ -866,12 +888,12 @@ void add_the_blackbox_for_latches(FILE *out)
 
 	/* add the inputs */
 	fprintf(out, ".inputs");
-	fprintf(out, " i0");
+	fprintf(out, " i[0]");
 	fprintf(out, "\n");
 
 	/* add the outputs */
 	fprintf(out, ".outputs");
-	fprintf(out, " o0");
+	fprintf(out, " o[0]");
 	fprintf(out, "\n");
 
 	fprintf(out, ".blackbox\n");
