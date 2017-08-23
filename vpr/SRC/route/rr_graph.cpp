@@ -1782,6 +1782,8 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
        the looping below will have to be modified if we want to account for pin-based
        Fc values */
 
+    //NOTE: At this point Fc is always an absolute value (number of tracks to connect)
+
 
     /* NB:  This wastes some space.  Could set tracks_..._pin[ipin][ioff][iside] = 
      * NULL if there is no pin on that side, or that pin is of the wrong type. 
@@ -1795,36 +1797,38 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
 
 
     auto tracks_connected_to_pin = vtr::NdMatrix<int, 5>({
-        size_t(Type->num_pins), //[0..num_pins-1]
-        size_t(Type->width), //[0..width-1]
-        size_t(Type->height), //[0..height-1]
-        4, //[0..sides-1]
-        size_t(Fc)
-    }, //[0..Fc-1]
-    OPEN); //Unconnected
+            size_t(Type->num_pins), //[0..num_pins-1]
+            size_t(Type->width), //[0..width-1]
+            size_t(Type->height), //[0..height-1]
+            4, //[0..sides-1]
+            size_t(Fc) //[0..Fc-1]
+        },
+        OPEN); //Unconnected
+
     //Number of *physical* pins on each side.
     auto num_dir = vtr::NdMatrix<int, 3>({
-        size_t(Type->width), //[0..width-1]
-        size_t(Type->height), //[0..height-1]
-        4 //[0..3]
-    },
-    0);
+            size_t(Type->width), //[0..width-1]
+            size_t(Type->height), //[0..height-1]
+            4 //[0..3]
+        },
+        0);
 
     //List of pins of correct type on each side. Max possible space alloced for simplicity
     auto dir_list = vtr::NdMatrix<int, 4>({
-        size_t(Type->width), //[0..width-1]
-        size_t(Type->height), //[0..height-1]
-        4, //[0..3]
-        size_t(Type->num_pins) //[0..num_pins-1]
-    },
-    -1); //Defensive coding: Initialize to invalid
+            size_t(Type->width), //[0..width-1]
+            size_t(Type->height), //[0..height-1]
+            4, //[0..3]
+            size_t(Type->num_pins) //[0..num_pins-1]
+        },
+        OPEN); //Defensive coding: Initialize to invalid
 
+    //Number of pins assigned allocated so far
     auto num_done_per_dir = vtr::NdMatrix<int, 3>({
-        size_t(Type->width), //[0..width-1]
-        size_t(Type->height), //[0..height-1]
-        4 //[0..3]
-    },
-    0);
+            size_t(Type->width), //[0..width-1]
+            size_t(Type->height), //[0..height-1]
+            4 //[0..3]
+        },
+        0);
 
     for (int pin = 0; pin < Type->num_pins; ++pin) {
         int pin_class = Type->pin_class[pin];
@@ -1832,10 +1836,11 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
             continue;
 
         /* Pins connecting only to global resources get no switches -> keeps area model accurate. */
-
         if (Type->is_global_pin[pin])
             continue;
 
+        //Record all locations where this pin exists in dir_list,
+        //also record the total number of pins per side
         for (int width = 0; width < Type->width; ++width) {
             for (int height = 0; height < Type->height; ++height) {
                 for (int side = 0; side < 4; ++side) {
@@ -1848,6 +1853,7 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         }
     }
 
+    //Record the total number of pins on this type, including duplicates (e.g. logical pins connected to multiple sides)
     int num_phys_pins = 0;
     for (int width = 0; width < Type->width; ++width) {
         for (int height = 0; height < Type->height; ++height) {
@@ -1941,10 +1947,10 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         /* Number of physical pins bounds number of logical pins */
 
         if (num_done_per_dir[width][height][side] >= num_dir[width][height][side]) {
-
+            //Side full
             continue;
-
         }
+
         pin_num_ordering[pin] = dir_list[width][height][side][pin_index]; //pin index says how many u have on that particular side, height,width
         side_ordering[pin] = side;
         width_ordering[pin] = width;
@@ -1968,12 +1974,6 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     check_all_tracks_reach_pins(Type, tracks_connected_to_pin, seg_type_tracks,
             Fc, pin_type);
 #endif
-
-    /* Free all temporary storage. */
-    free(pin_num_ordering);
-    free(side_ordering);
-    free(width_ordering);
-    free(height_ordering);
 
     return tracks_connected_to_pin;
 }
