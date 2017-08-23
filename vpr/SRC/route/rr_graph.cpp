@@ -132,15 +132,19 @@ static void alloc_and_load_rr_graph(
 
 static void load_uniform_connection_block_pattern(
         vtr::NdMatrix<int, 5>& tracks_connected_to_pin, const int num_phys_pins,
-        const int *pin_num_ordering, const int *side_ordering,
-        const int *width_ordering, const int *height_ordering,
+        const std::vector<int>& pin_num_ordering,
+        const std::vector<e_side>& side_ordering,
+        const std::vector<int>& width_ordering,
+        const std::vector<int>& height_ordering,
         const int x_chan_width, const int y_chan_width, const int Fc,
         const enum e_directionality directionality);
 
 static void load_perturbed_connection_block_pattern(
         vtr::NdMatrix<int, 5>& tracks_connected_to_pin, const int num_phys_pins,
-        const int *pin_num_ordering, const int *side_ordering,
-        const int *width_ordering, const int *height_ordering,
+        const std::vector<int>& pin_num_ordering,
+        const std::vector<e_side>& side_ordering,
+        const std::vector<int>& width_ordering,
+        const std::vector<int>& height_ordering,
         const int x_chan_width, const int y_chan_width, const int Fc,
         const enum e_directionality directionality);
 
