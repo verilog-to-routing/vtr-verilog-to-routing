@@ -552,7 +552,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     .. seealso:: :ref:`Routing Resource XML File <vpr_route_resource_file>`.
     
-.. option:: --routing_budgets { slack | criticality }
+.. option:: --routing_budgets_algorithm { slack | criticality }
 
     Controls how the routing budgets are created.
     
@@ -560,6 +560,8 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     
     ``criticality`` has the minimum budgets set to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality).
     
+    ``disable`` is used to disable the budget feature. This uses the default VPR and ignores hold time constraints.
+        
     **Default:** ``slack``
 
 .. _timing_driven_router_options:

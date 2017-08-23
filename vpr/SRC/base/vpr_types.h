@@ -819,6 +819,9 @@ enum e_base_cost_type {
 enum e_routing_failure_predictor {
 	OFF, SAFE, AGGRESSIVE
 };
+enum e_routing_budgets_algorithm {
+    SLACK, CRITICALITY, DISABLE
+};
 
 constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
 
@@ -848,6 +851,7 @@ struct t_router_opts {
     bool switch_usage_analysis;
 	bool doRouting;
 	enum e_routing_failure_predictor routing_failure_predictor;
+	enum e_routing_budgets_algorithm routing_budgets_algorithm;
 	std::string write_rr_graph_name;
     std::string read_rr_graph_name;
 };

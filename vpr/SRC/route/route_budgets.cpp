@@ -211,8 +211,6 @@ void route_budgets::allocate_short_path_slack(std::shared_ptr<HoldTimingInfo> ti
 
     do {
         for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-            //AtomNetId atom_net = atom_ctx.lookup.atom_net(inet);
-            //AtomPinId driver_pin = atom_ctx.nlist.net_driver(atom_net);
             for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
 
                 //get delay value

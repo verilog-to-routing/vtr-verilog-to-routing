@@ -246,6 +246,16 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 			vtr::printf_info("RouterOpts.routing_failure_predictor = AGGRESSIVE\n");
 		else if (RouterOpts.routing_failure_predictor == OFF)
 			vtr::printf_info("RouterOpts.routing_failure_predictor = OFF\n");
+                
+                if(RouterOpts.routing_budgets_algorithm == DISABLE){
+			vtr::printf_info("RouterOpts.routing_budgets_algorithm = DISABLE\n");
+                }else if(RouterOpts.routing_budgets_algorithm == SLACK){
+			vtr::printf_info("RouterOpts.routing_budgets_algorithm = SLACK\n");
+                }else if(RouterOpts.routing_budgets_algorithm == CRITICALITY){
+			vtr::printf_info("RouterOpts.routing_budgets_algorithm = CRITICALITY\n");
+                }
+                
+                
 	} else {
 		VTR_ASSERT(GLOBAL == RouterOpts.route_type);
 

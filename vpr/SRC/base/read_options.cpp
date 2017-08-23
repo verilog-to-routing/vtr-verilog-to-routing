@@ -90,6 +90,28 @@ struct ParseRouterAlgorithm {
     }
 };
 
+struct RouteBudgetsAlgorithm {
+    e_routing_budgets_algorithm from_str(std::string str) {
+        if      (str == "slack")  return SLACK;
+        else if (str == "criticality") return CRITICALITY;
+        else if (str == "disable") return DISABLE;
+        std::stringstream msg;
+        msg << "Invalid conversion from '" << str << "' to e_routing_budget_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+        throw argparse::ArgParseConversionError(msg.str());
+    }
+
+    std::string to_str(e_routing_budgets_algorithm val) {
+        if (val == SLACK) return "slack";
+        if (val == DISABLE) return "disable";
+        VTR_ASSERT(val == CRITICALITY);
+        return "criticality";
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"slack", "criticality", "disable"};
+    }
+};
+
 struct ParseRouteType {
     e_route_type from_str(std::string str) {
         if      (str == "global")  return GLOBAL;
@@ -612,7 +634,15 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("safe")
             .choices({"safe", "aggressive", "off"})
             .show_in(argparse::ShowIn::HELP_ONLY);
-
+            
+    route_timing_grp.add_argument<e_routing_budgets_algorithm,RouteBudgetsAlgorithm>(args.routing_budgets_algorithm, "--routing_budgets_algorithm")
+            .help("Controls how the routing budgets are created.\n"
+                  " * slack: Sets the budgets depending on the amount slack between connections and the current delay values.\n"
+                  " * criticality: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality)\n"
+                  " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
+            .default_value("slack")
+            .choices({"slack", "criticality", "disable"})
+            .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& analysis_grp = parser.add_argument_group("analysis options");
 
