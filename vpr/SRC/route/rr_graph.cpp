@@ -2022,14 +2022,14 @@ static void load_uniform_connection_block_pattern(
     for (int i = 0; i < num_phys_pins; ++i) {
 
         int pin = pin_num_ordering[i];
-        int side = side_ordering[i];
+        e_side side = side_ordering[i];
         int width = width_ordering[i];
         int height = height_ordering[i];
 
         /* Bi-directional treats each track separately, uni-directional works with pairs of tracks */
         for (int j = 0; j < (Fc / group_size); ++j) {
 
-            int max_chan_width = (side == 0 || side == 2 ? x_chan_width : y_chan_width);
+            int max_chan_width = (((side == TOP) || (side == BOTTOM)) ? x_chan_width : y_chan_width);
             float step_size = (float) max_chan_width / (float) (Fc * num_phys_pins);
 
             VTR_ASSERT(Fc > 0);
@@ -2078,12 +2078,12 @@ static void load_perturbed_connection_block_pattern(
     for (int i = 0; i < num_phys_pins; i++) {
 
         int pin = pin_num_ordering[i];
-        int side = side_ordering[i];
+        e_side side = side_ordering[i];
         int width = width_ordering[i];
         int height = height_ordering[i];
 
 
-        int max_chan_width = (side == 0 || side == 2 ? x_chan_width : y_chan_width);
+        int max_chan_width = (((side == TOP) || (side == BOTTOM)) ? x_chan_width : y_chan_width);
         float step_size = (float) max_chan_width / (float) (Fc * num_phys_pins);
 
         float spacing_dense = (float) max_chan_width / (float) (2 * Fc_dense);
