@@ -1712,21 +1712,21 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_track_map(const e_pin_type pi
        used to index into the correct entries when loading up 'result' */
 
     auto result = vtr::NdMatrix<int, 5>({
-        size_t(Type->num_pins), //[0..num_pins-1]
-        size_t(Type->width), //[0..width-1]
-        size_t(Type->height), //[0..height-1]
-        4, //[0..sides-1]
-        max_pin_tracks //[0..Fc-1]
-    },
-    OPEN);
+            size_t(Type->num_pins), //[0..num_pins-1]
+            size_t(Type->width), //[0..width-1]
+            size_t(Type->height), //[0..height-1]
+            4, //[0..sides-1]
+            max_pin_tracks //[0..Fc-1]
+        },
+        OPEN);
 
     auto next_result_index = vtr::NdMatrix<int, 4>({
-        size_t(Type->num_pins), //[0..num_pins-1]
-        size_t(Type->width), //[0..width-1]
-        size_t(Type->height), //[0..height-1]
-        4 //[0..sides-1]
-    },
-    0);
+            size_t(Type->num_pins), //[0..num_pins-1]
+            size_t(Type->width), //[0..width-1]
+            size_t(Type->height), //[0..height-1]
+            4 //[0..sides-1]
+        },
+        0);
 
     /* multiplier for unidirectional vs bidirectional architectures */
     int fac = 1;
