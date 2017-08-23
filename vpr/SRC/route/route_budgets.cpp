@@ -71,7 +71,7 @@ route_budgets::~route_budgets() {
     free_net_delay(delay_target, &target_budget_delay_ch);
     free_net_delay(delay_lower_bound, &lower_bound_delay_ch);
     free_net_delay(delay_upper_bound, &upper_bound_delay_ch);
-
+    num_times_congested.clear();
 }
 
 void route_budgets::load_route_budgets(float ** net_delay,
