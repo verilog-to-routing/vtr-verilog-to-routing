@@ -1360,6 +1360,7 @@ static void build_rr_sinks_sources(const int i, const int j,
     /* Connect IPINS to SINKS and dummy for OPINS */
     //We loop through all the pin locations on the block to initialize the IPINs/OPINs,
     //and hook-up the IPINs to sinks.
+    std::set<int> seen_pin_rr_nodes;
     for (int width_offset = 0; width_offset < type->width; ++width_offset) {
         for (int height_offset = 0; height_offset < type->height; ++height_offset) {
             for (e_side side : {TOP, BOTTOM, LEFT, RIGHT}) {
@@ -1371,7 +1372,7 @@ static void build_rr_sinks_sources(const int i, const int j,
 
                         if (class_inf[iclass].type == RECEIVER) {
                             //Connect the input pin to the sink
-                            inode = get_rr_node_index(i, j, IPIN, ipin, L_rr_node_indices);
+                            inode = get_rr_node_index(i, j, IPIN, ipin, L_rr_node_indices); //TODO: does not handle multiple pins on different sides
                             int to_node = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
 
                             L_rr_node[inode].set_num_edges(1);
@@ -1386,12 +1387,17 @@ static void build_rr_sinks_sources(const int i, const int j,
                             VTR_ASSERT(class_inf[iclass].type == DRIVER);
                             //Initialize the output pin
                             // Note that we leave it's out-going edges unconnected (they will be hooked up to global routing later)
-                            inode = get_rr_node_index(i, j, OPIN, ipin, L_rr_node_indices);
+                            inode = get_rr_node_index(i, j, OPIN, ipin, L_rr_node_indices); //TODO: does not handle multiple pins on different sides
 
                             L_rr_node[inode].set_num_edges(0);
                             L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
                             L_rr_node[inode].set_type(OPIN);
                         }
+
+                        if (seen_pin_rr_nodes.count(inode)) {
+                            vtr::printf_warning(__FILE__, __LINE__, "Overwritting previous OPIN/IPIN\n");
+                        }
+                        seen_pin_rr_nodes.insert(inode);
 
                         /* Common to both DRIVERs and RECEIVERs */
                         L_rr_node[inode].set_capacity(1);
