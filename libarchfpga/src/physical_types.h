@@ -77,7 +77,9 @@ enum e_side : unsigned char {
 
 /* pin location distributions */
 enum e_pin_location_distr {
-	E_SPREAD_PIN_DISTR = 1, E_CUSTOM_PIN_DISTR = 2
+	E_SPREAD_PIN_DISTR,
+	E_SPREAD_PERIMETER_PIN_DISTR,
+    E_CUSTOM_PIN_DISTR
 };
 
 /* pb_type class */

@@ -1409,6 +1409,29 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 		}
 		VTR_ASSERT(side_index == num_sides);
 		VTR_ASSERT(count == type->num_pins);
+    } else if (type->pin_location_distribution == E_SPREAD_PERIMETER_PIN_DISTR) {
+        //Add one pin at-a-time to perimeter sides in round-robin order
+        int ipin = 0;
+        while (ipin < type->num_pins) {
+            for (int width = 0; width < type->width; ++width) {
+                for (int height = 0; height < type->height; ++height) {
+                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+
+                        if ((   (width == 0 && side == LEFT)
+                             || (height == type->height - 1 && side == TOP) 
+                             || (width == type->width - 1 && side == RIGHT) 
+                             || (height == 0 && side == BOTTOM))
+                            && ipin < type->num_pins) {
+                            //On a side, with pins still to allocate
+
+                            type->pinloc[width][height][side][ipin] = true;
+                            ++ipin;
+                        }
+                    }
+                }
+            }
+        }
+        VTR_ASSERT(ipin == type->num_pins);
 
 	} else {
 		VTR_ASSERT(type->pin_location_distribution == E_CUSTOM_PIN_DISTR);
