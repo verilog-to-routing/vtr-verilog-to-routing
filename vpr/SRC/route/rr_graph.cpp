@@ -509,7 +509,7 @@ static void build_rr_graph(
     }
     /* END SB LOOKUP */
 
-    /* START IPconst MAP */
+    /* START IPIN MAP */
     /* Create ipin map lookups */
 
     t_pin_to_track_lookup ipin_to_track_map(L_num_types); /* [0..device_ctx.num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
@@ -526,9 +526,9 @@ static void build_rr_graph(
                 ipin_to_track_map[itype], Fc_in[itype], types[itype].width, types[itype].height,
                 types[itype].num_pins, max_chan_width, num_seg_types);
     }
-    /* END IPconst MAP */
+    /* END IPIN MAP */
 
-    /* START OPconst MAP */
+    /* START OPIN MAP */
     /* Create opin map lookups */
     t_pin_to_track_lookup opin_to_track_map(L_num_types); /* [0..device_ctx.num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
 
@@ -541,7 +541,7 @@ static void build_rr_graph(
                     num_seg_types, sets_per_seg_type);
         }
     }
-    /* END OPconst MAP */
+    /* END OPIN MAP */
 
     bool Fc_clipped = false;
     alloc_and_load_rr_graph(device_ctx.num_rr_nodes, device_ctx.rr_nodes, num_seg_types,
@@ -1123,7 +1123,7 @@ static void build_bidir_rr_opins(const int i, const int j,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types) {
 
-    /* OPconst edges need to be done at once so let the offset 0
+    /* OPIN edges need to be done at once so let the offset 0
      * block do the work. */
     if (L_grid[i][j].width_offset > 0 || L_grid[i][j].height_offset > 0) {
         return;
@@ -1412,7 +1412,7 @@ void init_fan_in(const DeviceGrid& grid,
         t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
         const int num_rr_nodes) {
     /* Loads IPIN, SINK, SOURCE, and OPIN. 
-     * Loads IPconst to SINK edges, and SOURCE to OPconst edges */
+     * Loads IPIN to SINK edges, and SOURCE to OPIN edges */
     for (int i = 0; i < num_rr_nodes; i++) {
         L_rr_node[i].set_fan_in(0);
     }
