@@ -539,7 +539,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
                 if (!port_pins_with_specified_locations[port->name].count(ipin)) {
                     //Missing
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                   "Pin '%s.%s[%d]' has no pin location specificed with pin location pattern=\"custom\"",
+                                   "Pin '%s.%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
                                    Type->name, port->name, ipin);
                 }
             }
