@@ -1737,7 +1737,7 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_track_map(const e_pin_type pi
     /* load the pin to track matrix by looking at each segment type in turn */
     int seg_type_start_track = 0;
     for (int iseg = 0; iseg < num_seg_types; iseg++) {
-        int seg_type_tracks = fac * sets_per_seg_type[iseg];
+        int num_seg_type_tracks = fac * sets_per_seg_type[iseg];
 
         /* determine the maximum Fc to this segment type across all pins */
         int max_Fc = 0;
@@ -1750,9 +1750,9 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_track_map(const e_pin_type pi
 
         /* get pin connections to tracks of the current segment type */
         auto pin_to_seg_type_map = alloc_and_load_pin_to_seg_type(pin_type,
-                seg_type_tracks, max_Fc, Type, perturb_switch_pattern[iseg], directionality);
+                num_seg_type_tracks, max_Fc, Type, perturb_switch_pattern[iseg], directionality);
 
-        /* connections in pin_to_seg_type_map are within that seg type -- i.e. in the [0,seg_type_tracks-1] range.
+        /* connections in pin_to_seg_type_map are within that seg type -- i.e. in the [0,num_seg_type_tracks-1] range.
            now load up 'result' array with these connections, but offset them so they are relative to the channel
            as a whole */
         for (int ipin = 0; ipin < Type->num_pins; ipin++) {
@@ -1774,31 +1774,25 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_track_map(const e_pin_type pi
         }
 
         /* next seg type will start at this track index */
-        seg_type_start_track += seg_type_tracks;
+        seg_type_start_track += num_seg_type_tracks;
     }
 
     return result;
 }
 
 static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
-        const int seg_type_tracks, const int Fc,
+        const int num_seg_type_tracks, const int Fc,
         const t_type_ptr Type, const bool perturb_switch_pattern,
         const e_directionality directionality) {
+    //NOTE: At this point Fc is always an absolute value (the number of tracks to connect)
 
-    /* Note: currently a single value of Fc is used across each pin. In the future
-       the looping below will have to be modified if we want to account for pin-based
-       Fc values */
-
-    //NOTE: At this point Fc is always an absolute value (number of tracks to connect)
-
-
-    /* NB:  This wastes some space.  Could set tracks_..._pin[ipin][ioff][iside] = 
-     * NULL if there is no pin on that side, or that pin is of the wrong type. 
-     * Probably not enough memory to worry about, esp. as it's temporary.      
-     * If pin ipin on side iside does not exist or is of the wrong type,       
-     * tracks_connected_to_pin[ipin][iside][0] = OPEN.                               */
+    /* 
+     * NB: If pin ipin on side iside does not exist or is of the wrong type,
+     * tracks_connected_to_pin[ipin][iside][0] = OPEN.
+     */
 
     if (Type->num_pins < 1) {
+        //(e.g. EMPTY_TYPE)
         return vtr::NdMatrix<int, 5>();
     }
 
@@ -1971,15 +1965,15 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     if (perturb_switch_pattern) {
         load_perturbed_connection_block_pattern(tracks_connected_to_pin,
                 num_phys_pins, pin_num_ordering, side_ordering, width_ordering, height_ordering,
-                seg_type_tracks, seg_type_tracks, Fc, directionality);
+                num_seg_type_tracks, num_seg_type_tracks, Fc, directionality);
     } else {
         load_uniform_connection_block_pattern(tracks_connected_to_pin,
                 num_phys_pins, pin_num_ordering, side_ordering, width_ordering, height_ordering,
-                seg_type_tracks, seg_type_tracks, Fc, directionality);
+                num_seg_type_tracks, num_seg_type_tracks, Fc, directionality);
     }
 
 #ifdef ENABLE_CHECK_ALL_TRACKS
-    check_all_tracks_reach_pins(Type, tracks_connected_to_pin, seg_type_tracks,
+    check_all_tracks_reach_pins(Type, tracks_connected_to_pin, num_seg_type_tracks,
             Fc, pin_type);
 #endif
 
