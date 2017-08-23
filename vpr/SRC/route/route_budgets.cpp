@@ -56,25 +56,21 @@ route_budgets::route_budgets() {
 
     num_times_congested.resize(cluster_ctx.clbs_nlist.net.size(), 0);
 
+    min_budget_delay_ch = {NULL, 0, NULL};
+    max_budget_delay_ch = {NULL, 0, NULL};
+    target_budget_delay_ch = {NULL, 0, NULL};
+    lower_bound_delay_ch = {NULL, 0, NULL};
+    upper_bound_delay_ch = {NULL, 0, NULL};
+
     set = false;
 }
 
 route_budgets::~route_budgets() {
-    //
-    //    auto& cluster_ctx = g_vpr_ctx.clustering();
-    //
-    //    for (unsigned i = 0; i < cluster_ctx.clbs_nlist.net.size(); i++) {
-    //        free(delay_min_budget[i]);
-    //        free(delay_max_budget[i]);
-    //        free(delay_target[i]);
-    //        free(delay_lower_bound[i]);
-    //        free(delay_upper_bound[i]);
-    //    }
-    //    free(delay_min_budget);
-    //    free(delay_max_budget);
-    //    free(delay_target);
-    //    free(delay_lower_bound);
-    //    free(delay_upper_bound);
+    free_net_delay(delay_min_budget, &min_budget_delay_ch);
+    free_net_delay(delay_max_budget, &max_budget_delay_ch);
+    free_net_delay(delay_target, &target_budget_delay_ch);
+    free_net_delay(delay_lower_bound, &lower_bound_delay_ch);
+    free_net_delay(delay_upper_bound, &upper_bound_delay_ch);
 
 }
 
@@ -83,12 +79,11 @@ void route_budgets::load_route_budgets(float ** net_delay,
         const IntraLbPbPinLookup& pb_gpin_lookup, t_router_opts router_opts) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    vtr::t_chunk net_delay_ch = {NULL, 0, NULL};
-    delay_min_budget = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
-    delay_target = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
-    delay_max_budget = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
-    delay_lower_bound = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
-    delay_upper_bound = alloc_net_delay(&net_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_min_budget = alloc_net_delay(&min_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_target = alloc_net_delay(&target_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_max_budget = alloc_net_delay(&max_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_lower_bound = alloc_net_delay(&lower_bound_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_upper_bound = alloc_net_delay(&upper_bound_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
             delay_lower_bound[inet][ipin] = 0;
