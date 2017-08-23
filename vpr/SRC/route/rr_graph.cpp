@@ -130,14 +130,14 @@ static void alloc_and_load_rr_graph(
         const int wire_to_ipin_switch, bool * Fc_clipped,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs);
 
-static void load_uniform_switch_pattern(
+static void load_uniform_connection_block_pattern(
         vtr::NdMatrix<int, 5>& tracks_connected_to_pin, const int num_phys_pins,
         const int *pin_num_ordering, const int *side_ordering,
         const int *width_ordering, const int *height_ordering,
         const int x_chan_width, const int y_chan_width, const int Fc,
         const enum e_directionality directionality);
 
-static void load_perturbed_switch_pattern(
+static void load_perturbed_connection_block_pattern(
         vtr::NdMatrix<int, 5>& tracks_connected_to_pin, const int num_phys_pins,
         const int *pin_num_ordering, const int *side_ordering,
         const int *width_ordering, const int *height_ordering,
@@ -1955,11 +1955,11 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     }
 
     if (perturb_switch_pattern) {
-        load_perturbed_switch_pattern(tracks_connected_to_pin,
+        load_perturbed_connection_block_pattern(tracks_connected_to_pin,
                 num_phys_pins, pin_num_ordering, side_ordering, width_ordering, height_ordering,
                 seg_type_tracks, seg_type_tracks, Fc, directionality);
     } else {
-        load_uniform_switch_pattern(tracks_connected_to_pin,
+        load_uniform_connection_block_pattern(tracks_connected_to_pin,
                 num_phys_pins, pin_num_ordering, side_ordering, width_ordering, height_ordering,
                 seg_type_tracks, seg_type_tracks, Fc, directionality);
     }
@@ -1978,7 +1978,7 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     return tracks_connected_to_pin;
 }
 
-static void load_uniform_switch_pattern(
+static void load_uniform_connection_block_pattern(
         vtr::NdMatrix<int, 5>& tracks_connected_to_pin, const int num_phys_pins,
         const int *pin_num_ordering, const int *side_ordering,
         const int *width_ordering, const int *height_ordering,
@@ -2045,7 +2045,7 @@ static void load_uniform_switch_pattern(
     }
 }
 
-static void load_perturbed_switch_pattern(
+static void load_perturbed_connection_block_pattern(
         vtr::NdMatrix<int, 5>& tracks_connected_to_pin, const int num_phys_pins,
         const int *pin_num_ordering, const int *side_ordering,
         const int *width_ordering, const int *height_ordering,
