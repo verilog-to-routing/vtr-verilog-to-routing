@@ -1855,10 +1855,10 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
                 num_phys_pins += num_dir[width][height][side]; /* Num. physical pins per type */
         }
     }
-    int *pin_num_ordering = (int *) vtr::malloc(num_phys_pins * sizeof (int));
-    int *side_ordering = (int *) vtr::malloc(num_phys_pins * sizeof (int));
-    int *width_ordering = (int *) vtr::malloc(num_phys_pins * sizeof (int));
-    int *height_ordering = (int *) vtr::malloc(num_phys_pins * sizeof (int));
+    std::vector<int> pin_num_ordering(num_phys_pins);
+    std::vector<e_side> side_ordering(num_phys_pins);
+    std::vector<int> width_ordering(num_phys_pins);
+    std::vector<int> height_ordering(num_phys_pins);
 
     /* Connection block I use distributes pins evenly across the tracks      *
      * of ALL sides of the clb at once.  Ensures that each pin connects      *
@@ -1868,7 +1868,7 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
      * good low Fc block that leverages the fact that usually lots of pins   *
      * are logically equivalent.                                             */
 
-    int side = LEFT; //left is 3!!! top is 0
+    e_side side = LEFT; //left is 3!!! top is 0
     int width = 0;
     int height = Type->height - 1;
     int pin = 0;
@@ -1980,8 +1980,10 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
 
 static void load_uniform_connection_block_pattern(
         vtr::NdMatrix<int, 5>& tracks_connected_to_pin, const int num_phys_pins,
-        const int *pin_num_ordering, const int *side_ordering,
-        const int *width_ordering, const int *height_ordering,
+        const std::vector<int>& pin_num_ordering,
+        const std::vector<e_side>& side_ordering,
+        const std::vector<int>& width_ordering,
+        const std::vector<int>& height_ordering,
         const int x_chan_width, const int y_chan_width, const int Fc,
         enum e_directionality directionality) {
 
@@ -2047,8 +2049,10 @@ static void load_uniform_connection_block_pattern(
 
 static void load_perturbed_connection_block_pattern(
         vtr::NdMatrix<int, 5>& tracks_connected_to_pin, const int num_phys_pins,
-        const int *pin_num_ordering, const int *side_ordering,
-        const int *width_ordering, const int *height_ordering,
+        const std::vector<int>& pin_num_ordering,
+        const std::vector<e_side>& side_ordering,
+        const std::vector<int>& width_ordering,
+        const std::vector<int>& height_ordering,
         const int x_chan_width, const int y_chan_width, const int Fc,
         enum e_directionality directionality) {
 
