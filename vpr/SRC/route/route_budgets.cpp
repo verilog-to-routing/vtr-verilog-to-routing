@@ -59,12 +59,20 @@ route_budgets::route_budgets() {
 }
 
 route_budgets::~route_budgets() {
-    free_net_delay(delay_min_budget, &min_budget_delay_ch);
-    free_net_delay(delay_max_budget, &max_budget_delay_ch);
-    free_net_delay(delay_target, &target_budget_delay_ch);
-    free_net_delay(delay_lower_bound, &lower_bound_delay_ch);
-    free_net_delay(delay_upper_bound, &upper_bound_delay_ch);
-    num_times_congested.clear();
+    if (set) {
+        free_net_delay(delay_min_budget, &min_budget_delay_ch);
+        free_net_delay(delay_max_budget, &max_budget_delay_ch);
+        free_net_delay(delay_target, &target_budget_delay_ch);
+        free_net_delay(delay_lower_bound, &lower_bound_delay_ch);
+        free_net_delay(delay_upper_bound, &upper_bound_delay_ch);
+        num_times_congested.clear();
+    } else {
+        vtr::free_chunk_memory(&min_budget_delay_ch);
+        vtr::free_chunk_memory(&max_budget_delay_ch);
+        vtr::free_chunk_memory(&target_budget_delay_ch);
+        vtr::free_chunk_memory(&lower_bound_delay_ch);
+        vtr::free_chunk_memory(&upper_bound_delay_ch);
+    }
 }
 
 void route_budgets::load_route_budgets(float ** net_delay,
@@ -112,24 +120,24 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
     //problematic cause pointers
     //delay_max_budget = delay_lower_bound;
 
-//    while (iteration < 7 && max_budget_change > 5e-12) {
-//        //cout << "finished 1" << endl;
-//        short_path_timing_info = perform_short_path_sta(delay_max_budget);
-//        allocate_negative_short_path_slack(short_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
-//        keep_budget_in_bounds(MIN, delay_max_budget);
-//
-//        long_path_timing_info = perform_long_path_sta(delay_max_budget);
-//        allocate_negative_long_path_slack(long_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
-//        keep_budget_in_bounds(MAX, delay_max_budget);
-//
-//        iteration++;
-//    }
+    //    while (iteration < 7 && max_budget_change > 5e-12) {
+    //        //cout << "finished 1" << endl;
+    //        short_path_timing_info = perform_short_path_sta(delay_max_budget);
+    //        allocate_negative_short_path_slack(short_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
+    //        keep_budget_in_bounds(MIN, delay_max_budget);
+    //
+    //        long_path_timing_info = perform_long_path_sta(delay_max_budget);
+    //        allocate_negative_long_path_slack(long_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
+    //        keep_budget_in_bounds(MAX, delay_max_budget);
+    //
+    //        iteration++;
+    //    }
 
     iteration = 0;
     max_budget_change = 900e-12;
 
     while (iteration < 3 && max_budget_change > 800e-12) {
-        cout << "1" << endl;
+        //cout << "1" << endl;
         long_path_timing_info = perform_long_path_sta(delay_max_budget);
         allocate_long_path_slack(long_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
         keep_budget_in_bounds(MIN, delay_max_budget);
@@ -152,7 +160,7 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
     max_budget_change = 900e-12;
 
     while (iteration < 3 && max_budget_change > 800e-12) {
-        cout << "2" << endl;
+        //cout << "2" << endl;
         short_path_timing_info = perform_short_path_sta(delay_min_budget);
         allocate_short_path_slack(short_path_timing_info, delay_min_budget, net_delay, pb_gpin_lookup);
         keep_budget_in_bounds(MAX, delay_min_budget);
@@ -199,6 +207,7 @@ void route_budgets::allocate_short_path_slack(std::shared_ptr<HoldTimingInfo> ti
     float new_path_slack = 0;
     float path_slack = 0;
     float total_path_delay = 0;
+    float final_required_time, future_path_delay, past_path_delay;
 
     do {
         for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
@@ -218,20 +227,28 @@ void route_budgets::allocate_short_path_slack(std::shared_ptr<HoldTimingInfo> ti
                     auto min_arrival_tag_iter = find_minimum_tag(arrival_tags);
                     auto min_required_tag_iter = find_minimum_tag(required_tags);
 
-                    if (min_arrival_tag_iter->time().value() == std::numeric_limits<float>::infinity() ||
-                            min_arrival_tag_iter->time().value() == -1 * std::numeric_limits<float>::infinity() ||
-                            min_required_tag_iter->time().value() == std::numeric_limits<float>::infinity() ||
-                            min_required_tag_iter->time().value() == -1 * std::numeric_limits<float>::infinity()) {
-                        //invalid
-                        continue;
-                    } else if (min_required_tag_iter != required_tags.end() && min_arrival_tag_iter != arrival_tags.end()) {
+                    tatum::NodeId sink_node = min_required_tag_iter->origin_node();
+                    auto sink_node_tags = timing_analyzer->hold_tags(sink_node, tatum::TagType::DATA_REQUIRED);
+                    auto min_sink_node_tag_iter = find_minimum_tag(sink_node_tags);
 
-                        //cout << min_arrival_tag_iter->time().value() << " " << -1 * min_required_tag_iter->time().value() << endl;
-                        total_path_delay = max(min_arrival_tag_iter->time().value() + (-1 * min_required_tag_iter->time().value()), total_path_delay);
+                    if (sink_node_tags.empty() || arrival_tags.empty() || required_tags.empty()) {
+                        continue;
+                    } else if (min_required_tag_iter != required_tags.end() && min_arrival_tag_iter != arrival_tags.end()
+                            && min_required_tag_iter != sink_node_tags.end()) {
+
+                        final_required_time = min_sink_node_tag_iter->time().value();
+
+                        future_path_delay = final_required_time - min_required_tag_iter->time().value();
+                        past_path_delay = min_arrival_tag_iter->time().value();
+
+                        //cout << past_path_delay << " " << future_path_delay << endl;
+                        total_path_delay = max(past_path_delay + future_path_delay, total_path_delay);
+
                     } else {
                         //No tags (e.g. driven by constant generator)
                         continue;
                     }
+
                 }
 
                 if (total_path_delay == 0) {
@@ -274,6 +291,7 @@ void route_budgets::allocate_long_path_slack(std::shared_ptr<SetupTimingInfo> ti
     float new_path_slack = 0;
     float path_slack = 0;
     float total_path_delay = 0;
+    float final_required_time, future_path_delay, past_path_delay;
 
     do {
         for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
@@ -293,15 +311,23 @@ void route_budgets::allocate_long_path_slack(std::shared_ptr<SetupTimingInfo> ti
                     auto min_arrival_tag_iter = find_minimum_tag(arrival_tags);
                     auto min_required_tag_iter = find_minimum_tag(required_tags);
 
-                    if (min_arrival_tag_iter->time().value() == std::numeric_limits<float>::infinity() ||
-                            min_arrival_tag_iter->time().value() == -1 * std::numeric_limits<float>::infinity() ||
-                            min_required_tag_iter->time().value() == std::numeric_limits<float>::infinity() ||
-                            min_required_tag_iter->time().value() == -1 * std::numeric_limits<float>::infinity()) {
-                        continue;
-                    } else if (min_required_tag_iter != required_tags.end() && min_arrival_tag_iter != arrival_tags.end()) {
+                    tatum::NodeId sink_node = min_required_tag_iter->origin_node();
+                    auto sink_node_tags = timing_analyzer->setup_tags(sink_node, tatum::TagType::DATA_REQUIRED);
+                    auto min_sink_node_tag_iter = find_minimum_tag(sink_node_tags);
 
-                        //cout << min_arrival_tag_iter->time().value() << " " << -1 * min_required_tag_iter->time().value() << endl;
-                        total_path_delay = max(min_arrival_tag_iter->time().value() + (-1 * min_required_tag_iter->time().value()), total_path_delay);
+                    if (sink_node_tags.empty() || arrival_tags.empty() || required_tags.empty()) {
+                        continue;
+                    } else if (min_required_tag_iter != required_tags.end() && min_arrival_tag_iter != arrival_tags.end()
+                            && min_required_tag_iter != sink_node_tags.end()) {
+
+                        final_required_time = min_sink_node_tag_iter->time().value();
+
+                        future_path_delay = final_required_time - min_required_tag_iter->time().value();
+                        past_path_delay = min_arrival_tag_iter->time().value();
+
+                        //cout << past_path_delay << " " << future_path_delay << endl;
+                        total_path_delay = max(past_path_delay + future_path_delay, total_path_delay);
+
                     } else {
                         //No tags (e.g. driven by constant generator)
                         continue;
