@@ -1345,9 +1345,6 @@ static void build_rr_sinks_sources(const int i, const int j,
 
         /* Things common to both SOURCEs and SINKs.   */
         L_rr_node[inode].set_capacity(class_inf[iclass].num_pins);
-        //assuming that type->width is always 1.
-        //if this needs to change, device_ctx.rr_nodes.{h,c} need to be modified accordingly
-        VTR_ASSERT(type->width == 1);
         L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
         L_rr_node[inode].set_R(0);
         L_rr_node[inode].set_C(0);
