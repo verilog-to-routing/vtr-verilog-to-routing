@@ -339,13 +339,13 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 	/* Alloc and clear pin locations */
 	Type->pin_width = (int *) vtr::calloc(Type->num_pins, sizeof(int));
 	Type->pin_height = (int *) vtr::calloc(Type->num_pins, sizeof(int));
-	Type->pinloc = (int ****) vtr::malloc(Type->width * sizeof(int ***));
+	Type->pinloc = (bool ****) vtr::malloc(Type->width * sizeof(int ***));
 	for (int width = 0; width < Type->width; ++width) {
-		Type->pinloc[width] = (int ***) vtr::malloc(Type->height * sizeof(int **));
+		Type->pinloc[width] = (bool ***) vtr::malloc(Type->height * sizeof(int **));
 		for (int height = 0; height < Type->height; ++height) {
-			Type->pinloc[width][height] = (int **) vtr::malloc(4 * sizeof(int *));
-			for (int side = 0; side < 4; ++side) {
-				Type->pinloc[width][height][side] = (int *) vtr::malloc(Type->num_pins * sizeof(int));
+			Type->pinloc[width][height] = (bool **) vtr::malloc(4 * sizeof(int *));
+            for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+				Type->pinloc[width][height][side] = (bool *) vtr::malloc(Type->num_pins * sizeof(int));
 				for (int pin = 0; pin < Type->num_pins; ++pin) {
 					Type->pinloc[width][height][side][pin] = 0;
 				}

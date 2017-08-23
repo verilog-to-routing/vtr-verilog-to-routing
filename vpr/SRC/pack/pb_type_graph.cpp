@@ -1391,13 +1391,13 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 
 	if (type->pin_location_distribution == E_SPREAD_PIN_DISTR) {
 		/* evenly distribute pins starting at bottom left corner */
-		for (int side = 0; side < 4; ++side) {
+        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
 			for (int width = 0; width < type->width; ++width) {
 				for (int height = 0; height < type->height; ++height) {
 					for (int pin_offset = 0; pin_offset < (type->num_pins / num_sides ) + 1; ++pin_offset) {
 						int pin_num = side_index + pin_offset * num_sides;
 						if (pin_num < type->num_pins) {
-							type->pinloc[width][height][side][pin_num] = 1;
+							type->pinloc[width][height][side][pin_num] = true;
 							type->pin_width[pin_num] = width;
 							type->pin_height[pin_num] = height;
 							count++;
@@ -1414,7 +1414,7 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 		VTR_ASSERT(type->pin_location_distribution == E_CUSTOM_PIN_DISTR);
 		for (int width = 0; width < type->width; ++width) {
 			for (int height = 0; height < type->height; ++height) {
-				for (int side = 0; side < 4; ++side) {
+                for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
 
 					for (int pin = 0; pin < type->num_pin_loc_assignments[width][height][side]; ++pin) {
 
@@ -1435,7 +1435,7 @@ static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor *type) 
 							int pin_num = pb_graph_node_pins[0][pin_index]->pin_count_in_cluster;
 							VTR_ASSERT(pin_num < type->num_pins / type->capacity);
 							for (int capacity = 0; capacity < type->capacity; ++capacity) {
-								type->pinloc[width][height][side][pin_num + capacity * type->num_pins / type->capacity] = 1;
+								type->pinloc[width][height][side][pin_num + capacity * type->num_pins / type->capacity] = true;
 								type->pin_width[pin_num] = width;
 								type->pin_height[pin_num] = height;
 								VTR_ASSERT(count < type->num_pins);

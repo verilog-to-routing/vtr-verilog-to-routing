@@ -414,7 +414,7 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	int width;
 	int height;
 
-	int ****pinloc; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
+	bool ****pinloc; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
 	int *pin_width; /* [0..num_pins-1] */
 	int *pin_height; /* [0..num_pins-1] */
 	int ***num_pin_loc_assignments; /* [0..width-1][0..height-1][0..3] */
