@@ -553,7 +553,7 @@ The ``block_types`` tag outlines the information of a placeable complex logic bl
         The index of the type of the descriptor in the array. This is used for index referencing
         
     :req_param name:
-        A unique identifier for this type of block. Note that an empty block type must be denoted "EMPTY" without the brackets ``<>`` to prevent breaking the xml format. Input and output blocks must be named "io". Other blocks can have any name.
+        A unique identifier for this type of block. Note that an empty block type must be denoted ``"EMPTY"`` without the brackets ``<>`` to prevent breaking the xml format. Input and output blocks must be named "io". Other blocks can have any name.
         
     :req_param width, height:
         The width and height of a large block in grid tiles.
@@ -600,7 +600,7 @@ The ``rr_nodes`` tag stores information about each node for the routing resource
         ``OPIN`` represents an output pin and ``IPIN`` representd an input pin
         
     :req_param direction:
-    	If the node represents a track, this field represents its direction as {INC | DEC | BI | NONE}. 
+    	If the node represents a track, this field represents its direction as { ``INC`` | ``DEC`` | ``BI`` | ``NONE`` }. 
         In other cases this value could be or defaulted to be ``NONE``.
        
     :req_param capacity:

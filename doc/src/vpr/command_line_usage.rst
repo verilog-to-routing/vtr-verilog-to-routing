@@ -551,6 +551,16 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     This file should be in XML format and can be easily obtained through :option:`--write_rr_graph`
 
     .. seealso:: :ref:`Routing Resource XML File <vpr_route_resource_file>`.
+    
+.. option:: --routing_budgets { slack | criticality }
+
+    Controls how the routing budgets are created.
+    
+    ``slack`` sets the minimum and maximum budgets depending on the amount slack between connections and the current delay values. This uses the routing cost valleys (RCV) and Minimax-PERT algorithm.
+    
+    ``criticality`` has the minimum budgets set to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality).
+    
+    **Default:** ``slack``
 
 .. _timing_driven_router_options:
 

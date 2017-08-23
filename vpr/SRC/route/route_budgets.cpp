@@ -41,13 +41,6 @@
 #include "net_delay.h"
 #include "route_budgets.h"
 
-//using tatum::TimingGraph;
-//using tatum::NodeId;
-//using tatum::NodeType;
-//using tatum::EdgeId;
-
-
-
 #define SHORT_PATH_EXP 0.5
 #define MIN_DELAY_DECREMENT 1e-9
 
@@ -119,24 +112,24 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
     //problematic cause pointers
     //delay_max_budget = delay_lower_bound;
 
-    while (iteration < 7 && max_budget_change > 5e-12) {
-        //cout << "finished 1" << endl;
-        short_path_timing_info = perform_short_path_sta(delay_max_budget);
-        allocate_negative_short_path_slack(short_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
-        keep_budget_in_bounds(MIN, delay_max_budget);
-
-        long_path_timing_info = perform_long_path_sta(delay_max_budget);
-        allocate_negative_long_path_slack(long_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
-        keep_budget_in_bounds(MAX, delay_max_budget);
-
-        iteration++;
-    }
+//    while (iteration < 7 && max_budget_change > 5e-12) {
+//        //cout << "finished 1" << endl;
+//        short_path_timing_info = perform_short_path_sta(delay_max_budget);
+//        allocate_negative_short_path_slack(short_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
+//        keep_budget_in_bounds(MIN, delay_max_budget);
+//
+//        long_path_timing_info = perform_long_path_sta(delay_max_budget);
+//        allocate_negative_long_path_slack(long_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
+//        keep_budget_in_bounds(MAX, delay_max_budget);
+//
+//        iteration++;
+//    }
 
     iteration = 0;
     max_budget_change = 900e-12;
 
     while (iteration < 3 && max_budget_change > 800e-12) {
-        //cout << "1" << endl;
+        cout << "1" << endl;
         long_path_timing_info = perform_long_path_sta(delay_max_budget);
         allocate_long_path_slack(long_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
         keep_budget_in_bounds(MIN, delay_max_budget);
@@ -159,7 +152,7 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
     max_budget_change = 900e-12;
 
     while (iteration < 3 && max_budget_change > 800e-12) {
-        //cout << "2" << endl;
+        cout << "2" << endl;
         short_path_timing_info = perform_short_path_sta(delay_min_budget);
         allocate_short_path_slack(short_path_timing_info, delay_min_budget, net_delay, pb_gpin_lookup);
         keep_budget_in_bounds(MAX, delay_min_budget);
