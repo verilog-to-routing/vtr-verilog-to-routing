@@ -214,11 +214,10 @@ bool try_timing_driven_route(t_router_opts router_opts,
     }
 
     CBRR connections_inf{};
-
-    route_budgets budgeting_inf;
-
     VTR_ASSERT_SAFE(connections_inf.sanity_check_lookup());
-
+    
+    route_budgets budgeting_inf;
+    
     /*
      * Routing parameters
      */

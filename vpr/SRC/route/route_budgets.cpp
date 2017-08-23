@@ -73,6 +73,7 @@ route_budgets::~route_budgets() {
         vtr::free_chunk_memory(&lower_bound_delay_ch);
         vtr::free_chunk_memory(&upper_bound_delay_ch);
     }
+    set = false;
 }
 
 void route_budgets::load_route_budgets(float ** net_delay,
@@ -237,16 +238,26 @@ void route_budgets::allocate_short_path_slack(std::shared_ptr<HoldTimingInfo> ti
                     auto arrival_tags = timing_analyzer->hold_tags(timing_node, tatum::TagType::DATA_ARRIVAL);
                     auto required_tags = timing_analyzer->hold_tags(timing_node, tatum::TagType::DATA_REQUIRED);
 
+                    if (arrival_tags.empty() || required_tags.empty()) {
+                        continue;
+                    }
+
                     auto min_arrival_tag_iter = find_minimum_tag(arrival_tags);
                     auto min_required_tag_iter = find_minimum_tag(required_tags);
 
                     tatum::NodeId sink_node = min_required_tag_iter->origin_node();
+                    if (sink_node == tatum::NodeId::INVALID()) {
+                        continue;
+                    }
                     auto sink_node_tags = timing_analyzer->hold_tags(sink_node, tatum::TagType::DATA_REQUIRED);
+
+                    if (sink_node_tags.empty()) {
+                        continue;
+                    }
+
                     auto min_sink_node_tag_iter = find_minimum_tag(sink_node_tags);
 
-                    if (sink_node_tags.empty() || arrival_tags.empty() || required_tags.empty()) {
-                        continue;
-                    } else if (min_required_tag_iter != required_tags.end() && min_arrival_tag_iter != arrival_tags.end()
+                    if (min_required_tag_iter != required_tags.end() && min_arrival_tag_iter != arrival_tags.end()
                             && min_required_tag_iter != sink_node_tags.end()) {
 
                         final_required_time = min_sink_node_tag_iter->time().value();
@@ -321,16 +332,25 @@ void route_budgets::allocate_long_path_slack(std::shared_ptr<SetupTimingInfo> ti
                     auto arrival_tags = timing_analyzer->setup_tags(timing_node, tatum::TagType::DATA_ARRIVAL);
                     auto required_tags = timing_analyzer->setup_tags(timing_node, tatum::TagType::DATA_REQUIRED);
 
+                    if (arrival_tags.empty() || required_tags.empty()) {
+                        continue;
+                    }
+
                     auto min_arrival_tag_iter = find_minimum_tag(arrival_tags);
                     auto min_required_tag_iter = find_minimum_tag(required_tags);
 
                     tatum::NodeId sink_node = min_required_tag_iter->origin_node();
+                    if (sink_node == tatum::NodeId::INVALID()) {
+                        continue;
+                    }
                     auto sink_node_tags = timing_analyzer->setup_tags(sink_node, tatum::TagType::DATA_REQUIRED);
+
+                    if (sink_node_tags.empty()) {
+                        continue;
+                    }
                     auto min_sink_node_tag_iter = find_minimum_tag(sink_node_tags);
 
-                    if (sink_node_tags.empty() || arrival_tags.empty() || required_tags.empty()) {
-                        continue;
-                    } else if (min_required_tag_iter != required_tags.end() && min_arrival_tag_iter != arrival_tags.end()
+                    if (min_required_tag_iter != required_tags.end() && min_arrival_tag_iter != arrival_tags.end()
                             && min_required_tag_iter != sink_node_tags.end()) {
 
                         final_required_time = min_sink_node_tag_iter->time().value();
