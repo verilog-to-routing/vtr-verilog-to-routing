@@ -41,7 +41,10 @@
  * direction: if the node represents a track, this field                     *
  *            indicates the direction of the track. Otherwise                *
  *            the value contained in the field should be                     *
- *            ignored.                                                       */
+ *            ignored.                                                       *
+ * side: The side of a grid location where an IPIN or OPIN is located.       *
+ *       This field is valid only for IPINs and OPINs and should be ignored  *
+ *       otherwise.                                                          */
 
 class t_rr_node {
     public: //Accessors
@@ -62,9 +65,16 @@ class t_rr_node {
         short capacity() const;
 
         short ptc_num() const;
+        short pin_num() const; //Same as ptc_num() but checks that type() is consistent
+        short track_num() const; //Same as ptc_num() but checks that type() is consistent
+        short class_num() const; //Same as ptc_num() but checks that type() is consistent
+
         short cost_index() const;
         e_direction direction() const;
         const char *direction_string() const;
+
+        e_side side() const;
+        const char *side_string() const;
 
         float R() const { return R_; }
         float C() const { return C_; }
@@ -82,8 +92,15 @@ class t_rr_node {
         void set_capacity(short);
 
         void set_ptc_num(short);
+        void set_pin_num(short); //Same as set_ptc_num() by checks type() is consistent
+        void set_track_num(short); //Same as set_ptc_num() by checks type() is consistent
+        void set_class_num(short); //Same as set_ptc_num() by checks type() is consistent
+
+
         void set_cost_index(short);
+
         void set_direction(e_direction);
+        void set_side(e_side);
 
         void set_R(float new_R);
         void set_C(float new_C);
@@ -94,7 +111,11 @@ class t_rr_node {
         short xhigh_ = -1;
         short yhigh_ = -1;
 
-        short ptc_num_ = -1;
+        union {
+            short pin_num;
+            short track_num;
+            short class_num;
+        } ptc_;
         short cost_index_ = -1;
         short fan_in_ = 0;
         short capacity_ = -1;
@@ -108,7 +129,10 @@ class t_rr_node {
         std::unique_ptr<short[]> edge_switches_ = nullptr;
         short num_edges_ = 0;
 
-        e_direction direction_ = NONE;
+        union {
+            e_direction direction; //Valid only for CHANX/CHANY
+            e_side side; //Valid only for IPINs/OPINs
+        } dir_side_;
         t_rr_type type_ = NUM_RR_TYPES;
 };
 

@@ -250,21 +250,28 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     }
 
     /* Check that the segment is within the array and such. */
+    type = device_ctx.grid[xlow][ylow].type;
 
     switch (rr_type) {
 
         case SOURCE:
         case SINK:
-        case IPIN:
-        case OPIN:
-            /* This is used later as well */
-            type = device_ctx.grid[xlow][ylow].type;
-
             if (type == NULL) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
             }
             if (xlow != (xhigh - type->width + 1) || ylow != (yhigh - type->height + 1)) {
+                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                        "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
+            }
+            break;
+        case IPIN:
+        case OPIN:
+            if (type == NULL) {
+                vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
+                        "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
+            }
+            if (xlow != xhigh || ylow != yhigh) {
                 vpr_throw(VPR_ERROR_ROUTE, __FILE__, __LINE__,
                         "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
             }

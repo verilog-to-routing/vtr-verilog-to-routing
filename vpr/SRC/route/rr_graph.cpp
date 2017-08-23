@@ -1291,17 +1291,17 @@ void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
 
 static void build_rr_sinks_sources(const int i, const int j,
         t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
-        const int delayless_switch, const DeviceGrid& L_grid) {
+        const int delayless_switch, const DeviceGrid& grid) {
 
     /* Loads IPIN, SINK, SOURCE, and OPIN. 
-     * Loads IPconst to SINK edges, and SOURCE to OPconst edges */
+     * Loads IPIN to SINK edges, and SOURCE to OPIN edges */
 
     /* Since we share nodes within a large block, only 
      * start tile can initialize sinks, sources, and pins */
-    if (L_grid[i][j].width_offset > 0 || L_grid[i][j].height_offset > 0)
+    if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0)
         return;
 
-    t_type_ptr type = L_grid[i][j].type;
+    t_type_ptr type = grid[i][j].type;
     int num_class = type->num_class;
     t_class *class_inf = type->class_inf;
     int num_pins = type->num_pins;
@@ -1316,6 +1316,7 @@ static void build_rr_sinks_sources(const int i, const int j,
             int num_edges = class_inf[iclass].num_pins;
             L_rr_node[inode].set_num_edges(num_edges);
 
+            //Connect the source to all its OPINs
             for (int ipin = 0; ipin < class_inf[iclass].num_pins; ++ipin) {
                 int pin_num = class_inf[iclass].pinlist[ipin];
                 int to_node = get_rr_node_index(i, j, OPIN, pin_num, L_rr_node_indices);
@@ -1349,42 +1350,57 @@ static void build_rr_sinks_sources(const int i, const int j,
         L_rr_node[inode].set_R(0);
         L_rr_node[inode].set_C(0);
         L_rr_node[inode].set_ptc_num(iclass);
-        L_rr_node[inode].set_direction(e_direction::NONE);
     }
 
     /* Connect IPINS to SINKS and dummy for OPINS */
-    for (int ipin = 0; ipin < num_pins; ++ipin) {
-        int inode = 0;
-        ;
-        int iclass = pin_class[ipin];
+    //We loop through all the pin locations on the block to initialize the IPINs/OPINs,
+    //and hook-up the IPINs to sinks.
+    for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+        for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+            for (e_side side : {TOP, BOTTOM, LEFT, RIGHT}) {
+                for (int ipin = 0; ipin < num_pins; ++ipin) {
 
-        if (class_inf[iclass].type == RECEIVER) {
-            inode = get_rr_node_index(i, j, IPIN, ipin, L_rr_node_indices);
-            int to_node = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
+                    if (type->pinloc[width_offset][height_offset][side][ipin]) {
+                        int inode = 0;
+                        int iclass = pin_class[ipin];
 
-            L_rr_node[inode].set_num_edges(1);
+                        if (class_inf[iclass].type == RECEIVER) {
+                            //Connect the input pin to the sink
+                            inode = get_rr_node_index(i, j, IPIN, ipin, L_rr_node_indices);
+                            int to_node = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
 
-            L_rr_node[inode].set_edge_sink_node(0, to_node);
-            L_rr_node[inode].set_edge_switch(0, delayless_switch);
+                            L_rr_node[inode].set_num_edges(1);
 
-            L_rr_node[inode].set_cost_index(IPIN_COST_INDEX);
-            L_rr_node[inode].set_type(IPIN);
+                            L_rr_node[inode].set_edge_sink_node(0, to_node);
+                            L_rr_node[inode].set_edge_switch(0, delayless_switch);
 
-        } else {
-            VTR_ASSERT(class_inf[iclass].type == DRIVER);
-            inode = get_rr_node_index(i, j, OPIN, ipin, L_rr_node_indices);
+                            L_rr_node[inode].set_cost_index(IPIN_COST_INDEX);
+                            L_rr_node[inode].set_type(IPIN);
 
-            L_rr_node[inode].set_num_edges(0);
-            L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
-            L_rr_node[inode].set_type(OPIN);
+                        } else {
+                            VTR_ASSERT(class_inf[iclass].type == DRIVER);
+                            //Initialize the output pin
+                            // Note that we leave it's out-going edges unconnected (they will be hooked up to global routing later)
+                            inode = get_rr_node_index(i, j, OPIN, ipin, L_rr_node_indices);
+
+                            L_rr_node[inode].set_num_edges(0);
+                            L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
+                            L_rr_node[inode].set_type(OPIN);
+                        }
+
+                        /* Common to both DRIVERs and RECEIVERs */
+                        L_rr_node[inode].set_capacity(1);
+                        L_rr_node[inode].set_coordinates(i + width_offset, j + height_offset, i + width_offset, j + height_offset);
+                        L_rr_node[inode].set_side(side);
+                        L_rr_node[inode].set_C(0);
+                        L_rr_node[inode].set_R(0);
+                        L_rr_node[inode].set_ptc_num(ipin);
+
+                        VTR_ASSERT(type->pinloc[width_offset][height_offset][L_rr_node[inode].side()][L_rr_node[inode].pin_num()]);
+                    }
+                }
+            }
         }
-        /* Common to both DRIVERs and RECEIVERs */
-        L_rr_node[inode].set_capacity(1);
-        L_rr_node[inode].set_coordinates(i, j, i + type->width - 1, j + type->height - 1);
-        L_rr_node[inode].set_C(0);
-        L_rr_node[inode].set_R(0);
-        L_rr_node[inode].set_ptc_num(ipin);
-        L_rr_node[inode].set_direction(e_direction::NONE);
     }
 }
 

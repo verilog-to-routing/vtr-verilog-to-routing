@@ -71,7 +71,7 @@ enum e_interconnect {
 };
 
 /* Orientations. */
-enum e_side {
+enum e_side : unsigned char {
 	TOP = 0, RIGHT = 1, BOTTOM = 2, LEFT = 3
 };
 

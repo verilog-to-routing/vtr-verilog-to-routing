@@ -1,5 +1,6 @@
 #include "rr_node.h"
 #include "globals.h"
+#include "vpr_error.h"
 
 /* Member function of "t_rr_node" used to retrieve a routing *
  * resource type string by its index, which is defined by           *
@@ -16,9 +17,6 @@ short t_rr_node::ylow() const {
 	return ylow_;
 }
 
-/*
-	Note: assuming that type -> width is 1, see assertion in rr_graph.c
-*/
 short t_rr_node::xhigh() const {
     return xhigh_;
 }
@@ -28,7 +26,28 @@ short t_rr_node::yhigh() const {
 }
 
 short t_rr_node::ptc_num() const {
-	return ptc_num_;
+	return ptc_.pin_num; //TODO eventually remove
+}
+
+short t_rr_node::pin_num() const {
+    if (type() != IPIN && type() != OPIN) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", type_string());
+    }
+    return ptc_.pin_num;
+}
+
+short t_rr_node::track_num() const {
+    if (type() != CHANX && type() != CHANY) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", type_string());
+    }
+    return ptc_.track_num;
+}
+
+short t_rr_node::class_num() const {
+    if (type() != SOURCE && type() != SINK) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", type_string());
+    }
+    return ptc_.class_num;
 }
 
 short t_rr_node::cost_index() const {
@@ -44,22 +63,41 @@ short t_rr_node::fan_in() const {
 }
 
 e_direction t_rr_node::direction() const {
-	return direction_;
+    if (type() != CHANX && type() != CHANY) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'direction' for non-channel type '%s'", type_string());
+    }
+	return dir_side_.direction;
 }
 
 const char* t_rr_node::direction_string() const{
-	if (direction_ == INC_DIRECTION){
+	if (direction() == INC_DIRECTION){
 		return "INC";
-	}else if (direction_ == DEC_DIRECTION){
+	}else if (direction() == DEC_DIRECTION){
 		return "DEC";
-	}else if (direction_== BI_DIRECTION){
+	}else if (direction() == BI_DIRECTION){
 		return "BI";
-	}else if (direction_== NONE){
+	}else if (direction() == NONE){
 		return "NONE";
 	}
 	
 	return "NONE";
 }
+
+e_side t_rr_node::side() const {
+    if (type() != IPIN && type() != OPIN) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'", type_string());
+    }
+	return dir_side_.side;
+}
+
+const char* t_rr_node::side_string() const {
+    if      (side() == TOP)     return "TOP";
+    else if (side() == BOTTOM)  return "BOTTOM";
+    else if (side() == LEFT)    return "LEFT";
+    else if (side() == RIGHT)   return "RIGHT";
+    VPR_THROW(VPR_ERROR_ROUTE, "Unrecognized side");
+}
+
 
 //Returns the max 'length' over the x or y direction
 short t_rr_node::length() const {
@@ -92,7 +130,28 @@ void t_rr_node::set_coordinates(short x1, short y1, short x2, short y2) {
 }
 
 void t_rr_node::set_ptc_num(short new_ptc_num) {
-	ptc_num_ = new_ptc_num;
+	ptc_.pin_num = new_ptc_num; //TODO: eventually remove
+}
+
+void t_rr_node::set_pin_num(short new_pin_num) {
+    if (type() != IPIN && type() != OPIN) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'", type_string());
+    }
+    ptc_.pin_num = new_pin_num;
+}
+
+void t_rr_node::set_track_num(short new_track_num) {
+    if (type() != CHANX && type() != CHANY) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", type_string());
+    }
+    ptc_.track_num = new_track_num;
+}
+
+void t_rr_node::set_class_num(short new_class_num) {
+    if (type() != SOURCE && type() != SINK) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'", type_string());
+    }
+    ptc_.class_num = new_class_num;
 }
 
 void t_rr_node::set_cost_index(short new_cost_index) {
@@ -115,7 +174,17 @@ void t_rr_node::set_num_edges(short new_num_edges) {
 }
 
 void t_rr_node::set_direction(e_direction new_direction) {
-	direction_ = new_direction;
+    if (type() != CHANX && type() != CHANY) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set RR node 'direction' for non-channel type '%s'", type_string());
+    }
+	dir_side_.direction = new_direction;
+}
+
+void t_rr_node::set_side(e_side new_side) {
+    if (type() != IPIN && type() != OPIN) {
+        VPR_THROW(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", type_string());
+    }
+	dir_side_.side = new_side;
 }
 
 void t_rr_node::set_R(float new_R) { 

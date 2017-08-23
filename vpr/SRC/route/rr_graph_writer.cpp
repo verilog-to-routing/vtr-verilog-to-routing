@@ -97,12 +97,24 @@ void write_rr_node(fstream &fp) {
 
     for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
         t_rr_node& node = device_ctx.rr_nodes[inode];
-        fp << "\t\t<node id=\"" << inode << "\" type=\"" << node.type_string() <<
-                "\" direction=\"" << node.direction_string() <<
-                "\" capacity=\"" << node.capacity() << "\">" << endl;
-        fp << "\t\t\t<loc xlow=\"" << node.xlow() << "\" ylow=\"" << node.ylow() <<
-                "\" xhigh=\"" << node.xhigh() << "\" yhigh=\"" << node.yhigh() <<
-                "\" ptc=\"" << node.ptc_num() << "\"/>" << endl;
+        fp << "\t\t<node";
+        fp << " id=\"" << inode;
+        fp << "\" type=\"" << node.type_string();
+        if (node.type() == CHANX || node.type() == CHANY) {
+            fp << "\" direction=\"" << node.direction_string();
+        }
+        fp << "\" capacity=\"" << node.capacity();
+        fp << "\">" << endl;
+        fp << "\t\t\t<loc";
+        fp << " xlow=\"" << node.xlow();
+        fp << "\" ylow=\"" << node.ylow();
+        fp << "\" xhigh=\"" << node.xhigh();
+        fp << "\" yhigh=\"" << node.yhigh();
+        if (node.type() == IPIN || node.type() == OPIN) {
+            fp << "\" side=\"" << node.side_string() ;
+        }
+        fp << "\" ptc=\"" << node.ptc_num() ;
+        fp << "\"/>" << endl;
         fp << "\t\t\t<timing R=\"" << setprecision(FLOAT_PRECISION)<< node.R() 
                 << "\" C=\"" << setprecision(FLOAT_PRECISION)<<node.C() << "\"/>" << endl;
 

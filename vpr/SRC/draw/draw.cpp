@@ -1031,8 +1031,9 @@ static void draw_rr_edges(int inode) {
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					// If CHANX or CHANY got clicked, set color to fan-in
 					setcolor(draw_state->draw_rr_node[inode].color);
-				} else
+				} else {
 					setcolor(PINK);
+                }
 				draw_pin_to_chan_edge(inode, to_node);
 				break;
 			case IPIN:
@@ -1040,8 +1041,9 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[to_node].color);
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
-				} else
+				} else {
 					setcolor(MEDIUMPURPLE);
+                }
 				draw_pin_to_pin(inode, to_node);
 				break;
 			default:
@@ -1072,8 +1074,9 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[to_node].color);
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
-				} else
+				} else {
 					setcolor(LIGHTSKYBLUE);
+                }
 				draw_pin_to_chan_edge(to_node, inode);
 				break;
 
@@ -1082,8 +1085,9 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[to_node].color);
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
-				} else
+				} else {
 					setcolor(DARKGREEN);
+                }
 				switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 				draw_chanx_to_chanx_edge(inode, to_node,
 						to_ptc_num, switch_type);
@@ -1094,8 +1098,9 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[to_node].color);
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
-				} else
+				} else {
 					setcolor(DARKGREEN);
+                }
 				switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 				draw_chanx_to_chany_edge(inode, from_ptc_num, to_node,
 						to_ptc_num, FROM_X_TO_Y, switch_type);
@@ -1129,8 +1134,9 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[to_node].color);
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
-				} else
+				} else {
 					setcolor(LIGHTSKYBLUE);
+                }
 				draw_pin_to_chan_edge(to_node, inode);
 				break;
 
@@ -1139,8 +1145,9 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[to_node].color);
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
-				} else
+				} else {
 					setcolor(DARKGREEN);
+                }
 				switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 				draw_chanx_to_chany_edge(to_node, to_ptc_num, inode,
 						from_ptc_num, FROM_Y_TO_X, switch_type);
@@ -1151,8 +1158,9 @@ static void draw_rr_edges(int inode) {
 					setcolor(draw_state->draw_rr_node[to_node].color);
 				} else if (draw_state->draw_rr_node[to_node].color == MAGENTA) {
 					setcolor(draw_state->draw_rr_node[inode].color);
-				} else
+				} else {
 					setcolor(DARKGREEN);
+                }
 				switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
 				draw_chany_to_chany_edge(inode, to_node,
 						to_ptc_num, switch_type);
@@ -1511,48 +1519,33 @@ static void draw_rr_pin(int inode, const t_color& color) {
         return;
     }
 
-	int ipin, i, j, iside;
 	float xcen, ycen;
 	char str[vtr::bufsize];
-	t_type_ptr type;
     auto& device_ctx = g_vpr_ctx.device();
 
-	i = device_ctx.rr_nodes[inode].xlow();
-	j = device_ctx.rr_nodes[inode].ylow();
-	ipin = device_ctx.rr_nodes[inode].ptc_num();
-	type = device_ctx.grid[i][j].type;
-	int width_offset = device_ctx.grid[i][j].width_offset;
-	int height_offset = device_ctx.grid[i][j].height_offset;
+	int ipin = device_ctx.rr_nodes[inode].ptc_num();
 
 	setcolor(color);
 
 	/* TODO: This is where we can hide fringe physical pins and also identify globals (hide, color, show) */
-	for (iside = 0; iside < 4; iside++) {
-		if (type->pinloc[device_ctx.grid[i][j].width_offset][device_ctx.grid[i][j].height_offset][iside][ipin]) { /* Pin exists on this side. */
-			draw_get_rr_pin_coords(inode, iside, width_offset, height_offset, &xcen, &ycen);
-			fillrect(xcen - draw_coords->pin_size, ycen - draw_coords->pin_size, 
-					 xcen + draw_coords->pin_size, ycen + draw_coords->pin_size);
-			sprintf(str, "%d", ipin);
-			setcolor(BLACK);
-			drawtext(xcen, ycen, str, 2 * draw_coords->pin_size, 2 * draw_coords->pin_size);
-			setcolor(color);
-		}
-	}
+    draw_get_rr_pin_coords(inode, &xcen, &ycen);
+    fillrect(xcen - draw_coords->pin_size, ycen - draw_coords->pin_size, 
+             xcen + draw_coords->pin_size, ycen + draw_coords->pin_size);
+    sprintf(str, "%d", ipin);
+    setcolor(BLACK);
+    drawtext(xcen, ycen, str, 2 * draw_coords->pin_size, 2 * draw_coords->pin_size);
+    setcolor(color);
 }
 
 /* Returns the coordinates at which the center of this pin should be drawn. *
  * inode gives the node number, and iside gives the side of the clb or pad  *
  * the physical pin is on.                                                  */
-void draw_get_rr_pin_coords(int inode, int iside, 
-		int width_offset, int height_offset, 
-		float *xcen, float *ycen) {
+void draw_get_rr_pin_coords(int inode, float *xcen, float *ycen) {
     auto& device_ctx = g_vpr_ctx.device();
-	draw_get_rr_pin_coords(&device_ctx.rr_nodes[inode], iside, width_offset, height_offset, xcen, ycen);
+	draw_get_rr_pin_coords(&device_ctx.rr_nodes[inode], xcen, ycen);
 }
 
-void draw_get_rr_pin_coords(t_rr_node* node, int iside, 
-		int width_offset, int height_offset, 
-		float *xcen, float *ycen) {
+void draw_get_rr_pin_coords(t_rr_node* node, float *xcen, float *ycen) {
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
 
@@ -1561,15 +1554,15 @@ void draw_get_rr_pin_coords(t_rr_node* node, int iside,
 	t_type_ptr type;
     auto& device_ctx = g_vpr_ctx.device();
 
-	i = node->xlow() + width_offset;
-	j = node->ylow() + height_offset;
+	i = node->xlow();
+	j = node->ylow();
 
 	xc = draw_coords->tile_x[i];
 	yc = draw_coords->tile_y[j];
 
 	ipin = node->ptc_num();
 	type = device_ctx.grid[i][j].type;
-	pins_per_sub_tile = device_ctx.grid[i][j].type->num_pins / device_ctx.grid[i][j].type->capacity;
+	pins_per_sub_tile = type->num_pins / type->capacity;
 	k = ipin / pins_per_sub_tile;
 
 	/* Since pins numbers go across all sub_tiles in a block in order
@@ -1579,7 +1572,7 @@ void draw_get_rr_pin_coords(t_rr_node* node, int iside,
 	step = (float) (draw_coords->get_tile_width()) / (float) (type->num_pins + type->capacity);
 	offset = (ipin + k + 1) * step;
 
-	switch (iside) {
+	switch (node->side()) {
 	case LEFT:
 		yc += offset;
 		break;
@@ -1600,7 +1593,7 @@ void draw_get_rr_pin_coords(t_rr_node* node, int iside,
 
 	default:
 		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-				"in draw_get_rr_pin_coords: Unexpected iside %d.\n", iside);
+				"in draw_get_rr_pin_coords: Unexpected side %s.\n", node->side_string());
 		break;
 	}
 
@@ -1971,8 +1964,7 @@ static int draw_check_rr_node_hit (float click_x, float click_y) {
 				for (iside = 0; iside < 4; iside++) {
 					// If pin exists on this side of the block, then get pin coordinates
 					if (type->pinloc[width_offset][height_offset][iside][ipin]) {
-						draw_get_rr_pin_coords(inode, iside, width_offset, height_offset, 
-											   &xcen, &ycen);
+						draw_get_rr_pin_coords(inode, &xcen, &ycen);
 
 						// Now check if we clicked on this pin
 						if (click_x >= xcen - draw_coords->pin_size &&
@@ -2410,189 +2402,80 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 
 	/* This routine draws an edge from the pin_node to the chan_node (CHANX or   *
 	 * CHANY).  The connection is made to the nearest end of the track instead   *
-	 * of perpundicular to the track to symbolize a single-drive connection.     *
-	 * If mark_conn is true, draw a box where the pin connects to the track      *
-	 * (useful for drawing  the rr graph)                                        */
+	 * of perpundicular to the track to symbolize a single-drive connection.     */
 
 	/* TODO: Fix this for global routing, currently for detailed only */
 
 	t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-	t_rr_type chan_type;
-	int grid_x, grid_y, pin_num, chan_xlow, chan_ylow;
-	float x1, x2, y1, y2;
-	int start, end, i;
-	t_bound_box chan_bbox;
-	float xend, yend;
-	float draw_pin_off;
-	enum e_direction direction;
-	enum e_side iside;
-	t_type_ptr type;
+    const t_rr_node& pin_rr = device_ctx.rr_nodes[pin_node];
+    const t_rr_node& chan_rr = device_ctx.rr_nodes[chan_node];
 
-	direction = device_ctx.rr_nodes[chan_node].direction();
-	grid_x = device_ctx.rr_nodes[pin_node].xlow();
-	grid_y = device_ctx.rr_nodes[pin_node].ylow();
-	pin_num = device_ctx.rr_nodes[pin_node].ptc_num();
-	chan_type = device_ctx.rr_nodes[chan_node].type();
-	type = device_ctx.grid[grid_x][grid_y].type;
+    const t_grid_tile& grid_tile = device_ctx.grid[pin_rr.xlow()][pin_rr.ylow()];
+	t_type_ptr grid_type = grid_tile.type;
 
-	/* large block begins at primary tile (offset == 0) */
-	int width_offset = device_ctx.grid[grid_x][grid_y].width_offset;
-	int height_offset = device_ctx.grid[grid_x][grid_y].height_offset;
-	grid_x = grid_x - width_offset;
-	grid_y = grid_y - height_offset;
+    VTR_ASSERT_MSG(grid_type->pinloc[grid_tile.width_offset][grid_tile.height_offset][pin_rr.side()][pin_rr.pin_num()], 
+                   "Pin coordinates should match block type pin locations");
 
-	int width = device_ctx.grid[grid_x][grid_y].type->width;
-	int height = device_ctx.grid[grid_x][grid_y].type->height;
-	chan_ylow = device_ctx.rr_nodes[chan_node].ylow();
-	chan_xlow = device_ctx.rr_nodes[chan_node].xlow();
+    float draw_pin_offset;
+    if (pin_rr.side() == TOP || pin_rr.side() == RIGHT) {
+        draw_pin_offset = draw_coords->pin_size;
+    } else {
+        VTR_ASSERT(pin_rr.side() == BOTTOM || pin_rr.side() == LEFT);
+        draw_pin_offset = -draw_coords->pin_size;
+    }
 
-	start = -1;
-	end = -1;
+    float x1, y1;
+    draw_get_rr_pin_coords(pin_node, &x1, &y1);
 
-	switch (chan_type) {
+    t_bound_box chan_bbox = draw_get_rr_chan_bbox(chan_node);
 
-	case CHANX:
-		start = device_ctx.rr_nodes[chan_node].xlow();
-		end = device_ctx.rr_nodes[chan_node].xhigh();
+    float x2, y2;
+	switch (chan_rr.type()) {
+        case CHANX: {
+            y1 += draw_pin_offset;
+            y2 = chan_bbox.bottom();
+            x2 = x1;
+            if (is_opin(pin_rr.pin_num(), grid_type)) {
+                if (chan_rr.direction() == INC_DIRECTION) {
+                    x2 = chan_bbox.left();
+                } else if (chan_rr.direction() == DEC_DIRECTION) {
+                    x2 = chan_bbox.right();
+                }
+            }
+            break;
+    
+        } case CHANY: {
+            x1 += draw_pin_offset;
+            x2 = chan_bbox.left();
+            y2 = y1;
+            if (is_opin(pin_rr.pin_num(), grid_type)) {
+                if (chan_rr.direction() == INC_DIRECTION) {
+                    y2 = chan_bbox.bottom();
+                } else if (chan_rr.direction() == DEC_DIRECTION) {
+                    y2 = chan_bbox.top();
+                }
+            }
+            break;
 
-		if (is_opin(pin_num, type)) {
-			if (direction == INC_DIRECTION) {
-				end = device_ctx.rr_nodes[chan_node].xlow();
-			} else if (direction == DEC_DIRECTION) {
-				start = device_ctx.rr_nodes[chan_node].xhigh();
-			}
-		}
-
-		start = max(start, grid_x);
-		end = min(end, grid_x); /* Width is 1 always */
-		VTR_ASSERT(end >= start);
-		/* Make sure we are nearby */
-
-
-		if ((grid_y + height - 1) == chan_ylow) {
-			iside = TOP;
-			width_offset = width - 1;
-			height_offset = height - 1;
-			draw_pin_off = draw_coords->pin_size;
-		} else if ((grid_y - 1) == chan_ylow) {
-			//VTR_ASSERT((grid_y - 1) == chan_ylow);
-
-			iside = BOTTOM;
-
-			width_offset = 0;
-			height_offset = 0;
-
-			draw_pin_off = -draw_coords->pin_size;
-		}
-		else {//This is used to determine where the pins are located in locations
-			//other than the perimeter.
-				iside=TOP;
-				for (int side1 = 0; side1 < 4; ++side1) {
-			for (int width1 = 0; width1 < device_ctx.grid[grid_x][grid_y].type->width; ++width1) {
-				for (int height1= 0; height1 < device_ctx.grid[grid_x][grid_y].type->height; ++height1) {
-					if (device_ctx.grid[grid_x][grid_y].type->pinloc[width1][height1][side1][pin_num])
-					{
-						height_offset = height1;
-						width_offset = width1;
-						if(side1==0)
-							iside=TOP;
-						else if(side1==2) iside=BOTTOM;
-					}
-				}
-			}
-		}
-			draw_pin_off = -draw_coords->pin_size;
-		}
-
-		VTR_ASSERT(device_ctx.grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
-
-		draw_get_rr_pin_coords(pin_node, iside, width_offset, height_offset, &x1, &y1);
-		chan_bbox = draw_get_rr_chan_bbox(chan_node);
-
-		y1 += draw_pin_off;
-		y2 = chan_bbox.bottom();
-		x2 = x1;
-		if (is_opin(pin_num, type)) {
-			if (direction == INC_DIRECTION) {
-				x2 = chan_bbox.left();
-			} else if (direction == DEC_DIRECTION) {
-				x2 = chan_bbox.right();
-			}
-		}
-		break;
-
-	case CHANY:
-		start = device_ctx.rr_nodes[chan_node].ylow();
-		end = device_ctx.rr_nodes[chan_node].yhigh();
-		if (is_opin(pin_num, type)) {
-			if (direction == INC_DIRECTION) {
-				end = device_ctx.rr_nodes[chan_node].ylow();
-			} else if (direction == DEC_DIRECTION) {
-				start = device_ctx.rr_nodes[chan_node].yhigh();
-			}
-		}
-
-		start = max(start, grid_y);
-		end = min(end, (grid_y + height - 1)); /* Width is 1 always */
-		VTR_ASSERT(end >= start);
-		/* Make sure we are nearby */
-
-		if ((grid_x) == chan_xlow) {
-			iside = RIGHT;
-			draw_pin_off = draw_coords->pin_size;
-		} else {
-			VTR_ASSERT((grid_x - 1) == chan_xlow);
-			iside = LEFT;
-			draw_pin_off = -draw_coords->pin_size;
-		}
-		for (i = start; i <= end; i++) {
-			height_offset = i - grid_y;
-			VTR_ASSERT(height_offset >= 0 && height_offset < type->height);
-			/* Once we find the location, break out, this will leave ioff pointing
-			 * to the correct offset.  If an offset is not found, the assertion after
-			 * this will fail.  With the correct routing graph, the assertion will not
-			 * be triggered.  This also takes care of connecting a wire once to multiple
-			 * physical pins on the same side. */
-			if (device_ctx.grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]) {
-				break;
-			}
-		}
-		VTR_ASSERT(device_ctx.grid[grid_x][grid_y].type->pinloc[width_offset][height_offset][iside][pin_num]);
-
-		draw_get_rr_pin_coords(pin_node, iside, width_offset, height_offset, &x1, &y1);
-		chan_bbox = draw_get_rr_chan_bbox(chan_node);
-		
-		x1 += draw_pin_off;
-		x2 = chan_bbox.left();
-		y2 = y1;
-		if (is_opin(pin_num, type)) {
-			if (direction == INC_DIRECTION) {
-				y2 = chan_bbox.bottom();
-			} else if (direction == DEC_DIRECTION) {
-				y2 = chan_bbox.top();
-			}
-		}
-		break;
-
-	default:
-		vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
-				"in draw_pin_to_chan_edge: Invalid channel node %d.\n", chan_node);
-		x1 = x2 = y1 = y2 = OPEN; //Prevents compiler error of variable uninitialized.  
-	}
+        } default: {
+            vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__, 
+                    "in draw_pin_to_chan_edge: Invalid channel node %d.\n", chan_node);
+        }
+    }
 
 	drawline(x1, y1, x2, y2);
 
 	//don't draw the ex, or triangle unless zoomed in really far
-	if (direction == BI_DIRECTION || !is_opin(pin_num, type)) {
+	if (chan_rr.direction() == BI_DIRECTION || !is_opin(pin_rr.pin_num(), grid_type)) {
 		if (LOD_screen_area_test_square(draw_coords->pin_size*1.3,MIN_VISIBLE_AREA) == true) {
 			draw_x(x2, y2, 0.7 * draw_coords->pin_size);
 		}
 	} else {
 		if (default_triangle_LOD_screen_area_test() == true) {
-			xend = x2 + (x1 - x2) / 10.;
-			yend = y2 + (y1 - y2) / 10.;
+			float xend = x2 + (x1 - x2) / 10.;
+			float yend = y2 + (y1 - y2) / 10.;
 			draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
 		}
 	}
@@ -2602,80 +2485,23 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
 static void draw_pin_to_pin(int opin_node, int ipin_node) {
 	
 	/* This routine draws an edge from the opin rr node to the ipin rr node */
-	int opin_grid_x, opin_grid_y, opin_pin_num;
-	int ipin_grid_x, ipin_grid_y, ipin_pin_num;
-	int width_offset, height_offset;
-	bool found;
-	float x1, x2, y1, y2;
-	float xend, yend;
-	enum e_side pin_side;
-	t_type_ptr type;
     auto& device_ctx = g_vpr_ctx.device();
-
 	VTR_ASSERT(device_ctx.rr_nodes[opin_node].type() == OPIN);
 	VTR_ASSERT(device_ctx.rr_nodes[ipin_node].type() == IPIN);
-	x1 = y1 = x2 = y2 = 0;
-	width_offset = 0;
-	height_offset = 0;
-	pin_side = TOP;
 
-	/* get opin coordinate */
-	opin_grid_x = device_ctx.rr_nodes[opin_node].xlow();
-	opin_grid_y = device_ctx.rr_nodes[opin_node].ylow();
-	opin_grid_x = opin_grid_x - device_ctx.grid[opin_grid_x][opin_grid_y].width_offset;
-	opin_grid_y = opin_grid_y - device_ctx.grid[opin_grid_x][opin_grid_y].height_offset;
+	float x1 = 0, y1 = 0;
+	draw_get_rr_pin_coords(opin_node, &x1, &y1);
 
-	opin_pin_num = device_ctx.rr_nodes[opin_node].ptc_num();
-	type = device_ctx.grid[opin_grid_x][opin_grid_y].type;
-	
-	found = false;
-	for (int width = 0; width < type->width && !found; ++width) {
-		for (int height = 0; height < type->height && !found; ++height) {
-            for (e_side iside : {TOP, RIGHT, BOTTOM, LEFT}) {
+	float x2 = 0, y2 = 0;
+	draw_get_rr_pin_coords(ipin_node, &x2, &y2);
 
-				/* Find first location of pin */
-				if (1 == type->pinloc[width][height][iside][opin_pin_num]) {
-					width_offset = width;
-					height_offset = height;
-					pin_side = iside;
-					found = true;
-				}
-			}
-		}
-	}
-	VTR_ASSERT(found);
-	draw_get_rr_pin_coords(opin_node, pin_side, width_offset, height_offset, &x1, &y1);
+	drawline(x1, y1, x2, y2);
 
-	/* get ipin coordinate */
-	ipin_grid_x = device_ctx.rr_nodes[ipin_node].xlow();
-	ipin_grid_y = device_ctx.rr_nodes[ipin_node].ylow();
-	ipin_grid_x = ipin_grid_x - device_ctx.grid[ipin_grid_x][ipin_grid_y].width_offset;
-	ipin_grid_y = ipin_grid_y - device_ctx.grid[ipin_grid_x][ipin_grid_y].height_offset;
-
-	ipin_pin_num = device_ctx.rr_nodes[ipin_node].ptc_num();
-	type = device_ctx.grid[ipin_grid_x][ipin_grid_y].type;
-	
-	found = false;
-	for (int width = 0; width < type->width && !found; ++width) {
-		for (int height = 0; height < type->height && !found; ++height) {
-            for (e_side iside : {TOP, RIGHT, BOTTOM, LEFT}) {
-				/* Find first location of pin */
-				if (1 == type->pinloc[width][height][iside][ipin_pin_num]) {
-					width_offset = width;
-					height_offset = height;
-					pin_side = iside;
-					found = true;
-				}
-			}
-		}
-	}
-	VTR_ASSERT(found);
-	draw_get_rr_pin_coords(ipin_node, pin_side, width_offset, height_offset, &x2, &y2);
-
-	drawline(x1, y1, x2, y2);	
-	xend = x2 + (x1 - x2) / 10.;
-	yend = y2 + (y1 - y2) / 10.;
-	draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
+    if (default_triangle_LOD_screen_area_test() == true) {
+        float xend = x2 + (x1 - x2) / 10.;
+        float yend = y2 + (y1 - y2) / 10.;
+        draw_triangle_along_line(xend, yend, x1, x2, y1, y2);
+    }
 }
 
 static inline void draw_mux_with_size(t_point origin, e_side orientation, float height, int size) {
