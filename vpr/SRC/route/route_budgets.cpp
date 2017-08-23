@@ -78,8 +78,16 @@ route_budgets::~route_budgets() {
 void route_budgets::load_route_budgets(float ** net_delay,
         std::shared_ptr<const SetupTimingInfo> timing_info,
         const IntraLbPbPinLookup& pb_gpin_lookup, t_router_opts router_opts) {
+
+    if (router_opts.routing_budgets_algorithm == DISABLE) {
+        //disable budgets
+        set = false;
+        return;
+    }
+
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
+    //allocate memory for budgets
     delay_min_budget = alloc_net_delay(&min_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
     delay_target = alloc_net_delay(&target_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
     delay_max_budget = alloc_net_delay(&max_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
@@ -93,16 +101,23 @@ void route_budgets::load_route_budgets(float ** net_delay,
         }
     }
 
-    //allocate_slack_using_delays_and_criticalities(net_delay, timing_info, pb_gpin_lookup, router_opts);
+    if (router_opts.routing_budgets_algorithm == MINIMAX) {
+        allocate_slack_minimax_PERT(net_delay, pb_gpin_lookup);
+        calculate_delay_tagets();
+    } else if (router_opts.routing_budgets_algorithm == SCALE_DELAY) {
+        allocate_slack_using_delays_and_criticalities(net_delay, timing_info, pb_gpin_lookup, router_opts);
+    }
+    set = true;
+}
 
-    allocate_slack_minimax_PERT(net_delay, pb_gpin_lookup);
+void route_budgets::calculate_delay_tagets() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             delay_target[inet][ipin] = min(0.5 * (delay_min_budget[inet][ipin] + delay_max_budget[inet][ipin]), delay_min_budget[inet][ipin] + 0.1e-9);
         }
     }
-    set = true;
 }
 
 void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup) {

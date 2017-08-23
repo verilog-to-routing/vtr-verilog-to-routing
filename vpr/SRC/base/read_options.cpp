@@ -92,8 +92,8 @@ struct ParseRouterAlgorithm {
 
 struct RouteBudgetsAlgorithm {
     e_routing_budgets_algorithm from_str(std::string str) {
-        if      (str == "slack")  return SLACK;
-        else if (str == "criticality") return CRITICALITY;
+        if      (str == "minimax")  return MINIMAX;
+        else if (str == "scale_delay") return SCALE_DELAY;
         else if (str == "disable") return DISABLE;
         std::stringstream msg;
         msg << "Invalid conversion from '" << str << "' to e_routing_budget_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -101,14 +101,14 @@ struct RouteBudgetsAlgorithm {
     }
 
     std::string to_str(e_routing_budgets_algorithm val) {
-        if (val == SLACK) return "slack";
+        if (val == MINIMAX) return "minimax";
         if (val == DISABLE) return "disable";
-        VTR_ASSERT(val == CRITICALITY);
-        return "criticality";
+        VTR_ASSERT(val == SCALE_DELAY);
+        return "scale_delay";
     }
 
     std::vector<std::string> default_choices() {
-        return {"slack", "criticality", "disable"};
+        return {"minimax", "scale_delay", "disable"};
     }
 };
 
@@ -640,8 +640,8 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
                   " * slack: Sets the budgets depending on the amount slack between connections and the current delay values.\n"
                   " * criticality: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality)\n"
                   " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
-            .default_value("slack")
-            .choices({"slack", "criticality", "disable"})
+            .default_value("minimax")
+            .choices({"minimax", "scale_delay", "disable"})
             .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& analysis_grp = parser.add_argument_group("analysis options");

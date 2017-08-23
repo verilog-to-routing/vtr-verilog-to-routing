@@ -75,7 +75,7 @@ public:
 private:
 
     std::shared_ptr<RoutingDelayCalculator> get_routing_calc(float ** net_delay);
-
+    void calculate_delay_tagets();
     tatum::EdgeId get_edge_from_nets(int inet, int ipin);
 
     float ** delay_min_budget; //[0..num_nets][0..clb_net[inet].pins]

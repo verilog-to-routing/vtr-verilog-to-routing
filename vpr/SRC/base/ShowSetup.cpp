@@ -249,10 +249,10 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 
                 if(RouterOpts.routing_budgets_algorithm == DISABLE){
 			vtr::printf_info("RouterOpts.routing_budgets_algorithm = DISABLE\n");
-                }else if(RouterOpts.routing_budgets_algorithm == SLACK){
-			vtr::printf_info("RouterOpts.routing_budgets_algorithm = SLACK\n");
-                }else if(RouterOpts.routing_budgets_algorithm == CRITICALITY){
-			vtr::printf_info("RouterOpts.routing_budgets_algorithm = CRITICALITY\n");
+                }else if(RouterOpts.routing_budgets_algorithm == MINIMAX){
+			vtr::printf_info("RouterOpts.routing_budgets_algorithm = MINIMAX\n");
+                }else if(RouterOpts.routing_budgets_algorithm == SCALE_DELAY){
+			vtr::printf_info("RouterOpts.routing_budgets_algorithm = SCALE_DELAY\n");
                 }
                 
                 

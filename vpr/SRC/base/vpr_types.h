@@ -820,7 +820,7 @@ enum e_routing_failure_predictor {
 	OFF, SAFE, AGGRESSIVE
 };
 enum e_routing_budgets_algorithm {
-    SLACK, CRITICALITY, DISABLE
+    MINIMAX, SCALE_DELAY, DISABLE
 };
 
 constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
