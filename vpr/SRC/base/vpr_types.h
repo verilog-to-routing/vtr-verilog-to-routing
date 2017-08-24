@@ -858,8 +858,14 @@ struct t_det_routing_arch {
 };
 
 enum e_direction : unsigned char {
-	INC_DIRECTION = 0, DEC_DIRECTION = 1, BI_DIRECTION = 2, NO_DIRECTION = 3
+	INC_DIRECTION = 0,
+    DEC_DIRECTION = 1,
+    BI_DIRECTION = 2,
+    NO_DIRECTION = 3,
+    NUM_DIRECTIONS
 };
+
+constexpr std::array<const char*,NUM_DIRECTIONS> DIRECTIONS_STRING = {"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NO_DIRECTION"};
 
 /* Lists detailed information about segmentation.  [0 .. W-1].              *
  * length:  length of segment.                                              *

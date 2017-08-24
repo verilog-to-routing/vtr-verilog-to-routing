@@ -2097,12 +2097,7 @@ void dump_rr_graph(const char *file_name) {
 /* Prints all the data about node inode to file fp.                    */
 void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
 
-    static const char *direction_name[] = {"NONE", "INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION"};
-
     t_rr_type rr_type = L_rr_node[inode].type();
-
-    /* Make sure we don't overrun const arrays */
-    VTR_ASSERT((L_rr_node[inode].direction()) < (int) (sizeof (direction_name) / sizeof (char *)));
 
     fprintf(fp, "Node: %d %s ", inode, L_rr_node[inode].type_string());
     if ((L_rr_node[inode].xlow() == L_rr_node[inode].xhigh())
@@ -2116,7 +2111,11 @@ void print_rr_node(FILE * fp, t_rr_node * L_rr_node, int inode) {
     }
     fprintf(fp, "Ptc_num: %d ", L_rr_node[inode].ptc_num());
     fprintf(fp, "Length: %d ", L_rr_node[inode].length());
-    fprintf(fp, "Direction: %s ", direction_name[L_rr_node[inode].direction()]);
+    if (rr_type == CHANX || rr_type == CHANY) {
+        fprintf(fp, "Direction: %s ", DIRECTIONS_STRING[L_rr_node[inode].direction()]);
+    } else if (rr_type == IPIN || rr_type == OPIN) {
+        fprintf(fp, "Side: %s ", SIDE_STRING[L_rr_node[inode].side()]);
+    }
     fprintf(fp, "\n");
 
     fprintf(fp, "%d edge(s):", L_rr_node[inode].num_edges());
