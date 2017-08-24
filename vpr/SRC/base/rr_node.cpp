@@ -154,14 +154,17 @@ void t_rr_node::set_cost_index(short new_cost_index) {
 }
 
 void t_rr_node::set_capacity(short new_capacity) {
+    VTR_ASSERT(new_capacity >= 0);
 	capacity_ = new_capacity;
 }
 
 void t_rr_node::set_fan_in(short new_fan_in) {
+    VTR_ASSERT(new_fan_in >= 0);
 	fan_in_ = new_fan_in;
 }
 
 void t_rr_node::set_num_edges(short new_num_edges) {
+    VTR_ASSERT(new_num_edges >= 0);
     num_edges_ = new_num_edges;
 
     edge_sink_nodes_ = std::make_unique<int[]>(num_edges_);
@@ -192,10 +195,12 @@ void t_rr_node::set_C(float new_C) {
 
 void t_rr_node::set_edge_sink_node(short iedge, int sink_node) { 
     VTR_ASSERT(iedge < num_edges());
+    VTR_ASSERT(sink_node >= 0);
     edge_sink_nodes_[iedge] = sink_node; 
 }
 
 void t_rr_node::set_edge_switch(short iedge, short switch_index) { 
     VTR_ASSERT(iedge < num_edges());
+    VTR_ASSERT(switch_index >= 0);
     edge_switches_[iedge] = switch_index; 
 }
