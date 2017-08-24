@@ -20,6 +20,8 @@ static bool rr_node_is_global_clb_ipin(int inode);
 
 static void check_pass_transistors(int from_node);
 
+static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid);
+
 /************************ Subroutine definitions ****************************/
 
 void check_rr_graph(const t_graph_type graph_type,
@@ -132,17 +134,13 @@ void check_rr_graph(const t_graph_type graph_type,
         rr_type = device_ctx.rr_nodes[inode].type();
 
         if (rr_type != SOURCE) {
-            if (total_edges_to_node[inode] < 1
-                    && !rr_node_is_global_clb_ipin(inode)) {
-                bool is_fringe;
-                bool is_wire;
-                bool is_chain = false;
+            if (total_edges_to_node[inode] < 1 && !rr_node_is_global_clb_ipin(inode)) {
 
                 /* A global CLB input pin will not have any edges, and neither will  *
                  * a SOURCE or the start of a carry-chain.  Anything else is an error.                             
                  * For simplicity, carry-chain input pin are entirely ignored in this test				 
                  */
-
+                bool is_chain = false;
                 if (rr_type == IPIN) {
                     type = device_ctx.grid[device_ctx.rr_nodes[inode].xlow()][device_ctx.rr_nodes[inode].ylow()].type;
                     for (const t_fc_specification fc_spec : types[type->index].fc_specs) {
@@ -152,17 +150,29 @@ void check_rr_graph(const t_graph_type graph_type,
                     }
                 }
 
-                //TODO: reconsider fring handling with non-perimeter io devices
-                is_fringe = ((device_ctx.rr_nodes[inode].xlow() == 1)
+                const auto& node = device_ctx.rr_nodes[inode];
+
+
+                bool is_fringe = ((device_ctx.rr_nodes[inode].xlow() == 1)
                         || (device_ctx.rr_nodes[inode].ylow() == 1)
                         || (device_ctx.rr_nodes[inode].xhigh() == int(grid.width()) - 2)
                         || (device_ctx.rr_nodes[inode].yhigh() == int(grid.height()) - 2));
-                is_wire = (device_ctx.rr_nodes[inode].type() == CHANX
+                bool is_wire = (device_ctx.rr_nodes[inode].type() == CHANX
                         || device_ctx.rr_nodes[inode].type() == CHANY);
 
                 if (!is_chain && !is_fringe && !is_wire) {
-                    vtr::printf_error(__FILE__, __LINE__,
-                            "in check_rr_graph: node %d has no fanin.\n", inode);
+                    if (node.type() == IPIN || node.type() == OPIN) {
+
+                        if (has_adjacent_channel(node, device_ctx.grid)) {
+                            auto block_type = device_ctx.grid[node.xlow()][node.ylow()].type;
+                            vtr::printf_error(__FILE__, __LINE__,
+                                    "in check_rr_graph: node %d (%s) at (%d,%d) block=%s side=%s has no fanin.\n", 
+                                    inode, node.type_string(), node.xlow(), node.ylow(), block_type->name, node.side_string());
+                        }
+                    } else {
+                        vtr::printf_error(__FILE__, __LINE__, "in check_rr_graph: node %d (%s) has no fanin.\n", 
+                                inode, device_ctx.rr_nodes[inode].type_string());
+                    }
                 } else if (!is_chain && !is_fringe_warning_sent) {
                     vtr::printf_warning(__FILE__, __LINE__,
                             "in check_rr_graph: fringe node %d %s at (%d,%d) has no fanin.\n"
@@ -171,8 +181,7 @@ void check_rr_graph(const t_graph_type graph_type,
                     is_fringe_warning_sent = true;
                 }
             }
-        }
-        else { /* SOURCE.  No fanin for now; change if feedthroughs allowed. */
+        } else { /* SOURCE.  No fanin for now; change if feedthroughs allowed. */
             if (total_edges_to_node[inode] != 0) {
                 vtr::printf_error(__FILE__, __LINE__,
                         "in check_rr_graph: SOURCE node %d has a fanin of %d, expected 0.\n",
@@ -411,17 +420,34 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
             /* Just a warning, since a very poorly routable rr-graph could have nodes with no edges.  *
              * If such a node was ever used in a final routing (not just in an rr_graph), other       *
              * error checks in check_routing will catch it.                                           */
-            if (device_ctx.rr_nodes[inode].type() == CHANX || device_ctx.rr_nodes[inode].type() == CHANY) {
-                int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
-                const char* seg_name = segment_inf[seg_index].name;
-                vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) has no out-going edges.\n",
-                        inode, device_ctx.rr_nodes[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh);
-            } else if (device_ctx.rr_nodes[inode].type() == IPIN || device_ctx.rr_nodes[inode].type() == OPIN) {
-                vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s at (%d,%d) block_type=%s ptc=%d has no out-going edges.\n",
-                        inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.grid[xlow][ylow].type->name, device_ctx.rr_nodes[inode].ptc_num());
-            } else {
-                vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s at (%d,%d) ptc=%d has no out-going edges.\n",
-                        inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.rr_nodes[inode].ptc_num());
+
+
+
+            //Don't worry about disconnect PINs which have no adjacent channels (i.e. on the device perimeter)
+            bool check_for_out_edges = true;
+            if (rr_type == IPIN || rr_type == OPIN) {
+                if (!has_adjacent_channel(device_ctx.rr_nodes[inode], device_ctx.grid)) {
+                    check_for_out_edges = false;
+                }
+            }
+
+            if (check_for_out_edges) {
+
+                if (device_ctx.rr_nodes[inode].type() == CHANX || device_ctx.rr_nodes[inode].type() == CHANY) {
+                    int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
+                    const char* seg_name = segment_inf[seg_index].name;
+                    vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) has no out-going edges.\n",
+                            inode, device_ctx.rr_nodes[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh);
+                } else if (device_ctx.rr_nodes[inode].type() == IPIN || device_ctx.rr_nodes[inode].type() == OPIN) {
+                    vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s at (%d,%d) side=%s, block_type=%s ptc=%d has no out-going edges.\n",
+                            inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.rr_nodes[inode].side_string(), device_ctx.grid[xlow][ylow].type->name, device_ctx.rr_nodes[inode].ptc_num());
+                } else if (device_ctx.rr_nodes[inode].type() == SOURCE || device_ctx.rr_nodes[inode].type() == SINK) {
+                    vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s at (%d,%d) block_type=%s ptc=%d has no out-going edges.\n",
+                            inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.grid[xlow][ylow].type->name, device_ctx.rr_nodes[inode].ptc_num());
+                } else {
+                    vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s at (%d,%d) block_type=%s ptc=%d has no out-going edges.\n",
+                            inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.rr_nodes[inode].ptc_num());
+                }
             }
         }
     }
@@ -505,4 +531,17 @@ static void check_pass_transistors(int from_node) {
         }
 
     } /* End for all from_node edges */
+}
+
+static bool has_adjacent_channel(const t_rr_node& node, const DeviceGrid& grid) {
+    VTR_ASSERT(node.type() == IPIN || node.type() == OPIN);
+
+    if (   (node.xlow() == 0 && node.side() != RIGHT) //left device edge connects only along block's right side
+        || (node.ylow() == int(grid.height() - 1) && node.side() != BOTTOM) //top device edge connects only along block's bottom side
+        || (node.xlow() == int(grid.width() - 1) && node.side() != LEFT) //right deivce edge connects only along block's left side
+        || (node.ylow() == 0 && node.side() != TOP) //bottom deivce edge connects only along block's top side
+       ) {
+        return false;
+    }
+    return true; //All other blocks will be surrounded on all sides by channels
 }
