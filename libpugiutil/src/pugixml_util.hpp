@@ -112,7 +112,7 @@ namespace pugiutil {
                           const loc_data& loc_data,
                           const ReqOpt req_opt);
     
-    //Throws a well formatted error if the actual count of child nodes name 'child_name' does not equal the 'expected_count'
+    //Throws a well formatted error if the actual count of child nodes named 'child_name' does not equal the 'expected_count'
     //
     //  node - The parent xml node
     //  loc_data - XML file location data
@@ -132,7 +132,7 @@ namespace pugiutil {
                             const loc_data& loc_data);
 
     //Throws a well formatted error if any of node's children are not part of child_names.
-    //Note this does not check whether the nodes in 'attribute_names' actually exist.
+    //Note this does not check whether the nodes in 'child_names' actually exist.
     //
     //  node - The parent xml node
     //  child_names - expected attribute names
