@@ -408,9 +408,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
 
                 budgeting_inf.load_route_budgets(net_delay, timing_info, pb_gpin_lookup, router_opts);
                 //for debugging purposes
-                if (budgeting_inf.if_set()) {
-                    budgeting_inf.print_route_budget();
-                }
+//                if (budgeting_inf.if_set()) {
+//                    budgeting_inf.print_route_budget();
+//                }
 
             } else {
                 bool stable_routing_configuration = true;

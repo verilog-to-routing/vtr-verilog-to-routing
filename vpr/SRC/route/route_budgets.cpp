@@ -152,7 +152,7 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
     max_budget_change = 900e-12;
 
     while (iteration < 3 || max_budget_change > 800e-12) {
-        cout << endl << "11111111111111111111111111111111111 " << max_budget_change << endl;
+        //cout << endl << "11111111111111111111111111111111111 " << max_budget_change << endl;
         timing_info = perform_sta(delay_max_budget);
         max_budget_change = allocate_slack(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP, POSITIVE);
         keep_budget_in_bounds(MIN, delay_max_budget);
@@ -161,8 +161,6 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
         if (iteration > 7)
             break;
     }
-
-    //print_temporary_budgets_to_file(delay_max_budget);
 
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
@@ -174,10 +172,9 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
     max_budget_change = 900e-12;
 
     while (iteration < 3 || max_budget_change > 800e-12) {
-        cout << endl << "222222222222222222222222222222222222222222222 " << max_budget_change << endl;
+        //cout << endl << "222222222222222222222222222222222222222222222 " << max_budget_change << endl;
         timing_info = perform_sta(delay_min_budget);
         max_budget_change = allocate_slack(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD, POSITIVE);
-        print_temporary_budgets_to_file(delay_max_budget);
         keep_budget_in_bounds(MAX, delay_min_budget);
         iteration++;
 
@@ -188,7 +185,7 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
 
     float bottom_range = -1e-9;
     timing_info = perform_sta(delay_min_budget);
-    cout << endl << "333333333333333333333333333333333333333333 " << endl;
+    //cout << endl << "333333333333333333333333333333333333333333 " << endl;
     allocate_slack(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD, POSITIVE);
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
@@ -257,18 +254,18 @@ float route_budgets::allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_
             }
 
             if (analysis_type == HOLD) {
-                temp_budgets[inet][ipin] -= net_delay[inet][ipin] * path_slack / total_path_delay;
-                if (inet == 14) {
-                    cout << "HOLD pin " << ipin << " net delay " << net_delay[inet][ipin] << " total path delay " << total_path_delay
-                            << " slack " << path_slack << " temp_budgets " << temp_budgets[inet][ipin] << endl;
-                }
+                temp_budgets[inet][ipin] = -1* net_delay[inet][ipin] * path_slack / total_path_delay;
+//                if (inet == 14) {
+//                    cout << "HOLD pin " << ipin << " net delay " << net_delay[inet][ipin] << " total path delay " << total_path_delay
+//                            << " slack " << path_slack << " temp_budgets " << temp_budgets[inet][ipin] << endl;
+//                }
             } else {
-                temp_budgets[inet][ipin] += net_delay[inet][ipin] * path_slack / total_path_delay;
+                temp_budgets[inet][ipin] = net_delay[inet][ipin] * path_slack / total_path_delay;
 
-                if (inet == 14) {
-                    cout << "SETUP pin " << ipin << " net delay " << net_delay[inet][ipin] << " total path delay " << total_path_delay
-                            << " slack " << path_slack << " temp_budgets " << temp_budgets[inet][ipin] << endl;
-                }
+//                if (inet == 14) {
+//                    cout << "SETUP pin " << ipin << " net delay " << net_delay[inet][ipin] << " total path delay " << total_path_delay
+//                            << " slack " << path_slack << " temp_budgets " << temp_budgets[inet][ipin] << endl;
+//                }
             }
             max_budget_change = max(max_budget_change, net_delay[inet][ipin] * path_slack / total_path_delay);
         }
@@ -377,7 +374,6 @@ void route_budgets::allocate_slack_using_delays_and_criticalities(float ** net_d
 
             /* Cut off pin criticality at max_criticality. */
             pin_criticality = min(pin_criticality, router_opts.max_criticality);
-
 
             delay_min_budget[inet][ipin] = 0;
             delay_lower_bound[inet][ipin] = 0;
