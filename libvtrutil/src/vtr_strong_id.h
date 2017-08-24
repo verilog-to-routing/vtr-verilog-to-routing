@@ -143,6 +143,7 @@
  */
 #include <type_traits> //for std::is_integral
 #include <cstddef> //for std::size_t
+#include <functional> //for std::hash
 
 namespace vtr {
 
