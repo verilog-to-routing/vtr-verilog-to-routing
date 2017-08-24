@@ -273,9 +273,9 @@ static float route_connection_delay(int source_x, int source_y,
 
     //Get the rr nodes to route between
     int driver_ptc = get_best_class(DRIVER, device_ctx.grid[source_x][source_y].type);
-    int source_rr_node = get_rr_node_index(source_x, source_y, SOURCE, driver_ptc, device_ctx.rr_node_indices);
+    int source_rr_node = get_rr_node_index(device_ctx.rr_node_indices, source_x, source_y, SOURCE, driver_ptc);
     int sink_ptc = get_best_class(RECEIVER, device_ctx.grid[sink_x][sink_y].type);
-    int sink_rr_node = get_rr_node_index(sink_x, sink_y, SINK, sink_ptc, device_ctx.rr_node_indices);
+    int sink_rr_node = get_rr_node_index(device_ctx.rr_node_indices, sink_x, sink_y, SINK, sink_ptc);
 
     bool successfully_routed = calculate_delay(source_rr_node, sink_rr_node,
             router_opts.astar_fac, router_opts.bend_cost,

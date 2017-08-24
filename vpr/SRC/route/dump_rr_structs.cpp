@@ -265,7 +265,7 @@ static void dump_rr_node_indices( fstream &file ){
 					continue;
 				}
 
-				std::vector<int> vec = device_ctx.rr_node_indices[rr_type][ix][iy];
+				std::vector<int> vec = device_ctx.rr_node_indices[rr_type][ix][iy][0];
 
 				if (vec.empty()){
 					/* skip if vector not allocated */

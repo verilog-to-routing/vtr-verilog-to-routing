@@ -917,7 +917,7 @@ struct t_linked_f_pointer {
 	float *fptr;
 };
 
-typedef std::vector<std::vector<std::vector<std::vector<int>>>> t_rr_node_indices; //[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..max_ptc-1]
+typedef std::vector<std::vector<std::vector<std::vector<std::vector<int>>>>> t_rr_node_indices; //[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
 
 /* Uncomment lines below to save some memory, at the cost of debugging ease. */
 /*enum e_rr_type {SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}; */

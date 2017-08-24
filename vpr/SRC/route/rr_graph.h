@@ -55,9 +55,7 @@ void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
 
 void print_rr_node(FILE *fp, t_rr_node *L_rr_node, int inode);
 
-void init_fan_in(const DeviceGrid& L_grid,
-        t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
-        const int num_rr_nodes);
+void init_fan_in(t_rr_node * L_rr_node, const int num_rr_nodes);
 
 void alloc_net_rr_terminals(void);
 

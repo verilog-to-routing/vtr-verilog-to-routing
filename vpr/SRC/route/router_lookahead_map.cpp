@@ -345,7 +345,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 
 	auto& device_ctx = g_vpr_ctx.device();
 
-	vector<int> channel_node_list = device_ctx.rr_node_indices[rr_type][chan_coord][seg_coord];
+	vector<int> channel_node_list = device_ctx.rr_node_indices[rr_type][chan_coord][0][seg_coord];
 
 	/* find first node in channel that has specified segment index and goes in the desired direction */
 	for (unsigned itrack = 0; itrack < channel_node_list.size(); itrack++){

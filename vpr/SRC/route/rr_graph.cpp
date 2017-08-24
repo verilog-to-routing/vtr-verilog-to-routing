@@ -94,7 +94,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(
         const int num_seg_types);
 
 static void build_bidir_rr_opins(
-        const int i, const int j,
+        const int i, const int j, const e_side side,
         t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
         const t_pin_to_track_lookup& opin_to_track_map, const std::vector<vtr::Matrix<int>>&Fc_out,
         bool * L_rr_edge_done, const t_seg_details * seg_details,
@@ -103,7 +103,7 @@ static void build_bidir_rr_opins(
         const int num_seg_types);
 
 static void build_unidir_rr_opins(
-        const int i, const int j,
+        const int i, const int j, const e_side side,
         const DeviceGrid& L_grid, const std::vector<vtr::Matrix<int>>&Fc_out,
         const int max_chan_width,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
@@ -114,7 +114,7 @@ static void build_unidir_rr_opins(
         const int num_seg_types);
 
 static int get_opin_direct_connecions(
-        int x, int y, int opin,
+        int x, int y, e_side side, int opin,
         t_linked_edge ** edge_list_ptr, const t_rr_node_indices& L_rr_node_indices,
         const t_direct_inf *directs, const int num_directs,
         const t_clb_to_clb_directs *clb_to_clb_directs);
@@ -651,8 +651,7 @@ static int alloc_and_load_rr_switch_inf(const int num_arch_switches, const int w
        To do this we will use an array of maps where each map corresponds to a different arch switch.
        So for each arch switch we will use this map to keep track of the different fan-ins that it uses (map key)
        and which index in the device_ctx.rr_switch_inf array this arch switch / fanin combination will be placed in */
-    map< int, int > *switch_fanin;
-    switch_fanin = new map<int, int>[num_arch_switches];
+    map<int, int> *switch_fanin = new map<int, int>[num_arch_switches];
 
     /* Determine what the different fan-ins are for each arch switch, and also
        how many entries the rr_switch_inf array should have */
@@ -1061,20 +1060,22 @@ static void alloc_and_load_rr_graph(const int num_nodes,
     /* Build opins */
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
-            if (BI_DIRECTIONAL == directionality) {
-                build_bidir_rr_opins(i, j, L_rr_node, L_rr_node_indices,
-                        opin_to_track_map, Fc_out, L_rr_edge_done, seg_details,
-                        grid,
-                        directs, num_directs, clb_to_clb_directs, num_seg_types);
-            } else {
-                VTR_ASSERT(UNI_DIRECTIONAL == directionality);
-                bool clipped;
-                build_unidir_rr_opins(i, j, grid, Fc_out, max_chan_width,
-                        chan_details_x, chan_details_y, Fc_xofs, Fc_yofs,
-                        L_rr_edge_done, &clipped, L_rr_node_indices,
-                        directs, num_directs, clb_to_clb_directs, num_seg_types);
-                if (clipped) {
-                    *Fc_clipped = true;
+            for (e_side side : SIDES) {
+                if (BI_DIRECTIONAL == directionality) {
+                    build_bidir_rr_opins(i, j, side, L_rr_node, L_rr_node_indices,
+                            opin_to_track_map, Fc_out, L_rr_edge_done, seg_details,
+                            grid,
+                            directs, num_directs, clb_to_clb_directs, num_seg_types);
+                } else {
+                    VTR_ASSERT(UNI_DIRECTIONAL == directionality);
+                    bool clipped;
+                    build_unidir_rr_opins(i, j, side, grid, Fc_out, max_chan_width,
+                            chan_details_x, chan_details_y, Fc_xofs, Fc_yofs,
+                            L_rr_edge_done, &clipped, L_rr_node_indices,
+                            directs, num_directs, clb_to_clb_directs, num_seg_types);
+                    if (clipped) {
+                        *Fc_clipped = true;
+                    }
                 }
             }
         }
@@ -1111,12 +1112,12 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         }
     }
 
-    init_fan_in(grid, L_rr_node, L_rr_node_indices, num_nodes);
+    init_fan_in(L_rr_node, num_nodes);
 
     free(opin_mux_size);
 }
 
-static void build_bidir_rr_opins(const int i, const int j,
+static void build_bidir_rr_opins(const int i, const int j, const e_side side,
         t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
         const t_pin_to_track_lookup& opin_to_track_map, const std::vector<vtr::Matrix<int>>&Fc_out,
         bool * L_rr_edge_done, const t_seg_details * seg_details,
@@ -1158,10 +1159,10 @@ static void build_bidir_rr_opins(const int i, const int j,
         }
 
         /* Add in direct connections */
-        num_edges += get_opin_direct_connecions(i, j, pin_index, &edge_list, L_rr_node_indices,
+        num_edges += get_opin_direct_connecions(i, j, side, pin_index, &edge_list, L_rr_node_indices,
                 directs, num_directs, clb_to_clb_directs);
 
-        int node_index = get_rr_node_index(i, j, OPIN, pin_index, L_rr_node_indices);
+        int node_index = get_rr_node_index(L_rr_node_indices, i, j, OPIN, pin_index, side);
         VTR_ASSERT(node_index >= 0);
         alloc_and_load_edges_and_switches(L_rr_node, node_index, num_edges,
                 L_rr_edge_done, edge_list);
@@ -1220,37 +1221,37 @@ void alloc_net_rr_terminals(void) {
 
 /* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
 * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    * 
-* Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of pin.         */
+* Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
 void load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
-	int i, j, pin_index, iclass, inode, pin_count;
-	t_type_ptr type;
 
-	auto& cluster_ctx = g_vpr_ctx.clustering();
-	auto& place_ctx = g_vpr_ctx.placement();
-	auto& route_ctx = g_vpr_ctx.mutable_routing();
+    int inode, i, j, node_block_pin, iclass;
+    t_type_ptr type;
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-		pin_count = 0;
+		int pin_count = 0;
 		for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
 			auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
 			i = place_ctx.block_locs[block_id].x;
 			j = place_ctx.block_locs[block_id].y;
-			type = cluster_ctx.clb_nlist.block_type(block_id);
+            type = cluster_ctx.clb_nlist.block_type(block_id);
 
-			/* In the routing graph, each (x, y) location has unique pins on it
-			* so when there is capacity, blocks are packed and their pin numbers
-			* are offset to get their actual rr_node */
-			pin_index = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
+            /* In the routing graph, each (x, y) location has unique pins on it
+             * so when there is capacity, blocks are packed and their pin numbers
+             * are offset to get their actual rr_node */
+            node_block_pin = cluster_ctx.clb_nlist.physical_pin_index(pin_id);
 
-			iclass = type->pin_class[pin_index];
+            iclass = type->pin_class[node_block_pin];
 
-			inode = get_rr_node_index(i, j, 
-				(pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
-				iclass, L_rr_node_indices);
-			route_ctx.net_rr_terminals[net_id][pin_count] = inode;
+            inode = get_rr_node_index(L_rr_node_indices, i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
+                    iclass);
+            route_ctx.net_rr_terminals[net_id][pin_count] = inode;
 			pin_count++;
-		}
-	}
+        }
+    }
 }
 
 /* Saves the rr_node corresponding to each SOURCE and SINK in each CLB      *
@@ -1284,8 +1285,7 @@ void alloc_and_load_rr_clb_source(const t_rr_node_indices& L_rr_node_indices) {
                 else
                     rr_type = SINK;
 
-                inode = get_rr_node_index(i, j, rr_type, iclass,
-                        L_rr_node_indices);
+                inode = get_rr_node_index(L_rr_node_indices, i, j, rr_type, iclass);
                 route_ctx.rr_blk_source[blk_id][iclass] = inode;
             } else {
                 route_ctx.rr_blk_source[blk_id][iclass] = OPEN;
@@ -1312,29 +1312,37 @@ static void build_rr_sinks_sources(const int i, const int j,
     int num_pins = type->num_pins;
     int *pin_class = type->pin_class;
 
-    /* SINKS and SOURCE to OPIN edges */
+    /* SINK and SOURCE-to-OPIN edges */
     for (int iclass = 0; iclass < num_class; ++iclass) {
         int inode = 0;
         if (class_inf[iclass].type == DRIVER) { /* SOURCE */
-            inode = get_rr_node_index(i, j, SOURCE, iclass, L_rr_node_indices);
+            inode = get_rr_node_index(L_rr_node_indices, i, j, SOURCE, iclass);
 
-            int num_edges = class_inf[iclass].num_pins;
-            L_rr_node[inode].set_num_edges(num_edges);
+            //Retrieve all the physical OPINs associated with this source, this includes
+            //those at different grid tiles of this block
+            std::vector<int> opin_nodes;
+            for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+                for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                    for (int ipin = 0; ipin < class_inf[iclass].num_pins; ++ipin) {
+                        int pin_num = class_inf[iclass].pinlist[ipin];
+                        auto physical_pins = get_rr_node_indices(L_rr_node_indices, i + width_offset, j + height_offset, OPIN, pin_num);
+                        opin_nodes.insert(opin_nodes.end(), physical_pins.begin(), physical_pins.end());
+                    }
+                }
+            }
 
-            //Connect the source to all its OPINs
-            for (int ipin = 0; ipin < class_inf[iclass].num_pins; ++ipin) {
-                int pin_num = class_inf[iclass].pinlist[ipin];
-                int to_node = get_rr_node_index(i, j, OPIN, pin_num, L_rr_node_indices);
-                L_rr_node[inode].set_edge_sink_node(ipin, to_node);
-                L_rr_node[inode].set_edge_switch(ipin, delayless_switch);
-
+            //Connect the SOURCE to each OPIN
+            L_rr_node[inode].set_num_edges(opin_nodes.size());
+            for (size_t iedge = 0; iedge < opin_nodes.size(); ++iedge) {
+                L_rr_node[inode].set_edge_sink_node(iedge, opin_nodes[iedge]);
+                L_rr_node[inode].set_edge_switch(iedge, delayless_switch);
             }
 
             L_rr_node[inode].set_cost_index(SOURCE_COST_INDEX);
             L_rr_node[inode].set_type(SOURCE);
         } else { /* SINK */
             VTR_ASSERT(class_inf[iclass].type == RECEIVER);
-            inode = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
+            inode = get_rr_node_index(L_rr_node_indices, i, j, SINK, iclass);
 
             /* NOTE:  To allow route throughs through clbs, change the lines below to  *
              * make an edge from the input SINK to the output SOURCE.  Do for just the *
@@ -1342,7 +1350,7 @@ static void build_rr_sinks_sources(const int i, const int j,
              * leads to.  If route throughs are allowed, you may want to increase the  *
              * base cost of OPINs and/or SOURCES so they aren't used excessively.      */
 
-            /* Initialize to unconnected to fix values */
+            /* Initialize to unconnected */
             L_rr_node[inode].set_num_edges(0);
 
             L_rr_node[inode].set_cost_index(SINK_COST_INDEX);
@@ -1357,23 +1365,22 @@ static void build_rr_sinks_sources(const int i, const int j,
         L_rr_node[inode].set_ptc_num(iclass);
     }
 
-    /* Connect IPINS to SINKS and dummy for OPINS */
+    /* Connect IPINS to SINKS and initialize OPINS */
     //We loop through all the pin locations on the block to initialize the IPINs/OPINs,
     //and hook-up the IPINs to sinks.
-    std::set<int> seen_pin_rr_nodes;
     for (int width_offset = 0; width_offset < type->width; ++width_offset) {
         for (int height_offset = 0; height_offset < type->height; ++height_offset) {
             for (e_side side : {TOP, BOTTOM, LEFT, RIGHT}) {
                 for (int ipin = 0; ipin < num_pins; ++ipin) {
 
                     if (type->pinloc[width_offset][height_offset][side][ipin]) {
-                        int inode = 0;
+                        int inode;
                         int iclass = pin_class[ipin];
 
                         if (class_inf[iclass].type == RECEIVER) {
                             //Connect the input pin to the sink
-                            inode = get_rr_node_index(i, j, IPIN, ipin, L_rr_node_indices); //TODO: does not handle multiple pins on different sides
-                            int to_node = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
+                            inode = get_rr_node_index(L_rr_node_indices, i + width_offset, j + height_offset, IPIN, ipin, side);
+                            int to_node = get_rr_node_index(L_rr_node_indices, i, j, SINK, iclass);
 
                             L_rr_node[inode].set_num_edges(1);
 
@@ -1387,17 +1394,12 @@ static void build_rr_sinks_sources(const int i, const int j,
                             VTR_ASSERT(class_inf[iclass].type == DRIVER);
                             //Initialize the output pin
                             // Note that we leave it's out-going edges unconnected (they will be hooked up to global routing later)
-                            inode = get_rr_node_index(i, j, OPIN, ipin, L_rr_node_indices); //TODO: does not handle multiple pins on different sides
+                            inode = get_rr_node_index(L_rr_node_indices, i + width_offset, j + height_offset, OPIN, ipin, side);
 
-                            L_rr_node[inode].set_num_edges(0);
+                            L_rr_node[inode].set_num_edges(0); //Initially unconnected
                             L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
                             L_rr_node[inode].set_type(OPIN);
                         }
-
-                        if (seen_pin_rr_nodes.count(inode)) {
-                            vtr::printf_warning(__FILE__, __LINE__, "Overwritting previous OPIN/IPIN\n");
-                        }
-                        seen_pin_rr_nodes.insert(inode);
 
                         /* Common to both DRIVERs and RECEIVERs */
                         L_rr_node[inode].set_capacity(1);
@@ -1418,54 +1420,21 @@ static void build_rr_sinks_sources(const int i, const int j,
     }
 }
 
-void init_fan_in(const DeviceGrid& grid,
-        t_rr_node * L_rr_node, const t_rr_node_indices& L_rr_node_indices,
-        const int num_rr_nodes) {
-    /* Loads IPIN, SINK, SOURCE, and OPIN. 
-     * Loads IPIN to SINK edges, and SOURCE to OPIN edges */
+void init_fan_in(t_rr_node * L_rr_node, const int num_rr_nodes) {
+    //Loads fan-ins for all nodes
+
+    //Reset all fan-ins to zero
     for (int i = 0; i < num_rr_nodes; i++) {
         L_rr_node[i].set_fan_in(0);
     }
 
-    for (size_t i = 0; i < grid.width(); ++i) {
-        for (size_t j = 0; j < grid.height(); ++j) {
-            t_type_ptr type = grid[i][j].type;
-            int num_class = type->num_class;
-            t_class *class_inf = type->class_inf;
-            int num_pins = type->num_pins;
-            int *pin_class = type->pin_class;
-
-            /* SINKS and SOURCE to OPIN edges */
-            for (int iclass = 0; iclass < num_class; ++iclass) {
-                if (class_inf[iclass].type == DRIVER) { /* SOURCE */
-                    for (int ipin = 0; ipin < class_inf[iclass].num_pins; ++ipin) {
-                        int pin_num = class_inf[iclass].pinlist[ipin];
-                        int to_node = get_rr_node_index(i, j, OPIN, pin_num, L_rr_node_indices);
-                        if (to_node != -1) {
-                            L_rr_node[to_node].set_fan_in((L_rr_node[to_node].fan_in() + 1));
-                        }
-                    }
-                }
-            }
-
-            /* Connect IPINS to SINKS and dummy for OPINS */
-            for (int ipin = 0; ipin < num_pins; ++ipin) {
-                int iclass = pin_class[ipin];
-                if (class_inf[iclass].type == RECEIVER) {
-                    int to_node = get_rr_node_index(i, j, SINK, iclass, L_rr_node_indices);
-                    if (to_node != -1) {
-                        L_rr_node[to_node].set_fan_in(L_rr_node[to_node].fan_in() + 1);
-                    }
-                }
-            }
-        }
-    }
-
+    //Walk the incrementing fanin on all downstream nodes
     for (int i = 0; i < num_rr_nodes; i++) {
         for (int iedge = 0; iedge < L_rr_node[i].num_edges(); iedge++) {
-            L_rr_node[L_rr_node[i].edge_sink_node(iedge)].set_fan_in(L_rr_node[L_rr_node[i].edge_sink_node(iedge)].fan_in() + 1);
-        }
+            int to_node = L_rr_node[i].edge_sink_node(iedge);
 
+            L_rr_node[to_node].set_fan_in(L_rr_node[to_node].fan_in() + 1);
+        }
     }
 }
 
@@ -1608,7 +1577,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         }
 
 
-        int node = get_rr_node_index(x_coord, y_coord, chan_type, track, L_rr_node_indices);
+        int node = get_rr_node_index(L_rr_node_indices, x_coord, y_coord, chan_type, track);
         VTR_ASSERT(node >= 0);
         alloc_and_load_edges_and_switches(L_rr_node, node, num_edges,
                 L_rr_edge_done, edge_list);
@@ -2185,7 +2154,7 @@ void print_rr_indexed_data(FILE * fp, int index) {
     fprintf(fp, "C_load: %g\n", device_ctx.rr_indexed_data[index].C_load);
 }
 
-static void build_unidir_rr_opins(const int i, const int j,
+static void build_unidir_rr_opins(const int i, const int j, const e_side side,
         const DeviceGrid& L_grid, const std::vector<vtr::Matrix<int>>&Fc_out, const int max_chan_width,
         const t_chan_details& chan_details_x, const t_chan_details& chan_details_y,
         vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs,
@@ -2194,19 +2163,18 @@ static void build_unidir_rr_opins(const int i, const int j,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types) {
 
-    /* This routine returns a list of the opins rr_nodes on each
-     * side/width/height of the block. You must free the result with
-     * free_matrix. */
+    /*
+     * This routine adds the edges from opins to channels at the specified 
+     * grid location (i,j) and grid tile side
+     */
     auto& device_ctx = g_vpr_ctx.device();
 
     *Fc_clipped = false;
 
-    /* Only the base block of a set should use this function */
-    if (L_grid[i][j].width_offset > 0 || L_grid[i][j].height_offset > 0) {
-        return;
-    }
-
     t_type_ptr type = L_grid[i][j].type;
+
+    int width_offset = L_grid[i][j].width_offset;
+    int height_offset = L_grid[i][j].height_offset;
 
     /* Go through each pin and find its fanout. */
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
@@ -2231,75 +2199,72 @@ static void build_unidir_rr_opins(const int i, const int j,
                 continue;
             }
 
-            for (int width = 0; width < type->width; ++width) {
-                for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+            /* Can't do anything if pin isn't at this location */
+            if (0 == type->pinloc[width_offset][height_offset][side][pin_index]) {
+                continue;
+            }
 
-                        /* Can't do anything if pin isn't at this location */
-                        if (0 == type->pinloc[width][height][side][pin_index]) {
-                            continue;
-                        }
+            /* Figure out the chan seg at that side. 
+             * side is the side of the logic or io block. */
+            bool vert = ((side == TOP) || (side == BOTTOM));
+            bool pos_dir = ((side == TOP) || (side == RIGHT));
+            t_rr_type chan_type = (vert ? CHANX : CHANY);
+            int chan = (vert ? (j) : (i));
+            int seg = (vert ? (i) : (j));
+            int max_len = (vert ? device_ctx.grid.width() : device_ctx.grid.height());
+            vtr::NdMatrix<int, 3>& Fc_ofs = (vert ? Fc_xofs : Fc_yofs);
+            if (false == pos_dir) {
+                --chan;
+            }
 
-                        /* Figure out the chan seg at that side. 
-                         * side is the side of the logic or io block. */
-                        bool vert = ((side == TOP) || (side == BOTTOM));
-                        bool pos_dir = ((side == TOP) || (side == RIGHT));
-                        t_rr_type chan_type = (vert ? CHANX : CHANY);
-                        int chan = (vert ? (j + height) : (i + width));
-                        int seg = (vert ? (i + width) : (j + height));
-                        int max_len = (vert ? device_ctx.grid.width() : device_ctx.grid.height());
-                        vtr::NdMatrix<int, 3>& Fc_ofs = (vert ? Fc_xofs : Fc_yofs);
-                        if (false == pos_dir) {
-                            --chan;
-                        }
+            /* Skip the location if there is no channel. */
+            if (chan < 0) {
+                continue;
+            }
+            if (seg < 1) {
+                continue;
+            }
+            if (seg > int(vert ? device_ctx.grid.width() : device_ctx.grid.height()) - 2) { //-2 since no channels around perim
+                continue;
+            }
+            if (chan > int(vert ? device_ctx.grid.height() : device_ctx.grid.width()) - 2) { //-2 since no channels around perim
+                continue;
+            }
 
-                        /* Skip the location if there is no channel. */
-                        if (chan < 0) {
-                            continue;
-                        }
-                        if (seg < 1) {
-                            continue;
-                        }
-                        if (seg > int(vert ? device_ctx.grid.width() : device_ctx.grid.height()) - 2) { //-2 since no channels around perim
-                            continue;
-                        }
-                        if (chan > int(vert ? device_ctx.grid.height() : device_ctx.grid.width()) - 2) { //-2 since no channels around perim
-                            continue;
-                        }
+            t_seg_details * seg_details = (chan_type == CHANX ?
+                    chan_details_x[seg][chan] : chan_details_y[chan][seg]);
+            if (seg_details[0].length == 0)
+                continue;
 
-                        t_seg_details * seg_details = (chan_type == CHANX ?
-                                chan_details_x[seg][chan] : chan_details_y[chan][seg]);
-                        if (seg_details[0].length == 0)
-                            continue;
-
-                        /* Get the list of opin to mux connections for that chan seg. */
-                        bool clipped;
-                        num_edges += get_unidir_opin_connections(chan, seg,
-                                seg_type_Fc, iseg, chan_type, seg_details, &edge_list,
-                                Fc_ofs, L_rr_edge_done, max_len, max_chan_width,
-                                L_rr_node_indices, &clipped);
-                        if (clipped) {
-                            *Fc_clipped = true;
-                        }
-                    }
-                }
+            /* Get the list of opin to mux connections for that chan seg. */
+            bool clipped;
+            num_edges += get_unidir_opin_connections(chan, seg,
+                    seg_type_Fc, iseg, chan_type, seg_details, &edge_list,
+                    Fc_ofs, L_rr_edge_done, max_len, max_chan_width,
+                    L_rr_node_indices, &clipped);
+            if (clipped) {
+                *Fc_clipped = true;
             }
         }
 
         /* Add in direct connections */
-        num_edges += get_opin_direct_connecions(i, j, pin_index, &edge_list, L_rr_node_indices,
+        num_edges += get_opin_direct_connecions(i, j, side, pin_index, &edge_list, L_rr_node_indices,
                 directs, num_directs, clb_to_clb_directs);
 
-        /* Add the edges */
-        int opin_node_index = get_rr_node_index(i, j, OPIN, pin_index, L_rr_node_indices);
-        VTR_ASSERT(opin_node_index >= 0);
-        alloc_and_load_edges_and_switches(device_ctx.rr_nodes, opin_node_index, num_edges,
-                L_rr_edge_done, edge_list);
-        while (edge_list != NULL) {
-            t_linked_edge *next_edge = edge_list->next;
-            free(edge_list);
-            edge_list = next_edge;
+        if (num_edges != 0) {
+
+            /* Add the edges */
+            int opin_node_index = get_rr_node_index(L_rr_node_indices, i, j, OPIN, pin_index, side);
+            VTR_ASSERT(opin_node_index >= 0);
+            alloc_and_load_edges_and_switches(device_ctx.rr_nodes, opin_node_index, num_edges,
+                    L_rr_edge_done, edge_list);
+            while (edge_list != NULL) {
+                t_linked_edge *next_edge = edge_list->next;
+                free(edge_list);
+                edge_list = next_edge;
+            }
         }
+        VTR_ASSERT(edge_list == nullptr);
     }
 }
 
@@ -2414,15 +2379,17 @@ static t_clb_to_clb_directs * alloc_and_load_clb_to_clb_directs(const t_direct_i
     return clb_to_clb_directs;
 }
 
-/* Add all direct clb-pin-to-clb-pin edges to given opin */
-static int get_opin_direct_connecions(int x, int y, int opin,
+/* Add all direct clb-pin-to-clb-pin edges to given opin
+ * 
+ * The current opin is located at (x,y) along the specified side
+ */
+static int get_opin_direct_connecions(int x, int y, e_side side, int opin,
         t_linked_edge ** edge_list_ptr, const t_rr_node_indices& L_rr_node_indices,
         const t_direct_inf *directs, const int num_directs,
         const t_clb_to_clb_directs *clb_to_clb_directs) {
 
     t_type_ptr curr_type, target_type;
-    int width_offset, height_offset;
-    int i, ipin, inode;
+    int i, ipin;
     t_linked_edge *edge_list_head;
     int max_index, min_index, offset, swap;
     int new_edges;
@@ -2432,6 +2399,12 @@ static int get_opin_direct_connecions(int x, int y, int opin,
     curr_type = device_ctx.grid[x][y].type;
     edge_list_head = *edge_list_ptr;
     new_edges = 0;
+
+    int width_offset = device_ctx.grid[x][y].width_offset;
+    int height_offset = device_ctx.grid[x][y].height_offset;
+    if (!curr_type->pinloc[width_offset][height_offset][side][opin]) {
+        return 0; //No source pin on this side
+    }
 
     /* Iterate through all direct connections */
     for (i = 0; i < num_directs; i++) {
@@ -2477,10 +2450,18 @@ static int get_opin_direct_connecions(int x, int y, int opin,
                         }
 
                         /* Add new ipin edge to list of edges */
-                        width_offset = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].width_offset;
-                        height_offset = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].height_offset;
-                        inode = get_rr_node_index(x + directs[i].x_offset - width_offset, y + directs[i].y_offset - height_offset,
-                                IPIN, ipin, L_rr_node_indices);
+                        int target_width_offset = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].width_offset;
+                        int target_height_offset = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].height_offset;
+
+                        auto inodes = get_rr_node_indices(L_rr_node_indices, x + directs[i].x_offset - target_width_offset, y + directs[i].y_offset - target_height_offset,
+                                IPIN, ipin);
+
+                        //There may be multiple physical pins corresponding to the logical 
+                        //target ipin. We only need to connect to one of them (since the physical pins
+                        //are logically equivalent).
+                        VTR_ASSERT(inodes.size() > 0);
+                        int inode = inodes[0];
+
                         edge_list_head = insert_in_edge_list(edge_list_head, inode, clb_to_clb_directs[i].switch_index);
                         new_edges++;
                     }

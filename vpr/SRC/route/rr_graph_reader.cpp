@@ -165,7 +165,7 @@ void load_rr_file(const t_graph_type graph_type,
 
         process_rr_node_indices(grid);
 
-        init_fan_in(grid, device_ctx.rr_nodes, device_ctx.rr_node_indices, device_ctx.num_rr_nodes);
+        init_fan_in(device_ctx.rr_nodes, device_ctx.num_rr_nodes);
 
         //sets the cost index and seg id information
         next_component = get_single_child(rr_graph, "rr_nodes", loc_data);
@@ -599,25 +599,25 @@ void process_rr_node_indices(const DeviceGrid& grid) {
         if (node.type() == SOURCE || node.type() == SINK) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                    indices[SINK][ix][iy].push_back(inode);
+                    indices[SINK][ix][iy][0].push_back(inode);
                 }
             }
         } else if (node.type() == IPIN || node.type() == OPIN) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                    indices[IPIN][ix][iy].push_back(inode);
+                    indices[IPIN][ix][iy][0].push_back(inode); //TODO: fix to use correct side
                 }
             }
         } else if (node.type() == CHANX) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                    indices[CHANX][iy][ix].push_back(inode);
+                    indices[CHANX][iy][ix][0].push_back(inode);
                 }
             }
         } else if (node.type() == CHANY) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                    indices[CHANY][ix][iy].push_back(inode);
+                    indices[CHANY][ix][iy][0].push_back(inode);
                 }
             }
         }
@@ -631,14 +631,14 @@ void process_rr_node_indices(const DeviceGrid& grid) {
             for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                     count = node.ptc_num();
-                    indices[CHANX][iy][ix][count] = inode;
+                    indices[CHANX][iy][ix][0][count] = inode;
                 }
             }
         } else if (node.type() == CHANY) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                     count = node.ptc_num();
-                    indices[CHANY][ix][iy][count] = inode;
+                    indices[CHANY][ix][iy][0][count] = inode;
                 }
             }
         }

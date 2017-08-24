@@ -1,5 +1,6 @@
 #ifndef RR_GRAPH2_H
 #define RR_GRAPH2_H
+#include <vector>
 
 #include "build_switchblocks.h"
 #include "rr_graph_util.h"
@@ -25,6 +26,15 @@ int get_rr_node_index(
 		int x, int y, 
 		t_rr_type rr_type, int ptc,
 		const t_rr_node_indices& L_rr_node_indices);
+
+//Returns all the rr nodes associated with the specified coordinate (i.e. accross sides)
+std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
+                                     int x, int y, t_rr_type rr_type, int ptc);
+
+//Return the first rr node of the specified type and coordinates
+// For non-IPIN/OPIN types 'side' is ignored
+int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
+        int x, int y, t_rr_type rr_type, int ptc, e_side side=NUM_SIDES);
 
 int find_average_rr_node_index(
 		int device_width, int device_height,

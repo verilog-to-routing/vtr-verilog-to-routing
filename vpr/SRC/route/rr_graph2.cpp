@@ -28,7 +28,12 @@ static void load_chan_rr_indices(
         const int max_chan_width, const int chan_len,
         const int num_chans, const t_rr_type type,
         const t_chan_details& chan_details,
-        int *index, t_rr_node_indices& indices);
+        t_rr_node_indices& indices, int *index);
+
+static void load_block_rr_indices(
+        const DeviceGrid& grid,
+        t_rr_node_indices& indices,
+        int* index);
 
 static int get_bidir_track_to_chan_seg(
         const std::vector<int> conn_tracks,
@@ -759,7 +764,7 @@ int get_bidir_opin_connections(
             /* Only connect to wire if there is a CB */
             if (is_cblock(chan, seg, to_track, seg_details)) {
                 to_switch = seg_details[to_track].arch_wire_switch;
-                to_node = get_rr_node_index(tr_i, tr_j, to_type, to_track, L_rr_node_indices);
+                to_node = get_rr_node_index(L_rr_node_indices, tr_i, tr_j, to_type, to_track);
 
                 *edge_list = insert_in_edge_list(*edge_list, to_node, to_switch);
                 L_rr_edge_done[to_node] = true;
@@ -831,8 +836,8 @@ int get_unidir_opin_connections(
         dec_track = dec_muxes[dec_mux];
 
         /* Figure the inodes of those muxes */
-        inc_inode_index = get_rr_node_index(x, y, chan_type, inc_track, L_rr_node_indices);
-        dec_inode_index = get_rr_node_index(x, y, chan_type, dec_track, L_rr_node_indices);
+        inc_inode_index = get_rr_node_index(L_rr_node_indices, x, y, chan_type, inc_track);
+        dec_inode_index = get_rr_node_index(L_rr_node_indices, x, y, chan_type, dec_track);
         /* Add to the list. */
         if (false == L_rr_edge_done[inc_inode_index]) {
             L_rr_edge_done[inc_inode_index] = true;
@@ -1072,21 +1077,19 @@ static void load_chan_rr_indices(
         const int max_chan_width, const int chan_len,
         const int num_chans, const t_rr_type type,
         const t_chan_details& chan_details,
-        int *index, t_rr_node_indices& indices) {
+        t_rr_node_indices& indices, int *index) {
 
-    indices[type].resize(num_chans);
+    VTR_ASSERT(indices[type].size() == size_t(num_chans));
     for (int chan = 0; chan < num_chans - 1; ++chan) {
 
-        indices[type][chan].resize(chan_len);
+        VTR_ASSERT(indices[type][chan].size() == size_t(chan_len));
 
         for (int seg = 1; seg < chan_len - 1; ++seg) {
+            VTR_ASSERT(indices[type][chan][seg].size() == NUM_SIDES);
 
             /* Alloc the track inode lookup list */
-            indices[type][chan][seg].resize(max_chan_width);
-
-            for (int track = 0; track < max_chan_width; ++track) {
-                indices[type][chan][seg][track] = OPEN;
-            }
+            //Since channels have no side, we just use the first side
+            indices[type][chan][seg][0].resize(max_chan_width, OPEN);
         }
     }
 
@@ -1098,7 +1101,7 @@ static void load_chan_rr_indices(
             int y = (type == CHANX ? chan : seg);
             t_seg_details * seg_details = chan_details[x][y];
 
-            for (unsigned track = 0; track < indices[type][chan][seg].size(); ++track) {
+            for (unsigned track = 0; track < indices[type][chan][seg][0].size(); ++track) {
 
                 if (seg_details[track].length <= 0)
                     continue;
@@ -1107,19 +1110,101 @@ static void load_chan_rr_indices(
 
                 /* If the start of the wire doesn't have a inode, 
                  * assign one to it. */
-                int inode = indices[type][chan][start][track];
+                int inode = indices[type][chan][start][0][track];
                 if (OPEN == inode) {
                     inode = *index;
                     ++(*index);
 
-                    indices[type][chan][start][track] = inode;
+                    indices[type][chan][start][0][track] = inode;
                 }
 
                 /* Assign inode of start of wire to current position */
-                indices[type][chan][seg][track] = inode;
+                indices[type][chan][seg][0][track] = inode;
             }
         }
     }
+}
+
+static void load_block_rr_indices(
+        const DeviceGrid& grid,
+        t_rr_node_indices& indices,
+        int* index) {
+
+    //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
+    for (size_t x = 0; x < grid.width(); x++) {
+        for (size_t y = 0; y < grid.height(); y++) {
+            if (grid[x][y].width_offset == 0 && grid[x][y].height_offset == 0) {
+                //Process each block from it's root location
+                t_type_ptr type = grid[x][y].type;
+
+                //Assign indicies for SINKs and SOURCEs
+                // Note that SINKS/SOURCES have no side, so we always use side 0
+                for (int iclass = 0; iclass < type->num_class; ++iclass) {
+                    auto class_type = type->class_inf[iclass].type;
+                    if (class_type == DRIVER) {
+                        indices[SOURCE][x][y][0].push_back(*index);
+                        indices[SINK][x][y][0].push_back(OPEN);
+                    } else {
+                        VTR_ASSERT(class_type == RECEIVER);
+                        indices[SINK][x][y][0].push_back(*index);
+                        indices[SOURCE][x][y][0].push_back(OPEN);
+                    }
+                    ++(*index);
+                }
+                VTR_ASSERT(indices[SOURCE][x][y][0].size() == size_t(type->num_class));
+                VTR_ASSERT(indices[SINK][x][y][0].size() == size_t(type->num_class));
+
+                //Assign indicies for IPINs and OPINs at all offsets from root
+                for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+                    int x_tile = x + width_offset;
+                    for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                        int y_tile = y + height_offset;
+                        for (e_side side : SIDES) {
+                            for (int ipin = 0; ipin < type->num_pins; ++ipin) {
+                                if (type->pinloc[width_offset][height_offset][side][ipin]) {
+
+                                    int iclass = type->pin_class[ipin];
+                                    auto class_type = type->class_inf[iclass].type;
+
+                                    if (class_type == DRIVER) {
+                                        indices[OPIN][x_tile][y_tile][side].push_back(*index);
+                                        indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
+                                    } else {
+                                        VTR_ASSERT(class_type == RECEIVER);
+                                        indices[IPIN][x_tile][y_tile][side].push_back(*index);
+                                        indices[OPIN][x_tile][y_tile][side].push_back(OPEN);
+                                    }
+                                    ++(*index);
+                                } else {
+                                    indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
+                                    indices[OPIN][x_tile][y_tile][side].push_back(OPEN);
+                                }
+                            }
+                            VTR_ASSERT(indices[IPIN][x_tile][y_tile][side].size() == size_t(type->num_pins));
+                            VTR_ASSERT(indices[OPIN][x_tile][y_tile][side].size() == size_t(type->num_pins));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //Copy the SOURCE/SINK nodes to all offset positions for blocks with width > 1 and/or height > 1
+    // This ensures that look-ups on non-root locations will still find the correct SOURCE/SINK
+    for (size_t x = 0; x < grid.width(); x++) {
+        for (size_t y = 0; y < grid.height(); y++) {
+            int width_offset = grid[x][y].width_offset;
+            int height_offset = grid[x][y].height_offset;
+            if (width_offset != 0 || height_offset != 0) {
+                int root_x = x - width_offset;
+                int root_y = y - height_offset;
+
+                indices[SOURCE][x][y] = indices[SOURCE][root_x][root_y];
+                indices[SINK][x][y] = indices[SINK][root_x][root_y];
+            }
+        }
+    }
+
 }
 
 t_rr_node_indices alloc_and_load_rr_node_indices(
@@ -1131,92 +1216,97 @@ t_rr_node_indices alloc_and_load_rr_node_indices(
      * of the *first* rr_node at a given (i,j) location.                       */
 
     t_rr_node_indices indices;
-    vector<int> tmp;
-    t_type_ptr type;
 
     /* Alloc the lookup table */
     indices.resize(NUM_RR_TYPES);
-
-    indices[IPIN].resize(grid.width());
-    indices[SINK].resize(grid.width());
-    for (size_t i = 0; i < grid.width(); ++i) {
-        indices[IPIN][i].resize(grid.height());
-        indices[SINK][i].resize(grid.height());
-    }
-
-    /* Count indices for block nodes */
-    for (size_t i = 0; i < grid.width(); i++) {
-        for (size_t j = 0; j < grid.height(); j++) {
-            if (grid[i][j].width_offset == 0 && grid[i][j].height_offset == 0) {
-                type = grid[i][j].type;
-
-                /* Load the pin class lookups. The ptc nums for SINK and SOURCE
-                 * are disjoint so they can share the list. */
-
-                for (int k = 0; k < type->num_class; ++k) {
-                    indices[SINK][i][j].push_back(*index);
-                    ++(*index);
+    for (t_rr_type rr_type : RR_TYPES) {
+        if (rr_type == CHANX) {
+            indices[rr_type].resize(grid.height());
+            for (size_t y = 0; y < grid.height(); ++y) {
+                indices[rr_type][y].resize(grid.width());
+                for (size_t x = 0; x < grid.width(); ++x) {
+                    indices[rr_type][y][x].resize(NUM_SIDES);
                 }
-
-                /* Load the pin lookups. The ptc nums for IPIN and OPIN
-                 * are disjoint so they can share the list. */
-                for (int k = 0; k < type->num_pins; ++k) {
-                    indices[IPIN][i][j].push_back(*index);
-                    ++(*index);
+            }
+        } else {
+            indices[rr_type].resize(grid.width());
+            for (size_t x = 0; x < grid.width(); ++x) {
+                indices[rr_type][x].resize(grid.height());
+                for (size_t y = 0; y < grid.height(); ++y) {
+                    indices[rr_type][x][y].resize(NUM_SIDES);
                 }
             }
         }
     }
 
-    /* Point offset blocks of a large block to base block */
-    for (size_t i = 0; i < grid.width(); i++) {
-        for (size_t j = 0; j < grid.height(); j++) {
-            if (grid[i][j].width_offset > 0 || grid[i][j].height_offset > 0) {
-                /* NOTE: this only supports horizontal and/or vertical large blocks */
-                indices[SINK][i][j] = indices[SINK][i - grid[i][j].width_offset][j - grid[i][j].height_offset];
-                indices[IPIN][i][j] = indices[IPIN][i - grid[i][j].width_offset][j - grid[i][j].height_offset];
-            }
-        }
-    }
-
-    /* SOURCE and SINK have unique ptc values so their data can be shared.
-     * IPIN and OPIN have unique ptc values so their data can be shared. */
-    indices[SOURCE] = indices[SINK];
-    indices[OPIN] = indices[IPIN];
+    /* Assign indices for block nodes */
+    load_block_rr_indices(grid, indices, index);
 
     /* Load the data for x and y channels */
     load_chan_rr_indices(max_chan_width, grid.width(), grid.height(),
-            CHANX, chan_details_x, index, indices);
+            CHANX, chan_details_x, indices, index);
     load_chan_rr_indices(max_chan_width, grid.height(), grid.width(),
-            CHANY, chan_details_y, index, indices);
+            CHANY, chan_details_y, indices, index);
     return indices;
 }
 
-int get_rr_node_index(
-        int x, int y, t_rr_type rr_type, int ptc,
-        const t_rr_node_indices& L_rr_node_indices) {
-    /* Returns the index of the specified routing resource node.  (x,y) are     *
-     * the location within the FPGA, rr_type specifies the type of resource,    *
-     * and ptc gives the number of this resource.  ptc is the class number,   *
-     * pin number or track number, depending on what type of resource this      *
-     * is.  All ptcs start at 0 and go up to pins_per_clb-1 or the equivalent. *
-     * The order within a clb is:  SOURCEs + SINKs (type->num_class of them); IPINs,  *
-     * and OPINs (pins_per_clb of them); CHANX; and CHANY (max_chan_width of    *
-     * each).  For (x,y) locations that point at pads the order is:  type->capacity     *
-     * occurances of SOURCE, SINK, OPIN, IPIN (one for each pad), then one      *
-     * associated channel (if there is a channel at (x,y)).  All IO pads are    *
-     * bidirectional, so while each will be used only as an INPAD or as an      *
-     * OUTPAD, all the switches necessary to do both must be in each pad.       *
-     *                                                                          *
-     * Note that for segments (CHANX and CHANY) of length > 1, the segment is   *
-     * given an rr_index based on the (x,y) location at which it starts (i.e.   *
-     * lowest (x,y) location at which this segment exists).                     *
-     * This routine also performs error checking to make sure the node in       *
-     * question exists.                                                         */
+std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
+                                     int x, int y, t_rr_type rr_type, int ptc) {
+    /*
+     * Like get_rr_node_index() but returns all matching nodes,
+     * rather than just the first. This is particularly useful for getting all instances
+     * of a specific IPIN/OPIN at a specific gird tile (x,y) location.
+     */
+    std::vector<int> indices;
 
-    int iclass, tmp;
-    t_type_ptr type;
-    vector<int> lookup;
+    if (rr_type == IPIN || rr_type == OPIN) {
+        //For pins we need to look at all the sides of the current grid tile
+
+        for (e_side side : SIDES) {
+            int rr_node_index = get_rr_node_index(L_rr_node_indices, x, y, rr_type, ptc, side);
+
+            if (rr_node_index >= 0) {
+                indices.push_back(rr_node_index);
+            }
+        }
+    } else {
+        //Sides do not effect non-pins so there should only be one per ptc
+        int rr_node_index = get_rr_node_index(L_rr_node_indices, x, y, rr_type, ptc);
+        indices.push_back(rr_node_index);
+    }
+
+    return indices;
+}
+
+int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
+        int x, int y, t_rr_type rr_type, int ptc, e_side side) {
+    /* 
+     * Returns the index of the specified routing resource node.  (x,y) are 
+     * the location within the FPGA, rr_type specifies the type of resource, 
+     * and ptc gives the number of this resource.  ptc is the class number,
+     * pin number or track number, depending on what type of resource this
+     * is.  All ptcs start at 0 and go up to pins_per_clb-1 or the equivalent.
+     * There are type->num_class SOURCEs + SINKs, type->num_pins IPINs + OPINs,
+     * and max_chan_width CHANX and CHANY (each).
+     *
+     * Note that for segments (CHANX and CHANY) of length > 1, the segment is
+     * given an rr_index based on the (x,y) location at which it starts (i.e.
+     * lowest (x,y) location at which this segment exists).
+     * This routine also performs error checking to make sure the node in
+     * question exists.
+     *
+     * The 'side' argument only applies to IPIN/OPIN types, and specifies which
+     * side of the grid tile the node should be located on. The value is ignored
+     * for non-IPIN/OPIN types
+     */
+    if (rr_type == IPIN || rr_type == OPIN) {
+        VTR_ASSERT_MSG(side != NUM_SIDES, "IPIN/OPIN must specify desired side (can not be default NUM_SIDES)");
+    } else {
+        VTR_ASSERT(rr_type != IPIN && rr_type != OPIN);
+        side = SIDES[0];
+    }
+
+    int iclass;
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -1224,17 +1314,15 @@ int get_rr_node_index(
     VTR_ASSERT(x >= 0 && x < int(device_ctx.grid.width()));
     VTR_ASSERT(y >= 0 && y < int(device_ctx.grid.height()));
 
-    type = device_ctx.grid[x][y].type;
+    t_type_ptr type = device_ctx.grid[x][y].type;
 
     /* Currently need to swap x and y for CHANX because of chan, seg convention */
     if (CHANX == rr_type) {
-        tmp = x;
-        x = y;
-        y = tmp;
+        std::swap(x, y);
     }
 
     /* Start of that block.  */
-    lookup = L_rr_node_indices[rr_type][x][y];
+    const std::vector<int>& lookup = L_rr_node_indices[rr_type][x][y][side];
 
     /* Check valid ptc num */
     VTR_ASSERT(ptc >= 0);
@@ -1286,16 +1374,16 @@ int find_average_rr_node_index(
      * Worst case, this function will simply return the 1st non-EMPTY and     *
      * non-IO node.                                                           */
 
-    int inode = get_rr_node_index((device_width) / 2, (device_height) / 2,
-            rr_type, ptc, L_rr_node_indices);
+    int inode = get_rr_node_index(L_rr_node_indices, (device_width) / 2, (device_height) / 2,
+            rr_type, ptc);
 
     if (inode == -1) {
-        inode = get_rr_node_index((device_width) / 4, (device_height) / 4,
-                rr_type, ptc, L_rr_node_indices);
+        inode = get_rr_node_index(L_rr_node_indices, (device_width) / 4, (device_height) / 4,
+                rr_type, ptc);
     }
     if (inode == -1) {
-        inode = get_rr_node_index((device_width) / 4 * 3, (device_height) / 4 * 3,
-                rr_type, ptc, L_rr_node_indices);
+        inode = get_rr_node_index(L_rr_node_indices, (device_width) / 4 * 3, (device_height) / 4 * 3,
+                rr_type, ptc);
     }
     if (inode == -1) {
 
@@ -1309,8 +1397,7 @@ int find_average_rr_node_index(
                 if (device_ctx.grid[x][y].type == device_ctx.IO_TYPE)
                     continue;
 
-                inode = get_rr_node_index(x, y,
-                        rr_type, ptc, L_rr_node_indices);
+                inode = get_rr_node_index(L_rr_node_indices, x, y, rr_type, ptc);
                 if (inode != -1)
                     break;
             }
@@ -1329,10 +1416,10 @@ int get_track_to_pins(
         enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
         enum e_directionality directionality) {
 
-    /* This counts the fan-out from wire segment (chan, seg, track) to blocks on either side */
+    /* This counts the fan-out from wire segment at (chan, seg, track) to blocks on either side */
 
     t_linked_edge *edge_list_head;
-    int j, pass, iconn, phy_track, end, to_node, max_conn, ipin, side, x, y, num_conn;
+    int j, pass, iconn, phy_track, end, max_conn, ipin, x, y, num_conn;
     t_type_ptr type;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -1345,7 +1432,8 @@ int get_track_to_pins(
 
     for (j = seg; j <= end; j++) {
         if (is_cblock(chan, j, track, seg_details)) {
-            for (pass = 0; pass < 2; ++pass) {
+            for (pass = 0; pass < 2; ++pass) { //pass == 0 => TOP/RIGHT, pass == 1 => BOTTOM/LEFT
+                e_side side;
                 if (CHANX == chan_type) {
                     x = j;
                     y = chan + pass;
@@ -1378,9 +1466,14 @@ int get_track_to_pins(
                     ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side][iconn];
 
                     /* Check there is a connection and Fc map isn't wrong */
-                    to_node = get_rr_node_index(x, y, IPIN, ipin, L_rr_node_indices);
-                    edge_list_head = insert_in_edge_list(edge_list_head, to_node, wire_to_ipin_switch);
-                    ++num_conn;
+                    /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
+                    int to_node = get_rr_node_index(L_rr_node_indices, x, y, IPIN, ipin, side);
+                    if (to_node >= 0) {
+                        edge_list_head = insert_in_edge_list(edge_list_head, to_node, wire_to_ipin_switch);
+                        ++num_conn;
+                    } else {
+                        vtr::printf("FOUND\n");
+                    }
                 }
             }
         }
@@ -1637,7 +1730,7 @@ static int get_bidir_track_to_chan_seg(
     num_conn = 0;
     for (iconn = 0; iconn < conn_tracks.size(); ++iconn) {
         to_track = conn_tracks[iconn];
-        to_node = get_rr_node_index(to_x, to_y, to_type, to_track, L_rr_node_indices);
+        to_node = get_rr_node_index(L_rr_node_indices, to_x, to_y, to_type, to_track);
 
         /* Skip edge if already done */
         if (L_rr_edge_done[to_node]) {
@@ -1717,8 +1810,7 @@ static int get_track_to_chan_seg(
             if (conn_vector.at(iconn).from_wire != from_wire) continue;
 
             int to_wire = conn_vector.at(iconn).to_wire;
-            int to_node = get_rr_node_index(to_x, to_y, to_chan_type, to_wire,
-                    L_rr_node_indices);
+            int to_node = get_rr_node_index(L_rr_node_indices, to_x, to_y, to_chan_type, to_wire);
 
             /* Get the index of the switch connecting the two wires */
             int src_switch = conn_vector[iconn].switch_ind;
@@ -1801,7 +1893,7 @@ static int get_unidir_track_to_chan_seg(
                 sblock_pattern[sb_x][sb_y][from_side][to_side][from_track][j + 1] = to_track;
             }
 
-            int to_node = get_rr_node_index(to_x, to_y, to_type, to_track, L_rr_node_indices);
+            int to_node = get_rr_node_index(L_rr_node_indices, to_x, to_y, to_type, to_track);
             if (L_rr_edge_done[to_node])
                 continue;
 
