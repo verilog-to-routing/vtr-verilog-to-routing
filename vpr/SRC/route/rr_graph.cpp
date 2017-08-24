@@ -1428,7 +1428,7 @@ void init_fan_in(t_rr_node * L_rr_node, const int num_rr_nodes) {
         L_rr_node[i].set_fan_in(0);
     }
 
-    //Walk the incrementing fanin on all downstream nodes
+    //Walk the graph and increment fanin on all downstream nodes
     for (int i = 0; i < num_rr_nodes; i++) {
         for (int iedge = 0; iedge < L_rr_node[i].num_edges(); iedge++) {
             int to_node = L_rr_node[i].edge_sink_node(iedge);
@@ -1464,7 +1464,6 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
     int chan_dimension = device_ctx.grid.height() - 2; //-2 for no perim channels
     const t_chan_details& from_chan_details = (chan_type == CHANX) ? chan_details_x : chan_details_y;
     const t_chan_details& opposite_chan_details = (chan_type == CHANX) ? chan_details_y : chan_details_x;
-    ;
     t_rr_type opposite_chan_type = CHANY;
     if (chan_type == CHANY) {
         seg_coord = y_coord;
