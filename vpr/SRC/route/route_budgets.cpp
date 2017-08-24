@@ -227,7 +227,7 @@ void route_budgets::allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_i
 
     std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer = timing_info->setup_hold_analyzer();
     int iteration = 0;
-    float average_slack_difference =0;
+    float average_slack_difference = 0;
     float ** new_path_slack;
     float ** path_slack;
 
@@ -240,6 +240,7 @@ void route_budgets::allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_i
     float final_required_time, future_path_delay, past_path_delay;
     int num_slacks = 0;
     do {
+        average_slack_difference = 0;
         for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
             for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
                 total_path_delay = 0;
@@ -311,41 +312,35 @@ void route_budgets::allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_i
                     new_path_slack[inet][ipin] = calculate_clb_pin_slack(inet, ipin, timing_info, pb_gpin_lookup, SETUP);
                 }
 
-                if (iteration == 0) {
-                    average_slack_difference =0;
-                    num_slacks = 0;
-                } else {
-                    average_slack_difference += new_path_slack[inet][ipin] - path_slack[inet][ipin];
-                    num_slacks++;
-                }
+                average_slack_difference += new_path_slack[inet][ipin] - path_slack[inet][ipin];
+                num_slacks++;
+
                 path_slack[inet][ipin] = new_path_slack[inet][ipin];
 
                 if (analysis_type == HOLD) {
                     temp_budgets[inet][ipin] -= net_delay[inet][ipin] * path_slack[inet][ipin] / total_path_delay;
 
-                    //                    if (inet == 14) {
-                    //                        cout << "HOLD pin " << ipin << " net delay " << net_delay[inet][ipin] << " total path delay " << total_path_delay
-                    //                                << " slack " << path_slack[inet][ipin] << " temp_budgets " << temp_budgets[inet][ipin] << endl;
-                    //                    }
+                    if (inet == 14) {
+                        cout << "HOLD pin " << ipin << " net delay " << net_delay[inet][ipin] << " total path delay " << total_path_delay
+                                << " slack " << path_slack[inet][ipin] << " temp_budgets " << temp_budgets[inet][ipin] << endl;
+                    }
                 } else {
                     temp_budgets[inet][ipin] += net_delay[inet][ipin] * path_slack[inet][ipin] / total_path_delay;
 
-                    //                    if (inet == 14) {
-                    //                        cout << "SETUP pin " << ipin << " net delay " << net_delay[inet][ipin] << " total path delay " << total_path_delay
-                    //                                << " slack " << path_slack[inet][ipin] << " temp_budgets " << temp_budgets[inet][ipin] << endl;
-                    //                    }
+                    if (inet == 14) {
+                        cout << "SETUP pin " << ipin << " net delay " << net_delay[inet][ipin] << " total path delay " << total_path_delay
+                                << " slack " << path_slack[inet][ipin] << " temp_budgets " << temp_budgets[inet][ipin] << endl;
+                    }
                 }
 
             }
         }
-        iteration++;
-        //cout << endl;
-
+        cout << endl;
         keep_budget_in_bounds(MAX, temp_budgets);
         timing_info = perform_sta(temp_budgets);
         average_slack_difference = average_slack_difference / num_slacks;
-
-    } while (iteration < 5 && abs(average_slack_difference) > 1e-12);
+        iteration++;
+    } while (iteration < 5 && ((abs(average_slack_difference) > 1e-12 && iteration != 1) || iteration == 1));
 
     free_net_delay(path_slack, &slack_delay_ch);
     free_net_delay(new_path_slack, &new_slack_delay_ch);
