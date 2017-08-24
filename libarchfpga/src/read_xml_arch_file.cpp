@@ -323,7 +323,6 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 
 	capacity = Type->capacity;
 
-    expect_only_children(Locations, {"loc"}, loc_data);
     expect_only_attributes(Locations, {"pattern"}, loc_data);
 
 	Prop = get_attribute(Locations, "pattern", loc_data).value();
@@ -368,6 +367,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 
 	/* Load the pin locations */
 	if (Type->pin_location_distribution == E_CUSTOM_PIN_DISTR) {
+        expect_only_children(Locations, {"loc"}, loc_data);
 		Cur = Locations.first_child();
         std::set<std::tuple<e_side,int,int>> seen_sides;
 		while (Cur) {
@@ -544,7 +544,10 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
                 }
             }
         }
-	}
+	} else {
+        //Non-custom pin locations. There should be no child tags
+        expect_child_node_count(Locations, 0, loc_data);
+    }
 
 	/* Setup pin classes */
 	num_class = 0;
