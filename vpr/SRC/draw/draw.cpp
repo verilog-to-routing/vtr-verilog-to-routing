@@ -2426,12 +2426,12 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node) {
         draw_pin_offset = -draw_coords->pin_size;
     }
 
-    float x1, y1;
+    float x1 = 0, y1 = 0;
     draw_get_rr_pin_coords(pin_node, &x1, &y1);
 
     t_bound_box chan_bbox = draw_get_rr_chan_bbox(chan_node);
 
-    float x2, y2;
+    float x2 = 0, y2 = 0;
 	switch (chan_rr.type()) {
         case CHANX: {
             y1 += draw_pin_offset;
