@@ -15,16 +15,8 @@
 
 using namespace std;
 
-enum max_or_min {
-    MAX, MIN
-};
-
 enum analysis_type {
     SETUP, HOLD
-};
-
-enum slack_type_to_allocate {
-    POSITIVE, NEGATIVE
 };
 
 class route_budgets {
@@ -44,23 +36,22 @@ public:
 
     //main loader function
     void load_route_budgets(float ** net_delay,
-            std::shared_ptr<const SetupTimingInfo> timing_info,
+            std::shared_ptr<SetupTimingInfo> timing_info,
             const IntraLbPbPinLookup& pb_gpin_lookup,
             t_router_opts router_opts);
 
     //different ways to set route budgets
     void allocate_slack_using_delays_and_criticalities(float ** net_delay,
-            std::shared_ptr<const SetupTimingInfo> timing_info,
+            std::shared_ptr<SetupTimingInfo> timing_info,
             const IntraLbPbPinLookup& pb_gpin_lookup, t_router_opts router_opts);
     void allocate_slack_minimax_PERT(float **net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
     float allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_info, float ** temp_budgets,
-            float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type,
-            slack_type_to_allocate slack_type);
+            float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type);
 
     std::shared_ptr<SetupHoldTimingInfo> perform_sta(float ** temp_budgets);
 
     //checks
-    void keep_budget_in_bounds(max_or_min _type, float ** temp_budgets);
+    void keep_budget_in_bounds(float ** temp_budgets);
     void keep_min_below_max_budget();
 
 
