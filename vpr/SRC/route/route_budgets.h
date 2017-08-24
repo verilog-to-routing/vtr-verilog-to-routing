@@ -44,8 +44,8 @@ public:
     void allocate_slack_using_delays_and_criticalities(float ** net_delay,
             std::shared_ptr<SetupTimingInfo> timing_info,
             const IntraLbPbPinLookup& pb_gpin_lookup, t_router_opts router_opts);
-    void allocate_slack_minimax_PERT(float **net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
-    float allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_info, float ** temp_budgets,
+    void allocate_slack_using_weights(float **net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
+    float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_info, float ** temp_budgets,
             float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type);
 
     std::shared_ptr<SetupHoldTimingInfo> perform_sta(float ** temp_budgets);
