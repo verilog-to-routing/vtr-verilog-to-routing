@@ -23,6 +23,10 @@ enum analysis_type{
     SETUP, HOLD
 };
 
+enum slack_type_to_allocate{
+    POSITIVE, NEGATIVE
+};
+
 class route_budgets {
 public:
     route_budgets();
@@ -54,7 +58,8 @@ public:
     void keep_budget_in_bounds(max_or_min _type, float ** temp_budgets);
     
     void allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_info, float ** temp_budgets,
-            float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type type);
+            float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type, 
+            slack_type_to_allocate slack_type);
 
     float calculate_clb_pin_slack(int inet, int ipin, std::shared_ptr<SetupHoldTimingInfo> timing_info,
             const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type type);

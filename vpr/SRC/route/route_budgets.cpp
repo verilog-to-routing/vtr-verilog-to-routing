@@ -135,18 +135,18 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
     //problematic cause pointers
     //delay_max_budget = delay_lower_bound;
 
-    //    while (iteration < 7 && max_budget_change > 5e-12) {
-    //        //cout << "finished 1" << endl;
-    //        short_path_timing_info = perform_short_path_sta(delay_max_budget);
-    //        allocate_negative_short_path_slack(short_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
-    //        keep_budget_in_bounds(MIN, delay_max_budget);
-    //
-    //        long_path_timing_info = perform_long_path_sta(delay_max_budget);
-    //        allocate_negative_long_path_slack(long_path_timing_info, delay_max_budget, net_delay, pb_gpin_lookup);
-    //        keep_budget_in_bounds(MAX, delay_max_budget);
-    //
-    //        iteration++;
-    //    }
+//    while (iteration < 7 && max_budget_change > 5e-12) {
+//        //cout << "finished 1" << endl;
+//        timing_info = perform_sta(delay_max_budget);
+//        allocate_slack(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, HOLD, NEGATIVE);
+//        keep_budget_in_bounds(MIN, delay_max_budget);
+//
+//        timing_info = perform_sta(delay_max_budget);
+//        allocate_slack(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP, NEGATIVE);
+//        keep_budget_in_bounds(MAX, delay_max_budget);
+//
+//        iteration++;
+//    }
 
     iteration = 0;
     max_budget_change = 900e-12;
@@ -154,7 +154,7 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
     while (iteration < 3 && max_budget_change > 800e-12) {
         //cout << "1" << endl;
         timing_info = perform_sta(delay_max_budget);
-        allocate_slack(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP);
+        allocate_slack(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP, POSITIVE);
         keep_budget_in_bounds(MIN, delay_max_budget);
 
         iteration++;
@@ -167,7 +167,6 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             delay_min_budget[inet][ipin] = delay_max_budget[inet][ipin];
-
         }
     }
 
@@ -177,7 +176,8 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
     while (iteration < 3 && max_budget_change > 800e-12) {
         //cout << "2" << endl;
         timing_info = perform_sta(delay_min_budget);
-        allocate_slack(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD);
+        allocate_slack(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD, POSITIVE);
+        print_temporary_budgets_to_file(delay_max_budget);
         keep_budget_in_bounds(MAX, delay_min_budget);
         iteration++;
 
@@ -187,7 +187,7 @@ void route_budgets::allocate_slack_minimax_PERT(float ** net_delay, const IntraL
 
     float bottom_range = -1e-9;
     timing_info = perform_sta(delay_min_budget);
-    allocate_slack(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD);
+    allocate_slack(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD, POSITIVE);
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
             delay_min_budget[inet][ipin] = max(delay_min_budget[inet][ipin], bottom_range);
@@ -211,7 +211,8 @@ void route_budgets::keep_budget_in_bounds(max_or_min _type, float ** temp_budget
 }
 
 void route_budgets::allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_info, float ** temp_budgets,
-        float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type type) {
+        float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type,
+        slack_type_to_allocate slack_type) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -236,7 +237,7 @@ void route_budgets::allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_i
                     auto arrival_tags = timing_analyzer->setup_tags(timing_node, tatum::TagType::DATA_ARRIVAL);
                     auto required_tags = timing_analyzer->setup_tags(timing_node, tatum::TagType::DATA_REQUIRED);
 
-                    if (type == HOLD) {
+                    if (analysis_type == HOLD) {
                         arrival_tags = timing_analyzer->hold_tags(timing_node, tatum::TagType::DATA_ARRIVAL);
                         required_tags = timing_analyzer->hold_tags(timing_node, tatum::TagType::DATA_REQUIRED);
                     }
@@ -255,10 +256,10 @@ void route_budgets::allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_i
 
                     auto sink_node_tags = timing_analyzer->setup_tags(sink_node, tatum::TagType::DATA_REQUIRED);
 
-                    if (type == HOLD) {
+                    if (analysis_type == HOLD) {
                         sink_node_tags = timing_analyzer->hold_tags(sink_node, tatum::TagType::DATA_REQUIRED);
                     }
-                    
+
                     if (sink_node_tags.empty()) {
                         continue;
                     }
@@ -280,7 +281,6 @@ void route_budgets::allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_i
                         //No tags (e.g. driven by constant generator)
                         continue;
                     }
-
                 }
 
                 if (total_path_delay == 0) {
@@ -289,7 +289,7 @@ void route_budgets::allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_i
                 }
 
                 //calculate slack
-                if (type == HOLD) {
+                if (analysis_type == HOLD) {
                     new_path_slack = calculate_clb_pin_slack(inet, ipin, timing_info, pb_gpin_lookup, HOLD);
                 } else {
 
@@ -305,8 +305,18 @@ void route_budgets::allocate_slack(std::shared_ptr<SetupHoldTimingInfo> timing_i
                 path_slack = new_path_slack;
 
                 //cout << net_delay[inet][ipin] << " " << path_slack << " " << total_path_delay << endl;
-                if (path_slack > 0) {
-                    temp_budgets[inet][ipin] -= net_delay[inet][ipin] * path_slack / total_path_delay;
+                if (slack_type == POSITIVE && path_slack > 0) {
+                    if (analysis_type == HOLD) {
+                        temp_budgets[inet][ipin] -= net_delay[inet][ipin] * path_slack / total_path_delay;
+                    } else {
+                        temp_budgets[inet][ipin] += net_delay[inet][ipin] * path_slack / total_path_delay;
+                    }
+                } else if (slack_type == NEGATIVE && path_slack < 0) {
+                    if (analysis_type == HOLD) {
+                        temp_budgets[inet][ipin] -= net_delay[inet][ipin] * path_slack / total_path_delay;
+                    } else {
+                        temp_budgets[inet][ipin] += net_delay[inet][ipin] * path_slack / total_path_delay;
+                    }
                 }
             }
         }
