@@ -203,6 +203,37 @@ void sync_grid_to_blocks() {
 	}
 }
 
+std::string block_type_pin_index_to_name(t_type_ptr type, int pin_index) {
+    std::string pin_name = type->name;
+
+    if (type->capacity > 1) {
+        int pins_per_inst = type->num_pins / type->capacity;
+        int inst_num = pin_index / pins_per_inst;
+        pin_index %= pins_per_inst;
+
+        pin_name += "[" + std::to_string(inst_num) + "]";
+    }
+
+    pin_name += ".";
+
+    t_pb_type* pb_type = type->pb_type;
+    int curr_index = 0;
+    for (int iport = 0; iport < pb_type->num_ports; ++iport) {
+        t_port* port = &pb_type->ports[iport];
+
+        if (curr_index + port->num_pins > pin_index) {
+            //This port contains the desired pin index
+            int index_in_port = pin_index - curr_index;
+            pin_name += port->name;
+            pin_name += "[" + std::to_string(index_in_port) + "]";
+            return pin_name;
+        }
+
+        curr_index += port->num_pins;
+    }
+
+    return "<UNKOWN>";
+}
 
 IntraLbPbPinLookup::IntraLbPbPinLookup(t_type_descriptor* block_types, int ntypes)
     : block_types_(block_types)

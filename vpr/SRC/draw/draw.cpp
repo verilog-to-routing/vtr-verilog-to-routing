@@ -2179,7 +2179,9 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
         if(hit_node != OPEN) {
             //Update message
 
-            std::string msg = vtr::string_fmt("Moused over rr node #%d: %s", hit_node, device_ctx.rr_nodes[hit_node].type_string());
+            std::string msg = vtr::string_fmt("Moused over rr node #%d: %s", 
+                    hit_node, device_ctx.rr_nodes[hit_node].type_string());
+
             if (device_ctx.rr_nodes[hit_node].type() == CHANX || device_ctx.rr_nodes[hit_node].type() == CHANY) {
                 int cost_index = device_ctx.rr_nodes[hit_node].cost_index();
 
@@ -2192,7 +2194,14 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
                         );
                 update_message(msg.c_str());
             } else if (device_ctx.rr_nodes[hit_node].type() == IPIN || device_ctx.rr_nodes[hit_node].type() == OPIN) {
-                msg += vtr::string_fmt(" pin: %d", device_ctx.rr_nodes[hit_node].ptc_num());
+                auto& node = device_ctx.rr_nodes[hit_node];
+
+                t_type_ptr type = device_ctx.grid[node.xlow()][node.ylow()].type;
+                std::string pin_name = block_type_pin_index_to_name(type, node.pin_num());
+
+                msg += vtr::string_fmt(" pin: %d pin_name: %s",
+                        node.pin_num(),
+                        pin_name.c_str());
                 update_message(msg.c_str());
             }
         } else {
