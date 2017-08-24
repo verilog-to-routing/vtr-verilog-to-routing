@@ -180,6 +180,7 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
     }
     /*Make sure that min budget is always less than max budget*/
     keep_min_below_max_budget();
+    check_if_budgets_in_bounds();
 
     /*Post basic algorithm processing
      *This prevents wasting resources by allowing the minimum budgets to go below 
@@ -257,17 +258,8 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
 
             if (analysis_type == HOLD) {
                 temp_budgets[inet][ipin] = -1 * net_delay[inet][ipin] * path_slack / total_path_delay;
-                //                if (inet == 14) {
-                //                    cout << "HOLD pin " << ipin << " net delay " << net_delay[inet][ipin] << " total path delay " << total_path_delay
-                //                            << " slack " << path_slack << " temp_budgets " << temp_budgets[inet][ipin] << endl;
-                //                }
             } else {
                 temp_budgets[inet][ipin] = net_delay[inet][ipin] * path_slack / total_path_delay;
-
-                //                if (inet == 14) {
-                //                    cout << "SETUP pin " << ipin << " net delay " << net_delay[inet][ipin] << " total path delay " << total_path_delay
-                //                            << " slack " << path_slack << " temp_budgets " << temp_budgets[inet][ipin] << endl;
-                //                }
             }
             max_budget_change = max(max_budget_change, net_delay[inet][ipin] * path_slack / total_path_delay);
         }
@@ -402,16 +394,27 @@ void route_budgets::allocate_slack_using_delays_and_criticalities(float ** net_d
             } else {
                 delay_max_budget[inet][ipin] = min(net_delay[inet][ipin] / pin_criticality, delay_upper_bound[inet][ipin]);
             }
-
-            VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
-                    && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
-                    && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
-                    && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin],
-                    "Delay budgets do not fit in delay bounds");
-
+            check_if_budgets_in_bounds(inet, ipin);
             /*Use RCV algorithm for delay target
             Tend towards minimum to consider short path timing delay more*/
             delay_target[inet][ipin] = min(0.5 * (delay_min_budget[inet][ipin] + delay_max_budget[inet][ipin]), delay_min_budget[inet][ipin] + 0.1e-9);
+        }
+    }
+}
+
+void route_budgets::check_if_budgets_in_bounds(int inet, int ipin) {
+    VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
+            && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
+            && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
+            && delay_upper_bound[inet][ipin] >= delay_lower_bound[inet][ipin],
+            "Delay budgets do not fit in delay bounds");
+}
+
+void route_budgets::check_if_budgets_in_bounds() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+            check_if_budgets_in_bounds(inet, ipin);
         }
     }
 }

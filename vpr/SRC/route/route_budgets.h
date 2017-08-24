@@ -53,6 +53,8 @@ public:
     //checks
     void keep_budget_in_bounds(float ** temp_budgets);
     void keep_min_below_max_budget();
+    void check_if_budgets_in_bounds();
+    void check_if_budgets_in_bounds(int inet, int ipin);
 
 
     //helper functions
