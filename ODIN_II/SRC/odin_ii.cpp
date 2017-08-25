@@ -99,6 +99,7 @@ int main(int argc, char **argv)
             XmlReadArch(global_args.arch_file, false, &Arch, &type_descriptors, &num_types);
         } catch(vtr::VtrError& vtr_error) {
             printf("Failed to load architecture file: %s\n", vtr_error.what());
+            return 1;
         }
 	}
 
