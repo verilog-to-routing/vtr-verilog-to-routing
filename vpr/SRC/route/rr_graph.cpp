@@ -1458,18 +1458,18 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    int seg_coord = x_coord;
-    int chan_coord = y_coord;
+    //Initally a assumes CHANX
+    int seg_coord = x_coord; //The absolute coordinate of this segment within the channel
+    int chan_coord = y_coord; //The absolute coordinate of this channel within the device
     int seg_dimension = device_ctx.grid.width() - 2; //-2 for no perim channels
     int chan_dimension = device_ctx.grid.height() - 2; //-2 for no perim channels
     const t_chan_details& from_chan_details = (chan_type == CHANX) ? chan_details_x : chan_details_y;
     const t_chan_details& opposite_chan_details = (chan_type == CHANX) ? chan_details_y : chan_details_x;
     t_rr_type opposite_chan_type = CHANY;
     if (chan_type == CHANY) {
-        seg_coord = y_coord;
-        chan_coord = x_coord;
-        seg_dimension = device_ctx.grid.height() - 2; //-2 for no perim channels
-        chan_dimension = device_ctx.grid.width() - 2; //-2 for no perim channels
+        //Swap values since CHANX was assumed above
+        std::swap(seg_coord, chan_coord);
+        std::swap(seg_dimension, chan_dimension);
         opposite_chan_type = CHANX;
     }
 
@@ -1489,11 +1489,15 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
         if (seg_details[track].length == 0)
             continue;
 
+        //Start and end coordinates of this segment along the length of the channel
+        //Note that these values are in the VPR coordinate system (and do not consider
+        //wire directionality), so start correspond to left/bottom and end corresponds to right/top
         int start = get_seg_start(seg_details, track, chan_coord, seg_coord);
         int end = get_seg_end(seg_details, track, start, chan_coord, seg_dimension);
 
         if (seg_coord > start)
-            continue; /* Not the start of this segment. */
+            continue; /* Only process segments which start at this location */
+        VTR_ASSERT(seg_coord == start);
 
         t_linked_edge *edge_list = NULL;
 
@@ -1502,7 +1506,7 @@ static void build_rr_chan(const int x_coord, const int y_coord, const t_rr_type 
             from_seg_details = chan_details_y[x_coord][start];
         }
 
-        /* First count number of edges and put the edges in a linked list. */
+        /* Add the edges from this track to all it's connected pins into the list */
         int num_edges = 0;
         num_edges += get_track_to_pins(start, chan_coord, track, tracks_per_chan, &edge_list,
                 L_rr_node_indices, track_to_pin_lookup, seg_details, chan_type, seg_dimension,
