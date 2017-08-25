@@ -100,6 +100,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode * mode, const t_arch& arch
 		const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node, t_type_descriptor * Type, t_segment_inf *segments, int num_segments, const pugiutil::loc_data& loc_data);
 static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
+static void ProcessSwitchblockLocations(pugi::xml_node swtichblock_locations, t_type_descriptor* type, const pugiutil::loc_data& loc_data);
 static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiutil::loc_data& loc_data);
 static void ProcessSizingTimingIpinCblock(pugi::xml_node Node,
@@ -1768,6 +1769,150 @@ static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml
     return fc_value_type;
 }
 
+//Process any custom switchblock locations
+static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations, t_type_descriptor* type, const pugiutil::loc_data& loc_data) {
+    VTR_ASSERT(type);
+
+    std::string pattern = get_attribute(switchblock_locations, "pattern", loc_data, OPTIONAL).as_string("external_full_internal_straight");
+
+    if (switchblock_locations) {
+        expect_only_attributes(switchblock_locations, {"pattern"}, loc_data);
+    }
+
+    //Initialize the location specs
+    size_t width = type->width;
+    size_t height = type->height;
+    type->switchblock_locations = vtr::Matrix<e_sb_type>({{width, height}}, e_sb_type::NONE);
+
+    if (pattern == "custom") {
+        //Load a custom pattern specified with <sb_loc> tags
+        expect_only_children(switchblock_locations, {"sb_loc"}, loc_data); //Only sb_loc child tags
+
+        //Default to no SBs unless specified
+        type->switchblock_locations.fill(e_sb_type::NONE);
+
+        //Track which locations have been assigned to detect overlaps
+        auto assigned_locs = vtr::Matrix<bool>({{width, height}}, false);
+
+        for (pugi::xml_node sb_loc : switchblock_locations.children("sb_loc")) {
+            expect_only_attributes(sb_loc, {"type", "xoffset", "yoffset"}, loc_data);
+
+            //Determine the type
+            std::string sb_type_str = get_attribute(sb_loc, "type", loc_data, OPTIONAL).as_string("full");
+            e_sb_type sb_type = e_sb_type::FULL;
+            if (sb_type_str == "none") {
+                sb_type = e_sb_type::NONE;
+            } else if (sb_type_str == "full") {
+                sb_type = e_sb_type::FULL;
+            } else if (sb_type_str == "straight") {
+                sb_type = e_sb_type::STRAIGHT;
+            } else if (sb_type_str == "turns") {
+                sb_type = e_sb_type::TURNS;
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
+                        "Invalid <sb_loc> 'type' attribute '%s'\n",
+                        sb_type_str.c_str());
+            }
+
+            //Get the horizontal offset
+            size_t xoffset = get_attribute(sb_loc, "xoffset", loc_data, OPTIONAL).as_uint(0);
+            if (xoffset > width - 1) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
+                        "Invalid <sb_loc> 'xoffset' attribute '%zu' (must be in range [%d,%d])\n",
+                        xoffset, 0, width - 1);
+            }
+
+            //Get the vertical offset
+            size_t yoffset = get_attribute(sb_loc, "yoffset", loc_data, OPTIONAL).as_uint(0);
+            if (yoffset > height - 1) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
+                        "Invalid <sb_loc> 'yoffset' attribute '%zu' (must be in range [%d,%d])\n",
+                        yoffset, 0, height - 1);
+            }
+
+            //Check if this location has already been set
+            if (assigned_locs[xoffset][yoffset]) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
+                        "Duplicate <sb_loc> specifications at xoffset=%zu yoffset=%zu\n",
+                        xoffset, yoffset);
+            }
+
+            //Set the custom sb location and type
+            type->switchblock_locations[xoffset][yoffset] = sb_type;
+            assigned_locs[xoffset][yoffset] = true; //Mark the location as set for error detection
+        }
+    } else { //Non-custom patterns
+        expect_only_children(switchblock_locations, {}, loc_data); //No child tags
+
+        //Fill in all the entries of the switchblock locations
+        if (pattern == "all") {
+            //SBs at all locations
+            type->switchblock_locations.fill(e_sb_type::FULL);
+
+        } else if (pattern == "external") {
+            //SBs only 'outside' blocks (note: SBs located to top/right of grid tile locations)
+
+            //Mark all locations as NONE
+            type->switchblock_locations.fill(e_sb_type::NONE);
+
+            //Mark top edge as FULL
+            size_t yoffset = height - 1;
+            for (size_t xoffset = 0; xoffset < width; ++xoffset) {
+                type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
+            }
+
+            //Mark right edge as FULL
+            size_t xoffset = width - 1;
+            for (yoffset = 0; yoffset < height; ++yoffset) {
+                type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
+            }
+
+        } else if (pattern == "internal") {
+            //SBs only 'inside' blocks (note: SBs located to top/right of grid tile locations)
+
+            //Fill all locations
+            type->switchblock_locations.fill(e_sb_type::FULL);
+
+            //Mark top edge as NONE
+            size_t yoffset = height - 1;
+            for (size_t xoffset = 0; xoffset < width; ++xoffset) {
+                type->switchblock_locations[xoffset][yoffset] = e_sb_type::NONE;
+            }
+
+            //Mark right edge as NONE
+            size_t xoffset = width - 1;
+            for (yoffset = 0; yoffset < height; ++yoffset) {
+                type->switchblock_locations[xoffset][yoffset] = e_sb_type::NONE;
+            }
+
+        } else if (pattern == "external_full_internal_straight") {
+            //Fill all locations
+            type->switchblock_locations.fill(e_sb_type::STRAIGHT);
+
+            //Mark top edge as NONE
+            size_t yoffset = height - 1;
+            for (size_t xoffset = 0; xoffset < width; ++xoffset) {
+                type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
+            }
+
+            //Mark right edge as NONE
+            size_t xoffset = width - 1;
+            for (yoffset = 0; yoffset < height; ++yoffset) {
+                type->switchblock_locations[xoffset][yoffset] = e_sb_type::FULL;
+            }
+
+        } else if (pattern == "none") {
+            //No SBs
+            type->switchblock_locations.fill(e_sb_type::NONE);
+
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
+                    "Invalid <switchblock_locations> 'pattern' attribute '%s'\n",
+                    pattern.c_str());
+        }
+    }
+}
+
 /* Thie processes attributes of the 'type' tag */
 static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Type, const pugiutil::loc_data& loc_data) {
 	const char *Prop;
@@ -1777,9 +1922,9 @@ static void ProcessComplexBlockProps(pugi::xml_node Node, t_type_descriptor * Ty
 	Type->name = vtr::strdup(Prop);
 
 	/* Load properties */
-	Type->capacity = get_attribute(Node, "capacity", loc_data, OPTIONAL).as_int(1); /* TODO: Any block with capacity > 1 that is not I/O has not been tested, must test */
-	Type->width = get_attribute(Node, "width", loc_data, OPTIONAL).as_int(1);
-	Type->height = get_attribute(Node, "height", loc_data, OPTIONAL).as_int(1);
+	Type->capacity = get_attribute(Node, "capacity", loc_data, OPTIONAL).as_uint(1); /* TODO: Any block with capacity > 1 that is not I/O has not been tested, must test */
+	Type->width = get_attribute(Node, "width", loc_data, OPTIONAL).as_uint(1);
+	Type->height = get_attribute(Node, "height", loc_data, OPTIONAL).as_uint(1);
 	Type->area = get_attribute(Node, "area", loc_data, OPTIONAL).as_float(UNDEFINED);
 
 	if (atof(Prop) < 0) {
@@ -2415,6 +2560,9 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 		Cur = get_single_child(CurType, "fc", loc_data);
 		Process_Fc(Cur, Type, arch.Segments, arch.num_segments, loc_data);
 
+        //Load switchblock type and location overrides
+        Cur = get_single_child(CurType, "switchblock_locations", loc_data, OPTIONAL);
+        ProcessSwitchblockLocations(Cur, Type, loc_data);
 
 		Type->index = i;
 

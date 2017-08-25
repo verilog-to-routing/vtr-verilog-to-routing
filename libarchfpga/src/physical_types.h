@@ -31,6 +31,9 @@
 #include <string>
 #include <map>
 #include <limits>
+
+#include "vtr_ndmatrix.h"
+
 #include "logic_types.h"
 
 //Forward declarations
@@ -391,38 +394,53 @@ struct t_fc_specification {
     std::vector<int> pins;          //The block pins collectively effected by this Fc
 };
 
+enum class e_sb_type {
+    NONE,       //No SB at this location
+    FULL,       //Full SB at this location (i.e. turns + straight)
+    STRAIGHT,   //Straight-through connections only
+    TURNS       //Turning connections only
+};
+
 /* Describes the type for a physical logic block
- name: unique identifier for type  
- num_pins: Number of pins for the block
- capacity: Number of blocks of this type that can occupy one grid tile (typically used by IOs).
- width: Width of large block in grid tiles
- height: Height of large block in grid tiles
-
- pinloc: Is set to true if a given pin exists on a certain position of a block. Derived from pin_location_distribution/pin_loc_assignments
-
- pin_location_distribution: The pin distribution type
- num_pin_loc_assignments: The number of strings within each pin_loc_assignments
- pin_loc_assignments: The strings for a custom pin location distribution.
-                      Valid only for pin_location_distribution == E_CUSTOM_PIN_DISTR
-
- num_class: Number of logically-equivalent pin classes
- class_inf: Information of each logically-equivalent class
-
- pin_width: Width offset to specified pin
- pin_height: Height offset to specified pin
- pin_class: The class a pin belongs to
- is_global_pin: Whether or not a pin is global (hence not routed)
-
- fc_specs: The Fc specifications for all pins
-
- pb_type: Internal subblocks and routing information for this physical block
- pb_graph_head: Head of DAG of pb_types_nodes and their edges
-
- area: Describes how much area this logic block takes, if undefined, use default
- type_timing_inf: timing information unique to this type
- num_drivers: Total number of output drivers supplied
- num_receivers: Total number of input receivers supplied
- index: Keep track of type in array for easy access
+ * name: unique identifier for type  
+ * num_pins: Number of pins for the block
+ * capacity: Number of blocks of this type that can occupy one grid tile (typically used by IOs).
+ * width: Width of large block in grid tiles
+ * height: Height of large block in grid tiles
+ *
+ * pinloc: Is set to true if a given pin exists on a certain position of a
+ *         block. Derived from pin_location_distribution/pin_loc_assignments
+ *
+ * pin_location_distribution: The pin distribution type
+ * num_pin_loc_assignments: The number of strings within each pin_loc_assignments
+ * pin_loc_assignments: The strings for a custom pin location distribution.
+ *                      Valid only for pin_location_distribution == E_CUSTOM_PIN_DISTR
+ *
+ * num_class: Number of logically-equivalent pin classes
+ * class_inf: Information of each logically-equivalent class
+ *
+ * pin_width: Width offset to specified pin
+ * pin_height: Height offset to specified pin
+ * pin_class: The class a pin belongs to
+ * is_global_pin: Whether or not a pin is global (hence not routed)
+ *
+ * fc_specs: The Fc specifications for all pins
+ *
+ * switchblock_locations: Switch block configuration for this block.
+ *                        Each element describes the type of SB which should be
+ *                        constructed at the specified location.
+ *                        Note that the SB is located to the top-right of the 
+ *                        grid tile location. [0..width-1][0..height-1]
+ *
+ *
+ * pb_type: Internal subblocks and routing information for this physical block
+ * pb_graph_head: Head of DAG of pb_types_nodes and their edges
+ *
+ * area: Describes how much area this logic block takes, if undefined, use default
+ * type_timing_inf: timing information unique to this type
+ * num_drivers: Total number of output drivers supplied
+ * num_receivers: Total number of input receivers supplied
+ * index: Keep track of type in array for easy access
  */
 struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or complex logic block or physical logic block*/
 {
@@ -448,6 +466,8 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 	bool *is_global_pin; /* [0..num_pins-1] */
 
     std::vector<t_fc_specification> fc_specs;
+
+    vtr::Matrix<e_sb_type> switchblock_locations;
 
 	/* Clustering info */
 	t_pb_type *pb_type;

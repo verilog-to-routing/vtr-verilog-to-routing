@@ -857,6 +857,65 @@ They describe how a complex block interfaces with the inter-block world.
     Physical equivalence for a pin is specified by listing a pin more than once for different locations.
     For example, a LUT whose output can exit from the top and bottom of a block will have its output pin specified twice: once for the top and once for the bottom.
 
+.. arch:tag:: <switchblock_locations pattern="{all|external|internal|none|custom}">
+        
+    Describes where global routing switchblocks are created in relation to the complex block.
+
+    .. note:: If the ``<switchblock_locations>`` tag is left unspecified the default pattern is assumed.
+
+    :opt_param pattern:
+
+        * ``all``: creates switchblocks wherever routing channels cross
+
+        * ``external``: creates switchblocks wherever routing channels cross *outside* the complex block
+
+        * ``internal``: creates switchblocks wherever routing channels cross *inside* the complex block
+
+        * ``none``: denotes that no switchblocks are created for the complex block
+
+        * ``external_full_internal_straight``: creates *full* switchblocks outside and *straight* switchblocks inside the complex block
+
+        * ``custom``: allows the architect to specify custom switchblock locations and types using ``<sb_loc>`` tags
+
+        **Default:** ``external_full_internal_straight``
+
+        .. figure:: sb_locations.*
+        
+            Switchblock Location Patterns for a width = 2, height = 3 complex block
+
+    .. arch:tag:: <sb_loc type="{full|straight|turns|none}" xoffset="int" yoffset="int">
+
+        Specifies the type of switchblock to create at a particular location relative to a complex block for the ``custom`` switchblock location pattern.
+
+        :opt_param type:
+            Specifies the type of switchblock to be created at this location:
+
+            * ``full``: denotes that a full switchblock will be created (i.e. both ``staight`` and ``turns``)
+            * ``straight``: denotes that a switchblock with only straight-through connections will be created (i.e. no ``turns``)
+            * ``turns``: denotes that a switchblock with only turning connections will be created (i.e. no ``straight``)
+            * ``none``: denotes that no switchblock will be created
+
+            **Default:** ``full``
+
+            .. figure:: sb_types.*
+            
+                Switchblock Types
+
+
+        :opt_param xoffset: 
+            Specifies the horizontal offset (in grid units) from block origin (bottom left corner).
+            The offset value must be less than the width of the block.
+
+            **Default:** ``0``
+
+        :opt_param yoffset: 
+            Specifies the vertical offset (in grid units) from block origin (bottom left corner).
+            The offset value must be less than the height of the block.
+
+            **Default:** ``0``
+
+        .. note:: The switchblock associated with a grid tile is located to the top-right of the grid tile
+
 Interconnect
 ~~~~~~~~~~~~
 

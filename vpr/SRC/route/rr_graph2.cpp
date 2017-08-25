@@ -2603,8 +2603,19 @@ bool should_create_switchblock(const DeviceGrid& grid, int from_chan_coord, int 
         x_coord = from_chan_coord; 
     }
 
-    if (is_block_internal_switchblock(grid, x_coord, y_coord)) {
-        return false; //Don't create internal switchblocks
+    t_type_ptr blk_type = grid[x_coord][y_coord].type;
+    int width_offset = grid[x_coord][y_coord].width_offset;
+    int height_offset = grid[x_coord][y_coord].height_offset;
+
+    e_sb_type sb_type = blk_type->switchblock_locations[width_offset][height_offset];
+    if (sb_type == e_sb_type::FULL) {
+        return true;
+    } else if (sb_type == e_sb_type::STRAIGHT) {
+        return from_chan_type == to_chan_type;
+    } else if (sb_type == e_sb_type::TURNS) {
+        return from_chan_type != to_chan_type;
     }
-    return true;
+
+    VTR_ASSERT(sb_type == e_sb_type::NONE);
+    return false;
 }

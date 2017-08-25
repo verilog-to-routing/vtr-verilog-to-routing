@@ -81,6 +81,7 @@ void SetupEmptyType(t_type_descriptor* cb_type_descriptors,
 	type->is_global_pin = NULL;
 	type->pb_type = NULL;
 	type->area = UNDEFINED;
+    type->switchblock_locations = vtr::Matrix<e_sb_type>({{size_t(type->width), size_t(type->height)}}, e_sb_type::FULL);
 }
 
 void alloc_and_load_default_child_for_pb_type( t_pb_type *pb_type,
