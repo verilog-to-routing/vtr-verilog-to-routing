@@ -1471,8 +1471,6 @@ int get_track_to_pins(
                     if (to_node >= 0) {
                         edge_list_head = insert_in_edge_list(edge_list_head, to_node, wire_to_ipin_switch);
                         ++num_conn;
-                    } else {
-                        vtr::printf("FOUND\n");
                     }
                 }
             }
