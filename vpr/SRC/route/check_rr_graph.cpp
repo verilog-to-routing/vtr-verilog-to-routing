@@ -433,20 +433,21 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
 
             if (check_for_out_edges) {
 
+                int ptc = device_ctx.rr_nodes[inode].ptc_num();
                 if (device_ctx.rr_nodes[inode].type() == CHANX || device_ctx.rr_nodes[inode].type() == CHANY) {
                     int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
                     const char* seg_name = segment_inf[seg_index].name;
-                    vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) has no out-going edges.\n",
-                            inode, device_ctx.rr_nodes[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh);
+                    vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s %s (%d,%d) <-> (%d,%d) track=%d has no out-going edges.\n",
+                            inode, device_ctx.rr_nodes[inode].type_string(), seg_name, xlow, ylow, xhigh, yhigh, ptc);
                 } else if (device_ctx.rr_nodes[inode].type() == IPIN || device_ctx.rr_nodes[inode].type() == OPIN) {
                     vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s at (%d,%d) side=%s, block_type=%s ptc=%d has no out-going edges.\n",
-                            inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.rr_nodes[inode].side_string(), device_ctx.grid[xlow][ylow].type->name, device_ctx.rr_nodes[inode].ptc_num());
+                            inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.rr_nodes[inode].side_string(), device_ctx.grid[xlow][ylow].type->name, ptc);
                 } else if (device_ctx.rr_nodes[inode].type() == SOURCE || device_ctx.rr_nodes[inode].type() == SINK) {
                     vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s at (%d,%d) block_type=%s ptc=%d has no out-going edges.\n",
-                            inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.grid[xlow][ylow].type->name, device_ctx.rr_nodes[inode].ptc_num());
+                            inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.grid[xlow][ylow].type->name, ptc);
                 } else {
                     vtr::printf_warning(__FILE__, __LINE__, "in check_rr_node: rr_node %d %s at (%d,%d) block_type=%s ptc=%d has no out-going edges.\n",
-                            inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, device_ctx.rr_nodes[inode].ptc_num());
+                            inode, device_ctx.rr_nodes[inode].type_string(), xlow, ylow, ptc);
                 }
             }
         }
