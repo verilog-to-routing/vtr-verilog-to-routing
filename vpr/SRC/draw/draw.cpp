@@ -2032,6 +2032,7 @@ static void highlight_rr_nodes(float x, float y) {
 		int ylow = device_ctx.rr_nodes[hit_node].ylow();
 		int yhigh = device_ctx.rr_nodes[hit_node].yhigh();
 		int ptc_num = device_ctx.rr_nodes[hit_node].ptc_num();
+        t_rr_type type = device_ctx.rr_nodes[hit_node].type();
 
 		if (draw_state->draw_rr_node[hit_node].color != MAGENTA) {
 			/* If the node hasn't been clicked on before, highlight it
@@ -2040,15 +2041,30 @@ static void highlight_rr_nodes(float x, float y) {
 			draw_state->draw_rr_node[hit_node].color = MAGENTA;
 			draw_state->draw_rr_node[hit_node].node_highlighted = true;
 
-			sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) track: %d, %d edges, occ: %d, capacity: %d",
-				    hit_node, device_ctx.rr_nodes[hit_node].type_string(),
-				    xlow, ylow, xhigh, yhigh, ptc_num, device_ctx.rr_nodes[hit_node].num_edges(), 
-				    route_ctx.rr_node_state[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
+            if (type == CHANX || type == CHANY) {
+                sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) track: %d, dir: %s, out_edges: %d, occ: %d, capacity: %d",
+                        hit_node, device_ctx.rr_nodes[hit_node].type_string(),
+                        xlow, ylow, xhigh, yhigh, ptc_num, 
+                        DIRECTIONS_STRING[device_ctx.rr_nodes[hit_node].direction()],
+                        device_ctx.rr_nodes[hit_node].num_edges(), 
+                        route_ctx.rr_node_state[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
+            } else if (type == IPIN || type == OPIN) {
+                sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) pin: %d, side: %s, out_edges: %d, occ: %d, capacity: %d",
+                        hit_node, device_ctx.rr_nodes[hit_node].type_string(),
+                        xlow, ylow, xhigh, yhigh, ptc_num, 
+                        SIDE_STRING[device_ctx.rr_nodes[hit_node].side()],
+                        device_ctx.rr_nodes[hit_node].num_edges(), 
+                        route_ctx.rr_node_state[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
+            } else {
+                sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) ptc: %d, %d edges, occ: %d, capacity: %d",
+                        hit_node, device_ctx.rr_nodes[hit_node].type_string(),
+                        xlow, ylow, xhigh, yhigh, ptc_num, device_ctx.rr_nodes[hit_node].num_edges(), 
+                        route_ctx.rr_node_state[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
+            }
 
             rr_highlight_message = message;
 
-		}
-		else {
+		} else {
 			/* Using white color to represent de-highlighting (or 
 			 * de-selecting) of node.
 			 */
@@ -2057,10 +2073,11 @@ static void highlight_rr_nodes(float x, float y) {
 		}
 
 		print_rr_node(stdout, device_ctx.rr_nodes, hit_node);
-		if (draw_state->draw_rr_toggle != DRAW_NO_RR) 
+		if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
 			// If rr_graph is shown, highlight the fan-in/fan-outs for
 			// this node.
 			draw_highlight_fan_in_fan_out(hit_node);
+        }
    }
 
 	if (hit_node == OPEN) {
@@ -2187,10 +2204,11 @@ static void act_on_mouse_over(float mouse_x, float mouse_y) {
 
                 int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
-                msg += vtr::string_fmt(" track: %d len: %d seg_type: %s", 
+                msg += vtr::string_fmt(" track: %d len: %d seg_type: %s dir: %s", 
                             device_ctx.rr_nodes[hit_node].ptc_num(), 
                             device_ctx.rr_nodes[hit_node].length(),
-                            draw_state->arch_info->Segments[seg_index].name
+                            draw_state->arch_info->Segments[seg_index].name,
+                            DIRECTIONS_STRING[device_ctx.rr_nodes[hit_node].direction()]
                         );
                 update_message(msg.c_str());
             } else if (device_ctx.rr_nodes[hit_node].type() == IPIN || device_ctx.rr_nodes[hit_node].type() == OPIN) {
