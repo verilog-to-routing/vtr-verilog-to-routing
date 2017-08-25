@@ -88,6 +88,21 @@ void dump_seg_details(
         int max_chan_width,
         const char *fname);
 
+//Returns true if the switch block at the specified location is 'inside' a block
+//  grid: The device grid
+//  x_coord: The grid tile x location
+//  y_coord: The grid tile y location
+//  chan_type: The channel type
+bool is_block_internal_switchblock(const DeviceGrid& grid, int x_coord, int y_coord);
+
+//Returns true if the switch block at the specified location should be created
+//  grid: The device grid
+//  from_chan_coord: The horizontal or vertical channel index (i.e. x-coord for CHANY, y-coord for CHANX)
+//  from_seg_coord: The horizontal or vertical location along the channel (i.e. y-coord for CHANY, x-coord for CHANX)
+//  from_chan_type: The from channel type
+//  to_chan_type: The to channel type
+bool should_create_switchblock(const DeviceGrid& grid, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type);
+
 /******************** Subroutine definitions *******************************/
 
 /* This assigns tracks (individually or pairs) to segment types.
@@ -1416,7 +1431,10 @@ int get_track_to_pins(
         enum e_rr_type chan_type, int chan_length, int wire_to_ipin_switch,
         enum e_directionality directionality) {
 
-    /* This counts the fan-out from wire segment at (chan, seg, track) to blocks on either side */
+    /*
+     * Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent 
+     * blocks along the wire's length
+     */
 
     t_linked_edge *edge_list_head;
     int j, pass, iconn, phy_track, end, max_conn, ipin, x, y, num_conn;
@@ -1481,22 +1499,24 @@ int get_track_to_pins(
     return (num_conn);
 }
 
-/* Counts how many connections should be made from this segment to the y-   *
- * segments in the adjacent channels at to_j.  It returns the number of     *
- * connections, and updates edge_list_ptr to point at the head of the       *
- * (extended) linked list giving the nodes to which this segment connects   *
- * and the switch type used to connect to each.                             *
- *                                                                          *
- * An edge is added from this segment to a y-segment if:                    *
- * (1) this segment should have a switch box at that location, or           *
- * (2) the y-segment to which it would connect has a switch box, and the    *
- *     switch type of that y-segment is unbuffered (bidirectional pass      *
- *     transistor).                                                         *
- *                                                                          *
- * For bidirectional:                                                       *
- * If the switch in each direction is a pass transistor (unbuffered), both  *
- * switches are marked as being of the types of the larger (lower R) pass   *
- * transistor.                                                              */
+/* 
+ * Collects the edges fanning-out of the 'from' track which connect to the 'to'
+ * tracks, according to the switch block pattern.
+ *
+ * It returns the number of connections added, and updates edge_list_ptr to
+ * point at the head of the (extended) linked list giving the nodes to which
+ * this segment connects and the switch type used to connect to each.
+ *                                                                          
+ * An edge is added from this segment to a y-segment if:
+ * (1) this segment should have a switch box at that location, or
+ * (2) the y-segment to which it would connect has a switch box, and the switch
+ *     type of that y-segment is unbuffered (bidirectional pass transistor).
+ * 
+ * For bidirectional:
+ * If the switch in each direction is a pass transistor (unbuffered), both
+ * switches are marked as being of the types of the larger (lower R) pass
+ * transistor.
+ */
 int get_track_to_tracks(
         const int from_chan, const int from_seg, const int from_track,
         const t_rr_type from_type, const int to_seg, const t_rr_type to_type,
@@ -1511,9 +1531,6 @@ int get_track_to_tracks(
         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
         t_sb_connection_map *sb_conn_map) {
 
-    int num_conn;
-    int from_switch, sb_seg, start_sb_seg, end_sb_seg;
-    int start, end;
     int to_chan, to_sb;
     std::vector<int> conn_tracks;
     bool from_is_sblock, is_behind, Fs_clipped;
@@ -1527,13 +1544,17 @@ int get_track_to_tracks(
         VTR_ASSERT(switch_block_conn.empty());
     }
 
-    VTR_ASSERT(from_seg == get_seg_start(from_seg_details, from_track, from_chan, from_seg));
+    VTR_ASSERT_MSG(from_seg == get_seg_start(from_seg_details, from_track, from_chan, from_seg), "From segment location must be a the wire start point");
 
-    from_switch = from_seg_details[from_track].arch_wire_switch;
-    end_sb_seg = get_seg_end(from_seg_details, from_track, from_seg, from_chan, chan_len);
+    int from_switch = from_seg_details[from_track].arch_wire_switch;
 
-    /* the 'seg' coordinate of the switch block at the beginning of the current segment */
-    start_sb_seg = from_seg - 1;
+    //The absolute coordinate along the channel where the switch block at the
+    //beginning of the current wire segment is located
+    int start_sb_seg = from_seg - 1;
+
+    //The absolute coordinate along the channel where the switch block at the
+    //end of the current wire segment is lcoated
+    int end_sb_seg = get_seg_end(from_seg_details, from_track, from_seg, from_chan, chan_len);
 
     /* Figure out the sides of SB the from_wire will use */
     if (CHANX == from_type) {
@@ -1545,21 +1566,22 @@ int get_track_to_tracks(
         from_side_b = BOTTOM;
     }
 
-    /* Set the loop bounds */
-    start = start_sb_seg;
-    end = end_sb_seg;
+    //Set the loop bounds so we iterate over the whole wire segment
+    int start = start_sb_seg;
+    int end = end_sb_seg;
 
-    /* If source and destination segments both lie along the same channel then
-       we want to clip the loop bounds to the switch blocks of interest and proceed normally */
+    //If source and destination segments both lie along the same channel 
+    //we clip the loop bounds to the switch blocks of interest and proceed
+    //normally
     if (to_type == from_type) {
         start = to_seg - 1;
         end = to_seg;
     }
 
-    /* Here we iterate over 'seg' coordinates which could contain switchblocks that will connect us from the current
-       segment to the desired seg coordinate and channel (chanx/chany) */
-    num_conn = 0;
-    for (sb_seg = start; sb_seg <= end; ++sb_seg) {
+    //Walk along the 'from' wire segment identifying if a switchblock is located
+    //at each coordinate and add any related fan-out connections to the 'from' wire segment
+    int num_conn = 0;
+    for (int sb_seg = start; sb_seg <= end; ++sb_seg) {
         if (sb_seg < start_sb_seg || sb_seg > end_sb_seg) {
             continue;
         }
@@ -1567,20 +1589,28 @@ int get_track_to_tracks(
         /* Figure out if we are at a sblock */
         from_is_sblock = is_sblock(from_chan, from_seg, sb_seg, from_track,
                 from_seg_details, directionality);
-        /* end of wire must be an sblock */
         if (sb_seg == end_sb_seg || sb_seg == start_sb_seg) {
+            /* end of wire must be an sblock */
             from_is_sblock = true;
+        }
+
+        if (!should_create_switchblock(grid, from_chan, sb_seg, from_type, to_type)) {
+            continue; //Do not create an SB here
         }
 
         /* Get the coordinates of the current SB from the perspective of the destination channel.
            i.e. for segments laid in the x-direction, sb_seg corresponds to the x coordinate and from_chan to the y,
            but for segments in the y-direction, from_chan is the x coordinate and sb_seg is the y. So here we reverse
            the coordinates if necessary */
-        to_chan = sb_seg;
-        to_sb = from_chan;
         if (from_type == to_type) {
+            //Same channel
             to_chan = from_chan;
             to_sb = sb_seg;
+        } else {
+            VTR_ASSERT(from_type != to_type);
+            //Different channels
+            to_chan = sb_seg;
+            to_sb = from_chan;
         }
 
         /* to_chan_details may correspond to an x-directed or y-directed channel, depending for which 
@@ -2538,4 +2568,43 @@ static int find_label_of_track(
 }
 
 
+bool is_block_internal_switchblock(const DeviceGrid& grid, int x_coord, int y_coord) {
 
+    t_type_ptr blk_type = grid[x_coord][y_coord].type;
+
+    //Can only be 'inside' a block if it's width and height are > 1
+    if (blk_type->width > 1 && blk_type->height > 1) {
+        int width_offset = grid[x_coord][y_coord].width_offset;
+        int height_offset = grid[x_coord][y_coord].height_offset;
+
+        VTR_ASSERT(width_offset >= 0);
+        VTR_ASSERT(height_offset >= 0);
+
+        //Channles are located to the right and above the associated grid tile.
+        //Therefore we must exclude grid tiles along the right/top edges of the
+        //block (since thier channels are outside the block).
+        if (width_offset < blk_type->width - 1 && height_offset < blk_type->height - 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool should_create_switchblock(const DeviceGrid& grid, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type) {
+    //Convert the chan/seg indicies to real x/y coordinates
+    int y_coord;
+    int x_coord;
+    if (from_chan_type == CHANX) {
+        y_coord = from_chan_coord; 
+        x_coord = from_seg_coord; 
+    } else {
+        VTR_ASSERT(from_chan_type == CHANY);
+        y_coord = from_seg_coord; 
+        x_coord = from_chan_coord; 
+    }
+
+    if (is_block_internal_switchblock(grid, x_coord, y_coord)) {
+        return false; //Don't create internal switchblocks
+    }
+    return true;
+}
