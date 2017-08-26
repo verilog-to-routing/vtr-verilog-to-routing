@@ -1022,38 +1022,51 @@ static void timing_driven_expand_neighbours(t_heap *current,
     float R_upstream = current->R_upstream;
     int num_edges = device_ctx.rr_nodes[inode].num_edges();
 
-    int target_x = device_ctx.rr_nodes[target_node].xhigh();
-    int target_y = device_ctx.rr_nodes[target_node].yhigh();
+    int target_xlow = device_ctx.rr_nodes[target_node].xlow();
+    int target_ylow = device_ctx.rr_nodes[target_node].ylow();
+    int target_xhigh = device_ctx.rr_nodes[target_node].xhigh();
+    int target_yhigh = device_ctx.rr_nodes[target_node].yhigh();
+
     bool high_fanout = num_sinks >= HIGH_FANOUT_NET_LIM;
 
     for (int iconn = 0; iconn < num_edges; iconn++) {
         int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iconn);
 
+        int to_xlow = device_ctx.rr_nodes[to_node].xlow();
+        int to_ylow = device_ctx.rr_nodes[to_node].ylow();
+        int to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
+        int to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
+
         if (high_fanout) {
-            // since target node is an IPIN, xhigh and xlow are the same (same for y values)
-            if (device_ctx.rr_nodes[to_node].xhigh() < target_x - highfanout_rlim
-                    || device_ctx.rr_nodes[to_node].xlow() > target_x + highfanout_rlim
-                    || device_ctx.rr_nodes[to_node].yhigh() < target_y - highfanout_rlim
-                    || device_ctx.rr_nodes[to_node].ylow() > target_y + highfanout_rlim) {
+            if (   to_xhigh < target_xhigh - highfanout_rlim
+                || to_xlow > target_xlow + highfanout_rlim
+                || to_yhigh < target_yhigh - highfanout_rlim
+                || to_ylow > target_ylow + highfanout_rlim) {
                 continue; /* Node is outside high fanout bin. */
             }
-        } else if (device_ctx.rr_nodes[to_node].xhigh() < bounding_box.xmin
-                || device_ctx.rr_nodes[to_node].xlow() > bounding_box.xmax
-                || device_ctx.rr_nodes[to_node].yhigh() < bounding_box.ymin
-                || device_ctx.rr_nodes[to_node].ylow() > bounding_box.ymax)
+        } else if (to_xhigh < bounding_box.xmin
+                   || to_xlow > bounding_box.xmax
+                   || to_yhigh < bounding_box.ymin
+                   || to_ylow > bounding_box.ymax) {
             continue; /* Node is outside (expanded) bounding box. */
+        }
 
 
         /* Prune away IPINs that lead to blocks other than the target one.  Avoids  *
          * the issue of how to cost them properly so they don't get expanded before *
          * more promising routes, but makes route-throughs (via CLBs) impossible.   *
          * Change this if you want to investigate route-throughs.                   */
-
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
-        if (to_type == IPIN
-                && (device_ctx.rr_nodes[to_node].xhigh() != target_x
-                || device_ctx.rr_nodes[to_node].yhigh() != target_y))
-            continue;
+        if (to_type == IPIN) {
+            //Check if this IPIN leads to the target block
+            // IPIN's of the target block should be contained within it's bounding box
+            if (   to_xlow < target_xlow 
+                || to_ylow < target_ylow
+                || to_xhigh > target_xhigh 
+                || to_yhigh > target_yhigh) {
+                continue;
+            }
+        }
 
         /* new_back_pcost stores the "known" part of the cost to this node -- the   *
          * congestion cost of all the routing resources back to the existing route  *

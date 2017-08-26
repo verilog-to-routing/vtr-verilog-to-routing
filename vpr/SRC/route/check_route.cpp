@@ -358,8 +358,12 @@ static bool check_adjacent(int from_node, int to_node) {
 
 	case SOURCE:
 		VTR_ASSERT(to_type == OPIN);
-		if (from_xlow == to_xlow && from_ylow == to_ylow
-				&& from_xhigh == to_xhigh && from_yhigh == to_yhigh) {
+
+        //The OPIN should be contained within the bounding box of it's connected source
+		if (   from_xlow <= to_xlow 
+            && from_ylow <= to_ylow
+            && from_xhigh >= to_xhigh 
+            && from_yhigh >= to_yhigh) {
 
 			from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
 			to_grid_type = device_ctx.grid[to_xlow][to_ylow].type;
@@ -389,8 +393,12 @@ static bool check_adjacent(int from_node, int to_node) {
 
 	case IPIN:
 		VTR_ASSERT(to_type == SINK);
-		if (from_xlow == to_xlow && from_ylow == to_ylow
-				&& from_xhigh == to_xhigh && from_yhigh == to_yhigh) {
+            
+        //An IPIN should be contained within the bounding box of it's connected sink
+        if (   from_xlow >= to_xlow 
+            && from_ylow >= to_ylow
+            && from_xhigh <= to_xhigh 
+            && from_yhigh <= to_yhigh) {
 
 			from_grid_type = device_ctx.grid[from_xlow][from_ylow].type;
 			to_grid_type = device_ctx.grid[to_xlow][to_ylow].type;
