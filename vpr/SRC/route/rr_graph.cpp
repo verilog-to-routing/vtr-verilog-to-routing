@@ -1125,18 +1125,20 @@ static void build_bidir_rr_opins(const int i, const int j, const e_side side,
         const t_direct_inf *directs, const int num_directs, const t_clb_to_clb_directs *clb_to_clb_directs,
         const int num_seg_types) {
 
-    /* OPIN edges need to be done at once so let the offset 0
-     * block do the work. */
-    if (L_grid[i][j].width_offset > 0 || L_grid[i][j].height_offset > 0) {
-        return;
-    }
-
     t_type_ptr type = L_grid[i][j].type;
+    int width_offset = L_grid[i][j].width_offset;
+    int height_offset = L_grid[i][j].height_offset;
+
     const vtr::Matrix<int>& Fc = Fc_out[type->index];
 
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
         /* We only are working with opins so skip non-drivers */
         if (type->class_inf[type->pin_class[pin_index]].type != DRIVER) {
+            continue;
+        }
+
+        /* Can't do anything if pin isn't at this location */
+        if (0 == type->pinloc[width_offset][height_offset][side][pin_index]) {
             continue;
         }
 
