@@ -599,19 +599,24 @@ The ``rr_nodes`` tag stores information about each node for the routing resource
         Sources and sinks describes where nets begin and end. 
         ``OPIN`` represents an output pin and ``IPIN`` representd an input pin
         
-    :req_param direction:
-    	If the node represents a track, this field represents its direction as { ``INC`` | ``DEC`` | ``BI`` | ``NONE`` }. 
-        In other cases this value could be or defaulted to be ``NONE``.
+    :opt_param direction:
+    	If the node represents a track (``CHANX`` or ``CHANY``), this field represents its direction as {``INC_DIR`` | ``DEC_DIR`` | ``BI_DIR``}. 
+        In other cases this attribute should not be specified.
        
     :req_param capacity:
     	The number of routes that can use this node.
 
-.. arch:tag:: <loc xlow="int" ylow="int" xhigh="int" yhigh="int" ptc="int">
+.. arch:tag:: <loc xlow="int" ylow="int" xhigh="int" yhigh="int" side="{LEFT|RIGHT|TOP|BOTTOM}" ptc="int">
 
     Contains location information for this node. For pins or segments of length one, xlow = xhigh and ylow = yhigh.
 
     :req_param xlow, xhigh, ylow, yhigh:
         Integer coordinates of the ends of this routing source.
+
+    :opt_param side:
+        For ``IPIN`` and ``OPIN`` nodes specifies the side of the grid tile on which the node is located.
+        Valid values are { ``LEFT`` | ``RIGHT`` | ``TOP`` | ``BOTTOM`` }.
+        In other cases this attribute should not be specified.
         
     :req_param ptc:
         This is the pin, track, or class number that depends on the rr_node type.

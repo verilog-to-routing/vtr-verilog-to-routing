@@ -57,7 +57,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
 void process_channels(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_rr_node_indices(const DeviceGrid& grid);
 void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data & loc_data);
-void set_cost_index(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
+void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
         const bool is_global_graph, const int num_seg_types);
 
 /************************ Subroutine definitions ****************************/
@@ -169,7 +169,7 @@ void load_rr_file(const t_graph_type graph_type,
 
         //sets the cost index and seg id information
         next_component = get_single_child(rr_graph, "rr_nodes", loc_data);
-        set_cost_index(next_component, loc_data, is_global_graph, num_seg_types);
+        set_cost_indices(next_component, loc_data, is_global_graph, num_seg_types);
 
         alloc_and_load_rr_indexed_data(segment_inf, num_seg_types, device_ctx.rr_node_indices,
                 max_chan_width, *wire_to_rr_ipin_switch, base_cost_type);
@@ -279,6 +279,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         auto& node = device_ctx.rr_nodes[i];
 
         const char* node_type = get_attribute(rr_node, "type", loc_data).as_string();
+        t_rr_type newType = NUM_RR_TYPES;
         if (strcmp(node_type, "CHANX") == 0) {
             node.set_type(CHANX);
         } else if (strcmp(node_type, "CHANY") == 0) {
@@ -296,16 +297,18 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
                     "Valid inputs for class types are \"CHANX\", \"CHANY\",\"SOURCE\", \"SINK\",\"OPIN\", and \"IPIN\".");
         }
 
-        const char* correct_direction = get_attribute(rr_node, "direction", loc_data).as_string(0);
-        if (strcmp(correct_direction, "INC_DIR") == 0) {
-            node.set_direction(INC_DIRECTION);
-        } else if (strcmp(correct_direction, "DEC_DIR") == 0) {
-            node.set_direction(DEC_DIRECTION);
-        } else if (strcmp(correct_direction, "BI_DIR") == 0) {
-            node.set_direction(BI_DIRECTION);
-        } else {
-            VTR_ASSERT((strcmp(correct_direction, "NO_DIR") == 0));
-            node.set_direction(NO_DIRECTION);
+        if (newType == CHANX || newType == CHANY) {
+            const char* correct_direction = get_attribute(rr_node, "direction", loc_data).as_string();
+            if (strcmp(correct_direction, "INC_DIR") == 0) {
+                node.set_direction(INC_DIRECTION);
+            } else if (strcmp(correct_direction, "DEC_DIR") == 0) {
+                node.set_direction(DEC_DIRECTION);
+            } else if (strcmp(correct_direction, "BI_DIR") == 0) {
+                node.set_direction(BI_DIRECTION);
+            } else {
+                VTR_ASSERT((strcmp(correct_direction, "NO_DIR") == 0));
+                node.set_direction(NO_DIRECTION);
+            }
         }
 
         node.set_capacity(get_attribute(rr_node, "capacity", loc_data).as_float());
@@ -318,6 +321,22 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data & loc_data) {
         x2 = get_attribute(locSubnode, "xhigh", loc_data).as_float();
         y1 = get_attribute(locSubnode, "ylow", loc_data).as_float();
         y2 = get_attribute(locSubnode, "yhigh", loc_data).as_float();
+
+        if (newType == IPIN || newType == OPIN) {
+            e_side side;
+            std::string side_str = get_attribute(locSubnode, "side", loc_data).as_string();
+            if (side_str == "LEFT") {
+                side = LEFT;
+            } else if (side_str == "RIGHT") {
+                side = RIGHT;
+            } else if (side_str == "TOP") {
+                side = TOP;
+            } else {
+                VTR_ASSERT(side_str == "BOTTOM");
+                side = BOTTOM;
+            }
+            node.set_side(side);
+        }
 
         node.set_coordinates(x1, y1, x2, y2);
         node.set_ptc_num(get_attribute(locSubnode, "ptc", loc_data).as_int());
@@ -576,20 +595,28 @@ void process_rr_node_indices(const DeviceGrid& grid) {
 
     indices.resize(NUM_RR_TYPES);
 
-    for (int itype = 0; itype < NUM_RR_TYPES; ++itype) {
-        if (itype != OPIN && itype != SOURCE) {
-            indices[itype].resize(grid.width());
-            if (itype == CHANX) {
-                for (size_t ilength = 0; ilength < grid.height(); ++ilength) {
-                    indices[itype][ilength].resize(grid.width());
+    /* Alloc the lookup table */
+    indices.resize(NUM_RR_TYPES);
+    for (t_rr_type rr_type : RR_TYPES) {
+        if (rr_type == CHANX) {
+            indices[rr_type].resize(grid.height());
+            for (size_t y = 0; y < grid.height(); ++y) {
+                indices[rr_type][y].resize(grid.width());
+                for (size_t x = 0; x < grid.width(); ++x) {
+                    indices[rr_type][y][x].resize(NUM_SIDES);
                 }
-            } else {
-                for (size_t ilength = 0; ilength < grid.width(); ++ilength) {
-                    indices[itype][ilength].resize(grid.height());
+            }
+        } else {
+            indices[rr_type].resize(grid.width());
+            for (size_t x = 0; x < grid.width(); ++x) {
+                indices[rr_type][x].resize(grid.height());
+                for (size_t y = 0; y < grid.height(); ++y) {
+                    indices[rr_type][x][y].resize(NUM_SIDES);
                 }
             }
         }
     }
+
     /*Add the correct node into the vector
      * Note that CHANX and CHANY 's x and y are swapped due to the chan and seg convention.
      * Push back temporary incorrect nodes for CHANX and CHANY to set the length of the vector*/
@@ -599,13 +626,28 @@ void process_rr_node_indices(const DeviceGrid& grid) {
         if (node.type() == SOURCE || node.type() == SINK) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                    indices[SINK][ix][iy][0].push_back(inode);
+                    if (node.type() == SOURCE) {
+                        indices[SOURCE][ix][iy][0].push_back(inode);
+                        indices[SINK][ix][iy][0].push_back(OPEN);
+                    } else  {
+                        VTR_ASSERT(node.type() == SINK);
+                        indices[SINK][ix][iy][0].push_back(inode);
+                        indices[SOURCE][ix][iy][0].push_back(OPEN);
+                    }
                 }
             }
         } else if (node.type() == IPIN || node.type() == OPIN) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                    indices[IPIN][ix][iy][0].push_back(inode); //TODO: fix to use correct side
+
+                    if (node.type() == OPIN) {
+                        indices[OPIN][ix][iy][node.side()].push_back(inode);
+                        indices[IPIN][ix][iy][node.side()].push_back(OPEN);
+                    } else {
+                        VTR_ASSERT(node.type() == IPIN);
+                        indices[IPIN][ix][iy][node.side()].push_back(inode);
+                        indices[OPIN][ix][iy][node.side()].push_back(OPEN);
+                    }
                 }
             }
         } else if (node.type() == CHANX) {
@@ -643,17 +685,29 @@ void process_rr_node_indices(const DeviceGrid& grid) {
             }
         }
     }
-    /* SOURCE and SINK have unique ptc values so their data can be shared.
-     * IPIN and OPIN have unique ptc values so their data can be shared. */
-    indices[SOURCE] = indices[SINK];
-    indices[OPIN] = indices[IPIN];
+    //Copy the SOURCE/SINK nodes to all offset positions for blocks with width > 1 and/or height > 1
+    // This ensures that look-ups on non-root locations will still find the correct SOURCE/SINK
+    for (size_t x = 0; x < grid.width(); x++) {
+        for (size_t y = 0; y < grid.height(); y++) {
+            int width_offset = grid[x][y].width_offset;
+            int height_offset = grid[x][y].height_offset;
+            if (width_offset != 0 || height_offset != 0) {
+                int root_x = x - width_offset;
+                int root_y = y - height_offset;
+
+                indices[SOURCE][x][y] = indices[SOURCE][root_x][root_y];
+                indices[SINK][x][y] = indices[SINK][root_x][root_y];
+            }
+        }
+    }
+
     device_ctx.rr_node_indices = indices;
 }
 
-/* This function uses the FPGA grid to build the cost indices. Source pins, sink pins, ipin, and opin
- * are set to their unique cost index identifier. CHANX and CHANY cost indicies are set after the 
+/* This function sets the Source pins, sink pins, ipin, and opin
+ * to their unique cost index identifier. CHANX and CHANY cost indicies are set after the 
  * seg_id is read in from the rr graph*/
-void set_cost_index(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
+void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
         const bool is_global_graph, const int num_seg_types) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
