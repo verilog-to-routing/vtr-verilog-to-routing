@@ -63,7 +63,11 @@ route_budgets::route_budgets() {
 }
 
 route_budgets::~route_budgets() {
-    /*Free associated budget memory if set
+    free_budgets();
+}
+
+void route_budgets::free_budgets(){
+        /*Free associated budget memory if set
     if not set, only free the chunk memory that wasn't used*/
     if (set) {
         free_net_delay(delay_min_budget, &min_budget_delay_ch);
@@ -147,13 +151,12 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
 
     unsigned iteration;
     float max_budget_change;
-
+    
     iteration = 0;
     max_budget_change = 900e-12;
 
     /*This allocates long path slack and increases the budgets*/
     while ((iteration > 3 && max_budget_change > 800e-12) || iteration <= 3) {
-        cout << "111111111111111111111111111111" << endl;
         timing_info = perform_sta(delay_max_budget);
         max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP);
         keep_budget_in_bounds(delay_max_budget);
@@ -175,7 +178,6 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
 
     /*Allocate the short path slack to decrease the budgets accordingly*/
     while ((iteration > 3 && max_budget_change > 800e-12) || iteration <= 3) {
-        cout << endl << "222222222222222222222222222222" << endl;
         timing_info = perform_sta(delay_min_budget);
         max_budget_change = minimax_PERT(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD);
         keep_budget_in_bounds(delay_min_budget);
@@ -184,8 +186,6 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
         if (iteration > 7)
             break;
     }
-    /*Make sure that min budget is always less than max budget*/
-    //keep_min_below_max_budget();
 
     /*Post basic algorithm processing
      *This prevents wasting resources by allowing the minimum budgets to go below 
@@ -193,7 +193,6 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
     iteration = 0;
     max_budget_change = 900e-12;
     while (iteration < 3) {
-        cout << endl << "333333333333333333333333333333333" << endl;
         float bottom_range = -1e-9;
         keep_budget_in_bounds(delay_min_budget);
         timing_info = perform_sta(delay_min_budget);
@@ -205,7 +204,6 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
         }
         iteration++;
     }
-    //keep_min_below_max_budget();
 }
 
 void route_budgets::keep_budget_in_bounds(float ** temp_budgets) {
@@ -255,7 +253,6 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
             tatum::NodeId timing_node = atom_ctx.lookup.atom_pin_tnode(atom_pin);
             total_path_delay = get_total_path_delay(timing_analyzer, analysis_type, timing_node);
             if (total_path_delay == -1) {
-                //cout << "HUHHHHHHHHHHHHHHHHH" <<endl;
                 continue;
             }
 
@@ -461,7 +458,7 @@ std::shared_ptr<SetupHoldTimingInfo> route_budgets::perform_sta(float ** temp_bu
             std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, temp_budgets);
 
     std::shared_ptr<SetupHoldTimingInfo> timing_info = make_setup_hold_timing_info(routing_delay_calc);
-    //unconstrained nodes should be warned in the main routing function
+    /*Unconstrained nodes should be warned in the main routing function, do not report it here*/
     timing_info->set_warn_unconstrained(false);
     timing_info->update();
     return timing_info;

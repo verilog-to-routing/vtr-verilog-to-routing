@@ -26,6 +26,7 @@ public:
     route_budgets(vector<vector<float>> net_delay);
 
     virtual ~route_budgets();
+    void free_budgets();
 
     //getter functions
     float get_delay_target(int inet, int ipin);
@@ -40,6 +41,20 @@ public:
             const IntraLbPbPinLookup& pb_gpin_lookup,
             t_router_opts router_opts);
 
+    //debugging tools
+    void print_route_budget();
+
+    //lower budgets during congestion
+    void update_congestion_times(int inet);
+    void lower_budgets();
+    void not_congested_this_iteration(int inet);
+private:
+
+    std::shared_ptr<RoutingDelayCalculator> get_routing_calc(float ** net_delay);
+    void calculate_delay_tagets();
+    tatum::EdgeId get_edge_from_nets(int inet, int ipin);
+    //debugging tools
+    void print_temporary_budgets_to_file(float ** temp_budgets);
     //different ways to set route budgets
     void allocate_slack_using_delays_and_criticalities(float ** net_delay,
             std::shared_ptr<SetupTimingInfo> timing_info,
@@ -63,20 +78,6 @@ public:
     float get_total_path_delay(std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer,
             analysis_type analysis_type, tatum::NodeId timing_node);
 
-    //debugging tools
-    void print_route_budget();
-
-    //lower budgets during congestion
-    void update_congestion_times(int inet);
-    void lower_budgets();
-    void not_congested_this_iteration(int inet);
-private:
-
-    std::shared_ptr<RoutingDelayCalculator> get_routing_calc(float ** net_delay);
-    void calculate_delay_tagets();
-    tatum::EdgeId get_edge_from_nets(int inet, int ipin);
-    //debugging tools
-    void print_temporary_budgets_to_file(float ** temp_budgets);
 
     float ** delay_min_budget; //[0..num_nets][0..clb_net[inet].pins]
     float ** delay_max_budget; //[0..num_nets][0..clb_net[inet].pins]
