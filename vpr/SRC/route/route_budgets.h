@@ -59,7 +59,7 @@ public:
 
     //helper functions
     float calculate_clb_pin_slack(int inet, int ipin, std::shared_ptr<SetupHoldTimingInfo> timing_info,
-            const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type type);
+            const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type type, AtomPinId &atom_pin);
     float get_total_path_delay(std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer,
             analysis_type analysis_type, tatum::NodeId timing_node);
 
