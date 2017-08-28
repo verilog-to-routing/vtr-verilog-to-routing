@@ -265,12 +265,12 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
             } else {
                 temp_budgets[inet][ipin] += net_delay[inet][ipin] * path_slack / total_path_delay;
             }
-            //
-            //            if (path_slack < 0) {
-            //                    cout << "net " << inet << " pin " << ipin << " net delay "
-            //                            << net_delay[inet][ipin] << " slack " << path_slack << " path delay " << total_path_delay << " budgets " <<
-            //                            temp_budgets[inet][ipin] << endl;
-            //                }
+//
+//            if (path_slack < 0) {
+//                cout << "net " << inet << " pin " << ipin << " net delay "
+//                        << net_delay[inet][ipin] << " slack " << path_slack << " path delay " << total_path_delay << " budgets " <<
+//                        temp_budgets[inet][ipin] << endl;
+//            }
 
             max_budget_change = max(max_budget_change, abs(net_delay[inet][ipin] * path_slack / total_path_delay));
         }
@@ -461,8 +461,9 @@ std::shared_ptr<SetupHoldTimingInfo> route_budgets::perform_sta(float ** temp_bu
             std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, temp_budgets);
 
     std::shared_ptr<SetupHoldTimingInfo> timing_info = make_setup_hold_timing_info(routing_delay_calc);
+    //unconstrained nodes should be warned in the main routing function
+    timing_info->set_warn_unconstrained(false);
     timing_info->update();
-
     return timing_info;
 }
 
