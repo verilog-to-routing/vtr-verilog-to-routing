@@ -239,6 +239,12 @@ void route_budgets::keep_budget_in_bounds(float ** temp_budgets) {
     }
 }
 
+void route_budgets::keep_budget_in_bounds(float ** temp_budgets, int inet, int ipin) {
+    /*Make sure the budget is between the lower and upper bounds*/
+    temp_budgets[inet][ipin] = max(temp_budgets[inet][ipin], delay_lower_bound[inet][ipin]);
+    temp_budgets[inet][ipin] = min(temp_budgets[inet][ipin], delay_upper_bound[inet][ipin]);
+}
+
 void route_budgets::keep_min_below_max_budget() {
     /*Minimum budgets should always be below the maximum budgets.
      Make them equal if minimum budget becomes bigger*/
@@ -499,13 +505,13 @@ void route_budgets::not_congested_this_iteration(int inet) {
 
 void route_budgets::lower_budgets(float delay_decrement) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    /*Decrease the budgets by a MIN_DELAY_DECREMENT when the congested times is high enough*/
+    /*Decrease the budgets by a delay increment when the congested times is high enough*/
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         if (num_times_congested[inet] >= 3) {
             for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
                 if (delay_min_budget[inet][ipin] - delay_lower_bound[inet][ipin] >= 1e-9) {
-
                     delay_min_budget[inet][ipin] = delay_min_budget[inet][ipin] - delay_decrement;
+                    keep_budget_in_bounds(delay_min_budget, inet, ipin);
                 }
             }
         }
