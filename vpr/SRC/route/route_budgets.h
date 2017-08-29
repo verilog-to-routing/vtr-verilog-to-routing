@@ -65,8 +65,8 @@ private:
             const IntraLbPbPinLookup& pb_gpin_lookup, t_router_opts router_opts);
     void allocate_slack_using_weights(float **net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
     float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_info, float ** temp_budgets,
-            float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type,
-            slack_allocated_type slack_type = BOTH);
+            float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type, 
+            bool keep_in_bounds, slack_allocated_type slack_type = BOTH);
 
     std::shared_ptr<SetupHoldTimingInfo> perform_sta(float ** temp_budgets);
 

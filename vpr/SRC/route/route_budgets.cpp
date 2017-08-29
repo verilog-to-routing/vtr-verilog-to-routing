@@ -155,18 +155,14 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
     max_budget_change = 900e-12;
     float second_max_budget_change = 900e-12;
 
-    /*Preprocessing algorithm
-     */
+    /*Preprocessing algorithm in order to consider short paths when setting initial maximum budgets*/
     while (iteration < 7 && max_budget_change > 5e-12) {
-        //cout <<"111111111111111111111111111111111!!!!!!!!"<< endl;
         timing_info = perform_sta(delay_max_budget);
-        max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, HOLD, NEGATIVE);
-        keep_budget_in_bounds(delay_max_budget);
+        max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, HOLD, true, NEGATIVE);
 
         timing_info = perform_sta(delay_max_budget);
-        second_max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP, NEGATIVE);
+        second_max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP, true, NEGATIVE);
         max_budget_change = max(max_budget_change, second_max_budget_change);
-        keep_budget_in_bounds(delay_max_budget);
 
         iteration++;
     }
@@ -176,10 +172,8 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
 
     /*This allocates long path slack and increases the budgets*/
     while ((iteration > 3 && max_budget_change > 800e-12) || iteration <= 3) {
-        //cout <<endl<<"222222222222222222222222222!!!!!!!!"<< endl;
         timing_info = perform_sta(delay_max_budget);
-        max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP);
-        keep_budget_in_bounds(delay_max_budget);
+        max_budget_change = minimax_PERT(timing_info, delay_max_budget, net_delay, pb_gpin_lookup, SETUP, true);
 
         iteration++;
         if (iteration > 7)
@@ -198,10 +192,8 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
 
     /*Allocate the short path slack to decrease the budgets accordingly*/
     while ((iteration > 3 && max_budget_change > 800e-12) || iteration <= 3) {
-        //cout<<endl <<"3333333333333333333333333333333333333333!!!!!!!!"<< endl;
         timing_info = perform_sta(delay_min_budget);
-        max_budget_change = minimax_PERT(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD);
-        keep_budget_in_bounds(delay_min_budget);
+        max_budget_change = minimax_PERT(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD, true);
         iteration++;
 
         if (iteration > 7)
@@ -210,15 +202,16 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
 
     /*Post basic algorithm processing
      *This prevents wasting resources by allowing the minimum budgets to go below 
-     * the lower bound so it will reflect absolute minimum delays in order to meet short path timing*/
+     * the lower bound so it will reflect absolute minimum delays in order to meet long path timing*/
     iteration = 0;
     max_budget_change = 900e-12;
     float bottom_range = -1e-9;
     while (iteration < 3 && max_budget_change > 800e-12) {
-        //cout<<endl <<"444444444444444444444444444444444444444!!!!!!!!"<< endl;
+        /*budgets must be in bounds before timing analysis*/
         keep_budget_in_bounds(delay_min_budget);
         timing_info = perform_sta(delay_min_budget);
-        max_budget_change = minimax_PERT(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD);
+        max_budget_change = minimax_PERT(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD, false);
+        /*budgets may go below minimum delay*/
         for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
             for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
                 delay_min_budget[inet][ipin] = max(delay_min_budget[inet][ipin], bottom_range);
@@ -233,8 +226,7 @@ void route_budgets::keep_budget_in_bounds(float ** temp_budgets) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-            temp_budgets[inet][ipin] = max(temp_budgets[inet][ipin], delay_lower_bound[inet][ipin]);
-            temp_budgets[inet][ipin] = min(temp_budgets[inet][ipin], delay_upper_bound[inet][ipin]);
+            keep_budget_in_bounds(temp_budgets, inet, ipin);
         }
     }
 }
@@ -260,7 +252,7 @@ void route_budgets::keep_min_below_max_budget() {
 
 float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_info, float ** temp_budgets,
         float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type,
-        slack_allocated_type slack_type) {
+        bool keep_in_bounds, slack_allocated_type slack_type) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -293,6 +285,9 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
                 } else {
                     temp_budgets[inet][ipin] += net_delay[inet][ipin] * path_slack / total_path_delay;
                 }
+            }
+            if (keep_in_bounds) {
+                keep_budget_in_bounds(temp_budgets, inet, ipin);
             }
             max_budget_change = max(max_budget_change, abs(net_delay[inet][ipin] * path_slack / total_path_delay));
         }
@@ -473,7 +468,6 @@ void route_budgets::check_if_budgets_in_bounds() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-
             check_if_budgets_in_bounds(inet, ipin);
         }
     }
