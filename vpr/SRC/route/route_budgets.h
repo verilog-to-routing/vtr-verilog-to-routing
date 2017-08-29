@@ -18,6 +18,10 @@ using namespace std;
 enum analysis_type {
     SETUP, HOLD
 };
+enum slack_allocated_type {
+    POSITIVE, NEGATIVE, BOTH
+};
+
 
 class route_budgets {
 public:
@@ -61,7 +65,8 @@ private:
             const IntraLbPbPinLookup& pb_gpin_lookup, t_router_opts router_opts);
     void allocate_slack_using_weights(float **net_delay, const IntraLbPbPinLookup& pb_gpin_lookup);
     float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_info, float ** temp_budgets,
-            float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type);
+            float ** net_delay, const IntraLbPbPinLookup& pb_gpin_lookup, analysis_type analysis_type,
+            slack_allocated_type slack_type = BOTH);
 
     std::shared_ptr<SetupHoldTimingInfo> perform_sta(float ** temp_budgets);
 
