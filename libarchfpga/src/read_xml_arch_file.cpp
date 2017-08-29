@@ -2065,8 +2065,8 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
             t_grid_loc_def single(type_name, priority);
             single.x.start_expr = get_attribute(loc_spec_tag, "x", loc_data).value();
             single.y.start_expr = get_attribute(loc_spec_tag, "y", loc_data).value();
-            single.x.end_expr = single.x.start_expr + "+ w - 1";
-            single.y.end_expr = single.y.start_expr + "+ h - 1";
+            single.x.end_expr = single.x.start_expr + " + w - 1";
+            single.y.end_expr = single.y.start_expr + " + h - 1";
 
             grid_def.loc_defs.push_back(single);
 
