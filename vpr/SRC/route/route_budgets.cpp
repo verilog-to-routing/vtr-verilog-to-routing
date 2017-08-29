@@ -156,7 +156,8 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
     max_budget_change = 900e-12;
     float second_max_budget_change = 900e-12;
 
-    /*This allocates long path slack and increases the budgets*/
+    /*Preprocessing algorithm
+     */
     while (iteration < 7 && max_budget_change > 5e-12) {
         //cout <<"111111111111111111111111111111111!!!!!!!!"<< endl;
         timing_info = perform_sta(delay_max_budget);
@@ -213,9 +214,9 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
      * the lower bound so it will reflect absolute minimum delays in order to meet short path timing*/
     iteration = 0;
     max_budget_change = 900e-12;
+    float bottom_range = -1e-9;
     while (iteration < 3 && max_budget_change > 800e-12) {
         //cout<<endl <<"444444444444444444444444444444444444444!!!!!!!!"<< endl;
-        float bottom_range = -1e-9;
         keep_budget_in_bounds(delay_min_budget);
         timing_info = perform_sta(delay_min_budget);
         max_budget_change = minimax_PERT(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD);
@@ -276,28 +277,18 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
             tatum::NodeId timing_node = atom_ctx.lookup.atom_pin_tnode(atom_pin);
             total_path_delay = get_total_path_delay(timing_analyzer, analysis_type, timing_node);
             if (total_path_delay == -1) {
+                /*Delay node is not valid, leave the budgets*/
                 continue;
             }
-            if ((slack_type == NEGATIVE && path_slack < 0) || (slack_type == POSITIVE && path_slack > 0)) {
-                if (analysis_type == HOLD) {
-                    temp_budgets[inet][ipin] += -1 * net_delay[inet][ipin] * path_slack / total_path_delay;
-                } else {
-                    temp_budgets[inet][ipin] += net_delay[inet][ipin] * path_slack / total_path_delay;
-                }
-            } else if (slack_type == BOTH) {
+            if ((slack_type == NEGATIVE && path_slack < 0) ||
+                    (slack_type == POSITIVE && path_slack > 0) ||
+                    slack_type == BOTH) {
                 if (analysis_type == HOLD) {
                     temp_budgets[inet][ipin] += -1 * net_delay[inet][ipin] * path_slack / total_path_delay;
                 } else {
                     temp_budgets[inet][ipin] += net_delay[inet][ipin] * path_slack / total_path_delay;
                 }
             }
-//
-//            if (path_slack < 0) {
-//                cout << "net " << inet << " pin " << ipin << " net delay "
-//                        << net_delay[inet][ipin] << " slack " << path_slack << " path delay " << total_path_delay << " budgets " <<
-//                        temp_budgets[inet][ipin] << endl;
-//            }
-
             max_budget_change = max(max_budget_change, abs(net_delay[inet][ipin] * path_slack / total_path_delay));
         }
     }
@@ -399,13 +390,13 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
         return -1;
     }
 
-    auto min_sink_node_tag_iter = find_minimum_tag(sink_node_tags);
+    auto max_sink_node_tag_iter = find_maximum_tag(sink_node_tags);
 
 
     if (min_required_tag_iter != required_tags.end() && max_arrival_tag_iter != arrival_tags.end()
             && min_required_tag_iter != sink_node_tags.end()) {
 
-        float final_required_time = min_sink_node_tag_iter->time().value();
+        float final_required_time = max_sink_node_tag_iter->time().value();
 
         float future_path_delay = final_required_time - min_required_tag_iter->time().value();
         float past_path_delay = max_arrival_tag_iter->time().value();
@@ -466,7 +457,6 @@ void route_budgets::allocate_slack_using_delays_and_criticalities(float ** net_d
 }
 
 void route_budgets::check_if_budgets_in_bounds(int inet, int ipin) {
-
     VTR_ASSERT_MSG(delay_max_budget[inet][ipin] >= delay_min_budget[inet][ipin]
             && delay_lower_bound[inet][ipin] <= delay_min_budget[inet][ipin]
             && delay_upper_bound[inet][ipin] >= delay_max_budget[inet][ipin]
