@@ -690,6 +690,7 @@ struct t_packer_opts {
 	float alpha;
 	float beta;
 	float inter_cluster_net_delay;
+    float target_device_utilization;
 	bool auto_compute_inter_cluster_net_delay;
 	bool allow_unrelated_clustering;
 	bool connection_driven;

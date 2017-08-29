@@ -250,6 +250,7 @@ static void start_new_cluster(
         const int clb_index,
 		const t_pack_molecule *molecule,
 		std::map<t_type_ptr, size_t>& num_used_type_instances,
+        const float target_device_utilization,
 		const int num_models, const int max_cluster_size,
         const t_arch* arch,
         std::string device_layout_name,
@@ -299,6 +300,7 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 		bool hill_climbing_flag, const char *out_fname, bool timing_driven, 
 		enum e_cluster_seed cluster_seed_type, float alpha, float beta,
         float inter_cluster_net_delay,
+        const float target_device_utilization,
 		bool allow_unrelated_clustering,
 		bool connection_driven,
 		enum e_packer_algorithm packer_algorithm, vector<t_lb_type_rr_node> *lb_type_rr_graphs,
@@ -533,7 +535,9 @@ void do_clustering(const t_arch *arch, t_pack_molecule *molecule_head,
 
 			/* start a new cluster and reset all stats */
 			start_new_cluster(cluster_placement_stats, primitives_list,
-					&clb[num_clb], atom_molecules, num_clb, istart, num_used_type_instances,
+					&clb[num_clb], atom_molecules, num_clb, istart,
+                    num_used_type_instances,
+                    target_device_utilization,
 					num_models, max_cluster_size,
                     arch, 
                     device_layout_name,
@@ -1898,6 +1902,7 @@ static void start_new_cluster(
         const int clb_index,
 		const t_pack_molecule *molecule,
 		std::map<t_type_ptr, size_t>& num_used_type_instances,
+        const float target_device_utilization,
 		const int num_models, const int max_cluster_size,
         const t_arch* arch,
         std::string device_layout_name,
@@ -1985,7 +1990,7 @@ static void start_new_cluster(
 
     /* Expand FPGA size if needed */
     if (num_used_type_instances[new_cluster->type] > device_ctx.grid.num_instances(new_cluster->type)) {
-        device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances);
+        device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization);
         vtr::printf_info("Not enough resources expand FPGA size to (%zu x %zu)\n",
                 device_ctx.grid.width(), device_ctx.grid.height());
     }

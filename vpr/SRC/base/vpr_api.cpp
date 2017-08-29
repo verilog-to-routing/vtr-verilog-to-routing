@@ -272,13 +272,21 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
     /* Output the current settings to console. */
     printClusteredNetlistStats();
 
-    //Load the device grid
+    /*
+     *Load the device grid
+     */
+
+    //Record the resource requirement
     std::map<t_type_ptr,size_t> num_type_instances;
     for (int i = 0; i < cluster_ctx.num_blocks; ++i) {
         num_type_instances[cluster_ctx.blocks[i].type]++;
     }
-    device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances);
 
+    //Build the device
+    float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
+    device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization);
+
+    //Report on the device
     vtr::printf_info("FPGA sized to %zu x %zu (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), device_ctx.grid.name().c_str());
 
     vtr::printf_info("\n");
@@ -291,6 +299,14 @@ void vpr_init_pre_place_and_route(const t_vpr_setup& vpr_setup, const t_arch& Ar
                 device_ctx.grid.num_instances(type), type->name);
     }
     vtr::printf_info("\n");
+    float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
+    vtr::printf_info("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
+    vtr::printf_info("\n");
+
+
+    /*
+     * Channel setup
+     */
     device_ctx.chan_width.x_max = device_ctx.chan_width.y_max = 0;
     device_ctx.chan_width.x_min = device_ctx.chan_width.y_min = 0;
     device_ctx.chan_width.x_list = (int *) vtr::malloc(device_ctx.grid.height() * sizeof (int));
