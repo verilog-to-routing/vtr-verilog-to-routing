@@ -721,7 +721,25 @@ static void draw_congestion(void) {
 
     vtr::PlasmaColorMap cmap(min_congestion_ratio, max_congestion_ratio);
 
-	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+    //Draw the nodes in ascending order of value, this ensures high valued nodes
+    //are not overdrawn by lower value ones (e.g. when zoomed-out far)
+    std::vector<int> nodes(device_ctx.num_rr_nodes);
+    std::iota(nodes.begin(), nodes.end(), 0);
+    auto cmp_ascending_acc_cost = [&](int lhs_node, int rhs_node) {
+		short lhs_occ = route_ctx.rr_node_route_inf[lhs_node].occ();
+        short lhs_capacity = device_ctx.rr_nodes[lhs_node].capacity();
+
+		short rhs_occ = route_ctx.rr_node_route_inf[rhs_node].occ();
+        short rhs_capacity = device_ctx.rr_nodes[rhs_node].capacity();
+
+        float lhs_cong_ratio = float(lhs_occ) / lhs_capacity;
+        float rhs_cong_ratio = float(rhs_occ) / rhs_capacity;
+
+        return lhs_cong_ratio < rhs_cong_ratio;
+    };
+    std::sort(nodes.begin(), nodes.end(), cmp_ascending_acc_cost);
+
+    for(int inode : nodes) {
 		short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = device_ctx.rr_nodes[inode].capacity();
 
