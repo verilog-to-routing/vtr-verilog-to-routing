@@ -48,16 +48,6 @@
 #define SHORT_PATH_EXP 0.5
 
 route_budgets::route_budgets() {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    num_times_congested.resize(cluster_ctx.clbs_nlist.net.size(), 0);
-
-    min_budget_delay_ch = {NULL, 0, NULL};
-    max_budget_delay_ch = {NULL, 0, NULL};
-    target_budget_delay_ch = {NULL, 0, NULL};
-    lower_bound_delay_ch = {NULL, 0, NULL};
-    upper_bound_delay_ch = {NULL, 0, NULL};
-
     set = false;
 }
 
@@ -67,7 +57,7 @@ route_budgets::~route_budgets() {
 
 void route_budgets::free_budgets() {
     /*Free associated budget memory if set
-if not set, only free the chunk memory that wasn't used*/
+      if not set, only free the chunk memory that wasn't used*/
     if (set) {
         free_net_delay(delay_min_budget, &min_budget_delay_ch);
         free_net_delay(delay_max_budget, &max_budget_delay_ch);
@@ -75,14 +65,41 @@ if not set, only free the chunk memory that wasn't used*/
         free_net_delay(delay_lower_bound, &lower_bound_delay_ch);
         free_net_delay(delay_upper_bound, &upper_bound_delay_ch);
         num_times_congested.clear();
-    } else {
-        vtr::free_chunk_memory(&min_budget_delay_ch);
-        vtr::free_chunk_memory(&max_budget_delay_ch);
-        vtr::free_chunk_memory(&target_budget_delay_ch);
-        vtr::free_chunk_memory(&lower_bound_delay_ch);
-        vtr::free_chunk_memory(&upper_bound_delay_ch);
     }
     set = false;
+}
+
+void route_budgets::load_memory_chunks() {
+    min_budget_delay_ch = {NULL, 0, NULL};
+    max_budget_delay_ch = {NULL, 0, NULL};
+    target_budget_delay_ch = {NULL, 0, NULL};
+    lower_bound_delay_ch = {NULL, 0, NULL};
+    upper_bound_delay_ch = {NULL, 0, NULL};
+}
+
+void route_budgets::alloc_budget_memory() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    delay_min_budget = alloc_net_delay(&min_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_target = alloc_net_delay(&target_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_max_budget = alloc_net_delay(&max_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_lower_bound = alloc_net_delay(&lower_bound_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+    delay_upper_bound = alloc_net_delay(&upper_bound_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
+}
+
+void route_budgets::load_initial_budgets() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
+            delay_lower_bound[inet][ipin] = 0;
+            delay_upper_bound[inet][ipin] = 100e-9;
+
+            //before all iterations, delay max budget is equal to the lower bound
+            delay_max_budget[inet][ipin] = delay_lower_bound[inet][ipin];
+            delay_min_budget[inet][ipin] = delay_lower_bound[inet][ipin];
+        }
+    }
 }
 
 void route_budgets::load_route_budgets(float ** net_delay,
@@ -92,6 +109,8 @@ void route_budgets::load_route_budgets(float ** net_delay,
     /*This function loads the routing budgets depending on the option selected by the user
      the default is to use the minimax algorithm. Other options include disabling this feature
      or scale the delay by the criticality*/
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    num_times_congested.resize(cluster_ctx.clbs_nlist.net.size(), 0);
 
     /*if chosen to be disable, never set the budgets*/
     if (router_opts.routing_budgets_algorithm == DISABLE) {
@@ -100,23 +119,10 @@ void route_budgets::load_route_budgets(float ** net_delay,
         return;
     }
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    /*allocate memory for budgets*/
-    delay_min_budget = alloc_net_delay(&min_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
-    delay_target = alloc_net_delay(&target_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
-    delay_max_budget = alloc_net_delay(&max_budget_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
-    delay_lower_bound = alloc_net_delay(&lower_bound_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
-    delay_upper_bound = alloc_net_delay(&upper_bound_delay_ch, cluster_ctx.clbs_nlist.net, cluster_ctx.clbs_nlist.net.size());
-    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ++ipin) {
-            delay_lower_bound[inet][ipin] = 0;
-            delay_upper_bound[inet][ipin] = 100e-9;
-
-            //before all iterations, delay max budget is equal to the lower bound
-            delay_max_budget[inet][ipin] = delay_lower_bound[inet][ipin];
-        }
-    }
+    /*allocate and load memory for budgets*/
+    load_memory_chunks();
+    alloc_budget_memory();
+    load_initial_budgets();
 
     /*go to the associated function depending on user input/default settings*/
     if (router_opts.routing_budgets_algorithm == MINIMAX) {
@@ -143,9 +149,6 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
      * The formula used where c is a connection is 
      * slack_allocated(c) = (slack(c)*weight(c)/max_weight_of_all_path_through(c)).
      * Values for conditions in the while loops are pulled from the RCV paper*/
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
     std::shared_ptr<SetupHoldTimingInfo> timing_info = NULL;
 
     unsigned iteration;
@@ -181,11 +184,7 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
     }
 
     /*Set the minimum budgets equal to the maximum budgets*/
-    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-            delay_min_budget[inet][ipin] = delay_max_budget[inet][ipin];
-        }
-    }
+    set_min_max_budgets_equal();
 
     iteration = 0;
     max_budget_change = 900e-12;
@@ -212,12 +211,18 @@ void route_budgets::allocate_slack_using_weights(float ** net_delay, const Intra
         timing_info = perform_sta(delay_min_budget);
         max_budget_change = minimax_PERT(timing_info, delay_min_budget, net_delay, pb_gpin_lookup, HOLD, false);
         /*budgets may go below minimum delay*/
-        for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-            for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
-                delay_min_budget[inet][ipin] = max(delay_min_budget[inet][ipin], bottom_range);
-            }
-        }
+        keep_budget_above_value(delay_min_budget, bottom_range);
         iteration++;
+    }
+}
+
+void route_budgets::keep_budget_above_value(float ** temp_budgets, float bottom_range) {
+    /*In post processing the minimum delay can go below the lower bound*/
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+            temp_budgets[inet][ipin] = max(temp_budgets[inet][ipin], bottom_range);
+        }
     }
 }
 
@@ -246,6 +251,15 @@ void route_budgets::keep_min_below_max_budget() {
             if (delay_min_budget[inet][ipin] > delay_max_budget[inet][ipin]) {
                 delay_max_budget[inet][ipin] = delay_min_budget[inet][ipin];
             }
+        }
+    }
+}
+
+void route_budgets::set_min_max_budgets_equal() {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+        for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
+            delay_min_budget[inet][ipin] = delay_max_budget[inet][ipin];
         }
     }
 }
