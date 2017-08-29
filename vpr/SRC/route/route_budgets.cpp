@@ -46,7 +46,6 @@
 #include "route_budgets.h"
 
 #define SHORT_PATH_EXP 0.5
-#define MIN_DELAY_DECREMENT 1e-9
 
 route_budgets::route_budgets() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -498,7 +497,7 @@ void route_budgets::not_congested_this_iteration(int inet) {
     num_times_congested[inet] = 0;
 }
 
-void route_budgets::lower_budgets() {
+void route_budgets::lower_budgets(float delay_decrement) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     /*Decrease the budgets by a MIN_DELAY_DECREMENT when the congested times is high enough*/
     for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
@@ -506,7 +505,7 @@ void route_budgets::lower_budgets() {
             for (unsigned ipin = 1; ipin < cluster_ctx.clbs_nlist.net[inet].pins.size(); ipin++) {
                 if (delay_min_budget[inet][ipin] - delay_lower_bound[inet][ipin] >= 1e-9) {
 
-                    delay_min_budget[inet][ipin] = delay_min_budget[inet][ipin] - MIN_DELAY_DECREMENT;
+                    delay_min_budget[inet][ipin] = delay_min_budget[inet][ipin] - delay_decrement;
                 }
             }
         }
@@ -539,7 +538,6 @@ float route_budgets::get_crit_short_path(int inet, int ipin) {
     //cannot get delay from a source
     VTR_ASSERT(ipin);
     if (delay_target[inet][ipin] == 0) {
-
         return 0;
     }
     return pow(((delay_target[inet][ipin] - delay_lower_bound[inet][ipin]) / delay_target[inet][ipin]), SHORT_PATH_EXP);

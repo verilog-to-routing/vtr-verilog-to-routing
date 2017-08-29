@@ -139,6 +139,8 @@ static void timing_driven_check_net_delays(float **net_delay);
 static int mark_node_expansion_by_bin(int source_node, int target_node,
         t_rt_node * rt_node, t_bb bounding_box, int num_sinks);
 
+void reduce_budgets_if_congested(route_budgets &budgeting_inf,
+        CBRR& connections_inf, float slope, int itry);
 
 static bool should_route_net(int inet, const CBRR& connections_inf, bool if_force_reroute);
 static bool early_exit_heuristic(const WirelengthInfo& wirelength_info);
@@ -215,9 +217,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
 
     CBRR connections_inf{};
     VTR_ASSERT_SAFE(connections_inf.sanity_check_lookup());
-    
+
     route_budgets budgeting_inf;
-    
+
     /*
      * Routing parameters
      */
@@ -362,24 +364,6 @@ bool try_timing_driven_route(t_router_opts router_opts,
             }
         }
 
-        // Check if rate of convergence is high enough, if not lower the budgets of certain nets
-        //        if (budgeting_inf.if_set()) {
-        //            for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
-        //                if (should_route_net(inet, connections_inf, false)) {
-        //                    budgeting_inf.update_congestion_times(inet);
-        //                } else {
-        //                    budgeting_inf.not_congested_this_iteration(inet);
-        //                }
-        //            }
-        //            
-        //            //Problematic if the overuse nodes are positive or declining at a slow rate
-        //            //Must be more than 9 iterations to have a valid slope
-        //            if (routing_success_predictor.get_slope() > CONGESTED_SLOPE_VAL && itry >= 9) {
-        //                budgeting_inf.lower_budgets();
-        //            }
-        //        }
-
-
         /*
          * Prepare for the next iteration
          */
@@ -407,10 +391,10 @@ bool try_timing_driven_route(t_router_opts router_opts,
                 connections_inf.set_lower_bound_connection_delays(net_delay);
 
                 budgeting_inf.load_route_budgets(net_delay, timing_info, pb_gpin_lookup, router_opts);
-                //for debugging purposes
-//                if (budgeting_inf.if_set()) {
-//                    budgeting_inf.print_route_budget();
-//                }
+                /*for debugging purposes*/
+                //                if (budgeting_inf.if_set()) {
+                //                    budgeting_inf.print_route_budget();
+                //                }
 
             } else {
                 bool stable_routing_configuration = true;
@@ -424,6 +408,9 @@ bool try_timing_driven_route(t_router_opts router_opts,
                 // not stable if any connection needs to be forcibly rerouted
                 if (stable_routing_configuration)
                     connections_inf.set_stable_critical_path_delay(critical_path.delay());
+
+                /*Check if rate of convergence is high enough, if not lower the budgets of certain nets*/
+                //reduce_budgets_if_congested(budgeting_inf, connections_inf, routing_success_predictor.get_slope(), itry);
             }
         } else {
             /* If timing analysis is not enabled, make sure that the criticalities and the
@@ -561,6 +548,26 @@ timing_driven_route_structs::~timing_driven_route_structs() {
             sink_order,
             rt_node_of_sink
             );
+}
+
+void reduce_budgets_if_congested(route_budgets &budgeting_inf,
+        CBRR& connections_inf, float slope, int itry) {
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    if (budgeting_inf.if_set()) {
+        for (unsigned inet = 0; inet < cluster_ctx.clbs_nlist.net.size(); inet++) {
+            if (should_route_net(inet, connections_inf, false)) {
+                budgeting_inf.update_congestion_times(inet);
+            } else {
+                budgeting_inf.not_congested_this_iteration(inet);
+            }
+        }
+
+        /*Problematic if the overuse nodes are positive or declining at a slow rate
+        Must be more than 9 iterations to have a valid slope*/
+        if (slope > CONGESTED_SLOPE_VAL && itry >= 9) {
+            budgeting_inf.lower_budgets(1e-9);
+        }
+    }
 }
 
 int get_max_pins_per_net(void) {

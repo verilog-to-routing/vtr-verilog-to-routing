@@ -50,7 +50,7 @@ public:
 
     //lower budgets during congestion
     void update_congestion_times(int inet);
-    void lower_budgets();
+    void lower_budgets(float delay_decrement);
     void not_congested_this_iteration(int inet);
 private:
 
