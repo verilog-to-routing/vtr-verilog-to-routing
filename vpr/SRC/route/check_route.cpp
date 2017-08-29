@@ -518,7 +518,7 @@ static int chanx_chany_adjacent(int chanx_node, int chany_node) {
 void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_locally) {
 
 	/*
-     * This routine updates the occ field in the route_ctx.rr_node_state structure 
+     * This routine updates the occ field in the route_ctx.rr_node_route_inf structure 
      * according to the resource usage of the current routing.  It does a 
      * brute force recompute from scratch that is useful for sanity checking.
      */
@@ -526,14 +526,14 @@ void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_loc
 	int inode, iclass, ipin, num_local_opins;
 	t_trace *tptr;
 
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
 	/* First set the occupancy of everything to zero. */
 
 	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++)
-		route_ctx.rr_node_state[inode].set_occ(0);
+		route_ctx.rr_node_route_inf[inode].set_occ(0);
 
 	/* Now go through each net and count the tracks and pins used everywhere */
 
@@ -547,7 +547,7 @@ void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_loc
 
 		for (;;) {
 			inode = tptr->index;
-			route_ctx.rr_node_state[inode].set_occ(route_ctx.rr_node_state[inode].occ() + 1);
+			route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
 
 			if (device_ctx.rr_nodes[inode].type() == SINK) {
 				tptr = tptr->next; /* Skip next segment. */
@@ -568,7 +568,7 @@ void recompute_occupancy_from_scratch(const t_clb_opins_used& clb_opins_used_loc
 			/* Will always be 0 for pads or SINK classes. */
 			for (ipin = 0; ipin < num_local_opins; ipin++) {
 				inode = clb_opins_used_locally[blk_id][iclass][ipin];
-				route_ctx.rr_node_state[inode].set_occ(route_ctx.rr_node_state[inode].occ() + 1);
+				route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
 			}
 		}
 	}

@@ -985,7 +985,8 @@ struct t_trace {
  *             to reach this node from the previous node.  If there is      *
  *             no predecessor, prev_edge = NO_PREVIOUS.                     *
  * target_flag:  Is this node a target (sink) for the current routing?      *
- *               Number of times this node must be reached to fully route.  */
+ *               Number of times this node must be reached to fully route.  *
+ * occ:        The current occupancy of the associated rr node              */
 struct t_rr_node_route_inf {
 	int prev_node;
 	float pres_cost;
@@ -994,6 +995,15 @@ struct t_rr_node_route_inf {
 	float backward_path_cost;
 	short prev_edge;
 	short target_flag;
+
+    public: //Accessors
+        short occ() const { return occ_; }
+
+    public: //Mutators
+        void set_occ(int new_occ) { occ_ = new_occ; }
+
+    private: //Data
+        short occ_ = 0;
 };
 
 

@@ -697,7 +697,7 @@ bool timing_driven_route_net(ClusterNetId net_id, int itry, float pres_fac, floa
         }
     }
 
-    VTR_ASSERT_MSG(route_ctx.rr_node_state[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
+    VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
 
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
     free_route_tree(rt_root);
@@ -1468,7 +1468,7 @@ static bool should_route_net(ClusterNetId net_id, const CBRR& connections_inf, b
 
     for (;;) {
         int inode = tptr->index;
-        int occ = route_ctx.rr_node_state[inode].occ();
+        int occ = route_ctx.rr_node_route_inf[inode].occ();
         int capacity = device_ctx.rr_nodes[inode].capacity();
 
         if (occ > capacity) {
@@ -1717,7 +1717,7 @@ static OveruseInfo calculate_overuse_info() {
     size_t worst_overuse = 0;
     int inode;
     for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-        int overuse = route_ctx.rr_node_state[inode].occ() - device_ctx.rr_nodes[inode].capacity();
+        int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
         if (overuse > 0) {
             overused_nodes += 1;
 

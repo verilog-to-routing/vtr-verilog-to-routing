@@ -589,10 +589,6 @@ static void build_rr_graph(
     compute_router_lookahead(num_seg_types);
 #endif
 
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    route_ctx.rr_node_state = new t_rr_node_state[device_ctx.num_rr_nodes];
-
     /* Free all temp structs */
     if (seg_details) {
         free_seg_details(seg_details, max_chan_width);
@@ -1190,7 +1186,6 @@ void free_rr_graph(void) {
 
     /* Before adding any more free calls here, be sure the data is NOT chunk *
      * allocated, as ALL the chunk allocated data is already free!           */
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     VTR_ASSERT(!device_ctx.rr_node_indices.empty());
@@ -1205,9 +1200,6 @@ void free_rr_graph(void) {
 
     delete[] device_ctx.rr_nodes;
     device_ctx.rr_nodes = NULL;
-
-    delete[] route_ctx.rr_node_state;
-    route_ctx.rr_node_state = NULL;
 }
 
 void alloc_net_rr_terminals(void) {

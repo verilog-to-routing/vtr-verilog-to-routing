@@ -140,7 +140,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 	t_trace *tptr;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	free_traceback(net_id);
 	breadth_first_add_source_to_heap(net_id);
@@ -226,7 +226,7 @@ static void breadth_first_expand_trace_segment(t_trace *start_ptr,
 	int inode, sink_node, last_ipin_node;
 
     auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
 	tptr = start_ptr;
 	if(tptr != NULL && device_ctx.rr_nodes[tptr->index].type() == SINK) {

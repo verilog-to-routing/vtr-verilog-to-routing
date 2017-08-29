@@ -84,8 +84,6 @@ void invalidate_heap_entries(int sink_node, int ipin_node);
 
 void init_route_structs(int bb_factor);
 
-void free_rr_node_route_structs(void);
-
 void alloc_and_load_rr_node_route_structs(void);
 
 void reset_rr_node_route_structs(void);

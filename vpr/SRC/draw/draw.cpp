@@ -403,7 +403,7 @@ static void toggle_congestion(void (*drawscreen_ptr)(void)) {
 	} else {
 		num_congested = 0;
 		for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-			if (route_ctx.rr_node_state[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
+			if (route_ctx.rr_node_route_inf[inode].occ() > device_ctx.rr_nodes[inode].capacity()) {
 				num_congested++;
 			}
 		}
@@ -701,15 +701,13 @@ static void draw_congestion(void) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-	int inode;
-
 	setlinewidth(2);
 
 
     float min_congestion_ratio = 1.;
     float max_congestion_ratio = min_congestion_ratio;
-	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-		short occ = route_ctx.rr_node_state[inode].occ();
+	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+		short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = device_ctx.rr_nodes[inode].capacity();
 
         float congestion_ratio = float(occ) / capacity;
@@ -723,8 +721,8 @@ static void draw_congestion(void) {
 
     vtr::PlasmaColorMap cmap(min_congestion_ratio, max_congestion_ratio);
 
-	for (inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
-		short occ = route_ctx.rr_node_state[inode].occ();
+	for (int inode = 0; inode < device_ctx.num_rr_nodes; inode++) {
+		short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = device_ctx.rr_nodes[inode].capacity();
 
         float congestion_ratio = float(occ) / capacity;
@@ -2047,19 +2045,19 @@ static void highlight_rr_nodes(float x, float y) {
                         xlow, ylow, xhigh, yhigh, ptc_num, 
                         DIRECTIONS_STRING[device_ctx.rr_nodes[hit_node].direction()],
                         device_ctx.rr_nodes[hit_node].num_edges(), 
-                        route_ctx.rr_node_state[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
+                        route_ctx.rr_node_route_inf[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
             } else if (type == IPIN || type == OPIN) {
                 sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) pin: %d, side: %s, out_edges: %d, occ: %d, capacity: %d",
                         hit_node, device_ctx.rr_nodes[hit_node].type_string(),
                         xlow, ylow, xhigh, yhigh, ptc_num, 
                         SIDE_STRING[device_ctx.rr_nodes[hit_node].side()],
                         device_ctx.rr_nodes[hit_node].num_edges(), 
-                        route_ctx.rr_node_state[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
+                        route_ctx.rr_node_route_inf[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
             } else {
                 sprintf(message, "Selected node #%d: %s (%d,%d) -> (%d,%d) ptc: %d, %d edges, occ: %d, capacity: %d",
                         hit_node, device_ctx.rr_nodes[hit_node].type_string(),
                         xlow, ylow, xhigh, yhigh, ptc_num, device_ctx.rr_nodes[hit_node].num_edges(), 
-                        route_ctx.rr_node_state[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
+                        route_ctx.rr_node_route_inf[hit_node].occ(), device_ctx.rr_nodes[hit_node].capacity());
             }
 
             rr_highlight_message = message;

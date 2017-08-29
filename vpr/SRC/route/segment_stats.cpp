@@ -55,9 +55,9 @@ void get_segment_usage_stats(int num_segment, t_segment_inf * segment_inf) {
 			else
 				length = LONGLINE;
 
-			seg_occ_by_length[length] += route_ctx.rr_node_state[inode].occ();
+			seg_occ_by_length[length] += route_ctx.rr_node_route_inf[inode].occ();
 			seg_cap_by_length[length] += device_ctx.rr_nodes[inode].capacity();
-			seg_occ_by_type[seg_type] += route_ctx.rr_node_state[inode].occ();
+			seg_occ_by_type[seg_type] += route_ctx.rr_node_route_inf[inode].occ();
 			seg_cap_by_type[seg_type] += device_ctx.rr_nodes[inode].capacity();
 
 		}

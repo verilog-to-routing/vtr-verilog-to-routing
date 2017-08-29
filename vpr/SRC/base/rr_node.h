@@ -176,17 +176,4 @@ struct t_rr_indexed_data {
 	float C_tile_per_m;
 };
 
-/* Contains ephemeral routing related rr_node state.
- * Actual data related to the structure of the RR graph should be in t_rr_node
- *
- * occ:        Current occupancy (usage) of this node.
- */
-class t_rr_node_state {
-    public:
-        short occ() const { return occ_; }
-        void set_occ(int new_occ) { occ_ = new_occ; }
-    private:
-        short occ_ = 0;
-};
-
 #endif

@@ -255,7 +255,6 @@ static void alloc_routing_structs(t_router_opts router_opts,
 static void free_routing_structs() {
     free_rr_graph();
 
-    free_rr_node_route_structs();
     free_route_structs();
     free_trace_structs();
 
@@ -664,7 +663,7 @@ static bool calculate_delay(int source_node, int sink_node,
         VTR_ASSERT(device_ctx.rr_nodes[rt_node_of_sink->parent_node->parent_node->inode].type() == OPIN);
     }
 
-    VTR_ASSERT_MSG(route_ctx.rr_node_state[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
+    VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(), "SOURCE should never be congested");
 
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
     free_route_tree(rt_root);

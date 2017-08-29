@@ -1951,7 +1951,7 @@ void print_usage_by_wire_length() {
             //int length = abs(device_ctx.rr_nodes[inode].get_xhigh() + rr_node[inode].get_yhigh() 
             //             - device_ctx.rr_nodes[inode].get_xlow() - rr_node[inode].get_ylow());
             int length = device_ctx.rr_nodes[inode].get_length();
-            if (rr_node_state[inode].occ() > 0) {
+            if (rr_node_route_inf[inode].occ() > 0) {
                 if (used_wire_count.count(length) == 0)
                     used_wire_count[length] = 0;
                 used_wire_count[length] ++;

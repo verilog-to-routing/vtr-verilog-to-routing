@@ -188,10 +188,6 @@ void load_rr_file(const t_graph_type graph_type,
 #ifdef USE_MAP_LOOKAHEAD
         compute_router_lookahead(num_seg_types);
 #endif
-        auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-        route_ctx.rr_node_state = new t_rr_node_state[device_ctx.num_rr_nodes];
-
 
         float elapsed_time = (float) (clock() - begin) / CLOCKS_PER_SEC;
         vtr::printf_info("Build routing resource graph took %g seconds\n", elapsed_time);

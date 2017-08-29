@@ -217,13 +217,11 @@ struct RoutingContext : public Context {
     /* [0..num_nets-1] of linked list start pointers.  Defines the routing.  */
     vtr::vector_map<ClusterNetId, t_trace *> trace_head, trace_tail;
 
-    t_rr_node_state* rr_node_state; /* [0..num_rr_nodes-1] */
-
 	vtr::vector_map<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
 
     vtr::vector_map<ClusterBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
-    t_rr_node_route_inf *rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
+    std::vector<t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
     //Limits area in which each net must be routed.
     vtr::vector_map<ClusterNetId, t_bb> route_bb; /* [0..cluster_ctx.clb_nlist.nets().size()-1]*/
