@@ -276,8 +276,6 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
         vars.set_var_value("w", type->width);
         vars.set_var_value("h", type->height);
 
-        //vtr::printf("Applying grid_loc_def for '%s' priority %d\n", type->name, grid_loc_def.priority);
-
         //Load the x specification
         auto& xspec = grid_loc_def.x;
 
@@ -379,6 +377,11 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, si
                     " the region height (%d) to avoid overlapping instances (was %s = %d)",
                     type->name, region_height, xspec.repeat_expr.c_str(), repeaty);
         }
+
+        //vtr::printf("Applying grid_loc_def for '%s' priority %d startx=%s=%zu, endx=%s=%zu, starty=%s=%zu, endx=%s=%zu,\n", 
+        //            type->name, grid_loc_def.priority,
+        //            xspec.start_expr.c_str(), startx, xspec.end_expr.c_str(), endx,
+        //            yspec.start_expr.c_str(), starty, yspec.end_expr.c_str(), endy);
 
         size_t x_end = 0;
         for (size_t kx = 0; x_end < width; ++kx) { //Repeat in x direction
@@ -533,10 +536,12 @@ static void set_grid_block_type(int priority, const t_type_descriptor* type, siz
                     VTR_ASSERT(device_ctx.EMPTY_TYPE->width == 1);
                     VTR_ASSERT(device_ctx.EMPTY_TYPE->height == 1);
 
+#ifdef VERBOSE
                     vtr::printf("Ripping up block '%s' at (%d,%d) offset (%d,%d). Overlapped by '%s' at (%d,%d)\n", 
                             invalidated_root.type->name, invalidated_root.x, invalidated_root.y,
                             x_offset, y_offset,
                             type->name, x_root, y_root);
+#endif
 
                     grid[x][y].type = device_ctx.EMPTY_TYPE;
                     grid[x][y].width_offset = 0;
