@@ -323,6 +323,12 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
             .default_value("on")
             .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument(args.target_device_utilization, "--target_utilization")
+            .help("Sets the target device utilization."
+                  " This corresponds to the maximum target fraction of device grid-tiles to be used."
+                  " A value of 1.0 means the smallest device (which fits the circuit) will be used.")
+            .default_value("1.0")
+            .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& file_grp = parser.add_argument_group("filename options");
 

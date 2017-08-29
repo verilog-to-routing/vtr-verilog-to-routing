@@ -42,6 +42,7 @@ struct t_options {
 	argparse::ArgValue<bool> CreateEchoFile;
     argparse::ArgValue<bool> verify_file_digests;
     argparse::ArgValue<std::string> device_layout;
+    argparse::ArgValue<float> target_device_utilization;
 
 
     /* Atom netlist options */
