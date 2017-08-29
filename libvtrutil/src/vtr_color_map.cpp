@@ -791,7 +791,15 @@ ColorMap::ColorMap(float min, float max, const std::vector<Color<float>>& color_
 Color<float> ColorMap::color(float value) {
     VTR_ASSERT(value >= min_);
     VTR_ASSERT(value <= max_);
-    float norm_value = (value - min_) / (max_ - min_);
+
+    float range = max_ - min_;
+
+    float norm_value;
+    if (range == 0) {
+        norm_value = 0;    
+    } else {
+        norm_value = (value - min_) / range;
+    }
 
     size_t color_idx = std::round(norm_value * (color_data_.size() - 1));
 
